@@ -413,6 +413,20 @@ void Simulation::_stage() {
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::_activate() {
+  // Detach entity transforms from spawner transforms
+  // so physics (and other runtime systems) don't corrupt spawner data.
+  // In edit mode, entities share the spawner's DecompTransform pointer
+  // so gizmo manipulations propagate. _activate() is only called for
+  // play/run mode, so this preserves the edit-mode sharing.
+  for (auto& item : mEntities) {
+    auto pent = item.second;
+    auto shared_xf = pent->transform();
+    auto independent_xf = std::make_shared<DecompTransform>();
+    independent_xf->_translation = shared_xf->_translation;
+    independent_xf->_rotation = shared_xf->_rotation;
+    independent_xf->_uniformScale = shared_xf->_uniformScale;
+    pent->setTransform(independent_xf);
+  }
   _activateSystems();
   _activateEntities();
   _transportState = ESimulationTransport::ACTIVATED;

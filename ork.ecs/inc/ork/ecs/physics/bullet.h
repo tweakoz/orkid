@@ -66,9 +66,6 @@ public:
   BulletObjectComponentData();
   ~BulletObjectComponentData();
 
-  void ShapeGetter(ork::rtti::ICastable*& val) const;
-  void ShapeSetter(ork::rtti::ICastable* const& val);
-
   Component* createComponent(Entity* pent) const final;
   static object::ObjectClass* componentClass();
   void DoRegisterWithScene(SceneComposer& sc) const final;

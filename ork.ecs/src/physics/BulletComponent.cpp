@@ -63,25 +63,11 @@ void BulletObjectComponentData::describeX(ComponentDataClass* clazz) {
   clazz->directProperty("IsKinematic", &BulletObjectComponentData::_isKinematic);
   clazz->directProperty("Disable", &BulletObjectComponentData::_disablePhysics);
 
-  clazz->directObjectMapProperty("ForceControllers", &BulletObjectComponentData::_forcedatas);
+  clazz->directObjectMapProperty("ForceControllers", &BulletObjectComponentData::_forcedatas)
+      ->annotate<ConstString>("editor.factorylistbase", "BulletObjectForceControllerData");
 
-  // reflect::annotatePropertyForEditor<BulletObjectComponentData>(
-  //  "ForceControllers", "editor.factorylistbase", "BulletObjectForceControllerData");
-  // reflect::annotatePropertyForEditor<BulletObjectComponentData>("ForceControllers", "editor.map.policy.impexp", "true");
-  // reflect::RegisterProperty("Shape", &BulletObjectComponentData::ShapeGetter, &BulletObjectComponentData::ShapeSetter);
-  // reflect::annotatePropertyForEditor<BulletObjectComponentData>("Shape", "editor.factorylistbase", "BulletShapeBaseData");
-}
-///////////////////////////////////////////////////////////////////////////////
-void BulletObjectComponentData::ShapeGetter(ork::rtti::ICastable*& val) const {
-  // BulletShapeBaseData* nonconst = const_cast<BulletShapeBaseData*>(_shapedata);
-  // val                           = nonconst;
-  OrkAssert(false);
-}
-///////////////////////////////////////////////////////////////////////////////
-void BulletObjectComponentData::ShapeSetter(ork::rtti::ICastable* const& val) {
-  // ork::rtti::ICastable* ptr = val;
-  //_shapedata                = ((ptr == 0) ? 0 : rtti::safe_downcast<BulletShapeBaseData*>(ptr));
-  OrkAssert(false);
+  clazz->directObjectProperty("Shape", &BulletObjectComponentData::_shapedata)
+      ->annotate<ConstString>("editor.factorylistbase", "EcsBulletShapeBaseData");
 }
 ///////////////////////////////////////////////////////////////////////////////
 Component* BulletObjectComponentData::createComponent(Entity* pent) const {

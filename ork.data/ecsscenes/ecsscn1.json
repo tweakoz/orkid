@@ -1,0 +1,465 @@
+{
+ "root": {
+  "object": {
+   "class": "EcsSceneData",
+   "uuid": "7a968af0-4a27-4d8d-8c0c-5608ca66bc59",
+   "properties": {
+    "SceneObjects": {
+     "ArchBall": {
+      "object": {
+       "class": "EcsArchetype",
+       "uuid": "d98f5eb2-12d8-4e22-ab58-56aa30bc2218",
+       "properties": {
+        "Components": {
+         "EcsBulletObjectComponentData": {
+          "object": {
+           "class": "EcsBulletObjectComponentData",
+           "uuid": "76ed0d49-5d09-409f-a0c9-854d340fb695",
+           "properties": {
+            "AllowSleeping": false,
+            "AngularDamping": 0.5,
+            "Disable": false,
+            "ForceControllers": {
+             "item-0": {
+              "object": {
+               "class": "DirectionalForceData",
+               "uuid": "1116da28-d144-49fd-8f1b-3ac1981e713e",
+               "properties": {
+                "Direction": [
+                 0.0,
+                 0.9999999403953552,
+                 0.0
+                ],
+                "Force": 0.040000032633543015
+               }
+              }
+             }
+            },
+            "Friction": 0.10000000894069672,
+            "IsKinematic": false,
+            "LinearDamping": 0.5,
+            "Mass": 0.6000000238418579,
+            "Restitution": 1.1799999475479126,
+            "Shape": {
+             "object": {
+              "class": "EcsBulletShapeSphereData",
+              "uuid": "d3bd3d4e-2edf-4791-b780-656de0fbd44d",
+              "properties": {
+               "Radius": 1.0
+              }
+             }
+            }
+           }
+          }
+         },
+         "SceneGraphComponentData": {
+          "object": {
+           "class": "SceneGraphComponentData",
+           "uuid": "5b9e8e6f-76c6-4b56-9010-004cfbd9e2e4",
+           "properties": {
+            "NodeDatas": {
+             "item-0": {
+              "object": {
+               "class": "SceneGraphNodeItemData",
+               "uuid": "d3321bbd-8eac-4b36-9ffe-337afd3938e8",
+               "properties": {
+                "DrawableData": {
+                 "object": {
+                  "class": "ModelDrawableData",
+                  "uuid": "13477281-f777-4132-9ded-e7cf0d95e01f",
+                  "properties": {
+                   "assetpath": "data://tests/pbr_calib.glb",
+                   "assetvars": {},
+                   "ModColor": [
+                    1.0,
+                    0.4399999976158142,
+                    1.0,
+                    1.0
+                   ]
+                  }
+                 }
+                },
+                "LayerName": "std_forward",
+                "NodeName": "X1"
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "ArchBallDown": {
+      "object": {
+       "class": "EcsArchetype",
+       "uuid": "b4b94bf4-a3a2-446b-8c80-181ae7b120fd",
+       "properties": {
+        "Components": {
+         "EcsBulletObjectComponentData": {
+          "object": {
+           "class": "EcsBulletObjectComponentData",
+           "uuid": "8317c929-b347-4605-8112-74f0beb29f71",
+           "properties": {
+            "AllowSleeping": true,
+            "AngularDamping": 0.5,
+            "Disable": false,
+            "ForceControllers": {
+             "item-0": {
+              "object": {
+               "class": "DirectionalForceData",
+               "uuid": "3e9e3c8c-16c4-47a4-91b7-81b67c8d8cd2",
+               "properties": {
+                "Direction": [
+                 0.0,
+                 -1.0,
+                 0.0
+                ],
+                "Force": 0.14000003039836884
+               }
+              }
+             }
+            },
+            "Friction": 0.5,
+            "IsKinematic": false,
+            "LinearDamping": 0.5,
+            "Mass": 0.09000001847743988,
+            "Restitution": 0.5,
+            "Shape": {
+             "object": {
+              "class": "EcsBulletShapeSphereData",
+              "uuid": "06d3c56c-e946-4cd4-b385-afa6f55008cf",
+              "properties": {
+               "Radius": 1.0
+              }
+             }
+            }
+           }
+          }
+         },
+         "SceneGraphComponentData": {
+          "object": {
+           "class": "SceneGraphComponentData",
+           "uuid": "baa63caf-2f47-491c-bb2a-c868c9edcf64",
+           "properties": {
+            "NodeDatas": {
+             "item-0": {
+              "object": {
+               "class": "SceneGraphNodeItemData",
+               "uuid": "507bc858-1b32-4b10-98ae-3819b7721cd0",
+               "properties": {
+                "DrawableData": {
+                 "object": {
+                  "class": "ModelDrawableData",
+                  "uuid": "33525f31-ff98-459a-8b13-6a798b9535e6",
+                  "properties": {
+                   "assetpath": "data://tests/pbr_calib.glb",
+                   "assetvars": {},
+                   "ModColor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                   ]
+                  }
+                 }
+                },
+                "LayerName": "std_forward",
+                "NodeName": "N2"
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "ArchGround": {
+      "object": {
+       "class": "EcsArchetype",
+       "uuid": "73bda066-8ba3-45c6-b813-7aca8de18e61",
+       "properties": {
+        "Components": {
+         "EcsBulletObjectComponentData": {
+          "object": {
+           "class": "EcsBulletObjectComponentData",
+           "uuid": "2b0882ec-a284-417c-b902-cd209fd27927",
+           "properties": {
+            "AllowSleeping": true,
+            "AngularDamping": 0.5,
+            "Disable": false,
+            "ForceControllers": {},
+            "Friction": 0.5,
+            "IsKinematic": false,
+            "LinearDamping": 0.5,
+            "Mass": 2.2351741790771484e-8,
+            "Restitution": 0.5,
+            "Shape": {
+             "object": {
+              "class": "EcsBulletShapePlaneData",
+              "uuid": "7a4deb34-0efa-4f26-b533-dde78d4b7934",
+              "properties": {}
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "ArchRedLight": {
+      "object": {
+       "class": "EcsArchetype",
+       "uuid": "6dec691a-c8a6-4888-b5f4-ed15c3f84501",
+       "properties": {
+        "Components": {
+         "SceneGraphComponentData": {
+          "object": {
+           "class": "SceneGraphComponentData",
+           "uuid": "80510048-72fa-4635-b3f4-69f847856d04",
+           "properties": {
+            "NodeDatas": {
+             "item-0": {
+              "object": {
+               "class": "SceneGraphNodeItemData",
+               "uuid": "482d6fc1-e997-4106-b1f4-69c031c6f2cf",
+               "properties": {
+                "DrawableData": {
+                 "object": {
+                  "class": "PointLightData",
+                  "uuid": "e510700b-efd8-4047-82a9-1eb6202588c7",
+                  "properties": {
+                   "Falloff": 1.0,
+                   "Radius": 1.0,
+                   "Color": [
+                    2.5999999046325684,
+                    2.239999771118164,
+                    0.0
+                   ],
+                   "Decal": false,
+                   "Intensity": 25.889997482299805,
+                   "ShadowBias": 0.0020000000949949026,
+                   "ShadowBlur": 0.0,
+                   "ShadowCaster": false,
+                   "ShadowMapSize": 1024,
+                   "ShadowSamples": 1,
+                   "ModColor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                   ]
+                  }
+                 }
+                },
+                "LayerName": "std_forward",
+                "NodeName": "L1"
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "spawner-redlight": {
+      "object": {
+       "class": "EcsSpawnData",
+       "uuid": "f5b5de3f-24d6-453e-9664-911412a7b7d9",
+       "properties": {
+        "Archetype": {
+         "object-ref": {
+          "uuid-ref": "6dec691a-c8a6-4888-b5f4-ed15c3f84501"
+         }
+        },
+        "UserProperties": {},
+        "DagNodeData": {
+         "object": {
+          "class": "EcsDagNodeData",
+          "uuid": "09552724-7fb0-4a06-b99d-e1f12093c14c",
+          "properties": {
+           "TransformNode": {
+            "object": {
+             "class": "TransformNode",
+             "uuid": "eb3d1bba-91cd-47b6-843b-4e0cbab4cdfe",
+             "properties": {
+              "transform": {
+               "object": {
+                "class": "DecompTransform",
+                "uuid": "2fb1cf51-170f-457c-ba12-3db3f262d992",
+                "properties": {
+                 "rotation": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                 ],
+                 "translation": [
+                  1.0018281936645508,
+                  3.7433645725250244,
+                  -1.1251561641693115
+                 ],
+                 "uniformScale": 1.0
+                }
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        },
+        "Parent": "scene"
+       }
+      }
+     },
+     "spawner0": {
+      "object": {
+       "class": "EcsSpawnData",
+       "uuid": "09a001c4-bf9c-43a9-879d-f207e4465a74",
+       "properties": {
+        "Archetype": {
+         "object-ref": {
+          "uuid-ref": "d98f5eb2-12d8-4e22-ab58-56aa30bc2218"
+         }
+        },
+        "UserProperties": {},
+        "DagNodeData": {
+         "object": {
+          "class": "EcsDagNodeData",
+          "uuid": "221a3210-0883-4440-96b7-df8024735091",
+          "properties": {
+           "TransformNode": {
+            "object": {
+             "class": "TransformNode",
+             "uuid": "d5753e62-53d2-4e82-b94c-09d5b4483310",
+             "properties": {
+              "transform": {
+               "object": {
+                "class": "DecompTransform",
+                "uuid": "e1418281-9509-4ef5-ae91-f62625e9d4f3",
+                "properties": {
+                 "rotation": [
+                  -0.0,
+                  -0.5088635087013245,
+                  -0.0,
+                  0.8608472943305969
+                 ],
+                 "translation": [
+                  2.692990303039551,
+                  1.0,
+                  4.369039535522461
+                 ],
+                 "uniformScale": 1.0
+                }
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        },
+        "Parent": "scene"
+       }
+      }
+     },
+     "spawner2": {
+      "object": {
+       "class": "EcsSpawnData",
+       "uuid": "c7ca9a63-05f2-459d-a5c8-c0d45876f117",
+       "properties": {
+        "Archetype": {
+         "object-ref": {
+          "uuid-ref": "b4b94bf4-a3a2-446b-8c80-181ae7b120fd"
+         }
+        },
+        "UserProperties": {},
+        "DagNodeData": {
+         "object": {
+          "class": "EcsDagNodeData",
+          "uuid": "40b5662b-2b36-4cbd-9399-e128f03848f5",
+          "properties": {
+           "TransformNode": {
+            "object": {
+             "class": "TransformNode",
+             "uuid": "453f055c-f0bd-4344-8a79-700acc98a01f",
+             "properties": {
+              "transform": {
+               "object": {
+                "class": "DecompTransform",
+                "uuid": "d28f9079-6ed3-434b-ac4f-ed44bf6722e0",
+                "properties": {
+                 "rotation": [
+                  -0.0,
+                  -0.0,
+                  -0.0,
+                  1.0
+                 ],
+                 "translation": [
+                  2.78144907951355,
+                  3.5571236610412598,
+                  3.443563938140869
+                 ],
+                 "uniformScale": 1.0
+                }
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        },
+        "Parent": "scene"
+       }
+      }
+     }
+    },
+    "ScriptFile": "",
+    "SystemData": {
+     "BulletSystem": {
+      "object": {
+       "class": "EcsBulletSystemData",
+       "uuid": "fe955038-58fb-4c97-ba51-a39c93131b73",
+       "properties": {
+        "Debug": false,
+        "ExpGravity": [
+         0.0,
+         -9.800000190734863,
+         0.0
+        ],
+        "LinGravity": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "SimulationRate": 240.0,
+        "TimeScale": 1.0
+       }
+      }
+     },
+     "SceneGraphSystemData": {
+      "object": {
+       "class": "SceneGraphSystemData",
+       "uuid": "53c771d8-7058-4fde-b926-49f200157857",
+       "properties": {
+        "drawabledatas": [],
+        "userparams": {}
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+}

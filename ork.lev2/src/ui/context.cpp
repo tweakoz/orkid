@@ -370,6 +370,11 @@ void Context::dumpWidgets(std::string label) const{
 void Context::pushOverlay(widget_ptr_t widget, int x, int y, int w, int h,
                           bool dismiss_on_click_outside,
                           std::function<void()> on_dismissed) {
+  // Flip upward if the overlay would overflow below the window
+  if (_top && (y + h) > _top->height()) {
+    y = y - h;
+    if (y < 0) y = 0;
+  }
   OverlayEntry entry;
   entry._widget = widget;
   entry._dismiss_on_click_outside = dismiss_on_click_outside;
