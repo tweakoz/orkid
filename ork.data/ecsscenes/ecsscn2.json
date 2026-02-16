@@ -362,7 +362,7 @@
                     0.0,
                     0.0
                    ],
-                   "time": 3.0
+                   "time": 1.0
                   }
                  }
                 },
@@ -393,7 +393,7 @@
                     0.0,
                     0.0
                    ],
-                   "time": 6.0
+                   "time": 5.0
                   }
                  }
                 },
@@ -424,7 +424,7 @@
                     0.0,
                     0.0
                    ],
-                   "time": 8.0
+                   "time": 6.0
                   }
                  }
                 },
@@ -460,10 +460,10 @@
                  }
                 }               ],
                "segmentTypes": [
-                "LINEAR",
-                "LINEAR",
-                "LINEAR",
-                "LINEAR"
+                "CATMULL_ROM",
+                "CATMULL_ROM",
+                "CATMULL_ROM",
+                "CATMULL_ROM"
                ]
               }
              }
