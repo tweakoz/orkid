@@ -310,8 +310,8 @@
                   "uuid": "f037559b-a525-421f-adce-84ed04a33ffb",
                   "properties": {
                    "position": [
-                    0.0,
-                    0.0,
+                    -10.0,
+                    1.0,
                     0.0
                    ],
                    "rotation": [
@@ -341,8 +341,101 @@
                   "uuid": "66020f7a-cca5-478e-9690-25fe75800a2a",
                   "properties": {
                    "position": [
-                    1.5415458679199219,
-                    -1.125038743019104,
+                    -10.0,
+                    2.0,
+                    0.0
+                   ],
+                   "rotation": [
+                    0.0,
+                    1.0,
+                    0.0,
+                    0.0
+                   ],
+                   "scale": 1.0,
+                   "tangent_in": [
+                    0.0,
+                    0.0,
+                    0.0
+                   ],
+                   "tangent_out": [
+                    0.0,
+                    0.0,
+                    0.0
+                   ],
+                   "time": 3.0
+                  }
+                 }
+                },
+                {
+                 "object": {
+                  "class": "TransformCurvePoint",
+                  "uuid": "66020f7b-cca5-478e-9690-25fe75800a2a",
+                  "properties": {
+                   "position": [
+                    10.0,
+                    4.0,
+                    0.0
+                   ],
+                   "rotation": [
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0
+                   ],
+                   "scale": 3.0,
+                   "tangent_in": [
+                    0.0,
+                    0.0,
+                    0.0
+                   ],
+                   "tangent_out": [
+                    0.0,
+                    0.0,
+                    0.0
+                   ],
+                   "time": 6.0
+                  }
+                 }
+                },
+                {
+                 "object": {
+                  "class": "TransformCurvePoint",
+                  "uuid": "66020f7c-cca5-478e-9690-25fe75800a2a",
+                  "properties": {
+                   "position": [
+                    10.0,
+                    1.0,
+                    0.0
+                   ],
+                   "rotation": [
+                    0.0,
+                    -1.0,
+                    0.0,
+                    0.0
+                   ],
+                   "scale": 1.0,
+                   "tangent_in": [
+                    0.0,
+                    0.0,
+                    0.0
+                   ],
+                   "tangent_out": [
+                    0.0,
+                    0.0,
+                    0.0
+                   ],
+                   "time": 8.0
+                  }
+                 }
+                },
+                {
+                 "object": {
+                  "class": "TransformCurvePoint",
+                  "uuid": "66020f7d-cca5-478e-9690-25fe75800a2a",
+                  "properties": {
+                   "position": [
+                    -10.0,
+                    1.0,
                     0.0
                    ],
                    "rotation": [
@@ -362,18 +455,20 @@
                     0.0,
                     0.0
                    ],
-                   "time": 0.10342790931463242
+                   "time": 10.0
                   }
                  }
-                }
-               ],
+                }               ],
                "segmentTypes": [
+                "LINEAR",
+                "LINEAR",
+                "LINEAR",
                 "LINEAR"
                ]
               }
              }
             },
-            "Looping": false,
+            "Looping": true,
             "PlaybackSpeed": 1.0
            }
           }
@@ -394,7 +489,7 @@
                   "class": "ModelDrawableData",
                   "uuid": "dd5782c3-eaa0-4ff8-8c50-3d5223892c0c",
                   "properties": {
-                   "assetpath": "data://tests/pbr_calib.glb",
+                   "assetpath": "data://tests/misc_gltf_samples/art_and_sculpture/fracvase.glb",
                    "assetvars": {}
                   }
                  }

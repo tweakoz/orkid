@@ -114,9 +114,11 @@ void Simulation::_buildStateMachine() {
   //
   _updateEditSimState->_onupdate = [this](fsm::fsminstance_ptr_t inst) {
     _serviceEventQueues();
-    _systems.atomicOp([&](const SystemLut& syslut) { _updsyslutcopy = syslut; });
-    for (auto sys : _updsyslutcopy)
-      sys.second->_update(this);
+    _systems.atomicOp([&](const SystemLut& syslut) {
+      auto it = syslut.find("SceneGraphSystem");
+      if (it != syslut.end())
+        it->second->_update(this);
+    });
   };
   ////////////////////////////////////////////////////////
   // ACTIVE STATE

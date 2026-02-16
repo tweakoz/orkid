@@ -32,7 +32,6 @@ public:
   const TransformCurveComponentData& _CD;
   TransformCurveSystem* _system = nullptr;
   float _curveTime = 0.0f;
-  bool _playing = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

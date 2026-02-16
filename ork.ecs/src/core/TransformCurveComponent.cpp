@@ -101,13 +101,6 @@ void TransformCurveComponent::_onDeactivate(Simulation* psi) {
 
 void TransformCurveComponent::_onNotify(Simulation* psi, token_t evID, evdata_t data) {
   switch (evID._hashed) {
-    case "PLAY"_crcu:
-      _playing = true;
-      _curveTime = 0.0f;
-      break;
-    case "STOP"_crcu:
-      _playing = false;
-      break;
     case "SETTIME"_crcu:
       _curveTime = data.get<float>();
       break;
@@ -161,8 +154,6 @@ void TransformCurveSystem::_onUnLink(Simulation* psi) {
 void TransformCurveSystem::_onUpdate(Simulation* inst) {
   float dt = inst->deltaTime();
   for (auto c : _components) {
-    if (!c->_playing)
-      continue;
     auto curve = c->_CD._curve;
     if (!curve || curve->numPoints() < 2)
       continue;
