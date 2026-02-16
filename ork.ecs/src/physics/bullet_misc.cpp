@@ -44,6 +44,11 @@ ork::fquat btqtoorkq(const btQuaternion& q) {
   return q_out.inverse();
 }
 
+btQuaternion orkqtobtq(const ork::fquat& q) {
+  auto inv = q.inverse();
+  return btQuaternion(inv.x, inv.y, inv.z, inv.w);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 btTransform orkmtx4tobtmtx4(const ork::fmtx4& mtx) {

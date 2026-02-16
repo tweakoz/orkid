@@ -62,6 +62,7 @@ void BulletObjectComponentData::describeX(ComponentDataClass* clazz) {
   clazz->directProperty("AllowSleeping", &BulletObjectComponentData::_allowSleeping);
   clazz->directProperty("IsKinematic", &BulletObjectComponentData::_isKinematic);
   clazz->directProperty("Disable", &BulletObjectComponentData::_disablePhysics);
+  clazz->directProperty("SyncShapeScale", &BulletObjectComponentData::_syncShapeScale);
 
   clazz->directObjectMapProperty("ForceControllers", &BulletObjectComponentData::_forcedatas)
       ->annotate<ConstString>("editor.factorylistbase", "BulletObjectForceControllerData");
@@ -195,8 +196,10 @@ void BulletObjectComponent::updateDynamic(Simulation* sim, float time_step) {
   ecs_xform->_translation = position;
   ecs_xform->_rotation = rotation;
 
-  // apply BulletSystem's expgravity
-
+  if (mBOCD._syncShapeScale && _shapeinst && _shapeinst->_collisionShape) {
+    float s = ecs_xform->_uniformScale;
+    _shapeinst->_collisionShape->setLocalScaling(btVector3(s, s, s));
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -204,9 +207,18 @@ void BulletObjectComponent::updateDynamic(Simulation* sim, float time_step) {
 void BulletObjectComponent::updateKinematic(Simulation* sim, float time_step){
   auto ecs_xform = GetEntity()->transform();
   btMotionState* motionState = _rigidbody->getMotionState();
-  auto ork_mtx               = ecs_xform->composed();
-  btTransform xf             = orkmtx4tobtmtx4(ork_mtx);
+
+  // build btTransform from rotation + translation only (no scale)
+  // scale goes through setLocalScaling instead
+  btTransform xf;
+  xf.setRotation(orkqtobtq(ecs_xform->_rotation));
+  xf.setOrigin(orkv3tobtv3(ecs_xform->_translation));
   motionState->setWorldTransform(xf);
+
+  if (mBOCD._syncShapeScale && _shapeinst && _shapeinst->_collisionShape) {
+    float s = ecs_xform->_uniformScale;
+    _shapeinst->_collisionShape->setLocalScaling(btVector3(s, s, s));
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////

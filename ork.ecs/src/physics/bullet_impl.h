@@ -115,8 +115,10 @@ virtual void  drawSphere (btScalar radius, const btTransform &transform, const b
   static constexpr int kmaxbuffers =20;
     //mDBRecs[i]; //._bulletSystem = system
   std::vector<BulletDebugDrawDBData> mDBRecs;
-  lev2::pbrmaterial_ptr_t _pbrmaterial;
-  lev2::fxpipelinecache_constptr_t _fxcache;
+  std::shared_ptr<lev2::FreestyleMaterial> _material;
+  const lev2::FxShaderTechnique* _technique = nullptr;
+  const lev2::FxShaderParam* _paramMVP = nullptr;
+  const lev2::FxShaderParam* _paramModColor = nullptr;
 
 
   //////////////////////////

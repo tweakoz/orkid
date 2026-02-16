@@ -22,6 +22,7 @@ from lev2utils.primitives import createGridData
 
 parser = argparse.ArgumentParser(description="ECS Scene Player")
 parser.add_argument("--scene", "-s", type=str, help="Scene file to play (.json)")
+parser.add_argument("--fullscreen", "-f", action="store_true", help="Start in fullscreen mode")
 args = parser.parse_args()
 
 ################################################################################
@@ -34,7 +35,7 @@ class EcsPlayer(ComponentizedApplication):
     self._playing = False
     self.createEzApp(
       name="OrkidEcsPlayer",
-      fullscreen=True,
+      fullscreen=args.fullscreen,
       pre_init_fns=[ecs.ecsInitCallback])
 
   ##############################################################################

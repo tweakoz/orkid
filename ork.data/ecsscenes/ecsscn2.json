@@ -17,12 +17,12 @@
            "uuid": "76ed0d49-5d09-409f-a0c9-854d340fb695",
            "properties": {
             "AllowSleeping": false,
-            "AngularDamping": 0.5,
+            "AngularDamping": 0.25999999046325684,
             "Disable": false,
             "ForceControllers": {},
             "Friction": 0.5,
             "IsKinematic": false,
-            "LinearDamping": 0.5,
+            "LinearDamping": 0.15000000596046448,
             "Mass": 1.0,
             "Restitution": 0.5099999904632568,
             "Shape": {
@@ -30,10 +30,11 @@
               "class": "EcsBulletShapeSphereData",
               "uuid": "d3bd3d4e-2edf-4791-b780-656de0fbd44d",
               "properties": {
-               "Radius": 1.0
+               "Radius": 1.024999976158142
               }
              }
-            }
+            },
+            "SyncShapeScale": false
            }
           }
          },
@@ -115,12 +116,12 @@
            "uuid": "8317c929-b347-4605-8112-74f0beb29f71",
            "properties": {
             "AllowSleeping": false,
-            "AngularDamping": 0.5,
+            "AngularDamping": 0.2199999988079071,
             "Disable": false,
             "ForceControllers": {},
             "Friction": 0.5,
             "IsKinematic": false,
-            "LinearDamping": 0.09000001102685928,
+            "LinearDamping": 0.04000001400709152,
             "Mass": 1.0,
             "Restitution": 0.5,
             "Shape": {
@@ -128,10 +129,11 @@
               "class": "EcsBulletShapeSphereData",
               "uuid": "06d3c56c-e946-4cd4-b385-afa6f55008cf",
               "properties": {
-               "Radius": 1.0
+               "Radius": 1.024999976158142
               }
              }
-            }
+            },
+            "SyncShapeScale": false
            }
           }
          },
@@ -227,7 +229,8 @@
               "uuid": "b5637f76-5dbb-49bb-8e8e-de54c901a0bf",
               "properties": {}
              }
-            }
+            },
+            "SyncShapeScale": false
            }
           }
          }
@@ -458,7 +461,8 @@
                    "time": 10.0
                   }
                  }
-                }               ],
+                }
+               ],
                "segmentTypes": [
                 "CATMULL_ROM",
                 "CATMULL_ROM",
@@ -469,7 +473,35 @@
              }
             },
             "Looping": true,
-            "PlaybackSpeed": 1.0
+            "PlaybackSpeed": 0.46000000834465027
+           }
+          }
+         },
+         "EcsBulletObjectComponentData": {
+          "object": {
+           "class": "EcsBulletObjectComponentData",
+           "uuid": "1b334162-fcb5-4942-a45d-20c9d71b2c1d",
+           "properties": {
+            "AllowSleeping": false,
+            "AngularDamping": 0.5,
+            "Disable": false,
+            "ForceControllers": {},
+            "Friction": 0.5,
+            "IsKinematic": true,
+            "LinearDamping": 0.5,
+            "Mass": 1.0,
+            "Restitution": 0.5,
+            "Shape": {
+             "object": {
+              "class": "EcsBulletShapeCapsuleData",
+              "uuid": "54209182-b736-46ae-ba26-319d8ac587c8",
+              "properties": {
+               "Extent": 1.5800012350082397,
+               "Radius": 0.5899991989135742
+              }
+             }
+            },
+            "SyncShapeScale": true
            }
           }
          },
@@ -761,6 +793,108 @@
         "Parent": "scene"
        }
       }
+     },
+     "spawner3": {
+      "object": {
+       "class": "EcsSpawnData",
+       "uuid": "f7fa78cb-9ccc-47b6-bf38-1e40ed3e213f",
+       "properties": {
+        "Archetype": {
+         "object-ref": {
+          "uuid-ref": "b4b94bf4-a3a2-446b-8c80-181ae7b120fd"
+         }
+        },
+        "UserProperties": {},
+        "DagNodeData": {
+         "object": {
+          "class": "EcsDagNodeData",
+          "uuid": "1e1051f3-b0bb-407d-b677-e228a8953702",
+          "properties": {
+           "TransformNode": {
+            "object": {
+             "class": "TransformNode",
+             "uuid": "6c33724f-eb9e-4bae-a2e6-f312bfaf8a8e",
+             "properties": {
+              "transform": {
+               "object": {
+                "class": "DecompTransform",
+                "uuid": "17b284c6-9763-433d-bbcb-57dfa8ef807f",
+                "properties": {
+                 "rotation": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                 ],
+                 "translation": [
+                  3.8972859382629395,
+                  13.357718467712402,
+                  0.0
+                 ],
+                 "uniformScale": 1.0
+                }
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        },
+        "Parent": "scene"
+       }
+      }
+     },
+     "spawner4": {
+      "object": {
+       "class": "EcsSpawnData",
+       "uuid": "2c02d8e9-63ec-46dd-a93c-e18a33b698a9",
+       "properties": {
+        "Archetype": {
+         "object-ref": {
+          "uuid-ref": "d98f5eb2-12d8-4e22-ab58-56aa30bc2218"
+         }
+        },
+        "UserProperties": {},
+        "DagNodeData": {
+         "object": {
+          "class": "EcsDagNodeData",
+          "uuid": "c6d17244-0941-46d6-96ba-d0dc9ef5f695",
+          "properties": {
+           "TransformNode": {
+            "object": {
+             "class": "TransformNode",
+             "uuid": "1b42cccd-8b19-450a-9e7f-5787fa992f3f",
+             "properties": {
+              "transform": {
+               "object": {
+                "class": "DecompTransform",
+                "uuid": "591b1db0-0140-443b-bce5-e248bf55201f",
+                "properties": {
+                 "rotation": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                 ],
+                 "translation": [
+                  1.1891279220581055,
+                  5.854824066162109,
+                  -0.40503787994384766
+                 ],
+                 "uniformScale": 1.0
+                }
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        },
+        "Parent": "scene"
+       }
+      }
      }
     },
     "ScriptFile": "",
@@ -770,7 +904,7 @@
        "class": "EcsBulletSystemData",
        "uuid": "fe955038-58fb-4c97-ba51-a39c93131b73",
        "properties": {
-        "Debug": false,
+        "Debug": true,
         "ExpGravity": [
          0.0,
          0.0,
@@ -782,7 +916,7 @@
          0.0
         ],
         "SimulationRate": 400.0,
-        "TimeScale": 1.0
+        "TimeScale": 0.3399999737739563
        }
       }
      },

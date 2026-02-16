@@ -126,7 +126,7 @@ class EcsRuntime:
       sgsys_data.declareLayer("std_forward")
     defaults = {
       "preset": "ForwardPBR",
-      "ssaa": 4,
+      "ssaa": 0,
       "SkyboxIntensity": 2.0,
       "DiffuseIntensity": 1.0,
       "SpecularIntensity": 1.0,
@@ -142,7 +142,7 @@ class EcsRuntime:
     """Create a fresh scenegraph + layer. Returns (sg, layer)."""
     sg_params = VarMap()
     sg_params.preset = "ForwardPBR"
-    sg_params.ssaa = 4
+    sg_params.ssaa = 0
     sg = lev2.scenegraph.Scene(sg_params)
     if enable_pick:
       sg.enablePickHud()
