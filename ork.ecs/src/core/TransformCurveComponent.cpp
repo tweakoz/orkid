@@ -180,7 +180,13 @@ void TransformCurveSystem::_onUpdate(Simulation* inst) {
     auto xf = e->transform();
     xf->_translation = sample._position;
     xf->_rotation = sample._rotation;
-    xf->_uniformScale = sample._scale;
+    if (curve->_useNonUniformScale) {
+      xf->_useNonUniformScale = true;
+      xf->_nonUniformScale = sample._scale;
+    } else {
+      xf->_useNonUniformScale = false;
+      xf->_uniformScale = sample._scale.x;
+    }
   }
 }
 

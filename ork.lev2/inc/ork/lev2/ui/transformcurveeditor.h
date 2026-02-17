@@ -14,8 +14,8 @@ namespace ork::ui {
 
 ////////////////////////////////////////////////////////////////////
 // TransformCurveEditor — interactive editor for TransformCurve
-// Shows X/Y/Z position channels as stacked subplots with
-// draggable control points.
+// Single unified track with all channels overlaid, sidebar with
+// visibility toggles and active edit channel selection.
 ////////////////////////////////////////////////////////////////////
 
 struct TransformCurveEditor final : public Widget {
@@ -27,10 +27,27 @@ public:
 
   math::transformcurve_ptr_t _curve;
 
-  // Selection/drag state
+  // Channel enum
+  enum Channel : int {
+    CH_POS_X = 0, CH_POS_Y, CH_POS_Z,
+    CH_ROT_X, CH_ROT_Y, CH_ROT_Z,
+    CH_SCALE_UNI,
+    CH_SCALE_X, CH_SCALE_Y, CH_SCALE_Z,
+    CH_COUNT
+  };
+
+  // Channel state
+  bool _channelVisible[CH_COUNT];
+  int _activeEditChannel = CH_POS_X;
+
+  // Selection/drag
   int _selectedPointIndex = -1;
-  int _dragChannel = -1;        // 0=X, 1=Y, 2=Z
   bool _dragging = false;
+
+  // Navigation: hold X+move = pan, hold C+move = zoom
+  bool _xKeyDown = false;
+  bool _cKeyDown = false;
+  int _navPrevRootX = 0, _navPrevRootY = 0;
 
   // View ranges
   float _timeMin = 0.0f, _timeMax = 10.0f;
@@ -44,34 +61,51 @@ public:
 
 private:
   static constexpr int TOOLBAR_H = 24;
+  static constexpr int SIDEBAR_W = 100;
+  static constexpr int ROW_H = 20;
   static constexpr int HIT_RADIUS = 6;
-  static constexpr int NUM_CHANNELS = 3;
   static constexpr int CURVE_SEGMENTS = 100;
 
-  struct SubplotRect {
-    int x, y, w, h;
-  };
+  struct PlotRect { int x, y, w, h; };
+  PlotRect _plotRect() const;
 
-  SubplotRect _subplotRect(int channel) const;
+  // Channel data helpers
+  float _getChannelValue(int channel, int pointIndex) const;
+  float _sampleChannelValue(int channel, float t) const;
+  void _setChannelValue(int channel, int pointIndex, float value);
+  bool _isChannelAvailable(int channel) const;
 
-  float _timeToScreenX(float t, const SubplotRect& r) const;
-  float _valueToScreenY(float v, const SubplotRect& r) const;
-  float _screenXToTime(float sx, const SubplotRect& r) const;
-  float _screenYToValue(float sy, const SubplotRect& r) const;
+  // Coordinate mapping
+  float _timeToScreenX(float t) const;
+  float _valueToScreenY(float v) const;
+  float _screenXToTime(float sx) const;
+  float _screenYToValue(float sy) const;
 
-  int _hitTestCloseButton(int localX, int localY) const;
-  int _hitTestPoint(int localX, int localY, int& outChannel) const;
-  int _channelForLocalY(int localY) const;
+  // Hit testing
+  int _hitTestCloseButton(int lx, int ly) const;
+  int _hitTestResetButton(int lx, int ly) const;
+  int _hitTestPoint(int lx, int ly) const;
+  int _hitTestSidebarCheckbox(int lx, int ly) const;
+  int _hitTestSidebarLabel(int lx, int ly) const;
+  int _hitTestNonUniformToggle(int lx, int ly) const;
+  bool _isInPlotArea(int lx, int ly) const;
 
-  void _drawSubplot(lev2::Context* ctx, lev2::rcfd_ptr_t RCFD, int channel,
-                    int rx, int ry, const fmtx4& uiMatrix);
-  void _drawToolbar(lev2::Context* ctx, lev2::rcfd_ptr_t RCFD,
-                    int rx, int ry, const fmtx4& uiMatrix);
+  // Drawing
+  void _drawPlotBackground(lev2::Context* ctx, lev2::rcfd_ptr_t RCFD, const fmtx4& uiMtx);
+  void _drawGrid(lev2::Context* ctx, lev2::rcfd_ptr_t RCFD, const fmtx4& uiMtx);
+  void _drawOriginLines(lev2::Context* ctx, lev2::rcfd_ptr_t RCFD, const fmtx4& uiMtx);
+  void _drawChannel(lev2::Context* ctx, lev2::rcfd_ptr_t RCFD, int channel, const fmtx4& uiMtx);
+  void _drawControlPoints(lev2::Context* ctx, lev2::rcfd_ptr_t RCFD, int channel, const fmtx4& uiMtx);
+  void _drawToolbar(lev2::Context* ctx, lev2::rcfd_ptr_t RCFD, const fmtx4& uiMtx);
+  void _drawSidebar(lev2::Context* ctx, lev2::rcfd_ptr_t RCFD, const fmtx4& uiMtx);
 
-  // Lazy-init material
+  // Material
   ork::lev2::freestyle_mtl_ptr_t _material;
   const ork::lev2::FxShaderTechnique* _tekvtxcolor = nullptr;
   const ork::lev2::FxShaderParam* _parmvp = nullptr;
+
+  // Root-space plot rect (cached per frame)
+  PlotRect _cachedPlotRect;
 };
 
 using transformcurveeditor_ptr_t = std::shared_ptr<TransformCurveEditor>;

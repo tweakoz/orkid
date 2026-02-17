@@ -347,20 +347,23 @@
                 {
                  "object": {
                   "class": "TransformCurvePoint",
-                  "uuid": "f037559b-a525-421f-adce-84ed04a33ffb",
+                  "uuid": "49bdc60f-109c-4c69-8e2c-49d521f1f65e",
                   "properties": {
-                   "position": [
-                    -10.0,
-                    1.0,
+                   "eulerRotation": [
+                    0.0,
+                    0.0,
                     0.0
                    ],
-                   "rotation": [
+                   "position": [
                     0.0,
                     0.0,
-                    0.0,
+                    0.0
+                   ],
+                   "scale": [
+                    1.0,
+                    1.0,
                     1.0
                    ],
-                   "scale": 1.0,
                    "tangent_in": [
                     0.0,
                     0.0,
@@ -378,51 +381,23 @@
                 {
                  "object": {
                   "class": "TransformCurvePoint",
-                  "uuid": "66020f7a-cca5-478e-9690-25fe75800a2a",
+                  "uuid": "d6cbb92e-d369-46d9-9379-9eed8a827c88",
                   "properties": {
-                   "position": [
-                    -10.0,
-                    2.0,
+                   "eulerRotation": [
+                    0.0,
+                    177.7248077392578,
                     0.0
                    ],
-                   "rotation": [
+                   "position": [
+                    -0.0005304954829625785,
                     0.0,
+                    0.0
+                   ],
+                   "scale": [
                     1.0,
-                    0.0,
-                    0.0
-                   ],
-                   "scale": 1.0,
-                   "tangent_in": [
-                    0.0,
-                    0.0,
-                    0.0
-                   ],
-                   "tangent_out": [
-                    0.0,
-                    0.0,
-                    0.0
-                   ],
-                   "time": 1.0
-                  }
-                 }
-                },
-                {
-                 "object": {
-                  "class": "TransformCurvePoint",
-                  "uuid": "66020f7b-cca5-478e-9690-25fe75800a2a",
-                  "properties": {
-                   "position": [
-                    10.0,
-                    4.0,
-                    0.0
-                   ],
-                   "rotation": [
-                    0.0,
-                    0.0,
-                    0.0,
+                    1.0,
                     1.0
                    ],
-                   "scale": 5.0,
                    "tangent_in": [
                     0.0,
                     0.0,
@@ -433,84 +408,21 @@
                     0.0,
                     0.0
                    ],
-                   "time": 5.0
-                  }
-                 }
-                },
-                {
-                 "object": {
-                  "class": "TransformCurvePoint",
-                  "uuid": "66020f7c-cca5-478e-9690-25fe75800a2a",
-                  "properties": {
-                   "position": [
-                    10.0,
-                    1.0,
-                    0.0
-                   ],
-                   "rotation": [
-                    0.0,
-                    -1.0,
-                    0.0,
-                    0.0
-                   ],
-                   "scale": 1.0,
-                   "tangent_in": [
-                    0.0,
-                    0.0,
-                    0.0
-                   ],
-                   "tangent_out": [
-                    0.0,
-                    0.0,
-                    0.0
-                   ],
-                   "time": 6.0
-                  }
-                 }
-                },
-                {
-                 "object": {
-                  "class": "TransformCurvePoint",
-                  "uuid": "66020f7d-cca5-478e-9690-25fe75800a2a",
-                  "properties": {
-                   "position": [
-                    -10.0,
-                    1.0,
-                    0.0
-                   ],
-                   "rotation": [
-                    0.0,
-                    0.0,
-                    0.0,
-                    1.0
-                   ],
-                   "scale": 1.0,
-                   "tangent_in": [
-                    0.0,
-                    0.0,
-                    0.0
-                   ],
-                   "tangent_out": [
-                    0.0,
-                    0.0,
-                    0.0
-                   ],
-                   "time": 10.0
+                   "time": 4.948779106140137
                   }
                  }
                 }
                ],
+               "rotationOrder": "XYZ",
                "segmentTypes": [
-                "CATMULL_ROM",
-                "CATMULL_ROM",
-                "CATMULL_ROM",
-                "CATMULL_ROM"
-               ]
+                "LINEAR"
+               ],
+               "useNonUniformScale": false
               }
              }
             },
             "Looping": true,
-            "PlaybackSpeed": 0.46000000834465027
+            "PlaybackSpeed": 13.100001335144043
            }
           }
          },
@@ -593,6 +505,8 @@
          0.0
         ],
         "InitialSpeed": 0.0,
+        "LifetimeMax": 0.0,
+        "LifetimeMin": 0.0,
         "MinDistance": [
          0.0,
          0.0,
@@ -664,6 +578,8 @@
          0.0
         ],
         "InitialSpeed": 0.0,
+        "LifetimeMax": 0.0,
+        "LifetimeMin": 0.0,
         "MinDistance": [
          0.0,
          0.0,
@@ -735,6 +651,8 @@
          0.0
         ],
         "InitialSpeed": 0.0,
+        "LifetimeMax": 0.0,
+        "LifetimeMin": 0.0,
         "MinDistance": [
          0.0,
          0.0,
@@ -806,6 +724,8 @@
          0.0
         ],
         "InitialSpeed": 0.0,
+        "LifetimeMax": 0.0,
+        "LifetimeMin": 0.0,
         "MinDistance": [
          0.0,
          0.0,
@@ -877,6 +797,8 @@
          0.0
         ],
         "InitialSpeed": 0.0,
+        "LifetimeMax": 0.0,
+        "LifetimeMin": 0.0,
         "MinDistance": [
          1.7599999904632568,
          1.4399999380111694,
@@ -948,6 +870,8 @@
          0.0
         ],
         "InitialSpeed": 0.0,
+        "LifetimeMax": 0.0,
+        "LifetimeMin": 0.0,
         "MinDistance": [
          1.5199999809265137,
          1.399999976158142,
@@ -1019,6 +943,8 @@
          0.0
         ],
         "InitialSpeed": 0.0,
+        "LifetimeMax": 0.0,
+        "LifetimeMin": 0.0,
         "MinDistance": [
          0.0,
          0.0,

@@ -14,6 +14,7 @@
 #include <ork/math/cvector3.hpp>
 #include <ork/math/quaternion.hpp>
 #include <ork/reflect/enum_serializer.inl>
+#include <ork/math/cmatrix4.hpp>
 #include <algorithm>
 
 ImplementReflectionX(ork::math::TransformCurvePoint, "TransformCurvePoint");
@@ -29,16 +30,26 @@ RegisterEnum(CurveSegmentType, BEZIER);
 RegisterEnum(CurveSegmentType, CATMULL_ROM);
 EndEnumRegistration();
 
+BeginEnumRegistration(RotationOrder);
+RegisterEnum(RotationOrder, XYZ);
+RegisterEnum(RotationOrder, XZY);
+RegisterEnum(RotationOrder, YXZ);
+RegisterEnum(RotationOrder, YZX);
+RegisterEnum(RotationOrder, ZXY);
+RegisterEnum(RotationOrder, ZYX);
+EndEnumRegistration();
+
 } // namespace math
 
 ImplementEnumSerializer(math::CurveSegmentType);
+ImplementEnumSerializer(math::RotationOrder);
 
 namespace math {
 
 void TransformCurvePoint::describeX(object::ObjectClass* clazz) {
   clazz->directProperty("time", &TransformCurvePoint::_time);
   clazz->directProperty("position", &TransformCurvePoint::_position);
-  clazz->directProperty("rotation", &TransformCurvePoint::_rotation);
+  clazz->directProperty("eulerRotation", &TransformCurvePoint::_eulerRotation);
   clazz->directProperty("scale", &TransformCurvePoint::_scale);
   clazz->directProperty("tangent_out", &TransformCurvePoint::_tangent_out);
   clazz->directProperty("tangent_in", &TransformCurvePoint::_tangent_in);
@@ -48,9 +59,12 @@ void TransformCurvePoint::describeX(object::ObjectClass* clazz) {
 
 void TransformCurve::describeX(object::ObjectClass* clazz) {
   InvokeEnumRegistration(CurveSegmentType);
+  InvokeEnumRegistration(RotationOrder);
 
   clazz->directObjectVectorProperty("points", &TransformCurve::_points);
   clazz->directVectorProperty("segmentTypes", &TransformCurve::_segmentTypes);
+  clazz->directProperty("useNonUniformScale", &TransformCurve::_useNonUniformScale);
+  clazz->directEnumProperty("rotationOrder", &TransformCurve::_rotationOrder);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -199,6 +213,44 @@ fvec3 TransformCurve::_evalCatmullRom(const fvec3& p0, const fvec3& p1, const fv
 
 ///////////////////////////////////////////////////////////////////////////////
 
+fquat TransformCurve::eulerToQuat(const fvec3& eulerDeg) const {
+  constexpr float D2R = 3.14159265358979323846f / 180.0f;
+  float rx = eulerDeg.x * D2R;
+  float ry = eulerDeg.y * D2R;
+  float rz = eulerDeg.z * D2R;
+  fmtx4 mtx;
+  switch (_rotationOrder) {
+    case RotationOrder::XYZ: mtx.fromEulerXYZ(rx, ry, rz); break;
+    case RotationOrder::XZY: { auto m = glm::eulerAngleXZY(rx, rz, ry); mtx = fmtx4(m); break; }
+    case RotationOrder::YXZ: { auto m = glm::eulerAngleYXZ(ry, rx, rz); mtx = fmtx4(m); break; }
+    case RotationOrder::YZX: { auto m = glm::eulerAngleYZX(ry, rz, rx); mtx = fmtx4(m); break; }
+    case RotationOrder::ZXY: { auto m = glm::eulerAngleZXY(rz, rx, ry); mtx = fmtx4(m); break; }
+    case RotationOrder::ZYX: { auto m = glm::eulerAngleZYX(rz, ry, rx); mtx = fmtx4(m); break; }
+  }
+  fquat q;
+  q.fromMatrix(mtx);
+  return q;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+fvec3 TransformCurve::quatToEuler(const fquat& q) const {
+  constexpr float R2D = 180.0f / 3.14159265358979323846f;
+  fmtx4 mtx = q.toMatrix();
+  float ex, ey, ez;
+  switch (_rotationOrder) {
+    case RotationOrder::XYZ: glm::extractEulerAngleXYZ((const glm::mat4&)mtx, ex, ey, ez); break;
+    case RotationOrder::XZY: glm::extractEulerAngleXZY((const glm::mat4&)mtx, ex, ez, ey); break;
+    case RotationOrder::YXZ: glm::extractEulerAngleYXZ((const glm::mat4&)mtx, ey, ex, ez); break;
+    case RotationOrder::YZX: glm::extractEulerAngleYZX((const glm::mat4&)mtx, ey, ez, ex); break;
+    case RotationOrder::ZXY: glm::extractEulerAngleZXY((const glm::mat4&)mtx, ez, ex, ey); break;
+    case RotationOrder::ZYX: glm::extractEulerAngleZYX((const glm::mat4&)mtx, ez, ey, ex); break;
+  }
+  return fvec3(ex * R2D, ey * R2D, ez * R2D);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 TransformCurveSample TransformCurve::sample(float t) const {
   TransformCurveSample result;
   int n = (int)_points.size();
@@ -208,7 +260,7 @@ TransformCurveSample TransformCurve::sample(float t) const {
   }
   if (n == 1) {
     result._position = _points[0]->_position;
-    result._rotation = _points[0]->_rotation;
+    result._rotation = eulerToQuat(_points[0]->_eulerRotation);
     result._scale = _points[0]->_scale;
     return result;
   }
@@ -270,12 +322,34 @@ TransformCurveSample TransformCurve::sample(float t) const {
     }
   }
 
-  // rotation — always slerp
-  result._rotation = fquat::slerp(A._rotation, B._rotation, lt);
+  // rotation — euler to quat then slerp
+  fquat qA = eulerToQuat(A._eulerRotation);
+  fquat qB = eulerToQuat(B._eulerRotation);
+  result._rotation = fquat::slerp(qA, qB, lt);
 
-  // scale — always lerp
-  result._scale = A._scale + (B._scale - A._scale) * lt;
+  // scale — always lerp (vec3)
+  fvec3 sc;
+  sc.lerp(A._scale, B._scale, lt);
+  result._scale = sc;
 
+  return result;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+fvec3 TransformCurve::sampleEuler(float t) const {
+  int n = (int)_points.size();
+  if (n == 0) return fvec3();
+  if (n == 1) return _points[0]->_eulerRotation;
+
+  auto seg = _findSegment(t);
+  int i = seg._segIndex;
+  float lt = seg._localT;
+
+  const auto& A = _points[i]->_eulerRotation;
+  const auto& B = _points[i + 1]->_eulerRotation;
+  fvec3 result;
+  result.lerp(A, B, lt);
   return result;
 }
 
@@ -290,7 +364,11 @@ fvec3 TransformCurve::samplePosition(float t) const {
 fmtx4 TransformCurve::sampleMatrix(float t) const {
   auto s = sample(t);
   fmtx4 mtx;
-  mtx.compose(s._position, s._rotation, s._scale);
+  if (_useNonUniformScale) {
+    mtx.compose(s._position, s._rotation, s._scale);
+  } else {
+    mtx.compose(s._position, s._rotation, s._scale.x);
+  }
   return mtx;
 }
 

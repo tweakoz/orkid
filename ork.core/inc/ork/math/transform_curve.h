@@ -24,6 +24,15 @@ enum struct CurveSegmentType : uint32_t {
   CATMULL_ROM = 2,
 };
 
+enum struct RotationOrder : uint32_t {
+  XYZ = 0,
+  XZY = 1,
+  YXZ = 2,
+  YZX = 3,
+  ZXY = 4,
+  ZYX = 5,
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct TransformCurvePoint : public ork::Object {
@@ -34,8 +43,8 @@ public:
 
   float _time = 0.0f;
   fvec3 _position;
-  fquat _rotation;
-  float _scale = 1.0f;
+  fvec3 _eulerRotation;  // degrees, interpreted per TransformCurve::_rotationOrder
+  fvec3 _scale = fvec3(1, 1, 1);
   fvec3 _tangent_out;
   fvec3 _tangent_in;
 };
@@ -47,7 +56,7 @@ using transformcurvepoint_ptr_t = std::shared_ptr<TransformCurvePoint>;
 struct TransformCurveSample {
   fvec3 _position;
   fquat _rotation;
-  float _scale = 1.0f;
+  fvec3 _scale = fvec3(1, 1, 1);
   fvec3 _tangent;
 };
 
@@ -69,8 +78,15 @@ public:
   CurveSegmentType getSegmentType(int seg_index) const;
 
   TransformCurveSample sample(float t) const;
+  fvec3 sampleEuler(float t) const;  // lerps raw euler degrees (no quat decomposition)
   fvec3 samplePosition(float t) const;
   fmtx4 sampleMatrix(float t) const;
+
+  bool _useNonUniformScale = false;
+  RotationOrder _rotationOrder = RotationOrder::XYZ;
+
+  fquat eulerToQuat(const fvec3& euler) const;
+  fvec3 quatToEuler(const fquat& q) const;
 
   std::vector<transformcurvepoint_ptr_t> _points;
   std::vector<CurveSegmentType> _segmentTypes;

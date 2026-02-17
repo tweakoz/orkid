@@ -140,7 +140,7 @@ void init_math(py::module& module_core,python::pb11_typecodec_ptr_t type_codec) 
           .def(py::init<>())
           .def_readwrite("time", &TransformCurvePoint::_time)
           .def_readwrite("position", &TransformCurvePoint::_position)
-          .def_readwrite("rotation", &TransformCurvePoint::_rotation)
+          .def_readwrite("eulerRotation", &TransformCurvePoint::_eulerRotation)
           .def_readwrite("scale", &TransformCurvePoint::_scale)
           .def_readwrite("tangent_out", &TransformCurvePoint::_tangent_out)
           .def_readwrite("tangent_in", &TransformCurvePoint::_tangent_in);
@@ -222,6 +222,32 @@ void init_math(py::module& module_core,python::pb11_typecodec_ptr_t type_codec) 
               "sampleMatrix",
               [](transformcurve_ptr_t self, float t) -> fmtx4 { //
                 return self->sampleMatrix(t);
+              })
+          .def_readwrite("useNonUniformScale", &TransformCurve::_useNonUniformScale)
+          .def(
+              "setRotationOrder",
+              [](transformcurve_ptr_t self, std::string order_str) { //
+                if (order_str == "XYZ") self->_rotationOrder = RotationOrder::XYZ;
+                else if (order_str == "XZY") self->_rotationOrder = RotationOrder::XZY;
+                else if (order_str == "YXZ") self->_rotationOrder = RotationOrder::YXZ;
+                else if (order_str == "YZX") self->_rotationOrder = RotationOrder::YZX;
+                else if (order_str == "ZXY") self->_rotationOrder = RotationOrder::ZXY;
+                else if (order_str == "ZYX") self->_rotationOrder = RotationOrder::ZYX;
+              })
+          .def(
+              "eulerToQuat",
+              [](transformcurve_ptr_t self, fvec3 euler) -> fquat { //
+                return self->eulerToQuat(euler);
+              })
+          .def(
+              "quatToEuler",
+              [](transformcurve_ptr_t self, fquat q) -> fvec3 { //
+                return self->quatToEuler(q);
+              })
+          .def(
+              "sampleEuler",
+              [](transformcurve_ptr_t self, float t) -> fvec3 { //
+                return self->sampleEuler(t);
               });
   type_codec->registerStdCodec<transformcurve_ptr_t>(tcurve_type);
   /////////////////////////////////////////////////////////////////////////////////
