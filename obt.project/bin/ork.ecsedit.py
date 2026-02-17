@@ -68,7 +68,13 @@ class EcsEditor(ComponentizedApplication):
     self.gizmo_node = None
 
     # Create app with ECS module init injected before finalization
-    self.createEzApp( name="OrkidEcsEditor", width=1440, height=900, pre_init_fns=[ecs.ecsInitCallback])
+    self.createEzApp( name="OrkidEcsEditor", 
+                      width=1440, 
+                      height=900, 
+                      enable_audio = True,
+                      enable_audio_output = True,
+                      enable_audio_synth = True,
+                      pre_init_fns=[ecs.ecsInitCallback])
 
   @property
   def scene_data(self):

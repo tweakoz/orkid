@@ -33,6 +33,44 @@
            }
           }
          },
+         "StochWavSoundEmitterData": {
+          "object": {
+           "class": "StochWavSoundEmitterData",
+           "uuid": "ec95be58-f909-4254-a5b4-f8a74db42cc4",
+           "properties": {
+            "Enabled": true,
+            "MasterGainDB": 0.0,
+            "MaxVoices": 4,
+            "OutputBusName": "main",
+            "Sounds": {
+             "item-0": {
+              "object": {
+               "class": "StochWavSound",
+               "uuid": "79c1ce0a-7c63-438e-98ac-15d695552c7a",
+               "properties": {
+                "FadeInTime": 0.0,
+                "FadeOutTime": 0.0,
+                "GainMaxDB": 0.0,
+                "GainMinDB": 0.0,
+                "PitchVarianceCents": 0.0,
+                "PostSilenceMax": 2.0,
+                "PostSilenceMin": 0.5,
+                "Probability": 1.0,
+                "WavFile": "data://sounds/b1.wav"
+               }
+              }
+             }
+            },
+            "Spatializer": {
+             "object": {
+              "class": "PannerSpatializerData",
+              "uuid": "8994dfe2-810a-4321-b80f-465effe00af6",
+              "properties": {}
+             }
+            }
+           }
+          }
+         },
          "EcsBulletObjectComponentData": {
           "object": {
            "class": "EcsBulletObjectComponentData",
@@ -1327,6 +1365,13 @@
         "drawabledatas": [],
         "userparams": {}
        }
+      }
+     },
+     "StochWavSoundEmitterSystem": {
+      "object": {
+       "class": "StochWavSoundEmitterSystemData",
+       "uuid": "f22d326b-fd76-4990-b0da-e3c2cacf2be4",
+       "properties": {}
       }
      },
      "TransformCurveSystem": {

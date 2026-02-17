@@ -41,6 +41,9 @@
 #include <ork/ecs/BoidsComponent.h>
 #include "BoidsComponent_impl.h"
 
+#include <ork/ecs/StochWavSoundEmitter.h>
+#include "StochWavSoundEmitter_impl.h"
+
 #include "InterpComponent_impl.h"
 #include "../scripting/Lua/LuaImpl.h"
 
@@ -181,6 +184,12 @@ struct EcsAppInit {
     RegisterClassX(BoidsSystemData);
     RegisterClassX(BoidsSystem);
 
+    RegisterClassX(StochWavSound);
+    RegisterClassX(StochWavSoundEmitterData);
+    RegisterClassX(StochWavSoundEmitterComponent);
+    RegisterClassX(StochWavSoundEmitterSystemData);
+    RegisterClassX(StochWavSoundEmitterSystem);
+
     RegisterFamily<LuaComponentData>(ork::AddPooledLiteral("control"));
     RegisterFamily<TransformCurveComponentData>(ork::AddPooledLiteral("control"));
     RegisterFamily<BoidsComponentData>(ork::AddPooledLiteral("control"));
@@ -188,6 +197,7 @@ struct EcsAppInit {
     RegisterFamily<InterpComponentData>(ork::AddPooledLiteral("control"));
     RegisterFamily<SceneGraphComponentData>(ork::AddPooledLiteral("render"));
     RegisterFamily<BulletObjectComponentData>(ork::AddPooledLiteral("")); // no update
+    RegisterFamily<StochWavSoundEmitterData>(ork::AddPooledLiteral("control"));
   }
 };
 

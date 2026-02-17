@@ -28,6 +28,7 @@ void pyinit_physics(py::module& module_ecs);
 void pyinit_pysys(py::module& module_ecs);
 void pyinit_transformcurve(py::module& module_ecs);
 void pyinit_boids(py::module& module_ecs);
+void pyinit_stochwav(py::module& module_ecs);
 
 } // namespace ork::ecs
 
@@ -243,6 +244,7 @@ PYBIND11_MODULE(_ecs, module_ecs) {
   pyinit_pysys(module_ecs);
   pyinit_transformcurve(module_ecs);
   pyinit_boids(module_ecs);
+  pyinit_stochwav(module_ecs);
   //////////////////////////////////////////////////////////////////////////////
   module_ecs.def("createApp", &ecsappcreate);
   //////////////////////////////////////////////////////////////////////////////

@@ -60,6 +60,7 @@
 #include <ork/lev2/aud/singularity/alg_pan.inl>
 #include <ork/lev2/aud/singularity/sampler.h>
 #include <ork/lev2/aud/singularity/spectral.h>
+#include <ork/lev2/aud/spatializer.h>
 #include <ork/math/plane.hpp>
 
 #include <ork/lev2/gfx/meshutil/meshutil.h>
@@ -426,6 +427,9 @@ struct ClassToucher {
     RegisterClassX(audio::singularity::Fdn8ReverbData);
     RegisterClassX(audio::singularity::Fdn4ReverbXData);
     RegisterClassX(audio::singularity::Fdn4ReverbData);
+
+    RegisterClassX(audio::singularity::SpatializerData);
+    RegisterClassX(audio::singularity::PannerSpatializerData);
 
     //////////////////////////////////////////
   }
