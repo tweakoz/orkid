@@ -46,6 +46,15 @@ drawable_ptr_t ModelDrawableData::createDrawable() const {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+drawable_ptr_t ModelDrawableData::createDrawableWithAsset(xgmmodelassetptr_t asset) const {
+  auto drw = std::make_shared<ModelDrawable>(nullptr);
+  drw->_data = this;
+  drw->bindModelAsset(asset);
+  drw->_modcolor = _modcolor;
+  drw->_name = _assetpath.c_str();
+  return drw;
+}
+///////////////////////////////////////////////////////////////////////////////
 void ModelDrawableData::reloadDrawable(drawable_ptr_t drw) const {
   auto model_drw = std::dynamic_pointer_cast<ModelDrawable>(drw);
   if (model_drw) {

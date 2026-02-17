@@ -205,6 +205,7 @@ struct SceneGraphSystem final : public System {
   lev2::cameradata_ptr_t _camera;
   lev2::cameradatalut_ptr_t _camlut;
   lev2::drawablecache_ptr_t _drwcache;
+  lev2::xgmmodel_assetcache_ptr_t _modelAssetCache;
   std::vector<lev2::scenegraph::DrawableKvPair> _staticDrawables;
   LockedResource<std::vector<void_lambda_t>> _onGpuInitOpQueue;
 

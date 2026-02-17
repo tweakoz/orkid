@@ -407,6 +407,7 @@ struct ModelDrawableData : public DrawableData {
   }
   ModelDrawableData(AssetPath path);
   drawable_ptr_t createDrawable() const final;
+  drawable_ptr_t createDrawableWithAsset(xgmmodelassetptr_t asset) const;
   void reloadDrawable(drawable_ptr_t drw) const override;
   AssetPath _assetpath;
   asset::vars_t _asset_vars;

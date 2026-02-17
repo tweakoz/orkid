@@ -555,6 +555,15 @@ using fxshaderasset_constptr_t = std::shared_ptr<const FxShaderAsset>;
 using texturearray_ptr_t = std::shared_ptr<TextureArray>;
 using texturearraysliceref_ptr_t = std::shared_ptr<TextureArraySliceRef>;
 
+// AssetCache forward declaration and aliases
+template <typename T> struct AssetCache;
+using xgmmodel_assetcache_t     = AssetCache<XgmModelAsset>;
+using xgmmodel_assetcache_ptr_t = std::shared_ptr<xgmmodel_assetcache_t>;
+using texture_assetcache_t      = AssetCache<TextureAsset>;
+using texture_assetcache_ptr_t  = std::shared_ptr<texture_assetcache_t>;
+using xgmanim_assetcache_t      = AssetCache<XgmAnimAsset>;
+using xgmanim_assetcache_ptr_t  = std::shared_ptr<xgmanim_assetcache_t>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 class TextureAnimationInst;

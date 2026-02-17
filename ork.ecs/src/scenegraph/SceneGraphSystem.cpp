@@ -14,6 +14,7 @@
 #include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_common.h>
 
+#include <ork/lev2/lev2_asset_cache.inl>
 #include <ork/ecs/ecs.h>
 #include <ork/ecs/system.h>
 #include <ork/ecs/SceneGraphComponent.h>
@@ -147,6 +148,7 @@ SceneGraphSystem::SceneGraphSystem(const SceneGraphSystemData& data, ork::ecs::S
   _camlut                = std::make_shared<CameraDataLut>();
   (*_camlut)["spawncam"] = _camera;
   _drwcache              = std::make_shared<DrawableCache>();
+  _modelAssetCache       = std::make_shared<xgmmodel_assetcache_t>();
 
   for (auto item : data._onCreateSystemOperations) {
     item(this);
@@ -312,6 +314,10 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
       auto NID = NID_item.second;
       if (NID->_drawabledata) {
         _drwcache->fetch(NID->_drawabledata);
+        // preload model assets into per-simulation cache
+        if (auto as_model = std::dynamic_pointer_cast<ModelDrawableData>(NID->_drawabledata)) {
+          _modelAssetCache->fetch(as_model->_assetpath);
+        }
       }
     }
   }
@@ -319,11 +325,17 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
     auto NID = NID_item.second;
     if (NID->_drawabledata) {
       _drwcache->fetch(NID->_drawabledata);
+      if (auto as_model = std::dynamic_pointer_cast<ModelDrawableData>(NID->_drawabledata)) {
+        _modelAssetCache->fetch(as_model->_assetpath);
+      }
     }
   }
 
   for (auto DRWDATA : _SGSD._drawdatas_prefetchlist) {
     _drwcache->fetch(DRWDATA);
+    if (auto as_model = std::dynamic_pointer_cast<ModelDrawableData>(DRWDATA)) {
+      _modelAssetCache->fetch(as_model->_assetpath);
+    }
   }
 
   /////////////////////////////////////////
@@ -420,6 +432,10 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
                 auto nitem                            = std::make_shared<SceneGraphNodeItem>();
                 if (drwdata->isSharedDrawable()) {
                   nitem->_drawable = _drwcache->fetch(drwdata);
+                } else if (auto as_model = std::dynamic_pointer_cast<ModelDrawableData>(drwdata)) {
+                  auto cached_asset = _modelAssetCache->fetch(as_model->_assetpath);
+                  nitem->_drawable = as_model->createDrawableWithAsset(cached_asset);
+                  nitem->_drawable->_modcolor = drwdata->_modcolor;
                 } else {
                   nitem->_drawable = drwdata->createDrawable();
                   nitem->_drawable->_modcolor = drwdata->_modcolor;
@@ -792,6 +808,10 @@ void SceneGraphSystem::_onRequest(impl::sys_response_ptr_t response, token_t req
         drawable_ptr_t drawable;
         if (mdata->isSharedDrawable()) {
           drawable = _drwcache->fetch(mdata);
+        } else if (auto as_model = std::dynamic_pointer_cast<ModelDrawableData>(mdata)) {
+          auto cached_asset = _modelAssetCache->fetch(as_model->_assetpath);
+          drawable = as_model->createDrawableWithAsset(cached_asset);
+          drawable->_modcolor = mdata->_modcolor;
         } else {
           drawable = mdata->createDrawable();
           drawable->_modcolor = mdata->_modcolor;
