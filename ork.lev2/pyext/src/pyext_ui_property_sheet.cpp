@@ -115,6 +115,7 @@ void pyinit_ui_property_sheet(py::module& uimodule) {
       .value("Color", ui::PropertyType::Color)
       .value("Asset", ui::PropertyType::Asset)
       .value("Quat", ui::PropertyType::Quat)
+      .value("Enum", ui::PropertyType::Enum)
       .value("Group", ui::PropertyType::Group);
 
   /////////////////////////////////////////////////////////////////////////////////

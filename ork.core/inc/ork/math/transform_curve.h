@@ -101,6 +101,9 @@ public:
   bool _looping = false;
   RotationOrder _rotationOrder = RotationOrder::XYZ;
 
+  // Debug scrub: when >= 0, forces all users to sample at this time
+  float _debugScrubTime = -1.0f;
+
   // When _looping is true, enforce that the last point's values match the first,
   // and tangents at the seam are mirrored for bezier continuity.
   void enforceLoopConstraints();

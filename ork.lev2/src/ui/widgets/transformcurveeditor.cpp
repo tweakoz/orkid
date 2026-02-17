@@ -570,6 +570,11 @@ HandlerResult TransformCurveEditor::DoOnUiEvent(event_constptr_t ev) {
 
   switch (ev->_eventcode) {
     case EventCode::KEY_DOWN: {
+      // Only handle key commands when mouse is within widget bounds
+      bool mouseInWidget = localX >= 0 && localX < _geometry._w
+                        && localY >= 0 && localY < _geometry._h;
+      if (!mouseInWidget) break;
+
       int key = ev->miKeyCode;
       if (key == 256) { // ESC
         if (_onClose) _onClose();
@@ -599,6 +604,15 @@ HandlerResult TransformCurveEditor::DoOnUiEvent(event_constptr_t ev) {
         _sKeyDown = true;
         _cycleSegmentType();
         rval.setHandled(this);
+      } else if (key == 32 && !_spaceKeyDown) { // Space — debug scrub
+        _spaceKeyDown = true;
+        if (_curve) {
+          float t = _screenXToTime(float(ev->miX));
+          _curve->_debugScrubTime = t;
+          if (_onCurveChanged) _onCurveChanged();
+        }
+        _navPrevRootX = ev->miX;
+        rval.setHandled(this);
       } else if (key == 65 && !_aKeyDown) { // 'A' — add point at mouse position
         _aKeyDown = true;
         if (_isInPlotArea(localX, localY) && _curve) {
@@ -625,17 +639,25 @@ HandlerResult TransformCurveEditor::DoOnUiEvent(event_constptr_t ev) {
     }
     case EventCode::KEY_UP: {
       int key = ev->miKeyCode;
-      if (key == 88) { // 'X'
+      // Always release state for keys we captured, to avoid stuck keys
+      if (key == 88 && _xKeyDown) {
         _xKeyDown = false;
         rval.setHandled(this);
-      } else if (key == 67) { // 'C'
+      } else if (key == 67 && _cKeyDown) {
         _cKeyDown = false;
         rval.setHandled(this);
-      } else if (key == 65) { // 'A'
+      } else if (key == 65 && _aKeyDown) {
         _aKeyDown = false;
         rval.setHandled(this);
-      } else if (key == 83) { // 'S'
+      } else if (key == 83 && _sKeyDown) {
         _sKeyDown = false;
+        rval.setHandled(this);
+      } else if (key == 32 && _spaceKeyDown) {
+        _spaceKeyDown = false;
+        if (_curve) {
+          _curve->_debugScrubTime = -1.0f;
+          if (_onCurveChanged) _onCurveChanged();
+        }
         rval.setHandled(this);
       }
       break;
@@ -829,6 +851,14 @@ HandlerResult TransformCurveEditor::DoOnUiEvent(event_constptr_t ev) {
       break;
     }
     case EventCode::MOVE: {
+      // Space held → debug scrub
+      if (_spaceKeyDown && _curve) {
+        float t = _screenXToTime(float(ev->miX));
+        _curve->_debugScrubTime = t;
+        if (_onCurveChanged) _onCurveChanged();
+        rval.setHandled(this);
+        break;
+      }
       // X held → pan
       if (_xKeyDown) {
         auto pr = _cachedPlotRect;
@@ -1504,8 +1534,24 @@ void TransformCurveEditor::DoDraw(drawevent_constptr_t drwev) {
 
   _drawToolbar(context, RCFD, uiMatrix);
   _drawPlotBackground(context, RCFD, uiMatrix);
+
+  // Scissor plot area to prevent curves from drawing outside
+  auto fbi = context->FBI();
+  auto pr = _cachedPlotRect;
+  fbi->pushScissor(pr.x, pr.y, pr.w, pr.h);
+
   _drawGrid(context, RCFD, uiMatrix);
   _drawOriginLines(context, RCFD, uiMatrix);
+
+  // Draw debug scrub indicator
+  if (_curve && _curve->_debugScrubTime >= 0.0f) {
+    float sx = _timeToScreenX(_curve->_debugScrubTime);
+    if (sx >= float(pr.x) && sx <= float(pr.x + pr.w)) {
+      _drawQuad(context, RCFD, _material, _tekvtxcolor, _parmvp, uiMatrix,
+                sx - 1.0f, float(pr.y), sx + 1.0f, float(pr.y + pr.h),
+                fvec3(1.0f, 0.4f, 0.1f));
+    }
+  }
 
   // Draw channels: non-active first, then active on top
   for (int ch = 0; ch < CH_COUNT; ch++) {
@@ -1522,6 +1568,8 @@ void TransformCurveEditor::DoDraw(drawevent_constptr_t drwev) {
     _drawControlPoints(context, RCFD, _activeEditChannel, uiMatrix);
     _drawTangentHandles(context, RCFD, _activeEditChannel, uiMatrix);
   }
+
+  fbi->popScissor();
 
   _drawSidebar(context, RCFD, uiMatrix);
 

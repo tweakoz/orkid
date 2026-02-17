@@ -13,6 +13,8 @@
 #include <ork/reflect/properties/IMap.h>
 #include <ork/reflect/properties/IArray.h>
 #include <ork/reflect/properties/AccessorVariant.h>
+#include <ork/reflect/properties/DirectEnum.h>
+#include <ork/reflect/enum_serializer.inl>
 #include <ork/object/ObjectClass.h>
 #include <ork/rtti/RTTIX.inl>
 #include <ork/math/cvector2.h>
@@ -351,6 +353,10 @@ PropertyType ReflectionPropertySheetModel::_mapPropertyType(
   if (dynamic_cast<const reflect::IArray*>(prop))
     return PropertyType::Group;
 
+  // Enum properties (check before ITyped<int> since enums also match int)
+  if (dynamic_cast<const reflect::DirectEnumBase*>(prop))
+    return PropertyType::Enum;
+
   // Typed properties
   if (dynamic_cast<const reflect::ITyped<bool>*>(prop))
     return PropertyType::Bool;
@@ -509,6 +515,8 @@ svar128_t ReflectionPropertySheetModel::getValue(
     file::Path val;
     typed_path->get(val, owner);
     result.set<std::string>(val.toStdString());
+  } else if (auto* enum_prop = dynamic_cast<const reflect::DirectEnumBase*>(entry.property)) {
+    result.set<std::string>(enum_prop->toString(owner));
   }
 
   return result;
@@ -589,6 +597,10 @@ void ReflectionPropertySheetModel::setValue(
   } else if (auto* typed_path = dynamic_cast<const reflect::ITyped<file::Path>*>(entry.property)) {
     if (value.isA<std::string>()) {
       typed_path->set(file::Path(value.get<std::string>().c_str()), owner);
+    }
+  } else if (auto* enum_prop = dynamic_cast<const reflect::DirectEnumBase*>(entry.property)) {
+    if (value.isA<std::string>()) {
+      enum_prop->setFromString(owner, value.get<std::string>());
     }
   }
 
@@ -860,6 +872,21 @@ std::vector<std::string> ReflectionPropertySheetModel::getChoices(
   if (ovr_it != _key_overrides.end() && ovr_it->second.choices) {
     return ovr_it->second.choices();
   }
+
+  // For enum properties, return the registered enum value names
+  auto it = _by_key.find(key);
+  if (it != _by_key.end()) {
+    const auto& entry = _entries[it->second];
+    if (auto* enum_prop = dynamic_cast<const reflect::DirectEnumBase*>(entry.property)) {
+      auto enums = enum_prop->enumerateEnumerations(_object);
+      std::vector<std::string> choices;
+      for (auto& ev : enums) {
+        choices.push_back(ev->_name);
+      }
+      return choices;
+    }
+  }
+
   return {};
 }
 

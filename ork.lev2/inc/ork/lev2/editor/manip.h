@@ -134,16 +134,16 @@ struct CurvePointManipulator : public ManipulatorInterface {
   int pointIndex() const { return _pointIndex; }
 
   bool supportsTranslation() const override { return true; }
-  bool supportsRotation() const override { return false; }
-  bool supportsUniformScaling() const override { return false; }
+  bool supportsRotation() const override { return true; }
+  bool supportsUniformScaling() const override { return true; }
 
   fmtx4 getWorldMatrix() const override;
   fvec3 getWorldPosition() const override;
   fquat getWorldRotation() const override;
   void applyTranslationDelta(const fvec3& delta) override;
-  void applyRotationDelta(const fquat& delta) override {}
-  void applyScaleDelta(float uniformDelta) override {}
-  void setWorldRotation(const fquat& rot) override {}
+  void applyRotationDelta(const fquat& delta) override;
+  void applyScaleDelta(float uniformDelta) override;
+  void setWorldRotation(const fquat& rot) override;
 
   std::function<void()> _onPointMoved;
 

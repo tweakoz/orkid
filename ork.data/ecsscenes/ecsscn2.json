@@ -16,20 +16,20 @@
            "class": "BoidsComponentData",
            "uuid": "7b0dafe3-1212-4fb6-b747-b863edf19549",
            "properties": {
-            "AlignmentRadius": 9.899999618530273,
-            "AlignmentWeight": 0.3500000238418579,
-            "CohesionRadius": 4.769999980926514,
-            "CohesionWeight": 0.6600000262260437,
+            "AlignmentRadius": 9.679999351501465,
+            "AlignmentWeight": 1.7100000381469727,
+            "CohesionRadius": 1.7000011205673218,
+            "CohesionWeight": 46.97999572753906,
             "FlockID": 0,
-            "GroundHeight": 17.399999618530273,
-            "HomeRadius": 8.430000305175781,
-            "HomeWeight": 2.059999942779541,
-            "MaxForce": 33.69999694824219,
-            "MaxSpeed": 26.71999740600586,
+            "GroundHeight": 19.83000373840332,
+            "HomeRadius": 14.930000305175781,
+            "HomeWeight": 15.75999927520752,
+            "MaxForce": 72.22999572753906,
+            "MaxSpeed": 80.0199966430664,
             "Mode": "AIR",
-            "SeparationRadius": 3.450000047683716,
-            "SeparationWeight": 0.949999988079071,
-            "WanderStrength": 1.5699999332427979
+            "SeparationRadius": 8.539999008178711,
+            "SeparationWeight": 8.930000305175781,
+            "WanderStrength": 49.070003509521484
            }
           }
          },
@@ -39,14 +39,14 @@
            "uuid": "76ed0d49-5d09-409f-a0c9-854d340fb695",
            "properties": {
             "AllowSleeping": false,
-            "AngularDamping": 0.25999999046325684,
+            "AngularDamping": 0.36999911069869995,
             "Disable": false,
             "ForceControllers": {},
-            "Friction": 0.5,
+            "Friction": 1.0699999332427979,
             "IsKinematic": false,
-            "LinearDamping": 0.15000000596046448,
-            "Mass": 1.0,
-            "Restitution": 0.5099999904632568,
+            "LinearDamping": 0.4500008225440979,
+            "Mass": 5.200000286102295,
+            "Restitution": 0.2099999487400055,
             "Shape": {
              "object": {
               "class": "EcsBulletShapeSphereData",
@@ -132,6 +132,28 @@
        "uuid": "b4b94bf4-a3a2-446b-8c80-181ae7b120fd",
        "properties": {
         "Components": {
+         "BoidsComponentData": {
+          "object": {
+           "class": "BoidsComponentData",
+           "uuid": "fa09fcaf-14e5-487f-8ed9-ff37f0207ff4",
+           "properties": {
+            "AlignmentRadius": 8.0,
+            "AlignmentWeight": 1.0,
+            "CohesionRadius": 8.0,
+            "CohesionWeight": 1.0,
+            "FlockID": 2,
+            "GroundHeight": 0.0,
+            "HomeRadius": 8.000000953674316,
+            "HomeWeight": 47.59999465942383,
+            "MaxForce": 10.0,
+            "MaxSpeed": 5.0,
+            "Mode": "AIR",
+            "SeparationRadius": 5.699999809265137,
+            "SeparationWeight": 43.89999771118164,
+            "WanderStrength": 9.199999809265137
+           }
+          }
+         },
          "EcsBulletObjectComponentData": {
           "object": {
            "class": "EcsBulletObjectComponentData",
@@ -151,7 +173,7 @@
                  1.1699999570846558,
                  0.0
                 ],
-                "Force": 5.420000076293945
+                "Force": -19.099998474121094
                }
               }
              }
@@ -346,24 +368,6 @@
                "channelSegmentTypes": [
                 "BEZIER",
                 "LINEAR",
-                "BEZIER",
-                "LINEAR",
-                "BEZIER",
-                "LINEAR",
-                "CATMULL_ROM",
-                "CATMULL_ROM",
-                "CATMULL_ROM",
-                "LINEAR",
-                "LINEAR",
-                "LINEAR",
-                "LINEAR",
-                "LINEAR",
-                "LINEAR",
-                "CATMULL_ROM",
-                "CATMULL_ROM",
-                "CATMULL_ROM",
-                "LINEAR",
-                "BEZIER",
                 "LINEAR",
                 "LINEAR",
                 "BEZIER",
@@ -380,7 +384,25 @@
                 "CATMULL_ROM",
                 "CATMULL_ROM",
                 "CATMULL_ROM",
+                "LINEAR",
                 "BEZIER",
+                "LINEAR",
+                "LINEAR",
+                "BEZIER",
+                "LINEAR",
+                "CATMULL_ROM",
+                "CATMULL_ROM",
+                "CATMULL_ROM",
+                "LINEAR",
+                "BEZIER",
+                "LINEAR",
+                "LINEAR",
+                "LINEAR",
+                "LINEAR",
+                "CATMULL_ROM",
+                "CATMULL_ROM",
+                "CATMULL_ROM",
+                "LINEAR",
                 "BEZIER",
                 "LINEAR",
                 "LINEAR",
@@ -400,12 +422,12 @@
                    "eulerRotation": [
                     0.0,
                     0.0,
-                    0.0
+                    -19.335269927978516
                    ],
                    "position": [
-                    8.826750755310059,
-                    0.8572311997413635,
-                    0.0
+                    9.962808609008789,
+                    1.4632848501205444,
+                    -0.10753663629293442
                    ],
                    "rot_tangent_in": [
                     0.0,
@@ -442,7 +464,7 @@
                     0.11363746225833893,
                     11.806414604187012
                    ],
-                   "time": 0.07218442857265472
+                   "time": -0.013153525069355965
                   }
                  }
                 },
@@ -452,13 +474,13 @@
                   "uuid": "0ebf4b60-741c-4b29-963c-81768803d094",
                   "properties": {
                    "eulerRotation": [
-                    0.0,
-                    211.15538024902344,
-                    0.0
+                    16.120683670043945,
+                    97.71853637695313,
+                    -32.45204544067383
                    ],
                    "position": [
-                    9.323362350463867,
-                    0.29814356565475464,
+                    9.141433715820313,
+                    1.282035231590271,
                     9.819971084594727
                    ],
                    "rot_tangent_in": [
@@ -492,11 +514,11 @@
                     -0.2816448211669922
                    ],
                    "tangent_out": [
-                    0.0,
-                    0.0,
-                    0.0
+                    -6.425761699676514,
+                    0.4863625764846802,
+                    0.08276908099651337
                    ],
-                   "time": 1.8919495344161987
+                   "time": 1.9762382507324219
                   }
                  }
                 },
@@ -506,13 +528,13 @@
                   "uuid": "bd21765b-e12a-4465-9278-8f36461b5aa6",
                   "properties": {
                    "eulerRotation": [
-                    0.0,
-                    254.9717254638672,
-                    0.0
+                    0.9134787321090698,
+                    -124.45299530029297,
+                    -1.5078104734420776
                    ],
                    "position": [
-                    -9.547847747802734,
-                    0.8572311997413635,
+                    -10.13585090637207,
+                    1.282035231590271,
                     10.068278312683105
                    ],
                    "rot_tangent_in": [
@@ -527,7 +549,7 @@
                    ],
                    "scale": [
                     1.0228667259216309,
-                    2.0566279888153076,
+                    1.3626842498779297,
                     1.0228667259216309
                    ],
                    "scale_tangent_in": [
@@ -541,16 +563,16 @@
                     -1.737546682357788
                    ],
                    "tangent_in": [
-                    0.0,
-                    0.0,
-                    0.0
+                    6.425761699676514,
+                    0.11363746225833893,
+                    -0.08276908099651337
                    ],
                    "tangent_out": [
                     0.00002935706106654834,
                     -0.03195542097091675,
                     0.0
                    ],
-                   "time": 4.649971961975098
+                   "time": 3.990976572036743
                   }
                  }
                 },
@@ -560,14 +582,14 @@
                   "uuid": "56e028db-1171-4726-83f5-47a915b65553",
                   "properties": {
                    "eulerRotation": [
-                    0.0,
-                    126.50684356689453,
-                    0.0
+                    -17.211395263671875,
+                    177.27342224121094,
+                    33.5518913269043
                    ],
                    "position": [
-                    -11.037680625915527,
-                    1.3808908462524414,
-                    -8.678778648376465
+                    -10.13585090637207,
+                    5.8132500648498535,
+                    -10.220760345458984
                    ],
                    "rot_tangent_in": [
                     0.0,
@@ -580,9 +602,9 @@
                     0.0
                    ],
                    "scale": [
-                    1.109014868736267,
-                    1.0,
-                    1.0
+                    4.712806701660156,
+                    4.249543190002441,
+                    4.249543190002441
                    ],
                    "scale_tangent_in": [
                     2.270993709564209,
@@ -596,15 +618,15 @@
                    ],
                    "tangent_in": [
                     0.0,
-                    0.0,
+                    -7.370777130126953,
                     0.0
                    ],
                    "tangent_out": [
-                    0.0,
-                    0.0,
-                    0.0
+                    6.705940246582031,
+                    -2.1145668029785156,
+                    0.048183441162109375
                    ],
-                   "time": 8.58838176727295
+                   "time": 6.014632225036621
                   }
                  }
                 },
@@ -614,14 +636,14 @@
                   "uuid": "0ce9ecb2-699d-4040-beab-2572b411f32e",
                   "properties": {
                    "eulerRotation": [
-                    0.0,
-                    -3.4720828533172607,
-                    0.0
+                    -15.166536331176758,
+                    -173.93226623535156,
+                    -29.941303253173828
                    ],
                    "position": [
-                    7.088613510131836,
-                    1.698381781578064,
-                    -9.175389289855957
+                    9.981968879699707,
+                    2.8528566360473633,
+                    -10.076210021972656
                    ],
                    "rot_tangent_in": [
                     -0.0,
@@ -635,7 +657,7 @@
                    ],
                    "scale": [
                     1.0228667259216309,
-                    3.0903892517089844,
+                    1.7944624423980713,
                     1.0228667259216309
                    ],
                    "scale_tangent_in": [
@@ -649,16 +671,16 @@
                     -1.64366614818573
                    ],
                    "tangent_in": [
-                    -0.00002935706106654834,
-                    0.3809915781021118,
-                    -0.0
+                    -6.705940246582031,
+                    1.0675652027130127,
+                    -0.048183441162109375
                    ],
                    "tangent_out": [
-                    0.015874624252319336,
-                    0.09460717439651489,
-                    0.0
+                    -0.006386756896972656,
+                    0.0685267448425293,
+                    0.060416221618652344
                    ],
-                   "time": 13.003486633300781
+                   "time": 8.009593963623047
                   }
                  }
                 },
@@ -670,12 +692,12 @@
                    "eulerRotation": [
                     0.0,
                     0.0,
-                    0.0
+                    -19.335269927978516
                    ],
                    "position": [
-                    8.826750755310059,
-                    0.8572311997413635,
-                    0.0
+                    9.962808609008789,
+                    1.4632848501205444,
+                    -0.10753663629293442
                    ],
                    "rot_tangent_in": [
                     -0.0,
@@ -703,16 +725,16 @@
                     0.0
                    ],
                    "tangent_in": [
-                    -0.5925849676132202,
-                    -0.11363746225833893,
-                    -11.806414604187012
+                    0.006386756896972656,
+                    0.6292937994003296,
+                    -12.02282428741455
                    ],
                    "tangent_out": [
                     0.0,
                     0.0,
                     0.0
                    ],
-                   "time": 15.470195770263672
+                   "time": 9.97138500213623
                   }
                  }
                 }
@@ -725,7 +747,7 @@
               }
              }
             },
-            "PlaybackSpeed": 1.5300018787384033
+            "PlaybackSpeed": 1.0000019073486328
            }
           }
          },
@@ -784,6 +806,43 @@
               }
              }
             }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "Archetype5hield": {
+      "object": {
+       "class": "EcsArchetype",
+       "uuid": "9af99e1f-fddc-42ba-b265-217caec3abc4",
+       "properties": {
+        "Components": {
+         "EcsBulletObjectComponentData": {
+          "object": {
+           "class": "EcsBulletObjectComponentData",
+           "uuid": "743921c6-7d0a-4f2c-b27b-d2c62c1c9963",
+           "properties": {
+            "AllowSleeping": true,
+            "AngularDamping": 0.5,
+            "Disable": false,
+            "ForceControllers": {},
+            "Friction": 0.5,
+            "IsKinematic": true,
+            "LinearDamping": 0.5,
+            "Mass": 1.0,
+            "Restitution": 0.5,
+            "Shape": {
+             "object": {
+              "class": "EcsBulletShapeSphereData",
+              "uuid": "a0703c87-23ef-45ef-91cd-62a7f398006d",
+              "properties": {
+               "Radius": 7.5099992752075195
+              }
+             }
+            },
+            "SyncShapeScale": false
            }
           }
          }
@@ -1010,79 +1069,6 @@
        }
       }
      },
-     "spawner0": {
-      "object": {
-       "class": "EcsSpawnData",
-       "uuid": "09a001c4-bf9c-43a9-879d-f207e4465a74",
-       "properties": {
-        "Archetype": {
-         "object-ref": {
-          "uuid-ref": "d98f5eb2-12d8-4e22-ab58-56aa30bc2218"
-         }
-        },
-        "DirectionRandomize": 0.0,
-        "InitialDirection": [
-         0.0,
-         0.0,
-         0.0
-        ],
-        "InitialSpeed": 0.0,
-        "LifetimeMax": 0.0,
-        "LifetimeMin": 0.0,
-        "MinDistance": [
-         0.0,
-         0.0,
-         0.0
-        ],
-        "PositionRandomRadius": [
-         0.0,
-         0.0,
-         0.0
-        ],
-        "SpawnCount": 1,
-        "SpawnInterval": 0.0,
-        "StochasticInterval": 0.0,
-        "UserProperties": {},
-        "DagNodeData": {
-         "object": {
-          "class": "EcsDagNodeData",
-          "uuid": "221a3210-0883-4440-96b7-df8024735091",
-          "properties": {
-           "TransformNode": {
-            "object": {
-             "class": "TransformNode",
-             "uuid": "d5753e62-53d2-4e82-b94c-09d5b4483310",
-             "properties": {
-              "transform": {
-               "object": {
-                "class": "DecompTransform",
-                "uuid": "e1418281-9509-4ef5-ae91-f62625e9d4f3",
-                "properties": {
-                 "rotation": [
-                  -0.0,
-                  -0.5088635087013245,
-                  -0.0,
-                  0.8608472943305969
-                 ],
-                 "translation": [
-                  2.692990303039551,
-                  3.7268564701080322,
-                  1.54718017578125
-                 ],
-                 "uniformScale": 1.0
-                }
-               }
-              }
-             }
-            }
-           }
-          }
-         }
-        },
-        "Parent": "scene"
-       }
-      }
-     },
      "spawner2": {
       "object": {
        "class": "EcsSpawnData",
@@ -1185,7 +1171,7 @@
          0.0,
          4.210000038146973
         ],
-        "SpawnCount": 21,
+        "SpawnCount": 30,
         "SpawnInterval": 0.0,
         "StochasticInterval": 0.0,
         "UserProperties": {},
@@ -1215,7 +1201,7 @@
                   13.357718467712402,
                   0.0
                  ],
-                 "uniformScale": 1.0
+                 "uniformScale": 0.5
                 }
                }
               }
@@ -1229,14 +1215,14 @@
        }
       }
      },
-     "spawner4": {
+     "spawnerShield": {
       "object": {
        "class": "EcsSpawnData",
-       "uuid": "2c02d8e9-63ec-46dd-a93c-e18a33b698a9",
+       "uuid": "427347f9-f69b-4c25-a9ca-8e910cf6958d",
        "properties": {
         "Archetype": {
          "object-ref": {
-          "uuid-ref": "d98f5eb2-12d8-4e22-ab58-56aa30bc2218"
+          "uuid-ref": "9af99e1f-fddc-42ba-b265-217caec3abc4"
          }
         },
         "DirectionRandomize": 0.0,
@@ -1265,17 +1251,17 @@
         "DagNodeData": {
          "object": {
           "class": "EcsDagNodeData",
-          "uuid": "c6d17244-0941-46d6-96ba-d0dc9ef5f695",
+          "uuid": "b0b7e7ba-b033-40f9-a27e-49ad4d553f28",
           "properties": {
            "TransformNode": {
             "object": {
              "class": "TransformNode",
-             "uuid": "1b42cccd-8b19-450a-9e7f-5787fa992f3f",
+             "uuid": "b3620caf-ad27-4668-88da-71aa3f4303ed",
              "properties": {
               "transform": {
                "object": {
                 "class": "DecompTransform",
-                "uuid": "591b1db0-0140-443b-bce5-e248bf55201f",
+                "uuid": "7aa9c2ed-019a-4bad-ae80-3a56f1506b73",
                 "properties": {
                  "rotation": [
                   0.0,
@@ -1284,9 +1270,9 @@
                   1.0
                  ],
                  "translation": [
-                  1.1891279220581055,
-                  5.854824066162109,
-                  -0.40503787994384766
+                  0.0,
+                  0.0,
+                  0.0
                  ],
                  "uniformScale": 1.0
                 }
@@ -1325,7 +1311,7 @@
         ],
         "LinGravity": [
          0.0,
-         -6.769999980926514,
+         -0.2700003683567047,
          0.0
         ],
         "SimulationRate": 400.0,

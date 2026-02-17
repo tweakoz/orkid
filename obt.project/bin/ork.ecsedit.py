@@ -263,7 +263,7 @@ class EcsEditor(ComponentizedApplication):
       self._closeTransformCurveEditor()
 
     top = self.ezapp.topLayoutGroup
-    h = int(top.height * 0.35)
+    h = int(top.height * 0.47)
     y = top.height - h
 
     editor = lev2.ui.TransformCurveEditor.create("curve_editor", curve)

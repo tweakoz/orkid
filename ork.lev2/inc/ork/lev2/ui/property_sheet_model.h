@@ -37,6 +37,7 @@ enum class PropertyType : uint32_t {
   CrcEnum(Curve),
   CrcEnum(Asset),
   CrcEnum(Quat),   // Quaternion (expanded to axis-angle sub-properties)
+  CrcEnum(Enum),   // Enum property (dropdown with choices)
   CrcEnum(Group),  // Container for child properties
 };
 

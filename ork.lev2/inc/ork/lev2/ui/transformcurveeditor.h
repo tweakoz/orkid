@@ -63,6 +63,7 @@ public:
   bool _cKeyDown = false;
   bool _aKeyDown = false;
   bool _sKeyDown = false;
+  bool _spaceKeyDown = false;
   int _navPrevRootX = 0, _navPrevRootY = 0;
 
   // View ranges

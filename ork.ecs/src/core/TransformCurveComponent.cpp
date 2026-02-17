@@ -157,24 +157,31 @@ void TransformCurveSystem::_onUpdate(Simulation* inst) {
     if (!curve || curve->numPoints() < 2)
       continue;
 
-    c->_curveTime += dt * c->_CD._playbackSpeed;
-
-    float maxTime = curve->getPoint(curve->numPoints() - 1)->_time;
-    float minTime = curve->getPoint(0)->_time;
-
-    if (curve->_looping) {
-      float range = maxTime - minTime;
-      if (range > 0.0f) {
-        while (c->_curveTime > maxTime)
-          c->_curveTime -= range;
-        while (c->_curveTime < minTime)
-          c->_curveTime += range;
-      }
+    float sampleTime;
+    if (curve->_debugScrubTime >= 0.0f) {
+      // Debug scrub overrides normal playback
+      sampleTime = curve->_debugScrubTime;
     } else {
-      c->_curveTime = std::clamp(c->_curveTime, minTime, maxTime);
+      c->_curveTime += dt * c->_CD._playbackSpeed;
+
+      float maxTime = curve->getPoint(curve->numPoints() - 1)->_time;
+      float minTime = curve->getPoint(0)->_time;
+
+      if (curve->_looping) {
+        float range = maxTime - minTime;
+        if (range > 0.0f) {
+          while (c->_curveTime > maxTime)
+            c->_curveTime -= range;
+          while (c->_curveTime < minTime)
+            c->_curveTime += range;
+        }
+      } else {
+        c->_curveTime = std::clamp(c->_curveTime, minTime, maxTime);
+      }
+      sampleTime = c->_curveTime;
     }
 
-    auto sample = curve->sample(c->_curveTime);
+    auto sample = curve->sample(sampleTime);
     auto e = c->GetEntity();
     auto xf = e->transform();
     xf->_translation = sample._position;

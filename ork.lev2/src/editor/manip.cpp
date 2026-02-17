@@ -126,8 +126,11 @@ void CurvePointManipulator::setTarget(math::transformcurve_ptr_t curve, int poin
 
 fmtx4 CurvePointManipulator::getWorldMatrix() const {
   if (_curve && _pointIndex >= 0 && _pointIndex < _curve->numPoints()) {
+    auto pt = _curve->getPoint(_pointIndex);
+    fquat rot = _curve->eulerToQuat(pt->_eulerRotation);
+    float s = pt->_scale.x;  // uniform scale from X component
     fmtx4 mtx;
-    mtx.compose(_curve->getPoint(_pointIndex)->_position, fquat(), 1.0f);
+    mtx.compose(pt->_position, rot, s);
     return mtx;
   }
   return fmtx4::Identity();
@@ -141,6 +144,9 @@ fvec3 CurvePointManipulator::getWorldPosition() const {
 }
 
 fquat CurvePointManipulator::getWorldRotation() const {
+  if (_curve && _pointIndex >= 0 && _pointIndex < _curve->numPoints()) {
+    return _curve->eulerToQuat(_curve->getPoint(_pointIndex)->_eulerRotation);
+  }
   return fquat();
 }
 
@@ -150,6 +156,44 @@ void CurvePointManipulator::applyTranslationDelta(const fvec3& delta) {
     if (_curve->_looping) {
       _curve->enforceLoopConstraints();
     }
+    if (_onPointMoved) {
+      _onPointMoved();
+    }
+  }
+}
+
+void CurvePointManipulator::applyRotationDelta(const fquat& delta) {
+  if (_curve && _pointIndex >= 0 && _pointIndex < _curve->numPoints()) {
+    auto pt = _curve->getPoint(_pointIndex);
+    fquat current = _curve->eulerToQuat(pt->_eulerRotation);
+    fquat result = current * delta;
+    result.normalizeInPlace();
+    pt->_eulerRotation = _curve->quatToEuler(result);
+    if (_curve->_looping) {
+      _curve->enforceLoopConstraints();
+    }
+    if (_onPointMoved) {
+      _onPointMoved();
+    }
+  }
+}
+
+void CurvePointManipulator::applyScaleDelta(float uniformDelta) {
+  if (_curve && _pointIndex >= 0 && _pointIndex < _curve->numPoints()) {
+    auto pt = _curve->getPoint(_pointIndex);
+    pt->_scale *= uniformDelta;
+    if (_curve->_looping) {
+      _curve->enforceLoopConstraints();
+    }
+    if (_onPointMoved) {
+      _onPointMoved();
+    }
+  }
+}
+
+void CurvePointManipulator::setWorldRotation(const fquat& rot) {
+  if (_curve && _pointIndex >= 0 && _pointIndex < _curve->numPoints()) {
+    _curve->getPoint(_pointIndex)->_eulerRotation = _curve->quatToEuler(rot);
     if (_onPointMoved) {
       _onPointMoved();
     }

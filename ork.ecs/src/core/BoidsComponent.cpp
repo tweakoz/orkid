@@ -57,7 +57,7 @@ static fvec3 _randomUnitVector() {
 void BoidsComponentData::describeX(ComponentDataClass* clazz) {
   InvokeEnumRegistration(BoidsMode);
   clazz->directProperty("FlockID", &BoidsComponentData::_flockID);
-  clazz->directProperty("Mode", &BoidsComponentData::_mode);
+  clazz->directEnumProperty("Mode", &BoidsComponentData::_mode);
 
   clazz->floatProperty("SeparationWeight", float_range{0, 100}, &BoidsComponentData::_separationWeight);
   clazz->floatProperty("SeparationRadius", float_range{0.1, 1000}, &BoidsComponentData::_separationRadius);
