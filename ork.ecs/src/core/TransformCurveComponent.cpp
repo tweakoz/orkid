@@ -29,7 +29,6 @@ using namespace ork::reflect;
 
 void TransformCurveComponentData::describeX(ComponentDataClass* clazz) {
   clazz->floatProperty("PlaybackSpeed", float_range{-10, 10}, &TransformCurveComponentData::_playbackSpeed);
-  clazz->directProperty("Looping", &TransformCurveComponentData::_looping);
   clazz->directObjectProperty("Curve", &TransformCurveComponentData::_curve)
       ->annotate<ConstString>("editor.custom", "transformcurveeditor");
 }
@@ -163,7 +162,7 @@ void TransformCurveSystem::_onUpdate(Simulation* inst) {
     float maxTime = curve->getPoint(curve->numPoints() - 1)->_time;
     float minTime = curve->getPoint(0)->_time;
 
-    if (c->_CD._looping) {
+    if (curve->_looping) {
       float range = maxTime - minTime;
       if (range > 0.0f) {
         while (c->_curveTime > maxTime)

@@ -32,10 +32,7 @@ void pyinit_transformcurve(py::module& module_ecs) {
               "playbackSpeed",
               [](transformcurvecompdata_ptr_t cd) -> float { return cd->_playbackSpeed; },
               [](transformcurvecompdata_ptr_t cd, float val) { cd->_playbackSpeed = val; })
-          .def_property(
-              "looping",
-              [](transformcurvecompdata_ptr_t cd) -> bool { return cd->_looping; },
-              [](transformcurvecompdata_ptr_t cd, bool val) { cd->_looping = val; });
+          ;
   type_codec->registerStdCodec<transformcurvecompdata_ptr_t>(tccompdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto tcsysdata_type = //

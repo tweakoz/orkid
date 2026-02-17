@@ -52,6 +52,13 @@ class EcsEditor(ComponentizedApplication):
     # Deferred rebuild flag — set by callbacks, consumed in _onUpdate
     self._needs_rebuild = False
 
+    # 3D curve visualization state
+    self._curve_path_data = None    # CurvePathDrawableData
+    self._curve_line_node = None    # DrawableNode for line strip
+    self._curve_cp_node = None      # DrawableNode for control point spheres
+    self._curve_for_viz = None      # The TransformCurve being visualized
+    self._curve_point_manip = None  # CurvePointManipulator (when a point is selected)
+
     # Deferred operations queue — (execute_at_time, callback) pairs
     self._deferred_ops = []
 
@@ -256,13 +263,17 @@ class EcsEditor(ComponentizedApplication):
       self._closeTransformCurveEditor()
 
     top = self.ezapp.topLayoutGroup
-    h = int(top.height * 0.25)
+    h = int(top.height * 0.35)
     y = top.height - h
 
     editor = lev2.ui.TransformCurveEditor.create("curve_editor", curve)
     editor.onClose = lambda: self._closeTransformCurveEditor()
-    editor.onCurveChanged = lambda: self.sgv.setDirty()
+    editor.onCurveChanged = lambda: self._onCurveEditorChanged()
     self._curve_editor = editor
+
+    # Show 3D curve path if not already visible
+    if self._curve_for_viz is None:
+      self._showCurveViz(curve)
 
     self.uicontext.pushOverlay(editor, 0, y, top.width, h, dismiss_on_click_outside=False)
 
@@ -391,6 +402,14 @@ class EcsEditor(ComponentizedApplication):
     self.runtime.stage_simulation()
     self.runtime.bind_to_viewport(self.sgv)
 
+    # Re-create curve viz if we had one active
+    if self._curve_for_viz is not None:
+      curve = self._curve_for_viz
+      self._curve_path_data = None
+      self._curve_line_node = None
+      self._curve_cp_node = None
+      self._showCurveViz(curve)
+
   def _requestRebuild(self):
     """Request a deferred edit-simulation rebuild (consumed in _onUpdate)."""
     if self._mode == self.EDIT:
@@ -416,9 +435,10 @@ class EcsEditor(ComponentizedApplication):
     parts = key.split("/") if key else []
     self._selected_object = None
 
-    # Disable manipulator when selection changes
+    # Disable manipulator and hide curve viz when selection changes
     self._enableManip(False)
     self.manip_interface = None
+    self._hideCurveViz()
 
     if len(parts) < 2:
       self.refl_model.clearKeyOverrides()
@@ -442,6 +462,11 @@ class EcsEditor(ComponentizedApplication):
             if c.className == comp_name:
               self._selected_object = c
               break
+          # Show 3D curve viz when TransformCurveComponentData is selected
+          if self._selected_object is not None and self._selected_object.className == "TransformCurveComponentData":
+            curve = getattr(self._selected_object, 'curve', None)
+            if curve:
+              self._showCurveViz(curve)
         else:
           self._selected_object = arch
     elif category == "Spawners":
@@ -460,6 +485,10 @@ class EcsEditor(ComponentizedApplication):
         xform = sp.transform
         self.manip_interface = lev2.DecompTransformManipulator(xform)
         self._enableManip(True)
+        # Show 3D curve viz if spawner has a TransformCurveComponent
+        curve = self._findCurveForSpawner(sp)
+        if curve:
+          self._showCurveViz(curve)
     elif category == "Systems":
       for s in self.scene_data.systemDatas:
         if s.className == name:
@@ -756,6 +785,71 @@ class EcsEditor(ComponentizedApplication):
         self._enableManip(False)
 
   ##############################################################################
+  # 3D Curve Visualization
+  ##############################################################################
+
+  def _showCurveViz(self, curve):
+    """Show 3D curve path + control point spheres for the given TransformCurve."""
+    self._hideCurveViz()
+
+    sg = self.runtime.scenegraph
+    layer = self.runtime.layer
+    if sg is None or layer is None:
+      return
+
+    data = lev2.CurvePathDrawableData()
+    data.curve = curve
+    self._curve_path_data = data
+    self._curve_for_viz = curve
+
+    line_drw = data.createDrawable()
+    self._curve_line_node = sg.createDrawableNodeOnLayers([layer], "curve-line", line_drw)
+    self._curve_line_node.sortkey = 50
+    self._curve_line_node.pickable = False
+
+    cp_drw = data.createControlPointDrawable()
+    self._curve_cp_node = sg.createDrawableNodeOnLayers([layer], "curve-cp", cp_drw)
+    self._curve_cp_node.sortkey = 51
+    self._curve_cp_node.pickable = False
+
+  def _hideCurveViz(self):
+    """Remove 3D curve visualization nodes."""
+    layer = getattr(self.runtime, 'layer', None)
+    if layer:
+      if self._curve_line_node:
+        layer.removeDrawableNode(self._curve_line_node)
+      if self._curve_cp_node:
+        layer.removeDrawableNode(self._curve_cp_node)
+    self._curve_path_data = None
+    self._curve_line_node = None
+    self._curve_cp_node = None
+    self._curve_for_viz = None
+    self._curve_point_manip = None
+
+  def _findCurveForSpawner(self, spawner):
+    """If spawner's archetype has a TransformCurveComponent, return its curve."""
+    arch = spawner.archetype if spawner else None
+    if arch is None:
+      return None
+    for comp in arch.components:
+      if comp.className == "TransformCurveComponentData":
+        return comp.curve
+    return None
+
+  def _onCurvePointMoved(self):
+    """Callback when gizmo moves a control point."""
+    if self._curve_path_data:
+      self._curve_path_data.updateControlPoints()
+    self.sgv.setDirty()
+    self.refl_model.notifyExternalValueChanged("")
+
+  def _onCurveEditorChanged(self):
+    """Callback when 2D curve editor modifies the curve — sync 3D viz."""
+    if self._curve_path_data:
+      self._curve_path_data.updateControlPoints()
+    self.sgv.setDirty()
+
+  ##############################################################################
   # Camera event handling
   ##############################################################################
 
@@ -772,6 +866,35 @@ class EcsEditor(ComponentizedApplication):
           local_x, local_y = uievent.x - vp_x, uievent.y - vp_y
           in_bounds = 0 <= local_x < self.sgv.width and 0 <= local_y < self.sgv.height
           print(f"  local=({local_x},{local_y}) sgv_size=({self.sgv.width},{self.sgv.height}) in_bounds={in_bounds}")
+          if in_bounds and self._curve_path_data is not None:
+            # CPU hit test on curve control points
+            aspect = float(self.sgv.width) / float(self.sgv.height)
+            vp_mtx = self.runtime.camera.vpMatrix(aspect)
+            hit_idx = self._curve_path_data.hitTestScreenCoord(
+              vp_mtx, vec2(local_x, local_y),
+              self.sgv.width, self.sgv.height, 20.0)
+            if hit_idx >= 0:
+              print(f"  curve point hit: {hit_idx}")
+              manip = lev2.CurvePointManipulator(self._curve_for_viz, hit_idx)
+              manip.onPointMoved = self._onCurvePointMoved
+              self._curve_point_manip = manip
+              self._curve_path_data.selectedPointIndex = hit_idx
+              self._curve_path_data.updateControlPoints()
+              self.manip_interface = manip
+              self._enableManip(True)
+              self.manip_controller.mode = lev2.ManipMode.TRANSLATE
+              self._syncManipButtons()
+              return self.runtime.handle_camera_event(uievent)
+            elif self._curve_point_manip is not None:
+              # Clicked away from control points — revert to spawner transform manip
+              self._curve_point_manip = None
+              self._curve_path_data.selectedPointIndex = -1
+              self._curve_path_data.updateControlPoints()
+              if self._selected_object is not None and hasattr(self._selected_object, 'transform'):
+                xform = self._selected_object.transform
+                self.manip_interface = lev2.DecompTransformManipulator(xform)
+                self._enableManip(True)
+                self._syncManipButtons()
           if in_bounds:
             gizmo_was = self.gizmo_node.enabled
             self.gizmo_node.enabled = False

@@ -77,6 +77,99 @@ TransformCurveEditor::TransformCurveEditor(
 // Channel data helpers
 ///////////////////////////////////////////////////////////////////////////////
 
+bool TransformCurveEditor::_isPositionChannel(int ch) const {
+  return ch == CH_POS_X || ch == CH_POS_Y || ch == CH_POS_Z;
+}
+
+// Rotation channels are displayed scaled: 90 degrees = 1.0 on chart
+static constexpr float ROT_CHART_SCALE = 1.0f / 90.0f;
+
+math::CurveChannel TransformCurveEditor::_editorChannelToCurveChannel(int editorCh) const {
+  switch (editorCh) {
+    case CH_POS_X: return math::CurveChannel::CC_POS_X;
+    case CH_POS_Y: return math::CurveChannel::CC_POS_Y;
+    case CH_POS_Z: return math::CurveChannel::CC_POS_Z;
+    case CH_ROT_X: return math::CurveChannel::CC_ROT_X;
+    case CH_ROT_Y: return math::CurveChannel::CC_ROT_Y;
+    case CH_ROT_Z: return math::CurveChannel::CC_ROT_Z;
+    case CH_SCALE_UNI: return math::CurveChannel::CC_SCALE_X;  // representative
+    case CH_SCALE_X: return math::CurveChannel::CC_SCALE_X;
+    case CH_SCALE_Y: return math::CurveChannel::CC_SCALE_Y;
+    case CH_SCALE_Z: return math::CurveChannel::CC_SCALE_Z;
+    default: return math::CurveChannel::CC_POS_X;
+  }
+}
+
+void TransformCurveEditor::_cycleSegmentType() {
+  if (_selectedPointIndex < 0 || !_curve) return;
+  int segIdx = _selectedPointIndex;
+  int numSegs = _curve->numPoints() - 1;
+  if (segIdx >= numSegs) return;
+
+  auto cc = _editorChannelToCurveChannel(_activeEditChannel);
+  auto curType = _curve->getChannelSegmentType(segIdx, cc);
+  math::CurveSegmentType nextType;
+  switch (curType) {
+    case math::CurveSegmentType::LINEAR:
+      nextType = math::CurveSegmentType::BEZIER;
+      break;
+    case math::CurveSegmentType::BEZIER:
+      nextType = math::CurveSegmentType::CATMULL_ROM;
+      break;
+    case math::CurveSegmentType::CATMULL_ROM:
+      nextType = math::CurveSegmentType::STEP;
+      break;
+    case math::CurveSegmentType::STEP:
+    default:
+      nextType = math::CurveSegmentType::LINEAR;
+      break;
+  }
+
+  // For CH_SCALE_UNI, set all 3 scale channels
+  if (_activeEditChannel == CH_SCALE_UNI) {
+    _curve->setChannelSegmentType(segIdx, math::CurveChannel::CC_SCALE_X, nextType);
+    _curve->setChannelSegmentType(segIdx, math::CurveChannel::CC_SCALE_Y, nextType);
+    _curve->setChannelSegmentType(segIdx, math::CurveChannel::CC_SCALE_Z, nextType);
+  } else {
+    _curve->setChannelSegmentType(segIdx, cc, nextType);
+  }
+
+  // When entering BEZIER, initialize tangent handles for the active channel group
+  if (nextType == math::CurveSegmentType::BEZIER) {
+    auto ptA = _curve->getPoint(segIdx);
+    auto ptB = _curve->getPoint(segIdx + 1);
+    float timeDelta = ptB->_time - ptA->_time;
+    float bump = std::max(0.3f, timeDelta * 0.15f);
+
+    if (_isPositionChannel(_activeEditChannel)) {
+      fvec3 delta = ptB->_position - ptA->_position;
+      ptA->_tangent_out = delta * (1.0f / 3.0f);
+      ptB->_tangent_in = delta * (-1.0f / 3.0f);
+      ptA->_tangent_out.y += bump;
+      ptB->_tangent_in.y += bump;
+    } else if (_activeEditChannel >= CH_ROT_X && _activeEditChannel <= CH_ROT_Z) {
+      fvec3 delta = ptB->_eulerRotation - ptA->_eulerRotation;
+      ptA->_rot_tangent_out = delta * (1.0f / 3.0f);
+      ptB->_rot_tangent_in = delta * (-1.0f / 3.0f);
+      // bump the active component
+      int comp = _activeEditChannel - CH_ROT_X;
+      (&ptA->_rot_tangent_out.x)[comp] += bump / ROT_CHART_SCALE;
+      (&ptB->_rot_tangent_in.x)[comp] += bump / ROT_CHART_SCALE;
+    } else {
+      // scale channels
+      fvec3 delta = ptB->_scale - ptA->_scale;
+      ptA->_scale_tangent_out = delta * (1.0f / 3.0f);
+      ptB->_scale_tangent_in = delta * (-1.0f / 3.0f);
+      int comp = (_activeEditChannel == CH_SCALE_UNI) ? 0 : (_activeEditChannel - CH_SCALE_X);
+      (&ptA->_scale_tangent_out.x)[comp] += bump;
+      (&ptB->_scale_tangent_in.x)[comp] += bump;
+    }
+  }
+
+  _curve->enforceLoopConstraints();
+  if (_onCurveChanged) _onCurveChanged();
+}
+
 bool TransformCurveEditor::_isChannelAvailable(int channel) const {
   if (!_curve) return false;
   switch (channel) {
@@ -87,9 +180,6 @@ bool TransformCurveEditor::_isChannelAvailable(int channel) const {
     default: return true;
   }
 }
-
-// Rotation channels are displayed scaled: 90 degrees = 1.0 on chart
-static constexpr float ROT_CHART_SCALE = 1.0f / 90.0f;
 
 float TransformCurveEditor::_getChannelValue(int channel, int pointIndex) const {
   auto pt = _curve->getPoint(pointIndex);
@@ -141,6 +231,155 @@ void TransformCurveEditor::_setChannelValue(int channel, int pointIndex, float v
     case CH_SCALE_Y: pt->_scale.y = value; break;
     case CH_SCALE_Z: pt->_scale.z = value; break;
   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Tangent helpers
+///////////////////////////////////////////////////////////////////////////////
+
+float TransformCurveEditor::_getTangentOutComponent(int ch, int ptIdx) const {
+  auto pt = _curve->getPoint(ptIdx);
+  switch (ch) {
+    case CH_POS_X: return pt->_tangent_out.x;
+    case CH_POS_Y: return pt->_tangent_out.y;
+    case CH_POS_Z: return pt->_tangent_out.z;
+    case CH_ROT_X: return pt->_rot_tangent_out.x * ROT_CHART_SCALE;
+    case CH_ROT_Y: return pt->_rot_tangent_out.y * ROT_CHART_SCALE;
+    case CH_ROT_Z: return pt->_rot_tangent_out.z * ROT_CHART_SCALE;
+    case CH_SCALE_UNI: return pt->_scale_tangent_out.x;
+    case CH_SCALE_X: return pt->_scale_tangent_out.x;
+    case CH_SCALE_Y: return pt->_scale_tangent_out.y;
+    case CH_SCALE_Z: return pt->_scale_tangent_out.z;
+    default: return 0.0f;
+  }
+}
+
+float TransformCurveEditor::_getTangentInComponent(int ch, int ptIdx) const {
+  auto pt = _curve->getPoint(ptIdx);
+  switch (ch) {
+    case CH_POS_X: return pt->_tangent_in.x;
+    case CH_POS_Y: return pt->_tangent_in.y;
+    case CH_POS_Z: return pt->_tangent_in.z;
+    case CH_ROT_X: return pt->_rot_tangent_in.x * ROT_CHART_SCALE;
+    case CH_ROT_Y: return pt->_rot_tangent_in.y * ROT_CHART_SCALE;
+    case CH_ROT_Z: return pt->_rot_tangent_in.z * ROT_CHART_SCALE;
+    case CH_SCALE_UNI: return pt->_scale_tangent_in.x;
+    case CH_SCALE_X: return pt->_scale_tangent_in.x;
+    case CH_SCALE_Y: return pt->_scale_tangent_in.y;
+    case CH_SCALE_Z: return pt->_scale_tangent_in.z;
+    default: return 0.0f;
+  }
+}
+
+void TransformCurveEditor::_setTangentOutComponent(int ch, int ptIdx, float val) {
+  auto pt = _curve->getPoint(ptIdx);
+  switch (ch) {
+    case CH_POS_X: pt->_tangent_out.x = val; break;
+    case CH_POS_Y: pt->_tangent_out.y = val; break;
+    case CH_POS_Z: pt->_tangent_out.z = val; break;
+    case CH_ROT_X: pt->_rot_tangent_out.x = val / ROT_CHART_SCALE; break;
+    case CH_ROT_Y: pt->_rot_tangent_out.y = val / ROT_CHART_SCALE; break;
+    case CH_ROT_Z: pt->_rot_tangent_out.z = val / ROT_CHART_SCALE; break;
+    case CH_SCALE_UNI:
+      pt->_scale_tangent_out = fvec3(val, val, val);
+      break;
+    case CH_SCALE_X: pt->_scale_tangent_out.x = val; break;
+    case CH_SCALE_Y: pt->_scale_tangent_out.y = val; break;
+    case CH_SCALE_Z: pt->_scale_tangent_out.z = val; break;
+    default: break;
+  }
+}
+
+void TransformCurveEditor::_setTangentInComponent(int ch, int ptIdx, float val) {
+  auto pt = _curve->getPoint(ptIdx);
+  switch (ch) {
+    case CH_POS_X: pt->_tangent_in.x = val; break;
+    case CH_POS_Y: pt->_tangent_in.y = val; break;
+    case CH_POS_Z: pt->_tangent_in.z = val; break;
+    case CH_ROT_X: pt->_rot_tangent_in.x = val / ROT_CHART_SCALE; break;
+    case CH_ROT_Y: pt->_rot_tangent_in.y = val / ROT_CHART_SCALE; break;
+    case CH_ROT_Z: pt->_rot_tangent_in.z = val / ROT_CHART_SCALE; break;
+    case CH_SCALE_UNI:
+      pt->_scale_tangent_in = fvec3(val, val, val);
+      break;
+    case CH_SCALE_X: pt->_scale_tangent_in.x = val; break;
+    case CH_SCALE_Y: pt->_scale_tangent_in.y = val; break;
+    case CH_SCALE_Z: pt->_scale_tangent_in.z = val; break;
+    default: break;
+  }
+}
+
+float TransformCurveEditor::_tangentOutScreenX(int ptIdx) const {
+  auto pt = _curve->getPoint(ptIdx);
+  int numPts = _curve->numPoints();
+  if (ptIdx + 1 >= numPts) return _timeToScreenX(pt->_time);
+  float nextTime = _curve->getPoint(ptIdx + 1)->_time;
+  float segDur = nextTime - pt->_time;
+  return _timeToScreenX(pt->_time + segDur * TANGENT_TIME_FRACTION);
+}
+
+float TransformCurveEditor::_tangentOutScreenY(int ptIdx, int ch) const {
+  float ptVal = _getChannelValue(ch, ptIdx);
+  float tangentComp = _getTangentOutComponent(ch, ptIdx);
+  return _valueToScreenY(ptVal + tangentComp);
+}
+
+float TransformCurveEditor::_tangentInScreenX(int ptIdx) const {
+  auto pt = _curve->getPoint(ptIdx);
+  if (ptIdx <= 0) return _timeToScreenX(pt->_time);
+  float prevTime = _curve->getPoint(ptIdx - 1)->_time;
+  float segDur = pt->_time - prevTime;
+  return _timeToScreenX(pt->_time - segDur * TANGENT_TIME_FRACTION);
+}
+
+float TransformCurveEditor::_tangentInScreenY(int ptIdx, int ch) const {
+  float ptVal = _getChannelValue(ch, ptIdx);
+  float tangentComp = _getTangentInComponent(ch, ptIdx);
+  return _valueToScreenY(ptVal + tangentComp);
+}
+
+int TransformCurveEditor::_hitTestTangentHandle(int lx, int ly, DragMode& outMode) const {
+  if (!_curve) return -1;
+  int ch = _activeEditChannel;
+  auto cc = _editorChannelToCurveChannel(ch);
+  int numPts = _curve->numPoints();
+
+  int rx, ry;
+  const_cast<TransformCurveEditor*>(this)->LocalToRoot(0, 0, rx, ry);
+  float mx = float(lx + rx);
+  float my = float(ly + ry);
+
+  for (int i = 0; i < numPts; i++) {
+    // tangent_out: check if segment to right is BEZIER for this channel
+    if (i + 1 < numPts) {
+      auto segType = _curve->getChannelSegmentType(i, cc);
+      if (segType == math::CurveSegmentType::BEZIER) {
+        float hx = _tangentOutScreenX(i);
+        float hy = _tangentOutScreenY(i, ch);
+        float dx = mx - hx;
+        float dy = my - hy;
+        if (dx * dx + dy * dy < float(TANGENT_HIT_RADIUS * TANGENT_HIT_RADIUS)) {
+          outMode = DRAG_TANGENT_OUT;
+          return i;
+        }
+      }
+    }
+    // tangent_in: check if segment to left is BEZIER for this channel
+    if (i > 0) {
+      auto segType = _curve->getChannelSegmentType(i - 1, cc);
+      if (segType == math::CurveSegmentType::BEZIER) {
+        float hx = _tangentInScreenX(i);
+        float hy = _tangentInScreenY(i, ch);
+        float dx = mx - hx;
+        float dy = my - hy;
+        if (dx * dx + dy * dy < float(TANGENT_HIT_RADIUS * TANGENT_HIT_RADIUS)) {
+          outMode = DRAG_TANGENT_IN;
+          return i;
+        }
+      }
+    }
+  }
+  return -1;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -224,8 +463,8 @@ float TransformCurveEditor::_screenYToValue(float sy) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 int TransformCurveEditor::_hitTestCloseButton(int localX, int localY) const {
-  int bx = _geometry._w - TOOLBAR_H;
-  if (localX >= bx && localX < _geometry._w && localY >= 0 && localY < TOOLBAR_H)
+  int bx = _geometry._w - BUTTON_H;
+  if (localX >= bx && localX < _geometry._w && localY >= 0 && localY < BUTTON_H)
     return 1;
   return 0;
 }
@@ -285,10 +524,29 @@ int TransformCurveEditor::_hitTestNonUniformToggle(int localX, int localY) const
   return 0;
 }
 
+int TransformCurveEditor::_hitTestLoopToggle(int localX, int localY) const {
+  int sidebarX = _geometry._w - SIDEBAR_W;
+  if (localX < sidebarX || localX >= _geometry._w)
+    return 0;
+  int toggleY = TOOLBAR_H + CH_COUNT * ROW_H + ROW_H + 8;
+  if (localY >= toggleY && localY < toggleY + ROW_H)
+    return 1;
+  return 0;
+}
+
 int TransformCurveEditor::_hitTestResetButton(int localX, int localY) const {
   // Reset button is left of close button: [R][X]
-  int bx = _geometry._w - TOOLBAR_H * 2;
-  if (localX >= bx && localX < bx + TOOLBAR_H && localY >= 0 && localY < TOOLBAR_H)
+  int bx = _geometry._w - BUTTON_H * 2;
+  if (localX >= bx && localX < bx + BUTTON_H && localY >= 0 && localY < BUTTON_H)
+    return 1;
+  return 0;
+}
+
+int TransformCurveEditor::_hitTestCycleButton(int localX, int localY) const {
+  // Cycle button [S] is left of reset button, only visible when point selected
+  if (_selectedPointIndex < 0) return 0;
+  int bx = _geometry._w - BUTTON_H * 3;
+  if (localX >= bx && localX < bx + BUTTON_H && localY >= 0 && localY < BUTTON_H)
     return 1;
   return 0;
 }
@@ -316,10 +574,11 @@ HandlerResult TransformCurveEditor::DoOnUiEvent(event_constptr_t ev) {
       if (key == 256) { // ESC
         if (_onClose) _onClose();
         rval.setHandled(this);
-      } else if (key == 261) { // Delete
+      } else if (key == 261 || key == 259) { // Delete or Backspace
         if (_selectedPointIndex >= 0 && _curve && _curve->numPoints() > 2) {
           _curve->removePoint(_selectedPointIndex);
           _selectedPointIndex = -1;
+          _curve->enforceLoopConstraints();
           if (_onCurveChanged) _onCurveChanged();
         }
         rval.setHandled(this);
@@ -336,6 +595,31 @@ HandlerResult TransformCurveEditor::DoOnUiEvent(event_constptr_t ev) {
         _navPrevRootX = ev->miX;
         _navPrevRootY = ev->miY;
         rval.setHandled(this);
+      } else if (key == 83 && !_sKeyDown) { // 'S' — cycle segment type
+        _sKeyDown = true;
+        _cycleSegmentType();
+        rval.setHandled(this);
+      } else if (key == 65 && !_aKeyDown) { // 'A' — add point at mouse position
+        _aKeyDown = true;
+        if (_isInPlotArea(localX, localY) && _curve) {
+          float t = _screenXToTime(float(ev->miX));
+          float v = _screenYToValue(float(ev->miY));
+
+          auto sample = _curve->sample(t);
+          auto newPt = std::make_shared<math::TransformCurvePoint>();
+          newPt->_time = t;
+          newPt->_position = sample._position;
+          newPt->_eulerRotation = _curve->sampleEuler(t);
+          newPt->_scale = sample._scale;
+
+          int idx = _curve->addPoint(newPt);
+          _setChannelValue(_activeEditChannel, idx, v);
+          _selectedPointIndex = idx;
+
+          _curve->enforceLoopConstraints();
+          if (_onCurveChanged) _onCurveChanged();
+        }
+        rval.setHandled(this);
       }
       break;
     }
@@ -346,6 +630,12 @@ HandlerResult TransformCurveEditor::DoOnUiEvent(event_constptr_t ev) {
         rval.setHandled(this);
       } else if (key == 67) { // 'C'
         _cKeyDown = false;
+        rval.setHandled(this);
+      } else if (key == 65) { // 'A'
+        _aKeyDown = false;
+        rval.setHandled(this);
+      } else if (key == 83) { // 'S'
+        _sKeyDown = false;
         rval.setHandled(this);
       }
       break;
@@ -360,6 +650,12 @@ HandlerResult TransformCurveEditor::DoOnUiEvent(event_constptr_t ev) {
       // Reset view button
       if (_hitTestResetButton(localX, localY)) {
         autoFitRanges();
+        rval.setHandled(this);
+        break;
+      }
+      // Cycle segment type button
+      if (_hitTestCycleButton(localX, localY)) {
+        _cycleSegmentType();
         rval.setHandled(this);
         break;
       }
@@ -391,6 +687,16 @@ HandlerResult TransformCurveEditor::DoOnUiEvent(event_constptr_t ev) {
         rval.setHandled(this);
         break;
       }
+      // Loop toggle
+      if (_hitTestLoopToggle(localX, localY)) {
+        _curve->_looping = !_curve->_looping;
+        if (_curve->_looping) {
+          _curve->enforceLoopConstraints();
+        }
+        if (_onCurveChanged) _onCurveChanged();
+        rval.setHandled(this);
+        break;
+      }
       // Sidebar checkbox
       int cbCh = _hitTestSidebarCheckbox(localX, localY);
       if (cbCh >= 0 && _isChannelAvailable(cbCh)) {
@@ -407,21 +713,78 @@ HandlerResult TransformCurveEditor::DoOnUiEvent(event_constptr_t ev) {
         rval.setHandled(this);
         break;
       }
-      // Plot area: hit-test points of active edit channel
-      int idx = _hitTestPoint(localX, localY);
-      if (idx >= 0) {
-        _selectedPointIndex = idx;
-        _dragging = true;
-        rval.setHandled(this);
-      } else {
-        _selectedPointIndex = -1;
-        rval.setHandled(this);
+      // Plot area: hit-test tangent handles first (they may overlap control points)
+      {
+        DragMode tangentMode = DRAG_NONE;
+        int tangentIdx = _hitTestTangentHandle(localX, localY, tangentMode);
+        if (tangentIdx >= 0) {
+          _dragMode = tangentMode;
+          _dragTangentPointIndex = tangentIdx;
+          rval.setHandled(this);
+          break;
+        }
+      }
+      // Hit-test control points of active edit channel
+      {
+        int idx = _hitTestPoint(localX, localY);
+        if (idx >= 0) {
+          _selectedPointIndex = idx;
+          // Shift+drag on last point → time stretch
+          int lastIdx = _curve->numPoints() - 1;
+          if (ev->mbSHIFT && idx == lastIdx && lastIdx > 0) {
+            _dragMode = DRAG_TIME_STRETCH;
+            _stretchOriginalTimes.resize(_curve->numPoints());
+            for (int i = 0; i < _curve->numPoints(); i++)
+              _stretchOriginalTimes[i] = _curve->getPoint(i)->_time;
+          } else if (ev->mbALT) {
+            // Alt+drag any point → shift all points vertically
+            _dragMode = DRAG_VALUE_SHIFT;
+            int n = _curve->numPoints();
+            _shiftOriginalValues.resize(n);
+            for (int i = 0; i < n; i++)
+              _shiftOriginalValues[i] = _getChannelValue(_activeEditChannel, i);
+            _shiftAnchorValue = _screenYToValue(float(ev->miY));
+          } else {
+            _dragMode = DRAG_POINT;
+          }
+          rval.setHandled(this);
+        } else {
+          _selectedPointIndex = -1;
+          rval.setHandled(this);
+        }
       }
       break;
     }
     case EventCode::DRAG: {
-      // Point drag
-      if (_dragging && _selectedPointIndex >= 0 && _curve) {
+      if (_dragMode == DRAG_TIME_STRETCH && _selectedPointIndex >= 0 && _curve) {
+        float newEndTime = _screenXToTime(float(ev->miX));
+        newEndTime = std::max(newEndTime, _stretchOriginalTimes[0] + 0.01f);  // don't collapse past start
+        float origStart = _stretchOriginalTimes[0];
+        float origEnd = _stretchOriginalTimes.back();
+        float origDuration = origEnd - origStart;
+        if (origDuration > 1e-9f) {
+          float newDuration = newEndTime - origStart;
+          float scale = newDuration / origDuration;
+          int n = _curve->numPoints();
+          for (int i = 1; i < n; i++) {
+            float t = origStart + (_stretchOriginalTimes[i] - origStart) * scale;
+            _curve->getPoint(i)->_time = t;
+          }
+          _selectedPointIndex = n - 1;  // keep last point selected
+          _curve->enforceLoopConstraints();
+          if (_onCurveChanged) _onCurveChanged();
+        }
+        rval.setHandled(this);
+      } else if (_dragMode == DRAG_VALUE_SHIFT && _curve) {
+        float mouseValue = _screenYToValue(float(ev->miY));
+        float delta = mouseValue - _shiftAnchorValue;
+        int n = _curve->numPoints();
+        for (int i = 0; i < n; i++)
+          _setChannelValue(_activeEditChannel, i, _shiftOriginalValues[i] + delta);
+        _curve->enforceLoopConstraints();
+        if (_onCurveChanged) _onCurveChanged();
+        rval.setHandled(this);
+      } else if (_dragMode == DRAG_POINT && _selectedPointIndex >= 0 && _curve) {
         float newTime = _screenXToTime(float(ev->miX));
         float newValue = _screenYToValue(float(ev->miY));
         newTime = std::clamp(newTime, _timeMin, _timeMax);
@@ -439,13 +802,29 @@ HandlerResult TransformCurveEditor::DoOnUiEvent(event_constptr_t ev) {
           }
         }
 
+        _curve->enforceLoopConstraints();
+        if (_onCurveChanged) _onCurveChanged();
+        rval.setHandled(this);
+      } else if ((_dragMode == DRAG_TANGENT_OUT || _dragMode == DRAG_TANGENT_IN)
+                 && _dragTangentPointIndex >= 0 && _curve) {
+        int ch = _activeEditChannel;
+        float mouseValue = _screenYToValue(float(ev->miY));
+        float ptValue = _getChannelValue(ch, _dragTangentPointIndex);
+        float offset = mouseValue - ptValue;
+        if (_dragMode == DRAG_TANGENT_OUT) {
+          _setTangentOutComponent(ch, _dragTangentPointIndex, offset);
+        } else {
+          _setTangentInComponent(ch, _dragTangentPointIndex, offset);
+        }
+        _curve->enforceLoopConstraints();
         if (_onCurveChanged) _onCurveChanged();
         rval.setHandled(this);
       }
       break;
     }
     case EventCode::RELEASE: {
-      _dragging = false;
+      _dragMode = DRAG_NONE;
+      _dragTangentPointIndex = -1;
       rval.setHandled(this);
       break;
     }
@@ -512,6 +891,7 @@ HandlerResult TransformCurveEditor::DoOnUiEvent(event_constptr_t ev) {
         _setChannelValue(_activeEditChannel, idx, v);
         _selectedPointIndex = idx;
 
+        _curve->enforceLoopConstraints();
         if (_onCurveChanged) _onCurveChanged();
         rval.setHandled(this);
       }
@@ -560,31 +940,76 @@ void TransformCurveEditor::_drawToolbar(
   int rx, ry;
   LocalToRoot(0, 0, rx, ry);
 
-  // Toolbar background
+  // Toolbar background (full TOOLBAR_H)
   _drawQuad(ctx, RCFD, _material, _tekvtxcolor, _parmvp, uiMtx,
             float(rx), float(ry), float(rx + _geometry._w), float(ry + TOOLBAR_H),
             fvec3(0.2f, 0.2f, 0.25f));
 
-  // Reset view button [R] — left of close button
+  // Reset view button [R] — left of close button (BUTTON_H height)
   _drawQuad(ctx, RCFD, _material, _tekvtxcolor, _parmvp, uiMtx,
-            float(rx + _geometry._w - TOOLBAR_H * 2), float(ry),
-            float(rx + _geometry._w - TOOLBAR_H), float(ry + TOOLBAR_H),
+            float(rx + _geometry._w - BUTTON_H * 2), float(ry),
+            float(rx + _geometry._w - BUTTON_H), float(ry + BUTTON_H),
             fvec3(0.25f, 0.35f, 0.5f));
 
-  // Close button [X]
+  // Close button [X] (BUTTON_H height)
   _drawQuad(ctx, RCFD, _material, _tekvtxcolor, _parmvp, uiMtx,
-            float(rx + _geometry._w - TOOLBAR_H), float(ry),
-            float(rx + _geometry._w), float(ry + TOOLBAR_H),
+            float(rx + _geometry._w - BUTTON_H), float(ry),
+            float(rx + _geometry._w), float(ry + BUTTON_H),
             fvec3(0.7f, 0.2f, 0.2f));
 
-  // Title + button text
+  // Cycle button [S] — visible when point selected (left of reset)
+  if (_selectedPointIndex >= 0) {
+    _drawQuad(ctx, RCFD, _material, _tekvtxcolor, _parmvp, uiMtx,
+              float(rx + _geometry._w - BUTTON_H * 3), float(ry),
+              float(rx + _geometry._w - BUTTON_H * 2), float(ry + BUTTON_H),
+              fvec3(0.35f, 0.4f, 0.25f));
+  }
+
+  // Title + button text (first row)
   lev2::FontMan::PushFont("i14");
   lev2::FontMan::beginTextBlock(ctx, 256);
   lev2::FontMan::DrawText(ctx, rx + 8, ry + 4, "TransformCurve Editor");
-  lev2::FontMan::DrawText(ctx, rx + _geometry._w - TOOLBAR_H * 2 + 6, ry + 4, "R");
-  lev2::FontMan::DrawText(ctx, rx + _geometry._w - TOOLBAR_H + 6, ry + 4, "X");
+  lev2::FontMan::DrawText(ctx, rx + _geometry._w - BUTTON_H * 2 + 6, ry + 4, "R");
+  lev2::FontMan::DrawText(ctx, rx + _geometry._w - BUTTON_H + 6, ry + 4, "X");
+  if (_selectedPointIndex >= 0) {
+    lev2::FontMan::DrawText(ctx, rx + _geometry._w - BUTTON_H * 3 + 6, ry + 4, "S");
+  }
   lev2::FontMan::endTextBlock(ctx);
   lev2::FontMan::PopFont();
+
+  // Second row: point info when selected
+  if (_selectedPointIndex >= 0 && _curve && _selectedPointIndex < _curve->numPoints()) {
+    auto pt = _curve->getPoint(_selectedPointIndex);
+    int ch = _activeEditChannel;
+    float chartVal = _getChannelValue(ch, _selectedPointIndex);
+    bool isRot = (ch >= CH_ROT_X && ch <= CH_ROT_Z);
+    float displayVal = isRot ? (chartVal / ROT_CHART_SCALE) : chartVal;
+
+    // Segment type label (per-channel)
+    const char* segLabel = "---";
+    int segIdx = _selectedPointIndex;
+    int numSegs = _curve->numPoints() - 1;
+    if (segIdx < numSegs) {
+      auto cc = _editorChannelToCurveChannel(ch);
+      auto segType = _curve->getChannelSegmentType(segIdx, cc);
+      switch (segType) {
+        case math::CurveSegmentType::LINEAR: segLabel = "LIN"; break;
+        case math::CurveSegmentType::BEZIER: segLabel = "BEZ"; break;
+        case math::CurveSegmentType::CATMULL_ROM: segLabel = "C-R"; break;
+        case math::CurveSegmentType::STEP: segLabel = "STP"; break;
+      }
+    }
+
+    char buf[128];
+    snprintf(buf, sizeof(buf), "Pt%d t:%.3f val:%.2f seg:%s",
+             _selectedPointIndex, pt->_time, displayVal, segLabel);
+
+    lev2::FontMan::PushFont("i12");
+    lev2::FontMan::beginTextBlock(ctx, 128);
+    lev2::FontMan::DrawText(ctx, rx + 8, ry + 18, buf);
+    lev2::FontMan::endTextBlock(ctx);
+    lev2::FontMan::PopFont();
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -736,6 +1161,18 @@ void TransformCurveEditor::_drawOriginLines(
               sx + thickness * 0.5f, float(r.y + r.h),
               originColor);
   }
+
+  // Vertical endpoint line (time of last point)
+  if (_curve && _curve->numPoints() >= 2) {
+    float tEnd = _curve->getPoint(_curve->numPoints() - 1)->_time;
+    if (_timeMin <= tEnd && _timeMax >= tEnd) {
+      float sx = _timeToScreenX(tEnd);
+      _drawQuad(ctx, RCFD, _material, _tekvtxcolor, _parmvp, uiMtx,
+                sx - thickness * 0.5f, float(r.y),
+                sx + thickness * 0.5f, float(r.y + r.h),
+                originColor);
+    }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -864,6 +1301,93 @@ void TransformCurveEditor::_drawControlPoints(
 
 ///////////////////////////////////////////////////////////////////////////////
 
+static void _drawLine(
+    lev2::Context* ctx, lev2::rcfd_ptr_t RCFD,
+    lev2::freestyle_mtl_ptr_t mtl,
+    const lev2::FxShaderTechnique* tek,
+    const lev2::FxShaderParam* parmvp,
+    const fmtx4& uiMtx,
+    float x0, float y0, float x1, float y1,
+    const fvec3& color) {
+  float dx = x1 - x0;
+  float dy = y1 - y0;
+  float len = sqrtf(dx * dx + dy * dy);
+  if (len < 0.5f) return;
+  float nx = -dy / len;
+  float ny = dx / len;
+
+  auto gbi = ctx->GBI();
+  using vtx_t = lev2::SVtxV16T16C16;
+  auto vb = lev2::GfxEnv::GetSharedDynamicV16T16C16();
+  lev2::VtxWriter<vtx_t> vw;
+  vw.Lock(ctx, vb.get(), 6);
+  vtx_t v0(fvec3(x0 + nx, y0 + ny, 0), fvec4(), color);
+  vtx_t v1(fvec3(x1 + nx, y1 + ny, 0), fvec4(), color);
+  vtx_t v2(fvec3(x0 - nx, y0 - ny, 0), fvec4(), color);
+  vtx_t v3(fvec3(x1 - nx, y1 - ny, 0), fvec4(), color);
+  vw.AddVertex(v0); vw.AddVertex(v1); vw.AddVertex(v2);
+  vw.AddVertex(v1); vw.AddVertex(v3); vw.AddVertex(v2);
+  vw.UnLock(ctx);
+  mtl->begin(tek, RCFD);
+  mtl->bindParamMatrix(parmvp, uiMtx);
+  gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::TRIANGLES);
+  mtl->end(RCFD);
+}
+
+void TransformCurveEditor::_drawTangentHandles(
+    lev2::Context* ctx, lev2::rcfd_ptr_t RCFD, int channel, const fmtx4& uiMtx) {
+  if (!_curve) return;
+  int numPts = _curve->numPoints();
+  if (numPts < 2) return;
+
+  auto cc = _editorChannelToCurveChannel(channel);
+
+  fvec3 colorOut(0.3f, 0.9f, 0.9f);  // cyan for tangent_out
+  fvec3 colorIn(0.9f, 0.3f, 0.9f);   // magenta for tangent_in
+  float handleHalf = 8.0f;
+
+  for (int i = 0; i < numPts; i++) {
+    float ptSx = _timeToScreenX(_curve->getPoint(i)->_time);
+    float ptSy = _valueToScreenY(_getChannelValue(channel, i));
+
+    // tangent_out handle
+    if (i + 1 < numPts) {
+      auto segType = _curve->getChannelSegmentType(i, cc);
+      if (segType == math::CurveSegmentType::BEZIER) {
+        float hx = _tangentOutScreenX(i);
+        float hy = _tangentOutScreenY(i, channel);
+
+        _drawLine(ctx, RCFD, _material, _tekvtxcolor, _parmvp, uiMtx,
+                  ptSx, ptSy, hx, hy, colorOut);
+
+        _drawQuad(ctx, RCFD, _material, _tekvtxcolor, _parmvp, uiMtx,
+                  hx - handleHalf, hy - handleHalf,
+                  hx + handleHalf, hy + handleHalf,
+                  colorOut);
+      }
+    }
+
+    // tangent_in handle
+    if (i > 0) {
+      auto segType = _curve->getChannelSegmentType(i - 1, cc);
+      if (segType == math::CurveSegmentType::BEZIER) {
+        float hx = _tangentInScreenX(i);
+        float hy = _tangentInScreenY(i, channel);
+
+        _drawLine(ctx, RCFD, _material, _tekvtxcolor, _parmvp, uiMtx,
+                  ptSx, ptSy, hx, hy, colorIn);
+
+        _drawQuad(ctx, RCFD, _material, _tekvtxcolor, _parmvp, uiMtx,
+                  hx - handleHalf, hy - handleHalf,
+                  hx + handleHalf, hy + handleHalf,
+                  colorIn);
+      }
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void TransformCurveEditor::_drawSidebar(
     lev2::Context* ctx, lev2::rcfd_ptr_t RCFD, const fmtx4& uiMtx) {
   int rx, ry;
@@ -927,6 +1451,19 @@ void TransformCurveEditor::_drawSidebar(
   lev2::FontMan::DrawText(ctx, sidebarX + 20, toggleY + 2, "Non-Uni");
   lev2::FontMan::endTextBlock(ctx);
 
+  // Loop toggle
+  int loopY = toggleY + ROW_H + 4;
+  bool looping = _curve ? _curve->_looping : false;
+  fvec3 loopColor = looping ? fvec3(0.5f, 0.5f, 0.8f) : fvec3(0.3f, 0.3f, 0.3f);
+  _drawQuad(ctx, RCFD, _material, _tekvtxcolor, _parmvp, uiMtx,
+            float(sidebarX + 4), float(loopY + 4),
+            float(sidebarX + 16), float(loopY + 16),
+            loopColor);
+
+  lev2::FontMan::beginTextBlock(ctx, 32);
+  lev2::FontMan::DrawText(ctx, sidebarX + 20, loopY + 2, "Loop");
+  lev2::FontMan::endTextBlock(ctx);
+
   lev2::FontMan::PopFont();
 }
 
@@ -983,6 +1520,7 @@ void TransformCurveEditor::DoDraw(drawevent_constptr_t drwev) {
       _channelVisible[_activeEditChannel] && _isChannelAvailable(_activeEditChannel)) {
     _drawChannel(context, RCFD, _activeEditChannel, uiMatrix);
     _drawControlPoints(context, RCFD, _activeEditChannel, uiMatrix);
+    _drawTangentHandles(context, RCFD, _activeEditChannel, uiMatrix);
   }
 
   _drawSidebar(context, RCFD, uiMatrix);

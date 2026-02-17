@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/lev2/editor/manip.h>
+#include <ork/math/transform_curve.h>
 #include <ork/reflect/properties/registerX.inl>
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -102,6 +103,60 @@ bool DecompTransformManipulator::supportsNonUniformScaling() const {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// CurvePointManipulator
+////////////////////////////////////////////////////////////////////////////////
+
+void CurvePointManipulator::describeX(class_t* clazz) {
+}
+
+CurvePointManipulator::CurvePointManipulator()
+    : _curve(nullptr)
+    , _pointIndex(-1) {
+}
+
+CurvePointManipulator::CurvePointManipulator(math::transformcurve_ptr_t curve, int pointIndex)
+    : _curve(curve)
+    , _pointIndex(pointIndex) {
+}
+
+void CurvePointManipulator::setTarget(math::transformcurve_ptr_t curve, int pointIndex) {
+  _curve = curve;
+  _pointIndex = pointIndex;
+}
+
+fmtx4 CurvePointManipulator::getWorldMatrix() const {
+  if (_curve && _pointIndex >= 0 && _pointIndex < _curve->numPoints()) {
+    fmtx4 mtx;
+    mtx.compose(_curve->getPoint(_pointIndex)->_position, fquat(), 1.0f);
+    return mtx;
+  }
+  return fmtx4::Identity();
+}
+
+fvec3 CurvePointManipulator::getWorldPosition() const {
+  if (_curve && _pointIndex >= 0 && _pointIndex < _curve->numPoints()) {
+    return _curve->getPoint(_pointIndex)->_position;
+  }
+  return fvec3();
+}
+
+fquat CurvePointManipulator::getWorldRotation() const {
+  return fquat();
+}
+
+void CurvePointManipulator::applyTranslationDelta(const fvec3& delta) {
+  if (_curve && _pointIndex >= 0 && _pointIndex < _curve->numPoints()) {
+    _curve->getPoint(_pointIndex)->_position += delta;
+    if (_curve->_looping) {
+      _curve->enforceLoopConstraints();
+    }
+    if (_onPointMoved) {
+      _onPointMoved();
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Legacy JointManipulatorInterface
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -151,3 +206,4 @@ void JointManipulatorInterface::_onEndScaling(ui::event_constptr_t EV) {
 
 ImplementReflectionX(ork::lev2::editor::ManipulatorInterface, "ManipulatorInterface");
 ImplementReflectionX(ork::lev2::editor::DecompTransformManipulator, "DecompTransformManipulator");
+ImplementReflectionX(ork::lev2::editor::CurvePointManipulator, "CurvePointManipulator");

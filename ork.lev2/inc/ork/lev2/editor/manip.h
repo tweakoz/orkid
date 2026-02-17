@@ -13,6 +13,7 @@
 #include <ork/lev2/ui/ui.h>
 #include <ork/lev2/editor/types.h>
 #include <ork/math/TransformNode.h>
+#include <ork/math/transform_curve.h>
 
 namespace ork::lev2::editor {
 
@@ -116,6 +117,42 @@ private:
 };
 
 using decompxfmanip_ptr_t = std::shared_ptr<DecompTransformManipulator>;
+
+////////////////////////////////////////////////////////////////////////////////
+// CurvePointManipulator - manipulates a single control point on a TransformCurve
+////////////////////////////////////////////////////////////////////////////////
+
+struct CurvePointManipulator : public ManipulatorInterface {
+
+  DeclareConcreteX(CurvePointManipulator, ManipulatorInterface);
+
+  CurvePointManipulator();
+  CurvePointManipulator(math::transformcurve_ptr_t curve, int pointIndex);
+
+  void setTarget(math::transformcurve_ptr_t curve, int pointIndex);
+  math::transformcurve_ptr_t curve() const { return _curve; }
+  int pointIndex() const { return _pointIndex; }
+
+  bool supportsTranslation() const override { return true; }
+  bool supportsRotation() const override { return false; }
+  bool supportsUniformScaling() const override { return false; }
+
+  fmtx4 getWorldMatrix() const override;
+  fvec3 getWorldPosition() const override;
+  fquat getWorldRotation() const override;
+  void applyTranslationDelta(const fvec3& delta) override;
+  void applyRotationDelta(const fquat& delta) override {}
+  void applyScaleDelta(float uniformDelta) override {}
+  void setWorldRotation(const fquat& rot) override {}
+
+  std::function<void()> _onPointMoved;
+
+private:
+  math::transformcurve_ptr_t _curve;
+  int _pointIndex = -1;
+};
+
+using curveptmanip_ptr_t = std::shared_ptr<CurvePointManipulator>;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Legacy interface (kept for compatibility)

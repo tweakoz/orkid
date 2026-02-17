@@ -143,7 +143,11 @@ void init_math(py::module& module_core,python::pb11_typecodec_ptr_t type_codec) 
           .def_readwrite("eulerRotation", &TransformCurvePoint::_eulerRotation)
           .def_readwrite("scale", &TransformCurvePoint::_scale)
           .def_readwrite("tangent_out", &TransformCurvePoint::_tangent_out)
-          .def_readwrite("tangent_in", &TransformCurvePoint::_tangent_in);
+          .def_readwrite("tangent_in", &TransformCurvePoint::_tangent_in)
+          .def_readwrite("rot_tangent_out", &TransformCurvePoint::_rot_tangent_out)
+          .def_readwrite("rot_tangent_in", &TransformCurvePoint::_rot_tangent_in)
+          .def_readwrite("scale_tangent_out", &TransformCurvePoint::_scale_tangent_out)
+          .def_readwrite("scale_tangent_in", &TransformCurvePoint::_scale_tangent_in);
   type_codec->registerStdCodec<transformcurvepoint_ptr_t>(tcpoint_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto tcsample_type = //
@@ -191,6 +195,8 @@ void init_math(py::module& module_core,python::pb11_typecodec_ptr_t type_codec) 
                   t = CurveSegmentType::BEZIER;
                 else if (type_str == "CATMULL_ROM")
                   t = CurveSegmentType::CATMULL_ROM;
+                else if (type_str == "STEP")
+                  t = CurveSegmentType::STEP;
                 self->setSegmentType(seg_index, t);
               })
           .def(
@@ -204,8 +210,34 @@ void init_math(py::module& module_core,python::pb11_typecodec_ptr_t type_codec) 
                     return "BEZIER";
                   case CurveSegmentType::CATMULL_ROM:
                     return "CATMULL_ROM";
+                  case CurveSegmentType::STEP:
+                    return "STEP";
                   default:
                     return "LINEAR";
+                }
+              })
+          .def(
+              "setChannelSegmentType",
+              [](transformcurve_ptr_t self, int seg_index, int channel, std::string type_str) { //
+                CurveSegmentType t = CurveSegmentType::LINEAR;
+                if (type_str == "BEZIER")
+                  t = CurveSegmentType::BEZIER;
+                else if (type_str == "CATMULL_ROM")
+                  t = CurveSegmentType::CATMULL_ROM;
+                else if (type_str == "STEP")
+                  t = CurveSegmentType::STEP;
+                self->setChannelSegmentType(seg_index, (CurveChannel)channel, t);
+              })
+          .def(
+              "getChannelSegmentType",
+              [](transformcurve_ptr_t self, int seg_index, int channel) -> std::string { //
+                auto t = self->getChannelSegmentType(seg_index, (CurveChannel)channel);
+                switch (t) {
+                  case CurveSegmentType::LINEAR: return "LINEAR";
+                  case CurveSegmentType::BEZIER: return "BEZIER";
+                  case CurveSegmentType::CATMULL_ROM: return "CATMULL_ROM";
+                  case CurveSegmentType::STEP: return "STEP";
+                  default: return "LINEAR";
                 }
               })
           .def(
@@ -224,6 +256,8 @@ void init_math(py::module& module_core,python::pb11_typecodec_ptr_t type_codec) 
                 return self->sampleMatrix(t);
               })
           .def_readwrite("useNonUniformScale", &TransformCurve::_useNonUniformScale)
+          .def_readwrite("looping", &TransformCurve::_looping)
+          .def("enforceLoopConstraints", &TransformCurve::enforceLoopConstraints)
           .def(
               "setRotationOrder",
               [](transformcurve_ptr_t self, std::string order_str) { //

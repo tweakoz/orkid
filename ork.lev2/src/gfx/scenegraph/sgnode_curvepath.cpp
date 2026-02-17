@@ -224,5 +224,50 @@ void CurvePathDrawableData::updateControlPoints() const {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+int CurvePathDrawableData::hitTestScreenCoord(
+    const fmtx4& vpMatrix, const fvec2& screenPos,
+    int vpW, int vpH, float hitRadius) const {
+
+  if (!_curve || _curve->numPoints() == 0) {
+    printf("hitTest: no curve or no points\n");
+    return -1;
+  }
+
+  int closestIndex = -1;
+  float closestDist = hitRadius;
+
+  int n = _curve->numPoints();
+  printf("hitTest: screenPos=(%.1f,%.1f) vp=(%dx%d) npts=%d radius=%.1f\n",
+         screenPos.x, screenPos.y, vpW, vpH, n, hitRadius);
+  for (int i = 0; i < n; i++) {
+    auto pt = _curve->getPoint(i);
+    fvec4 clip = fvec4(pt->_position, 1.0f).transform(vpMatrix);
+    if (clip.w <= 0.0f) {
+      printf("  pt[%d] pos=(%.2f,%.2f,%.2f) behind camera (w=%.2f)\n",
+             i, pt->_position.x, pt->_position.y, pt->_position.z, clip.w);
+      continue;
+    }
+    float ndc_x = clip.x / clip.w;
+    float ndc_y = clip.y / clip.w;
+    float sx = (ndc_x * 0.5f + 0.5f) * float(vpW);
+    float sy = (ndc_y * 0.5f + 0.5f) * float(vpH);
+    float dx = sx - screenPos.x;
+    float dy = sy - screenPos.y;
+    float dist = std::sqrt(dx * dx + dy * dy);
+    printf("  pt[%d] pos=(%.2f,%.2f,%.2f) clip=(%.2f,%.2f,%.2f,%.2f) screen=(%.1f,%.1f) dist=%.1f\n",
+           i, pt->_position.x, pt->_position.y, pt->_position.z,
+           clip.x, clip.y, clip.z, clip.w, sx, sy, dist);
+    if (dist < closestDist) {
+      closestDist = dist;
+      closestIndex = i;
+    }
+  }
+
+  printf("hitTest: result=%d\n", closestIndex);
+  return closestIndex;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
 ///////////////////////////////////////////////////////////////////////////////

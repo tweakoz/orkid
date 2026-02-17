@@ -30,7 +30,6 @@ public:
 
   math::transformcurve_ptr_t _curve;
   float _playbackSpeed = 1.0f;
-  bool _looping = false;
 };
 
 using transformcurvecomponentdata_ptr_t = std::shared_ptr<TransformCurveComponentData>;

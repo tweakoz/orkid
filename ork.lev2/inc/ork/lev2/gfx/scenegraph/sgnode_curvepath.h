@@ -25,14 +25,17 @@ public:
 
   void updateControlPoints() const;
 
+  int hitTestScreenCoord(const fmtx4& vpMatrix, const fvec2& screenPos,
+                         int vpW, int vpH, float hitRadius = 12.0f) const;
+
   CurvePathDrawableData();
   ~CurvePathDrawableData();
 
   math::transformcurve_ptr_t _curve;
   float _controlPointScale = 0.08f;
   fvec4 _lineColor = fvec4(1.0f, 0.8f, 0.2f, 1.0f);
-  fvec4 _cpColor = fvec4(0.2f, 0.8f, 1.0f, 1.0f);
-  fvec4 _cpSelectedColor = fvec4(1.0f, 1.0f, 0.3f, 1.0f);
+  fvec4 _cpColor = fvec4(0.5f, 1.0f, 1.0f, 1.0f);
+  fvec4 _cpSelectedColor = fvec4(1.0f, 1.0f, 0.4f, 1.0f);
   int _selectedPointIndex = -1;
   int _lineSubdivisions = 32;
 

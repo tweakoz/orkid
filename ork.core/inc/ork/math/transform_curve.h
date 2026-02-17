@@ -22,6 +22,14 @@ enum struct CurveSegmentType : uint32_t {
   LINEAR = 0,
   BEZIER = 1,
   CATMULL_ROM = 2,
+  STEP = 3,
+};
+
+enum struct CurveChannel : int {
+  CC_POS_X = 0, CC_POS_Y, CC_POS_Z,
+  CC_ROT_X, CC_ROT_Y, CC_ROT_Z,
+  CC_SCALE_X, CC_SCALE_Y, CC_SCALE_Z,
+  CC_COUNT = 9,
 };
 
 enum struct RotationOrder : uint32_t {
@@ -47,6 +55,10 @@ public:
   fvec3 _scale = fvec3(1, 1, 1);
   fvec3 _tangent_out;
   fvec3 _tangent_in;
+  fvec3 _rot_tangent_out;
+  fvec3 _rot_tangent_in;
+  fvec3 _scale_tangent_out;
+  fvec3 _scale_tangent_in;
 };
 
 using transformcurvepoint_ptr_t = std::shared_ptr<TransformCurvePoint>;
@@ -77,19 +89,28 @@ public:
   void setSegmentType(int seg_index, CurveSegmentType type);
   CurveSegmentType getSegmentType(int seg_index) const;
 
+  void setChannelSegmentType(int seg_index, CurveChannel ch, CurveSegmentType type);
+  CurveSegmentType getChannelSegmentType(int seg_index, CurveChannel ch) const;
+
   TransformCurveSample sample(float t) const;
   fvec3 sampleEuler(float t) const;  // lerps raw euler degrees (no quat decomposition)
   fvec3 samplePosition(float t) const;
   fmtx4 sampleMatrix(float t) const;
 
   bool _useNonUniformScale = false;
+  bool _looping = false;
   RotationOrder _rotationOrder = RotationOrder::XYZ;
+
+  // When _looping is true, enforce that the last point's values match the first,
+  // and tangents at the seam are mirrored for bezier continuity.
+  void enforceLoopConstraints();
 
   fquat eulerToQuat(const fvec3& euler) const;
   fvec3 quatToEuler(const fquat& q) const;
 
   std::vector<transformcurvepoint_ptr_t> _points;
-  std::vector<CurveSegmentType> _segmentTypes;
+  std::vector<CurveSegmentType> _segmentTypes;  // legacy, kept for backward-compat deser
+  std::vector<CurveSegmentType> _channelSegmentTypes;  // flat: [segIdx * CC_COUNT + channelIdx]
 
 private:
   struct SegmentResult {
@@ -103,6 +124,9 @@ private:
 
   fvec3 _evalBezier(const fvec3& p0, const fvec3& p1, const fvec3& p2, const fvec3& p3, float t) const;
   fvec3 _evalCatmullRom(const fvec3& p0, const fvec3& p1, const fvec3& p2, const fvec3& p3, float t) const;
+  float _evalScalarBezier(float p0, float p1, float p2, float p3, float t) const;
+  float _evalScalarCatmullRom(float vm1, float v0, float v1, float v2, float t) const;
+  void _syncChannelSegmentTypes();
 
   bool preDeserialize(ork::reflect::serdes::IDeserializer& deser) final;
   bool postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) final;

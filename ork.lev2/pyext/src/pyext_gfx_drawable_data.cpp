@@ -623,7 +623,15 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
           .def_property(
               "lineSubdivisions",
               [](curvepath_drawabledata_ptr_t drw) -> int { return drw->_lineSubdivisions; },
-              [](curvepath_drawabledata_ptr_t drw, int val) { drw->_lineSubdivisions = val; });
+              [](curvepath_drawabledata_ptr_t drw, int val) { drw->_lineSubdivisions = val; })
+          .def(
+              "hitTestScreenCoord",
+              [](curvepath_drawabledata_ptr_t data, fmtx4 vpMtx, fvec2 screenPos,
+                 int vpW, int vpH, float hitRadius) -> int {
+                return data->hitTestScreenCoord(vpMtx, screenPos, vpW, vpH, hitRadius);
+              },
+              py::arg("vpMatrix"), py::arg("screenPos"),
+              py::arg("vpW"), py::arg("vpH"), py::arg("hitRadius") = 12.0f);
   type_codec->registerStdCodec<curvepath_drawabledata_ptr_t>(curvepathdrawdata_type);
 }
 /////////////////////////////////////////////////////////////////////////////////
