@@ -60,6 +60,18 @@ void SpawnData::describeX(SceneObjectClass* clazz) {
       ->annotate("editor.factorylistbase", "EcsArchetype");
 
   clazz->directMapProperty("UserProperties", &SpawnData::mUserProperties);
+
+  clazz->directProperty("SpawnCount", &SpawnData::_spawnCount);
+  clazz->floatProperty("SpawnInterval", float_range{0, 1000}, &SpawnData::_spawnInterval);
+  clazz->floatProperty("StochasticInterval", float_range{0, 1000}, &SpawnData::_stochasticInterval);
+  clazz->directProperty("PositionRandomRadius", &SpawnData::_positionRandomRadius);
+  clazz->directProperty("MinDistance", &SpawnData::_minDistance);
+  clazz->directProperty("InitialDirection", &SpawnData::_initialDirection);
+  clazz->floatProperty("InitialSpeed", float_range{0, 10000}, &SpawnData::_initialSpeed);
+  clazz->floatProperty("DirectionRandomize", float_range{0, 1}, &SpawnData::_directionRandomize);
+
+  clazz->floatProperty("LifetimeMin", float_range{0, 100000}, &SpawnData::_lifetimeMin);
+  clazz->floatProperty("LifetimeMax", float_range{0, 100000}, &SpawnData::_lifetimeMax);
 }
 ///////////////////////////////////////////////////////////////////////////////
 ConstString SpawnData::GetUserProperty(const ConstString& key) const {

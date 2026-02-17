@@ -159,6 +159,7 @@ struct SceneGraphSystem final : public System {
   DeclareToken(CreateNode);
   DeclareToken(DestroyNode);
   DeclareToken(ChangeModColor);
+  DeclareToken(HighlightBySpawnData);
   ///////////////////////////////
   static constexpr systemkey_t SystemType = "SceneGraphSystem";
   systemkey_t systemTypeDynamic() final {

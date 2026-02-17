@@ -45,6 +45,7 @@ void SceneGraphSystemData::describeX(SystemDataClass* clazz) {
   ImplementToken(CreateNode);
   ImplementToken(DestroyNode);
   ImplementToken(ChangeModColor);
+  ImplementToken(HighlightBySpawnData);
   ImplementToken(eye);
   ImplementToken(tgt);
   ImplementToken(up);
@@ -744,6 +745,23 @@ void SceneGraphSystem::_onNotify(token_t evID, evdata_t data) {
         this->_default_layer->removeDrawableNode(node);
       };
       _renderops.push(remove_operation);
+      break;
+    }
+    case HighlightBySpawnData._hashed: {
+      const auto& table = *data.getShared<DataTable>();
+      auto name_str = table["name"_tok].get<std::string>();
+      auto modcolor = table["color"_tok].get<fvec4>();
+      auto psname = AddPooledString(name_str.c_str());
+      svar64_t colorvar;
+      colorvar.set<fvec4>(modcolor);
+      _components.atomicOp([&](component_set_t& comps) {
+        for (auto* comp : comps) {
+          auto ent = comp->GetEntity();
+          if (ent->data()->GetName() == psname) {
+            comp->_notify(_simulation, ChangeModColor, colorvar);
+          }
+        }
+      });
       break;
     }
     default:

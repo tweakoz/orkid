@@ -7,6 +7,7 @@
 
 #include "pyext.h"
 #include <ork/util/hotkey.h>
+#include <stack>
 #include <ork/python/pycodec.inl>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/uuid/string_generator.hpp>
@@ -240,7 +241,31 @@ void pyinit_reflection(py::module& module_core) {
           });
   type_codec->registerStdCodec<hotkeyconfig_ptr_t>(hkeycfg_type);
   /////////////////////////////////////////////////////////////////////////////////
-
+  module_core.def("enumerateInstantiableSubclassesOf", [](std::string baseclass_name) -> py::list {
+    py::list result;
+    auto* base = rtti::Class::FindClass(baseclass_name);
+    if (!base)
+      return result;
+    // iterative DFS using stack (sibling lists are circular)
+    std::stack<rtti::Class*> stack;
+    stack.push(base);
+    while (!stack.empty()) {
+      auto* clazz = stack.top();
+      stack.pop();
+      if (clazz != base && clazz->hasFactory()) {
+        result.append(clazz->Name());
+      }
+      // push children (circular sibling list)
+      rtti::Class* first_child = clazz->FirstChild();
+      rtti::Class* child = first_child;
+      while (child) {
+        stack.push(child);
+        child = (child->NextSibling() == first_child) ? nullptr : child->NextSibling();
+      }
+    }
+    return result;
+  });
+  /////////////////////////////////////////////////////////////////////////////////
 
 }
 

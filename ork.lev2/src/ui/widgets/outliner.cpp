@@ -1069,21 +1069,15 @@ void Outliner::DoDraw(drawevent_constptr_t drwev) {
       int add_row_y = -_scroll_offset;
       int add_row_depth = 0;
 
-      // Find where to insert the add row
+      // Find where to insert the add row (right after parent)
       bool found_parent = _adding_parent_key.empty(); // root level is always "found"
       for (const auto& item : _visible_items) {
+        add_row_y += _item_height;
         if (item.key == _adding_parent_key) {
           found_parent = true;
           add_row_depth = item.depth + 1;
-        } else if (found_parent) {
-          // Check if we're still under the parent
-          if (!_adding_parent_key.empty() &&
-              item.key.find(_adding_parent_key + "/") != 0) {
-            // We've moved past the parent's children
-            break;
-          }
+          break;
         }
-        add_row_y += _item_height;
       }
 
       // If parent wasn't found in visible items, don't render

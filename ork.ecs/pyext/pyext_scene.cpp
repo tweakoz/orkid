@@ -75,7 +75,47 @@ void pyinit_scene(py::module& module_ecs) {
                           [](spawndata_ptr_t spawndata, bool val) { 
                             spawndata->_autospawn = val; 
                           })
-                          .def_property_readonly("transform", [](spawndata_ptr_t spawndata) -> decompxf_ptr_t { return spawndata->transform(); });
+                          .def_property_readonly("transform", [](spawndata_ptr_t spawndata) -> decompxf_ptr_t { return spawndata->transform(); })
+                          .def_property(
+                            "spawnCount",
+                            [](spawndata_constptr_t sd) -> int { return sd->_spawnCount; },
+                            [](spawndata_ptr_t sd, int val) { sd->_spawnCount = val; })
+                          .def_property(
+                            "spawnInterval",
+                            [](spawndata_constptr_t sd) -> float { return sd->_spawnInterval; },
+                            [](spawndata_ptr_t sd, float val) { sd->_spawnInterval = val; })
+                          .def_property(
+                            "stochasticInterval",
+                            [](spawndata_constptr_t sd) -> float { return sd->_stochasticInterval; },
+                            [](spawndata_ptr_t sd, float val) { sd->_stochasticInterval = val; })
+                          .def_property(
+                            "positionRandomRadius",
+                            [](spawndata_constptr_t sd) -> fvec3 { return sd->_positionRandomRadius; },
+                            [](spawndata_ptr_t sd, fvec3 val) { sd->_positionRandomRadius = val; })
+                          .def_property(
+                            "minDistance",
+                            [](spawndata_constptr_t sd) -> fvec3 { return sd->_minDistance; },
+                            [](spawndata_ptr_t sd, fvec3 val) { sd->_minDistance = val; })
+                          .def_property(
+                            "initialDirection",
+                            [](spawndata_constptr_t sd) -> fvec3 { return sd->_initialDirection; },
+                            [](spawndata_ptr_t sd, fvec3 val) { sd->_initialDirection = val; })
+                          .def_property(
+                            "initialSpeed",
+                            [](spawndata_constptr_t sd) -> float { return sd->_initialSpeed; },
+                            [](spawndata_ptr_t sd, float val) { sd->_initialSpeed = val; })
+                          .def_property(
+                            "directionRandomize",
+                            [](spawndata_constptr_t sd) -> float { return sd->_directionRandomize; },
+                            [](spawndata_ptr_t sd, float val) { sd->_directionRandomize = val; })
+                          .def_property(
+                            "lifetimeMin",
+                            [](spawndata_constptr_t sd) -> float { return sd->_lifetimeMin; },
+                            [](spawndata_ptr_t sd, float val) { sd->_lifetimeMin = val; })
+                          .def_property(
+                            "lifetimeMax",
+                            [](spawndata_constptr_t sd) -> float { return sd->_lifetimeMax; },
+                            [](spawndata_ptr_t sd, float val) { sd->_lifetimeMax = val; });
   type_codec->registerStdCodec<spawndata_ptr_t>(sd_type);
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<SceneData, Object, scenedata_ptr_t>(module_ecs, "SceneData")

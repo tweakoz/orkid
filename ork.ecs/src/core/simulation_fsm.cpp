@@ -23,6 +23,9 @@
 #include <ork/util/logger.h>
 #include <ork/profiling.inl>
 
+#include "message_private.h"
+#include <random>
+
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ecs {
 ///////////////////////////////////////////////////////////////////////////////
@@ -467,6 +470,71 @@ void Simulation::_deactivate() {
   logchan_simfsm->log("Simulation<%p> _deactivated", (void*)this);
 }
 ///////////////////////////////////////////////////////////////////////////
+static thread_local std::mt19937 _spawn_rng{std::random_device{}()};
+static thread_local std::uniform_real_distribution<float> _spawn_dist(-1.0f, 1.0f);
+
+///////////////////////////////////////////////////////////////////////////
+
+static fvec3 _generateScatteredPosition(
+    const fvec3& basePos,
+    const fvec3& posRandRadius,
+    const fvec3& minDist,
+    const std::vector<fvec3>& existingPositions) {
+
+  bool hasScatter = (posRandRadius.x > 0 || posRandRadius.y > 0 || posRandRadius.z > 0);
+  if (!hasScatter)
+    return basePos;
+
+  bool hasMinDist = (minDist.x > 0 || minDist.y > 0 || minDist.z > 0);
+
+  const int maxRetries = 64;
+  for (int retry = 0; retry < maxRetries; retry++) {
+    fvec3 candidate = basePos + fvec3(
+        posRandRadius.x * _spawn_dist(_spawn_rng),
+        posRandRadius.y * _spawn_dist(_spawn_rng),
+        posRandRadius.z * _spawn_dist(_spawn_rng));
+
+    if (!hasMinDist || existingPositions.empty())
+      return candidate;
+
+    bool tooClose = false;
+    for (auto& prev : existingPositions) {
+      fvec3 delta = candidate - prev;
+      // rectangular exclusion zone: candidate is too close if it's
+      // within minDist on ALL checked axes simultaneously
+      bool insideX = (minDist.x <= 0) || (fabsf(delta.x) < minDist.x);
+      bool insideY = (minDist.y <= 0) || (fabsf(delta.y) < minDist.y);
+      bool insideZ = (minDist.z <= 0) || (fabsf(delta.z) < minDist.z);
+      if (insideX && insideY && insideZ) {
+        tooClose = true;
+        break;
+      }
+    }
+    if (!tooClose)
+      return candidate;
+  }
+  // exhausted retries — return last attempt
+  return basePos + fvec3(
+      posRandRadius.x * _spawn_dist(_spawn_rng),
+      posRandRadius.y * _spawn_dist(_spawn_rng),
+      posRandRadius.z * _spawn_dist(_spawn_rng));
+}
+
+///////////////////////////////////////////////////////////////////////////
+
+static fvec3 _computeInitialVelocity(const SpawnData& sd) {
+  if (sd._initialSpeed <= 0.0f)
+    return fvec3(0, 0, 0);
+  fvec3 dir = sd._initialDirection.normalized();
+  if (sd._directionRandomize > 0.0f) {
+    fvec3 rnd = fvec3(_spawn_dist(_spawn_rng), _spawn_dist(_spawn_rng), _spawn_dist(_spawn_rng)).normalized();
+    dir = (dir * (1.0f - sd._directionRandomize) + rnd * sd._directionRandomize).normalized();
+  }
+  return dir * sd._initialSpeed;
+}
+
+///////////////////////////////////////////////////////////////////////////
+
 void Simulation::_initializeEntities() {
 
   ork::opq::assertOnQueue2(opq::updateSerialQueue());
@@ -476,6 +544,7 @@ void Simulation::_initializeEntities() {
 
   mEntities.clear();
   _cameraDataLUT.clear();
+  _spawnerContexts.clear();
 
   ///////////////////////////////////
   // Compose Entities
@@ -489,43 +558,90 @@ void Simulation::_initializeEntities() {
     auto sobj = it.second;
     if (auto spawner = std::dynamic_pointer_cast<SpawnData>(sobj)) {
 
-      if (spawner->autoSpawn()) {
+      if (!spawner->autoSpawn())
+        continue;
 
-        auto arch = spawner->GetArchetype();
+      auto arch = spawner->GetArchetype();
+      int spawnCount = std::max(1, spawner->_spawnCount);
+      bool timed = (spawnCount > 1) && (spawner->_spawnInterval > 0.0f);
+
+      // how many to create during initialization (all at once, or just 1 if timed)
+      int immediateCount = timed ? 1 : spawnCount;
+
+      // set up spawner context for multi-spawn
+      spawnercontext_ptr_t ctx;
+      if (spawnCount > 1) {
+        ctx = std::make_shared<SpawnerContext>();
+        ctx->_spawnData = spawner;
+        _spawnerContexts[spawner] = ctx;
+      }
+
+      // determine draw layer once
+      std::string actualLayerName = "Default";
+      ConstString layer_name = spawner->GetUserProperty("DrawLayer");
+      if (strlen(layer_name.c_str()) != 0) {
+        actualLayerName = layer_name.c_str();
+      }
+      auto layer_data = GetLayerData(actualLayerName);
+      if (!layer_data) {
+        layer_data = new lev2::LayerData;
+        AddLayerData(actualLayerName, layer_data);
+      }
+
+      // base transform from spawner
+      auto baseXf = spawner->_dagnode->_xfnode->_transform;
+
+      for (int si = 0; si < immediateCount; si++) {
+
+        // unique name per spawn
+        PoolString entName;
+        if (spawnCount == 1) {
+          entName = spawner->GetName();
+        } else {
+          entName = AddPooledString(FormatString("%s_%d", spawner->GetName().c_str(), si).c_str());
+        }
 
         uint64_t entref = _controller->_objectIdCounter.fetch_add(1);
-
-        ork::ecs::Entity* pent = new ork::ecs::Entity(spawner, this, entref);
+        Entity* pent = new Entity(spawner, this, entref);
         _controller->_mutateObject([&](Controller::id2obj_map_t& unlocked) { unlocked[entref].set<Entity*>(pent); });
 
-        std::string actualLayerName = "Default";
-
-        ConstString layer_name = spawner->GetUserProperty("DrawLayer");
-        if (strlen(layer_name.c_str()) != 0) {
-          actualLayerName = layer_name.c_str();
-        }
-
-        auto layer_data = GetLayerData(actualLayerName);
-        if (0 == layer_data) {
-          layer_data = new lev2::LayerData;
-          AddLayerData(actualLayerName, layer_data);
-        }
-        ////////////////////////////////////////////////////////////////
-
         logchan_simfsm->log(
-            "Compose AutoSpawn Entity<%p> arch<%p> layer<%s>", //
-            (void*)pent,                                       //
-            (void*)arch.get(),                                 //
-            layer_name.c_str());
+            "Compose AutoSpawn Entity<%p> arch<%p> layer<%s>",
+            (void*)pent, (void*)arch.get(), layer_name.c_str());
 
-        assert(pent != nullptr);
+        // position: base + scatter with min-distance enforcement
+        fvec3 pos = baseXf->_translation;
+        if (ctx) {
+          pos = _generateScatteredPosition(
+              baseXf->_translation,
+              spawner->_positionRandomRadius,
+              spawner->_minDistance,
+              ctx->_spawnedPositions);
+          ctx->_spawnedPositions.push_back(pos);
+          ctx->_spawnedSoFar++;
+        }
 
-        auto node  = spawner->_dagnode;
-        auto world = node->_xfnode->_transform;
-        // auto init_xf          = pent->data()->_dagnode->_xfnode;
-        // ent->GetDagNode()->_xfnode->_transform->set(init_xf->_transform);
-        pent->setTransform(world);
-        mEntities[spawner->GetName()] = pent;
+        auto entXf = std::make_shared<DecompTransform>();
+        entXf->_translation = pos;
+        entXf->_rotation = baseXf->_rotation;
+        entXf->_uniformScale = baseXf->_uniformScale;
+        pent->setTransform(entXf);
+
+        // initial velocity stored in entity varmap
+        fvec3 vel = _computeInitialVelocity(*spawner);
+        if (vel.magnitudeSquared() > 0.0f) {
+          pent->_varmap->makeValueForKey<fvec3>("initialVelocity") = vel;
+        }
+
+        // lifetime-based despawn (0,0 = lives forever)
+        if (spawner->_lifetimeMin > 0.0f || spawner->_lifetimeMax > 0.0f) {
+          float ltMin = spawner->_lifetimeMin;
+          float ltMax = std::max(ltMin, spawner->_lifetimeMax);
+          std::uniform_real_distribution<float> ltDist(ltMin, ltMax);
+          pent->_despawnTime = mGameTime + ltDist(_spawn_rng);
+        }
+
+        mEntities[entName] = pent;
 
         if (spawner->_onSpawn) {
           auto invocation         = std::make_shared<deferred_script_invokation>();
@@ -537,6 +653,102 @@ void Simulation::_initializeEntities() {
           this->_enqueueDeferredInvokation(invocation);
         }
       }
+
+      // for timed spawning, set first spawn time
+      if (timed && ctx) {
+        float jitter = spawner->_stochasticInterval * fabsf(_spawn_dist(_spawn_rng));
+        ctx->_nextSpawnTime = spawner->_spawnInterval + jitter;
+      }
+
+      // if all spawns done, remove context
+      if (ctx && ctx->_spawnedSoFar >= spawnCount) {
+        _spawnerContexts.erase(spawner);
+      }
+    }
+  }
+}
+///////////////////////////////////////////////////////////////////////////
+void Simulation::_updateSpawnerContexts() {
+  if (_spawnerContexts.empty())
+    return;
+
+  float gameTime = mGameTime;
+  std::vector<spawndata_constptr_t> exhausted;
+
+  for (auto& [spawnData, ctx] : _spawnerContexts) {
+    int spawnCount = std::max(1, spawnData->_spawnCount);
+    if (ctx->_spawnedSoFar >= spawnCount) {
+      exhausted.push_back(spawnData);
+      continue;
+    }
+    if (gameTime < ctx->_nextSpawnTime)
+      continue;
+
+    // time to spawn the next entity
+    auto baseXf = spawnData->_dagnode->_xfnode->_transform;
+    fvec3 pos = _generateScatteredPosition(
+        baseXf->_translation,
+        spawnData->_positionRandomRadius,
+        spawnData->_minDistance,
+        ctx->_spawnedPositions);
+    ctx->_spawnedPositions.push_back(pos);
+    ctx->_spawnedSoFar++;
+
+    // build override transform
+    auto ovxf = std::make_shared<DecompTransform>();
+    ovxf->_translation = pos;
+    ovxf->_rotation = baseXf->_rotation;
+    ovxf->_uniformScale = baseXf->_uniformScale;
+
+    // spawn via the dynamic entity path
+    auto SAD = std::make_shared<SpawnAnonDynamic>();
+    SAD->_edataname = spawnData->GetName();
+    SAD->_overridexf = ovxf;
+
+    impl::_SpawnAnonDynamic internal_SAD;
+    internal_SAD._SAD = SAD;
+    internal_SAD._spawn_rec = spawnData;
+    internal_SAD._entref._entID = _controller->_objectIdCounter.fetch_add(1);
+
+    auto entName = AddPooledString(
+        FormatString("%s_%d", spawnData->GetName().c_str(), ctx->_spawnedSoFar - 1).c_str());
+    Entity* pent = _spawnNamedDynamicEntity(internal_SAD, entName);
+
+    // initial velocity + lifetime
+    if (pent) {
+      fvec3 vel = _computeInitialVelocity(*spawnData);
+      if (vel.magnitudeSquared() > 0.0f) {
+        pent->_varmap->makeValueForKey<fvec3>("initialVelocity") = vel;
+      }
+      if (spawnData->_lifetimeMin > 0.0f || spawnData->_lifetimeMax > 0.0f) {
+        float ltMin = spawnData->_lifetimeMin;
+        float ltMax = std::max(ltMin, spawnData->_lifetimeMax);
+        std::uniform_real_distribution<float> ltDist(ltMin, ltMax);
+        pent->_despawnTime = gameTime + ltDist(_spawn_rng);
+      }
+    }
+
+    // schedule next
+    if (ctx->_spawnedSoFar < spawnCount) {
+      float jitter = spawnData->_stochasticInterval * fabsf(_spawn_dist(_spawn_rng));
+      ctx->_nextSpawnTime = gameTime + spawnData->_spawnInterval + jitter;
+    } else {
+      exhausted.push_back(spawnData);
+    }
+  }
+
+  for (auto& key : exhausted) {
+    _spawnerContexts.erase(key);
+  }
+}
+///////////////////////////////////////////////////////////////////////////
+void Simulation::_updateEntityLifetimes() {
+  if (mGameTime <= 0.0f)
+    return;
+  for (auto it = mActiveEntities.begin(); it != mActiveEntities.end(); ++it) {
+    Entity* pent = *it;
+    if (pent->_despawnTime > 0.0f && mGameTime >= pent->_despawnTime) {
+      enqueueDespawnEntity(pent);
     }
   }
 }
@@ -549,6 +761,7 @@ void Simulation::_uninitializeEntities() {
     delete pent;
   }
   mEntities.clear();
+  _spawnerContexts.clear();
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::_composeEntities() {

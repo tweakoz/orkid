@@ -4,6 +4,7 @@
 # Distributed under the MIT License
 ################################################################################
 
+from orkengine import core
 from orkengine import lev2
 from orkengine import ecs
 
@@ -12,21 +13,25 @@ from orkengine import ecs
 # Categories shown at the root of the outliner tree
 CATEGORIES = ["Archetypes", "Spawners", "Systems"]
 
-# Available component types for the "Add Component" factory
-COMPONENT_TYPES = [
-  "SceneGraphComponent",
-  "BulletObjectComponent",
-  "PythonComponent",
-  "TransformCurveComponent",
-]
+def _reflectionNameToFactoryId(name):
+  """Convert a reflection class name to a factory ID.
+     e.g. 'BoidsComponentData' -> 'BoidsComponent'
+          'EcsBulletObjectComponentData' -> 'BulletObjectComponent'
+          'EcsBulletSystemData' -> 'BulletSystem'
+  """
+  if name.startswith("Ecs"):
+    name = name[3:]
+  if name.endswith("Data"):
+    name = name[:-4]
+  return name
 
-# Available system types for the "Add System" factory
-SYSTEM_TYPES = [
-  "SceneGraphSystem",
-  "BulletSystem",
-  "PythonSystem",
-  "TransformCurveSystem",
-]
+def _enumerateComponentTypes():
+  return [_reflectionNameToFactoryId(n)
+          for n in core.enumerateInstantiableSubclassesOf("ComponentData")]
+
+def _enumerateSystemTypes():
+  return [_reflectionNameToFactoryId(n)
+          for n in core.enumerateInstantiableSubclassesOf("SystemData")]
 
 ################################################################################
 
@@ -140,7 +145,7 @@ class EcsOutlinerModel(lev2.ui.OutlinerModel):
         "id": sys_type,
         "display_name": sys_type,
         "default_name_generator": lambda m, st=sys_type: st
-      } for sys_type in SYSTEM_TYPES
+      } for sys_type in _enumerateSystemTypes()
         if not self._hasSystem(sys_type)]
 
     # Components under an archetype
@@ -152,7 +157,7 @@ class EcsOutlinerModel(lev2.ui.OutlinerModel):
           "id": ct,
           "display_name": ct,
           "default_name_generator": lambda m, c=ct: c
-        } for ct in COMPONENT_TYPES if ct not in existing]
+        } for ct in _enumerateComponentTypes() if ct not in existing]
 
     return []
 

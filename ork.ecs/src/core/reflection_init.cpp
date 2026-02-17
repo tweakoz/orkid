@@ -38,6 +38,9 @@
 #include <ork/ecs/TransformCurveComponent.h>
 #include "TransformCurveComponent_impl.h"
 
+#include <ork/ecs/BoidsComponent.h>
+#include "BoidsComponent_impl.h"
+
 #include "InterpComponent_impl.h"
 #include "../scripting/Lua/LuaImpl.h"
 
@@ -173,8 +176,14 @@ struct EcsAppInit {
     RegisterClassX(TransformCurveComponent);
     RegisterClassX(TransformCurveSystemData);
 
+    RegisterClassX(BoidsComponentData);
+    RegisterClassX(BoidsComponent);
+    RegisterClassX(BoidsSystemData);
+    RegisterClassX(BoidsSystem);
+
     RegisterFamily<LuaComponentData>(ork::AddPooledLiteral("control"));
     RegisterFamily<TransformCurveComponentData>(ork::AddPooledLiteral("control"));
+    RegisterFamily<BoidsComponentData>(ork::AddPooledLiteral("control"));
     RegisterFamily<PythonComponentData>(ork::AddPooledLiteral("control"));
     RegisterFamily<InterpComponentData>(ork::AddPooledLiteral("control"));
     RegisterFamily<SceneGraphComponentData>(ork::AddPooledLiteral("render"));

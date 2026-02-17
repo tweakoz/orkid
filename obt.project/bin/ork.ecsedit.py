@@ -6,7 +6,7 @@
 # Distributed under the MIT License
 ################################################################################
 
-import os, sys, argparse, time
+import os, sys, argparse, time, math
 from orkengine.core import vec2, vec3, vec4, quat, CrcStringProxy, Transform, lev2_pyexdir
 from orkengine import lev2
 from orkengine import ecs
@@ -47,6 +47,7 @@ class EcsEditor(ComponentizedApplication):
     self._mode = self.EDIT
     self._selected_key = ""
     self._selected_object = None  # archetype, spawner, or system
+    self._highlighted_spawner_name = None
 
     # Deferred rebuild flag — set by callbacks, consumed in _onUpdate
     self._needs_rebuild = False
@@ -401,6 +402,7 @@ class EcsEditor(ComponentizedApplication):
 
   def _destroyEditSimulation(self):
     """Tear down the edit-mode simulation."""
+    self._highlighted_spawner_name = None
     self.runtime.destroy_simulation()
     if hasattr(self, 'sgv') and self.sgv:
       self.sgv.onPreRender = None
@@ -503,9 +505,9 @@ class EcsEditor(ComponentizedApplication):
 
   def _showAddComponentDropdown(self, arch):
     """Show dropdown to add a component to this archetype."""
-    from ork.editor.ecs_outliner_model import COMPONENT_TYPES
+    from ork.editor.ecs_outliner_model import _enumerateComponentTypes
     existing = {c.className for c in arch.components}
-    available = [ct for ct in COMPONENT_TYPES if ct not in existing]
+    available = [ct for ct in _enumerateComponentTypes() if ct not in existing]
     if not available:
       return
 
@@ -927,7 +929,36 @@ class EcsEditor(ComponentizedApplication):
     elif self._mode == self.PLAYING and self.runtime.controller:
       self.runtime.update()
 
+    # Selection highlight: animate selected spawner's entities red↔white
+    self._updateSelectionHighlight()
+
     self.sgv.setDirty()
+
+  def _updateSelectionHighlight(self):
+    if not self.runtime.controller or not self.runtime._sys_ref:
+      return
+
+    # Determine current spawner name (if a spawner is selected)
+    cur_name = None
+    if isinstance(self._selected_object, ecs.SpawnData):
+      cur_name = self._selected_object.name
+
+    # Reset previous highlight if selection changed
+    if self._highlighted_spawner_name and self._highlighted_spawner_name != cur_name:
+      self.runtime.controller.systemNotify(
+        self.runtime._sys_ref,
+        tokens.HighlightBySpawnData,
+        {tokens.name: self._highlighted_spawner_name, tokens.color: vec4(1, 1, 1, 1)})
+      self._highlighted_spawner_name = None
+
+    # Animate current selection
+    if cur_name:
+      t = math.sin(time.monotonic() * 8.0) * 0.5 + 0.5
+      self.runtime.controller.systemNotify(
+        self.runtime._sys_ref,
+        tokens.HighlightBySpawnData,
+        {tokens.name: cur_name, tokens.color: vec4(1 + t, 2*t, 2*t, 1)})
+      self._highlighted_spawner_name = cur_name
 
   ##############################################################################
   # GPU exit

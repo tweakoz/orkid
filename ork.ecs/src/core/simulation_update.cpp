@@ -162,6 +162,8 @@ void Simulation::_update_SIMSTATE() {
 
         mDeltaTime = step;
 
+        _updateSpawnerContexts();
+        _updateEntityLifetimes();
         _serviceDeactivateQueue();
         _serviceActivateQueue();
 
