@@ -17,6 +17,7 @@
 #include "StochWavSoundEmitter_impl.h"
 #include <ork/lev2/aud/singularity/konoff.h>
 #include <ork/math/audiomath.h>
+#include <ork/ecs/GlobalSynthSystem.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -91,6 +92,7 @@ object::ObjectClass* StochWavSoundEmitterData::componentClass() {
 
 void StochWavSoundEmitterData::DoRegisterWithScene(ork::ecs::SceneComposer& sc) const {
   sc.Register<ork::ecs::StochWavSoundEmitterSystemData>();
+  sc.Register<ork::ecs::GlobalSynthSystemData>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

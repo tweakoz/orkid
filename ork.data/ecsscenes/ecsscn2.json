@@ -1358,6 +1358,30 @@
        }
       }
      },
+     "GlobalSynthSystem": {
+      "object": {
+       "class": "GlobalSynthSystemData",
+       "uuid": "08265615-6c39-420d-a12b-eda32e13bd97",
+       "properties": {
+        "BusConfigs": {
+         "main": {
+          "object": {
+           "class": "SynthBusConfig",
+           "uuid": "5737e941-1074-44e4-a328-b67a15b0ac62",
+           "properties": {
+            "EffectPreset": "IR-Forest",
+            "GainDB": 0.0,
+            "Mute": false,
+            "Pan": 0.0,
+            "Solo": false
+           }
+          }
+         }
+        },
+        "MasterGainDB": 0.0
+       }
+      }
+     },
      "SceneGraphSystemData": {
       "object": {
        "class": "SceneGraphSystemData",

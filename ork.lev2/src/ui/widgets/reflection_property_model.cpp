@@ -873,10 +873,18 @@ std::vector<std::string> ReflectionPropertySheetModel::getChoices(
     return ovr_it->second.choices();
   }
 
-  // For enum properties, return the registered enum value names
+  // Check for choices provider annotation or enum properties
+  using choices_provider_t = std::function<std::vector<std::string>()>;
   auto it = _by_key.find(key);
   if (it != _by_key.end()) {
     const auto& entry = _entries[it->second];
+    if (entry.property) {
+      auto provider = entry.property->typedAnnotation<choices_provider_t>("editor.choiceprovider");
+      if (provider) {
+        return provider.value()();
+      }
+    }
+    // For enum properties, return the registered enum value names
     if (auto* enum_prop = dynamic_cast<const reflect::DirectEnumBase*>(entry.property)) {
       auto enums = enum_prop->enumerateEnumerations(_object);
       std::vector<std::string> choices;

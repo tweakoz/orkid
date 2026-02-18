@@ -47,6 +47,8 @@
 #include <ork/ecs/SimpleSoundEmitter.h>
 #include "SimpleSoundEmitter_impl.h"
 
+#include <ork/ecs/GlobalSynthSystem.h>
+
 #include "InterpComponent_impl.h"
 #include "../scripting/Lua/LuaImpl.h"
 
@@ -199,6 +201,10 @@ struct EcsAppInit {
     RegisterClassX(SimpleSoundEmitterComponent);
     RegisterClassX(SimpleSoundEmitterSystemData);
     RegisterClassX(SimpleSoundEmitterSystem);
+
+    RegisterClassX(SynthBusConfig);
+    RegisterClassX(GlobalSynthSystemData);
+    RegisterClassX(GlobalSynthSystem);
 
     RegisterFamily<LuaComponentData>(ork::AddPooledLiteral("control"));
     RegisterFamily<TransformCurveComponentData>(ork::AddPooledLiteral("control"));
