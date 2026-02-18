@@ -5,165 +5,6 @@
    "uuid": "7a968af0-4a27-4d8d-8c0c-5608ca66bc59",
    "properties": {
     "SceneObjects": {
-     "ArchBall": {
-      "object": {
-       "class": "EcsArchetype",
-       "uuid": "d98f5eb2-12d8-4e22-ab58-56aa30bc2218",
-       "properties": {
-        "Components": {
-         "BoidsComponentData": {
-          "object": {
-           "class": "BoidsComponentData",
-           "uuid": "7b0dafe3-1212-4fb6-b747-b863edf19549",
-           "properties": {
-            "AlignmentRadius": 9.679999351501465,
-            "AlignmentWeight": 1.7100000381469727,
-            "CohesionRadius": 1.7000011205673218,
-            "CohesionWeight": 46.97999572753906,
-            "FlockID": 0,
-            "GroundHeight": 19.83000373840332,
-            "HomeRadius": 14.930000305175781,
-            "HomeWeight": 15.75999927520752,
-            "MaxForce": 72.22999572753906,
-            "MaxSpeed": 80.0199966430664,
-            "Mode": "AIR",
-            "SeparationRadius": 8.539999008178711,
-            "SeparationWeight": 8.930000305175781,
-            "WanderStrength": 49.070003509521484
-           }
-          }
-         },
-         "StochWavSoundEmitterData": {
-          "object": {
-           "class": "StochWavSoundEmitterData",
-           "uuid": "ec95be58-f909-4254-a5b4-f8a74db42cc4",
-           "properties": {
-            "Enabled": true,
-            "MasterGainDB": 0.0,
-            "MaxVoices": 4,
-            "OutputBusName": "main",
-            "Sounds": {
-             "item-0": {
-              "object": {
-               "class": "StochWavSound",
-               "uuid": "79c1ce0a-7c63-438e-98ac-15d695552c7a",
-               "properties": {
-                "FadeInTime": 0.0,
-                "FadeOutTime": 0.0,
-                "GainMaxDB": 0.0,
-                "GainMinDB": 0.0,
-                "PitchVarianceCents": 0.0,
-                "PostSilenceMax": 2.0,
-                "PostSilenceMin": 0.5,
-                "Probability": 1.0,
-                "WavFile": "data://sounds/b1.wav"
-               }
-              }
-             }
-            },
-            "Spatializer": {
-             "object": {
-              "class": "PannerSpatializerData",
-              "uuid": "8994dfe2-810a-4321-b80f-465effe00af6",
-              "properties": {}
-             }
-            }
-           }
-          }
-         },
-         "EcsBulletObjectComponentData": {
-          "object": {
-           "class": "EcsBulletObjectComponentData",
-           "uuid": "76ed0d49-5d09-409f-a0c9-854d340fb695",
-           "properties": {
-            "AllowSleeping": false,
-            "AngularDamping": 0.36999911069869995,
-            "Disable": false,
-            "ForceControllers": {},
-            "Friction": 1.0699999332427979,
-            "IsKinematic": false,
-            "LinearDamping": 0.4500008225440979,
-            "Mass": 5.200000286102295,
-            "Restitution": 0.2099999487400055,
-            "Shape": {
-             "object": {
-              "class": "EcsBulletShapeSphereData",
-              "uuid": "d3bd3d4e-2edf-4791-b780-656de0fbd44d",
-              "properties": {
-               "Radius": 0.4650000035762787
-              }
-             }
-            },
-            "SyncShapeScale": false
-           }
-          }
-         },
-         "SceneGraphComponentData": {
-          "object": {
-           "class": "SceneGraphComponentData",
-           "uuid": "5b9e8e6f-76c6-4b56-9010-004cfbd9e2e4",
-           "properties": {
-            "NodeDatas": {
-             "item-0": {
-              "object": {
-               "class": "SceneGraphNodeItemData",
-               "uuid": "d3321bbd-8eac-4b36-9ffe-337afd3938e8",
-               "properties": {
-                "DrawableData": {
-                 "object": {
-                  "class": "ModelDrawableData",
-                  "uuid": "13477281-f777-4132-9ded-e7cf0d95e01f",
-                  "properties": {
-                   "assetpath": "data://tests/misc_gltf_samples/animals/turtle.glb",
-                   "assetvars": {}
-                  }
-                 }
-                },
-                "LayerName": "std_forward",
-                "NodeName": "X1"
-               }
-              }
-             },
-             "item-1": {
-              "object": {
-               "class": "SceneGraphNodeItemData",
-               "uuid": "3971b4a1-3368-41be-a56b-6f0f394239ca",
-               "properties": {
-                "DrawableData": {
-                 "object": {
-                  "class": "PointLightData",
-                  "uuid": "87465569-60c7-48c9-936e-51763608c143",
-                  "properties": {
-                   "Falloff": 1.0,
-                   "Radius": 1.0,
-                   "Color": [
-                    0.0,
-                    0.0,
-                    1.0
-                   ],
-                   "Decal": false,
-                   "Intensity": 42.97999954223633,
-                   "ShadowBias": 0.0020000000949949026,
-                   "ShadowBlur": 0.0,
-                   "ShadowCaster": false,
-                   "ShadowMapSize": 1024,
-                   "ShadowSamples": 1
-                  }
-                 }
-                },
-                "LayerName": "std_forward",
-                "NodeName": "L3"
-               }
-              }
-             }
-            }
-           }
-          }
-         }
-        }
-       }
-      }
-     },
      "ArchBallDown": {
       "object": {
        "class": "EcsArchetype",
@@ -177,18 +18,31 @@
            "properties": {
             "AlignmentRadius": 8.0,
             "AlignmentWeight": 1.0,
-            "CohesionRadius": 8.0,
+            "CohesionRadius": 25.999998092651367,
             "CohesionWeight": 1.0,
             "FlockID": 2,
             "GroundHeight": 0.0,
             "HomeRadius": 8.000000953674316,
-            "HomeWeight": 47.59999465942383,
+            "HomeWeight": 0.5999972224235535,
             "MaxForce": 10.0,
             "MaxSpeed": 5.0,
             "Mode": "AIR",
-            "SeparationRadius": 5.699999809265137,
-            "SeparationWeight": 43.89999771118164,
+            "SeparationRadius": 11.399999618530273,
+            "SeparationWeight": 57.29999542236328,
             "WanderStrength": 9.199999809265137
+           }
+          }
+         },
+         "StochWavSoundEmitterData": {
+          "object": {
+           "class": "StochWavSoundEmitterData",
+           "uuid": "ea52c4d7-4d5b-4421-9c66-0d8955432c9a",
+           "properties": {
+            "Enabled": true,
+            "GainOffsetDB": 0.0,
+            "GroupName": "misc",
+            "PitchOffsetCents": 0.0,
+            "RateScale": 1.0
            }
           }
          },
@@ -300,6 +154,140 @@
        }
       }
      },
+     "ArchBirdies": {
+      "object": {
+       "class": "EcsArchetype",
+       "uuid": "d98f5eb2-12d8-4e22-ab58-56aa30bc2218",
+       "properties": {
+        "Components": {
+         "BoidsComponentData": {
+          "object": {
+           "class": "BoidsComponentData",
+           "uuid": "7b0dafe3-1212-4fb6-b747-b863edf19549",
+           "properties": {
+            "AlignmentRadius": 9.679999351501465,
+            "AlignmentWeight": 1.7100000381469727,
+            "CohesionRadius": 1.7000011205673218,
+            "CohesionWeight": 46.97999572753906,
+            "FlockID": 0,
+            "GroundHeight": 19.83000373840332,
+            "HomeRadius": 14.930000305175781,
+            "HomeWeight": 15.75999927520752,
+            "MaxForce": 72.22999572753906,
+            "MaxSpeed": 80.0199966430664,
+            "Mode": "AIR",
+            "SeparationRadius": 8.539999008178711,
+            "SeparationWeight": 8.930000305175781,
+            "WanderStrength": 49.070003509521484
+           }
+          }
+         },
+         "StochWavSoundEmitterData": {
+          "object": {
+           "class": "StochWavSoundEmitterData",
+           "uuid": "0ea8eb5a-2bdc-4259-bb24-c4a28f1de462",
+           "properties": {
+            "Enabled": true,
+            "GainOffsetDB": 0.0,
+            "GroupName": "birds",
+            "PitchOffsetCents": 0.0,
+            "RateScale": 1.0
+           }
+          }
+         },
+         "EcsBulletObjectComponentData": {
+          "object": {
+           "class": "EcsBulletObjectComponentData",
+           "uuid": "76ed0d49-5d09-409f-a0c9-854d340fb695",
+           "properties": {
+            "AllowSleeping": false,
+            "AngularDamping": 0.36999911069869995,
+            "Disable": false,
+            "ForceControllers": {},
+            "Friction": 1.0699999332427979,
+            "IsKinematic": false,
+            "LinearDamping": 0.4500008225440979,
+            "Mass": 5.200000286102295,
+            "Restitution": 0.2099999487400055,
+            "Shape": {
+             "object": {
+              "class": "EcsBulletShapeSphereData",
+              "uuid": "d3bd3d4e-2edf-4791-b780-656de0fbd44d",
+              "properties": {
+               "Radius": 0.4650000035762787
+              }
+             }
+            },
+            "SyncShapeScale": false
+           }
+          }
+         },
+         "SceneGraphComponentData": {
+          "object": {
+           "class": "SceneGraphComponentData",
+           "uuid": "5b9e8e6f-76c6-4b56-9010-004cfbd9e2e4",
+           "properties": {
+            "NodeDatas": {
+             "item-0": {
+              "object": {
+               "class": "SceneGraphNodeItemData",
+               "uuid": "d3321bbd-8eac-4b36-9ffe-337afd3938e8",
+               "properties": {
+                "DrawableData": {
+                 "object": {
+                  "class": "ModelDrawableData",
+                  "uuid": "13477281-f777-4132-9ded-e7cf0d95e01f",
+                  "properties": {
+                   "assetpath": "data://tests/misc_gltf_samples/animals/turtle.glb",
+                   "assetvars": {}
+                  }
+                 }
+                },
+                "LayerName": "std_forward",
+                "NodeName": "X1"
+               }
+              }
+             },
+             "item-1": {
+              "object": {
+               "class": "SceneGraphNodeItemData",
+               "uuid": "3971b4a1-3368-41be-a56b-6f0f394239ca",
+               "properties": {
+                "DrawableData": {
+                 "object": {
+                  "class": "PointLightData",
+                  "uuid": "87465569-60c7-48c9-936e-51763608c143",
+                  "properties": {
+                   "Falloff": 1.0,
+                   "Radius": 1.0,
+                   "Color": [
+                    0.0,
+                    0.0,
+                    1.0
+                   ],
+                   "Decal": false,
+                   "Intensity": 42.97999954223633,
+                   "ShadowBias": 0.0020000000949949026,
+                   "ShadowBlur": 0.0,
+                   "ShadowCaster": false,
+                   "ShadowMapSize": 1024,
+                   "ShadowSamples": 1
+                  }
+                 }
+                },
+                "LayerName": "std_forward",
+                "NodeName": "L3"
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
      "ArchGround": {
       "object": {
        "class": "EcsArchetype",
@@ -393,6 +381,19 @@
        "uuid": "94d562c2-6172-4e27-815a-7e7b5a23d848",
        "properties": {
         "Components": {
+         "SimpleSoundEmitterData": {
+          "object": {
+           "class": "SimpleSoundEmitterData",
+           "uuid": "6d17d32b-33b4-41d7-8962-8c72ff6a3da6",
+           "properties": {
+            "AutoPlay": true,
+            "Enabled": true,
+            "GainOffsetDB": 0.0,
+            "PitchOffsetCents": 0.0,
+            "SoundName": "drone"
+           }
+          }
+         },
          "TransformCurveComponentData": {
           "object": {
            "class": "TransformCurveComponentData",
@@ -1367,11 +1368,159 @@
        }
       }
      },
+     "SimpleSoundEmitterSystem": {
+      "object": {
+       "class": "SimpleSoundEmitterSystemData",
+       "uuid": "383cc5c4-b143-4308-ac9b-4e5bf2ff90b7",
+       "properties": {
+        "Sounds": {
+         "drone": {
+          "object": {
+           "class": "SimpleSoundData",
+           "uuid": "62442cb2-fffb-430e-ad16-edd33fc50a67",
+           "properties": {
+            "FadeInTime": 0.009999999776482582,
+            "FadeOutTime": 0.05000000074505806,
+            "GainDB": 0.0,
+            "Looping": true,
+            "OutputBusName": "main",
+            "PitchOffsetCents": 0.0,
+            "Spatialize": true,
+            "WavFile": "data://sounds/j1.wav"
+           }
+          }
+         }
+        },
+        "Spatializer": {
+         "object": {
+          "class": "PannerSpatializerData",
+          "uuid": "3cd09a9d-61d2-482f-a8e2-48195707b357",
+          "properties": {
+           "HeadShadowMix": 0.6000000238418579,
+           "IidBaseFreq": 4000.0,
+           "IidMaxFreq": 8000.0,
+           "MaxDistance": 100.0,
+           "MinGainDB": -36.900001525878906,
+           "RefDistance": 1.0,
+           "Rolloff": 1.0
+          }
+         }
+        }
+       }
+      }
+     },
      "StochWavSoundEmitterSystem": {
       "object": {
        "class": "StochWavSoundEmitterSystemData",
        "uuid": "f22d326b-fd76-4990-b0da-e3c2cacf2be4",
-       "properties": {}
+       "properties": {
+        "SoundGroups": {
+         "birds": {
+          "object": {
+           "class": "StochSoundGroup",
+           "uuid": "fc32a9b1-81e3-4b14-9435-040dd44d2120",
+           "properties": {
+            "FadeInTime": 0.5,
+            "FadeOutTime": 0.5,
+            "MasterGainDB": 0.0,
+            "MaxVoicesPerGroup": 9,
+            "MinSpacing": 0.8099995851516724,
+            "OutputBusName": "main",
+            "Sounds": {
+             "b1": {
+              "object": {
+               "class": "StochWavSound",
+               "uuid": "f49147de-4308-4000-855f-d858a0d59ca4",
+               "properties": {
+                "BurstCountMax": 3,
+                "BurstCountMin": 1,
+                "BurstRate": 0.699999988079071,
+                "FadeInTime": 0.5,
+                "FadeOutTime": 0.5,
+                "GainMaxDB": 0.0,
+                "GainMinDB": 0.0,
+                "IntraBurstRate": 3.0,
+                "PitchVarianceCents": 137.0,
+                "SelectionWeight": 1.0,
+                "WavFile": "data://sounds/b1.wav"
+               }
+              }
+             },
+             "b2": {
+              "object": {
+               "class": "StochWavSound",
+               "uuid": "57067ff9-0499-4b6f-8609-e675eb522078",
+               "properties": {
+                "BurstCountMax": 3,
+                "BurstCountMin": 1,
+                "BurstRate": 0.25,
+                "FadeInTime": 0.5,
+                "FadeOutTime": 0.5,
+                "GainMaxDB": 0.0,
+                "GainMinDB": 0.0,
+                "IntraBurstRate": 3.0,
+                "PitchVarianceCents": 110.89999389648438,
+                "SelectionWeight": 1.0,
+                "WavFile": "data://sounds/b2.wav"
+               }
+              }
+             }
+            }
+           }
+          }
+         },
+         "misc": {
+          "object": {
+           "class": "StochSoundGroup",
+           "uuid": "146f2d7c-25f1-4a3f-aa0a-a8f8fe850840",
+           "properties": {
+            "FadeInTime": 0.009999999776482582,
+            "FadeOutTime": 0.05000000074505806,
+            "MasterGainDB": 0.0,
+            "MaxVoicesPerGroup": 5,
+            "MinSpacing": 0.30000001192092896,
+            "OutputBusName": "main",
+            "Sounds": {
+             "item-0": {
+              "object": {
+               "class": "StochWavSound",
+               "uuid": "b3c32857-c722-4778-946e-4578cbfd5e47",
+               "properties": {
+                "BurstCountMax": 3,
+                "BurstCountMin": 1,
+                "BurstRate": 0.10000000149011612,
+                "FadeInTime": 0.0,
+                "FadeOutTime": 0.0,
+                "GainMaxDB": 0.0,
+                "GainMinDB": 0.0,
+                "IntraBurstRate": 3.0,
+                "PitchVarianceCents": 0.0,
+                "SelectionWeight": 1.0,
+                "WavFile": "data://sounds/c1.wav"
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        },
+        "Spatializer": {
+         "object": {
+          "class": "PannerSpatializerData",
+          "uuid": "a71e1d4e-b2ab-4458-b067-f124de081e76",
+          "properties": {
+           "HeadShadowMix": 0.6000000238418579,
+           "IidBaseFreq": 4000.0,
+           "IidMaxFreq": 8000.0,
+           "MaxDistance": 100.0,
+           "MinGainDB": -44.400001525878906,
+           "RefDistance": 1.0,
+           "Rolloff": 0.550000011920929
+          }
+         }
+        }
+       }
       }
      },
      "TransformCurveSystem": {

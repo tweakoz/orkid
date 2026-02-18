@@ -605,7 +605,7 @@ void Simulation::_initializeEntities() {
         Entity* pent = new Entity(spawner, this, entref);
         _controller->_mutateObject([&](Controller::id2obj_map_t& unlocked) { unlocked[entref].set<Entity*>(pent); });
 
-        logchan_simfsm->log(
+        if(0)logchan_simfsm->log(
             "Compose AutoSpawn Entity<%p> arch<%p> layer<%s>",
             (void*)pent, (void*)arch.get(), layer_name.c_str());
 

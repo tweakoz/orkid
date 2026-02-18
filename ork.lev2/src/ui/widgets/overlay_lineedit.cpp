@@ -99,6 +99,10 @@ HandlerResult OverlayLineEdit::DoOnUiEvent(event_constptr_t ev) {
       }
       break;
     }
+    case EventCode::KEY_UP:
+      // Absorb key-up so it doesn't re-trigger character insertion
+      rval.setHandled(this);
+      break;
     case EventCode::PUSH:
       // Absorb clicks so overlay doesn't dismiss
       rval.setHandled(this);

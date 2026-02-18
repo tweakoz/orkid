@@ -235,10 +235,10 @@ void SampleData::loadFromAudioFile(const std::string& fname, bool normalize) {
 
     // Calculate the number of samples to read (frames * channels)
     int numSamples = static_cast<int>(_blk_end * channelCount);
-    //printf("frameCount<%lld>\n", _blk_end);
-    //printf("channelCount<%d>\n", channelCount);
-    //printf("numSamples<%d>\n", numSamples);
-    //printf("sampleRate<%f>\n", _sampleRate);
+    printf("frameCount<%d>\n", _blk_end);
+    printf("channelCount<%d>\n", channelCount);
+    printf("numSamples<%d>\n", numSamples);
+    printf("sampleRate<%f>\n", _sampleRate);
     _numChannels = channelCount;
     // Read the samples from the file
 
@@ -526,6 +526,11 @@ void SampleOscillator::keyOn(const KeyOnInfo& koi) {
   _pbincrem = 0;
   _dt       = synth::instance()->_dt;
 
+  // Convert fade times (seconds) to sample counts
+  float sr = (sample->_sampleRate > 0.0f) ? sample->_sampleRate : 48000.0f;
+  _fadeInSamples  = int(sr * _sampler_data->_fadeInTime);
+  _fadeOutSamples = int(sr * _sampler_data->_fadeOutTime);
+
   _loopMode = sample->_loopMode;
 
   switch (_loopMode) {
@@ -575,12 +580,18 @@ void SampleOscillator::keyOn(const KeyOnInfo& koi) {
 
   setSrRatio(pbratio);
 
-  // printf( "osc<%p> sroot<%d> SR<%d> ratio<%f> PBR<%d> looped<%d>\n", this, sample->_rootKey, int(sample->sampleRate),
-  // _curratio, int(_playbackRate), int(_isLooped) );
-  // printf("sample<%s>\n", sample->_name.c_str());
-  //printf("sampler::SAMPLEBLOCK<%p>\n", (void*) sample->_sampleBlock);
-  //printf("sampler::SAMPLEBLOCK st<%d> en<%d>\n", sample->_blk_start, sample->_blk_end);
-  // printf("lpst<%d> lpend<%d>\n", sample->_blk_loopstart, sample->_blk_loopend);
+  if(1){
+    printf( "KON osc<%p> sroot<%d> SR<%d> ratio<%f> PBR<%d> loopmode<%d>\n", this, sample->_rootKey, int(sample->_sampleRate),
+            _curratio, int(_playbackRate), int(_loopMode) );
+  }
+  if(0){
+    printf( "osc<%p> sroot<%d> SR<%d> ratio<%f> PBR<%d> loopmode<%d>\n", this, sample->_rootKey, int(sample->_sampleRate),
+            _curratio, int(_playbackRate), int(_loopMode) );
+    printf("sample<%s>\n", sample->_name.c_str());
+    printf("sampler::SAMPLEBLOCK<%p>\n", (void*) sample->_sampleBlock);
+    printf("sampler::SAMPLEBLOCK st<%d> en<%d>\n", sample->_blk_start, sample->_blk_end);
+    printf("lpst<%d> lpend<%d>\n", sample->_blk_loopstart, sample->_blk_loopend);
+  }
   _active = true;
 
   _forwarddir = true;
@@ -606,7 +617,7 @@ void SampleOscillator::keyOff() {
 
 
   _released = true;
-  // printf("osc<%p> beginRelease\n", (void*) this);
+   printf("KOFF osc<%p>\n", (void*) this);
 
   if (_enableNatEnv)
     _natAmpEnv->keyOff();
@@ -717,7 +728,25 @@ float SampleOscillator::playNoLoop() {
   float sampA_filtered = _lpFilter2A.compute(sampA);
   float sampB_filtered = _lpFilter2B.compute(sampB);
   float samp  = (sampB * fract + sampA * invfr) * kinv32k;
-  //printf("fract<%g> sampA<%g> sampB<%g> samp<%g>\n", fract, sampA_filtered, sampB_filtered, samp);
+
+  ///////////////
+  // anti-click fade-in at start of sample
+  if (_fadeInSamples > 0) {
+    int64_t posFromStart = (iiA - (_blk_start >> 16));
+    if (posFromStart < _fadeInSamples) {
+      float fadeGain = float(posFromStart) / float(_fadeInSamples);
+      samp *= fadeGain;
+    }
+  }
+  // anti-click fade-out at end of sample
+  if (_fadeOutSamples > 0) {
+    int64_t posToEnd = (_blk_end >> 16) - iiA;
+    if (posToEnd < _fadeOutSamples) {
+      float fadeGain = float(posToEnd) / float(_fadeOutSamples);
+      samp *= fadeGain;
+    }
+  }
+
   ///////////////
 
   _pbindex = _pbindexNext;
@@ -870,7 +899,7 @@ float SampleOscillator::playLoopBid() {
   int iiA = int(whole);
   if( iiA >= (_numFrames-1) )
   {
-      if( _isLooped )
+      if( _loopMode != eLoopMode::NONE )
           iiA = _numFrames-2;
   }
 

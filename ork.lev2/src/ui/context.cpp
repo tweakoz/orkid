@@ -77,26 +77,32 @@ HandlerResult Context::handleEvent(event_constptr_t ev) {
     int my = ev->miY;
     bool event_in_overlay = false;
 
-    // Check overlays from top to bottom for hit
-    for (int i = int(_overlay_stack.size()) - 1; i >= 0; i--) {
-      auto& entry = _overlay_stack[i];
-      // Hold a local shared_ptr copy so the widget survives
-      // even if the event handler pops/dismisses the overlay
-      auto w_shared = entry._widget;
-      auto w = w_shared.get();
-      if (w) {
-        int lx = mx - w->x();
-        int ly = my - w->y();
-        bool inside = (lx >= 0 && lx < w->width() && ly >= 0 && ly < w->height());
-        if (inside) {
-          event_in_overlay = true;
-          // Route to this overlay widget
-          rval = w->OnUiEvent(ev);
-          // Set push target so DRAG events in Phase 2 route to this overlay widget
-          if (ev->_eventcode == EventCode::PUSH || ev->_eventcode == EventCode::DOUBLECLICK) {
-            _evpushtarget = w;
+    // Check overlays from top to bottom for hit (mouse/click events only —
+    // KEY events are handled separately below to avoid double-dispatch)
+    bool is_key_event = (ev->_eventcode == EventCode::KEY_DOWN
+                      || ev->_eventcode == EventCode::KEY_UP
+                      || ev->_eventcode == EventCode::KEY_REPEAT);
+    if (!is_key_event) {
+      for (int i = int(_overlay_stack.size()) - 1; i >= 0; i--) {
+        auto& entry = _overlay_stack[i];
+        // Hold a local shared_ptr copy so the widget survives
+        // even if the event handler pops/dismisses the overlay
+        auto w_shared = entry._widget;
+        auto w = w_shared.get();
+        if (w) {
+          int lx = mx - w->x();
+          int ly = my - w->y();
+          bool inside = (lx >= 0 && lx < w->width() && ly >= 0 && ly < w->height());
+          if (inside) {
+            event_in_overlay = true;
+            // Route to this overlay widget
+            rval = w->OnUiEvent(ev);
+            // Set push target so DRAG events in Phase 2 route to this overlay widget
+            if (ev->_eventcode == EventCode::PUSH || ev->_eventcode == EventCode::DOUBLECLICK) {
+              _evpushtarget = w;
+            }
+            break;
           }
-          break;
         }
       }
     }

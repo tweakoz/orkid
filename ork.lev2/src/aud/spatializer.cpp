@@ -7,6 +7,7 @@
 
 #include <ork/lev2/aud/spatializer.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
+#include <ork/reflect/properties/registerX.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -20,6 +21,13 @@ void SpatializerData::describeX(object::ObjectClass* clazz) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void PannerSpatializerData::describeX(object::ObjectClass* clazz) {
+  clazz->floatProperty("RefDistance", float_range{0.01f, 1000}, &PannerSpatializerData::_refDistance);
+  clazz->floatProperty("MaxDistance", float_range{1, 10000}, &PannerSpatializerData::_maxDistance);
+  clazz->floatProperty("Rolloff", float_range{0, 10}, &PannerSpatializerData::_rolloff);
+  clazz->floatProperty("MinGainDB", float_range{-96, 0}, &PannerSpatializerData::_minGainDB);
+  clazz->floatProperty("HeadShadowMix", float_range{0, 1}, &PannerSpatializerData::_headShadowMix);
+  clazz->floatProperty("IidBaseFreq", float_range{100, 20000}, &PannerSpatializerData::_iidBaseFreq);
+  clazz->floatProperty("IidMaxFreq", float_range{100, 20000}, &PannerSpatializerData::_iidMaxFreq);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

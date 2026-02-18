@@ -26,16 +26,36 @@ public:
   StochWavSound() = default;
 
   file::Path _wavFilePath;
-  float _probability       = 1.0f;
-  float _postSilenceMin    = 0.5f;
-  float _postSilenceMax    = 2.0f;
+  float _burstRate          = 0.1f;   // Hz — avg one burst every 10s
+  int   _burstCountMin      = 1;
+  int   _burstCountMax      = 3;
+  float _intraBurstRate     = 3.0f;   // Hz — chirps/sec within burst
+  float _selectionWeight    = 1.0f;   // relative weight for sound selection
   float _pitchVarianceCents = 0.0f;
-  float _gainMinDB         = 0.0f;
-  float _gainMaxDB         = 0.0f;
-  float _fadeInTime        = 0.0f;
-  float _fadeOutTime       = 0.0f;
+  float _gainMinDB          = 0.0f;
+  float _gainMaxDB          = 0.0f;
+  float _fadeInTime         = 0.0f;  // 0 = use group default
+  float _fadeOutTime        = 0.0f;  // 0 = use group default
 };
 using stochwavsnd_ptr_t = std::shared_ptr<StochWavSound>;
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct StochSoundGroup : public ork::Object {
+  DeclareConcreteX(StochSoundGroup, ork::Object);
+
+public:
+  StochSoundGroup() = default;
+
+  std::map<std::string, stochwavsnd_ptr_t> _sounds;
+  std::string _outputBusName   = "main";
+  float _masterGainDB          = 0.0f;
+  int _maxVoicesPerGroup       = 5;
+  float _minSpacing            = 0.3f;  // seconds between any two triggers in group
+  float _fadeInTime            = 0.01f; // group-level default fade-in (seconds)
+  float _fadeOutTime           = 0.05f; // group-level default fade-out (seconds)
+};
+using stochsoundgroup_ptr_t = std::shared_ptr<StochSoundGroup>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -49,12 +69,11 @@ public:
   static object::ObjectClass* componentClass();
   void DoRegisterWithScene(ork::ecs::SceneComposer& sc) const final;
 
-  std::map<std::string, stochwavsnd_ptr_t> _sounds;
-  audio::singularity::spatializerdata_ptr_t _spatializer;
-  std::string _outputBusName = "main";
-  float _masterGainDB        = 0.0f;
-  int _maxVoices             = 4;
-  bool _enabled              = true;
+  std::string _groupName;
+  float _pitchOffsetCents  = 0.0f;
+  float _gainOffsetDB      = 0.0f;
+  float _rateScale         = 1.0f;
+  bool _enabled            = true;
 };
 using stochwavemitterdata_ptr_t = std::shared_ptr<StochWavSoundEmitterData>;
 
@@ -65,6 +84,9 @@ struct StochWavSoundEmitterSystemData : public ork::ecs::SystemData {
 
 public:
   StochWavSoundEmitterSystemData();
+
+  std::map<std::string, stochsoundgroup_ptr_t> _soundGroups;
+  audio::singularity::spatializerdata_ptr_t _spatializer;
 
 private:
   ork::ecs::System* createSystem(ork::ecs::Simulation* pinst) const final;

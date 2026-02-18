@@ -108,6 +108,11 @@ HandlerResult LineEdit::DoOnUiEvent(event_constptr_t cev) {
       rval.setHandled(this);
       break;
     }
+    case EventCode::KEY_UP: {
+      // Absorb key-up so it doesn't re-trigger character insertion
+      rval.setHandled(this);
+      break;
+    }
     case EventCode::PUSH: {
       _highlight = true;
       break;

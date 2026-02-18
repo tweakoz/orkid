@@ -7,10 +7,12 @@
 
 #include <ork/lev2/aud/singularity/synth.h>
 #include <assert.h>
+#include <algorithm>
 #include <ork/lev2/aud/singularity/filters.h>
 #include <ork/lev2/aud/singularity/alg_amp.h>
 #include <ork/lev2/aud/singularity/alg_pan.inl>
 #include <ork/lev2/aud/singularity/modulation.h>
+#include <ork/math/audiomath.h>
 
 ImplementReflectionX(ork::audio::singularity::PANNER_DATA, "DspAmpPanner");
 ImplementReflectionX(ork::audio::singularity::PANNER2D_DATA, "DspAmpPanner2D");
@@ -152,20 +154,8 @@ void PANNER2D::compute(DspBuffer& dspbuf) // final
   float dR = (snd_pos2d - earposR).magnitude(); // distance to R ear in meters
   float tL = dL / SOS;                          // time (seconds) for sound to travel from source to ear
   float tR = dR / SOS;                          // time (seconds) for sound to travel from source to ear
-  _delayL->setNextDelayTime(tL);
-  _delayR->setNextDelayTime(tR);
-
-  float filtposFront       = 0.5f + cosf(new_angle) * 0.5;
-  float filtposLeft        = 0.5f + cosf(new_angle + pi * 0.5) * 0.5;
-  float filtposRight       = 0.5f + cosf(new_angle + pi * 1.5) * 0.5;
-  constexpr float termBASE = 3000.0f;
-  constexpr float termX    = 2000.0f;
-  constexpr float termZ    = 3000.0f;
-  float frqL               = termBASE + filtposFront * termZ + filtposLeft * termX;
-  float frqR               = termBASE + filtposFront * termZ + filtposRight * termX;
-  float Q                  = 0.0f;
-  _filter1L.SetWithQ(EM_LPF, frqL, Q);
-  _filter1R.SetWithQ(EM_LPF, frqR, Q);
+  // NOTE: delay times and filter coefficients are computed per-sample
+  // inside the active branch below — no block-level state changes here
   if (0)
     printf(
         "angle<%g> snd_pos2d<%g %g %g> dL<%g> dR<%g> tL<%g> tR<%g>\n", //
@@ -222,15 +212,57 @@ void PANNER2D::compute(DspBuffer& dspbuf) // final
       bufR[i]     = input * rmix * oneOverDistanceSquared;
     }
   } else { // ITD+IID+allpasses
+    // Read configurable spatializer params from PANNER2D_DATA
+    auto pd2d = static_cast<const PANNER2D_DATA*>(_dbd);
+    const float refDist       = pd2d->_refDistance;
+    const float maxDist       = pd2d->_maxDistance;
+    const float rolloff       = pd2d->_rolloff;
+    const float minGain       = ork::audiomath::decibel_to_linear_amp_ratio(pd2d->_minGainDB);
+    const float headShadowMix = pd2d->_headShadowMix;
+    const float iidBase       = pd2d->_iidBaseFreq;
+    const float iidRange      = pd2d->_iidMaxFreq - pd2d->_iidBaseFreq;
+
+    // One-pole smoothing: ~2ms time constant at 48kHz gives C-inf continuity
+    constexpr float kSmoothAlpha = 0.01f; // 1 - exp(-1/(0.002*48000))
     for (int i = 0; i < inumframes; i++) {
-      float fi = float(i) / float(inumframes);
 
-      float distance = fi * new_distance + (1.0f - fi) * _prevDistance; // lerp distance
+      _prevAngle    += (new_angle - _prevAngle) * kSmoothAlpha;
+      _prevDistance  += (new_distance - _prevDistance) * kSmoothAlpha;
+      float angle    = _prevAngle;
+      float distance = _prevDistance;
 
-      float distanceSquared = distance * distance;
-      if (distanceSquared < 1.0f)
-        distanceSquared = 1.0f;
-      float oneOverDistanceSquared = 1.0f / distanceSquared;
+      // Per-sample panning coefficients from interpolated angle
+      fvec3 snd_interp(0, 0, 1);
+      snd_interp.rotateOnY(angle);
+      float p    = 0.5f + snd_interp.x * 0.5f;
+      float lm   = cosf(p * PI * 0.5f);
+      float rm   = sinf(p * PI * 0.5f);
+
+      // Per-sample ITD delay times
+      fvec3 earL(-E2E * 0.5, 0, 0);
+      fvec3 earR(E2E * 0.5, 0, 0);
+      float distL = (snd_interp - earL).magnitude();
+      float distR = (snd_interp - earR).magnitude();
+      _delayL->setNextDelayTime(distL / SOS);
+      _delayR->setNextDelayTime(distR / SOS);
+
+      // Per-sample IID filter coefficients (with configurable head shadow)
+      float fpFront    = 0.5f + cosf(angle) * 0.5;
+      float fpLeft     = 0.5f + cosf(angle + pi * 0.5) * 0.5;
+      float fpRight    = 0.5f + cosf(angle + pi * 1.5) * 0.5;
+      float frqL_full  = iidBase + fpFront * iidRange * 0.6f + fpLeft * iidRange * 0.4f;
+      float frqR_full  = iidBase + fpFront * iidRange * 0.6f + fpRight * iidRange * 0.4f;
+      // Blend between full-bandwidth (no shadow) and filtered (full shadow)
+      constexpr float kBypassFreq = 20000.0f;
+      float frqL_s = frqL_full + (kBypassFreq - frqL_full) * (1.0f - headShadowMix);
+      float frqR_s = frqR_full + (kBypassFreq - frqR_full) * (1.0f - headShadowMix);
+      _filter1L.SetWithQ(EM_LPF, frqL_s, 0.0f);
+      _filter1R.SetWithQ(EM_LPF, frqR_s, 0.0f);
+
+      // Distance attenuation: OpenAL inverse-distance-clamped model
+      float clampedDist = std::clamp(distance, refDist, maxDist);
+      float distGain    = refDist / (refDist + rolloff * (clampedDist - refDist));
+      distGain          = std::max(distGain, minGain);
 
       float fb    = _fbLP.Tick(_ap2) * _feedback;
       float input = _dcBLOCK.Tick(fb) // DC blocking for feedback loop
@@ -251,17 +283,18 @@ void PANNER2D::compute(DspBuffer& dspbuf) // final
 
       //////////////////
       // select between allpass and dry
-      //. based on distance
+      //  based on normalized distance
       //////////////////
 
-      float delay_input = distance * ap_output //
-                          + (1.0f - distance) * input;
+      float distNorm    = std::clamp((distance - refDist) / (maxDist - refDist), 0.0f, 1.0f);
+      float delay_input = distNorm * ap_output //
+                          + (1.0f - distNorm) * input;
 
       //////////////////
       // distance attenuation
       //////////////////
 
-      delay_input *= oneOverDistanceSquared;
+      delay_input *= distGain;
 
       //////////////////
       // ITD delay
@@ -269,23 +302,27 @@ void PANNER2D::compute(DspBuffer& dspbuf) // final
 
       _delayL->inp(delay_input);
       _delayR->inp(delay_input);
-      float delayedL = _filter1L.Tick(_delayL->out(fi));
-      float delayedR = _filter1R.Tick(_delayR->out(fi));
+      // 1.0f: per-sample setNextDelayTime means target is already exact
+      float delayedL = _filter1L.Tick(_delayL->out(1.0f));
+      float delayedR = _filter1R.Tick(_delayR->out(1.0f));
 
       //////////////////
       // final panning
       //////////////////
 
-      bufL[i] = delayedL * lmix;
-      bufR[i] = delayedR * rmix;
+      bufL[i] = delayedL * lm;
+      bufR[i] = delayedR * rm;
     }
   }
-  _prevDistance = new_distance; // save for next frame
+  // _prevAngle/_prevDistance updated continuously per-sample above
 }
 void PANNER2D::doKeyOn(const KeyOnInfo& koi) // final
 {
   _mixL = 0.0f;
   _mixR = 0.0f;
+  // Snap prev values to current so first block doesn't interpolate from 0
+  _prevAngle    = _param[0].eval();
+  _prevDistance  = _param[1].eval();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

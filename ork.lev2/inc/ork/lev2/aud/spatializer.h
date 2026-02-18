@@ -42,6 +42,17 @@ struct PannerSpatializerData : public SpatializerData {
 public:
   PannerSpatializerData() = default;
   spatializer_ptr_t createInstance() const override;
+
+  // Distance falloff (OpenAL inverse-distance-clamped model)
+  float _refDistance  = 1.0f;    // distance at which gain = 1.0
+  float _maxDistance  = 100.0f;  // beyond this, gain = _minGainDB
+  float _rolloff      = 1.0f;    // attenuation rate multiplier
+  float _minGainDB    = -60.0f;  // floor gain in dB
+
+  // Directional / head shadow
+  float _headShadowMix = 1.0f;    // 0=no IID filtering, 1=full
+  float _iidBaseFreq   = 3000.0f; // LPF floor frequency (rear)
+  float _iidMaxFreq    = 8000.0f; // LPF ceiling frequency (front)
 };
 using pannerspatializerdata_ptr_t = std::shared_ptr<PannerSpatializerData>;
 

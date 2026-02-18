@@ -36,6 +36,9 @@ class EcsPlayer(ComponentizedApplication):
     self.createEzApp(
       name="OrkidEcsPlayer",
       fullscreen=args.fullscreen,
+      enable_audio=True,
+      enable_audio_output=True,
+      enable_audio_synth=True,
       pre_init_fns=[ecs.ecsInitCallback])
 
   ##############################################################################
