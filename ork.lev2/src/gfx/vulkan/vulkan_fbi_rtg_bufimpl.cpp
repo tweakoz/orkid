@@ -105,13 +105,10 @@ void VklRtBufferImpl::setLayout(VkImageLayout layout) {
     _imgobj->_currentLayout = layout;
   }
 
-  // Also update the associated texture's descriptor if it exists
-  if (_teximpl.tryAsShared<VulkanTextureObject>()) {
-    auto tex_impl = _teximpl.getShared<VulkanTextureObject>();
-    if (tex_impl->_vkdescriptor_info[0]) {
-      tex_impl->_vkdescriptor_info[0]->imageLayout = layout;
-    }
-  }
+  // NOTE: Do NOT update _vkdescriptor_info[0]->imageLayout here.
+  // The sampling descriptor must always report SHADER_READ_ONLY_OPTIMAL
+  // because that's the layout the image will be in when actually sampled.
+  // _currentLayout already tracks the real layout for barrier purposes.
 }
 
 ///////////////////////////////////////////////////////////////////////////////

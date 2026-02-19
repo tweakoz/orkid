@@ -30,23 +30,31 @@ namespace ork::lev2 {
 static logchannel_ptr_t logchan_EZAPP = logger()->getChannel("EZAPP");
 
 void ezapp_python_traceback(py::error_already_set& e) {
-    // Import traceback module
-    py::object traceback = py::module::import("traceback");
-    py::object sys = py::module::import("sys");
-    
-    // Get exception info
-    py::object exc_type = py::reinterpret_borrow<py::object>(e.type());
-    py::object exc_value = py::reinterpret_borrow<py::object>(e.value());
-    py::object exc_tb = py::reinterpret_borrow<py::object>(e.trace());
-    
-    // Format the traceback
-    py::object format_exception = traceback.attr("format_exception");
-    py::list tb_lines = format_exception(exc_type, exc_value, exc_tb);
-    
-    // Print each line
-    for (auto line : tb_lines) {
-        auto decoed = deco::string(py::str(line).cast<std::string>(), 255, 100, 0);
-        std::cout << decoed;
+    try {
+        // Import traceback module
+        py::object traceback = py::module::import("traceback");
+        py::object sys = py::module::import("sys");
+
+        // Get exception info
+        py::object exc_type = py::reinterpret_borrow<py::object>(e.type());
+        py::object exc_value = py::reinterpret_borrow<py::object>(e.value());
+        py::object exc_tb = py::reinterpret_borrow<py::object>(e.trace());
+
+        // Format the traceback
+        py::object format_exception = traceback.attr("format_exception");
+        py::list tb_lines = format_exception(exc_type, exc_value, exc_tb);
+
+        // Print each line
+        for (auto line : tb_lines) {
+            auto decoed = deco::string(py::str(line).cast<std::string>(), 255, 100, 0);
+            std::cout << decoed;
+        }
+    } catch (std::exception& e2) {
+        std::cerr << "ezapp_python_traceback failed: " << e2.what() << std::endl;
+        std::cerr << "Original error: " << e.what() << std::endl;
+    } catch (...) {
+        std::cerr << "ezapp_python_traceback failed (unknown exception)" << std::endl;
+        std::cerr << "Original error: " << e.what() << std::endl;
     }
 }
 
@@ -351,7 +359,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               rval->_vars->makeValueForKey<py::function>("audexitfn") = audexitfn;
               rval->onAudioExit([=](audiodevice_ptr_t adev) { //
                 py::gil_scoped_acquire acquire;
-                auto pyfn = rval->_vars->typedValueForKey<py::function>("audinitfn");
+                auto pyfn = rval->_vars->typedValueForKey<py::function>("audexitfn");
                 try {
                   pyfn.value()(adev);
                 } catch (py::error_already_set& e) {
@@ -359,10 +367,8 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   printf( "\n\npython exception in onAudioExit\n\n");
                   e.restore();
                   PyErr_Print();
-                  OrkAssert(false);
                 } catch (std::exception& e) {
-                  std::cerr << e.what();
-                  OrkAssert(false);
+                  std::cerr << "onAudioExit: " << e.what() << std::endl;
                 }
               });
             }
@@ -405,10 +411,8 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   printf( "\n\npython exception in onSynthExit\n\n");
                   e.restore();
                   PyErr_Print();
-                  OrkAssert(false);
                 } catch (std::exception& e) {
-                  std::cerr << e.what();
-                  OrkAssert(false);
+                  std::cerr << "onSynthExit: " << e.what() << std::endl;
                 }
               });
             }

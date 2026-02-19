@@ -550,6 +550,7 @@ void VkContext::_initDefaultTextures() {
         1, &barrier);
     
     _endRecordCommandBuffer(cmdbuf);
+    cmdbuf_impl->_referenced_images.push_back(tex_obj->_imgobj[0]);
     enqueueDeferredOneShotCommand(cmdbuf);
 
     // Set up descriptor info (default textures only use slot [0])

@@ -263,6 +263,7 @@ void VkTextureInterface::generateMipMaps(Texture* ptex) {
   /////////////////////////////////////
 
   _contextVK->endRecordCommandBuffer(vktex->_loadCB);
+  cmdbuf_impl->_referenced_images.push_back(image);
   _contextVK->enqueueDeferredOneShotCommand(vktex->_loadCB);
 }
 
@@ -413,6 +414,7 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
   /////////////////////////////////////
 
   _contextVK->endRecordCommandBuffer(vktex->_loadCB);
+  cmdbuf_impl->_referenced_images.push_back(vktex->_imgobj[0]);
   _contextVK->enqueueDeferredOneShotCommand(vktex->_loadCB);
 
   return ptex;

@@ -285,6 +285,7 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
     // Async path: enqueue and return immediately
     // NOTE: Do NOT set _img_sampling here - will be set in completion callback
     _contextVK->endRecordCommandBuffer(vktex->_loadCB);
+    cmdbuf_impl->_referenced_images.push_back(vktex->_imgobj[0]);
     _contextVK->enqueueDeferredOneShotCommand(vktex->_loadCB);
 
   } else {
