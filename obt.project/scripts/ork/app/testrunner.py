@@ -20,20 +20,24 @@ Usage:
         "Unit Tests": {
             "Math": ["ork.test.python.unittests.all.py"],
         },
-        "UI": {
-            "Basic": {
-                "Outliner": ["ork.python", "outliner.py"],
-            },
+        "Multi Process": {
+            "Client+Server": [
+                ["server.py", "--port", "8080"],
+                ["client.py", "--port", "8080"],
+            ],
         },
     }
     TestRunnerApp(tests, title="My Tests").run()
 """
 
+import shlex
 import signal
 import subprocess
 import threading
 import time
 
+from obt import command
+from obt import tmux
 from orkengine.core import vec4
 from orkengine import lev2
 
@@ -42,13 +46,12 @@ from orkengine import lev2
 ################################################################################
 
 class TestInfo:
-  def __init__(self, name, command):
+  def __init__(self, name, commands, is_tmux=False):
     self.name = name
-    self.command = command
+    self.commands = commands    # list of strings (single) or list of lists (tmux)
+    self.is_tmux = is_tmux
     self.status = "pending"    # pending | running | passed | failed
     self.exit_code = -1
-    self.stdout = ""
-    self.stderr = ""
     self.duration = 0.0
 
 ################################################################################
@@ -76,7 +79,9 @@ class TestRunnerModel(lev2.ui.OutlinerModel):
     self.allow_add = False
 
   def populate(self, data, prefix=""):
-    """Recursively populate from nested dicts. Lists are leaf commands."""
+    """Recursively populate from nested dicts.
+    List of strings = single command test.
+    List of lists = multi-command tmux test."""
     for name, value in data.items():
       key = prefix + "/" + name if prefix else name
       self._display_names[key] = name
@@ -88,8 +93,15 @@ class TestRunnerModel(lev2.ui.OutlinerModel):
         else:
           self._root_children.append(key)
         self.populate(value, key)
+      elif isinstance(value, list) and len(value) > 0 and isinstance(value[0], list):
+        # tmux test (list of lists)
+        self._tests[key] = TestInfo(name, value, is_tmux=True)
+        if prefix:
+          self._children[prefix].append(key)
+        else:
+          self._root_children.append(key)
       else:
-        # leaf node (list = command)
+        # single command test (list of strings)
         self._tests[key] = TestInfo(name, value)
         if prefix:
           self._children[prefix].append(key)
@@ -162,15 +174,13 @@ class TestRunnerModel(lev2.ui.OutlinerModel):
 
   # -- state updates (called from background threads) --
 
-  def setTestStatus(self, key, status, exit_code=-1, stdout="", stderr="", duration=0.0):
+  def setTestStatus(self, key, status, exit_code=-1, duration=0.0):
     with self._lock:
       info = self._tests.get(key)
       if info is None:
         return
       info.status = status
       info.exit_code = exit_code
-      info.stdout = stdout
-      info.stderr = stderr
       info.duration = duration
       ancestors = self._ancestorKeys(key)
     self.notifyItemChanged(key)
@@ -224,7 +234,7 @@ class TestRunnerApp:
     self.outliner.model = self._model
     self.outliner.expandAll()
 
-    # -- Selection callback: click to run, or show output if already complete --
+    # -- Selection callback: click to run --
     def on_select(key):
       info = self._model.getTestInfo(key)
       if info is None:
@@ -233,7 +243,6 @@ class TestRunnerApp:
         return
 
       if info.status in ("pending", "passed", "failed"):
-        # run (or re-run) the test
         t = threading.Thread(target=self._runTest, args=(key,), daemon=True)
         t.start()
 
@@ -287,25 +296,48 @@ class TestRunnerApp:
     info = self._model.getTestInfo(key)
     if info is None:
       return
+    if info.is_tmux:
+      self._runTmuxTest(key, info)
+    else:
+      self._runSingleTest(key, info)
+
+  def _runSingleTest(self, key, info):
     self._model.setTestStatus(key, "running")
     t0 = time.time()
     try:
-      result = subprocess.run(
-        info.command,
-        capture_output=True,
-        text=True,
-        timeout=120,
-      )
+      exit_code = command.run(info.commands, do_log=True)
       elapsed = time.time() - t0
-      status = "passed" if result.returncode == 0 else "failed"
-      self._model.setTestStatus(key, status, result.returncode,
-                                 result.stdout, result.stderr, elapsed)
-    except subprocess.TimeoutExpired:
-      elapsed = time.time() - t0
-      self._model.setTestStatus(key, "failed", -1, "", "Timed out after 120s", elapsed)
+      status = "passed" if exit_code == 0 else "failed"
+      self._model.setTestStatus(key, status, exit_code, duration=elapsed)
     except Exception as e:
       elapsed = time.time() - t0
-      self._model.setTestStatus(key, "failed", -1, "", str(e), elapsed)
+      self._model.setTestStatus(key, "failed", -1, duration=elapsed)
+
+  def _runTmuxTest(self, key, info):
+    session_name = "test_" + key.replace("/", "_").replace(" ", "_")
+    self._model.setTestStatus(key, "running")
+    try:
+      orientation = "vertical" if len(info.commands) <= 3 else "horizontal"
+      session = tmux.Session(session_name, orientation=orientation, kill_first=True)
+      for cmd_list in info.commands:
+        session.command([shlex.join(cmd_list)])
+      # execute detached (bypass session.execute() to avoid attach)
+      session.kill()
+      session.bind_zoom_panes()
+      for item in session.post_chain:
+        session.cmd_chain.add(item)
+      session.select_layout()
+      if len(info.commands) > 3:
+        session.cmd_chain.add(["tmux", "select-layout", "-t", session_name, "tiled"])
+      session.cmd_chain.execute()
+      # open a terminal attached to the session
+      subprocess.Popen([
+        "osascript", "-e",
+        'tell application "Terminal" to do script "tmux attach-session -t %s"' % session_name
+      ])
+    except Exception as e:
+      print("tmux launch failed: %s" % e)
+      self._model.setTestStatus(key, "failed", -1)
 
   # -- Main loop --
 
