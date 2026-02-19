@@ -1344,7 +1344,7 @@ void OrkEzApp::closeAllSecondaryWindows() {
 
 void OrkEzApp::_renderSecondaryWindows() {
   for (auto& win : _secondaryWindows) {
-    if (!win->shouldClose()) {
+    if (!win->shouldClose() && win->needsRender()) {
       win->_render();
     }
   }

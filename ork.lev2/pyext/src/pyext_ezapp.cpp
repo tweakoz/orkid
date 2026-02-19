@@ -943,6 +943,9 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 else if (key == "floating") config._floating = py::cast<bool>(item.second);
                 else if (key == "transparent") config._transparent = py::cast<bool>(item.second);
                 else if (key == "focus_on_show") config._focusOnShow = py::cast<bool>(item.second);
+                else if (key == "focus_follows_mouse") config._focusFollowsMouse = py::cast<bool>(item.second);
+                else if (key == "focus_to_front") config._focusToFront = py::cast<bool>(item.second);
+                else if (key == "fullscreen_monitor") config._fullscreenMonitor = py::cast<std::string>(item.second);
               }
             }
             return app->createSecondaryWindow(config);
@@ -1015,6 +1018,32 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
           });
   type_codec->registerStdCodec<eztopwidget_ptr_t>(eztopwidget_type);
   /////////////////////////////////////////////////////////////////////////////////
+  // GLFW Monitor enumeration
+  /////////////////////////////////////////////////////////////////////////////////
+  auto glfwmoninfo_type = //
+      py::class_<GlfwMonitorInfo, glfwmonitorinfo_ptr_t>(module_lev2, "GlfwMonitorInfo")
+      .def_readonly("name", &GlfwMonitorInfo::_name)
+      .def_readonly("x", &GlfwMonitorInfo::_x)
+      .def_readonly("y", &GlfwMonitorInfo::_y)
+      .def_readonly("width", &GlfwMonitorInfo::_width)
+      .def_readonly("height", &GlfwMonitorInfo::_height)
+      .def_readonly("refresh_rate", &GlfwMonitorInfo::_refreshRate)
+      .def_readonly("physical_width_mm", &GlfwMonitorInfo::_physicalWidthMM)
+      .def_readonly("physical_height_mm", &GlfwMonitorInfo::_physicalHeightMM)
+      .def_readonly("content_scale_x", &GlfwMonitorInfo::_contentScaleX)
+      .def_readonly("content_scale_y", &GlfwMonitorInfo::_contentScaleY)
+      .def_readonly("primary", &GlfwMonitorInfo::_primary)
+      .def("__repr__", [](glfwmonitorinfo_ptr_t info) -> std::string {
+        return FormatString("GlfwMonitorInfo(name='%s', %dx%d@%dHz, pos=%d,%d%s)",
+                            info->_name.c_str(), info->_width, info->_height,
+                            info->_refreshRate, info->_x, info->_y,
+                            info->_primary ? ", primary" : "");
+      });
+  type_codec->registerStdCodec<glfwmonitorinfo_ptr_t>(glfwmoninfo_type);
+
+  module_lev2.def("enumerateGlfwMonitors", &enumerateGlfwMonitors,
+      "Enumerate all GLFW monitors on the system");
+  /////////////////////////////////////////////////////////////////////////////////
   // Phase 6: Secondary Window Bindings
   /////////////////////////////////////////////////////////////////////////////////
   using ezsecwinconfig_ptr_t = std::shared_ptr<EzSecondaryWinConfig>;
@@ -1031,6 +1060,9 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
       .def_readwrite("floating", &EzSecondaryWinConfig::_floating)
       .def_readwrite("transparent", &EzSecondaryWinConfig::_transparent)
       .def_readwrite("focus_on_show", &EzSecondaryWinConfig::_focusOnShow)
+      .def_readwrite("focus_follows_mouse", &EzSecondaryWinConfig::_focusFollowsMouse)
+      .def_readwrite("focus_to_front", &EzSecondaryWinConfig::_focusToFront)
+      .def_readwrite("fullscreen_monitor", &EzSecondaryWinConfig::_fullscreenMonitor)
       .def_static("popup", [](int x, int y, int w, int h, bool transparent) {
         return std::make_shared<EzSecondaryWinConfig>(
             EzSecondaryWinConfig::popup(x, y, w, h, transparent));
@@ -1076,6 +1108,8 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
         return ctx_t(win->gfxContext());
       })
       .def("requestClose", &EzSecondaryWin::requestClose)
+      .def("markDirty", &EzSecondaryWin::markDirty)
+      .def_readwrite("maxStalenessSeconds", &EzSecondaryWin::_maxStalenessSeconds)
       .def_property("onDraw",
           [](ezsecondarywin_ptr_t win) -> py::object { return py::none(); },
           [](ezsecondarywin_ptr_t win, py::object callback) {

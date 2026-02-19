@@ -52,6 +52,7 @@ struct SecondaryWinImpl {
   void _onResize(int w, int h);
   void _fireEvent(ui::event_ptr_t uiev);
   void _closeWindow();
+  void _setFullscreenMonitor(const std::string& monitorName);
 
   EzSecondaryWin* _owner = nullptr;
   EzSecondaryWinConfig _config;
@@ -157,7 +158,9 @@ SecondaryWinImpl::SecondaryWinImpl(EzSecondaryWin* owner, const EzSecondaryWinCo
 
 #ifdef __APPLE__
   // Enable focus-follows-mouse via NSTrackingArea
-  enableFocusFollowsMouse(_glfwWindow);
+  if (config._focusFollowsMouse) {
+    enableFocusFollowsMouse(_glfwWindow);
+  }
 #endif
 
   // Use logical window size (config dimensions)
@@ -185,6 +188,11 @@ SecondaryWinImpl::SecondaryWinImpl(EzSecondaryWin* owner, const EzSecondaryWinCo
     // Create clean RCFD without compositor for UI rendering
     // (The default context RCFD has a shared static compositor with uninitialized CPD)
     _cleanRcfd = std::make_shared<lev2::RenderContextFrameData>(_gfxContext);
+  }
+
+  // Apply fullscreen monitor if configured
+  if (!config._fullscreenMonitor.empty()) {
+    _setFullscreenMonitor(config._fullscreenMonitor);
   }
 
   logchan_secwin->log("Secondary window created successfully");
@@ -230,7 +238,49 @@ void SecondaryWinImpl::_closeWindow() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void SecondaryWinImpl::_setFullscreenMonitor(const std::string& monitorName) {
+  if (!_glfwWindow) return;
+
+  int monitorCount = 0;
+  GLFWmonitor** monitors = glfwGetMonitors(&monitorCount);
+  GLFWmonitor* target = nullptr;
+
+  for (int i = 0; i < monitorCount; i++) {
+    const char* name = glfwGetMonitorName(monitors[i]);
+    logchan_secwin->log("  monitor[%d]: %s", i, name);
+    if (monitorName == std::string(name)) {
+      target = monitors[i];
+    }
+  }
+
+  if (!target) {
+    logchan_secwin->log("setFullscreenMonitor: monitor '%s' not found", monitorName.c_str());
+    return;
+  }
+
+  const GLFWvidmode* mode = glfwGetVideoMode(target);
+  int mon_x = 0, mon_y = 0;
+  glfwGetMonitorPos(target, &mon_x, &mon_y);
+
+  logchan_secwin->log("setFullscreenMonitor: '%s' %dx%d @ %d,%d",
+                      monitorName.c_str(), mode->width, mode->height, mon_x, mon_y);
+
+  // Windowed fullscreen: borderless window covering the entire monitor
+  glfwSetWindowAttrib(_glfwWindow, GLFW_DECORATED, GLFW_FALSE);
+  glfwSetWindowAttrib(_glfwWindow, GLFW_RESIZABLE, GLFW_FALSE);
+  glfwSetWindowPos(_glfwWindow, mon_x, mon_y);
+  glfwSetWindowSize(_glfwWindow, mode->width, mode->height);
+
+  _onResize(mode->width, mode->height);
+  _owner->markDirty();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void SecondaryWinImpl::_fireEvent(ui::event_ptr_t uiev) {
+  // Any UI event means the window content may have changed
+  _owner->markDirty();
+
   uiev->_uicontext = _owner->_uicontext.get();
   if (_owner->_uicontext && _owner->_uicontext->_top) {
     uiev->setvpDim(_owner->_uicontext->_top.get());
@@ -358,6 +408,10 @@ void SecondaryWinImpl::_render() {
   _gfxContext->swapBuffers(_ctxglfw);
   _owner->_perf_render_duration = _owner->_perf_render_timer.SecsSinceStart();
   _owner->_perf_present_duration = _owner->_perf_render_duration - _owner->_perf_enqueue_duration;
+
+  // Clear dirty flag and restart staleness timer after successful render
+  _owner->_dirty = false;
+  _owner->_lastRenderTimer.Start();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -572,9 +626,17 @@ static void _secwin_callback_enterleave(GLFWwindow* window, int entered) {
   logchan_secwin->log("[SECWIN] enterleave: entered=%d window=%p", entered, window);
 
   // Focus follows mouse: give this window keyboard focus when mouse enters
-  if (entered) {
-    logchan_secwin->log("[SECWIN] calling glfwFocusWindow(%p)", window);
-    glfwFocusWindow(window);
+  if (entered && impl->_config._focusFollowsMouse) {
+    if (impl->_config._focusToFront) {
+      logchan_secwin->log("[SECWIN] calling glfwFocusWindow(%p) (focus+raise)", window);
+      glfwFocusWindow(window);
+    } else {
+      logchan_secwin->log("[SECWIN] calling glfwFocusWindow(%p) (focus only, no raise)", window);
+      glfwFocusWindow(window);
+      // Note: GLFW does not support focus-without-raise natively.
+      // On macOS, glfwFocusWindow always raises. To truly prevent raising,
+      // a platform-specific solution (e.g., NSWindow orderBack) would be needed.
+    }
   }
 
   auto uiev = std::make_shared<ui::Event>();
@@ -594,6 +656,24 @@ static void _secwin_callback_enterleave(GLFWwindow* window, int entered) {
 EzSecondaryWin::EzSecondaryWin(const EzSecondaryWinConfig& config) {
   _uicontext = std::make_shared<ui::Context>();
   _impl.makeShared<SecondaryWinImpl>(this, config);
+  _lastRenderTimer.Start();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void EzSecondaryWin::markDirty() {
+  _dirty = true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+bool EzSecondaryWin::needsRender() const {
+  if (_dirty)
+    return true;
+  // Safety net: re-render periodically even if not dirty
+  // to handle animations, timers, or other continuous updates
+  float elapsed = _lastRenderTimer.SecsSinceStart();
+  return elapsed >= _maxStalenessSeconds;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -680,6 +760,48 @@ void EzSecondaryWin::_handleResize(int w, int h) {
   if (auto impl = _impl.tryAsShared<SecondaryWinImpl>()) {
     impl.value()->_onResize(w, h);
   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// GLFW Monitor enumeration
+///////////////////////////////////////////////////////////////////////////////
+
+std::vector<glfwmonitorinfo_ptr_t> enumerateGlfwMonitors() {
+  std::vector<glfwmonitorinfo_ptr_t> result;
+
+  // Ensure GLFW is initialized (idempotent if already done)
+  if (!glfwInit()) return result;
+
+  int monitorCount = 0;
+  GLFWmonitor** monitors = glfwGetMonitors(&monitorCount);
+  if (!monitors || monitorCount == 0) return result;
+
+  GLFWmonitor* primary = glfwGetPrimaryMonitor();
+
+  for (int i = 0; i < monitorCount; i++) {
+    auto info = std::make_shared<GlfwMonitorInfo>();
+    GLFWmonitor* mon = monitors[i];
+
+    const char* name = glfwGetMonitorName(mon);
+    info->_name = name ? name : "unknown";
+
+    glfwGetMonitorPos(mon, &info->_x, &info->_y);
+    glfwGetMonitorPhysicalSize(mon, &info->_physicalWidthMM, &info->_physicalHeightMM);
+    glfwGetMonitorContentScale(mon, &info->_contentScaleX, &info->_contentScaleY);
+
+    const GLFWvidmode* mode = glfwGetVideoMode(mon);
+    if (mode) {
+      info->_width = mode->width;
+      info->_height = mode->height;
+      info->_refreshRate = mode->refreshRate;
+    }
+
+    info->_primary = (mon == primary);
+
+    result.push_back(info);
+  }
+
+  return result;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
