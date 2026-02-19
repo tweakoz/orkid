@@ -50,8 +50,21 @@ tests = {
             "Primitives": {
                 "Primitive Types": lev2("renderer/primitives/primitive_types.py"),
             },
+            "MoviePlayback": {
+                "HwDecodeBasic": lev2("movie/hwdec_basic.py","-a"),
+                "HwDecodeStress": lev2("movie/hwdec_stresstest.py","-a"),
+            },
+            "SubMesh": {
+                "Boolean": lev2("submesh/boolean.py"),
+                "ConvexDecomp": lev2("submesh/convex_decomp.py"),
+                "ConvexHull2": lev2("submesh/convex_hull_2.py"),
+                "PlanarClip": lev2("submesh/planar_clip.py"),
+            },
             "Misc": {
                 "Models": lev2e("scenegraph/models.py"),
+                "ShaderBalls": lev2e("scenegraph/shaderballs.py"),
+                "Skinning4": lev2e("scenegraph/skinning4.py"),
+                "PseudoWire": lev2e("scenegraph/pseudowire.py"),
             }
         },
         "UI": {
@@ -119,6 +132,7 @@ tests = {
     "ECS": {
         "Physics": {
             "FPS":     ["ork.python", orkdir + "/ork.ecs/examples/python/physics/FPS.py"],
+            "FPS2":    ["ork.python", orkdir + "/ork.ecs/examples/python/physics/FPS2.py"],
             "SubMesh": ["ork.python", orkdir + "/ork.ecs/examples/python/physics/submesh.py"],
         },
         "ScenePlayer": {
