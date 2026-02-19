@@ -331,8 +331,11 @@ void synth::deinit() {
   if(_lifecycle_state.exchange(2)==2)
     return;
 
+  // Clear pending events first — prevent stale KOFF events from firing
+  _eventmap.atomicOp([](eventmap_t& emap) { emap.clear(); });
+
   opq::concurrentQueue()->drain();
-    
+
   _allVoices.clear();
   _freeVoices.clear();
   _activeVoices.clear();
@@ -837,8 +840,8 @@ std::string synth::statusString() const {
 
 void synth::compute(int inumframes, const void* inputBuffer) {
 
-  // if (_lock_compute)
-  // return;
+  if (_lifecycle_state.load() >= 2)
+    return; // shutting down — do not access any containers
 
   resize(inumframes);
 

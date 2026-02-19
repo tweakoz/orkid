@@ -403,26 +403,21 @@ void CoreAudioDevice::startup() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void CoreAudioDevice::shutdown() {
-  //logchan_coreaudio->log("CoreAudioDevice::shutdown() starting...");
-
-  if (_the_synth) {
-    //logchan_coreaudio->log("Tearing down synth...");
-    synth::tearDown();
-  }
-
+  // Stop audio thread FIRST so no callbacks can access synth during teardown
   if (_aucontext) {
-    //logchan_coreaudio->log("Stopping audio context...");
-    _aucontext->Stop();  // This signals shutdown and stops CoreAudio
+    _aucontext->Stop();
 
-    // Wait for audio thread to exit
     if (_au_thread) {
-      //logchan_coreaudio->log("Joining audio thread...");
       _au_thread->join();
-      //logchan_coreaudio->log("Audio thread joined.");
       _au_thread = nullptr;
     }
 
     _aucontext.reset();
+  }
+
+  // Now safe to tear down synth — no audio thread running
+  if (_the_synth) {
+    synth::tearDown();
   }
 
   logchan_coreaudio->log("CoreAudioDevice::shutdown() complete.");
