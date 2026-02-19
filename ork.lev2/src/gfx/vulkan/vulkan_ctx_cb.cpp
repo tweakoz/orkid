@@ -191,12 +191,14 @@ VkPrimaryCommandBufferImpl::VkPrimaryCommandBufferImpl(VkContext* ctx)
 }
 
 VkPrimaryCommandBufferImpl::~VkPrimaryCommandBufferImpl() {
-  // printf ("DESTROY CB<%p>\n", (void*) _vkcmdbuf );
-    if(_contextVK->_vkdevice==nullptr){
-        return;
-    }
-  vkFreeCommandBuffers(_contextVK->_vkdevice, _contextVK->_vkcmdpool_graphics, 1, &_vkcmdbuf);
   _cmdbufcount.fetch_sub(1);
+  try {
+    if(_contextVK && _contextVK->_vkdevice && _contextVK->_vkcmdpool_graphics) {
+      vkFreeCommandBuffers(_contextVK->_vkdevice, _contextVK->_vkcmdpool_graphics, 1, &_vkcmdbuf);
+    }
+  } catch (...) {
+    // Swallow — during static destruction _contextVK may be dangling.
+  }
 }
 
 ///////////////////////////////////////////////////
@@ -211,12 +213,18 @@ _vkcmdbuf = nullptr;
 }
 
 VkSecondaryCommandBufferImpl::~VkSecondaryCommandBufferImpl() {
-  // printf ("DESTROY CB<%p>\n", (void*) _vkcmdbuf );
-  if(_contextVK->_vkdevice==nullptr){
-    return;
-  }
-  vkFreeCommandBuffers(_contextVK->_vkdevice, _contextVK->_vkcmdpool_graphics, 1, &_vkcmdbuf);
   _cmdbufcount.fetch_sub(1);
+  try {
+    if(_contextVK && _vkcmdbuf) {
+      auto device = _contextVK->_vkdevice;
+      auto cmdpool = _contextVK->_vkcmdpool_graphics;
+      if(device && cmdpool) {
+        vkFreeCommandBuffers(device, cmdpool, 1, &_vkcmdbuf);
+      }
+    }
+  } catch (...) {
+    // Swallow — during static destruction _contextVK may be dangling.
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

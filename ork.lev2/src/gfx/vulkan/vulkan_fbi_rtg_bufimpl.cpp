@@ -282,6 +282,10 @@ void VklRtBufferImpl::_transitionImage(vkpricmdbufimpl_ptr_t cb, const VkTransit
     if(0)logchan_rtbi->log("IMAGE: Performing transition for image %p from %d to %d", (void*)img, _currentLayout, p.layout);
     auto barrier = createImageBarrier(img, _currentLayout, p.layout, p.srcAccess, p.dstAccess);
     barrier->subresourceRange.aspectMask = VkFormatConverter::_instance.aspectForUsage(_usage);
+    if (_imgobj->_cinfo) {
+      barrier->subresourceRange.layerCount = _imgobj->_cinfo->arrayLayers;
+      barrier->subresourceRange.levelCount = _imgobj->_cinfo->mipLevels;
+    }
     
     vkCmdPipelineBarrier(cb->_vkcmdbuf,                 // command buffer
                          p.srcStage,                    // source stage

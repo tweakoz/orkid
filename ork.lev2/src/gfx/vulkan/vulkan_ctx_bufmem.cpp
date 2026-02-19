@@ -67,16 +67,19 @@ VulkanMemoryForImage::VulkanMemoryForImage(vkcontext_rawptr_t ctxVK, VkImage ima
 }
 
 VulkanMemoryForImage::~VulkanMemoryForImage() {
-    if(nullptr==_ctxVK->_vkdevice){
-        return;
+  try {
+    if(_ctxVK && _ctxVK->_vkdevice && _vkmem) {
+      vkFreeMemory(_ctxVK->_vkdevice, *_vkmem, nullptr);
     }
-  vkFreeMemory(_ctxVK->_vkdevice, *_vkmem, nullptr);
+  } catch (...) {
+    // Swallow — during static destruction _ctxVK may be dangling.
+  }
   int count    = _imgmemcount.fetch_sub(1);
   size_t bytes = _imgmembytes.fetch_sub(_memreq->size);
-  if(0)printf("~VulkanMemoryForImage<%p> bytes-freed<%zu> bytes-remaining<%zu> alloc-count<%zu> \n", 
-         (void*)this, 
-         _memreq->size, 
-         bytes, 
+  if(0)printf("~VulkanMemoryForImage<%p> bytes-freed<%zu> bytes-remaining<%zu> alloc-count<%zu> \n",
+         (void*)this,
+         _memreq->size,
+         bytes,
          count - 1);
 }
 
@@ -103,10 +106,13 @@ VulkanMemoryForBuffer::VulkanMemoryForBuffer(vkcontext_rawptr_t ctxVK, VkBuffer 
 }
 
 VulkanMemoryForBuffer::~VulkanMemoryForBuffer() {
-    if(nullptr==_ctxVK->_vkdevice){
-        return ;
+  try {
+    if(_ctxVK && _ctxVK->_vkdevice && _vkmem) {
+      vkFreeMemory(_ctxVK->_vkdevice, *_vkmem, nullptr);
     }
-  vkFreeMemory(_ctxVK->_vkdevice, *_vkmem, nullptr);
+  } catch (...) {
+    // Swallow — during static destruction _ctxVK may be dangling.
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -265,20 +271,24 @@ VulkanImageObject::VulkanImageObject(vkcontext_rawptr_t ctx, VkImage img, VkImag
 ///////////////////////////////////////////////////////////////////////////////
 VulkanImageObject::~VulkanImageObject() {
   _imgobjcount.fetch_sub(1);
-    if(_ctx->_vkdevice==nullptr){
-        return;
+  try {
+    if(!_ctx || !_ctx->_vkdevice){
+      return;
     }
-  if (_delete_imageview and (_vkimageview != VK_NULL_HANDLE)) {
-    vkDestroyImageView(_ctx->_vkdevice, _vkimageview, nullptr);
+    if (_delete_imageview and (_vkimageview != VK_NULL_HANDLE)) {
+      vkDestroyImageView(_ctx->_vkdevice, _vkimageview, nullptr);
+    }
+    if (_delete_image and (_vkimage != VK_NULL_HANDLE)) {
+      vkDestroyImage(_ctx->_vkdevice, _vkimage, nullptr);
+    }
+    if (_delete_devicemem and (_vkdevicemem != VK_NULL_HANDLE)) {
+      vkFreeMemory(_ctx->_vkdevice, _vkdevicemem, nullptr);
+    }
+    _vkimage = VK_NULL_HANDLE;
+    _imgmem = nullptr;
+  } catch (...) {
+    // Swallow — during static destruction _ctx may be dangling.
   }
-  if (_delete_image and (_vkimage != VK_NULL_HANDLE)) {
-    vkDestroyImage(_ctx->_vkdevice, _vkimage, nullptr);
-  }
-  if (_delete_devicemem and (_vkdevicemem != VK_NULL_HANDLE)) {
-    vkFreeMemory(_ctx->_vkdevice, _vkdevicemem, nullptr);
-  }
-  _vkimage = VK_NULL_HANDLE;
-  _imgmem = nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -331,11 +341,12 @@ VulkanBuffer::VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsag
 }
 //////////////////////////////////////
 VulkanBuffer::~VulkanBuffer() {
-    if(nullptr==_ctxVK->_vkdevice){
-        return;
+  try {
+    if(_ctxVK && _ctxVK->_vkdevice && _vkbuffer != VK_NULL_HANDLE) {
+      vkDestroyBuffer(_ctxVK->_vkdevice, _vkbuffer, nullptr);
     }
-  if(_vkbuffer != VK_NULL_HANDLE) {
-    vkDestroyBuffer(_ctxVK->_vkdevice, _vkbuffer, nullptr);
+  } catch (...) {
+    // Swallow — during static destruction _ctxVK may be dangling.
   }
   _buffercount.fetch_sub(1);
   _bufferbytes.fetch_sub(_length);

@@ -91,6 +91,7 @@ void ForwardPbrNodeImpl::_update_env_probes(CompositorDrawData& drawdata) {
           probe->_cubeRenderRTG->_cubeMap = true;  // Must set before creating buffers
           auto colorbuf                   = probe->_cubeRenderRTG->createRenderTarget(EBufferFormat::RGBA8);
           colorbuf->_debugName            = "ReflectionProbeColorCubeMap";
+          colorbuf->_mipgen               = RtBuffer::EMG_AUTOCOMPUTE;
           probe->_cubeRenderRTG->createDepthBuffer(EBufferFormat::Z32F, true);
         }
         if (probe->_dirty) {
