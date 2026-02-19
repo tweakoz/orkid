@@ -25,6 +25,7 @@ from lev2utils.primitives import createGridData
 
 parser = argparse.ArgumentParser(description="ECS Scene Editor")
 parser.add_argument("--scene", "-s", type=str, help="Scene file to load on startup (.json)")
+parser.add_argument("--fullscreen", "-f", action="store_true", help="Launch in fullscreen mode")
 args = parser.parse_args()
 
 ################################################################################
@@ -68,13 +69,18 @@ class EcsEditor(ComponentizedApplication):
     self.gizmo_node = None
 
     # Create app with ECS module init injected before finalization
-    self.createEzApp( name="OrkidEcsEditor", 
-                      width=1440, 
-                      height=900, 
-                      enable_audio = True,
-                      enable_audio_output = True,
-                      enable_audio_synth = True,
-                      pre_init_fns=[ecs.ecsInitCallback])
+    ezapp_kwargs = dict(
+      name="OrkidEcsEditor",
+      width=1440,
+      height=900,
+      enable_audio=True,
+      enable_audio_output=True,
+      enable_audio_synth=True,
+      pre_init_fns=[ecs.ecsInitCallback],
+    )
+    if args.fullscreen:
+      ezapp_kwargs["fullscreen"] = True
+    self.createEzApp(**ezapp_kwargs)
 
   @property
   def scene_data(self):

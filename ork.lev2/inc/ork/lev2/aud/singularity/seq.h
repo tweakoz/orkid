@@ -337,18 +337,29 @@ using sequencer_event_callback_t = std::function<void(
     float duration,
     const std::string& track_name)>;
 
+// Deferred sequencer event for cross-thread delivery
+struct SequencerEventData {
+  int _note = 0;
+  int _velocity = 0;
+  float _duration = 0.0f;
+  std::string _track_name;
+};
+
 struct Sequencer {
   using seqmap_t = std::unordered_map<std::string, sequence_ptr_t>;
   Sequencer(synth* the_synth);
   sequenceplayback_ptr_t playSequence(sequence_ptr_t sequence,float timeoffset);
   void process();
   void clearPlaybacks();
+  void enqueueMainThreadEventCallback(int note, int vel, float dur, const std::string& track);
+  void drainMainThreadEventCallbacks();
   seqmap_t _sequences;
   std::vector<sequenceplayback_ptr_t> _sequence_playbacks;
   synth* _the_synth = nullptr;
   track_ptr_t _recording_track;
   clip_ptr_t _recording_clip;
   sequencer_event_callback_t _on_event;
+  MpMcBoundedQueue<SequencerEventData, 256> _pendingMainThreadEventCallbacks;
 };
 
 } // namespace ork::audio::singularity

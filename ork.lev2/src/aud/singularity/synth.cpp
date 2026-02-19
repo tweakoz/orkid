@@ -695,10 +695,10 @@ void synth::mainThreadHandler() {
   }
 
   /////////////////////////////////
-  // process sequencer
+  // drain sequencer event callbacks (posted from audio thread)
   /////////////////////////////////
 
-  _sequencer->process();
+  _sequencer->drainMainThreadEventCallbacks();
 
   /////////////////////////////////
 
@@ -1004,6 +1004,12 @@ void synth::compute(int inumframes, const void* inputBuffer) {
         this->_tick(eventmap, elapsed_this_tick);
         _eventmap.UnLock();
         _samplesuntilnexttick += k_samples_per_tick;
+        ////////////////////////////////////////////
+        // process sequencer from audio thread
+        //  so MIDI timing is sample-accurate
+        //  and independent of render frame rate
+        ////////////////////////////////////////////
+        _sequencer->process();
         ////////////////////////////////////////////
         activateVoices(ifrpending);
         deactivateVoices();
