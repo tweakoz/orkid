@@ -114,6 +114,7 @@ class TestRunnerFilesystemModel(lev2.ui.FilesystemModel):
     self._entries = {}       # path -> entry dict {name, type, children, extension, description}
     self._tests = {}         # path -> TestInfo (leaves only)
     self._display_names = {} # path -> short name
+    self._custom_icons = {}  # path -> SVG string (custom per-entry icon)
     self._on_status_changed = None
     self._option_defaults = {}  # option_name -> latest value (bool or str)
 
@@ -156,6 +157,9 @@ class TestRunnerFilesystemModel(lev2.ui.FilesystemModel):
           "description": description,
         }
         self._entries[parent_path]["children"].append(name)
+        # Custom icon (SVG string)
+        if "_icon" in value:
+          self._custom_icons[path] = value["_icon"]
 
       elif isinstance(value, dict):
         # group node -> directory
@@ -325,7 +329,11 @@ class TestRunnerFilesystemModel(lev2.ui.FilesystemModel):
     """Return status icon for tests, tinted folder for groups."""
     svg_string = None
     with self._lock:
-      if path in self._tests:
+      # Custom per-entry icon (shown except when running — animation takes over)
+      if path in self._custom_icons:
+        if path not in self._tests or self._tests[path].status != "running":
+          svg_string = self._custom_icons[path]
+      elif path in self._tests:
         status = self._tests[path].status
         if status != "running":
           svg_string = _STATUS_SVGS.get(status)
@@ -502,8 +510,9 @@ class TestRunnerFilesystemModel(lev2.ui.FilesystemModel):
 
 class TestRunnerApp:
 
-  def __init__(self, tests, title="Test Runner", width=640, height=720, auto_run=False):
+  def __init__(self, tests, title="Test Runner", width=640, height=720, auto_run=False, default_view="list"):
     self._auto_run = auto_run
+    self._default_view = default_view
 
     # -- EzApp boilerplate --
     self.ezapp = lev2.OrkEzApp.create(self, name=title, width=width, height=height)
@@ -547,10 +556,11 @@ class TestRunnerApp:
     # View mode buttons
     btn_list = self.toolbar.addButton("list", standard_icons.get('file_text', icon_size, icon_size), "List View")
     btn_list.toggle_mode = True
-    btn_list.toggled = True
+    btn_list.toggled = (self._default_view == "list")
 
     btn_icons = self.toolbar.addButton("icons", standard_icons.get('folder', icon_size, icon_size), "Icon View")
     btn_icons.toggle_mode = True
+    btn_icons.toggled = (self._default_view == "icon")
 
     self.toolbar.addSeparator()
 
@@ -569,7 +579,7 @@ class TestRunnerApp:
     self._model._on_status_changed = lambda: self.fs_view.clearIconCache()
 
     self.fs_view.model = self._model
-    self.fs_view.view_mode = lev2.ui.FilesystemViewMode.List
+    self.fs_view.view_mode = lev2.ui.FilesystemViewMode.Icon if self._default_view == "icon" else lev2.ui.FilesystemViewMode.List
     self.fs_view.show_size_column = False
     self.fs_view.show_type_column = False
     self.fs_view.show_date_column = False
