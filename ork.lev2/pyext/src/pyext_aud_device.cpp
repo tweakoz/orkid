@@ -71,7 +71,10 @@ namespace ork::lev2 {
     auto audinpsrc_t = py::class_<AudioInputChunkSource, audioinputchunk_source_ptr_t>(lev2_module, "AudioInputChunkSource"); //
     type_codec->registerStdCodec<audioinputchunk_source_ptr_t>(audinpsrc_t);
     /////////////////////////////////////////////////////////////////////////////////
-    auto straudinpsrc_t = py::class_<StreamingAudioInputChunkSource, AudioInputChunkSource, audiostreaminginputchunk_source_ptr_t>(lev2_module, "StreamingAudioInputChunkSource"); //
+    auto straudinpsrc_t = py::class_<StreamingAudioInputChunkSource, AudioInputChunkSource, audiostreaminginputchunk_source_ptr_t>(lev2_module, "StreamingAudioInputChunkSource")
+        .def_property_readonly("current_playback_timestamp", [](audiostreaminginputchunk_source_ptr_t src) -> double {
+          return src->_current_playback_timestamp.load(std::memory_order_relaxed);
+        });
     type_codec->registerStdCodec<audiostreaminginputchunk_source_ptr_t>(straudinpsrc_t);
     /////////////////////////////////////////////////////////////////////////////////
     // AudioFrameCapture

@@ -36,6 +36,7 @@ struct AudioInputChunk {
   std::vector<input_frames_t> _channels;
   size_t _chunk_index = 0;
   size_t _num_frames = 0;
+  double _timestamp = 0.0;  // source timestamp (e.g. hub time)
 };
 
 struct AudioInputChunkSource {
@@ -54,6 +55,7 @@ struct StreamingAudioInputChunkSource : public AudioInputChunkSource {
   svar64_t _impl;
   int _chunk_index = 0;
   bool _was_reset = true;
+  std::atomic<double> _current_playback_timestamp{0.0};  // timestamp of audio currently being played
 };
 
 ///////////////////////////////////////////////////////////////////////////////
