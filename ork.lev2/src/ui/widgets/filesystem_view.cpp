@@ -1877,16 +1877,16 @@ lev2::texture_ptr_t FilesystemView::_getIconForPath(lev2::Context* ctx, const st
 ///////////////////////////////////////////////////////////////////////////////
 
 const FilesystemView::VisibleItem* FilesystemView::_getActiveVisibleItem() const {
-  // Prefer hovered item, fall back to selected
-  if (!_hovered_path.empty()) {
-    for (const auto& item : _visible_items) {
-      if (item.entry.path == _hovered_path && !item.item_options.empty()) return &item;
-    }
-  }
+  // Prefer selected item, fall back to hovered
   if (!_selected_paths.empty()) {
     const std::string& sel_path = *_selected_paths.begin();
     for (const auto& item : _visible_items) {
-      if (item.entry.path == sel_path) return &item;
+      if (item.entry.path == sel_path && !item.item_options.empty()) return &item;
+    }
+  }
+  if (!_hovered_path.empty()) {
+    for (const auto& item : _visible_items) {
+      if (item.entry.path == _hovered_path && !item.item_options.empty()) return &item;
     }
   }
   return nullptr;
