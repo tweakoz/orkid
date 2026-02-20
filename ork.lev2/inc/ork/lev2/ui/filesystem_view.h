@@ -176,8 +176,9 @@ struct FilesystemView : public Widget {
   lev2::image_ptr_t getFolderIcon() const { return _folder_icon_image; }
   lev2::image_ptr_t getFileIcon() const { return _file_icon_image; }
 
-  // Icon cache: path -> texture (populated from model's getIcon/getIconProvider)
-  std::unordered_map<std::string, lev2::texture_ptr_t> _icon_cache;
+  // Icon cache: path -> texture sequence (single frame for static, multiple for animated)
+  std::unordered_map<std::string, lev2::texture_list_t> _icon_cache;
+  float _icon_anim_fps = 10.0f;  // Animation speed for icon sequences
   void _updateIconCache(lev2::Context* ctx, const std::string& path, int size);
   lev2::texture_ptr_t _getIconForPath(lev2::Context* ctx, const std::string& path, FileType type, int size);
   void clearIconCache() { _icon_cache.clear(); _folder_icon_texture = nullptr; _file_icon_texture = nullptr; }

@@ -87,6 +87,20 @@ _STATUS_SVGS = {
   "failed":  _svg_wrap('<path d="M6 6L18 18M18 6L6 18" stroke="#CC4444" stroke-width="3" stroke-linecap="round"/>'),
 }
 
+# Pre-rotated yin-yang SVG frames for "running" animation
+_RUNNING_NUM_FRAMES = 24
+_RUNNING_FRAMES_SVG = []
+for _i in range(_RUNNING_NUM_FRAMES):
+  _angle = _i * (360.0 / _RUNNING_NUM_FRAMES)
+  _RUNNING_FRAMES_SVG.append(_svg_wrap(
+    '<g transform="rotate(%.1f, 12, 12)">'
+    '<circle cx="12" cy="12" r="8" fill="#CCAA00"/>'
+    '<path d="M12 4 A8 8 0 0 1 12 20 A4 4 0 0 1 12 12 A4 4 0 0 0 12 4" fill="#1A1A1A"/>'
+    '<circle cx="12" cy="8" r="1.5" fill="#CCAA00"/>'
+    '<circle cx="12" cy="16" r="1.5" fill="#1A1A1A"/>'
+    '</g>' % _angle
+  ))
+
 ################################################################################
 # Filesystem model: tests as virtual files, groups as directories
 ################################################################################
@@ -312,7 +326,9 @@ class TestRunnerFilesystemModel(lev2.ui.FilesystemModel):
     svg_string = None
     with self._lock:
       if path in self._tests:
-        svg_string = _STATUS_SVGS.get(self._tests[path].status)
+        status = self._tests[path].status
+        if status != "running":
+          svg_string = _STATUS_SVGS.get(status)
       elif path in self._entries and self._entries[path]["type"] == "directory" and path != "/":
         descendants = self._descendantTests(path)
         if descendants:
@@ -320,19 +336,39 @@ class TestRunnerFilesystemModel(lev2.ui.FilesystemModel):
           any_failed = any(self._tests[k].status == "failed" for k in descendants)
           all_passed = all(self._tests[k].status == "passed" for k in descendants)
           if any_running:
-            color = "#CCAA00"
+            pass  # handled by getIconSequence
           elif any_failed:
             color = "#CC4444"
+            svg_string = _svg_wrap(
+              '<path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" fill="%s"/>' % color
+            )
           elif all_passed:
             color = "#44AA44"
+            svg_string = _svg_wrap(
+              '<path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" fill="%s"/>' % color
+            )
           else:
             color = "#4D99CC"
-          svg_string = _svg_wrap(
-            '<path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" fill="%s"/>' % color
-          )
+            svg_string = _svg_wrap(
+              '<path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" fill="%s"/>' % color
+            )
     if svg_string:
       return icon_library.from_svg_string(svg_string, size, size)
     return None
+
+  def getIconSequence(self, path, size=64):
+    """Return animated yin-yang frames for running tests."""
+    is_running = False
+    with self._lock:
+      if path in self._tests:
+        is_running = (self._tests[path].status == "running")
+      elif path in self._entries and self._entries[path]["type"] == "directory" and path != "/":
+        descendants = self._descendantTests(path)
+        if descendants:
+          is_running = any(self._tests[k].status == "running" for k in descendants)
+    if is_running:
+      return [icon_library.from_svg_string(svg, size, size) for svg in _RUNNING_FRAMES_SVG]
+    return []
 
   # -- internal helpers --
 
@@ -641,6 +677,7 @@ class TestRunnerApp:
       '</svg>'
     self.fs_view.folder_icon = icon_library.from_svg_string(folder_svg, 64, 64)
     self.fs_view.file_icon = icon_library.from_svg_string(file_svg, 64, 64)
+    self.fs_view.icon_size = 128
 
     if self._auto_run:
       self.runAll()

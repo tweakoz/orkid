@@ -198,6 +198,24 @@ public:
         path, size);
   }
 
+  image_list_t getIconSequence(const std::string& path, int size) override {
+    py::gil_scoped_acquire acquire;
+    py::object py_result = py::cast(this).attr("getIconSequence")(path, size);
+    if (py_result.is_none()) {
+      return {};
+    }
+    if (py::isinstance<py::list>(py_result)) {
+      image_list_t result;
+      for (auto item : py_result.cast<py::list>()) {
+        if (!item.is_none()) {
+          result.push_back(item.cast<image_ptr_t>());
+        }
+      }
+      return result;
+    }
+    return {};
+  }
+
   image_provider_ptr_t getIconProvider(const std::string& path, int size) override {
     py::gil_scoped_acquire acquire;
     PYBIND11_OVERRIDE(
@@ -479,6 +497,19 @@ void pyinit_ui_filesystem(py::module& uimodule) {
               py::arg("path"),
               py::arg("size") = 64,
               "Get icon image for a path (returns None to use default)")
+          .def(
+              "getIconSequence",
+              [](ui::filesystem_model_ptr_t model, const std::string& path, int size) -> py::list {
+                auto images = model->getIconSequence(path, size);
+                py::list result;
+                for (auto& img : images) {
+                  result.append(img);
+                }
+                return result;
+              },
+              py::arg("path"),
+              py::arg("size") = 64,
+              "Get animated icon sequence for a path (returns empty list to use getIcon)")
           .def(
               "getIconProvider",
               [](ui::filesystem_model_ptr_t model, const std::string& path, int size) -> image_provider_ptr_t {
@@ -849,6 +880,7 @@ void pyinit_ui_filesystem(py::module& uimodule) {
           .def_readwrite("icon_size", &ui::FilesystemView::_icon_size)
           .def_readwrite("icon_spacing", &ui::FilesystemView::_icon_spacing)
           .def_readwrite("icon_label_height", &ui::FilesystemView::_icon_label_height)
+          .def_readwrite("icon_anim_fps", &ui::FilesystemView::_icon_anim_fps)
           // Appearance - Common
           .def_property(
               "bgcolor",

@@ -196,6 +196,12 @@ struct FilesystemModel {
     return nullptr;
   }
 
+  // Get animated icon sequence for a path (returns empty to use getIcon)
+  // If non-empty, the view cycles through frames at icon_anim_fps
+  virtual lev2::image_list_t getIconSequence(const std::string& path, int size) {
+    return {};
+  }
+
   // Get icon provider for lazy loading (returns nullptr to use getIcon or view's default)
   virtual lev2::image_provider_ptr_t getIconProvider(const std::string& path, int size) {
     return nullptr;

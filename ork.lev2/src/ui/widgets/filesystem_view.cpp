@@ -1823,10 +1823,30 @@ lev2::texture_ptr_t FilesystemView::_getIconForPath(lev2::Context* ctx, const st
   // Check cache first
   auto it = _icon_cache.find(path);
   if (it != _icon_cache.end()) {
-    return it->second;
+    auto& frames = it->second;
+    if (frames.size() == 1) {
+      return frames[0];
+    } else if (frames.size() > 1) {
+      float t = _uicontext ? _uicontext->_uitimer.SecsSinceStart() : 0.0f;
+      int frame = int(t * _icon_anim_fps) % int(frames.size());
+      return frames[frame];
+    }
   }
 
-  // Try to get icon from model
+  // Try animated icon sequence first
+  auto sequence = _model->getIconSequence(path, size);
+  if (!sequence.empty()) {
+    lev2::texture_list_t frames;
+    for (auto& img : sequence) {
+      auto texture = std::make_shared<lev2::Texture>();
+      txi->initTextureFromImage(texture.get(), img, true);
+      frames.push_back(texture);
+    }
+    _icon_cache[path] = frames;
+    return frames[0];
+  }
+
+  // Try to get single icon from model
   lev2::image_ptr_t image = nullptr;
 
   // First try provider (lazy loading)
@@ -1840,11 +1860,11 @@ lev2::texture_ptr_t FilesystemView::_getIconForPath(lev2::Context* ctx, const st
     image = _model->getIcon(path, size);
   }
 
-  // If model provides an image, create texture and cache it
+  // If model provides an image, create texture and cache as single-frame sequence
   if (image) {
     auto texture = std::make_shared<lev2::Texture>();
     txi->initTextureFromImage(texture.get(), image, true);
-    _icon_cache[path] = texture;
+    _icon_cache[path] = lev2::texture_list_t{texture};
     return texture;
   }
 
