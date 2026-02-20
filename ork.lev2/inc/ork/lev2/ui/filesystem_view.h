@@ -10,6 +10,7 @@
 #include <ork/lev2/ui/widget.h>
 #include <ork/lev2/ui/filesystem_model.h>
 #include <ork/lev2/ui/favorites.h>
+#include <ork/lev2/ui/dropdown_menu.h>
 #include <functional>
 #include <unordered_map>
 #include <unordered_set>
@@ -131,6 +132,10 @@ struct FilesystemView : public Widget {
   int _type_column_width = 100;   // Width of type column
   int _date_column_width = 120;   // Width of date column
   int _last_content_width = 0;    // For proportional column resizing
+  int _description_column_width = 200;
+  bool _show_description_column = false;
+  int _options_column_width = 150;
+  bool _show_options_column = false;
   bool _show_size_column = true;
   bool _show_type_column = true;
   bool _show_date_column = true;
@@ -156,6 +161,7 @@ struct FilesystemView : public Widget {
   bool _draw_background = true;
   bool _draw_header = true;       // Column headers in list mode
   bool _draw_path_bar = true;     // Current path breadcrumb
+  bool _draw_options_bar = false;  // Options bar for selected item (replaces inline column)
   lev2::font_ptr_t _font;
   lev2::font_ptr_t _small_font;   // For icon labels
 
@@ -193,6 +199,7 @@ private:
     lev2::texture_ptr_t thumbnail;
     bool thumbnail_requested = false;
     bool thumbnail_failed = false;
+    std::vector<ItemOptionDef> item_options;  // Cached per-item options
   };
 
   void _rebuildVisibleItems();
@@ -210,6 +217,7 @@ private:
   void _drawIconMode(drawevent_constptr_t drwev);
   void _drawPathBar(drawevent_constptr_t drwev, int& y_offset);
   void _drawHeader(drawevent_constptr_t drwev, int& y_offset);
+  void _drawOptionsBar(drawevent_constptr_t drwev, int& y_offset);
   void _drawListItem(drawevent_constptr_t drwev, const VisibleItem& item, int y_pos, bool selected, bool hovered, int row_index);
   void _drawIconItem(drawevent_constptr_t drwev, const VisibleItem& item, int x_pos, int y_pos, bool selected, bool hovered);
 
@@ -240,6 +248,7 @@ private:
   // Header click tracking (for sorting)
   int _header_height = 24;
   int _path_bar_height = 28;
+  int _options_bar_height = 28;
 
   // Column resize state
   int _resize_column = -1;        // Which column is being resized (-1 = none)
@@ -249,6 +258,20 @@ private:
 
   int _getColumnSeparatorAt(int local_x, int local_y) const;  // Returns column index or -1
   int* _getColumnWidthPtr(int column_index);  // Get pointer to column width variable
+
+  // Per-item options column state
+  bool _has_item_options = false;          // Any visible item has options
+  int _item_options_column_width = 200;    // Width of the combined options column
+  void _drawOptionCheckbox(drawevent_constptr_t drwev, int x, int y, int w, int h, bool checked);
+  void _drawOptionButton(drawevent_constptr_t drwev, int x, int y, int w, int h, bool highlighted = false);
+  int _getItemOptionsColumnX() const;      // X where the options column starts
+  int _hitTestItemOption(const VisibleItem& item, int local_x) const;  // Returns option index or -1
+  int _computeOptionWidgetWidth(const ItemOptionDef& opt) const;
+  bool _showInlineOptions() const { return _has_item_options && !_draw_options_bar; }
+  int _getOptionsBarOffset() const;        // Y offset where options bar starts (local coords)
+  bool _isInOptionsBarArea(int local_y) const;
+  int _hitTestOptionsBar(int local_x) const;  // Returns option index or -1
+  const VisibleItem* _getActiveVisibleItem() const;  // hovered or selected
 
   // Default icons
   lev2::texture_ptr_t _icon_file;

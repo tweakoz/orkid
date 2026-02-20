@@ -10,8 +10,8 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-from obt import template 
-import math, sys, signal, time
+from obt import template
+import argparse, math, sys, signal, time
 from orkengine.core import vec3, vec4, quat, mtx4, thisdir
 from orkengine.core import CrcStringProxy, lev2_pyexdir
 
@@ -194,20 +194,20 @@ class WaterSimComponent(ApplicationComponent):
 
 class WaterSimApp(ComponentizedApplication):
 
-  def __init__(self):
+  def __init__(self, fullscreen=False):
     super().__init__()
     sg_params = {
       "preset": "UNLIT"
     }
-    self.SGC = self.addComponent("std_scenegraph", 
-                                 StandardSceneGraphComponent, 
+    self.SGC = self.addComponent("std_scenegraph",
+                                 StandardSceneGraphComponent,
                                  grid_variant=None,
                                  sg_params=sg_params,
                                  eye=vec3(0,12,15))
-    #self.LUI = self.addComponent("loggerui", LoggerUIComponent, filter_regex=[".*"]) 
-    self.WSC = self.addComponent("water_sim", 
+    #self.LUI = self.addComponent("loggerui", LoggerUIComponent, filter_regex=[".*"])
+    self.WSC = self.addComponent("water_sim",
                                  WaterSimComponent)
-    self.createEzApp(name="WaterSimApp", ssaa=0, fullscreen=True, fsmouse=True,
+    self.createEzApp(name="WaterSimApp", ssaa=0, fullscreen=fullscreen, fsmouse=fullscreen,
                       use_subsystems=['opq', 'core', 'gpu', 'lev2'])
 
 
@@ -215,6 +215,10 @@ class WaterSimApp(ComponentizedApplication):
 ################################################################################
 ################################################################################
 
-WSA = WaterSimApp()
+parser = argparse.ArgumentParser()
+parser.add_argument("-f", "--fullscreen", action="store_true", default=False)
+args = parser.parse_args()
+
+WSA = WaterSimApp(fullscreen=args.fullscreen)
 WSA.ezapp.mainThreadLoop()
 WSA.ezapp.shutdown()

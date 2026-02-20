@@ -7,12 +7,13 @@
 
 #pragma once
 
-#include <ork/lev2/ui/widget.h>
+#include <ork/lev2/ui/group.h>
+#include <ork/lev2/ui/scroll_container.h>
 #include <ork/kernel/slashnode.h>
 
 namespace ork::ui {
 
-struct DropdownMenu : public Widget {
+struct DropdownMenu : public Group {
   using selection_cb_t = std::function<void(std::string value)>;
   using dismissed_cb_t = std::function<void()>;
 
@@ -25,7 +26,6 @@ struct DropdownMenu : public Widget {
   // State
   slashnode_constptr_t _node;
   int _hover_index = -1;
-  int _scroll_offset = 0;
   double _hover_start_time = 0.0;
   int _submenu_open_index = -1;
 
@@ -48,8 +48,17 @@ struct DropdownMenu : public Widget {
   static constexpr int ARROW_WIDTH = 20;
   static constexpr double SUBMENU_DELAY = 0.2;
 
+  // Inner content widget (draw-only, events handled by DropdownMenu)
+  struct Content : public Widget {
+    Content(DropdownMenu* owner);
+    DropdownMenu* _owner;
+    void DoDraw(drawevent_constptr_t drwev) override;
+    int desiredHeight() const override;
+  };
+
   // Overrides
   void DoDraw(drawevent_constptr_t drwev) override;
+  void DoLayout() override;
   HandlerResult DoOnUiEvent(event_constptr_t ev) override;
   void _doOnPreDestroy() override;
 
@@ -57,7 +66,12 @@ struct DropdownMenu : public Widget {
   void _openSubmenu(int index);
   void _closeSubmenu();
   void _selectItem(int index);
+  void _ensureItemVisible(int index);
   fvec2 computeSize() const;
+
+  // Children
+  std::shared_ptr<Content> _content;
+  scroll_container_ptr_t _scroll_container;
 
   // Static convenience: build a SlashTree from a list of slash-delimited paths
   static slashtree_ptr_t buildTreeFromPaths(const std::vector<std::string>& paths);
