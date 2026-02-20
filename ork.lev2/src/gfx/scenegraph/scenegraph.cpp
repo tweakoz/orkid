@@ -13,6 +13,7 @@
 #include <ork/util/logger.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorVr.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/unlit_node.h>
@@ -419,9 +420,12 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     if (auto as_ssaa = ssaa.tryAs<int>()) {
       if (auto as_scrnode = dynamic_cast<ScreenOutputCompositingNode*>(_outputNode.get())) {
         as_scrnode->setSuperSample(as_ssaa.value());
+      } else if (auto as_vrnode = dynamic_cast<VrOutputNode*>(_outputNode.get())) {
+        as_vrnode->setSuperSample(as_ssaa.value());
+      } else if (auto as_dmvrnode = dynamic_cast<DualMonoVrOutputNode*>(_outputNode.get())) {
+        as_dmvrnode->setSuperSample(as_ssaa.value());
       }
     }
-    // OrkAssert(false);
   }
   _compositorImpl = _compositorData->createImpl();
   _compositorImpl->bindLighting(_lightManager);

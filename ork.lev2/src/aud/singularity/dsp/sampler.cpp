@@ -10,6 +10,7 @@
 #include <assert.h>
 #include <unistd.h>
 #include <math.h>
+#include <inttypes.h>
 
 #include <ork/lev2/aud/singularity/synthdata.h>
 #include <ork/lev2/aud/singularity/synth.h>
@@ -580,7 +581,7 @@ void SampleOscillator::keyOn(const KeyOnInfo& koi) {
 
   setSrRatio(pbratio);
 
-  if(1){
+  if(0){
     printf( "KON osc<%p> sroot<%d> SR<%d> ratio<%f> PBR<%d> loopmode<%d>\n", this, sample->_rootKey, int(sample->_sampleRate),
             _curratio, int(_playbackRate), int(_loopMode) );
   }
@@ -617,7 +618,7 @@ void SampleOscillator::keyOff() {
 
 
   _released = true;
-   printf("KOFF osc<%p>\n", (void*) this);
+   //printf("KOFF osc<%p>\n", (void*) this);
 
   if (_enableNatEnv)
     _natAmpEnv->keyOff();
@@ -712,16 +713,28 @@ float SampleOscillator::playNoLoop() {
 
   ///////////////
 
+  int64_t maxindex = (_blk_end >> 16) - 1;
   int64_t iiA = (_pbindex >> 16);
-  if (iiA > (_blk_end >> 16))
-    iiA = (_blk_end >> 16);
+  if (iiA > maxindex)
+    iiA = maxindex;
 
   int64_t iiB = iiA + 1;
-  if (iiB > (_blk_end >> 16))
-    iiB = (_blk_end >> 16);
+  if (iiB > maxindex)
+    iiB = maxindex;
 
   ///////////////
   auto sblk = sample->_sampleBlock;
+  int64_t blk_end_samples = sample->_blk_end;
+  if (sblk == nullptr || iiA < 0 || iiA >= blk_end_samples || iiB < 0 || iiB >= blk_end_samples) {
+    printf("playNoLoop OOB!\n");
+    printf("  sblk=%p blk_end_samples=%" PRId64 "\n", (const void*)sblk, blk_end_samples);
+    printf("  iiA=%" PRId64 " iiB=%" PRId64 "\n", iiA, iiB);
+    printf("  _pbindex=%" PRId64 " _pbincrem=%" PRId64 " _pbindexNext=%" PRId64 "\n", _pbindex, _pbincrem, _pbindexNext);
+    printf("  _blk_start=%" PRId64 " _blk_end=%" PRId64 "\n", _blk_start, _blk_end);
+    printf("  sample->_blk_start=%d sample->_blk_end=%d\n", sample->_blk_start, sample->_blk_end);
+    printf("  sample->_name=%s\n", sample->_name.c_str());
+    OrkAssert(false);
+  }
 
   float sampA = float(sblk[iiA]);
   float sampB = float(sblk[iiB]);
@@ -785,10 +798,13 @@ float SampleOscillator::playLoopFwd() {
 
   ///////////////
 
+  int64_t loopend_idx = (_blk_loopend >> 16) - 1;
   int64_t iiA = (_pbindex >> 16);
+  if (iiA > loopend_idx)
+    iiA = loopend_idx;
 
   int64_t iiB = iiA + 1;
-  if (iiB > (_blk_loopend >> 16))
+  if (iiB > loopend_idx)
     iiB = (_blk_loopstart >> 16);
 
   // printf( "iia<%d> lpstart<%d> lpend<%d>\n", iiA,int(_blk_loop>>16),int(_blk_end>>16));
@@ -796,7 +812,18 @@ float SampleOscillator::playLoopFwd() {
   float samp = 0.0f;
 
   auto sblk = sample->_sampleBlock;
-  OrkAssert(sblk != nullptr);
+  int64_t blk_end_samples = sample->_blk_end;
+  if (sblk == nullptr || iiA < 0 || iiA >= blk_end_samples || iiB < 0 || iiB >= blk_end_samples) {
+    printf("playLoopFwd OOB!\n");
+    printf("  sblk=%p blk_end_samples=%" PRId64 "\n", (const void*)sblk, blk_end_samples);
+    printf("  iiA=%" PRId64 " iiB=%" PRId64 "\n", iiA, iiB);
+    printf("  _pbindex=%" PRId64 " _pbincrem=%" PRId64 " _pbindexNext=%" PRId64 "\n", _pbindex, _pbincrem, _pbindexNext);
+    printf("  _blk_start=%" PRId64 " _blk_end=%" PRId64 "\n", _blk_start, _blk_end);
+    printf("  _blk_loopstart=%" PRId64 " _blk_loopend=%" PRId64 "\n", _blk_loopstart, _blk_loopend);
+    printf("  sample->_blk_start=%d sample->_blk_end=%d\n", sample->_blk_start, sample->_blk_end);
+    printf("  sample->_name=%s\n", sample->_name.c_str());
+    OrkAssert(false);
+  }
   float sampA = float(sblk[iiA]);
   float sampB = float(sblk[iiB]);
   float sampA_filtered = _lpFilter.process(sampA);
@@ -823,10 +850,10 @@ float SampleOscillator::playLoopFwd() {
       // cubic
       ///////////////
       int64_t iiC = iiB + 1;
-      if (iiC > (_blk_loopend >> 16))
+      if (iiC > loopend_idx)
         iiC = (_blk_loopstart >> 16);
       int64_t iiD = iiC + 1;
-      if (iiD > (_blk_loopend >> 16))
+      if (iiD > loopend_idx)
         iiD = (_blk_loopstart >> 16);
       //float sampC = float(sblk[iiC]);
       //float sampD = float(sblk[iiD]);

@@ -149,11 +149,11 @@ bool StochWavSoundEmitterComponent::_onActivate(Simulation* psi) {
 }
 
 void StochWavSoundEmitterComponent::_onDeactivate(Simulation* psi) {
-  printf("StochWavComponent::_onDeactivate: %p, %zu voices\n", this, _activeVoices.size());
+  //printf("StochWavComponent::_onDeactivate: %p, %zu voices\n", this, _activeVoices.size());
   auto syn = synth::instance();
   for (auto& voice : _activeVoices) {
     if (voice._progInst) {
-      printf("  comp keyOff progInst %p\n", voice._progInst);
+      //printf("  comp keyOff progInst %p\n", voice._progInst);
       syn->liveKeyOff(voice._progInst, 60, 0);
     }
   }
@@ -238,13 +238,13 @@ bool StochWavSoundEmitterSystem::_onActivate(Simulation* psi) {
 }
 
 void StochWavSoundEmitterSystem::_onDeactivate(Simulation* inst) {
-  printf("StochWav::_onDeactivate: %zu components\n", _components.size());
+  //("StochWav::_onDeactivate: %zu components\n", _components.size());
   auto syn = synth::instance();
   for (auto* comp : _components) {
-    printf("  comp %p: %zu voices\n", comp, comp->_activeVoices.size());
+    //printf("  comp %p: %zu voices\n", comp, comp->_activeVoices.size());
     for (auto& voice : comp->_activeVoices) {
       if (voice._progInst) {
-        printf("    keyOff progInst %p\n", voice._progInst);
+        //printf("    keyOff progInst %p\n", voice._progInst);
         syn->liveKeyOff(voice._progInst, 60, 0);
       }
     }
@@ -732,7 +732,7 @@ void StochWavSoundEmitterSystem::_onUpdate(Simulation* inst) {
   // Periodic stats dump
   if ((_systemElapsedTime - _lastStatsPrintTime) >= _statsPrintInterval) {
     _lastStatsPrintTime = _systemElapsedTime;
-    printf("=== StochWav Stats @ %.1fs ===\n", _systemElapsedTime);
+    //printf("=== StochWav Stats @ %.1fs ===\n", _systemElapsedTime);
     for (auto& [groupName, emitterIndices] : _groupMap) {
       auto grit = _groupRuntime.find(groupName);
       if (grit == _groupRuntime.end()) continue;
