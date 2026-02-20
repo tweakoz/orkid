@@ -137,12 +137,12 @@ tests = {
             },
             "MoviePlayback": {
                 "HwDecodeBasic": {
-                    "_commands": lev2("movie/hwdec_basic.py","-a"),
-                    "_options": { "Fullscreen": ["-f"] },
+                    "_commands": lev2("movie/hwdec_basic.py"),
+                    "_options": { "Fullscreen": ["-f"], "Audio": ["-a"] },
                 },
                 "HwDecodeStress": {
-                    "_commands": lev2("movie/hwdec_stresstest.py","-a"),
-                    "_options": { "Fullscreen": ["-f"] },
+                    "_commands": lev2("movie/hwdec_stresstest.py"),
+                    "_options": { "Fullscreen": ["-f"], "Audio": ["-a"] },
                 },
             },
             "SubMesh": {
