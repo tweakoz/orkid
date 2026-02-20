@@ -55,10 +55,12 @@ from ork.ui import standard_icons, icon_library
 ################################################################################
 
 class TestInfo:
-  def __init__(self, name, commands, is_tmux=False, description="", options_spec=None):
+  def __init__(self, name, commands, is_tmux=False, description="", options_spec=None, capture=False, fire_and_forget=False):
     self.name = name
     self.commands = commands    # list of strings (single) or list of lists (tmux)
     self.is_tmux = is_tmux
+    self.capture = capture      # use command.capture instead of command.run
+    self.fire_and_forget = fire_and_forget  # mark passed immediately after launch
     self.description = description
     self.options_spec = options_spec or {}  # raw _options dict
     self.options_state = {}    # runtime state: {"BoolOpt": True, "EnumOpt": "A"}
@@ -142,7 +144,9 @@ class TestRunnerFilesystemModel(lev2.ui.FilesystemModel):
         description = value.get("_description", "")
         options_spec = value.get("_options", {})
         is_tmux = isinstance(commands, list) and len(commands) > 0 and isinstance(commands[0], list)
-        info = TestInfo(name, commands, is_tmux=is_tmux, description=description, options_spec=options_spec)
+        capture = value.get("_capture", False)
+        fire_and_forget = value.get("_fire_and_forget", False)
+        info = TestInfo(name, commands, is_tmux=is_tmux, description=description, options_spec=options_spec, capture=capture, fire_and_forget=fire_and_forget)
         # Initialize options_state with defaults
         for opt_name, opt_value in options_spec.items():
           if isinstance(opt_value, list):
@@ -735,7 +739,11 @@ class TestRunnerApp:
       # Build effective command with option args appended
       extra_args = self._model._buildEffectiveArgs(key)
       commands = info.commands + extra_args
-      exit_code = command.run(commands, do_log=True)
+      if info.capture:
+        output = command.capture(commands, do_log=True)
+        exit_code = 0 if output else 1
+      else:
+        exit_code = command.run(commands, do_log=True)
       elapsed = time.time() - t0
       status = "passed" if exit_code == 0 else "failed"
       self._model.setTestStatus(key, status, exit_code, duration=elapsed)
@@ -765,6 +773,8 @@ class TestRunnerApp:
         "osascript", "-e",
         'tell application "Terminal" to do script "tmux attach-session -t %s"' % session_name
       ])
+      if info.fire_and_forget:
+        self._model.setTestStatus(key, "passed", 0)
     except Exception as e:
       print("tmux launch failed: %s" % e)
       self._model.setTestStatus(key, "failed", -1)
