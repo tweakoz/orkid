@@ -8,6 +8,7 @@
 #pragma once
 
 #include <ork/lev2/ui/group.h>
+#include <ork/lev2/ui/scroll_controller.h>
 #include <ork/lev2/gfx/rtgroup.h>
 
 namespace ork::ui {
@@ -49,9 +50,9 @@ struct ScrollContainer : public Group {
   void setScrollMode(ScrollMode mode);
   ScrollMode scrollMode() const { return _mode; }
 
-  // Scroll position
-  int scrollOffsetX() const { return _scroll_offset_x; }
-  int scrollOffsetY() const { return _scroll_offset_y; }
+  // Scroll position (Y uses inverted convention: 0=bottom, maxScrollY=top)
+  int scrollOffsetX() const { return _hscroller._scroll_offset; }
+  int scrollOffsetY() const { return maxScrollY() - _vscroller._scroll_offset; }
   void setScrollOffsetX(int offset);
   void setScrollOffsetY(int offset);
   void setScrollOffset(int x, int y);
@@ -63,15 +64,13 @@ struct ScrollContainer : public Group {
   void scrollToRight();
 
   // Configuration
-  int _scroll_speed = 5;  // pixels per mouse wheel tick
   fvec4 _bg_color = fvec4(0.1f, 0.1f, 0.1f, 1.0f);
   bool _draw_background = true;
   bool _draw_scroll_indicator = true;  // macOS-style scroll indicator
-  fvec4 _scroll_indicator_color = fvec4(1.0f, 1.0f, 1.0f, 0.5f);
-  int _scroll_indicator_width = 6;  // pixels
-  int _scroll_indicator_margin = 2;  // margin from edge
-  float _scroll_indicator_fade_delay = 1.0f;  // seconds before fade starts
-  float _scroll_indicator_fade_duration = 0.3f;  // fade duration in seconds
+
+  // Scroll controllers (public for direct configuration)
+  ScrollController _vscroller;
+  ScrollController _hscroller;
 
   // Content size (computed from child)
   int contentWidth() const;
@@ -82,8 +81,9 @@ struct ScrollContainer : public Group {
   int maxScrollY() const;
 
   // Scroll adjustment for RootToLocal/LocalToRoot coordinate transformations
-  int scrollAdjustX() const override { return _scroll_offset_x; }
-  int scrollAdjustY() const override { return maxScrollY() - _scroll_offset_y; }
+  // Controller uses 0=top convention, so scrollAdjustY is just the offset
+  int scrollAdjustX() const override { return _hscroller._scroll_offset; }
+  int scrollAdjustY() const override { return _vscroller._scroll_offset; }
 
   // Mark content as needing repaint
   void markContentDirty() { _content_dirty = true; }
@@ -101,12 +101,9 @@ private:
   void _layoutChild();
   void _checkChildSizeChanged();
   void _renderContentToRTG(drawevent_constptr_t drwev);
-  void _drawScrollIndicator(drawevent_constptr_t drwev);
 
   widget_ptr_t _child;
   ScrollMode _mode = ScrollMode::Y;
-  int _scroll_offset_x = 0;
-  int _scroll_offset_y = 0;
 
   // Cached child desired size to detect changes
   int _cached_child_desired_w = 0;
@@ -119,9 +116,6 @@ private:
   int _rtg_content_h = 0;
   int _rtg_root_x = 0;  // Cached root offset for UV calculations
   int _rtg_root_y = 0;
-
-  // Scroll indicator fade timing
-  float _last_scroll_time = -10.0f;  // time of last scroll event (starts hidden)
 };
 
 using scroll_container_ptr_t = std::shared_ptr<ScrollContainer>;

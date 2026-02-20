@@ -12,6 +12,9 @@ namespace ork::ui {
 ///////////////////////////////////////////////////////////////////////////////
 ScrollContainer::ScrollContainer(const std::string& name, int x, int y, int w, int h)
     : Group(name, x, y, w, h) {
+  // Match the old indicator color (0.5 alpha vs default 0.4)
+  _vscroller._indicator_color = fvec4(1.0f, 1.0f, 1.0f, 0.5f);
+  _hscroller._indicator_color = fvec4(1.0f, 1.0f, 1.0f, 0.5f);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -40,7 +43,7 @@ void ScrollContainer::setChild(widget_ptr_t child) {
     _layoutChild();
   }
 
-  _scroll_offset_x = 0;
+  _hscroller._scroll_offset = 0;
   scrollToTop();
   _content_dirty = true;
 }
@@ -55,41 +58,43 @@ void ScrollContainer::setScrollMode(ScrollMode mode) {
 
 ///////////////////////////////////////////////////////////////////////////////
 void ScrollContainer::setScrollOffsetX(int offset) {
-  _scroll_offset_x = offset;
+  _hscroller._scroll_offset = offset;
   _clampScrollOffset();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 void ScrollContainer::setScrollOffsetY(int offset) {
-  _scroll_offset_y = offset;
+  // Public API uses old convention (0=bottom, maxScrollY=top)
+  // Controller uses 0=top, maxScroll=bottom
+  _vscroller._scroll_offset = maxScrollY() - offset;
   _clampScrollOffset();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 void ScrollContainer::setScrollOffset(int x, int y) {
-  _scroll_offset_x = x;
-  _scroll_offset_y = y;
+  _hscroller._scroll_offset = x;
+  _vscroller._scroll_offset = maxScrollY() - y;
   _clampScrollOffset();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 void ScrollContainer::scrollToTop() {
-  _scroll_offset_y = maxScrollY();
+  _vscroller._scroll_offset = 0;  // 0 = top in controller convention
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 void ScrollContainer::scrollToBottom() {
-  _scroll_offset_y = 0;
+  _vscroller._scroll_offset = maxScrollY();  // maxScroll = bottom
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 void ScrollContainer::scrollToLeft() {
-  _scroll_offset_x = 0;
+  _hscroller._scroll_offset = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 void ScrollContainer::scrollToRight() {
-  _scroll_offset_x = maxScrollX();
+  _hscroller._scroll_offset = maxScrollX();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -126,19 +131,25 @@ int ScrollContainer::maxScrollY() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 void ScrollContainer::_clampScrollOffset() {
+  // Update controller sizes from current content/viewport
+  _vscroller._content_size = contentHeight();
+  _vscroller._viewport_size = _geometry._h;
+  _hscroller._content_size = contentWidth();
+  _hscroller._viewport_size = _geometry._w;
+
   // Clamp based on scroll mode
   switch (_mode) {
     case ScrollMode::Y:
-      _scroll_offset_x = 0;
-      _scroll_offset_y = std::clamp(_scroll_offset_y, 0, maxScrollY());
+      _hscroller._scroll_offset = 0;
+      _vscroller.clamp();
       break;
     case ScrollMode::X:
-      _scroll_offset_x = std::clamp(_scroll_offset_x, 0, maxScrollX());
-      _scroll_offset_y = 0;
+      _hscroller.clamp();
+      _vscroller._scroll_offset = 0;
       break;
     case ScrollMode::XY:
-      _scroll_offset_x = std::clamp(_scroll_offset_x, 0, maxScrollX());
-      _scroll_offset_y = std::clamp(_scroll_offset_y, 0, maxScrollY());
+      _hscroller.clamp();
+      _vscroller.clamp();
       break;
   }
 }
@@ -296,10 +307,9 @@ Widget* ScrollContainer::doRouteUiEvent(event_constptr_t ev) {
   }
 
   // Adjust local coords by scroll offset for child hit testing
-  // Use inverted Y scroll to match display coordinate transformation
-  int inverted_scroll_y = maxScrollY() - _scroll_offset_y;
-  int child_local_x = lx + _scroll_offset_x;
-  int child_local_y = ly + inverted_scroll_y;
+  // Controller uses 0=top convention, so offset is already in display coords
+  int child_local_x = lx + _hscroller._scroll_offset;
+  int child_local_y = ly + _vscroller._scroll_offset;
 
   // Check if within child bounds (accounting for scroll offset)
   if (child_local_x >= 0 && child_local_x < _child->width() &&
@@ -307,8 +317,8 @@ Widget* ScrollContainer::doRouteUiEvent(event_constptr_t ev) {
     // Create a modified event with adjusted coordinates for the child
     // This compensates for scroll offset so RootToLocal works correctly
     auto modified_ev = std::make_shared<Event>(*ev);
-    modified_ev->miX = ev->miX + _scroll_offset_x;
-    modified_ev->miY = ev->miY + inverted_scroll_y;
+    modified_ev->miX = ev->miX + _hscroller._scroll_offset;
+    modified_ev->miY = ev->miY + _vscroller._scroll_offset;
 
     Widget* routed = _child->routeUiEvent(modified_ev);
 
@@ -326,21 +336,18 @@ HandlerResult ScrollContainer::DoOnUiEvent(event_constptr_t ev) {
 
   switch (ev->_eventcode) {
     case EventCode::MOUSEWHEEL: {
+      float current_time = _uicontext->_uitimer.SecsSinceStart();
       // Vertical wheel
       if (ev->miMWY != 0) {
         if (_mode == ScrollMode::Y || _mode == ScrollMode::XY) {
-          _scroll_offset_y += ev->miMWY * _scroll_speed;
-          _clampScrollOffset();
-          _last_scroll_time = _uicontext->_uitimer.SecsSinceStart();
+          _vscroller.applyMouseWheel(ev->miMWY, current_time);
           result.setHandled(this);
         }
       }
       // Horizontal wheel (or shift+wheel on some systems)
       if (ev->miMWX != 0) {
         if (_mode == ScrollMode::X || _mode == ScrollMode::XY) {
-          _scroll_offset_x -= ev->miMWX * _scroll_speed;
-          _clampScrollOffset();
-          _last_scroll_time = _uicontext->_uitimer.SecsSinceStart();
+          _hscroller.applyMouseWheel(ev->miMWX, current_time);
           result.setHandled(this);
         }
       }
@@ -411,13 +418,12 @@ void ScrollContainer::DoDraw(drawevent_constptr_t drwev) {
   int display_h = std::min(_geometry._h, _rtg_content_h);
 
   // UV coordinates select the visible portion of content
-  float u0 = float(_rtg_root_x + _scroll_offset_x) / float(rtg_w);
-  float u1 = float(_rtg_root_x + _scroll_offset_x + display_w) / float(rtg_w);
+  // Controller uses 0=top convention, offset is already in display coords
+  float u0 = float(_rtg_root_x + _hscroller._scroll_offset) / float(rtg_w);
+  float u1 = float(_rtg_root_x + _hscroller._scroll_offset + display_w) / float(rtg_w);
 
-  // For V, we need to invert scroll direction because of the V swap below
-  int inverted_scroll_y = maxScrollY() - _scroll_offset_y;
-  float v0 = float(_rtg_root_y + inverted_scroll_y) / float(rtg_h);
-  float v1 = float(_rtg_root_y + inverted_scroll_y + display_h) / float(rtg_h);
+  float v0 = float(_rtg_root_y + _vscroller._scroll_offset) / float(rtg_h);
+  float v1 = float(_rtg_root_y + _vscroller._scroll_offset + display_h) / float(rtg_h);
 
   // Swap V to flip vertically (RTG renders bottom-up, display top-down)
   float v0_flipped = v1;
@@ -448,104 +454,18 @@ void ScrollContainer::DoDraw(drawevent_constptr_t drwev) {
   mtxi->PopUIMatrix();
   tgt->PopModColor();
 
-  // Draw scroll indicator on top
+  // Draw scroll indicators on top
   if (_draw_scroll_indicator) {
-    _drawScrollIndicator(drwev);
+    bool need_vscroll = (_mode == ScrollMode::Y || _mode == ScrollMode::XY);
+    bool need_hscroll = (_mode == ScrollMode::X || _mode == ScrollMode::XY);
+
+    if (need_vscroll) {
+      _vscroller.drawIndicator(drwev, _uicontext, ix1, iy1, _geometry._w, _geometry._h, false);
+    }
+    if (need_hscroll) {
+      _hscroller.drawIndicator(drwev, _uicontext, ix1, iy1, _geometry._w, _geometry._h, true);
+    }
   }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-void ScrollContainer::_drawScrollIndicator(drawevent_constptr_t drwev) {
-  auto tgt = drwev->GetTarget();
-  auto fbi = tgt->FBI();
-  auto mtxi = tgt->MTXI();
-  auto fxi = tgt->FXI();
-
-  int content_w = contentWidth();
-  int content_h = contentHeight();
-
-  // Only draw if content exceeds visible area
-  bool need_vscroll = (_mode == ScrollMode::Y || _mode == ScrollMode::XY) && content_h > _geometry._h;
-  bool need_hscroll = (_mode == ScrollMode::X || _mode == ScrollMode::XY) && content_w > _geometry._w;
-
-  if (!need_vscroll && !need_hscroll) return;
-
-  // Calculate fade alpha based on time since last scroll
-  float current_time = _uicontext->_uitimer.SecsSinceStart();
-  float time_since_scroll = current_time - _last_scroll_time;
-
-  if (time_since_scroll > _scroll_indicator_fade_delay + _scroll_indicator_fade_duration) {
-    return;  // Fully faded out, don't draw
-  }
-
-  float alpha = _scroll_indicator_color.w;
-  if (time_since_scroll > _scroll_indicator_fade_delay) {
-    float fade_progress = (time_since_scroll - _scroll_indicator_fade_delay) / _scroll_indicator_fade_duration;
-    alpha *= (1.0f - fade_progress);
-  }
-
-  int ix1, iy1;
-  LocalToRoot(0, 0, ix1, iy1);
-
-  auto defmtl = lev2::defaultUIMaterial();
-
-  // Set raster state for alpha blending
-  defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
-  defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
-  defmtl->_rasterstate->_priority = 1 << 20;
-  defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
-
-  fvec4 indicator_color(_scroll_indicator_color.x, _scroll_indicator_color.y, _scroll_indicator_color.z, alpha);
-
-  mtxi->PushUIMatrix();
-  tgt->PushModColor(indicator_color);
-  fxi->pushRasterState(defmtl->_rasterstate);
-
-  // Draw vertical scroll indicator
-  if (need_vscroll) {
-    float visible_ratio = float(_geometry._h) / float(content_h);
-    float scroll_ratio = float(_scroll_offset_y) / float(content_h - _geometry._h);
-
-    int indicator_h = std::max(20, int(visible_ratio * _geometry._h));
-    int indicator_travel = _geometry._h - indicator_h;
-    int indicator_y = indicator_travel - int(scroll_ratio * indicator_travel);
-
-    int ind_x = ix1 + _geometry._w - _scroll_indicator_width - _scroll_indicator_margin;
-    int ind_y = iy1 + indicator_y;
-
-    tgt->PRI()->RenderQuadAtZ(
-        defmtl.get(),
-        ind_x, ind_x + _scroll_indicator_width,
-        ind_y, ind_y + indicator_h,
-        0.0f,
-        0.0f, 1.0f,
-        0.0f, 1.0f);
-  }
-
-  // Draw horizontal scroll indicator
-  if (need_hscroll) {
-    float visible_ratio = float(_geometry._w) / float(content_w);
-    float scroll_ratio = float(_scroll_offset_x) / float(content_w - _geometry._w);
-
-    int indicator_w = std::max(20, int(visible_ratio * _geometry._w));
-    int indicator_travel = _geometry._w - indicator_w;
-    int indicator_x = int(scroll_ratio * indicator_travel);
-
-    int ind_x = ix1 + indicator_x;
-    int ind_y = iy1 + _geometry._h - _scroll_indicator_width - _scroll_indicator_margin;
-
-    tgt->PRI()->RenderQuadAtZ(
-        defmtl.get(),
-        ind_x, ind_x + indicator_w,
-        ind_y, ind_y + _scroll_indicator_width,
-        0.0f,
-        0.0f, 1.0f,
-        0.0f, 1.0f);
-  }
-
-  fxi->popRasterState();
-  tgt->PopModColor();
-  mtxi->PopUIMatrix();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

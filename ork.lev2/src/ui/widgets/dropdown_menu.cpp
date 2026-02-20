@@ -135,7 +135,7 @@ DropdownMenu::DropdownMenu(const std::string& name, slashnode_constptr_t node)
   _scroll_container->setChild(_content);
   _scroll_container->setScrollMode(ScrollMode::Y);
   _scroll_container->_draw_background = false;
-  _scroll_container->_scroll_indicator_fade_delay = 999999.0f; // always visible while dropdown is open
+  _scroll_container->_vscroller._fade_delay = 999999.0f; // always visible while dropdown is open
   addChild(_scroll_container);
 }
 ///////////////////////////////////////////////////////////////////////////////

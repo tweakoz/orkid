@@ -3132,8 +3132,8 @@ void pyinit_ui(py::module& module_lev2) {
               [](ui::scroll_container_ptr_t sc, int v) { sc->setScrollOffsetY(v); })
           .def_property(
               "scroll_speed",
-              [](ui::scroll_container_ptr_t sc) -> int { return sc->_scroll_speed; },
-              [](ui::scroll_container_ptr_t sc, int v) { sc->_scroll_speed = v; })
+              [](ui::scroll_container_ptr_t sc) -> int { return sc->_vscroller._scroll_speed; },
+              [](ui::scroll_container_ptr_t sc, int v) { sc->_vscroller._scroll_speed = v; sc->_hscroller._scroll_speed = v; })
           .def_property(
               "bg_color",
               [](ui::scroll_container_ptr_t sc) -> fvec4 { return sc->_bg_color; },
@@ -3148,16 +3148,16 @@ void pyinit_ui(py::module& module_lev2) {
               [](ui::scroll_container_ptr_t sc, bool v) { sc->_draw_scroll_indicator = v; })
           .def_property(
               "scroll_indicator_color",
-              [](ui::scroll_container_ptr_t sc) -> fvec4 { return sc->_scroll_indicator_color; },
-              [](ui::scroll_container_ptr_t sc, fvec4 c) { sc->_scroll_indicator_color = c; })
+              [](ui::scroll_container_ptr_t sc) -> fvec4 { return sc->_vscroller._indicator_color; },
+              [](ui::scroll_container_ptr_t sc, fvec4 c) { sc->_vscroller._indicator_color = c; sc->_hscroller._indicator_color = c; })
           .def_property(
               "scroll_indicator_width",
-              [](ui::scroll_container_ptr_t sc) -> int { return sc->_scroll_indicator_width; },
-              [](ui::scroll_container_ptr_t sc, int v) { sc->_scroll_indicator_width = v; })
+              [](ui::scroll_container_ptr_t sc) -> int { return sc->_vscroller._indicator_width; },
+              [](ui::scroll_container_ptr_t sc, int v) { sc->_vscroller._indicator_width = v; sc->_hscroller._indicator_width = v; })
           .def_property(
               "scroll_indicator_margin",
-              [](ui::scroll_container_ptr_t sc) -> int { return sc->_scroll_indicator_margin; },
-              [](ui::scroll_container_ptr_t sc, int v) { sc->_scroll_indicator_margin = v; })
+              [](ui::scroll_container_ptr_t sc) -> int { return sc->_vscroller._indicator_margin; },
+              [](ui::scroll_container_ptr_t sc, int v) { sc->_vscroller._indicator_margin = v; sc->_hscroller._indicator_margin = v; })
           .def_property_readonly(
               "content_width",
               [](ui::scroll_container_ptr_t sc) -> int { return sc->contentWidth(); })

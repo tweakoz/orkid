@@ -66,6 +66,13 @@ def _build_modelviewer_tests():
       "_commands": ["ork.modelviewer.py", "-m", shortname],
       "_options": {
         "Fullscreen": ["-f"],
+        "SSAA": {
+          "none": ["--ssaa", "0"],
+          "2x2":  ["--ssaa", "1"],
+          "3x3":  ["--ssaa", "2"],
+          "4x4":  ["--ssaa", "3"],
+          "5x5":  ["--ssaa", "4"],
+        },
         "Intensity": {
           "1.0":  ["-i", "1.0"],
           "1.5":  ["-i", "1.5"],

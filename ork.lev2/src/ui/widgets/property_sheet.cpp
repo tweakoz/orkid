@@ -1785,6 +1785,7 @@ void PropertySheet::_rebuildRows() {
   int row_index = 0;
   _addRowsRecursive("", 0, y_offset, row_index);
   _total_rows = row_index;
+  _scroller._content_size = _total_rows * _row_height;
   _clampScrollOffset();
 }
 
@@ -1796,9 +1797,9 @@ void PropertySheet::_clampScrollOffset() {
     rows_area_height = _geometry._h - detail_height;
   }
 
-  int content_height = _total_rows * _row_height;
-  int max_scroll = std::max(0, content_height - rows_area_height);
-  _scroll_offset = std::clamp(_scroll_offset, 0, max_scroll);
+  _scroller._content_size = _total_rows * _row_height;
+  _scroller._viewport_size = rows_area_height;
+  _scroller.clamp();
 }
 
 void PropertySheet::_doOnResized() {
@@ -1832,7 +1833,7 @@ void PropertySheet::DoLayout() {
   }
 
   // Layout children vertically with scroll offset (in rows area)
-  int y = -_scroll_offset;
+  int y = -_scroller._scroll_offset;
   for (auto& child : _children) {
     child->SetRect(0, y, _geometry._w, _row_height);
 
@@ -1885,8 +1886,8 @@ Widget* PropertySheet::doRouteUiEvent(event_constptr_t ev) {
   }
 
   // Find which child the event is inside (scroll-aware)
-  // Children are positioned at y = -_scroll_offset + row_index * _row_height
-  int y = -_scroll_offset;
+  // Children are positioned at y = -_scroller._scroll_offset + row_index * _row_height
+  int y = -_scroller._scroll_offset;
   for (auto& child : _children) {
     int child_height = child->height();
     // Skip children that are scrolled out of view (and outside rows area)
@@ -1917,8 +1918,7 @@ HandlerResult PropertySheet::DoOnUiEvent(event_constptr_t ev) {
 
   switch (ev->_eventcode) {
     case EventCode::MOUSEWHEEL: {
-      _scroll_offset -= ev->miMWY * _row_height;  // Scroll by row height
-      _clampScrollOffset();
+      _scroller.applyMouseWheel(ev->miMWY, _uicontext->_uitimer.SecsSinceStart());
       DoLayout();  // Re-layout children with new scroll offset
       result.setHandled(this);
       break;
@@ -1969,6 +1969,9 @@ void PropertySheet::DoDraw(drawevent_constptr_t drwev) {
   }
 
   fbi->popScissor();
+
+  // Draw scroll indicator over rows area
+  _scroller.drawIndicator(drwev, _uicontext, ix1, iy1, _geometry._w, rows_area_height);
 
   // Draw detail editor on top (if active)
   if (_detail_editor) {

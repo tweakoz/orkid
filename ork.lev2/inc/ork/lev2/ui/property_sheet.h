@@ -10,6 +10,7 @@
 #include <ork/lev2/ui/group.h>
 #include <ork/lev2/ui/property_sheet_model.h>
 #include <ork/lev2/ui/style.h>
+#include <ork/lev2/ui/scroll_controller.h>
 #include <ork/kernel/sigslot2.h>
 #include <functional>
 
@@ -266,8 +267,8 @@ private:
   std::unordered_map<std::string, property_row_ptr_t> _rows;
   std::unordered_map<std::string, MapViewState> _map_view_states;
   bool _needs_rebuild = true;
-  int _scroll_offset = 0;
   int _total_rows = 0;  // For scroll calculation
+  ScrollController _scroller;
 
   // Editor factory registry (keyed by property type CRC)
   std::unordered_map<uint32_t, EditorFactoryPair> _editor_factories;
