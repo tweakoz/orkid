@@ -627,7 +627,6 @@ bool SceneGraphSystem::_onStage(Simulation* psi) {
     auto injected = sim_varmap->typedValueForKey<scenegraph::scene_ptr_t>("scenegraph");
     if (injected) {
       _scene = injected.value();
-      _sceneInjected = true;
     }
   }
 
@@ -666,7 +665,7 @@ void SceneGraphSystem::_onDeactivate(Simulation* inst) // final
 void SceneGraphSystem::_onUpdate(Simulation* psi) // final
 {
   EASY_BLOCK("SceneGraphSystem::_onUpdate", 0xffa02020);
-  if (_scene && (!_sceneInjected || _updateInjectedScene)) {
+  if (_scene && _autoupdate) {
     EASY_VALUE("NC", _numComponents);
     _scene->enqueueToRenderer(_camlut);
   }
@@ -685,7 +684,7 @@ void SceneGraphSystem::_rt_process() {
 ///////////////////////////////////////////////////////////////////////////////
 void SceneGraphSystem::_onRenderWithStandardCompositorFrame(Simulation* psi, lev2::standardcompositorframe_ptr_t sframe) {
   _rt_process();
-  if (_scene && !_sceneInjected) {
+  if (_scene && _autodraw) {
     _scene->renderWithStandardCompositorFrame(sframe);
   }
 }
@@ -693,8 +692,7 @@ void SceneGraphSystem::_onRenderWithStandardCompositorFrame(Simulation* psi, lev
 void SceneGraphSystem::_onRender(Simulation* psi, ui::drawevent_constptr_t drwev) // final
 {
   _rt_process();
-
-  if (_scene && !_sceneInjected) {
+  if (_scene && _autodraw) {
     _scene->renderOnContext(drwev->GetTarget());
   }
 }

@@ -218,8 +218,8 @@ struct SceneGraphSystem final : public System {
   int _numComponents = 0;
   const SceneGraphSystemData& _SGSD;
   MpMcBoundedQueue<void_lambda_t,65536> _renderops;
-  bool _sceneInjected = false;
-  bool _updateInjectedScene = false; // when true, call enqueueToRenderer even on injected scenes
+  bool _autodraw = true;   // when false, skip renderOnContext / renderWithStandardCompositorFrame
+  bool _autoupdate = true; // when false, skip enqueueToRenderer
 };
 
 ///////////////////////////////////////////////////////////////////////////////
