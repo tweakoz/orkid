@@ -319,6 +319,7 @@ ContentWidget::ContentWidget(FilesystemView* parent)
 }
 
 void ContentWidget::DoDraw(drawevent_constptr_t drwev) {
+  _drawColoredBox(drwev, _fsview->_bgcolor);
   if (_fsview->_view_mode == FilesystemViewMode::List) {
     _fsview->_drawContentListMode(drwev);
   } else {
@@ -534,7 +535,7 @@ FilesystemView::FilesystemView(const std::string& name, int x, int y, int w, int
   _subscribeToModel();
 
   _inner_vpack = std::make_shared<VerticalPack>(name + "_vpack");
-  _inner_vpack->_margin = 0;
+  _inner_vpack->_margin = 1;
   _inner_vpack->_draw_background = false;
   addChild(_inner_vpack, false);
 
@@ -669,7 +670,24 @@ void FilesystemView::refresh() {
   _needs_rebuild = true;
   _thumbnail_cache.clear();
   // Force full relayout of VPack hierarchy.
-  // Dirty the inner vpack so SetRect triggers DoLayout even at same size.
+  // Dirty both vpacks so SetRect triggers DoLayout even at same size.
+  _inner_vpack->_geometry._w = 0;
+  _bars_vpack->_geometry._w = 0;
+  _inner_vpack->SetRect(0, 0, _geometry._w, _geometry._h);
+}
+
+toolbar_ptr_t FilesystemView::addToolbar(const std::string& name, int height) {
+  auto toolbar = std::make_shared<Toolbar>(name);
+  toolbar->_fixed_height = height;
+  _bars_vpack->addChild(toolbar, false);
+  // Re-layout inner vpack so it accounts for the new bar height
+  _inner_vpack->_geometry._w = 0;
+  _inner_vpack->SetRect(0, 0, _geometry._w, _geometry._h);
+  return toolbar;
+}
+
+void FilesystemView::removeToolbar(toolbar_ptr_t toolbar) {
+  _bars_vpack->removeChild(toolbar, false);
   _inner_vpack->_geometry._w = 0;
   _inner_vpack->SetRect(0, 0, _geometry._w, _geometry._h);
 }

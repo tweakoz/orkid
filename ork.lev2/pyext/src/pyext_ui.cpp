@@ -3325,18 +3325,37 @@ void pyinit_ui(py::module& module_lev2) {
               [](std::vector<std::string> paths) -> slashtree_ptr_t { //
                 return ui::DropdownMenu::buildTreeFromPaths(paths);
               })
+          .def_readwrite("sort_alphabetically", &ui::DropdownMenu::_sort_alphabetically)
           .def_static(
               "show",
               [](ui::context_ptr_t ctx,
                  std::vector<std::string> paths,
                  int x, int y,
-                 py::object on_selected) {
+                 py::object on_selected,
+                 bool sort_alphabetically) {
                 // Build tree from paths
                 auto tree = ui::DropdownMenu::buildTreeFromPaths(paths);
                 auto root = tree->root();
 
+                // Extract top-level keys in path order
+                std::vector<std::string> item_order;
+                for (auto& path : paths) {
+                  std::string key = path;
+                  // Strip leading slashes
+                  while (!key.empty() && key[0] == '/') key = key.substr(1);
+                  // Take first path component
+                  auto pos = key.find('/');
+                  if (pos != std::string::npos) key = key.substr(0, pos);
+                  if (!key.empty() && std::find(item_order.begin(), item_order.end(), key) == item_order.end()) {
+                    item_order.push_back(key);
+                  }
+                }
+
                 // Create root dropdown menu
                 auto menu = std::make_shared<ui::DropdownMenu>("dropdown_root", root);
+                menu->_item_order = item_order;
+                menu->_sort_alphabetically = sort_alphabetically;
+                menu->_buildItems();
 
                 // Set selection callback
                 if (!on_selected.is_none()) {
@@ -3365,7 +3384,8 @@ void pyinit_ui(py::module& module_lev2) {
               py::arg("paths"),
               py::arg("x"),
               py::arg("y"),
-              py::arg("on_selected") = py::none());
+              py::arg("on_selected") = py::none(),
+              py::arg("sort_alphabetically") = false);
   type_codec->registerStdCodec<ui::dropdown_menu_ptr_t>(dropdown_menu_type);
   /////////////////////////////////////////////////////////////////////////////////
   // TransformCurveEditor

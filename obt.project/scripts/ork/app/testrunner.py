@@ -562,9 +562,8 @@ class TestRunnerApp:
     if self._checkHasDescriptions(tests):
       self.fs_view.show_description_column = True
 
-    # -- Audio device toolbar (inside fs_view.bars VPack) --
-    self._audio_toolbar = self.fs_view.bars.makeChild(uiclass=lev2.ui.Toolbar, args=["audio_toolbar"])
-    self._audio_toolbar.fixed_height = 24
+    # -- Audio device toolbar (inside fs_view bars) --
+    self._audio_toolbar = self.fs_view.addToolbar("audio_toolbar", 24)
     self._audio_toolbar.bgcolor = vec4(0.1, 0.1, 0.13, 1)
     self._audio_toolbar.button_hover_color = vec4(0.2, 0.2, 0.25, 1)
     self._audio_toolbar.button_pressed_color = vec4(0.2, 0.4, 0.6, 1)
@@ -606,9 +605,8 @@ class TestRunnerApp:
     self._audio_toolbar.addSeparator()
     self._btn_audio_refresh = self._audio_toolbar.addButton("audio_refresh", refresh_icon, "Refresh Audio Devices")
 
-    # -- Options toolbar (inside fs_view.bars, rebuilt on selection change) --
-    self._options_toolbar = self.fs_view.bars.makeChild(uiclass=lev2.ui.Toolbar, args=["options_toolbar"])
-    self._options_toolbar.fixed_height = 24
+    # -- Options toolbar (inside fs_view bars, rebuilt on selection change) --
+    self._options_toolbar = self.fs_view.addToolbar("options_toolbar", 24)
     self._options_toolbar.enable = False  # hidden until a test with options is selected
     self._options_toolbar.bgcolor = vec4(0.1, 0.1, 0.13, 1)
     self._options_toolbar.button_hover_color = vec4(0.2, 0.2, 0.25, 1)
@@ -722,9 +720,10 @@ class TestRunnerApp:
     self.fs_view.onActivate(on_activate)
     self.fs_view.onSelect(on_select)
     self.fs_view.onContextMenu(on_context_menu)
+    self.fs_view.onDirectoryChanged(lambda path: self._rebuildOptionsToolbar(None))
 
     # -- Style --
-    self.fs_view.bgcolor = vec4(0.15, 0.15, 0.15, 1)
+    self.fs_view.bgcolor = vec4(0, 0, 0, 1)
     self.fs_view.text_color = vec4(0.9, 0.9, 0.9, 1)
     self.fs_view.selected_color = vec4(0.2, 0.4, 0.6, 1)
     self.fs_view.hover_color = vec4(0.25, 0.25, 0.3, 1)
@@ -865,12 +864,23 @@ class TestRunnerApp:
     from xml.sax.saxutils import escape
     if width is None:
       width = max(80, len(text) * 8 + (30 if checked is not None else 16))
-    prefix = ""
+    checkbox_svg = ""
+    text_x = 4
     if checked is not None:
-      prefix = "\u2611 " if checked else "\u2610 "
+      # Draw a checkbox box with optional green checkmark
+      bx, by = 3, 3
+      bs = height - 6  # box size
+      checkbox_svg = '<rect x="%d" y="%d" width="%d" height="%d" rx="2" fill="none" stroke="#999999" stroke-width="1.5"/>' % (bx, by, bs, bs)
+      if checked:
+        # Green checkmark inside the box
+        cx, cy = bx + 3, by + bs // 2
+        checkbox_svg += '<polyline points="%d,%d %d,%d %d,%d" fill="none" stroke="#44CC44" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' % (
+          cx, cy + 2, cx + bs // 4, cy + bs // 3, cx + bs - 5, cy - bs // 3)
+      text_x = bx + bs + 4
     svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %d %d">'
-      '<text x="4" y="%d" font-family="sans-serif" font-size="%d" fill="#CCCCCC">%s</text>'
-      '</svg>' % (width, height, height - 5, height - 6, escape(prefix + text)))
+      '%s'
+      '<text x="%d" y="%d" font-family="sans-serif" font-size="%d" fill="#CCCCCC">%s</text>'
+      '</svg>' % (width, height, checkbox_svg, text_x, height - 5, height - 6, escape(text)))
     return icon_library.from_svg_string(svg, width, height)
 
   @staticmethod

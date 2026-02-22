@@ -28,6 +28,8 @@ struct DropdownMenu : public Group {
   int _hover_index = -1;
   double _hover_start_time = 0.0;
   int _submenu_open_index = -1;
+  bool _sort_alphabetically = false;
+  std::vector<std::string> _item_order; // if non-empty, display items in this order
 
   // Items (built from _node children)
   struct MenuItem {
@@ -63,6 +65,7 @@ struct DropdownMenu : public Group {
   void _doOnPreDestroy() override;
 
   // Internal
+  void _buildItems();
   void _openSubmenu(int index);
   void _closeSubmenu();
   void _selectItem(int index);

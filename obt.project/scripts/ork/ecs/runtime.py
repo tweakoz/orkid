@@ -72,6 +72,7 @@ class EcsRuntime:
     self.scenegraph = None
     self.layer = None
     self.controller = None
+    self._sys_handle = None
     self._sys_ref = None
     self.cameralut = lev2.CameraDataLut()
     self.camera = None
@@ -159,7 +160,8 @@ class EcsRuntime:
     self.controller.bindScene(self.scene_data)
     self.controller.createSimulation(scenegraph=self.scenegraph)
     self.controller.startSimulation()
-    self._sys_ref = self.controller.findSystem("SceneGraphSystem")
+    self._sys_handle = self.controller.findSystem("SceneGraphSystem")
+    self._sys_ref = self._sys_handle.ref
 
   def stage_simulation(self):
     """Create controller, bind scene, create+stage simulation (edit mode)."""
@@ -169,7 +171,8 @@ class EcsRuntime:
     self.controller.bindScene(self.scene_data)
     self.controller.createSimulation(scenegraph=self.scenegraph)
     self.controller.stageSimulation()
-    self._sys_ref = self.controller.findSystem("SceneGraphSystem")
+    self._sys_handle = self.controller.findSystem("SceneGraphSystem")
+    self._sys_ref = self._sys_handle.ref
 
   def destroy_simulation(self):
     """Tear down current simulation."""
@@ -180,6 +183,7 @@ class EcsRuntime:
       except:
         pass
       self.controller = None
+      self._sys_handle = None
       self._sys_ref = None
 
   def update(self):

@@ -11,6 +11,7 @@
 #include <ork/lev2/ui/filesystem_model.h>
 #include <ork/lev2/ui/favorites.h>
 #include <ork/lev2/ui/dropdown_menu.h>
+#include <ork/lev2/ui/toolbar.h>
 #include <functional>
 #include <unordered_map>
 #include <unordered_set>
@@ -114,6 +115,13 @@ struct FilesystemView : public Group {
   void refresh();
 
   //////////////////////////////////////////////////////////////
+  // Bars (toolbars between header and content)
+  //////////////////////////////////////////////////////////////
+
+  toolbar_ptr_t addToolbar(const std::string& name, int height = 24);
+  void removeToolbar(toolbar_ptr_t toolbar);
+
+  //////////////////////////////////////////////////////////////
   // Favorites management
   //////////////////////////////////////////////////////////////
 
@@ -174,7 +182,7 @@ struct FilesystemView : public Group {
   // Appearance - Common
   //////////////////////////////////////////////////////////////
 
-  fvec4 _bgcolor = fvec4(0.1f, 0.1f, 0.1f, 1.0f);
+  fvec4 _bgcolor = fvec4(0.0f, 0.0f, 0.0f, 1.0f);
   fvec4 _text_color = fvec4(1.0f, 1.0f, 1.0f, 1.0f);
   fvec4 _selected_color = fvec4(0.3f, 0.5f, 0.8f, 1.0f);
   fvec4 _hover_color = fvec4(0.2f, 0.3f, 0.4f, 1.0f);

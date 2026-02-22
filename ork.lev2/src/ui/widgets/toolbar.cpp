@@ -439,9 +439,6 @@ void Toolbar::_drawButton(drawevent_constptr_t drwev, toolbar_button_ptr_t btn, 
   if (btn->_pressed) {
     bg_color = _button_pressed_color;
     draw_bg = true;
-  } else if (btn->_toggle_mode && btn->_toggled) {
-    bg_color = _button_toggled_color;
-    draw_bg = true;
   } else if (btn->_hovered) {
     bg_color = _button_hover_color;
     draw_bg = true;

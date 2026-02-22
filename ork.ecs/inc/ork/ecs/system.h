@@ -158,6 +158,9 @@ protected:
   virtual void _onRenderWithStandardCompositorFrame(Simulation* psi, lev2::standardcompositorframe_ptr_t sframe);
   virtual void _onNotify(token_t evID, evdata_t data);
   virtual void _onRequest(impl::sys_response_ptr_t response, token_t evID, evdata_t data);
+  virtual void _onPropertyChanged(token_t name, evdata_t value);
+
+  static constexpr auto SetProperty = "SetProperty"_ecstok;
 
   const SystemData* _systemData = nullptr;
   Simulation* _simulation       = nullptr;

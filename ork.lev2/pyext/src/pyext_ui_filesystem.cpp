@@ -868,12 +868,21 @@ void pyinit_ui_filesystem(py::module& uimodule) {
               "Default file icon image (converted to texture lazily)")
           .def("clearIconCache", &ui::FilesystemView::clearIconCache,
               "Clear the icon cache (useful after directory change)")
-          .def_property_readonly(
-              "bars",
-              [](ui::filesystem_view_ptr_t view) -> ui::vpack_ptr_t { //
-                return view->_bars_vpack;
+          .def(
+              "addToolbar",
+              [](ui::filesystem_view_ptr_t view, const std::string& name, int height) -> ui::toolbar_ptr_t {
+                return view->addToolbar(name, height);
               },
-              "VPack for inserting custom bars (toolbars, options, etc.) between header and content")
+              py::arg("name"),
+              py::arg("height") = 24,
+              "Add a toolbar between header and content. Returns the Toolbar widget.")
+          .def(
+              "removeToolbar",
+              [](ui::filesystem_view_ptr_t view, ui::toolbar_ptr_t toolbar) {
+                view->removeToolbar(toolbar);
+              },
+              py::arg("toolbar"),
+              "Remove a toolbar previously added with addToolbar()")
           .def("__repr__", [](ui::filesystem_view_ptr_t view) {
             return FormatString("<FilesystemView name<%s> widget<%p>>", view->GetName().c_str(), (void*)view.get());
           });

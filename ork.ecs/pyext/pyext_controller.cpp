@@ -13,6 +13,17 @@ using ctx_t               = ork::python::unmanaged_ptr<::ork::lev2::Context>;
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::ecs {
+
+struct SystemPropertyProxy {
+  controller_ptr_t _ctrl;
+  sys_ref_t _sysref;
+};
+
+struct SystemHandle {
+  controller_ptr_t _ctrl;
+  sys_ref_t _sysref;
+};
+
 void pyinit_controller(py::module& module_ecs) {
   auto type_codec = python::pb11_typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
@@ -118,7 +129,9 @@ void pyinit_controller(py::module& module_ecs) {
           })
                 ///////////////////////////
       //
-      .def("findSystem", [](controller_ptr_t ctrl, std::string name) -> sys_ref_t { return ctrl->findSystemWithClassName(name); })
+      .def("findSystem", [](controller_ptr_t ctrl, std::string name) -> SystemHandle {
+        return SystemHandle{ctrl, ctrl->findSystemWithClassName(name)};
+      })
       .def(
           "systemNotify",
           [type_codec](
@@ -183,7 +196,7 @@ void pyinit_controller(py::module& module_ecs) {
         };
         ctrl->realtimeDelayedOperation(delay,L);
       });
-        
+
   type_codec->registerStdCodec<controller_ptr_t>(ctrl_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto sref_t = py::class_<SystemRef>(module_ecs, "SystemRef").def("__repr__", [](const sys_ref_t& sys) -> std::string {
@@ -192,6 +205,31 @@ void pyinit_controller(py::module& module_ecs) {
     return fxs.c_str();
   });
   type_codec->registerStdCodec<SystemRef>(sref_t);
+  /////////////////////////////////////////////////////////////////////////////////
+  // SystemPropertyProxy: write-only proxy — __setattr__ sends SetProperty event
+  /////////////////////////////////////////////////////////////////////////////////
+  auto sysprop_type = py::class_<SystemPropertyProxy>(module_ecs, "SystemPropertyProxy")
+      .def("__setattr__", [type_codec](SystemPropertyProxy& self, const std::string& name, py::object value) {
+        evdata_t evdata;
+        auto& dtab = *evdata.makeShared<DataTable>();
+        CrcString name_crc(name.c_str());
+        dtab[name_crc] = type_codec->decode64(value);
+        static CrcString SetProperty("SetProperty");
+        self._ctrl->systemNotify(self._sysref, SetProperty, evdata);
+      });
+  /////////////////////////////////////////////////////////////////////////////////
+  // SystemHandle: wraps controller + sys_ref, exposes system_properties proxy
+  /////////////////////////////////////////////////////////////////////////////////
+  auto syshandle_type = py::class_<SystemHandle>(module_ecs, "SystemHandle")
+      .def("__repr__", [](const SystemHandle& h) -> std::string {
+        fxstring<256> fxs;
+        fxs.format("ecs::SystemHandle id(0x%zx)", h._sysref._sysID);
+        return fxs.c_str();
+      })
+      .def_property_readonly("ref", [](const SystemHandle& h) -> sys_ref_t { return h._sysref; })
+      .def_property_readonly("system_properties", [](const SystemHandle& h) -> SystemPropertyProxy {
+        return SystemPropertyProxy{h._ctrl, h._sysref};
+      });
   /////////////////////////////////////////////////////////////////////////////////
   auto eref_t = py::class_<EntityRef>(module_ecs, "EntityRef").def("__repr__", [](const ent_ref_t& sys) -> std::string {
     fxstring<256> fxs;

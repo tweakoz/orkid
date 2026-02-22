@@ -778,7 +778,22 @@ void SceneGraphSystem::_onNotify(token_t evID, evdata_t data) {
       break;
     }
     default:
-      OrkAssert(false);
+      System::_onNotify(evID, data);
+      break;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SceneGraphSystem::_onPropertyChanged(token_t name, evdata_t value) {
+  switch (name.hashed()) {
+    case "autodraw"_crcu:
+      _autodraw = value.get<bool>();
+      break;
+    case "autoupdate"_crcu:
+      _autoupdate = value.get<bool>();
+      break;
+    default:
       break;
   }
 }

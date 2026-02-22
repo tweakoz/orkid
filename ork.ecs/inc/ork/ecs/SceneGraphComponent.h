@@ -191,6 +191,7 @@ struct SceneGraphSystem final : public System {
   void _onUpdate(Simulation* inst) final;
   void _onRender(Simulation* psi,ui::drawevent_constptr_t drwev) final;
   void _onNotify(token_t evID, evdata_t data ) final;
+  void _onPropertyChanged(token_t name, evdata_t value) final;
   void _onRequest(impl::sys_response_ptr_t response, token_t reqID, evdata_t data ) final;
   void _onRenderWithStandardCompositorFrame(Simulation* psi, lev2::standardcompositorframe_ptr_t sframe) final;
 
