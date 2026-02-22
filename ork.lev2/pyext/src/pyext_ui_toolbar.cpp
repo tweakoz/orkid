@@ -59,6 +59,7 @@ void pyinit_ui_toolbar(py::module& uimodule) {
               "pressed_icon",
               [](ui::toolbar_button_ptr_t btn) -> image_ptr_t { return btn->_pressed_image; },
               [](ui::toolbar_button_ptr_t btn, image_ptr_t img) { btn->_pressed_image = img; btn->_pressed_texture = nullptr; })
+          .def_readwrite("custom_width", &ui::ToolbarButton::_custom_width)
           .def_readwrite("tooltip", &ui::ToolbarButton::_tooltip)
           .def_readwrite("toggle_mode", &ui::ToolbarButton::_toggle_mode)
           .def_readwrite("toggled", &ui::ToolbarButton::_toggled)

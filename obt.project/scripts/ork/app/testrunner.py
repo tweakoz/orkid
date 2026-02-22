@@ -38,9 +38,9 @@ Usage:
     TestRunnerApp(tests, title="My Tests").run()
 """
 
+import os
 import shlex
 import signal
-import subprocess
 import threading
 import time
 
@@ -67,6 +67,8 @@ class TestInfo:
     self.status = "pending"    # pending | running | passed | failed
     self.exit_code = -1
     self.duration = 0.0
+    self._async_cmd = None          # CommandAsync handle (for kill)
+    self._tmux_session_name = None  # tmux session name (for kill-session)
 
 ################################################################################
 # Status display
@@ -118,7 +120,8 @@ class TestRunnerFilesystemModel(lev2.ui.FilesystemModel):
     self._display_names = {} # path -> short name
     self._custom_icons = {}  # path -> SVG string (custom per-entry icon)
     self._on_status_changed = None
-    self._option_defaults = {}  # option_name -> latest value (bool or str)
+    self._audio_input_device = None   # global: ORKID_AUDIO_INPUT_DEVICE
+    self._audio_output_device = None  # global: ORKID_AUDIO_OUTPUT_DEVICE
 
     # Root entry
     self._entries["/"] = {
@@ -430,58 +433,6 @@ class TestRunnerFilesystemModel(lev2.ui.FilesystemModel):
         args.extend(choice_args)
     return args
 
-  # -- Per-item options (model-driven micro-renderers) --
-
-  def getItemOptions(self, path):
-    """Return list of option defs for a specific item."""
-    info = self._tests.get(path)
-    if info is None or not info.options_spec:
-      return []
-    options = []
-    for opt_name, opt_spec in info.options_spec.items():
-      state = info.options_state.get(opt_name)
-      if isinstance(opt_spec, list):
-        # Boolean option
-        options.append({
-          "name": opt_name,
-          "type": "checkbox",
-          "bool_val": bool(state),
-          "string_val": "",
-          "choices": [],
-        })
-      elif isinstance(opt_spec, dict):
-        # Enum/dropdown option
-        options.append({
-          "name": opt_name,
-          "type": "dropdown",
-          "bool_val": False,
-          "string_val": str(state),
-          "choices": list(opt_spec.keys()),
-        })
-    return options
-
-  def setItemOption(self, path, option_name, value):
-    """Set an option value by name. Returns True if changed.
-    Caches the value so new items with the same option key inherit it."""
-    info = self._tests.get(path)
-    if info is None or option_name not in info.options_spec:
-      return False
-    spec = info.options_spec[option_name]
-    if isinstance(spec, list):
-      v = value.get("bool_val", False) if isinstance(value, dict) else value["bool_val"]
-      info.options_state[option_name] = v
-      self._option_defaults[option_name] = v
-    elif isinstance(spec, dict):
-      v = value.get("string_val", "") if isinstance(value, dict) else value["string_val"]
-      info.options_state[option_name] = v
-      self._option_defaults[option_name] = v
-    # Apply cached value to all other tests with the same option
-    for other_path, other_info in self._tests.items():
-      if other_path != path and option_name in other_info.options_spec:
-        other_info.options_state[option_name] = info.options_state[option_name]
-    self.notifyModelChanged()
-    return True
-
   # -- state updates (called from background threads) --
 
   def setTestStatus(self, path, status, exit_code=-1, duration=0.0):
@@ -495,6 +446,19 @@ class TestRunnerFilesystemModel(lev2.ui.FilesystemModel):
     self.notifyModelChanged()
     if self._on_status_changed:
       self._on_status_changed()
+
+  def killTest(self, path):
+    """Kill a running test process (single or tmux)."""
+    info = self._tests.get(path)
+    if info is None:
+      return
+    if info._tmux_session_name:
+      command.run(["tmux", "kill-session", "-t", info._tmux_session_name])
+      info._tmux_session_name = None
+    if info._async_cmd and info._async_cmd.is_running():
+      info._async_cmd.kill()
+      info._async_cmd = None
+    self.setTestStatus(path, "failed", -1)
 
   def getTestInfo(self, path):
     with self._lock:
@@ -572,6 +536,10 @@ class TestRunnerApp:
     btn_icon_minus = self.toolbar.addButton("icon_minus", standard_icons.get('minus', icon_size, icon_size), "Smaller Icons")
     btn_icon_plus = self.toolbar.addButton("icon_plus", standard_icons.get('plus', icon_size, icon_size), "Larger Icons")
 
+    # -- Audio devices (enumerate before fs_view, toolbar created in bars below) --
+    self._refreshAudioDevices()
+    self._resolveInitialAudioDevices()
+
     # -- FilesystemView --
     self.fs_view = self.main_vpack.makeChild(uiclass=lev2.ui.FilesystemView, args=["filesystem"])
 
@@ -581,19 +549,76 @@ class TestRunnerApp:
     self._model.directories_first = True
     self._model.sort_field = lev2.ui.FilesystemSortField.Name
     self._model._on_status_changed = lambda: self.fs_view.clearIconCache()
+    self._model._audio_output_device = self._initial_output_device
+    self._model._audio_input_device = self._initial_input_device
 
     self.fs_view.model = self._model
     self.fs_view.view_mode = lev2.ui.FilesystemViewMode.Icon if self._default_view == "icon" else lev2.ui.FilesystemViewMode.List
     self.fs_view.show_size_column = False
     self.fs_view.show_type_column = False
     self.fs_view.show_date_column = False
-    self.fs_view.draw_options_bar = True
 
     # Enable description column if any tests have descriptions
     if self._checkHasDescriptions(tests):
       self.fs_view.show_description_column = True
-    # Option columns are driven by model.getOptionColumns() (no text column needed)
-    self.fs_view.show_options_column = False
+
+    # -- Audio device toolbar (inside fs_view.bars VPack) --
+    self._audio_toolbar = self.fs_view.bars.makeChild(uiclass=lev2.ui.Toolbar, args=["audio_toolbar"])
+    self._audio_toolbar.fixed_height = 24
+    self._audio_toolbar.bgcolor = vec4(0.1, 0.1, 0.13, 1)
+    self._audio_toolbar.button_hover_color = vec4(0.2, 0.2, 0.25, 1)
+    self._audio_toolbar.button_pressed_color = vec4(0.2, 0.4, 0.6, 1)
+    self._audio_toolbar.button_toggled_color = vec4(0.25, 0.45, 0.65, 1)
+    self._audio_toolbar.separator_color = vec4(0.3, 0.3, 0.35, 1)
+    self._audio_toolbar.icon_size = icon_size
+    self._audio_toolbar.button_padding = 2
+    self._audio_toolbar.item_spacing = 2
+    self._audio_toolbar.edge_padding = 4
+
+    _spk_svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
+      '<path d="M3 9v6h4l5 5V4L7 9H3z" fill="#AAAAAA"/>'
+      '<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="#AAAAAA"/>'
+      '</svg>')
+    _mic_svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
+      '<path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" fill="#AAAAAA"/>'
+      '<path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" fill="#AAAAAA"/>'
+      '</svg>')
+    _refresh_svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
+      '<path d="M17.65 6.35A7.96 7.96 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" fill="#AAAAAA"/>'
+      '</svg>')
+
+    spk_icon = icon_library.from_svg_string(_spk_svg, icon_size, icon_size)
+    mic_icon = icon_library.from_svg_string(_mic_svg, icon_size, icon_size)
+    refresh_icon = icon_library.from_svg_string(_refresh_svg, icon_size, icon_size)
+
+    _out_label = self._initial_output_device or "Default"
+    _in_label = self._initial_input_device or "Default"
+    _label_w = 200
+    self._btn_audio_out = self._audio_toolbar.addButton("audio_out", spk_icon, "Audio Output Device")
+    self._btn_audio_out_label = self._audio_toolbar.addButton("audio_out_label",
+      self._makeAudioLabel(_out_label, _label_w), "Click to select output device")
+    self._btn_audio_out_label.custom_width = _label_w
+    self._audio_toolbar.addSeparator()
+    self._btn_audio_in = self._audio_toolbar.addButton("audio_in", mic_icon, "Audio Input Device")
+    self._btn_audio_in_label = self._audio_toolbar.addButton("audio_in_label",
+      self._makeAudioLabel(_in_label, _label_w), "Click to select input device")
+    self._btn_audio_in_label.custom_width = _label_w
+    self._audio_toolbar.addSeparator()
+    self._btn_audio_refresh = self._audio_toolbar.addButton("audio_refresh", refresh_icon, "Refresh Audio Devices")
+
+    # -- Options toolbar (inside fs_view.bars, rebuilt on selection change) --
+    self._options_toolbar = self.fs_view.bars.makeChild(uiclass=lev2.ui.Toolbar, args=["options_toolbar"])
+    self._options_toolbar.fixed_height = 0  # starts empty, set to 24 when populated
+    self._options_toolbar.bgcolor = vec4(0.1, 0.1, 0.13, 1)
+    self._options_toolbar.button_hover_color = vec4(0.2, 0.2, 0.25, 1)
+    self._options_toolbar.button_pressed_color = vec4(0.2, 0.4, 0.6, 1)
+    self._options_toolbar.button_toggled_color = vec4(0.25, 0.45, 0.65, 1)
+    self._options_toolbar.separator_color = vec4(0.3, 0.3, 0.35, 1)
+    self._options_toolbar.icon_size = icon_size
+    self._options_toolbar.button_padding = 2
+    self._options_toolbar.item_spacing = 2
+    self._options_toolbar.edge_padding = 4
+    self._options_selected_path = None
 
     # -- Wire toolbar buttons --
     btn_home.onPressed(lambda: self.fs_view.navigateTo("/"))
@@ -626,6 +651,44 @@ class TestRunnerApp:
     btn_icon_minus.onPressed(icon_size_smaller)
     btn_icon_plus.onPressed(icon_size_larger)
 
+    # -- Audio device button callbacks --
+    def show_audio_out_menu():
+      paths = ["/Default"] + ["/" + d.name for d in self._audio_output_devices]
+      def on_selected(sel):
+        name = sel.lstrip("/")
+        self._model._audio_output_device = None if name == "Default" else name
+        self._btn_audio_out_label.icon = self._makeAudioLabel(name)
+        print("Audio output: %s" % (name,))
+      lev2.ui.DropdownMenu.show(
+        context=self.uicontext, paths=paths,
+        x=0, y=32, on_selected=on_selected)
+    self._btn_audio_out.onPressed(show_audio_out_menu)
+    self._btn_audio_out_label.onPressed(show_audio_out_menu)
+
+    def show_audio_in_menu():
+      paths = ["/Default"] + ["/" + d.name for d in self._audio_input_devices]
+      def on_selected(sel):
+        name = sel.lstrip("/")
+        self._model._audio_input_device = None if name == "Default" else name
+        self._btn_audio_in_label.icon = self._makeAudioLabel(name)
+        print("Audio input: %s" % (name,))
+      lev2.ui.DropdownMenu.show(
+        context=self.uicontext, paths=paths,
+        x=0, y=32, on_selected=on_selected)
+    self._btn_audio_in.onPressed(show_audio_in_menu)
+    self._btn_audio_in_label.onPressed(show_audio_in_menu)
+
+    def refresh_audio_devices():
+      self._refreshAudioDevices()
+      # Reset labels to current selection or Default
+      out_name = self._model._audio_output_device or "Default"
+      in_name = self._model._audio_input_device or "Default"
+      self._btn_audio_out_label.icon = self._makeAudioLabel(out_name)
+      self._btn_audio_in_label.icon = self._makeAudioLabel(in_name)
+      print("Audio devices refreshed (%d input, %d output)" % (
+        len(self._audio_input_devices), len(self._audio_output_devices)))
+    self._btn_audio_refresh.onPressed(refresh_audio_devices)
+
     # -- Callbacks --
     def on_activate(path):
       """Double-click: run test or navigate into directory."""
@@ -635,13 +698,29 @@ class TestRunnerApp:
         t.start()
 
     def on_select(path):
-      """Single click: print test info."""
+      """Single click: print test info, rebuild options toolbar."""
       info = self._model.getTestInfo(path)
       if info is not None:
         print("Test: %s [%s]" % (info.name, info.status))
+      self._rebuildOptionsToolbar(path)
+
+    def on_context_menu(path, x, y):
+      """Right-click: show context menu with kill option for running tests."""
+      info = self._model.getTestInfo(path)
+      killable = (info is not None and
+                  (info.status == "running" or
+                   info._tmux_session_name is not None or
+                   (info._async_cmd is not None and info._async_cmd.is_running())))
+      if killable:
+        lev2.ui.DropdownMenu.show(
+          context=self.uicontext,
+          paths=["/Kill Process"],
+          x=x, y=y,
+          on_selected=lambda sel: self._model.killTest(path))
 
     self.fs_view.onActivate(on_activate)
     self.fs_view.onSelect(on_select)
+    self.fs_view.onContextMenu(on_context_menu)
 
     # -- Style --
     self.fs_view.bgcolor = vec4(0.15, 0.15, 0.15, 1)
@@ -671,6 +750,136 @@ class TestRunnerApp:
             return True
     return False
 
+
+  def _refreshAudioDevices(self):
+    """Enumerate audio devices and split into input/output lists."""
+    self._audio_devices = lev2.enumerateAudioDevices()
+    self._audio_input_devices = [d for d in self._audio_devices if d.max_input_channels > 0]
+    self._audio_output_devices = [d for d in self._audio_devices if d.max_output_channels > 0]
+
+  def _resolveInitialAudioDevices(self):
+    """Resolve initial audio devices from env vars, falling back to system defaults."""
+    device_names = {d.name for d in self._audio_devices}
+    short_ids_out = {d.output_short_id: d.name for d in self._audio_output_devices}
+    short_ids_in = {d.input_short_id: d.name for d in self._audio_input_devices}
+
+    # Resolve output device
+    env_out = os.environ.get("ORKID_AUDIO_OUTPUT_DEVICE")
+    self._initial_output_device = None
+    if env_out:
+      if env_out in device_names:
+        self._initial_output_device = env_out
+      elif env_out in short_ids_out:
+        self._initial_output_device = short_ids_out[env_out]
+    if self._initial_output_device is None and self._audio_output_devices:
+      # macOS default output is typically the first device
+      self._initial_output_device = self._audio_output_devices[0].name
+
+    # Resolve input device
+    env_in = os.environ.get("ORKID_AUDIO_INPUT_DEVICE")
+    self._initial_input_device = None
+    if env_in:
+      if env_in in device_names:
+        self._initial_input_device = env_in
+      elif env_in in short_ids_in:
+        self._initial_input_device = short_ids_in[env_in]
+    if self._initial_input_device is None and self._audio_input_devices:
+      self._initial_input_device = self._audio_input_devices[0].name
+
+  def _rebuildOptionsToolbar(self, path):
+    """Rebuild the options toolbar for the selected test path."""
+    info = self._model.getTestInfo(path) if path else None
+    if info is None or not info.options_spec:
+      # No options — collapse toolbar to zero height
+      if self._options_toolbar.fixed_height > 0:
+        self._options_toolbar.clear()
+        self._options_toolbar.fixed_height = 0
+        self._options_selected_path = None
+        self.fs_view.refresh()
+      return
+
+    self._options_selected_path = path
+    self._options_toolbar.clear()
+    self._options_toolbar.fixed_height = 24
+    icon_size = 20
+
+    for opt_name, opt_spec in info.options_spec.items():
+      state = info.options_state.get(opt_name)
+      if isinstance(opt_spec, list):
+        # Boolean option — toggle button with label
+        label = opt_name
+        btn = self._options_toolbar.addButton(
+          "opt_" + opt_name,
+          self._makeOptionLabel(label, checked=bool(state)),
+          opt_name)
+        btn.toggle_mode = True
+        btn.toggled = bool(state)
+        def make_bool_toggler(oname, button):
+          def toggler(toggled):
+            ti = self._model.getTestInfo(self._options_selected_path)
+            if ti:
+              ti.options_state[oname] = toggled
+              # Apply to all tests with same option
+              for other_path, other_info in self._model._tests.items():
+                if other_path != self._options_selected_path and oname in other_info.options_spec:
+                  other_info.options_state[oname] = toggled
+            button.icon = self._makeOptionLabel(oname, checked=toggled)
+          return toggler
+        btn.onToggled(make_bool_toggler(opt_name, btn))
+        btn.custom_width = max(80, len(label) * 8 + 30)
+      elif isinstance(opt_spec, dict):
+        # Enum option — button that shows dropdown on click
+        label = "%s: %s" % (opt_name, state)
+        btn = self._options_toolbar.addButton(
+          "opt_" + opt_name,
+          self._makeOptionLabel(label),
+          opt_name)
+        btn.custom_width = max(100, len(label) * 8 + 16)
+        def make_enum_handler(oname, ospec, button):
+          def handler():
+            paths = ["/" + k for k in ospec.keys()]
+            def on_selected(sel):
+              choice = sel.lstrip("/")
+              ti = self._model.getTestInfo(self._options_selected_path)
+              if ti:
+                ti.options_state[oname] = choice
+                # Apply to all tests with same option
+                for other_path, other_info in self._model._tests.items():
+                  if other_path != self._options_selected_path and oname in other_info.options_spec:
+                    other_info.options_state[oname] = choice
+              new_label = "%s: %s" % (oname, choice)
+              button.icon = self._makeOptionLabel(new_label)
+              button.custom_width = max(100, len(new_label) * 8 + 16)
+            lev2.ui.DropdownMenu.show(
+              context=self.uicontext, paths=paths,
+              x=0, y=32, on_selected=on_selected)
+          return handler
+        btn.onPressed(make_enum_handler(opt_name, opt_spec, btn))
+      self._options_toolbar.addSeparator()
+    self.fs_view.refresh()
+
+  @staticmethod
+  def _makeOptionLabel(text, checked=None, width=None, height=20):
+    """Render an option label into an Image for toolbar button."""
+    from xml.sax.saxutils import escape
+    if width is None:
+      width = max(80, len(text) * 8 + (30 if checked is not None else 16))
+    prefix = ""
+    if checked is not None:
+      prefix = "\u2611 " if checked else "\u2610 "
+    svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %d %d">'
+      '<text x="4" y="%d" font-family="sans-serif" font-size="%d" fill="#CCCCCC">%s</text>'
+      '</svg>' % (width, height, height - 5, height - 6, escape(prefix + text)))
+    return icon_library.from_svg_string(svg, width, height)
+
+  @staticmethod
+  def _makeAudioLabel(text, width=200, height=20):
+    """Render a text string into an Image for use as a toolbar button icon."""
+    from xml.sax.saxutils import escape
+    svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %d %d">'
+      '<text x="4" y="%d" font-family="sans-serif" font-size="%d" fill="#CCCCCC">%s</text>'
+      '</svg>' % (width, height, height - 5, height - 6, escape(text)))
+    return icon_library.from_svg_string(svg, width, height)
 
   # -- GPU init: theme setup --
 
@@ -723,6 +932,15 @@ class TestRunnerApp:
         t = threading.Thread(target=self._runTest, args=(key,), daemon=True)
         t.start()
 
+  def _buildGlobalEnv(self):
+    """Build environment dict from global settings (audio devices, etc.)."""
+    env = {}
+    if self._model._audio_input_device:
+      env["ORKID_AUDIO_INPUT_DEVICE"] = self._model._audio_input_device
+    if self._model._audio_output_device:
+      env["ORKID_AUDIO_OUTPUT_DEVICE"] = self._model._audio_output_device
+    return env
+
   def _runTest(self, key):
     info = self._model.getTestInfo(key)
     if info is None:
@@ -735,30 +953,45 @@ class TestRunnerApp:
   def _runSingleTest(self, key, info):
     self._model.setTestStatus(key, "running")
     t0 = time.time()
+    env = self._buildGlobalEnv()
     try:
       # Build effective command with option args appended
       extra_args = self._model._buildEffectiveArgs(key)
       commands = info.commands + extra_args
       if info.capture:
-        output = command.capture(commands, do_log=True)
+        output = command.capture(commands, environment=env, do_log=True)
         exit_code = 0 if output else 1
       else:
-        exit_code = command.run(commands, do_log=True)
+        async_cmd = command.runasync2(commands, environment=env, do_log=True)
+        info._async_cmd = async_cmd
+        exit_code = async_cmd.future.result()  # blocks until done
+        info._async_cmd = None
       elapsed = time.time() - t0
       status = "passed" if exit_code == 0 else "failed"
       self._model.setTestStatus(key, status, exit_code, duration=elapsed)
     except Exception as e:
+      info._async_cmd = None
       elapsed = time.time() - t0
       self._model.setTestStatus(key, "failed", -1, duration=elapsed)
 
   def _runTmuxTest(self, key, info):
     session_name = "test_" + key.replace("/", "_").replace(" ", "_")
+    info._tmux_session_name = session_name
     self._model.setTestStatus(key, "running")
     try:
+      extra_args = self._model._buildEffectiveArgs(key)
+      env = self._buildGlobalEnv()
+      env_prefix = " ".join("export %s=%s;" % (k, shlex.quote(v)) for k, v in env.items())
       orientation = "vertical" if len(info.commands) <= 3 else "horizontal"
       session = tmux.Session(session_name, orientation=orientation, kill_first=True)
-      for cmd_list in info.commands:
-        session.command([shlex.join(cmd_list)])
+      last = len(info.commands) - 1
+      for i, cmd_list in enumerate(info.commands):
+        if i == last and extra_args:
+          cmd_list = cmd_list + extra_args
+        cmd_str = shlex.join(cmd_list)
+        if env_prefix:
+          cmd_str = env_prefix + " " + cmd_str
+        session.command([cmd_str])
       # execute detached (bypass session.execute() to avoid attach)
       session.kill()
       session.bind_zoom_panes()
@@ -769,7 +1002,7 @@ class TestRunnerApp:
         session.cmd_chain.add(["tmux", "select-layout", "-t", session_name, "tiled"])
       session.cmd_chain.execute()
       # open a terminal attached to the session
-      subprocess.Popen([
+      info._async_cmd = command.runasync2([
         "osascript", "-e",
         'tell application "Terminal" to do script "tmux attach-session -t %s"' % session_name
       ])

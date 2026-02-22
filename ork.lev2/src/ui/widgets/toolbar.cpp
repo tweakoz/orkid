@@ -194,6 +194,11 @@ void Toolbar::_rebuildLayout() {
   bool horizontal = isHorizontal();
   int button_size = _icon_size + _button_padding * 2;
 
+  // Vertically center items within toolbar height (horizontal mode)
+  // or horizontally center items within toolbar width (vertical mode)
+  int center_offset_h = std::max(0, (_geometry._h - button_size) / 2);
+  int center_offset_w = std::max(0, (_geometry._w - button_size) / 2);
+
   int pos = _edge_padding;
 
   for (auto& item : _items) {
@@ -202,28 +207,29 @@ void Toolbar::_rebuildLayout() {
     }
 
     if (auto btn = std::dynamic_pointer_cast<ToolbarButton>(item)) {
+      int btn_w = (btn->_custom_width > 0) ? (btn->_custom_width + _button_padding * 2) : button_size;
       if (horizontal) {
         btn->_x = pos;
-        btn->_y = _edge_padding;
-        btn->_width = button_size;
+        btn->_y = center_offset_h;
+        btn->_width = btn_w;
         btn->_height = button_size;
-        pos += button_size + _item_spacing;
+        pos += btn_w + _item_spacing;
       } else {
-        btn->_x = _edge_padding;
+        btn->_x = center_offset_w;
         btn->_y = pos;
-        btn->_width = button_size;
+        btn->_width = btn_w;
         btn->_height = button_size;
-        pos += button_size + _item_spacing;
+        pos += btn_w + _item_spacing;
       }
     } else if (auto sep = std::dynamic_pointer_cast<ToolbarSeparator>(item)) {
       if (horizontal) {
         sep->_x = pos + sep->_padding;
-        sep->_y = _edge_padding;
+        sep->_y = center_offset_h;
         sep->_width = sep->_thickness;
         sep->_height = button_size;
         pos += sep->_thickness + sep->_padding * 2 + _item_spacing;
       } else {
-        sep->_x = _edge_padding;
+        sep->_x = center_offset_w;
         sep->_y = pos + sep->_padding;
         sep->_width = button_size;
         sep->_height = sep->_thickness;
@@ -468,7 +474,8 @@ void Toolbar::_drawButton(drawevent_constptr_t drwev, toolbar_button_ptr_t btn, 
 
     int icon_x1 = bx1 + _button_padding;
     int icon_y1 = by1 + _button_padding;
-    int icon_x2 = icon_x1 + _icon_size;
+    int icon_w = (btn->_custom_width > 0) ? btn->_custom_width : _icon_size;
+    int icon_x2 = icon_x1 + icon_w;
     int icon_y2 = icon_y1 + _icon_size;
 
     fvec4 tint = btn->_enabled ? fvec4(1, 1, 1, 1) : _disabled_tint;

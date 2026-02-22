@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/lev2/ui/widget.h>
+#include <ork/lev2/ui/pack.h>
 #include <ork/lev2/ui/filesystem_model.h>
 #include <ork/lev2/ui/favorites.h>
 #include <ork/lev2/ui/dropdown_menu.h>
@@ -18,7 +18,8 @@
 namespace ork::ui {
 
 ////////////////////////////////////////////////////////////////////
-// FilesystemView: Widget for displaying filesystem contents
+// FilesystemView: Group-based filesystem browser
+// - Internal VPack with PathBarWidget, HeaderWidget, bars VPack, ContentWidget
 // - Supports list and icon view modes
 // - Model-based data access
 // - Selection, navigation, thumbnails
@@ -30,9 +31,45 @@ enum class FilesystemViewMode {
 };
 
 struct FilesystemView;
+struct PathBarWidget;
+struct HeaderWidget;
+struct ContentWidget;
 using filesystem_view_ptr_t = std::shared_ptr<FilesystemView>;
 
-struct FilesystemView : public Widget {
+////////////////////////////////////////////////////////////////////
+// Sub-widgets (internal to FilesystemView)
+////////////////////////////////////////////////////////////////////
+
+struct PathBarWidget : public Widget {
+  PathBarWidget(FilesystemView* parent);
+  FilesystemView* _fsview;
+protected:
+  void DoDraw(drawevent_constptr_t drwev) override;
+  HandlerResult DoOnUiEvent(event_constptr_t ev) override;
+  Widget* doRouteUiEvent(event_constptr_t ev) override;
+};
+
+struct HeaderWidget : public Widget {
+  HeaderWidget(FilesystemView* parent);
+  FilesystemView* _fsview;
+protected:
+  void DoDraw(drawevent_constptr_t drwev) override;
+  HandlerResult DoOnUiEvent(event_constptr_t ev) override;
+  Widget* doRouteUiEvent(event_constptr_t ev) override;
+};
+
+struct ContentWidget : public Widget {
+  ContentWidget(FilesystemView* parent);
+  FilesystemView* _fsview;
+protected:
+  void DoDraw(drawevent_constptr_t drwev) override;
+  HandlerResult DoOnUiEvent(event_constptr_t ev) override;
+  Widget* doRouteUiEvent(event_constptr_t ev) override;
+};
+
+////////////////////////////////////////////////////////////////////
+
+struct FilesystemView : public Group {
   FilesystemView(const std::string& name, int x = 0, int y = 0, int w = 0, int h = 0);
   ~FilesystemView();
 
@@ -71,35 +108,19 @@ struct FilesystemView : public Widget {
   // Navigation
   //////////////////////////////////////////////////////////////
 
-  // Navigate to a path (directory)
   bool navigateTo(const std::string& path);
-
-  // Go up one directory
   bool navigateUp();
-
-  // Activate an item (open file or enter directory)
   void activateItem(const std::string& path);
-
-  // Refresh current view
   void refresh();
 
   //////////////////////////////////////////////////////////////
   // Favorites management
   //////////////////////////////////////////////////////////////
 
-  // Add current location + view state as a favorite
   void addCurrentAsFavorite(const std::string& display_name = "");
-
-  // Remove current path from favorites
   void removeCurrentFromFavorites();
-
-  // Check if current path is a favorite
   bool isCurrentFavorite() const;
-
-  // Apply a favorite entry (navigate and restore view state)
   void applyFavorite(favorite_entry_ptr_t entry);
-
-  // Get current state as a FavoriteEntry (without adding to favorites)
   favorite_entry_ptr_t getCurrentAsFavoriteEntry(const std::string& display_name = "") const;
 
   //////////////////////////////////////////////////////////////
@@ -116,22 +137,23 @@ struct FilesystemView : public Widget {
   //////////////////////////////////////////////////////////////
 
   std::function<void(const std::string& path)> _onSelect;
-  std::function<void(const std::string& path)> _onActivate;  // Double-click / Enter
+  std::function<void(const std::string& path)> _onActivate;
   std::function<void(const std::string& path)> _onDirectoryChanged;
   std::function<void(const std::string& path)> _onDelete;
   std::function<void(const std::string& old_path, const std::string& new_name)> _onRename;
+  std::function<void(const std::string& path, int screen_x, int screen_y)> _onContextMenu;
 
   //////////////////////////////////////////////////////////////
   // Appearance - List mode
   //////////////////////////////////////////////////////////////
 
-  int _item_height = 20;          // Row height in list mode
-  int _icon_column_width = 24;    // Width of icon column
-  int _name_column_width = 200;   // Width of name column
-  int _size_column_width = 80;    // Width of size column
-  int _type_column_width = 100;   // Width of type column
-  int _date_column_width = 120;   // Width of date column
-  int _last_content_width = 0;    // For proportional column resizing
+  int _item_height = 20;
+  int _icon_column_width = 24;
+  int _name_column_width = 200;
+  int _size_column_width = 80;
+  int _type_column_width = 100;
+  int _date_column_width = 120;
+  int _last_content_width = 0;
   int _description_column_width = 200;
   bool _show_description_column = false;
   int _options_column_width = 150;
@@ -144,9 +166,9 @@ struct FilesystemView : public Widget {
   // Appearance - Icon mode
   //////////////////////////////////////////////////////////////
 
-  int _icon_size = 64;            // Icon/thumbnail size
-  int _icon_spacing = 8;          // Space between icons
-  int _icon_label_height = 32;    // Height for label under icon
+  int _icon_size = 64;
+  int _icon_spacing = 8;
+  int _icon_label_height = 32;
 
   //////////////////////////////////////////////////////////////
   // Appearance - Common
@@ -156,35 +178,44 @@ struct FilesystemView : public Widget {
   fvec4 _text_color = fvec4(1.0f, 1.0f, 1.0f, 1.0f);
   fvec4 _selected_color = fvec4(0.3f, 0.5f, 0.8f, 1.0f);
   fvec4 _hover_color = fvec4(0.2f, 0.3f, 0.4f, 1.0f);
-  fvec4 _directory_color = fvec4(0.8f, 0.9f, 1.0f, 1.0f);  // Tint for directories
+  fvec4 _directory_color = fvec4(0.8f, 0.9f, 1.0f, 1.0f);
   fvec4 _header_bgcolor = fvec4(0.15f, 0.15f, 0.18f, 1.0f);
   bool _draw_background = true;
-  bool _draw_header = true;       // Column headers in list mode
-  bool _draw_path_bar = true;     // Current path breadcrumb
-  bool _draw_options_bar = false;  // Options bar for selected item (replaces inline column)
+  bool _draw_header = true;
+  bool _draw_path_bar = true;
   lev2::font_ptr_t _font;
-  lev2::font_ptr_t _small_font;   // For icon labels
+  lev2::font_ptr_t _small_font;
+  void setFontSize(int size);
 
-  // Default icons (as images - converted to textures lazily)
+  // Default icons
   lev2::image_ptr_t _folder_icon_image;
   lev2::image_ptr_t _file_icon_image;
-  lev2::texture_ptr_t _folder_icon_texture;  // Cached texture from image
-  lev2::texture_ptr_t _file_icon_texture;    // Cached texture from image
+  lev2::texture_ptr_t _folder_icon_texture;
+  lev2::texture_ptr_t _file_icon_texture;
 
   void setFolderIcon(lev2::image_ptr_t img);
   void setFileIcon(lev2::image_ptr_t img);
   lev2::image_ptr_t getFolderIcon() const { return _folder_icon_image; }
   lev2::image_ptr_t getFileIcon() const { return _file_icon_image; }
 
-  // Icon cache: path -> texture sequence (single frame for static, multiple for animated)
+  // Icon cache
   std::unordered_map<std::string, lev2::texture_list_t> _icon_cache;
-  float _icon_anim_fps = 10.0f;  // Animation speed for icon sequences
+  float _icon_anim_fps = 10.0f;
   void _updateIconCache(lev2::Context* ctx, const std::string& path, int size);
   lev2::texture_ptr_t _getIconForPath(lev2::Context* ctx, const std::string& path, FileType type, int size);
   void clearIconCache() { _icon_cache.clear(); _folder_icon_texture = nullptr; _file_icon_texture = nullptr; }
 
+  //////////////////////////////////////////////////////////////
+  // Composition (sub-widgets)
+  //////////////////////////////////////////////////////////////
+
+  vpack_ptr_t _inner_vpack;
+  std::shared_ptr<PathBarWidget> _path_bar_widget;
+  std::shared_ptr<HeaderWidget> _header_widget;
+  vpack_ptr_t _bars_vpack;
+  std::shared_ptr<ContentWidget> _content_widget;
+
 protected:
-  // Override from Widget
   void DoDraw(drawevent_constptr_t drwev) override;
   void DoLayout() override;
   void _doOnResized() override;
@@ -193,32 +224,31 @@ protected:
   HandlerResult DoOnUiEvent(event_constptr_t ev) override;
 
 private:
+  friend struct PathBarWidget;
+  friend struct HeaderWidget;
+  friend struct ContentWidget;
+
   // Internal item representation
   struct VisibleItem {
     FilesystemEntry entry;
-    int index;                    // Index in entries list
+    int index;
     lev2::texture_ptr_t thumbnail;
     bool thumbnail_requested = false;
     bool thumbnail_failed = false;
-    std::vector<ItemOptionDef> item_options;  // Cached per-item options
   };
 
   void _rebuildVisibleItems();
   void _clampScrollOffset();
   int _getItemIndexAt(int local_x, int local_y) const;
   std::string _getItemPathAt(int local_x, int local_y) const;
-  bool _isInHeaderArea(int local_y) const;
   FilesystemModel::SortField _getSortFieldAtX(int local_x) const;
   void _handleHeaderClick(int local_x);
   void _subscribeToModel();
   void _requestThumbnail(VisibleItem& item);
 
   // Drawing helpers
-  void _drawListMode(drawevent_constptr_t drwev);
-  void _drawIconMode(drawevent_constptr_t drwev);
-  void _drawPathBar(drawevent_constptr_t drwev, int& y_offset);
-  void _drawHeader(drawevent_constptr_t drwev, int& y_offset);
-  void _drawOptionsBar(drawevent_constptr_t drwev, int& y_offset);
+  void _drawContentListMode(drawevent_constptr_t drwev);
+  void _drawContentIconMode(drawevent_constptr_t drwev);
   void _drawListItem(drawevent_constptr_t drwev, const VisibleItem& item, int y_pos, bool selected, bool hovered, int row_index);
   void _drawIconItem(drawevent_constptr_t drwev, const VisibleItem& item, int x_pos, int y_pos, bool selected, bool hovered);
 
@@ -246,33 +276,14 @@ private:
   std::string _original_value;
   int _cursor_pos = 0;
 
-  // Header click tracking (for sorting)
-  int _header_height = 24;
-  int _path_bar_height = 28;
-  int _options_bar_height = 28;
-
   // Column resize state
-  int _resize_column = -1;        // Which column is being resized (-1 = none)
-  int _resize_start_x = 0;        // Mouse X when resize started
-  int _resize_start_width = 0;    // Column width when resize started
-  static constexpr int _resize_grip_width = 6;  // Pixels on each side of separator
+  int _resize_column = -1;
+  int _resize_start_x = 0;
+  int _resize_start_width = 0;
+  static constexpr int _resize_grip_width = 6;
 
-  int _getColumnSeparatorAt(int local_x, int local_y) const;  // Returns column index or -1
-  int* _getColumnWidthPtr(int column_index);  // Get pointer to column width variable
-
-  // Per-item options column state
-  bool _has_item_options = false;          // Any visible item has options
-  int _item_options_column_width = 200;    // Width of the combined options column
-  void _drawOptionCheckbox(drawevent_constptr_t drwev, int x, int y, int w, int h, bool checked);
-  void _drawOptionButton(drawevent_constptr_t drwev, int x, int y, int w, int h, bool highlighted = false);
-  int _getItemOptionsColumnX() const;      // X where the options column starts
-  int _hitTestItemOption(const VisibleItem& item, int local_x) const;  // Returns option index or -1
-  int _computeOptionWidgetWidth(const ItemOptionDef& opt) const;
-  bool _showInlineOptions() const { return _has_item_options && !_draw_options_bar; }
-  int _getOptionsBarOffset() const;        // Y offset where options bar starts (local coords)
-  bool _isInOptionsBarArea(int local_y) const;
-  int _hitTestOptionsBar(int local_x) const;  // Returns option index or -1
-  const VisibleItem* _getActiveVisibleItem() const;  // hovered or selected
+  int _getColumnSeparatorAt(int local_x) const;
+  int* _getColumnWidthPtr(int column_index);
 
   // Default icons
   lev2::texture_ptr_t _icon_file;

@@ -666,8 +666,7 @@ void SceneGraphSystem::_onDeactivate(Simulation* inst) // final
 void SceneGraphSystem::_onUpdate(Simulation* psi) // final
 {
   EASY_BLOCK("SceneGraphSystem::_onUpdate", 0xffa02020);
-  if (_scene) {
-
+  if (_scene && (!_sceneInjected || _updateInjectedScene)) {
     EASY_VALUE("NC", _numComponents);
     _scene->enqueueToRenderer(_camlut);
   }

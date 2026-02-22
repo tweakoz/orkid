@@ -77,6 +77,9 @@ struct ToolbarButton : public ToolbarItem {
   // Tooltip text
   std::string _tooltip;
 
+  // Custom width override (0 = use icon_size, >0 = explicit pixel width for icon area)
+  int _custom_width = 0;
+
   // Toggle mode (stays pressed until clicked again)
   bool _toggle_mode = false;
   bool _toggled = false;
