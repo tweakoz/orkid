@@ -529,7 +529,6 @@ Widget* ContentWidget::doRouteUiEvent(event_constptr_t ev) {
 
 FilesystemView::FilesystemView(const std::string& name, int x, int y, int w, int h)
     : Group(name, x, y, w, h) {
-  _propagate_on_parent_change = true;
   setFontSize(16);
   _model = std::make_shared<LocalFilesystemModel>();
   _subscribeToModel();
@@ -548,9 +547,8 @@ FilesystemView::FilesystemView(const std::string& name, int x, int y, int w, int
   _inner_vpack->addChild(_header_widget, false);
 
   _bars_vpack = std::make_shared<VerticalPack>(name + "_bars");
-  _bars_vpack->_margin = 0;
+  _bars_vpack->_margin = 1;
   _bars_vpack->_draw_background = false;
-  _bars_vpack->_propagate_on_parent_change = true;
   _inner_vpack->addChild(_bars_vpack, false);
 
   _content_widget = std::make_shared<ContentWidget>(this);
@@ -670,7 +668,9 @@ void FilesystemView::activateItem(const std::string& path) {
 void FilesystemView::refresh() {
   _needs_rebuild = true;
   _thumbnail_cache.clear();
-  // Re-layout inner vpack (bars may have changed)
+  // Force full relayout of VPack hierarchy.
+  // Dirty the inner vpack so SetRect triggers DoLayout even at same size.
+  _inner_vpack->_geometry._w = 0;
   _inner_vpack->SetRect(0, 0, _geometry._w, _geometry._h);
 }
 

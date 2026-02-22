@@ -608,7 +608,8 @@ class TestRunnerApp:
 
     # -- Options toolbar (inside fs_view.bars, rebuilt on selection change) --
     self._options_toolbar = self.fs_view.bars.makeChild(uiclass=lev2.ui.Toolbar, args=["options_toolbar"])
-    self._options_toolbar.fixed_height = 0  # starts empty, set to 24 when populated
+    self._options_toolbar.fixed_height = 24
+    self._options_toolbar.enable = False  # hidden until a test with options is selected
     self._options_toolbar.bgcolor = vec4(0.1, 0.1, 0.13, 1)
     self._options_toolbar.button_hover_color = vec4(0.2, 0.2, 0.25, 1)
     self._options_toolbar.button_pressed_color = vec4(0.2, 0.4, 0.6, 1)
@@ -790,17 +791,17 @@ class TestRunnerApp:
     """Rebuild the options toolbar for the selected test path."""
     info = self._model.getTestInfo(path) if path else None
     if info is None or not info.options_spec:
-      # No options — collapse toolbar to zero height
-      if self._options_toolbar.fixed_height > 0:
+      # No options — hide toolbar
+      if self._options_toolbar.enable:
+        self._options_toolbar.enable = False
         self._options_toolbar.clear()
-        self._options_toolbar.fixed_height = 0
         self._options_selected_path = None
         self.fs_view.refresh()
       return
 
     self._options_selected_path = path
     self._options_toolbar.clear()
-    self._options_toolbar.fixed_height = 24
+    self._options_toolbar.enable = True
     icon_size = 20
 
     for opt_name, opt_spec in info.options_spec.items():
