@@ -139,11 +139,13 @@ class EcsRuntime:
       defaults.update(params)
     sgsys_data.declareParams(defaults)
 
-  def create_scenegraph(self, enable_pick=False):
-    """Create a fresh scenegraph + layer. Returns (sg, layer)."""
-    sg_params = VarMap()
-    sg_params.preset = "ForwardPBR"
-    sg_params.ssaa = 1
+  def create_scenegraph(self, enable_pick=False, sg_params=None):
+    """Create a fresh scenegraph + layer. Returns (sg, layer).
+
+    If sg_params is None, generates default params from scene_data.
+    """
+    if sg_params is None:
+      sg_params = self.scene_data.generateSceneGraphParams()
     sg = lev2.scenegraph.Scene(sg_params)
     if enable_pick:
       sg.enablePickHud()

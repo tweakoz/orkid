@@ -15,6 +15,7 @@
 #include <ork/file/path.h>
 
 #include "types.h"
+#include <ork/kernel/varmap.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -102,6 +103,8 @@ public:
   systemdata_ptr_t addSystemWithClassName(std::string clazzname);
 
   bool postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) final;
+
+  varmap::varmap_ptr_t generateSceneGraphParams() const;
 
   //////////////////////////////////////////////////////////
 

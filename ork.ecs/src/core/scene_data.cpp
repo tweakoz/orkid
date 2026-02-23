@@ -374,6 +374,17 @@ systemdata_ptr_t SceneData::addSystemWithClassName(std::string clazzname){
 
 
 ///////////////////////////////////////////////////////////////////////////////
+varmap::varmap_ptr_t SceneData::generateSceneGraphParams() const {
+  auto params = std::make_shared<varmap::VarMap>();
+  params->makeValueForKey<std::string>("preset") = "ForwardPBR";
+  params->makeValueForKey<float>("SkyboxIntensity") = 1.0f;
+  params->makeValueForKey<float>("DiffuseIntensity") = 1.0f;
+  params->makeValueForKey<float>("SpecularIntensity") = 1.0f;
+  params->makeValueForKey<fvec3>("AmbientLevel") = fvec3(1.0f, 1.0f, 1.0f);
+  params->makeValueForKey<std::string>("SkyboxTexPathStr") = "nebula";
+  return params;
+}
+///////////////////////////////////////////////////////////////////////////////
 SceneComposer::SceneComposer(SceneData* psd)
     : _scenedata(psd) {
 }

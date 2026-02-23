@@ -38,17 +38,21 @@ Usage:
     TestRunnerApp(tests, title="My Tests").run()
 """
 
+import json
 import os
 import shlex
 import signal
 import threading
 import time
+from pathlib import Path
 
 from obt import command
 from obt import tmux
 from orkengine.core import vec4
 from orkengine import lev2
 from ork.ui import standard_icons, icon_library
+
+_SETTINGS_PATH = Path.home() / ".config" / "orkid" / "testrunner.json"
 
 ################################################################################
 # Per-test state
@@ -551,6 +555,7 @@ class TestRunnerApp:
     self._model._on_status_changed = lambda: self.fs_view.clearIconCache()
     self._model._audio_output_device = self._initial_output_device
     self._model._audio_input_device = self._initial_input_device
+    self._load_settings()
 
     self.fs_view.model = self._model
     self.fs_view.view_mode = lev2.ui.FilesystemViewMode.Icon if self._default_view == "icon" else lev2.ui.FilesystemViewMode.List
@@ -590,8 +595,8 @@ class TestRunnerApp:
     mic_icon = icon_library.from_svg_string(_mic_svg, icon_size, icon_size)
     refresh_icon = icon_library.from_svg_string(_refresh_svg, icon_size, icon_size)
 
-    _out_label = self._initial_output_device or "Default"
-    _in_label = self._initial_input_device or "Default"
+    _out_label = self._model._audio_output_device or "Default"
+    _in_label = self._model._audio_input_device or "Default"
     _label_w = 200
     self._btn_audio_out = self._audio_toolbar.addButton("audio_out", spk_icon, "Audio Output Device")
     self._btn_audio_out_label = self._audio_toolbar.addButton("audio_out_label",
@@ -657,6 +662,7 @@ class TestRunnerApp:
         name = sel.lstrip("/")
         self._model._audio_output_device = None if name == "Default" else name
         self._btn_audio_out_label.icon = self._makeAudioLabel(name)
+        self._save_settings()
         print("Audio output: %s" % (name,))
       lev2.ui.DropdownMenu.show(
         context=self.uicontext, paths=paths,
@@ -670,6 +676,7 @@ class TestRunnerApp:
         name = sel.lstrip("/")
         self._model._audio_input_device = None if name == "Default" else name
         self._btn_audio_in_label.icon = self._makeAudioLabel(name)
+        self._save_settings()
         print("Audio input: %s" % (name,))
       lev2.ui.DropdownMenu.show(
         context=self.uicontext, paths=paths,
@@ -786,6 +793,53 @@ class TestRunnerApp:
     if self._initial_input_device is None and self._audio_input_devices:
       self._initial_input_device = self._audio_input_devices[0].name
 
+  def _save_settings(self):
+    """Persist audio devices and option states to disk."""
+    try:
+      options = {}
+      seen = set()
+      for info in self._model._tests.values():
+        for opt_name, opt_value in info.options_state.items():
+          if opt_name not in seen:
+            seen.add(opt_name)
+            options[opt_name] = opt_value
+      data = {
+        "audio_output_device": self._model._audio_output_device,
+        "audio_input_device": self._model._audio_input_device,
+        "options": options,
+      }
+      _SETTINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
+      _SETTINGS_PATH.write_text(json.dumps(data, indent=2))
+    except OSError as e:
+      print("Warning: could not save settings: %s" % e)
+
+  def _load_settings(self):
+    """Restore audio devices and option states from disk."""
+    if not _SETTINGS_PATH.exists():
+      return
+    try:
+      data = json.loads(_SETTINGS_PATH.read_text())
+    except (OSError, json.JSONDecodeError) as e:
+      print("Warning: could not load settings: %s" % e)
+      return
+    # Audio devices
+    saved_out = data.get("audio_output_device")
+    if saved_out is not None:
+      self._model._audio_output_device = saved_out
+    saved_in = data.get("audio_input_device")
+    if saved_in is not None:
+      self._model._audio_input_device = saved_in
+    # Options
+    saved_options = data.get("options", {})
+    for opt_name, opt_value in saved_options.items():
+      for info in self._model._tests.values():
+        if opt_name in info.options_spec:
+          spec = info.options_spec[opt_name]
+          if isinstance(spec, list) and isinstance(opt_value, bool):
+            info.options_state[opt_name] = opt_value
+          elif isinstance(spec, dict) and opt_value in spec:
+            info.options_state[opt_name] = opt_value
+
   def _rebuildOptionsToolbar(self, path):
     """Rebuild the options toolbar for the selected test path."""
     info = self._model.getTestInfo(path) if path else None
@@ -824,6 +878,7 @@ class TestRunnerApp:
                 if other_path != self._options_selected_path and oname in other_info.options_spec:
                   other_info.options_state[oname] = toggled
             button.icon = self._makeOptionLabel(oname, checked=toggled)
+            self._save_settings()
           return toggler
         btn.onToggled(make_bool_toggler(opt_name, btn))
         btn.custom_width = max(80, len(label) * 8 + 30)
@@ -850,6 +905,7 @@ class TestRunnerApp:
               new_label = "%s: %s" % (oname, choice)
               button.icon = self._makeOptionLabel(new_label)
               button.custom_width = max(100, len(new_label) * 8 + 16)
+              self._save_settings()
             lev2.ui.DropdownMenu.show(
               context=self.uicontext, paths=paths,
               x=0, y=32, on_selected=on_selected)
@@ -975,6 +1031,9 @@ class TestRunnerApp:
       else:
         async_cmd = command.runasync2(commands, environment=env, do_log=True)
         info._async_cmd = async_cmd
+        if info.fire_and_forget:
+          self._model.setTestStatus(key, "passed", 0)
+          return
         exit_code = async_cmd.future.result()  # blocks until done
         info._async_cmd = None
       elapsed = time.time() - t0
