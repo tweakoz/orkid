@@ -213,12 +213,13 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
     } // switch (rtgroup->_usage) {
 
     // STEP 3: Start per-RTG GPU perf block (before render pass begins)
-    {
-      std::string rtg_name = rtgroup->_name.empty()
-        ? FormatString("rtg:%p", (void*)rtgroup)
-        : std::string("rtg:") + rtgroup->_name;
-      stack_impl->_rtg_perf_block = _contextVK->gpuPerfBlockBegin(rtg_name);
-    }
+    // TODO this is not the correct place to put this. A certain RTG is only getting pushed once, but popped twice. Why!?
+      if (rtgroup->_profiler_series == nullptr) {
+        rtgroup->_profiler_name = rtgroup->_name.empty() ? FormatString("rtg:%p", (void*)rtgroup) : std::string("rtg:") + rtgroup->_name;
+        printf("Created rtg series! %s\n", rtgroup->_profiler_name.c_str());
+        rtgroup->_profiler_series = _contextVK->_gpu_channel->createSeries(CrcString(rtgroup->_profiler_name.c_str()));
+      }
+      _contextVK->_gpu_channel->beginSample(rtgroup->_profiler_series);
 
     // STEP 4: Now begin the new render pass
     RTGIMPL->_transitionToRenderTarget(_contextVK->primary_cb());
@@ -278,18 +279,17 @@ void VkFrameBufferInterface::_popRtGroup() {
     _contextVK->_activeRenderPassRTG = nullptr;
   }
 
-  // End per-RTG GPU perf block (after render pass ends)
-  if (stack_impl && stack_impl->_rtg_perf_block) {
-    _contextVK->gpuPerfBlockEnd(stack_impl->_rtg_perf_block);
-    stack_impl->_rtg_perf_block = nullptr;
-  }
-
   /////////////////////////////////////////////
   // transition finished rtgroup based on its usage
   // This happens regardless of whether rendering occurred
   // since texture might be used even without being rendered to
   /////////////////////////////////////////////
   if (finished_rtg) {
+
+    // End per-RTG GPU perf block (after render pass ends)
+    // TODO this is not the correct place to put this. A certain RTG is only getting pushed once, but popped twice. Why!?
+    // _contextVK->_gpu_channel->endSample(finished_rtg->_profiler_series);
+
     auto RTGIMPL = finished_rtg->_impl.getShared<VkRtGroupImpl>();
 
     switch (finished_rtg->_usage) {

@@ -255,126 +255,95 @@ void usleep(int microsec) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-PerformanceItem::PerformanceItem( std::string nam )
-	: mName(nam)
-	, miStartCycle( 0 )
-	, miEndCycle( 0 )
-	, miAccumCycle( 0 )
-	, miAvgCycle( 0 )
-	, miChildAvgCycle( 0 ) {
-	for(int i = 0; i < TIMER_AVGAMT; i++)
-		miAverageSumCycle[i] = 0;
+void ProfilerSeries::addSample(Sample sample) {
+	_samples.push_back(sample);
+	while (_samples.size() > MAX_SAMPLES) 
+		_samples.pop_front();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void PerformanceItem::AddItem( PerformanceItem& Item ) {
-	OldStlSchoolMapInsert( mChildrenMap, Item.mName, & Item );
-	mChildrenList.push_back( & Item );
+profiler_series_ptr_t ProfilerChannel::createSeries(CrcString name) {
+	printf("Creating ProfilerSeries: %s for ProfilerChannel: %s\n", name.strval(), _name.strval());
+	auto [it, inserted] = _series.insert({name.hashed(), std::make_shared<ProfilerSeries>(name)});
+	OrkAssertI(inserted, "Inserting ProfilerSeries twice!\n");
+	_series_iter.push_back(it->second.get());
+	return it->second;
 }
 
-///////////////////////////////////////////////////////////////////////////////
+void ProfilerChannel::beginProfilerFrame() {
+	OrkAssertI(_current_level == 0, "ProfilerChannel endFrame not called!");
+}
 
-s64 PerformanceItem::Calculate( void ) {
-	miChildAvgCycle = 0;
+void ProfilerChannel::endProfilerFrame() { 
+	OrkAssertI(_current_level == 0, "ProfilerChannel did not call endSample for every sample! Or no samples recorded!");
 
-	if(mChildrenList.size() > 0)
-	{
-		for( orklist< PerformanceItem* >::iterator it=mChildrenList.begin(); it!=mChildrenList.end(); it++ )
-			(*it)->Calculate();
-
-		miChildAvgCycle = 0;
-
-		for( orklist< PerformanceItem* >::iterator it=mChildrenList.begin(); it!=mChildrenList.end(); it++ )
-			miChildAvgCycle += (*it)->miAccumCycle;
+	// We add a sample for all of them even if they didn't accumulate a sample so that the sampel vectors lineup.
+    for (auto s : _series_iter) {
+		OrkAssertI(s->_level == -1, "ProfilerSeries did not call endSample!");
+		s->addSample({_current_tick, s->_time, s->_count});
+		s->_time = 0;
+		s->_count = 0;
 	}
 
-	////////////////////////////////
-	for(int i = TIMER_AVGAMT - 1; i > 0; i--)
-	{
-		miAverageSumCycle[i] = miAverageSumCycle[i - 1];
+	_current_level = 0;
+	_current_tick++;
+}
+
+[[nodiscard]] ProfilerScope ProfilerChannel::sampleScope(profiler_series_ptr_t series) {
+	beginSample(series);
+	return ProfilerScope(this, series);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void CpuProfilerChannel::beginSample(profiler_series_ptr_t series) {
+	printf("CpuProfilerChannel beginSample %s\n", series->_name.strval());
+	double now = _timer.get_sync_time();
+	
+	auto s = series.get();
+	OrkAssertI(s->_level == -1, "ProfilerSeries did not call endSample!");
+
+	// pause parent by accumulating its time so far
+    if (!_span_stack.empty()) {
+      auto& parent = _span_stack.top();
+      parent.accum_time += now - parent.start_time;
+    }
+
+	s->_level = _current_level++;
+	_span_stack.push({.series = s, .accum_time = now, .start_time = 0});
+}
+
+void CpuProfilerChannel::endSample(profiler_series_ptr_t series) {
+	printf("CpuProfilerChannel endSample %s\n", series->_name.strval());
+	double now = _timer.get_sync_time();
+
+	auto s = series.get();
+	OrkAssertI(s->_level != -1, "ProfilerSeries did not call beginSample!");
+
+	while (!_span_stack.empty()) {
+		auto& top = _span_stack.top();
+
+		// exclude time in nested scopes from parent scope
+		double total_accum_time = top.accum_time + (now - top.start_time);
+		top.series->_time += total_accum_time;
+		top.series->_count++;
+		top.series->_level = -1;
+		_current_level--;
+		_span_stack.pop();
+
+		// pop and end samples for all children of passed in series
+		if (top.series == s) {
+
+			// resume parent
+			if (!_span_stack.empty()) 
+				_span_stack.top().start_time = now;
+
+			return;
+		}
 	}
-	miAverageSumCycle[0] = miAccumCycle;
-	miAvgCycle = 0;
-	for(int i = 0; i < TIMER_AVGAMT; i++)
-	{
-		miAvgCycle += miAverageSumCycle[i];
-	}
-	miAvgCycle /= TIMER_AVGAMT;
-	////////////////////////////////
-
-	miAccumCycle = 0;
-
-	return miAvgCycle;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void PerformanceItem::Enter() {
-	//miStartCycle = OldSchool::GetClockCycle();
-	f64 ftime = OldSchool::GetRef().GetLoResTime();
-	S64 output = S64(ftime*OldSchool::GetRef().mfClockRate);
-	miStartCycle = output;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void PerformanceItem::Exit() {
-	//miStartCycle = OldSchool::GetClockCycle();
-	f64 ftime = OldSchool::GetRef().GetLoResTime();
-	S64 output = S64(ftime*OldSchool::GetRef().mfClockRate);
-	miEndCycle = output;
-	miAccumCycle += (miEndCycle-miStartCycle);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-PerformanceTracker::PerformanceTracker()
-	: NoRttiSingleton<PerformanceTracker>() {
-	mRoots[EPS_UPDTHREAD] = new PerformanceItem( "update_root" );
-	mRoots[EPS_GFXTHREAD] = new PerformanceItem( "render_root" );
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-s64 PerformanceTracker::Calculate( void ) {
-	GetRef().mRoots[EPS_UPDTHREAD]->Exit();
-	GetRef().mRoots[EPS_GFXTHREAD]->Exit();
-	s64 value = GetRef().mRoots[EPS_UPDTHREAD]->Calculate();
-	s64 value2 = GetRef().mRoots[EPS_GFXTHREAD]->Calculate();
-	GetRef().mRoots[EPS_UPDTHREAD]->Enter();
-	GetRef().mRoots[EPS_GFXTHREAD]->Enter();
-	return 0;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void PerformanceTracker::AddItem( eperfset eset, PerformanceItem& Item ) {
-	if( Item.GetName() != (std::string) "root" )
-		GetRef().mRoots[eset]->AddItem( Item );
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-orklist<PerformanceItem*>* PerformanceTracker::GetItemList( eperfset eset ) {
-	return GetRef().mRoots[eset]->GetChildrenList();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void PerformanceTracker::TextDump( void ) {
-	PerformanceTracker::Calculate();
-
-	/*orklist<PerformanceItem*>* PerfItemList = PerformanceTracker::GetItemList();
-	s64 PerfTotal = PerformanceTracker::GetRef().mpRoot->miAvgCycle;
-
-	for( orklist<PerformanceItem*>::iterator it=PerfItemList->begin(); it!=PerfItemList->end(); it++ )
-	{
-		PerformanceItem* pItem = *it;
-		std::string name = pItem->GetName();
-
-		orkprintf( "%s\n", (char*)CreateFormattedString( "%s [%d microsec]", (char*)name.c_str(), pItem->miAvgCycle).c_str() );
-	}*/
+	
+	OrkAssertI(false, "ProfilerSeries beginSample never called!");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

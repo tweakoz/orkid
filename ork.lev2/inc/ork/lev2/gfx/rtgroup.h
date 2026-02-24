@@ -105,6 +105,9 @@ struct RtGroup final {
   uint64_t _usage = "user"_crcu; 
   rendertarget_rtgroup_ptr_t _rendertarget;
   TextureArraySliceRef* _slice = nullptr;
+  // TODO this is not the correct place to put this. A certain RTG is only getting pushed once, but popped twice. Why!?
+  // std::string _profiler_name;
+  // profiler_series_ptr_t _profiler_series = nullptr;
 };
 
 struct RtgSet {

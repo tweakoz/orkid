@@ -34,8 +34,7 @@ namespace ork { namespace lev2 {
 
 IRenderer::IRenderer(Context* pTARG)
     : _target(pTARG)
-    , _unsortedNodes()
-    , mPerformanceItem(0) {
+    , _unsortedNodes() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -55,9 +54,6 @@ void IRenderer::enqueueRenderable(IRenderable* renderable) {
 void IRenderer::drawEnqueuedRenderables(bool reset_after) {
 
   EASY_BLOCK("IRenderer::DER1", profiler::colors::Red);
-
-  if (mPerformanceItem)
-    mPerformanceItem->Enter();
 
   ///////////////////////////////////////////////////////
   // Early out if queue is empty
@@ -149,13 +145,6 @@ void IRenderer::drawEnqueuedRenderables(bool reset_after) {
 
   EASY_BLOCK("IRenderer::DER6", profiler::colors::Red);
 
-  if (mPerformanceItem)
-    mPerformanceItem->Exit();
-
-  EASY_END_BLOCK;
-
-  EASY_BLOCK("IRenderer::DER7", profiler::colors::Red);
-
   _target->debugPopGroup();
   if(reset_after){
     resetQueue();
@@ -219,10 +208,6 @@ CallbackRenderable& IRenderer::enqueueCallback() {
 ///////////////////////////////////////////////////////////////////////////////
 // Performance monitoring and context management
 ///////////////////////////////////////////////////////////////////////////////
-
-void IRenderer::SetPerformanceItem(PerformanceItem* perfitem) {
-  mPerformanceItem = perfitem;
-}
 
 Context* IRenderer::GetTarget() const {
   return _target;

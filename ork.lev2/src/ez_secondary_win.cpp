@@ -258,7 +258,6 @@ void SecondaryWinImpl::_fireEvent(ui::event_ptr_t uiev) {
 
 void SecondaryWinImpl::_render() {
   if (!_gfxContext || !_glfwWindow) return;
-  _owner->_perf_render_timer.Start();
 
   // Check for window close - just set flag, let cleanup handle destruction
   if (glfwWindowShouldClose(_glfwWindow)) {
@@ -345,19 +344,8 @@ void SecondaryWinImpl::_render() {
     _gfxContext->endFrame();
   }
 
-  // Record enqueue duration (everything before swap)
-  _owner->_perf_enqueue_duration = _owner->_perf_render_timer.SecsSinceStart();
-  _owner->_perf_acquire_duration = _gfxContext->_perf_acquire_duration;
-  _owner->_perf_fence_wait_duration = _gfxContext->_perf_fence_wait_duration;
-  _owner->_perf_beginFrame_duration = _gfxContext->_perf_beginFrame_duration;
-  _owner->_perf_endFrame_duration = _gfxContext->_perf_endFrame_duration;
-  _owner->_perf_submit_duration = _gfxContext->_perf_submit_duration;
-  _owner->_perf_present_vk_duration = _gfxContext->_perf_present_duration;
-
   // Swap buffers to display the rendered frame
   _gfxContext->swapBuffers(_ctxglfw);
-  _owner->_perf_render_duration = _owner->_perf_render_timer.SecsSinceStart();
-  _owner->_perf_present_duration = _owner->_perf_render_duration - _owner->_perf_enqueue_duration;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

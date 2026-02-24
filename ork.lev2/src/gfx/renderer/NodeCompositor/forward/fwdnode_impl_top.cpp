@@ -161,9 +161,8 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
   ///////////////////////////////////////////////////////////////////////////
 
   if (pbrcommon->_useDepthPrepass) {
-    //auto blk = _currentContext->gpuPerfBlockBegin("fwd:depth_prepass");
+    auto _ = _currentContext->_gpu_channel->sampleScope(_currentContext->_fwd_depth_prepass_series);
     _render_dpp(fpass);
-    //_currentContext->gpuPerfBlockEnd(blk);
     _currentRCFD->setUserProperty("DEPTH_MAP"_crcu, rtg_out->_depthBuffer->_texture);
   }
   else{
@@ -186,9 +185,8 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
   ///////////////////////////////////////////////////////////////////////////
 
   if ( is_ssao_active) {
-    //auto blk = _currentContext->gpuPerfBlockBegin("fwd:ssao");
+    auto _ = _currentContext->_gpu_channel->sampleScope(_currentContext->_fwd_ssao_series);
     _render_ssao_prepass(fpass);
-    //_currentContext->gpuPerfBlockEnd(blk);
   } else {
     // set SSAO to white..
     _currentRCFD->setUserProperty("SSAO_MAP"_crcu, _whiteTexture->GetTexture());
@@ -205,14 +203,13 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
   //FBI->rtGroupClear(rtg_out.get()); // TODO: vulkan 
   FBI->PushRtGroup(rtg_out.get());
   if(_node->_pbrcommon->_enable_skybox){
-    //auto blk = _currentContext->gpuPerfBlockBegin("fwd:skybox");
+    auto _ = _currentContext->_gpu_channel->sampleScope(_currentContext->_fwd_skybox_series);
     _render_skybox(fpass);
-    //_currentContext->gpuPerfBlockEnd(blk);
   }
-  { //auto blk = _currentContext->gpuPerfBlockBegin("fwd:color_pass");
+  { 
+    auto _ = _currentContext->_gpu_channel->sampleScope(_currentContext->_fwd_color_pass_series);
     _render_colorpass(fpass);
-    //_currentContext->gpuPerfBlockEnd(blk);
-     }
+  }
   FBI->PopRtGroup();
 
   ///////////////////////////////////////////////////////////////////////////
@@ -272,11 +269,12 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
   // get draw queue (otherwise we cant draw anything)
   //////////////////////////////////////////////////////
 
-  //auto perf_frame = context->gpuPerfBlockBegin("fwd:total");
+  context->_gpu_channel->beginSample(context->_fwd_total_series);
+
   auto autorelease_fpbr_rgroup = context->debugPushGroupAutoRelease("ForwardPBR::render");
   _currentDrawQueue = RCFD->GetDB();
   if(nullptr == _currentDrawQueue) {
-    //context->gpuPerfBlockEnd(perf_frame);
+    context->_gpu_channel->endSample(context->_fwd_total_series);
     return;
   }
 
@@ -287,7 +285,7 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
   _currentViewData = drawdata.computeViewData();
   _currentRCFD = RCFD;
   _currentIRenderer = drawdata.property("irenderer"_crcu).get<lev2::IRenderer*>();
-  _currentContext = context;
+  _currentContext   = context;
   _currentCIMPL = CIMPL;
 
   ////////////////////////////
@@ -329,15 +327,14 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
   // update enviroment probes
   ////////////////////////////
 
-  { //auto blk = context->gpuPerfBlockBegin("fwd:shadow_maps");
+  { 
+    auto _ = _currentContext->_gpu_channel->sampleScope(_currentContext->_fwd_shadow_maps_series);
     _update_shadow_maps();
-    //context->gpuPerfBlockEnd(blk); 
-    }
-
-  { //auto blk = context->gpuPerfBlockBegin("fwd:env_probes");
+  }
+  {
+    auto _ = _currentContext->_gpu_channel->sampleScope(_currentContext->_fwd_env_probes_series);
     _update_env_probes(drawdata);
-    //context->gpuPerfBlockEnd(blk); 
-    }
+  }
 
   ////////////////////////////
   // primary pass
@@ -365,7 +362,7 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
   RCFD->exchangeDebugPassID(prev_dbg_passid);
   RCFD->exchangeDebugSubPassID(prev_dbg_subpid);
 
-  //context->gpuPerfBlockEnd(perf_frame);
+  _currentContext->_gpu_channel->endSample(_currentContext->_fwd_total_series);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////

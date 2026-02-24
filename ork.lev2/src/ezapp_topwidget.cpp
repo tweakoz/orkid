@@ -102,9 +102,10 @@ void EzTopWidget::enableUiDraw() {
     compositorimpl->pushCPD(*CPD);
     //context->beginFrame();
     mtxi->PushUIMatrix();
-    auto ui_perf = context->gpuPerfBlockBegin("ui:top");
-    ezapp->_uicontext->draw(drwev);
-    context->gpuPerfBlockEnd(ui_perf);
+    {
+      auto _ = context->_gpu_channel->sampleScope(context->_ui_top_series);
+      ezapp->_uicontext->draw(drwev);
+    }
     mtxi->PopUIMatrix();
     compositorimpl->popCPD();
 
@@ -152,18 +153,9 @@ void EzTopWidget::DoDraw(ui::drawevent_constptr_t drwev) {
     }
     logchan_ezapp->log("[EzTopWidget::DoDraw] endFrame frame %d", frame_counter);
     ctx->endFrame();
-    _mainwin->_perf_enqueue_duration = _mainwin->_perf_render_timer.SecsSinceStart();
-    _mainwin->_perf_acquire_duration = ctx->_perf_acquire_duration;
-    _mainwin->_perf_fence_wait_duration = ctx->_perf_fence_wait_duration;
-    _mainwin->_perf_beginFrame_duration = ctx->_perf_beginFrame_duration;
-    _mainwin->_perf_endFrame_duration = ctx->_perf_endFrame_duration;
-    _mainwin->_perf_submit_duration = ctx->_perf_submit_duration;
-    _mainwin->_perf_present_vk_duration = ctx->_perf_present_duration;
     EASY_END_BLOCK;
     EASY_BLOCK("EzTopWidget swap", 0xffc04000);
     ctx->swapBuffers(ctx->mCtxBase);
-    _mainwin->_perf_render_duration = _mainwin->_perf_render_timer.SecsSinceStart();
-    _mainwin->_perf_present_duration = _mainwin->_perf_render_duration - _mainwin->_perf_enqueue_duration;
     EASY_END_BLOCK;
     ezapp->_render_count.fetch_add(1);
   }

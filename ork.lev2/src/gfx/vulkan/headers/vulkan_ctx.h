@@ -237,7 +237,6 @@ struct VkRtgStackItemImpl {
   bool _did_begin_rendering = false;  // Whether this push actually called vkCmdBeginRenderingKHR
   bool _was_redundant = false;        // Whether this push was a no-op (same rtgroup already active)
   RtGroup* _previous_rtgroup = nullptr; // The RTGroup that was active before this push
-  gpuperfblock_ptr_t _rtg_perf_block;   // GPU perf block for per-RTG timing
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VkFrameBufferInterface final : public FrameBufferInterface {
@@ -514,6 +513,41 @@ struct VkComputeInterface : public ComputeInterface {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+
+struct VkProfilerChannel final : ProfilerChannel {
+  static constexpr size_t MAX_GPU_PERF_QUERIES = 64; // 64 begin/end pairs per frame
+  
+  VkDevice        _device     = VK_NULL_HANDLE;
+  VkCommandBuffer _cmdbuf     = VK_NULL_HANDLE;
+  VkQueryPool     _query_pool = VK_NULL_HANDLE;
+
+  struct VkTimespan {
+    ProfilerSeries* series = nullptr;
+    int begin_query = -1;
+    int end_query   = -1;
+  };
+  std::stack<VkTimespan> _vk_span_stack{};
+  std::deque<VkTimespan> _vk_spans{};
+
+  u32 _query_index = 0; // next available query index in current pool
+
+  float _timestampPeriod = 1.0f;  // nanoseconds per timestamp tick for conversion
+  std::vector<u64> _timestamps{};
+
+  using ProfilerChannel::ProfilerChannel;
+
+  void create(VkDevice device, const VulkanDeviceInfo* deviceinfo);
+
+  // A given VulkanProfilerChannel Frame can only rest upon a single CommandBuffer.
+  // Create multiple VulkanProfilerChannel if you need multiple CommandBuffers.
+  void beginProfilerFrame(VkCommandBuffer cmdbuf);
+  void endProfilerFrame() override;
+
+  void beginSample(profiler_series_ptr_t series) override;
+  void endSample(profiler_series_ptr_t series) override;;
+};
+
+///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
@@ -716,26 +750,6 @@ public:
   bool mTargetDrawableSizeDirty;
   bool _first_frame = true;
   shared_pool::fixed_pool<PrimaryCommandBuffer, 16> _pri_cmdbuf_pool;
-  float _prev_time = 0.0f;
-  float _total_wait_time = 0.0f;
-  float _total_frame_time = 0.0f;
-  float _present_wait_time = 0.0f;
-  //////////////////////////////////////////////
-  // GPU timestamp query pools (double-buffered)
-  //////////////////////////////////////////////
-  static constexpr size_t MAX_GPU_PERF_QUERIES = 64;  // 64 begin/end pairs per frame
-  VkQueryPool _perfQueryPools[2] = {VK_NULL_HANDLE, VK_NULL_HANDLE};
-  int _perfQueryPoolIndex = 0;           // current write pool (0 or 1)
-  uint32_t _perfQueryNextSlot = 0;       // next available query index in current pool
-  std::vector<gpuperfblock_ptr_t> _perfPendingBlocks[2];  // blocks per pool awaiting readback
-  bool _perfQueryPoolsCreated = false;
-  float _timestampPeriod = 1.0f;         // nanoseconds per timestamp tick
-
-  gpuperfblock_ptr_t gpuPerfBlockBegin(const std::string& name) override;
-  void gpuPerfBlockEnd(gpuperfblock_ptr_t block) override;
-  void gpuPipelineDrain() override;
-  void _readbackPerfQueries();
-  void _createPerfQueryPools();
   //////////////////////////////////////////////
   vkpricmdbufimpl_ptr_t _createPrimaryVkCommandBuffer(PrimaryCommandBuffer* par);
   vkseccmdbufimpl_ptr_t _createSecondaryVkCommandBuffer(SecondaryCommandBuffer* par);
@@ -781,4 +795,3 @@ public:
 ///////////////////////////////////////////////////////////////////////////
 extern vkinstance_ptr_t _GVI;
 } // namespace ork::lev2::vulkan
-

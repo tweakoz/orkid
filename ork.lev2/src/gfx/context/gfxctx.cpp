@@ -85,20 +85,6 @@ void LoadingPhase::join() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-double Context::gpuPerfResult(const std::string& name) const {
-  auto it = _gpuPerfResults.find(name);
-  return (it != _gpuPerfResults.end()) ? it->second : -1.0;
-}
-
-void Context::enqueueGpuEvent(gpuevent_ptr_t evt) {
-  _gpuEventQueue.push(evt);
-}
-void Context::registerGpuEventSink(gpueventsink_ptr_t sink) {
-  _gpuEventSinks.atomicOp([sink](gpueventsink_map_t& unlocked) { unlocked.insert(std::make_pair(sink->_eventID, sink)); });
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 bool Context::hiDPI() const {
   return _HIDPI();
 }
@@ -185,7 +171,6 @@ void Context::submitPrimaryCommandBuffer(){
   _doSubmitPrimaryCommandBuffer();
 }
 void Context::_doBeginPrimaryCommandBuffer() {
-
 }
 void Context::_doEndPrimaryCommandBuffer() {
 }
@@ -195,11 +180,14 @@ void Context::_doSubmitPrimaryCommandBuffer(){
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context::beginFrame(bool visual) {
-  _perf_frame_t0 = _ctxtimer.SecsSinceStart();
-  _perf_acquire_duration = 0.0;
-  _perf_fence_wait_duration = 0.0;
-  _perf_submit_duration = 0.0;
-  _perf_present_duration = 0.0;
+  _main_thread_channel->beginSample(_frame_all_series);
+  auto _ = _main_thread_channel->sampleScope(_begin_frame_series);
+
+  // _perf_frame_t0 = _ctxtimer.SecsSinceStart();
+  // _perf_acquire_duration = 0.0;
+  // _perf_fence_wait_duration = 0.0;
+  // _perf_submit_duration = 0.0;
+  // _perf_present_duration = 0.0;
 
   OrkAssert(_currentPhase == 0);
   _currentPhase = "INFRAME"_crcu;
@@ -228,10 +216,8 @@ void Context::beginFrame(bool visual) {
   MTXI()->PushVMatrix(fmtx4::Identity());
   MTXI()->PushPMatrix(fmtx4::Identity());
 
-
   mRenderContextInstData = 0;
   _doBeginFrame();
-  _frameAllPerfBlock = gpuPerfBlockBegin("frame:all");
   FBI()->PushRtGroup(FBI()->_ensureMainRtg().get()); // implicit renderpass api
 
   /////////////////////////////////////
@@ -251,6 +237,7 @@ void Context::beginFrame(bool visual) {
 
   /////////////////////////////////////
 
+  // TODO could this be changed to lockless?
   _gpuEventSinks.atomicOp([this](gpueventsink_map_t& unlocked) {
     while (not _gpuEventQueue.empty()) {
       auto event = _gpuEventQueue.front();
@@ -265,14 +252,12 @@ void Context::beginFrame(bool visual) {
       _gpuEventQueue.pop();
     }
   });
-
-  _perf_beginFrame_duration = _ctxtimer.SecsSinceStart() - _perf_frame_t0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context::endFrame(void) {
-  float ef_t0 = _ctxtimer.SecsSinceStart();
+  auto _ = _main_thread_channel->sampleScope(_end_frame_series);
 
   FBI()->PopRtGroup(); // pop main rtg
 
@@ -303,7 +288,8 @@ void Context::endFrame(void) {
   _currentPhase = 0;
   if(0)printf("exit Context::endFrame this<%p>\n", this);
 
-  _perf_endFrame_duration = _ctxtimer.SecsSinceStart() - ef_t0;
+  _main_thread_channel->endSample(_frame_all_series);
+  _main_thread_channel->endProfilerFrame();
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -337,11 +323,9 @@ Context::Context()
     , miModColorStackIndex(0)
     , miTargetFrame(0)
     , miDrawLock(0)
-    , mbPostInitializeContext(true)
-    , mFramePerfItem(CreateFormattedString("<target:%p>", this)) {
+    , mbPostInitializeContext(true) {
 
   if(0)printf("Context::Context() this<%p>\n", this);
-  _ctxtimer.Start();
   _primitives_interface = std::make_shared<PrimitivesInterface>(this);
 
   static CompositingData _gdata;
@@ -351,8 +335,7 @@ Context::Context()
   _defaultrcfd = RCFD;
   pushRenderContextFrameData(RCFD);
 
-    mpCurrentObject = nullptr;
-
+  mpCurrentObject = nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
