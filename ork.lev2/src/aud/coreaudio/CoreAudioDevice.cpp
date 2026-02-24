@@ -17,6 +17,7 @@
 #include <ork/lev2/aud/singularity/synth.h>
 #include <mach/mach_time.h>
 #include <chrono>
+#include <cstdlib>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::ca {
@@ -232,6 +233,39 @@ void CoreAudioDevice::startup() {
   if (_input_impl or _output_impl) {
     _aucontext->Init(_input_impl, _output_impl);
     _aucontext->Start();
+
+    // Apply volume levels from environment variables (value in dB)
+    auto _setDeviceVolumeDb = [](AudioDeviceID devID, bool isInput, float db) {
+      AudioObjectPropertyAddress addr = {};
+      addr.mSelector = kAudioDevicePropertyVolumeDecibels;
+      addr.mScope    = isInput ? kAudioObjectPropertyScopeInput : kAudioObjectPropertyScopeOutput;
+      // Try per-channel (1 and 2), then master element (0)
+      for (UInt32 element : {1u, 2u, 0u}) {
+        addr.mElement = element;
+        if (AudioObjectHasProperty(devID, &addr)) {
+          Boolean settable = false;
+          if (AudioObjectIsPropertySettable(devID, &addr, &settable) == noErr && settable) {
+            Float32 vol = db;
+            AudioObjectSetPropertyData(devID, &addr, 0, NULL, sizeof(vol), &vol);
+          }
+        }
+      }
+    };
+
+    if (_input_info) {
+      if (auto env = std::getenv("ORKID_AUDIO_INPUT_LEVEL")) {
+        float db = float(std::atof(env));
+        _setDeviceVolumeDb(_input_info->_ID, true, db);
+        logchan_coreaudio->log("set input volume for '%s' to %.1f dB", _input_info->_name.c_str(), db);
+      }
+    }
+    if (_output_info) {
+      if (auto env = std::getenv("ORKID_AUDIO_OUTPUT_LEVEL")) {
+        float db = float(std::atof(env));
+        _setDeviceVolumeDb(_output_info->_ID, false, db);
+        logchan_coreaudio->log("set output volume for '%s' to %.1f dB", _output_info->_name.c_str(), db);
+      }
+    }
 
     _au_thread = std::make_shared<Thread>("CoreAudioThread");
 

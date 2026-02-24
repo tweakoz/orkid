@@ -46,7 +46,7 @@ void pyinit_ui_toolbar(py::module& uimodule) {
           .def_property(
               "icon",
               [](ui::toolbar_button_ptr_t btn) -> image_ptr_t { return btn->_icon_image; },
-              [](ui::toolbar_button_ptr_t btn, image_ptr_t img) { btn->_icon_image = img; btn->_icon_texture = nullptr; })
+              [](ui::toolbar_button_ptr_t btn, image_ptr_t img) { btn->_icon_image = img; btn->_prev_icon_image = nullptr; })
           .def_property(
               "icon_provider",
               [](ui::toolbar_button_ptr_t btn) -> image_provider_ptr_t { return btn->_icon_provider; },
@@ -54,11 +54,11 @@ void pyinit_ui_toolbar(py::module& uimodule) {
           .def_property(
               "hover_icon",
               [](ui::toolbar_button_ptr_t btn) -> image_ptr_t { return btn->_hover_image; },
-              [](ui::toolbar_button_ptr_t btn, image_ptr_t img) { btn->_hover_image = img; btn->_hover_texture = nullptr; })
+              [](ui::toolbar_button_ptr_t btn, image_ptr_t img) { btn->_hover_image = img; btn->_prev_hover_image = nullptr; })
           .def_property(
               "pressed_icon",
               [](ui::toolbar_button_ptr_t btn) -> image_ptr_t { return btn->_pressed_image; },
-              [](ui::toolbar_button_ptr_t btn, image_ptr_t img) { btn->_pressed_image = img; btn->_pressed_texture = nullptr; })
+              [](ui::toolbar_button_ptr_t btn, image_ptr_t img) { btn->_pressed_image = img; btn->_prev_pressed_image = nullptr; })
           .def_readwrite("custom_width", &ui::ToolbarButton::_custom_width)
           .def_readwrite("tooltip", &ui::ToolbarButton::_tooltip)
           .def_readwrite("toggle_mode", &ui::ToolbarButton::_toggle_mode)
@@ -79,6 +79,14 @@ void pyinit_ui_toolbar(py::module& uimodule) {
                 btn->_onToggled = [callback](bool toggled) {
                   py::gil_scoped_acquire acquire;
                   callback(toggled);
+                };
+              })
+          .def(
+              "onKeyEvent",
+              [](ui::toolbar_button_ptr_t btn, py::object callback) {
+                btn->_onKeyEvent = [callback](int keycode) {
+                  py::gil_scoped_acquire acquire;
+                  callback(keycode);
                 };
               })
           .def("__repr__", [](ui::toolbar_button_ptr_t btn) {

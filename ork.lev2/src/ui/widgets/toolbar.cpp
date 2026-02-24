@@ -19,6 +19,23 @@
 namespace ork::ui {
 
 ///////////////////////////////////////////////////////////////////////////////
+// Image -> Texture cache (avoids redundant GPU uploads for the same image)
+///////////////////////////////////////////////////////////////////////////////
+
+static std::unordered_map<lev2::image_ptr_t, lev2::texture_ptr_t> _image_texture_cache;
+
+static lev2::texture_ptr_t _cachedTextureForImage(lev2::Context* ctx, lev2::image_ptr_t image) {
+  auto it = _image_texture_cache.find(image);
+  if (it != _image_texture_cache.end()) {
+    return it->second;
+  }
+  auto tex = std::make_shared<lev2::Texture>();
+  ctx->TXI()->initTextureFromImage(tex.get(), image, false, true);
+  _image_texture_cache[image] = tex;
+  return tex;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // ToolbarButton
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -27,23 +44,18 @@ ToolbarButton::ToolbarButton(const std::string& id) {
 }
 
 void ToolbarButton::updateTextures(lev2::Context* ctx) {
-  auto txi = ctx->TXI();
-
   // Update icon texture
   if (_icon_provider) {
     auto new_image = _icon_provider->_func();
     if (new_image != _icon_image) {
       _icon_image = new_image;
       if (_icon_image) {
-        if (!_icon_texture) {
-          _icon_texture = std::make_shared<lev2::Texture>();
-        }
-        txi->initTextureFromImage(_icon_texture.get(), _icon_image, false);
+        _icon_texture = _cachedTextureForImage(ctx, _icon_image);
       }
     }
-  } else if (_icon_image && !_icon_texture) {
-    _icon_texture = std::make_shared<lev2::Texture>();
-    txi->initTextureFromImage(_icon_texture.get(), _icon_image, true);
+  } else if (_icon_image && _icon_image != _prev_icon_image) {
+    _prev_icon_image = _icon_image;
+    _icon_texture = _cachedTextureForImage(ctx, _icon_image);
   }
 
   // Update hover texture
@@ -52,15 +64,12 @@ void ToolbarButton::updateTextures(lev2::Context* ctx) {
     if (new_image != _hover_image) {
       _hover_image = new_image;
       if (_hover_image) {
-        if (!_hover_texture) {
-          _hover_texture = std::make_shared<lev2::Texture>();
-        }
-        txi->initTextureFromImage(_hover_texture.get(), _hover_image, false);
+        _hover_texture = _cachedTextureForImage(ctx, _hover_image);
       }
     }
-  } else if (_hover_image && !_hover_texture) {
-    _hover_texture = std::make_shared<lev2::Texture>();
-    txi->initTextureFromImage(_hover_texture.get(), _hover_image, true);
+  } else if (_hover_image && _hover_image != _prev_hover_image) {
+    _prev_hover_image = _hover_image;
+    _hover_texture = _cachedTextureForImage(ctx, _hover_image);
   }
 
   // Update pressed texture
@@ -69,15 +78,12 @@ void ToolbarButton::updateTextures(lev2::Context* ctx) {
     if (new_image != _pressed_image) {
       _pressed_image = new_image;
       if (_pressed_image) {
-        if (!_pressed_texture) {
-          _pressed_texture = std::make_shared<lev2::Texture>();
-        }
-        txi->initTextureFromImage(_pressed_texture.get(), _pressed_image, false);
+        _pressed_texture = _cachedTextureForImage(ctx, _pressed_image);
       }
     }
-  } else if (_pressed_image && !_pressed_texture) {
-    _pressed_texture = std::make_shared<lev2::Texture>();
-    txi->initTextureFromImage(_pressed_texture.get(), _pressed_image, true);
+  } else if (_pressed_image && _pressed_image != _prev_pressed_image) {
+    _prev_pressed_image = _pressed_image;
+    _pressed_texture = _cachedTextureForImage(ctx, _pressed_image);
   }
 }
 
@@ -282,7 +288,21 @@ HandlerResult Toolbar::DoOnUiEvent(event_constptr_t ev) {
       if (item_index >= 0) {
         if (auto btn = std::dynamic_pointer_cast<ToolbarButton>(_items[item_index])) {
           btn->_pressed = true;
+          _focused_index = item_index;
           result.setHandled(this);
+        }
+      }
+      break;
+    }
+
+    case EventCode::KEY_DOWN:
+    case EventCode::KEY_REPEAT: {
+      if (_focused_index >= 0 && _focused_index < (int)_items.size()) {
+        if (auto btn = std::dynamic_pointer_cast<ToolbarButton>(_items[_focused_index])) {
+          if (btn->_onKeyEvent) {
+            btn->_onKeyEvent(ev->miKeyCode);
+            result.setHandled(this);
+          }
         }
       }
       break;

@@ -126,6 +126,8 @@ class TestRunnerFilesystemModel(lev2.ui.FilesystemModel):
     self._on_status_changed = None
     self._audio_input_device = None   # global: ORKID_AUDIO_INPUT_DEVICE
     self._audio_output_device = None  # global: ORKID_AUDIO_OUTPUT_DEVICE
+    self._audio_input_gain_db = 0     # dB, passed as ORKID_AUDIO_INPUT_LEVEL
+    self._audio_output_gain_db = 0    # dB, passed as ORKID_AUDIO_OUTPUT_LEVEL
 
     # Root entry
     self._entries["/"] = {
@@ -587,28 +589,28 @@ class TestRunnerApp:
       '<path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" fill="#AAAAAA"/>'
       '<path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" fill="#AAAAAA"/>'
       '</svg>')
-    _refresh_svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
-      '<path d="M17.65 6.35A7.96 7.96 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" fill="#AAAAAA"/>'
-      '</svg>')
-
     spk_icon = icon_library.from_svg_string(_spk_svg, icon_size, icon_size)
     mic_icon = icon_library.from_svg_string(_mic_svg, icon_size, icon_size)
-    refresh_icon = icon_library.from_svg_string(_refresh_svg, icon_size, icon_size)
 
     _out_label = self._model._audio_output_device or "Default"
     _in_label = self._model._audio_input_device or "Default"
     _label_w = 200
+    _gain_w = 60
     self._btn_audio_out = self._audio_toolbar.addButton("audio_out", spk_icon, "Audio Output Device")
     self._btn_audio_out_label = self._audio_toolbar.addButton("audio_out_label",
       self._makeAudioLabel(_out_label, _label_w), "Click to select output device")
     self._btn_audio_out_label.custom_width = _label_w
+    self._btn_audio_out_gain = self._audio_toolbar.addButton("audio_out_gain",
+      self._makeGainLabel(self._model._audio_output_gain_db, _gain_w), "Output gain (-/= to adjust)")
+    self._btn_audio_out_gain.custom_width = _gain_w
     self._audio_toolbar.addSeparator()
     self._btn_audio_in = self._audio_toolbar.addButton("audio_in", mic_icon, "Audio Input Device")
     self._btn_audio_in_label = self._audio_toolbar.addButton("audio_in_label",
       self._makeAudioLabel(_in_label, _label_w), "Click to select input device")
     self._btn_audio_in_label.custom_width = _label_w
-    self._audio_toolbar.addSeparator()
-    self._btn_audio_refresh = self._audio_toolbar.addButton("audio_refresh", refresh_icon, "Refresh Audio Devices")
+    self._btn_audio_in_gain = self._audio_toolbar.addButton("audio_in_gain",
+      self._makeGainLabel(self._model._audio_input_gain_db, _gain_w), "Input gain (-/= to adjust)")
+    self._btn_audio_in_gain.custom_width = _gain_w
 
     # -- Options toolbar (inside fs_view bars, rebuilt on selection change) --
     self._options_toolbar = self.fs_view.addToolbar("options_toolbar", 24)
@@ -684,16 +686,67 @@ class TestRunnerApp:
     self._btn_audio_in.onPressed(show_audio_in_menu)
     self._btn_audio_in_label.onPressed(show_audio_in_menu)
 
-    def refresh_audio_devices():
-      self._refreshAudioDevices()
-      # Reset labels to current selection or Default
-      out_name = self._model._audio_output_device or "Default"
-      in_name = self._model._audio_input_device or "Default"
-      self._btn_audio_out_label.icon = self._makeAudioLabel(out_name)
-      self._btn_audio_in_label.icon = self._makeAudioLabel(in_name)
-      print("Audio devices refreshed (%d input, %d output)" % (
-        len(self._audio_input_devices), len(self._audio_output_devices)))
-    self._btn_audio_refresh.onPressed(refresh_audio_devices)
+    # -- Gain key event handlers (-/= to adjust, clamped to -60..+12 dB) --
+    self._gain_label_cache = {}
+
+    def _cached_gain_label(db):
+      if db not in self._gain_label_cache:
+        self._gain_label_cache[db] = self._makeGainLabel(db, _gain_w)
+      return self._gain_label_cache[db]
+
+    def on_out_gain_key(keycode):
+      db = self._model._audio_output_gain_db
+      if keycode == 45:  # '-'
+        db = max(-60, db - 1)
+      elif keycode == 61:  # '='
+        db = min(12, db + 1)
+      else:
+        return
+      self._model._audio_output_gain_db = db
+      self._btn_audio_out_gain.icon = _cached_gain_label(db)
+      self._save_settings()
+
+    def on_in_gain_key(keycode):
+      db = self._model._audio_input_gain_db
+      if keycode == 45:  # '-'
+        db = max(-60, db - 1)
+      elif keycode == 61:  # '='
+        db = min(12, db + 1)
+      else:
+        return
+      self._model._audio_input_gain_db = db
+      self._btn_audio_in_gain.icon = _cached_gain_label(db)
+      self._save_settings()
+
+    self._btn_audio_out_gain.onKeyEvent(on_out_gain_key)
+    self._btn_audio_in_gain.onKeyEvent(on_in_gain_key)
+
+    _gain_presets = [-12, -9, -6, -3, 0, 3, 6, 9, 12]
+    _gain_paths = ["/%+d dB" % g for g in _gain_presets]
+
+    def show_out_gain_menu():
+      bx, by = self._audio_toolbar.localToRoot(self._btn_audio_out_gain.x, self._btn_audio_out_gain.y)
+      def on_selected(sel):
+        db = int(sel.strip("/").replace(" dB", ""))
+        self._model._audio_output_gain_db = db
+        self._btn_audio_out_gain.icon = _cached_gain_label(db)
+        self._save_settings()
+      lev2.ui.DropdownMenu.show(
+        context=self.uicontext, paths=_gain_paths,
+        x=bx, y=by + self._audio_toolbar.height, on_selected=on_selected)
+    self._btn_audio_out_gain.onPressed(show_out_gain_menu)
+
+    def show_in_gain_menu():
+      bx, by = self._audio_toolbar.localToRoot(self._btn_audio_in_gain.x, self._btn_audio_in_gain.y)
+      def on_selected(sel):
+        db = int(sel.strip("/").replace(" dB", ""))
+        self._model._audio_input_gain_db = db
+        self._btn_audio_in_gain.icon = _cached_gain_label(db)
+        self._save_settings()
+      lev2.ui.DropdownMenu.show(
+        context=self.uicontext, paths=_gain_paths,
+        x=bx, y=by + self._audio_toolbar.height, on_selected=on_selected)
+    self._btn_audio_in_gain.onPressed(show_in_gain_menu)
 
     # -- Callbacks --
     def on_activate(path):
@@ -738,6 +791,11 @@ class TestRunnerApp:
     self.fs_view.header_bgcolor = vec4(0.12, 0.12, 0.15, 1)
     self.fs_view.item_height = 24
 
+    # -- Periodic audio device monitoring --
+    self._last_audio_check_time = 0.0
+    self._audio_check_interval = 2.0
+    self._audio_label_cache = {}  # (text, color) -> image_ptr_t
+
     # -- Ctrl+C --
     def onCtrlC(signum, frame):
       print("signalling EXIT")
@@ -763,6 +821,32 @@ class TestRunnerApp:
     self._audio_devices = lev2.enumerateAudioDevices()
     self._audio_input_devices = [d for d in self._audio_devices if d.max_input_channels > 0]
     self._audio_output_devices = [d for d in self._audio_devices if d.max_output_channels > 0]
+
+  def _checkAudioDevices(self):
+    """Periodically re-enumerate audio devices and update label colors."""
+    self._refreshAudioDevices()
+    input_names = {d.name for d in self._audio_input_devices}
+    output_names = {d.name for d in self._audio_output_devices}
+
+    cur_in = self._model._audio_input_device
+    in_avail = cur_in is None or cur_in in input_names
+    in_key = (cur_in or "Default", in_avail)
+    if in_key not in self._audio_label_cache:
+      if in_avail:
+        self._audio_label_cache[in_key] = self._makeAudioLabel(in_key[0])
+      else:
+        self._audio_label_cache[in_key] = self._makeAudioLabel("!! %s !!" % in_key[0], color="#EEEE44", bgcolor="#883333", bold=True)
+    self._btn_audio_in_label.icon = self._audio_label_cache[in_key]
+
+    cur_out = self._model._audio_output_device
+    out_avail = cur_out is None or cur_out in output_names
+    out_key = (cur_out or "Default", out_avail)
+    if out_key not in self._audio_label_cache:
+      if out_avail:
+        self._audio_label_cache[out_key] = self._makeAudioLabel(out_key[0])
+      else:
+        self._audio_label_cache[out_key] = self._makeAudioLabel("!! %s !!" % out_key[0], color="#EEEE44", bgcolor="#883333", bold=True)
+    self._btn_audio_out_label.icon = self._audio_label_cache[out_key]
 
   def _resolveInitialAudioDevices(self):
     """Resolve initial audio devices from env vars, falling back to system defaults."""
@@ -806,6 +890,8 @@ class TestRunnerApp:
       data = {
         "audio_output_device": self._model._audio_output_device,
         "audio_input_device": self._model._audio_input_device,
+        "audio_output_gain_db": self._model._audio_output_gain_db,
+        "audio_input_gain_db": self._model._audio_input_gain_db,
         "options": options,
       }
       _SETTINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -829,6 +915,12 @@ class TestRunnerApp:
     saved_in = data.get("audio_input_device")
     if saved_in is not None:
       self._model._audio_input_device = saved_in
+    saved_out_gain = data.get("audio_output_gain_db")
+    if saved_out_gain is not None:
+      self._model._audio_output_gain_db = int(saved_out_gain)
+    saved_in_gain = data.get("audio_input_gain_db")
+    if saved_in_gain is not None:
+      self._model._audio_input_gain_db = int(saved_in_gain)
     # Options
     saved_options = data.get("options", {})
     for opt_name, opt_value in saved_options.items():
@@ -940,12 +1032,28 @@ class TestRunnerApp:
     return icon_library.from_svg_string(svg, width, height)
 
   @staticmethod
-  def _makeAudioLabel(text, width=200, height=20):
+  def _makeAudioLabel(text, width=200, height=20, color="#CCCCCC", bgcolor=None, bold=False):
     """Render a text string into an Image for use as a toolbar button icon."""
     from xml.sax.saxutils import escape
+    bg_svg = ''
+    if bgcolor:
+      bg_svg = '<rect width="%d" height="%d" rx="3" ry="3" fill="%s"/>' % (width, height, bgcolor)
+    weight = ' font-weight="bold"' if bold else ''
     svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %d %d">'
-      '<text x="4" y="%d" font-family="sans-serif" font-size="%d" fill="#CCCCCC">%s</text>'
-      '</svg>' % (width, height, height - 5, height - 6, escape(text)))
+      '%s'
+      '<text x="4" y="%d" font-family="sans-serif" font-size="%d" fill="%s"%s>%s</text>'
+      '</svg>' % (width, height, bg_svg, height - 5, height - 6, color, weight, escape(text)))
+    return icon_library.from_svg_string(svg, width, height)
+
+  @staticmethod
+  def _makeGainLabel(db, width=60, height=20):
+    """Render a gain value in dB as an Image for use as a toolbar button icon."""
+    text = "%+d dB" % db
+    color = "#88CC88" if db == 0 else ("#CCCC44" if db > 0 else "#44AACC")
+    svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %d %d">'
+      '<rect width="%d" height="%d" rx="3" ry="3" fill="#282828"/>'
+      '<text x="%d" y="%d" text-anchor="middle" font-family="sans-serif" font-size="%d" fill="%s">%s</text>'
+      '</svg>' % (width, height, width, height, width // 2, height - 5, height - 6, color, text))
     return icon_library.from_svg_string(svg, width, height)
 
   # -- GPU init: theme setup --
@@ -973,7 +1081,10 @@ class TestRunnerApp:
       self.runAll()
 
   def onUpdate(self, updinfo):
-    pass
+    now = time.monotonic()
+    if now - self._last_audio_check_time >= self._audio_check_interval:
+      self._last_audio_check_time = now
+      self._checkAudioDevices()
 
   def onUiEvent(self, uievent):
     return lev2.ui.HandlerResult()
@@ -1006,6 +1117,12 @@ class TestRunnerApp:
       env["ORKID_AUDIO_INPUT_DEVICE"] = self._model._audio_input_device
     if self._model._audio_output_device:
       env["ORKID_AUDIO_OUTPUT_DEVICE"] = self._model._audio_output_device
+    in_db = self._model._audio_input_gain_db
+    out_db = self._model._audio_output_gain_db
+    if in_db != 0:
+      env["ORKID_AUDIO_INPUT_LEVEL"] = str(in_db)
+    if out_db != 0:
+      env["ORKID_AUDIO_OUTPUT_LEVEL"] = str(out_db)
     return env
 
   def _runTest(self, key):

@@ -61,16 +61,19 @@ struct ToolbarButton : public ToolbarItem {
 
   // Icon images (similar to ImageButton)
   lev2::image_ptr_t _icon_image;
+  lev2::image_ptr_t _prev_icon_image;
   lev2::image_provider_ptr_t _icon_provider;
   lev2::texture_ptr_t _icon_texture;
 
   // Hover state image (optional - tints normal if not set)
   lev2::image_ptr_t _hover_image;
+  lev2::image_ptr_t _prev_hover_image;
   lev2::image_provider_ptr_t _hover_provider;
   lev2::texture_ptr_t _hover_texture;
 
   // Pressed state image (optional - tints normal if not set)
   lev2::image_ptr_t _pressed_image;
+  lev2::image_ptr_t _prev_pressed_image;
   lev2::image_provider_ptr_t _pressed_provider;
   lev2::texture_ptr_t _pressed_texture;
 
@@ -91,6 +94,7 @@ struct ToolbarButton : public ToolbarItem {
   // Callbacks
   std::function<void()> _onPressed;
   std::function<void(bool)> _onToggled;  // For toggle mode
+  std::function<void(int)> _onKeyEvent;  // key code on KEY_DOWN/KEY_REPEAT when focused
 
   // Update textures from images/providers
   void updateTextures(lev2::Context* ctx);
@@ -213,6 +217,9 @@ private:
   std::vector<toolbar_item_ptr_t> _items;
   ToolbarOrientation _orientation = ToolbarOrientation::Auto;
   bool _needs_layout = true;
+
+  // Focus state (for key events)
+  int _focused_index = -1;
 
   // Tooltip state
   int _hovered_index = -1;
