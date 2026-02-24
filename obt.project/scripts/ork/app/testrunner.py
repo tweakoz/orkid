@@ -659,6 +659,7 @@ class TestRunnerApp:
 
     # -- Audio device button callbacks --
     def show_audio_out_menu():
+      bx, by = self._audio_toolbar.localToRoot(self._btn_audio_out_label.x, self._btn_audio_out_label.y)
       paths = ["/Default"] + ["/" + d.name for d in self._audio_output_devices]
       def on_selected(sel):
         name = sel.lstrip("/")
@@ -668,11 +669,12 @@ class TestRunnerApp:
         print("Audio output: %s" % (name,))
       lev2.ui.DropdownMenu.show(
         context=self.uicontext, paths=paths,
-        x=0, y=32, on_selected=on_selected)
+        x=bx, y=by + self._audio_toolbar.height, on_selected=on_selected)
     self._btn_audio_out.onPressed(show_audio_out_menu)
     self._btn_audio_out_label.onPressed(show_audio_out_menu)
 
     def show_audio_in_menu():
+      bx, by = self._audio_toolbar.localToRoot(self._btn_audio_in_label.x, self._btn_audio_in_label.y)
       paths = ["/Default"] + ["/" + d.name for d in self._audio_input_devices]
       def on_selected(sel):
         name = sel.lstrip("/")
@@ -682,7 +684,7 @@ class TestRunnerApp:
         print("Audio input: %s" % (name,))
       lev2.ui.DropdownMenu.show(
         context=self.uicontext, paths=paths,
-        x=0, y=32, on_selected=on_selected)
+        x=bx, y=by + self._audio_toolbar.height, on_selected=on_selected)
     self._btn_audio_in.onPressed(show_audio_in_menu)
     self._btn_audio_in_label.onPressed(show_audio_in_menu)
 
