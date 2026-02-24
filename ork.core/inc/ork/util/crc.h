@@ -109,7 +109,8 @@ int constexpr conststrlength(const char* str) {
 struct CrcString {
 
   constexpr CrcString(const char* strval)
-      : _hashed(crc32_recurse(KENDHASH, strval)) {
+      : _hashed(crc32_recurse(KENDHASH, strval))
+      , _strval(strval) {
   }
   constexpr CrcString(uint64_t h)
       : _hashed(h) {
@@ -118,6 +119,9 @@ struct CrcString {
       : _hashed(0) {
   }
 
+  constexpr const char* strval() const {
+    return _strval;
+  }
   constexpr uint64_t hashed() const {
     return _hashed;
   }
@@ -135,7 +139,8 @@ struct CrcString {
     return _hashed > other._hashed;
   }
 
-  uint64_t _hashed; // cannot make this const or we get weird compile errors!
+  uint64_t _hashed; // cannot make const or we get weird compile errors!
+  const char* _strval = nullptr; 
 };
 
 using crcstring_ptr_t = std::shared_ptr<CrcString>;
@@ -143,7 +148,7 @@ using crcstring_ptr_t = std::shared_ptr<CrcString>;
 ///////////////////////////////////////////////////////////////////////////////
 
 consteval CrcString operator"" _crc(const char* s, size_t len) {
-  return CrcString(crc32_recurse2(KENDHASH, s));
+  return CrcString(s);
 }
 consteval uint64_t operator"" _crcu(const char* s, size_t len) {
   return crc32_recurse2(KENDHASH, s);
