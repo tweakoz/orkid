@@ -38,7 +38,6 @@ struct IMPL {
   }
   ///////////////////////////////////////
   void init(lev2::Context* pTARG) {
-    pTARG->debugPushGroup("Forward::rendeinitr");
     if (nullptr == _rtg) {
       _material.gpuInit(pTARG);
       _rtg             = new RtGroup(pTARG, 8, 8);
@@ -48,7 +47,6 @@ struct IMPL {
       buf2->_debugName = "ForwardRt1";
       _profile_timer.Start();
     }
-    pTARG->debugPopGroup();
   }
   ///////////////////////////////////////
   void _render_top(UnlitNode* node, CompositorDrawData& drawdata) {

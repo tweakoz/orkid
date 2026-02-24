@@ -118,6 +118,7 @@ class MYCONTROLLER:
     ##################
 
     self.controller.installRenderCallbackOnEzApp(self.ezapp)
+    self.controller.installGpuUpdateCallbackOnEzApp(self.ezapp)
     self.controller.installUpdateCallbackOnEzApp(self.ezapp)
 
     ##################
@@ -198,6 +199,7 @@ class MYCONTROLLER:
   def onGpuExit(self,ctx):
     self.controller.gpuExit(ctx)
     self.controller.uninstallRenderCallbackOnEzApp(self.ezapp)
+    self.controller.uninstallGpuUpdateCallbackOnEzApp(self.ezapp)
 
   ##############################################
 

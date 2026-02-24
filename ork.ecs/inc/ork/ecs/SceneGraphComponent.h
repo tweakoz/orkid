@@ -181,6 +181,7 @@ struct SceneGraphSystem final : public System {
   ///////////////////////////////
   void _onGpuInit(Simulation* psi, lev2::Context* ctx) final;
   void _onGpuExit(Simulation* psi, lev2::Context* ctx) final;
+  void _onGpuUpdate(Simulation* psi, lev2::Context* ctx) final;
   ///////////////////////////////
   bool _onLink(Simulation* psi) final;
   void _onUnLink(Simulation* psi) final;

@@ -75,6 +75,9 @@ void pyinit_controller(py::module& module_ecs) {
       .def("gpuRender", [](controller_ptr_t ctrl, ctx_t ctx) {
          ctrl->gpuRender(ctx.get());
        })
+      .def("gpuUpdate", [](controller_ptr_t ctrl, ctx_t ctx) {
+         ctrl->gpuUpdate(ctx.get());
+       })
       ///////////////////////////
       .def("installRenderCallbackOnEzApp", [](controller_ptr_t ctrl,lev2::orkezapp_ptr_t ezapp) {
          py::gil_scoped_release release; //
@@ -86,6 +89,11 @@ void pyinit_controller(py::module& module_ecs) {
          ctrl->installUpdateCallbackOnEzApp(ezapp);
        })
       ///////////////////////////
+      .def("installGpuUpdateCallbackOnEzApp", [](controller_ptr_t ctrl,lev2::orkezapp_ptr_t ezapp) {
+         py::gil_scoped_release release; //
+         ctrl->installGpuUpdateCallbackOnEzApp(ezapp);
+       })
+      ///////////////////////////
       .def("uninstallRenderCallbackOnEzApp", [](controller_ptr_t ctrl,lev2::orkezapp_ptr_t ezapp) {
          py::gil_scoped_release release; //
          ctrl->uninstallRenderCallbackOnEzApp(ezapp);
@@ -94,6 +102,11 @@ void pyinit_controller(py::module& module_ecs) {
       .def("uninstallUpdateCallbackOnEzApp", [](controller_ptr_t ctrl,lev2::orkezapp_ptr_t ezapp) {
          py::gil_scoped_release release; //
          ctrl->uninstallUpdateCallbackOnEzApp(ezapp);
+       })
+      ///////////////////////////
+      .def("uninstallGpuUpdateCallbackOnEzApp", [](controller_ptr_t ctrl,lev2::orkezapp_ptr_t ezapp) {
+         py::gil_scoped_release release; //
+         ctrl->uninstallGpuUpdateCallbackOnEzApp(ezapp);
        })
       ///////////////////////////
       .def("entBarrier", [](controller_ptr_t ctrl, ent_ref_t eref){
@@ -129,14 +142,44 @@ void pyinit_controller(py::module& module_ecs) {
           })
                 ///////////////////////////
       //
-      .def("findSystem", [](controller_ptr_t ctrl, std::string name) -> SystemHandle {
+      .def("findSystem", [](controller_ptr_t ctrl, std::string name) -> sys_ref_t {
+        return ctrl->findSystemWithClassName(name);
+      })
+      .def("findSystemHandle", [](controller_ptr_t ctrl, std::string name) -> SystemHandle {
         return SystemHandle{ctrl, ctrl->findSystemWithClassName(name)};
       })
       .def(
           "systemNotify",
           [type_codec](
               controller_ptr_t ctrl, //
-              sys_ref_t sys,         //
+              const SystemHandle& sys, //
+              crcstring_ptr_t evID,
+              py::object evdata) {
+
+            evdata_t decoded;
+            if (py::isinstance<py::dict>(evdata)){
+              auto as_dict = evdata.cast<py::dict>();
+              auto dtab = decoded.makeShared<DataTable>();
+              DataKey dkey;
+              for (auto item : as_dict) {
+                auto key = py::cast<crcstring_ptr_t>(item.first);
+                auto val = py::reinterpret_borrow<py::object>(item.second);
+                auto var_val = type_codec->decode64(val);
+                dkey._encoded = *key;
+                (*dtab)[dkey] = var_val;
+              }
+            }
+            else{
+              decoded = type_codec->decode64(evdata);
+            }
+
+            ctrl->systemNotify(sys._sysref, *evID, decoded);
+          })
+      .def(
+          "systemNotify",
+          [type_codec](
+              controller_ptr_t ctrl, //
+              sys_ref_t sys, //
               crcstring_ptr_t evID,
               py::object evdata) {
 
@@ -163,7 +206,23 @@ void pyinit_controller(py::module& module_ecs) {
           "systemRequest",
           [type_codec](
               controller_ptr_t ctrl, //
-              sys_ref_t sys,         //
+              const SystemHandle& sys, //
+              crcstring_ptr_t evID,
+              py::object evdata) -> response_ref_t {
+            evdata_t decoded;
+            if (evdata.is_none())
+              decoded = nullptr;
+            else {
+              decoded = type_codec->decode64(evdata);
+            }
+            response_ref_t rval = ctrl->systemRequest(sys._sysref, *evID, decoded);
+            return rval;
+          })
+      .def(
+          "systemRequest",
+          [type_codec](
+              controller_ptr_t ctrl, //
+              sys_ref_t sys, //
               crcstring_ptr_t evID,
               py::object evdata) -> response_ref_t {
             evdata_t decoded;

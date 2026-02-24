@@ -172,11 +172,12 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     ##################
 
     self.controller.installRenderCallbackOnEzApp(self.ezapp)
+    self.controller.installGpuUpdateCallbackOnEzApp(self.ezapp)
 
     ##################
     # create / launch simulation
     ##################
-        
+
     #self.controller.beginWriteTrace(str(obt_path.temp()/"ecstrace.json"));
     self.controller.createSimulation()
     self.controller.startSimulation()

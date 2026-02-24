@@ -100,6 +100,8 @@ void System::_onGpuLink(Simulation* psi, lev2::Context* ctx) {
 
 void System::_onGpuExit(Simulation* psi, lev2::Context* ctx) {
 }
+void System::_onGpuUpdate(Simulation* psi, lev2::Context* ctx) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

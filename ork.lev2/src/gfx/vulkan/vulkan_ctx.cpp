@@ -1564,6 +1564,7 @@ void VkContext::initializeLoaderContext() {
 
 void VkContext::debugPushGroup(const std::string str, const fvec4& color) {
   if (_vkCmdDebugMarkerBeginEXT) {
+    OrkAssert(_cmdbufcurpri_gfx);
     VkDebugMarkerMarkerInfoEXT markerInfo = {};
     initializeVkStruct(markerInfo, VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT);
     markerInfo.color[0]    = color.x; // R
@@ -1579,6 +1580,7 @@ void VkContext::debugPushGroup(const std::string str, const fvec4& color) {
 
 void VkContext::debugPopGroup() {
   if (_vkCmdDebugMarkerEndEXT) {
+    OrkAssert(_cmdbufcurpri_gfx);
     _vkCmdDebugMarkerEndEXT(_cmdbufcurpri_gfx->_vkcmdbuf);
   }
 }

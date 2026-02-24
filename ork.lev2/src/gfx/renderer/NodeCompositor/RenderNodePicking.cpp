@@ -41,7 +41,6 @@ struct IMPL {
   }
   ///////////////////////////////////////
   void gpuInit(lev2::Context* pTARG) {
-    pTARG->debugPushGroup("Picking::rendeinitr");
     if (nullptr == _rtg) {
       _material.gpuInit(pTARG);
       _rtg                 = std::make_shared<RtGroup>(pTARG, _width, _height, MsaaSamples::MSAA_1X);
@@ -57,7 +56,6 @@ struct IMPL {
       buf_depth->_debugName = "rt0-depth";
       _rtg->_name          = "PickingRtGroup";
     }
-    pTARG->debugPopGroup();
     _initted = true;
   }
   ///////////////////////////////////////

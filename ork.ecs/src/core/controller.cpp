@@ -52,11 +52,18 @@ void Controller::installUpdateCallbackOnEzApp(lev2::orkezapp_ptr_t ezapp) {
   ezapp->onUpdate([this](ui::updatedata_ptr_t update) { this->update(); });
 }
 
+void Controller::installGpuUpdateCallbackOnEzApp(lev2::orkezapp_ptr_t ezapp) {
+  ezapp->onGpuUpdate([this](lev2::Context* ctx) { this->gpuUpdate(ctx); });
+}
+
 void Controller::uninstallRenderCallbackOnEzApp(lev2::orkezapp_ptr_t ezapp) {
   ezapp->onDraw([](ui::drawevent_constptr_t drwev) {});
 }
 void Controller::uninstallUpdateCallbackOnEzApp(lev2::orkezapp_ptr_t ezapp) {
   ezapp->onUpdate([this](ui::updatedata_ptr_t update) {});
+}
+void Controller::uninstallGpuUpdateCallbackOnEzApp(lev2::orkezapp_ptr_t ezapp) {
+  ezapp->onGpuUpdate(nullptr);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -111,11 +118,16 @@ void Controller::updateExit() {
 
 ///////////////////////////////////////////////////////////////////////////
 
-void Controller::render(ui::drawevent_constptr_t drwev) {
-  if (_needsGpuInit) {
-    gpuInit(drwev->_target);
-    _needsGpuInit = false;
+void Controller::gpuUpdate(lev2::Context* ctx) {
+  auto sim = _simulation._unprotected_ref();
+  if (sim) {
+    sim->gpuUpdate(ctx);
   }
+}
+
+///////////////////////////////////////////////////////////////////////////
+
+void Controller::render(ui::drawevent_constptr_t drwev) {
   auto sim = _simulation._unprotected_ref();
   if (sim) {
     sim->render(drwev);
@@ -125,10 +137,6 @@ void Controller::render(ui::drawevent_constptr_t drwev) {
 ///////////////////////////////////////////////////////////////////////////
 
 void Controller::gpuRender(lev2::Context* ctx) {
-  if (_needsGpuInit) {
-    gpuInit(ctx);
-    _needsGpuInit = false;
-  }
   auto sim = _simulation._unprotected_ref();
   if (sim) {
     auto drwev = std::make_shared<ui::DrawEvent>(ctx);

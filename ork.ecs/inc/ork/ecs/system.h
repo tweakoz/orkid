@@ -122,6 +122,7 @@ protected:
 
   void _beginRender() { _onBeginRender(); }
   void _endRender() { _onEndRender(); }
+  void _gpuUpdate(Simulation* psi, lev2::Context* ctx) { _onGpuUpdate(psi, ctx); }
 
   bool _initialize(Simulation* psi);
   void _uninitialize(Simulation* psi);
@@ -141,6 +142,7 @@ protected:
   virtual void _onGpuInit(Simulation* psi, lev2::Context* ctx);
   virtual void _onGpuLink(Simulation* psi, lev2::Context* ctx);
   virtual void _onGpuExit(Simulation* psi, lev2::Context* ctx);
+  virtual void _onGpuUpdate(Simulation* psi, lev2::Context* ctx);
   virtual void _onUpdate(Simulation* inst);
 
   virtual bool _onInitialize(Simulation* psi);

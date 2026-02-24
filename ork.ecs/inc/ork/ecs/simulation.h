@@ -82,6 +82,7 @@ struct Simulation {
 
   void render(ui::drawevent_constptr_t drwev);
   void renderWithStandardCompositorFrame(lev2::standardcompositorframe_ptr_t sframe);
+  void gpuUpdate(lev2::Context* ctx);
   void gpuExit(lev2::Context* ctx);
 
   ///////////////////////////////////////////////////
@@ -248,8 +249,10 @@ private:
 
   fsm::fsmdata_ptr_t _updateThreadSMData;
   fsm::fsmdata_ptr_t _renderThreadSMData;
+  fsm::fsmdata_ptr_t _gpuUpdateSMData;
   fsm::fsminstance_ptr_t _updateThreadSMInst;
   fsm::fsminstance_ptr_t _renderThreadSMInst;
+  fsm::fsminstance_ptr_t _gpuUpdateSMInst;
 
   fsm::lambdastate_ptr_t _updateReadySimState;
   fsm::lambdastate_ptr_t _updateEditSimState;
@@ -258,6 +261,10 @@ private:
   fsm::lambdastate_ptr_t _updateTerminatedSimState;
 
   fsm::lambdastate_ptr_t _renderTerminatedSimState;
+
+  fsm::lambdastate_ptr_t _gpuInitState;
+  fsm::lambdastate_ptr_t _gpuReadyState;
+  fsm::lambdastate_ptr_t _gpuTerminatedState;
 
 
   ui::drawevent_constptr_t _currentdrwev;

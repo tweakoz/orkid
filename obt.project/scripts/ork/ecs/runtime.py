@@ -162,8 +162,8 @@ class EcsRuntime:
     self.controller.bindScene(self.scene_data)
     self.controller.createSimulation(scenegraph=self.scenegraph)
     self.controller.startSimulation()
-    self._sys_handle = self.controller.findSystem("SceneGraphSystem")
-    self._sys_ref = self._sys_handle.ref
+    self._sys_ref = self.controller.findSystem("SceneGraphSystem")
+    self._sys_handle = self.controller.findSystemHandle("SceneGraphSystem")
 
   def stage_simulation(self):
     """Create controller, bind scene, create+stage simulation (edit mode)."""
@@ -173,8 +173,8 @@ class EcsRuntime:
     self.controller.bindScene(self.scene_data)
     self.controller.createSimulation(scenegraph=self.scenegraph)
     self.controller.stageSimulation()
-    self._sys_handle = self.controller.findSystem("SceneGraphSystem")
-    self._sys_ref = self._sys_handle.ref
+    self._sys_ref = self.controller.findSystem("SceneGraphSystem")
+    self._sys_handle = self.controller.findSystemHandle("SceneGraphSystem")
 
   def destroy_simulation(self):
     """Tear down current simulation."""
@@ -187,6 +187,11 @@ class EcsRuntime:
       self.controller = None
       self._sys_handle = None
       self._sys_ref = None
+
+  def gpuUpdate(self, ctx):
+    """Per-frame GPU update: tick gpuUpdate FSM. Call from _onGpuUpdate."""
+    if self.controller:
+      self.controller.gpuUpdate(ctx)
 
   def update(self):
     """Per-frame update: sync camera + tick simulation. Call from _onUpdate."""
@@ -204,11 +209,9 @@ class EcsRuntime:
       self.controller.updateSimulation()
 
   def bind_to_viewport(self, sgv):
-    """Bind scenegraph + camera + render callback to a SceneGraphViewport."""
+    """Bind scenegraph + camera to a SceneGraphViewport."""
     sgv.scenegraph = self.scenegraph
     sgv.cameraName = "spawncam"
-    controller = self.controller
-    sgv.onPreRender = lambda ctx: controller.gpuRender(ctx) if controller else None
 
   def handle_camera_event(self, uievent):
     """Process camera events. Call from sgv.camera_evhandler."""

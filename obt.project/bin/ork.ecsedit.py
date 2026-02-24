@@ -1043,6 +1043,7 @@ class EcsEditor(ComponentizedApplication):
   ##############################################################################
 
   def _onGpuUpdate(self, ctx):
+    self.runtime.gpuUpdate(ctx)
     # Process deferred operations (main thread)
     now = time.monotonic()
     ready = [op for op in self._deferred_ops if now >= op[0]]

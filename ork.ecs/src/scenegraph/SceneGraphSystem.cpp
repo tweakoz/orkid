@@ -682,8 +682,11 @@ void SceneGraphSystem::_rt_process() {
   ///////////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////////////////////
-void SceneGraphSystem::_onRenderWithStandardCompositorFrame(Simulation* psi, lev2::standardcompositorframe_ptr_t sframe) {
+void SceneGraphSystem::_onGpuUpdate(Simulation* psi, lev2::Context* ctx) {
   _rt_process();
+}
+///////////////////////////////////////////////////////////////////////////////
+void SceneGraphSystem::_onRenderWithStandardCompositorFrame(Simulation* psi, lev2::standardcompositorframe_ptr_t sframe) {
   if (_scene && _autodraw) {
     _scene->renderWithStandardCompositorFrame(sframe);
   }
@@ -691,7 +694,6 @@ void SceneGraphSystem::_onRenderWithStandardCompositorFrame(Simulation* psi, lev
 ///////////////////////////////////////////////////////////////////////////////
 void SceneGraphSystem::_onRender(Simulation* psi, ui::drawevent_constptr_t drwev) // final
 {
-  _rt_process();
   if (_scene && _autodraw) {
     _scene->renderOnContext(drwev->GetTarget());
   }
