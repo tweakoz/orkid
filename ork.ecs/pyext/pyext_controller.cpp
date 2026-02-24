@@ -28,9 +28,25 @@ void pyinit_controller(py::module& module_ecs) {
       .def("gpuInit", [](controller_ptr_t ctrl, ctx_t ctx) { ctrl->gpuInit(ctx.get()); })
       .def("gpuExit", [](controller_ptr_t ctrl, ctx_t ctx) { ctrl->gpuExit(ctx.get()); })
       .def("bindScene", [](controller_ptr_t ctrl, scenedata_ptr_t scenedata) { ctrl->bindScene(scenedata); })
-      .def("createSimulation", [](controller_ptr_t ctrl) { ctrl->createSimulation(); })
+      .def("createSimulation", [type_codec](controller_ptr_t ctrl, py::kwargs kwargs) {
+            varmap::varmap_ptr_t varmap;
+            if (kwargs.size() > 0) {
+              varmap = std::make_shared<varmap::VarMap>();
+              for (auto& [key, value] : kwargs) {
+                auto key_str = key.cast<std::string>();
+                auto val_obj = py::reinterpret_borrow<py::object>(value);
+                auto val_decoded = type_codec->decode(val_obj);
+                varmap->setValueForKey(key_str, val_decoded);
+              }
+            }
+            ctrl->createSimulation(varmap);
+          })
+      .def("stageSimulation", [](controller_ptr_t ctrl) { ctrl->stageSimulation(); })
       .def("startSimulation", [](controller_ptr_t ctrl) { ctrl->startSimulation(); })
       .def("stopSimulation", [](controller_ptr_t ctrl) { ctrl->stopSimulation(); })
+      .def_property_readonly("simulation", [](controller_ptr_t ctrl) -> simulation_ptr_t {
+        return ctrl->simulation();
+      })
       .def("terminateSimulation", [](controller_ptr_t ctrl) { //
         ctrl->endSimulation();
        })
@@ -44,6 +60,9 @@ void pyinit_controller(py::module& module_ecs) {
       ///////////////////////////
       .def("renderSimulation", [](controller_ptr_t ctrl,uidrawevent_ptr_t drawev) {
          ctrl->render(drawev);
+       })
+      .def("gpuRender", [](controller_ptr_t ctrl, ctx_t ctx) {
+         ctrl->gpuRender(ctx.get());
        })
       ///////////////////////////
       .def("installRenderCallbackOnEzApp", [](controller_ptr_t ctrl,lev2::orkezapp_ptr_t ezapp) {

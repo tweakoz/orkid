@@ -702,6 +702,10 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       // "Other than VkCommandPool objects, destroying or freeing any object or memory that may be accessed when the command buffer is accessed (e.g. an object bound to the command buffer) will transition the state of
       // that command buffer to the invalid state."
 
+      // Clear image refs before returning to pool (prevent stale refs on reuse)
+      auto impl = command_buffer->_impl.getShared<VkSecondaryCommandBufferImpl>();
+      impl->_referenced_images.clear();
+
       // Return command buffer to pool
       cb_pool_ref->atomicOp([&](sseccmdbufpool_ptr_t& pool) { pool->returnItem(command_buffer); });
       // Return staging buffers to their respective pools
@@ -720,6 +724,9 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     /////////////////////////////////////
     // enqueue the command buffer for execution
     /////////////////////////////////////
+
+    // Keep VkImage alive while CB is in use
+    cmdbuf_impl->_referenced_images.push_back(target_imgobj);
 
     _contextVK->enqueueDeferredOneShotCommand(transfer->_command_buffer);
   }

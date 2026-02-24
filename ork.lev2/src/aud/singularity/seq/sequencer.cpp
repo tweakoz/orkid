@@ -51,6 +51,28 @@ void Sequencer::process() {
 
 ////////////////////////////////////////////////////////////////
 
+void Sequencer::enqueueMainThreadEventCallback(int note, int vel, float dur, const std::string& track) {
+  SequencerEventData ev;
+  ev._note = note;
+  ev._velocity = vel;
+  ev._duration = dur;
+  ev._track_name = track;
+  _pendingMainThreadEventCallbacks.try_push(ev);
+}
+
+////////////////////////////////////////////////////////////////
+
+void Sequencer::drainMainThreadEventCallbacks() {
+  SequencerEventData ev;
+  while (_pendingMainThreadEventCallbacks.try_pop(ev)) {
+    if (_on_event) {
+      _on_event(ev._note, ev._velocity, ev._duration, ev._track_name);
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////
+
 void enqueue_audio_event(
     prgdata_constptr_t prog, //
     float time,
@@ -104,10 +126,10 @@ void enqueue_audio_event(
     // NOTE OFF
     s->addEvent(time + duration, [=]() { //
       s->keyOff(noteinstance);
-      // Invoke sequencer event callback for NOTE OFF (velocity=0)
+      // Enqueue NOTE OFF callback for main thread delivery
       auto sequencer = s->_sequencer;
-      if (sequencer && sequencer->_on_event) {
-        sequencer->_on_event(midinote, 0, 0.0f, track->_name);
+      if (sequencer) {
+        sequencer->enqueueMainThreadEventCallback(midinote, 0, 0.0f, track->_name);
       }
     });
   });

@@ -36,6 +36,7 @@ using nodedef_ptr_t = std::shared_ptr<NodeDef>;
 struct SceneGraphNodeItemData : public ork::Object {
   DeclareConcreteX(SceneGraphNodeItemData, ork::Object);
 public:
+  SceneGraphNodeItemData() : _modcolor(1,1,1,1) {}
   lev2::drawabledata_ptr_t _drawabledata;
   std::string _layername;
   std::vector<std::string> _multilayers;
@@ -158,6 +159,7 @@ struct SceneGraphSystem final : public System {
   DeclareToken(CreateNode);
   DeclareToken(DestroyNode);
   DeclareToken(ChangeModColor);
+  DeclareToken(HighlightBySpawnData);
   ///////////////////////////////
   static constexpr systemkey_t SystemType = "SceneGraphSystem";
   systemkey_t systemTypeDynamic() final {
@@ -168,6 +170,9 @@ struct SceneGraphSystem final : public System {
   ~SceneGraphSystem();
   ///////////////////////////////
   void _addStaticDrawable(std::string layername, lev2::drawable_ptr_t drw);
+  void reloadDrawableData(lev2::drawabledata_ptr_t data);
+  void processRenderOps();
+  void initializeForEditMode(lev2::Context* ctx);
   ///////////////////////////////
   void _onStageComponent(SceneGraphComponent* component);
   void _onUnstageComponent(SceneGraphComponent* component);
@@ -200,6 +205,7 @@ struct SceneGraphSystem final : public System {
   lev2::cameradata_ptr_t _camera;
   lev2::cameradatalut_ptr_t _camlut;
   lev2::drawablecache_ptr_t _drwcache;
+  lev2::xgmmodel_assetcache_ptr_t _modelAssetCache;
   std::vector<lev2::scenegraph::DrawableKvPair> _staticDrawables;
   LockedResource<std::vector<void_lambda_t>> _onGpuInitOpQueue;
 
@@ -212,6 +218,7 @@ struct SceneGraphSystem final : public System {
   int _numComponents = 0;
   const SceneGraphSystemData& _SGSD;
   MpMcBoundedQueue<void_lambda_t,65536> _renderops;
+  bool _sceneInjected = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

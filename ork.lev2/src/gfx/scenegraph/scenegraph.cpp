@@ -13,6 +13,7 @@
 #include <ork/util/logger.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorVr.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/unlit_node.h>
@@ -112,7 +113,9 @@ void Scene::_unregisterUISurface(drawable_ptr_t drawable) {
 
 void Scene::gpuInit(Context* ctx) {
   //printf("Scene::gpuInit BEGIN\n");
-  _sgpickbuffer = std::make_shared<SgPickBuffer>(ctx, *this);
+  if (_enable_pick_hud) {
+    _sgpickbuffer = std::make_shared<SgPickBuffer>(ctx, *this);
+  }
   if(0){
     printf("Scene::gpuInit: pick buffer textures:\n");
     printf("  ID: %p w=%d h=%d\n",
@@ -131,16 +134,25 @@ void Scene::gpuInit(Context* ctx) {
   _dogpuinit    = false;
   _boundContext = ctx;
 
-  auto op = [=]() -> bool {
-    if( _compositorImpl ){
-      _compositorImpl->gpuInit(ctx);
-      return true;
-    }
-    return false;
-  };
-  op();
+  // If the Scene was constructed off the main thread, initWithParams
+  // was deferred.  Now we are on the main/GPU thread, so complete it.
+  if (!_compositorImpl && _params) {
+    initWithParams(_params);
+  }
+
+  if (_compositorImpl) {
+    _compositorImpl->gpuInit(ctx);
+  }
   //ctx->_beginFrameBlockers.push_back(op);
   //printf("Scene::gpuInit END\n");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Scene::gpuUpdate(Context* ctx) {
+  if (_lightManager && _lightManager->_needs_gpu_init) {
+    _lightManager->gpuInit(ctx);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -176,11 +188,150 @@ void Scene::pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord, const V
 }
 ///////////////////////////////////////////////////////////////////////////////
 
+void Scene::applyRuntimeParams(varmap::varmap_ptr_t params) {
+  if (!_pbr_common)
+    return;
+
+  if (auto try_enable_skybox = params->typedValueForKey<bool>("enable_skybox")) {
+    _pbr_common->_enable_skybox = try_enable_skybox.value();
+  }
+  if (auto try_clearcolor = params->typedValueForKey<fvec3>("clearcolor")) {
+    fvec4 clearcolor = try_clearcolor.value();
+    _pbr_common->_clearcolor = clearcolor;
+  } else if (auto try_clearcolor2 = params->typedValueForKey<fvec4>("clearcolor")) {
+    fvec4 clearcolor = try_clearcolor2.value();
+    _pbr_common->_clearcolor = clearcolor;
+  }
+
+  if (auto try_bgtex = params->typedValueForKey<std::string>("SkyboxTexPathStr")) {
+    auto texture_path = try_bgtex.value();
+    // aliases
+    if (texture_path == "nebula") {
+      texture_path = "ork_envmaps|tozenv_nebula";
+    } else if (texture_path == "hellscape") {
+      texture_path = "ork_envmaps|tozenv_hellscape";
+    } else if (texture_path == "caustics") {
+      texture_path = "ork_envmaps|tozenv_caustic1";
+    } else if (texture_path == "forest") {
+      texture_path = "ork_envmaps|blender_forest";
+    } else if (texture_path == "city") {
+      texture_path = "ork_envmaps|blender_city";
+    } else if (texture_path == "courtyard") {
+      texture_path = "ork_envmaps|blender_courtyard";
+    } else if (texture_path == "studio") {
+      texture_path = "ork_envmaps|blender_studio";
+    } else if (texture_path == "interior") {
+      texture_path = "ork_envmaps|blender_interior";
+    } else if (texture_path == "night") {
+      texture_path = "ork_envmaps|blender_night";
+    } else if (texture_path == "sunrise") {
+      texture_path = "ork_envmaps|blender_sunrise";
+    } else if (texture_path == "sunset") {
+      texture_path = "ork_envmaps|blender_sunset";
+    } else if (texture_path == "arena") {
+      texture_path = "ork_envmaps|arena4k";
+    } else if (texture_path == "arena8k") {
+      texture_path = "ork_envmaps|arena8k";
+    } else if (texture_path == "club") {
+      texture_path = "ork_envmaps|club4k";
+    } else if (texture_path == "club8k") {
+      texture_path = "ork_envmaps|club8k";
+    } else if (texture_path == "cold") {
+      texture_path = "ork_envmaps|cold4k";
+    } else if (texture_path == "cold8k") {
+      texture_path = "ork_envmaps|cold8k";
+    } else if (texture_path == "pillars") {
+      texture_path = "ork_envmaps|pillars4k";
+    } else if (texture_path == "pillars8k") {
+      texture_path = "ork_envmaps|pillars8k";
+    } else if (texture_path == "desert") {
+      texture_path = "ork_envmaps|desert4k";
+    } else if (texture_path == "desert8k") {
+      texture_path = "ork_envmaps|desert8k";
+    } else if (texture_path == "ocean") {
+      texture_path = "ork_envmaps|ocean4k";
+    } else if (texture_path == "ocean8k") {
+      texture_path = "ork_envmaps|ocean8k";
+    } else if (texture_path == "crossroads") {
+      texture_path = "ork_envmaps|crossroads4k";
+    } else if (texture_path == "ethereal") {
+      texture_path = "ork_envmaps|ethereal4k";
+    } else if (texture_path == "futcity") {
+      texture_path = "ork_envmaps|futcity4k";
+    } else if (texture_path == "futcity8k") {
+      texture_path = "ork_envmaps|futcity8k";
+    }
+
+    _compositorData->_defaultBG = false;
+    auto load_req               = std::make_shared<asset::LoadRequest>(texture_path);
+    if (0)
+      printf("SCENE<%p> pbrc<%p> REQ SKYBOX TEX ASSET<%s>\n", (void*)this, (void*)_pbr_common.get(), texture_path.c_str());
+    _pbr_common->requestAndRefSkyboxTexture(load_req);
+  }
+
+  if (auto try_envintensity = params->tryKeyAsNumber("EnvironmentIntensity")) {
+    _pbr_common->_environmentIntensity = try_envintensity.value();
+  }
+  if (auto try_diffuseLevel = params->tryKeyAsNumber("DiffuseIntensity")) {
+    _pbr_common->_diffuseLevel = try_diffuseLevel.value();
+  }
+  if (auto try_ambientLevel = params->typedValueForKey<fvec3>("AmbientLight")) {
+    _pbr_common->_ambientLevel = try_ambientLevel.value();
+  }
+  if (auto try_skyboxLevel = params->tryKeyAsNumber("SkyboxIntensity")) {
+    _pbr_common->_skyboxLevel = try_skyboxLevel.value();
+  }
+  if (auto try_specularLevel = params->tryKeyAsNumber("SpecularIntensity")) {
+    _pbr_common->_specularLevel = try_specularLevel.value();
+  }
+  if (auto try_DepthFogDistance = params->tryKeyAsNumber("DepthFogDistance")) {
+    _pbr_common->_depthFogDistance = try_DepthFogDistance.value();
+  }
+  if (auto try_DepthFogPower = params->tryKeysAsNumber("DepthFogPower", "depthFogPower")) {
+    _pbr_common->_depthFogPower = try_DepthFogPower.value();
+  }
+  if (auto try_dfdist = params->tryKeysAsNumber("DepthFogDistance", "depthFogDistance")) {
+    _pbr_common->_depthFogDistance = try_dfdist.value();
+  }
+  if (auto try_ssao = params->tryKeyAsInteger("SSAONumSamples")) {
+    _pbr_common->_ssaoNumSamples = int(try_ssao.value());
+    _pbr_common->_useDepthPrepass = true;
+    printf("PBRC<%p> ssao num samples<%d>\n", (void*)_pbr_common.get(), _pbr_common->_ssaoNumSamples);
+  }
+  if (auto try_dpp = params->typedValueForKey<bool>("DepthPrepass")) {
+    _pbr_common->_useDepthPrepass = try_dpp.value();
+  }
+  if (auto try_ssao = params->tryKeyAsNumber("dppZbias")) {
+    _pbr_common->_dppZbias = try_ssao.value();
+  }
+  if (auto try_ssao = params->tryKeyAsInteger("SSAONumSteps")) {
+    _pbr_common->_ssaoNumSteps = int(try_ssao.value());
+  }
+  if (auto try_ssao = params->tryKeyAsNumber("SSAOFeedback")) {
+    _pbr_common->_ssaoFeedback = try_ssao.value();
+  }
+  if (auto try_ssao = params->tryKeyAsNumber("SSAOBias")) {
+    _pbr_common->_ssaoBias = try_ssao.value();
+  }
+  if (auto try_ssao = params->tryKeyAsNumber("SSAORadius")) {
+    _pbr_common->_ssaoRadius = try_ssao.value();
+  }
+  if (auto try_ssao = params->tryKeyAsNumber("SSAOWeight")) {
+    _pbr_common->_ssaoWeight = try_ssao.value();
+  }
+  if (auto try_ssao = params->tryKeyAsNumber("SSAOPower")) {
+    _pbr_common->_ssaoPower = try_ssao.value();
+  }
+  if (auto try_usef32 = params->typedValueForKey<bool>("use_float_color_buffer")) {
+    _pbr_common->_useFloatColorBuffer = try_usef32.value();
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void Scene::initWithParams(varmap::varmap_ptr_t params) {
 
   _params = params;
-
-  bool use_float_buffer = false;
 
   if (auto try_dbufcontext = params->typedValueForKey<dbufcontext_ptr_t>("dbufcontext")) {
     _dbufcontext_SG = try_dbufcontext.value();
@@ -193,11 +344,6 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
   }
 
   std::string preset = "DeferredPBR";
-  // std::string output = "SCREEN";
-
-  if( auto try_use_float_buffer = params->typedValueForKey<bool>("UseFloatBuffer") ) {
-    use_float_buffer = try_use_float_buffer.value();
-  }
 
   if (auto try_preset = params->typedValueForKey<std::string>("preset")){
     preset = try_preset.value();
@@ -252,172 +398,8 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
 
   //////////////////////////////////////////////
 
-  if (_pbr_common) {
+  applyRuntimeParams(params);
 
-    if( auto try_enable_skybox = params->typedValueForKey<bool>("enable_skybox") ) {
-      bool enable_skybox = try_enable_skybox.value();
-      _pbr_common->_enable_skybox = enable_skybox;
-    }
-    if( auto try_clearcolor = params->typedValueForKey<fvec3>("clearcolor") ) {
-      fvec4 clearcolor = try_clearcolor.value();
-      _pbr_common->_clearcolor = clearcolor;
-    }
-    else if( auto try_clearcolor2 = params->typedValueForKey<fvec4>("clearcolor") ) {
-      fvec4 clearcolor = try_clearcolor2.value();
-      _pbr_common->_clearcolor = clearcolor;
-    }
-
-    if (auto try_bgtex = params->typedValueForKey<std::string>("SkyboxTexPathStr")) {
-      auto texture_path = try_bgtex.value();
-      //printf("texture_path<%s>\n", texture_path.c_str());
-      //_renderPresetData->_assetSynchro->increment();
-      // aliases 
-      if(texture_path == "nebula") {
-        texture_path = "ork_envmaps|tozenv_nebula";
-      }
-      else if(texture_path == "hellscape") {
-        texture_path = "ork_envmaps|tozenv_hellscape";
-      }
-      else if(texture_path == "caustics") {
-        texture_path = "ork_envmaps|tozenv_caustic1";
-      }
-      else if(texture_path == "forest") {
-        texture_path = "ork_envmaps|blender_forest";
-      }
-      else if(texture_path == "city") {
-        texture_path = "ork_envmaps|blender_city";
-      }
-      else if(texture_path == "courtyard") {
-        texture_path = "ork_envmaps|blender_courtyard";
-      }
-      else if(texture_path == "studio") {
-        texture_path = "ork_envmaps|blender_studio";
-      }
-      else if(texture_path == "interior") {
-        texture_path = "ork_envmaps|blender_interior";
-      }
-      else if(texture_path == "night") {
-        texture_path = "ork_envmaps|blender_night";
-      }
-      else if(texture_path == "sunrise") {
-        texture_path = "ork_envmaps|blender_sunrise";
-      }
-      else if(texture_path == "sunset") {
-        texture_path = "ork_envmaps|blender_sunset";
-      }
-      else if(texture_path == "arena") {
-        texture_path = "ork_envmaps|arena4k";
-      }
-      else if(texture_path == "arena8k") {
-        texture_path = "ork_envmaps|arena8k";
-      }
-      else if(texture_path == "club") {
-        texture_path = "ork_envmaps|club4k";
-      }
-      else if(texture_path == "club8k") {
-        texture_path = "ork_envmaps|club8k";
-      }
-      else if(texture_path == "cold") {
-        texture_path = "ork_envmaps|cold4k";
-      }
-      else if(texture_path == "cold8k") {
-        texture_path = "ork_envmaps|cold8k";
-      }
-      else if(texture_path == "pillars") {
-        texture_path = "ork_envmaps|pillars4k";
-      }
-      else if(texture_path == "pillars8k") {
-        texture_path = "ork_envmaps|pillars8k";
-      }
-      else if(texture_path == "desert") {
-        texture_path = "ork_envmaps|desert4k";
-      }
-      else if(texture_path == "desert8k") {
-        texture_path = "ork_envmaps|desert8k";
-      }
-      else if(texture_path == "ocean") {
-        texture_path = "ork_envmaps|ocean4k";
-      }
-      else if(texture_path == "ocean8k") {
-        texture_path = "ork_envmaps|ocean8k";
-      }
-      else if(texture_path == "crossroads") {
-        texture_path = "ork_envmaps|crossroads4k";
-      }
-      else if(texture_path == "ethereal") {
-        texture_path = "ork_envmaps|ethereal4k";
-      }
-      else if(texture_path == "futcity") {
-        texture_path = "ork_envmaps|futcity4k";
-      }
-      else if(texture_path == "futcity8k") {
-        texture_path = "ork_envmaps|futcity8k";
-      }
-      _pbr_common->_useFloatColorBuffer = use_float_buffer;
-
-      _compositorData->_defaultBG = false;
-      auto load_req               = std::make_shared<asset::LoadRequest>(texture_path);
-      if(0)printf( "SCENE<%p> pbrc<%p> REQ SKYBOX TEX ASSET<%s>\n", (void*) this, (void*) _pbr_common.get(), texture_path.c_str() );
-      _pbr_common->requestAndRefSkyboxTexture(load_req);
-    }
-
-    if (auto try_envintensity = params->tryKeyAsNumber("EnvironmentIntensity")) {
-      _pbr_common->_environmentIntensity = try_envintensity.value();
-    }
-    if (auto try_diffuseLevel = params->tryKeyAsNumber("DiffuseIntensity")) {
-      _pbr_common->_diffuseLevel = try_diffuseLevel.value();
-    }
-    if (auto try_ambientLevel = params->typedValueForKey<fvec3>("AmbientLight")) {
-      _pbr_common->_ambientLevel = try_ambientLevel.value();
-    }
-    if (auto try_skyboxLevel = params->tryKeyAsNumber("SkyboxIntensity")) {
-      _pbr_common->_skyboxLevel = try_skyboxLevel.value();
-    }
-    if (auto try_specularLevel = params->tryKeyAsNumber("SpecularIntensity")) {
-      _pbr_common->_specularLevel = try_specularLevel.value();
-    }
-    if (auto try_DepthFogDistance = params->tryKeyAsNumber("DepthFogDistance")) {
-      _pbr_common->_depthFogDistance = try_DepthFogDistance.value();
-    }
-    if (auto try_DepthFogPower = params->tryKeysAsNumber("DepthFogPower", "depthFogPower")) {
-      _pbr_common->_depthFogPower = try_DepthFogPower.value();
-    }
-    if (auto try_dfdist = params->tryKeysAsNumber("DepthFogDistance", "depthFogDistance")) {
-      _pbr_common->_depthFogDistance = try_dfdist.value();
-    }
-    if (auto try_ssao = params->tryKeyAsInteger("SSAONumSamples")) {
-      _pbr_common->_ssaoNumSamples = int(try_ssao.value());
-      _pbr_common->_useDepthPrepass = true;
-      printf("PBRC<%p> ssao num samples<%d>\n", (void*) _pbr_common.get(), _pbr_common->_ssaoNumSamples);
-    }
-    if (auto try_dpp = params->typedValueForKey<bool>("DepthPrepass")) {
-      _pbr_common->_useDepthPrepass = try_dpp.value();
-    }
-    if (auto try_ssao = params->tryKeyAsNumber("dppZbias")) {
-      _pbr_common->_dppZbias = try_ssao.value();
-    }
-    if (auto try_ssao = params->tryKeyAsInteger("SSAONumSteps")) {
-      _pbr_common->_ssaoNumSteps = int(try_ssao.value());
-    }
-    if (auto try_ssao = params->tryKeyAsNumber("SSAOFeedback")) {
-      _pbr_common->_ssaoFeedback = try_ssao.value();
-    }
-    if (auto try_ssao = params->tryKeyAsNumber("SSAOBias")) {
-      _pbr_common->_ssaoBias = try_ssao.value();
-    }
-    if (auto try_ssao = params->tryKeyAsNumber("SSAORadius")) {
-      _pbr_common->_ssaoRadius = try_ssao.value();
-    }
-    if (auto try_ssao = params->tryKeyAsNumber("SSAOWeight")) {
-      _pbr_common->_ssaoWeight = try_ssao.value();
-    }
-    if (auto try_ssao = params->tryKeyAsNumber("SSAOPower")) {
-      _pbr_common->_ssaoPower = try_ssao.value();
-    }
-    if (auto try_usef32 = params->typedValueForKey<bool>("use_float_color_buffer")) {
-      _pbr_common->_useFloatColorBuffer = try_usef32.value();
-    }
-  }
   //////////////////////////////////////////////
 
   _compositorData->mbEnable = true;
@@ -438,9 +420,12 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     if (auto as_ssaa = ssaa.tryAs<int>()) {
       if (auto as_scrnode = dynamic_cast<ScreenOutputCompositingNode*>(_outputNode.get())) {
         as_scrnode->setSuperSample(as_ssaa.value());
+      } else if (auto as_vrnode = dynamic_cast<VrOutputNode*>(_outputNode.get())) {
+        as_vrnode->setSuperSample(as_ssaa.value());
+      } else if (auto as_dmvrnode = dynamic_cast<DualMonoVrOutputNode*>(_outputNode.get())) {
+        as_dmvrnode->setSuperSample(as_ssaa.value());
       }
     }
-    // OrkAssert(false);
   }
   _compositorImpl = _compositorData->createImpl();
   _compositorImpl->bindLighting(_lightManager);

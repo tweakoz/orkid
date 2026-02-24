@@ -38,10 +38,10 @@ using namespace ::ork::reflect;
 using namespace ::ork::rtti;
 
 ///////////////////////////////////////////////////////////////////////////////
-Simulation::Simulation(Controller* c)
+Simulation::Simulation(Controller* c, varmap::varmap_ptr_t injected_varmap)
     : _controller(c) {
 
-  _varmap = std::make_shared<varmap::VarMap>();
+  _varmap = injected_varmap ? injected_varmap : std::make_shared<varmap::VarMap>();
 
   _dbufctxSIM = std::make_shared<lev2::DrawQueueContext>();
   _dbufctxSIM->_name = "DBC.Simulation";

@@ -8,6 +8,7 @@
 #pragma once
 
 #include <ork/kernel/varmap.inl>
+#include <ork/kernel/sigslot2.h>
 #include <ork/util/crc.h>
 #include <functional>
 #include <vector>
@@ -35,6 +36,8 @@ enum class PropertyType : uint32_t {
   CrcEnum(Gradient),
   CrcEnum(Curve),
   CrcEnum(Asset),
+  CrcEnum(Quat),   // Quaternion (expanded to axis-angle sub-properties)
+  CrcEnum(Enum),   // Enum property (dropdown with choices)
   CrcEnum(Group),  // Container for child properties
 };
 
@@ -89,6 +92,37 @@ struct PropertySheetModel {
   // Returns a VarMap with keys like "min", "max", "step", "readonly", etc.
   virtual varmap::varmap_ptr_t getAnnotations(const std::string& key) const;
 
+  // Get choice list for a property (if any).
+  // When non-empty, the property sheet shows a dropdown instead of a normal editor.
+  virtual std::vector<std::string> getChoices(const std::string& key) const { return {}; }
+
+  //////////////////////////////////////////////////////////////
+  // Map property support (override in subclasses that have maps)
+  //////////////////////////////////////////////////////////////
+
+  virtual bool isMapProperty(const std::string& key) const { return false; }
+  virtual bool isMapConst(const std::string& key) const { return true; }
+  virtual void addMapElement(const std::string& key, const std::string& name) {}
+  virtual void removeMapElement(const std::string& key, const std::string& name) {}
+
+  //////////////////////////////////////////////////////////////
+  // Null object map entry / factory support
+  //////////////////////////////////////////////////////////////
+
+  // Is this entry a map entry whose object value is null?
+  virtual bool isNullObjectMapEntry(const std::string& key) const { return false; }
+  // Get available factory class names for a null object map entry
+  virtual std::vector<std::string> getFactoryClasses(const std::string& key) const { return {}; }
+  // Create an object from factory class name and set it in the map
+  virtual void setMapElementFromFactory(const std::string& key, const std::string& class_name) {}
+
+  // Is this entry a DirectObjectBase property whose sub-object is null?
+  virtual bool isNullDirectObjectEntry(const std::string& key) const { return false; }
+  // Get available factory class names for a null direct object property
+  virtual std::vector<std::string> getDirectObjectFactoryClasses(const std::string& key) const { return {}; }
+  // Create an object from factory class name and set it on the direct object property
+  virtual void setDirectObjectFromFactory(const std::string& key, const std::string& class_name) {}
+
   //////////////////////////////////////////////////////////////
   // Read-only support
   //////////////////////////////////////////////////////////////
@@ -102,6 +136,16 @@ struct PropertySheetModel {
 
   void notifyPropertyChanged(const std::string& key);
   void notifyStructureChanged();  // When properties are added/removed
+
+  // Signal emitted when a value changes externally (e.g. manipulator)
+  // Argument is the property key that changed (empty string = refresh all).
+  // PropertySheet connects to this to refresh editor widgets without full rebuild.
+  sigslot::signal<std::string> _sigExternalValueChanged;
+
+  // Convenience: emit the signal for a specific key
+  void notifyExternalValueChanged(const std::string& key) {
+    _sigExternalValueChanged(key);
+  }
 
   //////////////////////////////////////////////////////////////
   // Callbacks for observers (PropertySheet subscribes to these)

@@ -13,7 +13,9 @@
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/ui/filesystem_view.h>
+#include <ork/lev2/ui/dropdown_menu.h>
 #include <ork/lev2/ui/event.h>
+#include <ork/lev2/ui/context.h>
 #include <algorithm>
 #include <ctime>
 #include <iomanip>
@@ -256,6 +258,11 @@ void FilesystemView::_doOnResized() {
     float scale = (float)content_width / (float)_last_content_width;
 
     _name_column_width = std::max(60, (int)(_name_column_width * scale));
+    _description_column_width = std::max(80, (int)(_description_column_width * scale));
+    _options_column_width = std::max(60, (int)(_options_column_width * scale));
+    if (_showInlineOptions()) {
+      _item_options_column_width = std::max(80, (int)(_item_options_column_width * scale));
+    }
     _size_column_width = std::max(50, (int)(_size_column_width * scale));
     _type_column_width = std::max(50, (int)(_type_column_width * scale));
     _date_column_width = std::max(80, (int)(_date_column_width * scale));
@@ -283,10 +290,12 @@ void FilesystemView::_loadDefaultIcons(lev2::Context* ctx) {
 
 void FilesystemView::_rebuildVisibleItems() {
   _visible_items.clear();
+  _has_item_options = false;
 
   if (_model) {
     auto entries = _model->getEntries();
     int index = 0;
+    int max_options_chars = 0;
     for (const auto& entry : entries) {
       VisibleItem item;
       item.entry = entry;
@@ -294,7 +303,33 @@ void FilesystemView::_rebuildVisibleItems() {
       item.thumbnail = nullptr;
       item.thumbnail_requested = false;
       item.thumbnail_failed = false;
+      // Cache per-item options
+      item.item_options = _model->getItemOptions(entry.path);
+      if (!item.item_options.empty()) {
+        _has_item_options = true;
+        // Estimate width needed for this item's options
+        int chars = 0;
+        for (const auto& opt : item.item_options) {
+          switch (opt.type) {
+            case OptionWidgetType::Checkbox:
+              chars += opt.name.length() + 4;
+              break;
+            case OptionWidgetType::Dropdown:
+              chars += opt.name.length() + opt.string_val.length() + 4;
+              break;
+            default:
+              chars += opt.string_val.length() + 2;
+              break;
+          }
+        }
+        max_options_chars = std::max(max_options_chars, chars);
+      }
       _visible_items.push_back(item);
+    }
+    // Auto-size the options column
+    if (_has_item_options && max_options_chars > 0) {
+      int estimated = max_options_chars * 8 + 32;
+      _item_options_column_width = std::max(_item_options_column_width, estimated);
     }
   }
 
@@ -317,14 +352,16 @@ void FilesystemView::_clampScrollOffset() {
   }
 
   int header_offset = (_draw_path_bar ? _path_bar_height : 0) +
-                      ((_draw_header && _view_mode == FilesystemViewMode::List) ? _header_height : 0);
+                      ((_draw_header && _view_mode == FilesystemViewMode::List) ? _header_height : 0) +
+                      ((_draw_options_bar && _has_item_options) ? _options_bar_height : 0);
   int max_scroll = std::max(0, content_height - (_geometry._h - header_offset));
   _scroll_offset = std::clamp(_scroll_offset, 0, max_scroll);
 }
 
 int FilesystemView::_getItemIndexAt(int local_x, int local_y) const {
   int header_offset = (_draw_path_bar ? _path_bar_height : 0) +
-                      ((_draw_header && _view_mode == FilesystemViewMode::List) ? _header_height : 0);
+                      ((_draw_header && _view_mode == FilesystemViewMode::List) ? _header_height : 0) +
+                      ((_draw_options_bar && _has_item_options) ? _options_bar_height : 0);
 
   int content_y = local_y - header_offset + _scroll_offset;
   if (content_y < 0) return -1;
@@ -381,6 +418,27 @@ FilesystemModel::SortField FilesystemView::_getSortFieldAtX(int local_x) const {
   }
   x += _name_column_width;
 
+  // Description column (not sortable — falls through to Name)
+  if (_show_description_column) {
+    if (local_x < x + _description_column_width)
+      return FilesystemModel::SortField::Name;
+    x += _description_column_width;
+  }
+
+  // Options column (not sortable)
+  if (_show_options_column) {
+    if (local_x < x + _options_column_width)
+      return FilesystemModel::SortField::Name;
+    x += _options_column_width;
+  }
+
+  // Per-item options column (not sortable, only when inline)
+  if (_showInlineOptions()) {
+    if (local_x < x + _item_options_column_width)
+      return FilesystemModel::SortField::Name;
+    x += _item_options_column_width;
+  }
+
   // Size column
   if (_show_size_column) {
     if (local_x < x + _size_column_width) {
@@ -433,30 +491,64 @@ int FilesystemView::_getColumnSeparatorAt(int local_x, int local_y) const {
   }
 
   int x = _icon_column_width;
+  int col_idx = 0;
 
-  // Check name column separator
+  // Name column separator
   int sep_x = x + _name_column_width;
   if (local_x >= sep_x - _resize_grip_width && local_x <= sep_x + _resize_grip_width) {
-    return 0;  // Name column
+    return col_idx;
   }
   x = sep_x;
+  col_idx++;
 
-  // Check size column separator
+  // Description column separator
+  if (_show_description_column) {
+    sep_x = x + _description_column_width;
+    if (local_x >= sep_x - _resize_grip_width && local_x <= sep_x + _resize_grip_width) {
+      return col_idx;
+    }
+    x = sep_x;
+    col_idx++;
+  }
+
+  // Options column separator
+  if (_show_options_column) {
+    sep_x = x + _options_column_width;
+    if (local_x >= sep_x - _resize_grip_width && local_x <= sep_x + _resize_grip_width) {
+      return col_idx;
+    }
+    x = sep_x;
+    col_idx++;
+  }
+
+  // Per-item options column separator (only when inline)
+  if (_showInlineOptions()) {
+    sep_x = x + _item_options_column_width;
+    if (local_x >= sep_x - _resize_grip_width && local_x <= sep_x + _resize_grip_width) {
+      return col_idx;
+    }
+    x = sep_x;
+    col_idx++;
+  }
+
+  // Size column separator
   if (_show_size_column) {
     sep_x = x + _size_column_width;
     if (local_x >= sep_x - _resize_grip_width && local_x <= sep_x + _resize_grip_width) {
-      return 1;  // Size column
+      return col_idx;
     }
     x = sep_x;
+    col_idx++;
   }
 
-  // Check type column separator
+  // Type column separator
   if (_show_type_column) {
     sep_x = x + _type_column_width;
     if (local_x >= sep_x - _resize_grip_width && local_x <= sep_x + _resize_grip_width) {
-      return 2;  // Type column
+      return col_idx;
     }
     x = sep_x;
+    col_idx++;
   }
 
   // Date column doesn't have a separator on the right (it extends to edge)
@@ -464,13 +556,31 @@ int FilesystemView::_getColumnSeparatorAt(int local_x, int local_y) const {
 }
 
 int* FilesystemView::_getColumnWidthPtr(int column_index) {
-  switch (column_index) {
-    case 0: return &_name_column_width;
-    case 1: return &_size_column_width;
-    case 2: return &_type_column_width;
-    case 3: return &_date_column_width;
-    default: return nullptr;
+  int idx = 0;
+  if (column_index == idx) return &_name_column_width;
+  idx++;
+  if (_show_description_column) {
+    if (column_index == idx) return &_description_column_width;
+    idx++;
   }
+  if (_show_options_column) {
+    if (column_index == idx) return &_options_column_width;
+    idx++;
+  }
+  if (_showInlineOptions()) {
+    if (column_index == idx) return &_item_options_column_width;
+    idx++;
+  }
+  if (_show_size_column) {
+    if (column_index == idx) return &_size_column_width;
+    idx++;
+  }
+  if (_show_type_column) {
+    if (column_index == idx) return &_type_column_width;
+    idx++;
+  }
+  if (column_index == idx) return &_date_column_width;
+  return nullptr;
 }
 
 Widget* FilesystemView::doRouteUiEvent(event_constptr_t ev) {
@@ -560,6 +670,158 @@ HandlerResult FilesystemView::DoOnUiEvent(event_constptr_t ev) {
         _handleHeaderClick(localX);
         result.setHandled(this);
         break;
+      }
+
+      // Check if click is on options bar
+      if (_draw_options_bar && _has_item_options && _isInOptionsBarArea(localY)) {
+        auto* sel_item = _getActiveVisibleItem();
+        if (sel_item && !sel_item->item_options.empty()) {
+          int opt_idx = _hitTestOptionsBar(localX);
+          if (opt_idx >= 0 && opt_idx < (int)sel_item->item_options.size()) {
+            // Find the mutable item in _visible_items
+            for (auto& vi : _visible_items) {
+              if (vi.entry.path == sel_item->entry.path) {
+                auto& opt = vi.item_options[opt_idx];
+                switch (opt.type) {
+                  case OptionWidgetType::Checkbox: {
+                    ItemOptionDef new_val = opt;
+                    new_val.bool_val = !new_val.bool_val;
+                    if (_model && _model->setItemOption(vi.entry.path, opt.name, new_val)) {
+                      opt.bool_val = new_val.bool_val;
+                      clearIconCache();
+                    }
+                    break;
+                  }
+                  case OptionWidgetType::Dropdown: {
+                    if (!opt.choices.empty() && _uicontext) {
+                      // Build slash-delimited paths for DropdownMenu
+                      std::vector<std::string> paths;
+                      for (const auto& c : opt.choices) {
+                        paths.push_back("/" + c);
+                      }
+                      auto tree = DropdownMenu::buildTreeFromPaths(paths);
+                      auto menu = std::make_shared<DropdownMenu>("optbar_" + opt.name, tree->root());
+
+                      // Capture what we need for the callback
+                      std::string item_path = vi.entry.path;
+                      std::string opt_name = opt.name;
+                      menu->_onSelected = [this, item_path, opt_name](std::string value) {
+                        if (!value.empty() && value[0] == '/') {
+                          value = value.substr(1);
+                        }
+                        ItemOptionDef new_val;
+                        new_val.name = opt_name;
+                        new_val.type = OptionWidgetType::Dropdown;
+                        new_val.string_val = value;
+                        if (_model && _model->setItemOption(item_path, opt_name, new_val)) {
+                          _needs_rebuild = true;
+                        }
+                      };
+
+                      // Position popup below the widget in the options bar
+                      int popup_x = 8;  // left padding of options bar
+                      for (int pi = 0; pi < opt_idx; pi++) {
+                        popup_x += _computeOptionWidgetWidth(vi.item_options[pi]) + 4;
+                      }
+                      int root_x, root_y;
+                      LocalToRoot(popup_x, _getOptionsBarOffset() + _options_bar_height, root_x, root_y);
+                      auto sz = menu->computeSize();
+                      _uicontext->pushOverlay(menu, root_x, root_y, int(sz.x), int(sz.y), true, nullptr);
+                    }
+                    break;
+                  }
+                  case OptionWidgetType::Button: {
+                    ItemOptionDef new_val = opt;
+                    if (_model) {
+                      _model->setItemOption(vi.entry.path, opt.name, new_val);
+                    }
+                    break;
+                  }
+                  default:
+                    break;
+                }
+                break;  // found the mutable item
+              }
+            }
+            result.setHandled(this);
+            break;
+          }
+        }
+      }
+
+      // Check if click is on a per-item inline option widget
+      if (_showInlineOptions()) {
+        int item_idx = _getItemIndexAt(localX, localY);
+        if (item_idx >= 0) {
+          auto& item = _visible_items[item_idx];
+          int opt_idx = _hitTestItemOption(item, localX);
+          if (opt_idx >= 0 && opt_idx < (int)item.item_options.size()) {
+            auto& opt = item.item_options[opt_idx];
+            switch (opt.type) {
+              case OptionWidgetType::Checkbox: {
+                ItemOptionDef new_val = opt;
+                new_val.bool_val = !new_val.bool_val;
+                if (_model && _model->setItemOption(item.entry.path, opt.name, new_val)) {
+                  item.item_options[opt_idx].bool_val = new_val.bool_val;
+                  clearIconCache();
+                }
+                break;
+              }
+              case OptionWidgetType::Dropdown: {
+                if (!opt.choices.empty() && _uicontext) {
+                  std::vector<std::string> paths;
+                  for (const auto& c : opt.choices) {
+                    paths.push_back("/" + c);
+                  }
+                  auto tree = DropdownMenu::buildTreeFromPaths(paths);
+                  auto menu = std::make_shared<DropdownMenu>("inline_" + opt.name, tree->root());
+
+                  std::string item_path = item.entry.path;
+                  std::string opt_name = opt.name;
+                  menu->_onSelected = [this, item_path, opt_name](std::string value) {
+                    if (!value.empty() && value[0] == '/') {
+                      value = value.substr(1);
+                    }
+                    ItemOptionDef new_val;
+                    new_val.name = opt_name;
+                    new_val.type = OptionWidgetType::Dropdown;
+                    new_val.string_val = value;
+                    if (_model && _model->setItemOption(item_path, opt_name, new_val)) {
+                      _needs_rebuild = true;
+                    }
+                  };
+
+                  // Position popup below the clicked row
+                  int widget_x = _getItemOptionsColumnX();
+                  for (int pi = 0; pi < opt_idx; pi++) {
+                    widget_x += _computeOptionWidgetWidth(item.item_options[pi]);
+                  }
+                  // Compute row Y: header offset + (item_idx * item_height) - scroll
+                  int header_offset = (_draw_path_bar ? _path_bar_height : 0) +
+                                      ((_draw_header && _view_mode == FilesystemViewMode::List) ? _header_height : 0) +
+                                      ((_draw_options_bar && _has_item_options) ? _options_bar_height : 0);
+                  int row_bottom_local = header_offset + (item_idx + 1) * _item_height - _scroll_offset;
+                  int root_x, root_y;
+                  LocalToRoot(widget_x, row_bottom_local, root_x, root_y);
+                  auto sz = menu->computeSize();
+                  _uicontext->pushOverlay(menu, root_x, root_y, int(sz.x), int(sz.y), true, nullptr);
+                }
+                break;
+              }
+              case OptionWidgetType::Button: {
+                ItemOptionDef new_val = opt;
+                if (_model) {
+                  _model->setItemOption(item.entry.path, opt.name, new_val);
+                }
+                break;
+              }
+              default:
+                break;
+            }
+            result.setHandled(this);
+            break;
+          }
+        }
       }
 
       std::string clicked_path = _getItemPathAt(localX, localY);
@@ -673,9 +935,14 @@ HandlerResult FilesystemView::DoOnUiEvent(event_constptr_t ev) {
     }
 
     case EventCode::MOVE: {
-      std::string hovered_path = _getItemPathAt(localX, localY);
-      if (_hovered_path != hovered_path) {
-        _hovered_path = hovered_path;
+      // Only update hover when mouse is over a real item.
+      // Moving to header, path bar, options bar, or empty space
+      // should NOT clear the current hover (preserves options bar).
+      if (!_isInOptionsBarArea(localY)) {
+        std::string hovered_path = _getItemPathAt(localX, localY);
+        if (!hovered_path.empty() && _hovered_path != hovered_path) {
+          _hovered_path = hovered_path;
+        }
       }
       break;
     }
@@ -704,7 +971,7 @@ HandlerResult FilesystemView::DoOnUiEvent(event_constptr_t ev) {
     }
 
     case EventCode::MOUSE_LEAVE: {
-      _hovered_path = "";
+      // Don't clear hover on mouse leave — preserves options bar
       break;
     }
 
@@ -785,6 +1052,11 @@ void FilesystemView::_drawListMode(drawevent_constptr_t drwev) {
       _drawHeader(drwev, y_offset);
     }
 
+    // Draw options bar (for selected item)
+    if (_draw_options_bar && _has_item_options) {
+      _drawOptionsBar(drwev, y_offset);
+    }
+
     // Draw items
     int content_y = y_offset - _scroll_offset;
     for (size_t i = 0; i < _visible_items.size(); i++) {
@@ -815,6 +1087,24 @@ void FilesystemView::_drawListMode(drawevent_constptr_t drwev) {
       int sep_x = ix1 + _icon_column_width + _name_column_width;
       primi->RenderQuadAtZ(defmtl.get(), sep_x, sep_x + 1, content_top, iy2,
                            0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+
+      if (_show_description_column) {
+        sep_x += _description_column_width;
+        primi->RenderQuadAtZ(defmtl.get(), sep_x, sep_x + 1, content_top, iy2,
+                             0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+      }
+
+      if (_show_options_column) {
+        sep_x += _options_column_width;
+        primi->RenderQuadAtZ(defmtl.get(), sep_x, sep_x + 1, content_top, iy2,
+                             0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+      }
+
+      if (_showInlineOptions()) {
+        sep_x += _item_options_column_width;
+        primi->RenderQuadAtZ(defmtl.get(), sep_x, sep_x + 1, content_top, iy2,
+                             0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+      }
 
       if (_show_size_column) {
         sep_x += _size_column_width;
@@ -867,6 +1157,11 @@ void FilesystemView::_drawIconMode(drawevent_constptr_t drwev) {
     // Draw path bar
     if (_draw_path_bar) {
       _drawPathBar(drwev, y_offset);
+    }
+
+    // Draw options bar
+    if (_draw_options_bar && _has_item_options) {
+      _drawOptionsBar(drwev, y_offset);
     }
 
     // Calculate grid
@@ -986,6 +1281,30 @@ void FilesystemView::_drawHeader(drawevent_constptr_t drwev, int& y_offset) {
     tgt->PopModColor();
     x += _name_column_width;
 
+    // Description column
+    if (_show_description_column) {
+      tgt->PushModColor(_text_color * 0.7f);
+      lev2::FontMan::DrawText(tgt, x + col_padding, text_y, "Description");
+      tgt->PopModColor();
+      x += _description_column_width;
+    }
+
+    // Options column
+    if (_show_options_column) {
+      tgt->PushModColor(_text_color * 0.7f);
+      lev2::FontMan::DrawText(tgt, x + col_padding, text_y, "Options");
+      tgt->PopModColor();
+      x += _options_column_width;
+    }
+
+    // Per-item options column (only when inline)
+    if (_showInlineOptions()) {
+      tgt->PushModColor(_text_color * 0.7f);
+      lev2::FontMan::DrawText(tgt, x + col_padding, text_y, "Options");
+      tgt->PopModColor();
+      x += _item_options_column_width;
+    }
+
     // Size column
     if (_show_size_column) {
       bool is_size_sorted = (sort_field == FilesystemModel::SortField::Size);
@@ -1045,6 +1364,24 @@ void FilesystemView::_drawHeader(drawevent_constptr_t drwev, int& y_offset) {
     int sep_x = ix1 + _icon_column_width + _name_column_width;
     primi->RenderQuadAtZ(defmtl.get(), sep_x - 1, sep_x + 1, header_y1 + 2, header_y2 - 2,
                          0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+
+    if (_show_description_column) {
+      sep_x += _description_column_width;
+      primi->RenderQuadAtZ(defmtl.get(), sep_x - 1, sep_x + 1, header_y1 + 2, header_y2 - 2,
+                           0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+    }
+
+    if (_show_options_column) {
+      sep_x += _options_column_width;
+      primi->RenderQuadAtZ(defmtl.get(), sep_x - 1, sep_x + 1, header_y1 + 2, header_y2 - 2,
+                           0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+    }
+
+    if (_showInlineOptions()) {
+      sep_x += _item_options_column_width;
+      primi->RenderQuadAtZ(defmtl.get(), sep_x - 1, sep_x + 1, header_y1 + 2, header_y2 - 2,
+                           0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+    }
 
     if (_show_size_column) {
       sep_x += _size_column_width;
@@ -1160,9 +1497,33 @@ void FilesystemView::_drawListItem(drawevent_constptr_t drwev, const VisibleItem
     int text_y = y_pos + (_item_height - _font->description().miAdvanceHeight) / 2;
 
     size_t char_count = item.entry.name.length();
+    if (_show_description_column) char_count += item.entry.description.length() + 8;
+    if (_show_options_column) char_count += item.entry.options.length() + 8;
+    // Estimate chars for per-item options
+    for (const auto& opt : item.item_options) {
+      char_count += opt.name.length() + 2;
+      if (opt.type == OptionWidgetType::Dropdown || opt.type == OptionWidgetType::Label) {
+        char_count += opt.string_val.length() + 4;
+      } else if (opt.type == OptionWidgetType::Button) {
+        char_count += opt.string_val.length() + 4;
+      }
+    }
     if (_show_size_column) char_count += 16;
     if (_show_type_column) char_count += item.entry.extension.length() + 8;
     if (_show_date_column) char_count += 24;
+
+    // Draw button/dropdown backgrounds BEFORE text block (so text renders on top)
+    if (_showInlineOptions() && !item.item_options.empty()) {
+      bool row_highlighted = selected || hovered;
+      int opt_x = ix1 + _getItemOptionsColumnX();
+      for (const auto& opt : item.item_options) {
+        int w = _computeOptionWidgetWidth(opt);
+        if (opt.type == OptionWidgetType::Button || opt.type == OptionWidgetType::Dropdown) {
+          _drawOptionButton(drwev, opt_x, y_pos, w, _item_height, row_highlighted);
+        }
+        opt_x += w;
+      }
+    }
 
     lev2::FontMan::beginTextBlock(tgt, char_count);
 
@@ -1172,6 +1533,66 @@ void FilesystemView::_drawListItem(drawevent_constptr_t drwev, const VisibleItem
     std::string name_str = _truncateToWidth(item.entry.name, _name_column_width);
     lev2::FontMan::DrawText(tgt, x, text_y, name_str.c_str());
     x += _name_column_width;
+
+    // Description
+    if (_show_description_column) {
+      if (!item.entry.description.empty()) {
+        std::string desc_str = _truncateToWidth(item.entry.description, _description_column_width - col_padding);
+        lev2::FontMan::DrawText(tgt, x + col_padding, text_y, desc_str.c_str());
+      }
+      x += _description_column_width;
+    }
+
+    // Options text
+    if (_show_options_column) {
+      if (!item.entry.options.empty()) {
+        std::string opts_str = _truncateToWidth(item.entry.options, _options_column_width - col_padding);
+        lev2::FontMan::DrawText(tgt, x + col_padding, text_y, opts_str.c_str());
+      }
+      x += _options_column_width;
+    }
+
+    // Per-item options micro-widgets (text parts, only when inline)
+    if (_showInlineOptions() && !item.item_options.empty()) {
+      int opt_x = _getItemOptionsColumnX();
+      for (const auto& opt : item.item_options) {
+        int w = _computeOptionWidgetWidth(opt);
+        switch (opt.type) {
+          case OptionWidgetType::Checkbox: {
+            // Label drawn to the right of the checkbox quad
+            int label_x = ix1 + opt_x + 18;  // 18px = checkbox size + gap
+            lev2::FontMan::DrawText(tgt, label_x, text_y, opt.name.c_str());
+            break;
+          }
+          case OptionWidgetType::Dropdown: {
+            std::string text = opt.name + ": " + opt.string_val;
+            text = _truncateToWidth(text, w - col_padding);
+            lev2::FontMan::DrawText(tgt, ix1 + opt_x + col_padding, text_y, text.c_str());
+            break;
+          }
+          case OptionWidgetType::Button: {
+            std::string text = opt.string_val.empty() ? opt.name : opt.string_val;
+            text = _truncateToWidth(text, w - col_padding * 2);
+            if (!text.empty()) {
+              int text_w = text.length() * _font->description().miAdvanceWidth;
+              int text_x = ix1 + opt_x + (w - text_w) / 2;
+              lev2::FontMan::DrawText(tgt, text_x, text_y, text.c_str());
+            }
+            break;
+          }
+          case OptionWidgetType::Label: {
+            std::string text = opt.name + ": " + opt.string_val;
+            text = _truncateToWidth(text, w - col_padding);
+            lev2::FontMan::DrawText(tgt, ix1 + opt_x + col_padding, text_y, text.c_str());
+            break;
+          }
+        }
+        opt_x += w;
+      }
+      x += _item_options_column_width;
+    } else if (_showInlineOptions()) {
+      x += _item_options_column_width;
+    }
 
     // Size
     if (_show_size_column) {
@@ -1201,6 +1622,18 @@ void FilesystemView::_drawListItem(drawevent_constptr_t drwev, const VisibleItem
     lev2::FontMan::endTextBlock(tgt);
     tgt->PopModColor();
     lev2::FontMan::PopFont();
+
+    // Draw checkbox quads AFTER text block (only when inline)
+    if (_showInlineOptions() && !item.item_options.empty()) {
+      int opt_x = ix1 + _getItemOptionsColumnX();
+      for (const auto& opt : item.item_options) {
+        int w = _computeOptionWidgetWidth(opt);
+        if (opt.type == OptionWidgetType::Checkbox) {
+          _drawOptionCheckbox(drwev, opt_x, y_pos, 16, _item_height, opt.bool_val);
+        }
+        opt_x += w;
+      }
+    }
   }
 }
 
@@ -1390,10 +1823,30 @@ lev2::texture_ptr_t FilesystemView::_getIconForPath(lev2::Context* ctx, const st
   // Check cache first
   auto it = _icon_cache.find(path);
   if (it != _icon_cache.end()) {
-    return it->second;
+    auto& frames = it->second;
+    if (frames.size() == 1) {
+      return frames[0];
+    } else if (frames.size() > 1) {
+      float t = _uicontext ? _uicontext->_uitimer.SecsSinceStart() : 0.0f;
+      int frame = int(t * _icon_anim_fps) % int(frames.size());
+      return frames[frame];
+    }
   }
 
-  // Try to get icon from model
+  // Try animated icon sequence first
+  auto sequence = _model->getIconSequence(path, size);
+  if (!sequence.empty()) {
+    lev2::texture_list_t frames;
+    for (auto& img : sequence) {
+      auto texture = std::make_shared<lev2::Texture>();
+      txi->initTextureFromImage(texture.get(), img, true);
+      frames.push_back(texture);
+    }
+    _icon_cache[path] = frames;
+    return frames[0];
+  }
+
+  // Try to get single icon from model
   lev2::image_ptr_t image = nullptr;
 
   // First try provider (lazy loading)
@@ -1407,16 +1860,294 @@ lev2::texture_ptr_t FilesystemView::_getIconForPath(lev2::Context* ctx, const st
     image = _model->getIcon(path, size);
   }
 
-  // If model provides an image, create texture and cache it
+  // If model provides an image, create texture and cache as single-frame sequence
   if (image) {
     auto texture = std::make_shared<lev2::Texture>();
     txi->initTextureFromImage(texture.get(), image, true);
-    _icon_cache[path] = texture;
+    _icon_cache[path] = lev2::texture_list_t{texture};
     return texture;
   }
 
   // Fall back to default icons (don't cache - use defaults directly)
   return (type == FileType::Directory) ? _folder_icon_texture : _file_icon_texture;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Options bar helpers
+///////////////////////////////////////////////////////////////////////////////
+
+const FilesystemView::VisibleItem* FilesystemView::_getActiveVisibleItem() const {
+  // Prefer selected item, fall back to hovered
+  if (!_selected_paths.empty()) {
+    const std::string& sel_path = *_selected_paths.begin();
+    for (const auto& item : _visible_items) {
+      if (item.entry.path == sel_path && !item.item_options.empty()) return &item;
+    }
+  }
+  if (!_hovered_path.empty()) {
+    for (const auto& item : _visible_items) {
+      if (item.entry.path == _hovered_path && !item.item_options.empty()) return &item;
+    }
+  }
+  return nullptr;
+}
+
+int FilesystemView::_getOptionsBarOffset() const {
+  int offset = _draw_path_bar ? _path_bar_height : 0;
+  if (_draw_header && _view_mode == FilesystemViewMode::List) {
+    offset += _header_height;
+  }
+  return offset;
+}
+
+bool FilesystemView::_isInOptionsBarArea(int local_y) const {
+  if (!_draw_options_bar || !_has_item_options) {
+    return false;
+  }
+  int bar_start = _getOptionsBarOffset();
+  int bar_end = bar_start + _options_bar_height;
+  return local_y >= bar_start && local_y < bar_end;
+}
+
+int FilesystemView::_hitTestOptionsBar(int local_x) const {
+  auto* sel_item = _getActiveVisibleItem();
+  if (!sel_item || sel_item->item_options.empty()) return -1;
+
+  int x = 8;  // left padding
+  for (size_t i = 0; i < sel_item->item_options.size(); i++) {
+    int w = _computeOptionWidgetWidth(sel_item->item_options[i]);
+    if (local_x >= x && local_x < x + w) {
+      return (int)i;
+    }
+    x += w + 4;  // 4px gap between widgets
+  }
+  return -1;
+}
+
+void FilesystemView::_drawOptionsBar(drawevent_constptr_t drwev, int& y_offset) {
+  auto tgt = drwev->GetTarget();
+  auto fxi = tgt->FXI();
+  auto primi = tgt->PRI();
+  auto defmtl = lev2::defaultUIMaterial();
+
+  int ix1, iy1;
+  LocalToRoot(0, 0, ix1, iy1);
+  int ix2 = ix1 + _geometry._w;
+  int bar_y1 = iy1 + y_offset;
+  int bar_y2 = bar_y1 + _options_bar_height;
+
+  // Always draw background and advance y_offset so hit testing stays in sync
+  auto rs = defmtl->_rasterstate;
+  rs->setBlendingMacro(lev2::BlendingMacro::OFF);
+  rs->setDepthTest(lev2::EDepthTest::OFF);
+  fxi->pushRasterState(rs);
+  tgt->PushModColor(fvec4(0.13f, 0.13f, 0.17f, 1.0f));
+  defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+  primi->RenderQuadAtZ(defmtl.get(), ix1, ix2, bar_y1, bar_y2, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+  tgt->PopModColor();
+  fxi->popRasterState();
+
+  y_offset += _options_bar_height;
+
+  // Only draw widgets if there's a selected item with options
+  auto* sel_item = _getActiveVisibleItem();
+  if (!sel_item || sel_item->item_options.empty()) return;
+
+  // Draw widget backgrounds (buttons/dropdowns)
+  int wx = ix1 + 8;
+  for (const auto& opt : sel_item->item_options) {
+    int w = _computeOptionWidgetWidth(opt);
+    if (opt.type == OptionWidgetType::Button || opt.type == OptionWidgetType::Dropdown) {
+      _drawOptionButton(drwev, wx, bar_y1, w, _options_bar_height, true);
+    }
+    wx += w + 4;
+  }
+
+  // Draw checkbox quads
+  wx = ix1 + 8;
+  for (const auto& opt : sel_item->item_options) {
+    int w = _computeOptionWidgetWidth(opt);
+    if (opt.type == OptionWidgetType::Checkbox) {
+      _drawOptionCheckbox(drwev, wx, bar_y1, 16, _options_bar_height, opt.bool_val);
+    }
+    wx += w + 4;
+  }
+
+  // Draw text
+  if (_font) {
+    lev2::FontMan::PushFont(_font);
+    tgt->PushModColor(_text_color);
+
+    int text_y = bar_y1 + (_options_bar_height - _font->description().miAdvanceHeight) / 2;
+    const int col_padding = 8;
+
+    // Estimate char count
+    size_t char_count = 0;
+    for (const auto& opt : sel_item->item_options) {
+      char_count += opt.name.length() + opt.string_val.length() + 8;
+    }
+
+    lev2::FontMan::beginTextBlock(tgt, char_count);
+
+    wx = ix1 + 8;
+    for (const auto& opt : sel_item->item_options) {
+      int w = _computeOptionWidgetWidth(opt);
+      switch (opt.type) {
+        case OptionWidgetType::Checkbox: {
+          int label_x = wx + 18;
+          lev2::FontMan::DrawText(tgt, label_x, text_y, opt.name.c_str());
+          break;
+        }
+        case OptionWidgetType::Dropdown: {
+          std::string text = opt.name + ": " + opt.string_val;
+          text = _truncateToWidth(text, w - col_padding);
+          lev2::FontMan::DrawText(tgt, wx + col_padding, text_y, text.c_str());
+          break;
+        }
+        case OptionWidgetType::Button: {
+          std::string text = opt.string_val.empty() ? opt.name : opt.string_val;
+          text = _truncateToWidth(text, w - col_padding * 2);
+          if (!text.empty()) {
+            int text_w = text.length() * _font->description().miAdvanceWidth;
+            int text_x = wx + (w - text_w) / 2;
+            lev2::FontMan::DrawText(tgt, text_x, text_y, text.c_str());
+          }
+          break;
+        }
+        case OptionWidgetType::Label: {
+          std::string text = opt.name + ": " + opt.string_val;
+          text = _truncateToWidth(text, w - col_padding);
+          lev2::FontMan::DrawText(tgt, wx + col_padding, text_y, text.c_str());
+          break;
+        }
+      }
+      wx += w + 4;
+    }
+
+    lev2::FontMan::endTextBlock(tgt);
+    tgt->PopModColor();
+    lev2::FontMan::PopFont();
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Per-item option helpers
+///////////////////////////////////////////////////////////////////////////////
+
+int FilesystemView::_getItemOptionsColumnX() const {
+  int x = _icon_column_width + _name_column_width;
+  if (_show_description_column) x += _description_column_width;
+  if (_show_options_column) x += _options_column_width;
+  return x;
+}
+
+int FilesystemView::_computeOptionWidgetWidth(const ItemOptionDef& opt) const {
+  int char_w = _font ? _font->description().miAdvanceWidth : 8;
+  switch (opt.type) {
+    case OptionWidgetType::Checkbox:
+      return 18 + (int)opt.name.length() * char_w + 16 + 8;  // box + label + gap
+    case OptionWidgetType::Dropdown: {
+      int text_len = opt.name.length() + 2 + opt.string_val.length();  // "Name: Value"
+      return text_len * char_w + 16;
+    }
+    case OptionWidgetType::Button: {
+      std::string text = opt.string_val.empty() ? opt.name : opt.string_val;
+      return (int)text.length() * char_w + 24;
+    }
+    case OptionWidgetType::Label: {
+      int text_len = opt.name.length() + 2 + opt.string_val.length();
+      return text_len * char_w + 16;
+    }
+  }
+  return 60;
+}
+
+int FilesystemView::_hitTestItemOption(const VisibleItem& item, int local_x) const {
+  if (item.item_options.empty()) return -1;
+
+  int x = _getItemOptionsColumnX();
+  for (size_t i = 0; i < item.item_options.size(); i++) {
+    int w = _computeOptionWidgetWidth(item.item_options[i]);
+    if (local_x >= x && local_x < x + w) {
+      return (int)i;
+    }
+    x += w;
+  }
+  return -1;
+}
+
+void FilesystemView::_drawOptionCheckbox(drawevent_constptr_t drwev, int x, int y, int w, int h, bool checked) {
+  auto tgt = drwev->GetTarget();
+  auto fxi = tgt->FXI();
+  auto primi = tgt->PRI();
+  auto defmtl = lev2::defaultUIMaterial();
+
+  int box_size = std::min(h - 6, 14);
+  int bx = x + (w - box_size) / 2;
+  int by = y + (h - box_size) / 2;
+
+  auto rs = defmtl->_rasterstate;
+  rs->setBlendingMacro(lev2::BlendingMacro::ALPHA);
+  rs->setDepthTest(lev2::EDepthTest::OFF);
+  fxi->pushRasterState(rs);
+  defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+
+  // Box background
+  fvec4 bg_color = checked ? fvec4(0.2f, 0.5f, 0.8f, 1.0f) : fvec4(0.3f, 0.3f, 0.35f, 1.0f);
+  tgt->PushModColor(bg_color);
+  primi->RenderQuadAtZ(defmtl.get(), bx, bx + box_size, by, by + box_size,
+                       0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+  tgt->PopModColor();
+
+  // Check indicator (brighter inner square)
+  if (checked) {
+    int inset = 3;
+    tgt->PushModColor(fvec4(0.9f, 0.9f, 1.0f, 1.0f));
+    primi->RenderQuadAtZ(defmtl.get(), bx + inset, bx + box_size - inset,
+                         by + inset, by + box_size - inset,
+                         0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+    tgt->PopModColor();
+  }
+
+  fxi->popRasterState();
+}
+
+void FilesystemView::_drawOptionButton(drawevent_constptr_t drwev, int x, int y, int w, int h, bool highlighted) {
+  auto tgt = drwev->GetTarget();
+  auto fxi = tgt->FXI();
+  auto primi = tgt->PRI();
+  auto defmtl = lev2::defaultUIMaterial();
+
+  int btn_x = x + 4;
+  int btn_w = w - 8;
+  int btn_y = y + 2;
+  int btn_h = h - 4;
+
+  auto rs = defmtl->_rasterstate;
+  rs->setBlendingMacro(lev2::BlendingMacro::ALPHA);
+  rs->setDepthTest(lev2::EDepthTest::OFF);
+  fxi->pushRasterState(rs);
+  defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+
+  if (highlighted) {
+    // Outline (1px border)
+    tgt->PushModColor(fvec4(0.5f, 0.6f, 0.75f, 1.0f));
+    primi->RenderQuadAtZ(defmtl.get(), btn_x, btn_x + btn_w, btn_y, btn_y + btn_h,
+                         0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+    tgt->PopModColor();
+    // Inner fill (brighter than normal)
+    tgt->PushModColor(fvec4(0.35f, 0.38f, 0.45f, 1.0f));
+    primi->RenderQuadAtZ(defmtl.get(), btn_x + 1, btn_x + btn_w - 1, btn_y + 1, btn_y + btn_h - 1,
+                         0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+    tgt->PopModColor();
+  } else {
+    tgt->PushModColor(fvec4(0.25f, 0.25f, 0.3f, 1.0f));
+    primi->RenderQuadAtZ(defmtl.get(), btn_x, btn_x + btn_w, btn_y, btn_y + btn_h,
+                         0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+    tgt->PopModColor();
+  }
+
+  fxi->popRasterState();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

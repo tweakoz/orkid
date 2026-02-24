@@ -372,6 +372,14 @@ void pyinit_ui_outliner(py::module& uimodule) {
                   callback(key);
                 };
               })
+          .def(
+              "onShiftEnter",
+              [](ui::outliner_ptr_t outliner, py::object callback) { //
+                outliner->_onShiftEnter = [callback](const std::string& key) {
+                  py::gil_scoped_acquire acquire;
+                  callback(key);
+                };
+              })
           .def("startEditing", &ui::Outliner::startEditing)
           .def("cancelEditing", &ui::Outliner::cancelEditing)
           .def("commitEditing", &ui::Outliner::commitEditing)

@@ -23,13 +23,13 @@ VulkanSemaphoreBase::VulkanSemaphoreBase(vkcontext_rawptr_t ctxVK)
 ///////////////////////////////////////////////////
 
 VulkanSemaphoreBase::~VulkanSemaphoreBase() {
-  // logchan_vksynch->log("VulkanSemaphoreBase<%p> destroyed", (void*)this);
-    if(nullptr==_ctxVK->_vkdevice){
-        return;
+  try {
+    if(_ctxVK && _ctxVK->_vkdevice && _vksema) {
+      vkDestroySemaphore(_ctxVK->_vkdevice, _vksema, nullptr);
+      _vksema = VK_NULL_HANDLE;
     }
-  if (_vksema) {
-    vkDestroySemaphore(_ctxVK->_vkdevice, _vksema, nullptr);
-    _vksema = VK_NULL_HANDLE;
+  } catch (...) {
+    // Swallow — during static destruction _ctxVK may be dangling.
   }
 }
 
@@ -181,10 +181,13 @@ VulkanFenceObject::VulkanFenceObject(vkcontext_rawptr_t ctxVK)
 ///////////////////////////////////////////////////
 
 VulkanFenceObject::~VulkanFenceObject() {
-    if(nullptr==_ctxVK->_vkdevice){
-        return;
+  try {
+    if(_ctxVK && _ctxVK->_vkdevice && _vkfence) {
+      vkDestroyFence(_ctxVK->_vkdevice, _vkfence, nullptr);
     }
-  vkDestroyFence(_ctxVK->_vkdevice, _vkfence, nullptr);
+  } catch (...) {
+    // Swallow — during static destruction _ctxVK may be dangling.
+  }
 }
 
 ///////////////////////////////////////////////////

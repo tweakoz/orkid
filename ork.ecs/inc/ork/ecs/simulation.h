@@ -52,7 +52,7 @@ struct Simulation {
   typedef orklist<Component*> ComponentList;
   typedef orkset<Entity*> EntitySet;
 
-  Simulation(Controller* controller);
+  Simulation(Controller* controller, varmap::varmap_ptr_t injected_varmap = nullptr);
 
   ~Simulation();
 
@@ -186,6 +186,8 @@ private:
 
   void _initializeEntities();
   void _uninitializeEntities();
+  void _updateSpawnerContexts();
+  void _updateEntityLifetimes();
   void _composeEntities();
   void _decomposeEntities();
   void _linkEntities();
@@ -266,6 +268,7 @@ private:
 
   orkmap<std::string, lev2::LayerData*> _layerdataMap;
   orkmap<PoolString, Entity*> mEntities;
+  std::map<spawndata_constptr_t, spawnercontext_ptr_t> _spawnerContexts;
   EntitySet mActiveEntities;
 
   ComponentList mEmptyList;

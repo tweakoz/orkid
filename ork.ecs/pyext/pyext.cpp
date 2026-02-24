@@ -26,6 +26,11 @@ void pyinit_controller(py::module& module_ecs);
 void pyinit_datatable(py::module& module_ecs);
 void pyinit_physics(py::module& module_ecs);
 void pyinit_pysys(py::module& module_ecs);
+void pyinit_transformcurve(py::module& module_ecs);
+void pyinit_boids(py::module& module_ecs);
+void pyinit_stochwav(py::module& module_ecs);
+void pyinit_simplesound(py::module& module_ecs);
+void pyinit_globalsynth(py::module& module_ecs);
 
 } // namespace ork::ecs
 
@@ -239,6 +244,17 @@ PYBIND11_MODULE(_ecs, module_ecs) {
   pyinit_datatable(module_ecs);
   pyinit_physics(module_ecs);
   pyinit_pysys(module_ecs);
+  pyinit_transformcurve(module_ecs);
+  pyinit_boids(module_ecs);
+  pyinit_stochwav(module_ecs);
+  pyinit_simplesound(module_ecs);
+  pyinit_globalsynth(module_ecs);
   //////////////////////////////////////////////////////////////////////////////
   module_ecs.def("createApp", &ecsappcreate);
+  //////////////////////////////////////////////////////////////////////////////
+  module_ecs.def("ecsInitCallback", [](ork::appinitdata_ptr_t appinit) {
+    auto stringpoolctx = std::make_shared<StringPoolContext>();
+    StringPoolStack::push(stringpoolctx);
+    ecs::initModule(appinit);
+  });
 }

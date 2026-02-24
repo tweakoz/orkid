@@ -42,6 +42,13 @@ drawable_ptr_t InstancedModelDrawableData::createDrawable() const {
   return drw;
 }
 ///////////////////////////////////////////////////////////////////////////////
+void InstancedModelDrawableData::reloadDrawable(drawable_ptr_t drw) const {
+  auto inst_drw = std::dynamic_pointer_cast<InstancedModelDrawable>(drw);
+  if (inst_drw) {
+    inst_drw->bindModelAsset(_assetpath);
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
 InstancedModelDrawable::InstancedModelDrawable()
     : InstancedDrawable() {
 }

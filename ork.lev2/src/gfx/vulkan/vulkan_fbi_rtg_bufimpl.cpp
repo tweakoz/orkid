@@ -105,13 +105,10 @@ void VklRtBufferImpl::setLayout(VkImageLayout layout) {
     _imgobj->_currentLayout = layout;
   }
 
-  // Also update the associated texture's descriptor if it exists
-  if (_teximpl.tryAsShared<VulkanTextureObject>()) {
-    auto tex_impl = _teximpl.getShared<VulkanTextureObject>();
-    if (tex_impl->_vkdescriptor_info[0]) {
-      tex_impl->_vkdescriptor_info[0]->imageLayout = layout;
-    }
-  }
+  // NOTE: Do NOT update _vkdescriptor_info[0]->imageLayout here.
+  // The sampling descriptor must always report SHADER_READ_ONLY_OPTIMAL
+  // because that's the layout the image will be in when actually sampled.
+  // _currentLayout already tracks the real layout for barrier purposes.
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -285,6 +282,10 @@ void VklRtBufferImpl::_transitionImage(vkpricmdbufimpl_ptr_t cb, const VkTransit
     if(0)logchan_rtbi->log("IMAGE: Performing transition for image %p from %d to %d", (void*)img, _currentLayout, p.layout);
     auto barrier = createImageBarrier(img, _currentLayout, p.layout, p.srcAccess, p.dstAccess);
     barrier->subresourceRange.aspectMask = VkFormatConverter::_instance.aspectForUsage(_usage);
+    if (_imgobj->_cinfo) {
+      barrier->subresourceRange.layerCount = _imgobj->_cinfo->arrayLayers;
+      barrier->subresourceRange.levelCount = _imgobj->_cinfo->mipLevels;
+    }
     
     vkCmdPipelineBarrier(cb->_vkcmdbuf,                 // command buffer
                          p.srcStage,                    // source stage

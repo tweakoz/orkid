@@ -10,6 +10,7 @@
 #include <ork/kernel/timer.h>
 #include <ork/util/fsm.h>
 #include <ork/lev2/ui/group.h>
+#include <ork/lev2/ui/overlay.h>
 #include <ork/lev2/ui/style.h>
 #include <functional>
 
@@ -92,6 +93,17 @@ struct Context {
   // Fallback: called AFTER widget handling if unhandled (for app-level handling)
   event_handler_t _appPreviewHandler;
   event_handler_t _appFallbackHandler;
+
+  //////////////////////////////////////
+  // Overlay stack (drawn on top of widget tree, receives events first)
+  //////////////////////////////////////
+  void pushOverlay(widget_ptr_t widget, int x, int y, int w, int h,
+                   bool dismiss_on_click_outside = true,
+                   std::function<void()> on_dismissed = nullptr);
+  void popOverlay();
+  void dismissAllOverlays();
+  bool hasOverlays() const;
+  std::vector<OverlayEntry> _overlay_stack;
 };
 
 } // namespace ork::ui

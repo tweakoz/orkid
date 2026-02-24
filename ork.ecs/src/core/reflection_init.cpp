@@ -34,6 +34,21 @@
 #include <ork/ecs/physics/bullet.h>
 #include "../physics/bullet_impl.h"
 
+#include <ork/lev2/gfx/scenegraph/sgnode_curvepath.h>
+#include <ork/ecs/TransformCurveComponent.h>
+#include "TransformCurveComponent_impl.h"
+
+#include <ork/ecs/BoidsComponent.h>
+#include "BoidsComponent_impl.h"
+
+#include <ork/ecs/StochWavSoundEmitter.h>
+#include "StochWavSoundEmitter_impl.h"
+
+#include <ork/ecs/SimpleSoundEmitter.h>
+#include "SimpleSoundEmitter_impl.h"
+
+#include <ork/ecs/GlobalSynthSystem.h>
+
 #include "InterpComponent_impl.h"
 #include "../scripting/Lua/LuaImpl.h"
 
@@ -163,11 +178,43 @@ struct EcsAppInit {
     RegisterClassX(BulletObjectComponent);
     RegisterClassX(BulletSystem);
 
+    RegisterClassX(lev2::CurvePathDrawableData);
+
+    RegisterClassX(TransformCurveComponentData);
+    RegisterClassX(TransformCurveComponent);
+    RegisterClassX(TransformCurveSystemData);
+
+    RegisterClassX(BoidsComponentData);
+    RegisterClassX(BoidsComponent);
+    RegisterClassX(BoidsSystemData);
+    RegisterClassX(BoidsSystem);
+
+    RegisterClassX(StochWavSound);
+    RegisterClassX(StochSoundGroup);
+    RegisterClassX(StochWavSoundEmitterData);
+    RegisterClassX(StochWavSoundEmitterComponent);
+    RegisterClassX(StochWavSoundEmitterSystemData);
+    RegisterClassX(StochWavSoundEmitterSystem);
+
+    RegisterClassX(SimpleSoundData);
+    RegisterClassX(SimpleSoundEmitterData);
+    RegisterClassX(SimpleSoundEmitterComponent);
+    RegisterClassX(SimpleSoundEmitterSystemData);
+    RegisterClassX(SimpleSoundEmitterSystem);
+
+    RegisterClassX(SynthBusConfig);
+    RegisterClassX(GlobalSynthSystemData);
+    RegisterClassX(GlobalSynthSystem);
+
     RegisterFamily<LuaComponentData>(ork::AddPooledLiteral("control"));
+    RegisterFamily<TransformCurveComponentData>(ork::AddPooledLiteral("control"));
+    RegisterFamily<BoidsComponentData>(ork::AddPooledLiteral("control"));
     RegisterFamily<PythonComponentData>(ork::AddPooledLiteral("control"));
     RegisterFamily<InterpComponentData>(ork::AddPooledLiteral("control"));
     RegisterFamily<SceneGraphComponentData>(ork::AddPooledLiteral("render"));
     RegisterFamily<BulletObjectComponentData>(ork::AddPooledLiteral("")); // no update
+    RegisterFamily<StochWavSoundEmitterData>(ork::AddPooledLiteral("control"));
+    RegisterFamily<SimpleSoundEmitterData>(ork::AddPooledLiteral("control"));
   }
 };
 

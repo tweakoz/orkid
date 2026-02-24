@@ -26,6 +26,27 @@ void pyinit_archetype(py::module& module_ecs) {
       .def("declareComponent", [](archetype_ptr_t& arch, std::string classname) -> componentdata_ptr_t {
         auto X = arch->addComponentWithClassName(classname.c_str());
         return X;
+      })
+      .def_property("name",
+          [](const archetype_ptr_t& arch) -> std::string {
+            return arch->GetName().c_str();
+          },
+          [](archetype_ptr_t& arch, std::string name) {
+            arch->SetName(name.c_str());
+          })
+      .def_property_readonly("components", [](const archetype_ptr_t& arch) -> py::list {
+        py::list result;
+        for (auto& item : arch->componentdata()) {
+          auto cdata = item.second;
+          auto non_const = std::const_pointer_cast<ComponentData>(cdata);
+          result.append(non_const);
+        }
+        return result;
+      })
+      .def("removeComponent", [](archetype_ptr_t& arch, componentdata_ptr_t cdata) {
+        auto as_const = std::const_pointer_cast<const ComponentData>(cdata);
+        ComponentDataTable cdt(arch->mComponentDatas);
+        cdt.removeComponent(as_const);
       });
   /////////////////////////////////////////////////////////////////////////////////
 } // void pyinit_archetype(py::module& module_ecs) {

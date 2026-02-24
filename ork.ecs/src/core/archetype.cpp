@@ -44,7 +44,7 @@ bool Archetype::postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t sh
     auto k = it.first->Name();
     auto v = it.second;
 
-    printf("got component <%s> : %p\n", k.c_str(), (void*) v.get());
+    //printf("got component <%s> : %p\n", k.c_str(), (void*) v.get());
   }
   return true;
 }

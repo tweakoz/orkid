@@ -10,6 +10,19 @@ from obt import command
 from orkengine import core
 from orkengine import lev2
 
+_svg_cache = {}
+
+################################################################################
+
+def _dblock_key(svg_string, width, height):
+  """Compute a persistent cache key for an SVG string at a given size."""
+  crc = core.Crc64Context()
+  crc.accum("svg-icon:1")
+  crc.accum(svg_string)
+  crc.accum(f"{width}x{height}")
+  crc.finish()
+  return crc.result
+
 ################################################################################
 
 def text_icon(text, width=24, height=24, font_size=12, color="#E6E6E6"):
@@ -38,6 +51,8 @@ def text_icon(text, width=24, height=24, font_size=12, color="#E6E6E6"):
 def from_svg_string(svg_string, width, height):
   """
   Render an SVG string to an RGBA image.
+  Uses DataBlockCache for persistent on-disk caching (avoids rsvg-convert on repeat runs)
+  and an in-memory dict for within-session reuse.
 
   Args:
     svg_string: SVG markup as a string
@@ -47,14 +62,56 @@ def from_svg_string(svg_string, width, height):
   Returns:
     lev2.Image (image_ptr_t)
   """
+  dblock_key = _dblock_key(svg_string, width, height)
+
+  # Level 1: in-memory cache (same session)
+  cached = _svg_cache.get(dblock_key)
+  if cached is not None:
+    return cached
+
+  # Level 2: persistent DataBlockCache (across sessions)
+  cached_dblock = core.DataBlockCache.findDataBlock(dblock_key)
+  if cached_dblock is not None:
+    with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
+      tmp.write(bytes(cached_dblock.bytes))
+      tmp_path = tmp.name
+    try:
+      result = lev2.Image.createFromFile(tmp_path)
+    finally:
+      os.unlink(tmp_path)
+    _svg_cache[dblock_key] = result
+    return result
+
+  # Level 3: generate via rsvg-convert (single invocation)
   with tempfile.NamedTemporaryFile(suffix='.svg', delete=False) as svg_file:
     svg_file.write(svg_string.encode('utf-8'))
     svg_path = svg_file.name
+  with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as png_file:
+    png_path = png_file.name
 
   try:
-    return from_svg_file(svg_path, width, height)
+    cmd = [
+      'rsvg-convert',
+      '-w', str(width),
+      '-h', str(height),
+      '-f', 'png',
+      '-o', png_path,
+      svg_path
+    ]
+    command.run(cmd, do_log=False)
+    # Cache the PNG bytes for next run
+    try:
+      png_dblock = core.DataBlock.createFromFile(core.Path(png_path))
+      core.DataBlockCache.setDataBlock(dblock_key, png_dblock)
+    except Exception:
+      pass
+    result = lev2.Image.createFromFile(png_path)
+    _svg_cache[dblock_key] = result
+    return result
   finally:
     os.unlink(svg_path)
+    if os.path.exists(png_path):
+      os.unlink(png_path)
 
 ################################################################################
 

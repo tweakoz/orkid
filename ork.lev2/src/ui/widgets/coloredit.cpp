@@ -121,6 +121,9 @@ HandlerResult ColorEdit::DoOnUiEvent(event_constptr_t cev) {
   if(color_changed && _onColorChanged){
     _onColorChanged(_currentColor);
   }
+  if(rval._widget_finished && _onFinished){
+    _onFinished(!color_changed); // accepted=true for Enter, false for ESC (which reverts)
+  }
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////

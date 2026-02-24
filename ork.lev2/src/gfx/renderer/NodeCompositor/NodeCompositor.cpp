@@ -83,7 +83,7 @@ NodeCompositingTechnique::~NodeCompositingTechnique() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void NodeCompositingTechnique::gpuInit(lev2::Context* pTARG, int w, int h) {
-  pTARG->debugPushGroup("NodeCompositingTechnique::init");
+  //pTARG->debugPushGroup("NodeCompositingTechnique::init");
   if (_renderNode)
     _renderNode->gpuInit(pTARG, w, h);
   for (auto pfxnode : _postEffectNodes) {
@@ -92,7 +92,7 @@ void NodeCompositingTechnique::gpuInit(lev2::Context* pTARG, int w, int h) {
   if (_outputNode)
     _outputNode->gpuInit(pTARG, w, h);
 
-  pTARG->debugPopGroup();
+  //pTARG->debugPopGroup();
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool NodeCompositingTechnique::assemble(CompositorDrawData& drawdata) {

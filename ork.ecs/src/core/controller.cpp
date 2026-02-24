@@ -124,6 +124,20 @@ void Controller::render(ui::drawevent_constptr_t drwev) {
 
 ///////////////////////////////////////////////////////////////////////////
 
+void Controller::gpuRender(lev2::Context* ctx) {
+  if (_needsGpuInit) {
+    gpuInit(ctx);
+    _needsGpuInit = false;
+  }
+  auto sim = _simulation._unprotected_ref();
+  if (sim) {
+    auto drwev = std::make_shared<ui::DrawEvent>(ctx);
+    sim->render(drwev);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////
+
 void Controller::renderWithStandardCompositorFrame(lev2::standardcompositorframe_ptr_t sframe) {
   _simulation._unprotected_ref()->renderWithStandardCompositorFrame(sframe);
 }
@@ -484,10 +498,39 @@ void Controller::bindScene(scenedata_ptr_t scene) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Controller::createSimulation() {
+void Controller::createSimulation(varmap::varmap_ptr_t injected_varmap) {
   OrkAssert(_scenedata);
   logchan_controller->log("INSTANTIATING SIMULATION");
-  _simulation.atomicOp([this](simulation_ptr_t& unlocked) { unlocked = std::make_shared<Simulation>(this); });
+  _simulation.atomicOp([this, injected_varmap](simulation_ptr_t& unlocked) { unlocked = std::make_shared<Simulation>(this, injected_varmap); });
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+simulation_ptr_t Controller::simulation() const {
+  simulation_ptr_t rval;
+  const_cast<LockedResource<simulation_ptr_t>&>(_simulation)
+      .atomicOp([&](simulation_ptr_t& unlocked) { rval = unlocked; });
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Controller::stageSimulation() {
+  ork::opq::assertOnQueue2(opq::mainSerialQueue());
+  auto op = [this]() {
+    logchan_controller->log("STAGING SIMULATION (EDIT MODE)");
+    _simulation.atomicOp([](simulation_ptr_t& unlocked) {
+      unlocked->SetSimulationMode(ESimulationMode::EDIT);
+      unlocked->_serviceEventQueues();
+    });
+  };
+  opq::updateSerialQueue()->enqueue(op);
+  auto simevent      = std::make_shared<Event>();
+  simevent->_eventID = EventID::TRANSPORT_BARRIER;
+  auto TEV           = std::make_shared<impl::_TransportBarrier>();
+  TEV->_waitForState = ESimulationTransport::STAGED;
+  simevent->_payload.make<impl::transportbarrier_ptr_t>(TEV);
+  _enqueueEvent(simevent);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -519,6 +562,11 @@ void Controller::stopSimulation() {
   _delopq.atomicOp([=](delayed_opq_t& unlocked) { unlocked.clear(); });
   _eventQueue.atomicOp([&](Controller::evq_t& unlocked) { unlocked.clear(); });
   _simulation.atomicOp([](simulation_ptr_t& unlocked) {
+    // Force synchronous deactivation before FSM transition —
+    // the deferred FSM changeState may never process if the sim is destroyed
+    if (unlocked->_currentSimulationMode == ESimulationMode::ACTIVE) {
+      unlocked->_deactivate();
+    }
     unlocked->SetSimulationMode(ESimulationMode::EDIT);
     unlocked->_serviceEventQueues();
   });

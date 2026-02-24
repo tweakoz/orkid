@@ -10,6 +10,8 @@
 #include <ork/lev2/ui/group.h>
 #include <ork/lev2/ui/property_sheet_model.h>
 #include <ork/lev2/ui/style.h>
+#include <ork/lev2/ui/scroll_controller.h>
+#include <ork/kernel/sigslot2.h>
 #include <functional>
 
 namespace ork::ui {
@@ -45,6 +47,16 @@ struct PropertyRow : public Group {
 
   // Callbacks
   std::function<void()> _onExpandToggle;
+
+  // Editor refresh (called when external value changes, e.g. manipulator)
+  std::function<void(svar128_t new_value)> _refreshEditor;
+
+  // Map property support
+  bool _is_map_property = false;
+  bool _is_map_const = false;
+  std::function<void(event_constptr_t ev)> _onMapAdd;
+  std::function<void(event_constptr_t ev)> _onMapRemove;
+  std::function<void(event_constptr_t ev)> _onMapSelectItem;
 
   // Track which widget is being dragged (for proper event routing)
   Widget* _drag_capture = nullptr;
@@ -110,6 +122,26 @@ struct EditorFactoryPair {
 };
 
 ////////////////////////////////////////////////////////////////////
+// PropSheetEditorPropWidget: Shows an "Edit" button for properties
+// with custom editor workflows (e.g. curve editors)
+////////////////////////////////////////////////////////////////////
+
+struct PropSheetEditorPropWidget final : public Widget {
+  PropSheetEditorPropWidget(const std::string& name, const std::string& label = "Edit");
+  HandlerResult DoOnUiEvent(event_constptr_t ev) final;
+  void DoDraw(drawevent_constptr_t drwev) override;
+
+  std::function<void()> _onEditRequested;
+  std::string _label = "Edit";
+  fvec4 _bg_color = fvec4(0.25f, 0.25f, 0.3f, 1.0f);
+  fvec4 _hover_color = fvec4(0.35f, 0.35f, 0.4f, 1.0f);
+  fvec4 _down_color = fvec4(0.15f, 0.15f, 0.2f, 1.0f);
+  fvec4 _fg_color = fvec4(0.9f, 0.9f, 0.9f, 1.0f);
+  bool _pressed = false;
+  bool _hovering = false;
+};
+
+////////////////////////////////////////////////////////////////////
 // PropertySheet: A hierarchical property editor widget
 // - Uses PropertySheetModel for data
 // - Creates appropriate editor widgets for each property type
@@ -137,6 +169,9 @@ struct PropertySheet : public Group {
 
   // Rebuild the widget tree from model
   void rebuild();
+
+  // Refresh a specific row's editor widget value (no rebuild)
+  void refreshValue(const std::string& key);
 
   //////////////////////////////////////////////////////////////
   // Editor Factory Registry
@@ -187,6 +222,11 @@ struct PropertySheet : public Group {
   // Called if no detail factory is registered for the type
   std::function<void(const std::string& key, PropertyType type, svar128_t value)> _onRequestDetailEditor;
 
+  // Callback when a property with editor.custom annotation is clicked
+  // Args: property key, editor identifier (annotation value)
+  // Python side hooks this to open custom editors
+  std::function<void(const std::string& key, const std::string& editor_id)> _onRequestCustomEditor;
+
   // Callbacks
   std::function<void(const std::string& key, svar128_t value)> _onPropertyChanged;
 
@@ -206,22 +246,40 @@ protected:
   Widget* doRouteUiEvent(event_constptr_t ev) override;
   HandlerResult DoOnUiEvent(event_constptr_t ev) override;
 
+  // Map view state per map property
+  struct MapViewState {
+    bool single_mode = true;   // true = show one item, false = show all
+    int selected_index = 0;    // which item to show in single mode
+  };
+  std::unordered_map<std::string, MapViewState>& mapViewStates() { return _map_view_states; }
+
 private:
   void _subscribeToModel();
   void _rebuildRows();
   void _addRowsRecursive(const std::string& parent_key, int depth, int& y_offset, int& row_index);
+  void _addSingleChildRecursive(const std::string& child_key, int depth, int& y_offset, int& row_index);
   widget_ptr_t _createEditorWidget(const std::string& key, PropertyType type, svar128_t value);
+  std::function<void(svar128_t)> _makeRefreshCallback(widget_ptr_t editor, PropertyType type);
   void _clampScrollOffset();
 
   property_sheet_model_ptr_t _model;
   std::unordered_set<std::string> _expanded_keys;
   std::unordered_map<std::string, property_row_ptr_t> _rows;
+  std::unordered_map<std::string, MapViewState> _map_view_states;
   bool _needs_rebuild = true;
-  int _scroll_offset = 0;
   int _total_rows = 0;  // For scroll calculation
+  ScrollController _scroller;
 
   // Editor factory registry (keyed by property type CRC)
   std::unordered_map<uint32_t, EditorFactoryPair> _editor_factories;
+
+  // Stale widget cache: holds old children for one frame after rebuild
+  // so that raw pointers in Context (e.g. _mousefocuswidget) remain valid
+  // through the current event processing cycle.
+  std::vector<widget_ptr_t> _stale_widgets;
+
+  // Signal connection for external value change notifications
+  sigslot2::scoped_connection _external_value_connection;
 
 public:
   // Detail editor overlay (public for Python bindings)

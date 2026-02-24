@@ -29,6 +29,7 @@
 #include <ork/lev2/ui/colorswatch.h>
 #include <ork/lev2/ui/imgview.h>
 #include <ork/lev2/ui/graphview.h>
+#include <ork/lev2/ui/transformcurveeditor.h>
 #include <ork/lev2/ui/logger_group.h>
 #include <ork/lev2/ui/logger_ui_backend.h>
 #include <ork/lev2/ui/ged/ged_surface.h>
@@ -37,6 +38,9 @@
 #include <ork/lev2/ui/dockable_panel.h>
 #include <ork/lev2/ui/scroll_container.h>
 #include <ork/lev2/ui/collapsable.h>
+#include <ork/lev2/ui/dropdown_menu.h>
+#include <ork/kernel/slashnode.h>
+#include <ork/python/gil_safe_pyobj.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
 #include <ork/lev2/gfx/image.h>
 #include <ork/util/logger.h>
@@ -142,6 +146,39 @@ void pyinit_ui(py::module& module_lev2) {
                 uictx->_top = top;
                 if (top) {
                   top->_uicontext = uictx.get();
+                }
+              })
+          .def(
+              "pushOverlay",
+              [](ui::context_ptr_t uictx, ui::widget_ptr_t widget, int x, int y, int w, int h,
+                 bool dismiss_on_click_outside) {
+                uictx->pushOverlay(widget, x, y, w, h, dismiss_on_click_outside);
+              },
+              py::arg("widget"), py::arg("x"), py::arg("y"), py::arg("w"), py::arg("h"),
+              py::arg("dismiss_on_click_outside") = true)
+          .def("popOverlay", [](ui::context_ptr_t uictx) { uictx->popOverlay(); })
+          .def("dismissAllOverlays", [](ui::context_ptr_t uictx) { uictx->dismissAllOverlays(); })
+          .def("hasOverlays", [](ui::context_ptr_t uictx) -> bool { return uictx->hasOverlays(); })
+          .def_property(
+              "app_preview_handler",
+              [](ui::context_ptr_t uictx) -> py::object { return py::none(); },
+              [](ui::context_ptr_t uictx, py::object callback) {
+                if (callback.is_none()) {
+                  uictx->_appPreviewHandler = nullptr;
+                } else {
+                  uictx->_appPreviewHandler = [callback](ui::event_constptr_t ev) -> ui::HandlerResult {
+                    ui::HandlerResult rval;
+                    py::gil_scoped_acquire acquire;
+                    try {
+                      auto pyrval = callback(ev);
+                      if (py::isinstance<ui::HandlerResult>(pyrval)) {
+                        rval = py::cast<ui::HandlerResult>(pyrval);
+                      }
+                    } catch (const py::error_already_set& e) {
+                      printf("app_preview_handler error: %s\n", e.what());
+                    }
+                    return rval;
+                  };
                 }
               });
   ;
@@ -324,10 +361,13 @@ void pyinit_ui(py::module& module_lev2) {
               [](uiwidget_ptr_t widget, uint64_t uid) { //
                 widget->_userID = uid;
               })
-          .def_property_readonly(
+          .def_property(
               "name",
               [](uiwidget_ptr_t widget) -> std::string { //
                 return widget->GetName();
+              },
+              [](uiwidget_ptr_t widget, const std::string& name) { //
+                widget->SetName(name);
               })
           .def_property_readonly(
               "x",
@@ -768,6 +808,27 @@ void pyinit_ui(py::module& module_lev2) {
                   }
                   return rval;
                 };
+              })
+          //////////////////////////////////
+          .def_property(
+              "onPreRender",
+              [](uisgviewport_ptr_t sgview) -> py::object { //
+                return py::none();
+              },
+              [](uisgviewport_ptr_t sgview, py::object callback) { //
+                if (callback.is_none()) {
+                  sgview->_preRenderCallback = nullptr;
+                } else {
+                  auto pycb = ork::python::gil_safe_pyobj(callback);
+                  sgview->_preRenderCallback = [pycb](lev2::Context* ctx) {
+                    py::gil_scoped_acquire acquire_gil;
+                    auto fn = pycb.valueAs<py::function>();
+                    if (fn) {
+                      auto pyctx = python::unmanaged_ptr<lev2::Context>(ctx);
+                      (*fn)(pyctx);
+                    }
+                  };
+                }
               });
   type_codec->registerStdCodec<uisgviewport_ptr_t>(sgviewport_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -1638,16 +1699,6 @@ void pyinit_ui(py::module& module_lev2) {
                 auto layoutitem   = lg->makeChild<ui::Button>(name, color);
                 return layoutitem.as_shared();
               })
-          .def(
-              "setUpTexture",
-              [](ui::button_ptr_t btn, lev2::texture_ptr_t tex) { //
-                btn->setUpTexture(tex);
-              })
-          .def(
-              "setDownTexture",
-              [](ui::button_ptr_t btn, lev2::texture_ptr_t tex) { //
-                btn->setDownTexture(tex);
-              })
           .def_property(
               "onPressed",
               [](ui::button_ptr_t btn) -> py::object { //
@@ -1687,6 +1738,14 @@ void pyinit_ui(py::module& module_lev2) {
               },
               [](ui::button_ptr_t btn, fvec3 c) { //
                 btn->_down_color = c;
+              })
+          .def_property(
+              "hover_color",
+              [](ui::button_ptr_t btn) -> fvec3 { //
+                return btn->_hover_color;
+              },
+              [](ui::button_ptr_t btn, fvec3 c) { //
+                btn->_hover_color = c;
               });
   type_codec->registerStdCodec<ui::button_ptr_t>(button_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -3073,8 +3132,8 @@ void pyinit_ui(py::module& module_lev2) {
               [](ui::scroll_container_ptr_t sc, int v) { sc->setScrollOffsetY(v); })
           .def_property(
               "scroll_speed",
-              [](ui::scroll_container_ptr_t sc) -> int { return sc->_scroll_speed; },
-              [](ui::scroll_container_ptr_t sc, int v) { sc->_scroll_speed = v; })
+              [](ui::scroll_container_ptr_t sc) -> int { return sc->_vscroller._scroll_speed; },
+              [](ui::scroll_container_ptr_t sc, int v) { sc->_vscroller._scroll_speed = v; sc->_hscroller._scroll_speed = v; })
           .def_property(
               "bg_color",
               [](ui::scroll_container_ptr_t sc) -> fvec4 { return sc->_bg_color; },
@@ -3089,16 +3148,16 @@ void pyinit_ui(py::module& module_lev2) {
               [](ui::scroll_container_ptr_t sc, bool v) { sc->_draw_scroll_indicator = v; })
           .def_property(
               "scroll_indicator_color",
-              [](ui::scroll_container_ptr_t sc) -> fvec4 { return sc->_scroll_indicator_color; },
-              [](ui::scroll_container_ptr_t sc, fvec4 c) { sc->_scroll_indicator_color = c; })
+              [](ui::scroll_container_ptr_t sc) -> fvec4 { return sc->_vscroller._indicator_color; },
+              [](ui::scroll_container_ptr_t sc, fvec4 c) { sc->_vscroller._indicator_color = c; sc->_hscroller._indicator_color = c; })
           .def_property(
               "scroll_indicator_width",
-              [](ui::scroll_container_ptr_t sc) -> int { return sc->_scroll_indicator_width; },
-              [](ui::scroll_container_ptr_t sc, int v) { sc->_scroll_indicator_width = v; })
+              [](ui::scroll_container_ptr_t sc) -> int { return sc->_vscroller._indicator_width; },
+              [](ui::scroll_container_ptr_t sc, int v) { sc->_vscroller._indicator_width = v; sc->_hscroller._indicator_width = v; })
           .def_property(
               "scroll_indicator_margin",
-              [](ui::scroll_container_ptr_t sc) -> int { return sc->_scroll_indicator_margin; },
-              [](ui::scroll_container_ptr_t sc, int v) { sc->_scroll_indicator_margin = v; })
+              [](ui::scroll_container_ptr_t sc) -> int { return sc->_vscroller._indicator_margin; },
+              [](ui::scroll_container_ptr_t sc, int v) { sc->_vscroller._indicator_margin = v; sc->_hscroller._indicator_margin = v; })
           .def_property_readonly(
               "content_width",
               [](ui::scroll_container_ptr_t sc) -> int { return sc->contentWidth(); })
@@ -3206,6 +3265,154 @@ void pyinit_ui(py::module& module_lev2) {
                 }
               });
   type_codec->registerStdCodec<ui::collapsable_ptr_t>(collapsable_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // SlashNode (read-only)
+  py::class_<SlashNode, slashnode_ptr_t>(uimodule, "SlashNode")
+      .def_property_readonly("name", [](slashnode_ptr_t node) -> std::string { return node->nodeName(); })
+      .def_property_readonly("numChildren", [](slashnode_ptr_t node) -> int { return node->numChildren(); })
+      .def_property_readonly(
+          "children",
+          [](slashnode_ptr_t node) -> py::dict {
+            py::dict d;
+            for (auto& [k, v] : node->children()) {
+              d[py::str(k)] = v;
+            }
+            return d;
+          })
+      .def_property_readonly("isLeaf", [](slashnode_ptr_t node) -> bool { return node->isLeaf(); })
+      .def_property_readonly("path", [](slashnode_ptr_t node) -> std::string { return node->pathAsString(); });
+  /////////////////////////////////////////////////////////////////////////////////
+  // SlashTree
+  py::class_<SlashTree, slashtree_ptr_t>(uimodule, "SlashTree")
+      .def(py::init<>())
+      .def(
+          "addNode",
+          [](slashtree_ptr_t tree, std::string path) -> slashnode_ptr_t { //
+            return tree->addNode(path.c_str(), nullptr);
+          })
+      .def_property_readonly("root", [](slashtree_ptr_t tree) -> slashnode_constptr_t { return tree->root(); });
+  /////////////////////////////////////////////////////////////////////////////////
+  // DropdownMenu
+  auto dropdown_menu_type = //
+      py::class_<ui::DropdownMenu, ui::Widget, ui::dropdown_menu_ptr_t>(uimodule, "DropdownMenu")
+          .def(
+              py::init<const std::string&, slashnode_constptr_t>(),
+              py::arg("name"),
+              py::arg("node"))
+          .def_property(
+              "onSelected",
+              [](ui::dropdown_menu_ptr_t menu) -> py::object { //
+                return py::none();
+              },
+              [](ui::dropdown_menu_ptr_t menu, py::object callback) { //
+                if (callback.is_none()) {
+                  menu->_onSelected = nullptr;
+                } else {
+                  auto pycb          = std::make_shared<py::object>(callback);
+                  menu->_onSelected = [pycb](std::string value) {
+                    py::gil_scoped_acquire acquire_gil;
+                    (*pycb)(value);
+                  };
+                }
+              })
+          .def(
+              "computeSize",
+              [](ui::dropdown_menu_ptr_t menu) -> fvec2 { //
+                return menu->computeSize();
+              })
+          .def_static(
+              "buildTreeFromPaths",
+              [](std::vector<std::string> paths) -> slashtree_ptr_t { //
+                return ui::DropdownMenu::buildTreeFromPaths(paths);
+              })
+          .def_static(
+              "show",
+              [](ui::context_ptr_t ctx,
+                 std::vector<std::string> paths,
+                 int x, int y,
+                 py::object on_selected) {
+                // Build tree from paths
+                auto tree = ui::DropdownMenu::buildTreeFromPaths(paths);
+                auto root = tree->root();
+
+                // Create root dropdown menu
+                auto menu = std::make_shared<ui::DropdownMenu>("dropdown_root", root);
+
+                // Set selection callback
+                if (!on_selected.is_none()) {
+                  auto pycb = ork::python::gil_safe_pyobj(on_selected);
+                  menu->_onSelected = [pycb](std::string value) {
+                    py::gil_scoped_acquire acquire_gil;
+                    auto fn = pycb.valueAs<py::function>();
+                    (*fn)(value);
+                  };
+                }
+
+                // Compute size and push as overlay
+                auto sz = menu->computeSize();
+
+                // Subscribe to ticks for highlight animation
+                ctx->subscribeToTicks(menu.get(), [menu](ui::updatedata_ptr_t updata) {
+                  float abstime = updata->_abstime;
+                  menu->_hl_color.x = 0.4f + (0.3f * sinf(abstime * 3.0f));
+                  menu->_hl_color.y = 0.4f + (0.3f * sinf(abstime * 3.1f));
+                  menu->_hl_color.z = 0.6f + (0.3f * sinf(abstime * 3.2f));
+                });
+
+                ctx->pushOverlay(menu, x, y, int(sz.x), int(sz.y));
+              },
+              py::arg("context"),
+              py::arg("paths"),
+              py::arg("x"),
+              py::arg("y"),
+              py::arg("on_selected") = py::none());
+  type_codec->registerStdCodec<ui::dropdown_menu_ptr_t>(dropdown_menu_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // TransformCurveEditor
+  auto transformcurveeditor_type = //
+      py::class_<ui::TransformCurveEditor, ui::Widget, ui::transformcurveeditor_ptr_t>(uimodule, "TransformCurveEditor")
+          .def_static(
+              "create",
+              [](const std::string& name, math::transformcurve_ptr_t curve) -> ui::transformcurveeditor_ptr_t {
+                return std::make_shared<ui::TransformCurveEditor>(name, curve);
+              },
+              py::arg("name"), py::arg("curve"))
+          .def_property(
+              "onClose",
+              [](ui::transformcurveeditor_ptr_t ed) -> py::object { return py::none(); },
+              [](ui::transformcurveeditor_ptr_t ed, py::object callback) {
+                if (callback.is_none()) {
+                  ed->_onClose = nullptr;
+                } else {
+                  auto safe = python::gil_safe_pyobj(callback);
+                  ed->_onClose = [safe]() {
+                    py::gil_scoped_acquire acquire_gil;
+                    auto fn = safe.valueAs<py::object>();
+                    (*fn)();
+                  };
+                }
+              })
+          .def_property(
+              "onCurveChanged",
+              [](ui::transformcurveeditor_ptr_t ed) -> py::object { return py::none(); },
+              [](ui::transformcurveeditor_ptr_t ed, py::object callback) {
+                if (callback.is_none()) {
+                  ed->_onCurveChanged = nullptr;
+                } else {
+                  auto safe = python::gil_safe_pyobj(callback);
+                  ed->_onCurveChanged = [safe]() {
+                    py::gil_scoped_acquire acquire_gil;
+                    auto fn = safe.valueAs<py::object>();
+                    (*fn)();
+                  };
+                }
+              })
+          .def("autoFitRanges", [](ui::transformcurveeditor_ptr_t ed) { ed->autoFitRanges(); })
+          .def_property(
+              "selectedPointIndex",
+              [](ui::transformcurveeditor_ptr_t ed) -> int { return ed->_selectedPointIndex; },
+              [](ui::transformcurveeditor_ptr_t ed, int idx) { ed->_selectedPointIndex = idx; });
+  type_codec->registerStdCodec<ui::transformcurveeditor_ptr_t>(transformcurveeditor_type);
   /////////////////////////////////////////////////////////////////////////////////
   pyinit_ui_layout(uimodule);
   pyinit_ui_ged(uimodule);

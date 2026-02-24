@@ -53,7 +53,7 @@ struct ManipController {
   float _hit_threshold = 12.0f;
 
   // Ring visibility threshold (degrees) - dim ring when viewed more edge-on than this
-  float _min_ring_elevation_degrees = 25.0f;
+  float _min_ring_elevation_degrees = 12.0f;
 
   // Ring radius scale factor (relative to gizmo scale)
   float _ring_radius_scale = 1.2f;

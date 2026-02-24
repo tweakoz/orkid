@@ -364,6 +364,7 @@ struct OverlayStringDrawable;
 struct LabeledPointDrawableData;
 struct LabeledPointDrawable;
 struct CallbackDrawableData;
+struct CurvePathDrawableData;
 //
 using labeled_point_drawabledata_ptr_t = std::shared_ptr<LabeledPointDrawableData>;
 using labeled_point_drawable_ptr_t = std::shared_ptr<LabeledPointDrawable>;
@@ -375,6 +376,7 @@ using overlay_string_drawabledata_ptr_t = std::shared_ptr<OverlayStringDrawableD
 using callback_drawable_ptr_t       = std::shared_ptr<CallbackDrawable>;
 using callback_drawable_wkptr_t     = std::weak_ptr<CallbackDrawable>;
 using callback_drawabledata_ptr_t   = std::shared_ptr<CallbackDrawableData>;
+using curvepath_drawabledata_ptr_t = std::shared_ptr<CurvePathDrawableData>;
 using drawable_ptr_t                = std::shared_ptr<Drawable>;
 using drawablecache_ptr_t           = std::shared_ptr<DrawableCache>;
 using drawabledata_ptr_t            = std::shared_ptr<DrawableData>;
@@ -550,6 +552,15 @@ using fxshaderasset_ptr_t      = std::shared_ptr<FxShaderAsset>;
 using fxshaderasset_constptr_t = std::shared_ptr<const FxShaderAsset>;
 using texturearray_ptr_t = std::shared_ptr<TextureArray>;
 using texturearraysliceref_ptr_t = std::shared_ptr<TextureArraySliceRef>;
+
+// AssetCache forward declaration and aliases
+template <typename T> struct AssetCache;
+using xgmmodel_assetcache_t     = AssetCache<XgmModelAsset>;
+using xgmmodel_assetcache_ptr_t = std::shared_ptr<xgmmodel_assetcache_t>;
+using texture_assetcache_t      = AssetCache<TextureAsset>;
+using texture_assetcache_ptr_t  = std::shared_ptr<texture_assetcache_t>;
+using xgmanim_assetcache_t      = AssetCache<XgmAnimAsset>;
+using xgmanim_assetcache_ptr_t  = std::shared_ptr<xgmanim_assetcache_t>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

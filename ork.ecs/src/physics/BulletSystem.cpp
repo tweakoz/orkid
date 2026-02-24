@@ -482,7 +482,7 @@ bool BulletSystem::_onLink(Simulation* psi) {
 
   drw->setEnqueueOnLayerCallback(bulletDebugEnqueueToLayer);
   drw->SetRenderCallback(bulletDebugRender);
-  drw->_sortkey = (0x3fffffff);
+  drw->_sortkey = 0x3fffffff;
 
   auto pdata       = new BulletDebugDrawDBData(_debugger);
   pdata->_debugger = _debugger;
@@ -492,7 +492,7 @@ bool BulletSystem::_onLink(Simulation* psi) {
   _sgsystem = psi->findSystem<SceneGraphSystem>();
   OrkAssert(_sgsystem != nullptr);
 
-  _sgsystem->_addStaticDrawable("Default", _debugDrawable);
+  _sgsystem->_addStaticDrawable("std_forward", _debugDrawable);
 
   return true;
 }

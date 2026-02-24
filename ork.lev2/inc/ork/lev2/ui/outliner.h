@@ -9,6 +9,7 @@
 
 #include <ork/lev2/ui/widget.h>
 #include <ork/lev2/ui/outliner_model.h>
+#include <ork/lev2/ui/scroll_controller.h>
 #include <functional>
 
 namespace ork::ui {
@@ -64,6 +65,7 @@ struct Outliner : public Widget {
   std::function<void(const std::string& old_key, const std::string& new_name)> _onRename;
   std::function<void(const std::string& key)> _onDelete;
   std::function<void(const std::string& key)> _onAdd;
+  std::function<void(const std::string& key)> _onShiftEnter; // if set, overrides default startAdding
 
   // Appearance
   int _item_height = 20;
@@ -106,7 +108,7 @@ private:
   std::vector<VisibleItem> _visible_items;
   std::unordered_set<std::string> _expanded_keys;
   bool _needs_rebuild = true;
-  int _scroll_offset = 0;
+  ScrollController _scroller;
 
   // Inline editing state
   std::string _editing_key;       // key of item being edited (empty = not editing)

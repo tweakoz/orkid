@@ -107,6 +107,9 @@ struct VkSecondaryCommandBufferImpl {
   void_lambda_t _onPreEnqueueCallback = nullptr;
   // Callback invoked when clearing pending cleanup (e.g., to return pooled CB to pool)
   void_lambda_t _onCleanupCallback = nullptr;
+  // VkImages referenced by recorded commands - prevents premature destruction
+  // while this CB is still in use (pending execution or pending GPU completion)
+  std::vector<vkimageobj_ptr_t> _referenced_images;
 };
 ///////////////////////////////////////////////////////////////////////////////
 } //namespace ork::lev2::vulkan {

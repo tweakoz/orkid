@@ -268,10 +268,13 @@ struct SampleOscillator {
   natenv_ptr_t _natAmpEnv;
 
   bool _released;
-  SamplerLowPassFilter _lpFilter; 
-  OnePoleLoPass _lpFilter2A; 
-  OnePoleLoPass _lpFilter2B; 
+  SamplerLowPassFilter _lpFilter;
+  OnePoleLoPass _lpFilter2A;
+  OnePoleLoPass _lpFilter2B;
   BiQuad _bq[4];
+
+  int _fadeInSamples  = 64;  // anti-click fade at start of sample
+  int _fadeOutSamples = 64;  // anti-click fade at end of sample
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -284,6 +287,8 @@ struct SAMPLER_DATA : public DspBlockData {
   dspblk_ptr_t createInstance() const override;
   RegionSearch findRegion(lyrdata_constptr_t ld, const KeyOnInfo& koi) const;
   float _lowpassfrq;
+  float _fadeInTime  = 0.0f;  // seconds — anti-click fade at sample start
+  float _fadeOutTime = 0.0f;  // seconds — anti-click fade at sample end
 };
 
 ///////////////////////////////////////////////////////////////////////////////

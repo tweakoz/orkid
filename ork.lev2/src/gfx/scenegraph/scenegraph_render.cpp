@@ -125,6 +125,7 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras, on_enqueue_fn_t on_en
       auto drawable_layer = DB->MergeLayer(item._layername);
       auto drawable       = item._drawable;
       DrawQueueTransferData xfd;
+       //printf("enqueue static-drawable<%s> on layer<%s>\n", (void*)drawable->_name.c_str(), item._layername.c_str());
       if (RENDER_DEBUG_LOG) {
         logchan_sgrender->log("enqueue static-drawable<%s>", (void*)drawable->_name.c_str());
       }

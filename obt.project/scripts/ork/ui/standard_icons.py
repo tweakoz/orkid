@@ -219,6 +219,25 @@ SVG_CHEVRON_RIGHT = _svg_wrap(f'''
 ''')
 
 ################################################################################
+# Manipulator Icons
+################################################################################
+
+SVG_TRANSLATE = _svg_wrap(f'''
+  <path d="M12 2l3 3h-2v5h5v-2l3 3-3 3v-2h-5v5h2l-3 3-3-3h2v-5H5v2l-3-3 3-3v2h5V5H8l4-3z"
+        fill="{ICON_COLOR}" fill-opacity="0.9"/>
+''')
+
+SVG_ROTATE = _svg_wrap(f'''
+  <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"
+        fill="{ICON_COLOR}" fill-opacity="0.9"/>
+''')
+
+SVG_SCALE = _svg_wrap(f'''
+  <path d="M21 15h-2v2h2v-2zm0-4h-2v2h2v-2zm-8 8h2v-2h-2v2zm4-12h-2v2h2V7zm4 0h-2v2h2V7zm-4-4v2h2V3h-2zm4 4h-2v2h2V7zM3 21h8v-8H3v8zm2-6h4v4H5v-4zm16 4h-2v2h2v-2zM7 3v2h2V3H7zM3 7v2h2V7H3zm4-4v2h2V3H7zM3 11v2h2v-2H3zM3 3v2h2V3H3z"
+        fill="{ICON_COLOR}" fill-opacity="0.9"/>
+''')
+
+################################################################################
 # Icon Factory Functions
 ################################################################################
 
@@ -302,6 +321,11 @@ _ICONS = {
   'warning': SVG_WARNING,
   'error': SVG_ERROR,
   'check': SVG_CHECK,
+
+  # Manipulator
+  'translate': SVG_TRANSLATE,
+  'rotate': SVG_ROTATE,
+  'scale': SVG_SCALE,
 
   # UI
   'plus': SVG_PLUS,

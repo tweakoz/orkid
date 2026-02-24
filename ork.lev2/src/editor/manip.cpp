@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/lev2/editor/manip.h>
+#include <ork/math/transform_curve.h>
 #include <ork/reflect/properties/registerX.inl>
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -102,6 +103,104 @@ bool DecompTransformManipulator::supportsNonUniformScaling() const {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// CurvePointManipulator
+////////////////////////////////////////////////////////////////////////////////
+
+void CurvePointManipulator::describeX(class_t* clazz) {
+}
+
+CurvePointManipulator::CurvePointManipulator()
+    : _curve(nullptr)
+    , _pointIndex(-1) {
+}
+
+CurvePointManipulator::CurvePointManipulator(math::transformcurve_ptr_t curve, int pointIndex)
+    : _curve(curve)
+    , _pointIndex(pointIndex) {
+}
+
+void CurvePointManipulator::setTarget(math::transformcurve_ptr_t curve, int pointIndex) {
+  _curve = curve;
+  _pointIndex = pointIndex;
+}
+
+fmtx4 CurvePointManipulator::getWorldMatrix() const {
+  if (_curve && _pointIndex >= 0 && _pointIndex < _curve->numPoints()) {
+    auto pt = _curve->getPoint(_pointIndex);
+    fquat rot = _curve->eulerToQuat(pt->_eulerRotation);
+    float s = pt->_scale.x;  // uniform scale from X component
+    fmtx4 mtx;
+    mtx.compose(pt->_position, rot, s);
+    return mtx;
+  }
+  return fmtx4::Identity();
+}
+
+fvec3 CurvePointManipulator::getWorldPosition() const {
+  if (_curve && _pointIndex >= 0 && _pointIndex < _curve->numPoints()) {
+    return _curve->getPoint(_pointIndex)->_position;
+  }
+  return fvec3();
+}
+
+fquat CurvePointManipulator::getWorldRotation() const {
+  if (_curve && _pointIndex >= 0 && _pointIndex < _curve->numPoints()) {
+    return _curve->eulerToQuat(_curve->getPoint(_pointIndex)->_eulerRotation);
+  }
+  return fquat();
+}
+
+void CurvePointManipulator::applyTranslationDelta(const fvec3& delta) {
+  if (_curve && _pointIndex >= 0 && _pointIndex < _curve->numPoints()) {
+    _curve->getPoint(_pointIndex)->_position += delta;
+    if (_curve->_looping) {
+      _curve->enforceLoopConstraints();
+    }
+    if (_onPointMoved) {
+      _onPointMoved();
+    }
+  }
+}
+
+void CurvePointManipulator::applyRotationDelta(const fquat& delta) {
+  if (_curve && _pointIndex >= 0 && _pointIndex < _curve->numPoints()) {
+    auto pt = _curve->getPoint(_pointIndex);
+    fquat current = _curve->eulerToQuat(pt->_eulerRotation);
+    fquat result = current * delta;
+    result.normalizeInPlace();
+    pt->_eulerRotation = _curve->quatToEuler(result);
+    if (_curve->_looping) {
+      _curve->enforceLoopConstraints();
+    }
+    if (_onPointMoved) {
+      _onPointMoved();
+    }
+  }
+}
+
+void CurvePointManipulator::applyScaleDelta(float uniformDelta) {
+  if (_curve && _pointIndex >= 0 && _pointIndex < _curve->numPoints()) {
+    auto pt = _curve->getPoint(_pointIndex);
+    pt->_scale *= uniformDelta;
+    if (_curve->_looping) {
+      _curve->enforceLoopConstraints();
+    }
+    if (_onPointMoved) {
+      _onPointMoved();
+    }
+  }
+}
+
+void CurvePointManipulator::setWorldRotation(const fquat& rot) {
+  if (_curve && _pointIndex >= 0 && _pointIndex < _curve->numPoints()) {
+    _curve->getPoint(_pointIndex)->_eulerRotation = _curve->quatToEuler(rot);
+    if (_onPointMoved) {
+      _onPointMoved();
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Legacy JointManipulatorInterface
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -151,3 +250,4 @@ void JointManipulatorInterface::_onEndScaling(ui::event_constptr_t EV) {
 
 ImplementReflectionX(ork::lev2::editor::ManipulatorInterface, "ManipulatorInterface");
 ImplementReflectionX(ork::lev2::editor::DecompTransformManipulator, "DecompTransformManipulator");
+ImplementReflectionX(ork::lev2::editor::CurvePointManipulator, "CurvePointManipulator");

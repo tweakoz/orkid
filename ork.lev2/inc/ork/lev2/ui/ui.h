@@ -57,6 +57,10 @@ struct LoggerGroup;
 struct SdfShape;
 struct DockablePanel;
 struct ScrollContainer;
+struct DropdownMenu;
+struct OverlayEntry;
+struct ReflectionPropertySheetModel;
+struct TransformCurveEditor;
 
 using context_ptr_t     = std::shared_ptr<Context>;
 using widget_ptr_t      = std::shared_ptr<Widget>;
@@ -92,6 +96,9 @@ using loggergroup_wkptr_t = std::weak_ptr<LoggerGroup>;
 using sdfshape_ptr_t    = std::shared_ptr<SdfShape>;
 using dockablepanel_ptr_t = std::shared_ptr<DockablePanel>;
 using scroll_container_ptr_t = std::shared_ptr<ScrollContainer>;
+using dropdown_menu_ptr_t   = std::shared_ptr<DropdownMenu>;
+using reflection_property_model_ptr_t = std::shared_ptr<ReflectionPropertySheetModel>;
+using transformcurveeditor_ptr_t = std::shared_ptr<TransformCurveEditor>;
 ////////////////////////////////////////////////////////////////////////////////
 
 using evrouter_t  = std::function<Widget*(event_constptr_t ev)>;

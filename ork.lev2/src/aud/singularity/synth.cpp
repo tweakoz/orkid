@@ -331,8 +331,11 @@ void synth::deinit() {
   if(_lifecycle_state.exchange(2)==2)
     return;
 
+  // Clear pending events first — prevent stale KOFF events from firing
+  _eventmap.atomicOp([](eventmap_t& emap) { emap.clear(); });
+
   opq::concurrentQueue()->drain();
-    
+
   _allVoices.clear();
   _freeVoices.clear();
   _activeVoices.clear();
@@ -508,23 +511,37 @@ programInst* synth::liveKeyOn(int note, int velocity, prgdata_constptr_t pdata, 
 
   bool needs_new_trigger = true;
 
-  if (pdata->_monophonic) {
-    _prgchannel->_monokeycount++;
-    _prgchannel->_mononotes.push_back(note);
-    for (auto monopi : _prgchannel->_monoprogs) {
-      if (monopi->_progdata == pdata) {
-        pi                = monopi;
-        needs_new_trigger = false;
-        addEvent(0.0f, [note, velocity, monopi]() {
-          for (auto l : monopi->_layers) {
-            l->reTriggerMono(note, velocity);
-          }
-        });
+  // Lock _prgchannel for monophonic state access, release before addEvent
+  // to avoid deadlock with _eventmap lock held by audio thread.
+  {
+    std::lock_guard<std::mutex> lock(_prgchannel->_mutex);
+    if (pdata->_monophonic) {
+      _prgchannel->_monokeycount++;
+      _prgchannel->_mononotes.push_back(note);
+      for (auto monopi : _prgchannel->_monoprogs) {
+        if (monopi->_progdata == pdata) {
+          pi                = monopi;
+          needs_new_trigger = false;
+          break;
+        }
+      }
+      if (needs_new_trigger) {
+        // New monophonic voice — reset state
+        _prgchannel->_monokeycount = 1;
+        _prgchannel->_mononotes.clear();
+        _prgchannel->_mononotes.push_back(note);
       }
     }
-  }
+  } // unlock before addEvent
 
-  if (needs_new_trigger) {
+  if (!needs_new_trigger) {
+    // Monophonic re-trigger of existing voice
+    addEvent(0.0f, [note, velocity, pi]() {
+      for (auto l : pi->_layers) {
+        l->reTriggerMono(note, velocity);
+      }
+    });
+  } else {
     _freeProgInst.atomicOp([&pi](proginstset_t& piset) {
       auto it = piset.begin();
       assert(it != piset.end());
@@ -532,11 +549,6 @@ programInst* synth::liveKeyOn(int note, int velocity, prgdata_constptr_t pdata, 
       piset.erase(it);
     });
     pi->_progdata = pdata;
-    if (pdata->_monophonic) {
-      _prgchannel->_monokeycount = 1;
-      _prgchannel->_mononotes.clear();
-      _prgchannel->_mononotes.push_back(note);
-    }
     addEvent(0.0f, [note, velocity, pdata, this, pi, kmods]() {
       if(0)logchan_synth->log("liveKeyOn note<%d>", note);
 
@@ -605,40 +617,50 @@ void synth::liveKeyOff(programInst* pinst, int note, int velocity) {
 
   auto pdata      = pinst->_progdata;
   bool do_key_off = true;
-  if (pdata->_monophonic) {
-    _prgchannel->_monokeycount--;
-    do_key_off = (_prgchannel->_monokeycount == 0);
-    if (not do_key_off) {
-      int count = _prgchannel->_mononotes.size();
-      for (int i = count - 1; i >= 0; i--) {
-        if (_prgchannel->_mononotes[i] == note) {
-          auto it = _prgchannel->_mononotes.begin() + i;
-          _prgchannel->_mononotes.erase(it);
-          count = _prgchannel->_mononotes.size();
-          if (count) {
-            int prev = _prgchannel->_mononotes[count - 1];
-            addEvent(0.0f, [prev, pinst]() {
-              for (auto l : pinst->_layers) {
-                l->reTriggerMono(prev, 0);
-              }
-            });
+  int retrigger_note = -1;
+
+  // Lock _prgchannel for monophonic state access, release before addEvent
+  // to avoid deadlock with _eventmap lock held by audio thread.
+  {
+    std::lock_guard<std::mutex> lock(_prgchannel->_mutex);
+    if (pdata->_monophonic) {
+      _prgchannel->_monokeycount--;
+      do_key_off = (_prgchannel->_monokeycount == 0);
+      if (not do_key_off) {
+        int count = _prgchannel->_mononotes.size();
+        for (int i = count - 1; i >= 0; i--) {
+          if (_prgchannel->_mononotes[i] == note) {
+            auto it = _prgchannel->_mononotes.begin() + i;
+            _prgchannel->_mononotes.erase(it);
+            count = _prgchannel->_mononotes.size();
+            if (count) {
+              retrigger_note = _prgchannel->_mononotes[count - 1];
+            }
           }
         }
       }
     }
+    if (do_key_off) {
+      _prgchannel->_monoprogs.erase(pinst);
+    }
+  } // unlock before addEvent
+
+  if (!do_key_off && retrigger_note >= 0) {
+    addEvent(0.0f, [retrigger_note, pinst]() {
+      for (auto l : pinst->_layers) {
+        l->reTriggerMono(retrigger_note, 0);
+      }
+    });
   }
 
   if (do_key_off) {
-    auto it = _prgchannel->_monoprogs.find(pinst);
-    if (it != _prgchannel->_monoprogs.end()) {
-      _prgchannel->_monoprogs.erase(it);
-    }
     addEvent(0.0f, [pinst, this]() {
       pinst->keyOff();
       _activeProgInst.atomicOp([pinst](proginstset_t& piset) { //
         auto it = piset.find(pinst);
-        assert(it != piset.end());
-        piset.erase(it);
+        if (it != piset.end()) {
+          piset.erase(it);
+        }
       });
       _freeProgInst.atomicOp([pinst](proginstset_t& piset) { //
         piset.insert(pinst);
@@ -673,10 +695,10 @@ void synth::mainThreadHandler() {
   }
 
   /////////////////////////////////
-  // process sequencer
+  // drain sequencer event callbacks (posted from audio thread)
   /////////////////////////////////
 
-  _sequencer->process();
+  _sequencer->drainMainThreadEventCallbacks();
 
   /////////////////////////////////
 
@@ -818,8 +840,8 @@ std::string synth::statusString() const {
 
 void synth::compute(int inumframes, const void* inputBuffer) {
 
-  // if (_lock_compute)
-  // return;
+  if (_lifecycle_state.load() >= 2)
+    return; // shutting down — do not access any containers
 
   resize(inumframes);
 
@@ -982,6 +1004,12 @@ void synth::compute(int inumframes, const void* inputBuffer) {
         this->_tick(eventmap, elapsed_this_tick);
         _eventmap.UnLock();
         _samplesuntilnexttick += k_samples_per_tick;
+        ////////////////////////////////////////////
+        // process sequencer from audio thread
+        //  so MIDI timing is sample-accurate
+        //  and independent of render frame rate
+        ////////////////////////////////////////////
+        _sequencer->process();
         ////////////////////////////////////////////
         activateVoices(ifrpending);
         deactivateVoices();
@@ -1250,6 +1278,7 @@ void programInst::keyOn(int note, int velocity, prgdata_constptr_t pd, keyonmod_
   size_t num_layerdatas = pd->_layerdatas.size();
 
   if (_progdata->_monophonic) {
+    std::lock_guard<std::mutex> lock(prgchan->_mutex);
     prgchan->_monoprogs.insert(this);
   }
 

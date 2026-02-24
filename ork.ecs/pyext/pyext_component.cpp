@@ -13,7 +13,7 @@ namespace ork::ecs {
 void pyinit_component(py::module& module_ecs) {
   auto type_codec = python::pb11_typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<ComponentData,componentdata_ptr_t>(module_ecs, "ComponentData")
+  py::class_<ComponentData, Object, componentdata_ptr_t>(module_ecs, "ComponentData")
       .def(
           "__repr__",
           [](componentdata_ptr_t cdata) -> std::string {
@@ -21,7 +21,10 @@ void pyinit_component(py::module& module_ecs) {
             auto clazz = cdata->objectClass();
             fxs.format("ecs::ComponentData(%p) class<%s>", cdata.get(), clazz->Name().c_str());
             return fxs.c_str();
-          });
+          })
+      .def_property_readonly("className", [](componentdata_ptr_t cdata) -> std::string {
+        return cdata->objectClass()->Name().c_str();
+      });
   /////////////////////////////////////////////////////////////////////////////////
 } // void pyinit_component(py::module& module_ecs) {
 /////////////////////////////////////////////////////////////////////////////////

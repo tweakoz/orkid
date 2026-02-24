@@ -42,11 +42,13 @@ NodeDef::NodeDef(){
 void SceneGraphNodeItemData::describeX(object::ObjectClass* clazz) {
   clazz->directProperty("NodeName", &SceneGraphNodeItemData::_nodename);
   clazz->directProperty("LayerName", &SceneGraphNodeItemData::_layername);
-  clazz->directObjectProperty("DrawableData", &SceneGraphNodeItemData::_drawabledata);
+  clazz->directObjectProperty("DrawableData", &SceneGraphNodeItemData::_drawabledata)
+      ->annotate<ConstString>("editor.factorylistbase", "DrawableData");
 }
 ///////////////////////////////////////////////////////////////////////////////
 void SceneGraphComponentData::describeX(ComponentDataClass* clazz) {
-  clazz->directObjectMapProperty("NodeDatas", &SceneGraphComponentData::_nodedatas);
+  clazz->directObjectMapProperty("NodeDatas", &SceneGraphComponentData::_nodedatas)
+      ->annotate<ConstString>("editor.factorylistbase", "SceneGraphNodeItemData");
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -241,7 +243,13 @@ void SceneGraphComponent::_onRequest(Simulation* psi, impl::comp_response_ptr_t 
         float scale       = table["uniformScale"_tok].get<float>();
         auto nodename     = table["nodeName"_tok].get<std::string>();
 
-        auto drawable = _system->_drwcache->fetch(mdata);
+        lev2::drawable_ptr_t drawable;
+        if (mdata->isSharedDrawable()) {
+          drawable = _system->_drwcache->fetch(mdata);
+        } else {
+          drawable = mdata->createDrawable();
+          drawable->_modcolor = mdata->_modcolor;
+        }
 
         ///////////////////////////////
         // create scenegraph node

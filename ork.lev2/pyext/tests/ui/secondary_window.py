@@ -8,6 +8,7 @@
 
 import signal
 import sys
+import argparse
 from ork import path as ork_path
 from orkengine.core import vec4
 from orkengine import lev2
@@ -16,8 +17,21 @@ from ork.ui.test import outliner_data
 
 ################################################################################
 
-# Auto-close after 5 seconds for automated testing
-AUTO_CLOSE = "--auto-close" in sys.argv
+parser = argparse.ArgumentParser(description="Multi-window test")
+parser.add_argument("--auto-close", action="store_true", help="Auto-close after 5 seconds")
+parser.add_argument("--ffm", action="store_true", help="Enable focus-follows-mouse on secondary window")
+parser.add_argument("--f2f", action="store_true", help="Enable focus-to-front on secondary window")
+parser.add_argument("--fos", action="store_true", help="Enable focus-on-show on secondary window")
+parser.add_argument("--aot", action="store_true", help="Secondary window is always on top")
+parser.add_argument("-f", "--fullscreen", action="store_true", help="Primary window fullscreen")
+parser.add_argument("--fsmon", type=str, default="", help="Secondary window fullscreen on named monitor")
+args = parser.parse_args()
+
+AUTO_CLOSE = args.auto_close
+FOCUS_FOLLOWS_MOUSE = args.ffm
+FOCUS_TO_FRONT = args.f2f
+FOCUS_ON_SHOW = args.fos
+FLOATING = args.aot
 shader_path = ork_path.data / "platform_lev2" / "shaders" / "fxv2"
 
 ################################################################################
@@ -32,11 +46,12 @@ class MultiWindowTest:
     self.win_height = 720
 
     self.ezapp = lev2.OrkEzApp.create(self,
-                                      name = "MultiWindowTest::Primary", 
-                                      width=self.win_width, 
-                                      height=self.win_height, 
-                                      left=100, 
-                                      top=100)
+                                      name = "MultiWindowTest::Primary",
+                                      width=self.win_width,
+                                      height=self.win_height,
+                                      left=100,
+                                      top=100,
+                                      fullscreen=args.fullscreen)
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
 
@@ -77,15 +92,24 @@ class MultiWindowTest:
 
     # Create secondary window - side by side with main
     sec_x = 100 + self.win_width + 20  # 20px gap between windows
-    self.secondary_win = self.ezapp.createSecondaryWindow(
+    sec_kwargs = dict(
       width=self.win_width,
       height=self.win_height,
       x=sec_x,
       y=100,
       title="MultiWindowTest::Secondary",
       decorated=True,
-      resizable=True
+      resizable=True,
+      floating=FLOATING,
+      focus_on_show=FOCUS_ON_SHOW,
+      focus_follows_mouse=FOCUS_FOLLOWS_MOUSE,
+      focus_to_front=FOCUS_TO_FRONT,
     )
+
+    if args.fsmon:
+      sec_kwargs["fullscreen_monitor"] = args.fsmon
+
+    self.secondary_win = self.ezapp.createSecondaryWindow(**sec_kwargs)
 
     # Set up EvTestBox on secondary window
     uic = self.secondary_win.ui_context

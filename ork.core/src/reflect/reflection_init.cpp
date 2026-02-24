@@ -8,6 +8,7 @@
 #include <ork/util/hotkey.h>
 #include <ork/math/multicurve.h>
 #include <ork/math/gradient.h>
+#include <ork/math/transform_curve.h>
 #include <ork/math/TransformNode.h>
 #include <ork/asset/Asset.h>
 #include <ork/asset/AssetLoader.h>
@@ -30,6 +31,8 @@ struct CoreAppInit {
     HotKeyConfiguration::GetClassStatic();
     HotKey::GetClassStatic();
     MultiCurve1D::GetClassStatic();
+    math::TransformCurvePoint::GetClassStatic();
+    math::TransformCurve::GetClassStatic();
     GradientBase::GetClassStatic();
     gradient_fvec4_t::GetClassStatic();
     asset::Asset::GetClassStatic();

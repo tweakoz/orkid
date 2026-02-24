@@ -185,6 +185,17 @@ struct PANNER2D_DATA : public DspBlockData {
   DeclareConcreteX(PANNER2D_DATA,DspBlockData);
   PANNER2D_DATA(std::string name="DspAmpPanner2D");
   dspblk_ptr_t createInstance() const override;
+
+  // Distance falloff config (set from PannerSpatializerData at voice build time)
+  float _refDistance  = 1.0f;
+  float _maxDistance  = 100.0f;
+  float _rolloff      = 1.0f;
+  float _minGainDB    = -60.0f;
+
+  // Head shadow config
+  float _headShadowMix = 1.0f;
+  float _iidBaseFreq   = 3000.0f;
+  float _iidMaxFreq    = 8000.0f;
 };
 struct PANNER2D : public DspBlock {
   using dataclass_t = PANNER2D_DATA;

@@ -96,7 +96,7 @@ BulletShapeCapsuleData::BulletShapeCapsuleData()
     , mfExtent(1.0f) {
   _shapeFactory._createShape = [=](const ShapeCreateData& data) -> BulletShapeBaseInst* {
     auto rval             = new BulletShapeBaseInst(this);
-    rval->_collisionShape = new btCapsuleShapeZ(this->mfRadius, this->mfExtent);
+    rval->_collisionShape = new btCapsuleShape(this->mfRadius, this->mfExtent);
     return rval;
   };
 }

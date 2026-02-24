@@ -57,7 +57,31 @@ public:
   bool _autospawn = true;
   archetype_constptr_t _archetype;
   orklut<ConstString, ConstString> mUserProperties;
+
+  // multi-spawn properties
+  int _spawnCount = 1;
+  float _spawnInterval = 0.0f;          // seconds between spawns (0 = all at once)
+  float _stochasticInterval = 0.0f;     // random jitter added to interval
+  fvec3 _positionRandomRadius;          // ellipsoidal random scatter (rx, ry, rz)
+  fvec3 _minDistance;                   // minimum per-axis separation between spawned entities
+  fvec3 _initialDirection;              // initial velocity direction
+  float _initialSpeed = 0.0f;           // magnitude of initial velocity
+  float _directionRandomize = 0.0f;     // 0=none, 1=fully random direction
+
+  // lifetime (0,0 = lives forever)
+  float _lifetimeMin = 0.0f;
+  float _lifetimeMax = 0.0f;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct SpawnerContext {
+  spawndata_constptr_t _spawnData;
+  std::vector<fvec3> _spawnedPositions;   // positions of already-spawned entities
+  int _spawnedSoFar = 0;
+  float _nextSpawnTime = 0.0f;            // game time for next timed spawn
+};
+using spawnercontext_ptr_t = std::shared_ptr<SpawnerContext>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // an INSTANCE of an EntData is an Entity
@@ -155,6 +179,8 @@ public:
 
   PoolString _name;
   varmap::varmap_ptr_t _varmap;
+
+  float _despawnTime = 0.0f;  // game time at which to despawn (0 = never)
 
 };
 

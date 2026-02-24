@@ -234,6 +234,7 @@ struct Scene {
 
 
   void initWithParams(varmap::varmap_ptr_t _initialdata);
+  void applyRuntimeParams(varmap::varmap_ptr_t params);
 
   layer_ptr_t createLayer(std::string named);
   layer_ptr_t findLayer(std::string named);
@@ -249,6 +250,7 @@ struct Scene {
   void _renderWithAcquiredDrawQueueForRendering(acqdrawbuffer_constptr_t acqbuf);
 
   void gpuInit(Context* ctx);
+  void gpuUpdate(Context* ctx);
   void gpuExit(Context* ctx);
 
   void pickWithRay(fray3_constptr_t ray, SgPickBuffer::callback_t callback);

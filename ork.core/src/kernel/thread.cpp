@@ -37,7 +37,15 @@ void* Thread::LambdaThreadImpl(void* pdat)
 
 
     pthr->_running = true;
-    pthr->_lambda(pthr->_userdata);
+    try {
+        pthr->_lambda(pthr->_userdata);
+    } catch (std::exception& e) {
+        fprintf(stderr, "Uncaught exception in thread '%s': %s\n",
+                pthr->_threadname.c_str(), e.what());
+    } catch (...) {
+        fprintf(stderr, "Uncaught unknown exception in thread '%s'\n",
+                pthr->_threadname.c_str());
+    }
     pthr->_running = false;
     return nullptr;
 }

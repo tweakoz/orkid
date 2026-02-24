@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include "pyext.h"
+#include <ork/python/gil_safe_pyobj.h>
 #include <ork/lev2/input/inputdevice.h>
 #include <ork/lev2/editor/editor.h>
 #include <ork/lev2/editor/selection.h>
@@ -132,6 +133,31 @@ void pyinit_editor(py::module& module_lev2) {
           &DecompTransformManipulator::target,
           &DecompTransformManipulator::setTarget);
   type_codec->registerStdCodec<decompxfmanip_ptr_t>(dxm_type_t);
+
+  /////////////////////////////////////////////////////////////////////////////////
+  // CurvePointManipulator
+  /////////////////////////////////////////////////////////////////////////////////
+
+  auto cpm_type_t = py::class_<CurvePointManipulator, ManipulatorInterface, curveptmanip_ptr_t>(module_lev2, "CurvePointManipulator")
+      .def(py::init<>())
+      .def(py::init<math::transformcurve_ptr_t, int>())
+      .def("setTarget", &CurvePointManipulator::setTarget)
+      .def_property_readonly("curve", &CurvePointManipulator::curve)
+      .def_property_readonly("pointIndex", &CurvePointManipulator::pointIndex)
+      .def_property(
+          "onPointMoved",
+          [](curveptmanip_ptr_t m) -> py::object {
+            return py::none();
+          },
+          [](curveptmanip_ptr_t m, py::object callback) {
+            auto safe = python::gil_safe_pyobj(callback);
+            m->_onPointMoved = [safe]() {
+              py::gil_scoped_acquire acquire_gil;
+              auto fn = safe.valueAs<py::object>();
+              (*fn)();
+            };
+          });
+  type_codec->registerStdCodec<curveptmanip_ptr_t>(cpm_type_t);
 
   /////////////////////////////////////////////////////////////////////////////////
   // Editor

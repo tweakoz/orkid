@@ -359,9 +359,9 @@ void Outliner::_rebuildVisibleItems() {
 
 /////////////////////////////////////////////////////////////////////////
 void Outliner::_clampScrollOffset() {
-  int content_height = _visible_items.size() * _item_height;
-  int max_scroll = std::max(0, content_height - _geometry._h);
-  _scroll_offset = std::clamp(_scroll_offset, 0, max_scroll);
+  _scroller._content_size = _visible_items.size() * _item_height;
+  _scroller._viewport_size = _geometry._h;
+  _scroller.clamp();
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -389,7 +389,7 @@ void Outliner::_addItemsRecursive(const std::string& parent_key, int depth) {
 
 /////////////////////////////////////////////////////////////////////////
 int Outliner::_getItemIndexAt(int local_y) const {
-  int adjusted_y = local_y + _scroll_offset;
+  int adjusted_y = local_y + _scroller._scroll_offset;
   int index = adjusted_y / _item_height;
   if (index >= 0 && index < (int)_visible_items.size()) {
     return index;
@@ -722,8 +722,12 @@ HandlerResult Outliner::DoOnUiEvent(event_constptr_t ev) {
       }
       // Shift+Enter to start adding a new item (only if exactly 1 selected)
       else if (key == 257 && ev->mbSHIFT && single_selection) { // Enter = 257
-        // Model's getFactories() determines if item can have children
-        if (_model && _model->allowAdd()) {
+        if (_onShiftEnter) {
+          // Custom handler overrides default add behavior
+          _onShiftEnter(selected_key);
+          result.setHandled(this);
+        } else if (_model && _model->allowAdd()) {
+          // Default: Model's getFactories() determines if item can have children
           auto factories = _model->getFactories(selected_key);
           if (!factories.empty()) {
             startAdding(selected_key);
@@ -786,9 +790,7 @@ HandlerResult Outliner::DoOnUiEvent(event_constptr_t ev) {
     }
 
     case EventCode::MOUSEWHEEL: {
-      // Scroll by wheel delta (negative = scroll down, positive = scroll up)
-      _scroll_offset -= ev->miMWY * 3; // multiply for faster scrolling
-      _clampScrollOffset();
+      _scroller.applyMouseWheel(ev->miMWY, _uicontext->_uitimer.SecsSinceStart());
       result.setHandled(this);
       break;
     }
@@ -848,7 +850,7 @@ void Outliner::DoDraw(drawevent_constptr_t drwev) {
     // Count visible items and characters for allocation
     size_t visible_chars = 0;
     int num_triangles = 0;
-    int y_pos = -_scroll_offset;
+    int y_pos = -_scroller._scroll_offset;
     for (const auto& item : _visible_items) {
       if (y_pos + _item_height >= 0 && y_pos < _geometry._h) {
         visible_chars += item.display_name.length();
@@ -865,7 +867,7 @@ void Outliner::DoDraw(drawevent_constptr_t drwev) {
       tgt->PushModColor(_text_color);
       lev2::FontMan::beginTextBlock(tgt, visible_chars);
 
-      y_pos = -_scroll_offset;
+      y_pos = -_scroller._scroll_offset;
       for (const auto& item : _visible_items) {
         if (y_pos + _item_height < 0) {
           y_pos += _item_height;
@@ -1032,7 +1034,7 @@ void Outliner::DoDraw(drawevent_constptr_t drwev) {
 
       const int tri_size = 12; // triangle size in pixels
 
-      y_pos = -_scroll_offset;
+      y_pos = -_scroller._scroll_offset;
       for (const auto& item : _visible_items) {
         if (y_pos + _item_height < 0) {
           y_pos += _item_height;
@@ -1062,24 +1064,18 @@ void Outliner::DoDraw(drawevent_constptr_t drwev) {
     // Draw add row if in add mode
     if (isAdding() && _font && !_add_factories.empty()) {
       // Find the position for the add row (after parent's children)
-      int add_row_y = -_scroll_offset;
+      int add_row_y = -_scroller._scroll_offset;
       int add_row_depth = 0;
 
-      // Find where to insert the add row
+      // Find where to insert the add row (right after parent)
       bool found_parent = _adding_parent_key.empty(); // root level is always "found"
       for (const auto& item : _visible_items) {
+        add_row_y += _item_height;
         if (item.key == _adding_parent_key) {
           found_parent = true;
           add_row_depth = item.depth + 1;
-        } else if (found_parent) {
-          // Check if we're still under the parent
-          if (!_adding_parent_key.empty() &&
-              item.key.find(_adding_parent_key + "/") != 0) {
-            // We've moved past the parent's children
-            break;
-          }
+          break;
         }
-        add_row_y += _item_height;
       }
 
       // If parent wasn't found in visible items, don't render
@@ -1193,6 +1189,9 @@ void Outliner::DoDraw(drawevent_constptr_t drwev) {
     }
   }
   mtxi->PopUIMatrix();
+
+  // Draw scroll indicator
+  _scroller.drawIndicator(drwev, _uicontext, ix1, iy1, _geometry._w, _geometry._h);
 
   fbi->popScissor();
 }

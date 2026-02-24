@@ -7,6 +7,7 @@
 
 #include "pyext.h"
 #include <ork/lev2/aud/audiodevice.h>
+#include <ork/lev2/aud/spatializer.h>
 #include <ork/lev2/aud/singularity/cz1.h>
 #include <ork/lev2/aud/singularity/krzdata.h>
 #include <ork/lev2/aud/singularity/tx81z.h>
@@ -344,6 +345,63 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
                   }
                 });
               });
+  /////////////////////////////////////////////////////////////////////////////////
+  // Spatializer bindings
+  /////////////////////////////////////////////////////////////////////////////////
+  {
+    auto spatdata_type = //
+        py::class_<SpatializerData, ork::Object, spatializerdata_ptr_t>(
+            singmodule, "SpatializerData")
+            .def(
+                "__repr__",
+                [](spatializerdata_ptr_t sd) -> std::string {
+                  fxstring<256> fxs;
+                  fxs.format("audio::SpatializerData(%p)", sd.get());
+                  return fxs.c_str();
+                });
+    type_codec->registerStdCodec<spatializerdata_ptr_t>(spatdata_type);
+
+    auto pannerspatdata_type = //
+        py::class_<PannerSpatializerData, SpatializerData, pannerspatializerdata_ptr_t>(
+            singmodule, "PannerSpatializerData")
+            .def(py::init<>())
+            .def(
+                "__repr__",
+                [](pannerspatializerdata_ptr_t sd) -> std::string {
+                  fxstring<256> fxs;
+                  fxs.format("audio::PannerSpatializerData(%p)", sd.get());
+                  return fxs.c_str();
+                })
+            .def_property(
+                "refDistance",
+                [](pannerspatializerdata_ptr_t sd) -> float { return sd->_refDistance; },
+                [](pannerspatializerdata_ptr_t sd, float val) { sd->_refDistance = val; })
+            .def_property(
+                "maxDistance",
+                [](pannerspatializerdata_ptr_t sd) -> float { return sd->_maxDistance; },
+                [](pannerspatializerdata_ptr_t sd, float val) { sd->_maxDistance = val; })
+            .def_property(
+                "rolloff",
+                [](pannerspatializerdata_ptr_t sd) -> float { return sd->_rolloff; },
+                [](pannerspatializerdata_ptr_t sd, float val) { sd->_rolloff = val; })
+            .def_property(
+                "minGainDB",
+                [](pannerspatializerdata_ptr_t sd) -> float { return sd->_minGainDB; },
+                [](pannerspatializerdata_ptr_t sd, float val) { sd->_minGainDB = val; })
+            .def_property(
+                "headShadowMix",
+                [](pannerspatializerdata_ptr_t sd) -> float { return sd->_headShadowMix; },
+                [](pannerspatializerdata_ptr_t sd, float val) { sd->_headShadowMix = val; })
+            .def_property(
+                "iidBaseFreq",
+                [](pannerspatializerdata_ptr_t sd) -> float { return sd->_iidBaseFreq; },
+                [](pannerspatializerdata_ptr_t sd, float val) { sd->_iidBaseFreq = val; })
+            .def_property(
+                "iidMaxFreq",
+                [](pannerspatializerdata_ptr_t sd) -> float { return sd->_iidMaxFreq; },
+                [](pannerspatializerdata_ptr_t sd, float val) { sd->_iidMaxFreq = val; });
+    type_codec->registerStdCodec<pannerspatializerdata_ptr_t>(pannerspatdata_type);
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

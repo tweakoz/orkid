@@ -10,6 +10,7 @@
 #include <ork/lev2/ui/group.h>
 #include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/lev2/ui/property_sheet.h>
+#include <ork/lev2/ui/reflection_property_model.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
@@ -85,6 +86,15 @@ public:
       return nullptr;
     }
   }
+
+  std::vector<std::string> getChoices(const std::string& key) const override {
+    py::gil_scoped_acquire acquire;
+    PYBIND11_OVERRIDE(
+        std::vector<std::string>,
+        ui::PropertySheetModel,
+        getChoices,
+        key);
+  }
 };
 
 void pyinit_ui_property_sheet(py::module& uimodule) {
@@ -103,6 +113,9 @@ void pyinit_ui_property_sheet(py::module& uimodule) {
       .value("Vec3", ui::PropertyType::Vec3)
       .value("Vec4", ui::PropertyType::Vec4)
       .value("Color", ui::PropertyType::Color)
+      .value("Asset", ui::PropertyType::Asset)
+      .value("Quat", ui::PropertyType::Quat)
+      .value("Enum", ui::PropertyType::Enum)
       .value("Group", ui::PropertyType::Group);
 
   /////////////////////////////////////////////////////////////////////////////////
@@ -138,8 +151,10 @@ void pyinit_ui_property_sheet(py::module& uimodule) {
               [](ui::property_sheet_model_ptr_t model, const std::string& key) -> varmap::varmap_ptr_t {
                 return model->getAnnotations(key);
               })
+          .def("getChoices", &ui::PropertySheetModel::getChoices)
           .def("notifyPropertyChanged", &ui::PropertySheetModel::notifyPropertyChanged)
           .def("notifyStructureChanged", &ui::PropertySheetModel::notifyStructureChanged)
+          .def("notifyExternalValueChanged", &ui::PropertySheetModel::notifyExternalValueChanged)
           .def_property(
               "read_only",
               &ui::PropertySheetModel::isReadOnly,
@@ -171,6 +186,69 @@ void pyinit_ui_property_sheet(py::module& uimodule) {
           });
 
   type_codec->registerStdCodec<ui::varmap_property_model_ptr_t>(varmap_property_model_type);
+
+  /////////////////////////////////////////////////////////////////////////////////
+  // ReflectionPropertySheetModel - reflection-driven model
+  /////////////////////////////////////////////////////////////////////////////////
+  auto refl_model_type = //
+      py::class_<ui::ReflectionPropertySheetModel,
+                 ui::PropertySheetModel,
+                 ui::reflection_property_model_ptr_t>(uimodule, "ReflectionPropertySheetModel")
+          .def(py::init<>())
+          .def_property(
+              "object",
+              &ui::ReflectionPropertySheetModel::getObject,
+              &ui::ReflectionPropertySheetModel::setObject)
+          .def("isMapProperty", &ui::ReflectionPropertySheetModel::isMapProperty)
+          .def("isMapPropertyConst", &ui::ReflectionPropertySheetModel::isMapConst)
+          .def("addMapElement", &ui::ReflectionPropertySheetModel::addMapElement)
+          .def("removeMapElement", &ui::ReflectionPropertySheetModel::removeMapElement)
+          .def(
+              "addKeyOverride",
+              [type_codec](
+                  ui::reflection_property_model_ptr_t model,
+                  const std::string& key,
+                  ui::PropertyType type,
+                  py::object py_getter,
+                  py::object py_setter,
+                  py::object py_choices) {
+                ui::ReflectionPropertySheetModel::KeyOverride ovr;
+                ovr.type = type;
+                if (!py_getter.is_none()) {
+                  ovr.getter = [py_getter, type_codec]() -> svar128_t {
+                    py::gil_scoped_acquire acquire;
+                    py::object result = py_getter();
+                    if (result.is_none()) return svar128_t();
+                    return type_codec->decode(result);
+                  };
+                }
+                if (!py_setter.is_none()) {
+                  ovr.setter = [py_setter, type_codec](svar128_t value) {
+                    py::gil_scoped_acquire acquire;
+                    py::object py_value = type_codec->encode(value);
+                    py_setter(py_value);
+                  };
+                }
+                if (!py_choices.is_none()) {
+                  ovr.choices = [py_choices]() -> std::vector<std::string> {
+                    py::gil_scoped_acquire acquire;
+                    py::object result = py_choices();
+                    return result.cast<std::vector<std::string>>();
+                  };
+                }
+                model->addKeyOverride(key, ovr);
+              },
+              py::arg("key"),
+              py::arg("type"),
+              py::arg("getter"),
+              py::arg("setter"),
+              py::arg("choices"))
+          .def("clearKeyOverrides", &ui::ReflectionPropertySheetModel::clearKeyOverrides)
+          .def("__repr__", [](ui::reflection_property_model_ptr_t model) {
+            return FormatString("<ReflectionPropertySheetModel %p>", (void*)model.get());
+          });
+
+  type_codec->registerStdCodec<ui::reflection_property_model_ptr_t>(refl_model_type);
 
   /////////////////////////////////////////////////////////////////////////////////
   // PropertySheet widget
@@ -268,6 +346,16 @@ void pyinit_ui_property_sheet(py::module& uimodule) {
               "detail_bg_color",
               [](ui::property_sheet_ptr_t sheet) -> fvec4 { return sheet->_detail_bg_color; },
               [](ui::property_sheet_ptr_t sheet, fvec4 c) { sheet->_detail_bg_color = c; })
+          .def(
+              "onRequestCustomEditor",
+              [](ui::property_sheet_ptr_t sheet, py::object callback) {
+                if (not callback.is_none()) {
+                  sheet->_onRequestCustomEditor = [callback](const std::string& key, const std::string& editor_id) {
+                    py::gil_scoped_acquire acquire;
+                    callback(key, editor_id);
+                  };
+                }
+              })
           .def(
               "onRequestDetailEditor",
               [type_codec](ui::property_sheet_ptr_t sheet, py::object callback) {

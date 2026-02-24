@@ -40,6 +40,7 @@ public:
   float _radiusCurrentRingO = 0.0f;
   float _radiusCurrentRingI = 0.0f;
   coloredit_lambda_t _onColorChanged = nullptr;
+  std::function<void(bool accepted)> _onFinished = nullptr;
   
   const ork::lev2::FxShaderTechnique* _tekvtxcolor = nullptr;
   const ork::lev2::FxShaderTechnique* _tekmodcolor = nullptr;

@@ -11,6 +11,7 @@
 #include <ork/lev2/ui/context.h>
 #include <ork/lev2/ui/group.h>
 #include <ork/kernel/svariant.h>
+#include <ork/kernel/timer.h>
 #include <functional>
 #include <string>
 #include <memory>
@@ -40,7 +41,14 @@ struct EzSecondaryWinConfig {
   // Popup-specific options
   bool _floating = false;       // Always on top (for popups)
   bool _transparent = false;    // Transparent framebuffer (for styled popups)
-  bool _focusOnShow = true;     // Auto-focus when shown
+  bool _focusOnShow = false;    // Auto-focus when shown
+
+  // Focus behavior
+  bool _focusFollowsMouse = false; // Focus window when mouse enters
+  bool _focusToFront = false;      // Raise window to front when focused
+
+  // Fullscreen on a named monitor (empty = windowed)
+  std::string _fullscreenMonitor;
 
   // Convenience factory for popup-style windows
   static EzSecondaryWinConfig popup(int x, int y, int w, int h, bool transparent = false) {
@@ -114,6 +122,17 @@ struct EzSecondaryWin {
   ~EzSecondaryWin();
 
   //////////////////////////////////////////////
+  // Dirty-flag rendering control
+  //  Secondary windows only re-render when their
+  //  content has changed (UI event, resize, etc.)
+  //  to avoid blocking the main loop with vsync waits.
+  //  A maximum staleness interval provides a safety net.
+  //////////////////////////////////////////////
+
+  void markDirty();
+  bool needsRender() const;
+
+  //////////////////////////////////////////////
   // Internal - called by main runloop
   //////////////////////////////////////////////
 
@@ -129,7 +148,30 @@ private:
   ui::context_ptr_t _uicontext;
   bool _shouldClose = false;
   bool _gpuInitialized = false;
+  bool _dirty = true;                  // starts dirty (needs initial render)
+  ork::Timer _lastRenderTimer;         // time since last render
 };
+
+///////////////////////////////////////////////////////////////////////////////
+// GLFW Monitor enumeration (works on macOS, Linux/X11, Linux/Wayland)
+///////////////////////////////////////////////////////////////////////////////
+
+struct GlfwMonitorInfo {
+  std::string _name;          // Monitor name (use with fullscreen_monitor)
+  int _x = 0;                 // Position x
+  int _y = 0;                 // Position y
+  int _width = 0;             // Current video mode width
+  int _height = 0;            // Current video mode height
+  int _refreshRate = 0;       // Current video mode refresh rate (Hz)
+  int _physicalWidthMM = 0;   // Physical width in millimeters
+  int _physicalHeightMM = 0;  // Physical height in millimeters
+  float _contentScaleX = 1.0f; // Content scale X (>1 = HiDPI)
+  float _contentScaleY = 1.0f; // Content scale Y (>1 = HiDPI)
+  bool _primary = false;      // Is primary monitor
+};
+using glfwmonitorinfo_ptr_t = std::shared_ptr<GlfwMonitorInfo>;
+
+std::vector<glfwmonitorinfo_ptr_t> enumerateGlfwMonitors();
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

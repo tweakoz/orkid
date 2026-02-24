@@ -66,9 +66,6 @@ public:
   BulletObjectComponentData();
   ~BulletObjectComponentData();
 
-  void ShapeGetter(ork::rtti::ICastable*& val) const;
-  void ShapeSetter(ork::rtti::ICastable* const& val);
-
   Component* createComponent(Entity* pent) const final;
   static object::ObjectClass* componentClass();
   void DoRegisterWithScene(SceneComposer& sc) const final;
@@ -90,6 +87,7 @@ public:
   uint32_t _groupCollidesWith = 0xffffffff;
   script_cb_t _collisionCallback;
   fvec3 _angularFactor;
+  bool _syncShapeScale = false;
   std::string _instanceNodeName;
   lev2::scenegraph::node_instance_data_ptr_t _INSTANCEDATA;
 };

@@ -14,6 +14,7 @@
 #include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_common.h>
 
+#include <ork/lev2/lev2_asset_cache.inl>
 #include <ork/ecs/ecs.h>
 #include <ork/ecs/system.h>
 #include <ork/ecs/SceneGraphComponent.h>
@@ -45,6 +46,7 @@ void SceneGraphSystemData::describeX(SystemDataClass* clazz) {
   ImplementToken(CreateNode);
   ImplementToken(DestroyNode);
   ImplementToken(ChangeModColor);
+  ImplementToken(HighlightBySpawnData);
   ImplementToken(eye);
   ImplementToken(tgt);
   ImplementToken(up);
@@ -146,6 +148,7 @@ SceneGraphSystem::SceneGraphSystem(const SceneGraphSystemData& data, ork::ecs::S
   _camlut                = std::make_shared<CameraDataLut>();
   (*_camlut)["spawncam"] = _camera;
   _drwcache              = std::make_shared<DrawableCache>();
+  _modelAssetCache       = std::make_shared<xgmmodel_assetcache_t>();
 
   for (auto item : data._onCreateSystemOperations) {
     item(this);
@@ -172,6 +175,45 @@ void SceneGraphSystem::_addStaticDrawable(std::string layername, lev2::drawable_
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void SceneGraphSystem::reloadDrawableData(lev2::drawabledata_ptr_t data) {
+  _renderops.push([this, data]() {
+    std::unordered_set<lev2::Drawable*> already_reloaded;
+    _components.atomicOp([&](component_set_t& comps) {
+      for (auto* comp : comps) {
+        for (auto& [name, nitem] : comp->_nodeitems) {
+          if (nitem->_data && nitem->_data->_drawabledata == data) {
+            if (already_reloaded.insert(nitem->_drawable.get()).second) {
+              data->reloadDrawable(nitem->_drawable);
+            }
+          }
+        }
+      }
+    });
+    // Also check system-level node items
+    for (auto& [name, nitem] : _nodeitems) {
+      if (nitem->_data && nitem->_data->_drawabledata == data) {
+        if (already_reloaded.insert(nitem->_drawable.get()).second) {
+          data->reloadDrawable(nitem->_drawable);
+        }
+      }
+    }
+  });
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SceneGraphSystem::processRenderOps() {
+  _rt_process();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SceneGraphSystem::initializeForEditMode(lev2::Context* ctx) {
+  _onGpuInit(_simulation, ctx);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void SceneGraphSystem::_instantiateDeclaredNodes() {
   for (auto NID_item : _SGSD._nodedatas) {
     auto NID = NID_item.second;
@@ -183,7 +225,12 @@ void SceneGraphSystem::_instantiateDeclaredNodes() {
       _nodeitems[NID->_nodename] = nitem;
 
       auto on_gpu_init = [=]() {
-        nitem->_drawable = _drwcache->fetch(drwdata);
+        if (drwdata->isSharedDrawable()) {
+          nitem->_drawable = _drwcache->fetch(drwdata);
+        } else {
+          nitem->_drawable = drwdata->createDrawable();
+          nitem->_drawable->_modcolor = drwdata->_modcolor;
+        }
   
         if (auto as_instanced = dynamic_pointer_cast<InstancedDrawable>(nitem->_drawable)) {
           auto NODE_ON_LAYER = [=](lev2::scenegraph::layer_ptr_t layer){
@@ -212,7 +259,9 @@ void SceneGraphSystem::_instantiateDeclaredNodes() {
             }
           }
           else{
-            auto layer                 = _scene->findLayer(NID->_layername);
+            auto layer = NID->_layername.empty()
+                ? _default_layer
+                : _scene->findLayer(NID->_layername);
                 NODE_ON_LAYER(layer);
           }
         } else {
@@ -227,7 +276,9 @@ void SceneGraphSystem::_instantiateDeclaredNodes() {
                 NODE_ON_LAYER(layer);
             }
           } else {
-              auto layer = _scene->findLayer(NID->_layername);
+              auto layer = NID->_layername.empty()
+                  ? _default_layer
+                  : _scene->findLayer(NID->_layername);
               NODE_ON_LAYER(layer);
           }
         }
@@ -263,6 +314,10 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
       auto NID = NID_item.second;
       if (NID->_drawabledata) {
         _drwcache->fetch(NID->_drawabledata);
+        // preload model assets into per-simulation cache
+        if (auto as_model = std::dynamic_pointer_cast<ModelDrawableData>(NID->_drawabledata)) {
+          _modelAssetCache->fetch(as_model->_assetpath);
+        }
       }
     }
   }
@@ -270,11 +325,17 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
     auto NID = NID_item.second;
     if (NID->_drawabledata) {
       _drwcache->fetch(NID->_drawabledata);
+      if (auto as_model = std::dynamic_pointer_cast<ModelDrawableData>(NID->_drawabledata)) {
+        _modelAssetCache->fetch(as_model->_assetpath);
+      }
     }
   }
 
   for (auto DRWDATA : _SGSD._drawdatas_prefetchlist) {
     _drwcache->fetch(DRWDATA);
+    if (auto as_model = std::dynamic_pointer_cast<ModelDrawableData>(DRWDATA)) {
+      _modelAssetCache->fetch(as_model->_assetpath);
+    }
   }
 
   /////////////////////////////////////////
@@ -323,16 +384,20 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
         /////////////////////////////////////////////////
         auto as_light = dynamic_pointer_cast<LightData>(drwdata);
         if (as_light) {
-          auto layer = _scene->findLayer(NID->_layername);
+          auto layer = NID->_layername.empty()
+              ? _default_layer
+              : _scene->findLayer(NID->_layername);
           auto l = dynamic_pointer_cast<Light>(as_light->createDrawable());
 
           auto nitem                            = std::make_shared<SceneGraphNodeItem>();
           nitem->_drawable                      = l;
           nitem->_sgnode                        = layer->createLightNode(NID->_nodename, l);
           nitem->_nodename                      = NID->_nodename;
+          nitem->_data                          = NID;
           component->_nodeitems[NID->_nodename] = nitem;
 
           auto ent = component->GetEntity();
+          nitem->_sgnode->_userdata->makeValueForKey<uint64_t>("entref") = ent->_entref;
           if (NID->_xfoverride) {
             auto static_matrix = NID->_xfoverride->composed();
             l->_xformgenerator = [=]() -> fmtx4 {
@@ -365,21 +430,34 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
             
             auto DO_ITEM = [=](scenegraph::layer_ptr_t layer) -> sgnodeitem_ptr_t {
                 auto nitem                            = std::make_shared<SceneGraphNodeItem>();
-                nitem->_drawable                      = _drwcache->fetch(drwdata);
+                if (drwdata->isSharedDrawable()) {
+                  nitem->_drawable = _drwcache->fetch(drwdata);
+                } else if (auto as_model = std::dynamic_pointer_cast<ModelDrawableData>(drwdata)) {
+                  auto cached_asset = _modelAssetCache->fetch(as_model->_assetpath);
+                  nitem->_drawable = as_model->createDrawableWithAsset(cached_asset);
+                  nitem->_drawable->_modcolor = drwdata->_modcolor;
+                } else {
+                  nitem->_drawable = drwdata->createDrawable();
+                  nitem->_drawable->_modcolor = drwdata->_modcolor;
+                }
                 nitem->_nodename                      = NID->_nodename;
                 nitem->_data                          = NID;
                 component->_nodeitems[NID->_nodename] = nitem;
-                
+
                 if (auto as_instanced = dynamic_pointer_cast<InstancedDrawable>(nitem->_drawable)) {
                     nitem->_sgnode = layer->createDrawableNode(NID->_nodename, as_instanced);
                     OrkAssert(false);
                     // we should not hit this, because the instanced drawable
                     //  should be @ system scope, not component scope
-                    
+
                 } else {
                     auto node       = layer->createDrawableNode(NID->_nodename, nitem->_drawable);
                     node->_modcolor = NID->_modcolor;
                     nitem->_sgnode  = node;
+                    auto _ent = component->GetEntity();
+                    if (_ent) {
+                      node->_userdata->makeValueForKey<uint64_t>("entref") = _ent->_entref;
+                    }
                 }
                 return nitem;
             };
@@ -392,7 +470,9 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
                     layer->addDrawableNode(drw_node);
                 }
             } else {
-                auto layer = _scene->findLayer(NID->_layername);
+                auto layer = NID->_layername.empty()
+                    ? _default_layer
+                    : _scene->findLayer(NID->_layername);
                 auto item = DO_ITEM(layer);
             }
         }
@@ -539,8 +619,23 @@ bool SceneGraphSystem::_onStage(Simulation* psi) {
   }
 
   /////////////////////////////////////////
+  // check simulation varmap for an injected scenegraph
+  /////////////////////////////////////////
 
-  _scene = std::make_shared<scenegraph::Scene>(_mergedParams);
+  auto sim_varmap = psi->varmap();
+  if (sim_varmap->hasKey("scenegraph")) {
+    auto injected = sim_varmap->typedValueForKey<scenegraph::scene_ptr_t>("scenegraph");
+    if (injected) {
+      _scene = injected.value();
+      _sceneInjected = true;
+    }
+  }
+
+  if (!_scene) {
+    _scene = std::make_shared<scenegraph::Scene>(_mergedParams);
+  }
+
+  _scene->applyRuntimeParams(_mergedParams);
 
   _default_layer = _scene->createLayer("sg_default");
   for (auto item : _SGSD._declaredLayers) {
@@ -591,7 +686,7 @@ void SceneGraphSystem::_rt_process() {
 ///////////////////////////////////////////////////////////////////////////////
 void SceneGraphSystem::_onRenderWithStandardCompositorFrame(Simulation* psi, lev2::standardcompositorframe_ptr_t sframe) {
   _rt_process();
-  if (_scene) {
+  if (_scene && !_sceneInjected) {
     _scene->renderWithStandardCompositorFrame(sframe);
   }
 }
@@ -600,7 +695,7 @@ void SceneGraphSystem::_onRender(Simulation* psi, ui::drawevent_constptr_t drwev
 {
   _rt_process();
 
-  if (_scene) {
+  if (_scene && !_sceneInjected) {
     _scene->renderOnContext(drwev->GetTarget());
   }
 }
@@ -668,6 +763,23 @@ void SceneGraphSystem::_onNotify(token_t evID, evdata_t data) {
       _renderops.push(remove_operation);
       break;
     }
+    case HighlightBySpawnData._hashed: {
+      const auto& table = *data.getShared<DataTable>();
+      auto name_str = table["name"_tok].get<std::string>();
+      auto modcolor = table["color"_tok].get<fvec4>();
+      auto psname = AddPooledString(name_str.c_str());
+      svar64_t colorvar;
+      colorvar.set<fvec4>(modcolor);
+      _components.atomicOp([&](component_set_t& comps) {
+        for (auto* comp : comps) {
+          auto ent = comp->GetEntity();
+          if (ent->data()->GetName() == psname) {
+            comp->_notify(_simulation, ChangeModColor, colorvar);
+          }
+        }
+      });
+      break;
+    }
     default:
       OrkAssert(false);
       break;
@@ -693,7 +805,17 @@ void SceneGraphSystem::_onRequest(impl::sys_response_ptr_t response, token_t req
       ///////////////////////////////
 
       auto add_operation = [response, mdata, this]() {
-        auto drawable = _drwcache->fetch(mdata);
+        drawable_ptr_t drawable;
+        if (mdata->isSharedDrawable()) {
+          drawable = _drwcache->fetch(mdata);
+        } else if (auto as_model = std::dynamic_pointer_cast<ModelDrawableData>(mdata)) {
+          auto cached_asset = _modelAssetCache->fetch(as_model->_assetpath);
+          drawable = as_model->createDrawableWithAsset(cached_asset);
+          drawable->_modcolor = mdata->_modcolor;
+        } else {
+          drawable = mdata->createDrawable();
+          drawable->_modcolor = mdata->_modcolor;
+        }
 
         std::string nodename = "???";
         auto sgnode          = _default_layer->createDrawableNode(nodename, drawable);

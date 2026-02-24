@@ -238,8 +238,13 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
 
   // Cleanup callback: return CB to pool when primary CB is reset
   cmdbuf_impl->_onCleanupCallback = [command_buffer, pool_ref = &_seccmdbufpool_xfer]() {
+    auto impl = command_buffer->_impl.getShared<VkSecondaryCommandBufferImpl>();
+    impl->_referenced_images.clear();
     pool_ref->atomicOp([&](sseccmdbufpool_ptr_t& pool) { pool->returnItem(command_buffer); });
   };
+
+  // Keep VkImage alive while CB is in use
+  cmdbuf_impl->_referenced_images.push_back(vktex->_imgobj[0]);
 
   // Completion callback: cleanup transfer and staging buffer when GPU completes
   tlsema->_onComplete = [=]() {
@@ -464,6 +469,8 @@ void VkTextureInterface::initTextureArray2DAsync(TextureArray* texture_array) { 
   auto vk_cmdbuf = cmdbuf_impl->_vkcmdbuf;
   _enqueueInitTextureArray2DOnCB(texture_array,vk_cmdbuf);
   _contextVK->endRecordCommandBuffer(cmdbuf);
+  auto vktex_arr = texture_array->_tex->_impl.getShared<VulkanTextureObject>();
+  cmdbuf_impl->_referenced_images.push_back(vktex_arr->_imgobj[0]);
   _contextVK->enqueueDeferredOneShotCommand(cmdbuf);
 
   /////////////////////////////////
@@ -496,6 +503,12 @@ void VkTextureInterface::initTextureArray2D(TextureArray* texture_array) { // fi
   // Initialize texture array on primary command buffer
   /////////////////////////////////////////////////////
 
+  // Suspend render pass if active - barriers cannot be inside dynamic rendering
+  bool was_active = _contextVK->_renderPassActive;
+  if (was_active) {
+    _contextVK->suspendRenderPass();
+  }
+
   auto primary_cb = _contextVK->primary_cb();
   auto vk_cmdbuf = primary_cb->_vkcmdbuf;
 
@@ -504,6 +517,11 @@ void VkTextureInterface::initTextureArray2D(TextureArray* texture_array) { // fi
          (void*)primary_cb.get());
 
   _enqueueInitTextureArray2DOnCB(texture_array,vk_cmdbuf);
+
+  // Resume render pass if it was active
+  if (was_active) {
+    _contextVK->resumeRenderPass();
+  }
 
   /////////////////////////////////
   // Update the image object's tracked layout
@@ -814,8 +832,13 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
 
   // Cleanup callback: return CB to pool when primary CB is reset
   cmdbuf_impl->_onCleanupCallback = [command_buffer, pool_ref = &_seccmdbufpool_xfer]() {
+    auto impl = command_buffer->_impl.getShared<VkSecondaryCommandBufferImpl>();
+    impl->_referenced_images.clear();
     pool_ref->atomicOp([&](sseccmdbufpool_ptr_t& pool) { pool->returnItem(command_buffer); });
   };
+
+  // Keep VkImage alive while CB is in use
+  cmdbuf_impl->_referenced_images.push_back(vktex->_imgobj[0]);
 
   // Completion callback: cleanup transfer and staging buffer when GPU completes
   tlsema->_onComplete = [=]() {

@@ -25,6 +25,13 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   int iwidth   = rtbuffer->_width;
   int iheight  = rtbuffer->_height;
   int num_mips = 1;
+  if (rtbuffer->_mipgen != RtBuffer::EMG_NONE) {
+    int max_dim = std::max(iwidth, iheight);
+    while (max_dim > 1) {
+      max_dim >>= 1;
+      num_mips++;
+    }
+  }
   auto fmt_str = EBufferFormatToName(format);
 
   // Check if this is a depth buffer or cubemap
@@ -166,6 +173,7 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
       VkAccessFlagBits(0),
       VK_ACCESS_TRANSFER_WRITE_BIT);
   clear_barrier->subresourceRange.aspectMask = aspect_mask;
+  clear_barrier->subresourceRange.levelCount = num_mips;
   clear_barrier->subresourceRange.layerCount = num_layers;  // Handle all layers for cubemaps
 
   vkCmdPipelineBarrier(
@@ -177,12 +185,12 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   // Clear the image (all layers)
   if (is_depth) {
     VkClearDepthStencilValue clear_value = {1.0f, 0};
-    VkImageSubresourceRange range = {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, (uint32_t)num_layers};
+    VkImageSubresourceRange range = {VK_IMAGE_ASPECT_DEPTH_BIT, 0, (uint32_t)num_mips, 0, (uint32_t)num_layers};
     vkCmdClearDepthStencilImage(vk_cmdbuf, vk_tex->_imgobj[0]->_vkimage,
                                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_value, 1, &range);
   } else {
     VkClearColorValue clear_color = {{0.0f, 0.0f, 0.0f, 0.0f}};
-    VkImageSubresourceRange range = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, (uint32_t)num_layers};
+    VkImageSubresourceRange range = {VK_IMAGE_ASPECT_COLOR_BIT, 0, (uint32_t)num_mips, 0, (uint32_t)num_layers};
     vkCmdClearColorImage(vk_cmdbuf, vk_tex->_imgobj[0]->_vkimage,
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_color, 1, &range);
   }
@@ -195,6 +203,7 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
       VK_ACCESS_TRANSFER_WRITE_BIT,
       access_flags);
   attach_barrier->subresourceRange.aspectMask = aspect_mask;
+  attach_barrier->subresourceRange.levelCount = num_mips;
   attach_barrier->subresourceRange.layerCount = num_layers;  // Handle all layers for cubemaps
 
   vkCmdPipelineBarrier(
@@ -211,6 +220,9 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   }
 
   /////////////////////////////////////
+
+  // Set mip count on texture object
+  ptex->_num_mips = num_mips;
 
   // RTG texture is now ready for sampling
   vk_tex->_img_sampling = vk_tex->_imgobj[0];

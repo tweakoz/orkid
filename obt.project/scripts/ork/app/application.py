@@ -193,14 +193,14 @@ from orkengine.core import CrcString
 #    - Broadcasts to components: onUpdateExit()
 #    - Called when KAPPSTATEFLAG_JOINING detected
 #
-# 3. Application.onAudioExit() [UPDATE THREAD, GIL ACQUIRED]
+# 3. Application.onAudioExit(adev) [UPDATE THREAD, GIL ACQUIRED]
 #    - Called after onUpdateExit in update thread context
-#    - Broadcasts to components: onAudioExit()
+#    - Broadcasts to components: onAudioExit(adev)
 #    - Audio system shutdown
 #
-# 4. Application.onSynthExit() [UPDATE THREAD, GIL ACQUIRED]
+# 4. Application.onSynthExit(syn) [UPDATE THREAD, GIL ACQUIRED]
 #    - Called during audio exit
-#    - Broadcasts to components: onSynthExit()
+#    - Broadcasts to components: onSynthExit(syn)
 #    - Synth cleanup
 #
 # 5. [UPDATE THREAD JOIN] [MAIN THREAD, GIL RELEASED]
@@ -396,10 +396,14 @@ class ComponentizedApplication(object):
     args = {**default_args, **self.ezapp_args}
     args = {**args, **kwargs}
 
-
+    # Extract pre_init_fns if provided (used by ecs editor etc.)
+    pre_init_fns = args.pop('pre_init_fns', None)
 
     # Create ezapp
-    self.ezapp = lev2.OrkEzApp.create(self, **args)
+    if pre_init_fns:
+      self.ezapp = lev2.OrkEzApp.createEx(self, pre_init_fns, **args)
+    else:
+      self.ezapp = lev2.OrkEzApp.create(self, **args)
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 30)
     # Standard setup (refresh policy and UI draw)
     self.ezapp.topWidget.enableUiDraw()
@@ -497,19 +501,19 @@ class ComponentizedApplication(object):
 
   ##################################################
 
-  def onAudioExit(self):
+  def onAudioExit(self, adev):
     # invoked on update thread when the audio device is exiting
     # called after onUpdateExit in update thread context
     for component in self.components_sorted:
-      component.onAudioExit()
+      component.onAudioExit(adev)
 
   ##################################################
 
-  def onSynthExit(self):
+  def onSynthExit(self, syn):
     # invoked on update thread during audio exit
     # called after onAudioExit
     for component in self.components_sorted:
-      component.onSynthExit()
+      component.onSynthExit(syn)
 
   #########
   # GPU / renderer broadcast handlers
@@ -762,18 +766,18 @@ class ApplicationComponent(object):
 
   ##############################################
 
-  def onAudioExit(self):
-    self._onAudioExit()
+  def onAudioExit(self, adev):
+    self._onAudioExit(adev)
 
-  def _onAudioExit(self):
+  def _onAudioExit(self, adev):
     pass
 
   ##############################################
 
-  def onSynthExit(self):
-    self._onSynthExit()
+  def onSynthExit(self, syn):
+    self._onSynthExit(syn)
 
-  def _onSynthExit(self):
+  def _onSynthExit(self, syn):
     pass
 
   ##############################################

@@ -144,6 +144,7 @@ struct ProgramChannel{
     std::unordered_set<programInst*> _monoprogs;
     int _monokeycount = 0;
     std::vector<int> _mononotes;
+    std::mutex _mutex;
 };
 using programchannel_ptr_t = std::shared_ptr<ProgramChannel>;
 

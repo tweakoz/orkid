@@ -22,6 +22,8 @@ struct SimpleImpl {
   float _read_position_L = 0.0f;  // Fractional sample position for L channel
   float _read_position_R = 0.0f;  // Fractional sample position for R channel
 
+  double _latest_chunk_timestamp = 0.0;  // timestamp from most recently queued chunk
+
   // Stored values for lambda-based perfItems
   float _deviation = 0.0f;
   float _correction = 0.0f;
@@ -151,6 +153,7 @@ struct SimpleImpl {
     }
     while (source->_inputqueue.try_pop(chunk)) {
       _chunkindex = source->_chunk_index;
+      _latest_chunk_timestamp = chunk->_timestamp;
       auto& chan_L       = chunk->_channels[0];
       size_t num_samples = chan_L.size();
       const float* src_L = chan_L.data();
@@ -295,6 +298,14 @@ struct SimpleImpl {
         _read_position_L += frames * playback_rate;
         if (is_stereo) {
           _read_position_R += frames * playback_rate;
+        }
+
+        // Update playback timestamp on the source (safe for main-thread reads)
+        {
+          auto source = _oscil->_streamingdata->_source;
+          if (source) {
+            source->_current_playback_timestamp.store(_latest_chunk_timestamp, std::memory_order_relaxed);
+          }
         }
 
         // Consume integer samples from ring buffers

@@ -30,23 +30,31 @@ namespace ork::lev2 {
 static logchannel_ptr_t logchan_EZAPP = logger()->getChannel("EZAPP");
 
 void ezapp_python_traceback(py::error_already_set& e) {
-    // Import traceback module
-    py::object traceback = py::module::import("traceback");
-    py::object sys = py::module::import("sys");
-    
-    // Get exception info
-    py::object exc_type = py::reinterpret_borrow<py::object>(e.type());
-    py::object exc_value = py::reinterpret_borrow<py::object>(e.value());
-    py::object exc_tb = py::reinterpret_borrow<py::object>(e.trace());
-    
-    // Format the traceback
-    py::object format_exception = traceback.attr("format_exception");
-    py::list tb_lines = format_exception(exc_type, exc_value, exc_tb);
-    
-    // Print each line
-    for (auto line : tb_lines) {
-        auto decoed = deco::string(py::str(line).cast<std::string>(), 255, 100, 0);
-        std::cout << decoed;
+    try {
+        // Import traceback module
+        py::object traceback = py::module::import("traceback");
+        py::object sys = py::module::import("sys");
+
+        // Get exception info
+        py::object exc_type = py::reinterpret_borrow<py::object>(e.type());
+        py::object exc_value = py::reinterpret_borrow<py::object>(e.value());
+        py::object exc_tb = py::reinterpret_borrow<py::object>(e.trace());
+
+        // Format the traceback
+        py::object format_exception = traceback.attr("format_exception");
+        py::list tb_lines = format_exception(exc_type, exc_value, exc_tb);
+
+        // Print each line
+        for (auto line : tb_lines) {
+            auto decoed = deco::string(py::str(line).cast<std::string>(), 255, 100, 0);
+            std::cout << decoed;
+        }
+    } catch (std::exception& e2) {
+        std::cerr << "ezapp_python_traceback failed: " << e2.what() << std::endl;
+        std::cerr << "Original error: " << e.what() << std::endl;
+    } catch (...) {
+        std::cerr << "ezapp_python_traceback failed (unknown exception)" << std::endl;
+        std::cerr << "Original error: " << e.what() << std::endl;
     }
 }
 
@@ -103,11 +111,20 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             ork::genviron.init_from_global_env();
             auto appinit = appinitdata(); // Use the singleton
             rcfd_ptr_t override_rcfd = nullptr;
+            std::vector<appinitfn_t> pre_finalize_fns;
 
             if (kwargs) {
               for (auto item : kwargs) {
                 auto key = py::cast<std::string>(item.first);
-                if (key == "name") {
+                if (key == "_pre_init_fns") {
+                  auto fns_list = py::cast<py::list>(item.second);
+                  for (auto fn_item : fns_list) {
+                    auto callable = py::cast<py::function>(fn_item);
+                    pre_finalize_fns.push_back([callable](appinitdata_ptr_t appinit) {
+                      callable(appinit);
+                    });
+                  }
+                } else if (key == "name") {
                   auto app_name = py::cast<std::string>(item.second);
                   appinit->_application_name = app_name;
                 } else if (key == "left") {
@@ -240,8 +257,9 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             } // if (kwargs) {
             /////////////////////////////
             ::ork::lev2::initModule(appinit);
-            //logchan_EZAPP->log("finalizeInitialization begin..");
-            //fflush(stdout);
+            for (auto& fn : pre_finalize_fns) {
+              fn(appinit);
+            }
             appinit->finalizeInitialization();
             //logchan_EZAPP->log("finalizeInitialization done..");
             fflush(stdout);
@@ -341,7 +359,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               rval->_vars->makeValueForKey<py::function>("audexitfn") = audexitfn;
               rval->onAudioExit([=](audiodevice_ptr_t adev) { //
                 py::gil_scoped_acquire acquire;
-                auto pyfn = rval->_vars->typedValueForKey<py::function>("audinitfn");
+                auto pyfn = rval->_vars->typedValueForKey<py::function>("audexitfn");
                 try {
                   pyfn.value()(adev);
                 } catch (py::error_already_set& e) {
@@ -349,10 +367,8 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   printf( "\n\npython exception in onAudioExit\n\n");
                   e.restore();
                   PyErr_Print();
-                  OrkAssert(false);
                 } catch (std::exception& e) {
-                  std::cerr << e.what();
-                  OrkAssert(false);
+                  std::cerr << "onAudioExit: " << e.what() << std::endl;
                 }
               });
             }
@@ -395,10 +411,8 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   printf( "\n\npython exception in onSynthExit\n\n");
                   e.restore();
                   PyErr_Print();
-                  OrkAssert(false);
                 } catch (std::exception& e) {
-                  std::cerr << e.what();
-                  OrkAssert(false);
+                  std::cerr << "onSynthExit: " << e.what() << std::endl;
                 }
               });
             }
@@ -648,6 +662,21 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             ////////////////////////////////////////////////////////////////////
             logchan_EZAPP->log("app creation complete app: %p", (void*) rval.get());
             return rval;
+          })
+      ///////////////////////////////////////////////////////
+      .def_static(
+          "createEx",
+          [](py::object appinstance, py::list init_fns, py::kwargs kwargs) -> orkezapp_ptr_t { //
+            // Inject _pre_init_fns into kwargs and delegate to create
+            py::dict kw_dict;
+            for (auto item : kwargs) {
+              kw_dict[item.first] = item.second;
+            }
+            kw_dict[py::str("_pre_init_fns")] = init_fns;
+            auto lev2_mod = py::module::import("orkengine.lev2");
+            auto create_fn = lev2_mod.attr("OrkEzApp").attr("create");
+            auto result = create_fn(*py::make_tuple(appinstance), **kw_dict);
+            return result.cast<orkezapp_ptr_t>();
           })
       ///////////////////////////////////////////////////////
       .def_property(
@@ -904,6 +933,9 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 else if (key == "floating") config._floating = py::cast<bool>(item.second);
                 else if (key == "transparent") config._transparent = py::cast<bool>(item.second);
                 else if (key == "focus_on_show") config._focusOnShow = py::cast<bool>(item.second);
+                else if (key == "focus_follows_mouse") config._focusFollowsMouse = py::cast<bool>(item.second);
+                else if (key == "focus_to_front") config._focusToFront = py::cast<bool>(item.second);
+                else if (key == "fullscreen_monitor") config._fullscreenMonitor = py::cast<std::string>(item.second);
               }
             }
             return app->createSecondaryWindow(config);
@@ -949,6 +981,32 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
           });
   type_codec->registerStdCodec<eztopwidget_ptr_t>(eztopwidget_type);
   /////////////////////////////////////////////////////////////////////////////////
+  // GLFW Monitor enumeration
+  /////////////////////////////////////////////////////////////////////////////////
+  auto glfwmoninfo_type = //
+      py::class_<GlfwMonitorInfo, glfwmonitorinfo_ptr_t>(module_lev2, "GlfwMonitorInfo")
+      .def_readonly("name", &GlfwMonitorInfo::_name)
+      .def_readonly("x", &GlfwMonitorInfo::_x)
+      .def_readonly("y", &GlfwMonitorInfo::_y)
+      .def_readonly("width", &GlfwMonitorInfo::_width)
+      .def_readonly("height", &GlfwMonitorInfo::_height)
+      .def_readonly("refresh_rate", &GlfwMonitorInfo::_refreshRate)
+      .def_readonly("physical_width_mm", &GlfwMonitorInfo::_physicalWidthMM)
+      .def_readonly("physical_height_mm", &GlfwMonitorInfo::_physicalHeightMM)
+      .def_readonly("content_scale_x", &GlfwMonitorInfo::_contentScaleX)
+      .def_readonly("content_scale_y", &GlfwMonitorInfo::_contentScaleY)
+      .def_readonly("primary", &GlfwMonitorInfo::_primary)
+      .def("__repr__", [](glfwmonitorinfo_ptr_t info) -> std::string {
+        return FormatString("GlfwMonitorInfo(name='%s', %dx%d@%dHz, pos=%d,%d%s)",
+                            info->_name.c_str(), info->_width, info->_height,
+                            info->_refreshRate, info->_x, info->_y,
+                            info->_primary ? ", primary" : "");
+      });
+  type_codec->registerStdCodec<glfwmonitorinfo_ptr_t>(glfwmoninfo_type);
+
+  module_lev2.def("enumerateGlfwMonitors", &enumerateGlfwMonitors,
+      "Enumerate all GLFW monitors on the system");
+  /////////////////////////////////////////////////////////////////////////////////
   // Phase 6: Secondary Window Bindings
   /////////////////////////////////////////////////////////////////////////////////
   using ezsecwinconfig_ptr_t = std::shared_ptr<EzSecondaryWinConfig>;
@@ -965,6 +1023,9 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
       .def_readwrite("floating", &EzSecondaryWinConfig::_floating)
       .def_readwrite("transparent", &EzSecondaryWinConfig::_transparent)
       .def_readwrite("focus_on_show", &EzSecondaryWinConfig::_focusOnShow)
+      .def_readwrite("focus_follows_mouse", &EzSecondaryWinConfig::_focusFollowsMouse)
+      .def_readwrite("focus_to_front", &EzSecondaryWinConfig::_focusToFront)
+      .def_readwrite("fullscreen_monitor", &EzSecondaryWinConfig::_fullscreenMonitor)
       .def_static("popup", [](int x, int y, int w, int h, bool transparent) {
         return std::make_shared<EzSecondaryWinConfig>(
             EzSecondaryWinConfig::popup(x, y, w, h, transparent));
@@ -983,6 +1044,8 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
         return ctx_t(win->gfxContext());
       })
       .def("requestClose", &EzSecondaryWin::requestClose)
+      .def("markDirty", &EzSecondaryWin::markDirty)
+      .def_readwrite("maxStalenessSeconds", &EzSecondaryWin::_maxStalenessSeconds)
       .def_property("onDraw",
           [](ezsecondarywin_ptr_t win) -> py::object { return py::none(); },
           [](ezsecondarywin_ptr_t win, py::object callback) {
