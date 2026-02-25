@@ -214,12 +214,12 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
 
     // STEP 3: Start per-RTG GPU perf block (before render pass begins)
     // TODO this is not the correct place to put this. A certain RTG is only getting pushed once, but popped twice. Why!?
-      if (rtgroup->_profiler_series == nullptr) {
-        rtgroup->_profiler_name = rtgroup->_name.empty() ? FormatString("rtg:%p", (void*)rtgroup) : std::string("rtg:") + rtgroup->_name;
-        printf("Created rtg series! %s\n", rtgroup->_profiler_name.c_str());
-        rtgroup->_profiler_series = _contextVK->_gpu_channel->createSeries(CrcString(rtgroup->_profiler_name.c_str()));
-      }
-      _contextVK->_gpu_channel->beginSample(rtgroup->_profiler_series);
+    if (rtgroup->_profiler_series == nullptr) {
+      rtgroup->_profiler_name = rtgroup->_name.empty() ? FormatString("rtg:%p", (void*)rtgroup) : std::string("rtg:") + rtgroup->_name;
+      printf("Created rtg series! %s\n", rtgroup->_profiler_name.c_str());
+      rtgroup->_profiler_series = _contextVK->_gpu_channel->createSeries(CrcString(rtgroup->_profiler_name.c_str()));
+    }
+    _contextVK->_gpu_channel->beginSample(rtgroup->_profiler_series);
 
     // STEP 4: Now begin the new render pass
     RTGIMPL->_transitionToRenderTarget(_contextVK->primary_cb());
@@ -257,10 +257,11 @@ void VkFrameBufferInterface::_popRtGroup() {
 
   if (0)
     logchan_rtgroup->log(
-        "_popRtGroup: RTG %p usage=%llu, did_begin_rendering=%d",
+        "_popRtGroup: RTG %p usage=%llu, did_begin_rendering=%d mRtGroupStack=%d",
         finished_rtg,
         (unsigned long long)finished_rtg->_usage,
-        stack_impl ? stack_impl->_did_begin_rendering : 0);
+        stack_impl ? stack_impl->_did_begin_rendering : 0,
+        mRtGroupStack.size());
 
   // End rendering if there's an active render pass
   // NOTE: We end based on _renderPassActive, not did_begin_rendering, because
@@ -287,8 +288,8 @@ void VkFrameBufferInterface::_popRtGroup() {
   if (finished_rtg) {
 
     // End per-RTG GPU perf block (after render pass ends)
-    // TODO this is not the correct place to put this. A certain RTG is only getting pushed once, but popped twice. Why!?
-    // _contextVK->_gpu_channel->endSample(finished_rtg->_profiler_series);
+    if (stack_impl->_did_begin_rendering)
+      _contextVK->_gpu_channel->endSample(finished_rtg->_profiler_series);
 
     auto RTGIMPL = finished_rtg->_impl.getShared<VkRtGroupImpl>();
 

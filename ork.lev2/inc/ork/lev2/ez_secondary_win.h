@@ -140,6 +140,8 @@ struct EzSecondaryWin {
   void _handleResize(int w, int h);
   void _forceClose();  // Explicitly destroy GLFW window (for cleanup when Python holds refs)
 
+  float _maxStalenessSeconds = 0.2f;   // re-render at least this often (safety net)
+
 private:
   friend struct OrkEzApp;
   friend struct SecondaryWinImpl;
