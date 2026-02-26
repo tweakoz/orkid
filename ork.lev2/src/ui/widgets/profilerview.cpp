@@ -66,19 +66,11 @@ void ProfilerView::_drawContextChannel(
         return a->_samples.back().level < b->_samples.back().level;
       });
 
-  // Measure max level so the legend area is wide enough to accommodate indentation.
-  int max_level = 0;
-  for (auto* s : sorted_series)
-    max_level = std::max(max_level, s->_samples.empty() ? 0 : s->_samples.back().level);
-
-  const int   indent_px    = 8;
-  const int   incl_col_w   = lev2::FontMan::stringWidth(5) + 6; // inclusive ms "XX.XX"
-  const int   excl_col_w   = lev2::FontMan::stringWidth(5) + 6; // exclusive ms "XX.XX"
-  const int   count_col_w  = lev2::FontMan::stringWidth(4) + 6; // call count "NNNN"
-  const int   ms_col_w     = incl_col_w + excl_col_w + count_col_w;
-  const int   W            = width();
-  const int   box_x1       = W - (max_label_width + ms_col_w + max_level * indent_px + 28);
-  const int   box_x2       = W - 16;
+  // Three equally-spaced columns: total | isolated | name
+  // col_w driven by the widest header label ("isolated" = 8 chars)
+  const int   col_w    = lev2::FontMan::stringWidth(8) + 8;
+  const int   W        = width();
+  const int   box_x1   = W - int(0.6f * float(max_label_width + 2 * col_w + 20));
   const float chart_x0     = 0.0f;
   const float chart_x1     = float(box_x1 - 8);
   const int   legend_x0    = box_x1 + 4;
@@ -100,7 +92,18 @@ void ProfilerView::_drawContextChannel(
   // Per-series legend entries
   // ------------------------------------------------------------------
   const float legend_row_h   = 14.0f;
-  const float legend_start_y = lane_y_top + 18.0f;
+  const float legend_start_y = lane_y_top + 32.0f;
+
+  // Column headers
+  {
+    int header_y = int(lane_y_top) + 18;
+    _context->RefModColor() = fvec3(0.6f, 0.6f, 0.6f);
+    lev2::FontMan::beginTextBlock(_context, 128);
+    lev2::FontMan::DrawText(_context, legend_x0,             header_y, "total");
+    lev2::FontMan::DrawText(_context, legend_x0 + col_w,     header_y, "isolated");
+    lev2::FontMan::DrawText(_context, legend_x0 + 2 * col_w, header_y, "name");
+    lev2::FontMan::endTextBlock(_context);
+  }
 
   // Pass 1: assign colors and update exclusive currentValues.
   for (int i = 0; i < (int)sorted_series.size(); i++) {
@@ -120,11 +123,10 @@ void ProfilerView::_drawContextChannel(
     std::string key(sname);
     auto& rstate = _render_state_map[key];
 
-    int   level   = series->_samples.empty() ? 0 : series->_samples.back().level;
     float entry_y = legend_start_y + float(i) * legend_row_h;
     int   iy      = int(entry_y);
 
-    int name_x  = legend_x0 + ms_col_w + level * indent_px;
+    int name_x  = legend_x0 + 2 * col_w;
     int entry_w = W - name_x;
     _legend_entries.push_back({name_x, iy, entry_w, int(legend_row_h), key});
 
@@ -134,7 +136,6 @@ void ProfilerView::_drawContextChannel(
 
     float total_ms    = series->_samples.empty() ? 0.0f : float(series->_samples.back().total_time    * 1000.0);
     float isolated_ms = series->_samples.empty() ? 0.0f : float(series->_samples.back().isolated_time * 1000.0);
-    int   count       = series->_samples.empty() ? 0    : series->_samples.back().count;
 
     // total_time ms
     lev2::FontMan::beginTextBlock(_context, 128);
@@ -144,17 +145,11 @@ void ProfilerView::_drawContextChannel(
 
     // isolated_time ms
     lev2::FontMan::beginTextBlock(_context, 128);
-    lev2::FontMan::DrawText(_context, legend_x0 + incl_col_w, iy,
+    lev2::FontMan::DrawText(_context, legend_x0 + col_w, iy,
         FormatString("%0.2f", isolated_ms).c_str());
     lev2::FontMan::endTextBlock(_context);
 
-    // Call count
-    lev2::FontMan::beginTextBlock(_context, 128);
-    lev2::FontMan::DrawText(_context, legend_x0 + incl_col_w + excl_col_w, iy,
-        FormatString("%d", count).c_str());
-    lev2::FontMan::endTextBlock(_context);
-
-    // Series name — indented by call-stack level
+    // Series name
     lev2::FontMan::beginTextBlock(_context, 128);
     lev2::FontMan::DrawText(_context, name_x, iy, sname);
     lev2::FontMan::endTextBlock(_context);
@@ -205,7 +200,8 @@ void ProfilerView::_drawContextChannel(
   }
 
   // ------------------------------------------------------------------
-  // Line plots — each series drawn directly at its total_time value.
+  // Band plots — filled region from (total - isolated) up to total_time,
+  // with a bright top edge line.
   // ------------------------------------------------------------------
   auto rs      = _mtl->_rasterstate;
   auto omacro  = rs->_blendingMacro;
@@ -228,26 +224,62 @@ void ProfilerView::_drawContextChannel(
     fvec3 line_color = rstate.color;
     if (any_hover)
       line_color = is_hovered ? rstate.color * 1.8f : rstate.color * 0.2f;
+    fvec3 fill_color = line_color * 0.25f;
 
     if (n >= 2) {
       float x_step = (chart_x1 - chart_x0) / float(n - 1);
-      lev2::VtxWriter<vtx_t> vw;
-      vw.Lock(_context, _vbuf.get(), n * 2);
-      for (size_t i = 1; i < n; i++) {
-        float val_prev = float(series->_samples[i-1].total_time * 1000.0);
-        float val_curr = float(series->_samples[i].total_time   * 1000.0);
-        float sx_prev  = chart_x0 + float(i-1) * x_step;
-        float sx_curr  = chart_x0 + float(i)   * x_step;
-        float sy_prev  = y_bottom - val_prev * y_scale;
-        float sy_curr  = y_bottom - val_curr * y_scale;
-        vw.AddVertex(vtx_t(fvec3(sx_prev, sy_prev, 0), fvec4(), line_color));
-        vw.AddVertex(vtx_t(fvec3(sx_curr, sy_curr, 0), fvec4(), line_color));
+
+      // Pass 1: filled band (2 triangles per segment)
+      {
+        lev2::VtxWriter<vtx_t> vw;
+        vw.Lock(_context, _vbuf.get(), (n - 1) * 6);
+        for (size_t i = 1; i < n; i++) {
+          float tot_prev  = float(series->_samples[i-1].total_time    * 1000.0);
+          float tot_curr  = float(series->_samples[i].total_time      * 1000.0);
+          float isol_prev = float(series->_samples[i-1].isolated_time * 1000.0);
+          float isol_curr = float(series->_samples[i].isolated_time   * 1000.0);
+          float sx_prev   = chart_x0 + float(i-1) * x_step;
+          float sx_curr   = chart_x0 + float(i)   * x_step;
+          float top_prev  = y_bottom - tot_prev  * y_scale;
+          float top_curr  = y_bottom - tot_curr  * y_scale;
+          float bot_prev  = y_bottom - (tot_prev  - isol_prev)  * y_scale;
+          float bot_curr  = y_bottom - (tot_curr  - isol_curr)  * y_scale;
+          // Triangle 1
+          vw.AddVertex(vtx_t(fvec3(sx_prev, top_prev, 0), fvec4(), fill_color));
+          vw.AddVertex(vtx_t(fvec3(sx_curr, top_curr, 0), fvec4(), fill_color));
+          vw.AddVertex(vtx_t(fvec3(sx_prev, bot_prev, 0), fvec4(), fill_color));
+          // Triangle 2
+          vw.AddVertex(vtx_t(fvec3(sx_prev, bot_prev, 0), fvec4(), fill_color));
+          vw.AddVertex(vtx_t(fvec3(sx_curr, top_curr, 0), fvec4(), fill_color));
+          vw.AddVertex(vtx_t(fvec3(sx_curr, bot_curr, 0), fvec4(), fill_color));
+        }
+        vw.UnLock(_context);
+        _mtl->begin(_tek, _RCFD);
+        _mtl->bindParamMatrix(_par_mvp, _mtxi->RefMVPMatrix());
+        _gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::TRIANGLES);
+        _mtl->end(_RCFD);
       }
-      vw.UnLock(_context);
-      _mtl->begin(_tek, _RCFD);
-      _mtl->bindParamMatrix(_par_mvp, _mtxi->RefMVPMatrix());
-      _gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::LINES);
-      _mtl->end(_RCFD);
+
+      // Pass 2: top edge line at total_time
+      {
+        lev2::VtxWriter<vtx_t> vw;
+        vw.Lock(_context, _vbuf.get(), (n - 1) * 2);
+        for (size_t i = 1; i < n; i++) {
+          float tot_prev = float(series->_samples[i-1].total_time * 1000.0);
+          float tot_curr = float(series->_samples[i].total_time   * 1000.0);
+          float sx_prev  = chart_x0 + float(i-1) * x_step;
+          float sx_curr  = chart_x0 + float(i)   * x_step;
+          float sy_prev  = y_bottom - tot_prev * y_scale;
+          float sy_curr  = y_bottom - tot_curr * y_scale;
+          vw.AddVertex(vtx_t(fvec3(sx_prev, sy_prev, 0), fvec4(), line_color));
+          vw.AddVertex(vtx_t(fvec3(sx_curr, sy_curr, 0), fvec4(), line_color));
+        }
+        vw.UnLock(_context);
+        _mtl->begin(_tek, _RCFD);
+        _mtl->bindParamMatrix(_par_mvp, _mtxi->RefMVPMatrix());
+        _gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::LINES);
+        _mtl->end(_RCFD);
+      }
     }
   }
 
