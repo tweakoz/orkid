@@ -545,8 +545,8 @@ struct VkProfilerChannel final : ProfilerChannel {
   void beginProfilerFrame(VkCommandBuffer cmdbuf);
   void endProfilerFrame() override;
 
-  void beginSample(profiler_series_ptr_t series) override;
-  void endSample(profiler_series_ptr_t series) override;;
+  void beginSample(ProfilerSeries* series) override;
+  void endSample(ProfilerSeries* series) override;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

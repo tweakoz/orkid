@@ -79,11 +79,12 @@ struct ProfilerSeries {
 
   // accumulated frame data used to addSample on endFrame
 
-  double _total_time    = 0;
-  double _isolated_time = 0;
-  int    _call_count    = 0;
-  int    _call_level    = -1;
-  bool   _sampling      = false;
+  double _total_time     = 0;
+  double _isolated_time  = 0;
+  int    _call_count     = 0;
+  int    _max_call_level = -1;
+  int    _call_level     = -1;
+  bool   _sampling       = false;
 
   ProfilerSeries(CrcString name) : _name(name) {}
   void addSample(Sample sample);
@@ -114,11 +115,13 @@ struct ProfilerChannel {
   virtual void beginProfilerFrame();
   virtual void endProfilerFrame();
 
-  // sample. must override
-  virtual void beginSample(profiler_series_ptr_t series) = 0;
-  virtual void endSample(profiler_series_ptr_t series)   = 0;
+  virtual void beginSample(ProfilerSeries* series) = 0;
+  virtual void endSample(ProfilerSeries* series)   = 0;
+  void beginSample(profiler_series_ptr_t s) { beginSample(s.get()); }
+  void endSample(profiler_series_ptr_t s)   { endSample(s.get()); }
 
-  ProfilerScope sampleScope(profiler_series_ptr_t series);
+  ProfilerScope sampleScope(ProfilerSeries* series);
+  ProfilerScope sampleScope(profiler_series_ptr_t s); // defined after ProfilerScope
 };
 
 using profiler_channel_ptr_t = std::shared_ptr<ProfilerChannel>;
@@ -135,20 +138,21 @@ struct CpuProfilerChannel final : ProfilerChannel {
 
   using ProfilerChannel::ProfilerChannel;
 
-  void beginSample(profiler_series_ptr_t series) override;
-  void endSample(profiler_series_ptr_t series) override;
+  void beginSample(ProfilerSeries* series) override;
+  void endSample(ProfilerSeries* series) override;
 };
 
 struct ProfilerScope {
-  ProfilerScope(ProfilerChannel* channel, profiler_series_ptr_t series) : _channel(channel), _series(series) { }
-  ~ProfilerScope() { 
-    // this is a valid scenario if you made a sampleScope but then endSample on something above it in the stack
+  ProfilerScope(ProfilerChannel* channel, ProfilerSeries* series) : _channel(channel), _series(series) {}
+  ~ProfilerScope() {
     if (!_series->_sampling) return;
-    _channel->endSample(_series); 
+    _channel->endSample(_series);
   }
   ProfilerChannel* _channel;
-  profiler_series_ptr_t _series;
+  ProfilerSeries*  _series;
 };
+
+inline ProfilerScope ProfilerChannel::sampleScope(profiler_series_ptr_t s) { return sampleScope(s.get()); }
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork

@@ -281,7 +281,8 @@ void ProfilerChannel::endProfilerFrame() {
 	// We add a sample for all of them even if they didn't accumulate a sample so that the sampel vectors lineup.
 	// Some samples may have 0 total_accum_time and call_level -1!
     for (auto s : _series_iter) {
-		s->addSample({_current_tick, s->_total_time, s->_isolated_time, s->_call_count, s->_call_level});
+		OrkAssertI(s->_call_level == -1, "ProfilerSeries did not call endSample!");
+		s->addSample({_current_tick, s->_total_time, s->_isolated_time, s->_call_count, s->_max_call_level});
 		s->_total_time     = 0;
 		s->_isolated_time  = 0;
 		s->_call_count     = 0;
@@ -292,22 +293,18 @@ void ProfilerChannel::endProfilerFrame() {
 	_current_tick++;
 }
 
-[[nodiscard]] ProfilerScope ProfilerChannel::sampleScope(profiler_series_ptr_t series) {
+[[nodiscard]] ProfilerScope ProfilerChannel::sampleScope(ProfilerSeries* series) {
 	beginSample(series);
 	return ProfilerScope(this, series);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CpuProfilerChannel::beginSample(profiler_series_ptr_t series) {
-	printf("CpuProfilerChannel beginSample %s\n", series->_name.strval());
+void CpuProfilerChannel::beginSample(ProfilerSeries* s) {
+	// printf("CpuProfilerChannel beginSample %s\n", s->_name.strval());
 	double now = _timer.get_sync_time();
-	
-	auto s = series.get();
-	if (s->_call_level != -1 && s->_call_level != _current_level)
-		printf("VkProfilerSeries beginSample not being called from same level in single frame! %s priorLevel: %d currentLevel %d\n", series->_name.strval(), s->_call_level, _current_level);
-	else
-		OrkAssertI(s->_call_level == -1 || s->_call_level == _current_level, "VkProfilerSeries did not call endSample!");
+
+	OrkAssertI(s->_call_level == -1, "VkProfilerSeries did not call endSample!");
 
 	// pause parent by accumulating its time so far
     if (!_span_stack.empty()) {
@@ -321,21 +318,21 @@ void CpuProfilerChannel::beginSample(profiler_series_ptr_t series) {
 	_span_stack.push({.series = s, .start_total_time = now, .start_isolated_time = now});
 }
 
-void CpuProfilerChannel::endSample(profiler_series_ptr_t series) {
-	printf("CpuProfilerChannel endSample %s\n", series->_name.strval());
+void CpuProfilerChannel::endSample(ProfilerSeries* s) {
+	// printf("CpuProfilerChannel endSample %s\n", s->_name.strval());
 	double now = _timer.get_sync_time();
 
-	auto s = series.get();
 	OrkAssertI(s->_call_level != -1, "ProfilerSeries did not call beginSample!");
 
 	while (!_span_stack.empty()) {
 		auto& top = _span_stack.top();
-		printf("CpuProfilerChannel Pop endSample %s\n", top.series->_name.strval());
-
+		
 		// exclude time in nested scopes from parent scope
 		top.series->_total_time     = (now - top.start_total_time);
 		top.series->_isolated_time += (now - top.start_isolated_time);
-		top.series->_sampling = false;
+		top.series->_max_call_level = std::max(top.series->_max_call_level, _current_level);
+		top.series->_call_level     = -1;
+		top.series->_sampling       = false;
 		_current_level--;
 		OrkAssertI(_current_level >= 0, "CpuProfilerChannel _current_level never go below 0!");
 		_span_stack.pop();
