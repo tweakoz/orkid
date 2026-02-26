@@ -63,24 +63,24 @@ void PerfMarkerPopState();
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ProfilerSeries {
-  static constexpr u16 MAX_SAMPLES = 1024;
+  static constexpr u16 MAX_SAMPLES = 128;
   CrcString _name;
 
   struct Sample {
     u64    tick;
     double time;
     int    count;
+    int    level;
   };
 
   // Rolling Data
   std::deque<Sample> _samples{}; // should be ring?
 
   // accumulated frame data used to addSample on endFrame
-  double _time  = 0;
-  int    _count = 0;
-
-  // transient recording data
-  int _level = -1;
+  double _total_accum_time = 0;
+  int    _call_count       = 0;
+  int    _call_level       = -1;
+  bool   _sampling         = false;
 
   ProfilerSeries(CrcString name) : _name(name) {}
   void addSample(Sample sample);
@@ -100,8 +100,8 @@ struct ProfilerChannel {
   std::vector<ProfilerSeries*> _series_iter{};
 
    // Transient data to determine hiearchy level
-  int _current_level{};
-  u64 _current_tick{};
+  int _current_level  = 0;
+  u64 _current_tick   = 0;
 
   ProfilerChannel(CrcString&& name) : _name(name) {}
 
@@ -140,10 +140,7 @@ struct ProfilerScope {
   ProfilerScope(ProfilerChannel* channel, profiler_series_ptr_t series) : _channel(channel), _series(series) { }
   ~ProfilerScope() { 
     // this is a valid scenario if you made a sampleScope but then endSample on something above it in the stack
-    if (_series->_level == -1) {
-      printf("ProfilerSeries endSample already called for %s\n", _series->_name.strval());
-      return;
-    }
+    if (!_series->_sampling) return;
     _channel->endSample(_series); 
   }
   ProfilerChannel* _channel;

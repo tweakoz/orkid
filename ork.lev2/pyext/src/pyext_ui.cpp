@@ -29,6 +29,7 @@
 #include <ork/lev2/ui/colorswatch.h>
 #include <ork/lev2/ui/imgview.h>
 #include <ork/lev2/ui/graphview.h>
+#include <ork/lev2/ui/profilerview.h>
 #include <ork/lev2/ui/transformcurveeditor.h>
 #include <ork/lev2/ui/logger_group.h>
 #include <ork/lev2/ui/logger_ui_backend.h>
@@ -699,6 +700,35 @@ void pyinit_ui(py::module& module_lev2) {
           .def_readwrite("min_band_pixels", &ui::GraphView::_min_band_pixels)
           .def_readwrite("paused", &ui::GraphView::_paused);
   type_codec->registerStdCodec<ui::graphview_ptr_t>(graphview_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // ProfilerView
+  /////////////////////////////////////////////////////////////////////////////////
+  auto profilerview_type = //
+      py::class_<ui::ProfilerView, ui::PrimCanvas, ui::profilerview_ptr_t>(uimodule, "ProfilerView")
+          .def_static(
+              "wfactory",
+              [type_codec](py::list py_args) -> ui::profilerview_ptr_t {
+                return std::make_shared<ui::ProfilerView>();
+              })
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t {
+                auto layoutitem = lg->makeChild<ui::ProfilerView>();
+                return layoutitem.as_shared();
+              })
+          .def_static(
+              "uigridfactory",
+              [type_codec](uilayoutgroup_ptr_t lg, ui::gridparams_ptr_t gp, py::list py_args) -> py::list {
+                auto layoutitems = lg->makeGridOfWidgets<ui::ProfilerView>(gp);
+                py::list rval;
+                for (auto item : layoutitems) {
+                  rval.append(item.as_shared());
+                }
+                return rval;
+              })
+          .def("setContext", [](ui::ProfilerView* v, ctx_t& c) { v->setContext(c.get()); })
+          .def_readwrite("clear_color", &ui::ProfilerView::_bg_color);
+  type_codec->registerStdCodec<ui::profilerview_ptr_t>(profilerview_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto sgviewport_type = //
       py::class_<ui::SceneGraphViewport, ui::Viewport, uisgviewport_ptr_t>(uimodule, "SceneGraphViewport")

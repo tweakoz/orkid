@@ -216,7 +216,6 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
     // TODO this is not the correct place to put this. A certain RTG is only getting pushed once, but popped twice. Why!?
     if (rtgroup->_profiler_series == nullptr) {
       rtgroup->_profiler_name = rtgroup->_name.empty() ? FormatString("rtg:%p", (void*)rtgroup) : std::string("rtg:") + rtgroup->_name;
-      printf("Created rtg series! %s\n", rtgroup->_profiler_name.c_str());
       rtgroup->_profiler_series = _contextVK->_gpu_channel->createSeries(CrcString(rtgroup->_profiler_name.c_str()));
     }
     _contextVK->_gpu_channel->beginSample(rtgroup->_profiler_series);

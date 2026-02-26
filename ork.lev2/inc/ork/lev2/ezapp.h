@@ -20,11 +20,10 @@
 #include <ork/application/application.h>
 #include <ork/lev2/ui/event.h>
 #include <ork/lev2/ui/viewport.h>
+#include <ork/lev2/ui/context.h>
+#include <ork/lev2/ui/profilerview.h>
 #include <ork/lev2/gfx/scenegraph/scenegraph.h>
 #include <ork/lev2/glfw/ctx_glfw.h>
-
-#include <ork/lev2/ui/event.h>
-#include <ork/lev2/ui/context.h>
 #include <ork/lev2/ez_secondary_win.h>
 #include <ork/lev2/subsystem_gpu.h>
 #include <ork/lev2/subsystem_audio.h>
@@ -109,6 +108,8 @@ public:
   onupdatewithscene_t _onUpdateWithScene    = nullptr;
   scenegraph::scene_ptr_t _execscene;
   varmap::varmap_ptr_t _execsceneparams;
+
+  // TODO delete?
   ork::Timer _render_timer;
   double _render_prevtime        = 0;
   double _render_stats_timeaccum = 0;

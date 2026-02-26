@@ -1931,14 +1931,14 @@ void VkProfilerChannel::create(VkDevice device, const VulkanDeviceInfo* devicein
 }
 
 void VkProfilerChannel::beginProfilerFrame(VkCommandBuffer cmdbuf) {
-  printf("VkProfilerChannel beginProfilerFrame\n");
+  // printf("VkProfilerChannel beginProfilerFrame\n");
   OrkAssertI(_device != VK_NULL_HANDLE, "VulkanProfilerChannel initialize not called!");
   _cmdbuf = cmdbuf;
   vkCmdResetQueryPool(_cmdbuf, _query_pool, 0, MAX_GPU_PERF_QUERIES * 2);
 }
 
 void VkProfilerChannel::endProfilerFrame() {
-  printf("VkProfilerChannel endProfilerFrame\n");
+  // printf("VkProfilerChannel endProfilerFrame\n");
   OrkAssertI(_cmdbuf != VK_NULL_HANDLE, "VulkanProfilerChannel beginFrame not called!");
   _cmdbuf = VK_NULL_HANDLE;
 
@@ -1947,18 +1947,18 @@ void VkProfilerChannel::endProfilerFrame() {
   _timestamps.resize(queryCount);
   VkResult ok = vkGetQueryPoolResults(_device, _query_pool, 0, queryCount, queryCount * sizeof(u64), 
     _timestamps.data(), sizeof(u64), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
-  printf("vkGetQueryPoolResults: %s\n", string_VkResult(ok));
+  // printf("vkGetQueryPoolResults: %s\n", string_VkResult(ok));
   OrkAssert(VK_SUCCESS == ok);
   _query_index = 0;
 
   // Accumulate time and counts from timestamp queries
   for (auto& span : _vk_spans) {
-		OrkAssertI(span.series->_level == -1, "VkProfilerSeries did not call endSample!");
+		OrkAssertI(span.series->_call_level != -1, "VkProfilerSeries did not call beginSample!");
     double begin_ts = _timestamps[span.begin_query];
     double end_ts   = _timestamps[span.end_query];
     double sample_time = double(end_ts - begin_ts) * double(_timestampPeriod) * 1e-9;
-    span.series->_time += sample_time;
-		span.series->_count++;
+    span.series->_total_accum_time += sample_time;
+		span.series->_call_count++;
   }
   _vk_spans.clear();
 
@@ -1967,7 +1967,7 @@ void VkProfilerChannel::endProfilerFrame() {
 }
 
 void VkProfilerChannel::beginSample(profiler_series_ptr_t series) {
-  printf("VkProfilerChannel beginSample %s\n", series->_name.strval());
+  // printf("VkProfilerChannel beginSample %s\n", series->_name.strval());
   OrkAssertI(_cmdbuf != VK_NULL_HANDLE, "VulkanProfilerChannel beginFrame not called!");
   OrkAssertI(_query_index < MAX_GPU_PERF_QUERIES, "Vulkan Profiler Queries exhausted.");
 
@@ -1975,8 +1975,13 @@ void VkProfilerChannel::beginSample(profiler_series_ptr_t series) {
   vkCmdWriteTimestamp(_cmdbuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, _query_pool, current_query_index);
 
   auto s = series.get();
-  OrkAssertI(s->_level == -1, "VkProfilerSeries did not call endSample!");
-  s->_level = _current_level++;
+	if (s->_call_level != -1 && s->_call_level != _current_level)
+    printf("VkProfilerSeries beginSample not being called from same level in single frame! %s priorLevel: %d currentLevel %d\n", series->_name.strval(), s->_call_level, _current_level);
+  else
+    OrkAssertI(s->_call_level == -1 || s->_call_level == _current_level, "VkProfilerSeries did not call endSample!");
+
+  s->_call_level = _current_level++;
+  s->_sampling   = true;
 
 	// pause parent time by pushing a span which will end at the current query index
   if (!_vk_span_stack.empty()) {
@@ -1984,26 +1989,27 @@ void VkProfilerChannel::beginSample(profiler_series_ptr_t series) {
     _vk_spans.push_back({ .series = parent.series, .begin_query = parent.begin_query, .end_query = current_query_index });
   }
 
-	_vk_span_stack.push({.series = s, .begin_query = current_query_index, .end_query = -1});
+	_vk_span_stack.push({ .series = s, .begin_query = current_query_index, .end_query = -1 });
 }
 
 void VkProfilerChannel::endSample(profiler_series_ptr_t series) {
-  printf("VkProfilerChannel endSample %s\n", series->_name.strval());
+  // printf("VkProfilerChannel endSample %s\n", series->_name.strval());
   OrkAssertI(_cmdbuf != VK_NULL_HANDLE, "VulkanProfilerChannel beginFrame not called!");
 
   int current_query_index = _query_index++;
   vkCmdWriteTimestamp(_cmdbuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, _query_pool, current_query_index);
 
   auto s = series.get();
-  OrkAssertI(s->_level != -1, "VkProfilerSeries did not call beginSample!");
+  OrkAssertI(s->_call_level != -1, "VkProfilerSeries did not call beginSample!");
 
   while (!_vk_span_stack.empty()) {
     // Copy before pop — pop() destroys the element so a reference would dangle
     VkTimespan top = _vk_span_stack.top();
     _vk_spans.push_back({ .series = top.series, .begin_query = top.begin_query, .end_query = current_query_index });
-    top.series->_count++;
-    top.series->_level = -1;
+    top.series->_call_count++;
+    top.series->_sampling = false;
     _current_level--;
+    OrkAssertI(_current_level >= 0, "CpuProfilerChannel _current_level never go below 0!");
     _vk_span_stack.pop();
 
     // End samples for all children up to and including the target series
