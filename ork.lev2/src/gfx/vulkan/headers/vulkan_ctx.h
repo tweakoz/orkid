@@ -523,11 +523,13 @@ struct VkProfilerChannel final : ProfilerChannel {
 
   struct VkTimespan {
     ProfilerSeries* series = nullptr;
+    int begin_total_query = -1;
     int begin_query = -1;
     int end_query   = -1;
   };
   std::stack<VkTimespan> _vk_span_stack{};
-  std::deque<VkTimespan> _vk_spans{};
+  std::deque<VkTimespan> _vk_spans{};        // isolated-time segments
+  std::deque<VkTimespan> _vk_total_spans{};  // one per series: begin_total_query -> end_query
 
   u32 _query_index = 0; // next available query index in current pool
 

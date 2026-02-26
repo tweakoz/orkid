@@ -71,14 +71,17 @@ void ProfilerView::_drawContextChannel(
   for (auto* s : sorted_series)
     max_level = std::max(max_level, s->_samples.empty() ? 0 : s->_samples.back().level);
 
-  const int   indent_px = 8;
-  const int   ms_col_w  = lev2::FontMan::stringWidth(5) + 8; // fixed ms column ("XX.XX")
-  const int   W         = width();
-  const int   box_x1    = W - (max_label_width + ms_col_w + max_level * indent_px + 28);
-  const int   box_x2    = W - 16;
-  const float chart_x0  = 0.0f;
-  const float chart_x1  = float(box_x1 - 8);
-  const int   legend_x0 = box_x1 + 4;
+  const int   indent_px    = 8;
+  const int   incl_col_w   = lev2::FontMan::stringWidth(5) + 6; // inclusive ms "XX.XX"
+  const int   excl_col_w   = lev2::FontMan::stringWidth(5) + 6; // exclusive ms "XX.XX"
+  const int   count_col_w  = lev2::FontMan::stringWidth(4) + 6; // call count "NNNN"
+  const int   ms_col_w     = incl_col_w + excl_col_w + count_col_w;
+  const int   W            = width();
+  const int   box_x1       = W - (max_label_width + ms_col_w + max_level * indent_px + 28);
+  const int   box_x2       = W - 16;
+  const float chart_x0     = 0.0f;
+  const float chart_x1     = float(box_x1 - 8);
+  const int   legend_x0    = box_x1 + 4;
 
   // ------------------------------------------------------------------
   // Channel label — centered above the legend area
@@ -108,27 +111,9 @@ void ProfilerView::_drawContextChannel(
       rstate.color.setHSV(hue, 0.65f, 0.8f);
       rstate.color_index = _color_index++;
     }
-    if (!series->_samples.empty())
-      rstate.currentValue = float(series->_samples.back().time * 1000.0);
   }
 
-  // Pass 2: compute inclusive display values.
-  // Series at level L = its own exclusive time + exclusive time of ALL series
-  // at strictly deeper levels (> L).  Siblings at the same level are excluded.
-  std::vector<float> inclusive_vals(sorted_series.size());
-  for (int i = 0; i < (int)sorted_series.size(); i++) {
-    int   level_i = sorted_series[i]->_samples.empty() ? 0 : sorted_series[i]->_samples.back().level;
-    float sum     = _render_state_map[std::string(sorted_series[i]->_name.strval())].currentValue;
-    for (int j = 0; j < (int)sorted_series.size(); j++) {
-      if (j == i) continue;
-      int level_j = sorted_series[j]->_samples.empty() ? 0 : sorted_series[j]->_samples.back().level;
-      if (level_j > level_i)
-        sum += _render_state_map[std::string(sorted_series[j]->_name.strval())].currentValue;
-    }
-    inclusive_vals[i] = sum;
-  }
-
-  // Pass 3: draw legend entries.
+  // Pass 2: draw legend entries.
   for (int i = 0; i < (int)sorted_series.size(); i++) {
     auto*       series = sorted_series[i];
     const char* sname  = series->_name.strval();
@@ -147,10 +132,26 @@ void ProfilerView::_drawContextChannel(
     fvec3 draw_color = hovered ? rstate.color * 1.8f : rstate.color;
     _context->RefModColor() = draw_color;
 
-    // Inclusive ms value — own time + all deeper levels
-    auto valstr = FormatString("%0.2f", inclusive_vals[i]);
+    float total_ms    = series->_samples.empty() ? 0.0f : float(series->_samples.back().total_time    * 1000.0);
+    float isolated_ms = series->_samples.empty() ? 0.0f : float(series->_samples.back().isolated_time * 1000.0);
+    int   count       = series->_samples.empty() ? 0    : series->_samples.back().count;
+
+    // total_time ms
     lev2::FontMan::beginTextBlock(_context, 128);
-    lev2::FontMan::DrawText(_context, legend_x0, iy, valstr.c_str());
+    lev2::FontMan::DrawText(_context, legend_x0, iy,
+        FormatString("%0.2f", total_ms).c_str());
+    lev2::FontMan::endTextBlock(_context);
+
+    // isolated_time ms
+    lev2::FontMan::beginTextBlock(_context, 128);
+    lev2::FontMan::DrawText(_context, legend_x0 + incl_col_w, iy,
+        FormatString("%0.2f", isolated_ms).c_str());
+    lev2::FontMan::endTextBlock(_context);
+
+    // Call count
+    lev2::FontMan::beginTextBlock(_context, 128);
+    lev2::FontMan::DrawText(_context, legend_x0 + incl_col_w + excl_col_w, iy,
+        FormatString("%d", count).c_str());
     lev2::FontMan::endTextBlock(_context);
 
     // Series name — indented by call-stack level
@@ -169,13 +170,9 @@ void ProfilerView::_drawContextChannel(
     n_max_samples = std::max(n_max_samples, series->_samples.size());
 
   float cum_max_value = 0.0f;
-  for (size_t si = 0; si < n_max_samples; si++) {
-    float cum_at_i = 0.0f;
-    for (auto* series : sorted_series) {
-      if (si < series->_samples.size())
-        cum_at_i += float(series->_samples[si].time * 1000.0);
-    }
-    cum_max_value = std::max(cum_max_value, cum_at_i);
+  for (auto* series : sorted_series) {
+    for (auto& sample : series->_samples)
+      cum_max_value = std::max(cum_max_value, float(sample.total_time * 1000.0));
   }
   if (cum_max_value < 0.1f) cum_max_value = 0.1f;
 
@@ -208,10 +205,7 @@ void ProfilerView::_drawContextChannel(
   }
 
   // ------------------------------------------------------------------
-  // Stacked line plots — series drawn at cumulative Y positions.
-  // Each series is plotted at (running_baseline[i] + own_value[i]),
-  // measured upward from y_bottom.  After drawing, the series' values
-  // are added to baseline so the next (deeper) series stacks on top.
+  // Line plots — each series drawn directly at its total_time value.
   // ------------------------------------------------------------------
   auto rs      = _mtl->_rasterstate;
   auto omacro  = rs->_blendingMacro;
@@ -222,27 +216,6 @@ void ProfilerView::_drawContextChannel(
   rs->setWriteMaskZ(false);
   rs->_priority = 1 << 16;
   _fxi->pushRasterState(rs);
-
-  // Precompute per-series inclusive sample values.
-  // inclusive_samples[si][idx] = this series' own value + values of all series
-  // at strictly deeper levels (level > level_si).  Siblings are excluded.
-  std::vector<std::vector<float>> inclusive_samples(sorted_series.size());
-  for (int si = 0; si < (int)sorted_series.size(); si++) {
-    int level_si = sorted_series[si]->_samples.empty() ? 0 : sorted_series[si]->_samples.back().level;
-    inclusive_samples[si].assign(n_max_samples, 0.0f);
-    // Own values
-    for (size_t idx = 0; idx < sorted_series[si]->_samples.size() && idx < n_max_samples; idx++)
-      inclusive_samples[si][idx] = float(sorted_series[si]->_samples[idx].time * 1000.0);
-    // All strictly deeper levels
-    for (int sj = 0; sj < (int)sorted_series.size(); sj++) {
-      if (sj == si) continue;
-      int level_sj = sorted_series[sj]->_samples.empty() ? 0 : sorted_series[sj]->_samples.back().level;
-      if (level_sj > level_si) {
-        for (size_t idx = 0; idx < sorted_series[sj]->_samples.size() && idx < n_max_samples; idx++)
-          inclusive_samples[si][idx] += float(sorted_series[sj]->_samples[idx].time * 1000.0);
-      }
-    }
-  }
 
   for (int si = 0; si < (int)sorted_series.size(); si++) {
     auto*       series = sorted_series[si];
@@ -261,12 +234,12 @@ void ProfilerView::_drawContextChannel(
       lev2::VtxWriter<vtx_t> vw;
       vw.Lock(_context, _vbuf.get(), n * 2);
       for (size_t i = 1; i < n; i++) {
-        float incl_prev = inclusive_samples[si][i-1];
-        float incl_curr = inclusive_samples[si][i];
-        float sx_prev   = chart_x0 + float(i-1) * x_step;
-        float sx_curr   = chart_x0 + float(i)   * x_step;
-        float sy_prev   = y_bottom - incl_prev * y_scale;
-        float sy_curr   = y_bottom - incl_curr * y_scale;
+        float val_prev = float(series->_samples[i-1].total_time * 1000.0);
+        float val_curr = float(series->_samples[i].total_time   * 1000.0);
+        float sx_prev  = chart_x0 + float(i-1) * x_step;
+        float sx_curr  = chart_x0 + float(i)   * x_step;
+        float sy_prev  = y_bottom - val_prev * y_scale;
+        float sy_curr  = y_bottom - val_curr * y_scale;
         vw.AddVertex(vtx_t(fvec3(sx_prev, sy_prev, 0), fvec4(), line_color));
         vw.AddVertex(vtx_t(fvec3(sx_curr, sy_curr, 0), fvec4(), line_color));
       }

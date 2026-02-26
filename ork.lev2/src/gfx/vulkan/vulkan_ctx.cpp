@@ -1951,16 +1951,23 @@ void VkProfilerChannel::endProfilerFrame() {
   OrkAssert(VK_SUCCESS == ok);
   _query_index = 0;
 
-  // Accumulate time and counts from timestamp queries
+  // Accumulate isolated_time from per-segment spans
   for (auto& span : _vk_spans) {
 		OrkAssertI(span.series->_call_level != -1, "VkProfilerSeries did not call beginSample!");
-    double begin_ts = _timestamps[span.begin_query];
-    double end_ts   = _timestamps[span.end_query];
+    double begin_ts    = _timestamps[span.begin_query];
+    double end_ts      = _timestamps[span.end_query];
     double sample_time = double(end_ts - begin_ts) * double(_timestampPeriod) * 1e-9;
-    span.series->_total_accum_time += sample_time;
-		span.series->_call_count++;
+    span.series->_isolated_time += sample_time;
   }
   _vk_spans.clear();
+
+  // Compute total_time from full-duration spans (begin_total_query -> end_query)
+  for (auto& span : _vk_total_spans) {
+    double begin_ts    = _timestamps[span.begin_total_query];
+    double end_ts      = _timestamps[span.end_query];
+    span.series->_total_time = double(end_ts - begin_ts) * double(_timestampPeriod) * 1e-9;
+  }
+  _vk_total_spans.clear();
 
   // accumulate in series through base call
   ProfilerChannel::endProfilerFrame(); 
@@ -1982,6 +1989,7 @@ void VkProfilerChannel::beginSample(profiler_series_ptr_t series) {
 
   s->_call_level = _current_level++;
   s->_sampling   = true;
+  s->_call_count++;
 
 	// pause parent time by pushing a span which will end at the current query index
   if (!_vk_span_stack.empty()) {
@@ -1989,7 +1997,7 @@ void VkProfilerChannel::beginSample(profiler_series_ptr_t series) {
     _vk_spans.push_back({ .series = parent.series, .begin_query = parent.begin_query, .end_query = current_query_index });
   }
 
-	_vk_span_stack.push({ .series = s, .begin_query = current_query_index, .end_query = -1 });
+	_vk_span_stack.push({ .series = s, .begin_total_query = current_query_index, .begin_query = current_query_index, .end_query = -1 });
 }
 
 void VkProfilerChannel::endSample(profiler_series_ptr_t series) {
@@ -2006,7 +2014,6 @@ void VkProfilerChannel::endSample(profiler_series_ptr_t series) {
     // Copy before pop — pop() destroys the element so a reference would dangle
     VkTimespan top = _vk_span_stack.top();
     _vk_spans.push_back({ .series = top.series, .begin_query = top.begin_query, .end_query = current_query_index });
-    top.series->_call_count++;
     top.series->_sampling = false;
     _current_level--;
     OrkAssertI(_current_level >= 0, "CpuProfilerChannel _current_level never go below 0!");
@@ -2014,6 +2021,8 @@ void VkProfilerChannel::endSample(profiler_series_ptr_t series) {
 
     // End samples for all children up to and including the target series
     if (top.series == s) {
+      // Record full-duration span for total_time computation
+      _vk_total_spans.push_back({ .series = s, .begin_total_query = top.begin_total_query, .end_query = current_query_index });
       // Resume parent's timing from the current query index
       if (!_vk_span_stack.empty()) {
         _vk_span_stack.top().begin_query = current_query_index;

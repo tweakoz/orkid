@@ -180,14 +180,9 @@ void Context::_doSubmitPrimaryCommandBuffer(){
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context::beginFrame(bool visual) {
+  _main_thread_channel->beginProfilerFrame();
   _main_thread_channel->beginSample(_frame_all_series);
   auto _ = _main_thread_channel->sampleScope(_begin_frame_series);
-
-  // _perf_frame_t0 = _ctxtimer.SecsSinceStart();
-  // _perf_acquire_duration = 0.0;
-  // _perf_fence_wait_duration = 0.0;
-  // _perf_submit_duration = 0.0;
-  // _perf_present_duration = 0.0;
 
   OrkAssert(_currentPhase == 0);
   _currentPhase = "INFRAME"_crcu;

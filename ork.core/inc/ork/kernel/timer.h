@@ -68,7 +68,8 @@ struct ProfilerSeries {
 
   struct Sample {
     u64    tick;
-    double time;
+    double total_time;
+    double isolated_time;
     int    count;
     int    level;
   };
@@ -77,10 +78,12 @@ struct ProfilerSeries {
   std::deque<Sample> _samples{}; // should be ring?
 
   // accumulated frame data used to addSample on endFrame
-  double _total_accum_time = 0;
-  int    _call_count       = 0;
-  int    _call_level       = -1;
-  bool   _sampling         = false;
+
+  double _total_time    = 0;
+  double _isolated_time = 0;
+  int    _call_count    = 0;
+  int    _call_level    = -1;
+  bool   _sampling      = false;
 
   ProfilerSeries(CrcString name) : _name(name) {}
   void addSample(Sample sample);
@@ -125,8 +128,8 @@ struct CpuProfilerChannel final : ProfilerChannel {
 
   struct Timespan {
     ProfilerSeries* series;
-    double start_time;
-    double accum_time;
+    double start_total_time;
+    double start_isolated_time;
   };
   std::stack<Timespan> _span_stack{};
 
