@@ -422,7 +422,7 @@ void VkContext::_initVulkanCommon() {
   ////////////////////////////
   // create GPU profiler
   ////////////////////////////
-  auto gpu_channel = std::make_shared<VkProfilerChannel>("vulkan_gpu"_crc);
+  auto gpu_channel = std::make_shared<VkProfilerChannel>("vulkan_gpu");
   gpu_channel->create(_vkdevice, _vkdeviceinfo.get());
   initializeGpuProfiler(gpu_channel);
 }
@@ -811,7 +811,7 @@ void VkContext::_doSubmitPrimaryCommandBuffer(){
 
     // Submit
     {
-      auto _ = _main_thread_channel->sampleScope(_submit_series);
+      OrkCpuProfilerSampleScope(CHANNEL_RENDER_CONTEXT, "submit");
       if ( not semas_empty) {
         // Submit with timeline semaphores
         swapchain->_submitFrameWithSemaphores(this);
@@ -825,7 +825,7 @@ void VkContext::_doSubmitPrimaryCommandBuffer(){
     // Present !
     ///////////////////////////////////////////////////////
     {
-      auto _ = _main_thread_channel->sampleScope(_present_series);
+      OrkCpuProfilerSampleScope(CHANNEL_RENDER_CONTEXT, "present");
       swapchain->enqueuePresentFrame(this);
       swapchain->waitPresentFrame(this);
     }
@@ -1020,9 +1020,11 @@ void VkContext::_doPreBeginFrame() {
   _doBeginPrimaryCommandBuffer();
 
   // begin gpu profiler frame after we have setup commandbuffer
+  // must use beginProfilerFrame overload to set cmdbuf for frame
   VkProfilerChannel* vk_gpu_channel = static_cast<VkProfilerChannel*>(_gpu_channel.get());
-  vk_gpu_channel->beginProfilerFrame(primary_cb()->_vkcmdbuf);
-  _gpu_channel->beginSample(_gpu_fame_all_series);
+  vk_gpu_channel->frameBegin(primary_cb()->_vkcmdbuf);
+
+  OrkProfilerSampleBegin(_gpu_channel, _gpu_fame_all_series);
 
   /////////////////////////////////////////
   _pendingOneShotCommands.atomicOp([&](vkseccmdbufarray_t& unlocked) {
@@ -1141,7 +1143,7 @@ void VkContext::_doEndFrame() {
   ////////////////////////
 
   //end frame:all GPU perf block (covers all command buffer content)
-  _gpu_channel->endSample(_gpu_fame_all_series);
+  OrkProfilerSampleEnd(_gpu_channel, _gpu_fame_all_series);
 
   _doEndPrimaryCommandBuffer();
 
@@ -1157,7 +1159,7 @@ void VkContext::_doEndFrame() {
   submitPrimaryCommandBuffer(); 
 
   // read back GPU timestamps now that the GPU has finished executing
-  _gpu_channel->endProfilerFrame();
+  OrkProfilerFrameEnd(_gpu_channel);
 
   ///////////////////////////////////////////////////////
 
@@ -1168,7 +1170,7 @@ void VkContext::_doEndFrame() {
     _cmdbufcurpri_gfx->_secondary_cmdbuffers_pending_cleanup.size());
 
   ////////////////////////
-  // Append secondary command buffers to pending cleanup
+  // Append secondary command buffers to pending cleanupπ
   // They will be destroyed when this primary CB is reallocated and reset
   // (3 frames later due to pool size 3 in practice)
   ////////////////////////
@@ -1930,14 +1932,14 @@ void VkProfilerChannel::create(VkDevice device, const VulkanDeviceInfo* devicein
   OrkAssert(ok == VK_SUCCESS);
 }
 
-void VkProfilerChannel::beginProfilerFrame(VkCommandBuffer cmdbuf) {
+void VkProfilerChannel::frameBegin(VkCommandBuffer cmdbuf) {
   // printf("VkProfilerChannel beginProfilerFrame\n");
   OrkAssertI(_device != VK_NULL_HANDLE, "VulkanProfilerChannel initialize not called!");
   _cmdbuf = cmdbuf;
   vkCmdResetQueryPool(_cmdbuf, _query_pool, 0, MAX_GPU_PERF_QUERIES * 2);
 }
 
-void VkProfilerChannel::endProfilerFrame() {
+void VkProfilerChannel::frameEnd() {
   // printf("VkProfilerChannel endProfilerFrame\n");
   OrkAssertI(_cmdbuf != VK_NULL_HANDLE, "VulkanProfilerChannel beginFrame not called!");
   _cmdbuf = VK_NULL_HANDLE;
@@ -1945,7 +1947,7 @@ void VkProfilerChannel::endProfilerFrame() {
   // Readback timestamp queries
   int queryCount = _query_index;
   _timestamps.resize(queryCount);
-  VkResult ok = vkGetQueryPoolResults(_device, _query_pool, 0, queryCount, queryCount * sizeof(u64), 
+  VkResult ok = vkGetQueryPoolResults(_device, _query_pool, 0, queryCount, queryCount * sizeof(u64),
     _timestamps.data(), sizeof(u64), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
   // printf("vkGetQueryPoolResults: %s\n", string_VkResult(ok));
   OrkAssert(VK_SUCCESS == ok);
@@ -1969,10 +1971,10 @@ void VkProfilerChannel::endProfilerFrame() {
   _vk_total_spans.clear();
 
   // accumulate in series through base call
-  ProfilerChannel::endProfilerFrame(); 
+  ProfilerChannel::frameEnd(); 
 }
 
-void VkProfilerChannel::beginSample(ProfilerSeries* s) {
+void VkProfilerChannel::sampleBegin(ProfilerSeries* s) {
   // printf("VkProfilerChannel beginSample %s\n", s->_name.strval());
   OrkAssertI(_cmdbuf != VK_NULL_HANDLE, "VulkanProfilerChannel beginFrame not called!");
   OrkAssertI(_query_index < MAX_GPU_PERF_QUERIES, "Vulkan Profiler Queries exhausted.");
@@ -1992,10 +1994,10 @@ void VkProfilerChannel::beginSample(ProfilerSeries* s) {
     _vk_spans.push_back({ .series = parent.series, .begin_query = parent.begin_query, .end_query = current_query_index });
   }
 
-	_vk_span_stack.push({ .series = s, .begin_total_query = current_query_index, .begin_query = current_query_index, .end_query = -1 });
+  _vk_span_stack.push({ .series = s, .begin_total_query = current_query_index, .begin_query = current_query_index, .end_query = -1 });
 }
 
-void VkProfilerChannel::endSample(ProfilerSeries* s) {
+void VkProfilerChannel::sampleEnd(ProfilerSeries* s) {
   // printf("VkProfilerChannel endSample %s\n", s->_name.strval());
   OrkAssertI(_cmdbuf != VK_NULL_HANDLE, "VulkanProfilerChannel beginFrame not called!");
 
@@ -2005,15 +2007,14 @@ void VkProfilerChannel::endSample(ProfilerSeries* s) {
   OrkAssertI(s->_call_level != -1, "VkProfilerSeries did not call beginSample!");
 
   while (!_vk_span_stack.empty()) {
-    // Copy before pop — pop() destroys the element so a reference would dangle
     VkTimespan top = _vk_span_stack.top();
     _vk_total_spans.push_back({ .series = s,          .begin_total_query = top.begin_total_query, .end_query = current_query_index });
     _vk_spans.push_back(      { .series = top.series, .begin_query       = top.begin_query,       .end_query = current_query_index });
     top.series->_max_call_level = std::max(top.series->_max_call_level, _current_level);
-		top.series->_call_level     = -1;
+    top.series->_call_level     = -1;
     top.series->_sampling       = false;
     _current_level--;
-    OrkAssertI(_current_level >= 0, "CpuProfilerChannel _current_level never go below 0!");
+    OrkAssertI(_current_level >= 0, "VkProfilerChannel _current_level never go below 0!");
     _vk_span_stack.pop();
 
     // resume parent

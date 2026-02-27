@@ -180,10 +180,10 @@ void Context::_doSubmitPrimaryCommandBuffer(){
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context::beginFrame(bool visual) {
-  _main_thread_channel->beginProfilerFrame();
-  _main_thread_channel->beginSample(_frame_all_series);
-  auto _ = _main_thread_channel->sampleScope(_begin_frame_series);
-
+  OrkCpuProfilerFrameBegin(CHANNEL_RENDER_CONTEXT);
+  OrkCpuProfilerSampleBegin(CHANNEL_RENDER_CONTEXT, SERIES_FRAME_ALL);
+  OrkCpuProfilerSampleScope(CHANNEL_RENDER_CONTEXT, "begin_frame");
+  
   OrkAssert(_currentPhase == 0);
   _currentPhase = "INFRAME"_crcu;
 
@@ -252,7 +252,7 @@ void Context::beginFrame(bool visual) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context::endFrame(void) {
-  auto _ = _main_thread_channel->sampleScope(_end_frame_series);
+  OrkCpuProfilerSampleScope(CHANNEL_RENDER_CONTEXT, "end_frame");
 
   FBI()->PopRtGroup(); // pop main rtg
 
@@ -283,8 +283,8 @@ void Context::endFrame(void) {
   _currentPhase = 0;
   if(0)printf("exit Context::endFrame this<%p>\n", this);
 
-  _main_thread_channel->endSample(_frame_all_series);
-  _main_thread_channel->endProfilerFrame();
+  OrkCpuProfilerSampleEnd(CHANNEL_RENDER_CONTEXT, SERIES_FRAME_ALL);
+  OrkCpuProfilerFrameEnd(CHANNEL_RENDER_CONTEXT);
 }
 
 /////////////////////////////////////////////////////////////////////////

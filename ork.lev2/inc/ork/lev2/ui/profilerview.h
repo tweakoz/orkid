@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/lev2/ui/prim_canvas.h>
+#include <ork/lev2/ui/widget.h>
 #include <map>
 #include <string>
 #include <vector>
@@ -37,7 +37,7 @@ struct LegendEntry {
 // One lane per channel (MainThread, GPU), all series share the lane's Y-axis.
 // Call setContext() after GPU init.
 ///////////////////////////////////////////////////////////////////////////////
-struct ProfilerView : public ui::PrimCanvas {
+struct ProfilerView : public ui::Widget {
   ProfilerView();
   void DoDraw(ui::drawevent_constptr_t drwev) override;
   ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
@@ -52,27 +52,26 @@ struct ProfilerView : public ui::PrimCanvas {
   std::map<std::string, ChannelRange>      _channel_range_map;
   int _color_index = 0;
 
+  // Background
+  fvec4 _bg_color = fvec4(0, 0, 0, 1);
+
   // Hover state — series name under the mouse cursor (empty if none)
   std::string              _hovered_series;
   std::vector<LegendEntry> _legend_entries;
 
 private:
   void _drawContextChannel(
-      const std::string&    channel_label,
-      ork::ProfilerChannel* channel,
-      float                 lane_y_top,
-      float                 lane_height,
-      int                   max_label_width);
+      const std::string&              channel_label,
+      ork::ProfilerChannel*           channel,
+      float                           lane_y_top,
+      float                           lane_height,
+      lev2::rcfd_ptr_t                RCFD);
 
-  // Draw state — initialized once, updated per frame
+  // Draw state — initialized once
   lev2::freestyle_mtl_ptr_t                     _mtl;
   const lev2::FxShaderTechnique*                _tek     = nullptr;
   const lev2::FxShaderParam*                    _par_mvp = nullptr;
   std::shared_ptr<lev2::VertexBufferBase>       _vbuf;
-  lev2::GeometryBufferInterface*                _gbi  = nullptr;
-  lev2::MatrixStackInterface*                   _mtxi = nullptr;
-  lev2::FxInterface*                            _fxi  = nullptr;
-  std::shared_ptr<lev2::RenderContextFrameData> _RCFD;
 };
 using profilerview_ptr_t = std::shared_ptr<ProfilerView>;
 

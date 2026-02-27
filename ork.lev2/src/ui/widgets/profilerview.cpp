@@ -19,17 +19,16 @@ using vtx_t    = lev2::SVtxV16T16C16;
 using vtxbuf_t = lev2::DynamicVertexBuffer<vtx_t>;
 ///////////////////////////////////////////////////////////////////////////////
 ProfilerView::ProfilerView()
-    : PrimCanvas("ProfilerView", 0, 0, 32, 32) {
-  _bg_color = fvec4(0, 0, 0, 1);
+    : Widget("ProfilerView", 0, 0, 32, 32) {
 }
 /////////////////////////////////////////////////////////////////////////
 HandlerResult ProfilerView::DoOnUiEvent(event_constptr_t ev) {
   if (ev->_eventcode == ui::EventCode::MOVE) {
-    int mx = ev->miX;
-    int my = ev->miY;
+    int lx, ly;
+    RootToLocal(ev->miX, ev->miY, lx, ly);
     std::string hit;
     for (auto& e : _legend_entries) {
-      if (mx >= e.x && mx < e.x + e.w && my >= e.y && my < e.y + e.h) {
+      if (lx >= e.x && lx < e.x + e.w && ly >= e.y && ly < e.y + e.h) {
         hit = e.series_name;
         break;
       }
@@ -50,21 +49,17 @@ void ProfilerView::_drawContextChannel(
     ork::ProfilerChannel* channel,
     float                 lane_y_top,
     float                 lane_height,
-    int                   max_label_width) {
+    lev2::rcfd_ptr_t      RCFD) {
 
   if (channel->_series_iter.empty()) return;
 
-  // Sort series by the level recorded in their most recent sample so that
-  // shallower call-stack entries appear first (higher in the legend / drawn first).
-  std::vector<ork::ProfilerSeries*> sorted_series;
-  for (auto* s : channel->_series_iter) {
-    if (!s->_samples.empty() && s->_samples.back().level != -1)
-      sorted_series.push_back(s);
-  }
-  std::sort(sorted_series.begin(), sorted_series.end(),
-      [](const ork::ProfilerSeries* a, const ork::ProfilerSeries* b) {
-        return a->_samples.back().level < b->_samples.back().level;
-      });
+  const int max_label_width = lev2::FontMan::stringWidth(64);
+
+  auto  _gbi  = _context->GBI();
+  auto  _mtxi = _context->MTXI();
+  auto  _fxi  = _context->FXI();
+
+  auto& sorted_series = channel->_series_iter;
 
   // Three equally-spaced columns: total | isolated | name
   // col_w driven by the widest header label ("isolated" = 8 chars)
@@ -108,7 +103,7 @@ void ProfilerView::_drawContextChannel(
   // Pass 1: assign colors and update exclusive currentValues.
   for (int i = 0; i < (int)sorted_series.size(); i++) {
     auto* series = sorted_series[i];
-    auto& rstate = _render_state_map[std::string(series->_name.strval())];
+    auto& rstate = _render_state_map[series->_name];
     if (rstate.color_index < 0) {
       float hue = std::fmod(float(_color_index) * 0.618034f, 1.0f);
       rstate.color.setHSV(hue, 0.65f, 0.8f);
@@ -119,8 +114,8 @@ void ProfilerView::_drawContextChannel(
   // Pass 2: draw legend entries.
   for (int i = 0; i < (int)sorted_series.size(); i++) {
     auto*       series = sorted_series[i];
-    const char* sname  = series->_name.strval();
-    std::string key(sname);
+    const std::string& key = series->_name;
+    const char*        sname = key.c_str();
     auto& rstate = _render_state_map[key];
 
     float entry_y = legend_start_y + float(i) * legend_row_h;
@@ -192,11 +187,11 @@ void ProfilerView::_drawContextChannel(
     sv.AddVertex(vtx_t(fvec3(0,       lane_y_top, 0), fvec4(), fvec3(0.3f, 0.3f, 0.3f)));
     sv.AddVertex(vtx_t(fvec3(chart_x1,lane_y_top, 0), fvec4(), fvec3(0.3f, 0.3f, 0.3f)));
     sv.UnLock(_context);
-    _mtl->begin(_tek, _RCFD);
+    _mtl->begin(_tek, RCFD);
     _mtl->bindParamMatrix(_par_mvp, _mtxi->RefMVPMatrix());
     _mtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
     _gbi->DrawPrimitiveEML(sv, lev2::PrimitiveType::LINES);
-    _mtl->end(_RCFD);
+    _mtl->end(RCFD);
   }
 
   // ------------------------------------------------------------------
@@ -216,7 +211,7 @@ void ProfilerView::_drawContextChannel(
   for (int si = 0; si < (int)sorted_series.size(); si++) {
     auto*       series = sorted_series[si];
     size_t      n      = series->_samples.size();
-    std::string skey(series->_name.strval());
+    const std::string& skey = series->_name;
     auto& rstate = _render_state_map[skey];
 
     bool any_hover  = !_hovered_series.empty();
@@ -254,10 +249,10 @@ void ProfilerView::_drawContextChannel(
           vw.AddVertex(vtx_t(fvec3(sx_curr, bot_curr, 0), fvec4(), fill_color));
         }
         vw.UnLock(_context);
-        _mtl->begin(_tek, _RCFD);
+        _mtl->begin(_tek, RCFD);
         _mtl->bindParamMatrix(_par_mvp, _mtxi->RefMVPMatrix());
         _gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::TRIANGLES);
-        _mtl->end(_RCFD);
+        _mtl->end(RCFD);
       }
 
       // Pass 2: top edge line at total_time
@@ -275,10 +270,10 @@ void ProfilerView::_drawContextChannel(
           vw.AddVertex(vtx_t(fvec3(sx_curr, sy_curr, 0), fvec4(), line_color));
         }
         vw.UnLock(_context);
-        _mtl->begin(_tek, _RCFD);
+        _mtl->begin(_tek, RCFD);
         _mtl->bindParamMatrix(_par_mvp, _mtxi->RefMVPMatrix());
         _gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::LINES);
-        _mtl->end(_RCFD);
+        _mtl->end(RCFD);
       }
     }
   }
@@ -293,8 +288,6 @@ void ProfilerView::DoDraw(drawevent_constptr_t drwev) {
 
   auto tgt = drwev->GetTarget();
 
-  gpuInit(tgt);
-
   // Initialize GPU resources once
   if (!_mtl) {
     auto vb = std::make_shared<vtxbuf_t>(16 << 20, 0);
@@ -306,33 +299,21 @@ void ProfilerView::DoDraw(drawevent_constptr_t drwev) {
     _par_mvp = _mtl->param("MatMVP");
   }
 
-  // Per-frame interface pointers and frame data
-  _gbi  = tgt->GBI();
-  _mtxi = tgt->MTXI();
-  _fxi  = tgt->FXI();
-  _RCFD = std::make_shared<lev2::RenderContextFrameData>(tgt);
+  auto _mtxi = tgt->MTXI();
+  auto RCFD  = std::make_shared<lev2::RenderContextFrameData>(tgt);
 
-  if (_draw_background) {
-    _drawColoredBox(drwev, _bg_color, lev2::BlendingMacro::ALPHA);
-  }
+  _drawColoredBox(drwev, _bg_color, lev2::BlendingMacro::ALPHA);
 
   // Collect channels
   struct CtxEntry { std::string label; ork::ProfilerChannel* channel; };
   std::vector<CtxEntry> ctx_channels;
-  ctx_channels.push_back({"MainThread", _context->_main_thread_channel.get()});
-  if (_context->_gpu_channel)
-    ctx_channels.push_back({"GPU", _context->_gpu_channel.get()});
+  ctx_channels.push_back({"RenderContext", Profiler::acquireChannel<CpuProfilerChannel>("render_context", "render_context"_crcu)});
+  ctx_channels.push_back({"GPU", _context->_gpu_channel.get()});
+  // ctx_channels.push_back({"ez_app", Profiler::acquireChannel<CpuProfilerChannel>("ez_app", "ez_app"_crcu)});
 
-  // Max label width across all series
-  int max_label_width = 0;
   bool any_series = false;
-  for (auto& e : ctx_channels) {
-    for (auto* series : e.channel->_series_iter) {
-      int sw = lev2::FontMan::stringWidth(strlen(series->_name.strval()));
-      max_label_width = std::max(max_label_width, sw);
-      any_series = true;
-    }
-  }
+  for (auto& e : ctx_channels)
+    if (!e.channel->_series_iter.empty()) { any_series = true; break; }
   if (!any_series) return;
 
   int ix1, iy1;
@@ -356,7 +337,7 @@ void ProfilerView::DoDraw(drawevent_constptr_t drwev) {
         ctx_channels[ci].channel,
         float(ci) * lane_height,
         lane_height,
-        max_label_width);
+        RCFD);
   }
   _mtxi->PopUIMatrix();
 

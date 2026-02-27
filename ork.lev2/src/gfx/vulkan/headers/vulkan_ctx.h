@@ -515,8 +515,8 @@ struct VkComputeInterface : public ComputeInterface {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VkProfilerChannel final : ProfilerChannel {
-  static constexpr size_t MAX_GPU_PERF_QUERIES = 64; // 64 begin/end pairs per frame
-  
+  static constexpr size_t MAX_GPU_PERF_QUERIES = 64;
+
   VkDevice        _device     = VK_NULL_HANDLE;
   VkCommandBuffer _cmdbuf     = VK_NULL_HANDLE;
   VkQueryPool     _query_pool = VK_NULL_HANDLE;
@@ -528,25 +528,25 @@ struct VkProfilerChannel final : ProfilerChannel {
     int end_query   = -1;
   };
   std::stack<VkTimespan> _vk_span_stack{};
-  std::deque<VkTimespan> _vk_spans{};        // isolated-time segments
-  std::deque<VkTimespan> _vk_total_spans{};  // one per series: begin_total_query -> end_query
-
-  u32 _query_index = 0; // next available query index in current pool
-
-  float _timestampPeriod = 1.0f;  // nanoseconds per timestamp tick for conversion
+  std::deque<VkTimespan> _vk_spans{};
+  std::deque<VkTimespan> _vk_total_spans{};
+  u32 _query_index = 0;
+  float _timestampPeriod = 1.0f;
   std::vector<u64> _timestamps{};
 
   using ProfilerChannel::ProfilerChannel;
 
+  void frameBegin() override { OrkAssertI(false, "Call frameBegin(VkCommandBuffer) on VkProfilerChannel!"); }
+
+  // Create vulkan query pools
   void create(VkDevice device, const VulkanDeviceInfo* deviceinfo);
 
   // A given VulkanProfilerChannel Frame can only rest upon a single CommandBuffer.
   // Create multiple VulkanProfilerChannel if you need multiple CommandBuffers.
-  void beginProfilerFrame(VkCommandBuffer cmdbuf);
-  void endProfilerFrame() override;
-
-  void beginSample(ProfilerSeries* series) override;
-  void endSample(ProfilerSeries* series) override;
+  void frameBegin(VkCommandBuffer cmdbuf);
+  void frameEnd() override;
+  void sampleBegin(ProfilerSeries* series) override;
+  void sampleEnd(ProfilerSeries* series) override;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

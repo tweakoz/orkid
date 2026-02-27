@@ -11,7 +11,6 @@
 #include <ork/kernel/thread.h>
 #include <ork/kernel/svariant.h>
 #include <ork/orkstl.h>
-#include <ork/util/crc.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -61,99 +60,6 @@ void PerfMarkerPushState();
 void PerfMarkerPopState();
 
 ///////////////////////////////////////////////////////////////////////////////
-
-struct ProfilerSeries {
-  static constexpr u16 MAX_SAMPLES = 128;
-  CrcString _name;
-
-  struct Sample {
-    u64    tick;
-    double total_time;
-    double isolated_time;
-    int    count;
-    int    level;
-  };
-
-  // Rolling Data
-  std::deque<Sample> _samples{}; // should be ring?
-
-  // accumulated frame data used to addSample on endFrame
-
-  double _total_time     = 0;
-  double _isolated_time  = 0;
-  int    _call_count     = 0;
-  int    _max_call_level = -1;
-  int    _call_level     = -1;
-  bool   _sampling       = false;
-
-  ProfilerSeries(CrcString name) : _name(name) {}
-  void addSample(Sample sample);
-};
-
-using profiler_series_ptr_t = std::shared_ptr<ProfilerSeries>;
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct ProfilerScope;
-
-struct ProfilerChannel {
-  CrcString _name;
-
-  // Map of all series that belong to this channel
-  std::map<u64, profiler_series_ptr_t> _series{};
-  std::vector<ProfilerSeries*> _series_iter{};
-
-   // Transient data to determine hiearchy level
-  int _current_level  = 0;
-  u64 _current_tick   = 0;
-
-  ProfilerChannel(CrcString&& name) : _name(name) {}
-
-  profiler_series_ptr_t createSeries(CrcString name);
-
-  // prepare frame 
-  virtual void beginProfilerFrame();
-  virtual void endProfilerFrame();
-
-  virtual void beginSample(ProfilerSeries* series) = 0;
-  virtual void endSample(ProfilerSeries* series)   = 0;
-  void beginSample(profiler_series_ptr_t s) { beginSample(s.get()); }
-  void endSample(profiler_series_ptr_t s)   { endSample(s.get()); }
-
-  ProfilerScope sampleScope(ProfilerSeries* series);
-  ProfilerScope sampleScope(profiler_series_ptr_t s); // defined after ProfilerScope
-};
-
-using profiler_channel_ptr_t = std::shared_ptr<ProfilerChannel>;
-
-struct CpuProfilerChannel final : ProfilerChannel {
-  Timer _timer{}; // TODO change to __rdtsc ?
-
-  struct Timespan {
-    ProfilerSeries* series;
-    double start_total_time;
-    double start_isolated_time;
-  };
-  std::stack<Timespan> _span_stack{};
-
-  using ProfilerChannel::ProfilerChannel;
-
-  void beginSample(ProfilerSeries* series) override;
-  void endSample(ProfilerSeries* series) override;
-};
-
-struct ProfilerScope {
-  ProfilerScope(ProfilerChannel* channel, ProfilerSeries* series) : _channel(channel), _series(series) {}
-  ~ProfilerScope() {
-    if (!_series->_sampling) return;
-    _channel->endSample(_series);
-  }
-  ProfilerChannel* _channel;
-  ProfilerSeries*  _series;
-};
-
-inline ProfilerScope ProfilerChannel::sampleScope(profiler_series_ptr_t s) { return sampleScope(s.get()); }
-
-///////////////////////////////////////////////////////////////////////////////
 } // namespace ork
 ///////////////////////////////////////////////////////////////////////////////
+

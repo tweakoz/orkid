@@ -704,7 +704,7 @@ void pyinit_ui(py::module& module_lev2) {
   // ProfilerView
   /////////////////////////////////////////////////////////////////////////////////
   auto profilerview_type = //
-      py::class_<ui::ProfilerView, ui::PrimCanvas, ui::profilerview_ptr_t>(uimodule, "ProfilerView")
+      py::class_<ui::ProfilerView, ui::Widget, ui::profilerview_ptr_t>(uimodule, "ProfilerView")
           .def_static(
               "wfactory",
               [type_codec](py::list py_args) -> ui::profilerview_ptr_t {

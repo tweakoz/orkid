@@ -15,6 +15,7 @@
 #include <ork/kernel/core/singleton.h>
 #include <ork/kernel/taskgraph.h>
 #include <ork/kernel/timer.h>
+#include <ork/kernel/profiler.h>
 #include <ork/object/Object.h>
 
 #include <ork/lev2/gfx/config.h>
@@ -35,6 +36,9 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
+
+#define CHANNEL_RENDER_CONTEXT "render_context"
+#define SERIES_FRAME_ALL "frame_all"
 
 extern bool _HIDPI();
 extern bool _MIXEDDPI();
@@ -420,15 +424,6 @@ public:
   /// Profiler
   ///////////////////////////////////////////////////////////////////////
 
-  profiler_channel_ptr_t _main_thread_channel = std::make_shared<CpuProfilerChannel>("main_thread"_crc);
-  profiler_series_ptr_t _frame_all_series    = _main_thread_channel->createSeries("frame_all"_crc);
-  profiler_series_ptr_t _begin_frame_series  = _main_thread_channel->createSeries("begin_frame"_crc);
-  profiler_series_ptr_t _end_frame_series    = _main_thread_channel->createSeries("end_frame"_crc);
-  profiler_series_ptr_t _acquire_series      = _main_thread_channel->createSeries("acquire"_crc);
-  profiler_series_ptr_t _fence_wait_series   = _main_thread_channel->createSeries("fence_wait"_crc);
-  profiler_series_ptr_t _submit_series       = _main_thread_channel->createSeries("submit"_crc);
-  profiler_series_ptr_t _present_series      = _main_thread_channel->createSeries("present"_crc);
-
   //////////////////////////////////////////////////////////
 
   profiler_channel_ptr_t _gpu_channel;
@@ -445,16 +440,16 @@ public:
 
   void initializeGpuProfiler(profiler_channel_ptr_t gpu_channel) {
     _gpu_channel              = gpu_channel;
-    _gpu_fame_all_series      = _gpu_channel->createSeries("gpu_frame_all"_crc);
-    _gpu_acquire_wait_series  = _gpu_channel->createSeries("gpu_acquire_wait"_crc);
-    _fwd_total_series         = _gpu_channel->createSeries("fwd:total"_crc);
-    _fwd_depth_prepass_series = _gpu_channel->createSeries("fwd:depth_prepass"_crc);
-    _fwd_ssao_series          = _gpu_channel->createSeries("fwd:ssao"_crc);
-    _fwd_skybox_series        = _gpu_channel->createSeries("fwd:skybox"_crc);
-    _fwd_color_pass_series    = _gpu_channel->createSeries("fwd:color_pass"_crc);
-    _fwd_shadow_maps_series   = _gpu_channel->createSeries("fwd:shadow_maps"_crc);
-    _fwd_env_probes_series    = _gpu_channel->createSeries("fwd:env_probes"_crc);
-    _ui_top_series            = _gpu_channel->createSeries("ui:top"_crc);
+    _gpu_fame_all_series      = _gpu_channel->createSeries("gpu_frame_all");
+    _gpu_acquire_wait_series  = _gpu_channel->createSeries("gpu_acquire_wait");
+    _fwd_total_series         = _gpu_channel->createSeries("fwd:total");
+    _fwd_depth_prepass_series = _gpu_channel->createSeries("fwd:depth_prepass");
+    _fwd_ssao_series          = _gpu_channel->createSeries("fwd:ssao");
+    _fwd_skybox_series        = _gpu_channel->createSeries("fwd:skybox");
+    _fwd_color_pass_series    = _gpu_channel->createSeries("fwd:color_pass");
+    _fwd_shadow_maps_series   = _gpu_channel->createSeries("fwd:shadow_maps");
+    _fwd_env_probes_series    = _gpu_channel->createSeries("fwd:env_probes");
+    _ui_top_series            = _gpu_channel->createSeries("ui:top");
   }
 
   //////////////////////////////////////////////////////////
