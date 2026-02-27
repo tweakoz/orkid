@@ -418,13 +418,6 @@ void VkContext::_initVulkanCommon() {
     g_dynamic_ubo_system->init(this);
     if(0)printf("VkContext: Initialized dynamic UBO system\n");
   }
-
-  ////////////////////////////
-  // create GPU profiler
-  ////////////////////////////
-  auto gpu_channel = std::make_shared<VkProfilerChannel>("vulkan_gpu");
-  gpu_channel->create(_vkdevice, _vkdeviceinfo.get());
-  initializeGpuProfiler(gpu_channel);
 }
 
   void VkContext::_beginAssetProcessing() {
@@ -811,7 +804,7 @@ void VkContext::_doSubmitPrimaryCommandBuffer(){
 
     // Submit
     {
-      OrkCpuProfilerSampleScope(CHANNEL_RENDER_CONTEXT, "submit");
+      OrkProfilerSampleScope(CHANNEL_RENDER_CONTEXT, "submit");
       if ( not semas_empty) {
         // Submit with timeline semaphores
         swapchain->_submitFrameWithSemaphores(this);
@@ -825,7 +818,7 @@ void VkContext::_doSubmitPrimaryCommandBuffer(){
     // Present !
     ///////////////////////////////////////////////////////
     {
-      OrkCpuProfilerSampleScope(CHANNEL_RENDER_CONTEXT, "present");
+      OrkProfilerSampleScope(CHANNEL_RENDER_CONTEXT, "present");
       swapchain->enqueuePresentFrame(this);
       swapchain->waitPresentFrame(this);
     }
@@ -1021,10 +1014,8 @@ void VkContext::_doPreBeginFrame() {
 
   // begin gpu profiler frame after we have setup commandbuffer
   // must use beginProfilerFrame overload to set cmdbuf for frame
-  VkProfilerChannel* vk_gpu_channel = static_cast<VkProfilerChannel*>(_gpu_channel.get());
-  vk_gpu_channel->frameBegin(primary_cb()->_vkcmdbuf);
-
-  OrkProfilerSampleBegin(_gpu_channel, _gpu_fame_all_series);
+  OrkProfilerFrameBegin(CHANNEL_GPU, VkProfilerChannel, _vkdevice, _vkdeviceinfo.get(), primary_cb()->_vkcmdbuf);  
+  OrkProfilerSampleBegin(CHANNEL_GPU, SERIES_GPU_FRAME_ALL);
 
   /////////////////////////////////////////
   _pendingOneShotCommands.atomicOp([&](vkseccmdbufarray_t& unlocked) {
@@ -1143,7 +1134,7 @@ void VkContext::_doEndFrame() {
   ////////////////////////
 
   //end frame:all GPU perf block (covers all command buffer content)
-  OrkProfilerSampleEnd(_gpu_channel, _gpu_fame_all_series);
+  OrkProfilerSampleEnd(CHANNEL_GPU, SERIES_GPU_FRAME_ALL);
 
   _doEndPrimaryCommandBuffer();
 
@@ -1159,7 +1150,7 @@ void VkContext::_doEndFrame() {
   submitPrimaryCommandBuffer(); 
 
   // read back GPU timestamps now that the GPU has finished executing
-  OrkProfilerFrameEnd(_gpu_channel);
+  OrkProfilerFrameEnd(CHANNEL_GPU);
 
   ///////////////////////////////////////////////////////
 
@@ -1918,23 +1909,21 @@ void VkContext::resumeRenderPass() {
 // GPU Profiler Implementation
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkProfilerChannel::create(VkDevice device, const VulkanDeviceInfo* deviceinfo) {
-  printf("VkProfilerChannel create\n");
-  _device = device;
-  _timestampPeriod = deviceinfo->_devprops.limits.timestampPeriod; // nanoseconds per tick
-
-  VkQueryPoolCreateInfo info = {
-    .sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
-    .queryType = VK_QUERY_TYPE_TIMESTAMP,
-    .queryCount = MAX_GPU_PERF_QUERIES * 2, // 2 timestamps per block (begin + end)
-  };
-  VkResult ok = vkCreateQueryPool(device, &info, nullptr, &_query_pool);
-  OrkAssert(ok == VK_SUCCESS);
-}
-
-void VkProfilerChannel::frameBegin(VkCommandBuffer cmdbuf) {
+void VkProfilerChannel::frameBegin(VkDevice device, const VulkanDeviceInfo* deviceinfo, VkCommandBuffer cmdbuf) {
   // printf("VkProfilerChannel beginProfilerFrame\n");
-  OrkAssertI(_device != VK_NULL_HANDLE, "VulkanProfilerChannel initialize not called!");
+  if (_device == VK_NULL_HANDLE) {
+    _device = device;
+    _timestampPeriod = deviceinfo->_devprops.limits.timestampPeriod; // nanoseconds per tick
+
+    VkQueryPoolCreateInfo info = {
+      .sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
+      .queryType = VK_QUERY_TYPE_TIMESTAMP,
+      .queryCount = MAX_GPU_PERF_QUERIES * 2, // 2 timestamps per block (begin + end)
+    };
+    VkResult ok = vkCreateQueryPool(device, &info, nullptr, &_query_pool);
+    OrkAssert(ok == VK_SUCCESS);  
+  }
+
   _cmdbuf = cmdbuf;
   vkCmdResetQueryPool(_cmdbuf, _query_pool, 0, MAX_GPU_PERF_QUERIES * 2);
 }

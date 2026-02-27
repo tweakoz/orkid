@@ -307,9 +307,8 @@ void ProfilerView::DoDraw(drawevent_constptr_t drwev) {
   // Collect channels
   struct CtxEntry { std::string label; ork::ProfilerChannel* channel; };
   std::vector<CtxEntry> ctx_channels;
-  ctx_channels.push_back({"RenderContext", Profiler::acquireChannel<CpuProfilerChannel>("render_context", "render_context"_crcu)});
-  ctx_channels.push_back({"GPU", _context->_gpu_channel.get()});
-  // ctx_channels.push_back({"ez_app", Profiler::acquireChannel<CpuProfilerChannel>("ez_app", "ez_app"_crcu)});
+  ctx_channels.push_back({"render_context", Profiler::acquireChannel<CpuProfilerChannel>("render_context", "render_context"_crcu)});
+  ctx_channels.push_back({"gpu", Profiler::acquireChannel<CpuProfilerChannel>("gpu", "gpu"_crcu)});
 
   bool any_series = false;
   for (auto& e : ctx_channels)

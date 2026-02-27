@@ -23,26 +23,32 @@ namespace ork {
 #define CONCAT(a, b) _CONCAT(a, b)
 #define UNIQUE(name) CONCAT(name, __LINE__)
 
-#define _OrkCpuStaticChannel(_channel_name, _var, _type, _call) \
-    static ProfilerChannel* _var = nullptr; \
+#define _OrkStaticAcquireChannel(_channel_name, _type, _var, _call, ...) \
+    static _type* _var = nullptr; \
     if (_var == nullptr) _var = Profiler::acquireChannel<_type>(_channel_name, CRCU(_channel_name)); \
+    _var->_call(__VA_ARGS__)
+
+#define _OrkStaticGetChannel(_channel_name, _var, _call) \
+    static ProfilerChannel* _var = nullptr; \
+    if (_var == nullptr) _var = Profiler::getChannel(_channel_name, CRCU(_channel_name)); \
     _var->_call()
 
-#define _OrkCpuStaticSeries(_channel_name, _series_name, _var, _type, _call) \
+#define _OrkStaticSeries(_channel_name, _series_name, _var, _call) \
     static ProfilerSeries* _var = nullptr; \
-    if (_var == nullptr) _var = Profiler::acquireSeries<_type>(_channel_name, CRCU(_channel_name), _series_name, CRCU(_series_name)); \
+    if (_var == nullptr) _var = Profiler::acquireSeries(_channel_name, CRCU(_channel_name), _series_name, CRCU(_series_name)); \
     _var->_call()
 
-#define _OrkCpuStaticScope(_channel_name, _series_name, _var, _type) \
+#define _OrkStaticScope(_channel_name, _series_name, _var) \
     static ProfilerSeries* _var = nullptr; \
-    if (_var == nullptr) _var = Profiler::acquireSeries<_type>(_channel_name, CRCU(_channel_name), _series_name, CRCU(_series_name)); \
+    if (_var == nullptr) _var = Profiler::acquireSeries(_channel_name, CRCU(_channel_name), _series_name, CRCU(_series_name)); \
     auto CONCAT(_var, scope) = _var->sampleScope()
 
-#define OrkCpuProfilerFrameBegin(_channel_name) _OrkCpuStaticChannel(_channel_name, UNIQUE(_series), CpuProfilerChannel, frameBegin)
-#define OrkCpuProfilerFrameEnd(_channel_name)   _OrkCpuStaticChannel(_channel_name, UNIQUE(_series), CpuProfilerChannel, frameEnd)
-#define OrkCpuProfilerSampleBegin(_channel_name, _series_name) _OrkCpuStaticSeries(_channel_name, _series_name, UNIQUE(_series), CpuProfilerChannel, sampleBegin)
-#define OrkCpuProfilerSampleEnd(_channel_name, _series_name)   _OrkCpuStaticSeries(_channel_name, _series_name, UNIQUE(_series), CpuProfilerChannel, sampleEnd)
-#define OrkCpuProfilerSampleScope(_channel_name, _series_name) _OrkCpuStaticScope(_channel_name, _series_name, UNIQUE(_series), CpuProfilerChannel)
+// Initial frame begin defines what type the channel is. If different channel type needed first manually acquire it.
+#define OrkProfilerFrameBegin(_channel_name, _type, ...)    _OrkStaticAcquireChannel(_channel_name, _type, UNIQUE(_series), frameBegin, __VA_ARGS__)
+#define OrkProfilerFrameEnd(_channel_name)                  _OrkStaticGetChannel(_channel_name, UNIQUE(_series), frameEnd)
+#define OrkProfilerSampleBegin(_channel_name, _series_name) _OrkStaticSeries(_channel_name, _series_name, UNIQUE(_series), sampleBegin)
+#define OrkProfilerSampleEnd(_channel_name, _series_name)   _OrkStaticSeries(_channel_name, _series_name, UNIQUE(_series), sampleEnd)
+#define OrkProfilerSampleScope(_channel_name, _series_name) _OrkStaticScope(_channel_name, _series_name, UNIQUE(_series))
 
 struct ProfilerScope;
 struct ProfilerChannel;
@@ -94,9 +100,7 @@ struct ProfilerChannel {
   u64 _current_tick   = 0;
 
   ProfilerChannel(std::string&& name) : _name(name) {}
-
-  profiler_series_ptr_t createSeries(std::string name);
-
+  
   // prepare frame
   virtual void frameBegin();
   virtual void frameEnd();
@@ -148,53 +152,40 @@ struct Profiler {
   static inline std::unordered_map<u64, std::shared_ptr<ProfilerChannel>> _channels;
 
   template <typename T>
-  static ProfilerChannel* acquireChannel(const char* name, u64 namecrc) {
+  static T* acquireChannel(const char* name, u64 namecrc) {
     auto& c = _channels[namecrc];
     if (!c) c = std::make_shared<T>(std::string(name));
+    return static_cast<T*>(c.get());
+  }
+
+  static ProfilerChannel* getChannel(const char* name, u64 namecrc) {
+    OrkAssertI(_channels.contains(namecrc), "First acquireChannel get trying to getChannel!");
+    auto& c = _channels[namecrc];
     return (ProfilerChannel*)c.get();
   }
 
-  template <typename T>
   static ProfilerSeries* acquireSeries(const char* channel_name, u64 channel_namecrc, const char* series_name, u64 series_namecrc) {
-    auto& c = _channels[channel_namecrc]; if (!c) c = std::make_shared<T>(std::string(channel_name));
-    auto& s = c->_series[series_namecrc]; if (!s) {
+    OrkAssertI(_channels.contains(channel_namecrc), "First acquireChannel and call frameBegin before trying to acquireSeries!");
+    auto& c = _channels[channel_namecrc];
+    auto& s = c->_series[series_namecrc]; 
+    if (!s) {
       s = std::make_shared<ProfilerSeries>(series_name, c.get());
       c->_series_iter.push_back(s.get());
     }
     return s.get();
   }
 
+  // Methods to dynamically retrieve channels dynamically with std::string for manual customizaiton.
+  // Always prefer using the OrkProfiler macros to string on string literals and crc consteval
   template <typename T>
-  static void frameBegin(const char* channel_name, u64 channel_namecrc) {
-    auto& c = _channels[channel_namecrc]; if (!c) c = std::make_shared<T>(std::string(channel_name));
-    c->frameBegin();
+  static T* acquireChannel(const std::string& name) {
+    return acquireChannel<T>(name.c_str(), CrcString(name.c_str()).hashed());
   }
-
-  template <typename T>
-  static void frameEnd(const char* channel_name, u64 channel_namecrc) {
-    auto& c = _channels[channel_namecrc]; if (!c) c = std::make_shared<T>(std::string(channel_name));
-    c->frameEnd();
+  static ProfilerChannel* getChannel(const std::string& name) {
+    return getChannel(name.c_str(), CrcString(name.c_str()).hashed());
   }
-
-  template <typename T>
-  static void sampleBegin(const char* channel_name, u64 channel_namecrc, const char* series_name, u64 series_namecrc) {
-    auto& c = _channels[channel_namecrc]; if (!c) c = std::make_shared<T>(std::string(channel_name));
-    auto& s = c->_series[series_namecrc]; if (!s) s = std::make_shared<ProfilerSeries>(series_name, c.get());
-    s->sampleBegin();
-  }
-
-  template <typename T>
-  static void sampleEnd(const char* channel_name, u64 channel_namecrc, const char* series_name, u64 series_namecrc) {
-    auto& c = _channels[channel_namecrc]; if (!c) c = std::make_shared<T>(std::string(channel_name));
-    auto& s = c->_series[series_namecrc]; if (!s) s = std::make_shared<ProfilerSeries>(series_name, c.get());
-    s->sampleEnd();
-  }
-
-  template <typename T>
-  static ProfilerScope sampleScope(const char* channel_name, u64 channel_namecrc, const char* series_name, u64 series_namecrc) {
-    auto& c = _channels[channel_namecrc]; if (!c) c = std::make_shared<T>(std::string(channel_name));
-    auto& s = c->_series[series_namecrc]; if (!s) s = std::make_shared<ProfilerSeries>(series_name, c.get());
-    return s->sampleScope();
+  static ProfilerSeries* acquireSeries(const std::string& channel_name, const std::string& series_name) {
+    return acquireSeries(channel_name.c_str(), CrcString(channel_name.c_str()).hashed(), series_name.c_str(), CrcString(series_name.c_str()).hashed());
   }
 };
 

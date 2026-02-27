@@ -161,7 +161,7 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
   ///////////////////////////////////////////////////////////////////////////
 
   if (pbrcommon->_useDepthPrepass) {
-    OrkProfilerSampleScope(_currentContext->_gpu_channel, _currentContext->_fwd_depth_prepass_series);
+    OrkProfilerSampleScope(CHANNEL_GPU, "fwd:depth_prepass");
     _render_dpp(fpass);
     _currentRCFD->setUserProperty("DEPTH_MAP"_crcu, rtg_out->_depthBuffer->_texture);
   }
@@ -185,7 +185,7 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
   ///////////////////////////////////////////////////////////////////////////
 
   if ( is_ssao_active) {
-    OrkProfilerSampleScope(_currentContext->_gpu_channel, _currentContext->_fwd_ssao_series);
+    OrkProfilerSampleScope(CHANNEL_GPU, "fwd:ssao");
     _render_ssao_prepass(fpass);
   } else {
     // set SSAO to white..
@@ -203,11 +203,11 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
   //FBI->rtGroupClear(rtg_out.get()); // TODO: vulkan 
   FBI->PushRtGroup(rtg_out.get());
   if(_node->_pbrcommon->_enable_skybox){
-    OrkProfilerSampleScope(_currentContext->_gpu_channel, _currentContext->_fwd_skybox_series);
+    OrkProfilerSampleScope(CHANNEL_GPU, "fwd:skybox");
     _render_skybox(fpass);
   }
   { 
-    OrkProfilerSampleScope(_currentContext->_gpu_channel, _currentContext->_fwd_color_pass_series);
+    OrkProfilerSampleScope(CHANNEL_GPU, "fwd:color_pass");
     _render_colorpass(fpass);
   }
   FBI->PopRtGroup();
@@ -269,12 +269,12 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
   // get draw queue (otherwise we cant draw anything)
   //////////////////////////////////////////////////////
 
-  OrkProfilerSampleBegin(context->_gpu_channel, context->_fwd_total_series);
+  OrkProfilerSampleBegin(CHANNEL_GPU, "fwd:total");
 
   auto autorelease_fpbr_rgroup = context->debugPushGroupAutoRelease("ForwardPBR::render");
   _currentDrawQueue = RCFD->GetDB();
   if(nullptr == _currentDrawQueue) {
-    OrkProfilerSampleEnd(context->_gpu_channel, context->_fwd_total_series);
+    OrkProfilerSampleEnd(CHANNEL_GPU, "fwd:total");
     return;
   }
 
@@ -328,11 +328,11 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
   ////////////////////////////
 
   { 
-    OrkProfilerSampleScope(_currentContext->_gpu_channel, _currentContext->_fwd_shadow_maps_series);
+    OrkProfilerSampleScope(CHANNEL_GPU, "fwd:shadow_maps");
     _update_shadow_maps();
   }
   {
-    OrkProfilerSampleScope(_currentContext->_gpu_channel, _currentContext->_fwd_env_probes_series);
+    OrkProfilerSampleScope(CHANNEL_GPU, "fwd:env_probes");
     _update_env_probes(drawdata);
   }
 
@@ -362,7 +362,7 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
   RCFD->exchangeDebugPassID(prev_dbg_passid);
   RCFD->exchangeDebugSubPassID(prev_dbg_subpid);
 
-  OrkProfilerSampleEnd(_currentContext->_gpu_channel, _currentContext->_fwd_total_series);
+  OrkProfilerSampleEnd(CHANNEL_GPU, "fwd:total");
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////

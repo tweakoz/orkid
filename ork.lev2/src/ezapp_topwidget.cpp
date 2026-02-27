@@ -107,7 +107,7 @@ void EzTopWidget::enableUiDraw() {
     //context->beginFrame();
     mtxi->PushUIMatrix();
     {
-      OrkProfilerSampleScope(context->_gpu_channel, context->_ui_top_series);
+      OrkProfilerSampleScope(CHANNEL_GPU, "ui:top");
       ezapp->_uicontext->draw(drwev);
     }
     mtxi->PopUIMatrix();

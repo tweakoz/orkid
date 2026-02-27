@@ -216,9 +216,9 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
     // TODO this is not the correct place to put this. A certain RTG is only getting pushed once, but popped twice. Why!?
     if (rtgroup->_profiler_series == nullptr) {
       std::string name = rtgroup->_name.empty() ? FormatString("rtg:%p", (void*)rtgroup) : std::string("rtg:") + rtgroup->_name;
-      rtgroup->_profiler_series = _contextVK->_gpu_channel->createSeries(name);
+      rtgroup->_profiler_series = Profiler::acquireSeries(CHANNEL_GPU, name);
     }
-    OrkProfilerSampleBegin(_contextVK->_gpu_channel, rtgroup->_profiler_series);
+    rtgroup->_profiler_series->sampleBegin();
 
     // STEP 4: Now begin the new render pass
     RTGIMPL->_transitionToRenderTarget(_contextVK->primary_cb());
@@ -288,7 +288,7 @@ void VkFrameBufferInterface::_popRtGroup() {
 
     // End per-RTG GPU perf block (after render pass ends)
     if (stack_impl->_did_begin_rendering)
-      OrkProfilerSampleEnd(_contextVK->_gpu_channel, finished_rtg->_profiler_series);
+      finished_rtg->_profiler_series->sampleEnd();
 
     auto RTGIMPL = finished_rtg->_impl.getShared<VkRtGroupImpl>();
 

@@ -296,10 +296,6 @@ public:
   // Secondary window support (Phase 3)
   std::vector<ezsecondarywin_ptr_t> _secondaryWindows;
 
-  // Profiler
-  profiler_channel_ptr_t _ezapp_channel = std::make_shared<CpuProfilerChannel>("ez_app");
-  profiler_series_ptr_t _main_loop_series    = _ezapp_channel->createSeries("main_loop");
-
   ezsecondarywin_ptr_t createSecondaryWindow(const EzSecondaryWinConfig& config);
   void closeSecondaryWindow(ezsecondarywin_ptr_t win);
   void closeAllSecondaryWindows();

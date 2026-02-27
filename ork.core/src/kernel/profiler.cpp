@@ -24,14 +24,6 @@ ProfilerScope ProfilerSeries::sampleScope() { return _parent->sampleScope(this);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-profiler_series_ptr_t ProfilerChannel::createSeries(std::string name) {
-	printf("Creating ProfilerSeries: %s for ProfilerChannel: %s\n", name.c_str(), _name.c_str());
-	auto [it, inserted] = _series.insert({CrcString(name.c_str()).hashed(), std::make_shared<ProfilerSeries>(name, this)});
-	OrkAssertI(inserted, "Inserting ProfilerSeries twice!\n");
-	_series_iter.push_back(it->second.get());
-	return it->second;
-}
-
 void ProfilerChannel::frameBegin() {
 	OrkAssertI(_current_level == 0, "ProfilerChannel endFrame not called!");
 }

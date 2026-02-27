@@ -538,12 +538,9 @@ struct VkProfilerChannel final : ProfilerChannel {
 
   void frameBegin() override { OrkAssertI(false, "Call frameBegin(VkCommandBuffer) on VkProfilerChannel!"); }
 
-  // Create vulkan query pools
-  void create(VkDevice device, const VulkanDeviceInfo* deviceinfo);
-
   // A given VulkanProfilerChannel Frame can only rest upon a single CommandBuffer.
   // Create multiple VulkanProfilerChannel if you need multiple CommandBuffers.
-  void frameBegin(VkCommandBuffer cmdbuf);
+  void frameBegin(VkDevice device, const VulkanDeviceInfo* deviceinfo, VkCommandBuffer cmdbuf);
   void frameEnd() override;
   void sampleBegin(ProfilerSeries* series) override;
   void sampleEnd(ProfilerSeries* series) override;

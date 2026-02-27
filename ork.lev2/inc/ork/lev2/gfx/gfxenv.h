@@ -37,10 +37,6 @@
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-#define CHANNEL_RENDER_CONTEXT "render_context"
-#define SERIES_FRAME_ALL "frame_all"
-
-extern bool _HIDPI();
 extern bool _MIXEDDPI();
 extern float _currentDPI();
 
@@ -59,6 +55,18 @@ struct GpuEventSink {
   gpuevent_cb_t _onEvent;
 };
 using gpueventsink_map_t = std::unordered_map<std::string, gpueventsink_ptr_t>;
+
+///////////////////////////////////////////////////////////////////////
+/// Profiler
+///////////////////////////////////////////////////////////////////////
+
+#define CHANNEL_RENDER_CONTEXT "render_context"
+#define SERIES_FRAME_ALL "frame_all"
+
+#define CHANNEL_GPU "gpu"
+#define SERIES_GPU_FRAME_ALL "gpu_frame_all"
+
+extern bool _HIDPI();
 
 /// ////////////////////////////////////////////////////////////////////////////
 ///
@@ -419,38 +427,6 @@ public:
 
   void enqueueGpuEvent(gpuevent_ptr_t evt);
   void registerGpuEventSink(gpueventsink_ptr_t sink);
-
-  ///////////////////////////////////////////////////////////////////////
-  /// Profiler
-  ///////////////////////////////////////////////////////////////////////
-
-  //////////////////////////////////////////////////////////
-
-  profiler_channel_ptr_t _gpu_channel;
-  profiler_series_ptr_t _gpu_fame_all_series;
-  profiler_series_ptr_t _gpu_acquire_wait_series;
-  profiler_series_ptr_t _fwd_total_series;
-  profiler_series_ptr_t _fwd_depth_prepass_series;
-  profiler_series_ptr_t _fwd_ssao_series;
-  profiler_series_ptr_t _fwd_skybox_series;
-  profiler_series_ptr_t _fwd_color_pass_series;
-  profiler_series_ptr_t _fwd_shadow_maps_series;
-  profiler_series_ptr_t _fwd_env_probes_series;
-  profiler_series_ptr_t _ui_top_series;
-
-  void initializeGpuProfiler(profiler_channel_ptr_t gpu_channel) {
-    _gpu_channel              = gpu_channel;
-    _gpu_fame_all_series      = _gpu_channel->createSeries("gpu_frame_all");
-    _gpu_acquire_wait_series  = _gpu_channel->createSeries("gpu_acquire_wait");
-    _fwd_total_series         = _gpu_channel->createSeries("fwd:total");
-    _fwd_depth_prepass_series = _gpu_channel->createSeries("fwd:depth_prepass");
-    _fwd_ssao_series          = _gpu_channel->createSeries("fwd:ssao");
-    _fwd_skybox_series        = _gpu_channel->createSeries("fwd:skybox");
-    _fwd_color_pass_series    = _gpu_channel->createSeries("fwd:color_pass");
-    _fwd_shadow_maps_series   = _gpu_channel->createSeries("fwd:shadow_maps");
-    _fwd_env_probes_series    = _gpu_channel->createSeries("fwd:env_probes");
-    _ui_top_series            = _gpu_channel->createSeries("ui:top");
-  }
 
   //////////////////////////////////////////////////////////
 

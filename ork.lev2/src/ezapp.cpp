@@ -847,8 +847,8 @@ void OrkEzApp::_audioExit() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::_mainThreadLoopBegin() {
-  OrkCpuProfilerFrameBegin(EZAPP_CHANNEL);
-  OrkCpuProfilerSampleBegin(EZAPP_CHANNEL, EZAPP_MAIN_LOOP_SERIES);
+  OrkProfilerFrameBegin(EZAPP_CHANNEL, CpuProfilerChannel);
+  OrkProfilerSampleBegin(EZAPP_CHANNEL, EZAPP_MAIN_LOOP_SERIES);
 
   ///////////////////////////////
   // update thread implementation
@@ -1190,8 +1190,8 @@ void OrkEzApp::_mainThreadLoopEnd() {
   size_t num_prof_blocks = profiler::dumpBlocksToFile("test_profile.prof");
   logchan_ezapp->log( "Dumped %zu profiler blocks to test_profile.prof\n", num_prof_blocks);
 
-  OrkCpuProfilerFrameEnd(EZAPP_CHANNEL);
-  OrkCpuProfilerSampleEnd(EZAPP_CHANNEL, EZAPP_MAIN_LOOP_SERIES);
+  OrkProfilerSampleEnd(EZAPP_CHANNEL, EZAPP_MAIN_LOOP_SERIES);
+  OrkProfilerFrameEnd(EZAPP_CHANNEL);
 }
 ///////////////////////////////////////////////////////////////////////////////
 int OrkEzApp::mainThreadLoop() {

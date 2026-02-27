@@ -431,7 +431,7 @@ size_t VkSwapChain::subIndex() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 VkResult VkSwapChain::acquireImage(vkcontext_rawptr_t ctxVK) {
-  auto _ = ctxVK->_gpu_channel->sampleScope(ctxVK->_gpu_acquire_wait_series);
+  OrkProfilerSampleScope(CHANNEL_GPU, "gpu_acquire_wait");
 
   // Ensure we have a valid swapchain
   size_t sub_index = subIndex();
