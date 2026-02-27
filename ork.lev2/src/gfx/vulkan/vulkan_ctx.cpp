@@ -1952,10 +1952,11 @@ void VkProfilerChannel::frameEnd() {
   _vk_spans.clear();
 
   // Compute total_time from full-duration spans (begin_total_query -> end_query)
+  // Use += so multiple calls per frame accumulate correctly (same as isolated_time)
   for (auto& span : _vk_total_spans) {
     double begin_ts    = _timestamps[span.begin_total_query];
     double end_ts      = _timestamps[span.end_query];
-    span.series->_total_time = double(end_ts - begin_ts) * double(_timestampPeriod) * 1e-9;
+    span.series->_total_time += double(end_ts - begin_ts) * double(_timestampPeriod) * 1e-9;
   }
   _vk_total_spans.clear();
 

@@ -48,10 +48,12 @@ class FrameProfilerComponent(ApplicationComponent):
         fill=True
       )
       self.graphview = graphview_item.widget
+      self.graphview.addChannel("render_context")
+      self.graphview.addChannel("gpu")
+      self.graphview.addChannel("ez_app")
       lg_group.overlay_widget = self.overlay_group
 
     self.graphview.clear_color = vec4(0, 0, 0, 0.8)
-    self.graphview.setContext(ctx)
 
   ##############################################
 

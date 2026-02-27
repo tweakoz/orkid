@@ -726,7 +726,7 @@ void pyinit_ui(py::module& module_lev2) {
                 }
                 return rval;
               })
-          .def("setContext", [](ui::ProfilerView* v, ctx_t& c) { v->setContext(c.get()); })
+          .def("addChannel", [](ui::ProfilerView* v, const std::string& name) { v->addChannel(name); })
           .def_readwrite("clear_color", &ui::ProfilerView::_bg_color);
   type_codec->registerStdCodec<ui::profilerview_ptr_t>(profilerview_type);
   /////////////////////////////////////////////////////////////////////////////////

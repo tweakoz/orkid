@@ -81,7 +81,7 @@ void CpuProfilerChannel::sampleEnd(ProfilerSeries* s) {
 		auto& top = _span_stack.top();
 
 		// exclude time in nested scopes from parent scope
-		top.series->_total_time     = (now - top.start_total_time);
+		top.series->_total_time     += (now - top.start_total_time);
 		top.series->_isolated_time += (now - top.start_isolated_time);
 		top.series->_max_call_level = std::max(top.series->_max_call_level, _current_level);
 		top.series->_call_level     = -1;

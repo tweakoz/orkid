@@ -42,10 +42,10 @@ struct ProfilerView : public ui::Widget {
   void DoDraw(ui::drawevent_constptr_t drwev) override;
   ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
 
-  void setContext(lev2::Context* ctx) { _context = ctx; }
+  void addChannel(const std::string& name) { _channel_names.push_back(name); }
 
-  // Context providing profiler channel data
-  lev2::Context* _context = nullptr;
+  // Channels to display, by profiler channel name
+  std::vector<std::string> _channel_names;
 
   // Per-series and per-channel render state
   std::map<std::string, SeriesRenderState> _render_state_map;
@@ -61,6 +61,7 @@ struct ProfilerView : public ui::Widget {
 
 private:
   void _drawContextChannel(
+      lev2::Context*                  ctx,
       const std::string&              channel_label,
       ork::ProfilerChannel*           channel,
       float                           lane_y_top,

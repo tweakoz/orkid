@@ -45,6 +45,7 @@ HandlerResult ProfilerView::DoOnUiEvent(event_constptr_t ev) {
 // Y-axis (shared auto-ranging). Legend on the right lists each series.
 ///////////////////////////////////////////////////////////////////////////////
 void ProfilerView::_drawContextChannel(
+    lev2::Context*        ctx,
     const std::string&    channel_label,
     ork::ProfilerChannel* channel,
     float                 lane_y_top,
@@ -55,9 +56,9 @@ void ProfilerView::_drawContextChannel(
 
   const int max_label_width = lev2::FontMan::stringWidth(64);
 
-  auto  _gbi  = _context->GBI();
-  auto  _mtxi = _context->MTXI();
-  auto  _fxi  = _context->FXI();
+  auto  _gbi  = ctx->GBI();
+  auto  _mtxi = ctx->MTXI();
+  auto  _fxi  = ctx->FXI();
 
   auto& sorted_series = channel->_series_iter;
 
@@ -77,10 +78,10 @@ void ProfilerView::_drawContextChannel(
     int header_w  = lev2::FontMan::stringWidth(channel_label.length());
     int legend_cx = (box_x1 + W) / 2;
     int header_x  = legend_cx - header_w / 2;
-    _context->RefModColor() = fvec3(0.9f, 0.9f, 0.9f);
-    lev2::FontMan::beginTextBlock(_context, 128);
-    lev2::FontMan::DrawText(_context, header_x, int(lane_y_top) + 4, channel_label.c_str());
-    lev2::FontMan::endTextBlock(_context);
+    ctx->RefModColor() = fvec3(0.9f, 0.9f, 0.9f);
+    lev2::FontMan::beginTextBlock(ctx, 128);
+    lev2::FontMan::DrawText(ctx, header_x, int(lane_y_top) + 4, channel_label.c_str());
+    lev2::FontMan::endTextBlock(ctx);
   }
 
   // ------------------------------------------------------------------
@@ -92,12 +93,12 @@ void ProfilerView::_drawContextChannel(
   // Column headers
   {
     int header_y = int(lane_y_top) + 18;
-    _context->RefModColor() = fvec3(0.6f, 0.6f, 0.6f);
-    lev2::FontMan::beginTextBlock(_context, 128);
-    lev2::FontMan::DrawText(_context, legend_x0,             header_y, "total");
-    lev2::FontMan::DrawText(_context, legend_x0 + col_w,     header_y, "isolated");
-    lev2::FontMan::DrawText(_context, legend_x0 + 2 * col_w, header_y, "name");
-    lev2::FontMan::endTextBlock(_context);
+    ctx->RefModColor() = fvec3(0.6f, 0.6f, 0.6f);
+    lev2::FontMan::beginTextBlock(ctx, 128);
+    lev2::FontMan::DrawText(ctx, legend_x0,             header_y, "total");
+    lev2::FontMan::DrawText(ctx, legend_x0 + col_w,     header_y, "isolated");
+    lev2::FontMan::DrawText(ctx, legend_x0 + 2 * col_w, header_y, "name");
+    lev2::FontMan::endTextBlock(ctx);
   }
 
   // Pass 1: assign colors and update exclusive currentValues.
@@ -127,27 +128,27 @@ void ProfilerView::_drawContextChannel(
 
     bool  hovered    = (!_hovered_series.empty() && key == _hovered_series);
     fvec3 draw_color = hovered ? rstate.color * 1.8f : rstate.color;
-    _context->RefModColor() = draw_color;
+    ctx->RefModColor() = draw_color;
 
     float total_ms    = series->_samples.empty() ? 0.0f : float(series->_samples.back().total_time    * 1000.0);
     float isolated_ms = series->_samples.empty() ? 0.0f : float(series->_samples.back().isolated_time * 1000.0);
 
     // total_time ms
-    lev2::FontMan::beginTextBlock(_context, 128);
-    lev2::FontMan::DrawText(_context, legend_x0, iy,
+    lev2::FontMan::beginTextBlock(ctx, 128);
+    lev2::FontMan::DrawText(ctx, legend_x0, iy,
         FormatString("%0.2f", total_ms).c_str());
-    lev2::FontMan::endTextBlock(_context);
+    lev2::FontMan::endTextBlock(ctx);
 
     // isolated_time ms
-    lev2::FontMan::beginTextBlock(_context, 128);
-    lev2::FontMan::DrawText(_context, legend_x0 + col_w, iy,
+    lev2::FontMan::beginTextBlock(ctx, 128);
+    lev2::FontMan::DrawText(ctx, legend_x0 + col_w, iy,
         FormatString("%0.2f", isolated_ms).c_str());
-    lev2::FontMan::endTextBlock(_context);
+    lev2::FontMan::endTextBlock(ctx);
 
     // Series name
-    lev2::FontMan::beginTextBlock(_context, 128);
-    lev2::FontMan::DrawText(_context, name_x, iy, sname);
-    lev2::FontMan::endTextBlock(_context);
+    lev2::FontMan::beginTextBlock(ctx, 128);
+    lev2::FontMan::DrawText(ctx, name_x, iy, sname);
+    lev2::FontMan::endTextBlock(ctx);
   }
 
   // ------------------------------------------------------------------
@@ -183,10 +184,10 @@ void ProfilerView::_drawContextChannel(
   // ------------------------------------------------------------------
   if (lane_y_top > 0.5f) {
     lev2::VtxWriter<vtx_t> sv;
-    sv.Lock(_context, _vbuf.get(), 2);
+    sv.Lock(ctx, _vbuf.get(), 2);
     sv.AddVertex(vtx_t(fvec3(0,       lane_y_top, 0), fvec4(), fvec3(0.3f, 0.3f, 0.3f)));
     sv.AddVertex(vtx_t(fvec3(chart_x1,lane_y_top, 0), fvec4(), fvec3(0.3f, 0.3f, 0.3f)));
-    sv.UnLock(_context);
+    sv.UnLock(ctx);
     _mtl->begin(_tek, RCFD);
     _mtl->bindParamMatrix(_par_mvp, _mtxi->RefMVPMatrix());
     _mtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
@@ -227,7 +228,7 @@ void ProfilerView::_drawContextChannel(
       // Pass 1: filled band (2 triangles per segment)
       {
         lev2::VtxWriter<vtx_t> vw;
-        vw.Lock(_context, _vbuf.get(), (n - 1) * 6);
+        vw.Lock(ctx, _vbuf.get(), (n - 1) * 6);
         for (size_t i = 1; i < n; i++) {
           float tot_prev  = float(series->_samples[i-1].total_time    * 1000.0);
           float tot_curr  = float(series->_samples[i].total_time      * 1000.0);
@@ -248,7 +249,7 @@ void ProfilerView::_drawContextChannel(
           vw.AddVertex(vtx_t(fvec3(sx_curr, top_curr, 0), fvec4(), fill_color));
           vw.AddVertex(vtx_t(fvec3(sx_curr, bot_curr, 0), fvec4(), fill_color));
         }
-        vw.UnLock(_context);
+        vw.UnLock(ctx);
         _mtl->begin(_tek, RCFD);
         _mtl->bindParamMatrix(_par_mvp, _mtxi->RefMVPMatrix());
         _gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::TRIANGLES);
@@ -258,7 +259,7 @@ void ProfilerView::_drawContextChannel(
       // Pass 2: top edge line at total_time
       {
         lev2::VtxWriter<vtx_t> vw;
-        vw.Lock(_context, _vbuf.get(), (n - 1) * 2);
+        vw.Lock(ctx, _vbuf.get(), (n - 1) * 2);
         for (size_t i = 1; i < n; i++) {
           float tot_prev = float(series->_samples[i-1].total_time * 1000.0);
           float tot_curr = float(series->_samples[i].total_time   * 1000.0);
@@ -269,7 +270,7 @@ void ProfilerView::_drawContextChannel(
           vw.AddVertex(vtx_t(fvec3(sx_prev, sy_prev, 0), fvec4(), line_color));
           vw.AddVertex(vtx_t(fvec3(sx_curr, sy_curr, 0), fvec4(), line_color));
         }
-        vw.UnLock(_context);
+        vw.UnLock(ctx);
         _mtl->begin(_tek, RCFD);
         _mtl->bindParamMatrix(_par_mvp, _mtxi->RefMVPMatrix());
         _gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::LINES);
@@ -284,7 +285,7 @@ void ProfilerView::_drawContextChannel(
 }
 /////////////////////////////////////////////////////////////////////////
 void ProfilerView::DoDraw(drawevent_constptr_t drwev) {
-  if (!_context) return;
+  if (_channel_names.empty()) return;
 
   auto tgt = drwev->GetTarget();
 
@@ -304,11 +305,15 @@ void ProfilerView::DoDraw(drawevent_constptr_t drwev) {
 
   _drawColoredBox(drwev, _bg_color, lev2::BlendingMacro::ALPHA);
 
-  // Collect channels
+  // Collect channels by name (skip any not yet registered)
   struct CtxEntry { std::string label; ork::ProfilerChannel* channel; };
   std::vector<CtxEntry> ctx_channels;
-  ctx_channels.push_back({"render_context", Profiler::acquireChannel<CpuProfilerChannel>("render_context", "render_context"_crcu)});
-  ctx_channels.push_back({"gpu", Profiler::acquireChannel<CpuProfilerChannel>("gpu", "gpu"_crcu)});
+  for (auto& name : _channel_names) {
+    auto crc = CrcString(name.c_str()).hashed();
+    auto it  = Profiler::_channels.find(crc);
+    if (it != Profiler::_channels.end())
+      ctx_channels.push_back({name, it->second.get()});
+  }
 
   bool any_series = false;
   for (auto& e : ctx_channels)
@@ -324,17 +329,19 @@ void ProfilerView::DoDraw(drawevent_constptr_t drwev) {
 
   ork::lev2::FontMan::PushFont("i14");
 
-  size_t num_channels = ctx_channels.size();
-  float  lane_height  = float(height()) / float(num_channels);
+  size_t      num_channels = ctx_channels.size();
+  const float gap          = 10.0f;
+  float       lane_height  = (float(height()) - gap * float(num_channels - 1)) / float(num_channels);
 
   _legend_entries.clear();
 
   _mtxi->PushUIMatrix(width(), height());
   for (size_t ci = 0; ci < num_channels; ci++) {
     _drawContextChannel(
+        tgt,
         ctx_channels[ci].label,
         ctx_channels[ci].channel,
-        float(ci) * lane_height,
+        float(ci) * (lane_height + gap),
         lane_height,
         RCFD);
   }
