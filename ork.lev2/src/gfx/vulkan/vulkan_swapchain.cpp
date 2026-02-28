@@ -462,45 +462,45 @@ VkResult VkSwapChain::acquireImage(vkcontext_rawptr_t ctxVK) {
     }
 
     _curSwapWriteImage = 0xffffffff;
+    
+    // DEBUG: Log semaphore state before acquire
+    auto semaphore = _imageAcquiredSemaphores[sub_index]->_vksema;
+    if(0)logchan_swapchain->log("acquireImage: attempting vkAcquireNextImageKHR with semaphore %p (sub_index %zu)", 
+                          (void*)semaphore, sub_index);
+    
+    VkResult status    = vkAcquireNextImageKHR(
+        ctxVK->_vkdevice,
+        _vkSwapChain,
+        std::numeric_limits<uint64_t>::max(),
+        semaphore, // Use current frame's semaphore
+        VK_NULL_HANDLE,
+        &_curSwapWriteImage);
 
-  // DEBUG: Log semaphore state before acquire
-  auto semaphore = _imageAcquiredSemaphores[sub_index]->_vksema;
-  if(0)logchan_swapchain->log("acquireImage: attempting vkAcquireNextImageKHR with semaphore %p (sub_index %zu)", 
-                        (void*)semaphore, sub_index);
-  
-  VkResult status    = vkAcquireNextImageKHR(
-      ctxVK->_vkdevice,
-      _vkSwapChain,
-      std::numeric_limits<uint64_t>::max(),
-      semaphore, // Use current frame's semaphore
-      VK_NULL_HANDLE,
-      &_curSwapWriteImage);
+    // DEBUG: Log acquire result
+    if(0)logchan_swapchain->log("acquireImage: vkAcquireNextImageKHR returned %d, image index %u", 
+                          status, _curSwapWriteImage);
 
-  // DEBUG: Log acquire result
-  if(0)logchan_swapchain->log("acquireImage: vkAcquireNextImageKHR returned %d, image index %u", 
-                        status, _curSwapWriteImage);
-
-  switch (status) {
-    case VK_SUCCESS:
+    switch (status) {
+      case VK_SUCCESS:
         ok_to_transition = true;
-      if(0)logchan_swapchain->log("acquireImage: SUCCESS - acquired image %u", _curSwapWriteImage);
-      break;
-    case VK_SUBOPTIMAL_KHR:
-    case VK_ERROR_OUT_OF_DATE_KHR: {
-      logchan_swapchain->log("acquireImage: SWAPCHAIN OUT OF DATE - status %d", status);
-      vkDeviceWaitIdle(ctxVK->_vkdevice);
-      return status;
-      break;
-    }
-    case VK_ERROR_DEVICE_LOST:{
-      logchan_swapchain->error("acquireImage: VK_ERROR_DEVICE_LOST");
-      OrkAssert(false);
-      break;
-    }
-    default:
-      logchan_swapchain->error("acquireImage: UNEXPECTED STATUS %d", status);
-      OrkAssert(false);
-      break;
+        if(0)logchan_swapchain->log("acquireImage: SUCCESS - acquired image %u", _curSwapWriteImage);
+        break;
+      case VK_SUBOPTIMAL_KHR:
+      case VK_ERROR_OUT_OF_DATE_KHR: {
+        logchan_swapchain->log("acquireImage: SWAPCHAIN OUT OF DATE - status %d", status);
+        vkDeviceWaitIdle(ctxVK->_vkdevice);
+        return status;
+        break;
+      }
+      case VK_ERROR_DEVICE_LOST:{
+        logchan_swapchain->error("acquireImage: VK_ERROR_DEVICE_LOST");
+        OrkAssert(false);
+        break;
+      }
+      default:
+        logchan_swapchain->error("acquireImage: UNEXPECTED STATUS %d", status);
+        OrkAssert(false);
+        break;
     }
   }
   OrkAssert(_curSwapWriteImage >= 0);
@@ -549,9 +549,9 @@ void VkSwapChain::enqueueFrame(vkcontext_rawptr_t ctxVK) {
     fence->reset();
     {
       OrkProfilerSampleScope(CHANNEL_RENDER_CONTEXT, "enqueue_frame_fence_submit");
-      if(0)logchan_swapchain->log("enqueueFrame: submitting with fence %p (sub_index %zu)", (void*)fence->_vkfence, sub_index);
-      vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, &SI, fence->_vkfence);
-      if(0)logchan_swapchain->log("enqueueFrame: queue submit complete with fence %p", (void*)fence->_vkfence);
+    if(0)logchan_swapchain->log("enqueueFrame: submitting with fence %p (sub_index %zu)", (void*)fence->_vkfence, sub_index);
+    vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, &SI, fence->_vkfence);
+    if(0)logchan_swapchain->log("enqueueFrame: queue submit complete with fence %p", (void*)fence->_vkfence);
     }
   } else {
     OrkProfilerSampleScope(CHANNEL_RENDER_CONTEXT, "enqueue_frame_submit");
@@ -724,10 +724,6 @@ void VkSwapChain::waitPresentFrame(vkcontext_rawptr_t ctxVK) {
   
   // Wait for the current frame's fence to ensure rendering is complete
   auto& fence = _frameFences[sub_index];
-
-  // float pre_time                = ctxVK->_ctxtimer.SecsSinceStart();
-  // float time_since_last_present = pre_time - ctxVK->_prev_time;
-  // ctxVK->_prev_time             = pre_time;
 
   if (fence) {
     // Check if fence has been submitted (signaled or in-flight)
