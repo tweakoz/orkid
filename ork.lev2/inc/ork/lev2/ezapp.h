@@ -35,8 +35,8 @@ static constexpr uint64_t KAPPSTATEFLAG_JOINING    = 1 << 1;
 static constexpr uint64_t KAPPSTATEFLAG_JOINED     = 1 << 2;
 ////////////////////////////////////////////////////////////////////////////////
 
-#define EZAPP_CHANNEL "ez_app"
-#define EZAPP_MAIN_LOOP_SERIES "main_loop"
+#define CHANNEL_EZAPP "ez_app"
+#define SERIES_EZAPP_MAIN_LOOP "main_loop"
 
 struct EzAppContext {
 

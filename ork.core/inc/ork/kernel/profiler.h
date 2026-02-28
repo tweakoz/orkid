@@ -151,7 +151,7 @@ struct Profiler {
 
   // global state values to control all profiler sampling
   static inline std::atomic<bool> _enabled     = true;
-  static inline std::atomic<u16>  _max_samples = 512;
+  static inline std::atomic<u16>  _max_samples = 256;
 
   static void enabled(bool state) { return _enabled.store(state); }
   static bool enabled() { return _enabled.load(); }
