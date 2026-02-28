@@ -13,16 +13,12 @@
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
-#define OrkProfilerFrameBegin(_channel)           (_channel)->frameBegin()
-#define OrkProfilerFrameEnd(_channel)             (_channel)->frameEnd()
-#define OrkProfilerSampleBegin(_channel, _series) (_channel)->sampleBegin(_series)
-#define OrkProfilerSampleEnd(_channel, _series)   (_channel)->sampleEnd  (_series)
-#define OrkProfilerSampleScope(_channel, _series) auto _ = (_channel)->sampleScope(_series)
-
 #define _CONCAT(a, b) a##b
 #define CONCAT(a, b) _CONCAT(a, b)
 #define UNIQUE(name) CONCAT(name, __LINE__)
 
+// We use macros and stamp down copies of the static var and if statement to evade std::map lookup every time
+// and rely on CPU prediction to optimize away the overhead of the profiler marker after first call
 #define _OrkStaticAcquireChannel(_channel_name, _type, _var, _call, ...) \
     static _type* _var = nullptr; \
     if (_var == nullptr) _var = Profiler::acquireChannel<_type>(_channel_name, CRCU(_channel_name)); \

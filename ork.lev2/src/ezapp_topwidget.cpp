@@ -150,7 +150,6 @@ void EzTopWidget::DoDraw(ui::drawevent_constptr_t drwev) {
     int swap_w = 0, swap_h = 0;
     ctx->FBI()->querySwapchainSize(swap_w, swap_h);
     void* swap_ptr = ctx->FBI()->querySwapchainPtr();
-    _mainwin->_perf_render_timer.Start();
     ctx->beginFrame();
     if(ctx->FBI()->_main_rtg){
       _mainwin->_onDraw(drwev);

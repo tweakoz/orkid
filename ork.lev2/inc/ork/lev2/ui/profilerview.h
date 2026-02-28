@@ -7,7 +7,8 @@
 
 #pragma once
 
-#include <ork/lev2/ui/widget.h>
+#include <ork/lev2/ui/group.h>
+#include <ork/lev2/ui/button.h>
 #include <map>
 #include <string>
 #include <vector>
@@ -37,10 +38,11 @@ struct LegendEntry {
 // One lane per channel (MainThread, GPU), all series share the lane's Y-axis.
 // Call setContext() after GPU init.
 ///////////////////////////////////////////////////////////////////////////////
-struct ProfilerView : public ui::Widget {
+struct ProfilerView : public ui::Group {
   ProfilerView();
   void DoDraw(ui::drawevent_constptr_t drwev) override;
   ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
+  void _doOnResized() override;
 
   void addChannel(const std::string& name) { _channel_names.push_back(name); }
 
@@ -66,6 +68,11 @@ struct ProfilerView : public ui::Widget {
   // Sample-count button hold-to-repeat state
   int _held_smp_delta  = 0; // -8 or +8 while held, 0 when released
   int _held_smp_frames = 0;
+
+  // Header buttons — owned as Group children
+  button_ptr_t _btn_play;
+  button_ptr_t _btn_minus;
+  button_ptr_t _btn_plus;
 
 private:
   void _drawContextChannel(

@@ -462,45 +462,45 @@ VkResult VkSwapChain::acquireImage(vkcontext_rawptr_t ctxVK) {
     }
 
     _curSwapWriteImage = 0xffffffff;
-    
-    // DEBUG: Log semaphore state before acquire
-    auto semaphore = _imageAcquiredSemaphores[sub_index]->_vksema;
-    if(0)logchan_swapchain->log("acquireImage: attempting vkAcquireNextImageKHR with semaphore %p (sub_index %zu)", 
-                          (void*)semaphore, sub_index);
-    
-    VkResult status    = vkAcquireNextImageKHR(
-        ctxVK->_vkdevice,
-        _vkSwapChain,
-        std::numeric_limits<uint64_t>::max(),
-        semaphore, // Use current frame's semaphore
-        VK_NULL_HANDLE,
-        &_curSwapWriteImage);
 
-    // DEBUG: Log acquire result
-    if(0)logchan_swapchain->log("acquireImage: vkAcquireNextImageKHR returned %d, image index %u", 
-                          status, _curSwapWriteImage);
+  // DEBUG: Log semaphore state before acquire
+  auto semaphore = _imageAcquiredSemaphores[sub_index]->_vksema;
+  if(0)logchan_swapchain->log("acquireImage: attempting vkAcquireNextImageKHR with semaphore %p (sub_index %zu)", 
+                        (void*)semaphore, sub_index);
+  
+  VkResult status    = vkAcquireNextImageKHR(
+      ctxVK->_vkdevice,
+      _vkSwapChain,
+      std::numeric_limits<uint64_t>::max(),
+      semaphore, // Use current frame's semaphore
+      VK_NULL_HANDLE,
+      &_curSwapWriteImage);
 
-    switch (status) {
-      case VK_SUCCESS:
+  // DEBUG: Log acquire result
+  if(0)logchan_swapchain->log("acquireImage: vkAcquireNextImageKHR returned %d, image index %u", 
+                        status, _curSwapWriteImage);
+
+  switch (status) {
+    case VK_SUCCESS:
         ok_to_transition = true;
-        if(0)logchan_swapchain->log("acquireImage: SUCCESS - acquired image %u", _curSwapWriteImage);
-        break;
-      case VK_SUBOPTIMAL_KHR:
-      case VK_ERROR_OUT_OF_DATE_KHR: {
-        logchan_swapchain->log("acquireImage: SWAPCHAIN OUT OF DATE - status %d", status);
-        vkDeviceWaitIdle(ctxVK->_vkdevice);
-        return status;
-        break;
-      }
-      case VK_ERROR_DEVICE_LOST:{
-        logchan_swapchain->error("acquireImage: VK_ERROR_DEVICE_LOST");
-        OrkAssert(false);
-        break;
-      }
-      default:
-        logchan_swapchain->error("acquireImage: UNEXPECTED STATUS %d", status);
-        OrkAssert(false);
-        break;
+      if(0)logchan_swapchain->log("acquireImage: SUCCESS - acquired image %u", _curSwapWriteImage);
+      break;
+    case VK_SUBOPTIMAL_KHR:
+    case VK_ERROR_OUT_OF_DATE_KHR: {
+      logchan_swapchain->log("acquireImage: SWAPCHAIN OUT OF DATE - status %d", status);
+      vkDeviceWaitIdle(ctxVK->_vkdevice);
+      return status;
+      break;
+    }
+    case VK_ERROR_DEVICE_LOST:{
+      logchan_swapchain->error("acquireImage: VK_ERROR_DEVICE_LOST");
+      OrkAssert(false);
+      break;
+    }
+    default:
+      logchan_swapchain->error("acquireImage: UNEXPECTED STATUS %d", status);
+      OrkAssert(false);
+      break;
     }
   }
   OrkAssert(_curSwapWriteImage >= 0);
@@ -765,28 +765,6 @@ void VkSwapChain::waitPresentFrame(vkcontext_rawptr_t ctxVK) {
   } else {
     logchan_swapchain->log("waitPresentFrame: WARNING - no fence for sub_index %zu", sub_index);
   }
-
-  // ctxVK->_total_frame_time += time_since_last_present;
-
-  // float pos_time   = ctxVK->_ctxtimer.SecsSinceStart();
-  // float delta_time = pos_time - pre_time;
-  // ctxVK->_present_wait_time += delta_time;
-  // ctxVK->_perf_fence_wait_duration = delta_time;
-  // ctxVK->_total_wait_time = ctxVK->_ctxtimer.SecsSinceStart();
-
-  // if ((_currentFrame & 0x1ff) == 0) {
-  //   float average_frame_time = ctxVK->_total_frame_time / (_currentFrame + 1);
-  //   float average_wait_time  = ctxVK->_present_wait_time / (_currentFrame + 1);
-  //   if(0)logchan_swapchain->log(
-  //       "waittime<%g> total_time<%g>. average_wait_time<%g s> average_frame_time<%g>",
-  //       ctxVK->_present_wait_time,
-  //       ctxVK->_total_wait_time,
-  //       average_wait_time,
-  //       average_frame_time);
-
-  //   ctxVK->_total_frame_time = 0.0f;
-  //   ctxVK->_total_wait_time  = 0.0f;
-  // }
   
   // DEBUG: Log frame completion and increment
   if(0)logchan_swapchain->log("waitPresentFrame: frame %zu complete, incrementing to frame %zu", 
