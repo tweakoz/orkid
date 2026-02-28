@@ -803,15 +803,14 @@ void VkContext::_doSubmitPrimaryCommandBuffer(){
     }
 
     // Submit
-    {
-      OrkProfilerSampleScope(CHANNEL_RENDER_CONTEXT, "submit");
-      if ( not semas_empty) {
-        // Submit with timeline semaphores
-        swapchain->_submitFrameWithSemaphores(this);
-      } else {
-        // Normal submission
-        swapchain->enqueueFrame(this);
-      }
+    if ( not semas_empty) {
+      OrkProfilerSampleScope(CHANNEL_RENDER_CONTEXT, "submit_semaphores");
+      // Submit with timeline semaphores
+      swapchain->_submitFrameWithSemaphores(this);
+    } else {
+      OrkProfilerSampleScope(CHANNEL_RENDER_CONTEXT, "enqueue_frame");
+      // Normal submission
+      swapchain->enqueueFrame(this);
     }
 
     ///////////////////////////////////////////////////////
@@ -1910,6 +1909,8 @@ void VkContext::resumeRenderPass() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkProfilerChannel::frameBegin(VkDevice device, const VulkanDeviceInfo* deviceinfo, VkCommandBuffer cmdbuf) {
+  if (!Profiler::enabled()) return;
+
   // printf("VkProfilerChannel beginProfilerFrame\n");
   if (_device == VK_NULL_HANDLE) {
     _device = device;
@@ -1929,6 +1930,8 @@ void VkProfilerChannel::frameBegin(VkDevice device, const VulkanDeviceInfo* devi
 }
 
 void VkProfilerChannel::frameEnd() {
+  if (!Profiler::enabled()) return;
+
   // printf("VkProfilerChannel endProfilerFrame\n");
   OrkAssertI(_cmdbuf != VK_NULL_HANDLE, "VulkanProfilerChannel beginFrame not called!");
   _cmdbuf = VK_NULL_HANDLE;
@@ -1965,6 +1968,8 @@ void VkProfilerChannel::frameEnd() {
 }
 
 void VkProfilerChannel::sampleBegin(ProfilerSeries* s) {
+  if (!Profiler::enabled()) return;
+
   // printf("VkProfilerChannel beginSample %s\n", s->_name.strval());
   OrkAssertI(_cmdbuf != VK_NULL_HANDLE, "VulkanProfilerChannel beginFrame not called!");
   OrkAssertI(_query_index < MAX_GPU_PERF_QUERIES, "Vulkan Profiler Queries exhausted.");
@@ -1988,6 +1993,8 @@ void VkProfilerChannel::sampleBegin(ProfilerSeries* s) {
 }
 
 void VkProfilerChannel::sampleEnd(ProfilerSeries* s) {
+  if (!Profiler::enabled()) return;
+
   // printf("VkProfilerChannel endSample %s\n", s->_name.strval());
   OrkAssertI(_cmdbuf != VK_NULL_HANDLE, "VulkanProfilerChannel beginFrame not called!");
 

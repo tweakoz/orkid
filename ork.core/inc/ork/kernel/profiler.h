@@ -43,7 +43,7 @@ namespace ork {
     if (_var == nullptr) _var = Profiler::acquireSeries(_channel_name, CRCU(_channel_name), _series_name, CRCU(_series_name)); \
     auto CONCAT(_var, scope) = _var->sampleScope()
 
-// Initial frame begin defines what type the channel is. If different channel type needed first manually acquire it.
+// Initial frame begin defines what type the channel is. Additional optional parameters can be passed in.
 #define OrkProfilerFrameBegin(_channel_name, _type, ...)    _OrkStaticAcquireChannel(_channel_name, _type, UNIQUE(_series), frameBegin, __VA_ARGS__)
 #define OrkProfilerFrameEnd(_channel_name)                  _OrkStaticGetChannel(_channel_name, UNIQUE(_series), frameEnd)
 #define OrkProfilerSampleBegin(_channel_name, _series_name) _OrkStaticSeries(_channel_name, _series_name, UNIQUE(_series), sampleBegin)
@@ -54,7 +54,6 @@ struct ProfilerScope;
 struct ProfilerChannel;
 
 struct ProfilerSeries {
-  static constexpr u16 MAX_SAMPLES = 128;
   std::string _name;
   ProfilerChannel* _parent;
 
@@ -149,6 +148,18 @@ struct CpuProfilerChannel final : ProfilerChannel {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct Profiler {
+
+  // global state values to control all profiler sampling
+  static inline std::atomic<bool> _enabled     = true;
+  static inline std::atomic<u16>  _max_samples = 512;
+
+  static void enabled(bool state) { return _enabled.store(state); }
+  static bool enabled() { return _enabled.load(); }
+
+  static void maxSamples(u16 value) { return _max_samples.store(value); }
+  static u16  maxSamples() { return _max_samples.load(); }
+
+  // global catalong of all channels
   static inline std::unordered_map<u64, std::shared_ptr<ProfilerChannel>> _channels;
 
   template <typename T>

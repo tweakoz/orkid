@@ -547,12 +547,15 @@ void VkSwapChain::enqueueFrame(vkcontext_rawptr_t ctxVK) {
   if (sub_index < _frameFences.size()) {
     auto& fence = _frameFences[sub_index];
     fence->reset();
-    if(0)logchan_swapchain->log("enqueueFrame: submitting with fence %p (sub_index %zu)", (void*)fence->_vkfence, sub_index);
-    vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, &SI, fence->_vkfence);
-    if(0)logchan_swapchain->log("enqueueFrame: queue submit complete with fence %p", (void*)fence->_vkfence);
+    {
+      OrkProfilerSampleScope(CHANNEL_RENDER_CONTEXT, "enqueue_frame_fence_submit");
+      if(0)logchan_swapchain->log("enqueueFrame: submitting with fence %p (sub_index %zu)", (void*)fence->_vkfence, sub_index);
+      vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, &SI, fence->_vkfence);
+      if(0)logchan_swapchain->log("enqueueFrame: queue submit complete with fence %p", (void*)fence->_vkfence);
+    }
   } else {
-    logchan_swapchain->log("enqueueFrame: WARNING - submitting without fence (sub_index %zu >= fence count %zu)", 
-                          sub_index, _frameFences.size());
+    OrkProfilerSampleScope(CHANNEL_RENDER_CONTEXT, "enqueue_frame_submit");
+    logchan_swapchain->log("enqueueFrame: WARNING - submitting without fence (sub_index %zu >= fence count %zu)", sub_index, _frameFences.size());
     vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, &SI, VK_NULL_HANDLE);
   }
   

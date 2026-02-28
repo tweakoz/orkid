@@ -59,6 +59,14 @@ struct ProfilerView : public ui::Widget {
   std::string              _hovered_series;
   std::vector<LegendEntry> _legend_entries;
 
+  // Scrub state — vertical cursor dragged across the chart
+  float _scrub_x      = -1.0f; // local pixel x, -1 = inactive
+  bool  _is_scrubbing = false;
+
+  // Sample-count button hold-to-repeat state
+  int _held_smp_delta  = 0; // -8 or +8 while held, 0 when released
+  int _held_smp_frames = 0;
+
 private:
   void _drawContextChannel(
       lev2::Context*                  ctx,

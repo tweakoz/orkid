@@ -17,12 +17,102 @@ namespace ork::ui {
 ///////////////////////////////////////////////////////////////////////////////
 using vtx_t    = lev2::SVtxV16T16C16;
 using vtxbuf_t = lev2::DynamicVertexBuffer<vtx_t>;
+
+// Header bar layout — computed from widget width so draw and hit-test agree
+struct HdrLayout {
+  static constexpr int BTN_W = 48, BTN_H = 18, BTN_Y = 4;
+  static constexpr int SMP_BTN_W = 24; // width of [-] and [+]
+
+  int btn_x;        // play/pause button
+  int rec_x;        // "Record:" label
+  int smp_label_x;  // "Samples:" label
+  int smp_minus_x;  // [-] button
+  int smp_num_x;    // sample count text
+  int smp_plus_x;   // [+] button
+
+  explicit HdrLayout(int widget_w) {
+    btn_x      = (widget_w - BTN_W) / 2;
+    rec_x      = btn_x - 80;          // "Record: " ~9 chars × ~8px + gap
+    smp_label_x = btn_x + BTN_W + 10;
+    smp_minus_x = smp_label_x + 80;   // "Samples: " ~9 chars × ~8px + gap
+    smp_num_x   = smp_minus_x + SMP_BTN_W + 4;
+    smp_plus_x  = smp_num_x  + 36 + 4; // room for "1024"
+  }
+
+  bool inBtn     (int x, int y) const { return x>=btn_x       && x<btn_x+BTN_W       && y>=BTN_Y && y<BTN_Y+BTN_H; }
+  bool inSmpMinus(int x, int y) const { return x>=smp_minus_x && x<smp_minus_x+SMP_BTN_W && y>=BTN_Y && y<BTN_Y+BTN_H; }
+  bool inSmpPlus (int x, int y) const { return x>=smp_plus_x  && x<smp_plus_x +SMP_BTN_W && y>=BTN_Y && y<BTN_Y+BTN_H; }
+};
 ///////////////////////////////////////////////////////////////////////////////
 ProfilerView::ProfilerView()
     : Widget("ProfilerView", 0, 0, 32, 32) {
 }
 /////////////////////////////////////////////////////////////////////////
 HandlerResult ProfilerView::DoOnUiEvent(event_constptr_t ev) {
+  HdrLayout lo(width());
+
+  if (ev->_eventcode == ui::EventCode::PUSH) {
+    int lx, ly;
+    RootToLocal(ev->miX, ev->miY, lx, ly);
+
+    if (lo.inBtn(lx, ly)) {
+      Profiler::_enabled.store(!Profiler::_enabled.load());
+      SetDirty();
+      return HandlerResult();
+    }
+    if (lo.inSmpMinus(lx, ly)) {
+      _held_smp_delta  = -8;
+      _held_smp_frames = 0;
+      Profiler::maxSamples(u16(std::max(16, int(Profiler::maxSamples()) - 8)));
+      SetDirty();
+      HandlerResult rval; rval.setHandled(this); return rval;
+    }
+    if (lo.inSmpPlus(lx, ly)) {
+      _held_smp_delta  = +8;
+      _held_smp_frames = 0;
+      Profiler::maxSamples(u16(std::min(1024, int(Profiler::maxSamples()) + 8)));
+      SetDirty();
+      HandlerResult rval; rval.setHandled(this); return rval;
+    }
+    // Click in graph area — pause and begin scrub
+    constexpr float GRAPHS_TOP = 28.0f;
+    if (float(ly) >= GRAPHS_TOP) {
+      Profiler::_enabled.store(false);
+      _scrub_x      = float(lx);
+      _is_scrubbing = true;
+      SetDirty();
+      HandlerResult rval;
+      rval.setHandled(this);
+      return rval;
+    }
+  }
+
+  if (ev->_eventcode == ui::EventCode::DRAG) {
+    if (_is_scrubbing) {
+      int lx, ly;
+      RootToLocal(ev->miX, ev->miY, lx, ly);
+      _scrub_x = float(lx);
+      SetDirty();
+      HandlerResult rval;
+      rval.setHandled(this);
+      return rval;
+    }
+  }
+
+  if (ev->_eventcode == ui::EventCode::RELEASE) {
+    _is_scrubbing    = false;
+    _held_smp_delta  = 0;
+    _held_smp_frames = 0;
+  }
+
+  if (ev->_eventcode == ui::EventCode::MOUSEWHEEL && ev->mbSHIFT) {
+    int delta     = (ev->miMWY > 0) ? 8 : -8;
+    int new_val   = std::clamp(int(Profiler::maxSamples()) + delta, 16, 1024);
+    Profiler::maxSamples(u16(new_val));
+    SetDirty();
+    return HandlerResult();
+  }
+
   if (ev->_eventcode == ui::EventCode::MOVE) {
     int lx, ly;
     RootToLocal(ev->miX, ev->miY, lx, ly);
@@ -130,8 +220,18 @@ void ProfilerView::_drawContextChannel(
     fvec3 draw_color = hovered ? rstate.color * 1.8f : rstate.color;
     ctx->RefModColor() = draw_color;
 
-    float total_ms    = series->_samples.empty() ? 0.0f : float(series->_samples.back().total_time    * 1000.0);
-    float isolated_ms = series->_samples.empty() ? 0.0f : float(series->_samples.back().isolated_time * 1000.0);
+    float total_ms    = 0.0f;
+    float isolated_ms = 0.0f;
+    if (!series->_samples.empty()) {
+      size_t n   = series->_samples.size();
+      int    idx = int(n) - 1; // default: last sample
+      if (_scrub_x >= chart_x0 && _scrub_x <= chart_x1) {
+        float norm = (_scrub_x - chart_x0) / (chart_x1 - chart_x0);
+        idx = std::clamp(int(norm * float(n - 1) + 0.5f), 0, int(n) - 1);
+      }
+      total_ms    = float(series->_samples[idx].total_time    * 1000.0);
+      isolated_ms = float(series->_samples[idx].isolated_time * 1000.0);
+    }
 
     // total_time ms
     lev2::FontMan::beginTextBlock(ctx, 128);
@@ -193,6 +293,27 @@ void ProfilerView::_drawContextChannel(
     _mtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
     _gbi->DrawPrimitiveEML(sv, lev2::PrimitiveType::LINES);
     _mtl->end(RCFD);
+  }
+
+  // ------------------------------------------------------------------
+  // Horizontal max-value line at y_top_line, labeled with series_max
+  // ------------------------------------------------------------------
+  {
+    lev2::VtxWriter<vtx_t> sv;
+    sv.Lock(ctx, _vbuf.get(), 2);
+    sv.AddVertex(vtx_t(fvec3(0,       y_top_line, 0), fvec4(), fvec3(0.5f, 0.5f, 0.5f)));
+    sv.AddVertex(vtx_t(fvec3(chart_x1,y_top_line, 0), fvec4(), fvec3(0.5f, 0.5f, 0.5f)));
+    sv.UnLock(ctx);
+    _mtl->begin(_tek, RCFD);
+    _mtl->bindParamMatrix(_par_mvp, _mtxi->RefMVPMatrix());
+    _mtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
+    _gbi->DrawPrimitiveEML(sv, lev2::PrimitiveType::LINES);
+    _mtl->end(RCFD);
+
+    ctx->RefModColor() = fvec3(0.7f, 0.7f, 0.7f);
+    lev2::FontMan::beginTextBlock(ctx, 32);
+    lev2::FontMan::DrawText(ctx, 2, int(y_top_line) + 2, FormatString("%.2fms", series_max).c_str());
+    lev2::FontMan::endTextBlock(ctx);
   }
 
   // ------------------------------------------------------------------
@@ -282,10 +403,38 @@ void ProfilerView::_drawContextChannel(
   _fxi->popRasterState();
   rs->_priority      = prev_pri;
   rs->_blendingMacro = omacro;
+
+  // ------------------------------------------------------------------
+  // Scrub line — vertical marker at _scrub_x
+  // ------------------------------------------------------------------
+  float scrub_cx = std::clamp(_scrub_x, chart_x0, chart_x1);
+  if (_scrub_x >= chart_x0 && _scrub_x <= chart_x1) {
+    lev2::VtxWriter<vtx_t> sv;
+    sv.Lock(ctx, _vbuf.get(), 2);
+    sv.AddVertex(vtx_t(fvec3(scrub_cx, y_top_line, 0), fvec4(), fvec3(1.0f, 1.0f, 0.4f)));
+    sv.AddVertex(vtx_t(fvec3(scrub_cx, y_bottom,   0), fvec4(), fvec3(1.0f, 1.0f, 0.4f)));
+    sv.UnLock(ctx);
+    _mtl->begin(_tek, RCFD);
+    _mtl->bindParamMatrix(_par_mvp, _mtxi->RefMVPMatrix());
+    _mtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
+    _gbi->DrawPrimitiveEML(sv, lev2::PrimitiveType::LINES);
+    _mtl->end(RCFD);
+  }
 }
 /////////////////////////////////////////////////////////////////////////
 void ProfilerView::DoDraw(drawevent_constptr_t drwev) {
   if (_channel_names.empty()) return;
+
+  // Auto-repeat for held [-]/[+] buttons: 20-frame initial delay, then every 4 frames
+  if (_held_smp_delta != 0) {
+    _held_smp_frames++;
+    constexpr int INITIAL_DELAY = 20;
+    constexpr int REPEAT_EVERY  = 4;
+    if (_held_smp_frames > INITIAL_DELAY && (_held_smp_frames - INITIAL_DELAY) % REPEAT_EVERY == 0) {
+      int nv = std::clamp(int(Profiler::maxSamples()) + _held_smp_delta, 16, 1024);
+      Profiler::maxSamples(u16(nv));
+    }
+  }
 
   auto tgt = drwev->GetTarget();
 
@@ -304,6 +453,10 @@ void ProfilerView::DoDraw(drawevent_constptr_t drwev) {
   auto RCFD  = std::make_shared<lev2::RenderContextFrameData>(tgt);
 
   _drawColoredBox(drwev, _bg_color, lev2::BlendingMacro::ALPHA);
+
+  // Default scrub line to the center of the chart on first draw
+  if (_scrub_x < 0.0f)
+    _scrub_x = float(width()) / 2.0f;
 
   // Collect channels by name (skip any not yet registered)
   struct CtxEntry { std::string label; ork::ProfilerChannel* channel; };
@@ -329,19 +482,89 @@ void ProfilerView::DoDraw(drawevent_constptr_t drwev) {
 
   ork::lev2::FontMan::PushFont("i14");
 
-  size_t      num_channels = ctx_channels.size();
-  const float gap          = 10.0f;
-  float       lane_height  = (float(height()) - gap * float(num_channels - 1)) / float(num_channels);
+  size_t      num_channels  = ctx_channels.size();
+  const float gap           = 10.0f;
+  const float graphs_top    = 28.0f; // leave room for play/pause button
+  float       lane_height   = (float(height()) - graphs_top - gap * float(num_channels - 1)) / float(num_channels);
 
   _legend_entries.clear();
 
   _mtxi->PushUIMatrix(width(), height());
+
+  // ------------------------------------------------------------------
+  // Header bar: [Record:] [||] ... [Samples:] [-] [128] [+]
+  // ------------------------------------------------------------------
+  {
+    HdrLayout lo(width());
+    auto      gbi     = tgt->GBI();
+    bool      running = Profiler::_enabled.load();
+    int       smp     = int(Profiler::maxSamples());
+
+    // helper: draw a small filled button rect
+    auto drawSmallBtn = [&](int x, fvec3 col) {
+      lev2::VtxWriter<vtx_t> vw;
+      vw.Lock(tgt, _vbuf.get(), 6);
+      vw.AddVertex(vtx_t(fvec3(x,                       HdrLayout::BTN_Y,                       0), fvec4(), col));
+      vw.AddVertex(vtx_t(fvec3(x + HdrLayout::SMP_BTN_W, HdrLayout::BTN_Y,                       0), fvec4(), col));
+      vw.AddVertex(vtx_t(fvec3(x,                       HdrLayout::BTN_Y + HdrLayout::BTN_H,    0), fvec4(), col));
+      vw.AddVertex(vtx_t(fvec3(x,                       HdrLayout::BTN_Y + HdrLayout::BTN_H,    0), fvec4(), col));
+      vw.AddVertex(vtx_t(fvec3(x + HdrLayout::SMP_BTN_W, HdrLayout::BTN_Y,                       0), fvec4(), col));
+      vw.AddVertex(vtx_t(fvec3(x + HdrLayout::SMP_BTN_W, HdrLayout::BTN_Y + HdrLayout::BTN_H,    0), fvec4(), col));
+      vw.UnLock(tgt);
+      _mtl->begin(_tek, RCFD);
+      _mtl->bindParamMatrix(_par_mvp, _mtxi->RefMVPMatrix());
+      _mtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
+      gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::TRIANGLES);
+      _mtl->end(RCFD);
+    };
+
+    // Play/pause button
+    fvec3 play_col = running ? fvec3(0.1f, 0.45f, 0.1f) : fvec3(0.45f, 0.1f, 0.1f);
+    {
+      lev2::VtxWriter<vtx_t> vw;
+      vw.Lock(tgt, _vbuf.get(), 6);
+      vw.AddVertex(vtx_t(fvec3(lo.btn_x,              HdrLayout::BTN_Y,                    0), fvec4(), play_col));
+      vw.AddVertex(vtx_t(fvec3(lo.btn_x + HdrLayout::BTN_W, HdrLayout::BTN_Y,              0), fvec4(), play_col));
+      vw.AddVertex(vtx_t(fvec3(lo.btn_x,              HdrLayout::BTN_Y + HdrLayout::BTN_H, 0), fvec4(), play_col));
+      vw.AddVertex(vtx_t(fvec3(lo.btn_x,              HdrLayout::BTN_Y + HdrLayout::BTN_H, 0), fvec4(), play_col));
+      vw.AddVertex(vtx_t(fvec3(lo.btn_x + HdrLayout::BTN_W, HdrLayout::BTN_Y,              0), fvec4(), play_col));
+      vw.AddVertex(vtx_t(fvec3(lo.btn_x + HdrLayout::BTN_W, HdrLayout::BTN_Y + HdrLayout::BTN_H, 0), fvec4(), play_col));
+      vw.UnLock(tgt);
+      _mtl->begin(_tek, RCFD);
+      _mtl->bindParamMatrix(_par_mvp, _mtxi->RefMVPMatrix());
+      _mtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
+      gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::TRIANGLES);
+      _mtl->end(RCFD);
+    }
+
+    // [-] and [+] buttons
+    fvec3 smp_btn_col(0.25f, 0.25f, 0.35f);
+    drawSmallBtn(lo.smp_minus_x, smp_btn_col);
+    drawSmallBtn(lo.smp_plus_x,  smp_btn_col);
+
+    // Text labels
+    tgt->RefModColor() = fvec3(0.7f, 0.7f, 0.7f);
+    lev2::FontMan::beginTextBlock(tgt, 64);
+    lev2::FontMan::DrawText(tgt, lo.rec_x,       HdrLayout::BTN_Y + 2, "Record:");
+    lev2::FontMan::DrawText(tgt, lo.smp_label_x, HdrLayout::BTN_Y + 2, "Samples:");
+    lev2::FontMan::DrawText(tgt, lo.smp_num_x,   HdrLayout::BTN_Y + 2, FormatString("%d", smp).c_str());
+    lev2::FontMan::endTextBlock(tgt);
+
+    // Play/pause icon and [-]/[+] labels in white
+    tgt->RefModColor() = fvec3(1.0f, 1.0f, 1.0f);
+    lev2::FontMan::beginTextBlock(tgt, 16);
+    lev2::FontMan::DrawText(tgt, lo.btn_x + 6,        HdrLayout::BTN_Y + 2, running ? "||" : " >");
+    lev2::FontMan::DrawText(tgt, lo.smp_minus_x + 7,  HdrLayout::BTN_Y + 2, "-");
+    lev2::FontMan::DrawText(tgt, lo.smp_plus_x  + 7,  HdrLayout::BTN_Y + 2, "+");
+    lev2::FontMan::endTextBlock(tgt);
+  }
+
   for (size_t ci = 0; ci < num_channels; ci++) {
     _drawContextChannel(
         tgt,
         ctx_channels[ci].label,
         ctx_channels[ci].channel,
-        float(ci) * (lane_height + gap),
+        graphs_top + float(ci) * (lane_height + gap),
         lane_height,
         RCFD);
   }

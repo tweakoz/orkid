@@ -1,10 +1,3 @@
-////////////////////////////////////////////////////////////////
-// Orkid Media Engine
-// Copyright 1996-2023, Michael T. Mayers.
-// Distributed under the MIT License.
-// see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
-////////////////////////////////////////////////////////////////
-
 #include <ork/pch.h>
 #include <ork/kernel/profiler.h>
 
@@ -14,7 +7,8 @@ namespace ork {
 
 void ProfilerSeries::addSample(Sample sample) {
 	_samples.push_back(sample);
-	while (_samples.size() > MAX_SAMPLES)
+	u16 max_samples = Profiler::maxSamples();
+	while (_samples.size() > max_samples)
 		_samples.pop_front();
 }
 
@@ -25,10 +19,14 @@ ProfilerScope ProfilerSeries::sampleScope() { return _parent->sampleScope(this);
 ///////////////////////////////////////////////////////////////////////////////
 
 void ProfilerChannel::frameBegin() {
+	if (!Profiler::enabled()) return;
+
 	OrkAssertI(_current_level == 0, "ProfilerChannel endFrame not called!");
 }
 
 void ProfilerChannel::frameEnd() {
+	if (!Profiler::enabled()) return;
+
 	OrkAssertI(_current_level == 0, "ProfilerChannel did not call endSample for every sample! Or no samples recorded!");
 
 	// We add a sample for all of them even if they didn't accumulate a sample so that the sampel vectors lineup.
@@ -54,6 +52,8 @@ void ProfilerChannel::frameEnd() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void CpuProfilerChannel::sampleBegin(ProfilerSeries* s) {
+	if (!Profiler::enabled()) return;
+
 	// printf("CpuProfilerChannel beginSample %s\n", s->_name.strval());
 	double now = _timer.get_sync_time();
 
@@ -72,6 +72,8 @@ void CpuProfilerChannel::sampleBegin(ProfilerSeries* s) {
 }
 
 void CpuProfilerChannel::sampleEnd(ProfilerSeries* s) {
+	if (!Profiler::enabled()) return;
+
 	// printf("CpuProfilerChannel endSample %s\n", s->_name.strval());
 	double now = _timer.get_sync_time();
 
