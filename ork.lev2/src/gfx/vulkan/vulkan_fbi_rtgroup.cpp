@@ -254,6 +254,10 @@ void VkFrameBufferInterface::_popRtGroup() {
   auto stack_impl   = popped_item._impl.getShared<VkRtgStackItemImpl>();
   auto finished_rtg = popped_item._rtgroup;
 
+  // End per-RTG GPU perf block (after render pass ends)
+  if (stack_impl->_did_begin_rendering)
+    finished_rtg->_profiler_series->sampleEnd();
+
   if (0)
     logchan_rtgroup->log(
         "_popRtGroup: RTG %p usage=%llu, did_begin_rendering=%d mRtGroupStack=%d",
@@ -285,10 +289,6 @@ void VkFrameBufferInterface::_popRtGroup() {
   // since texture might be used even without being rendered to
   /////////////////////////////////////////////
   if (finished_rtg) {
-
-    // End per-RTG GPU perf block (after render pass ends)
-    if (stack_impl->_did_begin_rendering)
-      finished_rtg->_profiler_series->sampleEnd();
 
     auto RTGIMPL = finished_rtg->_impl.getShared<VkRtGroupImpl>();
 

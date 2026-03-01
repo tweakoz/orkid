@@ -527,9 +527,9 @@ struct VkProfilerChannel final : ProfilerChannel {
     int begin_query = -1;
     int end_query   = -1;
   };
-  std::stack<VkTimespan> _vk_span_stack{};
-  std::deque<VkTimespan> _vk_spans{};
-  std::deque<VkTimespan> _vk_total_spans{};
+  std::stack<VkTimespan>  _vk_span_stack{};
+  std::vector<VkTimespan> _vk_spans{};
+  std::vector<VkTimespan> _vk_total_spans{};
   u32 _query_index = 0;
   float _timestampPeriod = 1.0f;
   std::vector<u64> _timestamps{};
@@ -544,6 +544,8 @@ struct VkProfilerChannel final : ProfilerChannel {
   void frameEnd() override;
   void sampleBegin(ProfilerSeries* series) override;
   void sampleEnd(ProfilerSeries* series) override;
+
+  double _sampleTime(int begin_index, int end_index);
 };
 
 ///////////////////////////////////////////////////////////////////////////////

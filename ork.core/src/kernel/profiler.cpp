@@ -6,27 +6,30 @@ namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
 void ProfilerSeries::addSample(Sample sample) {
-	_samples.push_back(sample);
+	if (!_sample_buffer.push(sample))
+		_overflow = true;
+}
+
+bool ProfilerSeries::flushBuffer() {
+	bool success = _sample_buffer.drain(_samples);
 	u16 max_samples = Profiler::maxSamples();
 	while (_samples.size() > max_samples)
 		_samples.pop_front();
+	return success;
 }
 
 void ProfilerSeries::sampleBegin() { _parent->sampleBegin(this); }
 void ProfilerSeries::sampleEnd()   { _parent->sampleEnd(this); }
 ProfilerScope ProfilerSeries::sampleScope() { return _parent->sampleScope(this); }
 
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void ProfilerChannel::frameBegin() {
-	if (!Profiler::enabled()) return;
-
 	OrkAssertI(_current_level == 0, "ProfilerChannel endFrame not called!");
 }
 
 void ProfilerChannel::frameEnd() {
-	if (!Profiler::enabled()) return;
-
 	OrkAssertI(_current_level == 0, "ProfilerChannel did not call endSample for every sample! Or no samples recorded!");
 
 	// We add a sample for all of them even if they didn't accumulate a sample so that the sampel vectors lineup.
@@ -50,6 +53,18 @@ void ProfilerChannel::frameEnd() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void CpuProfilerChannel::frameBegin() {
+	if (!Profiler::enabled()) return;
+	_begin_time = _timer.get_sync_time();
+}
+
+void CpuProfilerChannel::frameEnd() {
+	if (!Profiler::enabled()) return;
+	double frame_time = _timer.get_sync_time() - _begin_time;
+	_frame_time.store(frame_time);
+  	ProfilerChannel::frameEnd(); 
+}
 
 void CpuProfilerChannel::sampleBegin(ProfilerSeries* s) {
 	if (!Profiler::enabled()) return;

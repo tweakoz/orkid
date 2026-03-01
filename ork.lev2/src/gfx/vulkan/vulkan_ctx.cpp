@@ -1908,6 +1908,12 @@ void VkContext::resumeRenderPass() {
 // GPU Profiler Implementation
 ///////////////////////////////////////////////////////////////////////////////
 
+double VkProfilerChannel::_sampleTime(int begin_index, int end_index) {
+    double begin_ts    = _timestamps[begin_index];
+    double end_ts      = _timestamps[end_index];
+    return double(end_ts - begin_ts) * double(_timestampPeriod) * 1e-9;
+}
+
 void VkProfilerChannel::frameBegin(VkDevice device, const VulkanDeviceInfo* deviceinfo, VkCommandBuffer cmdbuf) {
   if (!Profiler::enabled()) return;
 
@@ -1937,30 +1943,22 @@ void VkProfilerChannel::frameEnd() {
   _cmdbuf = VK_NULL_HANDLE;
 
   // Readback timestamp queries
-  int queryCount = _query_index;
-  _timestamps.resize(queryCount);
-  VkResult ok = vkGetQueryPoolResults(_device, _query_pool, 0, queryCount, queryCount * sizeof(u64),
+  _timestamps.resize(_query_index);
+  VkResult ok = vkGetQueryPoolResults(_device, _query_pool, 0, _query_index, _query_index * sizeof(u64),
     _timestamps.data(), sizeof(u64), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
   // printf("vkGetQueryPoolResults: %s\n", string_VkResult(ok));
   OrkAssert(VK_SUCCESS == ok);
   _query_index = 0;
 
   // Accumulate isolated_time from per-segment spans
-  for (auto& span : _vk_spans) {
-    double begin_ts    = _timestamps[span.begin_query];
-    double end_ts      = _timestamps[span.end_query];
-    double sample_time = double(end_ts - begin_ts) * double(_timestampPeriod) * 1e-9;
-    span.series->_isolated_time += sample_time;
-  }
+  for (auto& span : _vk_spans)
+    span.series->_isolated_time += _sampleTime(span.begin_query, span.end_query);
   _vk_spans.clear();
 
   // Compute total_time from full-duration spans (begin_total_query -> end_query)
   // Use += so multiple calls per frame accumulate correctly (same as isolated_time)
-  for (auto& span : _vk_total_spans) {
-    double begin_ts    = _timestamps[span.begin_total_query];
-    double end_ts      = _timestamps[span.end_query];
-    span.series->_total_time += double(end_ts - begin_ts) * double(_timestampPeriod) * 1e-9;
-  }
+  for (auto& span : _vk_total_spans)
+    span.series->_total_time += _sampleTime(span.begin_total_query, span.end_query);
   _vk_total_spans.clear();
 
   // accumulate in series through base call

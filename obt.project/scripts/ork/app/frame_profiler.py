@@ -32,9 +32,10 @@ from ork.app.application import ApplicationComponent
 
 class FrameProfilerComponent(ApplicationComponent):
 
-  def __init__(self):
+  def __init__(self, gpu_filter=None):
     super().__init__()
     self.graphview = None
+    self._gpu_filter = gpu_filter
 
   ##############################################
 
@@ -50,7 +51,8 @@ class FrameProfilerComponent(ApplicationComponent):
       self.graphview = graphview_item.widget
       self.graphview.addChannel("render_context")
       self.graphview.addChannel("gpu")
-      self.graphview.addChannel("ez_app")
+      self.graphview.addChannel("ez_app_main_thread")
+      self.graphview.addChannel("ez_app_update_thread")
       lg_group.overlay_widget = self.overlay_group
 
     self.graphview.clear_color = vec4(0, 0, 0, 0.8)

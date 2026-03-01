@@ -162,7 +162,13 @@ void ProfilerView::_drawContextChannel(
   auto  _mtxi = ctx->MTXI();
   auto  _fxi  = ctx->FXI();
 
-  auto& sorted_series = channel->_series_iter;
+  auto& series_iter = channel->_series_iter;
+
+  // Pre-pass: flush all series buffers and collect overflow flag before any rendering
+  bool channel_overflow = false;
+  for (auto* series : series_iter)
+    if (!series->flushBuffer())
+      channel_overflow = true;
 
   // Three equally-spaced columns: total | isolated | name
   // col_w driven by the widest header label ("isolated" = 8 chars)
@@ -174,16 +180,34 @@ void ProfilerView::_drawContextChannel(
   const int   legend_x0    = box_x1 + 4;
 
   // ------------------------------------------------------------------
-  // Channel label — centered above the legend area
+  // Channel label — centered above the legend area, with frame_time and FPS
   // ------------------------------------------------------------------
   {
     int header_w  = lev2::FontMan::stringWidth(channel_label.length());
     int legend_cx = (box_x1 + W) / 2;
     int header_x  = legend_cx - header_w / 2;
+    int label_y   = int(lane_y_top) + 4;
+
     ctx->RefModColor() = fvec3(0.9f, 0.9f, 0.9f);
     lev2::FontMan::beginTextBlock(ctx, 128);
-    lev2::FontMan::DrawText(ctx, header_x, int(lane_y_top) + 4, channel_label.c_str());
+    lev2::FontMan::DrawText(ctx, header_x, label_y, channel_label.c_str());
     lev2::FontMan::endTextBlock(ctx);
+
+    if (channel_overflow) {
+      ctx->RefModColor() = fvec3(1.0f, 0.0f, 0.0f);
+      lev2::FontMan::beginTextBlock(ctx, 32);
+      lev2::FontMan::DrawText(ctx, header_x + header_w, label_y, "  OVERFLOW");
+      lev2::FontMan::endTextBlock(ctx);
+    } else if (channel->_capture_fps) {
+      double ft_sec = channel->_frame_time.load();
+      double ft_ms  = ft_sec * 1000.0;
+      double fps    = (ft_sec > 1e-9) ? (1.0 / ft_sec) : 0.0;
+      ctx->RefModColor() = fvec3(0.6f, 0.9f, 0.6f);
+      lev2::FontMan::beginTextBlock(ctx, 128);
+      lev2::FontMan::DrawText(ctx, header_x + header_w, label_y,
+          FormatString("  %.2fms  %.1ffps", ft_ms, fps).c_str());
+      lev2::FontMan::endTextBlock(ctx);
+    }
   }
 
   // ------------------------------------------------------------------
@@ -204,8 +228,8 @@ void ProfilerView::_drawContextChannel(
   }
 
   // Pass 1: assign colors and update exclusive currentValues.
-  for (int i = 0; i < (int)sorted_series.size(); i++) {
-    auto* series = sorted_series[i];
+  for (int i = 0; i < (int)series_iter.size(); i++) {
+    auto* series = series_iter[i];
     auto& rstate = _render_state_map[series->_name];
     if (rstate.color_index < 0) {
       float hue = std::fmod(float(_color_index) * 0.618034f, 1.0f);
@@ -215,8 +239,8 @@ void ProfilerView::_drawContextChannel(
   }
 
   // Pass 2: draw legend entries.
-  for (int i = 0; i < (int)sorted_series.size(); i++) {
-    auto*       series = sorted_series[i];
+  for (int i = 0; i < (int)series_iter.size(); i++) {
+    auto*       series = series_iter[i];
     const std::string& key = series->_name;
     const char*        sname = key.c_str();
     auto& rstate = _render_state_map[key];
@@ -269,11 +293,11 @@ void ProfilerView::_drawContextChannel(
   // Y axis covers the full stacked height.
   // ------------------------------------------------------------------
   size_t n_max_samples = 0;
-  for (auto* series : sorted_series)
+  for (auto* series : series_iter)
     n_max_samples = std::max(n_max_samples, series->_samples.size());
 
   float cum_max_value = 0.0f;
-  for (auto* series : sorted_series) {
+  for (auto* series : series_iter) {
     for (auto& sample : series->_samples)
       cum_max_value = std::max(cum_max_value, float(sample.total_time * 1000.0));
   }
@@ -328,8 +352,9 @@ void ProfilerView::_drawContextChannel(
   rs->_priority = 1 << 16;
   _fxi->pushRasterState(rs);
 
-  for (int si = 0; si < (int)sorted_series.size(); si++) {
-    auto*       series = sorted_series[si];
+  for (int si = 0; si < (int)series_iter.size(); si++) {
+    auto*       series = series_iter[si];
+
     size_t      n      = series->_samples.size();
     const std::string& skey = series->_name;
     auto& rstate = _render_state_map[skey];

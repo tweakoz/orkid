@@ -38,6 +38,7 @@ class LIGHTING_APP(ComponentizedApplication):
   def __init__(self):
     super().__init__()
 
+    self.lighttime = 0.0
     self.materials = set()
     self.profiler = self.addComponent("profiler", FrameProfilerComponent)
     self.createEzApp(ssaa=2, msaa=0, fullscreen=False,

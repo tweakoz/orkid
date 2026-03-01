@@ -8,6 +8,7 @@
 #include <memory>
 #include <stack>
 #include <vector>
+#include <shared_mutex>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -18,7 +19,7 @@ namespace ork {
 #define UNIQUE(name) CONCAT(name, __LINE__)
 
 // We use macros and stamp down copies of the static var and if statement to evade std::map lookup every time
-// and rely on CPU prediction to optimize away the overhead of the profiler marker after first call
+// and rely on CPU prediction to optimize away the overhead of the profiler marker after first call.
 #define _OrkStaticAcquireChannel(_channel_name, _type, _var, _call, ...) \
     static _type* _var = nullptr; \
     if (_var == nullptr) _var = Profiler::acquireChannel<_type>(_channel_name, CRCU(_channel_name)); \
@@ -46,6 +47,42 @@ namespace ork {
 #define OrkProfilerSampleEnd(_channel_name, _series_name)   _OrkStaticSeries(_channel_name, _series_name, UNIQUE(_series), sampleEnd)
 #define OrkProfilerSampleScope(_channel_name, _series_name) _OrkStaticScope(_channel_name, _series_name, UNIQUE(_series))
 
+///////////////////////////////////////////////////////////////////////////////
+
+template<typename T, size_t N>
+struct SPSCQueue {
+    std::array<T, N> _buf;
+    std::atomic<size_t> _head{0};
+    std::atomic<size_t> _tail{0};
+
+    // return false if overflow
+    bool push(const T& val) {
+        size_t h = _head.load(std::memory_order_relaxed);
+        size_t next = (h + 1) % N;
+        if (next == _tail.load(std::memory_order_acquire)) return false; 
+        _buf[h] = val;
+        _head.store(next, std::memory_order_release);
+        return true;
+    }
+
+    // return false if there was overflow in prior push
+    bool drain(std::deque<T>& out) {
+      size_t t = _tail.load(std::memory_order_relaxed);
+      size_t h = _head.load(std::memory_order_acquire);
+      if (h >= t) {
+          out.insert(out.end(), &_buf[t], &_buf[h]);
+      } else {
+          out.insert(out.end(), &_buf[t], &_buf[N]);
+          out.insert(out.end(), &_buf[0], &_buf[h]);
+      }
+      _tail.store(h, std::memory_order_release);
+      bool overflow = (h - t) > N;
+      return !overflow;
+    }
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct ProfilerScope;
 struct ProfilerChannel;
 
@@ -61,8 +98,14 @@ struct ProfilerSeries {
     int    level;
   };
 
-  std::deque<Sample> _samples{}; // should be ring?
+  std::deque<Sample> _samples{};
 
+  // Other threads first push their sample to this thread-safe buffer
+  // then the mainthread displaying the ProfilerSeries must call flushBuffer
+  // to transfer them to _samples before display. It assumed flushBuffer will be 
+  // called frequently enough to keep this from overflowing.
+  SPSCQueue<Sample, 256> _sample_buffer{};
+  
   // accumulated frame data used to addSample on endFrame
   double _total_time     = 0;
   double _isolated_time  = 0;
@@ -70,13 +113,18 @@ struct ProfilerSeries {
   int    _max_call_level = -1;
   int    _call_level     = -1;
   bool   _sampling       = false;
+  bool   _overflow       = false;
 
   ProfilerSeries(std::string name, ProfilerChannel* parent) : _name(name), _parent(parent) {}
+
+  void addSample(Sample sample);
+
+  // Returns false if there was an overflow in the sample_buffer due to flush not being called frequently enough.
+  bool flushBuffer(); 
 
   void sampleBegin();
   void sampleEnd();
   ProfilerScope sampleScope();
-  void addSample(Sample sample);
 };
 
 using profiler_series_ptr_t = std::shared_ptr<ProfilerSeries>;
@@ -94,11 +142,15 @@ struct ProfilerChannel {
   int _current_level  = 0;
   u64 _current_tick   = 0;
 
+  bool _capture_fps = false;
+  double _begin_time{};
+  std::atomic<double> _frame_time{};
+
   ProfilerChannel(std::string&& name) : _name(name) {}
   
   // prepare frame
-  virtual void frameBegin();
-  virtual void frameEnd();
+  virtual void frameBegin() = 0;
+  virtual void frameEnd()   = 0;
 
   virtual void sampleBegin(ProfilerSeries* series) = 0;
   virtual void sampleEnd(ProfilerSeries* series)   = 0;
@@ -137,6 +189,14 @@ struct CpuProfilerChannel final : ProfilerChannel {
 
   using ProfilerChannel::ProfilerChannel;
 
+  void frameBegin() override;
+  void frameEnd() override;
+
+  void frameBegin(bool capture_fps) { 
+    _capture_fps = true;
+    frameBegin();
+  }
+
   void sampleBegin(ProfilerSeries* series) override;
   void sampleEnd(ProfilerSeries* series) override;
 };
@@ -155,11 +215,15 @@ struct Profiler {
   static void maxSamples(u16 value) { return _max_samples.store(value); }
   static u16  maxSamples() { return _max_samples.load(); }
 
-  // global catalong of all channels
+  // Global catalong of all channels.
   static inline std::unordered_map<u64, std::shared_ptr<ProfilerChannel>> _channels;
+
+  // We must lock global catalog on acquire and get. Sample points return a pointer so lookup only happens once.
+  static inline std::shared_mutex _channel_mtx;
 
   template <typename T>
   static T* acquireChannel(const char* name, u64 namecrc) {
+    std::unique_lock lock(_channel_mtx);
     auto& c = _channels[namecrc];
     if (!c) c = std::make_shared<T>(std::string(name));
     return static_cast<T*>(c.get());
@@ -167,12 +231,14 @@ struct Profiler {
 
   static ProfilerChannel* getChannel(const char* name, u64 namecrc) {
     OrkAssertI(_channels.contains(namecrc), "First acquireChannel get trying to getChannel!");
+    std::unique_lock lock(_channel_mtx);
     auto& c = _channels[namecrc];
     return (ProfilerChannel*)c.get();
   }
 
   static ProfilerSeries* acquireSeries(const char* channel_name, u64 channel_namecrc, const char* series_name, u64 series_namecrc) {
-    OrkAssertI(_channels.contains(channel_namecrc), "First acquireChannel and call frameBegin before trying to acquireSeries!");
+    OrkAssertI(_channels.contains(channel_namecrc), "First acquireChannel. Call frameBegin before trying to acquireSeries!");
+    std::unique_lock lock(_channel_mtx);
     auto& c = _channels[channel_namecrc];
     auto& s = c->_series[series_namecrc]; 
     if (!s) {
@@ -182,7 +248,7 @@ struct Profiler {
     return s.get();
   }
 
-  // Methods to dynamically retrieve channels dynamically with std::string for manual customizaiton.
+  // Methods to retrieve channels dynamically with std::string for manual customizaiton.
   // Always prefer using the OrkProfiler macros to string on string literals and crc consteval
   template <typename T>
   static T* acquireChannel(const std::string& name) {

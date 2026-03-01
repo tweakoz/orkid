@@ -180,7 +180,7 @@ void Context::_doSubmitPrimaryCommandBuffer(){
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context::beginFrame(bool visual) {
-  OrkProfilerFrameBegin(CHANNEL_RENDER_CONTEXT, CpuProfilerChannel);
+  OrkProfilerFrameBegin(CHANNEL_RENDER_CONTEXT, CpuProfilerChannel, true);
   OrkProfilerSampleBegin(CHANNEL_RENDER_CONTEXT, SERIES_FRAME_ALL);
   OrkProfilerSampleScope(CHANNEL_RENDER_CONTEXT, "begin_frame");
 
