@@ -6,12 +6,12 @@ namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
 void ProfilerSeries::addSample(Sample sample) {
-	if (!_sample_buffer.push(sample))
+	if (!_sample_buffer->push(sample))
 		_overflow = true;
 }
 
 bool ProfilerSeries::flushBuffer() {
-	bool success = _sample_buffer.drain(_samples);
+	bool success = _sample_buffer->drain(_samples);
 	u16 max_samples = Profiler::maxSamples();
 	while (_samples.size() > max_samples)
 		_samples.pop_front();

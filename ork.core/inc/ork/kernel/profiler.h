@@ -102,9 +102,9 @@ struct ProfilerSeries {
 
   // Other threads first push their sample to this thread-safe buffer
   // then the mainthread displaying the ProfilerSeries must call flushBuffer
-  // to transfer them to _samples before display. It assumed flushBuffer will be 
+  // to transfer them to _samples before display. It assumes flushBuffer will be 
   // called frequently enough to keep this from overflowing.
-  SPSCQueue<Sample, 256> _sample_buffer{};
+  std::unique_ptr<SPSCQueue<Sample, 1024>> _sample_buffer = std::make_unique<SPSCQueue<Sample, 1024>>();
   
   // accumulated frame data used to addSample on endFrame
   double _total_time     = 0;

@@ -180,12 +180,11 @@ void ProfilerView::_drawContextChannel(
   const int   legend_x0    = box_x1 + 4;
 
   // ------------------------------------------------------------------
-  // Channel label — centered above the legend area, with frame_time and FPS
+  // Channel label — left-justified at legend_x0, with frame_time and FPS
   // ------------------------------------------------------------------
   {
     int header_w  = lev2::FontMan::stringWidth(channel_label.length());
-    int legend_cx = (box_x1 + W) / 2;
-    int header_x  = legend_cx - header_w / 2;
+    int header_x  = legend_x0;
     int label_y   = int(lane_y_top) + 4;
 
     ctx->RefModColor() = fvec3(0.9f, 0.9f, 0.9f);
@@ -239,7 +238,13 @@ void ProfilerView::_drawContextChannel(
   }
 
   // Pass 2: draw legend entries.
-  for (int i = 0; i < (int)series_iter.size(); i++) {
+  const float lane_y_bottom = lane_y_top + lane_height;
+  const int   max_visible   = std::max(1, int((lane_y_bottom - legend_start_y) / legend_row_h));
+  const int   n_series      = int(series_iter.size());
+  const bool  truncated     = n_series > max_visible;
+  const int   draw_count    = truncated ? max_visible - 1 : n_series;
+
+  for (int i = 0; i < draw_count; i++) {
     auto*       series = series_iter[i];
     const std::string& key = series->_name;
     const char*        sname = key.c_str();
@@ -284,6 +289,17 @@ void ProfilerView::_drawContextChannel(
     // Series name
     lev2::FontMan::beginTextBlock(ctx, 128);
     lev2::FontMan::DrawText(ctx, name_x, iy, sname);
+    lev2::FontMan::endTextBlock(ctx);
+  }
+
+  if (truncated) {
+    float entry_y = legend_start_y + float(draw_count) * legend_row_h;
+    int   iy      = int(entry_y);
+    int   name_x  = legend_x0 + 2 * col_w;
+    ctx->RefModColor() = fvec3(0.8f, 0.5f, 0.2f);
+    lev2::FontMan::beginTextBlock(ctx, 64);
+    lev2::FontMan::DrawText(ctx, name_x, iy,
+        FormatString("<%d more...>", n_series - draw_count).c_str());
     lev2::FontMan::endTextBlock(ctx);
   }
 
