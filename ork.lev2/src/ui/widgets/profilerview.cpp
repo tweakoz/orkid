@@ -565,10 +565,18 @@ void ProfilerView::DoDraw(drawevent_constptr_t drwev) {
     int smp = int(Profiler::maxSamples());
     tgt->RefModColor() = fvec3(0.7f, 0.7f, 0.7f);
     auto smp_str = FormatString("%d", smp);
-    lev2::FontMan::beginTextBlock(tgt, 64);
+    // Match legend_x0 as computed in _drawContextChannel
+    const int max_label_width = lev2::FontMan::stringWidth(64);
+    const int col_w           = lev2::FontMan::stringWidth(8) + 8;
+    const int box_x1          = width() - int(0.6f * float(max_label_width + 2 * col_w + 20));
+    const int legend_x0       = box_x1 + 4;
+
+    lev2::FontMan::beginTextBlock(tgt, 128);
     lev2::FontMan::DrawText(tgt, lo.rec_x,                          HdrLayout::BTN_Y + 2, "Record:");
     lev2::FontMan::DrawText(tgt, lo.smp_label_x,                    HdrLayout::BTN_Y + 2, "Samples:");
     lev2::FontMan::DrawText(tgt, lo.centeredNumX(smp_str.length()), HdrLayout::BTN_Y + 2, smp_str.c_str());
+    tgt->RefModColor() = fvec3(0.45f, 0.45f, 0.45f);
+    lev2::FontMan::DrawText(tgt, legend_x0, HdrLayout::BTN_Y + 2, "hover labels to highlight isolated time");
     lev2::FontMan::endTextBlock(tgt);
   }
 

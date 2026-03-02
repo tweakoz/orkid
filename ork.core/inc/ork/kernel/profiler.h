@@ -24,7 +24,7 @@
 //      The second argument is the channel type; use CpuProfilerChannel for CPU timing.
 //      Optional params struct can be passed (e.g. to enable FPS capture).
 //
-//        OrkProfilerFrameBegin(CHANNEL_MAIN, CpuProfilerChannel, {});
+//        OrkProfilerFrameBegin(CHANNEL_MAIN, CpuProfilerChannel);
 //        OrkProfilerFrameBegin(CHANNEL_MAIN, CpuProfilerChannel, {.capture_fps=true});
 //
 //   2. End the frame (flushes all series samples for the channel):
@@ -169,10 +169,10 @@ struct ProfilerSeries {
 
   std::deque<Sample> _samples{};
 
-  // Other threads first push their sample to this thread-safe buffer
-  // then the mainthread displaying the ProfilerSeries must call flushBuffer
-  // to transfer them to _samples before display. It assumes flushBuffer will be 
-  // called frequently enough to keep this from overflowing.
+  // Producer thread first pushes their sample to this thread-safe buffer
+  // then the main thread consumer which displays the ProfilerSeries must call 
+  // flushBuffer to transfer them to _samples before display. It assumes flushBuffer 
+  // will be called frequently enough to keep this from overflowing.
   std::unique_ptr<SPSCQueue<Sample, 1024>> _sample_buffer = std::make_unique<SPSCQueue<Sample, 1024>>();
   
   // accumulated frame data used to addSample on endFrame
