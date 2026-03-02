@@ -47,7 +47,7 @@ RUNTIME_DIRS = ["bin", "lib", "pyvenv", "share"]
 # Directories to skip (build intermediates, headers, etc.)
 SKIP_DIRS = {"builds", "include", "buildlogs",
              "nanobind", "sdks", "subspaces", "tempdir",
-             "doc", "obt-launch-env"}
+             "doc", "obt-launch-env", "dblockcache"}
 
 def phase1_copy(staging_dir, target_dir, force=False):
   """Deep copy staging to target and internalize homebrew dylib closure.
@@ -955,8 +955,22 @@ unset OBT_STAGE
 unset OBT_ROOT
 unset OBT_PROJECT_DIRS
 unset OBT_PROJECTS_LIST
+unset OBT_SEARCH_PATH
+unset OBT_BUILDS
+unset OBT_SUBSPACE_DIR
+unset OBT_SUBSPACE_LIB_DIR
+unset OBT_SUBSPACE_BIN_DIR
+unset OBT_SUBSPACE_BUILD_DIR
+unset OBT_TARGET
 unset ORKID_WORKSPACE_DIR
 unset ORKID_ASSET_MANIFEST_DIRS
+unset ORKID_IS_MAIN_PROJECT
+unset LD_LIBRARY_PATH
+unset DYLD_LIBRARY_PATH
+unset DYLD_FALLBACK_LIBRARY_PATH
+unset PKG_CONFIG
+unset PKG_CONFIG_PATH
+unset LUA_PATH
 export PYTHONNOUSERSITE=1
 
 # Bootstrap the OBT framework venv.
@@ -1085,6 +1099,21 @@ def phase6_launch_script(target_dir):
       print(deco.val(f"    WARNING: pkg-config not found on host"))
   else:
     print(deco.val(f"    bin/pkg-config already present"))
+
+  # ---- Step 2b: Bundle rsvg-convert if not already present ----
+  print(deco.val(f"\n  Step 2b: Ensuring rsvg-convert is bundled..."))
+  target_rsvg = target_bin / "rsvg-convert"
+  if not target_rsvg.exists():
+    host_rsvg = shutil.which("rsvg-convert")
+    if host_rsvg:
+      real_rsvg = os.path.realpath(host_rsvg)
+      shutil.copy2(real_rsvg, str(target_rsvg))
+      os.chmod(str(target_rsvg), 0o755)
+      print(deco.val(f"    Copied: {real_rsvg} -> bin/rsvg-convert"))
+    else:
+      print(deco.val(f"    WARNING: rsvg-convert not found on host"))
+  else:
+    print(deco.val(f"    bin/rsvg-convert already present"))
 
   # ---- Step 3: Create MoltenVK ICD manifest ----
   # The vulkan dep module expects the ICD JSON at builds/moltenvk/Package/Latest/
