@@ -1,5 +1,69 @@
 #pragma once
 
+///////////////////////////////////////////////////////////////////////////////
+// Profiler - Hierarchical CPU timing profiler with per-channel sample series.
+//
+// CONCEPTS
+//   Channel  - A named timing domain, typically one per thread (e.g. "MainThread").
+//              Must be initialized with a frameBegin before any series are used.
+//   Series   - A named timer within a channel (e.g. "RenderScene").
+//              Tracks total time, isolated time (excluding nested series), call
+//              count, and nesting level per frame.
+//   Frame    - Delimited by frameBegin / frameEnd.  All series samples are
+//              accumulated during the frame and committed on frameEnd.
+//
+// CHANNEL NAME CONSTANTS (predefined for common threads)
+//   CHANNEL_MAIN   "MainThread"
+//   CHANNEL_UPDATE "UpdateThread"
+//   CHANNEL_AUDIO  "AudioThread"
+//   CHANNEL_GPU    "GPU"
+//
+// USAGE - MACROS (preferred, zero-overhead after first call)
+//
+//   1. Start a frame on a channel (lazy-creates the channel on first call).
+//      The second argument is the channel type; use CpuProfilerChannel for CPU timing.
+//      Optional params struct can be passed (e.g. to enable FPS capture).
+//
+//        OrkProfilerFrameBegin(CHANNEL_MAIN, CpuProfilerChannel, {});
+//        OrkProfilerFrameBegin(CHANNEL_MAIN, CpuProfilerChannel, {.capture_fps=true});
+//
+//   2. End the frame (flushes all series samples for the channel):
+//
+//        OrkProfilerFrameEnd(CHANNEL_MAIN);
+//
+//   3. Bracket a region of code with explicit begin/end (matched pairs required):
+//
+//        OrkProfilerSampleBegin(CHANNEL_MAIN, "MySystem::update");
+//        // ... work ...
+//        OrkProfilerSampleEnd(CHANNEL_MAIN, "MySystem::update");
+//
+//   4. RAII scope guard (recommended — exception-safe, no matching end needed):
+//
+//        OrkProfilerSampleScope(CHANNEL_MAIN, "MySystem::update");
+//        // scope ends automatically when the enclosing block exits
+//
+// USAGE - PROGRAMMATIC API (for dynamic channel names or tooling)
+//
+//        auto* ch = Profiler::acquireChannel<CpuProfilerChannel>("MyChannel");
+//        ch->frameBegin();
+//        auto* s  = Profiler::acquireSeries("MyChannel", "MyWork");
+//        s->sampleBegin();
+//        // ... work ...
+//        s->sampleEnd();
+//        ch->frameEnd();
+//
+// CROSS-THREAD MARKERS
+//   Series use a lock-free SPSC queue so that non-owner threads can push samples
+//   without contention.  The display/consumer thread must call
+//   ProfilerSeries::flushBuffer() to transfer queued samples into _samples before
+//   reading them.  Returns false if the 1024-entry queue overflowed.
+//
+// GLOBAL CONTROLS
+//   Profiler::enabled(bool)     - enable / disable all sampling globally
+//   Profiler::maxSamples(u16)   - cap the number of retained samples per series
+//
+///////////////////////////////////////////////////////////////////////////////
+
 #include <ork/kernel/timer.h>
 #include <ork/kernel/kernel.h>
 #include <ork/util/crc.h>
