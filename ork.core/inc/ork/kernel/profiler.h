@@ -14,38 +14,43 @@
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
+#define CHANNEL_MAIN   "MainThread"
+#define CHANNEL_UPDATE "UpdateThread"
+#define CHANNEL_AUDIO  "AudioThread"
+#define CHANNEL_GPU    "GPU"
+
 #define _CONCAT(a, b) a##b
 #define CONCAT(a, b) _CONCAT(a, b)
 #define UNIQUE(name) CONCAT(name, __LINE__)
 
 // We use macros and stamp down copies of the static var and if statement to evade std::map lookup every time
 // and rely on CPU prediction to optimize away the overhead of the profiler marker after first call.
-#define _OrkStaticAcquireChannel(_channel_name, _type, _var, _call, ...) \
+#define _OrkStaticAcquireChannel(_channel_name, _type, _var, _call, _params) \
     static _type* _var = nullptr; \
-    if (_var == nullptr) _var = Profiler::acquireChannel<_type>(_channel_name, CRCU(_channel_name)); \
-    _var->_call(__VA_ARGS__)
+    if (_var == nullptr) [[unlikely]] _var = Profiler::acquireChannel<_type>(_channel_name, CRCU(_channel_name)); \
+    _var->_call(_params)
 
 #define _OrkStaticGetChannel(_channel_name, _var, _call) \
     static ProfilerChannel* _var = nullptr; \
-    if (_var == nullptr) _var = Profiler::getChannel(_channel_name, CRCU(_channel_name)); \
+    if (_var == nullptr) [[unlikely]] _var = Profiler::getChannel(_channel_name, CRCU(_channel_name)); \
     _var->_call()
 
 #define _OrkStaticSeries(_channel_name, _series_name, _var, _call) \
     static ProfilerSeries* _var = nullptr; \
-    if (_var == nullptr) _var = Profiler::acquireSeries(_channel_name, CRCU(_channel_name), _series_name, CRCU(_series_name)); \
+    if (_var == nullptr) [[unlikely]] _var = Profiler::acquireSeries(_channel_name, CRCU(_channel_name), _series_name, CRCU(_series_name)); \
     _var->_call()
 
 #define _OrkStaticScope(_channel_name, _series_name, _var) \
     static ProfilerSeries* _var = nullptr; \
-    if (_var == nullptr) _var = Profiler::acquireSeries(_channel_name, CRCU(_channel_name), _series_name, CRCU(_series_name)); \
+    if (_var == nullptr) [[unlikely]] _var = Profiler::acquireSeries(_channel_name, CRCU(_channel_name), _series_name, CRCU(_series_name)); \
     auto CONCAT(_var, scope) = _var->sampleScope()
 
-// Initial frame begin defines what type the channel is. Additional optional parameters can be passed in.
-#define OrkProfilerFrameBegin(_channel_name, _type, ...)    _OrkStaticAcquireChannel(_channel_name, _type, UNIQUE(_series), frameBegin, __VA_ARGS__)
-#define OrkProfilerFrameEnd(_channel_name)                  _OrkStaticGetChannel(_channel_name, UNIQUE(_series), frameEnd)
-#define OrkProfilerSampleBegin(_channel_name, _series_name) _OrkStaticSeries(_channel_name, _series_name, UNIQUE(_series), sampleBegin)
-#define OrkProfilerSampleEnd(_channel_name, _series_name)   _OrkStaticSeries(_channel_name, _series_name, UNIQUE(_series), sampleEnd)
-#define OrkProfilerSampleScope(_channel_name, _series_name) _OrkStaticScope(_channel_name, _series_name, UNIQUE(_series))
+// Initial frame begin defines what type the channel is and lazy allocates on first call. Additional optional parameters can be passed in.
+#define OrkProfilerFrameBegin(_channel_name, _type, _params) _OrkStaticAcquireChannel(_channel_name, _type, UNIQUE(_series), frameBegin, _params)
+#define OrkProfilerFrameEnd(_channel_name)                   _OrkStaticGetChannel(_channel_name,            UNIQUE(_series), frameEnd)
+#define OrkProfilerSampleBegin(_channel_name, _series_name)  _OrkStaticSeries(_channel_name, _series_name,  UNIQUE(_series), sampleBegin)
+#define OrkProfilerSampleEnd(_channel_name, _series_name)    _OrkStaticSeries(_channel_name, _series_name,  UNIQUE(_series), sampleEnd)
+#define OrkProfilerSampleScope(_channel_name, _series_name)  _OrkStaticScope(_channel_name,  _series_name,  UNIQUE(_series))
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -192,8 +197,11 @@ struct CpuProfilerChannel final : ProfilerChannel {
   void frameBegin() override;
   void frameEnd() override;
 
-  void frameBegin(bool capture_fps) { 
-    _capture_fps = true;
+  struct BeginParams {
+    bool capture_fps;
+  };
+  void frameBegin(BeginParams params) { 
+    _capture_fps = params.capture_fps;
     frameBegin();
   }
 

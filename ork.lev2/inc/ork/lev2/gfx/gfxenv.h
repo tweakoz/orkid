@@ -60,11 +60,8 @@ using gpueventsink_map_t = std::unordered_map<std::string, gpueventsink_ptr_t>;
 /// Profiler
 ///////////////////////////////////////////////////////////////////////
 
-#define CHANNEL_RENDER_CONTEXT "render_context"
-#define SERIES_FRAME_ALL "frame_all"
-
-#define CHANNEL_GPU "gpu"
-#define SERIES_GPU_FRAME_ALL "gpu_frame_all"
+#define SERIES_FRAME_ALL     "gfx:all"
+#define SERIES_GPU_FRAME_ALL "gfx:all"
 
 extern bool _HIDPI();
 

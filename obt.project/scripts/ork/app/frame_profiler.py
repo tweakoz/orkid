@@ -32,10 +32,10 @@ from ork.app.application import ApplicationComponent
 class FrameProfilerComponent(ApplicationComponent):
 
   DEFAULT_CHANNELS = [
-    "render_context",
-    "gpu",
-    "ez_app_main_thread",
-    "ez_app_update_thread",
+    "MainThread",
+    "GPU",
+    "AudioThread",
+    "UpdateThread",
   ]
 
   def __init__(self, gpu_filter=None, channels=None, **kwargs):

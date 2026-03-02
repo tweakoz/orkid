@@ -889,8 +889,8 @@ void OrkEzApp::_mainThreadLoopBegin() {
       ork::Timer update_timer;
 
       while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
-        OrkProfilerFrameBegin(CHANNEL_EZAPP_UPDATE, CpuProfilerChannel, true);
-        OrkProfilerSampleBegin(CHANNEL_EZAPP_UPDATE, SERIES_EZAPP_UPDATE_FREERUN);
+        OrkProfilerFrameBegin(CHANNEL_UPDATE, CpuProfilerChannel, {.capture_fps = true});
+        OrkProfilerSampleBegin(CHANNEL_UPDATE, SERIES_EZAPP_UPDATE_FREERUN);
 
         EASY_BLOCK("UpdateIteration");
         double this_time = _update_timer.SecsSinceStart() * _timescale;
@@ -943,8 +943,8 @@ void OrkEzApp::_mainThreadLoopBegin() {
         opq::updateSerialQueue()->Process();
         sched_yield();
 
-        OrkProfilerSampleEnd(CHANNEL_EZAPP_UPDATE, SERIES_EZAPP_UPDATE_FREERUN);
-        OrkProfilerFrameEnd(CHANNEL_EZAPP_UPDATE);
+        OrkProfilerSampleEnd(CHANNEL_UPDATE, SERIES_EZAPP_UPDATE_FREERUN);
+        OrkProfilerFrameEnd(CHANNEL_UPDATE);
       } // while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
 
     } // end async mode
@@ -971,8 +971,8 @@ void OrkEzApp::_mainThreadLoopBegin() {
       double wallclock_updates = 0.0;
 
       while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
-        OrkProfilerFrameBegin(CHANNEL_EZAPP_UPDATE, CpuProfilerChannel, true);
-        OrkProfilerSampleBegin(CHANNEL_EZAPP_UPDATE, SERIES_EZAPP_UPDATE_LOCKSTEP);
+        OrkProfilerFrameBegin(CHANNEL_UPDATE, CpuProfilerChannel, {.capture_fps = true});
+        OrkProfilerSampleBegin(CHANNEL_UPDATE, SERIES_EZAPP_UPDATE_LOCKSTEP);
 
         EASY_BLOCK("UpdateIteration_SYNC");
 
@@ -1037,8 +1037,8 @@ void OrkEzApp::_mainThreadLoopBegin() {
 
         opq::updateSerialQueue()->Process();
 
-        OrkProfilerSampleEnd(CHANNEL_EZAPP_UPDATE, SERIES_EZAPP_UPDATE_LOCKSTEP);
-        OrkProfilerFrameEnd(CHANNEL_EZAPP_UPDATE);
+        OrkProfilerSampleEnd(CHANNEL_UPDATE, SERIES_EZAPP_UPDATE_LOCKSTEP);
+        OrkProfilerFrameEnd(CHANNEL_UPDATE);
       } // while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
 
     } // end sync mode
@@ -1205,9 +1205,9 @@ int OrkEzApp::mainThreadLoop() {
   _fireDeferredAudioCallbacks();
 
   {
-    OrkProfilerFrameBegin(CHANNEL_EZAPP_MAIN, CpuProfilerChannel, true);
+    OrkProfilerFrameBegin(CHANNEL_MAIN, CpuProfilerChannel, {.capture_fps = true});
     _mainThreadLoopBegin();
-    OrkProfilerFrameEnd(CHANNEL_EZAPP_MAIN);
+    OrkProfilerFrameEnd(CHANNEL_MAIN);
   }
 
   // Wall-clock FPS tracking
@@ -1227,24 +1227,24 @@ int OrkEzApp::mainThreadLoop() {
       ////////////////////////////////////////
 
       while (ctx->_runstate == 1) {
-        OrkProfilerFrameBegin(CHANNEL_EZAPP_MAIN, CpuProfilerChannel, true);
-        OrkProfilerSampleBegin(CHANNEL_EZAPP_MAIN, SERIES_EZAPP_MAIN_FREERUN);
+        OrkProfilerFrameBegin(CHANNEL_MAIN, CpuProfilerChannel, {.capture_fps = true});
+        OrkProfilerSampleBegin(CHANNEL_MAIN, SERIES_EZAPP_MAIN_FREERUN);
 
         frame_timer.Start();  // Start timing this frame
 
         // Process synth main thread tasks (sequencer, HUD events, etc.)
         if (_synth) {
-          OrkProfilerSampleBegin(CHANNEL_EZAPP_MAIN, "audio_synth");
+          OrkProfilerSampleBegin(CHANNEL_MAIN, "ez:audio_synth");
           _synth->mainThreadHandler();
         }
 
         {
-          OrkProfilerSampleBegin(CHANNEL_EZAPP_MAIN, "run_loop");
+          OrkProfilerSampleBegin(CHANNEL_MAIN, "ez:run_loop");
           ctx->_runloopIter(true);
         }
 
         {
-          OrkProfilerSampleBegin(CHANNEL_EZAPP_MAIN, "secondary_windows");
+          OrkProfilerSampleBegin(CHANNEL_MAIN, "ez:secondary_windows");
           // Render secondary windows
           _renderSecondaryWindows();
           _cleanupClosedSecondaryWindows();
@@ -1270,8 +1270,8 @@ int OrkEzApp::mainThreadLoop() {
           }
         }
 
-        OrkProfilerSampleEnd(CHANNEL_EZAPP_MAIN, SERIES_EZAPP_MAIN_FREERUN);
-        OrkProfilerFrameEnd(CHANNEL_EZAPP_MAIN);
+        OrkProfilerSampleEnd(CHANNEL_MAIN, SERIES_EZAPP_MAIN_FREERUN);
+        OrkProfilerFrameEnd(CHANNEL_MAIN);
       }
 
     } else {
@@ -1281,23 +1281,23 @@ int OrkEzApp::mainThreadLoop() {
       ////////////////////////////////////////
 
       while (ctx->_runstate == 1) {
-        OrkProfilerFrameBegin(CHANNEL_EZAPP_MAIN, CpuProfilerChannel, true);
-        OrkProfilerSampleBegin(CHANNEL_EZAPP_MAIN, SERIES_EZAPP_MAIN_LOCKSTEP);
+        OrkProfilerFrameBegin(CHANNEL_MAIN, CpuProfilerChannel, {.capture_fps = true});
+        OrkProfilerSampleBegin(CHANNEL_MAIN, SERIES_EZAPP_MAIN_LOCKSTEP);
 
         while (_lockstep_frame_requests.load()) {
           // Process synth main thread tasks (sequencer, HUD events, etc.)
           if (_synth) {
-            OrkProfilerSampleBegin(CHANNEL_EZAPP_MAIN, "audio_synth");
+            OrkProfilerSampleBegin(CHANNEL_MAIN, "ez:audio_synth");
             _synth->mainThreadHandler();
           }
 
           {
-            OrkProfilerSampleBegin(CHANNEL_EZAPP_MAIN, "run_loop");
+            OrkProfilerSampleBegin(CHANNEL_MAIN, "ez:run_loop");
             ctx->_runloopIter(false);
           }
 
           {
-            OrkProfilerSampleBegin(CHANNEL_EZAPP_MAIN, "secondary_windows");
+            OrkProfilerSampleBegin(CHANNEL_MAIN, "ez::secondary_windows");
             // Render secondary windows
             _renderSecondaryWindows();
             _cleanupClosedSecondaryWindows();
@@ -1320,8 +1320,8 @@ int OrkEzApp::mainThreadLoop() {
         }
         sched_yield();
 
-        OrkProfilerSampleEnd(CHANNEL_EZAPP_MAIN, SERIES_EZAPP_MAIN_LOCKSTEP);
-        OrkProfilerFrameEnd(CHANNEL_EZAPP_MAIN);
+        OrkProfilerSampleEnd(CHANNEL_MAIN, SERIES_EZAPP_MAIN_LOCKSTEP);
+        OrkProfilerFrameEnd(CHANNEL_MAIN);
       }
 
     }

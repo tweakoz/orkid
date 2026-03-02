@@ -804,11 +804,11 @@ void VkContext::_doSubmitPrimaryCommandBuffer(){
 
     // Submit
     if ( not semas_empty) {
-      OrkProfilerSampleScope(CHANNEL_RENDER_CONTEXT, "submit_semaphores");
+      OrkProfilerSampleScope(CHANNEL_MAIN, "vk:submit_semaphores");
       // Submit with timeline semaphores
       swapchain->_submitFrameWithSemaphores(this);
     } else {
-      OrkProfilerSampleScope(CHANNEL_RENDER_CONTEXT, "enqueue_frame");
+      OrkProfilerSampleScope(CHANNEL_MAIN, "vk:enqueue_frame");
       // Normal submission
       swapchain->enqueueFrame(this);
     }
@@ -817,7 +817,7 @@ void VkContext::_doSubmitPrimaryCommandBuffer(){
     // Present !
     ///////////////////////////////////////////////////////
     {
-      OrkProfilerSampleScope(CHANNEL_RENDER_CONTEXT, "present");
+      OrkProfilerSampleScope(CHANNEL_MAIN, "vk:present");
       swapchain->enqueuePresentFrame(this);
       swapchain->waitPresentFrame(this);
     }
@@ -1013,7 +1013,12 @@ void VkContext::_doPreBeginFrame() {
 
   // begin gpu profiler frame after we have setup commandbuffer
   // must use beginProfilerFrame overload to set cmdbuf for frame
-  OrkProfilerFrameBegin(CHANNEL_GPU, VkProfilerChannel, _vkdevice, _vkdeviceinfo.get(), primary_cb()->_vkcmdbuf);  
+  VkProfilerChannel::BeginParams profiler_params = {
+    .device           = _vkdevice, 
+    .timestamp_period = _vkdeviceinfo->_devprops.limits.timestampPeriod, 
+    .cmdbuf           = primary_cb()->_vkcmdbuf,
+  };
+  OrkProfilerFrameBegin(CHANNEL_GPU, VkProfilerChannel, profiler_params);
   OrkProfilerSampleBegin(CHANNEL_GPU, SERIES_GPU_FRAME_ALL);
 
   /////////////////////////////////////////
@@ -1916,24 +1921,24 @@ double VkProfilerChannel::_sampleTime(int begin_index, int end_index) {
     return double(end_ts - begin_ts) * double(_timestampPeriod) * 1e-9;
 }
 
-void VkProfilerChannel::frameBegin(VkDevice device, const VulkanDeviceInfo* deviceinfo, VkCommandBuffer cmdbuf) {
+void VkProfilerChannel::frameBegin(BeginParams params) {
   if (!Profiler::enabled()) return;
 
   // printf("VkProfilerChannel beginProfilerFrame\n");
   if (_device == VK_NULL_HANDLE) {
-    _device = device;
-    _timestampPeriod = deviceinfo->_devprops.limits.timestampPeriod; // nanoseconds per tick
+    _device = params.device;
+    _timestampPeriod = params.timestamp_period; // nanoseconds per tick
 
     VkQueryPoolCreateInfo info = {
       .sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
       .queryType = VK_QUERY_TYPE_TIMESTAMP,
       .queryCount = MAX_GPU_PERF_QUERIES * 2, // 2 timestamps per block (begin + end)
     };
-    VkResult ok = vkCreateQueryPool(device, &info, nullptr, &_query_pool);
+    VkResult ok = vkCreateQueryPool(_device, &info, nullptr, &_query_pool);
     OrkAssert(ok == VK_SUCCESS);  
   }
 
-  _cmdbuf = cmdbuf;
+  _cmdbuf = params.cmdbuf;
   vkCmdResetQueryPool(_cmdbuf, _query_pool, 0, MAX_GPU_PERF_QUERIES * 2);
 }
 

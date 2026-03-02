@@ -35,12 +35,10 @@ static constexpr uint64_t KAPPSTATEFLAG_JOINING    = 1 << 1;
 static constexpr uint64_t KAPPSTATEFLAG_JOINED     = 1 << 2;
 ////////////////////////////////////////////////////////////////////////////////
 
-#define CHANNEL_EZAPP_MAIN           "ez_app_main_thread"
-#define SERIES_EZAPP_MAIN_LOCKSTEP   "update_lockstep"
-#define SERIES_EZAPP_MAIN_FREERUN    "update_freerun"
-#define CHANNEL_EZAPP_UPDATE         "ez_app_update_thread"
-#define SERIES_EZAPP_UPDATE_LOCKSTEP "update_lockstep"
-#define SERIES_EZAPP_UPDATE_FREERUN  "update_freerun"
+#define SERIES_EZAPP_MAIN_LOCKSTEP   "ez:main_lockstep"
+#define SERIES_EZAPP_MAIN_FREERUN    "ez:main_freerun"
+#define SERIES_EZAPP_UPDATE_LOCKSTEP "ez:update_lockstep"
+#define SERIES_EZAPP_UPDATE_FREERUN  "ez:update_freerun"
 
 struct EzAppContext {
 
