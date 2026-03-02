@@ -38,6 +38,100 @@ from obt.command import run
 deco = deco_mod.Deco()
 
 ###############################################################################
+# Utility: Internalize a host binary + its full homebrew dylib closure
+###############################################################################
+
+def internalize_host_binary(binary_name, target_dir, homebrew_dir="/opt/homebrew"):
+  """Copy a host binary into bin/ and internalize its entire homebrew dylib closure.
+
+  This is the generic mechanism for severing a homebrew executable from its
+  host dependencies. It:
+    1. Finds the binary on the host via `which`
+    2. Copies the real binary (resolving symlinks) into target_dir/bin/
+    3. Walks its Mach-O dependencies to discover the full homebrew dylib closure
+    4. Copies all closure dylibs into target_dir/lib/
+    5. Rewrites load commands to @rpath and re-signs
+
+  Args:
+    binary_name: Name of the executable (e.g. "rsvg-convert", "pkg-config")
+    target_dir: The deployment infrastructure directory (.staging/)
+    homebrew_dir: Homebrew prefix (default /opt/homebrew)
+
+  Returns:
+    True if the binary was internalized, False if not found or not needed
+  """
+  target_dir = path.Path(target_dir)
+  target_bin = target_dir / "bin"
+  target_lib = target_dir / "lib"
+  target_bin.mkdir(parents=True, exist_ok=True)
+  target_lib.mkdir(parents=True, exist_ok=True)
+
+  target_binary = target_bin / binary_name
+
+  # Find on host
+  host_path = shutil.which(binary_name)
+  if not host_path:
+    print(deco.val(f"    WARNING: {binary_name} not found on host"))
+    return False
+
+  # Copy the real binary (resolve symlinks)
+  real_path = os.path.realpath(host_path)
+  shutil.copy2(real_path, str(target_binary))
+  os.chmod(str(target_binary), 0o755)
+  print(deco.val(f"    Copied: {real_path} -> bin/{binary_name}"))
+
+  # Check if it's a Mach-O binary (could be a script)
+  if not macos.is_macho_binary(str(target_binary)):
+    print(deco.val(f"    {binary_name} is not a Mach-O binary — no dylib fixup needed"))
+    return True
+
+  # Walk its homebrew dylib closure
+  walker = macos.MachoDependencyWalker(target_dir, homebrew_dir)
+  walker.seed_files = [target_binary]
+  walker.walk()
+  closure = walker.get_homebrew_closure()
+
+  # Copy closure dylibs into lib/
+  copied = 0
+  for hb_path in sorted(closure):
+    basename = os.path.basename(hb_path)
+    dest = target_lib / basename
+    if dest.exists():
+      continue
+    if ".framework/" in hb_path:
+      continue
+    real = os.path.realpath(hb_path)
+    if not os.path.isfile(real):
+      print(deco.val(f"    WARNING: closure dylib not found: {hb_path}"))
+      continue
+    shutil.copy2(real, str(dest))
+    copied += 1
+
+  print(deco.val(f"    Internalized {copied} homebrew dylibs for {binary_name}"))
+
+  # Relocate the binary + any new dylibs
+  relocator = macos.MachoRelocator(target_dir)
+  old_prefixes = [homebrew_dir,
+                  os.path.join(homebrew_dir, "opt"),
+                  os.path.join(homebrew_dir, "Cellar"),
+                  os.path.join(homebrew_dir, "lib")]
+
+  # Relocate the binary itself
+  relocator.relocate_binary(target_binary, old_prefixes, is_dylib=False)
+
+  # Relocate any new dylibs we just copied
+  for hb_path in sorted(closure):
+    basename = os.path.basename(hb_path)
+    dest = target_lib / basename
+    if dest.exists() and macos.is_macho_binary(str(dest)):
+      relocator.relocate_binary(dest, old_prefixes, is_dylib=True)
+
+  # Re-sign
+  relocator.resign_all()
+
+  return True
+
+###############################################################################
 # Phase 1: Deep Copy + Internalize
 ###############################################################################
 
@@ -1082,38 +1176,16 @@ def phase6_launch_script(target_dir):
   os.chmod(str(launch_script), 0o755)
   print(deco.val(f"    Wrote: {launch_script}"))
 
-  # ---- Step 2: Bundle pkg-config if not already present ----
-  print(deco.val(f"\n  Step 2: Ensuring pkg-config is bundled..."))
-  target_bin = target_dir / "bin"
-  target_bin.mkdir(parents=True, exist_ok=True)
-  target_pkgconfig = target_bin / "pkg-config"
-  if not target_pkgconfig.exists():
-    # Find pkg-config on the host and copy the real binary
-    host_pkgconfig = shutil.which("pkg-config")
-    if host_pkgconfig:
-      real_pkgconfig = os.path.realpath(host_pkgconfig)
-      shutil.copy2(real_pkgconfig, str(target_pkgconfig))
-      os.chmod(str(target_pkgconfig), 0o755)
-      print(deco.val(f"    Copied: {real_pkgconfig} -> bin/pkg-config"))
+  # ---- Step 2: Bundle host binaries (with full dylib severance) ----
+  HOST_BINARIES = ["pkg-config", "rsvg-convert"]
+  for i, bin_name in enumerate(HOST_BINARIES):
+    label = f"2{'abcdefgh'[i]}" if i > 0 else "2"
+    print(deco.val(f"\n  Step {label}: Ensuring {bin_name} is bundled..."))
+    target_binary = target_dir / "bin" / bin_name
+    if not target_binary.exists():
+      internalize_host_binary(bin_name, target_dir)
     else:
-      print(deco.val(f"    WARNING: pkg-config not found on host"))
-  else:
-    print(deco.val(f"    bin/pkg-config already present"))
-
-  # ---- Step 2b: Bundle rsvg-convert if not already present ----
-  print(deco.val(f"\n  Step 2b: Ensuring rsvg-convert is bundled..."))
-  target_rsvg = target_bin / "rsvg-convert"
-  if not target_rsvg.exists():
-    host_rsvg = shutil.which("rsvg-convert")
-    if host_rsvg:
-      real_rsvg = os.path.realpath(host_rsvg)
-      shutil.copy2(real_rsvg, str(target_rsvg))
-      os.chmod(str(target_rsvg), 0o755)
-      print(deco.val(f"    Copied: {real_rsvg} -> bin/rsvg-convert"))
-    else:
-      print(deco.val(f"    WARNING: rsvg-convert not found on host"))
-  else:
-    print(deco.val(f"    bin/rsvg-convert already present"))
+      print(deco.val(f"    bin/{bin_name} already present"))
 
   # ---- Step 3: Create MoltenVK ICD manifest ----
   # The vulkan dep module expects the ICD JSON at builds/moltenvk/Package/Latest/
@@ -1462,23 +1534,29 @@ def main():
     print(deco.val(f"  App bundles visible at top level of {target_dir}"))
 
     if args.dmg:
-      dmg_path = target_dir.parent / f"{target_dir.name}.dmg"
+      import tempfile
+      dmg_path = target_dir.parent / "Orkid.dmg"
       print(deco.val("\n" + "=" * 60))
       print(deco.val("Creating compressed DMG image"))
       print(deco.val("=" * 60))
       if dmg_path.exists():
         print(deco.val(f"  Removing existing {dmg_path.name}..."))
         os.remove(str(dmg_path))
-      print(deco.val(f"  Source:  {target_dir}"))
-      print(deco.val(f"  Output:  {dmg_path}"))
-      print(deco.val(f"  Format:  ULFO (LZFSE compressed, read-only)"))
-      subprocess.run([
-        "hdiutil", "create",
-        "-srcfolder", str(target_dir),
-        "-volname", target_dir.name,
-        "-format", "ULFO",
-        str(dmg_path),
-      ], check=True)
+      # Create a temp directory with an "Orkid" folder inside so the DMG
+      # volume contains a single draggable "Orkid" folder.
+      with tempfile.TemporaryDirectory() as tmpdir:
+        dmg_stage = path.Path(tmpdir) / "Orkid"
+        os.symlink(str(target_dir), str(dmg_stage))
+        print(deco.val(f"  Source:  {target_dir} (as Orkid/)"))
+        print(deco.val(f"  Output:  {dmg_path}"))
+        print(deco.val(f"  Format:  ULFO (LZFSE compressed, read-only)"))
+        subprocess.run([
+          "hdiutil", "create",
+          "-srcfolder", str(tmpdir),
+          "-volname", "Orkid",
+          "-format", "ULFO",
+          str(dmg_path),
+        ], check=True)
       dmg_size_mb = dmg_path.stat().st_size / (1024 * 1024)
       print(deco.val(f"  DMG created: {dmg_path} ({dmg_size_mb:.1f} MB)"))
 
