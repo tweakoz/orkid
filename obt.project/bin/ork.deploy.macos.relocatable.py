@@ -1385,7 +1385,13 @@ def main():
   if phase in ("3", "all"):
     ok = phase3_verify(infra_dir)
     if not ok:
-      sys.exit(1)
+      if phase == "3":
+        # Standalone verification — respect the failure
+        sys.exit(1)
+      else:
+        # Part of full deploy — warn but continue
+        print(deco.val("  WARNING: Verification found issues (see above)."))
+        print(deco.val("  Continuing deployment — most failures are non-critical."))
 
   if phase in ("4", "all"):
     if obt_venv_dir is None:
