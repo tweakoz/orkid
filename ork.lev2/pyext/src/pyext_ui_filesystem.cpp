@@ -8,6 +8,7 @@
 #include "pyext.h"
 #include <ork/lev2/ui/widget.h>
 #include <ork/lev2/ui/group.h>
+#include <ork/lev2/ui/pack.h>
 #include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/lev2/ui/filesystem_model.h>
 #include <ork/lev2/ui/filesystem_view.h>
@@ -261,59 +262,6 @@ public:
         path);
   }
 
-  std::vector<ui::ItemOptionDef> getItemOptions(const std::string& path) const override {
-    py::gil_scoped_acquire acquire;
-    py::object py_result = py::cast(this).attr("getItemOptions")(path);
-    std::vector<ui::ItemOptionDef> options;
-    if (!py_result.is_none() && py::isinstance<py::list>(py_result)) {
-      for (auto item : py_result.cast<py::list>()) {
-        if (py::isinstance<py::dict>(item)) {
-          auto d = item.cast<py::dict>();
-          ui::ItemOptionDef opt;
-          if (d.contains("name")) opt.name = d["name"].cast<std::string>();
-          if (d.contains("type")) {
-            std::string type_str = d["type"].cast<std::string>();
-            if (type_str == "checkbox") opt.type = ui::OptionWidgetType::Checkbox;
-            else if (type_str == "dropdown") opt.type = ui::OptionWidgetType::Dropdown;
-            else if (type_str == "button") opt.type = ui::OptionWidgetType::Button;
-            else opt.type = ui::OptionWidgetType::Label;
-          }
-          if (d.contains("bool_val")) opt.bool_val = d["bool_val"].cast<bool>();
-          if (d.contains("string_val")) opt.string_val = d["string_val"].cast<std::string>();
-          if (d.contains("choices")) {
-            for (auto c : d["choices"].cast<py::list>()) {
-              opt.choices.push_back(c.cast<std::string>());
-            }
-          }
-          options.push_back(opt);
-        }
-      }
-    }
-    return options;
-  }
-
-  bool setItemOption(const std::string& path, const std::string& option_name, const ui::ItemOptionDef& value) override {
-    py::gil_scoped_acquire acquire;
-    py::dict d;
-    d["name"] = value.name;
-    switch (value.type) {
-      case ui::OptionWidgetType::Checkbox: d["type"] = "checkbox"; break;
-      case ui::OptionWidgetType::Dropdown: d["type"] = "dropdown"; break;
-      case ui::OptionWidgetType::Button: d["type"] = "button"; break;
-      default: d["type"] = "label"; break;
-    }
-    d["bool_val"] = value.bool_val;
-    d["string_val"] = value.string_val;
-    py::list choices;
-    for (const auto& c : value.choices) choices.append(c);
-    d["choices"] = choices;
-    py::object py_result = py::cast(this).attr("setItemOption")(path, option_name, d);
-    if (!py_result.is_none()) {
-      return py_result.cast<bool>();
-    }
-    return false;
-  }
-
   std::string modelIdentifier() const override {
     py::gil_scoped_acquire acquire;
     PYBIND11_OVERRIDE_PURE(
@@ -334,26 +282,6 @@ void pyinit_ui_filesystem(py::module& uimodule) {
       .value("File", ui::FileType::File)
       .value("Directory", ui::FileType::Directory)
       .value("Symlink", ui::FileType::Symlink);
-
-  /////////////////////////////////////////////////////////////////////////////////
-  // OptionWidgetType enum
-  /////////////////////////////////////////////////////////////////////////////////
-  py::enum_<ui::OptionWidgetType>(uimodule, "OptionWidgetType")
-      .value("Checkbox", ui::OptionWidgetType::Checkbox)
-      .value("Dropdown", ui::OptionWidgetType::Dropdown)
-      .value("Button", ui::OptionWidgetType::Button)
-      .value("Label", ui::OptionWidgetType::Label);
-
-  /////////////////////////////////////////////////////////////////////////////////
-  // ItemOptionDef struct
-  /////////////////////////////////////////////////////////////////////////////////
-  py::class_<ui::ItemOptionDef>(uimodule, "ItemOptionDef")
-      .def(py::init<>())
-      .def_readwrite("name", &ui::ItemOptionDef::name)
-      .def_readwrite("type", &ui::ItemOptionDef::type)
-      .def_readwrite("bool_val", &ui::ItemOptionDef::bool_val)
-      .def_readwrite("string_val", &ui::ItemOptionDef::string_val)
-      .def_readwrite("choices", &ui::ItemOptionDef::choices);
 
   /////////////////////////////////////////////////////////////////////////////////
   // FilesystemEntry struct
@@ -526,51 +454,6 @@ void pyinit_ui_filesystem(py::module& uimodule) {
               py::arg("path"),
               py::arg("size") = 64)
           .def("hasThumbnail", &ui::FilesystemModel::hasThumbnail)
-          // Per-item options
-          .def(
-              "getItemOptions",
-              [](ui::filesystem_model_ptr_t model, const std::string& path) -> py::list {
-                auto options = model->getItemOptions(path);
-                py::list result;
-                for (const auto& opt : options) {
-                  py::dict d;
-                  d["name"] = opt.name;
-                  switch (opt.type) {
-                    case ui::OptionWidgetType::Checkbox: d["type"] = "checkbox"; break;
-                    case ui::OptionWidgetType::Dropdown: d["type"] = "dropdown"; break;
-                    case ui::OptionWidgetType::Button: d["type"] = "button"; break;
-                    default: d["type"] = "label"; break;
-                  }
-                  d["bool_val"] = opt.bool_val;
-                  d["string_val"] = opt.string_val;
-                  py::list choices;
-                  for (const auto& c : opt.choices) choices.append(c);
-                  d["choices"] = choices;
-                  result.append(d);
-                }
-                return result;
-              })
-          .def(
-              "setItemOption",
-              [](ui::filesystem_model_ptr_t model, const std::string& path, const std::string& option_name, py::dict d) -> bool {
-                ui::ItemOptionDef val;
-                if (d.contains("name")) val.name = d["name"].cast<std::string>();
-                if (d.contains("type")) {
-                  std::string type_str = d["type"].cast<std::string>();
-                  if (type_str == "checkbox") val.type = ui::OptionWidgetType::Checkbox;
-                  else if (type_str == "dropdown") val.type = ui::OptionWidgetType::Dropdown;
-                  else if (type_str == "button") val.type = ui::OptionWidgetType::Button;
-                  else val.type = ui::OptionWidgetType::Label;
-                }
-                if (d.contains("bool_val")) val.bool_val = d["bool_val"].cast<bool>();
-                if (d.contains("string_val")) val.string_val = d["string_val"].cast<std::string>();
-                if (d.contains("choices")) {
-                  for (auto c : d["choices"].cast<py::list>()) {
-                    val.choices.push_back(c.cast<std::string>());
-                  }
-                }
-                return model->setItemOption(path, option_name, val);
-              })
           .def("modelIdentifier", &ui::FilesystemModel::modelIdentifier)
           .def_property(
               "sort_field",
@@ -741,7 +624,7 @@ void pyinit_ui_filesystem(py::module& uimodule) {
   // FilesystemView widget
   /////////////////////////////////////////////////////////////////////////////////
   auto filesystem_view_type = //
-      py::class_<ui::FilesystemView, ui::Widget, ui::filesystem_view_ptr_t>(uimodule, "FilesystemView")
+      py::class_<ui::FilesystemView, ui::Group, ui::filesystem_view_ptr_t>(uimodule, "FilesystemView")
           .def_static(
               "wfactory",
               [type_codec](py::list py_args) -> ui::filesystem_view_ptr_t { //
@@ -862,6 +745,14 @@ void pyinit_ui_filesystem(py::module& uimodule) {
                   callback(old_path, new_name);
                 };
               })
+          .def(
+              "onContextMenu",
+              [](ui::filesystem_view_ptr_t view, py::object callback) { //
+                view->_onContextMenu = [callback](const std::string& path, int x, int y) {
+                  py::gil_scoped_acquire acquire;
+                  callback(path, x, y);
+                };
+              })
           // Appearance - List mode
           .def_readwrite("item_height", &ui::FilesystemView::_item_height)
           .def_readwrite("icon_column_width", &ui::FilesystemView::_icon_column_width)
@@ -931,8 +822,20 @@ void pyinit_ui_filesystem(py::module& uimodule) {
                 view->_header_bgcolor = c;
               })
           .def_readwrite("draw_background", &ui::FilesystemView::_draw_background)
-          .def_readwrite("draw_header", &ui::FilesystemView::_draw_header)
-          .def_readwrite("draw_path_bar", &ui::FilesystemView::_draw_path_bar)
+          .def_property(
+              "draw_header",
+              [](ui::filesystem_view_ptr_t view) -> bool { return view->_draw_header; },
+              [](ui::filesystem_view_ptr_t view, bool val) {
+                view->_draw_header = val;
+                if (view->_header_widget) view->_header_widget->_enable = val;
+              })
+          .def_property(
+              "draw_path_bar",
+              [](ui::filesystem_view_ptr_t view) -> bool { return view->_draw_path_bar; },
+              [](ui::filesystem_view_ptr_t view, bool val) {
+                view->_draw_path_bar = val;
+                if (view->_path_bar_widget) view->_path_bar_widget->_enable = val;
+              })
           .def_property(
               "font",
               [](ui::filesystem_view_ptr_t view) -> font_ptr_t { //
@@ -949,6 +852,10 @@ void pyinit_ui_filesystem(py::module& uimodule) {
               [](ui::filesystem_view_ptr_t view, font_ptr_t font) { //
                 view->_small_font = font;
               })
+          .def(
+              "setFontSize",
+              [](ui::filesystem_view_ptr_t view, int size) { view->setFontSize(size); },
+              "Set font size (e.g. 16 for i16). Small font is automatically size-2.")
           .def_property(
               "folder_icon",
               &ui::FilesystemView::getFolderIcon,
@@ -961,7 +868,21 @@ void pyinit_ui_filesystem(py::module& uimodule) {
               "Default file icon image (converted to texture lazily)")
           .def("clearIconCache", &ui::FilesystemView::clearIconCache,
               "Clear the icon cache (useful after directory change)")
-          .def_readwrite("draw_options_bar", &ui::FilesystemView::_draw_options_bar)
+          .def(
+              "addToolbar",
+              [](ui::filesystem_view_ptr_t view, const std::string& name, int height) -> ui::toolbar_ptr_t {
+                return view->addToolbar(name, height);
+              },
+              py::arg("name"),
+              py::arg("height") = 24,
+              "Add a toolbar between header and content. Returns the Toolbar widget.")
+          .def(
+              "removeToolbar",
+              [](ui::filesystem_view_ptr_t view, ui::toolbar_ptr_t toolbar) {
+                view->removeToolbar(toolbar);
+              },
+              py::arg("toolbar"),
+              "Remove a toolbar previously added with addToolbar()")
           .def("__repr__", [](ui::filesystem_view_ptr_t view) {
             return FormatString("<FilesystemView name<%s> widget<%p>>", view->GetName().c_str(), (void*)view.get());
           });

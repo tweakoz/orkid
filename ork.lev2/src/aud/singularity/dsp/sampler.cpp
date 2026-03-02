@@ -236,10 +236,12 @@ void SampleData::loadFromAudioFile(const std::string& fname, bool normalize) {
 
     // Calculate the number of samples to read (frames * channels)
     int numSamples = static_cast<int>(_blk_end * channelCount);
-    printf("frameCount<%d>\n", _blk_end);
-    printf("channelCount<%d>\n", channelCount);
-    printf("numSamples<%d>\n", numSamples);
-    printf("sampleRate<%f>\n", _sampleRate);
+    if(0){
+      printf("frameCount<%d>\n", _blk_end);
+      printf("channelCount<%d>\n", channelCount);
+      printf("numSamples<%d>\n", numSamples);
+      printf("sampleRate<%f>\n", _sampleRate);
+    }
     _numChannels = channelCount;
     // Read the samples from the file
 

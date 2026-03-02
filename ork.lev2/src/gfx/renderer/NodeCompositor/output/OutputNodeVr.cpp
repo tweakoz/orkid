@@ -39,7 +39,6 @@ struct VRIMPL {
   ///////////////////////////////////////
   void gpuInit(lev2::Context* context) {
     if (_doinit) {
-      context->debugPushGroup("VRIMPL::gpuInit");
       int width  = orkidvr::device()->_width * 2 * (_vrnode->supersample() + 1);
       int height = orkidvr::device()->_height * (_vrnode->supersample() + 1);
 
@@ -61,8 +60,6 @@ struct VRIMPL {
       _rtg            = new RtGroup(context, width, height, MsaaSamples::MSAA_1X);
       auto buf        = _rtg->createRenderTarget(EBufferFormat::RGBA8);
       buf->_debugName = "WtfVrRt";
-
-      context->debugPopGroup();
 
       _doinit = false;
     }

@@ -406,7 +406,8 @@ class ComponentizedApplication(object):
       self.ezapp = lev2.OrkEzApp.create(self, **args)
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 30)
     # Standard setup (refresh policy and UI draw)
-    self.ezapp.topWidget.enableUiDraw()
+    if self.ezapp.topWidget is not None:
+      self.ezapp.topWidget.enableUiDraw()
 
     # Broadcast to components (for early UI setup like overlays)
     for component in self.components_sorted:

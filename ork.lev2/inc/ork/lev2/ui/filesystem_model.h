@@ -29,26 +29,6 @@ enum class FileType {
 };
 
 ////////////////////////////////////////////////////////////////////
-// Per-item option types for inline micro-renderers
-////////////////////////////////////////////////////////////////////
-
-enum class OptionWidgetType {
-  Checkbox,   // Toggle boolean
-  Dropdown,   // Cycle through choices
-  Button,     // Clickable action
-  Label       // Read-only text
-};
-
-// Combines definition + current value for one option on one item
-struct ItemOptionDef {
-  std::string name;
-  OptionWidgetType type = OptionWidgetType::Label;
-  bool bool_val = false;
-  std::string string_val;
-  std::vector<std::string> choices;  // For Dropdown type
-};
-
-////////////////////////////////////////////////////////////////////
 // FilesystemEntry: Metadata for a filesystem item
 ////////////////////////////////////////////////////////////////////
 
@@ -214,16 +194,6 @@ struct FilesystemModel {
 
   // Check if thumbnails are supported for this path
   virtual bool hasThumbnail(const std::string& path) const { return false; }
-
-  //////////////////////////////////////////////////////////////
-  // Per-item options (inline micro-renderers)
-  //////////////////////////////////////////////////////////////
-
-  // Get option definitions + values for a specific item (empty = no options)
-  virtual std::vector<ItemOptionDef> getItemOptions(const std::string& path) const { return {}; }
-
-  // Set an option value by name (returns true if changed)
-  virtual bool setItemOption(const std::string& path, const std::string& option_name, const ItemOptionDef& value) { return false; }
 
   //////////////////////////////////////////////////////////////
   // Sorting

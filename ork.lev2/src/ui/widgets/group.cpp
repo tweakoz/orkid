@@ -104,7 +104,7 @@ widget_ptr_t Group::findChildPtr(const Widget* w) const {
 }
 /////////////////////////////////////////////////////////////////////////
 void Group::_doOnParentChanged(Group* parent) {
-  if (_propagate_on_parent_change && _uicontext) {
+  if (_uicontext) {
     std::function<void(Group*)> propagate = [&](Group* g) {
       for (auto& child : g->_children) {
         child->_uicontext = _uicontext;

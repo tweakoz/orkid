@@ -195,11 +195,12 @@ class ECS_MINIMAL(object):
     ##################
 
     self.controller.installRenderCallbackOnEzApp(self.ezapp)
+    self.controller.installGpuUpdateCallbackOnEzApp(self.ezapp)
 
     ##################
     # launch simulation
     ##################
-        
+
     #self.controller.beginWriteTrace(str(obt_path.temp()/"ecstrace.json"));
     self.controller.createSimulation()
     self.controller.startSimulation()

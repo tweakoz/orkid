@@ -94,6 +94,11 @@ void Simulation::_stashRenderThreadDestructable(svar64_t var){
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+void Simulation::gpuUpdate(lev2::Context* ctx){
+  _gpuUpdateSMInst->vars()->makeValueForKey<lev2::Context*>("ctx") = ctx;
+  fsm::FsmInstance::update(_gpuUpdateSMInst);
+}
+///////////////////////////////////////////////////////////////////////////////
 void Simulation::gpuExit(lev2::Context* ctx){
     SystemLut render_systems;
     _systems.atomicOp([&](const SystemLut& unlocked) { render_systems = unlocked; });
@@ -101,6 +106,14 @@ void Simulation::gpuExit(lev2::Context* ctx){
     for (auto sys : render_systems) {
       sys.second->_onGpuExit(this, ctx);
     }
+
+    // clean up gpuUpdate FSM
+    _gpuUpdateSMInst->changeState(_gpuTerminatedState);
+    fsm::FsmInstance::update(_gpuUpdateSMInst);
+    _gpuUpdateSMInst = nullptr;
+    _gpuUpdateSMData = nullptr;
+
+    // clean up render FSM
     fsm::FsmInstance::update(_renderThreadSMInst);
     fsm::FsmInstance::update(_renderThreadSMInst);
     fsm::FsmInstance::update(_renderThreadSMInst);

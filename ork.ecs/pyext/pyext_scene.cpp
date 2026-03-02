@@ -183,6 +183,9 @@ void pyinit_scene(py::module& module_ecs) {
       .def("findSceneObject", [](scenedata_ptr_t scenedata, std::string name) -> sceneobject_ptr_t {
         auto psname = AddPooledString(name.c_str());
         return scenedata->findSceneObjectByName(psname);
+      })
+      .def("generateSceneGraphParams", [](scenedata_ptr_t scenedata) -> varmap::varmap_ptr_t {
+        return scenedata->generateSceneGraphParams();
       });
 
   /////////////////////////////////////////////////////////////////////////////////

@@ -295,7 +295,7 @@ size_t TextureInitData::computeDstSize() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void TextureInterface::initTextureFromImage(Texture* ptex, image_ptr_t img, bool autogenmips) {
+void TextureInterface::initTextureFromImage(Texture* ptex, image_ptr_t img, bool autogenmips, bool asynchronous  ) {
   TextureInitData tid;
   tid._w           = img->_width;
   tid._h           = img->_height;
@@ -334,7 +334,7 @@ void TextureInterface::initTextureFromImage(Texture* ptex, image_ptr_t img, bool
       break;
   }
   tid._autogenmips = autogenmips;
-  tid._allow_async = true;
+  tid._allow_async = asynchronous;
   tid._data        = (const void*) img_to_use->_data->data();
   initTextureFromData(ptex, tid);
 }

@@ -627,7 +627,6 @@ bool SceneGraphSystem::_onStage(Simulation* psi) {
     auto injected = sim_varmap->typedValueForKey<scenegraph::scene_ptr_t>("scenegraph");
     if (injected) {
       _scene = injected.value();
-      _sceneInjected = true;
     }
   }
 
@@ -666,8 +665,7 @@ void SceneGraphSystem::_onDeactivate(Simulation* inst) // final
 void SceneGraphSystem::_onUpdate(Simulation* psi) // final
 {
   EASY_BLOCK("SceneGraphSystem::_onUpdate", 0xffa02020);
-  if (_scene) {
-
+  if (_scene && _autoupdate) {
     EASY_VALUE("NC", _numComponents);
     _scene->enqueueToRenderer(_camlut);
   }
@@ -684,18 +682,19 @@ void SceneGraphSystem::_rt_process() {
   ///////////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////////////////////
-void SceneGraphSystem::_onRenderWithStandardCompositorFrame(Simulation* psi, lev2::standardcompositorframe_ptr_t sframe) {
+void SceneGraphSystem::_onGpuUpdate(Simulation* psi, lev2::Context* ctx) {
   _rt_process();
-  if (_scene && !_sceneInjected) {
+}
+///////////////////////////////////////////////////////////////////////////////
+void SceneGraphSystem::_onRenderWithStandardCompositorFrame(Simulation* psi, lev2::standardcompositorframe_ptr_t sframe) {
+  if (_scene && _autodraw) {
     _scene->renderWithStandardCompositorFrame(sframe);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void SceneGraphSystem::_onRender(Simulation* psi, ui::drawevent_constptr_t drwev) // final
 {
-  _rt_process();
-
-  if (_scene && !_sceneInjected) {
+  if (_scene && _autodraw) {
     _scene->renderOnContext(drwev->GetTarget());
   }
 }
@@ -781,7 +780,22 @@ void SceneGraphSystem::_onNotify(token_t evID, evdata_t data) {
       break;
     }
     default:
-      OrkAssert(false);
+      System::_onNotify(evID, data);
+      break;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SceneGraphSystem::_onPropertyChanged(token_t name, evdata_t value) {
+  switch (name.hashed()) {
+    case "autodraw"_crcu:
+      _autodraw = value.get<bool>();
+      break;
+    case "autoupdate"_crcu:
+      _autoupdate = value.get<bool>();
+      break;
+    default:
       break;
   }
 }

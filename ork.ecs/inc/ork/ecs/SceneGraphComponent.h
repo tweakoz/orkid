@@ -181,6 +181,7 @@ struct SceneGraphSystem final : public System {
   ///////////////////////////////
   void _onGpuInit(Simulation* psi, lev2::Context* ctx) final;
   void _onGpuExit(Simulation* psi, lev2::Context* ctx) final;
+  void _onGpuUpdate(Simulation* psi, lev2::Context* ctx) final;
   ///////////////////////////////
   bool _onLink(Simulation* psi) final;
   void _onUnLink(Simulation* psi) final;
@@ -191,6 +192,7 @@ struct SceneGraphSystem final : public System {
   void _onUpdate(Simulation* inst) final;
   void _onRender(Simulation* psi,ui::drawevent_constptr_t drwev) final;
   void _onNotify(token_t evID, evdata_t data ) final;
+  void _onPropertyChanged(token_t name, evdata_t value) final;
   void _onRequest(impl::sys_response_ptr_t response, token_t reqID, evdata_t data ) final;
   void _onRenderWithStandardCompositorFrame(Simulation* psi, lev2::standardcompositorframe_ptr_t sframe) final;
 
@@ -218,7 +220,8 @@ struct SceneGraphSystem final : public System {
   int _numComponents = 0;
   const SceneGraphSystemData& _SGSD;
   MpMcBoundedQueue<void_lambda_t,65536> _renderops;
-  bool _sceneInjected = false;
+  bool _autodraw = true;   // when false, skip renderOnContext / renderWithStandardCompositorFrame
+  bool _autoupdate = true; // when false, skip enqueueToRenderer
 };
 
 ///////////////////////////////////////////////////////////////////////////////

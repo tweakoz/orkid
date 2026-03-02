@@ -1,4 +1,5 @@
 #include <ork/pch.h>
+#include <algorithm>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
@@ -116,9 +117,41 @@ DropdownMenu::DropdownMenu(const std::string& name, slashnode_constptr_t node)
     : Group(name, 0, 0, 0, 0)
     , _node(node) {
 
-  // Build menu items from SlashNode children
-  if (_node) {
-    for (auto& [child_name, child_node] : _node->children()) {
+  _buildItems();
+
+  _content = std::make_shared<Content>(this);
+  _scroll_container = std::make_shared<ScrollContainer>("ddscroll");
+  _scroll_container->setChild(_content);
+  _scroll_container->setScrollMode(ScrollMode::Y);
+  _scroll_container->_draw_background = false;
+  _scroll_container->_vscroller._fade_delay = 999999.0f; // always visible while dropdown is open
+  addChild(_scroll_container);
+}
+///////////////////////////////////////////////////////////////////////////////
+void DropdownMenu::_buildItems() {
+  _items.clear();
+  if (!_node) return;
+
+  auto& child_map = _node->children();
+
+  if (!_item_order.empty()) {
+    // Use caller-specified order
+    for (auto& key : _item_order) {
+      auto it = child_map.find(key);
+      if (it == child_map.end()) continue;
+      auto& child_node = it->second;
+      MenuItem item;
+      item._label = key;
+      item._node = child_node;
+      item._is_leaf = child_node->isLeaf();
+      if (item._is_leaf) {
+        item._value = child_node->pathAsString();
+      }
+      _items.push_back(item);
+    }
+  } else {
+    // Default: map iteration order (alphabetical)
+    for (auto& [child_name, child_node] : child_map) {
       MenuItem item;
       item._label = child_name;
       item._node = child_node;
@@ -130,13 +163,11 @@ DropdownMenu::DropdownMenu(const std::string& name, slashnode_constptr_t node)
     }
   }
 
-  _content = std::make_shared<Content>(this);
-  _scroll_container = std::make_shared<ScrollContainer>("ddscroll");
-  _scroll_container->setChild(_content);
-  _scroll_container->setScrollMode(ScrollMode::Y);
-  _scroll_container->_draw_background = false;
-  _scroll_container->_vscroller._fade_delay = 999999.0f; // always visible while dropdown is open
-  addChild(_scroll_container);
+  if (_sort_alphabetically) {
+    std::sort(_items.begin(), _items.end(), [](const MenuItem& a, const MenuItem& b) {
+      return a._label < b._label;
+    });
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void DropdownMenu::_doOnPreDestroy() {
@@ -183,6 +214,7 @@ void DropdownMenu::_openSubmenu(int index) {
 
   // Create child dropdown menu
   auto child_menu = std::make_shared<DropdownMenu>(_name + "/" + item._label, item._node);
+  child_menu->_sort_alphabetically = _sort_alphabetically;
   child_menu->_onSelected = _onSelected; // pass through selection callback
 
   // Position: to the right of this menu, aligned with the hovered row

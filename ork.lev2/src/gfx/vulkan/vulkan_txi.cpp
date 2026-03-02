@@ -367,7 +367,8 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
     auto set            = stagingBufferPoolForSrcOfSize(level_length);
     auto staging_buffer = set->borrowItem();
     staging_buffer->copyFromHost(level_data, level_length);
-    // vktex->_staging_buffers.insert(staging_buffer);
+    // Keep staging buffer alive until command buffer completes execution
+    cmdbuf_impl->_referenced_buffers.push_back(staging_buffer);
     VkBufferImageCopy region = {};
     region.bufferOffset      = 0;
     region.bufferRowLength   = 0;

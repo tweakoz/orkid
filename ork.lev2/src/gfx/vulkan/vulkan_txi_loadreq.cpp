@@ -286,6 +286,10 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
     // NOTE: Do NOT set _img_sampling here - will be set in completion callback
     _contextVK->endRecordCommandBuffer(vktex->_loadCB);
     cmdbuf_impl->_referenced_images.push_back(vktex->_imgobj[0]);
+    // Keep staging buffers alive until command buffer completes execution
+    for (auto& buf : vktex->_staging_buffers) {
+      cmdbuf_impl->_referenced_buffers.push_back(buf);
+    }
     _contextVK->enqueueDeferredOneShotCommand(vktex->_loadCB);
 
   } else {

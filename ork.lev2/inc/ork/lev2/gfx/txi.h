@@ -91,7 +91,7 @@ public:
 
   virtual void initTextureFromData(Texture* ptex, TextureInitData tid) {
   }
-  void initTextureFromImage(Texture* ptex, image_ptr_t img, bool autogenmips = false );
+  void initTextureFromImage(Texture* ptex, image_ptr_t img, bool autogenmips = false, bool asynch = true );
   virtual void initTextureArray1DFromData(TextureArray* ptex, TextureArrayInitData tid) {
   }
   virtual void initTextureArray2DFromData(TextureArray* ptex, TextureArrayInitData tid) {

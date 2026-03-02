@@ -110,6 +110,8 @@ struct VkSecondaryCommandBufferImpl {
   // VkImages referenced by recorded commands - prevents premature destruction
   // while this CB is still in use (pending execution or pending GPU completion)
   std::vector<vkimageobj_ptr_t> _referenced_images;
+  // VkBuffers (staging buffers) referenced by recorded commands - prevents premature destruction
+  std::vector<vkbuffer_ptr_t> _referenced_buffers;
 };
 ///////////////////////////////////////////////////////////////////////////////
 } //namespace ork::lev2::vulkan {

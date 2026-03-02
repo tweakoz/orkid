@@ -122,6 +122,7 @@ protected:
 
   void _beginRender() { _onBeginRender(); }
   void _endRender() { _onEndRender(); }
+  void _gpuUpdate(Simulation* psi, lev2::Context* ctx) { _onGpuUpdate(psi, ctx); }
 
   bool _initialize(Simulation* psi);
   void _uninitialize(Simulation* psi);
@@ -141,6 +142,7 @@ protected:
   virtual void _onGpuInit(Simulation* psi, lev2::Context* ctx);
   virtual void _onGpuLink(Simulation* psi, lev2::Context* ctx);
   virtual void _onGpuExit(Simulation* psi, lev2::Context* ctx);
+  virtual void _onGpuUpdate(Simulation* psi, lev2::Context* ctx);
   virtual void _onUpdate(Simulation* inst);
 
   virtual bool _onInitialize(Simulation* psi);
@@ -158,6 +160,9 @@ protected:
   virtual void _onRenderWithStandardCompositorFrame(Simulation* psi, lev2::standardcompositorframe_ptr_t sframe);
   virtual void _onNotify(token_t evID, evdata_t data);
   virtual void _onRequest(impl::sys_response_ptr_t response, token_t evID, evdata_t data);
+  virtual void _onPropertyChanged(token_t name, evdata_t value);
+
+  static constexpr auto SetProperty = "SetProperty"_ecstok;
 
   const SystemData* _systemData = nullptr;
   Simulation* _simulation       = nullptr;

@@ -194,7 +194,9 @@ void pyinit_scenegraph(py::module& module_ecs) {
               "initializeForEditMode",
               [](pysgsystem_ptr_t sgsys, ctx_t ctx) {
                 sgsys->initializeForEditMode(ctx.get());
-              });
+              })
+          .def_readwrite("autodraw", &SceneGraphSystem::_autodraw)
+          .def_readwrite("autoupdate", &SceneGraphSystem::_autoupdate);
   type_codec->registerStdCodec<pysgsystem_ptr_t>(sgsys_type);
   /////////////////////////////////////////////////////////////////////////////////
 } // void pyinit_scenegraph(py::module& module_ecs) {

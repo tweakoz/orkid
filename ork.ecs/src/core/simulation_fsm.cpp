@@ -183,6 +183,59 @@ void Simulation::_buildStateMachine() {
   };
 
   ///////////////////////////////////////////////////////////
+  // set up gpuUpdate state machine
+  ///////////////////////////////////////////////////////////
+
+  _gpuUpdateSMData = std::make_shared<fsm::FsmData>();
+  auto gpu_root    = _gpuUpdateSMData->newState<RootState>();
+  _gpuInitState    = _gpuUpdateSMData->newState<fsm::LambdaState>(gpu_root);
+  _gpuReadyState   = _gpuUpdateSMData->newState<fsm::LambdaState>(gpu_root);
+  _gpuTerminatedState = _gpuUpdateSMData->newState<fsm::LambdaState>(gpu_root);
+  _gpuUpdateSMInst = fsm::FsmInstance::create(_gpuUpdateSMData);
+
+  // GPU INIT STATE
+  _gpuInitState->_onupdate = [this](fsm::fsminstance_ptr_t inst) {
+    if (_needsGpuInit) {
+      auto ctx = inst->vars()->typedValueForKey<lev2::Context*>("ctx");
+      OrkAssert(ctx);
+
+      SystemLut gpu_systems;
+      _systems.atomicOp([&](const SystemLut& syslut) { gpu_systems = syslut; });
+
+      for (auto sys : gpu_systems) {
+        sys.second->_onGpuInit(this, ctx.value());
+      }
+      for (auto sys : gpu_systems) {
+        sys.second->_onGpuLink(this, ctx.value());
+      }
+
+      _needsGpuInit = false;
+      _gpuUpdateSMInst->changeState(_gpuReadyState);
+    }
+  };
+
+  // GPU READY STATE (steady-state per-frame)
+  _gpuReadyState->_onupdate = [this](fsm::fsminstance_ptr_t inst) {
+    if (_needsGpuInit) {
+      // re-init triggered by update FSM state change
+      _gpuUpdateSMInst->changeState(_gpuInitState);
+      return;
+    }
+    auto ctx = inst->vars()->typedValueForKey<lev2::Context*>("ctx");
+    OrkAssert(ctx);
+    SystemLut gpu_systems;
+    _systems.atomicOp([&](const SystemLut& syslut) { gpu_systems = syslut; });
+    for (auto sys : gpu_systems) {
+      sys.second->_gpuUpdate(this, ctx.value());
+    }
+  };
+
+  // GPU TERMINATED STATE
+  _gpuTerminatedState->_onenter = [this](fsm::fsminstance_ptr_t inst) {};
+
+  _gpuUpdateSMInst->changeState(_gpuInitState);
+
+  ///////////////////////////////////////////////////////////
   // set up render thread state machine
   ///////////////////////////////////////////////////////////
 
@@ -196,48 +249,16 @@ void Simulation::_buildStateMachine() {
   _renderThreadSMInst = fsm::FsmInstance::create(_renderThreadSMData);
 
   //////////////////
-  // RENDER INIT
+  // RENDER INIT (waits for gpuUpdate FSM to reach ready state)
   //////////////////
-  ren_init_state->_onenter = [this](fsm::fsminstance_ptr_t inst) { _needsGpuInit = true; };
+  ren_init_state->_onenter = [this](fsm::fsminstance_ptr_t inst) {};
   //
   ren_init_state->_onupdate = [=](fsm::fsminstance_ptr_t inst) {
-    OrkAssert(_currentdrwev);
-    if (_needsGpuInit) {
-
-      ////////////////////////////////////////////
-      // when all locks released after
-      //  enqueing gpuinit's
-      //  we can transition to the simulate state
-      ////////////////////////////////////////////
-
-      uint64_t l = lev2::GfxEnv::createLock();
-
-      auto LOCKS = lev2::GfxEnv::dumpLocks();
-
+    if (_gpuUpdateSMInst->currentState() == _gpuReadyState) {
       if (auto sframe = inst->vars()->typedValueForKey<lev2::standardcompositorframe_ptr_t>("sframe")) {
         sframe.value()->attachDrawQueueContext(_dbufctxSIM);
       }
-
-      lev2::GfxEnv::onLocksDone([=]() {
-        _renderThreadSMInst->changeState(ren_sim_state);
-      });
-
-      SystemLut render_systems;
-      _systems.atomicOp([&](const SystemLut& syslut) { render_systems = syslut; });
-
-      for (auto sys : render_systems) {
-        sys.second->_onGpuInit(this, _currentdrwev->_target);
-      }
-      for (auto sys : render_systems) {
-        sys.second->_onGpuLink(this, _currentdrwev->_target);
-      }
-
-      auto LOCKS2 = lev2::GfxEnv::dumpLocks();
-
-      _needsGpuInit    = false;
-      _waitingForRLock = true;
-
-      lev2::GfxEnv::releaseLock(l);
+      _renderThreadSMInst->changeState(ren_sim_state);
     }
   };
   //////////////////
@@ -377,6 +398,7 @@ void Simulation::SetSimulationMode(ESimulationMode emode) {
     case ESimulationMode::TERMINATED:
       _updateThreadSMInst->changeState(_updateTerminatedSimState);
       _renderThreadSMInst->changeState(_renderTerminatedSimState);
+      _gpuUpdateSMInst->changeState(_gpuTerminatedState);
       break;
     ///////////////////////////////////////
     case ESimulationMode::NONE:

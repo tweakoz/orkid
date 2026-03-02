@@ -121,8 +121,11 @@ struct Controller {
 	void renderWithStandardCompositorFrame(lev2::standardcompositorframe_ptr_t sframe);
 	void installRenderCallbackOnEzApp(lev2::orkezapp_ptr_t ezapp);
 	void installUpdateCallbackOnEzApp(lev2::orkezapp_ptr_t ezapp);
+	void installGpuUpdateCallbackOnEzApp(lev2::orkezapp_ptr_t ezapp);
 	void uninstallRenderCallbackOnEzApp(lev2::orkezapp_ptr_t ezapp);
 	void uninstallUpdateCallbackOnEzApp(lev2::orkezapp_ptr_t ezapp);
+	void uninstallGpuUpdateCallbackOnEzApp(lev2::orkezapp_ptr_t ezapp);
+	void gpuUpdate(lev2::Context* ctx);
 
 	scenedata_constptr_t scenedata() const { return _scenedata; }
 	///////////////////////////////////////////////////////////////////////////////

@@ -37,7 +37,6 @@ struct DMVRIMPL {
   ///////////////////////////////////////
   void gpuInit(lev2::Context* context) {
     if (_doinit) {
-      context->debugPushGroup("DMVRIMPL::gpuInit");
       int width  = orkidvr::device()->_width * 2 * (_vrnode->supersample() + 1);
       int height = orkidvr::device()->_height * (_vrnode->supersample() + 1);
 
@@ -57,8 +56,6 @@ struct DMVRIMPL {
       dsbufL->_debugName         = "MsaaDownsampleBufferL";
       auto dsbufR                = _ssaadownsamplebufferR->createRenderTarget(_vrnode->_format);
       dsbufR->_debugName         = "MsaaDownsampleBufferR";
-
-      context->debugPopGroup();
 
       _doinit = false;
     }

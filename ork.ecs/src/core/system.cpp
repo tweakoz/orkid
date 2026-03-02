@@ -8,6 +8,7 @@
 #include <ork/pch.h>
 
 #include <ork/ecs/system.h>
+#include <ork/ecs/datatable.h>
 
 #include <ork/kernel/orklut.hpp>
 #include <ork/reflect/properties/DirectTypedMap.hpp>
@@ -99,6 +100,8 @@ void System::_onGpuLink(Simulation* psi, lev2::Context* ctx) {
 
 void System::_onGpuExit(Simulation* psi, lev2::Context* ctx) {
 }
+void System::_onGpuUpdate(Simulation* psi, lev2::Context* ctx) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -164,6 +167,22 @@ void System::_onRenderWithStandardCompositorFrame(Simulation* psi, lev2::standar
 ///////////////////////////////////////////////////////////////////////////////
 
 void System::_onNotify(token_t evID, evdata_t data) {
+  switch (evID.hashed()) {
+    case SetProperty._hashed: {
+      const auto& table = *data.getShared<DataTable>();
+      for (auto& kvp : table._items) {
+        _onPropertyChanged(kvp._key._encoded.get<CrcString>(), kvp._val._encoded);
+      }
+      break;
+    }
+    default:
+      break;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void System::_onPropertyChanged(token_t name, evdata_t value) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
