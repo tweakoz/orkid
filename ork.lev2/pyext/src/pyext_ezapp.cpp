@@ -468,7 +468,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   = py::cast<py::function>(appinstance.attr("onGpuUpdate"));
               rval->_vars->makeValueForKey<py::function>("gpuupdatefn") = gpuupdatefn;
               rval->onGpuUpdate([=](Context* ctx) { //
-                OrkProfilerSampleScope(CHANNEL_MAIN, "py:GpuUpdate");
+                OrkProfilerSampleScope(CHANNEL_MAIN, "py:onGpuUpdate");
                 ctx->makeCurrentContext();
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars->typedValueForKey<py::function>("gpuupdatefn");
@@ -492,7 +492,6 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   = py::cast<py::function>(appinstance.attr("onGpuPreFrame"));
               rval->_vars->makeValueForKey<py::function>("gpupreframefn") = gpupreframefn;
               rval->onGpuPreFrame([=](Context* ctx) { //
-                OrkProfilerSampleScope(CHANNEL_MAIN, "py:GpuPreFrame");
                 ctx->makeCurrentContext();
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars->typedValueForKey<py::function>("gpupreframefn");
@@ -516,7 +515,6 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   = py::cast<py::function>(appinstance.attr("onGpuPostFrame"));
               rval->_vars->makeValueForKey<py::function>("gpupostframefn") = gpupostframefn;
               rval->onGpuPostFrame([=](Context* ctx) { //
-                OrkProfilerSampleScope(CHANNEL_MAIN, "py:GpuPostFrame");
                 ctx->makeCurrentContext();
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars->typedValueForKey<py::function>("gpupostframefn");
@@ -541,7 +539,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               rval->_vars->makeValueForKey<py::function>("drawfn") = drawfn;
               rval->_userSpecifiedOnDraw = true;
               rval->onDraw([=](ui::drawevent_constptr_t drwev) { //
-                OrkProfilerSampleScope(CHANNEL_MAIN, "py:Draw");
+                OrkProfilerSampleScope(CHANNEL_MAIN, "py:onDraw");
                 ork::opq::mainSerialQueue()->Process();
                 py::gil_scoped_acquire acquire;
                 auto pyfn       = rval->_vars->typedValueForKey<py::function>("drawfn");
@@ -612,6 +610,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   = py::cast<py::function>(appinstance.attr("onUpdate"));
               rval->_vars->makeValueForKey<py::function>("updatefn") = updfn;
               rval->onUpdate([=](ui::updatedata_ptr_t updata) { //
+                OrkProfilerSampleScope(CHANNEL_UPDATE, "py:onUpdate");
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars->typedValueForKey<py::function>("updatefn");
                 try {
@@ -638,7 +637,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   = py::cast<py::function>(appinstance.attr("onUiEvent"));
               rval->_vars->makeValueForKey<py::function>("uievfn") = uievfn;
               rval->onUiEvent([=](ui::event_constptr_t ev) -> ui::HandlerResult { //
-                OrkProfilerSampleScope(CHANNEL_MAIN, "py:UiEvent");
+                OrkProfilerSampleScope(CHANNEL_MAIN, "py:onUiEvent");
                 EASY_BLOCK("pyezapp::evh1", profiler::colors::Red);
                 py::gil_scoped_acquire acquire;
                 EASY_END_BLOCK;
