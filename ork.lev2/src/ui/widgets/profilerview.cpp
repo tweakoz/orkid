@@ -20,25 +20,31 @@ using vtxbuf_t = lev2::DynamicVertexBuffer<vtx_t>;
 
 // Header bar layout — computed from widget width so draw and hit-test agree
 struct HdrLayout {
-  static constexpr int BTN_W = 48, BTN_H = 18, BTN_Y = 4;
-  static constexpr int SMP_BTN_W = 24; // width of [-] and [+]
+  static constexpr int BTN_W      = 48, BTN_H = 18, BTN_Y = 4;
+  static constexpr int SMP_BTN_W  = 24;  // width of [-] and [+]
+  static constexpr int SMP_NUM_W  = 36;  // allocated width for count text area
+  static constexpr int SMP_NUM_GAP = 4;  // gap each side between buttons and count text
 
   int btn_x;        // play/pause button
   int rec_x;        // "Record:" label
   int smp_label_x;  // "Samples:" label
   int smp_minus_x;  // [-] button
-  int smp_num_x;    // sample count text
   int smp_plus_x;   // [+] button
 
   explicit HdrLayout(int widget_w) {
-    btn_x      = (widget_w - BTN_W) / 2;
-    rec_x      = btn_x - 80;          // "Record: " ~9 chars × ~8px + gap
+    btn_x       = (widget_w - BTN_W) / 2;
+    rec_x       = btn_x - 60;              // "Record:" (7 chars × ~8px) + 4px gap
     smp_label_x = btn_x + BTN_W + 10;
-    smp_minus_x = smp_label_x + 80;   // "Samples: " ~9 chars × ~8px + gap
-    smp_num_x   = smp_minus_x + SMP_BTN_W + 4;
-    smp_plus_x  = smp_num_x  + 36 + 4; // room for "1024"
+    smp_minus_x = smp_label_x + 68;       // "Samples:" (8 chars × ~8px) + 4px gap
+    smp_plus_x  = smp_minus_x + SMP_BTN_W + SMP_NUM_GAP + SMP_NUM_W + SMP_NUM_GAP;
   }
 
+  // x position to draw count text centered between [-] and [+]
+  int centeredNumX(int char_count) const {
+    static constexpr int CHAR_W = 8;
+    int mid = (smp_minus_x + SMP_BTN_W + smp_plus_x) / 2;
+    return mid - (char_count * CHAR_W) / 2;
+  }
 };
 ///////////////////////////////////////////////////////////////////////////////
 ProfilerView::ProfilerView()
@@ -558,10 +564,11 @@ void ProfilerView::DoDraw(drawevent_constptr_t drwev) {
     HdrLayout lo(width());
     int smp = int(Profiler::maxSamples());
     tgt->RefModColor() = fvec3(0.7f, 0.7f, 0.7f);
+    auto smp_str = FormatString("%d", smp);
     lev2::FontMan::beginTextBlock(tgt, 64);
-    lev2::FontMan::DrawText(tgt, lo.rec_x,       HdrLayout::BTN_Y + 2, "Record:");
-    lev2::FontMan::DrawText(tgt, lo.smp_label_x, HdrLayout::BTN_Y + 2, "Samples:");
-    lev2::FontMan::DrawText(tgt, lo.smp_num_x,   HdrLayout::BTN_Y + 2, FormatString("%d", smp).c_str());
+    lev2::FontMan::DrawText(tgt, lo.rec_x,                          HdrLayout::BTN_Y + 2, "Record:");
+    lev2::FontMan::DrawText(tgt, lo.smp_label_x,                    HdrLayout::BTN_Y + 2, "Samples:");
+    lev2::FontMan::DrawText(tgt, lo.centeredNumX(smp_str.length()), HdrLayout::BTN_Y + 2, smp_str.c_str());
     lev2::FontMan::endTextBlock(tgt);
   }
 

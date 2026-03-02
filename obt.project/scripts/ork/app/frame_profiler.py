@@ -11,9 +11,8 @@
 FrameProfilerComponent - Real-time frame timing overlay
 
 An ApplicationComponent that creates a ProfilerView overlay covering most
-of the primary window, showing line plots of frame timing metrics sourced
-directly from the C++ ork::ProfilerChannel data on the rendering Context.
-Toggle visibility with ~ key.
+of the primary window, showing scrolling line plots of frame timing metrics.
+Toggle visibility with ~ key. Pause/resume with spacebar.
 
 Usage:
     from ork.app.frame_profiler import FrameProfilerComponent
@@ -32,10 +31,18 @@ from ork.app.application import ApplicationComponent
 
 class FrameProfilerComponent(ApplicationComponent):
 
-  def __init__(self, gpu_filter=None):
+  DEFAULT_CHANNELS = [
+    "render_context",
+    "gpu",
+    "ez_app_main_thread",
+    "ez_app_update_thread",
+  ]
+
+  def __init__(self, gpu_filter=None, channels=None, **kwargs):
     super().__init__()
     self.graphview = None
     self._gpu_filter = gpu_filter
+    self._channels = channels if channels is not None else self.DEFAULT_CHANNELS
 
   ##############################################
 
@@ -49,12 +56,10 @@ class FrameProfilerComponent(ApplicationComponent):
         fill=True
       )
       self.graphview = graphview_item.widget
-      self.graphview.addChannel("render_context")
-      self.graphview.addChannel("gpu")
-      self.graphview.addChannel("ez_app_main_thread")
-      self.graphview.addChannel("ez_app_update_thread")
       lg_group.overlay_widget = self.overlay_group
 
+    for ch in self._channels:
+      self.graphview.addChannel(ch)
     self.graphview.clear_color = vec4(0, 0, 0, 0.8)
 
   ##############################################
