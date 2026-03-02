@@ -1234,17 +1234,17 @@ int OrkEzApp::mainThreadLoop() {
 
         // Process synth main thread tasks (sequencer, HUD events, etc.)
         if (_synth) {
-          OrkProfilerSampleBegin(CHANNEL_MAIN, "ez:audio_synth");
+          OrkProfilerSampleScope(CHANNEL_MAIN, "ez:audio_synth");
           _synth->mainThreadHandler();
         }
 
         {
-          OrkProfilerSampleBegin(CHANNEL_MAIN, "ez:run_loop");
+          OrkProfilerSampleScope(CHANNEL_MAIN, "ez:run_loop");
           ctx->_runloopIter(true);
         }
 
         {
-          OrkProfilerSampleBegin(CHANNEL_MAIN, "ez:secondary_windows");
+          OrkProfilerSampleScope(CHANNEL_MAIN, "ez:secondary_windows");
           // Render secondary windows
           _renderSecondaryWindows();
           _cleanupClosedSecondaryWindows();
@@ -1287,17 +1287,17 @@ int OrkEzApp::mainThreadLoop() {
         while (_lockstep_frame_requests.load()) {
           // Process synth main thread tasks (sequencer, HUD events, etc.)
           if (_synth) {
-            OrkProfilerSampleBegin(CHANNEL_MAIN, "ez:audio_synth");
+            OrkProfilerSampleScope(CHANNEL_MAIN, "ez:audio_synth");
             _synth->mainThreadHandler();
           }
 
           {
-            OrkProfilerSampleBegin(CHANNEL_MAIN, "ez:run_loop");
+            OrkProfilerSampleScope(CHANNEL_MAIN, "ez:run_loop");
             ctx->_runloopIter(false);
           }
 
           {
-            OrkProfilerSampleBegin(CHANNEL_MAIN, "ez::secondary_windows");
+            OrkProfilerSampleScope(CHANNEL_MAIN, "ez::secondary_windows");
             // Render secondary windows
             _renderSecondaryWindows();
             _cleanupClosedSecondaryWindows();
