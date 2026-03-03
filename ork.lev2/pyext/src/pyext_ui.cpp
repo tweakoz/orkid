@@ -744,6 +744,28 @@ void pyinit_ui(py::module& module_lev2) {
       py::arg("channel_name"),
       py::arg("series_name"));
   /////////////////////////////////////////////////////////////////////////////////
+  uimodule.def(
+      "profiler_sample_begin",
+      [](const std::string& channel_name, const std::string& series_name) {
+        auto* ss = Profiler::acquireSeries<SampleProfilerSeries>(
+            channel_name.c_str(), CrcString(channel_name.c_str()).hashed(),
+            series_name.c_str(), CrcString(series_name.c_str()).hashed());
+        ss->sampleBegin();
+      },
+      py::arg("channel_name"),
+      py::arg("series_name"));
+  /////////////////////////////////////////////////////////////////////////////////
+  uimodule.def(
+      "profiler_sample_end",
+      [](const std::string& channel_name, const std::string& series_name) {
+        auto* ss = Profiler::acquireSeries<SampleProfilerSeries>(
+            channel_name.c_str(), CrcString(channel_name.c_str()).hashed(),
+            series_name.c_str(), CrcString(series_name.c_str()).hashed());
+        ss->sampleEnd();
+      },
+      py::arg("channel_name"),
+      py::arg("series_name"));
+  /////////////////////////////////////////////////////////////////////////////////
   auto sgviewport_type = //
       py::class_<ui::SceneGraphViewport, ui::Viewport, uisgviewport_ptr_t>(uimodule, "SceneGraphViewport")
           .def_static(

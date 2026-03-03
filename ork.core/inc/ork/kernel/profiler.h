@@ -320,6 +320,8 @@ struct Profiler {
 
   // Methods to retrieve channels dynamically with std::string for manual customizaiton.
   // Always prefer using the OrkProfiler macros to string on string literals and crc consteval
+  // Python bindings utilize these methods for samples/events from python. For light profiling that is Okay right now.
+  // If we are to start collecting hundrends of samples from python we'd want to create a hot path for that.
   template <typename T>
   static T* acquireChannel(const std::string& name) {
     return acquireChannel<T>(name.c_str(), CrcString(name.c_str()).hashed());
