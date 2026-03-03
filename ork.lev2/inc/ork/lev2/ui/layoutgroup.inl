@@ -352,6 +352,9 @@ struct LayoutGroup : public Group {
   widget_ptr_t _overlay_widget = nullptr;  // Overlay widget (e.g., LoggerGroup)
   bool _overlay_enabled = false;           // Whether overlay is currently visible
 
+  widget_ptr_t _profiler_overlay_widget = nullptr;  // Profiler overlay (toggled with Shift+`)
+  bool _profiler_overlay_enabled = false;
+
 private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;
   void _doOnResized() override;

@@ -257,6 +257,9 @@ void LayoutGroup::DoLayout() {
   if (_overlay_widget) {
     _positionOverlay();
   }
+  if (_profiler_overlay_widget) {
+    _profiler_overlay_widget->SetRect(_geometry._x, _geometry._y, _geometry._w, _geometry._h);
+  }
   //
 }
 //////////////////////////////////////
@@ -306,6 +309,13 @@ void LayoutGroup::DoDraw(drawevent_constptr_t drwev) {
   }
   if (_overlay_widget && _overlay_enabled) {
     _overlay_widget->draw(drwev);
+  }
+
+  if (_profiler_overlay_widget) {
+    _profiler_overlay_widget->_enable = _profiler_overlay_enabled;
+  }
+  if (_profiler_overlay_widget && _profiler_overlay_enabled) {
+    _profiler_overlay_widget->draw(drwev);
   }
 
   // Draw highlighted guide if one is under the mouse
@@ -955,12 +965,30 @@ Widget* LayoutGroup::doRouteUiEvent(event_constptr_t ev) {
   ///////////////////////////
   if (ev->_eventcode == ui::EventCode::KEY_DOWN) {
     if (ev->miKeyCode == '~' || ev->miKeyCode == '`') {
-      if (_overlay_widget) {
-        _overlay_enabled = !_overlay_enabled;
-        SetDirty();
-        //printf("KC\n");
-        return this;  // Consume event
+      if (ev->mbSHIFT) {
+        if (_profiler_overlay_widget) {
+          _profiler_overlay_enabled = !_profiler_overlay_enabled;
+          SetDirty();
+          return this;
+        }
+      } else {
+        if (_overlay_widget) {
+          _overlay_enabled = !_overlay_enabled;
+          SetDirty();
+          return this;  // Consume event
+        }
       }
+    }
+  }
+
+  ///////////////////////////
+  // If profiler overlay is enabled, route events to it first
+  ///////////////////////////
+  if (_profiler_overlay_widget && _profiler_overlay_enabled) {
+    auto result = _profiler_overlay_widget->routeUiEvent(ev);
+    if (result) {
+      _guide_highlite = nullptr;
+      return result;
     }
   }
 

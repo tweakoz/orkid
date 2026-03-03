@@ -56,7 +56,7 @@ class FrameProfilerComponent(ApplicationComponent):
         fill=True
       )
       self.graphview = graphview_item.widget
-      lg_group.overlay_widget = self.overlay_group
+      lg_group.profiler_overlay_widget = self.overlay_group
 
     for ch in self._channels:
       self.graphview.addChannel(ch)
