@@ -1922,7 +1922,8 @@ double VkProfilerChannel::_sampleTime(int begin_index, int end_index) {
 }
 
 void VkProfilerChannel::frameBegin(BeginParams params) {
-  if (!Profiler::enabled()) return;
+  _recording = Profiler::enabled();
+  if (!_recording) return;
 
   // printf("VkProfilerChannel beginProfilerFrame\n");
   if (_device == VK_NULL_HANDLE) {
@@ -1943,7 +1944,7 @@ void VkProfilerChannel::frameBegin(BeginParams params) {
 }
 
 void VkProfilerChannel::frameEnd() {
-  if (!Profiler::enabled()) return;
+  if (!_recording) return;
 
   // printf("VkProfilerChannel endProfilerFrame\n");
   OrkAssertI(_cmdbuf != VK_NULL_HANDLE, "VulkanProfilerChannel beginFrame not called!");
@@ -1973,7 +1974,7 @@ void VkProfilerChannel::frameEnd() {
 }
 
 void VkProfilerChannel::sampleBegin(SampleProfilerSeries* s) {
-  if (!Profiler::enabled()) return;
+  if (!_recording) return;
 
   // printf("VkProfilerChannel beginSample %s\n", s->_name.strval());
   OrkAssertI(_cmdbuf != VK_NULL_HANDLE, "VulkanProfilerChannel beginFrame not called!");
@@ -1998,7 +1999,7 @@ void VkProfilerChannel::sampleBegin(SampleProfilerSeries* s) {
 }
 
 void VkProfilerChannel::sampleEnd(SampleProfilerSeries* s) {
-  if (!Profiler::enabled()) return;
+  if (!_recording) return;
 
   // printf("VkProfilerChannel endSample %s\n", s->_name.strval());
   OrkAssertI(_cmdbuf != VK_NULL_HANDLE, "VulkanProfilerChannel beginFrame not called!");

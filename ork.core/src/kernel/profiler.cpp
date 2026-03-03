@@ -75,19 +75,20 @@ void ProfilerChannel::frameEnd() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void CpuProfilerChannel::frameBegin() {
-	if (!Profiler::enabled()) return;
+	_recording = Profiler::enabled();
+	if (!_recording) return;
 	_begin_time = _timer.get_sync_time();
 }
 
 void CpuProfilerChannel::frameEnd() {
-	if (!Profiler::enabled()) return;
+	if (!_recording) return;
 	double frame_time = _timer.get_sync_time() - _begin_time;
 	_frame_time.store(frame_time);
-  	ProfilerChannel::frameEnd(); 
+  	ProfilerChannel::frameEnd();
 }
 
 void CpuProfilerChannel::sampleBegin(SampleProfilerSeries* s) {
-	if (!Profiler::enabled()) return;
+	if (!_recording) return;
 
 	// printf("CpuProfilerChannel beginSample %s\n", s->_name.strval());
 	OrkAssertI(s->_call_level == -1, "CpuProfilerSeries did not call endSample!");
@@ -105,8 +106,9 @@ void CpuProfilerChannel::sampleBegin(SampleProfilerSeries* s) {
 	_span_stack.push({.series = s, .start_total_time = now, .start_isolated_time = now});
 }
 
+
 void CpuProfilerChannel::sampleEnd(SampleProfilerSeries* s) {
-	if (!Profiler::enabled()) return;
+	if (!_recording) return;
 
 	// printf("CpuProfilerChannel endSample %s\n", s->_name.strval());
 	double now = _timer.get_sync_time();

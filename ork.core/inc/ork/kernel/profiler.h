@@ -254,8 +254,10 @@ struct ProfilerChannel {
   double _begin_time{};
   std::atomic<double> _frame_time{};
 
+  bool _recording = true;
+
   ProfilerChannel(std::string&& name) : _name(name) {}
-  
+
   // prepare frame
   virtual void frameBegin() = 0;
   virtual void frameEnd()   = 0;
@@ -314,7 +316,7 @@ struct Profiler {
   static inline std::atomic<bool> _enabled     = true;
   static inline std::atomic<u16>  _max_samples = 256;
 
-  static void enabled(bool state) { return _enabled.store(state); }
+  static void enabled(bool state) { _enabled.store(state); }
   static bool enabled() { return _enabled.load(); }
 
   static void maxSamples(u16 value) { return _max_samples.store(value); }
