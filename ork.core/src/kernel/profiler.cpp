@@ -5,12 +5,21 @@ namespace ork {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ProfilerSeries::addSample(Sample sample) {
+void SampleProfilerSeries::addSample() {
+	OrkAssertI(_call_level == -1, "ProfilerSeries did not call endSample!");
+
+	Sample sample = {_total_time, _isolated_time, _call_count, _max_call_level};
 	if (!_sample_buffer->push(sample))
 		_overflow = true;
+
+	_total_time     = 0;
+	_isolated_time  = 0;
+	_call_count     = 0;
+	_call_level     = -1;
+	_max_call_level = -1;
 }
 
-bool ProfilerSeries::flushBuffer() {
+bool SampleProfilerSeries::flushBuffer() {
 	bool success = _sample_buffer->drain(_samples);
 	u16 max_samples = Profiler::maxSamples();
 	while (_samples.size() > max_samples)
@@ -18,10 +27,24 @@ bool ProfilerSeries::flushBuffer() {
 	return success;
 }
 
-void ProfilerSeries::sampleBegin() { _parent->sampleBegin(this); }
-void ProfilerSeries::sampleEnd()   { _parent->sampleEnd(this); }
-ProfilerScope ProfilerSeries::sampleScope() { return _parent->sampleScope(this); }
+void SampleProfilerSeries::sampleBegin() { _parent->sampleBegin(this); }
+void SampleProfilerSeries::sampleEnd()   { _parent->sampleEnd(this); }
+ProfilerScope SampleProfilerSeries::sampleScope() { return _parent->sampleScope(this); }
 
+///////////////////////////////////////////////////////////////////////////////
+
+void EventProfilerSeries::addEvent() {
+	if (!_event_buffer->push({_parent->_current_tick}))
+		_overflow = true;
+}
+
+bool EventProfilerSeries::flushBuffer() {
+	bool success = _event_buffer->drain(_events);
+	u16 max_samples = Profiler::maxSamples();
+	while (_events.size() > max_samples)
+		_events.pop_front();
+	return success;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -32,22 +55,19 @@ void ProfilerChannel::frameBegin() {
 void ProfilerChannel::frameEnd() {
 	OrkAssertI(_current_level == 0, "ProfilerChannel did not call endSample for every sample! Or no samples recorded!");
 
-	// We add a sample for all of them even if they didn't accumulate a sample so that the sampel vectors lineup.
+	// We add a sample for all of them even if they didn't accumulate a sample so that the sample vectors lineup.
 	// Some samples may have 0 total_accum_time and call_level -1!
-    for (auto s : _series_iter) {
-		OrkAssertI(s->_call_level == -1, "ProfilerSeries did not call endSample!");
-		s->addSample({_current_tick, s->_total_time, s->_isolated_time, s->_call_count, s->_max_call_level});
-		s->_total_time     = 0;
-		s->_isolated_time  = 0;
-		s->_call_count     = 0;
-		s->_call_level     = -1;
+    for (auto series : _series_iter) {
+		if (series->_style != ProfilerSeries::Style::Sample) continue;
+		SampleProfilerSeries* s = static_cast<SampleProfilerSeries*>(series);
+		s->addSample();
 	}
 
 	_current_level = 0;
 	_current_tick++;
 }
 
-[[nodiscard]] ProfilerScope ProfilerChannel::sampleScope(ProfilerSeries* series) {
+[[nodiscard]] ProfilerScope ProfilerChannel::sampleScope(SampleProfilerSeries* series) {
 	sampleBegin(series);
 	return ProfilerScope(this, series);
 }
@@ -66,13 +86,12 @@ void CpuProfilerChannel::frameEnd() {
   	ProfilerChannel::frameEnd(); 
 }
 
-void CpuProfilerChannel::sampleBegin(ProfilerSeries* s) {
+void CpuProfilerChannel::sampleBegin(SampleProfilerSeries* s) {
 	if (!Profiler::enabled()) return;
 
 	// printf("CpuProfilerChannel beginSample %s\n", s->_name.strval());
+	OrkAssertI(s->_call_level == -1, "CpuProfilerSeries did not call endSample!");
 	double now = _timer.get_sync_time();
-
-	OrkAssertI(s->_call_level == -1, "VkProfilerSeries did not call endSample!");
 
 	// pause parent by accumulating its time so far
     if (!_span_stack.empty()) {
@@ -86,13 +105,12 @@ void CpuProfilerChannel::sampleBegin(ProfilerSeries* s) {
 	_span_stack.push({.series = s, .start_total_time = now, .start_isolated_time = now});
 }
 
-void CpuProfilerChannel::sampleEnd(ProfilerSeries* s) {
+void CpuProfilerChannel::sampleEnd(SampleProfilerSeries* s) {
 	if (!Profiler::enabled()) return;
 
 	// printf("CpuProfilerChannel endSample %s\n", s->_name.strval());
 	double now = _timer.get_sync_time();
-
-	OrkAssertI(s->_call_level != -1, "ProfilerSeries did not call beginSample!");
+	OrkAssertI(s->_call_level != -1, "CpuProfilerSeries did not call beginSample!");
 
 	while (!_span_stack.empty()) {
 		auto& top = _span_stack.top();

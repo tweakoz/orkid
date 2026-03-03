@@ -522,7 +522,7 @@ struct VkProfilerChannel final : ProfilerChannel {
   VkQueryPool     _query_pool = VK_NULL_HANDLE;
 
   struct VkTimespan {
-    ProfilerSeries* series = nullptr;
+    SampleProfilerSeries* series = nullptr;
     int begin_total_query = -1;
     int begin_query = -1;
     int end_query   = -1;
@@ -548,8 +548,8 @@ struct VkProfilerChannel final : ProfilerChannel {
   void frameBegin(BeginParams params);
   void frameEnd() override;
 
-  void sampleBegin(ProfilerSeries* series) override;
-  void sampleEnd(ProfilerSeries* series) override;
+  void sampleBegin(SampleProfilerSeries* series) override;
+  void sampleEnd(SampleProfilerSeries* series) override;
 
   double _sampleTime(int begin_index, int end_index);
 };

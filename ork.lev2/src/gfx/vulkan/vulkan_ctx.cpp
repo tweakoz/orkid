@@ -1972,7 +1972,7 @@ void VkProfilerChannel::frameEnd() {
   ProfilerChannel::frameEnd(); 
 }
 
-void VkProfilerChannel::sampleBegin(ProfilerSeries* s) {
+void VkProfilerChannel::sampleBegin(SampleProfilerSeries* s) {
   if (!Profiler::enabled()) return;
 
   // printf("VkProfilerChannel beginSample %s\n", s->_name.strval());
@@ -1997,7 +1997,7 @@ void VkProfilerChannel::sampleBegin(ProfilerSeries* s) {
   _vk_span_stack.push({ .series = s, .begin_total_query = current_query_index, .begin_query = current_query_index, .end_query = -1 });
 }
 
-void VkProfilerChannel::sampleEnd(ProfilerSeries* s) {
+void VkProfilerChannel::sampleEnd(SampleProfilerSeries* s) {
   if (!Profiler::enabled()) return;
 
   // printf("VkProfilerChannel endSample %s\n", s->_name.strval());

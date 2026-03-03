@@ -78,10 +78,27 @@
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
+// Common channel names.
 #define CHANNEL_MAIN   "MainThread"
 #define CHANNEL_UPDATE "UpdateThread"
 #define CHANNEL_AUDIO  "AudioThread"
 #define CHANNEL_GPU    "GPU"
+
+// Initial frame begin defines what type the channel is and lazy allocates on first call. Additional optional parameters can be passed in.
+#define OrkProfilerFrameBegin(_channel_name, _type, _params) _OrkStaticAcquireChannel(_channel_name, _type, UNIQUE(_series), frameBegin, _params)
+#define OrkProfilerFrameEnd(_channel_name)                   _OrkStaticGetChannel(_channel_name, UNIQUE(_series), frameEnd)
+
+// Every begin must be paired with an end.
+#define OrkProfilerSampleBegin(_channel_name, _series_name)  _OrkStaticSeries(_channel_name, _series_name, SampleProfilerSeries, UNIQUE(_series), sampleBegin)
+#define OrkProfilerSampleEnd(_channel_name, _series_name)    _OrkStaticSeries(_channel_name, _series_name, SampleProfilerSeries, UNIQUE(_series), sampleEnd)
+
+// Scope will automatically call end sample when going out of scope.
+#define OrkProfilerSampleScope(_channel_name, _series_name)  _OrkStaticScope(_channel_name,  _series_name,  UNIQUE(_series))
+
+// Events are single occurances that are draw as vertical markers rather than a continuous graph.
+#define OrkProfilerEvent(_channel_name, _series_name)  _OrkStaticSeries(_channel_name,  _series_name, EventProfilerSeries, UNIQUE(_series), addEvent)
+
+///////////////////////////////////////////////////////////////////////////////
 
 #define _CONCAT(a, b) a##b
 #define CONCAT(a, b) _CONCAT(a, b)
@@ -99,22 +116,15 @@ namespace ork {
     if (_var == nullptr) [[unlikely]] _var = Profiler::getChannel(_channel_name, CRCU(_channel_name)); \
     _var->_call()
 
-#define _OrkStaticSeries(_channel_name, _series_name, _var, _call) \
-    static ProfilerSeries* _var = nullptr; \
-    if (_var == nullptr) [[unlikely]] _var = Profiler::acquireSeries(_channel_name, CRCU(_channel_name), _series_name, CRCU(_series_name)); \
+#define _OrkStaticSeries(_channel_name, _series_name, _type, _var, _call) \
+    static _type* _var = nullptr; \
+    if (_var == nullptr) [[unlikely]] _var = Profiler::acquireSeries<_type>(_channel_name, CRCU(_channel_name), _series_name, CRCU(_series_name)); \
     _var->_call()
 
 #define _OrkStaticScope(_channel_name, _series_name, _var) \
-    static ProfilerSeries* _var = nullptr; \
-    if (_var == nullptr) [[unlikely]] _var = Profiler::acquireSeries(_channel_name, CRCU(_channel_name), _series_name, CRCU(_series_name)); \
+    static SampleProfilerSeries* _var = nullptr; \
+    if (_var == nullptr) [[unlikely]] _var = Profiler::acquireSeries<SampleProfilerSeries>(_channel_name, CRCU(_channel_name), _series_name, CRCU(_series_name)); \
     auto CONCAT(_var, scope) = _var->sampleScope()
-
-// Initial frame begin defines what type the channel is and lazy allocates on first call. Additional optional parameters can be passed in.
-#define OrkProfilerFrameBegin(_channel_name, _type, _params) _OrkStaticAcquireChannel(_channel_name, _type, UNIQUE(_series), frameBegin, _params)
-#define OrkProfilerFrameEnd(_channel_name)                   _OrkStaticGetChannel(_channel_name,            UNIQUE(_series), frameEnd)
-#define OrkProfilerSampleBegin(_channel_name, _series_name)  _OrkStaticSeries(_channel_name, _series_name,  UNIQUE(_series), sampleBegin)
-#define OrkProfilerSampleEnd(_channel_name, _series_name)    _OrkStaticSeries(_channel_name, _series_name,  UNIQUE(_series), sampleEnd)
-#define OrkProfilerSampleScope(_channel_name, _series_name)  _OrkStaticScope(_channel_name,  _series_name,  UNIQUE(_series))
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -159,8 +169,26 @@ struct ProfilerSeries {
   std::string _name;
   ProfilerChannel* _parent;
 
+  enum class Style {
+    Unknown,
+    Sample,
+    Event,
+  };
+  Style _style;
+
+  bool _overflow = false;
+
+  ProfilerSeries(std::string name, ProfilerChannel* parent, Style style) : _name(name), _parent(parent), _style(style) {}
+
+  // Returns false if there was an overflow in the sample_buffer due to flush not being called frequently enough.
+  virtual bool flushBuffer() = 0;
+};
+
+using profiler_series_ptr_t = std::shared_ptr<ProfilerSeries>;
+
+struct SampleProfilerSeries : ProfilerSeries {
+
   struct Sample {
-    u64    tick;
     double total_time;
     double isolated_time;
     int    count;
@@ -182,21 +210,32 @@ struct ProfilerSeries {
   int    _max_call_level = -1;
   int    _call_level     = -1;
   bool   _sampling       = false;
-  bool   _overflow       = false;
 
-  ProfilerSeries(std::string name, ProfilerChannel* parent) : _name(name), _parent(parent) {}
+  SampleProfilerSeries(std::string name, ProfilerChannel* parent) : ProfilerSeries(name, parent, Style::Sample) {}
 
-  void addSample(Sample sample);
+  void addSample();
+  bool flushBuffer() override; 
 
-  // Returns false if there was an overflow in the sample_buffer due to flush not being called frequently enough.
-  bool flushBuffer(); 
-
+  // Convienence methods to be able to sample directly from the series rather than the channel.
   void sampleBegin();
   void sampleEnd();
   ProfilerScope sampleScope();
 };
 
-using profiler_series_ptr_t = std::shared_ptr<ProfilerSeries>;
+struct EventProfilerSeries : ProfilerSeries {
+
+  struct Event {
+    u64  tick;
+  };
+
+  std::deque<Event> _events{};
+  std::unique_ptr<SPSCQueue<Event, 1024>> _event_buffer = std::make_unique<SPSCQueue<Event, 1024>>();
+
+  EventProfilerSeries(std::string name, ProfilerChannel* parent) : ProfilerSeries(name, parent, Style::Event) {}
+
+  void addEvent();
+  bool flushBuffer() override; 
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -221,28 +260,22 @@ struct ProfilerChannel {
   virtual void frameBegin() = 0;
   virtual void frameEnd()   = 0;
 
-  virtual void sampleBegin(ProfilerSeries* series) = 0;
-  virtual void sampleEnd(ProfilerSeries* series)   = 0;
-  void sampleBegin(profiler_series_ptr_t s) { sampleBegin(s.get()); }
-  void sampleEnd(profiler_series_ptr_t s)   { sampleEnd(s.get()); }
-
-  ProfilerScope sampleScope(ProfilerSeries* series);
-  ProfilerScope sampleScope(profiler_series_ptr_t s); // defined after ProfilerScope
+  virtual void sampleBegin(SampleProfilerSeries* series) = 0;
+  virtual void sampleEnd(SampleProfilerSeries* series)   = 0;
+  ProfilerScope sampleScope(SampleProfilerSeries* series);
 };
 
 using profiler_channel_ptr_t = std::shared_ptr<ProfilerChannel>;
 
 struct ProfilerScope {
-  ProfilerScope(ProfilerChannel* channel, ProfilerSeries* series) : _channel(channel), _series(series) {}
+  ProfilerScope(ProfilerChannel* channel, SampleProfilerSeries* series) : _channel(channel), _series(series) {}
   ~ProfilerScope() {
     if (!_series->_sampling) return;
     _channel->sampleEnd(_series);
   }
   ProfilerChannel* _channel;
-  ProfilerSeries*  _series;
+  SampleProfilerSeries*  _series;
 };
-
-inline ProfilerScope ProfilerChannel::sampleScope(profiler_series_ptr_t s) { return sampleScope(s.get()); }
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -250,7 +283,7 @@ struct CpuProfilerChannel final : ProfilerChannel {
   Timer _timer{}; // TODO change to __rdtsc ?
 
   struct Timespan {
-    ProfilerSeries* series;
+    SampleProfilerSeries* series;
     double start_total_time;
     double start_isolated_time;
   };
@@ -269,8 +302,8 @@ struct CpuProfilerChannel final : ProfilerChannel {
     frameBegin();
   }
 
-  void sampleBegin(ProfilerSeries* series) override;
-  void sampleEnd(ProfilerSeries* series) override;
+  void sampleBegin(SampleProfilerSeries* series) override;
+  void sampleEnd(SampleProfilerSeries* series) override;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -288,7 +321,7 @@ struct Profiler {
   static u16  maxSamples() { return _max_samples.load(); }
 
   // Global catalong of all channels.
-  static inline std::unordered_map<u64, std::shared_ptr<ProfilerChannel>> _channels;
+  static inline std::unordered_map<u64, profiler_channel_ptr_t> _channels;
 
   // We must lock global catalog on acquire and get. Sample points return a pointer so lookup only happens once.
   static inline std::shared_mutex _channel_mtx;
@@ -308,16 +341,17 @@ struct Profiler {
     return (ProfilerChannel*)c.get();
   }
 
-  static ProfilerSeries* acquireSeries(const char* channel_name, u64 channel_namecrc, const char* series_name, u64 series_namecrc) {
+  template <typename T>
+  static T* acquireSeries(const char* channel_name, u64 channel_namecrc, const char* series_name, u64 series_namecrc) {
     OrkAssertI(_channels.contains(channel_namecrc), "First acquireChannel. Call frameBegin before trying to acquireSeries!");
     std::unique_lock lock(_channel_mtx);
     auto& c = _channels[channel_namecrc];
     auto& s = c->_series[series_namecrc]; 
     if (!s) {
-      s = std::make_shared<ProfilerSeries>(series_name, c.get());
+      s = std::make_shared<T>(series_name, c.get());
       c->_series_iter.push_back(s.get());
     }
-    return s.get();
+    return static_cast<T*>(s.get());
   }
 
   // Methods to retrieve channels dynamically with std::string for manual customizaiton.
@@ -326,11 +360,14 @@ struct Profiler {
   static T* acquireChannel(const std::string& name) {
     return acquireChannel<T>(name.c_str(), CrcString(name.c_str()).hashed());
   }
+
   static ProfilerChannel* getChannel(const std::string& name) {
     return getChannel(name.c_str(), CrcString(name.c_str()).hashed());
   }
-  static ProfilerSeries* acquireSeries(const std::string& channel_name, const std::string& series_name) {
-    return acquireSeries(channel_name.c_str(), CrcString(channel_name.c_str()).hashed(), series_name.c_str(), CrcString(series_name.c_str()).hashed());
+
+  template <typename T>
+  static T* acquireSeries(const std::string& channel_name, const std::string& series_name) {
+    return acquireSeries<T>(channel_name.c_str(), CrcString(channel_name.c_str()).hashed(), series_name.c_str(), CrcString(series_name.c_str()).hashed());
   }
 };
 

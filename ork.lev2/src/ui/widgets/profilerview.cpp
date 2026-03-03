@@ -267,30 +267,31 @@ void ProfilerView::_drawContextChannel(
     fvec3 draw_color = hovered ? rstate.color * 1.8f : rstate.color;
     ctx->RefModColor() = draw_color;
 
-    float total_ms    = 0.0f;
-    float isolated_ms = 0.0f;
-    if (!series->_samples.empty()) {
-      size_t n   = series->_samples.size();
-      int    idx = int(n) - 1; // default: last sample
-      if (_scrub_x >= chart_x0 && _scrub_x <= chart_x1) {
-        float norm = (_scrub_x - chart_x0) / (chart_x1 - chart_x0);
-        idx = std::clamp(int(norm * float(n - 1) + 0.5f), 0, int(n) - 1);
+    if (series->_style == ProfilerSeries::Style::Sample) {
+      auto* ss = static_cast<SampleProfilerSeries*>(series);
+      float total_ms    = 0.0f;
+      float isolated_ms = 0.0f;
+      if (!ss->_samples.empty()) {
+        size_t n   = ss->_samples.size();
+        int    idx = int(n) - 1; // default: last sample
+        if (_scrub_x >= chart_x0 && _scrub_x <= chart_x1) {
+          float norm = (_scrub_x - chart_x0) / (chart_x1 - chart_x0);
+          idx = std::clamp(int(norm * float(n - 1) + 0.5f), 0, int(n) - 1);
+        }
+        total_ms    = float(ss->_samples[idx].total_time    * 1000.0);
+        isolated_ms = float(ss->_samples[idx].isolated_time * 1000.0);
       }
-      total_ms    = float(series->_samples[idx].total_time    * 1000.0);
-      isolated_ms = float(series->_samples[idx].isolated_time * 1000.0);
+      lev2::FontMan::beginTextBlock(ctx, 128);
+      lev2::FontMan::DrawText(ctx, legend_x0, iy, FormatString("%0.2f", total_ms).c_str());
+      lev2::FontMan::endTextBlock(ctx);
+      lev2::FontMan::beginTextBlock(ctx, 128);
+      lev2::FontMan::DrawText(ctx, legend_x0 + col_w, iy, FormatString("%0.2f", isolated_ms).c_str());
+      lev2::FontMan::endTextBlock(ctx);
+    } else {
+      lev2::FontMan::beginTextBlock(ctx, 128);
+      lev2::FontMan::DrawText(ctx, legend_x0, iy, "---");
+      lev2::FontMan::endTextBlock(ctx);
     }
-
-    // total_time ms
-    lev2::FontMan::beginTextBlock(ctx, 128);
-    lev2::FontMan::DrawText(ctx, legend_x0, iy,
-        FormatString("%0.2f", total_ms).c_str());
-    lev2::FontMan::endTextBlock(ctx);
-
-    // isolated_time ms
-    lev2::FontMan::beginTextBlock(ctx, 128);
-    lev2::FontMan::DrawText(ctx, legend_x0 + col_w, iy,
-        FormatString("%0.2f", isolated_ms).c_str());
-    lev2::FontMan::endTextBlock(ctx);
 
     // Series name
     lev2::FontMan::beginTextBlock(ctx, 128);
@@ -315,12 +316,17 @@ void ProfilerView::_drawContextChannel(
   // Y axis covers the full stacked height.
   // ------------------------------------------------------------------
   size_t n_max_samples = 0;
-  for (auto* series : series_iter)
-    n_max_samples = std::max(n_max_samples, series->_samples.size());
+  for (auto* series : series_iter) {
+    if (series->_style != ProfilerSeries::Style::Sample) continue;
+    auto* ss = static_cast<SampleProfilerSeries*>(series);
+    n_max_samples = std::max(n_max_samples, ss->_samples.size());
+  }
 
   float cum_max_value = 0.0f;
   for (auto* series : series_iter) {
-    for (auto& sample : series->_samples)
+    if (series->_style != ProfilerSeries::Style::Sample) continue;
+    auto* ss = static_cast<SampleProfilerSeries*>(series);
+    for (auto& sample : ss->_samples)
       cum_max_value = std::max(cum_max_value, float(sample.total_time * 1000.0));
   }
   if (cum_max_value < 0.1f) cum_max_value = 0.1f;
@@ -375,10 +381,8 @@ void ProfilerView::_drawContextChannel(
   _fxi->pushRasterState(rs);
 
   for (int si = 0; si < (int)series_iter.size(); si++) {
-    auto*       series = series_iter[si];
-
-    size_t      n      = series->_samples.size();
-    const std::string& skey = series->_name;
+    auto*              series = series_iter[si];
+    const std::string& skey   = series->_name;
     auto& rstate = _render_state_map[skey];
 
     bool any_hover  = !_hovered_series.empty();
@@ -386,59 +390,86 @@ void ProfilerView::_drawContextChannel(
     fvec3 line_color = rstate.color;
     if (any_hover)
       line_color = is_hovered ? rstate.color * 1.8f : rstate.color * 0.2f;
-    fvec3 fill_color = is_hovered ? rstate.color : line_color * 0.25f;
 
-    if (n >= 2) {
-      float x_step = (chart_x1 - chart_x0) / float(n - 1);
+    if (series->_style == ProfilerSeries::Style::Sample) {
+      auto*  ss         = static_cast<SampleProfilerSeries*>(series);
+      fvec3  fill_color = is_hovered ? rstate.color : line_color * 0.25f;
+      size_t n          = ss->_samples.size();
 
-      // Pass 1: filled band (2 triangles per segment)
-      {
-        if (is_hovered && any_hover)
-          rs->setBlendingMacro(lev2::BlendingMacro::OFF);
-        lev2::VtxWriter<vtx_t> vw;
-        vw.Lock(ctx, _vbuf.get(), (n - 1) * 6);
-        for (size_t i = 1; i < n; i++) {
-          float tot_prev  = float(series->_samples[i-1].total_time    * 1000.0);
-          float tot_curr  = float(series->_samples[i].total_time      * 1000.0);
-          float isol_prev = float(series->_samples[i-1].isolated_time * 1000.0);
-          float isol_curr = float(series->_samples[i].isolated_time   * 1000.0);
-          float sx_prev   = chart_x0 + float(i-1) * x_step;
-          float sx_curr   = chart_x0 + float(i)   * x_step;
-          float top_prev  = y_bottom - tot_prev  * y_scale;
-          float top_curr  = y_bottom - tot_curr  * y_scale;
-          float bot_prev  = y_bottom - (tot_prev  - isol_prev)  * y_scale;
-          float bot_curr  = y_bottom - (tot_curr  - isol_curr)  * y_scale;
-          // Triangle 1
-          vw.AddVertex(vtx_t(fvec3(sx_prev, top_prev, 0), fvec4(), fill_color));
-          vw.AddVertex(vtx_t(fvec3(sx_curr, top_curr, 0), fvec4(), fill_color));
-          vw.AddVertex(vtx_t(fvec3(sx_prev, bot_prev, 0), fvec4(), fill_color));
-          // Triangle 2
-          vw.AddVertex(vtx_t(fvec3(sx_prev, bot_prev, 0), fvec4(), fill_color));
-          vw.AddVertex(vtx_t(fvec3(sx_curr, top_curr, 0), fvec4(), fill_color));
-          vw.AddVertex(vtx_t(fvec3(sx_curr, bot_curr, 0), fvec4(), fill_color));
+      if (n >= 2) {
+        float x_step = (chart_x1 - chart_x0) / float(n - 1);
+
+        // Pass 1: filled band (2 triangles per segment)
+        {
+          if (is_hovered && any_hover)
+            rs->setBlendingMacro(lev2::BlendingMacro::OFF);
+          lev2::VtxWriter<vtx_t> vw;
+          vw.Lock(ctx, _vbuf.get(), (n - 1) * 6);
+          for (size_t i = 1; i < n; i++) {
+            float tot_prev  = float(ss->_samples[i-1].total_time    * 1000.0);
+            float tot_curr  = float(ss->_samples[i].total_time      * 1000.0);
+            float isol_prev = float(ss->_samples[i-1].isolated_time * 1000.0);
+            float isol_curr = float(ss->_samples[i].isolated_time   * 1000.0);
+            float sx_prev   = chart_x0 + float(i-1) * x_step;
+            float sx_curr   = chart_x0 + float(i)   * x_step;
+            float top_prev  = y_bottom - tot_prev  * y_scale;
+            float top_curr  = y_bottom - tot_curr  * y_scale;
+            float bot_prev  = y_bottom - (tot_prev  - isol_prev)  * y_scale;
+            float bot_curr  = y_bottom - (tot_curr  - isol_curr)  * y_scale;
+            // Triangle 1
+            vw.AddVertex(vtx_t(fvec3(sx_prev, top_prev, 0), fvec4(), fill_color));
+            vw.AddVertex(vtx_t(fvec3(sx_curr, top_curr, 0), fvec4(), fill_color));
+            vw.AddVertex(vtx_t(fvec3(sx_prev, bot_prev, 0), fvec4(), fill_color));
+            // Triangle 2
+            vw.AddVertex(vtx_t(fvec3(sx_prev, bot_prev, 0), fvec4(), fill_color));
+            vw.AddVertex(vtx_t(fvec3(sx_curr, top_curr, 0), fvec4(), fill_color));
+            vw.AddVertex(vtx_t(fvec3(sx_curr, bot_curr, 0), fvec4(), fill_color));
+          }
+          vw.UnLock(ctx);
+          _mtl->begin(_tek, RCFD);
+          _mtl->bindParamMatrix(_par_mvp, _mtxi->RefMVPMatrix());
+          _gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::TRIANGLES);
+          _mtl->end(RCFD);
+          if (is_hovered && any_hover)
+            rs->setBlendingMacro(lev2::BlendingMacro::ADDITIVE);
         }
-        vw.UnLock(ctx);
-        _mtl->begin(_tek, RCFD);
-        _mtl->bindParamMatrix(_par_mvp, _mtxi->RefMVPMatrix());
-        _gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::TRIANGLES);
-        _mtl->end(RCFD);
-        if (is_hovered && any_hover)
-          rs->setBlendingMacro(lev2::BlendingMacro::ADDITIVE);
+
+        // Pass 2: top edge line at total_time
+        {
+          lev2::VtxWriter<vtx_t> vw;
+          vw.Lock(ctx, _vbuf.get(), (n - 1) * 2);
+          for (size_t i = 1; i < n; i++) {
+            float tot_prev = float(ss->_samples[i-1].total_time * 1000.0);
+            float tot_curr = float(ss->_samples[i].total_time   * 1000.0);
+            float sx_prev  = chart_x0 + float(i-1) * x_step;
+            float sx_curr  = chart_x0 + float(i)   * x_step;
+            float sy_prev  = y_bottom - tot_prev * y_scale;
+            float sy_curr  = y_bottom - tot_curr * y_scale;
+            vw.AddVertex(vtx_t(fvec3(sx_prev, sy_prev, 0), fvec4(), line_color));
+            vw.AddVertex(vtx_t(fvec3(sx_curr, sy_curr, 0), fvec4(), line_color));
+          }
+          vw.UnLock(ctx);
+          _mtl->begin(_tek, RCFD);
+          _mtl->bindParamMatrix(_par_mvp, _mtxi->RefMVPMatrix());
+          _gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::LINES);
+          _mtl->end(RCFD);
+        }
       }
 
-      // Pass 2: top edge line at total_time
-      {
+    } else if (series->_style == ProfilerSeries::Style::Event) {
+      auto* es = static_cast<EventProfilerSeries*>(series);
+      if (!es->_events.empty() && n_max_samples > 0) {
+        u64   current_tick = channel->_current_tick;
+        u64   oldest_tick  = current_tick > (u64)n_max_samples
+                             ? current_tick - (u64)n_max_samples : 0;
+        float x_scale      = (chart_x1 - chart_x0) / float(n_max_samples);
         lev2::VtxWriter<vtx_t> vw;
-        vw.Lock(ctx, _vbuf.get(), (n - 1) * 2);
-        for (size_t i = 1; i < n; i++) {
-          float tot_prev = float(series->_samples[i-1].total_time * 1000.0);
-          float tot_curr = float(series->_samples[i].total_time   * 1000.0);
-          float sx_prev  = chart_x0 + float(i-1) * x_step;
-          float sx_curr  = chart_x0 + float(i)   * x_step;
-          float sy_prev  = y_bottom - tot_prev * y_scale;
-          float sy_curr  = y_bottom - tot_curr * y_scale;
-          vw.AddVertex(vtx_t(fvec3(sx_prev, sy_prev, 0), fvec4(), line_color));
-          vw.AddVertex(vtx_t(fvec3(sx_curr, sy_curr, 0), fvec4(), line_color));
+        vw.Lock(ctx, _vbuf.get(), es->_events.size() * 2);
+        for (auto& evt : es->_events) {
+          if (evt.tick < oldest_tick || evt.tick >= current_tick) continue;
+          float ex = chart_x0 + float(evt.tick - oldest_tick) * x_scale;
+          vw.AddVertex(vtx_t(fvec3(ex, y_top_line, 0), fvec4(), line_color));
+          vw.AddVertex(vtx_t(fvec3(ex, y_bottom,   0), fvec4(), line_color));
         }
         vw.UnLock(ctx);
         _mtl->begin(_tek, RCFD);
