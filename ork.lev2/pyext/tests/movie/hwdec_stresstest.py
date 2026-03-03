@@ -15,7 +15,6 @@ from obt import path
 from orkengine.core import vec2, vec3, vec4, mtx4, quat, VarMap, CrcStringProxy
 from orkengine import lev2
 from ork.app import application
-from ork.app.frame_profiler import FrameProfilerComponent
 
 tokens = CrcStringProxy()
 
@@ -49,8 +48,6 @@ class VideoToolboxStressTest(application.ComponentizedApplication):
     # Setup profiler UI component
     ############################################
 
-    self.profiler = self.addComponent("profiler", FrameProfilerComponent,
-                                      gpu_filter=["*", "-fwd:total"])
 
     ############################################
     # Create EzApp and initialize

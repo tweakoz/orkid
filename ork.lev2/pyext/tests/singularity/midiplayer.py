@@ -268,7 +268,7 @@ class MoonlightApp(ComponentizedApplication):
         vpack.uniform = True
 
         # ProfilerView for profiler (top, fills remaining space)
-        self.profiler.graphview = vpack.makeChild(uiclass=ui.ProfilerView, args=[])
+        self.profiler.profileview = vpack.makeChild(uiclass=ui.ProfilerView, args=[])
 
         # PrimCanvas for keyboard (bottom, fixed height)
         canvas = vpack.makeChild(uiclass=ui.PrimCanvas, args=["piano_canvas"])

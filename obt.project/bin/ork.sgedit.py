@@ -10,7 +10,6 @@ import os, argparse
 from orkengine.core import vec3, vec4, quat, VarMap, CrcStringProxy, Transform
 from orkengine import lev2
 from ork.editor import SceneEditorBase, SceneLoader, PARTICLE_PRESETS
-from ork.app.frame_profiler import FrameProfilerComponent
 
 tokens = CrcStringProxy()
 
@@ -32,8 +31,6 @@ class SceneEditor(SceneEditorBase):
       file_extension=".osgr",
       home_dir=os.path.expanduser("~")
     )
-
-    self.profiler = self.addComponent("profiler", FrameProfilerComponent)
 
     # Model registry (populated in _onGpuInit)
     self.models = {}       # short_name -> XgmModel

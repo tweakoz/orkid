@@ -14,7 +14,6 @@ from orkengine.core import *
 from orkengine import lev2
 from orkengine.lev2 import *
 from ork.app.application import ComponentizedApplication
-from ork.app.frame_profiler import FrameProfilerComponent
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 
@@ -38,7 +37,6 @@ class PackWidgets(ComponentizedApplication):
     self.abstime = 0.0
     self.box_height = 0.0
     self.latest_image = None
-    self.addComponent("profiler", FrameProfilerComponent, gpu_filter=["*", "-fwd:total"])
     self.createEzApp(enable_audio=False,
                      enable_audio_output=False,
                      enable_audio_synth=False)

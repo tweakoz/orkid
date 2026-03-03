@@ -14,7 +14,6 @@ import math
 from orkengine.core import vec3, vec4, quat, mtx4, VarMap, CrcStringProxy
 from orkengine import lev2
 from ork.app.application import ComponentizedApplication, ApplicationComponent
-from ork.app.frame_profiler import FrameProfilerComponent
 
 tokens = CrcStringProxy()
 
@@ -380,7 +379,6 @@ class DualSceneGraphWindow(ComponentizedApplication):
     self.win_height = 600
 
     self.scene = self.addComponent("scene", _DualSceneComponent)
-    self.profiler = self.addComponent("profiler", FrameProfilerComponent, audio=False)
 
     self.ezapp_args = {
       'name': 'DualSceneGraph::Primary',

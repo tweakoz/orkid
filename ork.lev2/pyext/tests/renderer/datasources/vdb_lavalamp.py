@@ -6,7 +6,6 @@ from orkengine.core import vec3
 from ork.app.application import ComponentizedApplication
 from ork.app.std_scenegraph import StandardSceneGraphComponent
 from ork.app.loggerui import LoggerUIComponent
-from ork.app.frame_profiler import FrameProfilerComponent
 ################################################################################
 
 parser = argparse.ArgumentParser()
@@ -24,10 +23,8 @@ class LavaLampApp(ComponentizedApplication):
                                  StandardSceneGraphComponent,
                                  eye=vec3(0,20,20),
                                  grid_variant=None)
-    if args.profiler:
-      self.addComponent("profiler", FrameProfilerComponent, gpu_filter=["*", "-fwd:total"])
-    else:
-      self.LUI = self.addComponent("loggerui", LoggerUIComponent, filter_regex=[".*"])
+
+    self.LUI = self.addComponent("loggerui", LoggerUIComponent, filter_regex=[".*"])
     self.LLA = self.addComponent("lavalamp", LavalampComponent)
     ############################################
     self.createEzApp(use_subsystems=['opq', 'core', 'gpu', 'lev2'])

@@ -12,7 +12,6 @@ from obt import path
 from orkengine.core import vec2, vec3, vec4, mtx4, quat, VarMap, CrcStringProxy
 from orkengine import lev2
 from ork.app.application import ComponentizedApplication
-from ork.app.frame_profiler import FrameProfilerComponent
 from ork.ui.analog_clock import AnalogClock
 from ork.ui.filesystem_browser import FilesystemBrowser
 from ork.ui.transform_edit import TransformEdit
@@ -103,9 +102,6 @@ class PackWidgets(ComponentizedApplication):
     super().__init__()
 
     self.box_height = 0.0
-
-    self.profiler = self.addComponent("profiler", FrameProfilerComponent,
-                                      gpu_filter=["*", "-fwd:total"])
 
     self.createEzApp(fullscreen=True,
                      enable_audio=True,

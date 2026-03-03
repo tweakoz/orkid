@@ -14,7 +14,6 @@ from orkengine.core import lev2_pyexdir, Transform
 from orkengine.core import CrcStringProxy, thisdir, VarMap
 from orkengine import lev2
 from ork.app.application import ComponentizedApplication
-from ork.app.frame_profiler import FrameProfilerComponent
 
 ################################################################################
 
@@ -40,7 +39,6 @@ class LIGHTING_APP(ComponentizedApplication):
 
     self.lighttime = 0.0
     self.materials = set()
-    self.profiler = self.addComponent("profiler", FrameProfilerComponent)
     self.createEzApp(ssaa=2, msaa=0, fullscreen=False,
                       use_subsystems=['opq', 'core', 'gpu', 'lev2'])
 

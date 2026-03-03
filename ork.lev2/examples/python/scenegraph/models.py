@@ -10,7 +10,6 @@ from orkengine.core import vec2, vec3, vec4, quat, mtx4, VarMap, CrcStringProxy,
 from orkengine import lev2
 from orkengine.lev2 import PostFxNodeHSVG
 from ork.app.application import ComponentizedApplication
-from ork.app.frame_profiler import FrameProfilerComponent
 
 lev2_pyexdir.addToSysPath()
 from lev2utils.cameras import setupUiCameraX
@@ -41,7 +40,6 @@ class SceneGraphApp(ComponentizedApplication):
 
   def __init__(self):
     super().__init__()
-    self.profiler = self.addComponent("profiler", FrameProfilerComponent)
     self.materials = set()
     self.modelinsts = []
 

@@ -24,43 +24,23 @@ Usage:
 """
 
 from orkengine.core import vec4
-from orkengine import lev2
-from ork.app.application import ApplicationComponent
+from ork.app.application import ApplicationComponent, ComponentizedApplication
 
 ################################################################################
 
 class FrameProfilerComponent(ApplicationComponent):
 
-  DEFAULT_CHANNELS = [
-    "MainThread",
-    "GPU",
-    "AudioThread",
-    "UpdateThread",
-  ]
-
-  def __init__(self, gpu_filter=None, channels=None, **kwargs):
+  def __init__(self, channels=ComponentizedApplication.DEFAULT_PROFILER_CHANNELS, **kwargs):
     super().__init__()
-    self.graphview = None
-    self._gpu_filter = gpu_filter
-    self._channels = channels if channels is not None else self.DEFAULT_CHANNELS
+    self.profileview = None
+    self._channels = channels
 
   ##############################################
 
   def _onGpuInit(self, ctx):
-    if self.graphview is None:
-      lg_group = self.app.ezapp.topLayoutGroup
-      self.overlay_group = lev2.ui.LayoutGroup.create("profiler_overlay")
-      graphview_item = self.overlay_group.makeChild(
-        uiclass=lev2.ui.ProfilerView,
-        args=[],
-        fill=True
-      )
-      self.graphview = graphview_item.widget
-      lg_group.profiler_overlay_widget = self.overlay_group
-
     for ch in self._channels:
-      self.graphview.addChannel(ch)
-    self.graphview.clear_color = vec4(0, 0, 0, 0.8)
+      self.profileview.addChannel(ch)
+    self.profileview.clear_color = vec4(0, 0, 0, 0.8)
 
   ##############################################
 
@@ -71,5 +51,5 @@ class FrameProfilerComponent(ApplicationComponent):
   ##############################################
 
   def _onGpuUpdate(self, ctx):
-    if self.graphview:
-      self.graphview.setDirty()
+    if self.profileview:
+      self.profileview.setDirty()
