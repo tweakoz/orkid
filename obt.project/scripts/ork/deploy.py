@@ -196,16 +196,14 @@ open -a Terminal.app "$DEPLOY_ROOT/obt-launch-env"
 
 
 def _gui_launcher(command_parts):
-  """Generate launcher script for gui mode (runs command directly).
+  """Generate launcher script for gui mode.
 
-  Uses obt-launch-env --command to run the gui app within the fully
-  configured OBT environment.
+  macOS restricts .app processes from exec-ing binaries outside their
+  bundle, so we delegate to Terminal.app (same as terminal mode with a
+  command).  The temp-script pattern lets us pass --command to
+  obt-launch-env through Terminal.app which otherwise ignores arguments.
   """
-  cmd_str = " ".join(_shell_quote(c) for c in command_parts)
-  return _LAUNCHER_HEADER + r'''
-# GUI mode: launch command inside OBT environment
-exec "$DEPLOY_ROOT/obt-launch-env" --command "%s"
-''' % cmd_str
+  return _terminal_launcher(command_parts)
 
 
 def _shell_quote(s):

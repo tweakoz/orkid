@@ -1418,8 +1418,6 @@ def main():
     help="Only run the dependency walker and print manifest (no copy)")
   parser.add_argument("--verify-only", action="store_true",
     help="Only verify an existing deployment (skip phases 1-2)")
-  parser.add_argument("--dmg", action="store_true",
-    help="After deployment, create a compressed .dmg image")
 
   args = parser.parse_args()
 
@@ -1533,32 +1531,23 @@ def main():
     print(deco.val(f"  Infrastructure: {infra_dir}"))
     print(deco.val(f"  App bundles visible at top level of {target_dir}"))
 
-    if args.dmg:
-      import tempfile
-      dmg_path = target_dir.parent / "Orkid.dmg"
-      print(deco.val("\n" + "=" * 60))
-      print(deco.val("Creating compressed DMG image"))
-      print(deco.val("=" * 60))
-      if dmg_path.exists():
-        print(deco.val(f"  Removing existing {dmg_path.name}..."))
-        os.remove(str(dmg_path))
-      # Create a temp directory with an "Orkid" folder inside so the DMG
-      # volume contains a single draggable "Orkid" folder.
-      with tempfile.TemporaryDirectory() as tmpdir:
-        dmg_stage = path.Path(tmpdir) / "Orkid"
-        os.symlink(str(target_dir), str(dmg_stage))
-        print(deco.val(f"  Source:  {target_dir} (as Orkid/)"))
-        print(deco.val(f"  Output:  {dmg_path}"))
-        print(deco.val(f"  Format:  ULFO (LZFSE compressed, read-only)"))
-        subprocess.run([
-          "hdiutil", "create",
-          "-srcfolder", str(tmpdir),
-          "-volname", "Orkid",
-          "-format", "ULFO",
-          str(dmg_path),
-        ], check=True)
-      dmg_size_mb = dmg_path.stat().st_size / (1024 * 1024)
-      print(deco.val(f"  DMG created: {dmg_path} ({dmg_size_mb:.1f} MB)"))
+    # Create a .tgz archive with OrkidDeploy/ as the top-level directory
+    targz_path = target_dir.parent / f"{target_dir.name}.tgz"
+    print(deco.val("\n" + "=" * 60))
+    print(deco.val("Creating compressed tar.gz archive"))
+    print(deco.val("=" * 60))
+    if targz_path.exists():
+      print(deco.val(f"  Removing existing {targz_path.name}..."))
+      os.remove(str(targz_path))
+    print(deco.val(f"  Source:  {target_dir}"))
+    print(deco.val(f"  Output:  {targz_path}"))
+    subprocess.run([
+      "tar", "czf", str(targz_path),
+      "-C", str(target_dir.parent),
+      target_dir.name,
+    ], check=True)
+    targz_size_mb = targz_path.stat().st_size / (1024 * 1024)
+    print(deco.val(f"  Archive created: {targz_path} ({targz_size_mb:.1f} MB)"))
 
 if __name__ == "__main__":
   main()
