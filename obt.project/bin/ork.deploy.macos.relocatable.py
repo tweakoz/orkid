@@ -136,12 +136,12 @@ def internalize_host_binary(binary_name, target_dir, homebrew_dir="/opt/homebrew
 ###############################################################################
 
 # Directories to copy from staging (runtime-essential only)
-RUNTIME_DIRS = ["bin", "lib", "pyvenv", "share"]
+RUNTIME_DIRS = ["bin", "lib", "pyvenv", "share", "assetcache", "dblockcache"]
 
 # Directories to skip (build intermediates, headers, etc.)
 SKIP_DIRS = {"builds", "include", "buildlogs",
              "nanobind", "sdks", "subspaces", "tempdir",
-             "doc", "obt-launch-env", "dblockcache"}
+             "doc", "obt-launch-env"}
 
 def phase1_copy(staging_dir, target_dir, force=False):
   """Deep copy staging to target and internalize homebrew dylib closure.
@@ -933,9 +933,10 @@ def phase5_projects(target_dir, project_dirs):
     print(deco.val(f"\n  Project: {proj_name} (manifest name: {canonical_name})"))
 
     # Determine what to copy
-    deploy_script = proj_root / "obt.project" / "bin" / "ork.deploy.project.py"
-    if deploy_script.exists():
-      deploy_manifest = _run_deploy_script(deploy_script, proj_root)
+    # Load deploy manifest by importing obt.project/deployment_manifest.py
+    deploy_manifest_py = proj_root / "obt.project" / "deployment_manifest.py"
+    if deploy_manifest_py.exists():
+      deploy_manifest = _load_deploy_manifest(deploy_manifest_py)
     else:
       deploy_manifest = _default_deploy_manifest(proj_root)
 
@@ -978,6 +979,22 @@ def phase5_projects(target_dir, project_dirs):
       else:
         print(deco.val(f"    Skipping {rel_file} (not found)"))
 
+    # Copy deploy_libs into .staging/lib/ and relocate them
+    for lib_rel in deploy_manifest.get("deploy_libs", []):
+      src = proj_root / lib_rel
+      if not src.exists():
+        print(deco.val(f"    WARNING: deploy_lib not found: {lib_rel}"))
+        continue
+      dst = target_dir / "lib" / src.name
+      print(deco.val(f"    Installing lib {src.name} → lib/"))
+      shutil.copy2(str(src), str(dst))
+      if macos.is_macho_binary(str(dst)):
+        relocator = macos.MachoRelocator(target_dir)
+        relocator.relocate_binary(str(dst), old_prefixes=[], is_dylib=True)
+        subprocess.run(
+          ["codesign", "--force", "--sign", "-", str(dst)],
+          capture_output=True)
+
     # Fix text references: old project root → new project root
     old_proj_str = str(proj_root)
     new_proj_str = str(proj_target)
@@ -1004,18 +1021,13 @@ def phase5_projects(target_dir, project_dirs):
 
 ###############################################################################
 
-def _run_deploy_script(script_path, proj_root):
-  """Run a project's deploy script and parse its JSON manifest output."""
-  try:
-    result = subprocess.run(
-      [sys.executable, str(script_path)],
-      capture_output=True, text=True, timeout=30,
-      env={**os.environ, "PROJECT_ROOT": str(proj_root)})
-    if result.returncode == 0 and result.stdout.strip():
-      return json.loads(result.stdout.strip())
-  except Exception as e:
-    print(deco.val(f"    WARNING: Deploy script failed: {e}"))
-  return _default_deploy_manifest(proj_root)
+def _load_deploy_manifest(manifest_path):
+  """Import a project's deployment_manifest.py and return its manifest dict."""
+  import importlib.util
+  spec = importlib.util.spec_from_file_location("deployment_manifest", str(manifest_path))
+  mod = importlib.util.module_from_spec(spec)
+  spec.loader.exec_module(mod)
+  return mod.manifest
 
 def _default_deploy_manifest(proj_root):
   """Generate a default deploy manifest — just obt.project/."""
@@ -1352,12 +1364,12 @@ def phase7_app_bundles(infra_dir, visible_dir):
     proj_name = proj_entry["name"]
     proj_dir = infra_dir / "projects" / proj_name
 
-    # Check if project has a deploy script with "apps" declared
-    deploy_script = proj_dir / "obt.project" / "bin" / "ork.deploy.project.py"
-    if not deploy_script.exists():
+    # Check if project has a deployment manifest with "apps" declared
+    deploy_manifest_py = proj_dir / "obt.project" / "deployment_manifest.py"
+    if not deploy_manifest_py.exists():
       continue
 
-    deploy_manifest = _run_deploy_script(deploy_script, proj_dir)
+    deploy_manifest = _load_deploy_manifest(deploy_manifest_py)
     app_specs = deploy_manifest.get("apps", [])
     if not app_specs:
       continue
@@ -1393,6 +1405,35 @@ def _phase7_finish(visible_dir, icon_str, total_apps):
   print(deco.val(f"\n  Phase 7 complete."))
 
 ###############################################################################
+# Phase 8: Archive
+###############################################################################
+
+def phase8_archive(target_dir):
+  """Create a .tgz archive of the deployment."""
+  target_dir = path.Path(target_dir)
+  targz_path = target_dir.parent / f"{target_dir.name}.tgz"
+
+  print(deco.val("=" * 60))
+  print(deco.val("Phase 8: Create .tgz Archive"))
+  print(deco.val("=" * 60))
+
+  if targz_path.exists():
+    print(deco.val(f"  Removing existing {targz_path.name}..."))
+    os.remove(str(targz_path))
+
+  print(deco.val(f"  Source:  {target_dir}"))
+  print(deco.val(f"  Output:  {targz_path}"))
+  subprocess.run([
+    "tar", "czf", str(targz_path),
+    "-C", str(target_dir.parent),
+    target_dir.name,
+  ], check=True)
+  targz_size_mb = targz_path.stat().st_size / (1024 * 1024)
+  print(deco.val(f"  Archive created: {targz_path} ({targz_size_mb:.1f} MB)"))
+  print(deco.val(f"\n  Phase 8 complete."))
+  return True
+
+###############################################################################
 # Main
 ###############################################################################
 
@@ -1404,7 +1445,7 @@ def main():
     help="Target directory for the relocatable deployment")
   parser.add_argument("--staging", default=None,
     help="Source staging directory (default: $OBT_STAGE)")
-  parser.add_argument("--phase", choices=["1", "2", "3", "4", "5", "6", "7", "all"], default="all",
+  parser.add_argument("--phase", choices=["1", "2", "3", "4", "5", "6", "7", "8", "all"], default="all",
     help="Run specific phase (default: all)")
   parser.add_argument("--force", action="store_true",
     help="Remove existing target before copying (Phase 1)")
@@ -1523,6 +1564,11 @@ def main():
     if not ok:
       sys.exit(1)
 
+  if phase in ("8", "all"):
+    ok = phase8_archive(target_dir)
+    if not ok:
+      sys.exit(1)
+
   if phase == "all":
     print(deco.val("\n" + "=" * 60))
     print(deco.val("Deployment complete!"))
@@ -1530,24 +1576,6 @@ def main():
     print(deco.val(f"  Location: {target_dir}"))
     print(deco.val(f"  Infrastructure: {infra_dir}"))
     print(deco.val(f"  App bundles visible at top level of {target_dir}"))
-
-    # Create a .tgz archive with OrkidDeploy/ as the top-level directory
-    targz_path = target_dir.parent / f"{target_dir.name}.tgz"
-    print(deco.val("\n" + "=" * 60))
-    print(deco.val("Creating compressed tar.gz archive"))
-    print(deco.val("=" * 60))
-    if targz_path.exists():
-      print(deco.val(f"  Removing existing {targz_path.name}..."))
-      os.remove(str(targz_path))
-    print(deco.val(f"  Source:  {target_dir}"))
-    print(deco.val(f"  Output:  {targz_path}"))
-    subprocess.run([
-      "tar", "czf", str(targz_path),
-      "-C", str(target_dir.parent),
-      target_dir.name,
-    ], check=True)
-    targz_size_mb = targz_path.stat().st_size / (1024 * 1024)
-    print(deco.val(f"  Archive created: {targz_path} ({targz_size_mb:.1f} MB)"))
 
 if __name__ == "__main__":
   main()
