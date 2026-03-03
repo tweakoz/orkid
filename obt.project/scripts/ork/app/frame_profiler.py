@@ -64,6 +64,12 @@ class FrameProfilerComponent(ApplicationComponent):
 
   ##############################################
 
+  def addEvent(self, channel_name, series_name):
+    from orkengine.lev2 import ui
+    ui.profiler_add_event(channel_name, series_name)
+
+  ##############################################
+
   def _onGpuUpdate(self, ctx):
     if self.graphview:
       self.graphview.setDirty()

@@ -30,6 +30,7 @@
 #include <ork/lev2/ui/imgview.h>
 #include <ork/lev2/ui/graphview.h>
 #include <ork/lev2/ui/profilerview.h>
+#include <ork/kernel/profiler.h>
 #include <ork/lev2/ui/transformcurveeditor.h>
 #include <ork/lev2/ui/logger_group.h>
 #include <ork/lev2/ui/logger_ui_backend.h>
@@ -729,6 +730,19 @@ void pyinit_ui(py::module& module_lev2) {
           .def("addChannel", [](ui::ProfilerView* v, const std::string& name) { v->addChannel(name); })
           .def_readwrite("clear_color", &ui::ProfilerView::_bg_color);
   type_codec->registerStdCodec<ui::profilerview_ptr_t>(profilerview_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  uimodule.def(
+      "profiler_add_event",
+      [](const std::string& channel_name, const std::string& series_name) {
+        // This is doing a fully lookup through the shared_mutex every call.
+        // If we ever need a way to call this hundrends of times a frame this needs to change.
+        auto* es = Profiler::acquireSeries<EventProfilerSeries>(
+            channel_name.c_str(), CrcString(channel_name.c_str()).hashed(),
+            series_name.c_str(), CrcString(series_name.c_str()).hashed());
+        es->addEvent();
+      },
+      py::arg("channel_name"),
+      py::arg("series_name"));
   /////////////////////////////////////////////////////////////////////////////////
   auto sgviewport_type = //
       py::class_<ui::SceneGraphViewport, ui::Viewport, uisgviewport_ptr_t>(uimodule, "SceneGraphViewport")
