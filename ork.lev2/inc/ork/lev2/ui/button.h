@@ -23,7 +23,8 @@ public:
 
   HandlerResult DoOnUiEvent(event_constptr_t Ev) final;
 
-  // Callback for button press
+  // Callbacks: _onPushed fires on mouse-down, _onPressed fires on mouse-up
+  void_lambda_t _onPushed;
   void_lambda_t _onPressed;
 
   fvec4 _bg_color;

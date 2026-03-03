@@ -684,6 +684,31 @@ void pyinit_ui_layout(py::module& uimodule) {
               },
               [](uilayoutgroup_ptr_t lgrp, bool enabled) { //
                 lgrp->_overlay_enabled = enabled;
+              })
+          .def_property(
+              "profiler_overlay_widget",
+              [](uilayoutgroup_ptr_t lgrp) -> uiwidget_ptr_t { //
+                return lgrp->_profiler_overlay_widget;
+              },
+              [](uilayoutgroup_ptr_t lgrp, uiwidget_ptr_t w) { //
+                lgrp->_profiler_overlay_widget = w;
+                std::function<void(ui::Widget*)> propagate = [&](ui::Widget* widget) {
+                  widget->_uicontext = lgrp->_uicontext;
+                  if (auto group = dynamic_cast<ui::Group*>(widget)) {
+                    for (auto& child : group->_children) {
+                      propagate(child.get());
+                    }
+                  }
+                };
+                propagate(w.get());
+              })
+          .def_property(
+              "profiler_overlay_enabled",
+              [](uilayoutgroup_ptr_t lgrp) -> bool { //
+                return lgrp->_profiler_overlay_enabled;
+              },
+              [](uilayoutgroup_ptr_t lgrp, bool enabled) { //
+                lgrp->_profiler_overlay_enabled = enabled;
               });
   type_codec->registerStdCodec<uilayoutgroup_ptr_t>(layoutgroup_type);
   /////////////////////////////////////////////////////////////////////////////////

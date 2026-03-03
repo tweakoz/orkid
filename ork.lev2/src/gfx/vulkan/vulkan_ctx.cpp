@@ -9,6 +9,7 @@
 #include "vulkan_captureasync.h"
 #include "vulkan_ubo_dynamic.h"
 #include <ork/lev2/gfx/image.h>
+#include <vulkan/vk_enum_string_helper.h>
 
 #define USE_OIIO
 #if defined(USE_OIIO)
@@ -417,11 +418,6 @@ void VkContext::_initVulkanCommon() {
     g_dynamic_ubo_system->init(this);
     if(0)printf("VkContext: Initialized dynamic UBO system\n");
   }
-
-  ////////////////////////////
-  // create GPU perf query pools
-  ////////////////////////////
-  _createPerfQueryPools();
 }
 
   void VkContext::_beginAssetProcessing() {
@@ -579,7 +575,6 @@ void VkContext::_initDefaultTextures() {
 ///////////////////////////////////////////////////////////////////////////////
 
 VkContext::VkContext() {
-  _prev_time = 0.0f;
   _GVI->_contexts.push_back(this);
 
   ////////////////////////////
@@ -807,27 +802,25 @@ void VkContext::_doSubmitPrimaryCommandBuffer(){
       }
     }
 
-    {
-      float t0 = _ctxtimer.SecsSinceStart();
-      if ( not semas_empty) {
-        // Submit with timeline semaphores
-        swapchain->_submitFrameWithSemaphores(this);
-      } else {
-        // Normal submission
-        swapchain->enqueueFrame(this);
-      }
-      float t1 = _ctxtimer.SecsSinceStart();
-      _perf_submit_duration = t1 - t0;
-
-      ///////////////////////////////////////////////////////
-      // Present !
-      ///////////////////////////////////////////////////////
-
-      swapchain->enqueuePresentFrame(this);
-      float t2 = _ctxtimer.SecsSinceStart();
-      _perf_present_duration = t2 - t1;
+    // Submit
+    if ( not semas_empty) {
+      OrkProfilerSampleScope(CHANNEL_MAIN, "vk:submit_semaphores");
+      // Submit with timeline semaphores
+      swapchain->_submitFrameWithSemaphores(this);
+    } else {
+      OrkProfilerSampleScope(CHANNEL_MAIN, "vk:enqueue_frame");
+      // Normal submission
+      swapchain->enqueueFrame(this);
     }
-    swapchain->waitPresentFrame(this);
+
+    ///////////////////////////////////////////////////////
+    // Present !
+    ///////////////////////////////////////////////////////
+    {
+      OrkProfilerSampleScope(CHANNEL_MAIN, "vk:present");
+      swapchain->enqueuePresentFrame(this);
+      swapchain->waitPresentFrame(this);
+    }
 
     // Process pending captures after swapchain frame completion
     _processPendingCaptures();
@@ -921,7 +914,7 @@ void VkContext::_doSubmitPrimaryCommandBuffer(){
       capture_fence->wait(); // Wait for fence to be signaled
     } else {
       vkQueueSubmit(_vkqueue_graphics, 1, &SI, VK_NULL_HANDLE);
-      vkQueueWaitIdle(_vkqueue_graphics);
+      vkQueueWaitIdle(_vkqueue_graphics); // TODO get rid of!
     }
 
     if(0)logchan_vkctx->log("Offscreen frame submitted");
@@ -1018,6 +1011,16 @@ void VkContext::_doPreBeginFrame() {
   mRenderContextInstData = 0;
   _doBeginPrimaryCommandBuffer();
 
+  // begin gpu profiler frame after we have setup commandbuffer
+  // must use beginProfilerFrame overload to set cmdbuf for frame
+  VkProfilerChannel::BeginParams profiler_params = {
+    .device           = _vkdevice, 
+    .timestamp_period = _vkdeviceinfo->_devprops.limits.timestampPeriod, 
+    .cmdbuf           = primary_cb()->_vkcmdbuf,
+  };
+  OrkProfilerFrameBegin(CHANNEL_GPU, VkProfilerChannel, profiler_params);
+  OrkProfilerSampleBegin(CHANNEL_GPU, SERIES_GPU_FRAME_ALL);
+
   /////////////////////////////////////////
   _pendingOneShotCommands.atomicOp([&](vkseccmdbufarray_t& unlocked) {
     //size_t num_one_shot = unlocked.size();
@@ -1041,19 +1044,7 @@ void VkContext::_doBeginFrame() {
     miH = main_rtg->miH;
   }
 
-  // Readback GPU perf queries from previous frame, then swap pools
-  if (_perfQueryPoolsCreated) {
-    _readbackPerfQueries();
-    _perfQueryPoolIndex = 1 - _perfQueryPoolIndex;
-    _perfQueryNextSlot = 0;
-    // Batch-reset the entire write pool here (outside any render pass)
-    // so gpuPerfBlockBegin doesn't need to call vkCmdResetQueryPool
-    // (which is not allowed inside a render pass).
-    auto cmdbuf = primary_cb()->_vkcmdbuf;
-    vkCmdResetQueryPool(cmdbuf, _perfQueryPools[_perfQueryPoolIndex], 0, MAX_GPU_PERF_QUERIES * 2);
-  }
-
-  // Poll timeline semaphores
+  // Poll completion semaphores
   _pendingOneShotSemas.atomicOp([&](vkcompsema_set_t& unlocked) {
     for (auto semaphore : unlocked) {
       if(semaphore->isSignalled()){
@@ -1094,7 +1085,7 @@ void VkContext::_onGpuPostInit() {
   // During init, we haven't started a frame yet, so we can't use the swapchain submit path
   // Do a simple direct submit without presentation semaphores
 
-  VkSubmitInfo SI = {};
+  VkSubmitInfo SI;
   initializeVkStruct(SI, VK_STRUCTURE_TYPE_SUBMIT_INFO);
   SI.commandBufferCount = 1;
   SI.pCommandBuffers = &_cmdbufcurpri_gfx->_vkcmdbuf;
@@ -1143,14 +1134,11 @@ void VkContext::_doEndFrame() {
   }
 
   ////////////////////////
-  // end frame:all GPU perf block (covers all command buffer content)
-  ////////////////////////
-  gpuPerfBlockEnd(_frameAllPerfBlock);
-  _frameAllPerfBlock = nullptr;
-
-  ////////////////////////
   // done with primary command buffer for this frame
   ////////////////////////
+
+  //end frame:all GPU perf block (covers all command buffer content)
+  OrkProfilerSampleEnd(CHANNEL_GPU, SERIES_GPU_FRAME_ALL);
 
   _doEndPrimaryCommandBuffer();
 
@@ -1162,7 +1150,11 @@ void VkContext::_doEndFrame() {
   // submit primary command buffer for this frame
   ///////////////////////////////////////////////////////
 
-  submitPrimaryCommandBuffer();
+  // submit AND wait!
+  submitPrimaryCommandBuffer(); 
+
+  // read back GPU timestamps now that the GPU has finished executing
+  OrkProfilerFrameEnd(CHANNEL_GPU);
 
   ///////////////////////////////////////////////////////
 
@@ -1173,7 +1165,7 @@ void VkContext::_doEndFrame() {
     _cmdbufcurpri_gfx->_secondary_cmdbuffers_pending_cleanup.size());
 
   ////////////////////////
-  // Append secondary command buffers to pending cleanup
+  // Append secondary command buffers to pending cleanupπ
   // They will be destroyed when this primary CB is reallocated and reset
   // (3 frames later due to pool size 3 in practice)
   ////////////////////////
@@ -1920,117 +1912,123 @@ void VkContext::resumeRenderPass() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// GPU Performance Query Implementation
+// GPU Profiler Implementation
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkContext::_createPerfQueryPools() {
-  if (_perfQueryPoolsCreated) return;
+double VkProfilerChannel::_sampleTime(int begin_index, int end_index) {
+    double begin_ts    = _timestamps[begin_index];
+    double end_ts      = _timestamps[end_index];
+    return double(end_ts - begin_ts) * double(_timestampPeriod) * 1e-9;
+}
 
-  // Store timestamp period for conversion
-  _timestampPeriod = _vkdeviceinfo->_devprops.limits.timestampPeriod; // nanoseconds per tick
+void VkProfilerChannel::frameBegin(BeginParams params) {
+  _recording = Profiler::enabled();
+  if (!_recording) return;
 
-  VkQueryPoolCreateInfo qpci = {};
-  initializeVkStruct(qpci, VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO);
-  qpci.queryType = VK_QUERY_TYPE_TIMESTAMP;
-  qpci.queryCount = MAX_GPU_PERF_QUERIES * 2; // 2 timestamps per block (begin + end)
+  // printf("VkProfilerChannel beginProfilerFrame\n");
+  if (_device == VK_NULL_HANDLE) {
+    _device = params.device;
+    _timestampPeriod = params.timestamp_period; // nanoseconds per tick
 
-  for (int i = 0; i < 2; i++) {
-    VkResult ok = vkCreateQueryPool(_vkdevice, &qpci, nullptr, &_perfQueryPools[i]);
-    OrkAssert(ok == VK_SUCCESS);
+    VkQueryPoolCreateInfo info = {
+      .sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
+      .queryType = VK_QUERY_TYPE_TIMESTAMP,
+      .queryCount = MAX_GPU_PERF_QUERIES * 2, // 2 timestamps per block (begin + end)
+    };
+    VkResult ok = vkCreateQueryPool(_device, &info, nullptr, &_query_pool);
+    OrkAssert(ok == VK_SUCCESS);  
   }
 
-  _perfQueryPoolsCreated = true;
+  _cmdbuf = params.cmdbuf;
+  vkCmdResetQueryPool(_cmdbuf, _query_pool, 0, MAX_GPU_PERF_QUERIES * 2);
 }
 
-///////////////////////////////////////////////////////////////////////////////
+void VkProfilerChannel::frameEnd() {
+  if (!_recording) return;
 
-gpuperfblock_ptr_t VkContext::gpuPerfBlockBegin(const std::string& name) {
-  if (!_perfQueryPoolsCreated) return nullptr;
-  if (_currentPhase != "INFRAME"_crcu) return nullptr; // must be called in-frame
-  if (_perfQueryNextSlot >= MAX_GPU_PERF_QUERIES) return nullptr; // pool exhausted
+  // printf("VkProfilerChannel endProfilerFrame\n");
+  OrkAssertI(_cmdbuf != VK_NULL_HANDLE, "VulkanProfilerChannel beginFrame not called!");
+  _cmdbuf = VK_NULL_HANDLE;
 
-  auto block = std::make_shared<GpuPerfBlock>();
-  block->_name = name;
-  block->_pool_index = _perfQueryPoolIndex;
-  block->_begin_query = _perfQueryNextSlot * 2;
-  block->_end_query = _perfQueryNextSlot * 2 + 1;
-  _perfQueryNextSlot++;
+  // Readback timestamp queries
+  _timestamps.resize(_query_index);
+  VkResult ok = vkGetQueryPoolResults(_device, _query_pool, 0, _query_index, _query_index * sizeof(u64),
+    _timestamps.data(), sizeof(u64), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+  // printf("vkGetQueryPoolResults: %s\n", string_VkResult(ok));
+  OrkAssert(VK_SUCCESS == ok);
+  _query_index = 0;
 
-  auto pool = _perfQueryPools[_perfQueryPoolIndex];
-  auto cmdbuf = primary_cb()->_vkcmdbuf;
-  // Pool was batch-reset in _doBeginFrame — no per-query reset needed here.
-  vkCmdWriteTimestamp(cmdbuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, pool, block->_begin_query);
+  // Accumulate isolated_time from per-segment spans
+  for (auto& span : _vk_spans)
+    span.series->_isolated_time += _sampleTime(span.begin_query, span.end_query);
+  _vk_spans.clear();
 
-  _perfPendingBlocks[_perfQueryPoolIndex].push_back(block);
-  return block;
+  // Compute total_time from full-duration spans (begin_total_query -> end_query)
+  // Use += so multiple calls per frame accumulate correctly (same as isolated_time)
+  for (auto& span : _vk_total_spans)
+    span.series->_total_time += _sampleTime(span.begin_total_query, span.end_query);
+  _vk_total_spans.clear();
+
+  // accumulate in series through base call
+  ProfilerChannel::frameEnd(); 
 }
 
-///////////////////////////////////////////////////////////////////////////////
+void VkProfilerChannel::sampleBegin(SampleProfilerSeries* s) {
+  if (!_recording) return;
 
-void VkContext::gpuPerfBlockEnd(gpuperfblock_ptr_t block) {
-  if (!block) return;
-  if (!_perfQueryPoolsCreated) return;
-  if (_currentPhase != "INFRAME"_crcu) return; // must be called in-frame
+  // printf("VkProfilerChannel beginSample %s\n", s->_name.strval());
+  OrkAssertI(_cmdbuf != VK_NULL_HANDLE, "VulkanProfilerChannel beginFrame not called!");
+  OrkAssertI(_query_index < MAX_GPU_PERF_QUERIES, "Vulkan Profiler Queries exhausted.");
 
-  auto pool = _perfQueryPools[block->_pool_index];
-  vkCmdWriteTimestamp(primary_cb()->_vkcmdbuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, pool, block->_end_query);
-}
+  int current_query_index = _query_index++;
+  vkCmdWriteTimestamp(_cmdbuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, _query_pool, current_query_index);
 
-///////////////////////////////////////////////////////////////////////////////
+  OrkAssertI(s->_call_level == -1, "VkProfilerSeries did not call endSample!");
 
-void VkContext::gpuPipelineDrain() {
-  if (_currentPhase != "INFRAME"_crcu) return;
-  VkMemoryBarrier memBarrier = {};
-  memBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
-  memBarrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
-  memBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
-  vkCmdPipelineBarrier(
-      primary_cb()->_vkcmdbuf,
-      VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-      VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-      0,
-      1, &memBarrier,
-      0, nullptr,
-      0, nullptr);
-}
+  s->_call_level = _current_level++;
+  s->_sampling   = true;
+  s->_call_count++;
 
-///////////////////////////////////////////////////////////////////////////////
-
-void VkContext::_readbackPerfQueries() {
-  // Read from the OTHER pool (not the current write pool)
-  int readIndex = 1 - _perfQueryPoolIndex;
-  auto& pending = _perfPendingBlocks[readIndex];
-  if (pending.empty()) return;
-
-  auto pool = _perfQueryPools[readIndex];
-  uint32_t queryCount = pending.size() * 2;
-
-  // Read all timestamps at once
-  std::vector<uint64_t> timestamps(queryCount);
-  VkResult result = vkGetQueryPoolResults(
-      _vkdevice, pool,
-      0, queryCount,
-      queryCount * sizeof(uint64_t),
-      timestamps.data(),
-      sizeof(uint64_t),
-      VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
-
-  if (result == VK_SUCCESS) {
-    _gpuPerfResults.clear();
-    for (auto& block : pending) {
-      uint64_t begin_ts = timestamps[block->_begin_query];
-      uint64_t end_ts = timestamps[block->_end_query];
-      // Convert ticks to seconds: ticks * timestampPeriod(ns) * 1e-9
-      block->_duration = double(end_ts - begin_ts) * double(_timestampPeriod) * 1e-9;
-      _gpuPerfResults[block->_name] = block->_duration;
-
-      if (block->_on_result) {
-        block->_on_result(block);
-      }
-    }
+	// pause parent time by pushing a span which will end at the current query index
+  if (!_vk_span_stack.empty()) {
+    auto& parent = _vk_span_stack.top();
+    _vk_spans.push_back({ .series = parent.series, .begin_query = parent.begin_query, .end_query = current_query_index });
   }
 
-  pending.clear();
+  _vk_span_stack.push({ .series = s, .begin_total_query = current_query_index, .begin_query = current_query_index, .end_query = -1 });
+}
+
+void VkProfilerChannel::sampleEnd(SampleProfilerSeries* s) {
+  if (!_recording) return;
+
+  // printf("VkProfilerChannel endSample %s\n", s->_name.strval());
+  OrkAssertI(_cmdbuf != VK_NULL_HANDLE, "VulkanProfilerChannel beginFrame not called!");
+
+  int current_query_index = _query_index++;
+  vkCmdWriteTimestamp(_cmdbuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, _query_pool, current_query_index);
+
+  OrkAssertI(s->_call_level != -1, "VkProfilerSeries did not call beginSample!");
+
+  while (!_vk_span_stack.empty()) {
+    VkTimespan top = _vk_span_stack.top();
+    _vk_total_spans.push_back({ .series = s,          .begin_total_query = top.begin_total_query, .end_query = current_query_index });
+    _vk_spans.push_back(      { .series = top.series, .begin_query       = top.begin_query,       .end_query = current_query_index });
+    top.series->_max_call_level = std::max(top.series->_max_call_level, _current_level);
+    top.series->_call_level     = -1;
+    top.series->_sampling       = false;
+    _current_level--;
+    OrkAssertI(_current_level >= 0, "VkProfilerChannel _current_level never go below 0!");
+    _vk_span_stack.pop();
+
+    // resume parent
+    if (!_vk_span_stack.empty())
+      _vk_span_stack.top().begin_query = current_query_index;
+
+		// pop and end samples for all children of passed in series
+    if (top.series == s)
+      return;
+  }
+  OrkAssertI(false, "VkProfilerChannel beginSample never called for series!");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

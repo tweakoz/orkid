@@ -18,6 +18,7 @@
 #include <ork/lev2/aud/singularity/fxgen.h>
 #include <ork/util/logger.h>
 #include <ork/kernel/opq.h>
+#include <ork/kernel/profiler.h>
 
 namespace ork::audio::singularity {
 static logchannel_ptr_t logchan_synth = logger()->configureChannel("SingulSynth", fvec3(1, 0.6, .8), true);
@@ -877,11 +878,7 @@ void synth::compute(int inumframes, const void* inputBuffer) {
   else {
 
     ////////////////////////////
-
-    double _perf_voices_accum  = 0.0;
-    double _perf_events_accum  = 0.0;
-    double _perf_effects_accum = 0.0;
-    double _perf_mixing_accum  = 0.0;
+    OrkProfilerFrameBegin(CHANNEL_AUDIO, CpuProfilerChannel, {.capture_fps = true});
 
     /////////////////////////////
     // clear output buffer
@@ -932,216 +929,219 @@ void synth::compute(int inumframes, const void* inputBuffer) {
       ////////////////////////////////
       // update controllers
       ////////////////////////////////
-      float t0 = Timer::get_sync_time();
-      for (auto l : _activeVoices)
-        l->updateControllers();
-      ////////////////////////////////
-      // update dsp modules
-      ////////////////////////////////
-      for (auto l : _activeVoices) {
-        l->compute(_dspwritebase, _dspwritecount);
-      }
-      /////////////////////////////
-      // clear synth main output mix buffer
-      /////////////////////////////
-      for (int i = 0; i < _dspwritecount; i++) {
-        int j           = _dspwritebase + i;
-        master_left[j]  = 0.0f;
-        master_right[j] = 0.0f;
-      }
-      /////////////////////////////
-      // accumulate layers into busses
-      /////////////////////////////
-      if (false) { // serial
+      { 
+        OrkProfilerSampleScope(CHANNEL_AUDIO, "voices");
+        for (auto l : _activeVoices)
+          l->updateControllers();
+        ////////////////////////////////
+        // update dsp modules
+        ////////////////////////////////
         for (auto l : _activeVoices) {
-          l->mixToBus(_dspwritebase, _dspwritecount);
-          l->updateScopes(_dspwritebase, _dspwritecount);
+          l->compute(_dspwritebase, _dspwritecount);
         }
-      } else { // parallel
-        //////
-        for (auto bitem : _outputBusses) {
-          auto bus = bitem.second;
-          bus->_exec_layers.clear();
+        /////////////////////////////
+        // clear synth main output mix buffer
+        /////////////////////////////
+        for (int i = 0; i < _dspwritecount; i++) {
+          int j           = _dspwritebase + i;
+          master_left[j]  = 0.0f;
+          master_right[j] = 0.0f;
         }
-        //////
-        for (auto l : _activeVoices) {
-          auto bus = l->_outbus;
-          bus->_exec_layers.push_back(l);
+        /////////////////////////////
+        // accumulate layers into busses
+        /////////////////////////////
+        if (false) { // serial
+          for (auto l : _activeVoices) {
+            l->mixToBus(_dspwritebase, _dspwritecount);
+            l->updateScopes(_dspwritebase, _dspwritecount);
+          }
+        } else { // parallel
+          //////
+          for (auto bitem : _outputBusses) {
+            auto bus = bitem.second;
+            bus->_exec_layers.clear();
+          }
+          //////
+          for (auto l : _activeVoices) {
+            auto bus = l->_outbus;
+            bus->_exec_layers.push_back(l);
+          }
+          //////
+          std::atomic<int> pending = 0;
+          for (auto bitem : _outputBusses) {
+            auto bus = bitem.second;
+            pending.fetch_add(1);
+            auto op = [this, bus, &pending]() {
+              for (auto l : bus->_exec_layers) {
+                l->mixToBus(_dspwritebase, _dspwritecount);
+              }
+              pending.fetch_sub(1);
+            };
+            opq::concurrentQueue()->enqueue(op);
+          }
+          //////
+          while (pending.load() > 0) {
+          }
+          //////
+          for (auto l : _activeVoices) {
+            l->updateScopes(_dspwritebase, _dspwritecount);
+          }
+          //////
         }
-        //////
+      } // voices
+      { 
+        OrkProfilerSampleScope(CHANNEL_AUDIO, "events");
+        /////////////////////////////
+        // synth update tick (events)
+        /////////////////////////////
+        _samplesuntilnexttick -= frames_per_controlpass;
+        if (_samplesuntilnexttick < 0) {
+          float elapsed_this_tick = float(k_samples_per_tick) * getInverseSampleRate();
+          _lnoteframe++;
+          _lnotetime += elapsed_this_tick;
+          auto& eventmap = _eventmap.LockForWrite();
+          this->_tick(eventmap, elapsed_this_tick);
+          _eventmap.UnLock();
+          _samplesuntilnexttick += k_samples_per_tick;
+          ////////////////////////////////////////////
+          // process sequencer from audio thread
+          //  so MIDI timing is sample-accurate
+          //  and independent of render frame rate
+          ////////////////////////////////////////////
+          _sequencer->process();
+          ////////////////////////////////////////////
+          activateVoices(ifrpending);
+          deactivateVoices();
+        }
+      } // events
+      { 
+        OrkProfilerSampleScope(CHANNEL_AUDIO, "effects");
+        /////////////////////////////
+        // compute/accumulate output busses
+        //  (into main output)
+        /////////////////////////////
         std::atomic<int> pending = 0;
-        for (auto bitem : _outputBusses) {
-          auto bus = bitem.second;
+        bool serial              = false;
+        for (auto busitem : _outputBusses) {
+          bool is_last_bus = (busitem.first == _outputBusses.rbegin()->first);
+          auto bus         = busitem.second;
           pending.fetch_add(1);
-          auto op = [this, bus, &pending]() {
-            for (auto l : bus->_exec_layers) {
-              l->mixToBus(_dspwritebase, _dspwritecount);
+          auto op = [&pending, bus, this, inumframes]() {
+            auto& bus_buf    = bus->_buffer;
+            float* bus_left  = bus_buf._leftBuffer;
+            float* bus_right = bus_buf._rightBuffer;
+            //////////////////////////////////////////
+            // Insert effects chain (runs BEFORE _dsplayer)
+            // Signal flow: Voices → _insertGroups → _dsplayer → Output
+            //////////////////////////////////////////
+            bus->computeInserts(inumframes, _dspwritebase, _dspwritecount);
+            //////////////////////////////////////////
+            // bus DSP fx (main bus effect via setEffect)
+            //////////////////////////////////////////
+            auto busdsplayer = bus->_dsplayer;
+            if (busdsplayer) {
+              auto dsp_buf = busdsplayer->_dspbuffer;
+              dsp_buf->resize(inumframes);
+              float* dsp_left  = dsp_buf->channel(0);
+              float* dsp_right = dsp_buf->channel(1);
+              //////////////////////////////////////////
+              // bus -> dsp buf input
+              //////////////////////////////////////////
+              for (int i = 0; i < _dspwritecount; i++) {
+                int j        = _dspwritebase + i;
+                dsp_left[i]  = bus_left[j];
+                dsp_right[i] = bus_right[j];
+              }
+              //////////////////////////////////////////
+              // compute dsp -> tempbus
+              //////////////////////////////////////////
+              busdsplayer->_outbus = nullptr;
+              busdsplayer->beginCompute(_dspwritecount);
+              busdsplayer->updateControllers();
+              busdsplayer->compute(0, _dspwritecount);
+              busdsplayer->endCompute();
+              //////////////////////////////////////////
+              // tempbus -> bus out
+              //////////////////////////////////////////
+              const float* fxlyroutl = busdsplayer->_dspbuffer->channel(0);
+              const float* fxlyroutr = busdsplayer->_dspbuffer->channel(1);
+              for (int i = 0; i < _dspwritecount; i++) {
+                int j        = _dspwritebase + i;
+                bus_left[j]  = fxlyroutl[i];
+                bus_right[j] = fxlyroutr[i];
+              }
+              //////////////////////////////////////////
             }
             pending.fetch_sub(1);
           };
-          opq::concurrentQueue()->enqueue(op);
+          if (serial or is_last_bus) {
+            op();
+          } else {
+            opq::concurrentQueue()->enqueue(op);
+          }
         }
-        //////
         while (pending.load() > 0) {
         }
-        //////
-        for (auto l : _activeVoices) {
-          l->updateScopes(_dspwritebase, _dspwritecount);
-        }
-        //////
-      }
-      float t1 = Timer::get_sync_time();
-      _perf_voices_accum += (t1 - t0);
-      /////////////////////////////
-      // synth update tick (events)
-      /////////////////////////////
-      _samplesuntilnexttick -= frames_per_controlpass;
-      if (_samplesuntilnexttick < 0) {
-        float elapsed_this_tick = float(k_samples_per_tick) * getInverseSampleRate();
-        _lnoteframe++;
-        _lnotetime += elapsed_this_tick;
-        auto& eventmap = _eventmap.LockForWrite();
-        this->_tick(eventmap, elapsed_this_tick);
-        _eventmap.UnLock();
-        _samplesuntilnexttick += k_samples_per_tick;
-        ////////////////////////////////////////////
-        // process sequencer from audio thread
-        //  so MIDI timing is sample-accurate
-        //  and independent of render frame rate
-        ////////////////////////////////////////////
-        _sequencer->process();
-        ////////////////////////////////////////////
-        activateVoices(ifrpending);
-        deactivateVoices();
-      }
-      float t2 = Timer::get_sync_time();
-      _perf_events_accum += (t2 - t1);
-      /////////////////////////////
-      // compute/accumulate output busses
-      //  (into main output)
-      /////////////////////////////
-      std::atomic<int> pending = 0;
-      bool serial              = false;
-      for (auto busitem : _outputBusses) {
-        bool is_last_bus = (busitem.first == _outputBusses.rbegin()->first);
-        auto bus         = busitem.second;
-        pending.fetch_add(1);
-        auto op = [&pending, bus, this, inumframes]() {
+      } // effects
+      { 
+        OrkProfilerSampleScope(CHANNEL_AUDIO, "mixing");
+        //////////////////////////////////////////
+        // accumulate busses to master
+        //////////////////////////////////////////
+        bool any_soloed = _num_soloed.load() > 0;
+        for (auto busitem : _outputBusses) {
+          auto bus         = busitem.second;
+          //////////////////////////////////////////
+          // mute/solo logic
+          //////////////////////////////////////////
+          if (any_soloed && !bus->_solo) {
+            continue;  // skip non-soloed buses when solo is active
+          }
+          if (!any_soloed && bus->_mute) {
+            continue;  // skip muted buses when no solo active
+          }
+          //////////////////////////////////////////
           auto& bus_buf    = bus->_buffer;
           float* bus_left  = bus_buf._leftBuffer;
           float* bus_right = bus_buf._rightBuffer;
           //////////////////////////////////////////
-          // Insert effects chain (runs BEFORE _dsplayer)
-          // Signal flow: Voices → _insertGroups → _dsplayer → Output
+          // accumulate bus to master
           //////////////////////////////////////////
-          bus->computeInserts(inumframes, _dspwritebase, _dspwritecount);
-          //////////////////////////////////////////
-          // bus DSP fx (main bus effect via setEffect)
-          //////////////////////////////////////////
-          auto busdsplayer = bus->_dsplayer;
-          if (busdsplayer) {
-            auto dsp_buf = busdsplayer->_dspbuffer;
-            dsp_buf->resize(inumframes);
-            float* dsp_left  = dsp_buf->channel(0);
-            float* dsp_right = dsp_buf->channel(1);
-            //////////////////////////////////////////
-            // bus -> dsp buf input
-            //////////////////////////////////////////
-            for (int i = 0; i < _dspwritecount; i++) {
-              int j        = _dspwritebase + i;
-              dsp_left[i]  = bus_left[j];
-              dsp_right[i] = bus_right[j];
-            }
-            //////////////////////////////////////////
-            // compute dsp -> tempbus
-            //////////////////////////////////////////
-            busdsplayer->_outbus = nullptr;
-            busdsplayer->beginCompute(_dspwritecount);
-            busdsplayer->updateControllers();
-            busdsplayer->compute(0, _dspwritecount);
-            busdsplayer->endCompute();
-            //////////////////////////////////////////
-            // tempbus -> bus out
-            //////////////////////////////////////////
-            const float* fxlyroutl = busdsplayer->_dspbuffer->channel(0);
-            const float* fxlyroutr = busdsplayer->_dspbuffer->channel(1);
-            for (int i = 0; i < _dspwritecount; i++) {
-              int j        = _dspwritebase + i;
-              bus_left[j]  = fxlyroutl[i];
-              bus_right[j] = fxlyroutr[i];
-            }
-            //////////////////////////////////////////
+          for (int i = 0; i < _dspwritecount; i++) {
+            int j   = _dspwritebase + i;
+            float L = bus_left[j];
+            float R = bus_right[j];
+            master_left[j] += L;
+            master_right[j] += R;
           }
-          pending.fetch_sub(1);
-        };
-        if (serial or is_last_bus) {
-          op();
-        } else {
-          opq::concurrentQueue()->enqueue(op);
-        }
-      }
-      while (pending.load() > 0) {
-      }
-      float t3 = Timer::get_sync_time();
-      _perf_effects_accum += (t3 - t2);
-      //////////////////////////////////////////
-      // accumulate busses to master
-      //////////////////////////////////////////
-      bool any_soloed = _num_soloed.load() > 0;
-      for (auto busitem : _outputBusses) {
-        auto bus         = busitem.second;
-        //////////////////////////////////////////
-        // mute/solo logic
-        //////////////////////////////////////////
-        if (any_soloed && !bus->_solo) {
-          continue;  // skip non-soloed buses when solo is active
-        }
-        if (!any_soloed && bus->_mute) {
-          continue;  // skip muted buses when no solo active
-        }
-        //////////////////////////////////////////
-        auto& bus_buf    = bus->_buffer;
-        float* bus_left  = bus_buf._leftBuffer;
-        float* bus_right = bus_buf._rightBuffer;
-        //////////////////////////////////////////
-        // accumulate bus to master
-        //////////////////////////////////////////
-        for (int i = 0; i < _dspwritecount; i++) {
-          int j   = _dspwritebase + i;
-          float L = bus_left[j];
-          float R = bus_right[j];
-          master_left[j] += L;
-          master_right[j] += R;
-        }
-        //////////////////////////////////////
-        // SignalScope
-        //////////////////////////////////////
-        if (bus->_scopesource) {
-          bus->_scopesource->updateStereo(
-              _dspwritecount, //
-              bus_left + _dspwritebase,
-              bus_right + _dspwritebase,
-              true);
-        }
-      }
-      ////////////////////////////////
-      // master bus DSP
-      ////////////////////////////////
-      if(_enableMasterEq){
-        for (int i = 0; i < _dspwritecount; i++) {
-          int j   = _dspwritebase + i;
-          float L = master_left[j];
-          float R = master_right[j];
-          for( int ifilt=0; ifilt<1; ifilt++ ){
-            L = _peqL[ifilt].compute(L);
-            R = _peqR[ifilt].compute(R);
+          //////////////////////////////////////
+          // SignalScope
+          //////////////////////////////////////
+          if (bus->_scopesource) {
+            bus->_scopesource->updateStereo(
+                _dspwritecount, //
+                bus_left + _dspwritebase,
+                bus_right + _dspwritebase,
+                true);
           }
-          master_left[j] = L;
-          master_right[j] = R;
         }
-      }
-      float t4 = Timer::get_sync_time();
-      _perf_mixing_accum += (t4 - t3);
+        ////////////////////////////////
+        // master bus DSP
+        ////////////////////////////////
+        if(_enableMasterEq){
+          for (int i = 0; i < _dspwritecount; i++) {
+            int j   = _dspwritebase + i;
+            float L = master_left[j];
+            float R = master_right[j];
+            for( int ifilt=0; ifilt<1; ifilt++ ){
+              L = _peqL[ifilt].compute(L);
+              R = _peqR[ifilt].compute(R);
+            }
+            master_left[j] = L;
+            master_right[j] = R;
+          }
+        }
+      } // mixing
       ////////////////////////////////
       // update indices
       ////////////////////////////////
@@ -1153,23 +1153,13 @@ void synth::compute(int inumframes, const void* inputBuffer) {
     for (auto l : _activeVoices)
       l->endCompute();
     //////////////////////////////////
-    // store timing breakdown
-    //////////////////////////////////
-    _perf_voices_duration  = _perf_voices_accum;
-    _perf_events_duration  = _perf_events_accum;
-    _perf_effects_duration = _perf_effects_accum;
-    _perf_mixing_duration  = _perf_mixing_accum;
-    //////////////////////////////////
+    OrkProfilerFrameEnd(CHANNEL_AUDIO);
     if (_onprofilerframe) {
       SynthProfilerFrame frame;
       frame._samplerate       = getSampleRate();
       frame._controlrate      = controlRate();
       frame._cpuload          = _cpuload;
       frame._numlayers        = _activeVoices.size();
-      frame._voices_duration  = _perf_voices_duration;
-      frame._events_duration  = _perf_events_duration;
-      frame._effects_duration = _perf_effects_duration;
-      frame._mixing_duration  = _perf_mixing_duration;
 
       int numdspblocks = 0;
       int numdspstages = 0;

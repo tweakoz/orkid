@@ -468,6 +468,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   = py::cast<py::function>(appinstance.attr("onGpuUpdate"));
               rval->_vars->makeValueForKey<py::function>("gpuupdatefn") = gpuupdatefn;
               rval->onGpuUpdate([=](Context* ctx) { //
+                OrkProfilerSampleScope(CHANNEL_MAIN, "py:onGpuUpdate");
                 ctx->makeCurrentContext();
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars->typedValueForKey<py::function>("gpuupdatefn");
@@ -538,6 +539,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               rval->_vars->makeValueForKey<py::function>("drawfn") = drawfn;
               rval->_userSpecifiedOnDraw = true;
               rval->onDraw([=](ui::drawevent_constptr_t drwev) { //
+                OrkProfilerSampleScope(CHANNEL_MAIN, "py:onDraw");
                 ork::opq::mainSerialQueue()->Process();
                 py::gil_scoped_acquire acquire;
                 auto pyfn       = rval->_vars->typedValueForKey<py::function>("drawfn");
@@ -608,6 +610,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   = py::cast<py::function>(appinstance.attr("onUpdate"));
               rval->_vars->makeValueForKey<py::function>("updatefn") = updfn;
               rval->onUpdate([=](ui::updatedata_ptr_t updata) { //
+                OrkProfilerSampleScope(CHANNEL_UPDATE, "py:onUpdate");
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars->typedValueForKey<py::function>("updatefn");
                 try {
@@ -634,6 +637,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   = py::cast<py::function>(appinstance.attr("onUiEvent"));
               rval->_vars->makeValueForKey<py::function>("uievfn") = uievfn;
               rval->onUiEvent([=](ui::event_constptr_t ev) -> ui::HandlerResult { //
+                OrkProfilerSampleScope(CHANNEL_MAIN, "py:onUiEvent");
                 EASY_BLOCK("pyezapp::evh1", profiler::colors::Red);
                 py::gil_scoped_acquire acquire;
                 EASY_END_BLOCK;
@@ -683,16 +687,6 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
           "timescale",
           [](orkezapp_ptr_t app) -> float { return app->_timescale; },
           [](orkezapp_ptr_t app, float val) { app->_timescale = val; })
-      ///////////////////////////////////////////////////////
-      .def_property_readonly("perf_frame_duration", [](orkezapp_ptr_t app) -> double {
-        return app->_perf_frame_duration;
-      })
-      .def_property_readonly("perf_gpu_update_duration", [](orkezapp_ptr_t app) -> double {
-        return app->_perf_gpu_update_duration;
-      })
-      .def_property_readonly("perf_update_duration", [](orkezapp_ptr_t app) -> double {
-        return app->_perf_update_duration;
-      })
       ///////////////////////////////////////////////////////
       .def_property_readonly("vars", [](orkezapp_ptr_t ezapp) -> varmap::varmap_ptr_t { //
         return ezapp->_vars;
@@ -977,33 +971,6 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
       py::class_<EzMainWin, ezmainwin_ptr_t>(module_lev2, "EzMainWin")
       .def_property_readonly("appwin",[](ezmainwin_ptr_t mwin) -> appwindow_ptr_t {
         return mwin->_appwin;
-      })
-      .def_property_readonly("perf_render_duration", [](ezmainwin_ptr_t mwin) -> double {
-        return mwin->_perf_render_duration;
-      })
-      .def_property_readonly("perf_enqueue_duration", [](ezmainwin_ptr_t mwin) -> double {
-        return mwin->_perf_enqueue_duration;
-      })
-      .def_property_readonly("perf_present_duration", [](ezmainwin_ptr_t mwin) -> double {
-        return mwin->_perf_present_duration;
-      })
-      .def_property_readonly("perf_acquire_duration", [](ezmainwin_ptr_t mwin) -> double {
-        return mwin->_perf_acquire_duration;
-      })
-      .def_property_readonly("perf_fence_wait_duration", [](ezmainwin_ptr_t mwin) -> double {
-        return mwin->_perf_fence_wait_duration;
-      })
-      .def_property_readonly("perf_beginFrame_duration", [](ezmainwin_ptr_t mwin) -> double {
-        return mwin->_perf_beginFrame_duration;
-      })
-      .def_property_readonly("perf_endFrame_duration", [](ezmainwin_ptr_t mwin) -> double {
-        return mwin->_perf_endFrame_duration;
-      })
-      .def_property_readonly("perf_submit_duration", [](ezmainwin_ptr_t mwin) -> double {
-        return mwin->_perf_submit_duration;
-      })
-      .def_property_readonly("perf_present_vk_duration", [](ezmainwin_ptr_t mwin) -> double {
-        return mwin->_perf_present_vk_duration;
       });
   type_codec->registerStdCodec<ezmainwin_ptr_t>(ezmainwin_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -1073,33 +1040,6 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
       py::class_<EzSecondaryWin, ezsecondarywin_ptr_t>(module_lev2, "EzSecondaryWin")
       .def_property_readonly("width", &EzSecondaryWin::width)
       .def_property_readonly("height", &EzSecondaryWin::height)
-      .def_property_readonly("perf_render_duration", [](ezsecondarywin_ptr_t win) -> double {
-        return win->_perf_render_duration;
-      })
-      .def_property_readonly("perf_enqueue_duration", [](ezsecondarywin_ptr_t win) -> double {
-        return win->_perf_enqueue_duration;
-      })
-      .def_property_readonly("perf_present_duration", [](ezsecondarywin_ptr_t win) -> double {
-        return win->_perf_present_duration;
-      })
-      .def_property_readonly("perf_acquire_duration", [](ezsecondarywin_ptr_t win) -> double {
-        return win->_perf_acquire_duration;
-      })
-      .def_property_readonly("perf_fence_wait_duration", [](ezsecondarywin_ptr_t win) -> double {
-        return win->_perf_fence_wait_duration;
-      })
-      .def_property_readonly("perf_beginFrame_duration", [](ezsecondarywin_ptr_t win) -> double {
-        return win->_perf_beginFrame_duration;
-      })
-      .def_property_readonly("perf_endFrame_duration", [](ezsecondarywin_ptr_t win) -> double {
-        return win->_perf_endFrame_duration;
-      })
-      .def_property_readonly("perf_submit_duration", [](ezsecondarywin_ptr_t win) -> double {
-        return win->_perf_submit_duration;
-      })
-      .def_property_readonly("perf_present_vk_duration", [](ezsecondarywin_ptr_t win) -> double {
-        return win->_perf_present_vk_duration;
-      })
       .def_property_readonly("should_close", &EzSecondaryWin::shouldClose)
       .def_property_readonly("ui_context", [](ezsecondarywin_ptr_t win) -> ui::context_ptr_t {
         return win->uiContextPtr();

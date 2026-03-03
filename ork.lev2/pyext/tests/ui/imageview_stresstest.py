@@ -16,7 +16,6 @@ from obt import path
 from orkengine.core import vec2, vec3, vec4, mtx4, quat, VarMap, CrcStringProxy
 from orkengine import lev2
 from ork.app import application, loggerui
-from ork.app.frame_profiler import FrameProfilerComponent
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 

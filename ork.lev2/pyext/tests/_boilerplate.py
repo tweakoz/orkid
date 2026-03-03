@@ -8,7 +8,6 @@ import math, random, argparse, sys
 from orkengine.core import *
 from orkengine.lev2 import *
 from ork.app.application import ComponentizedApplication
-from ork.app.frame_profiler import FrameProfilerComponent
 
 print(FxShaderTechnique)
 
@@ -174,7 +173,6 @@ class BasicUiCamSgApp(ComponentizedApplication):
         super().__init__()
         self.materials = set()
         setupUiCamera(app=self, eye=vec3(5, 5, 5), tgt=vec3(0, 0, 0))
-        self.addComponent("profiler", FrameProfilerComponent, gpu_filter=["*", "-fwd:total"])
         self.createEzApp(height=640,width=1280,ssaa=ssaa)
 
     ##############################################

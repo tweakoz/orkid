@@ -889,6 +889,8 @@ void OrkEzApp::_mainThreadLoopBegin() {
       ork::Timer update_timer;
 
       while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
+        OrkProfilerFrameBegin(CHANNEL_UPDATE, CpuProfilerChannel, {.capture_fps = true});
+        OrkProfilerSampleBegin(CHANNEL_UPDATE, SERIES_EZAPP_UPDATE_FREERUN);
 
         EASY_BLOCK("UpdateIteration");
         double this_time = _update_timer.SecsSinceStart() * _timescale;
@@ -940,8 +942,13 @@ void OrkEzApp::_mainThreadLoopBegin() {
         }
         opq::updateSerialQueue()->Process();
         sched_yield();
+
+        OrkProfilerSampleEnd(CHANNEL_UPDATE, SERIES_EZAPP_UPDATE_FREERUN);
+        OrkProfilerFrameEnd(CHANNEL_UPDATE);
       } // while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
+
     } // end async mode
+
     else { // lockstep / sync mode
 
       logchan_ezapp->log("LockStep/Synchronous MODE: UPS=%g FPS=%g", target_ups, target_fps);
@@ -964,6 +971,9 @@ void OrkEzApp::_mainThreadLoopBegin() {
       double wallclock_updates = 0.0;
 
       while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
+        OrkProfilerFrameBegin(CHANNEL_UPDATE, CpuProfilerChannel, {.capture_fps = true});
+        OrkProfilerSampleBegin(CHANNEL_UPDATE, SERIES_EZAPP_UPDATE_LOCKSTEP);
+
         EASY_BLOCK("UpdateIteration_SYNC");
 
         // Fixed time step per update
@@ -1027,6 +1037,8 @@ void OrkEzApp::_mainThreadLoopBegin() {
 
         opq::updateSerialQueue()->Process();
 
+        OrkProfilerSampleEnd(CHANNEL_UPDATE, SERIES_EZAPP_UPDATE_LOCKSTEP);
+        OrkProfilerFrameEnd(CHANNEL_UPDATE);
       } // while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
 
     } // end sync mode
@@ -1192,7 +1204,11 @@ int OrkEzApp::mainThreadLoop() {
   // Fire deferred audio callbacks now that all callbacks are registered
   _fireDeferredAudioCallbacks();
 
-  _mainThreadLoopBegin();
+  {
+    OrkProfilerFrameBegin(CHANNEL_MAIN, CpuProfilerChannel, {.capture_fps = true});
+    _mainThreadLoopBegin();
+    OrkProfilerFrameEnd(CHANNEL_MAIN);
+  }
 
   // Wall-clock FPS tracking
   ork::Timer fps_timer;
@@ -1202,21 +1218,37 @@ int OrkEzApp::mainThreadLoop() {
   ork::Timer frame_timer;
 
   if (_mainWindow) {
+
     auto ctx = _mainWindow->_ctqt;
     if (_initdata->_freerunning) {
+
+      ////////////////////////////////////////
+      // FREERUN MAIN THREAD
+      ////////////////////////////////////////
+
       while (ctx->_runstate == 1) {
+        OrkProfilerFrameBegin(CHANNEL_MAIN, CpuProfilerChannel, {.capture_fps = true});
+        OrkProfilerSampleBegin(CHANNEL_MAIN, SERIES_EZAPP_MAIN_FREERUN);
+
         frame_timer.Start();  // Start timing this frame
 
         // Process synth main thread tasks (sequencer, HUD events, etc.)
         if (_synth) {
+          OrkProfilerSampleScope(CHANNEL_MAIN, "ez:audio_synth");
           _synth->mainThreadHandler();
         }
 
-        ctx->_runloopIter(true);
+        {
+          OrkProfilerSampleScope(CHANNEL_MAIN, "ez:run_loop");
+          ctx->_runloopIter(true);
+        }
 
-        // Render secondary windows
-        _renderSecondaryWindows();
-        _cleanupClosedSecondaryWindows();
+        {
+          OrkProfilerSampleScope(CHANNEL_MAIN, "ez:secondary_windows");
+          // Render secondary windows
+          _renderSecondaryWindows();
+          _cleanupClosedSecondaryWindows();
+        }
 
         double frame_duration = frame_timer.SecsSinceStart();
         _perf_frame_duration = frame_duration;
@@ -1237,20 +1269,39 @@ int OrkEzApp::mainThreadLoop() {
             fps_timer.Start();
           }
         }
+
+        OrkProfilerSampleEnd(CHANNEL_MAIN, SERIES_EZAPP_MAIN_FREERUN);
+        OrkProfilerFrameEnd(CHANNEL_MAIN);
       }
+
     } else {
+
+      ////////////////////////////////////////
+      // SYNCHRONOUS MAIN THREAD
+      ////////////////////////////////////////
+
       while (ctx->_runstate == 1) {
+        OrkProfilerFrameBegin(CHANNEL_MAIN, CpuProfilerChannel, {.capture_fps = true});
+        OrkProfilerSampleBegin(CHANNEL_MAIN, SERIES_EZAPP_MAIN_LOCKSTEP);
+
         while (_lockstep_frame_requests.load()) {
           // Process synth main thread tasks (sequencer, HUD events, etc.)
           if (_synth) {
+            OrkProfilerSampleScope(CHANNEL_MAIN, "ez:audio_synth");
             _synth->mainThreadHandler();
           }
 
-          ctx->_runloopIter(false);
+          {
+            OrkProfilerSampleScope(CHANNEL_MAIN, "ez:run_loop");
+            ctx->_runloopIter(false);
+          }
 
-          // Render secondary windows
-          _renderSecondaryWindows();
-          _cleanupClosedSecondaryWindows();
+          {
+            OrkProfilerSampleScope(CHANNEL_MAIN, "ez::secondary_windows");
+            // Render secondary windows
+            _renderSecondaryWindows();
+            _cleanupClosedSecondaryWindows();
+          }
 
           _lockstep_frame_requests.fetch_sub(1);
 
@@ -1268,7 +1319,11 @@ int OrkEzApp::mainThreadLoop() {
           }
         }
         sched_yield();
+
+        OrkProfilerSampleEnd(CHANNEL_MAIN, SERIES_EZAPP_MAIN_LOCKSTEP);
+        OrkProfilerFrameEnd(CHANNEL_MAIN);
       }
+
     }
   }
   else{

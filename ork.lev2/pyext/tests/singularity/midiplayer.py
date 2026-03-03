@@ -22,7 +22,7 @@ import argparse
 from orkengine.core import *
 from orkengine.lev2 import *
 from ork.app.application import ComponentizedApplication
-from ork.app.frame_profiler import FrameProfilerComponent, EVENT_NOTE_ON, EVENT_NOTE_OFF
+from ork.app.frame_profiler import FrameProfilerComponent
 from mido import MidiFile
 
 # Import midiToSingularitySequence from local _seq module
@@ -267,9 +267,8 @@ class MoonlightApp(ComponentizedApplication):
         vpack = vpack_item.widget
         vpack.uniform = True
 
-        # GraphView for profiler (top, fills remaining space)
-        graphview = vpack.makeChild(uiclass=ui.GraphView, args=[])
-        self.profiler.graphview = graphview
+        # ProfilerView for profiler (top, fills remaining space)
+        self.profiler.profileview = vpack.makeChild(uiclass=ui.ProfilerView, args=[])
 
         # PrimCanvas for keyboard (bottom, fixed height)
         canvas = vpack.makeChild(uiclass=ui.PrimCanvas, args=["piano_canvas"])
@@ -329,9 +328,9 @@ class MoonlightApp(ComponentizedApplication):
             if velocity > 0:
                 if self.keyboard:
                     self.keyboard.triggerNote(note)
-                self.profiler.addEvent(EVENT_NOTE_ON, "AUDIO")
+                self.profiler.addEvent("AudioThread", "EVENT_NOTE_ON")
             else:
-                self.profiler.addEvent(EVENT_NOTE_OFF, "AUDIO")
+                self.profiler.addEvent("AudioThread", "EVENT_NOTE_OFF")
 
         self.sequencer.on_event = on_sequencer_event
 

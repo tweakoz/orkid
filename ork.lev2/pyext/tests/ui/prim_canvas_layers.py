@@ -12,7 +12,6 @@ import math, random
 from orkengine.core import vec2, vec3, vec4, mtx4, quat, CrcStringProxy
 from orkengine import lev2
 from ork.app.application import ComponentizedApplication
-from ork.app.frame_profiler import FrameProfilerComponent
 
 tokens = CrcStringProxy()
 
@@ -200,9 +199,6 @@ class ParallaxDemo(ComponentizedApplication):
 
   def __init__(self):
     super().__init__()
-
-    self.profiler = self.addComponent("profiler", FrameProfilerComponent,
-                                      gpu_filter=["*", "-fwd:total"])
 
     self.createEzApp(fullscreen=True)
 

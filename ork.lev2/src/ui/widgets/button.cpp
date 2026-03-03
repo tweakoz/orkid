@@ -31,6 +31,7 @@ HandlerResult Button::DoOnUiEvent(event_constptr_t cev) {
   switch (cev->_eventcode) {
     case EventCode::PUSH: {
       _pressed = true;
+      if (_onPushed) _onPushed();
       rval.setHandled(this);
       break;
     }

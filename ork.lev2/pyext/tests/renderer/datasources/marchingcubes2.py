@@ -17,7 +17,6 @@ from orkengine.core import vec3, vec4, VarMap, CrcStringProxy, lev2_pyexdir
 from orkengine import lev2
 from orkengine.lev2 import meshutil
 from ork.app.application import ComponentizedApplication
-from ork.app.frame_profiler import FrameProfilerComponent
 
 lev2_pyexdir.addToSysPath()
 from lev2utils.cameras import setupUiCameraX
@@ -37,7 +36,6 @@ class MCUBES2(ComponentizedApplication):
 
   def __init__(self):
     super().__init__()
-    self.profiler = self.addComponent("profiler", FrameProfilerComponent)
     self.materials = set()
 
     # create cube verts and faces

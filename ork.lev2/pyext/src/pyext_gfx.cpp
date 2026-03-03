@@ -86,50 +86,13 @@ void pyinit_gfx(py::module& module_lev2) {
           .def_property_readonly("topRCFD", [](ctx_t& c) -> rcfd_ptr_t { return c.get()->topRenderContextFrameData(); }) //
           //////////////////////
           .def_property_readonly("frameIndex", [](ctx_t& c) -> int { return c.get()->GetTargetFrame(); })
-          //.def_property("currentMaterial", [](ctx_t& c)&Context::currentMaterial, &Context::BindMaterial)
-          .def("gpuPerfBlockBegin", [](ctx_t& c, const std::string& name) -> gpuperfblock_ptr_t {
-              return c.get()->gpuPerfBlockBegin(name);
-          })
-          .def("gpuPerfBlockEnd", [](ctx_t& c, gpuperfblock_ptr_t block) {
-              c.get()->gpuPerfBlockEnd(block);
-          })
-          .def("gpuPerfResult", [](ctx_t& c, const std::string& name) -> double {
-              return c.get()->gpuPerfResult(name);
-          })
-          .def_property_readonly("gpu_profiler_results", [](ctx_t& c) -> py::dict {
-              py::dict d;
-              for (auto& [k, v] : c.get()->_gpuPerfResults) {
-                  d[py::cast(k)] = py::cast(v);
-              }
-              return d;
-          })
+          // .def_property("currentMaterial", [](ctx_t& c)&Context::currentMaterial, &Context::BindMaterial)
           .def("__repr__", [](const ctx_t& c) -> std::string {
             fxstring<64> fxs;
             fxs.format("Context(%p)", c.get());
             return fxs.c_str();
           });
   type_codec->registerStdCodec<ctx_t>(ctx_type);
-  /////////////////////////////////////////////////////////////////////////////////
-  py::class_<GpuPerfBlock, gpuperfblock_ptr_t>(module_lev2, "GpuPerfBlock")
-      .def_readonly("name", &GpuPerfBlock::_name)
-      .def_readonly("duration", &GpuPerfBlock::_duration)
-      .def_readwrite("sample_index", &GpuPerfBlock::_sample_index)
-      .def_property("on_result",
-          [](gpuperfblock_ptr_t& b) { return py::none(); },  // getter (opaque)
-          [](gpuperfblock_ptr_t& b, py::function fn) {        // setter
-              auto fn_ptr = std::shared_ptr<py::function>(
-                  new py::function(fn),
-                  [](py::function* p) {
-                      if (Py_IsInitialized()) {
-                          py::gil_scoped_acquire gil;
-                          delete p;
-                      }
-                  });
-              b->_on_result = [fn_ptr](gpuperfblock_ptr_t blk) {
-                  py::gil_scoped_acquire gil;
-                  (*fn_ptr)(blk);
-              };
-          });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<fbi_t>(module_lev2, "FrameBufferInterface")
       .def_property(

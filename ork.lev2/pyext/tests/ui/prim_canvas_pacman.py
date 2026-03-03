@@ -8,7 +8,6 @@ import numpy as np
 from orkengine.core import vec2, vec4, CrcStringProxy
 from orkengine import lev2
 from ork.app.application import ComponentizedApplication
-from ork.app.frame_profiler import FrameProfilerComponent
 from ork.app.testlib.gameutils.grid2d import (
   DIR_RIGHT, DIR_DOWN, DIR_LEFT, DIR_UP, DIR_NONE, DIR_DELTA,
   opposite_dir, GridMaze, GridEntity
@@ -177,9 +176,6 @@ class Ghost(GridEntity):
 class PacManGame(ComponentizedApplication):
   def __init__(self):
     super().__init__()
-
-    self.profiler = self.addComponent("profiler", FrameProfilerComponent,
-                                      gpu_filter=["*", "-fwd:total"])
 
     self.createEzApp(fullscreen=True, disable_mouse_cursor=True)
 

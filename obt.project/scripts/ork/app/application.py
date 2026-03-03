@@ -306,7 +306,14 @@ from orkengine.core import CrcString
 
 class ComponentizedApplication(object):
 
-  def __init__(self,lui="none"):
+  DEFAULT_PROFILER_CHANNELS = [
+    "MainThread",
+    "GPU",
+    "AudioThread",
+    "UpdateThread",
+  ]
+
+  def __init__(self,lui="none",profiler_channels=DEFAULT_PROFILER_CHANNELS):
     self.app_components = {}
     self.components_sorted = []
     self.absolutetime = 0.0
@@ -319,7 +326,15 @@ class ComponentizedApplication(object):
       self.ezapp.signalExit()
 
     signal.signal(signal.SIGINT, onCtrlC)
-    
+
+    # profiler_channels=DEFAULT_PROFILER_CHANNELS -> enabled with default channels
+    # profiler_channels=[...] -> enabled with specific channels
+    # profiler_channels=[]    -> disabled
+    self.profiler = None
+    if profiler_channels:
+      from ork.app.frame_profiler import FrameProfilerComponent
+      self.profiler = self.addComponent("profiler", FrameProfilerComponent, channels=profiler_channels)
+
     if lui == "yes":
       from ork.app.loggerui import LoggerUIComponent
       # enable logger UI component by if not overridden off by env var
@@ -406,7 +421,8 @@ class ComponentizedApplication(object):
       self.ezapp = lev2.OrkEzApp.create(self, **args)
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 30)
     # Standard setup (refresh policy and UI draw)
-    self.ezapp.topWidget.enableUiDraw()
+    if self.ezapp.topWidget is not None:
+      self.ezapp.topWidget.enableUiDraw()
 
     # Broadcast to components (for early UI setup like overlays)
     for component in self.components_sorted:
@@ -426,13 +442,25 @@ class ComponentizedApplication(object):
     # Call UI initialization template method
     self._onUiInit()
 
+    # If profiler exists and profileview wasn't assigned by _onUiInit, create default overlay
+    if self.profiler and self.profiler.profileview is None:
+      from orkengine import lev2
+      lg_group = self.ezapp.topLayoutGroup
+      overlay_group = lev2.ui.LayoutGroup.create("profiler_overlay")
+      self.profiler.profileview = overlay_group.makeChild(
+        uiclass=lev2.ui.ProfilerView,
+        args=[],
+        fill=True
+      ).widget
+      lg_group.profiler_overlay_widget = overlay_group
+
   ##################################################
 
   def _onUiInit(self):
     """Template method for UI initialization - override in subclasses"""
     pass
 
-  #########
+#########
   # application broadcast handlers
   #########
 
