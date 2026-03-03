@@ -179,7 +179,6 @@ if args["encrypt"]:
 from orkengine.core import *
 from orkengine.lev2 import *
 from ork.app.application import ComponentizedApplication
-from ork.app.frame_profiler import FrameProfilerComponent
 
 def trace_imports(frame, event, arg):
     if event == "import":
@@ -200,7 +199,6 @@ class SceneGraphApp(ComponentizedApplication):
 
   def __init__(self):
     super().__init__()
-    self.profiler = self.addComponent("profiler", FrameProfilerComponent)
     self.materials = set()
     self.modelinsts=[]
     self.ssaamode = False

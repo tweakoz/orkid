@@ -7,7 +7,6 @@ import random
 from orkengine.core import vec2, vec4, CrcStringProxy
 from orkengine import lev2
 from ork.app.application import ComponentizedApplication
-from ork.app.frame_profiler import FrameProfilerComponent
 from ork.app.testlib.gameutils import parse_ascii_sprite
 
 tokens = CrcStringProxy()
@@ -105,9 +104,6 @@ class SpaceInvaders(ComponentizedApplication):
 
   def __init__(self):
     super().__init__()
-
-    self.profiler = self.addComponent("profiler", FrameProfilerComponent,
-                                      gpu_filter=["*", "-fwd:total"])
 
     self.createEzApp(fullscreen=True, disable_mouse_cursor=True)
 

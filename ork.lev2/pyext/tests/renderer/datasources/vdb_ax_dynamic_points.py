@@ -8,7 +8,6 @@ from orkengine.core import *
 from orkengine.lev2 import *
 from orkengine.lev2 import vdb as ork_vdb
 from ork.app.application import ComponentizedApplication
-from ork.app.frame_profiler import FrameProfilerComponent
 sys.path.append(str(ork_path.py_lev2utils)) # add parent dir to path
 from cameras import *
 from shaders import POINTCLOUD_SHADERTEXT, createPipeline
@@ -112,7 +111,6 @@ class PointsPrimApp(ComponentizedApplication):
     super().__init__()
     self.materials = set()
     setupUiCamera( app=self, eye = vec3(6,6,6), constrainZ=True, up=vec3(0,1,0))
-    self.addComponent("profiler", FrameProfilerComponent, gpu_filter=["*", "-fwd:total"])
     self.phi = 0.0
     self.sphere = sphere
     self.next_sphere = None

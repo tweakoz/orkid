@@ -82,7 +82,6 @@ public:
   ork::fixedvector<CallbackRenderable, kmaxrablesmed> _callbacks;
   RadixSort _radixsorter;
   RenderQueue _unsortedNodes;
-  PerformanceItem* mPerformanceItem;
   std::string _renderername;
   bool _debugLog = false;
 };

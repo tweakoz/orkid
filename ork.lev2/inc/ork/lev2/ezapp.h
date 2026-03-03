@@ -20,11 +20,10 @@
 #include <ork/application/application.h>
 #include <ork/lev2/ui/event.h>
 #include <ork/lev2/ui/viewport.h>
+#include <ork/lev2/ui/context.h>
+#include <ork/lev2/ui/profilerview.h>
 #include <ork/lev2/gfx/scenegraph/scenegraph.h>
 #include <ork/lev2/glfw/ctx_glfw.h>
-
-#include <ork/lev2/ui/event.h>
-#include <ork/lev2/ui/context.h>
 #include <ork/lev2/ez_secondary_win.h>
 #include <ork/lev2/subsystem_gpu.h>
 #include <ork/lev2/subsystem_audio.h>
@@ -35,6 +34,11 @@ static constexpr uint64_t KAPPSTATEFLAG_UPDRUNNING = 1 << 0;
 static constexpr uint64_t KAPPSTATEFLAG_JOINING    = 1 << 1;
 static constexpr uint64_t KAPPSTATEFLAG_JOINED     = 1 << 2;
 ////////////////////////////////////////////////////////////////////////////////
+
+#define SERIES_EZAPP_MAIN_LOCKSTEP   "ez:main_lockstep"
+#define SERIES_EZAPP_MAIN_FREERUN    "ez:main_freerun"
+#define SERIES_EZAPP_UPDATE_LOCKSTEP "ez:update_lockstep"
+#define SERIES_EZAPP_UPDATE_FREERUN  "ez:update_freerun"
 
 struct EzAppContext {
 
@@ -109,22 +113,11 @@ public:
   onupdatewithscene_t _onUpdateWithScene    = nullptr;
   scenegraph::scene_ptr_t _execscene;
   varmap::varmap_ptr_t _execsceneparams;
+  
   ork::Timer _render_timer;
   double _render_prevtime        = 0;
   double _render_stats_timeaccum = 0;
   double _render_state_numiters  = 0.0;
-  double _perf_render_duration   = 0.0;  // primary window render+swap time
-  double _perf_enqueue_duration  = 0.0;  // beginFrame+draw+endFrame time
-  double _perf_present_duration  = 0.0;  // swapBuffers time (includes vsync wait)
-  double _perf_acquire_duration  = 0.0;  // swapchain acquire wait
-  double _perf_fence_wait_duration = 0.0; // fence wait
-  double _perf_beginFrame_duration = 0.0; // total beginFrame() time
-  double _perf_endFrame_duration = 0.0;   // total endFrame() time
-  double _perf_submit_duration = 0.0;     // vkQueueSubmit time
-  double _perf_present_vk_duration = 0.0; // vkQueuePresentKHR time
-  ork::Timer _perf_render_timer;         // reusable timer for render measurement
-
-
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct EzUiEventInterceptor : public ui::Widget {

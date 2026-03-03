@@ -15,6 +15,7 @@
 #include <ork/kernel/core/singleton.h>
 #include <ork/kernel/taskgraph.h>
 #include <ork/kernel/timer.h>
+#include <ork/kernel/profiler.h>
 #include <ork/object/Object.h>
 
 #include <ork/lev2/gfx/config.h>
@@ -36,7 +37,6 @@
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-extern bool _HIDPI();
 extern bool _MIXEDDPI();
 extern float _currentDPI();
 
@@ -50,25 +50,20 @@ struct GpuEvent {
 using gpuevent_queue_t = std::queue<gpuevent_ptr_t>;
 using gpuevent_cb_t    = std::function<void(gpuevent_ptr_t)>;
 
-/// ////////////////////////////////////////////////////////////////////////////
-/// GpuPerfBlock: GPU timestamp query block for measuring GPU execution time
-/// ////////////////////////////////////////////////////////////////////////////
-
-struct GpuPerfBlock {
-  std::string _name;
-  double _duration = -1.0;  // seconds, populated on readback
-  size_t _sample_index = 0; // reserved slot index for backfilling
-  std::function<void(gpuperfblock_ptr_t)> _on_result;  // callback when result ready
-  // Internal (set by VkContext):
-  uint32_t _begin_query = 0;
-  uint32_t _end_query = 0;
-  int _pool_index = -1;     // which double-buffered pool
-};
 struct GpuEventSink {
   std::string _eventID;
   gpuevent_cb_t _onEvent;
 };
 using gpueventsink_map_t = std::unordered_map<std::string, gpueventsink_ptr_t>;
+
+///////////////////////////////////////////////////////////////////////
+/// Profiler
+///////////////////////////////////////////////////////////////////////
+
+#define SERIES_FRAME_ALL     "gfx:all"
+#define SERIES_GPU_FRAME_ALL "gfx:all"
+
+extern bool _HIDPI();
 
 /// ////////////////////////////////////////////////////////////////////////////
 ///
@@ -336,9 +331,6 @@ public:
   int GetTargetFrame() const {
     return miTargetFrame;
   }
-  PerformanceItem& GetFramePerfItem() {
-    return mFramePerfItem;
-  }
   CTXBASE* GetCtxBase() const {
     return mCtxBase;
   }
@@ -433,15 +425,7 @@ public:
   void enqueueGpuEvent(gpuevent_ptr_t evt);
   void registerGpuEventSink(gpueventsink_ptr_t sink);
 
-  ///////////////////////////////////////////////////////////////////////
-  /// GPU performance timing (timestamp queries)
-  ///////////////////////////////////////////////////////////////////////
-  virtual gpuperfblock_ptr_t gpuPerfBlockBegin(const std::string& name) { return nullptr; }
-  virtual void gpuPerfBlockEnd(gpuperfblock_ptr_t block) {}
-  virtual void gpuPipelineDrain() {} // full pipeline barrier — drain all prior GPU work before continuing
-  double gpuPerfResult(const std::string& name) const;  // last-frame duration in seconds (-1 if not found)
-  std::map<std::string, double> _gpuPerfResults;  // populated during readback
-  gpuperfblock_ptr_t _frameAllPerfBlock;  // spans beginFrame→endFrame
+  //////////////////////////////////////////////////////////
 
   loadingphase_ptr_t newLoadingPhase();
   
@@ -466,9 +450,9 @@ public:
   static const int kiModColorStackMax = 8;
 
   CTXBASE* mCtxBase                                   = nullptr;
-  ctx_platform_handle_t                               _impl;
+  ctx_platform_handle_t _impl;
   const RenderContextInstData* mRenderContextInstData = nullptr;
-  const ::ork::rtti::ICastable* mpCurrentObject         = nullptr;
+  const ::ork::rtti::ICastable* mpCurrentObject       = nullptr;
   RtGroup* _defaultRTG                                = nullptr;
 
   uint64_t _currentPhase = 0;
@@ -482,22 +466,12 @@ public:
   bool _isFrameDebugCapture = false;
   fvec4 maModColorStack[kiModColorStackMax];
   fvec4 mvModColor;
-  PerformanceItem mFramePerfItem;
   std::unordered_map<uint32_t, svar64_t> _miscVBs;
   std::vector<sticky_cb_t> _beginFrameBlockers;
 
   secondary_commandbuffer_ptr_t _recordCommandBuffer;
   
   Timer _ctxtimer;
-
-  // Per-frame timing breakdown (uses _ctxtimer for timestamps)
-  float _perf_frame_t0 = 0.0f;             // timestamp at start of beginFrame
-  double _perf_beginFrame_duration = 0.0;   // total beginFrame() time
-  double _perf_endFrame_duration = 0.0;     // total endFrame() time
-  double _perf_acquire_duration = 0.0;      // swapchain acquire (set by backend)
-  double _perf_fence_wait_duration = 0.0;   // fence wait (set by backend)
-  double _perf_submit_duration = 0.0;       // vkQueueSubmit (set by backend)
-  double _perf_present_duration = 0.0;      // vkQueuePresentKHR (set by backend)
 
   svar64_t _pyimpl_beforeEndFrame;
 protected:

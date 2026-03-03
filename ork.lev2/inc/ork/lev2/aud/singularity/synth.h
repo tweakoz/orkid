@@ -54,11 +54,6 @@ struct SynthProfilerFrame {
   float _cpuload     = 0.0f;
   int _numlayers     = 0;
   int _numdspblocks  = 0;
-  // Per-compute timing breakdown (seconds)
-  double _voices_duration  = 0.0;  // voice DSP + controllers
-  double _events_duration  = 0.0;  // sequencer event processing + voice activate/deactivate
-  double _effects_duration = 0.0;  // insert effects + bus DSP
-  double _mixing_duration  = 0.0;  // bus accumulation + master EQ + clamping
 };
 
 using onprofframe_t = std::function<void(const SynthProfilerFrame& profframe)>;
@@ -278,11 +273,6 @@ struct synth {
   bool _lock_compute            = true;
   float _cpuload                = 0.0f;
   float _velcurvepower          = 0.5f;
-  // Per-compute timing breakdown
-  double _perf_voices_duration  = 0.0;
-  double _perf_events_duration  = 0.0;
-  double _perf_effects_duration = 0.0;
-  double _perf_mixing_duration  = 0.0;
   fmtx4 _listener_matrix;
   fmtx4 _inv_listener_matrix;
   std::atomic<int> _lifecycle_state;

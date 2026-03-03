@@ -11,7 +11,6 @@ from orkengine.core import vec2, vec3, vec4, quat, CrcStringProxy, Transform, le
 from orkengine import lev2
 from orkengine import ecs
 from ork.app.application import ComponentizedApplication
-from ork.app.frame_profiler import FrameProfilerComponent
 from ork.ui import standard_icons
 from ork.editor.ecs_outliner_model import EcsOutlinerModel
 from ork.ecs import EcsRuntime
@@ -38,8 +37,6 @@ class EcsEditor(ComponentizedApplication):
 
   def __init__(self):
     super().__init__()
-
-    self.profiler = self.addComponent("profiler", FrameProfilerComponent)
 
     # Shared ECS runtime (camera, scenegraph, simulation lifecycle)
     self.runtime = EcsRuntime()

@@ -142,6 +142,8 @@ using crcstring_ptr_t = std::shared_ptr<CrcString>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#define CRCU(x) x##_crcu
+
 consteval CrcString operator"" _crc(const char* s, size_t len) {
   return CrcString(crc32_recurse2(KENDHASH, s));
 }
