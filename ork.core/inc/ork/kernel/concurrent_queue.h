@@ -8,8 +8,48 @@
 #pragma once
 
 #include <ork/kernel/ringbuffer.hpp>
+#include <array>
+#include <atomic>
+#include <deque>
 
 namespace ork {
+
+///////////////////////////////////////////////////////////////////////////////
+
+// Lock-free single-producer single-consumer queue.
+// push() always succeeds, overwriting oldest data on overflow.
+// drain() transfers all valid items to out and returns false if overflow occurred.
+template<typename T, uint64_t N>
+struct SPSCQueue {
+    std::array<T, N> _buf;
+    std::atomic<uint64_t> _head{0};
+    std::atomic<uint64_t> _tail{0};
+
+    void push(const T& val) {
+        uint64_t head = _head.load(std::memory_order_relaxed);
+        _buf[head % N] = val;
+        _head.store(head + 1, std::memory_order_release);
+    }
+
+    // return false if there was overflow since last drain.
+    // on overflow, tail is snapped to head-N to drain the most recent N items.
+    bool drain(std::deque<T>& out) {
+        uint64_t tail = _tail.load(std::memory_order_relaxed);
+        uint64_t head = _head.load(std::memory_order_acquire);
+        bool overflow = (head - tail) > N;
+        if (overflow) tail = head - N;
+        uint64_t h = head % N;
+        uint64_t t = tail % N;
+        if (h >= t) {
+            out.insert(out.end(), &_buf[t], &_buf[h]);
+        } else {
+            out.insert(out.end(), &_buf[t], &_buf[N]);
+            out.insert(out.end(), &_buf[0], &_buf[h]);
+        }
+        _tail.store(head, std::memory_order_release);
+        return !overflow;
+    }
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 

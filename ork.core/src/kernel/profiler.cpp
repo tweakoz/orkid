@@ -9,8 +9,7 @@ void SampleProfilerSeries::addSample() {
 	OrkAssertI(_call_level == -1, "ProfilerSeries did not call endSample!");
 
 	Sample sample = {_total_time, _isolated_time, _call_count, _max_call_level};
-	if (!_sample_buffer->push(sample))
-		_overflow = true;
+	_sample_buffer->push(sample);
 
 	_total_time     = 0;
 	_isolated_time  = 0;
@@ -34,8 +33,7 @@ ProfilerScope SampleProfilerSeries::sampleScope() { return _parent->sampleScope(
 ///////////////////////////////////////////////////////////////////////////////
 
 void EventProfilerSeries::addEvent() {
-	if (!_event_buffer->push({_parent->_current_tick}))
-		_overflow = true;
+	_event_buffer->push({_parent->_current_tick});
 }
 
 bool EventProfilerSeries::flushBuffer() {

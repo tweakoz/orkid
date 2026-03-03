@@ -67,6 +67,8 @@
 #include <ork/kernel/timer.h>
 #include <ork/kernel/kernel.h>
 #include <ork/util/crc.h>
+#include <ork/orkstd.h>
+#include <ork/kernel/concurrent_queue.h>
 #include <deque>
 #include <map>
 #include <memory>
@@ -85,24 +87,18 @@ namespace ork {
 #define CHANNEL_GPU    "GPU"
 
 // Initial frame begin defines what type the channel is and lazy allocates on first call. Additional optional parameters can be passed in.
-#define OrkProfilerFrameBegin(_channel_name, _type, _params) _OrkStaticAcquireChannel(_channel_name, _type, UNIQUE(_series), frameBegin, _params)
-#define OrkProfilerFrameEnd(_channel_name)                   _OrkStaticGetChannel(_channel_name, UNIQUE(_series), frameEnd)
+#define OrkProfilerFrameBegin(_channel_name, _type, _params) _OrkStaticAcquireChannel(_channel_name, _type, OrkUnique(_series), frameBegin, _params)
+#define OrkProfilerFrameEnd(_channel_name)                   _OrkStaticGetChannel(_channel_name, OrkUnique(_series), frameEnd)
 
 // Every begin must be paired with an end.
-#define OrkProfilerSampleBegin(_channel_name, _series_name)  _OrkStaticSeries(_channel_name, _series_name, SampleProfilerSeries, UNIQUE(_series), sampleBegin)
-#define OrkProfilerSampleEnd(_channel_name, _series_name)    _OrkStaticSeries(_channel_name, _series_name, SampleProfilerSeries, UNIQUE(_series), sampleEnd)
+#define OrkProfilerSampleBegin(_channel_name, _series_name)  _OrkStaticSeries(_channel_name, _series_name, SampleProfilerSeries, OrkUnique(_series), sampleBegin)
+#define OrkProfilerSampleEnd(_channel_name, _series_name)    _OrkStaticSeries(_channel_name, _series_name, SampleProfilerSeries, OrkUnique(_series), sampleEnd)
 
 // Scope will automatically call end sample when going out of scope.
-#define OrkProfilerSampleScope(_channel_name, _series_name)  _OrkStaticScope(_channel_name,  _series_name,  UNIQUE(_series))
+#define OrkProfilerSampleScope(_channel_name, _series_name)  _OrkStaticScope(_channel_name,  _series_name,  OrkUnique(_series))
 
 // Events are single occurances that are draw as vertical markers rather than a continuous graph.
-#define OrkProfilerEvent(_channel_name, _series_name)  _OrkStaticSeries(_channel_name,  _series_name, EventProfilerSeries, UNIQUE(_series), addEvent)
-
-///////////////////////////////////////////////////////////////////////////////
-
-#define _CONCAT(a, b) a##b
-#define CONCAT(a, b) _CONCAT(a, b)
-#define UNIQUE(name) CONCAT(name, __LINE__)
+#define OrkProfilerEvent(_channel_name, _series_name)  _OrkStaticSeries(_channel_name,  _series_name, EventProfilerSeries, OrkUnique(_series), addEvent)
 
 // We use macros and stamp down copies of the static var and if statement to evade std::map lookup every time
 // and rely on CPU prediction to optimize away the overhead of the profiler marker after first call.
@@ -124,41 +120,7 @@ namespace ork {
 #define _OrkStaticScope(_channel_name, _series_name, _var) \
     static SampleProfilerSeries* _var = nullptr; \
     if (_var == nullptr) [[unlikely]] _var = Profiler::acquireSeries<SampleProfilerSeries>(_channel_name, CRCU(_channel_name), _series_name, CRCU(_series_name)); \
-    auto CONCAT(_var, scope) = _var->sampleScope()
-
-///////////////////////////////////////////////////////////////////////////////
-
-template<typename T, size_t N>
-struct SPSCQueue {
-    std::array<T, N> _buf;
-    std::atomic<size_t> _head{0};
-    std::atomic<size_t> _tail{0};
-
-    // return false if overflow
-    bool push(const T& val) {
-        size_t h = _head.load(std::memory_order_relaxed);
-        size_t next = (h + 1) % N;
-        if (next == _tail.load(std::memory_order_acquire)) return false; 
-        _buf[h] = val;
-        _head.store(next, std::memory_order_release);
-        return true;
-    }
-
-    // return false if there was overflow in prior push
-    bool drain(std::deque<T>& out) {
-      size_t t = _tail.load(std::memory_order_relaxed);
-      size_t h = _head.load(std::memory_order_acquire);
-      if (h >= t) {
-          out.insert(out.end(), &_buf[t], &_buf[h]);
-      } else {
-          out.insert(out.end(), &_buf[t], &_buf[N]);
-          out.insert(out.end(), &_buf[0], &_buf[h]);
-      }
-      _tail.store(h, std::memory_order_release);
-      bool overflow = (h - t) > N;
-      return !overflow;
-    }
-};
+    auto OrkConcat(_var, scope) = _var->sampleScope()
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -166,6 +128,8 @@ struct ProfilerScope;
 struct ProfilerChannel;
 
 struct ProfilerSeries {
+  static constexpr int BufferSize = 32;
+
   std::string _name;
   ProfilerChannel* _parent;
 
@@ -175,8 +139,6 @@ struct ProfilerSeries {
     Event,
   };
   Style _style;
-
-  bool _overflow = false;
 
   ProfilerSeries(std::string name, ProfilerChannel* parent, Style style) : _name(name), _parent(parent), _style(style) {}
 
@@ -201,7 +163,7 @@ struct SampleProfilerSeries : ProfilerSeries {
   // then the main thread consumer which displays the ProfilerSeries must call 
   // flushBuffer to transfer them to _samples before display. It assumes flushBuffer 
   // will be called frequently enough to keep this from overflowing.
-  std::unique_ptr<SPSCQueue<Sample, 1024>> _sample_buffer = std::make_unique<SPSCQueue<Sample, 1024>>();
+  std::unique_ptr<SPSCQueue<Sample, BufferSize>> _sample_buffer = std::make_unique<SPSCQueue<Sample, BufferSize>>();
   
   // accumulated frame data used to addSample on endFrame
   double _total_time     = 0;
@@ -229,7 +191,7 @@ struct EventProfilerSeries : ProfilerSeries {
   };
 
   std::deque<Event> _events{};
-  std::unique_ptr<SPSCQueue<Event, 1024>> _event_buffer = std::make_unique<SPSCQueue<Event, 1024>>();
+  std::unique_ptr<SPSCQueue<Event, BufferSize>> _event_buffer = std::make_unique<SPSCQueue<Event, BufferSize>>();
 
   EventProfilerSeries(std::string name, ProfilerChannel* parent) : ProfilerSeries(name, parent, Style::Event) {}
 
