@@ -92,9 +92,22 @@ HandlerResult ProfilerView::DoOnUiEvent(event_constptr_t ev) {
   if (ev->_eventcode == ui::EventCode::PUSH) {
     int lx, ly;
     RootToLocal(ev->miX, ev->miY, lx, ly);
-    // Graph area click — buttons are routed to their own handlers by Group
     constexpr float GRAPHS_TOP = 28.0f;
     if (float(ly) >= GRAPHS_TOP) {
+      // Check legend label click — toggle hide
+      for (auto& e : _legend_entries) {
+        if (lx >= e.x && lx < e.x + e.w && ly >= e.y && ly < e.y + e.h) {
+          if (_hidden_series.count(e.series_name))
+            _hidden_series.erase(e.series_name);
+          else
+            _hidden_series.insert(e.series_name);
+          SetDirty();
+          HandlerResult rval;
+          rval.setHandled(this);
+          return rval;
+        }
+      }
+      // Graph area click — scrub
       Profiler::_enabled.store(false);
       _scrub_x      = float(lx);
       _is_scrubbing = true;
@@ -264,7 +277,8 @@ void ProfilerView::_drawContextChannel(
     _legend_entries.push_back({name_x, iy, entry_w, int(legend_row_h), key});
 
     bool  hovered    = (!_hovered_series.empty() && key == _hovered_series);
-    fvec3 draw_color = hovered ? rstate.color * 1.8f : rstate.color;
+    bool  hidden     = _hidden_series.count(key) > 0;
+    fvec3 draw_color = hidden ? rstate.color * 0.35f : (hovered ? rstate.color * 1.8f : rstate.color);
     ctx->RefModColor() = draw_color;
 
     if (series->_style == ProfilerSeries::Style::Sample) {
@@ -387,6 +401,9 @@ void ProfilerView::_drawContextChannel(
 
     bool any_hover  = !_hovered_series.empty();
     bool is_hovered = (skey == _hovered_series);
+    bool is_hidden  = _hidden_series.count(skey) > 0;
+    if (is_hidden) continue;
+
     fvec3 line_color = rstate.color;
     if (any_hover)
       line_color = is_hovered ? rstate.color * 1.8f : rstate.color * 0.2f;
@@ -607,7 +624,7 @@ void ProfilerView::DoDraw(drawevent_constptr_t drwev) {
     lev2::FontMan::DrawText(tgt, lo.smp_label_x,                    HdrLayout::BTN_Y + 2, "Samples:");
     lev2::FontMan::DrawText(tgt, lo.centeredNumX(smp_str.length()), HdrLayout::BTN_Y + 2, smp_str.c_str());
     tgt->RefModColor() = fvec3(0.45f, 0.45f, 0.45f);
-    lev2::FontMan::DrawText(tgt, legend_x0, HdrLayout::BTN_Y + 2, "hover labels to highlight isolated time");
+    lev2::FontMan::DrawText(tgt, legend_x0, HdrLayout::BTN_Y + 2, "hover to highlight  |  click to hide/show");
     lev2::FontMan::endTextBlock(tgt);
   }
 
