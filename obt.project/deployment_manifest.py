@@ -26,4 +26,11 @@ manifest = {
             "bundle_id": "com.tweakoz.orkid.testrunner",
         },
     ],
+    "environment": [
+        "ORKID_AUDIO_FRAMESIZE",
+        "ORKID_AUDIO_INPUT_DEVICE",
+        "ORKID_AUDIO_OUTPUT_DEVICE",
+        "ORKID_GRAPHICS_API",
+        "MVK_CONFIG_LOG_LEVEL",
+    ],
 }
