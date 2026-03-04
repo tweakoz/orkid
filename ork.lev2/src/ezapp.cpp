@@ -1281,10 +1281,11 @@ int OrkEzApp::mainThreadLoop() {
       ////////////////////////////////////////
 
       while (ctx->_runstate == 1) {
-        OrkProfilerFrameBegin(CHANNEL_MAIN, CpuProfilerChannel, {.capture_fps = true});
-        OrkProfilerSampleBegin(CHANNEL_MAIN, SERIES_EZAPP_MAIN_LOCKSTEP);
 
         while (_lockstep_frame_requests.load()) {
+          OrkProfilerFrameBegin(CHANNEL_MAIN, CpuProfilerChannel, {.capture_fps = true});
+          OrkProfilerSampleBegin(CHANNEL_MAIN, SERIES_EZAPP_MAIN_LOCKSTEP);
+
           // Process synth main thread tasks (sequencer, HUD events, etc.)
           if (_synth) {
             OrkProfilerSampleScope(CHANNEL_MAIN, "ez:audio_synth");
@@ -1317,11 +1318,11 @@ int OrkEzApp::mainThreadLoop() {
               fps_timer.Start();
             }
           }
+
+          OrkProfilerSampleEnd(CHANNEL_MAIN, SERIES_EZAPP_MAIN_LOCKSTEP);
+          OrkProfilerFrameEnd(CHANNEL_MAIN);
         }
         sched_yield();
-
-        OrkProfilerSampleEnd(CHANNEL_MAIN, SERIES_EZAPP_MAIN_LOCKSTEP);
-        OrkProfilerFrameEnd(CHANNEL_MAIN);
       }
 
     }

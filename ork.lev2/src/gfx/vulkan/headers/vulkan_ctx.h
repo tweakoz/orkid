@@ -235,6 +235,7 @@ struct VkGeometryBufferInterface final : public GeometryBufferInterface {
 ///////////////////////////////////////////////////////////////////////////////
 struct VkRtgStackItemImpl {
   bool _did_begin_rendering = false;  // Whether this push actually called vkCmdBeginRenderingKHR
+  bool _profiler_owner      = false;  // Whether this push owns the profiler sample lifetime
   bool _was_redundant = false;        // Whether this push was a no-op (same rtgroup already active)
   RtGroup* _previous_rtgroup = nullptr; // The RTGroup that was active before this push
 };

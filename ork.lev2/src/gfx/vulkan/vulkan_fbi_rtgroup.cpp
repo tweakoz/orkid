@@ -212,13 +212,18 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
         break;
     } // switch (rtgroup->_usage) {
 
-    // STEP 3: Start per-RTG GPU perf block (before render pass begins)
-    // TODO this is not the correct place to put this. A certain RTG is only getting pushed once, but popped twice. Why!?
-    if (rtgroup->_profiler_series == nullptr) {
-      std::string name = rtgroup->_name.empty() ? FormatString("rtg:%p", (void*)rtgroup) : std::string("rtg:") + rtgroup->_name;
-      rtgroup->_profiler_series = Profiler::acquireSeries<SampleProfilerSeries>(CHANNEL_GPU, name);
+    // STEP 3: Start per-RTG GPU perf block only when transitioning to a new RTG.
+    // _profiler_owner tracks which stack entry owns the sample lifetime so that
+    // nested push/pop and resume cycles don't create orphaned begin/end pairs.
+    // This is really funky to me. Is there somewhere better to capture specific rtgroup samples?
+    stack_impl->_profiler_owner = (_active_rtgroup != rtgroup);
+    if (stack_impl->_profiler_owner) {
+      if (rtgroup->_profiler_series == nullptr) {
+        std::string name = rtgroup->_name.empty() ? FormatString("rtg:%p", (void*)rtgroup) : std::string("rtg:") + rtgroup->_name;
+        rtgroup->_profiler_series = Profiler::acquireSeries<SampleProfilerSeries>(CHANNEL_GPU, name);
+      }
+      rtgroup->_profiler_series->sampleBegin();
     }
-    rtgroup->_profiler_series->sampleBegin();
 
     // STEP 4: Now begin the new render pass
     RTGIMPL->_transitionToRenderTarget(_contextVK->primary_cb());
@@ -254,8 +259,8 @@ void VkFrameBufferInterface::_popRtGroup() {
   auto stack_impl   = popped_item._impl.getShared<VkRtgStackItemImpl>();
   auto finished_rtg = popped_item._rtgroup;
 
-  // End per-RTG GPU perf block (after render pass ends)
-  if (stack_impl->_did_begin_rendering)
+  // End per-RTG GPU perf block only for the entry that owns the sample lifetime.
+  if (stack_impl->_profiler_owner)
     finished_rtg->_profiler_series->sampleEnd();
 
   if (0)
