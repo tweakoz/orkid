@@ -213,17 +213,15 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
     } // switch (rtgroup->_usage) {
 
     // STEP 3: Start per-RTG GPU perf block only when transitioning to a new RTG.
-    // _profiler_owner tracks which stack entry owns the sample lifetime so that
-    // nested push/pop and resume cycles don't create orphaned begin/end pairs.
-    // This is really funky to me. Is there somewhere better to capture specific rtgroup samples?
-    stack_impl->_profiler_owner = (_active_rtgroup != rtgroup);
-    if (stack_impl->_profiler_owner) {
-      if (rtgroup->_profiler_series == nullptr) {
-        std::string name = rtgroup->_name.empty() ? FormatString("rtg:%p", (void*)rtgroup) : std::string("rtg:") + rtgroup->_name;
-        rtgroup->_profiler_series = Profiler::acquireSeries<SampleProfilerSeries>(CHANNEL_GPU, name);
-      }
-      rtgroup->_profiler_series->sampleBegin();
+    // Retain profiler_series lookup/creation on rtgroup so it doesn't need to happen every cycle for every RTG.
+    if (rtgroup->_profiler_series == nullptr) {
+      std::string name = rtgroup->_name.empty() ? FormatString("rtg:%p", (void*)rtgroup) : std::string("rtg:") + rtgroup->_name;
+      rtgroup->_profiler_series = Profiler::acquireSeries<SampleProfilerSeries>(CHANNEL_GPU, name);
     }
+    // _profiler_owner tracks which stack entry owns the sample lifetime so that nested push/pop and resume cycles don't create orphaned begin/end pairs.
+    stack_impl->_profiler_owner = (_active_rtgroup != rtgroup);
+    if (stack_impl->_profiler_owner)
+      rtgroup->_profiler_series->sampleBegin();
 
     // STEP 4: Now begin the new render pass
     RTGIMPL->_transitionToRenderTarget(_contextVK->primary_cb());
