@@ -26,7 +26,7 @@
 #include <ork/ecs/datatable.h>
 
 #include "bullet_impl.h"
-#include <ork/profiling.inl>
+#include <ork/kernel/profiler.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -530,7 +530,7 @@ void BulletSystem::_onEndRender() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void BulletSystem::_onUpdate(Simulation* inst) {
-  EASY_BLOCK("BulletSystem::_onUpdate", profiler::colors::Cyan);
+  OrkProfilerSampleScope(CHANNEL_UPDATE, "BulletSystem::_onUpdate");
   if (mDynamicsWorld) {
     float dt = inst->deltaTime();
     float gt = inst->gameTime();
@@ -554,21 +554,24 @@ void BulletSystem::_onUpdate(Simulation* inst) {
 
     if (mMaxSubSteps > 0) {
 
-      EASY_BLOCK("kinematic", profiler::colors::Cyan);
-      for (BulletObjectComponent* component : _updateKinematicComponents._linear) {
-        component->updateKinematic(_simulation, dt);
+      {
+        OrkProfilerSampleScope(CHANNEL_UPDATE, "bullet::kinematic");
+        for (BulletObjectComponent* component : _updateKinematicComponents._linear) {
+          component->updateKinematic(_simulation, dt);
+        }
       }
-      EASY_END_BLOCK;
-      EASY_BLOCK("dynamic", profiler::colors::Cyan);
-      for (BulletObjectComponent* component : _updateDynamicComponents._linear) {
-        component->updateDynamic(_simulation, dt);
+      {
+        OrkProfilerSampleScope(CHANNEL_UPDATE, "bullet::dynamic");
+        for (BulletObjectComponent* component : _updateDynamicComponents._linear) {
+          component->updateDynamic(_simulation, dt);
+        }
       }
-      EASY_END_BLOCK;
-      EASY_BLOCK("forces", profiler::colors::Cyan);
-      for (BulletObjectComponent* component : _updateForceComponents._linear) {
-        component->updateForces(_simulation, dt);
+      {
+        OrkProfilerSampleScope(CHANNEL_UPDATE, "bullet::forces");
+        for (BulletObjectComponent* component : _updateForceComponents._linear) {
+          component->updateForces(_simulation, dt);
+        }
       }
-      EASY_END_BLOCK;
 
       /////////////////////////////////////////
       // initial sleep at 10 seconds of age
@@ -647,19 +650,21 @@ void BulletSystem::_onUpdate(Simulation* inst) {
         /////////////////////////////////////////
       }
 
-      EASY_BLOCK("simulation", profiler::colors::Cyan);
-      int a = mDynamicsWorld->stepSimulation(fdts, mMaxSubSteps, ffts);
-      int b = mMaxSubSteps;
-      int m = std::min(a, b); // ? a : b; // ork::min()
-      mNumSubStepsTaken += m;
-      EASY_END_BLOCK;
-
-      EASY_BLOCK("collisions", profiler::colors::Cyan);
-      for (auto callback : _collisionCallbacks) {
-        auto body = callback->monitoredBody;
-        mDynamicsWorld->contactTest(body, *callback);
+      {
+        OrkProfilerSampleScope(CHANNEL_UPDATE, "bullet::stepSimulation");
+        int a = mDynamicsWorld->stepSimulation(fdts, mMaxSubSteps, ffts);
+        int b = mMaxSubSteps;
+        int m = std::min(a, b); // ? a : b; // ork::min()
+        mNumSubStepsTaken += m;
       }
-      EASY_END_BLOCK;
+
+      {
+        OrkProfilerSampleScope(CHANNEL_UPDATE, "bullet::collisions");
+        for (auto callback : _collisionCallbacks) {
+          auto body = callback->monitoredBody;
+          mDynamicsWorld->contactTest(body, *callback);
+        }
+      }
     }
 
     if (is_debug)

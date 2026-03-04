@@ -19,7 +19,7 @@
 #include <ork/ecs/controller.h>
 #include <ork/ecs/scene.inl>
 #include <ork/util/logger.h>
-#include <ork/profiling.inl>
+#include <ork/kernel/profiler.h>
 
 namespace ork::ecs {
 
@@ -106,7 +106,7 @@ void Simulation::_update() {
 
 void Simulation::_update_SIMSTATE() {
 
-  EASY_FUNCTION("Simulation::_update_SIMSTATE");
+  OrkProfilerSampleScope(CHANNEL_UPDATE, "Simulation::_update_SIMSTATE");
 
   _computeDeltaTime();
 

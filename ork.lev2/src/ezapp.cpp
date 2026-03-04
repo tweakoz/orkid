@@ -889,8 +889,6 @@ void OrkEzApp::_mainThreadLoopBegin() {
       ork::Timer update_timer;
 
       while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
-        OrkProfilerFrameBegin(CHANNEL_UPDATE, CpuProfilerChannel, {.capture_fps = true});
-        OrkProfilerSampleBegin(CHANNEL_UPDATE, SERIES_EZAPP_UPDATE_FREERUN);
 
         EASY_BLOCK("UpdateIteration");
         double this_time = _update_timer.SecsSinceStart() * _timescale;
@@ -899,6 +897,8 @@ void OrkEzApp::_mainThreadLoopBegin() {
         _update_timeaccumulator += raw_delta;
 
         if (_update_timeaccumulator >= step) {
+          OrkProfilerFrameBegin(CHANNEL_UPDATE, CpuProfilerChannel, {.capture_fps = true});
+          OrkProfilerSampleBegin(CHANNEL_UPDATE, SERIES_EZAPP_UPDATE_FREERUN);
 
           bool do_update = _mainWindow && bool(_mainWindow->_onUpdate);
 
@@ -939,12 +939,12 @@ void OrkEzApp::_mainThreadLoopBegin() {
             state_numiters  = 0.0;
             max_update_time = 0.0;
           }
+          OrkProfilerSampleEnd(CHANNEL_UPDATE, SERIES_EZAPP_UPDATE_FREERUN);
+          OrkProfilerFrameEnd(CHANNEL_UPDATE);
         }
         opq::updateSerialQueue()->Process();
         sched_yield();
 
-        OrkProfilerSampleEnd(CHANNEL_UPDATE, SERIES_EZAPP_UPDATE_FREERUN);
-        OrkProfilerFrameEnd(CHANNEL_UPDATE);
       } // while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
 
     } // end async mode
