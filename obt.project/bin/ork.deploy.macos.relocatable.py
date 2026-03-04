@@ -1034,6 +1034,23 @@ def _default_deploy_manifest(proj_root):
   return {"dirs": ["obt.project"], "optional_dirs": []}
 
 ###############################################################################
+# Phase 5.5: Dependency Module Deployment Fixups
+###############################################################################
+
+def phase5_5_dep_fixups(target_dir):
+  """Run deployment_fixup() on all dep modules that provide it."""
+  print(deco.val("=" * 60))
+  print(deco.val("Phase 5.5: Dependency Deployment Fixups"))
+  print(deco.val("=" * 60))
+  from obt import dep
+  for name in sorted(dep.enumerate().keys()):
+    inst = dep.instance(name)
+    if inst and hasattr(inst, "deployment_fixup"):
+      print(deco.val(f"  {name}"))
+      inst.deployment_fixup(str(path.Path(target_dir)))
+  return True
+
+###############################################################################
 # Phase 6: Launch Script + Shebang Fixup
 ###############################################################################
 
@@ -1551,6 +1568,11 @@ def main():
       print("ERROR: No --project provided and $OBT_PROJECT_DIRS not set.")
       sys.exit(1)
     ok = phase5_projects(infra_dir, project_dirs)
+    if not ok:
+      sys.exit(1)
+
+  if phase in ("5.5", "all"):
+    ok = phase5_5_dep_fixups(infra_dir)
     if not ok:
       sys.exit(1)
 
