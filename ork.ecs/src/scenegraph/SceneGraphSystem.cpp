@@ -25,7 +25,7 @@
 
 #include "../core/message_private.h"
 #include <ork/util/logger.h>
-#include <ork/profiling.inl>
+#include <ork/kernel/profiler.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ecs {
@@ -664,9 +664,8 @@ void SceneGraphSystem::_onDeactivate(Simulation* inst) // final
 }
 void SceneGraphSystem::_onUpdate(Simulation* psi) // final
 {
-  EASY_BLOCK("SceneGraphSystem::_onUpdate", 0xffa02020);
+  OrkProfilerSampleScope(CHANNEL_UPDATE, "SceneGraphSystem::_onUpdate");
   if (_scene && _autoupdate) {
-    EASY_VALUE("NC", _numComponents);
     _scene->enqueueToRenderer(_camlut);
   }
 }

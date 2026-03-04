@@ -14,6 +14,7 @@ from orkengine.core import vec3, vec4, quat
 from orkengine.core import CrcStringProxy, VarMap, Transform
 from orkengine import lev2, ecs
 from orkengine.lev2 import RigidPrimitive, RigidPrimitiveDrawableData, PBRMaterial, Image
+from ork.app.application import ComponentizedApplication
 import trimesh
 
 this_dir = Path(os.path.dirname(os.path.abspath(__file__)))
@@ -47,41 +48,40 @@ SCALE = vec3(5,-2,5)
 OFFSET = vec3(0,0,0)
 ################################################################################
 
-class ECS_FIRST_PERSON_SHOOTER(object):
+class ECS_FIRST_PERSON_SHOOTER(ComponentizedApplication):
 
   ##############################################
 
   def __init__(self):
     super().__init__()
 
-    self.ezapp = ecs.createApp( self,
-                                ssaa=0,
-                                fullscreen=args.fullscreen,
-                                left = 20,
-                                top = 42,
-                                width = 1280,
-                                height = 720,
-                                
-                                disableMouseCursor=True)
-
-    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
-    setupUiCamera( app=self, 
-                   eye = vec3(0,0,0), 
-                   tgt=vec3(0,0,1), 
-                   constrainZ=True, 
-                   up=vec3(0,1,0),
-                   near=0.1,
-                   far = 100.0 )
-    self.uicam.rotOnMove = True 
-
-    ##############################################
-
     self.player_transform = None
     self.spawncounter = 0
     self.gpuframecounter = 0
     self.gpuframecounterUP = 0
-    
+
+    self.createEzApp(
+      ssaa=0,
+      fullscreen=args.fullscreen,
+      left = 20,
+      top = 42,
+      width = 1280,
+      height = 720,
+      disable_mouse_cursor=True,
+      pre_init_fns=[ecs.ecsInitCallback])
+
+    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
+
     self.ecsInit()
+
+    setupUiCamera( app=self,
+                   eye = vec3(0,0,0),
+                   tgt=vec3(0,0,1),
+                   constrainZ=True,
+                   up=vec3(0,1,0),
+                   near=0.1,
+                   far = 100.0 )
+    self.uicam.rotOnMove = True
 
   ##############################################
 
@@ -122,9 +122,9 @@ class ECS_FIRST_PERSON_SHOOTER(object):
         "SSAOFeedback": 1.0/2.0,
         "dppZbias": 0.0, #2.0e-6,
       })
-    
+
     #todo - set pbrcommon dppZBias to match SSAOBias
-    
+
     self.systemdata_scenegraph = systemdata_SG
 
     ####################
@@ -206,7 +206,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     ######################################
     # physics setup for player
     ######################################
-    
+
     capsule = ecs.BulletShapeCapsuleData()
     capsule.radius = 1.0
     capsule.extent = 3.0
@@ -225,16 +225,16 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     c_physics.groupCollidesWith = GROUP_BALL|GROUP_ENV
 
     self.ball_state = dict()
-    
-   
+
+
     def incrBallState(id):
       state = 0
       if id in self.ball_state.keys():
         state = self.ball_state[id]+1
       self.ball_state[id] = state
       return state
-    
-    
+
+
     if True:
       def onCollision(table):
         ea = table[tokens.entityA]
@@ -270,7 +270,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
     ######################################
     # catch the player entity's transform
-    #  invoked on update thread 
+    #  invoked on update thread
     #    when entity is actually spawned.
     ######################################
 
@@ -279,7 +279,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
       self.player_transform = entity.transform
 
     player_spawner.onSpawn(onSpawn)
-    
+
     self.player_physics_componentdata = c_physics
 
   ##############################################
@@ -355,7 +355,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     proj_spawner.archetype = arch_ball
     proj_spawner.transform.scale = 0.5
     proj_spawner.autospawn = False
-    
+
   ##############################################
   # generate the environment
   ##############################################
@@ -385,7 +385,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
     #########################
     # visible mesh for room
-    # (deferred to onGpuInit - needs GPU context for custom shader)
+    # (deferred to _onGpuInit - needs GPU context for custom shader)
     #########################
 
     self.room_SGCOMP = c_scenegraph
@@ -398,7 +398,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
   ##############################################
 
-  def onGpuInit(self,ctx):
+  def _onGpuInit(self,ctx):
 
     #########################
     # Load OBJ as submesh
@@ -480,13 +480,12 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
   ##############################################
 
-  def onGpuExit(self,ctx): # clean up
+  def _onGpuExit(self,ctx): # clean up
     self.controller.stopSimulation()
-    self.controller.beginWriteTrace
 
   ##############################################
 
-  def onUpdate(self,updinfo):
+  def _onUpdate(self,updinfo):
 
     ##############################
     # spawn balls
@@ -516,7 +515,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
       # rot around Y by ROT
       MOTION_DIR = vec3(DIR.x,DIR.y,DIR.z)
       MOTION_DIR.roty(ROT)
-            
+
       self.playerforce.direction = MOTION_DIR
 
       # throttle camera updates
@@ -570,7 +569,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
       SAD.overridexf.translation = EYE+DIR*5.0
       ent = self.controller.spawnEntity(SAD)
       c_physics = self.controller.findComponent(ent,"EcsBulletObjectComponent")
-      
+
       def LAUNCH_OP():
         self.controller.systemNotify( self.sys_phys,
                                       tokens.IMPULSE_ON_COMPONENT,
@@ -578,14 +577,18 @@ class ECS_FIRST_PERSON_SHOOTER(object):
                                         tokens.component: c_physics,
                                         tokens.impulse: DIR*350.0
                                       })
-    
+
       self.controller.realtimeDelayedOperation(0.1,LAUNCH_OP)
-      
+
   ##############################################
 
-  def onUiEvent(self,uievent):
+  def _onUiEvent(self,uievent):
 
     ui = lev2.ui
+
+    # DEBUG: log key events to check if Shift+~ reaches Python
+    if uievent.code == tokens.KEY_DOWN.hashed:
+      print(f"[DEBUG] KEY_DOWN keycode={uievent.keycode} chr={chr(uievent.keycode) if 32<=uievent.keycode<127 else '?'} shift={uievent.shift}")
 
     ##############################################
     # camera controls
@@ -601,7 +604,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
     elif uievent.code == tokens.KEY_DOWN.hashed:
       #### JUMP #####
-      if uievent.keycode == ord(" "): 
+      if uievent.keycode == ord(" "):
         self.playerImpulse(vec3(0,500,0)) # JUMP
       #### FORWARD #####
       elif uievent.keycode == ord("W"):
@@ -631,4 +634,5 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
 ###############################################################################
 
-ECS_FIRST_PERSON_SHOOTER().ezapp.mainThreadLoop()
+app = ECS_FIRST_PERSON_SHOOTER()
+app.ezapp.mainThreadLoop()

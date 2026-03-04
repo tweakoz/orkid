@@ -37,6 +37,7 @@ class FpsApp(ComponentizedApplication):
     self.createEzApp(
       fullscreen=args.fullscreen,
       disable_mouse_cursor=True,
+      target_ups=240,
       pre_init_fns=[ecs.ecsInitCallback])
 
   ##############################################################################
