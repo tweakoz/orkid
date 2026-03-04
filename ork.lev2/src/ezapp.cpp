@@ -897,7 +897,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
         _update_timeaccumulator += raw_delta;
 
         if (_update_timeaccumulator >= step) {
-          OrkProfilerFrameBegin(CHANNEL_UPDATE, CpuProfilerChannel, {.capture_fps = true});
+          OrkProfilerFrameBegin(CHANNEL_UPDATE, CpuProfilerChannel);
           OrkProfilerSampleBegin(CHANNEL_UPDATE, SERIES_EZAPP_UPDATE_FREERUN);
 
           bool do_update = _mainWindow && bool(_mainWindow->_onUpdate);
@@ -939,6 +939,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
             state_numiters  = 0.0;
             max_update_time = 0.0;
           }
+
           OrkProfilerSampleEnd(CHANNEL_UPDATE, SERIES_EZAPP_UPDATE_FREERUN);
           OrkProfilerFrameEnd(CHANNEL_UPDATE);
         }
@@ -971,7 +972,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
       double wallclock_updates = 0.0;
 
       while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
-        OrkProfilerFrameBegin(CHANNEL_UPDATE, CpuProfilerChannel, {.capture_fps = true});
+        OrkProfilerFrameBegin(CHANNEL_UPDATE, CpuProfilerChannel);
         OrkProfilerSampleBegin(CHANNEL_UPDATE, SERIES_EZAPP_UPDATE_LOCKSTEP);
 
         EASY_BLOCK("UpdateIteration_SYNC");

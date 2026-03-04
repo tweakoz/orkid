@@ -87,8 +87,8 @@ namespace ork {
 #define CHANNEL_GPU    "GPU"
 
 // Initial frame begin defines what type the channel is and lazy allocates on first call. Additional optional parameters can be passed in.
-#define OrkProfilerFrameBegin(_channel_name, _type, _params) _OrkStaticAcquireChannel(_channel_name, _type, OrkUnique(_series), frameBegin, _params)
-#define OrkProfilerFrameEnd(_channel_name)                   _OrkStaticGetChannel(_channel_name, OrkUnique(_series), frameEnd)
+#define OrkProfilerFrameBegin(_channel_name, _type, ...) _OrkStaticAcquireChannel(_channel_name, _type, OrkUnique(_series), frameBegin, __VA_ARGS__)
+#define OrkProfilerFrameEnd(_channel_name)               _OrkStaticGetChannel(_channel_name, OrkUnique(_series), frameEnd)
 
 // Every begin must be paired with an end.
 #define OrkProfilerSampleBegin(_channel_name, _series_name)  _OrkStaticSeries(_channel_name, _series_name, SampleProfilerSeries, OrkUnique(_series), sampleBegin)
@@ -102,10 +102,10 @@ namespace ork {
 
 // We use macros and stamp down copies of the static var and if statement to evade std::map lookup every time
 // and rely on CPU prediction to optimize away the overhead of the profiler marker after first call.
-#define _OrkStaticAcquireChannel(_channel_name, _type, _var, _call, _params) \
+#define _OrkStaticAcquireChannel(_channel_name, _type, _var, _call, ...) \
     static _type* _var = nullptr; \
     if (_var == nullptr) [[unlikely]] _var = Profiler::acquireChannel<_type>(_channel_name, CRCU(_channel_name)); \
-    _var->_call(_params)
+    _var->_call(__VA_ARGS__)
 
 #define _OrkStaticGetChannel(_channel_name, _var, _call) \
     static ProfilerChannel* _var = nullptr; \
