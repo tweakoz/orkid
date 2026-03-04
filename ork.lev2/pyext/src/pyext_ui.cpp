@@ -440,6 +440,14 @@ void pyinit_ui(py::module& module_lev2) {
                 widget->_ignoreEvents = x;
               })
           .def_property(
+              "clip_events",
+              [](uiwidget_ptr_t widget) -> bool { //
+                return widget->_clipEvents;
+              },
+              [](uiwidget_ptr_t widget, bool x) { //
+                widget->_clipEvents = x;
+              })
+          .def_property(
               "enable",
               [](uiwidget_ptr_t widget) -> bool { //
                 return widget->_enable;

@@ -21,7 +21,7 @@
 #include <ork/ecs/scene.inl>
 #include <ork/ecs/datatable.h>
 #include <ork/util/logger.h>
-#include <ork/profiling.inl>
+#include <ork/kernel/profiler.h>
 
 #include "message_private.h"
 #include <random>
@@ -267,7 +267,7 @@ void Simulation::_buildStateMachine() {
   ren_sim_state->_onenter = [this](fsm::fsminstance_ptr_t inst) {};
   //
   ren_sim_state->_onupdate = [this](fsm::fsminstance_ptr_t inst) {
-    EASY_BLOCK("ecs::sim::fsm_render", profiler::colors::Red);
+    OrkProfilerSampleScope(CHANNEL_MAIN, "ecs::sim::fsm_render");
     if (auto as_sframe = inst->vars()->typedValueForKey<lev2::standardcompositorframe_ptr_t>("sframe")) {
       SystemLut render_systems;
       _systems.atomicOp([&](const SystemLut& syslut) { render_systems = syslut; });
@@ -283,24 +283,28 @@ void Simulation::_buildStateMachine() {
     } else {
       if (_currentdrwev) {
         OrkAssert(_currentdrwev);
-        EASY_BLOCK("ecs::sim::fsm_render::1", profiler::colors::Red);
         SystemLut render_systems;
-        _systems.atomicOp([&](const SystemLut& syslut) { render_systems = syslut; });
-        EASY_END_BLOCK;
-        EASY_BLOCK("ecs::sim::fsm_render::2", profiler::colors::Red);
-        for (auto sys : render_systems) {
-          sys.second->_beginRender();
+        {
+          OrkProfilerSampleScope(CHANNEL_MAIN, "ecs::fsm_render::syslut");
+          _systems.atomicOp([&](const SystemLut& syslut) { render_systems = syslut; });
         }
-        EASY_END_BLOCK;
-        EASY_BLOCK("ecs::sim::fsm_render::2", profiler::colors::Red);
-        for (auto sys : render_systems)
-          sys.second->_render(this, _currentdrwev);
-        EASY_END_BLOCK;
-        EASY_BLOCK("ecs::sim::fsm_render::2", profiler::colors::Red);
-        for (auto sys : render_systems) {
-          sys.second->_endRender();
+        {
+          OrkProfilerSampleScope(CHANNEL_MAIN, "ecs::fsm_render::beginRender");
+          for (auto sys : render_systems) {
+            sys.second->_beginRender();
+          }
         }
-        EASY_END_BLOCK;
+        {
+          OrkProfilerSampleScope(CHANNEL_MAIN, "ecs::fsm_render::render");
+          for (auto sys : render_systems)
+            sys.second->_render(this, _currentdrwev);
+        }
+        {
+          OrkProfilerSampleScope(CHANNEL_MAIN, "ecs::fsm_render::endRender");
+          for (auto sys : render_systems) {
+            sys.second->_endRender();
+          }
+        }
       }
     }
   };
