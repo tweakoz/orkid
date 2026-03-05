@@ -2,6 +2,7 @@
 #include <ork/kernel/profiler.h>
 #include <ork/util/logger.h>
 
+///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 
 static auto logchan_prof = logger()->configureChannel("PROF", fvec3(0.1, 0.5, 0.9), true);
@@ -13,48 +14,60 @@ static auto logchan_prof = logger()->configureChannel("PROF", fvec3(0.1, 0.5, 0.
 
 void SampleProfilerSeries::addSample() {
 	if (_call_level == -1) {
-    Sample sample = {_total_time, _isolated_time, _call_count, _max_call_level};
+    double scale  = _parent->_tick_to_seconds;
+    Sample sample = {
+        .total_ms    = double(_total_ticks) * scale,
+        .isolated_ms = double(_isolated_ticks) * scale,
+        .count       = _call_count,
+        .level       = _max_call_level};
     _sample_buffer->push(sample);
   } else {
     logchan_prof->log("addSample(%s) but _call_level=%d! Ensure sampleEnd called. Or use sampleScope. Skipping.", _name.c_str(), _call_level);
   }
 
-	_total_time     = 0;
-	_isolated_time  = 0;
-	_call_count     = 0;
-	_call_level     = -1;
-	_max_call_level = -1;
+  _total_ticks    = 0;
+  _isolated_ticks = 0;
+  _call_count     = 0;
+  _call_level     = -1;
+  _max_call_level = -1;
 }
 
 bool SampleProfilerSeries::flushBuffer() {
-	bool success = _sample_buffer->drain(_samples);
-	u16 max_samples = Profiler::maxSamples();
-	while (_samples.size() > max_samples)
-		_samples.pop_front();
-	return success;
+  bool success    = _sample_buffer->drain(_samples);
+  u16 max_samples = Profiler::maxSamples();
+  while (_samples.size() > max_samples)
+    _samples.pop_front();
+  return success;
 }
 
-void SampleProfilerSeries::sampleBegin() { _parent->sampleBegin(this); }
-void SampleProfilerSeries::sampleEnd()   { _parent->sampleEnd(this); }
-ProfilerScope SampleProfilerSeries::sampleScope() { return _parent->sampleScope(this); }
+void SampleProfilerSeries::sampleBegin() {
+  _parent->sampleBegin(this);
+}
+void SampleProfilerSeries::sampleEnd() {
+  _parent->sampleEnd(this);
+}
+ProfilerScope SampleProfilerSeries::sampleScope() {
+  return _parent->sampleScope(this);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
 void EventProfilerSeries::addEvent() {
-	_event_buffer->push({_parent->_current_tick});
+  _event_buffer->push({_parent->_current_tick});
 }
 
 bool EventProfilerSeries::flushBuffer() {
-	bool success = _event_buffer->drain(_events);
-	u16 max_samples = Profiler::maxSamples();
-	while (_events.size() > max_samples)
-		_events.pop_front();
-	return success;
+  bool success    = _event_buffer->drain(_events);
+  u16 max_samples = Profiler::maxSamples();
+  while (_events.size() > max_samples)
+    _events.pop_front();
+  return success;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 void ProfilerChannel::frameBegin() {
+
 }
 
 void ProfilerChannel::frameEnd() {
@@ -66,13 +79,13 @@ void ProfilerChannel::frameEnd() {
 		s->addSample();
 	}
 
-	_current_level = 0;
-	_current_tick++;
+  _current_level = 0;
+  _current_tick++;
 }
 
 [[nodiscard]] ProfilerScope ProfilerChannel::sampleScope(SampleProfilerSeries* series) {
-	sampleBegin(series);
-	return ProfilerScope(this, series);
+  sampleBegin(series);
+  return ProfilerScope(this, series);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -89,7 +102,8 @@ void CpuProfilerChannel::frameBegin() {
 		}
 		_current_level = 0;
 	}
-	_begin_time = _timer.get_sync_time();
+  _tick_to_seconds = Timer::tick_scale_ms();
+  _begin_time      = Timer::get_sync_time();
 }
 
 void CpuProfilerChannel::frameEnd() {
@@ -103,25 +117,24 @@ void CpuProfilerChannel::frameEnd() {
 		}
 		_current_level = 0;
 	}
-	double frame_time = _timer.get_sync_time() - _begin_time;
-	_frame_time.store(frame_time);
+  double frame_time = Timer::get_sync_time() - _begin_time;
+  _frame_time.store(frame_time);
   ProfilerChannel::frameEnd();
 }
 
 void CpuProfilerChannel::sampleBegin(SampleProfilerSeries* s) {
-	if (!_recording) return;
-
+  if (!_recording) [[Unlikely]] return;
 	if (s->_call_level != -1) {
 		logchan_prof->log("sampleBegin(%s::%s) _call_level=%d already sampling! Ensure sampleEnd called. Or use sampleScope. Skipping.",
 			_name.c_str(), s->_name.c_str(), s->_call_level);
     return;
 	}
-	double now = _timer.get_sync_time();
+  u64 now = Timer::get_sync_tick();
 
 	// pause parent by accumulating its time so far
   if (!_span_stack.empty()) {
     auto& parent = _span_stack.top();
-    parent.series->_isolated_time += now - parent.start_isolated_time;
+    parent.series->_isolated_ticks += now - parent.start_isolated_tick;
   }
 
 	s->_call_level = _current_level++;
@@ -129,19 +142,17 @@ void CpuProfilerChannel::sampleBegin(SampleProfilerSeries* s) {
 	s->_call_count++;
 	PROF_LOG("[PROF-DBG] sampleBegin(%s::%s) level=%d stack_depth=%zu\n",
 		_name.c_str(), s->_name.c_str(), _current_level, _span_stack.size() + 1);
-	_span_stack.push({.series = s, .start_total_time = now, .start_isolated_time = now});
+  _span_stack.push({.series = s, .start_total_tick = now, .start_isolated_tick = now});
 }
 
-
 void CpuProfilerChannel::sampleEnd(SampleProfilerSeries* s) {
-	if (!_recording) return;
-
+  if (!_recording) [[Unlikely]] return;
 	if (s->_call_level == -1) {
 		logchan_prof->log("sampleEnd(%s::%s) but _call_level=-1 not sampling! Ensure sampleBegin was called or use sampleScope. Skipping.",
 			_name.c_str(), s->_name.c_str());
     return;
 	}
-	double now = _timer.get_sync_time();
+  u64 now = Timer::get_sync_tick();
 
 	while (!_span_stack.empty()) {
 		auto& top = _span_stack.top();
@@ -151,8 +162,8 @@ void CpuProfilerChannel::sampleEnd(SampleProfilerSeries* s) {
 			_name.c_str(), s->_name.c_str(), top_series->_name.c_str(), _current_level, _span_stack.size());
 
 		// exclude time in nested scopes from parent scope
-		top_series->_total_time    += (now - top.start_total_time);
-		top_series->_isolated_time += (now - top.start_isolated_time);
+		top_series->_total_ticks    += (now - top.start_total_tick);
+		top_series->_isolated_ticks += (now - top.start_isolated_tick);
 		top_series->_max_call_level = std::max(top_series->_max_call_level, _current_level);
 		top_series->_call_level     = -1;
 		top_series->_sampling       = false;
@@ -160,9 +171,9 @@ void CpuProfilerChannel::sampleEnd(SampleProfilerSeries* s) {
 		OrkAssertI(_current_level >= 0, "CpuProfilerChannel _current_level should never go below 0!");
 		_span_stack.pop();
 
-		// resume parent
-		if (!_span_stack.empty())
-			_span_stack.top().start_isolated_time = now;
+    // resume parent
+    if (!_span_stack.empty())
+      _span_stack.top().start_isolated_tick = now;
 
 		// pop and end samples for all children of passed in series
 		if (top_series == s)
@@ -172,5 +183,5 @@ void CpuProfilerChannel::sampleEnd(SampleProfilerSeries* s) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
 } // namespace ork
+///////////////////////////////////////////////////////////////////////////////

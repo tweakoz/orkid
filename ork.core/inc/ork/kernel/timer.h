@@ -9,7 +9,6 @@
 
 #include <ork/kernel/kernel.h>
 #include <ork/kernel/thread.h>
-#include <ork/kernel/svariant.h>
 #include <ork/orkstl.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -23,43 +22,30 @@ struct Timer {
 
   void Start();
   void End();
-  float InternalSecsSinceStart() const;
-  float SecsSinceStart() const;
-  float SpanInSecs() const;
+  double InternalSecsSinceStart() const;
+  double SecsSinceStart() const;
+  double SpanInSecs() const;
   void OnInterval(float interval, const void_lambda_t& oper);
   void setCurrentTime(float value);
-  static float get_sync_time();
 
+  // Must be called early before use of get_sync_tick and get_sync_time
   static void staticInit();
 
-private:
-  static svar64_t _gimpl;
+  static u64 get_sync_tick();
+  static double get_sync_time();
+  static double tick_scale_ms(); // milliseconds per tick
 
-  float mStartTime;
-  float mEndTime;
-  float mLambdaInterval;
-  void_lambda_t mOnInterval;
-  ork::Thread* mThread;
-  bool mKill;
+private:
+  u64 _start_tick;
+  u64 _end_tick;
+  float _lambda_interval;
+  void_lambda_t _on_interval;
+  ork::Thread* _thread;
+  bool _kill;
 };
 
 using timer_ptr_t = std::shared_ptr<Timer>;
 
 ///////////////////////////////////////////////////////////////////////////////
-
-struct PerfItem2 {
-  const char* mpMarkerName;
-  float mfMarkerTime;
-};
-
-void PerfMarkerPush(const char* str);
-bool PerfMarkerPop(PerfItem2& outmkr);
-void PerfMarkerEnable();
-void PerfMarkerDisable();
-void PerfMarkerPushState();
-void PerfMarkerPopState();
-
-///////////////////////////////////////////////////////////////////////////////
 } // namespace ork
 ///////////////////////////////////////////////////////////////////////////////
-

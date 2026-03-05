@@ -151,8 +151,8 @@ using profiler_series_ptr_t = std::shared_ptr<ProfilerSeries>;
 struct SampleProfilerSeries : ProfilerSeries {
 
   struct Sample {
-    double total_time;
-    double isolated_time;
+    double total_ms;
+    double isolated_ms;
     int    count;
     int    level;
   };
@@ -166,9 +166,9 @@ struct SampleProfilerSeries : ProfilerSeries {
   std::unique_ptr<SPSCQueue<Sample, BufferSize>> _sample_buffer = std::make_unique<SPSCQueue<Sample, BufferSize>>();
   
   // accumulated frame data used to addSample on endFrame
-  double _total_time     = 0;
-  double _isolated_time  = 0;
-  int    _call_count     = 0;
+  u64  _total_ticks    = 0;
+  u64  _isolated_ticks = 0;
+  int  _call_count     = 0;
   int    _max_call_level = -1;
   int    _call_level     = -1;
   bool   _sampling       = false;
@@ -216,6 +216,10 @@ struct ProfilerChannel {
   double _begin_time{};
   std::atomic<double> _frame_time{};
 
+  // Seconds per tick — set by subclass in frameBegin.
+  // CpuProfilerChannel uses Timer::tick_scale_ms(); VkProfilerChannel uses timestamp_period * 1e-9.
+  double _tick_to_seconds = 1.0;
+
   bool _recording = true;
 
   ProfilerChannel(std::string&& name) : _name(name) {}
@@ -244,12 +248,11 @@ struct ProfilerScope {
 ////////////////////////////////////////////////////////////////////////////////
 
 struct CpuProfilerChannel final : ProfilerChannel {
-  Timer _timer{}; // TODO change to __rdtsc ?
 
   struct Timespan {
     SampleProfilerSeries* series;
-    double start_total_time;
-    double start_isolated_time;
+    u64 start_total_tick;
+    u64 start_isolated_tick;
   };
   std::stack<Timespan> _span_stack{};
 

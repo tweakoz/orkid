@@ -292,8 +292,8 @@ void ProfilerView::_drawContextChannel(
           float norm = (_scrub_x - chart_x0) / (chart_x1 - chart_x0);
           idx = std::clamp(int(norm * float(n - 1) + 0.5f), 0, int(n) - 1);
         }
-        total_ms    = float(ss->_samples[idx].total_time    * 1000.0);
-        isolated_ms = float(ss->_samples[idx].isolated_time * 1000.0);
+        total_ms    = float(ss->_samples[idx].total_ms);
+        isolated_ms = float(ss->_samples[idx].isolated_ms);
       }
       lev2::FontMan::beginTextBlock(ctx, 128);
       lev2::FontMan::DrawText(ctx, legend_x0, iy, FormatString("%0.2f", total_ms).c_str());
@@ -341,7 +341,7 @@ void ProfilerView::_drawContextChannel(
     if (series->_style != ProfilerSeries::Style::Sample) continue;
     auto* ss = static_cast<SampleProfilerSeries*>(series);
     for (auto& sample : ss->_samples)
-      cum_max_value = std::max(cum_max_value, float(sample.total_time * 1000.0));
+      cum_max_value = std::max(cum_max_value, float(sample.total_ms));
   }
   if (cum_max_value < 0.1f) cum_max_value = 0.1f;
 
@@ -423,10 +423,10 @@ void ProfilerView::_drawContextChannel(
           lev2::VtxWriter<vtx_t> vw;
           vw.Lock(ctx, _vbuf.get(), (n - 1) * 6);
           for (size_t i = 1; i < n; i++) {
-            float tot_prev  = float(ss->_samples[i-1].total_time    * 1000.0);
-            float tot_curr  = float(ss->_samples[i].total_time      * 1000.0);
-            float isol_prev = float(ss->_samples[i-1].isolated_time * 1000.0);
-            float isol_curr = float(ss->_samples[i].isolated_time   * 1000.0);
+            float tot_prev  = float(ss->_samples[i-1].total_ms);
+            float tot_curr  = float(ss->_samples[i].total_ms);
+            float isol_prev = float(ss->_samples[i-1].isolated_ms);
+            float isol_curr = float(ss->_samples[i].isolated_ms);
             float sx_prev   = chart_x0 + float(i-1) * x_step;
             float sx_curr   = chart_x0 + float(i)   * x_step;
             float top_prev  = y_bottom - tot_prev  * y_scale;
@@ -456,8 +456,8 @@ void ProfilerView::_drawContextChannel(
           lev2::VtxWriter<vtx_t> vw;
           vw.Lock(ctx, _vbuf.get(), (n - 1) * 2);
           for (size_t i = 1; i < n; i++) {
-            float tot_prev = float(ss->_samples[i-1].total_time * 1000.0);
-            float tot_curr = float(ss->_samples[i].total_time   * 1000.0);
+            float tot_prev = float(ss->_samples[i-1].total_ms);
+            float tot_curr = float(ss->_samples[i].total_ms);
             float sx_prev  = chart_x0 + float(i-1) * x_step;
             float sx_curr  = chart_x0 + float(i)   * x_step;
             float sy_prev  = y_bottom - tot_prev * y_scale;

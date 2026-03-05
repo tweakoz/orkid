@@ -810,7 +810,7 @@ void CtxGLFW::SlotRepaint() {
     return;
   }
 
-  ork::PerfMarkerPush("ork.viewport.draw.begin");
+  OrkProfilerSampleScope(CHANNEL_MAIN, "viewport.draw");
 
   if (this->_target) {
     _target->makeCurrentContext();
@@ -830,7 +830,6 @@ void CtxGLFW::SlotRepaint() {
       _target->endFrame();
     }
   }
-  ork::PerfMarkerPush("ork.viewport.draw.end");
 
 }
 ///////////////////////////////////////////////////////////////////////////////

@@ -27,6 +27,8 @@ namespace ork {
 struct CoreAppInit {
   CoreAppInit(ork::appinitdata_ptr_t init_data) {
 
+    Timer::staticInit();
+
     COM::GetClassStatic();
     HotKeyConfiguration::GetClassStatic();
     HotKey::GetClassStatic();
@@ -84,8 +86,6 @@ struct CoreAppInit {
     //dflow::fvec3xfpassthrudata::GetClassStatic();
 
     logger()->defaultChannel()->log("ork.core classes registered...");
-
-    Timer::staticInit();
 
     init_data->enqueuePostInitOp(AppInitOrder::REFLECTION_LINK,[init_data] { 
       logger()->defaultChannel()->log("ork.core postinit...");
