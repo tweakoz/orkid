@@ -516,7 +516,7 @@ struct VkComputeInterface : public ComputeInterface {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VkProfilerChannel final : ProfilerChannel {
-  static constexpr size_t MAX_GPU_PERF_QUERIES = 64;
+  static constexpr size_t MAX_GPU_PERF_QUERIES = 256;
 
   VkDevice        _device     = VK_NULL_HANDLE;
   VkCommandBuffer _cmdbuf     = VK_NULL_HANDLE;

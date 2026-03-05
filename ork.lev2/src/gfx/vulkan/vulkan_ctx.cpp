@@ -1978,7 +1978,7 @@ void VkProfilerChannel::sampleBegin(SampleProfilerSeries* s) {
 
   // printf("VkProfilerChannel beginSample %s\n", s->_name.strval());
   OrkAssertI(_cmdbuf != VK_NULL_HANDLE, "VulkanProfilerChannel beginFrame not called!");
-  OrkAssertI(_query_index < MAX_GPU_PERF_QUERIES, "Vulkan Profiler Queries exhausted.");
+  OrkAssertI(_query_index < MAX_GPU_PERF_QUERIES, "Vulkan Profiler Queries exhausted. Increase MAX_GPU_PERF_QUERIES or reduce number of samples per frame!");
 
   int current_query_index = _query_index++;
   vkCmdWriteTimestamp(_cmdbuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, _query_pool, current_query_index);
