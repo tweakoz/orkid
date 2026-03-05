@@ -943,8 +943,9 @@ def phase5_projects(target_dir, project_dirs):
     # Determine what to copy
     # Load deploy manifest by importing obt.project/deployment_manifest.py
     deploy_manifest_py = proj_root / "obt.project" / "deployment_manifest.py"
+    deploy_mod = None
     if deploy_manifest_py.exists():
-      deploy_manifest = _load_deploy_manifest(deploy_manifest_py)
+      deploy_manifest, deploy_mod = _load_deploy_manifest(deploy_manifest_py)
     else:
       deploy_manifest = _default_deploy_manifest(proj_root)
 
@@ -1011,6 +1012,11 @@ def phase5_projects(target_dir, project_dirs):
     if count:
       print(deco.val(f"    Fixed {count} text files"))
 
+    # Run project-specific deploy fixups if provided
+    if deploy_mod and hasattr(deploy_mod, 'deploy_fixup'):
+      print(deco.val(f"    Running deploy fixups..."))
+      deploy_mod.deploy_fixup(target_dir, proj_root, proj_target)
+
     manifest_entries.append({
       "name": proj_name,
       "canonical_name": canonical_name,
@@ -1030,12 +1036,12 @@ def phase5_projects(target_dir, project_dirs):
 ###############################################################################
 
 def _load_deploy_manifest(manifest_path):
-  """Import a project's deployment_manifest.py and return its manifest dict."""
+  """Import a project's deployment_manifest.py and return its manifest dict + module."""
   import importlib.util
   spec = importlib.util.spec_from_file_location("deployment_manifest", str(manifest_path))
   mod = importlib.util.module_from_spec(spec)
   spec.loader.exec_module(mod)
-  return mod.manifest
+  return mod.manifest, mod
 
 def _default_deploy_manifest(proj_root):
   """Generate a default deploy manifest — just obt.project/."""
@@ -1609,7 +1615,8 @@ def run_deploy(deploy_config):
       proj_root = path.Path(proj_root)
       manifest_py = proj_root / "obt.project" / "deployment_manifest.py"
       if manifest_py.exists():
-        deploy_manifests.append(_load_deploy_manifest(manifest_py))
+        manifest_dict, _ = _load_deploy_manifest(manifest_py)
+        deploy_manifests.append(manifest_dict)
       else:
         deploy_manifests.append(_default_deploy_manifest(proj_root))
 
