@@ -18,14 +18,6 @@ manifest = {
     "files": [
         "orkid.cmake",
     ],
-    "apps": [
-        {
-            "name": "OrkTestRunner",
-            "command": ["ork.app.testrunner.py"],
-            "mode": "gui",
-            "bundle_id": "com.tweakoz.orkid.testrunner",
-        },
-    ],
     "environment": [
         "ORKID_AUDIO_FRAMESIZE",
         "ORKID_AUDIO_INPUT_DEVICE",

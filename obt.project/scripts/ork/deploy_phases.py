@@ -24,6 +24,18 @@ from obt.command import run
 
 deco = deco_mod.Deco()
 
+class _TeeWriter:
+  """Write to both a file and the original stream."""
+  def __init__(self, stream, log_file):
+    self._stream = stream
+    self._log = log_file
+  def write(self, data):
+    self._stream.write(data)
+    self._log.write(data)
+  def flush(self):
+    self._stream.flush()
+    self._log.flush()
+
 ###############################################################################
 # Utility: Internalize a host binary + its full homebrew dylib closure
 ###############################################################################
@@ -123,7 +135,7 @@ def internalize_host_binary(binary_name, target_dir, homebrew_dir="/opt/homebrew
 ###############################################################################
 
 # Directories to copy from staging (runtime-essential only)
-RUNTIME_DIRS = ["bin", "lib", "pyvenv", "share", "assetcache", "dblockcache"]
+RUNTIME_DIRS = ["bin", "lib", "pyvenv", "share"]
 
 # Directories to skip (build intermediates, headers, etc.)
 SKIP_DIRS = {"builds", "include", "buildlogs",
@@ -176,6 +188,13 @@ def phase1_copy(staging_dir, target_dir, force=False):
       run(["cp", "-a", str(src), str(dst)], do_log=False)
     else:
       print(deco.val(f"    Skipping {dirname}/ (not found)"))
+
+  # assetcache symlink is created at launch time (obt-launch-env)
+  # so it points to the actual user's ~/.obt-global/assetcache
+
+  # Create empty dblockcache directory
+  (target_dir / "dblockcache").mkdir(parents=True, exist_ok=True)
+  print(deco.val(f"    Created dblockcache/ (empty)"))
 
   # ---- Step 3: Copy homebrew dylib closure into target/lib/ ----
   print(deco.val(f"\n  Step 3: Internalizing homebrew dylibs..."))
@@ -1144,6 +1163,13 @@ if [ "$_NEED_FIXUP" -eq 1 ]; then
   echo "[deploy-fixup] Done."
 fi
 
+# Ensure assetcache symlink points to user's global cache
+_GLOBAL_CACHE="$HOME/.obt-global/assetcache"
+mkdir -p "$_GLOBAL_CACHE"
+if [ ! -e "$DEPLOY_ROOT/assetcache" ]; then
+  ln -s "$_GLOBAL_CACHE" "$DEPLOY_ROOT/assetcache"
+fi
+
 # Source user/machine-specific configuration (audio devices, CDN keys, etc.)
 if [ -f "$DEPLOY_ROOT/obt_config/env.common.sh" ]; then
   source "$DEPLOY_ROOT/obt_config/env.common.sh"
@@ -1598,6 +1624,14 @@ def run_deploy(deploy_config):
   # only contains .app bundles (and the hidden .staging directory).
   infra_dir = target_dir / ".staging"
 
+  _orig_stdout = sys.stdout
+
+  # Tee all output to /tmp, move into bundle at the end
+  import tempfile
+  _tmp_log_path = tempfile.mktemp(prefix="deploy_", suffix=".log")
+  _log_file = open(_tmp_log_path, "w")
+  sys.stdout = _TeeWriter(_orig_stdout, _log_file)
+
   if args.verify_only:
     ok = phase3_verify(infra_dir)
     sys.exit(0 if ok else 1)
@@ -1670,3 +1704,10 @@ def run_deploy(deploy_config):
     print(deco.val(f"  Location: {target_dir}"))
     print(deco.val(f"  Infrastructure: {infra_dir}"))
     print(deco.val(f"  App bundles visible at top level of {target_dir}"))
+
+  sys.stdout = _orig_stdout
+  _log_file.close()
+  if infra_dir.exists():
+    shutil.move(_tmp_log_path, str(infra_dir / "deploy.log"))
+  else:
+    os.unlink(_tmp_log_path)

@@ -359,7 +359,7 @@ void VkFxInterface::bindParamMatrix(const FxShaderParam* hpar, const fmtx4& Mat)
   if (nan_check_count < 100) {
     const float* fdata = Mat.asArray();
     if (std::isnan(fdata[0]) || std::isnan(fdata[1]) || std::isnan(fdata[4]) || std::isnan(fdata[5])) {
-      logchan_vkbpar->log("WARN: bindParamMatrix param<%s> has NaN! [%g %g %g %g ...]",
+      if(0)logchan_vkbpar->log("WARN: bindParamMatrix param<%s> has NaN! [%g %g %g %g ...]",
                           hpar->_name.c_str(), fdata[0], fdata[1], fdata[2], fdata[3]);
       nan_check_count++;
     }
