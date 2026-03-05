@@ -149,8 +149,8 @@ double Timer::get_sync_time() {
 
 void Timer::sleepTicks(u64 ticks) {
   timespec ts = {
-    .tv_sec  = (time_t)(nanoseconds / NS_PER_SEC),
-    .tv_nsec = (long)  (nanoseconds % NS_PER_SEC)
+    .tv_sec  = (time_t)(ticks / NS_PER_SEC),
+    .tv_nsec = (long)  (ticks % NS_PER_SEC)
   };
   nanosleep(&ts, nullptr);
 }
@@ -166,58 +166,15 @@ void Timer::sleepUntilTick(u64 target_tick) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-#elif defined(ORK_WIN32)
-///////////////////////////////////////////////////////////////////////////////
-
-static u64 s_freq     = 1;
-static u64 s_timebase = 0; // raw QPC ticks at init
-
-void Timer::staticInit() {
-  LARGE_INTEGER freq, now;
-  QueryPerformanceFrequency(&freq);
-  QueryPerformanceCounter(&now);
-  s_freq     = u64(freq.QuadPart);
-  s_timebase = u64(now.QuadPart);
-}
-
-u64 Timer::getSyncTick() {
-  // returns nanoseconds via integer split to avoid overflow
-  LARGE_INTEGER now;
-  QueryPerformanceCounter(&now);
-  u64 raw  = u64(now.QuadPart) - s_timebase;
-  u64 secs = raw / s_freq;
-  u64 rem  = raw % s_freq;
-  return secs * NS_PER_SEC + rem * NS_PER_SEC / s_freq;
-}
-
-double Timer::get_sync_time() {
-  return double(getSyncTick()) * SEC_PER_NS;
-}
-
-void Timer::sleepTicks(u64 ticks) {
-  // High-resolution waitable timer: precise and no CPU burn (Win10 1803+)
-  HANDLE timer = CreateWaitableTimerEx(
-    NULL, NULL, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, TIMER_ALL_ACCESS);
-  LARGE_INTEGER due;
-  due.QuadPart = -(__int64)(nanoseconds / 100ULL); // 100ns units, negative = relative
-  SetWaitableTimerEx(timer, &due, 0, NULL, NULL, NULL, 0);
-  WaitForSingleObject(timer, INFINITE);
-  CloseHandle(timer);
-}
-
-void Timer::sleepUntilTick(u64 target_tick) {
-  u64 now = Timer::getSyncTick();
-  if (target_tick > now)
-    Timer::sleepTicks(target_tick - now);
-}
-
-///////////////////////////////////////////////////////////////////////////////
 #else
 #error // not implemented
 #endif
 ///////////////////////////////////////////////////////////////////////////////
 
+
+///////////////////////////////////////////////////////////////////////////////
 #if defined(__APPLE__) || defined(ORK_CONFIG_IX)
+///////////////////////////////////////////////////////////////////////////////
 
 void msleep(int millisec) {
   while (millisec > 0) {
@@ -229,7 +186,9 @@ void usleep(int microsec) {
   ::usleep(microsec);
 }
 
+///////////////////////////////////////////////////////////////////////////////
 #elif defined(ORK_WIN32)
+///////////////////////////////////////////////////////////////////////////////
 
 void msleep(int millisec) {
   Sleep(millisec);
@@ -247,7 +206,9 @@ void usleep(int microsec) {
   } while ((time2 - time1) < microsec);
 }
 
+///////////////////////////////////////////////////////////////////////////////
 #endif
+///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork
