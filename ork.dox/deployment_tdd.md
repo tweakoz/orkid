@@ -34,9 +34,8 @@ These are intentionally separate: the manifest describes *what content* a projec
         ...
     obt_config/
       env.common.sh             # Machine-specific environment variables
-    assetcache/
-      enc/                      # Placeholder for catalog-fetched assets
-    dblockcache/                # Empty, created at runtime
+    assetcache -> ~/.obt-global/assetcache  # Symlink created at launch time
+    dblockcache/                # Empty, created at deploy time
     obt-launch-env              # Entry point bootstrap script
     .deploy_path                # Relocation detection marker
     .is_deploy                  # Deploy mode flag
@@ -56,7 +55,7 @@ Copies runtime-essential directories from the staging area and internalizes the 
 **Steps:**
 1. Walk staging with `MachoDependencyWalker` to discover the full homebrew dylib dependency closure
 2. Copy `RUNTIME_DIRS` (`bin`, `lib`, `pyvenv`, `share`) preserving symlinks and permissions
-3. Create empty placeholder directories (`assetcache/enc/`, `dblockcache/`) — asset content is fetched separately post-deploy
+3. Create an empty `dblockcache/` directory (assetcache is symlinked at launch time — see Phase 6)
 4. Copy all discovered homebrew dylibs into `target/lib/`
 5. Ensure `libpython` is present in `lib/` (resolving symlinks)
 6. Fix hardcoded staging paths in text files (configs, scripts, pkg-config)
@@ -107,6 +106,8 @@ Copies project-specific runtime files as declared by each project's `deployment_
 - `files` — Individual files to copy
 - `deploy_libs` — Dylibs to copy into `lib/` and relocate
 
+After copying and text fixups, Phase 5 calls the manifest module's `deploy_fixup(infra_dir, proj_root, proj_target)` function if one is defined. This allows projects to run arbitrary Python code to copy additional files, patch deployed scripts, or perform other project-specific post-processing without modifying the core deployment phases.
+
 Also writes `projects/manifest.json` recording what was deployed.
 
 ### Phase 5.5: Dependency Module Fixups
@@ -122,7 +123,7 @@ Iterates all OBT dependency modules and calls `deployment_fixup(target_dir)` on 
 Creates the self-locating entry point and performs final setup.
 
 **Steps:**
-1. Generate `obt-launch-env` — a bash script that bootstraps the deployment environment, clears host variables, and detects relocation
+1. Generate `obt-launch-env` — a bash script that bootstraps the deployment environment, clears host variables, and detects relocation. Also creates a symlink from `$DEPLOY_ROOT/assetcache` to `~/.obt-global/assetcache` on first launch (ensuring the global cache directory exists), so asset data is shared across deployments and persists per-user.
 2. Internalize host binaries (`pkg-config`, `rsvg-convert`) with their dylib closures
 3. Set up MoltenVK ICD configuration for Vulkan support
 4. Fix Python shebangs in `obt_venv/bin/` to use `#!/usr/bin/env python3`
@@ -186,6 +187,16 @@ manifest = {
 ```
 
 If no manifest exists, the default is `{"dirs": ["obt.project"], "optional_dirs": []}`.
+
+### deploy_fixup() Hook
+
+The manifest module may also define a `deploy_fixup(infra_dir, proj_root, proj_target)` function. This runs after Phase 5 copies the project files and fixes text references. It receives:
+
+- `infra_dir` — the `.staging/` directory (for copying data into `share/`, `lib/`, etc.)
+- `proj_root` — the original source project directory
+- `proj_target` — the deployed copy under `.staging/projects/<name>/`
+
+Use cases include copying model/data files from external repositories, patching hardcoded paths in deployed scripts, or any project-specific post-processing. The fixup can use pip install metadata (`importlib.metadata`) to dynamically locate dependencies and their assets.
 
 ## Top-Level Deploy Script Pattern
 

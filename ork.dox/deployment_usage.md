@@ -114,6 +114,35 @@ manifest = {
 
 If no `deployment_manifest.py` exists, the default is to copy only `obt.project/`.
 
+### deploy_fixup() Hook
+
+The manifest module can optionally define a `deploy_fixup` function for project-specific post-processing:
+
+```python
+def deploy_fixup(infra_dir, proj_root, proj_target):
+    """Run after project files are copied into the deployment."""
+    # Example: copy model files from an external dependency
+    import importlib.metadata, json, urllib.parse
+    dist = importlib.metadata.distribution("my_package")
+    url_file = Path(dist._path) / "direct_url.json"
+    if url_file.exists():
+        url_json = json.loads(url_file.read_text())
+        src = Path(urllib.parse.urlparse(url_json["url"]).path)
+        # copy assets into <staging>/share/
+        ...
+
+    # Example: patch a deployed script to use deployment paths
+    script = proj_target / "scripts/my_utils.py"
+    text = script.read_text()
+    text = text.replace('old_hardcoded_path', 'new_deploy_path')
+    script.write_text(text)
+```
+
+This runs during Phase 5, after file copies and text reference fixups. It receives:
+- `infra_dir` — the `.staging/` directory
+- `proj_root` — original source project directory
+- `proj_target` — deployed copy under `.staging/projects/<name>/`
+
 ### What Each Key Does
 
 - **`dirs`** — Copied recursively with `cp -a` (preserves symlinks, permissions)
@@ -170,7 +199,7 @@ Every deployment produces `.staging/deploy.log` containing the full output from 
 
 ## Post-Deploy: Asset Fetching
 
-The deployment creates empty `assetcache/enc/` and `dblockcache/` directories. Asset content is not packaged — it should be fetched separately on the target machine using the asset catalog system.
+Asset content is not packaged in the deployment. On first launch, the `obt-launch-env` script creates a symlink from `<staging>/assetcache` to `~/.obt-global/assetcache` (creating the global directory if needed). This means assets fetched once are shared across all deployments on that machine. Fetch assets on the target machine using the asset catalog system.
 
 ## Troubleshooting
 
