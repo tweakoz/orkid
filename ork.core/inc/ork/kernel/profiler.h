@@ -216,9 +216,9 @@ struct ProfilerChannel {
   double _begin_time{};
   std::atomic<double> _frame_time{};
 
-  // Seconds per tick — set by subclass in frameBegin.
-  // CpuProfilerChannel uses Timer::tick_scale_ms(); VkProfilerChannel uses timestamp_period * 1e-9.
-  double _tick_to_seconds = 1.0;
+  // Milliseconds per nanosecond tick — set by subclass in frameBegin.
+  // CpuProfilerChannel uses MS_PER_NS; VkProfilerChannel uses timestamp_period * 1e-6.
+  double _tick_to_ms = 1.0;
 
   bool _recording = true;
 

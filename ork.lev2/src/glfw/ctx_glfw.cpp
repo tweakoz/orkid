@@ -715,10 +715,7 @@ void CtxGLFW::_runloopIter(bool pollevents) {
   //////////////////////////////
 
   if (_onGpuUpdate) {
-    auto ezapp = (OrkEzApp*)OrkEzAppBase::get();
-    if(ezapp) ezapp->_perf_gpu_update_timer.Start();
     _onGpuUpdate(_target);
-    if(ezapp) ezapp->_perf_gpu_update_duration = ezapp->_perf_gpu_update_timer.SecsSinceStart();
   }
 
   SlotRepaint();

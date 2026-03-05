@@ -202,7 +202,7 @@ void atexit_app(void) {
 OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
     : OrkEzAppBase(EzAppContext::get(initdata), initdata)  // Pass initdata to OrkEzAppBase
     , _mainWindow(0)
-    , _updateThread("updatethread") {
+    , _update_thread("updatethread") {
 
   logchan_ezapp->_status_interval = 8.0f;
 
@@ -222,10 +222,10 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
   _orkidWorkspaceDir = file::Path(orkdirstr);
   //////////////////////////////////////////////////////////
 
-  _update_data = std::make_shared<ui::UpdateData>();
-  _updq        = ork::opq::updateSerialQueue();
-  _conq        = ork::opq::concurrentQueue();
-  _mainq       = ork::opq::mainSerialQueue();
+  _update_data  = std::make_shared<ui::UpdateData>();
+  _update_queue = ork::opq::updateSerialQueue();
+  _conq         = ork::opq::concurrentQueue();
+  _mainq        = ork::opq::mainSerialQueue();
 
   /////////////////////////////////////////////
   // Fork initialization path based on use_subsystems flag
@@ -669,8 +669,8 @@ void OrkEzApp::joinUpdate() {
       _mainq->Process();
     }
     //logger()->defaultChannel()->log("OrkEzApp<%p> joinUpdate:2", this);
-    _updq->drain();
-    _updateThread.join();
+    _update_queue->drain();
+    _update_thread.join();
     //logger()->defaultChannel()->log("OrkEzApp<%p> joinUpdate:3", this);
     DrawQueue::ClearAndSyncWriters();
     //logger()->defaultChannel()->log("OrkEzApp<%p> joinUpdate:4", this);
@@ -844,13 +844,12 @@ void OrkEzApp::_mainThreadLoopBegin() {
   ///////////////////////////////
 
   _update_thread_impl = [&](anyp data) {
-    _update_timer.Start();
-    _update_prevtime        = _update_timer.SecsSinceStart();
-    _update_timeaccumulator = 0.0;
+
     ork::SetCurrentThreadName("update");
-    opq::TrackCurrent opqtest(_updq);
-    double stats_timeaccum = 0;
-    double state_numiters  = 0.0;
+    opq::TrackCurrent opqtest(_update_queue);
+
+    u64 update_prevtick = Timer::getSyncTick();
+    u64 update_timeaccum_ticks = 0;
     float target_ups = _initdata->_target_ups;
     float target_fps = _initdata->_target_fps;
 
@@ -867,72 +866,73 @@ void OrkEzApp::_mainThreadLoopBegin() {
     if (_initdata->_freerunning) {
       logchan_ezapp->log("FREERUNNING MODE: realtime, tgt UPS<%g> tgt FPS<%g>", target_ups, target_fps);
 
-      double step = 1.0 / target_ups;
-      double max_update_time = 0.0;  // Track max update time in current window (seconds)
-      ork::Timer update_timer;
+      double step    = 1.0 / target_ups;
+      u64 step_ticks = u64(double(NS_PER_SEC) / double(target_ups)); // ticks per update step
+      u64 post_delta = 0;
 
-      //////////////////////
+      ////////////////////////////////////////
       // Freerun Update Loop
-      //////////////////////
+      ////////////////////////////////////////
 
       while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
-        EASY_BLOCK("UpdateIteration");
-        double this_time = _update_timer.SecsSinceStart() * _timescale;
-        double raw_delta = this_time - _update_prevtime;
-        _update_prevtime = this_time;
-        _update_timeaccumulator += raw_delta;
+        u64 now_tick        = Timer::getSyncTick();
+        u64 raw_delta_ticks = now_tick - update_prevtick;
+        update_prevtick     = now_tick;
+        update_timeaccum_ticks += raw_delta_ticks;
 
-        ////////////////////////////
+        ////////////////////////////////////////
         // Freerun Timed Update Loop
-        ////////////////////////////
+        ////////////////////////////////////////
 
-        if (_update_timeaccumulator >= step) {
+        if (update_timeaccum_ticks >= step_ticks) {
           OrkProfilerFrameBegin(CHANNEL_UPDATE, CpuProfilerChannel);
           OrkProfilerSampleBegin(CHANNEL_UPDATE, SERIES_EZAPP_UPDATE_FREERUN);
 
           bool do_update = _mainWindow && bool(_mainWindow->_onUpdate);
           if (do_update) {
-            update_timer.Start();  // Start timing this update
             _update_data->_dt = step;
             _update_data->_abstime += step;
             _update_data->_counter = _update_count.load();
-            /////////////////////////////
+            if(0) printf( "OrkEzApp<%p> update dt<%g> abstime<%g> count<%d>\n", this, _update_data->_dt, _update_data->_abstime, (int)_update_data->_counter );
+            
             if (not checkAppState(KAPPSTATEFLAG_JOINING)) {
-              if (_mainWindow->_onUpdateInternal) {
+              if (_mainWindow->_onUpdateInternal)
                 _mainWindow->_onUpdateInternal(_update_data);
-              }
-              if (_mainWindow->_onUpdate) {
+
+              if (_mainWindow->_onUpdate)
                 _mainWindow->_onUpdate(_update_data);
-              } else if (_mainWindow->_onUpdateWithScene) {
+              else if (_mainWindow->_onUpdateWithScene)
                 _mainWindow->_onUpdateWithScene(_update_data, _mainWindow->_execscene);
-              }
+
               _update_count.fetch_add(1);
             }
-            /////////////////////////////
-            double update_duration = update_timer.SecsSinceStart();
-            _perf_update_duration = update_duration;
-            if (update_duration > max_update_time) {
-              max_update_time = update_duration;
-            }
-            state_numiters += 1.0;
           }
 
-          _update_timeaccumulator -= step;
-          stats_timeaccum += step;
-          if (_initdata->_log_freerun_ups && stats_timeaccum >= logchan_ezapp->_perf_interval) {
-            logchan_ezapp->perfItem("FREERUN_UPS", float(state_numiters / stats_timeaccum));
-            logchan_ezapp->perfItem("FREERUN_MAXU", float(max_update_time * 1000.0));  // Convert to msec
-            stats_timeaccum = 0.0;
-            state_numiters  = 0.0;
-            max_update_time = 0.0;
-          }
+          update_timeaccum_ticks -= step_ticks;
 
           OrkProfilerSampleEnd(CHANNEL_UPDATE, SERIES_EZAPP_UPDATE_FREERUN);
           OrkProfilerFrameEnd(CHANNEL_UPDATE);
         }
 
         opq::updateSerialQueue()->Process();
-        sched_yield();
+
+        // 1ms in ns. Unless there is at least this much time to sleep then we don't. Sleep overhead not justified.
+        constexpr u64 SLEEP_THRESHOLD_TICKS = NS_PER_MS;
+
+        // Sleep until the next step boundary. Otherwise spin wait via `if (update_timeaccum_ticks >= step_ticks)`.
+        if (_update_sleep_wait && step_ticks > update_timeaccum_ticks + SLEEP_THRESHOLD_TICKS) {
+          u64 target = update_prevtick + (step_ticks - update_timeaccum_ticks);
+          Timer::sleepUntilTick(target);
+
+          // Debug log if overshoot.
+          if (0) {
+            u64 post = Timer::getSyncTick();
+            post_delta = target - post;
+            if (post_delta > + NS_PER_US) {
+              logchan_ezapp->log_continue("sleep overshoot: +%llu ns", post - target);
+            }
+          }
+        }
 
       } // while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
 
@@ -956,19 +956,18 @@ void OrkEzApp::_mainThreadLoopBegin() {
       wallclock_timer.Start();
       double wallclock_accum = 0.0;
       double wallclock_updates = 0.0;
+      double render_timeaccumulator = 0.0;
 
-      //////////////////////////
+      ////////////////////////////////////////
       // Synchronous Update Loop
-      //////////////////////////
+      ////////////////////////////////////////
       while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
         OrkProfilerFrameBegin(CHANNEL_UPDATE, CpuProfilerChannel);
         OrkProfilerSampleBegin(CHANNEL_UPDATE, SERIES_EZAPP_UPDATE_LOCKSTEP);
 
-        EASY_BLOCK("UpdateIteration_SYNC");
-
         // Fixed time step per update
         virtual_time += update_delta;
-        _render_timeaccumulator += update_delta;
+        render_timeaccumulator += update_delta;
 
         // Run update
         bool do_update = _mainWindow && bool(_mainWindow->_onUpdate);
@@ -976,7 +975,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
           _update_data->_dt      = update_delta;
           _update_data->_abstime = virtual_time;
           _update_data->_counter = _update_count.load();
-          // printf( "OrkEzApp<%p> update dt<%g> abstime<%g> count<%d>\n", this, _update_data->_dt, _update_data->_abstime, (int)_update_data->_counter );
+          if(0) printf( "OrkEzApp<%p> update dt<%g> abstime<%g> count<%d>\n", this, _update_data->_dt, _update_data->_abstime, (int)_update_data->_counter );
           /////////////////////////////
           if (not checkAppState(KAPPSTATEFLAG_JOINING)) {
             if (_mainWindow->_onUpdateInternal) {
@@ -990,7 +989,6 @@ void OrkEzApp::_mainThreadLoopBegin() {
             _update_count.fetch_add(1);
           }
 
-          state_numiters += 1.0;
           wallclock_updates += 1.0;
         }
 
@@ -1015,9 +1013,9 @@ void OrkEzApp::_mainThreadLoopBegin() {
         }
 
         // Check if we should render a frame
-        while (_render_timeaccumulator >= frame_delta) {
+        while (render_timeaccumulator >= frame_delta) {
           _lockstep_frame_requests.fetch_add(1);
-          _render_timeaccumulator -= frame_delta;
+          render_timeaccumulator -= frame_delta;
         }
         while ((not checkAppState(KAPPSTATEFLAG_JOINING)) and (_lockstep_frame_requests.load() > 0)) {
           sched_yield();
@@ -1045,9 +1043,6 @@ void OrkEzApp::_mainThreadLoopBegin() {
       _audioExit();
     }
   };
-  EASY_PROFILER_ENABLE;
-  //EASY_MAIN_THREAD;
-  //profiler::startListen();
 
   if (not _mainWindow) {
     while (this->_onRunLoopIteration) {
@@ -1103,7 +1098,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
 
     //logchan_ezapp->log("END OrkEzApp::_onGpuInit");
     logchan_ezapp->log("starting update thread...");
-    _updateThread.start(_update_thread_impl);
+    _update_thread.start(_update_thread_impl);
     // Note: gpuPostInit() will be called by the framework (CtxGLFW::_runloopBegin)
   };
 
@@ -1232,12 +1227,6 @@ int OrkEzApp::mainThreadLoop() {
           // Render secondary windows
           _renderSecondaryWindows();
           _cleanupClosedSecondaryWindows();
-        }
-
-        double frame_duration = frame_timer.SecsSinceStart();
-        _perf_frame_duration = frame_duration;
-        if (frame_duration > max_frame_time) {
-          max_frame_time = frame_duration;
         }
 
         // Track freerun FPS

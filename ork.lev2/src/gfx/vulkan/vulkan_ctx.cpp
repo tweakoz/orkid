@@ -1922,7 +1922,7 @@ void VkProfilerChannel::frameBegin(BeginParams params) {
 
   if (_device == VK_NULL_HANDLE) {
     _device = params.device;
-    _tick_to_seconds = double(params.timestamp_period) * 1e-6; // milliseconds per tick
+    _tick_to_ms = double(params.timestamp_period) * 1e-6; // milliseconds per GPU tick
 
     VkQueryPoolCreateInfo info = {
       .sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
@@ -1984,7 +1984,7 @@ void VkProfilerChannel::frameEnd() {
   _vk_total_spans.clear();
 
   // accumulate in series through base call
-  ProfilerChannel::frameEnd(); 
+  ProfilerChannel::frameEnd();
 }
 
 void VkProfilerChannel::sampleBegin(SampleProfilerSeries* s) {

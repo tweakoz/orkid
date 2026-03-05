@@ -25,6 +25,7 @@ void orkerrorlog( const char *formatstring, ... );
 namespace ork {
 //#endif
 
+// Lower precision sleep functions. Prefer using Timer::sleepTicks 
 void msleep( int millisec );
 void usleep( int microsec );
 
