@@ -8,6 +8,9 @@
 #include <ork/pch.h>
 #include <ork/kernel/string/string.h>
 #include <ork/kernel/concurrent_queue.h>
+#include <ork/kernel/kernel.h>
+#include <ork/kernel/timer.h>
+#include <ork/kernel/mutex.h>
 
 #if defined(ORK_OSX) || defined(ORK_IOS)
 #include <mach/mach_time.h>
@@ -21,10 +24,6 @@
 #include <sched.h>
 #include <time.h>
 #endif
-
-#include <ork/kernel/kernel.h>
-#include <ork/kernel/timer.h>
-#include <ork/kernel/mutex.h>
 
 #include <time.h>
 #include <stdio.h>
