@@ -42,7 +42,7 @@ void Timer::End() {
   _end_tick = getSyncTick();
 }
 
-void Timer::setCurrentSecs(double secs) {
+void Timer::setCurrentTime(double secs) {
   u64 offset  = u64(secs * double(NS_PER_SEC));
   _start_tick = getSyncTick() - offset;
 }
@@ -72,13 +72,14 @@ Timer::~Timer() {
   delete _thread;
 }
 
-void Timer::OnInterval(float interval, const void_lambda_t& oper) {
+void Timer::OnInterval(double interval_secs, const void_lambda_t& oper) {
   _on_interval = oper;
   _thread      = new ork::Thread;
+  u64 interval_ticks = u64(interval_secs * double(NS_PER_SEC));
   if (_on_interval) {
     _thread->start([=](anyp data) {
       while (false == _kill) {
-        usleep(uint64_t(interval * 1e6f));
+        sleepTicks(interval_ticks);
         _on_interval();
       }
     });

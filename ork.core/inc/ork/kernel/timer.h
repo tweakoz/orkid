@@ -41,12 +41,10 @@ struct Timer {
 
   void Start();
   void End();
-  
-  void   setCurrentSecs(double secs);
   double SecsSinceStart() const;
   double SpanInSecs() const;
-
-  void OnInterval(float interval, const void_lambda_t& oper);
+  void OnInterval(double interval_secs, const void_lambda_t& oper);
+  void setCurrentTime(double secs);
 
   ////////////////////////////////////////
 
@@ -62,13 +60,12 @@ struct Timer {
   // High precision wait until absolute ns tick from staticInit
   static void   sleepUntilTick(u64 target_tick); 
 
-    // High precision sleep in ticks.
+  // High precision sleep in ticks.
   static void   sleepTicks(u64 ticks);
 
 private:
   u64           _start_tick{};
   u64           _end_tick{};
-  float         _lambda_interval{};
   void_lambda_t _on_interval{};
   ork::Thread*  _thread{};
   bool          _kill{};
