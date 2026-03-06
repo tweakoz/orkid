@@ -163,7 +163,7 @@ int GfxMaterialUI::BeginBlock(Context* pTarg, const RenderContextInstData& MatCt
   // Debug: check for NaN in MVP and log context info
   static int nan_log_count = 0;
   const float* mvpdata = MatMVP.asArray();
-  if (nan_log_count < 20 && (std::isnan(mvpdata[0]) || std::isnan(mvpdata[1]))) {
+  if (nan_log_count < 5 && (std::isnan(mvpdata[0]) || std::isnan(mvpdata[1]))) {
     printf("GfxMaterialUI::BeginBlock NaN! pTarg=%p MTXI=%p mvp=[%g %g %g %g]\n",
            (void*)pTarg, (void*)pTarg->MTXI(),
            mvpdata[0], mvpdata[1], mvpdata[2], mvpdata[3]);
