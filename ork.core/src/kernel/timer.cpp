@@ -35,20 +35,20 @@ namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Timer::Start() {
-  _start_tick = getSyncTick();
+  _start_tick = getSystemTick();
 }
 
 void Timer::End() {
-  _end_tick = getSyncTick();
+  _end_tick = getSystemTick();
 }
 
 void Timer::setCurrentTime(double secs) {
   u64 offset  = u64(secs * double(NS_PER_SEC));
-  _start_tick = getSyncTick() - offset;
+  _start_tick = getSystemTick() - offset;
 }
 
 double Timer::SecsSinceStart() const {
-  u64 delta = getSyncTick() - _start_tick;
+  u64 delta = getSystemTick() - _start_tick;
   return double(delta) * SEC_PER_NS;
 }
 
@@ -90,64 +90,65 @@ void Timer::OnInterval(double interval_secs, const void_lambda_t& oper) {
 #if defined(ORK_OSX) || defined(ORK_IOS)
 ///////////////////////////////////////////////////////////////////////////////
 
-static u64 s_numer    = 1;
-static u64 s_denom    = 1;
-static u64 s_timebase = 0; // raw mach ticks at init
+static mach_timebase_info_data_t s_info = [](){
+  mach_timebase_info_data_t i;
+  mach_timebase_info(&i);
+  return i;
+}();
+static u64 s_numer    = s_info.numer;
+static u64 s_denom    = s_info.denom;
+static u64 s_timebase = 0; // raw mach ticks at staticInit time
 
 void Timer::staticInit() {
-  mach_timebase_info_data_t info;
-  mach_timebase_info(&info);
-  s_numer    = info.numer;
-  s_denom    = info.denom;
   s_timebase = mach_absolute_time();
 }
 
-u64 Timer::getSyncTick() {
-  // returns nanoseconds: (raw * numer) / denom, all integer
-  u64 raw = mach_absolute_time() - s_timebase;
-  return (raw * s_numer) / s_denom;
+u64 Timer::getSystemTick() {
+  return (mach_absolute_time() * s_numer) / s_denom;
 }
 
 double Timer::get_sync_time() {
-  return double(Timer::getSyncTick()) * SEC_PER_NS;
+  // seconds since staticInit()
+  u64 raw = mach_absolute_time() - s_timebase;
+  return double((raw * s_numer) / s_denom) * SEC_PER_NS;
 }
 
 void Timer::sleepTicks(u64 ticks) {
-  u64 ns = (ticks * s_denom) / s_numer;
-  mach_wait_until(mach_absolute_time() + ns);
+  // ticks = duration in nanoseconds
+  u64 mach_ticks = (ticks * s_denom) / s_numer;
+  mach_wait_until(mach_absolute_time() + mach_ticks);
 }
 
 void Timer::sleepUntilTick(u64 target_tick) {
-  // convert absolute ns tick back to absolute mach tick
-  u64 abs_ns = s_timebase + (target_tick * s_denom) / s_numer;
-  mach_wait_until(abs_ns);
+  // target_tick = absolute ns from getSystemTick()
+  // convert to absolute mach time: mach = (ns * denom) / numer
+  mach_wait_until((target_tick * s_denom) / s_numer);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 #elif defined(ORK_CONFIG_IX)
 ///////////////////////////////////////////////////////////////////////////////
 
-static u64 s_timebase = 0;
+static u64 s_timebase = 0; // absolute ns at staticInit time
 
 void Timer::staticInit() {
-  timespec tmsnow;
-  clock_gettime(CLOCK_REALTIME, &tmsnow);
-  // store timebase in nanoseconds
-  s_timebase = u64(tmsnow.tv_sec) * NS_PER_SEC + u64(tmsnow.tv_nsec);
+  timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  s_timebase = u64(ts.tv_sec) * NS_PER_SEC + u64(ts.tv_nsec);
 }
 
-u64 Timer::getSyncTick() {
-  // returns nanoseconds
-  timespec tsnow;
-  clock_gettime(CLOCK_REALTIME, &tsnow);
-  return u64(tsnow.tv_sec) * NS_PER_SEC + u64(tsnow.tv_nsec) - s_timebase;
+u64 Timer::getSystemTick() {
+  timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return u64(ts.tv_sec) * NS_PER_SEC + u64(ts.tv_nsec);
 }
 
 double Timer::get_sync_time() {
-  return double(Timer::getSyncTick()) * SEC_PER_NS;
+  return double(getSystemTick() - s_timebase) * SEC_PER_NS;
 }
 
 void Timer::sleepTicks(u64 ticks) {
+  // ticks = duration in nanoseconds
   timespec ts = {
     .tv_sec  = (time_t)(ticks / NS_PER_SEC),
     .tv_nsec = (long)  (ticks % NS_PER_SEC)
@@ -156,13 +157,12 @@ void Timer::sleepTicks(u64 ticks) {
 }
 
 void Timer::sleepUntilTick(u64 target_tick) {
-  // convert absolute ns tick to absolute CLOCK_REALTIME timespec
-  u64 abs_ns = s_timebase + target_tick;
+  // target_tick = absolute ns from getSystemTick() (CLOCK_MONOTONIC)
   timespec ts = {
-    .tv_sec  = (time_t)(abs_ns / NS_PER_SEC),
-    .tv_nsec = (long)  (abs_ns % NS_PER_SEC)
+    .tv_sec  = (time_t)(target_tick / NS_PER_SEC),
+    .tv_nsec = (long)  (target_tick % NS_PER_SEC)
   };
-  clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &ts, nullptr);
+  clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts, nullptr);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -170,7 +170,6 @@ void Timer::sleepUntilTick(u64 target_tick) {
 #error // not implemented
 #endif
 ///////////////////////////////////////////////////////////////////////////////
-
 
 ///////////////////////////////////////////////////////////////////////////////
 #if defined(__APPLE__) || defined(ORK_CONFIG_IX)

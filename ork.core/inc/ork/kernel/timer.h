@@ -12,7 +12,7 @@
 //
 // UNITS
 //   Time  - seconds   (double)
-//   Tick  - nanoseconds (u64). 1 tick = 1 ns. Used in all tick-based APIs.
+//   Tick  - nanoseconds (u64). 1 tick = 1 ns. Monotomic time consistent system-wide.
 //   MS    - milliseconds. Suffix on constants/conversions (e.g. NS_PER_MS).
 //   US    - microseconds. Suffix on constants/conversions (e.g. NS_PER_US).
 //
@@ -46,22 +46,24 @@ struct Timer {
   void OnInterval(double interval_secs, const void_lambda_t& oper);
   void setCurrentTime(double secs);
 
-  ////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////
 
-  // Must be called before use of getSyncTick and get_sync_time
-  static void   staticInit(); 
+  // Must be called before use of get_sync_time
+  static void   staticInit();
 
-  // Ticks since staticInit. 1 tick = 1 nanosecond
-  static u64    getSyncTick(); 
+  // Seconds since staticInit() was called.
+  static double get_sync_time();
 
-  // Seconds since staticInit.
-  static double get_sync_time(); 
+  // Absolute nanoseconds since system boot. Cross-process consistent. No staticInit required.
+  static u64    getSystemTick();
 
-  // High precision wait until absolute ns tick from staticInit
-  static void   sleepUntilTick(u64 target_tick); 
-
-  // High precision sleep in ticks.
+  // Sleep for a duration in nanoseconds.
   static void   sleepTicks(u64 ticks);
+
+  // Sleep until an absolute tick from getSystemTick().
+  static void   sleepUntilTick(u64 target_tick);
+
+  ///////////////////////////////////////////////////////////////////////////////
 
 private:
   u64           _start_tick{};

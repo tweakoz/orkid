@@ -24,7 +24,7 @@ void SampleProfilerSeries::addSample() {
   } else {
     logchan_prof->log("addSample(%s) but _call_level=%d! Ensure sampleEnd called. Or use sampleScope. Skipping.", _name.c_str(), _call_level);
   }
-  
+
   _total_ticks    = 0;
   _isolated_ticks = 0;
   _call_count     = 0;
@@ -129,7 +129,7 @@ void CpuProfilerChannel::sampleBegin(SampleProfilerSeries* s) {
 			_name.c_str(), s->_name.c_str(), s->_call_level);
     return;
 	}
-  u64 now = Timer::getSyncTick();
+  u64 now = Timer::getSystemTick();
 
 	// pause parent by accumulating its time so far
   if (!_span_stack.empty()) {
@@ -152,7 +152,7 @@ void CpuProfilerChannel::sampleEnd(SampleProfilerSeries* s) {
 			_name.c_str(), s->_name.c_str());
     return;
 	}
-  u64 now = Timer::getSyncTick();
+  u64 now = Timer::getSystemTick();
 
 	while (!_span_stack.empty()) {
 		auto& top = _span_stack.top();

@@ -848,7 +848,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
     ork::SetCurrentThreadName("update");
     opq::TrackCurrent opqtest(_update_queue);
 
-    u64 update_prevtick = Timer::getSyncTick();
+    u64 update_prevtick = Timer::getSystemTick();
     u64 update_timeaccum_ticks = 0;
     float target_ups = _initdata->_target_ups;
     float target_fps = _initdata->_target_fps;
@@ -875,7 +875,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
       ////////////////////////////////////////
 
       while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
-        u64 now_tick        = Timer::getSyncTick();
+        u64 now_tick        = Timer::getSystemTick();
         u64 raw_delta_ticks = now_tick - update_prevtick;
         update_prevtick     = now_tick;
         update_timeaccum_ticks += raw_delta_ticks;
@@ -926,7 +926,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
 
           // Debug log if overshoot.
           if (0) {
-            u64 post = Timer::getSyncTick();
+            u64 post = Timer::getSystemTick();
             post_delta = target - post;
             if (post_delta > + NS_PER_US) {
               logchan_ezapp->log_continue("sleep overshoot: +%llu ns", post - target);
