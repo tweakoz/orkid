@@ -193,7 +193,7 @@ class TestRunnerFilesystemModel(lev2.ui.FilesystemModel):
         for opt_name, opt_value in options_spec.items():
           if isinstance(opt_value, list):
             info.options_state[opt_name] = False
-          elif isinstance(opt_value, dict):
+          elif isinstance(opt_value, dict) and opt_value:
             info.options_state[opt_name] = next(iter(opt_value))
         # Initialize env_state with defaults (first non-_label key of each env enum)
         for env_name, env_dict in env_spec.items():

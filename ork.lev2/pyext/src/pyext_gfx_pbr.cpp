@@ -176,6 +176,9 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
               })
           .def_property_readonly("freestyle", [](pbrmaterial_ptr_t m) -> freestyle_mtl_ptr_t { return m->_as_freestyle; })
           .def("gpuInit", [](pbrmaterial_ptr_t m, ctx_t& c) { m->gpuInit(c.get()); })
+          .def_static("brdfIntegrationMap", [](ctx_t& c, std::string type) -> texture_ptr_t {
+            return PBRMaterial::brdfIntegrationMap(c.get(), type);
+          })
           .def(
               "assignImages",
               [](pbrmaterial_ptr_t m,

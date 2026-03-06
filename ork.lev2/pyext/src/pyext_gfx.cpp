@@ -33,6 +33,8 @@ void pyinit_gfx(py::module& module_lev2) {
       py::class_<GfxEnv>(module_lev2, "GfxEnv")
           .def_readonly_static("ref", &GfxEnv::GetRef())
           .def_static("loadingContext", [] -> ctx_t { return ctx_t(ork::lev2::contextForCurrentThread()); })
+          .def("hasDeferredOps", [](GfxEnv& e) -> bool { return e.hasDeferredContextOps(); })
+          .def("waitForDeferredOps", [](GfxEnv& e) { e.waitForDeferredContextOps(); })
           .def("__repr__", [](const GfxEnv& e) -> std::string {
             fxstring<64> fxs;
             fxs.format("GfxEnv(%p)", &e);
