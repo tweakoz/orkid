@@ -848,8 +848,6 @@ void OrkEzApp::_mainThreadLoopBegin() {
     ork::SetCurrentThreadName("update");
     opq::TrackCurrent opqtest(_update_queue);
 
-    u64 update_prevtick = Timer::getSystemTick();
-    u64 update_timeaccum_ticks = 0;
     float target_ups = _initdata->_target_ups;
     float target_fps = _initdata->_target_fps;
 
@@ -866,32 +864,32 @@ void OrkEzApp::_mainThreadLoopBegin() {
     if (_initdata->_freerunning) {
       logchan_ezapp->log("FREERUNNING MODE: realtime, tgt UPS<%g> tgt FPS<%g>", target_ups, target_fps);
 
-      double step    = 1.0 / target_ups;
-      u64 step_ticks = u64(double(NS_PER_SEC) / double(target_ups)); // ticks per update step
-      u64 post_delta = 0;
+      double step_time       = 1.0 / target_ups;
+      u64 step_ticks         = u64(double(NS_PER_SEC) / double(target_ups)); // ticks per update step
+      u64 update_prevtick    = Timer::getSystemTick();
+      u64 update_accum_ticks = 0;
 
       ////////////////////////////////////////
       // Freerun Update Loop
       ////////////////////////////////////////
 
       while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
-        u64 now_tick        = Timer::getSystemTick();
-        u64 raw_delta_ticks = now_tick - update_prevtick;
-        update_prevtick     = now_tick;
-        update_timeaccum_ticks += raw_delta_ticks;
+        u64 now_tick    = Timer::getSystemTick();
+        u64 delta_ticks = now_tick - update_prevtick;
+        update_prevtick = now_tick;
 
-        ////////////////////////////////////////
-        // Freerun Timed Update Loop
-        ////////////////////////////////////////
+        // Accumulate ticks and consume if enough available for step.
+        update_accum_ticks += delta_ticks;
 
-        if (update_timeaccum_ticks >= step_ticks) {
+        // Step.
+        if (update_accum_ticks >= step_ticks) {
           OrkProfilerFrameBegin(CHANNEL_UPDATE, CpuProfilerChannel);
           OrkProfilerSampleBegin(CHANNEL_UPDATE, SERIES_EZAPP_UPDATE_FREERUN);
 
           bool do_update = _mainWindow && bool(_mainWindow->_onUpdate);
           if (do_update) {
-            _update_data->_dt = step;
-            _update_data->_abstime += step;
+            _update_data->_dt = step_time;
+            _update_data->_abstime += step_time;
             _update_data->_counter = _update_count.load();
             if(0) printf( "OrkEzApp<%p> update dt<%g> abstime<%g> count<%d>\n", this, _update_data->_dt, _update_data->_abstime, (int)_update_data->_counter );
             
@@ -908,30 +906,36 @@ void OrkEzApp::_mainThreadLoopBegin() {
             }
           }
 
-          update_timeaccum_ticks -= step_ticks;
+          opq::updateSerialQueue()->Process();
+
+          // Consume ticks for step.
+          update_accum_ticks -= step_ticks;
 
           OrkProfilerSampleEnd(CHANNEL_UPDATE, SERIES_EZAPP_UPDATE_FREERUN);
           OrkProfilerFrameEnd(CHANNEL_UPDATE);
         }
 
-        opq::updateSerialQueue()->Process();
+        // Only sleep if remaining time justifies the overhead (> SLEEP_THRESHOLD_TICKS).
+        constexpr u64 SLEEP_THRESHOLD_TICKS = NS_PER_MS; // 1 millisecond
 
-        // 1ms in ns. Unless there is at least this much time to sleep then we don't. Sleep overhead not justified.
-        constexpr u64 SLEEP_THRESHOLD_TICKS = NS_PER_MS;
+        // Wake from sleep early by this amount. Will spin rest of way if needed.
+        constexpr u64 TARGET_MARGIN_TICKS = 250 * NS_PER_US; // 200 microseconds
 
-        // Sleep until the next step boundary. Otherwise spin wait via `if (update_timeaccum_ticks >= step_ticks)`.
-        if (_update_sleep_wait && step_ticks > update_timeaccum_ticks + SLEEP_THRESHOLD_TICKS) {
-          u64 target = update_prevtick + (step_ticks - update_timeaccum_ticks);
-          Timer::sleepUntilTick(target);
+        if (_update_sleep_wait && step_ticks > update_accum_ticks + SLEEP_THRESHOLD_TICKS) {
+          u64 remaining_to_step = step_ticks - update_accum_ticks;
+          u64 sleep_target_tick = now_tick + remaining_to_step;
+          Timer::sleepUntilTick(sleep_target_tick - TARGET_MARGIN_TICKS);
 
-          // Debug log if overshoot.
           if (0) {
-            u64 post = Timer::getSystemTick();
-            post_delta = target - post;
-            if (post_delta > + NS_PER_US) {
-              logchan_ezapp->log_continue("sleep overshoot: +%llu ns", post - target);
+            // Check if our sleep overshot by more than TARGET_MARGIN_TICKS
+            u64 post_tick = Timer::getSystemTick();
+            u64 overshoot_ticks = (post_tick > sleep_target_tick) ? post_tick - sleep_target_tick : 0;
+            if (overshoot_ticks > TARGET_MARGIN_TICKS) {
+                logchan_ezapp->log_continue("sleep overshoot: +%llu ns - margin: %llu ns", post_tick - sleep_target_tick, TARGET_MARGIN_TICKS);
             }
           }
+        } else {
+           sched_yield();
         }
 
       } // while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
