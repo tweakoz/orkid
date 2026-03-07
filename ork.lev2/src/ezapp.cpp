@@ -884,7 +884,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
 
           // Log +/- error of ticks from target. 
           // Can also look in profilerview at UpdateThread FPS to see how locked it is on the target.
-          if (1) {
+          if (0) {
             u64 now_tick    = Timer::getSystemTick();
             u64 delta_ticks = now_tick - prev_tick;
             prev_tick = now_tick;
