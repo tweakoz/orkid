@@ -63,9 +63,14 @@ struct Timer {
   // Sleep until an absolute tick from getSystemTick().
   static void   sleepUntilTick(u64 target_tick);
 
+  // CPU yield hint for spin-wait loops. Stays on-CPU but reduces pipeline pressure.
+  static void   spinYield();
+
+  // Pure spin until an absolute tick. Burns 100% of one CPU core. Lowest possible jitter.
+  static void   spinUntilTick(u64 target_tick);
+
   ///////////////////////////////////////////////////////////////////////////////
 
-private:
   u64           _start_tick{};
   u64           _end_tick{};
   void_lambda_t _on_interval{};
@@ -74,6 +79,35 @@ private:
 };
 
 using timer_ptr_t = std::shared_ptr<Timer>;
+
+///////////////////////////////////////////////////////////////////////////////
+// AdaptiveWait
+//
+// Hybrid sleep+spin that self-tunes its spin margin to eliminate scheduler
+// wakeup jitter. Call sleepUntilTick() with an absolute tick from
+// Timer::getSystemTick(). The margin grows when the OS overshoots and
+// decays slowly when wakeups are on time.
+///////////////////////////////////////////////////////////////////////////////
+
+struct AdaptiveWait {
+
+  enum class Mode {
+    Coarse,   // Pure sleep, tiny spin margin. Lowest CPU. May overshoot by ~1ms.
+    Balanced, // Moderate spin margin and decay. Good CPU/precision tradeoff.
+    Precise,  // Large spin margin, slow decay. Lowest jitter. Burns more CPU in spin.
+  };
+
+  AdaptiveWait(Mode mode = Mode::Balanced);
+
+  void sleepUntilTick(u64 target_tick);
+
+  u64  _spin_margin;
+  u64  _margin_min;
+  u64  _margin_max;
+  u64  _decay;
+};
+
+using adaptive_wait_ptr_t = std::shared_ptr<AdaptiveWait>;
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork

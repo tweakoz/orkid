@@ -34,6 +34,21 @@
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
+Timer::Timer()
+    : _start_tick(0)
+    , _end_tick(0)
+    , _on_interval(nullptr)
+    , _thread(nullptr)
+    , _kill(false) {
+}
+
+Timer::~Timer() {
+  _kill = true;
+  if (_thread)
+    _thread->join();
+  delete _thread;
+}
+
 void Timer::Start() {
   _start_tick = getSystemTick();
 }
@@ -57,20 +72,19 @@ double Timer::SpanInSecs() const {
   return double(delta) * SEC_PER_NS;
 }
 
-Timer::Timer()
-    : _start_tick(0)
-    , _end_tick(0)
-    , _on_interval(nullptr)
-    , _thread(nullptr)
-    , _kill(false) {
+void Timer::spinYield() {
+#if defined(ORK_ARCHITECTURE_ARM_64)
+  __builtin_arm_yield();
+#elif defined(ORK_ARCHITECTURE_X86_64)
+  __builtin_ia32_pause();
+#endif
 }
 
-Timer::~Timer() {
-  _kill = true;
-  if (_thread)
-    _thread->join();
-  delete _thread;
+void Timer::spinUntilTick(u64 target_tick) {
+  while (getSystemTick() < target_tick)
+    spinYield();
 }
+
 
 void Timer::OnInterval(double interval_secs, const void_lambda_t& oper) {
   _on_interval = oper;
@@ -95,34 +109,34 @@ static mach_timebase_info_data_t s_info = [](){
   mach_timebase_info(&i);
   return i;
 }();
-static u64 s_numer    = s_info.numer;
-static u64 s_denom    = s_info.denom;
-static u64 s_timebase = 0; // raw mach ticks at staticInit time
 
+// Should move away from using staticInit and needing to rely on it. 
+// Everything should just use the system-wide monotomic tick.
+static u64 s_timebase = 0; // raw mach ticks at staticInit time
 void Timer::staticInit() {
   s_timebase = mach_absolute_time();
-}
-
-u64 Timer::getSystemTick() {
-  return (mach_absolute_time() * s_numer) / s_denom;
 }
 
 double Timer::get_sync_time() {
   // seconds since staticInit()
   u64 raw = mach_absolute_time() - s_timebase;
-  return double((raw * s_numer) / s_denom) * SEC_PER_NS;
+  return double((raw * s_info.numer) / s_info.denom) * SEC_PER_NS;
+}
+
+u64 Timer::getSystemTick() {
+  return (mach_absolute_time() * s_info.numer) / s_info.denom;
 }
 
 void Timer::sleepTicks(u64 ticks) {
   // ticks = duration in nanoseconds
-  u64 mach_ticks = (ticks * s_denom) / s_numer;
+  u64 mach_ticks = (ticks * s_info.denom) / s_info.numer;
   mach_wait_until(mach_absolute_time() + mach_ticks);
 }
 
 void Timer::sleepUntilTick(u64 target_tick) {
   // target_tick = absolute ns from getSystemTick()
   // convert to absolute mach time: mach = (ns * denom) / numer
-  mach_wait_until((target_tick * s_denom) / s_numer);
+  mach_wait_until((target_tick * s_info.denom) / s_info.numer);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -130,7 +144,6 @@ void Timer::sleepUntilTick(u64 target_tick) {
 ///////////////////////////////////////////////////////////////////////////////
 
 static u64 s_timebase = 0; // absolute ns at staticInit time
-
 void Timer::staticInit() {
   timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -170,6 +183,55 @@ void Timer::sleepUntilTick(u64 target_tick) {
 #error // not implemented
 #endif
 ///////////////////////////////////////////////////////////////////////////////
+
+AdaptiveWait::AdaptiveWait(Mode mode) {
+  switch (mode) {
+    case Mode::Coarse:
+      _margin_min  = 50ULL  * NS_PER_US;  //   50 µs — prevents collapse to zero
+      _margin_max  = 500ULL * NS_PER_US;  //  500 µs — caps scheduler spike absorption
+      _spin_margin = 50ULL  * NS_PER_US;  //   50 µs — starts tight, OS sleep dominates
+      _decay       = 5ULL   * NS_PER_US;  //    5 µs — snaps back to min quickly
+      break;
+    case Mode::Balanced:
+      _margin_min  = 200ULL  * NS_PER_US; //  200 µs — reliably wakes before target on a normal system
+      _margin_max  = 2000ULL * NS_PER_US; // 2000 µs — absorbs jitter spikes without runaway spin
+      _spin_margin = 200ULL  * NS_PER_US; //  200 µs — covers typical OS wakeup latency
+      _decay       = 1ULL    * NS_PER_US; //    1 µs — holds margin through on-time wakes
+      break;
+    case Mode::Precise:
+      _margin_min  = 500ULL  * NS_PER_US; //  500 µs — wide floor, almost always wakes early enough to spin
+      _margin_max  = 2000ULL * NS_PER_US; // 2000 µs — same ceiling as Balanced
+      _spin_margin = 500ULL  * NS_PER_US; //  500 µs — starts wide, first frames land in spin window immediately
+      _decay       = 250ULL;              // 0.25 µs — near-zero decay, stays biased early
+      break;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void AdaptiveWait::sleepUntilTick(u64 target_tick) {
+
+  if (target_tick > _spin_margin)
+    Timer::sleepUntilTick(target_tick - _spin_margin);
+
+  u64 wake_tick = Timer::getSystemTick();
+  if (wake_tick >= target_tick) {
+    // Overshot. Increase margin by the overshoot amount.
+    u64 overshoot = wake_tick - target_tick;
+    _spin_margin += overshoot;
+
+    if (_spin_margin > _margin_max)
+      _spin_margin = _margin_max;
+
+  } else {
+    // Woke early. Spin the remaining time and decay margin slightly.
+    while (Timer::getSystemTick() < target_tick)
+      Timer::spinYield();
+
+    if (_spin_margin > _margin_min + _decay)
+      _spin_margin -= _decay;
+  }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 #if defined(__APPLE__) || defined(ORK_CONFIG_IX)

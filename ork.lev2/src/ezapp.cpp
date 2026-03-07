@@ -836,12 +836,14 @@ void OrkEzApp::_audioExit() {
   }
   _audiodevice = nullptr;
 }
-///////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+
 void OrkEzApp::_mainThreadLoopBegin() {
 
-  ///////////////////////////////
+  ////////////////////////////////////////
   // Update Thread Implementation
-  ///////////////////////////////
+  ////////////////////////////////////////
 
   _update_thread_impl = [&](anyp data) {
 
@@ -864,34 +866,38 @@ void OrkEzApp::_mainThreadLoopBegin() {
     if (_initdata->_freerunning) {
       logchan_ezapp->log("FREERUNNING MODE: realtime, tgt UPS<%g> tgt FPS<%g>", target_ups, target_fps);
 
-      double step_time       = 1.0 / target_ups;
-      u64 step_ticks         = u64(double(NS_PER_SEC) / double(target_ups)); // ticks per update step
-      u64 update_prevtick    = Timer::getSystemTick();
-      u64 update_accum_ticks = 0;
+      AdaptiveWait wait{AdaptiveWait::Mode::Precise};
+      double step_time    = 1.0 / target_ups;
+      u64 step_ticks      = u64(double(NS_PER_SEC) / double(target_ups)); // ticks per update step
+      u64 prev_tick       = Timer::getSystemTick();
+      u64 step_grid_tick  = prev_tick + step_ticks; // absolute grid: advances by exactly step_ticks each frame
 
       ////////////////////////////////////////
       // Freerun Update Loop
       ////////////////////////////////////////
 
       while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
-        u64 now_tick    = Timer::getSystemTick();
-        u64 delta_ticks = now_tick - update_prevtick;
-        update_prevtick = now_tick;
+        OrkProfilerFrameBegin(CHANNEL_UPDATE, CpuProfilerChannel, {.capture_fps = true});
 
-        // Accumulate ticks and consume if enough available for step.
-        update_accum_ticks += delta_ticks;
+        {
+          OrkProfilerSampleScope(CHANNEL_UPDATE, SERIES_EZAPP_UPDATE_FREERUN);
 
-        // Step.
-        if (update_accum_ticks >= step_ticks) {
-          OrkProfilerFrameBegin(CHANNEL_UPDATE, CpuProfilerChannel);
-          OrkProfilerSampleBegin(CHANNEL_UPDATE, SERIES_EZAPP_UPDATE_FREERUN);
+          // Log +/- error of ticks from target. 
+          // Can also look in profilerview at UpdateThread FPS to see how locked it is on the target.
+          if (1) {
+            u64 now_tick    = Timer::getSystemTick();
+            u64 delta_ticks = now_tick - prev_tick;
+            prev_tick = now_tick;
+            s64 delta_error_ticks = (s64)delta_ticks - (s64)step_ticks;
+            printf("Update sleep error ticks: %lld\n", delta_error_ticks);
+          }
 
           bool do_update = _mainWindow && bool(_mainWindow->_onUpdate);
           if (do_update) {
-            _update_data->_dt = step_time;
+            _update_data->_dt       = step_time;
             _update_data->_abstime += step_time;
-            _update_data->_counter = _update_count.load();
-            if(0) printf( "OrkEzApp<%p> update dt<%g> abstime<%g> count<%d>\n", this, _update_data->_dt, _update_data->_abstime, (int)_update_data->_counter );
+            _update_data->_counter  = _update_count.load();
+            if(0) printf("OrkEzApp<%p> update dt<%g> abstime<%g> count<%d>\n", this, _update_data->_dt, _update_data->_abstime, (int)_update_data->_counter);
             
             if (not checkAppState(KAPPSTATEFLAG_JOINING)) {
               if (_mainWindow->_onUpdateInternal)
@@ -907,36 +913,15 @@ void OrkEzApp::_mainThreadLoopBegin() {
           }
 
           opq::updateSerialQueue()->Process();
-
-          // Consume ticks for step.
-          update_accum_ticks -= step_ticks;
-
-          OrkProfilerSampleEnd(CHANNEL_UPDATE, SERIES_EZAPP_UPDATE_FREERUN);
-          OrkProfilerFrameEnd(CHANNEL_UPDATE);
         }
+        
+        // Wait till next step on the absolute grid (self-corrects overshoot each frame)
+        wait.sleepUntilTick(step_grid_tick);
+        step_grid_tick += step_ticks;
 
-        // Only sleep if remaining time justifies the overhead (> SLEEP_THRESHOLD_TICKS).
-        constexpr u64 SLEEP_THRESHOLD_TICKS = NS_PER_MS; // 1 millisecond
-
-        // Wake from sleep early by this amount. Will spin rest of way if needed.
-        constexpr u64 TARGET_MARGIN_TICKS = 250 * NS_PER_US; // 200 microseconds
-
-        if (_update_sleep_wait && step_ticks > update_accum_ticks + SLEEP_THRESHOLD_TICKS) {
-          u64 remaining_to_step = step_ticks - update_accum_ticks;
-          u64 sleep_target_tick = now_tick + remaining_to_step;
-          Timer::sleepUntilTick(sleep_target_tick - TARGET_MARGIN_TICKS);
-
-          if (0) {
-            // Check if our sleep overshot by more than TARGET_MARGIN_TICKS
-            u64 post_tick = Timer::getSystemTick();
-            u64 overshoot_ticks = (post_tick > sleep_target_tick) ? post_tick - sleep_target_tick : 0;
-            if (overshoot_ticks > TARGET_MARGIN_TICKS) {
-                logchan_ezapp->log_continue("sleep overshoot: +%llu ns - margin: %llu ns", post_tick - sleep_target_tick, TARGET_MARGIN_TICKS);
-            }
-          }
-        } else {
-           sched_yield();
-        }
+        // Frame end after wait so FPS display in profiler will show the waited FPS.
+        // Then you can see how closely it stays at precisely the target FPS.
+        OrkProfilerFrameEnd(CHANNEL_UPDATE);
 
       } // while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
 
@@ -945,7 +930,9 @@ void OrkEzApp::_mainThreadLoopBegin() {
     ////////////////////////////////////////
     // SYNCHRONOUS MODE: Virtual time, deterministic
     ////////////////////////////////////////
+
     else {
+      
       logchan_ezapp->log("LockStep/Synchronous MODE: UPS=%g FPS=%g", target_ups, target_fps);
 
       double virtual_time = 0.0;
@@ -965,6 +952,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
       ////////////////////////////////////////
       // Synchronous Update Loop
       ////////////////////////////////////////
+
       while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
         OrkProfilerFrameBegin(CHANNEL_UPDATE, CpuProfilerChannel);
         OrkProfilerSampleBegin(CHANNEL_UPDATE, SERIES_EZAPP_UPDATE_LOCKSTEP);
@@ -1065,10 +1053,10 @@ void OrkEzApp::_mainThreadLoopBegin() {
 
   this->_gpuFrameCounter++;
 
-  ///////////////////////////////
+  ////////////////////////////////////////
   // hookup on gpuinit callback
   //   ensuring _onGpuInit called before onUpdateInit
-  ///////////////////////////////
+  ////////////////////////////////////////
 
   // Enable movie recording BEFORE GPU init if requested
   if (not _initdata->_movie_output_path.empty()) {
@@ -1106,7 +1094,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
     // Note: gpuPostInit() will be called by the framework (CtxGLFW::_runloopBegin)
   };
 
-  ///////////////////////////////
+  ////////////////////////////////////////
 
   ctx->_onGpuUpdate = [this](lev2::Context* context) {
     this->_gpuFrameCounter++;
@@ -1130,10 +1118,10 @@ void OrkEzApp::_mainThreadLoopBegin() {
     }
   };*/
 
-  ///////////////////////////////
+  ////////////////////////////////////////
   // hookup on gpuexit callback
   //   ensuring onGpuExit called after onUpdateExit
-  ///////////////////////////////
+  ////////////////////////////////////////
 
   ctx->_onGpuExit = [this](lev2::Context* context) {
     joinUpdate();
@@ -1147,7 +1135,9 @@ void OrkEzApp::_mainThreadLoopBegin() {
   };
   ctx->_runloopBegin();
 }
-///////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+
 void OrkEzApp::_mainThreadLoopIter() {
   if (_mainWindow) {
     auto ctx = _mainWindow->_ctqt;
