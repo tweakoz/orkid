@@ -40,8 +40,53 @@ int main(int argc, char* argv[]) {
     
     // Set the environment variable
     setenv("DYLD_LIBRARY_PATH", dyld_path.c_str(), 1);
-    //setenv("DYLD_INSERT_LIBRARIES", "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/lib/darwin/libclang_rt.tsan_osx_dynamic.dylib", 1 );
-    //setenv("DYLD_INSERT_LIBRARIES", "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/lib/darwin/libclang_rt.asan_osx_dynamic.dylib", 1 );
+
+    // Auto-detect sanitizer: compile-time definition from CMake (-DSANITIZER=ADDRESS),
+    // with runtime override via ORK_SANITIZER env var.
+    // This ensures the sanitizer runtime is pre-loaded via DYLD_INSERT_LIBRARIES
+    // before Python loads any .so files (required because SIP strips DYLD_INSERT_LIBRARIES
+    // from child processes, but this wrapper is a native binary that exec's Python).
+    {
+        std::string san;
+#ifdef ORK_SANITIZER
+        // Built with sanitizer — auto-inject unless explicitly disabled
+        const char* env_san = getenv("ORK_SANITIZER");
+        if (env_san && std::string(env_san) == "off") {
+            // Allow ORK_SANITIZER=off to suppress injection
+        } else {
+            san = ORK_SANITIZER;
+        }
+#else
+        // Not built with sanitizer — only inject if explicitly requested
+        const char* env_san = getenv("ORK_SANITIZER");
+        if (env_san) san = env_san;
+#endif
+        // Normalize to lowercase
+        for (auto& c : san) c = tolower(c);
+
+        std::string lib_name;
+        if (san == "address")        lib_name = "libclang_rt.asan_osx_dynamic.dylib";
+        else if (san == "thread")    lib_name = "libclang_rt.tsan_osx_dynamic.dylib";
+        else if (san == "undefined") lib_name = "libclang_rt.ubsan_osx_dynamic.dylib";
+
+        if (!lib_name.empty()) {
+            FILE* pipe = popen("xcrun clang --print-resource-dir 2>/dev/null", "r");
+            if (pipe) {
+                char buf[512];
+                std::string resource_dir;
+                while (fgets(buf, sizeof(buf), pipe))
+                    resource_dir += buf;
+                pclose(pipe);
+                while (!resource_dir.empty() && (resource_dir.back() == '\n' || resource_dir.back() == '\r'))
+                    resource_dir.pop_back();
+                if (!resource_dir.empty()) {
+                    std::string dylib_path = resource_dir + "/lib/darwin/" + lib_name;
+                    setenv("DYLD_INSERT_LIBRARIES", dylib_path.c_str(), 1);
+                    fprintf(stderr, "[ork.python_wrapper] Injecting sanitizer: %s\n", dylib_path.c_str());
+                }
+            }
+        }
+    }
 
 
     // Build path to orkids custom python executable

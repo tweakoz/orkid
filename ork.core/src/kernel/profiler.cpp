@@ -3,6 +3,9 @@
 
 namespace ork {
 
+// #define PROF_LOG(...) do { printf(__VA_ARGS__); fflush(stdout); } while(0)
+#define PROF_LOG(...) ((void)0)
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void SampleProfilerSeries::addSample() {
@@ -77,11 +80,29 @@ void ProfilerChannel::frameEnd() {
 void CpuProfilerChannel::frameBegin() {
 	_recording = Profiler::enabled();
 	if (!_recording) return;
+	if (!_span_stack.empty()) {
+		PROF_LOG("[PROF-DBG] frameBegin(%s) but _span_stack not empty (size=%zu)!\n",
+			_name.c_str(), _span_stack.size());
+		while (!_span_stack.empty()) {
+			PROF_LOG("[PROF-DBG]   stale entry: %s\n", _span_stack.top().series->_name.c_str());
+			_span_stack.pop();
+		}
+		_current_level = 0;
+	}
 	_begin_time = _timer.get_sync_time();
 }
 
 void CpuProfilerChannel::frameEnd() {
 	if (!_recording) return;
+	if (!_span_stack.empty()) {
+		PROF_LOG("[PROF-DBG] frameEnd(%s) but _span_stack not empty (size=%zu)!\n",
+			_name.c_str(), _span_stack.size());
+		while (!_span_stack.empty()) {
+			PROF_LOG("[PROF-DBG]   leaked entry: %s\n", _span_stack.top().series->_name.c_str());
+			_span_stack.pop();
+		}
+		_current_level = 0;
+	}
 	double frame_time = _timer.get_sync_time() - _begin_time;
 	_frame_time.store(frame_time);
   	ProfilerChannel::frameEnd();
@@ -90,7 +111,10 @@ void CpuProfilerChannel::frameEnd() {
 void CpuProfilerChannel::sampleBegin(SampleProfilerSeries* s) {
 	if (!_recording) return;
 
-	// printf("CpuProfilerChannel beginSample %s\n", s->_name.strval());
+	if (s->_call_level != -1) {
+		PROF_LOG("[PROF-DBG] sampleBegin(%s::%s) but _call_level=%d (already sampling!)\n",
+			_name.c_str(), s->_name.c_str(), s->_call_level);
+	}
 	OrkAssertI(s->_call_level == -1, "CpuProfilerSeries did not call endSample!");
 	double now = _timer.get_sync_time();
 
@@ -103,6 +127,8 @@ void CpuProfilerChannel::sampleBegin(SampleProfilerSeries* s) {
 	s->_call_level = _current_level++;
 	s->_sampling   = true;
 	s->_call_count++;
+	PROF_LOG("[PROF-DBG] sampleBegin(%s::%s) level=%d stack_depth=%zu\n",
+		_name.c_str(), s->_name.c_str(), _current_level, _span_stack.size() + 1);
 	_span_stack.push({.series = s, .start_total_time = now, .start_isolated_time = now});
 }
 
@@ -110,12 +136,18 @@ void CpuProfilerChannel::sampleBegin(SampleProfilerSeries* s) {
 void CpuProfilerChannel::sampleEnd(SampleProfilerSeries* s) {
 	if (!_recording) return;
 
-	// printf("CpuProfilerChannel endSample %s\n", s->_name.strval());
+	if (s->_call_level == -1) {
+		PROF_LOG("[PROF-DBG] sampleEnd(%s::%s) but _call_level=-1 (not sampling!)\n",
+			_name.c_str(), s->_name.c_str());
+	}
 	double now = _timer.get_sync_time();
 	OrkAssertI(s->_call_level != -1, "CpuProfilerSeries did not call beginSample!");
 
 	while (!_span_stack.empty()) {
 		auto& top = _span_stack.top();
+
+		PROF_LOG("[PROF-DBG] sampleEnd(%s::%s) popping: %s level=%d stack_depth=%zu\n",
+			_name.c_str(), s->_name.c_str(), top.series->_name.c_str(), _current_level, _span_stack.size());
 
 		// exclude time in nested scopes from parent scope
 		top.series->_total_time     += (now - top.start_total_time);
@@ -125,6 +157,14 @@ void CpuProfilerChannel::sampleEnd(SampleProfilerSeries* s) {
 		top.series->_sampling       = false;
 		_current_level--;
 		OrkAssertI(_current_level >= 0, "CpuProfilerChannel _current_level never go below 0!");
+
+		// FIX: Save series pointer before pop.
+		// `top` is a reference to _span_stack.top(). After pop(), the referenced
+		// element is destroyed, making `top` a dangling reference. Reading
+		// `top.series` after pop() is use-after-free (caught by ASan as
+		// "container overflow"). Without ASan this silently corrupts memory,
+		// occasionally manifesting as crashes in unrelated code (e.g. ImageIO).
+		auto* popped_series = top.series;
 		_span_stack.pop();
 
 		// resume parent
@@ -132,7 +172,7 @@ void CpuProfilerChannel::sampleEnd(SampleProfilerSeries* s) {
 			_span_stack.top().start_isolated_time = now;
 
 		// pop and end samples for all children of passed in series
-		if (top.series == s)
+		if (popped_series == s)
 			return;
 	}
 
