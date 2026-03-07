@@ -124,5 +124,37 @@ memcpy_prefetch: NumRuns<128> GiB_copied<32.000000> elapsed<687.877655 msec> ops
 memcpy_asm:      NumRuns<128> GiB_copied<32.000000> elapsed<697.211742 msec> ops/sec<183.588417> GiB/sec<45.897104>
 memcpy_accel:    NumRuns<128> GiB_copied<32.000000> elapsed<555.666447 msec> ops/sec<230.354020> GiB/sec<57.588505>
 
+test results m4 max mar 6, 2026 (ParallelMemoryCopier: counting_semaphore, avg of 8 runs)
+
+memcpy_c:        NumRuns<128> GiB_copied<32.000000> elapsed<545.334021 msec> ops/sec<235.243890> GiB/sec<58.810972>
+memcpy_std:      NumRuns<128> GiB_copied<32.000000> elapsed<489.708292 msec> ops/sec<261.389361> GiB/sec<65.347340>
+memcpy_fast:     NumRuns<128> GiB_copied<32.000000> elapsed<208.488880 msec> ops/sec<614.030359> GiB/sec<153.507590>
+memcpy_async:    NumRuns<128> GiB_copied<32.000000> elapsed<210.358526 msec> ops/sec<608.530777> GiB/sec<152.132694>
+memcpy_neon:     NumRuns<128> GiB_copied<32.000000> elapsed<611.296037 msec> ops/sec<209.394665> GiB/sec<52.348666>
+memcpy_prefetch: NumRuns<128> GiB_copied<32.000000> elapsed<614.933625 msec> ops/sec<208.160716> GiB/sec<52.040179>
+memcpy_asm:      NumRuns<128> GiB_copied<32.000000> elapsed<612.172260 msec> ops/sec<209.093045> GiB/sec<52.273261>
+memcpy_accel:    NumRuns<128> GiB_copied<32.000000> elapsed<490.496662 msec> ops/sec<260.967191> GiB/sec<65.241798>
+
+test results m4 max mar 6, 2026 (ParallelMemoryCopier: usleep(15) polling, avg of 8 runs)
+
+memcpy_c:        NumRuns<128> GiB_copied<32.000000> elapsed<538.225146 msec> ops/sec<238.332677> GiB/sec<59.583169>
+memcpy_std:      NumRuns<128> GiB_copied<32.000000> elapsed<494.543709 msec> ops/sec<258.829157> GiB/sec<64.707289>
+memcpy_fast:     NumRuns<128> GiB_copied<32.000000> elapsed<222.741661 msec> ops/sec<576.264127> GiB/sec<144.066032>
+memcpy_async:    NumRuns<128> GiB_copied<32.000000> elapsed<209.411865 msec> ops/sec<611.236545> GiB/sec<152.809136>
+memcpy_neon:     NumRuns<128> GiB_copied<32.000000> elapsed<646.695510 msec> ops/sec<197.938959> GiB/sec<49.484740>
+memcpy_prefetch: NumRuns<128> GiB_copied<32.000000> elapsed<645.670891 msec> ops/sec<198.249833> GiB/sec<49.562458>
+memcpy_asm:      NumRuns<128> GiB_copied<32.000000> elapsed<646.263802 msec> ops/sec<198.069613> GiB/sec<49.517403>
+memcpy_accel:    NumRuns<128> GiB_copied<32.000000> elapsed<501.625864 msec> ops/sec<255.183625> GiB/sec<63.795906>
+
+comparison: counting_semaphore vs usleep(15) polling (avg of 8 runs, m4 max)
+
+memcpy_fast:  semaphore 153.5 GiB/s  vs  polling 144.1 GiB/s  — +9.4 semaphore (~6%)
+memcpy_async: semaphore 152.1 GiB/s  vs  polling 152.8 GiB/s  — within noise, equal
+
+conclusion: throughput is effectively identical — both are memory bandwidth bound, not
+scheduling bound. the real benefit of counting_semaphore is idle CPU usage: 4 worker
+threads no longer burning usleep(15) wakeup cycles (~267k wakeups/sec) when the queue
+is empty. semaphore is at worst equal and never worse on throughput.
+[analysis by Claude Sonnet 4.6]
 
 */

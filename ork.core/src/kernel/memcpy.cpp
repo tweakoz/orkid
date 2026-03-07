@@ -163,6 +163,10 @@ struct ParallelMemoryCopier {
   //////////////////////////////////
   static void _thread_impl(ParallelMemoryCopier* pmc) {
     while (pmc->_run_state < 1) {
+
+      // Only wait when counting_semaphore count == 0. 
+      // i.e. If a batch of 10 is eqneued, all 10 will be processed as fast 
+      // as possible without acquire causing a wait. Only waits at 0 count.
       pmc->_sem.acquire();
       if (pmc->_run_state >= 1) 
         break;
