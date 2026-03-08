@@ -114,7 +114,7 @@ void CursorDrawableImpl::_render(const RenderContextInstData& RCID) {
   }
 
   auto RCFD = RCID.rcfd();
-  auto try_cdd = RCFD->getUserProperty("cdd"_crc).tryAs<std::shared_ptr<CompositorDrawData>>();
+  auto try_cdd = RCFD->tryUserProperty<std::shared_ptr<CompositorDrawData>>("cdd"_crc);
   auto cdd = try_cdd.value_or(nullptr);
   const auto& CPD = RCFD->topCPD();
   auto cmtcs = CPD.cameraMatrices();

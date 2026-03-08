@@ -113,10 +113,18 @@ struct RenderContextFrameData {
   bool hasUserProperty(CrcString) const;
   void setUserProperty(CrcString, rendervar_t data);
   void unSetUserProperty(CrcString);
-  rendervar_t getUserProperty(CrcString prop) const;
 
-  template <typename T> T userPropertyAs(CrcString prop) const {
-    return getUserProperty(prop).get<T>();
+  template <typename T> attempt_cast_const<T> tryUserProperty(CrcString prop) const {
+    auto it = _userProperties.find(prop);
+    if (it != _userProperties.end())
+      return it->second.tryAs<T>();
+    return attempt_cast_const<T>(nullptr);
+  }
+
+  template <typename T> const T& userPropertyAs(CrcString prop) const {
+    auto it = _userProperties.find(prop);
+    OrkAssert(it != _userProperties.end());
+    return it->second.get<T>();
   }
 
   const DrawQueue* GetDB() const;

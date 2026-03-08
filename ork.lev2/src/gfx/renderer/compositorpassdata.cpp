@@ -25,8 +25,7 @@
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 CompositingPassData CompositingPassData::FromRCFD(const RenderContextFrameData& RCFD) {
-  lev2::rendervar_t passdata = RCFD.getUserProperty("nodes"_crc);
-  auto cstack                = passdata.get<compositingpassdatastack_t*>();
+  auto cstack = RCFD.userPropertyAs<compositingpassdatastack_t*>("nodes"_crc);
   OrkAssert(cstack != nullptr);
   return cstack->top();
 }

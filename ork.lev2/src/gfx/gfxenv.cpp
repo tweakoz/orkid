@@ -368,6 +368,21 @@ void GfxEnv::processDeferredContextOps(context_rawptr_t ctx) {
   });
 }
 
+bool GfxEnv::hasDeferredContextOps() const {
+  using defctx_opq_t = std::queue<ctx_lambda_t>;
+  bool has = false;
+  _deferredContextOps.atomicOp([&has](const defctx_opq_t& unlocked) {
+    has = !unlocked.empty();
+  });
+  return has;
+}
+
+void GfxEnv::waitForDeferredContextOps() {
+  while (hasDeferredContextOps()) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 GfxEnv::GfxEnv()

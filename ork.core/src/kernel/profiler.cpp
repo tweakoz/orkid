@@ -150,6 +150,9 @@ void CpuProfilerChannel::sampleEnd(SampleProfilerSeries* s) {
 		PROF_LOG("[PROF-DBG] sampleEnd(%s::%s) popping: %s level=%d stack_depth=%zu\n",
 			_name.c_str(), s->_name.c_str(), top_series->_name.c_str(), _current_level, _span_stack.size());
 
+		PROF_LOG("[PROF-DBG] sampleEnd(%s::%s) popping: %s level=%d stack_depth=%zu\n",
+			_name.c_str(), s->_name.c_str(), top.series->_name.c_str(), _current_level, _span_stack.size());
+
 		// exclude time in nested scopes from parent scope
 		top_series->_total_time    += (now - top.start_total_time);
 		top_series->_isolated_time += (now - top.start_isolated_time);

@@ -49,7 +49,7 @@ void MatrixStackInterface::PushUIMatrix() {
 
   // Debug: check for invalid dimensions that would cause NaN in Ortho
   static int nan_log_count = 0;
-  if (nan_log_count < 20 && (fw <= 0 || fh <= 0)) {
+  if (nan_log_count < 5 && (fw <= 0 || fh <= 0)) {
     auto fbi = _target.FBI();
     int vpw_raw = fbi->GetVPW();
     int vph_raw = fbi->GetVPH();
