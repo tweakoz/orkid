@@ -91,6 +91,11 @@ void _format_and_assert(const char* file, int line, const char* fmtstr, ...);
 # define OrkNonFatalAssertI( x, i )
 #endif
 
+///////////////////////////////////////////////////////////////////////////////
+
+#define _OrkConcat(a, b) a##b
+#define OrkConcat(a, b) _OrkConcat(a, b)
+#define OrkUnique(name) OrkConcat(name, __LINE__)
 
 ///////////////////////////////////////////////////////////////////////////////
 // FIX MAYA

@@ -235,6 +235,7 @@ struct VkGeometryBufferInterface final : public GeometryBufferInterface {
 ///////////////////////////////////////////////////////////////////////////////
 struct VkRtgStackItemImpl {
   bool _did_begin_rendering = false;  // Whether this push actually called vkCmdBeginRenderingKHR
+  bool _profiler_owner      = false;  // Whether this push owns the profiler sample lifetime
   bool _was_redundant = false;        // Whether this push was a no-op (same rtgroup already active)
   RtGroup* _previous_rtgroup = nullptr; // The RTGroup that was active before this push
 };
@@ -515,7 +516,7 @@ struct VkComputeInterface : public ComputeInterface {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VkProfilerChannel final : ProfilerChannel {
-  static constexpr size_t MAX_GPU_PERF_QUERIES = 64;
+  static constexpr size_t MAX_GPU_PERF_QUERIES = 256;
 
   VkDevice        _device     = VK_NULL_HANDLE;
   VkCommandBuffer _cmdbuf     = VK_NULL_HANDLE;

@@ -251,6 +251,9 @@ class LIGHTING_APP(ComponentizedApplication):
   ################################################
 
   def _onGpuUpdate(self, ctx):
+    from orkengine.lev2 import ui
+    ui.profiler_sample_begin("MainThread", "probe:onGpuUpdate")
+
     def genpos(node, frq, offset, radius=5, yscale=2):
       phase = offset+self.lighttime*frq
       x = math.sin(phase)*radius
@@ -268,10 +271,11 @@ class LIGHTING_APP(ComponentizedApplication):
     self.probe.worldMatrix = mtx4.transMatrix(0,2,0)*self.node_ctr.modelnode.worldTransform.composed
     #self.probe.worldMatrix = self.node_ctr.modelnode.worldTransform.composed
 
-
     if hasattr(self,'spotlights'):
       for s in self.spotlights:
         s.update(self.lighttime)
+
+    ui.profiler_sample_end("MainThread", "probe:onGpuUpdate")
 
 ###############################################################################
 

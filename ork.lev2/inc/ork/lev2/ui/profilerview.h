@@ -10,6 +10,7 @@
 #include <ork/lev2/ui/group.h>
 #include <ork/lev2/ui/button.h>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -60,6 +61,9 @@ struct ProfilerView : public ui::Group {
   // Hover state — series name under the mouse cursor (empty if none)
   std::string              _hovered_series;
   std::vector<LegendEntry> _legend_entries;
+
+  // Hidden series — clicking a label toggles graph visibility
+  std::set<std::string>    _hidden_series;
 
   // Scrub state — vertical cursor dragged across the chart
   float _scrub_x      = -1.0f; // local pixel x, -1 = inactive
