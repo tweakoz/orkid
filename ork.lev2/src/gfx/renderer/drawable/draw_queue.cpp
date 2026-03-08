@@ -409,14 +409,6 @@ void DrawQueue::unSetUserProperty(CrcString key) {
     _userProperties.erase(it);
 }
 ////////////////////////////////////////////////////////////////
-rendervar_t DrawQueue::getUserProperty(CrcString key) const {
-  auto it = _userProperties.find(key);
-  if (it != _userProperties.end()) {
-    return it->second;
-  }
-  rendervar_t rval(nullptr);
-  return rval;
-}
 ////////////////////////////////////////////////////////////////
 AcquiredDrawQueueForRendering::AcquiredDrawQueueForRendering(rcfd_ptr_t rcfd) {
   _RCFD = rcfd;

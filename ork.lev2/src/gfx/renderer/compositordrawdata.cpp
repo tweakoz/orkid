@@ -55,7 +55,7 @@ ViewData CompositorDrawData::computeViewData() const {
 
   VD._near = nf.x;
   VD._far = nf.y;
-  VD._time = _RCFD->getUserProperty("time"_crc).get<float>();
+  VD._time = _RCFD->userPropertyAs<float>("time"_crc);
 
   if (VD._isStereo) {
     auto L = TOPCPD._stereo_cam_matrices->_left;

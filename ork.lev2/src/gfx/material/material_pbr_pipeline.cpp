@@ -130,8 +130,7 @@ FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
 
     if (stereocams) {
       fmtx4 vrroot;
-      auto vrrootprop = RCID.rcfd()->getUserProperty("vrroot"_crc);
-      if (auto as_mtx = vrrootprop.tryAs<fmtx4>()) {
+      if (auto as_mtx = RCID.rcfd()->tryUserProperty<fmtx4>("vrroot"_crc)) {
         vrroot = as_mtx.value();
       }
 

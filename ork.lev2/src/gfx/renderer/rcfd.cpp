@@ -148,21 +148,10 @@ void RenderContextFrameData::unSetUserProperty(CrcString key) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-rendervar_t RenderContextFrameData::getUserProperty(CrcString key) const {
-  auto it = _userProperties.find(key);
-  if (it != _userProperties.end()) {
-    return it->second;
-  }
-  rendervar_t rval(nullptr);
-  return rval;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 const DrawQueue* RenderContextFrameData::GetDB() const {
-  lev2::rendervar_t pvdb   = getUserProperty("DB"_crc);
-  const DrawQueue* DB = pvdb.get<const DrawQueue*>();
-  return DB;
+  if (auto db = tryUserProperty<const DrawQueue*>("DB"_crc))
+    return db.value();
+  return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

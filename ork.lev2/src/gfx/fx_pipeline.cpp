@@ -212,7 +212,7 @@ FxPipelineNamedParamProviders::FxPipelineNamedParamProviders() {
   /////////////////////////////////////////////////////////////////
   _providers["RCFD_TIME"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
     auto RCFD  = ppc._rcfd;
-    float time = RCFD->getUserProperty("time"_crc).get<float>();
+    float time = RCFD->userPropertyAs<float>("time"_crc);
     ppc._fxi->bindParamFloat(param, time);
   };
   /////////////////////////////////////////////////////////////////
@@ -262,14 +262,14 @@ FxPipelineNamedParamProviders::FxPipelineNamedParamProviders() {
   /////////////////////////////////////////////////////////////////
   _providers["RCFD_DEPTH_MAP"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
     auto RCFD      = ppc._rcfd;
-    auto depth_tex = RCFD->getUserProperty("DEPTH_MAP"_crc).get<texture_ptr_t>();
+    auto depth_tex = RCFD->userPropertyAs<texture_ptr_t>("DEPTH_MAP"_crc);
     ppc._fxi->bindParamTexture(param, depth_tex.get());
     // OrkAssert(false);
   };
   /////////////////////////////////////////////////////////////////
   _providers["RCFD_EYE_INDEX"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
     auto RCFD      = ppc._rcfd;
-    int eye_index = RCFD->getUserProperty("eyeindex"_crc).get<int>();
+    int eye_index = RCFD->userPropertyAs<int>("eyeindex"_crc);
     ppc._fxi->bindParamInt(param, eye_index);
     // OrkAssert(false);
   };

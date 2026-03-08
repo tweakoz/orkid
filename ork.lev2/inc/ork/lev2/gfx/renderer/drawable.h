@@ -182,7 +182,13 @@ public:
 
   void setUserProperty(CrcString, rendervar_t data);
   void unSetUserProperty(CrcString);
-  rendervar_t getUserProperty(CrcString prop) const;
+
+  template <typename T> attempt_cast_const<T> tryUserProperty(CrcString prop) const {
+    auto it = _userProperties.find(prop);
+    if (it != _userProperties.end())
+      return it->second.tryAs<T>();
+    return attempt_cast_const<T>(nullptr);
+  }
 
   template <typename T> void setUserPropertyAs(CrcString key, const T& data) {
     rendervar_t rv;

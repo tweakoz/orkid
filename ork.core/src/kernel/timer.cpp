@@ -134,7 +134,9 @@ void Timer::staticInit() {
 ///////////////////////////////////////////////////////////////////////////////
 
 float Timer::get_sync_time() {
-	static auto gimpl = Timer::_gimpl.getShared<TimerGlobalImpl>();
+	// intentionally leaked — prevents use-after-free when OpqThreads
+	// access the timer after static destructors run during exit()
+	static auto& gimpl = *new std::shared_ptr<TimerGlobalImpl>(Timer::_gimpl.getShared<TimerGlobalImpl>());
 	////////////////////////////////
 	#if defined(ORK_OSX) || defined(ORK_IOS)
 	////////////////////////////////
