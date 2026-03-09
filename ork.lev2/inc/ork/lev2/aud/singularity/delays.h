@@ -7,7 +7,9 @@
 
 #pragma once
 
-#include "dspbuffer.h"
+#include <vector>
+#include <cstdint>
+#include <cstddef>
 
 namespace ork::audio::singularity {
 
@@ -25,7 +27,7 @@ struct DelayContext {
   int64_t _index     = 0;
   float _basDelayLen = 0.0f;
   float _tgtDelayLen = 0.0f;
-  DspBuffer _buffer;
+  std::vector<float> _buffer;
   float* _bufdata = nullptr;
 };
 
@@ -33,7 +35,7 @@ struct DelayInput {
   DelayInput();
   void inp(float inputSample);
   void setDelayTime(float delayTime);
-  DspBuffer _buffer;
+  std::vector<float> _buffer;
   int64_t _index = 0;
   float _delayLen = 0.0f;
   float* _bufdata = nullptr;
