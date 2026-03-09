@@ -131,10 +131,6 @@ class MCUBES2(ComponentizedApplication):
     # Init lighting
     self.scene.lightingmanager.gpuInit(ctx)
 
-    # Set GPU budget range to 50ms
-    self.profiler.series_gpu_update.setFixedRange(0.0, 50.0)
-    self.profiler.series_draw.setFixedRange(0.0, 50.0)
-    self.profiler.series_present.setFixedRange(0.0, 50.0)
 
   ##############################################
 
