@@ -71,8 +71,8 @@ struct Timer {
 
   ///////////////////////////////////////////////////////////////////////////////
 
-  u64           _start_tick{};
-  u64           _end_tick{};
+  double        _start_time{};
+  double        _end_time{};
   void_lambda_t _on_interval{};
   ork::Thread*  _thread{};
   bool          _kill{};

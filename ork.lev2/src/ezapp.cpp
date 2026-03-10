@@ -202,7 +202,7 @@ void atexit_app(void) {
 OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
     : OrkEzAppBase(EzAppContext::get(initdata), initdata)  // Pass initdata to OrkEzAppBase
     , _mainWindow(0)
-    , _update_thread("updatethread") {
+    , _updateThread("updatethread") {
 
   logchan_ezapp->_status_interval = 8.0f;
 
@@ -629,14 +629,16 @@ void OrkEzApp::_initGraphicsContext() {
   // mainthread runloop callback
   /////////////////////////////////////////////
   _mainWindow->_ctqt->_onRunLoopIteration = [this]() {
-
+    //////////////////////////////
     // handle main serialqueue
+    //////////////////////////////
     opq::TrackCurrent opqtest(_mainq);
     _mainq->Process();
 
     if (this->_onRunLoopIteration) {
       this->_onRunLoopIteration();
     }
+    //////////////////////////////
   };
   //////////////////////////////////////////////
   _mainWindow->_ctqt->pushRefreshPolicy(RefreshPolicyItem{EREFRESH_WHENDIRTY});
@@ -657,10 +659,14 @@ void OrkEzApp::_initGraphicsContext() {
 
   //logchan_ezapp->log("graphics context initialized");
 }
+
 ///////////////////////////////////////////////////////////////////////////////
+
 void OrkEzApp::joinUpdate() {
   uint64_t prevappsate = _appstate.fetch_or(KAPPSTATEFLAG_JOINING);
+  ////////////////////////////////////////////////
   bool has_joined_already = bool(prevappsate & KAPPSTATEFLAG_JOINING);
+  ////////////////////////////////////////////////
   if (not has_joined_already) {
     //logger()->defaultChannel()->log("OrkEzApp<%p> joinUpdate:1", this);
     for( int i=0; i<100; i++ ) {
@@ -670,17 +676,20 @@ void OrkEzApp::joinUpdate() {
     }
     //logger()->defaultChannel()->log("OrkEzApp<%p> joinUpdate:2", this);
     _update_queue->drain();
-    _update_thread.join();
+    _updateThread.join();
     //logger()->defaultChannel()->log("OrkEzApp<%p> joinUpdate:3", this);
     DrawQueue::ClearAndSyncWriters();
     //logger()->defaultChannel()->log("OrkEzApp<%p> joinUpdate:4", this);
   }
+  ////////////////////////////////////////////////
 }
-///////////////////////////////////////////////////////////////////////////////
+
 bool OrkEzApp::isExiting() const {
   return checkAppState(KAPPSTATEFLAG_JOINING);
 }
+
 ///////////////////////////////////////////////////////////////////////////////
+
 void OrkEzApp::OnTimer() {
   opq::TrackCurrent opqtest(_mainq);
   while (_mainq->Process())
@@ -836,9 +845,7 @@ void OrkEzApp::_audioExit() {
   }
   _audiodevice = nullptr;
 }
-
-////////////////////////////////////////////////////////////////////////////////
-
+///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::_mainThreadLoopBegin() {
 
   ////////////////////////////////////////
@@ -1053,10 +1060,10 @@ void OrkEzApp::_mainThreadLoopBegin() {
 
   this->_gpuFrameCounter++;
 
-  ////////////////////////////////////////
+  ///////////////////////////////
   // hookup on gpuinit callback
   //   ensuring _onGpuInit called before onUpdateInit
-  ////////////////////////////////////////
+  ///////////////////////////////
 
   // Enable movie recording BEFORE GPU init if requested
   if (not _initdata->_movie_output_path.empty()) {
@@ -1094,7 +1101,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
     // Note: gpuPostInit() will be called by the framework (CtxGLFW::_runloopBegin)
   };
 
-  ////////////////////////////////////////
+  ///////////////////////////////
 
   ctx->_onGpuUpdate = [this](lev2::Context* context) {
     this->_gpuFrameCounter++;
@@ -1118,10 +1125,10 @@ void OrkEzApp::_mainThreadLoopBegin() {
     }
   };*/
 
-  ////////////////////////////////////////
+  ///////////////////////////////
   // hookup on gpuexit callback
   //   ensuring onGpuExit called after onUpdateExit
-  ////////////////////////////////////////
+  ///////////////////////////////
 
   ctx->_onGpuExit = [this](lev2::Context* context) {
     joinUpdate();
@@ -1135,9 +1142,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
   };
   ctx->_runloopBegin();
 }
-
-////////////////////////////////////////////////////////////////////////////////
-
+///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::_mainThreadLoopIter() {
   if (_mainWindow) {
     auto ctx = _mainWindow->_ctqt;
@@ -1199,6 +1204,7 @@ int OrkEzApp::mainThreadLoop() {
       // Freerun Main Thread
       //  Synchronization controlled by gfx acquire.
       ////////////////////////////////////////
+
       while (ctx->_runstate == 1) {
         OrkProfilerFrameBegin(CHANNEL_MAIN, CpuProfilerChannel, {.capture_fps = true});
         OrkProfilerSampleBegin(CHANNEL_MAIN, SERIES_EZAPP_MAIN_FREERUN);
@@ -1246,6 +1252,7 @@ int OrkEzApp::mainThreadLoop() {
       ////////////////////////////////////////
       // SYNCHRONOUS MAIN THREAD
       ////////////////////////////////////////
+
       while (ctx->_runstate == 1) {
 
         while (_lockstep_frame_requests.load()) {

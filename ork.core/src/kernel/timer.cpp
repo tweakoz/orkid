@@ -35,8 +35,8 @@ namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
 Timer::Timer()
-    : _start_tick(0)
-    , _end_tick(0)
+    : _start_time(0)
+    , _end_time(0)
     , _on_interval(nullptr)
     , _thread(nullptr)
     , _kill(false) {
@@ -50,29 +50,27 @@ Timer::~Timer() {
 }
 
 void Timer::Start() {
-  _start_tick = getSystemTick();
+  _start_time = get_sync_time();
 }
 
 void Timer::End() {
-  _end_tick = getSystemTick();
+  _end_time = get_sync_time();
 }
 
 void Timer::setCurrentTime(double secs) {
-  u64 offset  = u64(secs * double(NS_PER_SEC));
-  _start_tick = getSystemTick() - offset;
+  _start_time = get_sync_time() - secs;
 }
 
 double Timer::SecsSinceStart() const {
-  u64 delta = getSystemTick() - _start_tick;
-  return double(delta) * SEC_PER_NS;
+  return get_sync_time() - _start_time;
 }
 
 double Timer::SpanInSecs() const {
-  u64 delta = _end_tick - _start_tick;
-  return double(delta) * SEC_PER_NS;
+  return _end_time - _start_time;
 }
 
 void Timer::spinYield() {
+	// TODO AI keeps telling me this is better to use in spinwait rather than sched_yield, but should device benchmark.
 #if defined(ORK_ARCHITECTURE_ARM_64)
   __builtin_arm_yield();
 #elif defined(ORK_ARCHITECTURE_X86_64)
@@ -104,39 +102,39 @@ void Timer::OnInterval(double interval_secs, const void_lambda_t& oper) {
 #if defined(ORK_OSX) || defined(ORK_IOS)
 ///////////////////////////////////////////////////////////////////////////////
 
-static mach_timebase_info_data_t s_info = [](){
+static u64    s_numer      = 1;
+static u64    s_denom      = 1;
+static double s_resolution = 1.0; // (numer/denom) * SEC_PER_NS: mach ticks -> seconds
+static u64    s_timebase   = 0;
+
+static bool s_mach_init = [](){
   mach_timebase_info_data_t i;
   mach_timebase_info(&i);
-  return i;
+  s_numer      = i.numer;
+  s_denom      = i.denom;
+  s_resolution = (double(i.numer) / double(i.denom)) * SEC_PER_NS;
+  return true;
 }();
 
-// Should move away from using staticInit and needing to rely on it. 
-// Everything should just use the system-wide monotomic tick.
-static u64 s_timebase = 0; // raw mach ticks at staticInit time
 void Timer::staticInit() {
   s_timebase = mach_absolute_time();
 }
 
 double Timer::get_sync_time() {
-  // seconds since staticInit()
   u64 raw = mach_absolute_time() - s_timebase;
-  return double((raw * s_info.numer) / s_info.denom) * SEC_PER_NS;
+  return double(raw) * s_resolution;
 }
 
 u64 Timer::getSystemTick() {
-  return (mach_absolute_time() * s_info.numer) / s_info.denom;
+  return (mach_absolute_time() * s_numer) / s_denom;
 }
 
 void Timer::sleepTicks(u64 ticks) {
-  // ticks = duration in nanoseconds
-  u64 mach_ticks = (ticks * s_info.denom) / s_info.numer;
-  mach_wait_until(mach_absolute_time() + mach_ticks);
+  mach_wait_until(mach_absolute_time() + (ticks * s_denom) / s_numer);
 }
 
 void Timer::sleepUntilTick(u64 target_tick) {
-  // target_tick = absolute ns from getSystemTick()
-  // convert to absolute mach time: mach = (ns * denom) / numer
-  mach_wait_until((target_tick * s_info.denom) / s_info.numer);
+  mach_wait_until((target_tick * s_denom) / s_numer);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

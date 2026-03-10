@@ -155,7 +155,6 @@ public:
   ezappctx_ptr_t _ezapp;
   static OrkEzAppBase* get();
   static OrkEzAppBase* _staticapp;
-  // TODO should be u64
   std::atomic<int> _update_count;
   std::atomic<int> _render_count;
 };
@@ -260,7 +259,6 @@ public:
   size_t _total_samples_rendered = 0; // lockstep audio sync
 
   // Update Thread
-  static constexpr bool   _update_sleep_wait = true;
   Thread::thread_lambda_t _update_thread_impl{};
   ork::Thread             _update_thread{};
   ork::opq::opq_ptr_t     _update_queue{};
