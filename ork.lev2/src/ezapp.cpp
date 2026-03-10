@@ -202,7 +202,7 @@ void atexit_app(void) {
 OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
     : OrkEzAppBase(EzAppContext::get(initdata), initdata)  // Pass initdata to OrkEzAppBase
     , _mainWindow(0)
-    , _updateThread("updatethread") {
+    , _update_thread("updatethread") {
 
   logchan_ezapp->_status_interval = 8.0f;
 
@@ -676,7 +676,7 @@ void OrkEzApp::joinUpdate() {
     }
     //logger()->defaultChannel()->log("OrkEzApp<%p> joinUpdate:2", this);
     _update_queue->drain();
-    _updateThread.join();
+    _update_thread.join();
     //logger()->defaultChannel()->log("OrkEzApp<%p> joinUpdate:3", this);
     DrawQueue::ClearAndSyncWriters();
     //logger()->defaultChannel()->log("OrkEzApp<%p> joinUpdate:4", this);
