@@ -730,6 +730,8 @@ public:
   
   void enqueueDeferredContextOp(ctx_lambda_t op);
   void processDeferredContextOps(context_rawptr_t ctx);
+  bool hasDeferredContextOps() const;
+  void waitForDeferredContextOps();
 
   //////////////////////////////////////////////////////////////////////////////
   // Contex Factory

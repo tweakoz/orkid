@@ -72,7 +72,6 @@ void EzMainWin::_releaseAcquireUpdateBuffer(DrawQueue*db){
 }
 ///////////////////////////////////////////////////////////////////////////////
 void EzMainWin::_beginFrame(const DrawQueue* dbuf) {
-  auto try_ctx = dbuf->getUserProperty("CONTEXT"_crcu);
   _curframecontext->beginFrame();
 }
 ///////////////////////////////////////////////////////////////////////////////

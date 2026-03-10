@@ -247,23 +247,18 @@ tests = {
         "Audio": {
             "Simple Wave": {
                 "_commands": lev2("singularity/simplewave.py"),
-                "_options": { "Fullscreen": ["-f"] },
             },
             "KRZ Minimal": {
                 "_commands": lev2("singularity/krz_minimal.py"),
-                "_options": { "Fullscreen": ["-f"] },
             },
             "TX81Z Minimal": {
                 "_commands": lev2("singularity/minimal_tx81z.py"),
-                "_options": { "Fullscreen": ["-f"] },
             },
             "Loaded Waveforms": {
                 "_commands": lev2("singularity/waveforms_load.py"),
-                "_options": { "Fullscreen": ["-f"] },
             },
             "Computed Waveforms": {
                 "_commands": lev2("singularity/waveforms_compute.py"),
-                "_options": { "Fullscreen": ["-f"] },
             },
         },
     },

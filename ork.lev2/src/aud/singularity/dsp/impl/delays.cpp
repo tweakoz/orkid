@@ -18,9 +18,9 @@ namespace ork::audio::singularity {
 static std::atomic<int> dccounter = 0;
 
 DelayContext::DelayContext() {
-  _buffer.resize(_maxdelay);
+  _buffer.resize(_maxdelay, 0.0f);
   _index   = 0;
-  _bufdata = _buffer.channel(0);
+  _bufdata = _buffer.data();
 
   //int c = dccounter.fetch_add(1);
   //printf("DelayContext<%d> created\n", c);
@@ -126,9 +126,9 @@ void DelayContext::setNextDelayTime(float dt) {
 ///////////////////////////////////////////////////////////////////////////////
 
 DelayInput::DelayInput() {
-  _buffer.resize(_maxdelay);
+  _buffer.resize(_maxdelay, 0.0f);
   _index   = 0;
-  _bufdata = _buffer.channel(0);
+  _bufdata = _buffer.data();
 }
 
 void DelayInput::inp(float inputSample) {
@@ -137,7 +137,7 @@ void DelayInput::inp(float inputSample) {
     inpdelayindex += _maxdelay;
   while (inpdelayindex >= _maxdelay)
     inpdelayindex -= _maxdelay;
-  _buffer.channel(0)[inpdelayindex] = inputSample;
+  _bufdata[inpdelayindex] = inputSample;
 }
 void DelayInput::setDelayTime(float delayTime) {
   float delaylen = delayTime * getSampleRate();
@@ -166,8 +166,8 @@ float DelayOutput::out(float fi, size_t tapIndex) const {
   float invfr = 1.0f - fract;
   int64_t iiA = (outdelayindex >> 16) % _maxdelay;
   int64_t iiB = (iiA + 1) % _maxdelay;
-  float sampA = _input._buffer.channel(0)[iiA];
-  float sampB = _input._buffer.channel(0)[iiB];
+  float sampA = _input._bufdata[iiA];
+  float sampB = _input._bufdata[iiB];
   return (sampB * fract + sampA * invfr);
 }
 

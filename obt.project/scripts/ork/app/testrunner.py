@@ -33,6 +33,19 @@ Usage:
                 "Fullscreen": ["-f"],
                 "Mode": {"A": ["--mode", "a"], "B": ["--mode", "b"]},
             },
+            "_env": {
+                "MY_VAR": {"<none>": None, "1": "1"},
+            },
+        },
+        "VR Tests": {
+            # Group-level _options/_env are inherited by all children
+            "_options": {"VR": ["--vr"], "Fullscreen": ["-f"]},
+            "_env": {"USE_HMD": {"<none>": None, "1": "1"}},
+            "Minimal": {"_commands": ["ork.test.vr.minimal.py"]},
+            "Advanced": {
+                "_commands": ["ork.test.vr.advanced.py"],
+                "_options": {"Audio": ["-A"]},  # merged with inherited
+            },
         },
     }
     TestRunnerApp(tests, title="My Tests").run()
@@ -54,12 +67,20 @@ from ork.ui import standard_icons, icon_library
 
 _SETTINGS_PATH = Path.home() / ".config" / "orkid" / "testrunner.json"
 
+def _env_label_and_choices(env_name, env_dict):
+  """Extract display label and value choices from an _env entry.
+  If the dict contains a '_label' key, use it as the display name
+  and exclude it from choices. Otherwise use the env var name."""
+  label = env_dict.get("_label", env_name)
+  choices = {k: v for k, v in env_dict.items() if k != "_label"}
+  return label, choices
+
 ################################################################################
 # Per-test state
 ################################################################################
 
 class TestInfo:
-  def __init__(self, name, commands, is_tmux=False, description="", options_spec=None, capture=False, fire_and_forget=False):
+  def __init__(self, name, commands, is_tmux=False, description="", options_spec=None, env_spec=None, capture=False, fire_and_forget=False):
     self.name = name
     self.commands = commands    # list of strings (single) or list of lists (tmux)
     self.is_tmux = is_tmux
@@ -68,6 +89,9 @@ class TestInfo:
     self.description = description
     self.options_spec = options_spec or {}  # raw _options dict
     self.options_state = {}    # runtime state: {"BoolOpt": True, "EnumOpt": "A"}
+    self.env_spec = env_spec or {}        # raw _env dict: {"VAR": {"_label": "Name", "choice": "value", ...}}
+    self.env_state = {}                   # runtime state: {"VAR": "choice"}
+    self.env_labels = {}                  # display labels: {"VAR": "Name"}
     self.status = "pending"    # pending | running | passed | failed
     self.exit_code = -1
     self.duration = 0.0
@@ -136,14 +160,21 @@ class TestRunnerFilesystemModel(lev2.ui.FilesystemModel):
       "children": []
     }
 
-  def populate(self, data, prefix=""):
+  def populate(self, data, prefix="", inherited_options=None, inherited_env=None):
     """Recursively populate from nested dicts.
     Dict with _commands key = test-with-options.
     Dict without _commands key = group.
     List of strings = single command test.
-    List of lists = multi-command tmux test."""
+    List of lists = multi-command tmux test.
+
+    Groups may define _options and _env which are inherited by child tests.
+    Child _options/_env merge with (and override) inherited values."""
+    inherited_options = inherited_options or {}
+    inherited_env = inherited_env or {}
     parent_path = prefix if prefix else "/"
     for name, value in data.items():
+      if name.startswith("_"):
+        continue  # skip group-level meta keys
       path = prefix + "/" + name if prefix else "/" + name
       self._display_names[path] = name
 
@@ -151,17 +182,24 @@ class TestRunnerFilesystemModel(lev2.ui.FilesystemModel):
         # Test with options (stored as a file, options shown via option columns)
         commands = value["_commands"]
         description = value.get("_description", "")
-        options_spec = value.get("_options", {})
+        # Merge inherited options/env with test-level (test overrides inherited)
+        options_spec = {**inherited_options, **value.get("_options", {})}
+        env_spec = {**inherited_env, **value.get("_env", {})}
         is_tmux = isinstance(commands, list) and len(commands) > 0 and isinstance(commands[0], list)
         capture = value.get("_capture", False)
         fire_and_forget = value.get("_fire_and_forget", False)
-        info = TestInfo(name, commands, is_tmux=is_tmux, description=description, options_spec=options_spec, capture=capture, fire_and_forget=fire_and_forget)
+        info = TestInfo(name, commands, is_tmux=is_tmux, description=description, options_spec=options_spec, env_spec=env_spec, capture=capture, fire_and_forget=fire_and_forget)
         # Initialize options_state with defaults
         for opt_name, opt_value in options_spec.items():
           if isinstance(opt_value, list):
             info.options_state[opt_name] = False
-          elif isinstance(opt_value, dict):
+          elif isinstance(opt_value, dict) and opt_value:
             info.options_state[opt_name] = next(iter(opt_value))
+        # Initialize env_state with defaults (first non-_label key of each env enum)
+        for env_name, env_dict in env_spec.items():
+          label, choices = _env_label_and_choices(env_name, env_dict)
+          info.env_labels[env_name] = label
+          info.env_state[env_name] = next(iter(choices))
         self._tests[path] = info
         self._entries[path] = {
           "name": name,
@@ -176,13 +214,16 @@ class TestRunnerFilesystemModel(lev2.ui.FilesystemModel):
 
       elif isinstance(value, dict):
         # group node -> directory
+        # Extract group-level _options/_env, merge with inherited for children
+        group_options = {**inherited_options, **value.get("_options", {})}
+        group_env = {**inherited_env, **value.get("_env", {})}
         self._entries[path] = {
           "name": name,
           "type": "directory",
           "children": []
         }
         self._entries[parent_path]["children"].append(name)
-        self.populate(value, path)
+        self.populate(value, path, inherited_options=group_options, inherited_env=group_env)
       elif isinstance(value, list) and len(value) > 0 and isinstance(value[0], list):
         # tmux test (list of lists)
         self._tests[path] = TestInfo(name, value, is_tmux=True)
@@ -439,6 +480,17 @@ class TestRunnerFilesystemModel(lev2.ui.FilesystemModel):
         args.extend(choice_args)
     return args
 
+  def _buildEffectiveEnv(self, test_path):
+    """Build env dict from env_state for a test path. None values mean unset."""
+    info = self._tests.get(test_path)
+    if info is None or not info.env_state:
+      return {}
+    env = {}
+    for env_name, chosen_label in info.env_state.items():
+      _, choices = _env_label_and_choices(env_name, info.env_spec.get(env_name, {}))
+      env[env_name] = choices.get(chosen_label)  # None means unset
+    return env
+
   # -- state updates (called from background threads) --
 
   def setTestStatus(self, path, status, exit_code=-1, duration=0.0):
@@ -484,7 +536,7 @@ class TestRunnerFilesystemModel(lev2.ui.FilesystemModel):
 
 class TestRunnerApp:
 
-  def __init__(self, tests, title="Test Runner", width=640, height=720, auto_run=False, default_view="list"):
+  def __init__(self, tests, title="Test Runner", width=960, height=480, auto_run=False, default_view="list"):
     self._auto_run = auto_run
     self._default_view = default_view
 
@@ -883,18 +935,25 @@ class TestRunnerApp:
     """Persist audio devices and option states to disk."""
     try:
       options = {}
+      env_settings = {}
       seen = set()
+      seen_env = set()
       for info in self._model._tests.values():
         for opt_name, opt_value in info.options_state.items():
           if opt_name not in seen:
             seen.add(opt_name)
             options[opt_name] = opt_value
+        for env_name, env_value in info.env_state.items():
+          if env_name not in seen_env:
+            seen_env.add(env_name)
+            env_settings[env_name] = env_value
       data = {
         "audio_output_device": self._model._audio_output_device,
         "audio_input_device": self._model._audio_input_device,
         "audio_output_gain_db": self._model._audio_output_gain_db,
         "audio_input_gain_db": self._model._audio_input_gain_db,
         "options": options,
+        "env": env_settings,
       }
       _SETTINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
       _SETTINGS_PATH.write_text(json.dumps(data, indent=2))
@@ -933,12 +992,20 @@ class TestRunnerApp:
             info.options_state[opt_name] = opt_value
           elif isinstance(spec, dict) and opt_value in spec:
             info.options_state[opt_name] = opt_value
+    # Env settings
+    saved_env = data.get("env", {})
+    for env_name, env_value in saved_env.items():
+      for info in self._model._tests.values():
+        if env_name in info.env_spec:
+          _, choices = _env_label_and_choices(env_name, info.env_spec[env_name])
+          if env_value in choices:
+            info.env_state[env_name] = env_value
 
   def _rebuildOptionsToolbar(self, path):
     """Rebuild the options toolbar for the selected test path."""
     info = self._model.getTestInfo(path) if path else None
-    if info is None or not info.options_spec:
-      # No options — hide toolbar
+    if info is None or (not info.options_spec and not info.env_spec):
+      # No options or env — hide toolbar
       if self._options_toolbar.enable:
         self._options_toolbar.enable = False
         self._options_toolbar.clear()
@@ -951,61 +1018,102 @@ class TestRunnerApp:
     self._options_toolbar.enable = True
     icon_size = 20
 
-    for opt_name, opt_spec in info.options_spec.items():
-      state = info.options_state.get(opt_name)
-      if isinstance(opt_spec, list):
-        # Boolean option — toggle button with label
-        label = opt_name
-        btn = self._options_toolbar.addButton(
-          "opt_" + opt_name,
-          self._makeOptionLabel(label, checked=bool(state)),
-          opt_name)
-        btn.toggle_mode = True
-        btn.toggled = bool(state)
-        def make_bool_toggler(oname, button):
-          def toggler(toggled):
+    # Partition options into dropdowns (dict) and checkboxes (list), sorted alphabetically
+    enum_opts = sorted(((n, s) for n, s in info.options_spec.items() if isinstance(s, dict)), key=lambda x: x[0])
+    bool_opts = sorted(((n, s) for n, s in info.options_spec.items() if isinstance(s, list)), key=lambda x: x[0])
+    env_items = sorted(info.env_spec.items(), key=lambda x: info.env_labels.get(x[0], x[0]))
+
+    # --- 1. Env var dropdowns (leftmost) ---
+    for env_name, env_dict in env_items:
+      display_label = info.env_labels.get(env_name, env_name)
+      _, choices = _env_label_and_choices(env_name, env_dict)
+      chosen = info.env_state.get(env_name, next(iter(choices)))
+      label = "%s: %s" % (display_label, chosen)
+      btn = self._options_toolbar.addButton(
+        "env_" + env_name,
+        self._makeOptionLabel(label),
+        env_name)
+      btn.custom_width = max(100, len(label) * 8 + 16)
+      def make_env_handler(ename, echoices, dlabel, button):
+        def handler():
+          paths = ["/" + k for k in echoices.keys()]
+          def on_selected(sel):
+            choice = sel.lstrip("/")
             ti = self._model.getTestInfo(self._options_selected_path)
             if ti:
-              ti.options_state[oname] = toggled
-              # Apply to all tests with same option
+              ti.env_state[ename] = choice
+              for other_path, other_info in self._model._tests.items():
+                if other_path != self._options_selected_path and ename in other_info.env_spec:
+                  other_info.env_state[ename] = choice
+            new_label = "%s: %s" % (dlabel, choice)
+            button.icon = self._makeOptionLabel(new_label)
+            button.custom_width = max(100, len(new_label) * 8 + 16)
+            self._save_settings()
+          bx, by = self._options_toolbar.localToRoot(button.x, button.y)
+          lev2.ui.DropdownMenu.show(
+            context=self.uicontext, paths=paths,
+            x=bx, y=by + button.height, on_selected=on_selected)
+        return handler
+      btn.onPressed(make_env_handler(env_name, choices, display_label, btn))
+      self._options_toolbar.addSeparator()
+
+    # --- 2. Option enum dropdowns ---
+    for opt_name, opt_spec in enum_opts:
+      state = info.options_state.get(opt_name)
+      label = "%s: %s" % (opt_name, state)
+      btn = self._options_toolbar.addButton(
+        "opt_" + opt_name,
+        self._makeOptionLabel(label),
+        opt_name)
+      btn.custom_width = max(100, len(label) * 8 + 16)
+      def make_enum_handler(oname, ospec, button):
+        def handler():
+          paths = ["/" + k for k in ospec.keys()]
+          def on_selected(sel):
+            choice = sel.lstrip("/")
+            ti = self._model.getTestInfo(self._options_selected_path)
+            if ti:
+              ti.options_state[oname] = choice
               for other_path, other_info in self._model._tests.items():
                 if other_path != self._options_selected_path and oname in other_info.options_spec:
-                  other_info.options_state[oname] = toggled
-            button.icon = self._makeOptionLabel(oname, checked=toggled)
+                  other_info.options_state[oname] = choice
+            new_label = "%s: %s" % (oname, choice)
+            button.icon = self._makeOptionLabel(new_label)
+            button.custom_width = max(100, len(new_label) * 8 + 16)
             self._save_settings()
-          return toggler
-        btn.onToggled(make_bool_toggler(opt_name, btn))
-        btn.custom_width = max(80, len(label) * 8 + 30)
-      elif isinstance(opt_spec, dict):
-        # Enum option — button that shows dropdown on click
-        label = "%s: %s" % (opt_name, state)
-        btn = self._options_toolbar.addButton(
-          "opt_" + opt_name,
-          self._makeOptionLabel(label),
-          opt_name)
-        btn.custom_width = max(100, len(label) * 8 + 16)
-        def make_enum_handler(oname, ospec, button):
-          def handler():
-            paths = ["/" + k for k in ospec.keys()]
-            def on_selected(sel):
-              choice = sel.lstrip("/")
-              ti = self._model.getTestInfo(self._options_selected_path)
-              if ti:
-                ti.options_state[oname] = choice
-                # Apply to all tests with same option
-                for other_path, other_info in self._model._tests.items():
-                  if other_path != self._options_selected_path and oname in other_info.options_spec:
-                    other_info.options_state[oname] = choice
-              new_label = "%s: %s" % (oname, choice)
-              button.icon = self._makeOptionLabel(new_label)
-              button.custom_width = max(100, len(new_label) * 8 + 16)
-              self._save_settings()
-            lev2.ui.DropdownMenu.show(
-              context=self.uicontext, paths=paths,
-              x=0, y=32, on_selected=on_selected)
-          return handler
-        btn.onPressed(make_enum_handler(opt_name, opt_spec, btn))
+          bx, by = self._options_toolbar.localToRoot(button.x, button.y)
+          lev2.ui.DropdownMenu.show(
+            context=self.uicontext, paths=paths,
+            x=bx, y=by + button.height, on_selected=on_selected)
+        return handler
+      btn.onPressed(make_enum_handler(opt_name, opt_spec, btn))
       self._options_toolbar.addSeparator()
+
+    # --- 3. Boolean checkboxes (rightmost) ---
+    for opt_name, opt_spec in bool_opts:
+      state = info.options_state.get(opt_name)
+      label = opt_name
+      btn = self._options_toolbar.addButton(
+        "opt_" + opt_name,
+        self._makeOptionLabel(label, checked=bool(state)),
+        opt_name)
+      btn.toggle_mode = True
+      btn.toggled = bool(state)
+      def make_bool_toggler(oname, button):
+        def toggler(toggled):
+          ti = self._model.getTestInfo(self._options_selected_path)
+          if ti:
+            ti.options_state[oname] = toggled
+            for other_path, other_info in self._model._tests.items():
+              if other_path != self._options_selected_path and oname in other_info.options_spec:
+                other_info.options_state[oname] = toggled
+          button.icon = self._makeOptionLabel(oname, checked=toggled)
+          self._save_settings()
+        return toggler
+      btn.onToggled(make_bool_toggler(opt_name, btn))
+      btn.custom_width = max(80, len(label) * 8 + 30)
+      self._options_toolbar.addSeparator()
+
     self.fs_view.refresh()
 
   @staticmethod
@@ -1140,6 +1248,7 @@ class TestRunnerApp:
     self._model.setTestStatus(key, "running")
     t0 = time.time()
     env = self._buildGlobalEnv()
+    env.update(self._model._buildEffectiveEnv(key))
     try:
       # Build effective command with option args appended
       extra_args = self._model._buildEffectiveArgs(key)
@@ -1170,7 +1279,15 @@ class TestRunnerApp:
     try:
       extra_args = self._model._buildEffectiveArgs(key)
       env = self._buildGlobalEnv()
-      env_prefix = " ".join("export %s=%s;" % (k, shlex.quote(v)) for k, v in env.items())
+      env.update(self._model._buildEffectiveEnv(key))
+      # For tmux: export set vars, unset None vars
+      export_parts = []
+      for k, v in env.items():
+        if v is None:
+          export_parts.append("unset %s;" % k)
+        else:
+          export_parts.append("export %s=%s;" % (k, shlex.quote(v)))
+      env_prefix = " ".join(export_parts)
       orientation = "vertical" if len(info.commands) <= 3 else "horizontal"
       session = tmux.Session(session_name, orientation=orientation, kill_first=True)
       last = len(info.commands) - 1

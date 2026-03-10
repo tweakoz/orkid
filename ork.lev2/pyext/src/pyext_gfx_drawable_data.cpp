@@ -328,7 +328,7 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
             drw->_onRender                                            = [drw](RenderContextInstData& RCID) {
               auto RCFD = RCID.rcfd();
               auto DB   = RCFD->GetDB();
-              auto vpID = DB->getUserProperty("vpID"_crcu).get<uint64_t>();
+              auto vpID = DB->getUserPropertyAs<uint64_t>("vpID"_crcu);
               py::gil_scoped_acquire acquire;
               auto cb = drw->_vars->typedValueForKey<py::object>("_hold_callback").value();
               cb(int(vpID));
@@ -425,7 +425,7 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
             drw->_onRender                                            = [drw](RenderContextInstData& RCID) {
               auto RCFD = RCID.rcfd();
               auto DB   = RCFD->GetDB();
-              auto vpID = DB->getUserProperty("vpID"_crcu).get<uint64_t>();
+              auto vpID = DB->getUserPropertyAs<uint64_t>("vpID"_crcu);
               py::gil_scoped_acquire acquire;
               auto cb = drw->_vars->typedValueForKey<py::object>("_hold_callback").value();
               cb(int(vpID));

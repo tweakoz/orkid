@@ -96,8 +96,7 @@ struct DMVRIMPL {
         // rootmatrix.dump("yo");
       }
     } else {
-      auto vrcamprop = RCFD->getUserProperty("vrcam"_crc);
-      if (auto as_cam = vrcamprop.tryAs<const CameraData*>()) {
+      if (auto as_cam = RCFD->tryUserProperty<const CameraData*>("vrcam"_crc)) {
         targ->debugMarker("Vr::gotcamera");
         auto vrcam = as_cam.value();
         auto eye   = vrcam->GetEye();
