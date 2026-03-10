@@ -92,8 +92,8 @@ void ProfilerChannel::frameEnd() {
 
 void CpuProfilerChannel::frameBegin() {
   _recording = Profiler::enabled();
-  if (!_recording) [[Unlikely]] return;
-  if (!_span_stack.empty()) [[Unlikely]] {
+  if (!_recording) [[unlikely]] return;
+  if (!_span_stack.empty()) [[unlikely]] {
     logchan_prof->log("frameBegin(%s) but _span_stack not empty (size=%zu)! Ensure sampleEnd called. Or use sampleScope. Skipping.",
       _name.c_str(), _span_stack.size());
     while (!_span_stack.empty()) {
@@ -107,8 +107,8 @@ void CpuProfilerChannel::frameBegin() {
 }
 
 void CpuProfilerChannel::frameEnd() {
-  if (!_recording) [[Unlikely]] return;
-  if (!_span_stack.empty()) [[Unlikely]] { 
+  if (!_recording) [[unlikely]] return;
+  if (!_span_stack.empty()) [[unlikely]] { 
     logchan_prof->log("frameEnd(%s) but _span_stack not empty (size=%zu)! Ensure sampleEnd called. Or use sampleScope. Skipping.",
       _name.c_str(), _span_stack.size());
     while (!_span_stack.empty()) {
@@ -123,8 +123,8 @@ void CpuProfilerChannel::frameEnd() {
 }
 
 void CpuProfilerChannel::sampleBegin(SampleProfilerSeries* s) {
-  if (!_recording) [[Unlikely]] return;
-  if (s->_call_level != -1) [[Unlikely]]  {
+  if (!_recording) [[unlikely]] return;
+  if (s->_call_level != -1) [[unlikely]]  {
     logchan_prof->log("sampleBegin(%s::%s) _call_level=%d already sampling! Ensure sampleEnd called. Or use sampleScope. Skipping.",
       _name.c_str(), s->_name.c_str(), s->_call_level);
     return;
@@ -146,8 +146,8 @@ void CpuProfilerChannel::sampleBegin(SampleProfilerSeries* s) {
 }
 
 void CpuProfilerChannel::sampleEnd(SampleProfilerSeries* s) {
-  if (!_recording) [[Unlikely]] return;
-  if (s->_call_level == -1) [[Unlikely]]  {
+  if (!_recording) [[unlikely]] return;
+  if (s->_call_level == -1) [[unlikely]]  {
     logchan_prof->log("sampleEnd(%s::%s) but _call_level=-1 not sampling! Ensure sampleBegin was called or use sampleScope. Skipping.",
       _name.c_str(), s->_name.c_str());
     return;
