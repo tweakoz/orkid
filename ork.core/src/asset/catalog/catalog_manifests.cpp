@@ -180,7 +180,6 @@ void AssetCatalog::loadFromGlobalManifests(assetcatalog_ptr_t self) {
 
     // Get all namespaces from merged config
     for (const auto& [namespace_id, namespace_info] : merged_config->_namespaces) {
-      codec_counter.fetch_add(1);
       // Check if codec already registered
       bool needs_registration = false;
       impl->_state.atomicOp([&](CatalogImpl::CatalogState& state) {
@@ -194,6 +193,7 @@ void AssetCatalog::loadFromGlobalManifests(assetcatalog_ptr_t self) {
         std::string encryption_key = namespace_info->_encryption_key;
 
         if (!encryption_key.empty()) {
+          codec_counter.fetch_add(1);
           // Use the public API to register codec
           auto op = [=,&codec_counter](){
             self->registerCodecWithPassword(namespace_id, encryption_key);
