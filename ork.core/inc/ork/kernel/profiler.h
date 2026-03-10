@@ -141,6 +141,7 @@ struct ProfilerSeries {
   Style _style;
 
   ProfilerSeries(std::string name, ProfilerChannel* parent, Style style) : _name(name), _parent(parent), _style(style) {}
+  virtual ~ProfilerSeries() = default;
 
   // Returns false if there was an overflow in the sample_buffer due to flush not being called frequently enough.
   virtual bool flushBuffer() = 0;
@@ -169,9 +170,9 @@ struct SampleProfilerSeries : ProfilerSeries {
   u64  _total_ticks    = 0;
   u64  _isolated_ticks = 0;
   int  _call_count     = 0;
-  int    _max_call_level = -1;
-  int    _call_level     = -1;
-  bool   _sampling       = false;
+  int  _max_call_level = -1;
+  int  _call_level     = -1;
+  bool _sampling       = false;
 
   SampleProfilerSeries(std::string name, ProfilerChannel* parent) : ProfilerSeries(name, parent, Style::Sample) {}
 
@@ -278,8 +279,8 @@ struct CpuProfilerChannel final : ProfilerChannel {
 struct Profiler {
 
   // global state values to control all profiler sampling
-  static inline std::atomic<bool> _enabled     = true;
-  static inline std::atomic<u16>  _max_samples = 256;
+  static std::atomic<bool> _enabled;
+  static std::atomic<u16>  _max_samples;
 
   static void enabled(bool state) { _enabled.store(state); }
   static bool enabled() { return _enabled.load(); }
@@ -288,10 +289,10 @@ struct Profiler {
   static u16  maxSamples() { return _max_samples.load(); }
 
   // Global catalong of all channels.
-  static inline std::unordered_map<u64, profiler_channel_ptr_t> _channels;
+  static std::unordered_map<u64, profiler_channel_ptr_t> _channels;
 
   // We must lock global catalog on acquire and get. Sample points return a pointer so lookup only happens once.
-  static inline std::shared_mutex _channel_mtx;
+  static std::shared_mutex _channel_mtx;
 
   template <typename T>
   static T* acquireChannel(const char* name, u64 namecrc) {

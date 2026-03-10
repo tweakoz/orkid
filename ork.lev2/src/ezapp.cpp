@@ -896,7 +896,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
             u64 delta_ticks = now_tick - prev_tick;
             prev_tick = now_tick;
             s64 delta_error_ticks = (s64)delta_ticks - (s64)step_ticks;
-            printf("Update sleep error ticks: %lld\n", delta_error_ticks);
+            printf("Update sleep error ticks: %ld\n", delta_error_ticks);
           }
 
           bool do_update = _mainWindow && bool(_mainWindow->_onUpdate);
