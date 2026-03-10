@@ -1919,7 +1919,6 @@ void VkContext::resumeRenderPass() {
 void VkProfilerChannel::frameBegin(BeginParams params) {
   _recording = Profiler::enabled();
   if (!_recording) [[Unlikely]] return;
-
   if (_device == VK_NULL_HANDLE) {
     _device = params.device;
     _tick_to_ms = double(params.timestamp_period) * 1e-6; // milliseconds per GPU tick
@@ -1933,7 +1932,7 @@ void VkProfilerChannel::frameBegin(BeginParams params) {
     OrkAssert(ok == VK_SUCCESS);  
   }
 
-  if (!_vk_span_stack.empty()) {
+  if (!_vk_span_stack.empty()) [[Unlikely]] {
     logchan_vkprof->log("frameBegin(%s) but _vk_span_stack not empty (size=%zu)! Ensure sampleEnd called. Or use sampleScope.",
         _name.c_str(), _vk_span_stack.size());
     while (!_vk_span_stack.empty()) {
@@ -1949,14 +1948,11 @@ void VkProfilerChannel::frameBegin(BeginParams params) {
 
 void VkProfilerChannel::frameEnd() {
   if (!_recording) [[Unlikely]] return;
-
-  if (_cmdbuf == VK_NULL_HANDLE) {
+  if (_cmdbuf == VK_NULL_HANDLE) [[Unlikely]]{
     logchan_vkprof->log("frameEnd(%s) called but frameBegin was never called! Skipping.", _name.c_str());
     return;
   }
-  _cmdbuf = VK_NULL_HANDLE;
-
-  if (!_vk_span_stack.empty()) {
+  if (!_vk_span_stack.empty()) [[Unlikely]] {
     logchan_vkprof->log("frameEnd(%s) but _vk_span_stack not empty (size=%zu)! Ensure sampleEnd called! Or use sampleScope!",
         _name.c_str(), _vk_span_stack.size());
     while (!_vk_span_stack.empty()) {
@@ -1965,6 +1961,8 @@ void VkProfilerChannel::frameEnd() {
     }
     _current_level = 0;
   }
+
+  _cmdbuf = VK_NULL_HANDLE;
 
   // Readback timestamp queries
   _timestamps.resize(_query_index);
@@ -1989,15 +1987,15 @@ void VkProfilerChannel::frameEnd() {
 
 void VkProfilerChannel::sampleBegin(SampleProfilerSeries* s) {
   if (!_recording) [[Unlikely]] return;
-  if (_cmdbuf == VK_NULL_HANDLE) {
+  if (_cmdbuf == VK_NULL_HANDLE) [[Unlikely]] {
     logchan_vkprof->log("sampleBegin(%s::%s) called but frameBegin was never called! Skipping.", _name.c_str(), s->_name.c_str());
     return;
   }
-  if (_query_index >= MAX_GPU_PERF_QUERIES) {
+  if (_query_index >= MAX_GPU_PERF_QUERIES) [[Unlikely]] {
     logchan_vkprof->log("sampleBegin(%s::%s) queries exhausted! Increase MAX_GPU_PERF_QUERIES or reduce samples per frame. Skipping.", _name.c_str(), s->_name.c_str());
     return;
   }
-  if (s->_call_level != -1) {
+  if (s->_call_level != -1) [[Unlikely]] {
     logchan_vkprof->log("sampleBegin(%s::%s) _call_level=%d already sampling! Ensure sampleEnd was called or use sampleScope. Skipping.",
         _name.c_str(), s->_name.c_str(), s->_call_level);
     return;
@@ -2021,11 +2019,11 @@ void VkProfilerChannel::sampleBegin(SampleProfilerSeries* s) {
  
 void VkProfilerChannel::sampleEnd(SampleProfilerSeries* s) {
   if (!_recording) [[Unlikely]] return;
-  if (_cmdbuf == VK_NULL_HANDLE) {
+  if (_cmdbuf == VK_NULL_HANDLE) [[Unlikely]] {
     logchan_vkprof->log("sampleEnd(%s::%s) called but frameBegin was never called! Skipping.", _name.c_str(), s->_name.c_str());
     return;
   }
-  if (s->_call_level == -1) {
+  if (s->_call_level == -1) [[Unlikely]] {
     logchan_vkprof->log("sampleEnd(%s::%s) but _call_level=-1 not sampling! Ensure sampleBegin was called or use sampleScope! Skipping.",
         _name.c_str(), s->_name.c_str());
     return;
