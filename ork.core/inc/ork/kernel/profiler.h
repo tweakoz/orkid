@@ -74,6 +74,7 @@
 #include <memory>
 #include <stack>
 #include <vector>
+#include <mutex>
 #include <shared_mutex>
 
 ////////////////////////////////////////////////////////////////////////////////
