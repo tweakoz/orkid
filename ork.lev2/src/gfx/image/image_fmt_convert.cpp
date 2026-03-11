@@ -555,6 +555,125 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
     }
   }
   /////////////////////////////
+  else if (fmt == EBufferFormat::RGBA32F and inp._format == EBufferFormat::RGBA16F) {
+    // Convert from RGBA16F (half-float) to RGBA32F (float)
+    init(inp._width, inp._height, 4, 4);
+    auto outptr = (float*)_data->data();
+    auto inptr  = (const uint16_t*)inp._data->data();
+
+    auto half_to_float = [](uint16_t h) -> float {
+      uint32_t sign     = (h & 0x8000) << 16;
+      uint32_t exponent = ((h & 0x7C00) >> 10);
+      uint32_t mantissa = (h & 0x03FF) << 13;
+      if (exponent == 0) {
+        if (mantissa == 0) {
+          uint32_t result = sign;
+          return *reinterpret_cast<float*>(&result);
+        }
+        exponent = 1;
+        while (!(mantissa & 0x00800000)) {
+          mantissa <<= 1;
+          exponent--;
+        }
+        mantissa &= ~0x00800000;
+        exponent = (exponent + 127 - 15) << 23;
+      } else if (exponent == 31) {
+        exponent = 0xFF << 23;
+      } else {
+        exponent = (exponent + 127 - 15) << 23;
+      }
+      uint32_t result = sign | exponent | mantissa;
+      return *reinterpret_cast<float*>(&result);
+    };
+
+    size_t num_chunks = (inp._height + IMG_CONVERT_CHUNK_SIZE - 1) / IMG_CONVERT_CHUNK_SIZE;
+    std::atomic<int> chunkcounter = num_chunks;
+
+    for (size_t chunk = 0; chunk < num_chunks; chunk++) {
+      auto op = [chunk, inptr, outptr, &inp, &chunkcounter, &half_to_float](){
+        size_t y_start = chunk * IMG_CONVERT_CHUNK_SIZE;
+        size_t y_end = std::min(y_start + IMG_CONVERT_CHUNK_SIZE, size_t(inp._height));
+
+        for (size_t y = y_start; y < y_end; y++) {
+          for (int x = 0; x < inp._width; x++) {
+            int pixelindex       = y * inp._width + x;
+            int elembase         = pixelindex * 4;
+            outptr[elembase + 0] = half_to_float(inptr[elembase + 0]);
+            outptr[elembase + 1] = half_to_float(inptr[elembase + 1]);
+            outptr[elembase + 2] = half_to_float(inptr[elembase + 2]);
+            outptr[elembase + 3] = half_to_float(inptr[elembase + 3]);
+          }
+        }
+        chunkcounter.fetch_sub(1);
+      };
+      opq::concurrentQueue()->enqueue(op);
+    }
+    while(chunkcounter.load() > 0) {
+      std::this_thread::yield();
+    }
+  }
+  /////////////////////////////
+  else if (fmt == EBufferFormat::RGBA8 and inp._format == EBufferFormat::RGBA16F) {
+    // Convert from RGBA16F (half-float) to RGBA8 (8-bit)
+    init(inp._width, inp._height, 4, 1);
+    auto outptr = (uint8_t*)_data->data();
+    auto inptr  = (const uint16_t*)inp._data->data();
+
+    // half-float to float conversion
+    auto half_to_float = [](uint16_t h) -> float {
+      uint32_t sign     = (h & 0x8000) << 16;
+      uint32_t exponent = ((h & 0x7C00) >> 10);
+      uint32_t mantissa = (h & 0x03FF) << 13;
+      if (exponent == 0) {
+        if (mantissa == 0) {
+          uint32_t result = sign;
+          return *reinterpret_cast<float*>(&result);
+        }
+        // Denormalized
+        exponent = 1;
+        while (!(mantissa & 0x00800000)) {
+          mantissa <<= 1;
+          exponent--;
+        }
+        mantissa &= ~0x00800000;
+        exponent = (exponent + 127 - 15) << 23;
+      } else if (exponent == 31) {
+        exponent = 0xFF << 23; // Inf/NaN
+      } else {
+        exponent = (exponent + 127 - 15) << 23;
+      }
+      uint32_t result = sign | exponent | mantissa;
+      return *reinterpret_cast<float*>(&result);
+    };
+
+    size_t num_chunks = (inp._height + IMG_CONVERT_CHUNK_SIZE - 1) / IMG_CONVERT_CHUNK_SIZE;
+    std::atomic<int> chunkcounter = num_chunks;
+
+    for (size_t chunk = 0; chunk < num_chunks; chunk++) {
+      auto op = [chunk, inptr, outptr, &inp, &chunkcounter, &half_to_float](){
+        size_t y_start = chunk * IMG_CONVERT_CHUNK_SIZE;
+        size_t y_end = std::min(y_start + IMG_CONVERT_CHUNK_SIZE, size_t(inp._height));
+
+        for (size_t y = y_start; y < y_end; y++) {
+          for (int x = 0; x < inp._width; x++) {
+            int pixelindex       = y * inp._width + x;
+            int elembase         = pixelindex * 4;
+            // Convert half-float to float, clamp to [0,1], then to 0-255
+            outptr[elembase + 0] = uint8_t(std::clamp(half_to_float(inptr[elembase + 0]), 0.0f, 1.0f) * 255.0f);
+            outptr[elembase + 1] = uint8_t(std::clamp(half_to_float(inptr[elembase + 1]), 0.0f, 1.0f) * 255.0f);
+            outptr[elembase + 2] = uint8_t(std::clamp(half_to_float(inptr[elembase + 2]), 0.0f, 1.0f) * 255.0f);
+            outptr[elembase + 3] = uint8_t(std::clamp(half_to_float(inptr[elembase + 3]), 0.0f, 1.0f) * 255.0f);
+          }
+        }
+        chunkcounter.fetch_sub(1);
+      };
+      opq::concurrentQueue()->enqueue(op);
+    }
+    while(chunkcounter.load() > 0) {
+      std::this_thread::yield();
+    }
+  }
+  /////////////////////////////
   else if (fmt == EBufferFormat::RGBA8 and inp._format == EBufferFormat::RGB8) {
     //printf( "convert from RGB8 to RGBA8\n");
     init(inp._width, inp._height, 4, inp._bytesPerChannel);

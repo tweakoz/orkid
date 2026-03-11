@@ -114,7 +114,7 @@ void EnvMapProcessor::renderDiffuseTile(Context* ctx, const TileParams& tile, te
 // TaskGraph-based filtering implementation
 ////////////////////////////////////////////////////////////////////////////////
 
-taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvmap, bool is_equirectangular) {
+taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvmap, bool is_equirectangular, bool is_hdr_source) {
 
   auto graph = std::make_shared<TaskGraph>();
 
@@ -122,6 +122,11 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
   int tex_width        = rawenvmap->_width;
   int tex_height       = rawenvmap->_height;
   std::string tex_name = file::Path(rawenvmap->_debugName).toBFS().stem().string();
+
+  // HDR sources capture as RGBA16F to preserve dynamic range, LDR as RGBA8
+  // Render target matches capture format for HDR; LDR uses RGBA32F (shaders need float, capture clamps to RGBA8)
+  auto capture_format       = is_hdr_source ? EBufferFormat::RGBA16F : EBufferFormat::RGBA8;
+  auto render_target_format = is_hdr_source ? EBufferFormat::RGBA16F : EBufferFormat::RGBA32F;
 
   ///////////////////////////////////////
   // Create executors
@@ -239,11 +244,13 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
          roughness,                        //
          tile_size,                        //
          is_equirectangular,               //
+         capture_format,                   //
+         render_target_format,             //
          rough_idx](taskgraph_wkptr_t g) { //
           // logchan_gen->log("EnvMapProcessor: starting specular filtering for roughness %d (%f)", rough_idx, roughness);
 
           auto rtgroup         = std::make_shared<RtGroup>(gloadercontext.get(), tex_width, tex_height, MsaaSamples::MSAA_1X);
-          auto rtbuffer        = rtgroup->createRenderTarget(EBufferFormat::RGBA32F);
+          auto rtbuffer        = rtgroup->createRenderTarget(render_target_format);
           rtbuffer->_debugName = FormatString("%s-spc-rtb-%d", tex_name.c_str(), rough_idx);
           rtgroup->_name       = FormatString("%s-spc-rtg-%d", tex_name.c_str(), rough_idx);
           specular_rtgroups->push_back(rtgroup);
@@ -336,7 +343,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
                     
           auto capbuf = std::make_shared<CaptureBuffer>();
           spec_capbufs->push_back(capbuf);
-          auto future = fbi->captureAsFormat(rtbuffer.get(), capbuf, EBufferFormat::RGBA8);
+          auto future = fbi->captureAsFormat(rtbuffer.get(), capbuf, capture_format);
           spec_futures->push_back(future);
 
           // logchan_gen->log("EnvMapProcessor: completed specular filtering for roughness %d", rough_idx);
@@ -357,7 +364,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
   int mip    = 0;
   while (diff_w >= 4 && diff_h >= 4) { // Stop at 4x4, don't go smaller
     auto rtgroup         = std::make_shared<RtGroup>(gloadercontext.get(), diff_w, diff_h, MsaaSamples::MSAA_1X);
-    auto rtbuffer        = rtgroup->createRenderTarget(EBufferFormat::RGBA32F);
+    auto rtbuffer        = rtgroup->createRenderTarget(render_target_format);
     rtbuffer->_debugName = FormatString("%s-dif-rtb-mip%d", tex_name.c_str(), mip);
     rtgroup->_name       = FormatString("%s-dif-rtg-mip%d", tex_name.c_str(), mip);
     diffuse_rtgroups->push_back(rtgroup);
@@ -392,7 +399,8 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
          diff_capbufs,                     //
          tile_size,                        //
          mip,                              //
-         is_equirectangular](taskgraph_wkptr_t g) { //
+         is_equirectangular,               //
+         capture_format](taskgraph_wkptr_t g) { //
           if(0)logchan_gen->log("EnvMapProcessor<%s>: starting diffuse filtering for mip %d", tex_name.c_str(), mip);
 
           // logchan_gen->log("Diffuse filtering: Using rtgroup<%p> rtbuffer<%p> for mip %d",
@@ -483,7 +491,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
                    
           auto capbuf = std::make_shared<CaptureBuffer>();
           diff_capbufs->push_back(capbuf);
-          auto future = fbi->captureAsFormat(rtbuffer.get(), capbuf, EBufferFormat::RGBA8);
+          auto future = fbi->captureAsFormat(rtbuffer.get(), capbuf, capture_format);
           diff_futures->push_back(future);
 
           // logchan_gen->log("EnvMapProcessor: completed diffuse filtering for mip %d", mip);
@@ -513,7 +521,8 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
                                           diff_futures, //
                                           spec_capbufs, //
                                           diff_capbufs, //
-                                          spec_roughness_values //
+                                          spec_roughness_values, //
+                                          capture_format //
                                         ](taskgraph_wkptr_t g) {
     size_t num_specs = spec_futures->size();
     size_t num_diffs = diff_futures->size();
@@ -551,7 +560,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
         base_level._width = capbuf->width();
         base_level._height = capbuf->height();
         base_level._depth = 1;
-        base_level._format = EBufferFormat::RGBA8;
+        base_level._format = capture_format;
         base_level._numcomponents = 4;
         base_level._data = capbuf->_image->_data;
         
@@ -606,7 +615,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
       diffuse_mipchain._width = first_level._width;
       diffuse_mipchain._height = first_level._height;
       diffuse_mipchain._depth = 1;
-      diffuse_mipchain._format = EBufferFormat::RGBA8;
+      diffuse_mipchain._format = capture_format;
       diffuse_mipchain._numcomponents = 4;
       diffuse_mipchain._levels = diff_levels;
     }
@@ -665,6 +674,7 @@ xirprocessfuture_ptr_t EnvMapProcessor::processToXIRDataBlockAsync(const file::P
   std::transform(ext_str.begin(), ext_str.end(), ext_str.begin(), ::tolower);
   // getExtension returns without dot, so compare without dot
   bool is_equirectangular = (ext_str == "exr" || ext_str == "hdr");
+  bool is_hdr_source      = (ext_str == "exr" || ext_str == "hdr");
 
   // CRITICAL FIX: For equirectangular maps, U-axis must wrap to prevent seam at ±180°
   if (is_equirectangular) {
@@ -684,7 +694,7 @@ xirprocessfuture_ptr_t EnvMapProcessor::processToXIRDataBlockAsync(const file::P
 
   // Execute on a worker thread with ContextExecutor
   opq::concurrentQueue()->enqueue([=]() {
-    auto taskgraph = createFilteringTaskGraph(rawenvmap, is_equirectangular);
+    auto taskgraph = createFilteringTaskGraph(rawenvmap, is_equirectangular, is_hdr_source);
   
     // Get a context executor (will use main thread for GPU ops)
     // Need to get context from somewhere - will be set up properly later

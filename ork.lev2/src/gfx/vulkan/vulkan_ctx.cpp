@@ -1964,21 +1964,26 @@ void VkProfilerChannel::frameEnd() {
 
   _cmdbuf = VK_NULL_HANDLE;
 
-  // Readback timestamp queries
-  _timestamps.resize(_query_index);
-  VkResult ok = vkGetQueryPoolResults(_device, _query_pool, 0, _query_index, _query_index * sizeof(u64),
-    _timestamps.data(), sizeof(u64), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
-  OrkAssert(VK_SUCCESS == ok);
+  // Readback timestamp queries (skip if none were recorded or readback fails)
+  bool queries_valid = false;
+  if (_query_index > 0) {
+    _timestamps.resize(_query_index);
+    VkResult ok = vkGetQueryPoolResults(_device, _query_pool, 0, _query_index, _query_index * sizeof(u64),
+      _timestamps.data(), sizeof(u64), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+    queries_valid = (ok == VK_SUCCESS);
+  }
   _query_index = 0;
 
-  // Accumulate isolated ticks from per-segment spans
-  for (auto& span : _vk_spans)
-    span.series->_isolated_ticks += _timestamps[span.end_query] - _timestamps[span.begin_query];
-  _vk_spans.clear();
+  if (queries_valid) {
+    // Accumulate isolated ticks from per-segment spans
+    for (auto& span : _vk_spans)
+      span.series->_isolated_ticks += _timestamps[span.end_query] - _timestamps[span.begin_query];
 
-  // Accumulate total ticks from full-duration spans (begin_total_query -> end_query)
-  for (auto& span : _vk_total_spans)
-    span.series->_total_ticks += _timestamps[span.end_query] - _timestamps[span.begin_total_query];
+    // Accumulate total ticks from full-duration spans (begin_total_query -> end_query)
+    for (auto& span : _vk_total_spans)
+      span.series->_total_ticks += _timestamps[span.end_query] - _timestamps[span.begin_total_query];
+  }
+  _vk_spans.clear();
   _vk_total_spans.clear();
 
   // accumulate in series through base call

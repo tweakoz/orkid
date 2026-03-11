@@ -435,13 +435,14 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(
       break;
     }
     case EBufferFormat::RGBA8: {
-      // Handle both 8-bit and 32-bit float formats
+      // Handle 8-bit, 16-bit half-float, and 32-bit float source formats
       bool is_float_format = (vkfmt == VK_FORMAT_R32G32B32A32_SFLOAT);
+      bool is_half_format  = (vkfmt == VK_FORMAT_R16G16B16A16_SFLOAT);
       bool is_8bit_format  = (vkfmt == VK_FORMAT_R8G8B8A8_UNORM || vkfmt == VK_FORMAT_B8G8R8A8_UNORM);
 
-      OrkAssert(is_float_format || is_8bit_format);
+      OrkAssert(is_float_format || is_half_format || is_8bit_format);
 
-      size_t staging_bufsize = is_float_format ? (w * h * 16) : (w * h * 4); // 16 bytes per pixel for RGBA32F
+      size_t staging_bufsize = is_float_format ? (w * h * 16) : is_half_format ? (w * h * 8) : (w * h * 4);
 
       // Set up image with format and preallocated data
       capbuf->_image->initWithFormat(w, h, destfmt);
@@ -533,12 +534,14 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(
     }
     ///////////////////////////////////////////////////////
     case EBufferFormat::RGBA32F: {
-      OrkAssert(vkfmt == VK_FORMAT_R32G32B32A32_SFLOAT);
+      bool is_f32_source = (vkfmt == VK_FORMAT_R32G32B32A32_SFLOAT);
+      bool is_f16_source = (vkfmt == VK_FORMAT_R16G16B16A16_SFLOAT);
+      OrkAssert(is_f32_source || is_f16_source);
       // Set up image with format and preallocated data
       capbuf->_image->initWithFormat(w, h, destfmt);
 
-      // Create staging buffer for GPU to CPU transfer
-      size_t bufsize = w * h * 16; // 16 bytes per pixel for RGBA32F
+      // Create staging buffer for GPU to CPU transfer (size matches source format)
+      size_t bufsize = is_f32_source ? (w * h * 16) : (w * h * 8);
       auto staging_buffer =
           std::make_shared<VulkanBuffer>(_contextVK, bufsize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, "capture_staging_f32");
 

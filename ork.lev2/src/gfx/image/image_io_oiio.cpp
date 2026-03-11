@@ -97,10 +97,40 @@ bool Image::initFromInMemoryFile( std::string fmtguess, //
           return false;
       }
       break;
+    case TypeDesc::HALF:
+      _bytesPerChannel = 2;
+      switch (_numcomponents) {
+        case 3:
+          _format = EBufferFormat::RGBA16F;
+          _numcomponents = 4; // promote to 4-channel for GPU compatibility
+          break;
+        case 4:
+          _format = EBufferFormat::RGBA16F;
+          break;
+        default:
+          OrkAssert(false);
+          return false;
+      }
+      break;
+    case TypeDesc::FLOAT:
+      _bytesPerChannel = 4;
+      switch (_numcomponents) {
+        case 3:
+          _format = EBufferFormat::RGBA32F;
+          _numcomponents = 4; // promote to 4-channel for GPU compatibility
+          break;
+        case 4:
+          _format = EBufferFormat::RGBA32F;
+          break;
+        default:
+          OrkAssert(false);
+          return false;
+      }
+      break;
     default:
       OrkAssert(false);
       return false;
-      
+
   }
 
   _data = std::make_shared<DataBlock>();
@@ -108,6 +138,12 @@ bool Image::initFromInMemoryFile( std::string fmtguess, //
   auto pixels = (uint8_t*)_data->data();
   if (_bytesPerChannel == 1) {
     in->read_image(TypeDesc::UINT8, pixels);
+  } else if (_format == EBufferFormat::RGBA16F) {
+    // Read as HALF with 4 channels (OIIO promotes 3->4, alpha defaults to 1.0)
+    in->read_image(0, 0, 0, 4, TypeDesc::HALF, pixels);
+  } else if (_format == EBufferFormat::RGBA32F) {
+    // Read as FLOAT with 4 channels (OIIO promotes 3->4, alpha defaults to 1.0)
+    in->read_image(0, 0, 0, 4, TypeDesc::FLOAT, pixels);
   } else if (_bytesPerChannel == 2) {
     in->read_image(TypeDesc::UINT16, pixels);
   }
@@ -172,6 +208,11 @@ void Image::writeToFile(const ork::file::Path& outpath) const {
       break;
     case EBufferFormat::RGBA16:
       spec.format       = TypeDesc::UINT16;
+      spec.nchannels    = 4;
+      spec.channelnames = {"R", "G", "B", "A"};
+      break;
+    case EBufferFormat::RGBA16F:
+      spec.format       = TypeDesc::HALF;
       spec.nchannels    = 4;
       spec.channelnames = {"R", "G", "B", "A"};
       break;
