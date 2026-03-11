@@ -219,7 +219,7 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
       rtgroup->_profiler_series = Profiler::acquireSeries<SampleProfilerSeries>(CHANNEL_GPU, name);
     }
     // _profiler_owner tracks which stack entry owns the sample lifetime so that nested push/pop and resume cycles don't create orphaned begin/end pairs.
-    stack_impl->_profiler_owner = (_active_rtgroup != rtgroup);
+    stack_impl->_profiler_owner = (_active_rtgroup != rtgroup) && (rtgroup->_profiler_series != nullptr);
     if (stack_impl->_profiler_owner)
       rtgroup->_profiler_series->sampleBegin();
 

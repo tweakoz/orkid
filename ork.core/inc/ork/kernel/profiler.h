@@ -116,12 +116,12 @@ namespace ork {
 #define _OrkStaticSeries(_channel_name, _series_name, _type, _var, _call) \
     static _type* _var = nullptr; \
     if (_var == nullptr) [[unlikely]] _var = Profiler::acquireSeries<_type>(_channel_name, CRCU(_channel_name), _series_name, CRCU(_series_name)); \
-    _var->_call()
+    if (_var) [[likely]] _var->_call()
 
 #define _OrkStaticScope(_channel_name, _series_name, _var) \
     static SampleProfilerSeries* _var = nullptr; \
     if (_var == nullptr) [[unlikely]] _var = Profiler::acquireSeries<SampleProfilerSeries>(_channel_name, CRCU(_channel_name), _series_name, CRCU(_series_name)); \
-    auto OrkConcat(_var, scope) = _var->sampleScope()
+    auto OrkConcat(_var, scope) = _var ? _var->sampleScope() : ProfilerScope(nullptr, nullptr)
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -240,7 +240,7 @@ using profiler_channel_ptr_t = std::shared_ptr<ProfilerChannel>;
 struct ProfilerScope {
   ProfilerScope(ProfilerChannel* channel, SampleProfilerSeries* series) : _channel(channel), _series(series) {}
   ~ProfilerScope() {
-    if (!_series->_sampling) return;
+    if (!_series || !_series->_sampling) return;
     _channel->sampleEnd(_series);
   }
   ProfilerChannel* _channel;
@@ -312,10 +312,11 @@ struct Profiler {
 
   template <typename T>
   static T* acquireSeries(const char* channel_name, u64 channel_namecrc, const char* series_name, u64 series_namecrc) {
-    OrkAssertI(_channels.contains(channel_namecrc), "First acquireChannel. Call frameBegin before trying to acquireSeries!");
     std::unique_lock lock(_channel_mtx);
+    if (!_channels.contains(channel_namecrc))
+      return nullptr; // channel not yet initialized via frameBegin — caller must tolerate nullptr
     auto& c = _channels[channel_namecrc];
-    auto& s = c->_series[series_namecrc]; 
+    auto& s = c->_series[series_namecrc];
     if (!s) {
       s = std::make_shared<T>(series_name, c.get());
       c->_series_iter.push_back(s.get());
