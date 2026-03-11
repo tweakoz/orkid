@@ -108,6 +108,7 @@ ELSEIF(${UNIX})
     target_include_directories (ork_lev2 PRIVATE ${ObtPipewireSpaInclude_DIR} ${ObtPipewireInclude_DIR} )
     target_link_libraries(ork_lev2 LINK_PRIVATE ${ObtPipewire_LIBRARIES} )
     target_link_directories (ork_lev2 PRIVATE $ENV{OBT_VULKAN_ROOT}/lib)
+    target_include_directories (ork_lev2 PRIVATE $ENV{OBT_VULKAN_ROOT}/include)
 
     list(APPEND libs vulkan )
     IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
