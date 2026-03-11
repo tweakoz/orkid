@@ -123,7 +123,7 @@ void Simulation::_update_SIMSTATE() {
 
       // logchan_simupdate->log( "sim<%p> _update_SIMSTATE::ACTIVE", (void*) this );
 
-      ork::PerfMarkerPush("ork.simulation.update.begin");
+      OrkProfilerSampleScope(CHANNEL_UPDATE, "ecs.simulation.update");
 
       ///////////////////////////////
       // Update Components
@@ -182,8 +182,6 @@ void Simulation::_update_SIMSTATE() {
         sys.second->_update(this);
 
       ///////////////////////////////
-
-      ork::PerfMarkerPush("ork.simulation.update.end");
 
       ///////////////////////////////
       break;

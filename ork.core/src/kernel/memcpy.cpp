@@ -11,6 +11,7 @@
 #include <ork/kernel/opq.h>
 #include <ork/kernel/thread.h>
 #include <cstddef>
+#include <semaphore>
 
 #if defined(__APPLE__)
 #include <Accelerate/Accelerate.h>
@@ -144,7 +145,8 @@ struct copy_rec {
   size_t _n                     = 0;
 };
 
-using mpmc_queue_t = ork::MpMcBoundedQueue<copy_rec, 8192>;
+constexpr int ASYNC_QUEUE_CAPACITY = 8192;
+using mpmc_queue_t = ork::MpMcBoundedQueue<copy_rec, ASYNC_QUEUE_CAPACITY>;
 
 struct ParallelMemoryCopier {
 
@@ -152,21 +154,27 @@ struct ParallelMemoryCopier {
   mpmc_queue_t _mem_op_q;
   std::vector<thread_ptr_t> _threads;
   std::atomic<int> _run_state = -1;
+  std::counting_semaphore<ASYNC_QUEUE_CAPACITY> _sem{0};
   //////////////////////////////////
   void enqueue(copy_rec op) {
     _mem_op_q.push(op);
+    _sem.release();
   }
   //////////////////////////////////
   static void _thread_impl(ParallelMemoryCopier* pmc) {
-
     while (pmc->_run_state < 1) {
+
+      // Only wait when counting_semaphore count == 0. 
+      // i.e. If a batch of 10 is eqneued, all 10 will be processed as fast 
+      // as possible without acquire causing a wait. Only waits at 0 count.
+      pmc->_sem.acquire();
+      if (pmc->_run_state >= 1) 
+        break;
+
       copy_rec op;
       if (pmc->_mem_op_q.try_pop(op)) {
         std::memcpy(op._dest, op._src, op._n);
         op._async_op->_async_counter.fetch_add(-1);
-      } else {
-        // std::this_thread::yield();
-        ::usleep(15);
       }
     }
     pmc->_run_state++;
@@ -187,6 +195,8 @@ struct ParallelMemoryCopier {
   //////////////////////////////////
   ~ParallelMemoryCopier() {
     _run_state = 1;
+    for (int i = 0; i < NUM_THREADS; ++i)
+      _sem.release();
     for (auto thr : _threads) {
       thr->join();
     }

@@ -5,250 +5,270 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-
 #include <ork/pch.h>
 #include <ork/kernel/string/string.h>
 #include <ork/kernel/concurrent_queue.h>
+#include <ork/kernel/kernel.h>
+#include <ork/kernel/timer.h>
+#include <ork/kernel/mutex.h>
 
-//////////////////////////////////////////////////////////////////////////////
 #if defined(ORK_OSX) || defined(ORK_IOS)
 #include <mach/mach_time.h>
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #endif
+
 #if defined(ORK_CONFIG_IX)
 #include <unistd.h>
 #include <sys/time.h>
 #include <sched.h>
 #include <time.h>
 #endif
-//////////////////////////////////////////////////////////////////////////////
-#include <ork/kernel/kernel.h>
-#include <ork/kernel/timer.h>
-#include <ork/kernel/mutex.h>
 
 #include <time.h>
 #include <stdio.h>
 #include <sys/timeb.h>
 #include <cmath>
+
+///////////////////////////////////////////////////////////////////////////////
 namespace ork {
-
 ///////////////////////////////////////////////////////////////////////////////
-
-void Timer::Start() {
-    mStartTime = get_sync_time();
-}
-
-void Timer::setCurrentTime(float time) {
-    float now = get_sync_time();
-	mStartTime = now - time;
-}
-
-void Timer::End() {
-    mEndTime = get_sync_time();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-float Timer::InternalSecsSinceStart() const {
-    float now = get_sync_time();
-    return (now-mStartTime);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-float Timer::SecsSinceStart() const {
-    float rval = InternalSecsSinceStart();
-    return rval;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-float Timer::SpanInSecs() const {
-    return (mEndTime-mStartTime);
-}
 
 Timer::Timer()
-	: mOnInterval(nullptr)
-	, mThread(nullptr)
-	, mKill(false) {
-
+    : _start_time(0)
+    , _end_time(0)
+    , _on_interval(nullptr)
+    , _thread(nullptr)
+    , _kill(false) {
 }
 
 Timer::~Timer() {
-	mKill = true;
-	if(mThread)
-		mThread->join();
-	delete mThread;
+  _kill = true;
+  if (_thread)
+    _thread->join();
+  delete _thread;
 }
 
-void Timer::OnInterval( float interval, const void_lambda_t& oper ) {
-	mOnInterval = oper;
-
-	mThread = new ork::Thread;
-
-	if( mOnInterval )
-	{
-		mThread->start( [=](anyp data)
-		{
-			while(false==mKill)
-			{
-				usleep(uint64_t(interval*1e6f) );
-				mOnInterval();
-			}
-		});
-	}
+void Timer::Start() {
+  _start_time = get_sync_time();
 }
 
-svar64_t Timer::_gimpl;
+void Timer::End() {
+  _end_time = get_sync_time();
+}
+
+void Timer::setCurrentTime(double secs) {
+  _start_time = get_sync_time() - secs;
+}
+
+double Timer::SecsSinceStart() const {
+  return get_sync_time() - _start_time;
+}
+
+double Timer::SpanInSecs() const {
+  return _end_time - _start_time;
+}
+
+void Timer::spinYield() {
+	// TODO AI keeps telling me this is better to use in spinwait rather than sched_yield, but should device benchmark.
+#if defined(ORK_ARCHITECTURE_ARM_64)
+  __builtin_arm_yield();
+#elif defined(ORK_ARCHITECTURE_X86_64)
+  __builtin_ia32_pause();
+#endif
+}
+
+void Timer::spinUntilTick(u64 target_tick) {
+  while (getSystemTick() < target_tick)
+    spinYield();
+}
+
+
+void Timer::OnInterval(double interval_secs, const void_lambda_t& oper) {
+  _on_interval = oper;
+  _thread      = new ork::Thread;
+  u64 interval_ticks = u64(interval_secs * double(NS_PER_SEC));
+  if (_on_interval) {
+    _thread->start([=](anyp data) {
+      while (false == _kill) {
+        sleepTicks(interval_ticks);
+        _on_interval();
+      }
+    });
+  }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 #if defined(ORK_OSX) || defined(ORK_IOS)
 ///////////////////////////////////////////////////////////////////////////////
-struct TimerGlobalImpl {
-	mach_timebase_info_data_t _timebase_info;
-	double _resolution = 0.0;
-	uint64_t _timebase = 0;
-};
+
+static u64    s_numer      = 1;
+static u64    s_denom      = 1;
+static double s_resolution = 1.0; // (numer/denom) * SEC_PER_NS: mach ticks -> seconds
+static u64    s_timebase   = 0;
+
+static bool s_mach_init = [](){
+  mach_timebase_info_data_t i;
+  mach_timebase_info(&i);
+  s_numer      = i.numer;
+  s_denom      = i.denom;
+  s_resolution = (double(i.numer) / double(i.denom)) * SEC_PER_NS;
+  return true;
+}();
+
 void Timer::staticInit() {
-	auto gimpl = _gimpl.makeShared<TimerGlobalImpl>();
-	mach_timebase_info(&gimpl->_timebase_info);
-	gimpl->_resolution = (double)gimpl->_timebase_info.numer / (double)gimpl->_timebase_info.denom / 1000000.0;
-	uint64_t tms_now = mach_absolute_time();
-	gimpl->_timebase = ((tms_now>>16)<<16);
+  s_timebase = mach_absolute_time();
 }
+
+double Timer::get_sync_time() {
+  u64 raw = mach_absolute_time() - s_timebase;
+  return double(raw) * s_resolution;
+}
+
+u64 Timer::getSystemTick() {
+  return (mach_absolute_time() * s_numer) / s_denom;
+}
+
+void Timer::sleepTicks(u64 ticks) {
+  mach_wait_until(mach_absolute_time() + (ticks * s_denom) / s_numer);
+}
+
+void Timer::sleepUntilTick(u64 target_tick) {
+  mach_wait_until((target_tick * s_denom) / s_numer);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 #elif defined(ORK_CONFIG_IX)
 ///////////////////////////////////////////////////////////////////////////////
-struct TimerGlobalImpl {
-	uint64_t _timebase;
-};
+
+static u64 s_timebase = 0; // absolute ns at staticInit time
 void Timer::staticInit() {
-	auto gimpl = _gimpl.makeShared<TimerGlobalImpl>();
-	timespec tmsnow;
-  clock_gettime(CLOCK_REALTIME,&tmsnow);
-  gimpl->_timebase = ((tmsnow.tv_sec>>12)<<12)*1000;
+  timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  s_timebase = u64(ts.tv_sec) * NS_PER_SEC + u64(ts.tv_nsec);
 }
+
+u64 Timer::getSystemTick() {
+  timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return u64(ts.tv_sec) * NS_PER_SEC + u64(ts.tv_nsec);
+}
+
+double Timer::get_sync_time() {
+  return double(getSystemTick() - s_timebase) * SEC_PER_NS;
+}
+
+void Timer::sleepTicks(u64 ticks) {
+  // ticks = duration in nanoseconds
+  timespec ts = {
+    .tv_sec  = (time_t)(ticks / NS_PER_SEC),
+    .tv_nsec = (long)  (ticks % NS_PER_SEC)
+  };
+  nanosleep(&ts, nullptr);
+}
+
+void Timer::sleepUntilTick(u64 target_tick) {
+  // target_tick = absolute ns from getSystemTick() (CLOCK_MONOTONIC)
+  timespec ts = {
+    .tv_sec  = (time_t)(target_tick / NS_PER_SEC),
+    .tv_nsec = (long)  (target_tick % NS_PER_SEC)
+  };
+  clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts, nullptr);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
+#else
+#error // not implemented
 #endif
 ///////////////////////////////////////////////////////////////////////////////
 
-float Timer::get_sync_time() {
-	// intentionally leaked — prevents use-after-free when OpqThreads
-	// access the timer after static destructors run during exit()
-	static auto& gimpl = *new std::shared_ptr<TimerGlobalImpl>(Timer::_gimpl.getShared<TimerGlobalImpl>());
-	////////////////////////////////
-	#if defined(ORK_OSX) || defined(ORK_IOS)
-	////////////////////////////////
-	uint64_t tms_now = mach_absolute_time();
-	uint64_t tms_del = tms_now-gimpl->_timebase;
-	double millis = double(tms_del) * gimpl->_resolution;
-	//printf( "resolution<%g> tms_del<%zu> millis<%g>\n", resolution, tms_del, millis );
-	return float(millis*0.001);
-	////////////////////////////////
-	#elif defined(ORK_CONFIG_IX)
-	////////////////////////////////
-	struct timespec tsnow;
-	clock_gettime(CLOCK_REALTIME,&tsnow);
-	uint64_t tms_now = uint64_t(tsnow.tv_sec)*1000+uint64_t(tsnow.tv_nsec)/1000000;
-	uint64_t tms_del = tms_now-gimpl->_timebase;
-	float sec = float(tms_del)*0.001f;
-	return sec;
-	////////////////////////////////
-	#else
-	#error // not implemented
-	#endif
-	////////////////////////////////
+AdaptiveWait::AdaptiveWait(Mode mode) {
+  switch (mode) {
+    case Mode::Coarse:
+      _margin_min  = 50ULL  * NS_PER_US;  //   50 µs — prevents collapse to zero
+      _margin_max  = 500ULL * NS_PER_US;  //  500 µs — caps scheduler spike absorption
+      _spin_margin = 50ULL  * NS_PER_US;  //   50 µs — starts tight, OS sleep dominates
+      _decay       = 5ULL   * NS_PER_US;  //    5 µs — snaps back to min quickly
+      break;
+    case Mode::Balanced:
+      _margin_min  = 200ULL  * NS_PER_US; //  200 µs — reliably wakes before target on a normal system
+      _margin_max  = 2000ULL * NS_PER_US; // 2000 µs — absorbs jitter spikes without runaway spin
+      _spin_margin = 200ULL  * NS_PER_US; //  200 µs — covers typical OS wakeup latency
+      _decay       = 1ULL    * NS_PER_US; //    1 µs — holds margin through on-time wakes
+      break;
+    case Mode::Precise:
+      _margin_min  = 500ULL  * NS_PER_US; //  500 µs — wide floor, almost always wakes early enough to spin
+      _margin_max  = 2000ULL * NS_PER_US; // 2000 µs — same ceiling as Balanced
+      _spin_margin = 500ULL  * NS_PER_US; //  500 µs — starts wide, first frames land in spin window immediately
+      _decay       = 250ULL;              // 0.25 µs — near-zero decay, stays biased early
+      break;
+  }
 }
 
-static ork::MpMcBoundedQueue<PerfItem2,1024> gpiq;
+///////////////////////////////////////////////////////////////////////////////
 
-static bool gmena = false;
+void AdaptiveWait::sleepUntilTick(u64 target_tick) {
 
-typedef std::stack<bool> perf_ena_stack_t;
+  if (target_tick > _spin_margin)
+    Timer::sleepUntilTick(target_tick - _spin_margin);
 
-static ork::LockedResource<perf_ena_stack_t> gPES;
+  u64 wake_tick = Timer::getSystemTick();
+  if (wake_tick >= target_tick) {
+    // Overshot. Increase margin by the overshoot amount.
+    u64 overshoot = wake_tick - target_tick;
+    _spin_margin += overshoot;
 
+    if (_spin_margin > _margin_max)
+      _spin_margin = _margin_max;
 
-void PerfMarkerPushState() {
-	perf_ena_stack_t& pes = gPES.LockForWrite();
-	pes.push(gmena);
-	gPES.UnLock();
-}
-void PerfMarkerPopState() {
-	perf_ena_stack_t& pes = gPES.LockForWrite();
-	gmena = pes.top();
-	pes.pop();
-	gPES.UnLock();
-}
+  } else {
+    // Woke early. Spin the remaining time and decay margin slightly.
+    while (Timer::getSystemTick() < target_tick)
+      Timer::spinYield();
 
-void PerfMarkerEnable() {
-	gmena = true;
-}
-void PerfMarkerDisable() {
-	gmena = false;
+    if (_spin_margin > _margin_min + _decay)
+      _spin_margin -= _decay;
+  }
 }
 
-ork::atomic<int> gctr;
-
-void PerfMarkerPush( const char* mkrname ) {
-	if( gmena ) {
-		f32	ftime = Timer::get_sync_time();
-		PerfItem2 pi;
-		pi.mpMarkerName = mkrname;
-		pi.mfMarkerTime = ftime;
-		if( gpiq.try_push( pi ) ) {
-			gctr++;
-			//printf( "gctr<%d>\n", int(gctr) );
-		}
-	}
-}
-bool PerfMarkerPop( PerfItem2& outmkr ) {
-	bool rval = false;
-
-	if( gmena ) {
-		rval = gpiq.try_pop( outmkr );
-		if( rval )
-			gctr--;
-
-	}
-	return rval;
-}
-
-
+///////////////////////////////////////////////////////////////////////////////
 #if defined(__APPLE__) || defined(ORK_CONFIG_IX)
+///////////////////////////////////////////////////////////////////////////////
 
-void msleep( int millisec ) {
-	while( millisec>0 ) {
-		usleep( 1000 );
-		//sched_yield();
-		millisec--;
-	}
-}
-
-void usleep( int microsec ) {
-	::usleep( microsec );
-}
-
-#elif defined( ORK_WIN32 )
-void msleep( int millisec ) {
-	Sleep( millisec );
+void msleep(int millisec) {
+  while (millisec > 0) {
+    ::usleep(1000);
+    millisec--;
+  }
 }
 void usleep(int microsec) {
-	// TODO: non busy wait version
-
-	__int64 time1 = 0;
-	__int64 time2 = 0;
-	__int64 sysFreq = 0;
-
-	QueryPerformanceCounter( (LARGE_INTEGER*) & time1);
-	QueryPerformanceFrequency( (LARGE_INTEGER*) & sysFreq );
-
-	do {
-		QueryPerformanceCounter( (LARGE_INTEGER*) & time2);
-	}
-	while((time2-time1) < microsec);
+  ::usleep(microsec);
 }
-#endif
 
+///////////////////////////////////////////////////////////////////////////////
+#elif defined(ORK_WIN32)
+///////////////////////////////////////////////////////////////////////////////
+
+void msleep(int millisec) {
+  Sleep(millisec);
+}
+void usleep(int microsec) {
+  __int64 time1   = 0;
+  __int64 time2   = 0;
+  __int64 sysFreq = 0;
+
+  QueryPerformanceCounter((LARGE_INTEGER*)&time1);
+  QueryPerformanceFrequency((LARGE_INTEGER*)&sysFreq);
+
+  do {
+    QueryPerformanceCounter((LARGE_INTEGER*)&time2);
+  } while ((time2 - time1) < microsec);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+#endif
+///////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork
+///////////////////////////////////////////////////////////////////////////////

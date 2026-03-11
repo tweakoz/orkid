@@ -237,18 +237,11 @@ public:
   file::Path _orkidWorkspaceDir;
   ezmainwin_ptr_t _mainWindow;
   std::map<std::string, filedevctx_ptr_t> _fdevctxmap;
-  ork::Timer _update_timer;
-  double _update_prevtime        = 0;
-  double _update_timeaccumulator = 0;
-  double _render_timeaccumulator = 0;
   std::atomic<int> _lockstep_frame_requests = 0;
-  ork::Thread _updateThread;
   ork::opq::opq_ptr_t _mainq;
-  ork::opq::opq_ptr_t _updq;
   ork::opq::opq_ptr_t _conq;
   varmap::varmap_ptr_t _vars;
   std::atomic<uint64_t> _appstate;
-  ui::updatedata_ptr_t _update_data;
   ui::context_ptr_t _uicontext;
   ui::layoutgroup_ptr_t _topLayoutGroup;
   eztopwidget_ptr_t _eztopwidget;
@@ -265,12 +258,13 @@ public:
   int _gpuFrameCounterUP = 0;
   size_t _total_samples_rendered = 0; // lockstep audio sync
 
-  // Frame profiling fields (written each frame on main thread, except _perf_update_duration)
-  double _perf_frame_duration = 0.0;       // total frame time (main thread)
-  double _perf_gpu_update_duration = 0.0;  // onGpuUpdate callback time (main thread)
-  double _perf_update_duration = 0.0;      // update callback time (update thread - benign race for display)
-  ork::Timer _perf_gpu_update_timer;       // reusable timer for gpu update measurement
-  Thread::thread_lambda_t _update_thread_impl = nullptr;
+  // Update Thread
+  Thread::thread_lambda_t _update_thread_impl{};
+  ork::Thread             _update_thread{};
+  ork::opq::opq_ptr_t     _update_queue{};
+  ui::updatedata_ptr_t    _update_data{};
+
+  // Audio Thread
   onsynfn_t _onSynthInit                    = nullptr;
   onauddevfn_t _onAudioInit                 = nullptr;
   onauddevfn_t _onAudioExit                 = nullptr;

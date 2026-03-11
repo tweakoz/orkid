@@ -715,10 +715,7 @@ void CtxGLFW::_runloopIter(bool pollevents) {
   //////////////////////////////
 
   if (_onGpuUpdate) {
-    auto ezapp = (OrkEzApp*)OrkEzAppBase::get();
-    if(ezapp) ezapp->_perf_gpu_update_timer.Start();
     _onGpuUpdate(_target);
-    if(ezapp) ezapp->_perf_gpu_update_duration = ezapp->_perf_gpu_update_timer.SecsSinceStart();
   }
 
   SlotRepaint();
@@ -810,7 +807,7 @@ void CtxGLFW::SlotRepaint() {
     return;
   }
 
-  ork::PerfMarkerPush("ork.viewport.draw.begin");
+  OrkProfilerSampleScope(CHANNEL_MAIN, "viewport.draw");
 
   if (this->_target) {
     _target->makeCurrentContext();
@@ -830,7 +827,6 @@ void CtxGLFW::SlotRepaint() {
       _target->endFrame();
     }
   }
-  ork::PerfMarkerPush("ork.viewport.draw.end");
 
 }
 ///////////////////////////////////////////////////////////////////////////////

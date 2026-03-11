@@ -532,7 +532,6 @@ struct VkProfilerChannel final : ProfilerChannel {
   std::vector<VkTimespan> _vk_spans{};
   std::vector<VkTimespan> _vk_total_spans{};
   u32 _query_index = 0;
-  float _timestampPeriod = 1.0f;
   std::vector<u64> _timestamps{};
 
   using ProfilerChannel::ProfilerChannel;
@@ -551,8 +550,6 @@ struct VkProfilerChannel final : ProfilerChannel {
 
   void sampleBegin(SampleProfilerSeries* series) override;
   void sampleEnd(SampleProfilerSeries* series) override;
-
-  double _sampleTime(int begin_index, int end_index);
 };
 
 ///////////////////////////////////////////////////////////////////////////////

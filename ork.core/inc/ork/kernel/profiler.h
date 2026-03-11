@@ -142,6 +142,7 @@ struct ProfilerSeries {
   Style _style;
 
   ProfilerSeries(std::string name, ProfilerChannel* parent, Style style) : _name(name), _parent(parent), _style(style) {}
+  virtual ~ProfilerSeries() = default;
 
   // Returns false if there was an overflow in the sample_buffer due to flush not being called frequently enough.
   virtual bool flushBuffer() = 0;
@@ -152,8 +153,8 @@ using profiler_series_ptr_t = std::shared_ptr<ProfilerSeries>;
 struct SampleProfilerSeries : ProfilerSeries {
 
   struct Sample {
-    double total_time;
-    double isolated_time;
+    double total_ms;
+    double isolated_ms;
     int    count;
     int    level;
   };
@@ -167,12 +168,12 @@ struct SampleProfilerSeries : ProfilerSeries {
   std::unique_ptr<SPSCQueue<Sample, BufferSize>> _sample_buffer = std::make_unique<SPSCQueue<Sample, BufferSize>>();
   
   // accumulated frame data used to addSample on endFrame
-  double _total_time     = 0;
-  double _isolated_time  = 0;
-  int    _call_count     = 0;
-  int    _max_call_level = -1;
-  int    _call_level     = -1;
-  bool   _sampling       = false;
+  u64  _total_ticks    = 0;
+  u64  _isolated_ticks = 0;
+  int  _call_count     = 0;
+  int  _max_call_level = -1;
+  int  _call_level     = -1;
+  bool _sampling       = false;
 
   SampleProfilerSeries(std::string name, ProfilerChannel* parent) : ProfilerSeries(name, parent, Style::Sample) {}
 
@@ -217,6 +218,10 @@ struct ProfilerChannel {
   double _begin_time{};
   std::atomic<double> _frame_time{};
 
+  // Milliseconds per nanosecond tick — set by subclass in frameBegin.
+  // CpuProfilerChannel uses MS_PER_NS; VkProfilerChannel uses timestamp_period * 1e-6.
+  double _tick_to_ms = 1.0;
+
   bool _recording = true;
 
   ProfilerChannel(std::string&& name) : _name(name) {}
@@ -245,12 +250,11 @@ struct ProfilerScope {
 ////////////////////////////////////////////////////////////////////////////////
 
 struct CpuProfilerChannel final : ProfilerChannel {
-  Timer _timer{}; // TODO change to __rdtsc ?
 
   struct Timespan {
     SampleProfilerSeries* series;
-    double start_total_time;
-    double start_isolated_time;
+    u64 start_total_tick;
+    u64 start_isolated_tick;
   };
   std::stack<Timespan> _span_stack{};
 
@@ -276,8 +280,8 @@ struct CpuProfilerChannel final : ProfilerChannel {
 struct Profiler {
 
   // global state values to control all profiler sampling
-  static inline std::atomic<bool> _enabled     = true;
-  static inline std::atomic<u16>  _max_samples = 256;
+  static std::atomic<bool> _enabled;
+  static std::atomic<u16>  _max_samples;
 
   static void enabled(bool state) { _enabled.store(state); }
   static bool enabled() { return _enabled.load(); }
@@ -286,10 +290,10 @@ struct Profiler {
   static u16  maxSamples() { return _max_samples.load(); }
 
   // Global catalong of all channels.
-  static inline std::unordered_map<u64, profiler_channel_ptr_t> _channels;
+  static std::unordered_map<u64, profiler_channel_ptr_t> _channels;
 
   // We must lock global catalog on acquire and get. Sample points return a pointer so lookup only happens once.
-  static inline std::shared_mutex _channel_mtx;
+  static std::shared_mutex _channel_mtx;
 
   template <typename T>
   static T* acquireChannel(const char* name, u64 namecrc) {
