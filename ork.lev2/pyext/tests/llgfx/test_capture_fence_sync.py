@@ -6,6 +6,8 @@ to stress-test the GPU fence / staging buffer synchronization path.
 Multiple rapid captures can expose missing fence waits.
 """
 
+import os; os.environ["PYTHONUNBUFFERED"] = "1"
+import sys; sys.stdout.reconfigure(line_buffering=True)
 import sys
 import time
 from orkengine.core import vec2, vec3, vec4, mtx4

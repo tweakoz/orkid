@@ -75,8 +75,8 @@ fragment_shader ps_filterSpecularEnvMapSTD : iface_fyo : lib_math : lib_envmappi
   vec3 v  = r;
   vec3 o  = vec3(0, 0, 0);
   float w = 0;
-  for (uint i = 0; i < 8192; i++) {
-    vec2 e = hammersley(i, 8192);
+  for (uint i = 0; i < numsamples; i++) {
+    vec2 e = hammersley(i, numsamples);
     // Roughness affects the spread of the texture coordinate sampling
     float perturbScale = roughness * 0.5; // Control the scale of perturbation
     vec2 perturb       = vec2(rand(e) * perturbScale, rand(e.yx) * perturbScale);
@@ -84,7 +84,7 @@ fragment_shader ps_filterSpecularEnvMapSTD : iface_fyo : lib_math : lib_envmappi
     luv                = clamp(luv, 0, 1); // Ensure UVs are still within bounds
 
     vec3 sampledColor = textureLod(prefiltmap, luv, 0).rgb;
-    float weight      = 1.0 / 8192.0; // Uniform weight for each sample
+    float weight      = 1.0 / float(numsamples); // Uniform weight for each sample
     o += sampledColor * weight;
     w += weight;
   }
@@ -183,8 +183,8 @@ fragment_shader ps_filterDiffuseEnvMapSTD
   vec3 o    = vec3(0, 0, 0);
   float w   = 0;
   float RUF = 1;
-  for (uint i = 0; i < 16384; i++) {
-    vec2 e = hammersley(i, 16384);
+  for (uint i = 0; i < numsamples; i++) {
+    vec2 e = hammersley(i, numsamples);
 
     // Roughness affects the spread of the texture coordinate sampling
     float perturbScale = RUF * 0.5; // Control the scale of perturbation
@@ -193,7 +193,7 @@ fragment_shader ps_filterDiffuseEnvMapSTD
     luv                = clamp(luv, 0, 1); // Ensure UVs are still within bounds
 
     vec3 sampledColor = textureLod(prefiltmap, luv, 0).rgb;
-    float weight      = 1.0 / 16384.0; // Uniform weight for each sample
+    float weight      = 1.0 / float(numsamples); // Uniform weight for each sample
     o += sampledColor * weight;
     w += weight;
   }
@@ -214,8 +214,8 @@ fragment_shader ps_filterDiffuseEnvMapEQUI : iface_fyo : lib_math : lib_envmappi
   float w    = 0.0;
   float incr = 0.01;
   //////////////////////////////////
-  for (uint i = 0; i < 8192; i++) {
-    vec2 e   = hammersley(i, 8192);
+  for (uint i = 0; i < numsamples; i++) {
+    vec2 e   = hammersley(i, numsamples);
     vec3 h   = importanceSampleGGXN(e, n, 2);
     vec2 luv = env_equirectangularN2UV(normalize(n + h * 2));
     vec2 xuv = env_equirectangularN2UV(normalize(n - h * 2));

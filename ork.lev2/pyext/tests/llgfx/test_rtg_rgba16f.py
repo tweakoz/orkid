@@ -6,6 +6,8 @@ without hanging or crashing. This isolates render target format issues from
 capture format issues.
 """
 
+import os; os.environ["PYTHONUNBUFFERED"] = "1"
+import sys; sys.stdout.reconfigure(line_buffering=True)
 import sys
 import time
 from orkengine import core

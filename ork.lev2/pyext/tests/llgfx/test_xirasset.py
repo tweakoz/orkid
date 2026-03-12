@@ -4,6 +4,8 @@ Test for loading XIR Xir (Radiance) assets from Python.
 Loads a pre-filtered environment map and verifies the textures are created.
 """
 
+import os; os.environ["PYTHONUNBUFFERED"] = "1"
+import sys; sys.stdout.reconfigure(line_buffering=True)
 import sys, time, argparse
 from orkengine import core
 from orkengine import lev2

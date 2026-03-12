@@ -4,6 +4,8 @@ Test for shared memory and barrier() in Vulkan compute shaders.
 Verifies cross-thread communication via shared memory after barrier synchronization.
 """
 
+import os; os.environ["PYTHONUNBUFFERED"] = "1"
+import sys; sys.stdout.reconfigure(line_buffering=True)
 import sys
 import struct
 from orkengine import core

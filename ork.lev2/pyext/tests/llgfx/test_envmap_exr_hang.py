@@ -8,6 +8,8 @@ If no EXR file is available, creates a small test texture and writes it
 to a temp file, then processes it through the envmap pipeline.
 """
 
+import os; os.environ["PYTHONUNBUFFERED"] = "1"
+import sys; sys.stdout.reconfigure(line_buffering=True)
 import sys
 import os
 import time

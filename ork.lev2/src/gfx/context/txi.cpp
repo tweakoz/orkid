@@ -326,6 +326,10 @@ void TextureInterface::initTextureFromImage(Texture* ptex, image_ptr_t img, bool
       tid._src_format  = img->_format;
       tid._dst_format  = img->_format;
       break;
+    case EBufferFormat::RGBA16F:
+      tid._src_format  = img->_format;
+      tid._dst_format  = img->_format;
+      break;
     case EBufferFormat::RGBA32F:
       tid._src_format  = img->_format;
       tid._dst_format  = img->_format;

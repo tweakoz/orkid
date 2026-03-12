@@ -492,12 +492,14 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(
       break;
     }
     case EBufferFormat::RGBA16F: {
-      OrkAssert(vkfmt == VK_FORMAT_R16G16B16A16_SFLOAT);
+      bool is_f16_source = (vkfmt == VK_FORMAT_R16G16B16A16_SFLOAT);
+      bool is_f32_source = (vkfmt == VK_FORMAT_R32G32B32A32_SFLOAT);
+      OrkAssert(is_f16_source || is_f32_source);
       // Set up image with format and preallocated data
       capbuf->_image->initWithFormat(w, h, destfmt);
 
-      // Create staging buffer for GPU to CPU transfer
-      size_t bufsize = w * h * 8; // 8 bytes per pixel for RGBA16F (2 bytes per channel)
+      // Create staging buffer for GPU to CPU transfer (size matches source format)
+      size_t bufsize = is_f32_source ? (w * h * 16) : (w * h * 8);
       auto staging_buffer =
           std::make_shared<VulkanBuffer>(_contextVK, bufsize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, "capture_staging_f16");
 

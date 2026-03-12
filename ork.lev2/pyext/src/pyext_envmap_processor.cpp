@@ -5,6 +5,7 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
+#include "pyext.h"
 #include <ork/lev2/gfx/radiancemaps_processor.h>
 #include <ork/lev2/gfx/image.h>
 #include <ork/lev2/gfx/radiancemaps_asset.h>
@@ -55,10 +56,11 @@ void pyinit_radiance_maps_processor(py::module& module_lev2) {
         auto loadreq = std::make_shared<asset::LoadRequest>(path);
         return asset::AssetManager<RadianceMapsAsset>::load(loadreq);
       })
-      .def_property_readonly("Radiance_maps", 
+      .def_property_readonly("Radiance_maps",
         [](Radianceasset_ptr_t self) -> pbr::radiancemaps_ptr_t {
           return self->_radiance_maps;
         });
+
 }
 
 } // namespace ork::lev2

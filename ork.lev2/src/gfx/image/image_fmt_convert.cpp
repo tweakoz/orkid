@@ -613,6 +613,50 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
     }
   }
   /////////////////////////////
+  else if (fmt == EBufferFormat::RGBA16F and inp._format == EBufferFormat::RGBA32F) {
+    // Convert from RGBA32F (float) to RGBA16F (half-float)
+    init(inp._width, inp._height, 4, 2);
+    _format = EBufferFormat::RGBA16F;
+    auto outptr = (uint16_t*)_data->data();
+    auto inptr  = (const float*)inp._data->data();
+
+    auto float_to_half = [](float f) -> uint16_t {
+      uint32_t bits = *reinterpret_cast<uint32_t*>(&f);
+      uint32_t sign = (bits >> 16) & 0x8000;
+      int32_t exp32 = ((bits >> 23) & 0xFF) - 127 + 15;
+      uint32_t mant = (bits & 0x007FFFFF);
+      if (exp32 <= 0) return uint16_t(sign); // underflow to zero
+      if (exp32 >= 31) return uint16_t(sign | 0x7C00); // overflow to inf
+      return uint16_t(sign | (exp32 << 10) | (mant >> 13));
+    };
+
+    size_t num_chunks = (inp._height + IMG_CONVERT_CHUNK_SIZE - 1) / IMG_CONVERT_CHUNK_SIZE;
+    std::atomic<int> chunkcounter = num_chunks;
+
+    for (size_t chunk = 0; chunk < num_chunks; chunk++) {
+      auto op = [chunk, inptr, outptr, &inp, &chunkcounter, &float_to_half](){
+        size_t y_start = chunk * IMG_CONVERT_CHUNK_SIZE;
+        size_t y_end = std::min(y_start + IMG_CONVERT_CHUNK_SIZE, size_t(inp._height));
+
+        for (size_t y = y_start; y < y_end; y++) {
+          for (int x = 0; x < inp._width; x++) {
+            int pixelindex       = y * inp._width + x;
+            int elembase         = pixelindex * 4;
+            outptr[elembase + 0] = float_to_half(inptr[elembase + 0]);
+            outptr[elembase + 1] = float_to_half(inptr[elembase + 1]);
+            outptr[elembase + 2] = float_to_half(inptr[elembase + 2]);
+            outptr[elembase + 3] = float_to_half(inptr[elembase + 3]);
+          }
+        }
+        chunkcounter.fetch_sub(1);
+      };
+      opq::concurrentQueue()->enqueue(op);
+    }
+    while(chunkcounter.load() > 0) {
+      std::this_thread::yield();
+    }
+  }
+  /////////////////////////////
   else if (fmt == EBufferFormat::RGBA8 and inp._format == EBufferFormat::RGBA16F) {
     // Convert from RGBA16F (half-float) to RGBA8 (8-bit)
     init(inp._width, inp._height, 4, 1);

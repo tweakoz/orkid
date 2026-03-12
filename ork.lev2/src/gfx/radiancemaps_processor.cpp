@@ -123,10 +123,10 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
   int tex_height       = rawenvmap->_height;
   std::string tex_name = file::Path(rawenvmap->_debugName).toBFS().stem().string();
 
-  // HDR sources capture as RGBA16F to preserve dynamic range, LDR as RGBA8
-  // Render target matches capture format for HDR; LDR uses RGBA32F (shaders need float, capture clamps to RGBA8)
+  // HDR: render at RGBA32F precision, capture as RGBA16F to preserve dynamic range
+  // LDR: render at RGBA32F, capture as RGBA8
   auto capture_format       = is_hdr_source ? EBufferFormat::RGBA16F : EBufferFormat::RGBA8;
-  auto render_target_format = is_hdr_source ? EBufferFormat::RGBA16F : EBufferFormat::RGBA32F;
+  auto render_target_format = EBufferFormat::RGBA32F;
 
   ///////////////////////////////////////
   // Create executors
@@ -562,6 +562,8 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
         base_level._depth = 1;
         base_level._format = capture_format;
         base_level._numcomponents = 4;
+        base_level._bytesPerChannel = (capture_format == EBufferFormat::RGBA16F) ? 2
+                                    : (capture_format == EBufferFormat::RGBA32F) ? 4 : 1;
         base_level._data = capbuf->_image->_data;
         
         single_level_chain._width = base_level._width;
@@ -598,6 +600,10 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
         miplevel._width = capbuf->width();
         miplevel._height = capbuf->height();
         miplevel._depth = 1;
+        miplevel._format = capture_format;
+        miplevel._numcomponents = 4;
+        miplevel._bytesPerChannel = (capture_format == EBufferFormat::RGBA16F) ? 2
+                                  : (capture_format == EBufferFormat::RGBA32F) ? 4 : 1;
         miplevel._data = capbuf->_image->_data;
         diff_levels.push_back(miplevel);
         
@@ -664,6 +670,11 @@ xirprocessfuture_ptr_t EnvMapProcessor::processToXIRDataBlockAsync(const file::P
   }
 
   auto rawenvmap = texasset->GetTexture();
+
+  // Ensure the texture is fully uploaded to GPU before proceeding.
+  // _loadXTXTexture defers GPU upload to mainSerialQueue, so we must
+  // process pending ops before using the texture in the filtering pipeline.
+  while (opq::mainSerialQueue()->Process()) {}
 
   // Extract texture name for debug purposes
   std::string texture_name = input_path.getName();

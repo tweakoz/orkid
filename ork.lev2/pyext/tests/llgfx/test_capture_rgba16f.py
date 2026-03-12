@@ -5,6 +5,8 @@ Renders a known color to an RTG and captures it back, comparing capture
 formats to isolate whether the hang is in the capture/readback pipeline.
 """
 
+import os; os.environ["PYTHONUNBUFFERED"] = "1"
+import sys; sys.stdout.reconfigure(line_buffering=True)
 import sys
 import time
 from orkengine.core import vec2, vec3, vec4, mtx4

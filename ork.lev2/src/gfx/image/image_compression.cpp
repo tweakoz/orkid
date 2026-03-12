@@ -34,6 +34,7 @@ void CompressedImage::convertToImage(Image& ref) const{
   ref._width = _width;
   ref._height = _height;
   ref._numcomponents = _numcomponents;
+  ref._bytesPerChannel = _bytesPerChannel;
   ref._data = _data;
   ref._varmap.mergeVars(*_vars);
 }

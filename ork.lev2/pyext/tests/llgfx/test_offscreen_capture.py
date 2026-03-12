@@ -4,6 +4,8 @@ Test for offscreen Vulkan rendering with frame capture.
 Renders a colored triangle and captures it to a PNG file.
 """
 
+import os; os.environ["PYTHONUNBUFFERED"] = "1"
+import sys; sys.stdout.reconfigure(line_buffering=True)
 import sys
 import os
 import time

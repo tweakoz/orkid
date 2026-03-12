@@ -4,6 +4,8 @@ Test for single channel pixel picking with RGBA32UI format.
 Tests unsigned integer buffer format used for pick IDs.
 """
 
+import os; os.environ["PYTHONUNBUFFERED"] = "1"
+import sys; sys.stdout.reconfigure(line_buffering=True)
 import sys
 from orkengine import core
 from orkengine import lev2
