@@ -4,39 +4,38 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "build-debug",
+            "label": "gdb-attach-reminder",
             "type": "shell",
-            "command": "./ork.build/bin/init_env.py --launch ../staging-orkid --command './build.py --debug'",
-            "problemMatcher": [],
-            "group": {
-                "kind": "build",
-                "isDefault": true
+            "command": "echo 'NOTE: GDB attach requires one-time setup:'; echo '  sudo setcap cap_sys_ptrace=eip /usr/bin/gdb'; echo '  echo \"set debuginfod enabled off\" >> ~/.gdbinit'",
+            "presentation": { "reveal": "always", "panel": "dedicated", "focus": false },
+            "problemMatcher": []
+        },
+        {
+            "label": "run-script",
+            "type": "shell",
+            "command": "ork.python ${input:scriptPath}",
+            "options": { "cwd": "${workspaceFolder}" },
+            "isBackground": true,
+            "problemMatcher": {
+                "pattern": { "regexp": "^$" },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "^.",
+                    "endsPattern": "^."
+                }
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
             }
-        },
+        }
+    ],
+    "inputs": [
         {
-            "label": "fix-pybind11",
-            "type": "shell",
-            "command": "./ork.build/bin/init_env.py --launch ../staging-orkid --command 'obt.dep.build.py --force --wipe pybind11'",
-        },
-        {
-            "label": "fix-tuio",
-            "type": "shell",
-            "command": "./ork.build/bin/init_env.py --launch ../staging-orkid --command 'cd $OBT_STAGE/orkid/ork.tuio; make install'",
-        },
-        {
-            "label": "run-terrain",
-            "type": "shell",
-            "command": "./ork.build/bin/init_env.py --launch ../staging-orkid --command 'ork.example.lev2.gfx.terrain.exe'",
-        },
-        {
-            "label": "run-model3Dpbr",
-            "type": "shell",
-            "command": "./ork.build/bin/init_env.py --launch ../staging-orkid --command 'ork.example.lev2.gfx.model3Dpbr.exe'",
-        },
-        {
-            "label": "create-env",
-            "type": "shell",
-            "command": "./ork.build/bin/init_env.py --create ../staging-orkid --command 'pwd'"
+            "id": "scriptPath",
+            "type": "promptString",
+            "description": "Python script to run (relative to workspace)",
+            "default": "ork.lev2/pyext/tests/renderer/lighting/probe.py"
         }
     ]
 }
