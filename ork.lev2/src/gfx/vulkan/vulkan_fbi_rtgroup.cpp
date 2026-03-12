@@ -193,6 +193,8 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
           rtgroup->SetSizeDirty(false);
         }
 
+        RTGIMPL->_updateClearParams(rtgroup);
+
         // Handle cubemap face rendering
         if (rtgroup->_cubeMap) {
           RTGIMPL->_setupCubeFaceRendering(rtgroup->_cubeRenderFace);

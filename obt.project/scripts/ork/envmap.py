@@ -20,8 +20,9 @@ NUM_ROUGHNESS_LEVELS = 10
 ROUGHNESS_POWER = 0.5
 SPECULAR_SAMPLES = 8192
 DIFFUSE_SAMPLES = 4096
+SAMPLES_PER_PASS = 2048   # max samples per GPU submission to avoid watchdog
 TILE_SIZE = 128
-TILES_PER_FRAME = 4      # limit GPU work per frame to stay responsive
+TILES_PER_FRAME = 4       # tiles per GPU frame
 SLEEP_BETWEEN_FRAMES = 0.01  # 10ms breather between frames
 
 ###############################################################################
@@ -34,19 +35,150 @@ def _make_pipeline(mtl, technique_name):
     pipeline = mtl.fxcache.findPipeline(permu)
     return pipeline, permu
 
+def _render_single_tile(ctx, ezapp, fbi, dwi, pipeline, permu,
+                        fw, fh, tx, ty):
+    """Render one tile + capture in a single frame. Returns capbuf."""
+    rtg = lev2.RtGroup(ctx, fw, fh)
+    rtb = rtg.createBuffer(tokens.RGBA32F, tokens.color)
+    rtb.clearColor = vec4(0, 0, 0, 1)
+
+    capbuf = lev2.CaptureBuffer()
+    ctx.beginFrame()
+    fbi.rtGroupPush(rtg)
+    fbi.rtGroupClear(rtg)
+
+    RCFD = lev2.RenderContextFrameData(ctx)
+    RCID = lev2.RenderContextInstData(RCFD)
+    RCID.forceTechnique(permu.technique)
+    RCID.genMatrix(lambda: mtx4())
+
+    tile_x = tx * TILE_SIZE
+    tile_y = ty * TILE_SIZE
+    tile_w = min(TILE_SIZE, fw - tile_x)
+    tile_h = min(TILE_SIZE, fh - tile_y)
+
+    def draw():
+        ndc_x = tile_x / fw * 2.0 - 1.0
+        ndc_y = tile_y / fh * 2.0 - 1.0
+        ndc_w = tile_w / fw * 2.0
+        ndc_h = tile_h / fh * 2.0
+        uv_x = tile_x / fw
+        uv_y = tile_y / fh
+        uv_w = tile_w / fw
+        uv_h = tile_h / fh
+        dwi.quad2D(
+            vec4(ndc_x, ndc_y, ndc_w, ndc_h),
+            vec4(uv_x, uv_y, uv_w, uv_h))
+
+    pipeline.wrappedDrawCall(RCID, draw)
+    future = fbi.captureAsFormat(rtb, capbuf, "RGBA32F")
+    fbi.rtGroupPop()
+    ctx.endFrame()
+
+    start = time.time()
+    while not future.is_ready:
+        ezapp.mainThreadIter()
+        if time.time() - start > 120:
+            raise TimeoutError("GPU capture timeout")
+
+    return capbuf
+
+def _accumulate_tile(accum, capbuf_img, tx, ty, fw, fh):
+    """Add RGBA32F tile data (weighted sum in RGB, weight in A) into accumulator."""
+    import struct as st
+    tile_x = tx * TILE_SIZE
+    tile_y = ty * TILE_SIZE
+    tile_w = min(TILE_SIZE, fw - tile_x)
+    tile_h = min(TILE_SIZE, fh - tile_y)
+    src_data = bytes(capbuf_img.data.bytes)
+    bpp = 16  # RGBA32F
+    for row in range(tile_h):
+        for col in range(tile_w):
+            px = tile_x + col
+            py = tile_y + row
+            off = (py * fw + px) * bpp
+            r, g, b, w = st.unpack_from('<ffff', src_data, off)
+            idx = py * fw + px
+            accum[idx][0] += r
+            accum[idx][1] += g
+            accum[idx][2] += b
+            accum[idx][3] += w
+
+def _finalize_accum(accum, fw, fh, cap_fmt_str):
+    """Normalize accumulated weighted sums and produce final Image."""
+    import struct as st
+    img = lev2.Image()
+    if cap_fmt_str == "RGBA16F":
+        img.initWithFormat(fw, fh, tokens.RGBA16F)
+        mv = img.data.mutable_bytes
+        for idx in range(fw * fh):
+            r, g, b, w = accum[idx]
+            if w > 0:
+                r /= w; g /= w; b /= w
+            # Convert to half-float
+            def f2h(f):
+                raw = st.pack('<f', f)
+                bits = st.unpack('<I', raw)[0]
+                sign = (bits >> 16) & 0x8000
+                exp32 = ((bits >> 23) & 0xFF) - 127 + 15
+                mant = bits & 0x007FFFFF
+                if exp32 <= 0: return sign
+                if exp32 >= 31: return sign | 0x7C00
+                return sign | (exp32 << 10) | (mant >> 13)
+            off = idx * 8
+            st.pack_into('<HHHH', mv, off, f2h(r), f2h(g), f2h(b), f2h(1.0))
+    else:
+        img.initWithFormat(fw, fh, tokens.RGBA8)
+        mv = img.data.mutable_bytes
+        for idx in range(fw * fh):
+            r, g, b, w = accum[idx]
+            if w > 0:
+                r /= w; g /= w; b /= w
+            off = idx * 4
+            st.pack_into('BBBB', mv, off,
+                         min(255, int(r * 255)),
+                         min(255, int(g * 255)),
+                         min(255, int(b * 255)), 255)
+    return img
+
 def _filter_pass(ctx, ezapp, mtl, technique_name, src_tex,
                  roughness, fw, fh, numsamples, cap_fmt_str,
                  progress_prefix=""):
-    """Render a filter pass with tiled rendering spread across multiple frames."""
+    """Render tiles one at a time with accumulation passes to avoid GPU watchdog."""
     fbi = ctx.FBI
     dwi = ctx.DWI
-    pipeline, permu = _make_pipeline(mtl, technique_name)
 
+    # Use accumulation technique
+    accum_tek = technique_name + "_accum"
+    pipeline, permu = _make_pipeline(mtl, accum_tek)
+
+    num_tiles_x = (fw + TILE_SIZE - 1) // TILE_SIZE
+    num_tiles_y = (fh + TILE_SIZE - 1) // TILE_SIZE
+    total_tiles = num_tiles_x * num_tiles_y
+
+    tiles = [(tx, ty) for ty in range(num_tiles_y) for tx in range(num_tiles_x)]
+
+    # Build list of sample passes
+    passes = []
+    offset = 0
+    while offset < numsamples:
+        count = min(SAMPLES_PER_PASS, numsamples - offset)
+        passes.append((offset, count))
+        offset += count
+    num_passes = len(passes)
+
+    # Accumulator: per-pixel [r, g, b, weight]
+    accum = [[0.0, 0.0, 0.0, 0.0] for _ in range(fw * fh)]
+
+    total_work = total_tiles * num_passes
+    work_done = 0
+
+    # Bind constant params
     pipeline.bindParam(mtl.param("mvp"), mtx4())
     pipeline.bindParam(mtl.param("prefiltmap"), src_tex)
     pipeline.bindParam(mtl.param("roughness"), float(roughness))
     pipeline.bindParam(mtl.param("imgdim"), vec2(fw, fh))
-    pipeline.bindParam(mtl.param("numsamples"), int(numsamples))
+    pipeline.bindParam(mtl.param("totalsamples"), int(numsamples))
     vs_param = mtl.param("ViewportSize")
     if vs_param:
         pipeline.bindParam(vs_param, vec2(fw, fh))
@@ -57,88 +189,28 @@ def _filter_pass(ctx, ezapp, mtl, technique_name, src_tex,
     if ivs_frg:
         pipeline.bindParam(ivs_frg, vec2(1.0 / fw, 1.0 / fh))
 
-    rtg = lev2.RtGroup(ctx, fw, fh)
-    rtb = rtg.createBuffer(tokens.RGBA32F, tokens.color)
-    rtb.clearColor = vec4(0, 0, 0, 1)
+    for tx, ty in tiles:
+        for sample_offset, sample_count in passes:
+            # Update per-pass params
+            pipeline.bindParam(mtl.param("numsamples"), int(sample_count))
+            pipeline.bindParam(mtl.param("sampleoffset"), int(sample_offset))
 
-    num_tiles_x = (fw + TILE_SIZE - 1) // TILE_SIZE
-    num_tiles_y = (fh + TILE_SIZE - 1) // TILE_SIZE
-    total_tiles = num_tiles_x * num_tiles_y
+            capbuf = _render_single_tile(ctx, ezapp, fbi, dwi, pipeline, permu,
+                                          fw, fh, tx, ty)
+            _accumulate_tile(accum, capbuf.image, tx, ty, fw, fh)
 
-    # Build flat tile list
-    tiles = []
-    for ty in range(num_tiles_y):
-        for tx in range(num_tiles_x):
-            tiles.append((tx, ty))
+            work_done += 1
+            if progress_prefix:
+                pct = work_done * 100 // total_work
+                print(f"\r    {progress_prefix} {work_done}/{total_work} ({pct}%)   ", end="", flush=True)
 
-    # Clear the RTG in a first frame
-    ctx.beginFrame()
-    fbi.rtGroupPush(rtg)
-    fbi.rtGroupClear(rtg)
-    fbi.rtGroupPop()
-    ctx.endFrame()
-
-    # Render tiles in batches across multiple frames
-    tiles_done = 0
-    while tiles_done < total_tiles:
-        batch_end = min(tiles_done + TILES_PER_FRAME, total_tiles)
-        batch = tiles[tiles_done:batch_end]
-
-        ctx.beginFrame()
-        fbi.rtGroupPush(rtg)
-        RCFD = lev2.RenderContextFrameData(ctx)
-        RCID = lev2.RenderContextInstData(RCFD)
-        RCID.forceTechnique(permu.technique)
-        RCID.genMatrix(lambda: mtx4())
-
-        def draw_batch(batch=batch):
-            for tx, ty in batch:
-                tile_x = tx * TILE_SIZE
-                tile_y = ty * TILE_SIZE
-                tile_w = min(TILE_SIZE, fw - tile_x)
-                tile_h = min(TILE_SIZE, fh - tile_y)
-                ndc_x = tile_x / fw * 2.0 - 1.0
-                ndc_y = tile_y / fh * 2.0 - 1.0
-                ndc_w = tile_w / fw * 2.0
-                ndc_h = tile_h / fh * 2.0
-                uv_x = tile_x / fw
-                uv_y = tile_y / fh
-                uv_w = tile_w / fw
-                uv_h = tile_h / fh
-                dwi.quad2D(
-                    vec4(ndc_x, ndc_y, ndc_w, ndc_h),
-                    vec4(uv_x, uv_y, uv_w, uv_h))
-
-        pipeline.wrappedDrawCall(RCID, draw_batch)
-        fbi.rtGroupPop()
-        ctx.endFrame()
-
-        tiles_done = batch_end
-
-        if progress_prefix:
-            pct = tiles_done * 100 // total_tiles
-            print(f"\r    {progress_prefix} tiles {tiles_done}/{total_tiles} ({pct}%)   ", end="", flush=True)
-
-        # Let the system breathe
-        time.sleep(SLEEP_BETWEEN_FRAMES)
-        ezapp.mainThreadIter()
+            time.sleep(SLEEP_BETWEEN_FRAMES)
+            ezapp.mainThreadIter()
 
     if progress_prefix:
-        print("")  # final newline
+        print("", flush=True)
 
-    # Capture in a separate frame
-    capbuf = lev2.CaptureBuffer()
-    ctx.beginFrame()
-    future = fbi.captureAsFormat(rtb, capbuf, cap_fmt_str)
-    ctx.endFrame()
-
-    start = time.time()
-    while not future.is_ready:
-        ezapp.mainThreadIter()
-        if time.time() - start > 120:
-            raise TimeoutError("GPU capture timeout")
-
-    return capbuf
+    return _finalize_accum(accum, fw, fh, cap_fmt_str)
 
 ###############################################################################
 
@@ -177,7 +249,7 @@ def process_envmap(source_path, output_path, ctx, ezapp,
     if verbose:
         print(f"  Source: {tex_w}x{tex_h} nc={img.numcomponents} bpc={img.bytesPerChannel}")
         num_spec_tiles = ((tex_w + TILE_SIZE - 1) // TILE_SIZE) * ((tex_h + TILE_SIZE - 1) // TILE_SIZE)
-        print(f"  Tiles per pass: {num_spec_tiles} ({TILE_SIZE}px, {TILES_PER_FRAME}/frame)")
+        print(f"  Tiles per pass: {num_spec_tiles} ({TILE_SIZE}px)")
 
     tex = lev2.Texture("envmap_src")
     txi.updateTexture(tex, img, False)
@@ -207,12 +279,11 @@ def process_envmap(source_path, output_path, ctx, ezapp,
             print(f"  Specular [{i+1}/{NUM_ROUGHNESS_LEVELS}] roughness={roughness:.4f}")
 
         step_start = time.time()
-        capbuf = _filter_pass(
+        cap_img = _filter_pass(
             ctx, ezapp, spec_mtl, spec_tek, tex,
             roughness, tex_w, tex_h, SPECULAR_SAMPLES, cap_fmt_str,
             progress_prefix=f"spec[{i+1}/{NUM_ROUGHNESS_LEVELS}]")
 
-        cap_img = capbuf.image
         specular_images.append(cap_img)
         step_elapsed = time.time() - step_start
         if verbose:
@@ -222,6 +293,10 @@ def process_envmap(source_path, output_path, ctx, ezapp,
         if debug_dir:
             debug_ext = ".exr" if is_hdr else ".png"
             cap_img.writeToFile(os.path.join(debug_dir, f"specular_{i}_r{roughness:.3f}{debug_ext}"))
+
+        # Breathe between passes
+        time.sleep(SLEEP_BETWEEN_FRAMES)
+        ezapp.mainThreadIter()
 
     # ── Diffuse filtering (mip chain) ──────────────────────────────────
     diffuse_images = []
@@ -241,12 +316,11 @@ def process_envmap(source_path, output_path, ctx, ezapp,
             print(f"  Diffuse mip [{mip+1}/{total_diff_mips}] {dw}x{dh}")
 
         step_start = time.time()
-        capbuf = _filter_pass(
+        cap_img = _filter_pass(
             ctx, ezapp, diff_mtl, diff_tek, tex,
             1.0, dw, dh, DIFFUSE_SAMPLES, cap_fmt_str,
             progress_prefix=f"diff[{mip+1}/{total_diff_mips}]")
 
-        cap_img = capbuf.image
         diffuse_images.append(cap_img)
         step_elapsed = time.time() - step_start
         if verbose:
@@ -256,6 +330,10 @@ def process_envmap(source_path, output_path, ctx, ezapp,
         if debug_dir:
             debug_ext = ".exr" if is_hdr else ".png"
             cap_img.writeToFile(os.path.join(debug_dir, f"diffuse_mip_{mip}{debug_ext}"))
+
+        # Breathe between passes
+        time.sleep(SLEEP_BETWEEN_FRAMES)
+        ezapp.mainThreadIter()
 
         dw >>= 1
         dh >>= 1

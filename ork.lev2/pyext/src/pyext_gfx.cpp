@@ -584,7 +584,11 @@ void pyinit_gfx(py::module& module_lev2) {
                    .def_property_readonly("numBuffers", [](rtgroup_ptr_t rtg) -> int { return rtg->numImageBuffers(); })
                    .def_property_readonly("depth_buffer", [](rtgroup_ptr_t rtg) -> rtbuffer_ptr_t { return rtg->_depthBuffer; })
                    .def("buffer", [](rtgroup_ptr_t rtg, int irtb) -> rtbuffer_ptr_t { return rtg->buffer(irtb); })
-                   .def("texture", [](rtgroup_ptr_t rtg, int irtb) -> texture_ptr_t { return rtg->texture(irtb); });
+                   .def("texture", [](rtgroup_ptr_t rtg, int irtb) -> texture_ptr_t { return rtg->texture(irtb); })
+                   .def_property(
+                       "autoclear",
+                       [](rtgroup_ptr_t rtg) -> bool { return rtg->_autoclear; },
+                       [](rtgroup_ptr_t rtg, bool autoclear) { rtg->_autoclear = autoclear; });
   //.def("texture", [](rtgroup_ptr_t rtg, int irtb) -> texture_ptr_t { return rtg->buffer(irtb)->texture(); });
   type_codec->registerStdCodec<rtgroup_ptr_t>(rtg_t);
   /////////////////////////////////////////////////////////////////////////////////
