@@ -1138,12 +1138,14 @@ void OrkEzApp::_mainThreadLoopBegin() {
 
     if (_mainWindow->_onGpuExit) {
       _mainWindow->_onGpuExit(context);
-    }
+  }
   };
   ctx->_runloopBegin();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::_mainThreadLoopIter() {
+  OrkProfilerFrameBegin(CHANNEL_MAIN, CpuProfilerChannel, {.capture_fps = true});
+
   if (_mainWindow) {
     auto ctx = _mainWindow->_ctqt;
     ctx->_runloopIter();
@@ -1163,6 +1165,8 @@ void OrkEzApp::_mainThreadLoopIter() {
   // Phase 5: Render secondary windows and cleanup closed ones
   _renderSecondaryWindows();
   _cleanupClosedSecondaryWindows();
+
+  OrkProfilerFrameEnd(CHANNEL_MAIN);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::_mainThreadLoopEnd() {
