@@ -5,79 +5,57 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) attach model3Dpbr",
+            "name": "(gdb) debug python script",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${env:OBT_SUBSPACE_BIN_DIR}/ork.python",
+            "args": ["${input:scriptPath}"],
+            "preLaunchTask": "gdb-attach-reminder",
+            "MIMode": "gdb",
+            "cwd": "${workspaceFolder}",
+            "stopAtEntry": false,
+            "environment": [
+                { "name": "PYTHONPATH", "value": "${env:OBT_STAGE}/pyvenv/lib/python3.12/site-packages:${env:PYTHONPATH}" },
+                { "name": "LD_LIBRARY_PATH", "value": "${env:LD_LIBRARY_PATH}" },
+                { "name": "OBT_STAGE", "value": "${env:OBT_STAGE}" },
+                { "name": "PATH", "value": "${env:PATH}" }
+            ],
+            "setupCommands": [
+                { "text": "-enable-pretty-printing", "ignoreFailures": true },
+                { "text": "-interpreter-exec console \"set debuginfod enabled off\"", "ignoreFailures": true },
+                { "text": "-interpreter-exec console \"set print thread-events off\"", "ignoreFailures": true },
+                { "text": "-interpreter-exec console \"set follow-exec-mode same\"", "ignoreFailures": true },
+                { "text": "-interpreter-exec console \"source ${workspaceFolder}/obt.project/scripts/ork/ix_gdb_extensions.py\"", "ignoreFailures": false },
+                { "text": "-interpreter-exec console \"source /usr/share/gcc/python/libstdcxx/v6/printers.py\"", "ignoreFailures": true }
+            ]
+        },
+        // One-time setup required for attach to work without sudo:
+        //   sudo setcap cap_sys_ptrace=eip /usr/bin/gdb
+        // Also ensure ~/.gdbinit contains: set debuginfod enabled off
+        {
+            "name": "(gdb) attach python script",
             "type": "cppdbg",
             "request": "attach",
-            "processId":"${command:pickProcess}",
-            "program": "${env:OBT_SUBSPACE_BIN_DIR}/ork.example.lev2.gfx.model3Dpbr.exe",
-            "args": ["--forward","--usevr"],
+            "processId": "${command:pickProcess}",
+            "program": "${env:OBT_SUBSPACE_BIN_DIR}/ork.python",
+            "preLaunchTask": "gdb-attach-reminder",
             "MIMode": "gdb",
             "setupCommands": [
-                {
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
+                { "text": "-enable-pretty-printing", "ignoreFailures": true },
+                { "text": "-interpreter-exec console \"set debuginfod enabled off\"", "ignoreFailures": true },
+                { "text": "-interpreter-exec console \"set fork-follow-mode child\"", "ignoreFailures": true },
+                { "text": "-interpreter-exec console \"set follow-exec-mode new\"", "ignoreFailures": true },
+                { "text": "-interpreter-exec console \"source ${workspaceFolder}/obt.project/scripts/ork/ix_gdb_extensions.py\"", "ignoreFailures": false },
+                { "text": "-interpreter-exec console \"source /usr/share/gcc/python/libstdcxx/v6/printers.py\"", "ignoreFailures": true }
             ]
         },
+    ],
+    "inputs": [
         {
-            "name": "(gdb) launch model3Dpbr",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${env:OBT_SUBSPACE_BIN_DIR}/ork.example.lev2.gfx.model3Dpbr.exe",
-            "args": ["--forward","--usevr"],
-            "MIMode": "gdb",
-            "cwd": "${env:OBT_STAGE}",
-            "setupCommands": [
-                {
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        },
-        {
-            "name": "(gdb) debug skinning",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${env:OBT_SUBSPACE_BIN_DIR}/ork.example.lev2.gfx.skinning.exe",
-            "MIMode": "gdb",
-            "args": ["--testnum","2"],
-            "cwd": "${env:OBT_STAGE}",
-            "setupCommands": [
-                {
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        }
-        {
-            "name": "(gdb) debug tx81z.bank",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${env:OBT_SUBSPACE_BIN_DIR}/ork.test.lev2.aud.singularity.tx81z.bank.exe",
-            "MIMode": "gdb",
-            "args": ["--test","midi","--port","2"],
-            "cwd": "${env:OBT_STAGE}",
-            "setupCommands": [
-                {
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        }
-        {
-            "name": "(lldb) debug core.test",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/../.staging-may08/bin/ork.test.core.exe",
-            "MIMode": "lldb",
-            "args": ["parser2"],
-            "cwd": "${workspaceFolder}",
-            "setupCommands": [
-                {
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
+            "id": "scriptPath",
+            "type": "promptString",
+            "description": "Python script to run (relative to workspace)",
+            "default": "ork.lev2/pyext/tests/renderer/lighting/probe.py"
         }
     ]
 }
