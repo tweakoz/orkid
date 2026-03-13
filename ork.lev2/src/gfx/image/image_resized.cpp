@@ -125,11 +125,97 @@ void Image::resizedOf(const Image& inp, int w, int h) {
       break;
     }
     case RGBA32F:{
-      OrkAssert(false);
+      for (size_t y = 0; y<h; y++) {
+        for (size_t x = 0; x<w; x++) {
+          double u = double(x) / double(w);
+          double v = double(y) / double(h);
+          double x0 = u * double(original_width);
+          double y0 = v * double(original_height);
+          int x0i = std::min(int(x0), original_width - 1);
+          int y0i = std::min(int(y0), original_height - 1);
+          int x1i = std::min(x0i + 1, original_width - 1);
+          int y1i = std::min(y0i + 1, original_height - 1);
+          double x0f = x0 - double(x0i);
+          double y0f = y0 - double(y0i);
+          double x1f = 1.0 - x0f;
+          double y1f = 1.0 - y0f;
+          auto pixel = this->pixel32f(x, y);
+          auto pixel00 = inp.pixel32f(x0i, y0i);
+          auto pixel01 = inp.pixel32f(x0i, y1i);
+          auto pixel10 = inp.pixel32f(x1i, y0i);
+          auto pixel11 = inp.pixel32f(x1i, y1i);
+          for (size_t c = 0; c < original_numcomponents; c++) {
+            double val = 0.0;
+            val += x1f * y1f * double(pixel00[c]);
+            val += x1f * y0f * double(pixel01[c]);
+            val += x0f * y1f * double(pixel10[c]);
+            val += x0f * y0f * double(pixel11[c]);
+            pixel[c] = float(val);
+          }
+        }
+      }
       break;
     }
     case RGBA16F:{
-      OrkAssert(false);
+      auto half_to_float = [](uint16_t h) -> float {
+        uint32_t sign     = (h & 0x8000) << 16;
+        uint32_t exponent = ((h & 0x7C00) >> 10);
+        uint32_t mantissa = (h & 0x03FF) << 13;
+        if (exponent == 0) {
+          if (mantissa == 0) {
+            uint32_t result = sign;
+            return *reinterpret_cast<float*>(&result);
+          }
+          exponent = 1;
+          while (!(mantissa & 0x00800000)) { mantissa <<= 1; exponent--; }
+          mantissa &= ~0x00800000;
+          exponent = (exponent + 127 - 15) << 23;
+        } else if (exponent == 31) {
+          exponent = 0xFF << 23;
+        } else {
+          exponent = (exponent + 127 - 15) << 23;
+        }
+        uint32_t result = sign | exponent | mantissa;
+        return *reinterpret_cast<float*>(&result);
+      };
+      auto float_to_half = [](float f) -> uint16_t {
+        uint32_t bits = *reinterpret_cast<uint32_t*>(&f);
+        uint32_t sign = (bits >> 16) & 0x8000;
+        int32_t exp32 = ((bits >> 23) & 0xFF) - 127 + 15;
+        uint32_t mant = (bits & 0x007FFFFF);
+        if (exp32 <= 0) return uint16_t(sign);
+        if (exp32 >= 31) return uint16_t(sign | 0x7C00);
+        return uint16_t(sign | (exp32 << 10) | (mant >> 13));
+      };
+      for (size_t y = 0; y<h; y++) {
+        for (size_t x = 0; x<w; x++) {
+          double u = double(x) / double(w);
+          double v = double(y) / double(h);
+          double x0 = u * double(original_width);
+          double y0 = v * double(original_height);
+          int x0i = std::min(int(x0), original_width - 1);
+          int y0i = std::min(int(y0), original_height - 1);
+          int x1i = std::min(x0i + 1, original_width - 1);
+          int y1i = std::min(y0i + 1, original_height - 1);
+          double x0f = x0 - double(x0i);
+          double y0f = y0 - double(y0i);
+          double x1f = 1.0 - x0f;
+          double y1f = 1.0 - y0f;
+          auto pixel = this->pixel16(x, y);
+          auto pixel00 = inp.pixel16(x0i, y0i);
+          auto pixel01 = inp.pixel16(x0i, y1i);
+          auto pixel10 = inp.pixel16(x1i, y0i);
+          auto pixel11 = inp.pixel16(x1i, y1i);
+          for (size_t c = 0; c < original_numcomponents; c++) {
+            double val = 0.0;
+            val += x1f * y1f * double(half_to_float(pixel00[c]));
+            val += x1f * y0f * double(half_to_float(pixel01[c]));
+            val += x0f * y1f * double(half_to_float(pixel10[c]));
+            val += x0f * y0f * double(half_to_float(pixel11[c]));
+            pixel[c] = float_to_half(float(val));
+          }
+        }
+      }
       break;
     }
     default:

@@ -6,11 +6,67 @@ Replaces the C++ async EnvMapProcessor with a pure-Python GPU pipeline
 that avoids race conditions by doing everything synchronously on one thread.
 """
 
-import os, time
+import os, time, struct
+import numpy as np
 from orkengine.core import vec2, vec4, mtx4
 from orkengine import core, lev2
 
 tokens = core.CrcStringProxy()
+
+###############################################################################
+# Half-float helpers
+###############################################################################
+
+def _half_to_float_array(arr_u16):
+    sign = ((arr_u16 >> 15) & 1).astype(np.float32)
+    exp = ((arr_u16 >> 10) & 0x1F).astype(np.int32)
+    mant = (arr_u16 & 0x3FF).astype(np.float32)
+    result = np.zeros_like(sign)
+    normal = (exp > 0) & (exp < 31)
+    result[normal] = ((-1.0)**sign[normal]) * (2.0**(exp[normal] - 15)) * (1.0 + mant[normal] / 1024.0)
+    subnorm = (exp == 0) & (mant > 0)
+    result[subnorm] = ((-1.0)**sign[subnorm]) * (2.0**-14) * (mant[subnorm] / 1024.0)
+    return result
+
+def _float_to_half_array(arr_f32):
+    raw = arr_f32.astype(np.float32).view(np.uint32)
+    sign = ((raw >> 16) & 0x8000).astype(np.uint16)
+    exp32 = ((raw >> 23) & 0xFF).astype(np.int32) - 127 + 15
+    mant = (raw & 0x007FFFFF).astype(np.uint16)
+    result = sign.copy()
+    valid = (exp32 > 0) & (exp32 < 31)
+    result[valid] |= (exp32[valid].astype(np.uint16) << 10) | (mant[valid] >> 13)
+    overflow = exp32 >= 31
+    result[overflow] = sign[overflow] | 0x7C00
+    return result
+
+def _clamp_image(img, max_val, verbose=False):
+    """Clamp HDR image pixel values to max_val in-place."""
+    w, h, nc, bpc = img.width, img.height, img.numcomponents, img.bytesPerChannel
+    mv = img.data.mutable_bytes
+    def _report(floats, pre_max, max_val):
+        pre_min = float(np.min(floats[floats > 0])) if np.any(floats > 0) else 1e-6
+        old_dr = 20.0 * np.log10(pre_max / pre_min) if pre_min > 0 else 0.0
+        new_dr = 20.0 * np.log10(max_val / pre_min) if pre_min > 0 else 0.0
+        num_clamped = int(np.sum(floats > max_val))
+        print(f"  Clamp: max {pre_max:.1f} -> {max_val:.1f} ({num_clamped} values clamped)")
+        print(f"  Dynamic range: {old_dr:.1f} dB -> {new_dr:.1f} dB")
+
+    if bpc == 2:  # RGBA16F
+        arr = np.frombuffer(mv, dtype=np.uint16).copy()
+        floats = _half_to_float_array(arr)
+        pre_max = float(np.max(floats))
+        if verbose:
+            _report(floats, pre_max, max_val)
+        clamped = np.minimum(floats, max_val)
+        arr[:] = _float_to_half_array(clamped)
+        np.frombuffer(mv, dtype=np.uint16)[:] = arr
+    elif bpc == 4:  # RGBA32F
+        arr = np.frombuffer(mv, dtype=np.float32)
+        pre_max = float(np.max(arr))
+        if verbose:
+            _report(arr, pre_max, max_val)
+        np.minimum(arr, max_val, out=arr)
 
 ###############################################################################
 # Constants matching C++ EnvMapProcessor
@@ -35,10 +91,18 @@ def _make_pipeline(mtl, technique_name):
     pipeline = mtl.fxcache.findPipeline(permu)
     return pipeline, permu
 
-def _render_single_tile(ctx, ezapp, fbi, dwi, pipeline, permu,
+def _render_single_tile(ctx, ezapp, fbi, dwi, pipeline, permu, mtl,
                         fw, fh, tx, ty):
-    """Render one tile + capture in a single frame. Returns capbuf."""
-    rtg = lev2.RtGroup(ctx, fw, fh)
+    """Render one tile into a tile-sized RTG. Returns capbuf with tile pixels."""
+    tile_x = tx * TILE_SIZE
+    tile_y = ty * TILE_SIZE
+    tile_w = min(TILE_SIZE, fw - tile_x)
+    tile_h = min(TILE_SIZE, fh - tile_y)
+
+    # Set tile offset so shader computes correct full-image coordinates
+    pipeline.bindParam(mtl.param("tileoffset"), vec2(tile_x, tile_y))
+
+    rtg = lev2.RtGroup(ctx, tile_w, tile_h)
     rtb = rtg.createBuffer(tokens.RGBA32F, tokens.color)
     rtb.clearColor = vec4(0, 0, 0, 1)
 
@@ -52,23 +116,9 @@ def _render_single_tile(ctx, ezapp, fbi, dwi, pipeline, permu,
     RCID.forceTechnique(permu.technique)
     RCID.genMatrix(lambda: mtx4())
 
-    tile_x = tx * TILE_SIZE
-    tile_y = ty * TILE_SIZE
-    tile_w = min(TILE_SIZE, fw - tile_x)
-    tile_h = min(TILE_SIZE, fh - tile_y)
-
     def draw():
-        ndc_x = tile_x / fw * 2.0 - 1.0
-        ndc_y = tile_y / fh * 2.0 - 1.0
-        ndc_w = tile_w / fw * 2.0
-        ndc_h = tile_h / fh * 2.0
-        uv_x = tile_x / fw
-        uv_y = tile_y / fh
-        uv_w = tile_w / fw
-        uv_h = tile_h / fh
-        dwi.quad2D(
-            vec4(ndc_x, ndc_y, ndc_w, ndc_h),
-            vec4(uv_x, uv_y, uv_w, uv_h))
+        # Full-screen quad fills the tile-sized RTG
+        dwi.quad2D(vec4(-1, -1, 2, 2), vec4(0, 0, 1, 1))
 
     pipeline.wrappedDrawCall(RCID, draw)
     future = fbi.captureAsFormat(rtb, capbuf, "RGBA32F")
@@ -81,41 +131,40 @@ def _render_single_tile(ctx, ezapp, fbi, dwi, pipeline, permu,
         if time.time() - start > 120:
             raise TimeoutError("GPU capture timeout")
 
-    return capbuf
+    return capbuf, tile_w, tile_h
 
-def _accumulate_tile(accum, capbuf_img, tx, ty, fw, fh):
-    """Add RGBA32F tile data (weighted sum in RGB, weight in A) into accumulator."""
+def _accumulate_tile(accum_data, capbuf_img, tx, ty, tile_w, tile_h, fw):
+    """Add RGBA32F tile data into accumulator using struct for speed."""
     import struct as st
     tile_x = tx * TILE_SIZE
     tile_y = ty * TILE_SIZE
-    tile_w = min(TILE_SIZE, fw - tile_x)
-    tile_h = min(TILE_SIZE, fh - tile_y)
-    src_data = bytes(capbuf_img.data.bytes)
-    bpp = 16  # RGBA32F
+    src = bytes(capbuf_img.data.bytes)
     for row in range(tile_h):
+        py = tile_y + row
+        src_row_off = row * tile_w * 16
         for col in range(tile_w):
             px = tile_x + col
-            py = tile_y + row
-            off = (py * fw + px) * bpp
-            r, g, b, w = st.unpack_from('<ffff', src_data, off)
-            idx = py * fw + px
-            accum[idx][0] += r
-            accum[idx][1] += g
-            accum[idx][2] += b
-            accum[idx][3] += w
+            src_off = src_row_off + col * 16
+            r, g, b, w = st.unpack_from('<ffff', src, src_off)
+            idx = (py * fw + px) * 4
+            accum_data[idx] += r
+            accum_data[idx+1] += g
+            accum_data[idx+2] += b
+            accum_data[idx+3] += w
 
-def _finalize_accum(accum, fw, fh, cap_fmt_str):
+def _finalize_accum(accum_data, fw, fh, cap_fmt_str):
     """Normalize accumulated weighted sums and produce final Image."""
     import struct as st
+    import array
     img = lev2.Image()
     if cap_fmt_str == "RGBA16F":
         img.initWithFormat(fw, fh, tokens.RGBA16F)
         mv = img.data.mutable_bytes
         for idx in range(fw * fh):
-            r, g, b, w = accum[idx]
+            ai = idx * 4
+            r, g, b, w = accum_data[ai], accum_data[ai+1], accum_data[ai+2], accum_data[ai+3]
             if w > 0:
                 r /= w; g /= w; b /= w
-            # Convert to half-float
             def f2h(f):
                 raw = st.pack('<f', f)
                 bits = st.unpack('<I', raw)[0]
@@ -131,7 +180,8 @@ def _finalize_accum(accum, fw, fh, cap_fmt_str):
         img.initWithFormat(fw, fh, tokens.RGBA8)
         mv = img.data.mutable_bytes
         for idx in range(fw * fh):
-            r, g, b, w = accum[idx]
+            ai = idx * 4
+            r, g, b, w = accum_data[ai], accum_data[ai+1], accum_data[ai+2], accum_data[ai+3]
             if w > 0:
                 r /= w; g /= w; b /= w
             off = idx * 4
@@ -167,8 +217,9 @@ def _filter_pass(ctx, ezapp, mtl, technique_name, src_tex,
         offset += count
     num_passes = len(passes)
 
-    # Accumulator: per-pixel [r, g, b, weight]
-    accum = [[0.0, 0.0, 0.0, 0.0] for _ in range(fw * fh)]
+    # Accumulator: flat array [r, g, b, weight] per pixel
+    import array
+    accum_data = array.array('f', [0.0] * (fw * fh * 4))
 
     total_work = total_tiles * num_passes
     work_done = 0
@@ -195,9 +246,9 @@ def _filter_pass(ctx, ezapp, mtl, technique_name, src_tex,
             pipeline.bindParam(mtl.param("numsamples"), int(sample_count))
             pipeline.bindParam(mtl.param("sampleoffset"), int(sample_offset))
 
-            capbuf = _render_single_tile(ctx, ezapp, fbi, dwi, pipeline, permu,
-                                          fw, fh, tx, ty)
-            _accumulate_tile(accum, capbuf.image, tx, ty, fw, fh)
+            capbuf, tile_w, tile_h = _render_single_tile(
+                ctx, ezapp, fbi, dwi, pipeline, permu, mtl, fw, fh, tx, ty)
+            _accumulate_tile(accum_data, capbuf.image, tx, ty, tile_w, tile_h, fw)
 
             work_done += 1
             if progress_prefix:
@@ -210,12 +261,17 @@ def _filter_pass(ctx, ezapp, mtl, technique_name, src_tex,
     if progress_prefix:
         print("", flush=True)
 
-    return _finalize_accum(accum, fw, fh, cap_fmt_str)
+    return _finalize_accum(accum_data, fw, fh, cap_fmt_str)
 
 ###############################################################################
 
 def process_envmap(source_path, output_path, ctx, ezapp,
-                   debug_dir=None, verbose=True):
+                   debug_dir=None, verbose=True,
+                   num_roughness_levels=NUM_ROUGHNESS_LEVELS,
+                   roughness_values=None,
+                   skip_diffuse=False,
+                   scale=1.0,
+                   clamp=16.0):
     """
     Synchronously filter an environment map and write XIR.
 
@@ -245,6 +301,16 @@ def process_envmap(source_path, output_path, ctx, ezapp,
         print(f"ERROR: Could not load {source_path}")
         return False
 
+    if scale != 1.0:
+        new_w = max(1, int(img.width * scale))
+        new_h = max(1, int(img.height * scale))
+        if verbose:
+            print(f"  Scaling {img.width}x{img.height} -> {new_w}x{new_h} (scale={scale})")
+        img = img.resized(new_w, new_h)
+
+    if clamp > 0 and is_hdr:
+        _clamp_image(img, clamp, verbose)
+
     tex_w, tex_h = img.width, img.height
     if verbose:
         print(f"  Source: {tex_w}x{tex_h} nc={img.numcomponents} bpc={img.bytesPerChannel}")
@@ -270,19 +336,22 @@ def process_envmap(source_path, output_path, ctx, ezapp,
 
     # ── Specular filtering ──────────────────────────────────────────────
     specular_images = []
-    roughness_values = []
+    if roughness_values is None:
+        roughness_values = []
+        denom = max(1, num_roughness_levels - 1)
+        for i in range(num_roughness_levels):
+            roughness_values.append((i / denom) ** ROUGHNESS_POWER)
 
-    for i in range(NUM_ROUGHNESS_LEVELS):
-        roughness = (i / 9.0) ** ROUGHNESS_POWER
-        roughness_values.append(roughness)
+    num_levels = len(roughness_values)
+    for i, roughness in enumerate(roughness_values):
         if verbose:
-            print(f"  Specular [{i+1}/{NUM_ROUGHNESS_LEVELS}] roughness={roughness:.4f}")
+            print(f"  Specular [{i+1}/{num_levels}] roughness={roughness:.4f}")
 
         step_start = time.time()
         cap_img = _filter_pass(
             ctx, ezapp, spec_mtl, spec_tek, tex,
             roughness, tex_w, tex_h, SPECULAR_SAMPLES, cap_fmt_str,
-            progress_prefix=f"spec[{i+1}/{NUM_ROUGHNESS_LEVELS}]")
+            progress_prefix=f"spec[{i+1}/{num_levels}]")
 
         specular_images.append(cap_img)
         step_elapsed = time.time() - step_start
@@ -300,44 +369,47 @@ def process_envmap(source_path, output_path, ctx, ezapp,
 
     # ── Diffuse filtering (mip chain) ──────────────────────────────────
     diffuse_images = []
-    dw, dh = tex_w, tex_h
-    mip = 0
+    if not skip_diffuse:
+        dw, dh = tex_w, tex_h
+        mip = 0
 
-    # Count total diffuse mips for progress
-    tw, th = tex_w, tex_h
-    total_diff_mips = 0
-    while tw >= 4 and th >= 4:
-        total_diff_mips += 1
-        tw >>= 1
-        th >>= 1
+        # Count total diffuse mips for progress
+        tw, th = tex_w, tex_h
+        total_diff_mips = 0
+        while tw >= 4 and th >= 4:
+            total_diff_mips += 1
+            tw >>= 1
+            th >>= 1
 
-    while dw >= 4 and dh >= 4:
-        if verbose:
-            print(f"  Diffuse mip [{mip+1}/{total_diff_mips}] {dw}x{dh}")
+        while dw >= 4 and dh >= 4:
+            if verbose:
+                print(f"  Diffuse mip [{mip+1}/{total_diff_mips}] {dw}x{dh}")
 
-        step_start = time.time()
-        cap_img = _filter_pass(
-            ctx, ezapp, diff_mtl, diff_tek, tex,
-            1.0, dw, dh, DIFFUSE_SAMPLES, cap_fmt_str,
-            progress_prefix=f"diff[{mip+1}/{total_diff_mips}]")
+            step_start = time.time()
+            cap_img = _filter_pass(
+                ctx, ezapp, diff_mtl, diff_tek, tex,
+                1.0, dw, dh, DIFFUSE_SAMPLES, cap_fmt_str,
+                progress_prefix=f"diff[{mip+1}/{total_diff_mips}]")
 
-        diffuse_images.append(cap_img)
-        step_elapsed = time.time() - step_start
-        if verbose:
-            total_elapsed = time.time() - total_start
-            print(f"    done ({step_elapsed:.1f}s, total {total_elapsed:.0f}s)")
+            diffuse_images.append(cap_img)
+            step_elapsed = time.time() - step_start
+            if verbose:
+                total_elapsed = time.time() - total_start
+                print(f"    done ({step_elapsed:.1f}s, total {total_elapsed:.0f}s)")
 
-        if debug_dir:
-            debug_ext = ".exr" if is_hdr else ".png"
-            cap_img.writeToFile(os.path.join(debug_dir, f"diffuse_mip_{mip}{debug_ext}"))
+            if debug_dir:
+                debug_ext = ".exr" if is_hdr else ".png"
+                cap_img.writeToFile(os.path.join(debug_dir, f"diffuse_mip_{mip}{debug_ext}"))
 
-        # Breathe between passes
-        time.sleep(SLEEP_BETWEEN_FRAMES)
-        ezapp.mainThreadIter()
+            # Breathe between passes
+            time.sleep(SLEEP_BETWEEN_FRAMES)
+            ezapp.mainThreadIter()
 
-        dw >>= 1
-        dh >>= 1
-        mip += 1
+            dw >>= 1
+            dh >>= 1
+            mip += 1
+    elif verbose:
+        print("  Skipping diffuse filtering")
 
     # ── Write XIR ───────────────────────────────────────────────────────
     if verbose:

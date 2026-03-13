@@ -84,20 +84,74 @@ def load_image(path):
 ###############################################################################
 
 def channel_stats(arr):
-    """Per-channel min/max/mean/std for an HxWxC array."""
+    """Per-channel min/max/mean/std/percentiles for an HxWxC array."""
     nc = arr.shape[2] if arr.ndim == 3 else 1
     labels = ["R", "G", "B", "A"][:nc]
     stats = OrderedDict()
     for i, label in enumerate(labels):
-        ch = arr[:, :, i] if arr.ndim == 3 else arr
+        ch = arr[:, :, i].ravel() if arr.ndim == 3 else arr.ravel()
+        p50, p99, p999, p9999 = np.percentile(ch, [50, 99, 99.9, 99.99])
         stats[label] = {
             "min": float(np.min(ch)),
+            "p50": float(p50),
+            "p99": float(p99),
+            "p99.9": float(p999),
+            "p99.99": float(p9999),
             "max": float(np.max(ch)),
             "mean": float(np.mean(ch)),
             "std": float(np.std(ch)),
-            "median": float(np.median(ch)),
         }
     return stats
+
+def firefly_stats(arr, spatial_threshold=10.0, global_thresholds=(10, 100)):
+    """Detect firefly artifacts in an image.
+
+    Returns dict with:
+      - per-channel firefly counts at each global threshold
+      - spatial outlier count (pixels > spatial_threshold × local 3x3 median)
+      - max/p99.9 ratio per channel (>10 suggests fireflies)
+    """
+    from scipy.ndimage import median_filter
+
+    nc = min(arr.shape[2], 3) if arr.ndim == 3 else 1
+    labels = ["R", "G", "B"][:nc]
+
+    # Brightness = max of RGB channels
+    if nc >= 3:
+        brightness = np.max(arr[:, :, :3], axis=2)
+    else:
+        brightness = arr[:, :, 0] if arr.ndim == 3 else arr
+
+    result = OrderedDict()
+
+    # Per-channel firefly counts at global thresholds
+    for i, label in enumerate(labels):
+        ch = arr[:, :, i] if arr.ndim == 3 else arr
+        ch_flat = ch.ravel()
+        median = float(np.median(ch_flat))
+        p999 = float(np.percentile(ch_flat, 99.9))
+        ch_max = float(np.max(ch_flat))
+        ch_stats = {"median": round(median, 4), "max": round(ch_max, 4)}
+        ch_stats["max_over_p999"] = round(ch_max / p999, 2) if p999 > 0 else 0.0
+        for thresh in global_thresholds:
+            if median > 0:
+                count = int(np.sum(ch_flat > median * thresh))
+                ch_stats[f">{thresh}x_median"] = count
+            else:
+                ch_stats[f">{thresh}x_median"] = 0
+        result[label] = ch_stats
+
+    # Spatial outliers: pixels much brighter than 3x3 neighborhood median
+    local_med = median_filter(brightness, size=3)
+    # Avoid division by zero
+    safe_local = np.maximum(local_med, 1e-6)
+    spatial_outliers = int(np.sum(brightness > safe_local * spatial_threshold))
+    total_pixels = brightness.size
+    result["spatial_outliers"] = spatial_outliers
+    result["spatial_outlier_frac"] = round(spatial_outliers / total_pixels, 6)
+    result["total_pixels"] = total_pixels
+
+    return result
 
 ###############################################################################
 # Color analysis
@@ -328,6 +382,60 @@ def print_grid_compact(grid):
             print(f"  [{gy},{gx}] avg=({r:.3f},{g:.3f},{b:.3f}) bri={br:.3f} {tag}")
 
 ###############################################################################
+# XIR loading
+###############################################################################
+
+def load_xir(path):
+    """Load an XIR file and return a dict of named image arrays.
+    Returns dict: {
+      "specular_0_r0.0000": (arr, mode, size),
+      "specular_1_r0.5000": (arr, mode, size),
+      ...
+      "diffuse_0": (arr, mode, size),
+      ...
+    }
+    Each value is a (numpy_array, mode_str, (w,h)) tuple like load_image returns.
+    """
+    from orkengine import core
+    from orkengine import lev2
+    result = lev2.EnvMapProcessor.readXIR(str(path))
+    specular_images = list(result["specular_images"])
+    roughness_values = list(result["roughness_values"])
+    diffuse_images = list(result["diffuse_images"])
+
+    images = OrderedDict()
+    for i, img in enumerate(specular_images):
+        r = roughness_values[i] if i < len(roughness_values) else 0.0
+        key = f"specular_{i}_r{r:.4f}"
+        images[key] = _ork_image_to_array(img)
+    for i, img in enumerate(diffuse_images):
+        key = f"diffuse_{i}"
+        images[key] = _ork_image_to_array(img)
+    return images
+
+def _ork_image_to_array(img):
+    """Convert an orkengine Image to (numpy_array, mode, (w,h)) tuple."""
+    w, h = img.width, img.height
+    nc = img.numcomponents
+    bpc = img.bytesPerChannel
+    data = bytes(img.data.bytes)
+    if bpc == 4:
+        arr = np.frombuffer(data, dtype=np.float32).reshape(h, w, nc).copy()
+    elif bpc == 2:
+        raw = np.frombuffer(data, dtype=np.uint16).reshape(h, w, nc)
+        arr = np.zeros((h, w, nc), dtype=np.float32)
+        for c in range(nc):
+            arr[:, :, c] = _half_array_to_float(raw[:, :, c])
+    elif bpc == 1:
+        arr = np.frombuffer(data, dtype=np.uint8).reshape(h, w, nc).astype(np.float32) / 255.0
+    else:
+        raise RuntimeError(f"Unsupported bpc={bpc}")
+    if nc == 1:
+        arr = np.stack([arr[:,:,0]]*3, axis=-1)
+    mode = {1: "L", 3: "RGB", 4: "RGBA"}.get(nc, "RGBA")
+    return arr, mode, (w, h)
+
+###############################################################################
 # Full summary
 ###############################################################################
 
@@ -346,6 +454,7 @@ def summarize(path):
     summary["is_uniform"] = is_uniform(arr)
     summary["color"] = color_histogram(arr)
     summary["quadrants"] = quadrant_means(arr)
+    summary["fireflies"] = firefly_stats(arr)
     summary["scanlines_h"] = detect_scanlines(arr, axis=0)
     summary["scanlines_v"] = detect_scanlines(arr, axis=1)
     summary["grid_4x4"] = grid_matrix(arr, 4, 4)

@@ -174,6 +174,11 @@ void pyinit_gfx_image(py::module& module_lev2) {
         img->separableConvolve(*output, kernel, threshold);
         return output;
       }, py::arg("kernel"), py::arg("threshold") = fvec4(0.0f, 0.0f, 0.0f, 0.0f))
+      .def("resized", [](image_ptr_t img, int w, int h) -> image_ptr_t {
+        auto result = std::make_shared<Image>();
+        result->resizedOf(*img, w, h);
+        return result;
+      }, py::arg("w"), py::arg("h"))
       .def("toXTXDataBlock", [](image_ptr_t img) -> py::bytes {
         // Package this image as a single-level XTX mipchain datablock
         CompressedImageMipChain mipchain;

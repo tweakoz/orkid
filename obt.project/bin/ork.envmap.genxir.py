@@ -16,6 +16,11 @@ parser = argparse.ArgumentParser(description="Generate XIR from environment map"
 parser.add_argument("-i", "--input", required=True, help="Source environment map (.exr, .hdr, .png, .dds)")
 parser.add_argument("-o", "--output", required=True, help="Output XIR file path")
 parser.add_argument("-d", "--debug", default=None, help="Directory for debug images (specular roughness + diffuse mips)")
+parser.add_argument("-r", "--roughness", type=float, nargs="+", default=None,
+                    help="Explicit roughness values (e.g. -r 0.0 0.5 1.0). Skips diffuse unless --diffuse given.")
+parser.add_argument("--diffuse", action="store_true", help="Include diffuse filtering (used with -r)")
+parser.add_argument("--scale", type=float, default=1.0, help="Scale factor for source image before processing (e.g. 0.5 for half size)")
+parser.add_argument("--clamp", type=float, default=16.0, help="Clamp source HDR values to this maximum (default: 16.0, 0=no clamp)")
 parser.add_argument("--async", dest="use_async", action="store_true", help="Use original C++ async processor")
 args = parser.parse_args()
 
@@ -126,9 +131,15 @@ def main_sync():
     ezapp.mainThreadBegin()
 
     start_time = time.time()
-    ok = process_envmap(
-        source_file, dest_file, ctx, ezapp,
-        debug_dir=debug_dir, verbose=True)
+    kwargs = dict(debug_dir=debug_dir, verbose=True)
+    if args.roughness is not None:
+        kwargs["roughness_values"] = args.roughness
+        kwargs["skip_diffuse"] = not args.diffuse
+    if args.scale != 1.0:
+        kwargs["scale"] = args.scale
+    if args.clamp > 0:
+        kwargs["clamp"] = args.clamp
+    ok = process_envmap(source_file, dest_file, ctx, ezapp, **kwargs)
     elapsed = time.time() - start_time
 
     if ok:

@@ -75,48 +75,7 @@ class XIRViewer(ComponentizedApplication):
     tabs_item.layout.fill(lg_group.layout)
     self.tabs = tabs_item.widget
 
-    ############################################
-    # One tab per specular roughness level
-    # Each tab is a DynaGrid showing all mips for that roughness
-    # (currently 1 mip per roughness in XIR format)
-    ############################################
-
-    for i in range(10):
-      r = (i / 9.0) ** 0.5
-      grid = self.tabs.makeChild(
-        uiclass=lev2.ui.DynaGrid,
-        args=[f"S{i} r={r:.2f}"],
-      )
-      grid.margin = 4
-      imv = grid.makeChild(
-        uiclass=lev2.ui.ImageView,
-        args=[f"spec_{i}", vec4(0.06, 0.06, 0.08, 1)],
-      )
-      imv.maintain_aspect_ratio = True
-      imv.generate_mipmaps = False
-      self.spec_imageviews.append(imv)
-
-    ############################################
-    # Diffuse tab: DynaGrid showing all mip levels
-    ############################################
-
-    self.diff_grid = self.tabs.makeChild(
-      uiclass=lev2.ui.DynaGrid,
-      args=["Diffuse"],
-    )
-    self.diff_grid.margin = 4
-
-    # Pre-create up to 16 ImageView slots for diffuse mips
-    for i in range(16):
-      imv = self.diff_grid.makeChild(
-        uiclass=lev2.ui.ImageView,
-        args=[f"diff_{i}", vec4(0.06, 0.06, 0.08, 1)],
-      )
-      imv.maintain_aspect_ratio = True
-      imv.generate_mipmaps = False
-      self.diff_imageviews.append(imv)
-
-    self.tabs.setActiveTab(0)
+    # All tabs created dynamically in _onGpuInit after XIR is loaded
 
   ##############################################
 
@@ -143,15 +102,41 @@ class XIRViewer(ComponentizedApplication):
       print(f"    [{i}] {img.width}x{img.height}  nc={img.numcomponents}  bpc={img.bytesPerChannel}")
     print("=" * 60)
 
-    # Populate specular tabs
+    # Create specular tabs from XIR data
     for i, img in enumerate(self.specular_images):
-      if i < len(self.spec_imageviews):
-        self.spec_imageviews[i].setImage(img)
+      r = self.roughness_values[i] if i < len(self.roughness_values) else 0.0
+      grid = self.tabs.makeChild(
+        uiclass=lev2.ui.DynaGrid,
+        args=[f"S{i} r={r:.4f}"],
+      )
+      grid.margin = 4
+      imv = grid.makeChild(
+        uiclass=lev2.ui.ImageView,
+        args=[f"spec_{i}", vec4(0.06, 0.06, 0.08, 1)],
+      )
+      imv.maintain_aspect_ratio = True
+      imv.generate_mipmaps = False
+      imv.setImage(img)
+      self.spec_imageviews.append(imv)
 
-    # Populate diffuse mips
-    for i, img in enumerate(self.diffuse_images):
-      if i < len(self.diff_imageviews):
-        self.diff_imageviews[i].setImage(img)
+    # Create diffuse tab and mip ImageViews if diffuse data is present
+    if self.diffuse_images:
+      diff_grid = self.tabs.makeChild(
+        uiclass=lev2.ui.DynaGrid,
+        args=["Diffuse"],
+      )
+      diff_grid.margin = 4
+      for i, img in enumerate(self.diffuse_images):
+        imv = diff_grid.makeChild(
+          uiclass=lev2.ui.ImageView,
+          args=[f"diff_{i}", vec4(0.06, 0.06, 0.08, 1)],
+        )
+        imv.maintain_aspect_ratio = True
+        imv.generate_mipmaps = False
+        imv.setImage(img)
+        self.diff_imageviews.append(imv)
+
+    self.tabs.setActiveTab(0)
 
 ###############################################################################
 

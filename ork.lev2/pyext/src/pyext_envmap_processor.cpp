@@ -86,12 +86,15 @@ void pyinit_radiance_maps_processor(py::module& module_lev2) {
             auto img = specular_images[i].cast<image_ptr_t>();
             specular_datablocks.push_back(_imagesToXTXMipchainDataBlock({img}));
           }
-          // Package all diffuse mip levels as one multi-level XTX mipchain
-          std::vector<image_ptr_t> diff_imgs;
-          for (auto& item : diffuse_images) {
-            diff_imgs.push_back(item.cast<image_ptr_t>());
+          // Package all diffuse mip levels as one multi-level XTX mipchain (if any)
+          datablock_ptr_t diffuse_datablock;
+          if (diffuse_images.size() > 0) {
+            std::vector<image_ptr_t> diff_imgs;
+            for (auto& item : diffuse_images) {
+              diff_imgs.push_back(item.cast<image_ptr_t>());
+            }
+            diffuse_datablock = _imagesToXTXMipchainDataBlock(diff_imgs);
           }
-          auto diffuse_datablock = _imagesToXTXMipchainDataBlock(diff_imgs);
           // Collect roughness floats
           std::vector<float> roughness_vals;
           for (auto& item : roughness_values) {
@@ -130,14 +133,16 @@ void pyinit_radiance_maps_processor(py::module& module_lev2) {
           for (auto& r : xir_data._roughness_values) {
             roughness_values.append(r);
           }
-          // Extract diffuse images (all mip levels)
+          // Extract diffuse images (all mip levels) if present
           py::list diffuse_images;
-          CompressedImageMipChain diffuse_mipchain;
-          diffuse_mipchain.readXTX(xir_data._diffuse_data);
-          for (size_t i = 0; i < diffuse_mipchain._levels.size(); i++) {
-            auto image = std::make_shared<Image>();
-            diffuse_mipchain._levels[i].convertToImage(*image);
-            diffuse_images.append(image);
+          if (xir_data._diffuse_data && xir_data._diffuse_data->length() > 0) {
+            CompressedImageMipChain diffuse_mipchain;
+            diffuse_mipchain.readXTX(xir_data._diffuse_data);
+            for (size_t i = 0; i < diffuse_mipchain._levels.size(); i++) {
+              auto image = std::make_shared<Image>();
+              diffuse_mipchain._levels[i].convertToImage(*image);
+              diffuse_images.append(image);
+            }
           }
           // Build result dict
           py::dict result;
