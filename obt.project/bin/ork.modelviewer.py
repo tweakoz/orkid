@@ -278,11 +278,11 @@ class SceneGraphApp(ComponentizedApplication):
     ###################################
     # post fx nodes
     ###################################
-    acesNode = PostFxNodeACES()
-    acesNode.exposure = 1.0
-    acesNode.gpuInit(ctx,8,8)
-    acesNode.addToSceneVars(sceneparams,"PostFxChain")
-    self.aces_node = acesNode
+    #acesNode = PostFxNodeACES()
+    #acesNode.exposure = 1.0
+    #acesNode.gpuInit(ctx,8,8)
+    #acesNode.addToSceneVars(sceneparams,"PostFxChain")
+    #self.aces_node = acesNode
 
     postNode = PostFxNodeHSVG()
     postNode.hue = 0.0
