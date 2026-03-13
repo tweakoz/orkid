@@ -40,6 +40,8 @@ uniform_block ub_frg_FFX (descriptor_set 0) {
   float Saturation;
   float Value;
   float Gamma;
+
+  float Exposure;
 }
 ///////////////////////////////////////////////////////////////
 sampler_set samplers_all (descriptor_set 0) {
@@ -595,5 +597,35 @@ technique frameeffect_debugnormals {
     fragment_shader = ps_uitextured;
     state_block     = sb_default_ffx;
   }
+}
+///////////////////////////////////////////////////////////////
+// ACES Filmic Tone Mapping
+// Based on the Narkowicz 2015 fit of the ACES curve
+///////////////////////////////////////////////////////////////
+libblock lib_aces {
+  vec3 aces_filmic(vec3 x) {
+    float a = 2.51;
+    float b = 0.03;
+    float c = 2.43;
+    float d = 0.59;
+    float e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_aces //
+  : fif_FFX              //
+  : lib_aces             //
+  : ub_frg_FFX           //
+  : samplers_all {       //
+  vec3 hdr = texture(MrtMap0, frg_uv).xyz;
+  vec3 exposed = hdr * Exposure;
+  vec3 mapped = aces_filmic(exposed);
+  out_clr = vec4(mapped, 1.0);
+}
+///////////////////////////////////////////////////////////////
+technique framefx_aces {
+  fxconfig = fxcfg_default;
+  vf_pass = { vs_vtxcolor, ps_aces, sb_default_ffx }
 }
 

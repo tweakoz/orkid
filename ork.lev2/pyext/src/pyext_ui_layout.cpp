@@ -446,8 +446,8 @@ void pyinit_ui_layout(py::module& uimodule) {
                 container->addChild(new_widget, false); // this will retain the widget
 
                 // Now that widget is assigned and added, update the layouts
-                printf("=== DUMP in binding BEFORE updateAll ===\n");
-                lgrp->dumpLayoutHierarchy();
+                //printf("=== DUMP in binding BEFORE updateAll ===\n");
+                //lgrp->dumpLayoutHierarchy();
                 new_layout->updateAll();
 
                 // Return the layout item with the new widget

@@ -36,24 +36,26 @@ void Image::resizedOf(const Image& inp, int w, int h) {
   using enum EBufferFormat;
   switch( inp._format ){
     case R8:{
-      // bicubic interpolation
+      // bilinear interpolation
       for (size_t y = 0; y<h; y++) {
         for (size_t x = 0; x<w; x++) {
           double u = double(x) / double(w);
           double v = double(y) / double(h);
           double x0 = u * double(original_width);
           double y0 = v * double(original_height);
-          int x0i = int(x0);
-          int y0i = int(y0);
+          int x0i = std::min(int(x0), original_width - 1);
+          int y0i = std::min(int(y0), original_height - 1);
+          int x1i = std::min(x0i + 1, original_width - 1);
+          int y1i = std::min(y0i + 1, original_height - 1);
           double x0f = x0 - double(x0i);
           double y0f = y0 - double(y0i);
           double x1f = 1.0 - x0f;
           double y1f = 1.0 - y0f;
           auto pixel = this->pixel8(x, y);
           auto pixel00 = inp.pixel8(x0i, y0i);
-          auto pixel01 = inp.pixel8(x0i, y0i+1);
-          auto pixel10 = inp.pixel8(x0i+1, y0i);
-          auto pixel11 = inp.pixel8(x0i+1, y0i+1);
+          auto pixel01 = inp.pixel8(x0i, y1i);
+          auto pixel10 = inp.pixel8(x1i, y0i);
+          auto pixel11 = inp.pixel8(x1i, y1i);
           for (size_t c = 0; c < original_numcomponents; c++) {
             double val = 0.0;
             val += x1f * y1f * double(pixel00[c]);
@@ -77,25 +79,29 @@ void Image::resizedOf(const Image& inp, int w, int h) {
       break;
     }
     case BGR8:
-    case RGB8:{
-      // bicubic interpolation
+    case RGB8:
+    case BGRA8:
+    case RGBA8:{
+      // bilinear interpolation
       for (size_t y = 0; y<h; y++) {
         for (size_t x = 0; x<w; x++) {
           double u = double(x) / double(w);
           double v = double(y) / double(h);
           double x0 = u * double(original_width);
           double y0 = v * double(original_height);
-          int x0i = int(x0);
-          int y0i = int(y0);
+          int x0i = std::min(int(x0), original_width - 1);
+          int y0i = std::min(int(y0), original_height - 1);
+          int x1i = std::min(x0i + 1, original_width - 1);
+          int y1i = std::min(y0i + 1, original_height - 1);
           double x0f = x0 - double(x0i);
           double y0f = y0 - double(y0i);
           double x1f = 1.0 - x0f;
           double y1f = 1.0 - y0f;
           auto pixel = this->pixel8(x, y);
           auto pixel00 = inp.pixel8(x0i, y0i);
-          auto pixel01 = inp.pixel8(x0i, y0i+1);
-          auto pixel10 = inp.pixel8(x0i+1, y0i);
-          auto pixel11 = inp.pixel8(x0i+1, y0i+1);
+          auto pixel01 = inp.pixel8(x0i, y1i);
+          auto pixel10 = inp.pixel8(x1i, y0i);
+          auto pixel11 = inp.pixel8(x1i, y1i);
           for (size_t c = 0; c < original_numcomponents; c++) {
             double val = 0.0;
             val += x1f * y1f * double(pixel00[c]);
@@ -108,10 +114,6 @@ void Image::resizedOf(const Image& inp, int w, int h) {
       }
       break;
     }
-    case RGBA8:{
-      OrkAssert(false);
-      break;
-    }
     case RGB16:{
       OrkAssert(false);
       break;
@@ -120,10 +122,7 @@ void Image::resizedOf(const Image& inp, int w, int h) {
       OrkAssert(false);
       break;
     }
-    case RGB32F:{
-      OrkAssert(false);
-      break;
-    }
+    case RGB32F:
     case RGBA32F:{
       for (size_t y = 0; y<h; y++) {
         for (size_t x = 0; x<w; x++) {

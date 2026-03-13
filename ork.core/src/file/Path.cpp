@@ -447,7 +447,7 @@ Path Path::resolveRelativeTo(const Path& basePath) const {
   //printf("  this->isRelative()=%d basePath.isAbsolute()=%d\n", isRelative(), basePath.isAbsolute());
   
   if (!basePath.isAbsolute()) {
-    printf("ERROR: basePath is not absolute!\n");
+    //printf("ERROR: basePath is not absolute!\n");
     return *this;  // Return this path unchanged if basePath is not absolute
   }
   

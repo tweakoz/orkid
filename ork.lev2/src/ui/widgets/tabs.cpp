@@ -71,11 +71,13 @@ void TabWidget::_onChildrenChanged() {
 void TabWidget::_ensureSorted() {
   if (!_needs_layout_recalc) return;
 
-  // Sort _children using natural sort order (1, 2, 10 instead of 1, 10, 2)
-  std::sort(_children.begin(), _children.end(),
-    [](const widget_ptr_t& a, const widget_ptr_t& b) {
-      return naturalSortCompare(a->_name, b->_name);
-    });
+  if (_sort_tabs) {
+    // Sort _children using natural sort order (1, 2, 10 instead of 1, 10, 2)
+    std::sort(_children.begin(), _children.end(),
+      [](const widget_ptr_t& a, const widget_ptr_t& b) {
+        return naturalSortCompare(a->_name, b->_name);
+      });
+  }
 
   // Active tab pointer is still valid - no adjustment needed!
 }

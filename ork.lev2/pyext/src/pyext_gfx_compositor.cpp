@@ -13,6 +13,7 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeDecompBlur.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeHSVG.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeACES.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeUser.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
 
@@ -189,6 +190,21 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
             return fxs.c_str();
           });
   type_codec->registerStdCodec<postnode_hsvg_ptr_t>(dchsvgpostnode_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto dcacespostnode_type = //
+      py::class_<PostFxNodeACES, PostCompositingNode, postnode_aces_ptr_t>(module_lev2, "PostFxNodeACES")
+          .def(py::init<>())
+          .def("gpuInit", [](postnode_aces_ptr_t dcnode, ctx_t ctx, int w, int h) { dcnode->gpuInit(ctx.get(), w, h); })
+          .def_property(
+              "exposure",
+              [](postnode_aces_ptr_t dcnode) -> float { return dcnode->_exposure; },
+              [](postnode_aces_ptr_t dcnode, float exposure) { dcnode->_exposure = exposure; })
+          .def("__repr__", [](postnode_aces_ptr_t d) -> std::string {
+            fxstring<64> fxs;
+            fxs.format("PostFxNodeACES(%p)", d.get());
+            return fxs.c_str();
+          });
+  type_codec->registerStdCodec<postnode_aces_ptr_t>(dcacespostnode_type);
   /////////////////////////////////////////////////////////////////////////////////
   // materialinst params proxy
   /////////////////////////////////////////////////////////////////////////////////

@@ -1010,6 +1010,14 @@ void pyinit_ui(py::module& module_lev2) {
               },
               [](ui::tabwidget_ptr_t tabs, lev2::font_ptr_t f) { //
                 tabs->_tab_font = f;
+              })
+          .def_property(
+              "sort_tabs",
+              [](ui::tabwidget_ptr_t tabs) -> bool { //
+                return tabs->_sort_tabs;
+              },
+              [](ui::tabwidget_ptr_t tabs, bool b) { //
+                tabs->setSortTabs(b);
               });
   type_codec->registerStdCodec<ui::tabwidget_ptr_t>(tabsw_type);
   /////////////////////////////////////////////////////////////////////////////////

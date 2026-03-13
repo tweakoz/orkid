@@ -1,0 +1,440 @@
+////////////////////////////////////////
+// Compute-based environment map filtering
+// Progressive per-pixel accumulation via single SSBO
+//
+// SSBO layout (single flat vec4 array):
+//   [0]                          = vec4(img_w, img_h, src_w, src_h)
+//   [1]                          = vec4(roughness, num_samples, sample_offset, total_samples)
+//   [2]                          = vec4(frame_seed, 0, 0, 0)
+//   [3 .. 3+SRC_PIXELS-1]       = source image RGBA (read-only)
+//   [ACCUM_OFFSET .. end]        = per-pixel accumulation (R*w, G*w, B*w, w)
+//
+// Template params (substituted by Python before compilation):
+//   $$$SRC_PIXELS    = src_w * src_h
+//   $$$ACCUM_OFFSET  = 3 + SRC_PIXELS
+//   $$$TOTAL_SIZE    = 3 + SRC_PIXELS + max_accum_pixels
+////////////////////////////////////////
+import "orkshader://mathtools.i2";
+import "orkshader://brdftools.i2";
+////////////////////////////////////////
+fxconfig fxcfg_default {}
+////////////////////////////////////////
+storage_interface sif_envmap (descriptor_set 0) {
+  buffer layout(std430) envmap_data {
+    vec4 data[$$$TOTAL_SIZE];
+  };
+}
+////////////////////////////////////////
+// Equirectangular mapping + bilinear SSBO sampling
+////////////////////////////////////////
+libblock lib_envmap_compute : lib_math {
+
+  // PCG-style integer hash — much better distribution than fract(sin(...))
+  uint pcg_hash(uint x) {
+    uint state = x * 747796405u + 2891336453u;
+    uint word  = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+    return (word >> 22u) ^ word;
+  }
+
+  // Hash a 2D pixel coordinate to a float in [0,1)
+  float hash_pixel(int x, int y, uint salt) {
+    uint h = pcg_hash(uint(x) + pcg_hash(uint(y) + pcg_hash(salt)));
+    return float(h) / 4294967296.0;
+  }
+
+  // equirectangular UV -> world normal
+  vec3 envcomp_uv2normal(vec2 uv) {
+    float phi   = uv.x * PI2 - PI;
+    float theta = uv.y * PI;
+    float sinT  = sin(theta);
+    float cosT  = cos(theta);
+    vec3 n = vec3(sinT * cos(phi), sinT * sin(phi), cosT);
+    return vec3(n.x, n.z, n.y);
+  }
+
+  // world normal -> equirectangular UV (y/z swizzle, for specular path)
+  vec2 envcomp_normal2uv(vec3 normal) {
+    vec3 n  = normal.xzy;
+    vec2 s  = normalToSpherical(n) * INV_PI;
+    float u = (s.x + 1.0) * 0.5;
+    float v = s.y;
+    return vec2(u, v);
+  }
+
+  // world normal -> equirectangular UV (no swizzle, for diffuse path)
+  vec2 envcomp_normal2uv_diff(vec3 normal) {
+    vec3 n  = normal.xyz;
+    vec2 s  = normalToSpherical(n) * INV_PI;
+    float u = (s.x + 1.0) * 0.5;
+    float v = s.y;
+    return vec2(u, v);
+  }
+
+  // point sample from source region of SSBO (clamped)
+  vec4 envcomp_samplePoint(int src_w, int src_h, int x, int y) {
+    x = clamp(x, 0, src_w - 1);
+    y = clamp(y, 0, src_h - 1);
+    return data[3 + y * src_w + x];
+  }
+
+  // bilinear sample from source region of SSBO
+  vec3 envcomp_sampleBilinear(int src_w, int src_h, vec2 uv, bool wrap_u) {
+    float fx = uv.x * float(src_w) - 0.5;
+    float fy = uv.y * float(src_h) - 0.5;
+
+    int x0 = int(floor(fx));
+    int y0 = int(floor(fy));
+    int x1 = x0 + 1;
+    int y1 = y0 + 1;
+
+    float fracx = fx - float(x0);
+    float fracy = fy - float(y0);
+
+    if (wrap_u) {
+      x0 = ((x0 % src_w) + src_w) % src_w;
+      x1 = ((x1 % src_w) + src_w) % src_w;
+    }
+
+    vec4 s00 = envcomp_samplePoint(src_w, src_h, x0, y0);
+    vec4 s10 = envcomp_samplePoint(src_w, src_h, x1, y0);
+    vec4 s01 = envcomp_samplePoint(src_w, src_h, x0, y1);
+    vec4 s11 = envcomp_samplePoint(src_w, src_h, x1, y1);
+
+    vec4 r = mix(mix(s00, s10, fracx), mix(s01, s11, fracx), fracy);
+    return r.rgb;
+  }
+}
+////////////////////////////////////////
+// Compute interface
+////////////////////////////////////////
+compute_interface iface_compute_filter {
+  storage { sif_envmap }
+  inputs {
+    layout(local_size_x = 64, local_size_y = 1, local_size_z = 1);
+  }
+}
+////////////////////////////////////////
+// cs_clear - zero the accumulation region
+////////////////////////////////////////
+compute_shader cs_clear : iface_compute_filter : lib_envmap_compute {
+  int index = int(gl_GlobalInvocationID.x);
+
+  int img_w = int(data[0].x);
+  int img_h = int(data[0].y);
+  int num_pixels = img_w * img_h;
+
+  if (index >= num_pixels) return;
+
+  data[$$$ACCUM_OFFSET + index] = vec4(0.0, 0.0, 0.0, 0.0);
+}
+////////////////////////////////////////
+// cs_filter_specular_equi
+////////////////////////////////////////
+compute_shader cs_filter_specular_equi
+  : iface_compute_filter
+  : lib_envmap_compute
+  : lib_brdf {
+
+  int index = int(gl_GlobalInvocationID.x);
+
+  vec4 p0 = data[0];
+  vec4 p1 = data[1];
+  vec4 p2 = data[2];
+
+  int img_w   = int(p0.x);
+  int img_h   = int(p0.y);
+  int src_w   = int(p0.z);
+  int src_h   = int(p0.w);
+  int num_pixels = img_w * img_h;
+
+  if (index >= num_pixels) return;
+
+  float roughness     = p1.x;
+  int num_samples     = int(p1.y);
+  int sample_offset   = int(p1.z);
+  int total_samples   = int(p1.w);
+
+  int px = index % img_w;
+  int py = index / img_w;
+
+  vec2 fcoord = vec2(
+    float(px) / float(img_w - 1),
+    float(py) / float(img_h - 1)
+  );
+
+  vec3 n = envcomp_uv2normal(fcoord);
+  vec3 v = n;
+
+  // Per-pixel Cranley-Patterson rotation (PCG hash for uniform distribution)
+  vec2 cpOffset = vec2(hash_pixel(px, py, 0u), hash_pixel(px, py, 1u));
+
+  vec3 o = vec3(0.0);
+  float w = 0.0;
+
+  for (int i = 0; i < num_samples; i++) {
+    uint gi = uint(sample_offset + i);
+    vec2 e  = fract(hammersley(gi, uint(total_samples)) + cpOffset);
+
+    vec3 h      = importanceSampleGGXN(e, n, roughness);
+    vec3 l      = normalize(2.0 * dot(v, h) * h - v);
+    float ndotl = satdot(n, l);
+
+    if (ndotl > 0.0) {
+      vec2 luv = envcomp_normal2uv(l);
+      luv.y = clamp(luv.y, 0.0, 1.0);
+
+      vec3 sampleColor = envcomp_sampleBilinear(src_w, src_h, luv, true);
+
+      o += sampleColor * ndotl;
+      w += ndotl;
+    }
+  }
+
+  data[$$$ACCUM_OFFSET + index] += vec4(o, w);
+}
+////////////////////////////////////////
+// cs_filter_specular_std
+////////////////////////////////////////
+compute_shader cs_filter_specular_std
+  : iface_compute_filter
+  : lib_envmap_compute
+  : lib_brdf {
+
+  int index = int(gl_GlobalInvocationID.x);
+
+  vec4 p0 = data[0];
+  vec4 p1 = data[1];
+
+  int img_w = int(p0.x);
+  int img_h = int(p0.y);
+  int src_w = int(p0.z);
+  int src_h = int(p0.w);
+  int num_pixels = img_w * img_h;
+
+  if (index >= num_pixels) return;
+
+  float roughness   = p1.x;
+  int num_samples   = int(p1.y);
+  int sample_offset = int(p1.z);
+  int total_samples = int(p1.w);
+
+  int px = index % img_w;
+  int py = index / img_w;
+
+  vec2 fcoord = vec2(
+    float(px) / float(img_w - 1),
+    float(py) / float(img_h - 1)
+  );
+
+  vec2 cpOffset = vec2(hash_pixel(px, py, 0u), hash_pixel(px, py, 1u));
+
+  vec3 o = vec3(0.0);
+  float w = 0.0;
+
+  for (int i = 0; i < num_samples; i++) {
+    uint gi = uint(sample_offset + i);
+    vec2 e  = fract(hammersley(gi, uint(total_samples)) + cpOffset);
+
+    float perturbScale = roughness * 0.5;
+    uint si = uint(sample_offset + i);
+    vec2 perturb = vec2(hash_pixel(px, py, si * 2u + 100u) * perturbScale,
+                        hash_pixel(px, py, si * 2u + 101u) * perturbScale);
+    vec2 luv     = clamp(fcoord + perturb, 0.0, 1.0);
+
+    vec3 sampleColor = envcomp_sampleBilinear(src_w, src_h, luv, false);
+    o += sampleColor;
+    w += 1.0;
+  }
+
+  data[$$$ACCUM_OFFSET + index] += vec4(o, w);
+}
+////////////////////////////////////////
+// cs_filter_diffuse_equi
+// Cosine-weighted hemisphere sampling for irradiance map
+////////////////////////////////////////
+compute_shader cs_filter_diffuse_equi
+  : iface_compute_filter
+  : lib_envmap_compute
+  : lib_brdf {
+
+  int index = int(gl_GlobalInvocationID.x);
+
+  vec4 p0 = data[0];
+  vec4 p1 = data[1];
+
+  int img_w = int(p0.x);
+  int img_h = int(p0.y);
+  int src_w = int(p0.z);
+  int src_h = int(p0.w);
+  int num_pixels = img_w * img_h;
+
+  if (index >= num_pixels) return;
+
+  int num_samples   = int(p1.y);
+  int sample_offset = int(p1.z);
+  int total_samples = int(p1.w);
+
+  int px = index % img_w;
+  int py = index / img_w;
+
+  vec2 uv = vec2(
+    float(px) / float(img_w - 1),
+    float(py) / float(img_h - 1)
+  );
+
+  // Same coordinate convention as reference diffuse filter
+  vec3 n     = envcomp_uv2normal(uv * vec2(1.0, -1.0));
+  n          = n * vec3(-1.0, -1.0, 1.0);
+
+  // Robust TBN construction
+  vec3 up      = abs(n.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+  vec3 tangent = normalize(cross(up, n));
+  vec3 bitan   = cross(n, tangent);
+
+  vec2 cpOffset = vec2(hash_pixel(px, py, 0u), hash_pixel(px, py, 1u));
+
+  vec3 o = vec3(0.0);
+  float w = 0.0;
+
+  for (int i = 0; i < num_samples; i++) {
+    uint gi = uint(sample_offset + i);
+    vec2 e  = fract(hammersley(gi, uint(total_samples)) + cpOffset);
+
+    // Cosine-weighted hemisphere sampling
+    // PDF = cos(theta) / PI, which cancels the cos(theta) in the
+    // irradiance integrand, so we just average sample values.
+    float phi      = PI2 * e.x;
+    float cosTheta = sqrt(1.0 - e.y);
+    float sinTheta = sqrt(e.y);
+
+    vec3 l = tangent   * (sinTheta * cos(phi))
+           + bitan     * (sinTheta * sin(phi))
+           + n         * cosTheta;
+
+    vec2 luv = envcomp_normal2uv_diff(l);
+    luv.y = clamp(luv.y, 0.0, 1.0);
+
+    o += envcomp_sampleBilinear(src_w, src_h, luv, true);
+    w += 1.0;
+  }
+
+  data[$$$ACCUM_OFFSET + index] += vec4(o, w);
+}
+////////////////////////////////////////
+// cs_filter_diffuse_std
+////////////////////////////////////////
+compute_shader cs_filter_diffuse_std
+  : iface_compute_filter
+  : lib_envmap_compute
+  : lib_brdf {
+
+  int index = int(gl_GlobalInvocationID.x);
+
+  vec4 p0 = data[0];
+  vec4 p1 = data[1];
+
+  int img_w = int(p0.x);
+  int img_h = int(p0.y);
+  int src_w = int(p0.z);
+  int src_h = int(p0.w);
+  int num_pixels = img_w * img_h;
+
+  if (index >= num_pixels) return;
+
+  int num_samples   = int(p1.y);
+  int sample_offset = int(p1.z);
+  int total_samples = int(p1.w);
+
+  int px = index % img_w;
+  int py = index / img_w;
+
+  vec2 fcoord = vec2(
+    float(px) / float(img_w - 1),
+    float(py) / float(img_h - 1)
+  );
+
+  vec2 cpOffset = vec2(hash_pixel(px, py, 0u), hash_pixel(px, py, 1u));
+
+  vec3 o = vec3(0.0);
+  float w = 0.0;
+
+  for (int i = 0; i < num_samples; i++) {
+    uint gi = uint(sample_offset + i);
+    vec2 e  = fract(hammersley(gi, uint(total_samples)) + cpOffset);
+
+    float perturbScale = 0.5;
+    uint si = uint(sample_offset + i);
+    vec2 perturb = vec2(hash_pixel(px, py, si * 2u + 100u) * perturbScale,
+                        hash_pixel(px, py, si * 2u + 101u) * perturbScale);
+    vec2 luv     = clamp(fcoord + perturb, 0.0, 1.0);
+
+    vec3 sampleColor = envcomp_sampleBilinear(src_w, src_h, luv, false);
+    o += sampleColor;
+    w += 1.0;
+  }
+
+  data[$$$ACCUM_OFFSET + index] += vec4(o, w);
+}
+////////////////////////////////////////
+// Display shader - reads accum region, normalizes, outputs
+////////////////////////////////////////
+uniform_set ub_display {
+  mat4 mvp;
+  float img_width;
+  float img_height;
+}
+////////////////////////////////////////
+vertex_interface iface_vdisplay : ub_display {
+  inputs {
+    vec4 position : POSITION;
+    vec4 uv0 : TEXCOORD0;
+  }
+  outputs {
+    vec4 frg_uv0;
+  }
+}
+////////////////////////////////////////
+fragment_interface iface_fdisplay
+  : iface_vdisplay
+  : ub_display
+  : sif_envmap {
+  outputs {
+    layout(location = 0) vec4 out_color;
+  }
+}
+////////////////////////////////////////
+vertex_shader vs_display : iface_vdisplay {
+  gl_Position = mvp * position;
+  frg_uv0 = uv0;
+}
+////////////////////////////////////////
+fragment_shader fs_display : iface_fdisplay {
+  int iw = int(img_width);
+  int ih = int(img_height);
+
+  int px = clamp(int(frg_uv0.x * img_width), 0, iw - 1);
+  int py = clamp(int(frg_uv0.y * img_height), 0, ih - 1);
+  int idx = py * iw + px;
+
+  vec4 a = data[$$$ACCUM_OFFSET + idx];
+
+  if (a.w > 0.0) {
+    out_color = vec4(a.rgb / a.w, 1.0);
+  } else {
+    out_color = vec4(0.0, 0.0, 0.0, 1.0);
+  }
+}
+////////////////////////////////////////
+state_block sb_display : default {
+  CullTest = OFF;
+  DepthTest = OFF;
+}
+////////////////////////////////////////
+technique tek_display {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_display;
+    fragment_shader = fs_display;
+    state_block     = sb_display;
+  }
+}

@@ -32,10 +32,10 @@ def _float_to_half_array(arr_f32):
     raw = arr_f32.astype(np.float32).view(np.uint32)
     sign = ((raw >> 16) & 0x8000).astype(np.uint16)
     exp32 = ((raw >> 23) & 0xFF).astype(np.int32) - 127 + 15
-    mant = (raw & 0x007FFFFF).astype(np.uint16)
+    mant = ((raw & 0x007FFFFF) >> 13).astype(np.uint16)
     result = sign.copy()
     valid = (exp32 > 0) & (exp32 < 31)
-    result[valid] |= (exp32[valid].astype(np.uint16) << 10) | (mant[valid] >> 13)
+    result[valid] |= (exp32[valid].astype(np.uint16) << 10) | mant[valid]
     overflow = exp32 >= 31
     result[overflow] = sign[overflow] | 0x7C00
     return result
