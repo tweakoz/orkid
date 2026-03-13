@@ -304,8 +304,8 @@ void pyinit_gfx_material(py::module& module_lev2) {
                 else if( py::isinstance<Texture>(inp_value) ){
                   pipeline->bindParam(param.get(),py::cast<texture_ptr_t>(inp_value));
                 }
-                else if( py::isinstance<Texture>(inp_value) ){
-                  pipeline->bindParam(param.get(),py::cast<texture_ptr_t>(inp_value));
+                else if( py::isinstance<TextureArray>(inp_value) ){
+                  pipeline->bindParam(param.get(),py::cast<texturearray_ptr_t>(inp_value));
                 }
                 else if( py::hasattr(inp_value, "__call__")){
                   auto holdname = FormatString("%s_held",param->_name.c_str());
