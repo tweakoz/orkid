@@ -271,7 +271,9 @@ def process_envmap(source_path, output_path, ctx, ezapp,
                    roughness_values=None,
                    skip_diffuse=False,
                    scale=1.0,
-                   clamp=16.0):
+                   clamp=16.0,
+                   specular_samples=None,
+                   diffuse_samples=None):
     """
     Synchronously filter an environment map and write XIR.
 
@@ -288,6 +290,9 @@ def process_envmap(source_path, output_path, ctx, ezapp,
     source_path = str(source_path)
     output_path = str(output_path)
     total_start = time.time()
+
+    spec_samples = specular_samples if specular_samples is not None else SPECULAR_SAMPLES
+    diff_samples = diffuse_samples if diffuse_samples is not None else DIFFUSE_SAMPLES
 
     ext = os.path.splitext(source_path)[1].lower()
     is_hdr = ext in (".exr", ".hdr")
@@ -350,7 +355,7 @@ def process_envmap(source_path, output_path, ctx, ezapp,
         step_start = time.time()
         cap_img = _filter_pass(
             ctx, ezapp, spec_mtl, spec_tek, tex,
-            roughness, tex_w, tex_h, SPECULAR_SAMPLES, cap_fmt_str,
+            roughness, tex_w, tex_h, spec_samples, cap_fmt_str,
             progress_prefix=f"spec[{i+1}/{num_levels}]")
 
         specular_images.append(cap_img)
@@ -388,7 +393,7 @@ def process_envmap(source_path, output_path, ctx, ezapp,
             step_start = time.time()
             cap_img = _filter_pass(
                 ctx, ezapp, diff_mtl, diff_tek, tex,
-                1.0, dw, dh, DIFFUSE_SAMPLES, cap_fmt_str,
+                1.0, dw, dh, diff_samples, cap_fmt_str,
                 progress_prefix=f"diff[{mip+1}/{total_diff_mips}]")
 
             diffuse_images.append(cap_img)
