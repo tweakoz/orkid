@@ -5,7 +5,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 
-static auto logchan_prof = logger()->configureChannel("PROF", fvec3(0.1, 0.5, 0.9), true);
+logchannel_ptr_t logchan_prof = logger()->configureChannel("PROF", fvec3(0.1, 0.5, 0.9), true);
 
 // #define PROF_LOG(...) do { printf(__VA_ARGS__); fflush(stdout); } while(0)
 #define PROF_LOG(...) ((void)0)

@@ -742,12 +742,14 @@ void pyinit_ui(py::module& module_lev2) {
   uimodule.def(
       "profiler_add_event",
       [](const std::string& channel_name, const std::string& series_name) {
+#ifdef ORK_PROFILER_ENABLE
         // This is doing a fully lookup through the shared_mutex every call.
         // If we ever need a way to call this hundrends of times a frame this needs to change.
         auto* es = Profiler::acquireSeries<EventProfilerSeries>(
             channel_name.c_str(), CrcString(channel_name.c_str()).hashed(),
             series_name.c_str(), CrcString(series_name.c_str()).hashed());
         es->addEvent();
+#endif
       },
       py::arg("channel_name"),
       py::arg("series_name"));
@@ -755,10 +757,12 @@ void pyinit_ui(py::module& module_lev2) {
   uimodule.def(
       "profiler_sample_begin",
       [](const std::string& channel_name, const std::string& series_name) {
+#ifdef ORK_PROFILER_ENABLE
         auto* ss = Profiler::acquireSeries<SampleProfilerSeries>(
             channel_name.c_str(), CrcString(channel_name.c_str()).hashed(),
             series_name.c_str(), CrcString(series_name.c_str()).hashed());
         ss->sampleBegin();
+#endif
       },
       py::arg("channel_name"),
       py::arg("series_name"));
@@ -766,10 +770,12 @@ void pyinit_ui(py::module& module_lev2) {
   uimodule.def(
       "profiler_sample_end",
       [](const std::string& channel_name, const std::string& series_name) {
+#ifdef ORK_PROFILER_ENABLE
         auto* ss = Profiler::acquireSeries<SampleProfilerSeries>(
             channel_name.c_str(), CrcString(channel_name.c_str()).hashed(),
             series_name.c_str(), CrcString(series_name.c_str()).hashed());
         ss->sampleEnd();
+#endif
       },
       py::arg("channel_name"),
       py::arg("series_name"));
