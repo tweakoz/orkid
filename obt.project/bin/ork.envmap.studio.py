@@ -84,7 +84,7 @@ vertex_shader vs_prev : iface_vprev {
 }
 fragment_shader fs_prev : iface_fprev {
   vec4 src = texture(ColorMap, frg_uv0.xy);
-  vec3 c = clamp_val > 0.0 ? min(src.rgb, vec3(clamp_val)) : src.rgb;
+  vec3 c = src.rgb;
   c *= gain;
   float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
   c = mix(vec3(lum), c, saturation);
@@ -98,6 +98,7 @@ fragment_shader fs_prev : iface_fprev {
     c = clamp((c * (a * c + b)) / (c * (ca * c + d) + e), 0.0, 1.0);
   }
   c = pow(max(c, vec3(0.0)), vec3(inv_gamma));
+  if (clamp_val > 0.0) c = min(c, vec3(clamp_val));
   out_color = vec4(c, 1.0);
 }
 state_block sb_prev : default {
@@ -270,14 +271,6 @@ class EnvMapStudio(ComponentizedApplication):
     display_vp.fill = False
     col_display.setChild(display_vp)
 
-    self.clamp_slider = display_vp.makeChild(
-      uiclass=lev2.ui.FloatSlider,
-      args=["Clamp", sli_col, 0.5, 1000.0, 16.0])
-    self.clamp_slider.setRange(0.0, 1000.0)
-    self.clamp_slider.log_mode = True
-    self.clamp_slider.update_on_drag = True
-    self.clamp_slider.onValueChanged = lambda w: self._set_and_save('clamp_val', w.value)
-
     self.gain_slider = display_vp.makeChild(
       uiclass=lev2.ui.FloatSlider,
       args=["Gain", sli_col, 0.01, 10.0, 1.0])
@@ -285,13 +278,6 @@ class EnvMapStudio(ComponentizedApplication):
     self.gain_slider.log_mode = True
     self.gain_slider.update_on_drag = True
     self.gain_slider.onValueChanged = lambda w: self._set_and_save('gain_val', w.value)
-
-    self.gamma_slider = display_vp.makeChild(
-      uiclass=lev2.ui.FloatSlider,
-      args=["Gamma", sli_col, 0.1, 3.0, 2.2])
-    self.gamma_slider.setRange(0.1, 3.0)
-    self.gamma_slider.update_on_drag = True
-    self.gamma_slider.onValueChanged = lambda w: self._set_and_save('gamma_val', w.value)
 
     self.sat_slider = display_vp.makeChild(
       uiclass=lev2.ui.FloatSlider,
@@ -316,6 +302,21 @@ class EnvMapStudio(ComponentizedApplication):
     self.aces_exposure_slider.log_mode = True
     self.aces_exposure_slider.update_on_drag = True
     self.aces_exposure_slider.onValueChanged = lambda w: self._set_and_save('aces_exposure', w.value)
+
+    self.gamma_slider = display_vp.makeChild(
+      uiclass=lev2.ui.FloatSlider,
+      args=["Gamma", sli_col, 0.1, 3.0, 2.2])
+    self.gamma_slider.setRange(0.1, 3.0)
+    self.gamma_slider.update_on_drag = True
+    self.gamma_slider.onValueChanged = lambda w: self._set_and_save('gamma_val', w.value)
+
+    self.clamp_slider = display_vp.makeChild(
+      uiclass=lev2.ui.FloatSlider,
+      args=["Clamp", sli_col, 0.5, 1000.0, 16.0])
+    self.clamp_slider.setRange(0.0, 1000.0)
+    self.clamp_slider.log_mode = True
+    self.clamp_slider.update_on_drag = True
+    self.clamp_slider.onValueChanged = lambda w: self._set_and_save('clamp_val', w.value)
 
     # ── Preview controls ──────────────────────────────────────────────
 
@@ -759,24 +760,24 @@ class EnvMapStudio(ComponentizedApplication):
 
     # Apply transforms matching the preview shader exactly
     rgb = floats[:, :, :3].copy()
-    # 1. Clamp (0 = disabled)
-    if self.clamp_val > 0.0:
-      np.minimum(rgb, self.clamp_val, out=rgb)
-    # 2. Gain
+    # 1. Gain
     rgb *= self.gain_val
-    # 3. Saturation
+    # 2. Saturation
     lum = 0.2126 * rgb[:,:,0] + 0.7152 * rgb[:,:,1] + 0.0722 * rgb[:,:,2]
     for c in range(3):
       rgb[:,:,c] = lum + (rgb[:,:,c] - lum) * self.saturation_val
-    # 4. ACES filmic tonemap (Narkowicz 2015 fit)
+    # 3. ACES filmic tonemap (Narkowicz 2015 fit)
     if self.tonemap_aces:
       rgb *= self.aces_exposure
       a, b, ca, d, e = 2.51, 0.03, 2.43, 0.59, 0.14
       rgb = np.clip((rgb * (a * rgb + b)) / (rgb * (ca * rgb + d) + e), 0.0, 1.0)
-    # 5. Gamma
+    # 4. Gamma
     np.maximum(rgb, 0.0, out=rgb)
     inv_gamma = 1.0 / max(self.gamma_val, 0.01)
     np.power(rgb, inv_gamma, out=rgb)
+    # 5. Clamp (0 = disabled)
+    if self.clamp_val > 0.0:
+      np.minimum(rgb, self.clamp_val, out=rgb)
 
     floats[:, :, :3] = rgb
 
