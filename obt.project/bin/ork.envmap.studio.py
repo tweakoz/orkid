@@ -199,6 +199,7 @@ class EnvMapStudio(ComponentizedApplication):
     self._pv_state = "idle"
     self._pv_quick = False
     self._pv_levels = []      # list of dicts per roughness/diffuse level
+    self._pv_round_robin = 0  # index for round-robin level dispatch
     self._pv_src_w = 0
     self._pv_src_h = 0
     self._pv_start_time = 0
@@ -1092,21 +1093,24 @@ class EnvMapStudio(ComponentizedApplication):
 
     FXI = ctx.FXI
     CI = ctx.CI
-    spd = 4 if self._pv_quick else 16
 
-    levels_active = 0
-    for level in self._pv_levels:
+    # Round-robin: process one level per frame for UI responsiveness
+    attempts = 0
+    while attempts < nlev:
+      idx = self._pv_round_robin % nlev
+      self._pv_round_robin += 1
+      level = self._pv_levels[idx]
+      attempts += 1
+
       if level['done']:
         continue
 
       remaining = level['total_samples'] - level['sample_offset']
-      batch = min(spd, remaining)
-
-      if batch <= 0:
+      if remaining <= 0:
         level['done'] = True
-        elapsed = time.time() - self._pv_start_time
-        #print(f"\n  {level['label']} done ({elapsed:.1f}s)")
         continue
+
+      batch = min(1, remaining)
 
       # Update header[1] with current batch params
       FXI.copyDataIntoShaderStorageBuffer(
@@ -1121,7 +1125,7 @@ class EnvMapStudio(ComponentizedApplication):
       CI.endDispatchPhase()
 
       level['sample_offset'] += batch
-      levels_active += 1
+      break  # only one dispatch per frame
 
     # Progress summary
     total_done = sum(lv['sample_offset'] for lv in self._pv_levels)
