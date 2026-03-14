@@ -233,7 +233,8 @@ void SecondaryWinImpl::_closeWindow() {
     // but defer glfwDestroyWindow to next frame so macOS can
     // deliver the matching mouseUp event first.
     printf("SecondaryWinImpl::_closeWindow: hiding GLFW window %p (%s), destroy deferred\n", (void*)_glfwWindow, _config._title.c_str());
-    // Move offscreen first so any ghost surface can't block clicks
+    // Move offscreen and shrink so any ghost surface can't block clicks
+    glfwSetWindowSize(_glfwWindow, 1, 1);
     glfwSetWindowPos(_glfwWindow, -10000, -10000);
     glfwHideWindow(_glfwWindow);
     _hidden_pending_destroy = true;

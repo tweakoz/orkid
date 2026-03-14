@@ -1263,7 +1263,7 @@ class EnvMapStudio(ComponentizedApplication):
 
     browser_item = root.makeChild(
       uiclass=FilesystemBrowser,
-      args=["open_browser", initial_dir, "", vec3(0.1, 0.1, 0.1), "load"],
+      args=["open_browser", initial_dir, "*.exr;*.png;*.dds;*.hdr", vec3(0.1, 0.1, 0.1), "load"],
       fill=True,
     )
     browser = browser_item.widget.uservars.filesystem_browser
@@ -1293,7 +1293,7 @@ class EnvMapStudio(ComponentizedApplication):
       self.info_text.setText("No XIR saved yet.\nSave XIR first.")
       return
     import subprocess
-    cmd = ["ork.modelviewer.py", "-e", self._last_saved_xir, "-m", "lion"]
+    cmd = ["ork.modelviewer.py", "-t", "3", "-e", self._last_saved_xir, "-m", "lion"]
     print(f"Launching: {' '.join(cmd)}")
     subprocess.Popen(cmd)
 
