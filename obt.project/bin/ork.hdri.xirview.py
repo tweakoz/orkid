@@ -50,9 +50,7 @@ class XIRViewer(ComponentizedApplication):
 
     self.createEzApp(
       name=f"XIR Viewer - {xir_filename}",
-      width=1280,
-      height=800,
-      fullscreen=False,
+      fullscreen=True,
       enable_audio=False,
       enable_audio_output=False,
       enable_audio_synth=False,
