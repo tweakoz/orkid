@@ -1110,7 +1110,7 @@ class EnvMapStudio(ComponentizedApplication):
         level['done'] = True
         continue
 
-      batch = min(1, remaining)
+      batch = min(32, remaining)
 
       # Update header[1] with current batch params
       FXI.copyDataIntoShaderStorageBuffer(

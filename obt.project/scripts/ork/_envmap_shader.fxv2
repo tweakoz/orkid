@@ -166,7 +166,7 @@ compute_shader cs_filter_specular_equi
   vec3 v = n;
 
   // Per-pixel Cranley-Patterson rotation (PCG hash for uniform distribution)
-  vec2 cpOffset = vec2(hash_pixel(px, py, 0u), hash_pixel(px, py, 1u));
+  vec2 cpOffset = vec2(hash_pixel(px, py, uint(sample_offset) * 2u), hash_pixel(px, py, uint(sample_offset) * 2u + 1u));
 
   vec3 o = vec3(0.0);
   float w = 0.0;
@@ -226,7 +226,7 @@ compute_shader cs_filter_specular_std
     float(py) / float(img_h - 1)
   );
 
-  vec2 cpOffset = vec2(hash_pixel(px, py, 0u), hash_pixel(px, py, 1u));
+  vec2 cpOffset = vec2(hash_pixel(px, py, uint(sample_offset) * 2u), hash_pixel(px, py, uint(sample_offset) * 2u + 1u));
 
   vec3 o = vec3(0.0);
   float w = 0.0;
@@ -291,7 +291,7 @@ compute_shader cs_filter_diffuse_equi
   vec3 tangent = normalize(cross(up, n));
   vec3 bitan   = cross(n, tangent);
 
-  vec2 cpOffset = vec2(hash_pixel(px, py, 0u), hash_pixel(px, py, 1u));
+  vec2 cpOffset = vec2(hash_pixel(px, py, uint(sample_offset) * 2u), hash_pixel(px, py, uint(sample_offset) * 2u + 1u));
 
   vec3 o = vec3(0.0);
   float w = 0.0;
@@ -353,7 +353,7 @@ compute_shader cs_filter_diffuse_std
     float(py) / float(img_h - 1)
   );
 
-  vec2 cpOffset = vec2(hash_pixel(px, py, 0u), hash_pixel(px, py, 1u));
+  vec2 cpOffset = vec2(hash_pixel(px, py, uint(sample_offset) * 2u), hash_pixel(px, py, uint(sample_offset) * 2u + 1u));
 
   vec3 o = vec3(0.0);
   float w = 0.0;
