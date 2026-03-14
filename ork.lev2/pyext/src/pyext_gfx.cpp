@@ -204,6 +204,14 @@ void pyinit_gfx(py::module& module_lev2) {
               auto datablock = std::make_shared<DataBlock>();
               datablock->addItem<int32_t>(as_int);
               fxi.get()->copyBufferIntoStorageBuffer(buffer.get(), datablock->_storage, dest_offset);
+            } else if (py::isinstance<py::array>(data)) {
+              // Numpy array — direct memcpy from buffer pointer
+              auto arr = py::cast<py::array_t<float, py::array::c_style | py::array::forcecast>>(data);
+              auto buffer_info = arr.request();
+              auto ptr = static_cast<const uint8_t*>(buffer_info.ptr);
+              size_t num_bytes = buffer_info.size * sizeof(float);
+              std::vector<uint8_t> vec(ptr, ptr + num_bytes);
+              fxi.get()->copyBufferIntoStorageBuffer(buffer.get(), vec, dest_offset);
             } else if (py::hasattr(data, "__iter__") && !py::isinstance<py::str>(data)) {
               // Iterable (list, tuple) of numbers
               auto datablock = std::make_shared<DataBlock>();
@@ -216,21 +224,9 @@ void pyinit_gfx(py::module& module_lev2) {
               }
               fxi.get()->copyBufferIntoStorageBuffer(buffer.get(), datablock->_storage, dest_offset);
             } else {
-              // Check for numpy array
               auto type_str = data.get_type().attr("__name__").cast<std::string>();
-              if (type_str == "ndarray") {
-                auto numpy = py::module::import("numpy");
-                auto arr = data.attr("astype")(numpy.attr("float32")).attr("flatten")();
-                auto buffer_info = py::cast<py::array_t<float>>(arr).request();
-                float* ptr = static_cast<float*>(buffer_info.ptr);
-                size_t num_bytes = buffer_info.size * sizeof(float);
-                std::vector<uint8_t> vec(num_bytes);
-                memcpy(vec.data(), ptr, num_bytes);
-                fxi.get()->copyBufferIntoStorageBuffer(buffer.get(), vec, dest_offset);
-              } else {
-                printf("copyDataIntoShaderStorageBuffer unknown type<%s>\n", type_str.c_str());
-                OrkAssert(false);
-              }
+              printf("copyDataIntoShaderStorageBuffer unknown type<%s>\n", type_str.c_str());
+              OrkAssert(false);
             }
           })
       .def(

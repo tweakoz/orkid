@@ -805,15 +805,10 @@ class EnvMapStudio(ComponentizedApplication):
   # Compute-based progressive preview
   ##############################################################################
 
-  def _upload_to_ssbo(self, FXI, data, ssbo, byte_offset, chunk_size=4096):
-    """Upload numpy float32 array to SSBO in chunks as Python lists.
-    Workaround: numpy arrays hit the slow iterable path in C++ binding
-    instead of the fast ndarray memcpy path, producing incorrect results."""
-    flat = data.reshape(-1)
-    total = len(flat)
-    for i in range(0, total, chunk_size):
-      chunk = flat[i:i+chunk_size].tolist()
-      FXI.copyDataIntoShaderStorageBuffer(chunk, ssbo, byte_offset + i * 4)
+  def _upload_to_ssbo(self, FXI, data, ssbo, byte_offset):
+    """Upload numpy float32 array to SSBO via direct memcpy."""
+    flat = np.ascontiguousarray(data.reshape(-1), dtype=np.float32)
+    FXI.copyDataIntoShaderStorageBuffer(flat, ssbo, byte_offset)
 
   def _make_display_pipeline(self, ctx, accum_ssbo, img_w, img_h):
     """Create a display material+pipeline bound to one accum SSBO."""
@@ -1006,7 +1001,7 @@ class EnvMapStudio(ComponentizedApplication):
     FXI.copyDataIntoShaderStorageBuffer(
       [0.0, 0.0, 0.0, 0.0], ssbo, 32)
 
-    # Upload source data (chunked list upload - numpy SSBO path is broken)
+    # Upload source data
     self._upload_to_ssbo(FXI, self._pv_src_flat, ssbo, src_data_offset)
     dt = time.time() - t0
     #print(f"    SSBO upload: {dt:.2f}s ({len(self._pv_src_flat)} floats)")
