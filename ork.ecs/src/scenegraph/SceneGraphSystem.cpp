@@ -47,6 +47,7 @@ void SceneGraphSystemData::describeX(SystemDataClass* clazz) {
   ImplementToken(DestroyNode);
   ImplementToken(ChangeModColor);
   ImplementToken(HighlightBySpawnData);
+  ImplementToken(SyncTransformBySpawnData);
   ImplementToken(eye);
   ImplementToken(tgt);
   ImplementToken(up);
@@ -776,6 +777,35 @@ void SceneGraphSystem::_onNotify(token_t evID, evdata_t data) {
           }
         }
       });
+      break;
+    }
+    case SyncTransformBySpawnData._hashed: {
+      const auto& table = *data.getShared<DataTable>();
+      auto name_str = table["name"_tok].get<std::string>();
+      auto psname = AddPooledString(name_str.c_str());
+      int matched = 0;
+      _components.atomicOp([&](component_set_t& comps) {
+        fprintf(stderr, "[SyncXF] spawner='%s' num_components=%zu\n", name_str.c_str(), comps.size());
+        for (auto* comp : comps) {
+          auto ent = comp->GetEntity();
+          if (ent->data()->GetName() == psname) {
+            auto spawner_xf = ent->data()->_dagnode->_xfnode->_transform;
+            auto ent_xf = ent->transform();
+            fprintf(stderr, "[SyncXF]   MATCH: spawner_pos=(%.2f,%.2f,%.2f) ent_pos=(%.2f,%.2f,%.2f)\n",
+                    spawner_xf->_translation.x, spawner_xf->_translation.y, spawner_xf->_translation.z,
+                    ent_xf->_translation.x, ent_xf->_translation.y, ent_xf->_translation.z);
+            ent_xf->_translation = spawner_xf->_translation;
+            ent_xf->_rotation = spawner_xf->_rotation;
+            ent_xf->_uniformScale = spawner_xf->_uniformScale;
+            auto setxform_op = comp->_genTransformOperation();
+            _renderops.push(setxform_op);
+            matched++;
+          }
+        }
+      });
+      if (matched == 0) {
+        fprintf(stderr, "[SyncXF] WARNING: no entities matched spawner '%s'\n", name_str.c_str());
+      }
       break;
     }
     default:

@@ -1055,6 +1055,14 @@ class EcsEditor(ComponentizedApplication):
       self._createEditSimulation()
 
     if self._mode == self.EDIT and self.runtime.controller:
+      # Sync spawner transform → entity scenegraph nodes BEFORE update
+      # (so _serviceEventQueues processes it this frame)
+      if self.manip_enabled and self.manip_interface and isinstance(self._selected_object, ecs.SpawnData):
+        if self.runtime._sys_ref:
+          self.runtime.controller.systemNotify(
+            self.runtime._sys_ref,
+            tokens.SyncTransformBySpawnData,
+            {tokens.name: self._selected_object.name})
       self.runtime.update()
       # Live sync property sheet when manipulating
       if self.manip_enabled and self.manip_interface and self._selected_object is not None:
