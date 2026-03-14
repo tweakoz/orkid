@@ -607,6 +607,14 @@ VkContext::VkContext() {
 ///////////////////////////////////////////////////////
 
 VkContext::~VkContext() {
+    if (_vkpresentationsurface != VK_NULL_HANDLE && _GVI) {
+      printf("VkContext::~VkContext: destroying VkSurface %p\n", (void*)_vkpresentationsurface);
+      vkDestroySurfaceKHR(_GVI->_instance, _vkpresentationsurface, nullptr);
+      _vkpresentationsurface = VK_NULL_HANDLE;
+    } else {
+      printf("VkContext::~VkContext: no surface to destroy (surface=%p GVI=%p)\n",
+             (void*)_vkpresentationsurface, (void*)_GVI.get());
+    }
     _vkdevice = nullptr;
 }
 

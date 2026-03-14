@@ -76,6 +76,9 @@ struct SecondaryWinImpl {
   float _mouseUnitX = 0.0f;
   float _mouseUnitY = 0.0f;
 
+  // Deferred destroy: hide first, destroy next frame
+  bool _hidden_pending_destroy = false;
+
   // Clean RCFD without compositor for UI rendering
   lev2::rcfd_ptr_t _cleanRcfd;
 };
@@ -203,6 +206,13 @@ SecondaryWinImpl::SecondaryWinImpl(EzSecondaryWin* owner, const EzSecondaryWinCo
 SecondaryWinImpl::~SecondaryWinImpl() {
   logchan_secwin->log("Destroying secondary window: %s", _config._title.c_str());
 
+  // Clean up Orkid graphics resources before GLFW window
+  if (_orkWindow) {
+    delete _orkWindow;
+    _orkWindow = nullptr;
+  }
+  // Note: _ctxglfw is owned by _orkWindow->mpCTXBASE
+
   if (_glfwWindow) {
     glfwHideWindow(_glfwWindow);
     glfwDestroyWindow(_glfwWindow);
@@ -213,25 +223,42 @@ SecondaryWinImpl::~SecondaryWinImpl() {
   if (_owner && _owner->_onClosed) {
     _owner->_onClosed();
   }
-
-  delete _orkWindow;
-  _orkWindow = nullptr;
-  // Note: _ctxglfw is owned by _orkWindow->mpCTXBASE
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void SecondaryWinImpl::_closeWindow() {
-  if (_glfwWindow) {
-    logchan_secwin->log("Closing secondary window: %s", _config._title.c_str());
+  if (_glfwWindow && !_hidden_pending_destroy) {
+    // Phase 1: hide window immediately so it's not visible,
+    // but defer glfwDestroyWindow to next frame so macOS can
+    // deliver the matching mouseUp event first.
+    printf("SecondaryWinImpl::_closeWindow: hiding GLFW window %p (%s), destroy deferred\n", (void*)_glfwWindow, _config._title.c_str());
+    // Move offscreen first so any ghost surface can't block clicks
+    glfwSetWindowPos(_glfwWindow, -10000, -10000);
     glfwHideWindow(_glfwWindow);
-    glfwDestroyWindow(_glfwWindow);
-    _glfwWindow = nullptr;
+    _hidden_pending_destroy = true;
 
     // Call callback only once (when window is actually closed)
     if (_owner->_onClosed) {
       _owner->_onClosed();
     }
+  } else if (_glfwWindow && _hidden_pending_destroy) {
+    // Phase 2: clean up Orkid graphics resources first (releases Vulkan
+    // surface/swapchain backed by CAMetalLayer), then destroy GLFW window.
+    fprintf(stderr, "SecondaryWinImpl::_closeWindow phase2: _orkWindow=%p _gfxContext=%p _ctxglfw=%p _glfwWindow=%p\n",
+            (void*)_orkWindow, (void*)_gfxContext, (void*)_ctxglfw, (void*)_glfwWindow);
+    if (_orkWindow) {
+      fprintf(stderr, "  deleting _orkWindow...\n");
+      delete _orkWindow;
+      fprintf(stderr, "  _orkWindow deleted\n");
+      _orkWindow = nullptr;
+    }
+    _gfxContext = nullptr;
+    _ctxglfw = nullptr;
+    fprintf(stderr, "  calling glfwDestroyWindow...\n");
+    glfwDestroyWindow(_glfwWindow);
+    fprintf(stderr, "  glfwDestroyWindow done\n");
+    _glfwWindow = nullptr;
   }
   _owner->_shouldClose = true;
 }
@@ -678,6 +705,15 @@ bool EzSecondaryWin::shouldClose() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+bool EzSecondaryWin::_isFullyClosed() const {
+  if (auto impl = _impl.tryAsShared<SecondaryWinImpl>()) {
+    return impl.value()->_glfwWindow == nullptr;
+  }
+  return true;  // no impl means fully closed
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void EzSecondaryWin::requestClose() {
   // Only set the flag - do NOT destroy window here.
   // Destroying a GLFW window from within a callback (like the close callback)
@@ -730,7 +766,10 @@ lev2::Context* EzSecondaryWin::gfxContext() {
 
 void EzSecondaryWin::_forceClose() {
   if (auto impl = _impl.tryAsShared<SecondaryWinImpl>()) {
+    printf("EzSecondaryWin::_forceClose: calling _closeWindow\n");
     impl.value()->_closeWindow();
+  } else {
+    printf("EzSecondaryWin::_forceClose: _impl.tryAsShared FAILED\n");
   }
 }
 
