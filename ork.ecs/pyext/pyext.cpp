@@ -31,6 +31,7 @@ void pyinit_boids(py::module& module_ecs);
 void pyinit_stochwav(py::module& module_ecs);
 void pyinit_simplesound(py::module& module_ecs);
 void pyinit_globalsynth(py::module& module_ecs);
+void pyinit_probe(py::module& module_ecs);
 
 } // namespace ork::ecs
 
@@ -249,6 +250,7 @@ PYBIND11_MODULE(_ecs, module_ecs) {
   pyinit_stochwav(module_ecs);
   pyinit_simplesound(module_ecs);
   pyinit_globalsynth(module_ecs);
+  pyinit_probe(module_ecs);
   //////////////////////////////////////////////////////////////////////////////
   module_ecs.def("createApp", &ecsappcreate);
   //////////////////////////////////////////////////////////////////////////////

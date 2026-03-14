@@ -190,6 +190,7 @@ struct LightProbe {
   bool _dirty = true;
   uint64_t _version = 0;
   std::string _name;
+  std::string _renderLayer = "probe"; // layer to render into cubemap
   fmtx4 _worldMatrix; // +y up, right handed
   rtgroup_ptr_t _cubeRenderRTG;
   rtgroup_ptr_t _equiRenderRTG;

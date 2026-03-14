@@ -645,6 +645,14 @@ varmap::varmap_ptr_t ReflectionPropertySheetModel::getAnnotations(
     const auto& aval = ait->second;
     if (aval.isA<ConstString>()) {
       result->set(std::string(akey.c_str()), std::string(aval.get<ConstString>().c_str()));
+    } else if (aval.isA<float_range>()) {
+      auto rng = aval.get<float_range>();
+      result->set(std::string("min"), rng._min);
+      result->set(std::string("max"), rng._max);
+    } else if (aval.isA<int_range>()) {
+      auto rng = aval.get<int_range>();
+      result->set(std::string("min"), rng._min);
+      result->set(std::string("max"), rng._max);
     }
   }
   return result;

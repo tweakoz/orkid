@@ -165,7 +165,7 @@ void ForwardPbrNodeImpl::_update_env_probes(CompositorDrawData& drawdata) {
             probe_pass->_rtg_out                   = probe->_cubeRenderRTG;
             probe_pass->_rtg_depth_copy            = _rtg_cube1_depth_copy;
             probe_pass->_renderingPROBE            = true;
-            probe_pass->_fwd_pass_layer            = "probe";
+            probe_pass->_fwd_pass_layer            = probe->_renderLayer;
             probe_pass->_single_pass_stereo        = false;
             probe->_cubeRenderRTG->_cubeRenderFace = iface;
 

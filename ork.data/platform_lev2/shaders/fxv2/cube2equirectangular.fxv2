@@ -1,0 +1,63 @@
+///////////////////////////////////////////////////////////////
+// Cube to Equirectangular projection shader
+// Converts a cubemap to a 2D equirectangular image
+// Uses same spherical convention as envtools.i2
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default {
+  glsl_version = "330";
+  import "orkshader://stdtools.i2";
+}
+///////////////////////////////////////////////////////////////
+uniform_block ub_c2e (descriptor_set 0) {
+  mat3 mrot;
+}
+///////////////////////////////////////////////////////////////
+sampler_set sset_c2e (descriptor_set 0) {
+  samplerCube cube_sampler;
+}
+///////////////////////////////////////////////////////////////
+fragment_interface fface_c2e : vif_PT : ub_c2e : sset_c2e {
+  outputs {
+    layout(location = 0) vec4 out_clr;
+  }
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_c2e : vif_PT {
+  gl_Position = position;
+  frg_uv0    = uv0;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_c2e : fface_c2e {
+  // Match envtools.i2 env_equirectangularUV2N convention
+  float phi   = frg_uv0.x * PI2 - PI;  // longitude: -PI to PI
+  float theta = frg_uv0.y * PI;        // co-latitude: 0 (north) to PI (south)
+
+  // sphericalToNormal (Z-up spherical)
+  float sintheta = sin(theta);
+  float costheta = cos(theta);
+  vec3 n = vec3(sintheta * cos(phi), sintheta * sin(phi), costheta);
+
+  // swizzle to Y-up (same as env_equirectangularUV2N)
+  vec3 dir = vec3(n.x, n.z, n.y);
+
+  // Apply optional user rotation
+  dir = mrot * dir;
+
+  vec3 c = textureLod(cube_sampler, dir, 0).xyz;
+  out_clr = vec4(c, 1);
+}
+///////////////////////////////////////////////////////////////
+state_block sb_c2e : default {
+  BlendMode = OFF;
+  DepthTest = OFF;
+  CullTest  = OFF;
+}
+///////////////////////////////////////////////////////////////
+technique tek_cube2equi {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_c2e;
+    fragment_shader = ps_c2e;
+    state_block     = sb_c2e;
+  }
+}

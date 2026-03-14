@@ -7,6 +7,7 @@
 ################################################################################
 
 import os, sys, argparse, time, math
+from obt import command as obt_command
 from orkengine.core import vec2, vec3, vec4, quat, CrcStringProxy, Transform, lev2_pyexdir
 from orkengine import lev2
 from orkengine import ecs
@@ -59,6 +60,10 @@ class EcsEditor(ComponentizedApplication):
 
     # Deferred operations queue — (execute_at_time, callback) pairs
     self._deferred_ops = []
+
+    # Bake lighting state
+    self._bake_countdown = 0
+    self._bake_output_base = ""
 
     # Will be set during init
     self.outliner_model = None
@@ -201,6 +206,13 @@ class EcsEditor(ComponentizedApplication):
     self.btn_scale = self.toolbar.addButton(
       "scale", standard_icons.get('scale', icon_size, icon_size), "Scale (S)")
     self.btn_scale.toggle_mode = True
+
+    self.toolbar.addSeparator()
+
+    # Lighting operations
+    self.btn_bake_lighting = self.toolbar.addButton(
+      "bake_lighting", standard_icons.get('record', icon_size, icon_size),
+      "Bake Lighting (render all probes to equirectangular PNGs)")
 
   ##############################################################################
   # Pick Debug
@@ -361,6 +373,7 @@ class EcsEditor(ComponentizedApplication):
     self.btn_translate.onToggled(lambda t: self._onManipButton("translate", t))
     self.btn_rotate.onToggled(lambda t: self._onManipButton("rotate", t))
     self.btn_scale.onToggled(lambda t: self._onManipButton("scale", t))
+    self.btn_bake_lighting.onPressed(self._onBakeLighting)
 
     # Create initial edit simulation (creates fresh scenegraph + binds to viewport)
     self._createEditSimulation()
@@ -644,6 +657,31 @@ class EcsEditor(ComponentizedApplication):
       print(f"Saved: {path}")
     except Exception as e:
       print(f"Save failed: {e}")
+
+  ##############################################################################
+  # Bake Lighting
+  ##############################################################################
+
+  def _onBakeLighting(self):
+    """Trigger BakeLighting — marks probes dirty, then exports after compositor renders cubemaps."""
+    if self._mode != self.EDIT:
+      print("BakeLighting requires EDIT mode")
+      return
+    if not self.runtime.controller:
+      return
+    sim = self.runtime.controller.simulation
+    if not sim:
+      return
+
+    output_base = "/tmp/ecs_probes"
+    os.makedirs(output_base, exist_ok=True)
+
+    # Phase 1: mark probes dirty so compositor renders cubemaps
+    ecs.markProbesDirty(sim)
+    # Phase 2+3: wait frames then export (handled in _onGpuUpdate)
+    self._bake_countdown = 3
+    self._bake_output_base = output_base
+    print(f"BakeLighting: probes marked dirty, waiting for cubemap render...")
 
   ##############################################################################
   # Transport controls
@@ -1047,6 +1085,21 @@ class EcsEditor(ComponentizedApplication):
     self._deferred_ops = [op for op in self._deferred_ops if now < op[0]]
     for _, callback in ready:
       callback()
+    # Bake lighting — runs here (outside beginFrame/endFrame)
+    countdown = getattr(self, '_bake_countdown', 0)
+    if countdown > 0:
+      countdown -= 1
+      self._bake_countdown = countdown
+      if countdown == 0:
+        sim = self.runtime.controller.simulation if self.runtime.controller else None
+        if sim:
+          n = ecs.bakeProbes(sim, ctx, self._bake_output_base)
+          print(f"Bake complete: {n} probes exported to {self._bake_output_base}")
+          if n > 0:
+            import glob
+            pngs = sorted(glob.glob(os.path.join(self._bake_output_base, "*.png")))
+            for p in pngs:
+              obt_command.runasync(["open", p])
 
   def _onUpdate(self, updinfo):
     # Deferred rebuild — safe point between frames

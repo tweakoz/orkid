@@ -158,6 +158,7 @@ void VkContext::_processPendingCaptures() {
       size_t bufsize = staging_buffer->_length;
       OrkAssert(bufsize <= temp_img->_data->length());
       staging_buffer->copyToHost((void*)temp_img->_data->data(), bufsize);
+      async_impl->_dataRetrieved = true;
 
       // Do conversion async on opq
       opq::concurrentQueue()->enqueue([capture_async]() {
@@ -180,6 +181,7 @@ void VkContext::_processPendingCaptures() {
       img->initWithFormat(async_impl->width, async_impl->height, source_format);
       size_t bufsize = staging_buffer->_length;
       staging_buffer->copyToHost((void*)img->_data->data(), bufsize);
+      async_impl->_dataRetrieved = true;
 
       // Process pixel fetch BEFORE callback so values are available
       if (capture_async->_pixelFetchContext && capture_async->_width == 1 && capture_async->_height == 1) {

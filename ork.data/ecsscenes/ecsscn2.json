@@ -375,6 +375,28 @@
        }
       }
      },
+     "ArchProbe": {
+      "object": {
+       "class": "EcsArchetype",
+       "uuid": "1b2d1b9a-952b-40f0-a897-1419edffa8c7",
+       "properties": {
+        "Components": {
+         "ProbeComponentData": {
+          "object": {
+           "class": "ProbeComponentData",
+           "uuid": "08363f75-0dcc-4ac4-829f-f6fd982621cf",
+           "properties": {
+            "ImageDimension": 4096,
+            "OutputFolder": "${HOME}",
+            "OutputPrefix": "probetest",
+            "RenderLayer": "std_forward"
+           }
+          }
+         }
+        }
+       }
+      }
+     },
      "ArchXfPath": {
       "object": {
        "class": "EcsArchetype",
@@ -889,6 +911,79 @@
        }
       }
      },
+     "PROBE1": {
+      "object": {
+       "class": "EcsSpawnData",
+       "uuid": "fa2e3299-ab89-4efd-aebc-80b8033633aa",
+       "properties": {
+        "Archetype": {
+         "object-ref": {
+          "uuid-ref": "1b2d1b9a-952b-40f0-a897-1419edffa8c7"
+         }
+        },
+        "DirectionRandomize": 0.0,
+        "InitialDirection": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "InitialSpeed": 0.0,
+        "LifetimeMax": 0.0,
+        "LifetimeMin": 0.0,
+        "MinDistance": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "PositionRandomRadius": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "SpawnCount": 1,
+        "SpawnInterval": 0.0,
+        "StochasticInterval": 0.0,
+        "UserProperties": {},
+        "DagNodeData": {
+         "object": {
+          "class": "EcsDagNodeData",
+          "uuid": "ea7ff89d-fb73-4b69-8b83-4f44f0c05619",
+          "properties": {
+           "TransformNode": {
+            "object": {
+             "class": "TransformNode",
+             "uuid": "36067413-bb35-42df-92a8-7bce356fced4",
+             "properties": {
+              "transform": {
+               "object": {
+                "class": "DecompTransform",
+                "uuid": "9699d56c-5ff5-4562-b819-5a25349685ac",
+                "properties": {
+                 "rotation": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                 ],
+                 "translation": [
+                  0.0,
+                  1.687673568725586,
+                  0.0
+                 ],
+                 "uniformScale": 1.0
+                }
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        },
+        "Parent": "scene"
+       }
+      }
+     },
      "spawner-ground": {
       "object": {
        "class": "EcsSpawnData",
@@ -1380,6 +1475,13 @@
         },
         "MasterGainDB": 0.0
        }
+      }
+     },
+     "ProbeSystem": {
+      "object": {
+       "class": "ProbeSystemData",
+       "uuid": "59a92b13-bde3-41da-b241-9c404a0169f7",
+       "properties": {}
       }
      },
      "SceneGraphSystemData": {
