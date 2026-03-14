@@ -155,6 +155,7 @@ class EnvMapStudio(ComponentizedApplication):
     self.saturation_val = 1.0
     self.tonemap_aces = True
     self.aces_exposure = 1.0
+    self.convert_rgb8 = False
 
     # Preview parameters
     self.pv_scale_val = 0.5
@@ -209,9 +210,7 @@ class EnvMapStudio(ComponentizedApplication):
 
     self.createEzApp(
       name="HDRI Env Map Studio",
-      width=1440,
-      height=960,
-      fullscreen=False,
+      fullscreen=True,
       enable_audio=False,
       enable_audio_output=False,
       enable_audio_synth=False,
@@ -413,6 +412,14 @@ class EnvMapStudio(ComponentizedApplication):
     self.open_btn = actions_vp.makeChild(
       uiclass=lev2.ui.Button, args=["Open HDRI", vec3(0.3, 0.35, 0.45)])
     self.open_btn.onPressed = lambda w: self._onOpenHDRI()
+
+    self.rgb8_checkbox = actions_vp.makeChild(
+      uiclass=lev2.ui.Checkbox,
+      args=["Convert to RGB8", vec3(0.3, 0.4, 0.5)])
+    self.rgb8_checkbox.toggled = self.convert_rgb8
+    def _on_rgb8_toggle(chk=self.rgb8_checkbox):
+      self.convert_rgb8 = chk.toggled
+    self.rgb8_checkbox.onToggled = _on_rgb8_toggle
 
     self.save_btn = actions_vp.makeChild(
       uiclass=lev2.ui.Button, args=["Save XIR", vec3(0.35, 0.3, 0.45)])
@@ -1376,7 +1383,7 @@ class EnvMapStudio(ComponentizedApplication):
 
     FXI = ctx.FXI
     ext = os.path.splitext(self.source_path)[1].lower()
-    is_hdr = ext in (".exr", ".hdr")
+    is_hdr = ext in (".exr", ".hdr") and not self.convert_rgb8
 
     specular_images = []
     specular_roughness = []

@@ -619,9 +619,12 @@ fragment_shader ps_aces //
   : ub_frg_FFX           //
   : samplers_all {       //
   vec3 hdr = texture(MrtMap0, frg_uv).xyz;
-  vec3 exposed = hdr * Exposure;
-  vec3 mapped = aces_filmic(exposed);
-  out_clr = vec4(mapped, 1.0);
+  if (Exposure > 0.0) {
+    vec3 exposed = hdr * Exposure;
+    out_clr = vec4(aces_filmic(exposed), 1.0);
+  } else {
+    out_clr = vec4(hdr, 1.0);
+  }
 }
 ///////////////////////////////////////////////////////////////
 technique framefx_aces {

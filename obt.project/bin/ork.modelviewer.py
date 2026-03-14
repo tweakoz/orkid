@@ -40,6 +40,7 @@ parser.add_argument("-u", "--ssao", type=int, default=0, help='SSAO samples')
 parser.add_argument("-L", "--lightmap", type=str, default="", help='set active lightmap')
 parser.add_argument('-r', '--rendermodel', type=str, default='forward', help='rendering model (deferred,forward)')
 parser.add_argument('-S', '--stateDebugger', type=bool, default=False, help='Graphics state debugger')
+parser.add_argument('-E', '--exposure', type=float, default=None, help='enable ACES tonemapper with given exposure')
 parser.add_argument('--list', action="store_true", help='list available model short names')
 
 ################################################################################
@@ -208,7 +209,7 @@ class SceneGraphApp(ComponentizedApplication):
     self.cursati = 0
     self.curgami = 0
     self.brdfset = [("GGX",tokens.GGX),("VELVET",tokens.GGXVELVET),("GGXRIM",tokens.GGXRIM),("BLINN",tokens.BLINN),("PHONG",tokens.PHONG)]
-    self.satset = [0.0,0.1,0.2,0.5,0.75,1.0]
+    self.satset = [0.0,0.1,0.2,0.5,0.75,1.0,1.25,1.5,1.75,2.0]
     self.gamset = [0.8,1.0,1.2,1.4,1.6,1.8,2.0,2.4]
 
     # Environment map switching
@@ -278,11 +279,17 @@ class SceneGraphApp(ComponentizedApplication):
     ###################################
     # post fx nodes
     ###################################
-    #acesNode = PostFxNodeACES()
-    #acesNode.exposure = 1.0
-    #acesNode.gpuInit(ctx,8,8)
-    #acesNode.addToSceneVars(sceneparams,"PostFxChain")
-    #self.aces_node = acesNode
+    acesNode = PostFxNodeACES()
+    acesNode.exposure = args["exposure"] if args["exposure"] is not None else 0.0
+    acesNode.gpuInit(ctx,8,8)
+    acesNode.addToSceneVars(sceneparams,"PostFxChain")
+    self.aces_node = acesNode
+    self.exposure_values = [0.0, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 5.0]
+    cur_exp = acesNode.exposure
+    self.cur_exposure_idx = 0
+    for i, v in enumerate(self.exposure_values):
+      if abs(v - cur_exp) < 0.01:
+        self.cur_exposure_idx = i
 
     postNode = PostFxNodeHSVG()
     postNode.hue = 0.0
@@ -410,6 +417,38 @@ class SceneGraphApp(ComponentizedApplication):
 
     self.scene.lightingmanager.gpuInit(ctx)
 
+    # HUD keybinding legend (scale font with SSAA since it renders in pre-resolve RT)
+    hud_fonts = {0: "i24", 1: "i36", 2: "i48", 3: "i48", 4: "i48"}
+    hud_scale = max(ssaa, 1)
+    self._hud_drawable = StringDrawableData()
+    self._hud_drawable.pos2D = vec2(10 * hud_scale, 20 * hud_scale)
+    self._hud_drawable.color = vec4(0, 0, 0, 1)
+    self._hud_drawable.font = hud_fonts.get(ssaa, "i48")
+    self._hud_node = self.layer_fwd.createDrawableNodeFromData("hud_keys", self._hud_drawable)
+    self._hud_node.sortkey = 2000
+    self._update_hud()
+
+  ##############################################
+
+  def _update_hud(self):
+    brdf = self.brdfset[self.curbrdfi][0]
+    sat = self.satset[self.cursati]
+    gam = self.gamset[self.curgami]
+    exp = self.exposure_values[self.cur_exposure_idx]
+    ssao_str = "ON" if self.ssaamode else "OFF"
+    sky_idx = self.skybox_index
+    sky_str = self.skybox_names[sky_idx].split("|")[1] if sky_idx >= 0 else "default"
+    exp_str = f"{exp:.2f}" if exp > 0 else "OFF"
+    self._hud_drawable.text = (
+      f"[A] SSAO: {ssao_str}\n"
+      f"[B] BRDF: {brdf}\n"
+      f"[E] Envmap: {sky_str}\n"
+      f"[S] Saturation: {sat:.1f}\n"
+      f"[G] Gamma: {gam:.1f}\n"
+      f"[T] ACES Exposure: {exp_str}\n"
+      f"[R] Reset All"
+    )
+
   ##############################################
 
   def _onViewportEvent(self,uievent):
@@ -417,52 +456,46 @@ class SceneGraphApp(ComponentizedApplication):
     if uievent.code == tokens.KEY_DOWN.hashed:
       ######################
       if uievent.keycode == ord("A"):
-        if self.ssaamode == True:
-          self.ssaamode = False
-        else:
-          self.ssaamode = True
-        print("SSAO MODE",self.ssaamode)
-        return res
+        self.ssaamode = not self.ssaamode
       ######################
-      if uievent.keycode == ord("B"):
-        brdfi = self.curbrdfi+1
-        if brdfi >= len(self.brdfset):
-          brdfi = 0
-        self.curbrdfi = brdfi
-        brdf = self.brdfset[self.curbrdfi]
-        print("BRDF",brdf[0])
-        self.pbr_common.setBRDF(brdf[1])
+      elif uievent.keycode == ord("B"):
+        self.curbrdfi = (self.curbrdfi + 1) % len(self.brdfset)
+        self.pbr_common.setBRDF(self.brdfset[self.curbrdfi][1])
       ######################
-      # Environment map switching (E key)
-      ######################
-      if uievent.keycode == ord("E"):
-        self.skybox_index = (self.skybox_index+1)%len(self.skybox_names)
+      elif uievent.keycode == ord("E"):
+        self.skybox_index = (self.skybox_index + 1) % len(self.skybox_names)
         skybox_name = self.skybox_names[self.skybox_index]
-        print("Loading envmap:",skybox_name)
         if skybox_name in self.skybox_cache:
           skybox = self.skybox_cache[skybox_name]
         else:
           skybox = PbrCommon.requestRadianceMapsAsync(skybox_name)
           self.skybox_cache[skybox_name] = skybox
         self.pbr_common.RadianceMaps = skybox
-        return res
       ######################
-      if uievent.keycode == ord("S"):
-        sati = self.cursati+1
-        if sati >= len(self.satset):
-          sati = 0
-        self.cursati = sati
-        sat = self.satset[self.cursati]
-        self.post_node.saturation = sat
+      elif uievent.keycode == ord("S"):
+        self.cursati = (self.cursati + 1) % len(self.satset)
+        self.post_node.saturation = self.satset[self.cursati]
       ######################
-      if uievent.keycode == ord("G"):
-        gami = self.curgami+1
-        if gami >= len(self.gamset):
-          gami = 0
-        self.curgami = gami
-        gam = self.gamset[self.curgami]
-        self.post_node.gamma = gam
+      elif uievent.keycode == ord("T"):
+        self.cur_exposure_idx = (self.cur_exposure_idx + 1) % len(self.exposure_values)
+        self.aces_node.exposure = self.exposure_values[self.cur_exposure_idx]
       ######################
+      elif uievent.keycode == ord("G"):
+        self.curgami = (self.curgami + 1) % len(self.gamset)
+        self.post_node.gamma = self.gamset[self.curgami]
+      ######################
+      elif uievent.keycode == ord("R"):
+        self.ssaamode = False
+        self.curbrdfi = 0
+        self.pbr_common.setBRDF(self.brdfset[0][1])
+        self.cursati = 5  # 1.0
+        self.post_node.saturation = 1.0
+        self.curgami = 1  # 1.0
+        self.post_node.gamma = 1.0
+        self.cur_exposure_idx = 0  # OFF
+        self.aces_node.exposure = 0.0
+      ######################
+      self._update_hud()
     handled = self.uicam.uiEventHandler(uievent)
     if handled:
       self.uicam.updateMatrices()
