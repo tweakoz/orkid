@@ -173,6 +173,7 @@ void IRenderer::_renderCallbackRenderable(const CallbackRenderable& cbren) const
     RenderContextInstData RCID(context->topRenderContextFrameData());
     RCID.SetRenderer(this);
     RCID.setRenderable(&cbren);
+    RCID._pickID = cbren._pickID;
     context->RefModColor() = cbren._modColor;
     cbren.GetRenderCallback()(RCID);
   }
