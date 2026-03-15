@@ -490,7 +490,6 @@ class EcsEditor(ComponentizedApplication):
 
     gizmo_node = sg.createDrawableNodeOnLayers(
       [layer], "manip-gizmo", self.gizmo_drawable)
-    gizmo_node.sortkey = 999
     gizmo_node.pickable = False
     gizmo_node.enabled = self.manip_enabled
 

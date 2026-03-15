@@ -152,8 +152,10 @@ void ManipGizmoDrawableImpl::gpuInit(lev2::Context* ctx) {
   _param_lightdir = _material->param("lightdir");
   _param_planesize = _material->param("planesize");
   _param_unlit = _material->param("unlit");
+  _material->_rasterstate->setWriteMaskZ(true);  // Render on top of everything
   _material->_rasterstate->setDepthTest(EDepthTest::OFF);  // Render on top of everything
   _material->_rasterstate->setCullTest(ECullTest::OFF);
+  _material->_rasterstate->_priority = 1 << 30;
   _initted = true;
 }
 
@@ -232,7 +234,6 @@ void ManipGizmoDrawableImpl::_drawAxis(Context* ctx, rcfd_ptr_t RCFD, const fmtx
   _material->bindParamFloat(_param_unlit, 0.0f);
 
   // Two-pass rendering: backfaces first, then frontfaces
-  _material->_rasterstate->_priority = 1 << 20;
   _material->_rasterstate->setFrontFace(EFrontFace::COUNTER_CLOCKWISE);
   _material->_rasterstate->setCullTest(ECullTest::PASS_BACK);
   fxi->pushRasterState(_material->_rasterstate);
@@ -322,7 +323,6 @@ void ManipGizmoDrawableImpl::_drawCone(Context* ctx, rcfd_ptr_t RCFD, const fmtx
   _material->bindParamFloat(_param_unlit, 0.0f);
 
   // Two-pass rendering: backfaces first, then frontfaces
-  _material->_rasterstate->_priority = 1 << 20;
   _material->_rasterstate->setFrontFace(EFrontFace::COUNTER_CLOCKWISE);
   _material->_rasterstate->setCullTest(ECullTest::PASS_BACK);
   fxi->pushRasterState(_material->_rasterstate);
@@ -438,7 +438,6 @@ void ManipGizmoDrawableImpl::_drawRing(Context* ctx, rcfd_ptr_t RCFD, const fmtx
   _material->bindParamFloat(_param_unlit, 0.0f);
 
   // Two-pass rendering: backfaces first, then frontfaces
-  _material->_rasterstate->_priority = 1 << 20;
   _material->_rasterstate->setFrontFace(EFrontFace::COUNTER_CLOCKWISE);
   _material->_rasterstate->setCullTest(ECullTest::PASS_BACK);
   fxi->pushRasterState(_material->_rasterstate);
@@ -533,7 +532,6 @@ void ManipGizmoDrawableImpl::_drawCube(Context* ctx, rcfd_ptr_t RCFD, const fmtx
   _material->bindParamFloat(_param_unlit, 0.0f);
 
   // Two-pass rendering: backfaces first, then frontfaces
-  _material->_rasterstate->_priority = 1 << 20;
   _material->_rasterstate->setFrontFace(EFrontFace::COUNTER_CLOCKWISE);
   _material->_rasterstate->setCullTest(ECullTest::PASS_BACK);
   fxi->pushRasterState(_material->_rasterstate);
