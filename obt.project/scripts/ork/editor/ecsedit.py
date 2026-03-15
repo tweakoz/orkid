@@ -284,7 +284,7 @@ class EcsEditor(ComponentizedApplication):
 
     # Lighting operations
     self.btn_bake_lighting = self.toolbar.addButton(
-      "bake_lighting", standard_icons.get('record', icon_size, icon_size),
+      "bake_lighting", standard_icons.get('bake_lighting', icon_size, icon_size),
       "Bake Lighting (render all probes to equirectangular PNGs)")
 
     # Extra buttons from subclass
@@ -798,8 +798,84 @@ class EcsEditor(ComponentizedApplication):
   # Bake Lighting
   ##############################################################################
 
+  def _initBakeFSM(self):
+    """Create the HFSM for the bake lighting workflow."""
+    from orkengine.core import fsm
+
+    data = fsm.FsmData()
+    self._bake_idle = data.createState(None, "IDLE")
+    self._bake_activating = data.createState(None, "ACTIVATING")
+    self._bake_waiting = data.createState(None, "WAITING")
+    self._bake_exporting = data.createState(None, "EXPORTING")
+
+    data.addTransition(self._bake_idle, "bake_requested", self._bake_activating)
+    data.addTransition(self._bake_activating, "probes_activated", self._bake_waiting)
+    data.addTransition(self._bake_waiting, "probes_clean", self._bake_exporting)
+    data.addTransition(self._bake_exporting, "export_done", self._bake_idle)
+
+    self._bake_activating.onEnter = lambda inst: self._bakeFSM_onActivating()
+    self._bake_exporting.onEnter = lambda inst: self._bakeFSM_onExporting()
+
+    self._bake_fsm_data = data
+    self._bake_fsm = fsm.FsmInstance(data)
+    self._bake_fsm.changeState(self._bake_idle)
+    self._bake_fsm.update()
+
+  def _bakeFSM_onActivating(self):
+    """ACTIVATING state: activate BAKE_ONLY probes, mark all dirty."""
+    sim = self.runtime.controller.simulation if self.runtime.controller else None
+    if not sim:
+      self._bake_fsm.sendEvent("export_done")  # abort
+      return
+    ecs.activateBakeOnlyProbes(sim)
+    ecs.markProbesDirty(sim)
+    print("BakeFSM: probes activated and marked dirty")
+    self._bake_fsm.sendEvent("probes_activated")
+
+  def _bakeFSM_onExporting(self):
+    """EXPORTING state: export cubemaps, open files, deactivate."""
+    sim = self.runtime.controller.simulation if self.runtime.controller else None
+    ctx = None  # will be set from _onGpuUpdate
+    if sim and hasattr(self, '_bake_ctx'):
+      ctx = self._bake_ctx
+      # Build exact filenames matching bakeAll's output pattern: folder/prefix_index.png
+      expected_files = []
+      sd = self.runtime.scene_data
+      if sd:
+        idx = 0
+        for arch in sd.archetypes:
+          for comp in arch.components:
+            if comp.className == "ProbeComponentData":
+              folder = os.path.expandvars(comp.outputFolder) if comp.outputFolder else self._bake_output_base
+              prefix = comp.outputPrefix if comp.outputPrefix else "probe"
+              expected_files.append(os.path.join(folder, f"{prefix}_{idx}.png"))
+              idx += 1
+      n = ecs.bakeProbes(sim, ctx, self._bake_output_base)
+      print(f"BakeFSM: {n} probes exported")
+      for p in expected_files:
+        if os.path.exists(p):
+          print(f"  Opening: {p}")
+          obt_command.runasync(["open", p])
+      ecs.deactivateBakeOnlyProbes(sim)
+    self._bake_fsm.sendEvent("export_done")
+    print("BakeFSM: done, back to IDLE")
+
+  def _bakeFSM_update(self, ctx):
+    """Called from _onGpuUpdate to drive the bake FSM."""
+    if not hasattr(self, '_bake_fsm'):
+      return
+    self._bake_ctx = ctx
+    state = self._bake_fsm.currentState
+    if state == self._bake_waiting:
+      sim = self.runtime.controller.simulation if self.runtime.controller else None
+      if sim and ecs.areProbesClean(sim):
+        # Probes rendered — previous frame's GPU work is done (waitPresentFrame already called)
+        print("BakeFSM: probes clean, transitioning to EXPORTING")
+        self._bake_fsm.sendEvent("probes_clean")
+    self._bake_fsm.update()
+
   def _onBakeLighting(self):
-    """Trigger BakeLighting — marks probes dirty, then exports after compositor renders cubemaps."""
+    """Trigger BakeLighting via HFSM."""
     if self._mode != self.EDIT:
       print("BakeLighting requires EDIT mode")
       return
@@ -809,15 +885,16 @@ class EcsEditor(ComponentizedApplication):
     if not sim:
       return
 
-    output_base = "/tmp/ecs_probes"
-    os.makedirs(output_base, exist_ok=True)
+    self._bake_output_base = "/tmp/ecs_probes"
+    os.makedirs(self._bake_output_base, exist_ok=True)
 
-    # Phase 1: mark probes dirty so compositor renders cubemaps
-    ecs.markProbesDirty(sim)
-    # Phase 2+3: wait frames then export (handled in _onGpuUpdate)
-    self._bake_countdown = 3
-    self._bake_output_base = output_base
-    print(f"BakeLighting: probes marked dirty, waiting for cubemap render...")
+    if not hasattr(self, '_bake_fsm'):
+      self._initBakeFSM()
+
+    if self._bake_fsm.currentState == self._bake_idle:
+      print("BakeFSM: bake requested")
+      self._bake_fsm.sendEvent("bake_requested")
+      self._bake_fsm.update()
 
   ##############################################################################
   # Transport controls
@@ -1229,21 +1306,8 @@ class EcsEditor(ComponentizedApplication):
     self._deferred_ops = [op for op in self._deferred_ops if now < op[0]]
     for _, callback in ready:
       callback()
-    # Bake lighting — runs here (outside beginFrame/endFrame)
-    countdown = getattr(self, '_bake_countdown', 0)
-    if countdown > 0:
-      countdown -= 1
-      self._bake_countdown = countdown
-      if countdown == 0:
-        sim = self.runtime.controller.simulation if self.runtime.controller else None
-        if sim:
-          n = ecs.bakeProbes(sim, ctx, self._bake_output_base)
-          print(f"Bake complete: {n} probes exported to {self._bake_output_base}")
-          if n > 0:
-            import glob
-            pngs = sorted(glob.glob(os.path.join(self._bake_output_base, "*.png")))
-            for p in pngs:
-              obt_command.runasync(["open", p])
+    # Bake lighting HFSM — driven here (outside beginFrame/endFrame)
+    self._bakeFSM_update(ctx)
     # Subclass GPU update
     self._onEditorGpuUpdate(ctx)
 

@@ -8,6 +8,7 @@
 #pragma once
 
 #include <ork/rtti/RTTIX.inl>
+#include <ork/lev2/gfx/lighting/gfx_lighting.h>
 #include "component.h"
 #include "system.h"
 #include "entity.h"
@@ -30,6 +31,7 @@ public:
   std::string _outputFolder;
   std::string _outputPrefix = "probe";
   std::string _renderLayer = "std_forward";
+  lev2::ProbeActivationMode _activationMode = lev2::ProbeActivationMode::ALWAYS;
 };
 
 using probecompdata_ptr_t = std::shared_ptr<ProbeComponentData>;

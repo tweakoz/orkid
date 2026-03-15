@@ -73,5 +73,18 @@ void pyinit_probe(py::module& module_ecs) {
     if (!probe_sys) return 0;
     return probe_sys->bakeAll(ctx.get(), output_base);
   });
+  module_ecs.def("areProbesClean", [](simulation_ptr_t sim) -> bool {
+    auto probe_sys = sim->findSystem<ProbeSystem>();
+    if (!probe_sys) return true;
+    return probe_sys->areAllClean();
+  });
+  module_ecs.def("activateBakeOnlyProbes", [](simulation_ptr_t sim) {
+    auto probe_sys = sim->findSystem<ProbeSystem>();
+    if (probe_sys) probe_sys->activateBakeOnly();
+  });
+  module_ecs.def("deactivateBakeOnlyProbes", [](simulation_ptr_t sim) {
+    auto probe_sys = sim->findSystem<ProbeSystem>();
+    if (probe_sys) probe_sys->deactivateBakeOnly();
+  });
 }
 } // namespace ork::ecs

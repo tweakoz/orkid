@@ -177,6 +177,11 @@ enum class LightProbeType : uint64_t {
   CrcEnum(END)
 };
 
+enum class ProbeActivationMode : crc_enum_t {
+  CrcEnum(ALWAYS),
+  CrcEnum(BAKE_ONLY),
+};
+
 struct LightProbe {
 
   LightProbe();
@@ -186,6 +191,8 @@ struct LightProbe {
   void exportEquirectangular(Context* ctx, const fquat& rot, const file::Path& path);
 
   LightProbeType _type = LightProbeType::REFLECTION;
+  ProbeActivationMode _activationMode = ProbeActivationMode::ALWAYS;
+  bool _active = true;
   int _dim = 0;
   bool _dirty = true;
   uint64_t _version = 0;

@@ -9,6 +9,7 @@
 #include <ork/pch.h>
 #include <ork/reflect/properties/register.h>
 #include <ork/reflect/properties/registerX.inl>
+#include <ork/reflect/enum_serializer.inl>
 
 #include <ork/ecs/entity.inl>
 #include <ork/ecs/scene.inl>
@@ -22,7 +23,17 @@ ImplementReflectionX(ork::ecs::ProbeComponent, "ProbeComponent");
 ImplementReflectionX(ork::ecs::ProbeSystemData, "ProbeSystemData");
 
 ///////////////////////////////////////////////////////////////////////////////
+
+ImplementEnumSerializer(ork::lev2::ProbeActivationMode);
+
+///////////////////////////////////////////////////////////////////////////////
 namespace ork::ecs {
+using lev2::ProbeActivationMode;
+
+BeginEnumRegistration(ProbeActivationMode);
+RegisterEnum(ProbeActivationMode, ALWAYS);
+RegisterEnum(ProbeActivationMode, BAKE_ONLY);
+EndEnumRegistration();
 ///////////////////////////////////////////////////////////////////////////////
 using namespace ork;
 using namespace ork::object;
@@ -33,10 +44,12 @@ using namespace ork::reflect;
 ///////////////////////////////////////////////////////////////////////////////
 
 void ProbeComponentData::describeX(ComponentDataClass* clazz) {
+  InvokeEnumRegistration(ProbeActivationMode);
   clazz->intProperty("ImageDimension", int_range{64, 4096}, &ProbeComponentData::_imageDim);
   clazz->directProperty("OutputFolder", &ProbeComponentData::_outputFolder);
   clazz->directProperty("OutputPrefix", &ProbeComponentData::_outputPrefix);
   clazz->directProperty("RenderLayer", &ProbeComponentData::_renderLayer);
+  clazz->directEnumProperty("ActivationMode", &ProbeComponentData::_activationMode);
 }
 
 ProbeComponentData::ProbeComponentData() {
@@ -128,6 +141,8 @@ void ProbeSystem::_onStageComponent(ProbeComponent* component) {
   // Create LightProbe
   auto probe = std::make_shared<lev2::LightProbe>();
   probe->_type = lev2::LightProbeType::REFLECTION;
+  probe->_activationMode = CD._activationMode;
+  probe->_active = (CD._activationMode == lev2::ProbeActivationMode::ALWAYS);
   probe->resize(CD._imageDim);
   probe->_name = ent->data()->GetName().c_str();
   probe->_renderLayer = CD._renderLayer;
@@ -212,9 +227,44 @@ void ProbeSystem::markAllDirty() {
   }
 }
 
+bool ProbeSystem::areAllClean() const {
+  for (auto* comp : _components) {
+    if (comp->_probe && comp->_probe->_dirty) return false;
+  }
+  return true;
+}
+
+void ProbeSystem::activateBakeOnly() {
+  for (auto* comp : _components) {
+    if (comp->_probe && comp->_probe->_activationMode == lev2::ProbeActivationMode::BAKE_ONLY) {
+      comp->_probe->_active = true;
+      comp->_probe->_dirty = true;
+    }
+  }
+}
+
+void ProbeSystem::deactivateBakeOnly() {
+  for (auto* comp : _components) {
+    if (comp->_probe && comp->_probe->_activationMode == lev2::ProbeActivationMode::BAKE_ONLY) {
+      comp->_probe->_active = false;
+    }
+  }
+}
+
 int ProbeSystem::bakeAll(lev2::Context* ctx, const std::string& output_base) {
   // Identity rotation — shader matches engine's envtools.i2 convention
   fquat rot;
+
+  // Temporarily activate BAKE_ONLY probes for baking
+  std::vector<lev2::lightprobe_ptr_t> activated_for_bake;
+  for (auto* comp : _components) {
+    auto probe = comp->_probe;
+    if (probe && probe->_activationMode == lev2::ProbeActivationMode::BAKE_ONLY && !probe->_active) {
+      probe->_active = true;
+      probe->_dirty = true;
+      activated_for_bake.push_back(probe);
+    }
+  }
 
   int index = 0;
   for (auto* comp : _components) {
@@ -248,6 +298,12 @@ int ProbeSystem::bakeAll(lev2::Context* ctx, const std::string& output_base) {
     }
     index++;
   }
+
+  // Deactivate BAKE_ONLY probes that were temporarily activated
+  for (auto& probe : activated_for_bake) {
+    probe->_active = false;
+  }
+
   return index;
 }
 

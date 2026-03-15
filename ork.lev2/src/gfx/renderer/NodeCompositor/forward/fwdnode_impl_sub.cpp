@@ -82,18 +82,25 @@ void ForwardPbrNodeImpl::_update_env_probes(CompositorDrawData& drawdata) {
   auto topcomp = _currentRCFD->topCompositor();
   auto CPD     = _currentCIMPL->topCPD();
 
+  // Phase 1: Allocate RTG/VRAM for ALL probes (including inactive)
+  if (auto lmgr = _currentCIMPL->lightManager()) {
+    for (auto& probe : lmgr->_lightprobes) {
+      if (probe->_type == LightProbeType::REFLECTION && nullptr == probe->_cubeRenderRTG) {
+        probe->_cubeRenderRTG           = std::make_shared<RtGroup>(_currentContext, 8, 8);
+        probe->_cubeRenderRTG->_name    = "ReflectionProbeRTG";
+        probe->_cubeRenderRTG->_cubeMap = true;
+        auto colorbuf                   = probe->_cubeRenderRTG->createRenderTarget(EBufferFormat::RGBA8);
+        colorbuf->_debugName            = "ReflectionProbeColorCubeMap";
+        colorbuf->_mipgen               = RtBuffer::EMG_AUTOCOMPUTE;
+        probe->_cubeRenderRTG->createDepthBuffer(EBufferFormat::Z32F, true);
+      }
+    }
+  }
+
+  // Phase 2: Render cubemaps only for active + dirty probes
   for (auto probe : _enumeratedLights->_lightprobes) {
     switch (probe->_type) {
       case LightProbeType::REFLECTION: {
-        if (nullptr == probe->_cubeRenderRTG) {
-          probe->_cubeRenderRTG           = std::make_shared<RtGroup>(_currentContext, 8, 8);
-          probe->_cubeRenderRTG->_name    = "ReflectionProbeRTG";
-          probe->_cubeRenderRTG->_cubeMap = true;  // Must set before creating buffers
-          auto colorbuf                   = probe->_cubeRenderRTG->createRenderTarget(EBufferFormat::RGBA8);
-          colorbuf->_debugName            = "ReflectionProbeColorCubeMap";
-          colorbuf->_mipgen               = RtBuffer::EMG_AUTOCOMPUTE;
-          probe->_cubeRenderRTG->createDepthBuffer(EBufferFormat::Z32F, true);
-        }
         if (probe->_dirty) {
           int prevW = probe->_cubeRenderRTG->width();
           int prevH = probe->_cubeRenderRTG->height();

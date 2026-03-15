@@ -52,6 +52,9 @@ public:
   // Call from Python _onGpuUpdate (outside beginFrame/endFrame)
   int bakeAll(lev2::Context* ctx, const std::string& output_base);
   void markAllDirty();
+  bool areAllClean() const;
+  void activateBakeOnly();
+  void deactivateBakeOnly();
 
 private:
 
