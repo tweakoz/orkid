@@ -35,6 +35,7 @@ namespace ork::lev2 {
 void DrawableData::describeX(object::ObjectClass* clazz){
   //clazz->directProperty("ModColor", &DrawableData::_modcolor)
   //    ->annotate<ConstString>("editor.semantic", "color");
+  clazz->directProperty("EnvironmentMapPath", &DrawableData::_environmentMapPath);
 }
 
 DrawableData::DrawableData(){

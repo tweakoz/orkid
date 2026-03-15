@@ -18,6 +18,7 @@
 #include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/gfx/gfxmodel.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_common.h>
 #include <ork/kernel/environment.h>
 
 static bool SHOW_SKELETON() {
@@ -26,11 +27,59 @@ static bool SHOW_SKELETON() {
 
 namespace ork::lev2 {
 static logchannel_ptr_t logchan_model = logger()->configureChannel("model",fvec3(0.9,0.2,0.9),false);
+
+///////////////////////////////////////////////////////////////////////////////
+// Path expansion: supports <assetcache>, ${ENV_VAR}
+///////////////////////////////////////////////////////////////////////////////
+static std::string _expandAssetPath(const std::string& path) {
+  std::string result = path;
+
+  // <assetcache> → ${OBT_STAGE}/assetcache
+  auto pos = result.find("<assetcache>");
+  if (pos != std::string::npos) {
+    std::string stage;
+    if (genviron.get("OBT_STAGE", stage)) {
+      result.replace(pos, 12, stage + "/assetcache");
+    }
+  }
+
+  // ${ENV_VAR} expansion
+  size_t p = 0;
+  while ((p = result.find("${", p)) != std::string::npos) {
+    auto end = result.find('}', p + 2);
+    if (end == std::string::npos) break;
+    auto varname = result.substr(p + 2, end - p - 2);
+    std::string val;
+    if (genviron.get(varname, val)) {
+      result.replace(p, end - p + 1, val);
+    } else {
+      p = end + 1;
+    }
+  }
+  return result;
+}
+
+static void _loadEnvMapOverride(Drawable* drw, const std::string& envpath) {
+  if (envpath.empty()) return;
+  auto resolved = _expandAssetPath(envpath);
+  printf("\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+  printf("!! _loadEnvMapOverride: path='%s'\n", envpath.c_str());
+  printf("!! resolved='%s'\n", resolved.c_str());
+  auto maps = pbr::CommonStuff::requestRadianceMaps(resolved);
+  if (maps) {
+    drw->_envmapOverride = maps;
+    printf("!! SUCCESS: loaded RadianceMaps=%p\n", (void*)maps.get());
+  } else {
+    printf("!! FAILED: requestRadianceMaps returned null\n");
+  }
+  printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n");
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 void ModelDrawableData::describeX(object::ObjectClass* clazz){
   clazz->directProperty("assetpath", &ModelDrawableData::_assetpath);
   clazz->directMapProperty("assetvars", &ModelDrawableData::_assetvars);
+  clazz->directProperty("EnvironmentMapPath", &ModelDrawableData::_environmentMapPath);
 }
 
 ModelDrawableData::ModelDrawableData(AssetPath path) : _assetpath(path) {
@@ -42,6 +91,7 @@ drawable_ptr_t ModelDrawableData::createDrawable() const {
   drw->bindModelAsset(_assetpath);
   drw->_modcolor = _modcolor;
   drw->_name = _assetpath.c_str();
+  _loadEnvMapOverride(drw.get(), _environmentMapPath);
   return drw;
 }
 
@@ -52,6 +102,7 @@ drawable_ptr_t ModelDrawableData::createDrawableWithAsset(xgmmodelassetptr_t ass
   drw->bindModelAsset(asset);
   drw->_modcolor = _modcolor;
   drw->_name = _assetpath.c_str();
+  _loadEnvMapOverride(drw.get(), _environmentMapPath);
   return drw;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -255,6 +306,7 @@ void ModelDrawable::enqueueToRenderQueue(drawqueueitem_constptr_t item, lev2::IR
         renderable._offset = _offset;
 
         renderable._sortkey = _sortkey;
+        renderable._envmapOverride = _envmapOverride;
 
         if (item->_onrenderable) {
           item->_onrenderable(&renderable);
@@ -331,6 +383,7 @@ void ModelRenderable::Render(const IRenderer* renderer) const {
   RCID->setRenderable(this);
   RCID->_pipeline_cache = _submeshinst->_fxpipelinecache;
   RCID->_pickID = _pickID;
+  RCID->_envmapOverride = _envmapOverride;
   // context->debugMarker(FormatString("toolrenderer::RenderModel isskinned<%d> owner_as_ent<%p>", int(model->isSkinned()),
   // as_ent));
   ///////////////////////////////////////

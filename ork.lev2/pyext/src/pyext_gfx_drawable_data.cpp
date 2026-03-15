@@ -42,7 +42,8 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
           .def_property(
               "modcolor",
               [](drawabledata_ptr_t data) -> fvec4 { return data->_modcolor; },
-              [](drawabledata_ptr_t data, fvec4 c) { data->_modcolor = c; });
+              [](drawabledata_ptr_t data, fvec4 c) { data->_modcolor = c; })
+          .def_readwrite("environmentMapPath", &DrawableData::_environmentMapPath);
   type_codec->registerStdCodec<drawabledata_ptr_t>(drawabledata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto cbdrawabledata_type = //
