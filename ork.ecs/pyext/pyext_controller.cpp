@@ -7,6 +7,7 @@
 
 #include "pyext.h"
 #include <ork/ecs/controller.h>
+#include <ork/ecs/simulation.h>
 #include <ork/ecs/datatable.h>
 ///////////////////////////////////////////////////////////////////////////////
 using ctx_t               = ork::python::unmanaged_ptr<::ork::lev2::Context>;
@@ -254,7 +255,69 @@ void pyinit_controller(py::module& module_ecs) {
           fn();
         };
         ctrl->realtimeDelayedOperation(delay,L);
-      });
+      })
+      ///////////////////////////
+      // State change callback hooks
+      ///////////////////////////
+
+// Macro for update-thread hooks: controller.onUpdXxx(fn) where fn(sim)
+// PYNAME is the Python method name (e.g. onUpdPreCompose)
+// C++ member is _PYNAME (e.g. _onUpdPreCompose)
+#define DEF_UPD_HOOK(PYNAME) \
+      .def(#PYNAME, [](controller_ptr_t ctrl, py::function fn) { \
+        auto pyfn = std::make_shared<py::function>(fn); \
+        ctrl->_##PYNAME.push_back([pyfn, ctrl](Simulation* sim) { \
+            py::gil_scoped_acquire acquire; \
+            try { \
+                auto sim_ptr = ctrl->_simulation._unprotected_ref(); \
+                (*pyfn)(sim_ptr); \
+            } catch (py::error_already_set& e) { \
+                printf("\npython exception in " #PYNAME "\n"); \
+                e.restore(); PyErr_Print(); OrkAssert(false); \
+            } \
+        }); \
+      })
+
+// Macro for GPU-thread hooks: controller.onGpuXxx(fn) where fn(sim, ctx)
+#define DEF_GPU_HOOK(PYNAME) \
+      .def(#PYNAME, [](controller_ptr_t ctrl, py::function fn) { \
+        auto pyfn = std::make_shared<py::function>(fn); \
+        ctrl->_##PYNAME.push_back([pyfn, ctrl](Simulation* sim, lev2::Context* ctx) { \
+            py::gil_scoped_acquire acquire; \
+            try { \
+                auto sim_ptr = ctrl->_simulation._unprotected_ref(); \
+                (*pyfn)(sim_ptr, ctx_t(ctx)); \
+            } catch (py::error_already_set& e) { \
+                printf("\npython exception in " #PYNAME "\n"); \
+                e.restore(); PyErr_Print(); OrkAssert(false); \
+            } \
+        }); \
+      })
+
+      // Update thread hooks
+      DEF_UPD_HOOK(onUpdPreCompose)
+      DEF_UPD_HOOK(onUpdPostCompose)
+      DEF_UPD_HOOK(onUpdPreLink)
+      DEF_UPD_HOOK(onUpdPostLink)
+      DEF_UPD_HOOK(onUpdPreStage)
+      DEF_UPD_HOOK(onUpdPostStage)
+      DEF_UPD_HOOK(onUpdPreActivate)
+      DEF_UPD_HOOK(onUpdPostActivate)
+      DEF_UPD_HOOK(onUpdPreDeactivate)
+      DEF_UPD_HOOK(onUpdPostDeactivate)
+      DEF_UPD_HOOK(onUpdPreUnstage)
+      DEF_UPD_HOOK(onUpdPostUnstage)
+      // GPU thread hooks
+      DEF_GPU_HOOK(onGpuPostInit)
+      DEF_GPU_HOOK(onGpuPostLink)
+      // Clear all
+      .def("clearStateCallbacks", [](controller_ptr_t ctrl) {
+        ctrl->clearStateCallbacks();
+      })
+
+#undef DEF_UPD_HOOK
+#undef DEF_GPU_HOOK
+      ;
 
   type_codec->registerStdCodec<controller_ptr_t>(ctrl_type);
   /////////////////////////////////////////////////////////////////////////////////

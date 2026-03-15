@@ -586,7 +586,27 @@ void Controller::stopSimulation() {
   _enqueueEvent(simevent);
 }
 void Controller::endSimulation() {
+  clearStateCallbacks();
   updateExit();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Controller::clearStateCallbacks() {
+  _onUpdPreCompose.clear();
+  _onUpdPostCompose.clear();
+  _onUpdPreLink.clear();
+  _onUpdPostLink.clear();
+  _onUpdPreStage.clear();
+  _onUpdPostStage.clear();
+  _onUpdPreActivate.clear();
+  _onUpdPostActivate.clear();
+  _onUpdPreDeactivate.clear();
+  _onUpdPostDeactivate.clear();
+  _onUpdPreUnstage.clear();
+  _onUpdPostUnstage.clear();
+  _onGpuPostInit.clear();
+  _onGpuPostLink.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

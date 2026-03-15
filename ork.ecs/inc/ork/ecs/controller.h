@@ -164,6 +164,33 @@ struct Controller {
 	LockedResource<simulation_ptr_t> _simulation;
 
 	void_lambda_t _onSimulationExit;
+
+	// State change callback system
+	using state_callback_t = std::function<void(Simulation*)>;
+	using gpu_state_callback_t = std::function<void(Simulation*, lev2::Context*)>;
+	using state_callback_list_t = std::vector<state_callback_t>;
+	using gpu_state_callback_list_t = std::vector<gpu_state_callback_t>;
+
+	// Update thread hooks — fn(sim)
+	state_callback_list_t _onUpdPreCompose;
+	state_callback_list_t _onUpdPostCompose;
+	state_callback_list_t _onUpdPreLink;
+	state_callback_list_t _onUpdPostLink;
+	state_callback_list_t _onUpdPreStage;
+	state_callback_list_t _onUpdPostStage;
+	state_callback_list_t _onUpdPreActivate;
+	state_callback_list_t _onUpdPostActivate;
+	state_callback_list_t _onUpdPreDeactivate;
+	state_callback_list_t _onUpdPostDeactivate;
+	state_callback_list_t _onUpdPreUnstage;
+	state_callback_list_t _onUpdPostUnstage;
+
+	// GPU thread hooks — fn(sim, ctx)
+	gpu_state_callback_list_t _onGpuPostInit;
+	gpu_state_callback_list_t _onGpuPostLink;
+
+	void clearStateCallbacks();
+
 private:
 	
 	friend struct Simulation;
