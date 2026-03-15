@@ -128,6 +128,17 @@ SVG_BAKE_LIGHTING = _svg_wrap(f'''
         stroke="#CCAA4D" stroke-width="1.2" stroke-linecap="round"/>
 ''')
 
+SVG_ENVMAP_STUDIO = _svg_wrap(f'''
+  <path d="M4 20L10 4" stroke="#CCAA4D" stroke-width="2" stroke-linecap="round"/>
+  <path d="M10 4l2-2 2 2-2 2-2-2z" fill="#CCAA4D"/>
+  <circle cx="7" cy="12" r="1" fill="#CCAA4D"/>
+  <circle cx="14" cy="9" r="1" fill="#CCAA4D"/>
+  <circle cx="11" cy="15" r="1" fill="#CCAA4D"/>
+  <circle cx="17" cy="13" r="1" fill="#CCAA4D"/>
+  <circle cx="15" cy="18" r="1" fill="#CCAA4D"/>
+  <circle cx="19" cy="7" r="1" fill="#CCAA4D"/>
+''')
+
 SVG_LOOP = _svg_wrap(f'''
   <path d="M12 4V1L8 5l4 4V6c3.3 0 6 2.7 6 6 0 1-.3 2-.8 2.8l1.5 1.5c.8-1.2 1.3-2.7 1.3-4.3 0-4.4-3.6-8-8-8z" fill="{ICON_COLOR}"/>
   <path d="M12 18c-3.3 0-6-2.7-6-6 0-1 .3-2 .8-2.8L5.3 7.7C4.5 8.9 4 10.4 4 12c0 4.4 3.6 8 8 8v3l4-4-4-4v3z" fill="{ICON_COLOR}"/>
@@ -313,6 +324,7 @@ _ICONS = {
   'skip_forward': SVG_SKIP_FORWARD,
   'record': SVG_RECORD,
   'bake_lighting': SVG_BAKE_LIGHTING,
+  'envmap_studio': SVG_ENVMAP_STUDIO,
   'loop': SVG_LOOP,
 
   # Actions

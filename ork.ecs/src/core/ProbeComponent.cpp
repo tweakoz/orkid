@@ -17,6 +17,7 @@
 #include <ork/ecs/datatable.h>
 
 #include "ProbeComponent_impl.h"
+#include "message_private.h"
 
 ImplementReflectionX(ork::ecs::ProbeComponentData, "ProbeComponentData");
 ImplementReflectionX(ork::ecs::ProbeComponent, "ProbeComponent");
@@ -217,7 +218,42 @@ static std::string expandEnvVars(const std::string& input) {
   return result;
 }
 
-void ProbeSystem::markAllDirty() {
+void ProbeSystem::_onRequest(impl::sys_response_ptr_t response, token_t reqID, evdata_t data) {
+  switch (reqID.hashed()) {
+    case Bake._hashed: {
+      auto output_base = data.get<std::string>();
+      _pendingBakes.push_back({output_base, response, false});
+      break;
+    }
+    default:
+      System::_onRequest(response, reqID, data);
+      break;
+  }
+}
+
+void ProbeSystem::_onGpuUpdate(Simulation* psi, lev2::Context* ctx) {
+  for (auto& pending : _pendingBakes) {
+    if (!pending._activated) {
+      // First frame: activate probes and mark dirty
+      _activateBakeOnly();
+      _markAllDirty();
+      pending._activated = true;
+    } else if (_areAllClean()) {
+      // Probes rendered — bake and finish
+      int n = _bakeAll(ctx, pending._outputBase);
+      pending._response->_responseData.set<int>(n);
+      pending._response->_ready.store(true);
+      _deactivateBakeOnly();
+    }
+  }
+  // Remove completed bakes
+  _pendingBakes.erase(
+    std::remove_if(_pendingBakes.begin(), _pendingBakes.end(),
+      [](const PendingBake& pb) { return pb._response->_ready.load(); }),
+    _pendingBakes.end());
+}
+
+void ProbeSystem::_markAllDirty() {
   for (auto* comp : _components) {
     auto probe = comp->_probe;
     if (!probe) continue;
@@ -227,14 +263,14 @@ void ProbeSystem::markAllDirty() {
   }
 }
 
-bool ProbeSystem::areAllClean() const {
+bool ProbeSystem::_areAllClean() const {
   for (auto* comp : _components) {
     if (comp->_probe && comp->_probe->_dirty) return false;
   }
   return true;
 }
 
-void ProbeSystem::activateBakeOnly() {
+void ProbeSystem::_activateBakeOnly() {
   for (auto* comp : _components) {
     if (comp->_probe && comp->_probe->_activationMode == lev2::ProbeActivationMode::BAKE_ONLY) {
       comp->_probe->_active = true;
@@ -243,7 +279,7 @@ void ProbeSystem::activateBakeOnly() {
   }
 }
 
-void ProbeSystem::deactivateBakeOnly() {
+void ProbeSystem::_deactivateBakeOnly() {
   for (auto* comp : _components) {
     if (comp->_probe && comp->_probe->_activationMode == lev2::ProbeActivationMode::BAKE_ONLY) {
       comp->_probe->_active = false;
@@ -251,7 +287,7 @@ void ProbeSystem::deactivateBakeOnly() {
   }
 }
 
-int ProbeSystem::bakeAll(lev2::Context* ctx, const std::string& output_base) {
+int ProbeSystem::_bakeAll(lev2::Context* ctx, const std::string& output_base) {
   // Identity rotation — shader matches engine's envtools.i2 convention
   fquat rot;
 

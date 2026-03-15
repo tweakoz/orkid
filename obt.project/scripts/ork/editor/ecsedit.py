@@ -287,6 +287,10 @@ class EcsEditor(ComponentizedApplication):
       "bake_lighting", standard_icons.get('bake_lighting', icon_size, icon_size),
       "Bake Lighting (render all probes to equirectangular PNGs)")
 
+    self.btn_envmap_studio = self.toolbar.addButton(
+      "envmap_studio", standard_icons.get('envmap_studio', icon_size, icon_size),
+      "Open last baked probe in Environment Map Studio")
+
     # Extra buttons from subclass
     extras = self._getExtraToolbarButtons()
     if extras:
@@ -458,6 +462,7 @@ class EcsEditor(ComponentizedApplication):
     self.btn_rotate.onToggled(lambda t: self._onManipButton("rotate", t))
     self.btn_scale.onToggled(lambda t: self._onManipButton("scale", t))
     self.btn_bake_lighting.onPressed(self._onBakeLighting)
+    self.btn_envmap_studio.onPressed(self._onEnvmapStudio)
 
     # Create initial edit simulation (creates fresh scenegraph + binds to viewport)
     self._createEditSimulation()
@@ -804,74 +809,54 @@ class EcsEditor(ComponentizedApplication):
 
     data = fsm.FsmData()
     self._bake_idle = data.createState(None, "IDLE")
-    self._bake_activating = data.createState(None, "ACTIVATING")
-    self._bake_waiting = data.createState(None, "WAITING")
-    self._bake_exporting = data.createState(None, "EXPORTING")
+    self._bake_baking = data.createState(None, "BAKING")
 
-    data.addTransition(self._bake_idle, "bake_requested", self._bake_activating)
-    data.addTransition(self._bake_activating, "probes_activated", self._bake_waiting)
-    data.addTransition(self._bake_waiting, "probes_clean", self._bake_exporting)
-    data.addTransition(self._bake_exporting, "export_done", self._bake_idle)
+    data.addTransition(self._bake_idle, "bake_requested", self._bake_baking)
+    data.addTransition(self._bake_baking, "bake_done", self._bake_idle)
 
-    self._bake_activating.onEnter = lambda inst: self._bakeFSM_onActivating()
-    self._bake_exporting.onEnter = lambda inst: self._bakeFSM_onExporting()
+    self._bake_baking.onEnter = lambda inst: self._bakeFSM_onBaking()
 
     self._bake_fsm_data = data
     self._bake_fsm = fsm.FsmInstance(data)
     self._bake_fsm.changeState(self._bake_idle)
     self._bake_fsm.update()
 
-  def _bakeFSM_onActivating(self):
-    """ACTIVATING state: activate BAKE_ONLY probes, mark all dirty."""
-    sim = self.runtime.controller.simulation if self.runtime.controller else None
-    if not sim:
-      self._bake_fsm.sendEvent("export_done")  # abort
+  def _bakeFSM_onBaking(self):
+    """BAKING state: send Bake request, system handles full lifecycle internally."""
+    ctrl = self.runtime.controller
+    if not ctrl or not ctrl.simulation:
+      self._bake_fsm.sendEvent("bake_done")
       return
-    ecs.activateBakeOnlyProbes(sim)
-    ecs.markProbesDirty(sim)
-    print("BakeFSM: probes activated and marked dirty")
-    self._bake_fsm.sendEvent("probes_activated")
 
-  def _bakeFSM_onExporting(self):
-    """EXPORTING state: export cubemaps, open files, deactivate."""
-    sim = self.runtime.controller.simulation if self.runtime.controller else None
-    ctx = None  # will be set from _onGpuUpdate
-    if sim and hasattr(self, '_bake_ctx'):
-      ctx = self._bake_ctx
-      # Build exact filenames matching bakeAll's output pattern: folder/prefix_index.png
-      expected_files = []
-      sd = self.runtime.scene_data
-      if sd:
-        idx = 0
-        for arch in sd.archetypes:
-          for comp in arch.components:
-            if comp.className == "ProbeComponentData":
-              folder = os.path.expandvars(comp.outputFolder) if comp.outputFolder else self._bake_output_base
-              prefix = comp.outputPrefix if comp.outputPrefix else "probe"
-              expected_files.append(os.path.join(folder, f"{prefix}_{idx}.png"))
-              idx += 1
-      n = ecs.bakeProbes(sim, ctx, self._bake_output_base)
-      print(f"BakeFSM: {n} probes exported")
+    # Build expected filenames before bake
+    expected_files = []
+    sd = self.runtime.scene_data
+    if sd:
+      idx = 0
+      for arch in sd.archetypes:
+        for comp in arch.components:
+          if comp.className == "ProbeComponentData":
+            folder = os.path.expandvars(comp.outputFolder) if comp.outputFolder else self._bake_output_base
+            prefix = comp.outputPrefix if comp.outputPrefix else "probe"
+            expected_files.append(os.path.join(folder, f"{prefix}_{idx}.png"))
+            idx += 1
+
+    def on_bake_done():
+      print("BakeFSM: bake complete")
       for p in expected_files:
         if os.path.exists(p):
           print(f"  Opening: {p}")
           obt_command.runasync(["open", p])
-      ecs.deactivateBakeOnlyProbes(sim)
-    self._bake_fsm.sendEvent("export_done")
-    print("BakeFSM: done, back to IDLE")
+      self._bake_fsm.sendEvent("bake_done")
+
+    print("BakeFSM: sending Bake request")
+    ctrl.systemRequestWithCallback(
+      self._probe_sys, tokens.Bake, self._bake_output_base, on_bake_done)
 
   def _bakeFSM_update(self, ctx):
     """Called from _onGpuUpdate to drive the bake FSM."""
     if not hasattr(self, '_bake_fsm'):
       return
-    self._bake_ctx = ctx
-    state = self._bake_fsm.currentState
-    if state == self._bake_waiting:
-      sim = self.runtime.controller.simulation if self.runtime.controller else None
-      if sim and ecs.areProbesClean(sim):
-        # Probes rendered — previous frame's GPU work is done (waitPresentFrame already called)
-        print("BakeFSM: probes clean, transitioning to EXPORTING")
-        self._bake_fsm.sendEvent("probes_clean")
     self._bake_fsm.update()
 
   def _onBakeLighting(self):
@@ -890,6 +875,9 @@ class EcsEditor(ComponentizedApplication):
 
     if not hasattr(self, '_bake_fsm'):
       self._initBakeFSM()
+
+    # Get probe system handle for event-based communication
+    self._probe_sys = self.runtime.controller.findSystemHandle("ProbeSystem")
 
     if self._bake_fsm.currentState == self._bake_idle:
       print("BakeFSM: bake requested")
@@ -911,6 +899,29 @@ class EcsEditor(ComponentizedApplication):
       self._pausePlay()
     else:
       self._resumePlay()
+
+  def _onEnvmapStudio(self):
+    """Launch ork.hdri.studio.py with the first baked probe PNG."""
+    # Find the first probe's output file
+    sd = self.runtime.scene_data
+    if not sd:
+      print("EnvmapStudio: no scene data")
+      return
+    for arch in sd.archetypes:
+      for comp in arch.components:
+        if comp.className == "ProbeComponentData":
+          output_base = getattr(self, '_bake_output_base', '/tmp/ecs_probes')
+          folder = os.path.expandvars(comp.outputFolder) if comp.outputFolder else output_base
+          prefix = comp.outputPrefix if comp.outputPrefix else "probe"
+          path = os.path.join(folder, f"{prefix}_0.png")
+          if os.path.exists(path):
+            print(f"EnvmapStudio: launching with {path}")
+            obt_command.runasync(["ork.hdri.studio.py", "-i", path])
+            return
+          else:
+            print(f"EnvmapStudio: {path} not found — bake first")
+            return
+    print("EnvmapStudio: no ProbeComponent found")
 
   def _onStop(self):
     self._stopPlay()

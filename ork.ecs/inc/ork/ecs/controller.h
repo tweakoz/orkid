@@ -146,7 +146,7 @@ struct Controller {
   void entBarrier(ent_ref_t EREF);
 
   void systemNotify(sys_ref_t sys, token_t evID, svar64_t data);
-  response_ref_t systemRequest(sys_ref_t sys, token_t evID, svar64_t data);
+  response_ref_t systemRequest(sys_ref_t sys, token_t evID, svar64_t data, void_lambda_t callback = nullptr);
 
   void componentNotify(comp_ref_t comp, token_t evID, svar64_t data);
   response_ref_t componentRequest(comp_ref_t comp, token_t evID, svar64_t data);

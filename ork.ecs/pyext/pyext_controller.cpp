@@ -236,6 +236,37 @@ void pyinit_controller(py::module& module_ecs) {
             return rval;
           })
       .def(
+          "systemRequestWithCallback",
+          [type_codec](
+              controller_ptr_t ctrl,
+              const SystemHandle& sys,
+              crcstring_ptr_t evID,
+              py::object evdata,
+              py::object pycallback) -> response_ref_t {
+            evdata_t decoded;
+            if (evdata.is_none())
+              decoded = nullptr;
+            else {
+              decoded = type_codec->decode64(evdata);
+            }
+            void_lambda_t callback = nullptr;
+            if (!pycallback.is_none()) {
+              auto pyfn = std::make_shared<py::function>(pycallback.cast<py::function>());
+              callback = [pyfn, type_codec]() {
+                py::gil_scoped_acquire acquire;
+                try {
+                  (*pyfn)();
+                } catch (py::error_already_set& e) {
+                  printf("\npython exception in systemRequestWithCallback\n");
+                  e.restore();
+                  PyErr_Print();
+                }
+              };
+            }
+            response_ref_t rval = ctrl->systemRequest(sys._sysref, *evID, decoded, callback);
+            return rval;
+          })
+      .def(
           "spawnEntity",
           [type_codec](
               controller_ptr_t ctrl, //

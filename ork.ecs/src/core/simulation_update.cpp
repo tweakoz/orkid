@@ -18,6 +18,7 @@
 #include <ork/ecs/system.h>
 #include <ork/ecs/controller.h>
 #include <ork/ecs/scene.inl>
+#include "message_private.h"
 #include <ork/util/logger.h>
 #include <ork/kernel/profiler.h>
 
@@ -182,8 +183,6 @@ void Simulation::_update_SIMSTATE() {
         sys.second->_update(this);
 
       ///////////////////////////////
-
-      ///////////////////////////////
       break;
     }
     default:
@@ -192,6 +191,21 @@ void Simulation::_update_SIMSTATE() {
   }
 }
 
+///////////////////////////////////////////////////////////////////////////
+void Simulation::_sweepResponseCallbacks() {
+  auto it = _pendingResponseCallbacks.begin();
+  while (it != _pendingResponseCallbacks.end()) {
+    auto& response = *it;
+    if (response->_ready.load()) {
+      if (response->_callback) {
+        response->_callback();
+      }
+      it = _pendingResponseCallbacks.erase(it);
+    } else {
+      ++it;
+    }
+  }
+}
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::_serviceDeactivateQueue() {
   ork::opq::assertOnQueue2(opq::updateSerialQueue());

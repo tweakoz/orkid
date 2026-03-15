@@ -58,33 +58,6 @@ void pyinit_probe(py::module& module_ecs) {
                 return fxs.c_str();
               });
   type_codec->registerStdCodec<probesysdata_ptr_t>(probesysdata_type);
-  /////////////////////////////////////////////////////////////////////////////////
-  // Module-level probe baking functions (operate on simulation)
-  // Must be called from _onGpuUpdate (outside beginFrame/endFrame)
-  /////////////////////////////////////////////////////////////////////////////////
-  module_ecs.def("markProbesDirty", [](simulation_ptr_t sim) {
-    auto probe_sys = sim->findSystem<ProbeSystem>();
-    if (probe_sys) {
-      probe_sys->markAllDirty();
-    }
-  });
-  module_ecs.def("bakeProbes", [](simulation_ptr_t sim, ctx_t ctx, std::string output_base) -> int {
-    auto probe_sys = sim->findSystem<ProbeSystem>();
-    if (!probe_sys) return 0;
-    return probe_sys->bakeAll(ctx.get(), output_base);
-  });
-  module_ecs.def("areProbesClean", [](simulation_ptr_t sim) -> bool {
-    auto probe_sys = sim->findSystem<ProbeSystem>();
-    if (!probe_sys) return true;
-    return probe_sys->areAllClean();
-  });
-  module_ecs.def("activateBakeOnlyProbes", [](simulation_ptr_t sim) {
-    auto probe_sys = sim->findSystem<ProbeSystem>();
-    if (probe_sys) probe_sys->activateBakeOnly();
-  });
-  module_ecs.def("deactivateBakeOnlyProbes", [](simulation_ptr_t sim) {
-    auto probe_sys = sim->findSystem<ProbeSystem>();
-    if (probe_sys) probe_sys->deactivateBakeOnly();
-  });
+  // All probe operations now go through controller.systemNotify / systemRequestWithCallback
 }
 } // namespace ork::ecs

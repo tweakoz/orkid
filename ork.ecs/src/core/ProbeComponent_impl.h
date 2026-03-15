@@ -47,18 +47,33 @@ public:
     return SystemType;
   }
 
-  ProbeSystem(const ProbeSystemData& data, ork::ecs::Simulation* pinst);
+  // Event tokens
+  DeclareToken(Bake);
 
-  // Call from Python _onGpuUpdate (outside beginFrame/endFrame)
-  int bakeAll(lev2::Context* ctx, const std::string& output_base);
-  void markAllDirty();
-  bool areAllClean() const;
-  void activateBakeOnly();
-  void deactivateBakeOnly();
+  ProbeSystem(const ProbeSystemData& data, ork::ecs::Simulation* pinst);
 
 private:
 
   friend struct ProbeComponent;
+
+  // Request handler + GPU update
+  void _onRequest(impl::sys_response_ptr_t response, token_t reqID, evdata_t data) override;
+  void _onGpuUpdate(Simulation* psi, lev2::Context* ctx) override;
+
+  // Internal operations
+  int _bakeAll(lev2::Context* ctx, const std::string& output_base);
+  void _markAllDirty();
+  bool _areAllClean() const;
+  void _activateBakeOnly();
+  void _deactivateBakeOnly();
+
+  // Pending bake request (queued by Bake request, executed in _onGpuUpdate when probes clean)
+  struct PendingBake {
+    std::string _outputBase;
+    impl::sys_response_ptr_t _response;
+    bool _activated = false;
+  };
+  std::vector<PendingBake> _pendingBakes;
 
   void _onStageComponent(ProbeComponent* component);
   void _onUnstageComponent(ProbeComponent* component);

@@ -72,6 +72,7 @@ struct _SystemRequest {
   sys_ref_t _sysref;
   token_t _requestID;
   response_ref_t _respref;
+  void_lambda_t _callback;  // optional callback fired when response is ready
 };
 struct _SystemResponse {
   svar64_t _eventData;
@@ -79,6 +80,8 @@ struct _SystemResponse {
   sys_ref_t _sysref;
   token_t _requestID;
   response_ref_t _respref;
+  void_lambda_t _callback;
+  std::atomic<bool> _ready = false;
 };
 
 struct _ComponentEvent {
