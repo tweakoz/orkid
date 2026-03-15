@@ -269,6 +269,7 @@ def process_envmap(source_path, output_path, ctx, ezapp,
                    debug_dir=None, verbose=True,
                    num_roughness_levels=NUM_ROUGHNESS_LEVELS,
                    roughness_values=None,
+                   roughness_bias=0.0,
                    skip_diffuse=False,
                    scale=1.0,
                    clamp=16.0,
@@ -344,8 +345,9 @@ def process_envmap(source_path, output_path, ctx, ezapp,
     if roughness_values is None:
         roughness_values = []
         denom = max(1, num_roughness_levels - 1)
+        bias = roughness_bias
         for i in range(num_roughness_levels):
-            roughness_values.append((i / denom) ** ROUGHNESS_POWER)
+            roughness_values.append(bias + (1.0 - bias) * ((i / denom) ** ROUGHNESS_POWER))
 
     num_levels = len(roughness_values)
     for i, roughness in enumerate(roughness_values):

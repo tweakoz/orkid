@@ -161,6 +161,7 @@ class EnvMapStudio(ComponentizedApplication):
     self.pv_scale_val = 0.5
     self.pv_num_roughness = 3
     self.pv_roughness_curve = ROUGHNESS_POWER
+    self.pv_roughness_bias = 0.0
     self.pv_num_samples = 128
     self.pv_do_diffuse = True
 
@@ -168,6 +169,7 @@ class EnvMapStudio(ComponentizedApplication):
     self.scale_val = 1.0
     self.num_roughness = 10
     self.roughness_curve = ROUGHNESS_POWER
+    self.roughness_bias = 0.0
     self.num_samples = 8192
     self.do_diffuse = True
 
@@ -345,6 +347,12 @@ class EnvMapStudio(ComponentizedApplication):
     self.pv_curve_slider.setRange(0.1, 3.0)
     self.pv_curve_slider.onValueChanged = lambda w: self._set_and_save('pv_roughness_curve', w.value)
 
+    self.pv_bias_slider = preview_vp.makeChild(
+      uiclass=lev2.ui.FloatSlider,
+      args=["RoughnessBias", sli_col, 0.0, 0.5, 0.0])
+    self.pv_bias_slider.setRange(0.0, 0.5)
+    self.pv_bias_slider.onValueChanged = lambda w: self._set_and_save('pv_roughness_bias', w.value)
+
     self.pv_samples_slider = preview_vp.makeChild(
       uiclass=lev2.ui.IntSlider,
       args=["Samples", sli_col, 16, 16384, 128])
@@ -385,6 +393,12 @@ class EnvMapStudio(ComponentizedApplication):
       args=["RoughnessCurve", sli_col, 0.1, 3.0, ROUGHNESS_POWER])
     self.curve_slider.setRange(0.1, 3.0)
     self.curve_slider.onValueChanged = lambda w: self._set_and_save('roughness_curve', w.value)
+
+    self.bias_slider = bake_vp.makeChild(
+      uiclass=lev2.ui.FloatSlider,
+      args=["RoughnessBias", sli_col, 0.0, 0.5, 0.0])
+    self.bias_slider.setRange(0.0, 0.5)
+    self.bias_slider.onValueChanged = lambda w: self._set_and_save('roughness_bias', w.value)
 
     self.samples_slider = bake_vp.makeChild(
       uiclass=lev2.ui.IntSlider,
@@ -682,10 +696,12 @@ class EnvMapStudio(ComponentizedApplication):
       "scale": self.scale_val,
       "num_roughness": self.num_roughness,
       "roughness_curve": self.roughness_curve,
+      "roughness_bias": self.roughness_bias,
       "num_samples": self.num_samples,
       "pv_scale": self.pv_scale_val,
       "pv_num_roughness": self.pv_num_roughness,
       "pv_roughness_curve": self.pv_roughness_curve,
+      "pv_roughness_bias": self.pv_roughness_bias,
       "pv_num_samples": self.pv_num_samples,
     })
 
@@ -706,10 +722,12 @@ class EnvMapStudio(ComponentizedApplication):
     self.scale_val = s.get("scale", self.scale_val)
     self.num_roughness = s.get("num_roughness", self.num_roughness)
     self.roughness_curve = s.get("roughness_curve", self.roughness_curve)
+    self.roughness_bias = s.get("roughness_bias", self.roughness_bias)
     self.num_samples = s.get("num_samples", self.num_samples)
     self.pv_scale_val = s.get("pv_scale", self.pv_scale_val)
     self.pv_num_roughness = s.get("pv_num_roughness", self.pv_num_roughness)
     self.pv_roughness_curve = s.get("pv_roughness_curve", self.pv_roughness_curve)
+    self.pv_roughness_bias = s.get("pv_roughness_bias", self.pv_roughness_bias)
     self.pv_num_samples = s.get("pv_num_samples", self.pv_num_samples)
     # Update slider widgets to match
     self.clamp_slider.value = self.clamp_val
@@ -721,10 +739,12 @@ class EnvMapStudio(ComponentizedApplication):
     self.scale_slider.value = self.scale_val
     self.levels_slider.value = self.num_roughness
     self.curve_slider.value = self.roughness_curve
+    self.bias_slider.value = self.roughness_bias
     self.samples_slider.value = self.num_samples
     self.pv_scale_slider.value = self.pv_scale_val
     self.pv_levels_slider.value = self.pv_num_roughness
     self.pv_curve_slider.value = self.pv_roughness_curve
+    self.pv_bias_slider.value = self.pv_roughness_bias
     self.pv_samples_slider.value = self.pv_num_samples
 
   ##############################################################################
@@ -921,13 +941,15 @@ class EnvMapStudio(ComponentizedApplication):
       n = max(1, self.pv_num_roughness)
       denom = max(1, n - 1)
       curve = self.pv_roughness_curve
-      roughness_values = [(i / denom) ** curve for i in range(n)]
+      bias = self.pv_roughness_bias
+      roughness_values = [bias + (1.0 - bias) * ((i / denom) ** curve) for i in range(n)]
       total_samples = self.pv_num_samples
       do_diffuse = True
     else:
       denom = max(1, self.num_roughness - 1)
       curve = self.roughness_curve
-      roughness_values = [(i / denom) ** curve for i in range(self.num_roughness)]
+      bias = self.roughness_bias
+      roughness_values = [bias + (1.0 - bias) * ((i / denom) ** curve) for i in range(self.num_roughness)]
       total_samples = self.num_samples
       do_diffuse = True
 
