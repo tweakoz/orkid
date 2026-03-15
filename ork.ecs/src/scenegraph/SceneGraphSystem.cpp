@@ -785,13 +785,13 @@ void SceneGraphSystem::_onNotify(token_t evID, evdata_t data) {
       auto psname = AddPooledString(name_str.c_str());
       int matched = 0;
       _components.atomicOp([&](component_set_t& comps) {
-        fprintf(stderr, "[SyncXF] spawner='%s' num_components=%zu\n", name_str.c_str(), comps.size());
+        if(0)fprintf(stderr, "[SyncXF] spawner='%s' num_components=%zu\n", name_str.c_str(), comps.size());
         for (auto* comp : comps) {
           auto ent = comp->GetEntity();
           if (ent->data()->GetName() == psname) {
             auto spawner_xf = ent->data()->_dagnode->_xfnode->_transform;
             auto ent_xf = ent->transform();
-            fprintf(stderr, "[SyncXF]   MATCH: spawner_pos=(%.2f,%.2f,%.2f) ent_pos=(%.2f,%.2f,%.2f)\n",
+            if(0)fprintf(stderr, "[SyncXF]   MATCH: spawner_pos=(%.2f,%.2f,%.2f) ent_pos=(%.2f,%.2f,%.2f)\n",
                     spawner_xf->_translation.x, spawner_xf->_translation.y, spawner_xf->_translation.z,
                     ent_xf->_translation.x, ent_xf->_translation.y, ent_xf->_translation.z);
             ent_xf->_translation = spawner_xf->_translation;
@@ -804,7 +804,7 @@ void SceneGraphSystem::_onNotify(token_t evID, evdata_t data) {
         }
       });
       if (matched == 0) {
-        fprintf(stderr, "[SyncXF] WARNING: no entities matched spawner '%s'\n", name_str.c_str());
+        if(0)fprintf(stderr, "[SyncXF] WARNING: no entities matched spawner '%s'\n", name_str.c_str());
       }
       break;
     }
