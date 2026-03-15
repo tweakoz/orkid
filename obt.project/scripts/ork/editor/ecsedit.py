@@ -569,7 +569,17 @@ class EcsEditor(ComponentizedApplication):
     if category == "Archetypes":
       arch = self.outliner_model._findArchetype(name)
       if arch:
-        if len(parts) == 3:
+        if len(parts) == 4:
+          # Node selected under SceneGraphComponent
+          comp = self.outliner_model._findComponent(parts[1], parts[2])
+          if comp and comp.className == "SceneGraphComponentData":
+            node_name = parts[3]
+            nodedatas = comp.nodedatas
+            if node_name in nodedatas:
+              nid = nodedatas[node_name]
+              self._selected_object = nid.drawabledata
+              self._setupNodePropertyOverrides(nid, comp)
+        elif len(parts) == 3:
           comp_name = parts[2]
           for c in arch.components:
             if c.className == comp_name:
@@ -612,6 +622,38 @@ class EcsEditor(ComponentizedApplication):
     self.propsheet.rebuild()
     self.propsheet.expandAll()
     self._onSelectionChanged(self._selected_object, key)
+
+  def _setupNodePropertyOverrides(self, nid, comp):
+    """Set up property sheet key overrides for a SceneGraphNodeItemData."""
+    from ork.editor.ecs_outliner_model import _enumerateDrawableDataTypes
+    self.refl_model.clearKeyOverrides()
+
+    # Layer name
+    self.refl_model.addKeyOverride(
+        "Layer",
+        lev2.ui.PropertyType.String,
+        lambda: nid.layername,
+        lambda val: setattr(nid, 'layername', val),
+        None)
+
+    # Drawable type dropdown
+    def get_drawable_class():
+      return nid.drawableClassName
+
+    def set_drawable_class(val):
+      nid.drawableClassName = val
+      # Update selected object to the new drawable data
+      self._selected_object = nid.drawabledata
+      self.refl_model.object = self._selected_object
+      self.propsheet.rebuild()
+      self.propsheet.expandAll()
+
+    self.refl_model.addKeyOverride(
+        "DrawableType",
+        lev2.ui.PropertyType.String,
+        get_drawable_class,
+        set_drawable_class,
+        lambda: ["(none)"] + _enumerateDrawableDataTypes())
 
   def _setSpawnerArchetype(self, sp, name):
     for arch in self.scene_data.archetypes:
