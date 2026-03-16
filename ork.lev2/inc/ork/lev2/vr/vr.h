@@ -14,6 +14,7 @@
 #include <ork/math/cmatrix4.h>
 #include <ork/kernel/thread.h>
 #include <ork/kernel/mutex.h>
+#include <ork/kernel/timer.h>
 
 #if defined(ENABLE_LIBSURVIVE)
 #include <libsurvive/survive_api.h>
