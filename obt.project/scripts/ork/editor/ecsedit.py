@@ -287,10 +287,6 @@ class EcsEditor(ComponentizedApplication):
       "bake_lighting", standard_icons.get('bake_lighting', icon_size, icon_size),
       "Bake Lighting (render all probes to equirectangular PNGs)")
 
-    self.btn_envmap_studio = self.toolbar.addButton(
-      "envmap_studio", standard_icons.get('envmap_studio', icon_size, icon_size),
-      "Open last baked probe in Environment Map Studio")
-
     # Extra buttons from subclass
     extras = self._getExtraToolbarButtons()
     if extras:
@@ -462,7 +458,6 @@ class EcsEditor(ComponentizedApplication):
     self.btn_rotate.onToggled(lambda t: self._onManipButton("rotate", t))
     self.btn_scale.onToggled(lambda t: self._onManipButton("scale", t))
     self.btn_bake_lighting.onPressed(self._onBakeLighting)
-    self.btn_envmap_studio.onPressed(self._onEnvmapStudio)
 
     # Create initial edit simulation (creates fresh scenegraph + binds to viewport)
     self._createEditSimulation()
@@ -845,8 +840,8 @@ class EcsEditor(ComponentizedApplication):
       print("BakeFSM: bake complete")
       for p in expected_files:
         if os.path.exists(p):
-          print(f"  Opening: {p}")
-          obt_command.runasync(["open", p])
+          print(f"  Opening in HDRI Studio: {p}")
+          obt_command.runasync(["ork.hdri.studio.py", "-i", p])
       self._bake_fsm.sendEvent("bake_done")
 
     print("BakeFSM: sending Bake request")
@@ -899,29 +894,6 @@ class EcsEditor(ComponentizedApplication):
       self._pausePlay()
     else:
       self._resumePlay()
-
-  def _onEnvmapStudio(self):
-    """Launch ork.hdri.studio.py with the first baked probe PNG."""
-    # Find the first probe's output file
-    sd = self.runtime.scene_data
-    if not sd:
-      print("EnvmapStudio: no scene data")
-      return
-    for arch in sd.archetypes:
-      for comp in arch.components:
-        if comp.className == "ProbeComponentData":
-          output_base = getattr(self, '_bake_output_base', '/tmp/ecs_probes')
-          folder = os.path.expandvars(comp.outputFolder) if comp.outputFolder else output_base
-          prefix = comp.outputPrefix if comp.outputPrefix else "probe"
-          path = os.path.join(folder, f"{prefix}_0.png")
-          if os.path.exists(path):
-            print(f"EnvmapStudio: launching with {path}")
-            obt_command.runasync(["ork.hdri.studio.py", "-i", path])
-            return
-          else:
-            print(f"EnvmapStudio: {path} not found — bake first")
-            return
-    print("EnvmapStudio: no ProbeComponent found")
 
   def _onStop(self):
     self._stopPlay()
