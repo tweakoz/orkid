@@ -9,7 +9,6 @@
 #include "vulkan_captureasync.h"
 #include "vulkan_ubo_dynamic.h"
 #include <ork/lev2/gfx/image.h>
-#include <vulkan/vk_enum_string_helper.h>
 
 #define USE_OIIO
 #if defined(USE_OIIO)
@@ -335,8 +334,7 @@ void VkContext::_initVulkanCommon() {
   CPCI_GFX.flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT //
                    | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
 
-  VkResult OK = vkCreateCommandPool(_vkdevice, &CPCI_GFX, nullptr, &_vkcmdpool_graphics);
-  OrkAssert(OK == VK_SUCCESS);
+  OrkVkAssert(vkCreateCommandPool(_vkdevice, &CPCI_GFX, nullptr, &_vkcmdpool_graphics));
 
   ////////////////////////////
   // create primary command buffer impls
@@ -400,8 +398,7 @@ void VkContext::_initVulkanCommon() {
   poolInfo.pPoolSizes    = poolSizes.data();
   poolInfo.maxSets       = DESCRIPTORSET_COUNT; // Maximum number of descriptor sets to allocate from this pool
 
-  OK = vkCreateDescriptorPool(_vkdevice, &poolInfo, nullptr, &_vkDescriptorPool);
-  OrkAssert(OK == VK_SUCCESS);
+  OrkVkAssert(vkCreateDescriptorPool(_vkdevice, &poolInfo, nullptr, &_vkDescriptorPool));
   
   ////////////////////////////
   // create default texture implementations
@@ -514,8 +511,7 @@ void VkContext::_initDefaultTextures() {
         OrkAssert(false);
     }
     
-    VkResult ok = vkCreateImageView(_vkdevice, &viewInfo, nullptr, &tex_obj->_imgobj[0]->_vkimageview);
-    OrkAssert(VK_SUCCESS == ok);
+    OrkVkAssert(vkCreateImageView(_vkdevice, &viewInfo, nullptr, &tex_obj->_imgobj[0]->_vkimageview));
 
     // Initialize with black data (we'll need to transition and fill the texture)
     // For now, just transition to shader read optimal
@@ -777,6 +773,7 @@ void VkContext::_doEndPrimaryCommandBuffer() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_doSubmitPrimaryCommandBuffer(){
+  OrkProfilerSampleScope(CHANNEL_MAIN, "vk:doSubmitPrimaryCommandBuffer");
 
   auto swapchain = _fbi->_swapchain;
 #if defined(__linux__)
@@ -786,6 +783,11 @@ void VkContext::_doSubmitPrimaryCommandBuffer(){
 #endif
 
   if (swapchain) {
+
+    ////////////////////////////////////////
+    // Swapchain
+    ////////////////////////////////////////
+
     // Onscreen rendering with GLFW swapchain
     bool semas_empty = false;
     _pendingOneShotSemas.atomicOp([&](vkcompsema_set_t& unlocked) {
@@ -805,27 +807,33 @@ void VkContext::_doSubmitPrimaryCommandBuffer(){
 
     // Submit
     if ( not semas_empty) {
-      OrkProfilerSampleScope(CHANNEL_MAIN, "vk:submit_semaphores");
       // Submit with timeline semaphores
       swapchain->_submitFrameWithSemaphores(this);
     } else {
-      OrkProfilerSampleScope(CHANNEL_MAIN, "vk:enqueue_frame");
       // Normal submission
       swapchain->enqueueFrame(this);
     }
 
-    ///////////////////////////////////////////////////////
     // Present !
-    ///////////////////////////////////////////////////////
-    {
-      OrkProfilerSampleScope(CHANNEL_MAIN, "vk:present");
-      swapchain->enqueuePresentFrame(this);
-      swapchain->waitPresentFrame(this);
-    }
+    swapchain->enqueuePresentFrame(this);
 
-    // Process pending captures after swapchain frame completion
+    // Wait for only the frame which was just submitted to finish. (Not the present)
+    swapchain->waitFrame();
+
+    _render_timing_estimator->markPredictionTarget();
+
+    // Process pending captures. Assumes the frame has been waited.
     _processPendingCaptures();
+
+    // Incremenet frame after wait. Meaning there is no pipelining of frames.
+    swapchain->incrementFrame();
+
   } else if (swapchain_drm) {
+
+    ////////////////////////////////////////
+    // DRM
+    ////////////////////////////////////////
+
 #if defined(__linux__)
     // Onscreen rendering with DRM swapchain
     bool semas_empty = false;
@@ -862,6 +870,11 @@ void VkContext::_doSubmitPrimaryCommandBuffer(){
     _processPendingCaptures();
 #endif
   } else {
+
+    ////////////////////////////////////////
+    // Offscreen
+    ////////////////////////////////////////
+
     // Offscreen rendering - handle completion semaphores
     bool semas_empty = false;
     _pendingOneShotSemas.atomicOp([&](vkcompsema_set_t& unlocked) {
@@ -1015,8 +1028,8 @@ void VkContext::_doPreBeginFrame() {
   // begin gpu profiler frame after we have setup commandbuffer
   // must use beginProfilerFrame overload to set cmdbuf for frame
   VkProfilerChannel::BeginParams profiler_params = {
-    .device           = _vkdevice, 
-    .timestamp_period = _vkdeviceinfo->_devprops.limits.timestampPeriod, 
+    .device           = _vkdevice,
+    .timestamp_period = _vkdeviceinfo->_devprops.limits.timestampPeriod,
     .cmdbuf           = primary_cb()->_vkcmdbuf,
   };
   OrkProfilerFrameBegin(CHANNEL_GPU, VkProfilerChannel, profiler_params);
@@ -1114,6 +1127,7 @@ void VkContext::_onGpuPostInit() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_doEndFrame() {
+  OrkProfilerSampleScope(CHANNEL_MAIN, "vk:doEndFrame");
   
   auto main_rtg = _fbi->_ensureMainRtg();
   ////////////////////////
@@ -1289,13 +1303,12 @@ void VkContext::initializeWindowContext(
         vkGetInstanceProcAddr(_GVI->_instance, "vkCreateHeadlessSurfaceEXT");
 
       if (vkCreateHeadlessSurfaceEXT) {
-        VkResult OK = vkCreateHeadlessSurfaceEXT(
+        OrkVkAssert(vkCreateHeadlessSurfaceEXT(
           _GVI->_instance,
           &headlessInfo,
           nullptr,
           &_vkpresentationsurface
-        );
-        OrkAssert(OK == VK_SUCCESS);
+        ));
         logchan_vkctx->log("Headless surface created successfully");
       } else {
         logchan_vkctx->log("ERROR: vkCreateHeadlessSurfaceEXT not available");
@@ -1303,8 +1316,7 @@ void VkContext::initializeWindowContext(
       }
     } else {
       // Original onscreen path
-      VkResult OK = glfwCreateWindowSurface(_GVI->_instance, glfw_window, nullptr, &_vkpresentationsurface);
-      OrkAssert(OK == VK_SUCCESS);
+      OrkVkAssert(glfwCreateWindowSurface(_GVI->_instance, glfw_window, nullptr, &_vkpresentationsurface));
     }
   }
 
@@ -1491,13 +1503,12 @@ void VkContext::initializeLoaderContext() {
       vkGetInstanceProcAddr(_GVI->_instance, "vkCreateHeadlessSurfaceEXT");
 
     if (vkCreateHeadlessSurfaceEXT) {
-      VkResult OK = vkCreateHeadlessSurfaceEXT(
+      OrkVkAssert(vkCreateHeadlessSurfaceEXT(
         _GVI->_instance,
         &headlessInfo,
         nullptr,
         &temp_surface
-      );
-      OrkAssert(OK == VK_SUCCESS);
+      ));
     }
   }
 
@@ -1928,8 +1939,7 @@ void VkProfilerChannel::frameBegin(BeginParams params) {
       .queryType = VK_QUERY_TYPE_TIMESTAMP,
       .queryCount = MAX_GPU_PERF_QUERIES * 2, // 2 timestamps per block (begin + end)
     };
-    VkResult ok = vkCreateQueryPool(_device, &info, nullptr, &_query_pool);
-    OrkAssert(ok == VK_SUCCESS);  
+    OrkVkAssert(vkCreateQueryPool(_device, &info, nullptr, &_query_pool));
   }
 
   if (!_vk_span_stack.empty()) [[unlikely]] {
@@ -1966,19 +1976,18 @@ void VkProfilerChannel::frameEnd() {
 
   // Readback timestamp queries
   _timestamps.resize(_query_index);
-  VkResult ok = vkGetQueryPoolResults(_device, _query_pool, 0, _query_index, _query_index * sizeof(u64),
-    _timestamps.data(), sizeof(u64), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
-  OrkAssert(VK_SUCCESS == ok);
+  OrkVkAssert(vkGetQueryPoolResults(_device, _query_pool, 0, _query_index, _query_index * sizeof(u64),
+    _timestamps.data(), sizeof(u64), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
   _query_index = 0;
 
-  // Accumulate isolated ticks from per-segment spans
+    // Accumulate isolated ticks from per-segment spans
   for (auto& span : _vk_spans)
-    span.series->_isolated_ticks += _timestamps[span.end_query] - _timestamps[span.begin_query];
+      span.series->_isolated_ticks += _timestamps[span.end_query] - _timestamps[span.begin_query];
   _vk_spans.clear();
 
-  // Accumulate total ticks from full-duration spans (begin_total_query -> end_query)
+    // Accumulate total ticks from full-duration spans (begin_total_query -> end_query)
   for (auto& span : _vk_total_spans)
-    span.series->_total_ticks += _timestamps[span.end_query] - _timestamps[span.begin_total_query];
+      span.series->_total_ticks += _timestamps[span.end_query] - _timestamps[span.begin_total_query];
   _vk_total_spans.clear();
 
   // accumulate in series through base call

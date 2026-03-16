@@ -11,6 +11,7 @@
 #include <ork/kernel/kernel.h>
 #include <ork/kernel/timer.h>
 #include <ork/kernel/mutex.h>
+#include <ork/util/logger.h>
 
 #if defined(ORK_OSX) || defined(ORK_IOS)
 #include <mach/mach_time.h>
@@ -32,6 +33,10 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
+///////////////////////////////////////////////////////////////////////////////
+
+static logchannel_ptr_t logchan_timer = logger()->configureChannel("TIMER", fvec3(0.7, 0.9, 0.7), true);
+
 ///////////////////////////////////////////////////////////////////////////////
 
 Timer::Timer()
@@ -268,6 +273,38 @@ void usleep(int microsec) {
 ///////////////////////////////////////////////////////////////////////////////
 #endif
 ///////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+
+void TimePredictor::markPredictionTarget() {
+  u64 now = Timer::getSystemTick();
+  if (_last_mark_tick > 0) {
+    // Log prediction error from previous mark's prediction
+    if (0) {
+      int64_t error_ns = (int64_t)now - (int64_t)_last_prediction;
+      logchan_timer->log("predict error: %+.3f us  avg_interval: %.3f ms",
+                         double(error_ns) * 1e-3,
+                         double(_avg_interval_ns) * 1e-6);
+    }
+    u64 interval = now - _last_mark_tick;
+    _history[_history_index] = interval;
+    _history_index = (_history_index + 1) % HISTORY_SIZE;
+    if (_history_count < HISTORY_SIZE)
+      _history_count++;
+    u64 sum = 0;
+    for (size_t i = 0; i < _history_count; i++)
+      sum += _history[i];
+    _avg_interval_ns = sum / _history_count;
+  }
+  _last_mark_tick   = now;
+  _last_prediction  = predictNextTarget();
+}
+
+u64 TimePredictor::predictNextTarget() const {
+  if (_history_count == 0)
+    return 0;
+  return _last_mark_tick + _avg_interval_ns;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork

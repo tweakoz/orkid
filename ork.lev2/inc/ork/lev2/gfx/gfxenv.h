@@ -473,6 +473,8 @@ public:
   
   Timer _ctxtimer;
 
+  time_predictor_ptr_t _render_timing_estimator = std::make_shared<TimePredictor>();
+
   svar64_t _pyimpl_beforeEndFrame;
 protected:
   RenderingConventions _renderingConventions;

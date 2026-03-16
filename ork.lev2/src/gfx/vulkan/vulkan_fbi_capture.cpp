@@ -128,6 +128,7 @@ VkFrameBufferInterface::captureToTexture(const RtBuffer* inpbuf, Texture& tex, v
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_processPendingCaptures() {
+  OrkProfilerSampleScope(CHANNEL_MAIN, "vk:processPendingCaptures");
 
   if (_pending_captures.empty()) {
     return;
@@ -139,6 +140,12 @@ void VkContext::_processPendingCaptures() {
 
   for (auto capture_async : captures_to_process) {
     auto async_impl = capture_async->_impl.getShared<VkCaptureAsyncImpl>();
+
+    // Currently it is assume prior frame was waited so we do not run this nor use the fence on the async_impl.
+    // TODO when we start to buffer frames we will need a captures_to_process buffer for each frame. 
+    // Wait for the GPU to finish writing to the staging buffer before reading it back
+    // if (async_impl->_fence)
+    //   async_impl->_fence->wait();
 
     // Get the capture buffer implementation
     auto capbuf_impl    = async_impl->capture_buffer->_impl.getShared<VkCaptureBufferImpl>();

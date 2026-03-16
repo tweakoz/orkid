@@ -69,6 +69,8 @@ void VkFrameBufferInterface::_setScissor(int iX, int iY, int iW, int iH) {
 void VkFrameBufferInterface::_doBeginFrame() {
   static int frame_log_count = 0;
 
+  // TODO Framebuffer should not render directly to the swap.
+  // Render to something else then blit to swap.
   if (_swapchain) {
     _swapchain->_update();
   }
