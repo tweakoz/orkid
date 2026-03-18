@@ -23,26 +23,28 @@ This is THE fundamental pattern across the entire Orkid codebase. When forming h
 
 ```cpp
 // CORRECT - Static factory pattern
-class Parent;
-class Child;
+struct Parent;
+struct Child;
 
 using parent_ptr_t = std::shared_ptr<Parent>;
 using child_ptr_t = std::shared_ptr<Child>;
 
-class Parent {
-public:
+struct Parent {
     // Static factory receives parent as shared_ptr
     static child_ptr_t createChild(parent_ptr_t self, /* other args */) {
         auto child = std::make_shared<Child>();
-        child->_parent = self;  // Child stores weak_ptr
+        child->_parent = self;  // Child stores weak_ptr or raw ptr (see note below)
         return child;
     }
 };
 
-class Child {
-    std::weak_ptr<Parent> _parent;  // ALWAYS weak_ptr to prevent cycles
+struct Child {
+    std::weak_ptr<Parent> _parent;  // weak_ptr if lifetime is uncertain and you made need to check null
+    // Parent* _parent;             // raw ptr preferred when parent is guaranteed to outlive child
 };
 ```
+
+**Raw pointer vs weak_ptr for back-references:** Use raw pointers in hot-path code (rendering, per-frame updates, audio) where the lifetime of the pointed-to object is well known and guaranteed. Use `weak_ptr` when the referenced object could genuinely become null during the code's lifetime and you need to check for that — `lock()` gives you a safe nullable handle.
 
 **Why This Matters:**
 - Prevents circular reference memory leaks
@@ -466,7 +468,83 @@ ork.asset.catalog.list.py      # Asset catalog listing
 - Python scripts in obt.project/bin
 - Any user-facing commands
 
+### Comment Separators
+
+Full-width (`////////////////////////////////////////////////////////////////////////////////`) separators are used between top-level declarations and method definitions. Half-width (`////////////////////////////////////////`) separators are used within method bodies to divide logical chunks of work. Named half-width blocks annotate significant categories of work within a method.
+
+**Header example:**
+```cpp
+////////////////////////////////////////////////////////////////////////////////
+namespace ork {
+////////////////////////////////////////////////////////////////////////////////
+
+struct CurrentState {
+  int _variable_name;
+  void methodName(int param_name);
+  void otherMethodName(int param_name);
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct NextState {
+  int _variable_name;
+  void methodName(int param_name);
+};
+
+////////////////////////////////////////////////////////////////////////////////
+} // namespace ork
+////////////////////////////////////////////////////////////////////////////////
+```
+
+**Implementation example:**
+```cpp
+////////////////////////////////////////////////////////////////////////////////
+namespace ork {
+////////////////////////////////////////////////////////////////////////////////
+
+void CurrentState::methodName(int param_name) {
+  // minor comment
+  ** logical chunk of work **
+
+  ////////////////////////////////////////
+
+  // minor comment
+  ** next logical chunk of work **
+
+  ////////////////////////////////////////
+  // Significant Named Category of Work
+  ////////////////////////////////////////
+
+  // minor comment
+  ** logical chunk of work **
+}
+
+void CurrentState::otherMethodName(int param_name) {
+  // minor comment
+  ** logical chunk of work **
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void NextState::methodName(int param_name) {
+
+  ////////////////////////////////////////
+  // Significant Named Category of Work
+  //  Note about category.
+  ////////////////////////////////////////
+
+  // minor comment
+  ** logical chunk of work **
+}
+
+////////////////////////////////////////////////////////////////////////////////
+} // namespace ork
+////////////////////////////////////////////////////////////////////////////////
+```
+
 ### C++ Conventions
+
+Always use `struct`, never `class`. All members are public by default — this is intentional. Access control is enforced by convention (underscore prefix for internal methods/members) not by language enforcement.
 
 ```cpp
 // Member variables with underscore prefix
@@ -548,6 +626,21 @@ py::class_<MyStruct, mystruct_ptr_t>(module, "MyStruct")
 - **Document expectations**: Make failure modes clear
 - **Python bindings**: Convert to exceptions where appropriate
 - **Resource management**: RAII everywhere, no manual cleanup
+
+### `_buildup()` / `_teardown()` Pattern
+
+Used for objects that need to be torn down and rebuilt mid-lifetime (e.g. swapchain recreation on window resize). The constructor calls `_buildup()` directly; the destructor calls `_teardown()`.
+
+**Error handling inside `_buildup()`:** Use `OrkAssert` for unrecoverable init failures. Do not throw.
+
+### `throw` vs `OrkAssert` — When to Use Which
+
+**Use `OrkAssert`** for unrecoverable engine/render/vulkan errors — hardware init failures, missing Vulkan functions, GPU allocation failures, invalid internal state. There are no catch blocks in the render pipeline; a `throw` here will call `std::terminate()` anyway, so `OrkAssert` is cleaner and more consistent.
+
+**Use `throw std::runtime_error`** only for errors that propagate to a known catch boundary:
+- Asset/catalog I/O operations (caught in `ork.core/src/asset/catalog/`)
+- Utility functions called from Python bindings (caught in `pyext_*.cpp`)
+- Network/crypto operations (caught in their respective utility wrappers)
 
 ## Architecture Principles
 
