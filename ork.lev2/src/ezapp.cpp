@@ -1077,6 +1077,13 @@ void OrkEzApp::_mainThreadLoopBegin() {
 
   ctx->_onGpuInit = [this](lev2::Context* context) {
     //logchan_ezapp->log("BEGIN OrkEzApp::_onGpuInit");
+
+    auto vrdev = ork::lev2::orkidvr::device();
+    if (vrdev) {
+      vrdev->_render_timing_estimator = context->_render_timing_estimator;
+      logchan_ezapp->log("Setting gfx context<%p> to vrdevice<%p>.", (void*)context, (void*)vrdev.get());
+    }
+
     context->beginPrimaryCommandBuffer();
     //logchan_ezapp->log("_initdata->_enable_audio<%d>", (int)_initdata->_enable_audio);
 
@@ -1229,6 +1236,7 @@ int OrkEzApp::mainThreadLoop() {
           _cleanupClosedSecondaryWindows();
         }
 
+        // TODO change is so OrkProfilerFrameBegin can forward it's 'capture_fps' value logchannel
         // Track freerun FPS
         if (_initdata->_log_freerun_fps) {
           frame_count += 1.0;

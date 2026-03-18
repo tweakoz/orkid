@@ -1,9 +1,21 @@
-#pragma once 
+#pragma once
+#include <vulkan/vk_enum_string_helper.h>
 namespace ork::dds {
 struct DDS_HEADER;
 }
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
+///////////////////////////////////////////////////////////////////////////////
+// OrkVkAssert: assert that a VkResult is VK_SUCCESS, logging the error string if not.
+#define OrkVkAssert(result)                                                \
+  {                                                                        \
+    VkResult _vk_res = (result);                                           \
+    if (_vk_res != VK_SUCCESS) [[unlikely]] {                              \
+      fprintf(stderr, "VkResult error %d (%s) at %s:%d\n",                 \
+              (int)_vk_res, string_VkResult(_vk_res), __FILE__, __LINE__); \
+      OrkAssert(false);                                                    \
+    }                                                                      \
+  }
 ///////////////////////////////////////////////////////////////////////////////
 inline VkDeviceSize vkAlignUp(
     VkDeviceSize value,       //

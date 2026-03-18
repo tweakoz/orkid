@@ -50,7 +50,6 @@ void VkSwapChain::_buildup() {
       _imageAcquiredSemaphores.push_back(bin_sema_imgacq);
       _renderCompleteSemaphores.push_back(bin_sema_rencom);
       _frameFences.push_back(fence);
-      fence->reset();
     }
   } else {
     logchan_swapchain->log("_buildup: Reusing existing synchronization objects");
@@ -448,60 +447,43 @@ VkResult VkSwapChain::acquireImage(vkcontext_rawptr_t ctxVK) {
   // Get SwapChain Image
   ///////////////////////////////////////////////////
 
-  bool ok_to_transition = false;
+  // DEBUG: Log semaphore state before acquire
+  auto semaphore = _imageAcquiredSemaphores[sub_index]->_vksema;
+  if(0)logchan_swapchain->log("acquireImage: attempting vkAcquireNextImageKHR with semaphore %p (sub_index %zu)", 
+                        (void*)semaphore, sub_index);
+  
+  VkResult status    = vkAcquireNextImageKHR(
+      ctxVK->_vkdevice,
+      _vkSwapChain,
+      std::numeric_limits<uint64_t>::max(),
+      semaphore, // Use current frame's semaphore
+      VK_NULL_HANDLE,
+      &_curSwapWriteImage);
 
-  while (not ok_to_transition) {
+  // DEBUG: Log acquire result
+  if(0)logchan_swapchain->log("acquireImage: vkAcquireNextImageKHR returned %d, image index %u", 
+                        status, _curSwapWriteImage);
 
-    // Ensure we're using the correct frame's semaphore
-    // and that any previous signal has been consumed
-    if (_curSwapWriteImage != 0xffffffff) {
-      // Previous acquire might have failed mid-operation
-      // Wait for device idle to ensure clean state
-      if(0)logchan_swapchain->log("acquireImage: previous acquire failed, waiting for device idle");
+  switch (status) {
+    case VK_SUCCESS:
+      if(0)logchan_swapchain->log("acquireImage: SUCCESS - acquired image %u", _curSwapWriteImage);
+      break;
+    case VK_SUBOPTIMAL_KHR:
+    case VK_ERROR_OUT_OF_DATE_KHR: {
+      logchan_swapchain->log("acquireImage: SWAPCHAIN OUT OF DATE - status %d", status);
       vkDeviceWaitIdle(ctxVK->_vkdevice);
+      return status;
+      break;
     }
-
-    _curSwapWriteImage = 0xffffffff;
-    
-    // DEBUG: Log semaphore state before acquire
-    auto semaphore = _imageAcquiredSemaphores[sub_index]->_vksema;
-    if(0)logchan_swapchain->log("acquireImage: attempting vkAcquireNextImageKHR with semaphore %p (sub_index %zu)", 
-                          (void*)semaphore, sub_index);
-    
-    VkResult status    = vkAcquireNextImageKHR(
-        ctxVK->_vkdevice,
-        _vkSwapChain,
-        std::numeric_limits<uint64_t>::max(),
-        semaphore, // Use current frame's semaphore
-        VK_NULL_HANDLE,
-        &_curSwapWriteImage);
-
-    // DEBUG: Log acquire result
-    if(0)logchan_swapchain->log("acquireImage: vkAcquireNextImageKHR returned %d, image index %u", 
-                          status, _curSwapWriteImage);
-
-    switch (status) {
-      case VK_SUCCESS:
-        ok_to_transition = true;
-        if(0)logchan_swapchain->log("acquireImage: SUCCESS - acquired image %u", _curSwapWriteImage);
-        break;
-      case VK_SUBOPTIMAL_KHR:
-      case VK_ERROR_OUT_OF_DATE_KHR: {
-        logchan_swapchain->log("acquireImage: SWAPCHAIN OUT OF DATE - status %d", status);
-        vkDeviceWaitIdle(ctxVK->_vkdevice);
-        return status;
-        break;
-      }
-      case VK_ERROR_DEVICE_LOST:{
-        logchan_swapchain->error("acquireImage: VK_ERROR_DEVICE_LOST");
-        OrkAssert(false);
-        break;
-      }
-      default:
-        logchan_swapchain->error("acquireImage: UNEXPECTED STATUS %d", status);
-        OrkAssert(false);
-        break;
+    case VK_ERROR_DEVICE_LOST:{
+      logchan_swapchain->error("acquireImage: VK_ERROR_DEVICE_LOST");
+      OrkAssert(false);
+      break;
     }
+    default:
+      logchan_swapchain->error("acquireImage: UNEXPECTED STATUS %d", status);
+      OrkAssert(false);
+      break;
   }
   OrkAssert(_curSwapWriteImage >= 0);
 
@@ -545,14 +527,12 @@ void VkSwapChain::enqueueFrame(vkcontext_rawptr_t ctxVK) {
 
   // Submit with this frame's fence
   if (sub_index < _frameFences.size()) {
+    OrkProfilerSampleScope(CHANNEL_MAIN, "vk:enqueue_frame_fence_submit");
     auto& fence = _frameFences[sub_index];
     fence->reset();
-    {
-      OrkProfilerSampleScope(CHANNEL_MAIN, "vk:enqueue_frame_fence_submit");
     if(0)logchan_swapchain->log("enqueueFrame: submitting with fence %p (sub_index %zu)", (void*)fence->_vkfence, sub_index);
     vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, &SI, fence->_vkfence);
     if(0)logchan_swapchain->log("enqueueFrame: queue submit complete with fence %p", (void*)fence->_vkfence);
-    }
   } else {
     OrkProfilerSampleScope(CHANNEL_MAIN, "vk:enqueue_frame_submit");
     logchan_swapchain->log("enqueueFrame: WARNING - submitting without fence (sub_index %zu >= fence count %zu)", sub_index, _frameFences.size());
@@ -716,58 +696,19 @@ void VkSwapChain::enqueuePresentFrame(vkcontext_rawptr_t ctxVK) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkSwapChain::waitPresentFrame(vkcontext_rawptr_t ctxVK) {
+void VkSwapChain::waitFrame() {
   size_t sub_index = subIndex();
-  
-  // DEBUG: Log frame waiting
   if(0)logchan_swapchain->log("waitPresentFrame: frame %zu, sub_index %zu", _currentFrame, sub_index);
-  
-  // Wait for the current frame's fence to ensure rendering is complete
   auto& fence = _frameFences[sub_index];
-
-  if (fence) {
-    // Check if fence has been submitted (signaled or in-flight)
-    VkResult fence_status = vkGetFenceStatus(ctxVK->_vkdevice, fence->_vkfence);
-
-    if (fence_status == VK_SUCCESS) {
-      // Fence is already signaled - previous frame work is complete
-      // Just reset it, no need to wait (wait would return immediately anyway)
-      if(0)logchan_swapchain->log("waitPresentFrame: fence %p already signaled, resetting", (void*)fence->_vkfence);
-      fence->reset();
-    } else if (fence_status == VK_NOT_READY) {
-      // Fence is not yet signaled - could be in-flight OR never submitted (after reinit)
-      // Only skip wait if we're in the first MAX_FRAMES_IN_FLIGHT frames after reinit
-      // where fences haven't been cycled through yet
-      bool early_after_reinit = (_currentFrame < MAX_FRAMES_IN_FLIGHT);
-
-      if (early_after_reinit) {
-        // Fence was likely never submitted yet, safe to skip wait
-        if(0)logchan_swapchain->log("waitPresentFrame: fence %p not ready (early frame %zu), skipping wait",
-                              (void*)fence->_vkfence, _currentFrame);
-      } else {
-        // Fence should have been submitted MAX_FRAMES_IN_FLIGHT frames ago
-        // It's in-flight, wait for it
-        if(0)logchan_swapchain->log("waitPresentFrame: fence %p in-flight, waiting", (void*)fence->_vkfence);
-        fence->wait();
-        fence->reset();
-      }
-    } else {
-      // VK_ERROR_DEVICE_LOST (-4) or other error
-      logchan_swapchain->log("waitPresentFrame: ERROR - fence %p in error state: %d (device lost?)",
-                            (void*)fence->_vkfence, fence_status);
-      // Device is lost, cannot recover - this is fatal
-      // Log it but don't try to reset (would fail anyway)
-    }
-  } else {
-    logchan_swapchain->log("waitPresentFrame: WARNING - no fence for sub_index %zu", sub_index);
-  }
-  
-  // DEBUG: Log frame completion and increment
-  if(0)logchan_swapchain->log("waitPresentFrame: frame %zu complete, incrementing to frame %zu", 
-                         _currentFrame, _currentFrame + 1);
+  fence->wait();
   _currentFrame++;
-  
-  if(0)logchan_swapchain->log("waitPresentFrame: COMPLETE - frame counter now %zu", _currentFrame);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkSwapChain::incrementFrame() {
+  _currentFrame++;
+  if(0)logchan_swapchain->log("frame counter now %zu", _currentFrame);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

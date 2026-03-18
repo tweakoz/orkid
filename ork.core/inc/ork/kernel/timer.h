@@ -110,5 +110,38 @@ struct AdaptiveWait {
 using adaptive_wait_ptr_t = std::shared_ptr<AdaptiveWait>;
 
 ///////////////////////////////////////////////////////////////////////////////
+// TimePredictor
+//
+// Tracks a recurring event and predicts when it will next occur.
+// Call markPredictionTarget() each time the event happens.
+// Call predictNextTarget() at any time to get the predicted absolute tick
+// of the next occurrence, based on a rolling average of observed intervals.
+///////////////////////////////////////////////////////////////////////////////
+
+struct TimePredictor {
+
+  static constexpr size_t HISTORY_SIZE = 16;
+
+  // Record that the tracked event just occurred.
+  // Updates the rolling average interval between occurrences.
+  void markPredictionTarget();
+
+  // Predicted absolute system tick of the next occurrence.
+  // Returns last_mark + avg_interval, or 0 until 2 marks have been recorded.
+  u64 predictNextTarget() const;
+
+  u64 avgIntervalNs() const { return _avg_interval_ns; }
+
+  u64    _last_mark_tick  = 0;
+  u64    _last_prediction = 0;
+  u64    _avg_interval_ns = 0;
+  u64    _history[HISTORY_SIZE] = {};
+  size_t _history_index   = 0;
+  size_t _history_count   = 0;
+};
+
+using time_predictor_ptr_t = std::shared_ptr<TimePredictor>;
+
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork
 ///////////////////////////////////////////////////////////////////////////////

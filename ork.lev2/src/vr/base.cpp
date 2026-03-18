@@ -60,6 +60,13 @@ Device::~Device() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+u64 Device::predictedRenderFinishTick() const {
+  OrkAssertI(_render_timing_estimator, "VR device has no render timing estimator — was a gfx context wired up via ezapp onGpuInit?");
+  return _render_timing_estimator->predictNextTarget();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 void Device::overrideSize(int w, int h){
   _width          = w;
   _height         = h;
