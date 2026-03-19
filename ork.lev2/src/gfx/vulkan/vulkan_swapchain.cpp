@@ -6,12 +6,23 @@
 ////////////////////////////////////////////////////////////////
 
 #include "headers/vulkan_ctx.h"
+#include "vulkan_captureasync.h"
 #include <ork/util/logger.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-static auto logchan_swapchain = logger()->configureChannel("VKSWAP", fvec3(0.5, 0.5, 0.5), false);
+
+static auto logchan_swapchain = logger()->configureChannel("VKSWAP", fvec3(0.5, 0.5, 0.5), true);
+
+////////////////////////////////////////////////////////////////////////////////
+
+bool VkSwapChainCaps::supportsPresentationMode(VkPresentModeKHR mode) const {
+  auto it = _presentModes.find(mode);
+  return (it != _presentModes.end());
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 VkSwapChain::VkSwapChain(vkcontext_rawptr_t ctxVK)
     : _contextVK(ctxVK) {
@@ -19,14 +30,14 @@ VkSwapChain::VkSwapChain(vkcontext_rawptr_t ctxVK)
   _buildup();
 }
 
-///////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////
 
 VkSwapChain::~VkSwapChain() {
   logchan_swapchain->log("delete VkSwapChain");
   _teardown();
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 void VkSwapChain::_buildup() {
   auto& vkdev = _contextVK->_vkdevice;
@@ -35,21 +46,14 @@ void VkSwapChain::_buildup() {
   auto pres_caps = _contextVK->_vkpresentation_caps;
 
   
-  _semasOkToRender.resize(1);
-  _waitOnPipelineStages.resize(1);
-  _semasOkToPresent.resize(1);
-
   // NOTE: Synchronization objects are now cleared in _teardown() after proper waiting
-  // Only create new ones if the vectors are empty (first time or after teardown)
-  if (_frameFences.empty()) {
+  // Only create new ones if the arrays are empty (first time or after teardown)
+  if (_frame_fences[0] == nullptr) {
     logchan_swapchain->log("_buildup: Creating synchronization objects");
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-      auto bin_sema_imgacq = std::make_shared<VulkanBinarySemaphore>(_contextVK);
-      auto bin_sema_rencom = std::make_shared<VulkanBinarySemaphore>(_contextVK);
-      auto fence           = std::make_shared<VulkanFenceObject>(_contextVK);
-      _imageAcquiredSemaphores.push_back(bin_sema_imgacq);
-      _renderCompleteSemaphores.push_back(bin_sema_rencom);
-      _frameFences.push_back(fence);
+      _imageAcquiredSemaphores[i] = std::make_shared<VulkanBinarySemaphore>(_contextVK);
+      _renderCompleteSemaphores[i] = std::make_shared<VulkanBinarySemaphore>(_contextVK);
+      _frame_fences[i] = std::make_shared<VulkanFenceObject>(_contextVK);
     }
   } else {
     logchan_swapchain->log("_buildup: Reusing existing synchronization objects");
@@ -116,7 +120,7 @@ void VkSwapChain::_buildup() {
   bool dimensions_changed = (_width != width) || (_height != height);
   _width                  = width;
   _height                 = height;
-
+  
   if (dimensions_changed) {
 
     if(0)printf("Swap chain dimensions: requested=%dx%d, clamped=%ux%u\n", width, height, uint32_t(width), uint32_t(height));
@@ -184,13 +188,12 @@ void VkSwapChain::_buildup() {
   }
 
   ///////////////////////////////////////////////////
-  // declare old swapchain 
+  // declare old swapchain
   //  this allows us to reuse resources from the previous swapchain (if applicable)
   ///////////////////////////////////////////////////
 
-  auto old_swapchain = _contextVK->_fbi->_swapchain;   
-  SCINFO.clipped      = VK_TRUE; // clip pixels that are obscured by other windows
-  SCINFO.oldSwapchain = old_swapchain ? old_swapchain->_vkSwapChain : VK_NULL_HANDLE; // Use previous swapchain if available
+  SCINFO.clipped      = VK_TRUE;
+  SCINFO.oldSwapchain = _vkSwapChain; // Use previous swapchain if available
 
   ///////////////////////////////////////////////////
   // Choose a supported present mode
@@ -325,8 +328,8 @@ void VkSwapChain::_teardown() {
 
   // Collect fences that are in-flight (NOT_READY = submitted but not signaled yet)
   std::vector<VkFence> inflight_fences;
-  for (size_t i = 0; i < _frameFences.size(); i++) {
-    auto& fence = _frameFences[i];
+  for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    auto& fence = _frame_fences[i];
     if (fence) {
       VkResult status = vkGetFenceStatus(_contextVK->_vkdevice, fence->_vkfence);
       if (status == VK_SUCCESS) {
@@ -390,9 +393,11 @@ void VkSwapChain::_teardown() {
   // Explicitly clear synchronization objects AFTER everything is idle
   // The shared_ptr destructors will properly destroy the Vulkan objects
   logchan_swapchain->log("_teardown: Clearing synchronization objects");
-  _frameFences.clear();
-  _imageAcquiredSemaphores.clear();
-  _renderCompleteSemaphores.clear();
+  for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    _frame_fences[i] = nullptr;
+    _imageAcquiredSemaphores[i] = nullptr;
+    _renderCompleteSemaphores[i] = nullptr;
+  }
   logchan_swapchain->log("_teardown: Complete");
 }
 
@@ -401,58 +406,45 @@ void VkSwapChain::_teardown() {
 void VkSwapChain::_reinit() {
   _teardown();
   _buildup();
-  _currentFrame      = 0;          // Reset frame index after reinitialization
+  _current_frame      = 0;          // Reset frame index after reinitialization
   _curSwapWriteImage = 0xffffffff; // Reset current swap image index
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkSwapChain::_update() {
-  bool got_swapchain_image = false;
-  while (not got_swapchain_image) {
-    VkResult status     = acquireImage(_contextVK);
-    got_swapchain_image = (status == VK_SUCCESS);
-    if (not got_swapchain_image) {
-      _reinit();
-    }
-  }
-  // return _rtgs[_curSwapWriteImage];
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-size_t VkSwapChain::subIndex() const {
-  // Return the current frame index modulo MAX_FRAMES_IN_FLIGHT
-  // This gives us the index of the current frame in the circular buffer
-  return _currentFrame % MAX_FRAMES_IN_FLIGHT;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-VkResult VkSwapChain::acquireImage(vkcontext_rawptr_t ctxVK) {
+void VkSwapChain::_acquireImage(vkcontext_rawptr_t ctxVK) {
   OrkProfilerSampleScope(CHANNEL_GPU, "gpu_acquire_wait");
 
   // Ensure we have a valid swapchain
-  size_t sub_index = subIndex();
+  size_t sub_index = _sub_index;
   
   // DEBUG: Log current frame state
   if(0)logchan_swapchain->log("acquireImage: frame %zu, sub_index %zu, curSwapWriteImage %u", 
-                         _currentFrame, sub_index, _curSwapWriteImage);
+                         _current_frame, sub_index, _curSwapWriteImage);
 
-  // REMOVED: Fence waiting logic that was causing hang
-  // The semaphores are properly managed by the swapchain
-  // and vkAcquireNextImageKHR will handle the synchronization
+  // Waiting on frame fence at this location is unnecessary.
+  // vkAcquireNextImageKHR will handle the synchronization
 
   ///////////////////////////////////////////////////
   // Get SwapChain Image
   ///////////////////////////////////////////////////
 
-  // DEBUG: Log semaphore state before acquire
-  auto semaphore = _imageAcquiredSemaphores[sub_index]->_vksema;
-  if(0)logchan_swapchain->log("acquireImage: attempting vkAcquireNextImageKHR with semaphore %p (sub_index %zu)", 
-                        (void*)semaphore, sub_index);
-  
-  VkResult status    = vkAcquireNextImageKHR(
+  // It is necessary to continually retry to prevent a window drag
+  // resize ending up without a swapchain and potentially crashing.
+  // This is a heavy way to do deal with. If we want smooth resizing 
+  // of windows there is a better solution. 
+  bool got_swapchain_image = false;
+  while (not got_swapchain_image) {
+
+    // DEBUG: Log semaphore state before acquire
+    auto semaphore = _imageAcquiredSemaphores[sub_index]->_vksema;
+    if(0)logchan_swapchain->log("acquireImage: attempting vkAcquireNextImageKHR with semaphore %p (sub_index %zu)", 
+                          (void*)semaphore, sub_index);
+    
+    VkResult status = vkAcquireNextImageKHR(
       ctxVK->_vkdevice,
       _vkSwapChain,
       std::numeric_limits<uint64_t>::max(),
@@ -460,91 +452,38 @@ VkResult VkSwapChain::acquireImage(vkcontext_rawptr_t ctxVK) {
       VK_NULL_HANDLE,
       &_curSwapWriteImage);
 
-  // DEBUG: Log acquire result
-  if(0)logchan_swapchain->log("acquireImage: vkAcquireNextImageKHR returned %d, image index %u", 
-                        status, _curSwapWriteImage);
+    // DEBUG: Log acquire result
+    if(0)logchan_swapchain->log("acquireImage: vkAcquireNextImageKHR returned %d, image index %u", 
+                          status, _curSwapWriteImage);
 
-  switch (status) {
-    case VK_SUCCESS:
-      if(0)logchan_swapchain->log("acquireImage: SUCCESS - acquired image %u", _curSwapWriteImage);
-      break;
-    case VK_SUBOPTIMAL_KHR:
-    case VK_ERROR_OUT_OF_DATE_KHR: {
-      logchan_swapchain->log("acquireImage: SWAPCHAIN OUT OF DATE - status %d", status);
-      vkDeviceWaitIdle(ctxVK->_vkdevice);
-      return status;
-      break;
+    switch (status) {
+      case VK_SUCCESS:
+        if(0)logchan_swapchain->log("acquireImage: SUCCESS - acquired image %u", _curSwapWriteImage);
+        got_swapchain_image = true;
+        break;
+      case VK_SUBOPTIMAL_KHR:
+      case VK_ERROR_OUT_OF_DATE_KHR: {
+        logchan_swapchain->log("acquireImage: SWAPCHAIN OUT OF DATE - status %s", string_VkResult(status));
+        vkDeviceWaitIdle(ctxVK->_vkdevice);
+        _reinit();
+        break;
+      }
+      case VK_ERROR_DEVICE_LOST:
+      default:
+        logchan_swapchain->error("waacquireImageit: UNEXPECTED STATUS %s", string_VkResult(status));
+        OrkAssert(false);
+        break;
     }
-    case VK_ERROR_DEVICE_LOST:{
-      logchan_swapchain->error("acquireImage: VK_ERROR_DEVICE_LOST");
-      OrkAssert(false);
-      break;
-    }
-    default:
-      logchan_swapchain->error("acquireImage: UNEXPECTED STATUS %d", status);
-      OrkAssert(false);
-      break;
   }
   OrkAssert(_curSwapWriteImage >= 0);
 
-  auto rtg              = _contextVK->_fbi->_ensureMainRtg();
-  auto rtg_impl         = rtg->_impl.getShared<VkRtGroupImpl>();
-  auto rtb_color        = rtg->buffer(0);
-  auto rtb_impl         = rtb_color->_impl.getShared<VklRtBufferImpl>();
-  rtb_impl->_is_surface = true;
-  rtb_impl->_replaceImage(_swapChainImages[_curSwapWriteImage]);
-
   if(0)logchan_swapchain->log("acquireImage: COMPLETE - image %u ready for rendering", _curSwapWriteImage);
-  return VK_SUCCESS;
 }
+
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkSwapChain::enqueueFrame(vkcontext_rawptr_t ctxVK) {
-
-  size_t sub_index = subIndex();
-  
-  // DEBUG: Log frame submission
-  if(0)logchan_swapchain->log("enqueueFrame: frame %zu, sub_index %zu", _currentFrame, sub_index);
-
-  _semasOkToRender[0]      = _imageAcquiredSemaphores[sub_index]->_vksema;
-  _waitOnPipelineStages[0] = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-
-  // DEBUG: Log semaphore setup
-  if(0)logchan_swapchain->log("enqueueFrame: wait semaphore %p (image acquired), signal semaphore %p (render complete)", 
-                        (void*)_semasOkToRender[0], (void*)_renderCompleteSemaphores[sub_index]->_vksema);
-
-  VkSubmitInfo SI = {};
-  initializeVkStruct(SI, VK_STRUCTURE_TYPE_SUBMIT_INFO);
-  SI.commandBufferCount   = 1;
-  SI.pCommandBuffers      = &ctxVK->_cmdbufcurpri_gfx->_vkcmdbuf;
-
-  SI.waitSemaphoreCount   = _semasOkToRender.size();
-  SI.pWaitSemaphores      = _semasOkToRender.data();
-  SI.pWaitDstStageMask    = _waitOnPipelineStages.data();
-  SI.signalSemaphoreCount = 1;
-  SI.pSignalSemaphores    = &(_renderCompleteSemaphores[sub_index]->_vksema);
-
-  // Submit with this frame's fence
-  if (sub_index < _frameFences.size()) {
-    OrkProfilerSampleScope(CHANNEL_MAIN, "vk:enqueue_frame_fence_submit");
-    auto& fence = _frameFences[sub_index];
-    fence->reset();
-    if(0)logchan_swapchain->log("enqueueFrame: submitting with fence %p (sub_index %zu)", (void*)fence->_vkfence, sub_index);
-    vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, &SI, fence->_vkfence);
-    if(0)logchan_swapchain->log("enqueueFrame: queue submit complete with fence %p", (void*)fence->_vkfence);
-  } else {
-    OrkProfilerSampleScope(CHANNEL_MAIN, "vk:enqueue_frame_submit");
-    logchan_swapchain->log("enqueueFrame: WARNING - submitting without fence (sub_index %zu >= fence count %zu)", sub_index, _frameFences.size());
-    vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, &SI, VK_NULL_HANDLE);
-  }
-  
-  if(0)logchan_swapchain->log("enqueueFrame: COMPLETE - frame %zu submitted", _currentFrame);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void VkSwapChain::_submitFrameWithSemaphores(vkcontext_rawptr_t ctxVK) {
+void VkSwapChain::_enqueueFrame(vkcontext_rawptr_t ctxVK) {
   
   _allWaitSemaphores.clear();
   _allWaitValues.clear();
@@ -554,18 +493,14 @@ void VkSwapChain::_submitFrameWithSemaphores(vkcontext_rawptr_t ctxVK) {
 
   // Collect all semaphores and their signal values
   
-  size_t sub_index = subIndex();
+  size_t sub_index = _sub_index;
   auto imageAcquiredSem = _imageAcquiredSemaphores[sub_index];
   _allWaitSemaphores.push_back(imageAcquiredSem->_vksema);
   _allWaitValues.push_back(0);  // Binary semaphore, value 0
 
-  // Add timeline semaphores with their values
-  ctxVK->_pendingOneShotSemas.atomicOp([&](vkcompsema_set_t& unlocked) {
-    for (auto semaphore : unlocked) {
-      _allSignalSemaphores.push_back(semaphore->_vksema);
-      _allSignalValues.push_back(1);
-    }
-  });
+  // Add one-shot timeline semaphores (texture uploads, etc.)
+  _allSignalSemaphores.insert(_allSignalSemaphores.end(), ctxVK->_oneShotSignalSemaphores.begin(), ctxVK->_oneShotSignalSemaphores.end());
+  _allSignalValues.insert(_allSignalValues.end(), ctxVK->_oneShotSignalValues.begin(), ctxVK->_oneShotSignalValues.end());
 
 
   // Add binary semaphore (render complete) with value 0
@@ -608,7 +543,7 @@ void VkSwapChain::_submitFrameWithSemaphores(vkcontext_rawptr_t ctxVK) {
   submitInfo.pWaitSemaphores = _allWaitSemaphores.data();  
   submitInfo.pWaitDstStageMask = _allWaitStages.data();
   
-  auto fence = _frameFences[sub_index];
+  auto fence = _frame_fences[sub_index];
   fence->reset();
   vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, &submitInfo, fence->_vkfence);
 
@@ -617,23 +552,20 @@ void VkSwapChain::_submitFrameWithSemaphores(vkcontext_rawptr_t ctxVK) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkSwapChain::enqueuePresentFrame(vkcontext_rawptr_t ctxVK) {
+void VkSwapChain::_enqueuePresentFrame(vkcontext_rawptr_t ctxVK) {
 
-  size_t sub_index = subIndex();
+  size_t sub_index = _sub_index;
   
   // DEBUG: Log present operation
   if(0)logchan_swapchain->log("enqueuePresentFrame: frame %zu, sub_index %zu, image %u", 
-                         _currentFrame, sub_index, _curSwapWriteImage);
+                         _current_frame, sub_index, _curSwapWriteImage);
 
-  _semasOkToPresent[0] = (_renderCompleteSemaphores[sub_index]->_vksema);
-
-  // DEBUG: Log present semaphore
-  if(0)logchan_swapchain->log("enqueuePresentFrame: waiting for render complete semaphore %p", (void*)_semasOkToPresent[0]);
+  _semaOkToPresent = _renderCompleteSemaphores[sub_index]->_vksema;
 
   VkPresentInfoKHR PRESI{};
   initializeVkStruct(PRESI, VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
-  PRESI.waitSemaphoreCount = _semasOkToPresent.size();
-  PRESI.pWaitSemaphores    = _semasOkToPresent.data();
+  PRESI.waitSemaphoreCount = 1;
+  PRESI.pWaitSemaphores    = &_semaOkToPresent;
   PRESI.swapchainCount     = 1;
   PRESI.pSwapchains        = &_vkSwapChain;
   PRESI.pImageIndices      = &_curSwapWriteImage;
@@ -646,7 +578,7 @@ void VkSwapChain::enqueuePresentFrame(vkcontext_rawptr_t ctxVK) {
 
   switch (status) {
     case VK_SUCCESS:
-      if(0)logchan_swapchain->log("enqueuePresentFrame: SUCCESS - frame %zu presented", _currentFrame);
+      if(0)logchan_swapchain->log("enqueuePresentFrame: SUCCESS - frame %zu presented", _current_frame);
       break;
     case VK_SUBOPTIMAL_KHR: {
       logchan_swapchain->log("enqueuePresentFrame: VK_SUBOPTIMAL_KHR - Swap chain is suboptimal");
@@ -660,7 +592,7 @@ void VkSwapChain::enqueuePresentFrame(vkcontext_rawptr_t ctxVK) {
       printf("VK_ERROR_OUT_OF_DATE_KHR: Swap chain needs recreation\n");
       // Need to recreate swap chain immediately
       // Note: _reinit() will properly wait for fences/device idle before tearing down
-      ctxVK->_fbi->_swapchain->_reinit();
+      _reinit();
       break;
     }
     case VK_ERROR_DEVICE_LOST: {
@@ -696,19 +628,54 @@ void VkSwapChain::enqueuePresentFrame(vkcontext_rawptr_t ctxVK) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkSwapChain::waitFrame() {
-  size_t sub_index = subIndex();
-  if(0)logchan_swapchain->log("waitPresentFrame: frame %zu, sub_index %zu", _currentFrame, sub_index);
-  auto& fence = _frameFences[sub_index];
+void VkSwapChain::_waitFrame() {
+  size_t sub_index = _sub_index;
+  if(0)logchan_swapchain->log("waitPresentFrame: frame %zu, sub_index %zu", _current_frame, sub_index);
+  auto& fence = _frame_fences[sub_index];
   fence->wait();
-  _currentFrame++;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkSwapChain::incrementFrame() {
-  _currentFrame++;
-  if(0)logchan_swapchain->log("frame counter now %zu", _currentFrame);
+///////////////////////////////////////////////////////////////////////////////
+// VkSwapChain - VkFramebufferOutput implementation (GLFW / Vulkan-surface swapchain)
+///////////////////////////////////////////////////////////////////////////////
+
+void VkSwapChain::beginFrame(vkcontext_rawptr_t ctxVK) {
+  OrkAssertI(!_acquired, "beginFrame called twice without a submit in between");
+  _acquireImage(ctxVK);
+
+  // Inject the acquired swapchain image directly into the main RTG color buffer.
+  // _replaceImage resets the layout to UNDEFINED, so the subsequent _transitionToRenderTarget
+  // in _pushRtGroup correctly barriers UNDEFINED -> COLOR_ATTACHMENT_OPTIMAL.
+  auto main_rtg  = ctxVK->_fbi->_ensureMainRtg();
+  auto main_rtb  = main_rtg->buffer(0);
+  auto main_rtbi = main_rtb->_impl.getShared<VklRtBufferImpl>();
+  main_rtbi->_is_surface = true;
+  main_rtbi->_replaceImage(_swapChainImages[_curSwapWriteImage]);
+  _acquired = true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkSwapChain::endFrame(vkcontext_rawptr_t ctxVK) {
+  // Rendering went directly into the swapchain image (injected via beginFrame).
+  // Just transition COLOR_ATTACHMENT_OPTIMAL -> PRESENT_SRC_KHR.
+  auto main_rtg  = ctxVK->_fbi->_ensureMainRtg();
+  auto main_rtb  = main_rtg->buffer(0);
+  auto main_rtbi = main_rtb->_impl.getShared<VklRtBufferImpl>();
+  main_rtbi->_transitionToPresent(ctxVK->primary_cb());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkSwapChain::submit(vkcontext_rawptr_t ctxVK) {
+  _enqueueFrame(ctxVK);
+  _enqueuePresentFrame(ctxVK);
+  _waitFrame();
+  ctxVK->_render_timing_estimator->markPredictionTarget();
+  _incrementFrame();
+  _acquired = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -6,6 +6,9 @@
 ////////////////////////////////////////////////////////////////
 
 #include "headers/vulkan_ctx.h"
+#if defined(__linux__)
+#include "headers/vk_swapchain_drm.h"
+#endif
 #include "vulkan_captureasync.h"
 #include "vulkan_ubo_dynamic.h"
 #include <ork/lev2/gfx/image.h>
@@ -25,23 +28,27 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
+
 static logchannel_ptr_t logchan_vkctx = logger()->configureChannel("VKCTX", fvec3(1,1,.9),false);
 static logchannel_ptr_t logchan_vkcap = logger()->configureChannel("VKCAPTURE", fvec3(1,1,.9),false);
 static logchannel_ptr_t logchan_vkprof = logger()->configureChannel("VKPROF", fvec3(0.1, 0.5, 0.9), true);
 
-void VkContext::describeX(class_t* clazz) {
+////////////////////////////////////////////////////////////////////////////////
 
+void VkContext::describeX(class_t* clazz) {
   clazz->annotateTyped<context_factory_t>("context_factory", []() { //
     return std::make_shared<VkContext>();
   });
 }
 
-///////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
 bool VkContext::HaveExtension(const std::string& extname) {
   return false;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Vulkan Context Internal Init
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
@@ -569,7 +576,7 @@ void VkContext::_initDefaultTextures() {
   _defaultTexImpl3D = create_default_texture(ETEXTYPE_3D, 16, 16, 16);
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 VkContext::VkContext() {
   _GVI->_contexts.push_back(this);
@@ -606,7 +613,7 @@ VkContext::~VkContext() {
     _vkdevice = nullptr;
 }
 
-///////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 void VkContext::FxInit() {
 }
@@ -618,8 +625,9 @@ ctx_platform_handle_t VkContext::_doClonePlatformHandle() const {
   return ctx_platform_handle_t();
 }
 
-//////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 // Interfaces
+////////////////////////////////////////////////////////////////////////////////
 
 FxInterface* VkContext::FXI() {
   return _fxi.get();
@@ -631,11 +639,6 @@ ImmInterface* VkContext::IMI() {
   return _imi.get();
 }
 
-///////////////////////////////////////////////////////
-/*RasterStateInterface* VkContext::RSI() {
-
-  return _rsi.get();
-}*/
 ///////////////////////////////////////////////////////
 
 MatrixStackInterface* VkContext::MTXI() {
@@ -668,7 +671,9 @@ DrawingInterface* VkContext::DWI() {
   return _dwi.get();
 }
 
-///////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+// Vk Static Global State
+////////////////////////////////////////////////////////////////////////////////
 
 struct VkOneTimeInit {
 
@@ -696,14 +701,16 @@ static void platoPresent(vkplatformobject_ptr_t plato) {
   }
 }
 
-///////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 void VkContext::makeCurrentContext() {
   // auto plato = _impl.getShared<VkPlatformObject>();
   // platoMakeCurrent(plato);
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+// Vulkan Context Frame And Command Buffer
+////////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_doBeginPrimaryCommandBuffer() {
   ////////////////////////
@@ -775,167 +782,26 @@ void VkContext::_doEndPrimaryCommandBuffer() {
 void VkContext::_doSubmitPrimaryCommandBuffer(){
   OrkProfilerSampleScope(CHANNEL_MAIN, "vk:doSubmitPrimaryCommandBuffer");
 
-  auto swapchain = _fbi->_swapchain;
-#if defined(__linux__)
-  auto swapchain_drm = _fbi->_swapchain_drm;
-#else
-  decltype(_fbi->_swapchain) swapchain_drm = nullptr;
-#endif
-
-  if (swapchain) {
-
-    ////////////////////////////////////////
-    // Swapchain
-    ////////////////////////////////////////
-
-    // Onscreen rendering with GLFW swapchain
-    bool semas_empty = false;
-    _pendingOneShotSemas.atomicOp([&](vkcompsema_set_t& unlocked) {
-      semas_empty = unlocked.empty();
-    });
-
-    // Associate frame fence with pending captures
-    size_t sub_index = swapchain->subIndex();
-    if (sub_index < swapchain->_frameFences.size() && !_pending_captures.empty()) {
-      auto frame_fence = swapchain->_frameFences[sub_index];
-      for (auto& capture : _pending_captures) {
-        if (auto async_impl = capture->_impl.getShared<VkCaptureAsyncImpl>()) {
-          async_impl->_fence = frame_fence;
-        }
-      }
+  _oneShotSignalSemaphores.clear();
+  _oneShotSignalValues.clear();
+  _pendingOneShotSemas.atomicOp([&](vkcompsema_set_t& unlocked) {
+    for (auto& semaphore : unlocked) {
+      _oneShotSignalSemaphores.push_back(semaphore->_vksema);
+      _oneShotSignalValues.push_back(1);
     }
+  });
 
-    // Submit
-    if ( not semas_empty) {
-      // Submit with timeline semaphores
-      swapchain->_submitFrameWithSemaphores(this);
-    } else {
-      // Normal submission
-      swapchain->enqueueFrame(this);
-    }
-
-    // Present !
-    swapchain->enqueuePresentFrame(this);
-
-    // Wait for only the frame which was just submitted to finish. (Not the present)
-    swapchain->waitFrame();
-
-    _render_timing_estimator->markPredictionTarget();
-
-    // Process pending captures. Assumes the frame has been waited.
-    _processPendingCaptures();
-
-    // Incremenet frame after wait. Meaning there is no pipelining of frames.
-    swapchain->incrementFrame();
-
-  } else if (swapchain_drm) {
-
-    ////////////////////////////////////////
-    // DRM
-    ////////////////////////////////////////
-
-#if defined(__linux__)
-    // Onscreen rendering with DRM swapchain
-    bool semas_empty = false;
-    _pendingOneShotSemas.atomicOp([&](vkcompsema_set_t& unlocked) {
-      semas_empty = unlocked.empty();
-    });
-
-    // Associate frame fence with pending captures
-    size_t sub_index = swapchain_drm->subIndex();
-    if (sub_index < swapchain_drm->_frameFences.size() && !_pending_captures.empty()) {
-      auto frame_fence = swapchain_drm->_frameFences[sub_index];
-      for (auto& capture : _pending_captures) {
-        if (auto async_impl = capture->_impl.getShared<VkCaptureAsyncImpl>()) {
-          async_impl->_fence = frame_fence;
-        }
-      }
-    }
-
-    if ( not semas_empty) {
-      // Submit with timeline semaphores (DRM doesn't support _submitFrameWithSemaphores yet, fallback to normal)
-      swapchain_drm->enqueueFrame(this);
-    } else {
-      // Normal submission
-      swapchain_drm->enqueueFrame(this);
-    }
-
-    ///////////////////////////////////////////////////////
-    // Present (DRM page flip) !
-    ///////////////////////////////////////////////////////
-
-    swapchain_drm->waitPresentFrame(this);
-
-    // Process pending captures after swapchain frame completion
-    _processPendingCaptures();
-#endif
-  } else {
-
-    ////////////////////////////////////////
-    // Offscreen
-    ////////////////////////////////////////
-
-    // Offscreen rendering - handle completion semaphores
-    bool semas_empty = false;
-    _pendingOneShotSemas.atomicOp([&](vkcompsema_set_t& unlocked) {
-      semas_empty = unlocked.empty();
-    });
-
-    VkSubmitInfo SI = {};
-    initializeVkStruct(SI, VK_STRUCTURE_TYPE_SUBMIT_INFO);
-    SI.commandBufferCount = 1;
-    SI.pCommandBuffers = &_cmdbufcurpri_gfx->_vkcmdbuf;
-
-    // Handle timeline semaphores for texture uploads, etc.
-    VkTimelineSemaphoreSubmitInfo timelineInfo{};
-
-    if (!semas_empty) {
-      // Clear and populate vectors (reuse storage)
-      _offscreen_signalSemaphores.clear();
-      _offscreen_signalValues.clear();
-
-      _pendingOneShotSemas.atomicOp([&](vkcompsema_set_t& unlocked) {
-        for (auto semaphore : unlocked) {
-          _offscreen_signalSemaphores.push_back(semaphore->_vksema);
-          _offscreen_signalValues.push_back(1);  // Signal to value 1
-        }
-      });
-
-      // Set up timeline semaphore info
-      timelineInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
-      timelineInfo.signalSemaphoreValueCount = _offscreen_signalValues.size();
-      timelineInfo.pSignalSemaphoreValues = _offscreen_signalValues.data();
-
-      SI.pNext = &timelineInfo;
-      SI.signalSemaphoreCount = _offscreen_signalSemaphores.size();
-      SI.pSignalSemaphores = _offscreen_signalSemaphores.data();
-    }
-
-    // Create fence for captures if needed
-    vkfence_obj_ptr_t capture_fence;
-    if (!_pending_captures.empty()) {
-      capture_fence = std::make_shared<VulkanFenceObject>(this);
-      capture_fence->reset(); // Start unsignaled
-
-      // Associate fence with pending captures
-      for (auto& capture : _pending_captures) {
-        if (auto async_impl = capture->_impl.getShared<VkCaptureAsyncImpl>()) {
-          async_impl->_fence = capture_fence;
-        }
-      }
-
-      vkQueueSubmit(_vkqueue_graphics, 1, &SI, capture_fence->_vkfence);
-      capture_fence->wait(); // Wait for fence to be signaled
-    } else {
-      vkQueueSubmit(_vkqueue_graphics, 1, &SI, VK_NULL_HANDLE);
-      vkQueueWaitIdle(_vkqueue_graphics); // TODO get rid of!
-    }
-
-    if(0)logchan_vkctx->log("Offscreen frame submitted");
-
-    // Process pending captures after offscreen frame completion
-    _processPendingCaptures();
+  // Associate captures with the current frame fence before submitting to the GPU
+  auto frame_fence = _fbi->_output->currentFrameFence();
+  for (auto& capture : _pending_captures) {
+    if (auto async_impl = capture->_impl.getShared<VkCaptureAsyncImpl>())
+      async_impl->_fence = frame_fence;
   }
+
+  // VkFramebufferOutput deals with output specific submission and waiting.
+  _fbi->_output->submit(this);
+
+  _processPendingCaptures();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1044,8 +910,6 @@ void VkContext::_doPreBeginFrame() {
     }  
     unlocked.clear();
   });
-  /////////////////////////////////////////
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1088,7 +952,7 @@ void VkContext::_onGpuPreInit() {
   // Currently nothing special needed here
 }
 
-///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////
 
 void VkContext::_onGpuPostInit() {
   // Submit the primary command buffer that was recorded during gpuPreInit
@@ -1124,54 +988,28 @@ void VkContext::_onGpuPostInit() {
   //printf("VkContext::_onGpuPostInit: gpuPreInit transitions complete\n");
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_doEndFrame() {
   OrkProfilerSampleScope(CHANNEL_MAIN, "vk:doEndFrame");
-  
-  auto main_rtg = _fbi->_ensureMainRtg();
-  ////////////////////////
-  // main_rtg -> presentation or readable layout
-  ////////////////////////
 
-  auto main_rtb  = main_rtg->buffer(0);
-  auto main_rtbi = main_rtb->_impl.getShared<VklRtBufferImpl>();
+  ////////////////////////////////////////
+  // Done with primary command buffer for this frame
+  ////////////////////////////////////////
 
-  // Only transition to present for window targets with swapchain
-  // For offscreen, transition to texture-readable state
-  if(0)logchan_vkctx->log("_doEndFrame: meTargetType=%d (WINDOW=%d), buffer usage=0x%zx", (int)meTargetType, (int)TargetType::WINDOW, main_rtbi->_usage);
-  if (meTargetType == TargetType::WINDOW) {
-    main_rtbi->_transitionToPresent(primary_cb());
-  } else {
-    // For offscreen/loader contexts, transition to texture-readable state
-    // This allows the rendered image to be read back or used as a texture
-    main_rtbi->_transitionToTexture(primary_cb());
-  }
+  // Output endFrame is called from VkFrameBufferInterface::_doEndFrame (FBI()->EndFrame()).
 
-  ////////////////////////
-  // done with primary command buffer for this frame
-  ////////////////////////
-
-  //end frame:all GPU perf block (covers all command buffer content)
+  // End the sample for all GPU work.
   OrkProfilerSampleEnd(CHANNEL_GPU, SERIES_GPU_FRAME_ALL);
 
+  // End and submit primary command buffer. Currently this also waits.
   _doEndPrimaryCommandBuffer();
-
-  ////////////////////////
-
-  // logchan_vkctx->log( "num renderpasses<%zu>", _renderpasses.size() );
-
-  ///////////////////////////////////////////////////////
-  // submit primary command buffer for this frame
-  ///////////////////////////////////////////////////////
-
-  // submit AND wait!
-  submitPrimaryCommandBuffer(); 
+  _doSubmitPrimaryCommandBuffer(); 
 
   // read back GPU timestamps now that the GPU has finished executing
   OrkProfilerFrameEnd(CHANNEL_GPU);
 
-  ///////////////////////////////////////////////////////
+  ////////////////////////////////////////
 
   if(0)logchan_vkctx->log("CMDBUF: _doEndFrame: deallocating priCB<%p> impl<%p> vkhandle<%p>, pending_cleanup=%zu",
     (void*)_defaultCommandBuffer.get(),
@@ -1179,11 +1017,11 @@ void VkContext::_doEndFrame() {
     (void*)(_cmdbufcurpri_gfx ? _cmdbufcurpri_gfx->_vkcmdbuf : nullptr),
     _cmdbufcurpri_gfx->_secondary_cmdbuffers_pending_cleanup.size());
 
-  ////////////////////////
+  ////////////////////////////////////////
   // Append secondary command buffers to pending cleanupπ
   // They will be destroyed when this primary CB is reallocated and reset
   // (3 frames later due to pool size 3 in practice)
-  ////////////////////////
+  ////////////////////////////////////////
 
   // APPEND to pending_cleanup, don't replace! Multiple frames may add to it.
   _cmdbufcurpri_gfx->_secondary_cmdbuffers_pending_cleanup.insert(
@@ -1195,228 +1033,109 @@ void VkContext::_doEndFrame() {
 
   _pri_cmdbuf_pool.deallocate(_defaultCommandBuffer);
 
-  ////////////////////////
-
-
-  ///////////////////////////////////////////////////////
-  //logchan_vkctx->log("VkContext<%p> clear renderpasses", (void*)this );
-
+  ////////////////////////////////////////
+  
   _defaultCommandBuffer = nullptr;
   _first_frame            = false;
-
 }
 
-///////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+// Vulkan Context Initialization Paths
+////////////////////////////////////////////////////////////////////////////////
 
-bool VkSwapChainCaps::supportsPresentationMode(VkPresentModeKHR mode) const {
-  auto it = _presentModes.find(mode);
-  return (it != _presentModes.end());
-}
-
-///////////////////////////////////////////////////////
-
-void VkContext::initializeWindowContext(
-    Window* pWin,        //
-    CTXBASE* pctxbase) { //
-    miW = pWin->miWidth;
-    miH = pWin->miHeight;
+#if defined(__linux__)
+void VkContext::initializeDRMContext(Window* pWin, CTXBASE* pctxbase) {
+  logchan_vkctx->log("Detected DRM context, using VkPlatformObjectDRM");
+  auto ctxdrm  = dynamic_cast<CtxDRM*>(pctxbase);
+  OrkAssert(ctxdrm != nullptr);
+  miW          = pWin->miWidth;
+  miH          = pWin->miHeight;
   meTargetType = TargetType::WINDOW;
   ///////////////////////
+  auto plato_drm      = std::make_shared<VkPlatformObjectDRM>();
+  plato_drm->_ctxbase = ctxdrm;
+  plato_drm->_drmctx  = ctxdrm->_drmctx.get();
+  mCtxBase            = ctxdrm;
+  _impl.setShared<VkPlatformObjectDRM>(plato_drm);
+  plato_drm->_bindop(); // Call bind operation directly for DRM
+  _fbi->SetThisBuffer(pWin);
+  // CRITICAL: Use actual DRM mode dimensions, not window request size
+  miW = ctxdrm->_drmctx->imageExtent.width;
+  miH = ctxdrm->_drmctx->imageExtent.height;
+  logchan_vkctx->log("DRM: dimensions set to actual mode: %dx%d", miW, miH);
+  _vkpresentationsurface = VK_NULL_HANDLE;
+  ///////////////////////
+  auto vk_devinfo = _GVI->_preferred ? _GVI->_preferred : (_GVI->_device_infos.empty() ? nullptr : _GVI->_device_infos[0]);
+  OrkAssert(vk_devinfo != nullptr);
+  logchan_vkctx->log("DRM mode: using device <%s>", vk_devinfo->_devprops.deviceName);
+  _initVulkanForDevInfo(vk_devinfo);
+  _initVulkanCommon();
+  ///////////////////////
+  if (_GVI->_debugEnabled) {
+    _fetchDeviceProcAddr(_vkSetDebugUtilsObjectName, "vkSetDebugUtilsObjectNameEXT");
+    _fetchDeviceProcAddr(_vkCmdDebugMarkerBeginEXT, "vkCmdDebugMarkerBeginEXT");
+    _fetchDeviceProcAddr(_vkCmdDebugMarkerEndEXT, "vkCmdDebugMarkerEndEXT");
+    _fetchDeviceProcAddr(_vkCmdDebugMarkerInsertEXT, "vkCmdDebugMarkerInsertEXT");
+    _fetchDeviceProcAddr(_vkCmdInsertDebugUtilsLabelEXT, "vkCmdInsertDebugUtilsLabelEXT");
+  }
+  ///////////////////////
+  auto drm_sc = std::make_shared<VkSwapChainDRM>(this, plato_drm->_drmctx);
+  drm_sc->_buildup();
+  _fbi->_output = drm_sc;
+  logchan_vkctx->log("DRM context initialized");
+}
+#endif
 
+///////////////////////////////////////////////////////
+
+void VkContext::initializeWindowContext(Window* pWin, CTXBASE* pctxbase) {
+  miW = pWin->miWidth;
+  miH = pWin->miHeight;
+  meTargetType = TargetType::WINDOW;
+  ///////////////////////
   logchan_vkctx->log("initializeWindowContext called: pctxbase=%p, type=%s",
                      pctxbase, pctxbase ? typeid(*pctxbase).name() : "null");
-
-#if defined(__linux__)
-  // Check if using DRM
-  auto ctxdrm = dynamic_cast<CtxDRM*>(pctxbase);
-  logchan_vkctx->log("dynamic_cast<CtxDRM*> result: %p", ctxdrm);
-  if (ctxdrm) {
-    logchan_vkctx->log("Detected DRM context, using VkPlatformObjectDRM");
-    vkplatformobject_drm_ptr_t plato_drm = std::make_shared<VkPlatformObjectDRM>();
-    plato_drm->_ctxbase = ctxdrm;
-    plato_drm->_drmctx = ctxdrm->_drmctx.get();
-    mCtxBase = pctxbase;
-    _impl.setShared<VkPlatformObjectDRM>(plato_drm);
-    plato_drm->_bindop(); // Call bind operation directly for DRM
-    _fbi->SetThisBuffer(pWin);
-
-    // CRITICAL: Use actual DRM mode dimensions, not window request size
-    miW = ctxdrm->_drmctx->imageExtent.width;
-    miH = ctxdrm->_drmctx->imageExtent.height;
-    logchan_vkctx->log("DRM: Overriding context dimensions to actual mode: %dx%d", miW, miH);
-    // DRM-specific initialization will continue below
-  } else
-#endif
-  {
-    // Original GLFW path
-    logchan_vkctx->log("Using GLFW path (not DRM) - dynamic_cast failed or not Linux");
-    auto glfw_container = (CtxGLFW*)pctxbase;
-    auto glfw_window    = glfw_container->_glfwWindow;
-    vkplatformobject_ptr_t plato = std::make_shared<VkPlatformObject>();
-    plato->_ctxbase              = glfw_container;
-    mCtxBase                     = pctxbase;
-    _impl.setShared<VkPlatformObject>(plato);
-    platoMakeCurrent(plato);
-    _fbi->SetThisBuffer(pWin);
+  ///////////////////////
+  auto glfw_container = (CtxGLFW*)pctxbase;
+  auto plato          = std::make_shared<VkPlatformObject>();
+  plato->_ctxbase     = glfw_container;
+  mCtxBase            = pctxbase;
+  _impl.setShared<VkPlatformObject>(plato);
+  platoMakeCurrent(plato);
+  _fbi->SetThisBuffer(pWin);
+  ///////////////////////
+  auto glfw_window = glfw_container->_glfwWindow;
+  uint32_t count;
+  const char** extensions = glfwGetRequiredInstanceExtensions(&count);
+  logchan_vkctx->log("GLFW requires %u extensions for surface:", count);
+  for (uint32_t i = 0; i < count; i++) {
+    logchan_vkctx->log("  - %s", extensions[i]);
   }
-
-  bool is_drm = false;
-#if defined(__linux__)
-  is_drm = _impl.isShared<VkPlatformObjectDRM>();
-  logchan_vkctx->log("After setup: is_drm=%d (_impl.isShared<VkPlatformObjectDRM>()=%d)",
-                     is_drm, _impl.isShared<VkPlatformObjectDRM>());
-#endif
-
-  bool is_offscreen = (_ginitdata && _ginitdata->_offscreen);
-
-  logchan_vkctx->log("Checking surface creation: is_drm=%d, is_offscreen=%d", is_drm, is_offscreen);
-
-  if (is_drm) {
-#if defined(__linux__)
-    // DRM path: no surface needed, we manage framebuffers directly
-    logchan_vkctx->log("DRM mode: skipping Vulkan surface creation");
-    _vkpresentationsurface = VK_NULL_HANDLE;
-#endif
-  } else {
-    // GLFW path
-    uint32_t count;
-    const char** extensions = glfwGetRequiredInstanceExtensions(&count);
-    logchan_vkctx->log("GLFW requires %u extensions for surface:", count);
-    for (uint32_t i = 0; i < count; i++) {
-      logchan_vkctx->log("  - %s", extensions[i]);
-    }
-
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-
-    auto glfw_window = ((CtxGLFW*)pctxbase)->_glfwWindow;
-
-    if (is_offscreen) {
-      // Create headless surface for offscreen rendering
-      logchan_vkctx->log("Creating headless surface for offscreen rendering");
-
-      VkHeadlessSurfaceCreateInfoEXT headlessInfo = {};
-      headlessInfo.sType = VK_STRUCTURE_TYPE_HEADLESS_SURFACE_CREATE_INFO_EXT;
-      headlessInfo.pNext = nullptr;
-      headlessInfo.flags = 0;
-
-      auto vkCreateHeadlessSurfaceEXT = (PFN_vkCreateHeadlessSurfaceEXT)
-        vkGetInstanceProcAddr(_GVI->_instance, "vkCreateHeadlessSurfaceEXT");
-
-      if (vkCreateHeadlessSurfaceEXT) {
-        OrkVkAssert(vkCreateHeadlessSurfaceEXT(
-          _GVI->_instance,
-          &headlessInfo,
-          nullptr,
-          &_vkpresentationsurface
-        ));
-        logchan_vkctx->log("Headless surface created successfully");
-      } else {
-        logchan_vkctx->log("ERROR: vkCreateHeadlessSurfaceEXT not available");
-        OrkAssert(false);
-      }
-    } else {
-      // Original onscreen path
-      OrkVkAssert(glfwCreateWindowSurface(_GVI->_instance, glfw_window, nullptr, &_vkpresentationsurface));
-    }
+  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+  OrkVkAssert(glfwCreateWindowSurface(_GVI->_instance, glfw_window, nullptr, &_vkpresentationsurface));
+  ///////////////////////
+  _initVulkanForWindow(_vkpresentationsurface);
+  ///////////////////////
+  // Validate presentation support on queue families
+  bool has_presentation_support = false;
+  for (uint32_t i = 0; i < _num_queue_types; i++) {
+    VkBool32 presentSupport = VK_FALSE;
+    vkGetPhysicalDeviceSurfaceSupportKHR(_vkphysicaldevice, i, _vkpresentationsurface, &presentSupport);
+    logchan_vkctx->log("Qfamily<%u> on surface supports presentation<%d>", i, int(presentSupport));
+    if (presentSupport) has_presentation_support = true;
   }
-
-  // Initialize Vulkan device
-  if (is_drm) {
-#if defined(__linux__)
-    // For DRM rendering, select device similar to offscreen (no surface needed)
-    auto vk_devinfo = _GVI->_preferred ? _GVI->_preferred : (_GVI->_device_infos.empty() ? nullptr : _GVI->_device_infos[0]);
-    OrkAssert(vk_devinfo != nullptr);
-    logchan_vkctx->log("DRM mode: using device <%s>", vk_devinfo->_devprops.deviceName);
-    _initVulkanForDevInfo(vk_devinfo);
-    _initVulkanCommon();
-
-    // Initialize debug functions if needed
-    if (_GVI->_debugEnabled) {
-      _fetchDeviceProcAddr(_vkSetDebugUtilsObjectName, "vkSetDebugUtilsObjectNameEXT");
-      _fetchDeviceProcAddr(_vkCmdDebugMarkerBeginEXT, "vkCmdDebugMarkerBeginEXT");
-      _fetchDeviceProcAddr(_vkCmdDebugMarkerEndEXT, "vkCmdDebugMarkerEndEXT");
-      _fetchDeviceProcAddr(_vkCmdDebugMarkerInsertEXT, "vkCmdDebugMarkerInsertEXT");
-      _fetchDeviceProcAddr(_vkCmdInsertDebugUtilsLabelEXT, "vkCmdInsertDebugUtilsLabelEXT");
-    }
-#endif
-  } else if (is_offscreen) {
-    // For offscreen rendering, select the first available device (or preferred if set)
-    auto vk_devinfo = _GVI->_preferred ? _GVI->_preferred : (_GVI->_device_infos.empty() ? nullptr : _GVI->_device_infos[0]);
-    OrkAssert(vk_devinfo != nullptr);
-    logchan_vkctx->log("Offscreen mode: using device <%s>", vk_devinfo->_devprops.deviceName);
-    _initVulkanForDevInfo(vk_devinfo);
-    _initVulkanCommon();
-
-    // Initialize debug functions if needed
-    if (_GVI->_debugEnabled) {
-      _fetchDeviceProcAddr(_vkSetDebugUtilsObjectName, "vkSetDebugUtilsObjectNameEXT");
-      _fetchDeviceProcAddr(_vkCmdDebugMarkerBeginEXT, "vkCmdDebugMarkerBeginEXT");
-      _fetchDeviceProcAddr(_vkCmdDebugMarkerEndEXT, "vkCmdDebugMarkerEndEXT");
-      _fetchDeviceProcAddr(_vkCmdDebugMarkerInsertEXT, "vkCmdDebugMarkerInsertEXT");
-      _fetchDeviceProcAddr(_vkCmdInsertDebugUtilsLabelEXT, "vkCmdInsertDebugUtilsLabelEXT");
-    }
-  } else {
-    // Original path for windowed rendering
-    _initVulkanForWindow(_vkpresentationsurface);
-
-    // Validate presentation support on queue families
-    bool has_presentation_support = false;
-    for (uint32_t i = 0; i < _num_queue_types; i++) {
-      VkBool32 presentSupport = VK_FALSE;
-      vkGetPhysicalDeviceSurfaceSupportKHR(_vkphysicaldevice, i, _vkpresentationsurface, &presentSupport);
-      logchan_vkctx->log("Qfamily<%u> on surface supports presentation<%d>", i, int(presentSupport));
-      if (presentSupport) {
-        has_presentation_support = true;
-      }
-    }
-
-    if (!has_presentation_support) {
-      logchan_vkctx->log("ERROR: No queue family supports presentation on device %s", _vkdeviceinfo->_devprops.deviceName);
-      logchan_vkctx->log("       This should not happen if device selection is correct.");
-    }
-    OrkAssert(has_presentation_support);
+  if (!has_presentation_support) {
+    logchan_vkctx->log("ERROR: No queue family supports presentation on device %s", _vkdeviceinfo->_devprops.deviceName);
   }
-
-  // Only get presentation capabilities if we have a surface
-  if (_vkpresentationsurface) {
-    _vkpresentation_caps = _swapChainCapsForSurface(_vkpresentationsurface);
-  }
-  
-  // Reuse is_offscreen variable from above
-
-  if (is_drm) {
-#if defined(__linux__)
-    // Create DRM swapchain
-    auto drm_plato = _impl.getShared<VkPlatformObjectDRM>();
-    _fbi->_swapchain_drm = std::make_shared<VkSwapChainDRM>(this, drm_plato->_drmctx);
-    _fbi->_swapchain_drm->_buildup();
-    _fbi->_swapchain = nullptr;  // No traditional swapchain for DRM
-    logchan_vkctx->log("DRM swapchain created");
-#endif
-  } else if (!is_offscreen && _vkpresentation_caps) {
-    // Only create swapchain for onscreen rendering
-    OrkAssert(_vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_IMMEDIATE_KHR));
-    OrkAssert(_vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_FIFO_KHR));
-    // OrkAssert(_vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_FIFO_RELAXED_KHR));
-    //  OrkAssert( _vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_MAILBOX_KHR) );
-    //  OrkAssert( _vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR) );
-    //  OrkAssert( _vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR) );
-
-    _fbi->_swapchain = std::make_shared<VkSwapChain>(this);
-#if defined(__linux__)
-    _fbi->_swapchain_drm = nullptr;  // No DRM swapchain for GLFW
-#endif
-    logchan_vkctx->log("Swapchain created for onscreen rendering");
-  } else {
-    // For offscreen, we'll render to framebuffer objects instead
-    _fbi->_swapchain = nullptr;
-#if defined(__linux__)
-    _fbi->_swapchain_drm = nullptr;
-#endif
-    logchan_vkctx->log("Offscreen mode: no swapchain created");
-  }
-
-} // make a window
+  OrkAssert(has_presentation_support);
+  ///////////////////////
+  _vkpresentation_caps = _swapChainCapsForSurface(_vkpresentationsurface);
+  OrkAssert(_vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_IMMEDIATE_KHR));
+  OrkAssert(_vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_FIFO_KHR));
+  ///////////////////////
+  _fbi->_output = std::make_shared<VkSwapChain>(this);
+  logchan_vkctx->log("Window context initialized");
+} 
 
 ///////////////////////////////////////////////////////
 
@@ -1425,9 +1144,7 @@ void VkContext::initializeOffscreenContext(DisplayBuffer* pbuffer) {
   miW          = pbuffer->GetBufferW();
   miH          = pbuffer->GetBufferH();
   ///////////////////////
-  auto glfw_container = (CtxGLFW*)global_plato()->_ctxbase;
-  auto glfw_window    = glfw_container->_glfwWindow;
-  ///////////////////////
+  auto glfw_container          = (CtxGLFW*)global_plato()->_ctxbase;
   vkplatformobject_ptr_t plato = std::make_shared<VkPlatformObject>();
   plato->_ctxbase              = glfw_container;
   mCtxBase                     = glfw_container;
@@ -1438,17 +1155,18 @@ void VkContext::initializeOffscreenContext(DisplayBuffer* pbuffer) {
   platoMakeCurrent(plato);
   _fbi->SetThisBuffer(pbuffer);
   ///////////////////////
-  plato->_ctxbase   = global_plato()->_ctxbase;
+  plato->_ctxbase =  global_plato()->_ctxbase;
   plato->_needsInit = false;
-  _defaultRTG       = new RtGroup(this, miW, miH, MsaaSamples::MSAA_1X);
-  auto rtb          = _defaultRTG->createRenderTarget(EBufferFormat::RGBA8);
-  auto texture      = rtb->texture();
+  _fbi->_output    = std::make_shared<VkOffscreen>(this);
+  _defaultRTG      = new RtGroup(this, miW, miH, MsaaSamples::MSAA_1X);
+  auto rtb         = _defaultRTG->createRenderTarget(EBufferFormat::RGBA8);
+  auto texture     = rtb->texture();
   _fbi->SetBufferTexture(texture);
-  ///////////////////////
-
-} // make a pbuffer
+  logchan_vkctx->log("Offscreen context initialized");
+}
 
 ///////////////////////////////////////////////////////
+
 void VkContext::initializeLoaderContext() {
   meTargetType = TargetType::LOADING;
 
@@ -1459,64 +1177,14 @@ void VkContext::initializeLoaderContext() {
 
   auto plato = std::make_shared<VkPlatformObject>();
   _impl.setShared<VkPlatformObject>(plato);
-
-  plato->_ctxbase   = global_plato()->_ctxbase;
+  plato->_ctxbase = global_plato()->_ctxbase;
   plato->_needsInit = false;
 
-  // Initialize Vulkan device for loader context
-  // In headed mode (X11/Wayland available), we need to select a device that supports presentation
-  // so that resources loaded here can be used by the window context (like OpenGL share groups)
-
-  VkSurfaceKHR temp_surface = VK_NULL_HANDLE;
-  GLFWwindow* temp_window = nullptr;
-  bool is_headed = false;
-
-#if defined(LINUX)
-  // Check if we're in a headed environment
-  const char* display = getenv("DISPLAY");
-  const char* wayland = getenv("WAYLAND_DISPLAY");
-  is_headed = (display && display[0] != '\0') || (wayland && wayland[0] != '\0');
-
-  if (is_headed) {
-    // Create temporary GLFW window to get a surface for device selection
-    // This ensures loader context uses a device that supports presentation
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-    temp_window = glfwCreateWindow(32, 32, "", nullptr, nullptr);
-    if (temp_window) {
-      VkResult result = glfwCreateWindowSurface(_GVI->_instance, temp_window, nullptr, &temp_surface);
-      if (result == VK_SUCCESS) {
-        logchan_vkctx->log("Loader context: Created temporary surface for presentation-capable device selection");
-      }
-    }
-  }
-#endif
-
-  // If no temp surface (headless mode), create headless surface
-  if (temp_surface == VK_NULL_HANDLE) {
-    VkHeadlessSurfaceCreateInfoEXT headlessInfo = {};
-    headlessInfo.sType = VK_STRUCTURE_TYPE_HEADLESS_SURFACE_CREATE_INFO_EXT;
-    headlessInfo.pNext = nullptr;
-    headlessInfo.flags = 0;
-
-    auto vkCreateHeadlessSurfaceEXT = (PFN_vkCreateHeadlessSurfaceEXT)
-      vkGetInstanceProcAddr(_GVI->_instance, "vkCreateHeadlessSurfaceEXT");
-
-    if (vkCreateHeadlessSurfaceEXT) {
-      OrkVkAssert(vkCreateHeadlessSurfaceEXT(
-        _GVI->_instance,
-        &headlessInfo,
-        nullptr,
-        &temp_surface
-      ));
-    }
-  }
-
-  // Select device based on surface support (if headed) or discrete GPU (if headless)
+  // Select device. In DRM/headless mode skip findPresentableDevice() — it calls
+  bool use_drm = (_ginitdata && _ginitdata->_use_drm);
   if (nullptr == _GVI->_preferred) {
-    if (is_headed && temp_surface != VK_NULL_HANDLE) {
-      // Find device that supports presentation (for share group compatibility)
-      auto vk_devinfo = _GVI->findDeviceForSurface(temp_surface);
+    if (!use_drm) {
+      auto vk_devinfo = _GVI->findPresentableDevice();
       if (vk_devinfo) {
         _GVI->_preferred = vk_devinfo;
         logchan_vkctx->log("Loader context: Selected presentation-capable device for share group");
@@ -1533,21 +1201,15 @@ void VkContext::initializeLoaderContext() {
         }
       }
       _GVI->_preferred = discrete_device ? discrete_device : _GVI->_device_infos.front();
+      logchan_vkctx->log("Loader context: falling back to device <%s>", _GVI->_preferred->_devprops.deviceName);
     }
   }
+  logchan_vkctx->log("Loader context: using device <%s>", _GVI->_preferred->_devprops.deviceName);
 
   auto vk_devinfo = _GVI->_preferred;
   _initVulkanForDevInfo(vk_devinfo);
   _initVulkanCommon();
-
-  // Clean up temporary surface and window (device is created, no longer needed)
-  if (temp_surface != VK_NULL_HANDLE) {
-    vkDestroySurfaceKHR(_GVI->_instance, temp_surface, nullptr);
-  }
-  if (temp_window) {
-    glfwDestroyWindow(temp_window);
-  }
-
+  
   _defaultRTG  = new RtGroup(this, miW, miH, MsaaSamples::MSAA_1X);
   auto rtb     = _defaultRTG->createRenderTarget(EBufferFormat::RGBA8);
   auto texture = rtb->texture();
@@ -1562,9 +1224,14 @@ void VkContext::initializeLoaderContext() {
       mTargetDrawableSizeDirty = false;
     }
   };
+  
+  _fbi->_output = std::make_shared<VkOffscreen>(this);
+  logchan_vkctx->log("Loader context initialized");
 }
 
-///////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+// Vulkan Context Debug Utils
+////////////////////////////////////////////////////////////////////////////////
 
 void VkContext::debugPushGroup(const std::string str, const fvec4& color) {
   if (_vkCmdDebugMarkerBeginEXT) {
@@ -1630,17 +1297,19 @@ void VkContext::debugMarker(const std::string named, const fvec4& color) {
   }
 }
 
-///////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 void VkContext::TakeThreadOwnership() {
 }
 
-///////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 bool VkContext::SetDisplayMode(DisplayMode* mode) {
   return false;
 }
-///////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+
 load_token_t VkContext::_doBeginLoad() {
   load_token_t rval = nullptr;
 
@@ -1654,14 +1323,17 @@ load_token_t VkContext::_doBeginLoad() {
   // todo make global loading ctx current..
   return rval;
 }
+
 ///////////////////////////////////////////////////////
+
 void VkContext::_doEndLoad(load_token_t ploadtok) {
   auto loadctx = ploadtok.getShared<VkLoadContext>();
   auto pushed  = loadctx->_pushedWindow;
   glfwMakeContextCurrent(pushed);
   _GVI->_loadTokens.push(loadctx);
 }
-///////////////////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
 
 vkswapchaincaps_ptr_t VkContext::_swapChainCapsForSurface(VkSurfaceKHR surface) {
 
@@ -1740,9 +1412,10 @@ void VkContext::_doResizeMainSurface(int iw, int ih) {
   });
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
+////////////////////////////////////////////////////////////////////////////////
 // Helper functions for texture sampling mode conversion
+////////////////////////////////////////////////////////////////////////////////
+
 namespace {
 
 VkFilter orkidMagFilterToVulkan(ETextureMagnifyFilterMode mode) {
@@ -1879,7 +1552,9 @@ vksampler_obj_ptr_t VkContext::_getOrCreateSampler(const TextureSamplingModeData
   return sampler;
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+// Vulkan Context Render Pass
+////////////////////////////////////////////////////////////////////////////////
 
 void VkContext::suspendRenderPass() {
   if (!_renderPassActive) {
@@ -1923,9 +1598,9 @@ void VkContext::resumeRenderPass() {
   _renderPassActive = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 // GPU Profiler Implementation
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 void VkProfilerChannel::frameBegin(BeginParams params) {
   _recording = Profiler::enabled();

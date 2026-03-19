@@ -151,11 +151,6 @@ public:
   
   rtgroup_ptr_t _ensureMainRtg();
 
-  //////////////////////////////////////////////
-
-  // Query current swapchain dimensions (for debugging)
-  virtual void querySwapchainSize(int& w, int& h) const { w = 0; h = 0; }
-  virtual void* querySwapchainPtr() const { return nullptr; }
 
   //////////////////////////////////////////////
 
@@ -188,8 +183,11 @@ public:
   int _pickState;
   std::stack<RtgStackItem> mRtGroupStack;
 
-  RtGroup* _active_rtgroup = nullptr;
-  rtgroup_ptr_t _main_rtg;
+  // top of mRtGroupStack; null before first push
+  RtGroup* _active_rtgroup = nullptr; 
+
+  // swapchain surface RTG for window targets, offscreen RTG otherwise; lazily created by _ensureMainRtg()
+  rtgroup_ptr_t _main_rtg  = nullptr; 
 
 };
 

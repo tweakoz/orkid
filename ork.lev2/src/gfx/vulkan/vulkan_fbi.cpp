@@ -67,69 +67,19 @@ void VkFrameBufferInterface::_setScissor(int iX, int iY, int iW, int iH) {
 
 ///////////////////////////////////////////////////////
 void VkFrameBufferInterface::_doBeginFrame() {
-  static int frame_log_count = 0;
-
-  // TODO Framebuffer should not render directly to the swap.
-  // Render to something else then blit to swap.
-  if (_swapchain) {
-    _swapchain->_update();
-  }
-#if defined(__linux__)
-  else if (_swapchain_drm) {
-    if (frame_log_count < 10) {
-      logchan_fbi->log("DRM: _doBeginFrame[%d] - calling acquireImage", frame_log_count);
-    }
-    _swapchain_drm->acquireImage(_contextVK);
-    // NOTE: enqueueFrame() called later from vulkan_ctx.cpp after rendering
-  }
-#endif
-  _ensureMainRtg().get();    // ensure main rtgroup is created
+  OrkAssertI(_output != nullptr, "_output must be set during context creation before any frame");
+  _output->beginFrame(_contextVK);
   _active_rtgroup = nullptr; // ensure main rtgroup is pushed on first use
-
-  if (frame_log_count < 10) {
-    frame_log_count++;
-  }
 }
 
 ///////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::_doEndFrame() {
-  // NOTE: DRM's waitPresentFrame is called in _doSubmitPrimaryCommandBuffer,
-  // not here, to match GLFW flow
+  OrkAssertI(_output != nullptr, "_output must be set during context creation before any frame");
+  _output->endFrame(_contextVK);
 }
 
 ///////////////////////////////////////////////////////
-
-void VkFrameBufferInterface::querySwapchainSize(int& w, int& h) const {
-  if (_swapchain) {
-    w = _swapchain->_width;
-    h = _swapchain->_height;
-  }
-#if defined(__linux__)
-  else if (_swapchain_drm) {
-    w = _swapchain_drm->_width;
-    h = _swapchain_drm->_height;
-  }
-#endif
-  else {
-    w = 0;
-    h = 0;
-  }
-}
-
-///////////////////////////////////////////////////////
-
-void* VkFrameBufferInterface::querySwapchainPtr() const {
-  if (_swapchain) {
-    return (void*)_swapchain.get();
-  }
-#if defined(__linux__)
-  if (_swapchain_drm) {
-    return (void*)_swapchain_drm.get();
-  }
-#endif
-  return nullptr;
-}
 
 ///////////////////////////////////////////////////////
 

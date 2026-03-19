@@ -5,14 +5,21 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
+
 #include <ork/pch.h>
 #include <ork/kernel/environment.h>
 #include <ork/lev2/lev2_asset.h>
 #include <ork/asset/Asset.inl>
 #include <ork/lev2/init.h>
+
 #if defined(ENABLE_VULKAN)
+#if defined(__APPLE__)
+#define VK_USE_PLATFORM_MACOS_MVK
+#endif
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+#include <ork/lev2/glfw/ctx_glfw.h>
 #include "headers/vulkan_ctx.h"
-#import <ork/lev2/glfw/ctx_glfw.h>
 
 // Static initializer to configure MoltenVK before library initialization
 #if defined(__APPLE__)
@@ -111,6 +118,16 @@ vkdeviceinfo_ptr_t VulkanInstance::findDeviceForSurface(VkSurfaceKHR surface){
       if(presentSupport){
         return devinfo;
       }
+    }
+  }
+  return nullptr;
+}
+
+vkdeviceinfo_ptr_t VulkanInstance::findPresentableDevice() {
+  for (auto devinfo : _device_infos) {
+    for (uint32_t qf_index = 0; qf_index < devinfo->_queueprops.size(); qf_index++) {
+      if (glfwGetPhysicalDevicePresentationSupport(_instance, devinfo->_phydev, qf_index))
+        return devinfo;
     }
   }
   return nullptr;
@@ -570,4 +587,4 @@ const VkFormatConverter VkFormatConverter::VkFormatConverter::_instance;
 ///////////////////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::vulkan
 
-#endif
+#endif // defined(ENABLE_VULKAN)

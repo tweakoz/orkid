@@ -42,7 +42,7 @@ namespace ork::lev2 { class ShmTexConsumer; }
 #include <ork/lev2/gfx/shadman.h>
 
 #define GLFW_INCLUDE_VULKAN
-#import <ork/lev2/glfw/ctx_glfw.h>
+#include <ork/lev2/glfw/ctx_glfw.h>
 #include <GLFW/glfw3native.h>
 #if defined(__linux__)
 #include <ork/lev2/drm/drm_types.h>
@@ -58,9 +58,6 @@ namespace ork::lev2 { class ShmTexConsumer; }
 #include "vk_synchro.h"
 #include "vk_pipeline.h"
 #include "vk_merged_resources.h"
-#if defined(__linux__)
-#include "vk_swapchain_drm.h"
-#endif
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 
@@ -118,6 +115,7 @@ struct VulkanInstance {
   std::vector<vkdevgrp_ptr_t> _devgroups;
   std::vector<vkdeviceinfo_ptr_t> _device_infos;
   vkdeviceinfo_ptr_t findDeviceForSurface(VkSurfaceKHR surface);
+  vkdeviceinfo_ptr_t findPresentableDevice(); // no surface needed
   std::vector<const char*> _instance_extensions;
   uint32_t _numgpus   = 0;
   uint32_t _numgroups = 0;
@@ -239,7 +237,110 @@ struct VkRtgStackItemImpl {
   bool _was_redundant = false;        // Whether this push was a no-op (same rtgroup already active)
   RtGroup* _previous_rtgroup = nullptr; // The RTGroup that was active before this push
 };
-///////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+// Vulkan Framebuffer Output (owned by VkFrameBufferInterface::_output):
+//   VkFramebufferOutput  — abstract base: beginFrame / endFrame / submit / currentFrameFence
+//     VkOffscreen        — headless; submits with fence, no presentation
+//     VkSwapChain        — GLFW/surface swapchain; acquires image, presents via KHR
+//     VkSwapChainDRM     — Linux DRM direct-rendering (vk_swapchain_drm.h); exports via dmabuf
+////////////////////////////////////////////////////////////////////////////////
+
+static constexpr size_t MAX_FRAMES_IN_FLIGHT = 2;
+
+struct VkFramebufferOutput {
+  virtual ~VkFramebufferOutput() = default;
+
+  // Acquire the output image and inject it into the main RTG color buffer so rendering
+  // goes directly into the output surface. Called from _pushRtGroup for the main RTG.
+  virtual void beginFrame(vkcontext_rawptr_t ctxVK) {}
+
+  // Transition main RTG color buffer to its required end-of-frame layout (e.g. PRESENT_SRC_KHR).
+  // Called inside the primary CB before submit.
+  virtual void endFrame(vkcontext_rawptr_t ctxVK) = 0;
+
+  // Submit the primary command buffer and present (or, for offscreen, just submit and wait).
+  virtual void submit(vkcontext_rawptr_t ctxVK) = 0;
+
+  // Return the fence for the current frame (before _incrementFrame advances _sub_index).
+  vkfence_obj_ptr_t currentFrameFence() const { return _frame_fences[_sub_index]; }
+
+  void _incrementFrame() {
+    _current_frame++;
+    _sub_index = _current_frame % MAX_FRAMES_IN_FLIGHT;
+  }
+
+  vkfence_obj_ptr_t _frame_fences[MAX_FRAMES_IN_FLIGHT] = {nullptr};
+
+  uint64_t _current_frame = 0;
+  size_t   _sub_index     = 0;     // _current_frame % MAX_FRAMES_IN_FLIGHT, updated by _incrementFrame()
+  bool     _acquired      = false; // true between beginFrame and submit
+  int      _width         = 0;
+  int      _height        = 0;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+// Offscreen / headless output path (no presentation target)
+////////////////////////////////////////////////////////////////////////////////
+
+struct VkOffscreen : public VkFramebufferOutput {
+  VkOffscreen(vkcontext_rawptr_t ctxVK);
+  void endFrame(vkcontext_rawptr_t ctxVK) override final;
+  void submit(vkcontext_rawptr_t ctxVK) override final;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+// GLFW / Vulkan-surface swapchain output path
+////////////////////////////////////////////////////////////////////////////////
+
+struct VkSwapChainCaps {
+  bool supportsPresentationMode(VkPresentModeKHR mode) const;
+
+  VkSurfaceCapabilitiesKHR _capabilities;
+  std::vector<VkSurfaceFormatKHR> _formats;
+  std::set<VkPresentModeKHR> _presentModes;
+};
+
+struct VkSwapChain : public VkFramebufferOutput {
+
+  VkSwapChain(vkcontext_rawptr_t ctxVK);
+  ~VkSwapChain();
+
+  void beginFrame(vkcontext_rawptr_t ctxVK) override final;
+  void endFrame(vkcontext_rawptr_t ctxVK) override final;
+  void submit(vkcontext_rawptr_t ctxVK) override final;
+
+  void _reinit();
+  void _buildup();
+  void _teardown();
+  void _enqueuePresentFrame(vkcontext_rawptr_t ctxVK);
+  void _acquireImage(vkcontext_rawptr_t ctxVK);
+  void _waitFrame();
+  void _enqueueFrame(vkcontext_rawptr_t ctxVK);
+
+  vkcontext_rawptr_t _contextVK       = nullptr;
+  VkSwapchainKHR     _vkSwapChain     = VK_NULL_HANDLE;
+  VkSemaphore        _semaOkToPresent = VK_NULL_HANDLE;
+
+  vkbinarysemaphore_ptr_t _imageAcquiredSemaphores[MAX_FRAMES_IN_FLIGHT]  = {nullptr};
+  vkbinarysemaphore_ptr_t _renderCompleteSemaphores[MAX_FRAMES_IN_FLIGHT] = {nullptr};
+
+  std::vector<vkimageobj_ptr_t>     _swapChainImages;
+  std::vector<VkSemaphore>          _allSignalSemaphores;
+  std::vector<VkSemaphore>          _allWaitSemaphores;
+  std::vector<uint64_t>             _allSignalValues;
+  std::vector<uint64_t>             _allWaitValues;
+  std::vector<VkPipelineStageFlags> _allWaitStages;
+
+  // index of the swapchain image currently acquired for rendering; 0xffffffff = none
+  u32 _curSwapWriteImage = 0xffffffff; 
+};
+
+////////////////////////////////////////////////////////////////////////////////
+// VkFrameBufferInterface - Vulkan framebuffer/rendertarget management.
+//  Owns the output target (_output), manages RTG push/pop, captures, and
+////////////////////////////////////////////////////////////////////////////////
+
 struct VkFrameBufferInterface final : public FrameBufferInterface {
 
   VkFrameBufferInterface(vkcontext_rawptr_t ctx);
@@ -271,8 +372,6 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   void _doEndFrame(void) final;
   void _pushRtGroup(rtgroup_rawptr_t Base) final;
   void _popRtGroup() final;
-  void querySwapchainSize(int& w, int& h) const final;
-  void* querySwapchainPtr() const final;
 
   //////////////////////////////////////////////
 
@@ -299,14 +398,11 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   vkviewporttracker_ptr_t _scissorTracker;
   vkcontext_rawptr_t _contextVK;
 
-  //////////////////////////////////////////////
+  // Output target: VkSwapChain, VkSwapChainDRM, or VkOffscreen.
+  vkfboutput_ptr_t _output;
 
-  vkswapchain_ptr_t _swapchain;
-  std::unordered_set<vkswapchain_ptr_t> _old_swapchains;
-#if defined(__linux__)
-  vkswapchaindrm_ptr_t _swapchain_drm;
-#endif
 };
+
 ///////////////////////////////////////////////////////////////////////////////
 struct VkTextureInterface final : public TextureInterface {
 
@@ -617,6 +713,9 @@ public:
   void initializeWindowContext(Window* pWin, CTXBASE* pctxbase) final; // make a window
   void initializeOffscreenContext(DisplayBuffer* pBuf) final;          // make a pbuffer
   void initializeLoaderContext() final;
+#if defined(__linux__)
+  void initializeDRMContext(Window* pWin, CTXBASE* pctxbase) final;   // DRM direct-to-display window
+#endif
 
   void debugPushGroup(const std::string str, const fvec4& color) final;
   void debugPopGroup() final;
@@ -763,10 +862,10 @@ public:
   LockedResource<vkcompsema_set_t> _pendingOneShotSemas;
   void onFenceCrossed(void_lambda_t op);
   //////////////////////////////////////////////
-  // Offscreen semaphore submission (amortized storage)
+  // One-shot semaphore submission (amortized storage, shared across all output paths)
   //////////////////////////////////////////////
-  std::vector<VkSemaphore> _offscreen_signalSemaphores;
-  std::vector<uint64_t> _offscreen_signalValues;
+  std::vector<VkSemaphore> _oneShotSignalSemaphores;
+  std::vector<uint64_t> _oneShotSignalValues;
   //////////////////////////////////////////////
 
   vkdwi_ptr_t _dwi;
@@ -777,9 +876,11 @@ public:
   vktxi_ptr_t _txi;
   vkfxi_ptr_t _fxi;
   vkci_ptr_t _ci;
-  
+
+  // Output target is now owned by VkFrameBufferInterface as _output.
+
   std::vector<captureasync_ptr_t> _pending_captures;
-  void _processPendingCaptures();
+    void _processPendingCaptures();
   void _processPixelFetch(captureasync_ptr_t capture);
   //////////////////////////////////////////////
   // Render pass suspension/resumption support

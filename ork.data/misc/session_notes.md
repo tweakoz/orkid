@@ -473,6 +473,15 @@ ork.asset.catalog.list.py      # Asset catalog listing
 Full-width (`////////////////////////////////////////////////////////////////////////////////`) separators are used between top-level declarations and method definitions. Half-width (`////////////////////////////////////////`) separators are used within method bodies to divide logical chunks of work. Named half-width blocks annotate significant categories of work within a method.
 
 **Header example:**
+80 dashes = major seperator
+////////////////////////////////////////////////////////////////////////////////
+
+55 dashes = minor seperator
+///////////////////////////////////////////////////////
+
+40 dashes = in-method seperator
+////////////////////////////////////////
+
 ```cpp
 ////////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -519,6 +528,8 @@ void CurrentState::methodName(int param_name) {
   ** logical chunk of work **
 }
 
+///////////////////////////////////////////////////////
+
 void CurrentState::otherMethodName(int param_name) {
   // minor comment
   ** logical chunk of work **
@@ -541,6 +552,26 @@ void NextState::methodName(int param_name) {
 } // namespace ork
 ////////////////////////////////////////////////////////////////////////////////
 ```
+
+### Brace Style
+
+Single-line `if` bodies do not use braces:
+
+```cpp
+// CORRECT
+if (condition)
+  return value;
+
+if (ptr == nullptr)
+  OrkAssert(false);
+
+// WRONG
+if (condition) {
+  return value;
+}
+```
+
+Multi-line bodies always use braces.
 
 ### C++ Conventions
 
@@ -567,6 +598,27 @@ struct MyStruct {
   static constexpr size_t _static_some_size_or_length = 42;  // use appropiate type for job
 
 };
+
+// Member initialization in object structs vs POD structs:
+
+// Object structs (encapsulate state/functionality): always initialize all members to a known
+// value in the declaration (= 0, = nullptr, = {nullptr}, = VK_NULL_HANDLE, etc).
+// This prevents accidental garbage reads and makes default construction safe.
+
+  struct VkSwapChain : public VkFramebufferOutput {
+    VkSwapchainKHR          _vkSwapChain       = VK_NULL_HANDLE;  // GOOD - explicit zero init
+    u32                     _curSwapWriteImage = 0xffffffff;      // GOOD - sentinel value
+    vkbinarysemaphore_ptr_t _semas[MAX]        = {nullptr};       // GOOD - shared_ptrs default to nullptr anyway, but be explicit
+  };
+
+// POD structs (plain data, no invariants, used for bulk data or passed to C APIs):
+// do NOT initialize members in the declaration. This preserves the ability to leave
+// them uninitialized for performance (e.g. large arrays, per-vertex data, C interop).
+
+  struct Vertex {
+    float x, y, z;  // GOOD - no init, caller fills all fields before use
+    float u, v;
+  };
 
 
 // Type aliases over raw types
@@ -632,6 +684,21 @@ py::class_<MyStruct, mystruct_ptr_t>(module, "MyStruct")
 Used for objects that need to be torn down and rebuilt mid-lifetime (e.g. swapchain recreation on window resize). The constructor calls `_buildup()` directly; the destructor calls `_teardown()`.
 
 **Error handling inside `_buildup()`:** Use `OrkAssert` for unrecoverable init failures. Do not throw.
+
+### Assertions — Always Use `OrkAssertI` with a Message
+
+Prefer `OrkAssertI(condition, "message")` over bare `OrkAssert(condition)`. The message should describe *what invariant was violated and why it must hold*, not just restate the condition. Good messages make crash logs immediately actionable without needing a debugger.
+
+```cpp
+// BAD — no context on crash
+OrkAssert(_output != nullptr);
+
+// GOOD — tells you what went wrong and where to look
+OrkAssertI(_output != nullptr, "_output must be set during context creation before any frame");
+OrkAssertI(fence != nullptr, "_frameFences must be populated in _buildup() before any frame runs");
+```
+
+`OrkAssertIFMT(condition, fmt, ...)` is available for dynamic values (e.g. index out of range).
 
 ### `throw` vs `OrkAssert` — When to Use Which
 
