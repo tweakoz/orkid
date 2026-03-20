@@ -268,6 +268,10 @@ bool ReflectionPropertySheetModel::isMapConst(const std::string& key) const {
   auto anno = entry.property->typedAnnotation<ConstString>("editor.map.policy.const");
   if (anno && anno.value().length() > 0 && strcmp(anno.value().c_str(), "true") == 0)
     return true;
+  // Also handle annotations stored as const char* (annotate("key","val") deduces const char*)
+  auto anno2 = entry.property->typedAnnotation<const char*>("editor.map.policy.const");
+  if (anno2 && anno2.value() && strcmp(anno2.value(), "true") == 0)
+    return true;
   return false;
 }
 

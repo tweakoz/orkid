@@ -31,7 +31,7 @@ void Archetype::describeX(SceneObjectClass* clazz) {
   mutstr.format("/arch/Archetype");
   clazz->SetPreferredName(arrstr);
 
-  clazz->directObjectMapProperty("Components", &Archetype::mComponentDatas)->annotate("editor.map.policy.const", "true");
+  clazz->directObjectMapProperty("Components", &Archetype::mComponentDatas)->annotate("editor.map.policy.const", ConstString("true"));
 }
 ///////////////////////////////////////////////////////////////////////////////
 Archetype::Archetype()
