@@ -418,7 +418,8 @@ void VkSwapChain::_reinit() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkSwapChain::_acquireImage(vkcontext_rawptr_t ctxVK) {
-  OrkProfilerSampleScope(CHANNEL_GPU, "gpu_acquire_wait");
+  OrkProfilerSampleScope(CHANNEL_GPU, "gpu_acquireImage");
+  OrkProfilerSampleScope(CHANNEL_MAIN, "vk:acquireImage");
 
   // Ensure we have a valid swapchain
   size_t sub_index = _sub_index;
@@ -486,6 +487,7 @@ void VkSwapChain::_acquireImage(vkcontext_rawptr_t ctxVK) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkSwapChain::_enqueueFrame(vkcontext_rawptr_t ctxVK) {
+  OrkProfilerSampleScope(CHANNEL_MAIN, "vk:enqueueFrame");
   
   _allWaitSemaphores.clear();
   _allWaitValues.clear();
@@ -555,6 +557,7 @@ void VkSwapChain::_enqueueFrame(vkcontext_rawptr_t ctxVK) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkSwapChain::_enqueuePresentFrame(vkcontext_rawptr_t ctxVK) {
+  OrkProfilerSampleScope(CHANNEL_MAIN, "vk:enqueuePresentFrame");
 
   size_t sub_index = _sub_index;
   
@@ -631,6 +634,7 @@ void VkSwapChain::_enqueuePresentFrame(vkcontext_rawptr_t ctxVK) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkSwapChain::_waitFrame() {
+  OrkProfilerSampleScope(CHANNEL_MAIN, "vk:waitFrame");
   size_t sub_index = _sub_index;
   if(0)logchan_swapchain->log("waitPresentFrame: frame %zu, sub_index %zu", _current_frame, sub_index);
   auto& fence = _frame_fences[sub_index];
@@ -644,6 +648,7 @@ void VkSwapChain::_waitFrame() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkSwapChain::beginFrame(vkcontext_rawptr_t ctxVK) {
+  OrkProfilerSampleScope(CHANNEL_MAIN, "vk:swapchainBeginFrame");
   OrkAssertI(!_acquired, "beginFrame called twice without a submit in between");
   _acquireImage(ctxVK);
 
@@ -661,6 +666,7 @@ void VkSwapChain::beginFrame(vkcontext_rawptr_t ctxVK) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkSwapChain::endFrame(vkcontext_rawptr_t ctxVK) {
+  OrkProfilerSampleScope(CHANNEL_MAIN, "vk:swapchainEndFrame");
   // Rendering went directly into the swapchain image (injected via beginFrame).
   // Just transition COLOR_ATTACHMENT_OPTIMAL -> PRESENT_SRC_KHR.
   auto main_rtg  = ctxVK->_fbi->_ensureMainRtg();
@@ -672,6 +678,7 @@ void VkSwapChain::endFrame(vkcontext_rawptr_t ctxVK) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkSwapChain::submit(vkcontext_rawptr_t ctxVK) {
+  OrkProfilerSampleScope(CHANNEL_MAIN, "vk:swapchainSubmit");
   _enqueueFrame(ctxVK);
   _enqueuePresentFrame(ctxVK);
   _waitFrame();
