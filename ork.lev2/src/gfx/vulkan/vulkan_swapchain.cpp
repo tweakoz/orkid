@@ -136,10 +136,9 @@ void VkSwapChain::_buildup() {
 
   // image properties
   // Ensure minImageCount is within capabilities
-  uint32_t minImageCount = caps.minImageCount + 1;
-  if (caps.maxImageCount > 0 && minImageCount > caps.maxImageCount) {
-    minImageCount = caps.maxImageCount;
-  }
+  uint32_t minImageCount = MAX_FRAMES_IN_FLIGHT;
+  OrkAssertI(minImageCount >= caps.minImageCount, "minImageCount is below caps.minImageCount");
+  OrkAssertI(minImageCount <= caps.maxImageCount, "minImageCount exceeds caps.maxImageCount");
   SCINFO.minImageCount    = minImageCount;
   SCINFO.imageFormat      = surfaceFormat.format;                // Chosen from VkSurfaceFormatKHR, after querying supported formats
   SCINFO.imageColorSpace  = surfaceFormat.colorSpace;            // Chosen from VkSurfaceFormatKHR
@@ -233,6 +232,9 @@ void VkSwapChain::_buildup() {
   std::vector<VkImage> swapChainImages;
   swapChainImages.resize(imageCount);
   vkGetSwapchainImagesKHR(vkdev, _vkSwapChain, &imageCount, swapChainImages.data());
+
+  if (imageCount != minImageCount)
+    logchan_swapchain->log("WARNING: got extra swapchain images (requested %d, got %d)", minImageCount, imageCount);
 
   ///////////////////////////////////////////////////
   // register new swapchain images / image views
