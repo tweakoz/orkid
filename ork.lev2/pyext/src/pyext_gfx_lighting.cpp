@@ -187,7 +187,7 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
                      .def_property(
                          "imageDim",                         //
                          [](lightprobe_ptr_t probe) -> int { //
-                           return probe->_dim;
+                           return probe->dim();
                          },
                          [](lightprobe_ptr_t probe, int dim) { //
                            probe->_dim = dim;
@@ -215,6 +215,18 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
                          },
                          [](lightprobe_ptr_t probe, crcstring_ptr_t t) { //
                            probe->_type = LightProbeType(t->hashed());
+                         })
+                     .def_property(
+                         "active",
+                         [](lightprobe_ptr_t probe) -> bool { return probe->_active; },
+                         [](lightprobe_ptr_t probe, bool v) { probe->_active = v; })
+                     .def_property(
+                         "activationMode",
+                         [](lightprobe_ptr_t probe) -> crcstring_ptr_t {
+                           return std::make_shared<CrcString>(uint64_t(probe->_activationMode));
+                         },
+                         [](lightprobe_ptr_t probe, crcstring_ptr_t m) {
+                           probe->_activationMode = ProbeActivationMode(m->hashed());
                          })
                      .def("exportEquirectangular", [](lightprobe_ptr_t probe, ctx_t ctx, fquat& qrot, py::object path) {
                        auto path_as_str = py::str(path);

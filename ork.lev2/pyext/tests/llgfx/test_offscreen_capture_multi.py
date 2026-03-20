@@ -4,6 +4,8 @@ Test for offscreen Vulkan rendering with multiple frame captures.
 Renders 4 different colored RTGs and captures each to a separate PNG file.
 """
 
+import os; os.environ["PYTHONUNBUFFERED"] = "1"
+import sys; sys.stdout.reconfigure(line_buffering=True)
 import sys
 import os
 import time

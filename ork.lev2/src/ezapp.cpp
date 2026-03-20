@@ -1145,12 +1145,14 @@ void OrkEzApp::_mainThreadLoopBegin() {
 
     if (_mainWindow->_onGpuExit) {
       _mainWindow->_onGpuExit(context);
-    }
+  }
   };
   ctx->_runloopBegin();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::_mainThreadLoopIter() {
+  OrkProfilerFrameBegin(CHANNEL_MAIN, CpuProfilerChannel, {.capture_fps = true});
+
   if (_mainWindow) {
     auto ctx = _mainWindow->_ctqt;
     ctx->_runloopIter();
@@ -1170,6 +1172,8 @@ void OrkEzApp::_mainThreadLoopIter() {
   // Phase 5: Render secondary windows and cleanup closed ones
   _renderSecondaryWindows();
   _cleanupClosedSecondaryWindows();
+
+  OrkProfilerFrameEnd(CHANNEL_MAIN);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::_mainThreadLoopEnd() {
@@ -1392,18 +1396,19 @@ void OrkEzApp::_cleanupClosedSecondaryWindows() {
   // Remove closed windows and return focus to main window if any were removed
   size_t before = _secondaryWindows.size();
 
-  // Force-close GLFW windows before erasing shared_ptrs.
-  // Python callbacks may hold circular references to the window object,
-  // preventing the destructor from running. Explicit close ensures the
-  // GLFW window is destroyed regardless of reference counting.
+  // Two-phase close: first call hides the window (phase 1),
+  // second call destroys it (phase 2). This gives macOS a frame
+  // to deliver the matching mouseUp before the window is destroyed,
+  // preventing global click-blocking.
   for (auto& w : _secondaryWindows) {
     if (w->shouldClose()) {
       w->_forceClose();
     }
   }
 
+  // Only erase windows whose GLFW window has been fully destroyed (phase 2 done)
   std::erase_if(_secondaryWindows, [](const auto& w) {
-    return w->shouldClose();
+    return w->shouldClose() && w->_isFullyClosed();
   });
 
   size_t removed = before - _secondaryWindows.size();
@@ -1413,12 +1418,18 @@ void OrkEzApp::_cleanupClosedSecondaryWindows() {
 
   // Return focus to main window if any popups were closed
   if (_secondaryWindows.size() < before) {
+    printf("_cleanupClosedSecondaryWindows: removed %zu window(s), restoring focus\n", removed);
 #if defined(ENABLE_GLFW)
     if (_mainWindow && _mainWindow->_ctqt) {
       auto ctx = dynamic_cast<CtxGLFW*>(_mainWindow->_ctqt);
       if (ctx && ctx->_glfwWindow) {
+        printf("  calling glfwFocusWindow(%p)\n", (void*)ctx->_glfwWindow);
         glfwFocusWindow(ctx->_glfwWindow);
+      } else {
+        printf("  FAILED: ctx=%p glfwWindow=%p\n", (void*)ctx, ctx ? (void*)ctx->_glfwWindow : nullptr);
       }
+    } else {
+      printf("  FAILED: _mainWindow=%p _ctqt=%p\n", (void*)_mainWindow.get(), _mainWindow ? (void*)_mainWindow->_ctqt : nullptr);
     }
 #endif
   }

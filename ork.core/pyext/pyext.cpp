@@ -326,7 +326,9 @@ PYBIND11_MODULE(_core, module_core) {
         fxstring<512> fxs;
         fxs.format("Path(%s)", s.c_str());
         return fxs.c_str();
-      });
+      })
+      .def_static("expandPathString", &file::Path::expandPathString,
+        "Expand ~, <assetcache>, ${ENV_VAR} in a path string");
   /////////////////////////////////////////////////////////////////////////////////
   struct VarMapKeyIterator {
 

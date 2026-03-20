@@ -83,6 +83,10 @@ void Image::initWithFormat(size_t w, size_t h, EBufferFormat fmt) {
       _numcomponents = 4;
       _bytesPerChannel = 2;
       break;
+    case EBufferFormat::RGB32F:
+      _numcomponents = 3;
+      _bytesPerChannel = 4;
+      break;
     case EBufferFormat::RGBA32F:
       _numcomponents = 4;
       _bytesPerChannel = 4;
@@ -273,6 +277,7 @@ void Image::uncompressed(CompressedImage& imgout) const {
   imgout._blocked_width  = 0;
   imgout._blocked_height = 0;
   imgout._numcomponents  = _numcomponents;
+  imgout._bytesPerChannel = _bytesPerChannel;
   imgout._data           = std::make_shared<DataBlock>();
   size_t data_size       = _width * _height * _numcomponents * _bytesPerChannel;
   ork::Timer timer;

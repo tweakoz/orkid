@@ -72,9 +72,11 @@ datablock_ptr_t XIRWriter::writeXirDatablocksWithArray(
     roughness_stream->AddItem<float>(r);
   }
   
-  // Add diffuse texture data
-  auto diffuse_stream = writer.AddStream("diffuse");
-  diffuse_stream->AddDataBlock(diffuse_data);
+  // Add diffuse texture data (optional)
+  if (diffuse_data && diffuse_data->length() > 0) {
+    auto diffuse_stream = writer.AddStream("diffuse");
+    diffuse_stream->AddDataBlock(diffuse_data);
+  }
   
   // Add each specular roughness level
   for (size_t i = 0; i < specular_datablocks.size(); i++) {
@@ -143,8 +145,7 @@ XIRReader::XIRData XIRReader::readXirDatablocks(datablock_ptr_t xir_data) {
       }
     }
     
-    result._valid = result._diffuse_data && 
-                   (result._specular_datablocks.size() == result._num_roughness_levels);
+    result._valid = (result._specular_datablocks.size() == result._num_roughness_levels);
     
   } else if (reader._chunkfiletype == "xir-1.0") {
     // Legacy format

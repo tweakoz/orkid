@@ -566,7 +566,12 @@ void LightManager::enumerateInPass(const CompositingPassData& CPD, enumeratedlig
   // categorize
   ////////////////////////////////////////////////////////////
 
-  out_lights->_lightprobes = _lightprobes;
+  out_lights->_lightprobes.clear();
+  for (auto& probe : _lightprobes) {
+    if (probe->_active) {
+      out_lights->_lightprobes.push_back(probe);
+    }
+  }
 
   out_lights->_untexturedpointlights.clear();
   out_lights->_untexturedspotlights.clear();

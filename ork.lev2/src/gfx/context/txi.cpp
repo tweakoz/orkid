@@ -58,9 +58,13 @@ bool TextureInterface::LoadTexture(const AssetPath& fname, texture_ptr_t ptex) {
   AssetPath DdsFilename = fname;
   AssetPath PngFilename = fname;
   AssetPath XtxFilename = fname;
+  AssetPath ExrFilename = fname;
+  AssetPath HdrFilename = fname;
   DdsFilename.setExtension("dds");
   PngFilename.setExtension("png");
   XtxFilename.setExtension("xtx");
+  ExrFilename.setExtension("exr");
+  HdrFilename.setExtension("hdr");
   ptex->_debugName = fname.toStdString();
   ptex->_source = ETextureSource::FROM_ASSET;
   AssetPath final_fname;
@@ -70,6 +74,10 @@ bool TextureInterface::LoadTexture(const AssetPath& fname, texture_ptr_t ptex) {
     final_fname = DdsFilename;
   if (FileEnv::GetRef().DoesFileExist(XtxFilename))
     final_fname = XtxFilename;
+  if (FileEnv::GetRef().DoesFileExist(ExrFilename))
+    final_fname = ExrFilename;
+  if (FileEnv::GetRef().DoesFileExist(HdrFilename))
+    final_fname = HdrFilename;
 
   //printf("TXI::LoadTexture fname<%s>\n", fname.c_str());
   //printf("TXI::LoadTexture final_fname<%s>\n", final_fname.c_str());
@@ -315,6 +323,10 @@ void TextureInterface::initTextureFromImage(Texture* ptex, image_ptr_t img, bool
       tid._dst_format  = EBufferFormat::RGBA8;
       break;
     case EBufferFormat::RGBA8:
+      tid._src_format  = img->_format;
+      tid._dst_format  = img->_format;
+      break;
+    case EBufferFormat::RGBA16F:
       tid._src_format  = img->_format;
       tid._dst_format  = img->_format;
       break;

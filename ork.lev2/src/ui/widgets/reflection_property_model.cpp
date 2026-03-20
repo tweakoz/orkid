@@ -183,6 +183,8 @@ void ReflectionPropertySheetModel::_addMapElements(
       key_name = k_str.value();
     else if (auto k_int = elem_key.tryAs<int>())
       key_name = std::to_string(k_int.value());
+    else if (auto k_clazz = elem_key.tryAs<object::ObjectClass*>())
+      key_name = k_clazz.value()->Name();
     else
       continue; // Skip unsupported key types
 
@@ -208,6 +210,12 @@ void ReflectionPropertySheetModel::_addMapElements(
 
       if (!entry.sub_object) {
         entry.is_null_object_entry = true;
+      } else {
+        // Append class name to display name
+        auto clazz = entry.sub_object->GetClass();
+        if (clazz) {
+          entry.name = key_name + " (" + clazz->Name() + ")";
+        }
       }
 
       size_t idx       = _entries.size();
@@ -334,6 +342,58 @@ void ReflectionPropertySheetModel::removeMapElement(
   map_prop->removeElement(owner, key_item);
 
   // Rebuild the property list
+  setObject(_object);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void ReflectionPropertySheetModel::renameMapElement(
+    const std::string& map_key,
+    const std::string& old_name,
+    const std::string& new_name) {
+  if (old_name == new_name || new_name.empty()) return;
+
+  auto it = _by_key.find(map_key);
+  if (it == _by_key.end()) return;
+  const auto& entry = _entries[it->second];
+  if (!entry.is_map_property || !entry.property) return;
+
+  auto* map_prop = dynamic_cast<const reflect::IMap*>(entry.property);
+  if (!map_prop) return;
+
+  object_ptr_t owner = _object;
+  if (!entry.parent_key.empty()) {
+    auto parent_it = _by_key.find(entry.parent_key);
+    if (parent_it != _by_key.end()) {
+      const auto& parent_entry = _entries[parent_it->second];
+      if (parent_entry.sub_object) owner = parent_entry.sub_object;
+    }
+  }
+
+  // Find value at old key
+  auto kvs = map_prop->enumerateElements(owner);
+  reflect::map_abstract_item_t old_val;
+  bool found = false;
+  for (auto& [k, v] : kvs) {
+    if (auto ks = k.tryAs<std::string>()) {
+      if (ks.value() == old_name) {
+        old_val = v;
+        found = true;
+        break;
+      }
+    }
+  }
+  if (!found) return;
+
+  // Insert with new key + same value, remove old key
+  reflect::map_abstract_item_t new_key_item;
+  new_key_item.set<std::string>(new_name);
+  map_prop->setElement(owner, new_key_item, old_val);
+
+  reflect::map_abstract_item_t old_key_item;
+  old_key_item.set<std::string>(old_name);
+  map_prop->removeElement(owner, old_key_item);
+
   setObject(_object);
 }
 
@@ -645,6 +705,16 @@ varmap::varmap_ptr_t ReflectionPropertySheetModel::getAnnotations(
     const auto& aval = ait->second;
     if (aval.isA<ConstString>()) {
       result->set(std::string(akey.c_str()), std::string(aval.get<ConstString>().c_str()));
+    } else if (aval.isA<const char*>()) {
+      result->set(std::string(akey.c_str()), std::string(aval.get<const char*>()));
+    } else if (aval.isA<float_range>()) {
+      auto rng = aval.get<float_range>();
+      result->set(std::string("min"), rng._min);
+      result->set(std::string("max"), rng._max);
+    } else if (aval.isA<int_range>()) {
+      auto rng = aval.get<int_range>();
+      result->set(std::string("min"), rng._min);
+      result->set(std::string("max"), rng._max);
     }
   }
   return result;

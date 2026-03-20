@@ -654,9 +654,9 @@ HandlerResult Outliner::DoOnUiEvent(event_constptr_t ev) {
     }
 
     case EventCode::DOUBLECLICK: {
-      // Shift+Double-click to start editing
+      std::string clicked_key = _getItemKeyAt(localY);
       if (ev->mbSHIFT) {
-        std::string clicked_key = _getItemKeyAt(localY);
+        // Shift+Double-click to start editing
         if (!clicked_key.empty()) {
           int index = _getItemIndexAt(localY);
           if (index >= 0) {
@@ -669,6 +669,9 @@ HandlerResult Outliner::DoOnUiEvent(event_constptr_t ev) {
           }
           result.setHandled(this);
         }
+      } else if (!clicked_key.empty() && _onDoubleClick) {
+        _onDoubleClick(clicked_key);
+        result.setHandled(this);
       }
       break;
     }
@@ -770,6 +773,10 @@ HandlerResult Outliner::DoOnUiEvent(event_constptr_t ev) {
           }
         }
         result.setHandled(this);
+      }
+      // Forward unhandled keys to callback
+      else if (_onKeyDown && !result.wasHandled()) {
+        _onKeyDown(selected_key, key);
       }
       break;
     }

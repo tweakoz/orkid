@@ -447,7 +447,7 @@ Path Path::resolveRelativeTo(const Path& basePath) const {
   //printf("  this->isRelative()=%d basePath.isAbsolute()=%d\n", isRelative(), basePath.isAbsolute());
   
   if (!basePath.isAbsolute()) {
-    printf("ERROR: basePath is not absolute!\n");
+    //printf("ERROR: basePath is not absolute!\n");
     return *this;  // Return this path unchanged if basePath is not absolute
   }
   
@@ -1079,6 +1079,54 @@ Path Path::share_dir() {
 }
 Path Path::temp_dir() {
   return (stage_dir() / "tempdir");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+std::string Path::expandPathString(const std::string& path) {
+  std::string result = path;
+
+  // Expand ~ at start of path to home directory
+  if (!result.empty() && result[0] == '~') {
+    std::string home;
+    if (genviron.get("HOME", home)) {
+      result.replace(0, 1, home);
+    }
+  }
+
+  // Expand <assetcache> → ${OBT_STAGE}/assetcache
+  auto ac_pos = result.find("<assetcache>");
+  if (ac_pos != std::string::npos) {
+    std::string stage;
+    if (genviron.get("OBT_STAGE", stage)) {
+      result.replace(ac_pos, 12, stage + "/assetcache");
+    }
+  }
+
+  // Expand <staging> → ${OBT_STAGE}
+  auto st_pos = result.find("<staging>");
+  if (st_pos != std::string::npos) {
+    std::string stage;
+    if (genviron.get("OBT_STAGE", stage)) {
+      result.replace(st_pos, 9, stage);
+    }
+  }
+
+  // Expand ${ENV_VAR} patterns
+  size_t pos = 0;
+  while ((pos = result.find("${", pos)) != std::string::npos) {
+    auto end = result.find('}', pos + 2);
+    if (end == std::string::npos) break;
+    auto varname = result.substr(pos + 2, end - pos - 2);
+    std::string val;
+    if (genviron.get(varname, val)) {
+      result.replace(pos, end - pos + 1, val);
+    } else {
+      pos = end + 1;
+    }
+  }
+
+  return result;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

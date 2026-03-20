@@ -203,6 +203,7 @@ void pyinit_ui_property_sheet(py::module& uimodule) {
           .def("isMapPropertyConst", &ui::ReflectionPropertySheetModel::isMapConst)
           .def("addMapElement", &ui::ReflectionPropertySheetModel::addMapElement)
           .def("removeMapElement", &ui::ReflectionPropertySheetModel::removeMapElement)
+          .def("renameMapElement", &ui::ReflectionPropertySheetModel::renameMapElement)
           .def(
               "addKeyOverride",
               [type_codec](

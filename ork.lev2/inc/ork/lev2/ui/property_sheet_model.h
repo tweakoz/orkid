@@ -104,6 +104,7 @@ struct PropertySheetModel {
   virtual bool isMapConst(const std::string& key) const { return true; }
   virtual void addMapElement(const std::string& key, const std::string& name) {}
   virtual void removeMapElement(const std::string& key, const std::string& name) {}
+  virtual void renameMapElement(const std::string& key, const std::string& old_name, const std::string& new_name) {}
 
   //////////////////////////////////////////////////////////////
   // Null object map entry / factory support

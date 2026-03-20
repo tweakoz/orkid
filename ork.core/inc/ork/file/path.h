@@ -223,6 +223,16 @@ public:
   static Path share_dir();
   static Path temp_dir();
   static Path data_dir();
+
+  //////////////////////////////////////
+  // Path expansion
+  //////////////////////////////////////
+
+  // Expand a path string with all supported tokens:
+  //   ~                      → home directory
+  //   <assetcache>           → ${OBT_STAGE}/assetcache
+  //   ${ENV_VAR}             → environment variable lookup
+  static std::string expandPathString(const std::string& path);
   
   //////////////////////////////////////
   // Path sanitization

@@ -151,7 +151,8 @@ void StaticTexFileLoader::initLoadersForUriProto(const std::string& uriproto){
   addLocation(ctx, ".qtz");
   addLocation(ctx, ".dds");
   addLocation(ctx, ".png");
-  addLocation(ctx, ".dds");
+  addLocation(ctx, ".exr");
+  addLocation(ctx, ".hdr");
 }
 
 ///////////////////////////////////////////////////////////////////////////

@@ -80,6 +80,9 @@ struct ToolbarButton : public ToolbarItem {
   // Tooltip text
   std::string _tooltip;
 
+  // Text label (drawn instead of or alongside icon)
+  std::string _label;
+
   // Custom width override (0 = use icon_size, >0 = explicit pixel width for icon area)
   int _custom_width = 0;
 
@@ -142,6 +145,12 @@ struct Toolbar : public Widget {
       lev2::image_provider_ptr_t icon_provider,
       const std::string& tooltip = "");
 
+  // Add a text-only button (no icon)
+  toolbar_button_ptr_t addTextButton(
+      const std::string& id,
+      const std::string& label,
+      const std::string& tooltip = "");
+
   // Add a separator
   toolbar_separator_ptr_t addSeparator(const std::string& id = "");
 
@@ -188,6 +197,11 @@ struct Toolbar : public Widget {
   fvec4 _disabled_tint = fvec4(0.5f, 0.5f, 0.5f, 0.5f);
 
   bool _draw_background = true;
+
+  lev2::font_ptr_t _label_font;   // Font for button text labels
+  fvec4 _label_color = fvec4(0.9f, 0.9f, 0.9f, 1.0f);  // Text label color
+  fvec4 _label_toggled_color = fvec4(1.0f, 1.0f, 1.0f, 1.0f);  // Text color when toggled
+  int _label_padding = 6;         // Horizontal padding around label text
 
   lev2::font_ptr_t _tooltip_font;
 

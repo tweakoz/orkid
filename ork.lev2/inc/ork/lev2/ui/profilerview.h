@@ -45,7 +45,11 @@ struct ProfilerView : public ui::Group {
   ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
   void _doOnResized() override;
 
+#if defined(ORK_PROFILER_ENABLE)
   void addChannel(const std::string& name) { _channel_names.push_back(name); }
+#else
+  void addChannel(const std::string&) {}
+#endif
 
   // Channels to display, by profiler channel name
   std::vector<std::string> _channel_names;

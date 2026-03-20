@@ -33,6 +33,9 @@ def _enumerateSystemTypes():
   return [_reflectionNameToFactoryId(n)
           for n in core.enumerateInstantiableSubclassesOf("SystemData")]
 
+def _enumerateDrawableDataTypes():
+  return core.enumerateInstantiableSubclassesOf("DrawableData")
+
 ################################################################################
 
 class EcsOutlinerModel(lev2.ui.OutlinerModel):
@@ -41,7 +44,8 @@ class EcsOutlinerModel(lev2.ui.OutlinerModel):
   Tree structure:
     Archetypes/
       BallArchetype/
-        SceneGraphComponent
+        SceneGraphComponent/
+          nodename
         PythonComponent
     Spawners/
       ball_spawner/
@@ -55,6 +59,7 @@ class EcsOutlinerModel(lev2.ui.OutlinerModel):
     self.allow_rename = True
     self.allow_delete = True
     self.allow_add = True
+    self._visible_categories = set(CATEGORIES)  # all visible by default
 
   @property
   def scene_data(self):
@@ -64,9 +69,23 @@ class EcsOutlinerModel(lev2.ui.OutlinerModel):
   # OutlinerModel interface
   # ============================================================
 
+  def toggleCategory(self, category):
+    """Toggle visibility of a root category. Returns new visibility state."""
+    if category in self._visible_categories:
+      self._visible_categories.discard(category)
+      self.notifyModelReset()
+      return False
+    else:
+      self._visible_categories.add(category)
+      self.notifyModelReset()
+      return True
+
+  def isCategoryVisible(self, category):
+    return category in self._visible_categories
+
   def getChildren(self, parent_key):
     if parent_key == "":
-      return list(CATEGORIES)
+      return [c for c in CATEGORIES if c in self._visible_categories]
 
     parts = parent_key.split("/")
     category = parts[0]
@@ -81,6 +100,12 @@ class EcsOutlinerModel(lev2.ui.OutlinerModel):
         arch = self._findArchetype(arch_name)
         if arch:
           return [f"{parent_key}/{c.className}" for c in arch.components]
+      elif len(parts) == 3:
+        # List nodes of a SceneGraphComponent
+        comp = self._findComponent(parts[1], parts[2])
+        if comp and comp.className == "SceneGraphComponentData":
+          nodedatas = comp.nodedatas
+          return [f"{parent_key}/{name}" for name in nodedatas.keys()]
       return []
 
     elif category == "Spawners":
@@ -116,6 +141,12 @@ class EcsOutlinerModel(lev2.ui.OutlinerModel):
     if category == "Archetypes" and len(parts) == 2:
       arch = self._findArchetype(parts[1])
       return arch is not None and len(arch.components) > 0
+
+    # SceneGraphComponent has node children
+    if category == "Archetypes" and len(parts) == 3:
+      comp = self._findComponent(parts[1], parts[2])
+      if comp and comp.className == "SceneGraphComponentData":
+        return len(comp.nodedatas) > 0
 
     return False
 
@@ -158,6 +189,16 @@ class EcsOutlinerModel(lev2.ui.OutlinerModel):
           "display_name": ct,
           "default_name_generator": lambda m, c=ct: c
         } for ct in _enumerateComponentTypes() if ct not in existing]
+
+    # Nodes under a SceneGraphComponent
+    if category == "Archetypes" and len(parts) == 3:
+      comp = self._findComponent(parts[1], parts[2])
+      if comp and comp.className == "SceneGraphComponentData":
+        return [{
+          "id": "sgnode",
+          "display_name": "Node",
+          "default_name_generator": lambda m: f"node{len(comp.nodedatas)}"
+        }]
 
     return []
 
@@ -204,7 +245,18 @@ class EcsOutlinerModel(lev2.ui.OutlinerModel):
         arch.declareComponent(factory_id)
         new_key = f"{parent_key}/{factory_id}"
         self.notifyItemAdded(new_key)
-  
+
+        return new_key
+
+    # Adding node to SceneGraphComponent
+    if category == "Archetypes" and len(parts) == 3 and factory_id == "sgnode":
+      comp = self._findComponent(parts[1], parts[2])
+      if comp and comp.className == "SceneGraphComponentData":
+        if name in comp.nodedatas:
+          return ""
+        comp.addNode(name, "std_forward")
+        new_key = f"{parent_key}/{name}"
+        self.notifyItemAdded(new_key)
         return new_key
 
     return ""
@@ -220,6 +272,8 @@ class EcsOutlinerModel(lev2.ui.OutlinerModel):
       return None
     if category == "Archetypes" and len(parts) == 3:
       return None  # Can't rename components
+    if category == "Archetypes" and len(parts) == 4:
+      return None  # Can't rename nodes (yet)
 
     old_name = parts[-1]
 
@@ -227,14 +281,14 @@ class EcsOutlinerModel(lev2.ui.OutlinerModel):
       arch = self._findArchetype(old_name)
       if arch and not self._findArchetype(new_name):
         self.scene_data.renameSceneObject(arch, new_name)
-  
+
         return f"Archetypes/{new_name}"
 
     if category == "Spawners" and len(parts) == 2:
       sp = self._findSpawner(old_name)
       if sp and not self._findSpawner(new_name):
         self.scene_data.renameSceneObject(sp, new_name)
-  
+
         return f"Spawners/{new_name}"
 
     return None
@@ -259,6 +313,11 @@ class EcsOutlinerModel(lev2.ui.OutlinerModel):
             if c.className == comp_name:
               arch.removeComponent(c)
               break
+      elif len(parts) == 4:
+        # Remove node from SceneGraphComponent
+        comp = self._findComponent(parts[1], parts[2])
+        if comp and comp.className == "SceneGraphComponentData":
+          comp.removeNode(parts[3])
 
     elif category == "Spawners" and len(parts) == 2:
       sp = self._findSpawner(parts[1])
@@ -282,6 +341,14 @@ class EcsOutlinerModel(lev2.ui.OutlinerModel):
     for s in self.scene_data.spawners:
       if s.name == name:
         return s
+    return None
+
+  def _findComponent(self, arch_name, comp_class_name):
+    arch = self._findArchetype(arch_name)
+    if arch:
+      for c in arch.components:
+        if c.className == comp_class_name:
+          return c
     return None
 
   def _hasSystem(self, class_name):

@@ -394,7 +394,7 @@ void Controller::systemNotify(sys_ref_t sys, token_t evID, svar64_t data) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-response_ref_t Controller::systemRequest(sys_ref_t sys, token_t reqID, svar64_t data) {
+response_ref_t Controller::systemRequest(sys_ref_t sys, token_t reqID, svar64_t data, void_lambda_t callback) {
   auto simrequest        = std::make_shared<Request>();
   simrequest->_requestID = RequestID::SYSTEM_REQUEST;
 
@@ -408,6 +408,7 @@ response_ref_t Controller::systemRequest(sys_ref_t sys, token_t reqID, svar64_t 
   SRQ._requestID = reqID;
   SRQ._eventData = data;
   SRQ._respref   = rref;
+  SRQ._callback  = callback;
 
   _enqueueRequest(simrequest);
 
@@ -586,7 +587,27 @@ void Controller::stopSimulation() {
   _enqueueEvent(simevent);
 }
 void Controller::endSimulation() {
+  clearStateCallbacks();
   updateExit();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Controller::clearStateCallbacks() {
+  _onUpdPreCompose.clear();
+  _onUpdPostCompose.clear();
+  _onUpdPreLink.clear();
+  _onUpdPostLink.clear();
+  _onUpdPreStage.clear();
+  _onUpdPostStage.clear();
+  _onUpdPreActivate.clear();
+  _onUpdPostActivate.clear();
+  _onUpdPreDeactivate.clear();
+  _onUpdPostDeactivate.clear();
+  _onUpdPreUnstage.clear();
+  _onUpdPostUnstage.clear();
+  _onGpuPostInit.clear();
+  _onGpuPostLink.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

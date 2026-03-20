@@ -189,12 +189,36 @@ bool TextureInterface::_loadImageTexture(texture_ptr_t ptex, datablock_ptr_t src
       // OrkAssert(false);
     } // it is not cached
 
-  } else {
+  }
+  /////////////////////////////////////////////
+  // EXR: magic bytes 0x76 0x2f 0x31 0x01
+  /////////////////////////////////////////////
+  else if (magic[0] == 0x76 && magic[1] == 0x2f && magic[2] == 0x31 && magic[3] == 0x01) {
+    Image img;
+    img.initFromInMemoryFile("exr", src_datablock->data(), src_datablock->length());
+    img._debugName = ptex->_debugName;
+    xtx_datablock = std::make_shared<DataBlock>();
+    auto cmipchain = img.uncompressedMipChain();
+    cmipchain->writeXTX(xtx_datablock);
+  }
+  /////////////////////////////////////////////
+  // HDR (Radiance): starts with '#?'
+  /////////////////////////////////////////////
+  else if (magic[0] == '#' && magic[1] == '?') {
+    Image img;
+    img.initFromInMemoryFile("hdr", src_datablock->data(), src_datablock->length());
+    img._debugName = ptex->_debugName;
+    xtx_datablock = std::make_shared<DataBlock>();
+    auto cmipchain = img.uncompressedMipChain();
+    cmipchain->writeXTX(xtx_datablock);
+  }
+  /////////////////////////////////////////////
+  else {
     printf("unknown texture<%s>\n", ptex->_debugName.c_str());
-    printf("magic0<%c>\n", magic[0]);
-    printf("magic1<%c>\n", magic[1]);
-    printf("magic2<%c>\n", magic[2]);
-    printf("magic3<%c>\n", magic[3]);
+    printf("magic0<0x%02x>\n", magic[0]);
+    printf("magic1<0x%02x>\n", magic[1]);
+    printf("magic2<0x%02x>\n", magic[2]);
+    printf("magic3<0x%02x>\n", magic[3]);
     OrkAssert(false);
   }
   if (xtx_datablock) {

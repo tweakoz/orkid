@@ -88,7 +88,6 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
                                the_rcid->_genMatrix = [py_callback]() -> fmtx4 {
                                  py::gil_scoped_acquire acquire;
                                  py::object mtx_attempt = py_callback();
-                                 printf("YAY..\n");
                                  return mtx_attempt.cast<fmtx4>();
                                };
                              })

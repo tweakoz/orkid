@@ -17,6 +17,7 @@
 #include "SimpleSoundEmitter_impl.h"
 #include <ork/lev2/aud/singularity/konoff.h>
 #include <ork/math/audiomath.h>
+#include <ork/file/path.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -37,7 +38,9 @@ using namespace ork::audio::singularity;
 ///////////////////////////////////////////////////////////////////////////////
 
 void SimpleSoundData::describeX(object::ObjectClass* clazz) {
-  clazz->directProperty("WavFile", &SimpleSoundData::_wavFilePath);
+  clazz->directProperty("WavFile", &SimpleSoundData::_wavFilePath)
+      ->annotate("editor.filetype", "wav")
+      ->annotate("editor.filebase", "<assetcache>");
   clazz->directProperty("Looping", &SimpleSoundData::_looping);
   clazz->directProperty("Spatialize", &SimpleSoundData::_spatialize);
   clazz->floatProperty("GainDB", float_range{-96, 24}, &SimpleSoundData::_gainDB);
@@ -314,7 +317,7 @@ void SimpleSoundEmitterSystem::_ensureSoundLoaded(const std::string& soundName) 
   auto sd = std::make_shared<SampleData>();
   sd->_rootKey = 60;
   sd->_originalPitch = 261.63f * 0.5;
-  sd->loadFromAudioFile(sndData->_wavFilePath.toAbsolute().toStdString());
+  sd->loadFromAudioFile(file::Path::expandPathString(sndData->_wavFilePath.toStdString()));
 
   // Set loop mode
   if (sndData->_looping) {

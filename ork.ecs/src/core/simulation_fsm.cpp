@@ -205,9 +205,11 @@ void Simulation::_buildStateMachine() {
       for (auto sys : gpu_systems) {
         sys.second->_onGpuInit(this, ctx.value());
       }
+      if (_controller) for (auto& cb : _controller->_onGpuPostInit) cb(this, ctx.value());
       for (auto sys : gpu_systems) {
         sys.second->_onGpuLink(this, ctx.value());
       }
+      if (_controller) for (auto& cb : _controller->_onGpuPostLink) cb(this, ctx.value());
 
       _needsGpuInit = false;
       _gpuUpdateSMInst->changeState(_gpuReadyState);
@@ -419,31 +421,38 @@ void Simulation::_initialize() {
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::_compose() {
+  if (_controller) for (auto& cb : _controller->_onUpdPreCompose) cb(this);
   _composeSystems();
   _composeEntities();
   _transportState = ESimulationTransport::COMPOSED;
+  if (_controller) for (auto& cb : _controller->_onUpdPostCompose) cb(this);
   logchan_simfsm->log("Simulation<%p> _composed", (void*)this);
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::_link() {
+  if (_controller) for (auto& cb : _controller->_onUpdPreLink) cb(this);
   _linkSystems();
   _linkEntities();
   if (_onLink)
     _onLink();
   _transportState = ESimulationTransport::LINKED;
+  if (_controller) for (auto& cb : _controller->_onUpdPostLink) cb(this);
   logchan_simfsm->log("Simulation<%p> _linked", (void*)this);
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::_stage() {
+  if (_controller) for (auto& cb : _controller->_onUpdPreStage) cb(this);
   _stageSystems();
   _stageEntities();
   _resetClock();
   _serviceDeactivateQueue();
   _transportState = ESimulationTransport::STAGED;
+  if (_controller) for (auto& cb : _controller->_onUpdPostStage) cb(this);
   logchan_simfsm->log("Simulation<%p> _staged", (void*)this);
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::_activate() {
+  if (_controller) for (auto& cb : _controller->_onUpdPreActivate) cb(this);
   // Detach entity transforms from spawner transforms
   // so physics (and other runtime systems) don't corrupt spawner data.
   // In edit mode, entities share the spawner's DecompTransform pointer
@@ -461,6 +470,7 @@ void Simulation::_activate() {
   _activateSystems();
   _activateEntities();
   _transportState = ESimulationTransport::ACTIVATED;
+  if (_controller) for (auto& cb : _controller->_onUpdPostActivate) cb(this);
   logchan_simfsm->log("Simulation<%p> _activated", (void*)this);
 }
 ///////////////////////////////////////////////////////////////////////////
@@ -483,16 +493,20 @@ void Simulation::_unlink() {
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::_unstage() {
+  if (_controller) for (auto& cb : _controller->_onUpdPreUnstage) cb(this);
   _unstageEntities();
   _unstageSystems();
+  if (_controller) for (auto& cb : _controller->_onUpdPostUnstage) cb(this);
   logchan_simfsm->log("Simulation<%p> _unstaged", (void*)this);
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::_deactivate() {
+  if (_controller) for (auto& cb : _controller->_onUpdPreDeactivate) cb(this);
   _deactivateEntities();
   _deactivateSystems();
   mActiveEntities.clear();
   mEntityDeactivateQueue.clear();
+  if (_controller) for (auto& cb : _controller->_onUpdPostDeactivate) cb(this);
   logchan_simfsm->log("Simulation<%p> _deactivated", (void*)this);
 }
 ///////////////////////////////////////////////////////////////////////////

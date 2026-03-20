@@ -46,6 +46,44 @@ void pyinit_scenegraph(py::module& module_ecs) {
   type_codec->registerStdCodec<nodedef_ptr_t>(nd_type);
 
   /////////////////////////////////////////////////////////////////////////////////
+  auto snid_type = py::class_<SceneGraphNodeItemData, ork::Object, sgnodeitemdata_ptr_t>(module_ecs, "SceneGraphNodeItemData")
+      .def_property(
+          "nodename",
+          [](sgnodeitemdata_ptr_t nid) -> std::string { return nid->_nodename; },
+          [](sgnodeitemdata_ptr_t nid, std::string val) { nid->_nodename = val; })
+      .def_property(
+          "layername",
+          [](sgnodeitemdata_ptr_t nid) -> std::string { return nid->_layername; },
+          [](sgnodeitemdata_ptr_t nid, std::string val) { nid->_layername = val; })
+      .def_property(
+          "drawabledata",
+          [](sgnodeitemdata_ptr_t nid) -> lev2::drawabledata_ptr_t { return nid->_drawabledata; },
+          [](sgnodeitemdata_ptr_t nid, lev2::drawabledata_ptr_t val) { nid->_drawabledata = val; })
+      .def_property(
+          "transform",
+          [](sgnodeitemdata_ptr_t nid) -> decompxf_ptr_t { return nid->_xfoverride; },
+          [](sgnodeitemdata_ptr_t nid, decompxf_ptr_t val) { nid->_xfoverride = val; })
+      .def_property(
+          "modcolor",
+          [](sgnodeitemdata_ptr_t nid) -> fvec4 { return nid->_modcolor; },
+          [](sgnodeitemdata_ptr_t nid, fvec4 val) { nid->_modcolor = val; })
+      .def_property(
+          "drawableClassName",
+          [](sgnodeitemdata_ptr_t nid) -> std::string {
+            if (nid->_drawabledata) {
+              return nid->_drawabledata->GetClass()->Name();
+            }
+            return std::string("(none)");
+          },
+          [](sgnodeitemdata_ptr_t nid, std::string classname) {
+            auto* clazz = (ork::object::ObjectClass*) ork::rtti::Class::FindClass(classname);
+            if (clazz && clazz->hasFactory()) {
+              nid->_drawabledata = std::dynamic_pointer_cast<lev2::DrawableData>(clazz->createShared());
+            }
+          });
+  type_codec->registerStdCodec<sgnodeitemdata_ptr_t>(snid_type);
+
+  /////////////////////////////////////////////////////////////////////////////////
   py::class_<SceneGraphComponentData, ComponentData, sgcomponentdata_ptr_t>(module_ecs, "SceneGraphComponentData")
       .def(
           "__repr__",
@@ -96,6 +134,29 @@ void pyinit_scenegraph(py::module& module_ecs) {
           "declareNodeInstance",
           [](sgcomponentdata_ptr_t sgcd, ::ork::lev2::scenegraph::node_instance_data_ptr_t nid) { //
             sgcd->_INSTANCEDATA = nid;
+          })
+      .def_property_readonly(
+          "nodedatas",
+          [](sgcomponentdata_ptr_t sgcd) -> py::dict {
+            py::dict result;
+            for (auto& [key, val] : sgcd->_nodedatas) {
+              result[py::str(key)] = val;
+            }
+            return result;
+          })
+      .def(
+          "addNode",
+          [](sgcomponentdata_ptr_t sgcd, std::string name, std::string layer) -> sgnodeitemdata_ptr_t {
+            auto nid = std::make_shared<SceneGraphNodeItemData>();
+            nid->_nodename = name;
+            nid->_layername = layer;
+            sgcd->_nodedatas[name] = nid;
+            return nid;
+          })
+      .def(
+          "removeNode",
+          [](sgcomponentdata_ptr_t sgcd, std::string name) {
+            sgcd->_nodedatas.erase(name);
           });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<SceneGraphSystemData, SystemData, sgsystemdata_ptr_t>(module_ecs, "SceneGraphSystemData")

@@ -115,6 +115,12 @@ struct IMPL {
               _freestyle_mtl->bindParam(p, item.second);
             }
             _freestyle_mtl->bindParamTexture(_fxpInputMap, tex);
+            // Auto-bind depth buffer if shader declares DepthMap
+            auto depth_tex = input_rtg->depthTexture();
+            if (depth_tex) {
+              auto p = _freestyle_mtl->param("DepthMap");
+              if (p) _freestyle_mtl->bindParamTexture(p, depth_tex.get());
+            }
             rquad(inputw,inputh);
             _freestyle_mtl->end(framedata);
             FBI->PopRtGroup();

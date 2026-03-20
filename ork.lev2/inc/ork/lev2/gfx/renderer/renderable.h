@@ -97,6 +97,7 @@ struct ModelRenderable : public IRenderable {
   fvec3 _offset;
   fquat _orientation;
   xgmcluster_ptr_t _cluster;
+  pbr::radiancemaps_ptr_t _envmapOverride;  // per-drawable env map override
 };
 
 struct SkeletonRenderable : public IRenderable {

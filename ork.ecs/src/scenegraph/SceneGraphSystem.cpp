@@ -5,6 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
+#include <sstream>
 #include <ork/kernel/opq.h>
 #include <ork/lev2/ui/event.h>
 #include <ork/reflect/properties/registerX.inl>
@@ -32,6 +33,24 @@ namespace ork::ecs {
 ///////////////////////////////////////////////////////////////////////////////
 static logchannel_ptr_t logchan_sgsys = logger()->configureChannel("ecs.sgcomp", fvec3(0.9, 0.7, 0));
 ///////////////////////////////////////////////////////////////////////////////
+// Resolve layer names from either _multilayers (Python kwarg) or comma-delimited _layername (JSON).
+static std::vector<std::string> resolveLayerNames(const SceneGraphNodeItemData* NID) {
+  if (NID->_multilayers.size()) {
+    return NID->_multilayers;
+  }
+  std::vector<std::string> result;
+  std::istringstream ss(NID->_layername);
+  std::string token;
+  while (std::getline(ss, token, ',')) {
+    auto start = token.find_first_not_of(" \t");
+    auto end   = token.find_last_not_of(" \t");
+    if (start != std::string::npos)
+      result.push_back(token.substr(start, end - start + 1));
+  }
+  if (result.empty()) result.push_back("");
+  return result;
+}
+///////////////////////////////////////////////////////////////////////////////
 using namespace ork;
 using namespace ork::object;
 using namespace ork::reflect;
@@ -47,6 +66,7 @@ void SceneGraphSystemData::describeX(SystemDataClass* clazz) {
   ImplementToken(DestroyNode);
   ImplementToken(ChangeModColor);
   ImplementToken(HighlightBySpawnData);
+  ImplementToken(SyncTransformBySpawnData);
   ImplementToken(eye);
   ImplementToken(tgt);
   ImplementToken(up);
@@ -252,17 +272,10 @@ void SceneGraphSystem::_instantiateDeclaredNodes() {
               //printf( "init instanced<%d>\n", i );
             }
           };
-          if(NID->_multilayers.size()){
-            for( auto sub_layer : NID->_multilayers ){
-                auto layer = _scene->findLayer(sub_layer);
-                NODE_ON_LAYER(layer);
-            }
-          }
-          else{
-            auto layer = NID->_layername.empty()
-                ? _default_layer
-                : _scene->findLayer(NID->_layername);
-                NODE_ON_LAYER(layer);
+          auto layers_i = resolveLayerNames(NID.get());
+          for (auto& lname : layers_i) {
+            auto layer = lname.empty() ? _default_layer : _scene->createLayer(lname);
+            NODE_ON_LAYER(layer);
           }
         } else {
           auto NODE_ON_LAYER = [=](lev2::scenegraph::layer_ptr_t layer){
@@ -270,16 +283,10 @@ void SceneGraphSystem::_instantiateDeclaredNodes() {
             node->_modcolor = NID->_modcolor;
             nitem->_sgnode  = node;
           };
-          if(NID->_multilayers.size()){
-            for( auto sub_layer : NID->_multilayers ){
-                auto layer = _scene->findLayer(sub_layer);
-                NODE_ON_LAYER(layer);
-            }
-          } else {
-              auto layer = NID->_layername.empty()
-                  ? _default_layer
-                  : _scene->findLayer(NID->_layername);
-              NODE_ON_LAYER(layer);
+          auto layers_n = resolveLayerNames(NID.get());
+          for (auto& lname : layers_n) {
+            auto layer = lname.empty() ? _default_layer : _scene->createLayer(lname);
+            NODE_ON_LAYER(layer);
           }
         }
       };
@@ -461,19 +468,13 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
                 }
                 return nitem;
             };
-            if(NID->_multilayers.size()){
-                auto layer = _scene->findLayer(NID->_multilayers[0]);
-                auto item = DO_ITEM(layer);
-                for( int i=1; i<NID->_multilayers.size(); i++ ){
-                    auto layer = _scene->findLayer(NID->_multilayers[i]);
-                    auto drw_node = std::dynamic_pointer_cast<lev2::scenegraph::DrawableNode>(item->_sgnode);
-                    layer->addDrawableNode(drw_node);
-                }
-            } else {
-                auto layer = NID->_layername.empty()
-                    ? _default_layer
-                    : _scene->findLayer(NID->_layername);
-                auto item = DO_ITEM(layer);
+            auto layers_c = resolveLayerNames(NID.get());
+            auto first_layer = layers_c[0].empty() ? _default_layer : _scene->createLayer(layers_c[0]);
+            auto item = DO_ITEM(first_layer);
+            for (size_t i = 1; i < layers_c.size(); i++) {
+                auto layer = _scene->createLayer(layers_c[i]);
+                auto drw_node = std::dynamic_pointer_cast<lev2::scenegraph::DrawableNode>(item->_sgnode);
+                layer->addDrawableNode(drw_node);
             }
         }
       }
@@ -776,6 +777,35 @@ void SceneGraphSystem::_onNotify(token_t evID, evdata_t data) {
           }
         }
       });
+      break;
+    }
+    case SyncTransformBySpawnData._hashed: {
+      const auto& table = *data.getShared<DataTable>();
+      auto name_str = table["name"_tok].get<std::string>();
+      auto psname = AddPooledString(name_str.c_str());
+      int matched = 0;
+      _components.atomicOp([&](component_set_t& comps) {
+        if(0)fprintf(stderr, "[SyncXF] spawner='%s' num_components=%zu\n", name_str.c_str(), comps.size());
+        for (auto* comp : comps) {
+          auto ent = comp->GetEntity();
+          if (ent->data()->GetName() == psname) {
+            auto spawner_xf = ent->data()->_dagnode->_xfnode->_transform;
+            auto ent_xf = ent->transform();
+            if(0)fprintf(stderr, "[SyncXF]   MATCH: spawner_pos=(%.2f,%.2f,%.2f) ent_pos=(%.2f,%.2f,%.2f)\n",
+                    spawner_xf->_translation.x, spawner_xf->_translation.y, spawner_xf->_translation.z,
+                    ent_xf->_translation.x, ent_xf->_translation.y, ent_xf->_translation.z);
+            ent_xf->_translation = spawner_xf->_translation;
+            ent_xf->_rotation = spawner_xf->_rotation;
+            ent_xf->_uniformScale = spawner_xf->_uniformScale;
+            auto setxform_op = comp->_genTransformOperation();
+            _renderops.push(setxform_op);
+            matched++;
+          }
+        }
+      });
+      if (matched == 0) {
+        if(0)fprintf(stderr, "[SyncXF] WARNING: no entities matched spawner '%s'\n", name_str.c_str());
+      }
       break;
     }
     default:

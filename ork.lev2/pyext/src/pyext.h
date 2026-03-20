@@ -41,6 +41,7 @@ using namespace ork::lev2;
 namespace ork::lev2 {
 
 using ctx_t               = ork::python::unmanaged_ptr<Context>;
+using dwi_t               = ork::python::unmanaged_ptr<DrawingInterface>;
 using fbi_t               = ork::python::unmanaged_ptr<FrameBufferInterface>;
 using gbi_t               = ork::python::unmanaged_ptr<GeometryBufferInterface>;
 using fxi_t               = ork::python::unmanaged_ptr<FxInterface>;

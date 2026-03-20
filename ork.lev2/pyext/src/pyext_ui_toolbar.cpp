@@ -61,6 +61,7 @@ void pyinit_ui_toolbar(py::module& uimodule) {
               [](ui::toolbar_button_ptr_t btn, image_ptr_t img) { btn->_pressed_image = img; btn->_prev_pressed_image = nullptr; })
           .def_readwrite("custom_width", &ui::ToolbarButton::_custom_width)
           .def_readwrite("tooltip", &ui::ToolbarButton::_tooltip)
+          .def_readwrite("label", &ui::ToolbarButton::_label)
           .def_readwrite("toggle_mode", &ui::ToolbarButton::_toggle_mode)
           .def_readwrite("toggled", &ui::ToolbarButton::_toggled)
           .def_readonly("hovered", &ui::ToolbarButton::_hovered)
@@ -148,6 +149,14 @@ void pyinit_ui_toolbar(py::module& uimodule) {
               py::arg("icon_provider"),
               py::arg("tooltip") = "")
           .def(
+              "addTextButton",
+              [](ui::toolbar_ptr_t toolbar, const std::string& id, const std::string& label, const std::string& tooltip) -> ui::toolbar_button_ptr_t {
+                return toolbar->addTextButton(id, label, tooltip);
+              },
+              py::arg("id"),
+              py::arg("label"),
+              py::arg("tooltip") = "")
+          .def(
               "addSeparator",
               [](ui::toolbar_ptr_t toolbar, const std::string& id) -> ui::toolbar_separator_ptr_t {
                 return toolbar->addSeparator(id);
@@ -207,6 +216,16 @@ void pyinit_ui_toolbar(py::module& uimodule) {
               [](ui::toolbar_ptr_t toolbar) -> fvec4 { return toolbar->_disabled_tint; },
               [](ui::toolbar_ptr_t toolbar, fvec4 c) { toolbar->_disabled_tint = c; })
           .def_readwrite("draw_background", &ui::Toolbar::_draw_background)
+          // Label appearance
+          .def_property(
+              "label_color",
+              [](ui::toolbar_ptr_t toolbar) -> fvec4 { return toolbar->_label_color; },
+              [](ui::toolbar_ptr_t toolbar, fvec4 c) { toolbar->_label_color = c; })
+          .def_property(
+              "label_toggled_color",
+              [](ui::toolbar_ptr_t toolbar) -> fvec4 { return toolbar->_label_toggled_color; },
+              [](ui::toolbar_ptr_t toolbar, fvec4 c) { toolbar->_label_toggled_color = c; })
+          .def_readwrite("label_padding", &ui::Toolbar::_label_padding)
           // Tooltips
           .def_readwrite("show_tooltips", &ui::Toolbar::_show_tooltips)
           .def_readwrite("tooltip_delay_ms", &ui::Toolbar::_tooltip_delay_ms)

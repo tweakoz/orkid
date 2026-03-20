@@ -60,6 +60,8 @@ struct TabWidget : public Group {
 
   // Tab layout configuration
   int _tab_padding = 16;  // Constant padding around label text
+  bool _sort_tabs = true; // When true, tabs are sorted by name (natural sort)
+  void setSortTabs(bool b) { _sort_tabs = b; _needs_layout_recalc = true; }
 
   protected:
   // Override from Widget

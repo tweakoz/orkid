@@ -33,6 +33,7 @@ struct ReflectionPropertySheetModel : public PropertySheetModel {
   bool isMapConst(const std::string& key) const override;
   void addMapElement(const std::string& key, const std::string& name) override;
   void removeMapElement(const std::string& key, const std::string& name) override;
+  void renameMapElement(const std::string& key, const std::string& old_name, const std::string& new_name) override;
 
   // Null object map entry / factory support
   bool isNullObjectMapEntry(const std::string& key) const override;

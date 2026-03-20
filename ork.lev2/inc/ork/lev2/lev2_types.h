@@ -431,6 +431,7 @@ class RenderCompositingNode;
 class PostCompositingNode;
 class PostFxNodeDecompBlur;
 class PostFxNodeHSVG;
+class PostFxNodeACES;
 class PostFxNodeUser;
 class LambdaPostCompositingNode;
 struct AcquiredDrawQueueForUpdate;
@@ -464,6 +465,7 @@ using acqupdatebuffer_lambda_t = std::function<void(acqupdatebuffer_constptr_t)>
 
 using decompblur_postnode_ptr_t = std::shared_ptr<PostFxNodeDecompBlur>;
 using postnode_hsvg_ptr_t = std::shared_ptr<PostFxNodeHSVG>;
+using postnode_aces_ptr_t = std::shared_ptr<PostFxNodeACES>;
 using postnode_user_ptr_t = std::shared_ptr<PostFxNodeUser>;
 using lambda_postnode_ptr_t = std::shared_ptr<LambdaPostCompositingNode>;
 

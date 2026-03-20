@@ -102,6 +102,7 @@ ToolbarSeparator::ToolbarSeparator(const std::string& id) {
 Toolbar::Toolbar(const std::string& name, int x, int y, int w, int h)
     : Widget(name, x, y, w, h) {
   _tooltip_font = lev2::FontMan::fontForId("i12");
+  _label_font = lev2::FontMan::fontForId("i14");
 }
 
 Toolbar::~Toolbar() {
@@ -125,6 +126,18 @@ toolbar_button_ptr_t Toolbar::addButtonWithProvider(
     const std::string& tooltip) {
   auto btn = std::make_shared<ToolbarButton>(id);
   btn->_icon_provider = icon_provider;
+  btn->_tooltip = tooltip;
+  _items.push_back(btn);
+  _needs_layout = true;
+  return btn;
+}
+
+toolbar_button_ptr_t Toolbar::addTextButton(
+    const std::string& id,
+    const std::string& label,
+    const std::string& tooltip) {
+  auto btn = std::make_shared<ToolbarButton>(id);
+  btn->_label = label;
   btn->_tooltip = tooltip;
   _items.push_back(btn);
   _needs_layout = true;
@@ -213,7 +226,25 @@ void Toolbar::_rebuildLayout() {
     }
 
     if (auto btn = std::dynamic_pointer_cast<ToolbarButton>(item)) {
-      int btn_w = (btn->_custom_width > 0) ? (btn->_custom_width + _button_padding * 2) : button_size;
+      int btn_w;
+      if (btn->_custom_width > 0) {
+        btn_w = btn->_custom_width + _button_padding * 2;
+      } else if (!btn->_label.empty()) {
+        // Compute width from label text
+        int text_w = 0;
+        if (_label_font) {
+          text_w = btn->_label.length() * _label_font->description().miAdvanceWidth;
+        }
+        if (btn->_icon_image || btn->_icon_provider) {
+          // icon + label: icon_size + spacing + text + padding
+          btn_w = _button_padding + _icon_size + _label_padding + text_w + _label_padding;
+        } else {
+          // text only
+          btn_w = _label_padding + text_w + _label_padding;
+        }
+      } else {
+        btn_w = button_size;
+      }
       if (horizontal) {
         btn->_x = pos;
         btn->_y = center_offset_h;
@@ -459,6 +490,9 @@ void Toolbar::_drawButton(drawevent_constptr_t drwev, toolbar_button_ptr_t btn, 
   if (btn->_pressed) {
     bg_color = _button_pressed_color;
     draw_bg = true;
+  } else if (btn->_toggle_mode && btn->_toggled) {
+    bg_color = _button_toggled_color;
+    draw_bg = true;
   } else if (btn->_hovered) {
     bg_color = _button_hover_color;
     draw_bg = true;
@@ -486,6 +520,8 @@ void Toolbar::_drawButton(drawevent_constptr_t drwev, toolbar_button_ptr_t btn, 
     tex = btn->_icon_texture;
   }
 
+  int icon_right = bx1 + _button_padding;  // track where icon ends for label positioning
+
   if (tex) {
     auto texmtl = lev2::defaultUITextureMaterial();
 
@@ -512,6 +548,27 @@ void Toolbar::_drawButton(drawevent_constptr_t drwev, toolbar_button_ptr_t btn, 
 
     tgt->PopModColor();
     texmtl->SetTexture(lev2::ETEXDEST_DIFFUSE, nullptr);
+
+    icon_right = icon_x2;
+  }
+
+  // Draw text label
+  if (!btn->_label.empty() && _label_font) {
+    int text_x = tex ? (icon_right + _label_padding) : (bx1 + _label_padding);
+    int text_y = by1 + _button_padding;
+
+    fvec4 text_color = (btn->_toggle_mode && btn->_toggled) ? _label_toggled_color : _label_color;
+    if (!btn->_enabled) {
+      text_color = _disabled_tint;
+    }
+
+    lev2::FontMan::PushFont(_label_font);
+    tgt->PushModColor(text_color);
+    lev2::FontMan::beginTextBlock(tgt, btn->_label.length());
+    lev2::FontMan::DrawText(tgt, text_x, text_y, btn->_label.c_str());
+    lev2::FontMan::endTextBlock(tgt);
+    tgt->PopModColor();
+    lev2::FontMan::PopFont();
   }
 }
 

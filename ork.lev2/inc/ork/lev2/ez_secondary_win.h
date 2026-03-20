@@ -102,6 +102,7 @@ struct EzSecondaryWin {
   //////////////////////////////////////////////
 
   bool shouldClose() const;
+  bool _isFullyClosed() const;
   void requestClose();
   int width() const;
   int height() const;
