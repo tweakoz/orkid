@@ -121,8 +121,7 @@ void Window::initContext() {
     auto ctxdrm = dynamic_cast<CtxDRM*>(mpCTXBASE);
     if (ctxdrm) {
       // DRM uses window context (direct to display, no VkSurface)
-      // This will detect DRM and create VkPlatformObjectDRM + DRM swapchain
-      _sharedcontext->initializeWindowContext(this, mpCTXBASE);
+      _sharedcontext->initializeDRMContext(this, mpCTXBASE);
       return;
     }
 #endif

@@ -262,6 +262,9 @@ public:
   virtual void initializeWindowContext(Window* pWin, CTXBASE* pctxbase) = 0;
   virtual void initializeOffscreenContext(DisplayBuffer* pBuf)          = 0;
   virtual void initializeLoaderContext()                                = 0;
+#if defined(__linux__)
+  virtual void initializeDRMContext(Window* pWin, CTXBASE* pctxbase)   {}
+#endif
 
   ///////////////////////////////////////////////////////////////////////
 

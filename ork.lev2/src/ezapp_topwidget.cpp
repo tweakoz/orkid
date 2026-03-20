@@ -147,9 +147,6 @@ void EzTopWidget::DoDraw(ui::drawevent_constptr_t drwev) {
   if (_mainwin->_onDraw) {
     EASY_BLOCK("EzTopWidget drawcontent", profiler::colors::Red);
     auto ctx = drwev->GetTarget();
-    int swap_w = 0, swap_h = 0;
-    ctx->FBI()->querySwapchainSize(swap_w, swap_h);
-    void* swap_ptr = ctx->FBI()->querySwapchainPtr();
     ctx->beginFrame();
     if(ctx->FBI()->_main_rtg){
       _mainwin->_onDraw(drwev);

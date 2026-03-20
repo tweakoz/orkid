@@ -116,7 +116,10 @@ struct VulkanDescriptorSetCache;
 struct VkFrameBufferInterface;
 struct VulkanFenceObject;
 struct VulkanEventObject;
+struct VkReprojectionContext;
 struct VulkanSamplerObject;
+struct VkFramebufferOutput;
+struct VkOffscreen;
 struct InFlightTextureTransfer;
 struct RtGroupAttachments;
 struct VkRtbCreateOption;
@@ -137,8 +140,9 @@ using vkplatformobject_drm_ptr_t = std::shared_ptr<VkPlatformObjectDRM>;
 #endif
 using vertex_strconfig_item_ptr_t = std::shared_ptr<VertexStreamConfigItem>;
 using vertex_strconfig_ptr_t = std::shared_ptr<VertexStreamConfig>;
-using vkfence_obj_ptr_t = std::shared_ptr<VulkanFenceObject>;
-using vkevent_obj_ptr_t = std::shared_ptr<VulkanEventObject>;
+using vkfence_obj_ptr_t    = std::shared_ptr<VulkanFenceObject>;
+using vkevent_obj_ptr_t    = std::shared_ptr<VulkanEventObject>;
+using vkreprojctx_ptr_t    = std::shared_ptr<VkReprojectionContext>;
 ///////////////////////////////////////////////////////////////////////////////
 using vkfxdescsetitem_ptr_t = std::shared_ptr<VkFxShaderDescriptorSetItem>;
 using vkfxsunisetsref_ptr_t = std::shared_ptr<VkFxShaderUniformSetsReference>;
@@ -219,6 +223,7 @@ using vkswapchaindrm_rawptr_t   = VkSwapChainDRM*;
 #endif
 using vkmsaastate_ptr_t         = std::shared_ptr<VkMsaaState>;
 using vkrasterstate_ptr_t       = std::shared_ptr<VkRasterState>;
+using vkfboutput_ptr_t          = std::shared_ptr<VkFramebufferOutput>;
 
 using smpset_map_t      = std::map<std::string, vkfxssmpset_ptr_t>;
 using uniset_map_t      = std::map<std::string, vkfxsuniset_ptr_t>;

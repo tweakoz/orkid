@@ -63,6 +63,7 @@ rtgroup_ptr_t FrameBufferInterface::_ensureMainRtg() {
   _main_rtg              = std::make_shared<RtGroup>(&tgt, w, h, MsaaSamples::MSAA_1X, rtg_usage);
   _main_rtg->_name       = "main_rtg";
 
+  // Create Texture containers but does not actually allocate the textures!
   // auto rtb_color = _main_rtg->createRenderTarget(EBufferFormat::SRGB_BGRA8, buffer_usage, false);
   auto rtb_color = _main_rtg->createRenderTarget(EBufferFormat::BGRA8, buffer_usage, false);
   auto rtb_depth = _main_rtg->createDepthBuffer(EBufferFormat::Z32F, false);

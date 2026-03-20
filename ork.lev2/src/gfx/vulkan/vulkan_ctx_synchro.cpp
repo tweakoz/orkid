@@ -221,12 +221,9 @@ void VulkanFenceObject::onCrossed(void_lambda_t op) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::onFenceCrossed(void_lambda_t op) {
-  auto swapchain   = _fbi->_swapchain;
-  size_t sub_index = swapchain->subIndex();
-  auto fence       = swapchain->_frameFences[sub_index];
-  if (fence) {
-    fence->onCrossed(op);
-  }
+  auto fence = _fbi->_output->currentFrameFence();
+  OrkAssertI(fence != nullptr, "_frame_fences must be populated before any frame (see _buildup / constructor)");
+  fence->onCrossed(op);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
