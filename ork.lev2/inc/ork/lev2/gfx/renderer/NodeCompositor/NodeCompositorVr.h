@@ -9,6 +9,7 @@
 
 #include "NodeCompositor.h"
 #include <ork/lev2/gfx/material_freestyle.h>
+#include <ork/lev2/ez_secondary_win.h>
 
 namespace ork::lev2 {
 
@@ -76,6 +77,9 @@ public:
     _supersample = ss;
   }
 
+  ezsecondarywin_ptr_t createExternalViewer(orkezapp_ptr_t app, const EzSecondaryWinConfig& cfg, bool mono = true);
+  void closeExternalViewer();
+
   EBufferFormat _format = EBufferFormat::RGBA8;
 
 private:
@@ -85,6 +89,7 @@ private:
   svar256_t _impl;
   distortion_lambda_t _distortion_lambda;
   int _supersample = 0;
+  ezsecondarywin_ptr_t _externalViewer;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
