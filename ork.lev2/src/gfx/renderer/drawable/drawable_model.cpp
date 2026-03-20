@@ -42,7 +42,8 @@ void ModelDrawableData::describeX(object::ObjectClass* clazz){
   clazz->directProperty("assetpath", &ModelDrawableData::_assetpath)
       ->annotate("editor.filetype", "glb,gltf")
       ->annotate("editor.filebase", "<assetcache>");
-  clazz->directMapProperty("assetvars", &ModelDrawableData::_assetvars);
+  clazz->directMapProperty("assetvars", &ModelDrawableData::_assetvars)
+      ->annotate("editor.visible", ConstString("false"));
 }
 
 ModelDrawableData::ModelDrawableData(AssetPath path) : _assetpath(path) {
