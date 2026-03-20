@@ -352,6 +352,9 @@ void pyinit_gfx(py::module& module_lev2) {
       })
       .def("bindStorageBuffer", [](ci_t& ci, pyfxcomputeshader_ptr_t csh, uint32_t binding_index, fxshaderstoragebuffer_ptr_t buffer) {
         ci.get()->bindStorageBuffer(csh.get(), binding_index, buffer.get());
+      })
+      .def("bindSampler", [](ci_t& ci, pyfxcomputeshader_ptr_t csh, uint32_t binding_index, texture_ptr_t tex) {
+        ci.get()->bindSampler(csh.get(), binding_index, tex.get());
       });
 
   /////////////////////////////////////////////////////////////////////////////////
