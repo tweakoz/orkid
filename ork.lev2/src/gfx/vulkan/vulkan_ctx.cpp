@@ -1180,10 +1180,11 @@ void VkContext::initializeLoaderContext() {
   plato->_ctxbase = global_plato()->_ctxbase;
   plato->_needsInit = false;
 
-  // Select device. In DRM/headless mode skip findPresentableDevice() — it calls
-  bool use_drm = (_ginitdata && _ginitdata->_use_drm);
+  // Select device. In DRM or headless (GLFW_PLATFORM_NULL) skip findPresentableDevice() 
+  bool use_drm        = (_ginitdata && _ginitdata->_use_drm);
+  bool glfw_null_plat = (glfwGetPlatform() == GLFW_PLATFORM_NULL);
   if (nullptr == _GVI->_preferred) {
-    if (!use_drm) {
+    if (!use_drm && !glfw_null_plat) {
       auto vk_devinfo = _GVI->findPresentableDevice();
       if (vk_devinfo) {
         _GVI->_preferred = vk_devinfo;
