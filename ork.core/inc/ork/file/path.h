@@ -284,6 +284,23 @@ private:
 using path_ptr_t = std::shared_ptr<Path>;
 
 ///////////////////////////////////////////////////////////////////////////////
+// Process-global, thread-safe path expansion system
+///////////////////////////////////////////////////////////////////////////////
+
+/// Register a named path expander (thread-safe).
+/// The key is normalized: setPathExpander("orkid", ...) handles both
+/// "<orkid>" and "orkid://..." forms.
+void setPathExpander(const std::string& key, const file::Path& destination);
+
+/// Expand all tokens in a path string (thread-safe).
+/// Handles in order:
+///   ~              → $HOME
+///   <key>          → table lookup, replace token with destination
+///   key://rest     → table lookup, result = destination/rest
+///   ${ENV_VAR}     → environment variable
+std::string expandPaths(const std::string& path);
+
+///////////////////////////////////////////////////////////////////////////////
 } // namespace file
 ///////////////////////////////////////////////////////////////////////////////
 

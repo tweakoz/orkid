@@ -328,7 +328,13 @@ PYBIND11_MODULE(_core, module_core) {
         return fxs.c_str();
       })
       .def_static("expandPathString", &file::Path::expandPathString,
-        "Expand ~, <assetcache>, ${ENV_VAR} in a path string");
+        "Expand ~, <assetcache>, ${ENV_VAR} in a path string")
+      .def_static("expandPaths", &file::expandPaths,
+        py::arg("path"),
+        "Expand all path tokens: ~, <key>, key://, ${ENV_VAR}")
+      .def_static("setPathExpander", &file::setPathExpander,
+        py::arg("key"), py::arg("destination"),
+        "Register a named path expander (thread-safe)");
   /////////////////////////////////////////////////////////////////////////////////
   struct VarMapKeyIterator {
 

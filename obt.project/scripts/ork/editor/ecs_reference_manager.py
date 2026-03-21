@@ -250,3 +250,6 @@ class EcsReferenceManagerModel(lev2.ui.OutlinerModel):
       import_data.selectedSystems = sel
 
     self.notifyModelReset()
+    # Also refresh the main outliner so inline imports update
+    if hasattr(self.editor, 'outliner_model'):
+      self.editor.outliner_model.notifyModelReset()

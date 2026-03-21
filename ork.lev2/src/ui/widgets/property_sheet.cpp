@@ -52,24 +52,9 @@ static std::vector<std::string> _parseCSV(const std::string& csv) {
 }
 
 // Expand a base path for the asset picker.
-// Uses Path::expandPathString for ~, <assetcache>, ${ENV_VAR},
-// then handles uribase:// (lev2-specific).
+// Handles ~, <key>, key://, ${ENV_VAR} via the unified expander.
 static std::string _expandBasePath(const std::string& raw) {
-  auto result = file::Path::expandPathString(raw);
-
-  // Check for URI protocol (e.g., "data://models") — lev2-specific
-  auto proto_pos = result.find("://");
-  if (proto_pos != std::string::npos) {
-    auto proto = result.substr(0, proto_pos + 3);
-    auto remainder = result.substr(proto_pos + 3);
-    auto ctx = ork::FileEnv::contextForUriProto(proto);
-    if (ctx) {
-      auto base = ctx->getFilesystemBaseAbs();
-      result = std::string(base.c_str()) + "/" + remainder;
-    }
-  }
-
-  return result;
+  return file::expandPaths(raw);
 }
 
 // Base path entry: display form, expanded absolute path, and whether

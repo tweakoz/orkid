@@ -26,6 +26,8 @@
 #include <string.h>
 #include <ork/kernel/environment.h>
 #include <unordered_set>
+#include <shared_mutex>
+#include <ork/file/fileenv.h>
 
 template class ork::fixedvector<ork::file::Path, 8>;
 bool gbas1 = true;
@@ -1084,9 +1086,41 @@ Path Path::temp_dir() {
 ///////////////////////////////////////////////////////////////////////////////
 
 std::string Path::expandPathString(const std::string& path) {
+  return file::expandPaths(path);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Process-global path expansion system
+///////////////////////////////////////////////////////////////////////////////
+
+static std::shared_mutex _expander_mutex;
+static std::unordered_map<std::string, file::Path> _expander_table;
+static thread_local bool _in_set_path_expander = false;
+
+void file::setPathExpander(const std::string& key, const file::Path& destination) {
+  {
+    std::unique_lock lock(_expander_mutex);
+    _expander_table[key] = destination;
+  }
+  // Bidirectional sync: also register as URI protocol so
+  // Path::toAbsoluteFolder() (which uses FileEnv::contextForUriProto) works.
+  // Guard against re-entry from createContextForUriBase→setPathExpander loop.
+  if (!_in_set_path_expander) {
+    _in_set_path_expander = true;
+    auto proto = key + "://";
+    auto existing = FileEnv::contextForUriProto(proto);
+    if (!existing) {
+      auto ctx = FileEnv::createContextForUriBase(proto, destination);
+      ctx->SetPrependFilesystemBase(true);
+    }
+    _in_set_path_expander = false;
+  }
+}
+
+std::string file::expandPaths(const std::string& path) {
   std::string result = path;
 
-  // Expand ~ at start of path to home directory
+  // 1. Expand ~ at start of path to home directory
   if (!result.empty() && result[0] == '~') {
     std::string home;
     if (genviron.get("HOME", home)) {
@@ -1094,25 +1128,43 @@ std::string Path::expandPathString(const std::string& path) {
     }
   }
 
-  // Expand <assetcache> → ${OBT_STAGE}/assetcache
-  auto ac_pos = result.find("<assetcache>");
-  if (ac_pos != std::string::npos) {
-    std::string stage;
-    if (genviron.get("OBT_STAGE", stage)) {
-      result.replace(ac_pos, 12, stage + "/assetcache");
+  // 2. Check for "key://rest" pattern first
+  auto proto_pos = result.find("://");
+  if (proto_pos != std::string::npos && proto_pos > 0) {
+    auto key = result.substr(0, proto_pos);
+    auto rest = result.substr(proto_pos + 3);
+    std::shared_lock lock(_expander_mutex);
+    auto it = _expander_table.find(key);
+    if (it != _expander_table.end()) {
+      auto dest = it->second.toStdString();
+      lock.unlock();
+      if (rest.empty()) {
+        result = dest;
+      } else {
+        result = dest + "/" + rest;
+      }
+      // Fall through to env var expansion
+    }
+  } else {
+    // 3. Scan for "<key>" tokens
+    std::shared_lock lock(_expander_mutex);
+    size_t pos = 0;
+    while ((pos = result.find('<', pos)) != std::string::npos) {
+      auto end = result.find('>', pos + 1);
+      if (end == std::string::npos) break;
+      auto key = result.substr(pos + 1, end - pos - 1);
+      auto it = _expander_table.find(key);
+      if (it != _expander_table.end()) {
+        auto dest = it->second.toStdString();
+        result.replace(pos, end - pos + 1, dest);
+        pos += dest.size();
+      } else {
+        pos = end + 1;
+      }
     }
   }
 
-  // Expand <staging> → ${OBT_STAGE}
-  auto st_pos = result.find("<staging>");
-  if (st_pos != std::string::npos) {
-    std::string stage;
-    if (genviron.get("OBT_STAGE", stage)) {
-      result.replace(st_pos, 9, stage);
-    }
-  }
-
-  // Expand ${ENV_VAR} patterns
+  // 4. Expand ${ENV_VAR} patterns
   size_t pos = 0;
   while ((pos = result.find("${", pos)) != std::string::npos) {
     auto end = result.find('}', pos + 2);

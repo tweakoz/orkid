@@ -160,6 +160,14 @@ class EcsEditor(ComponentizedApplication):
     for the add-component dropdown."""
     return []
 
+  def _getImportBasePaths(self):
+    """Extension point: return list of base path entries for .ecs file scanning.
+    Each entry is either:
+      str             — a known token like "<assetcache>", "orkid://"
+      (str, path_obj) — a custom display name + explicit filesystem path
+    Override in subclass to add project-specific roots."""
+    return ["<orkid_ecs>", "<assetcache>"]
+
   def _createExtraOverlayNodes(self, sg, layer):
     """Extension point: create additional scenegraph overlay nodes.
     Called each time the scenegraph is rebuilt."""
@@ -668,27 +676,71 @@ class EcsEditor(ComponentizedApplication):
     if len(parts) == 3:
       self.ref_mgr_model.toggleSelection(key)
 
+  def _expandBaseToken(self, token):
+    """Expand a base path token to an absolute filesystem path."""
+    from orkengine.core import Path as OrkPath
+    result = OrkPath.expandPaths(token)
+    # expandPaths returns the input unchanged if no match — treat as failure
+    return result if result != token else None
+
+  def _scanForEcsFiles(self):
+    """Scan all import base paths for .ecs files.
+    Returns list of paths formatted for DropdownMenu: '/<display>/rel/path/file.ecs'
+    Also populates self._import_base_map for resolving selections back to abs paths."""
+    results = []
+    self._import_base_map = {}
+
+    for entry in self._getImportBasePaths():
+      if isinstance(entry, tuple):
+        display, path_obj = entry
+        abs_path = str(path_obj)
+      else:
+        display = entry
+        abs_path = self._expandBaseToken(entry)
+
+      if not abs_path or not os.path.isdir(abs_path):
+        continue
+      self._import_base_map[display] = abs_path
+
+      for root, dirs, files in os.walk(abs_path):
+        dirs[:] = [d for d in dirs if not d.startswith('.')]
+        if display == "<assetcache>":
+          dirs[:] = [d for d in dirs if d not in ("enc", "local_manifests", "receipts", "temp", "extracted")]
+        for f in files:
+          if f.endswith(".ecs"):
+            rel = os.path.relpath(os.path.join(root, f), abs_path)
+            results.append(f"/{display}/{rel}")
+    results.sort()
+    return results
+
+  def _doImportSceneFromDropdown(self, selected):
+    """Handle dropdown selection. Store as URI path (e.g. orkid_ecs://file.ecs)
+    so the JSON serializes the unresolved form and C++ resolves on demand."""
+    selected = selected.lstrip("/")
+    parts = selected.split("/", 1)
+    if len(parts) != 2:
+      return
+    display, rel_path = parts
+    # Convert <token> display name to token:// URI form
+    token = display.strip("<>")
+    uri_path = f"{token}://{rel_path}"
+    self._doImportScene(uri_path)
+
   def _onImportScene(self):
-    """Open file browser to import a scene file."""
+    """Show dropdown of .ecs files from configured base paths."""
     if self._mode != self.EDIT:
       return
-    from ork.ui.filesystem_browser import FilesystemBrowser
-    home = os.path.expanduser("~")
-    popup = self.ezapp.createSecondaryWindow(
-      width=800, height=600, x=200, y=150,
-      title="Import ECS Scene", decorated=True, resizable=True, floating=True)
-    uic = popup.ui_context
-    root = lev2.ui.LayoutGroup.create("popup_lg")
-    root.setRect(0, 0, popup.width, popup.height)
-    uic.top = root
-    root.margin = 4
-
-    browser_item = root.makeChild(
-      uiclass=FilesystemBrowser,
-      args=["browser", home, ".json", vec3(0.1, 0.1, 0.1), "load"],
-      fill=True)
-    browser = browser_item.widget.uservars.filesystem_browser
-    browser.onActivate = lambda p: (self._doImportScene(p), popup.requestClose())
+    paths = self._scanForEcsFiles()
+    if not paths:
+      print("No .ecs files found in import base paths")
+      return
+    rx, ry = self.ref_toolbar.localToRoot(0, self.ref_toolbar.height)
+    lev2.ui.DropdownMenu.show(
+      context=self.uicontext,
+      paths=paths,
+      x=rx, y=ry,
+      on_selected=lambda val: self._doImportSceneFromDropdown(val),
+      sort_alphabetically=True)
 
   def _doImportScene(self, path):
     """Actually add a SceneImportData for the given file path."""
@@ -772,6 +824,45 @@ class EcsEditor(ComponentizedApplication):
     # Clear key overrides for non-spawner selections
     if category != "Spawners":
       self.refl_model.clearKeyOverrides()
+
+    # Check for imported item selection
+    parsed = self.outliner_model._parseImportPath(category, parts)
+    if parsed is not None:
+      ns_key, obj_name, remainder = parsed
+      if obj_name is None:
+        # Namespace folder selected — show SceneImportData
+        imports = self.scene_data.imports
+        if ns_key in imports:
+          self._selected_object = imports[ns_key]
+      else:
+        # Imported object selected — resolve from imported scene
+        imported_scene = self.outliner_model._getImportedScene(ns_key)
+        if imported_scene:
+          if category == "Archetypes":
+            arch = self.outliner_model._findInScene(imported_scene, "archetypes", obj_name)
+            if arch and len(remainder) == 0:
+              self._selected_object = arch
+            elif arch and len(remainder) >= 1:
+              for c in arch.components:
+                if c.className == remainder[0]:
+                  if len(remainder) == 1:
+                    self._selected_object = c
+                  elif c.className == "SceneGraphComponentData" and len(remainder) == 2:
+                    nodedatas = c.nodedatas
+                    if remainder[1] in nodedatas:
+                      self._selected_object = nodedatas[remainder[1]].drawabledata
+                  break
+          elif category == "Spawners":
+            self._selected_object = self.outliner_model._findInScene(
+              imported_scene, "spawners", obj_name)
+          elif category == "Systems":
+            self._selected_object = self.outliner_model._findInScene(
+              imported_scene, "systemDatas", obj_name)
+      self.refl_model.object = self._selected_object
+      self._onSelectionChanged(self._selected_object, key)
+      self.propsheet.rebuild()
+      self.propsheet.expandAll()
+      return
 
     if category == "Archetypes":
       arch = self.outliner_model._findArchetype(name)
@@ -1014,8 +1105,8 @@ class EcsEditor(ComponentizedApplication):
 
   def _saveScene(self, path):
     try:
-      if not path.endswith(".json"):
-        path += ".json"
+      if not path.endswith(".ecs") and not path.endswith(".json"):
+        path += ".ecs"
       json_str = self.scene_data.serializeJson()
       with open(path, "w") as f:
         f.write(json_str)

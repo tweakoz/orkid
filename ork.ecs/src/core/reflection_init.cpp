@@ -136,10 +136,12 @@ struct EcsAppInit {
   EcsAppInit(ork::appinitdata_ptr_t init_data) {
 
     RegisterClassX(Archetype);
+    RegisterClassX(ReferenceArchetype);
     RegisterClassX(DagNodeData);
     RegisterClassX(SpawnData);
     RegisterClassX(SceneObject);
     RegisterClassX(SceneData);
+    RegisterClassX(SceneImportData);
     RegisterClassX(ComponentData);
     RegisterClassX(ComponentFragmentData);
 
