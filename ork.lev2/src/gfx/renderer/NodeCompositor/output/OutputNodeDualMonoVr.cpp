@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorVr.h>
+#include <ork/lev2/ezapp.h>
 #include <ork/application/application.h>
 #include <ork/lev2/gfx/camera/uicam.h>
 #include <ork/lev2/gfx/pri.h>
@@ -239,6 +240,125 @@ DualMonoVrOutputNode::DualMonoVrOutputNode() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 DualMonoVrOutputNode::~DualMonoVrOutputNode() {
+  closeExternalViewer();
+}
+///////////////////////////////////////////////////////////////////////////////
+ezsecondarywin_ptr_t DualMonoVrOutputNode::createExternalViewer(
+    orkezapp_ptr_t app, const EzSecondaryWinConfig& cfg, bool mono) {
+
+  closeExternalViewer();
+
+  auto impl = _impl.get<DMVRIMPL_ptr_t>();
+  auto win = app->createSecondaryWindow(cfg);
+
+  struct ExtViewerState {
+    FreestyleMaterial _mtl;
+    const FxShaderTechnique* _tek = nullptr;
+    const FxShaderParam* _fxpMVP = nullptr;
+    const FxShaderParam* _fxpColorMap = nullptr;
+    bool _initialized = false;
+    bool _mono = true;
+  };
+  auto ext = std::make_shared<ExtViewerState>();
+  ext->_mono = mono;
+
+  win->_onGpuInit = [ext](Context* ctx) {
+    ext->_mtl.gpuInit(ctx, "orkshader://blit");
+    ext->_mtl._rasterstate->setCullTest(ECullTest::OFF);
+    ext->_mtl._rasterstate->setBlendingMacro(BlendingMacro::OFF);
+    ext->_mtl._rasterstate->setDepthTest(EDepthTest::OFF);
+    ext->_tek = ext->_mtl.technique("blituv");
+    ext->_fxpMVP = ext->_mtl.param("MatMVP");
+    ext->_fxpColorMap = ext->_mtl.param("ColorMap");
+    ext->_initialized = true;
+  };
+
+  win->_onDraw = [impl, ext](ui::drawevent_constptr_t drwev) {
+    if (!ext->_initialized) return;
+
+    auto ctx = drwev->GetTarget();
+    auto fbi = ctx->FBI();
+    auto dwi = ctx->DWI();
+
+    auto texL = impl->_ssaadownsamplebufferL
+                  ? impl->_ssaadownsamplebufferL->texture(0).get()
+                  : nullptr;
+    if (!texL) return;
+
+    int w = ctx->mainSurfaceWidth();
+    int h = ctx->mainSurfaceHeight();
+    auto framedata = drwev->_acqdbuf->_RCFD;
+    auto this_buf = fbi->GetThisBuffer();
+
+    ctx->beginFrame();
+
+    ViewportRect vprect(0, 0, w, h);
+    fbi->pushViewport(vprect);
+    fbi->pushScissor(vprect);
+
+    auto& mtl = ext->_mtl;
+    mtl.begin(ext->_tek, framedata);
+    mtl.bindParamMatrix(ext->_fxpMVP, fmtx4::Identity());
+
+    if (ext->_mono) {
+      // Single eye -> full window, zoom to fit (crop excess)
+      auto uvrect = fvec4(0, 0, 1, 1);
+      if (impl->_per_eye_width > 0 && impl->_per_eye_height > 0 && w > 0 && h > 0) {
+        float tex_aspect = float(impl->_per_eye_width) / float(impl->_per_eye_height);
+        float win_aspect = float(w) / float(h);
+        float uv_x = 0.0f, uv_y = 0.0f, uv_w = 1.0f, uv_h = 1.0f;
+        if (tex_aspect > win_aspect) {
+          uv_w = win_aspect / tex_aspect;
+          uv_x = (1.0f - uv_w) * 0.5f;
+        } else {
+          uv_h = tex_aspect / win_aspect;
+          uv_y = (1.0f - uv_h) * 0.5f;
+        }
+        uvrect = fvec4(uv_x, uv_y, uv_w, uv_h);
+      }
+      mtl.bindParamTexture(ext->_fxpColorMap, texL);
+      this_buf->Render2dQuadEML(
+          fvec4(-1, -1, 2, 2),
+          uvrect,
+          uvrect);
+    } else {
+      auto texR = impl->_ssaadownsamplebufferR
+                    ? impl->_ssaadownsamplebufferR->texture(0).get()
+                    : nullptr;
+      if (!texR) { mtl.end(framedata); fbi->popScissor(); fbi->popViewport(); ctx->endFrame(); return; }
+
+      // Left eye -> left half
+      mtl.bindParamTexture(ext->_fxpColorMap, texL);
+      this_buf->Render2dQuadEML(
+          fvec4(-1, -1, 1, 2),
+          fvec4(0, 0, 1, 1),
+          fvec4(0, 0, 1, 1));
+
+      // Right eye -> right half
+      mtl.bindParamTexture(ext->_fxpColorMap, texR);
+      this_buf->Render2dQuadEML(
+          fvec4(0, -1, 1, 2),
+          fvec4(0, 0, 1, 1),
+          fvec4(0, 0, 1, 1));
+    }
+
+    mtl.end(framedata);
+
+    fbi->popScissor();
+    fbi->popViewport();
+
+    ctx->endFrame();
+  };
+
+  _externalViewer = win;
+  return win;
+}
+///////////////////////////////////////////////////////////////////////////////
+void DualMonoVrOutputNode::closeExternalViewer() {
+  if (_externalViewer) {
+    _externalViewer->requestClose();
+    _externalViewer.reset();
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void DualMonoVrOutputNode::gpuInit(lev2::Context* pTARG, int iW, int iH) {
@@ -445,6 +565,10 @@ void DualMonoVrOutputNode::composite(CompositorDrawData& drawdata) {
         drawdata.context()->debugPopGroup();
       }
     }
+  }
+  // mark external viewer dirty so it redraws with fresh eye textures
+  if (_externalViewer) {
+    _externalViewer->markDirty();
   }
   drawdata.context()->debugPopGroup();
 }
