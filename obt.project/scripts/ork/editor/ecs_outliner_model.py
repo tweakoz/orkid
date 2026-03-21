@@ -11,7 +11,7 @@ from orkengine import ecs
 ################################################################################
 
 # Categories shown at the root of the outliner tree
-CATEGORIES = ["Archetypes", "Spawners", "Systems"]
+CATEGORIES = ["Archetypes", "Spawners", "Systems", "Imports"]
 
 def _reflectionNameToFactoryId(name):
   """Convert a reflection class name to a factory ID.
@@ -118,6 +118,29 @@ class EcsOutlinerModel(lev2.ui.OutlinerModel):
         return [f"Systems/{s.className}" for s in self.scene_data.systemDatas]
       return []
 
+    elif category == "Imports":
+      if len(parts) == 1:
+        imports = self.scene_data.imports
+        return [f"Imports/{ns}" for ns in sorted(imports.keys())]
+      elif len(parts) == 2:
+        # Show sub-categories under an import namespace
+        return [f"{parent_key}/Archetypes", f"{parent_key}/Spawners", f"{parent_key}/Systems"]
+      elif len(parts) == 3:
+        ns = parts[1]
+        sub = parts[2]
+        # Try to get the imported scene from the controller
+        controller = getattr(self.editor.runtime, 'controller', None)
+        if controller:
+          imported_scene = controller.findImportedScene(ns)
+          if imported_scene:
+            if sub == "Archetypes":
+              return [f"{parent_key}/{a.name}" for a in imported_scene.archetypes]
+            elif sub == "Spawners":
+              return [f"{parent_key}/{s.name}" for s in imported_scene.spawners]
+            elif sub == "Systems":
+              return [f"{parent_key}/{s.className}" for s in imported_scene.systemDatas]
+      return []
+
     return []
 
   def getDisplayName(self, key):
@@ -136,6 +159,8 @@ class EcsOutlinerModel(lev2.ui.OutlinerModel):
         return len(self.scene_data.spawners) > 0
       elif category == "Systems":
         return len(self.scene_data.systemDatas) > 0
+      elif category == "Imports":
+        return len(self.scene_data.imports) > 0
 
     # Archetypes have component children
     if category == "Archetypes" and len(parts) == 2:
@@ -147,6 +172,25 @@ class EcsOutlinerModel(lev2.ui.OutlinerModel):
       comp = self._findComponent(parts[1], parts[2])
       if comp and comp.className == "SceneGraphComponentData":
         return len(comp.nodedatas) > 0
+
+    # Import namespaces always have sub-categories
+    if category == "Imports" and len(parts) == 2:
+      return True
+
+    # Import sub-categories may have items
+    if category == "Imports" and len(parts) == 3:
+      ns = parts[1]
+      sub = parts[2]
+      controller = getattr(self.editor.runtime, 'controller', None)
+      if controller:
+        imported_scene = controller.findImportedScene(ns)
+        if imported_scene:
+          if sub == "Archetypes":
+            return len(imported_scene.archetypes) > 0
+          elif sub == "Spawners":
+            return len(imported_scene.spawners) > 0
+          elif sub == "Systems":
+            return len(imported_scene.systemDatas) > 0
 
     return False
 
@@ -265,9 +309,11 @@ class EcsOutlinerModel(lev2.ui.OutlinerModel):
     parts = old_key.split("/")
     category = parts[0]
 
-    # Can't rename categories, systems, or components
+    # Can't rename categories, systems, components, or imported objects
     if len(parts) == 1:
       return None
+    if category == "Imports":
+      return None  # imported objects are read-only
     if category == "Systems":
       return None
     if category == "Archetypes" and len(parts) == 3:
@@ -299,6 +345,8 @@ class EcsOutlinerModel(lev2.ui.OutlinerModel):
 
     if len(parts) == 1:
       return  # Can't remove categories
+    if category == "Imports":
+      return  # imported objects are read-only (use Reference Manager to un-import)
 
     if category == "Archetypes":
       if len(parts) == 2:

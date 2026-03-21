@@ -8,12 +8,15 @@
 #include <ork/kernel/opq.h>
 #include <ork/rtti/Class.h>
 #include <ork/ecs/scene.h>
+#include <ork/ecs/scene_import_data.h>
 #include <ork/ecs/simulation.h>
 #include <ork/ecs/controller.h>
 #include <ork/ecs/system.h>
+#include <ork/object/serdes.inl>
 
 #include <ork/ecs/entity.inl>
 #include <ork/ecs/scene.inl>
+#include <ork/ecs/archetype.h>
 #include <ork/lev2/ui/event.h>
 
 #include "message_private.h"
@@ -503,6 +506,64 @@ void Controller::_mutateObject(std::function<void(id2obj_map_t&)> operation) {
 void Controller::bindScene(scenedata_ptr_t scene) {
   scene->prepareForSimulation();
   _scenedata = scene;
+
+  // Recursively load imports
+  _importedScenes.clear();
+  std::set<std::string> visited;
+  _loadImports(scene, "", visited);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Controller::_loadImports(scenedata_ptr_t scene, const std::string& parentNs,
+                              std::set<std::string>& visited) {
+  for (auto& [ns, importData] : scene->getImports()) {
+    auto fullNs = parentNs.empty() ? ns : (parentNs + ":" + ns);
+    auto abspath = importData->_sourcePath.toAbsolute();
+
+    // Cycle detection
+    auto pathstr = abspath.c_str();
+    if (visited.count(pathstr)) {
+      logchan_controller->log("Circular import detected: %s", pathstr);
+      continue;
+    }
+    visited.insert(pathstr);
+
+    // Load via deserialize helper
+    auto imported = ork::object::deserialize<SceneData>(abspath);
+    if (!imported) {
+      logchan_controller->log("Failed to load import: %s", pathstr);
+      continue;
+    }
+
+    imported->prepareForSimulation();
+    _importedScenes[fullNs] = imported;
+
+    // Recurse for nested imports
+    _loadImports(imported, fullNs, visited);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+scenedata_constptr_t Controller::findImportedScene(const std::string& ns) const {
+  auto it = _importedScenes.find(ns);
+  if (it != _importedScenes.end()) {
+    return it->second;
+  }
+  return nullptr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+archetype_constptr_t Controller::findImportedArchetype(const std::string& ns,
+                                                        const std::string& name) const {
+  auto it = _importedScenes.find(ns);
+  if (it != _importedScenes.end()) {
+    auto pname = AddPooledString(name.c_str());
+    return it->second->findTypedObject<Archetype>(pname);
+  }
+  return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

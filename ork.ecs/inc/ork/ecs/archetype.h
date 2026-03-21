@@ -32,6 +32,7 @@ public:
     deleteComponents();
   }
 
+  // Public non-virtual interface — handles invariants, calls do* methods
   //void initializeEntity(Simulation* psi, const DecompTransform& xf, Entity* pent) const;
   void uninitializeEntity(Simulation* psi, Entity* pent) const;
   void composeEntity(Simulation* psi, Entity* pent) const;
@@ -65,26 +66,24 @@ public:
   }
 
 
-  //protected:
-  //virtual void DoInitializeEntity(Simulation* psi, const DecompTransform& xf, Entity* pent) const;
-  //virtual void DoUninitializeEntity(Simulation* psi, Entity* pent) const;
-  //virtual void DoComposeEntity(Simulation* psi, Entity* pent) const;
-  //virtual void DoDecomposeEntity(Simulation* psi, Entity* pent) const;
-  //virtual void DoLinkEntity(Simulation* psi, Entity* pent) const;
-  //virtual void DoUnlinkEntity(Simulation* psi, Entity* pent) const;
-  //virtual void DoStageEntity(Simulation* psi, Entity* pent) const;
-  //virtual void DoUnstageEntity(Simulation* psi, Entity* pent) const;
-  //virtual void DoActivateEntity(Simulation* psi, Entity* pent) const;
-  //virtual void DoDeactivateEntity(Simulation* psi, Entity* pent) const {
-  //}
+protected:
+  // Virtual overridable core operations (Template Method pattern)
+  virtual void doComposeEntity(Simulation* psi, Entity* pent) const;
+  virtual void doDecomposeEntity(Simulation* psi, Entity* pent) const;
+  virtual void doLinkEntity(Simulation* psi, Entity* pent) const;
+  virtual void doUnlinkEntity(Simulation* psi, Entity* pent) const;
+  virtual void doStageEntity(Simulation* psi, Entity* pent) const;
+  virtual void doUnstageEntity(Simulation* psi, Entity* pent) const;
+  virtual void doActivateEntity(Simulation* psi, Entity* pent) const;
+  virtual void doDeactivateEntity(Simulation* psi, Entity* pent) const;
 
-  //virtual void DoCompose(ArchComposer& arch_composer);
-
+public:
   SceneData* _scenedata = nullptr;
   ComponentDataTable::LutType mComponentDatas;
   //ComponentDataTable mComponentDataTable;
 
 private:
+  friend struct ReferenceArchetype;
   bool postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) override;
 };
 

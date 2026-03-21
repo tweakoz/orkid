@@ -9,6 +9,7 @@
 #include <ork/ecs/controller.h>
 #include <ork/ecs/simulation.h>
 #include <ork/ecs/datatable.h>
+#include <ork/ecs/scene.h>
 ///////////////////////////////////////////////////////////////////////////////
 using ctx_t               = ork::python::unmanaged_ptr<::ork::lev2::Context>;
 ///////////////////////////////////////////////////////////////////////////////
@@ -348,6 +349,21 @@ void pyinit_controller(py::module& module_ecs) {
 
 #undef DEF_UPD_HOOK
 #undef DEF_GPU_HOOK
+
+      ///////////////////////////
+      // Import system
+      ///////////////////////////
+      .def_property_readonly("importedScenes", [](controller_ptr_t ctrl) -> py::dict {
+        py::dict result;
+        for (auto& [ns, scene] : ctrl->importedScenes()) {
+          result[py::cast(ns)] = std::const_pointer_cast<SceneData>(scene);
+        }
+        return result;
+      })
+      .def("findImportedScene", [](controller_ptr_t ctrl, std::string ns) -> scenedata_ptr_t {
+        auto scene = ctrl->findImportedScene(ns);
+        return scene ? std::const_pointer_cast<SceneData>(scene) : nullptr;
+      })
       ;
 
   type_codec->registerStdCodec<controller_ptr_t>(ctrl_type);

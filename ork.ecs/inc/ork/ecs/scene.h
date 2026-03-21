@@ -15,6 +15,7 @@
 #include <ork/file/path.h>
 
 #include "types.h"
+#include "scene_import_data.h"
 #include <ork/kernel/varmap.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -111,6 +112,11 @@ public:
   orkmap<PoolString, sceneobject_ptr_t> _sceneObjects;
   SystemDataLut _systemDatas;
   file::Path _sceneScriptPath;
+  orkmap<std::string, sceneimportdata_ptr_t> _imports;  // namespace → import record
+
+  void addImport(sceneimportdata_ptr_t import);
+  void removeImport(const std::string& ns);
+  const orkmap<std::string, sceneimportdata_ptr_t>& getImports() const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -10,6 +10,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "types.h"
+#include <set>
 #include <ork/util/crc.h>
 #include <ork/file/path.h>
 #include <ork/kernel/concurrent_queue.h>
@@ -128,6 +129,11 @@ struct Controller {
 	void gpuUpdate(lev2::Context* ctx);
 
 	scenedata_constptr_t scenedata() const { return _scenedata; }
+
+	// Import system
+	scenedata_constptr_t findImportedScene(const std::string& ns) const;
+	archetype_constptr_t findImportedArchetype(const std::string& ns, const std::string& name) const;
+	const orkmap<std::string, scenedata_constptr_t>& importedScenes() const { return _importedScenes; }
 	///////////////////////////////////////////////////////////////////////////////
 
 	void update();
@@ -217,6 +223,8 @@ private:
 
 	LockedResource<TokMap> _tokmaps;
 	scenedata_constptr_t _scenedata;
+	orkmap<std::string, scenedata_constptr_t> _importedScenes;  // namespace → loaded imported scene
+	void _loadImports(scenedata_ptr_t scene, const std::string& parentNs, std::set<std::string>& visited);
 	
 
 	LockedResource<evq_t> _eventQueue;

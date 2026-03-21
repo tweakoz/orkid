@@ -16,6 +16,7 @@
 #include <ork/ecs/ReferenceArchetype.h>
 #include <ork/ecs/entity.h>
 #include <ork/ecs/scene.h>
+#include <ork/ecs/scene_import_data.h>
 #include <ork/ecs/system.h>
 #include <ork/ecs/controller.h>
 #include <ork/ecs/scene.inl>
@@ -706,6 +707,134 @@ void Simulation::_initializeEntities() {
       }
     }
   }
+
+  // Also iterate imported scenes' spawners (filtered by selection)
+  for (auto& [ns, importedScene] : _controller->_importedScenes) {
+    // Find the selection manifest for this namespace
+    sceneimportdata_ptr_t importData;
+    auto colonPos = ns.rfind(':');
+    if (colonPos == std::string::npos) {
+      auto& imports = _controller->_scenedata->getImports();
+      auto iit = imports.find(ns);
+      if (iit != imports.end()) importData = iit->second;
+    } else {
+      auto parentNs = ns.substr(0, colonPos);
+      auto childNs = ns.substr(colonPos + 1);
+      auto parentScene = _controller->findImportedScene(parentNs);
+      if (parentScene) {
+        auto parentSceneMut = std::const_pointer_cast<SceneData>(parentScene);
+        auto& imports = parentSceneMut->getImports();
+        auto iit = imports.find(childNs);
+        if (iit != imports.end()) importData = iit->second;
+      }
+    }
+
+    for (auto it : importedScene->GetSceneObjects()) {
+      auto sobj = it.second;
+      if (auto spawner = std::dynamic_pointer_cast<SpawnData>(sobj)) {
+
+        // Check if this spawner is selected
+        if (importData && !importData->_selectedSpawners.empty()) {
+          auto spawnerName = std::string(spawner->GetName().c_str());
+          auto& sel = importData->_selectedSpawners;
+          if (std::find(sel.begin(), sel.end(), spawnerName) == sel.end())
+            continue;
+        }
+
+        if (!spawner->autoSpawn())
+          continue;
+
+        auto arch = spawner->GetArchetype();
+        int spawnCount = std::max(1, spawner->_spawnCount);
+        bool timed = (spawnCount > 1) && (spawner->_spawnInterval > 0.0f);
+        int immediateCount = timed ? 1 : spawnCount;
+
+        spawnercontext_ptr_t ctx;
+        if (spawnCount > 1) {
+          ctx = std::make_shared<SpawnerContext>();
+          ctx->_spawnData = spawner;
+          _spawnerContexts[spawner] = ctx;
+        }
+
+        std::string actualLayerName = "Default";
+        ConstString layer_name = spawner->GetUserProperty("DrawLayer");
+        if (strlen(layer_name.c_str()) != 0) {
+          actualLayerName = layer_name.c_str();
+        }
+        auto layer_data = GetLayerData(actualLayerName);
+        if (!layer_data) {
+          layer_data = new lev2::LayerData;
+          AddLayerData(actualLayerName, layer_data);
+        }
+
+        auto baseXf = spawner->_dagnode->_xfnode->_transform;
+
+        for (int si = 0; si < immediateCount; si++) {
+          PoolString entName;
+          if (spawnCount == 1) {
+            // Prefix with namespace to avoid name collisions
+            entName = AddPooledString(FormatString("%s:%s", ns.c_str(), spawner->GetName().c_str()).c_str());
+          } else {
+            entName = AddPooledString(FormatString("%s:%s_%d", ns.c_str(), spawner->GetName().c_str(), si).c_str());
+          }
+
+          uint64_t entref = _controller->_objectIdCounter.fetch_add(1);
+          Entity* pent = new Entity(spawner, this, entref);
+          _controller->_mutateObject([&](Controller::id2obj_map_t& unlocked) { unlocked[entref].set<Entity*>(pent); });
+
+          fvec3 pos = baseXf->_translation;
+          if (ctx) {
+            pos = _generateScatteredPosition(
+                baseXf->_translation,
+                spawner->_positionRandomRadius,
+                spawner->_minDistance,
+                ctx->_spawnedPositions);
+            ctx->_spawnedPositions.push_back(pos);
+            ctx->_spawnedSoFar++;
+          }
+
+          auto entXf = std::make_shared<DecompTransform>();
+          entXf->_translation = pos;
+          entXf->_rotation = baseXf->_rotation;
+          entXf->_uniformScale = baseXf->_uniformScale;
+          pent->setTransform(entXf);
+
+          fvec3 vel = _computeInitialVelocity(*spawner);
+          if (vel.magnitudeSquared() > 0.0f) {
+            pent->_varmap->makeValueForKey<fvec3>("initialVelocity") = vel;
+          }
+
+          if (spawner->_lifetimeMin > 0.0f || spawner->_lifetimeMax > 0.0f) {
+            float ltMin = spawner->_lifetimeMin;
+            float ltMax = std::max(ltMin, spawner->_lifetimeMax);
+            std::uniform_real_distribution<float> ltDist(ltMin, ltMax);
+            pent->_despawnTime = mGameTime + ltDist(_spawn_rng);
+          }
+
+          mEntities[entName] = pent;
+
+          if (spawner->_onSpawn) {
+            auto invocation         = std::make_shared<deferred_script_invokation>();
+            invocation->_cb         = spawner->_onSpawn;
+            auto& datatable         = *invocation->_data.makeShared<DataTable>();
+            EntityRef eref          = {pent->_entref};
+            datatable["entity"_tok] = pyentity_ptr_t(pent);
+            datatable["entref"_tok] = eref;
+            this->_enqueueDeferredInvokation(invocation);
+          }
+        }
+
+        if (timed && ctx) {
+          float jitter = spawner->_stochasticInterval * fabsf(_spawn_dist(_spawn_rng));
+          ctx->_nextSpawnTime = spawner->_spawnInterval + jitter;
+        }
+
+        if (ctx && ctx->_spawnedSoFar >= spawnCount) {
+          _spawnerContexts.erase(spawner);
+        }
+      }
+    }
+  }
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::_updateSpawnerContexts() {
@@ -829,13 +958,66 @@ void Simulation::_decomposeEntities() {
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::_composeSystems() {
   ork::opq::assertOnQueue2(opq::updateSerialQueue());
+
+  // Primary scene systems
   auto scene     = _controller->_scenedata;
   auto& sysdatas = scene->getSystemDatas();
+  std::set<std::string> createdSystemTypes;
   for (auto it : sysdatas) {
     auto pscd = it.second;
     if (pscd != nullptr) {
       auto sys = pscd->createSystem(this);
-      addSystem(sys->systemTypeDynamic(), sys);
+      auto sysType = sys->systemTypeDynamic();
+      addSystem(sysType, sys);
+      createdSystemTypes.insert(it.first);
+    }
+  }
+
+  // Imported scene systems (filtered by selection, skip duplicates)
+  for (auto& [ns, importedScene] : _controller->_importedScenes) {
+    // Find the selection manifest for this namespace
+    sceneimportdata_ptr_t importData;
+    // Walk the namespace hierarchy to find the import data
+    // For top-level "env", look in primary scene
+    // For nested "env:props", look in parent imported scene
+    auto colonPos = ns.rfind(':');
+    if (colonPos == std::string::npos) {
+      // top-level import
+      auto& imports = _controller->_scenedata->getImports();
+      auto iit = imports.find(ns);
+      if (iit != imports.end()) importData = iit->second;
+    } else {
+      // nested import — parent ns is everything before last colon
+      auto parentNs = ns.substr(0, colonPos);
+      auto childNs = ns.substr(colonPos + 1);
+      auto parentScene = _controller->findImportedScene(parentNs);
+      if (parentScene) {
+        auto parentSceneMut = std::const_pointer_cast<SceneData>(parentScene);
+        auto& imports = parentSceneMut->getImports();
+        auto iit = imports.find(childNs);
+        if (iit != imports.end()) importData = iit->second;
+      }
+    }
+
+    auto& importedSysDatas = importedScene->getSystemDatas();
+    for (auto& sit : importedSysDatas) {
+      auto pscd = sit.second;
+      if (pscd == nullptr) continue;
+
+      // Skip if this system type was already created (local wins)
+      if (createdSystemTypes.count(sit.first)) continue;
+
+      // If we have selection data, check if this system is selected
+      if (importData && !importData->_selectedSystems.empty()) {
+        auto& sel = importData->_selectedSystems;
+        if (std::find(sel.begin(), sel.end(), sit.first) == sel.end())
+          continue;
+      }
+
+      auto sys = pscd->createSystem(this);
+      auto sysType = sys->systemTypeDynamic();
+      addSystem(sysType, sys);
+      createdSystemTypes.insert(sit.first);
     }
   }
 }

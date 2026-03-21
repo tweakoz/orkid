@@ -58,6 +58,7 @@ class EcsEditor(ComponentizedApplication):
     # Editor state
     self._mode = self.EDIT
     self._selected_key = ""
+    self._ref_mgr_selected_key = ""
     self._selected_object = None  # archetype, spawner, or system
     self._highlighted_spawner_name = None
 
@@ -216,12 +217,53 @@ class EcsEditor(ComponentizedApplication):
     # Pick debug
     self._setupPickDebug()
 
-    # Outliner
-    self.outliner = self.left_panel.makeChild(
-      uiclass=lev2.ui.Outliner, args=["outliner"])
-    self.left_panel.fill_widget = self.outliner
+    # Content tabs (Outliner + References)
+    self.content_tabs = self.left_panel.makeChild(
+      uiclass=lev2.ui.TabsWidget, args=["content_tabs", vec3(0.5, 0.5, 0.8)])
+    self.left_panel.fill_widget = self.content_tabs
+    self.content_tabs.sort_tabs = False  # preserve insertion order
+
+    # Outliner tab
+    self.outliner = self.content_tabs.makeChild(
+      uiclass=lev2.ui.Outliner, args=["Outliner"])
     self.outliner.bgcolor = vec4(0.12, 0.12, 0.14, 1)
     self.outliner.item_height = 22
+
+    # Reference Manager tab — VerticalPack with toolbar + outliner
+    self.ref_mgr_pack = self.content_tabs.makeChild(
+      uiclass=lev2.ui.VerticalPack, args=["References"])
+    self.ref_mgr_pack.margin = 2
+    self.ref_mgr_pack.item_height = 36
+
+    # Reference Manager toolbar
+    self.ref_toolbar = self.ref_mgr_pack.makeChild(
+      uiclass=lev2.ui.Toolbar, args=["ref_toolbar"])
+    self.ref_toolbar.bgcolor = vec4(0.18, 0.18, 0.18, 1)
+    self.ref_toolbar.button_hover_color = vec4(0.3, 0.3, 0.35, 1)
+    self.ref_toolbar.button_pressed_color = vec4(0.25, 0.45, 0.65, 1)
+    self.ref_toolbar.separator_color = vec4(0.35, 0.35, 0.35, 1)
+    self.ref_toolbar.icon_size = 20
+    self.ref_toolbar.button_padding = 4
+    self.ref_toolbar.item_spacing = 3
+    self.ref_toolbar.edge_padding = 4
+    self.ref_toolbar.show_tooltips = True
+    self.ref_toolbar.tooltip_delay_ms = 400
+
+    icon_sz = 20
+    self.btn_import = self.ref_toolbar.addButton(
+      "import", standard_icons.get('open', icon_sz, icon_sz), "Import Scene File")
+    self.btn_unimport = self.ref_toolbar.addButton(
+      "unimport", standard_icons.get('delete', icon_sz, icon_sz), "Un-import Selected")
+    self.ref_toolbar.addSeparator()
+    self.btn_reload_imports = self.ref_toolbar.addButton(
+      "reload", standard_icons.get('refresh', icon_sz, icon_sz), "Reload All Imports")
+
+    # Reference Manager outliner
+    self.ref_mgr_widget = self.ref_mgr_pack.makeChild(
+      uiclass=lev2.ui.Outliner, args=["ref_outliner"])
+    self.ref_mgr_pack.fill_widget = self.ref_mgr_widget
+    self.ref_mgr_widget.bgcolor = vec4(0.12, 0.14, 0.12, 1)
+    self.ref_mgr_widget.item_height = 22
 
     # Property sheet dock (split from left dock, bottom portion)
     propsheet_dock_item = lg.split(
@@ -480,6 +522,18 @@ class EcsEditor(ComponentizedApplication):
     self.outliner.model = self.outliner_model
     self.outliner.expandAll()
 
+    # Reference Manager model + callbacks
+    from ork.editor.ecs_reference_manager import EcsReferenceManagerModel
+    self.ref_mgr_model = EcsReferenceManagerModel(self)
+    self.ref_mgr_widget.model = self.ref_mgr_model
+    self.ref_mgr_widget.onSelect(lambda key: self._onRefMgrSelect(key))
+    self.ref_mgr_widget.expandAll()
+
+    # Reference Manager toolbar callbacks
+    self.btn_import.onPressed(self._onImportScene)
+    self.btn_unimport.onPressed(self._onUnimportScene)
+    self.btn_reload_imports.onPressed(self._onReloadImports)
+
     # Wire outliner callbacks
     self.outliner.onSelect(self._onOutlinerSelect)
     self.outliner.onRename(self._onOutlinerRename)
@@ -586,6 +640,110 @@ class EcsEditor(ComponentizedApplication):
     self.runtime.destroy_simulation()
     if hasattr(self, 'sgv') and self.sgv:
       self.sgv.onPreRender = None
+
+  ##############################################################################
+  # Reference Manager callbacks
+  ##############################################################################
+
+  def _onRefMgrSelect(self, key):
+    """Handle selection in the Reference Manager.
+       - Namespace level: show SceneImportData in property sheet.
+       - Importable items (depth 3 with checkbox): toggle selection."""
+    self._ref_mgr_selected_key = key
+    parts = key.split("/") if key else []
+    if not parts:
+      return
+
+    ns = parts[0]
+    imports = self.scene_data.imports
+
+    # Namespace level — show import data in property sheet
+    if ns in imports and len(parts) == 1:
+      import_data = imports[ns]
+      self.refl_model.object = import_data
+      self.propsheet.rebuild()
+      return
+
+    # Importable item with checkbox — single-click toggles
+    if len(parts) == 3:
+      self.ref_mgr_model.toggleSelection(key)
+
+  def _onImportScene(self):
+    """Open file browser to import a scene file."""
+    if self._mode != self.EDIT:
+      return
+    from ork.ui.filesystem_browser import FilesystemBrowser
+    home = os.path.expanduser("~")
+    popup = self.ezapp.createSecondaryWindow(
+      width=800, height=600, x=200, y=150,
+      title="Import ECS Scene", decorated=True, resizable=True, floating=True)
+    uic = popup.ui_context
+    root = lev2.ui.LayoutGroup.create("popup_lg")
+    root.setRect(0, 0, popup.width, popup.height)
+    uic.top = root
+    root.margin = 4
+
+    browser_item = root.makeChild(
+      uiclass=FilesystemBrowser,
+      args=["browser", home, ".json", vec3(0.1, 0.1, 0.1), "load"],
+      fill=True)
+    browser = browser_item.widget.uservars.filesystem_browser
+    browser.onActivate = lambda p: (self._doImportScene(p), popup.requestClose())
+
+  def _doImportScene(self, path):
+    """Actually add a SceneImportData for the given file path."""
+    import os
+    basename = os.path.splitext(os.path.basename(path))[0]
+    # Use basename as namespace, ensure unique
+    ns = basename
+    imports = self.scene_data.imports
+    counter = 1
+    while ns in imports:
+      ns = f"{basename}{counter}"
+      counter += 1
+
+    import_data = ecs.SceneImportData()
+    import_data.namespace_ = ns
+    import_data.sourcePath = path
+    self.scene_data.addImport(import_data)
+
+    # Reload imports in controller if active
+    self._reloadImports()
+
+    self.ref_mgr_model.notifyModelReset()
+    self.ref_mgr_widget.expandAll()
+    self.outliner_model.notifyModelReset()
+    print(f"Imported scene: {path} as namespace '{ns}'")
+
+  def _onUnimportScene(self):
+    """Remove the currently selected import namespace."""
+    key = getattr(self, '_ref_mgr_selected_key', None)
+    if not key:
+      return
+    ns = key.split("/")[0]
+    if ns.startswith("("):
+      return
+    imports = self.scene_data.imports
+    if ns in imports:
+      self.scene_data.removeImport(ns)
+      self._reloadImports()
+      self.ref_mgr_model.notifyModelReset()
+      self.outliner_model.notifyModelReset()
+      print(f"Un-imported namespace '{ns}'")
+
+  def _onReloadImports(self):
+    """Re-read all imported scene files from disk."""
+    self._reloadImports()
+    self.ref_mgr_model.notifyModelReset()
+    self.ref_mgr_widget.expandAll()
+    self.outliner_model.notifyModelReset()
+    print("Reloaded all imports")
+
+  def _reloadImports(self):
+    """Re-run Controller.bindScene to reload imports."""
+    ctrl = self.runtime.controller
+    if ctrl:
+      ctrl.bindScene(self.scene_data)
 
   ##############################################################################
   # Outliner callbacks

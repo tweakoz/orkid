@@ -7,6 +7,7 @@
 
 #include "pyext.h"
 #include <ork/ecs/scene.inl>
+#include <ork/ecs/scene_import_data.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -186,8 +187,73 @@ void pyinit_scene(py::module& module_ecs) {
       })
       .def("generateSceneGraphParams", [](scenedata_ptr_t scenedata) -> varmap::varmap_ptr_t {
         return scenedata->generateSceneGraphParams();
+      })
+      .def("addImport", [](scenedata_ptr_t scenedata, sceneimportdata_ptr_t imp) {
+        scenedata->addImport(imp);
+      })
+      .def("removeImport", [](scenedata_ptr_t scenedata, std::string ns) {
+        scenedata->removeImport(ns);
+      })
+      .def_property_readonly("imports", [](scenedata_ptr_t scenedata) -> py::dict {
+        py::dict result;
+        for (auto& item : scenedata->getImports()) {
+          result[py::cast(item.first)] = item.second;
+        }
+        return result;
       });
 
+  /////////////////////////////////////////////////////////////////////////////////
+  auto sid_type = py::class_<SceneImportData, Object, sceneimportdata_ptr_t>(module_ecs, "SceneImportData")
+      .def(py::init<>())
+      .def(
+          "__repr__",
+          [](const sceneimportdata_ptr_t& sid) -> std::string {
+            fxstring<256> fxs;
+            fxs.format("ecs::SceneImportData(ns=%s)", sid->_namespace.c_str());
+            return fxs.c_str();
+          })
+      .def_property(
+          "sourcePath",
+          [](sceneimportdata_ptr_t sid) -> std::string { return sid->_sourcePath.c_str(); },
+          [](sceneimportdata_ptr_t sid, std::string path) { sid->_sourcePath = file::Path(path.c_str()); })
+      .def_property(
+          "namespace_",
+          [](sceneimportdata_ptr_t sid) -> std::string { return sid->_namespace; },
+          [](sceneimportdata_ptr_t sid, std::string ns) { sid->_namespace = ns; })
+      .def_property(
+          "selectedArchetypes",
+          [](sceneimportdata_ptr_t sid) -> py::list {
+            py::list result;
+            for (auto& s : sid->_selectedArchetypes) result.append(s);
+            return result;
+          },
+          [](sceneimportdata_ptr_t sid, py::list lst) {
+            sid->_selectedArchetypes.clear();
+            for (auto& item : lst) sid->_selectedArchetypes.push_back(item.cast<std::string>());
+          })
+      .def_property(
+          "selectedSpawners",
+          [](sceneimportdata_ptr_t sid) -> py::list {
+            py::list result;
+            for (auto& s : sid->_selectedSpawners) result.append(s);
+            return result;
+          },
+          [](sceneimportdata_ptr_t sid, py::list lst) {
+            sid->_selectedSpawners.clear();
+            for (auto& item : lst) sid->_selectedSpawners.push_back(item.cast<std::string>());
+          })
+      .def_property(
+          "selectedSystems",
+          [](sceneimportdata_ptr_t sid) -> py::list {
+            py::list result;
+            for (auto& s : sid->_selectedSystems) result.append(s);
+            return result;
+          },
+          [](sceneimportdata_ptr_t sid, py::list lst) {
+            sid->_selectedSystems.clear();
+            for (auto& item : lst) sid->_selectedSystems.push_back(item.cast<std::string>());
+          });
+  type_codec->registerStdCodec<sceneimportdata_ptr_t>(sid_type);
   /////////////////////////////////////////////////////////////////////////////////
 
   /*pyinit_gfx_material(module_lev2);
