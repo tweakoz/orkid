@@ -734,7 +734,7 @@ void Simulation::_initializeEntities() {
       if (auto spawner = std::dynamic_pointer_cast<SpawnData>(sobj)) {
 
         // Check if this spawner is selected
-        if (importData && !importData->_selectedSpawners.empty()) {
+        if (importData) {
           auto spawnerName = std::string(spawner->GetName().c_str());
           auto& sel = importData->_selectedSpawners;
           if (std::find(sel.begin(), sel.end(), spawnerName) == sel.end())
@@ -1008,7 +1008,7 @@ void Simulation::_composeSystems() {
       if (createdSystemTypes.count(sit.first)) continue;
 
       // If we have selection data, check if this system is selected
-      if (importData && !importData->_selectedSystems.empty()) {
+      if (importData) {
         auto& sel = importData->_selectedSystems;
         if (std::find(sel.begin(), sel.end(), sit.first) == sel.end())
           continue;

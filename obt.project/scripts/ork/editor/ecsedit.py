@@ -625,13 +625,11 @@ class EcsEditor(ComponentizedApplication):
     self.runtime.stage_simulation()
     self.runtime.bind_to_viewport(self.sgv)
 
-    # Re-create curve viz if we had one active
-    if self._curve_for_viz is not None:
-      curve = self._curve_for_viz
-      self._curve_path_data = None
-      self._curve_line_node = None
-      self._curve_cp_node = None
-      self._showCurveViz(curve)
+    # Clear stale curve viz refs — will be re-shown on next selection
+    self._curve_path_data = None
+    self._curve_line_node = None
+    self._curve_cp_node = None
+    self._curve_for_viz = None
 
   def _requestRebuild(self):
     """Request a deferred edit-simulation rebuild (consumed in _onUpdate)."""
@@ -899,9 +897,9 @@ class EcsEditor(ComponentizedApplication):
         self.refl_model.addKeyOverride(
             "Archetype",
             lev2.ui.PropertyType.String,
-            lambda: sp.archetype.name if sp.archetype else "(none)",
+            lambda: self._getSpawnerArchetypeDisplay(sp),
             lambda val: self._setSpawnerArchetype(sp, val),
-            lambda: [a.name for a in self.scene_data.archetypes])
+            lambda: self._enumerateAllArchetypes())
         # Enable manipulator on spawner's transform
         xform = sp.transform
         self.manip_interface = lev2.DecompTransformManipulator(xform)
@@ -953,12 +951,82 @@ class EcsEditor(ComponentizedApplication):
         set_drawable_class,
         lambda: ["(none)"] + _enumerateDrawableDataTypes())
 
+  def _getSpawnerArchetypeDisplay(self, sp):
+    """Return display name for a spawner's current archetype.
+    Local archetypes show plain name, ReferenceArchetypes show ns/name."""
+    if not sp.archetype:
+      return "(none)"
+    arch = sp.archetype
+    # Check if it's a ReferenceArchetype
+    if isinstance(arch, ecs.ReferenceArchetype):
+      ns = arch.importNamespace
+      return f"{ns.replace(':', '/')}/{arch.archetypeName}"
+    return arch.name
+
+  def _enumerateAllArchetypes(self):
+    """Return list of all archetype names for dropdown.
+    Local archetypes are plain names, imported are ns/name (hierarchical).
+    ReferenceArchetypes are shown in ns/name form, not their raw name."""
+    choices = []
+    for a in self.scene_data.archetypes:
+      if isinstance(a, ecs.ReferenceArchetype):
+        ns = a.importNamespace
+        choices.append(f"{ns.replace(':', '/')}/{a.archetypeName}")
+      else:
+        choices.append(a.name)
+    # Add imported archetypes that don't already have a ReferenceArchetype
+    existing_refs = set()
+    for a in self.scene_data.archetypes:
+      if isinstance(a, ecs.ReferenceArchetype):
+        existing_refs.add(f"{a.importNamespace}:{a.archetypeName}")
+    om = self.outliner_model
+    for ns_key in sorted(self.scene_data.imports.keys()):
+      selected = om._getSelectedNames(ns_key, "Archetypes")
+      imported_scene = om._getImportedScene(ns_key)
+      if imported_scene:
+        ns_display = ns_key.replace(":", "/")
+        for a in imported_scene.archetypes:
+          if a.name in selected:
+            ref_id = f"{ns_key}:{a.name}"
+            if ref_id not in existing_refs:
+              choices.append(f"{ns_display}/{a.name}")
+    return choices
+
   def _setSpawnerArchetype(self, sp, name):
+    """Set spawner archetype by name. Handles both local and ns/imported names.
+    For imported archetypes, creates a ReferenceArchetype proxy that serializes
+    as namespace+name and resolves lazily at runtime."""
+    # Try local first (includes existing ReferenceArchetypes)
     for arch in self.scene_data.archetypes:
       if arch.name == name:
         sp.archetype = arch
         self._requestRebuild()
         return
+    # Try imported: name is like "ns/subns/ArchName"
+    if "/" in name:
+      parts = name.rsplit("/", 1)
+      ns_key = parts[0].replace("/", ":")
+      arch_name = parts[1]
+      imported_scene = self.outliner_model._getImportedScene(ns_key)
+      if imported_scene:
+        arch = self.outliner_model._findInScene(imported_scene, "archetypes", arch_name)
+        if arch:
+          # Check if a ReferenceArchetype for this already exists
+          ref_name = f"{ns_key}:{arch_name}"
+          existing = self.outliner_model._findArchetype(ref_name)
+          if existing:
+            sp.archetype = existing
+          else:
+            # Create a ReferenceArchetype proxy in the local scene
+            ref_arch = ecs.ReferenceArchetype()
+            ref_arch.importNamespace = ns_key
+            ref_arch.archetypeName = arch_name
+            ref_arch.name = ref_name
+            self.scene_data.addSceneObject(ref_arch)
+            sp.archetype = ref_arch
+          self._requestRebuild()
+          self.outliner_model.notifyModelReset()
+          return
 
   def _onOutlinerRename(self, old_key, new_name):
     self.outliner_model.renameItem(old_key, new_name)

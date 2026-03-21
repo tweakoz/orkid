@@ -51,7 +51,7 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
   auto lg_type_t = py::class_<LightingGroup, lightinggroup_ptr_t>(module_lev2, "LightingGroup");
   type_codec->registerStdCodec<lightinggroup_ptr_t>(lg_type_t);
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<LightData, lightdata_ptr_t>(module_lev2, "LightData")
+  py::class_<LightData, DrawableData, lightdata_ptr_t>(module_lev2, "LightData")
       .def_property(
           "color",                                 //
           [](lightdata_ptr_t lightdata) -> fvec3 { //

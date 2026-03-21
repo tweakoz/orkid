@@ -160,30 +160,40 @@ PostFxNodeUser::~PostFxNodeUser() {
 ///////////////////////////////////////////////////////////////////////////////
 void PostFxNodeUser::doGpuInit(lev2::Context* pTARG, int iW, int iH) // virtual
 {
-  _impl.get<std::shared_ptr<posteffect_user::IMPL>>()->init(pTARG);
+  if (auto impl = _impl.tryAsShared<posteffect_user::IMPL>()) {
+    impl.value()->init(pTARG);
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void PostFxNodeUser::DoRender(CompositorDrawData& drawdata) // virtual
 {
-  _impl.get<std::shared_ptr<posteffect_user::IMPL>>()->_render(drawdata);
+  if (auto impl = _impl.tryAsShared<posteffect_user::IMPL>()) {
+    impl.value()->_render(drawdata);
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 rtbuffer_ptr_t PostFxNodeUser::GetOutput() const {
-  auto impl = _impl.get<std::shared_ptr<posteffect_user::IMPL>>();
-  // Return read buffer (previous frame for feedback, safe to sample from)
-  return (impl->_rtg_out[impl->_read_index]) ? impl->_rtg_out[impl->_read_index]->buffer(0) : nullptr;
+  if (auto impl = _impl.tryAsShared<posteffect_user::IMPL>()) {
+    auto& rtg = impl.value()->_rtg_out[impl.value()->_read_index];
+    return rtg ? rtg->buffer(0) : nullptr;
+  }
+  return nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
 rtgroup_ptr_t PostFxNodeUser::GetOutputGroup() const {
-  auto impl = _impl.get<std::shared_ptr<posteffect_user::IMPL>>();
-  // Return read buffer (previous frame for feedback, safe to sample from)
-  return (impl->_rtg_out[impl->_read_index]) ? impl->_rtg_out[impl->_read_index] : nullptr;
+  if (auto impl = _impl.tryAsShared<posteffect_user::IMPL>()) {
+    auto& rtg = impl.value()->_rtg_out[impl.value()->_read_index];
+    return rtg ? rtg : nullptr;
+  }
+  return nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
 texture_ptr_t PostFxNodeUser::getCurrentReadTexture() const {
-  auto impl = _impl.get<std::shared_ptr<posteffect_user::IMPL>>();
-  if (impl->_rtg_out[impl->_read_index]) {
-    return impl->_rtg_out[impl->_read_index]->buffer(0)->_texture;
+  if (auto impl = _impl.tryAsShared<posteffect_user::IMPL>()) {
+    auto& rtg = impl.value()->_rtg_out[impl.value()->_read_index];
+    if (rtg) {
+      return rtg->buffer(0)->_texture;
+    }
   }
   return nullptr;
 }
