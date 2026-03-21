@@ -53,7 +53,9 @@ void Outliner::_subscribeToModel() {
     };
     _model->_onModelReset = [this]() {
       _needs_rebuild = true;
-      _expanded_keys.clear();
+      // Preserve _expanded_keys so collapse state survives model resets
+      // (e.g. checkbox toggles). Only explicit user actions (collapse, delete)
+      // should change expansion state.
       _selected_keys.clear();
     };
   }
