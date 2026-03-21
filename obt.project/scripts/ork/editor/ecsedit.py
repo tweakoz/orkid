@@ -231,7 +231,7 @@ class EcsEditor(ComponentizedApplication):
 
     # Reference Manager tab — VerticalPack with toolbar + outliner
     self.ref_mgr_pack = self.content_tabs.makeChild(
-      uiclass=lev2.ui.VerticalPack, args=["References"])
+      uiclass=lev2.ui.VerticalPack, args=["Imports"])
     self.ref_mgr_pack.margin = 2
     self.ref_mgr_pack.item_height = 36
 
