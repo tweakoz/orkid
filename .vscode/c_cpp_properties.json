@@ -31,7 +31,8 @@
                 "ENABLE_OPENVR",
                 "ENABLE_VULKAN",
                 "ENABLE_CORE_AUDIO",
-                "RENDERDOC_API_ENABLED"
+                "RENDERDOC_API_ENABLED",
+                "ENABLE_GLFW"
             ],
             "compilerPath": "/usr/bin/clang",
             "cStandard": "c17",
