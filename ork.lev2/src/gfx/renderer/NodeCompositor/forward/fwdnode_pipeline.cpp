@@ -166,7 +166,8 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
     ///////////////////////////////////////////////////////////////////////////
 
     auto modcolor = context->RefModColor();
-    FXI->bindParamVect4(mtl->_parModColor, modcolor * mtl->_baseColor);
+    auto final_modcolor = modcolor * mtl->_baseColor;
+    FXI->bindParamVect4(mtl->_parModColor, final_modcolor);
   };
   return L;
 }
@@ -203,10 +204,14 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
 
     mut->_rasterstate->setCullTest(culltest);
     mut->_rasterstate->setDepthTest(EDepthTest::LEQUALS);
-    mut->_rasterstate->setWriteMaskZ(true);
+    if (this->_alphaMode == 2) { // BLEND
+      mut->_rasterstate->setBlendingMacro(BlendingMacro::ALPHA);
+      mut->_rasterstate->setWriteMaskZ(false); // transparent objects don't write depth
+    } else {
+      mut->_rasterstate->setWriteMaskZ(true);
+    }
     mut->_rasterstate->setWriteMaskRGB(true);
     mut->_rasterstate->setWriteMaskA(true);
-    //RSI->BindRasterState(this->_rasterstate);
   };
   ////////////////////////////////////////////////
   // ssao lambda

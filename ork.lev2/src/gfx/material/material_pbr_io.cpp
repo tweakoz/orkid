@@ -120,7 +120,9 @@ material_ptr_t PBRMaterial::_xgmReader( chunkfile::XgmMaterialReaderContext& ctx
     ctx._inputStream->GetItem<float>(mtl->_metallicFactor);
     ctx._inputStream->GetItem<float>(mtl->_roughnessFactor);
     ctx._inputStream->GetItem<fvec4>(mtl->_baseColor);
-    // logchan_pbr_io->log("read.xgm: basecolor<%g %g %g>", mtl->_baseColor.x,mtl->_baseColor.y,mtl->_baseColor.z);
+    ctx._inputStream->GetItem<float>(mtl->_alphaCutoff);
+    ctx._inputStream->GetItem<int>(mtl->_alphaMode);
+    ctx._inputStream->GetItem<bool>(mtl->_doubleSided);
     size_t num_lightmaps = 0;
     ctx._inputStream->GetItem<size_t>(num_lightmaps);
     mtl->_modifiers = std::make_shared<XgmModelAssetMaterialModifiers>();
@@ -183,7 +185,9 @@ void PBRMaterial::_xgmWriter( chunkfile::XgmMaterialWriterContext& ctx ) {
     ctx._outputStream->AddItem<float>(pbrmtl->_metallicFactor);
     ctx._outputStream->AddItem<float>(pbrmtl->_roughnessFactor);
     ctx._outputStream->AddItem<fvec4>(pbrmtl->_baseColor);
-
+    ctx._outputStream->AddItem<float>(pbrmtl->_alphaCutoff);
+    ctx._outputStream->AddItem<int>(pbrmtl->_alphaMode);
+    ctx._outputStream->AddItem<bool>(pbrmtl->_doubleSided);
     //////////////////////////////////
     // save lightmaps
     //////////////////////////////////

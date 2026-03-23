@@ -84,17 +84,13 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
       return;
     }
 
-    if(0)printf("XIR v2 array format: diffuse size: %zu, %d roughness levels\n", 
-           xir_data_result._diffuse_data->length(),
-           xir_data_result._num_roughness_levels);
-        
     ////////////////////////////////////
     // Parse diffuse data
     ////////////////////////////////////
 
     auto diffuse_cmipchain = std::make_shared<CompressedImageMipChain>();
     diffuse_cmipchain->readXTX(xir_data_result._diffuse_data);
-    
+
     auto diffuse_tex = std::make_shared<Texture>();
     diffuse_tex->_debugName = base_name + ".ibldiff";
     
@@ -157,7 +153,7 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
         uint32_t usage_id = CrcString(FormatString("roughness_%d", i).c_str()).hashed();
         TID._slices[i] = TextureArrayInitSubItem{usage_id, specular_images[i]};
       }
-      txi->initTextureArray2DFromData(specular_texarray.get(), TID);    
+      txi->initTextureArray2DFromData(specular_texarray.get(), TID);
       irrmaps->_filtenvSpecularMapArray = specular_texarray;  // Use array instead of single texture
     };
 

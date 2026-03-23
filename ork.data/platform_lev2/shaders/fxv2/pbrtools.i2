@@ -433,8 +433,11 @@ fragment_shader ps_forward_test //
     : lib_brdf                  //
     : lib_def                   //
     : lib_fwd
-    : std_forward_all {   
-  out_color = vec4(forward_lighting_mono(frg_clr.xyz*ModColor.xyz), 1);
+    : std_forward_all {
+  vec4 lit = forward_lighting_mono_alpha(frg_clr.xyz*ModColor.xyz);
+  if (AlphaCutoff > 0.0 && lit.a < AlphaCutoff)
+    discard;
+  out_color = vec4(lit.rgb, 1.0);
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_forward_instanced
@@ -475,7 +478,10 @@ fragment_shader ps_forward_test_fragcolor //
     : lib_def                   //
     : lib_fwd
     : std_forward_all {                 //
-  out_color = vec4(forward_lighting_mono(frg_clr.xyz*ModColor.xyz), 1);
+  vec4 lit = forward_lighting_mono_alpha(frg_clr.xyz*ModColor.xyz);
+  if (AlphaCutoff > 0.0 && lit.a < AlphaCutoff)
+    discard;
+  out_color = lit;
 }
 
 ///////////////////////////////////////////////////////////////
