@@ -35,7 +35,7 @@ struct MoltenVKConfigurator {
 #endif
 
 namespace ork::lev2::vulkan {
-static logchannel_ptr_t logchan_vkimpl = logger()->configureChannel("VKIMPL", fvec3(1,1,0),false);
+static logchannel_ptr_t logchan_vkimpl = logger()->configureChannel("VKIMPL", fvec3(1,1,0),true);
 static logchannel_ptr_t logchan_vkierr = logger()->configureChannel("VKINSTERR", fvec3(1,0,0),true);
 
 vkinstance_ptr_t _GVI = nullptr;
@@ -157,8 +157,15 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 VulkanInstance::VulkanInstance() {
+  logchan_vkimpl->log("Constructing Vulkan Instance");
 
-// printf( "VulkanInstance::VulkanInstance() HERE!!!\n");
+  char cwd[PATH_MAX];
+  getcwd(cwd, sizeof(cwd));
+  logchan_vkimpl->log("Working dir: %s", cwd);
+  logchan_vkimpl->log("VK_ICD_FILENAMES: %s", getenv("VK_ICD_FILENAMES"));
+  logchan_vkimpl->log("VK_LAYER_PATH: %s", getenv("VK_LAYER_PATH"));
+  logchan_vkimpl->log("DYLD_LIBRARY_PATH: %s", getenv("DYLD_LIBRARY_PATH"));
+  logchan_vkimpl->log("MVK_CONFIG_LOG_LEVEL: %s", getenv("MVK_CONFIG_LOG_LEVEL"));
 
   // Check if we're using DRM mode (direct rendering without GLFW)
   bool use_drm = (lev2::_ginitdata && lev2::_ginitdata->_use_drm);
@@ -259,16 +266,33 @@ VulkanInstance::VulkanInstance() {
   }
   // DRM mode: no surface extensions needed (direct display)
 
+  // Enumerate available instance extensions and validate they are vailable
+  uint32_t available_extension_count = 0;
+  vkEnumerateInstanceExtensionProperties(nullptr, &available_extension_count, nullptr);
+  std::vector<VkExtensionProperties> availailable_extensions(available_extension_count);
+  vkEnumerateInstanceExtensionProperties(nullptr, &available_extension_count, availailable_extensions.data());
+
+  for (auto req_it = _instance_extensions.begin(); req_it != _instance_extensions.end(); ) {
+    bool found = false;
+
+    for(auto& avail_it : availailable_extensions){
+      if(strcmp(avail_it.extensionName, *req_it) == 0){
+        found = true;
+        break;
+      } 
+    }
+
+    if (found) {
+      logchan_vkimpl->log("Requested Extension Available: %s", *req_it);
+      ++req_it;
+    } else {
+      logchan_vkimpl->log("Requested Extension Unavailable: %s", *req_it);
+       req_it = _instance_extensions.erase(req_it);
+    }
+  }
+
   _instancedata.enabledExtensionCount   = _instance_extensions.size();
   _instancedata.ppEnabledExtensionNames = _instance_extensions.data();
-
-  char cwd[PATH_MAX];
-  getcwd(cwd, sizeof(cwd));
-  logchan_vkimpl->log("Working dir: %s", cwd);
-  logchan_vkimpl->log("VK_ICD_FILENAMES: %s", getenv("VK_ICD_FILENAMES"));
-  logchan_vkimpl->log("VK_LAYER_PATH: %s", getenv("VK_LAYER_PATH"));
-  logchan_vkimpl->log("DYLD_LIBRARY_PATH: %s", getenv("DYLD_LIBRARY_PATH"));
-  logchan_vkimpl->log("MVK_CONFIG_LOG_LEVEL: %s", getenv("MVK_CONFIG_LOG_LEVEL"));
 
 #if defined(__APPLE__)
   // Disable MoltenVK argument buffers - they require additional type metadata
@@ -277,8 +301,7 @@ VulkanInstance::VulkanInstance() {
   logchan_vkimpl->log("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS: %s", getenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS"));
 #endif
 
-  VkResult res = vkCreateInstance(&_instancedata, nullptr, &_instance);
-  OrkAssert(res == 0);
+  OrkVkAssert(vkCreateInstance(&_instancedata, nullptr, &_instance));
 
   if(_debugEnabled) {
     _fetchInstanceProcAddr(_vkCreateDebugUtilsMessengerEXT, "vkCreateDebugUtilsMessengerEXT");
@@ -308,7 +331,7 @@ VulkanInstance::VulkanInstance() {
   // check device groups (for later multidevice support)
   /////////////////////////////////////////////////////////////////////////////
 
-  res = vkEnumeratePhysicalDeviceGroups(_instance, &_numgroups, nullptr);
+  OrkVkAssert(vkEnumeratePhysicalDeviceGroups(_instance, &_numgroups, nullptr));
   _phygroups.resize(_numgroups);
   // Initialize sType for each group properties structure
   for (auto& group : _phygroups) {
@@ -367,8 +390,7 @@ VulkanInstance::VulkanInstance() {
 
   /////////////////////////////////////////////////////////////////////////////
 
-  res = vkEnumeratePhysicalDevices(_instance, &_numgpus, nullptr);
-  OrkAssert(_device_infos.size() == _numgpus);
+  OrkVkAssert(vkEnumeratePhysicalDevices(_instance, &_numgpus, nullptr));
 
   // std::vector<VkPhysicalDevice> phydevs(_numgpus);
   // vkEnumeratePhysicalDevices(_instance, &_numgpus, phydevs.data());

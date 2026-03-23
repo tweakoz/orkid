@@ -856,7 +856,7 @@ void error_callback(int error, const char* msg) {
 ///////////////////////////////////////////////////////////////////////////////
 
 GLFWwindow* CtxGLFW::_apiInitVK() {
-  OrkAssert(glfwVulkanSupported());
+  OrkAssertI(glfwVulkanSupported(), "glfwVulkanSupported == false! Might need to set VK_ICD_FILENAMES env var on linux!");
   // OrkAssert(vulkan::_GVI);
   // OrkAssert(vulkan::_GVI->_instance);
   auto ctx_vars = std::make_shared<varmap::VarMap>();
