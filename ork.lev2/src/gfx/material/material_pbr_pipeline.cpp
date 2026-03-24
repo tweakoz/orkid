@@ -85,9 +85,12 @@ FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
     FXI->bindParamFloat(mtl->_paramSkyboxLevel, pbrcommon->_skyboxLevel);
     //printf("pbrcommon<%s> spec_tex<%p>\n", pbrcommon->_name.c_str(), (void*) spec_tex.get());
     FXI->bindParamTextureArray(mtl->_parMapSpecularEnv, spec_tex.get());
-    FXI->bindParamTexture(mtl->_parMapDiffuseEnv, pbrcommon->envDiffuseTexture().get());
+    auto the_diff_tex = pbrcommon->envDiffuseTexture();
+    FXI->bindParamTexture(mtl->_parMapDiffuseEnv, the_diff_tex.get());
 
-    FXI->bindParamFloat(mtl->_parMapSpecularRufLevels, PBRMaterial::roughnessLevels);
+    float actual_roughness_levels = float(pbrcommon->_radiance_maps->_numRoughnessLevels);
+    if (actual_roughness_levels < 1.0f) actual_roughness_levels = PBRMaterial::roughnessLevels;
+    FXI->bindParamFloat(mtl->_parMapSpecularRufLevels, actual_roughness_levels);
 
     switch (pbrcommon->_brdftype) {
       case "BLINN"_crcu:
@@ -293,6 +296,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipeline(const FxPipelinePermutation& per
     if (require_pbr and require_pbr.value()) {
       pipeline->bindParam(mtl->_parMetallicFactor, mtl->_metallicFactor);
       pipeline->bindParam(mtl->_parRoughnessFactor, mtl->_roughnessFactor);
+      pipeline->bindParam(mtl->_parAlphaCutoff, mtl->_alphaCutoff);
     }
 
     pipeline->_parInstanceBlock = mtl->_parInstanceBlock;

@@ -39,7 +39,7 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
   auto src_format  = chain->_format;
   int iwidth       = chain->_width;
   int iheight      = chain->_height;
-  
+
   logchan_txi_loadreq->log("  Base dimensions: %dx%d", iwidth, iheight);
   logchan_txi_loadreq->log("  Number of mip levels: %zu", num_mips);
   logchan_txi_loadreq->log("  Source format: %s", EBufferFormatToName(src_format).c_str());
@@ -191,8 +191,47 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
           logchan_txi_loadreq->log("    Converted mip[%d] RGB8->RGBA8: %zu pixels, %zu->%zu bytes",
                                    ilevel, pixel_count, level_length, staging_length);
         }
+      } else if (src_format == EBufferFormat::RGB32F && dst_format == EBufferFormat::RGBA32F) {
+        // Convert RGB32F to RGBA32F
+        size_t pixel_count = level_width * level_height;
+        if (pixel_count > 0) {
+          converted_data.resize(pixel_count * 16); // 4 floats * 4 bytes
+          const float* src = reinterpret_cast<const float*>(level_data);
+          float* dst = reinterpret_cast<float*>(converted_data.data());
+          for (size_t i = 0; i < pixel_count; i++) {
+            dst[i * 4 + 0] = src[i * 3 + 0]; // R
+            dst[i * 4 + 1] = src[i * 3 + 1]; // G
+            dst[i * 4 + 2] = src[i * 3 + 2]; // B
+            dst[i * 4 + 3] = 1.0f;            // A
+          }
+          staging_length = converted_data.size();
+          staging_data = converted_data.data();
+          logchan_txi_loadreq->log("    Converted mip[%d] RGB32F->RGBA32F: %zu pixels, %zu->%zu bytes",
+                                   ilevel, pixel_count, level_length, staging_length);
+        }
+      } else if (src_format == EBufferFormat::RGB16 && dst_format == EBufferFormat::RGBA16) {
+        // Convert RGB16 to RGBA16
+        size_t pixel_count = level_width * level_height;
+        if (pixel_count > 0) {
+          converted_data.resize(pixel_count * 8); // 4 uint16 * 2 bytes
+          const uint16_t* src = reinterpret_cast<const uint16_t*>(level_data);
+          uint16_t* dst = reinterpret_cast<uint16_t*>(converted_data.data());
+          for (size_t i = 0; i < pixel_count; i++) {
+            dst[i * 4 + 0] = src[i * 3 + 0]; // R
+            dst[i * 4 + 1] = src[i * 3 + 1]; // G
+            dst[i * 4 + 2] = src[i * 3 + 2]; // B
+            dst[i * 4 + 3] = 0xFFFF;          // A
+          }
+          staging_length = converted_data.size();
+          staging_data = converted_data.data();
+          logchan_txi_loadreq->log("    Converted mip[%d] RGB16->RGBA16: %zu pixels, %zu->%zu bytes",
+                                   ilevel, pixel_count, level_length, staging_length);
+        }
+      } else {
+        logchan_txi_loadreq->log("    WARNING: Unhandled format conversion %s->%s for mip[%d]!",
+                                 EBufferFormatToName(src_format).c_str(),
+                                 EBufferFormatToName(dst_format).c_str(), ilevel);
       }
-      // Add other conversions as needed
     }
     
     // Ensure we have valid data before creating staging buffer

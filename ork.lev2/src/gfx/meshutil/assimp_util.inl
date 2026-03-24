@@ -102,6 +102,9 @@ struct GltfMaterial {
   std::string _emissivemap;
   float _metallicFactor  = 0.0f;
   float _roughnessFactor = 1.0f;
+  float _alphaCutoff     = 0.0f;
+  bool _doubleSided      = false;
+  int _alphaMode         = 0; // 0=OPAQUE, 1=MASK, 2=BLEND
   fvec4 _baseColor       = fvec4(1, 1, 1, 1);
   lev2::xgmmodelassetmaterialmodifiers_ptr_t _modifiers;
 };

@@ -77,7 +77,8 @@ void Image::resizedOf(const Image& inp, int w, int h) {
       break;
     }
     case BGR8:
-    case RGB8:{
+    case RGB8:
+    case RGBA8:{
       // bicubic interpolation
       for (size_t y = 0; y<h; y++) {
         for (size_t x = 0; x<w; x++) {
@@ -106,10 +107,6 @@ void Image::resizedOf(const Image& inp, int w, int h) {
           }
         }
       }
-      break;
-    }
-    case RGBA8:{
-      OrkAssert(false);
       break;
     }
     case RGB16:{

@@ -288,6 +288,28 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
         outmtl->_roughnessFactor = f;
         logchan_meshutilassimp->log("material: has_pbr_RoughnessFactor<%g>", f);
       }
+      // GLTF alpha mode: OPAQUE(0), MASK(1), BLEND(2)
+      if (AI_SUCCESS == aiGetMaterialString(material, AI_MATKEY_GLTF_ALPHAMODE, &string)) {
+        std::string mode = string.data;
+        if (mode == "MASK") {
+          outmtl->_alphaMode = 1;
+          outmtl->_alphaCutoff = 0.5f; // GLTF default for MASK
+        } else if (mode == "BLEND") {
+          outmtl->_alphaMode = 2;
+        }
+        logchan_meshutilassimp->log("material: alphaMode<%s>", mode.c_str());
+      }
+      if (AI_SUCCESS == aiGetMaterialFloat(material, AI_MATKEY_GLTF_ALPHACUTOFF, &f)) {
+        outmtl->_alphaCutoff = f;
+        logchan_meshutilassimp->log("material: alphaCutoff<%g>", f);
+      }
+      {
+        int twosided = 0;
+        if (AI_SUCCESS == aiGetMaterialInteger(material, AI_MATKEY_TWOSIDED, &twosided)) {
+          outmtl->_doubleSided = (twosided != 0);
+          logchan_meshutilassimp->log("material: doubleSided<%d>", twosided);
+        }
+      }
       if (AI_SUCCESS == material->GetTexture(aiTextureType_DIFFUSE, 0, &string, NULL, NULL, NULL, NULL, NULL)) {
         outmtl->_colormap = (const char*)string.data;
         auto tex          = find_texture(outmtl->_colormap, lev2::ETEXUSAGE_COLOR);
@@ -510,6 +532,22 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
         /////////////////////////////////////////////
         GltfMaterial* outmtl = materialmap[mesh->mMaterialIndex];
         /////////////////////////////////////////////
+        // read KHR_texture_transform (UV offset/scale) from diffuse texture
+        /////////////////////////////////////////////
+        aiUVTransform uv_transform;
+        bool has_uv_transform = false;
+        {
+          const aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+          unsigned int max_size = sizeof(aiUVTransform);
+          if (AI_SUCCESS == aiGetMaterialFloatArray(material,
+              AI_MATKEY_UVTRANSFORM(aiTextureType_DIFFUSE, 0),
+              (float*)&uv_transform, &max_size)) {
+            has_uv_transform = (uv_transform.mScaling.x != 1.0f || uv_transform.mScaling.y != 1.0f ||
+                                uv_transform.mTranslation.x != 0.0f || uv_transform.mTranslation.y != 0.0f ||
+                                uv_transform.mRotation != 0.0f);
+          }
+        }
+        /////////////////////////////////////////////
         // merge geometry
         /////////////////////////////////////////////
         auto& out_submesh = MergeSubMesh(name);
@@ -551,7 +589,15 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
                 muvtx.mCol[0] = fvec4(1, 1, 1, 1);
               if (has_uvs) {
                 muvtx.miNumUvs = 1;
-                muvtx.mUV[0].mMapTexCoord = fvec2(uv.x, uv.y);
+                float tx_u = uv.x;
+                float tx_v = uv.y;
+                if (has_uv_transform) {
+                  // Apply KHR_texture_transform: uv' = (uv * scale) + offset
+                  // Note: rotation not yet supported
+                  tx_u = uv.x * uv_transform.mScaling.x + uv_transform.mTranslation.x;
+                  tx_v = uv.y * uv_transform.mScaling.y + uv_transform.mTranslation.y;
+                }
+                muvtx.mUV[0].mMapTexCoord = fvec2(tx_u, tx_v);
                 muvtx.mUV[0].mMapBiNormal = fvec3(b.x, b.y, b.z).transform(ork_normal_mtx);
               }
               /////////////////////////////////////////////
@@ -779,6 +825,9 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
     mtlout->_metallicFactor  = gltfmtl->_metallicFactor;
     mtlout->_roughnessFactor = gltfmtl->_roughnessFactor;
     mtlout->_baseColor       = gltfmtl->_baseColor;
+    mtlout->_doubleSided     = gltfmtl->_doubleSided;
+    mtlout->_alphaCutoff     = gltfmtl->_alphaCutoff;
+    mtlout->_alphaMode       = gltfmtl->_alphaMode;
     mtlout->_modifiers       = gltfmtl->_modifiers;
     out_model.AddMaterial(mtlout);
 

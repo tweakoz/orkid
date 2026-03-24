@@ -239,7 +239,7 @@ bool XgmModel::_loadAssimp(XgmModel* mdl, datablock_ptr_t inp_datablock) {
   auto basehasher = DataBlock::createHasher();
   basehasher->accumulateString("assimp2xgm");
 
-  basehasher->accumulateString("version-102524");
+  basehasher->accumulateString("version-250313-material-props-rgba");
 
   inp_datablock->accumlateHash(basehasher);
 

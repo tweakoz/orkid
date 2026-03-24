@@ -247,6 +247,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _parMetallicFactor      = fxi->parameter(_shader, "MetallicFactor");
   _parRoughnessFactor     = fxi->parameter(_shader, "RoughnessFactor");
   _parRoughnessPower      = fxi->parameter(_shader, "RoughnessPower" );
+  _parAlphaCutoff         = fxi->parameter(_shader, "AlphaCutoff");
   _parModColor            = fxi->parameter(_shader, "ModColor");
   _parPickID              = fxi->parameter(_shader, "obj_pickID");
   _parInstanceBlock       = fxi->storageBlock(_shader, "storage_instancing");

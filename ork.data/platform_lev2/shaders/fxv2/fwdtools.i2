@@ -289,7 +289,7 @@ libblock lib_fwd     //
   /////////////////////////////////////////////////////////
 
   vec3 _forward_lighting(vec3 modcolor, vec3 eyepos) {
-    vec2 uvinvy    = mod(frg_uv0.xy, 1); // TODO wrap in sampler addressing mode
+    vec2 uvinvy    = abs(frg_uv0.xy);
     vec3 albedo    = texture(CNMREA, vec3(uvinvy, 0)).xyz;
     vec3 TN        = texture(CNMREA, vec3(uvinvy, 1)).xyz;
     vec3 ambrufmtl = texture(CNMREA, vec3(uvinvy, 2)).xyz;
@@ -305,8 +305,15 @@ libblock lib_fwd     //
     return _forward_lighting(modcolor, EyePostion);
   }
 
+  vec4 forward_lighting_mono_alpha(vec3 modcolor) {
+    vec2 uvinvy = abs(frg_uv0.xy);
+    float alpha = texture(CNMREA, vec3(uvinvy, 0)).a;
+    vec3 rgb    = _forward_lighting(modcolor, EyePostion);
+    return vec4(rgb, alpha);
+  }
+
   vec3 forward_lighting_ntex(vec3 modcolor) {
-    vec2 uvinvy    = mod(frg_uv0.xy, 1); // TODO wrap in sampler addressing mode
+    vec2 uvinvy    = abs(frg_uv0.xy);
     vec3 albedo    = vec3(1,1,1);
     vec3 TN        = vec3(0.5,0.5,1);
     vec3 ambrufmtl = vec3(1,1,1);
