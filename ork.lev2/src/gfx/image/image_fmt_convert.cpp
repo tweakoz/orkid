@@ -689,7 +689,111 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
     }
   }
   /////////////////////////////
+  else if (fmt == EBufferFormat::RGBA8 and inp._format == EBufferFormat::BGR8) {
+    //printf( "convert from BGR8 to RGBA8\n");
+    init(inp._width, inp._height, 4, 1);
+    auto outptr = (uint8_t*)_data->data();
+    auto inptr  = (const uint8_t*)inp._data->data();
+
+    size_t num_chunks = (inp._height + IMG_CONVERT_CHUNK_SIZE - 1) / IMG_CONVERT_CHUNK_SIZE;
+    std::atomic<int> chunkcounter = num_chunks;
+
+    for (size_t chunk = 0; chunk < num_chunks; chunk++) {
+      auto op = [chunk, inptr, outptr, &inp, &chunkcounter](){
+        size_t y_start = chunk * IMG_CONVERT_CHUNK_SIZE;
+        size_t y_end = std::min(y_start + IMG_CONVERT_CHUNK_SIZE, size_t(inp._height));
+
+        for (size_t y = y_start; y < y_end; y++) {
+          for (int x = 0; x < inp._width; x++) {
+            int pixelindex           = y * inp._width + x;
+            int in_elembase          = pixelindex * 3;
+            int out_elembase         = pixelindex * 4;
+            outptr[out_elembase + 0] = inptr[in_elembase + 2]; // B -> R
+            outptr[out_elembase + 1] = inptr[in_elembase + 1]; // G -> G
+            outptr[out_elembase + 2] = inptr[in_elembase + 0]; // R -> B
+            outptr[out_elembase + 3] = 255;                     // A = opaque
+          }
+        }
+        chunkcounter.fetch_sub(1);
+      };
+      opq::concurrentQueue()->enqueue(op);
+    }
+    while(chunkcounter.load() > 0) {
+      std::this_thread::yield();
+    }
+  }
+  /////////////////////////////
+  else if (fmt == EBufferFormat::RGBA8 and inp._format == EBufferFormat::RGB16) {
+    //printf( "convert from RGB16 to RGBA8\n");
+    init(inp._width, inp._height, 4, 1);
+    auto outptr = (uint8_t*)_data->data();
+    auto inptr  = (const uint16_t*)inp._data->data();
+
+    size_t num_chunks = (inp._height + IMG_CONVERT_CHUNK_SIZE - 1) / IMG_CONVERT_CHUNK_SIZE;
+    std::atomic<int> chunkcounter = num_chunks;
+
+    for (size_t chunk = 0; chunk < num_chunks; chunk++) {
+      auto op = [chunk, inptr, outptr, &inp, &chunkcounter](){
+        size_t y_start = chunk * IMG_CONVERT_CHUNK_SIZE;
+        size_t y_end = std::min(y_start + IMG_CONVERT_CHUNK_SIZE, size_t(inp._height));
+
+        for (size_t y = y_start; y < y_end; y++) {
+          for (int x = 0; x < inp._width; x++) {
+            int pixelindex           = y * inp._width + x;
+            int in_elembase          = pixelindex * 3;
+            int out_elembase         = pixelindex * 4;
+            outptr[out_elembase + 0] = uint8_t(inptr[in_elembase + 0] >> 8);
+            outptr[out_elembase + 1] = uint8_t(inptr[in_elembase + 1] >> 8);
+            outptr[out_elembase + 2] = uint8_t(inptr[in_elembase + 2] >> 8);
+            outptr[out_elembase + 3] = 255;
+          }
+        }
+        chunkcounter.fetch_sub(1);
+      };
+      opq::concurrentQueue()->enqueue(op);
+    }
+    while(chunkcounter.load() > 0) {
+      std::this_thread::yield();
+    }
+  }
+  /////////////////////////////
+  else if (fmt == EBufferFormat::RGBA8 and inp._format == EBufferFormat::RGBA16) {
+    //printf( "convert from RGBA16 to RGBA8\n");
+    init(inp._width, inp._height, 4, 1);
+    auto outptr = (uint8_t*)_data->data();
+    auto inptr  = (const uint16_t*)inp._data->data();
+
+    size_t num_chunks = (inp._height + IMG_CONVERT_CHUNK_SIZE - 1) / IMG_CONVERT_CHUNK_SIZE;
+    std::atomic<int> chunkcounter = num_chunks;
+
+    for (size_t chunk = 0; chunk < num_chunks; chunk++) {
+      auto op = [chunk, inptr, outptr, &inp, &chunkcounter](){
+        size_t y_start = chunk * IMG_CONVERT_CHUNK_SIZE;
+        size_t y_end = std::min(y_start + IMG_CONVERT_CHUNK_SIZE, size_t(inp._height));
+
+        for (size_t y = y_start; y < y_end; y++) {
+          for (int x = 0; x < inp._width; x++) {
+            int pixelindex       = y * inp._width + x;
+            int elembase         = pixelindex * 4;
+            outptr[elembase + 0] = uint8_t(inptr[elembase + 0] >> 8);
+            outptr[elembase + 1] = uint8_t(inptr[elembase + 1] >> 8);
+            outptr[elembase + 2] = uint8_t(inptr[elembase + 2] >> 8);
+            outptr[elembase + 3] = uint8_t(inptr[elembase + 3] >> 8);
+          }
+        }
+        chunkcounter.fetch_sub(1);
+      };
+      opq::concurrentQueue()->enqueue(op);
+    }
+    while(chunkcounter.load() > 0) {
+      std::this_thread::yield();
+    }
+  }
+  /////////////////////////////
   else {
+    auto inp_fmt_str = EBufferFormatToName(inp._format);
+    auto fmt_str     = EBufferFormatToName(fmt);
+    fprintf( stderr, "Image::convertFromImageToFormat unsupported combo : fmt<%s> inp_fmt<%s>\n", fmt_str.c_str(), inp_fmt_str.c_str());
     OrkAssert(false);
   }
   _format = fmt;

@@ -149,6 +149,7 @@ public:
   fxparam_constptr_t _parMetallicFactor  = nullptr;
   fxparam_constptr_t _parRoughnessFactor = nullptr;
   fxparam_constptr_t _parRoughnessPower  = nullptr;
+  fxparam_constptr_t _parAlphaCutoff     = nullptr;
   fxparam_constptr_t _parModColor        = nullptr;
   fxparam_constptr_t _parPickID          = nullptr;
   fxparamblock_constptr_t _parBoneBlock  = nullptr;
@@ -371,11 +372,13 @@ public:
 
   float _metallicFactor  = 0.0f;
   float _roughnessFactor = 1.0f;
-  fvec4 _baseColor;
+  fvec4 _baseColor = fvec4(1, 1, 1, 1);
 
   bool _stereoVtex = false;
   bool _doubleSided = false;
-  
+  float _alphaCutoff = 0.0f;
+  int _alphaMode = 0; // 0=OPAQUE, 1=MASK, 2=BLEND
+
   varmap::varmap_ptr_t _vars;
   xgmmodelassetmaterialmodifiers_ptr_t _modifiers;
 
