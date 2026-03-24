@@ -23,6 +23,35 @@
             "setupCommands": [
                 { "text": "-enable-pretty-printing", "ignoreFailures": true },
                 { "text": "-interpreter-exec console \"set debuginfod enabled off\"", "ignoreFailures": true },
+                { "text": "-interpreter-exec console \"set debug-file-directory \\\"\\\"\"", "ignoreFailures": true },
+                { "text": "-interpreter-exec console \"set print thread-events off\"", "ignoreFailures": true },
+                { "text": "-interpreter-exec console \"set follow-exec-mode same\"", "ignoreFailures": true },
+                { "text": "-interpreter-exec console \"source ${workspaceFolder}/obt.project/scripts/ork/ix_gdb_extensions.py\"", "ignoreFailures": false },
+                { "text": "-interpreter-exec console \"source /usr/share/gcc/python/libstdcxx/v6/printers.py\"", "ignoreFailures": true }
+            ]
+        },
+        {
+            "name": "(gdb) debug orkid exe",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${env:OBT_SUBSPACE_BIN_DIR}/${input:exeName}",
+            "args": [],
+            "MIMode": "gdb",
+            "cwd": "${workspaceFolder}",
+            "stopAtEntry": false,
+            "environment": [
+                { "name": "ORKID_GRAPHICS_API", "value": "VULKAN" },
+                { "name": "DISPLAY", "value": "${env:DISPLAY}" },
+                { "name": "VULKAN_SDK", "value": "${env:VULKAN_SDK}" },
+                { "name": "VK_LAYER_PATH", "value": "${env:VK_LAYER_PATH}" },
+                { "name": "LD_LIBRARY_PATH", "value": "${env:LD_LIBRARY_PATH}" },
+                { "name": "OBT_STAGE", "value": "${env:OBT_STAGE}" },
+                { "name": "PATH", "value": "${env:PATH}" }
+            ],
+            "setupCommands": [
+                { "text": "-enable-pretty-printing", "ignoreFailures": true },
+                { "text": "-interpreter-exec console \"set debuginfod enabled off\"", "ignoreFailures": true },
+                { "text": "-interpreter-exec console \"set debug-file-directory \\\"\\\"\"", "ignoreFailures": true },
                 { "text": "-interpreter-exec console \"set print thread-events off\"", "ignoreFailures": true },
                 { "text": "-interpreter-exec console \"set follow-exec-mode same\"", "ignoreFailures": true },
                 { "text": "-interpreter-exec console \"source ${workspaceFolder}/obt.project/scripts/ork/ix_gdb_extensions.py\"", "ignoreFailures": false },
@@ -56,6 +85,12 @@
             "type": "promptString",
             "description": "Python script to run (relative to workspace)",
             "default": "ork.lev2/pyext/tests/renderer/lighting/probe.py"
+        },
+        {
+            "id": "exeName",
+            "type": "promptString",
+            "description": "Orkid executable name (in OBT_SUBSPACE_BIN_DIR)",
+            "default": "ork.example.lev2.gfx.minimal3D.exe"
         }
     ]
 }

@@ -1,7 +1,6 @@
 makefile
 .*
 *stag*
-.vscode
 *.blend1
 *.png
 *.trace
