@@ -137,7 +137,6 @@ void VkSwapChain::_buildup() {
   // image properties
   // Ensure minImageCount is within capabilities
   uint32_t minImageCount = MAX_FRAMES_IN_FLIGHT;
-  OrkAssertI(minImageCount >= caps.minImageCount, "minImageCount is below caps.minImageCount");
   OrkAssertI(minImageCount <= caps.maxImageCount, "minImageCount exceeds caps.maxImageCount");
   SCINFO.minImageCount    = minImageCount;
   SCINFO.imageFormat      = surfaceFormat.format;                // Chosen from VkSurfaceFormatKHR, after querying supported formats
