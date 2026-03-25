@@ -193,6 +193,8 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
           rtgroup->SetSizeDirty(false);
         }
 
+        RTGIMPL->_updateClearParams(rtgroup);
+
         // Handle cubemap face rendering
         if (rtgroup->_cubeMap) {
           RTGIMPL->_setupCubeFaceRendering(rtgroup->_cubeRenderFace);
@@ -212,6 +214,7 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
         break;
     } // switch (rtgroup->_usage) {
 
+#ifdef ORK_PROFILER_ENABLE
     // STEP 3: Start per-RTG GPU perf block only when transitioning to a new RTG.
     // Retain profiler_series lookup/creation on rtgroup so it doesn't need to happen every cycle for every RTG.
     if (rtgroup->_profiler_series == nullptr) {
@@ -222,6 +225,7 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
     stack_impl->_profiler_owner = (_active_rtgroup != rtgroup);
     if (stack_impl->_profiler_owner)
       rtgroup->_profiler_series->sampleBegin();
+#endif
 
     // STEP 4: Now begin the new render pass
     RTGIMPL->_transitionToRenderTarget(_contextVK->primary_cb());
@@ -257,9 +261,11 @@ void VkFrameBufferInterface::_popRtGroup() {
   auto stack_impl   = popped_item._impl.getShared<VkRtgStackItemImpl>();
   auto finished_rtg = popped_item._rtgroup;
 
+#ifdef ORK_PROFILER_ENABLE
   // End per-RTG GPU perf block only for the entry that owns the sample lifetime.
   if (stack_impl->_profiler_owner)
     finished_rtg->_profiler_series->sampleEnd();
+#endif
 
   if (0)
     logchan_rtgroup->log(

@@ -26,6 +26,8 @@
 #include <string.h>
 #include <ork/kernel/environment.h>
 #include <unordered_set>
+#include <shared_mutex>
+#include <ork/file/fileenv.h>
 
 template class ork::fixedvector<ork::file::Path, 8>;
 bool gbas1 = true;
@@ -445,9 +447,18 @@ Path Path::toAbsoluteFolderX() const{
 Path Path::resolveRelativeTo(const Path& basePath) const {
   //printf("Path::resolveRelativeTo: this='%s' basePath='%s'\n", this->c_str(), basePath.c_str());
   //printf("  this->isRelative()=%d basePath.isAbsolute()=%d\n", isRelative(), basePath.isAbsolute());
-  
+
+  // If this path contains an <expansion_key> token, expand it and return directly.
+  {
+    std::string s = this->c_str();
+    auto lt = s.find('<');
+    if (lt != std::string::npos && s.find('>', lt + 1) != std::string::npos) {
+      return Path(file::expandPaths(s));
+    }
+  }
+
   if (!basePath.isAbsolute()) {
-    printf("ERROR: basePath is not absolute!\n");
+    //printf("ERROR: basePath is not absolute!\n");
     return *this;  // Return this path unchanged if basePath is not absolute
   }
   
@@ -1079,6 +1090,104 @@ Path Path::share_dir() {
 }
 Path Path::temp_dir() {
   return (stage_dir() / "tempdir");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+std::string Path::expandPathString(const std::string& path) {
+  return file::expandPaths(path);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Process-global path expansion system
+///////////////////////////////////////////////////////////////////////////////
+
+static std::shared_mutex _expander_mutex;
+static std::unordered_map<std::string, file::Path> _expander_table;
+static thread_local bool _in_set_path_expander = false;
+
+void file::setPathExpander(const std::string& key, const file::Path& destination) {
+  {
+    std::unique_lock lock(_expander_mutex);
+    _expander_table[key] = destination;
+  }
+  // Bidirectional sync: also register as URI protocol so
+  // Path::toAbsoluteFolder() (which uses FileEnv::contextForUriProto) works.
+  // Guard against re-entry from createContextForUriBase→setPathExpander loop.
+  if (!_in_set_path_expander) {
+    _in_set_path_expander = true;
+    auto proto = key + "://";
+    auto existing = FileEnv::contextForUriProto(proto);
+    if (!existing) {
+      auto ctx = FileEnv::createContextForUriBase(proto, destination);
+      ctx->SetPrependFilesystemBase(true);
+    }
+    _in_set_path_expander = false;
+  }
+}
+
+std::string file::expandPaths(const std::string& path) {
+  std::string result = path;
+
+  // 1. Expand ~ at start of path to home directory
+  if (!result.empty() && result[0] == '~') {
+    std::string home;
+    if (genviron.get("HOME", home)) {
+      result.replace(0, 1, home);
+    }
+  }
+
+  // 2. Check for "key://rest" pattern first
+  auto proto_pos = result.find("://");
+  if (proto_pos != std::string::npos && proto_pos > 0) {
+    auto key = result.substr(0, proto_pos);
+    auto rest = result.substr(proto_pos + 3);
+    std::shared_lock lock(_expander_mutex);
+    auto it = _expander_table.find(key);
+    if (it != _expander_table.end()) {
+      auto dest = it->second.toStdString();
+      lock.unlock();
+      if (rest.empty()) {
+        result = dest;
+      } else {
+        result = dest + "/" + rest;
+      }
+      // Fall through to env var expansion
+    }
+  } else {
+    // 3. Scan for "<key>" tokens
+    std::shared_lock lock(_expander_mutex);
+    size_t pos = 0;
+    while ((pos = result.find('<', pos)) != std::string::npos) {
+      auto end = result.find('>', pos + 1);
+      if (end == std::string::npos) break;
+      auto key = result.substr(pos + 1, end - pos - 1);
+      auto it = _expander_table.find(key);
+      if (it != _expander_table.end()) {
+        auto dest = it->second.toStdString();
+        result.replace(pos, end - pos + 1, dest);
+        pos += dest.size();
+      } else {
+        pos = end + 1;
+      }
+    }
+  }
+
+  // 4. Expand ${ENV_VAR} patterns
+  size_t pos = 0;
+  while ((pos = result.find("${", pos)) != std::string::npos) {
+    auto end = result.find('}', pos + 2);
+    if (end == std::string::npos) break;
+    auto varname = result.substr(pos + 2, end - pos - 2);
+    std::string val;
+    if (genviron.get(varname, val)) {
+      result.replace(pos, end - pos + 1, val);
+    } else {
+      pos = end + 1;
+    }
+  }
+
+  return result;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

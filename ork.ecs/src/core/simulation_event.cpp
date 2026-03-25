@@ -67,7 +67,9 @@ void Simulation::_serviceEventQueues() {
   }
 
   //////////////////////////////////////////////////////////
-
+  // Sweep pending response callbacks (fires ready ones in all modes)
+  //////////////////////////////////////////////////////////
+  _sweepResponseCallbacks();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -99,6 +101,19 @@ bool Simulation::_onControllerEvent(const Controller::Event& event) {
       else{
         logchan_event_ERR->log( "Simulation::_onControllerEvent SYSTEM_EVENT system not found\n");
       }
+      break;
+    }
+    ///////////////////////////////////////////////////////////////
+    case Controller::EventID::SYSTEM_BROADCAST_EVENT: {
+      const auto& SEV = event._payload.get<impl::_SystemEvent>();
+      _controller->_mutateObject([&](const Controller::id2obj_map_t& unlocked) {
+        for (auto& [id, obj_var] : unlocked) {
+          auto sys = obj_var.tryAs<System*>();
+          if (sys) {
+            sys.value()->_notify(SEV._eventID, SEV._eventData);
+          }
+        }
+      });
       break;
     }
     ///////////////////////////////////////////////////////////////
@@ -238,6 +253,7 @@ bool Simulation::_onControllerRequest(const Controller::Request& request) {
         response->_requestID = SRQ._requestID;
         response->_eventData = SRQ._eventData;
         response->_respref = SRQ._respref;
+        response->_callback = SRQ._callback;
 
         _controller->_mutateObject([=](Controller::id2obj_map_t& unlocked) { //
           unlocked[respID].set<impl::sys_response_ptr_t>(response); //
@@ -256,6 +272,11 @@ bool Simulation::_onControllerRequest(const Controller::Request& request) {
         logchan_event_OK->log( "proc request the_system<%p> reqid<%zx>\n", (void*) the_system, SRQ._requestID._hashed );
 
         the_system->_request( response, SRQ._requestID, SRQ._eventData );
+
+        // Track responses with callbacks for end-of-update sweep
+        if (response->_callback) {
+          _pendingResponseCallbacks.push_back(response);
+        }
 
         /////////////////////////////
 

@@ -34,7 +34,8 @@ public:
   lev2::scenegraph::scene_ptr_t _scenegraph;
   lev2::editor::manipcontroller_ptr_t _manipController;
   lev2::compositoroutnode_rtgroup_ptr_t _outputnode;
-  int _supersample = 1;
+  int _supersample = 0;
+  int _temporalFrames = 0;
   std::string _cameraname = "spawncam";
   lev2::acqdrawbuffer_ptr_t _override_acqdbuf;
 

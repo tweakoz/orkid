@@ -30,6 +30,39 @@ template <typename kt, typename vt> bool IsMultiMapDeducer(const ork::orklut<kt,
   return map.GetKeyPolicy() == ork::EKEYPOLICY_MULTILUT;
 }
 ////////////////////////////////////////////////////////////////////////////////
+// Helper: pack a typed value into a serialization node.
+// For varmap::var_t (svar128_t), the value cannot be embedded inside
+// another svar (sizeof(svar128_t) > ksize), so we encode it as a
+// type-tagged string: "<type>:<data>".  All other types use set<T> directly.
+////////////////////////////////////////////////////////////////////////////////
+template<typename vt>
+struct NODEENC {
+  static void enc(serdes::node_ptr_t elemnode, const vt& value) {
+    elemnode->_value.template set<vt>(value);
+  }
+};
+template<>
+struct NODEENC<varmap::var_t> {
+  static void enc(serdes::node_ptr_t elemnode, const varmap::var_t& value) {
+    std::string encoded;
+    if      (value.isA<float>())       encoded = "float:"  + std::to_string(value.get<float>());
+    else if (value.isA<int>())         encoded = "int:"    + std::to_string(value.get<int>());
+    else if (value.isA<bool>())        encoded = std::string("bool:") + (value.get<bool>() ? "1" : "0");
+    else if (value.isA<fvec3>()) {
+      auto v = value.get<fvec3>();
+      encoded = "fvec3:" + std::to_string(v.x) + "," + std::to_string(v.y) + "," + std::to_string(v.z);
+    } else if (value.isA<fvec4>()) {
+      auto v = value.get<fvec4>();
+      encoded = "fvec4:" + std::to_string(v.x) + "," + std::to_string(v.y) + "," + std::to_string(v.z) + "," + std::to_string(v.w);
+    } else if (value.isA<std::string>()) {
+      encoded = "string:" + value.get<std::string>();
+    } else {
+      encoded = "null:";
+    }
+    elemnode->_value.set<std::string>(encoded);
+  }
+};
+////////////////////////////////////////////////////////////////////////////////
 template <typename KeyType, typename ValueType> //
 void ITypedMap<KeyType, ValueType>::serialize(serdes::node_ptr_t sernode) const {
   auto serializer        = sernode->_serializer;
@@ -52,7 +85,7 @@ void ITypedMap<KeyType, ValueType>::serialize(serdes::node_ptr_t sernode) const 
     auto elemnode = serializer->pushNode(keystr, serdes::NodeType::MAP_ELEMENT_LEAF);
     //////////////////////////////
     elemnode->_key = keystr;
-    elemnode->_value.template set<ValueType>(V);
+    NODEENC<ValueType>::enc(elemnode, V);
     elemnode->_index        = i;
     elemnode->_parent       = mapnode;
     elemnode->_ser_instance = instance;

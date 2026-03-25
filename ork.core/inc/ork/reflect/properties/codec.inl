@@ -10,6 +10,8 @@
 
 #include <ork/reflect/properties/codec.h>
 #include <ork/math/cvector4.h>
+#include <ork/kernel/varmap.inl>
+#include <cstdio>
 
 namespace ork{
   class PoolString;
@@ -83,6 +85,39 @@ inline void decode_value(var_t val_inp, object_ptr_t& val_out) {
   }
   else{
     OrkAssert(false);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// decode_value<svar128_t>: reconstruct a varmap::var_t from the type-tagged
+// string written by NODEENC<varmap::var_t> during serialization.
+// Format: "<type>:<data>", e.g. "float:3.14", "fvec3:1.0,2.0,3.0"
+////////////////////////////////////////////////////////////////////////////////
+template <>
+inline void decode_value(var_t val_inp, svar128_t& val_out) {
+  if (auto as_str = val_inp.tryAs<std::string>()) {
+    const auto& s = as_str.value();
+    auto colon = s.find(':');
+    if (colon == std::string::npos) return;
+    auto type_name = s.substr(0, colon);
+    auto data      = s.substr(colon + 1);
+    if (type_name == "float") {
+      val_out.set<float>(std::stof(data));
+    } else if (type_name == "int") {
+      val_out.set<int>(std::stoi(data));
+    } else if (type_name == "bool") {
+      val_out.set<bool>(data == "1");
+    } else if (type_name == "fvec3") {
+      float x = 0, y = 0, z = 0;
+      std::sscanf(data.c_str(), "%f,%f,%f", &x, &y, &z);
+      val_out.set<fvec3>(fvec3(x, y, z));
+    } else if (type_name == "fvec4") {
+      float x = 0, y = 0, z = 0, w = 0;
+      std::sscanf(data.c_str(), "%f,%f,%f,%f", &x, &y, &z, &w);
+      val_out.set<fvec4>(fvec4(x, y, z, w));
+    } else if (type_name == "string") {
+      val_out.set<std::string>(data);
+    }
   }
 }
 

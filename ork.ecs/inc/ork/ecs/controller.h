@@ -10,6 +10,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "types.h"
+#include <set>
 #include <ork/util/crc.h>
 #include <ork/file/path.h>
 #include <ork/kernel/concurrent_queue.h>
@@ -29,6 +30,7 @@ struct Controller {
 
 	enum struct EventID : crc_enum_t {
 	  CrcEnum(SYSTEM_EVENT),
+	  CrcEnum(SYSTEM_BROADCAST_EVENT),
 	  CrcEnum(COMPONENT_EVENT),
 	  CrcEnum(FIND_SYSTEM),
 	  CrcEnum(FIND_COMPONENT),
@@ -128,6 +130,11 @@ struct Controller {
 	void gpuUpdate(lev2::Context* ctx);
 
 	scenedata_constptr_t scenedata() const { return _scenedata; }
+
+	// Import system
+	scenedata_constptr_t findImportedScene(const std::string& ns) const;
+	archetype_constptr_t findImportedArchetype(const std::string& ns, const std::string& name) const;
+	const orkmap<std::string, scenedata_constptr_t>& importedScenes() const { return _importedScenes; }
 	///////////////////////////////////////////////////////////////////////////////
 
 	void update();
@@ -146,7 +153,8 @@ struct Controller {
   void entBarrier(ent_ref_t EREF);
 
   void systemNotify(sys_ref_t sys, token_t evID, svar64_t data);
-  response_ref_t systemRequest(sys_ref_t sys, token_t evID, svar64_t data);
+  void notifyAllSystems(token_t evID, svar64_t data);
+  response_ref_t systemRequest(sys_ref_t sys, token_t evID, svar64_t data, void_lambda_t callback = nullptr);
 
   void componentNotify(comp_ref_t comp, token_t evID, svar64_t data);
   response_ref_t componentRequest(comp_ref_t comp, token_t evID, svar64_t data);
@@ -164,6 +172,33 @@ struct Controller {
 	LockedResource<simulation_ptr_t> _simulation;
 
 	void_lambda_t _onSimulationExit;
+
+	// State change callback system
+	using state_callback_t = std::function<void(Simulation*)>;
+	using gpu_state_callback_t = std::function<void(Simulation*, lev2::Context*)>;
+	using state_callback_list_t = std::vector<state_callback_t>;
+	using gpu_state_callback_list_t = std::vector<gpu_state_callback_t>;
+
+	// Update thread hooks — fn(sim)
+	state_callback_list_t _onUpdPreCompose;
+	state_callback_list_t _onUpdPostCompose;
+	state_callback_list_t _onUpdPreLink;
+	state_callback_list_t _onUpdPostLink;
+	state_callback_list_t _onUpdPreStage;
+	state_callback_list_t _onUpdPostStage;
+	state_callback_list_t _onUpdPreActivate;
+	state_callback_list_t _onUpdPostActivate;
+	state_callback_list_t _onUpdPreDeactivate;
+	state_callback_list_t _onUpdPostDeactivate;
+	state_callback_list_t _onUpdPreUnstage;
+	state_callback_list_t _onUpdPostUnstage;
+
+	// GPU thread hooks — fn(sim, ctx)
+	gpu_state_callback_list_t _onGpuPostInit;
+	gpu_state_callback_list_t _onGpuPostLink;
+
+	void clearStateCallbacks();
+
 private:
 	
 	friend struct Simulation;
@@ -190,6 +225,8 @@ private:
 
 	LockedResource<TokMap> _tokmaps;
 	scenedata_constptr_t _scenedata;
+	orkmap<std::string, scenedata_constptr_t> _importedScenes;  // namespace → loaded imported scene
+	void _loadImports(scenedata_ptr_t scene, const std::string& parentNs, std::set<std::string>& visited);
 	
 
 	LockedResource<evq_t> _eventQueue;

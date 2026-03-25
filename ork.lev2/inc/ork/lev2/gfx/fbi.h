@@ -82,6 +82,7 @@ public:
 
   void pushScissor(int iX, int iY, int iW, int iH);
   void pushScissor(const ViewportRect& rScissorRect);
+  void pushScissorIntersected(int iX, int iY, int iW, int iH);
 
   void pushViewport(int iX, int iY, int iW, int iH);
   void pushViewport(const ViewportRect& rViewportRect);

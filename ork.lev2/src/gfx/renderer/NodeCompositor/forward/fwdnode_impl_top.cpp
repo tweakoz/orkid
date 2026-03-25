@@ -300,7 +300,7 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
 
   auto CPD               = CIMPL->topCPD();
   CPD._mono_cam_matrices = drawdata.property("defcammtx"_crcu).get<cameramatrices_ptr_t>();
-  CPD.assignLayers("depth_prepass,std_forward,probe,depth_probe");
+  CPD.assignLayers("depth_prepass,std_forward,std_editor,probe,depth_probe");
   CPD._clearColor = _node->_pbrcommon->_clearcolor;
   RtGroupRenderTarget rt(_rtg_primary.get());
   CPD._irendertarget = &rt;

@@ -159,4 +159,23 @@ struct CommonStuff : public ork::Object {
 };
 
 
+///////////////////////////////////////////////////////////////////////////////
+
+struct RadianceMapCache {
+  /// Get or load radiance maps by resolved path (thread-safe, cached).
+  radiancemaps_ptr_t get(const AssetPath& path);
+  /// Clear all cached entries (e.g., after re-baking probes).
+  void clear();
+private:
+  std::mutex _mutex;
+  std::map<std::string, radiancemaps_ptr_t> _cache;
+};
+
+using radiancemap_cache_ptr_t = std::shared_ptr<RadianceMapCache>;
+
+/// Process-wide radiance map cache (lazy singleton).
+radiancemap_cache_ptr_t getRadianceMapCache();
+
+///////////////////////////////////////////////////////////////////////////////
+
 } // namespace ork::lev2::pbr {

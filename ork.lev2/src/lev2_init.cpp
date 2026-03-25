@@ -31,6 +31,7 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
 #include <ork/lev2/gfx/scenegraph/scenegraph.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_grid.h>
+#include <ork/lev2/gfx/scenegraph/sgnode_billboard.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_groundplane.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_imposter.h>
 ///////////////////////////////////////////////////////////////////////////////
@@ -204,6 +205,7 @@ struct ClassToucher {
     InstancedBillboardStringDrawableData::GetClassStatic();
     OverlayStringDrawableData::GetClassStatic();
 
+    BillboardDrawableData::GetClassStatic();
     GridDrawableData::GetClassStatic();
     GroundPlaneDrawableData::GetClassStatic();
     ImposterDrawableData::GetClassStatic();
@@ -279,6 +281,7 @@ struct ClassToucher {
     */
 
     RegisterClassX(PointLightData);
+    RegisterClassX(SpotLightData);
 
     RegisterClassX(OutputCompositingNode);
     RegisterClassX(VrOutputNode);

@@ -127,6 +127,12 @@ void ReflectionPropertySheetModel::_addPropertiesFromDescription(
       entry.sub_object = direct_obj->getObject(obj);
       if (!entry.sub_object) {
         entry.is_null_direct_object = true;
+      } else {
+        // Show polymorphic class name for object properties
+        auto clazz = entry.sub_object->GetClass();
+        if (clazz) {
+          entry.name = clazz->Name();
+        }
       }
       size_t idx       = _entries.size();
       _entries.push_back(entry);
@@ -183,6 +189,8 @@ void ReflectionPropertySheetModel::_addMapElements(
       key_name = k_str.value();
     else if (auto k_int = elem_key.tryAs<int>())
       key_name = std::to_string(k_int.value());
+    else if (auto k_clazz = elem_key.tryAs<object::ObjectClass*>())
+      key_name = k_clazz.value()->Name();
     else
       continue; // Skip unsupported key types
 
@@ -208,6 +216,12 @@ void ReflectionPropertySheetModel::_addMapElements(
 
       if (!entry.sub_object) {
         entry.is_null_object_entry = true;
+      } else {
+        // Append class name to display name
+        auto clazz = entry.sub_object->GetClass();
+        if (clazz) {
+          entry.name = key_name + " (" + clazz->Name() + ")";
+        }
       }
 
       size_t idx       = _entries.size();
@@ -229,6 +243,12 @@ void ReflectionPropertySheetModel::_addMapElements(
         entry.type = PropertyType::Float;
       else if (elem_val.isA<std::string>())
         entry.type = PropertyType::String;
+      else if (elem_val.isA<fvec2>())
+        entry.type = PropertyType::Vec2;
+      else if (elem_val.isA<fvec3>())
+        entry.type = PropertyType::Vec3;
+      else if (elem_val.isA<fvec4>())
+        entry.type = PropertyType::Vec4;
       else
         entry.type = PropertyType::Unknown;
 
@@ -259,6 +279,10 @@ bool ReflectionPropertySheetModel::isMapConst(const std::string& key) const {
     return true;
   auto anno = entry.property->typedAnnotation<ConstString>("editor.map.policy.const");
   if (anno && anno.value().length() > 0 && strcmp(anno.value().c_str(), "true") == 0)
+    return true;
+  // Also handle annotations stored as const char* (annotate("key","val") deduces const char*)
+  auto anno2 = entry.property->typedAnnotation<const char*>("editor.map.policy.const");
+  if (anno2 && anno2.value() && strcmp(anno2.value(), "true") == 0)
     return true;
   return false;
 }
@@ -334,6 +358,58 @@ void ReflectionPropertySheetModel::removeMapElement(
   map_prop->removeElement(owner, key_item);
 
   // Rebuild the property list
+  setObject(_object);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void ReflectionPropertySheetModel::renameMapElement(
+    const std::string& map_key,
+    const std::string& old_name,
+    const std::string& new_name) {
+  if (old_name == new_name || new_name.empty()) return;
+
+  auto it = _by_key.find(map_key);
+  if (it == _by_key.end()) return;
+  const auto& entry = _entries[it->second];
+  if (!entry.is_map_property || !entry.property) return;
+
+  auto* map_prop = dynamic_cast<const reflect::IMap*>(entry.property);
+  if (!map_prop) return;
+
+  object_ptr_t owner = _object;
+  if (!entry.parent_key.empty()) {
+    auto parent_it = _by_key.find(entry.parent_key);
+    if (parent_it != _by_key.end()) {
+      const auto& parent_entry = _entries[parent_it->second];
+      if (parent_entry.sub_object) owner = parent_entry.sub_object;
+    }
+  }
+
+  // Find value at old key
+  auto kvs = map_prop->enumerateElements(owner);
+  reflect::map_abstract_item_t old_val;
+  bool found = false;
+  for (auto& [k, v] : kvs) {
+    if (auto ks = k.tryAs<std::string>()) {
+      if (ks.value() == old_name) {
+        old_val = v;
+        found = true;
+        break;
+      }
+    }
+  }
+  if (!found) return;
+
+  // Insert with new key + same value, remove old key
+  reflect::map_abstract_item_t new_key_item;
+  new_key_item.set<std::string>(new_name);
+  map_prop->setElement(owner, new_key_item, old_val);
+
+  reflect::map_abstract_item_t old_key_item;
+  old_key_item.set<std::string>(old_name);
+  map_prop->removeElement(owner, old_key_item);
+
   setObject(_object);
 }
 
@@ -452,11 +528,23 @@ svar128_t ReflectionPropertySheetModel::getValue(
     return svar128_t();
 
   const auto& entry = _entries[it->second];
-  if (!entry.property || !_object)
-    return svar128_t();
 
   // For group/container types, return empty
   if (entry.type == PropertyType::Group)
+    return svar128_t();
+
+  // Map entries store value directly in the IMap — entry.property is null
+  if (!entry.property && entry.map_property && entry.map_owner) {
+    for (const auto& [k, v] : entry.map_property->enumerateElements(entry.map_owner)) {
+      if (auto ks = k.tryAs<std::string>()) {
+        if (ks.value() == entry.name)
+          return v;
+      }
+    }
+    return svar128_t();
+  }
+
+  if (!entry.property || !_object)
     return svar128_t();
 
   // Determine which object to read from:
@@ -542,6 +630,17 @@ void ReflectionPropertySheetModel::setValue(
     return;
 
   const auto& entry = _entries[it->second];
+
+  // Map entries: write directly into the IMap
+  if (!entry.property && entry.map_property && entry.map_owner) {
+    if (entry.map_property->isRawVariantMap())
+      entry.map_property->setRawVariantElement(entry.map_owner, entry.map_key, value);
+    else
+      entry.map_property->setElement(entry.map_owner, entry.map_key, value);
+    notifyPropertyChanged(key);
+    return;
+  }
+
   if (!entry.property || !_object)
     return;
 
@@ -645,6 +744,16 @@ varmap::varmap_ptr_t ReflectionPropertySheetModel::getAnnotations(
     const auto& aval = ait->second;
     if (aval.isA<ConstString>()) {
       result->set(std::string(akey.c_str()), std::string(aval.get<ConstString>().c_str()));
+    } else if (aval.isA<const char*>()) {
+      result->set(std::string(akey.c_str()), std::string(aval.get<const char*>()));
+    } else if (aval.isA<float_range>()) {
+      auto rng = aval.get<float_range>();
+      result->set(std::string("min"), rng._min);
+      result->set(std::string("max"), rng._max);
+    } else if (aval.isA<int_range>()) {
+      auto rng = aval.get<int_range>();
+      result->set(std::string("min"), rng._min);
+      result->set(std::string("max"), rng._max);
     }
   }
   return result;
@@ -896,6 +1005,41 @@ std::vector<std::string> ReflectionPropertySheetModel::getChoices(
   }
 
   return {};
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+bool ReflectionPropertySheetModel::isUntypedVariantMapEntry(const std::string& key) const {
+  auto it = _by_key.find(key);
+  if (it == _by_key.end())
+    return false;
+  const auto& entry = _entries[it->second];
+  return entry.is_map_entry && !entry.is_null_object_entry && entry.type == PropertyType::Unknown;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void ReflectionPropertySheetModel::setVariantMapEntryType(
+    const std::string& key,
+    const std::string& type_name) {
+  auto it = _by_key.find(key);
+  if (it == _by_key.end())
+    return;
+  const auto& entry = _entries[it->second];
+  if (!entry.is_map_entry || !entry.map_property || !entry.map_owner)
+    return;
+
+  svar128_t default_val;
+  if      (type_name == "float")  default_val.set<float>(0.0f);
+  else if (type_name == "int")    default_val.set<int>(0);
+  else if (type_name == "bool")   default_val.set<bool>(false);
+  else if (type_name == "fvec3")  default_val.set<fvec3>(fvec3(0,0,0));
+  else if (type_name == "fvec4")  default_val.set<fvec4>(fvec4(0,0,0,0));
+  else if (type_name == "string") default_val.set<std::string>("");
+  else return;
+
+  entry.map_property->setRawVariantElement(entry.map_owner, entry.map_key, default_val);
+  setObject(_object);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

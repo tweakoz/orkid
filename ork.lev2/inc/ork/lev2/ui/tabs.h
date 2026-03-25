@@ -52,6 +52,13 @@ struct TabWidget : public Group {
   // Per-tab style overrides (keyed by widget pointer)
   std::unordered_map<widget_ptr_t, uint64_t> _per_tab_style_tags;
 
+  // Per-tab closeable flag (opt-in)
+  std::unordered_set<widget_ptr_t> _closeable_tabs;
+  void setTabCloseable(widget_ptr_t tab, bool closeable);
+  bool isTabCloseable(widget_ptr_t tab) const;
+  std::function<void(widget_ptr_t)> _onTabClose;
+  static constexpr int _close_button_size = 14;
+
   // Widget-level colors
   fvec4 _tabBarBackground;
   fvec4 _contentBackground;
@@ -60,6 +67,8 @@ struct TabWidget : public Group {
 
   // Tab layout configuration
   int _tab_padding = 16;  // Constant padding around label text
+  bool _sort_tabs = true; // When true, tabs are sorted by name (natural sort)
+  void setSortTabs(bool b) { _sort_tabs = b; _needs_layout_recalc = true; }
 
   protected:
   // Override from Widget
@@ -76,6 +85,7 @@ private:
   // Pointer-based tracking (stable across sorts)
   widget_ptr_t _active_tab;
   widget_ptr_t _hovered_tab;
+  widget_ptr_t _pendingClose;  // deferred close to avoid destroying during event routing
 
   // Cached layout data
   std::vector<int> _tab_widths;     // Width of each tab (in current sorted order)

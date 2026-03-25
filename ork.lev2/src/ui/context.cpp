@@ -328,6 +328,9 @@ bool Context::hasMouseFocus(const Widget* w) const {
 }
 //////////////////////////////////////
 void Context::draw(drawevent_constptr_t drwev) {
+  // Process deferred operations from previous frame
+  processNextFrameOps();
+
   // Lazy init theme engine on first draw
   if (_theme_engine && _theme_engine->_impl.isSet() == false) {
     auto tgt = drwev->GetTarget();
@@ -417,6 +420,18 @@ void Context::dismissAllOverlays() {
 /////////////////////////////////////////////////////////////////////////
 bool Context::hasOverlays() const {
   return not _overlay_stack.empty();
+}
+/////////////////////////////////////////////////////////////////////////
+void Context::enqueueOnNextFrame(std::function<void()> op) {
+  _nextFrameOps.push_back(std::move(op));
+}
+/////////////////////////////////////////////////////////////////////////
+void Context::processNextFrameOps() {
+  auto ops = std::move(_nextFrameOps);
+  _nextFrameOps.clear();
+  for (auto& op : ops) {
+    op();
+  }
 }
 /////////////////////////////////////////////////////////////////////////
 } // namespace ork::ui

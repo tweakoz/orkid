@@ -76,112 +76,117 @@ void ForwardPbrNodeImpl::_render_skybox(forward_pass_ptr_t fpass) {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void ForwardPbrNodeImpl::_setupCubeFaceCamera(lightprobe_ptr_t probe, int iface) {
+  auto CMATRIX = probe->_worldMatrix;
+  fvec3 POSX = CMATRIX.xNormal() * -1;
+  fvec3 POSY = CMATRIX.yNormal();
+  fvec3 POSZ = CMATRIX.zNormal() * -1;
+  fvec3 position = CMATRIX.translation();
+
+  // compute projection matrix
+  _CUBECAM->_pmatrix.perspective(90.0f * DTOR, 1.0f, 0.01f, 1000.0f);
+  fmtx4 flipy;
+  flipy.setScale(1, -1, 1);
+  _CUBECAM->_pmatrix = flipy * _CUBECAM->_pmatrix;
+
+  // compute view matrix from cubeface
+  switch (iface) {
+    case 1: _CUBECAM->_vmatrix.lookAt(position, position + POSX, POSY); break;
+    case 0: _CUBECAM->_vmatrix.lookAt(position, position - POSX, POSY); break;
+    case 2: _CUBECAM->_vmatrix.lookAt(position, position + POSY, POSZ * -1); break;
+    case 3: _CUBECAM->_vmatrix.lookAt(position, position - POSY, POSZ); break;
+    case 4: _CUBECAM->_vmatrix.lookAt(position, position + POSZ, POSY); break;
+    case 5: _CUBECAM->_vmatrix.lookAt(position, position - POSZ, POSY); break;
+  }
+
+  _CUBECAM->_vpmatrix  = _CUBECAM->_vmatrix * _CUBECAM->_pmatrix;
+  _CUBECAM->_ivpmatrix = _CUBECAM->_vpmatrix.inverse();
+  _CUBECAM->_ivmatrix  = _CUBECAM->_vmatrix.inverse();
+  _CUBECAM->_ipmatrix  = _CUBECAM->_pmatrix.inverse();
+  _CUBECAM->_frustum.set(_CUBECAM->_vmatrix, _CUBECAM->_pmatrix);
+  _CUBECAM->_explicitProjectionMatrix = true;
+  _CUBECAM->_explicitViewMatrix       = true;
+  _CUBECAM->_aspectRatio              = 1.0f;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void ForwardPbrNodeImpl::_update_env_probes(CompositorDrawData& drawdata) {
 
   auto TXI     = _currentContext->TXI();
   auto topcomp = _currentRCFD->topCompositor();
   auto CPD     = _currentCIMPL->topCPD();
 
+  // Phase 1: Allocate RTG/VRAM for ALL probes (including inactive)
+  if (auto lmgr = _currentCIMPL->lightManager()) {
+    for (auto& probe : lmgr->_lightprobes) {
+      if (probe->_type == LightProbeType::REFLECTION && nullptr == probe->_cubeRenderRTG) {
+        probe->_cubeRenderRTG           = std::make_shared<RtGroup>(_currentContext, 8, 8);
+        probe->_cubeRenderRTG->_name    = "ReflectionProbeRTG";
+        probe->_cubeRenderRTG->_cubeMap = true;
+        auto colorbuf                   = probe->_cubeRenderRTG->createRenderTarget(EBufferFormat::RGBA8);
+        colorbuf->_debugName            = "ReflectionProbeColorCubeMap";
+        colorbuf->_mipgen               = RtBuffer::EMG_AUTOCOMPUTE;
+        probe->_cubeRenderRTG->createDepthBuffer(EBufferFormat::Z32F, true);
+      }
+    }
+  }
+
+  // Lazy-init blit material for SSAA/TAA
+  if (!_probeBlitInitDone) {
+    _initProbeBlitMaterial(_currentContext);
+  }
+
+  // Phase 2: Render cubemaps only for active + dirty probes
   for (auto probe : _enumeratedLights->_lightprobes) {
     switch (probe->_type) {
       case LightProbeType::REFLECTION: {
-        if (nullptr == probe->_cubeRenderRTG) {
-          probe->_cubeRenderRTG           = std::make_shared<RtGroup>(_currentContext, 8, 8);
-          probe->_cubeRenderRTG->_name    = "ReflectionProbeRTG";
-          probe->_cubeRenderRTG->_cubeMap = true;  // Must set before creating buffers
-          auto colorbuf                   = probe->_cubeRenderRTG->createRenderTarget(EBufferFormat::RGBA8);
-          colorbuf->_debugName            = "ReflectionProbeColorCubeMap";
-          colorbuf->_mipgen               = RtBuffer::EMG_AUTOCOMPUTE;
-          probe->_cubeRenderRTG->createDepthBuffer(EBufferFormat::Z32F, true);
-        }
         if (probe->_dirty) {
           int prevW = probe->_cubeRenderRTG->width();
           int prevH = probe->_cubeRenderRTG->height();
-          if (prevW != probe->_dim or prevH != probe->_dim) {
-            probe->_cubeRenderRTG->Resize(probe->_dim, probe->_dim);
+          if (prevW != probe->dim() or prevH != probe->dim()) {
+            probe->_cubeRenderRTG->Resize(probe->dim(), probe->dim());
           }
-
-          auto CMATRIX = probe->_worldMatrix;
-
-          fvec3 POSX = CMATRIX.xNormal() * -1;
-          fvec3 POSY = CMATRIX.yNormal();
-          fvec3 POSZ = CMATRIX.zNormal() * -1;
-
-          fvec3 position = CMATRIX.translation();
 
           CompositingPassData cubemapCPD = CPD.clone();
+          cubemapCPD.AddLayer(probe->renderLayer());
 
-          // compute projection matrix
-          _CUBECAM->_pmatrix.perspective(90.0f * DTOR, 1.0f, 0.01f, 1000.0f);
+          if (probe->temporalFrames() > 0) {
+            // TAA path (handles SSAA internally if also enabled)
+            _renderProbeWithTAA(probe, drawdata, cubemapCPD);
+          } else if (probe->supersample() > 0) {
+            // SSAA-only path
+            _renderProbeWithSSAA(probe, drawdata, cubemapCPD);
+          } else {
+            // Default path: direct render into cubemap face (unchanged)
+            for (int iface = 0; iface < 6; iface++) {
+              _currentContext->debugPushGroup(FormatString("ForwardPBR::cubemap pass<%d>", iface));
 
-          // flip y on projection matrix
-          fmtx4 flipy;
-          flipy.setScale(1, -1, 1);
-          _CUBECAM->_pmatrix = flipy * _CUBECAM->_pmatrix;
+              _setupCubeFaceCamera(probe, iface);
 
-          for (int iface = 0; iface < 6; iface++) {
+              auto probe_pass                        = std::make_shared<ForwardPass>();
+              probe_pass->_drawdata                  = &drawdata;
+              probe_pass->_rtg_out                   = probe->_cubeRenderRTG;
+              probe_pass->_rtg_depth_copy            = _rtg_cube1_depth_copy;
+              probe_pass->_renderingPROBE            = true;
+              probe_pass->_fwd_pass_layer            = probe->renderLayer();
+              probe_pass->_single_pass_stereo        = false;
+              probe->_cubeRenderRTG->_cubeRenderFace = iface;
 
-            _currentContext->debugPushGroup(FormatString("ForwardPBR::cubemap pass<%d>", iface));
+              cubemapCPD._mono_cam_matrices = _CUBECAM;
+              _currentRCFD->_passID         = "PROBE"_crcu;
 
-            // compute view matrices from cubeface and CMATRIX (matching GL code exactly)
-            //  face 0 = POSX
-            //  face 1 = NEGX
-            //  face 2 = POSY
-            //  face 3 = NEGY
-            //  face 4 = POSZ
-            //  face 5 = NEGZ
-            switch (iface) {
-              case 1:
-                _CUBECAM->_vmatrix.lookAt(position, position + POSX, POSY);
-                break;
-              case 0:
-                _CUBECAM->_vmatrix.lookAt(position, position - POSX, POSY);
-                break;
-              case 2:
-                _CUBECAM->_vmatrix.lookAt(position, position + POSY, POSZ * -1);
-                break;
-              case 3:
-                _CUBECAM->_vmatrix.lookAt(position, position - POSY, POSZ);
-                break;
-              case 4:
-                _CUBECAM->_vmatrix.lookAt(position, position + POSZ, POSY);
-                break;
-              case 5:
-                _CUBECAM->_vmatrix.lookAt(position, position - POSZ, POSY);
-                break;
+              topcomp->pushCPD(cubemapCPD);
+              _render_dppskyssaocolor(probe_pass);
+              topcomp->popCPD();
+
+              _currentContext->debugPopGroup();
             }
 
-            _CUBECAM->_vpmatrix  = _CUBECAM->_vmatrix * _CUBECAM->_pmatrix;
-            _CUBECAM->_ivpmatrix = _CUBECAM->_vpmatrix.inverse();
-            _CUBECAM->_ivmatrix  = _CUBECAM->_vmatrix.inverse();
-            _CUBECAM->_ipmatrix  = _CUBECAM->_pmatrix.inverse();
-            _CUBECAM->_frustum.set(_CUBECAM->_vmatrix, _CUBECAM->_pmatrix);
-            _CUBECAM->_explicitProjectionMatrix = true;
-            _CUBECAM->_explicitViewMatrix       = true;
-            _CUBECAM->_aspectRatio              = 1.0f;
-
-            auto probe_pass                        = std::make_shared<ForwardPass>();
-            probe_pass->_drawdata                  = &drawdata;
-            probe_pass->_rtg_out                   = probe->_cubeRenderRTG;
-            probe_pass->_rtg_depth_copy            = _rtg_cube1_depth_copy;
-            probe_pass->_renderingPROBE            = true;
-            probe_pass->_fwd_pass_layer            = "probe";
-            probe_pass->_single_pass_stereo        = false;
-            probe->_cubeRenderRTG->_cubeRenderFace = iface;
-
-            cubemapCPD._mono_cam_matrices = _CUBECAM;
-            _currentRCFD->_passID         = "PROBE"_crcu;
-
-            topcomp->pushCPD(cubemapCPD);
-            _render_dppskyssaocolor(probe_pass);
-            topcomp->popCPD();
-
-            _currentContext->debugPopGroup();
+            probe->_cubeTexture = probe->_cubeRenderRTG->texture(0);
+            TXI->generateMipMaps(probe->_cubeTexture.get());
+            probe->_dirty = false;
           }
-
-          probe->_cubeTexture = probe->_cubeRenderRTG->texture(0);
-          TXI->generateMipMaps(probe->_cubeTexture.get());
-          probe->_dirty = false;
         }
         break;
       }
@@ -241,10 +246,333 @@ void ForwardPbrNodeImpl::_update_shadow_maps() {
         FBI->PopRtGroup();
         topcomp->popCPD();
 
-        _currentContext->debugPopGroup();        
+        _currentContext->debugPopGroup();
       }
       num_shadow_casters++;
     }
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void ForwardPbrNodeImpl::_initProbeBlitMaterial(Context* ctx) {
+  if (_probeBlitInitDone) return;
+  _probeBlitMtl.gpuInit(ctx, "orkshader://blit");
+  _probeBlitMtl._rasterstate->setCullTest(ECullTest::OFF);
+  _tek_probe_blit     = _probeBlitMtl.technique("blit");
+  _tek_probe_ds[0]    = _probeBlitMtl.technique("blit");
+  _tek_probe_ds[1]    = _probeBlitMtl.technique("downsample_2x2");
+  _tek_probe_ds[2]    = _probeBlitMtl.technique("downsample_3x3");
+  _tek_probe_ds[3]    = _probeBlitMtl.technique("downsample_4x4");
+  _tek_probe_ds[4]    = _probeBlitMtl.technique("downsample_5x5");
+  _tek_probe_ds[5]    = _probeBlitMtl.technique("downsample_6x6");
+  _tek_probe_ds[6]    = _probeBlitMtl.technique("downsample_7x7");
+  _tek_probe_temporal = _probeBlitMtl.technique("tek_temporal_blend");
+  _par_probe_colormap    = _probeBlitMtl.param("ColorMap");
+  _par_probe_accummap    = _probeBlitMtl.param("AccumMap");
+  _par_probe_blendweight = _probeBlitMtl.param("BlendWeight");
+  _par_probe_mvp         = _probeBlitMtl.param("MatMVP");
+  _par_probe_vpdim       = _probeBlitMtl.param("ViewportDim");
+  _par_probe_flipy       = _probeBlitMtl.param("FlipY");
+  _par_probe_flipx       = _probeBlitMtl.param("FlipX");
+  _probeBlitInitDone = true;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void ForwardPbrNodeImpl::_renderProbeWithSSAA(
+    lightprobe_ptr_t probe,
+    CompositorDrawData& drawdata,
+    CompositingPassData& cubemapCPD) {
+
+  auto TXI = _currentContext->TXI();
+  auto FBI = _currentContext->FBI();
+  auto DWI = _currentContext->DWI();
+  auto topcomp = _currentRCFD->topCompositor();
+
+  int ss = probe->supersample();
+  int ssaa_dim = probe->dim() * (ss + 1);
+
+  // Ensure SSAA render RTG exists at upscaled resolution
+  if (!probe->_ssaaRenderRTG || probe->_ssaaRenderRTG->width() != ssaa_dim) {
+    probe->_ssaaRenderRTG = std::make_shared<RtGroup>(_currentContext, ssaa_dim, ssaa_dim);
+    probe->_ssaaRenderRTG->_name = "ProbeSSAA_Render";
+    auto colorbuf = probe->_ssaaRenderRTG->createRenderTarget(EBufferFormat::RGBA8);
+    colorbuf->_debugName = "ProbeSSAA_Color";
+    probe->_ssaaRenderRTG->createDepthBuffer(EBufferFormat::Z32F, true);
+  }
+
+  for (int iface = 0; iface < 6; iface++) {
+    _currentContext->debugPushGroup(FormatString("ForwardPBR::cubemap SSAA pass<%d>", iface));
+
+    _setupCubeFaceCamera(probe, iface);
+
+    // Step 1: Render at upscaled resolution into _ssaaRenderRTG
+    auto probe_pass = std::make_shared<ForwardPass>();
+    probe_pass->_drawdata = &drawdata;
+    probe_pass->_rtg_out = probe->_ssaaRenderRTG;
+    probe_pass->_rtg_depth_copy = _rtg_cube1_depth_copy;
+    probe_pass->_renderingPROBE = true;
+    probe_pass->_fwd_pass_layer = probe->renderLayer();
+    probe_pass->_single_pass_stereo = false;
+
+    cubemapCPD._mono_cam_matrices = _CUBECAM;
+    _currentRCFD->_passID = "PROBE"_crcu;
+
+    topcomp->pushCPD(cubemapCPD);
+    _render_dppskyssaocolor(probe_pass);
+    topcomp->popCPD();
+
+    // Step 2: Downsample _ssaaRenderRTG -> cubeRenderRTG[iface]
+    probe->_cubeRenderRTG->_cubeRenderFace = iface;
+    probe->_cubeRenderRTG->_autoclear = false;
+    FBI->PushRtGroup(probe->_cubeRenderRTG.get());
+
+    auto tex = probe->_ssaaRenderRTG->buffer(0)->texture();
+    auto& mtl = _probeBlitMtl;
+    mtl._rasterstate->_force = true;
+    mtl._rasterstate->setBlendingMacro(BlendingMacro::OFF);
+    mtl._rasterstate->setDepthTest(EDepthTest::OFF);
+    mtl._rasterstate->setCullTest(ECullTest::OFF);
+    mtl.begin(_tek_probe_ds[ss], _currentRCFD);
+    mtl.bindParamTexture(_par_probe_colormap, tex);
+    mtl.bindParamMatrix(_par_probe_mvp, fmtx4::Identity());
+    mtl.bindParamVec2(_par_probe_vpdim, fvec2(float(probe->dim()), float(probe->dim())));
+    mtl.bindParamInt(_par_probe_flipy, 0);
+    mtl.bindParamInt(_par_probe_flipx, 0);
+    ViewportRect extents(0, 0, probe->dim(), probe->dim());
+    FBI->pushViewport(extents);
+    FBI->pushScissor(extents);
+    DWI->fullscreenQuad();
+    FBI->popViewport();
+    FBI->popScissor();
+    mtl.end(_currentRCFD);
+
+    FBI->PopRtGroup();
+    _currentContext->debugPopGroup();
+  }
+
+  probe->_cubeTexture = probe->_cubeRenderRTG->texture(0);
+  TXI->generateMipMaps(probe->_cubeTexture.get());
+  probe->_dirty = false;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void ForwardPbrNodeImpl::_renderProbeWithTAA(
+    lightprobe_ptr_t probe,
+    CompositorDrawData& drawdata,
+    CompositingPassData& cubemapCPD) {
+
+  auto TXI = _currentContext->TXI();
+  auto FBI = _currentContext->FBI();
+  auto DWI = _currentContext->DWI();
+  auto topcomp = _currentRCFD->topCompositor();
+
+  int dim = probe->dim();
+  bool doSSAA = (probe->supersample() > 0);
+  int ss = probe->supersample();
+
+  // Ensure SSAA RTG if needed
+  if (doSSAA) {
+    int ssaa_dim = dim * (ss + 1);
+    if (!probe->_ssaaRenderRTG || probe->_ssaaRenderRTG->width() != ssaa_dim) {
+      probe->_ssaaRenderRTG = std::make_shared<RtGroup>(_currentContext, ssaa_dim, ssaa_dim);
+      probe->_ssaaRenderRTG->_name = "ProbeSSAA_Render";
+      auto colorbuf = probe->_ssaaRenderRTG->createRenderTarget(EBufferFormat::RGBA8);
+      colorbuf->_debugName = "ProbeSSAA_Color";
+      probe->_ssaaRenderRTG->createDepthBuffer(EBufferFormat::Z32F, true);
+    }
+  }
+
+  // Ensure temp face RTG for current-frame face result
+  if (!probe->_tempFaceRTG || probe->_tempFaceRTG->width() != dim) {
+    probe->_tempFaceRTG = std::make_shared<RtGroup>(_currentContext, dim, dim);
+    probe->_tempFaceRTG->_name = "ProbeTAA_TempFace";
+    auto buf = probe->_tempFaceRTG->createRenderTarget(EBufferFormat::RGBA32F);
+    buf->_debugName = "ProbeTAA_TempFaceColor";
+    probe->_tempFaceRTG->createDepthBuffer(EBufferFormat::Z32F, true);
+    probe->_tempFaceRTG->_autoclear = false;
+  }
+
+  // Ensure per-face accumulation RTGs
+  for (int f = 0; f < 6; f++) {
+    for (int pp = 0; pp < 2; pp++) {
+      if (!probe->_accumFaceRTG[f][pp] || probe->_accumFaceRTG[f][pp]->width() != dim) {
+        probe->_accumFaceRTG[f][pp] = std::make_shared<RtGroup>(_currentContext, dim, dim);
+        probe->_accumFaceRTG[f][pp]->_name = FormatString("ProbeTAA_Accum_f%d_pp%d", f, pp);
+        auto buf = probe->_accumFaceRTG[f][pp]->createRenderTarget(EBufferFormat::RGBA32F);
+        buf->_debugName = FormatString("ProbeTAA_AccumColor_f%d_pp%d", f, pp);
+        probe->_accumFaceRTG[f][pp]->_autoclear = false;
+      }
+    }
+  }
+
+  int writeIdx = probe->_accumWriteIdx;
+  int readIdx = writeIdx ^ 1;
+  float weight = 1.0f / float(std::min(probe->_accumFrameCount + 1, probe->temporalFrames()));
+
+  for (int iface = 0; iface < 6; iface++) {
+    _currentContext->debugPushGroup(FormatString("ForwardPBR::cubemap TAA pass<%d> frame<%d>", iface, probe->_accumFrameCount));
+
+    _setupCubeFaceCamera(probe, iface);
+
+    // Step 1: Render current face
+    if (doSSAA) {
+      // Render at upscaled resolution
+      auto probe_pass = std::make_shared<ForwardPass>();
+      probe_pass->_drawdata = &drawdata;
+      probe_pass->_rtg_out = probe->_ssaaRenderRTG;
+      probe_pass->_rtg_depth_copy = _rtg_cube1_depth_copy;
+      probe_pass->_renderingPROBE = true;
+      probe_pass->_fwd_pass_layer = probe->renderLayer();
+      probe_pass->_single_pass_stereo = false;
+
+      cubemapCPD._mono_cam_matrices = _CUBECAM;
+      _currentRCFD->_passID = "PROBE"_crcu;
+      topcomp->pushCPD(cubemapCPD);
+      _render_dppskyssaocolor(probe_pass);
+      topcomp->popCPD();
+
+      // Downsample into _tempFaceRTG
+      FBI->PushRtGroup(probe->_tempFaceRTG.get());
+      auto tex = probe->_ssaaRenderRTG->buffer(0)->texture();
+      auto& mtl = _probeBlitMtl;
+      mtl._rasterstate->_force = true;
+      mtl._rasterstate->setBlendingMacro(BlendingMacro::OFF);
+      mtl._rasterstate->setDepthTest(EDepthTest::OFF);
+      mtl._rasterstate->setCullTest(ECullTest::OFF);
+      mtl.begin(_tek_probe_ds[ss], _currentRCFD);
+      mtl.bindParamTexture(_par_probe_colormap, tex);
+      mtl.bindParamMatrix(_par_probe_mvp, fmtx4::Identity());
+      mtl.bindParamVec2(_par_probe_vpdim, fvec2(float(dim), float(dim)));
+      bool isTopBottom = (iface == 2 || iface == 3);
+      mtl.bindParamInt(_par_probe_flipy, isTopBottom ? 0 : 1);
+      mtl.bindParamInt(_par_probe_flipx, isTopBottom ? 1 : 0);
+      ViewportRect extents(0, 0, dim, dim);
+      FBI->pushViewport(extents);
+      FBI->pushScissor(extents);
+      DWI->fullscreenQuad();
+      FBI->popViewport();
+      FBI->popScissor();
+      mtl.end(_currentRCFD);
+      FBI->PopRtGroup();
+    } else {
+      // Render directly into _tempFaceRTG at native resolution
+      auto probe_pass = std::make_shared<ForwardPass>();
+      probe_pass->_drawdata = &drawdata;
+      probe_pass->_rtg_out = probe->_tempFaceRTG;
+      probe_pass->_rtg_depth_copy = _rtg_cube1_depth_copy;
+      probe_pass->_renderingPROBE = true;
+      probe_pass->_fwd_pass_layer = probe->renderLayer();
+      probe_pass->_single_pass_stereo = false;
+
+      cubemapCPD._mono_cam_matrices = _CUBECAM;
+      _currentRCFD->_passID = "PROBE"_crcu;
+      topcomp->pushCPD(cubemapCPD);
+      _render_dppskyssaocolor(probe_pass);
+      topcomp->popCPD();
+    }
+
+    // Step 2: Temporal blend
+    auto temp_tex = probe->_tempFaceRTG->buffer(0)->texture();
+    ViewportRect extents(0, 0, dim, dim);
+
+    if (probe->_accumFrameCount == 0) {
+      // First frame: just copy temp to accum[write]
+      FBI->PushRtGroup(probe->_accumFaceRTG[iface][writeIdx].get());
+      auto& mtl = _probeBlitMtl;
+      mtl._rasterstate->_force = true;
+      mtl._rasterstate->setBlendingMacro(BlendingMacro::OFF);
+      mtl._rasterstate->setDepthTest(EDepthTest::OFF);
+      mtl._rasterstate->setCullTest(ECullTest::OFF);
+      mtl.begin(_tek_probe_blit, _currentRCFD);
+      mtl.bindParamTexture(_par_probe_colormap, temp_tex);
+      mtl.bindParamMatrix(_par_probe_mvp, fmtx4::Identity());
+      mtl.bindParamVec2(_par_probe_vpdim, fvec2(float(dim), float(dim)));
+      mtl.bindParamInt(_par_probe_flipy, 0);
+      mtl.bindParamInt(_par_probe_flipx, 0);
+      FBI->pushViewport(extents);
+      FBI->pushScissor(extents);
+      DWI->fullscreenQuad();
+      FBI->popViewport();
+      FBI->popScissor();
+      mtl.end(_currentRCFD);
+      FBI->PopRtGroup();
+    } else {
+      // Blend temp + accum[read] -> accum[write]
+      auto accum_read_tex = probe->_accumFaceRTG[iface][readIdx]->buffer(0)->texture();
+      FBI->PushRtGroup(probe->_accumFaceRTG[iface][writeIdx].get());
+      auto& mtl = _probeBlitMtl;
+      mtl._rasterstate->_force = true;
+      mtl._rasterstate->setBlendingMacro(BlendingMacro::OFF);
+      mtl._rasterstate->setDepthTest(EDepthTest::OFF);
+      mtl._rasterstate->setCullTest(ECullTest::OFF);
+      mtl.begin(_tek_probe_temporal, _currentRCFD);
+      mtl.bindParamTexture(_par_probe_colormap, temp_tex);
+      mtl.bindParamTexture(_par_probe_accummap, accum_read_tex);
+      mtl.bindParamMatrix(_par_probe_mvp, fmtx4::Identity());
+      mtl.bindParamFloat(_par_probe_blendweight, weight);
+      FBI->pushViewport(extents);
+      FBI->pushScissor(extents);
+      DWI->fullscreenQuad();
+      FBI->popViewport();
+      FBI->popScissor();
+      mtl.end(_currentRCFD);
+      FBI->PopRtGroup();
+    }
+
+    // Step 3: Copy accum[write] -> cubeRenderRTG[iface]
+    auto accum_result_tex = probe->_accumFaceRTG[iface][writeIdx]->buffer(0)->texture();
+    probe->_cubeRenderRTG->_cubeRenderFace = iface;
+    probe->_cubeRenderRTG->_autoclear = false;
+    FBI->PushRtGroup(probe->_cubeRenderRTG.get());
+    {
+      auto& mtl = _probeBlitMtl;
+      mtl._rasterstate->_force = true;
+      mtl._rasterstate->setBlendingMacro(BlendingMacro::OFF);
+      mtl._rasterstate->setDepthTest(EDepthTest::OFF);
+      mtl._rasterstate->setCullTest(ECullTest::OFF);
+      mtl.begin(_tek_probe_blit, _currentRCFD);
+      mtl.bindParamTexture(_par_probe_colormap, accum_result_tex);
+      mtl.bindParamMatrix(_par_probe_mvp, fmtx4::Identity());
+      mtl.bindParamVec2(_par_probe_vpdim, fvec2(float(dim), float(dim)));
+      mtl.bindParamInt(_par_probe_flipy, 0);
+      mtl.bindParamInt(_par_probe_flipx, 0);
+      FBI->pushViewport(extents);
+      FBI->pushScissor(extents);
+      DWI->fullscreenQuad();
+      FBI->popViewport();
+      FBI->popScissor();
+      mtl.end(_currentRCFD);
+    }
+    FBI->PopRtGroup();
+
+    _currentContext->debugPopGroup();
+  }
+
+  // After all 6 faces: swap ping-pong and advance frame count
+  probe->_accumWriteIdx ^= 1;
+  probe->_accumFrameCount++;
+
+  if (probe->_accumFrameCount >= probe->temporalFrames()) {
+    // Converged
+    probe->_cubeTexture = probe->_cubeRenderRTG->texture(0);
+    TXI->generateMipMaps(probe->_cubeTexture.get());
+    probe->_dirty = false;
+    probe->_accumFrameCount = 0;
+
+    // Release temporary buffers
+    for (int f = 0; f < 6; f++) {
+      probe->_accumFaceRTG[f][0] = nullptr;
+      probe->_accumFaceRTG[f][1] = nullptr;
+    }
+    probe->_tempFaceRTG = nullptr;
+    probe->_ssaaRenderRTG = nullptr;
+  } else {
+    // Intermediate: update cube texture for live display but stay dirty
+    probe->_cubeTexture = probe->_cubeRenderRTG->texture(0);
+    TXI->generateMipMaps(probe->_cubeTexture.get());
   }
 }
 
@@ -264,6 +592,10 @@ void ForwardPbrNodeImpl::_render_colorpass(forward_pass_ptr_t fpass) {
 
   _currentContext->debugMarker("ForwardPBR::renderEnqueuedScene::layer<std_forward>");
   _currentDrawQueue->enqueueLayerToRenderQueue(fpass->_fwd_pass_layer, _currentIRenderer);
+  if (_currentDrawQueue->_enableEditorLayers) {
+    _currentContext->debugMarker("ForwardPBR::renderEnqueuedScene::layer<std_editor>");
+    _currentDrawQueue->enqueueLayerToRenderQueue("std_editor", _currentIRenderer);
+  }
 
   _currentRCFD->_renderingmodel = "FORWARD_PBR"_crcu;
   _currentRCFD->_subpassID      = "COLOR"_crcu;

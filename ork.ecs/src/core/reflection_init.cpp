@@ -50,6 +50,7 @@
 #include <ork/ecs/GlobalSynthSystem.h>
 
 #include "InterpComponent_impl.h"
+#include "ProbeComponent_impl.h"
 #include "../scripting/Lua/LuaImpl.h"
 
 
@@ -135,10 +136,12 @@ struct EcsAppInit {
   EcsAppInit(ork::appinitdata_ptr_t init_data) {
 
     RegisterClassX(Archetype);
+    RegisterClassX(ReferenceArchetype);
     RegisterClassX(DagNodeData);
     RegisterClassX(SpawnData);
     RegisterClassX(SceneObject);
     RegisterClassX(SceneData);
+    RegisterClassX(SceneImportData);
     RegisterClassX(ComponentData);
     RegisterClassX(ComponentFragmentData);
 
@@ -206,6 +209,10 @@ struct EcsAppInit {
     RegisterClassX(GlobalSynthSystemData);
     RegisterClassX(GlobalSynthSystem);
 
+    RegisterClassX(ProbeComponentData);
+    RegisterClassX(ProbeComponent);
+    RegisterClassX(ProbeSystemData);
+
     RegisterFamily<LuaComponentData>(ork::AddPooledLiteral("control"));
     RegisterFamily<TransformCurveComponentData>(ork::AddPooledLiteral("control"));
     RegisterFamily<BoidsComponentData>(ork::AddPooledLiteral("control"));
@@ -215,6 +222,7 @@ struct EcsAppInit {
     RegisterFamily<BulletObjectComponentData>(ork::AddPooledLiteral("")); // no update
     RegisterFamily<StochWavSoundEmitterData>(ork::AddPooledLiteral("control"));
     RegisterFamily<SimpleSoundEmitterData>(ork::AddPooledLiteral("control"));
+    RegisterFamily<ProbeComponentData>(ork::AddPooledLiteral("")); // no update
   }
 };
 

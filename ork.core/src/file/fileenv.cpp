@@ -8,6 +8,7 @@
 #include <ork/pch.h>
 
 #include <ork/file/fileenv.h>
+#include <ork/file/path.h>
 #include <ork/kernel/slashnode.h>
 #include <ork/orkstd.h> // For OrkAssert
 
@@ -154,6 +155,15 @@ filedevctx_ptr_t FileEnv::createContextForUriBase(
   context->setFilesystemBaseAbs(base_location);
   GetRef()._filedevcontext_map[uriproto] = context;
   context->SetPrependFilesystemBase(true);
+
+  // Bidirectional sync: also register in the unified expander table
+  // Strip "://" suffix to get the key name.
+  // setPathExpander guards against re-entry back into createContextForUriBase.
+  auto proto_end = uriproto.find("://");
+  if (proto_end != std::string::npos) {
+    auto key = uriproto.substr(0, proto_end);
+    file::setPathExpander(key, base_location);
+  }
 
   return context;
 }

@@ -182,13 +182,14 @@ void DropdownMenu::DoLayout() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 fvec2 DropdownMenu::computeSize() const {
+  auto font = lev2::FontMan::PushFont(FONTNAME);
   int max_label_w = 0;
   for (auto& item : _items) {
-    int sw = lev2::FontMan::stringWidth(item._label.length());
+    int sw = font->stringWidth(item._label.length());
     max_label_w = std::max(max_label_w, sw);
   }
+  lev2::FontMan::PopFont();
   int w = max_label_w + PADDING_X * 2 + ARROW_WIDTH;
-  w = std::max(w, 160); // minimum width
   int num_visible = std::min(int(_items.size()), MAX_VISIBLE);
   int h = num_visible * ITEM_HEIGHT;
   return fvec2(w, h);

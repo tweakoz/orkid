@@ -5,6 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
+#include <sstream>
 #include <ork/kernel/opq.h>
 #include <ork/lev2/ui/event.h>
 #include <ork/reflect/properties/registerX.inl>
@@ -26,11 +27,30 @@
 #include "../core/message_private.h"
 #include <ork/util/logger.h>
 #include <ork/kernel/profiler.h>
+#include <ork/lev2/gfx/texman.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ecs {
 ///////////////////////////////////////////////////////////////////////////////
 static logchannel_ptr_t logchan_sgsys = logger()->configureChannel("ecs.sgcomp", fvec3(0.9, 0.7, 0));
+///////////////////////////////////////////////////////////////////////////////
+// Resolve layer names from either _multilayers (Python kwarg) or comma-delimited _layername (JSON).
+static std::vector<std::string> resolveLayerNames(const SceneGraphNodeItemData* NID) {
+  if (NID->_multilayers.size()) {
+    return NID->_multilayers;
+  }
+  std::vector<std::string> result;
+  std::istringstream ss(NID->_layername);
+  std::string token;
+  while (std::getline(ss, token, ',')) {
+    auto start = token.find_first_not_of(" \t");
+    auto end   = token.find_last_not_of(" \t");
+    if (start != std::string::npos)
+      result.push_back(token.substr(start, end - start + 1));
+  }
+  if (result.empty()) result.push_back("");
+  return result;
+}
 ///////////////////////////////////////////////////////////////////////////////
 using namespace ork;
 using namespace ork::object;
@@ -47,6 +67,8 @@ void SceneGraphSystemData::describeX(SystemDataClass* clazz) {
   ImplementToken(DestroyNode);
   ImplementToken(ChangeModColor);
   ImplementToken(HighlightBySpawnData);
+  ImplementToken(SyncTransformBySpawnData);
+  ImplementToken(AttachEditorBillboard);
   ImplementToken(eye);
   ImplementToken(tgt);
   ImplementToken(up);
@@ -58,6 +80,11 @@ void SceneGraphSystemData::describeX(SystemDataClass* clazz) {
 
   clazz->directMapProperty("userparams", &SceneGraphSystemData::_userParams);
   clazz->directObjectVectorProperty("drawabledatas", &SceneGraphSystemData::_staticDrawableDatas);
+
+  clazz->intProperty("CookieAtlasWidth", int_range{64, 4096}, &SceneGraphSystemData::_cookieAtlasWidth);
+  clazz->intProperty("CookieAtlasHeight", int_range{64, 4096}, &SceneGraphSystemData::_cookieAtlasHeight);
+  clazz->intProperty("ShadowAtlasWidth", int_range{64, 4096}, &SceneGraphSystemData::_shadowAtlasWidth);
+  clazz->intProperty("ShadowAtlasHeight", int_range{64, 4096}, &SceneGraphSystemData::_shadowAtlasHeight);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -252,17 +279,10 @@ void SceneGraphSystem::_instantiateDeclaredNodes() {
               //printf( "init instanced<%d>\n", i );
             }
           };
-          if(NID->_multilayers.size()){
-            for( auto sub_layer : NID->_multilayers ){
-                auto layer = _scene->findLayer(sub_layer);
-                NODE_ON_LAYER(layer);
-            }
-          }
-          else{
-            auto layer = NID->_layername.empty()
-                ? _default_layer
-                : _scene->findLayer(NID->_layername);
-                NODE_ON_LAYER(layer);
+          auto layers_i = resolveLayerNames(NID.get());
+          for (auto& lname : layers_i) {
+            auto layer = lname.empty() ? _default_layer : _scene->createLayer(lname);
+            NODE_ON_LAYER(layer);
           }
         } else {
           auto NODE_ON_LAYER = [=](lev2::scenegraph::layer_ptr_t layer){
@@ -270,16 +290,10 @@ void SceneGraphSystem::_instantiateDeclaredNodes() {
             node->_modcolor = NID->_modcolor;
             nitem->_sgnode  = node;
           };
-          if(NID->_multilayers.size()){
-            for( auto sub_layer : NID->_multilayers ){
-                auto layer = _scene->findLayer(sub_layer);
-                NODE_ON_LAYER(layer);
-            }
-          } else {
-              auto layer = NID->_layername.empty()
-                  ? _default_layer
-                  : _scene->findLayer(NID->_layername);
-              NODE_ON_LAYER(layer);
+          auto layers_n = resolveLayerNames(NID.get());
+          for (auto& lname : layers_n) {
+            auto layer = lname.empty() ? _default_layer : _scene->createLayer(lname);
+            NODE_ON_LAYER(layer);
           }
         }
       };
@@ -339,6 +353,84 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
   }
 
   /////////////////////////////////////////
+  // Build cookie atlas from SpotLightData cookie paths
+  // (scan scene DATA, not live scene graph — lights aren't staged yet)
+  // Strategy: create NEW TextureArrays, GPU-upload directly, swap pointers.
+  // Don't touch defaults or _needs_gpu_init. (see ~/liveload.md Theory 5)
+  /////////////////////////////////////////
+
+  {
+    auto lmgr = _scene->_lightManager;
+    if (lmgr) {
+      int atlasW  = _SGSD._cookieAtlasWidth;
+      int atlasH  = _SGSD._cookieAtlasHeight;
+      int shadowW = _SGSD._shadowAtlasWidth;
+      int shadowH = _SGSD._shadowAtlasHeight;
+
+      // Collect unique cookie paths and count spotlights from scene data
+      std::vector<std::string> cookiePaths;
+      std::set<std::string> seenPaths;
+      int numSpotlights = 0;
+
+      auto collect_spotlights = [&](const std::map<std::string, sgnodeitemdata_ptr_t>& nodedatas) {
+        for (auto& NID_item : nodedatas) {
+          auto NID = NID_item.second;
+          if (auto as_spot = std::dynamic_pointer_cast<lev2::SpotLightData>(NID->_drawabledata)) {
+            numSpotlights++;
+            std::string key = as_spot->_cookiePath.c_str();
+            if (!key.empty() && seenPaths.find(key) == seenPaths.end()) {
+              seenPaths.insert(key);
+              cookiePaths.push_back(key);
+            }
+          }
+        }
+      };
+
+      // scan all archetypes' SceneGraphComponentData
+      for (auto COMPDATA : compdatas) {
+        collect_spotlights(COMPDATA->_nodedatas);
+      }
+      // scan system-level nodedatas
+      collect_spotlights(_SGSD._nodedatas);
+
+      {
+        // Always create cookie arrays — spotlights may be added dynamically
+        int numColorSlices = std::max((int)cookiePaths.size(), 1); // at least 1 (default white)
+        int numDepthSlices = std::max(numSpotlights, 4);           // reserve slots for dynamic adds
+
+        // Create color cookie TextureArray
+        _cookieColorArray = std::make_shared<lev2::TextureArray>();
+        _cookieColorArray->_tex->_debugName = "ecs_cookie_color";
+        _cookieColorArray->_debugName       = "ecs_cookie_color";
+        _cookieColorArray->_needsRadianceCache = true;
+        _cookieColorArray->_requires_mips   = true;
+        _cookieColorArray->resize(atlasW, atlasH, numColorSlices, lev2::EBufferFormat::RGB8);
+
+        // Load cookie images (populates _images for GPU upload)
+        for (size_t i = 0; i < cookiePaths.size(); i++) {
+          auto expanded = file::expandPaths(cookiePaths[i]);
+          auto sliceRef = _cookieColorArray->load(expanded);
+          _cookiePathToSliceRef[cookiePaths[i]] = sliceRef;
+        }
+
+        // Create depth cookie TextureArray (blank render target for shadow maps)
+        _cookieDepthArray = std::make_shared<lev2::TextureArray>();
+        _cookieDepthArray->_tex->_debugName = "ecs_cookie_depth";
+        _cookieDepthArray->_debugName       = "ecs_cookie_depth";
+        _cookieDepthArray->resize(shadowW, shadowH, numDepthSlices, lev2::EBufferFormat::Z32F);
+        _cookieDepthArray->_tex->mTexSampleMode._texAddrModeS = lev2::TextureAddressMode::CLAMP;
+        _cookieDepthArray->_tex->mTexSampleMode._texAddrModeT = lev2::TextureAddressMode::CLAMP;
+        _cookieDepthArray->_tex->mTexSampleMode._texAddrModeR = lev2::TextureAddressMode::CLAMP;
+
+        // Set on light manager
+        lmgr->_cookies_spot_color = _cookieColorArray;
+        lmgr->_cookies_spot_depth = _cookieDepthArray;
+        _nextDepthSlice = 0;
+      }
+    }
+  }
+
+  /////////////////////////////////////////
 
   _onGpuInitOpQueue.atomicOp([](std::vector<void_lambda_t>& unlocked) {
     for (auto item : unlocked) {
@@ -347,8 +439,15 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
     unlocked.clear();
   });
 
+  // GPU uploads deferred to loading phase (safe for first-run shader compilation)
   auto ph = ctx->newLoadingPhase();
   ph->enqueueOperation([=](Context* ctx) {
+    if (_cookieColorArray) {
+      ctx->TXI()->updateTextureArray(_cookieColorArray.get());
+    }
+    if (_cookieDepthArray) {
+      ctx->TXI()->initTextureArray2D(_cookieDepthArray.get());
+    }
     if (_scene->_lightManager) {
       _scene->_lightManager->gpuInit(ctx);
     }
@@ -388,6 +487,7 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
               ? _default_layer
               : _scene->findLayer(NID->_layername);
           auto l = dynamic_pointer_cast<Light>(as_light->createDrawable());
+          l->_castsShadows = as_light->IsShadowCaster();
 
           auto nitem                            = std::make_shared<SceneGraphNodeItem>();
           nitem->_drawable                      = l;
@@ -396,8 +496,28 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
           nitem->_data                          = NID;
           component->_nodeitems[NID->_nodename] = nitem;
 
+          // Assign cookie atlas slices to spotlights
+          if (auto as_spot = std::dynamic_pointer_cast<lev2::SpotLight>(l)) {
+            if (as_spot->_spdata) {
+              std::string ckey = as_spot->_spdata->_cookiePath.c_str();
+              auto it = _cookiePathToSliceRef.find(ckey);
+              if (it != _cookiePathToSliceRef.end()) {
+                as_spot->_cookieColor = it->second;
+              } else if (_cookieColorArray) {
+                as_spot->_cookieColor = _cookieColorArray->slice(0); // default white
+              }
+            }
+            if (_cookieDepthArray && _nextDepthSlice < (int)_cookieDepthArray->_maxslices) {
+              as_spot->_cookieDepth = _cookieDepthArray->slice(_nextDepthSlice++);
+            }
+          }
+
           auto ent = component->GetEntity();
           nitem->_sgnode->_userdata->makeValueForKey<uint64_t>("entref") = ent->_entref;
+
+          // For spotlights, derive view/projection from entity transform (+Z forward)
+          auto as_spotl = std::dynamic_pointer_cast<lev2::SpotLight>(l);
+
           if (NID->_xfoverride) {
             auto static_matrix = NID->_xfoverride->composed();
             l->_xformgenerator = [=]() -> fmtx4 {
@@ -406,11 +526,20 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
               if (node) {
                 auto xform = ent->transform();
                 rval       = xform->composed() * static_matrix;
-                OrkAssert(false);
+              }
+              if (as_spotl) {
+                fvec3 pos = rval.translation();
+                fvec3 fwd = rval.zNormal();
+                fvec3 up  = rval.yNormal();
+                fvec3 tgt = pos + fwd * as_spotl->getRange();
+                float near = as_spotl->getRange() / 1000.0f;
+                float far  = as_spotl->getRange();
+                as_spotl->mProjectionMatrix.perspective(as_spotl->getFovy() * DTOR, 1.0f, near, far);
+                as_spotl->mViewMatrix.lookAt(pos.x, pos.y, pos.z, tgt.x, tgt.y, tgt.z, up.x, up.y, up.z);
+                as_spotl->mWorldSpaceLightFrustum.set(as_spotl->mViewMatrix, as_spotl->mProjectionMatrix);
               }
               return rval;
             };
-            OrkAssert(false);
           } else {
             l->_xformgenerator = [=]() -> fmtx4 {
               fmtx4 rval;
@@ -418,6 +547,17 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
               if (node) {
                 auto xform = ent->transform();
                 rval       = xform->composed();
+              }
+              if (as_spotl) {
+                fvec3 pos = rval.translation();
+                fvec3 fwd = rval.zNormal();
+                fvec3 up  = rval.yNormal();
+                fvec3 tgt = pos + fwd * as_spotl->getRange();
+                float near = as_spotl->getRange() / 1000.0f;
+                float far  = as_spotl->getRange();
+                as_spotl->mProjectionMatrix.perspective(as_spotl->getFovy() * DTOR, 1.0f, near, far);
+                as_spotl->mViewMatrix.lookAt(pos.x, pos.y, pos.z, tgt.x, tgt.y, tgt.z, up.x, up.y, up.z);
+                as_spotl->mWorldSpaceLightFrustum.set(as_spotl->mViewMatrix, as_spotl->mProjectionMatrix);
               }
               return rval;
             };
@@ -461,19 +601,20 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
                 }
                 return nitem;
             };
-            if(NID->_multilayers.size()){
-                auto layer = _scene->findLayer(NID->_multilayers[0]);
-                auto item = DO_ITEM(layer);
-                for( int i=1; i<NID->_multilayers.size(); i++ ){
-                    auto layer = _scene->findLayer(NID->_multilayers[i]);
-                    auto drw_node = std::dynamic_pointer_cast<lev2::scenegraph::DrawableNode>(item->_sgnode);
-                    layer->addDrawableNode(drw_node);
+            auto layers_c = resolveLayerNames(NID.get());
+            auto first_layer = layers_c[0].empty() ? _default_layer : _scene->createLayer(layers_c[0]);
+            auto item = DO_ITEM(first_layer);
+            for (size_t i = 1; i < layers_c.size(); i++) {
+                auto layer = _scene->createLayer(layers_c[i]);
+                auto drw_node = std::dynamic_pointer_cast<lev2::scenegraph::DrawableNode>(item->_sgnode);
+                layer->addDrawableNode(drw_node);
+            }
+            // Also add to depth_prepass layer for shadow rendering
+            if (auto drw_node = std::dynamic_pointer_cast<lev2::scenegraph::DrawableNode>(item->_sgnode)) {
+                auto dpp_layer = _scene->findLayer("depth_prepass");
+                if (dpp_layer) {
+                    dpp_layer->addDrawableNode(drw_node);
                 }
-            } else {
-                auto layer = NID->_layername.empty()
-                    ? _default_layer
-                    : _scene->findLayer(NID->_layername);
-                auto item = DO_ITEM(layer);
             }
         }
       }
@@ -637,6 +778,7 @@ bool SceneGraphSystem::_onStage(Simulation* psi) {
   _scene->applyRuntimeParams(_mergedParams);
 
   _default_layer = _scene->createLayer("sg_default");
+  _scene->createLayer("depth_prepass");
   for (auto item : _SGSD._declaredLayers) {
     _scene->createLayer(item);
   }
@@ -776,6 +918,55 @@ void SceneGraphSystem::_onNotify(token_t evID, evdata_t data) {
           }
         }
       });
+      break;
+    }
+    case SyncTransformBySpawnData._hashed: {
+      const auto& table = *data.getShared<DataTable>();
+      auto name_str = table["name"_tok].get<std::string>();
+      auto psname = AddPooledString(name_str.c_str());
+      int matched = 0;
+      _components.atomicOp([&](component_set_t& comps) {
+        if(0)fprintf(stderr, "[SyncXF] spawner='%s' num_components=%zu\n", name_str.c_str(), comps.size());
+        for (auto* comp : comps) {
+          auto ent = comp->GetEntity();
+          if (ent->data()->GetName() == psname) {
+            auto spawner_xf = ent->data()->_dagnode->_xfnode->_transform;
+            auto ent_xf = ent->transform();
+            if(0)fprintf(stderr, "[SyncXF]   MATCH: spawner_pos=(%.2f,%.2f,%.2f) ent_pos=(%.2f,%.2f,%.2f)\n",
+                    spawner_xf->_translation.x, spawner_xf->_translation.y, spawner_xf->_translation.z,
+                    ent_xf->_translation.x, ent_xf->_translation.y, ent_xf->_translation.z);
+            ent_xf->_translation = spawner_xf->_translation;
+            ent_xf->_rotation = spawner_xf->_rotation;
+            ent_xf->_uniformScale = spawner_xf->_uniformScale;
+            auto setxform_op = comp->_genTransformOperation();
+            _renderops.push(setxform_op);
+            matched++;
+          }
+        }
+      });
+      if (matched == 0) {
+        // Fallback: find entity directly (e.g. probe entities with no SceneGraphComponent)
+        auto* ent = _simulation->findEntity(psname);
+        if (ent) {
+          auto spawner_xf = ent->data()->_dagnode->_xfnode->_transform;
+          auto ent_xf = ent->transform();
+          ent_xf->_translation = spawner_xf->_translation;
+          ent_xf->_rotation = spawner_xf->_rotation;
+          ent_xf->_uniformScale = spawner_xf->_uniformScale;
+        }
+      }
+      break;
+    }
+    case "AttachEditorBillboard"_crcu: {
+      const auto& table = *data.getShared<DataTable>();
+      auto spawner_name = table["spawner"_tok].get<std::string>();
+      auto bb_node = table["node"_tok].getShared<lev2::scenegraph::DrawableNode>();
+      auto psname = AddPooledString(spawner_name.c_str());
+      auto* ent = _simulation->findEntity(psname);
+      if (ent) {
+        bb_node->_userdata->makeValueForKey<uint64_t>("entref") = ent->_entref;
+        bb_node->_dqxfdata._worldTransform = ent->_dagnode->_xfnode->_transform;
+      }
       break;
     }
     default:

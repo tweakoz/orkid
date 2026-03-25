@@ -317,6 +317,7 @@ struct VkComputePipelineObject {
 
   bool createPipeline(vkfxsobj_ptr_t computeShader);
   void bindStorageBuffer(uint32_t binding_index, VkBuffer buffer, VkDeviceSize size);
+  void bindSampler(uint32_t binding_index, VkDescriptorImageInfo desc_info);
   void updateDescriptorSet();
 
   vkcontext_rawptr_t _contextVK = nullptr;
@@ -335,6 +336,9 @@ struct VkComputePipelineObject {
     VkDeviceSize size = 0;
   };
   std::map<uint32_t, StorageBufferBinding> _ssbo_bindings;
+
+  // Sampler bindings (binding_id -> descriptor image info)
+  std::map<uint32_t, VkDescriptorImageInfo> _sampler_bindings;
 
   // Track if descriptor set needs update
   bool _descriptors_dirty = true;

@@ -8,6 +8,7 @@
 #include "pyext.h"
 #include <ork/lev2/gfx/image.h>
 #include <ork/kernel/memcpy.inl>
+#include <ork/file/chunkfile.inl>
 #include <pybind11/numpy.h>
 #include <iostream>
 
@@ -173,6 +174,58 @@ void pyinit_gfx_image(py::module& module_lev2) {
         img->separableConvolve(*output, kernel, threshold);
         return output;
       }, py::arg("kernel"), py::arg("threshold") = fvec4(0.0f, 0.0f, 0.0f, 0.0f))
+      .def("resized", [](image_ptr_t img, int w, int h) -> image_ptr_t {
+        auto result = std::make_shared<Image>();
+        result->resizedOf(*img, w, h);
+        return result;
+      }, py::arg("w"), py::arg("h"))
+      .def("toXTXDataBlock", [](image_ptr_t img) -> py::bytes {
+        // Package this image as a single-level XTX mipchain datablock
+        CompressedImageMipChain mipchain;
+        CompressedImage level;
+        level._width = img->_width;
+        level._height = img->_height;
+        level._depth = 1;
+        level._format = img->_format;
+        level._numcomponents = img->_numcomponents;
+        level._bytesPerChannel = img->_bytesPerChannel;
+        level._data = img->_data;
+        mipchain._width = img->_width;
+        mipchain._height = img->_height;
+        mipchain._depth = 1;
+        mipchain._format = img->_format;
+        mipchain._numcomponents = img->_numcomponents;
+        mipchain._levels = {level};
+        auto datablock = std::make_shared<DataBlock>();
+        mipchain.writeXTX(datablock);
+        return py::bytes((const char*)datablock->data(), datablock->length());
+      })
+      .def_static("mipChainToXTXDataBlock", [](py::list images) -> py::bytes {
+        // Package a list of images as a multi-level XTX mipchain datablock
+        CompressedImageMipChain mipchain;
+        for (size_t i = 0; i < images.size(); i++) {
+          auto img = images[i].cast<image_ptr_t>();
+          CompressedImage level;
+          level._width = img->_width;
+          level._height = img->_height;
+          level._depth = 1;
+          level._format = img->_format;
+          level._numcomponents = img->_numcomponents;
+          level._bytesPerChannel = img->_bytesPerChannel;
+          level._data = img->_data;
+          mipchain._levels.push_back(level);
+          if (i == 0) {
+            mipchain._width = img->_width;
+            mipchain._height = img->_height;
+            mipchain._depth = 1;
+            mipchain._format = img->_format;
+            mipchain._numcomponents = img->_numcomponents;
+          }
+        }
+        auto datablock = std::make_shared<DataBlock>();
+        mipchain.writeXTX(datablock);
+        return py::bytes((const char*)datablock->data(), datablock->length());
+      })
       ;
   type_codec->registerStdCodec<image_ptr_t>(image_type);      
   ///////////////////////////////////////////////////////

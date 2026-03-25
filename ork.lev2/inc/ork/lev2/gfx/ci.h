@@ -26,6 +26,11 @@ struct ComputeInterface {
   virtual void dispatchComputeIndirect(const FxComputeShader* shader, int32_t* indirect) {}
   
   virtual void bindStorageBuffer(const FxComputeShader* shader, uint32_t binding_index, FxShaderStorageBuffer* buffer) {}
+
+  // Insert a shader storage (SSBO) memory barrier within an active dispatch phase.
+  // Ensures all SSBO writes from prior dispatches are visible to subsequent dispatches
+  // in the same command buffer. Must be called between dependent compute passes.
+  virtual void storageBarrier() {}
   #if defined(ENABLE_PYTORCH)
   virtual void copyTensorIntoStorageBuffer(FxShaderStorageBuffer* ssbo, torchtensor_ptr_t tensor, size_t dest_offset) { }
   virtual FxShaderStorageBuffer* storageBufferFromTensor(torchtensor_ptr_t tensor) { return nullptr; }
@@ -33,6 +38,8 @@ struct ComputeInterface {
 
 
   virtual void bindImage(const FxComputeShader* shader, uint32_t binding_index, Texture* tex, ImageBindAccess access) {}
+
+  virtual void bindSampler(const FxComputeShader* shader, uint32_t binding_index, Texture* tex) {}
 
 };
 

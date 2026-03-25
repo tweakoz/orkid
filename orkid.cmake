@@ -299,7 +299,7 @@ function(ork_std_target_set_defs the_target)
 
 
   IF(PROFILER)
-    list(APPEND def_list -DBUILD_WITH_EASY_PROFILER)
+    list(APPEND def_list -DORK_PROFILER_ENABLE)
   ENDIF()
 
 #  message(STATUS "ARCHITECTURE: ${ARCHITECTURE}")

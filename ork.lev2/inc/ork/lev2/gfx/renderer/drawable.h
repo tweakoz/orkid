@@ -172,6 +172,7 @@ public:
   int miNumLayersUsed = 0;
   int miBufferIndex   = -1;
   int miReadCount     = 0;
+  bool _enableEditorLayers = false;
 
   const usermap_t& userProperties() const {
     return _userProperties;
@@ -358,6 +359,7 @@ struct Drawable {
   uint32_t _sortkey = 0;
   uint64_t _drawable_type = 0;  // type identifier for enumeration (e.g. "model"_crcu)
   uint64_t _tag = 0;            // user-defined tag for custom filtering
+  pbr::radiancemaps_ptr_t _envmapOverride;  // per-drawable environment map override
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -401,6 +403,7 @@ struct DrawableData : public ork::Object { // todo subclass reflection Object
   fvec4 _modcolor;
   rendervar_strmap_t _assetvars;
   varmap::varmap_ptr_t _vars;
+  std::string _environmentMapPath;  // per-drawable env map override (supports <assetcache>, ${ENV})
 };
 
 ///////////////////////////////////////////////////////////////////////////////

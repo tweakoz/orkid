@@ -610,6 +610,14 @@ VkContext::VkContext() {
 ///////////////////////////////////////////////////////
 
 VkContext::~VkContext() {
+    if (_vkpresentationsurface != VK_NULL_HANDLE && _GVI) {
+      printf("VkContext::~VkContext: destroying VkSurface %p\n", (void*)_vkpresentationsurface);
+      vkDestroySurfaceKHR(_GVI->_instance, _vkpresentationsurface, nullptr);
+      _vkpresentationsurface = VK_NULL_HANDLE;
+    } else {
+      printf("VkContext::~VkContext: no surface to destroy (surface=%p GVI=%p)\n",
+             (void*)_vkpresentationsurface, (void*)_GVI.get());
+    }
     _vkdevice = nullptr;
 }
 
@@ -1652,8 +1660,9 @@ void VkProfilerChannel::frameEnd() {
 
   // Readback timestamp queries
   _timestamps.resize(_query_index);
-  OrkVkAssert(vkGetQueryPoolResults(_device, _query_pool, 0, _query_index, _query_index * sizeof(u64),
-    _timestamps.data(), sizeof(u64), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+  VkResult ok = vkGetQueryPoolResults(_device, _query_pool, 0, _query_index, _query_index * sizeof(u64),
+      _timestamps.data(), sizeof(u64), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+  OrkAssert(VK_SUCCESS == ok);
   _query_index = 0;
 
     // Accumulate isolated ticks from per-segment spans

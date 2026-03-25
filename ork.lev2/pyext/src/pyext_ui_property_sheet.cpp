@@ -11,6 +11,7 @@
 #include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/lev2/ui/property_sheet.h>
 #include <ork/lev2/ui/reflection_property_model.h>
+#include <ork/python/gil_safe_pyobj.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
@@ -203,6 +204,7 @@ void pyinit_ui_property_sheet(py::module& uimodule) {
           .def("isMapPropertyConst", &ui::ReflectionPropertySheetModel::isMapConst)
           .def("addMapElement", &ui::ReflectionPropertySheetModel::addMapElement)
           .def("removeMapElement", &ui::ReflectionPropertySheetModel::removeMapElement)
+          .def("renameMapElement", &ui::ReflectionPropertySheetModel::renameMapElement)
           .def(
               "addKeyOverride",
               [type_codec](
@@ -295,11 +297,13 @@ void pyinit_ui_property_sheet(py::module& uimodule) {
           .def(
               "onPropertyChanged",
               [](ui::property_sheet_ptr_t sheet, py::object callback) {
-                sheet->_onPropertyChanged = [callback](const std::string& key, svar128_t value) {
+                auto safe = python::gil_safe_pyobj(callback);
+                sheet->_onPropertyChanged = [safe](const std::string& key, svar128_t value) {
                   py::gil_scoped_acquire acquire;
+                  auto fn = safe.valueAs<py::object>();
                   auto type_codec = python::pb11_typecodec_t::instance();
                   py::object py_value = type_codec->encode(value);
-                  callback(key, py_value);
+                  (*fn)(key, py_value);
                 };
               })
           .def_property(
@@ -350,9 +354,11 @@ void pyinit_ui_property_sheet(py::module& uimodule) {
               "onRequestCustomEditor",
               [](ui::property_sheet_ptr_t sheet, py::object callback) {
                 if (not callback.is_none()) {
-                  sheet->_onRequestCustomEditor = [callback](const std::string& key, const std::string& editor_id) {
+                  auto safe = python::gil_safe_pyobj(callback);
+                  sheet->_onRequestCustomEditor = [safe](const std::string& key, const std::string& editor_id) {
                     py::gil_scoped_acquire acquire;
-                    callback(key, editor_id);
+                    auto fn = safe.valueAs<py::object>();
+                    (*fn)(key, editor_id);
                   };
                 }
               })
@@ -360,13 +366,15 @@ void pyinit_ui_property_sheet(py::module& uimodule) {
               "onRequestDetailEditor",
               [type_codec](ui::property_sheet_ptr_t sheet, py::object callback) {
                 if (not callback.is_none()) {
-                  sheet->_onRequestDetailEditor = [callback, type_codec](
+                  auto safe = python::gil_safe_pyobj(callback);
+                  sheet->_onRequestDetailEditor = [safe, type_codec](
                                                        const std::string& key,
                                                        ui::PropertyType type,
                                                        svar128_t value) {
                     py::gil_scoped_acquire acquire;
+                    auto fn = safe.valueAs<py::object>();
                     py::object py_value = type_codec->encode(value);
-                    callback(key, type, py_value);
+                    (*fn)(key, type, py_value);
                   };
                 }
               })

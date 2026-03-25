@@ -66,6 +66,8 @@ struct Outliner : public Widget {
   std::function<void(const std::string& key)> _onDelete;
   std::function<void(const std::string& key)> _onAdd;
   std::function<void(const std::string& key)> _onShiftEnter; // if set, overrides default startAdding
+  std::function<void(const std::string& key)> _onDoubleClick;
+  std::function<void(const std::string& selected_key, int keycode)> _onKeyDown;
 
   // Appearance
   int _item_height = 20;

@@ -373,6 +373,22 @@ void pyinit_ui_outliner(py::module& uimodule) {
                 };
               })
           .def(
+              "onDoubleClick",
+              [](ui::outliner_ptr_t outliner, py::object callback) { //
+                outliner->_onDoubleClick = [callback](const std::string& key) {
+                  py::gil_scoped_acquire acquire;
+                  callback(py::cast(key));
+                };
+              })
+          .def(
+              "onKeyDown",
+              [](ui::outliner_ptr_t outliner, py::object callback) { //
+                outliner->_onKeyDown = [callback](const std::string& selected_key, int keycode) {
+                  py::gil_scoped_acquire acquire;
+                  callback(py::cast(selected_key), py::cast(keycode));
+                };
+              })
+          .def(
               "onShiftEnter",
               [](ui::outliner_ptr_t outliner, py::object callback) { //
                 outliner->_onShiftEnter = [callback](const std::string& key) {

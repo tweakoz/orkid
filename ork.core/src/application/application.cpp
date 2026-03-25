@@ -18,6 +18,7 @@
 
 #include <ork/util/Context.hpp>
 #include <ork/kernel/environment.h>
+#include <ork/file/path.h>
 #include <ork/util/logger.h>
 #include <ork/kernel/future.hpp>
 #include <thread>
@@ -248,6 +249,7 @@ StdFileSystemInitalizer::StdFileSystemInitalizer(const AppInitData& appinitdata)
   static auto WorkingDirContext = std::make_shared<FileDevContext>();
 
   auto base_dir  = file::Path::orkroot_dir();
+  auto stage_dir = file::Path::stage_dir();
   auto src_core  = base_dir / "ork.core";
   auto src_lev2  = base_dir / "ork.lev2";
   auto data_dir  = base_dir / "ork.data";
@@ -255,7 +257,18 @@ StdFileSystemInitalizer::StdFileSystemInitalizer(const AppInitData& appinitdata)
   auto srcd_base = data_dir / "src";
 
   //////////////////////////////////////////
-  // Register urlbases
+  // Register path expanders (token-only, no URI protocol needed)
+  // These handle <assetcache> and <staging> tokens in expandPaths()
+  //////////////////////////////////////////
+
+  file::setPathExpander("assetcache",   stage_dir / "assetcache");
+  file::setPathExpander("staging",      stage_dir);
+  file::setPathExpander("ork_ecsscenes", data_dir / "ecsscenes");
+  file::setPathExpander("ork_data",     data_dir);
+  file::setPathExpander("ork_testdata", data_dir / "tests");
+
+  //////////////////////////////////////////
+  // Register urlbases (also populates expander table via bidirectional sync)
   //////////////////////////////////////////
 
   auto LocPlatformLevel2FileContext   = FileEnv::createContextForUriBase("lev2://", lev2_base);

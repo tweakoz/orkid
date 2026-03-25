@@ -84,15 +84,24 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
       return;
     }
 
+    bool has_diffuse = xir_data_result._diffuse_data && xir_data_result._diffuse_data->length() > 0;
+
+    if(0)printf("XIR v2 array format: diffuse size: %zu, %d roughness levels\n",
+           has_diffuse ? xir_data_result._diffuse_data->length() : 0,
+           xir_data_result._num_roughness_levels);
+
     ////////////////////////////////////
-    // Parse diffuse data
+    // Parse diffuse data (if present)
     ////////////////////////////////////
 
-    auto diffuse_cmipchain = std::make_shared<CompressedImageMipChain>();
-    diffuse_cmipchain->readXTX(xir_data_result._diffuse_data);
-
-    auto diffuse_tex = std::make_shared<Texture>();
-    diffuse_tex->_debugName = base_name + ".ibldiff";
+    std::shared_ptr<CompressedImageMipChain> diffuse_cmipchain;
+    std::shared_ptr<Texture> diffuse_tex;
+    if (has_diffuse) {
+      diffuse_cmipchain = std::make_shared<CompressedImageMipChain>();
+      diffuse_cmipchain->readXTX(xir_data_result._diffuse_data);
+      diffuse_tex = std::make_shared<Texture>();
+      diffuse_tex->_debugName = base_name + ".ibldiff";
+    }
     
     ////////////////////////////////////
     // Parse specular roughness array
@@ -129,15 +138,17 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
     // Diffuse upload op (deferrable)
     //////////////////////////////////////////////////////////////
 
-    auto diffuseUploadOp = [=](Context* ctx) {
-      auto diffuse_loadreq = std::make_shared<TexLoadReq>();
-      diffuse_loadreq->ptex = diffuse_tex;
-      diffuse_loadreq->_cmipchain = diffuse_cmipchain;
-      diffuse_loadreq->_texname = base_name + ".irrdiff";
-      ctx->TXI()->_createFromLoadReq(diffuse_loadreq);
-      irrmaps->_filtenvDiffuseMap = diffuse_tex;
-    };
-    GfxEnv::GetRef().enqueueDeferredContextOp(diffuseUploadOp);
+    if (has_diffuse) {
+      auto diffuseUploadOp = [=](Context* ctx) {
+        auto diffuse_loadreq = std::make_shared<TexLoadReq>();
+        diffuse_loadreq->ptex = diffuse_tex;
+        diffuse_loadreq->_cmipchain = diffuse_cmipchain;
+        diffuse_loadreq->_texname = base_name + ".irrdiff";
+        ctx->TXI()->_createFromLoadReq(diffuse_loadreq);
+        irrmaps->_filtenvDiffuseMap = diffuse_tex;
+      };
+      GfxEnv::GetRef().enqueueDeferredContextOp(diffuseUploadOp);
+    }
     //diffuseUploadOp(gloadercontext.get());
       
     //////////////////////////////////////////////////////////////
@@ -176,8 +187,9 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
     //brdfSetOp(gloadercontext.get());
     //////////////////////////////////////////////////////////////
 
-    if(0)printf("XIR asset<%p> irrmaps<%p> dtex<%p> stexarray<%p> roughness_levels<%d>\n", 
-           (void*) asset.get(), (void*) irrmaps.get(), diffuse_tex.get(), 
+    if(0)printf("XIR asset<%p> irrmaps<%p> dtex<%p> stexarray<%p> roughness_levels<%d>\n",
+           (void*) asset.get(), (void*) irrmaps.get(),
+           diffuse_tex ? diffuse_tex.get() : nullptr,
            specular_texarray.get(), num_roughness_levels);
   };
   opq::concurrentQueue()->enqueue(op);

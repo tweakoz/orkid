@@ -75,18 +75,36 @@ FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
     if (mtl->_commonOverride) {
       pbrcommon = mtl->_commonOverride;
     }
-    auto spec_tex  = pbrcommon->envSpecularTexture();
+
+    // Per-drawable env map override (from DrawableData._environmentMapPath)
+    auto envOverride = RCID._envmapOverride;
+    if (envOverride) {
+      static bool once = false;
+      if (!once) {
+        printf("\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+        printf("!! PBR STATE LAMBDA: ENVMAP OVERRIDE ACTIVE\n");
+        printf("!! spec_array=%p diff=%p\n",
+               (void*)envOverride->_filtenvSpecularMapArray.get(),
+               (void*)envOverride->_filtenvDiffuseMap.get());
+        printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n");
+        once = true;
+      }
+    }
+    auto spec_tex = envOverride
+      ? envOverride->_filtenvSpecularMapArray
+      : pbrcommon->envSpecularTexture();
+    auto diff_tex = envOverride
+      ? envOverride->_filtenvDiffuseMap
+      : pbrcommon->envDiffuseTexture();
     float num_mips = spec_tex ? spec_tex->_num_mips : 1.0f;
 
     FXI->bindParamVect3(mtl->_paramAmbientLevel, pbrcommon->_ambientLevel);
-    FXI->bindParamFloat(mtl->_paramSpecularLevel, pbrcommon->_specularLevel);
-    FXI->bindParamFloat(mtl->_parSpecularMipBias, pbrcommon->_specularMipBias);
-    FXI->bindParamFloat(mtl->_paramDiffuseLevel, pbrcommon->_diffuseLevel);
-    FXI->bindParamFloat(mtl->_paramSkyboxLevel, pbrcommon->_skyboxLevel);
-    //printf("pbrcommon<%s> spec_tex<%p>\n", pbrcommon->_name.c_str(), (void*) spec_tex.get());
+    FXI->bindParamFloat(mtl->_paramSpecularLevel, envOverride ? 1.0f : pbrcommon->_specularLevel);
+    FXI->bindParamFloat(mtl->_parSpecularMipBias, envOverride ? 0.0f : pbrcommon->_specularMipBias);
+    FXI->bindParamFloat(mtl->_paramDiffuseLevel, envOverride ? 1.0f : pbrcommon->_diffuseLevel);
+    FXI->bindParamFloat(mtl->_paramSkyboxLevel, envOverride ? 1.0f : pbrcommon->_skyboxLevel);
     FXI->bindParamTextureArray(mtl->_parMapSpecularEnv, spec_tex.get());
-    auto the_diff_tex = pbrcommon->envDiffuseTexture();
-    FXI->bindParamTexture(mtl->_parMapDiffuseEnv, the_diff_tex.get());
+    FXI->bindParamTexture(mtl->_parMapDiffuseEnv, diff_tex.get());
 
     float actual_roughness_levels = float(pbrcommon->_radiance_maps->_numRoughnessLevels);
     if (actual_roughness_levels < 1.0f) actual_roughness_levels = PBRMaterial::roughnessLevels;

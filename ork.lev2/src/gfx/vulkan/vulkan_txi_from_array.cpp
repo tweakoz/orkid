@@ -205,10 +205,14 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
     size_t level_w         = max_w >> level;
     size_t level_h         = max_h >> level;
     size_t bytes_per_pixel = 0;
-    if (format == EBufferFormat::RGBA8) {
+    if (format == EBufferFormat::RGBA8 || format == EBufferFormat::BGRA8) {
       bytes_per_pixel = 4;
-    } else if (format == EBufferFormat::RGBA16) {
+    } else if (format == EBufferFormat::RGBA16 || format == EBufferFormat::RGBA16F) {
       bytes_per_pixel = 8; // 4 channels * 2 bytes per channel
+    } else if (format == EBufferFormat::RGBA32F) {
+      bytes_per_pixel = 16; // 4 channels * 4 bytes per channel
+    } else {
+      OrkAssert(false); // unsupported format for texture array
     }
     total_staging_size += level_w * level_h * bytes_per_pixel * num_slices;
   }

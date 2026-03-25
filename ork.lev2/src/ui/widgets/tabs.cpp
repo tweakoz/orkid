@@ -63,6 +63,19 @@ TabWidget::~TabWidget() {
 }
 
 /////////////////////////////////////////////////////////////////////////
+void TabWidget::setTabCloseable(widget_ptr_t tab, bool closeable) {
+  if (closeable)
+    _closeable_tabs.insert(tab);
+  else
+    _closeable_tabs.erase(tab);
+  _needs_layout_recalc = true;
+}
+
+bool TabWidget::isTabCloseable(widget_ptr_t tab) const {
+  return _closeable_tabs.count(tab) > 0;
+}
+
+/////////////////////////////////////////////////////////////////////////
 void TabWidget::_onChildrenChanged() {
   _needs_layout_recalc = true;
 }
@@ -71,11 +84,13 @@ void TabWidget::_onChildrenChanged() {
 void TabWidget::_ensureSorted() {
   if (!_needs_layout_recalc) return;
 
-  // Sort _children using natural sort order (1, 2, 10 instead of 1, 10, 2)
-  std::sort(_children.begin(), _children.end(),
-    [](const widget_ptr_t& a, const widget_ptr_t& b) {
-      return naturalSortCompare(a->_name, b->_name);
-    });
+  if (_sort_tabs) {
+    // Sort _children using natural sort order (1, 2, 10 instead of 1, 10, 2)
+    std::sort(_children.begin(), _children.end(),
+      [](const widget_ptr_t& a, const widget_ptr_t& b) {
+        return naturalSortCompare(a->_name, b->_name);
+      });
+  }
 
   // Active tab pointer is still valid - no adjustment needed!
 }
@@ -101,6 +116,8 @@ void TabWidget::_recalculateTabLayout() {
     }
 
     int tab_width = label_width + _tab_padding;
+    if (_closeable_tabs.count(child))
+      tab_width += _close_button_size + 4;
 
     _tab_widths.push_back(tab_width);
     _tab_positions.push_back(current_x);
@@ -245,9 +262,25 @@ HandlerResult TabWidget::DoOnUiEvent(event_constptr_t ev) {
     case EventCode::PUSH: {
       if (localY < _tabBarHeight) {
         int tabIndex = _getTabIndexAt(localX, localY);
-        if (tabIndex >= 0 && _children[tabIndex] != _active_tab) {
-          setActiveTab(tabIndex);
-          result.setHandled(this);
+        if (tabIndex >= 0) {
+          auto& child = _children[tabIndex];
+          // Check if click is on close button
+          if (_closeable_tabs.count(child)) {
+            int tab_x2 = _tab_positions[tabIndex] + _tab_widths[tabIndex] - 2;
+            int close_x1 = tab_x2 - _close_button_size - 2;
+            if (localX >= close_x1 && localX < tab_x2) {
+              // Close button clicked — defer removal to avoid destroying
+              // widgets (which may hold Python refs) during event processing
+              auto tab_to_close = child;
+              _pendingClose = tab_to_close;
+              result.setHandled(this);
+              break;
+            }
+          }
+          if (child != _active_tab) {
+            setActiveTab(tabIndex);
+            result.setHandled(this);
+          }
         }
       }
       break;
@@ -282,6 +315,18 @@ HandlerResult TabWidget::DoOnUiEvent(event_constptr_t ev) {
 
 /////////////////////////////////////////////////////////////////////////
 void TabWidget::DoDraw(drawevent_constptr_t drwev) {
+  // Process deferred tab close (safe point — not inside event routing)
+  if (_pendingClose) {
+    auto tab_to_close = _pendingClose;
+    _pendingClose = nullptr;
+    _closeable_tabs.erase(tab_to_close);
+    _per_tab_style_tags.erase(tab_to_close);
+    if (_active_tab == tab_to_close)
+      _active_tab = nullptr;
+    removeChild(tab_to_close);
+    if (_onTabClose) _onTabClose(tab_to_close);
+  }
+
   // Update pulsation phase for active tab animation
   _pulsation_phase += 0.01f;
 
@@ -481,6 +526,30 @@ void TabWidget::_drawTabBar(drawevent_constptr_t drwev) {
         fontman->DrawText(tgt, textX, textY, child->_name.c_str());
         tgt->PopModColor();
       }
+    }
+    fontman->endTextBlock(tgt);
+    ork::lev2::FontMan::PopFont();
+
+    // Draw close buttons on closeable tabs (using font "x")
+    ork::lev2::FontMan::PushFont(_tab_font);
+    fontman->beginTextBlock(tgt);
+    for (size_t i = 0; i < _children.size(); i++) {
+      auto& child = _children[i];
+      if (!_closeable_tabs.count(child)) continue;
+
+      int tab_x1 = _tab_positions[i] + 1;
+      int tab_w = _tab_widths[i] - 2;
+      int abs_x1, abs_y1;
+      LocalToRoot(tab_x1, 0, abs_x1, abs_y1);
+
+      int text_height = _tab_font->stringHeight(1);
+      int tx = abs_x1 + tab_w - _close_button_size;
+      int ty = abs_y1 + (_tabBarHeight - text_height) / 2;
+
+      fvec4 xcolor = (child == _hovered_tab) ? fvec4(1, 0.4, 0.4, 1) : fvec4(0.6, 0.6, 0.6, 1);
+      tgt->PushModColor(xcolor);
+      fontman->DrawText(tgt, tx, ty, "x");
+      tgt->PopModColor();
     }
     fontman->endTextBlock(tgt);
     ork::lev2::FontMan::PopFont();

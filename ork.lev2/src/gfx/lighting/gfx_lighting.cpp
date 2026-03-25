@@ -278,6 +278,9 @@ void SpotLightData::describeX(class_t* c) {
   c->floatProperty("Fovy", float_range{0, 180}, &SpotLightData::mFovy);
   c->floatProperty("Range", float_range{1, 1000}, &SpotLightData::mRange) //
       ->annotate<bool>("editor.range.log", true);
+  c->directProperty("CookiePath", &SpotLightData::_cookiePath)
+      ->annotate("editor.filetype", "png")
+      ->annotate("editor.filebase", "<assetcache>,<ork_data>");
 }
 
 SpotLightData::SpotLightData()
@@ -343,7 +346,7 @@ bool SpotLight::IsInFrustum(const Frustum& frustum) {
 void SpotLight::lookAt(const fvec3& pos, const fvec3& tgt, const fvec3& up) {
   float near = getRange() / 1000.0f;
   float far  = getRange();
-  float fovy = getFovy();
+  float fovy = getFovy() * DTOR;
   mProjectionMatrix.perspective(fovy, 1.0, near, far);
   mViewMatrix.lookAt(pos.x, pos.y, pos.z, tgt.x, tgt.y, tgt.z, up.x, up.y, up.z);
   mWorldSpaceLightFrustum.set(mViewMatrix, mProjectionMatrix);
@@ -384,7 +387,7 @@ fmtx4 SpotLight::shadowMatrix() const {
 CameraData SpotLight::shadowCamDat() const {
   CameraData rval;
   fmtx4 matW   = worldMatrix();
-  float fovy   = getFovy();
+  float fovy   = getFovy() * DTOR;
   float range  = getRange();
   float near   = range / 1000.0f;
   float far    = range;
@@ -566,7 +569,12 @@ void LightManager::enumerateInPass(const CompositingPassData& CPD, enumeratedlig
   // categorize
   ////////////////////////////////////////////////////////////
 
-  out_lights->_lightprobes = _lightprobes;
+  out_lights->_lightprobes.clear();
+  for (auto& probe : _lightprobes) {
+    if (probe->_active) {
+      out_lights->_lightprobes.push_back(probe);
+    }
+  }
 
   out_lights->_untexturedpointlights.clear();
   out_lights->_untexturedspotlights.clear();
@@ -581,14 +589,9 @@ void LightManager::enumerateInPass(const CompositingPassData& CPD, enumeratedlig
         auto cookie = as_spot->_cookieColor;
         if (cookie) {
           out_lights->_tex2shadowedspotlightmap[cookie].push_back(as_spot);
-          OrkAssert(false);
         }
       }
     } else if (auto as_point = dynamic_cast<lev2::PointLight*>(l)) {
-      // auto cookie = as_point->_cookieTexture;
-      // if (cookie)
-      // out_lights->_tex2pointlightmap[cookie.get()].push_back(as_point);
-      // else
       out_lights->_untexturedpointlights.push_back(as_point);
     } else if (auto as_spot = dynamic_cast<lev2::SpotLight*>(l)) {
       auto cookie = as_spot->_cookieColor;
@@ -597,7 +600,6 @@ void LightManager::enumerateInPass(const CompositingPassData& CPD, enumeratedlig
         if (cookie) {
           out_lights->_tex2spotdecalmap[cookie].push_back(as_spot);
         }
-        OrkAssert(false);
       } else {
         if (cookie) {
           out_lights->_tex2spotlightmap[cookie].push_back(as_spot);
@@ -801,7 +803,7 @@ void LightManager::bindEnumeratedToStorageBuffer( Context* ctx,                 
     pl_mapped->ref<fmtx4>(base_shmtx + (index * mat4_stride)) = fmtx4();
     index++;
   }
-  enumerated_lights->_num_active_untextured_pointlights = enumerated_lights->_untexturedpointlights.size(); 
+  enumerated_lights->_num_active_untextured_pointlights = enumerated_lights->_untexturedpointlights.size();
 
   //////////////////////////////////////////
   // Textured spot lights
@@ -816,37 +818,33 @@ void LightManager::bindEnumeratedToStorageBuffer( Context* ctx,                 
   //////////////////////////////////////////
 
   enumerated_lights->_num_active_texspotlights = 0;
-  for (auto item : enumerated_lights->_tex2spotlightmap) {
-    for (auto light : item.second) {
-      auto irr = light->_RadianceCookie;
 
-      auto C    = fvec4(light->color(), light->intensity());
-      auto P    = light->worldMatrix().translation();
-      float R   = light->_spdata->GetRange();
-      float B   = light->shadowDepthBias();
-      float SMS = light->_spdata->shadowMapSize();
+  auto _write_spotlights = [&](const tex2spotlightmap_t& spotmap) {
+    for (auto item : spotmap) {
+      for (auto light : item.second) {
+        auto C    = fvec4(light->color(), light->intensity());
+        auto P    = light->worldMatrix().translation();
+        float R   = light->_spdata->GetRange();
+        float B   = light->shadowDepthBias();
+        float SMS = light->_spdata->shadowMapSize();
 
-      if (0) {
-        printf("C<%zu> <%g %g %g %g>\n", index, C.x, C.y, C.z, C.w);
-        printf("P<%zu> <%g %g %g>\n", index, P.x, P.y, P.z);
-        printf("R<%zu> <%f> B<%f> SMS<%f>\n", index, R, B, SMS);
+        size_t v4_offset                                          = index * vec4_stride;
+        pl_mapped->ref<fvec4>(base_color + v4_offset)             = C;
+        pl_mapped->ref<fvec4>(base_sizbias + v4_offset)           = fvec4(R, B, SMS, 1);
+        pl_mapped->ref<fvec4>(base_position + v4_offset)          = P;
+        pl_mapped->ref<fmtx4>(base_shmtx + (index * mat4_stride)) = light->shadowMatrix();
+        size_t texid_addr                                         = base_lighttexid + (index * i32_stride);
+
+        int cookie_index = light->_cookieColor->_slice;
+        pl_mapped->ref<uint32_t>(texid_addr) = uint32_t(cookie_index);
+        index++;
+        enumerated_lights->_num_active_texspotlights++;
       }
-
-      size_t v4_offset                                          = index * vec4_stride;
-      pl_mapped->ref<fvec4>(base_color + v4_offset)             = C;
-      pl_mapped->ref<fvec4>(base_sizbias + v4_offset)           = fvec4(R, B, SMS, 1);
-      pl_mapped->ref<fvec4>(base_position + v4_offset)          = P;
-      pl_mapped->ref<fmtx4>(base_shmtx + (index * mat4_stride)) = light->shadowMatrix();
-      size_t texid_addr                                         = base_lighttexid + (index * i32_stride);
-      // printf( "TEXID ADDR<%zu> ID<%d>\n", tex_addr, num_texspotlights );
-
-      int cookie_index = light->_cookieColor->_slice;
-      // cookie_index = rand() % 8;
-      pl_mapped->ref<uint32_t>(texid_addr) = uint32_t(cookie_index);
-      index++;
-      enumerated_lights->_num_active_texspotlights++;
     }
-  }
+  };
+
+  _write_spotlights(enumerated_lights->_tex2spotlightmap);
+  _write_spotlights(enumerated_lights->_tex2shadowedspotlightmap);
   OrkAssert(index <= kmaxlights);
   // printf( "texlistsize<%d>\n", texlist.size() );
   pl_mapped->unmap();

@@ -7,7 +7,9 @@
 
 #include "pyext.h"
 #include <ork/ecs/controller.h>
+#include <ork/ecs/simulation.h>
 #include <ork/ecs/datatable.h>
+#include <ork/ecs/scene.h>
 ///////////////////////////////////////////////////////////////////////////////
 using ctx_t               = ork::python::unmanaged_ptr<::ork::lev2::Context>;
 ///////////////////////////////////////////////////////////////////////////////
@@ -203,6 +205,27 @@ void pyinit_controller(py::module& module_ecs) {
             ctrl->systemNotify(sys, *evID, decoded);
           })
       .def(
+          "notifyAllSystems",
+          [type_codec](
+              controller_ptr_t ctrl,
+              crcstring_ptr_t evID,
+              py::object evdata) {
+            svar64_t decoded;
+            if (py::isinstance<py::dict>(evdata)) {
+              auto table = std::make_shared<DataTable>();
+              for (auto item : py::cast<py::dict>(evdata)) {
+                auto key = item.first.cast<crcstring_ptr_t>();
+                auto& slot = (*table)[*key];
+                auto val = py::reinterpret_borrow<py::object>(item.second);
+                slot = type_codec->decode64(val);
+              }
+              decoded.setShared<DataTable>(table);
+            } else {
+              decoded = type_codec->decode64(evdata);
+            }
+            ctrl->notifyAllSystems(*evID, decoded);
+          })
+      .def(
           "systemRequest",
           [type_codec](
               controller_ptr_t ctrl, //
@@ -235,6 +258,37 @@ void pyinit_controller(py::module& module_ecs) {
             return rval;
           })
       .def(
+          "systemRequestWithCallback",
+          [type_codec](
+              controller_ptr_t ctrl,
+              const SystemHandle& sys,
+              crcstring_ptr_t evID,
+              py::object evdata,
+              py::object pycallback) -> response_ref_t {
+            evdata_t decoded;
+            if (evdata.is_none())
+              decoded = nullptr;
+            else {
+              decoded = type_codec->decode64(evdata);
+            }
+            void_lambda_t callback = nullptr;
+            if (!pycallback.is_none()) {
+              auto pyfn = std::make_shared<py::function>(pycallback.cast<py::function>());
+              callback = [pyfn, type_codec]() {
+                py::gil_scoped_acquire acquire;
+                try {
+                  (*pyfn)();
+                } catch (py::error_already_set& e) {
+                  printf("\npython exception in systemRequestWithCallback\n");
+                  e.restore();
+                  PyErr_Print();
+                }
+              };
+            }
+            response_ref_t rval = ctrl->systemRequest(sys._sysref, *evID, decoded, callback);
+            return rval;
+          })
+      .def(
           "spawnEntity",
           [type_codec](
               controller_ptr_t ctrl, //
@@ -254,7 +308,84 @@ void pyinit_controller(py::module& module_ecs) {
           fn();
         };
         ctrl->realtimeDelayedOperation(delay,L);
-      });
+      })
+      ///////////////////////////
+      // State change callback hooks
+      ///////////////////////////
+
+// Macro for update-thread hooks: controller.onUpdXxx(fn) where fn(sim)
+// PYNAME is the Python method name (e.g. onUpdPreCompose)
+// C++ member is _PYNAME (e.g. _onUpdPreCompose)
+#define DEF_UPD_HOOK(PYNAME) \
+      .def(#PYNAME, [](controller_ptr_t ctrl, py::function fn) { \
+        auto pyfn = std::make_shared<py::function>(fn); \
+        ctrl->_##PYNAME.push_back([pyfn, ctrl](Simulation* sim) { \
+            py::gil_scoped_acquire acquire; \
+            try { \
+                auto sim_ptr = ctrl->_simulation._unprotected_ref(); \
+                (*pyfn)(sim_ptr); \
+            } catch (py::error_already_set& e) { \
+                printf("\npython exception in " #PYNAME "\n"); \
+                e.restore(); PyErr_Print(); OrkAssert(false); \
+            } \
+        }); \
+      })
+
+// Macro for GPU-thread hooks: controller.onGpuXxx(fn) where fn(sim, ctx)
+#define DEF_GPU_HOOK(PYNAME) \
+      .def(#PYNAME, [](controller_ptr_t ctrl, py::function fn) { \
+        auto pyfn = std::make_shared<py::function>(fn); \
+        ctrl->_##PYNAME.push_back([pyfn, ctrl](Simulation* sim, lev2::Context* ctx) { \
+            py::gil_scoped_acquire acquire; \
+            try { \
+                auto sim_ptr = ctrl->_simulation._unprotected_ref(); \
+                (*pyfn)(sim_ptr, ctx_t(ctx)); \
+            } catch (py::error_already_set& e) { \
+                printf("\npython exception in " #PYNAME "\n"); \
+                e.restore(); PyErr_Print(); OrkAssert(false); \
+            } \
+        }); \
+      })
+
+      // Update thread hooks
+      DEF_UPD_HOOK(onUpdPreCompose)
+      DEF_UPD_HOOK(onUpdPostCompose)
+      DEF_UPD_HOOK(onUpdPreLink)
+      DEF_UPD_HOOK(onUpdPostLink)
+      DEF_UPD_HOOK(onUpdPreStage)
+      DEF_UPD_HOOK(onUpdPostStage)
+      DEF_UPD_HOOK(onUpdPreActivate)
+      DEF_UPD_HOOK(onUpdPostActivate)
+      DEF_UPD_HOOK(onUpdPreDeactivate)
+      DEF_UPD_HOOK(onUpdPostDeactivate)
+      DEF_UPD_HOOK(onUpdPreUnstage)
+      DEF_UPD_HOOK(onUpdPostUnstage)
+      // GPU thread hooks
+      DEF_GPU_HOOK(onGpuPostInit)
+      DEF_GPU_HOOK(onGpuPostLink)
+      // Clear all
+      .def("clearStateCallbacks", [](controller_ptr_t ctrl) {
+        ctrl->clearStateCallbacks();
+      })
+
+#undef DEF_UPD_HOOK
+#undef DEF_GPU_HOOK
+
+      ///////////////////////////
+      // Import system
+      ///////////////////////////
+      .def_property_readonly("importedScenes", [](controller_ptr_t ctrl) -> py::dict {
+        py::dict result;
+        for (auto& [ns, scene] : ctrl->importedScenes()) {
+          result[py::cast(ns)] = std::const_pointer_cast<SceneData>(scene);
+        }
+        return result;
+      })
+      .def("findImportedScene", [](controller_ptr_t ctrl, std::string ns) -> scenedata_ptr_t {
+        auto scene = ctrl->findImportedScene(ns);
+        return scene ? std::const_pointer_cast<SceneData>(scene) : nullptr;
+      })
+      ;
 
   type_codec->registerStdCodec<controller_ptr_t>(ctrl_type);
   /////////////////////////////////////////////////////////////////////////////////

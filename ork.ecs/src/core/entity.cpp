@@ -59,7 +59,8 @@ void SpawnData::describeX(SceneObjectClass* clazz) {
       ->annotate("editor.choicelist", "archetype")
       ->annotate("editor.factorylistbase", "EcsArchetype");
 
-  clazz->directMapProperty("UserProperties", &SpawnData::mUserProperties);
+  clazz->directMapProperty("UserProperties", &SpawnData::mUserProperties)
+      ->annotate("editor.visible", ConstString("false"));
 
   clazz->directProperty("SpawnCount", &SpawnData::_spawnCount);
   clazz->floatProperty("SpawnInterval", float_range{0, 1000}, &SpawnData::_spawnInterval);

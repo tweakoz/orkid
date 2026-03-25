@@ -6,6 +6,7 @@
 #include <ork/profiling.inl>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/gfx/pri.h>
+#include <ork/kernel/profiler.h>
 
 namespace ork { namespace ui {
 /////////////////////////////////////////////////////////////////////////
@@ -966,11 +967,15 @@ Widget* LayoutGroup::doRouteUiEvent(event_constptr_t ev) {
   if (ev->_eventcode == ui::EventCode::KEY_DOWN) {
     if (ev->miKeyCode == '~' || ev->miKeyCode == '`') {
       if (ev->mbSHIFT) {
+#if defined(ORK_PROFILER_ENABLE)
         if (_profiler_overlay_widget) {
           _profiler_overlay_enabled = !_profiler_overlay_enabled;
           SetDirty();
           return this;
         }
+#else
+        logchan_prof->log("Profiler overlay unavailable: build was not compiled with ORK_PROFILER_ENABLE. Run `ork.build.py --profiler`.");
+#endif
       } else {
         if (_overlay_widget) {
           _overlay_enabled = !_overlay_enabled;

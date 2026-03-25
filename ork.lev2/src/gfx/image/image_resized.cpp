@@ -36,24 +36,26 @@ void Image::resizedOf(const Image& inp, int w, int h) {
   using enum EBufferFormat;
   switch( inp._format ){
     case R8:{
-      // bicubic interpolation
+      // bilinear interpolation
       for (size_t y = 0; y<h; y++) {
         for (size_t x = 0; x<w; x++) {
           double u = double(x) / double(w);
           double v = double(y) / double(h);
           double x0 = u * double(original_width);
           double y0 = v * double(original_height);
-          int x0i = int(x0);
-          int y0i = int(y0);
+          int x0i = std::min(int(x0), original_width - 1);
+          int y0i = std::min(int(y0), original_height - 1);
+          int x1i = std::min(x0i + 1, original_width - 1);
+          int y1i = std::min(y0i + 1, original_height - 1);
           double x0f = x0 - double(x0i);
           double y0f = y0 - double(y0i);
           double x1f = 1.0 - x0f;
           double y1f = 1.0 - y0f;
           auto pixel = this->pixel8(x, y);
           auto pixel00 = inp.pixel8(x0i, y0i);
-          auto pixel01 = inp.pixel8(x0i, y0i+1);
-          auto pixel10 = inp.pixel8(x0i+1, y0i);
-          auto pixel11 = inp.pixel8(x0i+1, y0i+1);
+          auto pixel01 = inp.pixel8(x0i, y1i);
+          auto pixel10 = inp.pixel8(x1i, y0i);
+          auto pixel11 = inp.pixel8(x1i, y1i);
           for (size_t c = 0; c < original_numcomponents; c++) {
             double val = 0.0;
             val += x1f * y1f * double(pixel00[c]);
@@ -78,25 +80,28 @@ void Image::resizedOf(const Image& inp, int w, int h) {
     }
     case BGR8:
     case RGB8:
+    case BGRA8:
     case RGBA8:{
-      // bicubic interpolation
+      // bilinear interpolation
       for (size_t y = 0; y<h; y++) {
         for (size_t x = 0; x<w; x++) {
           double u = double(x) / double(w);
           double v = double(y) / double(h);
           double x0 = u * double(original_width);
           double y0 = v * double(original_height);
-          int x0i = int(x0);
-          int y0i = int(y0);
+          int x0i = std::min(int(x0), original_width - 1);
+          int y0i = std::min(int(y0), original_height - 1);
+          int x1i = std::min(x0i + 1, original_width - 1);
+          int y1i = std::min(y0i + 1, original_height - 1);
           double x0f = x0 - double(x0i);
           double y0f = y0 - double(y0i);
           double x1f = 1.0 - x0f;
           double y1f = 1.0 - y0f;
           auto pixel = this->pixel8(x, y);
           auto pixel00 = inp.pixel8(x0i, y0i);
-          auto pixel01 = inp.pixel8(x0i, y0i+1);
-          auto pixel10 = inp.pixel8(x0i+1, y0i);
-          auto pixel11 = inp.pixel8(x0i+1, y0i+1);
+          auto pixel01 = inp.pixel8(x0i, y1i);
+          auto pixel10 = inp.pixel8(x1i, y0i);
+          auto pixel11 = inp.pixel8(x1i, y1i);
           for (size_t c = 0; c < original_numcomponents; c++) {
             double val = 0.0;
             val += x1f * y1f * double(pixel00[c]);
@@ -117,16 +122,99 @@ void Image::resizedOf(const Image& inp, int w, int h) {
       OrkAssert(false);
       break;
     }
-    case RGB32F:{
-      OrkAssert(false);
-      break;
-    }
+    case RGB32F:
     case RGBA32F:{
-      OrkAssert(false);
+      for (size_t y = 0; y<h; y++) {
+        for (size_t x = 0; x<w; x++) {
+          double u = double(x) / double(w);
+          double v = double(y) / double(h);
+          double x0 = u * double(original_width);
+          double y0 = v * double(original_height);
+          int x0i = std::min(int(x0), original_width - 1);
+          int y0i = std::min(int(y0), original_height - 1);
+          int x1i = std::min(x0i + 1, original_width - 1);
+          int y1i = std::min(y0i + 1, original_height - 1);
+          double x0f = x0 - double(x0i);
+          double y0f = y0 - double(y0i);
+          double x1f = 1.0 - x0f;
+          double y1f = 1.0 - y0f;
+          auto pixel = this->pixel32f(x, y);
+          auto pixel00 = inp.pixel32f(x0i, y0i);
+          auto pixel01 = inp.pixel32f(x0i, y1i);
+          auto pixel10 = inp.pixel32f(x1i, y0i);
+          auto pixel11 = inp.pixel32f(x1i, y1i);
+          for (size_t c = 0; c < original_numcomponents; c++) {
+            double val = 0.0;
+            val += x1f * y1f * double(pixel00[c]);
+            val += x1f * y0f * double(pixel01[c]);
+            val += x0f * y1f * double(pixel10[c]);
+            val += x0f * y0f * double(pixel11[c]);
+            pixel[c] = float(val);
+          }
+        }
+      }
       break;
     }
     case RGBA16F:{
-      OrkAssert(false);
+      auto half_to_float = [](uint16_t h) -> float {
+        uint32_t sign     = (h & 0x8000) << 16;
+        uint32_t exponent = ((h & 0x7C00) >> 10);
+        uint32_t mantissa = (h & 0x03FF) << 13;
+        if (exponent == 0) {
+          if (mantissa == 0) {
+            uint32_t result = sign;
+            return *reinterpret_cast<float*>(&result);
+          }
+          exponent = 1;
+          while (!(mantissa & 0x00800000)) { mantissa <<= 1; exponent--; }
+          mantissa &= ~0x00800000;
+          exponent = (exponent + 127 - 15) << 23;
+        } else if (exponent == 31) {
+          exponent = 0xFF << 23;
+        } else {
+          exponent = (exponent + 127 - 15) << 23;
+        }
+        uint32_t result = sign | exponent | mantissa;
+        return *reinterpret_cast<float*>(&result);
+      };
+      auto float_to_half = [](float f) -> uint16_t {
+        uint32_t bits = *reinterpret_cast<uint32_t*>(&f);
+        uint32_t sign = (bits >> 16) & 0x8000;
+        int32_t exp32 = ((bits >> 23) & 0xFF) - 127 + 15;
+        uint32_t mant = (bits & 0x007FFFFF);
+        if (exp32 <= 0) return uint16_t(sign);
+        if (exp32 >= 31) return uint16_t(sign | 0x7C00);
+        return uint16_t(sign | (exp32 << 10) | (mant >> 13));
+      };
+      for (size_t y = 0; y<h; y++) {
+        for (size_t x = 0; x<w; x++) {
+          double u = double(x) / double(w);
+          double v = double(y) / double(h);
+          double x0 = u * double(original_width);
+          double y0 = v * double(original_height);
+          int x0i = std::min(int(x0), original_width - 1);
+          int y0i = std::min(int(y0), original_height - 1);
+          int x1i = std::min(x0i + 1, original_width - 1);
+          int y1i = std::min(y0i + 1, original_height - 1);
+          double x0f = x0 - double(x0i);
+          double y0f = y0 - double(y0i);
+          double x1f = 1.0 - x0f;
+          double y1f = 1.0 - y0f;
+          auto pixel = this->pixel16(x, y);
+          auto pixel00 = inp.pixel16(x0i, y0i);
+          auto pixel01 = inp.pixel16(x0i, y1i);
+          auto pixel10 = inp.pixel16(x1i, y0i);
+          auto pixel11 = inp.pixel16(x1i, y1i);
+          for (size_t c = 0; c < original_numcomponents; c++) {
+            double val = 0.0;
+            val += x1f * y1f * double(half_to_float(pixel00[c]));
+            val += x1f * y0f * double(half_to_float(pixel01[c]));
+            val += x0f * y1f * double(half_to_float(pixel10[c]));
+            val += x0f * y0f * double(half_to_float(pixel11[c]));
+            pixel[c] = float_to_half(float(val));
+          }
+        }
+      }
       break;
     }
     default:
@@ -235,6 +323,63 @@ void Image::downsample(Image& imgout) const {
                 }
 
                 outpixel[c] = uint16_t(sum);
+              }
+              break;
+            }
+            case RGBA16F: {
+              // Half-float format: read as uint16_t, convert to float for math, write back as half
+              auto half_to_float = [](uint16_t h) -> float {
+                uint32_t sign     = (h & 0x8000) << 16;
+                uint32_t exponent = ((h & 0x7C00) >> 10);
+                uint32_t mantissa = (h & 0x03FF) << 13;
+                if (exponent == 0) {
+                  if (mantissa == 0) {
+                    uint32_t result = sign;
+                    return *reinterpret_cast<float*>(&result);
+                  }
+                  exponent = 1;
+                  while (!(mantissa & 0x00800000)) { mantissa <<= 1; exponent--; }
+                  mantissa &= ~0x00800000;
+                  exponent = (exponent + 127 - 15) << 23;
+                } else if (exponent == 31) {
+                  exponent = 0xFF << 23;
+                } else {
+                  exponent = (exponent + 127 - 15) << 23;
+                }
+                uint32_t result = sign | exponent | mantissa;
+                return *reinterpret_cast<float*>(&result);
+              };
+              auto float_to_half = [](float f) -> uint16_t {
+                uint32_t bits = *reinterpret_cast<uint32_t*>(&f);
+                uint32_t sign = (bits >> 16) & 0x8000;
+                int32_t exp32 = ((bits >> 23) & 0xFF) - 127 + 15;
+                uint32_t mant = (bits & 0x007FFFFF);
+                if (exp32 <= 0) return uint16_t(sign); // underflow to zero
+                if (exp32 >= 31) return uint16_t(sign | 0x7C00); // overflow to inf
+                return uint16_t(sign | (exp32 << 10) | (mant >> 13));
+              };
+
+              auto outpixel = imgout.pixel16(x, y);
+
+              for (size_t c = 0; c < this->_numcomponents; c++) {
+                double sum = 0.0;
+
+                for (int ky = 0; ky < 4; ky++) {
+                  int sy = base_y + ky;
+                  if (sy < 0) sy = 0;
+                  if (sy >= int(this->_height)) sy = this->_height - 1;
+
+                  for (int kx = 0; kx < 4; kx++) {
+                    int sx = base_x + kx;
+                    if (sx < 0) sx = 0;
+                    if (sx >= int(this->_width)) sx = this->_width - 1;
+
+                    auto pixel = this->pixel16(sx, sy);
+                    sum += double(half_to_float(pixel[c])) * kernel[ky][kx];
+                  }
+                }
+
+                outpixel[c] = float_to_half(float(sum));
               }
               break;
             }

@@ -576,6 +576,22 @@ std::vector<lightnode_ptr_t> Scene::lightNodesWithTag(uint64_t tag) const {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+std::vector<probenode_ptr_t> Scene::probeNodes() const {
+  std::vector<probenode_ptr_t> result;
+  _layers.atomicOp([&](const layer_map_t& unlocked) {
+    for (const auto& [name, layer] : unlocked) {
+      layer->_probenodes.atomicOp([&](const Layer::probenodevect_t& nodes) {
+        for (const auto& node : nodes) {
+          result.push_back(node);
+        }
+      });
+    }
+  });
+  return result;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::scenegraph
 
 ImplementReflectionX(ork::lev2::scenegraph::Node, "scenegraph::Node");

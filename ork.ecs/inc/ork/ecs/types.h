@@ -42,6 +42,7 @@ struct SpawnData;
 struct Archetype;
 struct CompositeArchetype;
 struct ReferenceArchetype;
+struct SceneImportData;
 struct SystemData;
 struct ComponentData;
 struct ComponentFragmentData;
@@ -229,6 +230,9 @@ using sgcomponentdata_ptr_t = std::shared_ptr<SceneGraphComponentData>;
 
 using pysysdata_ptr_t = std::shared_ptr<PythonSystemData>;
 using pycompdata_ptr_t = std::shared_ptr<PythonComponentData>;
+
+using sceneimportdata_ptr_t = std::shared_ptr<SceneImportData>;
+using sceneimportdata_constptr_t = std::shared_ptr<const SceneImportData>;
 
 using controller_ptr_t = std::shared_ptr<Controller>;
 using simulation_ptr_t = std::shared_ptr<Simulation>;

@@ -323,6 +323,11 @@ private:
   using destructables_vect_t = std::vector<svar64_t>;
 
   LockedResource<destructables_vect_t> _renderthreaddestructables;
+
+  // Pending system response callbacks — swept at end of update
+  using pending_response_t = impl::sys_response_ptr_t;
+  std::vector<pending_response_t> _pendingResponseCallbacks;
+  void _sweepResponseCallbacks();
   //////////////////////////////////////////////////////////
 
 };

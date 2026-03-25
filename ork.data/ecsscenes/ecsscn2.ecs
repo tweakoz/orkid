@@ -1,0 +1,1663 @@
+{
+ "root": {
+  "object": {
+   "class": "EcsSceneData",
+   "uuid": "7a968af0-4a27-4d8d-8c0c-5608ca66bc59",
+   "properties": {
+    "SceneObjects": {
+     "ArchBallDown": {
+      "object": {
+       "class": "EcsArchetype",
+       "uuid": "b4b94bf4-a3a2-446b-8c80-181ae7b120fd",
+       "properties": {
+        "Components": {
+         "BoidsComponentData": {
+          "object": {
+           "class": "BoidsComponentData",
+           "uuid": "fa09fcaf-14e5-487f-8ed9-ff37f0207ff4",
+           "properties": {
+            "AlignmentRadius": 8.0,
+            "AlignmentWeight": 1.0,
+            "CohesionRadius": 25.999998092651367,
+            "CohesionWeight": 1.0,
+            "FlockID": 2,
+            "GroundHeight": 0.0,
+            "HomeRadius": 8.000000953674316,
+            "HomeWeight": 0.5999972224235535,
+            "MaxForce": 10.0,
+            "MaxSpeed": 5.0,
+            "Mode": "AIR",
+            "SeparationRadius": 11.399999618530273,
+            "SeparationWeight": 57.29999542236328,
+            "WanderStrength": 9.199999809265137
+           }
+          }
+         },
+         "StochWavSoundEmitterData": {
+          "object": {
+           "class": "StochWavSoundEmitterData",
+           "uuid": "ea52c4d7-4d5b-4421-9c66-0d8955432c9a",
+           "properties": {
+            "Enabled": true,
+            "GainOffsetDB": 0.0,
+            "GroupName": "misc",
+            "PitchOffsetCents": 0.0,
+            "RateScale": 1.0
+           }
+          }
+         },
+         "EcsBulletObjectComponentData": {
+          "object": {
+           "class": "EcsBulletObjectComponentData",
+           "uuid": "8317c929-b347-4605-8112-74f0beb29f71",
+           "properties": {
+            "AllowSleeping": false,
+            "AngularDamping": 0.4699999988079071,
+            "Disable": false,
+            "ForceControllers": {
+             "item-0": {
+              "object": {
+               "class": "DirectionalForceData",
+               "uuid": "5b6a70a5-b508-43d5-93ea-669e23430bbd",
+               "properties": {
+                "Direction": [
+                 0.0,
+                 1.1699999570846558,
+                 0.0
+                ],
+                "Force": -19.099998474121094
+               }
+              }
+             }
+            },
+            "Friction": 0.5,
+            "IsKinematic": false,
+            "LinearDamping": 0.5,
+            "Mass": 1.0,
+            "Restitution": 0.5,
+            "Shape": {
+             "object": {
+              "class": "EcsBulletShapeSphereData",
+              "uuid": "06d3c56c-e946-4cd4-b385-afa6f55008cf",
+              "properties": {
+               "Radius": 1.024999976158142
+              }
+             }
+            },
+            "SyncShapeScale": false
+           }
+          }
+         },
+         "SceneGraphComponentData": {
+          "object": {
+           "class": "SceneGraphComponentData",
+           "uuid": "baa63caf-2f47-491c-bb2a-c868c9edcf64",
+           "properties": {
+            "NodeDatas": {
+             "item-0": {
+              "object": {
+               "class": "SceneGraphNodeItemData",
+               "uuid": "507bc858-1b32-4b10-98ae-3819b7721cd0",
+               "properties": {
+                "DrawableData": {
+                 "object": {
+                  "class": "ModelDrawableData",
+                  "uuid": "33525f31-ff98-459a-8b13-6a798b9535e6",
+                  "properties": {
+                   "assetpath": "data://tests/pbr_calib.glb",
+                   "assetvars": {}
+                  }
+                 }
+                },
+                "LayerName": "std_forward",
+                "NodeName": "N2"
+               }
+              }
+             },
+             "item-1": {
+              "object": {
+               "class": "SceneGraphNodeItemData",
+               "uuid": "984ffdd5-16d3-4acb-bc11-0c8654ea1acd",
+               "properties": {
+                "DrawableData": {
+                 "object": {
+                  "class": "PointLightData",
+                  "uuid": "5dc2ba0e-607c-4b44-a211-ddaf572120ea",
+                  "properties": {
+                   "Falloff": 1.0,
+                   "Radius": 1.0,
+                   "Color": [
+                    -3.6999998092651367,
+                    7.6999993324279785,
+                    0.0
+                   ],
+                   "Decal": false,
+                   "Intensity": 1.5200023651123047,
+                   "ShadowBias": 0.0020000000949949026,
+                   "ShadowBlur": 0.0,
+                   "ShadowCaster": false,
+                   "ShadowMapSize": 1024,
+                   "ShadowSamples": 1
+                  }
+                 }
+                },
+                "LayerName": "",
+                "NodeName": ""
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "ArchBirdies": {
+      "object": {
+       "class": "EcsArchetype",
+       "uuid": "d98f5eb2-12d8-4e22-ab58-56aa30bc2218",
+       "properties": {
+        "Components": {
+         "BoidsComponentData": {
+          "object": {
+           "class": "BoidsComponentData",
+           "uuid": "7b0dafe3-1212-4fb6-b747-b863edf19549",
+           "properties": {
+            "AlignmentRadius": 9.679999351501465,
+            "AlignmentWeight": 1.7100000381469727,
+            "CohesionRadius": 1.7000011205673218,
+            "CohesionWeight": 46.97999572753906,
+            "FlockID": 0,
+            "GroundHeight": 19.83000373840332,
+            "HomeRadius": 14.930000305175781,
+            "HomeWeight": 15.75999927520752,
+            "MaxForce": 72.22999572753906,
+            "MaxSpeed": 80.0199966430664,
+            "Mode": "AIR",
+            "SeparationRadius": 8.539999008178711,
+            "SeparationWeight": 8.930000305175781,
+            "WanderStrength": 49.070003509521484
+           }
+          }
+         },
+         "StochWavSoundEmitterData": {
+          "object": {
+           "class": "StochWavSoundEmitterData",
+           "uuid": "0ea8eb5a-2bdc-4259-bb24-c4a28f1de462",
+           "properties": {
+            "Enabled": true,
+            "GainOffsetDB": 0.0,
+            "GroupName": "birds",
+            "PitchOffsetCents": 0.0,
+            "RateScale": 1.0
+           }
+          }
+         },
+         "EcsBulletObjectComponentData": {
+          "object": {
+           "class": "EcsBulletObjectComponentData",
+           "uuid": "76ed0d49-5d09-409f-a0c9-854d340fb695",
+           "properties": {
+            "AllowSleeping": false,
+            "AngularDamping": 0.36999911069869995,
+            "Disable": false,
+            "ForceControllers": {},
+            "Friction": 1.0699999332427979,
+            "IsKinematic": false,
+            "LinearDamping": 0.4500008225440979,
+            "Mass": 5.200000286102295,
+            "Restitution": 0.2099999487400055,
+            "Shape": {
+             "object": {
+              "class": "EcsBulletShapeSphereData",
+              "uuid": "d3bd3d4e-2edf-4791-b780-656de0fbd44d",
+              "properties": {
+               "Radius": 0.4650000035762787
+              }
+             }
+            },
+            "SyncShapeScale": false
+           }
+          }
+         },
+         "SceneGraphComponentData": {
+          "object": {
+           "class": "SceneGraphComponentData",
+           "uuid": "5b9e8e6f-76c6-4b56-9010-004cfbd9e2e4",
+           "properties": {
+            "NodeDatas": {
+             "item-0": {
+              "object": {
+               "class": "SceneGraphNodeItemData",
+               "uuid": "d3321bbd-8eac-4b36-9ffe-337afd3938e8",
+               "properties": {
+                "DrawableData": {
+                 "object": {
+                  "class": "ModelDrawableData",
+                  "uuid": "13477281-f777-4132-9ded-e7cf0d95e01f",
+                  "properties": {
+                   "assetpath": "data://tests/misc_gltf_samples/animals/turtle.glb",
+                   "assetvars": {}
+                  }
+                 }
+                },
+                "LayerName": "std_forward",
+                "NodeName": "X1"
+               }
+              }
+             },
+             "item-1": {
+              "object": {
+               "class": "SceneGraphNodeItemData",
+               "uuid": "3971b4a1-3368-41be-a56b-6f0f394239ca",
+               "properties": {
+                "DrawableData": {
+                 "object": {
+                  "class": "PointLightData",
+                  "uuid": "87465569-60c7-48c9-936e-51763608c143",
+                  "properties": {
+                   "Falloff": 1.0,
+                   "Radius": 1.0,
+                   "Color": [
+                    0.0,
+                    0.0,
+                    1.0
+                   ],
+                   "Decal": false,
+                   "Intensity": 42.97999954223633,
+                   "ShadowBias": 0.0020000000949949026,
+                   "ShadowBlur": 0.0,
+                   "ShadowCaster": false,
+                   "ShadowMapSize": 1024,
+                   "ShadowSamples": 1
+                  }
+                 }
+                },
+                "LayerName": "std_forward",
+                "NodeName": "L3"
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "ArchGround": {
+      "object": {
+       "class": "EcsArchetype",
+       "uuid": "73bda066-8ba3-45c6-b813-7aca8de18e61",
+       "properties": {
+        "Components": {
+         "EcsBulletObjectComponentData": {
+          "object": {
+           "class": "EcsBulletObjectComponentData",
+           "uuid": "2b0882ec-a284-417c-b902-cd209fd27927",
+           "properties": {
+            "AllowSleeping": true,
+            "AngularDamping": 0.5,
+            "Disable": false,
+            "ForceControllers": {},
+            "Friction": 0.5,
+            "IsKinematic": false,
+            "LinearDamping": 0.5,
+            "Mass": 0.0,
+            "Restitution": 0.5,
+            "Shape": {
+             "object": {
+              "class": "EcsBulletShapePlaneData",
+              "uuid": "b5637f76-5dbb-49bb-8e8e-de54c901a0bf",
+              "properties": {}
+             }
+            },
+            "SyncShapeScale": false
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "ArchLight": {
+      "object": {
+       "class": "EcsArchetype",
+       "uuid": "6dec691a-c8a6-4888-b5f4-ed15c3f84501",
+       "properties": {
+        "Components": {
+         "SceneGraphComponentData": {
+          "object": {
+           "class": "SceneGraphComponentData",
+           "uuid": "80510048-72fa-4635-b3f4-69f847856d04",
+           "properties": {
+            "NodeDatas": {
+             "item-0": {
+              "object": {
+               "class": "SceneGraphNodeItemData",
+               "uuid": "482d6fc1-e997-4106-b1f4-69c031c6f2cf",
+               "properties": {
+                "DrawableData": {
+                 "object": {
+                  "class": "PointLightData",
+                  "uuid": "e510700b-efd8-4047-82a9-1eb6202588c7",
+                  "properties": {
+                   "Falloff": 1.0,
+                   "Radius": 1.0,
+                   "Color": [
+                    1.0,
+                    -0.15999996662139893,
+                    -0.26999998092651367
+                   ],
+                   "Decal": false,
+                   "Intensity": 136.2899932861328,
+                   "ShadowBias": 0.0020000000949949026,
+                   "ShadowBlur": 0.0,
+                   "ShadowCaster": false,
+                   "ShadowMapSize": 1024,
+                   "ShadowSamples": 1
+                  }
+                 }
+                },
+                "LayerName": "std_forward",
+                "NodeName": "L1"
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "ArchProbe": {
+      "object": {
+       "class": "EcsArchetype",
+       "uuid": "1b2d1b9a-952b-40f0-a897-1419edffa8c7",
+       "properties": {
+        "Components": {
+         "ProbeComponentData": {
+          "object": {
+           "class": "ProbeComponentData",
+           "uuid": "08363f75-0dcc-4ac4-829f-f6fd982621cf",
+           "properties": {
+            "ImageDimension": 4096,
+            "OutputFolder": "${HOME}",
+            "OutputPrefix": "probetest",
+            "RenderLayer": "std_forward"
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "ArchXfPath": {
+      "object": {
+       "class": "EcsArchetype",
+       "uuid": "94d562c2-6172-4e27-815a-7e7b5a23d848",
+       "properties": {
+        "Components": {
+         "SimpleSoundEmitterData": {
+          "object": {
+           "class": "SimpleSoundEmitterData",
+           "uuid": "6d17d32b-33b4-41d7-8962-8c72ff6a3da6",
+           "properties": {
+            "AutoPlay": true,
+            "Enabled": true,
+            "GainOffsetDB": 0.0,
+            "PitchOffsetCents": 0.0,
+            "SoundName": "drone"
+           }
+          }
+         },
+         "TransformCurveComponentData": {
+          "object": {
+           "class": "TransformCurveComponentData",
+           "uuid": "c4b85dd8-8525-40eb-b0d2-db5c4117bab4",
+           "properties": {
+            "Curve": {
+             "object": {
+              "class": "TransformCurve",
+              "uuid": "83b46087-7b8a-49b3-96c4-2bffd50f594f",
+              "properties": {
+               "channelSegmentTypes": [
+                "BEZIER",
+                "LINEAR",
+                "LINEAR",
+                "LINEAR",
+                "BEZIER",
+                "LINEAR",
+                "CATMULL_ROM",
+                "CATMULL_ROM",
+                "CATMULL_ROM",
+                "LINEAR",
+                "LINEAR",
+                "LINEAR",
+                "LINEAR",
+                "LINEAR",
+                "LINEAR",
+                "CATMULL_ROM",
+                "CATMULL_ROM",
+                "CATMULL_ROM",
+                "LINEAR",
+                "BEZIER",
+                "LINEAR",
+                "LINEAR",
+                "BEZIER",
+                "LINEAR",
+                "CATMULL_ROM",
+                "CATMULL_ROM",
+                "CATMULL_ROM",
+                "LINEAR",
+                "BEZIER",
+                "LINEAR",
+                "LINEAR",
+                "LINEAR",
+                "LINEAR",
+                "CATMULL_ROM",
+                "CATMULL_ROM",
+                "CATMULL_ROM",
+                "LINEAR",
+                "BEZIER",
+                "LINEAR",
+                "LINEAR",
+                "BEZIER",
+                "LINEAR",
+                "CATMULL_ROM",
+                "CATMULL_ROM",
+                "CATMULL_ROM"
+               ],
+               "looping": true,
+               "points": [
+                {
+                 "object": {
+                  "class": "TransformCurvePoint",
+                  "uuid": "49bdc60f-109c-4c69-8e2c-49d521f1f65e",
+                  "properties": {
+                   "eulerRotation": [
+                    0.0,
+                    0.0,
+                    -19.335269927978516
+                   ],
+                   "position": [
+                    9.962808609008789,
+                    1.4632848501205444,
+                    -0.10753663629293442
+                   ],
+                   "rot_tangent_in": [
+                    0.0,
+                    0.0,
+                    0.0
+                   ],
+                   "rot_tangent_out": [
+                    0.0,
+                    -1.6243685483932495,
+                    0.0
+                   ],
+                   "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                   ],
+                   "scale_tangent_in": [
+                    -0.0,
+                    -0.0,
+                    -0.0
+                   ],
+                   "scale_tangent_out": [
+                    0.30000001192092896,
+                    0.0,
+                    0.0
+                   ],
+                   "tangent_in": [
+                    -0.0,
+                    -0.0,
+                    -0.0
+                   ],
+                   "tangent_out": [
+                    0.5925849676132202,
+                    0.11363746225833893,
+                    11.806414604187012
+                   ],
+                   "time": -0.013153525069355965
+                  }
+                 }
+                },
+                {
+                 "object": {
+                  "class": "TransformCurvePoint",
+                  "uuid": "0ebf4b60-741c-4b29-963c-81768803d094",
+                  "properties": {
+                   "eulerRotation": [
+                    16.120683670043945,
+                    97.71853637695313,
+                    -32.45204544067383
+                   ],
+                   "position": [
+                    9.141433715820313,
+                    1.282035231590271,
+                    9.819971084594727
+                   ],
+                   "rot_tangent_in": [
+                    -0.0,
+                    22.860637664794922,
+                    -0.0
+                   ],
+                   "rot_tangent_out": [
+                    0.0,
+                    0.0,
+                    0.0
+                   ],
+                   "scale": [
+                    1.0228667259216309,
+                    1.0,
+                    1.0228667259216309
+                   ],
+                   "scale_tangent_in": [
+                    0.30000001192092896,
+                    -0.0,
+                    -0.0
+                   ],
+                   "scale_tangent_out": [
+                    2.292503595352173,
+                    1.737546682357788,
+                    1.737546682357788
+                   ],
+                   "tangent_in": [
+                    -0.5925849676132202,
+                    0.4863625764846802,
+                    -0.2816448211669922
+                   ],
+                   "tangent_out": [
+                    -6.425761699676514,
+                    0.4863625764846802,
+                    0.08276908099651337
+                   ],
+                   "time": 1.9762382507324219
+                  }
+                 }
+                },
+                {
+                 "object": {
+                  "class": "TransformCurvePoint",
+                  "uuid": "bd21765b-e12a-4465-9278-8f36461b5aa6",
+                  "properties": {
+                   "eulerRotation": [
+                    0.9134787321090698,
+                    -124.45299530029297,
+                    -1.5078104734420776
+                   ],
+                   "position": [
+                    -10.13585090637207,
+                    1.282035231590271,
+                    10.068278312683105
+                   ],
+                   "rot_tangent_in": [
+                    0.0,
+                    0.0,
+                    0.0
+                   ],
+                   "rot_tangent_out": [
+                    0.0,
+                    -27.204626083374023,
+                    0.0
+                   ],
+                   "scale": [
+                    1.0228667259216309,
+                    1.3626842498779297,
+                    1.0228667259216309
+                   ],
+                   "scale_tangent_in": [
+                    -1.1825897693634033,
+                    -1.737546682357788,
+                    -1.737546682357788
+                   ],
+                   "scale_tangent_out": [
+                    -1.2040997743606567,
+                    -1.737546682357788,
+                    -1.737546682357788
+                   ],
+                   "tangent_in": [
+                    6.425761699676514,
+                    0.11363746225833893,
+                    -0.08276908099651337
+                   ],
+                   "tangent_out": [
+                    0.00002935706106654834,
+                    -0.03195542097091675,
+                    0.0
+                   ],
+                   "time": 3.990976572036743
+                  }
+                 }
+                },
+                {
+                 "object": {
+                  "class": "TransformCurvePoint",
+                  "uuid": "56e028db-1171-4726-83f5-47a915b65553",
+                  "properties": {
+                   "eulerRotation": [
+                    -17.211395263671875,
+                    177.27342224121094,
+                    33.5518913269043
+                   ],
+                   "position": [
+                    -10.13585090637207,
+                    5.8132500648498535,
+                    -10.220760345458984
+                   ],
+                   "rot_tangent_in": [
+                    0.0,
+                    0.0,
+                    0.0
+                   ],
+                   "rot_tangent_out": [
+                    0.0,
+                    0.0,
+                    0.0
+                   ],
+                   "scale": [
+                    4.712806701660156,
+                    4.249543190002441,
+                    4.249543190002441
+                   ],
+                   "scale_tangent_in": [
+                    2.270993709564209,
+                    1.737546682357788,
+                    1.737546682357788
+                   ],
+                   "scale_tangent_out": [
+                    2.2287368774414063,
+                    1.64366614818573,
+                    1.64366614818573
+                   ],
+                   "tangent_in": [
+                    0.0,
+                    -7.370777130126953,
+                    0.0
+                   ],
+                   "tangent_out": [
+                    6.705940246582031,
+                    -2.1145668029785156,
+                    0.048183441162109375
+                   ],
+                   "time": 6.014632225036621
+                  }
+                 }
+                },
+                {
+                 "object": {
+                  "class": "TransformCurvePoint",
+                  "uuid": "0ce9ecb2-699d-4040-beab-2572b411f32e",
+                  "properties": {
+                   "eulerRotation": [
+                    -15.166536331176758,
+                    -173.93226623535156,
+                    -29.941303253173828
+                   ],
+                   "position": [
+                    9.981968879699707,
+                    2.8528566360473633,
+                    -10.076210021972656
+                   ],
+                   "rot_tangent_in": [
+                    -0.0,
+                    12.410272598266602,
+                    -0.0
+                   ],
+                   "rot_tangent_out": [
+                    0.0,
+                    29.89468765258789,
+                    0.0
+                   ],
+                   "scale": [
+                    1.0228667259216309,
+                    1.7944624423980713,
+                    1.0228667259216309
+                   ],
+                   "scale_tangent_in": [
+                    -1.0585955381393433,
+                    -1.64366614818573,
+                    -1.64366614818573
+                   ],
+                   "scale_tangent_out": [
+                    -1.2629096508026123,
+                    -1.64366614818573,
+                    -1.64366614818573
+                   ],
+                   "tangent_in": [
+                    -6.705940246582031,
+                    1.0675652027130127,
+                    -0.048183441162109375
+                   ],
+                   "tangent_out": [
+                    -0.006386756896972656,
+                    0.0685267448425293,
+                    0.060416221618652344
+                   ],
+                   "time": 8.009593963623047
+                  }
+                 }
+                },
+                {
+                 "object": {
+                  "class": "TransformCurvePoint",
+                  "uuid": "d6cbb92e-d369-46d9-9379-9eed8a827c88",
+                  "properties": {
+                   "eulerRotation": [
+                    0.0,
+                    0.0,
+                    -19.335269927978516
+                   ],
+                   "position": [
+                    9.962808609008789,
+                    1.4632848501205444,
+                    -0.10753663629293442
+                   ],
+                   "rot_tangent_in": [
+                    -0.0,
+                    -3.3828680515289307,
+                    -0.0
+                   ],
+                   "rot_tangent_out": [
+                    0.0,
+                    0.0,
+                    0.0
+                   ],
+                   "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                   ],
+                   "scale_tangent_in": [
+                    -0.0,
+                    -0.0,
+                    -0.0
+                   ],
+                   "scale_tangent_out": [
+                    0.0,
+                    0.0,
+                    0.0
+                   ],
+                   "tangent_in": [
+                    0.006386756896972656,
+                    0.6292937994003296,
+                    -12.02282428741455
+                   ],
+                   "tangent_out": [
+                    0.0,
+                    0.0,
+                    0.0
+                   ],
+                   "time": 9.97138500213623
+                  }
+                 }
+                }
+               ],
+               "rotationOrder": "XYZ",
+               "segmentTypes": [
+                "LINEAR"
+               ],
+               "useNonUniformScale": true
+              }
+             }
+            },
+            "PlaybackSpeed": 1.0000019073486328
+           }
+          }
+         },
+         "EcsBulletObjectComponentData": {
+          "object": {
+           "class": "EcsBulletObjectComponentData",
+           "uuid": "1b334162-fcb5-4942-a45d-20c9d71b2c1d",
+           "properties": {
+            "AllowSleeping": false,
+            "AngularDamping": 0.5,
+            "Disable": false,
+            "ForceControllers": {},
+            "Friction": 0.5,
+            "IsKinematic": true,
+            "LinearDamping": 0.5,
+            "Mass": 1.0,
+            "Restitution": 0.5,
+            "Shape": {
+             "object": {
+              "class": "EcsBulletShapeCapsuleData",
+              "uuid": "54209182-b736-46ae-ba26-319d8ac587c8",
+              "properties": {
+               "Extent": 1.5800012350082397,
+               "Radius": 0.5899991989135742
+              }
+             }
+            },
+            "SyncShapeScale": true
+           }
+          }
+         },
+         "SceneGraphComponentData": {
+          "object": {
+           "class": "SceneGraphComponentData",
+           "uuid": "5d4d9a32-44c8-4003-883e-c36be6f5b291",
+           "properties": {
+            "NodeDatas": {
+             "item-0": {
+              "object": {
+               "class": "SceneGraphNodeItemData",
+               "uuid": "3209df80-81f6-401d-8888-05562ed725ae",
+               "properties": {
+                "DrawableData": {
+                 "object": {
+                  "class": "ModelDrawableData",
+                  "uuid": "dd5782c3-eaa0-4ff8-8c50-3d5223892c0c",
+                  "properties": {
+                   "assetpath": "data://tests/misc_gltf_samples/art_and_sculpture/fracvase.glb",
+                   "assetvars": {}
+                  }
+                 }
+                },
+                "LayerName": "std_forward",
+                "NodeName": "X4"
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "Archetype5hield": {
+      "object": {
+       "class": "EcsArchetype",
+       "uuid": "9af99e1f-fddc-42ba-b265-217caec3abc4",
+       "properties": {
+        "Components": {
+         "EcsBulletObjectComponentData": {
+          "object": {
+           "class": "EcsBulletObjectComponentData",
+           "uuid": "743921c6-7d0a-4f2c-b27b-d2c62c1c9963",
+           "properties": {
+            "AllowSleeping": true,
+            "AngularDamping": 0.5,
+            "Disable": false,
+            "ForceControllers": {},
+            "Friction": 0.5,
+            "IsKinematic": true,
+            "LinearDamping": 0.5,
+            "Mass": 1.0,
+            "Restitution": 0.5,
+            "Shape": {
+             "object": {
+              "class": "EcsBulletShapeSphereData",
+              "uuid": "a0703c87-23ef-45ef-91cd-62a7f398006d",
+              "properties": {
+               "Radius": 7.5099992752075195
+              }
+             }
+            },
+            "SyncShapeScale": false
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "PROBE1": {
+      "object": {
+       "class": "EcsSpawnData",
+       "uuid": "fa2e3299-ab89-4efd-aebc-80b8033633aa",
+       "properties": {
+        "Archetype": {
+         "object-ref": {
+          "uuid-ref": "1b2d1b9a-952b-40f0-a897-1419edffa8c7"
+         }
+        },
+        "DirectionRandomize": 0.0,
+        "InitialDirection": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "InitialSpeed": 0.0,
+        "LifetimeMax": 0.0,
+        "LifetimeMin": 0.0,
+        "MinDistance": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "PositionRandomRadius": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "SpawnCount": 1,
+        "SpawnInterval": 0.0,
+        "StochasticInterval": 0.0,
+        "UserProperties": {},
+        "DagNodeData": {
+         "object": {
+          "class": "EcsDagNodeData",
+          "uuid": "ea7ff89d-fb73-4b69-8b83-4f44f0c05619",
+          "properties": {
+           "TransformNode": {
+            "object": {
+             "class": "TransformNode",
+             "uuid": "36067413-bb35-42df-92a8-7bce356fced4",
+             "properties": {
+              "transform": {
+               "object": {
+                "class": "DecompTransform",
+                "uuid": "9699d56c-5ff5-4562-b819-5a25349685ac",
+                "properties": {
+                 "rotation": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                 ],
+                 "translation": [
+                  0.0,
+                  1.687673568725586,
+                  0.0
+                 ],
+                 "uniformScale": 1.0
+                }
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        },
+        "Parent": "scene"
+       }
+      }
+     },
+     "spawner-ground": {
+      "object": {
+       "class": "EcsSpawnData",
+       "uuid": "02748a14-833c-42e7-af08-a982329721eb",
+       "properties": {
+        "Archetype": {
+         "object-ref": {
+          "uuid-ref": "73bda066-8ba3-45c6-b813-7aca8de18e61"
+         }
+        },
+        "DirectionRandomize": 0.0,
+        "InitialDirection": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "InitialSpeed": 0.0,
+        "LifetimeMax": 0.0,
+        "LifetimeMin": 0.0,
+        "MinDistance": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "PositionRandomRadius": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "SpawnCount": 1,
+        "SpawnInterval": 0.0,
+        "StochasticInterval": 0.0,
+        "UserProperties": {},
+        "DagNodeData": {
+         "object": {
+          "class": "EcsDagNodeData",
+          "uuid": "0fd332a6-0890-4d8a-9e93-822408a0ce49",
+          "properties": {
+           "TransformNode": {
+            "object": {
+             "class": "TransformNode",
+             "uuid": "e418b15f-621e-495e-85fe-e71de643db1e",
+             "properties": {
+              "transform": {
+               "object": {
+                "class": "DecompTransform",
+                "uuid": "23de7df6-0735-4a6e-b1ac-d602287d0b04",
+                "properties": {
+                 "rotation": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                 ],
+                 "translation": [
+                  0.0,
+                  0.0,
+                  0.0
+                 ],
+                 "uniformScale": 1.0
+                }
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        },
+        "Parent": "scene"
+       }
+      }
+     },
+     "spawner-redlight": {
+      "object": {
+       "class": "EcsSpawnData",
+       "uuid": "f5b5de3f-24d6-453e-9664-911412a7b7d9",
+       "properties": {
+        "Archetype": {
+         "object-ref": {
+          "uuid-ref": "6dec691a-c8a6-4888-b5f4-ed15c3f84501"
+         }
+        },
+        "DirectionRandomize": 0.0,
+        "InitialDirection": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "InitialSpeed": 0.0,
+        "LifetimeMax": 0.0,
+        "LifetimeMin": 0.0,
+        "MinDistance": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "PositionRandomRadius": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "SpawnCount": 1,
+        "SpawnInterval": 0.0,
+        "StochasticInterval": 0.0,
+        "UserProperties": {},
+        "DagNodeData": {
+         "object": {
+          "class": "EcsDagNodeData",
+          "uuid": "09552724-7fb0-4a06-b99d-e1f12093c14c",
+          "properties": {
+           "TransformNode": {
+            "object": {
+             "class": "TransformNode",
+             "uuid": "eb3d1bba-91cd-47b6-843b-4e0cbab4cdfe",
+             "properties": {
+              "transform": {
+               "object": {
+                "class": "DecompTransform",
+                "uuid": "2fb1cf51-170f-457c-ba12-3db3f262d992",
+                "properties": {
+                 "rotation": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                 ],
+                 "translation": [
+                  0.0,
+                  5.840345859527588,
+                  0.0
+                 ],
+                 "uniformScale": 1.0
+                }
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        },
+        "Parent": "scene"
+       }
+      }
+     },
+     "spawner-xfpath": {
+      "object": {
+       "class": "EcsSpawnData",
+       "uuid": "18c43a90-b0fa-4303-9104-654088bee996",
+       "properties": {
+        "Archetype": {
+         "object-ref": {
+          "uuid-ref": "94d562c2-6172-4e27-815a-7e7b5a23d848"
+         }
+        },
+        "DirectionRandomize": 0.0,
+        "InitialDirection": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "InitialSpeed": 0.0,
+        "LifetimeMax": 0.0,
+        "LifetimeMin": 0.0,
+        "MinDistance": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "PositionRandomRadius": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "SpawnCount": 1,
+        "SpawnInterval": 0.0,
+        "StochasticInterval": 0.0,
+        "UserProperties": {},
+        "DagNodeData": {
+         "object": {
+          "class": "EcsDagNodeData",
+          "uuid": "2bc78abf-5843-4f56-a347-2cdc338abc10",
+          "properties": {
+           "TransformNode": {
+            "object": {
+             "class": "TransformNode",
+             "uuid": "e410acaa-f956-471b-aa3d-981ae96636a1",
+             "properties": {
+              "transform": {
+               "object": {
+                "class": "DecompTransform",
+                "uuid": "7e31193b-4ae2-4659-9cb8-442c7f1ac9f0",
+                "properties": {
+                 "rotation": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                 ],
+                 "translation": [
+                  -5.004416465759277,
+                  1.235278606414795,
+                  0.0
+                 ],
+                 "uniformScale": 1.0
+                }
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        },
+        "Parent": "scene"
+       }
+      }
+     },
+     "spawner2": {
+      "object": {
+       "class": "EcsSpawnData",
+       "uuid": "c7ca9a63-05f2-459d-a5c8-c0d45876f117",
+       "properties": {
+        "Archetype": {
+         "object-ref": {
+          "uuid-ref": "d98f5eb2-12d8-4e22-ab58-56aa30bc2218"
+         }
+        },
+        "DirectionRandomize": 0.0,
+        "InitialDirection": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "InitialSpeed": 0.0,
+        "LifetimeMax": 0.0,
+        "LifetimeMin": 0.0,
+        "MinDistance": [
+         1.7599999904632568,
+         1.4399999380111694,
+         1.2300000190734863
+        ],
+        "PositionRandomRadius": [
+         4.940000057220459,
+         3.490000009536743,
+         4.420000076293945
+        ],
+        "SpawnCount": 21,
+        "SpawnInterval": 0.0,
+        "StochasticInterval": 0.0,
+        "UserProperties": {},
+        "DagNodeData": {
+         "object": {
+          "class": "EcsDagNodeData",
+          "uuid": "40b5662b-2b36-4cbd-9399-e128f03848f5",
+          "properties": {
+           "TransformNode": {
+            "object": {
+             "class": "TransformNode",
+             "uuid": "453f055c-f0bd-4344-8a79-700acc98a01f",
+             "properties": {
+              "transform": {
+               "object": {
+                "class": "DecompTransform",
+                "uuid": "d28f9079-6ed3-434b-ac4f-ed44bf6722e0",
+                "properties": {
+                 "rotation": [
+                  -0.0,
+                  -0.0,
+                  -0.0,
+                  1.0
+                 ],
+                 "translation": [
+                  2.78144907951355,
+                  11.277647018432617,
+                  0.34155142307281494
+                 ],
+                 "uniformScale": 0.25
+                }
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        },
+        "Parent": "scene"
+       }
+      }
+     },
+     "spawner3": {
+      "object": {
+       "class": "EcsSpawnData",
+       "uuid": "f7fa78cb-9ccc-47b6-bf38-1e40ed3e213f",
+       "properties": {
+        "Archetype": {
+         "object-ref": {
+          "uuid-ref": "b4b94bf4-a3a2-446b-8c80-181ae7b120fd"
+         }
+        },
+        "DirectionRandomize": 3.549999952316284,
+        "InitialDirection": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "InitialSpeed": 0.0,
+        "LifetimeMax": 0.0,
+        "LifetimeMin": 0.0,
+        "MinDistance": [
+         1.5199999809265137,
+         1.399999976158142,
+         1.2899999618530273
+        ],
+        "PositionRandomRadius": [
+         4.989999771118164,
+         0.0,
+         4.210000038146973
+        ],
+        "SpawnCount": 30,
+        "SpawnInterval": 0.0,
+        "StochasticInterval": 0.0,
+        "UserProperties": {},
+        "DagNodeData": {
+         "object": {
+          "class": "EcsDagNodeData",
+          "uuid": "1e1051f3-b0bb-407d-b677-e228a8953702",
+          "properties": {
+           "TransformNode": {
+            "object": {
+             "class": "TransformNode",
+             "uuid": "6c33724f-eb9e-4bae-a2e6-f312bfaf8a8e",
+             "properties": {
+              "transform": {
+               "object": {
+                "class": "DecompTransform",
+                "uuid": "17b284c6-9763-433d-bbcb-57dfa8ef807f",
+                "properties": {
+                 "rotation": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                 ],
+                 "translation": [
+                  3.8972859382629395,
+                  13.357718467712402,
+                  0.0
+                 ],
+                 "uniformScale": 0.5
+                }
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        },
+        "Parent": "scene"
+       }
+      }
+     },
+     "spawnerShield": {
+      "object": {
+       "class": "EcsSpawnData",
+       "uuid": "427347f9-f69b-4c25-a9ca-8e910cf6958d",
+       "properties": {
+        "Archetype": {
+         "object-ref": {
+          "uuid-ref": "9af99e1f-fddc-42ba-b265-217caec3abc4"
+         }
+        },
+        "DirectionRandomize": 0.0,
+        "InitialDirection": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "InitialSpeed": 0.0,
+        "LifetimeMax": 0.0,
+        "LifetimeMin": 0.0,
+        "MinDistance": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "PositionRandomRadius": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "SpawnCount": 1,
+        "SpawnInterval": 0.0,
+        "StochasticInterval": 0.0,
+        "UserProperties": {},
+        "DagNodeData": {
+         "object": {
+          "class": "EcsDagNodeData",
+          "uuid": "b0b7e7ba-b033-40f9-a27e-49ad4d553f28",
+          "properties": {
+           "TransformNode": {
+            "object": {
+             "class": "TransformNode",
+             "uuid": "b3620caf-ad27-4668-88da-71aa3f4303ed",
+             "properties": {
+              "transform": {
+               "object": {
+                "class": "DecompTransform",
+                "uuid": "7aa9c2ed-019a-4bad-ae80-3a56f1506b73",
+                "properties": {
+                 "rotation": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                 ],
+                 "translation": [
+                  0.0,
+                  0.0,
+                  0.0
+                 ],
+                 "uniformScale": 1.0
+                }
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        },
+        "Parent": "scene"
+       }
+      }
+     }
+    },
+    "ScriptFile": "",
+    "SystemData": {
+     "BoidsSystem": {
+      "object": {
+       "class": "BoidsSystemData",
+       "uuid": "b8f80df6-8803-4e4b-b9b5-2caed99ac6a6",
+       "properties": {}
+      }
+     },
+     "BulletSystem": {
+      "object": {
+       "class": "EcsBulletSystemData",
+       "uuid": "fe955038-58fb-4c97-ba51-a39c93131b73",
+       "properties": {
+        "Debug": false,
+        "ExpGravity": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "LinGravity": [
+         0.0,
+         -0.2700003683567047,
+         0.0
+        ],
+        "SimulationRate": 400.0,
+        "TimeScale": 0.9700000286102295
+       }
+      }
+     },
+     "GlobalSynthSystem": {
+      "object": {
+       "class": "GlobalSynthSystemData",
+       "uuid": "08265615-6c39-420d-a12b-eda32e13bd97",
+       "properties": {
+        "BusConfigs": {
+         "main": {
+          "object": {
+           "class": "SynthBusConfig",
+           "uuid": "5737e941-1074-44e4-a328-b67a15b0ac62",
+           "properties": {
+            "EffectPreset": "IR-Forest",
+            "GainDB": 0.0,
+            "Mute": false,
+            "Pan": 0.0,
+            "Solo": false
+           }
+          }
+         }
+        },
+        "MasterGainDB": 0.0
+       }
+      }
+     },
+     "ProbeSystem": {
+      "object": {
+       "class": "ProbeSystemData",
+       "uuid": "59a92b13-bde3-41da-b241-9c404a0169f7",
+       "properties": {}
+      }
+     },
+     "SceneGraphSystemData": {
+      "object": {
+       "class": "SceneGraphSystemData",
+       "uuid": "53c771d8-7058-4fde-b926-49f200157857",
+       "properties": {
+        "drawabledatas": [],
+        "userparams": {}
+       }
+      }
+     },
+     "SimpleSoundEmitterSystem": {
+      "object": {
+       "class": "SimpleSoundEmitterSystemData",
+       "uuid": "383cc5c4-b143-4308-ac9b-4e5bf2ff90b7",
+       "properties": {
+        "Sounds": {
+         "drone": {
+          "object": {
+           "class": "SimpleSoundData",
+           "uuid": "62442cb2-fffb-430e-ad16-edd33fc50a67",
+           "properties": {
+            "FadeInTime": 0.009999999776482582,
+            "FadeOutTime": 0.05000000074505806,
+            "GainDB": 0.0,
+            "Looping": true,
+            "OutputBusName": "main",
+            "PitchOffsetCents": 0.0,
+            "Spatialize": true,
+            "WavFile": "data://sounds/j1.wav"
+           }
+          }
+         }
+        },
+        "Spatializer": {
+         "object": {
+          "class": "PannerSpatializerData",
+          "uuid": "3cd09a9d-61d2-482f-a8e2-48195707b357",
+          "properties": {
+           "HeadShadowMix": 0.6000000238418579,
+           "IidBaseFreq": 4000.0,
+           "IidMaxFreq": 8000.0,
+           "MaxDistance": 100.0,
+           "MinGainDB": -36.900001525878906,
+           "RefDistance": 1.0,
+           "Rolloff": 1.0
+          }
+         }
+        }
+       }
+      }
+     },
+     "StochWavSoundEmitterSystem": {
+      "object": {
+       "class": "StochWavSoundEmitterSystemData",
+       "uuid": "f22d326b-fd76-4990-b0da-e3c2cacf2be4",
+       "properties": {
+        "SoundGroups": {
+         "birds": {
+          "object": {
+           "class": "StochSoundGroup",
+           "uuid": "fc32a9b1-81e3-4b14-9435-040dd44d2120",
+           "properties": {
+            "FadeInTime": 0.5,
+            "FadeOutTime": 0.5,
+            "MasterGainDB": 0.0,
+            "MaxVoicesPerGroup": 9,
+            "MinSpacing": 0.8099995851516724,
+            "OutputBusName": "main",
+            "Sounds": {
+             "b1": {
+              "object": {
+               "class": "StochWavSound",
+               "uuid": "f49147de-4308-4000-855f-d858a0d59ca4",
+               "properties": {
+                "BurstCountMax": 3,
+                "BurstCountMin": 1,
+                "BurstRate": 0.699999988079071,
+                "FadeInTime": 0.5,
+                "FadeOutTime": 0.5,
+                "GainMaxDB": 0.0,
+                "GainMinDB": 0.0,
+                "IntraBurstRate": 3.0,
+                "PitchVarianceCents": 137.0,
+                "SelectionWeight": 1.0,
+                "WavFile": "data://sounds/b1.wav"
+               }
+              }
+             },
+             "b2": {
+              "object": {
+               "class": "StochWavSound",
+               "uuid": "57067ff9-0499-4b6f-8609-e675eb522078",
+               "properties": {
+                "BurstCountMax": 3,
+                "BurstCountMin": 1,
+                "BurstRate": 0.25,
+                "FadeInTime": 0.5,
+                "FadeOutTime": 0.5,
+                "GainMaxDB": 0.0,
+                "GainMinDB": 0.0,
+                "IntraBurstRate": 3.0,
+                "PitchVarianceCents": 110.89999389648438,
+                "SelectionWeight": 1.0,
+                "WavFile": "data://sounds/b2.wav"
+               }
+              }
+             }
+            }
+           }
+          }
+         },
+         "misc": {
+          "object": {
+           "class": "StochSoundGroup",
+           "uuid": "146f2d7c-25f1-4a3f-aa0a-a8f8fe850840",
+           "properties": {
+            "FadeInTime": 0.009999999776482582,
+            "FadeOutTime": 0.05000000074505806,
+            "MasterGainDB": 0.0,
+            "MaxVoicesPerGroup": 5,
+            "MinSpacing": 0.30000001192092896,
+            "OutputBusName": "main",
+            "Sounds": {
+             "item-0": {
+              "object": {
+               "class": "StochWavSound",
+               "uuid": "b3c32857-c722-4778-946e-4578cbfd5e47",
+               "properties": {
+                "BurstCountMax": 3,
+                "BurstCountMin": 1,
+                "BurstRate": 0.10000000149011612,
+                "FadeInTime": 0.0,
+                "FadeOutTime": 0.0,
+                "GainMaxDB": 0.0,
+                "GainMinDB": 0.0,
+                "IntraBurstRate": 3.0,
+                "PitchVarianceCents": 0.0,
+                "SelectionWeight": 1.0,
+                "WavFile": "data://sounds/c1.wav"
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        },
+        "Spatializer": {
+         "object": {
+          "class": "PannerSpatializerData",
+          "uuid": "a71e1d4e-b2ab-4458-b067-f124de081e76",
+          "properties": {
+           "HeadShadowMix": 0.6000000238418579,
+           "IidBaseFreq": 4000.0,
+           "IidMaxFreq": 8000.0,
+           "MaxDistance": 100.0,
+           "MinGainDB": -44.400001525878906,
+           "RefDistance": 1.0,
+           "Rolloff": 0.550000011920929
+          }
+         }
+        }
+       }
+      }
+     },
+     "TransformCurveSystem": {
+      "object": {
+       "class": "TransformCurveSystemData",
+       "uuid": "78db3412-89e8-438c-b34a-caadf39b8a87",
+       "properties": {}
+      }
+     }
+    }
+   }
+  }
+ }
+}

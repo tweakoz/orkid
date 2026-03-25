@@ -69,6 +69,7 @@
 #include <ork/util/crc.h>
 #include <ork/orkstd.h>
 #include <ork/kernel/concurrent_queue.h>
+#include <ork/util/logger.h>
 #include <deque>
 #include <map>
 #include <memory>
@@ -87,6 +88,8 @@ namespace ork {
 #define CHANNEL_AUDIO  "AudioThread"
 #define CHANNEL_GPU    "GPU"
 
+#ifdef ORK_PROFILER_ENABLE
+
 // Initial frame begin defines what type the channel is and lazy allocates on first call. Additional optional parameters can be passed in.
 #define OrkProfilerFrameBegin(_channel_name, _type, ...) _OrkStaticAcquireChannel(_channel_name, _type, OrkUnique(_series), frameBegin, __VA_ARGS__)
 #define OrkProfilerFrameEnd(_channel_name)               _OrkStaticGetChannel(_channel_name, OrkUnique(_series), frameEnd)
@@ -100,6 +103,17 @@ namespace ork {
 
 // Events are single occurances that are draw as vertical markers rather than a continuous graph.
 #define OrkProfilerEvent(_channel_name, _series_name)  _OrkStaticSeries(_channel_name,  _series_name, EventProfilerSeries, OrkUnique(_series), addEvent)
+
+#else
+
+#define OrkProfilerFrameBegin(_channel_name, _type, ...)
+#define OrkProfilerFrameEnd(_channel_name)
+#define OrkProfilerSampleBegin(_channel_name, _series_name)
+#define OrkProfilerSampleEnd(_channel_name, _series_name)
+#define OrkProfilerSampleScope(_channel_name, _series_name)
+#define OrkProfilerEvent(_channel_name, _series_name)
+
+#endif
 
 // We use macros and stamp down copies of the static var and if statement to evade std::map lookup every time
 // and rely on CPU prediction to optimize away the overhead of the profiler marker after first call.
@@ -121,7 +135,7 @@ namespace ork {
 #define _OrkStaticScope(_channel_name, _series_name, _var) \
     static SampleProfilerSeries* _var = nullptr; \
     if (_var == nullptr) [[unlikely]] _var = Profiler::acquireSeries<SampleProfilerSeries>(_channel_name, CRCU(_channel_name), _series_name, CRCU(_series_name)); \
-    auto OrkConcat(_var, scope) = _var->sampleScope()
+    auto OrkConcat(_var, scope) = _var ? _var->sampleScope() : ProfilerScope(nullptr, nullptr)
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -277,6 +291,8 @@ struct CpuProfilerChannel final : ProfilerChannel {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+extern logchannel_ptr_t logchan_prof;
+
 struct Profiler {
 
   // global state values to control all profiler sampling
@@ -304,7 +320,10 @@ struct Profiler {
   }
 
   static ProfilerChannel* getChannel(const char* name, u64 namecrc) {
-    OrkAssertI(_channels.contains(namecrc), "First acquireChannel get trying to getChannel!");
+    if (!_channels.contains(namecrc)) {
+      logchan_prof->log("First acquireChannel %s before calling getChannel!", name);
+    OrkAssertI(_channels.contains(namecrc), "First acquireChannel before calling getChannel!");
+    }
     std::unique_lock lock(_channel_mtx);
     auto& c = _channels[namecrc];
     return (ProfilerChannel*)c.get();
@@ -312,10 +331,13 @@ struct Profiler {
 
   template <typename T>
   static T* acquireSeries(const char* channel_name, u64 channel_namecrc, const char* series_name, u64 series_namecrc) {
-    OrkAssertI(_channels.contains(channel_namecrc), "First acquireChannel. Call frameBegin before trying to acquireSeries!");
+    if (!_channels.contains(channel_namecrc)) {
+      logchan_prof->log("Call frameBegin for %s before calling sampleBegin or sampleScope for %s!", channel_name, series_name);
+      OrkAssertI(_channels.contains(channel_namecrc), "Call frameBegin before calling sampleBegin or sampleScope!");
+    }
     std::unique_lock lock(_channel_mtx);
     auto& c = _channels[channel_namecrc];
-    auto& s = c->_series[series_namecrc]; 
+    auto& s = c->_series[series_namecrc];
     if (!s) {
       s = std::make_shared<T>(series_name, c.get());
       c->_series_iter.push_back(s.get());

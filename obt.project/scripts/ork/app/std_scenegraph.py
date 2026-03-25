@@ -53,7 +53,7 @@ class StdSpotLight:
     self.modelnode.worldTransform.translation = vec3(0)
     self.spot_light = lev2.DynamicSpotLight()
     self.spot_light.data.color = color
-    self.spot_light.data.fovy = math.radians(45)
+    self.spot_light.data.fovy = 45
     self.spot_light.lookAt(
       vec3(0,2,1)*4, # eye
       vec3(0,0,0), # tgt 
@@ -76,7 +76,7 @@ class StdSpotLight:
     ty = math.sin(phase*2.0)
     z = math.cos(phase)
     fovy = self.fovbase+(1.0+math.sin(phase*3.5))*self.fovamp*0.5
-    self.spot_light.data.fovy = math.radians(fovy)
+    self.spot_light.data.fovy = fovy
     LPOS =       vec3(x*self.radius,self.voffset+y,z*self.radius)
 
     self.spot_light.lookAt(
