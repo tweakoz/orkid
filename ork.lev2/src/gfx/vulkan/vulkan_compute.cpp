@@ -53,8 +53,15 @@ void VkComputePipelineObject::bindStorageBuffer(uint32_t binding_index, VkBuffer
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void VkComputePipelineObject::bindSampler(uint32_t binding_index, VkDescriptorImageInfo desc_info) {
+  _sampler_bindings[binding_index] = desc_info;
+  _descriptors_dirty = true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void VkComputePipelineObject::updateDescriptorSet() {
-  if (!_descriptors_dirty || _ssbo_bindings.empty()) {
+  if (!_descriptors_dirty || (_ssbo_bindings.empty() && _sampler_bindings.empty())) {
     return;
   }
 
@@ -80,6 +87,27 @@ void VkComputePipelineObject::updateDescriptorSet() {
     writes.push_back(write);
   }
 
+  // Write sampler descriptors
+  // Store image infos in a stable vector so pointers remain valid
+  std::vector<VkDescriptorImageInfo> imageInfos;
+  imageInfos.reserve(_sampler_bindings.size());
+
+  for (auto& [binding_id, img_info] : _sampler_bindings) {
+    imageInfos.push_back(img_info);
+
+    VkWriteDescriptorSet write{};
+    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write.dstSet = _descriptorSet;
+    write.dstBinding = binding_id;
+    write.dstArrayElement = 0;
+    write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    write.descriptorCount = 1;
+    write.pImageInfo = &imageInfos.back();
+    writes.push_back(write);
+  }
+
+  if(0)printf("updateDescriptorSet<%s>: %zu writes (%zu ssbo, %zu sampler)\n",
+         _name.c_str(), writes.size(), _ssbo_bindings.size(), _sampler_bindings.size());
   vkUpdateDescriptorSets(_contextVK->_vkdevice, writes.size(), writes.data(), 0, nullptr);
   _descriptors_dirty = false;
 }
@@ -134,6 +162,7 @@ bool VkComputePipelineObject::createPipeline(vkfxsobj_ptr_t computeShader) {
   }
 
   // Add sampler bindings if present
+  printf("createPipeline<%s>: _smpset_refs=%p\n", _name.c_str(), computeShader->_smpset_refs.get());
   if (computeShader->_smpset_refs) {
     for (const auto& [name, smpset] : computeShader->_smpset_refs->_smpsets) {
       for (const auto& [samp_name, sampler] : smpset->_samplers_by_name) {
@@ -291,15 +320,16 @@ void VkComputeInterface::beginDispatchPhase() {
   beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
   vkBeginCommandBuffer(_computeCmdBuf, &beginInfo);
 
-  // Insert memory barrier: ensure any host writes are complete before compute reads
+  // Insert memory barrier: ensure host writes and any prior compute shader writes
+  // are complete and visible before this compute pass reads.
   VkMemoryBarrier memoryBarrier{};
   memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
-  memoryBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+  memoryBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_SHADER_WRITE_BIT;
   memoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
 
   vkCmdPipelineBarrier(
       _computeCmdBuf,
-      VK_PIPELINE_STAGE_HOST_BIT,
+      VK_PIPELINE_STAGE_HOST_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
       VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
       0,
       1, &memoryBarrier,
@@ -309,6 +339,24 @@ void VkComputeInterface::beginDispatchPhase() {
 
   _dispatchCount = 0;
   _inDispatchPhase = true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkComputeInterface::storageBarrier() {
+  OrkAssert(_inDispatchPhase && "storageBarrier must be called within a dispatch phase");
+  OrkAssert(_computeCmdBuf != VK_NULL_HANDLE);
+
+  VkMemoryBarrier barrier{};
+  barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+  barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+  barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+
+  vkCmdPipelineBarrier(
+      _computeCmdBuf,
+      VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+      VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+      0, 1, &barrier, 0, nullptr, 0, nullptr);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -490,6 +538,44 @@ void VkComputeInterface::bindImage(
     ImageBindAccess access) {
   // TODO: Implement image binding for compute
   logchan_vkcomp->log("bindImage: not implemented");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkComputeInterface::bindSampler(
+    const FxComputeShader* shader,
+    uint32_t binding_index,
+    Texture* tex) {
+
+  if (!shader || !tex) {
+    logchan_vkcomp->log("bindSampler: null shader or texture");
+    return;
+  }
+
+  auto vk_compute_pipeline = shader->_impl.tryAs<vkcompute_pipeline_ptr_t>();
+  if (!vk_compute_pipeline) {
+    printf("bindSampler: shader has no compute pipeline!\n");
+    return;
+  }
+
+  auto pipeline = vk_compute_pipeline.value();
+
+  // Get VulkanTextureObject from texture
+  auto vktex = tex->_impl.getShared<VulkanTextureObject>();
+  if (!vktex) {
+    printf("bindSampler: texture has no VulkanTextureObject!\n");
+    return;
+  }
+  if (!vktex->_descset_sampling) {
+    printf("bindSampler: texture has no _descset_sampling! img_sampling=%p\n", vktex->_img_sampling.get());
+    return;
+  }
+
+  // Use the active sampling descriptor
+  VkDescriptorImageInfo desc_info = *vktex->_descset_sampling;
+  printf("bindSampler: binding=%u imageView=%p sampler=%p layout=%d\n",
+         binding_index, (void*)desc_info.imageView, (void*)desc_info.sampler, (int)desc_info.imageLayout);
+  pipeline->bindSampler(binding_index, desc_info);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

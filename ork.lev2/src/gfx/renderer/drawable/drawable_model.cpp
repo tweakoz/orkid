@@ -18,6 +18,7 @@
 #include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/gfx/gfxmodel.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_common.h>
 #include <ork/kernel/environment.h>
 
 static bool SHOW_SKELETON() {
@@ -26,11 +27,23 @@ static bool SHOW_SKELETON() {
 
 namespace ork::lev2 {
 static logchannel_ptr_t logchan_model = logger()->configureChannel("model",fvec3(0.9,0.2,0.9),false);
+
+static void _loadEnvMapOverride(Drawable* drw, const std::string& envpath) {
+  if (envpath.empty()) return;
+  auto resolved = file::Path::expandPathString(envpath);
+  auto maps = pbr::getRadianceMapCache()->get(resolved);
+  if (maps) {
+    drw->_envmapOverride = maps;
+  }
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 void ModelDrawableData::describeX(object::ObjectClass* clazz){
-  clazz->directProperty("assetpath", &ModelDrawableData::_assetpath);
-  clazz->directMapProperty("assetvars", &ModelDrawableData::_assetvars);
+  clazz->directProperty("assetpath", &ModelDrawableData::_assetpath)
+      ->annotate("editor.filetype", "glb,gltf")
+      ->annotate("editor.filebase", "<assetcache>");
+  clazz->directMapProperty("assetvars", &ModelDrawableData::_assetvars)
+      ->annotate("editor.visible", ConstString("false"));
 }
 
 ModelDrawableData::ModelDrawableData(AssetPath path) : _assetpath(path) {
@@ -42,6 +55,7 @@ drawable_ptr_t ModelDrawableData::createDrawable() const {
   drw->bindModelAsset(_assetpath);
   drw->_modcolor = _modcolor;
   drw->_name = _assetpath.c_str();
+  _loadEnvMapOverride(drw.get(), _environmentMapPath);
   return drw;
 }
 
@@ -52,6 +66,7 @@ drawable_ptr_t ModelDrawableData::createDrawableWithAsset(xgmmodelassetptr_t ass
   drw->bindModelAsset(asset);
   drw->_modcolor = _modcolor;
   drw->_name = _assetpath.c_str();
+  _loadEnvMapOverride(drw.get(), _environmentMapPath);
   return drw;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -255,6 +270,7 @@ void ModelDrawable::enqueueToRenderQueue(drawqueueitem_constptr_t item, lev2::IR
         renderable._offset = _offset;
 
         renderable._sortkey = _sortkey;
+        renderable._envmapOverride = _envmapOverride;
 
         if (item->_onrenderable) {
           item->_onrenderable(&renderable);
@@ -331,6 +347,7 @@ void ModelRenderable::Render(const IRenderer* renderer) const {
   RCID->setRenderable(this);
   RCID->_pipeline_cache = _submeshinst->_fxpipelinecache;
   RCID->_pickID = _pickID;
+  RCID->_envmapOverride = _envmapOverride;
   // context->debugMarker(FormatString("toolrenderer::RenderModel isskinned<%d> owner_as_ent<%p>", int(model->isSkinned()),
   // as_ent));
   ///////////////////////////////////////

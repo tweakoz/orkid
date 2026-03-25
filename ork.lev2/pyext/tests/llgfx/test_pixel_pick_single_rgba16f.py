@@ -3,6 +3,8 @@
 Test for single channel pixel picking with RGBA16F format.
 """
 
+import os; os.environ["PYTHONUNBUFFERED"] = "1"
+import sys; sys.stdout.reconfigure(line_buffering=True)
 import sys
 from orkengine import core
 from orkengine.core import vec4

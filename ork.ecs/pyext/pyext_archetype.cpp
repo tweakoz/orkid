@@ -8,6 +8,7 @@
 #include "pyext.h"
 #include <ork/ecs/entity.inl>
 #include <ork/ecs/archetype.inl>
+#include <ork/ecs/ReferenceArchetype.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -48,6 +49,25 @@ void pyinit_archetype(py::module& module_ecs) {
         ComponentDataTable cdt(arch->mComponentDatas);
         cdt.removeComponent(as_const);
       });
+  /////////////////////////////////////////////////////////////////////////////////
+  using refarchetype_ptr_t = std::shared_ptr<ReferenceArchetype>;
+  py::class_<ReferenceArchetype, Archetype, refarchetype_ptr_t>(module_ecs, "ReferenceArchetype")
+      .def(py::init<>())
+      .def(
+          "__repr__",
+          [](const refarchetype_ptr_t& ra) -> std::string {
+            fxstring<256> fxs;
+            fxs.format("ecs::ReferenceArchetype(ns=%s, name=%s)", ra->_importNamespace.c_str(), ra->_archetypeName.c_str());
+            return fxs.c_str();
+          })
+      .def_property(
+          "importNamespace",
+          [](refarchetype_ptr_t ra) -> std::string { return ra->_importNamespace; },
+          [](refarchetype_ptr_t ra, std::string ns) { ra->_importNamespace = ns; })
+      .def_property(
+          "archetypeName",
+          [](refarchetype_ptr_t ra) -> std::string { return ra->_archetypeName; },
+          [](refarchetype_ptr_t ra, std::string name) { ra->_archetypeName = name; });
   /////////////////////////////////////////////////////////////////////////////////
 } // void pyinit_archetype(py::module& module_ecs) {
 

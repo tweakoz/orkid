@@ -107,9 +107,11 @@ struct EnvMapProcessor {
       const std::vector<std::string>& extensions = {".exr", ".hdr", ".png", ".dds"});
   
   // TaskGraph-based filtering - creates the full filtering pipeline
+  // is_hdr_source: when true, captures in RGBA16F (half-float) to preserve HDR range
   static taskgraph_ptr_t createFilteringTaskGraph(
       texture_ptr_t rawenvmap,
-      bool is_equirectangular);
+      bool is_equirectangular,
+      bool is_hdr_source);
   
   // Individual tile rendering methods
   static void renderSpecularTile(

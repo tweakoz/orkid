@@ -47,6 +47,7 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras, on_enqueue_fn_t on_en
 
   auto DB = _dbufcontext_SG->acquireForWriteLocked();
   DB->Reset();
+  DB->_enableEditorLayers = _enableEditorLayers;
   DB->copyCameras(*cameras.get());
 
   auto cam = cameras->find("spawncam");

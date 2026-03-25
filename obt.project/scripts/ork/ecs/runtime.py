@@ -193,7 +193,7 @@ class EcsRuntime:
     if self.controller:
       self.controller.gpuUpdate(ctx)
 
-  def update(self):
+  def update(self,updinfo):
     """Per-frame update: sync camera + tick simulation. Call from _onUpdate."""
     if self.controller and self._sys_ref:
       UIC = self.uicam.cameradata

@@ -42,7 +42,8 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
           .def_property(
               "modcolor",
               [](drawabledata_ptr_t data) -> fvec4 { return data->_modcolor; },
-              [](drawabledata_ptr_t data, fvec4 c) { data->_modcolor = c; });
+              [](drawabledata_ptr_t data, fvec4 c) { data->_modcolor = c; })
+          .def_readwrite("environmentMapPath", &DrawableData::_environmentMapPath);
   type_codec->registerStdCodec<drawabledata_ptr_t>(drawabledata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto cbdrawabledata_type = //
@@ -246,13 +247,21 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
       py::class_<BillboardDrawableData, DrawableData, billboarddrawabledataptr_t>(module_lev2, "BillboardDrawableData")
           .def(py::init<>())
           .def_property(
-              "texturepath",
-              [](billboarddrawabledataptr_t drw) -> std::string { return drw->_colortexpath; },
-              [](billboarddrawabledataptr_t drw, std::string val) { drw->_colortexpath = val; })
+              "imagePath",
+              [](billboarddrawabledataptr_t drw) -> file::Path { return drw->_imagePath; },
+              [](billboarddrawabledataptr_t drw, file::Path val) { drw->_imagePath = val; })
+          .def_property(
+              "image",
+              [](billboarddrawabledataptr_t drw) -> image_ptr_t { return drw->_image; },
+              [](billboarddrawabledataptr_t drw, image_ptr_t val) { drw->_image = val; })
           .def_property(
               "alpha",
               [](billboarddrawabledataptr_t drw) -> float { return drw->_alpha; },
-              [](billboarddrawabledataptr_t drw, float val) { drw->_alpha = val; });
+              [](billboarddrawabledataptr_t drw, float val) { drw->_alpha = val; })
+          .def_property(
+              "screenSize",
+              [](billboarddrawabledataptr_t drw) -> float { return drw->_screenSize; },
+              [](billboarddrawabledataptr_t drw, float val) { drw->_screenSize = val; });
   type_codec->registerStdCodec<billboarddrawabledataptr_t>(bbdrawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto groundplanedrawdata_type = //

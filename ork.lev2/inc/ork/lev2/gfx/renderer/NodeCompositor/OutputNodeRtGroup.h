@@ -37,6 +37,7 @@ public:
 
   svar256_t _impl;
   int _supersample;
+  int _temporalFrames = 0;  // 0 = disabled, N = accumulate N frames
 
 };
 

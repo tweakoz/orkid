@@ -4,6 +4,8 @@ Basic test for Vulkan compute shaders.
 Creates an SSBO, runs a compute shader to fill it, and verifies the results.
 """
 
+import os; os.environ["PYTHONUNBUFFERED"] = "1"
+import sys; sys.stdout.reconfigure(line_buffering=True)
 import sys
 import struct
 from orkengine import core

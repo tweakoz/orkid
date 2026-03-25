@@ -183,7 +183,10 @@ class FilesystemBrowser:
     # Apply default filter if specified
     if self.default_filter:
       self.filter_edit.text = self.default_filter
-      if '*' not in self.default_filter and '?' not in self.default_filter:
+      if ';' in self.default_filter:
+        # Multi-pattern: use model.filter which supports semicolon-separated globs
+        self.model.filter = self.default_filter
+      elif '*' not in self.default_filter and '?' not in self.default_filter:
         self.model.name_filter = f"*{self.default_filter}*"
       else:
         self.model.name_filter = self.default_filter

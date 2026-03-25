@@ -104,6 +104,7 @@ struct PropertySheetModel {
   virtual bool isMapConst(const std::string& key) const { return true; }
   virtual void addMapElement(const std::string& key, const std::string& name) {}
   virtual void removeMapElement(const std::string& key, const std::string& name) {}
+  virtual void renameMapElement(const std::string& key, const std::string& old_name, const std::string& new_name) {}
 
   //////////////////////////////////////////////////////////////
   // Null object map entry / factory support
@@ -122,6 +123,17 @@ struct PropertySheetModel {
   virtual std::vector<std::string> getDirectObjectFactoryClasses(const std::string& key) const { return {}; }
   // Create an object from factory class name and set it on the direct object property
   virtual void setDirectObjectFromFactory(const std::string& key, const std::string& class_name) {}
+
+  //////////////////////////////////////////////////////////////
+  // Untyped variant map entry / type-picker support
+  // (for maps of svar128_t / rendervar_t whose entries have no type yet)
+  //////////////////////////////////////////////////////////////
+
+  // Is this a map entry whose value is an untyped/empty svar128_t?
+  virtual bool isUntypedVariantMapEntry(const std::string& key) const { return false; }
+  // Set the map entry to a default value of the given type name.
+  // Type names: "float", "int", "bool", "fvec3", "fvec4", "string"
+  virtual void setVariantMapEntryType(const std::string& key, const std::string& type_name) {}
 
   //////////////////////////////////////////////////////////////
   // Read-only support

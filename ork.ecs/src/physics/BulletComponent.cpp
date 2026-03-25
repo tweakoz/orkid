@@ -197,8 +197,13 @@ void BulletObjectComponent::updateDynamic(Simulation* sim, float time_step) {
   ecs_xform->_rotation = rotation;
 
   if (mBOCD._syncShapeScale && _shapeinst && _shapeinst->_collisionShape) {
-    float s = ecs_xform->_uniformScale;
-    _shapeinst->_collisionShape->setLocalScaling(btVector3(s, s, s));
+    if (ecs_xform->_useNonUniformScale) {
+      auto& ns = ecs_xform->_nonUniformScale;
+      _shapeinst->_collisionShape->setLocalScaling(btVector3(ns.x, ns.y, ns.z));
+    } else {
+      float s = ecs_xform->_uniformScale;
+      _shapeinst->_collisionShape->setLocalScaling(btVector3(s, s, s));
+    }
   }
 }
 
@@ -216,8 +221,13 @@ void BulletObjectComponent::updateKinematic(Simulation* sim, float time_step){
   motionState->setWorldTransform(xf);
 
   if (mBOCD._syncShapeScale && _shapeinst && _shapeinst->_collisionShape) {
-    float s = ecs_xform->_uniformScale;
-    _shapeinst->_collisionShape->setLocalScaling(btVector3(s, s, s));
+    if (ecs_xform->_useNonUniformScale) {
+      auto& ns = ecs_xform->_nonUniformScale;
+      _shapeinst->_collisionShape->setLocalScaling(btVector3(ns.x, ns.y, ns.z));
+    } else {
+      float s = ecs_xform->_uniformScale;
+      _shapeinst->_collisionShape->setLocalScaling(btVector3(s, s, s));
+    }
   }
 }
 

@@ -580,6 +580,7 @@ struct VkComputeInterface : public ComputeInterface {
 
   void beginDispatchPhase() final;
   void endDispatchPhase() final;
+  void storageBarrier() final;
 
   void dispatchCompute(const FxComputeShader* shader, uint32_t numgroups_x, uint32_t numgroups_y, uint32_t numgroups_z) final;
 
@@ -594,6 +595,7 @@ struct VkComputeInterface : public ComputeInterface {
 #endif
 
   void bindImage(const FxComputeShader* shader, uint32_t binding_index, Texture* tex, ImageBindAccess access) final;
+  void bindSampler(const FxComputeShader* shader, uint32_t binding_index, Texture* tex) final;
 
   // PipelineCompute* createComputePipe(ComputeShader* csh);
   // void bindComputeShader(ComputeShader* csh);

@@ -51,7 +51,7 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
   auto lg_type_t = py::class_<LightingGroup, lightinggroup_ptr_t>(module_lev2, "LightingGroup");
   type_codec->registerStdCodec<lightinggroup_ptr_t>(lg_type_t);
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<LightData, lightdata_ptr_t>(module_lev2, "LightData")
+  py::class_<LightData, DrawableData, lightdata_ptr_t>(module_lev2, "LightData")
       .def_property(
           "color",                                 //
           [](lightdata_ptr_t lightdata) -> fvec3 { //
@@ -104,7 +104,11 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
           },
           [](spotlightdata_ptr_t lightdata, float range) { //
             lightdata->mRange = range;
-          });
+          })
+      .def_property(
+          "cookiePath",                                          //
+          [](spotlightdata_ptr_t d) -> std::string { return d->_cookiePath.c_str(); },
+          [](spotlightdata_ptr_t d, std::string p) { d->_cookiePath = file::Path(p.c_str()); });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<Light, light_ptr_t>(module_lev2, "Light")
       .def_property_readonly(
@@ -187,7 +191,7 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
                      .def_property(
                          "imageDim",                         //
                          [](lightprobe_ptr_t probe) -> int { //
-                           return probe->_dim;
+                           return probe->dim();
                          },
                          [](lightprobe_ptr_t probe, int dim) { //
                            probe->_dim = dim;
@@ -215,6 +219,18 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
                          },
                          [](lightprobe_ptr_t probe, crcstring_ptr_t t) { //
                            probe->_type = LightProbeType(t->hashed());
+                         })
+                     .def_property(
+                         "active",
+                         [](lightprobe_ptr_t probe) -> bool { return probe->_active; },
+                         [](lightprobe_ptr_t probe, bool v) { probe->_active = v; })
+                     .def_property(
+                         "activationMode",
+                         [](lightprobe_ptr_t probe) -> crcstring_ptr_t {
+                           return std::make_shared<CrcString>(uint64_t(probe->_activationMode));
+                         },
+                         [](lightprobe_ptr_t probe, crcstring_ptr_t m) {
+                           probe->_activationMode = ProbeActivationMode(m->hashed());
                          })
                      .def("exportEquirectangular", [](lightprobe_ptr_t probe, ctx_t ctx, fquat& qrot, py::object path) {
                        auto path_as_str = py::str(path);

@@ -67,6 +67,7 @@ void SceneGraphViewport::_doGpuInit(lev2::Context* context) {
   static int vpcount = 0;
   _rtgroup->_name = FormatString("ui.sgvp.%d", vpcount++);
   _outputnode->setSuperSample(_supersample);
+  _outputnode->_temporalFrames = _temporalFrames;
   if( _scenegraph ) {
     _scenegraph->gpuInit(context);
   }

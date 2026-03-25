@@ -49,6 +49,12 @@ struct ForwardPbrNodeImpl {
   void _render_colorpass(forward_pass_ptr_t fpass);
   void _update_env_probes(CompositorDrawData& drawdata);
   void _update_shadow_maps();
+  void _initProbeBlitMaterial(Context* ctx);
+  void _setupCubeFaceCamera(lightprobe_ptr_t probe, int iface);
+  void _renderProbeWithSSAA(lightprobe_ptr_t probe, CompositorDrawData& drawdata,
+                            CompositingPassData& cubemapCPD);
+  void _renderProbeWithTAA(lightprobe_ptr_t probe, CompositorDrawData& drawdata,
+                           CompositingPassData& cubemapCPD);
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ForwardNode* _node;
   std::string _camname;
@@ -109,6 +115,20 @@ struct ForwardPbrNodeImpl {
   int _currentHeight             = 0;
 
   forward_pass_ptr_t _primary_pass;
+
+  // Probe SSAA/TAA blit support
+  FreestyleMaterial _probeBlitMtl;
+  const FxShaderTechnique* _tek_probe_blit = nullptr;
+  const FxShaderTechnique* _tek_probe_ds[7] = {};    // downsample 1x1 through 7x7
+  const FxShaderTechnique* _tek_probe_temporal = nullptr;
+  const FxShaderParam* _par_probe_colormap = nullptr;
+  const FxShaderParam* _par_probe_accummap = nullptr;
+  const FxShaderParam* _par_probe_blendweight = nullptr;
+  const FxShaderParam* _par_probe_mvp = nullptr;
+  const FxShaderParam* _par_probe_vpdim = nullptr;
+  const FxShaderParam* _par_probe_flipy = nullptr;
+  const FxShaderParam* _par_probe_flipx = nullptr;
+  bool _probeBlitInitDone = false;
 
 }; // IMPL
 

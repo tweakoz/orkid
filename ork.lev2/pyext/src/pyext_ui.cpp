@@ -742,12 +742,14 @@ void pyinit_ui(py::module& module_lev2) {
   uimodule.def(
       "profiler_add_event",
       [](const std::string& channel_name, const std::string& series_name) {
+#ifdef ORK_PROFILER_ENABLE
         // This is doing a fully lookup through the shared_mutex every call.
         // If we ever need a way to call this hundrends of times a frame this needs to change.
         auto* es = Profiler::acquireSeries<EventProfilerSeries>(
             channel_name.c_str(), CrcString(channel_name.c_str()).hashed(),
             series_name.c_str(), CrcString(series_name.c_str()).hashed());
         es->addEvent();
+#endif
       },
       py::arg("channel_name"),
       py::arg("series_name"));
@@ -755,10 +757,12 @@ void pyinit_ui(py::module& module_lev2) {
   uimodule.def(
       "profiler_sample_begin",
       [](const std::string& channel_name, const std::string& series_name) {
+#ifdef ORK_PROFILER_ENABLE
         auto* ss = Profiler::acquireSeries<SampleProfilerSeries>(
             channel_name.c_str(), CrcString(channel_name.c_str()).hashed(),
             series_name.c_str(), CrcString(series_name.c_str()).hashed());
         ss->sampleBegin();
+#endif
       },
       py::arg("channel_name"),
       py::arg("series_name"));
@@ -766,10 +770,12 @@ void pyinit_ui(py::module& module_lev2) {
   uimodule.def(
       "profiler_sample_end",
       [](const std::string& channel_name, const std::string& series_name) {
+#ifdef ORK_PROFILER_ENABLE
         auto* ss = Profiler::acquireSeries<SampleProfilerSeries>(
             channel_name.c_str(), CrcString(channel_name.c_str()).hashed(),
             series_name.c_str(), CrcString(series_name.c_str()).hashed());
         ss->sampleEnd();
+#endif
       },
       py::arg("channel_name"),
       py::arg("series_name"));
@@ -832,6 +838,16 @@ void pyinit_ui(py::module& module_lev2) {
               [](uisgviewport_ptr_t sgview) -> lev2::compositoroutnode_rtgroup_ptr_t { //
                 return sgview->_outputnode;
               })
+          //////////////////////////////////
+          .def_property(
+              "supersample",
+              [](uisgviewport_ptr_t sgview) -> int { return sgview->_supersample; },
+              [](uisgviewport_ptr_t sgview, int ss) { sgview->_supersample = ss; })
+          //////////////////////////////////
+          .def_property(
+              "temporal_frames",
+              [](uisgviewport_ptr_t sgview) -> int { return sgview->_temporalFrames; },
+              [](uisgviewport_ptr_t sgview, int tf) { sgview->_temporalFrames = tf; })
           //////////////////////////////////
           // Bind ManipController directly (C++ event routing)
           .def(
@@ -1010,6 +1026,44 @@ void pyinit_ui(py::module& module_lev2) {
               },
               [](ui::tabwidget_ptr_t tabs, lev2::font_ptr_t f) { //
                 tabs->_tab_font = f;
+              })
+          .def_property(
+              "sort_tabs",
+              [](ui::tabwidget_ptr_t tabs) -> bool { //
+                return tabs->_sort_tabs;
+              },
+              [](ui::tabwidget_ptr_t tabs, bool b) { //
+                tabs->setSortTabs(b);
+              })
+          .def(
+              "setTabCloseable",
+              [](ui::tabwidget_ptr_t tabs, ui::widget_ptr_t tab, bool closeable) {
+                tabs->setTabCloseable(tab, closeable);
+              })
+          .def(
+              "isTabCloseable",
+              [](ui::tabwidget_ptr_t tabs, ui::widget_ptr_t tab) -> bool {
+                return tabs->isTabCloseable(tab);
+              })
+          .def(
+              "onTabClose",
+              [](ui::tabwidget_ptr_t tabs, py::object callback) {
+                auto safe = python::gil_safe_pyobj(callback);
+                tabs->_onTabClose = [safe](ui::widget_ptr_t tab) {
+                  py::gil_scoped_acquire acquire;
+                  auto fn = safe.valueAs<py::object>();
+                  (*fn)(tab);
+                };
+              })
+          .def(
+              "removeTab",
+              [](ui::tabwidget_ptr_t tabs, ui::widget_ptr_t tab) {
+                tabs->_closeable_tabs.erase(tab);
+                tabs->_per_tab_style_tags.erase(tab);
+                if (tabs->getActiveTab() >= 0 && tabs->_children[tabs->getActiveTab()] == tab) {
+                  tabs->setActiveTab(0);
+                }
+                tabs->removeChild(tab);
               });
   type_codec->registerStdCodec<ui::tabwidget_ptr_t>(tabsw_type);
   /////////////////////////////////////////////////////////////////////////////////

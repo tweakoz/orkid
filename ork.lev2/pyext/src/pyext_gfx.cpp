@@ -57,6 +57,7 @@ void pyinit_gfx(py::module& module_lev2) {
           .def_property_readonly("FBI", [](ctx_t& c) -> fbi_t { return fbi_t(c.get()->FBI()); })
           .def_property_readonly("FXI", [](ctx_t& c) -> fxi_t { return fxi_t(c.get()->FXI()); })
           .def_property_readonly("GBI", [](ctx_t& c) -> gbi_t { return gbi_t(c.get()->GBI()); })
+          .def_property_readonly("DWI", [](ctx_t& c) -> dwi_t { return dwi_t(c.get()->DWI()); })
           .def_property_readonly("TXI", [](ctx_t& c) -> txi_t { return txi_t(c.get()->TXI()); })
           .def_property_readonly("CI", [](ctx_t& c) -> ci_t { return ci_t(c.get()->CI()); })
           .def("setPostSwapWaitTime", [](ctx_t& c, int wt) { _g_post_swap_wait_time = wt; })
@@ -203,6 +204,14 @@ void pyinit_gfx(py::module& module_lev2) {
               auto datablock = std::make_shared<DataBlock>();
               datablock->addItem<int32_t>(as_int);
               fxi.get()->copyBufferIntoStorageBuffer(buffer.get(), datablock->_storage, dest_offset);
+            } else if (py::isinstance<py::array>(data)) {
+              // Numpy array — direct memcpy from buffer pointer
+              auto arr = py::cast<py::array_t<float, py::array::c_style | py::array::forcecast>>(data);
+              auto buffer_info = arr.request();
+              auto ptr = static_cast<const uint8_t*>(buffer_info.ptr);
+              size_t num_bytes = buffer_info.size * sizeof(float);
+              std::vector<uint8_t> vec(ptr, ptr + num_bytes);
+              fxi.get()->copyBufferIntoStorageBuffer(buffer.get(), vec, dest_offset);
             } else if (py::hasattr(data, "__iter__") && !py::isinstance<py::str>(data)) {
               // Iterable (list, tuple) of numbers
               auto datablock = std::make_shared<DataBlock>();
@@ -215,21 +224,9 @@ void pyinit_gfx(py::module& module_lev2) {
               }
               fxi.get()->copyBufferIntoStorageBuffer(buffer.get(), datablock->_storage, dest_offset);
             } else {
-              // Check for numpy array
               auto type_str = data.get_type().attr("__name__").cast<std::string>();
-              if (type_str == "ndarray") {
-                auto numpy = py::module::import("numpy");
-                auto arr = data.attr("astype")(numpy.attr("float32")).attr("flatten")();
-                auto buffer_info = py::cast<py::array_t<float>>(arr).request();
-                float* ptr = static_cast<float*>(buffer_info.ptr);
-                size_t num_bytes = buffer_info.size * sizeof(float);
-                std::vector<uint8_t> vec(num_bytes);
-                memcpy(vec.data(), ptr, num_bytes);
-                fxi.get()->copyBufferIntoStorageBuffer(buffer.get(), vec, dest_offset);
-              } else {
-                printf("copyDataIntoShaderStorageBuffer unknown type<%s>\n", type_str.c_str());
-                OrkAssert(false);
-              }
+              printf("copyDataIntoShaderStorageBuffer unknown type<%s>\n", type_str.c_str());
+              OrkAssert(false);
             }
           })
       .def(
@@ -300,6 +297,30 @@ void pyinit_gfx(py::module& module_lev2) {
   //.def("copyTensorIntoStorageBuffer", [](gbi_t gbi, torchtensor_ptr_t tensor, fxshaderstoragebuffer_ptr_t buffer) {
   // ci.get()->copyTensorIntoStorageBuffer(buffer.get(), tensor); });
   /////////////////////////////////////////////////////////////////////////////////
+  py::class_<dwi_t>(module_lev2, "DrawingInterface")
+      .def(
+          "__repr__",
+          [](const dwi_t& dwi) -> std::string {
+            fxstring<256> fxs;
+            fxs.format("DWI(%p)", dwi.get());
+            return fxs.c_str();
+          })
+      .def("quad2D",
+          [](dwi_t dwi, fvec4 quad_rect, fvec4 uv_rect, fvec4 uv_rect2, float depth) {
+            dwi.get()->quad2D(quad_rect, uv_rect, uv_rect2, depth);
+          },
+          py::arg("quad_rect"),
+          py::arg("uv_rect"),
+          py::arg("uv_rect2") = fvec4(0,0,0,0),
+          py::arg("depth") = 0.0f)
+      .def("fullscreenQuad",
+          [](dwi_t dwi, fvec4 uv_rect, fvec4 uv_rect2, float depth) {
+            dwi.get()->fullscreenQuad(uv_rect, uv_rect2, depth);
+          },
+          py::arg("uv_rect") = fvec4(0,0,1,1),
+          py::arg("uv_rect2") = fvec4(0,0,0,0),
+          py::arg("depth") = 0.0f);
+  /////////////////////////////////////////////////////////////////////////////////
   py::class_<ci_t>(module_lev2, "ComputeInterface")
       .def(
           "__repr__",
@@ -331,6 +352,9 @@ void pyinit_gfx(py::module& module_lev2) {
       })
       .def("bindStorageBuffer", [](ci_t& ci, pyfxcomputeshader_ptr_t csh, uint32_t binding_index, fxshaderstoragebuffer_ptr_t buffer) {
         ci.get()->bindStorageBuffer(csh.get(), binding_index, buffer.get());
+      })
+      .def("bindSampler", [](ci_t& ci, pyfxcomputeshader_ptr_t csh, uint32_t binding_index, texture_ptr_t tex) {
+        ci.get()->bindSampler(csh.get(), binding_index, tex.get());
       });
 
   /////////////////////////////////////////////////////////////////////////////////
@@ -393,9 +417,13 @@ void pyinit_gfx(py::module& module_lev2) {
           "updateTexture",         //
           [](const txi_t& the_txi, //
              texture_ptr_t tex,    //
-             image_ptr_t img) {    //
-            the_txi->initTextureFromImage(tex.get(), img);
-          })
+             image_ptr_t img,      //
+             bool async) {         //
+            the_txi->initTextureFromImage(tex.get(), img, false, async);
+          },
+          py::arg("tex"),
+          py::arg("img"),
+          py::arg("async") = true)
       .def(
           "updateTextureArraySlice",           //
           [](const txi_t& the_txi,             //
@@ -419,6 +447,11 @@ void pyinit_gfx(py::module& module_lev2) {
             the_txi->initTextureFromTensor(ptex.get(), tensor, as_efmt);
           })
 #endif
+      .def(
+          "applySamplingMode",
+          [](const txi_t& the_txi, texture_ptr_t tex) {
+            the_txi->ApplySamplingMode(tex.get());
+          })
       .def("__repr__", [](const txi_t& txi) -> std::string {
         fxstring<256> fxs;
         fxs.format("TXI(%p)", txi.get());
@@ -550,7 +583,11 @@ void pyinit_gfx(py::module& module_lev2) {
                    .def_property_readonly("numBuffers", [](rtgroup_ptr_t rtg) -> int { return rtg->numImageBuffers(); })
                    .def_property_readonly("depth_buffer", [](rtgroup_ptr_t rtg) -> rtbuffer_ptr_t { return rtg->_depthBuffer; })
                    .def("buffer", [](rtgroup_ptr_t rtg, int irtb) -> rtbuffer_ptr_t { return rtg->buffer(irtb); })
-                   .def("texture", [](rtgroup_ptr_t rtg, int irtb) -> texture_ptr_t { return rtg->texture(irtb); });
+                   .def("texture", [](rtgroup_ptr_t rtg, int irtb) -> texture_ptr_t { return rtg->texture(irtb); })
+                   .def_property(
+                       "autoclear",
+                       [](rtgroup_ptr_t rtg) -> bool { return rtg->_autoclear; },
+                       [](rtgroup_ptr_t rtg, bool autoclear) { rtg->_autoclear = autoclear; });
   //.def("texture", [](rtgroup_ptr_t rtg, int irtb) -> texture_ptr_t { return rtg->buffer(irtb)->texture(); });
   type_codec->registerStdCodec<rtgroup_ptr_t>(rtg_t);
   /////////////////////////////////////////////////////////////////////////////////
@@ -647,7 +684,23 @@ void pyinit_gfx(py::module& module_lev2) {
           .def_property(
               "name",
               [](texture_ptr_t tex) -> std::string { return tex->_debugName; },
-              [](texture_ptr_t tex, std::string name) { tex->_debugName = name; });
+              [](texture_ptr_t tex, std::string name) { tex->_debugName = name; })
+          .def(
+              "setAddressMode",
+              [](texture_ptr_t tex, crcstring_ptr_t s, crcstring_ptr_t t, crcstring_ptr_t r) {
+                auto parse = [](crcstring_ptr_t m) -> TextureAddressMode {
+                  static const auto WRAP_CRC = CrcString("WRAP").hashed();
+                  static const auto CLAMP_CRC = CrcString("CLAMP").hashed();
+                  auto h = m->hashed();
+                  if (h == WRAP_CRC) return TextureAddressMode::WRAP;
+                  if (h == CLAMP_CRC) return TextureAddressMode::CLAMP;
+                  OrkAssert(false);
+                  return TextureAddressMode::CLAMP;
+                };
+                tex->TexSamplingMode()._texAddrModeS = parse(s);
+                tex->TexSamplingMode()._texAddrModeT = parse(t);
+                tex->TexSamplingMode()._texAddrModeR = parse(r);
+              });
 
   // using rawtexptr_t = Texture*;
   type_codec->registerStdCodec<texture_ptr_t>(texture_type);

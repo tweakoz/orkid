@@ -27,7 +27,8 @@ namespace ork::lev2 {
 
 void InstancedModelDrawableData::describeX(object::ObjectClass* clazz){
   clazz->directProperty("assetpath", &InstancedModelDrawableData::_assetpath);
-  clazz->directMapProperty("assetvars", &InstancedModelDrawableData::_assetvars);
+  clazz->directMapProperty("assetvars", &InstancedModelDrawableData::_assetvars)
+      ->annotate("editor.visible", ConstString("false"));
 }
 
 InstancedModelDrawableData::InstancedModelDrawableData(AssetPath path) : _assetpath(path) {

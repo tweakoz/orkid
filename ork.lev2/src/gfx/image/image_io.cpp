@@ -63,6 +63,12 @@ bool Image::initFromDataBlock(datablock_ptr_t datablock) {
         magic[2] == 'N' and //
         magic[3] == 'G') {
       ok = _initFromDataBlockPNG(datablock);
+    } else if (magic[0] == 0x76 and magic[1] == 0x2f and magic[2] == 0x31 and magic[3] == 0x01) {
+      // EXR magic bytes
+      ok = initFromInMemoryFile("exr", datablock->data(), datablock->length());
+    } else if (magic[0] == '#' and magic[1] == '?') {
+      // HDR/RGBE magic bytes
+      ok = initFromInMemoryFile("hdr", datablock->data(), datablock->length());
     } else {
       OrkAssert(false);
     }

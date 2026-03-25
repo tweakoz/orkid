@@ -53,7 +53,9 @@ void Outliner::_subscribeToModel() {
     };
     _model->_onModelReset = [this]() {
       _needs_rebuild = true;
-      _expanded_keys.clear();
+      // Preserve _expanded_keys so collapse state survives model resets
+      // (e.g. checkbox toggles). Only explicit user actions (collapse, delete)
+      // should change expansion state.
       _selected_keys.clear();
     };
   }
@@ -654,9 +656,9 @@ HandlerResult Outliner::DoOnUiEvent(event_constptr_t ev) {
     }
 
     case EventCode::DOUBLECLICK: {
-      // Shift+Double-click to start editing
+      std::string clicked_key = _getItemKeyAt(localY);
       if (ev->mbSHIFT) {
-        std::string clicked_key = _getItemKeyAt(localY);
+        // Shift+Double-click to start editing
         if (!clicked_key.empty()) {
           int index = _getItemIndexAt(localY);
           if (index >= 0) {
@@ -669,6 +671,9 @@ HandlerResult Outliner::DoOnUiEvent(event_constptr_t ev) {
           }
           result.setHandled(this);
         }
+      } else if (!clicked_key.empty() && _onDoubleClick) {
+        _onDoubleClick(clicked_key);
+        result.setHandled(this);
       }
       break;
     }
@@ -770,6 +775,10 @@ HandlerResult Outliner::DoOnUiEvent(event_constptr_t ev) {
           }
         }
         result.setHandled(this);
+      }
+      // Forward unhandled keys to callback
+      else if (_onKeyDown && !result.wasHandled()) {
+        _onKeyDown(selected_key, key);
       }
       break;
     }

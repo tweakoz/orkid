@@ -221,6 +221,9 @@ void pyinit_reflection(py::module& module_core) {
     })
     .def_property_readonly("uuid", [](object_ptr_t obj) -> std::string {
       return boost::uuids::to_string(obj->_uuid);
+    })
+    .def("clone", [](object_ptr_t obj) -> object_ptr_t {
+      return Object::clone(obj);
     });
   type_codec->registerStdCodec<object_ptr_t>(objtype_t);
   /////////////////////////////////////////////////////////////////////////////////

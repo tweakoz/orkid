@@ -185,18 +185,19 @@ libblock lib_fwd_impl : lib_math //
       point_lighting += plcalc_forward(plc, pbd, LR) * LC;
     }
     /////////////////////////
-    // spot lighting
+    // spot lighting (fwd)
     /////////////////////////
     vec3 spot_lighting = vec3(0, 0, 0);
     //
     for (int i = 0; i < spot_light_count; i++) {
       int j = i + point_light_count;
       /////////////////////
-      uint light_tex_slice = _lightTexSlice[i];
-      mat4 shmtx           = _shadowmatrix[i];
-      vec3 lightcol        = _lightcolor[i].xyz;
-      vec3 lightpos        = _lightpos[i].xyz;
-      vec4 LSB             = _lightsizbias[i];
+      uint light_tex_slice = _lightTexSlice[j];
+      mat4 shmtx           = _shadowmatrix[j];
+      vec4 lightcol4       = _lightcolor[j];
+      vec3 lightcol        = lightcol4.xyz * lightcol4.w;
+      vec3 lightpos        = _lightpos[j].xyz;
+      vec4 LSB             = _lightsizbias[j];
       float lightrange     = LSB.x;
       /////////////////////
       vec3 lightdel       = lightpos - pbd._wpos;
@@ -229,9 +230,10 @@ libblock lib_fwd_impl : lib_math //
 
         shadow_factor /= float(pcf_width*pcf_width);
 
-      } else {        
+      } else {
         shadow_factor = 0.0;
       }
+      if (!light_mask) shadow_factor = 0.0;
       ////////////////////////////////////////////////////////////
       // compute specular lightuv
       ////////////////////////////////////////////////////////////

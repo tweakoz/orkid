@@ -137,6 +137,23 @@ void CompressedImageMipChain::readXTX(   //
     level._blocked_height = ((level._height+3)/4)*4;
     level._depth = _depth;
     level._numcomponents = _numcomponents;
+    // Derive bytesPerChannel from format
+    switch(_format) {
+      case EBufferFormat::RGBA32F:
+      case EBufferFormat::RGB32F:
+      case EBufferFormat::R32F:
+        level._bytesPerChannel = 4;
+        break;
+      case EBufferFormat::RGBA16F:
+      case EBufferFormat::RGBA16:
+      case EBufferFormat::RGB16:
+      case EBufferFormat::R16UI:
+        level._bytesPerChannel = 2;
+        break;
+      default:
+        level._bytesPerChannel = 1;
+        break;
+    }
     _levels.push_back(level);
   }
 

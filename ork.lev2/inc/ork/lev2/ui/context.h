@@ -103,7 +103,10 @@ struct Context {
   void popOverlay();
   void dismissAllOverlays();
   bool hasOverlays() const;
+  void enqueueOnNextFrame(std::function<void()> op);
+  void processNextFrameOps();
   std::vector<OverlayEntry> _overlay_stack;
+  std::vector<std::function<void()>> _nextFrameOps;
 };
 
 } // namespace ork::ui

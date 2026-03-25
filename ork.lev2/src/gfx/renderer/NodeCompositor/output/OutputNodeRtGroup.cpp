@@ -59,6 +59,9 @@ struct RTGIMPL {
       _fxpColorMap    = _blit2screenmtl.param("ColorMap");
       _fxpFlipY       = _blit2screenmtl.param("FlipY");
       _fxpVpDim       = _blit2screenmtl.param("ViewportDim");
+      _fxtechnique_temporal = _blit2screenmtl.technique("tek_temporal_blend");
+      _fxpAccumMap    = _blit2screenmtl.param("AccumMap");
+      _fxpBlendWeight = _blit2screenmtl.param("BlendWeight");
       _needsinit      = false;
       int w           = ctx->mainSurfaceWidth();
       int h           = ctx->mainSurfaceHeight();
@@ -115,6 +118,14 @@ struct RTGIMPL {
   fxparam_constptr_t     _fxpColorMap;
   fxparam_constptr_t     _fxpFlipY;
   fxparam_constptr_t     _fxpVpDim;
+  // Temporal accumulation
+  fxtechnique_constptr_t _fxtechnique_temporal = nullptr;
+  fxparam_constptr_t     _fxpAccumMap = nullptr;
+  fxparam_constptr_t     _fxpBlendWeight = nullptr;
+  rtgroup_ptr_t _tempRTG;       // downsample target (temp)
+  rtgroup_ptr_t _accumRTG[2];   // ping-pong blend buffers
+  int _accumWriteIdx = 0;
+  int _accumFrameCount = 0;
   bool _needsinit = true;
   int _width      = 0;
   int _height     = 0;
@@ -173,7 +184,12 @@ void RtGroupOutputCompositingNode::composite(CompositorDrawData& drawdata) {
         int dstw = output_buffer->_width;
         int dsth = output_buffer->_height;
 
-        //printf( "src<%d %d> dst<%d %d>\n", srcw, srch, dstw, dsth );
+        static int _dbg_ss = 0;
+        if ((_dbg_ss++ % 300) == 0 && this->supersample() > 0) {
+          printf("SSAA resolve: ss=%d src=%dx%d dst=%dx%d ratio=%.1fx%.1f\n",
+                 this->supersample(), srcw, srch, dstw, dsth,
+                 float(srcw)/float(dstw), float(srch)/float(dsth));
+        }
 
         assert(src_buffer != nullptr);
         auto tex = src_buffer->texture();
@@ -212,14 +228,116 @@ void RtGroupOutputCompositingNode::composite(CompositorDrawData& drawdata) {
         //printf("RtGroupOutputCompositingNode _flipY<%d>\n", _flipY ? 1 : 0);
         mtl.bindParamVec2(impl->_fxpVpDim, fvec2(float(dstw), float(dsth)));
         ViewportRect extents(0, 0, dstw, dsth);
-        fbi->pushViewport(extents);
-        fbi->pushScissor(extents);
-        dwi->fullscreenQuad(); 
-        fbi->popViewport();
-        fbi->popScissor();
-        mtl.end(framedata);
+        int temporalFrames = _temporalFrames;
+        bool doTemporal = (temporalFrames > 0 && impl->_fxtechnique_temporal);
 
-        fbi->PopRtGroup();
+        if (!doTemporal) {
+          // No temporal — downsample directly into output_rtg (existing path)
+          fbi->pushViewport(extents);
+          fbi->pushScissor(extents);
+          dwi->fullscreenQuad();
+          fbi->popViewport();
+          fbi->popScissor();
+          mtl.end(framedata);
+          fbi->PopRtGroup();
+        } else {
+          // Temporal enabled — use 3-buffer approach to avoid read-after-write
+          // _tempRTG: downsample target
+          // _accumRTG[read]: previous blended result
+          // _accumRTG[write]: new blended result
+          mtl.end(framedata);
+          fbi->PopRtGroup();
+
+          // Ensure temp + accumulation buffers exist and are sized correctly
+          auto ensureBuf = [&](rtgroup_ptr_t& rtg) {
+            if (!rtg || rtg->width() != dstw || rtg->height() != dsth) {
+              rtg = std::make_shared<RtGroup>(context, dstw, dsth, MsaaSamples::MSAA_1X);
+              rtg->createRenderTarget(EBufferFormat::RGBA32F);
+              rtg->_autoclear = false;
+              impl->_accumFrameCount = 0;
+            }
+          };
+          ensureBuf(impl->_tempRTG);
+          ensureBuf(impl->_accumRTG[0]);
+          ensureBuf(impl->_accumRTG[1]);
+
+          int writeIdx = impl->_accumWriteIdx;
+          int readIdx = writeIdx ^ 1;
+          float weight = 1.0f / float(std::min(impl->_accumFrameCount + 1, temporalFrames));
+
+          // Pass 1: Downsample final_out → _tempRTG
+          fbi->PushRtGroup(impl->_tempRTG.get());
+          mtl._rasterstate->_force = true;
+          mtl._rasterstate->setBlendingMacro(BlendingMacro::OFF);
+          mtl._rasterstate->setDepthTest(EDepthTest::OFF);
+          mtl._rasterstate->setCullTest(ECullTest::OFF);
+          switch (this->supersample()) {
+            case 0: mtl.begin(impl->_fxtechnique1x1, framedata); break;
+            case 1: mtl.begin(impl->_fxtechnique2x2, framedata); break;
+            case 2: mtl.begin(impl->_fxtechnique3x3, framedata); break;
+            case 3: mtl.begin(impl->_fxtechnique4x4, framedata); break;
+            case 4: mtl.begin(impl->_fxtechnique5x5, framedata); break;
+            case 5: mtl.begin(impl->_fxtechnique6x6, framedata); break;
+            case 6: mtl.begin(impl->_fxtechnique7x7, framedata); break;
+          }
+          mtl.bindParamTexture(impl->_fxpColorMap, tex);
+          mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
+          mtl.bindParamInt(impl->_fxpFlipY, _flipY ? 1 : 0);
+          mtl.bindParamVec2(impl->_fxpVpDim, fvec2(float(dstw), float(dsth)));
+          fbi->pushViewport(extents);
+          fbi->pushScissor(extents);
+          dwi->fullscreenQuad();
+          fbi->popViewport();
+          fbi->popScissor();
+          mtl.end(framedata);
+          fbi->PopRtGroup();
+
+          // Pass 2: Temporal blend _tempRTG + accum[read] → accum[write]
+          auto temp_tex = impl->_tempRTG->buffer(0)->texture();
+          auto accum_read_tex = impl->_accumRTG[readIdx]->buffer(0)->texture();
+          fbi->PushRtGroup(impl->_accumRTG[writeIdx].get());
+          mtl._rasterstate->_force = true;
+          mtl._rasterstate->setBlendingMacro(BlendingMacro::OFF);
+          mtl._rasterstate->setDepthTest(EDepthTest::OFF);
+          mtl._rasterstate->setCullTest(ECullTest::OFF);
+          mtl.begin(impl->_fxtechnique_temporal, framedata);
+          mtl.bindParamTexture(impl->_fxpColorMap, temp_tex);
+          mtl.bindParamTexture(impl->_fxpAccumMap, accum_read_tex);
+          mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
+          mtl.bindParamFloat(impl->_fxpBlendWeight, weight);
+          fbi->pushViewport(extents);
+          fbi->pushScissor(extents);
+          dwi->fullscreenQuad();
+          fbi->popViewport();
+          fbi->popScissor();
+          mtl.end(framedata);
+          fbi->PopRtGroup();
+
+          // Pass 3: Blit accum[write] → output_rtg (final display)
+          auto accum_result_tex = impl->_accumRTG[writeIdx]->buffer(0)->texture();
+          fbi->PushRtGroup(output_rtg);
+          mtl._rasterstate->_force = true;
+          mtl._rasterstate->setBlendingMacro(BlendingMacro::OFF);
+          mtl._rasterstate->setDepthTest(EDepthTest::OFF);
+          mtl._rasterstate->setCullTest(ECullTest::OFF);
+          mtl.begin(impl->_fxtechnique1x1, framedata);
+          mtl.bindParamTexture(impl->_fxpColorMap, accum_result_tex);
+          mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
+          mtl.bindParamInt(impl->_fxpFlipY, 0);
+          mtl.bindParamVec2(impl->_fxpVpDim, fvec2(float(dstw), float(dsth)));
+          fbi->pushViewport(extents);
+          fbi->pushScissor(extents);
+          dwi->fullscreenQuad();
+          fbi->popViewport();
+          fbi->popScissor();
+          mtl.end(framedata);
+          fbi->PopRtGroup();
+
+          // Swap ping-pong and advance frame count
+          impl->_accumWriteIdx ^= 1;
+          if (impl->_accumFrameCount < temporalFrames)
+            impl->_accumFrameCount++;
+        }
       }
     }
   }

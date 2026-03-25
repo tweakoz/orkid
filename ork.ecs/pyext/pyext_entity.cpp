@@ -24,7 +24,8 @@ void pyinit_entity(py::module& module_ecs) {
           })
           .def_property_readonly("transform", [](pyentity_ptr_t ent) -> decompxf_ptr_t { return ent->transform(); })
           .def_property_readonly("transformNode", [](pyentity_ptr_t ent) -> xfnode_ptr_t { return ent->transformNode(); })
-          .def_property_readonly("spawner", [](pyentity_ptr_t ent) -> spawndata_constptr_t { return ent->data(); });
+          .def_property_readonly("spawner", [](pyentity_ptr_t ent) -> spawndata_constptr_t { return ent->data(); })
+          .def_property_readonly("id", [](pyentity_ptr_t ent) -> uint64_t { return ent->_entref; });
 
   type_codec->registerStdCodec<pyentity_ptr_t>(entity_type);
   /////////////////////////////////////////////////////////////////////////////////

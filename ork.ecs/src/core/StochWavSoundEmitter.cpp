@@ -17,6 +17,7 @@
 #include "StochWavSoundEmitter_impl.h"
 #include <ork/lev2/aud/singularity/konoff.h>
 #include <ork/math/audiomath.h>
+#include <ork/file/path.h>
 #include <ork/ecs/GlobalSynthSystem.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -39,7 +40,9 @@ using namespace ork::audio::singularity;
 ///////////////////////////////////////////////////////////////////////////////
 
 void StochWavSound::describeX(object::ObjectClass* clazz) {
-  clazz->directProperty("WavFile", &StochWavSound::_wavFilePath);
+  clazz->directProperty("WavFile", &StochWavSound::_wavFilePath)
+      ->annotate("editor.filetype", "wav")
+      ->annotate("editor.filebase", "<assetcache>");
   clazz->floatProperty("BurstRate", float_range{0.001f, 100}, &StochWavSound::_burstRate);
   clazz->directProperty("BurstCountMin", &StochWavSound::_burstCountMin);
   clazz->directProperty("BurstCountMax", &StochWavSound::_burstCountMax);
@@ -404,7 +407,7 @@ void StochWavSoundEmitterSystem::_ensureGroupRuntime(const std::string& groupNam
     sd->_rootKey = 60;
     sd->_originalPitch = 261.63f * 0.5; // middle C frequency for key 60
     sd->_loopMode = eLoopMode::NONE;
-    sd->loadFromAudioFile(snd->_wavFilePath.toAbsolute().toStdString());
+    sd->loadFromAudioFile(file::Path::expandPathString(snd->_wavFilePath.toStdString()));
     ps._sampleData = sd;
 
     // Compute sample duration for drum-style voice lifecycle

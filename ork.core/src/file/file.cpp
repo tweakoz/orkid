@@ -91,12 +91,12 @@ EFileErrCode File::saveDatablock(const file::Path& sFileName, datablock_ptr_t da
   if (!datablock) {
     return EFEC_FILE_DOES_NOT_EXIST;
   }
-  
+
   File file(sFileName, EFM_WRITE);
-  size_t bytes_written = file.Write(datablock->data(), datablock->length());
+  EFileErrCode result = file.Write(datablock->data(), datablock->length());
   file.Close();
-  
-  return (bytes_written == datablock->length()) ? EFEC_FILE_OK : EFEC_FILE_UNKNOWN;
+
+  return result;
 }
 
 File::File(FileDev* pdev)

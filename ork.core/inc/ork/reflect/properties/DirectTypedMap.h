@@ -47,6 +47,8 @@ protected:
   void insertDefaultElement(object_ptr_t obj,map_abstract_item_t key) const final;
   void setElement(object_ptr_t obj,map_abstract_item_t key, map_abstract_item_t val) const final;
   void removeElement(object_ptr_t obj, map_abstract_item_t key) const final;
+  bool isRawVariantMap() const final { return std::is_same_v<ValueType, svar128_t>; }
+  void setRawVariantElement(object_ptr_t obj, map_abstract_item_t key, const svar128_t& raw_val) const final;
 
 private:
   MapType Object::*mProperty;

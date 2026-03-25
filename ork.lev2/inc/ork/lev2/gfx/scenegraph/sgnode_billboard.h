@@ -1,6 +1,8 @@
 #pragma once
 #include <ork/lev2/gfx/renderer/drawable.h>
+#include <ork/lev2/gfx/image.h>
 #include <ork/lev2/lev2_asset.h>
+#include <ork/file/path.h>
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
@@ -14,8 +16,10 @@ public:
   BillboardDrawableData();
   ~BillboardDrawableData();
 
-  std::string _colortexpath;
+  file::Path _imagePath;     // image file path (reflection/UI — png file browser)
+  image_ptr_t _image;        // programmatic: set image directly (overrides _imagePath)
   float _alpha = 1.0f;
+  float _screenSize = 30.0f; // constant screen-size in pixels
 };
 
 ///////////////////////////////////////////////////////////////////////////////

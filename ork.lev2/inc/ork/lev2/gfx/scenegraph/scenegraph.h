@@ -297,6 +297,7 @@ struct Scene {
   varmap::varmap_ptr_t _userdata;
   varmap::varmap_ptr_t _params;
   bool _dogpuinit        = true;
+  bool _enableEditorLayers = false;
   Context* _boundContext = nullptr;
 
   asset::loadsynchro_ptr_t _loadSynchro;
@@ -316,6 +317,7 @@ struct Scene {
   std::vector<lightnode_ptr_t> lightNodes() const;
   std::vector<lightnode_ptr_t> lightNodesWithType(uint64_t light_type) const;
   std::vector<lightnode_ptr_t> lightNodesWithTag(uint64_t tag) const;
+  std::vector<probenode_ptr_t> probeNodes() const;
 
   struct DrawItem{
     ork::lev2::DrawQueueLayer * _layer;

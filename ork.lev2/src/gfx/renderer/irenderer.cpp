@@ -35,6 +35,7 @@ namespace ork { namespace lev2 {
 IRenderer::IRenderer(Context* pTARG)
     : _target(pTARG)
     , _unsortedNodes() {
+      _debugLog = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -89,7 +90,7 @@ void IRenderer::drawEnqueuedRenderables(bool reset_after) {
     int skey     = _sortedNodes[i]->_renderable->ComposeSortKey(this);
     _sortkeys[i] = skey;
     if(_debugLog){
-      printf( "skey<%zu:%d>\n", i, skey );
+      printf( "skey<%zu:%0x>\n", i, skey );
     }
   }
   EASY_END_BLOCK;
@@ -131,6 +132,13 @@ void IRenderer::drawEnqueuedRenderables(bool reset_after) {
     int sorted = sortedRenderQueueIndices[i];
     OrkAssert(sorted < U32(renderQueueSize));
     const RenderQueue::Node* pnode = _sortedNodes[sorted];
+
+    if(_debugLog){
+      int sortkey = _sortkeys[sorted];
+      printf( "render i<%zu> sorted<%d> sortkey<0x%x>\n", i, sorted, sortkey );
+    }
+
+
     _target->debugPushGroup(FormatString("IRenderer::drawEnqueuedRenderables render item<%zu> node<%p>", i, pnode));
     pnode->_renderable->Render(this);
     _target->debugPopGroup();
@@ -173,6 +181,7 @@ void IRenderer::_renderCallbackRenderable(const CallbackRenderable& cbren) const
     RenderContextInstData RCID(context->topRenderContextFrameData());
     RCID.SetRenderer(this);
     RCID.setRenderable(&cbren);
+    RCID._pickID = cbren._pickID;
     context->RefModColor() = cbren._modColor;
     cbren.GetRenderCallback()(RCID);
   }

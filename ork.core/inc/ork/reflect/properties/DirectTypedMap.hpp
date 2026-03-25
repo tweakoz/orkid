@@ -32,6 +32,23 @@ template <typename MapType> const MapType& DirectTypedMap<MapType>::GetMap(objec
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+template <typename MapType>
+void DirectTypedMap<MapType>::setRawVariantElement(
+    object_ptr_t obj, map_abstract_item_t key, const svar128_t& raw_val) const {
+  SvarDecoder<key.ksize> decoder;
+  auto typed_key_attempt = decoder.template decode<KeyType>(key);
+  OrkAssert(typed_key_attempt);
+  MapType& the_map = obj.get()->*mProperty;
+  if constexpr (std::is_same_v<ValueType, svar128_t>) {
+    auto it = the_map.find(typed_key_attempt.value());
+    if (it != the_map.end())
+      the_map.erase(it);
+    the_map.insert(std::make_pair(typed_key_attempt.value(), raw_val));
+  } else {
+    OrkAssert(false); // ValueType is not svar128_t; use setElement() instead
+  }
+}
+////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
 void DirectTypedMap<MapType>::insertDefaultElement(object_ptr_t obj,
                                                     map_abstract_item_t key) const {

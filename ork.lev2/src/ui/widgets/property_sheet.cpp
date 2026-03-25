@@ -19,12 +19,339 @@
 #include <ork/lev2/ui/colorswatch.h>
 #include <ork/lev2/ui/coloredit.h>
 #include <ork/math/quaternion.h>
+#include <ork/file/path.h>
+#include <ork/file/fileenv.h>
+#include <filesystem>
+#include <regex>
 
 namespace ork::ui {
 
 static constexpr float PI = 3.14159265359f;
 static constexpr float kRadToDeg = 180.0f / PI;
 static constexpr float kDegToRad = PI / 180.0f;
+
+/////////////////////////////////////////////////////////////////////////
+// Asset picker utilities
+/////////////////////////////////////////////////////////////////////////
+
+// Parse comma-separated string into trimmed tokens
+static std::vector<std::string> _parseCSV(const std::string& csv) {
+  std::vector<std::string> result;
+  size_t start = 0;
+  while (start < csv.size()) {
+    auto end = csv.find(',', start);
+    if (end == std::string::npos) end = csv.size();
+    auto token = csv.substr(start, end - start);
+    // trim whitespace
+    size_t a = token.find_first_not_of(" \t");
+    size_t b = token.find_last_not_of(" \t");
+    if (a != std::string::npos)
+      result.push_back(token.substr(a, b - a + 1));
+    start = end + 1;
+  }
+  return result;
+}
+
+// Expand a base path for the asset picker.
+// Handles ~, <key>, key://, ${ENV_VAR} via the unified expander.
+static std::string _expandBasePath(const std::string& raw) {
+  return file::expandPaths(raw);
+}
+
+// Base path entry: display form, expanded absolute path, and whether
+// this is an <assetcache> base (which gets smart filtering).
+struct _BasePath {
+  std::string display;
+  std::string abs_path;
+  bool is_assetcache = false;
+};
+
+// Parse comma-separated base paths, expand each.
+static std::vector<_BasePath> _parseAndExpandBasePaths(const std::string& csv) {
+  auto raw_bases = _parseCSV(csv);
+  std::vector<_BasePath> result;
+  for (const auto& raw : raw_bases) {
+    _BasePath bp;
+    bp.display = raw;
+    bp.is_assetcache = (raw == "<assetcache>");
+    bp.abs_path = _expandBasePath(raw);
+    result.push_back(bp);
+  }
+  return result;
+}
+
+// Top-level directory names to skip under <assetcache>.
+static const std::vector<std::string> _assetcache_ignore_dirs = {
+    "enc", "local_manifests", "receipts", "temp", "extracted"
+};
+
+// Check if a relative path should be skipped under <assetcache> filtering.
+// Skips hidden entries (starting with '.') and ignored top-level dirs.
+static bool _shouldSkipAssetCacheEntry(const std::string& rel_path) {
+  // Skip hidden entries
+  auto filename = std::filesystem::path(rel_path).filename().string();
+  if (!filename.empty() && filename[0] == '.')
+    return true;
+  // Check top-level directory of the relative path
+  auto first_sep = rel_path.find('/');
+  auto top_dir = (first_sep != std::string::npos) ? rel_path.substr(0, first_sep) : rel_path;
+  for (const auto& ignore : _assetcache_ignore_dirs) {
+    if (top_dir == ignore)
+      return true;
+  }
+  return false;
+}
+
+// Scan base paths for files matching extensions.
+// Returns paths formatted for DropdownMenu SlashTree:
+//   "/${BASE_DISPLAY}/relative/path/to/file.ext"
+static std::vector<std::string> _scanForAssetFiles(
+    const std::vector<_BasePath>& bases,
+    const std::vector<std::string>& extensions,
+    const std::string& regex_pattern = "") {
+  std::vector<std::string> result;
+  namespace fs = std::filesystem;
+
+  std::optional<std::regex> re;
+  if (!regex_pattern.empty()) {
+    try { re = std::regex(regex_pattern, std::regex::ECMAScript | std::regex::icase); }
+    catch (...) { /* ignore malformed regex */ }
+  }
+
+  for (const auto& bp : bases) {
+    if (!fs::exists(bp.abs_path) || !fs::is_directory(bp.abs_path))
+      continue;
+    try {
+      for (const auto& entry : fs::recursive_directory_iterator(bp.abs_path,
+                fs::directory_options::skip_permission_denied)) {
+        if (!entry.is_regular_file())
+          continue;
+        auto rel = fs::relative(entry.path(), bp.abs_path).string();
+        if (bp.is_assetcache && _shouldSkipAssetCacheEntry(rel))
+          continue;
+        auto ext = entry.path().extension().string();
+        if (ext.empty())
+          continue;
+        auto ext_nodot = ext.substr(1);
+        std::string ext_lower = ext_nodot;
+        std::transform(ext_lower.begin(), ext_lower.end(), ext_lower.begin(), ::tolower);
+        bool ext_ok = false;
+        for (const auto& want : extensions) {
+          std::string want_lower = want;
+          std::transform(want_lower.begin(), want_lower.end(), want_lower.begin(), ::tolower);
+          if (ext_lower == want_lower) { ext_ok = true; break; }
+        }
+        if (!ext_ok) continue;
+        if (re && !std::regex_search(entry.path().filename().string(), *re)) continue;
+        result.push_back("/" + bp.display + "/" + rel);
+      }
+    } catch (const fs::filesystem_error&) {
+    }
+  }
+
+  std::sort(result.begin(), result.end());
+  return result;
+}
+
+// Scan base paths for directories (not files).
+// Returns paths formatted for DropdownMenu SlashTree.
+static std::vector<std::string> _scanForFolders(
+    const std::vector<_BasePath>& bases) {
+  std::vector<std::string> result;
+  namespace fs = std::filesystem;
+
+  for (const auto& bp : bases) {
+    if (!fs::exists(bp.abs_path) || !fs::is_directory(bp.abs_path))
+      continue;
+    try {
+      for (const auto& entry : fs::recursive_directory_iterator(bp.abs_path,
+                fs::directory_options::skip_permission_denied)) {
+        if (!entry.is_directory())
+          continue;
+        auto rel = fs::relative(entry.path(), bp.abs_path).string();
+        if (bp.is_assetcache && _shouldSkipAssetCacheEntry(rel))
+          continue;
+        // Always skip hidden directories
+        auto dirname = entry.path().filename().string();
+        if (!dirname.empty() && dirname[0] == '.')
+          continue;
+        result.push_back("/" + bp.display + "/" + rel);
+      }
+    } catch (const fs::filesystem_error&) {
+    }
+  }
+
+  std::sort(result.begin(), result.end());
+  return result;
+}
+
+/////////////////////////////////////////////////////////////////////////
+// AssetPickerBrowseButton
+// Small button that shows "v" indicator; on click triggers asset scan.
+/////////////////////////////////////////////////////////////////////////
+
+struct AssetPickerBrowseButton : public Widget {
+  AssetPickerBrowseButton(const std::string& name)
+      : Widget(name, 0, 0, 0, 0) {
+  }
+
+  std::function<void(event_constptr_t ev)> _onBrowse;
+
+  fvec4 _bg_color = fvec4(0.25f, 0.25f, 0.3f, 1.0f);
+  fvec4 _hover_color = fvec4(0.35f, 0.35f, 0.4f, 1.0f);
+  fvec4 _fg_color = fvec4(0.5f, 0.6f, 0.8f, 1.0f);
+  bool _hovering = false;
+
+  void DoDraw(drawevent_constptr_t drwev) override {
+    auto tgt = drwev->GetTarget();
+    auto mtxi = tgt->MTXI();
+    auto primi = tgt->PRI();
+    auto defmtl = lev2::defaultUIMaterial();
+
+    int ix1, iy1;
+    LocalToRoot(0, 0, ix1, iy1);
+    int ix2 = ix1 + _geometry._w;
+    int iy2 = iy1 + _geometry._h;
+
+    mtxi->PushUIMatrix();
+    {
+      defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
+      defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
+      auto bg = _hovering ? _hover_color : _bg_color;
+      tgt->PushModColor(bg);
+      defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+      primi->RenderQuadAtZ(defmtl.get(), ix1, ix2, iy1 + 1, iy2 - 1, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+      tgt->PopModColor();
+
+      auto font = lev2::FontMan::fontForId("i14");
+      if (font) {
+        lev2::FontMan::PushFont(font);
+        tgt->PushModColor(_fg_color);
+        int text_y = iy1 + (_geometry._h - font->description().miAdvanceHeight) / 2;
+        int text_x = ix1 + (_geometry._w - 8) / 2;
+        lev2::FontMan::beginTextBlock(tgt, 1);
+        lev2::FontMan::DrawText(tgt, text_x, text_y, "v");
+        lev2::FontMan::endTextBlock(tgt);
+        tgt->PopModColor();
+        lev2::FontMan::PopFont();
+      }
+    }
+    mtxi->PopUIMatrix();
+  }
+
+  HandlerResult DoOnUiEvent(event_constptr_t ev) override {
+    HandlerResult result;
+    if (ev->_eventcode == EventCode::MOVE) {
+      _hovering = true;
+      result.setHandled(this);
+    } else if (ev->_eventcode == EventCode::PUSH) {
+      if (_onBrowse) {
+        _onBrowse(ev);
+      }
+      result.setHandled(this);
+    }
+    return result;
+  }
+};
+
+/////////////////////////////////////////////////////////////////////////
+// AssetPickerWidget
+// Composite: HorizontalPack(LineEdit + BrowseButton)
+// LineEdit is editable, BrowseButton opens DropdownMenu with scanned files.
+/////////////////////////////////////////////////////////////////////////
+
+struct AssetPickerWidget : public HorizontalPack {
+  AssetPickerWidget(const std::string& name,
+                    const std::string& current_value,
+                    const std::string& filetype_csv,
+                    const std::string& filebase_csv,
+                    bool folder_mode = false,
+                    const std::string& regex_pattern = "")
+      : HorizontalPack(name)
+      , _filetype_csv(filetype_csv)
+      , _filebase_csv(filebase_csv)
+      , _folder_mode(folder_mode)
+      , _regex_pattern(regex_pattern) {
+
+    // LineEdit fills remaining space
+    _lineedit = std::make_shared<LineEdit>("le_" + name, fvec4(0.2f, 0.2f, 0.25f, 1.0f));
+    _lineedit->_draw_label = false;
+    _lineedit->setValue(current_value);
+
+    // Browse button gets fixed width
+    _browse_button = std::make_shared<AssetPickerBrowseButton>("btn_" + name);
+
+    addChild(_lineedit);
+    addChild(_browse_button);
+
+    _fill = true;
+    _fill_widget = _lineedit;
+    _item_width = 24;
+
+    // Wire LineEdit commit
+    _lineedit->_onTextCommitted = [this](const std::string& text) {
+      if (_onValueCommitted) {
+        _onValueCommitted(text);
+      }
+    };
+
+    // Wire browse button
+    _browse_button->_onBrowse = [this](event_constptr_t ev) {
+      auto bases = _parseAndExpandBasePaths(_filebase_csv);
+      std::vector<std::string> files;
+      if (_folder_mode) {
+        files = _scanForFolders(bases);
+      } else {
+        auto extensions = _parseCSV(_filetype_csv);
+        files = _scanForAssetFiles(bases, extensions, _regex_pattern);
+      }
+
+      if (files.empty()) {
+        // Nothing found — don't show dropdown
+        return;
+      }
+
+      auto tree = DropdownMenu::buildTreeFromPaths(files);
+      auto menu = std::make_shared<DropdownMenu>("assetpick_" + _name, tree->root());
+
+      menu->_onSelected = [this](std::string selected) {
+        // selected is "/${BASE_DISPLAY}/relative/path/file.ext"
+        // Strip leading / and reconstruct as "${BASE_DISPLAY}/relative/path"
+        if (!selected.empty() && selected[0] == '/') {
+          selected = selected.substr(1);
+        }
+        _lineedit->setValue(selected);
+        if (_onValueCommitted) {
+          _onValueCommitted(selected);
+        }
+      };
+
+      auto sz = menu->computeSize();
+      int sx = ev->miX;
+      int sy = ev->miY;
+      if (_uicontext) {
+        // Clamp so menu stays within window bounds
+        if (_uicontext->_top) {
+          int win_w = _uicontext->_top->width();
+          int win_h = _uicontext->_top->height();
+          if (sx + int(sz.x) > win_w)
+            sx = std::max(0, win_w - int(sz.x));
+          if (sy + int(sz.y) > win_h)
+            sy = std::max(0, win_h - int(sz.y));
+        }
+        _uicontext->pushOverlay(menu, sx, sy, int(sz.x), int(sz.y), true, nullptr);
+      }
+    };
+  }
+
+  std::shared_ptr<LineEdit> _lineedit;
+  std::shared_ptr<AssetPickerBrowseButton> _browse_button;
+  std::string _filetype_csv;
+  std::string _filebase_csv;
+  std::string _regex_pattern;
+  bool _folder_mode = false;
+  std::function<void(const std::string&)> _onValueCommitted;
+};
 
 /////////////////////////////////////////////////////////////////////////
 // MapItemObjectFactoryWidget
@@ -383,55 +710,54 @@ void PropertyRow::DoDraw(drawevent_constptr_t drwev) {
       theme->drawTriangle(tri_x, tri_y, tri_size, tri_size, drwev, &tri_style, rotation);
     }
 
-    // Draw [+][-] buttons for mutable map properties (right-aligned)
+    // Draw [+][R][-] buttons for mutable map properties (right-aligned)
     if (_is_map_property && !_is_map_const) {
       const int btn_size = 12;
       const int btn_spacing = 4;
       const int btn_margin = 8;
       int btn_y = iy1 + (_geometry._h - btn_size) / 2;
-      int btn2_right = ix1 + _geometry._w - btn_margin;
-      int btn2_x_draw = btn2_right - btn_size;
-      int btn_x = btn2_x_draw - btn_spacing - btn_size;
+      int btn3_right = ix1 + _geometry._w - btn_margin;
+      int btn3_x = btn3_right - btn_size;                          // [-]
+      int btn2_x = btn3_x - btn_spacing - btn_size;                // [R]
+      int btn1_x = btn2_x - btn_spacing - btn_size;                // [+]
 
       defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
       defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
 
-      // [+] button - outline box with cross
-      fvec4 btn_color(0.5f, 0.8f, 0.5f, 1.0f);
-      tgt->PushModColor(btn_color);
-      defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
-      // Outline: top
-      primi->RenderQuadAtZ(defmtl.get(), btn_x, btn_x + btn_size, btn_y, btn_y + 1, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
-      // Outline: bottom
-      primi->RenderQuadAtZ(defmtl.get(), btn_x, btn_x + btn_size, btn_y + btn_size - 1, btn_y + btn_size, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
-      // Outline: left
-      primi->RenderQuadAtZ(defmtl.get(), btn_x, btn_x + 1, btn_y, btn_y + btn_size, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
-      // Outline: right
-      primi->RenderQuadAtZ(defmtl.get(), btn_x + btn_size - 1, btn_x + btn_size, btn_y, btn_y + btn_size, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
-      // Horizontal bar of +
-      int cx = btn_x + btn_size / 2;
-      int cy = btn_y + btn_size / 2;
-      primi->RenderQuadAtZ(defmtl.get(), btn_x + 2, btn_x + btn_size - 2, cy, cy + 1, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
-      // Vertical bar of +
-      primi->RenderQuadAtZ(defmtl.get(), cx, cx + 1, btn_y + 2, btn_y + btn_size - 2, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+      auto drawButtonOutline = [&](int bx, fvec4 color) {
+        tgt->PushModColor(color);
+        defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+        primi->RenderQuadAtZ(defmtl.get(), bx, bx + btn_size, btn_y, btn_y + 1, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+        primi->RenderQuadAtZ(defmtl.get(), bx, bx + btn_size, btn_y + btn_size - 1, btn_y + btn_size, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+        primi->RenderQuadAtZ(defmtl.get(), bx, bx + 1, btn_y, btn_y + btn_size, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+        primi->RenderQuadAtZ(defmtl.get(), bx + btn_size - 1, bx + btn_size, btn_y, btn_y + btn_size, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+      };
+
+      // [+] button
+      drawButtonOutline(btn1_x, fvec4(0.5f, 0.8f, 0.5f, 1.0f));
+      int cx1 = btn1_x + btn_size / 2;
+      int cy1 = btn_y + btn_size / 2;
+      primi->RenderQuadAtZ(defmtl.get(), btn1_x + 2, btn1_x + btn_size - 2, cy1, cy1 + 1, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+      primi->RenderQuadAtZ(defmtl.get(), cx1, cx1 + 1, btn_y + 2, btn_y + btn_size - 2, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
       tgt->PopModColor();
 
-      // [-] button - outline box with horizontal line
-      int btn2_x = btn2_x_draw;
-      fvec4 btn2_color(0.8f, 0.5f, 0.5f, 1.0f);
-      tgt->PushModColor(btn2_color);
-      defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
-      // Outline: top
-      primi->RenderQuadAtZ(defmtl.get(), btn2_x, btn2_x + btn_size, btn_y, btn_y + 1, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
-      // Outline: bottom
-      primi->RenderQuadAtZ(defmtl.get(), btn2_x, btn2_x + btn_size, btn_y + btn_size - 1, btn_y + btn_size, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
-      // Outline: left
-      primi->RenderQuadAtZ(defmtl.get(), btn2_x, btn2_x + 1, btn_y, btn_y + btn_size, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
-      // Outline: right
-      primi->RenderQuadAtZ(defmtl.get(), btn2_x + btn_size - 1, btn2_x + btn_size, btn_y, btn_y + btn_size, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
-      // Horizontal bar of -
-      int cy2 = btn_y + btn_size / 2;
-      primi->RenderQuadAtZ(defmtl.get(), btn2_x + 2, btn2_x + btn_size - 2, cy2, cy2 + 1, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+      // [R] button - outline box with "R" drawn as lines
+      drawButtonOutline(btn2_x, fvec4(0.5f, 0.6f, 0.9f, 1.0f));
+      // R glyph: vertical bar + top-right curve + diagonal leg
+      int rx = btn2_x + 3;
+      int ry = btn_y + 2;
+      int rh = btn_size - 4;
+      primi->RenderQuadAtZ(defmtl.get(), rx, rx + 1, ry, ry + rh, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);          // vertical
+      primi->RenderQuadAtZ(defmtl.get(), rx + 1, rx + 4, ry, ry + 1, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);        // top bar
+      primi->RenderQuadAtZ(defmtl.get(), rx + 4, rx + 5, ry + 1, ry + 3, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);    // right side
+      primi->RenderQuadAtZ(defmtl.get(), rx + 1, rx + 4, ry + 3, ry + 4, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);    // mid bar
+      primi->RenderQuadAtZ(defmtl.get(), rx + 3, rx + 5, ry + 4, ry + rh, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);   // diagonal leg
+      tgt->PopModColor();
+
+      // [-] button
+      drawButtonOutline(btn3_x, fvec4(0.8f, 0.5f, 0.5f, 1.0f));
+      int cy3 = btn_y + btn_size / 2;
+      primi->RenderQuadAtZ(defmtl.get(), btn3_x + 2, btn3_x + btn_size - 2, cy3, cy3 + 1, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
       tgt->PopModColor();
     }
 
@@ -513,15 +839,16 @@ HandlerResult PropertyRow::DoOnUiEvent(event_constptr_t ev) {
 
     int indent = _depth * _indent_width;
 
-    // Check if click is on map buttons [+] or [-] (right-aligned)
+    // Check if click is on map buttons [+] [-] [R] (right-aligned)
     if (_is_map_property && !_is_map_const) {
       const int btn_size = 12;
       const int btn_spacing = 4;
       const int btn_margin = 8;
       int btn_y_top = (_geometry._h - btn_size) / 2;
       int btn_y_bot = btn_y_top + btn_size;
-      int btn2_x = _geometry._w - btn_margin - btn_size;
-      int btn1_x = btn2_x - btn_spacing - btn_size;
+      int btn3_x = _geometry._w - btn_margin - btn_size;          // [-]
+      int btn2_x = btn3_x - btn_spacing - btn_size;               // [R]
+      int btn1_x = btn2_x - btn_spacing - btn_size;               // [+]
 
       if (localY >= btn_y_top && localY <= btn_y_bot) {
         // [+] button
@@ -532,8 +859,16 @@ HandlerResult PropertyRow::DoOnUiEvent(event_constptr_t ev) {
           result.setHandled(this);
           return result;
         }
-        // [-] button
+        // [R] button
         if (localX >= btn2_x && localX < btn2_x + btn_size) {
+          if (_onMapRename) {
+            _onMapRename(ev);
+          }
+          result.setHandled(this);
+          return result;
+        }
+        // [-] button
+        if (localX >= btn3_x && localX < btn3_x + btn_size) {
           if (_onMapRemove) {
             _onMapRemove(ev);
           }
@@ -589,6 +924,7 @@ void PropertySheet::_subscribeToModel() {
     _model->_onStructureChanged = [this]() {
       _needs_rebuild = true;
       _expanded_keys.clear();
+      _external_value_connection.disconnect(); // stale rows, don't refresh
     };
 
     // Connect to external value change signal for live sync (e.g. manipulators)
@@ -659,7 +995,7 @@ void PropertySheet::rebuild() {
 }
 
 void PropertySheet::refreshValue(const std::string& key) {
-  if (!_model) return;
+  if (!_model || _needs_rebuild) return;
 
   if (key.empty()) {
     // Refresh all rows
@@ -886,6 +1222,54 @@ widget_ptr_t PropertySheet::_createEditorWidget(const std::string& key, Property
 
   // Get annotations for this property
   varmap::varmap_ptr_t annotations = _model ? _model->getAnnotations(key) : nullptr;
+
+  // Check for asset picker annotation (annotation-driven, type-agnostic)
+  if (annotations) {
+    // Check for editor.browsetype (folder mode) or editor.filetype (file mode)
+    bool folder_mode = false;
+    auto bt_it = annotations->_themap.find("editor.browsetype");
+    if (bt_it != annotations->_themap.end()) {
+      if (auto s = bt_it->second.tryAs<std::string>()) {
+        folder_mode = (s.value() == "folder");
+      }
+    }
+
+    auto ft_it = annotations->_themap.find("editor.filetype");
+    if (ft_it != annotations->_themap.end() || folder_mode) {
+      std::string filetype_csv, filebase_csv;
+      if (ft_it != annotations->_themap.end()) {
+        if (auto s = ft_it->second.tryAs<std::string>()) filetype_csv = s.value();
+      }
+
+      auto fb_it = annotations->_themap.find("editor.filebase");
+      if (fb_it != annotations->_themap.end()) {
+        if (auto s = fb_it->second.tryAs<std::string>()) filebase_csv = s.value();
+      }
+
+      std::string regex_pattern;
+      auto re_it = annotations->_themap.find("editor.regex");
+      if (re_it != annotations->_themap.end()) {
+        if (auto s = re_it->second.tryAs<std::string>()) regex_pattern = s.value();
+      }
+
+      std::string cur_text;
+      if (auto s = value.tryAs<std::string>()) cur_text = s.value();
+
+      auto picker = std::make_shared<AssetPickerWidget>(
+          "ap_" + key, cur_text, filetype_csv, filebase_csv, folder_mode, regex_pattern);
+      picker->_onValueCommitted = [this, key](const std::string& text) {
+        if (_model) {
+          svar128_t val;
+          val.set<std::string>(text);
+          _model->setValue(key, val);
+          if (_onPropertyChanged) {
+            _onPropertyChanged(key, val);
+          }
+        }
+      };
+      return picker;
+    }
+  }
 
   // Check for registered inline factory first
   uint32_t type_crc = propertyTypeToCrc(type);
@@ -1292,6 +1676,16 @@ widget_ptr_t PropertySheet::_createEditorWidget(const std::string& key, Property
 }
 
 std::function<void(svar128_t)> PropertySheet::_makeRefreshCallback(widget_ptr_t editor, PropertyType type) {
+  // AssetPickerWidget: update lineedit text on external value change
+  auto ap = std::dynamic_pointer_cast<AssetPickerWidget>(editor);
+  if (ap) {
+    return [ap](svar128_t new_value) {
+      if (auto s = new_value.tryAs<std::string>()) {
+        ap->_lineedit->setValue(s.value());
+      }
+    };
+  }
+
   // ChoicelistWidget: update displayed text on external value change
   auto cw = std::dynamic_pointer_cast<ChoicelistWidget>(editor);
   if (cw) {
@@ -1486,20 +1880,77 @@ void PropertySheet::_addRowsRecursive(const std::string& parent_key, int depth, 
         _uicontext->pushOverlay(lineedit, sx, sy, 200, 28, true, nullptr);
       };
 
-      // [-] button: push DropdownMenu to select element to remove
-      row->_onMapRemove = [this, key](event_constptr_t ev) {
+      // [R] button: select element to rename, then enter new name
+      row->_onMapRename = [this, key](event_constptr_t ev) {
         auto map_children = _model->getChildren(key);
         std::vector<std::string> names;
         for (auto& ck : map_children) {
           names.push_back(_model->getDisplayName(ck));
         }
         if (names.empty()) return;
+
+        int sx = ev->miX;
+        int sy = ev->miY;
+
+        if (names.size() == 1) {
+          // Only one element — skip selection, go straight to rename
+          auto selected = names[0];
+          auto lineedit = std::make_shared<OverlayLineEdit>("rename_to_" + key, selected);
+          lineedit->_onCommit = [this, key, selected](const std::string& new_name) {
+            _model->renameMapElement(key, selected, new_name);
+            rebuild();
+            expandAll();
+          };
+          _uicontext->pushOverlay(lineedit, sx, sy, 200, 28, true, nullptr);
+        } else {
+          // Multiple elements — show dropdown, then line edit after dismiss
+          auto tree = DropdownMenu::buildTreeFromPaths(names);
+          auto menu = std::make_shared<DropdownMenu>("rename_" + key, tree->root());
+          auto uictx = _uicontext;
+          auto model = _model;
+          auto sheet = this;
+          menu->_onSelected = [sheet, model, uictx, key, sx, sy](std::string selected) {
+            if (!selected.empty() && selected[0] == '/')
+              selected = selected.substr(1);
+            // Schedule line edit to appear after dismissAllOverlays completes
+            auto lineedit = std::make_shared<OverlayLineEdit>("rename_to_" + key, selected);
+            lineedit->_onCommit = [sheet, model, key, selected](const std::string& new_name) {
+              model->renameMapElement(key, selected, new_name);
+              sheet->rebuild();
+              sheet->expandAll();
+            };
+            // Queue the overlay push for next frame (after dismiss clears)
+            uictx->enqueueOnNextFrame([uictx, lineedit, sx, sy]() {
+              uictx->pushOverlay(lineedit, sx, sy, 200, 28, true, nullptr);
+            });
+          };
+          auto sz = menu->computeSize();
+          _uicontext->pushOverlay(menu, sx, sy, int(sz.x), int(sz.y), true, nullptr);
+        }
+      };
+
+      // [-] button: push DropdownMenu to select element to remove
+      row->_onMapRemove = [this, key](event_constptr_t ev) {
+        auto map_children = _model->getChildren(key);
+        // Build display→raw key mapping
+        std::vector<std::string> names;
+        std::map<std::string, std::string> display_to_raw;
+        std::string prefix = key + "/";
+        for (auto& ck : map_children) {
+          auto display = _model->getDisplayName(ck);
+          auto raw = ck.substr(prefix.size());
+          names.push_back(display);
+          display_to_raw[display] = raw;
+        }
+        if (names.empty()) return;
         auto tree = DropdownMenu::buildTreeFromPaths(names);
         auto menu = std::make_shared<DropdownMenu>("remove_" + key, tree->root());
-        menu->_onSelected = [this, key](std::string selected) {
+        menu->_onSelected = [this, key, display_to_raw](std::string selected) {
           if (!selected.empty() && selected[0] == '/')
             selected = selected.substr(1);
-          _model->removeMapElement(key, selected);
+          auto it = display_to_raw.find(selected);
+          auto raw_key = (it != display_to_raw.end()) ? it->second : selected;
+          _model->removeMapElement(key, raw_key);
           rebuild();
           expandAll();
         };
@@ -1589,6 +2040,18 @@ void PropertySheet::_addRowsRecursive(const std::string& parent_key, int depth, 
         };
         row->setEditorWidget(factory_widget);
       }
+    }
+
+    // For untyped variant map entries, show a type-picker dropdown
+    if (_model->isUntypedVariantMapEntry(key)) {
+      static const std::vector<std::string> kVariantTypes = {
+          "float", "int", "bool", "fvec3", "fvec4", "string"};
+      auto type_widget = std::make_shared<MapItemObjectFactoryWidget>("typepick_" + key, kVariantTypes);
+      type_widget->_onFactorySelected = [this, key](const std::string& type_name) {
+        _model->setVariantMapEntryType(key, type_name);
+        rebuild();
+      };
+      row->setEditorWidget(type_widget);
     }
 
     // For null direct object properties, show a factory widget
@@ -1705,6 +2168,18 @@ void PropertySheet::_addSingleChildRecursive(const std::string& child_key, int d
       };
       row->setEditorWidget(factory_widget);
     }
+  }
+
+  // For untyped variant map entries, show a type-picker dropdown
+  if (_model->isUntypedVariantMapEntry(child_key)) {
+    static const std::vector<std::string> kVariantTypes = {
+        "float", "int", "bool", "fvec3", "fvec4", "string"};
+    auto type_widget = std::make_shared<MapItemObjectFactoryWidget>("typepick_" + child_key, kVariantTypes);
+    type_widget->_onFactorySelected = [this, child_key](const std::string& type_name) {
+      _model->setVariantMapEntryType(child_key, type_name);
+      rebuild();
+    };
+    row->setEditorWidget(type_widget);
   }
 
   // For null direct object properties, show a factory widget

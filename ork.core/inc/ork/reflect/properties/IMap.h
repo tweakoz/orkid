@@ -32,6 +32,11 @@ public:
   virtual void setElement(object_ptr_t obj,map_abstract_item_t key, map_abstract_item_t val) const = 0;
   virtual void removeElement(object_ptr_t obj,map_abstract_item_t key) const = 0;
 
+  // For maps whose ValueType IS svar128_t (raw variant maps).
+  // setElement() cannot be used in that case because sizeof(svar128_t) > ksize.
+  virtual bool isRawVariantMap() const { return false; }
+  virtual void setRawVariantElement(object_ptr_t obj, map_abstract_item_t key, const svar128_t& raw_val) const {}
+
 protected:
   IMap() : ObjectProperty() {
   }

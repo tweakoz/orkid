@@ -101,6 +101,31 @@ radiancemaps_ptr_t CommonStuff::requestRadianceMapsAsync(const AssetPath& textur
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+radiancemap_cache_ptr_t getRadianceMapCache() {
+  static radiancemap_cache_ptr_t _instance;
+  if (!_instance) {
+    _instance = std::make_shared<RadianceMapCache>();
+  }
+  return _instance;
+}
+
+radiancemaps_ptr_t RadianceMapCache::get(const AssetPath& path) {
+  std::lock_guard<std::mutex> lock(_mutex);
+  auto key = path.toStdString();
+  auto it = _cache.find(key);
+  if (it != _cache.end()) return it->second;
+  auto maps = CommonStuff::requestRadianceMaps(path);
+  _cache[key] = maps;
+  return maps;
+}
+
+void RadianceMapCache::clear() {
+  std::lock_guard<std::mutex> lock(_mutex);
+  _cache.clear();
+}
+
+///////////////////////////////////////////////////////////////////////////////
 void CommonStuff::requestAndRefSkyboxTexture(asset::loadrequest_ptr_t load_req) {
   auto generic_asset = asset::AssetManager<RadianceMapsAsset>::load(load_req);
   if( auto as_radmaps = std::dynamic_pointer_cast<RadianceMapsAsset>(generic_asset) ){

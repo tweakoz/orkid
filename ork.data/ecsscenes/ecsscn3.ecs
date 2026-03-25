@@ -4,6 +4,7 @@
    "class": "EcsSceneData",
    "uuid": "7a968af0-4a27-4d8d-8c0c-5608ca66bc59",
    "properties": {
+    "Imports": {},
     "SceneObjects": {
      "ArchBallDown": {
       "object": {
@@ -105,44 +106,13 @@
                   "uuid": "33525f31-ff98-459a-8b13-6a798b9535e6",
                   "properties": {
                    "assetpath": "data://tests/pbr_calib.glb",
-                   "assetvars": {}
+                   "assetvars": {},
+                   "EnvironmentMapPath": ""
                   }
                  }
                 },
                 "LayerName": "std_forward",
                 "NodeName": "N2"
-               }
-              }
-             },
-             "item-1": {
-              "object": {
-               "class": "SceneGraphNodeItemData",
-               "uuid": "984ffdd5-16d3-4acb-bc11-0c8654ea1acd",
-               "properties": {
-                "DrawableData": {
-                 "object": {
-                  "class": "PointLightData",
-                  "uuid": "5dc2ba0e-607c-4b44-a211-ddaf572120ea",
-                  "properties": {
-                   "Falloff": 1.0,
-                   "Radius": 1.0,
-                   "Color": [
-                    -3.6999998092651367,
-                    7.6999993324279785,
-                    0.0
-                   ],
-                   "Decal": false,
-                   "Intensity": 1.5200023651123047,
-                   "ShadowBias": 0.0020000000949949026,
-                   "ShadowBlur": 0.0,
-                   "ShadowCaster": false,
-                   "ShadowMapSize": 1024,
-                   "ShadowSamples": 1
-                  }
-                 }
-                },
-                "LayerName": "",
-                "NodeName": ""
                }
               }
              }
@@ -239,7 +209,8 @@
                   "uuid": "13477281-f777-4132-9ded-e7cf0d95e01f",
                   "properties": {
                    "assetpath": "data://tests/misc_gltf_samples/animals/turtle.glb",
-                   "assetvars": {}
+                   "assetvars": {},
+                   "EnvironmentMapPath": ""
                   }
                  }
                 },
@@ -263,7 +234,7 @@
                    "Color": [
                     0.0,
                     0.0,
-                    1.0
+                    0.0
                    ],
                    "Decal": false,
                    "Intensity": 42.97999954223633,
@@ -271,7 +242,8 @@
                    "ShadowBlur": 0.0,
                    "ShadowCaster": false,
                    "ShadowMapSize": 1024,
-                   "ShadowSamples": 1
+                   "ShadowSamples": 1,
+                   "EnvironmentMapPath": ""
                   }
                  }
                 },
@@ -348,17 +320,18 @@
                    "Falloff": 1.0,
                    "Radius": 1.0,
                    "Color": [
-                    1.0,
+                    0.06000002101063728,
                     -0.15999996662139893,
                     -0.26999998092651367
                    ],
                    "Decal": false,
-                   "Intensity": 136.2899932861328,
+                   "Intensity": 250.0,
                    "ShadowBias": 0.0020000000949949026,
                    "ShadowBlur": 0.0,
                    "ShadowCaster": false,
                    "ShadowMapSize": 1024,
-                   "ShadowSamples": 1
+                   "ShadowSamples": 1,
+                   "EnvironmentMapPath": ""
                   }
                  }
                 },
@@ -366,8 +339,89 @@
                 "NodeName": "L1"
                }
               }
+             },
+             "item-1": {
+              "object": {
+               "class": "SceneGraphNodeItemData",
+               "uuid": "85f30ac1-4710-48dd-95b5-8f26a72488d9",
+               "properties": {
+                "DrawableData": {
+                 "object": {
+                  "class": "SpotLightData",
+                  "uuid": "ac41f50d-2191-4f84-939a-46d20322278b",
+                  "properties": {
+                   "CookiePath": "<ork_data>/platform_lev2/textures/Inconsolata48.png",
+                   "Fovy": 60.0,
+                   "Range": 60.70999526977539,
+                   "Color": [
+                    1.0,
+                    1.0,
+                    1.0
+                   ],
+                   "Decal": false,
+                   "Intensity": 1500.0,
+                   "ShadowBias": 0.0020000000949949026,
+                   "ShadowBlur": 0.0,
+                   "ShadowCaster": true,
+                   "ShadowMapSize": 1024,
+                   "ShadowSamples": 1,
+                   "EnvironmentMapPath": ""
+                  }
+                 }
+                },
+                "LayerName": "std_forward",
+                "NodeName": "L2"
+               }
+              }
+             },
+             "item-2": {
+              "object": {
+               "class": "SceneGraphNodeItemData",
+               "uuid": "75e75ad1-a9eb-40d7-9f0e-830624ec1da5",
+               "properties": {
+                "DrawableData": {
+                 "object": {
+                  "class": "BillboardDrawableData",
+                  "uuid": "74ed9788-8d5a-4ce8-830b-c6dc60e96199",
+                  "properties": {
+                   "Alpha": 1.0,
+                   "Image": "<ork_data>/platform_lev2/textures/dfnode3.png",
+                   "ScreenSize": 4.0,
+                   "EnvironmentMapPath": ""
+                  }
+                 }
+                },
+                "LayerName": "std_editor",
+                "NodeName": "BB"
+               }
+              }
              }
             }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "ArchProbe": {
+      "object": {
+       "class": "EcsArchetype",
+       "uuid": "1b2d1b9a-952b-40f0-a897-1419edffa8c7",
+       "properties": {
+        "Components": {
+         "ProbeComponentData": {
+          "object": {
+           "class": "ProbeComponentData",
+           "uuid": "08363f75-0dcc-4ac4-829f-f6fd982621cf",
+           "properties": {
+            "ActivationMode": "ALWAYS",
+            "ImageDimension": 4096,
+            "OutputFolder": "${HOME}",
+            "OutputPrefix": "probetest",
+            "RenderLayer": "std_forward",
+            "Supersample": 0,
+            "TemporalFrames": 0
            }
           }
          }
@@ -835,7 +889,8 @@
                   "uuid": "dd5782c3-eaa0-4ff8-8c50-3d5223892c0c",
                   "properties": {
                    "assetpath": "data://tests/misc_gltf_samples/art_and_sculpture/fracvase.glb",
-                   "assetvars": {}
+                   "assetvars": {},
+                   "EnvironmentMapPath": ""
                   }
                  }
                 },
@@ -886,6 +941,79 @@
           }
          }
         }
+       }
+      }
+     },
+     "PROBE1": {
+      "object": {
+       "class": "EcsSpawnData",
+       "uuid": "fa2e3299-ab89-4efd-aebc-80b8033633aa",
+       "properties": {
+        "Archetype": {
+         "object-ref": {
+          "uuid-ref": "1b2d1b9a-952b-40f0-a897-1419edffa8c7"
+         }
+        },
+        "DirectionRandomize": 0.0,
+        "InitialDirection": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "InitialSpeed": 0.0,
+        "LifetimeMax": 0.0,
+        "LifetimeMin": 0.0,
+        "MinDistance": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "PositionRandomRadius": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "SpawnCount": 1,
+        "SpawnInterval": 0.0,
+        "StochasticInterval": 0.0,
+        "UserProperties": {},
+        "DagNodeData": {
+         "object": {
+          "class": "EcsDagNodeData",
+          "uuid": "ea7ff89d-fb73-4b69-8b83-4f44f0c05619",
+          "properties": {
+           "TransformNode": {
+            "object": {
+             "class": "TransformNode",
+             "uuid": "36067413-bb35-42df-92a8-7bce356fced4",
+             "properties": {
+              "transform": {
+               "object": {
+                "class": "DecompTransform",
+                "uuid": "9699d56c-5ff5-4562-b819-5a25349685ac",
+                "properties": {
+                 "rotation": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                 ],
+                 "translation": [
+                  0.0,
+                  1.687673568725586,
+                  0.0
+                 ],
+                 "uniformScale": 1.0
+                }
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        },
+        "Parent": "scene"
        }
       }
      },
@@ -1011,15 +1139,15 @@
                 "uuid": "2fb1cf51-170f-457c-ba12-3db3f262d992",
                 "properties": {
                  "rotation": [
-                  0.0,
-                  0.0,
-                  0.0,
-                  1.0
+                  -0.2580970525741577,
+                  0.6356827020645142,
+                  -0.6047552227973938,
+                  0.404431015253067
                  ],
                  "translation": [
-                  0.0,
-                  5.840345859527588,
-                  0.0
+                  7.176550388336182,
+                  34.07127380371094,
+                  -1.1545662879943848
                  ],
                  "uniformScale": 1.0
                 }
@@ -1108,79 +1236,6 @@
        }
       }
      },
-     "spawner2": {
-      "object": {
-       "class": "EcsSpawnData",
-       "uuid": "c7ca9a63-05f2-459d-a5c8-c0d45876f117",
-       "properties": {
-        "Archetype": {
-         "object-ref": {
-          "uuid-ref": "d98f5eb2-12d8-4e22-ab58-56aa30bc2218"
-         }
-        },
-        "DirectionRandomize": 0.0,
-        "InitialDirection": [
-         0.0,
-         0.0,
-         0.0
-        ],
-        "InitialSpeed": 0.0,
-        "LifetimeMax": 0.0,
-        "LifetimeMin": 0.0,
-        "MinDistance": [
-         1.7599999904632568,
-         1.4399999380111694,
-         1.2300000190734863
-        ],
-        "PositionRandomRadius": [
-         4.940000057220459,
-         3.490000009536743,
-         4.420000076293945
-        ],
-        "SpawnCount": 21,
-        "SpawnInterval": 0.0,
-        "StochasticInterval": 0.0,
-        "UserProperties": {},
-        "DagNodeData": {
-         "object": {
-          "class": "EcsDagNodeData",
-          "uuid": "40b5662b-2b36-4cbd-9399-e128f03848f5",
-          "properties": {
-           "TransformNode": {
-            "object": {
-             "class": "TransformNode",
-             "uuid": "453f055c-f0bd-4344-8a79-700acc98a01f",
-             "properties": {
-              "transform": {
-               "object": {
-                "class": "DecompTransform",
-                "uuid": "d28f9079-6ed3-434b-ac4f-ed44bf6722e0",
-                "properties": {
-                 "rotation": [
-                  -0.0,
-                  -0.0,
-                  -0.0,
-                  1.0
-                 ],
-                 "translation": [
-                  2.78144907951355,
-                  11.277647018432617,
-                  0.34155142307281494
-                 ],
-                 "uniformScale": 0.25
-                }
-               }
-              }
-             }
-            }
-           }
-          }
-         }
-        },
-        "Parent": "scene"
-       }
-      }
-     },
      "spawner3": {
       "object": {
        "class": "EcsSpawnData",
@@ -1236,7 +1291,7 @@
                   1.0
                  ],
                  "translation": [
-                  3.8972859382629395,
+                  2.697185516357422,
                   13.357718467712402,
                   0.0
                  ],
@@ -1382,11 +1437,22 @@
        }
       }
      },
+     "ProbeSystem": {
+      "object": {
+       "class": "ProbeSystemData",
+       "uuid": "59a92b13-bde3-41da-b241-9c404a0169f7",
+       "properties": {}
+      }
+     },
      "SceneGraphSystemData": {
       "object": {
        "class": "SceneGraphSystemData",
        "uuid": "53c771d8-7058-4fde-b926-49f200157857",
        "properties": {
+        "CookieAtlasHeight": 512,
+        "CookieAtlasWidth": 512,
+        "ShadowAtlasHeight": 1024,
+        "ShadowAtlasWidth": 1024,
         "drawabledatas": [],
         "userparams": {}
        }

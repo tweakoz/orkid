@@ -19,13 +19,14 @@ uniform_block ublock_frg (descriptor_set 0) {
   vec2 ViewportDim;
   int downsampledim;
   int FlipY;
+  int FlipX;
   float downsampleamp;
+  float BlendWeight;
 }
 ///////////////////////////////////////////////////////////////
 sampler_set samplers(descriptor_set 0) {
   sampler2D ColorMap;
-  // sampler2D ColorMap2;
-  // sampler2D ColorMap3;
+  sampler2D AccumMap;
 }
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_fmt : ublock_frg : samplers {
@@ -47,6 +48,9 @@ fragment_shader ps_blit : iface_fmt : samplers {
   if( FlipY == 1 ) {
     uv.y = ViewportDim.y - uv.y;
   }
+  if( FlipX == 1 ) {
+    uv.x = ViewportDim.x - uv.x;
+  }
   vec2 uvb = uv.xy - vec2(0.5, 0.5);
   vec3 texc = texelFetch(ColorMap, ivec2(uvb),0).xyz;
   out_clr   = vec4(texc, 1);
@@ -67,6 +71,9 @@ fragment_shader ps_downsample2x2 : iface_fmt : samplers {
   if( FlipY == 1 ) {
     uv.y = ViewportDim.y - uv.y;
   }
+  if( FlipX == 1 ) {
+    uv.x = ViewportDim.x - uv.x;
+  }
   vec2 uvb           = uv.xy * 2 - vec2(0.5, 0.5);
   vec3 outc          = vec3(0);
   for (int iy = 0; iy < 2; iy++) {
@@ -83,6 +90,9 @@ fragment_shader ps_downsample3x3 : iface_fmt : samplers {
   vec2 uv = gl_FragCoord.xy;
   if( FlipY == 1 ) {
     uv.y = ViewportDim.y - uv.y;
+  }
+  if( FlipX == 1 ) {
+    uv.x = ViewportDim.x - uv.x;
   }
   vec2 uvb           = uv * 3 - vec2(0.5, 0.5);
   vec3 outc          = vec3(0);
@@ -101,6 +111,9 @@ fragment_shader ps_downsample4x4 : iface_fmt : samplers {
   if( FlipY == 1 ) {
     uv.y = ViewportDim.y - uv.y;
   }
+  if( FlipX == 1 ) {
+    uv.x = ViewportDim.x - uv.x;
+  }
   vec2 uvb           = uv * 4 - vec2(0.5, 0.5);
   vec3 outc          = vec3(0);
   for (int iy = 0; iy < 4; iy++) {
@@ -117,6 +130,9 @@ fragment_shader ps_downsample5x5 : iface_fmt : samplers {
   vec2 uv = gl_FragCoord.xy;
   if( FlipY == 1 ) {
     uv.y = ViewportDim.y - uv.y;
+  }
+  if( FlipX == 1 ) {
+    uv.x = ViewportDim.x - uv.x;
   }
   vec2 uvb           = uv * 5 + vec2(2, 2);
   vec3 outc          = vec3(0);
@@ -140,6 +156,9 @@ fragment_shader ps_downsample6x6 : iface_fmt : samplers {
   if( FlipY == 1 ) {
     uv.y = ViewportDim.y - uv.y;
   }
+  if( FlipX == 1 ) {
+    uv.x = ViewportDim.x - uv.x;
+  }
   vec2 uvb           = uv * 6 - vec2(0.5, 0.5);
   vec3 outc          = vec3(0);
   for (int iy = 0; iy < 6; iy++) {
@@ -155,6 +174,9 @@ fragment_shader ps_downsample7x7 : iface_fmt : samplers {
   vec2 uv = gl_FragCoord.xy;
   if( FlipY == 1 ) {
     uv.y = ViewportDim.y - uv.y;
+  }
+  if( FlipX == 1 ) {
+    uv.x = ViewportDim.x - uv.x;
   }
   vec2 uvb    = uv * 7 + vec2(3, 3);
   vec3 outc   = vec3(0);
@@ -240,6 +262,23 @@ technique downsample_7x7 {
   pass p0 {
     vertex_shader   = vs_blit;
     fragment_shader = ps_downsample7x7;
+    state_block     = sb_blit;
+  }
+}
+///////////////////////////////////////////////////////////////
+// Temporal accumulation blend
+///////////////////////////////////////////////////////////////
+fragment_shader ps_temporal_blend : iface_fmt : samplers {
+  ivec2 coord = ivec2(gl_FragCoord.xy);
+  vec3 newFrame = texelFetch(ColorMap, coord, 0).xyz;
+  vec3 prevAccum = texelFetch(AccumMap, coord, 0).xyz;
+  out_clr = vec4(mix(prevAccum, newFrame, BlendWeight), 1);
+}
+technique tek_temporal_blend {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_blit;
+    fragment_shader = ps_temporal_blend;
     state_block     = sb_blit;
   }
 }

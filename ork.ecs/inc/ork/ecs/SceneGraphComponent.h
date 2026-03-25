@@ -145,6 +145,11 @@ private:
   std::vector<std::string> _declaredLayers;
 
   std::map<std::string,sgnodeitemdata_ptr_t> _nodedatas;
+
+  int _cookieAtlasWidth  = 1024;
+  int _cookieAtlasHeight = 1024;
+  int _shadowAtlasWidth  = 1024;
+  int _shadowAtlasHeight = 1024;
 };
 
 using sgsystemdata_ptr_t = std::shared_ptr<SceneGraphSystemData>;
@@ -160,6 +165,7 @@ struct SceneGraphSystem final : public System {
   DeclareToken(DestroyNode);
   DeclareToken(ChangeModColor);
   DeclareToken(HighlightBySpawnData);
+  DeclareToken(SyncTransformBySpawnData);
   ///////////////////////////////
   static constexpr systemkey_t SystemType = "SceneGraphSystem";
   systemkey_t systemTypeDynamic() final {
@@ -222,6 +228,12 @@ struct SceneGraphSystem final : public System {
   MpMcBoundedQueue<void_lambda_t,65536> _renderops;
   bool _autodraw = true;   // when false, skip renderOnContext / renderWithStandardCompositorFrame
   bool _autoupdate = true; // when false, skip enqueueToRenderer
+  ///////////////////////////////
+  // cookie atlas (built during gpuInit, slices assigned during staging)
+  std::map<std::string, lev2::texturearraysliceref_ptr_t> _cookiePathToSliceRef;
+  lev2::texturearray_ptr_t _cookieColorArray;
+  lev2::texturearray_ptr_t _cookieDepthArray;
+  int _nextDepthSlice = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

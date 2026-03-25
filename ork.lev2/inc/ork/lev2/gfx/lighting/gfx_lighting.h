@@ -177,6 +177,11 @@ enum class LightProbeType : uint64_t {
   CrcEnum(END)
 };
 
+enum class ProbeActivationMode : crc_enum_t {
+  CrcEnum(ALWAYS),
+  CrcEnum(BAKE_ONLY),
+};
+
 struct LightProbe {
 
   LightProbe();
@@ -186,7 +191,8 @@ struct LightProbe {
   void exportEquirectangular(Context* ctx, const fquat& rot, const file::Path& path);
 
   LightProbeType _type = LightProbeType::REFLECTION;
-  int _dim = 0;
+  ProbeActivationMode _activationMode = ProbeActivationMode::ALWAYS;
+  bool _active = true;
   bool _dirty = true;
   uint64_t _version = 0;
   std::string _name;
@@ -196,6 +202,31 @@ struct LightProbe {
   texture_ptr_t _cubeTexture;
   varmap::varmap_ptr_t _userdata;
   svar64_t _impl;
+
+  // Pointers to live component data (no caching — always reads current values)
+  const int* _pDim = nullptr;
+  const int* _pSupersample = nullptr;
+  const int* _pTemporalFrames = nullptr;
+  const std::string* _pRenderLayer = nullptr;
+
+  // Defaults used when no component data is bound
+  int _dim = 0;
+  std::string _renderLayer = "probe";
+  int _supersample = 0;
+  int _temporalFrames = 0;
+
+  // Accessors — read from component data if bound, else from defaults
+  int dim() const { return _pDim ? *_pDim : _dim; }
+  int supersample() const { return _pSupersample ? *_pSupersample : _supersample; }
+  int temporalFrames() const { return _pTemporalFrames ? *_pTemporalFrames : _temporalFrames; }
+  const std::string& renderLayer() const { return _pRenderLayer ? *_pRenderLayer : _renderLayer; }
+
+  // TAA runtime state
+  int _accumFrameCount = 0;
+  int _accumWriteIdx = 0;
+  rtgroup_ptr_t _ssaaRenderRTG;
+  rtgroup_ptr_t _tempFaceRTG;
+  rtgroup_ptr_t _accumFaceRTG[6][2];
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -375,6 +406,7 @@ struct SpotLightData : public LightData {
 
   float mFovy;
   float mRange;
+  file::Path _cookiePath;
 
 public:
   float GetFovy() const {

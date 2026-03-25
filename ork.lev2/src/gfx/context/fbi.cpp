@@ -197,6 +197,13 @@ void FrameBufferInterface::pushScissor(int x, int y, int w, int h) {
   maScissorStack[++miScissorStackIndex] = rect;
   _setScissor(x, y, w, h);
 }
+void FrameBufferInterface::pushScissorIntersected(int x, int y, int w, int h) {
+  auto& cur = maScissorStack[miScissorStackIndex];
+  int cx2 = cur._x + cur._w, cy2 = cur._y + cur._h;
+  int nx1 = std::max(x, cur._x), ny1 = std::max(y, cur._y);
+  int nx2 = std::min(x + w, cx2), ny2 = std::min(y + h, cy2);
+  pushScissor(nx1, ny1, std::max(0, nx2 - nx1), std::max(0, ny2 - ny1));
+}
 void FrameBufferInterface::pushViewport(int x, int y, int w, int h) {
   OrkAssert((miViewportStackIndex + 1) < kiVPStackMax);
   ViewportRect rect(x, y, w, h);

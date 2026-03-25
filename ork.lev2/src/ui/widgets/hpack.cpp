@@ -193,7 +193,7 @@ void HorizontalPack::DoDraw(drawevent_constptr_t drwev) {
   int scissor_h = _geometry._h+_margin;
 
   ///////////////////////////////////
-  fbi->pushScissor(scissor_x, scissor_y, scissor_w, scissor_h);
+  fbi->pushScissorIntersected(scissor_x, scissor_y, scissor_w, scissor_h);
 
   if (_draw_background) {
     _drawColoredBox(drwev, _bgcolor);

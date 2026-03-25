@@ -4,6 +4,8 @@ Basic test for offscreen Vulkan rendering.
 Creates offscreen context, begins frame with RTG clear, ends frame, and exits.
 """
 
+import os; os.environ["PYTHONUNBUFFERED"] = "1"
+import sys; sys.stdout.reconfigure(line_buffering=True)
 import sys
 import time
 from orkengine import core

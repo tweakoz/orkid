@@ -48,6 +48,7 @@ bool Image::initFromInMemoryFile( std::string fmtguess, //
   _width                = spec.width;
   _height               = spec.height;
   _numcomponents        = spec.nchannels;
+  int native_nc         = spec.nchannels;
   switch (spec.format.basetype) {
     case TypeDesc::UINT8:
       _bytesPerChannel = 1;
@@ -97,21 +98,91 @@ bool Image::initFromInMemoryFile( std::string fmtguess, //
           return false;
       }
       break;
+    case TypeDesc::HALF:
+      _bytesPerChannel = 2;
+      switch (_numcomponents) {
+        case 3:
+          _format = EBufferFormat::RGBA16F;
+          _numcomponents = 4; // promote to 4-channel for GPU compatibility
+          break;
+        case 4:
+          _format = EBufferFormat::RGBA16F;
+          break;
+        default:
+          OrkAssert(false);
+          return false;
+      }
+      break;
+    case TypeDesc::FLOAT:
+      _bytesPerChannel = 4;
+      switch (_numcomponents) {
+        case 3:
+          _format = EBufferFormat::RGBA32F;
+          _numcomponents = 4; // promote to 4-channel for GPU compatibility
+          break;
+        case 4:
+          _format = EBufferFormat::RGBA32F;
+          break;
+        default:
+          OrkAssert(false);
+          return false;
+      }
+      break;
     default:
       OrkAssert(false);
       return false;
-      
+
   }
 
   _data = std::make_shared<DataBlock>();
   _data->allocateBlock(_width * _height * _numcomponents * _bytesPerChannel);
   auto pixels = (uint8_t*)_data->data();
-  if (_bytesPerChannel == 1) {
+  bool needs_expand = (_numcomponents == 4 && native_nc == 3);
+
+  if (needs_expand) {
+    // Read native 3 channels into temp buffer, then expand to 4
+    size_t num_pixels = _width * _height;
+    auto tmp = std::vector<uint8_t>(num_pixels * 3 * _bytesPerChannel);
+    TypeDesc read_type = (_bytesPerChannel == 4) ? TypeDesc::FLOAT : TypeDesc::HALF;
+    in->read_image(0, 0, 0, 3, read_type, tmp.data());
+    in->close();
+
+    // Expand 3→4 channels, alpha = 1.0
+    if (_bytesPerChannel == 4) {
+      auto src = reinterpret_cast<const float*>(tmp.data());
+      auto dst = reinterpret_cast<float*>(pixels);
+      for (size_t i = 0; i < num_pixels; i++) {
+        dst[i * 4 + 0] = src[i * 3 + 0];
+        dst[i * 4 + 1] = src[i * 3 + 1];
+        dst[i * 4 + 2] = src[i * 3 + 2];
+        dst[i * 4 + 3] = 1.0f;
+      }
+    } else { // HALF
+      auto src = reinterpret_cast<const uint16_t*>(tmp.data());
+      auto dst = reinterpret_cast<uint16_t*>(pixels);
+      uint16_t one_half = 0x3C00; // 1.0 in half-float
+      for (size_t i = 0; i < num_pixels; i++) {
+        dst[i * 4 + 0] = src[i * 3 + 0];
+        dst[i * 4 + 1] = src[i * 3 + 1];
+        dst[i * 4 + 2] = src[i * 3 + 2];
+        dst[i * 4 + 3] = one_half;
+      }
+    }
+  } else if (_bytesPerChannel == 1) {
     in->read_image(TypeDesc::UINT8, pixels);
+    in->close();
+  } else if (_format == EBufferFormat::RGBA16F) {
+    in->read_image(0, 0, 0, 4, TypeDesc::HALF, pixels);
+    in->close();
+  } else if (_format == EBufferFormat::RGBA32F) {
+    in->read_image(0, 0, 0, 4, TypeDesc::FLOAT, pixels);
+    in->close();
   } else if (_bytesPerChannel == 2) {
     in->read_image(TypeDesc::UINT16, pixels);
+    in->close();
+  } else {
+    in->close();
   }
-  in->close();
 
   if (1) {
     logchan_image->log("///////////////////////////////////");
@@ -172,6 +243,11 @@ void Image::writeToFile(const ork::file::Path& outpath) const {
       break;
     case EBufferFormat::RGBA16:
       spec.format       = TypeDesc::UINT16;
+      spec.nchannels    = 4;
+      spec.channelnames = {"R", "G", "B", "A"};
+      break;
+    case EBufferFormat::RGBA16F:
+      spec.format       = TypeDesc::HALF;
       spec.nchannels    = 4;
       spec.channelnames = {"R", "G", "B", "A"};
       break;

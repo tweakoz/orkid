@@ -36,11 +36,11 @@ void LightProbe::resize(int dim) {
 
 void LightProbe::exportEquirectangular(Context* ctx, const fquat& rot, const file::Path& path) {
   auto tex              = _cubeTexture;
-  int w                 = 2048;
-  int h                 = 1024;
+  int w                 = _dim * 2;
+  int h                 = _dim;
   _equiRenderRTG        = std::make_shared<RtGroup>(ctx, w, h);
   _equiRenderRTG->_name = "ReflectionProbeRTG";
-  auto colorbuf         = _equiRenderRTG->createRenderTarget(EBufferFormat::RGB8);
+  auto colorbuf         = _equiRenderRTG->createRenderTarget(EBufferFormat::RGBA8);
   colorbuf->_debugName  = "ReflectionProbeColorCubeMap";
 
   auto material = std::make_shared<FreestyleMaterial>();
@@ -51,35 +51,33 @@ void LightProbe::exportEquirectangular(Context* ctx, const fquat& rot, const fil
   material->_rasterstate->_culltest  = ECullTest::OFF;
   material->_rasterstate->_depthtest = EDepthTest::OFF;
 
-  auto tek_c2e = material->technique("tek_cube2equi");
+  auto tek_c2e  = material->technique("tek_cube2equi");
   auto p_mrot   = material->param("mrot");
-  auto p_cube  = material->param("cube_sampler");
+  auto p_cube   = material->param("cube_sampler");
+  auto p_flipy  = material->param("FlipY");
 
   auto FBI = ctx->FBI();
 
+  // Must use own beginFrame/endFrame — capture requires a standalone frame
   ctx->beginFrame();
   FBI->PushRtGroup(_equiRenderRTG.get());
-  //FBI->Clear(fvec4(1, 0, 0, 0), 1.0);
 
   fmtx3 mtxrot;
   mtxrot.fromQuaternion(rot);
 
-  if (1) {
+  {
     auto RCFD = std::make_shared<RenderContextFrameData>(ctx);
     material->begin(tek_c2e, RCFD);
-
-
     material->bindParamMatrix(p_mrot, mtxrot);
     material->bindParamTexture(p_cube, _cubeTexture.get());
-    //ctx->RSI()->BindRasterState(material->_rasterstate, true);
+    material->bindParamInt(p_flipy, 0);
     ctx->GBI()->render2dQuadEML(); // full screen quad
     material->end(RCFD);
   }
 
   FBI->PopRtGroup();
-  ctx->endFrame();
-
   FBI->capture(colorbuf.get(), path);
+  ctx->endFrame();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

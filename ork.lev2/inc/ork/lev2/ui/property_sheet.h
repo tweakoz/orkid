@@ -56,6 +56,7 @@ struct PropertyRow : public Group {
   bool _is_map_const = false;
   std::function<void(event_constptr_t ev)> _onMapAdd;
   std::function<void(event_constptr_t ev)> _onMapRemove;
+  std::function<void(event_constptr_t ev)> _onMapRename;
   std::function<void(event_constptr_t ev)> _onMapSelectItem;
 
   // Track which widget is being dragged (for proper event routing)

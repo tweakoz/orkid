@@ -4,6 +4,8 @@ Test for multi-buffer (deep pixel) picking with mixed formats.
 Tests simultaneous capture from RGBA32F, RGBA16F, RGBA32UI, and RGBA16UI buffers.
 """
 
+import os; os.environ["PYTHONUNBUFFERED"] = "1"
+import sys; sys.stdout.reconfigure(line_buffering=True)
 import sys, time
 from orkengine import core
 from orkengine import lev2

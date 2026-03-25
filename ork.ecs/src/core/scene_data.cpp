@@ -15,6 +15,7 @@
 
 #include <ork/ecs/ReferenceArchetype.h>
 #include <ork/ecs/scene.h>
+#include <ork/ecs/scene_import_data.h>
 #include <ork/ecs/system.h>
 #include <ork/ecs/entity.inl>
 
@@ -112,6 +113,8 @@ void SceneData::describeX(ObjectClass* clazz) {
       ->annotate("editor.class", "ged.factory.filelist")
       ->annotate("editor.filetype", "lua")
       ->annotate("editor.filebase", "src://scripts/");
+  /////////////////////
+  clazz->directObjectMapProperty("Imports", &SceneData::_imports);
 }
 ///////////////////////////////////////////////////////////////////////////////
 SceneData::SceneData(){
@@ -383,6 +386,21 @@ varmap::varmap_ptr_t SceneData::generateSceneGraphParams() const {
   params->makeValueForKey<fvec3>("AmbientLevel") = fvec3(1.0f, 1.0f, 1.0f);
   params->makeValueForKey<std::string>("SkyboxTexPathStr") = "nebula";
   return params;
+}
+///////////////////////////////////////////////////////////////////////////////
+void SceneData::addImport(sceneimportdata_ptr_t import) {
+  _imports[import->_namespace] = import;
+}
+///////////////////////////////////////////////////////////////////////////////
+void SceneData::removeImport(const std::string& ns) {
+  auto it = _imports.find(ns);
+  if (it != _imports.end()) {
+    _imports.erase(it);
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+const orkmap<std::string, sceneimportdata_ptr_t>& SceneData::getImports() const {
+  return _imports;
 }
 ///////////////////////////////////////////////////////////////////////////////
 SceneComposer::SceneComposer(SceneData* psd)

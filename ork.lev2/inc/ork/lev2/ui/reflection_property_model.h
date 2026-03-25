@@ -33,6 +33,7 @@ struct ReflectionPropertySheetModel : public PropertySheetModel {
   bool isMapConst(const std::string& key) const override;
   void addMapElement(const std::string& key, const std::string& name) override;
   void removeMapElement(const std::string& key, const std::string& name) override;
+  void renameMapElement(const std::string& key, const std::string& old_name, const std::string& new_name) override;
 
   // Null object map entry / factory support
   bool isNullObjectMapEntry(const std::string& key) const override;
@@ -43,6 +44,10 @@ struct ReflectionPropertySheetModel : public PropertySheetModel {
   bool isNullDirectObjectEntry(const std::string& key) const override;
   std::vector<std::string> getDirectObjectFactoryClasses(const std::string& key) const override;
   void setDirectObjectFromFactory(const std::string& key, const std::string& class_name) override;
+
+  // Untyped variant map entry / type-picker support
+  bool isUntypedVariantMapEntry(const std::string& key) const override;
+  void setVariantMapEntryType(const std::string& key, const std::string& type_name) override;
 
   // Per-key override support (for properties like object pointers
   // that need custom get/set/choices from Python)
