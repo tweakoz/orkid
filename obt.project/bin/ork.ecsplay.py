@@ -131,7 +131,7 @@ class EcsPlayer(ComponentizedApplication):
   def _onUpdate(self, updinfo):
     # Always update — staged mode needs camera sync, playing mode needs full tick
     if self.runtime.controller:
-      self.runtime.update()
+      self.runtime.update(updinfo)
     self.sgv.setDirty()
 
 ################################################################################
