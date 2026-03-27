@@ -56,6 +56,8 @@ struct GpuEventSink {
 };
 using gpueventsink_map_t = std::unordered_map<std::string, gpueventsink_ptr_t>;
 
+static constexpr u32 MAX_FRAMES_IN_FLIGHT = 2;
+
 ///////////////////////////////////////////////////////////////////////
 /// Profiler
 ///////////////////////////////////////////////////////////////////////
@@ -422,6 +424,7 @@ public:
     _onEndFrameCallbacks.push_back(l);
   }
 
+  // TODO Delete?
   virtual void swapBuffers(CTXBASE* ctxbase) {
   }
 
@@ -889,9 +892,39 @@ struct SecondaryCommandBuffer {
   static std::atomic<int> _num_alive;
 };
 
-/// ////////////////////////////////////////////////////////////////////////////
-///
-/// ////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// Display Client
+///////////////////////////////////////////////////////////////////////////////
+
+enum class OrkDisplayClientState {
+  Initialized,
+  Connecting,
+  Connected,
+  Synchronized,
+  Visible,
+  Hidden,
+  Disconnecting,
+  Disconnected,
+};
+
+// Data synchronize from server.
+struct OrkDisplayClientSharedData {
+  std::atomic<OrkDisplayClientState> state;
+  std::atomic<u64> server_timeline_value;
+  std::atomic<u64> client_timeline_value;
+  ork::fmtx4*      frame_vps[MAX_FRAMES_IN_FLIGHT];
+};
+
+struct OrkDisplayClient {
+  virtual ~OrkDisplayClient() = default;
+  OrkDisplayClientSharedData* _shared = nullptr;
+  u64 _server_wait_timeline_value = 0;
+};
+
+using orkdisplayclient_ptr_t = std::shared_ptr<OrkDisplayClient>;
+
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
+///////////////////////////////////////////////////////////////////////////////
 
 #define gGfxEnv ork::lev2::GfxEnv::GetRef()

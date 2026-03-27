@@ -1,12 +1,24 @@
 #pragma once
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 #include <vulkan/vk_enum_string_helper.h>
+#include <ork/lev2/gfx/gfxenv_enum.h>
 namespace ork::dds {
 struct DDS_HEADER;
 }
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-// OrkVkAssert: assert that a VkResult is VK_SUCCESS, logging the error string if not.
+
+#define ORK_VK_ALLOC nullptr
+
+////////////////////////////////////////////////////////////////////////////////
+// OrkVkAssert
+//   Assert that a VkResult is VK_SUCCESS, logging the error string if not.
+////////////////////////////////////////////////////////////////////////////////
+
 #define OrkVkAssert(result)                                                \
   {                                                                        \
     VkResult _vk_res = (result);                                           \
@@ -16,22 +28,58 @@ namespace ork::lev2::vulkan {
       OrkAssert(false);                                                    \
     }                                                                      \
   }
-///////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+// Vk Inline Initialization Pointers
+//
+//   vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, 
+//     pConst(VkSubmitInfo{
+//       VK_STRUCTURE_TYPE_SUBMIT_INFO,
+//       pNext(VkTimelineSemaphoreSubmitInfo{
+//         VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,
+//         .signalSemaphoreValueCount = (uint32_t)ctxVK->_oneShotSignalValues.size(),
+//         .pSignalSemaphoreValues    = ctxVK->_oneShotSignalValues.data(),
+//       }),
+//       .commandBufferCount   = 1,
+//       .pCommandBuffers      = &ctxVK->_cmdbufcurpri_gfx->_vkcmdbuf,
+//       .signalSemaphoreCount = (uint32_t)ctxVK->_oneShotSignalSemaphores.size(),
+//       .pSignalSemaphores    = ctxVK->_oneShotSignalSemaphores.data(),
+//     }), 
+//     fence->_vkfence);
+//
+////////////////////////////////////////////////////////////////////////////////
+
+template<typename T>
+__attribute__((warn_unused_result, returns_nonnull))
+const T* pConst(T&& val [[clang::lifetimebound]]) { return &val; }
+
+// Same as pConst but named pNext so it's usage is clearer in the method.
+template<typename T>
+__attribute__((warn_unused_result, returns_nonnull))
+const T* pNext(T&& val [[clang::lifetimebound]]) { return &val; }
+
+////////////////////////////////////////////////////////////////////////////////
+
 inline VkDeviceSize vkAlignUp(
     VkDeviceSize value,       //
     VkDeviceSize alignment) { //
   return (value + alignment - 1) & ~(alignment - 1);
 }
-///////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+
+// Deprecated. Prefer using designated initializers. Or pConst and pNext.
 template <typename T> void initializeVkStruct(T& s, VkStructureType s_type) {
   memset(&s, 0, sizeof(T));
   s.sType = s_type;
 }
-///////////////////////////////////////////////////////////////////////////////
+
 template <typename T> void initializeVkStruct(T& s) {
   memset(&s, 0, sizeof(T));
 }
-///////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+
 struct VulkanInstance;
 struct VulkanDeviceInfo;
 struct VulkanDeviceGroup;
@@ -116,7 +164,6 @@ struct VulkanDescriptorSetCache;
 struct VkFrameBufferInterface;
 struct VulkanFenceObject;
 struct VulkanEventObject;
-struct VkReprojectionContext;
 struct VulkanSamplerObject;
 struct VkFramebufferOutput;
 struct VkOffscreen;
@@ -142,7 +189,6 @@ using vertex_strconfig_item_ptr_t = std::shared_ptr<VertexStreamConfigItem>;
 using vertex_strconfig_ptr_t = std::shared_ptr<VertexStreamConfig>;
 using vkfence_obj_ptr_t    = std::shared_ptr<VulkanFenceObject>;
 using vkevent_obj_ptr_t    = std::shared_ptr<VulkanEventObject>;
-using vkreprojctx_ptr_t    = std::shared_ptr<VkReprojectionContext>;
 ///////////////////////////////////////////////////////////////////////////////
 using vkfxdescsetitem_ptr_t = std::shared_ptr<VkFxShaderDescriptorSetItem>;
 using vkfxsunisetsref_ptr_t = std::shared_ptr<VkFxShaderUniformSetsReference>;

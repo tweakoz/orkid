@@ -139,11 +139,15 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
   }
 #endif
 
-  // DRM-specific extensions (Linux only)
+  // Linux cross-process sharing extensions
 #if defined(__linux__)
+  _device_extensions.push_back(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME);
+  _device_extensions.push_back(VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME);
+  _device_extensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME);
+  _device_extensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME);
+
+  // DRM-specific extensions
   if(_ginitdata && _ginitdata->_use_drm) {
-    _device_extensions.push_back(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME);
-    _device_extensions.push_back(VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME);
     _device_extensions.push_back(VK_EXT_EXTERNAL_MEMORY_DMA_BUF_EXTENSION_NAME);
     _device_extensions.push_back(VK_KHR_BIND_MEMORY_2_EXTENSION_NAME);
     _device_extensions.push_back(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
@@ -1207,6 +1211,13 @@ void VkContext::initializeOffscreenContext(DisplayBuffer* pbuffer) {
   auto texture     = rtb->texture();
   _fbi->SetBufferTexture(texture);
   logchan_vkctx->log("Offscreen context initialized");
+}
+
+///////////////////////////////////////////////////////
+
+void VkContext::initializeDisplayClientContext(vkdisplayclient_ptr_t client) {
+  _fbi->_output = std::make_shared<VkDisplayClientOutput>(this, miW, miH, client);
+  logchan_vkctx->log("Display Client Context initialized");
 }
 
 ///////////////////////////////////////////////////////

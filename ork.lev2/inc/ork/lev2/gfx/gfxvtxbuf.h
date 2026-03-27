@@ -191,4 +191,11 @@ using dvb_V12C4T16_ptr_t = std::shared_ptr<dvb_V12C4T16>;
 using dvb_V12N12B12T8C4_ptr_t = std::shared_ptr<dvb_V12N12B12T8C4>;
 using dvb_V16T16C16_ptr_t = std::shared_ptr<dvb_V16T16C16>;
 
+using svb_V12C4T16 = StaticVertexBuffer<SVtxV12C4T16>;
+using svb_V12N12B12T8C4 = StaticVertexBuffer<SVtxV12N12B12T8C4>;
+using svb_V16T16C16 = StaticVertexBuffer<SVtxV16T16C16>;
+using svb_V12C4T16_ptr_t     = std::shared_ptr<svb_V12C4T16>;
+using svb_V12N12B12T8C4_ptr_t = std::shared_ptr<svb_V12N12B12T8C4>;
+using svb_V16T16C16_ptr_t    = std::shared_ptr<svb_V16T16C16>;
+
 } // namespace ork::lev2
