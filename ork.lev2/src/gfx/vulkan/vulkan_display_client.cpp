@@ -115,9 +115,11 @@ u32 VkDisplayClient::acquireImage(VkDevice device) {
     }),
     UINT64_MAX));
 
-  // Server timeline_value % MAX_FRAMES_IN_FLIGHT;
-  u64 timeline_value = _shared->client_timeline_value.load(std::memory_order_acquire);
-  u32 id = (u32)timeline_value % MAX_FRAMES_IN_FLIGHT;
+  // Client will render into (client_timeline_value + 1) % MAX_FRAMES_IN_FLIGHT
+  // While server displays client_timeline_value) % MAX_FRAMES_IN_FLIGHT
+  // Alternating frames based on timeline value.
+  u64 client_timeline_value = _shared->client_timeline_value.load(std::memory_order_acquire);
+  u32 id = (u32)(client_timeline_value + 1) % MAX_FRAMES_IN_FLIGHT;
   return id;
 }
 
