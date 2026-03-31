@@ -315,8 +315,7 @@ VulkanBuffer::VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsag
   _cinfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
   initializeVkStruct(_vkbuffer);
-  VkResult ok = vkCreateBuffer(ctxVK->_vkdevice, &_cinfo, nullptr, &_vkbuffer);
-  OrkAssert(VK_SUCCESS == ok);
+  OrkVkAssert(vkCreateBuffer(ctxVK->_vkdevice, &_cinfo, nullptr, &_vkbuffer));
 
   if (name != "") {
     _ctxVK->_setObjectDebugName(_vkbuffer, VK_OBJECT_TYPE_BUFFER, name.c_str());

@@ -15,6 +15,12 @@ namespace ork { namespace lev2 {
 
 std::function<void(Context*)> FrameBufferInterface::_hackcb = nullptr;
 
+void FrameBufferInterface::SetClearColor(const fcolor4& scol) {
+  _clearColor = scol;
+  if (_main_rtg && _main_rtg->buffer(0))
+    _main_rtg->buffer(0)->_clearColor = scol;
+}
+
 FrameBufferInterface::FrameBufferInterface(Context& tgt)
     : _target(tgt)
     , _enableVSync(false)
@@ -67,6 +73,8 @@ rtgroup_ptr_t FrameBufferInterface::_ensureMainRtg() {
   // auto rtb_color = _main_rtg->createRenderTarget(EBufferFormat::SRGB_BGRA8, buffer_usage, false);
   auto rtb_color = _main_rtg->createRenderTarget(EBufferFormat::BGRA8, buffer_usage, false);
   auto rtb_depth = _main_rtg->createDepthBuffer(EBufferFormat::Z32F, false);
+
+  rtb_color->_clearColor = _clearColor;
 
   return _main_rtg;
 }

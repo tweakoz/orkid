@@ -58,8 +58,8 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
 
   logchan_vkctx->log("VkContext: using device <%s>", vk_devinfo->_devprops.deviceName);
 
-  _vkphysicaldevice = vk_devinfo->_phydev;
-  _vkdeviceinfo     = vk_devinfo;
+  _vkphysicaldevice    = vk_devinfo->_phydev;
+  _vkdeviceinfo        = vk_devinfo;
 
   ////////////////////////////
   // get queue families
@@ -76,12 +76,12 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
     const auto& QPROP = vk_devinfo->_queueprops[i];
     if (QPROP.queueCount == 0)
       continue;
-
+    
     VkDeviceQueueCreateInfo DQCI;
     initializeVkStruct(DQCI, VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO);
 
     DQCI.queueFamilyIndex = i;
-    DQCI.queueCount       = 1; // Just one queue from each family for now
+    DQCI.queueCount       = 1;
     DQCI.pQueuePriorities = queuePriorities.data();
 
     bool add = false;
@@ -188,7 +188,6 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
   dynrenderfeat.pNext = (void*) & ycbcrFeatures;
   ycbcrFeatures.pNext = (void*) nullptr;
 
-
   VkResult result = vkCreateDevice(_vkphysicaldevice, &DCI, nullptr, &_vkdevice);
   if (result != VK_SUCCESS) {
     printf("vkCreateDevice FAILED with result: %d\n", result);
@@ -201,26 +200,43 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
     OrkAssert(false);
   }
 
-  vkGetDeviceQueue(
-      _vkdevice,        //
-      _vkqfid_graphics, //
-      0,                //
-      &_vkqueue_graphics);
-  
-  // Load device function pointers needed for rendering
-  // These are needed for both window and offscreen contexts
+  ////////////////////////////
+  // Load Device PFNs
+  ////////////////////////////
+
   if (_GVI->_debugEnabled) {
-    _fetchDeviceProcAddr(_vkSetDebugUtilsObjectName, "vkSetDebugUtilsObjectNameEXT");
     _fetchDeviceProcAddr(_vkCmdDebugMarkerBeginEXT, "vkCmdDebugMarkerBeginEXT");
     _fetchDeviceProcAddr(_vkCmdDebugMarkerEndEXT, "vkCmdDebugMarkerEndEXT");
     _fetchDeviceProcAddr(_vkCmdDebugMarkerInsertEXT, "vkCmdDebugMarkerInsertEXT");
     _fetchDeviceProcAddr(_vkCmdInsertDebugUtilsLabelEXT, "vkCmdInsertDebugUtilsLabelEXT");
   }
 
+  _fetchDeviceProcAddr(_vkSetDebugUtilsObjectName, "vkSetDebugUtilsObjectNameEXT");
+
+  // Load device function pointers needed for rendering
+  // These are needed for both window and offscreen contexts
   _fetchDeviceProcAddr(_vkCmdBeginRenderingKHR, "vkCmdBeginRenderingKHR");
   _fetchDeviceProcAddr(_vkCmdEndRenderingKHR, "vkCmdEndRenderingKHR");
   OrkAssertI(_vkCmdBeginRenderingKHR != nullptr, "_vkCmdBeginRenderingKHR function pointer is null!");
   OrkAssertI(_vkCmdEndRenderingKHR != nullptr, "_vkCmdEndRenderingKHR function pointer is null!");
+
+  ////////////////////////////
+  // Init Queues
+  ////////////////////////////
+
+  _initGraphicsQueue(0);
+}
+
+void VkContext::_initGraphicsQueue(u32 queue_id) {
+  u32 max_queue_count = _vkdeviceinfo->_queueprops[queue_id].queueCount;
+  OrkAssertIFMT(queue_id < max_queue_count, "Cannot create graphics queue: gfx_qid(%u) >= _vkqcapacity_graphics(%u)", queue_id, max_queue_count);
+
+  logchan_vkctx->log("claiming graphics queue: fid(%u) qid(%u/%u)", _vkqfid_graphics, queue_id, max_queue_count);
+  vkGetDeviceQueue(_vkdevice, _vkqfid_graphics, queue_id, &_vkqueue_graphics);
+
+  char qname[64];
+  snprintf(qname, sizeof(qname), "vk_queue-fid%u-qid%u", _vkqfid_graphics, queue_id);
+  _setObjectDebugName(_vkqueue_graphics, VK_OBJECT_TYPE_QUEUE, qname);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -800,8 +816,8 @@ void VkContext::_doEndPrimaryCommandBuffer() {
 void VkContext::_doSubmitPrimaryCommandBuffer(){
   OrkProfilerSampleScope(CHANNEL_MAIN, "vk:doSubmitPrimaryCommandBuffer");
 
-  _oneShotSignalSemaphores.clear();
-  _oneShotSignalValues.clear();
+  // Drain pending completion semaphores from async secondary CBs into the
+  // one-shot lists. _doBeginFrame handles removal via its erase_if pass.
   _pendingOneShotSemas.atomicOp([&](vkcompsema_set_t& unlocked) {
     for (auto& semaphore : unlocked) {
       _oneShotSignalSemaphores.push_back(semaphore->_vksema);
@@ -818,6 +834,10 @@ void VkContext::_doSubmitPrimaryCommandBuffer(){
 
   // VkFramebufferOutput deals with output specific submission and waiting.
   _fbi->_output->submit(this);
+
+  // Consumed by submit — clear for next frame.
+  _oneShotSignalSemaphores.clear();
+  _oneShotSignalValues.clear();
 
   _processPendingCaptures();
 }
@@ -940,7 +960,8 @@ void VkContext::_doBeginFrame() {
     miH = main_rtg->miH;
   }
 
-  // Poll completion semaphores
+  // Poll completion semaphores 
+  // TODO is this really necessary?
   _pendingOneShotSemas.atomicOp([&](vkcompsema_set_t& unlocked) {
     for (auto semaphore : unlocked) {
       if(semaphore->isSignalled()){
@@ -1216,6 +1237,22 @@ void VkContext::initializeOffscreenContext(DisplayBuffer* pbuffer) {
 ///////////////////////////////////////////////////////
 
 void VkContext::initializeDisplayClientContext(vkdisplayclient_ptr_t client) {
+  meTargetType = TargetType::OFFSCREEN;
+
+  miW = client->_shared->frame_width;
+  miH = client->_shared->frame_height;
+
+  // Share the device/queue from the first existing context (same as offscreen path).
+  // pBuf is unused inside _initVulkanForOffscreen when _GVI->_contexts is non-empty.
+  auto plato = std::make_shared<VkPlatformObject>();
+  plato->_ctxbase   = global_plato()->_ctxbase;
+  plato->_needsInit = false;
+  plato->_bindop    = [](){};
+  mCtxBase = 0;
+  _impl.setShared<VkPlatformObject>(plato);
+
+  _initVulkanForOffscreen(nullptr);
+
   _fbi->_output = std::make_shared<VkDisplayClientOutput>(this, miW, miH, client);
   logchan_vkctx->log("Display Client Context initialized");
 }

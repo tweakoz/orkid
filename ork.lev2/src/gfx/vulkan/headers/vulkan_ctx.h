@@ -791,6 +791,7 @@ public:
   void _initVulkanForOffscreen(DisplayBuffer* pBuf);
   void _initVulkanCommon();
   void _initDefaultTextures();
+  void _initGraphicsQueue(u32 queue_id);
   //////////////////////////////////////////////
   template <typename T> void _setObjectDebugName(T& object, VkObjectType objectType, const char* name) {
     if (_vkSetDebugUtilsObjectName) {
@@ -824,7 +825,7 @@ public:
   std::vector<float> _queuePriorities;
   std::vector<VkDeviceQueueCreateInfo> _DQCIs;
   static constexpr uint32_t NO_QUEUE = 0xffffffff;
-  uint32_t _vkqfid_graphics          = NO_QUEUE;
+  vkthreadedqueue_ptr_t _gfxqueue;
   uint32_t _vkqfid_compute           = NO_QUEUE;
   uint32_t _vkqfid_transfer          = NO_QUEUE;
   VkQueue _vkqueue_graphics          = VK_NULL_HANDLE;

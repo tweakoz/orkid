@@ -897,6 +897,7 @@ struct SecondaryCommandBuffer {
 ///////////////////////////////////////////////////////////////////////////////
 
 enum class OrkDisplayClientState {
+  Uninitialized,
   Initialized,
   Connecting,
   Connected,
@@ -910,9 +911,17 @@ enum class OrkDisplayClientState {
 // Data synchronize from server.
 struct OrkDisplayClientSharedData {
   std::atomic<OrkDisplayClientState> state;
-  std::atomic<u64> server_timeline_value;
+
+  // Completed client timeline value. Set after frame finishes.
   std::atomic<u64> client_timeline_value;
-  ork::fmtx4*      frame_vps[MAX_FRAMES_IN_FLIGHT];
+
+  // Pending server timeline value. Set before frame finishes.
+  std::atomic<u64> server_timeline_value;
+
+  ork::fmtx4 frame_vps[MAX_FRAMES_IN_FLIGHT];
+
+  u16 frame_width;
+  u16 frame_height;
 };
 
 struct OrkDisplayClient {
