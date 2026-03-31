@@ -753,6 +753,14 @@ void pyinit_ui_filesystem(py::module& uimodule) {
                   callback(path, x, y);
                 };
               })
+          .def(
+              "onHover",
+              [](ui::filesystem_view_ptr_t view, py::object callback) { //
+                view->_onHover = [callback](const std::string& path) {
+                  py::gil_scoped_acquire acquire;
+                  callback(path);
+                };
+              })
           // Appearance - List mode
           .def_readwrite("item_height", &ui::FilesystemView::_item_height)
           .def_readwrite("icon_column_width", &ui::FilesystemView::_icon_column_width)
@@ -771,6 +779,8 @@ void pyinit_ui_filesystem(py::module& uimodule) {
           .def_readwrite("icon_size", &ui::FilesystemView::_icon_size)
           .def_readwrite("icon_spacing", &ui::FilesystemView::_icon_spacing)
           .def_readwrite("icon_label_height", &ui::FilesystemView::_icon_label_height)
+          .def_readwrite("icon_center_h", &ui::FilesystemView::_icon_center_h)
+          .def_readwrite("icon_center_v", &ui::FilesystemView::_icon_center_v)
           .def_readwrite("icon_anim_fps", &ui::FilesystemView::_icon_anim_fps)
           // Appearance - Common
           .def_property(
@@ -868,6 +878,9 @@ void pyinit_ui_filesystem(py::module& uimodule) {
               "Default file icon image (converted to texture lazily)")
           .def("clearIconCache", &ui::FilesystemView::clearIconCache,
               "Clear the icon cache (useful after directory change)")
+          .def("clearIconCacheForPath", &ui::FilesystemView::clearIconCacheForPath,
+              py::arg("path"),
+              "Clear cached icon for a specific path only")
           .def(
               "addToolbar",
               [](ui::filesystem_view_ptr_t view, const std::string& name, int height) -> ui::toolbar_ptr_t {

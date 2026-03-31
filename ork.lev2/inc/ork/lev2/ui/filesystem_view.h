@@ -150,6 +150,8 @@ struct FilesystemView : public Group {
   std::function<void(const std::string& path)> _onDelete;
   std::function<void(const std::string& old_path, const std::string& new_name)> _onRename;
   std::function<void(const std::string& path, int screen_x, int screen_y)> _onContextMenu;
+  std::function<void(const std::string& path)> _onHover;
+
 
   //////////////////////////////////////////////////////////////
   // Appearance - List mode
@@ -177,6 +179,8 @@ struct FilesystemView : public Group {
   int _icon_size = 64;
   int _icon_spacing = 8;
   int _icon_label_height = 32;
+  bool _icon_center_h = false;  // center icon grid horizontally
+  bool _icon_center_v = false;  // center icon grid vertically
 
   //////////////////////////////////////////////////////////////
   // Appearance - Common
@@ -212,6 +216,7 @@ struct FilesystemView : public Group {
   void _updateIconCache(lev2::Context* ctx, const std::string& path, int size);
   lev2::texture_ptr_t _getIconForPath(lev2::Context* ctx, const std::string& path, FileType type, int size);
   void clearIconCache() { _icon_cache.clear(); _folder_icon_texture = nullptr; _file_icon_texture = nullptr; }
+  void clearIconCacheForPath(const std::string& path) { _icon_cache.erase(path); }
 
   //////////////////////////////////////////////////////////////
   // Composition (sub-widgets)

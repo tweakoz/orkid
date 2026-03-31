@@ -48,6 +48,34 @@ def text_icon(text, width=24, height=24, font_size=12, color="#E6E6E6"):
 
 ################################################################################
 
+def from_svg_string_auto(svg_string, width):
+  """
+  Render an SVG string to an RGBA image, preserving aspect ratio.
+  Width is fixed; height is derived from the SVG viewBox.
+  Falls back to square if viewBox is absent or square.
+
+  Args:
+    svg_string: SVG markup as a string
+    width: Output width in pixels
+
+  Returns:
+    lev2.Image (image_ptr_t)
+  """
+  height = width  # default: square
+  vb_start = svg_string.find('viewBox="')
+  if vb_start >= 0:
+    vb_start += len('viewBox="')
+    vb_end = svg_string.find('"', vb_start)
+    parts = svg_string[vb_start:vb_end].split()
+    if len(parts) == 4:
+      vb_w = float(parts[2])
+      vb_h = float(parts[3])
+      if vb_w > 0:
+        height = int(width * vb_h / vb_w)
+  return from_svg_string(svg_string, width, height)
+
+################################################################################
+
 def from_svg_string(svg_string, width, height):
   """
   Render an SVG string to an RGBA image.
