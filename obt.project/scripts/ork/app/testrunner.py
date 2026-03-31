@@ -67,6 +67,54 @@ from ork.ui import standard_icons, icon_library
 
 _SETTINGS_PATH = Path.home() / ".config" / "orkid" / "testrunner.json"
 
+################################################################################
+# Theme system
+################################################################################
+
+DARK_THEME = {
+  "icon_color":           "#E6E6E6",
+  "clear_color":          vec4(0.1, 0.1, 0.1, 1),
+  "bg_color":             vec4(0, 0, 0, 1),
+  "text_color":           vec4(0.9, 0.9, 0.9, 1),
+  "selected_color":       vec4(0.2, 0.4, 0.6, 1),
+  "hover_color":          vec4(0.25, 0.25, 0.3, 1),
+  "directory_color":      vec4(0.7, 0.85, 1.0, 1),
+  "header_bg_color":      vec4(0.12, 0.12, 0.15, 1),
+  "toolbar_bg_color":     vec4(0.12, 0.12, 0.15, 1),
+  "toolbar_hover_color":  vec4(0.25, 0.25, 0.3, 1),
+  "toolbar_pressed_color":vec4(0.2, 0.4, 0.6, 1),
+  "toolbar_toggled_color":vec4(0.25, 0.45, 0.65, 1),
+  "toolbar_separator_color": vec4(0.3, 0.3, 0.35, 1),
+  "toolbar_label_color":  vec4(0.9, 0.9, 0.9, 1),
+  "toolbar2_bg_color":    vec4(0.1, 0.1, 0.13, 1),
+  "toolbar2_hover_color": vec4(0.2, 0.2, 0.25, 1),
+  "label_svg_color":      "#CCCCCC",
+  "label_svg_bg":         "#282828",
+  "checkbox_stroke":      "#999999",
+}
+
+LIGHT_THEME = {
+  "icon_color":           "#333333",
+  "clear_color":          vec4(0.88, 0.88, 0.88, 1),
+  "bg_color":             vec4(0.88, 0.88, 0.88, 1),
+  "text_color":           vec4(0.15, 0.15, 0.15, 1),
+  "selected_color":       vec4(0.55, 0.7, 0.9, 1),
+  "hover_color":          vec4(0.78, 0.78, 0.82, 1),
+  "directory_color":      vec4(0.15, 0.15, 0.15, 1),
+  "header_bg_color":      vec4(0.82, 0.82, 0.85, 1),
+  "toolbar_bg_color":     vec4(0.85, 0.85, 0.87, 1),
+  "toolbar_hover_color":  vec4(0.75, 0.75, 0.8, 1),
+  "toolbar_pressed_color":vec4(0.55, 0.65, 0.8, 1),
+  "toolbar_toggled_color":vec4(0.6, 0.7, 0.85, 1),
+  "toolbar_separator_color": vec4(0.7, 0.7, 0.72, 1),
+  "toolbar_label_color":  vec4(0.15, 0.15, 0.15, 1),
+  "toolbar2_bg_color":    vec4(0.82, 0.82, 0.85, 1),
+  "toolbar2_hover_color": vec4(0.72, 0.72, 0.77, 1),
+  "label_svg_color":      "#333333",
+  "label_svg_bg":         "#D8D8D8",
+  "checkbox_stroke":      "#666666",
+}
+
 def _env_label_and_choices(env_name, env_dict):
   """Extract display label and value choices from an _env entry.
   If the dict contains a '_label' key, use it as the display name
@@ -536,9 +584,10 @@ class TestRunnerFilesystemModel(lev2.ui.FilesystemModel):
 
 class TestRunnerApp:
 
-  def __init__(self, tests, title="Test Runner", width=960, height=480, auto_run=False, default_view="list"):
+  def __init__(self, tests, title="Test Runner", width=960, height=480, auto_run=False, default_view="list", theme=None):
     self._auto_run = auto_run
     self._default_view = default_view
+    self._theme = dict(theme or DARK_THEME)
 
     # -- EzApp boilerplate --
     self.ezapp = lev2.OrkEzApp.create(self, name=title, width=width, height=height)
@@ -547,7 +596,6 @@ class TestRunnerApp:
 
     lg_group = self.ezapp.topLayoutGroup
     lg_group.margin = 4
-    lg_group.clearColorStd = vec4(0.1, 0.1, 0.1, 1)
 
     icon_size = 20
 
@@ -558,41 +606,36 @@ class TestRunnerApp:
     self.main_vpack.margin = 4
     self.main_vpack.item_height = 32
     self.main_vpack.fill = True
-    self.main_vpack.bg_color = vec4(0, 0, 0, 1)
 
     # -- Toolbar --
     self.toolbar = self.main_vpack.makeChild(uiclass=lev2.ui.Toolbar, args=["toolbar"])
     self.toolbar.fixed_height = 32
-    self.toolbar.bgcolor = vec4(0.12, 0.12, 0.15, 1)
-    self.toolbar.button_hover_color = vec4(0.25, 0.25, 0.3, 1)
-    self.toolbar.button_pressed_color = vec4(0.2, 0.4, 0.6, 1)
-    self.toolbar.button_toggled_color = vec4(0.25, 0.45, 0.65, 1)
-    self.toolbar.separator_color = vec4(0.3, 0.3, 0.35, 1)
     self.toolbar.icon_size = icon_size
     self.toolbar.button_padding = 4
     self.toolbar.item_spacing = 2
     self.toolbar.edge_padding = 6
 
     # Navigation buttons
-    btn_home = self.toolbar.addButton("home", standard_icons.get('home', icon_size, icon_size), "Home Directory")
-    btn_parent = self.toolbar.addButton("parent", standard_icons.get('parent', icon_size, icon_size), "Parent Directory")
+    _ic = self._theme.get("icon_color")
+    btn_home = self.toolbar.addButton("home", standard_icons.get('home', icon_size, icon_size, icon_color=_ic), "Home Directory")
+    btn_parent = self.toolbar.addButton("parent", standard_icons.get('parent', icon_size, icon_size, icon_color=_ic), "Parent Directory")
 
     self.toolbar.addSeparator()
 
     # View mode buttons
-    btn_list = self.toolbar.addButton("list", standard_icons.get('file_text', icon_size, icon_size), "List View")
+    btn_list = self.toolbar.addButton("list", standard_icons.get('file_text', icon_size, icon_size, icon_color=_ic), "List View")
     btn_list.toggle_mode = True
     btn_list.toggled = (self._default_view == "list")
 
-    btn_icons = self.toolbar.addButton("icons", standard_icons.get('folder', icon_size, icon_size), "Icon View")
+    btn_icons = self.toolbar.addButton("icons", standard_icons.get('folder', icon_size, icon_size, icon_color=_ic), "Icon View")
     btn_icons.toggle_mode = True
     btn_icons.toggled = (self._default_view == "icon")
 
     self.toolbar.addSeparator()
 
     # Icon size buttons
-    btn_icon_minus = self.toolbar.addButton("icon_minus", standard_icons.get('minus', icon_size, icon_size), "Smaller Icons")
-    btn_icon_plus = self.toolbar.addButton("icon_plus", standard_icons.get('plus', icon_size, icon_size), "Larger Icons")
+    btn_icon_minus = self.toolbar.addButton("icon_minus", standard_icons.get('minus', icon_size, icon_size, icon_color=_ic), "Smaller Icons")
+    btn_icon_plus = self.toolbar.addButton("icon_plus", standard_icons.get('plus', icon_size, icon_size, icon_color=_ic), "Larger Icons")
 
     # -- Audio devices (enumerate before fs_view, toolbar created in bars below) --
     self._refreshAudioDevices()
@@ -623,24 +666,20 @@ class TestRunnerApp:
 
     # -- Audio device toolbar (inside fs_view bars) --
     self._audio_toolbar = self.fs_view.addToolbar("audio_toolbar", 24)
-    self._audio_toolbar.bgcolor = vec4(0.1, 0.1, 0.13, 1)
-    self._audio_toolbar.button_hover_color = vec4(0.2, 0.2, 0.25, 1)
-    self._audio_toolbar.button_pressed_color = vec4(0.2, 0.4, 0.6, 1)
-    self._audio_toolbar.button_toggled_color = vec4(0.25, 0.45, 0.65, 1)
-    self._audio_toolbar.separator_color = vec4(0.3, 0.3, 0.35, 1)
     self._audio_toolbar.icon_size = icon_size
     self._audio_toolbar.button_padding = 2
     self._audio_toolbar.item_spacing = 2
     self._audio_toolbar.edge_padding = 4
 
+    _aic = _ic or "#AAAAAA"  # audio icon color from theme
     _spk_svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
-      '<path d="M3 9v6h4l5 5V4L7 9H3z" fill="#AAAAAA"/>'
-      '<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="#AAAAAA"/>'
-      '</svg>')
+      '<path d="M3 9v6h4l5 5V4L7 9H3z" fill="%s"/>'
+      '<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="%s"/>'
+      '</svg>') % (_aic, _aic)
     _mic_svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
-      '<path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" fill="#AAAAAA"/>'
-      '<path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" fill="#AAAAAA"/>'
-      '</svg>')
+      '<path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" fill="%s"/>'
+      '<path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" fill="%s"/>'
+      '</svg>') % (_aic, _aic)
     spk_icon = icon_library.from_svg_string(_spk_svg, icon_size, icon_size)
     mic_icon = icon_library.from_svg_string(_mic_svg, icon_size, icon_size)
 
@@ -654,6 +693,7 @@ class TestRunnerApp:
     self._btn_audio_out_label.custom_width = _label_w
     self._btn_audio_out_gain = self._audio_toolbar.addButton("audio_out_gain",
       self._makeGainLabel(self._model._audio_output_gain_db, _gain_w), "Output gain (-/= to adjust)")
+    self._btn_audio_out_gain.hover_icon = self._makeGainLabel(self._model._audio_output_gain_db, _gain_w, hover=True)
     self._btn_audio_out_gain.custom_width = _gain_w
     self._audio_toolbar.addSeparator()
     self._btn_audio_in = self._audio_toolbar.addButton("audio_in", mic_icon, "Audio Input Device")
@@ -662,16 +702,12 @@ class TestRunnerApp:
     self._btn_audio_in_label.custom_width = _label_w
     self._btn_audio_in_gain = self._audio_toolbar.addButton("audio_in_gain",
       self._makeGainLabel(self._model._audio_input_gain_db, _gain_w), "Input gain (-/= to adjust)")
+    self._btn_audio_in_gain.hover_icon = self._makeGainLabel(self._model._audio_input_gain_db, _gain_w, hover=True)
     self._btn_audio_in_gain.custom_width = _gain_w
 
     # -- Options toolbar (inside fs_view bars, rebuilt on selection change) --
     self._options_toolbar = self.fs_view.addToolbar("options_toolbar", 24)
     self._options_toolbar.enable = False  # hidden until a test with options is selected
-    self._options_toolbar.bgcolor = vec4(0.1, 0.1, 0.13, 1)
-    self._options_toolbar.button_hover_color = vec4(0.2, 0.2, 0.25, 1)
-    self._options_toolbar.button_pressed_color = vec4(0.2, 0.4, 0.6, 1)
-    self._options_toolbar.button_toggled_color = vec4(0.25, 0.45, 0.65, 1)
-    self._options_toolbar.separator_color = vec4(0.3, 0.3, 0.35, 1)
     self._options_toolbar.icon_size = icon_size
     self._options_toolbar.button_padding = 2
     self._options_toolbar.item_spacing = 2
@@ -836,13 +872,7 @@ class TestRunnerApp:
     self.fs_view.onContextMenu(on_context_menu)
     self.fs_view.onDirectoryChanged(lambda path: self._rebuildOptionsToolbar(None))
 
-    # -- Style --
-    self.fs_view.bgcolor = vec4(0, 0, 0, 1)
-    self.fs_view.text_color = vec4(0.9, 0.9, 0.9, 1)
-    self.fs_view.selected_color = vec4(0.2, 0.4, 0.6, 1)
-    self.fs_view.hover_color = vec4(0.25, 0.25, 0.3, 1)
-    self.fs_view.directory_color = vec4(0.7, 0.85, 1.0, 1)
-    self.fs_view.header_bgcolor = vec4(0.12, 0.12, 0.15, 1)
+    # -- Style (applied via theme) --
     self.fs_view.item_height = 24
 
     # -- Periodic audio device monitoring --
@@ -850,11 +880,42 @@ class TestRunnerApp:
     self._audio_check_interval = 2.0
     self._audio_label_cache = {}  # (text, color) -> image_ptr_t
 
+    # -- Apply theme --
+    self.applyTheme(self._theme)
+
     # -- Ctrl+C --
     def onCtrlC(signum, frame):
       print("signalling EXIT")
       self.ezapp.signalExit()
     signal.signal(signal.SIGINT, onCtrlC)
+
+  def applyTheme(self, theme):
+    """Apply a theme dict to all widgets. Subclasses can override the theme."""
+    self._theme = dict(theme)
+    t = self._theme
+    lg = self.ezapp.topLayoutGroup
+    lg.clearColorStd = t["clear_color"]
+    self.main_vpack.bg_color = t["bg_color"]
+    # Filesystem view
+    self.fs_view.bgcolor = t["bg_color"]
+    self.fs_view.text_color = t["text_color"]
+    self.fs_view.selected_color = t["selected_color"]
+    self.fs_view.hover_color = t["hover_color"]
+    self.fs_view.directory_color = t["directory_color"]
+    self.fs_view.header_bgcolor = t["header_bg_color"]
+    # All toolbars
+    for tb in (self.toolbar, self._audio_toolbar, self._options_toolbar):
+      tb.bgcolor = t["toolbar_bg_color"]
+      tb.button_hover_color = t["toolbar_hover_color"]
+      tb.button_pressed_color = t["toolbar_pressed_color"]
+      tb.button_toggled_color = t["toolbar_toggled_color"]
+      tb.separator_color = t["toolbar_separator_color"]
+      if hasattr(tb, 'label_color'):
+        tb.label_color = t["toolbar_label_color"]
+    # Secondary toolbar overrides
+    for tb in (self._audio_toolbar, self._options_toolbar):
+      tb.bgcolor = t.get("toolbar2_bg_color", t["toolbar_bg_color"])
+      tb.button_hover_color = t.get("toolbar2_hover_color", t["toolbar_hover_color"])
 
   # -- helpers for checking if test data uses descriptions/options --
 
@@ -1117,34 +1178,35 @@ class TestRunnerApp:
     self.fs_view.refresh()
 
   @staticmethod
-  def _makeOptionLabel(text, checked=None, width=None, height=20):
+  def _makeOptionLabel(self, text, checked=None, width=None, height=20):
     """Render an option label into an Image for toolbar button."""
     from xml.sax.saxutils import escape
+    lc = self._theme.get("label_svg_color", "#CCCCCC")
+    cs = self._theme.get("checkbox_stroke", "#999999")
     if width is None:
       width = max(80, len(text) * 8 + (30 if checked is not None else 16))
     checkbox_svg = ""
     text_x = 4
     if checked is not None:
-      # Draw a checkbox box with optional green checkmark
       bx, by = 3, 3
-      bs = height - 6  # box size
-      checkbox_svg = '<rect x="%d" y="%d" width="%d" height="%d" rx="2" fill="none" stroke="#999999" stroke-width="1.5"/>' % (bx, by, bs, bs)
+      bs = height - 6
+      checkbox_svg = '<rect x="%d" y="%d" width="%d" height="%d" rx="2" fill="none" stroke="%s" stroke-width="1.5"/>' % (bx, by, bs, bs, cs)
       if checked:
-        # Green checkmark inside the box
         cx, cy = bx + 3, by + bs // 2
         checkbox_svg += '<polyline points="%d,%d %d,%d %d,%d" fill="none" stroke="#44CC44" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' % (
           cx, cy + 2, cx + bs // 4, cy + bs // 3, cx + bs - 5, cy - bs // 3)
       text_x = bx + bs + 4
     svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %d %d">'
       '%s'
-      '<text x="%d" y="%d" font-family="sans-serif" font-size="%d" fill="#CCCCCC">%s</text>'
-      '</svg>' % (width, height, checkbox_svg, text_x, height - 5, height - 6, escape(text)))
+      '<text x="%d" y="%d" font-family="sans-serif" font-size="%d" fill="%s">%s</text>'
+      '</svg>' % (width, height, checkbox_svg, text_x, height - 5, height - 6, lc, escape(text)))
     return icon_library.from_svg_string(svg, width, height)
 
-  @staticmethod
-  def _makeAudioLabel(text, width=200, height=20, color="#CCCCCC", bgcolor=None, bold=False):
+  def _makeAudioLabel(self, text, width=200, height=20, color=None, bgcolor=None, bold=False):
     """Render a text string into an Image for use as a toolbar button icon."""
     from xml.sax.saxutils import escape
+    if color is None:
+      color = self._theme.get("label_svg_color", "#CCCCCC")
     bg_svg = ''
     if bgcolor:
       bg_svg = '<rect width="%d" height="%d" rx="3" ry="3" fill="%s"/>' % (width, height, bgcolor)
@@ -1155,15 +1217,28 @@ class TestRunnerApp:
       '</svg>' % (width, height, bg_svg, height - 5, height - 6, color, weight, escape(text)))
     return icon_library.from_svg_string(svg, width, height)
 
-  @staticmethod
-  def _makeGainLabel(db, width=60, height=20):
+  def _makeGainLabel(self, db, width=60, height=20, hover=False):
     """Render a gain value in dB as an Image for use as a toolbar button icon."""
     text = "%+d dB" % db
-    color = "#88CC88" if db == 0 else ("#CCCC44" if db > 0 else "#44AACC")
+    bg = self._theme.get("label_svg_bg", "#282828")
+    hover_bg = self._theme.get("label_svg_hover_bg", None)
+    if hover and hover_bg:
+      bg = hover_bg
+    is_light = self._theme.get("label_svg_bg", "#282828") > "#888888"
+    if is_light:
+      color = "#338833" if db == 0 else ("#887700" if db > 0 else "#226688")
+    else:
+      color = "#88CC88" if db == 0 else ("#CCCC44" if db > 0 else "#44AACC")
+    outer_bg = self._theme.get("toolbar2_bg_color", None)
+    outer_fill = ""
+    if outer_bg:
+      r, g, b = int(outer_bg.x*255), int(outer_bg.y*255), int(outer_bg.z*255)
+      outer_fill = '<rect width="%d" height="%d" fill="#%02x%02x%02x"/>' % (width, height, r, g, b)
     svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %d %d">'
-      '<rect width="%d" height="%d" rx="3" ry="3" fill="#282828"/>'
+      '%s'
+      '<rect width="%d" height="%d" rx="5" ry="5" fill="%s"/>'
       '<text x="%d" y="%d" text-anchor="middle" font-family="sans-serif" font-size="%d" fill="%s">%s</text>'
-      '</svg>' % (width, height, width, height, width // 2, height - 5, height - 6, color, text))
+      '</svg>' % (width, height, outer_fill, width, height, bg, width // 2, height - 5, height - 6, color, text))
     return icon_library.from_svg_string(svg, width, height)
 
   # -- GPU init: theme setup --

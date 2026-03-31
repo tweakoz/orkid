@@ -498,7 +498,7 @@ void Toolbar::_drawButton(drawevent_constptr_t drwev, toolbar_button_ptr_t btn, 
     draw_bg = true;
   }
 
-  if (draw_bg) {
+  if (draw_bg && bg_color.w > 0.001f) {
     auto rs = defmtl->_rasterstate;
     rs->setBlendingMacro(lev2::BlendingMacro::ALPHA);
     rs->setDepthTest(lev2::EDepthTest::OFF);

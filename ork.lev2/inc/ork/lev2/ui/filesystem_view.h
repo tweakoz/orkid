@@ -179,6 +179,7 @@ struct FilesystemView : public Group {
   int _icon_size = 64;
   int _icon_spacing = 8;
   int _icon_label_height = 32;
+  bool _icon_label_enable = true;
   bool _icon_center_h = false;  // center icon grid horizontally
   bool _icon_center_v = false;  // center icon grid vertically
 
@@ -212,11 +213,13 @@ struct FilesystemView : public Group {
 
   // Icon cache
   std::unordered_map<std::string, lev2::texture_list_t> _icon_cache;
+  std::set<std::string> _icon_update_pending;
   float _icon_anim_fps = 10.0f;
   void _updateIconCache(lev2::Context* ctx, const std::string& path, int size);
   lev2::texture_ptr_t _getIconForPath(lev2::Context* ctx, const std::string& path, FileType type, int size);
   void clearIconCache() { _icon_cache.clear(); _folder_icon_texture = nullptr; _file_icon_texture = nullptr; }
   void clearIconCacheForPath(const std::string& path) { _icon_cache.erase(path); }
+  void updateIconForPath(const std::string& path) { _icon_update_pending.insert(path); }
 
   //////////////////////////////////////////////////////////////
   // Composition (sub-widgets)

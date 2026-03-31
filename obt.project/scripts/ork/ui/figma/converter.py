@@ -317,9 +317,10 @@ def figma_node_to_svg(node, width=None, height=None):
     w = width or bbox["width"]
     h = height or bbox["height"]
 
-    # Collect filter definitions from effects
+    # Collect filter definitions from effects and compute shadow padding
     defs_parts = []
     filter_id_counter = [0]
+    shadow_pad = [0]  # max padding needed for drop shadows
 
     def _collect_effects(n):
         for effect in n.get("effects", []):
@@ -328,6 +329,13 @@ def figma_node_to_svg(node, width=None, height=None):
                 filter_id_counter[0] += 1
                 defs_parts.append(_svg_drop_shadow(effect, fid))
                 n["_svg_filter_id"] = fid
+                # Compute padding: blur radius * 2 + offset
+                offset = effect.get("offset", {})
+                radius = effect.get("radius", 0)
+                dx = abs(offset.get("x", 0))
+                dy = abs(offset.get("y", 0))
+                pad = int(radius + max(dx, dy) + 2)
+                shadow_pad[0] = max(shadow_pad[0], pad)
         for child in n.get("children", []):
             _collect_effects(child)
 
@@ -341,8 +349,15 @@ def figma_node_to_svg(node, width=None, height=None):
     _render_children(node, ox, oy, body_parts)
     body_svg = "\n".join(body_parts)
 
+    # Expand viewBox to accommodate drop shadow overflow
+    pad = shadow_pad[0]
+    vb_x = -pad
+    vb_y = -pad
+    vb_w = w + pad * 2
+    vb_h = h + pad * 2
+
     return (
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}">'
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{vb_x} {vb_y} {vb_w} {vb_h}">'
         f'{defs_svg}'
         f'{body_svg}'
         f'</svg>'
