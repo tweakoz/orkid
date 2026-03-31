@@ -122,6 +122,8 @@ public:
     void bindToRtGroup(lev2::rtgroup_ptr_t rtgroup);
     void bindToCamera(lev2::cameradata_ptr_t camera);
     void declareLayer(const std::string& layername);
+    void clearDeclaredLayers() { _declaredLayers.clear(); }
+    const std::vector<std::string>& declaredLayers() const { return _declaredLayers; }
 
     void declareNodeOnLayer( nodedef_ptr_t ndef );
 
@@ -176,6 +178,7 @@ struct SceneGraphSystem final : public System {
   ~SceneGraphSystem();
   ///////////////////////////////
   void _addStaticDrawable(std::string layername, lev2::drawable_ptr_t drw);
+  void _removeStaticDrawable(lev2::drawable_ptr_t drw);
   void reloadDrawableData(lev2::drawabledata_ptr_t data);
   void processRenderOps();
   void initializeForEditMode(lev2::Context* ctx);

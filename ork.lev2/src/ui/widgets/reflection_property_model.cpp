@@ -62,6 +62,22 @@ object_ptr_t ReflectionPropertySheetModel::getObject() const {
   return _object;
 }
 
+object_ptr_t ReflectionPropertySheetModel::getSubObject(const std::string& key) const {
+  auto it = _by_key.find(key);
+  if (it == _by_key.end()) return nullptr;
+  return _entries[it->second].sub_object;
+}
+
+std::vector<std::pair<std::string, object_ptr_t>> ReflectionPropertySheetModel::getSubObjectEntries() const {
+  std::vector<std::pair<std::string, object_ptr_t>> result;
+  for (const auto& entry : _entries) {
+    if (entry.sub_object) {
+      result.push_back({entry.full_key, entry.sub_object});
+    }
+  }
+  return result;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void ReflectionPropertySheetModel::_buildPropertyList() {

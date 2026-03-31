@@ -37,7 +37,10 @@ void DrawableData::describeX(object::ObjectClass* clazz){
   //    ->annotate<ConstString>("editor.semantic", "color");
   clazz->directProperty("EnvironmentMapPath", &DrawableData::_environmentMapPath)
       ->annotate("editor.filetype", "hdr,exr,dds,xir")
-      ->annotate("editor.filebase", "<assetcache>");
+      ->annotate("editor.filebase", "<ork_envmaps>,<assetcache>");
+  clazz->intProperty("SortKey", int_range{0, 0x7fffffff}, &DrawableData::_sortkey)
+      ->annotate("editor.widget", "SortKeyEditor");
+
 }
 
 DrawableData::DrawableData(){

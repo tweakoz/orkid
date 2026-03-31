@@ -12,6 +12,7 @@
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/gfx/pri.h>
 #include <ork/lev2/gfx/dbgfontman.h>
+#include <ork/lev2/gfx/image.h>
 #include <ork/util/crc.h>
 
 namespace ork::ui {
@@ -193,6 +194,81 @@ void ThemeEngine::gpuInit(lev2::Context* ctx) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Default SVG icons for property sheet buttons
+///////////////////////////////////////////////////////////////////////////////
+
+static const char* _svg_icon_popout = R"SVG(
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <path d="M7 17L17 7" stroke="#8AD" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M10 7H17V14" stroke="#8AD" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>
+)SVG";
+
+static const char* _svg_icon_map_add = R"SVG(
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <line x1="12" y1="5" x2="12" y2="19" stroke="#8C8" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="5" y1="12" x2="19" y2="12" stroke="#8C8" stroke-width="2.5" stroke-linecap="round"/>
+</svg>
+)SVG";
+
+static const char* _svg_icon_map_remove = R"SVG(
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <line x1="5" y1="12" x2="19" y2="12" stroke="#C88" stroke-width="2.5" stroke-linecap="round"/>
+</svg>
+)SVG";
+
+static const char* _svg_icon_map_rename = R"SVG(
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <path d="M15.5 4.5L19.5 8.5L8.5 19.5H4.5V15.5L15.5 4.5Z" stroke="#89C" stroke-width="2" stroke-linejoin="round" fill="none"/>
+  <line x1="13" y1="7" x2="17" y2="11" stroke="#89C" stroke-width="1.5"/>
+</svg>
+)SVG";
+
+static const char* _svg_icon_dropdown = R"SVG(
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <polygon points="4,7 20,7 12,18" fill="#668" stroke="#AAB" stroke-width="2" stroke-linejoin="miter"/>
+</svg>
+)SVG";
+
+static const char* _svg_icon_dropdown_right = R"SVG(
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <polygon points="7,4 7,20 18,12" fill="#668" stroke="#AAB" stroke-width="2" stroke-linejoin="miter"/>
+</svg>
+)SVG";
+
+static const char* _svg_icon_disclosure_right = R"SVG(
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <path d="M9 6L15 12L9 18" stroke="#99A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>
+)SVG";
+
+static const char* _svg_icon_disclosure_down = R"SVG(
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <path d="M6 9L12 15L18 9" stroke="#99A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>
+)SVG";
+
+static const char* _svg_icon_close = R"SVG(
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <rect x="3" y="3" width="18" height="18" rx="3" fill="#C44"/>
+  <line x1="8" y1="8" x2="16" y2="16" stroke="#FFF" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="16" y1="8" x2="8" y2="16" stroke="#FFF" stroke-width="2.5" stroke-linecap="round"/>
+</svg>
+)SVG";
+
+static void _initDefaultIcons(Style* style, int icon_size = 32) {
+  style->_icon_popout     = lev2::Image::fromSvgString(_svg_icon_popout, icon_size, icon_size);
+  style->_icon_map_add    = lev2::Image::fromSvgString(_svg_icon_map_add, icon_size, icon_size);
+  style->_icon_map_remove = lev2::Image::fromSvgString(_svg_icon_map_remove, icon_size, icon_size);
+  style->_icon_map_rename       = lev2::Image::fromSvgString(_svg_icon_map_rename, icon_size, icon_size);
+  style->_icon_dropdown          = lev2::Image::fromSvgString(_svg_icon_dropdown, icon_size, icon_size);
+  style->_icon_dropdown_right    = lev2::Image::fromSvgString(_svg_icon_dropdown_right, icon_size, icon_size);
+  style->_icon_disclosure_right  = lev2::Image::fromSvgString(_svg_icon_disclosure_right, icon_size, icon_size);
+  style->_icon_disclosure_down   = lev2::Image::fromSvgString(_svg_icon_disclosure_down, icon_size, icon_size);
+  style->_icon_close             = lev2::Image::fromSvgString(_svg_icon_close, icon_size, icon_size);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Helper functions for creating common style databases
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -208,6 +284,7 @@ styledatabase_ptr_t createDefaultStyleDatabase() {
   box_style->_corner_radius = DEFAULT_CORNER_RADIUS;
   box_style->_border_width = 1;
   box_style->_padding = 4;
+  _initDefaultIcons(box_style.get());
   db->registerStyle("box"_crcu, box_style);
 
   // Create default slider style

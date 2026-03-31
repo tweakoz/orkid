@@ -293,6 +293,7 @@ VkRasterState::VkRasterState(rasterstate_ptr_t rstate, int attachment_count, con
 
   hasher.finish();
   uint64_t hashed = hasher.result();
+  _rasterstate_hash = hashed;
 
   auto op = [&](VkRasterState::rsmap_t& unlocked){
 

@@ -8,6 +8,7 @@
 #include "pyext.h"
 #include <ork/lev2/ui/style.h>
 #include <ork/lev2/ui/context.h>
+#include <ork/lev2/gfx/image.h>
 #include <ork/util/crc.h>
 
 namespace ork::lev2 {
@@ -73,7 +74,24 @@ void pyinit_ui_style(py::module& module_ui) {
           .def_property(
               "font",
               [](ui::style_ptr_t style) -> font_ptr_t { return style->_font; },
-              [](ui::style_ptr_t style, font_ptr_t f) { style->_font = f; });
+              [](ui::style_ptr_t style, font_ptr_t f) { style->_font = f; })
+          // Icons
+          .def_property(
+              "icon_popout",
+              [](ui::style_ptr_t style) -> image_ptr_t { return style->_icon_popout; },
+              [](ui::style_ptr_t style, image_ptr_t i) { style->_icon_popout = i; })
+          .def_property(
+              "icon_map_add",
+              [](ui::style_ptr_t style) -> image_ptr_t { return style->_icon_map_add; },
+              [](ui::style_ptr_t style, image_ptr_t i) { style->_icon_map_add = i; })
+          .def_property(
+              "icon_map_remove",
+              [](ui::style_ptr_t style) -> image_ptr_t { return style->_icon_map_remove; },
+              [](ui::style_ptr_t style, image_ptr_t i) { style->_icon_map_remove = i; })
+          .def_property(
+              "icon_map_rename",
+              [](ui::style_ptr_t style) -> image_ptr_t { return style->_icon_map_rename; },
+              [](ui::style_ptr_t style, image_ptr_t i) { style->_icon_map_rename = i; });
   type_codec->registerStdCodec<ui::style_ptr_t>(style_type);
 
   /////////////////////////////////////////////////////////////////////////////////

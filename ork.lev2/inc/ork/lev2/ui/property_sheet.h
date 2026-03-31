@@ -59,6 +59,16 @@ struct PropertyRow : public Group {
   std::function<void(event_constptr_t ev)> _onMapRename;
   std::function<void(event_constptr_t ev)> _onMapSelectItem;
 
+  // Map item pop-out support
+  bool _is_map_item = false;
+  std::function<void()> _onPopout;
+  lev2::image_ptr_t _popout_icon;
+
+  // Map button icons (set by PropertySheet from style)
+  lev2::image_ptr_t _map_add_icon;
+  lev2::image_ptr_t _map_remove_icon;
+  lev2::image_ptr_t _map_rename_icon;
+
   // Track which widget is being dragged (for proper event routing)
   Widget* _drag_capture = nullptr;
 
@@ -229,7 +239,13 @@ struct PropertySheet : public Group {
   std::function<void(const std::string& key, const std::string& editor_id)> _onRequestCustomEditor;
 
   // Callbacks
-  std::function<void(const std::string& key, svar128_t value)> _onPropertyChanged;
+  using propertychanged_fn_t = std::function<void(const std::string& key, svar128_t value)>;
+  using childobjectpopout_fn_t = std::function<void(const std::string& key, object_ptr_t obj)>;
+  using createwidgeteditor_fn_t = std::function<widget_ptr_t(const std::string& key, const std::string& widget_class, svar128_t value)>;
+
+  propertychanged_fn_t _onPropertyChanged;
+  childobjectpopout_fn_t _onChildObjectPopout;
+  createwidgeteditor_fn_t _onCreateWidgetEditor;
 
   // Appearance
   int _row_height = 24;
@@ -239,6 +255,12 @@ struct PropertySheet : public Group {
   fvec4 _label_color = fvec4(0.9f, 0.9f, 0.9f, 1.0f);
   fvec4 _group_color = fvec4(0.2f, 0.2f, 0.25f, 1.0f);
   lev2::font_ptr_t _font;
+
+  // Icons from style (resolved once at rebuild)
+  lev2::image_ptr_t _icon_popout;
+  lev2::image_ptr_t _icon_map_add;
+  lev2::image_ptr_t _icon_map_remove;
+  lev2::image_ptr_t _icon_map_rename;
 
 protected:
   void DoDraw(drawevent_constptr_t drwev) override;

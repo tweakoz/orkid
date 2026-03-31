@@ -111,6 +111,9 @@ struct Image {
   Image clone() const;
 
   static image_ptr_t createFromFile(const std::string& inpath);
+  static image_ptr_t fromSvgString(const std::string& svg, int width, int height);
+  static image_ptr_t fromSvgString(const std::string& svg, int size);
+  static fvec2 svgIntrinsicSize(const std::string& svg);
   
   //////////////////////////
 

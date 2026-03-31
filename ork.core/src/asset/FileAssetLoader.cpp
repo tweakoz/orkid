@@ -93,7 +93,9 @@ bool FileAssetLoader::_find(
   // do we already have an extension
   //////////////////////////////////////////
 
-  file::Path pathobjnoq(name);
+  // Expand path tokens like <ork_data>, <assetcache>, etc.
+  std::string expanded = file::expandPaths(name.c_str());
+  file::Path pathobjnoq(expanded);
   // Query strings are no longer supported
   
   file::Path::NameType preext;

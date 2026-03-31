@@ -7,6 +7,8 @@
 #include <ork/lev2/gfx/pri.h>
 #include <ork/lev2/ui/dropdown_menu.h>
 #include <ork/lev2/ui/context.h>
+#include <ork/lev2/ui/style.h>
+#include <ork/util/crc.h>
 
 namespace ork::ui {
 ///////////////////////////////////////////////////////////////////////////////
@@ -98,15 +100,28 @@ void DropdownMenu::Content::DoDraw(drawevent_constptr_t drwev) {
 
       lev2::FontMan::DrawText(tgt, ix1 + PADDING_X, text_y, item._label.c_str());
 
-      if (!item._is_leaf) {
-        int arrow_x = ix2 - ARROW_WIDTH;
-        lev2::FontMan::DrawText(tgt, arrow_x, text_y, ">");
-      }
     }
 
     lev2::FontMan::endTextBlock(tgt);
     ork::lev2::FontMan::PopFont();
     tgt->PopModColor();
+
+    // Draw submenu arrow icons (after text block)
+    if (_uicontext && _uicontext->_theme_engine) {
+      auto style = _uicontext->_theme_engine->_styledb->getStyle("box"_crcu);
+      if (style && style->_icon_dropdown_right) {
+        const int icon_size = 10;
+        for (int i = 0; i < num_items; i++) {
+          auto& item = _owner->_items[i];
+          if (!item._is_leaf) {
+            int item_y = iy1 + i * ITEM_HEIGHT;
+            int icon_x = ix2 - ARROW_WIDTH;
+            int icon_y = item_y + (ITEM_HEIGHT - icon_size) / 2;
+            _uicontext->_theme_engine->drawIcon(icon_x, icon_y, icon_size, icon_size, drwev, style->_icon_dropdown_right);
+          }
+        }
+      }
+    }
   }
   mtxi->PopUIMatrix();
 }

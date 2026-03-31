@@ -18,6 +18,7 @@ class AnalogClock:
 
   def __init__(self, canvas):
     self.canvas = canvas
+    canvas.supersample = 4
     self.time_offset = 0  # For testing: add seconds to current time
 
     # Color schemes

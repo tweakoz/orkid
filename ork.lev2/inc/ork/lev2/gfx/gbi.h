@@ -86,6 +86,13 @@ public:
       PrimitiveType eType,
       size_t instance_count) = 0;
 
+  virtual void DrawInstancedIndexedPrimitiveEML(
+      const VertexBufferBase& VBuf,
+      const IndexBufferBase& IdxBuf,
+      PrimitiveType eType,
+      size_t instance_count,
+      size_t first_instance) = 0;
+
   virtual void* LockIB(IndexBufferBase& VBuf, int ibase = 0, int icount = 0) = 0;
   virtual void UnLockIB(IndexBufferBase& VBuf)                               = 0;
 

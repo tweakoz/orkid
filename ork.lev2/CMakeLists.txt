@@ -138,7 +138,8 @@ target_include_directories (ork_lev2 PRIVATE $ENV{OBT_STAGE}/include/bullet )
 
 
 target_link_libraries(ork_lev2 PRIVATE ${libs} )
-target_link_libraries(ork_lev2 PRIVATE assimp sndfile shaderc_shared )
+find_package(lunasvg REQUIRED)
+target_link_libraries(ork_lev2 PRIVATE assimp sndfile shaderc_shared lunasvg::lunasvg )
 
 target_link_libraries(ork_lev2 LINK_PRIVATE Boost::filesystem )
 target_link_libraries(ork_lev2 LINK_PRIVATE ork_ftxui )

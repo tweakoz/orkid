@@ -86,7 +86,7 @@ void StringDrawable::enqueueToRenderQueue(drawqueueitem_constptr_t item, lev2::I
   cb_renderable.SetMatrix(worldmatrix);
   cb_renderable._pickID = _pickID;
   cb_renderable.SetRenderCallback(_rendercb);
-  cb_renderable.SetSortKey(0x7fff);
+  cb_renderable._sortkey = 0x7fff;
   cb_renderable._drawDataA.set<const StringDrawableData*>(_data);
   cb_renderable.SetModColor(renderer->GetTarget()->RefModColor());
 }
@@ -112,7 +112,7 @@ void BillboardStringDrawable::enqueueToRenderQueue(drawqueueitem_constptr_t item
   cb_renderable.SetMatrix(worldmatrix);
   cb_renderable._pickID = _pickID;
   cb_renderable.SetRenderCallback(_rendercb);
-  cb_renderable.SetSortKey(0x7fff);
+  cb_renderable._sortkey = 0x7fff;
   cb_renderable._drawDataA.set<std::string>(_data->_initialString);
   cb_renderable.SetModColor(renderer->GetTarget()->RefModColor());
 }
@@ -359,7 +359,7 @@ void InstancedBillboardStringDrawable::enqueueToRenderQueue(drawqueueitem_constp
   // cb_renderable.SetMatrix(worldmatrix);
   cb_renderable._pickID = _pickID;
   cb_renderable.SetRenderCallback(_rendercb);
-  cb_renderable.SetSortKey(0x7fff);
+  cb_renderable._sortkey = 0x7fff;
   cb_renderable._drawDataB.set<const InstancedBillboardStringDrawable*>(this);
   cb_renderable.SetModColor(renderer->GetTarget()->RefModColor());
 }

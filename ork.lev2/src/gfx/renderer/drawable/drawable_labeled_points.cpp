@@ -39,7 +39,7 @@ void LabeledPointDrawable::enqueueToRenderQueue(drawqueueitem_constptr_t item, l
   cb_renderable.SetMatrix(worldmatrix);
   cb_renderable._pickID = _pickID;
   cb_renderable.SetRenderCallback(_rendercb);
-  cb_renderable.SetSortKey(0x7fff);
+  cb_renderable._sortkey = 0x7fff;
   cb_renderable.SetModColor(renderer->GetTarget()->RefModColor());
 }
 ///////////////////////////////////////////////////////////////////////////////

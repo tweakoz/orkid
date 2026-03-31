@@ -27,6 +27,7 @@ class WaveformVisualizer(ComponentizedApplication):
     # Create PrimCanvas widget
     canvas_layout = lg_group.makeChild(uiclass=lev2.ui.PrimCanvas, args=["waveform_canvas"])
     self.canvas = canvas_layout.widget
+    self.canvas.supersample = 3
 
     # Anchor to fill parent
     root_layout = lg_group.layout

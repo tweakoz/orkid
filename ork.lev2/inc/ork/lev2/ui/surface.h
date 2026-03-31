@@ -8,6 +8,7 @@
 #pragma once
 
 #include <ork/lev2/ui/group.h>
+#include <ork/lev2/gfx/material_freestyle.h>
 
 namespace ork { namespace ui {
 
@@ -54,6 +55,9 @@ public:
   int _decoupled_width = 0;
   int _decoupled_height = 0;
 
+  // SSAA: 0=off, 1=2x2, 2=3x3, 3=4x4, 4=5x5, 5=6x6
+  int _supersample = 0;
+
 protected:
   void _doGpuInit(lev2::Context* pTARG) override;
   void RenderCached();
@@ -63,6 +67,17 @@ protected:
   void DoDraw(ui::drawevent_constptr_t drwev) override;
   virtual void DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   }
+
+  // SSAA resolve resources (initialized lazily when _supersample > 0)
+  lev2::rtgroup_ptr_t _ssaa_resolve_rtg;
+  lev2::FreestyleMaterial _ssaa_blit_mtl;
+  const lev2::FxShaderTechnique* _ssaa_tek[6] = {};
+  lev2::fxparam_constptr_t _ssaa_par_mvp;
+  lev2::fxparam_constptr_t _ssaa_par_colormap;
+  bool _ssaa_initialized = false;
+  void _initSsaa(lev2::Context* ctx);
+  void _ssaaResolve(lev2::Context* ctx, int dst_w, int dst_h);
+  lev2::Texture* _resolvedTexture(); // returns resolved or direct texture
 };
 
 }} // namespace ork::ui

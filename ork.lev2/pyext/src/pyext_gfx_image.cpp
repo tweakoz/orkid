@@ -226,6 +226,12 @@ void pyinit_gfx_image(py::module& module_lev2) {
         mipchain.writeXTX(datablock);
         return py::bytes((const char*)datablock->data(), datablock->length());
       })
+      .def_static("fromSvgString", [](const std::string& svg, int w, int h) -> image_ptr_t {
+        return Image::fromSvgString(svg, w, h);
+      }, py::arg("svg"), py::arg("width"), py::arg("height"))
+      .def_static("fromSvgStringSquare", [](const std::string& svg, int size) -> image_ptr_t {
+        return Image::fromSvgString(svg, size);
+      }, py::arg("svg"), py::arg("size"))
       ;
   type_codec->registerStdCodec<image_ptr_t>(image_type);      
   ///////////////////////////////////////////////////////

@@ -146,6 +146,17 @@ struct Style {
   lev2::font_ptr_t _font;
   // NOTE: font size is a property of font, not stored here
 
+  // Icons (RGBA images, alpha-composited)
+  lev2::image_ptr_t _icon_popout;              // property sheet map item pop-out
+  lev2::image_ptr_t _icon_map_add;             // property sheet map [+]
+  lev2::image_ptr_t _icon_map_remove;          // property sheet map [-]
+  lev2::image_ptr_t _icon_map_rename;          // property sheet map pencil
+  lev2::image_ptr_t _icon_dropdown;            // dropdown down-triangle
+  lev2::image_ptr_t _icon_dropdown_right;      // submenu right-triangle
+  lev2::image_ptr_t _icon_disclosure_right;    // disclosure triangle (collapsed)
+  lev2::image_ptr_t _icon_disclosure_down;     // disclosure triangle (expanded)
+  lev2::image_ptr_t _icon_close;               // tab close button (red box with white X)
+
   // CSS-like inheritance
   style_ptr_t _parent;  // Inherit from this style if properties not overridden
 
@@ -199,9 +210,14 @@ struct ThemeEngine {
   void drawPause(int x, int y, int w, int h, drawevent_constptr_t drwev, const Style* style, float spacing = 0.3f);
   void drawStar(int x, int y, int w, int h, drawevent_constptr_t drwev, const Style* style, float rotation = 0.0f);
   void drawText(const Widget* w, drawevent_constptr_t drwev, const Style* style, const std::string& text);
+  void drawIcon(int x, int y, int w, int h, drawevent_constptr_t drwev, lev2::image_ptr_t icon);
+
+  // Icon texture cache (image_ptr_t → GPU texture)
+  lev2::texture_ptr_t cachedTextureForIcon(lev2::Context* ctx, lev2::image_ptr_t icon);
 
   styledatabase_ptr_t _styledb;
   svar16_t _impl;
+  std::unordered_map<lev2::image_ptr_t, lev2::texture_ptr_t> _icon_texture_cache;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -57,6 +57,7 @@ public:
   bool _autospawn = true;
   archetype_constptr_t _archetype;
   orklut<ConstString, ConstString> mUserProperties;
+  lev2::rendervar_strmap_t _newuserproperties;
 
   // multi-spawn properties
   int _spawnCount = 1;

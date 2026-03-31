@@ -77,6 +77,7 @@ class EcsRuntime:
     self.cameralut = lev2.CameraDataLut()
     self.camera = None
     self.uicam = None
+    self.dead_controllers = []
 
   def setup_camera(self, camname="spawncam", eye=None, tgt=None, up=None):
     """One-time camera setup. Call from _onGpuInit."""
@@ -181,9 +182,10 @@ class EcsRuntime:
     if self.controller:
       try:
         self.controller.stopSimulation()
-        self.controller.terminateSimulation()
+        #self.controller.terminateSimulation()
       except:
         pass
+      self.dead_controllers += [self.controller]
       self.controller = None
       self._sys_handle = None
       self._sys_ref = None

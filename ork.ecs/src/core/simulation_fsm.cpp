@@ -172,15 +172,16 @@ void Simulation::_buildStateMachine() {
     DB->Reset();
     _dbufctxSIM->releaseFromWriteLocked(DB);
 
-    if (inst->currentState() == _updateEditSimState) {
-      _unstage();
-    } else if (inst->currentState() == _updateActiveSimState) {
-      _deactivate();
-      _unstage();
-    }
+    // Always deactivate and unstage regardless of current state
+    _deactivate();
+    _unstage();
+    // Sync with render thread before unlinking — ensures no stale
+    // draw queue entries reference systems/components being destroyed
+    lev2::DrawQueue::BeginClearAndSyncReaders();
     _unlink();
     _decompose();
     _uninitialize();
+    lev2::DrawQueue::EndClearAndSyncReaders();
   };
 
   ///////////////////////////////////////////////////////////
@@ -335,7 +336,8 @@ void Simulation::_resetClock() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Simulation::SetSimulationMode(ESimulationMode emode) {
-  ork::opq::assertOnQueue2(opq::updateSerialQueue());
+  // Called from both main thread (initial load) and update thread (hotload)
+  // Serialization is provided by Controller::_simulation.atomicOp mutex
   switch (emode) {
     case ESimulationMode::NEW:
       break;

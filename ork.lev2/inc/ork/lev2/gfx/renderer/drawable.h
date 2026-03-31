@@ -356,7 +356,8 @@ struct Drawable {
   std::string _name;
   scenegraph::scene_ptr_t _sg;
   scenegraph::node_ptr_t _sgnode;
-  uint32_t _sortkey = 0;
+  const DrawableData* _drawabledata = nullptr;
+  int _sortkey = 0;
   uint64_t _drawable_type = 0;  // type identifier for enumeration (e.g. "model"_crcu)
   uint64_t _tag = 0;            // user-defined tag for custom filtering
   pbr::radiancemaps_ptr_t _envmapOverride;  // per-drawable environment map override
@@ -403,6 +404,8 @@ struct DrawableData : public ork::Object { // todo subclass reflection Object
   fvec4 _modcolor;
   rendervar_strmap_t _assetvars;
   varmap::varmap_ptr_t _vars;
+  int _sortkey = 0;
+  std::string _name;
   std::string _environmentMapPath;  // per-drawable env map override (supports <assetcache>, ${ENV})
 };
 
@@ -727,6 +730,7 @@ struct CallbackDrawable : public Drawable {
 
   ICallbackDrawableDataDestroyer* mDataDestroyer;
   lev2::CallbackRenderable::cbtype_t mRenderCallback;
+  std::atomic<bool> _renderEnabled{true};
   Q2LCBType* _enqueueOnLayerCallback;
   Q2LLambdaType _enqueueOnLayerLambda;
   RLCBType _renderLambda;

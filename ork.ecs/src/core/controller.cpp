@@ -638,13 +638,10 @@ void Controller::startSimulation() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Controller::stopSimulation() {
-  // ork::opq::assertOnQueue2(opq::mainSerialQueue());
   logchan_controller->log("STOPPING SIMULATION");
   _delopq.atomicOp([=](delayed_opq_t& unlocked) { unlocked.clear(); });
   _eventQueue.atomicOp([&](Controller::evq_t& unlocked) { unlocked.clear(); });
   _simulation.atomicOp([](simulation_ptr_t& unlocked) {
-    // Force synchronous deactivation before FSM transition —
-    // the deferred FSM changeState may never process if the sim is destroyed
     if (unlocked->_currentSimulationMode == ESimulationMode::ACTIVE) {
       unlocked->_deactivate();
     }

@@ -246,6 +246,26 @@ void pyinit_ui_property_sheet(py::module& uimodule) {
               py::arg("setter"),
               py::arg("choices"))
           .def("clearKeyOverrides", &ui::ReflectionPropertySheetModel::clearKeyOverrides)
+          .def("getSubObject", [](ui::reflection_property_model_ptr_t model, const std::string& key) -> py::object {
+            auto obj = model->getSubObject(key);
+            if (!obj) return py::none();
+            auto type_codec = python::pb11_typecodec_t::instance();
+            varmap::var_t v;
+            v.set<object_ptr_t>(obj);
+            return type_codec->encode(v);
+          })
+          .def("getSubObjectEntries", [](ui::reflection_property_model_ptr_t model) -> py::list {
+            auto entries = model->getSubObjectEntries();
+            auto type_codec = python::pb11_typecodec_t::instance();
+            py::list result;
+            for (auto& [key, obj] : entries) {
+              varmap::var_t v;
+              v.set<object_ptr_t>(obj);
+              py::object py_obj = type_codec->encode(v);
+              result.append(py::make_tuple(key, py_obj));
+            }
+            return result;
+          })
           .def("__repr__", [](ui::reflection_property_model_ptr_t model) {
             return FormatString("<ReflectionPropertySheetModel %p>", (void*)model.get());
           });
@@ -304,6 +324,36 @@ void pyinit_ui_property_sheet(py::module& uimodule) {
                   auto type_codec = python::pb11_typecodec_t::instance();
                   py::object py_value = type_codec->encode(value);
                   (*fn)(key, py_value);
+                };
+              })
+          .def(
+              "onCreateWidgetEditor",
+              [](ui::property_sheet_ptr_t sheet, py::object callback) {
+                auto safe = python::gil_safe_pyobj(callback);
+                sheet->_onCreateWidgetEditor = [safe](const std::string& key,
+                                                      const std::string& widget_class,
+                                                      svar128_t value) -> ui::widget_ptr_t {
+                  py::gil_scoped_acquire acquire;
+                  auto fn = safe.valueAs<py::object>();
+                  auto type_codec = python::pb11_typecodec_t::instance();
+                  py::object py_value = type_codec->encode(value);
+                  py::object result = (*fn)(key, widget_class, py_value);
+                  if (result.is_none()) return nullptr;
+                  return result.cast<ui::widget_ptr_t>();
+                };
+              })
+          .def(
+              "onChildObjectPopout",
+              [](ui::property_sheet_ptr_t sheet, py::object callback) {
+                auto safe = python::gil_safe_pyobj(callback);
+                sheet->_onChildObjectPopout = [safe](const std::string& key, object_ptr_t obj) {
+                  py::gil_scoped_acquire acquire;
+                  auto fn = safe.valueAs<py::object>();
+                  auto type_codec = python::pb11_typecodec_t::instance();
+                  varmap::var_t v;
+                  v.set<object_ptr_t>(obj);
+                  py::object py_obj = type_codec->encode(v);
+                  (*fn)(key, py_obj);
                 };
               })
           .def_property(

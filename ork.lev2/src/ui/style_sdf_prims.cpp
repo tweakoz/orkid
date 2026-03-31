@@ -9,6 +9,7 @@
 #include <ork/lev2/ui/style.h>
 #include <ork/lev2/ui/widget.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
+#include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/gfx/pri.h>
 #include <ork/lev2/gfx/dbgfontman.h>
@@ -477,6 +478,49 @@ void ThemeEngine::drawStar(
   fxi->popRasterState();
   mtxi->PopUIMatrix();
   fxi->EndBlock();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+lev2::texture_ptr_t ThemeEngine::cachedTextureForIcon(lev2::Context* ctx, lev2::image_ptr_t icon) {
+  auto it = _icon_texture_cache.find(icon);
+  if (it != _icon_texture_cache.end()) {
+    return it->second;
+  }
+  auto tex = std::make_shared<lev2::Texture>();
+  ctx->TXI()->initTextureFromImage(tex.get(), icon, false, true);
+  _icon_texture_cache[icon] = tex;
+  return tex;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void ThemeEngine::drawIcon(int x, int y, int w, int h, drawevent_constptr_t drwev, lev2::image_ptr_t icon) {
+  auto tgt = drwev->GetTarget();
+  auto mtxi = tgt->MTXI();
+  auto primi = tgt->PRI();
+  auto fxi = tgt->FXI();
+
+  auto tex = cachedTextureForIcon(tgt, icon);
+  auto texmtl = lev2::defaultUITextureMaterial();
+
+  mtxi->PushUIMatrix();
+  tgt->PushModColor(fvec4(1, 1, 1, 1));
+  texmtl->SetTexture(lev2::ETEXDEST_DIFFUSE, tex.get());
+
+  auto rs = texmtl->_rasterstate;
+  rs->setBlendingMacro(lev2::BlendingMacro::ALPHA);
+  rs->setDepthTest(lev2::EDepthTest::OFF);
+  int prev_pri = rs->_priority;
+  rs->_priority = 1 << 24;
+  fxi->pushRasterState(rs);
+  primi->RenderQuadAtZ(texmtl.get(), x, x + w, y, y + h, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+  fxi->popRasterState();
+  rs->_priority = prev_pri;
+
+  tgt->PopModColor();
+  texmtl->SetTexture(lev2::ETEXDEST_DIFFUSE, nullptr);
+  mtxi->PopUIMatrix();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

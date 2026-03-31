@@ -29,6 +29,7 @@ class FlowFieldVisualizer:
     # Create PrimCanvas widget
     canvas_layout = lg_group.makeChild(uiclass=lev2.ui.PrimCanvas, args=["flowfield_canvas"])
     self.canvas = canvas_layout.widget
+    self.canvas.supersample = 4
 
     # Anchor to fill parent
     root_layout = lg_group.layout

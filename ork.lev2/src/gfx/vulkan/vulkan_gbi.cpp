@@ -866,6 +866,60 @@ void VkGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(
       0);              // first instance
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+void VkGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(
+    const VertexBufferBase& vtx_buf,
+    const IndexBufferBase& idx_buf,
+    PrimitiveType eType,
+    size_t instance_count,
+    size_t first_instance) {
+
+  int num_indices = idx_buf.GetNumIndices();
+
+  auto it_pc = _primclasses.find(uint64_t(eType));
+  OrkAssert(it_pc != _primclasses.end());
+  auto primclass = it_pc->second;
+
+  auto vk_vbimpl = vtx_buf._impl.getShared<VulkanVertexBuffer>();
+  auto vk_ibimpl = idx_buf._impl.getShared<VulkanIndexBuffer>();
+  auto fxi       = _contextVK->_fxi;
+  auto pipeline  = fxi->_fetchPipeline(vk_vbimpl, primclass);
+  auto pass      = fxi->_currentVKPASS;
+  auto prog      = pass->_vk_program;
+
+  auto& CB = _contextVK->primary_cb()->_vkcmdbuf;
+  fxi->_bindPipeline(CB, pipeline);
+  fxi->_bindVertexBufferOnSlot(CB, vk_vbimpl, 0);
+
+  auto vk_index_size = idx_buf.indexSize() == 2
+                     ? VK_INDEX_TYPE_UINT16
+                     : VK_INDEX_TYPE_UINT32;
+
+  auto& vk_buffer = vk_ibimpl->_vkbuffer->_vkbuffer;
+
+  vkCmdBindIndexBuffer(CB, vk_buffer, 0, vk_index_size);
+
+  switch (eType) {
+    case PrimitiveType::TRIANGLES:
+      miTrianglesRendered += (num_indices / 3) * instance_count;
+      break;
+    case PrimitiveType::TRIANGLESTRIP:
+      miTrianglesRendered += (num_indices - 2) * instance_count;
+      break;
+    default:
+      break;
+  }
+
+  vkCmdDrawIndexed(
+      CB,              // command buffer
+      num_indices,     // index count
+      instance_count,  // instance count
+      0,               // first index
+      0,               // vertex offset
+      first_instance); // first instance
+}
+
 //////////////////////////////////////////////
 // nvidia mesh shaders
 //////////////////////////////////////////////
