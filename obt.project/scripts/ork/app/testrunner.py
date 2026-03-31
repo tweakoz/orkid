@@ -1177,7 +1177,6 @@ class TestRunnerApp:
 
     self.fs_view.refresh()
 
-  @staticmethod
   def _makeOptionLabel(self, text, checked=None, width=None, height=20):
     """Render an option label into an Image for toolbar button."""
     from xml.sax.saxutils import escape
