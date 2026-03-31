@@ -356,6 +356,7 @@ struct VkRasterState {
   std::vector<VkFormat> _vkformats; // Store formats for cache invalidation
   int _pipeline_bits = -1;
   int _attachment_count = 1;
+  uint64_t _rasterstate_hash = 0; // Hash of rasterstate content for cache invalidation
   RasterState* _ork_rasterstate = nullptr;
 
   using rsmap_t = std::unordered_map<uint64_t, int>;

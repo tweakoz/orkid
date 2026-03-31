@@ -188,7 +188,7 @@ HandlerResult SceneGraphViewport::_routeToEmbeddedUiSurfaces(event_constptr_t ev
     return HandlerResult();
   }
 
-  auto camera = cameralut->find(_cameraname);
+  auto camera = cameralut->atomicCopy(_cameraname);
   if (!camera) {
     if(0)printf("_routeToEmbeddedUiSurfaces: camera '%s' not found\n", _cameraname.c_str());
     return HandlerResult();
@@ -304,7 +304,7 @@ HandlerResult SceneGraphViewport::DoOnUiEvent(event_constptr_t ev) {
   if (_manip_evhandler && _manipController) {
     // Update ManipController with current camera before handling events
     if (_scenegraph && _scenegraph->_cameralut) {
-      auto camera = _scenegraph->_cameralut->find(_cameraname);
+      auto camera = _scenegraph->_cameralut->atomicCopy(_cameraname);
       if (camera) {
         float aspect = (height() > 0) ? float(width()) / float(height()) : 1.0f;
         auto camMtx = camera->computeMatrices(aspect);

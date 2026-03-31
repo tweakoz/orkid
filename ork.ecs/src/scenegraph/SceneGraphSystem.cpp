@@ -78,6 +78,8 @@ void SceneGraphSystemData::describeX(SystemDataClass* clazz) {
   ImplementToken(width);
   ImplementToken(height);
 
+  clazz->directVectorProperty("Layers", &SceneGraphSystemData::_declaredLayers)
+      ->annotate("editor.widget", "EcsLayerFactory");
   clazz->directMapProperty("userparams", &SceneGraphSystemData::_userParams);
   clazz->directObjectVectorProperty("drawabledatas", &SceneGraphSystemData::_staticDrawableDatas);
 
@@ -198,6 +200,21 @@ void SceneGraphSystem::_addStaticDrawable(std::string layername, lev2::drawable_
   kvpair._layername = layername;
   kvpair._drawable  = drw;
   _staticDrawables.push_back(kvpair);
+}
+
+void SceneGraphSystem::_removeStaticDrawable(lev2::drawable_ptr_t drw) {
+  _staticDrawables.erase(
+    std::remove_if(_staticDrawables.begin(), _staticDrawables.end(),
+      [&](const lev2::scenegraph::DrawableKvPair& kvp) { return kvp._drawable == drw; }),
+    _staticDrawables.end());
+  // Also remove from the live scene if it exists
+  if (_scene) {
+    auto& sd = _scene->_staticDrawables;
+    sd.erase(
+      std::remove_if(sd.begin(), sd.end(),
+        [&](const lev2::scenegraph::DrawableKvPair& kvp) { return kvp._drawable == drw; }),
+      sd.end());
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -871,8 +888,10 @@ void SceneGraphSystem::_onNotify(token_t evID, evdata_t data) {
       float near        = table["near"_tok].get<float>();
       float far         = table["far"_tok].get<float>();
       float fovy        = table["fovy"_tok].get<float>();
+      _camlut->lock();
       _camera->Lookat(eye, tgt, up);
       _camera->Persp(near, far, fovy);
+      _camlut->unlock();
       break;
     }
     case UpdateFramebufferSize._hashed: {

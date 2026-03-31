@@ -41,7 +41,7 @@ static void _loadEnvMapOverride(Drawable* drw, const std::string& envpath) {
 void ModelDrawableData::describeX(object::ObjectClass* clazz){
   clazz->directProperty("assetpath", &ModelDrawableData::_assetpath)
       ->annotate("editor.filetype", "glb,gltf")
-      ->annotate("editor.filebase", "<assetcache>");
+      ->annotate("editor.filebase", "<assetcache>,<ork_data>");
   clazz->directMapProperty("assetvars", &ModelDrawableData::_assetvars)
       ->annotate("editor.visible", ConstString("false"));
 }
@@ -56,12 +56,14 @@ drawable_ptr_t ModelDrawableData::createDrawable() const {
   drw->_modcolor = _modcolor;
   drw->_name = _assetpath.c_str();
   _loadEnvMapOverride(drw.get(), _environmentMapPath);
+  drw->_sortkey = _sortkey;
   return drw;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 drawable_ptr_t ModelDrawableData::createDrawableWithAsset(xgmmodelassetptr_t asset) const {
   auto drw = std::make_shared<ModelDrawable>(nullptr);
+  drw->_sortkey = _sortkey;
   drw->_data = this;
   drw->bindModelAsset(asset);
   drw->_modcolor = _modcolor;
@@ -169,6 +171,9 @@ void ModelDrawable::bindModel(xgmmodel_ptr_t model) {
 ///////////////////////////////////////////////////////////////////////////////
 void ModelDrawable::enqueueToRenderQueue(drawqueueitem_constptr_t item, lev2::IRenderer* renderer) const {
   ork::opq::assertOnQueue2(opq::mainSerialQueue());
+  if(nullptr == _modelinst){
+    return;
+  }
   auto RCFD                   = renderer->GetTarget()->topRenderContextFrameData();
   const auto& topCPD          = RCFD->topCPD();
   const lev2::XgmModel* Model = _modelinst->xgmModel();
@@ -252,7 +257,8 @@ void ModelDrawable::enqueueToRenderQueue(drawqueueitem_constptr_t item, lev2::IR
       if (btest) {
         //OrkBreak();
         lev2::ModelRenderable& renderable = renderer->enqueueModel();
-        
+        renderable._drawable = this;
+
         renderable._modelinst = _modelinst;
         renderable._pickID = _pickID;
         renderable._submeshinst = submeshinst;
@@ -366,10 +372,6 @@ void ModelRenderable::Render(const IRenderer* renderer) const {
   }
   context->debugPopGroup();
 }
-/////////////////////////////////////////////////////////////////////
-uint32_t ModelRenderable::ComposeSortKey(const IRenderer* renderer) const {
-  return _sortkey;
-}
 ///////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
@@ -411,10 +413,6 @@ void SkeletonRenderable::Render(const IRenderer* renderer) const {
   RCID._isSkinned       = true;
   model->RenderSkeleton(minst.get(), nmat, context, RCID);
   context->debugPopGroup();
-}
-/////////////////////////////////////////////////////////////////////
-uint32_t SkeletonRenderable::ComposeSortKey(const IRenderer* renderer) const {
-  return _sortkey;
 }
 /////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

@@ -97,6 +97,17 @@ struct InstancedIndexedPrimitive {
       _num_instances);
   }
 
+  void renderSubRangedEML(Context* ctx, size_t first_instance, size_t instance_count) {
+    auto gbi = ctx->GBI();
+
+    gbi->DrawInstancedIndexedPrimitiveEML(
+      *_instance_vb,
+      *_base_ib,
+      _prim_type,
+      instance_count,
+      first_instance);
+  }
+
   //////////////////////////////////////////////////////////////////////////////
 
   inline scenegraph::drawable_node_ptr_t createNode(

@@ -7,6 +7,10 @@
 #include <ork/lev2/gfx/gbi.h>
 #include <ork/lev2/gfx/gfxvtxbuf.inl>
 #include <ork/lev2/ui/property_sheet.h>
+#include <ork/lev2/ui/reflection_property_model.h>
+#include <ork/lev2/ui/choicelist_widget.h>
+#include <ork/lev2/ui/style.h>
+#include <ork/util/crc.h>
 #include <ork/lev2/ui/slider.h>
 #include <ork/lev2/ui/checkbox.h>
 #include <ork/lev2/ui/lineedit.h>
@@ -223,17 +227,15 @@ struct AssetPickerBrowseButton : public Widget {
       primi->RenderQuadAtZ(defmtl.get(), ix1, ix2, iy1 + 1, iy2 - 1, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
       tgt->PopModColor();
 
-      auto font = lev2::FontMan::fontForId("i14");
-      if (font) {
-        lev2::FontMan::PushFont(font);
-        tgt->PushModColor(_fg_color);
-        int text_y = iy1 + (_geometry._h - font->description().miAdvanceHeight) / 2;
-        int text_x = ix1 + (_geometry._w - 8) / 2;
-        lev2::FontMan::beginTextBlock(tgt, 1);
-        lev2::FontMan::DrawText(tgt, text_x, text_y, "v");
-        lev2::FontMan::endTextBlock(tgt);
-        tgt->PopModColor();
-        lev2::FontMan::PopFont();
+      // Draw dropdown icon
+      if (_uicontext && _uicontext->_theme_engine) {
+        auto style = _uicontext->_theme_engine->_styledb->getStyle("box"_crcu);
+        if (style && style->_icon_dropdown) {
+          const int icon_size = 10;
+          int icon_x = ix1 + (_geometry._w - icon_size) / 2;
+          int icon_y = iy1 + (_geometry._h - icon_size) / 2;
+          _uicontext->_theme_engine->drawIcon(icon_x, icon_y, icon_size, icon_size, drwev, style->_icon_dropdown);
+        }
       }
     }
     mtxi->PopUIMatrix();
@@ -451,117 +453,7 @@ struct MapItemObjectFactoryWidget : public Widget {
   }
 };
 
-/////////////////////////////////////////////////////////////////////////
-// ChoicelistWidget
-// Shows a dropdown button for properties that have a choice list.
-// Displays current value text with a v indicator; opens DropdownMenu on click.
-/////////////////////////////////////////////////////////////////////////
-
-struct ChoicelistWidget : public Widget {
-  ChoicelistWidget(const std::string& name, const std::string& current_value)
-      : Widget(name, 0, 0, 0, 0)
-      , _current_value(current_value) {
-  }
-
-  std::string _current_value;
-  std::function<std::vector<std::string>()> _getChoices;
-  std::function<void(const std::string&)> _onChoiceSelected;
-
-  fvec4 _bg_color = fvec4(0.2f, 0.2f, 0.25f, 1.0f);
-  fvec4 _fg_color = fvec4(0.8f, 0.8f, 0.8f, 1.0f);
-  fvec4 _indicator_color = fvec4(0.5f, 0.6f, 0.8f, 1.0f);
-
-  void DoDraw(drawevent_constptr_t drwev) override {
-    auto tgt = drwev->GetTarget();
-    auto mtxi = tgt->MTXI();
-    auto primi = tgt->PRI();
-    auto defmtl = lev2::defaultUIMaterial();
-
-    int ix1, iy1;
-    LocalToRoot(0, 0, ix1, iy1);
-    int ix2 = ix1 + _geometry._w;
-    int iy2 = iy1 + _geometry._h;
-
-    mtxi->PushUIMatrix();
-    {
-      // Draw background
-      defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
-      defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
-      tgt->PushModColor(_bg_color);
-      defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
-      primi->RenderQuadAtZ(defmtl.get(), ix1 + 1, ix2 - 1, iy1 + 1, iy2 - 1, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
-      tgt->PopModColor();
-
-      // Draw current value text
-      auto font = lev2::FontMan::fontForId("i14");
-      if (font) {
-        lev2::FontMan::PushFont(font);
-        tgt->PushModColor(_fg_color);
-        int text_x = ix1 + 6;
-        int text_y = iy1 + (_geometry._h - font->description().miAdvanceHeight) / 2;
-        lev2::FontMan::beginTextBlock(tgt, _current_value.length() + 2);
-        lev2::FontMan::DrawText(tgt, text_x, text_y, _current_value.c_str());
-        lev2::FontMan::endTextBlock(tgt);
-        tgt->PopModColor();
-
-        // Draw v indicator on the right
-        tgt->PushModColor(_indicator_color);
-        std::string indicator = "v";
-        int ind_x = ix2 - 18;
-        lev2::FontMan::beginTextBlock(tgt, 1);
-        lev2::FontMan::DrawText(tgt, ind_x, text_y, indicator.c_str());
-        lev2::FontMan::endTextBlock(tgt);
-        tgt->PopModColor();
-
-        lev2::FontMan::PopFont();
-      }
-    }
-    mtxi->PopUIMatrix();
-  }
-
-  HandlerResult DoOnUiEvent(event_constptr_t ev) override {
-    HandlerResult result;
-
-    if (ev->_eventcode == EventCode::PUSH) {
-      if (_getChoices) {
-        auto choices = _getChoices();
-        if (!choices.empty()) {
-          // Prepend / so DropdownMenu slash-tree works correctly
-          std::vector<std::string> paths;
-          for (const auto& c : choices) {
-            if (c.empty()) continue;
-            // If the choice already starts with /, use as-is; otherwise prepend /
-            if (c[0] == '/') {
-              paths.push_back(c);
-            } else {
-              paths.push_back("/" + c);
-            }
-          }
-          auto tree = DropdownMenu::buildTreeFromPaths(paths);
-          auto menu = std::make_shared<DropdownMenu>("choicelist_" + _name, tree->root());
-          menu->_onSelected = [this](std::string selected) {
-            // Strip leading / that was prepended for the slash tree
-            if (!selected.empty() && selected[0] == '/') {
-              selected = selected.substr(1);
-            }
-            if (_onChoiceSelected) {
-              _onChoiceSelected(selected);
-            }
-          };
-          auto sz = menu->computeSize();
-          int sx = ev->miX;
-          int sy = ev->miY;
-          if (_uicontext) {
-            _uicontext->pushOverlay(menu, sx, sy, int(sz.x), int(sz.y), true, nullptr);
-          }
-        }
-      }
-      result.setHandled(this);
-    }
-
-    return result;
-  }
-};
+// ChoicelistWidget: moved to choicelist_widget.h / choicelist_widget.cpp
 
 /////////////////////////////////////////////////////////////////////////
 // PropSheetEditorPropWidget
@@ -710,8 +602,10 @@ void PropertyRow::DoDraw(drawevent_constptr_t drwev) {
       theme->drawTriangle(tri_x, tri_y, tri_size, tri_size, drwev, &tri_style, rotation);
     }
 
-    // Draw [+][R][-] buttons for mutable map properties (right-aligned)
+    // Draw [+][R][-] icon buttons for mutable map properties (right-aligned)
     if (_is_map_property && !_is_map_const) {
+      OrkAssert(_map_add_icon && _map_remove_icon && _map_rename_icon);
+      auto theme = _uicontext->_theme_engine;
       const int btn_size = 12;
       const int btn_spacing = 4;
       const int btn_margin = 8;
@@ -721,44 +615,21 @@ void PropertyRow::DoDraw(drawevent_constptr_t drwev) {
       int btn2_x = btn3_x - btn_spacing - btn_size;                // [R]
       int btn1_x = btn2_x - btn_spacing - btn_size;                // [+]
 
-      defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
-      defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
+      theme->drawIcon(btn1_x, btn_y, btn_size, btn_size, drwev, _map_add_icon);
+      theme->drawIcon(btn2_x, btn_y, btn_size, btn_size, drwev, _map_rename_icon);
+      theme->drawIcon(btn3_x, btn_y, btn_size, btn_size, drwev, _map_remove_icon);
+    }
 
-      auto drawButtonOutline = [&](int bx, fvec4 color) {
-        tgt->PushModColor(color);
-        defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
-        primi->RenderQuadAtZ(defmtl.get(), bx, bx + btn_size, btn_y, btn_y + 1, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
-        primi->RenderQuadAtZ(defmtl.get(), bx, bx + btn_size, btn_y + btn_size - 1, btn_y + btn_size, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
-        primi->RenderQuadAtZ(defmtl.get(), bx, bx + 1, btn_y, btn_y + btn_size, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
-        primi->RenderQuadAtZ(defmtl.get(), bx + btn_size - 1, bx + btn_size, btn_y, btn_y + btn_size, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
-      };
+    // Draw pop-out icon button for map item rows (right-aligned)
+    if (_is_map_item && _onPopout) {
+      OrkAssert(_popout_icon);
+      auto theme = _uicontext->_theme_engine;
+      const int btn_size = 12;
+      const int btn_margin = 8;
+      int btn_y = iy1 + (_geometry._h - btn_size) / 2;
+      int btn_x = ix1 + _geometry._w - btn_margin - btn_size;
 
-      // [+] button
-      drawButtonOutline(btn1_x, fvec4(0.5f, 0.8f, 0.5f, 1.0f));
-      int cx1 = btn1_x + btn_size / 2;
-      int cy1 = btn_y + btn_size / 2;
-      primi->RenderQuadAtZ(defmtl.get(), btn1_x + 2, btn1_x + btn_size - 2, cy1, cy1 + 1, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
-      primi->RenderQuadAtZ(defmtl.get(), cx1, cx1 + 1, btn_y + 2, btn_y + btn_size - 2, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
-      tgt->PopModColor();
-
-      // [R] button - outline box with "R" drawn as lines
-      drawButtonOutline(btn2_x, fvec4(0.5f, 0.6f, 0.9f, 1.0f));
-      // R glyph: vertical bar + top-right curve + diagonal leg
-      int rx = btn2_x + 3;
-      int ry = btn_y + 2;
-      int rh = btn_size - 4;
-      primi->RenderQuadAtZ(defmtl.get(), rx, rx + 1, ry, ry + rh, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);          // vertical
-      primi->RenderQuadAtZ(defmtl.get(), rx + 1, rx + 4, ry, ry + 1, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);        // top bar
-      primi->RenderQuadAtZ(defmtl.get(), rx + 4, rx + 5, ry + 1, ry + 3, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);    // right side
-      primi->RenderQuadAtZ(defmtl.get(), rx + 1, rx + 4, ry + 3, ry + 4, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);    // mid bar
-      primi->RenderQuadAtZ(defmtl.get(), rx + 3, rx + 5, ry + 4, ry + rh, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);   // diagonal leg
-      tgt->PopModColor();
-
-      // [-] button
-      drawButtonOutline(btn3_x, fvec4(0.8f, 0.5f, 0.5f, 1.0f));
-      int cy3 = btn_y + btn_size / 2;
-      primi->RenderQuadAtZ(defmtl.get(), btn3_x + 2, btn3_x + btn_size - 2, cy3, cy3 + 1, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
-      tgt->PopModColor();
+      theme->drawIcon(btn_x, btn_y, btn_size, btn_size, drwev, _popout_icon);
     }
 
     // Draw label
@@ -875,6 +746,21 @@ HandlerResult PropertyRow::DoOnUiEvent(event_constptr_t ev) {
           result.setHandled(this);
           return result;
         }
+      }
+    }
+
+    // Check if click is on pop-out button [↑] (right-aligned, map items)
+    if (_is_map_item && _onPopout) {
+      const int btn_size = 12;
+      const int btn_margin = 8;
+      int popout_x = _geometry._w - btn_margin - btn_size;
+      int btn_y_top = (_geometry._h - btn_size) / 2;
+      int btn_y_bot = btn_y_top + btn_size;
+      if (localX >= popout_x && localX < popout_x + btn_size
+          && localY >= btn_y_top && localY <= btn_y_bot) {
+        _onPopout();
+        result.setHandled(this);
+        return result;
       }
     }
 
@@ -1187,6 +1073,18 @@ void PropertySheet::requestDetailEditor(const std::string& key) {
 
 widget_ptr_t PropertySheet::_createEditorWidget(const std::string& key, PropertyType type, svar128_t value) {
   widget_ptr_t editor;
+
+  // Check for editor.widget annotation — delegate to Python widget factory
+  if (_model && _onCreateWidgetEditor) {
+    auto annotations = _model->getAnnotations(key);
+    if (annotations) {
+      auto widget_class = annotations->typedValueForKey<std::string>(std::string("editor.widget"));
+      if (widget_class) {
+        auto widget = _onCreateWidgetEditor(key, widget_class.value(), value);
+        if (widget) return widget;
+      }
+    }
+  }
 
   // Check for choice list — if present, show a dropdown regardless of type
   if (_model) {
@@ -1692,6 +1590,7 @@ std::function<void(svar128_t)> PropertySheet::_makeRefreshCallback(widget_ptr_t 
     return [cw](svar128_t new_value) {
       if (auto s = new_value.tryAs<std::string>()) {
         cw->_current_value = s.value();
+        cw->SetDirty();
       }
     };
   }
@@ -1860,10 +1759,30 @@ void PropertySheet::_addRowsRecursive(const std::string& parent_key, int depth, 
     row->_alt_bg_color = (has_children || is_map) ? (_group_color * 0.9f) : (_bgcolor * 0.85f);
     row->_alt_bg_color.w = 1.0f;  // Keep full alpha
 
+    // Map item pop-out support: if parent is a map and this child has a sub_object
+    if (!parent_key.empty() && _model->isMapProperty(parent_key) && has_children) {
+      auto refl_model = std::dynamic_pointer_cast<ReflectionPropertySheetModel>(_model);
+      if (refl_model) {
+        auto sub_obj = refl_model->getSubObject(key);
+        if (sub_obj) {
+          row->_is_map_item = true;
+          row->_popout_icon = _icon_popout;
+          row->_onPopout = [this, key, sub_obj]() {
+            if (_onChildObjectPopout) {
+              _onChildObjectPopout(key, sub_obj);
+            }
+          };
+        }
+      }
+    }
+
     // Map property support
     if (is_map) {
       row->_is_map_property = true;
       row->_is_map_const = _model->isMapConst(key);
+      row->_map_add_icon = _icon_map_add;
+      row->_map_remove_icon = _icon_map_remove;
+      row->_map_rename_icon = _icon_map_rename;
 
       // [+] button: push OverlayLineEdit for adding new element
       row->_onMapAdd = [this, key](event_constptr_t ev) {
@@ -2009,22 +1928,43 @@ void PropertySheet::_addRowsRecursive(const std::string& parent_key, int depth, 
       };
     }
 
+    // Check for editor.widget annotation first — always wins regardless of type
+    bool has_custom_widget = false;
+    if (_model && _onCreateWidgetEditor) {
+      auto annotations = _model->getAnnotations(key);
+      if (annotations) {
+        auto widget_class = annotations->typedValueForKey<std::string>(std::string("editor.widget"));
+        if (widget_class) {
+          svar128_t value = _model->getValue(key);
+          auto widget = _onCreateWidgetEditor(key, widget_class.value(), value);
+          if (widget) {
+            row->setEditorWidget(widget);
+            row->setHasChildren(false);
+            row->_refreshEditor = _makeRefreshCallback(widget, type);
+            has_custom_widget = true;
+          }
+        }
+      }
+    }
+
     // Create editor widget for non-group, non-compound properties
     // Vec3 and Quat get inline compound editors (they look like leaf rows, not expandable groups)
-    if (type == PropertyType::Vec3 || type == PropertyType::Vec4 || type == PropertyType::Quat) {
-      svar128_t value = _model->getValue(key);
-      auto editor = _createEditorWidget(key, type, value);
-      if (editor) {
-        row->setEditorWidget(editor);
-        row->setHasChildren(false);  // Don't show disclosure triangle
-        row->_refreshEditor = _makeRefreshCallback(editor, type);
-      }
-    } else if (!has_children && type != PropertyType::Group) {
-      svar128_t value = _model->getValue(key);
-      auto editor = _createEditorWidget(key, type, value);
-      if (editor) {
-        row->setEditorWidget(editor);
-        row->_refreshEditor = _makeRefreshCallback(editor, type);
+    if (!has_custom_widget) {
+      if (type == PropertyType::Vec3 || type == PropertyType::Vec4 || type == PropertyType::Quat) {
+        svar128_t value = _model->getValue(key);
+        auto editor = _createEditorWidget(key, type, value);
+        if (editor) {
+          row->setEditorWidget(editor);
+          row->setHasChildren(false);  // Don't show disclosure triangle
+          row->_refreshEditor = _makeRefreshCallback(editor, type);
+        }
+      } else if (!has_children && type != PropertyType::Group) {
+        svar128_t value = _model->getValue(key);
+        auto editor = _createEditorWidget(key, type, value);
+        if (editor) {
+          row->setEditorWidget(editor);
+          row->_refreshEditor = _makeRefreshCallback(editor, type);
+        }
       }
     }
 
@@ -2138,6 +2078,23 @@ void PropertySheet::_addSingleChildRecursive(const std::string& child_key, int d
   row->_alt_bg_color = has_children ? (_group_color * 0.9f) : (_bgcolor * 0.85f);
   row->_alt_bg_color.w = 1.0f;
 
+  // Map item pop-out support
+  if (has_children) {
+    auto refl_model = std::dynamic_pointer_cast<ReflectionPropertySheetModel>(_model);
+    if (refl_model) {
+      auto sub_obj = refl_model->getSubObject(child_key);
+      if (sub_obj) {
+        row->_is_map_item = true;
+        row->_popout_icon = _icon_popout;
+        row->_onPopout = [this, child_key, sub_obj]() {
+          if (_onChildObjectPopout) {
+            _onChildObjectPopout(child_key, sub_obj);
+          }
+        };
+      }
+    }
+  }
+
   // Create editor widget for non-group, non-compound properties
   if (type == PropertyType::Vec3 || type == PropertyType::Vec4 || type == PropertyType::Quat) {
     svar128_t value = _model->getValue(child_key);
@@ -2238,6 +2195,17 @@ void PropertySheet::_rebuildRows() {
   // Set this FIRST to prevent recursion (addChild/removeChild trigger layout)
   _needs_rebuild = false;
 
+  // Resolve icons from theme style database
+  if (_uicontext && _uicontext->_theme_engine) {
+    auto style = _uicontext->_theme_engine->_styledb->getStyle("box"_crcu);
+    if (style) {
+      _icon_popout     = style->_icon_popout;
+      _icon_map_add    = style->_icon_map_add;
+      _icon_map_remove = style->_icon_map_remove;
+      _icon_map_rename = style->_icon_map_rename;
+    }
+  }
+
   // Release previous stale widgets (they've survived at least one full frame)
   _stale_widgets.clear();
 
@@ -2262,6 +2230,14 @@ void PropertySheet::_rebuildRows() {
   _total_rows = row_index;
   _scroller._content_size = _total_rows * _row_height;
   _clampScrollOffset();
+
+  // Reconnect external value signal — _onStructureChanged disconnects it when
+  // setObject() fires notifyStructureChanged(), but rows are now fresh again.
+  if (_model) {
+    _external_value_connection = _model->_sigExternalValueChanged.connect([this](std::string key) {
+      refreshValue(key);
+    });
+  }
 }
 
 void PropertySheet::_clampScrollOffset() {

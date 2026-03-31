@@ -180,15 +180,20 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
 ///////////////////////////////////////////////////////////////////////////////
 
 uint64_t VkFxShaderProgram::samplersHash() {
-  // Always recalculate to pick up changes in texture _imgview_hash (e.g., ping-pong slots)
+  // Always recalculate to pick up changes in texture/SSBO bindings
   boost::Crc64 the_crc;
   the_crc.init();
   for (auto& it : _textures_by_orkparam) {
     auto as_vktex  = it.second;
-    // Include texture object pointer to guarantee uniqueness per texture instance
     the_crc.accumulateItem(reinterpret_cast<uintptr_t>(as_vktex.get()));
     the_crc.accumulateItem(as_vktex->_format_hash);
     the_crc.accumulateItem(as_vktex->_imgview_hash.result());
+  }
+  // Include SSBO buffer pointers so different SSBOs produce different cache keys
+  for (auto& it : _vk_ssbo_blocks) {
+    auto& ssbo_block = it.second;
+    auto bound = ssbo_block->_bound_buffer;
+    the_crc.accumulateItem(reinterpret_cast<uintptr_t>(bound.get()));
   }
   return the_crc.finished();
 }

@@ -51,11 +51,13 @@ void QuadPrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_
   auto param_layer_transform = material->param("layer_transform");
   auto param_colormap = material->param("ColorMap");
 
-  // Set uniforms (stored in pipeline, applied during beginBlock)
+  // Set uniforms and SSBO binding on pipeline BEFORE wrappedDrawCall
+  // so beginBlock applies them when building the descriptor set
   fvec2 canvas_size(canvas->width(), canvas->height());
   _pipeline->bindParam(param_canvas_size, canvas_size);
   _pipeline->bindParam(param_ssbo_base, (int)_ssbo_offset);
   _pipeline->bindParam(param_layer_transform, layer->transform());
+  _pipeline->bindStorage(ssbo_block, canvas->ssboGpu());
 
   if (_texture && param_colormap) {
     _pipeline->bindParam(param_colormap, _texture.get());
@@ -66,9 +68,6 @@ void QuadPrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_
   _pipeline->_rasterstate->_priority = 1 << 20;
   FXI->pushRasterState(_pipeline->_rasterstate);
   _pipeline->wrappedDrawCall(rcid, [&]() {
-    // Bind SSBO inside draw call — after technique/shader binding —
-    // to ensure this canvas's SSBO is active (not a stale binding from another PrimCanvas)
-    FXI->bindStorageBuffer(ssbo_block, canvas->ssboGpu());
     GBI->DrawPrimitiveEML(
         canvas->ssboGpu(),
         lev2::PrimitiveType::TRIANGLES,
@@ -120,6 +119,7 @@ void SpritePrimitive::drawInstanced(PrimCanvas* canvas, lev2::Context* ctx, lev2
   pipeline->bindParam(canvas->paramSpriteSsboBase(), (int)_ssbo_offset);
   pipeline->bindParam(canvas->paramSpriteInstanceTransform(), transform);
   pipeline->bindParam(canvas->paramSpriteInstanceTint(), tint);
+  pipeline->bindStorage(ssbo_block, canvas->ssboGpu());
 
   if (_texture && canvas->paramSpriteColorMap()) {
     pipeline->bindParam(canvas->paramSpriteColorMap(), _texture.get());
@@ -130,7 +130,6 @@ void SpritePrimitive::drawInstanced(PrimCanvas* canvas, lev2::Context* ctx, lev2
   pipeline->_rasterstate->_priority = 1 << 20;
   FXI->pushRasterState(pipeline->_rasterstate);
   pipeline->wrappedDrawCall(rcid, [&]() {
-    FXI->bindStorageBuffer(ssbo_block, canvas->ssboGpu());
     GBI->DrawPrimitiveEML(
         canvas->ssboGpu(),
         lev2::PrimitiveType::TRIANGLES,
@@ -283,6 +282,7 @@ void TriStripPrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_
   _pipeline->bindParam(param_canvas_size, canvas_size);
   _pipeline->bindParam(param_ssbo_base, (int)_ssbo_offset);
   _pipeline->bindParam(param_layer_transform, layer->transform());
+  _pipeline->bindStorage(ssbo_block, canvas->ssboGpu());
 
   if (_texture && param_colormap) {
     _pipeline->bindParam(param_colormap, _texture.get());
@@ -292,7 +292,6 @@ void TriStripPrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_
   _pipeline->_rasterstate->_priority = 1 << 20;
   FXI->pushRasterState(_pipeline->_rasterstate);
   _pipeline->wrappedDrawCall(rcid, [&]() {
-    FXI->bindStorageBuffer(ssbo_block, canvas->ssboGpu());
     GBI->DrawPrimitiveEML(
         canvas->ssboGpu(),
         lev2::PrimitiveType::TRIANGLESTRIP,
@@ -349,6 +348,7 @@ void TriListPrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_p
   _pipeline->bindParam(param_canvas_size, canvas_size);
   _pipeline->bindParam(param_ssbo_base, (int)_ssbo_offset);
   _pipeline->bindParam(param_layer_transform, layer->transform());
+  _pipeline->bindStorage(ssbo_block, canvas->ssboGpu());
 
   if (_texture && param_colormap) {
     _pipeline->bindParam(param_colormap, _texture.get());
@@ -358,7 +358,6 @@ void TriListPrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_p
   _pipeline->_rasterstate->_priority = 1 << 20;
   FXI->pushRasterState(_pipeline->_rasterstate);
   _pipeline->wrappedDrawCall(rcid, [&]() {
-    FXI->bindStorageBuffer(ssbo_block, canvas->ssboGpu());
     GBI->DrawPrimitiveEML(
         canvas->ssboGpu(),
         lev2::PrimitiveType::TRIANGLES,
@@ -388,16 +387,19 @@ void TextPrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_
 
   auto mtxi = ctx->MTXI();
 
-  int ix1, iy1;
-  canvas->LocalToRoot(0, 0, ix1, iy1);
+  // Use widget dimensions (not RTG) for the UI matrix — with SSAA the RTG
+  // is larger, so using widget dims causes the projection to scale up glyphs
+  // to match the higher-res surface. Positions are canvas-local either way.
+  int uiw = canvas->width();
+  int uih = canvas->height();
 
   lev2::FontMan::PushFont(_font);
   ctx->PushModColor(_color);
-  mtxi->PushUIMatrix();
+  mtxi->PushUIMatrix(uiw, uih);
   {
     for (const auto& item : _items) {
-      int text_x = ix1 + int(item.position.x);
-      int text_y = iy1 + int(item.position.y);
+      int text_x = int(item.position.x);
+      int text_y = int(item.position.y);
 
       lev2::FontMan::beginTextBlock(ctx, item.text.length());
       lev2::FontMan::DrawText(ctx, text_x, text_y, item.text.c_str());
@@ -459,7 +461,8 @@ void PrimCanvasLayer::gatherQuadData(std::vector<QuadData>& out) const {
 ////////////////////////////////////////////////////////////////
 
 PrimCanvas::PrimCanvas(const std::string& name, int x, int y, int w, int h)
-    : Widget(name, x, y, w, h) {
+    : Surface(name, x, y, w, h, fcolor4(0.1f, 0.1f, 0.1f, 1.0f), 1.0f) {
+  _alwaysRepaint = true;
 }
 
 ////////////////////////////////////////////////////////////////
@@ -476,6 +479,11 @@ PrimCanvas::~PrimCanvas() {
 void PrimCanvas::gpuInit(lev2::Context* ctx) {
   if (_gpu_initialized) {
     return;
+  }
+
+  // Ensure Surface RTG is created
+  if (!_rtgroup) {
+    Surface::_doGpuInit(ctx);
   }
 
   auto FXI = ctx->FXI();
@@ -498,6 +506,8 @@ void PrimCanvas::gpuInit(lev2::Context* ctx) {
   lev2::FxPipelinePermutation permu_tex;
   permu_tex._forced_technique = tek_tex;
   _pipeline_textured = pipeline_cache->findPipeline(permu_tex);
+  _pipeline_textured->_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
+  _pipeline_textured->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
 
   // Vertex-based techniques
   auto tek_vtx_solid = _material->technique("tek_canvas_vtx_solid");
@@ -674,39 +684,128 @@ void PrimCanvas::renderLayers(lev2::Context* ctx) {
 
 ////////////////////////////////////////////////////////////////
 
-void PrimCanvas::DoDraw(drawevent_constptr_t drwev) {
+void PrimCanvas::DoRePaintSurface(drawevent_constptr_t drwev) {
   auto ctx = drwev->GetTarget();
   auto FBI = ctx->FBI();
 
   // Initialize GPU resources on first draw
   gpuInit(ctx);
 
-  // Draw background if enabled (before viewport change, uses root coords)
-  if (_draw_background) {
-    _drawColoredBox(drwev, _bg_color, lev2::BlendingMacro::ALPHA);
-  }
+  // Set clear color from canvas bg
+  _clearColor = _bg_color;
 
   // Call pre-render callback (for Python widgets to update primitives)
   if (_onPreRender) {
     _onPreRender();
   }
 
-  // Get widget bounds in root coordinates
-  int rx1, ry1;
-  LocalToRoot(0, 0, rx1, ry1);
-  int w = width();
-  int h = height();
+  // Render into the Surface's RTG (already pushed by Surface::DoDraw)
+  int rtw = _rtgroup->width();
+  int rth = _rtgroup->height();
+  if (rtw < 1 || rth < 1) return;
 
-  // Set viewport and scissor to widget bounds for primitive rendering
-  lev2::ViewportRect vprect(rx1, ry1, w, h);
-  FBI->pushViewport(vprect);
-  FBI->pushScissor(vprect);
-
+  lev2::ViewportRect vp(0, 0, rtw, rth);
+  FBI->pushViewport(vp);
+  FBI->pushScissor(vp);
   renderLayers(ctx);
-
-  // Restore viewport and scissor
   FBI->popScissor();
   FBI->popViewport();
+
+  // SVG export (separate pass)
+  if (!_svg_export_path.empty()) {
+    _doSvgExport();
+    _svg_export_path.clear();
+  }
+}
+
+////////////////////////////////////////////////////////////////
+
+void PrimCanvas::_doSvgExport() {
+  int w = width();
+  int h = height();
+  if (w < 1 || h < 1) return;
+
+  FILE* fp = fopen(_svg_export_path.c_str(), "w");
+  if (!fp) return;
+
+  fprintf(fp, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+  fprintf(fp, "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"%d\" height=\"%d\" viewBox=\"0 0 %d %d\">\n", w, h, w, h);
+
+  // Background
+  if (_draw_background) {
+    fprintf(fp, "  <rect width=\"%d\" height=\"%d\" fill=\"rgb(%d,%d,%d)\" fill-opacity=\"%.2f\"/>\n",
+            w, h,
+            int(_bg_color.x * 255), int(_bg_color.y * 255), int(_bg_color.z * 255), _bg_color.w);
+  }
+
+  for (auto& layer : _layers) {
+    if (!layer->_enabled) continue;
+    fprintf(fp, "  <g id=\"%s\">\n", layer->_name.c_str());
+
+    for (auto& prim : layer->_primitives) {
+      // QuadPrimitive
+      if (auto qp = dynamic_cast<QuadPrimitive*>(prim.get())) {
+        for (auto& qd : qp->_quads) {
+          float x = qd->pos_size.x;
+          float y_up = qd->pos_size.y;  // Y-up canvas coords
+          float qw = qd->pos_size.z;
+          float qh = qd->pos_size.w;
+          float y = h - y_up - qh;  // convert to Y-down SVG coords
+          float r = qd->extra.y;    // corner radius
+          float rot = qd->extra.x;  // rotation in radians
+          auto& c = qd->color;
+
+          if (rot != 0.0f) {
+            float cx = x + qw * 0.5f;
+            float cy = y + qh * 0.5f;
+            float deg = rot * -180.0f / M_PI;  // negate for SVG Y-down
+            fprintf(fp, "    <rect x=\"%.1f\" y=\"%.1f\" width=\"%.1f\" height=\"%.1f\" rx=\"%.1f\" ry=\"%.1f\" "
+                    "fill=\"rgb(%d,%d,%d)\" fill-opacity=\"%.2f\" transform=\"rotate(%.1f,%.1f,%.1f)\"/>\n",
+                    x, y, qw, qh, r, r,
+                    int(c.x*255), int(c.y*255), int(c.z*255), c.w, deg, cx, cy);
+          } else {
+            fprintf(fp, "    <rect x=\"%.1f\" y=\"%.1f\" width=\"%.1f\" height=\"%.1f\" rx=\"%.1f\" ry=\"%.1f\" "
+                    "fill=\"rgb(%d,%d,%d)\" fill-opacity=\"%.2f\"/>\n",
+                    x, y, qw, qh, r, r,
+                    int(c.x*255), int(c.y*255), int(c.z*255), c.w);
+          }
+        }
+      }
+      // TriListPrimitive
+      else if (auto tp = dynamic_cast<TriListPrimitive*>(prim.get())) {
+        size_t nv = tp->_vertices.size();
+        for (size_t i = 0; i + 2 < nv; i += 3) {
+          auto& v0 = tp->_vertices[i];
+          auto& v1 = tp->_vertices[i+1];
+          auto& v2 = tp->_vertices[i+2];
+          auto& c = v0->color;
+          // Convert Y-up to Y-down
+          fprintf(fp, "    <polygon points=\"%.1f,%.1f %.1f,%.1f %.1f,%.1f\" "
+                  "fill=\"rgb(%d,%d,%d)\" fill-opacity=\"%.2f\" stroke=\"none\"/>\n",
+                  v0->position.x, h - v0->position.y,
+                  v1->position.x, h - v1->position.y,
+                  v2->position.x, h - v2->position.y,
+                  int(c.x*255), int(c.y*255), int(c.z*255), c.w);
+        }
+      }
+      // TextPrimitive
+      else if (auto txp = dynamic_cast<TextPrimitive*>(prim.get())) {
+        auto& c = txp->_color;
+        for (auto& item : txp->_items) {
+          // Text positions are in screen coords (Y-down already)
+          fprintf(fp, "    <text x=\"%.1f\" y=\"%.1f\" font-family=\"monospace\" font-size=\"14\" "
+                  "fill=\"rgb(%d,%d,%d)\" fill-opacity=\"%.2f\">%s</text>\n",
+                  item.position.x, item.position.y + 12,  // +12 for baseline offset
+                  int(c.x*255), int(c.y*255), int(c.z*255), c.w,
+                  item.text.c_str());
+        }
+      }
+    }
+    fprintf(fp, "  </g>\n");
+  }
+  fprintf(fp, "</svg>\n");
+  fclose(fp);
+  printf("[PrimCanvas] SVG exported to: %s\n", _svg_export_path.c_str());
 }
 
 ////////////////////////////////////////////////////////////////

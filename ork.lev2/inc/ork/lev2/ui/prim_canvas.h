@@ -7,10 +7,11 @@
 
 #pragma once
 
-#include <ork/lev2/ui/widget.h>
+#include <ork/lev2/ui/surface.h>
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/shadman.h>
+#include <ork/lev2/gfx/rtgroup.h>
 #include <vector>
 
 namespace ork::ui {
@@ -243,7 +244,7 @@ struct PrimCanvasLayer {
 // - All input events routed to Python callbacks
 ////////////////////////////////////////////////////////////////////
 
-struct PrimCanvas : public Widget {
+struct PrimCanvas : public Surface {
   PrimCanvas(const std::string& name, int x = 0, int y = 0, int w = 0, int h = 0);
   ~PrimCanvas();
 
@@ -296,6 +297,9 @@ struct PrimCanvas : public Widget {
   int desiredWidth() const override { return _desired_width; }
   int desiredHeight() const override { return _desired_height; }
 
+  // SVG export: set path to trigger export on next frame
+  void exportSvg(const std::string& path) { _svg_export_path = path; }
+
   //////////////////////////////////////////////////////////////
   // GPU initialization and pipeline access
   //////////////////////////////////////////////////////////////
@@ -325,11 +329,12 @@ struct PrimCanvas : public Widget {
   lev2::freestyle_mtl_ptr_t material() const { return _material; }
 
 protected:
-  void DoDraw(drawevent_constptr_t drwev) override;
+  void DoRePaintSurface(drawevent_constptr_t drwev) override;
   HandlerResult DoOnUiEvent(event_constptr_t ev) override;
 
 private:
   void _rebuildSsbo(lev2::Context* ctx);
+  void _doSvgExport();
 
   std::vector<primcanvaslayer_ptr_t> _layers;
   std::vector<QuadData> _ssbo_cpu_data;  // CPU-side SSBO data
@@ -360,6 +365,9 @@ private:
   lev2::fxparam_constptr_t _param_sprite_colormap;
   lev2::fxparam_constptr_t _param_sprite_instance_transform;
   lev2::fxparam_constptr_t _param_sprite_instance_tint;
+
+  // SVG export
+  std::string _svg_export_path;
 };
 
 using prim_canvas_ptr_t = std::shared_ptr<PrimCanvas>;

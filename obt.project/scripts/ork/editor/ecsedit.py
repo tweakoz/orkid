@@ -15,6 +15,176 @@ from ork.ui import standard_icons, icon_library
 from ork.editor.ecs_outliner_model import EcsOutlinerModel, _enumerateComponentTypes
 from ork.ecs import EcsRuntime
 
+################################################################################
+# Widget Editor Registry
+# Maps annotation "editor.widget" values to factory functions.
+# Factory signature: fn(key, value, propsheet) -> widget_ptr_t or None
+################################################################################
+
+_widget_editor_registry = {}
+
+def registerWidgetEditor(name, factory):
+  _widget_editor_registry[name] = factory
+
+def _createRegisteredWidgetEditor(key, widget_class, value, propsheet, editor=None):
+  factory = _widget_editor_registry.get(widget_class)
+  if factory:
+    return factory(key, value, propsheet, editor)
+  return None
+
+################################################################################
+# SortKeyEditor — dropdown for sort key values
+################################################################################
+
+_SORTKEY_LABELS = {"0": 0, "1": 1, "1<<10": 1 << 10, "1<<20": 1 << 20, "2<<20": 2 << 20, "1<<30": 1 << 30}
+_SORTKEY_REVERSE = {v: k for k, v in _SORTKEY_LABELS.items()}
+_SORTKEY_ITEMS = list(_SORTKEY_LABELS.keys())
+
+def _sortkey_editor_factory(key, value, propsheet, editor=None):
+  int_val = value if isinstance(value, int) else 0
+  cur_label = _SORTKEY_REVERSE.get(int_val, str(int_val))
+  widget = lev2.ui.ChoicelistWidget("sk_" + key, cur_label)
+  widget.setChoices(_SORTKEY_ITEMS)
+  if propsheet:
+    model = propsheet.model
+    def on_selected(selected):
+      int_val = _SORTKEY_LABELS.get(selected, 0)
+      model.setValue(key, int_val)
+      widget.current_value = selected
+    widget.onChoiceSelected = on_selected
+  return widget
+
+registerWidgetEditor("SortKeyEditor", _sortkey_editor_factory)
+
+################################################################################
+# EcsLayerFactory — editable layer list with +/R/- for unique string entries
+################################################################################
+
+def _layer_factory_editor(key, value, propsheet, editor=None):
+  def _find_sgsysdata():
+    if not editor:
+      return None
+    for s in editor.scene_data.systemDatas:
+      if s.className == "SceneGraphSystemData":
+        return s
+    return None
+
+  # Read initial layers directly from the object
+  sgsys = _find_sgsysdata()
+  layers = list(sgsys.declaredLayers) if sgsys else []
+  text = ", ".join(layers)
+  widget = lev2.ui.LineEdit.wfactory(["lf_" + key, text, vec3(0.8, 0.8, 0.8)])
+
+  if editor:
+    def on_commit(text):
+      names = [n.strip() for n in text.split(",")]
+      seen = set()
+      unique = []
+      for n in names:
+        if n and n not in seen:
+          unique.append(n)
+          seen.add(n)
+      sgsys = _find_sgsysdata()
+      if sgsys:
+        sgsys.clearDeclaredLayers()
+        for n in unique:
+          sgsys.declareLayer(n)
+      widget.text = ", ".join(unique)
+
+    widget.onTextCommitted(on_commit)
+
+  return widget
+
+registerWidgetEditor("EcsLayerFactory", _layer_factory_editor)
+
+################################################################################
+# EcsLayerSelector — dropdown that toggles layer names from SceneGraphSystemData
+################################################################################
+
+def _get_declared_layers(editor):
+  """Get declared layers from the scene's SceneGraphSystemData."""
+  if not editor:
+    return []
+  scene_data = editor.scene_data
+  if not scene_data:
+    return []
+  for s in scene_data.systemDatas:
+    if s.className == "SceneGraphSystemData":
+      try:
+        return list(s.declaredLayers)
+      except:
+        pass
+  return []
+
+def _layer_selector_factory(key, value, propsheet, editor=None):
+  cur_text = value if isinstance(value, str) else ""
+  widget = lev2.ui.ChoicelistWidget("ls_" + key, cur_text if cur_text else "(none)")
+
+  def _refresh():
+    available = _get_declared_layers(editor)
+    cur = [n.strip() for n in cur_text.split(",") if n.strip()] if cur_text else []
+    choices = []
+    for layer in available:
+      prefix = "[x] " if layer in cur else "[ ] "
+      choices.append(prefix + layer)
+    widget.setChoices(choices)
+
+  _refresh()
+
+  if propsheet:
+    model = propsheet.model
+
+    def on_selected(selected):
+      # strip the checkbox prefix
+      layer = selected[4:] if selected.startswith("[") else selected
+      cur_val = model.getValue(key)
+      cur_str = cur_val if isinstance(cur_val, str) else ""
+      cur_layers = [n.strip() for n in cur_str.split(",") if n.strip()]
+
+      if layer in cur_layers:
+        cur_layers.remove(layer)
+      else:
+        cur_layers.append(layer)
+
+      new_val = ", ".join(cur_layers)
+      model.setValue(key, new_val)
+      widget.current_value = new_val if new_val else "(none)"
+
+      # re-read to refresh checkboxes
+      nonlocal cur_text
+      cur_text = new_val
+      _refresh()
+
+    widget.onChoiceSelected = on_selected
+
+  return widget
+
+registerWidgetEditor("EcsLayerSelector", _layer_selector_factory)
+
+################################################################################
+
+class OverridablePropertySheetModel(lev2.ui.ReflectionPropertySheetModel):
+  """ReflectionPropertySheetModel that records key overrides for replay to pinned sheets."""
+
+  def __init__(self):
+    super().__init__()
+    self._override_records = []
+
+  def addKeyOverride(self, name, prop_type, getter, setter, choices_fn):
+    self._override_records.append((name, prop_type, getter, setter, choices_fn))
+    super().addKeyOverride(name, prop_type, getter, setter, choices_fn)
+
+  def clearKeyOverrides(self):
+    self._override_records.clear()
+    super().clearKeyOverrides()
+
+  def replayOverridesTo(self, other_model):
+    other_model.clearKeyOverrides()
+    for (name, prop_type, getter, setter, choices_fn) in self._override_records:
+      other_model.addKeyOverride(name, prop_type, getter, setter, choices_fn)
+
+################################################################################
+
 # SVG icon strings for editor light/probe billboards
 _SVG_POINT_LIGHT = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <circle cx="32" cy="32" r="14" fill="#FFD700" stroke="#FFA500" stroke-width="2"/>
@@ -172,6 +342,13 @@ class EcsEditor(ComponentizedApplication):
     Override to add custom key overrides via self.refl_model.addKeyOverride()."""
     pass
 
+  def _applySubObjectOverrides(self):
+    """Apply _onSelectionChanged overrides for all nested sub-objects in the model."""
+    if not hasattr(self.refl_model, 'getSubObjectEntries'):
+      return
+    for key_prefix, sub_obj in self.refl_model.getSubObjectEntries():
+      self._onSelectionChanged(sub_obj, key_prefix)
+
   def _onSceneLoaded(self, path):
     """Extension point: called after a scene is successfully loaded."""
     pass
@@ -259,6 +436,7 @@ class EcsEditor(ComponentizedApplication):
       uiclass=lev2.ui.TabsWidget, args=["content_tabs", vec3(0.5, 0.5, 0.8)])
     self.left_panel.fill_widget = self.content_tabs
     self.content_tabs.sort_tabs = False  # preserve insertion order
+    self.content_tabs.font = lev2.FontManager.fontForId("i12")
 
     # Outliner tab
     self.outliner = self.content_tabs.makeChild(
@@ -454,17 +632,20 @@ class EcsEditor(ComponentizedApplication):
     self.propsheet_tabs = self.propsheet_dock.createChild(
       uiclass=lev2.ui.TabsWidget, args=["propsheet_tabs", vec3(0.4, 0.4, 0.6)])
     self.propsheet_tabs.sort_tabs = False
+    self.propsheet_tabs.font = lev2.FontManager.fontForId("i12")
     self.propsheet_tabs.onTabClose(self._onPinnedTabClosed)
     self._pinned_tabs = []  # list of (widget, model) tuples
 
     self.propsheet = self.propsheet_tabs.makeChild(
       uiclass=lev2.ui.PropertySheet, args=["Properties"])
     self.propsheet.row_height = 24
-    self.propsheet.label_width = 120
-    self.refl_model = lev2.ui.ReflectionPropertySheetModel()
+    self.propsheet.label_width = 200
+    self.refl_model = OverridablePropertySheetModel()
     self.propsheet.model = self.refl_model
-    self.propsheet.onPropertyChanged(self._onPropertyChanged)
-    self.propsheet.onRequestCustomEditor(self._onRequestCustomEditor)
+    self.propsheet.onPropertyChanged(lambda k, v: self._onPropertyChangedForModel(self.refl_model, k, v))
+    self.propsheet.onRequestCustomEditor(lambda k, eid: self._onRequestCustomEditor(k, eid, self.refl_model))
+    self.propsheet.onChildObjectPopout(lambda key, obj: self._pinObjectPropertySheet(obj, key))
+    self.propsheet.onCreateWidgetEditor(lambda k, wc, v: _createRegisteredWidgetEditor(k, wc, v, self.propsheet, self))
     self._curve_editor = None
 
   def _pinCurrentPropertySheet(self):
@@ -484,12 +665,53 @@ class EcsEditor(ComponentizedApplication):
     pinned_sheet = self.propsheet_tabs.makeChild(
       uiclass=lev2.ui.PropertySheet, args=[tab_name])
     pinned_sheet.row_height = 24
-    pinned_sheet.label_width = 120
-    pinned_model = lev2.ui.ReflectionPropertySheetModel()
+    pinned_sheet.label_width = 200
+    pinned_model = OverridablePropertySheetModel()
+    pinned_model.object = obj
+    self.refl_model.replayOverridesTo(pinned_model)
+    pinned_sheet.model = pinned_model
+    pinned_sheet.onPropertyChanged(lambda k, v: self._onPropertyChangedForModel(pinned_model, k, v))
+    pinned_sheet.onRequestCustomEditor(lambda k, eid: self._onRequestCustomEditor(k, eid, pinned_model))
+    pinned_sheet.onCreateWidgetEditor(lambda k, wc, v: _createRegisteredWidgetEditor(k, wc, v, pinned_sheet, self))
+    pinned_sheet.rebuild()
+    pinned_sheet.expandAll()
+    self.propsheet_tabs.setTabCloseable(pinned_sheet, True)
+    self._pinned_tabs.append((pinned_sheet, pinned_model))
+    self.propsheet_tabs.setActiveTabByName(tab_name)
+
+  def _pinObjectPropertySheet(self, obj, key=""):
+    """Pin an arbitrary object to a new closeable property sheet tab."""
+    if obj is None:
+      return
+    class_name = getattr(obj, 'className', None) or type(obj).__name__
+    display_key = key.rsplit("/", 1)[-1] if key else ""
+    if display_key == class_name or not display_key:
+      parent_name = getattr(self._selected_object, 'name', None) \
+                    or getattr(self._selected_object, 'className', None) or ""
+      display_key = parent_name
+    label = f"{display_key} ({class_name})" if display_key and display_key != class_name else class_name
+    # Avoid duplicate pins on the same object
+    for w, m in self._pinned_tabs:
+      if m.object is obj:
+        self.propsheet_tabs.setActiveTabByName(w._name)
+        return
+    tab_name = f"{label}"
+    pinned_sheet = self.propsheet_tabs.makeChild(
+      uiclass=lev2.ui.PropertySheet, args=[tab_name])
+    pinned_sheet.row_height = 24
+    pinned_sheet.label_width = 200
+    pinned_model = OverridablePropertySheetModel()
     pinned_model.object = obj
     pinned_sheet.model = pinned_model
-    pinned_sheet.onPropertyChanged(self._onPropertyChanged)
-    pinned_sheet.onRequestCustomEditor(self._onRequestCustomEditor)
+    pinned_sheet.onPropertyChanged(lambda k, v: self._onPropertyChangedForModel(pinned_model, k, v))
+    pinned_sheet.onRequestCustomEditor(lambda k, eid: self._onRequestCustomEditor(k, eid, pinned_model))
+    pinned_sheet.onChildObjectPopout(lambda k, child: self._pinObjectPropertySheet(child, k))
+    pinned_sheet.onCreateWidgetEditor(lambda k, wc, v: _createRegisteredWidgetEditor(k, wc, v, pinned_sheet, self))
+    # Temporarily swap refl_model so _onSelectionChanged adds overrides to the pinned model
+    saved_model = self.refl_model
+    self.refl_model = pinned_model
+    self._onSelectionChanged(obj, "")
+    self.refl_model = saved_model
     pinned_sheet.rebuild()
     pinned_sheet.expandAll()
     self.propsheet_tabs.setTabCloseable(pinned_sheet, True)
@@ -500,6 +722,15 @@ class EcsEditor(ComponentizedApplication):
     """Called when a pinned tab's X button is clicked."""
     self._pinned_tabs = [(w, m) for w, m in self._pinned_tabs if w is not widget]
 
+  def _onPropertyChangedForModel(self, source_model, key, value):
+    """Handles a property change from a specific model and notifies sibling models."""
+    self._onPropertyChanged(key, value)
+    changed_obj = source_model.object
+    all_models = [self.refl_model] + [m for _, m in self._pinned_tabs]
+    for m in all_models:
+      if m is not source_model and m.object is changed_obj:
+        m.notifyExternalValueChanged(key)
+
   def _onPropertyChanged(self, key, value):
     if "userparams/" in key:
       param_name = key.split("/")[-1]
@@ -508,14 +739,35 @@ class EcsEditor(ComponentizedApplication):
     elif "/assetpath" in key:
       self._requestRebuild()
 
-  def _onRequestCustomEditor(self, key, editor_id):
+  def _onRequestCustomEditor(self, key, editor_id, model=None):
     if editor_id == "transformcurveeditor":
-      self._openTransformCurveEditor()
+      self._openTransformCurveEditor(key, model)
 
-  def _openTransformCurveEditor(self):
-    if self._selected_object is None:
-      return
-    curve = getattr(self._selected_object, 'curve', None)
+  def _openTransformCurveEditor(self, key="", model=None):
+    # Resolve the curve from the key path by walking up until we find
+    # an object with a 'curve' attribute
+    curve = None
+    if model and key:
+      path = key
+      while path:
+        obj = model.getSubObject(path)
+        if obj is not None:
+          curve = getattr(obj, 'curve', None)
+          if curve is not None:
+            break
+        # Walk up one level
+        if "/" in path:
+          path = path.rsplit("/", 1)[0]
+        else:
+          break
+    # Check the model's root object (for popped-out sheets where root IS the component)
+    if curve is None and model:
+      root = model.object
+      if root is not None:
+        curve = getattr(root, 'curve', None)
+    # Fallback to selected object
+    if curve is None and self._selected_object is not None:
+      curve = getattr(self._selected_object, 'curve', None)
     if curve is None:
       return
 
@@ -941,6 +1193,7 @@ class EcsEditor(ComponentizedApplication):
               imported_scene, "systemDatas", obj_name)
       self.refl_model.object = self._selected_object
       self._onSelectionChanged(self._selected_object, key)
+      self._applySubObjectOverrides()
       self.propsheet.rebuild()
       self.propsheet.expandAll()
       return
@@ -999,6 +1252,7 @@ class EcsEditor(ComponentizedApplication):
 
     self.refl_model.object = self._selected_object
     self._onSelectionChanged(self._selected_object, key)
+    self._applySubObjectOverrides()
     self.propsheet.rebuild()
     self.propsheet.expandAll()
 

@@ -13,6 +13,70 @@ namespace ork { namespace ui {
 constexpr bool DEBUG_BLIT = false;
 
 /////////////////////////////////////////////////////////////////////////
+// SSAA support
+/////////////////////////////////////////////////////////////////////////
+
+void Surface::_initSsaa(lev2::Context* ctx) {
+  if (_ssaa_initialized) return;
+  _ssaa_initialized = true;
+
+  _ssaa_blit_mtl.gpuInit(ctx, "orkshader://blit");
+  _ssaa_blit_mtl._rasterstate->setCullTest(lev2::ECullTest::OFF);
+  _ssaa_tek[0] = _ssaa_blit_mtl.technique("blit");           // 1x1 (passthrough)
+  _ssaa_tek[1] = _ssaa_blit_mtl.technique("downsample_2x2");
+  _ssaa_tek[2] = _ssaa_blit_mtl.technique("downsample_3x3");
+  _ssaa_tek[3] = _ssaa_blit_mtl.technique("downsample_4x4");
+  _ssaa_tek[4] = _ssaa_blit_mtl.technique("downsample_5x5");
+  _ssaa_tek[5] = _ssaa_blit_mtl.technique("downsample_6x6");
+  _ssaa_par_mvp      = _ssaa_blit_mtl.param("MatMVP");
+  _ssaa_par_colormap  = _ssaa_blit_mtl.param("ColorMap");
+
+  _ssaa_resolve_rtg = std::make_shared<lev2::RtGroup>(ctx, 8, 8, lev2::MsaaSamples::MSAA_1X);
+  _ssaa_resolve_rtg->createRenderTarget(lev2::EBufferFormat::RGBA8);
+}
+
+void Surface::_ssaaResolve(lev2::Context* ctx, int dst_w, int dst_h) {
+  auto fbi = ctx->FBI();
+  auto gbi = ctx->GBI();
+
+  if (_ssaa_resolve_rtg->width() != dst_w || _ssaa_resolve_rtg->height() != dst_h) {
+    _ssaa_resolve_rtg->Resize(dst_w, dst_h);
+  }
+
+  auto ssaa_tex = _rtgroup->buffer(0)->texture();
+  _ssaa_resolve_rtg->_autoclear = false;
+  fbi->PushRtGroup(_ssaa_resolve_rtg.get());
+  {
+    auto rcfd = ctx->topRenderContextFrameData();
+    auto& mtl = _ssaa_blit_mtl;
+    mtl._rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
+    mtl._rasterstate->setDepthTest(lev2::EDepthTest::OFF);
+    mtl._rasterstate->_force = true;
+
+    int tek_idx = std::clamp(_supersample, 0, 5);
+    mtl.begin(_ssaa_tek[tek_idx], rcfd);
+    mtl.bindParamTexture(_ssaa_par_colormap, ssaa_tex);
+    mtl.bindParamMatrix(_ssaa_par_mvp, fmtx4::Identity());
+
+    lev2::ViewportRect resolve_vp(0, 0, dst_w, dst_h);
+    fbi->pushViewport(resolve_vp);
+    fbi->pushScissor(resolve_vp);
+    gbi->render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+    fbi->popScissor();
+    fbi->popViewport();
+    mtl.end(rcfd);
+  }
+  fbi->PopRtGroup();
+}
+
+lev2::Texture* Surface::_resolvedTexture() {
+  if (_supersample > 0 && _ssaa_resolve_rtg) {
+    return _ssaa_resolve_rtg->buffer(0)->texture();
+  }
+  return _rtgroup->buffer(0)->texture();
+}
+
+/////////////////////////////////////////////////////////////////////////
 
 Surface::Surface(const std::string& name, int x, int y, int w, int h, fcolor4 color, F32 depth)
     : Group(name, x, y, w, h)
@@ -89,24 +153,31 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
     mNeedsSurfaceRepaint = true;
   }
   ///////////////////////////////////////
+  // Determine render target size (with optional SSAA upscale)
+  int multiplier = _supersample + 1;
+  int target_w, target_h;
+
   if (_decouple_from_ui_size) {
-    int irtgw  = _rtgroup->width();
-    int irtgh  = _rtgroup->height();
-    int isurfw = _decoupled_width;
-    int isurfh = _decoupled_height;
-
-    if (irtgw != isurfw or irtgh != isurfh) {
-      _rtgroup->Resize(isurfw, isurfh);
-      mNeedsSurfaceRepaint = true;
-    }
+    target_w = _decoupled_width * multiplier;
+    target_h = _decoupled_height * multiplier;
   } else {
-    int irtgw  = _rtgroup->width();
-    int irtgh  = _rtgroup->height();
-    int isurfw = width();
-    int isurfh = height();
+    target_w = width() * multiplier;
+    target_h = height() * multiplier;
+  }
 
-    if (irtgw != isurfw or irtgh != isurfh) {
-      _rtgroup->Resize(isurfw, isurfh);
+  if (target_w < 1 || target_h < 1) return;
+
+  // Initialize SSAA resolve resources if needed
+  if (_supersample > 0) {
+    _initSsaa(tgt);
+  }
+
+  // Resize RTG if needed
+  {
+    int irtgw = _rtgroup->width();
+    int irtgh = _rtgroup->height();
+    if (irtgw != target_w || irtgh != target_h) {
+      _rtgroup->Resize(target_w, target_h);
       mNeedsSurfaceRepaint = true;
     }
   }
@@ -126,13 +197,20 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
     _postRenderCallback();
   }
 
+  // SSAA resolve: downsample from upscaled RTG to widget-size resolve RTG
+  if (_supersample > 0) {
+    int resolve_w = _decouple_from_ui_size ? _decoupled_width : width();
+    int resolve_h = _decouple_from_ui_size ? _decoupled_height : height();
+    _ssaaResolve(tgt, resolve_w, resolve_h);
+  }
+
   ///////////////////////////////////
   // pickbuffer debug ?
   ///////////////////////////////////
   if (false) {
     if (_pickbuffer) {
       ork::lev2::PixelFetchContext pfc(2);
-      pfc.miMrtMask = (1 << 0); // | (1 << 1); // ObjectID and ObjectUVD
+      pfc.miMrtMask = (1 << 0);
       pfc._usage[0] = lev2::PixelFetchContext::EPixelUsage::PTR64;
       pfc._usage[1] = lev2::PixelFetchContext::EPixelUsage::FLOAT;
       GetPixel(100, 100, pfc);
@@ -145,7 +223,8 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
 
   if (_rtgroup) {
     static auto texmtl = std::make_shared<lev2::GfxMaterialUITextured>(tgt);
-    auto ptex          = _rtgroup->buffer(0)->texture();
+    // Use resolved texture (downsampled) if SSAA, otherwise direct RTG texture
+    auto ptex = _resolvedTexture();
     OrkAssert(ptex);
     texmtl->SetTexture(lev2::ETEXDEST_DIFFUSE, ptex);
     material = texmtl;

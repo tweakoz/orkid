@@ -7,6 +7,7 @@
 #include <ork/lev2/ui/event.h>
 #include <ork/lev2/ui/style.h>
 #include <ork/lev2/ui/context.h>
+#include <ork/util/crc.h>
 #include <cmath>
 #include <cctype>
 
@@ -498,10 +499,11 @@ void TabWidget::_drawTabBar(drawevent_constptr_t drwev) {
 
       // Draw tab text (using child's name)
       if (fontman && !child->_name.empty()) {
-        // Center text horizontally in tab
+        // Center text horizontally in tab (account for close icon on closeable tabs)
         int text_width = _tab_font->stringWidth(child->_name.length());
         int text_height = _tab_font->stringHeight(1);
-        int textX = x1 + (tab_w - text_width) / 2;  // Center horizontally
+        int avail_w = _closeable_tabs.count(child) ? (tab_w - _close_button_size - 4) : tab_w;
+        int textX = x1 + (avail_w - text_width) / 2;  // Center horizontally
         int textY = y1 + (_tabBarHeight - text_height) / 2;  // Center vertically
 
         // Get style for text color (pointer comparison)
@@ -530,29 +532,26 @@ void TabWidget::_drawTabBar(drawevent_constptr_t drwev) {
     fontman->endTextBlock(tgt);
     ork::lev2::FontMan::PopFont();
 
-    // Draw close buttons on closeable tabs (using font "x")
-    ork::lev2::FontMan::PushFont(_tab_font);
-    fontman->beginTextBlock(tgt);
-    for (size_t i = 0; i < _children.size(); i++) {
-      auto& child = _children[i];
-      if (!_closeable_tabs.count(child)) continue;
+    // Draw close button icons on closeable tabs
+    {
+      auto style = theme_engine->_styledb->getStyle("box"_crcu);
+      if (style && style->_icon_close) {
+        for (size_t i = 0; i < _children.size(); i++) {
+          auto& child = _children[i];
+          if (!_closeable_tabs.count(child)) continue;
 
-      int tab_x1 = _tab_positions[i] + 1;
-      int tab_w = _tab_widths[i] - 2;
-      int abs_x1, abs_y1;
-      LocalToRoot(tab_x1, 0, abs_x1, abs_y1);
+          int tab_x1 = _tab_positions[i] + 1;
+          int tab_w = _tab_widths[i] - 2;
+          int abs_x1, abs_y1;
+          LocalToRoot(tab_x1, 0, abs_x1, abs_y1);
 
-      int text_height = _tab_font->stringHeight(1);
-      int tx = abs_x1 + tab_w - _close_button_size;
-      int ty = abs_y1 + (_tabBarHeight - text_height) / 2;
-
-      fvec4 xcolor = (child == _hovered_tab) ? fvec4(1, 0.4, 0.4, 1) : fvec4(0.6, 0.6, 0.6, 1);
-      tgt->PushModColor(xcolor);
-      fontman->DrawText(tgt, tx, ty, "x");
-      tgt->PopModColor();
+          int icon_size = _close_button_size;
+          int ix = abs_x1 + tab_w - icon_size - 4;
+          int iy = abs_y1 + (_tabBarHeight - icon_size) / 2;
+          theme_engine->drawIcon(ix, iy, icon_size, icon_size, drwev, style->_icon_close);
+        }
+      }
     }
-    fontman->endTextBlock(tgt);
-    ork::lev2::FontMan::PopFont();
   }
   mtxi->PopUIMatrix();
 }

@@ -55,8 +55,8 @@ void CallbackDrawable::setEnqueueOnLayerLambda(Q2LLambdaType cb) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void CallbackDrawable::_renderWithLambda(RenderContextInstData& RCID) {
-  auto renderable = dynamic_cast<const CallbackRenderable*>(RCID._irenderable);
-  auto drawable   = renderable->_drawable;
+  auto renderable = (const CallbackRenderable*)(RCID._irenderable);
+  auto drawable   = (const CallbackDrawable*) renderable->_drawable;
   OrkAssert(drawable != nullptr);
   OrkAssert(drawable->_renderLambda != nullptr);
   drawable->_renderLambda(RCID);
@@ -73,6 +73,7 @@ void CallbackDrawable::setRenderLambda(RLCBType cb) {
 drawqueueitem_ptr_t CallbackDrawable::enqueueOnLayer(const DrawQueueTransferData& xfdata, DrawQueueLayer& buffer) const {
   // ork::opq::assertOnQueue2(opq::updateSerialQueue());
   auto item = buffer.enqueueDrawable(xfdata, this);
+  
   if (_enqueueOnLayerCallback) {
     _enqueueOnLayerCallback(item);
   }
@@ -85,6 +86,8 @@ drawqueueitem_ptr_t CallbackDrawable::enqueueOnLayer(const DrawQueueTransferData
 void CallbackDrawable::enqueueToRenderQueue(drawqueueitem_constptr_t item, lev2::IRenderer* renderer) const {
   ork::opq::assertOnQueue2(opq::mainSerialQueue());
 
+  if (!_renderEnabled.load(std::memory_order_acquire)) return;
+
   const auto& DQDATA = item->_dqxferdata;
 
   lev2::CallbackRenderable& renderable = renderer->enqueueCallback();
@@ -94,7 +97,7 @@ void CallbackDrawable::enqueueToRenderQueue(drawqueueitem_constptr_t item, lev2:
   renderable.SetMatrix(matrix);
   renderable._pickID = _pickID;
   renderable.SetRenderCallback(mRenderCallback);
-  renderable.SetSortKey(_sortkey);
+  renderable._sortkey = _sortkey;
   renderable.SetDrawableDataA(GetUserDataA());
   renderable.SetDrawableDataB(GetUserDataB());
   renderable.SetModColor(DQDATA._modcolor);
@@ -111,20 +114,12 @@ void CallbackRenderable::Render(const IRenderer* renderer) const {
   renderer->_renderCallbackRenderable(*this);
 }
 /////////////////////////////////////////////////////////////////////
-void CallbackRenderable::SetSortKey(uint32_t skey) {
-  mSortKey = skey;
-}
-/////////////////////////////////////////////////////////////////////
 void CallbackRenderable::SetRenderCallback(cbtype_t cb) {
   mRenderCallback = cb;
 }
 /////////////////////////////////////////////////////////////////////
 CallbackRenderable::cbtype_t CallbackRenderable::GetRenderCallback() const {
   return mRenderCallback;
-}
-/////////////////////////////////////////////////////////////////////
-uint32_t CallbackRenderable::ComposeSortKey(const IRenderer* renderer) const {
-  return mSortKey;
 }
 /////////////////////////////////////////////////////////////////////
 drawable_ptr_t CallbackDrawableData::createDrawable() const {

@@ -1135,7 +1135,6 @@ callback_drawable_ptr_t TerrainDrawableInst::createCallbackDrawable() {
   _rawdrawable = std::make_shared<CallbackDrawable>(nullptr);
   _rawdrawable->SetRenderCallback(_RenderHeightfield);
   _rawdrawable->SetUserDataA(impl);
-  _rawdrawable->SetSortKey(1000);
   return _rawdrawable;
 }*/
 

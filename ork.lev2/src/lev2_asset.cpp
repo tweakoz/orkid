@@ -279,13 +279,13 @@ FxShaderLoader::FxShaderLoader()
 
 asset_ptr_t FxShaderLoader::_doLoadAsset(asset::loadrequest_ptr_t loadreq) {
   auto path = loadreq->_asset_path;
-  
-  // Check cache first
-  auto it = _shader_cache.find(path.c_str());
-  if (it != _shader_cache.end()) {
-    // Return cached shader asset
-    //printf("FxShaderLoader: CACHE HIT for shader <%s>\n", path.c_str());
-    return it->second;
+
+  // Check cache first (unless caller explicitly bypasses)
+  if (loadreq->_enable_cache) {
+    auto it = _shader_cache.find(path.c_str());
+    if (it != _shader_cache.end()) {
+      return it->second;
+    }
   }
   
   // Create and load new shader
@@ -303,10 +303,11 @@ asset_ptr_t FxShaderLoader::_doLoadAsset(asset::loadrequest_ptr_t loadreq) {
   if (bOK)
     pshader->GetFxShader()->SetName(path.c_str());
   
-  // Cache the loaded shader
-  _shader_cache[path.c_str()] = pshader;
-  //printf("FxShaderLoader: Cached shader <%s>, cache size now: %zu\n", path.c_str(), _shader_cache.size());
-  
+  // Cache the loaded shader (unless cache bypassed)
+  if (loadreq->_enable_cache) {
+    _shader_cache[path.c_str()] = pshader;
+  }
+
   return pshader;
 }
 

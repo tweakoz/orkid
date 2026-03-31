@@ -28,6 +28,7 @@ namespace ork {
 //using namespace rtti;
 ///////////////////////////////////////////////////////////////////////////////
 using class_pyptr_t               = unmanaged_ptr<rtti::Class>;
+//auto objtype_t = py::class_<Object,rtti::ICastable,object_ptr_t>(module_core, "Object")
 ///////////////////////////////////////////////////////////////////////////////
 void pyinit_reflection(py::module& module_core) {
   auto type_codec = python::pb11_typecodec_t::instance();
@@ -35,12 +36,21 @@ void pyinit_reflection(py::module& module_core) {
     auto class_type_t = py::class_<rtti::Class,class_pyptr_t>(module_core, "Class") //
       .def_property_readonly("name", [](class_pyptr_t clazz) -> std::string {
         return clazz->Name().c_str();
+      })
+      .def("isSubclassOf", [](class_pyptr_t clazz, class_pyptr_t other) -> bool {
+        return clazz->IsSubclassOf(other.get());
       });
   type_codec->registerStdCodec<class_pyptr_t>(class_type_t);
   /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
     auto icastable_type_t = py::class_<rtti::ICastable,rtti::castable_ptr_t>(module_core, "ICastable") //
       .def_property_readonly("clazz", [](rtti::castable_ptr_t castable) -> class_pyptr_t {
-        return class_pyptr_t(castable->GetClass()); 
+        return class_pyptr_t(castable->GetClass());
+      })
+      .def("isSubclassOfNamed", [](rtti::castable_ptr_t castable, const std::string& name) -> bool {
+        auto* target = rtti::Class::FindClass(name);
+        if (!target) return false;
+        return castable->GetClass()->IsSubclassOf(target);
       });
   type_codec->registerStdCodec<rtti::castable_ptr_t>(icastable_type_t);
   /////////////////////////////////////////////////////////////////////////////////
@@ -52,79 +62,83 @@ void pyinit_reflection(py::module& module_core) {
     py::object ork_to_python(const std::string& key) const {
       auto clazz = _object->GetClass();
       auto objclazz = dynamic_cast<object::ObjectClass*>(clazz);
-      auto& desc = objclazz->Description();
-      for( auto pitem : desc.properties() ){
-        auto refprop = pitem.second;
-        auto annos = refprop->_annotations;
-        auto try_vis = refprop->typedAnnotation<bool>("python.visible");
-        bool is_visible = try_vis ? try_vis.value() : true;
-        auto propname = refprop->_name;
-        if(propname==key and is_visible){
-          varmap::var_t variant;
-          if( auto as_int = dynamic_cast<ityped_int*>(refprop) ){
-            int intvalue = 0;
-            as_int->get(intvalue,_object);
-            variant.set<int>(intvalue);
-            return _codec->encode(variant);
-          }
-          else if( auto as_float = dynamic_cast<ityped_float*>(refprop) ){
-            float floatvalue = 0;
-            as_float->get(floatvalue,_object);
-            variant.set<float>(floatvalue);
-            return _codec->encode(variant);
-          }
-          else if( auto as_str = dynamic_cast<ityped_string*>(refprop) ){
-            std::string strvalue;
-            as_str->get(strvalue,_object);
-            variant.set<std::string>(strvalue);
-            return _codec->encode(variant);
-          }
-          else if( auto as_bool = dynamic_cast<ityped_bool*>(refprop) ){
-            bool bvalue;
-            as_bool->get(bvalue,_object);
-            variant.set<bool>(bvalue);
-            return _codec->encode(variant);
-          }
-          else if( auto as_intarray = dynamic_cast<ityped_int_array*>(refprop) ){
-            refl_codec_adapter_ptr_t adapter = //
-            std::make_shared<IntArrayPropertyAdapter>( _object,//
-                                                       as_intarray, //
-                                                       _codec);
-            return _codec->encode(adapter);
-          }
-          else if( auto as_floatarray = dynamic_cast<ityped_float_array*>(refprop) ){
-            refl_codec_adapter_ptr_t adapter = //
-            std::make_shared<FloatArrayPropertyAdapter>( _object,//
-                                                         as_floatarray, //
+      // Walk the description chain (own + parent classes)
+      const reflect::Description* desc_ptr = &objclazz->Description();
+      while (desc_ptr) {
+        for( auto pitem : desc_ptr->properties() ){
+          auto refprop = pitem.second;
+          auto annos = refprop->_annotations;
+          auto try_vis = refprop->typedAnnotation<bool>("python.visible");
+          bool is_visible = try_vis ? try_vis.value() : true;
+          auto propname = refprop->_name;
+          if(propname==key and is_visible){
+            varmap::var_t variant;
+            if( auto as_int = dynamic_cast<ityped_int*>(refprop) ){
+              int intvalue = 0;
+              as_int->get(intvalue,_object);
+              variant.set<int>(intvalue);
+              return _codec->encode(variant);
+            }
+            else if( auto as_float = dynamic_cast<ityped_float*>(refprop) ){
+              float floatvalue = 0;
+              as_float->get(floatvalue,_object);
+              variant.set<float>(floatvalue);
+              return _codec->encode(variant);
+            }
+            else if( auto as_str = dynamic_cast<ityped_string*>(refprop) ){
+              std::string strvalue;
+              as_str->get(strvalue,_object);
+              variant.set<std::string>(strvalue);
+              return _codec->encode(variant);
+            }
+            else if( auto as_bool = dynamic_cast<ityped_bool*>(refprop) ){
+              bool bvalue;
+              as_bool->get(bvalue,_object);
+              variant.set<bool>(bvalue);
+              return _codec->encode(variant);
+            }
+            else if( auto as_intarray = dynamic_cast<ityped_int_array*>(refprop) ){
+              refl_codec_adapter_ptr_t adapter = //
+              std::make_shared<IntArrayPropertyAdapter>( _object,//
+                                                         as_intarray, //
                                                          _codec);
-            return _codec->encode(adapter);
-          }
-          else if( auto as_objarray = dynamic_cast<iobject_array*>(refprop) ){
-            refl_codec_adapter_ptr_t adapter = //
-            std::make_shared<ObjectArrayCodecAdapter>( _object,//
-                                                       as_objarray, //
+              return _codec->encode(adapter);
+            }
+            else if( auto as_floatarray = dynamic_cast<ityped_float_array*>(refprop) ){
+              refl_codec_adapter_ptr_t adapter = //
+              std::make_shared<FloatArrayPropertyAdapter>( _object,//
+                                                           as_floatarray, //
+                                                           _codec);
+              return _codec->encode(adapter);
+            }
+            else if( auto as_objarray = dynamic_cast<iobject_array*>(refprop) ){
+              refl_codec_adapter_ptr_t adapter = //
+              std::make_shared<ObjectArrayCodecAdapter>( _object,//
+                                                         as_objarray, //
+                                                         _codec);
+              return _codec->encode(adapter);
+            }
+            else if( auto as_objmap = dynamic_cast<iobject_map*>(refprop) ){
+              refl_codec_adapter_ptr_t adapter = //
+              std::make_shared<ObjectMapCodecAdapter>( _object,//
+                                                       as_objmap, //
                                                        _codec);
-            return _codec->encode(adapter);
-          }
-          else if( auto as_objmap = dynamic_cast<iobject_map*>(refprop) ){
-            refl_codec_adapter_ptr_t adapter = //
-            std::make_shared<ObjectMapCodecAdapter>( _object,//
-                                                     as_objmap, //
-                                                     _codec);
-            return _codec->encode(adapter);
-          }
-          else if( auto as_sdobjmap = dynamic_cast<sdobject_map*>(refprop) ){
-            refl_codec_adapter_ptr_t adapter = //
-            std::make_shared<SDObjectMapCodecAdapter>( _object,//
-                                                       as_sdobjmap, //
-                                                      _codec);
-            return _codec->encode(adapter);
-          }
-          else{
-            printf( "reflection class<%s> prop<%s> unhandled type>\n", clazz->Name().c_str(), propname.c_str());
-            OrkAssert(false);
+              return _codec->encode(adapter);
+            }
+            else if( auto as_sdobjmap = dynamic_cast<sdobject_map*>(refprop) ){
+              refl_codec_adapter_ptr_t adapter = //
+              std::make_shared<SDObjectMapCodecAdapter>( _object,//
+                                                         as_sdobjmap, //
+                                                        _codec);
+              return _codec->encode(adapter);
+            }
+            else{
+              printf( "reflection class<%s> prop<%s> unhandled type>\n", clazz->Name().c_str(), propname.c_str());
+              OrkAssert(false);
+            }
           }
         }
+        desc_ptr = desc_ptr->parent();
       }
       return py::none();
     }
@@ -145,42 +159,45 @@ void pyinit_reflection(py::module& module_core) {
                 auto obj = proxy->_object;
                 auto clazz = obj->GetClass();
                 auto objclazz = dynamic_cast<object::ObjectClass*>(clazz);
-                auto& desc = objclazz->Description();
-                for( auto pitem : desc.properties() ){
-                  auto refprop = pitem.second;
-                  auto propname = refprop->_name;
-                  if(propname==key){
-                    if( auto as_int = dynamic_cast<ityped_int*>(refprop) ){
-                      auto variant = proxy->_codec->decode(value);
-                      as_int->set(variant.get<int>(),obj);
-                      return;
-                    }
-                    else if( auto as_float = dynamic_cast<ityped_float*>(refprop) ){
-                      auto variant = proxy->_codec->decode(value);
-                      as_float->set(variant.get<float>(),obj);
-                      return;
-                    }
-                    else if( auto as_str = dynamic_cast<ityped_string*>(refprop) ){
-                      auto variant = proxy->_codec->decode(value);
-                      as_str->set(variant.get<std::string>(),obj);
-                      return;
-                    }
-                    else if( auto as_iarray = dynamic_cast<ityped_int_array*>(refprop) ){
-                      auto as_list = value.cast<py::list>();
-                      size_t len = as_list.size();
-                      as_iarray->resize(obj,len);
-                      for( size_t index=0; index<len; index++ ){
-                        int ival = as_list[index].cast<int>();
-                        as_iarray->set(ival,obj,index);
+                // Walk the description chain (own + parent classes)
+                const reflect::Description* desc_ptr = &objclazz->Description();
+                while (desc_ptr) {
+                  for( auto pitem : desc_ptr->properties() ){
+                    auto refprop = pitem.second;
+                    auto propname = refprop->_name;
+                    if(propname==key){
+                      if( auto as_int = dynamic_cast<ityped_int*>(refprop) ){
+                        auto variant = proxy->_codec->decode(value);
+                        as_int->set(variant.get<int>(),obj);
+                        return;
                       }
-                      return;
+                      else if( auto as_float = dynamic_cast<ityped_float*>(refprop) ){
+                        auto variant = proxy->_codec->decode(value);
+                        as_float->set(variant.get<float>(),obj);
+                        return;
+                      }
+                      else if( auto as_str = dynamic_cast<ityped_string*>(refprop) ){
+                        auto variant = proxy->_codec->decode(value);
+                        as_str->set(variant.get<std::string>(),obj);
+                        return;
+                      }
+                      else if( auto as_iarray = dynamic_cast<ityped_int_array*>(refprop) ){
+                        auto as_list = value.cast<py::list>();
+                        size_t len = as_list.size();
+                        as_iarray->resize(obj,len);
+                        for( size_t index=0; index<len; index++ ){
+                          int ival = as_list[index].cast<int>();
+                          as_iarray->set(ival,obj,index);
+                        }
+                        return;
+                      }
+                      else{
+                        printf( "reflection class<%s> prop<%s> unhandled type>\n", clazz->Name().c_str(), propname.c_str());
+                        OrkAssert(false);
+                      }
                     }
-                    else{
-                      printf( "reflection class<%s> prop<%s> unhandled type>\n", clazz->Name().c_str(), propname.c_str());
-                      OrkAssert(false);
-                    }
-                                        
                   }
+                  desc_ptr = desc_ptr->parent();
                 }
                 OrkAssert(false);
               })

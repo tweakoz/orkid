@@ -27,6 +27,8 @@ struct ReflectionPropertySheetModel : public PropertySheetModel {
 
   void setObject(object_ptr_t obj);
   object_ptr_t getObject() const;
+  object_ptr_t getSubObject(const std::string& key) const;
+  std::vector<std::pair<std::string, object_ptr_t>> getSubObjectEntries() const;
 
   // Map property support (overrides from PropertySheetModel)
   bool isMapProperty(const std::string& key) const override;

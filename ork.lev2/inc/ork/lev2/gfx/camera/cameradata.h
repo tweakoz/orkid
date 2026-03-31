@@ -12,6 +12,7 @@
 #include <ork/math/frustum.h>
 #include <ork/math/cmatrix4.h>
 #include <ork/lev2/lev2_types.h>
+#include <mutex>
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -90,6 +91,9 @@ struct CameraDataLut{
 
   cameradata_constptr_t& operator[] (const std::string& named);
   cameradata_constptr_t find(const std::string& named) const;
+  cameradata_constptr_t atomicCopy(const std::string& named) const;
+  void lock() const;
+  void unlock() const;
   size_t size() const;
   void clear();
   map_t::iterator begin();
@@ -98,6 +102,7 @@ struct CameraDataLut{
   map_t::const_iterator end() const;
   std::atomic<int> _state;
 
+  mutable std::mutex _mutex;
   map_t _lut;
 };
 

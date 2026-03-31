@@ -8,6 +8,7 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
 #include <ork/pch.h>
@@ -87,10 +88,11 @@ void IRenderer::drawEnqueuedRenderables(bool reset_after) {
 
   _sortkeys.resize(renderQueueSize);
   for (size_t i = 0; i < renderQueueSize; i++) {
-    int skey     = _sortedNodes[i]->_renderable->ComposeSortKey(this);
+    auto ren = _sortedNodes[i]->_renderable;
+    int skey     = ren->_sortkey;
     _sortkeys[i] = skey;
     if(_debugLog){
-      printf( "skey<%zu:%0x>\n", i, skey );
+      printf( "skey<%zu:%0x>\n", i, skey  );
     }
   }
   EASY_END_BLOCK;
@@ -132,15 +134,16 @@ void IRenderer::drawEnqueuedRenderables(bool reset_after) {
     int sorted = sortedRenderQueueIndices[i];
     OrkAssert(sorted < U32(renderQueueSize));
     const RenderQueue::Node* pnode = _sortedNodes[sorted];
-
+    auto ren = pnode->_renderable;
     if(_debugLog){
       int sortkey = _sortkeys[sorted];
-      printf( "render i<%zu> sorted<%d> sortkey<0x%x>\n", i, sorted, sortkey );
+      const char* name = ren->_drawable ? ren->_drawable->_name.c_str() : "???";
+      printf( "render i<%zu> sorted<%d> sortkey<0x%x> drw: %p:%s\n", i, sorted, sortkey, ren->_drawable, name );
     }
 
 
     _target->debugPushGroup(FormatString("IRenderer::drawEnqueuedRenderables render item<%zu> node<%p>", i, pnode));
-    pnode->_renderable->Render(this);
+    ren->Render(this);
     _target->debugPopGroup();
   }
 
@@ -176,6 +179,12 @@ void IRenderer::resetQueue(void) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void IRenderer::_renderCallbackRenderable(const CallbackRenderable& cbren) const {
+  // Check _renderEnabled on the drawable at render execution time
+  // (equivalent to ModelDrawable's "if (!_modelinst) return;" pattern)
+  if (cbren._drawable) {
+    auto* cbd = static_cast<const CallbackDrawable*>(cbren._drawable);
+    if (!cbd->_renderEnabled.load(std::memory_order_acquire)) return;
+  }
   if (cbren.GetRenderCallback()) {
     auto context = GetTarget();
     RenderContextInstData RCID(context->topRenderContextFrameData());

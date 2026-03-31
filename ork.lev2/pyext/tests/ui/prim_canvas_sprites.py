@@ -152,6 +152,7 @@ class SpriteTortureTest(ComponentizedApplication):
     lg.clearColorStd = vec4(0.05, 0.05, 0.1, 1)
     cl = lg.makeChild(uiclass=lev2.ui.PrimCanvas, args=["sprites"])
     self.canvas = cl.widget
+    self.canvas.supersample = 3
     for edge in ['top', 'left', 'bottom', 'right']:
       getattr(cl.layout, edge).anchorTo(getattr(lg.layout, edge))
     self.canvas.bg_color = vec4(0.05, 0.05, 0.1, 1)

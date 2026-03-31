@@ -182,7 +182,7 @@ drawqueueitem_ptr_t DrawQueueLayer::enqueueDrawable(const DrawQueueTransferData&
   item->_bufferIndex = miBufferIndex;
   static std::atomic<int> counter = 0;
   item->_serialno = counter++;
-  item->_sortkey = _sortkey;
+  item->_sortkey = d->_sortkey;
   _items.atomicOp([this,item](DrawQueueLayer::itemvect_t& unlocked){
     unlocked.push_back(item);
     _itemIndex = unlocked.size();
@@ -239,15 +239,19 @@ void DrawQueueItem::terminate() {
 void DrawQueue::copyCameras(const CameraDataLut& cameras) {
   _state.store(999);
   ork::opq::assertOnQueue2( opq::updateSerialQueue() );
-  _cameraDataLUT.atomicOp([&cameras](cameradatalut_ptr_t& unlocked){
-    unlocked->clear();
-    for (auto itCAM = cameras.begin(); itCAM != cameras.end(); itCAM++) {
-      const std::string& CameraName       = itCAM->first;
-      cameradata_constptr_t pcameradata = itCAM->second;
-      if (pcameradata) {
-        (*unlocked)[CameraName]=pcameradata;
-      }
+  // Deep-copy cameras under the source lock, then store into destination
+  cameradatalut_ptr_t snapshot = std::make_shared<CameraDataLut>();
+  cameras.lock();
+  for (auto itCAM = cameras.begin(); itCAM != cameras.end(); itCAM++) {
+    const std::string& CameraName = itCAM->first;
+    cameradata_constptr_t pcameradata = itCAM->second;
+    if (pcameradata) {
+      (*snapshot)[CameraName] = std::make_shared<CameraData>(*pcameradata);
     }
+  }
+  cameras.unlock();
+  _cameraDataLUT.atomicOp([&snapshot](cameradatalut_ptr_t& unlocked){
+    unlocked = snapshot;
   });
   _state.store(1000);
 }

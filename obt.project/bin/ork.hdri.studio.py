@@ -222,7 +222,7 @@ class EnvMapStudio(ComponentizedApplication):
 
     self.createEzApp(
       name="HDRI Env Map Studio",
-      fullscreen=True,
+      fullscreen=False,
       enable_audio=False,
       enable_audio_output=False,
       enable_audio_synth=False,

@@ -164,6 +164,13 @@ class DuGeometryBufferInterface final : public GeometryBufferInterface {
       PrimitiveType eType,
       size_t instance_count) override;
 
+  void DrawInstancedIndexedPrimitiveEML(
+      const VertexBufferBase& VBuf,
+      const IndexBufferBase& IdxBuf,
+      PrimitiveType eType,
+      size_t instance_count,
+      size_t first_instance) override;
+
   //////////////////////////////////////////////
 
 public:

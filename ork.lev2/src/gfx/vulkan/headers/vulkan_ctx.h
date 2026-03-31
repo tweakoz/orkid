@@ -212,6 +212,13 @@ struct VkGeometryBufferInterface final : public GeometryBufferInterface {
       PrimitiveType eType,
       size_t instance_count) final;
 
+  void DrawInstancedIndexedPrimitiveEML(
+      const VertexBufferBase& VBuf,
+      const IndexBufferBase& IdxBuf,
+      PrimitiveType eType,
+      size_t instance_count,
+      size_t first_instance) final;
+
   //////////////////////////////////////////////
   // nvidia mesh shaders
   //////////////////////////////////////////////

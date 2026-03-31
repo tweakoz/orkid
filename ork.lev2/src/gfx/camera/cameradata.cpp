@@ -52,6 +52,23 @@ cameradata_constptr_t CameraDataLut::find(const std::string& named) const{
   return it->second;
 }
 ////////////////////////////////////////////////////////////////////////////////
+cameradata_constptr_t CameraDataLut::atomicCopy(const std::string& named) const{
+  std::lock_guard<std::mutex> lock(_mutex);
+  auto it = _lut.find(named);
+  if(it==_lut.end()){
+    return nullptr;
+  }
+  return std::make_shared<CameraData>(*(it->second));
+}
+////////////////////////////////////////////////////////////////////////////////
+void CameraDataLut::lock() const{
+  _mutex.lock();
+}
+////////////////////////////////////////////////////////////////////////////////
+void CameraDataLut::unlock() const{
+  _mutex.unlock();
+}
+////////////////////////////////////////////////////////////////////////////////
 void CameraDataLut::clear(){
   _state.fetch_add(100);
   _lut.clear();

@@ -21,10 +21,6 @@ IRenderable::IRenderable()
 }
 IRenderable::~IRenderable() { // virtual
 }
-uint32_t IRenderable::ComposeSortKey(const IRenderer* renderer) const { // virtual
-  return 0;
-}
-
 void IRenderable::setObject(const ork::Object* o) {
   _pickID.set<const ork::Object*>(o);
 }

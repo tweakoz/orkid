@@ -487,7 +487,7 @@ bool BulletSystem::_onLink(Simulation* psi) {
   auto pdata       = new BulletDebugDrawDBData(_debugger);
   pdata->_debugger = _debugger;
   _debugDrawable->SetUserDataA(pdata);
-  _debugDrawable->_name = "bulletphysdebugger";
+  _debugDrawable->_name = "BulletSystemDebugger";
 
   _sgsystem = psi->findSystem<SceneGraphSystem>();
   OrkAssert(_sgsystem != nullptr);

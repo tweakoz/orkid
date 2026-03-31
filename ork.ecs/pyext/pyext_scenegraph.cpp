@@ -176,6 +176,16 @@ void pyinit_scenegraph(py::module& module_ecs) {
         Parameters:
         name (str): The name of the layer.
      )doc")
+      .def_property_readonly(
+          "declaredLayers",
+          [](sgsystemdata_ptr_t sgsys) -> std::vector<std::string> {
+            return sgsys->declaredLayers();
+          })
+      .def(
+          "clearDeclaredLayers",
+          [](sgsystemdata_ptr_t sgsys) {
+            sgsys->clearDeclaredLayers();
+          })
       .def(
           "declareParams",
           [type_codec](sgsystemdata_ptr_t sgsys, py::dict param_dict) {

@@ -52,6 +52,7 @@ void InstancedModelDrawableData::reloadDrawable(drawable_ptr_t drw) const {
 ///////////////////////////////////////////////////////////////////////////////
 InstancedModelDrawable::InstancedModelDrawable()
     : InstancedDrawable() {
+      _name = "InstancedModelDrawable";
 }
 /////////////////////////////////////////////////////////////////////
 InstancedModelDrawable::~InstancedModelDrawable() {
@@ -112,6 +113,7 @@ void InstancedModelDrawable::enqueueToRenderQueue(
   const auto& topCPD                   = RCFD->topCPD();
   const auto& monofrustum              = topCPD.monoCamFrustum();
   lev2::CallbackRenderable& renderable = renderer->enqueueCallback();
+  renderable._drawable = this;
   ////////////////////////////////////////////////////////////////////
   bool isPick    = context->FBI()->isPickState();
   bool isSkinned = _model->isSkinned();
@@ -120,7 +122,7 @@ void InstancedModelDrawable::enqueueToRenderQueue(
   }
   ////////////////////////////////////////////////////////////////////
   renderable._pickID = _pickID;
-  renderable.SetSortKey(0x00000001);
+  renderable._sortkey = 0x7fff;
   renderable.SetDrawableDataA(GetUserDataA());
   renderable.SetDrawableDataB(GetUserDataB());
   renderable._instanced = true;

@@ -40,7 +40,7 @@ void OverlayStringDrawable::enqueueToRenderQueue(drawqueueitem_constptr_t item, 
   cb_renderable.SetMatrix(worldmatrix);
   cb_renderable._pickID = _pickID;
   cb_renderable.SetRenderCallback(_rendercb);
-  cb_renderable.SetSortKey(0x7fff);
+  cb_renderable._sortkey = 0x7fff;
   cb_renderable._drawDataA.set<std::string>(_data->_initialString);
   cb_renderable.SetModColor(renderer->GetTarget()->RefModColor());
 }

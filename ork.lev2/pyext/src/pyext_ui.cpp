@@ -41,6 +41,7 @@
 #include <ork/lev2/ui/scroll_container.h>
 #include <ork/lev2/ui/collapsable.h>
 #include <ork/lev2/ui/dropdown_menu.h>
+#include <ork/lev2/ui/choicelist_widget.h>
 #include <ork/kernel/slashnode.h>
 #include <ork/python/gil_safe_pyobj.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
@@ -674,7 +675,7 @@ void pyinit_ui(py::module& module_lev2) {
   // PrimCanvas - forward declaration (methods added later)
   /////////////////////////////////////////////////////////////////////////////////
   auto primcanvas_type = //
-      py::class_<ui::PrimCanvas, ui::Widget, ui::prim_canvas_ptr_t>(uimodule, "PrimCanvas");
+      py::class_<ui::PrimCanvas, ui::Surface, ui::prim_canvas_ptr_t>(uimodule, "PrimCanvas");
   type_codec->registerStdCodec<ui::prim_canvas_ptr_t>(primcanvas_type);
   /////////////////////////////////////////////////////////////////////////////////
   // GraphView - widget for plotting time-series data
@@ -3102,6 +3103,13 @@ void pyinit_ui(py::module& module_lev2) {
               "draw_background",
               [](ui::prim_canvas_ptr_t canvas) -> bool { return canvas->_draw_background; },
               [](ui::prim_canvas_ptr_t canvas, bool b) { canvas->_draw_background = b; })
+          .def("exportSvg", [](ui::prim_canvas_ptr_t canvas, const std::string& path) {
+            canvas->exportSvg(path);
+          })
+          .def_property(
+              "supersample",
+              [](ui::prim_canvas_ptr_t canvas) -> int { return canvas->_supersample; },
+              [](ui::prim_canvas_ptr_t canvas, int ss) { canvas->_supersample = std::clamp(ss, 0, 5); })
           .def_property(
               "desiredWidth",
               [](ui::prim_canvas_ptr_t canvas) -> int { return canvas->_desired_width; },
@@ -3419,6 +3427,36 @@ void pyinit_ui(py::module& module_lev2) {
             return tree->addNode(path.c_str(), nullptr);
           })
       .def_property_readonly("root", [](slashtree_ptr_t tree) -> slashnode_constptr_t { return tree->root(); });
+  /////////////////////////////////////////////////////////////////////////////////
+  // ChoicelistWidget
+  auto choicelist_widget_type = //
+      py::class_<ui::ChoicelistWidget, ui::Widget, ui::choicelist_widget_ptr_t>(uimodule, "ChoicelistWidget")
+          .def(py::init<const std::string&, const std::string&>(),
+               py::arg("name"),
+               py::arg("current_value") = "")
+          .def_readwrite("current_value", &ui::ChoicelistWidget::_current_value)
+          .def_readwrite("bg_color", &ui::ChoicelistWidget::_bg_color)
+          .def_readwrite("fg_color", &ui::ChoicelistWidget::_fg_color)
+          .def(
+              "setChoices",
+              [](ui::choicelist_widget_ptr_t w, std::vector<std::string> choices) {
+                w->_getChoices = [choices]() { return choices; };
+              })
+          .def_property(
+              "onChoiceSelected",
+              [](ui::choicelist_widget_ptr_t w) -> py::object { return py::none(); },
+              [](ui::choicelist_widget_ptr_t w, py::object callback) {
+                if (callback.is_none()) {
+                  w->_onChoiceSelected = nullptr;
+                } else {
+                  auto pycb = std::make_shared<py::object>(callback);
+                  w->_onChoiceSelected = [pycb](const std::string& value) {
+                    py::gil_scoped_acquire acquire;
+                    (*pycb)(value);
+                  };
+                }
+              });
+  type_codec->registerStdCodec<ui::choicelist_widget_ptr_t>(choicelist_widget_type);
   /////////////////////////////////////////////////////////////////////////////////
   // DropdownMenu
   auto dropdown_menu_type = //

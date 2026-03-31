@@ -55,19 +55,13 @@ struct IRenderable {
   //////////////////////////////////////////////////////////////////////////////
   virtual void Render(const IRenderer* renderer) const = 0;
   //////////////////////////////////////////////////////////////////////////////
-  /// Renderables implement this function to set the sort key used when all Renderables are sorted together.
-  /// The default is 0 for all Renderables. If no Renderable overrides this, then the RenderableQueue is not
-  /// sorted and all Renderables are drawn in the order they are queued.
-  /// Typically, a Renderable will use the IRenderer::ComposeSortKey() function as a helper when composing
-  /// its sort key.
-  virtual uint32_t ComposeSortKey(const IRenderer* renderer) const;
-  //////////////////////////////////////////////////////////////////////////////
 
   matrix_lamda_t genMatrixLambda() const;
 
   pickvariant_t _pickID;
+  int _sortkey      = 0;
   bool _instanced            = false;
-
+  const Drawable* _drawable = nullptr;
   fmtx4 _worldMatrix;
   fcolor4 _modColor;
   var_t _drawDataA;
@@ -81,13 +75,11 @@ struct ModelRenderable : public IRenderable {
 
   ModelRenderable(IRenderer* renderer = NULL);
 
-  uint32_t ComposeSortKey(const IRenderer* renderer) const final;
   void Render(const IRenderer* renderer) const final;
 
   xgmsubmeshinst_ptr_t _submeshinst;
 
   xgmmodelinst_constptr_t _modelinst;
-  uint32_t _sortkey      = 0;
   int mSubMeshIndex      = 0;
   int mMaterialIndex     = 0;
   int mMaterialPassIndex = 0;
@@ -104,12 +96,10 @@ struct SkeletonRenderable : public IRenderable {
 
   SkeletonRenderable(IRenderer* renderer = NULL);
 
-  uint32_t ComposeSortKey(const IRenderer* renderer) const final;
   void Render(const IRenderer* renderer) const final;
 
   xgmsubmeshinst_ptr_t _submeshinst;
   xgmmodelinst_constptr_t _modelinst;
-  uint32_t _sortkey      = 0;
   float _scale           = 1.0f;
   fvec3 _offset;
   fquat _orientation;
@@ -123,16 +113,12 @@ struct CallbackRenderable : public IRenderable {
 
   CallbackRenderable(IRenderer* renderer = NULL);
 
-  void SetSortKey(uint32_t skey);
   void SetRenderCallback(cbtype_t cb);
   cbtype_t GetRenderCallback() const;
   void Render(const IRenderer* renderer) const final;
-  uint32_t ComposeSortKey(const IRenderer* renderer) const final;
 
-  uint32_t mSortKey = 0;
   int mMaterialIndex = 0;
   int mMaterialPassIndex = 0;
-  const CallbackDrawable* _drawable = nullptr;
   cbtype_t mRenderCallback;
 };
 
