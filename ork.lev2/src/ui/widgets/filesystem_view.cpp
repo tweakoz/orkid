@@ -1409,7 +1409,7 @@ void FilesystemView::_drawIconItem(drawevent_constptr_t drwev, const VisibleItem
   }
 
   // Draw label
-  if (_small_font) {
+  if (_small_font && _icon_label_enable) {
     fvec4 text_col = (item.entry.type == FileType::Directory) ? _directory_color : _text_color;
     lev2::FontMan::PushFont(_small_font);
     tgt->PushModColor(text_col);
@@ -1519,6 +1519,22 @@ lev2::texture_ptr_t FilesystemView::_getIconForPath(lev2::Context* ctx, const st
 
   auto it = _icon_cache.find(path);
   if (it != _icon_cache.end()) {
+    // Check if this path needs an in-place update (e.g. hover icon change)
+    auto pending_it = _icon_update_pending.find(path);
+    if (pending_it != _icon_update_pending.end()) {
+      _icon_update_pending.erase(pending_it);
+      auto& frames = it->second;
+      if (!frames.empty()) {
+        lev2::image_ptr_t image = nullptr;
+        auto provider = _model->getIconProvider(path, size);
+        if (provider) image = provider->_func();
+        if (!image) image = _model->getIcon(path, size);
+        if (image) {
+          txi->initTextureFromImage(frames[0].get(), image, true);
+          return frames[0];
+        }
+      }
+    }
     auto& frames = it->second;
     if (frames.size() == 1) return frames[0];
     if (frames.size() > 1) {

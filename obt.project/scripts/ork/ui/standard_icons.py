@@ -260,7 +260,7 @@ SVG_SCALE = _svg_wrap(f'''
 # Icon Factory Functions
 ################################################################################
 
-def get(name, width=24, height=24):
+def get(name, width=24, height=24, icon_color=None):
   """
   Get a standard icon as an Image.
 
@@ -268,6 +268,7 @@ def get(name, width=24, height=24):
     name: Icon name (e.g., 'play', 'folder', 'file')
     width: Output width in pixels
     height: Output height in pixels
+    icon_color: Optional hex color string to replace default ICON_COLOR
 
   Returns:
     lev2.Image
@@ -275,6 +276,8 @@ def get(name, width=24, height=24):
   svg = _ICONS.get(name)
   if svg is None:
     raise ValueError(f"Unknown icon: {name}")
+  if icon_color:
+    svg = svg.replace(ICON_COLOR, icon_color).replace(ICON_COLOR_DIM, icon_color)
   return icon_library.from_svg_string(svg, width, height)
 
 def get_provider(name, width=24, height=24):
