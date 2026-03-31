@@ -415,7 +415,7 @@ class TestRunnerFilesystemModel(lev2.ui.FilesystemModel):
               '<path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" fill="%s"/>' % color
             )
     if svg_string:
-      return icon_library.from_svg_string(svg_string, size, size)
+      return icon_library.from_svg_string_auto(svg_string, size)
     return None
 
   def getIconSequence(self, path, size=64):

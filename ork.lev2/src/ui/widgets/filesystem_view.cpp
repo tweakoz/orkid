@@ -499,8 +499,11 @@ HandlerResult ContentWidget::DoOnUiEvent(event_constptr_t ev) {
 
     case EventCode::MOVE: {
       std::string hovered_path = _fsview->_getItemPathAt(localX, localY);
-      if (!hovered_path.empty() && _fsview->_hovered_path != hovered_path) {
+      if (_fsview->_hovered_path != hovered_path) {
         _fsview->_hovered_path = hovered_path;
+        if (_fsview->_onHover) {
+          _fsview->_onHover(hovered_path);
+        }
       }
       break;
     }
@@ -898,9 +901,15 @@ int FilesystemView::_getItemIndexAt(int local_x, int local_y) const {
     int cell_width = _icon_size + _icon_spacing;
     int cell_height = _icon_size + _icon_label_height + _icon_spacing;
     int cols = std::max(1, available_width / cell_width);
-    int col = (local_x - _icon_spacing) / cell_width;
-    int row = content_y / cell_height;
-    if (col >= 0 && col < cols) {
+    int rows = ((int)_visible_items.size() + cols - 1) / cols;
+    int items_in_first_row = std::min((int)_visible_items.size(), cols);
+    int grid_width = items_in_first_row * cell_width - _icon_spacing;
+    int grid_height = rows * cell_height;
+    int x_offset = _icon_center_h ? std::max(0, (_geometry._w - grid_width) / 2) : _icon_spacing;
+    int y_offset = _icon_center_v ? std::max(0, ((_content_widget ? _content_widget->height() : _geometry._h) - grid_height) / 2) : 0;
+    int col = (local_x - x_offset) / cell_width;
+    int row = (content_y - y_offset) / cell_height;
+    if (col >= 0 && col < cols && row >= 0) {
       int index = row * cols + col;
       if (index >= 0 && index < (int)_visible_items.size()) return index;
     }
@@ -1135,13 +1144,21 @@ void FilesystemView::_drawContentIconMode(drawevent_constptr_t drwev) {
     int cell_width = _icon_size + _icon_spacing;
     int cell_height = _icon_size + _icon_label_height + _icon_spacing;
     int cols = std::max(1, available_width / cell_width);
+    int rows = ((int)_visible_items.size() + cols - 1) / cols;
+
+    // Centering offsets
+    int items_in_first_row = std::min((int)_visible_items.size(), cols);
+    int grid_width = items_in_first_row * cell_width - _icon_spacing;
+    int grid_height = rows * cell_height;
+    int x_offset = _icon_center_h ? std::max(0, (_geometry._w - grid_width) / 2) : _icon_spacing;
+    int y_offset = _icon_center_v ? std::max(0, (_content_widget->height() - grid_height) / 2) : 0;
 
     for (size_t i = 0; i < _visible_items.size(); i++) {
       int col = i % cols;
       int row = i / cols;
 
-      int item_x = ix1 + _icon_spacing + col * cell_width;
-      int item_y = iy1 - _scroll_offset + row * cell_height;
+      int item_x = ix1 + x_offset + col * cell_width;
+      int item_y = iy1 + y_offset - _scroll_offset + row * cell_height;
 
       if (item_y + cell_height < iy1) continue;
       if (item_y > iy2) break;
@@ -1359,9 +1376,19 @@ void FilesystemView::_drawIconItem(drawevent_constptr_t drwev, const VisibleItem
       fxi->pushRasterState(rs);
       tgt->PushModColor(fvec4(1, 1, 1, 1));
       _tex_material->SetTexture(lev2::ETEXDEST_DIFFUSE, icon_texture.get());
+
+      // Respect texture aspect ratio: tall textures extend below the icon cell
+      int icon_w = _icon_size - 8;
+      int icon_h = icon_w;
+      int tex_w = icon_texture->_width;
+      int tex_h = icon_texture->_height;
+      if (tex_w > 0 && tex_h > tex_w) {
+        icon_h = icon_w * tex_h / tex_w;
+      }
+
       primi->RenderQuadAtZ(_tex_material.get(),
-                           x_pos + 4, x_pos + _icon_size - 4,
-                           y_pos + 4, y_pos + _icon_size - 4,
+                           x_pos + 4, x_pos + 4 + icon_w,
+                           y_pos + 4, y_pos + 4 + icon_h,
                            0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
       tgt->PopModColor();
       fxi->popRasterState();
