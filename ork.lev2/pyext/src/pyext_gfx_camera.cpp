@@ -106,6 +106,14 @@ void pyinit_gfx_camera(py::module& module_lev2) {
                 uic->QuatC = quat;
               })
           .def_property(
+              "heading",
+              [](ezuicam_ptr_t uic) -> fquat { return uic->QuatHeading; },
+              [](ezuicam_ptr_t uic, fquat q) { uic->QuatHeading = q; })
+          .def_property(
+              "elevation",
+              [](ezuicam_ptr_t uic) -> fquat { return uic->QuatElevation; },
+              [](ezuicam_ptr_t uic, fquat q) { uic->QuatElevation = q; })
+          .def_property(
               "positionOffset",
               [](ezuicam_ptr_t uic) -> fvec3 { //
                 return uic->_position_offset;
