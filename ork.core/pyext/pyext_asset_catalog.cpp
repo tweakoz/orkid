@@ -80,7 +80,11 @@ void pyinit_asset_catalog(py::module& module_core) {
   /////////////////////////////////////////////////////////////////////////////////
   auto request_type = py::class_<FetchRequest, fetchrequest_ptr_t>(module_core, "FetchRequest")
                          .def_readonly("error_detail", &FetchRequest::_error_detail)
-                         .def_readonly("bytes_downloaded", &FetchRequest::_bytes_downloaded)
+                         .def_property_readonly("bytes_downloaded", [](fetchrequest_ptr_t self) -> size_t { return self->_bytes_downloaded.load(); })
+                         .def_property_readonly("bytes_total", [](fetchrequest_ptr_t self) -> size_t { return self->_bytes_total.load(); })
+                         .def_property_readonly("progress", [](fetchrequest_ptr_t self) -> float { return self->_progress.load(); })
+                         .def_property_readonly("chunks_completed", [](fetchrequest_ptr_t self) -> size_t { return self->_chunks_completed.load(); })
+                         .def_property_readonly("chunks_total", [](fetchrequest_ptr_t self) -> size_t { return self->_chunks_total.load(); })
                          .def("wait", [](fetchrequest_ptr_t self) -> bool {
                            py::gil_scoped_release release;
                            return self->wait();
@@ -88,7 +92,7 @@ void pyinit_asset_catalog(py::module& module_core) {
                          .def_property_readonly("succeeded", [](fetchrequest_ptr_t self) -> bool { return self->isSuccess(); })
                          .def_property_readonly("completed", [](fetchrequest_ptr_t self) -> bool { return self->isComplete(); })
                          .def("__repr__", [](fetchrequest_ptr_t result) -> std::string {
-                           return FormatString("FetchRequest(status=%d, bytes=%zu)", (int)result->_status, result->_bytes_downloaded.load());
+                           return FormatString("FetchRequest(status=%d, bytes=%zu/%zu)", (int)result->_status, result->_bytes_downloaded.load(), result->_bytes_total.load());
                          });
   type_codec->registerStdCodec<fetchrequest_ptr_t>(request_type);
 
@@ -220,6 +224,11 @@ void pyinit_asset_catalog(py::module& module_core) {
               [](assetcatalog_ptr_t catalog, const std::string& asset_id) -> fetchrequest_ptr_t {
                 py::gil_scoped_release release;
                 return catalog->fetchAsync(asset_id);
+              },
+              py::arg("asset_id"))
+          .def("invalidateRequest",
+              [](assetcatalog_ptr_t catalog, const std::string& asset_id) {
+                catalog->invalidateRequest(asset_id);
               },
               py::arg("asset_id"))
           // Asset Queries

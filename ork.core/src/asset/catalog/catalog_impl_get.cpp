@@ -225,6 +225,15 @@ datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
 
   auto CHUNKS = std::make_shared<wrapped_chunk_map_t>();
 
+  // Initialize progress tracking on request
+  request->_chunks_total = NUM_CHUNKS;
+  request->_chunks_completed = 0;
+  request->_bytes_total = 0;
+  request->_bytes_downloaded = 0;
+  for (size_t i = 0; i < NUM_CHUNKS; ++i) {
+    request->_bytes_total += chk_manifest->_chunks[i]._size;
+  }
+
   // Track which chunks need downloading
   std::vector<size_t> chunks_to_download;
 
@@ -245,6 +254,11 @@ datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
       CHUNKS->atomicOp([=](chunk_map_t& unlocked) {
         unlocked[i] = chunk_data;
       });
+      request->_chunks_completed++;
+      request->_bytes_downloaded += chunk_info._size;
+      if (request->_bytes_total > 0) {
+        request->_progress = float(request->_bytes_downloaded.load()) / float(request->_bytes_total.load());
+      }
     } else {
       chunks_to_download.push_back(i);
     }
@@ -288,7 +302,7 @@ datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
     size_t chunk_idx = i;
     chunk_hash_t expected_hash = chk_manifest->_chunks[i]._hash;
 
-    dl->_on_complete._item = [this, temp_path, chunk_idx, expected_hash, chunk_cache_path, CHUNKS]
+    dl->_on_complete._item = [this, temp_path, chunk_idx, expected_hash, chunk_cache_path, CHUNKS, request]
                              (bool success, const file::Path& path) {
       if (success) {
         // Read downloaded chunk
@@ -317,6 +331,11 @@ datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
           unlocked[chunk_idx] = chunk_data;
         });
         saveToCacheFile(chunk_data, chunk_cache_path);
+        request->_chunks_completed++;
+        request->_bytes_downloaded += chunk_data->length();
+        if (request->_bytes_total > 0) {
+          request->_progress = float(request->_bytes_downloaded.load()) / float(request->_bytes_total.load());
+        }
         logchan_catalog->log("  Chunk %zu: downloaded ✓ (%zu bytes, hash=%llu)",
                             chunk_idx, chunk_data->length(), computed_hash);
       } else {

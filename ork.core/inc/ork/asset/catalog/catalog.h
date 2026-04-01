@@ -161,6 +161,9 @@ struct AssetCatalog {
     bool enable_cache = true,
     chunk_completed_callback_t on_chunk_completed = nullptr);
   
+  // Invalidate a cached fetch request so it can be re-fetched
+  void invalidateRequest(const assetid_t& fq_asset_id);
+
   // Check if asset exists without downloading
   bool hasAsset(const assetid_t& fq_asset_id) const;
   

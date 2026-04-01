@@ -678,9 +678,9 @@ HandlerResult Outliner::DoOnUiEvent(event_constptr_t ev) {
       break;
     }
 
-    case EventCode::KEY_DOWN: {
+    case EventCode::KEY_DOWN:
+    case EventCode::KEY_REPEAT: {
       int key = ev->miKeyCode;
-      printf("Outliner::DoOnUiEvent key<%d>\n", key);
       std::string selected_key = getSelectedKey();  // Get first selected key
       bool single_selection = (_selected_keys.size() == 1);
 
@@ -754,6 +754,32 @@ HandlerResult Outliner::DoOnUiEvent(event_constptr_t ev) {
               }
               break;
             }
+          }
+        }
+        result.setHandled(this);
+      }
+      // Left arrow - collapse selected item
+      else if (key == 263 && !_selected_keys.empty()) {
+        for (auto& item : _visible_items) {
+          if (item.key == selected_key) {
+            if (item.has_children && item.is_expanded) {
+              setExpanded(item.key, false);
+              _rebuildVisibleItems();
+            }
+            break;
+          }
+        }
+        result.setHandled(this);
+      }
+      // Right arrow - expand selected item
+      else if (key == 262 && !_selected_keys.empty()) {
+        for (auto& item : _visible_items) {
+          if (item.key == selected_key) {
+            if (item.has_children && !item.is_expanded) {
+              setExpanded(item.key, true);
+              _rebuildVisibleItems();
+            }
+            break;
           }
         }
         result.setHandled(this);

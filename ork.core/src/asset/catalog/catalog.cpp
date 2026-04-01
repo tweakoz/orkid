@@ -400,6 +400,13 @@ std::string AssetCatalog::getChunkFilename(std::string basename,        //
 // Asset Request State Management (Flyweight)
 ////////////////////////////////////////////////////////////////
 
+void AssetCatalog::invalidateRequest(const assetid_t& fq_asset_id) {
+  auto impl = _impl.getShared<CatalogImpl>();
+  impl->_active_handles.atomicOp([&](assethandle_map_t& unlocked) {
+    unlocked.erase(fq_asset_id);
+  });
+}
+
 fetchrequest_ptr_t AssetCatalog::_mergeRequest(assetfqid_ptr_t fqid) {
   auto impl = _impl.getShared<CatalogImpl>();
   fetchrequest_ptr_t request;
