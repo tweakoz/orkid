@@ -32,6 +32,21 @@ def format_size(nbytes):
 # Outliner model — namespace / asset tree
 ################################################################################
 
+def _derive_project_name(source_file):
+  """Extract project name from manifest source_file path."""
+  # e.g. /Users/.../imp/cap4d/obt.project/asset_manifests/cap4d.json → cap4d
+  # e.g. /Users/.../orkid/ork.data/asset_manifests/singularity.json → orkid
+  parts = source_file.replace("\\", "/").split("/")
+  for i, p in enumerate(parts):
+    if p == "asset_manifests" and i >= 2:
+      parent = parts[i - 1]
+      grandparent = parts[i - 2]
+      if parent in ("obt.project", "ork.data"):
+        return grandparent
+      return parent
+  return "unknown"
+
+
 class CatalogOutlinerModel(lev2.ui.OutlinerModel):
   def __init__(self, tool):
     super().__init__()
@@ -42,12 +57,23 @@ class CatalogOutlinerModel(lev2.ui.OutlinerModel):
 
   def getChildren(self, parent_key):
     if parent_key == "":
-      return self.tool.namespaces
-    return self.tool.ns_assets.get(parent_key, [])
+      return self.tool.projects
+    if parent_key in self.tool.project_namespaces:
+      # Project → list of "project/namespace" keys
+      return [f"{parent_key}/{ns}" for ns in self.tool.project_namespaces[parent_key]]
+    if "/" in parent_key and "|" not in parent_key:
+      # "project/namespace" → list of "project/ns|asset" keys
+      ns = parent_key.split("/", 1)[1]
+      return [f"{parent_key.split('/')[0]}/{fqid}" for fqid in self.tool.ns_assets.get(ns, [])]
+    return []
 
   def getDisplayName(self, key):
     if "|" in key:
+      # "project/ns|asset" → asset name
       return key.split("|", 1)[1]
+    if "/" in key:
+      # "project/namespace" → namespace name
+      return key.split("/", 1)[1]
     return key
 
   def hasChildren(self, key):
@@ -134,6 +160,7 @@ def _build_asset_varmap(tool, fqid):
     return d
 
   d["ID"] = fqid
+  d["Manifest"] = tool.asset_manifest_file.get(fqid, "unknown")
   d["Type"] = entry.type or "unknown"
   d["Platforms"] = ", ".join(entry.platforms) if entry.platforms else "all"
   d["Priority"] = str(entry.priority)
@@ -360,6 +387,46 @@ class CatalogTool(ComponentizedApplication):
     self.asset_entries = {}
     self.chunk_status = {}
     self.chunk_valid = {}
+    # Build project → namespace mapping from manifest source files
+    self.project_namespaces = {}    # project_name -> sorted list of ns_ids
+    self.project_manifests = {}     # project_name -> sorted list of manifest file basenames
+    self.project_import_configs = {} # project_name -> sorted list of import config basenames
+    self.ns_project = {}            # ns_id -> project_name
+    self.ns_manifests = {}          # ns_id -> sorted list of manifest file basenames
+    self.ns_import_configs = {}     # ns_id -> sorted list of import config basenames
+    self.asset_manifest_file = {}   # fqid -> manifest source file basename
+    for ns in self.namespaces:
+      manifests = self.catalog.manifestsForNamespace(ns)
+      project = "unknown"
+      ns_files = []
+      ns_import_configs = []
+      for m in manifests:
+        sf = m.source_file
+        if sf:
+          if project == "unknown":
+            project = _derive_project_name(sf)
+          basename = os.path.basename(sf)
+          # Real manifests have assets with storage hashes
+          assets = m.assets
+          is_real = assets and any(hasattr(assets[k], 'storage_hash') and assets[k].storage_hash for k in assets)
+          if is_real:
+            ns_files.append(basename)
+            for asset_id in assets.keys():
+              self.asset_manifest_file[f"{ns}|{asset_id}"] = basename
+          else:
+            ns_import_configs.append(basename)
+      self.ns_project[ns] = project
+      self.ns_manifests[ns] = sorted(set(ns_files))
+      self.ns_import_configs[ns] = sorted(set(ns_import_configs))
+      self.project_namespaces.setdefault(project, []).append(ns)
+      self.project_manifests.setdefault(project, set()).update(ns_files)
+      self.project_import_configs.setdefault(project, set()).update(ns_import_configs)
+    for proj in self.project_namespaces:
+      self.project_namespaces[proj].sort()
+      self.project_manifests[proj] = sorted(self.project_manifests[proj])
+      self.project_import_configs[proj] = sorted(self.project_import_configs.get(proj, set()))
+    self.projects = sorted(self.project_namespaces.keys())
+
     for ns in self.namespaces:
       fqids = sorted(self.catalog.list_assets(f"{ns}|*"))
       self.ns_assets[ns] = fqids
@@ -461,6 +528,47 @@ class CatalogTool(ComponentizedApplication):
     self.canvas_dirty = True
 
   ############################################################################
+  # Key parsing — keys are "project", "project/ns", or "project/ns|asset"
+  ############################################################################
+
+  def _key_type(self, key):
+    """Return 'project', 'namespace', or 'asset'."""
+    if not key:
+      return None
+    if "|" in key:
+      return "asset"
+    if "/" in key:
+      return "namespace"
+    return "project"
+
+  def _key_to_ns(self, key):
+    """Extract namespace id from a namespace or asset key."""
+    if "|" in key:
+      # "project/ns|asset" → "ns"
+      return key.split("/", 1)[1].split("|")[0] if "/" in key else key.split("|")[0]
+    if "/" in key:
+      # "project/ns" → "ns"
+      return key.split("/", 1)[1]
+    return None
+
+  def _key_to_fqid(self, key):
+    """Extract fqid (ns|asset) from an asset key."""
+    if "|" in key and "/" in key:
+      # "project/ns|asset" → "ns|asset"
+      return key.split("/", 1)[1]
+    if "|" in key:
+      return key
+    return None
+
+  def _key_to_project(self, key):
+    """Extract project name from any key."""
+    if "/" in key:
+      return key.split("/", 1)[0]
+    if "|" not in key:
+      return key
+    return None
+
+  ############################################################################
   # Selection
   ############################################################################
 
@@ -471,15 +579,17 @@ class CatalogTool(ComponentizedApplication):
     self.selected_key = key
     self.canvas_dirty = True
     self._selecting = False
-    # Auto-verify CDN on selection
-    if "|" in key:
-      if key not in self.cdn_status:
-        self._bg(lambda: self._verify_cdn_asset(key))
-    else:
-      # Namespace — verify all assets that haven't been checked
-      unchecked = [f for f in self.ns_assets.get(key, []) if f not in self.cdn_status]
-      if unchecked:
-        self._bg(lambda fqids=unchecked: self._verify_cdn_batch(fqids))
+    kt = self._key_type(key)
+    if kt == "asset":
+      fqid = self._key_to_fqid(key)
+      if fqid and fqid not in self.cdn_status:
+        self._bg(lambda: self._verify_cdn_asset(fqid))
+    elif kt == "namespace":
+      ns = self._key_to_ns(key)
+      if ns:
+        unchecked = [f for f in self.ns_assets.get(ns, []) if f not in self.cdn_status]
+        if unchecked:
+          self._bg(lambda fqids=unchecked: self._verify_cdn_batch(fqids))
 
   ############################################################################
   # Background helper
@@ -532,26 +642,29 @@ class CatalogTool(ComponentizedApplication):
     key = self.selected_key
     if not key:
       return
+    kt = self._key_type(key)
+    fqid = self._key_to_fqid(key)
+    ns = self._key_to_ns(key)
     if name == "FETCH":
-      if "|" in key:
-        self._do_fetch(key)  # fetchAsync is already async, no need for _bg
+      if kt == "asset" and fqid:
+        self._do_fetch(fqid)
     elif name == "FETCH ALL":
-      if "|" not in key:
-        self._do_fetch_namespace(key)
+      if kt == "namespace" and ns:
+        self._do_fetch_namespace(ns)
     elif name == "UPLOAD":
-      if "|" in key:
-        self._bg(lambda: self._do_upload_asset(key))
-      else:
-        self._bg(lambda: self._do_upload_namespace(key))
+      if kt == "asset" and fqid:
+        self._bg(lambda: self._do_upload_asset(fqid))
+      elif kt == "namespace" and ns:
+        self._bg(lambda: self._do_upload_namespace(ns))
     elif name == "CANCEL":
-      if "|" in key:
-        self._do_cancel_fetch(key)
+      if kt == "asset" and fqid:
+        self._do_cancel_fetch(fqid)
     elif name == "VERIFY HASH":
-      if "|" in key:
-        self._bg(lambda: self._do_verify_hashes(key))
+      if kt == "asset" and fqid:
+        self._bg(lambda: self._do_verify_hashes(fqid))
     elif name == "CLEAR LOCAL":
-      if "|" in key:
-        self._bg(lambda: self._do_clear_local(key))
+      if kt == "asset" and fqid:
+        self._bg(lambda: self._do_clear_local(fqid))
 
   ############################################################################
   # Actions
@@ -925,14 +1038,19 @@ class CatalogTool(ComponentizedApplication):
 
     key = self.selected_key
     if not key:
-      self._texts["label"].addItem("Select a namespace or asset", vec2(8, y))
+      self._texts["label"].addItem("Select a project, namespace, or asset", vec2(8, y))
       self.canvas.markDirty()
       return
 
-    if "|" in key:
-      self._draw_asset_view(key, y, w, h)
-    else:
-      self._draw_namespace_view(key, y, w, h)
+    kt = self._key_type(key)
+    if kt == "asset":
+      fqid = self._key_to_fqid(key)
+      self._draw_asset_view(fqid, y, w, h)
+    elif kt == "namespace":
+      ns = self._key_to_ns(key)
+      self._draw_namespace_view(ns, y, w, h)
+    elif kt == "project":
+      self._draw_project_view(key, y, w, h)
 
     self.canvas.markDirty()
 
@@ -976,6 +1094,110 @@ class CatalogTool(ComponentizedApplication):
     self.bg_prim.addQuad(qd)
     self._texts["cdn_hdr"].addItem(title, vec2(8, y))
 
+  ############################################################################
+  # Project view
+  ############################################################################
+
+  def _draw_project_view(self, project, y_start, w, h):
+    y = y_start
+    ns_list = self.project_namespaces.get(project, [])
+
+    self._draw_section_header("Project", y, w, h)
+    y += 18
+    self._draw_prop_row("Name", project, y)
+    y += 16
+    self._draw_prop_row("Namespaces", str(len(ns_list)), y)
+    y += 16
+
+    # Count totals
+    total_assets = 0
+    total_chunks = 0
+    present_chunks = 0
+    total_sz = 0
+    local_sz = 0
+    for ns in ns_list:
+      for fqid in self.ns_assets.get(ns, []):
+        total_assets += 1
+        cs = self.chunk_status.get(fqid, [])
+        total_chunks += len(cs)
+        present_chunks += sum(1 for x in cs if x)
+        entry = self.asset_entries.get(fqid)
+        if entry:
+          total_sz += entry.archive_size
+          if cs and all(cs):
+            local_sz += entry.archive_size
+
+    self._draw_prop_row("Total Assets", str(total_assets), y)
+    y += 16
+    self._draw_prop_row("Chunks Local", f"{present_chunks} / {total_chunks}", y)
+    y += 16
+    self._draw_prop_row("Size Local", f"{format_size(local_sz)} / {format_size(total_sz)}", y)
+    y += 16
+
+    # Manifest source directory
+    if ns_list:
+      manifests = self.catalog.manifestsForNamespace(ns_list[0])
+      if manifests and manifests[0].source_file:
+        src = manifests[0].source_file
+        manifest_dir = os.path.dirname(src)
+        self._draw_prop_row("Manifest Dir", manifest_dir, y)
+        y += 16
+    y += 4
+
+    # Manifest files
+    mfiles = self.project_manifests.get(project, [])
+    if mfiles:
+      self._draw_section_header("Manifests", y, w, h)
+      y += 18
+      for mf in mfiles:
+        if y > h - 40:
+          self._texts["label"].addItem(f"... {len(mfiles)} total", vec2(8, y))
+          y += 16
+          break
+        self._texts["label"].addItem(mf, vec2(8, y))
+        y += 16
+    # Import configs
+    icfiles = self.project_import_configs.get(project, [])
+    if icfiles:
+      y += 4
+      self._draw_section_header("Import Configs", y, w, h)
+      y += 18
+      for ic in icfiles:
+        if y > h - 40:
+          self._texts["label"].addItem(f"... {len(icfiles)} total", vec2(8, y))
+          y += 16
+          break
+        self._texts["label"].addItem(ic, vec2(8, y))
+        y += 16
+    y += 4
+
+    # Namespace summary grid
+    self._draw_section_header("Namespaces", y, w, h)
+    y += 18
+    for ns in ns_list:
+      if y > h - 20:
+        self._texts["label"].addItem(f"... {len(ns_list)} total", vec2(8, y))
+        break
+      assets = self.ns_assets.get(ns, [])
+      n_total = 0
+      n_present = 0
+      for fqid in assets:
+        cs = self.chunk_status.get(fqid, [])
+        n_total += len(cs)
+        n_present += sum(1 for x in cs if x)
+      label = f"{ns}  ({len(assets)} assets, {n_present}/{n_total} chunks)"
+      if n_total > 0 and n_present == n_total:
+        self._texts["status_ok"].addItem(label, vec2(8, y))
+      elif n_present > 0:
+        self._texts["status_warn"].addItem(label, vec2(8, y))
+      else:
+        self._texts["label"].addItem(label, vec2(8, y))
+      y += 16
+
+  ############################################################################
+  # Namespace view
+  ############################################################################
+
   def _draw_namespace_view(self, ns, y_start, w, h):
     y = y_start
 
@@ -1010,6 +1232,23 @@ class CatalogTool(ComponentizedApplication):
         if key in d:
           self._draw_prop_row(key, d[key], y)
           y += 16
+    # Manifest files for this namespace
+    ns_mfiles = self.ns_manifests.get(ns, [])
+    if ns_mfiles:
+      y += 4
+      self._draw_section_header("Manifests", y, w, h)
+      y += 18
+      for mf in ns_mfiles:
+        self._draw_prop_row("File", mf, y)
+        y += 16
+    ns_ics = self.ns_import_configs.get(ns, [])
+    if ns_ics:
+      y += 4
+      self._draw_section_header("Import Configs", y, w, h)
+      y += 18
+      for ic in ns_ics:
+        self._draw_prop_row("File", ic, y)
+        y += 16
     y += 8
 
     # Compute local/CDN completeness and key availability for ghosting
@@ -1126,7 +1365,7 @@ class CatalogTool(ComponentizedApplication):
     d = _build_asset_varmap(self, fqid)
     self._draw_section_header("Asset", y, w, h)
     y += 18
-    for key in ["ID", "Type", "Platforms", "Priority"]:
+    for key in ["ID", "Manifest", "Type", "Platforms", "Priority"]:
       if key in d:
         self._draw_prop_row(key, d[key], y)
         y += 16
