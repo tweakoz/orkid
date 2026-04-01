@@ -7,6 +7,7 @@
 
 #include <ork/asset/catalog/catalog.h>
 #include <ork/asset/catalog/request.h>
+#include <ork/util/download_group.h>
 #include <ork/file/file.h>
 #include <ork/kernel/string/deco.inl>
 #include <ork/kernel/mutex.h>
@@ -60,6 +61,18 @@ bool FetchRequest::isSuccess() const {
 
 FetchRequest::operator bool() const {
   return isSuccess();
+}
+
+void FetchRequest::cancel() {
+  _cancel_requested = true;
+  // Propagate cancel to all active downloads
+  _active_download_group.atomicOp([](download_group_ptr_t& group) {
+    if (group) {
+      for (auto& dl : group->_downloads) {
+        dl->_state = DownloadState::CANCELLED;
+      }
+    }
+  });
 }
 
 void FetchRequest::invokeCompletionCallbacks(fetchrequest_ptr_t self) { // static

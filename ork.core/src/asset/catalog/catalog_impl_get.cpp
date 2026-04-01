@@ -280,6 +280,9 @@ datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
 
   auto download_group = std::make_shared<DownloadGroup>();
 
+  // Store on request so cancel() can propagate
+  request->_active_download_group.atomicOp([&](download_group_ptr_t& g) { g = download_group; });
+
   // Create download tasks for all chunks that need downloading
   for (size_t i : chunks_to_download) {
     file::Path chunk_cache_path = getCachePathForChunk(fqid, i);
@@ -350,11 +353,21 @@ datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
   _download_manager->downloadGroup(download_group);
 
   // Wait for initial download attempt to complete
-  while (!download_group->isComplete() && !_shutdown_requested) {
+  while (!download_group->isComplete() && !_shutdown_requested && !request->isCancelled()) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
-  if (_shutdown_requested) {
-    return nullptr; // Abort on shutdown
+  if (_shutdown_requested || request->isCancelled()) {
+    // Cancel any in-flight downloads
+    for (auto& dl : download_group->_downloads) {
+      if (dl->_state == DownloadState::DOWNLOADING || dl->_state == DownloadState::PENDING) {
+        dl->_state = DownloadState::CANCELLED;
+      }
+    }
+    if (request->isCancelled()) {
+      request->_state = AssetState::FAILED;
+      request->_status = AssetStatus::CANCELLED;
+    }
+    return nullptr;
   }
 
   /////////////////////////////////////////////////
@@ -376,14 +389,21 @@ datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
       break; // All chunks downloaded successfully
     }
 
+    if (request->isCancelled()) break;
+
     // linear backoff delay
     size_t delay_ms = INITIAL_RETRY_DELAY_MS * retry;
     logchan_catalog->log("  Retry %zu/%zu: %zu chunks failed, waiting %zums...",
                         retry, MAX_CHUNK_RETRIES, failed_chunks.size(), delay_ms);
-    std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));
+    // Sleep in small increments to allow cancel to take effect
+    for (size_t ms = 0; ms < delay_ms && !request->isCancelled(); ms += 100) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+    if (request->isCancelled()) break;
 
     // Create NEW DownloadGroup for retries
     auto retry_group = std::make_shared<DownloadGroup>();
+    request->_active_download_group.atomicOp([&](download_group_ptr_t& g) { g = retry_group; });
 
     for (size_t chunk_idx : failed_chunks) {
       logchan_catalog->log("  Chunk %zu: retry %zu/%zu",
@@ -441,11 +461,20 @@ datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
     _download_manager->downloadGroup(retry_group);
 
     // Wait for retry batch to complete
-    while (!retry_group->isComplete() && !_shutdown_requested) {
+    while (!retry_group->isComplete() && !_shutdown_requested && !request->isCancelled()) {
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
-    if (_shutdown_requested) {
-      return nullptr; // Abort on shutdown
+    if (_shutdown_requested || request->isCancelled()) {
+      for (auto& dl : retry_group->_downloads) {
+        if (dl->_state == DownloadState::DOWNLOADING || dl->_state == DownloadState::PENDING) {
+          dl->_state = DownloadState::CANCELLED;
+        }
+      }
+      if (request->isCancelled()) {
+        request->_state = AssetState::FAILED;
+        request->_status = AssetStatus::CANCELLED;
+      }
+      return nullptr;
     }
   }
 

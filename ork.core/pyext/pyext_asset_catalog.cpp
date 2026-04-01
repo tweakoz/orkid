@@ -91,6 +91,8 @@ void pyinit_asset_catalog(py::module& module_core) {
                          })
                          .def_property_readonly("succeeded", [](fetchrequest_ptr_t self) -> bool { return self->isSuccess(); })
                          .def_property_readonly("completed", [](fetchrequest_ptr_t self) -> bool { return self->isComplete(); })
+                         .def_property_readonly("cancelled", [](fetchrequest_ptr_t self) -> bool { return self->isCancelled(); })
+                         .def("cancel", &FetchRequest::cancel)
                          .def("__repr__", [](fetchrequest_ptr_t result) -> std::string {
                            return FormatString("FetchRequest(status=%d, bytes=%zu/%zu)", (int)result->_status, result->_bytes_downloaded.load(), result->_bytes_total.load());
                          });
@@ -231,6 +233,10 @@ void pyinit_asset_catalog(py::module& module_core) {
                 catalog->invalidateRequest(asset_id);
               },
               py::arg("asset_id"))
+          .def_property_readonly("download_manager",
+              [](assetcatalog_ptr_t catalog) -> downloadmanager_ptr_t {
+                return catalog->getDownloadManager();
+              })
           // Asset Queries
           .def("list_assets", &AssetCatalog::listAssets, py::arg("pattern") = "*")
           

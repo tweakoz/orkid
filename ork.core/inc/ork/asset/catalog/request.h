@@ -88,15 +88,19 @@ struct FetchRequest {
   std::atomic<size_t> _chunks_completed{0};
   std::atomic<size_t> _chunks_total{0};
   std::atomic<int> _refcount{0};     // Number of active requests
-  
+  std::atomic<bool> _cancel_requested{false};
+  LockedResource<download_group_ptr_t> _active_download_group;  // For cancel propagation
+
   //////////////////////////////////////////////////////////////////////////////
   // Callbacks
   //////////////////////////////////////////////////////////////////////////////
-  
+
   pysafe_asset_request_progress_t _progress_callback;
 
   bool wait();
-  bool isComplete() const;  
+  bool isComplete() const;
+  void cancel();
+  bool isCancelled() const { return _cancel_requested.load(); }
 
   // Helpers
   bool isSuccess() const;

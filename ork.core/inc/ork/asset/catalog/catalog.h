@@ -209,6 +209,7 @@ struct AssetCatalog {
   
   // Set download manager
   void setDownloadManager(downloadmanager_ptr_t mgr);
+  downloadmanager_ptr_t getDownloadManager() const;
   
   ////////////////////////////////////////////////////////////////////////////////
   // === URL Generation (Single Source of Truth) ===

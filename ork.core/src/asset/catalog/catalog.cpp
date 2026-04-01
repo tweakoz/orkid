@@ -313,6 +313,11 @@ void AssetCatalog::setDownloadManager(downloadmanager_ptr_t mgr) {
   impl->_download_manager = mgr;
 }
 
+downloadmanager_ptr_t AssetCatalog::getDownloadManager() const {
+  auto impl = _impl.getShared<CatalogImpl>();
+  return impl->_download_manager;
+}
+
 ////////////////////////////////////////////////////////////////
 // Utility Methods
 ////////////////////////////////////////////////////////////////
