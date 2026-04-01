@@ -303,6 +303,9 @@ VulkanInstance::VulkanInstance() {
 
   OrkVkAssert(vkCreateInstance(&_instancedata, nullptr, &_instance));
 
+  // Fetch immediately via instance so we can start putting names on vk objects right away.
+  _fetchInstanceProcAddr(_vkSetDebugUtilsObjectName, "vkSetDebugUtilsObjectNameEXT");
+
   if(_debugEnabled) {
     _fetchInstanceProcAddr(_vkCreateDebugUtilsMessengerEXT, "vkCreateDebugUtilsMessengerEXT");
 

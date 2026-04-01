@@ -12,6 +12,8 @@ struct DDS_HEADER;
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
+// User for all pAlloc parameters.
+// Currentrly nullptr but provides single location to potentialy change it.
 #define ORK_VK_ALLOC nullptr
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -39,7 +41,7 @@ inline VkDeviceSize vkAlignUp(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// Deprecated. Prefer using designated initializers. Or pConst and pNext.
+// TODO Deprecated. Prefer using designated initializers. Or pConst and pNext.
 template <typename T> void initializeVkStruct(T& s, VkStructureType s_type) {
   memset(&s, 0, sizeof(T));
   s.sType = s_type;
@@ -349,6 +351,7 @@ struct VkColorSubresourceLayers {
 
 ////////////////////////////////////////////////////////////////////////////////
 // Vk Inline Initialization Pointers
+//   Always calling Vulkan functions with all temporary variables.
 //
 //   vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, 
 //     pConst(VkSubmitInfo{
@@ -365,8 +368,8 @@ struct VkColorSubresourceLayers {
 //     }), 
 //     fence->_vkfence);
 //
-// This style of intiializing structs can fully compile out even in -01:
-//   https://godbolt.org/z/xrfsqf9nT
+// Optimal for compiler optimization:
+//   https://godbolt.org/z/Wq5b73ETj
 //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -382,8 +385,9 @@ const T* pNext(T&& val [[clang::lifetimebound]]) { return &val; }
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Inline Shorthand Cmd Functions
-//   Command Buffer implemented with Inline Initialization to fully compile out
+// Shorthand Inline Cmd Functions
+//   Wrappers that do not contain logic themselves.
+//   Only shorthand for functions in vulkan header.
 ////////////////////////////////////////////////////////////////////////////////
 
 inline void vkCmdImageBarrier(
@@ -456,6 +460,31 @@ inline void vkCmdBlitColorImage(
           .subresourceRange    = VkColorSubresourceRange{}},
       });
 }
+
+template <typename T> struct VkObjectTypeFor;
+template <> struct VkObjectTypeFor<VkQueue>          { static constexpr VkObjectType value = VK_OBJECT_TYPE_QUEUE; };
+template <> struct VkObjectTypeFor<VkImage>          { static constexpr VkObjectType value = VK_OBJECT_TYPE_IMAGE; };
+template <> struct VkObjectTypeFor<VkImageView>      { static constexpr VkObjectType value = VK_OBJECT_TYPE_IMAGE_VIEW; };
+template <> struct VkObjectTypeFor<VkBuffer>         { static constexpr VkObjectType value = VK_OBJECT_TYPE_BUFFER; };
+template <> struct VkObjectTypeFor<VkDeviceMemory>   { static constexpr VkObjectType value = VK_OBJECT_TYPE_DEVICE_MEMORY; };
+template <> struct VkObjectTypeFor<VkCommandBuffer>  { static constexpr VkObjectType value = VK_OBJECT_TYPE_COMMAND_BUFFER; };
+template <> struct VkObjectTypeFor<VkSemaphore>      { static constexpr VkObjectType value = VK_OBJECT_TYPE_SEMAPHORE; };
+template <> struct VkObjectTypeFor<VkFence>          { static constexpr VkObjectType value = VK_OBJECT_TYPE_FENCE; };
+template <> struct VkObjectTypeFor<VkPipeline>       { static constexpr VkObjectType value = VK_OBJECT_TYPE_PIPELINE; };
+template <> struct VkObjectTypeFor<VkRenderPass>     { static constexpr VkObjectType value = VK_OBJECT_TYPE_RENDER_PASS; };
+template <> struct VkObjectTypeFor<VkFramebuffer>    { static constexpr VkObjectType value = VK_OBJECT_TYPE_FRAMEBUFFER; };
+template <> struct VkObjectTypeFor<VkDescriptorSet>  { static constexpr VkObjectType value = VK_OBJECT_TYPE_DESCRIPTOR_SET; };
+template <> struct VkObjectTypeFor<VkShaderModule>   { static constexpr VkObjectType value = VK_OBJECT_TYPE_SHADER_MODULE; };
+
+// Implemented as define, not template, to properly output line and file in OrkVkAssert.
+#define VkSetDebugName(device, object, name)                                             \
+  OrkVkAssert(ork::lev2::vulkan::_GVI->_vkSetDebugUtilsObjectName((device),              \
+    pConst(VkDebugUtilsObjectNameInfoEXT{                                                \
+      VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,                                \
+      .objectType   = VkObjectTypeFor<std::remove_reference_t<decltype(object)>>::value, \
+      .objectHandle = reinterpret_cast<uint64_t>(object),                                \
+      .pObjectName  = (name),                                                            \
+    })))   
 
 ////////////////////////////////////////////////////////////////////////////////
 } //namespace ork::lev2::vulkan

@@ -908,26 +908,36 @@ enum class OrkDisplayClientState {
   Disconnected,
 };
 
-// Data synchronize from server.
 struct OrkDisplayClientSharedData {
-  std::atomic<OrkDisplayClientState> state;
+  ////////////////////////////////////////
+  // Bidirectional Data
+  ////////////////////////////////////////
 
-  // Completed client timeline value. Set after frame finishes.
-  std::atomic<u64> client_timeline_value;
+  std::atomic<OrkDisplayClientState> state = OrkDisplayClientState::Uninitialized;
 
-  // Pending server timeline value. Set before frame finishes.
-  std::atomic<u64> server_timeline_value;
+  // Number of frames to wait for next display output.
+  std::atomic<u16> frame_wait_count = 1;
 
-  ork::fmtx4 frame_vps[MAX_FRAMES_IN_FLIGHT];
+  ////////////////////////////////////////
+  // Server to Client Data
+  ////////////////////////////////////////
 
-  u16 frame_width;
-  u16 frame_height;
+  struct Indices{
+    u8 server = 0;
+    u8 client = 1; // start client offset from server by 1
+  };
+  std::atomic<Indices> indices{};
+
+  ork::fmtx4 frame_vp_mtxs[MAX_FRAMES_IN_FLIGHT]{};
+  ork::fmtx4 frame_iv_mtxs[MAX_FRAMES_IN_FLIGHT]{};
+
+  u16 frame_width  = 0;
+  u16 frame_height = 0;
 };
 
 struct OrkDisplayClient {
   virtual ~OrkDisplayClient() = default;
   OrkDisplayClientSharedData* _shared = nullptr;
-  u64 _server_wait_timeline_value = 0;
 };
 
 using orkdisplayclient_ptr_t = std::shared_ptr<OrkDisplayClient>;

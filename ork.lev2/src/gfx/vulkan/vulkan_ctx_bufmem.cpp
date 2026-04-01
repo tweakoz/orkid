@@ -76,7 +76,7 @@ VulkanMemoryForImage::~VulkanMemoryForImage() {
   }
   int count    = _imgmemcount.fetch_sub(1);
   size_t bytes = _imgmembytes.fetch_sub(_memreq->size);
-  if(0)printf("~VulkanMemoryForImage<%p> bytes-freed<%zu> bytes-remaining<%zu> alloc-count<%zu> \n",
+  if(0)printf("~VulkanMemoryForImage<%p> bytes-freed<%zu> bytes-remaining<%zu> alloc-count<%d> \n",
          (void*)this,
          _memreq->size,
          bytes,

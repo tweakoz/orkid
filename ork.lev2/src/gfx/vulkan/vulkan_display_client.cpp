@@ -5,7 +5,7 @@
 namespace ork::lev2::vulkan {
 ////////////////////////////////////////////////////////////////////////////////
 
-static auto logchan_presentout = logger()->configureChannel("DisplayClientOut", fvec3(0.2, 0.8, 0.5), false);
+static auto logchan_presentout = logger()->configureChannel("DisplayClientOut", fvec3(0.2, 0.8, 0.5), true);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -20,17 +20,18 @@ VkDisplayClientOutput::VkDisplayClientOutput(vkcontext_rawptr_t vk_ctx, int widt
     "VkDisplayClientOutput: Trying to create VkDisplayClientOutput with uninitialized DisplayClient!");
 
   for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-    auto imgobj = std::make_shared<VulkanImageObject>(vk_ctx, _display_client->_local.images[i], _display_client->_local.views[i], VK_FORMAT_R8G8B8A8_UNORM);
+    auto imgobj = std::make_shared<VulkanImageObject>(vk_ctx, _display_client->_local.images[i], _display_client->_local.views[i], VK_FORMAT_B8G8R8A8_UNORM);
     imgobj->_delete_image     = false;
     imgobj->_delete_imageview = false;
     _imgobjs[i] = imgobj;
   }
 
-  // Set up main RTG vulkan impl so beginFrame() can access VklRtBufferImpl.
-  // Same pattern as swapchain/DRM _buildup — the color buffer's placeholder
-  // image will be replaced each frame via _replaceImage().
   auto main_rtg = vk_ctx->_fbi->_ensureMainRtg();
   vk_ctx->_fbi->_createRtGroupImpl(main_rtg.get());
+
+  // Incremement to 1 at start as a timeline cannot be signalled/waited at 0.
+  _incrementFrame();
+
 
   logchan_presentout->log("created: size=%dx%d client=%p", width, height, client.get());
 }
@@ -47,7 +48,7 @@ VkDisplayClientOutput::~VkDisplayClientOutput() {
 void VkDisplayClientOutput::beginFrame(vkcontext_rawptr_t vk_ctx) {
   OrkAssertI(!_acquired, "beginFrame called twice without a submit in between");
 
-  logchan_presentout->log("beginFrame: frame=%lu acquiring", _current_frame);
+  if(0) logchan_presentout->log("beginFrame: frame=%lu acquiring", _current_frame);
   _acquired_index = _display_client->acquireImage(vk_ctx->_vkdevice);
 
   auto main_rtg  = vk_ctx->_fbi->_ensureMainRtg();
@@ -56,14 +57,14 @@ void VkDisplayClientOutput::beginFrame(vkcontext_rawptr_t vk_ctx) {
   main_rtbi->_is_surface = false;
   main_rtbi->_replaceImage(_imgobjs[_acquired_index]);
 
-  logchan_presentout->log("beginFrame: frame=%lu slot=%u acquired", _current_frame, _acquired_index);
+  if(0) logchan_presentout->log("beginFrame: frame=%lu idx=%u acquired", _current_frame, _acquired_index);
   _acquired = true;
 }
 
 ///////////////////////////////////////////////////////
 
 void VkDisplayClientOutput::endFrame(vkcontext_rawptr_t _ctx) {
-  logchan_presentout->log("endFrame: slot=%u -> texture", _acquired_index);
+  if(0) logchan_presentout->log("endFrame: idx=%u -> texture", _acquired_index);
   auto main_rtg  = _ctx->_fbi->_ensureMainRtg();
   auto main_rtbi = main_rtg->buffer(0)->_impl.getShared<VklRtBufferImpl>();
   main_rtbi->_transitionToTexture(_ctx->primary_cb());
@@ -72,15 +73,14 @@ void VkDisplayClientOutput::endFrame(vkcontext_rawptr_t _ctx) {
 ///////////////////////////////////////////////////////
 
 void VkDisplayClientOutput::submit(vkcontext_rawptr_t _ctx) {
-  auto client_timeline = _display_client->_local.client_timeline;
 
+  auto client_timeline = _display_client->_local.client_timeline;
   auto allSemas  = _ctx->_oneShotSignalSemaphores;
   auto allValues = _ctx->_oneShotSignalValues;
   allSemas.push_back(client_timeline);
-  allValues.push_back(_current_frame + 1);
+  allValues.push_back(_current_frame);
 
-  logchan_presentout->log("submit: slot=%u frame=%lu signaling client_tv->%lu",
-    _acquired_index, _current_frame, _current_frame + 1);
+  if(0) logchan_presentout->log("submit: idx=%u frame=%lu signaling client_tv->%lu", _acquired_index, _current_frame, _current_frame + 1);
 
   OrkVkAssert(vkQueueSubmit(_ctx->_vkqueue_graphics, 1,
     pConst(VkSubmitInfo{
@@ -102,13 +102,13 @@ void VkDisplayClientOutput::submit(vkcontext_rawptr_t _ctx) {
       VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
       .semaphoreCount = 1,
       .pSemaphores    = &client_timeline,
-      .pValues        = pConst<u64>(_current_frame + 1),
+      .pValues        = &_current_frame,
     }),
     UINT64_MAX));
 
-  logchan_presentout->log("submit: slot=%u done", _acquired_index);
+  if(0) logchan_presentout->log("submit: idx=%u done", _acquired_index);
 
-  _display_client->releaseImage(_acquired_index);
+  _display_client->releaseImage(_ctx->_vkdevice, _acquired_index);
 
   _incrementFrame();
 
@@ -117,8 +117,8 @@ void VkDisplayClientOutput::submit(vkcontext_rawptr_t _ctx) {
 
 ///////////////////////////////////////////////////////
 
-u32 VkDisplayClient::acquireImage(VkDevice device) {
-  logchan_presentout->log("acquireImage: waiting server_wait>=%lu", _server_wait_timeline_value);
+u8 VkDisplayClient::acquireImage(VkDevice device) {
+  if(0) logchan_presentout->log("acquireImage: waiting server_wait>=%lu", _server_wait_timeline_value);
 
   // Wait for server
   OrkVkAssert(vkWaitSemaphores(device,
@@ -130,27 +130,20 @@ u32 VkDisplayClient::acquireImage(VkDevice device) {
     }),
     UINT64_MAX));
 
-  // Client will render into (client_timeline_value + 1) % MAX_FRAMES_IN_FLIGHT
-  // While server displays client_timeline_value % MAX_FRAMES_IN_FLIGHT
-  // Alternating frames based on timeline value.
-  u64 client_timeline_value = _shared->client_timeline_value.load(std::memory_order_acquire);
-  u32 id = (u32)(client_timeline_value + 1) % MAX_FRAMES_IN_FLIGHT;
-
-  logchan_presentout->log("acquireImage: slot=%u client_tv=%lu", id, client_timeline_value);
-  return id;
+  auto idxs = _shared->indices.load(std::memory_order_acquire);
+  if(0) logchan_presentout->log("acquireImage: client_id=%d server_id=%d", idxs.client, idxs.server);
+  return idxs.client;
 }
 
-void VkDisplayClient::releaseImage(u32 idx) {
-  // Signal server to flip to the new client frame.
-  u64 prev = _shared->client_timeline_value.fetch_add(1, std::memory_order_release);
+void VkDisplayClient::releaseImage(VkDevice device, u8 idx) {
+  int frame_wait_count = _shared->frame_wait_count.load(std::memory_order_relaxed);
 
-  // Next server cycle means it has released the current frame.
-  // server_timeline_value + 1 to wait on the next server cycle.
-  u64 server_timeline_value = _shared->server_timeline_value.load(std::memory_order_acquire);
-  _server_wait_timeline_value = server_timeline_value + 1;
+  // If frame did not render in expected wait time then update to current server timeline value
+  u64 server_tv;
+  OrkVkAssert(vkGetSemaphoreCounterValue(device, _local.server_timeline, &server_tv));
+  _server_wait_timeline_value = std::max(server_tv, _server_wait_timeline_value + frame_wait_count);
 
-  logchan_presentout->log("releaseImage: slot=%u client_tv=%lu->%lu next_server_wait=%lu",
-    idx, prev, prev + 1, _server_wait_timeline_value);
+  if(0) logchan_presentout->log("releaseImage: idx=%u next_server_wait=%lu", idx, _server_wait_timeline_value);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

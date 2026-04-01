@@ -72,7 +72,7 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
 
   // Create a single VkImage with all mip levels using the converted format
   auto imageInfo   = makeVKICI(iwidth, iheight, 1, dst_format, num_mips);
-  imageInfo->usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+  imageInfo->usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
   std::string debug_name = ptex->_debugName.empty() ? "texture_loadreq" : ptex->_debugName;
   // Load request textures use slot [0] only (no double-buffering needed)
   vktex->_imgobj[0] = std::make_shared<VulkanImageObject>(_contextVK, imageInfo, debug_name);

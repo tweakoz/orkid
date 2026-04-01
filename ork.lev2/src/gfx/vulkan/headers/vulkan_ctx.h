@@ -127,6 +127,7 @@ struct VulkanInstance {
   std::vector<VkContext*> _contexts;
 
   PFN_vkCreateDebugUtilsMessengerEXT _vkCreateDebugUtilsMessengerEXT = nullptr;
+  PFN_vkSetDebugUtilsObjectNameEXT   _vkSetDebugUtilsObjectName = nullptr;
 
   //////////////////////////////////////////////
   template <typename T> bool _fetchInstanceProcAddr(T& object, const char* name) {
@@ -307,9 +308,12 @@ struct VkDisplayClientLocalData {
 };
 
 struct VkDisplayClient : OrkDisplayClient {
-  virtual bool initialize(VkDevice device)   = 0;
-  u32  acquireImage(VkDevice device);
-  void releaseImage(u32 idx);
+  virtual bool initialize(VkDevice device) = 0;
+  
+  u8   acquireImage(VkDevice device);
+  void releaseImage(VkDevice device, u8 id);
+
+  u64 _server_wait_timeline_value = 0;
   VkDisplayClientLocalData _local = {};
 };
 
@@ -326,7 +330,7 @@ struct VkDisplayClientOutput : public VkFramebufferOutput {
 
   vkcontext_rawptr_t    _gfx_ctx        = nullptr;
   vkdisplayclient_ptr_t _display_client = nullptr;
-  u32 _acquired_index = 0xffffffff; 
+  u8 _acquired_index = UINT8_MAX; 
 
   std::shared_ptr<VulkanImageObject> _imgobjs[MAX_FRAMES_IN_FLIGHT];
 };
@@ -793,6 +797,7 @@ public:
   void _initDefaultTextures();
   void _initGraphicsQueue(u32 queue_id);
   //////////////////////////////////////////////
+  // TODO obsolete prefer using VkSetDebugName in vk_protos.h
   template <typename T> void _setObjectDebugName(T& object, VkObjectType objectType, const char* name) {
     if (_vkSetDebugUtilsObjectName) {
       VkDebugUtilsObjectNameInfoEXT nameInfo = {};

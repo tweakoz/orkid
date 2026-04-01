@@ -472,6 +472,8 @@ ork.asset.catalog.list.py      # Asset catalog listing
 
 Full-width (`////////////////////////////////////////////////////////////////////////////////`) separators are used between top-level declarations and method definitions. Half-width (`////////////////////////////////////////`) separators are used within method bodies to divide logical chunks of work. Named half-width blocks annotate significant categories of work within a method.
 
+**Never use two consecutive full-width separators.** One is sufficient; double separators (`////////////////////////////////////////////////////////////////////////////////\n////////////////////////////////////////////////////////////////////////////////`) are not a convention in this codebase and should not be written.
+
 **Header example:**
 80 dashes = major seperator
 ////////////////////////////////////////////////////////////////////////////////
@@ -552,6 +554,10 @@ void NextState::methodName(int param_name) {
 } // namespace ork
 ////////////////////////////////////////////////////////////////////////////////
 ```
+
+### Preserve Existing Formatting (NEVER VIOLATE)
+
+Never reformat code that is not being changed as part of the task. If a struct, function, or block has existing whitespace, alignment, or style — leave it exactly as-is. Only touch the lines that are actually being added or modified. This applies even when the existing style differs from surrounding code.
 
 ### Brace Style
 
@@ -886,5 +892,38 @@ ork.test.core.exe TestName!     # Run C++ tests
 - Convert paths from py::object to file::Path
 
 ---
+
+## Vulkan Allocator
+Always pass `ORK_VK_ALLOC` (defined as `nullptr`) as the allocator parameter in all Vulkan creation/destruction calls:
+```cpp
+vkCreateImage(..., ORK_VK_ALLOC, &image);
+vkCreateImageView(..., ORK_VK_ALLOC, &view);
+vkAllocateMemory(..., ORK_VK_ALLOC, &mem);
+vkCreateSemaphore(..., ORK_VK_ALLOC, &sema);
+vkDestroyImage(..., ORK_VK_ALLOC);
+// etc.
+```
+Never use raw `nullptr` for the vulkan pAllocator param — always `ORK_VK_ALLOC`.
+
+## Vulkan Inline Struct Style (`pConst` / `pNext`)
+
+When writing Vulkan initialization code, use the `pConst`/`pNext` template helpers for inline struct construction instead of named temporaries.
+
+**`pConst(T&&)`** — takes an rvalue struct and returns `const T*`. Use for the outermost Vk create-info passed to a Vulkan API call.
+**`pNext(T&&)`** — same but intended for chaining into a `.pNext` field.
+
+### Semaphore (timeline) example
+```cpp
+OrkVkAssert(vkCreateSemaphore(device, 
+  pConst(VkSemaphoreCreateInfo{
+    VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+    pNext(VkSemaphoreTypeCreateInfoKHR{
+      VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR,
+      .semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE,
+      .initialValue  = 0,
+    }),
+  }), 
+  ORK_VK_ALLOC, &sema));
+```
 
 *This is a living document. Each interaction should improve it.*
