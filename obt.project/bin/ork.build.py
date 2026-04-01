@@ -89,8 +89,8 @@ with buildtrace.NestedBuildTrace({ "op": "obt.build.py"}) as nested:
   ######################################################################
 
 
-  dep_list = ORKID_DEPMODULE.deplist
-
+  dep_list = ORKID_DEPMODULE.deplist + ["lunasvg"] # todo move to OBT depper
+  
   l = list()
   chain = obt.dep.Chain(dep_list)
   for item in chain._list:
