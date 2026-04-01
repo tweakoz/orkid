@@ -611,7 +611,12 @@ void pyinit_ui(py::module& module_lev2) {
               [](uisurface_ptr_t surface) -> fvec3 { //
                 return surface->_clearColor;
               },
-              [](uisurface_ptr_t surface, fvec3 c) { surface->_clearColor = c; });
+              [](uisurface_ptr_t surface, fvec3 c) { surface->_clearColor = c; })
+          //////////////////////////////////
+          .def_property(
+              "supersample",
+              [](uisurface_ptr_t surface) -> int { return surface->_supersample; },
+              [](uisurface_ptr_t surface, int ss) { surface->_supersample = ss; });
   type_codec->registerStdCodec<uisurface_ptr_t>(surface_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto viewport_type = //
@@ -3218,7 +3223,9 @@ void pyinit_ui(py::module& module_lev2) {
                   panel->setChild(rval);
                 }
                 return rval;
-              });
+              })
+          .def_readwrite("title_override", &ui::DockablePanel::_title_override)
+          .def_readwrite("title_center", &ui::DockablePanel::_title_center);
   type_codec->registerStdCodec<ui::dockablepanel_ptr_t>(dockablepanel_type);
   /////////////////////////////////////////////////////////////////////////////////
   // ScrollContainer

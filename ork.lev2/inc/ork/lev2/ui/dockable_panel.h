@@ -34,6 +34,8 @@ struct DockablePanel : public Group {
   fvec4 _titlebar_color = fvec4(0.2f, 0.2f, 0.25f, 1.0f);
   fvec4 _title_color = fvec4(0.9f, 0.9f, 0.9f, 1.0f);
   fvec4 _border_color = fvec4(0.3f, 0.3f, 0.35f, 1.0f);
+  std::string _title_override; // if non-empty, use this instead of child name
+  bool _title_center = false;  // center-justify title text
 
 private:
   widget_ptr_t _child;

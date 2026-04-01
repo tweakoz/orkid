@@ -89,16 +89,26 @@ void DockablePanel::DoDraw(ui::drawevent_constptr_t drwev) {
         0.0f, 1.0f);
     tgt->PopModColor();
 
-    // Draw title text (child's name)
-    if (_child) {
-      const auto& title = _child->GetName();
+    // Draw title text
+    {
+      std::string title = _title_override.empty()
+        ? (_child ? _child->GetName() : _name)
+        : _title_override;
       if (!title.empty()) {
         tgt->PushModColor(_title_color);
         lev2::FontMan::PushFont(_font);
-        int font_height = lev2::FontMan::currentFont()->charHeight();
+        auto font = lev2::FontMan::currentFont();
+        int font_height = font->charHeight();
         int text_y = iyr + (_titlebar_height - font_height) / 2;
+        int text_x;
+        if (_title_center) {
+          int text_w = font->stringWidth(title.length());
+          text_x = ixr + (_geometry._w - text_w) / 2;
+        } else {
+          text_x = ixr + 8;
+        }
         lev2::FontMan::beginTextBlock(tgt);
-        lev2::FontMan::DrawText(tgt, ixr + 8, text_y, title.c_str());
+        lev2::FontMan::DrawText(tgt, text_x, text_y, title.c_str());
         lev2::FontMan::endTextBlock(tgt);
         lev2::FontMan::PopFont();
         tgt->PopModColor();
