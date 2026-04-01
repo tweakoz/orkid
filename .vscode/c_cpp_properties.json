@@ -34,6 +34,7 @@
                 "RENDERDOC_API_ENABLED",
                 "ENABLE_GLFW"
             ],
+            "compileCommands": "${workspaceFolder}/compile_commands.json",
             "compilerPath": "/usr/bin/clang",
             "cStandard": "c17",
             "cppStandard": "c++20",

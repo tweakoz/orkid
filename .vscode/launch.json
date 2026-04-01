@@ -11,6 +11,8 @@
             "program": "${env:OBT_SUBSPACE_BIN_DIR}/ork.python",
             "args": ["${input:scriptPath}"],
             "preLaunchTask": "gdb-attach-reminder",
+            "miDebuggerPath": "${workspaceFolder}/.vscode/gdb-nodebuginfod.sh",
+            "miDebuggerArgs": "--init-eval-command=\"set debuginfod enabled off\"",
             "MIMode": "gdb",
             "cwd": "${workspaceFolder}",
             "stopAtEntry": false,
@@ -18,7 +20,8 @@
                 { "name": "PYTHONPATH", "value": "${env:OBT_STAGE}/pyvenv/lib/python3.12/site-packages:${env:PYTHONPATH}" },
                 { "name": "LD_LIBRARY_PATH", "value": "${env:LD_LIBRARY_PATH}" },
                 { "name": "OBT_STAGE", "value": "${env:OBT_STAGE}" },
-                { "name": "PATH", "value": "${env:PATH}" }
+                { "name": "PATH", "value": "${env:PATH}" },
+                { "name": "DEBUGINFOD_URLS", "value": "" }
             ],
             "setupCommands": [
                 { "text": "-enable-pretty-printing", "ignoreFailures": true },
@@ -36,6 +39,7 @@
             "request": "launch",
             "program": "${env:OBT_SUBSPACE_BIN_DIR}/${input:exeName}",
             "args": [],
+            "miDebuggerPath": "${workspaceFolder}/.vscode/gdb-nodebuginfod.sh",
             "MIMode": "gdb",
             "cwd": "${workspaceFolder}",
             "stopAtEntry": false,
@@ -46,7 +50,8 @@
                 { "name": "VK_LAYER_PATH", "value": "${env:VK_LAYER_PATH}" },
                 { "name": "LD_LIBRARY_PATH", "value": "${env:LD_LIBRARY_PATH}" },
                 { "name": "OBT_STAGE", "value": "${env:OBT_STAGE}" },
-                { "name": "PATH", "value": "${env:PATH}" }
+                { "name": "PATH", "value": "${env:PATH}" },
+                { "name": "DEBUGINFOD_URLS", "value": "" }
             ],
             "setupCommands": [
                 { "text": "-enable-pretty-printing", "ignoreFailures": true },
@@ -68,6 +73,8 @@
             "processId": "${command:pickProcess}",
             "program": "${env:OBT_SUBSPACE_BIN_DIR}/ork.python",
             "preLaunchTask": "gdb-attach-reminder",
+            "miDebuggerPath": "${workspaceFolder}/.vscode/gdb-nodebuginfod.sh",
+            "miDebuggerArgs": "--init-eval-command=\"set debuginfod enabled off\"",
             "MIMode": "gdb",
             "setupCommands": [
                 { "text": "-enable-pretty-printing", "ignoreFailures": true },
