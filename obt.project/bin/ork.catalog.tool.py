@@ -115,9 +115,12 @@ def _build_namespace_varmap(tool, ns_id):
     if host in tool.cdn_health:
       h = tool.cdn_health[host]
       d["CDN Endpoint"] = h.get("url", "")
-    d["CDN Reachable"] = "Yes" if h.get("reachable") else "No"
-    ms = h.get("latency_ms", 0)
-    d["CDN Latency"] = f"{ms:.0f}ms" if h.get("reachable") else "N/A"
+      d["CDN Reachable"] = "Yes" if h.get("reachable") else "No"
+      ms = h.get("latency_ms", 0)
+      d["CDN Latency"] = f"{ms:.0f}ms" if h.get("reachable") else "N/A"
+    else:
+      d["CDN Reachable"] = "unreachable"
+      d["CDN Latency"] = "N/A"
 
   return d
 
@@ -431,6 +434,12 @@ class CatalogTool(ComponentizedApplication):
       if host in seen_hosts:
         continue
       seen_hosts.add(host)
+      # Resolve IP safely
+      import socket
+      try:
+        resolved_ip = socket.gethostbyname(host)
+      except Exception:
+        resolved_ip = "unresolvable"
       try:
         t0 = time.time()
         r = self.http_session.head(url, timeout=5, verify=not resolved.disable_cert_check)
@@ -441,9 +450,10 @@ class CatalogTool(ComponentizedApplication):
           "url": url,
           "host": host,
           "location": remote_loc,
+          "ip": resolved_ip,
         }
       except Exception:
-        entry = {"reachable": False, "latency_ms": 0, "url": url, "host": host, "location": remote_loc}
+        entry = {"reachable": False, "latency_ms": 0, "url": url, "host": host, "location": remote_loc, "ip": resolved_ip}
       health[host] = entry
     self.cdn_health = health
     self.cdn_ping_time = time.time()
@@ -872,8 +882,14 @@ class CatalogTool(ComponentizedApplication):
         else:
           txt = f"{label} offline"
           self._texts["status_err"].addItem(txt, vec2(cx, y))
+        # Second line: resolved IP
+        ip = info.get("ip", "")
+        if ip == "unresolvable":
+          self._texts["status_err"].addItem(f"  ip: {ip}", vec2(cx, y + 14))
+        elif ip:
+          self._texts["label"].addItem(f"  ip: {ip}", vec2(cx, y + 14))
 
-    y += 16
+    y += 30
 
     # DownloadManager status
     dm = self.catalog.download_manager
