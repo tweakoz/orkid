@@ -824,19 +824,39 @@ class CatalogTool(ComponentizedApplication):
     if self.canvas_dirty and self.canvas_ready:
       self._redraw_canvas()
 
-  def _ns_can_fetch(self, ns):
-    """Check if namespace has encryption key for fetching."""
+  def _ns_cdn_reachable(self, ns):
+    """Check if namespace's CDN endpoint is reachable."""
     merged = self.cfgspc.merged_config
     if not merged:
       return False
-    return bool(merged.getEncryptionKeyForNamespace(ns))
+    remote_loc = self.cfgspc.getNamespaceRemoteLocation(ns)
+    if not remote_loc:
+      return False
+    resolved = merged.resolveRemoteLocation(remote_loc)
+    if not resolved:
+      return False
+    from urllib.parse import urlparse
+    host = urlparse(str(resolved.download_url)).hostname or ""
+    h = self.cdn_health.get(host)
+    return bool(h and h.get("reachable"))
 
-  def _ns_can_upload(self, ns):
-    """Check if namespace has encryption key and write API key for uploading."""
+  def _ns_can_fetch(self, ns):
+    """Check if namespace has encryption key and CDN is reachable."""
     merged = self.cfgspc.merged_config
     if not merged:
       return False
     if not merged.getEncryptionKeyForNamespace(ns):
+      return False
+    return self._ns_cdn_reachable(ns)
+
+  def _ns_can_upload(self, ns):
+    """Check if namespace has encryption key, write API key, and CDN is reachable."""
+    merged = self.cfgspc.merged_config
+    if not merged:
+      return False
+    if not merged.getEncryptionKeyForNamespace(ns):
+      return False
+    if not self._ns_cdn_reachable(ns):
       return False
     remote_loc = self.cfgspc.getNamespaceRemoteLocation(ns)
     if not remote_loc:
