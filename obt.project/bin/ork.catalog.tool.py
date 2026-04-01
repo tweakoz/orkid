@@ -246,6 +246,7 @@ class CatalogTool(ComponentizedApplication):
     self.cdn_ping_interval = 1.0
     self.cdn_ping_running = False
     self.selected_key = None
+    self.selected_import_config = None  # basename of selected import config
     self._selecting = False
     self.canvas_dirty = True
     self.canvas_ready = False
@@ -391,6 +392,8 @@ class CatalogTool(ComponentizedApplication):
     self.project_namespaces = {}    # project_name -> sorted list of ns_ids
     self.project_manifests = {}     # project_name -> sorted list of manifest file basenames
     self.project_import_configs = {} # project_name -> sorted list of import config basenames
+    self.import_config_paths = {}   # basename -> full path
+    self.import_config_data = {}    # basename -> parsed dict (loaded on demand)
     self.ns_project = {}            # ns_id -> project_name
     self.ns_manifests = {}          # ns_id -> sorted list of manifest file basenames
     self.ns_import_configs = {}     # ns_id -> sorted list of import config basenames
@@ -415,6 +418,7 @@ class CatalogTool(ComponentizedApplication):
               self.asset_manifest_file[f"{ns}|{asset_id}"] = basename
           else:
             ns_import_configs.append(basename)
+            self.import_config_paths[basename] = sf
       self.ns_project[ns] = project
       self.ns_manifests[ns] = sorted(set(ns_files))
       self.ns_import_configs[ns] = sorted(set(ns_import_configs))
@@ -568,6 +572,22 @@ class CatalogTool(ComponentizedApplication):
       return key
     return None
 
+  def _get_import_config(self, basename):
+    """Load and cache import config JSON data."""
+    if basename in self.import_config_data:
+      return self.import_config_data[basename]
+    path = self.import_config_paths.get(basename)
+    if not path or not os.path.exists(path):
+      return None
+    try:
+      import json
+      with open(path, 'r') as f:
+        data = json.load(f)
+      self.import_config_data[basename] = data
+      return data
+    except Exception:
+      return None
+
   ############################################################################
   # Selection
   ############################################################################
@@ -665,6 +685,17 @@ class CatalogTool(ComponentizedApplication):
     elif name == "CLEAR LOCAL":
       if kt == "asset" and fqid:
         self._bg(lambda: self._do_clear_local(fqid))
+    elif name.startswith("AUTOCORRECT:"):
+      ic_name = name[12:]
+      self._do_autocorrect_import_config(ic_name)
+    elif name.startswith("IC:"):
+      ic_name = name[3:]
+      # Toggle — click again to collapse
+      if self.selected_import_config == ic_name:
+        self.selected_import_config = None
+      else:
+        self.selected_import_config = ic_name
+      self.canvas_dirty = True
 
   ############################################################################
   # Actions
@@ -1167,8 +1198,15 @@ class CatalogTool(ComponentizedApplication):
           self._texts["label"].addItem(f"... {len(icfiles)} total", vec2(8, y))
           y += 16
           break
-        self._texts["label"].addItem(ic, vec2(8, y))
-        y += 16
+        # -> button to view details
+        btn_name = f"IC:{ic}"
+        selected = self.selected_import_config == ic
+        self._add_button_quad(btn_name, 8, y, 20, 16, ">")
+        self._texts["label"].addItem(ic, vec2(32, y))
+        y += 18
+        # Show details inline if selected
+        if selected:
+          y = self._draw_import_config_detail(ic, y, w, h)
     y += 4
 
     # Namespace summary grid
@@ -1197,6 +1235,148 @@ class CatalogTool(ComponentizedApplication):
   ############################################################################
   # Namespace view
   ############################################################################
+
+  def _import_config_needs_autocorrect(self, ic_name):
+    """Check if import config has absolute paths (should use ${ENV_VAR} form)."""
+    data = self._get_import_config(ic_name)
+    if not data:
+      return False
+    for key in ["source_dir", "manifest"]:
+      val = data.get(key, "")
+      if val and os.path.isabs(val):
+        return True
+    return False
+
+  def _sanitize_path(self, abspath):
+    """Replace longest-matching env var prefix with ${VAR}."""
+    abspath = os.path.abspath(abspath)
+    best_var = None
+    best_len = 0
+    excluded = {'PWD', 'OLDPWD', 'HOME', 'PATH', 'SHELL', 'USER', 'LOGNAME',
+                'TERM', 'LANG', 'DISPLAY', 'EDITOR', 'TMPDIR', '_',
+                'PYTHONPATH', 'PYTHONHOME', 'SHLVL', 'COLORTERM'}
+    for var, val in os.environ.items():
+      if var in excluded or not val or not os.path.isabs(val):
+        continue
+      val = val.rstrip("/")
+      if len(val) <= best_len:
+        continue
+      if abspath == val or abspath.startswith(val + "/"):
+        best_var = var
+        best_len = len(val)
+    if best_var:
+      remainder = abspath[best_len:]
+      return f"${{{best_var}}}{remainder}"
+    return abspath
+
+  def _resolve_bad_path(self, bad_path, manifest_dir):
+    """Try to resolve a bad absolute path (from another machine) to a local path,
+       then sanitize with env var prefix."""
+    if not bad_path or not os.path.isabs(bad_path):
+      return bad_path
+    if os.path.exists(bad_path):
+      return self._sanitize_path(bad_path)
+    # Derive project root from manifest_dir
+    project_root = manifest_dir
+    for _ in range(3):
+      parent = os.path.dirname(project_root)
+      if os.path.basename(project_root) in ("obt.project", "asset_manifests"):
+        project_root = parent
+      else:
+        break
+    # Try progressively shorter suffixes of bad_path against project_root
+    parts = bad_path.replace("\\", "/").rstrip("/").split("/")
+    for i in range(len(parts) - 1, 0, -1):
+      suffix = os.path.join(*parts[i:])
+      candidate = os.path.join(project_root, suffix)
+      if os.path.exists(candidate):
+        return self._sanitize_path(candidate)
+    # Fallback: sanitize the project root itself
+    return self._sanitize_path(project_root)
+
+  def _do_autocorrect_import_config(self, ic_name):
+    """Rewrite absolute paths in import config using env var substitution."""
+    import json
+    path = self.import_config_paths.get(ic_name)
+    if not path:
+      return
+    manifest_dir = os.path.dirname(path)
+    with open(path, 'r') as f:
+      data = json.load(f)
+    changed = False
+    for key in ["source_dir", "manifest"]:
+      val = data.get(key, "")
+      if not val or not os.path.isabs(val):
+        continue
+      if os.path.exists(val):
+        # Path exists but is absolute — sanitize with env var
+        new_val = self._sanitize_path(val)
+        if new_val != val:
+          data[key] = new_val
+          changed = True
+      else:
+        # Path doesn't exist — resolve then sanitize
+        new_val = self._resolve_bad_path(val, manifest_dir)
+        if new_val != val:
+          data[key] = new_val
+          changed = True
+    if changed:
+      with open(path, 'w') as f:
+        json.dump(data, f, indent=2)
+      self.import_config_data.pop(ic_name, None)
+      self.canvas_dirty = True
+
+  def _draw_import_config_detail(self, ic_name, y, w, h):
+    """Draw expanded import config details inline. Returns updated y."""
+    data = self._get_import_config(ic_name)
+    if not data:
+      self._texts["status_err"].addItem("  (could not load)", vec2(8, y))
+      return y + 16
+    indent = 24
+
+    # Autocorrect button if paths look wrong
+    if self._import_config_needs_autocorrect(ic_name):
+      btn_name = f"AUTOCORRECT:{ic_name}"
+      self._add_button_quad(btn_name, indent, y, 96, 16, "AUTOCORRECT", danger=True)
+      self._texts["status_err"].addItem("(paths need correction)", vec2(indent + 104, y + 1))
+      y += 20
+
+    display_names = {
+      "namespace": "namespace",
+      "source_dir": "project dir",
+      "local_loc": "local_loc",
+      "manifest": "manifest",
+      "encryption_key": "encryption_key",
+    }
+    for key in ["namespace", "source_dir", "local_loc", "manifest", "encryption_key"]:
+      val = data.get(key)
+      if val:
+        label = display_names.get(key, key)
+        self._texts["label"].addItem(f"{label}:", vec2(indent, y))
+        # Highlight bad paths in red
+        if key in ("source_dir", "manifest") and os.path.isabs(val) and not os.path.exists(val):
+          self._texts["status_err"].addItem(str(val), vec2(indent + 120, y))
+        else:
+          self._texts["value"].addItem(str(val), vec2(indent + 120, y))
+        y += 14
+    if "platforms" in data:
+      self._texts["label"].addItem("platforms:", vec2(indent, y))
+      self._texts["value"].addItem(", ".join(data["platforms"]), vec2(indent + 120, y))
+      y += 14
+    assets = data.get("assets", [])
+    if assets:
+      self._texts["label"].addItem("assets:", vec2(indent, y))
+      y += 14
+      for a in assets:
+        if isinstance(a, dict):
+          aid = a.get("id", "?")
+          inc = a.get("include", "")
+          self._texts["value"].addItem(f"{aid}  ({inc})", vec2(indent + 8, y))
+        else:
+          self._texts["value"].addItem(str(a), vec2(indent + 8, y))
+        y += 14
+    y += 4
+    return y
 
   def _draw_namespace_view(self, ns, y_start, w, h):
     y = y_start
@@ -1247,8 +1427,13 @@ class CatalogTool(ComponentizedApplication):
       self._draw_section_header("Import Configs", y, w, h)
       y += 18
       for ic in ns_ics:
-        self._draw_prop_row("File", ic, y)
-        y += 16
+        btn_name = f"IC:{ic}"
+        selected = self.selected_import_config == ic
+        self._add_button_quad(btn_name, 8, y, 20, 16, ">")
+        self._texts["label"].addItem(ic, vec2(32, y))
+        y += 18
+        if selected:
+          y = self._draw_import_config_detail(ic, y, w, h)
     y += 8
 
     # Compute local/CDN completeness and key availability for ghosting
