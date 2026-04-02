@@ -45,11 +45,28 @@ orkid/
 ### ork.lev2 Skills
 | Skill | Covers | Key Files |
 |-------|--------|-----------|
-| **orklev2-context** | Abstract graphics API, materials, render targets, compositor | `ork.lev2/inc/ork/lev2/gfx/` |
+| **orklev2-gfxcontext** | Context class, sub-interfaces (GBI/TXI/FXI/DWI/CI/FBI), GfxEnv | `ork.lev2/inc/ork/lev2/gfx/gfxenv.h` |
+| **orklev2-gbi** | GeometryBufferInterface, vertex/index buffers, vertex formats, draw | `ork.lev2/inc/ork/lev2/gfx/gbi.h` |
+| **orklev2-txi** | TextureInterface, Texture/TextureArray, Image, sampling, ShmTex | `ork.lev2/inc/ork/lev2/gfx/txi.h` |
+| **orklev2-fxi** | FxInterface, shader binding, params, UBO/SSBO, raster state | `ork.lev2/inc/ork/lev2/gfx/fxi.h` |
+| **orklev2-dwi** | DrawingInterface, 2D/3D quads, lines, fullscreen quads | `ork.lev2/inc/ork/lev2/gfx/dwi.h` |
+| **orklev2-ci** | ComputeInterface, dispatch, barriers, image binding | `ork.lev2/inc/ork/lev2/gfx/ci.h` |
+| **orklev2-fbi** | FrameBufferInterface, RtGroup, viewport/scissor, capture | `ork.lev2/inc/ork/lev2/gfx/fbi.h` |
 | **orklev2-shader** | FXV2 shader language, .fxv2 format, SPIR-V compilation, built-in shaders | `ork.data/platform_lev2/shaders/fxv2/`, `ork.lev2/inc/ork/lev2/gfx/shadman.h` |
 | **orklev2-scenegraph** | Scene/Layer/Node, drawables, cameras, lighting, SceneGraphViewport | `ork.lev2/inc/ork/lev2/gfx/scenegraph/` |
 | **orklev2-ui** | Widgets, layout, events, overlays, PropertySheet, Outliner, PrimCanvas | `ork.lev2/inc/ork/lev2/ui/` |
 | **orklev2-audio** | Singularity synth, DSP, oscillators, filters, modulation, sampling | `ork.lev2/inc/ork/lev2/aud/singularity/` |
+| **orklev2-coreaudio** | CoreAudio backend (macOS), AudioUnit graph, HAL callbacks | `ork.lev2/src/aud/coreaudio/` |
+| **orklev2-alsa** | ALSA backend (Linux), dual-thread, PCM device, int16 output | `ork.lev2/src/aud/alsa/` |
+| **orklev2-portaudio** | PortAudio backend (cross-platform), callback-based audio | `ork.lev2/src/aud/portaudio/` |
+| **orklev2-pipewire** | PipeWire backend (Linux), SPA buffer, pw_stream callback | `ork.lev2/src/aud/pipewire/` |
+| **orklev2-particles** | Dataflow particle system, emitters, forces, renderers, materials | `ork.lev2/inc/ork/lev2/gfx/particle/` |
+| **orklev2-pbr** | PBR materials, IBL, environment maps, lightmaps, XGM serialization | `ork.lev2/inc/ork/lev2/gfx/material_pbr.inl` |
+| **orklev2-fxpipeline** | FxPipeline, permutations, cache, parameter binding, state lambdas | `ork.lev2/inc/ork/lev2/gfx/fx_pipeline.h` |
+| **orklev2-lighting** | Light types, LightManager, shadows, cookies, probes, SSBO layout | `ork.lev2/inc/ork/lev2/gfx/lighting/gfx_lighting.h` |
+| **orklev2-renderer** | Drawables, DrawQueue, IRenderer, radix sort, instancing, skinning | `ork.lev2/inc/ork/lev2/gfx/renderer/drawable.h` |
+| **orklev2-compositor** | Compositor pipeline, render/post-FX/output nodes, presets, RtGroup | `ork.lev2/inc/ork/lev2/gfx/renderer/compositor.h` |
+| **orklev2-vulkan** | Vulkan backend, VkContext, swapchain, pipelines, sync, memory | `ork.lev2/src/gfx/vulkan/` |
 | **orklev2-ezapp** | OrkEzApp, main loop, secondary windows, refresh policies | `ork.lev2/inc/ork/lev2/ezapp.h` |
 
 ### Other Skills
