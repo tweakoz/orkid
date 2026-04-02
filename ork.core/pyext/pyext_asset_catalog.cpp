@@ -187,6 +187,7 @@ void pyinit_asset_catalog(py::module& module_core) {
           .def("manifestsForNamespace", &AssetCatalog::manifestsForNamespace)
           .def("findAssetEntry", &AssetCatalog::findAssetEntry)
           .def_static("loadFromGlobalManifests", &AssetCatalog::loadFromGlobalManifests)
+          .def_static("reloadAllManifests", &AssetCatalog::reloadAllManifests)
           .def_property_readonly_static("instance", [](py::object /* self */) -> assetcatalog_ptr_t { 
               return AssetCatalog::globalInstance(); 
           })

@@ -70,10 +70,11 @@ def resolve_variables(value: str, env: dict = None) -> str:
 
     result = value
 
-    # Expand <stage> and <temp>
+    # Expand <stage>, <temp>, and <assetcache>
     from obt import path as obt_path
     result = result.replace("<stage>", str(obt_path.stage()))
     result = result.replace("<temp>", str(obt_path.temp()))
+    result = result.replace("<assetcache>", str(obt_path.stage() / "assetcache"))
 
     # Expand ${VAR} patterns
     def replace_var(match):

@@ -108,6 +108,10 @@ struct AssetCatalog {
   // 3. Loads all non-config JSON files as manifests
   // 4. Registers codecs for all namespaces found in configs
   static void loadFromGlobalManifests(assetcatalog_ptr_t self);
+
+  // Purge all loaded manifests, asset index, and namespace tree,
+  // then reload everything from disk via loadFromGlobalManifests.
+  static void reloadAllManifests(assetcatalog_ptr_t self);
   
   ////////////////////////////////////////////////////////////////////////////////
   // === Codec Management ===

@@ -753,6 +753,8 @@ class CatalogTool(ComponentizedApplication):
   ############################################################################
 
   def _do_refresh(self):
+    # Purge and reload all manifests from disk
+    core.AssetCatalog.reloadAllManifests(self.catalog)
     self._full_scan()
     self._check_cdn_health()
     self.canvas_dirty = True
@@ -1861,11 +1863,20 @@ class CatalogTool(ComponentizedApplication):
     elif sel.startswith("AssetPaks/"):
       pak_id = sel.split("/", 1)[1]
       assets = data.get("assets", [])
+      print(f"[PROPCHANGE] pak_id={pak_id} key={key} value={value!r} type={type(value)}")
+      found = False
       for a in assets:
         if a["id"] == pak_id:
           field = key.split("/")[-1] if "/" in key else key
           if field == "id":
-            a["id"] = str(value)
+            new_id = str(value)
+            a["id"] = new_id
+            # Update outliner key and selection to match new id
+            old_key = sel
+            new_key = f"AssetPaks/{new_id}"
+            self._editor_selected_key = new_key
+            self._editor_outliner_model.notifyModelReset()
+            self._editor_outliner.expandAll()
           elif field == "include":
             val = str(value)
             parts = [s.strip() for s in val.split(",") if s.strip()]
@@ -1877,7 +1888,11 @@ class CatalogTool(ComponentizedApplication):
               a["exclude"] = parts
             else:
               a.pop("exclude", None)
+          found = True
+          print(f"[PROPCHANGE] UPDATED a={a}")
           break
+      if not found:
+        print(f"[PROPCHANGE] pak_id={pak_id} NOT FOUND in assets")
 
   def _editor_close(self):
     """Close editor overlay."""
@@ -1999,6 +2014,8 @@ class CatalogTool(ComponentizedApplication):
       if os.path.isdir(path):
         # Sanitize to ${VAR} form
         sanitized = self._sanitize_path(path)
+        # Prefer <assetcache> over ${ASSETCACHE} for catalog_import compatibility
+        sanitized = sanitized.replace("${ASSETCACHE}", "<assetcache>")
         self._editor_data[field_key] = sanitized
         self._editor_dirty = True
         # Refresh propsheet if Config is selected
