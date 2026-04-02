@@ -109,7 +109,7 @@ SceneData
 | Component | Purpose |
 |-----------|---------|
 | SceneGraphComponent | Rendering via scenegraph |
-| BulletObjectComponent | Physics (Bullet engine) |
+| BulletObjectComponent | Physics via Bullet engine (rigid body, collision shapes, constraints) |
 | PythonComponent | Python script execution |
 | LuaComponent | Lua script execution |
 | TransformCurveComponent | Transform animation via curves |
@@ -123,7 +123,7 @@ SceneData
 | System | Purpose |
 |--------|---------|
 | SceneGraphSystem | Master rendering (owns scene graph, camera, drawable cache) |
-| BulletSystem | Physics simulation |
+| BulletSystem | Bullet physics simulation (rigid bodies, collision detection, constraints, gravity) |
 | PythonSystem | Python script coordination |
 | LuaSystem | Lua script coordination |
 | GlobalSynthSystem | Global synthesizer/audio |
@@ -155,21 +155,24 @@ simulation.enqueueDespawnEntity(entity)
 - Namespace-based: `_importNamespace` (e.g., "env", "env:props")
 - Cross-scene component sharing
 
-### ork.ecsedit.py — Scene Editor
+### ork.ecsedit.py — Full Scene Editor
 
 CLI: `ork.ecsedit.py [-s scene.json] [-f] [--ssaa N]`
 
-Launches `EcsEditor` (from `ork.editor.ecsedit`) — a `ComponentizedApplication` with:
-- **Edit mode**: outliner (Archetypes/Spawners/Systems), PropertySheet, 3D viewport with grid
-- **Play mode**: live simulation with ECS systems ticking
-- **Key patterns to reference:**
-  - OutlinerModel subclass with categories and factories (`ecs_outliner_model.py`)
-  - PropertySheet wired to reflection model (`ReflectionPropertySheetModel`)
-  - Overlay system for curve editors, dropdown menus
-  - Secondary windows for file browser load/save
-  - SceneGraphViewport with EzUiCam camera control
-  - Extension hooks for custom toolbar buttons, keyboard shortcuts, GPU init
-  - Scene IO via `FilesystemBrowser` in secondary window
+Launches `EcsEditor` (from `ork.editor.ecsedit`) — a full-featured `ComponentizedApplication` scene editor with:
+- **Edit mode**: outliner (Archetypes/Spawners/Systems), PropertySheet, 3D viewport with grid, toolbar
+- **Play mode**: live simulation with all ECS systems ticking (physics, scripting, audio, rendering)
+- **Scene I/O**: load/save via `FilesystemBrowser` in secondary window
+- **3D manipulation**: SceneGraphViewport with EzUiCam camera control
+- **Property editing**: PropertySheet wired to reflection model (`ReflectionPropertySheetModel`) — auto-generates UI for any reflected component
+- **Overlay system**: curve editors, dropdown menus, custom overlays
+- **Extension hooks**: custom toolbar buttons, keyboard shortcuts, GPU init callbacks
+- **Key implementation files:**
+  - `ork.editor.ecsedit` — main editor application
+  - `ecs_outliner_model.py` — OutlinerModel with categories and factories
+  - `scene_io.py` — scene load/save
+  - `light_editor.py` — light property editing
+  - `ptc_factories.py` — custom PropertySheet editor factories
 
 ### ork.ecsplay.py — Scene Player
 

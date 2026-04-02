@@ -17,6 +17,8 @@ When answering questions about drawables, render queues, or the draw pipeline in
 | RenderQueue | `inc/ork/lev2/gfx/renderer/renderqueue.h` |
 | IRenderable / ModelRenderable / CallbackRenderable | `inc/ork/lev2/gfx/renderer/renderable.h` |
 | Render Context (RCID/RCFD) | `inc/ork/lev2/gfx/renderer/rendercontext.h` |
+| Animation System | `inc/ork/lev2/gfx/gfxanim.h` |
+| Skeleton / IK | `inc/ork/lev2/gfx/gfxmodel.h`, `inc/ork/lev2/gfx/ikchain.h` |
 | Drawable Impl (base) | `src/gfx/renderer/drawable/drawable.cpp` |
 | Model Drawable | `src/gfx/renderer/drawable/drawable_model.cpp` |
 | Instanced Drawable | `src/gfx/renderer/drawable/drawable_instanced.cpp` |
@@ -211,6 +213,31 @@ bddraw = bddata.createDrawable()
 ddata.modcolor = fvec4(1, 1, 1, 1)
 ddata.environmentMapPath = "<assetcache>/env/skybox.dds"
 ```
+
+## Animation & Skinned Mesh System
+
+Orkid has a full skeletal animation system in `gfxanim.h`:
+
+- **XgmSkeleton** — flattened joint hierarchy (up to 256 bones), bind/inverse-bind matrices, joint lookup by name/path/ID
+- **XgmAnim** — animation clip with per-joint `XgmDecompMatrixAnimChannel` channels (sampled frames of pos/rot/scale), plus material channels. Loads from XGA or Assimp formats.
+- **XgmAnimInst** — running animation instance with weight, mask, frame position, temporal lerp
+- **XgmAnimMask** — per-bone enable bits for selective animation
+- **XgmLocalPose** — local-space pose with blend support (up to 2 weighted anims per joint)
+- **XgmWorldPose** — world-space joint matrices for GPU skinning
+- **BoneTransformer** — programmatic bone transforms (IK, procedural animation)
+- **XgmSkelApplicator** — selective bone application
+
+### Skinned rendering flow
+1. `ModelDrawable::bindModelInst()` detects `isSkinned()`, creates `XgmWorldPose`
+2. Animation instances applied to `XgmLocalPose` via `applyToPose()`
+3. `XgmLocalPose::blendPoses()` → `concatenate()` builds hierarchy
+4. `XgmWorldPose::apply(worldmtx, localpose)` produces final bone matrices
+5. Bone matrices uploaded to GPU via UBO for vertex shader skinning
+
+### Examples
+- `ork.lev2/examples/python/scenegraph/skinning.py` through `skinning5.py` — skinned model demos
+- `ork.lev2/pyext/tests/renderer/lighting/spotlight_skinned_model.py` — skinned model with lighting
+- `ork.lev2/pyext/tests/misc/gfxanim.py` — animation API test
 
 ## How to Answer
 
