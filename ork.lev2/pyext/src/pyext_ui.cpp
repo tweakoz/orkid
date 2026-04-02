@@ -38,6 +38,7 @@
 #include <ork/lev2/ui/popups.inl>
 #include <ork/lev2/ui/prim_canvas.h>
 #include <ork/lev2/ui/dockable_panel.h>
+#include <ork/lev2/ui/border_frame.h>
 #include <ork/lev2/ui/scroll_container.h>
 #include <ork/lev2/ui/collapsable.h>
 #include <ork/lev2/ui/dropdown_menu.h>
@@ -159,6 +160,18 @@ void pyinit_ui(py::module& module_lev2) {
               },
               py::arg("widget"), py::arg("x"), py::arg("y"), py::arg("w"), py::arg("h"),
               py::arg("dismiss_on_click_outside") = true)
+          .def(
+              "createOverlayWidget",
+              [](ui::context_ptr_t uictx, py::object uiclass, py::list args) -> ui::widget_ptr_t {
+                auto wfactory = uiclass.attr("wfactory");
+                auto widget = py::cast<ui::widget_ptr_t>(wfactory(args));
+                widget->_uicontext = uictx.get();
+                if (auto group = dynamic_cast<ui::Group*>(widget.get())) {
+                  group->_doOnParentChanged(nullptr);
+                }
+                return widget;
+              },
+              py::arg("uiclass"), py::arg("args"))
           .def("popOverlay", [](ui::context_ptr_t uictx) { uictx->popOverlay(); })
           .def("dismissAllOverlays", [](ui::context_ptr_t uictx) { uictx->dismissAllOverlays(); })
           .def("hasOverlays", [](ui::context_ptr_t uictx) -> bool { return uictx->hasOverlays(); })
@@ -1555,9 +1568,11 @@ void pyinit_ui(py::module& module_lev2) {
                 if (callback.is_none()) {
                   le->_onTextCommitted = nullptr;
                 } else {
-                  le->_onTextCommitted = [callback](const std::string& text) {
+                  auto safe = python::gil_safe_pyobj(callback);
+                  le->_onTextCommitted = [safe](const std::string& text) {
                     py::gil_scoped_acquire acquire;
-                    callback(text);
+                    auto fn = safe.valueAs<py::object>();
+                    (*fn)(text);
                   };
                 }
               });
@@ -3227,6 +3242,82 @@ void pyinit_ui(py::module& module_lev2) {
           .def_readwrite("title_override", &ui::DockablePanel::_title_override)
           .def_readwrite("title_center", &ui::DockablePanel::_title_center);
   type_codec->registerStdCodec<ui::dockablepanel_ptr_t>(dockablepanel_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // BorderFrame - container that draws a solid border around a single child
+  auto borderframe_type = //
+      py::class_<ui::BorderFrame, ui::Group, ui::borderframe_ptr_t>(uimodule, "BorderFrame")
+          .def_static(
+              "wfactory",
+              [type_codec](py::list py_args) -> ui::borderframe_ptr_t {
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name = decoded_args[0].get<std::string>();
+                auto frame = std::make_shared<ui::BorderFrame>(name);
+                return frame;
+              })
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t {
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name = decoded_args[0].get<std::string>();
+                auto layoutitem = lg->makeChild<ui::BorderFrame>(name);
+                return layoutitem.as_shared();
+              })
+          .def_property(
+              "child",
+              [](ui::borderframe_ptr_t frame) -> ui::widget_ptr_t {
+                return frame->child();
+              },
+              [](ui::borderframe_ptr_t frame, ui::widget_ptr_t child) {
+                frame->setChild(child);
+              })
+          .def_property(
+              "border_width",
+              [](ui::borderframe_ptr_t frame) -> int { return frame->_border_width; },
+              [](ui::borderframe_ptr_t frame, int w) { frame->_border_width = w; })
+          .def_property(
+              "border_color",
+              [](ui::borderframe_ptr_t frame) -> fvec4 { return frame->_border_color; },
+              [](ui::borderframe_ptr_t frame, fvec4 c) { frame->_border_color = c; })
+          .def_property(
+              "border_outer_color",
+              [](ui::borderframe_ptr_t frame) -> fvec4 { return frame->_border_outer_color; },
+              [](ui::borderframe_ptr_t frame, fvec4 c) { frame->_border_outer_color = c; })
+          .def_property(
+              "border_inner_color",
+              [](ui::borderframe_ptr_t frame) -> fvec4 { return frame->_border_inner_color; },
+              [](ui::borderframe_ptr_t frame, fvec4 c) { frame->_border_inner_color = c; })
+          .def_property(
+              "border_edge_width",
+              [](ui::borderframe_ptr_t frame) -> int { return frame->_border_edge_width; },
+              [](ui::borderframe_ptr_t frame, int w) { frame->_border_edge_width = w; })
+          .def(
+              "createChild",
+              [](ui::borderframe_ptr_t frame, py::kwargs kwargs) -> ui::widget_ptr_t {
+                ui::widget_ptr_t rval;
+                if (kwargs) {
+                  py::list args;
+                  py::object wfactory;
+                  int args_parsed = 0;
+                  for (auto item : kwargs) {
+                    auto key = py::cast<std::string>(item.first);
+                    if (key == "uiclass") {
+                      auto uiclass_obj = py::cast<py::object>(item.second);
+                      bool has_wfactory = py::hasattr(uiclass_obj, "wfactory");
+                      OrkAssert(has_wfactory);
+                      wfactory = uiclass_obj.attr("wfactory");
+                      args_parsed++;
+                    } else if (key == "args") {
+                      args = py::cast<py::list>(item.second);
+                      args_parsed++;
+                    }
+                  }
+                  OrkAssert(args_parsed == 2);
+                  rval = py::cast<ui::widget_ptr_t>(wfactory(args));
+                  frame->setChild(rval);
+                }
+                return rval;
+              });
+  type_codec->registerStdCodec<ui::borderframe_ptr_t>(borderframe_type);
   /////////////////////////////////////////////////////////////////////////////////
   // ScrollContainer
   auto scrollcontainer_type = //

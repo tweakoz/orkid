@@ -114,6 +114,11 @@ bool FilesystemModel::_passesFilter(const FilesystemEntry& entry) const {
     return false;
   }
 
+  // Directories-only mode: reject non-directories
+  if (_directories_only && entry.type != FileType::Directory) {
+    return false;
+  }
+
   // Check name filter (applies to both files and directories)
   if (!_name_filter.empty()) {
     if (!_globMatch(_name_filter, entry.name)) {

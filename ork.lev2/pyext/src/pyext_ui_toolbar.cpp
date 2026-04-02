@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include "pyext.h"
+#include <ork/python/gil_safe_pyobj.h>
 #include <ork/lev2/ui/widget.h>
 #include <ork/lev2/ui/group.h>
 #include <ork/lev2/ui/layoutgroup.inl>
@@ -69,17 +70,21 @@ void pyinit_ui_toolbar(py::module& uimodule) {
           .def(
               "onPressed",
               [](ui::toolbar_button_ptr_t btn, py::object callback) {
-                btn->_onPressed = [callback]() {
+                auto safe = python::gil_safe_pyobj(callback);
+                btn->_onPressed = [safe]() {
                   py::gil_scoped_acquire acquire;
-                  callback();
+                  auto fn = safe.valueAs<py::object>();
+                  (*fn)();
                 };
               })
           .def(
               "onToggled",
               [](ui::toolbar_button_ptr_t btn, py::object callback) {
-                btn->_onToggled = [callback](bool toggled) {
+                auto safe = python::gil_safe_pyobj(callback);
+                btn->_onToggled = [safe](bool toggled) {
                   py::gil_scoped_acquire acquire;
-                  callback(toggled);
+                  auto fn = safe.valueAs<py::object>();
+                  (*fn)(toggled);
                 };
               })
           .def(
