@@ -105,7 +105,9 @@ Template for per-material-class caches. Sets `_on_miss` to call `MtlClass::_crea
 
 ## Named Parameter Providers (fx_pipeline.cpp:190–400)
 
-Singleton map of CrcString name → provider function. When a `CrcString` is bound as a parameter value, the provider is invoked at render time:
+**Key design pattern:** When a `CrcString` is bound as a parameter value (from C++ or Python), the runtime resolves it at render time via a singleton map of name → C++ provider function. This is a **declarative binding** — the wiring is set up once, then the C++ runtime evaluates the provider every frame with zero scripting overhead. Engine-internal data (camera matrices, PBR environment maps, time, etc.) flows to shader parameters without the caller needing to know how that data is computed. This pattern is used throughout the engine in both C++ material setup (e.g., PBRMaterial state lambdas) and Python scene composition.
+
+Registered providers:
 
 | Provider Name | Returns |
 |---------------|---------|
@@ -156,7 +158,7 @@ Stereo variants append `"_Left"` / `"_Right"` suffixes.
 3. Execute all state lambdas with RCID
 4. Bind all parameters via type dispatch
 5. Bind all storage buffers
-6. Apply rasterstate
+6. Apply rasterstate (via priority resolution — see below)
 7. Return pass count
 
 ### Cache Lookup (fx_pipeline.cpp:703–740)
@@ -165,6 +167,44 @@ Stereo variants append `"_Left"` / `"_Right"` suffixes.
 3. Check `_lut[hash]`
 4. On miss: call `_on_miss(permutation)` → create pipeline
 5. Cache and return
+
+### Raster State Priority Override
+
+Raster state is resolved via a `priority_stack<rasterstate_ptr_t>` (`ork.core/inc/ork/kernel/priority_stack.inl`). When a rasterstate is pushed onto FXI, it competes with the shader's stateblock rasterstate based on the `_priority` field — **higher priority wins**.
+
+**Resolution logic** (vulkan_fxi_pipelines.cpp:71–81):
+```cpp
+rasterstate_ptr_t effective = _rasterstate_stack.resolve();  // highest-priority pushed state
+int iraspri = effective ? effective->_priority : 0;
+if (_currentVKPASS && _currentVKPASS->_stateblock_rasterstate) {
+  auto try_rs = _currentVKPASS->_stateblock_rasterstate;
+  if (try_rs->_priority >= iraspri) {
+    effective = _currentVKPASS->_stateblock_rasterstate;  // shader stateblock wins
+  }
+}
+```
+
+**Usage pattern** — push a higher-priority rasterstate to override the shader's stateblock:
+```cpp
+// Override shader's blend/depth/cull for this draw call
+auto RSTATE = std::make_shared<RasterState>();
+RSTATE->setDepthTest(EDepthTest::OFF);
+RSTATE->setCullTest(ECullTest::OFF);
+RSTATE->setBlendingMacro(BlendingMacro::ALPHA);
+RSTATE->_priority = 1 << 10;  // higher than shader stateblock (default 0)
+
+context->FXI()->pushRasterState(RSTATE);
+// ... draw calls use this rasterstate instead of shader's ...
+context->FXI()->popRasterState();
+```
+
+**Examples in codebase:**
+- `fontman_render.cpp:111` — font rendering overrides depth/cull for 2D text
+- `gfxmodel_render_skeleton.cpp:396` — skeleton debug vis with `_priority = 1<<10`
+- `sgnode_billboard.cpp:224` — billboard rendering with custom blend
+- `sgnode_manipgizmo.cpp:239+` — two-pass gizmo rendering (backface then frontface)
+- `sgnode_curvepath.cpp:149` — curve path line rendering
+- UI widgets (outliner, toolbar, textbox, etc.) — override for 2D UI rendering
 
 ## Python API
 
@@ -184,13 +224,18 @@ pipeline = cache.findPipeline(permu)
 
 # Pipeline usage
 pipeline.technique = tek
-pipeline.bindParam(param, 0.5)          # float
-pipeline.bindParam(param, lambda: 0.5)  # float evaluator (evaluated at render)
-pipeline.bindParam(param, fvec4(...))   # vector
-pipeline.bindParam(param, texture)      # texture
-pipeline.bindParam(param, crcstring)    # named provider
+pipeline.bindParam(param, 0.5)          # float — stored, applied in C++ at render time
+pipeline.bindParam(param, fvec4(...))   # vector — same, no Python on render path
+pipeline.bindParam(param, texture)      # texture — same
+pipeline.bindParam(param, crcstring)    # named provider — C++ resolves engine data each frame
+pipeline.bindParam(param, lambda: 0.5)  # Python lambda — only case where Python runs per-frame
 pipeline.bindStorage(storage, ssbo)     # SSBO
 pipeline.wrappedDrawCall(rcid, lambda: draw())
+
+# NOTE: All bindings except Python lambdas execute entirely in C++ at render time.
+# Python sets up the wiring once; the C++ runtime evaluates it every frame.
+# This means Python scene composition has zero per-frame scripting overhead
+# for parameter binding — only Python lambdas invoke the interpreter.
 ```
 
 ## How to Answer

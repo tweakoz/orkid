@@ -90,11 +90,18 @@ orkid/
 - `svar256_t` — 256-byte variant (large compound types)
 
 ### CrcString / Tokens
+Hashed to `uint32_t` at compile time (C++) or init time (Python) for O(1) comparison.
 ```python
+# Python
 from orkengine.core import CrcStringProxy
 tokens = CrcStringProxy()
-# tokens.SomeName → CrcString with hashed value
-# Used for fast enum-like dispatch throughout the engine
+pipeline.bindParam(param, tokens.RCFD_Camera_MVP_Mono)  # named provider
+tex.setAddressMode(tokens.WRAP, tokens.WRAP, tokens.CLAMP)
+```
+```cpp
+// C++
+uint32_t id = "FORWARD_PBR"_crcu;
+pipeline->bindParam(param, CrcString("RCFD_EYE_POSITION"));
 ```
 
 ### VarMap (Dynamic Key-Value)

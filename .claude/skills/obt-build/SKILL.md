@@ -31,6 +31,7 @@ ork.build.py --clean      # Clean build
 ork.build.py --debug      # Debug build
 ork.build.py --verbose    # Verbose make output
 ork.build.py --sanitize address  # AddressSanitizer
+ork.build.py --sanitize thread  # ThreadSanitizer
 ork.build.py --xcode      # Generate Xcode project
 ork.build.py --cmakeenv   # Display cmake flags and exit
 ```
