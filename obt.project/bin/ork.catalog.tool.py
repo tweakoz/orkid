@@ -246,7 +246,8 @@ class CatalogTool(ComponentizedApplication):
     self.cdn_ping_interval = 1.0
     self.cdn_ping_running = False
     self.selected_key = None
-    self.selected_import_config = None  # basename of selected import config
+    self.selected_import_config = None  # basename — when set, takes over detail view
+    self.import_output_lines = []      # captured output from import operations
     self._selecting = False
     self.canvas_dirty = True
     self.canvas_ready = False
@@ -685,16 +686,28 @@ class CatalogTool(ComponentizedApplication):
     elif name == "CLEAR LOCAL":
       if kt == "asset" and fqid:
         self._bg(lambda: self._do_clear_local(fqid))
+    elif name == "IC_BACK":
+      self.selected_import_config = None
+      self.import_output_lines = []
+      self.canvas_dirty = True
+    elif name == "IC_IMPORT":
+      if self.selected_import_config:
+        self._do_run_import(self.selected_import_config, dry_run=False)
+    elif name == "IC_DRY_RUN":
+      if self.selected_import_config:
+        self._do_run_import(self.selected_import_config, dry_run=True)
+    elif name == "IC_LIST":
+      if self.selected_import_config:
+        self._do_run_import(self.selected_import_config, list_only=True)
+    elif name == "IC_NEW":
+      self._do_create_new_import_config()
     elif name.startswith("AUTOCORRECT:"):
       ic_name = name[12:]
       self._do_autocorrect_import_config(ic_name)
     elif name.startswith("IC:"):
       ic_name = name[3:]
-      # Toggle — click again to collapse
-      if self.selected_import_config == ic_name:
-        self.selected_import_config = None
-      else:
-        self.selected_import_config = ic_name
+      self.selected_import_config = ic_name
+      self.import_output_lines = []
       self.canvas_dirty = True
 
   ############################################################################
@@ -763,6 +776,97 @@ class CatalogTool(ComponentizedApplication):
         self.hash_verify_results[fqid] = f"MISMATCH (got {computed:016x})"
     except Exception as e:
       self.hash_verify_results[fqid] = f"error: {e}"
+    self.canvas_dirty = True
+
+  def _do_run_import(self, ic_name, dry_run=False, list_only=False):
+    """Run the import operation with live output in the detail view."""
+    from ork import catalog_import
+    path = self.import_config_paths.get(ic_name)
+    if not path:
+      return
+
+    # Stream adapter that writes to import_output_lines and marks dirty
+    tool = self
+    class LiveStream:
+      def write(self, msg):
+        for line in msg.splitlines():
+          if line:
+            tool.import_output_lines.append(line)
+        tool.canvas_dirty = True
+      def flush(self):
+        pass
+
+    self.import_output_lines = ["Running..."]
+    self.canvas_dirty = True
+    stream = LiveStream()
+
+    def run_thread():
+      try:
+        config = catalog_import.load_config(path)
+        result = catalog_import.run_import(
+          config, upload=False, dry_run=dry_run,
+          list_only=list_only, verbose=True, output=stream)
+        if not dry_run and not list_only and result.failed_count == 0:
+          stream.write("\nImport succeeded. Rescanning catalog...\n")
+          self._full_scan()
+          stream.write("Rescan complete.\n")
+        elif result.failed_count > 0:
+          stream.write(f"\nFailed: {result.failed_count} error(s)\n")
+          for err in result.errors:
+            stream.write(f"  {err}\n")
+      except Exception as e:
+        stream.write(f"\nImport error: {e}\n")
+      stream.write("\nDone.\n")
+      tool.canvas_dirty = True
+
+    self._bg(run_thread)
+
+  def _do_create_new_import_config(self):
+    """Create a new empty import config in the selected project's manifest dir."""
+    import json
+    key = self.selected_key
+    project = self._key_to_project(key) if key else None
+    if not project or project not in self.project_namespaces:
+      return
+    # Find manifest dir from any namespace in this project
+    ns_list = self.project_namespaces.get(project, [])
+    if not ns_list:
+      return
+    manifests = self.catalog.manifestsForNamespace(ns_list[0])
+    if not manifests or not manifests[0].source_file:
+      return
+    manifest_dir = os.path.dirname(manifests[0].source_file)
+    # Generate unique filename
+    base = f"{project}_import"
+    idx = 0
+    while True:
+      suffix = f"_{idx}" if idx > 0 else ""
+      filename = f"{base}{suffix}.json"
+      filepath = os.path.join(manifest_dir, filename)
+      if not os.path.exists(filepath):
+        break
+      idx += 1
+    # Write template
+    template = {
+      "namespace": ns_list[0] if len(ns_list) == 1 else project,
+      "source_dir": self._sanitize_path(os.path.dirname(manifest_dir.rstrip("/"))),
+      "local_loc": "<stage>/assetcache/" + project,
+      "manifest": self._sanitize_path(os.path.join(manifest_dir, f"{project}.json")),
+      "encryption_key": "${YOUR_ENC_KEY}",
+      "platforms": ["mac", "linux"],
+      "assets": [
+        {"id": "example_asset", "include": "data/*"}
+      ]
+    }
+    with open(filepath, 'w') as f:
+      json.dump(template, f, indent=2)
+      f.write('\n')
+    # Register and open
+    basename = os.path.basename(filepath)
+    self.import_config_paths[basename] = filepath
+    self.project_import_configs.setdefault(project, []).append(basename)
+    self.project_import_configs[project] = sorted(self.project_import_configs[project])
+    self.selected_import_config = basename
     self.canvas_dirty = True
 
   def _do_clear_local(self, fqid):
@@ -1067,6 +1171,12 @@ class CatalogTool(ComponentizedApplication):
       self._texts["label"].addItem(dm_txt, vec2(8, y))
     y += 16
 
+    # Import config detail mode takes over the view
+    if self.selected_import_config:
+      self._draw_import_config_full_view(self.selected_import_config, y, w, h)
+      self.canvas.markDirty()
+      return
+
     key = self.selected_key
     if not key:
       self._texts["label"].addItem("Select a project, namespace, or asset", vec2(8, y))
@@ -1189,24 +1299,22 @@ class CatalogTool(ComponentizedApplication):
         y += 16
     # Import configs
     icfiles = self.project_import_configs.get(project, [])
-    if icfiles:
-      y += 4
-      self._draw_section_header("Import Configs", y, w, h)
+    y += 4
+    self._draw_section_header("Import Configs", y, w, h)
+    self._add_button_quad("IC_NEW", w - 56, y, 48, 16, "NEW")
+    y += 18
+    for ic in icfiles:
+      if y > h - 40:
+        self._texts["label"].addItem(f"... {len(icfiles)} total", vec2(8, y))
+        y += 16
+        break
+      btn_name = f"IC:{ic}"
+      self._add_button_quad(btn_name, 8, y, 20, 16, ">")
+      self._texts["label"].addItem(ic, vec2(32, y))
       y += 18
-      for ic in icfiles:
-        if y > h - 40:
-          self._texts["label"].addItem(f"... {len(icfiles)} total", vec2(8, y))
-          y += 16
-          break
-        # -> button to view details
-        btn_name = f"IC:{ic}"
-        selected = self.selected_import_config == ic
-        self._add_button_quad(btn_name, 8, y, 20, 16, ">")
-        self._texts["label"].addItem(ic, vec2(32, y))
-        y += 18
-        # Show details inline if selected
-        if selected:
-          y = self._draw_import_config_detail(ic, y, w, h)
+    if not icfiles:
+      self._texts["label"].addItem("(none)", vec2(8, y))
+      y += 16
     y += 4
 
     # Namespace summary grid
@@ -1378,6 +1486,110 @@ class CatalogTool(ComponentizedApplication):
     y += 4
     return y
 
+  ############################################################################
+  # Import Config full view
+  ############################################################################
+
+  def _draw_import_config_full_view(self, ic_name, y_start, w, h):
+    y = y_start
+    data = self._get_import_config(ic_name)
+    path = self.import_config_paths.get(ic_name, "")
+
+    # Back button
+    self._add_button_quad("IC_BACK", 8, y, 56, 22, "BACK")
+    self._texts["cdn_hdr"].addItem(f"Import Config: {ic_name}", vec2(72, y + 3))
+    y += 30
+
+    if not data:
+      self._texts["status_err"].addItem("Could not load config", vec2(8, y))
+      return
+
+    # File path
+    self._draw_section_header("Config File", y, w, h)
+    y += 18
+    self._draw_prop_row("Path", path, y)
+    y += 20
+
+    # Properties
+    self._draw_section_header("Properties", y, w, h)
+    y += 18
+    display_map = {
+      "namespace": "Namespace",
+      "source_dir": "Project Dir",
+      "local_loc": "Local Location",
+      "manifest": "Manifest",
+      "encryption_key": "Encryption Key",
+    }
+    for key, label in display_map.items():
+      val = data.get(key, "")
+      if val:
+        self._texts["label"].addItem(f"{label}:", vec2(8, y))
+        if key in ("source_dir", "manifest") and os.path.isabs(val) and not os.path.exists(val):
+          self._texts["status_err"].addItem(str(val), vec2(140, y))
+        else:
+          self._texts["value"].addItem(str(val), vec2(140, y))
+        y += 16
+    if "platforms" in data:
+      self._texts["label"].addItem("Platforms:", vec2(8, y))
+      self._texts["value"].addItem(", ".join(data["platforms"]), vec2(140, y))
+      y += 16
+    if "priority" in data:
+      self._texts["label"].addItem("Priority:", vec2(8, y))
+      self._texts["value"].addItem(str(data["priority"]), vec2(140, y))
+      y += 16
+    y += 4
+
+    # Autocorrect button if needed
+    if self._import_config_needs_autocorrect(ic_name):
+      self._add_button_quad(f"AUTOCORRECT:{ic_name}", 8, y, 110, 22, "AUTOCORRECT", danger=True)
+      self._texts["status_err"].addItem("(absolute paths need ${VAR} form)", vec2(126, y + 3))
+      y += 28
+
+    # Assets section
+    assets = data.get("assets", [])
+    self._draw_section_header(f"Assets ({len(assets)})", y, w, h)
+    y += 18
+    for a in assets:
+      if y > h - 60:
+        self._texts["label"].addItem(f"... {len(assets)} total", vec2(8, y))
+        y += 16
+        break
+      if isinstance(a, dict):
+        aid = a.get("id", "?")
+        inc = a.get("include", "")
+        if isinstance(inc, list):
+          inc = ", ".join(inc)
+        exc = a.get("exclude", [])
+        self._texts["value"].addItem(aid, vec2(8, y))
+        self._texts["label"].addItem(inc, vec2(140, y))
+        y += 16
+        if exc:
+          self._texts["status_err"].addItem(f"  exclude: {', '.join(exc)}", vec2(140, y))
+          y += 16
+      else:
+        self._texts["value"].addItem(str(a), vec2(8, y))
+        y += 16
+    y += 8
+
+    # Action buttons
+    self._add_button_quad("IC_IMPORT", 8, y, 80, 22, "IMPORT")
+    bx = 96
+    self._add_button_quad("IC_DRY_RUN", bx, y, 80, 22, "DRY RUN")
+    bx += 88
+    self._add_button_quad("IC_LIST", bx, y, 80, 22, "LIST FILES")
+    y += 30
+
+    # Output from last operation
+    if self.import_output_lines:
+      self._draw_section_header("Output", y, w, h)
+      y += 18
+      for line in self.import_output_lines:
+        if y > h - 16:
+          self._texts["label"].addItem("...", vec2(8, y))
+          break
+        self._texts["value"].addItem(line, vec2(8, y))
+        y += 14
+
   def _draw_namespace_view(self, ns, y_start, w, h):
     y = y_start
 
@@ -1428,12 +1640,9 @@ class CatalogTool(ComponentizedApplication):
       y += 18
       for ic in ns_ics:
         btn_name = f"IC:{ic}"
-        selected = self.selected_import_config == ic
         self._add_button_quad(btn_name, 8, y, 20, 16, ">")
         self._texts["label"].addItem(ic, vec2(32, y))
         y += 18
-        if selected:
-          y = self._draw_import_config_detail(ic, y, w, h)
     y += 8
 
     # Compute local/CDN completeness and key availability for ghosting
