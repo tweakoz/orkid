@@ -1,0 +1,850 @@
+################################################################################
+# Catalog Tool — UI Library (reusable canvas/overlay/outliner boilerplate)
+################################################################################
+
+import os, json, copy
+from orkengine import core
+from orkengine import lev2
+from ork.catalog_tool import (
+  CatalogModel, format_size, sanitize_path, resolve_bad_path,
+  build_namespace_varmap, build_asset_varmap,
+)
+
+tokens = core.CrcStringProxy()
+vec2 = core.vec2
+vec3 = core.vec3
+vec4 = core.vec4
+
+################################################################################
+# Outliner Models
+################################################################################
+
+class CatalogOutlinerModel(lev2.ui.OutlinerModel):
+  """Outliner tree model: projects -> namespaces -> assets."""
+
+  def __init__(self, model):
+    super().__init__()
+    self.model = model
+    self.allow_rename = False
+    self.allow_delete = False
+    self.allow_add = False
+
+  def getChildren(self, parent_key):
+    if parent_key == "":
+      return self.model.projects
+    if parent_key in self.model.project_namespaces:
+      return [f"{parent_key}/{ns}" for ns in self.model.project_namespaces[parent_key]]
+    if "/" in parent_key and "|" not in parent_key:
+      ns = parent_key.split("/", 1)[1]
+      return [f"{parent_key.split('/')[0]}/{fqid}" for fqid in self.model.ns_assets.get(ns, [])]
+    return []
+
+  def getDisplayName(self, key):
+    if "|" in key:
+      return key.split("|", 1)[1]
+    if "/" in key:
+      return key.split("/", 1)[1]
+    return key
+
+  def hasChildren(self, key):
+    return "|" not in key
+
+
+class ImportConfigEditorModel(lev2.ui.OutlinerModel):
+  """Outliner model for editing an import config JSON."""
+
+  def __init__(self, editor):
+    super().__init__()
+    self.editor = editor
+    self.allow_rename = True
+    self.allow_delete = True
+    self.allow_add = True
+
+  @property
+  def data(self):
+    return self.editor._editor_data
+
+  def getChildren(self, parent_key):
+    if parent_key == "":
+      return ["Config", "AssetPaks"]
+    if parent_key == "AssetPaks":
+      assets = self.data.get("assets", [])
+      return [f"AssetPaks/{a['id']}" for a in assets]
+    return []
+
+  def getDisplayName(self, key):
+    if key in ("Config", "AssetPaks"):
+      return key
+    if key.startswith("AssetPaks/"):
+      return key.split("/", 1)[1]
+    return key
+
+  def hasChildren(self, key):
+    return key == "AssetPaks"
+
+  def getFactories(self, parent_key):
+    if parent_key == "AssetPaks":
+      return [{"id": "assetpak", "display_name": "AssetPak"}]
+    return []
+
+  def createItem(self, parent_key, name, factory_id):
+    if parent_key == "AssetPaks" and factory_id == "assetpak":
+      assets = self.data.setdefault("assets", [])
+      for a in assets:
+        if a["id"] == name:
+          return ""
+      assets.append({"id": name, "include": "*"})
+      new_key = f"AssetPaks/{name}"
+      self.editor._editor_dirty = True
+      self.notifyItemAdded(new_key)
+      return new_key
+    return ""
+
+  def renameItem(self, old_key, new_name):
+    if not old_key.startswith("AssetPaks/"):
+      return None
+    old_id = old_key.split("/", 1)[1]
+    assets = self.data.get("assets", [])
+    for a in assets:
+      if a["id"] == new_name:
+        return None
+    for a in assets:
+      if a["id"] == old_id:
+        a["id"] = new_name
+        self.editor._editor_dirty = True
+        return f"AssetPaks/{new_name}"
+    return None
+
+  def removeItem(self, key):
+    if not key.startswith("AssetPaks/"):
+      return
+    pak_id = key.split("/", 1)[1]
+    assets = self.data.get("assets", [])
+    self.data["assets"] = [a for a in assets if a["id"] != pak_id]
+    self.editor._editor_dirty = True
+    self.notifyItemRemoved(key)
+
+
+class TestMatchOutlinerModel(lev2.ui.OutlinerModel):
+  """Read-only outliner showing matched files per asset pak."""
+
+  def __init__(self, results, source_dir):
+    super().__init__()
+    self._results = results
+    self._source_dir = source_dir
+    self.allow_rename = False
+    self.allow_delete = False
+    self.allow_add = False
+
+  def getChildren(self, parent_key):
+    if parent_key == "":
+      return [pak_id for pak_id, _ in self._results]
+    for pak_id, files in self._results:
+      if pak_id == parent_key:
+        src = self._source_dir
+        children = []
+        for f in files:
+          try:
+            rel = str(f.relative_to(src)) if src else str(f)
+          except ValueError:
+            rel = str(f)
+          children.append(f"{pak_id}/{rel}")
+        return children
+    return []
+
+  def getDisplayName(self, key):
+    if "/" not in key:
+      for pak_id, files in self._results:
+        if pak_id == key:
+          return f"{key} ({len(files)} files)"
+      return key
+    return key.split("/", 1)[1]
+
+  def hasChildren(self, key):
+    return "/" not in key
+
+
+################################################################################
+# CanvasDetailView
+################################################################################
+
+class CanvasDetailView:
+  """Base class for PrimCanvas-based property/detail panels."""
+
+  def __init__(self, canvas):
+    self.canvas = canvas
+    self.buttons = {}
+    self.hover_button = None
+    self.bg_prim = None
+    self._texts = {}
+    self.text_sm = None
+
+  def gpuInit(self, ctx):
+    """Create quad prim + text prims by named color role."""
+    self.canvas.gpuInit(ctx)
+    self.canvas_font = lev2.FontManager.fontForId("i14")
+    self.canvas_font_sm = lev2.FontManager.fontForId("i12")
+    self.canvas_layer = self.canvas.createLayer("status")
+
+    self.bg_prim = lev2.ui.QuadPrimitive(pipeline=self.canvas.pipelineSolid)
+    self.canvas_layer.addPrimitive(self.bg_prim)
+
+    text_colors = {
+      "label": vec4(0.6, 0.6, 0.7, 1),
+      "value": vec4(0.9, 0.9, 0.9, 1),
+      "button": vec4(0.9, 0.9, 0.95, 1),
+      "status_ok": vec4(0.4, 0.9, 0.4, 1),
+      "status_err": vec4(0.9, 0.3, 0.3, 1),
+      "status_warn": vec4(0.9, 0.9, 0.3, 1),
+      "cdn_hdr": vec4(0.5, 0.7, 0.9, 1),
+    }
+    for name, color in text_colors.items():
+      tp = lev2.ui.TextPrimitive(font=self.canvas_font, color=color)
+      self._texts[name] = tp
+      self.canvas_layer.addPrimitive(tp)
+
+    self.text_sm = lev2.ui.TextPrimitive(font=self.canvas_font_sm, color=vec4(0.7, 0.7, 0.7, 1))
+    self.canvas_layer.addPrimitive(self.text_sm)
+
+  def beginRedraw(self):
+    """Clear all prims and reset button registry."""
+    self.buttons = {}
+    self.bg_prim.clearQuads()
+    for tp in self._texts.values():
+      tp.clearItems()
+    self.text_sm.clearItems()
+
+  def addButton(self, name, x, y, bw, bh, label, ghost=False, danger=False):
+    """Draw clickable button quad with hover/danger states."""
+    h = max(self.canvas.height, 200)
+    if not ghost:
+      self.buttons[name] = (x, y, bw, bh)
+    hovered = not ghost and self.hover_button == name
+    if ghost:
+      color = vec4(0.12, 0.12, 0.14, 1)
+    elif danger and hovered:
+      color = vec4(0.55, 0.15, 0.15, 1)
+    elif danger:
+      color = vec4(0.40, 0.10, 0.10, 1)
+    elif hovered:
+      color = vec4(0.30, 0.35, 0.50, 1)
+    else:
+      color = vec4(0.20, 0.25, 0.35, 1)
+    qd = lev2.ui.QuadData()
+    qd.setPosition(x, h - y - bh)
+    qd.setSize(bw, bh)
+    qd.setColor(color)
+    self.bg_prim.addQuad(qd)
+    txt_role = "label" if ghost else "button"
+    self._texts[txt_role].addItem(label, vec2(x + 6, y + 3))
+
+  def drawPropRow(self, label, value, y, val_x=140):
+    """Draw label: value text row."""
+    self._texts["label"].addItem(f"{label}:", vec2(8, y))
+    self._texts["value"].addItem(value, vec2(val_x, y))
+
+  def drawSectionHeader(self, title, y, w, h):
+    """Draw a section header with background bar."""
+    qd = lev2.ui.QuadData()
+    qd.setPosition(4, h - y - 16)
+    qd.setSize(w - 8, 16)
+    qd.setColor(vec4(0.15, 0.15, 0.20, 1))
+    self.bg_prim.addQuad(qd)
+    self._texts["cdn_hdr"].addItem(title, vec2(8, y))
+
+  def drawProgressBar(self, x, y, w, h_bar, fraction, color, bg_color, canvas_h):
+    """Draw a filled progress bar."""
+    qd = lev2.ui.QuadData()
+    qd.setPosition(x, canvas_h - y - h_bar - 1)
+    qd.setSize(w, h_bar)
+    qd.setColor(bg_color)
+    self.bg_prim.addQuad(qd)
+    fill_w = int(w * fraction)
+    if fill_w > 0:
+      qd2 = lev2.ui.QuadData()
+      qd2.setPosition(x, canvas_h - y - h_bar - 1)
+      qd2.setSize(fill_w, h_bar)
+      qd2.setColor(color)
+      self.bg_prim.addQuad(qd2)
+
+  def drawChunkGrid(self, chunks_present, chunks_valid, cdn_list, fqid_active, x, y, cell_w, canvas_h, cells_per_row, label):
+    """Draw colored chunk status grid. Returns new y."""
+    total = len(chunks_present)
+    if total == 0:
+      return y
+    self._texts["label"].addItem(f"{label}:", vec2(8, y))
+    for i in range(total):
+      row = i // cells_per_row
+      col = i % cells_per_row
+      cx = x + col * cell_w
+      cy = y + row * 16
+      qd = lev2.ui.QuadData()
+      qd.setPosition(cx, canvas_h - cy - 12)
+      qd.setSize(cell_w - 2, 12)
+      if label == "CDN":
+        if i < len(cdn_list) and cdn_list[i]:
+          qd.setColor(vec4(0.2, 0.6, 0.2, 1))
+        else:
+          qd.setColor(vec4(0.5, 0.15, 0.15, 1))
+      else:
+        if not chunks_present[i]:
+          qd.setColor(vec4(0.5, 0.15, 0.15, 1))
+        elif i < len(chunks_valid) and not chunks_valid[i]:
+          qd.setColor(vec4(0.7, 0.7, 0.2, 1))
+        elif fqid_active:
+          qd.setColor(vec4(0.2, 0.3, 0.7, 1))
+        else:
+          qd.setColor(vec4(0.2, 0.6, 0.2, 1))
+      self.bg_prim.addQuad(qd)
+    rows = (total + cells_per_row - 1) // cells_per_row
+    return y + rows * 16 + 4
+
+  def drawCdnHealthHeader(self, model, y, w):
+    """Draw CDN health status bar. Returns new y."""
+    x = 8
+    self._texts["cdn_hdr"].addItem("CDN:", vec2(x, y))
+    cdn_x0 = 40
+    n_cdn = len(model.cdn_health)
+    if n_cdn > 0:
+      col_w = (w - cdn_x0 - 8) // n_cdn
+      for idx, (host, info) in enumerate(model.cdn_health.items()):
+        cx = cdn_x0 + idx * col_w
+        loc_name = info.get("location", host)
+        label = f"{loc_name} ({host})"
+        if info.get("reachable"):
+          txt = f"{label} {info['latency_ms']:.0f}ms"
+          self._texts["status_ok"].addItem(txt, vec2(cx, y))
+        else:
+          txt = f"{label} offline"
+          self._texts["status_err"].addItem(txt, vec2(cx, y))
+        ip = info.get("ip", "")
+        if ip == "unresolvable":
+          self._texts["status_err"].addItem(f"  ip: {ip}", vec2(cx, y + 14))
+        elif ip:
+          self._texts["label"].addItem(f"  ip: {ip}", vec2(cx, y + 14))
+    return y + 30
+
+  def drawDownloadManagerStatus(self, model, y):
+    """Draw DL manager stats line. Returns new y."""
+    dm = model.catalog.download_manager
+    if dm:
+      active = dm.active_download_count()
+      pending = dm.pending_count
+      completed = dm.completed_count
+      failed = dm.failed_count
+      total_mb = dm.total_bytes_downloaded / 1048576.0
+      dm_txt = f"DL: active={active}  pending={pending}  completed={completed}  failed={failed}  total={total_mb:.1f}MB"
+      self._texts["label"].addItem(dm_txt, vec2(8, y))
+    return y + 16
+
+  def handleCanvasEvent(self, canvas, ev):
+    """Hit-test buttons, track hover. Returns clicked button name or None."""
+    clicked = None
+    if ev.code == tokens.PUSH.hashed:
+      mx, my = canvas.rootToLocal(ev.x, ev.y)
+      for name, (bx, by, bw, bh) in self.buttons.items():
+        if bx <= mx < bx + bw and by <= my < by + bh:
+          clicked = name
+          break
+    elif ev.code == tokens.MOVE.hashed:
+      mx, my = canvas.rootToLocal(ev.x, ev.y)
+      old_hover = self.hover_button
+      self.hover_button = None
+      for name, (bx, by, bw, bh) in self.buttons.items():
+        if bx <= mx < bx + bw and by <= my < by + bh:
+          self.hover_button = name
+          break
+      if self.hover_button != old_hover:
+        return "__hover_changed__"
+    return clicked
+
+
+################################################################################
+# ImportConfigEditor
+################################################################################
+
+class ImportConfigEditor:
+  """Self-contained overlay editor for import config JSON files."""
+
+  def __init__(self, uicontext, model, ezapp):
+    self.model = model
+    self.uicontext = uicontext
+    self.ezapp = ezapp
+    self.on_close = None
+    self.on_save = None
+    self._editor_ic_name = None
+    self._editor_ic_path = None
+    self._editor_data = None
+    self._editor_dirty = False
+    self._editor_selected_key = None
+
+  def open(self, ic_name):
+    """Open editor overlay for named import config."""
+    path = self.model.import_config_paths.get(ic_name)
+    if not path:
+      return
+    try:
+      with open(path, 'r') as f:
+        data = json.load(f)
+    except Exception:
+      return
+
+    self._editor_ic_name = ic_name
+    self._editor_ic_path = path
+    self._editor_data = data
+    self._editor_dirty = False
+    self._editor_selected_key = None
+
+    lg = self.ezapp.topLayoutGroup
+    top_w = lg.width
+    top_h = lg.height
+    margin = int(min(top_w, top_h) * 0.05)
+
+    self._editor_frame = self.uicontext.createOverlayWidget(
+      lev2.ui.BorderFrame, ["ic_editor_frame"])
+    self._editor_frame.border_width = 12
+    self._editor_frame.border_edge_width = 3
+    self._editor_frame.border_color = vec4(0, 0, 0, 1)
+    self._editor_frame.border_outer_color = vec4(0, 0, 0, 1)
+    self._editor_frame.border_inner_color = vec4(1, 1, 0, 1)
+
+    self._editor_vpack = lev2.ui.VerticalPack.wfactory(["ic_editor_vpack"])
+    self._editor_frame.child = self._editor_vpack
+    self._editor_vpack.margin = 4
+    self._editor_vpack.item_height = 36
+
+    # Toolbar
+    self._editor_toolbar = self._editor_vpack.makeChild(
+      uiclass=lev2.ui.Toolbar, args=["ic_editor_toolbar"])
+    self._editor_toolbar.bgcolor = vec4(0.15, 0.15, 0.18, 1)
+    self._editor_toolbar.button_hover_color = vec4(0.28, 0.28, 0.35, 1)
+    self._editor_toolbar.button_pressed_color = vec4(0.25, 0.45, 0.65, 1)
+    self._editor_toolbar.separator_color = vec4(0.30, 0.30, 0.35, 1)
+    self._editor_toolbar.icon_size = 28
+    self._editor_toolbar.button_padding = 8
+    self._editor_toolbar.item_spacing = 4
+    self._editor_toolbar.edge_padding = 8
+
+    btn_close = self._editor_toolbar.addTextButton("ed_close", "CLOSE")
+    btn_close.custom_width = 56
+    btn_close.onPressed(lambda: self.close())
+
+    btn_save = self._editor_toolbar.addTextButton("ed_save", "SAVE")
+    btn_save.custom_width = 48
+    btn_save.onPressed(lambda: self.save())
+
+    btn_revert = self._editor_toolbar.addTextButton("ed_revert", "REVERT")
+    btn_revert.custom_width = 64
+    btn_revert.onPressed(lambda: self.revert())
+
+    btn_autocorrect = self._editor_toolbar.addTextButton("ed_autocorrect", "AUTOCORRECT")
+    btn_autocorrect.custom_width = 96
+    btn_autocorrect.onPressed(lambda: self.autocorrect())
+
+    btn_test = self._editor_toolbar.addTextButton("ed_testmatch", "TEST MATCH")
+    btn_test.custom_width = 88
+    btn_test.onPressed(lambda: self.test_match())
+
+    # HPack for outliner + propsheet
+    self._editor_hpack = self._editor_vpack.makeChild(
+      uiclass=lev2.ui.HorizontalPack, args=["ic_editor_hpack"])
+    self._editor_hpack.margin = 2
+    self._editor_hpack.item_width = int((top_w - 2 * margin) * 0.30)
+    self._editor_vpack.fill_widget = self._editor_hpack
+
+    # Outliner
+    self._editor_outliner = self._editor_hpack.makeChild(
+      uiclass=lev2.ui.Outliner, args=["ic_editor_outliner"])
+    self._editor_outliner.bgcolor = vec4(0.10, 0.10, 0.12, 1)
+    self._editor_outliner.item_height = 22
+
+    self._editor_outliner_model = ImportConfigEditorModel(self)
+    self._editor_outliner.model = self._editor_outliner_model
+
+    self._editor_outliner.onSelect(self._on_select)
+    self._editor_outliner.onRename(self._on_rename)
+    self._editor_outliner.onDelete(self._on_delete)
+    self._editor_outliner.onAdd(self._on_add)
+
+    # PropertySheet
+    self._editor_propsheet = self._editor_hpack.makeChild(
+      uiclass=lev2.ui.PropertySheet, args=["ic_editor_propsheet"])
+    self._editor_propsheet.bgcolor = vec4(0.12, 0.12, 0.14, 1)
+    self._editor_propsheet.label_color = vec4(0.9, 0.9, 0.9, 1)
+    self._editor_propsheet.group_color = vec4(0.18, 0.18, 0.22, 1)
+    self._editor_propsheet.row_height = 28
+    self._editor_propsheet.label_width = 140
+    self._editor_hpack.fill_widget = self._editor_propsheet
+
+    self._editor_propsheet.onPropertyChanged(self._on_prop_changed)
+
+    self._editor_propsheet.registerEditorFactory(
+      tokens.Platforms,
+      self._create_platforms_inline_editor)
+    self._editor_propsheet.registerEditorFactory(
+      tokens.FolderBrowse,
+      self._create_folder_browse_inline_editor)
+
+    self.uicontext.pushOverlay(
+      self._editor_frame,
+      margin, margin,
+      top_w - 2 * margin, top_h - 2 * margin,
+      dismiss_on_click_outside=False)
+
+    self._editor_outliner.expandAll()
+
+  def close(self):
+    """Close editor overlay."""
+    self.uicontext.popOverlay()
+    self.model.import_config_data.pop(self._editor_ic_name, None)
+    if self.on_close:
+      self.on_close()
+
+  def save(self):
+    """Save in-memory dict to JSON file."""
+    data = self._editor_data
+    save_data = {}
+    for k in ["namespace", "source_dir", "local_loc", "manifest"]:
+      if k in data:
+        save_data[k] = data[k]
+    if data.get("encryption_key"):
+      save_data["encryption_key"] = data["encryption_key"]
+    if data.get("platforms") and data["platforms"] != ["mac", "linux"]:
+      save_data["platforms"] = data["platforms"]
+    if data.get("priority", 0) != 0:
+      save_data["priority"] = data["priority"]
+    if data.get("assets"):
+      save_data["assets"] = []
+      for a in data["assets"]:
+        ad = {"id": a["id"], "include": a["include"]}
+        if a.get("exclude"):
+          ad["exclude"] = a["exclude"]
+        save_data["assets"].append(ad)
+
+    with open(self._editor_ic_path, 'w') as f:
+      json.dump(save_data, f, indent=2)
+      f.write('\n')
+    self._editor_dirty = False
+    self.model.import_config_data.pop(self._editor_ic_name, None)
+    if self.on_save:
+      self.on_save()
+
+  def revert(self):
+    """Reload from disk, discard edits."""
+    try:
+      with open(self._editor_ic_path, 'r') as f:
+        self._editor_data = json.load(f)
+    except Exception:
+      return
+    self._editor_dirty = False
+    self._editor_outliner_model.notifyModelReset()
+    self._editor_outliner.expandAll()
+    if self._editor_selected_key:
+      self._on_select(self._editor_selected_key)
+
+  def autocorrect(self):
+    """Run path sanitization on source_dir and manifest."""
+    data = self._editor_data
+    changed = False
+    manifest_dir = os.path.dirname(self._editor_ic_path)
+    for key in ["source_dir", "manifest"]:
+      val = data.get(key, "")
+      if not val or not os.path.isabs(val):
+        continue
+      if os.path.exists(val):
+        new_val = sanitize_path(val)
+      else:
+        new_val = resolve_bad_path(val, manifest_dir)
+      if new_val != val:
+        data[key] = new_val
+        changed = True
+    if changed:
+      self._editor_dirty = True
+      if self._editor_selected_key == "Config":
+        self._on_select("Config")
+
+  def test_match(self):
+    """Open test match overlay showing file enumeration results."""
+    data = self._editor_data
+    try:
+      results, source_dir = self.model.list_import_assets(data)
+    except Exception as e:
+      results = []
+      source_dir = ""
+
+    lg = self.ezapp.topLayoutGroup
+    top_w = lg.width
+    top_h = lg.height
+    margin = int(min(top_w, top_h) * 0.08)
+
+    self._match_frame = self.uicontext.createOverlayWidget(
+      lev2.ui.BorderFrame, ["match_frame"])
+    self._match_frame.border_width = 12
+    self._match_frame.border_edge_width = 3
+    self._match_frame.border_color = vec4(0, 0, 0, 1)
+    self._match_frame.border_outer_color = vec4(0, 0, 0, 1)
+    self._match_frame.border_inner_color = vec4(1, 1, 0, 1)
+
+    self._match_vpack = lev2.ui.VerticalPack.wfactory(["match_vpack"])
+    self._match_frame.child = self._match_vpack
+    self._match_vpack.margin = 4
+    self._match_vpack.item_height = 36
+
+    self._match_toolbar = self._match_vpack.makeChild(
+      uiclass=lev2.ui.Toolbar, args=["match_toolbar"])
+    self._match_toolbar.bgcolor = vec4(0.15, 0.15, 0.18, 1)
+    self._match_toolbar.button_hover_color = vec4(0.28, 0.28, 0.35, 1)
+    self._match_toolbar.button_pressed_color = vec4(0.25, 0.45, 0.65, 1)
+    self._match_toolbar.separator_color = vec4(0.30, 0.30, 0.35, 1)
+    self._match_toolbar.icon_size = 28
+    self._match_toolbar.button_padding = 8
+    self._match_toolbar.item_spacing = 4
+    self._match_toolbar.edge_padding = 8
+
+    btn_close = self._match_toolbar.addTextButton("match_close", "CLOSE")
+    btn_close.custom_width = 56
+    btn_close.onPressed(lambda: self.uicontext.popOverlay())
+
+    total_files = sum(len(files) for _, files in results)
+    total_paks = len(results)
+    btn_summary = self._match_toolbar.addTextButton("match_summary",
+      f"{total_paks} paks, {total_files} files matched")
+    btn_summary.custom_width = 200
+
+    self._match_outliner = self._match_vpack.makeChild(
+      uiclass=lev2.ui.Outliner, args=["match_outliner"])
+    self._match_outliner.bgcolor = vec4(0.10, 0.10, 0.12, 1)
+    self._match_outliner.item_height = 20
+    self._match_vpack.fill_widget = self._match_outliner
+
+    self._match_outliner_model = TestMatchOutlinerModel(results, source_dir)
+    self._match_outliner.model = self._match_outliner_model
+
+    self.uicontext.pushOverlay(
+      self._match_frame,
+      margin, margin,
+      top_w - 2 * margin, top_h - 2 * margin,
+      dismiss_on_click_outside=True)
+    self._match_outliner.expandAll()
+
+  # ── Internal ──
+
+  def _build_config_varmap(self):
+    VarMap = core.VarMap
+    data = self._editor_data
+    vm = VarMap()
+    vm.namespace = data.get("namespace", "")
+    vm.source_dir = data.get("source_dir", "")
+    vm.local_loc = data.get("local_loc", "")
+    vm.manifest = data.get("manifest", "")
+    vm.encryption_key = data.get("encryption_key", "") or ""
+    platforms = data.get("platforms", ["mac", "linux"])
+    vm.platforms = ", ".join(platforms) if isinstance(platforms, list) else str(platforms)
+    return vm
+
+  def _build_pak_varmap(self, pak_id):
+    VarMap = core.VarMap
+    assets = self._editor_data.get("assets", [])
+    pak = None
+    for a in assets:
+      if a["id"] == pak_id:
+        pak = a
+        break
+    if not pak:
+      return VarMap()
+    vm = VarMap()
+    vm.id = pak["id"]
+    inc = pak.get("include", "")
+    if isinstance(inc, list):
+      vm.include = ", ".join(inc)
+    else:
+      vm.include = str(inc)
+    exc = pak.get("exclude", [])
+    vm.exclude = ", ".join(exc) if isinstance(exc, list) else str(exc)
+    return vm
+
+  def _on_select(self, key):
+    self._editor_selected_key = key
+    if key == "Config":
+      self._editor_propsheet.data = self._build_config_varmap()
+      model = self._editor_propsheet.model
+      plat_annot = core.VarMap()
+      plat_annot.type = tokens.Platforms
+      model.setAnnotations("platforms", plat_annot)
+      for fkey in ("source_dir", "local_loc"):
+        fb_annot = core.VarMap()
+        fb_annot.type = tokens.FolderBrowse
+        model.setAnnotations(fkey, fb_annot)
+    elif key.startswith("AssetPaks/"):
+      pak_id = key.split("/", 1)[1]
+      self._editor_propsheet.data = self._build_pak_varmap(pak_id)
+    else:
+      self._editor_propsheet.data = None
+    self._editor_propsheet.expandAll()
+
+  def _on_rename(self, old_key, new_name):
+    self._editor_outliner_model.renameItem(old_key, new_name)
+
+  def _on_delete(self, key):
+    self._editor_outliner_model.removeItem(key)
+    if self._editor_selected_key == key:
+      self._editor_propsheet.data = None
+      self._editor_selected_key = None
+
+  def _on_add(self, key):
+    pass
+
+  def _on_prop_changed(self, key, value):
+    sel = self._editor_selected_key
+    if not sel:
+      return
+    self._editor_dirty = True
+    data = self._editor_data
+
+    if sel == "Config":
+      field = key.split("/")[-1] if "/" in key else key
+      if field == "platforms":
+        data["platforms"] = [s.strip() for s in str(value).split(",") if s.strip()]
+      elif field == "encryption_key":
+        if str(value).strip():
+          data["encryption_key"] = str(value)
+        else:
+          data.pop("encryption_key", None)
+      else:
+        data[field] = str(value)
+    elif sel.startswith("AssetPaks/"):
+      pak_id = sel.split("/", 1)[1]
+      assets = data.get("assets", [])
+      for a in assets:
+        if a["id"] == pak_id:
+          field = key.split("/")[-1] if "/" in key else key
+          if field == "id":
+            new_id = str(value)
+            a["id"] = new_id
+            self._editor_selected_key = f"AssetPaks/{new_id}"
+            self._editor_outliner_model.notifyModelReset()
+            self._editor_outliner.expandAll()
+          elif field == "include":
+            val = str(value)
+            parts = [s.strip() for s in val.split(",") if s.strip()]
+            a["include"] = parts[0] if len(parts) == 1 else parts
+          elif field == "exclude":
+            val = str(value)
+            parts = [s.strip() for s in val.split(",") if s.strip()]
+            if parts:
+              a["exclude"] = parts
+            else:
+              a.pop("exclude", None)
+          break
+
+  def _create_folder_browse_inline_editor(self, sheet, key, value, annotations):
+    hpack = lev2.ui.HorizontalPack.wfactory(["fb_hpack_" + key])
+    hpack.item_width = 28
+    current = str(value) if value else ""
+    lineedit = hpack.makeChild(
+      uiclass=lev2.ui.LineEdit,
+      args=["", current, vec3(0.15, 0.15, 0.18)])
+    hpack.fill_widget = lineedit
+    field_key = key
+    editor = self
+
+    def on_text_committed(text):
+      editor._editor_data[field_key] = text
+      editor._editor_dirty = True
+
+    lineedit.onTextCommitted(on_text_committed)
+
+    btn = hpack.makeChild(
+      uiclass=lev2.ui.Toolbar, args=["fb_btn_" + key])
+    btn.bgcolor = vec4(0.20, 0.25, 0.35, 1)
+    btn.button_hover_color = vec4(0.30, 0.35, 0.50, 1)
+    btn.button_pressed_color = vec4(0.25, 0.45, 0.65, 1)
+    btn.icon_size = 14
+    btn.button_padding = 2
+    btn.item_spacing = 0
+    btn.edge_padding = 2
+    browse_btn = btn.addTextButton("browse_" + key, "...")
+    browse_btn.custom_width = 24
+    browse_btn.onPressed(lambda: editor._browse_folder(field_key))
+    return hpack
+
+  def _create_platforms_inline_editor(self, sheet, key, value, annotations):
+    hpack = lev2.ui.HorizontalPack.wfactory(["platforms_hpack"])
+    hpack.item_width = 80
+    chk_color = vec3(0.7, 0.7, 0.8)
+    platforms = self._editor_data.get("platforms", ["mac", "linux"])
+
+    chk_mac = hpack.makeChild(
+      uiclass=lev2.ui.Checkbox, args=["mac", chk_color])
+    chk_mac.toggled = "mac" in platforms
+    chk_mac.bg_color = vec3(0, 0, 0)
+
+    chk_linux = hpack.makeChild(
+      uiclass=lev2.ui.Checkbox, args=["linux", chk_color])
+    chk_linux.toggled = "linux" in platforms
+    chk_linux.bg_color = vec3(0, 0, 0)
+
+    editor = self
+    def on_toggled(chk):
+      plats = []
+      if chk_mac.toggled:
+        plats.append("mac")
+      if chk_linux.toggled:
+        plats.append("linux")
+      editor._editor_data["platforms"] = plats if plats else ["mac", "linux"]
+      editor._editor_dirty = True
+
+    chk_mac.onToggled = on_toggled
+    chk_linux.onToggled = on_toggled
+    return hpack
+
+  def _browse_folder(self, field_key):
+    from ork.ui.filesystem_browser import FilesystemBrowser
+    from obt import path as obt_path
+
+    assetcache = str(obt_path.stage() / "assetcache")
+    current_val = self._editor_data.get(field_key, "")
+    if current_val:
+      from ork.catalog_import import resolve_variables
+      try:
+        resolved = resolve_variables(current_val)
+        if os.path.isdir(resolved):
+          initial_path = resolved
+        else:
+          initial_path = assetcache
+      except Exception:
+        initial_path = assetcache
+    else:
+      initial_path = assetcache
+
+    title = f"Browse: {field_key}"
+    popup = self.ezapp.createSecondaryWindow(
+      width=800, height=600, x=200, y=150,
+      title=title, decorated=True, resizable=True, floating=True)
+    uic = popup.ui_context
+    root = lev2.ui.LayoutGroup.create("popup_lg")
+    root.setRect(0, 0, popup.width, popup.height)
+    uic.top = root
+    root.margin = 4
+
+    browser_item = root.makeChild(
+      uiclass=FilesystemBrowser,
+      args=["browser", initial_path, "", vec3(0.1, 0.1, 0.1), "select"],
+      fill=True)
+    browser = browser_item.widget.uservars.filesystem_browser
+
+    browser.model.directories_only = True
+    editor = self
+
+    def on_activate(path):
+      if os.path.isdir(path):
+        sanitized = sanitize_path(path)
+        sanitized = sanitized.replace("${ASSETCACHE}", "<assetcache>")
+        editor._editor_data[field_key] = sanitized
+        editor._editor_dirty = True
+        if editor._editor_selected_key == "Config":
+          editor._on_select("Config")
+      popup.requestClose()
+
+    browser.onActivate = on_activate
+    browser.onCancel = lambda: popup.requestClose()

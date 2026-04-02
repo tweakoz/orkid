@@ -3,353 +3,22 @@
 # Orkid Asset Catalog GUI Tool
 ################################################################################
 
-import os, re, time, threading, requests, urllib3
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+import os, time
 from orkengine import core
 from orkengine import lev2
-from ork import assets as ork_assets
 from ork.app.application import ComponentizedApplication
+from ork.catalog_tool import (
+  CatalogModel, format_size,
+  build_namespace_varmap, build_asset_varmap,
+)
+from ork.catalog_tool_ui import (
+  CatalogOutlinerModel, CanvasDetailView, ImportConfigEditor,
+)
 
 tokens = core.CrcStringProxy()
 vec2 = core.vec2
 vec3 = core.vec3
 vec4 = core.vec4
-
-################################################################################
-
-def format_size(nbytes):
-  if nbytes == 0:
-    return "0 B"
-  units = ['B', 'KB', 'MB', 'GB', 'TB']
-  idx = 0
-  size = float(nbytes)
-  while size >= 1024.0 and idx < len(units) - 1:
-    size /= 1024.0
-    idx += 1
-  return f"{int(size)} {units[idx]}" if idx == 0 else f"{size:.1f} {units[idx]}"
-
-################################################################################
-# Outliner model — namespace / asset tree
-################################################################################
-
-def _derive_project_name(source_file):
-  """Extract project name from manifest source_file path."""
-  # e.g. /Users/.../imp/cap4d/obt.project/asset_manifests/cap4d.json → cap4d
-  # e.g. /Users/.../orkid/ork.data/asset_manifests/singularity.json → orkid
-  parts = source_file.replace("\\", "/").split("/")
-  for i, p in enumerate(parts):
-    if p == "asset_manifests" and i >= 2:
-      parent = parts[i - 1]
-      grandparent = parts[i - 2]
-      if parent in ("obt.project", "ork.data"):
-        return grandparent
-      return parent
-  return "unknown"
-
-
-class CatalogOutlinerModel(lev2.ui.OutlinerModel):
-  def __init__(self, tool):
-    super().__init__()
-    self.tool = tool
-    self.allow_rename = False
-    self.allow_delete = False
-    self.allow_add = False
-
-  def getChildren(self, parent_key):
-    if parent_key == "":
-      return self.tool.projects
-    if parent_key in self.tool.project_namespaces:
-      # Project → list of "project/namespace" keys
-      return [f"{parent_key}/{ns}" for ns in self.tool.project_namespaces[parent_key]]
-    if "/" in parent_key and "|" not in parent_key:
-      # "project/namespace" → list of "project/ns|asset" keys
-      ns = parent_key.split("/", 1)[1]
-      return [f"{parent_key.split('/')[0]}/{fqid}" for fqid in self.tool.ns_assets.get(ns, [])]
-    return []
-
-  def getDisplayName(self, key):
-    if "|" in key:
-      # "project/ns|asset" → asset name
-      return key.split("|", 1)[1]
-    if "/" in key:
-      # "project/namespace" → namespace name
-      return key.split("/", 1)[1]
-    return key
-
-  def hasChildren(self, key):
-    return "|" not in key
-
-################################################################################
-# Import Config Editor — outliner model for Config/AssetPaks hierarchy
-################################################################################
-
-class ImportConfigEditorModel(lev2.ui.OutlinerModel):
-  """Outliner model for editing an import config JSON.
-  Two top-level nodes: 'Config' (leaf) and 'AssetPaks' (group of paks)."""
-
-  def __init__(self, editor):
-    super().__init__()
-    self.editor = editor
-    self.allow_rename = True
-    self.allow_delete = True
-    self.allow_add = True
-
-  @property
-  def data(self):
-    return self.editor._editor_data
-
-  def getChildren(self, parent_key):
-    if parent_key == "":
-      return ["Config", "AssetPaks"]
-    if parent_key == "AssetPaks":
-      assets = self.data.get("assets", [])
-      return [f"AssetPaks/{a['id']}" for a in assets]
-    return []
-
-  def getDisplayName(self, key):
-    if key == "Config":
-      return "Config"
-    if key == "AssetPaks":
-      return "AssetPaks"
-    if key.startswith("AssetPaks/"):
-      return key.split("/", 1)[1]
-    return key
-
-  def hasChildren(self, key):
-    return key == "AssetPaks"
-
-  def getFactories(self, parent_key):
-    if parent_key == "AssetPaks":
-      return [{"id": "assetpak", "display_name": "AssetPak"}]
-    return []
-
-  def createItem(self, parent_key, name, factory_id):
-    if parent_key == "AssetPaks" and factory_id == "assetpak":
-      assets = self.data.setdefault("assets", [])
-      # Check for duplicate
-      for a in assets:
-        if a["id"] == name:
-          return ""
-      assets.append({"id": name, "include": "*"})
-      new_key = f"AssetPaks/{name}"
-      self.editor._editor_dirty = True
-      self.notifyItemAdded(new_key)
-      return new_key
-    return ""
-
-  def renameItem(self, old_key, new_name):
-    if not old_key.startswith("AssetPaks/"):
-      return None
-    old_id = old_key.split("/", 1)[1]
-    assets = self.data.get("assets", [])
-    # Check for duplicate
-    for a in assets:
-      if a["id"] == new_name:
-        return None
-    for a in assets:
-      if a["id"] == old_id:
-        a["id"] = new_name
-        self.editor._editor_dirty = True
-        return f"AssetPaks/{new_name}"
-    return None
-
-  def removeItem(self, key):
-    if not key.startswith("AssetPaks/"):
-      return
-    pak_id = key.split("/", 1)[1]
-    assets = self.data.get("assets", [])
-    self.data["assets"] = [a for a in assets if a["id"] != pak_id]
-    self.editor._editor_dirty = True
-    self.notifyItemRemoved(key)
-
-################################################################################
-# Test Match — read-only outliner model for file enumeration results
-################################################################################
-
-class TestMatchOutlinerModel(lev2.ui.OutlinerModel):
-  """Read-only outliner showing matched files per asset pak."""
-
-  def __init__(self, tool):
-    super().__init__()
-    self.tool = tool
-    self.allow_rename = False
-    self.allow_delete = False
-    self.allow_add = False
-
-  def getChildren(self, parent_key):
-    results = self.tool._test_match_results
-    if parent_key == "":
-      return [pak_id for pak_id, _ in results]
-    # Parent is a pak_id — return file paths
-    for pak_id, files in results:
-      if pak_id == parent_key:
-        src = self.tool._test_match_source_dir
-        children = []
-        for f in files:
-          try:
-            rel = str(f.relative_to(src)) if src else str(f)
-          except ValueError:
-            rel = str(f)
-          children.append(f"{pak_id}/{rel}")
-        return children
-    return []
-
-  def getDisplayName(self, key):
-    if "/" not in key:
-      # Top-level pak — show count
-      for pak_id, files in self.tool._test_match_results:
-        if pak_id == key:
-          return f"{key} ({len(files)} files)"
-      return key
-    # File entry — show relative path
-    return key.split("/", 1)[1]
-
-  def hasChildren(self, key):
-    return "/" not in key
-
-################################################################################
-# PropertySheet helpers — use VarMapPropertyModel (C++ impl, no trampoline)
-################################################################################
-
-def _build_namespace_varmap(tool, ns_id):
-  """Build a flat dict of namespace properties for VarMapPropertyModel."""
-  d = {}
-  d["Name"] = ns_id
-  d["Asset Count"] = str(len(tool.ns_assets.get(ns_id, [])))
-
-  merged = tool.cfgspc.merged_config
-  ek = merged.getEncryptionKeyForNamespace(ns_id) if merged else None
-  d["Encryption Key"] = "Yes" if ek else "No"
-
-  remote_loc = tool.cfgspc.getNamespaceRemoteLocation(ns_id) or ""
-  d["Remote Location"] = remote_loc
-
-  if remote_loc and merged:
-    resolved = merged.resolveRemoteLocation(remote_loc)
-    if resolved:
-      d["Download URL"] = str(resolved.download_url)
-      d["Upload URL"] = str(resolved.upload_url)
-      d["TLS Verify"] = "Disabled" if resolved.disable_cert_check else "Enabled"
-      # API key read status
-      akr = resolved.api_key_read if hasattr(resolved, 'api_key_read') else None
-      if akr == "<PasswordAuthentication>":
-        d["API Key (read)"] = "password auth"
-      elif akr:
-        d["API Key (read)"] = "Yes"
-      else:
-        d["API Key (read)"] = "No"
-      # API key write status
-      akw = resolved.api_key_write if hasattr(resolved, 'api_key_write') else None
-      if akw == "<PasswordAuthentication>":
-        d["API Key (write)"] = "password auth"
-      elif akw:
-        d["API Key (write)"] = "Yes"
-      else:
-        d["API Key (write)"] = "No"
-
-  total, present = 0, 0
-  total_sz, local_sz = 0, 0
-  for fqid in tool.ns_assets.get(ns_id, []):
-    cs = tool.chunk_status.get(fqid, [])
-    total += len(cs)
-    present += sum(1 for x in cs if x)
-    entry = tool.asset_entries.get(fqid)
-    if entry:
-      total_sz += entry.archive_size
-      if cs and all(cs):
-        local_sz += entry.archive_size
-  d["Chunks Local"] = f"{present} / {total}"
-  d["Size Local"] = f"{format_size(local_sz)} / {format_size(total_sz)}"
-
-  # Look up CDN health by hostname
-  cdn_url = d.get("Download URL", "")
-  if cdn_url:
-    from urllib.parse import urlparse
-    host = urlparse(cdn_url).hostname or ""
-    if host in tool.cdn_health:
-      h = tool.cdn_health[host]
-      d["CDN Endpoint"] = h.get("url", "")
-      d["CDN Reachable"] = "Yes" if h.get("reachable") else "No"
-      ms = h.get("latency_ms", 0)
-      d["CDN Latency"] = f"{ms:.0f}ms" if h.get("reachable") else "N/A"
-    else:
-      d["CDN Reachable"] = "unreachable"
-      d["CDN Latency"] = "N/A"
-
-  return d
-
-
-def _build_asset_varmap(tool, fqid):
-  """Build a flat dict of asset properties for VarMapPropertyModel."""
-  d = {}
-  entry = tool.asset_entries.get(fqid)
-  if not entry:
-    d["ID"] = fqid
-    return d
-
-  d["ID"] = fqid
-  d["Manifest"] = tool.asset_manifest_file.get(fqid, "unknown")
-  d["Type"] = entry.type or "unknown"
-  d["Platforms"] = ", ".join(entry.platforms) if entry.platforms else "all"
-  d["Priority"] = str(entry.priority)
-  d["Archive Size"] = format_size(entry.archive_size)
-  d["Compressed Size"] = format_size(entry.compressed_size)
-  d["Encrypted Size"] = format_size(entry.encrypted_size)
-  if entry.archive_size > 0:
-    r = 100.0 - (entry.compressed_size / entry.archive_size * 100.0)
-    d["Compression"] = f"{r:.1f}%"
-
-  if hasattr(entry, 'content_hash') and entry.content_hash:
-    d["Content Hash"] = str(entry.content_hash)
-  if hasattr(entry, 'storage_hash') and entry.storage_hash:
-    d["Storage Hash"] = str(entry.storage_hash)
-  if hasattr(entry, 'hash_algorithm') and entry.hash_algorithm:
-    d["Hash Algorithm"] = str(entry.hash_algorithm)
-
-  cm = entry.chunk_manifest if hasattr(entry, 'chunk_manifest') else None
-
-  if cm and hasattr(cm, 'file_hash') and cm.file_hash:
-    d["File Hash (expected)"] = f"{cm.file_hash:016x}"
-  if hasattr(entry, 'storage_hash') and entry.storage_hash:
-    cache_dir = tool.catalog.cache_dir
-    enc_path = os.path.join(cache_dir, 'enc', f"{entry.storage_hash}.enc")
-    d["Encrypted File"] = "Yes" if os.path.exists(enc_path) else "No"
-  cm = entry.chunk_manifest if hasattr(entry, 'chunk_manifest') else None
-  if cm:
-    d["Total Chunks"] = str(len(cm.chunks))
-    if hasattr(cm, 'chunk_size'):
-      d["Chunk Size"] = format_size(cm.chunk_size)
-
-  cs = tool.chunk_status.get(fqid, [])
-  total = len(cs)
-  present = sum(1 for x in cs if x)
-  d["Chunks Local"] = f"{present} / {total}"
-
-  vs = tool.chunk_valid.get(fqid, [])
-  valid = sum(1 for x in vs if x)
-  d["Chunks Valid"] = f"{valid} / {len(vs)}"
-
-  if hasattr(entry, 'local_loc') and entry.local_loc:
-    d["Local Location"] = str(entry.local_loc)
-    merged = tool.cfgspc.merged_config
-    if merged:
-      resolved_path = merged.resolveLocalPath(entry.local_loc)
-      if resolved_path:
-        d["Local Path"] = str(resolved_path)
-        d["Local Exists"] = "Yes" if os.path.exists(str(resolved_path)) else "No"
-  elif hasattr(entry, 'resolved_local_path') and entry.resolved_local_path:
-    d["Local Path"] = str(entry.resolved_local_path)
-    d["Local Exists"] = "Yes" if os.path.exists(str(entry.resolved_local_path)) else "No"
-
-  ns = fqid.split("|")[0]
-  remote_loc = tool.cfgspc.getNamespaceRemoteLocation(ns)
-  if remote_loc:
-    merged = tool.cfgspc.merged_config
-    resolved = merged.resolveRemoteLocation(remote_loc) if merged else None
-    if resolved:
-      d["Remote URL"] = str(resolved.download_url)
-
-  return d
 
 ################################################################################
 # Main application
@@ -359,29 +28,19 @@ class CatalogTool(ComponentizedApplication):
 
   def __init__(self):
     super().__init__(profiler_channels=[])
-    # data model
-    self.namespaces = []
-    self.ns_assets = {}
-    self.asset_entries = {}
-    self.chunk_status = {}
-    self.chunk_valid = {}
-    self.cdn_status = {}
-    self.cdn_health = {}
-    self.active_fetches = {}
-    self.hash_verify_results = {}  # fqid -> "OK" / "MISMATCH ..." / "verifying..."
-    self.http_session = requests.Session()
-    self.cdn_ping_time = 0  # last ping timestamp
-    self.cdn_ping_interval = 1.0
-    self.cdn_ping_running = False
+    self.model = CatalogModel()
+    self.model.on_dirty = self._on_model_dirty
     self.selected_key = None
-    self.selected_import_config = None  # basename — when set, takes over detail view
-    self.import_output_lines = []      # captured output from import operations
+    self.selected_import_config = None
     self._selecting = False
     self.canvas_dirty = True
     self.canvas_ready = False
-    self.buttons = {}
-    self.hover_button = None
+    self.detail_view = None
+    self.ic_editor = None
     self.createEzApp(width=1200, height=800, fullscreen=False, name="Asset Catalog Tool")
+
+  def _on_model_dirty(self):
+    self.canvas_dirty = True
 
   ############################################################################
   # UI init
@@ -392,7 +51,7 @@ class CatalogTool(ComponentizedApplication):
     lg.margin = 4
     lg.clearColorStd = vec4(0.12, 0.12, 0.14, 1)
 
-    # Main content area — start with a fill panel for the right side
+    # Right panel — details
     right_dock_item = lg.makeChild(
       fill=True, margin=2,
       uiclass=lev2.ui.DockablePanel, args=["details_dock"])
@@ -402,7 +61,6 @@ class CatalogTool(ComponentizedApplication):
     self.right_dock.title_override = "Details"
     self.right_dock.title_center = True
 
-    # Single PrimCanvas fills the right dock — renders both details and status
     self.canvas = self.right_dock.createChild(
       uiclass=lev2.ui.PrimCanvas, args=["detail_canvas"])
     self.canvas.supersample = 0
@@ -410,7 +68,7 @@ class CatalogTool(ComponentizedApplication):
     self.canvas.draw_background = True
     self.canvas.onUiEvent = self._on_canvas_event
 
-    # Left panel: split from right — Outliner
+    # Left panel — outliner
     left_dock_item = lg.split(
       layout=right_dock_item.layout,
       proportion=0.30, placement=tokens.LEFT, margin=2,
@@ -421,7 +79,6 @@ class CatalogTool(ComponentizedApplication):
     self.left_dock.title_override = "Catalog"
     self.left_dock.title_center = True
 
-    # Left dock contents: VPack with toolbar + outliner
     self.left_vpack = self.left_dock.createChild(
       uiclass=lev2.ui.VerticalPack, args=["left_vpack"])
     self.left_vpack.margin = 2
@@ -441,7 +98,7 @@ class CatalogTool(ComponentizedApplication):
 
     btn_refresh = self.toolbar.addTextButton("refresh", "REFRESH")
     btn_refresh.custom_width = 72
-    btn_refresh.onPressed(lambda: self._bg(self._do_refresh))
+    btn_refresh.onPressed(lambda: self.model._bg(self.model.refresh))
 
     # Outliner
     self.outliner = self.left_vpack.makeChild(
@@ -450,9 +107,17 @@ class CatalogTool(ComponentizedApplication):
     self.outliner.item_height = 22
     self.left_vpack.fill_widget = self.outliner
 
-    self.outliner_model = CatalogOutlinerModel(self)
+    self.outliner_model = CatalogOutlinerModel(self.model)
     self.outliner.model = self.outliner_model
     self.outliner.onSelect(self._on_select)
+
+    # Wire model scan callback to reset outliner
+    orig_on_scan = self.model.on_scan_complete
+    def on_scan():
+      self.outliner_model.notifyModelReset()
+      if orig_on_scan:
+        orig_on_scan()
+    self.model.on_scan_complete = on_scan
 
   ############################################################################
   # GPU init
@@ -464,258 +129,11 @@ class CatalogTool(ComponentizedApplication):
     custom_db = lev2.ui.StyleDatabase.createChild(base_db)
     self.uicontext.theme_engine = lev2.ui.ThemeEngine(custom_db)
 
-    # Canvas GPU resources
-    self.canvas.gpuInit(ctx)
-    self.canvas_font = lev2.FontManager.fontForId("i14")
-    self.canvas_font_sm = lev2.FontManager.fontForId("i12")
-    self.canvas_layer = self.canvas.createLayer("status")
-
-    # Quad primitives
-    self.bg_prim = lev2.ui.QuadPrimitive(pipeline=self.canvas.pipelineSolid)
-    self.canvas_layer.addPrimitive(self.bg_prim)
-
-    # Text primitives by color role
-    self._texts = {}
-    text_colors = {
-      "label": vec4(0.6, 0.6, 0.7, 1),
-      "value": vec4(0.9, 0.9, 0.9, 1),
-      "button": vec4(0.9, 0.9, 0.95, 1),
-      "status_ok": vec4(0.4, 0.9, 0.4, 1),
-      "status_err": vec4(0.9, 0.3, 0.3, 1),
-      "status_warn": vec4(0.9, 0.9, 0.3, 1),
-      "cdn_hdr": vec4(0.5, 0.7, 0.9, 1),
-    }
-    for name, color in text_colors.items():
-      tp = lev2.ui.TextPrimitive(font=self.canvas_font, color=color)
-      self._texts[name] = tp
-      self.canvas_layer.addPrimitive(tp)
-
-    # Small text for chunk grid
-    self.text_sm = lev2.ui.TextPrimitive(font=self.canvas_font_sm, color=vec4(0.7, 0.7, 0.7, 1))
-    self.canvas_layer.addPrimitive(self.text_sm)
-
+    self.detail_view = CanvasDetailView(self.canvas)
+    self.detail_view.gpuInit(ctx)
     self.canvas_ready = True
 
-    # Initialize catalog
-    self.cfgspc, self.catalog = ork_assets.default_cfg_and_catalog()
-    self._full_scan()
-    self._bg(self._check_cdn_health)
-
-    # Disable DOWNLOAD log channel — progress is shown visually
-    logger = core.Logger.instance()
-    dl_chan = logger.getChannel("DOWNLOAD")
-    if dl_chan:
-      dl_chan.enabled = False
-
-  ############################################################################
-  # Data scanning
-  ############################################################################
-
-  def _full_scan(self):
-    self.namespaces = sorted(self.catalog.list_namespaces("*"))
-    self.ns_assets = {}
-    self.asset_entries = {}
-    self.chunk_status = {}
-    self.chunk_valid = {}
-    # Build project → namespace mapping from manifest source files
-    self.project_namespaces = {}    # project_name -> sorted list of ns_ids
-    self.project_manifests = {}     # project_name -> sorted list of manifest file basenames
-    self.project_import_configs = {} # project_name -> sorted list of import config basenames
-    self.import_config_paths = {}   # basename -> full path
-    self.import_config_data = {}    # basename -> parsed dict (loaded on demand)
-    self.ns_project = {}            # ns_id -> project_name
-    self.ns_manifests = {}          # ns_id -> sorted list of manifest file basenames
-    self.ns_import_configs = {}     # ns_id -> sorted list of import config basenames
-    self.asset_manifest_file = {}   # fqid -> manifest source file basename
-    for ns in self.namespaces:
-      manifests = self.catalog.manifestsForNamespace(ns)
-      project = "unknown"
-      ns_files = []
-      ns_import_configs = []
-      for m in manifests:
-        sf = m.source_file
-        if sf:
-          if project == "unknown":
-            project = _derive_project_name(sf)
-          basename = os.path.basename(sf)
-          # Real manifests have assets with storage hashes
-          assets = m.assets
-          is_real = assets and any(hasattr(assets[k], 'storage_hash') and assets[k].storage_hash for k in assets)
-          if is_real:
-            ns_files.append(basename)
-            for asset_id in assets.keys():
-              self.asset_manifest_file[f"{ns}|{asset_id}"] = basename
-          else:
-            ns_import_configs.append(basename)
-            self.import_config_paths[basename] = sf
-      self.ns_project[ns] = project
-      self.ns_manifests[ns] = sorted(set(ns_files))
-      self.ns_import_configs[ns] = sorted(set(ns_import_configs))
-      self.project_namespaces.setdefault(project, []).append(ns)
-      self.project_manifests.setdefault(project, set()).update(ns_files)
-      self.project_import_configs.setdefault(project, set()).update(ns_import_configs)
-    for proj in self.project_namespaces:
-      self.project_namespaces[proj].sort()
-      self.project_manifests[proj] = sorted(self.project_manifests[proj])
-      self.project_import_configs[proj] = sorted(self.project_import_configs.get(proj, set()))
-    self.projects = sorted(self.project_namespaces.keys())
-
-    for ns in self.namespaces:
-      fqids = sorted(self.catalog.list_assets(f"{ns}|*"))
-      self.ns_assets[ns] = fqids
-      for fqid in fqids:
-        entry = self.catalog.findAssetEntry(fqid)
-        self.asset_entries[fqid] = entry
-        self._scan_chunks(fqid, entry)
-    self.outliner_model.notifyModelReset()
-
-  def _scan_chunks(self, fqid, entry):
-    if not entry or not hasattr(entry, 'chunk_manifest') or not entry.chunk_manifest:
-      self.chunk_status[fqid] = []
-      self.chunk_valid[fqid] = []
-      return
-    cm = entry.chunk_manifest
-    cache_dir = self.catalog.cache_dir
-    chunks_dir = os.path.join(cache_dir, 'enc', 'chunks')
-    present = []
-    valid = []
-    for i, chunk in enumerate(cm.chunks):
-      chunk_file = f"{entry.storage_hash}.chunk.{i:04d}"
-      chunk_path = os.path.join(chunks_dir, chunk_file)
-      exists = os.path.exists(chunk_path)
-      present.append(exists)
-      hash_ok = False
-      if exists:
-        try:
-          from orkengine.core import xxhash64_chunk
-          with open(chunk_path, 'rb') as f:
-            data = f.read()
-          computed = xxhash64_chunk(data)
-          hash_ok = (computed == chunk.hash)
-        except Exception:
-          pass
-      valid.append(hash_ok)
-    self.chunk_status[fqid] = present
-    self.chunk_valid[fqid] = valid
-
-  def _scan_chunks_fast(self, fqid, entry):
-    """Presence-only check — no hash verification. Used during active downloads."""
-    if not entry or not hasattr(entry, 'chunk_manifest') or not entry.chunk_manifest:
-      return
-    cm = entry.chunk_manifest
-    chunks_dir = os.path.join(self.catalog.cache_dir, 'enc', 'chunks')
-    present = []
-    for i in range(len(cm.chunks)):
-      chunk_path = os.path.join(chunks_dir, f"{entry.storage_hash}.chunk.{i:04d}")
-      present.append(os.path.exists(chunk_path))
-    self.chunk_status[fqid] = present
-
-  ############################################################################
-  # CDN health check
-  ############################################################################
-
-  def _check_cdn_health(self):
-    """Ping each unique CDN host, dedup by hostname."""
-    from urllib.parse import urlparse
-    health = {}  # hostname -> entry
-    seen_hosts = set()
-    for ns in self.namespaces:
-      remote_loc = self.cfgspc.getNamespaceRemoteLocation(ns)
-      if not remote_loc:
-        continue
-      merged = self.cfgspc.merged_config
-      if not merged:
-        continue
-      resolved = merged.resolveRemoteLocation(remote_loc)
-      if not resolved:
-        continue
-      url = str(resolved.download_url)
-      host = urlparse(url).hostname or url
-      if host in seen_hosts:
-        continue
-      seen_hosts.add(host)
-      # Resolve IP safely
-      import socket
-      try:
-        resolved_ip = socket.gethostbyname(host)
-      except Exception:
-        resolved_ip = "unresolvable"
-      try:
-        t0 = time.time()
-        r = self.http_session.head(url, timeout=5, verify=not resolved.disable_cert_check)
-        latency = (time.time() - t0) * 1000
-        entry = {
-          "reachable": r.status_code < 500,
-          "latency_ms": latency,
-          "url": url,
-          "host": host,
-          "location": remote_loc,
-          "ip": resolved_ip,
-        }
-      except Exception:
-        entry = {"reachable": False, "latency_ms": 0, "url": url, "host": host, "location": remote_loc, "ip": resolved_ip}
-      health[host] = entry
-    self.cdn_health = health
-    self.cdn_ping_time = time.time()
-    self.cdn_ping_running = False
-    self.canvas_dirty = True
-
-  ############################################################################
-  # Key parsing — keys are "project", "project/ns", or "project/ns|asset"
-  ############################################################################
-
-  def _key_type(self, key):
-    """Return 'project', 'namespace', or 'asset'."""
-    if not key:
-      return None
-    if "|" in key:
-      return "asset"
-    if "/" in key:
-      return "namespace"
-    return "project"
-
-  def _key_to_ns(self, key):
-    """Extract namespace id from a namespace or asset key."""
-    if "|" in key:
-      # "project/ns|asset" → "ns"
-      return key.split("/", 1)[1].split("|")[0] if "/" in key else key.split("|")[0]
-    if "/" in key:
-      # "project/ns" → "ns"
-      return key.split("/", 1)[1]
-    return None
-
-  def _key_to_fqid(self, key):
-    """Extract fqid (ns|asset) from an asset key."""
-    if "|" in key and "/" in key:
-      # "project/ns|asset" → "ns|asset"
-      return key.split("/", 1)[1]
-    if "|" in key:
-      return key
-    return None
-
-  def _key_to_project(self, key):
-    """Extract project name from any key."""
-    if "/" in key:
-      return key.split("/", 1)[0]
-    if "|" not in key:
-      return key
-    return None
-
-  def _get_import_config(self, basename):
-    """Load and cache import config JSON data."""
-    if basename in self.import_config_data:
-      return self.import_config_data[basename]
-    path = self.import_config_paths.get(basename)
-    if not path or not os.path.exists(path):
-      return None
-    try:
-      import json
-      with open(path, 'r') as f:
-        data = json.load(f)
-      self.import_config_data[basename] = data
-      return data
-    except Exception:
-      return None
+    self.model.init()
 
   ############################################################################
   # Selection
@@ -728,525 +146,108 @@ class CatalogTool(ComponentizedApplication):
     self.selected_key = key
     self.canvas_dirty = True
     self._selecting = False
-    kt = self._key_type(key)
+    m = self.model
+    kt = m.key_type(key)
     if kt == "asset":
-      fqid = self._key_to_fqid(key)
-      if fqid and fqid not in self.cdn_status:
-        self._bg(lambda: self._verify_cdn_asset(fqid))
+      fqid = m.key_to_fqid(key)
+      if fqid and fqid not in m.cdn_status:
+        m._bg(lambda: m.verify_cdn(fqid))
     elif kt == "namespace":
-      ns = self._key_to_ns(key)
+      ns = m.key_to_ns(key)
       if ns:
-        unchecked = [f for f in self.ns_assets.get(ns, []) if f not in self.cdn_status]
+        unchecked = [f for f in m.ns_assets.get(ns, []) if f not in m.cdn_status]
         if unchecked:
-          self._bg(lambda fqids=unchecked: self._verify_cdn_batch(fqids))
-
-  ############################################################################
-  # Background helper
-  ############################################################################
-
-  def _bg(self, fn):
-    t = threading.Thread(target=fn, daemon=True)
-    t.start()
-
-  ############################################################################
-  # Refresh
-  ############################################################################
-
-  def _do_refresh(self):
-    # Purge and reload all manifests from disk
-    core.AssetCatalog.reloadAllManifests(self.catalog)
-    self._full_scan()
-    self._check_cdn_health()
-    self.canvas_dirty = True
+          m._bg(lambda fqids=unchecked: m.verify_cdn_batch(fqids))
 
   ############################################################################
   # Canvas event handling
   ############################################################################
 
   def _on_canvas_event(self, ev):
-    handled = False
-    if ev.code == tokens.PUSH.hashed:
-      mx, my = self.canvas.rootToLocal(ev.x, ev.y)
-      for name, (bx, by, bw, bh) in self.buttons.items():
-        if bx <= mx < bx + bw and by <= my < by + bh:
-          self._on_button(name)
-          handled = True
-          break
-    elif ev.code == tokens.MOVE.hashed:
-      mx, my = self.canvas.rootToLocal(ev.x, ev.y)
-      old_hover = self.hover_button
-      self.hover_button = None
-      for name, (bx, by, bw, bh) in self.buttons.items():
-        if bx <= mx < bx + bw and by <= my < by + bh:
-          self.hover_button = name
-          break
-      if self.hover_button != old_hover:
-        self.canvas_dirty = True
-
-    if handled:
+    result = self.detail_view.handleCanvasEvent(self.canvas, ev)
+    if result == "__hover_changed__":
+      self.canvas_dirty = True
+      return lev2.ui.HandlerResult()
+    if result:
+      self._on_button(result)
       res = lev2.ui.HandlerResult()
       res.setHandler(self.canvas)
       return res
     return lev2.ui.HandlerResult()
 
   def _on_button(self, name):
+    m = self.model
     key = self.selected_key
     if not key:
       return
-    kt = self._key_type(key)
-    fqid = self._key_to_fqid(key)
-    ns = self._key_to_ns(key)
+    kt = m.key_type(key)
+    fqid = m.key_to_fqid(key)
+    ns = m.key_to_ns(key)
     if name == "FETCH":
       if kt == "asset" and fqid:
-        self._do_fetch(fqid)
+        m.fetch(fqid)
     elif name == "FETCH ALL":
       if kt == "namespace" and ns:
-        self._do_fetch_namespace(ns)
+        m.fetch_namespace(ns)
     elif name == "UPLOAD":
       if kt == "asset" and fqid:
-        self._bg(lambda: self._do_upload_asset(fqid))
+        m._bg(lambda: m.upload(fqid))
       elif kt == "namespace" and ns:
-        self._bg(lambda: self._do_upload_namespace(ns))
+        m._bg(lambda: m.upload_namespace(ns))
     elif name == "CANCEL":
       if kt == "asset" and fqid:
-        self._do_cancel_fetch(fqid)
+        m.cancel_fetch(fqid)
     elif name == "VERIFY HASH":
       if kt == "asset" and fqid:
-        self._bg(lambda: self._do_verify_hashes(fqid))
+        m._bg(lambda: m.verify_hashes(fqid))
     elif name == "CLEAR LOCAL":
       if kt == "asset" and fqid:
-        self._bg(lambda: self._do_clear_local(fqid))
+        m._bg(lambda: m.clear_local(fqid))
     elif name == "IC_BACK":
       self.selected_import_config = None
-      self.import_output_lines = []
+      m.import_output_lines = []
       self.canvas_dirty = True
     elif name == "IC_IMPORT":
       if self.selected_import_config:
-        self._do_run_import(self.selected_import_config, dry_run=False)
+        m.run_import(self.selected_import_config, dry_run=False)
     elif name == "IC_DRY_RUN":
       if self.selected_import_config:
-        self._do_run_import(self.selected_import_config, dry_run=True)
+        m.run_import(self.selected_import_config, dry_run=True)
     elif name == "IC_LIST":
       if self.selected_import_config:
-        self._do_run_import(self.selected_import_config, list_only=True)
+        m.run_import(self.selected_import_config, list_only=True)
     elif name == "IC_EDIT":
       if self.selected_import_config:
         self._open_import_config_editor(self.selected_import_config)
     elif name == "IC_NEW":
-      self._do_create_new_import_config()
+      project = m.key_to_project(key) if key else None
+      if project:
+        basename = m.create_import_config(project)
+        if basename:
+          self.selected_import_config = basename
+          self.canvas_dirty = True
     elif name.startswith("AUTOCORRECT:"):
       ic_name = name[12:]
-      self._do_autocorrect_import_config(ic_name)
+      m.autocorrect_import_config(ic_name)
     elif name.startswith("IC:"):
       ic_name = name[3:]
       self.selected_import_config = ic_name
-      self.import_output_lines = []
+      m.import_output_lines = []
       self.canvas_dirty = True
 
-  ############################################################################
-  # Actions
-  ############################################################################
-
-  def _do_cancel_fetch(self, fqid):
-    req = self.active_fetches.get(fqid)
-    if req:
-      req.cancel()
-      # Remove immediately so a new fetch can start cleanly
-      del self.active_fetches[fqid]
-      # Invalidate so a fresh fetch can be started later
-      self.catalog.invalidateRequest(fqid)
-      # Rescan chunks (keep whatever was downloaded)
-      entry = self.asset_entries.get(fqid)
-      if entry:
-        self._scan_chunks(fqid, entry)
-      self._last_fetch_snap = None
-      self.canvas_dirty = True
-
-  def _do_fetch(self, fqid):
-    fetch_req = self.catalog.fetchAsync(fqid)
-    self.active_fetches[fqid] = fetch_req
-    self._last_fetch_snap = None
-    self.canvas_dirty = True
-
-  def _do_fetch_namespace(self, ns):
-    for fqid in self.ns_assets.get(ns, []):
-      fetch_req = self.catalog.fetchAsync(fqid)
-      self.active_fetches[fqid] = fetch_req
-    self._last_fetch_snap = None
-    self.canvas_dirty = True
-
-  def _do_verify_hashes(self, fqid):
-    """Verify assembled file hash from chunks on disk."""
-    from orkengine.core import xxhash64_chunk
-    self.hash_verify_results[fqid] = "verifying..."
-    self.canvas_dirty = True
-    entry = self.asset_entries.get(fqid)
-    if not entry:
-      self.hash_verify_results[fqid] = "no entry"
-      self.canvas_dirty = True
-      return
-    cm = entry.chunk_manifest if hasattr(entry, 'chunk_manifest') else None
-    if not cm or not hasattr(cm, 'file_hash') or not cm.file_hash:
-      self.hash_verify_results[fqid] = "no file hash in manifest"
-      self.canvas_dirty = True
-      return
-    cache_dir = self.catalog.cache_dir
-    chunks_dir = os.path.join(cache_dir, 'enc', 'chunks')
-    all_data = bytearray()
-    for i in range(len(cm.chunks)):
-      cp = os.path.join(chunks_dir, f"{entry.storage_hash}.chunk.{i:04d}")
-      if not os.path.exists(cp):
-        self.hash_verify_results[fqid] = f"incomplete (chunk {i} missing)"
-        self.canvas_dirty = True
-        return
-      with open(cp, 'rb') as f:
-        all_data.extend(f.read())
-    try:
-      computed = xxhash64_chunk(bytes(all_data))
-      if computed == cm.file_hash:
-        self.hash_verify_results[fqid] = "OK"
-      else:
-        self.hash_verify_results[fqid] = f"MISMATCH (got {computed:016x})"
-    except Exception as e:
-      self.hash_verify_results[fqid] = f"error: {e}"
-    self.canvas_dirty = True
-
-  def _do_run_import(self, ic_name, dry_run=False, list_only=False):
-    """Run the import operation with live output in the detail view."""
-    from ork import catalog_import
-    path = self.import_config_paths.get(ic_name)
-    if not path:
-      return
-
-    # Stream adapter that writes to import_output_lines and marks dirty
-    tool = self
-    class LiveStream:
-      def write(self, msg):
-        for line in msg.splitlines():
-          if line:
-            tool.import_output_lines.append(line)
-        tool.canvas_dirty = True
-      def flush(self):
-        pass
-
-    self.import_output_lines = ["Running..."]
-    self.canvas_dirty = True
-    stream = LiveStream()
-
-    def run_thread():
-      try:
-        config = catalog_import.load_config(path)
-        result = catalog_import.run_import(
-          config, upload=False, dry_run=dry_run,
-          list_only=list_only, verbose=True, output=stream)
-        if not dry_run and not list_only and result.failed_count == 0:
-          stream.write("\nImport succeeded. Rescanning catalog...\n")
-          self._full_scan()
-          stream.write("Rescan complete.\n")
-        elif result.failed_count > 0:
-          stream.write(f"\nFailed: {result.failed_count} error(s)\n")
-          for err in result.errors:
-            stream.write(f"  {err}\n")
-      except Exception as e:
-        stream.write(f"\nImport error: {e}\n")
-      stream.write("\nDone.\n")
-      tool.canvas_dirty = True
-
-    self._bg(run_thread)
-
-  def _do_create_new_import_config(self):
-    """Create a new empty import config in the selected project's manifest dir."""
-    import json
-    key = self.selected_key
-    project = self._key_to_project(key) if key else None
-    if not project or project not in self.project_namespaces:
-      return
-    # Find manifest dir from any namespace in this project
-    ns_list = self.project_namespaces.get(project, [])
-    if not ns_list:
-      return
-    manifests = self.catalog.manifestsForNamespace(ns_list[0])
-    if not manifests or not manifests[0].source_file:
-      return
-    manifest_dir = os.path.dirname(manifests[0].source_file)
-    # Generate unique filename
-    base = f"{project}_import"
-    idx = 0
-    while True:
-      suffix = f"_{idx}" if idx > 0 else ""
-      filename = f"{base}{suffix}.json"
-      filepath = os.path.join(manifest_dir, filename)
-      if not os.path.exists(filepath):
-        break
-      idx += 1
-    # Write template
-    template = {
-      "namespace": ns_list[0] if len(ns_list) == 1 else project,
-      "source_dir": self._sanitize_path(os.path.dirname(manifest_dir.rstrip("/"))),
-      "local_loc": "<stage>/assetcache/" + project,
-      "manifest": self._sanitize_path(os.path.join(manifest_dir, f"{project}.json")),
-      "encryption_key": "${YOUR_ENC_KEY}",
-      "platforms": ["mac", "linux"],
-      "assets": [
-        {"id": "example_asset", "include": "data/*"}
-      ]
-    }
-    with open(filepath, 'w') as f:
-      json.dump(template, f, indent=2)
-      f.write('\n')
-    # Register and open
-    basename = os.path.basename(filepath)
-    self.import_config_paths[basename] = filepath
-    self.project_import_configs.setdefault(project, []).append(basename)
-    self.project_import_configs[project] = sorted(self.project_import_configs[project])
-    self.selected_import_config = basename
-    self.canvas_dirty = True
-
-  def _do_clear_local(self, fqid):
-    """Delete local cached chunks and dearchived files for an asset."""
-    import shutil
-    entry = self.asset_entries.get(fqid)
-    if not entry:
-      return
-    cache_dir = self.catalog.cache_dir
-
-    # Delete chunks
-    if hasattr(entry, 'chunk_manifest') and entry.chunk_manifest:
-      chunks_dir = os.path.join(cache_dir, 'enc', 'chunks')
-      for i in range(len(entry.chunk_manifest.chunks)):
-        chunk_file = f"{entry.storage_hash}.chunk.{i:04d}"
-        chunk_path = os.path.join(chunks_dir, chunk_file)
-        if os.path.exists(chunk_path):
-          os.remove(chunk_path)
-
-    # Delete encrypted file
-    if hasattr(entry, 'storage_hash') and entry.storage_hash:
-      enc_path = os.path.join(cache_dir, 'enc', f"{entry.storage_hash}.enc")
-      if os.path.exists(enc_path):
-        os.remove(enc_path)
-
-    # Delete dearchived local path
-    if hasattr(entry, 'resolved_local_path') and entry.resolved_local_path:
-      local_path = str(entry.resolved_local_path)
-      if os.path.isdir(local_path):
-        shutil.rmtree(local_path)
-      elif os.path.isfile(local_path):
-        os.remove(local_path)
-
-    # Invalidate cached fetch request so it can be re-fetched
-    self.catalog.invalidateRequest(fqid)
-    # Rescan and refresh
-    self._scan_chunks(fqid, entry)
-    self.canvas_dirty = True
-
-  def _do_upload_asset(self, fqid):
-    try:
-      self.catalog.uploadAsset(fqid)
-    except Exception as e:
-      print(f"Upload error: {e}")
-    self.canvas_dirty = True
-
-  def _do_upload_namespace(self, ns):
-    try:
-      self.catalog.uploadNamespace(ns)
-    except Exception as e:
-      print(f"Upload error: {e}")
-    self.canvas_dirty = True
-
-  def _verify_cdn_asset(self, fqid):
-    entry = self.asset_entries.get(fqid)
-    if not entry or not hasattr(entry, 'chunk_manifest') or not entry.chunk_manifest:
-      return
-    ns = fqid.split("|")[0]
-    remote_loc = self.cfgspc.getNamespaceRemoteLocation(ns)
-    if not remote_loc:
-      return
-    merged = self.cfgspc.merged_config
-    resolved = merged.resolveRemoteLocation(remote_loc)
-    if not resolved:
-      return
-    cm = entry.chunk_manifest
-    chunk_requests = []
-    for i, chunk in enumerate(cm.chunks):
-      chunk_requests.append({
-        'file': f"{entry.storage_hash}.chunk.{i:04d}",
-        'expected_hash': f"{chunk.hash:016x}",
-      })
-    download_url = str(resolved.download_url)
-    endpoint_match = re.search(r'/([^/]+)/download/?$', download_url)
-    if not endpoint_match:
-      return
-    endpoint = endpoint_match.group(1)
-    base_url = download_url.rsplit('/', 2)[0]
-    verify_url = f"{base_url}/api/{endpoint}/verify"
-    headers = {'Content-Type': 'application/json'}
-    if hasattr(resolved, 'api_key_read') and resolved.api_key_read:
-      headers['X-API-Key'] = resolved.api_key_read
-    try:
-      response = self.http_session.post(
-        verify_url, headers=headers,
-        json={'chunks': chunk_requests},
-        timeout=30, verify=not resolved.disable_cert_check)
-      if response.status_code == 200:
-        data = response.json()
-        self.cdn_status[fqid] = [r['present'] for r in data['results']]
-      else:
-        self.cdn_status[fqid] = [False] * len(cm.chunks)
-    except Exception:
-      self.cdn_status[fqid] = [False] * len(cm.chunks)
-    self.canvas_dirty = True
-
-  def _verify_cdn_batch(self, fqids):
-    """Verify multiple assets in a single POST per namespace (they share endpoint)."""
-    # Group by namespace
-    by_ns = {}
-    for fqid in fqids:
-      ns = fqid.split("|")[0]
-      by_ns.setdefault(ns, []).append(fqid)
-
-    for ns, ns_fqids in by_ns.items():
-      remote_loc = self.cfgspc.getNamespaceRemoteLocation(ns)
-      if not remote_loc:
-        continue
-      merged = self.cfgspc.merged_config
-      resolved = merged.resolveRemoteLocation(remote_loc)
-      if not resolved:
-        continue
-      download_url = str(resolved.download_url)
-      endpoint_match = re.search(r'/([^/]+)/download/?$', download_url)
-      if not endpoint_match:
-        continue
-      endpoint = endpoint_match.group(1)
-      base_url = download_url.rsplit('/', 2)[0]
-      verify_url = f"{base_url}/api/{endpoint}/verify"
-      headers = {'Content-Type': 'application/json'}
-      if hasattr(resolved, 'api_key_read') and resolved.api_key_read:
-        headers['X-API-Key'] = resolved.api_key_read
-
-      # Build one big chunk list, track boundaries per asset
-      all_chunks = []
-      boundaries = []  # (fqid, start_idx, count)
-      for fqid in ns_fqids:
-        entry = self.asset_entries.get(fqid)
-        if not entry or not hasattr(entry, 'chunk_manifest') or not entry.chunk_manifest:
-          self.cdn_status[fqid] = []
-          continue
-        cm = entry.chunk_manifest
-        start = len(all_chunks)
-        for i, chunk in enumerate(cm.chunks):
-          all_chunks.append({
-            'file': f"{entry.storage_hash}.chunk.{i:04d}",
-            'expected_hash': f"{chunk.hash:016x}",
-          })
-        boundaries.append((fqid, start, len(cm.chunks)))
-
-      if not all_chunks:
-        continue
-
-      try:
-        response = self.http_session.post(
-          verify_url, headers=headers,
-          json={'chunks': all_chunks},
-          timeout=60, verify=not resolved.disable_cert_check)
-        if response.status_code == 200:
-          results = response.json()['results']
-          for fqid, start, count in boundaries:
-            self.cdn_status[fqid] = [results[start + i]['present'] for i in range(count)]
-        else:
-          for fqid, start, count in boundaries:
-            self.cdn_status[fqid] = [False] * count
-      except Exception:
-        for fqid, start, count in boundaries:
-          self.cdn_status[fqid] = [False] * count
-
-    self.canvas_dirty = True
+  def _open_import_config_editor(self, ic_name):
+    self.ic_editor = ImportConfigEditor(self.uicontext, self.model, self.ezapp)
+    self.ic_editor.on_close = lambda: setattr(self, 'canvas_dirty', True)
+    self.ic_editor.open(ic_name)
 
   ############################################################################
   # Update loop
   ############################################################################
 
   def _onUpdate(self, updinfo):
-    # Poll active fetches
-    done = []
-    any_changed = False
-    for fqid, req in self.active_fetches.items():
-      if req.completed:
-        done.append(fqid)
-        entry = self.asset_entries.get(fqid)
-        if entry:
-          self._scan_chunks(fqid, entry)
-        any_changed = True
-    for fqid in done:
-      del self.active_fetches[fqid]
-    if any_changed:
-      self.canvas_dirty = True
-    # Redraw when fetch progress changes, rescan chunk presence
-    if self.active_fetches:
-      new_snap = {}
-      for fqid, req in self.active_fetches.items():
-        new_snap[fqid] = (req.chunks_completed, req.bytes_downloaded)
-      if new_snap != getattr(self, '_last_fetch_snap', None):
-        self._last_fetch_snap = new_snap
-        for fqid in self.active_fetches:
-          entry = self.asset_entries.get(fqid)
-          if entry:
-            self._scan_chunks_fast(fqid, entry)
-        self.canvas_dirty = True
-    elif hasattr(self, '_last_fetch_snap') and self._last_fetch_snap:
-      self._last_fetch_snap = None
-      self.canvas_dirty = True
-
-    # Periodic CDN health re-ping
-    if self.canvas_ready and not self.cdn_ping_running:
-      if time.time() - self.cdn_ping_time >= self.cdn_ping_interval:
-        self.cdn_ping_running = True
-        self._bg(self._check_cdn_health)
-
+    self.model.poll()
     if self.canvas_dirty and self.canvas_ready:
       self._redraw_canvas()
-
-  def _ns_cdn_reachable(self, ns):
-    """Check if namespace's CDN endpoint is reachable."""
-    merged = self.cfgspc.merged_config
-    if not merged:
-      return False
-    remote_loc = self.cfgspc.getNamespaceRemoteLocation(ns)
-    if not remote_loc:
-      return False
-    resolved = merged.resolveRemoteLocation(remote_loc)
-    if not resolved:
-      return False
-    from urllib.parse import urlparse
-    host = urlparse(str(resolved.download_url)).hostname or ""
-    h = self.cdn_health.get(host)
-    return bool(h and h.get("reachable"))
-
-  def _ns_can_fetch(self, ns):
-    """Check if namespace has encryption key and CDN is reachable."""
-    merged = self.cfgspc.merged_config
-    if not merged:
-      return False
-    if not merged.getEncryptionKeyForNamespace(ns):
-      return False
-    return self._ns_cdn_reachable(ns)
-
-  def _ns_can_upload(self, ns):
-    """Check if namespace has encryption key, write API key, and CDN is reachable."""
-    merged = self.cfgspc.merged_config
-    if not merged:
-      return False
-    if not merged.getEncryptionKeyForNamespace(ns):
-      return False
-    if not self._ns_cdn_reachable(ns):
-      return False
-    remote_loc = self.cfgspc.getNamespaceRemoteLocation(ns)
-    if not remote_loc:
-      return False
-    resolved = merged.resolveRemoteLocation(remote_loc)
-    if not resolved:
-      return False
-    akw = resolved.api_key_write if hasattr(resolved, 'api_key_write') else None
-    return bool(akw)
 
   ############################################################################
   # Canvas drawing
@@ -1254,55 +255,16 @@ class CatalogTool(ComponentizedApplication):
 
   def _redraw_canvas(self):
     self.canvas_dirty = False
-    self.buttons = {}
-
-    # Clear all primitives
-    self.bg_prim.clearQuads()
-    for tp in self._texts.values():
-      tp.clearItems()
-    self.text_sm.clearItems()
+    dv = self.detail_view
+    m = self.model
+    dv.beginRedraw()
 
     w = max(self.canvas.width, 400)
     h = max(self.canvas.height, 200)
 
-    # CDN health header bar — equal-width columns
     y = 4
-    x = 8
-    self._texts["cdn_hdr"].addItem("CDN:", vec2(x, y))
-    cdn_x0 = 40
-    n_cdn = len(self.cdn_health)
-    if n_cdn > 0:
-      col_w = (w - cdn_x0 - 8) // n_cdn
-      for idx, (host, info) in enumerate(self.cdn_health.items()):
-        cx = cdn_x0 + idx * col_w
-        loc_name = info.get("location", host)
-        label = f"{loc_name} ({host})"
-        if info.get("reachable"):
-          txt = f"{label} {info['latency_ms']:.0f}ms"
-          self._texts["status_ok"].addItem(txt, vec2(cx, y))
-        else:
-          txt = f"{label} offline"
-          self._texts["status_err"].addItem(txt, vec2(cx, y))
-        # Second line: resolved IP
-        ip = info.get("ip", "")
-        if ip == "unresolvable":
-          self._texts["status_err"].addItem(f"  ip: {ip}", vec2(cx, y + 14))
-        elif ip:
-          self._texts["label"].addItem(f"  ip: {ip}", vec2(cx, y + 14))
-
-    y += 30
-
-    # DownloadManager status
-    dm = self.catalog.download_manager
-    if dm:
-      active = dm.active_download_count()
-      pending = dm.pending_count
-      completed = dm.completed_count
-      failed = dm.failed_count
-      total_mb = dm.total_bytes_downloaded / 1048576.0
-      dm_txt = f"DL: active={active}  pending={pending}  completed={completed}  failed={failed}  total={total_mb:.1f}MB"
-      self._texts["label"].addItem(dm_txt, vec2(8, y))
-    y += 16
+    y = dv.drawCdnHealthHeader(m, y, w)
+    y = dv.drawDownloadManagerStatus(m, y)
 
     # Import config detail mode takes over the view
     if self.selected_import_config:
@@ -1312,828 +274,452 @@ class CatalogTool(ComponentizedApplication):
 
     key = self.selected_key
     if not key:
-      self._texts["label"].addItem("Select a project, namespace, or asset", vec2(8, y))
+      dv._texts["label"].addItem("Select a project, namespace, or asset", vec2(8, y))
       self.canvas.markDirty()
       return
 
-    kt = self._key_type(key)
+    kt = m.key_type(key)
     if kt == "asset":
-      fqid = self._key_to_fqid(key)
+      fqid = m.key_to_fqid(key)
       self._draw_asset_view(fqid, y, w, h)
     elif kt == "namespace":
-      ns = self._key_to_ns(key)
+      ns = m.key_to_ns(key)
       self._draw_namespace_view(ns, y, w, h)
     elif kt == "project":
       self._draw_project_view(key, y, w, h)
 
     self.canvas.markDirty()
 
-  def _add_button_quad(self, name, x, y, bw, bh, label, ghost=False, danger=False):
-    if not ghost:
-      self.buttons[name] = (x, y, bw, bh)
-    hovered = not ghost and self.hover_button == name
-    if ghost:
-      color = vec4(0.12, 0.12, 0.14, 1)
-    elif danger and hovered:
-      color = vec4(0.55, 0.15, 0.15, 1)
-    elif danger:
-      color = vec4(0.40, 0.10, 0.10, 1)
-    elif hovered:
-      color = vec4(0.30, 0.35, 0.50, 1)
-    else:
-      color = vec4(0.20, 0.25, 0.35, 1)
-    qd = lev2.ui.QuadData()
-    qd.setPosition(x, max(self.canvas.height, 200) - y - bh)
-    qd.setSize(bw, bh)
-    qd.setColor(color)
-    self.bg_prim.addQuad(qd)
-    txt_role = "label" if ghost else "button"
-    self._texts[txt_role].addItem(label, vec2(x + 6, y + 3))
-
-  ############################################################################
-  # Namespace view
-  ############################################################################
-
-  def _draw_prop_row(self, label, value, y, val_x=140):
-    """Draw a label: value row."""
-    self._texts["label"].addItem(f"{label}:", vec2(8, y))
-    self._texts["value"].addItem(value, vec2(val_x, y))
-
-  def _draw_section_header(self, title, y, w, h):
-    """Draw a section header with background bar."""
-    qd = lev2.ui.QuadData()
-    qd.setPosition(4, h - y - 16)
-    qd.setSize(w - 8, 16)
-    qd.setColor(vec4(0.15, 0.15, 0.20, 1))
-    self.bg_prim.addQuad(qd)
-    self._texts["cdn_hdr"].addItem(title, vec2(8, y))
-
   ############################################################################
   # Project view
   ############################################################################
 
   def _draw_project_view(self, project, y_start, w, h):
+    dv = self.detail_view
+    m = self.model
     y = y_start
-    ns_list = self.project_namespaces.get(project, [])
+    ns_list = m.project_namespaces.get(project, [])
 
-    self._draw_section_header("Project", y, w, h)
+    dv.drawSectionHeader("Project", y, w, h)
     y += 18
-    self._draw_prop_row("Name", project, y)
+    dv.drawPropRow("Name", project, y)
     y += 16
-    self._draw_prop_row("Namespaces", str(len(ns_list)), y)
+    dv.drawPropRow("Namespaces", str(len(ns_list)), y)
     y += 16
 
-    # Count totals
     total_assets = 0
     total_chunks = 0
     present_chunks = 0
     total_sz = 0
     local_sz = 0
     for ns in ns_list:
-      for fqid in self.ns_assets.get(ns, []):
+      for fqid in m.ns_assets.get(ns, []):
         total_assets += 1
-        cs = self.chunk_status.get(fqid, [])
+        cs = m.chunk_status.get(fqid, [])
         total_chunks += len(cs)
         present_chunks += sum(1 for x in cs if x)
-        entry = self.asset_entries.get(fqid)
+        entry = m.asset_entries.get(fqid)
         if entry:
           total_sz += entry.archive_size
           if cs and all(cs):
             local_sz += entry.archive_size
 
-    self._draw_prop_row("Total Assets", str(total_assets), y)
+    dv.drawPropRow("Total Assets", str(total_assets), y)
     y += 16
-    self._draw_prop_row("Chunks Local", f"{present_chunks} / {total_chunks}", y)
+    dv.drawPropRow("Chunks Local", f"{present_chunks} / {total_chunks}", y)
     y += 16
-    self._draw_prop_row("Size Local", f"{format_size(local_sz)} / {format_size(total_sz)}", y)
+    dv.drawPropRow("Size Local", f"{format_size(local_sz)} / {format_size(total_sz)}", y)
     y += 16
 
-    # Manifest source directory
     if ns_list:
-      manifests = self.catalog.manifestsForNamespace(ns_list[0])
+      manifests = m.catalog.manifestsForNamespace(ns_list[0])
       if manifests and manifests[0].source_file:
-        src = manifests[0].source_file
-        manifest_dir = os.path.dirname(src)
-        self._draw_prop_row("Manifest Dir", manifest_dir, y)
+        manifest_dir = os.path.dirname(manifests[0].source_file)
+        dv.drawPropRow("Manifest Dir", manifest_dir, y)
         y += 16
     y += 4
 
     # Manifest files
-    mfiles = self.project_manifests.get(project, [])
+    mfiles = m.project_manifests.get(project, [])
     if mfiles:
-      self._draw_section_header("Manifests", y, w, h)
+      dv.drawSectionHeader("Manifests", y, w, h)
       y += 18
       for mf in mfiles:
         if y > h - 40:
-          self._texts["label"].addItem(f"... {len(mfiles)} total", vec2(8, y))
+          dv._texts["label"].addItem(f"... {len(mfiles)} total", vec2(8, y))
           y += 16
           break
-        self._texts["label"].addItem(mf, vec2(8, y))
+        dv._texts["label"].addItem(mf, vec2(8, y))
         y += 16
+
     # Import configs
-    icfiles = self.project_import_configs.get(project, [])
+    icfiles = m.project_import_configs.get(project, [])
     y += 4
-    self._draw_section_header("Import Configs", y, w, h)
-    self._add_button_quad("IC_NEW", w - 56, y, 48, 16, "NEW")
+    dv.drawSectionHeader("Import Configs", y, w, h)
+    dv.addButton("IC_NEW", w - 56, y, 48, 16, "NEW")
     y += 18
     for ic in icfiles:
       if y > h - 40:
-        self._texts["label"].addItem(f"... {len(icfiles)} total", vec2(8, y))
+        dv._texts["label"].addItem(f"... {len(icfiles)} total", vec2(8, y))
         y += 16
         break
       btn_name = f"IC:{ic}"
-      self._add_button_quad(btn_name, 8, y, 20, 16, ">")
-      self._texts["label"].addItem(ic, vec2(32, y))
+      dv.addButton(btn_name, 8, y, 20, 16, ">")
+      dv._texts["label"].addItem(ic, vec2(32, y))
       y += 18
     if not icfiles:
-      self._texts["label"].addItem("(none)", vec2(8, y))
+      dv._texts["label"].addItem("(none)", vec2(8, y))
       y += 16
     y += 4
 
     # Namespace summary grid
-    self._draw_section_header("Namespaces", y, w, h)
+    dv.drawSectionHeader("Namespaces", y, w, h)
     y += 18
     for ns in ns_list:
       if y > h - 20:
-        self._texts["label"].addItem(f"... {len(ns_list)} total", vec2(8, y))
+        dv._texts["label"].addItem(f"... {len(ns_list)} total", vec2(8, y))
         break
-      assets = self.ns_assets.get(ns, [])
+      assets = m.ns_assets.get(ns, [])
       n_total = 0
       n_present = 0
       for fqid in assets:
-        cs = self.chunk_status.get(fqid, [])
+        cs = m.chunk_status.get(fqid, [])
         n_total += len(cs)
         n_present += sum(1 for x in cs if x)
       label = f"{ns}  ({len(assets)} assets, {n_present}/{n_total} chunks)"
       if n_total > 0 and n_present == n_total:
-        self._texts["status_ok"].addItem(label, vec2(8, y))
+        dv._texts["status_ok"].addItem(label, vec2(8, y))
       elif n_present > 0:
-        self._texts["status_warn"].addItem(label, vec2(8, y))
+        dv._texts["status_warn"].addItem(label, vec2(8, y))
       else:
-        self._texts["label"].addItem(label, vec2(8, y))
+        dv._texts["label"].addItem(label, vec2(8, y))
       y += 16
 
   ############################################################################
   # Namespace view
   ############################################################################
 
-  def _import_config_needs_autocorrect(self, ic_name):
-    """Check if import config has absolute paths (should use ${ENV_VAR} form)."""
-    data = self._get_import_config(ic_name)
-    if not data:
-      return False
-    for key in ["source_dir", "manifest"]:
-      val = data.get(key, "")
-      if val and os.path.isabs(val):
-        return True
-    return False
+  def _draw_namespace_view(self, ns, y_start, w, h):
+    dv = self.detail_view
+    m = self.model
+    y = y_start
 
-  def _sanitize_path(self, abspath):
-    """Replace longest-matching env var prefix with ${VAR}."""
-    abspath = os.path.abspath(abspath)
-    best_var = None
-    best_len = 0
-    excluded = {'PWD', 'OLDPWD', 'HOME', 'PATH', 'SHELL', 'USER', 'LOGNAME',
-                'TERM', 'LANG', 'DISPLAY', 'EDITOR', 'TMPDIR', '_',
-                'PYTHONPATH', 'PYTHONHOME', 'SHLVL', 'COLORTERM'}
-    for var, val in os.environ.items():
-      if var in excluded or not val or not os.path.isabs(val):
-        continue
-      val = val.rstrip("/")
-      if len(val) <= best_len:
-        continue
-      if abspath == val or abspath.startswith(val + "/"):
-        best_var = var
-        best_len = len(val)
-    if best_var:
-      remainder = abspath[best_len:]
-      return f"${{{best_var}}}{remainder}"
-    return abspath
+    d = build_namespace_varmap(m, ns)
+    dv.drawSectionHeader("Namespace", y, w, h)
+    y += 18
+    for key in ["Name", "Asset Count"]:
+      if key in d:
+        dv.drawPropRow(key, d[key], y)
+        y += 16
+    y += 4
+    dv.drawSectionHeader("Config", y, w, h)
+    y += 18
+    for key in ["Encryption Key", "Remote Location", "Download URL", "Upload URL",
+                 "TLS Verify", "API Key (read)", "API Key (write)"]:
+      if key in d:
+        dv.drawPropRow(key, d[key], y)
+        y += 16
+    y += 4
+    dv.drawSectionHeader("Status", y, w, h)
+    y += 18
+    for key in ["Chunks Local", "Size Local"]:
+      if key in d:
+        dv.drawPropRow(key, d[key], y)
+        y += 16
+    if "CDN Endpoint" in d:
+      y += 4
+      dv.drawSectionHeader("CDN", y, w, h)
+      y += 18
+      for key in ["CDN Endpoint", "CDN Reachable", "CDN Latency"]:
+        if key in d:
+          dv.drawPropRow(key, d[key], y)
+          y += 16
 
-  def _resolve_bad_path(self, bad_path, manifest_dir):
-    """Try to resolve a bad absolute path (from another machine) to a local path,
-       then sanitize with env var prefix."""
-    if not bad_path or not os.path.isabs(bad_path):
-      return bad_path
-    if os.path.exists(bad_path):
-      return self._sanitize_path(bad_path)
-    # Derive project root from manifest_dir
-    project_root = manifest_dir
-    for _ in range(3):
-      parent = os.path.dirname(project_root)
-      if os.path.basename(project_root) in ("obt.project", "asset_manifests"):
-        project_root = parent
-      else:
-        break
-    # Try progressively shorter suffixes of bad_path against project_root
-    parts = bad_path.replace("\\", "/").rstrip("/").split("/")
-    for i in range(len(parts) - 1, 0, -1):
-      suffix = os.path.join(*parts[i:])
-      candidate = os.path.join(project_root, suffix)
-      if os.path.exists(candidate):
-        return self._sanitize_path(candidate)
-    # Fallback: sanitize the project root itself
-    return self._sanitize_path(project_root)
+    # Manifest files
+    ns_mfiles = m.ns_manifests.get(ns, [])
+    if ns_mfiles:
+      y += 4
+      dv.drawSectionHeader("Manifests", y, w, h)
+      y += 18
+      for mf in ns_mfiles:
+        dv.drawPropRow("File", mf, y)
+        y += 16
 
-  def _do_autocorrect_import_config(self, ic_name):
-    """Rewrite absolute paths in import config using env var substitution."""
-    import json
-    path = self.import_config_paths.get(ic_name)
-    if not path:
+    # Import configs
+    ns_ics = m.ns_import_configs.get(ns, [])
+    if ns_ics:
+      y += 4
+      dv.drawSectionHeader("Import Configs", y, w, h)
+      y += 18
+      for ic in ns_ics:
+        btn_name = f"IC:{ic}"
+        dv.addButton(btn_name, 8, y, 20, 16, ">")
+        dv._texts["label"].addItem(ic, vec2(32, y))
+        y += 18
+    y += 8
+
+    # Compute status for ghosting
+    can_fetch = m.ns_can_fetch(ns)
+    can_upload = m.ns_can_upload(ns)
+    all_local = True
+    all_cdn = True
+    for fqid in m.ns_assets.get(ns, []):
+      cs = m.chunk_status.get(fqid, [])
+      if not cs or not all(cs):
+        all_local = False
+      cdn = m.cdn_status.get(fqid, [])
+      if not cdn or not all(cdn):
+        all_cdn = False
+
+    bx = 8
+    dv.addButton("FETCH ALL", bx, y, 80, 22, "FETCH ALL", ghost=all_local or not can_fetch)
+    bx += 88
+    dv.addButton("UPLOAD", bx, y, 64, 22, "UPLOAD", ghost=all_cdn or not can_upload)
+    y += 30
+
+    # Asset grid
+    assets = m.ns_assets.get(ns, [])
+    if not assets:
+      dv._texts["label"].addItem("(no assets)", vec2(8, y))
       return
-    manifest_dir = os.path.dirname(path)
-    with open(path, 'r') as f:
-      data = json.load(f)
-    changed = False
-    for key in ["source_dir", "manifest"]:
-      val = data.get(key, "")
-      if not val or not os.path.isabs(val):
-        continue
-      if os.path.exists(val):
-        # Path exists but is absolute — sanitize with env var
-        new_val = self._sanitize_path(val)
-        if new_val != val:
-          data[key] = new_val
-          changed = True
+
+    dv.drawSectionHeader("Assets", y, w, h)
+    y += 18
+
+    cell_w = 200
+    cell_h = 16
+    max_name = 14
+    cols = max(1, (w - 16) // cell_w)
+    rows_avail = max(1, (h - y - 40) // cell_h)
+    total_slots = cols * rows_avail
+    show_all = len(assets) <= total_slots
+    assets_to_show = assets if show_all else assets[:total_slots - 1]
+
+    for idx, fqid in enumerate(assets_to_show):
+      col = idx % cols
+      row = idx // cols
+      cx = 8 + col * cell_w
+      cy = y + row * cell_h
+
+      name = fqid.split("|", 1)[1] if "|" in fqid else fqid
+      if len(name) > max_name:
+        name = name[:max_name - 2] + ".."
+
+      cs = m.chunk_status.get(fqid, [])
+      ntotal = len(cs)
+      npresent = sum(1 for x in cs if x) if cs else 0
+
+      if ntotal > 0:
+        label = f"{name}  {npresent}/{ntotal}"
+        if fqid in m.active_fetches:
+          dv._texts["status_warn"].addItem(label, vec2(cx, cy))
+        elif npresent == ntotal:
+          dv._texts["status_ok"].addItem(label, vec2(cx, cy))
+        elif npresent == 0:
+          dv._texts["status_err"].addItem(label, vec2(cx, cy))
+        else:
+          pct = int(npresent / ntotal * 100)
+          label = f"{name}  {npresent}/{ntotal} ({pct}%)"
+          dv._texts["status_warn"].addItem(label, vec2(cx, cy))
       else:
-        # Path doesn't exist — resolve then sanitize
-        new_val = self._resolve_bad_path(val, manifest_dir)
-        if new_val != val:
-          data[key] = new_val
-          changed = True
-    if changed:
-      with open(path, 'w') as f:
-        json.dump(data, f, indent=2)
-      self.import_config_data.pop(ic_name, None)
-      self.canvas_dirty = True
+        dv._texts["label"].addItem(f"{name}  --", vec2(cx, cy))
+
+    if not show_all:
+      remaining = len(assets) - len(assets_to_show)
+      col = len(assets_to_show) % cols
+      row = len(assets_to_show) // cols
+      cx = 8 + col * cell_w
+      cy = y + row * cell_h
+      dv._texts["status_warn"].addItem(f"+{remaining} more", vec2(cx, cy))
+
+    grid_rows = (len(assets_to_show) + cols - 1) // cols
+    if not show_all:
+      grid_rows = rows_avail
+    y += grid_rows * cell_h + 8
+
+    # Summary
+    total_chunks, present_chunks = 0, 0
+    total_sz, local_sz = 0, 0
+    for fqid in assets:
+      cs = m.chunk_status.get(fqid, [])
+      total_chunks += len(cs)
+      present_chunks += sum(1 for x in cs if x)
+      entry = m.asset_entries.get(fqid)
+      if entry:
+        total_sz += entry.archive_size
+        if cs and all(cs):
+          local_sz += entry.archive_size
+    summary = f"Local: {present_chunks}/{total_chunks} chunks  |  {format_size(local_sz)} / {format_size(total_sz)}"
+    dv._texts["value"].addItem(summary, vec2(8, y))
 
   ############################################################################
-  # Import Config Editor Overlay
+  # Asset view
   ############################################################################
 
-  def _open_import_config_editor(self, ic_name):
-    """Open the import config editor overlay."""
-    import json, copy
-    path = self.import_config_paths.get(ic_name)
-    if not path:
-      return
-    # Load fresh from disk
-    try:
-      with open(path, 'r') as f:
-        data = json.load(f)
-    except Exception:
+  def _draw_asset_view(self, fqid, y_start, w, h):
+    dv = self.detail_view
+    m = self.model
+    y = y_start
+    entry = m.asset_entries.get(fqid)
+    if not entry:
+      dv._texts["label"].addItem("No entry", vec2(8, y))
       return
 
-    self._editor_ic_name = ic_name
-    self._editor_ic_path = path
-    self._editor_data = data
-    self._editor_dirty = False
-    self._editor_selected_key = None
+    d = build_asset_varmap(m, fqid)
+    dv.drawSectionHeader("Asset", y, w, h)
+    y += 18
+    for key in ["ID", "Manifest", "Type", "Platforms", "Priority"]:
+      if key in d:
+        dv.drawPropRow(key, d[key], y)
+        y += 16
+    y += 4
+    dv.drawSectionHeader("Sizes", y, w, h)
+    y += 18
+    for key in ["Archive Size", "Compressed Size", "Encrypted Size", "Compression"]:
+      if key in d:
+        dv.drawPropRow(key, d[key], y)
+        y += 16
+    y += 4
+    dv.drawSectionHeader("Hashes", y, w, h)
+    y += 18
+    for key in ["Content Hash", "Storage Hash", "Hash Algorithm",
+                 "File Hash (expected)", "Encrypted File"]:
+      if key in d:
+        dv.drawPropRow(key, d[key], y)
+        y += 16
 
-    lg = self.ezapp.topLayoutGroup
-    top_w = lg.width
-    top_h = lg.height
-    margin = int(min(top_w, top_h) * 0.05)
-
-    # Build widget tree: BorderFrame > VPack > Toolbar + HPack > Outliner + PropertySheet
-    self._editor_frame = self.uicontext.createOverlayWidget(
-      lev2.ui.BorderFrame, ["ic_editor_frame"])
-    self._editor_frame.border_width = 12
-    self._editor_frame.border_edge_width = 3
-    self._editor_frame.border_color = vec4(0, 0, 0, 1)
-    self._editor_frame.border_outer_color = vec4(0, 0, 0, 1)
-    self._editor_frame.border_inner_color = vec4(1, 1, 0, 1)
-
-    self._editor_vpack = lev2.ui.VerticalPack.wfactory(["ic_editor_vpack"])
-    self._editor_frame.child = self._editor_vpack
-    self._editor_vpack.margin = 4
-    self._editor_vpack.item_height = 36
-
-    # Toolbar
-    self._editor_toolbar = self._editor_vpack.makeChild(
-      uiclass=lev2.ui.Toolbar, args=["ic_editor_toolbar"])
-    self._editor_toolbar.bgcolor = vec4(0.15, 0.15, 0.18, 1)
-    self._editor_toolbar.button_hover_color = vec4(0.28, 0.28, 0.35, 1)
-    self._editor_toolbar.button_pressed_color = vec4(0.25, 0.45, 0.65, 1)
-    self._editor_toolbar.separator_color = vec4(0.30, 0.30, 0.35, 1)
-    self._editor_toolbar.icon_size = 28
-    self._editor_toolbar.button_padding = 8
-    self._editor_toolbar.item_spacing = 4
-    self._editor_toolbar.edge_padding = 8
-
-    btn_close = self._editor_toolbar.addTextButton("ed_close", "CLOSE")
-    btn_close.custom_width = 56
-    btn_close.onPressed(lambda: self._editor_close())
-
-    btn_save = self._editor_toolbar.addTextButton("ed_save", "SAVE")
-    btn_save.custom_width = 48
-    btn_save.onPressed(lambda: self._editor_save())
-
-    btn_revert = self._editor_toolbar.addTextButton("ed_revert", "REVERT")
-    btn_revert.custom_width = 64
-    btn_revert.onPressed(lambda: self._editor_revert())
-
-    btn_autocorrect = self._editor_toolbar.addTextButton("ed_autocorrect", "AUTOCORRECT")
-    btn_autocorrect.custom_width = 96
-    btn_autocorrect.onPressed(lambda: self._editor_autocorrect())
-
-    btn_test = self._editor_toolbar.addTextButton("ed_testmatch", "TEST MATCH")
-    btn_test.custom_width = 88
-    btn_test.onPressed(lambda: self._editor_test_match())
-
-
-    # HPack for outliner + propsheet
-    self._editor_hpack = self._editor_vpack.makeChild(
-      uiclass=lev2.ui.HorizontalPack, args=["ic_editor_hpack"])
-    self._editor_hpack.margin = 2
-    self._editor_hpack.item_width = int((top_w - 2 * margin) * 0.30)
-    self._editor_vpack.fill_widget = self._editor_hpack
-
-    # Outliner (left side of HPack)
-    self._editor_outliner = self._editor_hpack.makeChild(
-      uiclass=lev2.ui.Outliner, args=["ic_editor_outliner"])
-    self._editor_outliner.bgcolor = vec4(0.10, 0.10, 0.12, 1)
-    self._editor_outliner.item_height = 22
-
-    self._editor_outliner_model = ImportConfigEditorModel(self)
-    self._editor_outliner.model = self._editor_outliner_model
-
-    self._editor_outliner.onSelect(self._editor_on_select)
-    self._editor_outliner.onRename(self._editor_on_rename)
-    self._editor_outliner.onDelete(self._editor_on_delete)
-    self._editor_outliner.onAdd(self._editor_on_add)
-
-    # PropertySheet (right side of HPack, fill)
-    self._editor_propsheet = self._editor_hpack.makeChild(
-      uiclass=lev2.ui.PropertySheet, args=["ic_editor_propsheet"])
-    self._editor_propsheet.bgcolor = vec4(0.12, 0.12, 0.14, 1)
-    self._editor_propsheet.label_color = vec4(0.9, 0.9, 0.9, 1)
-    self._editor_propsheet.group_color = vec4(0.18, 0.18, 0.22, 1)
-    self._editor_propsheet.row_height = 28
-    self._editor_propsheet.label_width = 140
-    self._editor_hpack.fill_widget = self._editor_propsheet
-
-    self._editor_propsheet.onPropertyChanged(self._editor_on_prop_changed)
-
-    # Register custom inline editor for platforms checkboxes
-    self._editor_propsheet.registerEditorFactory(
-      tokens.Platforms,
-      self._create_platforms_inline_editor)
-
-    # Register custom inline editor for folder browse fields
-    self._editor_propsheet.registerEditorFactory(
-      tokens.FolderBrowse,
-      self._create_folder_browse_inline_editor)
-
-    # Push overlay
-    self.uicontext.pushOverlay(
-      self._editor_frame,
-      margin, margin,
-      top_w - 2 * margin, top_h - 2 * margin,
-      dismiss_on_click_outside=False)
-
-    # Expand and select Config node
-    self._editor_outliner.expandAll()
-
-  def _editor_build_config_varmap(self):
-    """Build VarMap data for the Config node."""
-    VarMap = core.VarMap
-    data = self._editor_data
-    vm = VarMap()
-    vm.namespace = data.get("namespace", "")
-    vm.source_dir = data.get("source_dir", "")
-    vm.local_loc = data.get("local_loc", "")
-    vm.manifest = data.get("manifest", "")
-    vm.encryption_key = data.get("encryption_key", "") or ""
-    platforms = data.get("platforms", ["mac", "linux"])
-    vm.platforms = ", ".join(platforms) if isinstance(platforms, list) else str(platforms)
-    return vm
-
-  def _editor_build_pak_varmap(self, pak_id):
-    """Build VarMap data for an AssetPak node."""
-    VarMap = core.VarMap
-    assets = self._editor_data.get("assets", [])
-    pak = None
-    for a in assets:
-      if a["id"] == pak_id:
-        pak = a
-        break
-    if not pak:
-      return VarMap()
-    vm = VarMap()
-    vm.id = pak["id"]
-    inc = pak.get("include", "")
-    if isinstance(inc, list):
-      vm.include = ", ".join(inc)
+    # Verify hash button + result
+    verify_result = m.hash_verify_results.get(fqid, "")
+    verifying = verify_result == "verifying..."
+    dv.addButton("VERIFY HASH", 8, y, 96, 18, "VERIFY HASH", ghost=verifying)
+    if verify_result:
+      role = "status_ok" if verify_result == "OK" else "status_warn" if verifying else "status_err"
+      dv._texts[role].addItem(verify_result, vec2(112, y + 1))
     else:
-      vm.include = str(inc)
-    exc = pak.get("exclude", [])
-    vm.exclude = ", ".join(exc) if isinstance(exc, list) else str(exc)
-    return vm
+      dv._texts["label"].addItem("(not checked)", vec2(112, y + 1))
+    y += 22
+    y += 4
+    dv.drawSectionHeader("Chunks", y, w, h)
+    y += 18
+    for key in ["Total Chunks", "Chunk Size", "Chunks Local", "Chunks Valid"]:
+      if key in d:
+        dv.drawPropRow(key, d[key], y)
+        y += 16
+    if any(k in d for k in ["Local Location", "Local Path", "Remote URL"]):
+      y += 4
+      dv.drawSectionHeader("Location", y, w, h)
+      y += 18
+      for key in ["Local Location", "Local Path", "Local Exists", "Remote URL"]:
+        if key in d:
+          dv.drawPropRow(key, d[key], y)
+          y += 16
+    y += 8
 
-  def _create_folder_browse_inline_editor(self, sheet, key, value, annotations):
-    """Create HPack with LineEdit + Browse button for folder fields."""
-    hpack = lev2.ui.HorizontalPack.wfactory(["fb_hpack_" + key])
-    hpack.item_width = 28
+    # Buttons
+    ns = fqid.split("|")[0]
+    can_fetch = m.ns_can_fetch(ns)
+    can_upload = m.ns_can_upload(ns)
+    cs = m.chunk_status.get(fqid, [])
+    cdn = m.cdn_status.get(fqid, [])
+    fetch_ghost = (bool(cs) and all(cs)) or not can_fetch
+    upload_ghost = (bool(cdn) and all(cdn)) or not can_upload
+    is_fetching = fqid in m.active_fetches
 
-    # LineEdit for text value
-    current = str(value) if value else ""
-    lineedit = hpack.makeChild(
-      uiclass=lev2.ui.LineEdit,
-      args=["", current, vec3(0.15, 0.15, 0.18)])
-    hpack.fill_widget = lineedit
+    bx = 8
+    dv.addButton("FETCH", bx, y, 56, 22, "FETCH", ghost=fetch_ghost or is_fetching)
+    bx += 64
+    dv.addButton("CANCEL", bx, y, 64, 22, "CANCEL", ghost=not is_fetching, danger=is_fetching)
+    bx += 72
+    dv.addButton("UPLOAD", bx, y, 64, 22, "UPLOAD", ghost=upload_ghost)
+    bx += 72
+    dv.addButton("CLEAR LOCAL", bx, y, 90, 22, "CLEAR LOCAL", danger=True)
+    y += 30
 
-    field_key = key
-    tool = self
+    # Live download progress bar
+    fetch_req = m.active_fetches.get(fqid)
+    if fetch_req:
+      dl_total = fetch_req.bytes_total
+      dl_done = fetch_req.bytes_downloaded
+      dl_chunks_done = fetch_req.chunks_completed
+      dl_chunks_total = fetch_req.chunks_total
+      dl_pct = fetch_req.progress
 
-    def on_text_committed(text):
-      tool._editor_data[field_key] = text
-      tool._editor_dirty = True
+      bar_x, bar_w, bar_h = 8, w - 16, 20
+      dv.drawProgressBar(bar_x, y, bar_w, bar_h, dl_pct,
+                         vec4(0.2, 0.4, 0.8, 1), vec4(0.15, 0.15, 0.18, 1), h)
+      pct_i = int(dl_pct * 100)
+      dl_text = f"Downloading: {format_size(dl_done)} / {format_size(dl_total)}  ({pct_i}%)  chunks {dl_chunks_done}/{dl_chunks_total}"
+      text_w = len(dl_text) * 8
+      tx = bar_x + (bar_w - text_w) // 2
+      ty = y + (bar_h - 14) // 2
+      dv._texts["value"].addItem(dl_text, vec2(tx, ty))
+      y += bar_h + 4
 
-    lineedit.onTextCommitted(on_text_committed)
-
-    # Browse button
-    btn = hpack.makeChild(
-      uiclass=lev2.ui.Toolbar, args=["fb_btn_" + key])
-    btn.bgcolor = vec4(0.20, 0.25, 0.35, 1)
-    btn.button_hover_color = vec4(0.30, 0.35, 0.50, 1)
-    btn.button_pressed_color = vec4(0.25, 0.45, 0.65, 1)
-    btn.icon_size = 14
-    btn.button_padding = 2
-    btn.item_spacing = 0
-    btn.edge_padding = 2
-    browse_btn = btn.addTextButton("browse_" + key, "...")
-    browse_btn.custom_width = 24
-    browse_btn.onPressed(lambda: tool._editor_browse_folder(field_key))
-
-    return hpack
-
-  def _create_platforms_inline_editor(self, sheet, key, value, annotations):
-    """Create HPack with mac/linux checkboxes for platforms property."""
-    hpack = lev2.ui.HorizontalPack.wfactory(["platforms_hpack"])
-    hpack.item_width = 80
-
-    chk_color = vec3(0.7, 0.7, 0.8)
-    platforms = self._editor_data.get("platforms", ["mac", "linux"])
-
-    chk_mac = hpack.makeChild(
-      uiclass=lev2.ui.Checkbox, args=["mac", chk_color])
-    chk_mac.toggled = "mac" in platforms
-    chk_mac.bg_color = vec3(0, 0, 0)
-
-    chk_linux = hpack.makeChild(
-      uiclass=lev2.ui.Checkbox, args=["linux", chk_color])
-    chk_linux.toggled = "linux" in platforms
-    chk_linux.bg_color = vec3(0, 0, 0)
-
-    def on_toggled(chk):
-      plats = []
-      if chk_mac.toggled:
-        plats.append("mac")
-      if chk_linux.toggled:
-        plats.append("linux")
-      self._editor_data["platforms"] = plats if plats else ["mac", "linux"]
-      self._editor_dirty = True
-
-    chk_mac.onToggled = on_toggled
-    chk_linux.onToggled = on_toggled
-
-    return hpack
-
-  def _editor_on_select(self, key):
-    """Outliner selection changed — populate PropertySheet."""
-    self._editor_selected_key = key
-    if key == "Config":
-      self._editor_propsheet.data = self._editor_build_config_varmap()
-      model = self._editor_propsheet.model
-      # Platforms: custom checkbox editor
-      plat_annot = core.VarMap()
-      plat_annot.type = tokens.Platforms
-      model.setAnnotations("platforms", plat_annot)
-      # source_dir and local_loc: folder browse inline editor
-      for fkey in ("source_dir", "local_loc"):
-        fb_annot = core.VarMap()
-        fb_annot.type = tokens.FolderBrowse
-        model.setAnnotations(fkey, fb_annot)
-    elif key.startswith("AssetPaks/"):
-      pak_id = key.split("/", 1)[1]
-      self._editor_propsheet.data = self._editor_build_pak_varmap(pak_id)
-    else:
-      # AssetPaks group node or root — clear
-      self._editor_propsheet.data = None
-    self._editor_propsheet.expandAll()
-
-  def _editor_on_rename(self, old_key, new_name):
-    """Outliner rename callback."""
-    self._editor_outliner_model.renameItem(old_key, new_name)
-
-  def _editor_on_delete(self, key):
-    """Outliner delete callback."""
-    self._editor_outliner_model.removeItem(key)
-    # Clear propsheet if deleted item was selected
-    if self._editor_selected_key == key:
-      self._editor_propsheet.data = None
-      self._editor_selected_key = None
-
-  def _editor_on_add(self, key):
-    """Outliner add callback — model handles via factories."""
-    pass
-
-  def _editor_on_prop_changed(self, key, value):
-    """PropertySheet value changed — write back to dict."""
-    sel = self._editor_selected_key
-    if not sel:
+    vs = m.chunk_valid.get(fqid, [])
+    cdn = m.cdn_status.get(fqid, [])
+    total = len(cs)
+    if total == 0:
+      dv._texts["label"].addItem("No chunks", vec2(8, y))
       return
-    self._editor_dirty = True
-    data = self._editor_data
 
-    if sel == "Config":
-      # Map propsheet keys back to dict keys
-      field = key.split("/")[-1] if "/" in key else key
-      if field == "platforms":
-        # Parse comma-separated to list
-        data["platforms"] = [s.strip() for s in str(value).split(",") if s.strip()]
-      elif field == "encryption_key":
-        if str(value).strip():
-          data["encryption_key"] = str(value)
-        else:
-          data.pop("encryption_key", None)
-      else:
-        data[field] = str(value)
-    elif sel.startswith("AssetPaks/"):
-      pak_id = sel.split("/", 1)[1]
-      assets = data.get("assets", [])
-      print(f"[PROPCHANGE] pak_id={pak_id} key={key} value={value!r} type={type(value)}")
-      found = False
-      for a in assets:
-        if a["id"] == pak_id:
-          field = key.split("/")[-1] if "/" in key else key
-          if field == "id":
-            new_id = str(value)
-            a["id"] = new_id
-            # Update outliner key and selection to match new id
-            old_key = sel
-            new_key = f"AssetPaks/{new_id}"
-            self._editor_selected_key = new_key
-            self._editor_outliner_model.notifyModelReset()
-            self._editor_outliner.expandAll()
-          elif field == "include":
-            val = str(value)
-            parts = [s.strip() for s in val.split(",") if s.strip()]
-            a["include"] = parts[0] if len(parts) == 1 else parts
-          elif field == "exclude":
-            val = str(value)
-            parts = [s.strip() for s in val.split(",") if s.strip()]
-            if parts:
-              a["exclude"] = parts
-            else:
-              a.pop("exclude", None)
-          found = True
-          print(f"[PROPCHANGE] UPDATED a={a}")
-          break
-      if not found:
-        print(f"[PROPCHANGE] pak_id={pak_id} NOT FOUND in assets")
+    present = sum(1 for x in cs if x)
+    chunk_sz = ""
+    if hasattr(entry, 'chunk_manifest') and entry.chunk_manifest:
+      cm = entry.chunk_manifest
+      chunk_sz = format_size(cm.chunk_size) if hasattr(cm, 'chunk_size') else ""
 
-  def _editor_close(self):
-    """Close editor overlay."""
-    if self._editor_dirty:
-      # For now, just close — TODO: prompt
-      pass
-    self.uicontext.popOverlay()
-    # Invalidate cached data so it reloads from disk next time
-    self.import_config_data.pop(self._editor_ic_name, None)
-    self.canvas_dirty = True
+    dv._texts["label"].addItem(
+      f"Chunk Status ({total} chunks, {chunk_sz} each):", vec2(8, y))
+    y += 20
 
-  def _editor_save(self):
-    """Save in-memory dict to JSON file."""
-    import json
-    data = self._editor_data
-    # Clean up: omit exclude if empty, omit priority if 0
-    save_data = {}
-    for k in ["namespace", "source_dir", "local_loc", "manifest"]:
-      if k in data:
-        save_data[k] = data[k]
-    if data.get("encryption_key"):
-      save_data["encryption_key"] = data["encryption_key"]
-    if data.get("platforms") and data["platforms"] != ["mac", "linux"]:
-      save_data["platforms"] = data["platforms"]
-    if data.get("priority", 0) != 0:
-      save_data["priority"] = data["priority"]
-    if data.get("assets"):
-      save_data["assets"] = []
-      for a in data["assets"]:
-        ad = {"id": a["id"], "include": a["include"]}
-        if a.get("exclude"):
-          ad["exclude"] = a["exclude"]
-        save_data["assets"].append(ad)
+    # Chunk grid
+    cell_w = 12
+    cells_per_row = max(1, (w - 60) // cell_w)
+    grid_x = 50
 
-    with open(self._editor_ic_path, 'w') as f:
-      json.dump(save_data, f, indent=2)
-      f.write('\n')
-    self._editor_dirty = False
-    # Invalidate cache
-    self.import_config_data.pop(self._editor_ic_name, None)
+    # LOC row
+    y = dv.drawChunkGrid(cs, vs, cdn, fqid in m.active_fetches,
+                         grid_x, y, cell_w, h, cells_per_row, "LOC")
 
-  def _editor_revert(self):
-    """Reload from disk, discard edits."""
-    import json
-    try:
-      with open(self._editor_ic_path, 'r') as f:
-        self._editor_data = json.load(f)
-    except Exception:
-      return
-    self._editor_dirty = False
-    self._editor_outliner_model.notifyModelReset()
-    self._editor_outliner.expandAll()
-    # Re-select current node to refresh propsheet
-    if self._editor_selected_key:
-      self._editor_on_select(self._editor_selected_key)
+    # CDN row
+    if cdn:
+      y = dv.drawChunkGrid(cs, vs, cdn, False,
+                           grid_x, y, cell_w, h, cells_per_row, "CDN")
 
-  def _editor_autocorrect(self):
-    """Run path sanitization on source_dir and manifest."""
-    data = self._editor_data
-    changed = False
-    manifest_dir = os.path.dirname(self._editor_ic_path)
-    for key in ["source_dir", "manifest"]:
-      val = data.get(key, "")
-      if not val or not os.path.isabs(val):
-        continue
-      if os.path.exists(val):
-        new_val = self._sanitize_path(val)
-      else:
-        new_val = self._resolve_bad_path(val, manifest_dir)
-      if new_val != val:
-        data[key] = new_val
-        changed = True
-    if changed:
-      self._editor_dirty = True
-      if self._editor_selected_key == "Config":
-        self._editor_on_select("Config")
+    y += 4
+    cdn_present = sum(1 for x in cdn if x) if cdn else 0
+    summary = f"Local: {present}/{total}"
+    if cdn:
+      summary += f"     CDN: {cdn_present}/{total}"
+    dv._texts["value"].addItem(summary, vec2(8, y))
+    y += 20
 
-  def _editor_browse_folder(self, field_key):
-    """Open a secondary window folder browser for a config field."""
-    from ork.ui.filesystem_browser import FilesystemBrowser
-    from obt import path as obt_path
+    # Overall progress bar
+    frac = present / total if total > 0 else 0
+    dv.drawProgressBar(8, y, w - 16, 16, frac,
+                       vec4(0.2, 0.6, 0.2, 1) if frac >= 1.0 else vec4(0.3, 0.5, 0.3, 1),
+                       vec4(0.15, 0.15, 0.18, 1), h)
+    pct = int(frac * 100)
+    dv._texts["value"].addItem(f"{pct}%", vec2(8 + (w - 16) // 2 - 10, y))
 
-    # Resolve initial path from current field value or default to assetcache
-    assetcache = str(obt_path.stage() / "assetcache")
-    current_val = self._editor_data.get(field_key, "")
-    if current_val:
-      from ork.catalog_import import resolve_variables
-      try:
-        resolved = resolve_variables(current_val)
-        if os.path.isdir(resolved):
-          initial_path = resolved
-        else:
-          initial_path = assetcache
-      except Exception:
-        initial_path = assetcache
-    else:
-      initial_path = assetcache
-
-    title = f"Browse: {field_key}"
-    popup = self.ezapp.createSecondaryWindow(
-      width=800, height=600, x=200, y=150,
-      title=title, decorated=True, resizable=True, floating=True)
-    uic = popup.ui_context
-    root = lev2.ui.LayoutGroup.create("popup_lg")
-    root.setRect(0, 0, popup.width, popup.height)
-    uic.top = root
-    root.margin = 4
-
-    browser_item = root.makeChild(
-      uiclass=FilesystemBrowser,
-      args=["browser", initial_path, "", vec3(0.1, 0.1, 0.1), "select"],
-      fill=True)
-    browser = browser_item.widget.uservars.filesystem_browser
-
-    # Folders only
-    browser.model.directories_only = True
-
-    def on_activate(path):
-      if os.path.isdir(path):
-        # Sanitize to ${VAR} form
-        sanitized = self._sanitize_path(path)
-        # Prefer <assetcache> over ${ASSETCACHE} for catalog_import compatibility
-        sanitized = sanitized.replace("${ASSETCACHE}", "<assetcache>")
-        self._editor_data[field_key] = sanitized
-        self._editor_dirty = True
-        # Refresh propsheet if Config is selected
-        if self._editor_selected_key == "Config":
-          self._editor_on_select("Config")
-      popup.requestClose()
-
-    browser.onActivate = on_activate
-    browser.onCancel = lambda: popup.requestClose()
-
-  def _editor_test_match(self):
-    """Open test match overlay showing file enumeration results."""
-    from ork import catalog_import
-    data = self._editor_data
-
-    # Build a temporary ImportConfig from current editor state
-    assets_list = []
-    for a in data.get("assets", []):
-      inc = a.get("include", "")
-      exc = a.get("exclude", [])
-      assets_list.append(catalog_import.AssetDefinition(
-        id=a["id"], include=inc, exclude=exc))
-
-    config = catalog_import.ImportConfig(
-      namespace=data.get("namespace", ""),
-      source_dir=data.get("source_dir", ""),
-      local_loc=data.get("local_loc", ""),
-      manifest=data.get("manifest", ""),
-      encryption_key=data.get("encryption_key"),
-      platforms=data.get("platforms", ["mac", "linux"]),
-      priority=data.get("priority", 0),
-      assets=assets_list)
-
-    importer = catalog_import.AssetImporter(config)
-    try:
-      importer.resolve_paths()
-      results = importer.list_assets()
-    except Exception as e:
-      results = []
-      self._test_match_error = str(e)
-
-    # Build outliner model for results
-    self._test_match_results = results
-    self._test_match_source_dir = str(importer._resolved_source_dir) if importer._resolved_source_dir else ""
-
-    # Build the overlay widget
-    lg = self.ezapp.topLayoutGroup
-    top_w = lg.width
-    top_h = lg.height
-    margin = int(min(top_w, top_h) * 0.08)
-
-    self._match_frame = self.uicontext.createOverlayWidget(
-      lev2.ui.BorderFrame, ["match_frame"])
-    self._match_frame.border_width = 12
-    self._match_frame.border_edge_width = 3
-    self._match_frame.border_color = vec4(0, 0, 0, 1)
-    self._match_frame.border_outer_color = vec4(0, 0, 0, 1)
-    self._match_frame.border_inner_color = vec4(1, 1, 0, 1)
-
-    self._match_vpack = lev2.ui.VerticalPack.wfactory(["match_vpack"])
-    self._match_frame.child = self._match_vpack
-    self._match_vpack.margin = 4
-    self._match_vpack.item_height = 36
-
-    # Toolbar
-    self._match_toolbar = self._match_vpack.makeChild(
-      uiclass=lev2.ui.Toolbar, args=["match_toolbar"])
-    self._match_toolbar.bgcolor = vec4(0.15, 0.15, 0.18, 1)
-    self._match_toolbar.button_hover_color = vec4(0.28, 0.28, 0.35, 1)
-    self._match_toolbar.button_pressed_color = vec4(0.25, 0.45, 0.65, 1)
-    self._match_toolbar.separator_color = vec4(0.30, 0.30, 0.35, 1)
-    self._match_toolbar.icon_size = 28
-    self._match_toolbar.button_padding = 8
-    self._match_toolbar.item_spacing = 4
-    self._match_toolbar.edge_padding = 8
-
-    btn_close = self._match_toolbar.addTextButton("match_close", "CLOSE")
-    btn_close.custom_width = 56
-    btn_close.onPressed(lambda: self.uicontext.popOverlay())
-
-    # Summary text
-    total_files = sum(len(files) for _, files in results)
-    total_paks = len(results)
-    btn_summary = self._match_toolbar.addTextButton("match_summary",
-      f"{total_paks} paks, {total_files} files matched")
-    btn_summary.custom_width = 200
-
-    # Outliner for results
-    self._match_outliner = self._match_vpack.makeChild(
-      uiclass=lev2.ui.Outliner, args=["match_outliner"])
-    self._match_outliner.bgcolor = vec4(0.10, 0.10, 0.12, 1)
-    self._match_outliner.item_height = 20
-    self._match_vpack.fill_widget = self._match_outliner
-
-    self._match_outliner_model = TestMatchOutlinerModel(self)
-    self._match_outliner.model = self._match_outliner_model
-
-    # Push overlay on top of editor
-    self.uicontext.pushOverlay(
-      self._match_frame,
-      margin, margin,
-      top_w - 2 * margin, top_h - 2 * margin,
-      dismiss_on_click_outside=True)
-    self._match_outliner.expandAll()
+  ############################################################################
+  # Import Config views
+  ############################################################################
 
   def _draw_import_config_detail(self, ic_name, y, w, h):
     """Draw expanded import config details inline. Returns updated y."""
-    data = self._get_import_config(ic_name)
+    dv = self.detail_view
+    m = self.model
+    data = m.load_import_config(ic_name)
     if not data:
-      self._texts["status_err"].addItem("  (could not load)", vec2(8, y))
+      dv._texts["status_err"].addItem("  (could not load)", vec2(8, y))
       return y + 16
     indent = 24
 
-    # Autocorrect button if paths look wrong
-    if self._import_config_needs_autocorrect(ic_name):
+    if m.import_config_needs_autocorrect(ic_name):
       btn_name = f"AUTOCORRECT:{ic_name}"
-      self._add_button_quad(btn_name, indent, y, 96, 16, "AUTOCORRECT", danger=True)
-      self._texts["status_err"].addItem("(paths need correction)", vec2(indent + 104, y + 1))
+      dv.addButton(btn_name, indent, y, 96, 16, "AUTOCORRECT", danger=True)
+      dv._texts["status_err"].addItem("(paths need correction)", vec2(indent + 104, y + 1))
       y += 20
 
     display_names = {
@@ -2147,58 +733,53 @@ class CatalogTool(ComponentizedApplication):
       val = data.get(key)
       if val:
         label = display_names.get(key, key)
-        self._texts["label"].addItem(f"{label}:", vec2(indent, y))
-        # Highlight bad paths in red
+        dv._texts["label"].addItem(f"{label}:", vec2(indent, y))
         if key in ("source_dir", "manifest") and os.path.isabs(val) and not os.path.exists(val):
-          self._texts["status_err"].addItem(str(val), vec2(indent + 120, y))
+          dv._texts["status_err"].addItem(str(val), vec2(indent + 120, y))
         else:
-          self._texts["value"].addItem(str(val), vec2(indent + 120, y))
+          dv._texts["value"].addItem(str(val), vec2(indent + 120, y))
         y += 14
     if "platforms" in data:
-      self._texts["label"].addItem("platforms:", vec2(indent, y))
-      self._texts["value"].addItem(", ".join(data["platforms"]), vec2(indent + 120, y))
+      dv._texts["label"].addItem("platforms:", vec2(indent, y))
+      dv._texts["value"].addItem(", ".join(data["platforms"]), vec2(indent + 120, y))
       y += 14
     assets = data.get("assets", [])
     if assets:
-      self._texts["label"].addItem("assets:", vec2(indent, y))
+      dv._texts["label"].addItem("assets:", vec2(indent, y))
       y += 14
       for a in assets:
         if isinstance(a, dict):
           aid = a.get("id", "?")
           inc = a.get("include", "")
-          self._texts["value"].addItem(f"{aid}  ({inc})", vec2(indent + 8, y))
+          dv._texts["value"].addItem(f"{aid}  ({inc})", vec2(indent + 8, y))
         else:
-          self._texts["value"].addItem(str(a), vec2(indent + 8, y))
+          dv._texts["value"].addItem(str(a), vec2(indent + 8, y))
         y += 14
     y += 4
     return y
 
-  ############################################################################
-  # Import Config full view
-  ############################################################################
-
   def _draw_import_config_full_view(self, ic_name, y_start, w, h):
+    dv = self.detail_view
+    m = self.model
     y = y_start
-    data = self._get_import_config(ic_name)
-    path = self.import_config_paths.get(ic_name, "")
+    data = m.load_import_config(ic_name)
+    path = m.import_config_paths.get(ic_name, "")
 
-    # Back button
-    self._add_button_quad("IC_BACK", 8, y, 56, 22, "BACK")
-    self._texts["cdn_hdr"].addItem(f"Import Config: {ic_name}", vec2(72, y + 3))
+    dv.addButton("IC_BACK", 8, y, 56, 22, "BACK")
+    dv._texts["cdn_hdr"].addItem(f"Import Config: {ic_name}", vec2(72, y + 3))
     y += 30
 
     if not data:
-      self._texts["status_err"].addItem("Could not load config", vec2(8, y))
+      dv._texts["status_err"].addItem("Could not load config", vec2(8, y))
       return
 
-    # File path
-    self._draw_section_header("Config File", y, w, h)
+    dv.drawSectionHeader("Config File", y, w, h)
     y += 18
-    self._draw_prop_row("Path", path, y)
+    dv.drawPropRow("Path", path, y)
     y += 20
 
     # Properties
-    self._draw_section_header("Properties", y, w, h)
+    dv.drawSectionHeader("Properties", y, w, h)
     y += 18
     display_map = {
       "namespace": "Namespace",
@@ -2210,35 +791,34 @@ class CatalogTool(ComponentizedApplication):
     for key, label in display_map.items():
       val = data.get(key, "")
       if val:
-        self._texts["label"].addItem(f"{label}:", vec2(8, y))
+        dv._texts["label"].addItem(f"{label}:", vec2(8, y))
         if key in ("source_dir", "manifest") and os.path.isabs(val) and not os.path.exists(val):
-          self._texts["status_err"].addItem(str(val), vec2(140, y))
+          dv._texts["status_err"].addItem(str(val), vec2(140, y))
         else:
-          self._texts["value"].addItem(str(val), vec2(140, y))
+          dv._texts["value"].addItem(str(val), vec2(140, y))
         y += 16
     if "platforms" in data:
-      self._texts["label"].addItem("Platforms:", vec2(8, y))
-      self._texts["value"].addItem(", ".join(data["platforms"]), vec2(140, y))
+      dv._texts["label"].addItem("Platforms:", vec2(8, y))
+      dv._texts["value"].addItem(", ".join(data["platforms"]), vec2(140, y))
       y += 16
     if "priority" in data:
-      self._texts["label"].addItem("Priority:", vec2(8, y))
-      self._texts["value"].addItem(str(data["priority"]), vec2(140, y))
+      dv._texts["label"].addItem("Priority:", vec2(8, y))
+      dv._texts["value"].addItem(str(data["priority"]), vec2(140, y))
       y += 16
     y += 4
 
-    # Autocorrect button if needed
-    if self._import_config_needs_autocorrect(ic_name):
-      self._add_button_quad(f"AUTOCORRECT:{ic_name}", 8, y, 110, 22, "AUTOCORRECT", danger=True)
-      self._texts["status_err"].addItem("(absolute paths need ${VAR} form)", vec2(126, y + 3))
+    if m.import_config_needs_autocorrect(ic_name):
+      dv.addButton(f"AUTOCORRECT:{ic_name}", 8, y, 110, 22, "AUTOCORRECT", danger=True)
+      dv._texts["status_err"].addItem("(absolute paths need ${VAR} form)", vec2(126, y + 3))
       y += 28
 
     # Assets section
     assets = data.get("assets", [])
-    self._draw_section_header(f"Assets ({len(assets)})", y, w, h)
+    dv.drawSectionHeader(f"Assets ({len(assets)})", y, w, h)
     y += 18
     for a in assets:
       if y > h - 60:
-        self._texts["label"].addItem(f"... {len(assets)} total", vec2(8, y))
+        dv._texts["label"].addItem(f"... {len(assets)} total", vec2(8, y))
         y += 16
         break
       if isinstance(a, dict):
@@ -2247,398 +827,37 @@ class CatalogTool(ComponentizedApplication):
         if isinstance(inc, list):
           inc = ", ".join(inc)
         exc = a.get("exclude", [])
-        self._texts["value"].addItem(aid, vec2(8, y))
-        self._texts["label"].addItem(inc, vec2(140, y))
+        dv._texts["value"].addItem(aid, vec2(8, y))
+        dv._texts["label"].addItem(inc, vec2(140, y))
         y += 16
         if exc:
-          self._texts["status_err"].addItem(f"  exclude: {', '.join(exc)}", vec2(140, y))
+          dv._texts["status_err"].addItem(f"  exclude: {', '.join(exc)}", vec2(140, y))
           y += 16
       else:
-        self._texts["value"].addItem(str(a), vec2(8, y))
+        dv._texts["value"].addItem(str(a), vec2(8, y))
         y += 16
     y += 8
 
     # Action buttons
-    self._add_button_quad("IC_EDIT", 8, y, 56, 22, "EDIT")
+    dv.addButton("IC_EDIT", 8, y, 56, 22, "EDIT")
     bx = 72
-    self._add_button_quad("IC_IMPORT", bx, y, 80, 22, "IMPORT")
+    dv.addButton("IC_IMPORT", bx, y, 80, 22, "IMPORT")
     bx += 88
-    self._add_button_quad("IC_DRY_RUN", bx, y, 80, 22, "DRY RUN")
+    dv.addButton("IC_DRY_RUN", bx, y, 80, 22, "DRY RUN")
     bx += 88
-    self._add_button_quad("IC_LIST", bx, y, 80, 22, "LIST FILES")
+    dv.addButton("IC_LIST", bx, y, 80, 22, "LIST FILES")
     y += 30
 
-    # Output from last operation
-    if self.import_output_lines:
-      self._draw_section_header("Output", y, w, h)
+    # Output
+    if m.import_output_lines:
+      dv.drawSectionHeader("Output", y, w, h)
       y += 18
-      for line in self.import_output_lines:
+      for line in m.import_output_lines:
         if y > h - 16:
-          self._texts["label"].addItem("...", vec2(8, y))
+          dv._texts["label"].addItem("...", vec2(8, y))
           break
-        self._texts["value"].addItem(line, vec2(8, y))
+        dv._texts["value"].addItem(line, vec2(8, y))
         y += 14
-
-  def _draw_namespace_view(self, ns, y_start, w, h):
-    y = y_start
-
-    # Detail properties
-    d = _build_namespace_varmap(self, ns)
-    self._draw_section_header("Namespace", y, w, h)
-    y += 18
-    for key in ["Name", "Asset Count"]:
-      if key in d:
-        self._draw_prop_row(key, d[key], y)
-        y += 16
-    y += 4
-    self._draw_section_header("Config", y, w, h)
-    y += 18
-    for key in ["Encryption Key", "Remote Location", "Download URL", "Upload URL",
-                 "TLS Verify", "API Key (read)", "API Key (write)"]:
-      if key in d:
-        self._draw_prop_row(key, d[key], y)
-        y += 16
-    y += 4
-    self._draw_section_header("Status", y, w, h)
-    y += 18
-    for key in ["Chunks Local", "Size Local"]:
-      if key in d:
-        self._draw_prop_row(key, d[key], y)
-        y += 16
-    if "CDN Endpoint" in d:
-      y += 4
-      self._draw_section_header("CDN", y, w, h)
-      y += 18
-      for key in ["CDN Endpoint", "CDN Reachable", "CDN Latency"]:
-        if key in d:
-          self._draw_prop_row(key, d[key], y)
-          y += 16
-    # Manifest files for this namespace
-    ns_mfiles = self.ns_manifests.get(ns, [])
-    if ns_mfiles:
-      y += 4
-      self._draw_section_header("Manifests", y, w, h)
-      y += 18
-      for mf in ns_mfiles:
-        self._draw_prop_row("File", mf, y)
-        y += 16
-    ns_ics = self.ns_import_configs.get(ns, [])
-    if ns_ics:
-      y += 4
-      self._draw_section_header("Import Configs", y, w, h)
-      y += 18
-      for ic in ns_ics:
-        btn_name = f"IC:{ic}"
-        self._add_button_quad(btn_name, 8, y, 20, 16, ">")
-        self._texts["label"].addItem(ic, vec2(32, y))
-        y += 18
-    y += 8
-
-    # Compute local/CDN completeness and key availability for ghosting
-    can_fetch = self._ns_can_fetch(ns)
-    can_upload = self._ns_can_upload(ns)
-    all_local = True
-    all_cdn = True
-    for fqid in self.ns_assets.get(ns, []):
-      cs = self.chunk_status.get(fqid, [])
-      if not cs or not all(cs):
-        all_local = False
-      cdn = self.cdn_status.get(fqid, [])
-      if not cdn or not all(cdn):
-        all_cdn = False
-
-    # Buttons — ghost if missing keys or already complete
-    bx = 8
-    self._add_button_quad("FETCH ALL", bx, y, 80, 22, "FETCH ALL", ghost=all_local or not can_fetch)
-    bx += 88
-    self._add_button_quad("UPLOAD", bx, y, 64, 22, "UPLOAD", ghost=all_cdn or not can_upload)
-    y += 30
-
-    # Asset grid — compact: name + chunk fraction, color = status
-    assets = self.ns_assets.get(ns, [])
-    if not assets:
-      self._texts["label"].addItem("(no assets)", vec2(8, y))
-      return
-
-    self._draw_section_header("Assets", y, w, h)
-    y += 18
-
-    # Grid layout
-    cell_w = 200
-    cell_h = 16
-    max_name = 14
-    cols = max(1, (w - 16) // cell_w)
-    rows_avail = max(1, (h - y - 40) // cell_h)
-    total_slots = cols * rows_avail
-    show_all = len(assets) <= total_slots
-    assets_to_show = assets if show_all else assets[:total_slots - 1]
-
-    # Accumulate summary
-    total_chunks, present_chunks = 0, 0
-    total_sz, local_sz = 0, 0
-    for fqid in assets:
-      cs = self.chunk_status.get(fqid, [])
-      total_chunks += len(cs)
-      present_chunks += sum(1 for x in cs if x)
-      entry = self.asset_entries.get(fqid)
-      if entry:
-        total_sz += entry.archive_size
-        if cs and all(cs):
-          local_sz += entry.archive_size
-
-    for idx, fqid in enumerate(assets_to_show):
-      col = idx % cols
-      row = idx // cols
-      cx = 8 + col * cell_w
-      cy = y + row * cell_h
-
-      name = fqid.split("|", 1)[1] if "|" in fqid else fqid
-      if len(name) > max_name:
-        name = name[:max_name - 2] + ".."
-
-      cs = self.chunk_status.get(fqid, [])
-      ntotal = len(cs)
-      npresent = sum(1 for x in cs if x) if cs else 0
-
-      # Format: "name  N/M" — color by status
-      if ntotal > 0:
-        label = f"{name}  {npresent}/{ntotal}"
-        if fqid in self.active_fetches:
-          self._texts["status_warn"].addItem(label, vec2(cx, cy))
-        elif npresent == ntotal:
-          self._texts["status_ok"].addItem(label, vec2(cx, cy))
-        elif npresent == 0:
-          self._texts["status_err"].addItem(label, vec2(cx, cy))
-        else:
-          pct = int(npresent / ntotal * 100)
-          label = f"{name}  {npresent}/{ntotal} ({pct}%)"
-          self._texts["status_warn"].addItem(label, vec2(cx, cy))
-      else:
-        self._texts["label"].addItem(f"{name}  --", vec2(cx, cy))
-
-    if not show_all:
-      remaining = len(assets) - len(assets_to_show)
-      col = len(assets_to_show) % cols
-      row = len(assets_to_show) // cols
-      cx = 8 + col * cell_w
-      cy = y + row * cell_h
-      self._texts["status_warn"].addItem(f"+{remaining} more", vec2(cx, cy))
-
-    grid_rows = (len(assets_to_show) + cols - 1) // cols
-    if not show_all:
-      grid_rows = rows_avail
-    y += grid_rows * cell_h + 8
-
-    # Summary
-    summary = f"Local: {present_chunks}/{total_chunks} chunks  |  {format_size(local_sz)} / {format_size(total_sz)}"
-    self._texts["value"].addItem(summary, vec2(8, y))
-
-  ############################################################################
-  # Asset view
-  ############################################################################
-
-  def _draw_asset_view(self, fqid, y_start, w, h):
-    y = y_start
-    entry = self.asset_entries.get(fqid)
-    if not entry:
-      self._texts["label"].addItem("No entry", vec2(8, y))
-      return
-
-    # Detail properties
-    d = _build_asset_varmap(self, fqid)
-    self._draw_section_header("Asset", y, w, h)
-    y += 18
-    for key in ["ID", "Manifest", "Type", "Platforms", "Priority"]:
-      if key in d:
-        self._draw_prop_row(key, d[key], y)
-        y += 16
-    y += 4
-    self._draw_section_header("Sizes", y, w, h)
-    y += 18
-    for key in ["Archive Size", "Compressed Size", "Encrypted Size", "Compression"]:
-      if key in d:
-        self._draw_prop_row(key, d[key], y)
-        y += 16
-    y += 4
-    self._draw_section_header("Hashes", y, w, h)
-    y += 18
-    for key in ["Content Hash", "Storage Hash", "Hash Algorithm",
-                 "File Hash (expected)", "Encrypted File"]:
-      if key in d:
-        self._draw_prop_row(key, d[key], y)
-        y += 16
-    # Verify hash button + result inline
-    verify_result = self.hash_verify_results.get(fqid, "")
-    verifying = verify_result == "verifying..."
-    self._add_button_quad("VERIFY HASH", 8, y, 96, 18, "VERIFY HASH", ghost=verifying)
-    if verify_result:
-      self._texts["status_ok" if verify_result == "OK" else "status_warn" if verifying else "status_err"].addItem(
-        verify_result, vec2(112, y + 1))
-    else:
-      self._texts["label"].addItem("(not checked)", vec2(112, y + 1))
-    y += 22
-    y += 4
-    self._draw_section_header("Chunks", y, w, h)
-    y += 18
-    for key in ["Total Chunks", "Chunk Size", "Chunks Local", "Chunks Valid"]:
-      if key in d:
-        self._draw_prop_row(key, d[key], y)
-        y += 16
-    if any(k in d for k in ["Local Location", "Local Path", "Remote URL"]):
-      y += 4
-      self._draw_section_header("Location", y, w, h)
-      y += 18
-      for key in ["Local Location", "Local Path", "Local Exists", "Remote URL"]:
-        if key in d:
-          self._draw_prop_row(key, d[key], y)
-          y += 16
-    y += 8
-
-    # Buttons — ghost based on status and key availability
-    ns = fqid.split("|")[0]
-    can_fetch = self._ns_can_fetch(ns)
-    can_upload = self._ns_can_upload(ns)
-    cs = self.chunk_status.get(fqid, [])
-    cdn = self.cdn_status.get(fqid, [])
-    fetch_ghost = (bool(cs) and all(cs)) or not can_fetch
-    upload_ghost = (bool(cdn) and all(cdn)) or not can_upload
-
-    is_fetching = fqid in self.active_fetches
-
-    bx = 8
-    self._add_button_quad("FETCH", bx, y, 56, 22, "FETCH", ghost=fetch_ghost or is_fetching)
-    bx += 64
-    self._add_button_quad("CANCEL", bx, y, 64, 22, "CANCEL", ghost=not is_fetching, danger=is_fetching)
-    bx += 72
-    self._add_button_quad("UPLOAD", bx, y, 64, 22, "UPLOAD", ghost=upload_ghost)
-    bx += 72
-    self._add_button_quad("CLEAR LOCAL", bx, y, 90, 22, "CLEAR LOCAL", danger=True)
-    y += 30
-
-    # Live download progress bar
-    fetch_req = self.active_fetches.get(fqid)
-    if fetch_req:
-      dl_total = fetch_req.bytes_total
-      dl_done = fetch_req.bytes_downloaded
-      dl_chunks_done = fetch_req.chunks_completed
-      dl_chunks_total = fetch_req.chunks_total
-      dl_pct = fetch_req.progress
-
-      # Progress bar
-      bar_x, bar_w, bar_h = 8, w - 16, 20
-      qd = lev2.ui.QuadData()
-      qd.setPosition(bar_x, h - y - bar_h - 1)
-      qd.setSize(bar_w, bar_h)
-      qd.setColor(vec4(0.15, 0.15, 0.18, 1))
-      self.bg_prim.addQuad(qd)
-      fill_w = int(bar_w * dl_pct)
-      if fill_w > 0:
-        qd2 = lev2.ui.QuadData()
-        qd2.setPosition(bar_x, h - y - bar_h - 1)
-        qd2.setSize(fill_w, bar_h)
-        qd2.setColor(vec4(0.2, 0.4, 0.8, 1))
-        self.bg_prim.addQuad(qd2)
-      pct_i = int(dl_pct * 100)
-      dl_text = f"Downloading: {format_size(dl_done)} / {format_size(dl_total)}  ({pct_i}%)  chunks {dl_chunks_done}/{dl_chunks_total}"
-      text_w = len(dl_text) * 8
-      tx = bar_x + (bar_w - text_w) // 2
-      ty = y + (bar_h - 14) // 2
-      self._texts["value"].addItem(dl_text, vec2(tx, ty))
-      y += bar_h + 4
-
-    vs = self.chunk_valid.get(fqid, [])
-    cdn = self.cdn_status.get(fqid, [])
-    total = len(cs)
-    if total == 0:
-      self._texts["label"].addItem("No chunks", vec2(8, y))
-      return
-
-    present = sum(1 for x in cs if x)
-    chunk_sz = ""
-    if hasattr(entry, 'chunk_manifest') and entry.chunk_manifest:
-      cm = entry.chunk_manifest
-      chunk_sz = format_size(cm.chunk_size) if hasattr(cm, 'chunk_size') else ""
-
-    self._texts["label"].addItem(
-      f"Chunk Status ({total} chunks, {chunk_sz} each):", vec2(8, y))
-    y += 20
-
-    # Chunk grid
-    cell_w = 12
-    cells_per_row = max(1, (w - 60) // cell_w)
-    grid_x = 50
-
-    # LOC row
-    self._texts["label"].addItem("LOC:", vec2(8, y))
-    for i in range(total):
-      row = i // cells_per_row
-      col = i % cells_per_row
-      cx = grid_x + col * cell_w
-      cy = y + row * 16
-      qd = lev2.ui.QuadData()
-      qd.setPosition(cx, h - cy - 12)
-      qd.setSize(cell_w - 2, 12)
-      if not cs[i]:
-        qd.setColor(vec4(0.5, 0.15, 0.15, 1))  # red = missing
-      elif i < len(vs) and not vs[i]:
-        qd.setColor(vec4(0.7, 0.7, 0.2, 1))     # yellow = hash mismatch
-      elif fqid in self.active_fetches:
-        qd.setColor(vec4(0.2, 0.3, 0.7, 1))     # blue = downloading
-      else:
-        qd.setColor(vec4(0.2, 0.6, 0.2, 1))     # green = present+valid
-      self.bg_prim.addQuad(qd)
-
-    loc_rows = (total + cells_per_row - 1) // cells_per_row
-    y += loc_rows * 16 + 4
-
-    # CDN row (if verified)
-    if cdn:
-      self._texts["label"].addItem("CDN:", vec2(8, y))
-      for i in range(total):
-        row = i // cells_per_row
-        col = i % cells_per_row
-        cx = grid_x + col * cell_w
-        cy = y + row * 16
-        qd = lev2.ui.QuadData()
-        qd.setPosition(cx, h - cy - 12)
-        qd.setSize(cell_w - 2, 12)
-        if i < len(cdn) and cdn[i]:
-          qd.setColor(vec4(0.2, 0.6, 0.2, 1))
-        else:
-          qd.setColor(vec4(0.5, 0.15, 0.15, 1))
-        self.bg_prim.addQuad(qd)
-      cdn_rows = (total + cells_per_row - 1) // cells_per_row
-      y += cdn_rows * 16 + 4
-
-    y += 4
-    # Summary counts
-    cdn_present = sum(1 for x in cdn if x) if cdn else 0
-    summary = f"Local: {present}/{total}"
-    if cdn:
-      summary += f"     CDN: {cdn_present}/{total}"
-    self._texts["value"].addItem(summary, vec2(8, y))
-    y += 20
-
-    # Overall progress bar
-    bar_x = 8
-    bar_w = w - 16
-    qd = lev2.ui.QuadData()
-    qd.setPosition(bar_x, h - y - 18)
-    qd.setSize(bar_w, 16)
-    qd.setColor(vec4(0.15, 0.15, 0.18, 1))
-    self.bg_prim.addQuad(qd)
-
-    frac = present / total if total > 0 else 0
-    fill_w = int(bar_w * frac)
-    if fill_w > 0:
-      qd2 = lev2.ui.QuadData()
-      qd2.setPosition(bar_x, h - y - 18)
-      qd2.setSize(fill_w, 16)
-      qd2.setColor(vec4(0.2, 0.6, 0.2, 1) if frac >= 1.0 else vec4(0.3, 0.5, 0.3, 1))
-      self.bg_prim.addQuad(qd2)
-
-    pct = int(frac * 100)
-    self._texts["value"].addItem(f"{pct}%", vec2(bar_x + bar_w // 2 - 10, y))
 
 ################################################################################
 
