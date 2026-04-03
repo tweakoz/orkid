@@ -187,6 +187,7 @@ void CpuProfilerChannel::sampleEnd(SampleProfilerSeries* s) {
 std::atomic<bool> Profiler::_enabled     = true;
 std::atomic<u16>  Profiler::_max_samples = 256;
 std::unordered_map<u64, profiler_channel_ptr_t> Profiler::_channels;
+std::unordered_map<u64, std::vector<ProfilerChannel*>> Profiler::_channels_by_name;
 std::shared_mutex Profiler::_channel_mtx;
 
 ////////////////////////////////////////////////////////////////////////////////
