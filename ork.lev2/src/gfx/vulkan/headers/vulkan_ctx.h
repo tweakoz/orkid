@@ -302,9 +302,14 @@ struct VkOffscreen : public VkFramebufferOutput {
 struct VkDisplayClientLocalData {
   VkSemaphore    server_timeline;
   VkSemaphore    client_timeline;
+
   VkImage        images[MAX_FRAMES_IN_FLIGHT];
   VkImageView    views[MAX_FRAMES_IN_FLIGHT];
   VkDeviceMemory mems[MAX_FRAMES_IN_FLIGHT];
+
+  VkImage        depth_images[MAX_FRAMES_IN_FLIGHT];
+  VkImageView    depth_views[MAX_FRAMES_IN_FLIGHT];
+  VkDeviceMemory depth_mems[MAX_FRAMES_IN_FLIGHT];
 };
 
 struct VkDisplayClient : OrkDisplayClient {

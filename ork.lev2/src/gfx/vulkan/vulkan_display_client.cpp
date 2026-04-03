@@ -32,11 +32,10 @@ VkDisplayClientOutput::VkDisplayClientOutput(vkcontext_rawptr_t vk_ctx, int widt
   // Incremement to 1 at start as a timeline cannot be signalled/waited at 0.
   _incrementFrame();
 
-
   logchan_presentout->log("created: size=%dx%d client=%p", width, height, client.get());
 }
 
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////
 
 VkDisplayClientOutput::~VkDisplayClientOutput() {
   vkDeviceWaitIdle(_gfx_ctx->_vkdevice);
@@ -115,7 +114,7 @@ void VkDisplayClientOutput::submit(vkcontext_rawptr_t _ctx) {
   _acquired = false;
 }
 
-///////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 u8 VkDisplayClient::acquireImage(VkDevice device) {
   if(0) logchan_presentout->log("acquireImage: waiting server_wait>=%lu", _server_wait_timeline_value);
