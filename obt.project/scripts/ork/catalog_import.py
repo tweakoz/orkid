@@ -328,17 +328,7 @@ class AssetImporter:
                 self._print(f"  Filters: {filters}")
                 self._print(f"  Local loc: {self._resolved_local_loc}")
 
-            # Preserve existing local_loc from manifest if present
-            effective_local_loc = self.config.local_loc
-            try:
-              catalog = core.AssetCatalog.instance
-              fqid = f"{self.config.namespace}|{asset_def.id}"
-              existing = catalog.findAssetEntry(fqid)
-              if existing and hasattr(existing, 'local_loc') and existing.local_loc:
-                effective_local_loc = existing.local_loc
-            except Exception:
-              pass
-
+            # Import config is the source of truth for local_loc
             result = assets.build_assetpak(
                 namespace=self.config.namespace,
                 output=str(self._resolved_manifest),
@@ -346,7 +336,7 @@ class AssetImporter:
                 source_dir=str(self._resolved_source_dir),
                 filters=filters,
                 priority=self.config.priority,
-                local_loc=effective_local_loc,
+                local_loc=self.config.local_loc,
                 key=self._resolved_key,
                 platforms=self.config.platforms,
                 write_manifest=True

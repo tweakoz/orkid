@@ -48,8 +48,12 @@ datablock_ptr_t AssetCatalog::_packFromLocal(assetfqid_ptr_t fqid) {
     return nullptr;
   }
 
-  logchan_catalog->log("packFromLocal: Looking for directory: %s (pak_local_path=%s, tar_root=%s)", 
-                       source_dir.c_str(), pak_local_path.c_str(), asset_info->_tar_root.c_str());
+  logchan_catalog->log("packFromLocal: source_dir=%s pak_local_path=%s tar_root=%s filters=%zu",
+                       source_dir.c_str(), pak_local_path.c_str(), asset_info->_tar_root.c_str(),
+                       asset_info->_filters.size());
+  for (size_t fi = 0; fi < asset_info->_filters.size(); fi++) {
+    logchan_catalog->log("  filter[%zu]: '%s'", fi, asset_info->_filters[fi].c_str());
+  }
   
   if (!source_dir.doesPathExist()) {
     logchan_catalog->log("packFromLocal: Source directory does not exist: %s", source_dir.c_str());
@@ -83,27 +87,44 @@ datablock_ptr_t AssetCatalog::_packFromLocal(assetfqid_ptr_t fqid) {
       
       // Check if any filter matches this path
       for (const std::string& filter : asset_info->_filters) {
-        // Simple glob matching - convert * to regex .*
-        std::string regex_pattern = filter;
-        
-        // Escape special regex characters except *
-        size_t pos = 0;
-        while ((pos = regex_pattern.find(".", pos)) != std::string::npos) {
-          regex_pattern.replace(pos, 1, "\\.");
-          pos += 2;
+        // Glob-to-regex conversion:
+        //   **/  → (.*/)?   (match any path prefix, including empty)
+        //   *    → [^/]*    (match within a single directory)
+        //   .    → \.       (literal dot)
+        std::string regex_pattern;
+        size_t i = 0;
+        size_t len = filter.length();
+        while (i < len) {
+          char c = filter[i];
+          if (c == '*' && i + 1 < len && filter[i + 1] == '*') {
+            // ** — match any number of directories
+            if (i + 2 < len && filter[i + 2] == '/') {
+              regex_pattern += "(.*/)?";
+              i += 3;  // skip **/
+            } else {
+              regex_pattern += ".*";
+              i += 2;  // skip **
+            }
+          } else if (c == '*') {
+            regex_pattern += "[^/]*";
+            i++;
+          } else if (c == '.') {
+            regex_pattern += "\\.";
+            i++;
+          } else if (c == '?') {
+            regex_pattern += "[^/]";
+            i++;
+          } else {
+            regex_pattern += c;
+            i++;
+          }
         }
-        
-        // Convert * to .*
-        pos = 0;
-        while ((pos = regex_pattern.find("*", pos)) != std::string::npos) {
-          regex_pattern.replace(pos, 1, ".*");
-          pos += 2;
-        }
-        
+
         // Match the pattern
+        logchan_catalog->log("  glob='%s' regex='%s' relpath='%s'", filter.c_str(), regex_pattern.c_str(), relative_path.c_str());
         std::regex pattern(regex_pattern);
         if (std::regex_match(relative_path, pattern)) {
-          logchan_catalog->log(" FilterPassed file: %s (relative: %s)", path.c_str(), relative_path.c_str());
+          logchan_catalog->log("  MATCH: %s", relative_path.c_str());
           return true;  // Include this file
         }
       }

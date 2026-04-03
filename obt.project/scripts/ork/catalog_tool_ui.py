@@ -729,6 +729,15 @@ class ImportConfigEditor:
     btn_browse.custom_width = 88
     btn_browse.onPressed(lambda: self.browse_local_loc())
 
+    btn_preset = self._editor_toolbar.addTextButton("ed_preset_byext", "PRESET:BYEXT")
+    btn_preset.custom_width = 100
+    btn_preset.onPressed(lambda: self.preset_by_ext())
+
+    btn_delete = self._editor_toolbar.addTextButton("ed_delete", "DELETE")
+    btn_delete.custom_width = 56
+    btn_delete.color_override = vec4(0.4, 0.1, 0.1, 1)
+    btn_delete.onPressed(lambda: self.delete_config())
+
     # HPack for outliner + propsheet (fills remaining vertical space)
     self._editor_hpack = self._editor_vpack.makeChild(
       uiclass=lev2.ui.HorizontalPack, args=["ic_editor_hpack"])
@@ -773,9 +782,6 @@ class ImportConfigEditor:
       tokens.FolderBrowse,
       self._create_folder_browse_inline_editor)
     self._editor_propsheet.registerEditorFactory(
-      tokens.EncKeySelect,
-      self._create_enc_key_inline_editor)
-    self._editor_propsheet.registerEditorFactory(
       tokens.NamespaceSelect,
       self._create_namespace_inline_editor)
 
@@ -804,8 +810,15 @@ class ImportConfigEditor:
     for k in ["namespace", "source_dir", "local_loc", "manifest"]:
       if k in data:
         save_data[k] = data[k]
-    if data.get("encryption_key"):
+    # Grab unresolved encryption_key from namespace config (config.json)
+    ns = data.get("namespace", "")
+    ns_enc_key = self.model.get_namespace_encryption_key_raw(ns) if ns else None
+    if ns_enc_key:
+      save_data["encryption_key"] = ns_enc_key
+    elif data.get("encryption_key"):
       save_data["encryption_key"] = data["encryption_key"]
+    else:
+      print(f"WARNING: No encryption key set for namespace '{ns}' — import may fail")
     if data.get("platforms") and data["platforms"] != ["mac", "linux"]:
       save_data["platforms"] = data["platforms"]
     if data.get("priority", 0) != 0:
@@ -938,7 +951,6 @@ class ImportConfigEditor:
     vm.source_dir = data.get("source_dir", "")
     vm.local_loc = data.get("local_loc", "")
     vm.manifest = data.get("manifest", "")
-    vm.encryption_key = data.get("encryption_key", "") or ""
     platforms = data.get("platforms", ["mac", "linux"])
     vm.platforms = ", ".join(platforms) if isinstance(platforms, list) else str(platforms)
     return vm
@@ -974,13 +986,10 @@ class ImportConfigEditor:
       plat_annot = core.VarMap()
       plat_annot.type = tokens.Platforms
       model.setAnnotations("platforms", plat_annot)
-      for fkey in ("source_dir", "local_loc"):
+      for fkey in ("source_dir", "local_loc", "manifest"):
         fb_annot = core.VarMap()
         fb_annot.type = tokens.FolderBrowse
         model.setAnnotations(fkey, fb_annot)
-      ek_annot = core.VarMap()
-      ek_annot.type = tokens.EncKeySelect
-      model.setAnnotations("encryption_key", ek_annot)
       ns_annot = core.VarMap()
       ns_annot.type = tokens.NamespaceSelect
       model.setAnnotations("namespace", ns_annot)
@@ -1066,6 +1075,10 @@ class ImportConfigEditor:
     editor = self
 
     def on_text_committed(text):
+      # Sanitize absolute paths on commit
+      if text and os.path.isabs(text):
+        text = sanitize_path(text)
+        text = text.replace("${ASSETCACHE}", "<assetcache>")
       editor._editor_data[field_key] = text
       editor._editor_dirty = True
 
@@ -1200,11 +1213,13 @@ class ImportConfigEditor:
       fill=True)
     browser = browser_item.widget.uservars.filesystem_browser
 
-    browser.model.directories_only = True
+    # manifest field accepts files; source_dir/local_loc accept only directories
+    if field_key != "manifest":
+      browser.model.directories_only = True
     editor = self
 
     def on_activate(path):
-      if os.path.isdir(path):
+      if os.path.isdir(path) or (field_key == "manifest" and os.path.isfile(path)):
         sanitized = sanitize_path(path)
         sanitized = sanitized.replace("${ASSETCACHE}", "<assetcache>")
         editor._editor_data[field_key] = sanitized
@@ -1250,3 +1265,53 @@ class ImportConfigEditor:
 
     browser.onActivate = lambda path: popup.requestClose()
     browser.onCancel = lambda: popup.requestClose()
+
+  def preset_by_ext(self):
+    """Scan source_dir for file extensions, create one AssetPak per extension."""
+    from ork.catalog_import import resolve_variables
+    source_dir = self._editor_data.get("source_dir", "")
+    if not source_dir:
+      return
+    try:
+      resolved = resolve_variables(source_dir)
+    except Exception:
+      return
+    if not os.path.isdir(resolved):
+      return
+    # Walk directory, collect unique extensions
+    extensions = set()
+    for root, dirs, files in os.walk(resolved):
+      for f in files:
+        ext = os.path.splitext(f)[1].lstrip(".")
+        if ext:
+          extensions.add(ext)
+    if not extensions:
+      return
+    # Replace assets list with one pak per extension (recursive glob)
+    self._editor_data["assets"] = [
+      {"id": ext, "include": f"**/*.{ext}"}
+      for ext in sorted(extensions)
+    ]
+    self._editor_dirty = True
+    self._editor_outliner_model.notifyModelReset()
+    self._editor_outliner.expandAll()
+    # Refresh propsheet if an asset pak was selected
+    if self._editor_selected_key and self._editor_selected_key.startswith("AssetPaks/"):
+      self._editor_propsheet.data = None
+      self._editor_selected_key = None
+
+  def delete_config(self):
+    """Delete the import config file from disk, close editor, rescan."""
+    path = self._editor_ic_path
+    if not path or not os.path.exists(path):
+      return
+    os.remove(path)
+    self.model.import_config_data.pop(self._editor_ic_name, None)
+    self.model.import_config_paths.pop(self._editor_ic_name, None)
+    self.uicontext.popOverlay()
+    # Rescan so the deleted config disappears from the UI
+    from orkengine import core
+    core.AssetCatalog.reloadAllManifests(self.model.catalog)
+    self.model.scan()
+    if self.on_close:
+      self.on_close()

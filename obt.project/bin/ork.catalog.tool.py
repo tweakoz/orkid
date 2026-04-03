@@ -25,7 +25,7 @@
 #                          → _on_button dispatch table
 ################################################################################
 
-import os, time
+import os, time, json
 from orkengine import core
 from orkengine import lev2
 from ork.app.application import ComponentizedApplication
@@ -298,17 +298,32 @@ class CatalogTool(ComponentizedApplication):
     elif name == "IC_EDIT":
       if self.selected_import_config:
         self._open_import_config_editor(self.selected_import_config)
-    elif name == "IC_NEW":
+    elif name == "NS_EDIT":
+      if kt == "namespace" and ns:
+        self._open_namespace_editor(ns)
+    elif name == "NS_NEW":
       project = m.key_to_project(key) if key else None
       if project:
-        def on_name(config_name, _proj=project):
-          basename = m.create_import_config(_proj, name=config_name)
+        def on_ns_name(ns_name, _proj=project):
+          m.create_namespace(_proj, ns_name)
+          self.canvas_dirty = True
+        self._text_prompt = TextPromptOverlay(self.uicontext, self.ezapp,
+                          f"New namespace for [{project}]:",
+                          default_text="",
+                          on_commit=on_ns_name)
+    elif name == "IC_NEW":
+      project = m.key_to_project(key) if key else None
+      ic_ns = m.key_to_ns(key)
+      if project:
+        def on_name(config_name, _proj=project, _ns=ic_ns):
+          basename = m.create_import_config(_proj, name=config_name, namespace=_ns)
           if basename:
             self.selected_import_config = basename
             self.canvas_dirty = True
+        default_name = f"{ic_ns}_import" if ic_ns else f"{project}_import"
         self._text_prompt = TextPromptOverlay(self.uicontext, self.ezapp,
-                          f"New import config for [{project}]:",
-                          default_text=f"{project}_import",
+                          f"New import config for [{project}] {ic_ns or ''}:",
+                          default_text=default_name,
                           on_commit=on_name)
     elif name.startswith("AUTOCORRECT:"):
       ic_name = name[12:]
@@ -324,6 +339,168 @@ class CatalogTool(ComponentizedApplication):
     self.ic_editor = ImportConfigEditor(self.uicontext, self.model, self.ezapp)
     self.ic_editor.on_close = lambda: setattr(self, 'canvas_dirty', True)
     self.ic_editor.open(ic_name)
+
+  def _open_namespace_editor(self, ns):
+    """Open overlay editor for namespace config (encryption_key + remote_location)."""
+    m = self.model
+    project = m.ns_project.get(ns)
+    if not project:
+      return
+    # Find config.json path
+    ns_list = m.project_namespaces.get(project, [])
+    if not ns_list:
+      return
+    manifests = m.catalog.manifestsForNamespace(ns_list[0])
+    if not manifests or not manifests[0].source_file:
+      return
+    manifest_dir = os.path.dirname(manifests[0].source_file)
+    config_path = os.path.join(manifest_dir, "config.json")
+    if not os.path.exists(config_path):
+      return
+
+    with open(config_path, 'r') as f:
+      config_data = json.load(f)
+    ns_config = config_data.get("namespaces", {}).get(ns, {})
+    locations = sorted(config_data.get("locations", {}).keys())
+
+    # Build overlay: BorderFrame > VPack > Toolbar + PropertySheet
+    lg = self.ezapp.topLayoutGroup
+    top_w = lg.width
+    top_h = lg.height
+    ow = min(600, top_w - 80)
+    oh = 220
+    ox = (top_w - ow) // 2
+    oy = (top_h - oh) // 2
+
+    frame = self.uicontext.createOverlayWidget(
+      lev2.ui.BorderFrame, ["ns_editor_frame"])
+    frame.border_width = 12
+    frame.border_edge_width = 3
+    frame.border_color = vec4(0, 0, 0, 1)
+    frame.border_outer_color = vec4(0, 0, 0, 1)
+    frame.border_inner_color = vec4(1, 1, 0, 1)
+
+    self.uicontext.pushOverlay(frame, ox, oy, ow, oh, dismiss_on_click_outside=False)
+
+    vpack = lev2.ui.VerticalPack.wfactory(["ns_editor_vpack"])
+    frame.child = vpack
+    vpack.margin = 4
+    vpack.item_height = 36
+
+    # Toolbar
+    toolbar = vpack.makeChild(uiclass=lev2.ui.Toolbar, args=["ns_editor_toolbar"])
+    toolbar.bgcolor = vec4(0.15, 0.15, 0.18, 1)
+    toolbar.button_color = vec4(0.20, 0.20, 0.25, 1)
+    toolbar.button_hover_color = vec4(0.28, 0.28, 0.35, 1)
+    toolbar.button_pressed_color = vec4(0.25, 0.45, 0.65, 1)
+    toolbar.button_border_color = vec4(0.35, 0.35, 0.42, 1)
+    toolbar.button_border_width = 1
+    toolbar.icon_size = 28
+    toolbar.button_padding = 4
+    toolbar.label_padding = 4
+    toolbar.item_spacing = 8
+    toolbar.edge_padding = 8
+
+    # Mutable state for dirty tracking
+    ns_editor_state = {"dirty": False, "data": dict(ns_config)}
+
+    btn_close = toolbar.addTextButton("ns_ed_close", "CLOSE")
+    btn_close.custom_width = 56
+    btn_save = toolbar.addTextButton("ns_ed_save", "SAVE")
+    btn_save.custom_width = 48
+    lbl = toolbar.addTextButton("ns_ed_label", f"Namespace: {ns}")
+    lbl.custom_width = ow - 200
+
+    uictx = self.uicontext
+    app = self
+
+    def do_close():
+      uictx.popOverlay()
+      app.canvas_dirty = True
+
+    def do_save():
+      config_data["namespaces"][ns] = ns_editor_state["data"]
+      with open(config_path, 'w') as f:
+        json.dump(config_data, f, indent=2)
+        f.write('\n')
+      ns_editor_state["dirty"] = False
+      btn_close.color_override = vec4(0, 0, 0, 0)
+      btn_save.color_override = vec4(0, 0, 0, 0)
+      # Rescan to pick up config changes
+      core.AssetCatalog.reloadAllManifests(m.catalog)
+      m.scan()
+
+    btn_close.onPressed(do_close)
+    btn_save.onPressed(do_save)
+
+    # PropertySheet
+    propsheet = vpack.makeChild(uiclass=lev2.ui.PropertySheet, args=["ns_editor_propsheet"])
+    propsheet.bgcolor = vec4(0.12, 0.12, 0.14, 1)
+    propsheet.label_color = vec4(0.9, 0.9, 0.9, 1)
+    propsheet.group_color = vec4(0.18, 0.18, 0.22, 1)
+    propsheet.row_height = 28
+    propsheet.label_width = 140
+    vpack.fill_widget = propsheet
+
+    # Build VarMap from namespace config
+    vm = core.VarMap()
+    vm.encryption_key = ns_editor_state["data"].get("encryption_key", "")
+    vm.remote_location = ns_editor_state["data"].get("remote_location", "")
+    propsheet.data = vm
+
+    # Register custom editors: EncKeySelect for encryption_key, location dropdown
+    propsheet.registerEditorFactory(tokens.EncKeySelect,
+      lambda sheet, key, value, annot: self._ns_enc_key_editor(sheet, key, value, annot, ns_editor_state, btn_close, btn_save))
+    propsheet.registerEditorFactory(tokens.LocationSelect,
+      lambda sheet, key, value, annot: self._ns_location_editor(sheet, key, value, annot, ns_editor_state, locations, btn_close, btn_save))
+
+    ps_model = propsheet.model
+    ek_annot = core.VarMap()
+    ek_annot.type = tokens.EncKeySelect
+    ps_model.setAnnotations("encryption_key", ek_annot)
+    loc_annot = core.VarMap()
+    loc_annot.type = tokens.LocationSelect
+    ps_model.setAnnotations("remote_location", loc_annot)
+    propsheet.expandAll()
+
+    self._ns_editor_ref = frame  # prevent GC
+
+  def _ns_enc_key_editor(self, sheet, key, value, annotations, state, btn_close, btn_save):
+    """ChoicelistWidget for encryption key in namespace editor."""
+    current = str(value) if value else ""
+    enc_vars = sorted(v for v in os.environ if "ENC_KEY" in v)
+    choices = [f"${{{v}}}" for v in enc_vars]
+    if current and current not in choices:
+      choices.insert(0, current)
+    widget = lev2.ui.ChoicelistWidget("ns_ek", current if current else "(none)")
+    widget.setChoices(choices)
+    widget.bg_color = vec4(0.15, 0.15, 0.2, 1)
+    def on_selected(selected):
+      state["data"]["encryption_key"] = selected
+      state["dirty"] = True
+      widget.current_value = selected
+      btn_close.color_override = vec4(0.5, 0.12, 0.12, 1)
+      btn_save.color_override = vec4(0.12, 0.4, 0.12, 1)
+    widget.onChoiceSelected = on_selected
+    return widget
+
+  def _ns_location_editor(self, sheet, key, value, annotations, state, locations, btn_close, btn_save):
+    """ChoicelistWidget for remote location in namespace editor."""
+    current = str(value) if value else ""
+    choices = list(locations)
+    if current and current not in choices:
+      choices.insert(0, current)
+    widget = lev2.ui.ChoicelistWidget("ns_loc", current if current else "(none)")
+    widget.setChoices(choices)
+    widget.bg_color = vec4(0.15, 0.15, 0.2, 1)
+    def on_selected(selected):
+      state["data"]["remote_location"] = selected
+      state["dirty"] = True
+      widget.current_value = selected
+      btn_close.color_override = vec4(0.5, 0.12, 0.12, 1)
+      btn_save.color_override = vec4(0.12, 0.4, 0.12, 1)
+    widget.onChoiceSelected = on_selected
+    return widget
 
   ############################################################################
   # Update loop — poll model for background results, redraw if dirty
@@ -454,28 +631,11 @@ class CatalogTool(ComponentizedApplication):
         dv._texts["label"].addItem(mf, vec2(8, y))
         y += 16
 
-    # Import configs
-    icfiles = m.project_import_configs.get(project, [])
-    y += 4
-    dv.drawSectionHeader("Import Configs", y, w, h)
-    dv.addButton("IC_NEW", w - 56, y, 48, 16, "NEW")
-    y += 18
-    for ic in icfiles:
-      if y > h - 40:
-        dv._texts["label"].addItem(f"... {len(icfiles)} total", vec2(8, y))
-        y += 16
-        break
-      btn_name = f"IC:{ic}"
-      dv.addButton(btn_name, 8, y, 20, 16, ">")
-      dv._texts["label"].addItem(ic, vec2(32, y))
-      y += 18
-    if not icfiles:
-      dv._texts["label"].addItem("(none)", vec2(8, y))
-      y += 16
     y += 4
 
     # Namespace summary grid — color-coded by completeness (ok/warn/plain)
     dv.drawSectionHeader("Namespaces", y, w, h)
+    dv.addButton("NS_NEW", w - 56, y, 48, 16, "NEW")
     y += 18
     for ns in ns_list:
       if y > h - 20:
@@ -509,6 +669,7 @@ class CatalogTool(ComponentizedApplication):
     # build_namespace_varmap returns a dict of display-ready property values
     d = build_namespace_varmap(m, ns)
     dv.drawSectionHeader("Namespace", y, w, h)
+    dv.addButton("NS_EDIT", w - 56, y, 48, 16, "EDIT")
     y += 18
     for key in ["Name", "Asset Count"]:
       if key in d:
@@ -550,15 +711,18 @@ class CatalogTool(ComponentizedApplication):
 
     # Import configs
     ns_ics = m.ns_import_configs.get(ns, [])
-    if ns_ics:
-      y += 4
-      dv.drawSectionHeader("Import Configs", y, w, h)
+    y += 4
+    dv.drawSectionHeader("Import Configs", y, w, h)
+    dv.addButton("IC_NEW", w - 56, y, 48, 16, "NEW")
+    y += 18
+    for ic in ns_ics:
+      btn_name = f"IC:{ic}"
+      dv.addButton(btn_name, 8, y, 20, 16, ">")
+      dv._texts["label"].addItem(ic, vec2(32, y))
       y += 18
-      for ic in ns_ics:
-        btn_name = f"IC:{ic}"
-        dv.addButton(btn_name, 8, y, 20, 16, ">")
-        dv._texts["label"].addItem(ic, vec2(32, y))
-        y += 18
+    if not ns_ics:
+      dv._texts["label"].addItem("(none)", vec2(8, y))
+      y += 16
     y += 8
 
     # Determine button ghost state: disable fetch if all local, upload if all on CDN

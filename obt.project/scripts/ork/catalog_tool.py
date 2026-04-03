@@ -411,7 +411,6 @@ class CatalogModel:
       manifests = self.catalog.manifestsForNamespace(ns)
       project = "unknown"
       ns_files = []
-      ns_import_configs = []
       for m in manifests:
         sf = m.source_file
         if sf:
@@ -420,26 +419,28 @@ class CatalogModel:
           seen_manifest_dirs.add(os.path.dirname(sf))
           basename = os.path.basename(sf)
           assets = m.assets
-          # A "real" manifest has assets with storage hashes (already imported)
+          # A "real" manifest has assets with storage hashes (already imported).
+          # Empty manifests (no assets) are valid — they're just namespaces
+          # with no imported assets yet. Import configs live in importconfigs/.
           is_real = assets and any(hasattr(assets[k], 'storage_hash') and assets[k].storage_hash for k in assets)
           if is_real:
             ns_files.append(basename)
             for asset_id in assets.keys():
               self.asset_manifest_file[f"{ns}|{asset_id}"] = basename
-          else:
-            # No storage hashes = this is an import config, not a data manifest
-            ns_import_configs.append(basename)
-            self.import_config_paths[basename] = sf
       self.ns_project[ns] = project
       self.ns_manifests[ns] = sorted(set(ns_files))
-      self.ns_import_configs[ns] = sorted(set(ns_import_configs))
       self.project_namespaces.setdefault(project, []).append(ns)
       self.project_manifests.setdefault(project, set()).update(ns_files)
-      self.project_import_configs.setdefault(project, set()).update(ns_import_configs)
 
-    # Scan importconfigs/ subdirectories for import configs not in the catalog
+    # Scan importconfigs/ subdirectories in all manifest dirs.
+    # Each import config has a "namespace" field — file it under that namespace.
     import glob
-    for mdir in seen_manifest_dirs:
+    manifest_dirs_env = os.environ.get("ORKID_ASSET_MANIFEST_DIRS", "")
+    all_manifest_dirs = set(seen_manifest_dirs)
+    for d in manifest_dirs_env.split(":"):
+      if d and os.path.isdir(d):
+        all_manifest_dirs.add(d)
+    for mdir in all_manifest_dirs:
       ic_dir = os.path.join(mdir, "importconfigs")
       if not os.path.isdir(ic_dir):
         continue
@@ -450,6 +451,15 @@ class CatalogModel:
           continue
         self.import_config_paths[basename] = jf
         self.project_import_configs.setdefault(project, set()).add(basename)
+        # Read namespace from the import config to file under the right namespace
+        try:
+          with open(jf, 'r') as _f:
+            ic_data = json.load(_f)
+          ic_ns = ic_data.get("namespace", "")
+          if ic_ns:
+            self.ns_import_configs.setdefault(ic_ns, []).append(basename)
+        except Exception:
+          pass
 
     for proj in self.project_namespaces:
       self.project_namespaces[proj].sort()
@@ -625,6 +635,27 @@ class CatalogModel:
   # Used by UI to enable/disable action buttons.
   ############################################################################
 
+  def get_namespace_encryption_key_raw(self, ns):
+    """Get the unresolved encryption_key (e.g. '${VAR}') from config.json."""
+    project = self.ns_project.get(ns)
+    if not project:
+      return None
+    ns_list = self.project_namespaces.get(project, [])
+    if not ns_list:
+      return None
+    manifests = self.catalog.manifestsForNamespace(ns_list[0])
+    if not manifests or not manifests[0].source_file:
+      return None
+    config_path = os.path.join(os.path.dirname(manifests[0].source_file), "config.json")
+    if not os.path.exists(config_path):
+      return None
+    try:
+      with open(config_path, 'r') as f:
+        config_data = json.load(f)
+      return config_data.get("namespaces", {}).get(ns, {}).get("encryption_key")
+    except Exception:
+      return None
+
   def ns_cdn_reachable(self, ns):
     """Check if namespace's CDN endpoint is reachable."""
     merged = self.cfgspc.merged_config
@@ -705,6 +736,61 @@ class CatalogModel:
       json.dump(data, f, indent=2)
       f.write('\n')
     self.import_config_data.pop(basename, None)  # invalidate cache
+
+  def create_namespace(self, project, ns_name):
+    """Create a new namespace: adds to config.json, creates empty manifest, rescans.
+
+    Creates:
+      1. Entry in config.json with encryption_key and remote_location
+         copied from an existing namespace in the same project
+      2. Empty manifest {ns_name}.json with id, uuid, namespace, version
+    """
+    import uuid as _uuid
+    if not ns_name or project not in self.project_namespaces:
+      return
+    ns_list = self.project_namespaces.get(project, [])
+    if not ns_list:
+      return
+    # Find manifest dir from any existing namespace
+    manifests = self.catalog.manifestsForNamespace(ns_list[0])
+    if not manifests or not manifests[0].source_file:
+      return
+    manifest_dir = os.path.dirname(manifests[0].source_file)
+
+    # 1. Update config.json — copy settings from first existing namespace
+    config_path = os.path.join(manifest_dir, "config.json")
+    if os.path.exists(config_path):
+      with open(config_path, 'r') as f:
+        config_data = json.load(f)
+      namespaces = config_data.setdefault("namespaces", {})
+      if ns_name not in namespaces:
+        # Copy encryption_key and remote_location from a sibling namespace
+        template_ns = namespaces.get(ns_list[0], {})
+        namespaces[ns_name] = {
+          "encryption_key": template_ns.get("encryption_key", ""),
+          "remote_location": template_ns.get("remote_location", ""),
+        }
+        with open(config_path, 'w') as f:
+          json.dump(config_data, f, indent=2)
+          f.write('\n')
+
+    # 2. Create empty manifest
+    manifest_path = os.path.join(manifest_dir, f"{ns_name}.json")
+    if not os.path.exists(manifest_path):
+      manifest_data = {
+        "id": ns_name,
+        "uuid": str(_uuid.uuid4()),
+        "namespace": ns_name,
+        "version": "1.0.0",
+        "assets": {}
+      }
+      with open(manifest_path, 'w') as f:
+        json.dump(manifest_data, f, indent=2)
+        f.write('\n')
+
+    # Rescan so the new namespace appears
+    core.AssetCatalog.reloadAllManifests(self.catalog)
+    self.scan()
 
   def create_import_config(self, project, name=None, namespace=None):
     """Create a new template import config in the project's manifest dir.
