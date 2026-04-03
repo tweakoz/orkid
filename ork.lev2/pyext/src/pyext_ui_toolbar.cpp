@@ -201,6 +201,10 @@ void pyinit_ui_toolbar(py::module& uimodule) {
               [](ui::toolbar_ptr_t toolbar) -> fvec4 { return toolbar->_bgcolor; },
               [](ui::toolbar_ptr_t toolbar, fvec4 c) { toolbar->_bgcolor = c; })
           .def_property(
+              "button_color",
+              [](ui::toolbar_ptr_t toolbar) -> fvec4 { return toolbar->_button_color; },
+              [](ui::toolbar_ptr_t toolbar, fvec4 c) { toolbar->_button_color = c; })
+          .def_property(
               "button_hover_color",
               [](ui::toolbar_ptr_t toolbar) -> fvec4 { return toolbar->_button_hover_color; },
               [](ui::toolbar_ptr_t toolbar, fvec4 c) { toolbar->_button_hover_color = c; })
@@ -220,6 +224,11 @@ void pyinit_ui_toolbar(py::module& uimodule) {
               "disabled_tint",
               [](ui::toolbar_ptr_t toolbar) -> fvec4 { return toolbar->_disabled_tint; },
               [](ui::toolbar_ptr_t toolbar, fvec4 c) { toolbar->_disabled_tint = c; })
+          .def_property(
+              "button_border_color",
+              [](ui::toolbar_ptr_t toolbar) -> fvec4 { return toolbar->_button_border_color; },
+              [](ui::toolbar_ptr_t toolbar, fvec4 c) { toolbar->_button_border_color = c; })
+          .def_readwrite("button_border_width", &ui::Toolbar::_button_border_width)
           .def_readwrite("draw_background", &ui::Toolbar::_draw_background)
           // Label appearance
           .def_property(

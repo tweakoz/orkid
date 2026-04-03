@@ -46,6 +46,14 @@ void pyinit_gfx(py::module& module_lev2) {
       py::class_<ctx_t>(module_lev2, "GfxContext")
           .def("mainSurfaceWidth", [](ctx_t& c) -> int { return c.get()->mainSurfaceWidth(); })
           .def("mainSurfaceHeight", [](ctx_t& c) -> int { return c.get()->mainSurfaceHeight(); })
+          .def("setClipboardText", [](ctx_t& c, const std::string& text) {
+            auto ctxbase = c.get()->GetCtxBase();
+            if (ctxbase) ctxbase->setClipboardText(text);
+          })
+          .def("getClipboardText", [](ctx_t& c) -> std::string {
+            auto ctxbase = c.get()->GetCtxBase();
+            return ctxbase ? ctxbase->getClipboardText() : "";
+          })
           .def("makeCurrent", [](ctx_t& c) { c.get()->makeCurrentContext(); })
           .def("beginFrame", [](ctx_t& c) { return c.get()->beginFrame(); })
           .def("endFrame", [](ctx_t& c) { return c.get()->endFrame(); })

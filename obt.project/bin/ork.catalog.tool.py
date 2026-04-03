@@ -1,6 +1,28 @@
 #!/usr/bin/env ork.python
 ################################################################################
-# Orkid Asset Catalog GUI Tool
+# Orkid Asset Catalog GUI Tool — View / Application Layer
+#
+# This is the slim app/view layer of an MVC-refactored catalog tool.
+# It wires the CatalogModel (business logic, in ork.catalog_tool) to a
+# PrimCanvas-based UI via CanvasDetailView (drawing helpers, in
+# ork.catalog_tool_ui).
+#
+# Architecture overview:
+#   Model  — CatalogModel:       manifests, assets, CDN ops, import configs
+#   View   — CanvasDetailView:   text layers, buttons, progress bars, grids
+#   App    — CatalogTool (this): widget tree, event routing, redraw dispatch
+#
+# Widget tree layout:
+#   TopLayoutGroup
+#     ├─ left dock  (30%) — toolbar (REFRESH) + Outliner (project/ns/asset tree)
+#     └─ right dock (70%) — PrimCanvas detail view (properties, chunk grids, etc.)
+#
+# Data flow:
+#   model.on_dirty        → sets canvas_dirty flag → redrawn next _onUpdate
+#   model.on_scan_complete→ resets outliner tree data
+#   outliner selection     → _on_select → triggers CDN verify, marks dirty
+#   canvas UI event        → detail_view.handleCanvasEvent → button name
+#                          → _on_button dispatch table
 ################################################################################
 
 import os, time
@@ -28,22 +50,30 @@ class CatalogTool(ComponentizedApplication):
 
   def __init__(self):
     super().__init__(profiler_channels=[])
+    # MVC wiring: model callback marks canvas dirty so next frame redraws
     self.model = CatalogModel()
     self.model.on_dirty = self._on_model_dirty
-    self.selected_key = None
-    self.selected_import_config = None
-    self._selecting = False
+    self.selected_key = None                # outliner key currently selected
+    self.selected_import_config = None       # when set, detail view shows IC overlay
+    self.cdn_validate_mode = False           # when True, detail view shows CDN validation
+    self._selecting = False                  # reentrancy guard for _on_select
     self.canvas_dirty = True
-    self.canvas_ready = False
-    self.detail_view = None
-    self.ic_editor = None
+    self.canvas_ready = False                # set True after GPU init
+    self.detail_view = None                  # CanvasDetailView, created in _onGpuInit
+    self.ic_editor = None                    # ImportConfigEditor overlay, created on demand
     self.createEzApp(width=1200, height=800, fullscreen=False, name="Asset Catalog Tool")
 
   def _on_model_dirty(self):
     self.canvas_dirty = True
 
+  def _start_cdn_validation(self):
+    """Enter CDN validation mode: verify all locally-present assets against CDN."""
+    self.cdn_validate_mode = True
+    self.canvas_dirty = True
+    self.model._bg(self.model.validate_cdn_all)
+
   ############################################################################
-  # UI init
+  # UI init — builds the widget tree and wires model callbacks to UI
   ############################################################################
 
   def _onUiInit(self):
@@ -51,7 +81,7 @@ class CatalogTool(ComponentizedApplication):
     lg.margin = 4
     lg.clearColorStd = vec4(0.12, 0.12, 0.14, 1)
 
-    # Right panel — details
+    # --- Right dock: PrimCanvas detail view (created first, then split) ---
     right_dock_item = lg.makeChild(
       fill=True, margin=2,
       uiclass=lev2.ui.DockablePanel, args=["details_dock"])
@@ -66,9 +96,9 @@ class CatalogTool(ComponentizedApplication):
     self.canvas.supersample = 0
     self.canvas.bg_color = vec4(0.08, 0.08, 0.10, 1)
     self.canvas.draw_background = True
-    self.canvas.onUiEvent = self._on_canvas_event
+    self.canvas.onUiEvent = self._on_canvas_event  # route canvas clicks/hovers
 
-    # Left panel — outliner
+    # --- Left dock: toolbar + outliner (split off 30% of layout) ---
     left_dock_item = lg.split(
       layout=right_dock_item.layout,
       proportion=0.30, placement=tokens.LEFT, margin=2,
@@ -88,17 +118,25 @@ class CatalogTool(ComponentizedApplication):
     self.toolbar = self.left_vpack.makeChild(
       uiclass=lev2.ui.Toolbar, args=["toolbar"])
     self.toolbar.bgcolor = vec4(0.15, 0.15, 0.18, 1)
+    self.toolbar.button_color = vec4(0.20, 0.20, 0.25, 1)
     self.toolbar.button_hover_color = vec4(0.28, 0.28, 0.35, 1)
     self.toolbar.button_pressed_color = vec4(0.25, 0.45, 0.65, 1)
+    self.toolbar.button_border_color = vec4(0.35, 0.35, 0.42, 1)
+    self.toolbar.button_border_width = 1
     self.toolbar.separator_color = vec4(0.30, 0.30, 0.35, 1)
     self.toolbar.icon_size = 28
-    self.toolbar.button_padding = 8
-    self.toolbar.item_spacing = 4
+    self.toolbar.button_padding = 4   # 4px vertical margin around text
+    self.toolbar.label_padding = 4    # 4px horizontal margin around text
+    self.toolbar.item_spacing = 8     # 8px gap between buttons
     self.toolbar.edge_padding = 8
 
     btn_refresh = self.toolbar.addTextButton("refresh", "REFRESH")
     btn_refresh.custom_width = 72
     btn_refresh.onPressed(lambda: self.model._bg(self.model.refresh))
+
+    btn_validate = self.toolbar.addTextButton("validate_cdn", "VALIDATE CDN")
+    btn_validate.custom_width = 100
+    btn_validate.onPressed(lambda: self._start_cdn_validation())
 
     # Outliner
     self.outliner = self.left_vpack.makeChild(
@@ -111,7 +149,8 @@ class CatalogTool(ComponentizedApplication):
     self.outliner.model = self.outliner_model
     self.outliner.onSelect(self._on_select)
 
-    # Wire model scan callback to reset outliner
+    # MVC wiring: when model finishes scanning manifests, reset the outliner
+    # tree so it reflects the new data. Chains with any existing callback.
     orig_on_scan = self.model.on_scan_complete
     def on_scan():
       self.outliner_model.notifyModelReset()
@@ -120,7 +159,7 @@ class CatalogTool(ComponentizedApplication):
     self.model.on_scan_complete = on_scan
 
   ############################################################################
-  # GPU init
+  # GPU init — create CanvasDetailView and kick off initial model scan
   ############################################################################
 
   def _onGpuInit(self, ctx):
@@ -129,23 +168,31 @@ class CatalogTool(ComponentizedApplication):
     custom_db = lev2.ui.StyleDatabase.createChild(base_db)
     self.uicontext.theme_engine = lev2.ui.ThemeEngine(custom_db)
 
+    # CanvasDetailView owns the text layers, buttons, and drawing helpers
     self.detail_view = CanvasDetailView(self.canvas)
     self.detail_view.gpuInit(ctx)
+
+    # Enable click-to-copy on value text items
+    self.detail_view.setClickableRoles("value")
+    self._gfx_ctx = ctx  # stash for clipboard access
+    self.detail_view.on_text_clicked = self._on_text_clicked
+
     self.canvas_ready = True
 
-    self.model.init()
+    self.model.init()  # triggers background manifest scan
 
   ############################################################################
-  # Selection
+  # Selection — outliner callback, triggers CDN verification lazily
   ############################################################################
 
   def _on_select(self, key):
-    if self._selecting:
+    if self._selecting:  # reentrancy guard
       return
     self._selecting = True
     self.selected_key = key
     self.canvas_dirty = True
     self._selecting = False
+    # Lazily verify CDN status when an asset or namespace is first selected
     m = self.model
     kt = m.key_type(key)
     if kt == "asset":
@@ -159,15 +206,28 @@ class CatalogTool(ComponentizedApplication):
         if unchecked:
           m._bg(lambda fqids=unchecked: m.verify_cdn_batch(fqids))
 
+  def _on_text_clicked(self, text):
+    """Copy clicked text value to clipboard via GLFW."""
+    self._gfx_ctx.setClipboardText(text)
+
   ############################################################################
   # Canvas event handling
+  # Flow: canvas event → detail_view.handleCanvasEvent (hit-test buttons)
+  #       → returns button name string → _on_button dispatch
   ############################################################################
 
   def _on_canvas_event(self, ev):
+    # detail_view does hit-testing; returns button name, "__hover_changed__",
+    # "__text_copied__", or None
     result = self.detail_view.handleCanvasEvent(self.canvas, ev)
     if result == "__hover_changed__":
       self.canvas_dirty = True
       return lev2.ui.HandlerResult()
+    if result == "__text_copied__":
+      self.canvas_dirty = True
+      res = lev2.ui.HandlerResult()
+      res.setHandler(self.canvas)
+      return res
     if result:
       self._on_button(result)
       res = lev2.ui.HandlerResult()
@@ -176,6 +236,16 @@ class CatalogTool(ComponentizedApplication):
     return lev2.ui.HandlerResult()
 
   def _on_button(self, name):
+    """Dispatch table for all canvas button actions.
+    Button names use prefixes for import-config actions (IC_*, IC:name)."""
+    # CDN validate mode has its own buttons
+    if name == "CDN_VALIDATE_BACK":
+      self.cdn_validate_mode = False
+      self.canvas_dirty = True
+      return
+    if name == "CDN_VALIDATE_REFRESH":
+      self.model._bg(self.model.validate_cdn_all)
+      return
     m = self.model
     key = self.selected_key
     if not key:
@@ -203,8 +273,9 @@ class CatalogTool(ComponentizedApplication):
     elif name == "CLEAR LOCAL":
       if kt == "asset" and fqid:
         m._bg(lambda: m.clear_local(fqid))
+    # --- Import config actions (IC_ prefix = global, IC: prefix = select by name) ---
     elif name == "IC_BACK":
-      self.selected_import_config = None
+      self.selected_import_config = None  # return to normal detail view
       m.import_output_lines = []
       self.canvas_dirty = True
     elif name == "IC_IMPORT":
@@ -230,48 +301,65 @@ class CatalogTool(ComponentizedApplication):
       ic_name = name[12:]
       m.autocorrect_import_config(ic_name)
     elif name.startswith("IC:"):
-      ic_name = name[3:]
+      ic_name = name[3:]  # "IC:foo.json" → select import config "foo.json"
       self.selected_import_config = ic_name
       m.import_output_lines = []
       self.canvas_dirty = True
 
   def _open_import_config_editor(self, ic_name):
+    """Create the ImportConfigEditor overlay on demand (lazy instantiation)."""
     self.ic_editor = ImportConfigEditor(self.uicontext, self.model, self.ezapp)
     self.ic_editor.on_close = lambda: setattr(self, 'canvas_dirty', True)
     self.ic_editor.open(ic_name)
 
   ############################################################################
-  # Update loop
+  # Update loop — poll model for background results, redraw if dirty
   ############################################################################
 
   def _onUpdate(self, updinfo):
-    self.model.poll()
+    self.model.poll()  # process any completed background tasks
+    # Keep redrawing during copy-flash animation
+    if self.detail_view and self.detail_view.isFlashActive():
+      self.canvas_dirty = True
     if self.canvas_dirty and self.canvas_ready:
       self._redraw_canvas()
 
   ############################################################################
-  # Canvas drawing
+  # Canvas drawing — routes to the correct view based on selection type
+  #
+  # Drawing pattern used throughout:
+  #   dv = self.detail_view  (shorthand for drawing helper)
+  #   m  = self.model        (shorthand for data access)
+  #   y  = vertical layout cursor, incremented after each drawn element
   ############################################################################
 
   def _redraw_canvas(self):
     self.canvas_dirty = False
-    dv = self.detail_view
-    m = self.model
-    dv.beginRedraw()
+    dv = self.detail_view   # drawing helper shorthand
+    m = self.model           # model shorthand
+    dv.beginRedraw()         # clears text layers and button list
 
     w = max(self.canvas.width, 400)
     h = max(self.canvas.height, 200)
 
+    # Common header: CDN health + active download status
     y = 4
     y = dv.drawCdnHealthHeader(m, y, w)
     y = dv.drawDownloadManagerStatus(m, y)
 
-    # Import config detail mode takes over the view
+    # CDN validation mode takes over the entire detail view
+    if self.cdn_validate_mode:
+      self._draw_cdn_validate_view(y, w, h)
+      self.canvas.markDirty()
+      return
+
+    # When an import config is selected, it takes over the entire detail view
     if self.selected_import_config:
       self._draw_import_config_full_view(self.selected_import_config, y, w, h)
       self.canvas.markDirty()
       return
 
+    # Route to the appropriate view based on the type of outliner selection
     key = self.selected_key
     if not key:
       dv._texts["label"].addItem("Select a project, namespace, or asset", vec2(8, y))
@@ -291,7 +379,7 @@ class CatalogTool(ComponentizedApplication):
     self.canvas.markDirty()
 
   ############################################################################
-  # Project view
+  # Project view — summary of all namespaces, manifests, and import configs
   ############################################################################
 
   def _draw_project_view(self, project, y_start, w, h):
@@ -307,6 +395,7 @@ class CatalogTool(ComponentizedApplication):
     dv.drawPropRow("Namespaces", str(len(ns_list)), y)
     y += 16
 
+    # Aggregate chunk/size stats across all namespaces in the project
     total_assets = 0
     total_chunks = 0
     present_chunks = 0
@@ -372,7 +461,7 @@ class CatalogTool(ComponentizedApplication):
       y += 16
     y += 4
 
-    # Namespace summary grid
+    # Namespace summary grid — color-coded by completeness (ok/warn/plain)
     dv.drawSectionHeader("Namespaces", y, w, h)
     y += 18
     for ns in ns_list:
@@ -396,7 +485,7 @@ class CatalogTool(ComponentizedApplication):
       y += 16
 
   ############################################################################
-  # Namespace view
+  # Namespace view — config, status, action buttons, and asset grid
   ############################################################################
 
   def _draw_namespace_view(self, ns, y_start, w, h):
@@ -404,6 +493,7 @@ class CatalogTool(ComponentizedApplication):
     m = self.model
     y = y_start
 
+    # build_namespace_varmap returns a dict of display-ready property values
     d = build_namespace_varmap(m, ns)
     dv.drawSectionHeader("Namespace", y, w, h)
     y += 18
@@ -458,7 +548,7 @@ class CatalogTool(ComponentizedApplication):
         y += 18
     y += 8
 
-    # Compute status for ghosting
+    # Determine button ghost state: disable fetch if all local, upload if all on CDN
     can_fetch = m.ns_can_fetch(ns)
     can_upload = m.ns_can_upload(ns)
     all_local = True
@@ -477,7 +567,7 @@ class CatalogTool(ComponentizedApplication):
     dv.addButton("UPLOAD", bx, y, 64, 22, "UPLOAD", ghost=all_cdn or not can_upload)
     y += 30
 
-    # Asset grid
+    # Asset grid — compact multi-column layout, color-coded by chunk presence
     assets = m.ns_assets.get(ns, [])
     if not assets:
       dv._texts["label"].addItem("(no assets)", vec2(8, y))
@@ -486,6 +576,7 @@ class CatalogTool(ComponentizedApplication):
     dv.drawSectionHeader("Assets", y, w, h)
     y += 18
 
+    # Compute grid dimensions to fit available canvas area
     cell_w = 200
     cell_h = 16
     max_name = 14
@@ -553,7 +644,7 @@ class CatalogTool(ComponentizedApplication):
     dv._texts["value"].addItem(summary, vec2(8, y))
 
   ############################################################################
-  # Asset view
+  # Asset view — full detail: properties, chunk grid, progress, actions
   ############################################################################
 
   def _draw_asset_view(self, fqid, y_start, w, h):
@@ -565,6 +656,7 @@ class CatalogTool(ComponentizedApplication):
       dv._texts["label"].addItem("No entry", vec2(8, y))
       return
 
+    # build_asset_varmap returns a dict of display-ready property values
     d = build_asset_varmap(m, fqid)
     dv.drawSectionHeader("Asset", y, w, h)
     y += 18
@@ -615,7 +707,7 @@ class CatalogTool(ComponentizedApplication):
           y += 16
     y += 8
 
-    # Buttons
+    # Action buttons — ghosted based on local/CDN completeness and fetch state
     ns = fqid.split("|")[0]
     can_fetch = m.ns_can_fetch(ns)
     can_upload = m.ns_can_upload(ns)
@@ -672,16 +764,14 @@ class CatalogTool(ComponentizedApplication):
       f"Chunk Status ({total} chunks, {chunk_sz} each):", vec2(8, y))
     y += 20
 
-    # Chunk grid
+    # Chunk grid — one cell per chunk, LOC row shows local presence, CDN row shows remote
     cell_w = 12
     cells_per_row = max(1, (w - 60) // cell_w)
     grid_x = 50
 
-    # LOC row
     y = dv.drawChunkGrid(cs, vs, cdn, fqid in m.active_fetches,
                          grid_x, y, cell_w, h, cells_per_row, "LOC")
 
-    # CDN row
     if cdn:
       y = dv.drawChunkGrid(cs, vs, cdn, False,
                            grid_x, y, cell_w, h, cells_per_row, "CDN")
@@ -703,7 +793,159 @@ class CatalogTool(ComponentizedApplication):
     dv._texts["value"].addItem(f"{pct}%", vec2(8 + (w - 16) // 2 - 10, y))
 
   ############################################################################
+  # CDN Validation view
+  # Shows all namespaces with compact chunk grids comparing LOC vs CDN status.
+  ############################################################################
+
+  def _draw_cdn_validate_view(self, y_start, w, h):
+    dv = self.detail_view
+    m = self.model
+    y = y_start
+
+    # Header with back and refresh buttons
+    dv.addButton("CDN_VALIDATE_BACK", 8, y, 56, 22, "BACK")
+    dv.addButton("CDN_VALIDATE_REFRESH", 72, y, 80, 22, "REFRESH")
+    dv._texts["cdn_hdr"].addItem("CDN Validation", vec2(160, y + 3))
+    y += 30
+
+    # ── Pass 1: collect namespace data ──
+    ns_entries = []  # [(project, ns, n_assets, ns_loc, ns_cdn), ...]
+    for project in m.projects:
+      for ns in m.project_namespaces.get(project, []):
+        assets = m.ns_assets.get(ns, [])
+        if not assets:
+          continue
+        ns_loc = []
+        ns_cdn = []
+        for fqid in assets:
+          cs = m.chunk_status.get(fqid, [])
+          cdn = m.cdn_status.get(fqid, [])
+          ns_loc.extend(cs)
+          if cdn:
+            ns_cdn.extend(cdn)
+          else:
+            ns_cdn.extend([None] * len(cs))
+        if not ns_loc:
+          continue
+        ns_entries.append((project, ns, len(assets), ns_loc, ns_cdn))
+
+    if not ns_entries:
+      dv._texts["label"].addItem("No assets found", vec2(8, y))
+      return
+
+    # ── Pass 2: compute cell size to fit everything ──
+    # Layout per namespace: 18px header + grid rows * cell_h + 4px gap
+    # Plus 26px for grand total footer
+    cell_margin = 1
+    gap = 8
+    label_w = 32
+    half_w = (w - gap) // 2
+    grid_w = half_w - label_w - 8
+    avail_h = h - y - 26  # space for all namespaces (reserve footer)
+    header_cost = len(ns_entries) * 22  # 18px header + 4px gap per ns
+    grid_h_budget = max(1, avail_h - header_cost)
+
+    # Try cell sizes from 8 down to 2, pick largest that fits
+    cell_w = 2  # minimum fallback
+    for try_cw in range(8, 1, -1):
+      cells_per_row = max(1, grid_w // try_cw)
+      total_grid_h = 0
+      for _, _, _, ns_loc, _ in ns_entries:
+        rows = (len(ns_loc) + cells_per_row - 1) // cells_per_row
+        total_grid_h += rows * try_cw
+      if total_grid_h <= grid_h_budget:
+        cell_w = try_cw
+        break
+
+    cell_h = cell_w
+    loc_label_x = 8
+    loc_grid_x = loc_label_x + label_w
+    cdn_label_x = half_w + gap
+    cdn_grid_x = cdn_label_x + label_w
+    cells_per_row = max(1, grid_w // cell_w)
+
+    # ── Pass 3: draw ──
+    grand_total = 0
+    grand_local = 0
+    grand_cdn = 0
+    grand_missing = 0
+
+    for project, ns, n_assets, ns_loc, ns_cdn in ns_entries:
+      total = len(ns_loc)
+      local_count = sum(1 for x in ns_loc if x)
+      cdn_count = sum(1 for x in ns_cdn if x)
+      missing = sum(1 for loc, cdn in zip(ns_loc, ns_cdn) if loc and cdn is not None and not cdn)
+      unchecked = sum(1 for x in ns_cdn if x is None)
+
+      grand_total += total
+      grand_local += local_count
+      grand_cdn += cdn_count
+      grand_missing += missing
+
+      # Section header: [project] namespace (n assets, n chunks)  stats
+      hdr = f"[{project}] {ns}  ({n_assets} assets, {total} chunks)"
+      dv.drawSectionHeader(hdr, y, w, h)
+      stats = f"LOC {local_count}/{total}  CDN {cdn_count}/{total}"
+      if missing > 0:
+        stats += f"  MISS {missing}"
+        dv._texts["status_err"].addItem(stats, vec2(w - len(stats) * 8 - 8, y))
+      elif unchecked > 0:
+        dv._texts["status_warn"].addItem(stats + " ...", vec2(w - (len(stats) + 4) * 8 - 8, y))
+      else:
+        dv._texts["status_ok"].addItem(stats, vec2(w - len(stats) * 8 - 8, y))
+      y += 18
+
+      # LOC and CDN labels
+      dv._texts["label"].addItem("LOC:", vec2(loc_label_x, y))
+      dv._texts["label"].addItem("CDN:", vec2(cdn_label_x, y))
+
+      # Draw both grids side by side
+      grid_rows = (total + cells_per_row - 1) // cells_per_row
+      for i in range(total):
+        row = i // cells_per_row
+        col = i % cells_per_row
+        cy = y + row * cell_h
+
+        # LOC cell
+        cx_loc = loc_grid_x + col * cell_w
+        qd = lev2.ui.QuadData()
+        qd.setPosition(cx_loc, h - cy - (cell_h - cell_margin))
+        qd.setSize(cell_w - 2 * cell_margin, cell_h - 2 * cell_margin)
+        if ns_loc[i]:
+          qd.setColor(vec4(0.2, 0.6, 0.2, 1))
+        else:
+          qd.setColor(vec4(0.2, 0.2, 0.2, 1))
+        dv.bg_prim.addQuad(qd)
+
+        # CDN cell
+        cx_cdn = cdn_grid_x + col * cell_w
+        qd2 = lev2.ui.QuadData()
+        qd2.setPosition(cx_cdn, h - cy - (cell_h - cell_margin))
+        qd2.setSize(cell_w - 2 * cell_margin, cell_h - 2 * cell_margin)
+        cdn_val = ns_cdn[i]
+        if cdn_val is None:
+          qd2.setColor(vec4(0.15, 0.15, 0.2, 1))   # dim: not yet checked
+        elif cdn_val:
+          qd2.setColor(vec4(0.2, 0.6, 0.2, 1))     # green: present on CDN
+        else:
+          qd2.setColor(vec4(0.8, 0.15, 0.15, 1))   # red: missing from CDN
+        dv.bg_prim.addQuad(qd2)
+
+      y += grid_rows * cell_h + 4
+
+    # Grand total footer
+    dv.drawSectionHeader("Total", y, w, h)
+    total_summary = f"Chunks: {grand_total}  Local: {grand_local}  CDN: {grand_cdn}"
+    if grand_missing > 0:
+      total_summary += f"  MISSING FROM CDN: {grand_missing}"
+      dv._texts["status_err"].addItem(total_summary, vec2(w - len(total_summary) * 8 - 8, y))
+    else:
+      dv._texts["status_ok"].addItem(total_summary, vec2(w - len(total_summary) * 8 - 8, y))
+
+  ############################################################################
   # Import Config views
+  # When selected_import_config is set, _draw_import_config_full_view takes
+  # over the entire detail canvas with a back button to return.
   ############################################################################
 
   def _draw_import_config_detail(self, ic_name, y, w, h):
@@ -759,12 +1001,14 @@ class CatalogTool(ComponentizedApplication):
     return y
 
   def _draw_import_config_full_view(self, ic_name, y_start, w, h):
+    """Full-screen import config detail with back button, properties, assets, and actions."""
     dv = self.detail_view
     m = self.model
     y = y_start
     data = m.load_import_config(ic_name)
     path = m.import_config_paths.get(ic_name, "")
 
+    # Back button returns to the normal selection-based detail view
     dv.addButton("IC_BACK", 8, y, 56, 22, "BACK")
     dv._texts["cdn_hdr"].addItem(f"Import Config: {ic_name}", vec2(72, y + 3))
     y += 30
@@ -838,7 +1082,7 @@ class CatalogTool(ComponentizedApplication):
         y += 16
     y += 8
 
-    # Action buttons
+    # Action buttons — EDIT opens ImportConfigEditor overlay
     dv.addButton("IC_EDIT", 8, y, 56, 22, "EDIT")
     bx = 72
     dv.addButton("IC_IMPORT", bx, y, 80, 22, "IMPORT")
@@ -848,7 +1092,7 @@ class CatalogTool(ComponentizedApplication):
     dv.addButton("IC_LIST", bx, y, 80, 22, "LIST FILES")
     y += 30
 
-    # Output
+    # Output — shows results of IMPORT / DRY RUN / LIST actions
     if m.import_output_lines:
       dv.drawSectionHeader("Output", y, w, h)
       y += 18

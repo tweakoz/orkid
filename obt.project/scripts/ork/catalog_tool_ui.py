@@ -1,5 +1,26 @@
 ################################################################################
 # Catalog Tool — UI Library (reusable canvas/overlay/outliner boilerplate)
+#
+# This module provides the reusable UI layer for catalog tools, following an
+# MVC pattern. It contains:
+#
+#   - Outliner models (CatalogOutlinerModel, ImportConfigEditorModel,
+#     TestMatchOutlinerModel) that implement the OutlinerModel interface
+#     (getChildren / getDisplayName / hasChildren) to present hierarchical
+#     tree data.  Each node is identified by a string key that encodes its
+#     path in the tree.
+#
+#   - CanvasDetailView — a base class for PrimCanvas-based detail panels
+#     that renders text, buttons, progress bars, and grids via GPU
+#     primitives (QuadPrimitive / TextPrimitive).
+#
+#   - ImportConfigEditor — a self-contained overlay editor for import config
+#     JSON files, built from a BorderFrame > VPack > (Toolbar + HPack >
+#     Outliner + PropertySheet) widget tree.
+#
+# Coordinate note: layout code uses a top-down Y axis (y=0 at the top),
+# but QuadData uses OpenGL bottom-up coordinates.  Quad positions are
+# therefore flipped as:  quad_y = canvas_height - layout_y - quad_height.
 ################################################################################
 
 import os, json, copy
@@ -17,56 +38,90 @@ vec4 = core.vec4
 
 ################################################################################
 # Outliner Models
+#
+# Each outliner model implements the OutlinerModel interface:
+#   getChildren(parent_key) -> list[str]   — child keys for a node
+#   getDisplayName(key)     -> str         — label shown in the tree
+#   hasChildren(key)        -> bool        — whether to draw expand arrow
+#
+# Nodes are identified by opaque string keys.  The key encoding scheme
+# varies per model (see per-class comments below).
 ################################################################################
 
 class CatalogOutlinerModel(lev2.ui.OutlinerModel):
-  """Outliner tree model: projects -> namespaces -> assets."""
+  """Outliner tree model: projects -> namespaces -> assets.
+
+  Key encoding scheme (three levels):
+    "project"              — top-level project node
+    "project/namespace"    — namespace within a project
+    "project/ns|asset"     — leaf asset (pipe separates ns from asset id)
+
+  The "|" character distinguishes asset leaves from namespace branches,
+  so hasChildren simply checks for its absence.
+  """
 
   def __init__(self, model):
     super().__init__()
-    self.model = model
+    self.model = model       # CatalogModel from catalog_tool.py
     self.allow_rename = False
     self.allow_delete = False
     self.allow_add = False
 
   def getChildren(self, parent_key):
+    # Root -> list of project names
     if parent_key == "":
       return self.model.projects
+    # Project -> "project/ns" keys for each namespace
     if parent_key in self.model.project_namespaces:
       return [f"{parent_key}/{ns}" for ns in self.model.project_namespaces[parent_key]]
+    # Namespace -> "project/ns|asset" keys for each asset (only if no "|")
     if "/" in parent_key and "|" not in parent_key:
       ns = parent_key.split("/", 1)[1]
       return [f"{parent_key.split('/')[0]}/{fqid}" for fqid in self.model.ns_assets.get(ns, [])]
     return []
 
   def getDisplayName(self, key):
+    # Asset leaf: show just the asset name after "|"
     if "|" in key:
       return key.split("|", 1)[1]
+    # Namespace: show just the namespace after "/"
     if "/" in key:
       return key.split("/", 1)[1]
+    # Project: show raw key
     return key
 
   def hasChildren(self, key):
+    # Assets (containing "|") are always leaves
     return "|" not in key
 
 
 class ImportConfigEditorModel(lev2.ui.OutlinerModel):
-  """Outliner model for editing an import config JSON."""
+  """Outliner model for editing an import config JSON.
+
+  Key encoding (two levels):
+    "Config"            — the global config section
+    "AssetPaks"         — parent group for asset paks
+    "AssetPaks/<id>"    — individual asset pak entry
+
+  The model reads/writes through self.editor._editor_data, which is
+  the shared mutable dict backing the ImportConfigEditor.
+  """
 
   def __init__(self, editor):
     super().__init__()
-    self.editor = editor
+    self.editor = editor     # ImportConfigEditor instance (owns _editor_data)
     self.allow_rename = True
     self.allow_delete = True
     self.allow_add = True
 
   @property
   def data(self):
+    # Shared mutable dict — edits here are immediately visible to the editor
     return self.editor._editor_data
 
   def getChildren(self, parent_key):
     if parent_key == "":
-      return ["Config", "AssetPaks"]
+      return ["Config", "AssetPaks"]   # Two fixed top-level nodes
     if parent_key == "AssetPaks":
       assets = self.data.get("assets", [])
       return [f"AssetPaks/{a['id']}" for a in assets]
@@ -88,11 +143,12 @@ class ImportConfigEditorModel(lev2.ui.OutlinerModel):
     return []
 
   def createItem(self, parent_key, name, factory_id):
+    """Add a new asset pak entry.  Returns "" if name already exists (reject duplicate)."""
     if parent_key == "AssetPaks" and factory_id == "assetpak":
       assets = self.data.setdefault("assets", [])
       for a in assets:
         if a["id"] == name:
-          return ""
+          return ""              # Duplicate — reject
       assets.append({"id": name, "include": "*"})
       new_key = f"AssetPaks/{name}"
       self.editor._editor_dirty = True
@@ -101,10 +157,12 @@ class ImportConfigEditorModel(lev2.ui.OutlinerModel):
     return ""
 
   def renameItem(self, old_key, new_name):
+    """Rename an asset pak.  Returns None if rejected (only pak items are renameable)."""
     if not old_key.startswith("AssetPaks/"):
       return None
     old_id = old_key.split("/", 1)[1]
     assets = self.data.get("assets", [])
+    # Reject if new name already exists
     for a in assets:
       if a["id"] == new_name:
         return None
@@ -116,6 +174,7 @@ class ImportConfigEditorModel(lev2.ui.OutlinerModel):
     return None
 
   def removeItem(self, key):
+    """Delete an asset pak entry by key."""
     if not key.startswith("AssetPaks/"):
       return
     pak_id = key.split("/", 1)[1]
@@ -126,19 +185,28 @@ class ImportConfigEditorModel(lev2.ui.OutlinerModel):
 
 
 class TestMatchOutlinerModel(lev2.ui.OutlinerModel):
-  """Read-only outliner showing matched files per asset pak."""
+  """Read-only outliner showing matched files per asset pak.
+
+  Key encoding:
+    "<pak_id>"              — top-level pak node (shows file count)
+    "<pak_id>/<rel_path>"   — individual matched file (leaf)
+
+  results is a list of (pak_id, [pathlib.Path, ...]) tuples.
+  """
 
   def __init__(self, results, source_dir):
     super().__init__()
-    self._results = results
+    self._results = results      # [(pak_id, [Path, ...]), ...]
     self._source_dir = source_dir
     self.allow_rename = False
     self.allow_delete = False
     self.allow_add = False
 
   def getChildren(self, parent_key):
+    # Root -> one node per asset pak
     if parent_key == "":
       return [pak_id for pak_id, _ in self._results]
+    # Pak -> one leaf per matched file (shown as relative path)
     for pak_id, files in self._results:
       if pak_id == parent_key:
         src = self._source_dir
@@ -153,19 +221,36 @@ class TestMatchOutlinerModel(lev2.ui.OutlinerModel):
     return []
 
   def getDisplayName(self, key):
+    # Pak node: append file count
     if "/" not in key:
       for pak_id, files in self._results:
         if pak_id == key:
           return f"{key} ({len(files)} files)"
       return key
+    # File leaf: show relative path only
     return key.split("/", 1)[1]
 
   def hasChildren(self, key):
+    # Paks (no "/") have children; files are leaves
     return "/" not in key
 
 
 ################################################################################
 # CanvasDetailView
+#
+# Base class for GPU-rendered detail panels using PrimCanvas.
+#
+# Key concepts:
+#   - "Text roles" are named TextPrimitive instances (e.g. "label", "value",
+#     "status_ok") each with a fixed color.  Subclasses add text items to
+#     the appropriate role to get correctly colored text.
+#   - bg_prim is a single QuadPrimitive that accumulates all background
+#     rectangles (buttons, section headers, progress bars, chunk grids).
+#   - The button registry (self.buttons) maps button names to (x,y,w,h)
+#     rects for hit-testing in handleCanvasEvent.
+#   - Layout uses top-down Y (y=0 at top of canvas), but QuadData uses
+#     OpenGL bottom-up coords, so quad positions are flipped:
+#       quad_y = canvas_height - layout_y - quad_height
 ################################################################################
 
 class CanvasDetailView:
@@ -173,11 +258,15 @@ class CanvasDetailView:
 
   def __init__(self, canvas):
     self.canvas = canvas
-    self.buttons = {}
-    self.hover_button = None
-    self.bg_prim = None
-    self._texts = {}
-    self.text_sm = None
+    self.buttons = {}          # name -> (x, y, w, h) for hit-testing
+    self.hover_button = None   # currently hovered button name (or None)
+    self.bg_prim = None        # shared QuadPrimitive for all background quads
+    self._texts = {}           # role_name -> TextPrimitive
+    self.text_sm = None        # small-font text prim (auxiliary)
+    self.on_text_clicked = None  # callback(text_value) — fired when clickable text is clicked
+    # Flash highlight: 2-frame animation (frame 0 = highlight, frame 1 = restore)
+    self._flash_rect = None    # (x, y, w, h) in layout coords, or None
+    self._flash_frames = 0     # frames remaining (2 = draw highlight, 1 = redraw normal)
 
   def gpuInit(self, ctx):
     """Create quad prim + text prims by named color role."""
@@ -186,9 +275,12 @@ class CanvasDetailView:
     self.canvas_font_sm = lev2.FontManager.fontForId("i12")
     self.canvas_layer = self.canvas.createLayer("status")
 
+    # Single quad primitive collects all background rectangles
     self.bg_prim = lev2.ui.QuadPrimitive(pipeline=self.canvas.pipelineSolid)
     self.canvas_layer.addPrimitive(self.bg_prim)
 
+    # Each "text role" is a TextPrimitive with a distinct color.
+    # Subclasses add items via self._texts["role"].addItem(text, position).
     text_colors = {
       "label": vec4(0.6, 0.6, 0.7, 1),
       "value": vec4(0.9, 0.9, 0.9, 1),
@@ -206,6 +298,24 @@ class CanvasDetailView:
     self.text_sm = lev2.ui.TextPrimitive(font=self.canvas_font_sm, color=vec4(0.7, 0.7, 0.7, 1))
     self.canvas_layer.addPrimitive(self.text_sm)
 
+    # Cache font metrics for text hit-testing (monospace: width = advance * len)
+    self._font_advance_w = self.canvas_font.description.advance_width
+    self._font_advance_h = self.canvas_font.description.advance_height
+
+  def setClickableRoles(self, *role_names):
+    """Mark text roles as clickable (enables per-item hit-testing).
+    Call after gpuInit. Only items in clickable roles will respond to clicks.
+    Example: detail_view.setClickableRoles("value", "status_ok")
+    """
+    for name in role_names:
+      tp = self._texts.get(name)
+      if tp:
+        tp.clickable = True
+
+  def isFlashActive(self):
+    """Returns True if flash still needs a redraw."""
+    return self._flash_frames > 0
+
   def beginRedraw(self):
     """Clear all prims and reset button registry."""
     self.buttons = {}
@@ -213,12 +323,27 @@ class CanvasDetailView:
     for tp in self._texts.values():
       tp.clearItems()
     self.text_sm.clearItems()
+    # 2-frame flash: frame 2 = draw highlight, frame 1 = normal redraw (clears it)
+    if self._flash_frames > 0:
+      if self._flash_frames == 2 and self._flash_rect is not None:
+        fx, fy, fw, fh = self._flash_rect
+        h = max(self.canvas.height, 200)
+        qd = lev2.ui.QuadData()
+        qd.setPosition(fx - 2, h - fy - fh)
+        qd.setSize(fw + 4, fh)
+        qd.setColor(vec4(0.3, 0.6, 1.0, 0.35))
+        self.bg_prim.addQuad(qd)
+      self._flash_frames -= 1
+      if self._flash_frames == 0:
+        self._flash_rect = None
 
   def addButton(self, name, x, y, bw, bh, label, ghost=False, danger=False):
-    """Draw clickable button quad with hover/danger states."""
+    """Draw clickable button quad with hover/danger states.
+    ghost=True makes a non-interactive (disabled-looking) button.
+    """
     h = max(self.canvas.height, 200)
     if not ghost:
-      self.buttons[name] = (x, y, bw, bh)
+      self.buttons[name] = (x, y, bw, bh)   # Register for hit-testing
     hovered = not ghost and self.hover_button == name
     if ghost:
       color = vec4(0.12, 0.12, 0.14, 1)
@@ -231,6 +356,7 @@ class CanvasDetailView:
     else:
       color = vec4(0.20, 0.25, 0.35, 1)
     qd = lev2.ui.QuadData()
+    # Flip Y: layout y is top-down, QuadData y is bottom-up (OpenGL)
     qd.setPosition(x, h - y - bh)
     qd.setSize(bw, bh)
     qd.setColor(color)
@@ -244,9 +370,9 @@ class CanvasDetailView:
     self._texts["value"].addItem(value, vec2(val_x, y))
 
   def drawSectionHeader(self, title, y, w, h):
-    """Draw a section header with background bar."""
+    """Draw a section header with background bar.  h is the canvas height (for Y flip)."""
     qd = lev2.ui.QuadData()
-    qd.setPosition(4, h - y - 16)
+    qd.setPosition(4, h - y - 16)   # Y flip: bottom-up OpenGL coords
     qd.setSize(w - 8, 16)
     qd.setColor(vec4(0.15, 0.15, 0.20, 1))
     self.bg_prim.addQuad(qd)
@@ -268,7 +394,14 @@ class CanvasDetailView:
       self.bg_prim.addQuad(qd2)
 
   def drawChunkGrid(self, chunks_present, chunks_valid, cdn_list, fqid_active, x, y, cell_w, canvas_h, cells_per_row, label):
-    """Draw colored chunk status grid. Returns new y."""
+    """Draw colored chunk status grid.  Returns new y after the grid.
+
+    Each cell represents one chunk.  Colors indicate status:
+      red    — missing / not on CDN
+      yellow — present but invalid checksum
+      blue   — present, valid, and currently active
+      green  — present and valid
+    """
     total = len(chunks_present)
     if total == 0:
       return y
@@ -279,22 +412,22 @@ class CanvasDetailView:
       cx = x + col * cell_w
       cy = y + row * 16
       qd = lev2.ui.QuadData()
-      qd.setPosition(cx, canvas_h - cy - 12)
+      qd.setPosition(cx, canvas_h - cy - 12)   # Y flip
       qd.setSize(cell_w - 2, 12)
       if label == "CDN":
         if i < len(cdn_list) and cdn_list[i]:
-          qd.setColor(vec4(0.2, 0.6, 0.2, 1))
+          qd.setColor(vec4(0.2, 0.6, 0.2, 1))   # green: present on CDN
         else:
-          qd.setColor(vec4(0.5, 0.15, 0.15, 1))
+          qd.setColor(vec4(0.5, 0.15, 0.15, 1))  # red: missing from CDN
       else:
         if not chunks_present[i]:
-          qd.setColor(vec4(0.5, 0.15, 0.15, 1))
+          qd.setColor(vec4(0.5, 0.15, 0.15, 1))  # red: missing
         elif i < len(chunks_valid) and not chunks_valid[i]:
-          qd.setColor(vec4(0.7, 0.7, 0.2, 1))
+          qd.setColor(vec4(0.7, 0.7, 0.2, 1))    # yellow: invalid checksum
         elif fqid_active:
-          qd.setColor(vec4(0.2, 0.3, 0.7, 1))
+          qd.setColor(vec4(0.2, 0.3, 0.7, 1))    # blue: active
         else:
-          qd.setColor(vec4(0.2, 0.6, 0.2, 1))
+          qd.setColor(vec4(0.2, 0.6, 0.2, 1))    # green: valid
       self.bg_prim.addQuad(qd)
     rows = (total + cells_per_row - 1) // cells_per_row
     return y + rows * 16 + 4
@@ -337,15 +470,49 @@ class CanvasDetailView:
       self._texts["label"].addItem(dm_txt, vec2(8, y))
     return y + 16
 
+  def _hitTestClickableText(self, mx, my):
+    """Hit-test clickable TextPrimitives at (mx, my) in canvas-local coords.
+    Returns (text, (x, y, w, h)) of the hit item, or (None, None).
+    Only checks TextPrimitives with clickable=True.
+    Uses cached font metrics (monospace: width = advance_width * len(text)).
+    """
+    aw = self._font_advance_w
+    ah = self._font_advance_h
+    for tp in self._texts.values():
+      if not tp.clickable:
+        continue
+      for i in range(tp.itemCount):
+        item = tp.item(i)
+        ix = item.position.x
+        iy = item.position.y
+        iw = aw * len(item.text)
+        if ix <= mx < ix + iw and iy <= my < iy + ah:
+          return item.text, (ix, iy, iw, ah)
+    return None, None
+
   def handleCanvasEvent(self, canvas, ev):
-    """Hit-test buttons, track hover. Returns clicked button name or None."""
+    """Hit-test buttons and clickable text, track hover.
+    Returns the clicked button name on PUSH, "__hover_changed__" if the
+    hovered button changed on MOVE, or None otherwise.
+    Clickable text clicks are dispatched via on_text_clicked callback.
+    """
     clicked = None
     if ev.code == tokens.PUSH.hashed:
       mx, my = canvas.rootToLocal(ev.x, ev.y)
+      # Check buttons first
       for name, (bx, by, bw, bh) in self.buttons.items():
         if bx <= mx < bx + bw and by <= my < by + bh:
           clicked = name
           break
+      # If no button hit, check clickable text items
+      if not clicked:
+        hit_text, hit_rect = self._hitTestClickableText(mx, my)
+        if hit_text and self.on_text_clicked:
+          self.on_text_clicked(hit_text)
+          # Start 2-frame flash highlight on the clicked text
+          self._flash_rect = hit_rect
+          self._flash_frames = 2
+          return "__text_copied__"
     elif ev.code == tokens.MOVE.hashed:
       mx, my = canvas.rootToLocal(ev.x, ev.y)
       old_hover = self.hover_button
@@ -354,6 +521,7 @@ class CanvasDetailView:
         if bx <= mx < bx + bw and by <= my < by + bh:
           self.hover_button = name
           break
+      # Signal hover change so the caller can trigger a repaint
       if self.hover_button != old_hover:
         return "__hover_changed__"
     return clicked
@@ -361,22 +529,44 @@ class CanvasDetailView:
 
 ################################################################################
 # ImportConfigEditor
+#
+# Self-contained overlay editor for import config JSON files.
+#
+# Widget tree (created in open()):
+#   BorderFrame
+#     VPack
+#       Toolbar          — CLOSE / SAVE / REVERT / AUTOCORRECT / TEST MATCH
+#       HPack
+#         Outliner       — shows Config + AssetPaks tree
+#         PropertySheet  — editable properties for selected node
+#
+# Data flow:
+#   - _editor_data is the in-memory mutable dict loaded from the JSON file.
+#   - ImportConfigEditorModel reads/writes _editor_data via its .data property.
+#   - PropertySheet displays VarMaps built from _editor_data and writes back
+#     through _on_prop_changed.
+#   - _editor_dirty tracks unsaved changes.
+#
+# Custom inline editors:
+#   - "Platforms" annotation -> checkbox row (mac / linux)
+#   - "FolderBrowse" annotation -> line edit + "..." button that opens a
+#     secondary window with a FilesystemBrowser
 ################################################################################
 
 class ImportConfigEditor:
   """Self-contained overlay editor for import config JSON files."""
 
   def __init__(self, uicontext, model, ezapp):
-    self.model = model
-    self.uicontext = uicontext
-    self.ezapp = ezapp
-    self.on_close = None
-    self.on_save = None
-    self._editor_ic_name = None
-    self._editor_ic_path = None
-    self._editor_data = None
-    self._editor_dirty = False
-    self._editor_selected_key = None
+    self.model = model              # CatalogModel (shared state)
+    self.uicontext = uicontext      # UI context for overlay management
+    self.ezapp = ezapp              # EzApp for window dimensions / secondary windows
+    self.on_close = None            # Optional callback when editor closes
+    self.on_save = None             # Optional callback after save
+    self._editor_ic_name = None     # Name of the import config being edited
+    self._editor_ic_path = None     # Filesystem path to the JSON file
+    self._editor_data = None        # Mutable dict — the live working copy
+    self._editor_dirty = False      # True if unsaved edits exist
+    self._editor_selected_key = None  # Currently selected outliner key
 
   def open(self, ic_name):
     """Open editor overlay for named import config."""
@@ -400,6 +590,7 @@ class ImportConfigEditor:
     top_h = lg.height
     margin = int(min(top_w, top_h) * 0.05)
 
+    # Build widget tree: BorderFrame > VPack > (Toolbar, HPack > (Outliner, PropertySheet))
     self._editor_frame = self.uicontext.createOverlayWidget(
       lev2.ui.BorderFrame, ["ic_editor_frame"])
     self._editor_frame.border_width = 12
@@ -411,18 +602,22 @@ class ImportConfigEditor:
     self._editor_vpack = lev2.ui.VerticalPack.wfactory(["ic_editor_vpack"])
     self._editor_frame.child = self._editor_vpack
     self._editor_vpack.margin = 4
-    self._editor_vpack.item_height = 36
+    self._editor_vpack.item_height = 36   # Fixed height for the toolbar row
 
     # Toolbar
     self._editor_toolbar = self._editor_vpack.makeChild(
       uiclass=lev2.ui.Toolbar, args=["ic_editor_toolbar"])
     self._editor_toolbar.bgcolor = vec4(0.15, 0.15, 0.18, 1)
+    self._editor_toolbar.button_color = vec4(0.20, 0.20, 0.25, 1)
     self._editor_toolbar.button_hover_color = vec4(0.28, 0.28, 0.35, 1)
     self._editor_toolbar.button_pressed_color = vec4(0.25, 0.45, 0.65, 1)
+    self._editor_toolbar.button_border_color = vec4(0.35, 0.35, 0.42, 1)
+    self._editor_toolbar.button_border_width = 1
     self._editor_toolbar.separator_color = vec4(0.30, 0.30, 0.35, 1)
     self._editor_toolbar.icon_size = 28
-    self._editor_toolbar.button_padding = 8
-    self._editor_toolbar.item_spacing = 4
+    self._editor_toolbar.button_padding = 4
+    self._editor_toolbar.label_padding = 4
+    self._editor_toolbar.item_spacing = 8
     self._editor_toolbar.edge_padding = 8
 
     btn_close = self._editor_toolbar.addTextButton("ed_close", "CLOSE")
@@ -445,11 +640,11 @@ class ImportConfigEditor:
     btn_test.custom_width = 88
     btn_test.onPressed(lambda: self.test_match())
 
-    # HPack for outliner + propsheet
+    # HPack for outliner + propsheet (fills remaining vertical space)
     self._editor_hpack = self._editor_vpack.makeChild(
       uiclass=lev2.ui.HorizontalPack, args=["ic_editor_hpack"])
     self._editor_hpack.margin = 2
-    self._editor_hpack.item_width = int((top_w - 2 * margin) * 0.30)
+    self._editor_hpack.item_width = int((top_w - 2 * margin) * 0.30)  # Outliner gets 30% width
     self._editor_vpack.fill_widget = self._editor_hpack
 
     # Outliner
@@ -458,6 +653,7 @@ class ImportConfigEditor:
     self._editor_outliner.bgcolor = vec4(0.10, 0.10, 0.12, 1)
     self._editor_outliner.item_height = 22
 
+    # Wire up the outliner model (shares _editor_data through self)
     self._editor_outliner_model = ImportConfigEditorModel(self)
     self._editor_outliner.model = self._editor_outliner_model
 
@@ -466,7 +662,7 @@ class ImportConfigEditor:
     self._editor_outliner.onDelete(self._on_delete)
     self._editor_outliner.onAdd(self._on_add)
 
-    # PropertySheet
+    # PropertySheet (fills remaining horizontal space)
     self._editor_propsheet = self._editor_hpack.makeChild(
       uiclass=lev2.ui.PropertySheet, args=["ic_editor_propsheet"])
     self._editor_propsheet.bgcolor = vec4(0.12, 0.12, 0.14, 1)
@@ -478,6 +674,9 @@ class ImportConfigEditor:
 
     self._editor_propsheet.onPropertyChanged(self._on_prop_changed)
 
+    # Register custom inline editors for specific annotation types.
+    # When a property has a matching annotation, the PropertySheet calls
+    # the factory instead of using the default text editor.
     self._editor_propsheet.registerEditorFactory(
       tokens.Platforms,
       self._create_platforms_inline_editor)
@@ -501,8 +700,11 @@ class ImportConfigEditor:
       self.on_close()
 
   def save(self):
-    """Save in-memory dict to JSON file."""
+    """Save in-memory dict to JSON file.
+    Only writes fields that differ from defaults (omits default platforms, zero priority, etc.)
+    """
     data = self._editor_data
+    # Build a clean output dict with only non-default fields
     save_data = {}
     for k in ["namespace", "source_dir", "local_loc", "manifest"]:
       if k in data:
@@ -593,12 +795,16 @@ class ImportConfigEditor:
     self._match_toolbar = self._match_vpack.makeChild(
       uiclass=lev2.ui.Toolbar, args=["match_toolbar"])
     self._match_toolbar.bgcolor = vec4(0.15, 0.15, 0.18, 1)
+    self._match_toolbar.button_color = vec4(0.20, 0.20, 0.25, 1)
     self._match_toolbar.button_hover_color = vec4(0.28, 0.28, 0.35, 1)
     self._match_toolbar.button_pressed_color = vec4(0.25, 0.45, 0.65, 1)
+    self._match_toolbar.button_border_color = vec4(0.35, 0.35, 0.42, 1)
+    self._match_toolbar.button_border_width = 1
     self._match_toolbar.separator_color = vec4(0.30, 0.30, 0.35, 1)
     self._match_toolbar.icon_size = 28
-    self._match_toolbar.button_padding = 8
-    self._match_toolbar.item_spacing = 4
+    self._match_toolbar.button_padding = 4
+    self._match_toolbar.label_padding = 4
+    self._match_toolbar.item_spacing = 8
     self._match_toolbar.edge_padding = 8
 
     btn_close = self._match_toolbar.addTextButton("match_close", "CLOSE")
@@ -664,9 +870,11 @@ class ImportConfigEditor:
     return vm
 
   def _on_select(self, key):
+    """Handle outliner selection — populate the PropertySheet for the selected node."""
     self._editor_selected_key = key
     if key == "Config":
       self._editor_propsheet.data = self._build_config_varmap()
+      # Attach annotations so the PropertySheet uses custom inline editors
       model = self._editor_propsheet.model
       plat_annot = core.VarMap()
       plat_annot.type = tokens.Platforms
@@ -695,6 +903,7 @@ class ImportConfigEditor:
     pass
 
   def _on_prop_changed(self, key, value):
+    """Write property edits back into _editor_data."""
     sel = self._editor_selected_key
     if not sel:
       return
@@ -702,14 +911,16 @@ class ImportConfigEditor:
     data = self._editor_data
 
     if sel == "Config":
+      # Property keys may be prefixed with group path — extract the field name
       field = key.split("/")[-1] if "/" in key else key
       if field == "platforms":
+        # Comma-separated string -> list
         data["platforms"] = [s.strip() for s in str(value).split(",") if s.strip()]
       elif field == "encryption_key":
         if str(value).strip():
           data["encryption_key"] = str(value)
         else:
-          data.pop("encryption_key", None)
+          data.pop("encryption_key", None)  # Remove empty key entirely
       else:
         data[field] = str(value)
     elif sel.startswith("AssetPaks/"):
@@ -719,6 +930,7 @@ class ImportConfigEditor:
         if a["id"] == pak_id:
           field = key.split("/")[-1] if "/" in key else key
           if field == "id":
+            # Renaming via property sheet — update key and refresh outliner
             new_id = str(value)
             a["id"] = new_id
             self._editor_selected_key = f"AssetPaks/{new_id}"
@@ -727,6 +939,7 @@ class ImportConfigEditor:
           elif field == "include":
             val = str(value)
             parts = [s.strip() for s in val.split(",") if s.strip()]
+            # Single pattern stored as string, multiple as list
             a["include"] = parts[0] if len(parts) == 1 else parts
           elif field == "exclude":
             val = str(value)
@@ -734,17 +947,20 @@ class ImportConfigEditor:
             if parts:
               a["exclude"] = parts
             else:
-              a.pop("exclude", None)
+              a.pop("exclude", None)  # Remove empty exclude
           break
 
   def _create_folder_browse_inline_editor(self, sheet, key, value, annotations):
+    """Custom inline editor: text field + "..." browse button.
+    The browse button opens a secondary window with a FilesystemBrowser.
+    """
     hpack = lev2.ui.HorizontalPack.wfactory(["fb_hpack_" + key])
-    hpack.item_width = 28
+    hpack.item_width = 28    # Fixed width for the browse button
     current = str(value) if value else ""
     lineedit = hpack.makeChild(
       uiclass=lev2.ui.LineEdit,
       args=["", current, vec3(0.15, 0.15, 0.18)])
-    hpack.fill_widget = lineedit
+    hpack.fill_widget = lineedit  # Text field fills remaining space
     field_key = key
     editor = self
 
@@ -769,6 +985,7 @@ class ImportConfigEditor:
     return hpack
 
   def _create_platforms_inline_editor(self, sheet, key, value, annotations):
+    """Custom inline editor: checkbox row for platform selection (mac / linux)."""
     hpack = lev2.ui.HorizontalPack.wfactory(["platforms_hpack"])
     hpack.item_width = 80
     chk_color = vec3(0.7, 0.7, 0.8)
@@ -799,6 +1016,9 @@ class ImportConfigEditor:
     return hpack
 
   def _browse_folder(self, field_key):
+    """Open a secondary window with a FilesystemBrowser for folder selection.
+    The selected path is sanitized and written back to _editor_data.
+    """
     from ork.ui.filesystem_browser import FilesystemBrowser
     from obt import path as obt_path
 

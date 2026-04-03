@@ -65,6 +65,10 @@ public:
   virtual void hideMouseCursor() {}
   virtual void showMouseCursor() {}
 
+  // Clipboard access
+  virtual void setClipboardText(const std::string& text) {}
+  virtual std::string getClipboardText() const { return ""; }
+
   // Fullscreen mouse mode accessor
   bool fsMouseMode() const { return _fsMouseMode; }
 

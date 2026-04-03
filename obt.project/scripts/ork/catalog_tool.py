@@ -1,5 +1,23 @@
 ################################################################################
 # Catalog Tool — Model (business logic, no UI imports)
+#
+# This is the Model layer of an MVC-structured catalog tool for managing
+# orkid asset catalogs. It contains:
+#
+#   - Utility functions for display formatting and path resolution
+#   - VarMap builders that produce display-ready property dicts for UI views
+#   - CatalogModel class — core business logic with no UI dependencies
+#
+# Data hierarchy:
+#   Project  ->  Namespace(s)  ->  Asset(s)  ->  Chunk(s)
+#
+# Projects are derived from manifest file paths (not stored explicitly in
+# manifests). Namespaces group related assets. Each asset has a chunk
+# manifest describing how its encrypted archive is split into downloadable
+# pieces. Chunks are stored locally under <cache>/enc/chunks/.
+#
+# The companion View/Controller modules (catalog_tool_qt.py, etc.) import
+# this module and register callbacks on CatalogModel to drive their UI.
 ################################################################################
 
 import os, re, time, threading, json, requests, urllib3
@@ -23,19 +41,30 @@ def format_size(nbytes):
   return f"{int(size)} {units[idx]}" if idx == 0 else f"{size:.1f} {units[idx]}"
 
 def derive_project_name(source_file):
-  """Extract project name from manifest source_file path."""
+  """Extract project name from manifest source_file path.
+
+  Walks the path looking for the 'asset_manifests' directory, then uses
+  the parent (or grandparent for obt.project/ork.data) as the project name.
+  e.g. '/foo/myproj/obt.project/asset_manifests/ns.json' -> 'myproj'
+  """
   parts = source_file.replace("\\", "/").split("/")
   for i, p in enumerate(parts):
     if p == "asset_manifests" and i >= 2:
       parent = parts[i - 1]
       grandparent = parts[i - 2]
+      # obt.project and ork.data are infrastructure dirs, go one level up
       if parent in ("obt.project", "ork.data"):
         return grandparent
       return parent
   return "unknown"
 
 def sanitize_path(abspath):
-  """Replace longest-matching env var prefix with ${VAR}."""
+  """Replace longest-matching env var prefix with ${VAR}.
+
+  Makes paths portable across machines by substituting project-specific
+  env vars (e.g. ${OBT_STAGE}) instead of hard-coded absolute paths.
+  Generic shell vars (HOME, PATH, etc.) are excluded to avoid confusion.
+  """
   abspath = os.path.abspath(abspath)
   best_var = None
   best_len = 0
@@ -58,11 +87,17 @@ def sanitize_path(abspath):
 
 def resolve_bad_path(bad_path, manifest_dir):
   """Try to resolve a bad absolute path (from another machine) to a local path,
-     then sanitize with env var prefix."""
+     then sanitize with env var prefix.
+
+  Import configs may contain absolute paths baked from a different user's
+  machine. This function tries progressively shorter suffixes of the bad path
+  against the local project root until a match is found.
+  """
   if not bad_path or not os.path.isabs(bad_path):
     return bad_path
   if os.path.exists(bad_path):
     return sanitize_path(bad_path)
+  # Walk up from manifest_dir to find the project root
   project_root = manifest_dir
   for _ in range(3):
     parent = os.path.dirname(project_root)
@@ -70,6 +105,7 @@ def resolve_bad_path(bad_path, manifest_dir):
       project_root = parent
     else:
       break
+  # Try progressively shorter suffixes: e.g. "a/b/c/d" -> "b/c/d" -> "c/d" -> "d"
   parts = bad_path.replace("\\", "/").rstrip("/").split("/")
   for i in range(len(parts) - 1, 0, -1):
     suffix = os.path.join(*parts[i:])
@@ -80,14 +116,19 @@ def resolve_bad_path(bad_path, manifest_dir):
 
 ################################################################################
 # VarMap builders (display-ready property dicts)
+#
+# These functions produce flat string-keyed dicts that UI views can display
+# directly in property sheets. They read from CatalogModel state and resolve
+# CDN/encryption info into human-readable values.
 ################################################################################
 
 def build_namespace_varmap(model, ns_id):
-  """Build a flat dict of namespace properties."""
+  """Build a flat dict of namespace properties for the property sheet view."""
   d = {}
   d["Name"] = ns_id
   d["Asset Count"] = str(len(model.ns_assets.get(ns_id, [])))
 
+  # Encryption and remote location from the merged config space
   merged = model.cfgspc.merged_config
   ek = merged.getEncryptionKeyForNamespace(ns_id) if merged else None
   d["Encryption Key"] = "Yes" if ek else "No"
@@ -95,6 +136,7 @@ def build_namespace_varmap(model, ns_id):
   remote_loc = model.cfgspc.getNamespaceRemoteLocation(ns_id) or ""
   d["Remote Location"] = remote_loc
 
+  # Resolve remote location to get concrete URLs and auth info
   if remote_loc and merged:
     resolved = merged.resolveRemoteLocation(remote_loc)
     if resolved:
@@ -116,6 +158,7 @@ def build_namespace_varmap(model, ns_id):
       else:
         d["API Key (write)"] = "No"
 
+  # Aggregate chunk presence and size stats across all assets in namespace
   total, present = 0, 0
   total_sz, local_sz = 0, 0
   for fqid in model.ns_assets.get(ns_id, []):
@@ -130,6 +173,7 @@ def build_namespace_varmap(model, ns_id):
   d["Chunks Local"] = f"{present} / {total}"
   d["Size Local"] = f"{format_size(local_sz)} / {format_size(total_sz)}"
 
+  # Include CDN health info if we've pinged this endpoint
   cdn_url = d.get("Download URL", "")
   if cdn_url:
     from urllib.parse import urlparse
@@ -148,7 +192,7 @@ def build_namespace_varmap(model, ns_id):
 
 
 def build_asset_varmap(model, fqid):
-  """Build a flat dict of asset properties."""
+  """Build a flat dict of asset properties for the property sheet view."""
   d = {}
   entry = model.asset_entries.get(fqid)
   if not entry:
@@ -165,8 +209,9 @@ def build_asset_varmap(model, fqid):
   d["Encrypted Size"] = format_size(entry.encrypted_size)
   if entry.archive_size > 0:
     r = 100.0 - (entry.compressed_size / entry.archive_size * 100.0)
-    d["Compression"] = f"{r:.1f}%"
+    d["Compression"] = f"{r:.1f}%"  # space savings from compression
 
+  # Hash and integrity metadata
   if hasattr(entry, 'content_hash') and entry.content_hash:
     d["Content Hash"] = str(entry.content_hash)
   if hasattr(entry, 'storage_hash') and entry.storage_hash:
@@ -174,6 +219,7 @@ def build_asset_varmap(model, fqid):
   if hasattr(entry, 'hash_algorithm') and entry.hash_algorithm:
     d["Hash Algorithm"] = str(entry.hash_algorithm)
 
+  # Chunk manifest: describes how the encrypted archive is split into pieces
   cm = entry.chunk_manifest if hasattr(entry, 'chunk_manifest') else None
 
   if cm and hasattr(cm, 'file_hash') and cm.file_hash:
@@ -188,6 +234,7 @@ def build_asset_varmap(model, fqid):
     if hasattr(cm, 'chunk_size'):
       d["Chunk Size"] = format_size(cm.chunk_size)
 
+  # Local chunk presence and hash-validity counts
   cs = model.chunk_status.get(fqid, [])
   total = len(cs)
   present = sum(1 for x in cs if x)
@@ -197,6 +244,7 @@ def build_asset_varmap(model, fqid):
   valid = sum(1 for x in vs if x)
   d["Chunks Valid"] = f"{valid} / {len(vs)}"
 
+  # Resolved local file path (where dearchived asset lives)
   if hasattr(entry, 'local_loc') and entry.local_loc:
     d["Local Location"] = str(entry.local_loc)
     merged = model.cfgspc.merged_config
@@ -209,6 +257,7 @@ def build_asset_varmap(model, fqid):
     d["Local Path"] = str(entry.resolved_local_path)
     d["Local Exists"] = "Yes" if os.path.exists(str(entry.resolved_local_path)) else "No"
 
+  # fqid format is "namespace|asset_id" — split to get the namespace
   ns = fqid.split("|")[0]
   remote_loc = model.cfgspc.getNamespaceRemoteLocation(ns)
   if remote_loc:
@@ -228,64 +277,85 @@ class CatalogModel:
 
   All state lives here. Frontends read properties and call actions.
   Callbacks fire on state changes so any frontend can react.
+
+  Callback system:
+    Frontends register callbacks by assigning callables to the on_* attrs.
+    The model fires them via _fire() when state changes. Callbacks may fire
+    from background threads (e.g. CDN health checks, import runs), so
+    frontends must handle thread safety (e.g. Qt signals, tkinter after()).
+
+  Threading model:
+    _bg() launches daemon threads for long-running operations (CDN pings,
+    imports). poll() is meant to be called from the UI's update/timer loop
+    to check async fetch progress without blocking the main thread.
   """
 
   def __init__(self):
-    # Callbacks (set by frontend)
-    self.on_scan_complete = None
-    self.on_chunk_status_changed = None
-    self.on_fetch_started = None
-    self.on_fetch_progress = None
-    self.on_fetch_complete = None
-    self.on_cdn_health_updated = None
-    self.on_import_started = None
-    self.on_import_output = None
-    self.on_import_complete = None
-    self.on_verify_complete = None
-    self.on_error = None
-    self.on_dirty = None  # generic "something changed" signal
+    # --- Callbacks (set by frontend) ---
+    # Frontends assign callables here; model calls them on state changes.
+    # All are optional (None = no-op).
+    self.on_scan_complete = None       # () -> called after full rescan
+    self.on_chunk_status_changed = None # (fqid) -> chunk files changed on disk
+    self.on_fetch_started = None       # (fqid) -> async download kicked off
+    self.on_fetch_progress = None      # (fqid) -> download progress updated
+    self.on_fetch_complete = None      # (fqid, success) -> download finished
+    self.on_cdn_health_updated = None  # () -> CDN ping results ready
+    self.on_import_started = None      # (ic_name) -> import process started
+    self.on_import_output = None       # (ic_name, text) -> live import output
+    self.on_import_complete = None     # (ic_name, success) -> import finished
+    self.on_verify_complete = None     # (fqid, result_str) -> hash verify done
+    self.on_error = None               # (message) -> error occurred
+    self.on_dirty = None               # () -> generic "something changed" signal
 
-    # Data properties
-    self.namespaces = []
-    self.projects = []
-    self.project_namespaces = {}
-    self.project_manifests = {}
-    self.project_import_configs = {}
-    self.ns_project = {}
-    self.ns_manifests = {}
-    self.ns_import_configs = {}
-    self.ns_assets = {}
-    self.asset_entries = {}
-    self.asset_manifest_file = {}
-    self.chunk_status = {}
-    self.chunk_valid = {}
-    self.cdn_status = {}
-    self.cdn_health = {}
-    self.active_fetches = {}
-    self.hash_verify_results = {}
-    self.import_output_lines = []
-    self.import_config_paths = {}
-    self.import_config_data = {}
+    # --- Data: project/namespace/asset hierarchy ---
+    self.namespaces = []               # sorted list of all namespace IDs
+    self.projects = []                 # sorted list of derived project names
+    self.project_namespaces = {}       # project -> [namespace IDs]
+    self.project_manifests = {}        # project -> [manifest basenames]
+    self.project_import_configs = {}   # project -> [import config basenames]
+    self.ns_project = {}               # namespace -> project name
+    self.ns_manifests = {}             # namespace -> [manifest basenames]
+    self.ns_import_configs = {}        # namespace -> [import config basenames]
+    self.ns_assets = {}                # namespace -> [fqid strings]
 
-    # Internal
-    self.http_session = requests.Session()
-    self.cdn_ping_time = 0
-    self.cdn_ping_interval = 1.0
-    self.cdn_ping_running = False
-    self._last_fetch_snap = None
+    # --- Data: per-asset state ---
+    self.asset_entries = {}            # fqid -> AssetEntry object (from C++)
+    self.asset_manifest_file = {}      # fqid -> manifest basename it came from
+    self.chunk_status = {}             # fqid -> [bool] per-chunk presence on disk
+    self.chunk_valid = {}              # fqid -> [bool] per-chunk hash validity
+    self.cdn_status = {}               # fqid -> [bool] per-chunk presence on CDN
+    self.cdn_health = {}               # hostname -> {reachable, latency_ms, ...}
+    self.active_fetches = {}           # fqid -> FetchRequest (in-progress downloads)
+    self.hash_verify_results = {}      # fqid -> result string ("OK", "MISMATCH", ...)
 
-    # Catalog (initialized by init())
-    self.cfgspc = None
-    self.catalog = None
+    # --- Data: import configs ---
+    self.import_output_lines = []      # live output lines from current import
+    self.import_config_paths = {}      # basename -> absolute file path
+    self.import_config_data = {}       # basename -> parsed JSON (cached)
+
+    # --- Internal state ---
+    self.http_session = requests.Session()  # reused for CDN requests
+    self.cdn_ping_time = 0             # timestamp of last CDN health check
+    self.cdn_ping_interval = 1.0       # seconds between automatic re-pings
+    self.cdn_ping_running = False      # guard against overlapping ping threads
+    self._last_fetch_snap = None       # snapshot for detecting fetch progress changes
+
+    # --- Catalog engine objects (initialized by init()) ---
+    self.cfgspc = None                 # ConfigSpace: merged config + env overrides
+    self.catalog = None                # AssetCatalog: C++ catalog engine
 
   def _fire(self, cb, *args):
+    """Invoke a callback if registered. Safe to call with None callbacks."""
     if cb:
       cb(*args)
 
   def _mark_dirty(self):
+    """Signal that model state changed — frontends should refresh their views."""
     self._fire(self.on_dirty)
 
   def _bg(self, fn):
+    """Run fn on a daemon thread. NOTE: callbacks fired from fn will execute
+    on the background thread, not the main/UI thread."""
     t = threading.Thread(target=fn, daemon=True)
     t.start()
 
@@ -294,11 +364,11 @@ class CatalogModel:
   ############################################################################
 
   def init(self):
-    """Initialize catalog and perform initial scan."""
+    """Initialize catalog engine, scan all manifests, and start CDN health check."""
     self.cfgspc, self.catalog = ork_assets.default_cfg_and_catalog()
     self.scan()
-    self._bg(self.check_cdn_health)
-    # Disable DOWNLOAD log channel
+    self._bg(self.check_cdn_health)  # non-blocking CDN ping on startup
+    # Suppress noisy per-chunk download log messages
     logger = core.Logger.instance()
     dl_chan = logger.getChannel("DOWNLOAD")
     if dl_chan:
@@ -309,7 +379,13 @@ class CatalogModel:
   ############################################################################
 
   def scan(self):
-    """Full rescan of catalog + chunks."""
+    """Full rescan: re-read all manifests, rebuild hierarchy, check all chunks.
+
+    Populates the project -> namespace -> asset -> chunk hierarchy from
+    the catalog engine's manifest files. Distinguishes "real" manifests
+    (containing assets with storage_hash) from import configs (JSON files
+    that define import operations but have no actual asset data yet).
+    """
     self.namespaces = sorted(self.catalog.list_namespaces("*"))
     self.ns_assets = {}
     self.asset_entries = {}
@@ -325,6 +401,7 @@ class CatalogModel:
     self.ns_import_configs = {}
     self.asset_manifest_file = {}
 
+    # Phase 1: Build project/namespace hierarchy from manifest source files
     for ns in self.namespaces:
       manifests = self.catalog.manifestsForNamespace(ns)
       project = "unknown"
@@ -337,12 +414,14 @@ class CatalogModel:
             project = derive_project_name(sf)
           basename = os.path.basename(sf)
           assets = m.assets
+          # A "real" manifest has assets with storage hashes (already imported)
           is_real = assets and any(hasattr(assets[k], 'storage_hash') and assets[k].storage_hash for k in assets)
           if is_real:
             ns_files.append(basename)
             for asset_id in assets.keys():
               self.asset_manifest_file[f"{ns}|{asset_id}"] = basename
           else:
+            # No storage hashes = this is an import config, not a data manifest
             ns_import_configs.append(basename)
             self.import_config_paths[basename] = sf
       self.ns_project[ns] = project
@@ -358,8 +437,9 @@ class CatalogModel:
       self.project_import_configs[proj] = sorted(self.project_import_configs.get(proj, set()))
     self.projects = sorted(self.project_namespaces.keys())
 
+    # Phase 2: Enumerate assets per namespace and scan their chunk status
     for ns in self.namespaces:
-      fqids = sorted(self.catalog.list_assets(f"{ns}|*"))
+      fqids = sorted(self.catalog.list_assets(f"{ns}|*"))  # glob for all assets
       self.ns_assets[ns] = fqids
       for fqid in fqids:
         entry = self.catalog.findAssetEntry(fqid)
@@ -370,7 +450,12 @@ class CatalogModel:
     self._mark_dirty()
 
   def scan_chunks(self, fqid, entry=None):
-    """Deep scan single asset (with hash verify)."""
+    """Deep scan single asset — checks both file presence and hash validity.
+
+    Chunk files are named: <storage_hash>.chunk.<NNNN> and live in
+    <cache_dir>/enc/chunks/. Each chunk's xxhash64 is compared against
+    the expected hash in the chunk manifest.
+    """
     if entry is None:
       entry = self.asset_entries.get(fqid)
     if not entry or not hasattr(entry, 'chunk_manifest') or not entry.chunk_manifest:
@@ -402,7 +487,8 @@ class CatalogModel:
     self.chunk_valid[fqid] = valid
 
   def scan_chunks_fast(self, fqid, entry=None):
-    """Presence-only check — no hash verification."""
+    """Presence-only check — no hash verification. Used during active downloads
+    to quickly update progress without the overhead of reading+hashing each chunk."""
     if entry is None:
       entry = self.asset_entries.get(fqid)
     if not entry or not hasattr(entry, 'chunk_manifest') or not entry.chunk_manifest:
@@ -467,6 +553,14 @@ class CatalogModel:
 
   ############################################################################
   # Key parsing
+  #
+  # Tree widget keys encode the hierarchy level:
+  #   "myproject"              -> project
+  #   "myproject/mynamespace"  -> namespace (project/ns)
+  #   "myproject/ns|assetname" -> asset (project/ns|asset = project/fqid)
+  #
+  # The "|" separator distinguishes asset keys from namespace keys.
+  # The "/" separator separates project from the rest.
   ############################################################################
 
   def key_type(self, key):
@@ -505,6 +599,10 @@ class CatalogModel:
 
   ############################################################################
   # Capability queries
+  #
+  # These check whether operations are possible for a namespace, based on
+  # the presence of encryption keys, API keys, and CDN reachability.
+  # Used by UI to enable/disable action buttons.
   ############################################################################
 
   def ns_cdn_reachable(self, ns):
@@ -552,6 +650,15 @@ class CatalogModel:
 
   ############################################################################
   # Import config operations
+  #
+  # Import configs are JSON files that define how to import raw source
+  # files into the asset catalog. They specify:
+  #   - namespace, source_dir, local_loc, manifest output path
+  #   - encryption_key, platforms, priority
+  #   - assets: list of {id, include glob, exclude globs}
+  #
+  # The actual import is performed by catalog_import.py; this model
+  # manages loading/saving/creating the config files and running imports.
   ############################################################################
 
   def load_import_config(self, basename):
@@ -570,17 +677,18 @@ class CatalogModel:
       return None
 
   def save_import_config(self, basename, data):
-    """Write JSON to disk."""
+    """Write JSON to disk and invalidate the cache so next load re-reads."""
     path = self.import_config_paths.get(basename)
     if not path:
       return
     with open(path, 'w') as f:
       json.dump(data, f, indent=2)
       f.write('\n')
-    self.import_config_data.pop(basename, None)
+    self.import_config_data.pop(basename, None)  # invalidate cache
 
   def create_import_config(self, project):
-    """Create a new empty import config in the project's manifest dir. Returns basename."""
+    """Create a new template import config in the project's manifest dir.
+    Returns the basename of the created file, or None on failure."""
     if project not in self.project_namespaces:
       return None
     ns_list = self.project_namespaces.get(project, [])
@@ -621,7 +729,8 @@ class CatalogModel:
     return basename
 
   def import_config_needs_autocorrect(self, ic_name):
-    """Check if import config has absolute paths (should use ${ENV_VAR} form)."""
+    """Check if import config has hard-coded absolute paths that should be
+    converted to portable ${ENV_VAR} form via autocorrect."""
     data = self.load_import_config(ic_name)
     if not data:
       return False
@@ -661,7 +770,12 @@ class CatalogModel:
       self._mark_dirty()
 
   def run_import(self, ic_name, dry_run=False, list_only=False):
-    """Run the import operation with live output."""
+    """Run the import operation on a background thread with live output.
+
+    A LiveStream adapter captures output from catalog_import and fires
+    on_import_output callbacks so the UI can display progress in real time.
+    On success (non-dry-run), automatically rescans the catalog.
+    """
     from ork import catalog_import
     path = self.import_config_paths.get(ic_name)
     if not path:
@@ -706,7 +820,8 @@ class CatalogModel:
     self._bg(run_thread)
 
   def list_import_assets(self, config_data):
-    """Test match — returns list of (pak_id, files) tuples."""
+    """Dry-run asset matching — returns list of (pak_id, files) tuples showing
+    which source files each asset definition would include."""
     from ork import catalog_import
     assets_list = []
     for a in config_data.get("assets", []):
@@ -734,9 +849,9 @@ class CatalogModel:
   ############################################################################
 
   def fetch(self, fqid):
-    """Async fetch single asset."""
+    """Start async download of a single asset's chunks from CDN."""
     fetch_req = self.catalog.fetchAsync(fqid)
-    self.active_fetches[fqid] = fetch_req
+    self.active_fetches[fqid] = fetch_req  # tracked by poll()
     self._last_fetch_snap = None
     self._fire(self.on_fetch_started, fqid)
     self._mark_dirty()
@@ -788,7 +903,9 @@ class CatalogModel:
   ############################################################################
 
   def verify_hashes(self, fqid):
-    """Verify assembled file hash from chunks on disk."""
+    """Verify the whole-file hash by concatenating all chunks and comparing
+    against the expected file_hash in the chunk manifest. This is a stronger
+    check than per-chunk hashes — it catches ordering or truncation issues."""
     from orkengine.core import xxhash64_chunk
     self.hash_verify_results[fqid] = "verifying..."
     self._mark_dirty()
@@ -804,6 +921,7 @@ class CatalogModel:
       return
     cache_dir = self.catalog.cache_dir
     chunks_dir = os.path.join(cache_dir, 'enc', 'chunks')
+    # Reassemble all chunks in order and hash the result
     all_data = bytearray()
     for i in range(len(cm.chunks)):
       cp = os.path.join(chunks_dir, f"{entry.storage_hash}.chunk.{i:04d}")
@@ -825,7 +943,12 @@ class CatalogModel:
     self._mark_dirty()
 
   def verify_cdn(self, fqid):
-    """Check CDN chunk presence for a single asset."""
+    """Check CDN chunk presence for a single asset via the verify API.
+
+    Sends a batch POST to the CDN's /api/<endpoint>/verify endpoint with
+    chunk filenames and expected hashes. The CDN responds with a 'present'
+    boolean per chunk. Results are stored in self.cdn_status[fqid].
+    """
     entry = self.asset_entries.get(fqid)
     if not entry or not hasattr(entry, 'chunk_manifest') or not entry.chunk_manifest:
       return
@@ -844,6 +967,9 @@ class CatalogModel:
         'file': f"{entry.storage_hash}.chunk.{i:04d}",
         'expected_hash': f"{chunk.hash:016x}",
       })
+    # Derive the verify API URL from the download URL pattern
+    # e.g. https://cdn.example.com/repo/myendpoint/download
+    #   -> https://cdn.example.com/repo/api/myendpoint/verify
     download_url = str(resolved.download_url)
     endpoint_match = re.search(r'/([^/]+)/download/?$', download_url)
     if not endpoint_match:
@@ -869,7 +995,12 @@ class CatalogModel:
     self._mark_dirty()
 
   def verify_cdn_batch(self, fqids):
-    """Verify multiple assets in a single POST per namespace."""
+    """Verify multiple assets in a single POST per namespace.
+
+    Groups assets by namespace (each namespace has its own CDN endpoint),
+    collects all chunk requests into one batch, and maps the flat response
+    array back to per-asset cdn_status lists using boundary tracking.
+    """
     by_ns = {}
     for fqid in fqids:
       ns = fqid.split("|")[0]
@@ -894,8 +1025,8 @@ class CatalogModel:
       if hasattr(resolved, 'api_key_read') and resolved.api_key_read:
         headers['X-API-Key'] = resolved.api_key_read
 
-      all_chunks = []
-      boundaries = []
+      all_chunks = []       # flat list of all chunk requests for this namespace
+      boundaries = []       # (fqid, start_index, count) to slice results back
       for fqid in ns_fqids:
         entry = self.asset_entries.get(fqid)
         if not entry or not hasattr(entry, 'chunk_manifest') or not entry.chunk_manifest:
@@ -931,12 +1062,26 @@ class CatalogModel:
 
     self._mark_dirty()
 
+  def validate_cdn_all(self):
+    """Verify CDN presence for all assets that have local chunks.
+    Calls verify_cdn_batch per namespace. Results populate self.cdn_status."""
+    all_fqids = []
+    for ns in self.namespaces:
+      for fqid in self.ns_assets.get(ns, []):
+        cs = self.chunk_status.get(fqid, [])
+        # Only verify assets that have at least one local chunk
+        if cs and any(cs):
+          all_fqids.append(fqid)
+    if all_fqids:
+      self.verify_cdn_batch(all_fqids)
+
   ############################################################################
   # Local cache
   ############################################################################
 
   def clear_local(self, fqid):
-    """Delete local chunks + encrypted + dearchived."""
+    """Delete all local files for an asset: chunk files, encrypted archive,
+    and the dearchived output directory/file."""
     import shutil
     entry = self.asset_entries.get(fqid)
     if not entry:
@@ -983,23 +1128,30 @@ class CatalogModel:
   ############################################################################
 
   def poll(self):
-    """Poll active fetches, periodic CDN re-ping. Returns True if something changed."""
+    """Called from the UI's timer/update loop to drive async progress.
+
+    This is the main mechanism for bridging async C++ fetch operations with
+    the UI. It checks for completed downloads, detects progress changes via
+    snapshot comparison, and triggers periodic CDN health re-pings.
+
+    Returns True if any state changed (so the UI knows to refresh).
+    """
     changed = False
 
-    # Poll completed fetches
+    # 1. Check for completed fetches — do a full hash-verified scan
     done = []
     for fqid, req in self.active_fetches.items():
       if req.completed:
         done.append(fqid)
         entry = self.asset_entries.get(fqid)
         if entry:
-          self.scan_chunks(fqid, entry)
+          self.scan_chunks(fqid, entry)  # deep scan with hash verify
         changed = True
     for fqid in done:
       del self.active_fetches[fqid]
       self._fire(self.on_fetch_complete, fqid, True)
 
-    # Check fetch progress
+    # 2. Detect in-progress download changes via snapshot comparison
     if self.active_fetches:
       new_snap = {}
       for fqid, req in self.active_fetches.items():
@@ -1009,13 +1161,13 @@ class CatalogModel:
         for fqid in self.active_fetches:
           entry = self.asset_entries.get(fqid)
           if entry:
-            self.scan_chunks_fast(fqid, entry)
+            self.scan_chunks_fast(fqid, entry)  # fast presence-only scan
         changed = True
     elif self._last_fetch_snap:
       self._last_fetch_snap = None
       changed = True
 
-    # Periodic CDN re-ping
+    # 3. Periodic CDN re-ping (non-blocking, runs on bg thread)
     if not self.cdn_ping_running:
       if time.time() - self.cdn_ping_time >= self.cdn_ping_interval:
         self.cdn_ping_running = True

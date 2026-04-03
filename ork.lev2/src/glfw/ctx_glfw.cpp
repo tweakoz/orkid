@@ -71,6 +71,19 @@ ui::event_constptr_t CtxGLFW::uievent() const {
   return _uievent;
 }
 ///////////////////////////////////////////////////////////////////////////////
+void CtxGLFW::setClipboardText(const std::string& text) {
+  if (_glfwWindow) {
+    glfwSetClipboardString(_glfwWindow, text.c_str());
+  }
+}
+std::string CtxGLFW::getClipboardText() const {
+  if (_glfwWindow) {
+    const char* txt = glfwGetClipboardString(_glfwWindow);
+    if (txt) return txt;
+  }
+  return "";
+}
+///////////////////////////////////////////////////////////////////////////////
 static GLFWmonitor* monitorForWindow(GLFWwindow* window) {
   int winX, winY;                         // window position
   glfwGetWindowPos(window, &winX, &winY); // get window position

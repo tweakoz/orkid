@@ -3041,7 +3041,11 @@ void pyinit_ui(py::module& module_lev2) {
           }), py::arg("font"), py::arg("color") = fvec4(1, 1, 1, 1))
           .def_readonly("font", &ui::TextPrimitive::_font)
           .def_readonly("color", &ui::TextPrimitive::_color)
+          .def_readwrite("clickable", &ui::TextPrimitive::_clickable)
           .def_property_readonly("itemCount", [](ui::textprimitive_ptr_t prim) { return prim->_items.size(); })
+          .def("item", [](ui::textprimitive_ptr_t prim, size_t idx) -> ui::TextItem& {
+            return prim->_items.at(idx);
+          }, py::return_value_policy::reference_internal)
           .def(
               "addItem",
               [](ui::textprimitive_ptr_t prim, std::string text, fvec2 position) {
