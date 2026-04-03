@@ -251,7 +251,11 @@ struct AssetCatalog {
   // Returns: upload receipt for the asset
   uploadreceipt_ptr_t uploadAsset(
     const assetid_t& fq_asset_id,
-    chunk_completed_callback_t on_chunk_completed = nullptr);
+    chunk_completed_callback_t on_chunk_completed = nullptr,
+    std::atomic<bool>* cancel_flag = nullptr);
+
+  // Async upload — returns UploadRequest with live progress tracking
+  uploadrequest_ptr_t uploadAssetAsync(const assetid_t& fq_asset_id);
 
   // Upload all namespaces to their configured remote locations
   // Returns: map of namespace ID to upload receipt

@@ -61,6 +61,10 @@ void pyinit_ui_toolbar(py::module& uimodule) {
               [](ui::toolbar_button_ptr_t btn) -> image_ptr_t { return btn->_pressed_image; },
               [](ui::toolbar_button_ptr_t btn, image_ptr_t img) { btn->_pressed_image = img; btn->_prev_pressed_image = nullptr; })
           .def_readwrite("custom_width", &ui::ToolbarButton::_custom_width)
+          .def_property(
+              "color_override",
+              [](ui::toolbar_button_ptr_t btn) -> fvec4 { return btn->_color_override; },
+              [](ui::toolbar_button_ptr_t btn, fvec4 c) { btn->_color_override = c; })
           .def_readwrite("tooltip", &ui::ToolbarButton::_tooltip)
           .def_readwrite("label", &ui::ToolbarButton::_label)
           .def_readwrite("toggle_mode", &ui::ToolbarButton::_toggle_mode)

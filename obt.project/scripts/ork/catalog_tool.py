@@ -326,6 +326,8 @@ class CatalogModel:
     self.cdn_status = {}               # fqid -> [bool] per-chunk presence on CDN
     self.cdn_health = {}               # hostname -> {reachable, latency_ms, ...}
     self.active_fetches = {}           # fqid -> FetchRequest (in-progress downloads)
+    self.active_uploads = {}           # fqid -> UploadRequest (in-progress uploads)
+    self._pending_cdn_verify = set()   # fqids awaiting CDN re-verify after upload
     self.hash_verify_results = {}      # fqid -> result string ("OK", "MISMATCH", ...)
 
     # --- Data: import configs ---
@@ -373,6 +375,8 @@ class CatalogModel:
     dl_chan = logger.getChannel("DOWNLOAD")
     if dl_chan:
       dl_chan.enabled = False
+    # Note: HTTPSUPLOAD channel is disabled in poll() because
+    # configureChannel() re-enables it when HttpsUploader is first constructed
 
   ############################################################################
   # Scanning
@@ -402,6 +406,7 @@ class CatalogModel:
     self.asset_manifest_file = {}
 
     # Phase 1: Build project/namespace hierarchy from manifest source files
+    seen_manifest_dirs = set()  # track manifest dirs for importconfigs/ scan
     for ns in self.namespaces:
       manifests = self.catalog.manifestsForNamespace(ns)
       project = "unknown"
@@ -412,6 +417,7 @@ class CatalogModel:
         if sf:
           if project == "unknown":
             project = derive_project_name(sf)
+          seen_manifest_dirs.add(os.path.dirname(sf))
           basename = os.path.basename(sf)
           assets = m.assets
           # A "real" manifest has assets with storage hashes (already imported)
@@ -430,6 +436,20 @@ class CatalogModel:
       self.project_namespaces.setdefault(project, []).append(ns)
       self.project_manifests.setdefault(project, set()).update(ns_files)
       self.project_import_configs.setdefault(project, set()).update(ns_import_configs)
+
+    # Scan importconfigs/ subdirectories for import configs not in the catalog
+    import glob
+    for mdir in seen_manifest_dirs:
+      ic_dir = os.path.join(mdir, "importconfigs")
+      if not os.path.isdir(ic_dir):
+        continue
+      project = derive_project_name(mdir + "/dummy")
+      for jf in sorted(glob.glob(os.path.join(ic_dir, "*.json"))):
+        basename = os.path.basename(jf)
+        if basename in self.import_config_paths:
+          continue
+        self.import_config_paths[basename] = jf
+        self.project_import_configs.setdefault(project, set()).add(basename)
 
     for proj in self.project_namespaces:
       self.project_namespaces[proj].sort()
@@ -686,8 +706,10 @@ class CatalogModel:
       f.write('\n')
     self.import_config_data.pop(basename, None)  # invalidate cache
 
-  def create_import_config(self, project):
+  def create_import_config(self, project, name=None, namespace=None):
     """Create a new template import config in the project's manifest dir.
+    name: base filename (without .json). If None, auto-generates.
+    namespace: namespace to use in template. If None, uses first in project.
     Returns the basename of the created file, or None on failure."""
     if project not in self.project_namespaces:
       return None
@@ -698,17 +720,27 @@ class CatalogModel:
     if not manifests or not manifests[0].source_file:
       return None
     manifest_dir = os.path.dirname(manifests[0].source_file)
-    base = f"{project}_import"
-    idx = 0
-    while True:
-      suffix = f"_{idx}" if idx > 0 else ""
-      filename = f"{base}{suffix}.json"
-      filepath = os.path.join(manifest_dir, filename)
-      if not os.path.exists(filepath):
-        break
-      idx += 1
+    ic_dir = os.path.join(manifest_dir, "importconfigs")
+    os.makedirs(ic_dir, exist_ok=True)
+    if name:
+      # User-provided name — ensure .json extension and uniqueness
+      if not name.endswith(".json"):
+        name = name + ".json"
+      filepath = os.path.join(ic_dir, name)
+      if os.path.exists(filepath):
+        return None  # refuse to overwrite
+    else:
+      base = f"{project}_import"
+      idx = 0
+      while True:
+        suffix = f"_{idx}" if idx > 0 else ""
+        name = f"{base}{suffix}.json"
+        filepath = os.path.join(ic_dir, name)
+        if not os.path.exists(filepath):
+          break
+        idx += 1
     template = {
-      "namespace": ns_list[0] if len(ns_list) == 1 else project,
+      "namespace": namespace or (ns_list[0] if len(ns_list) == 1 else project),
       "source_dir": sanitize_path(os.path.dirname(manifest_dir.rstrip("/"))),
       "local_loc": "<stage>/assetcache/" + project,
       "manifest": sanitize_path(os.path.join(manifest_dir, f"{project}.json")),
@@ -883,20 +915,31 @@ class CatalogModel:
   ############################################################################
 
   def upload(self, fqid):
-    """Upload single asset."""
-    try:
-      self.catalog.uploadAsset(fqid)
-    except Exception as e:
-      self._fire(self.on_error, f"Upload error: {e}")
+    """Async upload single asset with progress tracking."""
+    upload_req = self.catalog.uploadAssetAsync(fqid)
+    self.active_uploads[fqid] = upload_req
     self._mark_dirty()
 
   def upload_namespace(self, ns):
-    """Upload all in namespace."""
-    try:
-      self.catalog.uploadNamespace(ns)
-    except Exception as e:
-      self._fire(self.on_error, f"Upload error: {e}")
+    """Async upload all assets in namespace."""
+    for fqid in self.ns_assets.get(ns, []):
+      upload_req = self.catalog.uploadAssetAsync(fqid)
+      self.active_uploads[fqid] = upload_req
     self._mark_dirty()
+
+  def _do_cdn_verify_after_upload(self, fqid):
+    """Background: verify CDN then clear pending flag so UI updates."""
+    self.verify_cdn(fqid)
+    self._pending_cdn_verify.discard(fqid)
+    self._mark_dirty()
+
+  def cancel_upload(self, fqid):
+    """Cancel an active upload."""
+    req = self.active_uploads.get(fqid)
+    if req:
+      req.cancel()
+      del self.active_uploads[fqid]
+      self._mark_dirty()
 
   ############################################################################
   # Verification
@@ -1075,6 +1118,35 @@ class CatalogModel:
     if all_fqids:
       self.verify_cdn_batch(all_fqids)
 
+  def delete_from_manifest(self, fqid):
+    """Remove an asset entry from its manifest JSON file on disk, then rescan."""
+    manifest_basename = self.asset_manifest_file.get(fqid)
+    if not manifest_basename:
+      return
+    # Find the manifest file path
+    ns = fqid.split("|")[0]
+    asset_id = fqid.split("|")[1]
+    manifests = self.catalog.manifestsForNamespace(ns)
+    manifest_path = None
+    for m in manifests:
+      if m.source_file and os.path.basename(m.source_file) == manifest_basename:
+        manifest_path = m.source_file
+        break
+    if not manifest_path or not os.path.exists(manifest_path):
+      return
+    # Load, remove the asset, save
+    with open(manifest_path, 'r') as f:
+      data = json.load(f)
+    assets = data.get("assets", {})
+    if asset_id in assets:
+      del assets[asset_id]
+      with open(manifest_path, 'w') as f:
+        json.dump(data, f, indent=2)
+        f.write('\n')
+    # Rescan to reflect changes
+    core.AssetCatalog.reloadAllManifests(self.catalog)
+    self.scan()
+
   ############################################################################
   # Local cache
   ############################################################################
@@ -1167,7 +1239,43 @@ class CatalogModel:
       self._last_fetch_snap = None
       changed = True
 
-    # 3. Periodic CDN re-ping (non-blocking, runs on bg thread)
+    # 3. Check for completed uploads — queue CDN re-verify
+    ul_done = []
+    for fqid, req in self.active_uploads.items():
+      if req.completed:
+        ul_done.append(fqid)
+        changed = True
+    for fqid in ul_done:
+      del self.active_uploads[fqid]
+      # Queue CDN re-verify — poll will keep redrawing until verified
+      self._pending_cdn_verify.add(fqid)
+      self._bg(lambda f=fqid: self._do_cdn_verify_after_upload(f))
+
+    # 3b. Keep redrawing while CDN verify is pending
+    if self._pending_cdn_verify:
+      changed = True
+
+    # 3c. Keep HTTPSUPLOAD channel muted while uploads are active
+    #     (configureChannel re-enables it each time HttpsUploader is constructed)
+    if self.active_uploads or self._pending_cdn_verify:
+      logger = core.Logger.instance()
+      ul_chan = logger.getChannel("HTTPSUPLOAD")
+      if ul_chan and ul_chan.enabled:
+        ul_chan.enabled = False
+
+    # 4. Detect in-progress upload changes via snapshot comparison
+    if self.active_uploads:
+      new_ul_snap = {}
+      for fqid, req in self.active_uploads.items():
+        new_ul_snap[fqid] = (req.chunks_completed, req.bytes_uploaded)
+      if new_ul_snap != getattr(self, '_last_upload_snap', None):
+        self._last_upload_snap = new_ul_snap
+        changed = True
+    elif getattr(self, '_last_upload_snap', None):
+      self._last_upload_snap = None
+      changed = True
+
+    # 5. Periodic CDN re-ping (non-blocking, runs on bg thread)
     if not self.cdn_ping_running:
       if time.time() - self.cdn_ping_time >= self.cdn_ping_interval:
         self.cdn_ping_running = True

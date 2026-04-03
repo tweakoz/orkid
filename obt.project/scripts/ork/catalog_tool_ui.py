@@ -84,11 +84,11 @@ class CatalogOutlinerModel(lev2.ui.OutlinerModel):
     # Asset leaf: show just the asset name after "|"
     if "|" in key:
       return key.split("|", 1)[1]
-    # Namespace: show just the namespace after "/"
+    # Namespace: show namespace with label
     if "/" in key:
-      return key.split("/", 1)[1]
-    # Project: show raw key
-    return key
+      return f"{key.split('/', 1)[1]} (namespace)"
+    # Project: show project with label
+    return f"{key} (project)"
 
   def hasChildren(self, key):
     # Assets (containing "|") are always leaves
@@ -457,17 +457,35 @@ class CanvasDetailView:
           self._texts["label"].addItem(f"  ip: {ip}", vec2(cx, y + 14))
     return y + 30
 
-  def drawDownloadManagerStatus(self, model, y):
-    """Draw DL manager stats line. Returns new y."""
-    dm = model.catalog.download_manager
-    if dm:
-      active = dm.active_download_count()
-      pending = dm.pending_count
-      completed = dm.completed_count
-      failed = dm.failed_count
-      total_mb = dm.total_bytes_downloaded / 1048576.0
-      dm_txt = f"DL: active={active}  pending={pending}  completed={completed}  failed={failed}  total={total_mb:.1f}MB"
-      self._texts["label"].addItem(dm_txt, vec2(8, y))
+  def drawTransferStatus(self, model, y):
+    """Draw DL or UL status line (uploads take over when active). Returns new y."""
+    if model.active_uploads:
+      # Aggregate upload stats from all active UploadRequests
+      ul_active = len(model.active_uploads)
+      ul_bytes_done = 0
+      ul_bytes_total = 0
+      ul_chunks_done = 0
+      ul_chunks_total = 0
+      for req in model.active_uploads.values():
+        ul_bytes_done += req.bytes_uploaded
+        ul_bytes_total += req.bytes_total
+        ul_chunks_done += req.chunks_completed
+        ul_chunks_total += req.chunks_total
+      pending_mb = (ul_bytes_total - ul_bytes_done) / 1048576.0
+      total_mb = ul_bytes_total / 1048576.0
+      done_mb = ul_bytes_done / 1048576.0
+      txt = f"UL: active={ul_active}  {done_mb:.1f}/{total_mb:.1f}MB  pending={pending_mb:.1f}MB  chunks={ul_chunks_done}/{ul_chunks_total}"
+      self._texts["status_warn"].addItem(txt, vec2(8, y))
+    else:
+      dm = model.catalog.download_manager
+      if dm:
+        active = dm.active_download_count()
+        pending = dm.pending_count
+        completed = dm.completed_count
+        failed = dm.failed_count
+        total_mb = dm.total_bytes_downloaded / 1048576.0
+        dm_txt = f"DL: active={active}  pending={pending}  completed={completed}  failed={failed}  total={total_mb:.1f}MB"
+        self._texts["label"].addItem(dm_txt, vec2(8, y))
     return y + 16
 
   def _hitTestClickableText(self, mx, my):
@@ -553,6 +571,51 @@ class CanvasDetailView:
 #     secondary window with a FilesystemBrowser
 ################################################################################
 
+################################################################################
+# TextPromptOverlay — small overlay with a label + line edit for text input
+################################################################################
+
+class TextPromptOverlay:
+  """Small centered overlay that prompts for a text value.
+  Shows a label, a LineEdit, and commits on Enter / cancels on Escape."""
+
+  def __init__(self, uicontext, ezapp, label, default_text="", on_commit=None):
+    self.uicontext = uicontext
+    self.on_commit = on_commit
+
+    lg = ezapp.topLayoutGroup
+    top_w = lg.width
+    top_h = lg.height
+    ow = min(500, top_w - 40)
+    oh = 120
+    ox = (top_w - ow) // 2
+    oy = (top_h - oh) // 2
+
+    # Just push a LineEdit directly as the overlay
+    lineedit = uicontext.createOverlayWidget(
+      lev2.ui.LineEdit, ["prompt_input", default_text, vec3(0.15, 0.15, 0.2)])
+    lineedit.highlight = True
+
+    prompt = self
+
+    def on_text_committed(text):
+      uicontext.popOverlay()
+      if prompt.on_commit and text.strip():
+        prompt.on_commit(text.strip())
+
+    def on_cancel():
+      uicontext.popOverlay()
+
+    lineedit.onTextCommitted(on_text_committed)
+    lineedit.onCancel(on_cancel)
+
+    uicontext.pushOverlay(lineedit, ox, oy, ow, oh, dismiss_on_click_outside=True)
+
+
+################################################################################
+# ImportConfigEditor
+################################################################################
+
 class ImportConfigEditor:
   """Self-contained overlay editor for import config JSON files."""
 
@@ -565,8 +628,30 @@ class ImportConfigEditor:
     self._editor_ic_name = None     # Name of the import config being edited
     self._editor_ic_path = None     # Filesystem path to the JSON file
     self._editor_data = None        # Mutable dict — the live working copy
-    self._editor_dirty = False      # True if unsaved edits exist
+    self.__editor_dirty = False     # True if unsaved edits exist (use property)
     self._editor_selected_key = None  # Currently selected outliner key
+    self._btn_close = None
+    self._btn_save = None
+
+  @property
+  def _editor_dirty(self):
+    return self.__editor_dirty
+
+  @_editor_dirty.setter
+  def _editor_dirty(self, val):
+    self.__editor_dirty = val
+    self._update_dirty_buttons()
+
+  def _update_dirty_buttons(self):
+    """Update close/save button colors based on dirty state."""
+    if not self._btn_close or not self._btn_save:
+      return
+    if self.__editor_dirty:
+      self._btn_close.color_override = vec4(0.5, 0.12, 0.12, 1)  # red = unsaved changes
+      self._btn_save.color_override = vec4(0.12, 0.4, 0.12, 1)   # green = save available
+    else:
+      self._btn_close.color_override = vec4(0, 0, 0, 0)  # transparent = default
+      self._btn_save.color_override = vec4(0, 0, 0, 0)
 
   def open(self, ic_name):
     """Open editor overlay for named import config."""
@@ -620,13 +705,13 @@ class ImportConfigEditor:
     self._editor_toolbar.item_spacing = 8
     self._editor_toolbar.edge_padding = 8
 
-    btn_close = self._editor_toolbar.addTextButton("ed_close", "CLOSE")
-    btn_close.custom_width = 56
-    btn_close.onPressed(lambda: self.close())
+    self._btn_close = self._editor_toolbar.addTextButton("ed_close", "CLOSE")
+    self._btn_close.custom_width = 56
+    self._btn_close.onPressed(lambda: self.close())
 
-    btn_save = self._editor_toolbar.addTextButton("ed_save", "SAVE")
-    btn_save.custom_width = 48
-    btn_save.onPressed(lambda: self.save())
+    self._btn_save = self._editor_toolbar.addTextButton("ed_save", "SAVE")
+    self._btn_save.custom_width = 48
+    self._btn_save.onPressed(lambda: self.save())
 
     btn_revert = self._editor_toolbar.addTextButton("ed_revert", "REVERT")
     btn_revert.custom_width = 64
@@ -639,6 +724,10 @@ class ImportConfigEditor:
     btn_test = self._editor_toolbar.addTextButton("ed_testmatch", "TEST MATCH")
     btn_test.custom_width = 88
     btn_test.onPressed(lambda: self.test_match())
+
+    btn_browse = self._editor_toolbar.addTextButton("ed_browseloc", "BROWSELOC")
+    btn_browse.custom_width = 88
+    btn_browse.onPressed(lambda: self.browse_local_loc())
 
     # HPack for outliner + propsheet (fills remaining vertical space)
     self._editor_hpack = self._editor_vpack.makeChild(
@@ -683,6 +772,12 @@ class ImportConfigEditor:
     self._editor_propsheet.registerEditorFactory(
       tokens.FolderBrowse,
       self._create_folder_browse_inline_editor)
+    self._editor_propsheet.registerEditorFactory(
+      tokens.EncKeySelect,
+      self._create_enc_key_inline_editor)
+    self._editor_propsheet.registerEditorFactory(
+      tokens.NamespaceSelect,
+      self._create_namespace_inline_editor)
 
     self.uicontext.pushOverlay(
       self._editor_frame,
@@ -883,6 +978,12 @@ class ImportConfigEditor:
         fb_annot = core.VarMap()
         fb_annot.type = tokens.FolderBrowse
         model.setAnnotations(fkey, fb_annot)
+      ek_annot = core.VarMap()
+      ek_annot.type = tokens.EncKeySelect
+      model.setAnnotations("encryption_key", ek_annot)
+      ns_annot = core.VarMap()
+      ns_annot.type = tokens.NamespaceSelect
+      model.setAnnotations("namespace", ns_annot)
     elif key.startswith("AssetPaks/"):
       pak_id = key.split("/", 1)[1]
       self._editor_propsheet.data = self._build_pak_varmap(pak_id)
@@ -1015,6 +1116,52 @@ class ImportConfigEditor:
     chk_linux.onToggled = on_toggled
     return hpack
 
+  def _create_enc_key_inline_editor(self, sheet, key, value, annotations):
+    """Custom inline editor: ChoicelistWidget dropdown of env vars matching *ENC_KEY*."""
+    current = str(value) if value else ""
+    # Scan environment for vars containing ENC_KEY
+    enc_vars = sorted(v for v in os.environ if "ENC_KEY" in v)
+    choices = [f"${{{v}}}" for v in enc_vars]
+    if current and current not in choices:
+      choices.insert(0, current)  # keep current value visible even if not in env
+
+    widget = lev2.ui.ChoicelistWidget("ek_" + key, current if current else "(none)")
+    widget.setChoices(choices)
+    widget.bg_color = vec4(0.15, 0.15, 0.2, 1)
+
+    editor = self
+    def on_selected(selected):
+      editor._editor_data["encryption_key"] = selected
+      editor._editor_dirty = True
+      widget.current_value = selected
+
+    widget.onChoiceSelected = on_selected
+    return widget
+
+  def _create_namespace_inline_editor(self, sheet, key, value, annotations):
+    """Custom inline editor: ChoicelistWidget dropdown of project's namespaces."""
+    from ork.catalog_tool import derive_project_name
+    current = str(value) if value else ""
+    # Derive project from the import config's path
+    path = self._editor_ic_path or ""
+    project = derive_project_name(path) if path else ""
+    ns_list = sorted(self.model.project_namespaces.get(project, []))
+    if current and current not in ns_list:
+      ns_list.insert(0, current)
+
+    widget = lev2.ui.ChoicelistWidget("ns_" + key, current if current else "(none)")
+    widget.setChoices(ns_list)
+    widget.bg_color = vec4(0.15, 0.15, 0.2, 1)
+
+    editor = self
+    def on_selected(selected):
+      editor._editor_data["namespace"] = selected
+      editor._editor_dirty = True
+      widget.current_value = selected
+
+    widget.onChoiceSelected = on_selected
+    return widget
+
   def _browse_folder(self, field_key):
     """Open a secondary window with a FilesystemBrowser for folder selection.
     The selected path is sanitized and written back to _editor_data.
@@ -1067,4 +1214,39 @@ class ImportConfigEditor:
       popup.requestClose()
 
     browser.onActivate = on_activate
+    browser.onCancel = lambda: popup.requestClose()
+
+  def browse_local_loc(self):
+    """Open a read-only secondary window browser at the local_loc path."""
+    from ork.ui.filesystem_browser import FilesystemBrowser
+    from obt import path as obt_path
+
+    local_loc = self._editor_data.get("local_loc", "")
+    if local_loc:
+      from ork.catalog_import import resolve_variables
+      try:
+        initial_path = resolve_variables(local_loc)
+        if not os.path.isdir(initial_path):
+          initial_path = str(obt_path.stage() / "assetcache")
+      except Exception:
+        initial_path = str(obt_path.stage() / "assetcache")
+    else:
+      initial_path = str(obt_path.stage() / "assetcache")
+
+    popup = self.ezapp.createSecondaryWindow(
+      width=800, height=600, x=200, y=150,
+      title=f"Browse: {local_loc}", decorated=True, resizable=True, floating=True)
+    uic = popup.ui_context
+    root = lev2.ui.LayoutGroup.create("popup_lg")
+    root.setRect(0, 0, popup.width, popup.height)
+    uic.top = root
+    root.margin = 4
+
+    browser_item = root.makeChild(
+      uiclass=FilesystemBrowser,
+      args=["browser", initial_path, "", vec3(0.1, 0.1, 0.1), "select"],
+      fill=True)
+    browser = browser_item.widget.uservars.filesystem_browser
+
+    browser.onActivate = lambda path: popup.requestClose()
     browser.onCancel = lambda: popup.requestClose()

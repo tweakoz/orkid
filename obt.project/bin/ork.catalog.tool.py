@@ -34,7 +34,7 @@ from ork.catalog_tool import (
   build_namespace_varmap, build_asset_varmap,
 )
 from ork.catalog_tool_ui import (
-  CatalogOutlinerModel, CanvasDetailView, ImportConfigEditor,
+  CatalogOutlinerModel, CanvasDetailView, ImportConfigEditor, TextPromptOverlay,
 )
 
 tokens = core.CrcStringProxy()
@@ -261,18 +261,26 @@ class CatalogTool(ComponentizedApplication):
         m.fetch_namespace(ns)
     elif name == "UPLOAD":
       if kt == "asset" and fqid:
-        m._bg(lambda: m.upload(fqid))
+        m.upload(fqid)
       elif kt == "namespace" and ns:
-        m._bg(lambda: m.upload_namespace(ns))
+        m.upload_namespace(ns)
     elif name == "CANCEL":
       if kt == "asset" and fqid:
         m.cancel_fetch(fqid)
+    elif name == "CANCEL_UPLOAD":
+      if kt == "asset" and fqid:
+        m.cancel_upload(fqid)
     elif name == "VERIFY HASH":
       if kt == "asset" and fqid:
         m._bg(lambda: m.verify_hashes(fqid))
     elif name == "CLEAR LOCAL":
       if kt == "asset" and fqid:
         m._bg(lambda: m.clear_local(fqid))
+    elif name == "DELETE_FROM_MANIFEST":
+      if kt == "asset" and fqid:
+        m.delete_from_manifest(fqid)
+        self.selected_key = None
+        self.canvas_dirty = True
     # --- Import config actions (IC_ prefix = global, IC: prefix = select by name) ---
     elif name == "IC_BACK":
       self.selected_import_config = None  # return to normal detail view
@@ -293,10 +301,15 @@ class CatalogTool(ComponentizedApplication):
     elif name == "IC_NEW":
       project = m.key_to_project(key) if key else None
       if project:
-        basename = m.create_import_config(project)
-        if basename:
-          self.selected_import_config = basename
-          self.canvas_dirty = True
+        def on_name(config_name, _proj=project):
+          basename = m.create_import_config(_proj, name=config_name)
+          if basename:
+            self.selected_import_config = basename
+            self.canvas_dirty = True
+        self._text_prompt = TextPromptOverlay(self.uicontext, self.ezapp,
+                          f"New import config for [{project}]:",
+                          default_text=f"{project}_import",
+                          on_commit=on_name)
     elif name.startswith("AUTOCORRECT:"):
       ic_name = name[12:]
       m.autocorrect_import_config(ic_name)
@@ -345,7 +358,7 @@ class CatalogTool(ComponentizedApplication):
     # Common header: CDN health + active download status
     y = 4
     y = dv.drawCdnHealthHeader(m, y, w)
-    y = dv.drawDownloadManagerStatus(m, y)
+    y = dv.drawTransferStatus(m, y)
 
     # CDN validation mode takes over the entire detail view
     if self.cdn_validate_mode:
@@ -664,6 +677,8 @@ class CatalogTool(ComponentizedApplication):
       if key in d:
         dv.drawPropRow(key, d[key], y)
         y += 16
+    dv.addButton("DELETE_FROM_MANIFEST", 8, y, 160, 18, "DELETE FROM MANIFEST", danger=True)
+    y += 22
     y += 4
     dv.drawSectionHeader("Sizes", y, w, h)
     y += 18
@@ -716,13 +731,16 @@ class CatalogTool(ComponentizedApplication):
     fetch_ghost = (bool(cs) and all(cs)) or not can_fetch
     upload_ghost = (bool(cdn) and all(cdn)) or not can_upload
     is_fetching = fqid in m.active_fetches
+    is_uploading = fqid in m.active_uploads
 
     bx = 8
     dv.addButton("FETCH", bx, y, 56, 22, "FETCH", ghost=fetch_ghost or is_fetching)
     bx += 64
     dv.addButton("CANCEL", bx, y, 64, 22, "CANCEL", ghost=not is_fetching, danger=is_fetching)
     bx += 72
-    dv.addButton("UPLOAD", bx, y, 64, 22, "UPLOAD", ghost=upload_ghost)
+    dv.addButton("UPLOAD", bx, y, 64, 22, "UPLOAD", ghost=upload_ghost or is_uploading)
+    bx += 72
+    dv.addButton("CANCEL_UPLOAD", bx, y, 64, 22, "CANCEL", ghost=not is_uploading, danger=is_uploading)
     bx += 72
     dv.addButton("CLEAR LOCAL", bx, y, 90, 22, "CLEAR LOCAL", danger=True)
     y += 30
@@ -745,6 +763,44 @@ class CatalogTool(ComponentizedApplication):
       tx = bar_x + (bar_w - text_w) // 2
       ty = y + (bar_h - 14) // 2
       dv._texts["value"].addItem(dl_text, vec2(tx, ty))
+      y += bar_h + 4
+
+    # Live upload progress bar
+    upload_req = m.active_uploads.get(fqid)
+    if upload_req:
+      import time as _time
+      ul_total = upload_req.bytes_total
+      ul_done = upload_req.bytes_uploaded
+      ul_chunks_done = upload_req.chunks_completed
+      ul_chunks_total = upload_req.chunks_total
+      ul_pct = upload_req.progress
+
+      # Compute upload rate: sample over 10 seconds, hold until next sample
+      now = _time.time()
+      ul_rate_key = f"_ul_rate_{fqid}"
+      prev = getattr(self, ul_rate_key, None)  # (sample_time, sample_bytes, rate)
+      if prev:
+        dt = now - prev[0]
+        if dt >= 10.0:
+          # New sample period — compute rate and reset
+          db = ul_done - prev[1]
+          rate_mbs = db / dt / 1048576.0
+          setattr(self, ul_rate_key, (now, ul_done, rate_mbs))
+        else:
+          rate_mbs = prev[2]  # hold previous rate
+      else:
+        rate_mbs = 0.0
+        setattr(self, ul_rate_key, (now, ul_done, 0.0))
+
+      bar_x, bar_w, bar_h = 8, w - 16, 20
+      dv.drawProgressBar(bar_x, y, bar_w, bar_h, ul_pct,
+                         vec4(0.6, 0.4, 0.2, 1), vec4(0.15, 0.15, 0.18, 1), h)
+      pct_i = int(ul_pct * 100)
+      ul_text = f"Uploading: {format_size(ul_done)} / {format_size(ul_total)}  ({pct_i}%)  chunks {ul_chunks_done}/{ul_chunks_total}  {rate_mbs:.1f} MiB/s"
+      text_w = len(ul_text) * 8
+      tx = bar_x + (bar_w - text_w) // 2
+      ty = y + (bar_h - 14) // 2
+      dv._texts["value"].addItem(ul_text, vec2(tx, ty))
       y += bar_h + 4
 
     vs = m.chunk_valid.get(fqid, [])

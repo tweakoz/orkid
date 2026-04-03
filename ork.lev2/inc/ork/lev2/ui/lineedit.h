@@ -33,6 +33,7 @@ public:
   // Callbacks
   std::function<void(const std::string&)> _onTextChanged;
   std::function<void(const std::string&)> _onTextCommitted;  // Called on Enter
+  std::function<void()> _onCancel;  // Called on Escape
 
 private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;

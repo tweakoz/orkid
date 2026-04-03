@@ -85,7 +85,8 @@ struct AssetEntry {
   uploadreceipt_ptr_t upload(
     const AssetConfig& config,
     locationinfo_ptr_t location,
-    chunk_completed_callback_t on_chunk_completed = nullptr) const;
+    chunk_completed_callback_t on_chunk_completed = nullptr,
+    std::atomic<bool>* cancel_flag = nullptr) const;
   
   // Get resolved local path (with templates expanded)
   // Returns: local path with <stage>, <cache>, etc. resolved

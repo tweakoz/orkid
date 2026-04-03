@@ -1575,6 +1575,21 @@ void pyinit_ui(py::module& module_lev2) {
                     (*fn)(text);
                   };
                 }
+              })
+          .def_readwrite("highlight", &ui::LineEdit::_highlight)
+          .def(
+              "onCancel",
+              [](ui::lineedit_ptr_t le, py::object callback) {
+                if (callback.is_none()) {
+                  le->_onCancel = nullptr;
+                } else {
+                  auto safe = python::gil_safe_pyobj(callback);
+                  le->_onCancel = [safe]() {
+                    py::gil_scoped_acquire acquire;
+                    auto fn = safe.valueAs<py::object>();
+                    (*fn)();
+                  };
+                }
               });
   type_codec->registerStdCodec<ui::lineedit_ptr_t>(lineedit_type);
   /////////////////////////////////////////////////////////////////////////////////

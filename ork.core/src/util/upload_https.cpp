@@ -186,6 +186,7 @@ bool HttpsUploader::uploadFiles(
     bool completed = false;
     bool success = false;
     HttpsUploader* uploader = nullptr;  // Reference to uploader for progress tracking
+    std::atomic<bool>* external_cancel = nullptr;  // External cancel flag (from UploadRequest)
   };
   
   std::vector<std::unique_ptr<UploadContext>> contexts;
@@ -204,6 +205,7 @@ bool HttpsUploader::uploadFiles(
     ctx->local_path = local_files[file_index];
     ctx->remote_path = remote_paths[file_index];
     ctx->uploader = this;  // Store reference for progress callback
+    ctx->external_cancel = _external_cancel;  // Propagate external cancel flag
     
     // Check if file exists
     if (!ctx->local_path.doesPathExist()) {
@@ -262,13 +264,17 @@ bool HttpsUploader::uploadFiles(
     curl_easy_setopt(ctx->curl, CURLOPT_WRITEDATA, &ctx->response);
     curl_easy_setopt(ctx->curl, CURLOPT_PRIVATE, ctx.get());
     
-    // Set up progress callback for real-time byte tracking
-    curl_easy_setopt(ctx->curl, CURLOPT_XFERINFOFUNCTION, 
-      +[](void* clientp, curl_off_t dltotal, curl_off_t dlnow, 
+    // Set up progress callback for real-time byte tracking and cancel checking
+    curl_easy_setopt(ctx->curl, CURLOPT_XFERINFOFUNCTION,
+      +[](void* clientp, curl_off_t dltotal, curl_off_t dlnow,
           curl_off_t ultotal, curl_off_t ulnow) -> int {
         auto* ctx = static_cast<UploadContext*>(clientp);
         if (!ctx || !ctx->uploader) return 0;
-        
+
+        // Check cancel flags — returning non-zero aborts the CURL transfer
+        if (ctx->uploader->isCancelled()) return 1;
+        if (ctx->external_cancel && ctx->external_cancel->load()) return 1;
+
         // Track bytes uploaded for bandwidth calculation and total
         if (ulnow > ctx->last_progress) {
           size_t bytes_delta = ulnow - ctx->last_progress;
@@ -373,9 +379,13 @@ bool HttpsUploader::uploadFiles(
               curl_easy_getinfo(easy, CURLINFO_TOTAL_TIME, &total_time);
               double upload_rate = (total_time > 0) ? (ul_bytes / total_time / 1048576.0) : 0;
               
-              if(0)_log_channel->log("Upload successful: %s (HTTP %ld) - %.2f MiB in %.2fs (%.2f MiB/s)", 
+              if(0)_log_channel->log("Upload successful: %s (HTTP %ld) - %.2f MiB in %.2fs (%.2f MiB/s)",
                                ctx->remote_path.c_str(), ctx->http_code,
                                ul_bytes / 1048576.0, total_time, upload_rate);
+              // Fire per-file completion callback
+              if (_file_completed_callback) {
+                _file_completed_callback(ctx->remote_path);
+              }
             } else if (ctx->http_code == 429 || ctx->http_code == 503) {
               // Rate limit or service unavailable - retry
               if (ctx->retry_count < 3) {
@@ -461,12 +471,18 @@ bool HttpsUploader::uploadFiles(
     // Emit performance metrics periodically
     _impl->emitPerfMetrics(_log_channel);
     
+    // Check cancel flags (internal + external)
+    if (_cancelled || (_external_cancel && _external_cancel->load())) {
+      _log_channel->log("Upload cancelled by user");
+      break;
+    }
+
     if (still_running) {
       // Wait for activity
       int numfds;
       curl_multi_wait(multi_handle, nullptr, 0, 100, &numfds);
     }
-    
+
   } while (still_running > 0 || !retry_indices.empty());
   
   // Cleanup

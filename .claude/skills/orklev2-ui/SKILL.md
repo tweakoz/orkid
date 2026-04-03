@@ -29,6 +29,8 @@ When answering questions about the UI system in orkid, consult the files below. 
 | DockablePanel | `inc/ork/lev2/ui/dockable_panel.h` |
 | BorderFrame | `inc/ork/lev2/ui/border_frame.h` |
 | ScrollContainer | `inc/ork/lev2/ui/scroll_container.h` |
+| ComboBox | `inc/ork/lev2/ui/combobox.h` |
+| ChoicelistWidget | `inc/ork/lev2/ui/choicelist_widget.h` |
 | DropdownMenu | `inc/ork/lev2/ui/dropdown_menu.h` |
 | OverlayLineEdit | `inc/ork/lev2/ui/overlay_lineedit.h` |
 | FilesystemView | `inc/ork/lev2/ui/filesystem_view.h` |
@@ -121,6 +123,47 @@ propsheet.onPropertyChanged(lambda key, value: ...)
 # Custom inline editor factory
 propsheet.registerEditorFactory(tokens.MyType, my_factory_fn)
 ```
+
+### Dropdown / Choice Widgets
+
+Three dropdown/selection widgets, each suited for different contexts:
+
+**ComboBox** — cyclic selector with +/- buttons, for fixed choices in layout packs:
+```python
+combo = parent.makeChild(uiclass=lev2.ui.ComboBox, args=["name", vec3(0.15, 0.15, 0.2)])
+combo.setItems(["option1", "option2", "option3"])
+combo.onSelectionChanged = lambda w: print(w.selectedItem())
+combo.selected_index = 0
+```
+
+**ChoicelistWidget** — shows current value, opens dropdown on click. Best for PropertySheet custom editors:
+```python
+widget = lev2.ui.ChoicelistWidget("name", current_value)
+widget.setChoices(["${VAR_A}", "${VAR_B}", "${VAR_C}"])
+widget.onChoiceSelected = lambda selected: print(selected)
+```
+
+**DropdownMenu** — hierarchical overlay menu with slash-delimited paths. Best for dynamic popups:
+```python
+# Flat list
+paths = ["/Option A", "/Option B", "/Option C"]
+# Hierarchical
+paths = ["/Group1/Sub A", "/Group1/Sub B", "/Group2/Sub C"]
+
+rx, ry = widget.localToRoot(0, widget.height)
+lev2.ui.DropdownMenu.show(
+    context=uicontext,
+    paths=paths,
+    x=rx, y=ry,
+    on_selected=lambda val: print(val.lstrip("/")),
+    sort_alphabetically=True)
+```
+
+| Widget | Header | Python Class | Best For |
+|--------|--------|-------------|----------|
+| ComboBox | `combobox.h` | `lev2.ui.ComboBox` | Fixed choices in layouts |
+| ChoicelistWidget | `choicelist_widget.h` | `lev2.ui.ChoicelistWidget` | PropertySheet custom editors |
+| DropdownMenu | `dropdown_menu.h` | `lev2.ui.DropdownMenu` | Overlay popup menus |
 
 ### OutlinerModel (subclass in Python)
 ```python

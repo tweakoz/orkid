@@ -650,7 +650,8 @@ uploadreceipt_ptr_t AssetCatalog::uploadNamespace(
 
 uploadreceipt_ptr_t AssetCatalog::uploadAsset(
     const assetid_t& fq_asset_id,
-    chunk_completed_callback_t on_chunk_completed) {
+    chunk_completed_callback_t on_chunk_completed,
+    std::atomic<bool>* cancel_flag) {
   logchan_catalog->log("Starting upload for asset: %s", fq_asset_id.c_str());
   
   auto impl = _impl.getShared<CatalogImpl>();
@@ -726,7 +727,7 @@ uploadreceipt_ptr_t AssetCatalog::uploadAsset(
   
   try {
     // Upload the single asset using AssetEntry's upload method (same as manifest does)
-    auto upload_receipt = target_asset->upload(*config, upload_location, on_chunk_completed);
+    auto upload_receipt = target_asset->upload(*config, upload_location, on_chunk_completed, cancel_flag);
     
     if (upload_receipt) {
       // Copy results from upload receipt
@@ -757,6 +758,74 @@ uploadreceipt_ptr_t AssetCatalog::uploadAsset(
   
   logchan_catalog->log("Completed upload for asset: %s", fq_asset_id.c_str());
   return receipt;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+uploadrequest_ptr_t AssetCatalog::uploadAssetAsync(const assetid_t& fq_asset_id) {
+  auto req = std::make_shared<UploadRequest>();
+  req->_fqid = fq_asset_id;
+
+  // Determine total chunks from manifest
+  // Build chunk size lookup for byte-level progress tracking
+  auto chunk_sizes = std::make_shared<std::map<std::string, size_t>>();
+  auto entry = findAssetEntry(fq_asset_id);
+  if (entry) {
+    auto cm = entry->_chunk_manifest;
+    if (cm) {
+      req->_chunks_total.store(cm->_chunks.size());
+      size_t total = 0;
+      for (size_t i = 0; i < cm->_chunks.size(); ++i) {
+        auto& c = cm->_chunks[i];
+        total += c._size;
+        // Build filename → size map (same naming convention as entry.cpp)
+        std::string filename = FormatString("%s.chunk.%04zu", entry->_storage_hash.c_str(), i);
+        (*chunk_sizes)[filename] = c._size;
+      }
+      req->_bytes_total.store(total);
+    }
+  }
+
+  // Per-chunk callback updates progress atomically
+  auto weak_req = std::weak_ptr<UploadRequest>(req);
+  auto on_chunk = [weak_req, chunk_sizes](const std::string& chunk_filename) {
+    if (auto r = weak_req.lock()) {
+      auto done = r->_chunks_completed.fetch_add(1) + 1;
+      auto total = r->_chunks_total.load();
+      if (total > 0) {
+        r->_progress.store(float(done) / float(total));
+      }
+      // Accumulate bytes from chunk size lookup
+      auto it = chunk_sizes->find(chunk_filename);
+      if (it != chunk_sizes->end()) {
+        r->_bytes_uploaded.fetch_add(it->second);
+      }
+    }
+  };
+
+  // Run upload on concurrent queue (capture this by raw pointer — catalog outlives the op)
+  auto* catalog_ptr = this;
+  auto op = [catalog_ptr, fq_asset_id, req, on_chunk]() {
+    if (req->isCancelled()) {
+      req->_status_message.atomicOp([](std::string& s) { s = "Cancelled"; });
+      req->_completed.store(true);
+      return;
+    }
+    auto receipt = catalog_ptr->uploadAsset(fq_asset_id, on_chunk, &req->_cancel_requested);
+    req->_receipt = receipt;
+    if (receipt) {
+      req->_success.store(receipt->success);
+      req->_bytes_uploaded.store(receipt->bytes_uploaded);
+      req->_chunks_completed.store(req->_chunks_total.load());
+      req->_progress.store(1.0f);
+      req->_status_message.atomicOp([&](std::string& s) { s = receipt->status_message; });
+    } else {
+      req->_status_message.atomicOp([](std::string& s) { s = "Upload failed - no receipt"; });
+    }
+    req->_completed.store(true);
+  };
+  opq::concurrentQueue()->enqueue(op);
+  return req;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

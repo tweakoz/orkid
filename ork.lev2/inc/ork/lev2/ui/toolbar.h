@@ -90,6 +90,9 @@ struct ToolbarButton : public ToolbarItem {
   bool _toggle_mode = false;
   bool _toggled = false;
 
+  // Per-button color override (alpha=0 means use toolbar default)
+  fvec4 _color_override = fvec4(0, 0, 0, 0);
+
   // Visual state
   bool _hovered = false;
   bool _pressed = false;

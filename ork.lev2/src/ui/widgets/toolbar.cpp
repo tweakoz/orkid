@@ -514,6 +514,9 @@ void Toolbar::_drawButton(drawevent_constptr_t drwev, toolbar_button_ptr_t btn, 
   } else if (btn->_hovered) {
     bg_color = _button_hover_color;
     draw_bg = true;
+  } else if (btn->_color_override.w > 0.001f) {
+    bg_color = btn->_color_override;
+    draw_bg = true;
   } else if (_button_color.w > 0.001f) {
     bg_color = _button_color;
     draw_bg = true;

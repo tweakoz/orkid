@@ -68,6 +68,7 @@ struct AssetUploadCoordinator;     // Manages multiple uploaders for redundancy/
 
 // Async fetching
 struct FetchRequest;               // Encapsulates all parameters for asset fetching
+struct UploadRequest;              // Async upload with progress tracking
 struct LocalManifest;
 struct AssetFqIdentifier;
 struct AssetIndexEntry;
@@ -86,6 +87,7 @@ using assetcatalog_ptr_t = std::shared_ptr<AssetCatalog>;
 using assetcatalog_wkptr_t = std::weak_ptr<AssetCatalog>;
 using assetconfigspace_ptr_t = std::shared_ptr<AssetConfigSpace>;
 using fetchrequest_ptr_t = std::shared_ptr<FetchRequest>;
+using uploadrequest_ptr_t = std::shared_ptr<UploadRequest>;
 using assetfqid_ptr_t = std::shared_ptr<AssetFqIdentifier>;
 
 using chunkmanifest_ptr_t = std::shared_ptr<ChunkManifest>;
