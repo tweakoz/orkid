@@ -6,9 +6,15 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/kernel/thread.h>
+#include <ork/util/crc.h>
+#include <string>
 
 #if defined(LINUX)
 #include <sys/prctl.h>
+#include <unistd.h>   // gettid()
+#endif
+#if defined(__APPLE__)
+#include <pthread.h>
 #endif
 
 namespace ork
@@ -100,7 +106,26 @@ bool Thread::join()
 	return true;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// TLS Thread Name
+////////////////////////////////////////////////////////////////////////////////
 
+static thread_local std::string g_current_thread_name;
+static thread_local uint64_t   g_current_thread_id = 0;
+
+// Set default thread name on static init.
+static thread_local bool s_thread_name_init = []() {
+#if defined(__APPLE__)
+  pthread_threadid_np(nullptr, &g_current_thread_id);
+#else
+  g_current_thread_id = (uint64_t)gettid();
+#endif
+  g_current_thread_name = "thread_" + std::to_string(g_current_thread_id);
+  return true;
+}();
+
+const std::string& GetCurrentThreadName() { return g_current_thread_name; }
+uint64_t           GetCurrentThreadId()   { return g_current_thread_id;   }
 
 ///////////////////////////////////////////////////
 #if defined(_WIN32)
@@ -119,6 +144,7 @@ typedef struct tagTHREADNAME_INFO
 
 void SetCurrentThreadName(const char* threadName)
 {
+	g_current_thread_name = threadName;
 	DWORD dwThreadID = (DWORD) GetCurrentThreadId();
 	THREADNAME_INFO info;
 	info.dwType = 0x1000;
@@ -143,6 +169,7 @@ void SetCurrentThreadName(const char* threadName)
 
 void SetCurrentThreadName(const char* threadName)
 {
+	g_current_thread_name = threadName;
 	static const int  kMAX_NAME_LEN = 15;
 	char name[kMAX_NAME_LEN+1];
 	for( int i=0; i<kMAX_NAME_LEN; i++ ) name[i]=0;

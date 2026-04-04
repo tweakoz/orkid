@@ -66,6 +66,7 @@
 
 #include <ork/kernel/timer.h>
 #include <ork/kernel/kernel.h>
+#include <ork/kernel/thread.h>
 #include <ork/util/crc.h>
 #include <ork/orkstd.h>
 #include <ork/kernel/concurrent_queue.h>
@@ -83,9 +84,9 @@ namespace ork {
 ////////////////////////////////////////////////////////////////////////////////
 
 // Common channel names.
-#define CHANNEL_MAIN   "MainThread"
-#define CHANNEL_UPDATE "UpdateThread"
-#define CHANNEL_AUDIO  "AudioThread"
+#define CHANNEL_MAIN   "Main"
+#define CHANNEL_UPDATE "Update"
+#define CHANNEL_AUDIO  "Audio"
 #define CHANNEL_GPU    "GPU"
 
 #ifdef ORK_PROFILER_ENABLE
@@ -316,23 +317,13 @@ struct Profiler {
 
   static constexpr u64 FibonacciHashMultiplier = 0x9e3779b97f4a7c15ULL;
 
-  static u64 _nativeThreadId() {
-#if defined(__APPLE__)
-    uint64_t tid;
-    pthread_threadid_np(nullptr, &tid);
-    return tid;
-#else
-    return (u64)gettid();
-#endif
-  }
-
-  // Hash name with the thread id
+  // Mix channel/series namecrc with thread name hash for a per-(name,thread) key.
   static u64 _threadKey(u64 namecrc) {
-    return namecrc ^ (_nativeThreadId() * FibonacciHashMultiplier);
+    return namecrc ^ (GetCurrentThreadId() * FibonacciHashMultiplier);
   }
 
   static std::string _threadName(const char* name) {
-    return CreateFormattedString("%s:%llu", name, _nativeThreadId());
+    return CreateFormattedString("%s:%s", name, GetCurrentThreadName().c_str());
   }
 
   template <typename T>
@@ -375,7 +366,7 @@ struct Profiler {
   }
 
   // Methods to retrieve channels dynamically with std::string for manual customizaiton.
-  // Always prefer using the OrkProfiler macros to string on string literals and crc consteval
+  // Always prefer using the OrkProfiler macros to rely on string literals and crc consteval
   // Python bindings utilize these methods for samples/events from python. For light profiling that is Okay right now.
   // If we are to start collecting hundrends of samples from python we'd want to create a hot path for that.
   template <typename T>
