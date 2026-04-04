@@ -81,7 +81,7 @@ void VkDisplayClientOutput::submit(vkcontext_rawptr_t _ctx) {
 
   if(0) logchan_presentout->log("submit: idx=%u frame=%lu signaling client_tv->%lu", _acquired_index, _current_frame, _current_frame + 1);
 
-  OrkVkAssert(vkQueueSubmit(_ctx->_vkqueue_graphics, 1,
+  _ctx->_gfxqueue->queueSubmit(
     pConst(VkSubmitInfo{
       VK_STRUCTURE_TYPE_SUBMIT_INFO,
       pNext(VkTimelineSemaphoreSubmitInfo{
@@ -94,7 +94,7 @@ void VkDisplayClientOutput::submit(vkcontext_rawptr_t _ctx) {
       .signalSemaphoreCount = (u32)allSemas.size(),
       .pSignalSemaphores    = allSemas.data(),
     }),
-    VK_NULL_HANDLE));
+    VK_NULL_HANDLE);
 
   OrkVkAssert(vkWaitSemaphores(_ctx->_vkdevice,
     pConst(VkSemaphoreWaitInfo{

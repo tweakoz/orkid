@@ -65,12 +65,10 @@ void VkRtGroupImpl::_updateClearParams(::ork::lev2::rtgroup_rawptr_t rtg) {
 ///////////////////////////////////////////////////////
 
 void VkRtGroupImpl::_updateMainSurface(VkFrameBufferInterface* fbi) {
-  auto ctxVK = fbi->_contextVK;
-  int w = ctxVK->mainSurfaceWidth();
-  int h = ctxVK->mainSurfaceHeight();
+  int w = fbi->_output->_width;
+  int h = fbi->_output->_height;
   if ( (_width != w) or (_height != h) ) {
     logchan_rtgi->log("resize main surface to w<%d> h<%d>", w, h);
-    //SetSizeDirty(false);
     _width  = w;
     _height = h;
     // Invalidate cached render info since size changed

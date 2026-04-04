@@ -395,7 +395,7 @@ void VkComputeInterface::endDispatchPhase() {
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &_computeCmdBuf;
 
-    vkQueueSubmit(_contextVK->_vkqueue_graphics, 1, &submitInfo, fence);
+    _contextVK->_gfxqueue->queueSubmit(&submitInfo, fence);
 
     // Wait for compute to complete before returning
     vkWaitForFences(_contextVK->_vkdevice, 1, &fence, VK_TRUE, UINT64_MAX);

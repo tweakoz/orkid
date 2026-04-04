@@ -701,9 +701,33 @@ struct VkProfilerChannel final : ProfilerChannel {
   void sampleEnd(SampleProfilerSeries* series) override;
 };
 
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+// VkThreadedQueue
+//   Wraps a single VkQueue with a mutex so multiple threads can safely submit
+//   without assuming more than one queue per family is available.
+////////////////////////////////////////////////////////////////////////////////
+
+struct VkThreadedQueue {
+  VkQueue _vkqueue = VK_NULL_HANDLE;
+  u32     _qfid    = 0xffffffff;
+
+  // Using Mutex for now. Only used in debug scenarios.
+  // If using in production should switch to MPMC queue.
+  // However would need to reworked the swap reinit logc to no need to wait.
+  std::mutex _submit_mutex;
+
+  VkResult queueSubmit(const VkSubmitInfo* pSubmits, VkFence fence);
+  VkResult queuePresent(const VkPresentInfoKHR* pPresentInfo);
+
+  // When submitting from multipled threads you need to use this wait
+  // not vkDeviceWaitIdle as that can technically make calls to queues
+  // across threads and cause validation errors. 
+  VkResult queueWaitIdle();
+};
+
+using vkthreadedqueue_ptr_t = std::shared_ptr<VkThreadedQueue>;
+
+////////////////////////////////////////////////////////////////////////////////
 
 struct VkContext : public Context {
 
@@ -800,7 +824,6 @@ public:
   void _initVulkanForOffscreen(DisplayBuffer* pBuf);
   void _initVulkanCommon();
   void _initDefaultTextures();
-  void _initGraphicsQueue(u32 queue_id);
   //////////////////////////////////////////////
   // TODO obsolete prefer using VkSetDebugName in vk_protos.h
   template <typename T> void _setObjectDebugName(T& object, VkObjectType objectType, const char* name) {
@@ -838,7 +861,6 @@ public:
   vkthreadedqueue_ptr_t _gfxqueue;
   uint32_t _vkqfid_compute           = NO_QUEUE;
   uint32_t _vkqfid_transfer          = NO_QUEUE;
-  VkQueue _vkqueue_graphics          = VK_NULL_HANDLE;
   VkCommandPool _vkcmdpool_graphics  = VK_NULL_HANDLE;
   primary_commandbuffer_ptr_t _defaultCommandBuffer;
   vkpricmdbufimpl_ptr_t _defaultCommandBufferImpl;

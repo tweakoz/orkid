@@ -38,7 +38,7 @@ void VkOffscreen::submit(vkcontext_rawptr_t ctxVK) {
 
   auto& fence = _frame_fences[_sub_index];
   fence->reset();
-  vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, &SI, fence->_vkfence);
+  ctxVK->_gfxqueue->queueSubmit(&SI, fence->_vkfence);
   fence->wait();
   _incrementFrame();
 }

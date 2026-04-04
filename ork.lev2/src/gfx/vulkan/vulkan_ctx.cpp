@@ -65,9 +65,9 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
   // get queue families
   ////////////////////////////
 
-  _vkqfid_graphics = NO_QUEUE;
-  _vkqfid_compute  = NO_QUEUE;
-  _vkqfid_transfer = NO_QUEUE;
+  u32      gfx_qfid = NO_QUEUE;
+  _vkqfid_compute   = NO_QUEUE;
+  _vkqfid_transfer  = NO_QUEUE;
 
   _num_queue_types = vk_devinfo->_queueprops.size();
   std::vector<float> queuePriorities(_num_queue_types, 1.0f);
@@ -85,9 +85,9 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
     DQCI.pQueuePriorities = queuePriorities.data();
 
     bool add = false;
-    if (QPROP.queueFlags & VK_QUEUE_GRAPHICS_BIT && _vkqfid_graphics == NO_QUEUE) {
-      _vkqfid_graphics = i;
-      add              = true;
+    if (QPROP.queueFlags & VK_QUEUE_GRAPHICS_BIT && gfx_qfid == NO_QUEUE) {
+      gfx_qfid = i;
+      add       = true;
     }
 
     if (QPROP.queueFlags & VK_QUEUE_COMPUTE_BIT && _vkqfid_compute == NO_QUEUE) {
@@ -104,7 +104,7 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
     }
   }
 
-  OrkAssert(_vkqfid_graphics != NO_QUEUE);
+  OrkAssert(gfx_qfid != NO_QUEUE);
   OrkAssert(_vkqfid_compute != NO_QUEUE);
   OrkAssert(_vkqfid_transfer != NO_QUEUE);
 
@@ -224,19 +224,33 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
   // Init Queues
   ////////////////////////////
 
-  _initGraphicsQueue(0);
-}
+  _gfxqueue        = std::make_shared<VkThreadedQueue>();
+  _gfxqueue->_qfid = gfx_qfid;
 
-void VkContext::_initGraphicsQueue(u32 queue_id) {
-  u32 max_queue_count = _vkdeviceinfo->_queueprops[queue_id].queueCount;
-  OrkAssertIFMT(queue_id < max_queue_count, "Cannot create graphics queue: gfx_qid(%u) >= _vkqcapacity_graphics(%u)", queue_id, max_queue_count);
+  u32 max_queue_count = _vkdeviceinfo->_queueprops[0].queueCount;
+  OrkAssertIFMT(0 < max_queue_count, "Cannot create graphics queue: gfx_qid(0) >= _vkqcapacity_graphics(%u)", max_queue_count);
 
-  logchan_vkctx->log("claiming graphics queue: fid(%u) qid(%u/%u)", _vkqfid_graphics, queue_id, max_queue_count);
-  vkGetDeviceQueue(_vkdevice, _vkqfid_graphics, queue_id, &_vkqueue_graphics);
+  logchan_vkctx->log("claiming graphics queue: fid(%u) qid(0/%u)", gfx_qfid, max_queue_count);
+  vkGetDeviceQueue(_vkdevice, gfx_qfid, 0, &_gfxqueue->_vkqueue);
 
   char qname[64];
-  snprintf(qname, sizeof(qname), "vk_queue-fid%u-qid%u", _vkqfid_graphics, queue_id);
-  _setObjectDebugName(_vkqueue_graphics, VK_OBJECT_TYPE_QUEUE, qname);
+  snprintf(qname, sizeof(qname), "vk_queue-fid%u-qid0", gfx_qfid);
+  _setObjectDebugName(_gfxqueue->_vkqueue, VK_OBJECT_TYPE_QUEUE, qname);
+}
+
+VkResult VkThreadedQueue::queueSubmit(const VkSubmitInfo* pSubmits, VkFence fence) {
+  std::lock_guard<std::mutex> lock(_submit_mutex);
+  return vkQueueSubmit(_vkqueue, 1, pSubmits, fence);
+}
+
+VkResult VkThreadedQueue::queuePresent(const VkPresentInfoKHR* pPresentInfo) {
+  std::lock_guard<std::mutex> lock(_submit_mutex);
+  return vkQueuePresentKHR(_vkqueue, pPresentInfo);
+}
+
+VkResult VkThreadedQueue::queueWaitIdle() {
+  std::lock_guard<std::mutex> lock(_submit_mutex);
+  return vkQueueWaitIdle(_vkqueue);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -281,8 +295,7 @@ void VkContext::_initVulkanForWindow(VkSurfaceKHR surface) {
     _vkdevice = context0->_vkdevice;
     _vkdeviceinfo = context0->_vkdeviceinfo;
     _vkphysicaldevice = context0->_vkphysicaldevice;
-    _vkqueue_graphics = context0->_vkqueue_graphics;
-    _vkqfid_graphics = context0->_vkqfid_graphics;
+    _gfxqueue = context0->_gfxqueue;
     _vkqfid_transfer = context0->_vkqfid_transfer;
     _vkqfid_compute = context0->_vkqfid_compute;
     _vkSetDebugUtilsObjectName = context0->_vkSetDebugUtilsObjectName;
@@ -317,8 +330,7 @@ void VkContext::_initVulkanForOffscreen(DisplayBuffer* pBuf) {
     _vkdevice = context0->_vkdevice;
     _vkdeviceinfo = context0->_vkdeviceinfo;
     _vkphysicaldevice = context0->_vkphysicaldevice;
-    _vkqueue_graphics = context0->_vkqueue_graphics;
-    _vkqfid_graphics = context0->_vkqfid_graphics;
+    _gfxqueue = context0->_gfxqueue;
     _vkqfid_transfer = context0->_vkqfid_transfer;
     _vkqfid_compute = context0->_vkqfid_compute;
     _vkSetDebugUtilsObjectName = context0->_vkSetDebugUtilsObjectName;
@@ -360,7 +372,7 @@ void VkContext::_initVulkanCommon() {
 
   VkCommandPoolCreateInfo CPCI_GFX = {};
   initializeVkStruct(CPCI_GFX, VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
-  CPCI_GFX.queueFamilyIndex = _vkqfid_graphics;
+  CPCI_GFX.queueFamilyIndex = _gfxqueue->_qfid;
   CPCI_GFX.flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT //
                    | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
 
@@ -908,7 +920,7 @@ void VkContext::endAndSubmitSyncTransferCB() {
   submitInfo.commandBufferCount = 1;
   submitInfo.pCommandBuffers = &_syncTransfer.command_buffer_impl->_vkcmdbuf;
 
-  vkQueueSubmit(_vkqueue_graphics, 1, &submitInfo, fence);
+  _gfxqueue->queueSubmit(&submitInfo, fence);
 
   // Wait for this specific submit to complete
   vkWaitForFences(_vkdevice, 1, &fence, VK_TRUE, UINT64_MAX);
@@ -1014,7 +1026,7 @@ void VkContext::_onGpuPostInit() {
   vkCreateFence(_vkdevice, &fenceInfo, nullptr, &fence);
 
   // Submit and wait
-  vkQueueSubmit(_vkqueue_graphics, 1, &SI, fence);
+  _gfxqueue->queueSubmit(&SI, fence);
   vkWaitForFences(_vkdevice, 1, &fence, VK_TRUE, UINT64_MAX);
   vkDestroyFence(_vkdevice, fence, nullptr);
 
@@ -1482,9 +1494,9 @@ vkswapchaincaps_ptr_t VkContext::_swapChainCapsForSurface(VkSurfaceKHR surface) 
     }
   }
   VkBool32 presentSupport = false;
-  vkGetPhysicalDeviceSurfaceSupportKHR(_vkphysicaldevice, _vkqfid_graphics, surface, &presentSupport);
+  vkGetPhysicalDeviceSurfaceSupportKHR(_vkphysicaldevice, _gfxqueue->_qfid, surface, &presentSupport);
   if (!presentSupport) {
-    logchan_vkctx->log("ERROR: Graphics queue family %u does not support presentation to this surface!", _vkqfid_graphics);
+    logchan_vkctx->log("ERROR: Graphics queue family %u does not support presentation to this surface!", _gfxqueue->_qfid);
     logchan_vkctx->log("       Device: %s", _vkdeviceinfo->_devprops.deviceName);
     logchan_vkctx->log("       This indicates device selection or queue family selection is incorrect.");
   }
