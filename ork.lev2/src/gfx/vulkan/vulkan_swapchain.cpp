@@ -135,9 +135,21 @@ void VkSwapChain::_buildup() {
   }
 
   // image properties
-  // Ensure minImageCount is within capabilities
-  uint32_t minImageCount = MAX_FRAMES_IN_FLIGHT;
-  OrkAssertI(minImageCount <= caps.maxImageCount, "minImageCount exceeds caps.maxImageCount");
+  //
+  // Clamp minImageCount to the range [caps.minImageCount, caps.maxImageCount].
+  //
+  // Previously we used MAX_FRAMES_IN_FLIGHT (2) directly, which violated
+  // VUID-VkSwapchainCreateInfoKHR-presentMode-02839 on drivers where the
+  // surface requires more images (e.g. NVIDIA FIFO requiring minImageCount=3).
+  //
+  // The swapchain may end up with more images than MAX_FRAMES_IN_FLIGHT —
+  // that's fine: MAX_FRAMES_IN_FLIGHT governs fence/semaphore indexing
+  // (how many frames the CPU can have in-flight), while the swapchain
+  // image count is a separate concern controlled by the driver/surface.
+  //
+  uint32_t minImageCount = std::max<uint32_t>(MAX_FRAMES_IN_FLIGHT, caps.minImageCount);
+  if (caps.maxImageCount > 0) // maxImageCount==0 means no upper limit
+    minImageCount = std::min(minImageCount, caps.maxImageCount);
   SCINFO.minImageCount    = minImageCount;
   SCINFO.imageFormat      = surfaceFormat.format;                // Chosen from VkSurfaceFormatKHR, after querying supported formats
   SCINFO.imageColorSpace  = surfaceFormat.colorSpace;            // Chosen from VkSurfaceFormatKHR
