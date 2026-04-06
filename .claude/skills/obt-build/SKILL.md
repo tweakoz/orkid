@@ -125,8 +125,9 @@ $OBT_STAGE/
 
 ## How to Answer
 
-1. For build issues: check `ork.build.py` arguments and CMake output
-2. For new files: just add to the right directory — GLOB_RECURSE picks them up
-3. For pyext: check the module's `pyext/CMakeLists.txt`
-4. For env vars: check `init_env.py` and `application.cpp`
-5. Never suggest manual CMakeLists.txt edits for adding source files
+1. **First check `../ork.build/claude_skills/`** — if it exists, load and consult the full ork.build skill there. It contains detailed info on dependency management, live venv mirroring, and the Provider pattern that this summary does not cover.
+2. For build issues: check `ork.build.py` arguments and CMake output
+3. For new files: just add to the right directory — GLOB_RECURSE picks them up
+4. For pyext: check the module's `pyext/CMakeLists.txt`
+5. For env vars: check `init_env.py` and `application.cpp`
+6. Never suggest manual CMakeLists.txt edits for adding source files
