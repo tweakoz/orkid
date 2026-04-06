@@ -386,8 +386,13 @@ void VkSwapChain::_teardown() {
     }
   }
 
-  // NO fence resets - let waitPresentFrame() handle that before next submit
-  // The fences guaranteed swapchain images aren't in use
+  // Unconditionally wait for device idle before destroying any resources.
+  // Fence waits above only cover queue submissions, but the presentation
+  // engine may still hold references to semaphores (e.g. from
+  // vkAcquireNextImageKHR or vkQueuePresentKHR). On NVIDIA in particular,
+  // destroying semaphores without vkDeviceWaitIdle triggers
+  // VUID-vkDestroySemaphore-semaphore-05149 during swapchain resize.
+  vkDeviceWaitIdle(_contextVK->_vkdevice);
 
   if (_vkSwapChain != VK_NULL_HANDLE) {
 
