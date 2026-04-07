@@ -32,6 +32,12 @@ TestPatternGenerator::TestPatternGenerator(float sample_rate)
     , _sample_count(0)
     , _phase(0.0) {
   _epoch_ref_ms = _nowEpochMs();
+  // ORK_AUDIOSWEEP_OFFSET: milliseconds added to epoch ref (+ or -)
+  const char* offset_str = std::getenv("ORK_AUDIOSWEEP_OFFSET");
+  if (offset_str) {
+    int64_t offset_ms = std::atoll(offset_str);
+    _epoch_ref_ms = uint64_t(int64_t(_epoch_ref_ms) + offset_ms);
+  }
 }
 
 void TestPatternGenerator::setPattern(TestPattern p) { _pattern = p; }
