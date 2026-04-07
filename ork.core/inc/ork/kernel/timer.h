@@ -31,6 +31,8 @@ static constexpr u64    NS_PER_MS  = 1000000ULL;     // nanoseconds per millisec
 static constexpr u64    NS_PER_SEC = 1000000000ULL;  // nanoseconds per second
 static constexpr double MS_PER_NS  = 1e-6;           // milliseconds per nanosecond (tick)
 static constexpr double SEC_PER_NS = 1e-9;           // seconds per nanosecond (tick)
+static constexpr double SEC_PER_MS = 1e-3;           // seconds per millisecond
+static constexpr double MS_PER_SEC = 1e3;            // milliseconds pers seconds 
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -50,6 +52,9 @@ struct Timer {
 
   // Must be called before use of get_sync_time
   static void   staticInit();
+
+  // Milliseconds since Unix epoch as double (sub-millisecond precision).
+  static double getEpochMS();
 
   // Seconds since staticInit() was called.
   static double get_sync_time();
@@ -111,36 +116,81 @@ using adaptive_wait_ptr_t = std::shared_ptr<AdaptiveWait>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // TimePredictor
-//
-// Tracks a recurring event and predicts when it will next occur.
-// Call markPredictionTarget() each time the event happens.
-// Call predictNextTarget() at any time to get the predicted absolute tick
-// of the next occurrence, based on a rolling average of observed intervals.
+//   Tracks a recurring event and predicts when it will next occur.
+//   Call markPredictionTarget() each time the event happens.
+//   Call predictNextTarget() at any time to get the predicted epoch ms.
 ///////////////////////////////////////////////////////////////////////////////
 
 struct TimePredictor {
 
   static constexpr size_t HISTORY_SIZE = 16;
 
-  // Record that the tracked event just occurred.
+  // Record that the tracked event just occurred at the given epoch ms.
   // Updates the rolling average interval between occurrences.
+  void markPredictionTarget(double epoch_ms);
+
+  // Convenience overload — uses Timer::getEpochMS() as the timestamp.
   void markPredictionTarget();
 
-  // Predicted absolute system tick of the next occurrence.
-  // Returns last_mark + avg_interval, or 0 until 2 marks have been recorded.
-  u64 predictNextTarget() const;
+  // Predicted absolute epoch milliseconds of the next occurrence.
+  // Returns 0 until 2 marks have been recorded.
+  double predictNextTarget() const;
 
-  u64 avgIntervalNs() const { return _avg_interval_ns; }
+  double avgIntervalMS() const { return _avg_interval_ms; }
+  double stddevMS() const      { return _stddev_ms; }
 
-  u64    _last_mark_tick  = 0;
-  u64    _last_prediction = 0;
-  u64    _avg_interval_ns = 0;
-  u64    _history[HISTORY_SIZE] = {};
+  double _last_mark_ms    = 0.0;
+  double _avg_interval_ms = 0.0;
+  double _stddev_ms       = 0.0;
+  double _history[HISTORY_SIZE] = {};
   size_t _history_index   = 0;
   size_t _history_count   = 0;
+  double _last_prediction = 0.0;
 };
 
 using time_predictor_ptr_t = std::shared_ptr<TimePredictor>;
+
+///////////////////////////////////////////////////////////////////////////////
+// RunningStats
+//   Feed samples one at a time with the poll functions
+//   to calculate min, mac, mean, and stddev.
+///////////////////////////////////////////////////////////////////////////////
+
+struct RunningStats {
+
+  // Feed a new sample. Updates all stats immediately.
+  void pollValue(double sample);
+
+  // Record a call timestamp via getSystemTick() and feed the computed Hz into pollValue.
+  // Call this once per event (e.g. each pose frame) to track event rate.
+  void pollHz();
+
+  // Reset to initial state.
+  void reset();
+
+  // sample stddev — returns 0 until 2+ samples
+  double stddev() const;
+
+  // upper end of the distribution: mean + sqrt(3) * stddev
+  // for a uniform distribution this equals the max of the range
+  double upperRange() const { return _mean + sqrt(3.0) * stddev(); }
+
+  void printStats(const char* label = "") const {
+    printf("[RunningStats] %s last:%.4f count:%lld min:%.4f max:%.4f mean:%.4f stddev:%.4f\n",
+           label, _last_value, _count, _min, _max, _mean, stddev());
+  }
+
+  double  _min        =  1e300;
+  double  _max        = -1e300;
+  double  _mean       =  0.0;
+  double  _m2         =  0.0;
+  double  _last_value =  0.0;
+  int64_t _count      =  0;
+  int64_t _warmup     =  10;   // samples to discard before accumulating stats
+  u64     _last_tick  =  0;
+};
+
+using running_stats_ptr_t = std::shared_ptr<RunningStats>;
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork

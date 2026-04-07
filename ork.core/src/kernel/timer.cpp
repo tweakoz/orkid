@@ -54,6 +54,12 @@ Timer::~Timer() {
   delete _thread;
 }
 
+double Timer::getEpochMS() {
+  timespec ts;
+  clock_gettime(CLOCK_REALTIME, &ts);
+  return double(ts.tv_sec) * 1e3 + double(ts.tv_nsec) * 1e-6;
+}
+
 void Timer::Start() {
   _start_time = get_sync_time();
 }
@@ -274,36 +280,100 @@ void usleep(int microsec) {
 #endif
 ///////////////////////////////////////////////////////////////////////////////
 
-///////////////////////////////////////////////////////////////////////////////
+void TimePredictor::markPredictionTarget(double epoch_ms) {
+  // TODO this is WIP. Expiriments need to be done to figure out what is best.
+  // Right now it seems rolling recent history is better than RunningStats
+  // which takes into account infinite time.
 
-void TimePredictor::markPredictionTarget() {
-  u64 now = Timer::getSystemTick();
-  if (_last_mark_tick > 0) {
-    // Log prediction error from previous mark's prediction
-    if (0) {
-      int64_t error_ns = (int64_t)now - (int64_t)_last_prediction;
-      logchan_timer->log("predict error: %+.3f us  avg_interval: %.3f ms",
-                         double(error_ns) * 1e-3,
-                         double(_avg_interval_ns) * 1e-6);
-    }
-    u64 interval = now - _last_mark_tick;
+  // epoch_ms is expected target
+  if (_last_mark_ms > 0.0) {
+
+    // store interal since last
+    double interval = epoch_ms - _last_mark_ms;
     _history[_history_index] = interval;
     _history_index = (_history_index + 1) % HISTORY_SIZE;
     if (_history_count < HISTORY_SIZE)
       _history_count++;
-    u64 sum = 0;
+
+    // rolling average of intervals
+    double sum = 0.0;
     for (size_t i = 0; i < _history_count; i++)
       sum += _history[i];
-    _avg_interval_ns = sum / _history_count;
+    _avg_interval_ms = sum / double(_history_count);
+
+    // stddev over history to bias prediction toward later edge of jitter window
+    if (_history_count > 1) {
+      double m2 = 0.0;
+      for (size_t i = 0; i < _history_count; i++) {
+        double d = _history[i] - _avg_interval_ms;
+        m2 += d * d;
+      }
+      _stddev_ms = sqrt(m2 / double(_history_count - 1));
+    }
   }
-  _last_mark_tick   = now;
-  _last_prediction  = predictNextTarget();
+  _last_mark_ms    = epoch_ms;
+  _last_prediction = predictNextTarget();
 }
 
-u64 TimePredictor::predictNextTarget() const {
+void TimePredictor::markPredictionTarget() {
+  markPredictionTarget(Timer::getEpochMS());
+}
+
+double TimePredictor::predictNextTarget() const {
   if (_history_count == 0)
-    return 0;
-  return _last_mark_tick + _avg_interval_ns;
+    return 0.0;
+  
+  // start from last reported scanout, step avg+stddev until past now
+  double interval = _avg_interval_ms + _stddev_ms;
+  double now      = Timer::getEpochMS();
+  double next     = _last_mark_ms;
+  while (next <= now)
+    next += interval;
+
+  return next;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void RunningStats::pollValue(double sample) {
+  _last_value = sample;
+  if (_warmup > 0) {
+    _warmup--;
+    return;
+  }
+  _count++;
+  double delta = sample - _mean;
+  _mean += delta / double(_count);
+  _m2   += delta * (sample - _mean); // Welford's update
+  if (sample < _min) _min = sample;
+  if (sample > _max) _max = sample;
+}
+
+void RunningStats::pollHz() {
+  u64 now = Timer::getSystemTick();
+  if (_last_tick != 0) {
+    u64 delta_ns = now - _last_tick;
+    if (delta_ns > 0) {
+      double hz = double(NS_PER_SEC) / double(delta_ns);
+      pollValue(hz);
+    }
+  }
+  _last_tick = now;
+}
+
+void RunningStats::reset() {
+  _min        =  1e300;
+  _max        = -1e300;
+  _mean       =  0.0;
+  _m2         =  0.0;
+  _last_value =  0.0;
+  _count      =  0;
+  _warmup     =  10;
+  _last_tick  =  0;
+}
+
+double RunningStats::stddev() const {
+  return _count > 1 ? sqrt(_m2 / double(_count - 1)) : 0.0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
