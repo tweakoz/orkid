@@ -8,6 +8,8 @@
 #include <ork/lev2/config.h>
 #if defined(ENABLE_CORE_AUDIO)
 
+#define DEBUG_LATENCY
+
 #include "CoreAudioDevice.h"
 #include "au.h"
 #include "ca_helpers/CARingBuffer.h"
@@ -15,6 +17,7 @@
 #include <libkern/OSAtomic.h>
 #include <ork/util/logger.h>
 #include <ork/lev2/aud/singularity/synth.h>
+#include <ork/lev2/aud/singularity/audiotest.h>
 #include <mach/mach_time.h>
 #include <chrono>
 #include <cstdlib>
@@ -389,6 +392,41 @@ void CoreAudioDevice::startup() {
               outL[i] = obuf._leftBuffer[i];  // interleaved
               outR[i] = obuf._rightBuffer[i]; // interleaved
             }
+#if defined(DEBUG_LATENCY)
+            // Latency probe at CoreAudio output (post-synthesizer)
+            {
+              using namespace ork::audio::singularity;
+              static std::unique_ptr<TestPatternProbe> _ca_probe;
+              static uint64_t _ca_probe_samples = 0;
+              static double _ca_probe_sum = 0.0;
+              static int _ca_probe_count = 0;
+              static uint64_t _ca_probe_interval = 0;
+              if (!_ca_probe) {
+                float sr = _the_synth->_sampleRate;
+                _ca_probe = std::make_unique<TestPatternProbe>(sr, 4096);
+                _ca_probe->setChirpConfig(ChirpConfig());
+                _ca_probe_interval = uint64_t(sr * 3.0);
+              }
+              _ca_probe->write(outL, inumfr);
+              _ca_probe_samples += inumfr;
+              if (_ca_probe->ready()) {
+                double lat = _ca_probe->measureLatencyMs();
+                if (lat >= 0.0) {
+                  _ca_probe_sum += lat;
+                  _ca_probe_count++;
+                }
+              }
+              if (_ca_probe_interval > 0 && _ca_probe_samples >= _ca_probe_interval) {
+                if (_ca_probe_count > 0) {
+                  double avg = _ca_probe_sum / double(_ca_probe_count);
+                  logchan_coreaudio->log("LATENCY PROBE (CoreAudio out): avg=%.1f ms (%d measurements)", avg, _ca_probe_count);
+                }
+                _ca_probe_samples = 0;
+                _ca_probe_sum = 0.0;
+                _ca_probe_count = 0;
+              }
+            }
+#endif
           }
           uint64_t end_time     = mach_absolute_time();
           uint64_t elapsed_mach = end_time - start_time;
