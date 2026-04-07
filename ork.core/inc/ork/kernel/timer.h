@@ -115,42 +115,6 @@ struct AdaptiveWait {
 using adaptive_wait_ptr_t = std::shared_ptr<AdaptiveWait>;
 
 ///////////////////////////////////////////////////////////////////////////////
-// TimePredictor
-//   Tracks a recurring event and predicts when it will next occur.
-//   Call markPredictionTarget() each time the event happens.
-//   Call predictNextTarget() at any time to get the predicted epoch ms.
-///////////////////////////////////////////////////////////////////////////////
-
-struct TimePredictor {
-
-  static constexpr size_t HISTORY_SIZE = 16;
-
-  // Record that the tracked event just occurred at the given epoch ms.
-  // Updates the rolling average interval between occurrences.
-  void markPredictionTarget(double epoch_ms);
-
-  // Convenience overload — uses Timer::getEpochMS() as the timestamp.
-  void markPredictionTarget();
-
-  // Predicted absolute epoch milliseconds of the next occurrence.
-  // Returns 0 until 2 marks have been recorded.
-  double predictNextTarget() const;
-
-  double avgIntervalMS() const { return _avg_interval_ms; }
-  double stddevMS() const      { return _stddev_ms; }
-
-  double _last_mark_ms    = 0.0;
-  double _avg_interval_ms = 0.0;
-  double _stddev_ms       = 0.0;
-  double _history[HISTORY_SIZE] = {};
-  size_t _history_index   = 0;
-  size_t _history_count   = 0;
-  double _last_prediction = 0.0;
-};
-
-using time_predictor_ptr_t = std::shared_ptr<TimePredictor>;
-
-///////////////////////////////////////////////////////////////////////////////
 // RunningStats
 //   Feed samples one at a time with the poll functions
 //   to calculate min, mac, mean, and stddev.
@@ -191,6 +155,43 @@ struct RunningStats {
 };
 
 using running_stats_ptr_t = std::shared_ptr<RunningStats>;
+
+///////////////////////////////////////////////////////////////////////////////
+// TimePredictor
+//   Tracks a recurring event and predicts when it will next occur.
+//   Call markPredictionTarget() each time the event happens.
+//   Call predictNextTarget() at any time to get the predicted epoch ms.
+///////////////////////////////////////////////////////////////////////////////
+
+struct TimePredictor {
+
+  static constexpr size_t HISTORY_SIZE = 16;
+
+  // Record that the tracked event just occurred at the given epoch ms.
+  // Updates the rolling average interval between occurrences.
+  void markPredictionTarget(double epoch_ms);
+
+  // Convenience overload — uses Timer::getEpochMS() as the timestamp.
+  void markPredictionTarget();
+
+  // Predicted absolute epoch milliseconds of the next occurrence.
+  // Returns 0 until 2 marks have been recorded.
+  double predictNextTarget() const;
+
+  double avgIntervalMS() const { return _avg_interval_ms; }
+  double stddevMS() const      { return _stddev_ms; }
+
+  double _last_mark_ms    = 0.0;
+  double _avg_interval_ms = 0.0;
+  double _stddev_ms       = 0.0;
+  double _history[HISTORY_SIZE] = {};
+  size_t _history_index   = 0;
+  size_t _history_count   = 0;
+  double _last_prediction = 0.0;
+  RunningStats _epoch_ms_stats;
+};
+
+using time_predictor_ptr_t = std::shared_ptr<TimePredictor>;
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork

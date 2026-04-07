@@ -284,12 +284,15 @@ void TimePredictor::markPredictionTarget(double epoch_ms) {
   // TODO this is WIP. Expiriments need to be done to figure out what is best.
   // Right now it seems rolling recent history is better than RunningStats
   // which takes into account infinite time.
-
   // epoch_ms is expected target
   if (_last_mark_ms > 0.0) {
 
     // store interal since last
     double interval = epoch_ms - _last_mark_ms;
+    // _epoch_ms_stats.pollValue(interval);
+    // _epoch_ms_stats.printStats("prediction target delta");
+    // [RunningStats] prediction target delta last:11.1116 count:8032 min:11.1111 max:11.1118 mean:11.1115 stddev:0.0001
+
     _history[_history_index] = interval;
     _history_index = (_history_index + 1) % HISTORY_SIZE;
     if (_history_count < HISTORY_SIZE)

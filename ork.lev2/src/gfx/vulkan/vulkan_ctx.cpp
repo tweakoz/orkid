@@ -1027,7 +1027,19 @@ void VkContext::_doEndFrame() {
 
   // End and submit primary command buffer. Currently this also waits.
   _doEndPrimaryCommandBuffer();
-  _doSubmitPrimaryCommandBuffer(); 
+  _doSubmitPrimaryCommandBuffer();
+
+  // TODO turn into OrkProfiler macro
+  // {
+  //   double now = Timer::getEpochMS();
+  //   if (_last_submit_epoch_ms > 0.0) {
+  //     double delta = now - _last_submit_epoch_ms;
+  //     _submit_delta_stats.pollValue(delta);
+  //     _submit_delta_stats.printStats("primary cmdbuf submit delta");
+  //   }
+  //   _last_submit_epoch_ms = now;
+  // }
+  // [RunningStats] primary cmdbuf submit delta last:9.8372 count:7538 min:5.2849 max:18.7739 mean:11.1116 stddev:1.2483
 
   // read back GPU timestamps now that the GPU has finished executing
   OrkProfilerFrameEnd(CHANNEL_GPU);
