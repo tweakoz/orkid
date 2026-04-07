@@ -6,6 +6,9 @@
 ////////////////////////////////////////////////////////////////
 
 #include "headers/vulkan_ctx.h"
+#if defined(__APPLE__)
+#include <dispatch/dispatch.h>
+#endif
 #if defined(__linux__)
 #include "headers/vk_swapchain_drm.h"
 #endif
@@ -610,6 +613,9 @@ VkContext::VkContext() {
 ///////////////////////////////////////////////////////
 
 VkContext::~VkContext() {
+#if defined(__APPLE__)
+    _stopDisplayLink();
+#endif
     if (_vkpresentationsurface != VK_NULL_HANDLE && _GVI) {
       printf("VkContext::~VkContext: destroying VkSurface %p\n", (void*)_vkpresentationsurface);
       vkDestroySurfaceKHR(_GVI->_instance, _vkpresentationsurface, nullptr);
@@ -994,6 +1000,15 @@ void VkContext::_onGpuPostInit() {
   _cmdbufcurpri_gfx = nullptr;
 
   //printf("VkContext::_onGpuPostInit: gpuPreInit transitions complete\n");
+
+#if defined(__APPLE__)
+  if (_vkpresentationsurface != VK_NULL_HANDLE) {
+    auto* self = this;
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+      self->_startDisplayLink();
+    });
+  }
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1016,6 +1031,15 @@ void VkContext::_doEndFrame() {
 
   // read back GPU timestamps now that the GPU has finished executing
   OrkProfilerFrameEnd(CHANNEL_GPU);
+
+#if defined(__APPLE__)
+  // Apple marks the prediction target from vulkan_displaylink.mm
+  // if the context was created with a surface
+  if (_vkpresentationsurface == VK_NULL_HANDLE)
+    _render_timing_estimator->markPredictionTarget();
+#else
+  _render_timing_estimator->markPredictionTarget();
+#endif
 
   ////////////////////////////////////////
 
