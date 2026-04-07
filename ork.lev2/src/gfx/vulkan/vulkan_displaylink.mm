@@ -1,8 +1,13 @@
 #if defined(__APPLE__)
+#ifndef GLFW_EXPOSE_NATIVE_COCOA
+#define GLFW_EXPOSE_NATIVE_COCOA
+#endif
 #include "headers/vulkan_ctx.h"
 #include <ork/kernel/timer.h>
 #include <ork/util/logger.h>
+#include <ork/lev2/glfw/ctx_glfw.h>
 #import <CoreVideo/CoreVideo.h>
+#import <AppKit/AppKit.h>
 #import <Foundation/Foundation.h>
 #include <mach/mach_time.h>
 #include <memory>
@@ -11,7 +16,7 @@
 namespace ork::lev2::vulkan {
 ////////////////////////////////////////////////////////////////////////////////
 
-static logchannel_ptr_t logchan_displaylink = logger()->configureChannel("VKDISPLAYLINK", fvec3(0.7, 0.9, 0.7), false);
+static logchannel_ptr_t logchan_displaylink = logger()->configureChannel("VKDISPLAYLINK", fvec3(0.7, 0.9, 0.7), true);
 
 // CVDisplayLink fires once per vblank on its own thread. outputTime->hostTime
 // is the upcoming scanout in Mach absolute time — converted to epoch ms and
@@ -58,15 +63,37 @@ void VkContext::_startDisplayLink() {
         machToNs
     };
 
-    logchan_displaylink->log("starting, epochOffset=%.3f estimator=%p",
-           _displayLinkEpochOffsetMS, (void*)w->estimator.get());
+    // Get the CGDirectDisplayID for whichever display the window is on,
+    // so CVDisplayLink fires at that display's actual refresh rate (e.g. 90Hz)
+    // rather than the lowest-common-denominator of all active displays.
+    CGDirectDisplayID displayID = CGMainDisplayID();
+    auto glfw_container = (CtxGLFW*)mCtxBase;
+    if (glfw_container && glfw_container->_glfwWindow) {
+        NSWindow* nswin = glfwGetCocoaWindow(glfw_container->_glfwWindow);
+        if (nswin) {
+            NSScreen* screen = nswin.screen;
+            if (screen) {
+                NSDictionary* desc = screen.deviceDescription;
+                NSNumber* screenID = desc[@"NSScreenNumber"];
+                if (screenID) {
+                    displayID = (CGDirectDisplayID)screenID.unsignedIntValue;
+                }
+            }
+        }
+    }
 
-    CVDisplayLinkCreateWithActiveCGDisplays(&w->cvLink);
+    logchan_displaylink->log("starting on display=0x%x epochOffset=%.3f estimator=%p",
+           displayID, _displayLinkEpochOffsetMS, (void*)w->estimator.get());
+
+    CVDisplayLinkCreateWithCGDisplay(displayID, &w->cvLink);
     CVDisplayLinkSetOutputCallback(w->cvLink, displayLinkCallback, w);
     CVDisplayLinkStart(w->cvLink);
 
+    CVTime period = CVDisplayLinkGetNominalOutputVideoRefreshPeriod(w->cvLink);
+    double hz = (period.flags & kCVTimeIsIndefinite) ? 0.0
+              : double(period.timeScale) / double(period.timeValue);
+    logchan_displaylink->log("started cvLink=%p display=0x%x refresh=%.2fHz", (void*)w->cvLink, displayID, hz);
     _displayLink = (void*)w;
-    logchan_displaylink->log("started cvLink=%p", (void*)w->cvLink);
 }
 
 void VkContext::_stopDisplayLink() {
