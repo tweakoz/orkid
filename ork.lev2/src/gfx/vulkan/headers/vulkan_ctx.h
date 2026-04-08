@@ -900,6 +900,13 @@ public:
   
   void suspendRenderPass();
   void resumeRenderPass();
+
+#if defined(__APPLE__)
+  void* _displayLink               = nullptr;
+  double _displayLinkEpochOffsetMS = 0.0;
+  void _startDisplayLink();
+  void _stopDisplayLink();
+#endif
 };
 ///////////////////////////////////////////////////////////////////////////
   struct VkCaptureBufferImpl {

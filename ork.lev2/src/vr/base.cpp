@@ -4,6 +4,7 @@
 #include <ork/lev2/vr/vr.h>
 #include <ork/kernel/string/deco.inl>
 #include <ork/profiling.inl>
+#include <thread>
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::orkidvr {
@@ -60,7 +61,7 @@ Device::~Device() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-u64 Device::predictedRenderFinishTick() const {
+double Device::predictedRenderFinishEpochMS() const {
   OrkAssertI(_render_timing_estimator, "VR device has no render timing estimator — was a gfx context wired up via ezapp onGpuInit?");
   return _render_timing_estimator->predictNextTarget();
 }
@@ -106,9 +107,14 @@ void Device::resetCalibration(){
 
 void Device::_updatePosesCommon() {
   EASY_BLOCK("vr-upc");
-  fmtx4 hmd  = _posemap["hmd"];
-  fmtx4 eyeL = _posemap["eyel"];
-  fmtx4 eyeR = _posemap["eyer"];
+  fmtx4 hmd, eyeL, eyeR;
+  {
+    // _posemap written from pose processor thread; lock on read to avoid data race
+    std::lock_guard<std::mutex> lock(_posemap_mutex);
+    hmd  = _posemap["hmd"];
+    eyeL = _posemap["eyel"];
+    eyeR = _posemap["eyer"];
+  }
 
   fvec3 hmdpos;
   fquat hmdrot;

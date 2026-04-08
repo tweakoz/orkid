@@ -477,6 +477,8 @@ public:
   Timer _ctxtimer;
 
   time_predictor_ptr_t _render_timing_estimator = std::make_shared<TimePredictor>();
+  RunningStats _submit_delta_stats;
+  double _last_submit_epoch_ms = 0.0;
 
   svar64_t _pyimpl_beforeEndFrame;
 protected:

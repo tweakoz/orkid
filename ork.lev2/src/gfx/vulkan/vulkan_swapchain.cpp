@@ -681,7 +681,6 @@ void VkSwapChain::submit(vkcontext_rawptr_t ctxVK) {
   _enqueueFrame(ctxVK);
   _enqueuePresentFrame(ctxVK);
   _waitFrame();
-  ctxVK->_render_timing_estimator->markPredictionTarget();
   _incrementFrame();
   _acquired = false;
 }

@@ -112,15 +112,20 @@ struct Device {
   virtual void gpuUpdate(RenderContextFrameData& RCFD)              = 0;
   virtual void __composite(Context* targ, Texture* twoeyetex) const = 0;
 
-  // Returns the predicted absolute system tick (Timer::getSystemTick() scale)
+  // Returns the predicted absolute epoch milliseconds (Timer::getEpochMS() scale)
   // when the current frame will finish rendering. Used for pose prediction.
   // Returns 0 if not enough frames have been rendered yet.
-  u64 predictedRenderFinishTick() const;
+  double predictedRenderFinishEpochMS() const;
 
   // Shared with the gfx context producing frames for this device.
-  ork::time_predictor_ptr_t _render_timing_estimator;
+  ork::time_predictor_ptr_t _render_timing_estimator; 
 
   std::map<std::string, fmtx4> _posemap;
+
+  // Posemap is getting updated from the sensor thread and read from the rendering thread.
+  // We need a synchronization primitive for this. TODO should be SPSCQueue
+  mutable std::mutex _posemap_mutex; 
+
   cameramatrices_ptr_t _leftcamera       = nullptr;
   cameramatrices_ptr_t _centercamera     = nullptr;
   cameramatrices_ptr_t _rightcamera      = nullptr;
