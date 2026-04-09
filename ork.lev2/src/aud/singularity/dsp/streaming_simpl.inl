@@ -43,11 +43,13 @@ struct SimpleImpl {
   int _ed_to_drain = 0;
 
   // Latency probe (active when CHIRP pattern detected)
+#if defined(DEBUG_LATENCY)
   std::unique_ptr<TestPatternProbe> _probe;
   uint64_t _probe_sample_count = 0;
   uint64_t _probe_report_interval = 0; // samples between reports (set at init)
   double _probe_latency_sum = 0.0;
   int _probe_latency_count = 0;
+#endif 
 
   ////////////////////////////////////////////////////////////////
 
@@ -75,10 +77,13 @@ struct SimpleImpl {
 
       // Initialize latency probe (3-second reporting interval)
       float sr = synth::instance() ? synth::instance()->_sampleRate : 48000.0f;
+#if defined(DEBUG_LATENCY)
+
       _probe = std::make_unique<TestPatternProbe>(sr, 4096);
       _probe->setChirpConfig(ChirpConfig()); // default chirp params
       _probe_report_interval = uint64_t(sr * 3.0); // every 3 seconds
-  }
+#endif  
+}
 
   ////////////////////////////////////////////////////////////////
 
@@ -308,6 +313,7 @@ struct SimpleImpl {
           }
         }
 
+        #if defined(DEBUG_LATENCY)
         // Feed output to latency probe and report periodically
         _probe->write(outputchan_L, frames);
         _probe_sample_count += frames;
@@ -327,6 +333,7 @@ struct SimpleImpl {
           _probe_latency_sum = 0.0;
           _probe_latency_count = 0;
         }
+        #endif
 
         // Advance read positions
         _read_position_L += frames * playback_rate;

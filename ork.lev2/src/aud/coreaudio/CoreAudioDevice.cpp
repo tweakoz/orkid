@@ -8,7 +8,7 @@
 #include <ork/lev2/config.h>
 #if defined(ENABLE_CORE_AUDIO)
 
-#define DEBUG_LATENCY
+//#define DEBUG_LATENCY
 
 #include "CoreAudioDevice.h"
 #include "au.h"
