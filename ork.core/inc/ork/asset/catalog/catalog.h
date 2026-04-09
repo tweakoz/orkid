@@ -108,6 +108,10 @@ struct AssetCatalog {
   // 3. Loads all non-config JSON files as manifests
   // 4. Registers codecs for all namespaces found in configs
   static void loadFromGlobalManifests(assetcatalog_ptr_t self);
+
+  // Purge all loaded manifests, asset index, and namespace tree,
+  // then reload everything from disk via loadFromGlobalManifests.
+  static void reloadAllManifests(assetcatalog_ptr_t self);
   
   ////////////////////////////////////////////////////////////////////////////////
   // === Codec Management ===
@@ -209,6 +213,7 @@ struct AssetCatalog {
   
   // Set download manager
   void setDownloadManager(downloadmanager_ptr_t mgr);
+  downloadmanager_ptr_t getDownloadManager() const;
   
   ////////////////////////////////////////////////////////////////////////////////
   // === URL Generation (Single Source of Truth) ===
@@ -246,7 +251,11 @@ struct AssetCatalog {
   // Returns: upload receipt for the asset
   uploadreceipt_ptr_t uploadAsset(
     const assetid_t& fq_asset_id,
-    chunk_completed_callback_t on_chunk_completed = nullptr);
+    chunk_completed_callback_t on_chunk_completed = nullptr,
+    std::atomic<bool>* cancel_flag = nullptr);
+
+  // Async upload — returns UploadRequest with live progress tracking
+  uploadrequest_ptr_t uploadAssetAsync(const assetid_t& fq_asset_id);
 
   // Upload all namespaces to their configured remote locations
   // Returns: map of namespace ID to upload receipt

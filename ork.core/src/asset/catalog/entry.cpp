@@ -410,7 +410,8 @@ bool AssetEntry::isRepackaged() const {
 uploadreceipt_ptr_t AssetEntry::upload(
     const AssetConfig& config,
     locationinfo_ptr_t location_info,
-    chunk_completed_callback_t on_chunk_completed) const {
+    chunk_completed_callback_t on_chunk_completed,
+    std::atomic<bool>* cancel_flag) const {
   
   ////////////////////////////////////
   // Verify entry is repackaged
@@ -669,14 +670,24 @@ uploadreceipt_ptr_t AssetEntry::upload(
   ////////////////////////////////////          
 
   HttpsUploader uploader(https_config);
-  bool chunks_success = uploader.uploadFiles(chunk_files, chunk_remote_paths);
 
-  // Invoke chunk completion callback for each successfully uploaded chunk
-  if (chunks_success && on_chunk_completed) {
-    for (size_t i = 0; i < chunk_remote_paths.size(); ++i) {
-      on_chunk_completed(chunk_remote_paths[i]);
-    }
+  // Wire per-file completion callback so progress updates live during upload
+  if (on_chunk_completed) {
+    uploader.setFileCompletedCallback(on_chunk_completed);
   }
+
+  // Propagate external cancel flag to the uploader
+  if (cancel_flag && cancel_flag->load()) {
+    auto receipt2 = std::make_shared<UploadReceipt>();
+    receipt2->success = false;
+    receipt2->status_message = "Cancelled before upload started";
+    return receipt2;
+  }
+  if (cancel_flag) {
+    uploader.setExternalCancelFlag(cancel_flag);
+  }
+
+  bool chunks_success = uploader.uploadFiles(chunk_files, chunk_remote_paths);
 
   if (!chunks_success) {
     // Some or all chunks failed - add failure entries

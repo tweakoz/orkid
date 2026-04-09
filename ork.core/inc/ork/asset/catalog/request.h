@@ -88,15 +88,19 @@ struct FetchRequest {
   std::atomic<size_t> _chunks_completed{0};
   std::atomic<size_t> _chunks_total{0};
   std::atomic<int> _refcount{0};     // Number of active requests
-  
+  std::atomic<bool> _cancel_requested{false};
+  LockedResource<download_group_ptr_t> _active_download_group;  // For cancel propagation
+
   //////////////////////////////////////////////////////////////////////////////
   // Callbacks
   //////////////////////////////////////////////////////////////////////////////
-  
+
   pysafe_asset_request_progress_t _progress_callback;
 
   bool wait();
-  bool isComplete() const;  
+  bool isComplete() const;
+  void cancel();
+  bool isCancelled() const { return _cancel_requested.load(); }
 
   // Helpers
   bool isSuccess() const;
@@ -104,5 +108,29 @@ struct FetchRequest {
   bool isPak() const { return !_pak_contents.empty(); }  // Check if this is a pak result
 };
 
+////////////////////////////////////////////////////////////////////////////////
+// UploadRequest — async upload with progress tracking (mirrors FetchRequest)
+////////////////////////////////////////////////////////////////////////////////
+
+struct UploadRequest {
+  std::string _fqid;                             // Fully qualified asset ID
+  std::atomic<size_t> _bytes_uploaded{0};         // Bytes uploaded so far
+  std::atomic<size_t> _bytes_total{0};            // Total bytes to upload
+  std::atomic<float> _progress{0.0f};             // 0.0 - 1.0
+  std::atomic<size_t> _chunks_completed{0};       // Chunks uploaded so far
+  std::atomic<size_t> _chunks_total{0};           // Total chunks to upload
+  std::atomic<bool> _completed{false};            // Upload finished
+  std::atomic<bool> _success{false};              // Upload succeeded
+  std::atomic<bool> _cancel_requested{false};     // Cancel flag
+  LockedResource<std::string> _status_message;    // Status/error message
+  uploadreceipt_ptr_t _receipt;                   // Final receipt (set on completion)
+
+  bool isComplete() const { return _completed.load(); }
+  bool isSuccess() const { return _success.load(); }
+  bool isCancelled() const { return _cancel_requested.load(); }
+  void cancel() { _cancel_requested.store(true); }
+};
+
+using uploadrequest_ptr_t = std::shared_ptr<UploadRequest>;
 
 } //  namespace ork::asset::catalog {

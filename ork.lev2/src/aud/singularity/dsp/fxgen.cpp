@@ -648,7 +648,7 @@ dspblkdata_ptr_t appendStereoReverbX(
 }
 ///////////////////////////////////////////////////////////////////////////////
 void appendStereoEnhancer(lyrdata_ptr_t layer, dspstagedata_ptr_t stage) {
-  auto stereoenh           = stage->appendTypedBlock<StereoDynamicEcho>("echo");
+  auto stereoenh           = stage->appendTypedBlock<StereoEnhancer>("enhancer");
   auto width_mod           = stereoenh->param(0)->_mods;
   auto WIDTHCONTROL        = layer->appendController<CustomControllerData>("WIDTH");
   width_mod->_src1         = WIDTHCONTROL;

@@ -90,6 +90,9 @@ struct ToolbarButton : public ToolbarItem {
   bool _toggle_mode = false;
   bool _toggled = false;
 
+  // Per-button color override (alpha=0 means use toolbar default)
+  fvec4 _color_override = fvec4(0, 0, 0, 0);
+
   // Visual state
   bool _hovered = false;
   bool _pressed = false;
@@ -190,11 +193,14 @@ struct Toolbar : public Widget {
   int _edge_padding = 4;         // Padding at toolbar edges
 
   fvec4 _bgcolor = fvec4(0.15f, 0.15f, 0.15f, 1.0f);
+  fvec4 _button_color = fvec4(0.0f, 0.0f, 0.0f, 0.0f);          // normal-state bg (transparent = no bg)
   fvec4 _button_hover_color = fvec4(0.25f, 0.25f, 0.3f, 1.0f);
   fvec4 _button_pressed_color = fvec4(0.2f, 0.4f, 0.6f, 1.0f);
   fvec4 _button_toggled_color = fvec4(0.3f, 0.5f, 0.7f, 1.0f);
   fvec4 _separator_color = fvec4(0.3f, 0.3f, 0.3f, 1.0f);
   fvec4 _disabled_tint = fvec4(0.5f, 0.5f, 0.5f, 0.5f);
+  fvec4 _button_border_color = fvec4(0.0f, 0.0f, 0.0f, 0.0f);   // border color (transparent = no border)
+  int _button_border_width = 1;                                   // border thickness in pixels
 
   bool _draw_background = true;
 

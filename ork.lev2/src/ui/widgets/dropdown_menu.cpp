@@ -274,7 +274,7 @@ void DropdownMenu::_selectItem(int index) {
       _onSelected(item._value);
     }
     if (_uicontext) {
-      _uicontext->dismissAllOverlays();
+      _uicontext->popOverlay();
     }
   } else {
     _openSubmenu(index);
@@ -349,7 +349,7 @@ HandlerResult DropdownMenu::DoOnUiEvent(event_constptr_t cev) {
       switch (key) {
         case 256: // ESC
           if (_uicontext) {
-            _uicontext->dismissAllOverlays();
+            _uicontext->popOverlay();
           }
           rval.setHandled(this);
           break;

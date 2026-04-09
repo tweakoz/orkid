@@ -76,6 +76,26 @@ void pyinit_asset_catalog(py::module& module_core) {
   type_codec->registerStdCodec<assetmanifest_ptr_t>(manifest_type);
 
   /////////////////////////////////////////////////////////////////////////////////
+  // UploadRequest — async upload with progress tracking
+  /////////////////////////////////////////////////////////////////////////////////
+  auto upload_request_type = py::class_<UploadRequest, uploadrequest_ptr_t>(module_core, "UploadRequest")
+    .def_property_readonly("bytes_uploaded", [](uploadrequest_ptr_t self) -> size_t { return self->_bytes_uploaded.load(); })
+    .def_property_readonly("bytes_total", [](uploadrequest_ptr_t self) -> size_t { return self->_bytes_total.load(); })
+    .def_property_readonly("progress", [](uploadrequest_ptr_t self) -> float { return self->_progress.load(); })
+    .def_property_readonly("chunks_completed", [](uploadrequest_ptr_t self) -> size_t { return self->_chunks_completed.load(); })
+    .def_property_readonly("chunks_total", [](uploadrequest_ptr_t self) -> size_t { return self->_chunks_total.load(); })
+    .def_property_readonly("completed", [](uploadrequest_ptr_t self) -> bool { return self->isComplete(); })
+    .def_property_readonly("succeeded", [](uploadrequest_ptr_t self) -> bool { return self->isSuccess(); })
+    .def_property_readonly("cancelled", [](uploadrequest_ptr_t self) -> bool { return self->isCancelled(); })
+    .def("cancel", &UploadRequest::cancel)
+    .def("__repr__", [](uploadrequest_ptr_t self) -> std::string {
+      return FormatString("UploadRequest(fqid='%s', chunks=%zu/%zu, %s)",
+        self->_fqid.c_str(), self->_chunks_completed.load(), self->_chunks_total.load(),
+        self->isComplete() ? (self->isSuccess() ? "success" : "failed") : "in_progress");
+    });
+  type_codec->registerStdCodec<uploadrequest_ptr_t>(upload_request_type);
+
+  /////////////////////////////////////////////////////////////////////////////////
   // FetchRequest
   /////////////////////////////////////////////////////////////////////////////////
   auto request_type = py::class_<FetchRequest, fetchrequest_ptr_t>(module_core, "FetchRequest")
@@ -91,6 +111,8 @@ void pyinit_asset_catalog(py::module& module_core) {
                          })
                          .def_property_readonly("succeeded", [](fetchrequest_ptr_t self) -> bool { return self->isSuccess(); })
                          .def_property_readonly("completed", [](fetchrequest_ptr_t self) -> bool { return self->isComplete(); })
+                         .def_property_readonly("cancelled", [](fetchrequest_ptr_t self) -> bool { return self->isCancelled(); })
+                         .def("cancel", &FetchRequest::cancel)
                          .def("__repr__", [](fetchrequest_ptr_t result) -> std::string {
                            return FormatString("FetchRequest(status=%d, bytes=%zu/%zu)", (int)result->_status, result->_bytes_downloaded.load(), result->_bytes_total.load());
                          });
@@ -154,7 +176,12 @@ void pyinit_asset_catalog(py::module& module_core) {
                                   })
                               .def("supports_current_platform", &AssetEntry::supportsCurrentPlatform)
                               .def("repackage", &AssetEntry::repackage)
-                              .def("upload", &AssetEntry::upload,
+                              .def("upload", [](const AssetEntry& entry,
+                                   const AssetConfig& config,
+                                   locationinfo_ptr_t location,
+                                   chunk_completed_callback_t on_chunk_completed) {
+                                return entry.upload(config, location, on_chunk_completed, nullptr);
+                              },
                                    py::arg("config"),
                                    py::arg("destination_id"),
                                    py::arg("on_chunk_completed") = nullptr)
@@ -185,6 +212,7 @@ void pyinit_asset_catalog(py::module& module_core) {
           .def("manifestsForNamespace", &AssetCatalog::manifestsForNamespace)
           .def("findAssetEntry", &AssetCatalog::findAssetEntry)
           .def_static("loadFromGlobalManifests", &AssetCatalog::loadFromGlobalManifests)
+          .def_static("reloadAllManifests", &AssetCatalog::reloadAllManifests)
           .def_property_readonly_static("instance", [](py::object /* self */) -> assetcatalog_ptr_t { 
               return AssetCatalog::globalInstance(); 
           })
@@ -231,6 +259,10 @@ void pyinit_asset_catalog(py::module& module_core) {
                 catalog->invalidateRequest(asset_id);
               },
               py::arg("asset_id"))
+          .def_property_readonly("download_manager",
+              [](assetcatalog_ptr_t catalog) -> downloadmanager_ptr_t {
+                return catalog->getDownloadManager();
+              })
           // Asset Queries
           .def("list_assets", &AssetCatalog::listAssets, py::arg("pattern") = "*")
           
@@ -251,8 +283,8 @@ void pyinit_asset_catalog(py::module& module_core) {
             return catalog->uploadNamespace(namespace_id, callback);
           }, py::arg("namespace_id"), py::arg("on_asset_completed") = py::none())
 
-          .def("uploadAsset", [](assetcatalog_ptr_t catalog, 
-                                 std::string fq_asset_id, 
+          .def("uploadAsset", [](assetcatalog_ptr_t catalog,
+                                 std::string fq_asset_id,
                                  py::object on_completed) {
 
             auto oncompl_ptr = std::make_shared<py::object>(on_completed);
@@ -275,6 +307,10 @@ void pyinit_asset_catalog(py::module& module_core) {
             py::gil_scoped_release release;
             opq::concurrentQueue()->enqueue(op);
           }, py::arg("fq_asset_id"), py::arg("on_completed") = py::none())
+
+          .def("uploadAssetAsync", [](assetcatalog_ptr_t catalog, std::string fq_asset_id) -> uploadrequest_ptr_t {
+            return catalog->uploadAssetAsync(fq_asset_id);
+          }, py::arg("fq_asset_id"))
 
           .def("uploadAllNamespaces", [](assetcatalog_ptr_t catalog, py::object on_namespace_completed) {
             asset::catalog::namespace_completed_callback_t callback = nullptr;

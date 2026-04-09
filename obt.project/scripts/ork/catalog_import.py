@@ -70,10 +70,11 @@ def resolve_variables(value: str, env: dict = None) -> str:
 
     result = value
 
-    # Expand <stage> and <temp>
+    # Expand <stage>, <temp>, and <assetcache>
     from obt import path as obt_path
     result = result.replace("<stage>", str(obt_path.stage()))
     result = result.replace("<temp>", str(obt_path.temp()))
+    result = result.replace("<assetcache>", str(obt_path.stage() / "assetcache"))
 
     # Expand ${VAR} patterns
     def replace_var(match):
@@ -254,12 +255,16 @@ def validate_namespace(namespace: str) -> Tuple[bool, str]:
 class AssetImporter:
     """Main importer class."""
 
-    def __init__(self, config: ImportConfig):
+    def __init__(self, config: ImportConfig, output=None):
         self.config = config
         self._resolved_source_dir = None
         self._resolved_local_loc = None
         self._resolved_manifest = None
         self._resolved_key = None
+        self._out = output or __import__('sys').stdout
+
+    def _print(self, msg=""):
+        self._out.write(msg + "\n")
 
     def validate_config(self) -> Tuple[bool, List[str]]:
         """Validate configuration before running. Returns (is_valid, errors)."""
@@ -319,10 +324,11 @@ class AssetImporter:
             filters = asset_def.include if isinstance(asset_def.include, list) else [asset_def.include]
 
             if verbose:
-                print(f"  Source dir: {self._resolved_source_dir}")
-                print(f"  Filters: {filters}")
-                print(f"  Local loc: {self._resolved_local_loc}")
+                self._print(f"  Source dir: {self._resolved_source_dir}")
+                self._print(f"  Filters: {filters}")
+                self._print(f"  Local loc: {self._resolved_local_loc}")
 
+            # Import config is the source of truth for local_loc
             result = assets.build_assetpak(
                 namespace=self.config.namespace,
                 output=str(self._resolved_manifest),
@@ -330,20 +336,20 @@ class AssetImporter:
                 source_dir=str(self._resolved_source_dir),
                 filters=filters,
                 priority=self.config.priority,
-                local_loc=self.config.local_loc,  # Use unexpanded path for portability
+                local_loc=self.config.local_loc,
                 key=self._resolved_key,
                 platforms=self.config.platforms,
                 write_manifest=True
             )
 
             if verbose:
-                print(f"  Storage hash: {result.get('storage_hash', 'N/A')}")
-                print(f"  Content hash: {result.get('content_hash', 'N/A')}")
+                self._print(f"  Storage hash: {result.get('storage_hash', 'N/A')}")
+                self._print(f"  Content hash: {result.get('content_hash', 'N/A')}")
 
             return True
 
         except Exception as e:
-            print(f"  ✗ Error packaging {asset_def.id}: {e}")
+            self._print(f"  ✗ Error packaging {asset_def.id}: {e}")
             return False
 
     def package_all(self, verbose: bool = False) -> ImportResult:
@@ -356,34 +362,34 @@ class AssetImporter:
         result = ImportResult()
         asset_defs = self.get_asset_definitions()
 
-        print(f"Packaging {len(asset_defs)} asset(s) to namespace '{self.config.namespace}'")
-        print(f"Manifest: {self._resolved_manifest}")
-        print("=" * 60)
+        self._print(f"Packaging {len(asset_defs)} asset(s) to namespace '{self.config.namespace}'")
+        self._print(f"Manifest: {self._resolved_manifest}")
+        self._print("=" * 60)
 
         for i, asset_def in enumerate(asset_defs, 1):
-            print(f"\n[{i}/{len(asset_defs)}] {asset_def.id}")
+            self._print(f"\n[{i}/{len(asset_defs)}] {asset_def.id}")
 
             if self.package_asset(asset_def, verbose=verbose):
                 result.success_count += 1
                 result.assets.append((self.config.namespace, asset_def.id))
-                print(f"  ✓ Packaged successfully")
+                self._print(f"  ✓ Packaged successfully")
             else:
                 result.failed_count += 1
                 result.errors.append(f"Failed to package {asset_def.id}")
 
-        print("\n" + "=" * 60)
-        print(f"Packaging complete: {result.success_count} succeeded, {result.failed_count} failed")
+        self._print(f"\n{'=' * 60}")
+        self._print(f"Packaging complete: {result.success_count} succeeded, {result.failed_count} failed")
 
         return result
 
     def upload_assets(self, result: ImportResult, verbose: bool = False) -> ImportResult:
         """Upload packaged assets to CDN."""
         if not result.assets:
-            print("No assets to upload")
+            self._print("No assets to upload")
             return result
 
-        print(f"\nUploading {len(result.assets)} asset(s) to CDN...")
-        print("=" * 60)
+        self._print(f"\nUploading {len(result.assets)} asset(s) to CDN...")
+        self._print("=" * 60)
 
         # Get catalog instance
         catalog = core.AssetCatalog.instance
@@ -393,24 +399,24 @@ class AssetImporter:
 
         for i, (namespace, asset_id) in enumerate(result.assets, 1):
             fqid = f"{namespace}|{asset_id}"
-            print(f"\n[{i}/{len(result.assets)}] Uploading {fqid}...")
+            self._print(f"\n[{i}/{len(result.assets)}] Uploading {fqid}...")
 
             try:
                 receipt = catalog.uploadAsset(fqid)
                 if receipt and receipt.success:
-                    print(f"  ✓ Uploaded successfully")
+                    self._print(f"  ✓ Uploaded successfully")
                     upload_success += 1
                 else:
-                    print(f"  ✗ Upload failed")
+                    self._print(f"  ✗ Upload failed")
                     upload_failed += 1
                     result.errors.append(f"Upload failed: {fqid}")
             except Exception as e:
-                print(f"  ✗ Upload error: {e}")
+                self._print(f"  ✗ Upload error: {e}")
                 upload_failed += 1
                 result.errors.append(f"Upload error for {fqid}: {e}")
 
-        print("\n" + "=" * 60)
-        print(f"Upload complete: {upload_success} succeeded, {upload_failed} failed")
+        self._print(f"\n{'=' * 60}")
+        self._print(f"Upload complete: {upload_success} succeeded, {upload_failed} failed")
 
         return result
 
@@ -421,55 +427,55 @@ class AssetImporter:
 
         # Validate source directory exists
         if not self._resolved_source_dir.exists():
-            print(f"Error: Source directory does not exist: {self._resolved_source_dir}")
+            self._print(f"Error: Source directory does not exist: {self._resolved_source_dir}")
             return ImportResult(failed_count=1, errors=["Source directory not found"])
 
         # Validate namespace configuration (skip for list-only mode)
         if not list_only:
             is_valid, errors = self.validate_config()
             if not is_valid:
-                print("Error: Configuration validation failed:")
+                self._print("Error: Configuration validation failed:")
                 for error in errors:
-                    print(f"\n{error}")
+                    self._print(f"\n{error}")
                 return ImportResult(failed_count=1, errors=errors)
 
         # List mode
         if list_only:
-            print(f"Assets in namespace '{self.config.namespace}':")
-            print(f"Source: {self._resolved_source_dir}")
-            print("=" * 60)
+            self._print(f"Assets in namespace '{self.config.namespace}':")
+            self._print(f"Source: {self._resolved_source_dir}")
+            self._print("=" * 60)
 
             total_files = 0
             for asset_id, files in self.list_assets():
-                print(f"\n{asset_id}:")
+                self._print(f"\n{asset_id}:")
                 for f in files:
                     rel_path = f.relative_to(self._resolved_source_dir)
-                    print(f"  - {rel_path}")
+                    self._print(f"  - {rel_path}")
                     total_files += 1
 
-            print("\n" + "=" * 60)
-            print(f"Total: {len(self.get_asset_definitions())} asset(s), {total_files} file(s)")
+            self._print(f"\n{'=' * 60}")
+            self._print(f"Total: {len(self.get_asset_definitions())} asset(s), {total_files} file(s)")
             return ImportResult()
 
         # Dry run mode
         if dry_run:
-            print("[DRY RUN] Would perform the following actions:")
-            print(f"  Namespace: {self.config.namespace}")
-            print(f"  Source: {self._resolved_source_dir}")
-            print(f"  Local loc: {self._resolved_local_loc}")
-            print(f"  Manifest: {self._resolved_manifest}")
-            print(f"  Platforms: {', '.join(self.config.platforms)}")
-            print(f"  Encryption: {'Yes' if self._resolved_key else 'No'}")
-            print()
+            self._print("[DRY RUN] Would perform the following actions:")
+            self._print(f"  Namespace: {self.config.namespace}")
+            self._print(f"  Source: {self._resolved_source_dir}")
+            self._print(f"  Local loc: {self._resolved_local_loc}")
+            self._print(f"  Manifest: {self._resolved_manifest}")
+            self._print(f"  Platforms: {', '.join(self.config.platforms)}")
+            self._print(f"  Encryption: {'Yes' if self._resolved_key else 'No'}")
+            self._print()
 
             asset_defs = self.get_asset_definitions()
-            print(f"Would package {len(asset_defs)} asset(s):")
+            self._print(f"Would package {len(asset_defs)} asset(s):")
             for asset_def in asset_defs:
                 files = self.enumerate_asset_files(asset_def)
-                print(f"  - {asset_def.id} ({len(files)} file(s))")
+                self._print(f"  - {asset_def.id} ({len(files)} file(s))")
 
             if upload:
-                print(f"\nWould upload {len(asset_defs)} asset(s) to CDN")
+                self._print(f"\nWould upload {len(asset_defs)} asset(s) to CDN")
 
             return ImportResult()
 
@@ -486,8 +492,8 @@ class AssetImporter:
 #############################################
 
 def run_import(config: ImportConfig, upload: bool = False, dry_run: bool = False,
-               list_only: bool = False, verbose: bool = False) -> ImportResult:
+               list_only: bool = False, verbose: bool = False, output=None) -> ImportResult:
     """Convenience function to run import from config."""
-    importer = AssetImporter(config)
+    importer = AssetImporter(config, output=output)
     return importer.run(upload=upload, dry_run=dry_run,
                         list_only=list_only, verbose=verbose)

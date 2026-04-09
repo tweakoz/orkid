@@ -216,8 +216,8 @@ void DownloadManager::downloadGroup(download_group_ptr_t group) {
 ////////////////////////////////////////////////////////////////////////////////
 
 void DownloadManager::processDownload(download_ptr_t dl) {
-  
-  if (_impl->_shutdown_requested) {
+
+  if (_impl->_shutdown_requested || dl->_state == DownloadState::CANCELLED) {
     dl->_state = DownloadState::CANCELLED;
     _impl->_failed_downloads++;
     _impl->_queue_size--;
@@ -355,6 +355,11 @@ void DownloadManager::processDownload(download_ptr_t dl) {
       // Remove partial file
       std::remove(dl->_destination_path.c_str());
     }
+  } else if (res == CURLE_ABORTED_BY_CALLBACK || dl->_state == DownloadState::CANCELLED) {
+    // Cancelled via progress callback or explicit cancel
+    dl->_state = DownloadState::CANCELLED;
+    _impl->_failed_downloads++;
+    std::remove(dl->_destination_path.c_str());
   } else {
     dl->_state         = DownloadState::FAILED;
     dl->_error_message = curl_easy_strerror(res);
@@ -425,6 +430,26 @@ bool DownloadManager::isActive() const {
 
 size_t DownloadManager::activeDownloadCount() const {
   return _impl->_active_downloads;
+}
+
+size_t DownloadManager::totalBytesDownloaded() const {
+  return _impl->_total_bytes_downloaded;
+}
+
+size_t DownloadManager::pendingDownloadCount() const {
+  return _impl->_queue_size;
+}
+
+int DownloadManager::completedDownloadCount() const {
+  return _impl->_completed_downloads;
+}
+
+int DownloadManager::failedDownloadCount() const {
+  return _impl->_failed_downloads;
+}
+
+size_t DownloadManager::queueSize() const {
+  return _impl->_queue_size;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

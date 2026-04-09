@@ -226,6 +226,19 @@ void Toolbar::_rebuildLayout() {
     }
 
     if (auto btn = std::dynamic_pointer_cast<ToolbarButton>(item)) {
+      bool has_icon = btn->_icon_image || btn->_icon_provider;
+      bool text_only = !has_icon && !btn->_label.empty();
+
+      // Button height: text-only buttons use font height + padding,
+      // icon buttons use icon_size + padding
+      int btn_h;
+      if (text_only && _label_font) {
+        int font_h = _label_font->description().miAdvanceHeight;
+        btn_h = font_h + _button_padding * 2;
+      } else {
+        btn_h = button_size;
+      }
+
       int btn_w;
       if (btn->_custom_width > 0) {
         btn_w = btn->_custom_width + _button_padding * 2;
@@ -235,7 +248,7 @@ void Toolbar::_rebuildLayout() {
         if (_label_font) {
           text_w = btn->_label.length() * _label_font->description().miAdvanceWidth;
         }
-        if (btn->_icon_image || btn->_icon_provider) {
+        if (has_icon) {
           // icon + label: icon_size + spacing + text + padding
           btn_w = _button_padding + _icon_size + _label_padding + text_w + _label_padding;
         } else {
@@ -245,18 +258,23 @@ void Toolbar::_rebuildLayout() {
       } else {
         btn_w = button_size;
       }
+
+      // Center button vertically within toolbar
+      int btn_center_y = std::max(0, (_geometry._h - btn_h) / 2);
+
       if (horizontal) {
         btn->_x = pos;
-        btn->_y = center_offset_h;
+        btn->_y = btn_center_y;
         btn->_width = btn_w;
-        btn->_height = button_size;
+        btn->_height = btn_h;
         pos += btn_w + _item_spacing;
       } else {
-        btn->_x = center_offset_w;
+        int btn_center_x = std::max(0, (_geometry._w - btn_w) / 2);
+        btn->_x = btn_center_x;
         btn->_y = pos;
         btn->_width = btn_w;
-        btn->_height = button_size;
-        pos += btn_w + _item_spacing;
+        btn->_height = btn_h;
+        pos += btn_h + _item_spacing;
       }
     } else if (auto sep = std::dynamic_pointer_cast<ToolbarSeparator>(item)) {
       if (horizontal) {
@@ -483,7 +501,7 @@ void Toolbar::_drawButton(drawevent_constptr_t drwev, toolbar_button_ptr_t btn, 
   int bx2 = abs_x + btn->_width;
   int by2 = abs_y + btn->_height;
 
-  // Draw button background (hover/pressed/toggled state)
+  // Draw button background (state-dependent) and optional border
   fvec4 bg_color;
   bool draw_bg = false;
 
@@ -496,6 +514,12 @@ void Toolbar::_drawButton(drawevent_constptr_t drwev, toolbar_button_ptr_t btn, 
   } else if (btn->_hovered) {
     bg_color = _button_hover_color;
     draw_bg = true;
+  } else if (btn->_color_override.w > 0.001f) {
+    bg_color = btn->_color_override;
+    draw_bg = true;
+  } else if (_button_color.w > 0.001f) {
+    bg_color = _button_color;
+    draw_bg = true;
   }
 
   if (draw_bg && bg_color.w > 0.001f) {
@@ -506,6 +530,27 @@ void Toolbar::_drawButton(drawevent_constptr_t drwev, toolbar_button_ptr_t btn, 
     tgt->PushModColor(bg_color);
     defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
     primi->RenderQuadAtZ(defmtl.get(), bx1, bx2, by1, by2, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+    tgt->PopModColor();
+    fxi->popRasterState();
+  }
+
+  // Draw border if configured (raised edge around each button)
+  if (_button_border_color.w > 0.001f && _button_border_width > 0) {
+    auto rs = defmtl->_rasterstate;
+    rs->setBlendingMacro(lev2::BlendingMacro::ALPHA);
+    rs->setDepthTest(lev2::EDepthTest::OFF);
+    fxi->pushRasterState(rs);
+    tgt->PushModColor(_button_border_color);
+    defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+    int bw = _button_border_width;
+    // Top edge
+    primi->RenderQuadAtZ(defmtl.get(), bx1, bx2, by1, by1 + bw, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+    // Bottom edge
+    primi->RenderQuadAtZ(defmtl.get(), bx1, bx2, by2 - bw, by2, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+    // Left edge
+    primi->RenderQuadAtZ(defmtl.get(), bx1, bx1 + bw, by1, by2, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+    // Right edge
+    primi->RenderQuadAtZ(defmtl.get(), bx2 - bw, bx2, by1, by2, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
     tgt->PopModColor();
     fxi->popRasterState();
   }
@@ -552,10 +597,12 @@ void Toolbar::_drawButton(drawevent_constptr_t drwev, toolbar_button_ptr_t btn, 
     icon_right = icon_x2;
   }
 
-  // Draw text label
+  // Draw text label — centered both horizontally and vertically within button
   if (!btn->_label.empty() && _label_font) {
-    int text_x = tex ? (icon_right + _label_padding) : (bx1 + _label_padding);
-    int text_y = by1 + _button_padding;
+    int font_h = _label_font->description().miAdvanceHeight;
+    int font_w = btn->_label.length() * _label_font->description().miAdvanceWidth;
+    int text_x = tex ? (icon_right + _label_padding) : (bx1 + (btn->_width - font_w) / 2);
+    int text_y = by1 + (btn->_height - font_h) / 2;
 
     fvec4 text_color = (btn->_toggle_mode && btn->_toggled) ? _label_toggled_color : _label_color;
     if (!btn->_enabled) {

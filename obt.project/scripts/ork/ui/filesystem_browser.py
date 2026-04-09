@@ -125,8 +125,10 @@ class FilesystemBrowser:
 
     # Hold/Clear icons
     def make_text_icon(text, color="#E6E6E6"):
-      return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-        <text x="12" y="12" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="9" font-weight="bold" fill="{color}">{text}</text>
+      w = max(24, len(text) * 6 + 4)
+      cx = w / 2
+      return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} 24">
+        <text x="{cx}" y="12" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="9" font-weight="bold" fill="{color}">{text}</text>
       </svg>'''
 
     icon_hold = icon_library.from_svg_string(make_text_icon("HOLD"), icon_size*2, icon_size*2)
@@ -236,7 +238,7 @@ class FilesystemBrowser:
       self.filename_edit = None
 
     # Action button (Save or Load)
-    action_text = "SAVE" if self.mode == "save" else "LOAD"
+    action_text = "SAVE" if self.mode == "save" else self.mode.upper()
     action_color = vec4(0.15, 0.25, 0.15, 1) if self.mode == "save" else vec4(0.15, 0.15, 0.25, 1)
     icon_action = icon_library.from_svg_string(make_text_icon(action_text), icon_size*2, icon_size*2)
     self.btn_action = self.bottom_hpack.makeChild(uiclass=lev2.ui.ImageButton, args=[f"{name}_action"])

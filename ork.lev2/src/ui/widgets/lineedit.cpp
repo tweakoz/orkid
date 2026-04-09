@@ -44,6 +44,9 @@ HandlerResult LineEdit::DoOnUiEvent(event_constptr_t cev) {
             if (_onTextChanged && _value != old_value) {
               _onTextChanged(_value);
             }
+            if (_onCancel) {
+              _onCancel();
+            }
             break;
           case 257: // enter
             rval._widget_finished = true;

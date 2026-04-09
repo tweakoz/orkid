@@ -214,6 +214,33 @@ void AssetCatalog::loadFromGlobalManifests(assetcatalog_ptr_t self) {
 
 /////////////////////////////////////////////////////////////////////////////////
 
+void AssetCatalog::reloadAllManifests(assetcatalog_ptr_t self) {
+  auto impl = self->_impl.getShared<CatalogImpl>();
+
+  logchan_catalog->log("reloadAllManifests: purging catalog state...");
+
+  // Clear all catalog state
+  impl->_state.atomicOp([&](CatalogImpl::CatalogState& state) {
+    state._manifests_by_namespace.clear();
+    state._nodes_by_namespace.clear();
+    state._entries_by_assetid.clear();
+    state._codecs_by_namespace.clear();
+  });
+
+  // Reset namespace tree
+  impl->_root_namespace = std::make_shared<AssetNamespace>("");
+  impl->_root_namespace->_full_path = "";
+
+  logchan_catalog->log("reloadAllManifests: reloading from disk...");
+
+  // Reload everything from disk
+  loadFromGlobalManifests(self);
+
+  logchan_catalog->log("reloadAllManifests: done.");
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+
 void AssetCatalog::_addManifest(assetmanifest_ptr_t manifest) {
   if (!manifest)
     return;

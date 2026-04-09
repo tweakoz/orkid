@@ -200,6 +200,7 @@ struct TextPrimitive : Primitive {
 
   lev2::font_ptr_t _font;
   fvec4 _color;
+  bool _clickable = false; // opt-in: enable per-item hit-testing
   std::vector<TextItem> _items;
 
   // TextPrimitive ignores layer transform - text stays screen-fixed

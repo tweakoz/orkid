@@ -199,9 +199,15 @@ void pyinit_download(py::module& module_core) {
          py::arg("headers") = py::dict(),
          py::arg("ignore_tls_errors") = false,
          "Check if a remote file exists using HEAD request")
+    .def_property_readonly("total_bytes_downloaded", &DownloadManager::totalBytesDownloaded)
+    .def_property_readonly("pending_count", &DownloadManager::pendingDownloadCount)
+    .def_property_readonly("completed_count", &DownloadManager::completedDownloadCount)
+    .def_property_readonly("failed_count", &DownloadManager::failedDownloadCount)
+    .def_property_readonly("queue_size", &DownloadManager::queueSize)
     .def("__repr__", [](downloadmanager_ptr_t mgr) -> std::string {
-      return FormatString("DownloadManager(active=%zu)", 
-        mgr->activeDownloadCount());
+      return FormatString("DownloadManager(active=%zu, pending=%zu, completed=%d, failed=%d)",
+        mgr->activeDownloadCount(), mgr->pendingDownloadCount(),
+        mgr->completedDownloadCount(), mgr->failedDownloadCount());
     });
   type_codec->registerStdCodec<downloadmanager_ptr_t>(download_manager_type);
 }

@@ -144,6 +144,13 @@ struct FilesystemModel {
   }
   bool getShowDirectories() const { return _show_directories; }
 
+  // Directories-only mode (hide all files, show only directories)
+  void setDirectoriesOnly(bool only) {
+    _directories_only = only;
+    notifyModelChanged();
+  }
+  bool getDirectoriesOnly() const { return _directories_only; }
+
   //////////////////////////////////////////////////////////////
   // Operations (for read/write models)
   //////////////////////////////////////////////////////////////
@@ -250,6 +257,7 @@ protected:
   std::vector<std::string> _filter_patterns;    // Parsed glob patterns
   bool _show_hidden = false;
   bool _show_directories = true;
+  bool _directories_only = false;
   SortField _sort_field = SortField::Name;
   SortOrder _sort_order = SortOrder::Ascending;
   bool _directories_first = true;

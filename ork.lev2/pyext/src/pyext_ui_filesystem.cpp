@@ -464,6 +464,10 @@ void pyinit_ui_filesystem(py::module& uimodule) {
               &ui::FilesystemModel::getSortOrder,
               &ui::FilesystemModel::setSortOrder)
           .def_property(
+              "directories_only",
+              &ui::FilesystemModel::getDirectoriesOnly,
+              &ui::FilesystemModel::setDirectoriesOnly)
+          .def_property(
               "directories_first",
               &ui::FilesystemModel::getDirectoriesFirst,
               &ui::FilesystemModel::setDirectoriesFirst)

@@ -107,6 +107,10 @@ struct CtxGLFW : public CTXBASE {
   ui::event_ptr_t uievent();
   Context* context() const;
 
+  // Clipboard (via GLFW)
+  void setClipboardText(const std::string& text) override;
+  std::string getClipboardText() const override;
+
   GLFWwindow* _glfwWindow = nullptr;
 
   bool mbAlwaysRun = false;

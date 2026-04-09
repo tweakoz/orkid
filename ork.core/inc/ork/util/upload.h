@@ -208,11 +208,19 @@ public:
   ////////////////////////////////////////////////////////////////////////////////
   
   void setProgressCallback(upload_progress_fn_t callback) { _progress_callback = callback; }
-  
+
+  // Per-file completion callback: (remote_path) -> void
+  using file_completed_fn_t = std::function<void(const std::string&)>;
+  void setFileCompletedCallback(file_completed_fn_t callback) { _file_completed_callback = callback; }
+
   // Cancel upload
   virtual void cancel() { _cancelled = true; }
   bool isCancelled() const { return _cancelled; }
-  
+
+  // External cancel flag (e.g. from UploadRequest) — checked by CURL progress callback
+  void setExternalCancelFlag(std::atomic<bool>* flag) { _external_cancel = flag; }
+  std::atomic<bool>* externalCancelFlag() const { return _external_cancel; }
+
 protected:
   // Update progress
   void updateProgress(size_t uploaded, size_t total) {
@@ -220,10 +228,12 @@ protected:
       _progress_callback(uploaded, total);
     }
   }
-  
+
 protected:
   upload_progress_fn_t _progress_callback;
+  file_completed_fn_t _file_completed_callback;
   std::atomic<bool> _cancelled{false};
+  std::atomic<bool>* _external_cancel = nullptr;
 };
 
 using uploader_ptr_t = std::shared_ptr<Uploader>;

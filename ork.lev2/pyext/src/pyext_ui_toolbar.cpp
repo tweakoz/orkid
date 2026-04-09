@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include "pyext.h"
+#include <ork/python/gil_safe_pyobj.h>
 #include <ork/lev2/ui/widget.h>
 #include <ork/lev2/ui/group.h>
 #include <ork/lev2/ui/layoutgroup.inl>
@@ -60,6 +61,10 @@ void pyinit_ui_toolbar(py::module& uimodule) {
               [](ui::toolbar_button_ptr_t btn) -> image_ptr_t { return btn->_pressed_image; },
               [](ui::toolbar_button_ptr_t btn, image_ptr_t img) { btn->_pressed_image = img; btn->_prev_pressed_image = nullptr; })
           .def_readwrite("custom_width", &ui::ToolbarButton::_custom_width)
+          .def_property(
+              "color_override",
+              [](ui::toolbar_button_ptr_t btn) -> fvec4 { return btn->_color_override; },
+              [](ui::toolbar_button_ptr_t btn, fvec4 c) { btn->_color_override = c; })
           .def_readwrite("tooltip", &ui::ToolbarButton::_tooltip)
           .def_readwrite("label", &ui::ToolbarButton::_label)
           .def_readwrite("toggle_mode", &ui::ToolbarButton::_toggle_mode)
@@ -69,17 +74,21 @@ void pyinit_ui_toolbar(py::module& uimodule) {
           .def(
               "onPressed",
               [](ui::toolbar_button_ptr_t btn, py::object callback) {
-                btn->_onPressed = [callback]() {
+                auto safe = python::gil_safe_pyobj(callback);
+                btn->_onPressed = [safe]() {
                   py::gil_scoped_acquire acquire;
-                  callback();
+                  auto fn = safe.valueAs<py::object>();
+                  (*fn)();
                 };
               })
           .def(
               "onToggled",
               [](ui::toolbar_button_ptr_t btn, py::object callback) {
-                btn->_onToggled = [callback](bool toggled) {
+                auto safe = python::gil_safe_pyobj(callback);
+                btn->_onToggled = [safe](bool toggled) {
                   py::gil_scoped_acquire acquire;
-                  callback(toggled);
+                  auto fn = safe.valueAs<py::object>();
+                  (*fn)(toggled);
                 };
               })
           .def(
@@ -196,6 +205,10 @@ void pyinit_ui_toolbar(py::module& uimodule) {
               [](ui::toolbar_ptr_t toolbar) -> fvec4 { return toolbar->_bgcolor; },
               [](ui::toolbar_ptr_t toolbar, fvec4 c) { toolbar->_bgcolor = c; })
           .def_property(
+              "button_color",
+              [](ui::toolbar_ptr_t toolbar) -> fvec4 { return toolbar->_button_color; },
+              [](ui::toolbar_ptr_t toolbar, fvec4 c) { toolbar->_button_color = c; })
+          .def_property(
               "button_hover_color",
               [](ui::toolbar_ptr_t toolbar) -> fvec4 { return toolbar->_button_hover_color; },
               [](ui::toolbar_ptr_t toolbar, fvec4 c) { toolbar->_button_hover_color = c; })
@@ -215,6 +228,11 @@ void pyinit_ui_toolbar(py::module& uimodule) {
               "disabled_tint",
               [](ui::toolbar_ptr_t toolbar) -> fvec4 { return toolbar->_disabled_tint; },
               [](ui::toolbar_ptr_t toolbar, fvec4 c) { toolbar->_disabled_tint = c; })
+          .def_property(
+              "button_border_color",
+              [](ui::toolbar_ptr_t toolbar) -> fvec4 { return toolbar->_button_border_color; },
+              [](ui::toolbar_ptr_t toolbar, fvec4 c) { toolbar->_button_border_color = c; })
+          .def_readwrite("button_border_width", &ui::Toolbar::_button_border_width)
           .def_readwrite("draw_background", &ui::Toolbar::_draw_background)
           // Label appearance
           .def_property(

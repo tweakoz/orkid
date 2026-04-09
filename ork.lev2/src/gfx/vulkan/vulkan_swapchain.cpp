@@ -135,9 +135,27 @@ void VkSwapChain::_buildup() {
   }
 
   // image properties
+<<<<<<< HEAD
   // Ensure minImageCount is within capabilities
   u32 minImageCount = std::max((u32)MAX_FRAMES_IN_FLIGHT, (u32)caps.minImageCount);
   OrkAssertI(caps.maxImageCount == 0 || minImageCount <= caps.maxImageCount, "minImageCount exceeds caps.maxImageCount");
+=======
+  //
+  // Clamp minImageCount to the range [caps.minImageCount, caps.maxImageCount].
+  //
+  // Previously we used MAX_FRAMES_IN_FLIGHT (2) directly, which violated
+  // VUID-VkSwapchainCreateInfoKHR-presentMode-02839 on drivers where the
+  // surface requires more images (e.g. NVIDIA FIFO requiring minImageCount=3).
+  //
+  // The swapchain may end up with more images than MAX_FRAMES_IN_FLIGHT —
+  // that's fine: MAX_FRAMES_IN_FLIGHT governs fence/semaphore indexing
+  // (how many frames the CPU can have in-flight), while the swapchain
+  // image count is a separate concern controlled by the driver/surface.
+  //
+  uint32_t minImageCount = std::max<uint32_t>(MAX_FRAMES_IN_FLIGHT, caps.minImageCount);
+  if (caps.maxImageCount > 0) // maxImageCount==0 means no upper limit
+    minImageCount = std::min(minImageCount, caps.maxImageCount);
+>>>>>>> toz-2026-apr06-ixvk2
   SCINFO.minImageCount    = minImageCount;
   SCINFO.imageFormat      = surfaceFormat.format;                // Chosen from VkSurfaceFormatKHR, after querying supported formats
   SCINFO.imageColorSpace  = surfaceFormat.colorSpace;            // Chosen from VkSurfaceFormatKHR
@@ -374,8 +392,13 @@ void VkSwapChain::_teardown() {
     }
   }
 
-  // NO fence resets - let waitPresentFrame() handle that before next submit
-  // The fences guaranteed swapchain images aren't in use
+  // Unconditionally wait for device idle before destroying any resources.
+  // Fence waits above only cover queue submissions, but the presentation
+  // engine may still hold references to semaphores (e.g. from
+  // vkAcquireNextImageKHR or vkQueuePresentKHR). On NVIDIA in particular,
+  // destroying semaphores without vkDeviceWaitIdle triggers
+  // VUID-vkDestroySemaphore-semaphore-05149 during swapchain resize.
+  vkDeviceWaitIdle(_contextVK->_vkdevice);
 
   if (_vkSwapChain != VK_NULL_HANDLE) {
 

@@ -80,6 +80,15 @@ struct DownloadManager {
   void shutdown();
   bool isActive() const;
   size_t activeDownloadCount() const;
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Statistics
+  //////////////////////////////////////////////////////////////////////////////
+  size_t totalBytesDownloaded() const;
+  size_t pendingDownloadCount() const;
+  int completedDownloadCount() const;
+  int failedDownloadCount() const;
+  size_t queueSize() const;
   
   //////////////////////////////////////////////////////////////////////////////
   // Utility methods

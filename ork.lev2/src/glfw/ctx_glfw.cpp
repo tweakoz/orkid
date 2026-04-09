@@ -21,6 +21,9 @@
 #include <ork/util/logger.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include "../gfx/vulkan/headers/vulkan_ctx.h"
+#if defined(__APPLE__)
+#include <dlfcn.h>
+#endif
 ///////////////////////////////////////////////////////////////////////////////
 #if defined(ENABLE_GLFW)
 #include <ork/lev2/glfw/ctx_glfw.h>
@@ -69,6 +72,19 @@ void CtxGLFW::warpCursor(int x, int y) {
 ///////////////////////////////////////////////////////////////////////////////
 ui::event_constptr_t CtxGLFW::uievent() const {
   return _uievent;
+}
+///////////////////////////////////////////////////////////////////////////////
+void CtxGLFW::setClipboardText(const std::string& text) {
+  if (_glfwWindow) {
+    glfwSetClipboardString(_glfwWindow, text.c_str());
+  }
+}
+std::string CtxGLFW::getClipboardText() const {
+  if (_glfwWindow) {
+    const char* txt = glfwGetClipboardString(_glfwWindow);
+    if (txt) return txt;
+  }
+  return "";
 }
 ///////////////////////////////////////////////////////////////////////////////
 static GLFWmonitor* monitorForWindow(GLFWwindow* window) {
@@ -902,6 +918,32 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
       glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_NULL);
     }
     // Otherwise let GLFW auto-select between X11/Wayland based on availability
+#endif
+
+#if defined(__APPLE__)
+    // On macOS, GLFW's Cocoa backend calls dlopen("libvulkan.1.dylib") during glfwInit().
+    // SIP strips DYLD_LIBRARY_PATH, so the bare-name dlopen can't find our staging copy,
+    // and may instead find homebrew's (causing dual-load crashes).
+    // Fix: dlopen our Vulkan loader by absolute path, extract vkGetInstanceProcAddr,
+    // and hand it to GLFW via glfwInitVulkanLoader() — GLFW then skips its own dlopen entirely.
+    {
+      const char* stage = getenv("OBT_STAGE");
+      if (stage) {
+        std::string vk_path = std::string(stage) + "/lib/libvulkan.1.dylib";
+        void* h = dlopen(vk_path.c_str(), RTLD_NOW | RTLD_GLOBAL);
+        if (h) {
+          auto procAddr = (PFN_vkGetInstanceProcAddr)dlsym(h, "vkGetInstanceProcAddr");
+          if (procAddr) {
+            glfwInitVulkanLoader(procAddr);
+            logchan_glfw->log("Initialized GLFW Vulkan loader from: %s", vk_path.c_str());
+          } else {
+            logchan_glfw->log("WARNING: dlsym vkGetInstanceProcAddr failed: %s", dlerror());
+          }
+        } else {
+          logchan_glfw->log("WARNING: failed to load Vulkan loader from %s: %s", vk_path.c_str(), dlerror());
+        }
+      }
+    }
 #endif
 
     bool ok = glfwInit();

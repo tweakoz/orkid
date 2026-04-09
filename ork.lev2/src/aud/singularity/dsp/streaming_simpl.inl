@@ -8,6 +8,7 @@
 #pragma once
 
 #include <ork/lev2/aud/singularity/fft.h>
+#include <ork/lev2/aud/singularity/audiotest.h>
 #include <dspstretch/signalsmith-stretch.h>
 
 namespace ork::audio::singularity {
@@ -41,6 +42,13 @@ struct SimpleImpl {
   int _ed_excess = 0;
   int _ed_to_drain = 0;
 
+  // Latency probe (active when CHIRP pattern detected)
+  std::unique_ptr<TestPatternProbe> _probe;
+  uint64_t _probe_sample_count = 0;
+  uint64_t _probe_report_interval = 0; // samples between reports (set at init)
+  double _probe_latency_sum = 0.0;
+  int _probe_latency_count = 0;
+
   ////////////////////////////////////////////////////////////////
 
   SimpleImpl(StreamingOscillatorBlock* osc)
@@ -64,6 +72,12 @@ struct SimpleImpl {
       logchan_strsimpl->perfItem("ED.ts*1.5", (float_lambda_t) [this]() -> float { return _ed_ts_1_5; });
       logchan_strsimpl->perfItem("ED.excess", (int_lambda_t)[this]() -> int { return _ed_excess; });
       logchan_strsimpl->perfItem("ED.to_drain", (int_lambda_t)[this]() -> int { return _ed_to_drain; });
+
+      // Initialize latency probe (3-second reporting interval)
+      float sr = synth::instance() ? synth::instance()->_sampleRate : 48000.0f;
+      _probe = std::make_unique<TestPatternProbe>(sr, 4096);
+      _probe->setChirpConfig(ChirpConfig()); // default chirp params
+      _probe_report_interval = uint64_t(sr * 3.0); // every 3 seconds
   }
 
   ////////////////////////////////////////////////////////////////
@@ -292,6 +306,26 @@ struct SimpleImpl {
             float sample1 = temp_buffer_R[index + 1];
             outputchan_R[i] = sample0 + frac * (sample1 - sample0);
           }
+        }
+
+        // Feed output to latency probe and report periodically
+        _probe->write(outputchan_L, frames);
+        _probe_sample_count += frames;
+        if (_probe->ready()) {
+          double lat = _probe->measureLatencyMs();
+          if (lat >= 0.0) {
+            _probe_latency_sum += lat;
+            _probe_latency_count++;
+          }
+        }
+        if (_probe_report_interval > 0 && _probe_sample_count >= _probe_report_interval) {
+          if (_probe_latency_count > 0) {
+            double avg = _probe_latency_sum / double(_probe_latency_count);
+            logchan_strsimpl->log("LATENCY PROBE: avg=%.1f ms (%d measurements)", avg, _probe_latency_count);
+          }
+          _probe_sample_count = 0;
+          _probe_latency_sum = 0.0;
+          _probe_latency_count = 0;
         }
 
         // Advance read positions
