@@ -352,7 +352,7 @@ struct VkColorSubresourceLayers {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-// Vulkan Inline Info Struct Creation
+// Vulkan Inline Designated Intializer Struct Creation
 //   Allows nesting info struct pointers and arrays inside vk method call itself.
 //
 //   Removes need for all tertiary CreateInfo struct names. 'SCSCI', 'info' etc.
@@ -572,20 +572,36 @@ inline void vkCmdBlitColorImage(
 //   Automatically fill in objectType on vkSetDebugUtilsObjectName call.
 //   Implemented as define, not template, to properly output line and file in OrkVkAssert.
 ///////////////////////////////////////////////////////
-#define VK_OBJECT_TYPE_OF(obj) _Generic((obj),    \
-  VkQueue:         VK_OBJECT_TYPE_QUEUE,          \
-  VkImage:         VK_OBJECT_TYPE_IMAGE,          \
-  VkImageView:     VK_OBJECT_TYPE_IMAGE_VIEW,     \
-  VkBuffer:        VK_OBJECT_TYPE_BUFFER,         \
-  VkDeviceMemory:  VK_OBJECT_TYPE_DEVICE_MEMORY,  \
-  VkCommandBuffer: VK_OBJECT_TYPE_COMMAND_BUFFER, \
-  VkSemaphore:     VK_OBJECT_TYPE_SEMAPHORE,      \
-  VkFence:         VK_OBJECT_TYPE_FENCE,          \
-  VkPipeline:      VK_OBJECT_TYPE_PIPELINE,       \
-  VkRenderPass:    VK_OBJECT_TYPE_RENDER_PASS,    \
-  VkFramebuffer:   VK_OBJECT_TYPE_FRAMEBUFFER,    \
-  VkDescriptorSet: VK_OBJECT_TYPE_DESCRIPTOR_SET, \
-  VkShaderModule:  VK_OBJECT_TYPE_SHADER_MODULE   \
+#define VK_OBJECT_TYPE_OF(obj) _Generic((obj),                             \
+  VkInstance:                 VK_OBJECT_TYPE_INSTANCE,                     \
+  VkPhysicalDevice:           VK_OBJECT_TYPE_PHYSICAL_DEVICE,              \
+  VkDevice:                   VK_OBJECT_TYPE_DEVICE,                       \
+  VkQueue:                    VK_OBJECT_TYPE_QUEUE,                        \
+  VkCommandPool:              VK_OBJECT_TYPE_COMMAND_POOL,                 \
+  VkCommandBuffer:            VK_OBJECT_TYPE_COMMAND_BUFFER,               \
+  VkFence:                    VK_OBJECT_TYPE_FENCE,                        \
+  VkSemaphore:                VK_OBJECT_TYPE_SEMAPHORE,                    \
+  VkEvent:                    VK_OBJECT_TYPE_EVENT,                        \
+  VkDeviceMemory:             VK_OBJECT_TYPE_DEVICE_MEMORY,                \
+  VkBuffer:                   VK_OBJECT_TYPE_BUFFER,                       \
+  VkBufferView:               VK_OBJECT_TYPE_BUFFER_VIEW,                  \
+  VkImage:                    VK_OBJECT_TYPE_IMAGE,                        \
+  VkImageView:                VK_OBJECT_TYPE_IMAGE_VIEW,                   \
+  VkSampler:                  VK_OBJECT_TYPE_SAMPLER,                      \
+  VkShaderModule:             VK_OBJECT_TYPE_SHADER_MODULE,                \
+  VkPipelineCache:            VK_OBJECT_TYPE_PIPELINE_CACHE,               \
+  VkPipelineLayout:           VK_OBJECT_TYPE_PIPELINE_LAYOUT,              \
+  VkPipeline:                 VK_OBJECT_TYPE_PIPELINE,                     \
+  VkRenderPass:               VK_OBJECT_TYPE_RENDER_PASS,                  \
+  VkFramebuffer:              VK_OBJECT_TYPE_FRAMEBUFFER,                  \
+  VkDescriptorSetLayout:      VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT,        \
+  VkDescriptorPool:           VK_OBJECT_TYPE_DESCRIPTOR_POOL,              \
+  VkDescriptorSet:            VK_OBJECT_TYPE_DESCRIPTOR_SET,               \
+  VkQueryPool:                VK_OBJECT_TYPE_QUERY_POOL,                   \
+  VkSwapchainKHR:             VK_OBJECT_TYPE_SWAPCHAIN_KHR,                \
+  VkSurfaceKHR:               VK_OBJECT_TYPE_SURFACE_KHR,                  \
+  VkAccelerationStructureKHR: VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR,  \
+  default:                    VK_OBJECT_TYPE_UNKNOWN                       \
 )
 
 #define VK_SET_DEBUG_NAME(device, object, name)                             \
