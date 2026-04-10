@@ -1,8 +1,10 @@
 #pragma once
+#include <initializer_list>
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
+#include <vulkan/vulkan.h>
 #include <vulkan/vk_enum_string_helper.h>
 #include <ork/lev2/gfx/gfxenv_enum.h>
 namespace ork::dds {
@@ -41,7 +43,7 @@ inline VkDeviceSize vkAlignUp(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// TODO Deprecated. Prefer using designated initializers. Or pConst and pNext.
+// TODO Deprecated. Prefer using designated initializers.
 template <typename T> void initializeVkStruct(T& s, VkStructureType s_type) {
   memset(&s, 0, sizeof(T));
   s.sType = s_type;
@@ -350,44 +352,148 @@ struct VkColorSubresourceLayers {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-// Vk Inline Initialization Pointers
-//   Always calling Vulkan functions with all temporary variables.
+// Vulkan Inline Info Struct Creation
+//   Allows nesting info struct pointers and arrays inside vk method call itself.
 //
-//   vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, 
-//     pConst(VkSubmitInfo{
-//       VK_STRUCTURE_TYPE_SUBMIT_INFO,
-//       pNext(VkTimelineSemaphoreSubmitInfo{
-//         VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,
-//         .signalSemaphoreValueCount = (uint32_t)ctxVK->_oneShotSignalValues.size(),
-//         .pSignalSemaphoreValues    = ctxVK->_oneShotSignalValues.data(),
+//   Removes need for all tertiary CreateInfo struct names. 'SCSCI', 'info' etc.
+//   Keeps info struct in context of parent struct to easily see where it's used.
+//   Uses raw structs from vulkan.h directly to stay familiar with Vulkan API.
+//   Optimally compield out: https://godbolt.org/z/Wq5b73ETj
+//
+//   Small Exmaple:
+//
+//     vkWaitSemaphores(device,
+//         pConst(VkSemaphoreWaitInfo{
+//           VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
+//           .semaphoreCount = 1,
+//           .pSemaphores    = &_timeline,
+//           .pValues        = &_timeline_value,
+//         }),
+//         UINT64_MAX));
+//
+//   Big Example:
+//
+//     vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1,
+//       pConst(VkGraphicsPipelineCreateInfo{
+//         VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+//         .stageCount = 2,
+//         .pStages    = pArr<VkPipelineShaderStageCreateInfo>({
+//           {
+//             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+//             .stage  = VK_SHADER_STAGE_VERTEX_BIT,
+//             .module = vertShader,
+//             .pName  = "main",
+//           },
+//           {
+//             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+//             .stage  = VK_SHADER_STAGE_FRAGMENT_BIT,
+//             .module = fragShader,
+//             .pName  = "main",
+//           },
+//         }),
+//         .pVertexInputState = pConst(VkPipelineVertexInputStateCreateInfo{
+//           VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+//           .vertexBindingDescriptionCount = 1,
+//           .pVertexBindingDescriptions    = pArr<VkVertexInputBindingDescription>({
+//             { .binding = 0, .stride = sizeof(Vertex), .inputRate = VK_VERTEX_INPUT_RATE_VERTEX },
+//           }),
+//           .vertexAttributeDescriptionCount = 3,
+//           .pVertexAttributeDescriptions    = pArr<VkVertexInputAttributeDescription>({
+//             { .location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(Vertex, pos)    },
+//             { .location = 1, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(Vertex, normal) },
+//             { .location = 2, .binding = 0, .format = VK_FORMAT_R32G32_SFLOAT,    .offset = offsetof(Vertex, uv)     },
+//           }),
+//         }),
+//         .pInputAssemblyState = pConst(VkPipelineInputAssemblyStateCreateInfo{
+//           VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+//           .topology               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+//           .primitiveRestartEnable = VK_FALSE,
+//         }),
+//         .pViewportState = pConst(VkPipelineViewportStateCreateInfo{
+//           VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+//           .viewportCount = 1,
+//           .scissorCount  = 1,
+//         }),
+//         .pRasterizationState = pConst(VkPipelineRasterizationStateCreateInfo{
+//           VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+//           pNext(VkPipelineRasterizationConservativeStateCreateInfoEXT{
+//             VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT,
+//             .conservativeRasterizationMode    = VK_CONSERVATIVE_RASTERIZATION_MODE_DISABLED_EXT,
+//             .extraPrimitiveOverestimationSize = 0.0f,
+//           }),
+//           .depthClampEnable        = VK_FALSE,
+//           .rasterizerDiscardEnable = VK_FALSE,
+//           .polygonMode             = VK_POLYGON_MODE_FILL,
+//           .cullMode                = VK_CULL_MODE_BACK_BIT,
+//           .frontFace               = VK_FRONT_FACE_COUNTER_CLOCKWISE,
+//           .depthBiasEnable         = VK_FALSE,
+//           .lineWidth               = 1.0f,
+//         }),
+//         .pMultisampleState = pConst(VkPipelineMultisampleStateCreateInfo{
+//           VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+//           .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
+//           .sampleShadingEnable  = VK_FALSE,
+//         }),
+//         .pDepthStencilState = pConst(VkPipelineDepthStencilStateCreateInfo{
+//           VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+//           .depthTestEnable       = VK_TRUE,
+//           .depthWriteEnable      = VK_TRUE,
+//           .depthCompareOp        = VK_COMPARE_OP_LESS,
+//           .depthBoundsTestEnable = VK_FALSE,
+//           .stencilTestEnable     = VK_FALSE,
+//         }),
+//         .pColorBlendState = pConst(VkPipelineColorBlendStateCreateInfo{
+//           VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+//           pNext(VkPipelineColorWriteCreateInfoEXT{
+//             VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT,
+//             .attachmentCount  = 1,
+//             .pColorWriteEnables = pArr<VkBool32>({ VK_TRUE }),
+//           }),
+//           .logicOpEnable   = VK_FALSE,
+//           .attachmentCount = 1,
+//           .pAttachments    = pConst(VkPipelineColorBlendAttachmentState{
+//             .blendEnable    = VK_FALSE,
+//             .colorWriteMask = VK_COLOR_COMPONENT_R_BIT
+//                             | VK_COLOR_COMPONENT_G_BIT
+//                             | VK_COLOR_COMPONENT_B_BIT
+//                             | VK_COLOR_COMPONENT_A_BIT,
+//           }),
+//         }),
+//         .pDynamicState = pConst(VkPipelineDynamicStateCreateInfo{
+//           VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+//           .dynamicStateCount = 2,
+//           .pDynamicStates    = pArr<VkDynamicState>({
+//             VK_DYNAMIC_STATE_VIEWPORT,
+//             VK_DYNAMIC_STATE_SCISSOR,
+//           }),
+//         }),
+//         .layout     = pipelineLayout,
+//         .renderPass = renderPass,
+//         .subpass    = 0,
 //       }),
-//       .commandBufferCount   = 1,
-//       .pCommandBuffers      = &ctxVK->_cmdbufcurpri_gfx->_vkcmdbuf,
-//       .signalSemaphoreCount = (uint32_t)ctxVK->_oneShotSignalSemaphores.size(),
-//       .pSignalSemaphores    = ctxVK->_oneShotSignalSemaphores.data(),
-//     }), 
-//     fence->_vkfence);
-//
-// Optimal for compiler optimization:
-//   https://godbolt.org/z/Wq5b73ETj
+//       ORK_VK_ALLOC, &pipeline);
+// 
+// pConst and pNext are the same. Naming is solely a visual aid for being read.
+// The extra attributes ensure it is only used inline within a function call. 
+// Pointers to temporaries are valid in C++ within the expresion (before ;).
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-// pConst and pNext are the same. Naming is solely a visual aid when being used.
-// The extra attributes ensure it is only used inline within a function call.
 template<typename T>
 __attribute__((warn_unused_result, returns_nonnull))
-const T* pConst(T&& val [[clang::lifetimebound]]) { return &val; }
+constexpr const T* pConst(T&& val [[clang::lifetimebound]]) { return &val; }
 
 template<typename T>
 __attribute__((warn_unused_result, returns_nonnull))
-const T* pNext(T&& val [[clang::lifetimebound]]) { return &val; }
+constexpr const T* pNext(T&& val [[clang::lifetimebound]]) { return &val; }
 
+template<typename T>
+__attribute__((warn_unused_result, returns_nonnull))
+constexpr const T* pArr(std::initializer_list<T> vals [[clang::lifetimebound]]) { return vals.begin(); }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shorthand Inline Cmd Functions
-//   Wrappers that do not contain logic themselves.
-//   Only shorthand for functions in vulkan header.
+//   Wrappers to vk called which which can inlined and optimized out.
 ////////////////////////////////////////////////////////////////////////////////
 
 inline void vkCmdImageBarrier(
@@ -461,30 +567,35 @@ inline void vkCmdBlitColorImage(
       });
 }
 
-template <typename T> struct VkObjectTypeFor;
-template <> struct VkObjectTypeFor<VkQueue>          { static constexpr VkObjectType value = VK_OBJECT_TYPE_QUEUE; };
-template <> struct VkObjectTypeFor<VkImage>          { static constexpr VkObjectType value = VK_OBJECT_TYPE_IMAGE; };
-template <> struct VkObjectTypeFor<VkImageView>      { static constexpr VkObjectType value = VK_OBJECT_TYPE_IMAGE_VIEW; };
-template <> struct VkObjectTypeFor<VkBuffer>         { static constexpr VkObjectType value = VK_OBJECT_TYPE_BUFFER; };
-template <> struct VkObjectTypeFor<VkDeviceMemory>   { static constexpr VkObjectType value = VK_OBJECT_TYPE_DEVICE_MEMORY; };
-template <> struct VkObjectTypeFor<VkCommandBuffer>  { static constexpr VkObjectType value = VK_OBJECT_TYPE_COMMAND_BUFFER; };
-template <> struct VkObjectTypeFor<VkSemaphore>      { static constexpr VkObjectType value = VK_OBJECT_TYPE_SEMAPHORE; };
-template <> struct VkObjectTypeFor<VkFence>          { static constexpr VkObjectType value = VK_OBJECT_TYPE_FENCE; };
-template <> struct VkObjectTypeFor<VkPipeline>       { static constexpr VkObjectType value = VK_OBJECT_TYPE_PIPELINE; };
-template <> struct VkObjectTypeFor<VkRenderPass>     { static constexpr VkObjectType value = VK_OBJECT_TYPE_RENDER_PASS; };
-template <> struct VkObjectTypeFor<VkFramebuffer>    { static constexpr VkObjectType value = VK_OBJECT_TYPE_FRAMEBUFFER; };
-template <> struct VkObjectTypeFor<VkDescriptorSet>  { static constexpr VkObjectType value = VK_OBJECT_TYPE_DESCRIPTOR_SET; };
-template <> struct VkObjectTypeFor<VkShaderModule>   { static constexpr VkObjectType value = VK_OBJECT_TYPE_SHADER_MODULE; };
+///////////////////////////////////////////////////////
+// VK_SET_DEBUG_NAME
+//   Automatically fill in objectType on vkSetDebugUtilsObjectName call.
+//   Implemented as define, not template, to properly output line and file in OrkVkAssert.
+///////////////////////////////////////////////////////
+#define VK_OBJECT_TYPE_OF(obj) _Generic((obj),    \
+  VkQueue:         VK_OBJECT_TYPE_QUEUE,          \
+  VkImage:         VK_OBJECT_TYPE_IMAGE,          \
+  VkImageView:     VK_OBJECT_TYPE_IMAGE_VIEW,     \
+  VkBuffer:        VK_OBJECT_TYPE_BUFFER,         \
+  VkDeviceMemory:  VK_OBJECT_TYPE_DEVICE_MEMORY,  \
+  VkCommandBuffer: VK_OBJECT_TYPE_COMMAND_BUFFER, \
+  VkSemaphore:     VK_OBJECT_TYPE_SEMAPHORE,      \
+  VkFence:         VK_OBJECT_TYPE_FENCE,          \
+  VkPipeline:      VK_OBJECT_TYPE_PIPELINE,       \
+  VkRenderPass:    VK_OBJECT_TYPE_RENDER_PASS,    \
+  VkFramebuffer:   VK_OBJECT_TYPE_FRAMEBUFFER,    \
+  VkDescriptorSet: VK_OBJECT_TYPE_DESCRIPTOR_SET, \
+  VkShaderModule:  VK_OBJECT_TYPE_SHADER_MODULE   \
+)
 
-// Implemented as define, not template, to properly output line and file in OrkVkAssert.
-#define VkSetDebugName(device, object, name)                                             \
-  OrkVkAssert(ork::lev2::vulkan::_GVI->_vkSetDebugUtilsObjectName((device),              \
-    pConst(VkDebugUtilsObjectNameInfoEXT{                                                \
-      VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,                                \
-      .objectType   = VkObjectTypeFor<std::remove_reference_t<decltype(object)>>::value, \
-      .objectHandle = reinterpret_cast<uint64_t>(object),                                \
-      .pObjectName  = (name),                                                            \
-    })))   
+#define VK_SET_DEBUG_NAME(device, object, name)                             \
+  OrkVkAssert(ork::lev2::vulkan::_GVI->_vkSetDebugUtilsObjectName((device), \
+    pConst(VkDebugUtilsObjectNameInfoEXT{                                   \
+      VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,                   \
+      .objectType   = VK_OBJECT_TYPE_OF(object),                            \
+      .objectHandle = reinterpret_cast<uint64_t>(object),                   \
+      .pObjectName  = (name),                                               \
+    })))
 
 ////////////////////////////////////////////////////////////////////////////////
 } //namespace ork::lev2::vulkan

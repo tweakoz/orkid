@@ -248,10 +248,11 @@ struct VkRtgStackItemImpl {
 
 ////////////////////////////////////////////////////////////////////////////////
 // Vulkan Framebuffer Output (owned by VkFrameBufferInterface::_output):
-//   VkFramebufferOutput  — abstract base: beginFrame / endFrame / submit / currentFrameFence
-//     VkOffscreen        — headless; submits with fence, no presentation
-//     VkSwapChain        — GLFW/surface swapchain; acquires image, presents via KHR
-//     VkSwapChainDRM     — Linux DRM direct-rendering (vk_swapchain_drm.h); exports via dmabuf
+//   VkFramebufferOutput     — abstract base: beginFrame / endFrame / submit / currentFrameFence
+//     VkOffscreen           — headless; submits with fence, no presentation
+//     VkSwapChain           — GLFW/surface swapchain; acquires image, presents via KHR
+//     VkSwapChainDRM        — Linux DRM direct-rendering (vk_swapchain_drm.h); exports via dmabuf
+//     VkDisplayClientOutput — Output to Orkid Display Client
 ////////////////////////////////////////////////////////////////////////////////
 
 struct VkFramebufferOutput {
@@ -825,7 +826,7 @@ public:
   void _initVulkanCommon();
   void _initDefaultTextures();
   //////////////////////////////////////////////
-  // TODO obsolete prefer using VkSetDebugName in vk_protos.h
+  // TODO obsolete prefer using VK_SET_DEBUG_NAME in vk_protos.h
   template <typename T> void _setObjectDebugName(T& object, VkObjectType objectType, const char* name) {
     if (_vkSetDebugUtilsObjectName) {
       VkDebugUtilsObjectNameInfoEXT nameInfo = {};
