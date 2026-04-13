@@ -134,16 +134,17 @@ class TransparencyApp(object):
   ##############################################
 
   def onGpuInit(self, ctx):
-    createSceneGraph(app=self)
+    createSceneGraph(app=self, params_dict={
+      "SkyboxTexPathStr": "ork_envmaps|cold4k",
+      "SkyboxIntensity": float(1),
+    })
 
     self.grid_data = createGridData()
     self.grid_node = self.layer1.createDrawableNodeFromData("grid", self.grid_data)
     self.grid_node.sortkey = 1
 
-    self.white_img = lev2.Image.createFromBuffer(4, 4, "RGBA8",
-      np.full((4, 4, 4), 255, dtype=np.uint8))
-    self.normal_img = lev2.Image.createFromBuffer(4, 4, "RGBA8",
-      np.tile(np.array([128, 128, 255, 255], dtype=np.uint8), (4, 4, 1)))
+    self.white_img = lev2.Image.createFromFile("src://effect_textures/white.dds")
+    self.normal_img = lev2.Image.createFromFile("src://effect_textures/default_normal.dds")
 
     sv, sn, sb, su, si = make_sphere_arrays(radius=1.0, n=12)
     cv, cn, cb, cu, ci = make_cube_arrays(size=0.8)

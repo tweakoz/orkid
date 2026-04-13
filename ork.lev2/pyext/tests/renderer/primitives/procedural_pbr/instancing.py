@@ -78,16 +78,17 @@ class InstancingApp(object):
   ##############################################
 
   def onGpuInit(self, ctx):
-    createSceneGraph(app=self)
+    createSceneGraph(app=self, params_dict={
+      "SkyboxTexPathStr": "ork_envmaps|cold4k",
+      "SkyboxIntensity": float(1),
+    })
 
     self.grid_data = createGridData()
     self.grid_node = self.layer1.createDrawableNodeFromData("grid", self.grid_data)
     self.grid_node.sortkey = 1
 
-    white_img = lev2.Image.createFromBuffer(4, 4, "RGBA8",
-      np.full((4, 4, 4), 255, dtype=np.uint8))
-    normal_img = lev2.Image.createFromBuffer(4, 4, "RGBA8",
-      np.tile(np.array([128, 128, 255, 255], dtype=np.uint8), (4, 4, 1)))
+    white_img = lev2.Image.createFromFile("src://effect_textures/white.dds")
+    normal_img = lev2.Image.createFromFile("src://effect_textures/default_normal.dds")
 
     sv, sn, sb, su, si = make_sphere_arrays(1.0, 8)
     nv = len(sv)

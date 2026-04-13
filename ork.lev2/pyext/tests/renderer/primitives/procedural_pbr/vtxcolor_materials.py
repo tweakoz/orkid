@@ -76,8 +76,9 @@ MATERIALS = [
   ("chalk",    (0.8, 0.75, 0.7), 1.0, 0.0, False),
   ("obsidian", (0.05, 0.05, 0.06), 0.1, 0.0, False),
   ("copper",   (0.7, 0.4, 0.2),  0.2, 1.0, False),
-  ("plastic",  (0.6, 0.1, 0.1),  0.3, 0.0, False),
+  ("plastic",  (0.6, 0.1, 0.1),  0.15, 0.8, False),
   ("glass",    (0.9, 0.95, 1.0), 0.0, 0.0, True),
+  ("bubble",   (0.9, 0.95, 1.0), 0.0, 1.0, True),
 ]
 
 ################################################################################
@@ -95,7 +96,10 @@ class ProceduralMaterialsApp(object):
   ##############################################
 
   def onGpuInit(self, ctx):
-    createSceneGraph(app=self)
+    createSceneGraph(app=self, params_dict={
+      "SkyboxTexPathStr": "ork_envmaps|cold4k",
+      "SkyboxIntensity": float(1),
+    })
 
     # Grid
     self.grid_data = createGridData()
@@ -103,10 +107,8 @@ class ProceduralMaterialsApp(object):
     self.grid_node.sortkey = 1
 
     # White textures for PBR (vertex colors provide albedo)
-    self.white_img = lev2.Image.createFromBuffer(4, 4, "RGBA8",
-      np.full((4, 4, 4), 255, dtype=np.uint8))
-    self.normal_img = lev2.Image.createFromBuffer(4, 4, "RGBA8",
-      np.tile(np.array([128, 128, 255, 255], dtype=np.uint8), (4, 4, 1)))
+    self.white_img = lev2.Image.createFromFile("src://effect_textures/white.dds")
+    self.normal_img = lev2.Image.createFromFile("src://effect_textures/default_normal.dds")
 
     # Sphere mesh data (shared across all materials)
     verts_np, norms_np, binormals_np, uvs_np, indices_np = make_sphere_arrays(radius=1.0, n=16)
