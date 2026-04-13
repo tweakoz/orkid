@@ -90,19 +90,20 @@ class PointLightsApp(object):
 
     # Three spheres: matte, metallic, mirror
     configs = [
-      ("matte",    (-2.5, 1.2, 0), (0.2, 0.15, 0.12), 0.9, 0.0),
-      ("metallic", (0,    1.2, 0), (0.7, 0.5, 0.3),   0.3, 1.0),
-      ("mirror",   (2.5,  1.2, 0), (0.9, 0.9, 0.9),   0.0, 1.0),
+      ("matte",    (-3.75, 1.2, 0), (0.6, 0.55, 0.5),  0.9, 0.0, False),
+      ("metallic", (-1.25, 1.2, 0), (0.7, 0.5, 0.3),  0.3, 1.0, False),
+      ("mirror",   (1.25,  1.2, 0), (0.9, 0.9, 0.9),  0.0, 1.0, False),
+      ("glass",    (3.75,  1.2, 0), (0.9, 0.95, 1.0),  0.0, 1.0, True),
     ]
 
-    for name, pos, color, roughness, metallic in configs:
+    for name, pos, color, roughness, metallic, alpha_blend in configs:
       nv = len(sv)
       r, g, b = color
       colors_np = np.zeros((nv, 4), dtype=np.uint8)
       colors_np[:, 0] = int(r * 255)
       colors_np[:, 1] = int(g * 255)
       colors_np[:, 2] = int(b * 255)
-      colors_np[:, 3] = 255
+      colors_np[:, 3] = 76 if alpha_blend else 255
 
       prim = RigidPrimitive()
       prim.fromArrays(sv, sn, sb, su, colors_np, si, ctx)
@@ -112,13 +113,15 @@ class PointLightsApp(object):
       mtl.baseColor = vec4(1, 1, 1, 1)
       mtl.roughnessFactor = roughness
       mtl.metallicFactor = metallic
+      if alpha_blend:
+        mtl.alphaBlend = True
       mtl.gpuInit(ctx)
       self.materials.append(mtl)
       self.prims.append(prim)
 
       node = prim.createNode(name, self.layer1, mtl)
       node.worldTransform.translation = vec3(*pos)
-      node.sortkey = 10
+      node.sortkey = 20 if alpha_blend else 10
 
     # Three orbiting point lights with indicator spheres
     orb_sv, orb_sn, orb_sb, orb_su, orb_si = make_sphere_arrays(0.12, 6)
@@ -159,16 +162,17 @@ class PointLightsApp(object):
     self.scene.lightingmanager.gpuInit(ctx)
 
     print("Point Lights Test:")
-    print("  Left: matte sphere (rough=0.9, metal=0)")
-    print("  Center: metallic sphere (rough=0.3, metal=1)")
-    print("  Right: mirror sphere (rough=0, metal=1)")
+    print("  matte sphere (rough=0.9, metal=0)")
+    print("  metallic sphere (rough=0.3, metal=1)")
+    print("  mirror sphere (rough=0, metal=1)")
+    print("  glass sphere (rough=0, metal=1, transparent)")
     print("  Three colored point lights orbit in an ellipse")
 
   ##############################################
 
   def onGpuUpdate(self, ctx):
     t = self.time
-    rx, rz = 5.0, 3.0  # ellipse radii
+    rx, rz = 6.0, 3.5  # ellipse radii
     for i, (light, light_node, orb_node) in enumerate(self.lights):
       angle = t * 0.8 + i * math.tau / 3
       x = rx * math.cos(angle)

@@ -26,7 +26,8 @@ from lev2utils.scenegraph import createSceneGraph
 
 tokens = CrcStringProxy()
 
-NUM_OPAQUE = 500
+NUM_SPHERES = 300
+NUM_CUBES = 200
 NUM_TRANSPARENT = 200
 
 ################################################################################
@@ -63,6 +64,31 @@ def make_sphere_arrays(radius=1.0, n=8):
   uvs_np = np.zeros((nv, 2), dtype=np.float32)
   return verts_np, norms_np, binormals_np, uvs_np, np.array(indices, dtype=np.uint32)
 
+def make_cube_arrays(size=1.0):
+  h = size / 2.0
+  face_data = [
+    ((0,0,1),  [(-h,-h,h),(h,-h,h),(h,h,h),(-h,h,h)]),
+    ((0,0,-1), [(h,-h,-h),(-h,-h,-h),(-h,h,-h),(h,h,-h)]),
+    ((1,0,0),  [(h,-h,h),(h,-h,-h),(h,h,-h),(h,h,h)]),
+    ((-1,0,0), [(-h,-h,-h),(-h,-h,h),(-h,h,h),(-h,h,-h)]),
+    ((0,1,0),  [(-h,h,h),(h,h,h),(h,h,-h),(-h,h,-h)]),
+    ((0,-1,0), [(-h,-h,-h),(h,-h,-h),(h,-h,h),(-h,-h,h)]),
+  ]
+  verts, norms, indices = [], [], []
+  for (nx, ny, nz), corners in face_data:
+    base = len(verts)
+    for c in corners:
+      verts.append(c)
+      norms.append((nx, ny, nz))
+    indices.extend([base, base+2, base+1, base, base+3, base+2])
+  nv = len(verts)
+  verts_np = np.array(verts, dtype=np.float32)
+  norms_np = np.array(norms, dtype=np.float32)
+  binormals_np = np.zeros((nv, 3), dtype=np.float32)
+  binormals_np[:, 0] = 1.0
+  uvs_np = np.zeros((nv, 2), dtype=np.float32)
+  return verts_np, norms_np, binormals_np, uvs_np, np.array(indices, dtype=np.uint32)
+
 ################################################################################
 
 class InstancingApp(object):
@@ -90,44 +116,78 @@ class InstancingApp(object):
     white_img = lev2.Image.createFromFile("src://effect_textures/white.dds")
     normal_img = lev2.Image.createFromFile("src://effect_textures/default_normal.dds")
 
-    sv, sn, sb, su, si = make_sphere_arrays(1.0, 8)
-    nv = len(sv)
+    self.materials = []
+    self.prims = []
+
+    def make_instanced_set(mesh_arrays, count, name, roughness, metallic, alpha_blend=False):
+      v, n, b, u, idx = mesh_arrays
+      nv = len(v)
+      vc = np.full((nv, 4), 255, dtype=np.uint8)
+      prim = RigidPrimitive()
+      prim.fromArrays(v, n, b, u, vc, idx, ctx)
+      mtl = lev2.PBRMaterial()
+      mtl.assignImages(ctx, color=white_img, normal=normal_img, mtlruf=white_img, doConform=True)
+      mtl.baseColor = vec4(1, 1, 1, 1)
+      mtl.roughnessFactor = roughness
+      mtl.metallicFactor = metallic
+      if alpha_blend:
+        mtl.alphaBlend = True
+      mtl.gpuInit(ctx)
+      self.materials.append(mtl)
+      self.prims.append(prim)
+      node = prim.createInstancedNode(count, name, self.layer1, mtl)
+      node.sortkey = 20 if alpha_blend else 10
+      return node
+
+    sphere_arrays = make_sphere_arrays(1.0, 8)
+    cube_arrays = make_cube_arrays(1.0)
 
     ##################################
     # Opaque instanced spheres
     ##################################
-    colors_opaque = np.full((nv, 4), 255, dtype=np.uint8)
+    self.sphere_node = make_instanced_set(sphere_arrays, NUM_SPHERES, "spheres", 0.4, 0.8)
+    self.sphere_instdata = self.sphere_node.instanceData
 
-    prim_opaque = RigidPrimitive()
-    prim_opaque.fromArrays(sv, sn, sb, su, colors_opaque, si, ctx)
-
-    mtl_opaque = lev2.PBRMaterial()
-    mtl_opaque.assignImages(ctx, color=white_img, normal=normal_img, mtlruf=white_img, doConform=True)
-    mtl_opaque.baseColor = vec4(1, 1, 1, 1)
-    mtl_opaque.roughnessFactor = 0.4
-    mtl_opaque.metallicFactor = 0.8
-    mtl_opaque.gpuInit(ctx)
-
-    self.opaque_node = prim_opaque.createInstancedNode(NUM_OPAQUE, "opaque_spheres", self.layer1, mtl_opaque)
-    self.opaque_node.sortkey = 10
-    self.opaque_instdata = self.opaque_node.instanceData
-
-    # Initialize opaque instance data
-    self.opaque_data = []
-    matrices = np.array(self.opaque_instdata.matrices, copy=False)
-    colors = np.array(self.opaque_instdata.colors, copy=False)
-    for i in range(NUM_OPAQUE):
+    self.sphere_data = []
+    matrices = np.array(self.sphere_instdata.matrices, copy=False)
+    colors = np.array(self.sphere_instdata.colors, copy=False)
+    for i in range(NUM_SPHERES):
       x = random.uniform(-10, 10)
       z = random.uniform(-10, 10)
       y = random.uniform(0.5, 5)
-      s = random.uniform(0.1, 0.4)
+      s = random.uniform(0.2, 0.5)
       phase = random.uniform(0, math.tau)
       speed = random.uniform(0.3, 1.0)
-      # Random warm color (instance tint, multiplied with vertex color)
       cr = random.uniform(0.5, 1.0)
       cg = random.uniform(0.3, 0.8)
       cb = random.uniform(0.2, 0.6)
-      self.opaque_data.append((x, y, z, s, phase, speed, cr, cg, cb))
+      self.sphere_data.append((x, y, z, s, phase, speed, cr, cg, cb))
+      m = mtx4.composed(vec3(x, y, z), quat(), s)
+      matrices[i] = np.array(m, copy=False)
+      colors[i] = (cr, cg, cb, 1.0)
+
+    ##################################
+    # Opaque instanced cubes
+    ##################################
+    self.cube_node = make_instanced_set(cube_arrays, NUM_CUBES, "cubes", 0.6, 0.5)
+    self.cube_instdata = self.cube_node.instanceData
+
+    self.cube_data = []
+    matrices = np.array(self.cube_instdata.matrices, copy=False)
+    colors = np.array(self.cube_instdata.colors, copy=False)
+    for i in range(NUM_CUBES):
+      x = random.uniform(-10, 10)
+      z = random.uniform(-10, 10)
+      y = random.uniform(0.5, 4)
+      s = random.uniform(0.15, 0.4)
+      phase = random.uniform(0, math.tau)
+      speed = random.uniform(0.2, 0.7)
+      rx_speed = random.uniform(0.3, 1.2)
+      rz_speed = random.uniform(0.2, 0.8)
+      cr = random.uniform(0.3, 0.7)
+      cg = random.uniform(0.3, 0.7)
+      cb = random.uniform(0.5, 1.0)
+      self.cube_data.append((x, y, z, s, phase, speed, rx_speed, rz_speed, cr, cg, cb))
       m = mtx4.composed(vec3(x, y, z), quat(), s)
       matrices[i] = np.array(m, copy=False)
       colors[i] = (cr, cg, cb, 1.0)
@@ -135,28 +195,9 @@ class InstancingApp(object):
     ##################################
     # Transparent instanced spheres
     ##################################
-    colors_trans = np.zeros((nv, 4), dtype=np.uint8)
-    colors_trans[:, 0] = 230
-    colors_trans[:, 1] = 240
-    colors_trans[:, 2] = 255
-    colors_trans[:, 3] = 255  # vertex alpha = 1, instance alpha controls opacity
-
-    prim_trans = RigidPrimitive()
-    prim_trans.fromArrays(sv, sn, sb, su, colors_trans, si, ctx)
-
-    mtl_trans = lev2.PBRMaterial()
-    mtl_trans.assignImages(ctx, color=white_img, normal=normal_img, mtlruf=white_img, doConform=True)
-    mtl_trans.baseColor = vec4(1, 1, 1, 1)
-    mtl_trans.roughnessFactor = 0.0
-    mtl_trans.metallicFactor = 1.0
-    mtl_trans.alphaBlend = True
-    mtl_trans.gpuInit(ctx)
-
-    self.trans_node = prim_trans.createInstancedNode(NUM_TRANSPARENT, "trans_spheres", self.layer1, mtl_trans)
-    self.trans_node.sortkey = 20
+    self.trans_node = make_instanced_set(sphere_arrays, NUM_TRANSPARENT, "trans_spheres", 0.0, 1.0, alpha_blend=True)
     self.trans_instdata = self.trans_node.instanceData
 
-    # Initialize transparent instance data
     self.trans_data = []
     matrices = np.array(self.trans_instdata.matrices, copy=False)
     colors = np.array(self.trans_instdata.colors, copy=False)
@@ -174,10 +215,6 @@ class InstancingApp(object):
       matrices[i] = np.array(m, copy=False)
       colors[i] = (0.9, 0.95, 1.0, 0.4)
 
-    # Keep materials alive
-    self.materials = [mtl_opaque, mtl_trans]
-    self.prims = [prim_opaque, prim_trans]
-
     # Lighting — two point lights
     self.dyn_lights = []
     for lname, lpos, lcolor, lintens in [
@@ -194,28 +231,47 @@ class InstancingApp(object):
 
     self.scene.lightingmanager.gpuInit(ctx)
 
-    print(f"Instancing Test: {NUM_OPAQUE} opaque + {NUM_TRANSPARENT} transparent spheres")
+    print(f"Instancing Test: {NUM_SPHERES} spheres + {NUM_CUBES} cubes + {NUM_TRANSPARENT} transparent bubbles")
 
   ##############################################
 
   def onGpuUpdate(self, ctx):
     t = self.time
 
-    # Animate opaque instances: gentle bobbing
-    matrices = np.array(self.opaque_instdata.matrices, copy=False)
-    for i in range(NUM_OPAQUE):
-      x, y_base, z, s, phase, speed, cr, cg, cb = self.opaque_data[i]
+    # Animate spheres: bobbing, occasional visibility toggle
+    matrices = np.array(self.sphere_instdata.matrices, copy=False)
+    colors = np.array(self.sphere_instdata.colors, copy=False)
+    for i in range(NUM_SPHERES):
+      x, y_base, z, s, phase, speed, cr, cg, cb = self.sphere_data[i]
+      # Rare visibility toggle (~5% hidden at any time)
+      visible = math.sin(t * 0.2 + phase * 3.7) > -0.9
+      if not visible:
+        matrices[i] = np.zeros((4, 4), dtype=np.float32)
+        colors[i] = (0, 0, 0, 0)
+        continue
       y = y_base + math.sin(t * speed + phase) * 0.3
       m = mtx4.composed(vec3(x, y, z), quat(vec3(0, 1, 0), t * speed + phase), s)
       matrices[i] = np.array(m, copy=False)
+      colors[i] = (cr, cg, cb, 1.0)
 
-    # Animate transparent instances: fade in/out lifecycle
+    # Animate cubes: tumbling rotation, scale pulsing
+    matrices = np.array(self.cube_instdata.matrices, copy=False)
+    colors = np.array(self.cube_instdata.colors, copy=False)
+    for i in range(NUM_CUBES):
+      x, y_base, z, s, phase, speed, rx_spd, rz_spd, cr, cg, cb = self.cube_data[i]
+      y = y_base + math.sin(t * speed + phase) * 0.2
+      pulse = s * (0.8 + 0.2 * math.sin(t * 1.5 + phase))
+      rot = quat(vec3(1, 0, 0), t * rx_spd + phase) * quat(vec3(0, 1, 0), t * speed) * quat(vec3(0, 0, 1), t * rz_spd)
+      m = mtx4.composed(vec3(x, y, z), rot, pulse)
+      matrices[i] = np.array(m, copy=False)
+      colors[i] = (cr, cg, cb, 1.0)
+
+    # Animate transparent spheres: fade in/out lifecycle
     matrices = np.array(self.trans_instdata.matrices, copy=False)
     colors = np.array(self.trans_instdata.colors, copy=False)
     for i in range(NUM_TRANSPARENT):
       x, y_base, z, s, phase, speed, birth, lifetime = self.trans_data[i]
       age = t - birth
-      # Wrap around
       cycle_age = age % lifetime
       fade = 1.0 - (cycle_age / lifetime) ** 1.5
       alpha = max(0.0, 0.5 * fade)
