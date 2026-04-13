@@ -198,8 +198,8 @@ class TransparencyApp(object):
     self.point_light.data.color = vec3(1, 0.95, 0.85)
     self.point_light.data.intensity = 5.0
     self.point_light.data.radius = 25.0
-    self.light_node = self.point_light.data.createNode("key", self.layer1)
-    self.light_node.worldTransform.translation = vec3(3, 5, 5)
+    self.light_node = self.layer1.createLightNode("key", self.point_light)
+    self.light_node.setMatrix(mtx4.transMatrix(vec3(3, 5, 5)))
 
     self.scene.lightingmanager.gpuInit(ctx)
 

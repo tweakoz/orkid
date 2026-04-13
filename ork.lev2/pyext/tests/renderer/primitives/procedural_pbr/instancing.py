@@ -96,11 +96,7 @@ class InstancingApp(object):
     ##################################
     # Opaque instanced spheres
     ##################################
-    colors_opaque = np.zeros((nv, 4), dtype=np.uint8)
-    colors_opaque[:, 0] = 200
-    colors_opaque[:, 1] = 200
-    colors_opaque[:, 2] = 200
-    colors_opaque[:, 3] = 255
+    colors_opaque = np.full((nv, 4), 255, dtype=np.uint8)
 
     prim_opaque = RigidPrimitive()
     prim_opaque.fromArrays(sv, sn, sb, su, colors_opaque, si, ctx)
@@ -108,8 +104,8 @@ class InstancingApp(object):
     mtl_opaque = lev2.PBRMaterial()
     mtl_opaque.assignImages(ctx, color=white_img, normal=normal_img, mtlruf=white_img, doConform=True)
     mtl_opaque.baseColor = vec4(1, 1, 1, 1)
-    mtl_opaque.roughnessFactor = 0.5
-    mtl_opaque.metallicFactor = 0.0
+    mtl_opaque.roughnessFactor = 0.4
+    mtl_opaque.metallicFactor = 0.8
     mtl_opaque.gpuInit(ctx)
 
     self.opaque_node = prim_opaque.createInstancedNode(NUM_OPAQUE, "opaque_spheres", self.layer1, mtl_opaque)
@@ -127,10 +123,10 @@ class InstancingApp(object):
       s = random.uniform(0.1, 0.4)
       phase = random.uniform(0, math.tau)
       speed = random.uniform(0.3, 1.0)
-      # Random warm color
-      cr = random.uniform(0.1, 0.25)
-      cg = random.uniform(0.05, 0.15)
-      cb = random.uniform(0.03, 0.1)
+      # Random warm color (instance tint, multiplied with vertex color)
+      cr = random.uniform(0.5, 1.0)
+      cg = random.uniform(0.3, 0.8)
+      cb = random.uniform(0.2, 0.6)
       self.opaque_data.append((x, y, z, s, phase, speed, cr, cg, cb))
       m = mtx4.composed(vec3(x, y, z), quat(), s)
       matrices[i] = np.array(m, copy=False)
@@ -182,14 +178,19 @@ class InstancingApp(object):
     self.materials = [mtl_opaque, mtl_trans]
     self.prims = [prim_opaque, prim_trans]
 
-    # Lighting
-    light = lev2.DynamicPointLight()
-    light.data.color = vec3(1, 0.95, 0.85)
-    light.data.intensity = 8.0
-    light.data.radius = 30.0
-    self.light_node = light.data.createNode("sun", self.layer1)
-    self.light_node.worldTransform.translation = vec3(5, 10, 5)
-    self.light = light
+    # Lighting — two point lights
+    self.dyn_lights = []
+    for lname, lpos, lcolor, lintens in [
+      ("key",  vec3(5, 12, 5),   vec3(1, 0.95, 0.85), 20.0),
+      ("fill", vec3(-5, 10, -3), vec3(0.5, 0.6, 0.9), 12.0),
+    ]:
+      light = lev2.DynamicPointLight()
+      light.data.color = lcolor
+      light.data.intensity = lintens
+      light.data.radius = 30.0
+      light_node = self.layer1.createLightNode(lname, light)
+      light_node.setMatrix(mtx4.transMatrix(lpos))
+      self.dyn_lights.append(light)
 
     self.scene.lightingmanager.gpuInit(ctx)
 
