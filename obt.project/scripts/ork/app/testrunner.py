@@ -875,10 +875,15 @@ class TestRunnerApp:
     # -- Style (applied via theme) --
     self.fs_view.item_height = 24
 
-    # -- Periodic audio device monitoring --
-    self._last_audio_check_time = 0.0
+    # -- Periodic audio device monitoring (runs on background thread) --
     self._audio_check_interval = 2.0
     self._audio_label_cache = {}  # (text, color) -> image_ptr_t
+    self._audio_worker_stop = threading.Event()
+    self._audio_worker_lock = threading.Lock()
+    self._audio_worker_latest = None  # list of devices, latest from worker
+    self._audio_worker_thread = threading.Thread(
+        target=self._audioWorker, name="audio-device-poll", daemon=True)
+    self._audio_worker_thread.start()
 
     # -- Apply theme --
     self.applyTheme(self._theme)
@@ -932,14 +937,41 @@ class TestRunnerApp:
 
 
   def _refreshAudioDevices(self):
-    """Enumerate audio devices and split into input/output lists."""
+    """Enumerate audio devices (blocking) and split into input/output lists.
+
+    Safe to call from any thread; only mutates self._audio_* on the caller.
+    Used at startup from the main thread before the worker is running.
+    """
     self._audio_devices = lev2.enumerateAudioDevices()
     self._audio_input_devices = [d for d in self._audio_devices if d.max_input_channels > 0]
     self._audio_output_devices = [d for d in self._audio_devices if d.max_output_channels > 0]
 
-  def _checkAudioDevices(self):
-    """Periodically re-enumerate audio devices and update label colors."""
-    self._refreshAudioDevices()
+  def _audioWorker(self):
+    """Background thread: enumerate audio devices periodically and hand off latest."""
+    while not self._audio_worker_stop.is_set():
+      try:
+        devs = lev2.enumerateAudioDevices()
+      except Exception:
+        devs = None
+      if devs is not None:
+        with self._audio_worker_lock:
+          self._audio_worker_latest = devs
+      self._audio_worker_stop.wait(self._audio_check_interval)
+
+  def _drainAudioWorker(self):
+    """Main thread: pick up latest device list from worker, if any."""
+    with self._audio_worker_lock:
+      latest = self._audio_worker_latest
+      self._audio_worker_latest = None
+    if latest is None:
+      return
+    self._audio_devices = latest
+    self._audio_input_devices = [d for d in latest if d.max_input_channels > 0]
+    self._audio_output_devices = [d for d in latest if d.max_output_channels > 0]
+    self._applyAudioDeviceLabels()
+
+  def _applyAudioDeviceLabels(self):
+    """Main thread: update toolbar labels based on current _audio_*_devices."""
     input_names = {d.name for d in self._audio_input_devices}
     output_names = {d.name for d in self._audio_output_devices}
 
@@ -1264,11 +1296,9 @@ class TestRunnerApp:
     if self._auto_run:
       self.runAll()
 
-  def onUpdate(self, updinfo):
-    now = time.monotonic()
-    if now - self._last_audio_check_time >= self._audio_check_interval:
-      self._last_audio_check_time = now
-      self._checkAudioDevices()
+  def onGpuUpdate(self, ctx):
+    # Runs on main/GPU thread — safe place to mutate widgets/icons.
+    self._drainAudioWorker()
 
   def onUiEvent(self, uievent):
     return lev2.ui.HandlerResult()

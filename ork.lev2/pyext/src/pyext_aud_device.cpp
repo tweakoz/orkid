@@ -54,7 +54,13 @@ namespace ork::lev2 {
     // enumerateAudioDevices
     /////////////////////////////////////////////////////////////////////////////////
     lev2_module.def("enumerateAudioDevices", []() -> py::list {
-      auto devices = enumerateAudioDevices();
+      // Release the GIL while probing host audio devices — Pa_Initialize /
+      // Pa_IsFormatSupported can block for tens/hundreds of ms on Linux.
+      audiodeviceinfo_list_t devices;
+      {
+        py::gil_scoped_release _release;
+        devices = enumerateAudioDevices();
+      }
       py::list result;
       for (const auto& dev : devices) {
         result.append(dev);

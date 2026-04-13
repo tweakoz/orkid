@@ -27,6 +27,11 @@
 #include <ork/util/logger.h>
 #include <set>
 #include <algorithm>
+#include <mutex>
+#if defined(__linux__)
+#include <alsa/asoundlib.h>
+#include <dlfcn.h>
+#endif
 
 #if defined(ENABLE_PORTAUDIO)
 
@@ -36,6 +41,40 @@ template class ork::orklut<ork::Char8, float>;
 
 namespace ork::lev2 {
 static logchannel_ptr_t logchan_portaudio = logger()->configureChannel("audio.PA", fvec3(1, 0.6, .8), true);
+
+///////////////////////////////////////////////////////////////////////////////
+
+#if defined(__linux__)
+static void _null_alsa_error_handler(const char* /*file*/, int /*line*/, const char* /*function*/, int /*err*/, const char* /*fmt*/, ...) {
+}
+static void _null_jack_msg_handler(const char* /*msg*/) {
+}
+#endif
+
+static void _silence_host_audio_logging() {
+  static std::once_flag _once;
+  std::call_once(_once, []() {
+#if defined(__linux__)
+    // ALSA: install a null error handler so PCM probe failures don't hit stderr.
+    snd_lib_error_set_handler(&_null_alsa_error_handler);
+
+    // JACK: dlopen libjack and install null error/info callbacks so failed
+    // server connections don't spam stderr. dlopen avoids adding a hard
+    // link dependency on libjack.
+    void* jack_handle = dlopen("libjack.so.0", RTLD_NOW | RTLD_NOLOAD);
+    if (!jack_handle) {
+      jack_handle = dlopen("libjack.so.0", RTLD_NOW | RTLD_GLOBAL);
+    }
+    if (jack_handle) {
+      using jack_set_msg_fn = void (*)(void (*)(const char*));
+      auto set_err  = reinterpret_cast<jack_set_msg_fn>(dlsym(jack_handle, "jack_set_error_function"));
+      auto set_info = reinterpret_cast<jack_set_msg_fn>(dlsym(jack_handle, "jack_set_info_function"));
+      if (set_err)  set_err(&_null_jack_msg_handler);
+      if (set_info) set_info(&_null_jack_msg_handler);
+    }
+#endif
+  });
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 PaStream* pa_stream      = nullptr;
@@ -209,6 +248,7 @@ static int patestCallback(
   }
 
   auto paimpl = padev->_impl.makeShared<PaImpl>();
+  _silence_host_audio_logging();
   auto err = Pa_Initialize();
   OrkAssert(err == paNoError);
   int num_inputs = 0;
@@ -398,6 +438,7 @@ void AudioDevicePa::shutdown(){
 
 audiodeviceinfo_list_t enumerateAudioDevices_portaudio() {
   audiodeviceinfo_list_t result;
+  _silence_host_audio_logging();
   Pa_Initialize();
 
   // Sample rates to probe
