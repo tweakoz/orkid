@@ -312,10 +312,17 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
       }
     } else { // not skinned
       if (permu._instanced) {
-        if (this->_tek_FWD_CT_NM_RI_IN_MO) {
+        if (permu._has_vtxcolors) {
+          if (permu._is_alpha && this->_tek_FWD_CV_NM_RI_IN_MO_ALPHA) {
+            pipeline             = std::make_shared<FxPipeline>(permu);
+            pipeline->_technique = this->_tek_FWD_CV_NM_RI_IN_MO_ALPHA;
+          } else if (this->_tek_FWD_CV_NM_RI_IN_MO) {
+            pipeline             = std::make_shared<FxPipeline>(permu);
+            pipeline->_technique = this->_tek_FWD_CV_NM_RI_IN_MO;
+          }
+        } else if (this->_tek_FWD_CT_NM_RI_IN_MO) {
           pipeline             = std::make_shared<FxPipeline>(permu);
           pipeline->_technique = this->_tek_FWD_CT_NM_RI_IN_MO;
-          //printf( "got fwdtek FWD_CT_NM_RI_IN_MO\n");
         }
       } else {
         if( permu._has_vtxcolors ){

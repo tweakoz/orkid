@@ -608,6 +608,26 @@ void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
           },
           "Create rigid primitive directly from vertex attribute arrays, bypassing mesh processing",
           py::arg("positions"), py::arg("normals"), py::arg("binormals"),
-          py::arg("uvs"), py::arg("colors"), py::arg("indices"), py::arg("context"));
+          py::arg("uvs"), py::arg("colors"), py::arg("indices"), py::arg("context"))
+      .def(
+          "createInstancedNode",
+          [](meshutil::rigidprim_V12N12B12T8C4_ptr_t prim,
+             int count,
+             std::string named,
+             scenegraph::layer_ptr_t layer,
+             material_ptr_t material) -> scenegraph::drawable_node_ptr_t {
+            using drw_t = meshutil::InstancedRigidPrimitiveDrawable<SVtxV12N12B12T8C4>;
+            auto drw = std::make_shared<drw_t>();
+            drw->bindPrimitive(prim, material);
+            drw->resize(count);
+            auto instdata = drw->_instancedata;
+            for (int i = 0; i < count; i++) {
+              instdata->_worldmatrices[i].compose(fvec3(0, 0, 0), fquat(), 0.0f);
+              instdata->_modcolors[i] = fvec4(1, 1, 1, 1);
+            }
+            auto node = layer->createDrawableNode(named, drw);
+            return node;
+          },
+          py::arg("count"), py::arg("name"), py::arg("layer"), py::arg("material"));
 } // void pyinit_gfx_rigidprim(py::module& module_lev2) {
 } // namespace ork::lev2

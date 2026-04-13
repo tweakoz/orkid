@@ -76,6 +76,16 @@ technique FWD_CT_NM_RI_IN_MO {
 	vf_pass={vs_forward_instanced,ps_forward_test,sb_default}
 }
 ///////////////////////////////////////////////////////////////
+technique FWD_CV_NM_RI_IN_MO {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_instanced_vc,ps_forward_test_vtxcol,sb_cullcw}
+}
+///////////////////////////////////////////////////////////////
+technique FWD_CV_NM_RI_IN_MO_ALPHA {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_instanced_vc,ps_forward_instanced_vtxcol_alpha,sb_cullcw_alpha}
+}
+///////////////////////////////////////////////////////////////
 technique FWD_CT_NM_SK_NI_MO {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_forward_skinned_mono,ps_forward_test,sb_default}

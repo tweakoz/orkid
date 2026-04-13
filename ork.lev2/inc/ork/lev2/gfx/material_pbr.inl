@@ -313,6 +313,8 @@ public:
   // texcolor
 
   fxtechnique_constptr_t _tek_FWD_CT_NM_RI_IN_MO = nullptr;
+  fxtechnique_constptr_t _tek_FWD_CV_NM_RI_IN_MO = nullptr;
+  fxtechnique_constptr_t _tek_FWD_CV_NM_RI_IN_MO_ALPHA = nullptr;
   fxtechnique_constptr_t _tek_FWD_CT_NM_RI_NI_MO = nullptr;
   fxtechnique_constptr_t _tek_FWD_CV_NM_RI_NI_MO = nullptr;
   fxtechnique_constptr_t _tek_FWD_CV_NM_RI_NI_MO_ALPHA = nullptr;
