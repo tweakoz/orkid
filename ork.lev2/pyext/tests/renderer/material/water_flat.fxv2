@@ -1,0 +1,236 @@
+///////////////////////////////////////////////////////////////
+// flat-plane water shader (fragment-only, no vertex displacement)
+// adapted from geoclipmesh_water.fxv2
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default {
+  glsl_version = "450";
+  import "orkshader://mathtools.i2";
+  import "orkshader://pbrtools.i2";
+  import "orkshader://envtools.i2";
+  import "orkshader://misctools.i2";
+  import "orkshader://stdtools.i2";
+}
+///////////////////////////////////////////////////////////////
+uniform_block ub_frgX (descriptor_set 0) {
+  float Time;
+  vec3 BaseColor;
+  float plightamp;
+}
+// TODO: re-enable scene-depth readback once the Vulkan RTG layout issue
+// (vulkan_fxi_bindparam.cpp strict SHADER_READ_ONLY_OPTIMAL check vs
+// the sync2 unified READ_ONLY_OPTIMAL that the barrier produces) is fixed.
+// Will restore `sampler_set sset_water { sampler2D depth_map; }`,
+// `vec2 bufinvdim` in ub_frgX, and the inv_vp reconstruction below.
+
+///////////////////////////////////////////////////////////////
+// height / normal helpers (fragment-side, no vtx displacement)
+///////////////////////////////////////////////////////////////
+libblock lib_water_height : ub_frgX : lib_mmnoise {
+
+  // Gerstner-style long-swell contribution (y component only, for a flat plane)
+  float radial_gerstner_y(vec3 center, vec3 pos, float timeval, float frq, float baseamp, float rscale, float falloff) {
+    float radius = length(pos.xz - center.xz);
+    float amp    = clamp(pow(1.0 / max(radius, 0.001), falloff), 0.0, 1.0);
+    amp         *= clamp(radius * rscale, 0.0, 1.0);
+    float phase  = radius * frq - timeval;
+    return -cos(phase) * baseamp * amp;
+  }
+
+  // Sum-of-Gerstners + octave noise chop. Returns signed height in world units.
+  float water_height(vec3 wpos) {
+    float speed   = Time * 1.65;
+    float baseamp = 8.0;
+    float cdist   = 3000.0;
+    float falloff = 0.09;
+
+    float h = 0.0;
+    h += radial_gerstner_y(vec3(-6, 0,-32) * cdist, wpos, speed * 0.9, 0.003131, baseamp * 0.3, 0.00013, falloff);
+    h += radial_gerstner_y(vec3( 6, 0,  5) * cdist, wpos, speed * 2.1, 0.0131,   baseamp * 0.3, 0.00013, falloff);
+    h += radial_gerstner_y(vec3(11, 0, -6) * cdist, wpos, speed * 0.6, 0.0091,   baseamp * 0.3, 0.00013, falloff);
+    h += radial_gerstner_y(vec3(-11,0,  6) * cdist, wpos, speed * 0.3, 0.00111,  baseamp * 0.5, 0.00013, falloff);
+
+    // fine chop (isotropic noise octaves)
+    for (int i = 0; i < 4; i++) {
+      float amp = 0.6 / float(i + 1);
+      float frq = 0.5 + float(i) * 0.5;
+      float spd = 3.1 + float(i) * 0.1;
+      float n   = noise(vec3(wpos.xz * frq * 0.01, Time * spd));
+      h += n * amp;
+    }
+    return h;
+  }
+
+  // Analytic normal via two-tap finite difference in the xz plane.
+  vec3 water_normal(vec3 wpos) {
+    float eps = 0.35;
+    float h0  = water_height(wpos);
+    float hx  = water_height(wpos + vec3(eps, 0.0, 0.0));
+    float hz  = water_height(wpos + vec3(0.0, 0.0, eps));
+    vec3 dx   = vec3(eps, hx - h0, 0.0);
+    vec3 dz   = vec3(0.0, hz - h0, eps);
+    return normalize(cross(dz, dx));
+  }
+}
+
+///////////////////////////////////////////////////////////////
+// fragment shader
+///////////////////////////////////////////////////////////////
+fragment_shader ps_fwd_water_flat
+    : iface_forward
+    : lib_math
+    : lib_brdf
+    : lib_def
+    : lib_fwd
+    : lib_mmnoise
+    : lib_water_height
+    : ub_frgX
+    : std_forward_all {
+
+  vec3 wpos = frg_wpos.xyz;
+
+  ///////////////////////////////////////////////
+  // procedural normal from fragment-side height
+  ///////////////////////////////////////////////
+  vec3 N = water_normal(wpos);
+
+  ///////////////////////////////////////////////
+  // TODO: scene-depth readback disabled until RTG layout issue is resolved.
+  // For now, hardcode shoreline/murk so alpha behaves reasonably.
+  ///////////////////////////////////////////////
+  float murk      = 1.0;
+  float shoreline = 1.0;
+
+  ///////////////////////////////////////////////
+  // eye / view vectors
+  ///////////////////////////////////////////////
+  vec3 eye_delta = wpos - EyePostion;
+  vec3 eye_dir   = normalize(eye_delta);
+
+  ///////////////////////////////////////////////
+  // env skybox reflection (grazing-angle mirror)
+  ///////////////////////////////////////////////
+  vec3 skybox_n    = vec3(eye_dir.x, eye_dir.y, eye_dir.z) * -1.0;
+  vec3 skyboxColor = env_equirectangular_skybox(skybox_n, MapSpecularEnv, EnvironmentMipBias) * SkyboxLevel;
+
+  vec3 refl_n             = reflect(skybox_n * -1.0, N * -1.0);
+  vec3 skyboxRefractColor = (vec3(1.0) - env_equirectangular_skybox(refl_n, MapSpecularEnv, 0.8)) * 1.5;
+  skyboxRefractColor.x    = pow(skyboxRefractColor.x, 0.65);
+  skyboxRefractColor.y    = pow(skyboxRefractColor.y, 0.55);
+  skyboxRefractColor.z    = pow(skyboxRefractColor.z, 0.45);
+
+  float F      = fresnelSchlick(eye_dir * -1.0, N, vec3(0.02)).x;
+  vec3 albedo  = mix(BaseColor, skyboxRefractColor, 0.65);
+
+  ///////////////////////////////////////////////
+  // foam near peaks
+  ///////////////////////////////////////////////
+  float signalY  = clamp(water_height(wpos) * 0.1, 0.0, 1.0);
+  float peak_mix = clamp(signalY * 2.0, 0.0, 1.0);
+  float foam     = 0.0;
+  for (int i = 0; i < 4; i++) {
+    float amp    = 2.0 / float(4 - i);
+    float frq    = 3.0 + float(i) * 1.007;
+    float spd    = 3.1 + float(i) * 1.1;
+    float n      = noise(wpos * frq + vec3(0.0, 1.0, 0.0) * Time * spd);
+    float scalar = pow(peak_mix * 5.0, 2.5);
+    foam        += n * amp * scalar;
+  }
+  foam = clamp(foam * 10.0, 0.0, 1.0);
+
+  ///////////////////////////////////////////////
+  // PBR env lighting + point lights + spot lights (manual, same
+  // layout as geoclipmesh_water.fxv2 so the full PCF path runs)
+  ///////////////////////////////////////////////
+  PbrData pbd;
+  pbd._emissive  = false;
+  pbd._metallic  = 0.75;
+  pbd._roughness = 0.08;
+  pbd._albedo    = albedo;
+  pbd._wpos      = wpos;
+  pbd._wnrm      = N;
+  pbd._fogZ      = 0.0;
+  pbd._atmos     = 0.0;
+  pbd._alpha     = 1.0;
+
+  vec3 env_lighting = pbrEnvironmentLightingXXX(pbd, EyePostion);
+
+  LightCtx plc        = lcalc_forward(wpos, pbd, EyePostion);
+  vec3 point_lighting = vec3(0.0);
+  for (int i = 0; i < point_light_count; i++) {
+    plc._lightdel = _lightpos[i].xyz - wpos;
+    vec3 LC       = _lightcolor[i].xyz * _lightcolor[i].w;
+    vec4 LSB      = _lightsizbias[i];
+    float LR      = LSB.x;
+    point_lighting += plcalc_forward(plc, pbd, LR) * LC * plightamp;
+  }
+
+  vec3 spot_lighting = vec3(0.0);
+  for (int i = 0; i < spot_light_count; i++) {
+    int j = i + point_light_count;
+
+    uint light_tex_slice = _lightTexSlice[j];
+    mat4 shmtx           = _shadowmatrix[j];
+    vec3 lightpos        = _lightpos[j].xyz;
+    vec4 LSB             = _lightsizbias[j];
+    float lightrange     = LSB.x;
+
+    vec4 light_hpos = (shmtx) * vec4(wpos, 1.0);
+    vec3 light_ndc  = light_hpos.xyz / light_hpos.w;
+    float lightz    = light_ndc.z;
+    vec2 light_uv   = light_ndc.xy * 0.5 + vec2(0.5);
+
+    bool mask = bool(light_ndc.x >= -1.0 && light_ndc.x < 1.0) &&
+                bool(light_ndc.y >= -1.0 && light_ndc.y < 1.0) &&
+                bool(light_ndc.z >=  0.0 && light_ndc.z <= 1.0);
+
+    // PCF shadow
+    float shadow_factor = 0.0;
+    if (mask) {
+      float bias            = LSB.y;
+      int pcf_width         = 1;
+      float pcf_filter_size = 1.0 / LSB.z;
+      for (int x = -pcf_width; x <= pcf_width; x++) {
+        for (int y = -pcf_width; y <= pcf_width; y++) {
+          vec2 pcf_uv         = light_uv + vec2(float(x), float(y)) * pcf_filter_size;
+          float pcf_depth_ndc = _sample_depth_cookie(light_tex_slice, pcf_uv) * 2.0 - 1.0;
+          shadow_factor      += (pcf_depth_ndc + bias) >= lightz ? 1.0 : 0.0;
+        }
+      }
+      shadow_factor /= float((pcf_width * 2 + 1) * (pcf_width * 2 + 1));
+    }
+
+    vec3 lightcol         = _lightcolor[j].xyz * _lightcolor[j].w;
+    vec3 diffuse_lighttex = textureLod(light_cookie_colors, vec3(light_uv, light_tex_slice), 0).xyz;
+
+    vec3 lightdel = lightpos - wpos;
+    vec3 LN       = normalize(lightdel);
+    float Ldist   = length(lightdel);
+    float NdotL   = max(0.0, dot(N, LN));
+
+    vec3 diffuse  = pbd._albedo * diffuse_lighttex * NdotL;
+    spot_lighting += lightcol * diffuse / max(0.0625, Ldist * Ldist) * float(mask) * shadow_factor;
+  }
+
+  vec3 L  = env_lighting + point_lighting + spot_lighting;
+  vec3 OC = L + env_lighting * foam * 0.1;
+
+  // fresnel-weighted alpha: more opaque at grazing angles, more see-through looking straight down
+  float alpha = mix(0.35, 1.0, clamp(F + shoreline * 0.5, 0.0, 1.0));
+  alpha       = mix(alpha, 1.0, murk);
+
+  out_color = vec4(OC, alpha);
+}
+///////////////////////////////////////////////////////////////
+state_block sb_water : sb_default {
+  DepthMask = false;
+  CullTest  = OFF;
+}
+///////////////////////////////////////////////////////////////
+technique FWD_CT_NM_RI_NI_MO {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_forward_test;
+    fragment_shader = ps_fwd_water_flat;
+    state_block     = sb_water;
+  }
+}
