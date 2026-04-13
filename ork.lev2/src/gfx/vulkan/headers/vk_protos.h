@@ -1,12 +1,28 @@
 #pragma once
+#include <initializer_list>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
+#include <vulkan/vulkan.h>
 #include <vulkan/vk_enum_string_helper.h>
+#include <ork/lev2/gfx/gfxenv_enum.h>
 namespace ork::dds {
 struct DDS_HEADER;
 }
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-// OrkVkAssert: assert that a VkResult is VK_SUCCESS, logging the error string if not.
+
+// User for all pAlloc parameters.
+// Currentrly nullptr but provides single location to potentialy change it.
+#define ORK_VK_ALLOC nullptr
+
+////////////////////////////////////////////////////////////////////////////////
+// OrkVkAssert
+//   Assert that a VkResult is VK_SUCCESS, logging the error string if not.
+////////////////////////////////////////////////////////////////////////////////
+
 #define OrkVkAssert(result)                                                \
   {                                                                        \
     VkResult _vk_res = (result);                                           \
@@ -16,22 +32,29 @@ namespace ork::lev2::vulkan {
       OrkAssert(false);                                                    \
     }                                                                      \
   }
-///////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+
 inline VkDeviceSize vkAlignUp(
     VkDeviceSize value,       //
     VkDeviceSize alignment) { //
   return (value + alignment - 1) & ~(alignment - 1);
 }
-///////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+
+// TODO Deprecated. Prefer using designated initializers.
 template <typename T> void initializeVkStruct(T& s, VkStructureType s_type) {
   memset(&s, 0, sizeof(T));
   s.sType = s_type;
 }
-///////////////////////////////////////////////////////////////////////////////
+
 template <typename T> void initializeVkStruct(T& s) {
   memset(&s, 0, sizeof(T));
 }
-///////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+
 struct VulkanInstance;
 struct VulkanDeviceInfo;
 struct VulkanDeviceGroup;
@@ -116,7 +139,6 @@ struct VulkanDescriptorSetCache;
 struct VkFrameBufferInterface;
 struct VulkanFenceObject;
 struct VulkanEventObject;
-struct VkReprojectionContext;
 struct VulkanSamplerObject;
 struct VkFramebufferOutput;
 struct VkOffscreen;
@@ -142,7 +164,6 @@ using vertex_strconfig_item_ptr_t = std::shared_ptr<VertexStreamConfigItem>;
 using vertex_strconfig_ptr_t = std::shared_ptr<VertexStreamConfig>;
 using vkfence_obj_ptr_t    = std::shared_ptr<VulkanFenceObject>;
 using vkevent_obj_ptr_t    = std::shared_ptr<VulkanEventObject>;
-using vkreprojctx_ptr_t    = std::shared_ptr<VkReprojectionContext>;
 ///////////////////////////////////////////////////////////////////////////////
 using vkfxdescsetitem_ptr_t = std::shared_ptr<VkFxShaderDescriptorSetItem>;
 using vkfxsunisetsref_ptr_t = std::shared_ptr<VkFxShaderUniformSetsReference>;
@@ -155,7 +176,6 @@ using vkdescriptorset_ptr_t = std::shared_ptr<VulkanDescriptorSet>;
 ///////////////////////////////////////////////////////////////////////////////
 using barrier_ptr_t = std::shared_ptr<VkImageMemoryBarrier>;
 
-//
 using vkinstance_ptr_t   = std::shared_ptr<VulkanInstance>;
 using vkdeviceinfo_ptr_t = std::shared_ptr<VulkanDeviceInfo>;
 using vkdevgrp_ptr_t     = std::shared_ptr<VulkanDeviceGroup>;
@@ -285,6 +305,7 @@ void _vkCreateImageForBuffer(
     vkrtbufimpl_ptr_t bufferimpl,
     VkRtbCreateOption options);
 
+// TODO lets not wrap vulkan struct initializes in a shared_ptr. Replace with one of the patterns below.
 barrier_ptr_t createImageBarrier(
     VkImage image,
     VkImageLayout oldLayout,
@@ -298,5 +319,300 @@ vkimagecreateinfo_ptr_t makeVKICI(
     VkFormat fmt,
     int nummips);
 
-///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2::vulkan {
+////////////////////////////////////////////////////////////////////////////////
+// Default Initialized Plain Value Structs
+////////////////////////////////////////////////////////////////////////////////
+
+// TODO refactor to using VkColorSubresourceRange style instead to still enable named designated intiializers
+inline constexpr VkImageSubresourceRange vkColorSubresource(
+    uint32_t baseMip = 0, uint32_t mipCount = 1,
+    uint32_t baseLayer = 0, uint32_t layerCount = 1) {
+  return {VK_IMAGE_ASPECT_COLOR_BIT, baseMip, mipCount, baseLayer, layerCount};
+}
+
+struct VkColorSubresourceRange {
+  VkImageAspectFlags aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+  uint32_t           baseMipLevel   = 0;
+  uint32_t           levelCount     = 1;
+  uint32_t           baseArrayLayer = 0;
+  uint32_t           layerCount     = 1;
+  constexpr operator VkImageSubresourceRange() const {
+    return {aspectMask, baseMipLevel, levelCount, baseArrayLayer, layerCount};
+  }
+};
+
+struct VkColorSubresourceLayers {
+  VkImageAspectFlags aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+  uint32_t           mipLevel       = 0;
+  uint32_t           baseArrayLayer = 0;
+  uint32_t           layerCount     = 1;
+  constexpr operator VkImageSubresourceLayers() const {
+    return {aspectMask, mipLevel, baseArrayLayer, layerCount};
+  }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+// Vulkan Inline Designated Intializer Struct Creation
+//   Allows nesting info struct pointers and arrays inside vk method call itself.
+//
+//   Removes need for all tertiary CreateInfo struct names. 'SCSCI', 'info' etc.
+//   Keeps info struct in context of parent struct to easily see where it's used.
+//   Uses raw structs from vulkan.h directly to stay familiar with Vulkan API.
+//   Optimally compield out: https://godbolt.org/z/Wq5b73ETj
+//
+//   Small Exmaple:
+//
+//     vkWaitSemaphores(device,
+//         pConst(VkSemaphoreWaitInfo{
+//           VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
+//           .semaphoreCount = 1,
+//           .pSemaphores    = &_timeline,
+//           .pValues        = &_timeline_value,
+//         }),
+//         UINT64_MAX));
+//
+//   Big Example:
+//
+//     vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1,
+//       pConst(VkGraphicsPipelineCreateInfo{
+//         VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+//         .stageCount = 2,
+//         .pStages    = pArr<VkPipelineShaderStageCreateInfo>({
+//           {
+//             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+//             .stage  = VK_SHADER_STAGE_VERTEX_BIT,
+//             .module = vertShader,
+//             .pName  = "main",
+//           },
+//           {
+//             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+//             .stage  = VK_SHADER_STAGE_FRAGMENT_BIT,
+//             .module = fragShader,
+//             .pName  = "main",
+//           },
+//         }),
+//         .pVertexInputState = pConst(VkPipelineVertexInputStateCreateInfo{
+//           VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+//           .vertexBindingDescriptionCount = 1,
+//           .pVertexBindingDescriptions    = pArr<VkVertexInputBindingDescription>({
+//             { .binding = 0, .stride = sizeof(Vertex), .inputRate = VK_VERTEX_INPUT_RATE_VERTEX },
+//           }),
+//           .vertexAttributeDescriptionCount = 3,
+//           .pVertexAttributeDescriptions    = pArr<VkVertexInputAttributeDescription>({
+//             { .location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(Vertex, pos)    },
+//             { .location = 1, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(Vertex, normal) },
+//             { .location = 2, .binding = 0, .format = VK_FORMAT_R32G32_SFLOAT,    .offset = offsetof(Vertex, uv)     },
+//           }),
+//         }),
+//         .pInputAssemblyState = pConst(VkPipelineInputAssemblyStateCreateInfo{
+//           VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+//           .topology               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+//           .primitiveRestartEnable = VK_FALSE,
+//         }),
+//         .pViewportState = pConst(VkPipelineViewportStateCreateInfo{
+//           VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+//           .viewportCount = 1,
+//           .scissorCount  = 1,
+//         }),
+//         .pRasterizationState = pConst(VkPipelineRasterizationStateCreateInfo{
+//           VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+//           pNext(VkPipelineRasterizationConservativeStateCreateInfoEXT{
+//             VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT,
+//             .conservativeRasterizationMode    = VK_CONSERVATIVE_RASTERIZATION_MODE_DISABLED_EXT,
+//             .extraPrimitiveOverestimationSize = 0.0f,
+//           }),
+//           .depthClampEnable        = VK_FALSE,
+//           .rasterizerDiscardEnable = VK_FALSE,
+//           .polygonMode             = VK_POLYGON_MODE_FILL,
+//           .cullMode                = VK_CULL_MODE_BACK_BIT,
+//           .frontFace               = VK_FRONT_FACE_COUNTER_CLOCKWISE,
+//           .depthBiasEnable         = VK_FALSE,
+//           .lineWidth               = 1.0f,
+//         }),
+//         .pMultisampleState = pConst(VkPipelineMultisampleStateCreateInfo{
+//           VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+//           .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
+//           .sampleShadingEnable  = VK_FALSE,
+//         }),
+//         .pDepthStencilState = pConst(VkPipelineDepthStencilStateCreateInfo{
+//           VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+//           .depthTestEnable       = VK_TRUE,
+//           .depthWriteEnable      = VK_TRUE,
+//           .depthCompareOp        = VK_COMPARE_OP_LESS,
+//           .depthBoundsTestEnable = VK_FALSE,
+//           .stencilTestEnable     = VK_FALSE,
+//         }),
+//         .pColorBlendState = pConst(VkPipelineColorBlendStateCreateInfo{
+//           VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+//           pNext(VkPipelineColorWriteCreateInfoEXT{
+//             VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT,
+//             .attachmentCount  = 1,
+//             .pColorWriteEnables = pArr<VkBool32>({ VK_TRUE }),
+//           }),
+//           .logicOpEnable   = VK_FALSE,
+//           .attachmentCount = 1,
+//           .pAttachments    = pConst(VkPipelineColorBlendAttachmentState{
+//             .blendEnable    = VK_FALSE,
+//             .colorWriteMask = VK_COLOR_COMPONENT_R_BIT
+//                             | VK_COLOR_COMPONENT_G_BIT
+//                             | VK_COLOR_COMPONENT_B_BIT
+//                             | VK_COLOR_COMPONENT_A_BIT,
+//           }),
+//         }),
+//         .pDynamicState = pConst(VkPipelineDynamicStateCreateInfo{
+//           VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+//           .dynamicStateCount = 2,
+//           .pDynamicStates    = pArr<VkDynamicState>({
+//             VK_DYNAMIC_STATE_VIEWPORT,
+//             VK_DYNAMIC_STATE_SCISSOR,
+//           }),
+//         }),
+//         .layout     = pipelineLayout,
+//         .renderPass = renderPass,
+//         .subpass    = 0,
+//       }),
+//       ORK_VK_ALLOC, &pipeline);
+// 
+// pConst and pNext are the same. Naming is solely a visual aid for being read.
+// The extra attributes ensure it is only used inline within a function call. 
+// Pointers to temporaries are valid in C++ within the expresion (before ;).
+//
+////////////////////////////////////////////////////////////////////////////////
+
+template<typename T>
+__attribute__((warn_unused_result, returns_nonnull))
+constexpr const T* pConst(T&& val [[clang::lifetimebound]]) { return &val; }
+
+template<typename T>
+__attribute__((warn_unused_result, returns_nonnull))
+constexpr const T* pNext(T&& val [[clang::lifetimebound]]) { return &val; }
+
+template<typename T>
+__attribute__((warn_unused_result, returns_nonnull))
+constexpr const T* pArr(std::initializer_list<T> vals [[clang::lifetimebound]]) { return vals.begin(); }
+
+////////////////////////////////////////////////////////////////////////////////
+// Shorthand Inline Cmd Functions
+//   Wrappers to vk called which which can inlined and optimized out.
+////////////////////////////////////////////////////////////////////////////////
+
+inline void vkCmdImageBarrier(
+    VkCommandBuffer cmd,
+    VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,
+    std::initializer_list<VkImageMemoryBarrier>&& barriers) {
+  vkCmdPipelineBarrier(cmd, srcStage, dstStage, 0, 0, nullptr, 0, nullptr, (u32)barriers.size(), barriers.begin());
+}
+
+///////////////////////////////////////////////////////
+// vkCmdBlitColorImage
+//   Handles the full pre/post barrier pair for a color image blit in one call.
+///////////////////////////////////////////////////////
+inline void vkCmdBlitColorImage(
+    VkCommandBuffer cmd,
+    VkImage src_img, VkPipelineStageFlags src_stage,
+    VkImage dst_img, VkPipelineStageFlags dst_stage,
+    VkExtent2D src_extent, VkExtent2D dst_extent,
+    VkFilter filter = VK_FILTER_LINEAR) {
+  vkCmdImageBarrier(cmd,
+      src_stage, VK_PIPELINE_STAGE_TRANSFER_BIT, {
+        { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+          .srcAccessMask       = VK_ACCESS_SHADER_READ_BIT,
+          .dstAccessMask       = VK_ACCESS_TRANSFER_READ_BIT,
+          .oldLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+          .newLayout           = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+          .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+          .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+          .image               = src_img,
+          .subresourceRange    = VkColorSubresourceRange{}},
+        { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+          .srcAccessMask       = 0,
+          .dstAccessMask       = VK_ACCESS_TRANSFER_WRITE_BIT,
+          .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
+          .newLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+          .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+          .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+          .image               = dst_img,
+          .subresourceRange    = VkColorSubresourceRange{}},
+      });
+  vkCmdBlitImage(cmd,
+      src_img, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+      dst_img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+      1,
+      pConst(VkImageBlit{
+        .srcSubresource = VkColorSubresourceLayers{},
+        .srcOffsets     = {{0,0,0}, {(s32)src_extent.width,(s32)src_extent.height,1}},
+        .dstSubresource = VkColorSubresourceLayers{},
+        .dstOffsets     = {{0,0,0}, {(s32)dst_extent.width,(s32)dst_extent.height,1}},
+      }), filter);
+  vkCmdImageBarrier(cmd,
+      VK_PIPELINE_STAGE_TRANSFER_BIT, dst_stage, {
+        { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+          .srcAccessMask       = VK_ACCESS_TRANSFER_READ_BIT,
+          .dstAccessMask       = VK_ACCESS_SHADER_READ_BIT,
+          .oldLayout           = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+          .newLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+          .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+          .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+          .image               = src_img,
+          .subresourceRange    = VkColorSubresourceRange{}},
+        { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+          .srcAccessMask       = VK_ACCESS_TRANSFER_WRITE_BIT,
+          .dstAccessMask       = VK_ACCESS_SHADER_READ_BIT,
+          .oldLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+          .newLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+          .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+          .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+          .image               = dst_img,
+          .subresourceRange    = VkColorSubresourceRange{}},
+      });
+}
+
+///////////////////////////////////////////////////////
+// VK_SET_DEBUG_NAME
+//   Automatically fill in objectType on vkSetDebugUtilsObjectName call.
+//   Implemented as define, not template, to properly output line and file in OrkVkAssert.
+///////////////////////////////////////////////////////
+#define VK_OBJECT_TYPE_OF(obj) _Generic((obj),                             \
+  VkInstance:                 VK_OBJECT_TYPE_INSTANCE,                     \
+  VkPhysicalDevice:           VK_OBJECT_TYPE_PHYSICAL_DEVICE,              \
+  VkDevice:                   VK_OBJECT_TYPE_DEVICE,                       \
+  VkQueue:                    VK_OBJECT_TYPE_QUEUE,                        \
+  VkCommandPool:              VK_OBJECT_TYPE_COMMAND_POOL,                 \
+  VkCommandBuffer:            VK_OBJECT_TYPE_COMMAND_BUFFER,               \
+  VkFence:                    VK_OBJECT_TYPE_FENCE,                        \
+  VkSemaphore:                VK_OBJECT_TYPE_SEMAPHORE,                    \
+  VkEvent:                    VK_OBJECT_TYPE_EVENT,                        \
+  VkDeviceMemory:             VK_OBJECT_TYPE_DEVICE_MEMORY,                \
+  VkBuffer:                   VK_OBJECT_TYPE_BUFFER,                       \
+  VkBufferView:               VK_OBJECT_TYPE_BUFFER_VIEW,                  \
+  VkImage:                    VK_OBJECT_TYPE_IMAGE,                        \
+  VkImageView:                VK_OBJECT_TYPE_IMAGE_VIEW,                   \
+  VkSampler:                  VK_OBJECT_TYPE_SAMPLER,                      \
+  VkShaderModule:             VK_OBJECT_TYPE_SHADER_MODULE,                \
+  VkPipelineCache:            VK_OBJECT_TYPE_PIPELINE_CACHE,               \
+  VkPipelineLayout:           VK_OBJECT_TYPE_PIPELINE_LAYOUT,              \
+  VkPipeline:                 VK_OBJECT_TYPE_PIPELINE,                     \
+  VkRenderPass:               VK_OBJECT_TYPE_RENDER_PASS,                  \
+  VkFramebuffer:              VK_OBJECT_TYPE_FRAMEBUFFER,                  \
+  VkDescriptorSetLayout:      VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT,        \
+  VkDescriptorPool:           VK_OBJECT_TYPE_DESCRIPTOR_POOL,              \
+  VkDescriptorSet:            VK_OBJECT_TYPE_DESCRIPTOR_SET,               \
+  VkQueryPool:                VK_OBJECT_TYPE_QUERY_POOL,                   \
+  VkSwapchainKHR:             VK_OBJECT_TYPE_SWAPCHAIN_KHR,                \
+  VkSurfaceKHR:               VK_OBJECT_TYPE_SURFACE_KHR,                  \
+  VkAccelerationStructureKHR: VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR,  \
+  default:                    VK_OBJECT_TYPE_UNKNOWN                       \
+)
+
+#define VK_SET_DEBUG_NAME(device, object, name)                             \
+  OrkVkAssert(ork::lev2::vulkan::_GVI->_vkSetDebugUtilsObjectName((device), \
+    pConst(VkDebugUtilsObjectNameInfoEXT{                                   \
+      VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,                   \
+      .objectType   = VK_OBJECT_TYPE_OF(object),                            \
+      .objectHandle = reinterpret_cast<uint64_t>(object),                   \
+      .pObjectName  = (name),                                               \
+    })))
+
+////////////////////////////////////////////////////////////////////////////////
+} //namespace ork::lev2::vulkan
+////////////////////////////////////////////////////////////////////////////////

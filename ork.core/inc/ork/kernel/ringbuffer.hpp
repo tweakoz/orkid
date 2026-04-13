@@ -46,6 +46,7 @@ public:
 	void pop(T& data,int quanta_usec=250);
 	bool try_push(const T& data);
 	bool try_pop(T& data);
+	bool isEmpty() const;
 
 private:
 
@@ -196,6 +197,14 @@ bool MpMcRingBuf<T,max_items>::try_push(const T& data)
 	cell->mData = data;
 	cell->mSequence.store(pos + 1,MemRelease);
 	return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template<typename T,size_t max_items>
+bool MpMcRingBuf<T,max_items>::isEmpty() const
+{
+	return mEnqueuePos.load(MemRelaxed) == mDequeuePos.load(MemRelaxed);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

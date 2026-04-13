@@ -84,6 +84,10 @@ struct MpMcBoundedQueue
     {
         return mImpl.try_pop(item);
     }
+    bool isEmpty() const
+    {
+        return mImpl.isEmpty();
+    }
 
     impl_t mImpl;
     static const size_t kSIZE = sizeof(T);

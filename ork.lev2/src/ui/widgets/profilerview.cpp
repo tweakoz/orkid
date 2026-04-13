@@ -575,9 +575,10 @@ void ProfilerView::DoDraw(drawevent_constptr_t drwev) {
   std::vector<CtxEntry> ctx_channels;
   for (auto& name : _channel_names) {
     auto crc = CrcString(name.c_str()).hashed();
-    auto it  = Profiler::_channels.find(crc);
-    if (it != Profiler::_channels.end())
-      ctx_channels.push_back({name, it->second.get()});
+    auto it  = Profiler::_channels_by_name.find(crc);
+    if (it != Profiler::_channels_by_name.end())
+      for (auto* ch : it->second)
+        ctx_channels.push_back({ch->_name, ch});
   }
 
   bool any_series = false;

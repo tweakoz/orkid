@@ -148,7 +148,8 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   // hash the image creation parameters
   /////////////////////////////////////
 
-  uint64_t usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT //
+  uint64_t usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT //
+                 | VK_IMAGE_USAGE_TRANSFER_DST_BIT //
                  | VK_IMAGE_USAGE_SAMPLED_BIT;
 
   uint64_t format_hash = hashImageCreationParams(

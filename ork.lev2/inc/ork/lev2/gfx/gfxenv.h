@@ -56,6 +56,8 @@ struct GpuEventSink {
 };
 using gpueventsink_map_t = std::unordered_map<std::string, gpueventsink_ptr_t>;
 
+static constexpr u32 MAX_FRAMES_IN_FLIGHT = 2;
+
 ///////////////////////////////////////////////////////////////////////
 /// Profiler
 ///////////////////////////////////////////////////////////////////////
@@ -422,6 +424,7 @@ public:
     _onEndFrameCallbacks.push_back(l);
   }
 
+  // TODO Delete?
   virtual void swapBuffers(CTXBASE* ctxbase) {
   }
 
@@ -889,9 +892,58 @@ struct SecondaryCommandBuffer {
   static std::atomic<int> _num_alive;
 };
 
-/// ////////////////////////////////////////////////////////////////////////////
-///
-/// ////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// Display Client
+///////////////////////////////////////////////////////////////////////////////
+
+enum class OrkDisplayClientState {
+  Uninitialized,
+  Initialized,
+  Connecting,
+  Connected,
+  Synchronized,
+  Visible,
+  Hidden,
+  Disconnecting,
+  Disconnected,
+};
+
+struct OrkDisplayClientSharedData {
+  ////////////////////////////////////////
+  // Bidirectional Data
+  ////////////////////////////////////////
+
+  std::atomic<OrkDisplayClientState> state = OrkDisplayClientState::Uninitialized;
+
+  // Number of frames to wait for next display output.
+  std::atomic<u16> frame_wait_count = 1;
+
+  ////////////////////////////////////////
+  // Server to Client Data
+  ////////////////////////////////////////
+
+  struct Indices{
+    u8 server = 0;
+    u8 client = 1; // start client offset from server by 1
+  };
+  std::atomic<Indices> indices{};
+
+  ork::fmtx4 frame_vp_mtxs[MAX_FRAMES_IN_FLIGHT]{};
+  ork::fmtx4 frame_iv_mtxs[MAX_FRAMES_IN_FLIGHT]{};
+
+  u16 frame_width  = 0;
+  u16 frame_height = 0;
+};
+
+struct OrkDisplayClient {
+  virtual ~OrkDisplayClient() = default;
+  OrkDisplayClientSharedData* _shared = nullptr;
+};
+
+using orkdisplayclient_ptr_t = std::shared_ptr<OrkDisplayClient>;
+
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
+///////////////////////////////////////////////////////////////////////////////
 
 #define gGfxEnv ork::lev2::GfxEnv::GetRef()

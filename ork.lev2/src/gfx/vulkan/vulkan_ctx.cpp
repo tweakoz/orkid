@@ -58,16 +58,16 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
 
   logchan_vkctx->log("VkContext: using device <%s>", vk_devinfo->_devprops.deviceName);
 
-  _vkphysicaldevice = vk_devinfo->_phydev;
-  _vkdeviceinfo     = vk_devinfo;
+  _vkphysicaldevice    = vk_devinfo->_phydev;
+  _vkdeviceinfo        = vk_devinfo;
 
   ////////////////////////////
   // get queue families
   ////////////////////////////
 
-  _vkqfid_graphics = NO_QUEUE;
-  _vkqfid_compute  = NO_QUEUE;
-  _vkqfid_transfer = NO_QUEUE;
+  u32      gfx_qfid = NO_QUEUE;
+  _vkqfid_compute   = NO_QUEUE;
+  _vkqfid_transfer  = NO_QUEUE;
 
   _num_queue_types = vk_devinfo->_queueprops.size();
   std::vector<float> queuePriorities(_num_queue_types, 1.0f);
@@ -76,18 +76,18 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
     const auto& QPROP = vk_devinfo->_queueprops[i];
     if (QPROP.queueCount == 0)
       continue;
-
+    
     VkDeviceQueueCreateInfo DQCI;
     initializeVkStruct(DQCI, VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO);
 
     DQCI.queueFamilyIndex = i;
-    DQCI.queueCount       = 1; // Just one queue from each family for now
+    DQCI.queueCount       = 1;
     DQCI.pQueuePriorities = queuePriorities.data();
 
     bool add = false;
-    if (QPROP.queueFlags & VK_QUEUE_GRAPHICS_BIT && _vkqfid_graphics == NO_QUEUE) {
-      _vkqfid_graphics = i;
-      add              = true;
+    if (QPROP.queueFlags & VK_QUEUE_GRAPHICS_BIT && gfx_qfid == NO_QUEUE) {
+      gfx_qfid = i;
+      add       = true;
     }
 
     if (QPROP.queueFlags & VK_QUEUE_COMPUTE_BIT && _vkqfid_compute == NO_QUEUE) {
@@ -104,7 +104,7 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
     }
   }
 
-  OrkAssert(_vkqfid_graphics != NO_QUEUE);
+  OrkAssert(gfx_qfid != NO_QUEUE);
   OrkAssert(_vkqfid_compute != NO_QUEUE);
   OrkAssert(_vkqfid_transfer != NO_QUEUE);
 
@@ -139,11 +139,15 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
   }
 #endif
 
-  // DRM-specific extensions (Linux only)
+  // Linux cross-process sharing extensions
 #if defined(__linux__)
+  _device_extensions.push_back(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME);
+  _device_extensions.push_back(VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME);
+  _device_extensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME);
+  _device_extensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME);
+
+  // DRM-specific extensions
   if(_ginitdata && _ginitdata->_use_drm) {
-    _device_extensions.push_back(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME);
-    _device_extensions.push_back(VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME);
     _device_extensions.push_back(VK_EXT_EXTERNAL_MEMORY_DMA_BUF_EXTENSION_NAME);
     _device_extensions.push_back(VK_KHR_BIND_MEMORY_2_EXTENSION_NAME);
     _device_extensions.push_back(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
@@ -184,7 +188,6 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
   dynrenderfeat.pNext = (void*) & ycbcrFeatures;
   ycbcrFeatures.pNext = (void*) nullptr;
 
-
   VkResult result = vkCreateDevice(_vkphysicaldevice, &DCI, nullptr, &_vkdevice);
   if (result != VK_SUCCESS) {
     printf("vkCreateDevice FAILED with result: %d\n", result);
@@ -197,26 +200,57 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
     OrkAssert(false);
   }
 
-  vkGetDeviceQueue(
-      _vkdevice,        //
-      _vkqfid_graphics, //
-      0,                //
-      &_vkqueue_graphics);
-  
-  // Load device function pointers needed for rendering
-  // These are needed for both window and offscreen contexts
+  ////////////////////////////
+  // Load Device PFNs
+  ////////////////////////////
+
   if (_GVI->_debugEnabled) {
-    _fetchDeviceProcAddr(_vkSetDebugUtilsObjectName, "vkSetDebugUtilsObjectNameEXT");
     _fetchDeviceProcAddr(_vkCmdDebugMarkerBeginEXT, "vkCmdDebugMarkerBeginEXT");
     _fetchDeviceProcAddr(_vkCmdDebugMarkerEndEXT, "vkCmdDebugMarkerEndEXT");
     _fetchDeviceProcAddr(_vkCmdDebugMarkerInsertEXT, "vkCmdDebugMarkerInsertEXT");
     _fetchDeviceProcAddr(_vkCmdInsertDebugUtilsLabelEXT, "vkCmdInsertDebugUtilsLabelEXT");
   }
 
+  _fetchDeviceProcAddr(_vkSetDebugUtilsObjectName, "vkSetDebugUtilsObjectNameEXT");
+
+  // Load device function pointers needed for rendering
+  // These are needed for both window and offscreen contexts
   _fetchDeviceProcAddr(_vkCmdBeginRenderingKHR, "vkCmdBeginRenderingKHR");
   _fetchDeviceProcAddr(_vkCmdEndRenderingKHR, "vkCmdEndRenderingKHR");
   OrkAssertI(_vkCmdBeginRenderingKHR != nullptr, "_vkCmdBeginRenderingKHR function pointer is null!");
   OrkAssertI(_vkCmdEndRenderingKHR != nullptr, "_vkCmdEndRenderingKHR function pointer is null!");
+
+  ////////////////////////////
+  // Init Queues
+  ////////////////////////////
+
+  _gfxqueue        = std::make_shared<VkThreadedQueue>();
+  _gfxqueue->_qfid = gfx_qfid;
+
+  u32 max_queue_count = _vkdeviceinfo->_queueprops[0].queueCount;
+  OrkAssertIFMT(0 < max_queue_count, "Cannot create graphics queue: gfx_qid(0) >= _vkqcapacity_graphics(%u)", max_queue_count);
+
+  logchan_vkctx->log("claiming graphics queue: fid(%u) qid(0/%u)", gfx_qfid, max_queue_count);
+  vkGetDeviceQueue(_vkdevice, gfx_qfid, 0, &_gfxqueue->_vkqueue);
+
+  char qname[64];
+  snprintf(qname, sizeof(qname), "vk_queue-fid%u-qid0", gfx_qfid);
+  _setObjectDebugName(_gfxqueue->_vkqueue, VK_OBJECT_TYPE_QUEUE, qname);
+}
+
+VkResult VkThreadedQueue::queueSubmit(const VkSubmitInfo* pSubmits, VkFence fence) {
+  std::lock_guard<std::mutex> lock(_submit_mutex);
+  return vkQueueSubmit(_vkqueue, 1, pSubmits, fence);
+}
+
+VkResult VkThreadedQueue::queuePresent(const VkPresentInfoKHR* pPresentInfo) {
+  std::lock_guard<std::mutex> lock(_submit_mutex);
+  return vkQueuePresentKHR(_vkqueue, pPresentInfo);
+}
+
+VkResult VkThreadedQueue::queueWaitIdle() {
+  std::lock_guard<std::mutex> lock(_submit_mutex);
+  return vkQueueWaitIdle(_vkqueue);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -261,8 +295,7 @@ void VkContext::_initVulkanForWindow(VkSurfaceKHR surface) {
     _vkdevice = context0->_vkdevice;
     _vkdeviceinfo = context0->_vkdeviceinfo;
     _vkphysicaldevice = context0->_vkphysicaldevice;
-    _vkqueue_graphics = context0->_vkqueue_graphics;
-    _vkqfid_graphics = context0->_vkqfid_graphics;
+    _gfxqueue = context0->_gfxqueue;
     _vkqfid_transfer = context0->_vkqfid_transfer;
     _vkqfid_compute = context0->_vkqfid_compute;
     _vkSetDebugUtilsObjectName = context0->_vkSetDebugUtilsObjectName;
@@ -297,8 +330,7 @@ void VkContext::_initVulkanForOffscreen(DisplayBuffer* pBuf) {
     _vkdevice = context0->_vkdevice;
     _vkdeviceinfo = context0->_vkdeviceinfo;
     _vkphysicaldevice = context0->_vkphysicaldevice;
-    _vkqueue_graphics = context0->_vkqueue_graphics;
-    _vkqfid_graphics = context0->_vkqfid_graphics;
+    _gfxqueue = context0->_gfxqueue;
     _vkqfid_transfer = context0->_vkqfid_transfer;
     _vkqfid_compute = context0->_vkqfid_compute;
     _vkSetDebugUtilsObjectName = context0->_vkSetDebugUtilsObjectName;
@@ -340,7 +372,7 @@ void VkContext::_initVulkanCommon() {
 
   VkCommandPoolCreateInfo CPCI_GFX = {};
   initializeVkStruct(CPCI_GFX, VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
-  CPCI_GFX.queueFamilyIndex = _vkqfid_graphics;
+  CPCI_GFX.queueFamilyIndex = _gfxqueue->_qfid;
   CPCI_GFX.flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT //
                    | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
 
@@ -461,7 +493,7 @@ void VkContext::_initDefaultTextures() {
     imageInfo->arrayLayers = num_layers;
     imageInfo->samples = VK_SAMPLE_COUNT_1_BIT;
     imageInfo->tiling = VK_IMAGE_TILING_OPTIMAL;
-    imageInfo->usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    imageInfo->usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     imageInfo->sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     imageInfo->initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     
@@ -796,8 +828,8 @@ void VkContext::_doEndPrimaryCommandBuffer() {
 void VkContext::_doSubmitPrimaryCommandBuffer(){
   OrkProfilerSampleScope(CHANNEL_MAIN, "vk:doSubmitPrimaryCommandBuffer");
 
-  _oneShotSignalSemaphores.clear();
-  _oneShotSignalValues.clear();
+  // Drain pending completion semaphores from async secondary CBs into the
+  // one-shot lists. _doBeginFrame handles removal via its erase_if pass.
   _pendingOneShotSemas.atomicOp([&](vkcompsema_set_t& unlocked) {
     for (auto& semaphore : unlocked) {
       _oneShotSignalSemaphores.push_back(semaphore->_vksema);
@@ -814,6 +846,10 @@ void VkContext::_doSubmitPrimaryCommandBuffer(){
 
   // VkFramebufferOutput deals with output specific submission and waiting.
   _fbi->_output->submit(this);
+
+  // Consumed by submit — clear for next frame.
+  _oneShotSignalSemaphores.clear();
+  _oneShotSignalValues.clear();
 
   _processPendingCaptures();
 }
@@ -884,7 +920,7 @@ void VkContext::endAndSubmitSyncTransferCB() {
   submitInfo.commandBufferCount = 1;
   submitInfo.pCommandBuffers = &_syncTransfer.command_buffer_impl->_vkcmdbuf;
 
-  vkQueueSubmit(_vkqueue_graphics, 1, &submitInfo, fence);
+  _gfxqueue->queueSubmit(&submitInfo, fence);
 
   // Wait for this specific submit to complete
   vkWaitForFences(_vkdevice, 1, &fence, VK_TRUE, UINT64_MAX);
@@ -936,7 +972,8 @@ void VkContext::_doBeginFrame() {
     miH = main_rtg->miH;
   }
 
-  // Poll completion semaphores
+  // Poll completion semaphores 
+  // TODO is this really necessary?
   _pendingOneShotSemas.atomicOp([&](vkcompsema_set_t& unlocked) {
     for (auto semaphore : unlocked) {
       if(semaphore->isSignalled()){
@@ -989,7 +1026,7 @@ void VkContext::_onGpuPostInit() {
   vkCreateFence(_vkdevice, &fenceInfo, nullptr, &fence);
 
   // Submit and wait
-  vkQueueSubmit(_vkqueue_graphics, 1, &SI, fence);
+  _gfxqueue->queueSubmit(&SI, fence);
   vkWaitForFences(_vkdevice, 1, &fence, VK_TRUE, UINT64_MAX);
   vkDestroyFence(_vkdevice, fence, nullptr);
 
@@ -1207,6 +1244,29 @@ void VkContext::initializeOffscreenContext(DisplayBuffer* pbuffer) {
   auto texture     = rtb->texture();
   _fbi->SetBufferTexture(texture);
   logchan_vkctx->log("Offscreen context initialized");
+}
+
+///////////////////////////////////////////////////////
+
+void VkContext::initializeDisplayClientContext(vkdisplayclient_ptr_t client) {
+  meTargetType = TargetType::OFFSCREEN;
+
+  miW = client->_shared->frame_width;
+  miH = client->_shared->frame_height;
+
+  // Share the device/queue from the first existing context (same as offscreen path).
+  // pBuf is unused inside _initVulkanForOffscreen when _GVI->_contexts is non-empty.
+  auto plato = std::make_shared<VkPlatformObject>();
+  plato->_ctxbase   = global_plato()->_ctxbase;
+  plato->_needsInit = false;
+  plato->_bindop    = [](){};
+  mCtxBase = 0;
+  _impl.setShared<VkPlatformObject>(plato);
+
+  _initVulkanForOffscreen(nullptr);
+
+  _fbi->_output = std::make_shared<VkDisplayClientOutput>(this, miW, miH, client);
+  logchan_vkctx->log("Display Client Context initialized");
 }
 
 ///////////////////////////////////////////////////////
@@ -1434,9 +1494,9 @@ vkswapchaincaps_ptr_t VkContext::_swapChainCapsForSurface(VkSurfaceKHR surface) 
     }
   }
   VkBool32 presentSupport = false;
-  vkGetPhysicalDeviceSurfaceSupportKHR(_vkphysicaldevice, _vkqfid_graphics, surface, &presentSupport);
+  vkGetPhysicalDeviceSurfaceSupportKHR(_vkphysicaldevice, _gfxqueue->_qfid, surface, &presentSupport);
   if (!presentSupport) {
-    logchan_vkctx->log("ERROR: Graphics queue family %u does not support presentation to this surface!", _vkqfid_graphics);
+    logchan_vkctx->log("ERROR: Graphics queue family %u does not support presentation to this surface!", _gfxqueue->_qfid);
     logchan_vkctx->log("       Device: %s", _vkdeviceinfo->_devprops.deviceName);
     logchan_vkctx->log("       This indicates device selection or queue family selection is incorrect.");
   }

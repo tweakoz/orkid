@@ -27,9 +27,7 @@ public:
 
   ///////////////////////////////////////////////////////
 
-  void SetClearColor(const fcolor4& scol) {
-    _clearColor = scol;
-  }
+  void SetClearColor(const fcolor4& scol);
   const fcolor4& GetClearColor() const {
     return _clearColor;
   }

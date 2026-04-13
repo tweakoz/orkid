@@ -475,7 +475,7 @@ void VkSwapChainDRM::_enqueueFrame(vkcontext_rawptr_t ctxVK) {
     SI.signalSemaphoreCount = ctxVK->_oneShotSignalSemaphores.size();
     SI.pSignalSemaphores    = ctxVK->_oneShotSignalSemaphores.data();
 
-    vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, &SI, _frame_fences[_sub_index]->_vkfence);
+    ctxVK->_gfxqueue->queueSubmit(&SI, _frame_fences[_sub_index]->_vkfence);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -137,6 +137,7 @@ with buildtrace.NestedBuildTrace({ "op": "obt.build.py"}) as nested:
   clangdep = obt.dep.instance("clang")
 
   cmd += ["-DBUILDING_ORKID=ON"]
+  cmd += ["-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"]
 
   cmd += ["-DCMAKE_CXX_COMPILER=%s"%clangdep.bin_clangpp]
   cmd += ["-DCMAKE_C_COMPILER=%s"%clangdep.bin_clang]

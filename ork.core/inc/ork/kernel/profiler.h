@@ -66,6 +66,7 @@
 
 #include <ork/kernel/timer.h>
 #include <ork/kernel/kernel.h>
+#include <ork/kernel/thread.h>
 #include <ork/util/crc.h>
 #include <ork/orkstd.h>
 #include <ork/kernel/concurrent_queue.h>
@@ -83,9 +84,9 @@ namespace ork {
 ////////////////////////////////////////////////////////////////////////////////
 
 // Common channel names.
-#define CHANNEL_MAIN   "MainThread"
-#define CHANNEL_UPDATE "UpdateThread"
-#define CHANNEL_AUDIO  "AudioThread"
+#define CHANNEL_MAIN   "Main"
+#define CHANNEL_UPDATE "Update"
+#define CHANNEL_AUDIO  "Audio"
 #define CHANNEL_GPU    "GPU"
 
 #ifdef ORK_PROFILER_ENABLE
@@ -118,22 +119,22 @@ namespace ork {
 // We use macros and stamp down copies of the static var and if statement to evade std::map lookup every time
 // and rely on CPU prediction to optimize away the overhead of the profiler marker after first call.
 #define _OrkStaticAcquireChannel(_channel_name, _type, _var, _call, ...) \
-    static _type* _var = nullptr; \
+    static thread_local _type* _var = nullptr; \
     if (_var == nullptr) [[unlikely]] _var = Profiler::acquireChannel<_type>(_channel_name, CRCU(_channel_name)); \
     _var->_call(__VA_ARGS__)
 
 #define _OrkStaticGetChannel(_channel_name, _var, _call) \
-    static ProfilerChannel* _var = nullptr; \
+    static thread_local ProfilerChannel* _var = nullptr; \
     if (_var == nullptr) [[unlikely]] _var = Profiler::getChannel(_channel_name, CRCU(_channel_name)); \
     _var->_call()
 
 #define _OrkStaticSeries(_channel_name, _series_name, _type, _var, _call) \
-    static _type* _var = nullptr; \
+    static thread_local _type* _var = nullptr; \
     if (_var == nullptr) [[unlikely]] _var = Profiler::acquireSeries<_type>(_channel_name, CRCU(_channel_name), _series_name, CRCU(_series_name)); \
     _var->_call()
 
 #define _OrkStaticScope(_channel_name, _series_name, _var) \
-    static SampleProfilerSeries* _var = nullptr; \
+    static thread_local SampleProfilerSeries* _var = nullptr; \
     if (_var == nullptr) [[unlikely]] _var = Profiler::acquireSeries<SampleProfilerSeries>(_channel_name, CRCU(_channel_name), _series_name, CRCU(_series_name)); \
     auto OrkConcat(_var, scope) = _var ? _var->sampleScope() : ProfilerScope(nullptr, nullptr)
 
@@ -305,38 +306,57 @@ struct Profiler {
   static void maxSamples(u16 value) { return _max_samples.store(value); }
   static u16  maxSamples() { return _max_samples.load(); }
 
-  // Global catalong of all channels.
+  // Global catalog of all channels keyed by thread-mixed CRC.
   static std::unordered_map<u64, profiler_channel_ptr_t> _channels;
+
+  // Secondary index keyed by bare name CRC.
+  static std::unordered_map<u64, std::vector<ProfilerChannel*>> _channels_by_name;
 
   // We must lock global catalog on acquire and get. Sample points return a pointer so lookup only happens once.
   static std::shared_mutex _channel_mtx;
 
+  static constexpr u64 FibonacciHashMultiplier = 0x9e3779b97f4a7c15ULL;
+
+  // Mix channel/series namecrc with thread name hash for a per-(name,thread) key.
+  static u64 _threadKey(u64 namecrc) {
+    return namecrc ^ (GetCurrentThreadId() * FibonacciHashMultiplier);
+  }
+
+  static std::string _threadName(const char* name) {
+    return CreateFormattedString("%s:%s", name, GetCurrentThreadName().c_str());
+  }
+
   template <typename T>
   static T* acquireChannel(const char* name, u64 namecrc) {
+    u64 key = _threadKey(namecrc);
     std::unique_lock lock(_channel_mtx);
-    auto& c = _channels[namecrc];
-    if (!c) c = std::make_shared<T>(std::string(name));
+    auto& c = _channels[key];
+    if (!c) {
+      c = std::make_shared<T>(_threadName(name));
+      _channels_by_name[namecrc].push_back(c.get());
+    }
     return static_cast<T*>(c.get());
   }
 
   static ProfilerChannel* getChannel(const char* name, u64 namecrc) {
-    if (!_channels.contains(namecrc)) {
+    u64 key = _threadKey(namecrc);
+    if (!_channels.contains(key)) {
       logchan_prof->log("First acquireChannel %s before calling getChannel!", name);
-    OrkAssertI(_channels.contains(namecrc), "First acquireChannel before calling getChannel!");
+      OrkAssertI(_channels.contains(key), "First acquireChannel before calling getChannel!");
     }
     std::unique_lock lock(_channel_mtx);
-    auto& c = _channels[namecrc];
-    return (ProfilerChannel*)c.get();
+    return (ProfilerChannel*)_channels[key].get();
   }
 
   template <typename T>
   static T* acquireSeries(const char* channel_name, u64 channel_namecrc, const char* series_name, u64 series_namecrc) {
-    if (!_channels.contains(channel_namecrc)) {
+    u64 channel_key = _threadKey(channel_namecrc);
+    if (!_channels.contains(channel_key)) {
       logchan_prof->log("Call frameBegin for %s before calling sampleBegin or sampleScope for %s!", channel_name, series_name);
-      OrkAssertI(_channels.contains(channel_namecrc), "Call frameBegin before calling sampleBegin or sampleScope!");
+      OrkAssertI(_channels.contains(channel_key), "Call frameBegin before calling sampleBegin or sampleScope!");
     }
     std::unique_lock lock(_channel_mtx);
-    auto& c = _channels[channel_namecrc];
+    auto& c = _channels[channel_key];
     auto& s = c->_series[series_namecrc];
     if (!s) {
       s = std::make_shared<T>(series_name, c.get());
@@ -346,7 +366,7 @@ struct Profiler {
   }
 
   // Methods to retrieve channels dynamically with std::string for manual customizaiton.
-  // Always prefer using the OrkProfiler macros to string on string literals and crc consteval
+  // Always prefer using the OrkProfiler macros to rely on string literals and crc consteval
   // Python bindings utilize these methods for samples/events from python. For light profiling that is Okay right now.
   // If we are to start collecting hundrends of samples from python we'd want to create a hot path for that.
   template <typename T>

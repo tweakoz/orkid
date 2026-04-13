@@ -17,7 +17,9 @@
 
 namespace ork
 {
-	void SetCurrentThreadName(const char* threadName);
+	void               SetCurrentThreadName(const char* threadName);
+	const std::string& GetCurrentThreadName();
+	uint64_t           GetCurrentThreadId();
 
 	struct Thread
 	{		

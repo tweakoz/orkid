@@ -9,12 +9,12 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 #include <array>
-#include <functional>
 #include <map>
+#include <memory>
+#include <mutex>
 #include <set>
 #include <string>
 #include <vector>
-#include <memory>
 ///////////////////////////////////////////////////////////////////////////////
 struct GLFWwindow;
 namespace ork::lev2 { class ShmTexConsumer; }
@@ -127,6 +127,7 @@ struct VulkanInstance {
   std::vector<VkContext*> _contexts;
 
   PFN_vkCreateDebugUtilsMessengerEXT _vkCreateDebugUtilsMessengerEXT = nullptr;
+  PFN_vkSetDebugUtilsObjectNameEXT   _vkSetDebugUtilsObjectName = nullptr;
 
   //////////////////////////////////////////////
   template <typename T> bool _fetchInstanceProcAddr(T& object, const char* name) {
@@ -247,13 +248,12 @@ struct VkRtgStackItemImpl {
 
 ////////////////////////////////////////////////////////////////////////////////
 // Vulkan Framebuffer Output (owned by VkFrameBufferInterface::_output):
-//   VkFramebufferOutput  — abstract base: beginFrame / endFrame / submit / currentFrameFence
-//     VkOffscreen        — headless; submits with fence, no presentation
-//     VkSwapChain        — GLFW/surface swapchain; acquires image, presents via KHR
-//     VkSwapChainDRM     — Linux DRM direct-rendering (vk_swapchain_drm.h); exports via dmabuf
+//   VkFramebufferOutput     — abstract base: beginFrame / endFrame / submit / currentFrameFence
+//     VkOffscreen           — headless; submits with fence, no presentation
+//     VkSwapChain           — GLFW/surface swapchain; acquires image, presents via KHR
+//     VkSwapChainDRM        — Linux DRM direct-rendering (vk_swapchain_drm.h); exports via dmabuf
+//     VkDisplayClientOutput — Output to Orkid Display Client
 ////////////////////////////////////////////////////////////////////////////////
-
-static constexpr size_t MAX_FRAMES_IN_FLIGHT = 2;
 
 struct VkFramebufferOutput {
   virtual ~VkFramebufferOutput() = default;
@@ -279,8 +279,8 @@ struct VkFramebufferOutput {
 
   vkfence_obj_ptr_t _frame_fences[MAX_FRAMES_IN_FLIGHT] = {nullptr};
 
-  uint64_t _current_frame = 0;
-  size_t   _sub_index     = 0;     // _current_frame % MAX_FRAMES_IN_FLIGHT, updated by _incrementFrame()
+  u64      _current_frame = 0;
+  u32      _sub_index     = 0;     // _current_frame % MAX_FRAMES_IN_FLIGHT, updated by _incrementFrame()
   bool     _acquired      = false; // true between beginFrame and submit
   int      _width         = 0;
   int      _height        = 0;
@@ -294,6 +294,51 @@ struct VkOffscreen : public VkFramebufferOutput {
   VkOffscreen(vkcontext_rawptr_t ctxVK);
   void endFrame(vkcontext_rawptr_t ctxVK) override final;
   void submit(vkcontext_rawptr_t ctxVK) override final;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+// Display Client Output path: renders main scene into VkDisplayClient-owned images.
+////////////////////////////////////////////////////////////////////////////////
+
+struct VkDisplayClientLocalData {
+  VkSemaphore    server_timeline;
+  VkSemaphore    client_timeline;
+
+  VkImage        images[MAX_FRAMES_IN_FLIGHT];
+  VkImageView    views[MAX_FRAMES_IN_FLIGHT];
+  VkDeviceMemory mems[MAX_FRAMES_IN_FLIGHT];
+
+  VkImage        depth_images[MAX_FRAMES_IN_FLIGHT];
+  VkImageView    depth_views[MAX_FRAMES_IN_FLIGHT];
+  VkDeviceMemory depth_mems[MAX_FRAMES_IN_FLIGHT];
+};
+
+struct VkDisplayClient : OrkDisplayClient {
+  virtual bool initialize(VkDevice device) = 0;
+  
+  u8   acquireImage(VkDevice device);
+  void releaseImage(VkDevice device, u8 id);
+
+  u64 _server_wait_timeline_value = 0;
+  VkDisplayClientLocalData _local = {};
+};
+
+using vkdisplayclient_ptr_t = std::shared_ptr<VkDisplayClient>;
+
+struct VkDisplayClientOutput : public VkFramebufferOutput {
+
+  VkDisplayClientOutput(vkcontext_rawptr_t ctxVK, int width, int height, vkdisplayclient_ptr_t client);
+  ~VkDisplayClientOutput();
+
+  void beginFrame(vkcontext_rawptr_t ctxVK) override final;
+  void endFrame(vkcontext_rawptr_t ctxVK)   override final;
+  void submit(vkcontext_rawptr_t ctxVK)     override final;
+
+  vkcontext_rawptr_t    _gfx_ctx        = nullptr;
+  vkdisplayclient_ptr_t _display_client = nullptr;
+  u8 _acquired_index = UINT8_MAX; 
+
+  std::shared_ptr<VulkanImageObject> _imgobjs[MAX_FRAMES_IN_FLIGHT];
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -314,8 +359,8 @@ struct VkSwapChain : public VkFramebufferOutput {
   ~VkSwapChain();
 
   void beginFrame(vkcontext_rawptr_t ctxVK) override final;
-  void endFrame(vkcontext_rawptr_t ctxVK) override final;
-  void submit(vkcontext_rawptr_t ctxVK) override final;
+  void endFrame(vkcontext_rawptr_t ctxVK)   override final;
+  void submit(vkcontext_rawptr_t ctxVK)     override final;
 
   void _reinit();
   void _buildup();
@@ -657,9 +702,33 @@ struct VkProfilerChannel final : ProfilerChannel {
   void sampleEnd(SampleProfilerSeries* series) override;
 };
 
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+// VkThreadedQueue
+//   Wraps a single VkQueue with a mutex so multiple threads can safely submit
+//   without assuming more than one queue per family is available.
+////////////////////////////////////////////////////////////////////////////////
+
+struct VkThreadedQueue {
+  VkQueue _vkqueue = VK_NULL_HANDLE;
+  u32     _qfid    = 0xffffffff;
+
+  // Using Mutex for now. Only used in debug scenarios.
+  // If using in production should switch to MPMC queue.
+  // However would need to reworked the swap reinit logc to no need to wait.
+  std::mutex _submit_mutex;
+
+  VkResult queueSubmit(const VkSubmitInfo* pSubmits, VkFence fence);
+  VkResult queuePresent(const VkPresentInfoKHR* pPresentInfo);
+
+  // When submitting from multipled threads you need to use this wait
+  // not vkDeviceWaitIdle as that can technically make calls to queues
+  // across threads and cause validation errors. 
+  VkResult queueWaitIdle();
+};
+
+using vkthreadedqueue_ptr_t = std::shared_ptr<VkThreadedQueue>;
+
+////////////////////////////////////////////////////////////////////////////////
 
 struct VkContext : public Context {
 
@@ -721,6 +790,7 @@ public:
 
   void initializeWindowContext(Window* pWin, CTXBASE* pctxbase) final; // make a window
   void initializeOffscreenContext(DisplayBuffer* pBuf) final;          // make a pbuffer
+  void initializeDisplayClientContext(vkdisplayclient_ptr_t client);  // client output via exchange
   void initializeLoaderContext() final;
 #if defined(__linux__)
   void initializeDRMContext(Window* pWin, CTXBASE* pctxbase) final;   // DRM direct-to-display window
@@ -756,6 +826,7 @@ public:
   void _initVulkanCommon();
   void _initDefaultTextures();
   //////////////////////////////////////////////
+  // TODO obsolete prefer using VK_SET_DEBUG_NAME in vk_protos.h
   template <typename T> void _setObjectDebugName(T& object, VkObjectType objectType, const char* name) {
     if (_vkSetDebugUtilsObjectName) {
       VkDebugUtilsObjectNameInfoEXT nameInfo = {};
@@ -770,7 +841,9 @@ public:
   //////////////////////////////////////////////
   template <typename T> bool _fetchDeviceProcAddr(T& object, const char* name) {
     object = reinterpret_cast<T>(vkGetDeviceProcAddr(_vkdevice, name));
-    return (object != nullptr);
+    bool loaded = (object != nullptr);
+    OrkAssertI(loaded, name);
+    return loaded;
   }
   //////////////////////////////////////////////
   VkDevice _vkdevice;
@@ -786,10 +859,9 @@ public:
   std::vector<float> _queuePriorities;
   std::vector<VkDeviceQueueCreateInfo> _DQCIs;
   static constexpr uint32_t NO_QUEUE = 0xffffffff;
-  uint32_t _vkqfid_graphics          = NO_QUEUE;
+  vkthreadedqueue_ptr_t _gfxqueue;
   uint32_t _vkqfid_compute           = NO_QUEUE;
   uint32_t _vkqfid_transfer          = NO_QUEUE;
-  VkQueue _vkqueue_graphics          = VK_NULL_HANDLE;
   VkCommandPool _vkcmdpool_graphics  = VK_NULL_HANDLE;
   primary_commandbuffer_ptr_t _defaultCommandBuffer;
   vkpricmdbufimpl_ptr_t _defaultCommandBufferImpl;

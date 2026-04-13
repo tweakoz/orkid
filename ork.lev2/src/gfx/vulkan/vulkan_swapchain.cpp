@@ -483,7 +483,7 @@ void VkSwapChain::_acquireImage(vkcontext_rawptr_t ctxVK) {
       case VK_SUBOPTIMAL_KHR:
       case VK_ERROR_OUT_OF_DATE_KHR: {
         logchan_swapchain->log("acquireImage: SWAPCHAIN OUT OF DATE - status %s", string_VkResult(status));
-        vkDeviceWaitIdle(ctxVK->_vkdevice);
+        ctxVK->_gfxqueue->queueWaitIdle();
         _reinit();
         break;
       }
@@ -565,7 +565,7 @@ void VkSwapChain::_enqueueFrame(vkcontext_rawptr_t ctxVK) {
   
   auto fence = _frame_fences[sub_index];
   fence->reset();
-  vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, &submitInfo, fence->_vkfence);
+  ctxVK->_gfxqueue->queueSubmit(&submitInfo, fence->_vkfence);
 
   if(0)logchan_swapchain->log("vkQueueSubmit: CB %p", (void*)ctxVK->primary_cb()->_vkcmdbuf);
 }
@@ -592,7 +592,7 @@ void VkSwapChain::_enqueuePresentFrame(vkcontext_rawptr_t ctxVK) {
   PRESI.pImageIndices      = &_curSwapWriteImage;
 
   if(0)logchan_swapchain->log("enqueuePresentFrame: calling vkQueuePresentKHR for image %u", _curSwapWriteImage);
-  VkResult status = vkQueuePresentKHR(ctxVK->_vkqueue_graphics, &PRESI);
+  VkResult status = ctxVK->_gfxqueue->queuePresent(&PRESI);
   if(0)logchan_swapchain->log("enqueuePresentFrame: vkQueuePresentKHR returned %d", status);
   
   // printf("vkQueuePresentKHR returned status: %d (0x%x)\n", status, status);
@@ -611,8 +611,7 @@ void VkSwapChain::_enqueuePresentFrame(vkcontext_rawptr_t ctxVK) {
     case VK_ERROR_OUT_OF_DATE_KHR: {
       logchan_swapchain->log("enqueuePresentFrame: VK_ERROR_OUT_OF_DATE_KHR - Swap chain needs recreation");
       printf("VK_ERROR_OUT_OF_DATE_KHR: Swap chain needs recreation\n");
-      // Need to recreate swap chain immediately
-      // Note: _reinit() will properly wait for fences/device idle before tearing down
+      _contextVK->_gfxqueue->queueWaitIdle();
       _reinit();
       break;
     }
