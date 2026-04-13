@@ -86,6 +86,7 @@ class PointLightsApp(object):
 
     sv, sn, sb, su, si = make_sphere_arrays(1.0, 12)
     self.materials = []
+    self.prims = []
 
     # Three spheres: matte, metallic, mirror
     configs = [
@@ -113,12 +114,14 @@ class PointLightsApp(object):
       mtl.metallicFactor = metallic
       mtl.gpuInit(ctx)
       self.materials.append(mtl)
+      self.prims.append(prim)
 
       node = prim.createNode(name, self.layer1, mtl)
       node.worldTransform.translation = vec3(*pos)
       node.sortkey = 10
 
-    # Three orbiting point lights
+    # Three orbiting point lights with indicator spheres
+    orb_sv, orb_sn, orb_sb, orb_su, orb_si = make_sphere_arrays(0.12, 6)
     light_configs = [
       ("red",   vec3(1.0, 0.2, 0.1)),
       ("green", vec3(0.1, 1.0, 0.2)),
@@ -130,8 +133,28 @@ class PointLightsApp(object):
       light.data.color = color
       light.data.intensity = 8.0
       light.data.radius = 15.0
-      light_node = light.data.createNode(f"light_{name}", self.layer1)
-      self.lights.append((light, light_node))
+      light_node = self.layer1.createLightNode(f"light_{name}", light)
+
+      # Indicator sphere matching light color
+      nv = len(orb_sv)
+      orb_colors = np.zeros((nv, 4), dtype=np.uint8)
+      orb_colors[:, 0] = int(min(color.x, 1.0) * 255)
+      orb_colors[:, 1] = int(min(color.y, 1.0) * 255)
+      orb_colors[:, 2] = int(min(color.z, 1.0) * 255)
+      orb_colors[:, 3] = 255
+      orb_prim = RigidPrimitive()
+      orb_prim.fromArrays(orb_sv, orb_sn, orb_sb, orb_su, orb_colors, orb_si, ctx)
+      orb_mtl = lev2.PBRMaterial()
+      orb_mtl.assignImages(ctx, color=white_img, normal=normal_img, mtlruf=white_img, doConform=True)
+      orb_mtl.baseColor = vec4(1, 1, 1, 1)
+      orb_mtl.roughnessFactor = 0.0
+      orb_mtl.metallicFactor = 0.0
+      orb_mtl.gpuInit(ctx)
+      self.materials.append(orb_mtl)
+      self.prims.append(orb_prim)
+      orb_node = orb_prim.createNode(f"orb_{name}", self.layer1, orb_mtl)
+
+      self.lights.append((light, light_node, orb_node))
 
     self.scene.lightingmanager.gpuInit(ctx)
 
@@ -139,19 +162,20 @@ class PointLightsApp(object):
     print("  Left: matte sphere (rough=0.9, metal=0)")
     print("  Center: metallic sphere (rough=0.3, metal=1)")
     print("  Right: mirror sphere (rough=0, metal=1)")
-    print("  Three colored point lights orbit the scene")
+    print("  Three colored point lights orbit in an ellipse")
 
   ##############################################
 
   def onGpuUpdate(self, ctx):
     t = self.time
-    r = 4.0
-    for i, (light, node) in enumerate(self.lights):
-      angle = t * 1.2 + i * math.tau / 3
-      x = r * math.cos(angle)
-      z = r * math.sin(angle)
-      y = 2.0 + math.sin(t * 2.0 + i) * 0.5
-      node.worldTransform.translation = vec3(x, y, z)
+    rx, rz = 5.0, 3.0  # ellipse radii
+    for i, (light, light_node, orb_node) in enumerate(self.lights):
+      angle = t * 0.8 + i * math.tau / 3
+      x = rx * math.cos(angle)
+      z = rz * math.sin(angle)
+      y = 2.0 + math.sin(t * 1.5 + i) * 0.8
+      light_node.setMatrix(mtx4.transMatrix(vec3(x, y, z)))
+      orb_node.worldTransform.translation = vec3(x, y, z)
 
   def onUiEvent(self, uievent):
     handled = self.uicam.uiEventHandler(uievent)

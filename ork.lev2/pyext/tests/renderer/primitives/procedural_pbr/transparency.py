@@ -72,11 +72,6 @@ def make_cube_arrays(size=1.0):
     ((0,1,0),  [(-h,h,h),(h,h,h),(h,h,-h),(-h,h,-h)]),
     ((0,-1,0), [(-h,-h,-h),(h,-h,-h),(h,-h,h),(-h,-h,h)]),
   ]
-  verts, norms = [], []
-  indices = []
-  for nx, ny, nz in [(n, v) for n, v in face_data]:
-    pass
-  # Simpler: use shared verts
   verts = []
   norms = []
   indices = []
@@ -150,11 +145,13 @@ class TransparencyApp(object):
     cv, cn, cb, cu, ci = make_cube_arrays(size=0.8)
 
     self.materials = []
+    self.prims = []
 
     # Center: opaque red cube
     prim, mtl = create_prim(ctx, cv, cn, cb, cu, ci,
       (0.7, 0.1, 0.05), 1.0, 0.5, 0.0, False, self.white_img, self.normal_img)
     self.materials.append(mtl)
+    self.prims.append(prim)
     self.cube_node = prim.createNode("cube", self.layer1, mtl)
     self.cube_node.worldTransform.translation = vec3(0, 1.2, 0)
     self.cube_node.sortkey = 10
@@ -163,6 +160,7 @@ class TransparencyApp(object):
     prim, mtl = create_prim(ctx, sv, sn, sb, su, si,
       (0.6, 0.7, 1.0), 0.35, 0.0, 1.0, True, self.white_img, self.normal_img)
     self.materials.append(mtl)
+    self.prims.append(prim)
     self.sphere_fixed = prim.createNode("sphere_fixed", self.layer1, mtl)
     self.sphere_fixed.worldTransform.translation = vec3(-3, 1.5, 0)
     self.sphere_fixed.sortkey = 20
@@ -171,6 +169,7 @@ class TransparencyApp(object):
     prim, mtl = create_prim(ctx, sv, sn, sb, su, si,
       (0.85, 0.9, 1.0), 0.3, 0.0, 1.0, True, self.white_img, self.normal_img)
     self.materials.append(mtl)
+    self.prims.append(prim)
     self.sphere_around = prim.createNode("sphere_around", self.layer1, mtl)
     self.sphere_around.worldTransform.translation = vec3(0, 1.5, 0)
     self.sphere_around.worldTransform.scale = 1.8
@@ -180,6 +179,7 @@ class TransparencyApp(object):
     prim, mtl = create_prim(ctx, sv, sn, sb, su, si,
       (0.9, 0.3, 0.1), 1.0, 0.3, 0.0, True, self.white_img, self.normal_img)
     self.materials.append(mtl)
+    self.prims.append(prim)
     self.sphere_fading = prim.createNode("sphere_fading", self.layer1, mtl)
     self.sphere_fading.worldTransform.translation = vec3(3, 1.5, 0)
     self.sphere_fading.sortkey = 20
@@ -188,6 +188,7 @@ class TransparencyApp(object):
     prim, mtl = create_prim(ctx, sv, sn, sb, su, si,
       (0.8, 0.8, 0.8), 1.0, 0.5, 0.0, False, self.white_img, self.normal_img)
     self.materials.append(mtl)
+    self.prims.append(prim)
     self.sphere_tint = prim.createNode("sphere_tint", self.layer1, mtl)
     self.sphere_tint.worldTransform.translation = vec3(0, 1.5, -3)
     self.sphere_tint.sortkey = 10
