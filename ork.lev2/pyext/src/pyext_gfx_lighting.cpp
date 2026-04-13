@@ -67,6 +67,22 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
             lightdata->mColor = color;
           })
       .def_property(
+          "intensity",                             //
+          [](lightdata_ptr_t lightdata) -> float { //
+            return lightdata->_intensity;
+          },
+          [](lightdata_ptr_t lightdata, float v) { //
+            lightdata->_intensity = v;
+          })
+      .def_property(
+          "shadowCaster",                          //
+          [](lightdata_ptr_t lightdata) -> bool {  //
+            return lightdata->mbShadowCaster;
+          },
+          [](lightdata_ptr_t lightdata, bool v) {  //
+            lightdata->mbShadowCaster = v;
+          })
+      .def_property(
           "shadowBias",                            //
           [](lightdata_ptr_t lightdata) -> float { //
             return lightdata->mShadowBias;
@@ -84,6 +100,22 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
           });
   py::class_<PointLightData, LightData, pointlightdata_ptr_t>(module_lev2, "PointLightData")
       .def(py::init<>())
+      .def_property(
+          "radius",                                      //
+          [](pointlightdata_ptr_t lightdata) -> float {  //
+            return lightdata->_radius;
+          },
+          [](pointlightdata_ptr_t lightdata, float v) {  //
+            lightdata->_radius = v;
+          })
+      .def_property(
+          "falloff",                                     //
+          [](pointlightdata_ptr_t lightdata) -> float {  //
+            return lightdata->_falloff;
+          },
+          [](pointlightdata_ptr_t lightdata, float v) {  //
+            lightdata->_falloff = v;
+          })
       .def(
           "createNode",                      //
           [](pointlightdata_ptr_t lightdata, //
@@ -114,7 +146,16 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
       .def_property(
           "cookiePath",                                          //
           [](spotlightdata_ptr_t d) -> std::string { return d->_cookiePath.c_str(); },
-          [](spotlightdata_ptr_t d, std::string p) { d->_cookiePath = file::Path(p.c_str()); });
+          [](spotlightdata_ptr_t d, std::string p) { d->_cookiePath = file::Path(p.c_str()); })
+      .def(
+          "createNode",                      //
+          [](spotlightdata_ptr_t lightdata, //
+             std::string named,
+             scenegraph::layer_ptr_t layer) -> scenegraph::lightnode_ptr_t { //
+            auto xfgen = [] -> fmtx4 { return fmtx4(); };
+            auto light = std::make_shared<SpotLight>(xfgen, lightdata.get());
+            return layer->createLightNode(named, light);
+          });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<Light, light_ptr_t>(module_lev2, "Light")
       .def_property_readonly(
@@ -191,7 +232,13 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
             return light->mViewMatrix;
           });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<DynamicPointLight, PointLight, dynamicpointlight_ptr_t>(module_lev2, "DynamicPointLight");
+  py::class_<DynamicPointLight, PointLight, dynamicpointlight_ptr_t>(module_lev2, "DynamicPointLight")
+      .def(py::init<>())
+      .def_property_readonly(
+          "data",
+          [](dynamicpointlight_ptr_t light) -> pointlightdata_ptr_t {
+            return light->_inlineData;
+          });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<DynamicDirectionalLight, DirectionalLight, dynamicdirectionallight_ptr_t>(module_lev2, "DynamicDirectionalLight");
   /////////////////////////////////////////////////////////////////////////////////

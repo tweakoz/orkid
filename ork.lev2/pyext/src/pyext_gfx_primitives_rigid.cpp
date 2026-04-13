@@ -544,6 +544,70 @@ void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
           py::arg("verts"), py::arg("faces"), py::arg("context"), py::arg("primitive_type") = nullptr)
       .def("renderEML", [](meshutil::rigidprim_V12N12B12T8C4_ptr_t prim, ctx_t context) { //
         prim->renderEML(context.get());
-      });
+      })
+      .def(
+          "fromArrays",
+          [](meshutil::rigidprim_V12N12B12T8C4_ptr_t prim,
+             py::buffer positions,   // (N,3) float32
+             py::buffer normals,     // (N,3) float32
+             py::buffer binormals,   // (N,3) float32
+             py::buffer uvs,         // (N,2) float32
+             py::buffer colors,      // (N,4) uint8 RGBA, or empty
+             py::buffer indices,     // (M,) uint32
+             ctx_t context) {
+            auto pos_info = positions.request();
+            auto nrm_info = normals.request();
+            auto bin_info = binormals.request();
+            auto uv_info  = uvs.request();
+            auto clr_info = colors.request();
+            auto idx_info = indices.request();
+            py::gil_scoped_release release;
+            int num_verts = pos_info.shape[0];
+            int num_indices = idx_info.shape[0];
+            bool has_colors = (clr_info.size > 0);
+            auto* pos_ptr = static_cast<const float*>(pos_info.ptr);
+            auto* nrm_ptr = static_cast<const float*>(nrm_info.ptr);
+            auto* bin_ptr = static_cast<const float*>(bin_info.ptr);
+            auto* uv_ptr  = static_cast<const float*>(uv_info.ptr);
+            auto* clr_ptr = has_colors ? static_cast<const uint8_t*>(clr_info.ptr) : nullptr;
+            auto* idx_ptr = static_cast<const uint32_t*>(idx_info.ptr);
+
+            auto GBI = context->GBI();
+            using vtx_t = SVtxV12N12B12T8C4;
+            prim->_gpuClusters.clear();
+            auto cluster = std::make_shared<meshutil::rigidprim_V12N12B12T8C4_t::PrimGroupCluster>();
+            auto vtxbuf = std::make_shared<lev2::StaticVertexBuffer<vtx_t>>(num_verts, 0);
+            auto idxbuf = std::make_shared<lev2::StaticIndexBuffer<uint32_t>>(num_indices);
+            cluster->_vtxbuffer = vtxbuf;
+            auto PG = std::make_shared<meshutil::rigidprim_V12N12B12T8C4_t::PrimitiveGroup>();
+            cluster->_primgroups.push_back(PG);
+            PG->_primtype = lev2::PrimitiveType::TRIANGLES;
+            PG->_idxbuffer = idxbuf;
+            prim->_gpuClusters.push_back(cluster);
+
+            auto vtxptr = GBI->LockVB(*vtxbuf.get(), 0, num_verts);
+            auto* typed_verts = (vtx_t*)vtxptr;
+            for (int i = 0; i < num_verts; i++) {
+              auto& v = typed_verts[i];
+              v._position = fvec3(pos_ptr[i*3], pos_ptr[i*3+1], pos_ptr[i*3+2]);
+              v._normal   = fvec3(nrm_ptr[i*3], nrm_ptr[i*3+1], nrm_ptr[i*3+2]);
+              v._binormal = fvec3(bin_ptr[i*3], bin_ptr[i*3+1], bin_ptr[i*3+2]);
+              v._uv       = fvec2(uv_ptr[i*2], uv_ptr[i*2+1]);
+              v._color    = has_colors
+                          ? (uint32_t(clr_ptr[i*4]) | (uint32_t(clr_ptr[i*4+1])<<8) | (uint32_t(clr_ptr[i*4+2])<<16) | (uint32_t(clr_ptr[i*4+3])<<24))
+                          : 0xFFFFFFFF;
+            }
+            GBI->UnLockVB(*vtxbuf.get());
+
+            auto idxptr = GBI->LockIB(*idxbuf.get(), 0, num_indices);
+            auto* typed_idx = (uint32_t*)idxptr;
+            for (int i = 0; i < num_indices; i++) {
+              typed_idx[i] = idx_ptr[i];
+            }
+            GBI->UnLockIB(*idxbuf.get());
+          },
+          "Create rigid primitive directly from vertex attribute arrays, bypassing mesh processing",
+          py::arg("positions"), py::arg("normals"), py::arg("binormals"),
+          py::arg("uvs"), py::arg("colors"), py::arg("indices"), py::arg("context"));
 } // void pyinit_gfx_rigidprim(py::module& module_lev2) {
 } // namespace ork::lev2

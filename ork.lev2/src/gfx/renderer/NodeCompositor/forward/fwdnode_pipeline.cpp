@@ -41,7 +41,6 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
 
   auto L = [mtl](const RenderContextInstData& RCID) {
 
-    //printf( "LIGHTINGLAMBDA\n");
     auto RCFD             = RCID.rcfd();
     auto context    = RCFD->GetTarget();
     auto FXI        = context->FXI();
@@ -320,10 +319,13 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
         }
       } else {
         if( permu._has_vtxcolors ){
-          if (this->_tek_FWD_CV_NM_RI_NI_MO) {
+          if (permu._is_alpha && this->_tek_FWD_CV_NM_RI_NI_MO_ALPHA) {
+            pipeline             = std::make_shared<FxPipeline>(permu);
+            pipeline->_technique = this->_tek_FWD_CV_NM_RI_NI_MO_ALPHA;
+          }
+          else if (this->_tek_FWD_CV_NM_RI_NI_MO) {
             pipeline             = std::make_shared<FxPipeline>(permu);
             pipeline->_technique = this->_tek_FWD_CV_NM_RI_NI_MO;
-            //printf( "got fwdtek FWD_CV_NM_SK_NI_MO\n");
           }
         }
         else{

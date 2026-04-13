@@ -24,6 +24,7 @@ uint64_t FxPipelinePermutation::genIndex() const {
   index += (uint64_t(_skinned) << 3);
   index += (uint64_t(_is_picking) << 4);
   index += (uint64_t(_has_vtxcolors) << 5);
+  index += (uint64_t(_is_alpha) << 6);
   index += (uint64_t(_rendering_model) << 16);
 
   auto tekovr = uint64_t((const void*)_forced_technique);

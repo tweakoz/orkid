@@ -423,8 +423,22 @@ fragment_shader ps_forward_test_vtxcol //
     : lib_brdf                  //
     : lib_def                   //
     : lib_fwd
-    : std_forward_all {   
-  out_color = vec4(forward_lighting_ntex(frg_clr.xyz), 1);
+    : std_forward_all {
+  out_color = vec4(forward_lighting_ntex(frg_clr.xyz) * ModColor.rgb, frg_clr.a * ModColor.a);
+}
+//////////////////////////////////////
+fragment_shader ps_forward_test_vtxcol_alpha //
+    : fif_FWDTESTVC             //
+    : lib_math                  //
+    : lib_brdf                  //
+    : lib_def                   //
+    : lib_fwd
+    : std_forward_all {
+  vec3 lit = forward_lighting_ntex(frg_clr.xyz) * ModColor.rgb;
+  float vtx_alpha = frg_clr.a;
+  float lum = dot(lit, vec3(0.2126, 0.7152, 0.0722));
+  float boosted = clamp(vtx_alpha + lum * (1.0 - vtx_alpha), vtx_alpha, 1.0);
+  out_color = vec4(lit, boosted * ModColor.a);
 }
 //////////////////////////////////////
 fragment_shader ps_forward_test //

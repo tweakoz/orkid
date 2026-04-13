@@ -17,6 +17,7 @@
 #include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/lev2/gfx/gfxvtxbuf.h>
 #include <ork/lev2/gfx/gfxmaterial.h>
+#include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/targetinterfaces.h>
 #include <unordered_map>
@@ -179,7 +180,11 @@ template <typename vtx_t> struct RigidPrimitive : public RigidPrimitiveBase {
   //////////////////////////////////////////////////////////////////////////////
   void installInCallbackDrawable(lev2::callback_drawable_wkptr_t drw, lev2::material_ptr_t material){
     OrkAssert(material != nullptr);
-    drw.lock()->SetRenderCallback([this,material](lev2::RenderContextInstData& RCID) { //
+    bool is_alpha = false;
+    if (auto as_pbr = std::dynamic_pointer_cast<lev2::PBRMaterial>(material)) {
+      is_alpha = as_pbr->_alphaBlend;
+    }
+    drw.lock()->SetRenderCallback([this,material,is_alpha](lev2::RenderContextInstData& RCID) { //
       auto context = RCID.context();
       auto RCFD = RCID.rcfd();
       lev2::FxPipelinePermutation permu;
@@ -188,6 +193,7 @@ template <typename vtx_t> struct RigidPrimitive : public RigidPrimitiveBase {
       permu._skinned = false;
       permu._is_picking = false;
       permu._has_vtxcolors = true;
+      permu._is_alpha = is_alpha;
       permu._rendering_model = RCFD->_renderingmodel._modelID;
       auto fxcache = material->pipelineCache();
       auto pipeline = fxcache->findPipeline(permu);

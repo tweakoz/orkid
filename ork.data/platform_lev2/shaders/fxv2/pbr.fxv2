@@ -13,6 +13,12 @@ state_block sb_cullcw : sb_default {
 	CullTest = PASS_BACK;
 }
 ///////////////////////////////////////////////////////////////
+state_block sb_cullcw_alpha : sb_default {
+	CullTest = PASS_BACK;
+	BlendMode = ALPHA;
+	DepthMask = false;
+}
+///////////////////////////////////////////////////////////////
 technique PIK_RI_NI {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_pick_rigid_simple_mono,ps_pick,sb_default}
@@ -55,9 +61,14 @@ technique FWD_CT_NM_RI_NI_MO {
 	vf_pass={vs_forward_test,ps_forward_test,sb_default}
 }
 ///////////////////////////////////////////////////////////////
-technique FWD_CV_NM_RI_NI_MO { 
+technique FWD_CV_NM_RI_NI_MO {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_forward_test_vtxcol,ps_forward_test_vtxcol,sb_cullcw}
+}
+///////////////////////////////////////////////////////////////
+technique FWD_CV_NM_RI_NI_MO_ALPHA {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_test_vtxcol,ps_forward_test_vtxcol_alpha,sb_cullcw_alpha}
 }
 ///////////////////////////////////////////////////////////////
 technique FWD_CT_NM_RI_IN_MO {
