@@ -454,7 +454,7 @@ fragment_shader ps_fwd_ground_mono
 
   vec3 L  = env_lighting + point_lighting + spot_lighting;
   vec3 OC = L;
-  OC += env_lighting * foam * 0.1;
+  OC += env_lighting * foam * 0.05;
   D = 1.0;
   out_color = vec4(OC, D);
 }

@@ -66,7 +66,7 @@ class WaterApp(object):
     sceneparams.AmbientLight = vec3(0.1)
     sceneparams.DepthFogDistance = float(10000)
     sceneparams.DepthFogPower = float(2)
-    sceneparams.SkyboxTexPathStr = "ork_envmaps|tozenv_nebula"
+    sceneparams.SkyboxTexPathStr = str(path.Path("<assetcache>/envmaps2/ocean4k.xir").expanded)
 
     ###################################
     # post fx node
@@ -197,11 +197,11 @@ class WaterApp(object):
     #gmtl.bindParam(param_voltexa,self.NOISETEX)
     #gmtl.bindParam(param_noizekernmap,self.NOISETEX2)
     gmtl.bindParam(param_time,lambda: _gentime() )
-    gmtl.bindParam(param_color,lambda: vec3(0.85,1.2,1) )
+    gmtl.bindParam(param_color,lambda: vec3(0.5,0.5,0.6) )
     gmtl.bindParam(param_depthmap,tokens.RCFD_DEPTH_MAP )
     gmtl.bindParam(param_bufinvdim,tokens.CPD_Rtg_InvDim )
     gmtl.bindParam(param_m,tokens.RCFD_M )
-    gmtl.bindParam(param_plightamp,0.25 )
+    gmtl.bindParam(param_plightamp,0.03 )
     # Must match ClipMapDrawableData.baseQuadSize below — the VS uses it
     # to derive per-LOD quad sizes for T-junction-free vertex morphing.
     gmtl.bindParam(param_base_quad_size, 0.25)
