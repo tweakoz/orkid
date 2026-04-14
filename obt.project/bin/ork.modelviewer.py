@@ -264,8 +264,12 @@ class SceneGraphApp(ComponentizedApplication):
     sceneparams.SkyboxTexPathStr = "ork_envmaps|tozenv_nebula"
     sceneparams.ssaa = ssaa
 
+    envmap = args["envmap"]
     if envmap != "":
-      sceneparams.SkyboxTexPathStr = envmap
+      if "<" in envmap:
+        envmap = path.Path(envmap).expanded
+        print(f"Expanded envmap path: {envmap}")
+      sceneparams.SkyboxTexPathStr = str(envmap)
 
     #rendermodel = "DeferredPBR"
     global rendermodel
