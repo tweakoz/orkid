@@ -284,6 +284,25 @@ FxPipelineNamedParamProviders::FxPipelineNamedParamProviders() {
     ppc._fxi->bindParamVect3(param, eyepos);
   };
   /////////////////////////////////////////////////////////////////
+  // 4 world-space corners of the view frustum intersected with y=0.
+  // NDC corner order: (x0,y0),(x1,y0),(x1,y1),(x0,y1).
+  // Used by projected-grid water / ground shaders.
+  _providers["RCFD_GROUND_FRUSTUM_CORNERS"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto monocams = ppc._topCPD._mono_cam_matrices;
+    fvec4 corners4[4];
+    if (monocams) {
+      auto pts = monocams->projectedCornersOnPlane(0.0f);
+      for (int i = 0; i < 4; ++i) {
+        corners4[i] = fvec4(pts[i].x, pts[i].y, pts[i].z, 1.0f);
+      }
+    } else {
+      for (int i = 0; i < 4; ++i) {
+        corners4[i] = fvec4(0, 0, 0, 1);
+      }
+    }
+    ppc._fxi->bindParamVect4Array(param, corners4, 4);
+  };
+  /////////////////////////////////////////////////////////////////
   _providers["RCFD_PBR_BRDF_INTEGRATION_GGX"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
     auto pbrcommon          = ppc._rcfd->_pbrcommon;
     auto brdf_integration = pbrcommon->_radiance_maps->_brdfIntegrationMapGGX.get();

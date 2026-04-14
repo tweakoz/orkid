@@ -14,6 +14,7 @@
 #include <ork/lev2/gfx/scenegraph/sgnode_imposter.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_billboard.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_groundplane.h>
+#include <ork/lev2/gfx/scenegraph/sgnode_projectedgrid.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_geoclipmap.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_uisurface.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_cursor.h>
@@ -283,6 +284,23 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
               [](groundplane_drawabledataptr_t drw) -> fxpipeline_ptr_t { return drw->_pipeline_color; },
               [](groundplane_drawabledataptr_t drw, fxpipeline_ptr_t pipe) { drw->_pipeline_color = pipe; });
   type_codec->registerStdCodec<groundplane_drawabledataptr_t>(groundplanedrawdata_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto projgriddrawdata_type = //
+      py::class_<ProjectedGridDrawableData, DrawableData, projectedgrid_drawabledataptr_t>(module_lev2, "ProjectedGridDrawableData")
+          .def(py::init<>())
+          .def_property(
+              "pbrmaterial",
+              [](projectedgrid_drawabledataptr_t drw) -> pbrmaterial_ptr_t { return drw->_material; },
+              [](projectedgrid_drawabledataptr_t drw, pbrmaterial_ptr_t mtl) { drw->_material = mtl; })
+          .def_property(
+              "pipeline",
+              [](projectedgrid_drawabledataptr_t drw) -> fxpipeline_ptr_t { return drw->_pipeline_color; },
+              [](projectedgrid_drawabledataptr_t drw, fxpipeline_ptr_t pipe) { drw->_pipeline_color = pipe; })
+          .def_property(
+              "griddim",
+              [](projectedgrid_drawabledataptr_t drw) -> int { return drw->_griddim; },
+              [](projectedgrid_drawabledataptr_t drw, int val) { drw->_griddim = val; });
+  type_codec->registerStdCodec<projectedgrid_drawabledataptr_t>(projgriddrawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto clipmapdrawdata_type = //
       py::class_<ClipMapDrawableData, DrawableData, clipmapdrawabledata_ptr_t>(module_lev2, "GeoClipMapDrawable")

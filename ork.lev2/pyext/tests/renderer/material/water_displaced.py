@@ -1,16 +1,12 @@
 #!/usr/bin/env ork.python
 
 ################################################################################
-# flat-plane water material test
+# displaced-plane water material test
 #   - ComponentizedApplication + StandardSceneGraphComponent
 #   - ForwardPBR scene, nebula skybox
 #   - one moving spotlight with color + depth cookies (PCF shadows)
-#   - GroundPlaneDrawableData water surface (fragment-only waves)
+#   - GroundPlaneDrawableData subdivided to 256x256 cells, vertex-displaced water
 #   - DamagedHelmet floating above waterline
-#
-# Water drawable is NOT on the depth_prepass layer — it only reads scene depth
-# via tokens.RCFD_DEPTH_MAP. This leaves room for underwater translucency /
-# absorption effects later (scene depth behind water is what the shader needs).
 #
 # Copyright 1996-2023, Michael T. Mayers.
 # Distributed under the MIT License
@@ -27,7 +23,7 @@ tokens = CrcStringProxy()
 
 ################################################################################
 
-class WaterFlatApp(ComponentizedApplication):
+class WaterDisplacedApp(ComponentizedApplication):
 
   def __init__(self):
     super().__init__()
@@ -50,7 +46,7 @@ class WaterFlatApp(ComponentizedApplication):
                                  sg_params=sg_params)
 
     self.createEzApp(ssaa=0,
-                     name="WaterFlat",
+                     name="WaterDisplaced",
                      use_subsystems=['opq', 'core', 'gpu', 'lev2'])
 
     self.curtime = 0.0
@@ -80,16 +76,16 @@ class WaterFlatApp(ComponentizedApplication):
       index=0,
       model=lite_model,
       frq=0.17,
-      color=vec3(1.0, 1.0, 0.7) * 1000.0,
+      color=vec3(1.0, 1.0, 0.7) * 3000.0,
       cookie=cookie0,
       depth_cookie=depth0,
-      fovbase=80.0,
+      fovbase=60.0,
       fovamp=20.0,
-      voffset=100,
+      voffset=40,
       vscale=10,
       bias=1e-5,
       dim=2048,
-      range=2000,
+      range=200,
       radius=30,
     )
 
@@ -115,7 +111,7 @@ class WaterFlatApp(ComponentizedApplication):
     gmtl.metallicFactor  = 1.0
     gmtl.roughnessFactor = 1.0
     gmtl.doubleSided     = True
-    gmtl.shaderpath      = str(thisdir() / "water_flat.fxv2")
+    gmtl.shaderpath      = str(thisdir() / "water_displaced.fxv2")
     gmtl.addLightingLambda()
     gmtl.gpuInit(ctx)
     gmtl.rasterstate.setBlendingMacro(tokens.ALPHA)
@@ -130,24 +126,21 @@ class WaterFlatApp(ComponentizedApplication):
     assert param_time
 
     gmtl.bindParam(param_time,      lambda: self.curtime)
-    gmtl.bindParam(param_color,     lambda: vec3(0.8, 0.9, 1.0))
+    gmtl.bindParam(param_color,     lambda: vec3(0.18, 0.30, 0.42))
     gmtl.bindParam(param_m,         tokens.RCFD_M)
     gmtl.bindParam(param_plightamp, 0.15)
-    # TODO: re-add depth_map=RCFD_DEPTH_MAP and bufinvdim=CPD_Rtg_InvDim
-    # bindings once the Vulkan RTG layout issue is resolved (see water_flat.fxv2).
 
     self.water_material = gmtl
 
     ###################################
-    # water drawable (flat plane)
+    # water drawable (subdivided plane for vertex displacement)
     # NOTE: added to [SGC.layer_fwd] only — not on depth_prepass.
-    # This keeps scene depth (helmet, spotlight model, etc.) readable
-    # behind the water surface for underwater effects later.
     ###################################
 
     gdata = lev2.GroundPlaneDrawableData()
     gdata.pbrmaterial = gmtl
     gdata.extent      = 10000.0
+    gdata.griddim     = 256
     self.gdata = gdata
 
     self.drawable_water = gdata.createSGDrawable(SG)
@@ -159,8 +152,7 @@ class WaterFlatApp(ComponentizedApplication):
     self.waternode.worldTransform.translation = vec3(0, 0, 0)
 
     ###################################
-    # floating helmet (on both fwd + depth_prepass → writes depth
-    #  that the water shader will read)
+    # floating helmet (on both fwd + depth_prepass)
     ###################################
 
     self.model = lev2.XgmModel("data://tests/misc_gltf_samples/DamagedHelmet.glb")
@@ -183,7 +175,6 @@ class WaterFlatApp(ComponentizedApplication):
     self.curtime   = updinfo.absolutetime
     self.lighttime = updinfo.absolutetime
 
-    # gentle bob for the helmet
     mdl_y = 18.0 + 3.0 * math.sin(self.curtime * 1.3)
     self.helmetnode.worldTransform.translation = vec3(0, mdl_y, 0)
 
@@ -200,6 +191,6 @@ def sig_handler(signal_received, frame):
 
 signal.signal(signal.SIGINT, sig_handler)
 
-app = WaterFlatApp()
+app = WaterDisplacedApp()
 app.ezapp.mainThreadLoop()
 app.ezapp.shutdown()

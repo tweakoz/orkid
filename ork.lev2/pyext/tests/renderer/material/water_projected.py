@@ -1,16 +1,15 @@
 #!/usr/bin/env ork.python
 
 ################################################################################
-# flat-plane water material test
+# projected-grid water material test
 #   - ComponentizedApplication + StandardSceneGraphComponent
 #   - ForwardPBR scene, nebula skybox
 #   - one moving spotlight with color + depth cookies (PCF shadows)
-#   - GroundPlaneDrawableData water surface (fragment-only waves)
+#   - ProjectedGridDrawableData: static V12T8 grid in param space, vs bilerps
+#     the 4 world-space frustum/plane corners each frame (supplied by the
+#     RCFD_GROUND_FRUSTUM_CORNERS named-param provider) and displaces y via
+#     water_height
 #   - DamagedHelmet floating above waterline
-#
-# Water drawable is NOT on the depth_prepass layer — it only reads scene depth
-# via tokens.RCFD_DEPTH_MAP. This leaves room for underwater translucency /
-# absorption effects later (scene depth behind water is what the shader needs).
 #
 # Copyright 1996-2023, Michael T. Mayers.
 # Distributed under the MIT License
@@ -27,7 +26,7 @@ tokens = CrcStringProxy()
 
 ################################################################################
 
-class WaterFlatApp(ComponentizedApplication):
+class WaterProjectedApp(ComponentizedApplication):
 
   def __init__(self):
     super().__init__()
@@ -50,7 +49,7 @@ class WaterFlatApp(ComponentizedApplication):
                                  sg_params=sg_params)
 
     self.createEzApp(ssaa=0,
-                     name="WaterFlat",
+                     name="WaterProjected",
                      use_subsystems=['opq', 'core', 'gpu', 'lev2'])
 
     self.curtime = 0.0
@@ -63,7 +62,7 @@ class WaterFlatApp(ComponentizedApplication):
     SG  = SGC.scenegraph
 
     ###################################
-    # spotlight cookies (color + depth arrays)
+    # spotlight cookies
     ###################################
 
     color_cookies = lev2.TextureArray(w=1024, h=1024, slices=1, fmt=tokens.RGB8, mipmapped=True)
@@ -80,16 +79,16 @@ class WaterFlatApp(ComponentizedApplication):
       index=0,
       model=lite_model,
       frq=0.17,
-      color=vec3(1.0, 1.0, 0.7) * 1000.0,
+      color=vec3(1.0, 1.0, 0.7) * 3000.0,
       cookie=cookie0,
       depth_cookie=depth0,
-      fovbase=80.0,
+      fovbase=60.0,
       fovamp=20.0,
-      voffset=100,
+      voffset=40,
       vscale=10,
       bias=1e-5,
       dim=2048,
-      range=2000,
+      range=200,
       radius=30,
     )
 
@@ -115,7 +114,7 @@ class WaterFlatApp(ComponentizedApplication):
     gmtl.metallicFactor  = 1.0
     gmtl.roughnessFactor = 1.0
     gmtl.doubleSided     = True
-    gmtl.shaderpath      = str(thisdir() / "water_flat.fxv2")
+    gmtl.shaderpath      = str(thisdir() / "water_projected.fxv2")
     gmtl.addLightingLambda()
     gmtl.gpuInit(ctx)
     gmtl.rasterstate.setBlendingMacro(tokens.ALPHA)
@@ -126,28 +125,25 @@ class WaterFlatApp(ComponentizedApplication):
     param_time      = freestyle.param("Time")
     param_color     = freestyle.param("BaseColor")
     param_plightamp = freestyle.param("plightamp")
-    param_m         = freestyle.param("m")
+    param_corners   = freestyle.param("GroundCorners")
     assert param_time
+    assert param_corners
 
     gmtl.bindParam(param_time,      lambda: self.curtime)
-    gmtl.bindParam(param_color,     lambda: vec3(0.8, 0.9, 1.0))
-    gmtl.bindParam(param_m,         tokens.RCFD_M)
+    gmtl.bindParam(param_color,     lambda: vec3(0.18, 0.30, 0.42))
     gmtl.bindParam(param_plightamp, 0.15)
-    # TODO: re-add depth_map=RCFD_DEPTH_MAP and bufinvdim=CPD_Rtg_InvDim
-    # bindings once the Vulkan RTG layout issue is resolved (see water_flat.fxv2).
+    gmtl.bindParam(param_corners,   tokens.RCFD_GROUND_FRUSTUM_CORNERS)
 
     self.water_material = gmtl
 
     ###################################
-    # water drawable (flat plane)
+    # water drawable — static projected grid
     # NOTE: added to [SGC.layer_fwd] only — not on depth_prepass.
-    # This keeps scene depth (helmet, spotlight model, etc.) readable
-    # behind the water surface for underwater effects later.
     ###################################
 
-    gdata = lev2.GroundPlaneDrawableData()
+    gdata = lev2.ProjectedGridDrawableData()
     gdata.pbrmaterial = gmtl
-    gdata.extent      = 10000.0
+    gdata.griddim     = 128
     self.gdata = gdata
 
     self.drawable_water = gdata.createSGDrawable(SG)
@@ -159,8 +155,7 @@ class WaterFlatApp(ComponentizedApplication):
     self.waternode.worldTransform.translation = vec3(0, 0, 0)
 
     ###################################
-    # floating helmet (on both fwd + depth_prepass → writes depth
-    #  that the water shader will read)
+    # floating helmet (both fwd + depth_prepass)
     ###################################
 
     self.model = lev2.XgmModel("data://tests/misc_gltf_samples/DamagedHelmet.glb")
@@ -183,7 +178,6 @@ class WaterFlatApp(ComponentizedApplication):
     self.curtime   = updinfo.absolutetime
     self.lighttime = updinfo.absolutetime
 
-    # gentle bob for the helmet
     mdl_y = 18.0 + 3.0 * math.sin(self.curtime * 1.3)
     self.helmetnode.worldTransform.translation = vec3(0, mdl_y, 0)
 
@@ -200,6 +194,6 @@ def sig_handler(signal_received, frame):
 
 signal.signal(signal.SIGINT, sig_handler)
 
-app = WaterFlatApp()
+app = WaterProjectedApp()
 app.ezapp.mainThreadLoop()
 app.ezapp.shutdown()

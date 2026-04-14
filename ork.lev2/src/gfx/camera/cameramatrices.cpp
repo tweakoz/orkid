@@ -57,6 +57,52 @@ fmtx4 CameraMatrices::MVPMONO(const fmtx4& M) const {
   return fmtx4::multiply_ltor(M,VPMONO());
 }
 ////////////////////////////////////////////////////////////////////////////////
+point_vect_t CameraMatrices::projectedCornersOnPlane(float plane_y) const {
+  point_vect_t rval;
+  rval.reserve(4);
+
+  const auto& NC = _frustum.mNearCorners;
+  const auto& FC = _frustum.mFarCorners;
+
+  const float PARALLEL_EPS = 1e-5f;
+  const float HORIZON_DIST = 1.0e5f;
+
+  for (int i = 0; i < 4; ++i) {
+    const fvec3& n = NC[i];
+    const fvec3& f = FC[i];
+    fvec3 dir      = f - n;
+    float dy       = dir.y;
+
+    bool hit = false;
+    fvec3 hit_pos;
+
+    if (std::abs(dy) > PARALLEL_EPS) {
+      float t = (plane_y - n.y) / dy;
+      if (t > 0.0f) {
+        hit_pos = n + dir * t;
+        hit     = true;
+      }
+    }
+
+    if (not hit) {
+      // ray is parallel to plane or points away from it — push the
+      // corner out along its xz direction so the grid still covers a
+      // sensible patch of the plane under the camera.
+      fvec3 xzdir(dir.x, 0.0f, dir.z);
+      float xzlen = xzdir.magnitude();
+      if (xzlen < PARALLEL_EPS) {
+        hit_pos = fvec3(n.x, plane_y, n.z);
+      } else {
+        xzdir   = xzdir * (1.0f / xzlen);
+        hit_pos = fvec3(n.x, plane_y, n.z) + xzdir * HORIZON_DIST;
+      }
+    }
+
+    rval.push_back(hit_pos);
+  }
+  return rval;
+}
+////////////////////////////////////////////////////////////////////////////////
 // StereoCameraMatrices
 ////////////////////////////////////////////////////////////////////////////////
 fmtx4 StereoCameraMatrices::VL() const {

@@ -137,6 +137,14 @@ struct CameraMatrices {
   void setCustomView(const fmtx4& view);
   void setCustomProjection(const fmtx4& proj);
   ////////////////////////////////////////////////////////////////////
+  // Intersect the 4 view frustum near→far rays with a horizontal plane
+  // at y=plane_y. Returns 4 world-space points in NDC corner order:
+  //   [0]=(x0,y0) [1]=(x1,y0) [2]=(x1,y1) [3]=(x0,y1).
+  // When a ray is parallel to the plane or exits upward the point
+  // falls back to a clamped horizon projection so the returned grid
+  // remains finite and well-ordered.
+  point_vect_t projectedCornersOnPlane(float plane_y) const;
+  ////////////////////////////////////////////////////////////////////
   void _updateInternal();
   ////////////////////////////////////////////////////////////////////
   bool _explicitProjectionMatrix = false;

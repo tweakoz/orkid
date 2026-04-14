@@ -12,16 +12,19 @@
 #pragma once
 #include <memory>
 #include <unordered_map>
+#include <vector>
 #include <ork/kernel/fixedlut.h>
 #include <ork/kernel/varmap.inl>
 #include <ork/util/crc.h>
 #include <ork/lev2/config.h>
 #include <ork/lev2/gfx/config.h>
 #include <ork/math/cmatrix4.h>
+#include <ork/math/cvector3.h>
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 using matrix_lamda_t = std::function<fmtx4()>;
+using point_vect_t   = std::vector<fvec3>;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct LoadingPhase;
@@ -348,6 +351,7 @@ struct ImposterPassData;
 struct GridDrawableData;
 struct BillboardDrawableData;
 struct GroundPlaneDrawableData;
+struct ProjectedGridDrawableData;
 struct StringDrawable;
 struct StringDrawableData;
 struct InstancedBillboardStringDrawable;
@@ -387,6 +391,7 @@ using imposterdrawabledataptr_t = std::shared_ptr<ImposterDrawableData> ;
 using imposterpassdataptr_t = std::shared_ptr<ImposterPassData> ;
 using billboarddrawabledataptr_t = std::shared_ptr<BillboardDrawableData> ;
 using groundplane_drawabledataptr_t = std::shared_ptr<GroundPlaneDrawableData> ;
+using projectedgrid_drawabledataptr_t = std::shared_ptr<ProjectedGridDrawableData> ;
 using modeldrawabledata_ptr_t = std::shared_ptr<ModelDrawableData>;
 using instanceddrawinstancedata_ptr_t       = std::shared_ptr<InstancedDrawableInstanceData>;
 using instancedmodeldrawabledata_ptr_t = std::shared_ptr<InstancedModelDrawableData>;
