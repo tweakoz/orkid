@@ -339,7 +339,7 @@ fragment_shader ps_fwd_ground_mono
   skyboxRefractColor.y    = pow(skyboxRefractColor.y, 0.55);
   skyboxRefractColor.z    = pow(skyboxRefractColor.z, 0.45);
   float F                 = fresnelSchlick(eye_dir * -1.0, normal, vec3(0.004)).x;
-  //F                       = 0.5;
+  F                       = pow(F,0.5);
   vec3 albedo             = BaseColor;
 
   PbrData pbd;
@@ -347,7 +347,7 @@ fragment_shader ps_fwd_ground_mono
   pbd._metallic = 0.05;
 
   float ssy      = clamp(signalY, 0, 1);
-  pbd._roughness = 0.25;
+  pbd._roughness = 0.7;
   pbd._albedo    = albedo;
   pbd._wpos      = frg_tbn[0].xyz;
   pbd._wnrm      = normal;
@@ -452,7 +452,7 @@ fragment_shader ps_fwd_ground_mono
     spot_lighting += vec3(reflectDir) * 0.03 * float(mask) * shadow_factor;
   }
 
-  vec3 L  = env_lighting*2.0 + point_lighting + spot_lighting;
+  vec3 L  = env_lighting+ point_lighting + spot_lighting;
   vec3 OC = L;
   OC += env_lighting * foam * 0.05;
   D = 1.0;

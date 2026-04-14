@@ -108,7 +108,7 @@ class WaterApp(object):
                                    index=0,
                                    model=lite_model,
                                    frq=0.177,
-                                   color=vec3(1,1,.7)*9.5e5,
+                                   color=vec3(1,1,.7)*99.5e5,
                                    cookie=cookie,
                                    depth_cookie=depth_cookies.slice(0),
                                    fovbase=70.0,
@@ -197,11 +197,11 @@ class WaterApp(object):
     #gmtl.bindParam(param_voltexa,self.NOISETEX)
     #gmtl.bindParam(param_noizekernmap,self.NOISETEX2)
     gmtl.bindParam(param_time,lambda: _gentime() )
-    gmtl.bindParam(param_color,lambda: vec3(0.5,0.5,0.6) )
+    gmtl.bindParam(param_color,lambda: vec3(0.5,0.6,0.5) )
     gmtl.bindParam(param_depthmap,tokens.RCFD_DEPTH_MAP )
     gmtl.bindParam(param_bufinvdim,tokens.CPD_Rtg_InvDim )
     gmtl.bindParam(param_m,tokens.RCFD_M )
-    gmtl.bindParam(param_plightamp,0.03 )
+    gmtl.bindParam(param_plightamp,0.3 )
     # Must match ClipMapDrawableData.baseQuadSize below — the VS uses it
     # to derive per-LOD quad sizes for T-junction-free vertex morphing.
     gmtl.bindParam(param_base_quad_size, 0.25)
