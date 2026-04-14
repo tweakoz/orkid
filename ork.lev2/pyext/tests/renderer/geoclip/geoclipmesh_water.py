@@ -36,7 +36,7 @@ class WaterApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=0,width=1080,height=720,fullscreen=False)
+    self.ezapp = OrkEzApp.create(self,ssaa=1,fullscreen=True)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.curtime = 0.0
 
@@ -197,14 +197,14 @@ class WaterApp(object):
     #gmtl.bindParam(param_voltexa,self.NOISETEX)
     #gmtl.bindParam(param_noizekernmap,self.NOISETEX2)
     gmtl.bindParam(param_time,lambda: _gentime() )
-    gmtl.bindParam(param_color,lambda: vec3(0.75,1.2,1) )
+    gmtl.bindParam(param_color,lambda: vec3(0.85,1.2,1) )
     gmtl.bindParam(param_depthmap,tokens.RCFD_DEPTH_MAP )
     gmtl.bindParam(param_bufinvdim,tokens.CPD_Rtg_InvDim )
     gmtl.bindParam(param_m,tokens.RCFD_M )
-    gmtl.bindParam(param_plightamp,1.0 )
+    gmtl.bindParam(param_plightamp,0.25 )
     # Must match ClipMapDrawableData.baseQuadSize below — the VS uses it
     # to derive per-LOD quad sizes for T-junction-free vertex morphing.
-    gmtl.bindParam(param_base_quad_size, lambda: 0.25)
+    gmtl.bindParam(param_base_quad_size, 0.25)
 
     #######################################
     # ground drawable
