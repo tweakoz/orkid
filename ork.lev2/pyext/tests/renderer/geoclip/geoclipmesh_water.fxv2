@@ -33,7 +33,7 @@ typeblock typ_water {
   };
 }
 ///////////////////////////////////////////////////////////////
-libblock lib_ground_vtx_base : ub_frgX : lib_mmnoise : typ_water {
+libblock lib_ground_vtx_base : ub_frgX : ublk_std_matrices : lib_mmnoise : typ_water {
 
   float radial_sinwave_fn(vec3 center, vec3 pos, float timeval, float frq, float baseamp, float rscale, float falloff) {
     frq          = frq * 0.00033;
@@ -121,38 +121,48 @@ libblock lib_ground_vtx_base : ub_frgX : lib_mmnoise : typ_water {
   }
 }
 ///////////////////////////////////////////////////////////////
-libblock lib_ground_vtx : ub_frgX : lib_ground_vtx_base {
+libblock lib_ground_vtx : ub_frgX : ublk_std_matrices : lib_ground_vtx_base {
 
-  vec4 vs_common_mono(vec4 pos, vec3 nrm, vec3 bin) {
-    vec4 cpos = v * pos;
-
+  vec4 vs_common_mono(vec4 pos, vec3 nrm, vec2 uv) {
     x_pos _x = vs_compute_position(pos.xyz);
 
-    frg_wpos   = _x.new_pos;
-    frg_tbn[0] = _x.true_wpos.xyz;
-
-    float D      = clamp(length(pos) * 0.0001, 0, 1);
-    vec3 C       = mix(nrm, vec3(0.5), D);
-    float intens = mix(0.5 + _x.signal.y * 0.1, 0.5, D);
-
-    frg_clr = vec4(vec3(1) * intens, 1);
-    frg_uv0 = uv0 * vec2(1, -1);
-
-    vec3 wnormal    = normalize(mrot * nrm);
-    vec3 wbitangent = normalize(mrot * bin);
-    vec3 wtangent   = cross(wbitangent, wnormal);
-
-    frg_camz    = _x.signal;
-    frg_camdist = 1;
+    frg_wpos     = _x.new_pos;
+    frg_tbn[0]   = _x.true_wpos.xyz;
+    frg_uv0      = uv * vec2(1, -1);
+    frg_camz     = _x.signal;
+    frg_camdist  = 1;
+    frg_clr      = vec4(1);
+    frg_modcolor = vec4(1);
     return _x.new_pos;
   }
 }
 
 ///////////////////////////////////////////////////////////////
+// Clipmap uses SVtxV12N12T16 (position + normal + vec4 uv0, no binormal).
+// Custom interface matches that layout; outputs mirror vif_PNBT so the
+// fragment shader can read frg_wpos / frg_tbn / frg_uv0 / etc as usual.
+///////////////////////////////////////////////////////////////
+vertex_interface vif_PNt4 : ub_std_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal   : NORMAL;
+    vec4 uv0      : TEXCOORD0;
+  }
+  outputs {
+    vec4  frg_wpos;
+    vec4  frg_clr;
+    vec2  frg_uv0;
+    mat3  frg_tbn;
+    float frg_camdist;
+    vec3  frg_camz;
+    vec4  frg_modcolor;
+  }
+}
 vertex_shader vs_ground_mono
-    : vif_PNBT
+    : vif_PNt4
+    : ublk_std_matrices
     : lib_ground_vtx {
-  vec4 new_pos = vs_common_mono(position, normal, binormal);
+  vec4 new_pos = vs_common_mono(position, normal, uv0.xy);
   gl_Position  = mvp * new_pos;
 }
 ///////////////////////////////////////////////////////////////
@@ -178,14 +188,16 @@ vertex_shader vs_my_forward_depthprepass_mono
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_fwd_ground_mono
     : iface_forward
+    : lib_math
+    : lib_brdf
+    : lib_def
     : lib_fwd
     : lib_fwd_impl
     : lib_mmnoise
     : ub_frgX
     : sset_water
-    : ublk_std_lighting
     : storage_fwd_lighting
-    : sset_std_lighting {
+    : std_forward_all {
 
   vec3 wpos = frg_tbn[0];
 

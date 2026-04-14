@@ -86,6 +86,13 @@ struct VkRtGroupImpl {
   int _height        = 0;
   int _pipeline_bits = -1;
   bool _autoclear = true;
+  // One-shot flag set by FBI::transitionDepthForSampling().
+  // When true, the next _transitionToRenderTarget() for the depth buffer
+  // targets VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL instead of
+  // VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, and the VulkanRenderInfo's
+  // depth attachment imageLayout picks up the same value. The flag resets
+  // at the end of the matching _popRtGroup.
+  bool _depthReadOnlyMode = false;
   vkmsaastate_ptr_t _msaaState;
 
   vkrenderinfo_ptr_t _rinfo_retain;

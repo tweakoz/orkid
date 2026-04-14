@@ -116,7 +116,7 @@ class TERRAINAPP(object):
     sceneparams.AmbientLight = vec3(0.1)
     sceneparams.DepthFogDistance = float(10000)
     sceneparams.DepthFogPower = float(2)
-    sceneparams.SkyboxTexPathStr = "src://envmaps/tozenv_nebula.png"
+    sceneparams.SkyboxTexPathStr = "ork_envmaps|tozenv_nebula"
     ###################################
     # post fx node
     ###################################
@@ -152,7 +152,7 @@ class TERRAINAPP(object):
     gmtl.shaderpath = str(thisdir()/"geoclipmesh_terrain.fxv2")
     #gmtl.addLightingLambda()
     gmtl.gpuInit(ctx)
-    gmtl.blending = tokens.ALPHA
+    #gmtl.blending = tokens.ALPHA
     freestyle = gmtl.freestyle
     assert(freestyle)
     param_m= freestyle.param("m")

@@ -125,7 +125,6 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
   CompositingPassData MY_CPD = _currentCIMPL->topCPD(); // copy top CPD
   auto pbrcommon             = _node->_pbrcommon;
   bool renderingPROBE        = fpass->_renderingPROBE;
-  pbrcommon->_useDepthPrepass = false;
   ///////////////////////////////////////////////////////////////////////////
   // CPD modifications for this set of passes
   ///////////////////////////////////////////////////////////////////////////
@@ -200,13 +199,22 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
   // main color pass
   ///////////////////////////////////////////////////////////////////////////
 
-  //FBI->rtGroupClear(rtg_out.get()); // TODO: vulkan 
+  //FBI->rtGroupClear(rtg_out.get()); // TODO: vulkan
+  // When depth prepass is active, flip the rtg's depth buffer into
+  // read-only mode for the color pass. This lets shaders that bind
+  // RCFD_DEPTH_MAP (e.g. water translucency) sample the already-filled
+  // depth texture while it's still bound as a read-only depth attachment.
+  // One-shot: VkFrameBufferInterface resets the mode after the matching
+  // PopRtGroup below.
+  if (pbrcommon->_useDepthPrepass) {
+    FBI->transitionDepthForSampling(rtg_out);
+  }
   FBI->PushRtGroup(rtg_out.get());
   if(_node->_pbrcommon->_enable_skybox){
     OrkProfilerSampleScope(CHANNEL_GPU, "fwd:skybox");
     _render_skybox(fpass);
   }
-  { 
+  {
     OrkProfilerSampleScope(CHANNEL_GPU, "fwd:color_pass");
     _render_colorpass(fpass);
   }

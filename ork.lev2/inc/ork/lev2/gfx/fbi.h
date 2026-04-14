@@ -104,6 +104,20 @@ public:
   virtual void cloneDepthBuffer(rtgroup_ptr_t src, rtgroup_ptr_t dst) {}
   virtual void downsample2x2(rtgroup_ptr_t src, rtgroup_ptr_t dst) {}
 
+  // Put the rtg's depth buffer into a state where the next render pass on
+  // this rtg can use it as a read-only depth attachment AND fragment shaders
+  // in that pass can sample it as a texture. Assumes the depth buffer already
+  // contains meaningful data (typical use: call after a depth prepass has
+  // filled it, before pushing the same rtg again for the color pass).
+  //
+  // Drawables in the resulting color pass MUST have depth-write disabled,
+  // or Vulkan validation will complain about writing to a read-only
+  // attachment. Orkid's depth-prepass mode already implies this.
+  //
+  // One-shot: the mode resets after the next matching PopRtGroup so the
+  // next frame starts in normal read/write depth-attachment mode again.
+  virtual void transitionDepthForSampling(rtgroup_ptr_t rtg) {}
+
   int GetVPX() {
     return viewport()._x;
   }

@@ -297,9 +297,17 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
               [](projectedgrid_drawabledataptr_t drw) -> fxpipeline_ptr_t { return drw->_pipeline_color; },
               [](projectedgrid_drawabledataptr_t drw, fxpipeline_ptr_t pipe) { drw->_pipeline_color = pipe; })
           .def_property(
-              "griddim",
-              [](projectedgrid_drawabledataptr_t drw) -> int { return drw->_griddim; },
-              [](projectedgrid_drawabledataptr_t drw, int val) { drw->_griddim = val; });
+              "lod0_cell_size",
+              [](projectedgrid_drawabledataptr_t drw) -> float { return drw->_lod0_cell_size; },
+              [](projectedgrid_drawabledataptr_t drw, float val) { drw->_lod0_cell_size = val; })
+          .def_property(
+              "lod0_cells",
+              [](projectedgrid_drawabledataptr_t drw) -> int { return drw->_lod0_cells; },
+              [](projectedgrid_drawabledataptr_t drw, int val) { drw->_lod0_cells = val; })
+          .def_property(
+              "lod_count",
+              [](projectedgrid_drawabledataptr_t drw) -> int { return drw->_lod_count; },
+              [](projectedgrid_drawabledataptr_t drw, int val) { drw->_lod_count = val; });
   type_codec->registerStdCodec<projectedgrid_drawabledataptr_t>(projgriddrawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto clipmapdrawdata_type = //

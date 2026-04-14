@@ -36,7 +36,7 @@ class WaterApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=0,fullscreen=False)
+    self.ezapp = OrkEzApp.create(self,ssaa=0,width=1080,height=720,fullscreen=False)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.curtime = 0.0
 
@@ -66,7 +66,8 @@ class WaterApp(object):
     sceneparams.AmbientLight = vec3(0.1)
     sceneparams.DepthFogDistance = float(10000)
     sceneparams.DepthFogPower = float(2)
-    sceneparams.SkyboxTexPathStr = "src://envmaps/tozenv_nebula.png"
+    sceneparams.SkyboxTexPathStr = "ork_envmaps|tozenv_nebula"
+
     ###################################
     # post fx node
     ###################################

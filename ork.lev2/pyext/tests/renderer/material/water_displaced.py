@@ -119,15 +119,23 @@ class WaterDisplacedApp(ComponentizedApplication):
     freestyle = gmtl.freestyle
     assert freestyle
 
+    # ring-LOD mesh parameters (see ProjectedGridDrawableData header)
+    LOD0_CELL_SIZE = 0.5
+    LOD0_CELLS     = 32
+    LOD_COUNT      = 7
+    # coarsest LOD cell size — VS snaps camera xz to this to avoid crawling
+    camera_snap    = LOD0_CELL_SIZE * float(1 << (LOD_COUNT - 1))
+
     param_time      = freestyle.param("Time")
     param_color     = freestyle.param("BaseColor")
     param_plightamp = freestyle.param("plightamp")
-    param_m         = freestyle.param("m")
+    param_snap      = freestyle.param("CameraSnap")
     assert param_time
+    assert param_snap
 
     gmtl.bindParam(param_time,      lambda: self.curtime)
     gmtl.bindParam(param_color,     lambda: vec3(0.18, 0.30, 0.42))
-    gmtl.bindParam(param_m,         tokens.RCFD_M)
+    gmtl.bindParam(param_snap,      camera_snap)
     gmtl.bindParam(param_plightamp, 0.15)
 
     self.water_material = gmtl
@@ -137,10 +145,11 @@ class WaterDisplacedApp(ComponentizedApplication):
     # NOTE: added to [SGC.layer_fwd] only — not on depth_prepass.
     ###################################
 
-    gdata = lev2.GroundPlaneDrawableData()
-    gdata.pbrmaterial = gmtl
-    gdata.extent      = 10000.0
-    gdata.griddim     = 256
+    gdata = lev2.ProjectedGridDrawableData()
+    gdata.pbrmaterial    = gmtl
+    gdata.lod0_cell_size = LOD0_CELL_SIZE
+    gdata.lod0_cells     = LOD0_CELLS
+    gdata.lod_count      = LOD_COUNT
     self.gdata = gdata
 
     self.drawable_water = gdata.createSGDrawable(SG)

@@ -414,6 +414,7 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   void msaaBlit(rtgroup_ptr_t src, rtgroup_ptr_t dst) final;
   void blit(rtgroup_ptr_t src, rtgroup_ptr_t dst) final;
   void downsample2x2(rtgroup_ptr_t src, rtgroup_ptr_t dst) final;
+  void transitionDepthForSampling(rtgroup_ptr_t rtg) final;
 
   //////////////////////////////////////////////
 

@@ -1,6 +1,7 @@
 ///////////////////////////////////////////////////////////////
-// displaced water shader (vertex displacement + fragment shading)
-// requires a subdivided GroundPlaneDrawable (set griddim ~256)
+// displaced water shader — ring-LOD mesh centered on camera
+// (see ProjectedGridDrawableData). Vertex positions are camera-local
+// world xz; VS adds snapped camera xz and displaces y by water_height.
 ///////////////////////////////////////////////////////////////
 fxconfig fxcfg_default {
   glsl_version = "450";
@@ -11,10 +12,15 @@ fxconfig fxcfg_default {
   import "orkshader://stdtools.i2";
 }
 ///////////////////////////////////////////////////////////////
+// CameraSnap is the coarsest LOD cell size; the VS snaps camera xz
+// to a multiple of CameraSnap before adding it to the local vertex
+// xz, so the ring-LOD mesh follows the camera pop-free.
+///////////////////////////////////////////////////////////////
 uniform_block ub_frgX (descriptor_set 0) {
   float Time;
   vec3 BaseColor;
   float plightamp;
+  float CameraSnap;
 }
 
 ///////////////////////////////////////////////////////////////
@@ -31,29 +37,34 @@ libblock lib_water_height : ub_frgX : lib_mmnoise {
   }
 
   float water_height(vec3 wpos) {
-    float speed   = Time * 1.65;
-    float baseamp = 8.0;
+    float speed   = Time * 0.35;
+    float baseamp = 6.0;
     float cdist   = 3000.0;
     float falloff = 0.09;
 
+    // long-period swell (gerstner sum) — slow motion, hundreds-of-meters wavelength
     float h = 0.0;
     h += radial_gerstner_y(vec3(-6, 0,-32) * cdist, wpos, speed * 0.9, 0.003131, baseamp * 0.3, 0.00013, falloff);
     h += radial_gerstner_y(vec3( 6, 0,  5) * cdist, wpos, speed * 2.1, 0.0131,   baseamp * 0.3, 0.00013, falloff);
     h += radial_gerstner_y(vec3(11, 0, -6) * cdist, wpos, speed * 0.6, 0.0091,   baseamp * 0.3, 0.00013, falloff);
     h += radial_gerstner_y(vec3(-11,0,  6) * cdist, wpos, speed * 0.3, 0.00111,  baseamp * 0.5, 0.00013, falloff);
 
-    for (int i = 0; i < 4; i++) {
-      float amp = 0.6 / float(i + 1);
-      float frq = 0.5 + float(i) * 0.5;
-      float spd = 3.1 + float(i) * 0.1;
-      float n   = noise(vec3(wpos.xz * frq * 0.01, Time * spd));
-      h += n * amp;
+    // high-frequency ripple stack — 6 octaves, ~2m → ~6cm wavelength, zero-centered
+    float amp = 0.9;
+    float frq = 0.5;   // 1/m  →  wavelength ≈ 2m at i=0
+    float spd = 0.25;  // slow scroll at base octave
+    for (int i = 0; i < 6; i++) {
+      float n = noise(vec3(wpos.xz * frq, Time * spd)) - 0.5;
+      h  += n * amp;
+      amp *= 0.55;
+      frq *= 2.0;
+      spd *= 1.35;
     }
     return h;
   }
 
   vec3 water_normal(vec3 wpos) {
-    float eps = 0.35;
+    float eps = 0.04;   // matched to the finest ripple octave in water_height
     float h0  = water_height(wpos);
     float hx  = water_height(wpos + vec3(eps, 0.0, 0.0));
     float hz  = water_height(wpos + vec3(0.0, 0.0, eps));
@@ -66,24 +77,49 @@ libblock lib_water_height : ub_frgX : lib_mmnoise {
 ///////////////////////////////////////////////////////////////
 // vertex shader — displaces position.y by water_height(wpos)
 ///////////////////////////////////////////////////////////////
+vertex_interface vif_CUSTOM : vif_forward_outputs : ub_std_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec2 uv0 : TEXCOORD0;
+  }
+}
 vertex_shader vs_water_displaced
-    : vif_FWDTEST
-    : lib_pbr_vtx
+    : vif_CUSTOM
     : lib_water_height
     : ublk_std_matrices {
 
-  // evaluate wave height at the undisplaced world xz
-  vec4 wpos_undisp = m * position;
-  float h          = water_height(wpos_undisp.xyz);
+  // ring-LOD mesh: vertex position.xz is camera-local world xz (y=0).
+  // Extract camera world position from inv_v's translation column, snap
+  // xz to the coarsest LOD cell size (CameraSnap) for pop-free follow,
+  // then add snapped camera xz to get the absolute world position.
+  vec3 cam_world   = inv_v[3].xyz;
+  vec2 cam_snapped = floor(cam_world.xz / CameraSnap) * CameraSnap;
+  vec3 wpos        = vec3(cam_snapped.x + position.x, 0.0, cam_snapped.y + position.z);
 
-  // displace in local space (valid while model matrix is rigid / unscaled in y)
-  vec4 dpos = position;
-  dpos.y   += h;
+  // wave displacement
+  float h = water_height(wpos);
+  wpos.y += h;
 
-  vs_common(dpos, normal, binormal);
+  // analytic tangent frame from finite differences on water_height
+  float eps = 0.04;
+  float hx  = water_height(wpos + vec3(eps, 0.0, 0.0));
+  float hz  = water_height(wpos + vec3(0.0, 0.0, eps));
+  vec3 dx   = vec3(eps, hx - h, 0.0);
+  vec3 dz   = vec3(0.0, hz - h, eps);
+  vec3 wnormal    = normalize(cross(dz, dx));
+  vec3 wtangent   = normalize(dx);
+  vec3 wbitangent = normalize(dz);
 
-  gl_Position  = mvp * dpos;
-  frg_uv0      = vec2(1, 1) + (uv0 * vec2(1, -1));
+  vec4 wpos4   = vec4(wpos, 1.0);
+  vec4 cpos    = v * wpos4;
+
+  frg_wpos     = wpos4;
+  frg_tbn      = mat3(wtangent, wbitangent, wnormal);
+  frg_camz     = wnormal;
+  frg_camdist  = -cpos.z;
+
+  gl_Position  = vp * wpos4;
+  frg_uv0      = uv0;                 // uv0.x encodes LOD index for debug
   frg_clr      = vec4(1, 1, 1, 1);
   frg_modcolor = vec4(1, 1, 1, 1);
 }

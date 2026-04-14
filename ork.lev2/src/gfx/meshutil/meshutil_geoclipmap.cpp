@@ -18,8 +18,8 @@ vertex_vect_t Quad::generateTriangleList() const {
   vertex_vect_t triangles;
   auto addTriangle = [&](const dvec3& v1, const dvec3& v2, const dvec3& v3) {
     triangles.push_back(v1);
-    triangles.push_back(v2);
     triangles.push_back(v3);
+    triangles.push_back(v2);
   };
   auto center = (vertices[0] + vertices[1] + vertices[2] + vertices[3]) * 0.25f;
 

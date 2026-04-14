@@ -226,6 +226,19 @@ static constexpr VkTransitionParams kToRenderTargetDepth = {
     VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT     // dstStage
 };
 
+// Read-only depth attachment: depth test reads without writes, and
+// fragment shaders sample the same image as a texture. Used when the
+// parent VkRtGroupImpl has _depthReadOnlyMode set via
+// FBI::transitionDepthForSampling() — typical path: depth-prepass filled
+// the buffer, the color pass uses it read-only and samples from it.
+static constexpr VkTransitionParams kToRenderTargetDepthReadOnly = {
+    VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL,                                                       // layout
+    VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,                                                  // srcAccess
+    VkAccessFlagBits(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_SHADER_READ_BIT),     // dstAccess
+    VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,                                                     // srcStage
+    VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT             // dstStage
+};
+
 static constexpr VkTransitionParams kToTextureColor = {
     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,      // layout
     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,          // srcAccess
@@ -310,7 +323,11 @@ void VklRtBufferImpl::_transitionToRenderTarget(vkpricmdbufimpl_ptr_t cb) { //
       _transitionImage(cb, kToRenderTargetColor);
       break;
     case "depth"_crcu: // depth attachment
-      _transitionImage(cb, kToRenderTargetDepth);
+      if (_rtg_impl && _rtg_impl->_depthReadOnlyMode) {
+        _transitionImage(cb, kToRenderTargetDepthReadOnly);
+      } else {
+        _transitionImage(cb, kToRenderTargetDepth);
+      }
       break;
     case "swapchain"_crcu: // present attachment
       _transitionImage(cb, kToRenderTargetColor);

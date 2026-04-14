@@ -620,8 +620,11 @@ void VkFxInterface::bindParamTexture(const FxShaderParam* hpar, const Texture* p
         actual_layout = sample_img->_currentLayout;
       }
 
-      // Assert if the actual image layout is wrong - this catches the problem at the source
-      if(actual_layout != desc_info->imageLayout ){
+      // Assert if the actual image layout is wrong - this catches the problem at the source.
+      // DEPTH_READ_ONLY_OPTIMAL is a legitimate sample-time layout (see
+      // FrameBufferInterface::transitionDepthForSampling) so suppress the debug noise for it.
+      if(actual_layout != desc_info->imageLayout
+         && actual_layout != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL){
         printf("DEBUG: Binding RTG texture '%s' ptr=%p, descriptor expects layout=%d, actual image layout=%d (expected %d)\n",
              pTex->_debugName.c_str(), pTex, desc_info->imageLayout, actual_layout, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
       }
@@ -632,12 +635,17 @@ void VkFxInterface::bindParamTexture(const FxShaderParam* hpar, const Texture* p
         printf("  Swapchain RTGs should NEVER be used as textures - they're for presentation only!\n");
         printf("  Texture: %s\n", pTex->_debugName.c_str());
         OrkAssertI(false, "RTG texture in UNDEFINED layout - likely a swapchain RTG being misused as texture");
-      } else if (actual_layout != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+      } else if (actual_layout != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+              && actual_layout != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL) {
+        // DEPTH_READ_ONLY_OPTIMAL is valid for sampling depth textures that
+        // are simultaneously bound as a read-only depth attachment — see
+        // FrameBufferInterface::transitionDepthForSampling().
         printf("ERROR: RTG texture has wrong actual image layout!\n");
         printf("  Texture: %s\n", pTex->_debugName.c_str());
         printf("  Actual image layout: %d\n", actual_layout);
-        printf("  Should be: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL (%d)\n", VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        OrkAssertI(false, "RTG texture image is in wrong layout - not transitioned to SHADER_READ_ONLY_OPTIMAL");
+        printf("  Should be: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL (%d) or VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL (%d)\n",
+               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL);
+        OrkAssertI(false, "RTG texture image is in wrong layout - not transitioned to a shader-readable layout");
       }
 
       // Also check descriptor expectation matches

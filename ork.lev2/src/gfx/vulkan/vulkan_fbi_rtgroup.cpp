@@ -311,6 +311,10 @@ void VkFrameBufferInterface::_popRtGroup() {
       }
       case "user"_crcu: { // we will probably use it as a texture...
         RTGIMPL->_transitionToTexture(_contextVK->primary_cb());
+        // One-shot: the read-only-depth mode lasts for a single push/pop
+        // cycle. Reset it here so the next push on this RTG goes back to
+        // the default read/write depth attachment transition.
+        RTGIMPL->_depthReadOnlyMode = false;
         break;
       }
       case "arrayslice"_crcu: {
@@ -369,6 +373,29 @@ void VkFrameBufferInterface::_popRtGroup() {
         "PopRtGroup: RTG %p, primary CB %p",
         (void*)_active_rtgroup,
         _contextVK->primary_cb() ? (void*)_contextVK->primary_cb().get() : nullptr);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkFrameBufferInterface::transitionDepthForSampling(rtgroup_ptr_t rtg) {
+  if (not rtg) return;
+  auto try_impl = rtg->_impl.tryAsShared<VkRtGroupImpl>();
+  if (not try_impl) return;
+  auto impl = try_impl.value();
+  if (not impl->_depth_buffer_impl) return;
+
+  // This method only mutates CPU-side state (mode flag + cached renderinfo)
+  // — no command-buffer work, no barriers. The actual layout transition
+  // happens inside the next _pushRtGroup() → _transitionToRenderTarget()
+  // call on this rtg, which already handles ending the active pass first.
+  // So it's safe to call while another RTG's render pass is active.
+  impl->_depthReadOnlyMode = true;
+
+  // Invalidate cached renderinfo so the next renderinfo() call rebuilds
+  // with _rainfo_depth.imageLayout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL
+  // (copied from _depth_buffer_impl->_currentLayout after the transition).
+  impl->_rinfo_retain = nullptr;
+  impl->_rinfo_resume_retain = nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
