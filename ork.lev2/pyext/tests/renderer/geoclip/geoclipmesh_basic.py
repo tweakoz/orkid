@@ -42,13 +42,14 @@ class GeoClipMapApp(ComponentizedApplication):
       eye=vec3(0, 150, -15),
       tgt=vec3(0, 150, 0),
       up=vec3(0, 1, 0),
+      far = 10000.0,
       grid_variant=None
     )
 
     # WASD movement state
     self.move_vel = vec2(0, 0)
     self.pos_offset = vec3(0, 0, 0)
-    self.move_speed = 150.0
+    self.move_speed = 300.0
 
     self.createEzApp(ssaa=0)
 
@@ -94,7 +95,7 @@ class GeoClipMapApp(ComponentizedApplication):
 
     gdata = GeoClipMapDrawable()
     gdata.pbrmaterial = gmtl
-    gdata.numLevels = 8
+    gdata.numLevels = 16
     gdata.ringSize = 256
     gdata.baseQuadSize = 1
     gdata.circle = False
@@ -144,21 +145,20 @@ class GeoClipMapApp(ComponentizedApplication):
 
   def _onUiEvent(self, uievent):
     code = uievent.code
-    move_speed = 5.0
 
     if code == 2634741946:  # key down
       keycode = uievent.keycode
       if keycode == ord('W'):
-        self.move_vel = vec2(self.move_vel.x, move_speed)
+        self.move_vel = vec2(self.move_vel.x, 1)
         return ui.HandlerResult()
       elif keycode == ord('S'):
-        self.move_vel = vec2(self.move_vel.x, -move_speed)
+        self.move_vel = vec2(self.move_vel.x, -1)
         return ui.HandlerResult()
       elif keycode == ord('A'):
-        self.move_vel = vec2(-move_speed, self.move_vel.y)
+        self.move_vel = vec2(-1, self.move_vel.y)
         return ui.HandlerResult()
       elif keycode == ord('D'):
-        self.move_vel = vec2(move_speed, self.move_vel.y)
+        self.move_vel = vec2(1, self.move_vel.y)
         return ui.HandlerResult()
 
     elif code == 957111669:  # key up

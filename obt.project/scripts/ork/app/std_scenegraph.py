@@ -101,6 +101,7 @@ class StandardSceneGraphComponent(ApplicationComponent):
                eye=vec3(0,0,5),
                tgt=vec3(0),
                up=vec3(0,1,0),
+               far = 10000.0,
                sg_params=None,
                post_nodes=None,
                use_float_color_buffer=True,
@@ -121,6 +122,7 @@ class StandardSceneGraphComponent(ApplicationComponent):
     self.initial_eye = eye
     self.initial_tgt = tgt
     self.initial_up = up
+    self.initial_far = far
     self.use_float_color_buffer = use_float_color_buffer
     self.layout_component = layout_component
     sgparam_vm = VarMap()
@@ -194,7 +196,7 @@ class StandardSceneGraphComponent(ApplicationComponent):
                                               eye=self.initial_eye,
                                               tgt=self.initial_tgt,
                                               up=self.initial_up,
-                                              far=10000.0)
+                                              far=self.initial_far)
     if self.using_pbr:
       self.pbr_common = SG.pbr_common
       self.pbr_common.useDepthPrepass = True
