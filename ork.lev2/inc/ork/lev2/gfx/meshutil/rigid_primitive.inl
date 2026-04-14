@@ -516,8 +516,26 @@ void RigidPrimitive<vtx_t>::gpuLoadFromChunks(
 
       gpu_prim->_primtype  = primtype;
       gpu_prim->_idxbuffer = std::make_shared<idxbuf_t>(numindices);
-      auto gpuindexptr     = (void*)context->GBI()->LockIB(*gpu_prim->_idxbuffer.get());
-      memcpy(gpuindexptr, indexbufferdata, numindices * indexsize);
+      auto gpuindexptr     = (uint32_t*)context->GBI()->LockIB(*gpu_prim->_idxbuffer.get());
+      // idxbuf_t is always uint32_t but the chunk data may be 16-bit — upcast if so.
+      // Without this, the trailing half of the dst buffer is left uninitialized
+      // (zero-valued after allocation) and draws triangles with stray indices
+      // pointing at vertex 0 — hence the "geometry radiating from origin" glitch.
+      switch (indexsize) {
+        case 2: {
+          auto src16 = (const uint16_t*)indexbufferdata;
+          for (size_t i = 0; i < numindices; i++) {
+            gpuindexptr[i] = uint32_t(src16[i]);
+          }
+          break;
+        }
+        case 4:
+          memcpy(gpuindexptr, indexbufferdata, numindices * 4);
+          break;
+        default:
+          OrkAssert(false);
+          break;
+      }
       context->GBI()->UnLockIB(*gpu_prim->_idxbuffer.get());
     }
     hdrstream->GetItem<size_t>(end_lod_marker);
@@ -592,8 +610,24 @@ void RigidPrimitive<vtx_t>::gpuLoadFromChunksA(
 
       gpu_prim->_primtype  = primtype;
       gpu_prim->_idxbuffer = std::make_shared<idxbuf_t>(numindices);
-      auto gpuindexptr     = (void*) context->GBI()->LockIB(*gpu_prim->_idxbuffer.get());
-      memcpy(gpuindexptr, indexbufferdata, numindices * indexsize);
+      auto gpuindexptr     = (uint32_t*)context->GBI()->LockIB(*gpu_prim->_idxbuffer.get());
+      // idxbuf_t is always uint32_t but the chunk data may be 16-bit — upcast if so.
+      // See matching fix in gpuLoadFromChunksA / fromClusterizer.
+      switch (indexsize) {
+        case 2: {
+          auto src16 = (const uint16_t*)indexbufferdata;
+          for (size_t i = 0; i < numindices; i++) {
+            gpuindexptr[i] = uint32_t(src16[i]);
+          }
+          break;
+        }
+        case 4:
+          memcpy(gpuindexptr, indexbufferdata, numindices * 4);
+          break;
+        default:
+          OrkAssert(false);
+          break;
+      }
       context->GBI()->UnLockIB(*gpu_prim->_idxbuffer.get());
     }
     hdrstream->GetItem<size_t>(end_lod_marker);
