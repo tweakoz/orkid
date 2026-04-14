@@ -61,7 +61,7 @@ libblock lib_ground_vtx_base : ub_frgX : ublk_std_matrices : lib_mmnoise : typ_w
     _x.true_wpos = matO2W * vec4(pos, 1);
 
     float speed   = Time * 1.65;
-    float baseamp = 32;
+    float baseamp = 8;
     vec3 wave_pos = _x.true_wpos.xyz;
     float radius  = length(wave_pos.xz);
 

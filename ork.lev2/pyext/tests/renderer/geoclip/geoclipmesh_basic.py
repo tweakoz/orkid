@@ -94,7 +94,7 @@ class GeoClipMapApp(ComponentizedApplication):
 
     gdata = GeoClipMapDrawable()
     gdata.pbrmaterial = gmtl
-    gdata.numLevels = 4
+    gdata.numLevels = 8
     gdata.ringSize = 256
     gdata.baseQuadSize = 1
     gdata.circle = False
@@ -144,20 +144,21 @@ class GeoClipMapApp(ComponentizedApplication):
 
   def _onUiEvent(self, uievent):
     code = uievent.code
+    move_speed = 5.0
 
     if code == 2634741946:  # key down
       keycode = uievent.keycode
       if keycode == ord('W'):
-        self.move_vel = vec2(self.move_vel.x, 1)
+        self.move_vel = vec2(self.move_vel.x, move_speed)
         return ui.HandlerResult()
       elif keycode == ord('S'):
-        self.move_vel = vec2(self.move_vel.x, -1)
+        self.move_vel = vec2(self.move_vel.x, -move_speed)
         return ui.HandlerResult()
       elif keycode == ord('A'):
-        self.move_vel = vec2(-1, self.move_vel.y)
+        self.move_vel = vec2(-move_speed, self.move_vel.y)
         return ui.HandlerResult()
       elif keycode == ord('D'):
-        self.move_vel = vec2(1, self.move_vel.y)
+        self.move_vel = vec2(move_speed, self.move_vel.y)
         return ui.HandlerResult()
 
     elif code == 957111669:  # key up
