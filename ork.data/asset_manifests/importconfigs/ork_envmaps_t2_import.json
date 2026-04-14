@@ -1,0 +1,13 @@
+{
+  "namespace": "ork_envmaps_t2",
+  "source_dir": "<assetcache>/envmaps2",
+  "local_loc": "<assetcache>/envmaps2",
+  "manifest": "${ORKID_WORKSPACE_DIR}/ork.data/asset_manifests/orkid_t2.json",
+  "encryption_key": "orkid_rulez",
+  "assets": [
+    {
+      "id": "test2",
+      "include": "*.xir"
+    }
+  ]
+}

@@ -73,7 +73,7 @@ def _clamp_image(img, max_val, verbose=False):
 ###############################################################################
 
 NUM_ROUGHNESS_LEVELS = 10
-ROUGHNESS_POWER = 0.5
+ROUGHNESS_POWER = 1.0
 SPECULAR_SAMPLES = 8192
 DIFFUSE_SAMPLES = 4096
 SAMPLES_PER_PASS = 2048   # max samples per GPU submission to avoid watchdog

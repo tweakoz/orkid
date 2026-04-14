@@ -35,6 +35,10 @@
     "singularity_ext": {
       "encryption_key": "singularity_rulez",
       "remote_location": "orkid_ext"
+    },
+    "ork_envmaps_t2": {
+      "encryption_key": "orkid_rulez",
+      "remote_location": "orkid_std"
     }
   },
   "locations": {

@@ -156,7 +156,7 @@ class EnvMapStudio(ComponentizedApplication):
     # Display parameters (shader uniforms)
     self.clamp_val = 16.0
     self.gain_val = 1.0
-    self.gamma_val = 2.2
+    self.gamma_val = 1.0
     self.saturation_val = 1.0
     self.tonemap_aces = True
     self.aces_exposure = 1.0
@@ -164,10 +164,10 @@ class EnvMapStudio(ComponentizedApplication):
 
     # Preview parameters
     self.pv_scale_val = 0.5
-    self.pv_num_roughness = 3
+    self.pv_num_roughness = 10
     self.pv_roughness_curve = ROUGHNESS_POWER
     self.pv_roughness_bias = 0.0
-    self.pv_num_samples = 128
+    self.pv_num_samples = 1024
     self.pv_do_diffuse = True
 
     # Bake parameters
@@ -317,7 +317,7 @@ class EnvMapStudio(ComponentizedApplication):
 
     self.gamma_slider = display_vp.makeChild(
       uiclass=lev2.ui.FloatSlider,
-      args=["Gamma", sli_col, 0.1, 3.0, 2.2])
+      args=["Gamma", sli_col, 0.1, 3.0, 1.0])
     self.gamma_slider.setRange(0.1, 3.0)
     self.gamma_slider.update_on_drag = True
     self.gamma_slider.onValueChanged = lambda w: self._set_and_save('gamma_val', w.value)
@@ -347,7 +347,7 @@ class EnvMapStudio(ComponentizedApplication):
 
     self.pv_levels_slider = preview_vp.makeChild(
       uiclass=lev2.ui.IntSlider,
-      args=["RoughnessLevels", sli_col, 1, 20, 3])
+      args=["RoughnessLevels", sli_col, 1, 20, 10])
     self.pv_levels_slider.setRange(1, 20)
     self.pv_levels_slider.onValueChanged = lambda w: self._set_and_save('pv_num_roughness', w.value)
 
@@ -365,7 +365,7 @@ class EnvMapStudio(ComponentizedApplication):
 
     self.pv_samples_slider = preview_vp.makeChild(
       uiclass=lev2.ui.IntSlider,
-      args=["Samples", sli_col, 16, 16384, 128])
+      args=["Samples", sli_col, 16, 16384, 1024])
     self.pv_samples_slider.setRange(16, 16384)
     self.pv_samples_slider.onValueChanged = lambda w: self._set_and_save('pv_num_samples', w.value)
 
