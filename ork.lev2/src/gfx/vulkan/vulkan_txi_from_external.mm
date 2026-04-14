@@ -268,11 +268,11 @@ void VkTextureInterface::initTextureFromGpuExternalSurface(Texture* ptex) {
       submitInfo.commandBufferCount = 1;
       submitInfo.pCommandBuffers = &cmdBuffer;
 
-      vkctx->_gfxqueue->submit(&submitInfo, VK_NULL_HANDLE);
+      vkctx->_gfxqueue->queueSubmit(&submitInfo, VK_NULL_HANDLE);
 
       // Wait for layout transition to complete before freeing command buffer
       // TODO: Replace with deferred cleanup to avoid blocking
-      vkQueueWaitIdle(vkctx->_gfxqueue->_vkqueue);
+      vkctx->_gfxqueue->queueWaitIdle();
       vkFreeCommandBuffers(vkctx->_vkdevice, vkctx->_vkcmdpool_graphics, 1, &cmdBuffer);
 
       ///////////////////////////////////////////////////////////////////////
