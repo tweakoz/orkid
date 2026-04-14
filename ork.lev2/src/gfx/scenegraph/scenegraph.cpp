@@ -261,6 +261,11 @@ void Scene::applyRuntimeParams(varmap::varmap_ptr_t params) {
     } else if (texture_path == "futcity8k") {
       texture_path = "ork_envmaps|futcity8k";
     }
+    else {
+      if( texture_path.find("<") != texture_path.npos ) {
+        texture_path = file::Path::expandPathString(texture_path);
+      }
+    }
 
     _compositorData->_defaultBG = false;
     auto load_req               = std::make_shared<asset::LoadRequest>(texture_path);
