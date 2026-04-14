@@ -13,10 +13,12 @@ fxconfig fxcfg_default {
 
 uniform_block ub_frgX (descriptor_set 0) {
   float Time;
-  vec3 BaseColor;
   float GroundColorPower;
-  vec2 bufinvdim;
   float plightamp;
+  float BaseQuadSize; // for ClipMap seam removal
+  vec3 BaseColor;
+  float pad;
+  vec2 bufinvdim;
 }
 
 sampler_set sset_water (descriptor_set 0) {
@@ -61,7 +63,7 @@ libblock lib_ground_vtx_base : ub_frgX : ublk_std_matrices : lib_mmnoise : typ_w
     _x.true_wpos = matO2W * vec4(pos, 1);
 
     float speed   = Time * 1.65;
-    float baseamp = 8;
+    float baseamp = 4;
     vec3 wave_pos = _x.true_wpos.xyz;
     float radius  = length(wave_pos.xz);
 
@@ -162,13 +164,44 @@ vertex_shader vs_ground_mono
     : vif_PNt4
     : ublk_std_matrices
     : lib_ground_vtx {
-  vec4 new_pos = vs_common_mono(position, normal, uv0.xy);
+
+  // LOD-seam elimination via vertex morphing.
+  //
+  // Each vertex is tagged with its ring level L (baked into uv0.z by
+  // geoclipmap::Generator::generateClipmaps). As a vertex approaches the
+  // outer edge of its ring, it morphs toward the coarse-grid position it
+  // would occupy at level L+1 — so at the exact ring boundary, a fine
+  // vertex lands on top of a coarse vertex. No T-junctions, no seams.
+  //
+  // Ring geometry facts (from generateRing):
+  //   quad_size(L) = BaseQuadSize * 2^L
+  //   outer extent = 64 * quad_size(L)   (DIM=128, DIMD2=64)
+  //   inner hole    = 32 * quad_size(L)
+  //   level L outer boundary == level L+1 inner boundary == 64*BQS*2^L
+  float lod_level    = uv0.z;
+  float quad_size    = BaseQuadSize * exp2(lod_level);
+  float outer_extent = 64.0 * quad_size;
+  float trans_band   = 8.0  * quad_size;   // morph band width; tune 4..16
+  float max_dist     = max(abs(position.x), abs(position.z));
+  float morph_w      = clamp((max_dist - (outer_extent - trans_band)) / trans_band, 0.0, 1.0);
+  float snap_size    = quad_size * 2.0;    // next-coarser level's cell
+  vec2  snapped_xz   = floor(position.xz / snap_size + 0.5) * snap_size;
+  vec2  morphed_xz   = mix(position.xz, snapped_xz, morph_w);
+  vec4  morphed_pos  = vec4(morphed_xz.x, position.y, morphed_xz.y, position.w);
+
+  vec4 new_pos = vs_common_mono(morphed_pos, normal, uv0.xy);
   gl_Position  = mvp * new_pos;
 }
+///////////////////////////////////////////////////////////////
+// Depth prepass VS also needs uv0 so it can apply the SAME LOD-morph
+// as the color pass. If the prepass drew unmorphed positions and the
+// color pass drew morphed ones, the depth test at each pixel would
+// either hole out or Z-fight. They must agree per-vertex.
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_my_vdprepass : ublk_std_matrices {
   inputs {
     vec4 position : POSITION;
+    vec4 uv0      : TEXCOORD0;
   }
   outputs {
     float frg_depth;
@@ -178,7 +211,20 @@ vertex_interface iface_my_vdprepass : ublk_std_matrices {
 vertex_shader vs_my_forward_depthprepass_mono
     : iface_my_vdprepass
     : lib_ground_vtx_base {
-  x_pos _x = vs_compute_position(position.xyz);
+
+  // LOD-morph: mirror of vs_ground_mono's block — must match exactly.
+  float lod_level    = uv0.z;
+  float quad_size    = BaseQuadSize * exp2(lod_level);
+  float outer_extent = 64.0 * quad_size;
+  float trans_band   = 8.0  * quad_size;
+  float max_dist     = max(abs(position.x), abs(position.z));
+  float morph_w      = clamp((max_dist - (outer_extent - trans_band)) / trans_band, 0.0, 1.0);
+  float snap_size    = quad_size * 2.0;
+  vec2  snapped_xz   = floor(position.xz / snap_size + 0.5) * snap_size;
+  vec2  morphed_xz   = mix(position.xz, snapped_xz, morph_w);
+  vec3  morphed_pos  = vec3(morphed_xz.x, position.y, morphed_xz.y);
+
+  x_pos _x = vs_compute_position(morphed_pos);
 
   vec4 new_pos = _x.new_pos;
   vec4 hpos    = mvp * new_pos;

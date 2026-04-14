@@ -146,6 +146,12 @@ submesh_ptr_t Generator::generateClipmaps() {
       V0.mUV[0].mMapBiNormal = fvec3(fi, 0, 0);
       V1.mUV[0].mMapBiNormal = fvec3(0, fi + 1, 0);
       V2.mUV[0].mMapBiNormal = fvec3(0, 0, fi + 2);
+      // LOD level tagging for VS-side T-junction morphing:
+      // mUV[1] flows into vertex attribute uv0.zw (see SVtxV12N12T16).
+      // .x = this vertex's LOD level; .y = reserved.
+      V0.mUV[1].mMapTexCoord = fvec2(float(ilevel), 0.0f);
+      V1.mUV[1].mMapTexCoord = fvec2(float(ilevel), 0.0f);
+      V2.mUV[1].mMapTexCoord = fvec2(float(ilevel), 0.0f);
       auto smv0              = _submesh->mergeVertex(V0);
       auto smv1              = _submesh->mergeVertex(V1);
       auto smv2              = _submesh->mergeVertex(V2);

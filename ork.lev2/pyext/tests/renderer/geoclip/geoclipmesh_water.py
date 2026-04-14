@@ -184,7 +184,9 @@ class WaterApp(object):
     param_plightamp = freestyle.param("plightamp")
     #param_noizekernmap = freestyle.param("noizekernmap")
     param_m= freestyle.param("m")
+    param_base_quad_size = freestyle.param("BaseQuadSize")
     assert(param_time)
+    assert(param_base_quad_size)
     
     def _gentime():
       return self.curtime
@@ -195,11 +197,14 @@ class WaterApp(object):
     #gmtl.bindParam(param_voltexa,self.NOISETEX)
     #gmtl.bindParam(param_noizekernmap,self.NOISETEX2)
     gmtl.bindParam(param_time,lambda: _gentime() )
-    gmtl.bindParam(param_color,lambda: vec3(0.75,1.2,1) ) 
+    gmtl.bindParam(param_color,lambda: vec3(0.75,1.2,1) )
     gmtl.bindParam(param_depthmap,tokens.RCFD_DEPTH_MAP )
     gmtl.bindParam(param_bufinvdim,tokens.CPD_Rtg_InvDim )
     gmtl.bindParam(param_m,tokens.RCFD_M )
-    gmtl.bindParam(param_plightamp,0.15 )
+    gmtl.bindParam(param_plightamp,1.0 )
+    # Must match ClipMapDrawableData.baseQuadSize below — the VS uses it
+    # to derive per-LOD quad sizes for T-junction-free vertex morphing.
+    gmtl.bindParam(param_base_quad_size, lambda: 0.25)
 
     #######################################
     # ground drawable

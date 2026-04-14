@@ -32,7 +32,8 @@ struct ClipMapRenderImpl {
     params->_baseQuadSize = _data->_baseQuadSize;
     auto cmaphasher   = DataBlock::createHasher();
     cmaphasher->accumulateString("ClipMapRenderImpl::mesh"); // identifier
-    cmaphasher->accumulateItem<float>(1.2);                  // version code
+    cmaphasher->accumulateItem<float>(1.3);                  // version code — bump to invalidate caches
+                                                             // that lack per-vertex LOD-level tag in mUV[1]
     cmaphasher->accumulateItem<float>(1.0);                  // salt
     cmaphasher->accumulateItem<int>(params->_levels);
     cmaphasher->accumulateItem<int>(params->_ringSize);
