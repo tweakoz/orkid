@@ -15,7 +15,8 @@
 #   step 6 : component owns the camera rig (opt-out for external camera)
 ################################################################################
 
-from orkengine.core import fsm
+from orkengine.core import fsm, vec4
+from orkengine import lev2
 from ork.app.application import ApplicationComponent
 
 ################################################################################
@@ -39,6 +40,10 @@ class MultiEcsSceneComponent(ApplicationComponent):
     self._fsm_fade_out    = None
     self._fsm_fade_in     = None
     self._fade_duration   = 0.5
+    # Step 2 state
+    self.scenegraph       = None
+    self.layer_fwd        = None
+    self.fade_node        = None
 
   ##############################################################################
   # Public API
@@ -47,6 +52,28 @@ class MultiEcsSceneComponent(ApplicationComponent):
   @property
   def is_idle(self):
     return self.fsm is None or self.fsm.currentState == self._fsm_idle
+
+  def build_scenegraph(self, ctx, sg_params, fade_color=vec4(0, 0, 0, 1)):
+    """Create the shared lev2 scenegraph from sg_params, installing
+    a PostFxNodeFadeToColor in the PostFxChain BEFORE scene
+    construction so the compositor picks it up. Creates the
+    std_forward layer. Stores scenegraph / layer_fwd / fade_node on
+    the component.
+
+    The caller owns sg_params and its initial values (preset, skybox
+    path, intensity, etc.) — the component just injects the fade
+    post-fx and invokes Scene(sg_params).
+    """
+    self.fade_node            = lev2.PostFxNodeFadeToColor()
+    self.fade_node.fadeColor  = fade_color
+    self.fade_node.fadeAmount = 0.0
+    self.fade_node.gpuInit(ctx, 8, 8)
+    self.fade_node.addToSceneVars(sg_params, "PostFxChain")
+
+    self.scenegraph = lev2.scenegraph.Scene(sg_params)
+    self.layer_fwd  = self.scenegraph.createLayer("std_forward")
+    # depth_prepass is auto-created by SceneGraphSystem._onStage when
+    # any runtime stages; no need to create it here.
 
   def build_fsm(self, app, fade_duration):
     """Construct the HFSM and bind its callbacks to `app`. Called by
