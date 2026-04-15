@@ -47,6 +47,8 @@ class MultiEcsSceneComponent(ApplicationComponent):
     # Step 3 state
     self.runtimes         = {}     # tag -> EcsRuntime (populated by app)
     self._primed          = False  # flips to True once every scene has nodes
+    # Step 4 state
+    self.skybox_cache     = {}     # full asset path -> RadianceMap handle
 
   ##############################################################################
   # Public API
@@ -218,3 +220,26 @@ class MultiEcsSceneComponent(ApplicationComponent):
       self._primed = True
       pretty = " ".join(f"{t}={n}" for t, n in scene_node_counts.items())
       print(f"[multi_ecs] primed — switching to active-only tick ({pretty})")
+
+  ##############################################################################
+  # Skybox preload + pbr state application — step 4
+  ##############################################################################
+
+  def preload_skyboxes(self, paths):
+    """Sync-preload every unique skybox asset path in `paths` via
+    PbrCommon.requestRadianceMaps and stash the resulting handles in
+    self.skybox_cache (strong refs for process lifetime). Idempotent
+    — paths already in the cache are skipped."""
+    for p in paths:
+      if p not in self.skybox_cache:
+        self.skybox_cache[p] = lev2.PbrCommon.requestRadianceMaps(p)
+    print(f"[multi_ecs] preloaded skyboxes (sync): {len(self.skybox_cache)}")
+
+  def apply_scene_pbr(self, skybox_path, skybox_intensity):
+    """Apply a scene's pbr_common state to the shared scenegraph:
+    RadianceMaps from the preloaded cache + skyboxLevel. Called at
+    scene activation (fade midpoint) and every idle frame as a
+    Gap-1 workaround against SGSData default clobbering."""
+    pbc = self.scenegraph.pbr_common
+    pbc.RadianceMaps = self.skybox_cache[skybox_path]
+    pbc.skyboxLevel  = float(skybox_intensity)
