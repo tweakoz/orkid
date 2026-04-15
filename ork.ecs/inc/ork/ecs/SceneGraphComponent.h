@@ -30,6 +30,15 @@ struct NodeDef{
   std::vector<std::string> _multilayers;
   decompxf_ptr_t _transform;
   fvec4 _modcolor;
+  // When true, SceneGraphSystem::_onStageComponent will NOT auto-add
+  // this drawable node to the "depth_prepass" layer. Default false
+  // preserves the legacy behavior where every drawable participates
+  // in depth prepass / shadows. Opt in to skip for drawables whose
+  // material samples the depth RTG (e.g. translucent water) — those
+  // must not render during depth_prepass, since the depth attachment
+  // is still in DEPTH_ATTACHMENT_OPTIMAL at that point and binding
+  // it as a texture asserts in Vulkan.
+  bool _skipAutoDepthPrepass = false;
 };
 using nodedef_ptr_t = std::shared_ptr<NodeDef>;
 
@@ -43,6 +52,8 @@ public:
   std::string _nodename;
   decompxf_ptr_t _xfoverride;
   fvec4 _modcolor;
+  // See NodeDef::_skipAutoDepthPrepass.
+  bool _skipAutoDepthPrepass = false;
 };
 
 using sgnodeitemdata_ptr_t = std::shared_ptr<SceneGraphNodeItemData>;

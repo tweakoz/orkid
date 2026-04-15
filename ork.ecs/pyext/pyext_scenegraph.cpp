@@ -119,6 +119,9 @@ void pyinit_scenegraph(py::module& module_ecs) {
             if (kwargs.contains("modcolor")) {
               ndef->_modcolor = kwargs["modcolor"].cast<fvec4>();
             }
+            if (kwargs.contains("skip_auto_dpp")) {
+              ndef->_skipAutoDepthPrepass = kwargs["skip_auto_dpp"].cast<bool>();
+            }
             sgcd->declareNodeOnLayer(ndef);
           },
           R"doc(
@@ -221,6 +224,9 @@ void pyinit_scenegraph(py::module& module_ecs) {
             }
             if (kwargs.contains("modcolor")) {
               ndef->_modcolor = kwargs["modcolor"].cast<fvec4>();
+            }
+            if (kwargs.contains("skip_auto_dpp")) {
+              ndef->_skipAutoDepthPrepass = kwargs["skip_auto_dpp"].cast<bool>();
             }
             sgsys->declareNodeOnLayer(ndef);
           },

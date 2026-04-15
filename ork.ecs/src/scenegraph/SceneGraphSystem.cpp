@@ -650,12 +650,19 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
                 auto drw_node = std::dynamic_pointer_cast<lev2::scenegraph::DrawableNode>(item->_sgnode);
                 layer->addDrawableNode(drw_node);
             }
-            // Also add to depth_prepass layer for shadow rendering
-            if (auto drw_node = std::dynamic_pointer_cast<lev2::scenegraph::DrawableNode>(item->_sgnode)) {
-                auto dpp_layer = _scene->findLayer("depth_prepass");
-                if (dpp_layer) {
-                    dpp_layer->addDrawableNode(drw_node);
-                }
+            // Also add to depth_prepass layer for shadow rendering.
+            // Opt-out via NodeDef::_skipAutoDepthPrepass for drawables
+            // whose material samples the depth RTG (e.g. water) — those
+            // must not render during depth_prepass because the depth
+            // attachment is still in DEPTH_ATTACHMENT_OPTIMAL at that
+            // point and binding it as a sampled texture asserts in Vulkan.
+            if (not NID->_skipAutoDepthPrepass) {
+              if (auto drw_node = std::dynamic_pointer_cast<lev2::scenegraph::DrawableNode>(item->_sgnode)) {
+                  auto dpp_layer = _scene->findLayer("depth_prepass");
+                  if (dpp_layer) {
+                      dpp_layer->addDrawableNode(drw_node);
+                  }
+              }
             }
         }
       }

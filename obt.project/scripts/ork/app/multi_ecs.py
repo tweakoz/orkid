@@ -23,6 +23,62 @@ lev2_pyexdir.addToSysPath()
 from lev2utils.cameras import setupUiCameraX
 
 ################################################################################
+# NonEcsScene — base class for a scene that manages lev2 scenegraph
+# nodes directly (no ECS archetype). Subclasses implement the
+# lifecycle methods; MultiEcsSceneComponent fires them based on
+# registration + FSM-driven scene-activation state.
+################################################################################
+
+class NonEcsScene:
+  """Lifecycle:
+
+    __init__                  Python object exists; no GPU yet.
+
+    onGpuInit(ctx, component) Build materials / drawables / scenegraph
+                              nodes / lights. Called once from the
+                              app's _onGpuInit pipeline via
+                              component.init_non_ecs_scenes(ctx).
+
+    onActivate()              Called by the component's FSM at the
+                              fade_in midpoint when this scene has
+                              just become the active one.
+
+    onDeactivate()            Called at the same fade_in midpoint
+                              when this scene is losing active
+                              status (fires before the active flip).
+
+    onUpdate(updinfo)         Per-frame CPU tick. Fired by the
+                              component's tick_runtimes only while
+                              active_tag == self.tag.
+
+    onGpuUpdate(ctx)          Per-frame GPU tick. Same gating.
+  """
+
+  def __init__(self, tag):
+    self.tag     = tag
+    # Subclasses that build their own ECS runtime should assign it
+    # here in onGpuInit. init_non_ecs_scenes harvests the result into
+    # the component's runtime pool so the standard tick / priming /
+    # node-visibility plumbing handles the scene identically to a
+    # code-declared or file-loaded runtime.
+    self.runtime = None
+
+  def onGpuInit(self, ctx, component):
+    pass
+
+  def onActivate(self):
+    pass
+
+  def onDeactivate(self):
+    pass
+
+  def onUpdate(self, updinfo):
+    pass
+
+  def onGpuUpdate(self, ctx):
+    pass
+
+################################################################################
 
 class MultiEcsSceneComponent(ApplicationComponent):
   """Currently owns only the fade-transition HFSM.
@@ -58,6 +114,8 @@ class MultiEcsSceneComponent(ApplicationComponent):
     self.cameralut        = None
     self.camera           = None
     self.uicam            = None
+    # Step 7 state — non-ECS scenes registered by the app
+    self.non_ecs_scenes   = {}     # tag -> NonEcsScene instance
 
   ##############################################################################
   # Public API
@@ -130,10 +188,23 @@ class MultiEcsSceneComponent(ApplicationComponent):
         inst.sendEvent("midpoint")
 
     def _on_enter_fade_in(inst):
-      a = inst.vars.app
+      a    = inst.vars.app
+      comp = a.multiecs
+      # Deactivate outgoing non-ECS scene (if any). Fires BEFORE the
+      # active flip so the scene still reads its own tag as active
+      # inside onDeactivate if it wants to.
+      old = comp.non_ecs_scenes.get(a._active)
+      if old is not None:
+        old.onDeactivate()
+      # Flip active tag — single source of truth for "which scene
+      # owns this frame".
       a._active = inst.vars.target
       a._applyScenePbr(a._active)
       a._syncNodeState()
+      # Activate incoming non-ECS scene (if any).
+      new = comp.non_ecs_scenes.get(a._active)
+      if new is not None:
+        new.onActivate()
       inst.vars.t = 0.0
       a.fade_node.fadeAmount = 1.0
 
@@ -196,8 +267,10 @@ class MultiEcsSceneComponent(ApplicationComponent):
 
   def tick_runtimes(self, updinfo, active_tag):
     """Per-frame CPU tick. Called by the host app from _onUpdate.
-    While priming, ticks every runtime so each scene stages its
-    entities. Once primed, ticks only the active runtime."""
+    While priming, ticks every ECS runtime so each scene stages its
+    entities. Once primed, ticks only the active runtime. Always
+    fires the active NonEcsScene's onUpdate (non-ECS scenes don't
+    participate in priming — they exist as soon as onGpuInit runs)."""
     if self._primed:
       rt = self.runtimes.get(active_tag)
       if rt is not None:
@@ -206,10 +279,14 @@ class MultiEcsSceneComponent(ApplicationComponent):
       for rt in self.runtimes.values():
         if rt is not None:
           rt.update(updinfo)
+    ne = self.non_ecs_scenes.get(active_tag)
+    if ne is not None:
+      ne.onUpdate(updinfo)
 
   def gpu_tick_runtimes(self, ctx, active_tag):
     """Per-frame GPU tick. Same prime/active-only selection as
-    tick_runtimes. Called from _onGpuUpdate."""
+    tick_runtimes for ECS runtimes; always fires the active
+    NonEcsScene's onGpuUpdate. Called from _onGpuUpdate."""
     if self._primed:
       rt = self.runtimes.get(active_tag)
       if rt is not None:
@@ -218,6 +295,9 @@ class MultiEcsSceneComponent(ApplicationComponent):
       for rt in self.runtimes.values():
         if rt is not None:
           rt.gpuUpdate(ctx)
+    ne = self.non_ecs_scenes.get(active_tag)
+    if ne is not None:
+      ne.onGpuUpdate(ctx)
 
   def check_priming(self, scene_node_counts):
     """Flip self._primed to True once every entry in
@@ -229,6 +309,33 @@ class MultiEcsSceneComponent(ApplicationComponent):
       self._primed = True
       pretty = " ".join(f"{t}={n}" for t, n in scene_node_counts.items())
       print(f"[multi_ecs] primed — switching to active-only tick ({pretty})")
+
+  ##############################################################################
+  # Non-ECS scene registry — step 7
+  ##############################################################################
+
+  def register_non_ecs_scene(self, scene):
+    """Register a NonEcsScene instance. Call from the app's __init__
+    (before createEzApp) so the scene is present when _onGpuInit
+    fires. The scene's onGpuInit runs later when the app calls
+    init_non_ecs_scenes(ctx)."""
+    self.non_ecs_scenes[scene.tag] = scene
+
+  def init_non_ecs_scenes(self, ctx):
+    """Run onGpuInit on every registered NonEcsScene. The app should
+    call this from its _onGpuInit AFTER build_scenegraph +
+    setup_camera but BEFORE build_fsm, so (a) the scenegraph / camera
+    are valid when scene builders need them and (b) the FSM has a
+    valid NonEcsScene set to transition to / from.
+
+    After each scene's onGpuInit runs, if it has populated
+    `scene.runtime` we harvest it into `self.runtimes[scene.tag]` so
+    the standard tick_runtimes / check_priming / sync_node_state path
+    handles it identically to a code-declared runtime. Scenes that
+    stay pure non-ECS (no runtime) get a None slot."""
+    for scene in self.non_ecs_scenes.values():
+      scene.onGpuInit(ctx, self)
+      self.runtimes[scene.tag] = scene.runtime
 
   ##############################################################################
   # Skybox preload + pbr state application — step 4
