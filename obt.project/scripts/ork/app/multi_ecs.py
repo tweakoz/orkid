@@ -49,6 +49,8 @@ class MultiEcsSceneComponent(ApplicationComponent):
     self._primed          = False  # flips to True once every scene has nodes
     # Step 4 state
     self.skybox_cache     = {}     # full asset path -> RadianceMap handle
+    # Step 5 state
+    self.scene_nodes      = {}     # tag -> list[node] classified each frame
 
   ##############################################################################
   # Public API
@@ -243,3 +245,41 @@ class MultiEcsSceneComponent(ApplicationComponent):
     pbc = self.scenegraph.pbr_common
     pbc.RadianceMaps = self.skybox_cache[skybox_path]
     pbc.skyboxLevel  = float(skybox_intensity)
+
+  ##############################################################################
+  # Node enable/disable (scene visibility toggle) — step 5
+  ##############################################################################
+
+  def sync_node_state(self, active_tag, filters, catchall_tag=None):
+    """Walk every drawable node in the shared scenegraph, classify
+    each by calling the caller-supplied filters, and apply
+    node.enabled = (tag == active_tag) to the result.
+
+    filters       : dict { tag -> predicate(node) -> bool }
+    catchall_tag  : optional tag that claims any node no filter matched
+                    (used e.g. for SceneFromFile loaded scenes whose
+                    node names we don't control)
+
+    Per-tag node lists are stashed on self.scene_nodes so the caller
+    can use their counts for check_priming(). Entity spawns are
+    async — node lists rebuild each call for self-healing."""
+    tags = list(filters.keys())
+    if catchall_tag is not None and catchall_tag not in tags:
+      tags.append(catchall_tag)
+    self.scene_nodes = { t: [] for t in tags }
+
+    for layer_name, layer in self.scenegraph.layers.items():
+      for node in layer.drawable_nodes:
+        claimed = False
+        for tag, fn in filters.items():
+          if fn(node):
+            self.scene_nodes[tag].append(node)
+            claimed = True
+            break
+        if not claimed and catchall_tag is not None:
+          self.scene_nodes[catchall_tag].append(node)
+
+    for tag in tags:
+      want = (active_tag == tag)
+      for n in self.scene_nodes[tag]:
+        n.enabled = want
