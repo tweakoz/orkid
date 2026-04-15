@@ -44,6 +44,9 @@ class MultiEcsSceneComponent(ApplicationComponent):
     self.scenegraph       = None
     self.layer_fwd        = None
     self.fade_node        = None
+    # Step 3 state
+    self.runtimes         = {}     # tag -> EcsRuntime (populated by app)
+    self._primed          = False  # flips to True once every scene has nodes
 
   ##############################################################################
   # Public API
@@ -167,3 +170,51 @@ class MultiEcsSceneComponent(ApplicationComponent):
       return
     self.fsm.vars.dt = dt
     self.fsm.update()
+
+  ##############################################################################
+  # Runtime pool — step 3
+  ##############################################################################
+
+  @property
+  def primed(self):
+    """True once every registered runtime has at least one drawable
+    node on the shared scenegraph. Before that, tick_runtimes /
+    gpu_tick_runtimes drive every runtime; after, only the active
+    one. The app flips this via check_priming(counts)."""
+    return self._primed
+
+  def tick_runtimes(self, updinfo, active_tag):
+    """Per-frame CPU tick. Called by the host app from _onUpdate.
+    While priming, ticks every runtime so each scene stages its
+    entities. Once primed, ticks only the active runtime."""
+    if self._primed:
+      rt = self.runtimes.get(active_tag)
+      if rt is not None:
+        rt.update(updinfo)
+    else:
+      for rt in self.runtimes.values():
+        if rt is not None:
+          rt.update(updinfo)
+
+  def gpu_tick_runtimes(self, ctx, active_tag):
+    """Per-frame GPU tick. Same prime/active-only selection as
+    tick_runtimes. Called from _onGpuUpdate."""
+    if self._primed:
+      rt = self.runtimes.get(active_tag)
+      if rt is not None:
+        rt.gpuUpdate(ctx)
+    else:
+      for rt in self.runtimes.values():
+        if rt is not None:
+          rt.gpuUpdate(ctx)
+
+  def check_priming(self, scene_node_counts):
+    """Flip self._primed to True once every entry in
+    scene_node_counts (dict tag->int) is positive. The host app
+    supplies the counts after its per-frame node classification."""
+    if self._primed:
+      return
+    if scene_node_counts and all(n > 0 for n in scene_node_counts.values()):
+      self._primed = True
+      pretty = " ".join(f"{t}={n}" for t, n in scene_node_counts.items())
+      print(f"[multi_ecs] primed — switching to active-only tick ({pretty})")
