@@ -108,6 +108,16 @@ public:
   varmap::varmap_ptr_t generateSceneGraphParams() const;
 
   //////////////////////////////////////////////////////////
+  // Rewrite every reference to `old_name` as `new_name` across every
+  // SceneGraphSystemData's declared layers and every Archetype's
+  // SceneGraphComponentData node declarations. Used after load_scene()
+  // to retarget a loaded scene's layer names without touching the
+  // .ecs file — call BEFORE start_simulation() / stage_simulation().
+  //////////////////////////////////////////////////////////
+
+  void remapLayerName(const std::string& old_name, const std::string& new_name);
+
+  //////////////////////////////////////////////////////////
 
   orkmap<PoolString, sceneobject_ptr_t> _sceneObjects;
   SystemDataLut _systemDatas;

@@ -535,6 +535,27 @@ technique framefx_hsvg {
   fxconfig = fxcfg_default;
   vf_pass = { vs_vtxcolor, ps_hsvg, sb_default_ffx }
 }
+///////////////////////////////////////////////////////////////
+// Fade-to-color: lerp each sampled fragment toward a fixed color by
+// FadeAmount. Used for scene transitions (fade-to-white, etc.). The
+// uniforms live in a dedicated block so binding ub_frg_fade does not
+// disturb the other framefx shaders that inherit ub_frg_FFX.
+///////////////////////////////////////////////////////////////
+uniform_block ub_frg_fade (descriptor_set 0) {
+  vec4 FadeColor;
+  float FadeAmount;
+}
+fragment_shader ps_fade_to_color //
+  : fif_FFX                      //
+  : ub_frg_fade                  //
+  : samplers_all {               //
+  vec4 src = texture(MrtMap0, frg_uv);
+  out_clr  = vec4(mix(src.rgb, FadeColor.rgb, clamp(FadeAmount, 0.0, 1.0)), 1.0);
+}
+technique framefx_fade_to_color {
+  fxconfig = fxcfg_default;
+  vf_pass = { vs_vtxcolor, ps_fade_to_color, sb_default_ffx }
+}
 state_block sb_ssao : default {
   BlendMode = OFF;
   DepthTest = LESS;

@@ -119,6 +119,30 @@ void SceneGraphSystemData::declareNodeOnLayer(nodedef_ptr_t ndef) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void SceneGraphSystemData::remapLayerName(const std::string& old_name, const std::string& new_name) {
+  if (old_name == new_name) {
+    return;
+  }
+  for (auto& s : _declaredLayers) {
+    if (s == old_name) {
+      s = new_name;
+    }
+  }
+  for (auto& kv : _nodedatas) {
+    if (!kv.second) continue;
+    if (kv.second->_layername == old_name) {
+      kv.second->_layername = new_name;
+    }
+    for (auto& s : kv.second->_multilayers) {
+      if (s == old_name) {
+        s = new_name;
+      }
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void SceneGraphSystemData::addStaticDrawableData(std::string layername, lev2::drawabledata_ptr_t drwdata) {
   auto ddkvpair           = std::make_shared<lev2::scenegraph::DrawableDataKvPair>();
   ddkvpair->_layername    = layername;

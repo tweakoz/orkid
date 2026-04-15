@@ -188,6 +188,10 @@ void pyinit_scene(py::module& module_ecs) {
       .def("generateSceneGraphParams", [](scenedata_ptr_t scenedata) -> varmap::varmap_ptr_t {
         return scenedata->generateSceneGraphParams();
       })
+      .def("remapLayerName",
+           [](scenedata_ptr_t scenedata, const std::string& old_name, const std::string& new_name) {
+             scenedata->remapLayerName(old_name, new_name);
+           })
       .def("addImport", [](scenedata_ptr_t scenedata, sceneimportdata_ptr_t imp) {
         scenedata->addImport(imp);
       })

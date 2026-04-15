@@ -108,7 +108,7 @@ class WaterApp(object):
                                    index=0,
                                    model=lite_model,
                                    frq=0.177,
-                                   color=vec3(1,1,.7)*99.5e5,
+                                   color=vec3(0),
                                    cookie=cookie,
                                    depth_cookie=depth_cookies.slice(0),
                                    fovbase=70.0,

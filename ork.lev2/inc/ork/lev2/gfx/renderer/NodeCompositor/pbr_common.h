@@ -11,6 +11,9 @@
 #include <ork/kernel/varmap.inl>
 #include <ork/kernel/datacache.h>
 
+// scenegraph::Scene forward decl comes via lev2_types.h (pulled in
+// transitively through rtgroup.h included above).
+
 namespace ork::lev2::pbr {
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -156,6 +159,13 @@ struct CommonStuff : public ork::Object {
   bool _needsGpuInit = true;
 
   std::string _name;
+
+  // Non-owning back-pointer to the scenegraph::Scene that owns this
+  // CommonStuff (via its shared_ptr). Used by the forward compositor
+  // to reach Scene::layersForRole() for layer-role-based scene
+  // composition. Nullable — can be unset for compositors not backed
+  // by a scenegraph. Scene outlives this so raw pointer is safe.
+  scenegraph::Scene* _scene = nullptr;
 };
 
 

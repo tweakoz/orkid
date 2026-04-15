@@ -422,6 +422,14 @@ using rendervar_strmap_t   = orklut<std::string, rendervar_t>;
 struct CompositingScene;
 struct CompositingSceneItem;
 struct CompositorDrawData;
+
+// Scene-graph forward decl (full def lives in scenegraph/scenegraph.h).
+// Declared here so pbr::CommonStuff can hold a non-owning back-pointer
+// to it without having to include the scenegraph header (which would
+// create a circular include via the renderer/compositor stack).
+} // close ork::lev2 so we can open the scenegraph sub-namespace
+namespace ork::lev2::scenegraph { struct Scene; }
+namespace ork::lev2 {
 struct CompositingContext;
 struct CompositingMorphable;
 struct CompositingPassData;
@@ -438,6 +446,7 @@ class PostFxNodeDecompBlur;
 class PostFxNodeHSVG;
 class PostFxNodeACES;
 class PostFxNodeUser;
+class PostFxNodeFadeToColor;
 class LambdaPostCompositingNode;
 struct AcquiredDrawQueueForUpdate;
 struct AcquiredDrawQueueForRendering;
@@ -472,6 +481,7 @@ using decompblur_postnode_ptr_t = std::shared_ptr<PostFxNodeDecompBlur>;
 using postnode_hsvg_ptr_t = std::shared_ptr<PostFxNodeHSVG>;
 using postnode_aces_ptr_t = std::shared_ptr<PostFxNodeACES>;
 using postnode_user_ptr_t = std::shared_ptr<PostFxNodeUser>;
+using postnode_fadetocolor_ptr_t = std::shared_ptr<PostFxNodeFadeToColor>;
 using lambda_postnode_ptr_t = std::shared_ptr<LambdaPostCompositingNode>;
 
 using postfx_node_chain_t = std::vector<compositorpostnode_ptr_t>;

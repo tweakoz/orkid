@@ -239,6 +239,26 @@ struct Scene {
   layer_ptr_t createLayer(std::string named);
   layer_ptr_t findLayer(std::string named);
 
+  //////////////////////////////////////////////////////////////////
+  // Layer-role lookup.
+  //
+  // Compositors ask the scene "which layers render in the depth_prepass
+  // role this frame?", rather than hardcoding a single canonical layer
+  // name. By default every role resolves to a singleton list containing
+  // its own name — so with no overrides, layersForRole("depth_prepass")
+  // returns {"depth_prepass"} and the compositor sees identical behavior
+  // to the pre-role-lookup code path.
+  //
+  // Callers (e.g. a multi-ECS scene host) can override a role via
+  // setLayerRole() to redirect it to one or more custom layer names.
+  // This enables layer-swap-based scene isolation without changing
+  // existing caller code.
+  //////////////////////////////////////////////////////////////////
+
+  const std::vector<std::string>& layersForRole(const std::string& role) const;
+  void setLayerRole(const std::string& role, std::vector<std::string> layers);
+  void clearLayerRole(const std::string& role);
+
   using on_enqueue_fn_t = std::function<void(DrawQueue* DB)>;
 
   void enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enqueue=[](DrawQueue* DB){});
@@ -294,6 +314,11 @@ struct Scene {
   using layer_map_t = std::map<std::string, layer_ptr_t>;
   size_t _renderer_idx = 0;
   LockedResource<layer_map_t> _layers;
+  // role -> ordered list of layer names to render in that role's slot.
+  // Empty / missing entry means identity (role name itself). Written
+  // on the main thread in response to scene transitions; read by the
+  // compositor during each frame's CPD.assignLayers build.
+  std::unordered_map<std::string, std::vector<std::string>> _layerRoleOverrides;
   varmap::varmap_ptr_t _userdata;
   varmap::varmap_ptr_t _params;
   bool _dogpuinit        = true;

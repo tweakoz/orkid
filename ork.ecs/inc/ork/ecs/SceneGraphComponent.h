@@ -62,6 +62,11 @@ public:
 
   void declareNodeOnLayer( nodedef_ptr_t ndef );
 
+  // Rewrite every reference to `old_name` as `new_name` across every
+  // registered node item's _layername / _multilayers. Used by
+  // SceneData::remapLayerName.
+  void remapLayerName(const std::string& old_name, const std::string& new_name);
+
   std::map<std::string,sgnodeitemdata_ptr_t> _nodedatas;
   lev2::scenegraph::node_instance_data_ptr_t _INSTANCEDATA;
 
@@ -124,6 +129,11 @@ public:
     void declareLayer(const std::string& layername);
     void clearDeclaredLayers() { _declaredLayers.clear(); }
     const std::vector<std::string>& declaredLayers() const { return _declaredLayers; }
+
+    // Rewrite every reference to `old_name` as `new_name` in the
+    // declared layers and in every registered node item's _layername /
+    // _multilayers. Used by SceneData::remapLayerName.
+    void remapLayerName(const std::string& old_name, const std::string& new_name);
 
     void declareNodeOnLayer( nodedef_ptr_t ndef );
 

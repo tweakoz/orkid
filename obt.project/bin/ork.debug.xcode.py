@@ -17,6 +17,7 @@ if __name__ == "__main__":
   env_vars["ORKID_AUDIO_OUTPUT_DEVICE"] = os.environ.get("ORKID_AUDIO_OUTPUT_DEVICE", "MacBook Pro Speakers")
   env_vars["ORKID_DISABLE_SHADER_CACHE"] = os.environ.get("ORKID_DISABLE_SHADER_CACHE", "")
   env_vars["ORKID_ASSET_MANIFEST_DIRS"] = str(path.orkid()/"ork.data"/"asset_manifests")
+  env_vars["VK_ICD_FILENAMES"] = os.environ.get("VK_ICD_FILENAMES", "")
   #env_vars["ORKID_DISABLE_DBLOCK_CACHING"] = os.environ.get("ORKID_DISABLE_DBLOCK_CACHING", "")
   # Add OKA_DIR if it exists
   if "OKA_DIR" in os.environ:

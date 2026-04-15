@@ -15,6 +15,7 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeHSVG.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeACES.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeUser.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeFadeToColor.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -190,6 +191,25 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
             return fxs.c_str();
           });
   type_codec->registerStdCodec<postnode_hsvg_ptr_t>(dchsvgpostnode_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto dcfade2clrpostnode_type = //
+      py::class_<PostFxNodeFadeToColor, PostCompositingNode, postnode_fadetocolor_ptr_t>(module_lev2, "PostFxNodeFadeToColor")
+          .def(py::init<>())
+          .def("gpuInit", [](postnode_fadetocolor_ptr_t dcnode, ctx_t ctx, int w, int h) { dcnode->gpuInit(ctx.get(), w, h); })
+          .def_property(
+              "fadeColor",
+              [](postnode_fadetocolor_ptr_t dcnode) -> fvec4 { return dcnode->_fadeColor; },
+              [](postnode_fadetocolor_ptr_t dcnode, fvec4 c) { dcnode->_fadeColor = c; })
+          .def_property(
+              "fadeAmount",
+              [](postnode_fadetocolor_ptr_t dcnode) -> float { return dcnode->_fadeAmount; },
+              [](postnode_fadetocolor_ptr_t dcnode, float a) { dcnode->_fadeAmount = a; })
+          .def("__repr__", [](postnode_fadetocolor_ptr_t d) -> std::string {
+            fxstring<64> fxs;
+            fxs.format("PostFxNodeFadeToColor(%p)", d.get());
+            return fxs.c_str();
+          });
+  type_codec->registerStdCodec<postnode_fadetocolor_ptr_t>(dcfade2clrpostnode_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto dcacespostnode_type = //
       py::class_<PostFxNodeACES, PostCompositingNode, postnode_aces_ptr_t>(module_lev2, "PostFxNodeACES")

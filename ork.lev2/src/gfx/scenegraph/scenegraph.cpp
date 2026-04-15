@@ -401,6 +401,14 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     throw std::runtime_error("unknown compositor preset type");
   }
 
+  // Install a non-owning back-pointer from the PBR common object to
+  // this scene so the forward compositor can reach layersForRole()
+  // via _node->_pbrcommon->_scene. Scene owns the pbr_common shared_ptr
+  // so this raw pointer stays valid for the scene's lifetime.
+  if (_pbr_common) {
+    _pbr_common->_scene = this;
+  }
+
   //////////////////////////////////////////////
 
   applyRuntimeParams(params);
@@ -434,6 +442,32 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
   }
   _compositorImpl = _compositorData->createImpl();
   _compositorImpl->bindLighting(_lightManager);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+const std::vector<std::string>& Scene::layersForRole(const std::string& role) const {
+  auto it = _layerRoleOverrides.find(role);
+  if (it != _layerRoleOverrides.end()) {
+    return it->second;
+  }
+  // Identity default: we need a stable reference with a single element
+  // equal to the role name. Cache per-role in a thread_local map so we
+  // don't allocate on every frame and can return a const ref safely.
+  static thread_local std::unordered_map<std::string, std::vector<std::string>> s_identity_cache;
+  auto cit = s_identity_cache.find(role);
+  if (cit == s_identity_cache.end()) {
+    cit = s_identity_cache.emplace(role, std::vector<std::string>{role}).first;
+  }
+  return cit->second;
+}
+
+void Scene::setLayerRole(const std::string& role, std::vector<std::string> layers) {
+  _layerRoleOverrides[role] = std::move(layers);
+}
+
+void Scene::clearLayerRole(const std::string& role) {
+  _layerRoleOverrides.erase(role);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

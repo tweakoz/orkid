@@ -7,6 +7,9 @@
 
 #include "fwdnode_impl.h"
 #include <ork/util/logger.h>
+// Full Scene definition needed for scene->layersForRole() in the
+// shadow-map pass below.
+#include <ork/lev2/gfx/scenegraph/scenegraph.h>
 
 namespace ork::lev2::pbr {
 
@@ -235,7 +238,19 @@ void ForwardPbrNodeImpl::_update_shadow_maps() {
         shadowCPD._mono_cam_matrices = _SHADOWCAM;
 
         // FBI->validateRtGroup(light->_depthRTG.get());
-        _currentDrawQueue->enqueueLayerToRenderQueue("depth_prepass", _currentIRenderer);
+        // Enqueue every layer that plays the "depth_prepass" role for
+        // this scene. With no role override, iterates a single-element
+        // {"depth_prepass"} list — identical to the previous code path.
+        {
+          auto* scene = _node->_pbrcommon ? _node->_pbrcommon->_scene : nullptr;
+          if (scene) {
+            for (const auto& layer : scene->layersForRole("depth_prepass")) {
+              _currentDrawQueue->enqueueLayerToRenderQueue(layer, _currentIRenderer);
+            }
+          } else {
+            _currentDrawQueue->enqueueLayerToRenderQueue("depth_prepass", _currentIRenderer);
+          }
+        }
 
         topcomp->pushCPD(shadowCPD);
         auto FBI = _currentContext->FBI();

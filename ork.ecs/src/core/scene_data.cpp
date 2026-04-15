@@ -14,9 +14,11 @@
 #include <ork/kernel/opq.h>
 
 #include <ork/ecs/ReferenceArchetype.h>
+#include <ork/ecs/archetype.h>
 #include <ork/ecs/scene.h>
 #include <ork/ecs/scene_import_data.h>
 #include <ork/ecs/system.h>
+#include <ork/ecs/SceneGraphComponent.h>
 #include <ork/ecs/entity.inl>
 
 template class ork::orklut<const ork::object::ObjectClass*, ork::ecs::systemdata_ptr_t>;
@@ -386,6 +388,38 @@ varmap::varmap_ptr_t SceneData::generateSceneGraphParams() const {
   params->makeValueForKey<fvec3>("AmbientLevel") = fvec3(1.0f, 1.0f, 1.0f);
   params->makeValueForKey<std::string>("SkyboxTexPathStr") = "nebula";
   return params;
+}
+///////////////////////////////////////////////////////////////////////////////
+void SceneData::remapLayerName(const std::string& old_name, const std::string& new_name) {
+  if (old_name == new_name) {
+    return;
+  }
+  // 1) SceneGraphSystemData — delegate to SGSD::remapLayerName
+  for (auto& kv : _systemDatas) {
+    auto sd = kv.second;
+    if (!sd) continue;
+    if (auto sgsd = std::dynamic_pointer_cast<SceneGraphSystemData>(sd)) {
+      sgsd->remapLayerName(old_name, new_name);
+    }
+  }
+  // 2) Every archetype's SceneGraphComponentData — delegate likewise.
+  // mComponentDatas stores constptrs; cast away const to invoke the
+  // mutating method. The const-ness is a container invariant, not a
+  // semantic one — remapLayerName is an explicit pre-simulation edit.
+  for (auto& kv : _sceneObjects) {
+    auto so = kv.second;
+    if (!so) continue;
+    auto arch = std::dynamic_pointer_cast<Archetype>(so);
+    if (!arch) continue;
+    for (auto& ckv : arch->mComponentDatas) {
+      auto cd = ckv.second;
+      if (!cd) continue;
+      auto sgcd = std::dynamic_pointer_cast<const SceneGraphComponentData>(cd);
+      if (!sgcd) continue;
+      auto mutable_sgcd = std::const_pointer_cast<SceneGraphComponentData>(sgcd);
+      mutable_sgcd->remapLayerName(old_name, new_name);
+    }
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void SceneData::addImport(sceneimportdata_ptr_t import) {

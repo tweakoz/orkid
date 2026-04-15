@@ -467,6 +467,22 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 });
                 return rval;
               })
+          .def(
+              "layersForRole",
+              [](scene_ptr_t SG, const std::string& role) -> std::vector<std::string> {
+                // Return by value so Python gets a stable copy.
+                return SG->layersForRole(role);
+              })
+          .def(
+              "setLayerRole",
+              [](scene_ptr_t SG, const std::string& role, std::vector<std::string> layers) {
+                SG->setLayerRole(role, std::move(layers));
+              })
+          .def(
+              "clearLayerRole",
+              [](scene_ptr_t SG, const std::string& role) {
+                SG->clearLayerRole(role);
+              })
           .def_property_readonly(
               "pbr_common",
               [](scene_ptr_t SG) -> pbr::commonstuff_ptr_t { //

@@ -7,6 +7,10 @@
 
 #include "fwdnode_impl.h"
 #include <ork/util/logger.h>
+// Needed for scene->layersForRole() in the compositor's layer list
+// assembly (forward decl in lev2_types.h isn't enough — we call a
+// member function, so require the full Scene definition here).
+#include <ork/lev2/gfx/scenegraph/scenegraph.h>
 
 namespace ork::lev2 {
 extern appinitdata_ptr_t _ginitdata;
@@ -308,7 +312,31 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
 
   auto CPD               = CIMPL->topCPD();
   CPD._mono_cam_matrices = drawdata.property("defcammtx"_crcu).get<cameramatrices_ptr_t>();
-  CPD.assignLayers("depth_prepass,std_forward,std_editor,probe,depth_probe");
+  // Assemble the compositor's active layer list via the scene's
+  // layer-role lookup. With no overrides, layersForRole(role)
+  // returns {role}, so the resulting string is byte-identical to
+  // the previous hardcoded "depth_prepass,std_forward,...".
+  // Overrides redirect or extend any role to custom layer names,
+  // enabling layer-swap-based scene isolation.
+  {
+    static const char* k_roles[] = {
+      "depth_prepass", "std_forward", "std_editor", "probe", "depth_probe"
+    };
+    std::string layer_csv;
+    auto* scene = _node->_pbrcommon ? _node->_pbrcommon->_scene : nullptr;
+    for (auto role : k_roles) {
+      if (scene) {
+        for (const auto& layer : scene->layersForRole(role)) {
+          if (!layer_csv.empty()) layer_csv += ",";
+          layer_csv += layer;
+        }
+      } else {
+        if (!layer_csv.empty()) layer_csv += ",";
+        layer_csv += role;
+      }
+    }
+    CPD.assignLayers(layer_csv);
+  }
   CPD._clearColor = _node->_pbrcommon->_clearcolor;
   RtGroupRenderTarget rt(_rtg_primary.get());
   CPD._irendertarget = &rt;

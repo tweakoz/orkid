@@ -72,6 +72,25 @@ void SceneGraphComponentData::declareNodeOnLayer( nodedef_ptr_t ndef ) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void SceneGraphComponentData::remapLayerName(const std::string& old_name, const std::string& new_name) {
+  if (old_name == new_name) {
+    return;
+  }
+  for (auto& kv : _nodedatas) {
+    if (!kv.second) continue;
+    if (kv.second->_layername == old_name) {
+      kv.second->_layername = new_name;
+    }
+    for (auto& s : kv.second->_multilayers) {
+      if (s == old_name) {
+        s = new_name;
+      }
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 Component* SceneGraphComponentData::createComponent(ecs::Entity* pent) const {
   return new SceneGraphComponent(*this, pent);
 }
