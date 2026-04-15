@@ -15,9 +15,12 @@
 #   step 6 : component owns the camera rig (opt-out for external camera)
 ################################################################################
 
-from orkengine.core import fsm, vec4
+from orkengine.core import fsm, vec3, vec4, lev2_pyexdir
 from orkengine import lev2
 from ork.app.application import ApplicationComponent
+
+lev2_pyexdir.addToSysPath()
+from lev2utils.cameras import setupUiCameraX
 
 ################################################################################
 
@@ -51,6 +54,10 @@ class MultiEcsSceneComponent(ApplicationComponent):
     self.skybox_cache     = {}     # full asset path -> RadianceMap handle
     # Step 5 state
     self.scene_nodes      = {}     # tag -> list[node] classified each frame
+    # Step 6 state
+    self.cameralut        = None
+    self.camera           = None
+    self.uicam            = None
 
   ##############################################################################
   # Public API
@@ -283,3 +290,33 @@ class MultiEcsSceneComponent(ApplicationComponent):
       want = (active_tag == tag)
       for n in self.scene_nodes[tag]:
         n.enabled = want
+
+  ##############################################################################
+  # Camera rig — step 6
+  ##############################################################################
+
+  def setup_camera(self, eye=vec3(0, 2, 8), tgt=vec3(0, 0, 0),
+                   up=vec3(0, 1, 0), camname="spawncam"):
+    """Create the cameralut / camera / uicam rig and perform the
+    initial lookAt. Stores all three on the component for the app
+    and each EcsRuntime to share. Does NOT touch the viewport — the
+    host app is responsible for binding its SceneGraphViewport to
+    the cameraName and routing UI events via handle_camera_event."""
+    self.cameralut = lev2.CameraDataLut()
+    self.camera, self.uicam = setupUiCameraX(
+      cameralut=self.cameralut, camname=camname)
+    self.uicam.lookAt(eye, tgt, up)
+    self.uicam.updateMatrices()
+    self.camera.copyFrom(self.uicam.cameradata)
+
+  def handle_camera_event(self, uievent):
+    """Dispatch a UI event to the uicam and copy the updated
+    cameradata back to the main camera. Returns True if the uicam
+    consumed the event, False otherwise."""
+    if self.uicam is None:
+      return False
+    handled = self.uicam.uiEventHandler(uievent)
+    if handled:
+      self.uicam.updateMatrices()
+      self.camera.copyFrom(self.uicam.cameradata)
+    return bool(handled)
