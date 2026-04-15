@@ -163,6 +163,38 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
   // depth prepass
   ///////////////////////////////////////////////////////////////////////////
 
+  {
+    static int _dpp_dbg_frame = 0;
+    if ((_dpp_dbg_frame++ % 60) == 0) {
+      auto* scene = pbrcommon ? pbrcommon->_scene : nullptr;
+      printf("[fwd.dpp] frame=%d useDepthPrepass=%d scene=%p dpp_layer='%s'\n",
+             _dpp_dbg_frame, (int)pbrcommon->_useDepthPrepass, (void*)scene,
+             fpass->_dpp_pass_layer.c_str());
+      if (scene) {
+        auto dpp_layer = scene->findLayer(fpass->_dpp_pass_layer);
+        if (dpp_layer) {
+          dpp_layer->_drawable_nodes.atomicOp(
+              [](const scenegraph::Layer::drawablenodevect_t& nodes) {
+                printf("[fwd.dpp]   dpp_layer node count=%zu\n", nodes.size());
+                for (const auto& n : nodes) {
+                  fvec3 pos(0,0,0);
+                  if (n->_dqxfdata._worldTransform) {
+                    pos = n->_dqxfdata._worldTransform->_translation;
+                  }
+                  printf("[fwd.dpp]     node name='%s' enabled=%d pos=(%+.2f,%+.2f,%+.2f) drawable=%p xf=%p\n",
+                         n->_name.c_str(), (int)n->_enabled,
+                         pos.x, pos.y, pos.z,
+                         (void*)n->_drawable.get(),
+                         (void*)n->_dqxfdata._worldTransform.get());
+                }
+              });
+        } else {
+          printf("[fwd.dpp]   dpp_layer NOT FOUND in scene\n");
+        }
+      }
+    }
+  }
+
   if (pbrcommon->_useDepthPrepass) {
     OrkProfilerSampleScope(CHANNEL_GPU, "fwd:depth_prepass");
     _render_dpp(fpass);
