@@ -516,6 +516,22 @@ layer_ptr_t Scene::findLayer(std::string named) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+layer_ptr_t Scene::tryFindLayer(std::string named) {
+
+  layer_ptr_t rval;
+
+  _layers.atomicOp([&](layer_map_t& unlocked) {
+    auto it = unlocked.find(named);
+    if (it != unlocked.end()) {
+      rval = it->second;
+    }
+  });
+
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 compositorpostnode_ptr_t Scene::getPostNode(size_t index) const {
   return _compositorTechnique->_postEffectNodes[index];
 }

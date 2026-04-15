@@ -82,14 +82,14 @@ class SceneGraphApp(ComponentizedApplication):
       "SSAOWeight": 0.25,
       "SSAOPower": 0.125,
       "SSAOFeedback": 1.0/16.0,
-      "SkyboxTexPathStr": envmap if envmap != "" else "ork_envmaps|blender_night"
+      "SkyboxTexPathStr": envmap if envmap != "" else "<assetcache>/envmaps2/blender_studio.xir"
     }
     self.SGC = self.addComponent("std_scenegraph",
                                  StandardSceneGraphComponent,
                                  enable_ui_camera=True,
                                  eye=vec3(0,20,20),
                                  sg_params=params_dict )
-    self.createEzApp(name="ShaderBalls", ssaa=1,
+    self.createEzApp(name="ShaderBalls", ssaa=2,
                       use_subsystems=['opq', 'core', 'gpu', 'lev2'])
 
   ##############################################
@@ -104,10 +104,6 @@ class SceneGraphApp(ComponentizedApplication):
     PBRC.useFloatColorBuffer = True
     PBRC.useDepthPrepass = True
     PBRC.dppZBias = 1.0e-4
-
-    SGC.rendernode.debugRenderingModel = tokens.DEPTH_PREPASS # NONE ALL FORWARD_PBR
-    SGC.rendernode.debugPassID = tokens.SHADOW # PROBE MAIN
-    SGC.rendernode.debugSubPassID = tokens.ALL # tokens.FORWARD_PBR
 
     ###################################
 

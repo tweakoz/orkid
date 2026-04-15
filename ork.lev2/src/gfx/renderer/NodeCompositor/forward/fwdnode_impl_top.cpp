@@ -171,7 +171,7 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
              _dpp_dbg_frame, (int)pbrcommon->_useDepthPrepass, (void*)scene,
              fpass->_dpp_pass_layer.c_str());
       if (scene) {
-        auto dpp_layer = scene->findLayer(fpass->_dpp_pass_layer);
+        auto dpp_layer = scene->tryFindLayer(fpass->_dpp_pass_layer);
         if (dpp_layer) {
           dpp_layer->_drawable_nodes.atomicOp(
               [](const scenegraph::Layer::drawablenodevect_t& nodes) {

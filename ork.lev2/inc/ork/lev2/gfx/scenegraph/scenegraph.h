@@ -236,8 +236,9 @@ struct Scene {
   void initWithParams(varmap::varmap_ptr_t _initialdata);
   void applyRuntimeParams(varmap::varmap_ptr_t params);
 
-  layer_ptr_t createLayer(std::string named);
-  layer_ptr_t findLayer(std::string named);
+  layer_ptr_t createLayer(std::string named); // create or return existing layer (idempotent)
+  layer_ptr_t findLayer(std::string named);   // strict: asserts if layer not found
+  layer_ptr_t tryFindLayer(std::string named); // nullable: returns nullptr if layer not found
 
   //////////////////////////////////////////////////////////////////
   // Layer-role lookup.
