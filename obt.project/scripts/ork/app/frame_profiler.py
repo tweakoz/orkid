@@ -38,6 +38,8 @@ class FrameProfilerComponent(ApplicationComponent):
   ##############################################
 
   def _onGpuInit(self, ctx):
+    if self.profileview is None:
+      return
     for ch in self._channels:
       self.profileview.addChannel(ch)
     self.profileview.clear_color = vec4(0, 0, 0, 0.8)
