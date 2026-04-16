@@ -101,6 +101,7 @@ class StandardSceneGraphComponent(ApplicationComponent):
                eye=vec3(0,0,5),
                tgt=vec3(0),
                up=vec3(0,1,0),
+               near = 1.0,
                far = 10000.0,
                sg_params=None,
                post_nodes=None,
@@ -122,6 +123,7 @@ class StandardSceneGraphComponent(ApplicationComponent):
     self.initial_eye = eye
     self.initial_tgt = tgt
     self.initial_up = up
+    self.initial_near = near
     self.initial_far = far
     self.use_float_color_buffer = use_float_color_buffer
     self.layout_component = layout_component
@@ -196,6 +198,7 @@ class StandardSceneGraphComponent(ApplicationComponent):
                                               eye=self.initial_eye,
                                               tgt=self.initial_tgt,
                                               up=self.initial_up,
+                                              near=self.initial_near,
                                               far=self.initial_far)
     if self.using_pbr:
       self.pbr_common = SG.pbr_common
@@ -210,6 +213,12 @@ class StandardSceneGraphComponent(ApplicationComponent):
     self.uicam.lookAt( self.initial_eye,
                        self.initial_tgt,
                        self.initial_up )
+    
+    # EzUiCam exposes clamps (near_min / far_max), not direct near/far.
+    # The actual near/far are derived from mfLoc * near_far_ratio in
+    # updateMatrices, then clamped into [near_min, far_max].
+    self.uicam.near_min = self.initial_near
+    self.uicam.far_max  = self.initial_far
     
     ###################################
     # create grid

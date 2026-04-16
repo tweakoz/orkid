@@ -185,6 +185,12 @@ void pyinit_gfx_camera(py::module& module_lev2) {
               [](ezuicam_ptr_t uic, bool value) { //
                 uic->_rotOnMove = value;
               })
+              .def_property("explicit_near_far", [](ezuicam_ptr_t uic) -> bool { //
+                return uic->_explicit_near_far;
+              },
+              [](ezuicam_ptr_t uic, bool value) { //
+                uic->_explicit_near_far = value;
+              })
           ;
   type_codec->registerStdCodec<ezuicam_ptr_t>(ezuicam_type);
   /////////////////////////////////////////////////////////////////////////////

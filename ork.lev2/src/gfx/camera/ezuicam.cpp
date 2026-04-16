@@ -726,29 +726,24 @@ void EzUiCam::updateMatrices(void) {
     mfLoc = _loc_max;
 
   // Parameters to define
-  float base_near = mfLoc*0.01; // Base near plane distance
-  float near_far_ratio = 10000.0; // Ratio between far and near plane distances
-
-  // Calculate the logarithm of the location (mfLoc) to determine the dynamic range
-  //float flog10 = log10(mfLoc);
-
-  // Calculate the interpolation index based on the logarithm, adjusted for our dynamic range
-  //float flerpidx = (flog10 + 1.0f) / 6.0f;
-  //float finvlerpidx = 1.0f - flerpidx;
-  // Adjust calculations for neardiv and farmul using the base near and ratio
-  //float neardiv = (base_near * finvlerpidx + near_far_ratio * base_near) * flerpidx;
-  //float farmul = (near_far_ratio * 0.5f * finvlerpidx + 0.5f / near_far_ratio) * flerpidx;
-
-  // Calculate the near and far plane distances
-  float fnear = base_near;
-  //float ffar = mfLoc * farmul;
-  //float fnear = base_near;
-  float ffar = fnear * near_far_ratio;
-  // Enforce minimum and maximum values for near and far plane distances
-  //if (ffar > far_max) ffar = far_max;
-  if (fnear < near_min) fnear = near_min;
-  if (ffar > far_max) ffar = far_max;
-  //if (ffar < (fnear+0.0001)) ffar = (fnear+0.0001);
+  float fnear, ffar;
+  if (_explicit_near_far) {
+    // FPS/walking mode: near/far are pinned directly to near_min/far_max
+    // and independent of mfLoc. Use this when the camera's pos_offset is
+    // meant to BE the eye and mfLoc is set tiny (for sampling alignment)
+    // — otherwise the mfLoc-derived ffar would collapse to nothing.
+    fnear = near_min;
+    ffar  = far_max;
+  } else {
+    // Editor-cam mode: near/far scale with mfLoc (orbit distance) so the
+    // depth range is centered on the focus target.
+    float base_near = mfLoc*0.01;
+    float near_far_ratio = 10000.0;
+    fnear = base_near;
+    ffar = fnear * near_far_ratio;
+    if (fnear < near_min) fnear = near_min;
+    if (ffar > far_max) ffar = far_max;
+  }
 
   //float fratio = ffar/fnear;
   //printf( "mfLoc<%g> near_min<%g> far_max<%g> fnear<%g> ffar<%g> fratio<%g>\n", mfLoc, near_min, far_max, fnear, ffar, fratio );

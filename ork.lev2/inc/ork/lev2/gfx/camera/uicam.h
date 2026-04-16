@@ -224,6 +224,11 @@ public: //
   bool mDoPan;
   bool mDoZoom;
   bool _constrainZ = false;
+  // When true, updateMatrices uses near_min / far_max verbatim as the
+  // camera's near/far, ignoring the mfLoc-derived editor-cam scaling.
+  // Use for FPS/walking cameras where near/far should be independent
+  // of mfLoc (orbit distance).
+  bool _explicit_near_far = false;
 
   fvec3 _pushNZ, _pushNX, _pushNY;
   fvec3 _position_offset;

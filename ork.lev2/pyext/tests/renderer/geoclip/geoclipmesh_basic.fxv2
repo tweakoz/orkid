@@ -15,6 +15,11 @@ state_block sb_geoclipmesh : sb_default {
 uniform_block ub_terrain (descriptor_set 0) {
   float terrainFadeNear;
   float terrainFadeFar;
+  float terrainNearFadeDist;  // alpha ramps 0→1 from near plane out to this distance
+  float terrainNearPlane;     // camera near plane (alpha = 0 at this distance)
+  float terrainFeatureScale;  // uniform XYZ scale on the terrain function — bigger
+                              // features extend visible detail without changing the
+                              // mesh. Slopes are preserved → lighting unchanged.
   float BaseQuadSize;
 }
 ///////////////////////////////////////////////////////////////
@@ -66,6 +71,9 @@ typeblock typ_geoclipmesh_basic {
     vec4 new_pos;
     vec3 signal;
     float radius;
+    vec3 nrm;
+    vec3 tan;
+    vec3 bin;
   };
 }
 ///////////////////////////////////////////////////////////////
@@ -73,24 +81,57 @@ libblock lib_ground_vtx_base
  : lib_mmnoise
  : typ_geoclipmesh_basic {
 
-  float terrain_height(vec2 xz) {
-    float mtn_wave = sin(xz.x * 0.005 + 0.3)
-                   * cos(xz.y * 0.005 * 0.8 + 0.7)
-                   + sin(xz.x * 0.005 * 1.3 - xz.y * 0.005 * 0.4) * 0.5;
-    float large_wave = sin(xz.x * 0.015)
-                     * cos(xz.y * 0.015 * 0.7)
-                     + cos(xz.x * 0.015 * 0.6 + xz.y * 0.015) * 0.6;
-    float med_wave = sin(xz.x * 0.04 + xz.y * 0.04 * 0.5)
-                   * cos(xz.y * 0.04 * 1.3);
-    float small_wave = sin(xz.x * 0.12 * 1.1)
-                     * sin(xz.y * 0.12 * 0.9);
-    float fine_wave = sin(xz.x * 0.3 * 1.2 + xz.y * 0.3 * 0.7)
-                    * cos(xz.y * 0.3 * 1.1);
-    return mtn_wave * 80.0
-         + large_wave * 30.0
-         + med_wave * 12.0
-         + small_wave * 4.0
-         + fine_wave * 1.5;
+  // analytic band-limit driven by radial distance from camera (continuous
+  // across LOD ring boundaries). effective spacing s_eff(d) = max(BaseQuadSize,
+  // d/64) matches ring-k outer extent (64*s_k) at each ring boundary but
+  // varies smoothly in between. rolloff kills a component over one octave
+  // before its Nyquist, giving margin against residual aliasing.
+  float band_weight(float kmag, float ny) {
+    return 1.0 - smoothstep(0.25, 0.5, kmag / ny);
+  }
+
+  float terrain_height(vec2 xz, float dist_cam) {
+    // Uniform XYZ scale on the terrain FUNCTION: features s times wider AND
+    // s times taller, so slopes (= normals, = lighting) are preserved bit-
+    // identically. Equivalent to evaluating at xz/s and scaling amplitude by s.
+    float s   = terrainFeatureScale;
+    vec2 xzs  = xz / s;
+    float s_eff = max(BaseQuadSize, dist_cam / 64.0);
+    float ny    = 3.14159265 / s_eff;
+    // Stretched features have kmag divided by s → bump Nyquist by s so the
+    // filter's cutoff tracks the (wider) wavelengths correctly.
+    float ny_adj = ny * s;
+    float w_mtn   = band_weight(0.0068, ny_adj);
+    float w_large = band_weight(0.0183, ny_adj);
+    float w_med   = band_weight(0.0824, ny_adj);
+    float w_small = band_weight(0.1712, ny_adj);
+    float w_fine  = band_weight(0.6492, ny_adj);
+    float w_fine2 = band_weight(1.2985, ny_adj);
+    float w_fine3 = band_weight(2.5970, ny_adj);
+    float mtn_wave = sin(xzs.x * 0.005 + 0.3)
+                   * cos(xzs.y * 0.005 * 0.8 + 0.7)
+                   + sin(xzs.x * 0.005 * 1.3 - xzs.y * 0.005 * 0.4) * 0.5;
+    float large_wave = sin(xzs.x * 0.015)
+                     * cos(xzs.y * 0.015 * 0.7)
+                     + cos(xzs.x * 0.015 * 0.6 + xzs.y * 0.015) * 0.6;
+    float med_wave = sin(xzs.x * 0.04 + xzs.y * 0.04 * 0.5)
+                   * cos(xzs.y * 0.04 * 1.3);
+    float small_wave = sin(xzs.x * 0.12 * 1.1)
+                     * sin(xzs.y * 0.12 * 0.9);
+    float fine_wave = sin(xzs.x * 0.3 * 1.2 + xzs.y * 0.3 * 0.7)
+                    * cos(xzs.y * 0.3 * 1.1);
+    float fine2_wave = sin(xzs.x * 0.6 * 1.2 + xzs.y * 0.6 * 0.7)
+                     * cos(xzs.y * 0.6 * 1.1);
+    float fine3_wave = sin(xzs.x * 1.2 * 1.2 + xzs.y * 1.2 * 0.7)
+                     * cos(xzs.y * 1.2 * 1.1);
+    return s * (
+           mtn_wave   * 80.0   * w_mtn
+         + large_wave * 30.0   * w_large
+         + med_wave   * 12.0   * w_med
+         + small_wave *  4.0   * w_small
+         + fine_wave  *  1.5   * w_fine
+         + fine2_wave *  0.75  * w_fine2
+         + fine3_wave *  0.375 * w_fine3);
   }
 
   x_pos vs_compute_position(vec3 pos) {
@@ -98,9 +139,23 @@ libblock lib_ground_vtx_base
     _x.true_wpos = m * vec4(pos, 1);
     vec3 wave_pos = _x.true_wpos.xyz;
     float radius  = length(wave_pos.xz);
-    float displacement = terrain_height(wave_pos.xz);
-    wave_pos.y += displacement;
-    _x.signal  = vec3(displacement, 0, 0);
+    // pos.xz is local grid space (camera-centered), so |pos.xz| L-inf is
+    // the distance from camera — drives the radial band-limit filter.
+    float dist_cam = max(abs(pos.x), abs(pos.z));
+    float h0 = terrain_height(wave_pos.xz, dist_cam);
+    // analytic normal via central-difference. terrain_height is band-
+    // limited at this dist_cam, so eps=1 is stable at any range — no
+    // aliasing of an eps that picks up already-filtered high freqs.
+    float eps = 1.0;
+    float hx = terrain_height(wave_pos.xz + vec2(eps, 0.0), dist_cam);
+    float hz = terrain_height(wave_pos.xz + vec2(0.0, eps), dist_cam);
+    vec3 tvec = vec3(eps, hx - h0, 0.0);
+    vec3 bvec = vec3(0.0, hz - h0, eps);
+    _x.tan = normalize(tvec);
+    _x.bin = normalize(bvec);
+    _x.nrm = normalize(cross(bvec, tvec));
+    wave_pos.y += h0;
+    _x.signal  = vec3(h0, 0, 0);
     _x.new_pos = vec4(wave_pos, 1);
     _x.radius  = radius;
     return _x;
@@ -115,10 +170,13 @@ libblock lib_ground_vtx : lib_ground_vtx_base {
     // _x.new_pos is now in WORLD space
     // Use v (view matrix) to go from world to view space
     vec4 cpos       = v * _x.new_pos;
-    vec3 wnormal    = normalize(mrot * nrm);
-    // No binormal in V12N12T16 format - construct tangent from normal
-    vec3 wtangent   = normalize(cross(wnormal, vec3(0, 1, 0)));
-    vec3 wbitangent = cross(wnormal, wtangent);
+    // Analytic TBN from the terrain height gradient (computed in
+    // vs_compute_position). Ignores the per-vertex `nrm` attribute
+    // because the generated mesh is flat — real surface orientation
+    // comes from the displacement.
+    vec3 wtangent   = _x.tan;
+    vec3 wbitangent = _x.bin;
+    vec3 wnormal    = _x.nrm;
 
     // _x.new_pos is already in world space
     frg_wpos    = _x.new_pos;
@@ -172,7 +230,9 @@ fragment_shader ps_fwd_ground_mono
   float line_width = 0.05;
   vec2 wpos_xz = frg_wpos.xz;
   vec2 tile_pos = mod(wpos_xz, tile_size);
-  vec2 fw = fwidth(wpos_xz);
+  float fw_index = smoothstep(terrainNearPlane, terrainFadeFar, frg_camdist);
+  float fw_mul = mix(1.0, 5.0,pow(fw_index,0.5));
+  vec2 fw = fwidth(wpos_xz) * fw_mul;
   vec2 dist_to_line = min(tile_pos, tile_size - tile_pos);
   vec2 aa_grid = 1.0 - smoothstep(line_width - fw, line_width + fw, dist_to_line);
   float grid = clamp(aa_grid.x + aa_grid.y, 0.0, 1.0);
@@ -181,15 +241,28 @@ fragment_shader ps_fwd_ground_mono
   vec2 tile_id = floor(wpos_xz / tile_size);
   float checker = mod(tile_id.x + tile_id.y, 2.0);
 
-  // Base color from lighting with checkerboard tint
-  vec3 lit_color = forward_lighting_mono(frg_clr.xyz * ModColor.xyz);
-  vec3 tile_color = mix(lit_color * 0.8, lit_color * 1.0, checker);
+  // Albedo = checkerboard tint + grid lines. Fed into PBR as the surface
+  // color so lighting/shadowing modulates it correctly.
+  vec3 tile_albedo = mix(vec3(0.5), vec3(0.85), checker);
+  vec3 grid_albedo = vec3(0.08);
+  vec3 albedo      = mix(tile_albedo, grid_albedo, grid);
 
-  // Grid lines in dark color
-  vec3 grid_color = vec3(0.1, 0.1, 0.1);
-  vec3 final_color = mix(tile_color, grid_color, grid);
+  // PBR lighting with analytic normal from the vertex shader.
+  // ambrufmtl = (ambient, roughness, metallic). Matte terrain → rough, non-metal.
+  vec3 normal     = normalize(frg_tbn[2]);
+  vec3 ambrufmtl  = vec3(0.0, 1, 0.0);
+  vec3 emission   = vec3(0.0);
+  vec3 final_color = _forward_lightingZ(ModColor.xyz, albedo, ambrufmtl, emission, EyePostion, normal, false);
 
+  // Near fade-in: modulate color toward BLACK (not alpha) so the terrain
+  // stays opaque right up to the camera but darkens into the near plane
+  // instead of revealing the skybox behind it.
+  float near_factor = smoothstep(terrainNearPlane, terrainNearFadeDist, frg_camdist);
+  final_color *= near_factor;
+
+  // Far fade-out stays alpha-based — terrain dissolves into the distance.
   float fade_alpha = 1.0 - smoothstep(terrainFadeNear, terrainFadeFar, frg_camdist);
+  fade_alpha = pow(fade_alpha, 2.0); // gamma-correct the fade so it looks smoother
   if (fade_alpha <= 0.001) discard;
   out_color = vec4(final_color, fade_alpha);
 }
