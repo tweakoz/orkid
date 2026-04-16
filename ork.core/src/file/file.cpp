@@ -80,7 +80,8 @@ bool File::writeBinary(const file::Path& input_path, const void* data, size_t da
 }
 
 datablock_ptr_t File::loadDatablock(const file::Path& sFileName){
-  File file(sFileName, EFM_READ);
+  auto expanded = file::Path(file::expandPaths(sFileName.toStdString()));
+  File file(expanded, EFM_READ);
   std::vector<uint8_t> bytes;
   file.Load(bytes);
   datablock_ptr_t datablock = std::make_shared<DataBlock>(bytes.data(), bytes.size());
