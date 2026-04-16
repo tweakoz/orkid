@@ -208,16 +208,7 @@ void ForwardPbrNodeImpl::_update_shadow_maps() {
     _currentRCFD->_passID         = "SHADOW"_crcu;
     int num_shadow_casters        = 0;
     static int _shadow_dbg_frame = 0;
-    bool shadow_dbg = ((_shadow_dbg_frame++ % 60) == 0);
-    if (shadow_dbg) {
-      printf("[fwd.shadow] frame=%d alllights=%zu\n",
-             _shadow_dbg_frame, _enumeratedLights->_alllights.size());
-    }
     for (auto light : _enumeratedLights->_alllights) {
-      if (shadow_dbg) {
-        printf("[fwd.shadow]   light=%p castsShadows=%d\n",
-               (void*)light, (int)light->_castsShadows);
-      }
       if (not light->_castsShadows)
         continue;
 
@@ -226,35 +217,16 @@ void ForwardPbrNodeImpl::_update_shadow_maps() {
 
         if (light->_depthRTG == nullptr) {
           auto depcookie = light->_cookieDepth;
-          if (shadow_dbg) {
-            printf("[fwd.shadow]     (first use) cookieDepth=%p\n", (void*)depcookie.get());
-          }
           OrkAssert(depcookie);
           auto rtg         = depcookie->createRenderTarget(_currentContext);
           rtg->_depthOnly  = true;
           light->_depthRTG = rtg;
-          if (shadow_dbg) {
-            printf("[fwd.shadow]     created depthRTG=%p w=%d h=%d\n",
-                   (void*)rtg.get(), rtg ? rtg->width() : -1, rtg ? rtg->height() : -1);
-          }
-        } else if (shadow_dbg) {
-          printf("[fwd.shadow]     depthRTG=%p w=%d h=%d\n",
-                 (void*)light->_depthRTG.get(),
-                 light->_depthRTG->width(), light->_depthRTG->height());
         }
-
+        
         CompositingPassData shadowCPD = _currentCIMPL->topCPD().clone();
 
         _SHADOWCAM->_pmatrix                  = as_spotlight->mProjectionMatrix;
         _SHADOWCAM->_vmatrix                  = as_spotlight->mViewMatrix;
-        if (shadow_dbg) {
-          auto vmi = as_spotlight->mViewMatrix.inverse();
-          fvec3 lpos = vmi.translation();
-          fvec3 lfwd = vmi.zNormal();
-          printf("[fwd.shadow]     spot world_pos=(%+.2f %+.2f %+.2f) fwd=(%+.2f %+.2f %+.2f) fovy=%.2f range=%.2f\n",
-                 lpos.x, lpos.y, lpos.z, lfwd.x, lfwd.y, lfwd.z,
-                 as_spotlight->getFovy(), as_spotlight->getRange());
-        }
         _SHADOWCAM->_vpmatrix                 = _SHADOWCAM->_vmatrix * _SHADOWCAM->_pmatrix;
         _SHADOWCAM->_ivpmatrix                = _SHADOWCAM->_vpmatrix.inverse();
         _SHADOWCAM->_ivmatrix                 = _SHADOWCAM->_vmatrix.inverse();
@@ -272,33 +244,8 @@ void ForwardPbrNodeImpl::_update_shadow_maps() {
         // {"depth_prepass"} list — identical to the previous code path.
         {
           auto* scene = _node->_pbrcommon ? _node->_pbrcommon->_scene : nullptr;
-          if (shadow_dbg) {
-            printf("[fwd.shadow]     enqueue for spotlight=%p scene=%p\n",
-                   (void*)as_spotlight, (void*)scene);
-          }
           if (scene) {
             for (const auto& layer_name : scene->layersForRole("depth_prepass")) {
-              if (shadow_dbg) {
-                auto lp = scene->findLayer(layer_name);
-                size_t count = 0;
-                if (lp) {
-                  lp->_drawable_nodes.atomicOp(
-                      [&count](const scenegraph::Layer::drawablenodevect_t& v) {
-                        count = v.size();
-                      });
-                }
-                printf("[fwd.shadow]       layer='%s' node_count=%zu\n",
-                       layer_name.c_str(), count);
-                if (lp) {
-                  lp->_drawable_nodes.atomicOp(
-                      [](const scenegraph::Layer::drawablenodevect_t& nodes) {
-                        for (const auto& n : nodes) {
-                          printf("[fwd.shadow]         node='%s' enabled=%d drawable=%p\n",
-                                 n->_name.c_str(), (int)n->_enabled, (void*)n->_drawable.get());
-                        }
-                      });
-                }
-              }
               _currentDrawQueue->enqueueLayerToRenderQueue(layer_name, _currentIRenderer);
             }
           } else {
