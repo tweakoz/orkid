@@ -28,9 +28,15 @@ void pyinit_simplesound(py::module& module_ecs) {
                 return fxs.c_str();
               })
           .def_property(
-              "wavFilePath",
+              "wavfile_path",
               [](simplesnddata_ptr_t s) -> file::Path { return s->_wavFilePath; },
-              [](simplesnddata_ptr_t s, file::Path val) { s->_wavFilePath = val; })
+              [](simplesnddata_ptr_t s, py::object val) {
+                if (py::isinstance<file::Path>(val)) {
+                  s->_wavFilePath = val.cast<file::Path>();
+                } else if (py::isinstance<py::str>(val)) {
+                  s->_wavFilePath = file::Path(val.cast<std::string>().c_str());
+                }
+              })
           .def_property(
               "looping",
               [](simplesnddata_ptr_t s) -> bool { return s->_looping; },
