@@ -1,5 +1,6 @@
 #include "pyext.h"
 #include <ork/ecs/datatable.h>
+#include <ork/ecs/archetype.h>
 
 namespace ork::ecssim {
 using eref_ptr_t = std::shared_ptr<EntityRef>;
@@ -15,6 +16,20 @@ void register_entity(typename py::module_& module, typename nanobindadapter::cod
   auto ent_t = clazz<nanobindadapter, pyentity_ptr_t>(module, "Entity")
                    .prop_ro("vars", [](pyentity_ptr_t ent) -> varmap::varmap_ptr_t { return ent->_varmap; })
                    .prop_ro("id", [](pyentity_ptr_t ent) -> uint64_t { return ent->_entref; })
+                   .prop_ro("name", [](pyentity_ptr_t ent) -> std::string { return ent->name().c_str(); })
+                   .prop_ro("archetype_name", [](pyentity_ptr_t ent) -> std::string {
+                     auto sd = ent->data();
+                     if (sd) {
+                       auto arch = sd->GetArchetype();
+                       if (arch) return arch->GetName().c_str();
+                     }
+                     return "";
+                   })
+                   .prop_ro("spawner_name", [](pyentity_ptr_t ent) -> std::string {
+                     auto sd = ent->data();
+                     if (sd) return sd->GetName().c_str();
+                     return "";
+                   })
                    .prop_rw(
                        "translation",
                        [](pyentity_ptr_t ent) -> fvec3 {
@@ -35,6 +50,14 @@ void register_entity(typename py::module_& module, typename nanobindadapter::cod
                          auto trans          = ent->transform();
                          trans->_rotation = rot;
                        })
+                   .prop_rw(
+                       "scale",
+                       [](pyentity_ptr_t ent) -> float {
+                         return ent->transform()->_uniformScale;
+                       },
+                       [](pyentity_ptr_t ent, float s) {
+                         ent->transform()->_uniformScale = s;
+                       })
                    .def(
                        "findComponentByName",
                        [](pyentity_ptr_t ent, const std::string& classname) -> pycomponent_ptr_t {
@@ -42,7 +65,6 @@ void register_entity(typename py::module_& module, typename nanobindadapter::cod
                          auto wrapped = pycomponent_ptr_t(comp);
                          return wrapped;
                        })
-
                    .def("__repr__", [](pyentity_ptr_t ent) -> std::string { return FormatString("ent<%p>", ent.get()); });
   type_codec->registerStdCodec<pyentity_ptr_t>(ent_t);
 };

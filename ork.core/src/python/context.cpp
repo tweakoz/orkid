@@ -383,16 +383,25 @@ PyInterpreterState* fetchPyInterpreterState(PyThreadState* tstate) {
 
 Context2::Context2() {
 
-  // created on update thread
-  // for now until deletion the update thread will
-  //  only run _subInterpreter
-  //  and main thread will run _mainInterpreter
-
   auto gstate      = GlobalState::instance();
   _mainInterpreter = gstate->_mainInterpreter;
 
-  _mainInterpreterMyThreadState = PyThreadState_New(_mainInterpreter);
-  PyGILState_STATE gil_state    = PyGILState_Ensure();
+  // Detect whether the caller holds a GIL (called from Python) or
+  // not (called from C++ update thread after py::gil_scoped_release).
+  PyThreadState* caller_tstate = _PyThreadState_UncheckedGet();
+  bool caller_had_gil = (caller_tstate != nullptr);
+
+  if (caller_had_gil) {
+    // Use the caller's existing thread state so we can restore it
+    // after creating the sub-interpreter. Using the SAME state avoids
+    // pybind11 deadlocks (its scoped guards track thread state identity).
+    _mainInterpreterMyThreadState = caller_tstate;
+  } else {
+    // No GIL held — create a temporary thread state and acquire the
+    // main GIL so Py_NewInterpreterFromConfig has a valid context.
+    _mainInterpreterMyThreadState = PyThreadState_New(_mainInterpreter);
+    PyEval_RestoreThread(_mainInterpreterMyThreadState);
+  }
 
   PyInterpreterConfig pyconfig;
   memset(&pyconfig, 0, sizeof(PyInterpreterConfig));
@@ -401,12 +410,20 @@ Context2::Context2() {
   auto status                            = Py_NewInterpreterFromConfig(&_subPrimaryThreadState, &pyconfig);
   OrkAssert(PyStatus_IsError(status) == 0);
 
-  _subGILheld = true; // Py_NewInterpreterFromConfig releases parent GIL and acquires new GIL
-
+  _subGILheld = true;
   _subInterpreter = fetchPyInterpreterState(_subPrimaryThreadState);
 
   logchan_pyctx->log("pyctx<%p> _subInterpreter<%p>\n", this, (void*)_subInterpreter);
-  logchan_pyctx->log("pyctx<%p> 1...\n", this);
+
+  // Swap back to the main interpreter. Releases sub GIL, acquires main.
+  PyThreadState_Swap(_mainInterpreterMyThreadState);
+
+  if (!caller_had_gil) {
+    // Caller didn't hold the GIL — release it so we return in the
+    // same state we entered. The caller's py::gil_scoped_release
+    // destructor will reacquire later.
+    PyEval_SaveThread();
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -435,19 +452,22 @@ Context2::~Context2() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context2::bindSubInterpreter() {
-  // logchan_pyctx->log("pyctx<%p> binding subinterpreter\n", this);
-  _saveInterpreter = PyThreadState_Get();
-  if (_saveInterpreter != _subPrimaryThreadState) {
-    PyThreadState_Swap(_subPrimaryThreadState);
+  PyThreadState* current = _PyThreadState_UncheckedGet();
+  if (current) {
+    _saveInterpreter = PyEval_SaveThread();
+  } else {
+    _saveInterpreter = nullptr;
   }
-
-  //  logchan_pyctx->log("pyctx<%p> bound subinterpreter...\n", this);
+  PyEval_RestoreThread(_subPrimaryThreadState);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context2::unbindSubInterpreter() {
-  PyThreadState_Swap(_saveInterpreter);
+  _subPrimaryThreadState = PyEval_SaveThread();
+  if (_saveInterpreter) {
+    PyEval_RestoreThread(_saveInterpreter);
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 

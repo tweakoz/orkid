@@ -350,7 +350,7 @@ void SpotLight::lookAt(const fvec3& pos, const fvec3& tgt, const fvec3& up) {
   mProjectionMatrix.perspective(fovy, 1.0, near, far);
   mViewMatrix.lookAt(pos.x, pos.y, pos.z, tgt.x, tgt.y, tgt.z, up.x, up.y, up.z);
   mWorldSpaceLightFrustum.set(mViewMatrix, mProjectionMatrix);
-  opq::assertOnQueue(opq::mainSerialQueue());
+  //opq::assertOnQueue(opq::mainSerialQueue());
   _xformgenerator = [this, pos]() -> fmtx4 {
     fmtx4 rval;
     rval.setTranslation(pos);

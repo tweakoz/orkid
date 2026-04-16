@@ -64,7 +64,7 @@ void pyinit_controller(py::module& module_ecs) {
         ctrl->endSimulation();
        })
       .def("updateSimulation", [](controller_ptr_t ctrl) { //
-        //py::gil_scoped_release release; //
+        py::gil_scoped_release release; //
         ctrl->update(); //
         })
       .def("beginWriteTrace", [](controller_ptr_t ctrl, std::string outpath) { //
