@@ -413,6 +413,14 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
     size_t estimated_buffer_count = 128; // Estimate max UBOs we might have
     buffer_infos.reserve(estimated_buffer_count);
 
+    // Patched image infos: when an RTG depth texture is sampled while simultaneously
+    // bound as a read-only depth attachment, its actual layout is DEPTH_READ_ONLY_OPTIMAL,
+    // not SHADER_READ_ONLY_OPTIMAL. Vulkan requires VkDescriptorImageInfo::imageLayout to
+    // match the actual layout (VUID-VkDescriptorImageInfo-imageLayout-00344).
+    static std::vector<VkDescriptorImageInfo> image_infos;
+    image_infos.clear();
+    image_infos.reserve(256);
+
     // First, handle textures/samplers - ensure ALL samplers from merged resources are bound
     // Build a map of what's already bound (only for texture params)
     static std::unordered_map<int, vktexobj_ptr_t> bound_textures;
@@ -465,13 +473,29 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
               OrkAssert(desc_info->imageView != VK_NULL_HANDLE);
               OrkAssert(desc_info->sampler != VK_NULL_HANDLE);
 
+              // Copy the image info and patch imageLayout to match the actual
+              // current layout of the underlying image. This is required when
+              // an RTG depth texture is simultaneously bound as a read-only
+              // depth attachment — actual layout is DEPTH_READ_ONLY_OPTIMAL,
+              // not SHADER_READ_ONLY_OPTIMAL.
+              OrkAssert(image_infos.size() < image_infos.capacity());
+              image_infos.push_back(*desc_info);
+              VkDescriptorImageInfo& patched = image_infos.back();
+              auto sample_img = vk_tex->samplingImage();
+              if (sample_img) {
+                VkImageLayout actual = sample_img->_currentLayout;
+                if (actual == VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL) {
+                  patched.imageLayout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
+                }
+              }
+
               VkWriteDescriptorSet DWRITE = {};
               initializeVkStruct(DWRITE, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
               DWRITE.dstSet          = descset_ptr->_vkdescset;
               DWRITE.dstBinding      = binding->binding_id;
               DWRITE.descriptorCount = 1;
               DWRITE.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-              DWRITE.pImageInfo      = desc_info.get();
+              DWRITE.pImageInfo      = &patched;
 
               descriptor_writes.push_back(DWRITE);
               break;
