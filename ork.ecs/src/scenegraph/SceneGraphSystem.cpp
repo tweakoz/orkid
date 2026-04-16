@@ -396,13 +396,15 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
   /////////////////////////////////////////
   // Build cookie atlas from SpotLightData cookie paths
   // (scan scene DATA, not live scene graph — lights aren't staged yet)
-  // Strategy: create NEW TextureArrays, GPU-upload directly, swap pointers.
-  // Don't touch defaults or _needs_gpu_init. (see ~/liveload.md Theory 5)
+  //
+  // When the scenegraph is shared (injected), cookie arrays are owned by
+  // the app via the LightManager — don't create or replace them.
+  // When the scenegraph is private, create arrays and swap pointers.
   /////////////////////////////////////////
 
   {
     auto lmgr = _scene->_lightManager;
-    if (lmgr) {
+    if (lmgr && !_isSharedScene) {
       int atlasW  = _SGSD._cookieAtlasWidth;
       int atlasH  = _SGSD._cookieAtlasHeight;
       int shadowW = _SGSD._shadowAtlasWidth;
@@ -468,6 +470,10 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
         lmgr->_cookies_spot_depth = _cookieDepthArray;
         _nextDepthSlice = 0;
       }
+    } else if (lmgr && _isSharedScene) {
+      // Shared scenegraph: alias lmgr's existing arrays for local use
+      _cookieColorArray = lmgr->_cookies_spot_color;
+      _cookieDepthArray = lmgr->_cookies_spot_depth;
     }
   }
 
@@ -482,12 +488,27 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
 
   // GPU uploads deferred to loading phase (safe for first-run shader compilation)
   auto ph = ctx->newLoadingPhase();
+  bool shared = _isSharedScene;
   ph->enqueueOperation([=](Context* ctx) {
-    if (_cookieColorArray) {
-      ctx->TXI()->updateTextureArray(_cookieColorArray.get());
-    }
-    if (_cookieDepthArray) {
-      ctx->TXI()->initTextureArray2D(_cookieDepthArray.get());
+    if (!shared) {
+      // Private scenegraph: ECS owns the arrays, upload now
+      if (_cookieColorArray) {
+        ctx->TXI()->updateTextureArray(_cookieColorArray.get());
+      }
+      if (_cookieDepthArray) {
+        ctx->TXI()->initTextureArray2D(_cookieDepthArray.get());
+      }
+    } else {
+      // Shared scenegraph: upload color array if images have been loaded
+      // (e.g. via allocateColorSlice); skip if no images yet (A-D scenes)
+      if (_cookieColorArray && !_cookieColorArray->_images.empty()) {
+        ctx->TXI()->updateTextureArray(_cookieColorArray.get());
+      }
+      // Init depth array (render target) once
+      if (_cookieDepthArray && !_cookieDepthArray->_gpuInitialized) {
+        ctx->TXI()->initTextureArray2D(_cookieDepthArray.get());
+        _cookieDepthArray->_gpuInitialized = true;
+      }
     }
     if (_scene->_lightManager) {
       _scene->_lightManager->gpuInit(ctx);
@@ -539,17 +560,32 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
 
           // Assign cookie atlas slices to spotlights
           if (auto as_spot = std::dynamic_pointer_cast<lev2::SpotLight>(l)) {
-            if (as_spot->_spdata) {
-              std::string ckey = as_spot->_spdata->_cookiePath.c_str();
-              auto it = _cookiePathToSliceRef.find(ckey);
-              if (it != _cookiePathToSliceRef.end()) {
-                as_spot->_cookieColor = it->second;
-              } else if (_cookieColorArray) {
-                as_spot->_cookieColor = _cookieColorArray->slice(0); // default white
+            auto lmgr = _scene->_lightManager;
+            if (_isSharedScene && lmgr) {
+              // Shared scenegraph: use LightManager's centralized allocator
+              if (as_spot->_spdata) {
+                std::string ckey = as_spot->_spdata->_cookiePath.c_str();
+                if (!ckey.empty()) {
+                  as_spot->_cookieColor = lmgr->allocateColorSlice(ckey);
+                } else if (_cookieColorArray) {
+                  as_spot->_cookieColor = _cookieColorArray->slice(0);
+                }
               }
-            }
-            if (_cookieDepthArray && _nextDepthSlice < (int)_cookieDepthArray->_maxslices) {
-              as_spot->_cookieDepth = _cookieDepthArray->slice(_nextDepthSlice++);
+              as_spot->_cookieDepth = lmgr->allocateDepthSlice();
+            } else {
+              // Private scenegraph: use local cookie arrays
+              if (as_spot->_spdata) {
+                std::string ckey = as_spot->_spdata->_cookiePath.c_str();
+                auto it = _cookiePathToSliceRef.find(ckey);
+                if (it != _cookiePathToSliceRef.end()) {
+                  as_spot->_cookieColor = it->second;
+                } else if (_cookieColorArray) {
+                  as_spot->_cookieColor = _cookieColorArray->slice(0);
+                }
+              }
+              if (_cookieDepthArray && _nextDepthSlice < (int)_cookieDepthArray->_maxslices) {
+                as_spot->_cookieDepth = _cookieDepthArray->slice(_nextDepthSlice++);
+              }
             }
           }
 
@@ -816,6 +852,7 @@ bool SceneGraphSystem::_onStage(Simulation* psi) {
     auto injected = sim_varmap->typedValueForKey<scenegraph::scene_ptr_t>("scenegraph");
     if (injected) {
       _scene = injected.value();
+      _isSharedScene = true;
     }
   }
 

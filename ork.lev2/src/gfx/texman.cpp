@@ -319,7 +319,6 @@ void TextureArray::resize(size_t w, size_t h, size_t maxslices, EBufferFormat ef
   _dirty_slices.clear();
   for (size_t i = 0; i < maxslices; i++) {
     _free_slices.insert(i);
-    _dirty_slices.insert(i);
   }
 }
 

@@ -258,6 +258,7 @@ struct SceneGraphSystem final : public System {
   lev2::texturearray_ptr_t _cookieColorArray;
   lev2::texturearray_ptr_t _cookieDepthArray;
   int _nextDepthSlice = 0;
+  bool _isSharedScene = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

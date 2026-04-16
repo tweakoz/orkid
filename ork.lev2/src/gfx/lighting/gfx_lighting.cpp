@@ -643,9 +643,26 @@ void LightManager::gpuInit(Context* ctx) {
     ctx->TXI()->updateTextureArray(_cookies_spot_depth_default.get());
     _needs_gpu_init = false;
   }
-  else {
-    printf("LightManager::gpuInit this=%p already initialized\n", (void*)this);
+}
+
+texturearraysliceref_ptr_t LightManager::allocateDepthSlice() {
+  if (_cookies_spot_depth && _nextDepthSliceAlloc < (int)_cookies_spot_depth->_maxslices) {
+    return _cookies_spot_depth->slice(_nextDepthSliceAlloc++);
   }
+  return nullptr;
+}
+
+texturearraysliceref_ptr_t LightManager::allocateColorSlice(const std::string& cookiePath) {
+  auto it = _colorCookieMap.find(cookiePath);
+  if (it != _colorCookieMap.end()) {
+    return it->second;
+  }
+  if (_cookies_spot_color && _nextColorSliceAlloc < (int)_cookies_spot_color->_maxslices) {
+    auto sliceRef = _cookies_spot_color->load(cookiePath);
+    _colorCookieMap[cookiePath] = sliceRef;
+    return sliceRef;
+  }
+  return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

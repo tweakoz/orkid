@@ -587,6 +587,7 @@ void VkTextureInterface::_enqueueInitTextureArray2DOnCB(TextureArray* texture_ar
       num_levels++;
     }
     texture_array->_num_mips = num_levels;
+    texture_array->_tex->_num_mips = num_levels;
   }
 
   // Create texture object
@@ -931,10 +932,12 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
 
   staging_buffer->unmap();
 
-  // Transition image layout from shader read to transfer destination
+  // Transition image layout to transfer destination.
+  // Use UNDEFINED as old layout — we're about to overwrite this slice entirely,
+  // and the image may be in SHADER_READ_ONLY or GENERAL depending on init path.
   auto barrier = createImageBarrier(
       vktex->_imgobj[0]->_vkimage,
-      VK_IMAGE_LAYOUT_GENERAL,
+      VK_IMAGE_LAYOUT_UNDEFINED,
       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
       VkAccessFlagBits(VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT),
       VK_ACCESS_TRANSFER_WRITE_BIT);
@@ -1066,10 +1069,18 @@ void VkTextureInterface::updateTextureArray(TextureArray* array) { // final
       if (img_iter != array->_images.end() && img_iter->second) {
         slice_item._subimg = img_iter->second;
       } else {
-        // Create a blank image for empty slots
-        auto blank_img = std::make_shared<Image>();
-        blank_img->initWithFormat(array->_width, array->_height, array->_format);
-        slice_item._subimg = blank_img;
+        // Broadcast: fill empty slots with a copy of the first loaded image
+        image_ptr_t fill_img;
+        for (auto& [idx, img] : array->_images) {
+          if (img) { fill_img = img; break; }
+        }
+        if (fill_img) {
+          slice_item._subimg = std::make_shared<Image>(fill_img->clone());
+        } else {
+          auto blank_img = std::make_shared<Image>();
+          blank_img->initWithFormat(array->_width, array->_height, array->_format);
+          slice_item._subimg = blank_img;
+        }
       }
 
       init_data._slices.push_back(slice_item);

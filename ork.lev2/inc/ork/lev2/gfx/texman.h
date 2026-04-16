@@ -273,6 +273,7 @@ struct TextureArray {
   rtgroup_ptr_t _rtg;
   std::string _debugName;
   bool _isDirty = true;
+  bool _gpuInitialized = false;
 
 };
 

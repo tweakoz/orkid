@@ -42,7 +42,13 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
       });
       lm_type_t.def("gpuInit", [](lightmanager_ptr_t lm, ctx_t ctx) { //
         lm->gpuInit(ctx.get());
-      });      
+      });
+  lm_type_t.def("allocateDepthSlice", [](lightmanager_ptr_t lm) -> texturearraysliceref_ptr_t {
+    return lm->allocateDepthSlice();
+  });
+  lm_type_t.def("allocateColorSlice", [](lightmanager_ptr_t lm, std::string path) -> texturearraysliceref_ptr_t {
+    return lm->allocateColorSlice(path);
+  });
   type_codec->registerStdCodec<lightmanager_ptr_t>(lm_type_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto lc_type_t = py::class_<LightCollector, lightcollector_ptr_t>(module_lev2, "LightCollector");
