@@ -38,6 +38,7 @@ struct programInst {
   int _velocity = 0;
   fmtx4 _emitter_matrix;
   float _gain = 0.0f;
+  float _fadeGainLinear = 1.0f;
 };
 
 using onkey_t = std::function<void(

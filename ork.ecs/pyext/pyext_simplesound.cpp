@@ -98,7 +98,11 @@ void pyinit_simplesound(py::module& module_ecs) {
           .def_property(
               "pitchOffsetCents",
               [](simplesoundemitterdata_ptr_t cd) -> float { return cd->_pitchOffsetCents; },
-              [](simplesoundemitterdata_ptr_t cd, float val) { cd->_pitchOffsetCents = val; });
+              [](simplesoundemitterdata_ptr_t cd, float val) { cd->_pitchOffsetCents = val; })
+          .def_property(
+              "initialFadeGain",
+              [](simplesoundemitterdata_ptr_t cd) -> float { return cd->_initialFadeGainLinear; },
+              [](simplesoundemitterdata_ptr_t cd, float val) { cd->_initialFadeGainLinear = val; });
   type_codec->registerStdCodec<simplesoundemitterdata_ptr_t>(emitterdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   // SimpleSoundEmitterSystemData

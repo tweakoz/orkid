@@ -319,6 +319,7 @@ float Layer::currentPan() const{
 void Layer::mixToBus(int base, int count) {
   float prggain = decibel_to_linear_amp_ratio(_layerdata->_programdata->_gainDB);
   prggain *= decibel_to_linear_amp_ratio(_programinst->_gain);
+  prggain *= _programinst->_fadeGainLinear;
   float* lyroutl  = _dspbuffer->channel(0) + base;
   float* lyroutr  = _dspbuffer->channel(1) + base;
   auto& out_buf   = _outbus->_buffer;

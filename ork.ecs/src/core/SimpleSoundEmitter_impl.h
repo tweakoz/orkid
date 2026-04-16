@@ -37,6 +37,11 @@ struct ActiveSimpleVoice {
   float _sampleDuration          = 0.0f;  // seconds (0 = looping/unknown)
   float _startTime               = 0.0f;
   bool _keyOffSent               = false;
+
+  // Per-voice fade gain ramp (linear, 1.0 = full volume)
+  float _fadeGainLinear          = 1.0f;
+  float _fadeTargetLinear        = 1.0f;
+  float _fadeRatePerSec          = 0.0f;  // linear units/sec (0 = no ramp)
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -70,6 +75,8 @@ public:
   bool _onActivate(Simulation* psi) final;
   void _onDeactivate(Simulation* psi) final;
   void _onNotify(Simulation* psi, token_t evID, evdata_t data) final;
+
+  void fadeToGain(float targetLinear, float duration);
 
   const SimpleSoundEmitterData& _CD;
   SimpleSoundEmitterSystem* _system = nullptr;
@@ -105,6 +112,7 @@ private:
   void _onUnstage(Simulation* inst) override;
   bool _onActivate(Simulation* psi) override;
   void _onDeactivate(Simulation* inst) override;
+  void _onNotify(token_t evID, evdata_t data) override;
 
   // Build a per-voice program referencing pre-loaded sound data.
   struct VoiceProgramResult {

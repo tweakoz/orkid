@@ -57,6 +57,7 @@ public:
   bool _enabled              = true;
   float _gainOffsetDB        = 0.0f;
   float _pitchOffsetCents    = 0.0f;
+  float _initialFadeGainLinear = 1.0f;
 };
 using simplesoundemitterdata_ptr_t = std::shared_ptr<SimpleSoundEmitterData>;
 

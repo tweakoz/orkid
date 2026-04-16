@@ -78,6 +78,9 @@ class NonEcsScene:
   def onGpuUpdate(self, ctx):
     pass
 
+  def onFadeTick(self, fadeAmount):
+    pass
+
 ################################################################################
 
 class MultiEcsSceneComponent(ApplicationComponent):
@@ -181,9 +184,14 @@ class MultiEcsSceneComponent(ApplicationComponent):
     def _on_update_fade_out(inst):
       inst.vars.t += inst.vars.dt
       a = inst.vars.app
+      comp = a.multiecs
       dur = inst.vars.fade_duration
       t = min(inst.vars.t / dur, 1.0)
       a.fade_node.fadeAmount = t
+      # Fade outgoing scene's audio down with the visual fade
+      outgoing = comp.non_ecs_scenes.get(a._active)
+      if outgoing is not None:
+        outgoing.onFadeTick(t)
       if inst.vars.t >= dur:
         inst.sendEvent("midpoint")
 
@@ -211,9 +219,14 @@ class MultiEcsSceneComponent(ApplicationComponent):
     def _on_update_fade_in(inst):
       inst.vars.t += inst.vars.dt
       a = inst.vars.app
+      comp = a.multiecs
       dur = inst.vars.fade_duration
       t = min(inst.vars.t / dur, 1.0)
       a.fade_node.fadeAmount = 1.0 - t
+      # Fade incoming scene's audio up with the visual fade
+      incoming = comp.non_ecs_scenes.get(a._active)
+      if incoming is not None:
+        incoming.onFadeTick(1.0 - t)
       if inst.vars.t >= dur:
         inst.sendEvent("complete")
 

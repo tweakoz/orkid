@@ -18,6 +18,7 @@
 #include <ork/lev2/aud/singularity/konoff.h>
 #include <ork/math/audiomath.h>
 #include <ork/file/path.h>
+#include <ork/ecs/datatable.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -124,6 +125,20 @@ void SimpleSoundEmitterComponent::_onNotify(Simulation* psi, token_t evID, evdat
   // Could respond to "play"/"stop" events here in the future
 }
 
+void SimpleSoundEmitterComponent::fadeToGain(float targetLinear, float duration) {
+  targetLinear = std::clamp(targetLinear, 0.0f, 1.0f);
+  for (auto& voice : _activeVoices) {
+    voice._fadeTargetLinear = targetLinear;
+    if (duration <= 0.0f) {
+      voice._fadeGainLinear = targetLinear;
+      voice._fadeRatePerSec = 0.0f;
+    } else {
+      float delta = targetLinear - voice._fadeGainLinear;
+      voice._fadeRatePerSec = delta / duration;
+    }
+  }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // SimpleSoundEmitterSystemData
 ///////////////////////////////////////////////////////////////////////////////
@@ -184,6 +199,17 @@ void SimpleSoundEmitterSystem::_onUnstage(Simulation* inst) {
 
 bool SimpleSoundEmitterSystem::_onActivate(Simulation* psi) {
   return true;
+}
+
+void SimpleSoundEmitterSystem::_onNotify(token_t evID, evdata_t data) {
+  if (evID.hashed() == "FADE_GAIN"_crcu) {
+    auto table = data.getShared<DataTable>();
+    float targetLinear = table->operator[]("gain"_tok).get<float>();
+    float duration     = table->operator[]("duration"_tok).get<float>();
+    for (auto* comp : _components) {
+      comp->fadeToGain(targetLinear, duration);
+    }
+  }
 }
 
 void SimpleSoundEmitterSystem::_onDeactivate(Simulation* inst) {
@@ -388,10 +414,13 @@ void SimpleSoundEmitterSystem::_triggerVoice(
 
   if (progInst) {
     ActiveSimpleVoice av;
-    av._progInst    = progInst;
-    av._program     = voiceResult._program;
-    av._pannerBlock = voiceResult._pannerBlock;
-    av._startTime   = 0.0f; // SimpleSoundEmitter doesn't track per-component elapsed time
+    av._progInst         = progInst;
+    av._program          = voiceResult._program;
+    av._pannerBlock      = voiceResult._pannerBlock;
+    av._startTime        = 0.0f;
+    av._fadeGainLinear   = comp->_CD._initialFadeGainLinear;
+    av._fadeTargetLinear = av._fadeGainLinear;
+    progInst->_fadeGainLinear = av._fadeGainLinear;
     // Compute one-shot sample duration for auto-keyOff (skip for looping sounds)
     if (!sndData->_looping && preloaded._sampleData && preloaded._sampleData->_sampleRate > 0.0f) {
       av._sampleDuration = float(preloaded._sampleData->_blk_end - preloaded._sampleData->_blk_start)
@@ -542,11 +571,26 @@ void SimpleSoundEmitterSystem::_onUpdate(Simulation* inst) {
       }
     }
 
-    // Update panner positions for active voices (emitter + listener both moving)
+    // Update panner positions and fade gain for active voices
     fvec3 pos = comp->GetEntity()->GetEntityPosition();
     for (auto& v : voices) {
       if (v._pannerBlock) {
         _setPannerParams(v, invListenerMtx, pos, dt);
+      }
+      // Tick fade gain ramp
+      if (v._fadeRatePerSec != 0.0f) {
+        v._fadeGainLinear += v._fadeRatePerSec * dt;
+        bool done = (v._fadeRatePerSec > 0.0f)
+                      ? (v._fadeGainLinear >= v._fadeTargetLinear)
+                      : (v._fadeGainLinear <= v._fadeTargetLinear);
+        if (done) {
+          v._fadeGainLinear = v._fadeTargetLinear;
+          v._fadeRatePerSec = 0.0f;
+        }
+      }
+      // Apply to synth voice
+      if (v._progInst) {
+        v._progInst->_fadeGainLinear = v._fadeGainLinear;
       }
     }
   }
