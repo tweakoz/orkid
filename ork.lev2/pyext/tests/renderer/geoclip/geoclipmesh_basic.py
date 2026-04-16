@@ -15,6 +15,27 @@ from ork.app.std_scenegraph import StandardSceneGraphComponent
 
 tokens = CrcStringProxy()
 
+CAMERA_HEIGHT_ABOVE_TERRAIN = 1.0
+TERRAIN_FADE_NEAR = 450.0
+TERRAIN_FADE_FAR  = 500.0
+
+def terrain_height(x, z):
+  mtn_wave   = (math.sin(x * 0.005 + 0.3) * math.cos(z * 0.005 * 0.8 + 0.7)
+              + math.sin(x * 0.005 * 1.3 - z * 0.005 * 0.4) * 0.5)
+  large_wave = (math.sin(x * 0.015) * math.cos(z * 0.015 * 0.7)
+              + math.cos(x * 0.015 * 0.6 + z * 0.015) * 0.6)
+  med_wave   = (math.sin(x * 0.04 + z * 0.04 * 0.5)
+              * math.cos(z * 0.04 * 1.3))
+  small_wave = (math.sin(x * 0.12 * 1.1)
+              * math.sin(z * 0.12 * 0.9))
+  fine_wave  = (math.sin(x * 0.3 * 1.2 + z * 0.3 * 0.7)
+              * math.cos(z * 0.3 * 1.1))
+  return (mtn_wave * 80.0
+        + large_wave * 30.0
+        + med_wave * 12.0
+        + small_wave * 4.0
+        + fine_wave * 1.5)
+
 ################################################################################
 
 class GeoClipMapApp(ComponentizedApplication):
@@ -39,8 +60,8 @@ class GeoClipMapApp(ComponentizedApplication):
       "std_scenegraph",
       StandardSceneGraphComponent,
       sg_params=sg_params,
-      eye=vec3(0, 150, -15),
-      tgt=vec3(0, 150, 0),
+      eye=vec3(0, 15, -15),
+      tgt=vec3(0, 15, 0),
       up=vec3(0, 1, 0),
       far = 10000.0,
       grid_variant=None
@@ -49,9 +70,10 @@ class GeoClipMapApp(ComponentizedApplication):
     # WASD movement state
     self.move_vel = vec2(0, 0)
     self.pos_offset = vec3(0, 0, 0)
-    self.move_speed = 600.0
+    self.move_speed = 40.0
+    self.smoothed_height = terrain_height(0, 0) + CAMERA_HEIGHT_ABOVE_TERRAIN
 
-    self.createEzApp(ssaa=0)
+    self.createEzApp(ssaa=2)
 
   ################################################
   # gpu data init:
@@ -87,7 +109,18 @@ class GeoClipMapApp(ComponentizedApplication):
     gmtl.addBasicStateLambda()
     gmtl.addLightingLambda()
     gmtl.gpuInit(ctx)
-    gmtl.rasterstate.setBlendingMacro(tokens.OFF)
+    gmtl.rasterstate.setBlendingMacro(tokens.ALPHA)
+
+    fs = gmtl.freestyle
+    param_fade_near = fs.param("terrainFadeNear")
+    param_fade_far  = fs.param("terrainFadeFar")
+    if param_fade_near:
+      gmtl.bindParam(param_fade_near, TERRAIN_FADE_NEAR)
+    if param_fade_far:
+      gmtl.bindParam(param_fade_far, TERRAIN_FADE_FAR)
+    param_base_quad_size = fs.param("BaseQuadSize")
+    if param_base_quad_size:
+      gmtl.bindParam(param_base_quad_size, 1.0)
 
     #######################################
     # ground drawable
@@ -130,11 +163,24 @@ class GeoClipMapApp(ComponentizedApplication):
     UP = vec3(0, 1, 0)
     xdir = zdir.cross(UP)
 
-    # Apply WASD movement in camera-relative direction
+    # Apply WASD movement in camera-relative direction (XZ only)
     move_dir = zdir * self.move_vel.y + xdir * self.move_vel.x
     self.pos_offset += move_dir * self.move_speed * DT
 
-    # Update camera position offset
+    # Sample terrain height at current XZ and smooth toward it
+    cam_x = self.pos_offset.x
+    cam_z = self.pos_offset.z
+    target_y = terrain_height(cam_x, cam_z) + CAMERA_HEIGHT_ABOVE_TERRAIN
+    min_y = terrain_height(cam_x, cam_z) + 1.0
+    alpha = 1.0 - math.exp(-DT / 1.0)
+    self.smoothed_height += (target_y - self.smoothed_height) * alpha
+    if self.smoothed_height < min_y:
+      # Fast catch-up to avoid going underground
+      rescue_alpha = 1.0 - math.exp(-DT / 0.1)
+      self.smoothed_height += (min_y - self.smoothed_height) * rescue_alpha
+    self.pos_offset = vec3(cam_x, self.smoothed_height, cam_z)
+
+    # Update camera position offset (direction still from uicam)
     uicam.positionOffset = self.pos_offset
     uicam.updateMatrices()
     self.SGC.camera.copyFrom(uicam.cameradata)
