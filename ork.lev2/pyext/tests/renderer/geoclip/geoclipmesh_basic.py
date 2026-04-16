@@ -49,7 +49,7 @@ class GeoClipMapApp(ComponentizedApplication):
     # WASD movement state
     self.move_vel = vec2(0, 0)
     self.pos_offset = vec3(0, 0, 0)
-    self.move_speed = 300.0
+    self.move_speed = 600.0
 
     self.createEzApp(ssaa=0)
 

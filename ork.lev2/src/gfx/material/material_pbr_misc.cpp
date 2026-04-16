@@ -74,7 +74,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineSKY(const FxPipelinePermutation& 
   } else if (this->_tek_FWD_SKYBOX_MO) {
     auto pipeline_mono        = std::make_shared<FxPipeline>(permu);
     pipeline_mono->_technique = this->_tek_FWD_SKYBOX_MO;
-    pipeline_mono->bindParam(this->_paramIVP, "RCFD_Camera_IVP_Mono"_crcsh);
+    pipeline_mono->bindParam(this->_paramIVP, "RCFD_Camera_IVP_NoTrans_Mono"_crcsh);
     pipeline_mono->addStateLambda(skybox_lambda);
     pipeline                   = pipeline_mono;
   }

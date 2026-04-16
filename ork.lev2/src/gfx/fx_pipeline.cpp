@@ -490,6 +490,22 @@ FxPipelineNamedParamProviders::FxPipelineNamedParamProviders() {
     }
   };
   /////////////////////////////////////////////////////////////////
+  _providers["RCFD_Camera_IVP_NoTrans_Mono"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto monocams = ppc._topCPD._mono_cam_matrices;
+    if (monocams) {
+      auto V = monocams->_vmatrix;
+      V.setTranslation(0, 0, 0);
+      auto VP  = fmtx4::multiply_ltor(V, monocams->_pmatrix);
+      ppc._fxi->bindParamMatrix(param, VP.inverse());
+    } else {
+      auto MTXI = ppc._rcfd->GetTarget()->MTXI();
+      auto V    = MTXI->RefVMatrix();
+      V.setTranslation(0, 0, 0);
+      auto VP   = fmtx4::multiply_ltor(V, MTXI->RefPMatrix());
+      ppc._fxi->bindParamMatrix(param, VP.inverse());
+    }
+  };
+  /////////////////////////////////////////////////////////////////
   _providers["RCFD_Camera_IMVP_Mono"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
     auto monocams = ppc._topCPD._mono_cam_matrices;
     auto worldmatrix = ppc._rcid.worldMatrix();
