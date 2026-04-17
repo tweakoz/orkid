@@ -677,6 +677,13 @@ void pyinit_math_la_t(
                 rval.lookAt(eye, tgt, up);
                 return rval;
               })
+          .def_static(
+              "ortho",
+              [](T left, T right, T top, T bottom, T fnear, T ffar) -> mat4_t {
+                mat4_t rval;
+                rval.ortho(left, right, top, bottom, fnear, ffar);
+                return rval;
+              })
           //.def("lookAt", &mat4_t::decompose)
           .def("setScale", (void(mat4_t::*)(T, T, T)) & mat4_t::setScale)
           .def(py::self * py::self)

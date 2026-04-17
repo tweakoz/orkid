@@ -9,6 +9,7 @@
 #include <ork/kernel/prop.h>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/fixedstring.hpp>
+#include <ork/kernel/debug.h>
 #include <ork/util/logger.h>
 #include <ork/python/context.h>
 #include <ork/util/stl_ext.h>
@@ -258,6 +259,43 @@ pybind11::module Context::orkidModule() {
   return pybind11::module::import("ork_core");
 }
 ///////////////////////////////////////////////////////////////////////////////
+// Python-aware assert hook.
+//
+// Invoked by OrkAssertFunction (ork.core/src/kernel/error.cpp) before the
+// C++ backtrace, iff this function pointer has been registered. Must be
+// safe to call from any thread, including one that doesn't hold the GIL,
+// and from code paths where Python may not be initialized (the same
+// ork.core binary is used by non-Python builds).
+static void _print_python_stack() {
+  if (!Py_IsInitialized()) return;
+  // Py_IsFinalizing() is public only in 3.13+; _Py_IsFinalizing() is the
+  // private equivalent available in 3.12 and earlier. Use it directly for
+  // backward compat with our 3.12 builds.
+#if PY_VERSION_HEX >= 0x030D0000
+  if (Py_IsFinalizing())   return; // dying interpreter — don't touch it
+#else
+  if (_Py_IsFinalizing())  return;
+#endif
+
+  PyGILState_STATE gst = PyGILState_Ensure();  // re-entrant / creates thread state if needed
+  fprintf(stderr, "--- Python traceback ---\n");
+  fflush(stderr);
+  // Delegate to stdlib traceback for readable output. PyRun_SimpleString
+  // swallows uncaught exceptions but won't clear PyErr, so clear it after.
+  PyRun_SimpleString(
+      "import traceback, sys; "
+      "traceback.print_stack(file=sys.stderr); "
+      "sys.stderr.flush()");
+  PyErr_Clear();
+  PyGILState_Release(gst);
+}
+///////////////////////////////////////////////////////////////////////////////
+void installAssertTraceback() {
+  // Idempotent — drop the callback on any call after the first.
+  if (ork::_python_stack_printer == &_print_python_stack) return;
+  ork::_python_stack_printer = &_print_python_stack;
+}
+///////////////////////////////////////////////////////////////////////////////
 Context::Context() {
   Py_NoSiteFlag  = 1;
   Py_VerboseFlag = 2;
@@ -266,11 +304,19 @@ Context::Context() {
   orkpy_cf.cf_flags = 0;
   Py_InitializeEx(0);
   PyEval_InitThreads();
+  // Register the python-stack printer with ork.core's assert handler so
+  // crashes originating from Python code show a Python traceback above
+  // the C++ backtrace.
+  ork::_python_stack_printer = &_print_python_stack;
   // PyOS_StdioReadline=orkpy_readline;
   //_orkpy_redirect_interactiveloopflags = orkpy_redirect_interactiveloopflags;
 }
 ///////////////////////////////////////////////////////////////////////////////
 Context::~Context() {
+  // Must clear BEFORE Py_Finalize so a late assert can't reach into a
+  // dying interpreter. The Py_IsFinalizing() guard inside the printer is
+  // a belt-and-suspenders second line of defense.
+  ork::_python_stack_printer = nullptr;
   Py_Finalize();
 }
 

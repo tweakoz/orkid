@@ -350,7 +350,78 @@ void SpotLight::lookAt(const fvec3& pos, const fvec3& tgt, const fvec3& up) {
   mProjectionMatrix.perspective(fovy, 1.0, near, far);
   mViewMatrix.lookAt(pos.x, pos.y, pos.z, tgt.x, tgt.y, tgt.z, up.x, up.y, up.z);
   mWorldSpaceLightFrustum.set(mViewMatrix, mProjectionMatrix);
+  // lookAt is the "derive from fovy+range+pos/tgt" path — callers can
+  // still get their matrices rebuilt by the ECS xformgenerator, which
+  // mirrors this behavior. Not an explicit override.
+  _matrices_explicit = false;
+  _explicit_proj_type = ExplicitProjType::NONE;
   //opq::assertOnQueue(opq::mainSerialQueue());
+  _xformgenerator = [this, pos]() -> fmtx4 {
+    fmtx4 rval;
+    rval.setTranslation(pos);
+    return rval;
+  };
+}
+
+///////////////////////////////////////////////////////////
+
+void SpotLight::setViewProj(const fmtx4& view, const fmtx4& proj, const fvec3& pos) {
+  OrkAssert(false);
+  mViewMatrix       = view;
+  mProjectionMatrix = proj;
+  mWorldSpaceLightFrustum.set(mViewMatrix, mProjectionMatrix);
+  _matrices_explicit = true;
+  _explicit_proj_type = ExplicitProjType::CUSTOM;
+  _xformgenerator = [this, pos]() -> fmtx4 {
+    fmtx4 rval;
+    rval.setTranslation(pos);
+    return rval;
+  };
+}
+
+///////////////////////////////////////////////////////////
+
+void SpotLight::setOrthoViewProj(
+    const fmtx4& view,
+    float left, float right, float top, float bottom,
+    float near, float far,
+    const fvec3& pos) {
+  mViewMatrix = view;
+  mProjectionMatrix.ortho(left, right, top, bottom, near, far);
+  mWorldSpaceLightFrustum.set(mViewMatrix, mProjectionMatrix);
+  _matrices_explicit      = true;
+  _explicit_proj_type     = ExplicitProjType::ORTHO;
+  _explicit_ortho_left    = left;
+  _explicit_ortho_right   = right;
+  _explicit_ortho_top     = top;
+  _explicit_ortho_bottom  = bottom;
+  _explicit_near          = near;
+  _explicit_far           = far;
+  _xformgenerator = [this, pos]() -> fmtx4 {
+    fmtx4 rval;
+    rval.setTranslation(pos);
+    return rval;
+  };
+}
+
+///////////////////////////////////////////////////////////
+
+void SpotLight::setPerspectiveViewProj(
+    const fmtx4& view,
+    float fovy_rad, float aspect,
+    float near, float far,
+    const fvec3& pos) {
+
+      OrkAssert(false);
+  mViewMatrix = view;
+  mProjectionMatrix.perspective(fovy_rad, aspect, near, far);
+  mWorldSpaceLightFrustum.set(mViewMatrix, mProjectionMatrix);
+  _matrices_explicit        = true;
+  _explicit_proj_type       = ExplicitProjType::PERSPECTIVE;
+  _explicit_persp_fovy_rad  = fovy_rad;
+  _explicit_persp_aspect    = aspect;
+  _explicit_near            = near;
+  _explicit_far             = far;
   _xformgenerator = [this, pos]() -> fmtx4 {
     fmtx4 rval;
     rval.setTranslation(pos);

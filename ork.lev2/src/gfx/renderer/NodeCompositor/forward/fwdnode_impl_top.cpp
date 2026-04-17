@@ -127,6 +127,7 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
   RtGroupRenderTarget rt(rtg_out.get());
 
   CompositingPassData MY_CPD = _currentCIMPL->topCPD(); // copy top CPD
+  MY_CPD._debugName = "_render_dppskyssaocolor";
   auto pbrcommon             = _node->_pbrcommon;
   bool renderingPROBE        = fpass->_renderingPROBE;
   ///////////////////////////////////////////////////////////////////////////

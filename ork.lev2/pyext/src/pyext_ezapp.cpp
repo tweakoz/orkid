@@ -8,6 +8,7 @@
 #include "pyext.h"
 #include <ork/kernel/string/deco.inl>
 #include <ork/kernel/environment.h>
+#include <ork/python/context.h>
 #include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/lev2/gfx/util/movie.inl>
 #include <ork/profiling.inl>
@@ -865,7 +866,12 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
       .def(
           "mainThreadLoop",
           [=](orkezapp_ptr_t app,py::kwargs kwargs) -> int { //
-            
+
+            // Python is definitely up by the time mainThreadLoop is called
+            // from Python — register the assert-time Python traceback
+            // printer now. Idempotent; cheap to re-call.
+            ork::python::installAssertTraceback();
+
             if (kwargs) {
               for (auto item : kwargs) {
                 auto key = py::cast<std::string>(item.first);

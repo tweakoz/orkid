@@ -161,6 +161,18 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<SpotLight, Light, spotlight_ptr_t>(module_lev2, "SpotLight")
       .def("lookAt", &SpotLight::lookAt)
+      .def("setViewProj", &SpotLight::setViewProj)
+      .def("setOrthoViewProj", &SpotLight::setOrthoViewProj)
+      .def("setPerspectiveViewProj", &SpotLight::setPerspectiveViewProj)
+      .def_readonly("are_matrices_explicit", &SpotLight::_matrices_explicit)
+      .def_readonly("explicit_ortho_left",   &SpotLight::_explicit_ortho_left)
+      .def_readonly("explicit_ortho_right",  &SpotLight::_explicit_ortho_right)
+      .def_readonly("explicit_ortho_top",    &SpotLight::_explicit_ortho_top)
+      .def_readonly("explicit_ortho_bottom", &SpotLight::_explicit_ortho_bottom)
+      .def_readonly("explicit_persp_fovy_rad", &SpotLight::_explicit_persp_fovy_rad)
+      .def_readonly("explicit_persp_aspect",   &SpotLight::_explicit_persp_aspect)
+      .def_readonly("explicit_near", &SpotLight::_explicit_near)
+      .def_readonly("explicit_far",  &SpotLight::_explicit_far)
       .def("affectsSphere", &SpotLight::AffectsSphere)
       .def("affectsAABox", &SpotLight::AffectsAABox)
       .def_property_readonly(

@@ -152,6 +152,7 @@ void ForwardPbrNodeImpl::_update_env_probes(CompositorDrawData& drawdata) {
           }
 
           CompositingPassData cubemapCPD = CPD.clone();
+          cubemapCPD._debugName = FormatString("ProbeCubemapPass<%s>", probe->_name.c_str());
           cubemapCPD.AddLayer(probe->renderLayer());
 
           if (probe->temporalFrames() > 0) {
@@ -224,6 +225,7 @@ void ForwardPbrNodeImpl::_update_shadow_maps() {
         }
         
         CompositingPassData shadowCPD = _currentCIMPL->topCPD().clone();
+        shadowCPD._debugName = "ShadowMapPass";
 
         _SHADOWCAM->_pmatrix                  = as_spotlight->mProjectionMatrix;
         _SHADOWCAM->_vmatrix                  = as_spotlight->mViewMatrix;
@@ -253,14 +255,14 @@ void ForwardPbrNodeImpl::_update_shadow_maps() {
           }
         }
 
-        topcomp->pushCPD(shadowCPD);
         auto FBI = _currentContext->FBI();
         FBI->PushRtGroup(light->_depthRTG.get());
+        topcomp->pushCPD(shadowCPD);
 
         _currentIRenderer->drawEnqueuedRenderables(true);
+        topcomp->popCPD();
 
         FBI->PopRtGroup();
-        topcomp->popCPD();
 
         _currentContext->debugPopGroup();
       }

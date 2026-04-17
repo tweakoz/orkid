@@ -604,7 +604,9 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
                 auto xform = ent->transform();
                 rval       = xform->composed() * static_matrix;
               }
-              if (as_spotl) {
+              // Skip the view/proj rebuild if the caller has taken over
+              // via setViewProj / setOrthoViewProj / setPerspectiveViewProj.
+              if (as_spotl && !as_spotl->_matrices_explicit) {
                 fvec3 pos = rval.translation();
                 fvec3 fwd = rval.zNormal();
                 fvec3 up  = rval.yNormal();
@@ -625,7 +627,9 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
                 auto xform = ent->transform();
                 rval       = xform->composed();
               }
-              if (as_spotl) {
+              // Skip the view/proj rebuild if the caller has taken over
+              // via setViewProj / setOrthoViewProj / setPerspectiveViewProj.
+              if (as_spotl && !as_spotl->_matrices_explicit) {
                 fvec3 pos = rval.translation();
                 fvec3 fwd = rval.zNormal();
                 fvec3 up  = rval.yNormal();

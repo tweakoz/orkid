@@ -438,6 +438,27 @@ public:
 
   void lookAt(const fvec3& pos, const fvec3& target, const fvec3& up);
 
+  // Set view/projection matrices directly (bypasses lookAt's perspective
+  // projection, enabling orthographic shadow projection, off-axis frusta,
+  // or caller-provided view matrices that sidestep lookAt's up-vector
+  // singularity.)
+  //
+  // All three variants mark `_matrices_explicit = true` so callers that
+  // would otherwise overwrite view/proj (ECS xformgenerator lambdas etc.)
+  // leave the values alone. The two higher-level variants also record the
+  // raw projection params in `_explicit_*` for debugging / round-trip.
+  void setViewProj(const fmtx4& view, const fmtx4& proj, const fvec3& pos);
+  void setOrthoViewProj(
+      const fmtx4& view,
+      float left, float right, float top, float bottom,
+      float near, float far,
+      const fvec3& pos);
+  void setPerspectiveViewProj(
+      const fmtx4& view,
+      float fovy_rad, float aspect,
+      float near, float far,
+      const fvec3& pos);
+
   float getFovy() const;
   float getRange() const;
 
@@ -457,6 +478,31 @@ public:
   fmtx4 mViewMatrix;
   Frustum mWorldSpaceLightFrustum;
   int _shadowmapDim;
+
+  // Explicit-matrix override bookkeeping.
+  //
+  // Set by setViewProj / setOrthoViewProj / setPerspectiveViewProj; any
+  // code that otherwise rebuilds view/proj from the light's transform
+  // (e.g. ECS xformgenerator lambdas, lookAt) should check
+  // `_matrices_explicit` and skip the recalc so the explicit matrices
+  // stay intact. `_explicit_proj_type` and `_explicit_proj_*` record the
+  // raw projection params the caller supplied (for debugging / round-trip
+  // matrix rebuild). CUSTOM = matrix handed in pre-built, raw params not
+  // tracked.
+  enum class ExplicitProjType { NONE, ORTHO, PERSPECTIVE, CUSTOM };
+  bool _matrices_explicit = false;
+  ExplicitProjType _explicit_proj_type = ExplicitProjType::NONE;
+  // Ortho params (meaningful iff _explicit_proj_type == ORTHO)
+  float _explicit_ortho_left   = 0.0f;
+  float _explicit_ortho_right  = 0.0f;
+  float _explicit_ortho_top    = 0.0f;
+  float _explicit_ortho_bottom = 0.0f;
+  // Perspective params (meaningful iff _explicit_proj_type == PERSPECTIVE)
+  float _explicit_persp_fovy_rad = 0.0f;
+  float _explicit_persp_aspect   = 1.0f;
+  // Near/far (meaningful for both ORTHO and PERSPECTIVE)
+  float _explicit_near = 0.0f;
+  float _explicit_far  = 0.0f;
 };
 
 struct DynamicSpotLight : public SpotLight {

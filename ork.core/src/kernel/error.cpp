@@ -33,6 +33,12 @@ template class ork::util::Context<ork::OldSchool::LogPolicy>;
 
 ork::mutex					gMemMutex( "yo" );
 
+namespace ork {
+// Set by ork.core's Python bootstrap (context.cpp) when available.
+// Stays nullptr in non-Python builds/runs.
+python_stack_printer_t _python_stack_printer = nullptr;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void OrkHeapCheck(){}
@@ -56,6 +62,19 @@ void OrkAssertFunction(const char *fmtstr)
 	fprintf( stderr, "/////////////////////////////////////////////\n" );
 	fprintf( stderr, "%s\n", fmtstr);
 	fprintf( stderr, "crashing....\n");
+
+	// Python traceback (best-effort): delegates to ork::python which
+	// knows how to safely Py_IsInitialized-check and take the GIL. Guard
+	// against re-entrant asserts from inside the printer itself.
+	if (ork::_python_stack_printer) {
+		static thread_local bool _in_python_printer = false;
+		if (!_in_python_printer) {
+			_in_python_printer = true;
+			ork::_python_stack_printer();
+			_in_python_printer = false;
+		}
+	}
+
 	std::string bt = ork::get_backtrace();
 	fprintf( stderr, "BACKTRACE\n%s\n", bt.c_str() );
 	fprintf( stderr, "/////////////////////////////////////////////\n" );

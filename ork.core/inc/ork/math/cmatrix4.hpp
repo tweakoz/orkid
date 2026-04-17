@@ -1165,7 +1165,13 @@ template <typename T> void Matrix44<T>::ortho(T left, T right, T top, T bottom, 
   setColumn(2, zero,    zero,    fScaleZ, zero);
   setColumn(0, TransX,  TransY,  TransZ,  one);*/
   Matrix44<T> out;
-  out   = glm::ortho(left, right, top, bottom);
+  // glm::ortho expects (left, right, bottom, top, zNear, zFar). This API
+  // takes (left, right, top, bottom, ...) — callers using top<bottom will
+  // get a Y-flipped frustum; pass top>bottom for the natural orientation.
+  // Use *_ZO so z_ndc ∈ [0,1] (Vulkan/D3D depth range). Default glm::ortho
+  // maps near→−1, which Vulkan clips on the near plane — half the ortho
+  // frustum ends up beyond the clip volume and is discarded.
+  out   = glm::orthoRH_ZO(left, right, bottom, top, fnear, ffar);
   *this = out;
 }
 

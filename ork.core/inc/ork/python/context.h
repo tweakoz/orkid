@@ -20,6 +20,12 @@ namespace ork::python {
 
 void init();
 
+// Register a Python-aware assert-traceback printer with ork.core's
+// OrkAssertFunction. Safe to call multiple times; should be called once
+// Python is up and orkid has been imported (e.g. from EzApp mainThreadLoop
+// bindings). A no-op if already installed.
+void installAssertTraceback();
+
 struct Context
 {
 public:

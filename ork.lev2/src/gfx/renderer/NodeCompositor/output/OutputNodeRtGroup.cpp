@@ -34,7 +34,7 @@ struct RTGIMPL {
       , _camname(AddPooledString("Camera"))
       , _layers(AddPooledString("All")) {
     _outputRTG = defaultrtg;
-    _CPD._debugName = "RtGroupOutputCompositingNode";
+    _CPD._debugName = "RtgOutNode:"+defaultrtg->_name;
   }
   ///////////////////////////////////////
   ~RTGIMPL() {
