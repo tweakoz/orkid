@@ -503,6 +503,20 @@ public:
   // Near/far (meaningful for both ORTHO and PERSPECTIVE)
   float _explicit_near = 0.0f;
   float _explicit_far  = 0.0f;
+  // Light world-position storage read by the xformgenerator lambda. Kept
+  // as a plain member instead of lambda-captured so per-frame setters
+  // don't need to replace `_xformgenerator` (std::function reassignment
+  // races with render-thread worldMatrix() calls → UAF on the old
+  // lambda's captures). Lambda captures `[this]` only and reads this.
+  fvec3 _explicit_eye_pos = fvec3(0);
+  bool _xformgenerator_is_explicit = false;
+
+private:
+  // Install `_xformgenerator` to read _explicit_eye_pos. Idempotent —
+  // subsequent calls are no-ops so the std::function storage stays
+  // stable across per-frame update/setter calls.
+  void _installExplicitXformGenerator();
+public:
 };
 
 struct DynamicSpotLight : public SpotLight {

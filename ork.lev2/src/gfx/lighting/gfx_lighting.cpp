@@ -343,6 +343,21 @@ bool SpotLight::IsInFrustum(const Frustum& frustum) {
 
 ///////////////////////////////////////////////////////////
 
+// Shared helper: install the xformgenerator lambda ONCE (first call).
+// Subsequent setter calls just mutate `_explicit_eye_pos` — safe for a
+// render thread reading it via worldMatrix() while the update thread
+// overwrites it. Replacing the std::function itself per-frame was a
+// UAF (old captures destroyed mid-render-thread call).
+void SpotLight::_installExplicitXformGenerator() {
+  if (_xformgenerator_is_explicit) return;
+  _xformgenerator_is_explicit = true;
+  _xformgenerator = [this]() -> fmtx4 {
+    fmtx4 rval;
+    rval.setTranslation(_explicit_eye_pos);
+    return rval;
+  };
+}
+
 void SpotLight::lookAt(const fvec3& pos, const fvec3& tgt, const fvec3& up) {
   float near = getRange() / 1000.0f;
   float far  = getRange();
@@ -355,12 +370,8 @@ void SpotLight::lookAt(const fvec3& pos, const fvec3& tgt, const fvec3& up) {
   // mirrors this behavior. Not an explicit override.
   _matrices_explicit = false;
   _explicit_proj_type = ExplicitProjType::NONE;
-  //opq::assertOnQueue(opq::mainSerialQueue());
-  _xformgenerator = [this, pos]() -> fmtx4 {
-    fmtx4 rval;
-    rval.setTranslation(pos);
-    return rval;
-  };
+  _explicit_eye_pos = pos;
+  _installExplicitXformGenerator();
 }
 
 ///////////////////////////////////////////////////////////
@@ -372,11 +383,8 @@ void SpotLight::setViewProj(const fmtx4& view, const fmtx4& proj, const fvec3& p
   mWorldSpaceLightFrustum.set(mViewMatrix, mProjectionMatrix);
   _matrices_explicit = true;
   _explicit_proj_type = ExplicitProjType::CUSTOM;
-  _xformgenerator = [this, pos]() -> fmtx4 {
-    fmtx4 rval;
-    rval.setTranslation(pos);
-    return rval;
-  };
+  _explicit_eye_pos = pos;
+  _installExplicitXformGenerator();
 }
 
 ///////////////////////////////////////////////////////////
@@ -397,11 +405,8 @@ void SpotLight::setOrthoViewProj(
   _explicit_ortho_bottom  = bottom;
   _explicit_near          = near;
   _explicit_far           = far;
-  _xformgenerator = [this, pos]() -> fmtx4 {
-    fmtx4 rval;
-    rval.setTranslation(pos);
-    return rval;
-  };
+  _explicit_eye_pos       = pos;
+  _installExplicitXformGenerator();
 }
 
 ///////////////////////////////////////////////////////////
@@ -422,11 +427,8 @@ void SpotLight::setPerspectiveViewProj(
   _explicit_persp_aspect    = aspect;
   _explicit_near            = near;
   _explicit_far             = far;
-  _xformgenerator = [this, pos]() -> fmtx4 {
-    fmtx4 rval;
-    rval.setTranslation(pos);
-    return rval;
-  };
+  _explicit_eye_pos         = pos;
+  _installExplicitXformGenerator();
 }
 
 ///////////////////////////////////////////////////////////
