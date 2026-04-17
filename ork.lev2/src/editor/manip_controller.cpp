@@ -70,12 +70,11 @@ fvec2 ManipController::_project(const fvec3& worldPos) const {
     return fvec2(-10000, -10000); // Behind camera
   }
   fvec2 ndc = fvec2(clip.x, clip.y) / clip.w;
-  // Vulkan convention: NDC Y=-1 at top, Y=+1 at bottom
-  // Screen Y=0 at top, Y=height at bottom
-  // So: screenY = (ndc.y * 0.5 + 0.5) * height (no flip needed)
+  // Framebuffer (post viewport negative-height flip): NDC Y=+1 at top, -1 at bottom.
+  // Screen/mouse Y=0 at top → flip ndc.y when mapping to pixels.
   return fvec2(
       (ndc.x * 0.5f + 0.5f) * _viewport_dim.x,
-      (ndc.y * 0.5f + 0.5f) * _viewport_dim.y
+      (0.5f - ndc.y * 0.5f) * _viewport_dim.y
   );
 }
 
@@ -368,14 +367,14 @@ fvec3 ManipController::_computeTranslationDelta(const fvec2& mouseDelta, ManipAx
   fvec3 axisY = (_space == ManipSpace::LOCAL) ? targetRot.transform(fvec3(0, 1, 0)) : fvec3(0, 1, 0);
   fvec3 axisZ = (_space == ManipSpace::LOCAL) ? targetRot.transform(fvec3(0, 0, 1)) : fvec3(0, 0, 1);
 
-  // Convert screen coordinates to NDC (-1 to +1 range)
+  // Convert screen coordinates to NDC (top-origin mouse → NDC Y=+1 at top)
   fvec2 curMouseNDC(
       (_drag_prev_mouse.x / _viewport_dim.x) * 2.0f - 1.0f,
-      (_drag_prev_mouse.y / _viewport_dim.y) * 2.0f - 1.0f
+      1.0f - (_drag_prev_mouse.y / _viewport_dim.y) * 2.0f
   );
   fvec2 newMouseNDC(
       ((_drag_prev_mouse.x + mouseDelta.x) / _viewport_dim.x) * 2.0f - 1.0f,
-      ((_drag_prev_mouse.y + mouseDelta.y) / _viewport_dim.y) * 2.0f - 1.0f
+      1.0f - ((_drag_prev_mouse.y + mouseDelta.y) / _viewport_dim.y) * 2.0f
   );
 
   // Project mouse movement onto the constraint axis/plane
@@ -463,10 +462,10 @@ bool ManipController::_computeRotationAngle(const fvec2& mousePos, float& outAng
 
   fvec3 gizmoPos = _target->getWorldPosition();
 
-  // Convert screen coordinates to NDC
+  // Convert screen coordinates to NDC (top-origin mouse → NDC Y=+1 at top)
   fvec2 mouseNDC(
       (mousePos.x / _viewport_dim.x) * 2.0f - 1.0f,
-      (mousePos.y / _viewport_dim.y) * 2.0f - 1.0f
+      1.0f - (mousePos.y / _viewport_dim.y) * 2.0f
   );
 
   // Generate ray from camera through mouse position
@@ -615,10 +614,10 @@ ui::HandlerResult ManipController::handleEvent(ui::event_constptr_t ev) {
         _drag_start_pos = _target->getWorldPosition();
         _drag_start_rot = _target->getWorldRotation();
 
-        // Initialize ManipHandler with NDC coordinates
+        // Initialize ManipHandler with NDC coordinates (top-origin mouse → NDC Y=+1 at top)
         fvec2 mouseNDC(
             (mousePos.x / _viewport_dim.x) * 2.0f - 1.0f,
-            (mousePos.y / _viewport_dim.y) * 2.0f - 1.0f
+            1.0f - (mousePos.y / _viewport_dim.y) * 2.0f
         );
         _handler.Init(mouseNDC, _cam_matrices.GetIVPMatrix(), fquat());
 
