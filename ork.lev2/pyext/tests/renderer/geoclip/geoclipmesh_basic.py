@@ -7,7 +7,7 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import math, sys, os
+import math, sys, os, argparse
 from orkengine.core import vec2, vec3, quat, thisdir, CrcStringProxy
 from orkengine.lev2 import PBRMaterial, Image, GeoClipMapDrawable, ui
 from ork.app.application import ComponentizedApplication
@@ -65,8 +65,9 @@ def terrain_height(x, z):
 
 class GeoClipMapApp(ComponentizedApplication):
 
-  def __init__(self):
+  def __init__(self, fullscreen=False):
     super().__init__()
+    self._fullscreen = fullscreen
 
     # Configure scenegraph parameters
     sg_params = {
@@ -111,7 +112,7 @@ class GeoClipMapApp(ComponentizedApplication):
     # CapsLock toggles autowalk-forward.
     self.autowalk = False
 
-    self.createEzApp(ssaa=4)
+    self.createEzApp(ssaa=4, fullscreen=self._fullscreen)
 
   ################################################
   # gpu data init:
@@ -330,5 +331,9 @@ class GeoClipMapApp(ComponentizedApplication):
 
 ###############################################################################
 
-app = GeoClipMapApp()
+parser = argparse.ArgumentParser(description='GeoClipMap terrain demo')
+parser.add_argument('-f', '--fullscreen', action='store_true', help='Run in fullscreen mode')
+args = parser.parse_args()
+
+app = GeoClipMapApp(fullscreen=args.fullscreen)
 app.ezapp.mainThreadLoop()

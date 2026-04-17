@@ -65,7 +65,13 @@ using vkseccmdbufarray_t = std::vector<secondary_commandbuffer_ptr_t>;
 using vkcompsema_set_t = std::unordered_set<vkcompletionsemaphore_ptr_t>;
 ///////////////////////////////////////////////////////////////////////////////
 constexpr EBufferFormat DEPTH_FORMAT = EBufferFormat::Z24S8;
-constexpr bool FLIP_Y_LIKE_OPENGL = true;
+// FLIP_Y_LIKE_OPENGL=false: Y-flip is owned by the rasterizer via a negative-
+// height viewport plus FrontFace=CLOCKWISE mapping of the logical CCW front-
+// face. The projection matrix stays in native GL/RH form (no det-negative
+// flip_y), so ALL sources of projection matrices — CameraData::computeMatrices,
+// CameraMatrices::setCustomProjection (VR eyes, portals, custom renders) —
+// produce consistent winding without per-caller compensation.
+constexpr bool FLIP_Y_LIKE_OPENGL = false;
 ///////////////////////////////////////////////////////////////////////////////
 using StagingBufferPool = LockedObjectPoolX<SbsPoolAdapter>;
 using stagingbufferpool_ptr_t = std::shared_ptr<StagingBufferPool>;

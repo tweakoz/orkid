@@ -102,9 +102,12 @@ struct IMPL {
             ViewportRect extents(0, 0, w, h);
             FBI->pushViewport(extents);
             FBI->pushScissor(extents);
-            DWI->quad2DEMLCCL(fvec4(-1, -1, 2, 2), // pos
-                              fvec4(0, 0, 1, 1), // uv0
-                              fvec4(0, 0, 1, 1));
+            // Use the convention-aware dispatcher (fullscreenQuad → quad2D)
+            // instead of quad2DEMLCCL directly. The dispatcher picks the
+            // correct winding (CCW under FLIP_Y_LIKE_OPENGL=false) AND
+            // applies the UV V-flip needed when logical Y-up / native Y-down
+            // differ. Calling quad2DEMLCCL directly skips both.
+            DWI->fullscreenQuad(fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
             FBI->popViewport();
             FBI->popScissor();
           };

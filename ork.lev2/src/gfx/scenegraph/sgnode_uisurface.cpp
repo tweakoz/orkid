@@ -340,7 +340,7 @@ ui::HandlerResult UISurfaceRenderImpl::routeUiEvent(
     auto enterEv = std::make_shared<ui::Event>(*ev);
     enterEv->_eventcode = ui::EventCode::MOUSE_ENTER;
     int pixelX = int(uv.x * _layoutSurface->width());
-    int pixelY = int((1.0f - uv.y) * _layoutSurface->height());  // Flip Y
+    int pixelY = int(uv.y * _layoutSurface->height());
     enterEv->miX = pixelX;
     enterEv->miY = pixelY;
     _layoutSurface->handleUiEvent(enterEv);

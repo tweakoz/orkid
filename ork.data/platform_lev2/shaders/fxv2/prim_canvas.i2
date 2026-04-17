@@ -118,13 +118,14 @@ vertex_shader vs_canvas_quad : vface_canvas_quad {
 
   // Corner offsets for 2 triangles (6 vertices)
   // Triangle 1: 0,1,2  Triangle 2: 3,4,5
+  // CCW winding in framebuffer (Y-up post-NDC-flip): TL, BR, TR + TL, BL, BR
   const vec2 corners[6] = vec2[6](
     vec2(0.0, 0.0),  // 0: top-left
-    vec2(1.0, 0.0),  // 1: top-right
-    vec2(1.0, 1.0),  // 2: bottom-right
+    vec2(1.0, 1.0),  // 1: bottom-right
+    vec2(1.0, 0.0),  // 2: top-right
     vec2(0.0, 0.0),  // 3: top-left
-    vec2(1.0, 1.0),  // 4: bottom-right
-    vec2(0.0, 1.0)   // 5: bottom-left
+    vec2(0.0, 1.0),  // 4: bottom-left
+    vec2(1.0, 1.0)   // 5: bottom-right
   );
 
   vec2 corner = corners[cornerIdx];
@@ -146,8 +147,8 @@ vertex_shader vs_canvas_quad : vface_canvas_quad {
   vec4 worldPos4 = layer_transform * vec4(localPos, 0.0, 1.0);
   vec2 worldPos = worldPos4.xy;
 
-  // Convert to NDC (assuming orthographic UI projection)
-  // Canvas uses top-left origin, OpenGL uses bottom-left
+  // Convert to NDC (canvas uses top-left origin, framebuffer observed Y-up:
+  // NDC y=+1 = top, y=-1 = bottom)
   vec2 ndc = vec2(
     (worldPos.x / canvas_size.x) * 2.0 - 1.0,
     1.0 - (worldPos.y / canvas_size.y) * 2.0
@@ -182,7 +183,7 @@ vertex_shader vs_canvas_vertex : vface_canvas_quad {
   vec4 worldPos4 = layer_transform * vec4(position.xy, 0.0, 1.0);
   vec2 worldPos = worldPos4.xy;
 
-  // Convert to NDC (canvas uses top-left origin)
+  // Convert to NDC (canvas uses top-left origin; framebuffer is Y-up)
   vec2 ndc = vec2(
     (worldPos.x / canvas_size.x) * 2.0 - 1.0,
     1.0 - (worldPos.y / canvas_size.y) * 2.0
@@ -272,9 +273,10 @@ vertex_shader vs_sprite_quad : vface_sprite_quad {
   vec2 size = pos_size.zw;
   float rotation = extra.x;
 
+  // CCW winding in framebuffer (Y-up post-NDC-flip)
   const vec2 corners[6] = vec2[6](
-    vec2(0.0, 0.0), vec2(1.0, 0.0), vec2(1.0, 1.0),
-    vec2(0.0, 0.0), vec2(1.0, 1.0), vec2(0.0, 1.0)
+    vec2(0.0, 0.0), vec2(1.0, 1.0), vec2(1.0, 0.0),
+    vec2(0.0, 0.0), vec2(0.0, 1.0), vec2(1.0, 1.0)
   );
 
   vec2 corner = corners[cornerIdx];

@@ -329,7 +329,7 @@ class PrimitiveTypesApp:
         # Create FLAT pipeline for points/lines/triangles
         flat_mtl = FreestyleMaterial()
         flat_mtl.gpuInitFromShaderText(ctx, "flat_shader", FLAT_SHADER)
-        flat_mtl.rasterstate.culltest = tokens.OFF
+        flat_mtl.rasterstate.culltest = tokens.PASS_FRONT
         flat_mtl.rasterstate.depthtest = tokens.LEQUALS
 
         flat_permu = FxPipelinePermutation(rendermodel="ForwardPBR")

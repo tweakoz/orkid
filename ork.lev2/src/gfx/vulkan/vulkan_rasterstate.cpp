@@ -93,13 +93,26 @@ VkRasterState::VkRasterState(rasterstate_ptr_t rstate, int attachment_count, con
     }
   }
   hasher.accumulateItem(rstate->_frontface);
+  // With FLIP_Y_LIKE_OPENGL=true (old path): projection had flip_y (det −1,
+  // reverses winding), viewport was positive-height (Vulkan natural Y-down
+  // framebuffer, which ALSO reverses winding interpretation vs GL authoring).
+  // Two reversals cancel, so logical CCW maps straight to VK_FRONT_FACE_CCW.
+  //
+  // With FLIP_Y_LIKE_OPENGL=false (new path): projection has no flip_y,
+  // viewport is negative-height (inverts Y so NDC-Y-up → framebuffer-Y-up).
+  // A CCW authored triangle stays CCW when the inverted viewport aligns NDC
+  // with framebuffer Y direction, so again logical CCW → VK_FRONT_FACE_CCW.
+  //
+  // Net result: the mapping is IDENTITY regardless of the flag. The earlier
+  // swap in the !FLIP path was incorrect and caused inside-out rendering
+  // when we switched to the negative-height viewport route.
   switch(rstate->_frontface){
     case EFrontFace::CLOCKWISE: {
-      _VKRSCI.frontFace = FLIP_Y_LIKE_OPENGL ? VK_FRONT_FACE_CLOCKWISE : VK_FRONT_FACE_COUNTER_CLOCKWISE;
+      _VKRSCI.frontFace = VK_FRONT_FACE_CLOCKWISE;
       break;
     }
     case EFrontFace::COUNTER_CLOCKWISE: {
-      _VKRSCI.frontFace = FLIP_Y_LIKE_OPENGL ? VK_FRONT_FACE_COUNTER_CLOCKWISE : VK_FRONT_FACE_CLOCKWISE;
+      _VKRSCI.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
       break;
     }
   }

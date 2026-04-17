@@ -39,7 +39,7 @@ class LIGHTING_APP(ComponentizedApplication):
 
     self.lighttime = 0.0
     self.materials = set()
-    self.createEzApp(ssaa=2, msaa=0, fullscreen=False,
+    self.createEzApp(ssaa=0, msaa=0, fullscreen=False,
                       use_subsystems=['opq', 'core', 'gpu', 'lev2'])
 
 

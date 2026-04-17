@@ -27,6 +27,7 @@ from _ptc_harness import *
 
 ################################################################################
 parser = argparse.ArgumentParser(description='scenegraph particles example')
+parser.add_argument('-f', '--fullscreen', action='store_true', help='Run in fullscreen mode')
 
 args = vars(parser.parse_args())
 
@@ -36,7 +37,7 @@ class WaterApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=1,fullscreen=True)
+    self.ezapp = OrkEzApp.create(self,ssaa=1,fullscreen=args['fullscreen'])
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.curtime = 0.0
 

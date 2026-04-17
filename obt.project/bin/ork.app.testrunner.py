@@ -135,6 +135,11 @@ tests = {
             "Primitives": {
                 "Primitive Types": lev2("renderer/primitives/primitive_types.py"),
             },
+            "GeoClipMesh": {
+                "_options": { "Fullscreen": ["-f"] },
+                "Basic": { "_commands": lev2("renderer/geoclip/geoclipmesh_basic.py") },
+                "Water": { "_commands": lev2("renderer/geoclip/geoclipmesh_water.py") },
+            },
             "MoviePlayback": {
                 "HwDecodeBasic": {
                     "_commands": lev2("movie/hwdec_basic.py"),
@@ -211,6 +216,7 @@ tests = {
                 "Clock":    lev2("ui/prim_canvas_clock.py"),
                 "Invaders": lev2("ui/prim_canvas_invaders.py"),
                 "Layers":   lev2("ui/prim_canvas_layers.py"),
+                "Pacman":   lev2("ui/prim_canvas_pacman.py"),
                 "Quads":    lev2("ui/prim_canvas_quads.py"),
                 "Sprites":  lev2("ui/prim_canvas_sprites.py"),
                 "Text":     lev2("ui/prim_canvas_text.py"),

@@ -86,7 +86,14 @@ Surface::Surface(const std::string& name, int x, int y, int w, int h, fcolor4 co
     , mNeedsSurfaceRepaint(true)
     , _pickbuffer(nullptr) {
 
-  _flipY = true; // on vulkan we need to flip the UVs
+  // _flipY=true selects the "standard UV" branch in Surface::Draw (UV rect
+  // (u0,v0,u1-u0,v1-v0) — i.e., no V inversion). Under the current rasterizer-
+  // owned Y-flip scheme (FLIP_Y_LIKE_OPENGL=false + negative-height viewport),
+  // RTG-texel row 0 is at the top of the rendered content. Sampling with
+  // UV(0,0)=top-left shows the RTG right-side-up on screen. Setting false
+  // would V-flip the display and invert any Surface-backed content (PrimCanvas,
+  // embedded scenegraph widgets, etc).
+  _flipY = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

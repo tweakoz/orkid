@@ -155,18 +155,18 @@ class FlowFieldVisualizer:
         r, g, b = self._hsv_to_rgb(hue, 0.7, 0.9)
         alpha = 0.6 + speed * 0.4
 
-        # Triangle vertices
+        # Triangle vertices — CCW winding in canvas (top-left origin)
         v0 = self.arrow_vertices[arrow_idx * 3 + 0]  # tip
-        v1 = self.arrow_vertices[arrow_idx * 3 + 1]  # base left
-        v2 = self.arrow_vertices[arrow_idx * 3 + 2]  # base right
+        v1 = self.arrow_vertices[arrow_idx * 3 + 1]  # base right
+        v2 = self.arrow_vertices[arrow_idx * 3 + 2]  # base left
 
         v0.setPosition(tip_x, tip_y)
         v0.setColor(vec4(r, g, b, alpha))
 
-        v1.setPosition(base_x + px, base_y + py)
+        v1.setPosition(base_x - px, base_y - py)
         v1.setColor(vec4(r * 0.5, g * 0.5, b * 0.5, alpha * 0.7))
 
-        v2.setPosition(base_x - px, base_y - py)
+        v2.setPosition(base_x + px, base_y + py)
         v2.setColor(vec4(r * 0.5, g * 0.5, b * 0.5, alpha * 0.7))
 
         arrow_idx += 1

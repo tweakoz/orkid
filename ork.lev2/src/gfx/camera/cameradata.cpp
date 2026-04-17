@@ -257,14 +257,11 @@ CameraMatrices CameraData::computeMatrices(float faspect) const {
   else{
     rval._pmatrix.perspective(faper, faspect, fnear, ffar);
   }
-  
-  // Apply Y-flip for Vulkan coordinate system (Y increases downward)
-  // This flips the Y axis in clip space
-  fmtx4 flip_y;
-  flip_y.setToIdentity();
-  flip_y.setElemXY(1, 1, -1.0f);  // Flip Y scale
-  rval._pmatrix = fmtx4::multiply_ltor(flip_y, rval._pmatrix);
-  
+  // No projection-level Y-flip: the Vulkan backend now owns Y-flip via
+  // negative-height viewport + CW-mapped CCW front-face (see
+  // FLIP_Y_LIKE_OPENGL in vulkan_ctx.h). Keeping projection in native GL/RH
+  // form means every projection source — computeMatrices, setCustomProjection
+  // (VR eyes / portals / etc) — produces consistent winding.
   rval._ipmatrix.inverseOf(rval._pmatrix);
   ///////////////////////////////////////////////////
   rval._vmatrix.lookAt(mEye, mTarget, mUp);

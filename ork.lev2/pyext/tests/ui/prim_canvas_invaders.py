@@ -192,7 +192,6 @@ class SpaceInvaders(ComponentizedApplication):
 
   def _update(self, dt):
     if self.game_over: return self._render()
-
     # Animation & invader movement (synced)
     self.anim_time += dt
     if self.anim_time > 0.5:
@@ -291,7 +290,10 @@ class SpaceInvaders(ComponentizedApplication):
       if inv['alive']:
         sx, sy = inv['x'] * w, inv['y'] * h
         for px, py, color in pixels:
-          self._set_quad(self.pixel_quads[qi], sx + px * ps, h - sy - py * ps, ps, ps, color)
+          # Canvas is y-down (y=0 at top). Game coords: inv['y']=0 at top,
+          # increasing toward the player at the bottom — already matches
+          # screen-y direction, so no "h - sy" flip.
+          self._set_quad(self.pixel_quads[qi], sx + px * ps, sy + py * ps, ps, ps, color)
           qi += 1
         for _ in range(max_px - len(pixels)):
           self._hide_quad(self.pixel_quads[qi])
@@ -306,23 +308,23 @@ class SpaceInvaders(ComponentizedApplication):
     sx, sy = self.player_x * w, self.player_y * h
     for px, py, color in pixels:
       if qi < len(self.pixel_quads):
-        self._set_quad(self.pixel_quads[qi], sx + px * ps, h - sy - py * ps, ps, ps, color)
+        self._set_quad(self.pixel_quads[qi], sx + px * ps, sy + py * ps, ps, ps, color)
         qi += 1
 
     while qi < len(self.pixel_quads):
       self._hide_quad(self.pixel_quads[qi])
       qi += 1
 
-    # Bullets & missiles
+    # Bullets & missiles — game y is in canvas y-down space (0 top, 1 bottom).
     for i, b in enumerate(self.bullets):
       if b['active']:
-        self._set_quad(self.bullet_quads[i], b['x'] * w - bw / 2, h - b['y'] * h, bw, bh, vec4(1, 1, 1, 1))
+        self._set_quad(self.bullet_quads[i], b['x'] * w - bw / 2, b['y'] * h, bw, bh, vec4(1, 1, 1, 1))
       else:
         self._hide_quad(self.bullet_quads[i])
 
     for i, m in enumerate(self.missiles):
       if m['active']:
-        self._set_quad(self.missile_quads[i], m['x'] * w - bw / 2, h - m['y'] * h, bw, bh, vec4(1, 0.3, 0.1, 1))
+        self._set_quad(self.missile_quads[i], m['x'] * w - bw / 2, m['y'] * h, bw, bh, vec4(1, 0.3, 0.1, 1))
       else:
         self._hide_quad(self.missile_quads[i])
 

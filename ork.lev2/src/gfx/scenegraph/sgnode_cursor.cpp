@@ -105,7 +105,10 @@ void CursorDrawableImpl::_render(const RenderContextInstData& RCID) {
       int w = context->mainSurfaceWidth();
       int h = context->mainSurfaceHeight();
       cursorNdcX = (2.0f * uiev->miX / float(w)) - 1.0f;
-      cursorNdcY = (2.0f * uiev->miY / float(h)) - 1.0f;
+      // Mouse miY=0 is the top of the screen. With negative-height viewport
+      // (see FLIP_Y_LIKE_OPENGL in vulkan_ctx.h), NDC Y=+1 is at the top of
+      // the framebuffer, so invert the sign vs. the natural Vulkan mapping.
+      cursorNdcY = 1.0f - (2.0f * uiev->miY / float(h));
       //printf("Cursor NDC: (%f, %f)\n", cursorNdcX, cursorNdcY);
     } else {
       // Not in fullscreen mouse mode, don't render

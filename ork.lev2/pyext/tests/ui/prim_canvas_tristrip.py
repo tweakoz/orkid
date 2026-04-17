@@ -101,15 +101,15 @@ class WaveformVisualizer(ComponentizedApplication):
       r, g, b = self._hsv_to_rgb(hue, 0.8, 0.9)
       alpha = 0.7 + abs(wave) * 0.3
 
-      # Bottom vertex of ribbon (first for correct winding after Y flip)
-      vd_bot = self.wave_vertices[i * 2]
-      vd_bot.setPosition(x, y + thickness)
-      vd_bot.setColor(vec4(r * 0.6, g * 0.6, b * 0.6, alpha * 0.8))
-
-      # Top vertex of ribbon
-      vd_top = self.wave_vertices[i * 2 + 1]
+      # Top vertex of ribbon (first → CCW winding in canvas coords)
+      vd_top = self.wave_vertices[i * 2]
       vd_top.setPosition(x, y - thickness)
       vd_top.setColor(vec4(r, g, b, alpha))
+
+      # Bottom vertex of ribbon
+      vd_bot = self.wave_vertices[i * 2 + 1]
+      vd_bot.setPosition(x, y + thickness)
+      vd_bot.setColor(vec4(r * 0.6, g * 0.6, b * 0.6, alpha * 0.8))
 
     self.canvas.markDirty()
 

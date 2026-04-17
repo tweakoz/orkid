@@ -91,9 +91,13 @@ void SgPickBuffer::pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord, 
   int H    = vprect._h;
   float fx = float(screencoord.x) / W;
   float fy = float(screencoord.y) / H;
-  // Flip Y for Vulkan coordinate system: screen Y=0 is top, but frustum Y=1 is top
-  // (due to Y-flip in projection matrix for Vulkan NDC)
-  fvec2 unitpos(fx, 1.0f - fy);
+  // Frustum corners are unProject'd from NDC where y=-1 is the bottom of the
+  // view and y=+1 is the top (GL/RH convention used by our projections now
+  // that the projection-level flip_y is gone — see FLIP_Y_LIKE_OPENGL).
+  // projectDepthRay lerps mNearCorners[0/1] at v2d.y=0 and [2/3] at v2d.y=1,
+  // and since corners[0/1] are the NDC-top corners (y=+1), v2d.y=0 maps to
+  // the top of the view. Mouse screen-y is already 0-at-top, so no flip.
+  fvec2 unitpos(fx, fy);
   auto mtcs = cam->computeMatrices(float(W) / float(H));
   auto ray  = std::make_shared<fray3>();
   mtcs.projectDepthRay(unitpos, *ray.get());

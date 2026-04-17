@@ -43,7 +43,7 @@ def hsv_to_rgb255(h, s, v):
   return int(r * 255), int(g * 255), int(b * 255)
 
 
-def create_texture_from_numpy(ctx, np_img, name, flip_y=True, auto_alpha=True):
+def create_texture_from_numpy(ctx, np_img, name, flip_y=False, auto_alpha=True):
   """
   Create an Orkid texture from a numpy array.
 
@@ -51,7 +51,7 @@ def create_texture_from_numpy(ctx, np_img, name, flip_y=True, auto_alpha=True):
     ctx: Orkid graphics context
     np_img: Numpy array of shape (H, W, 3) or (H, W, 4) with uint8 values
     name: Texture name string
-    flip_y: If True, flip image vertically (OpenGL convention)
+    flip_y: If True, flip image vertically (legacy GL bottom-origin convention)
     auto_alpha: If True and input is RGB, generate alpha from non-black pixels
 
   Returns:

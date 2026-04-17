@@ -84,8 +84,11 @@ struct IMPL {
             ViewportRect extents(0, 0, w, h);
             FBI->pushViewport(extents);
             FBI->pushScissor(extents);
-            DWI->fullscreenQuad(fvec4(0, 1, 1, -1), // uv0
-                                fvec4(0, 1, 1, -1));
+            // Standard (non-flipped) UVs: Y-flip now lives at the rasterizer
+            // (negative-height viewport), so RTG texels are already in the
+            // orientation sampling expects.
+            DWI->fullscreenQuad(fvec4(0, 0, 1, 1), // uv0
+                                fvec4(0, 0, 1, 1));
             FBI->popViewport();
             FBI->popScissor();
           };

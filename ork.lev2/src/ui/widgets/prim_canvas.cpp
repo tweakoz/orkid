@@ -666,10 +666,6 @@ void PrimCanvas::renderLayers(lev2::Context* ctx) {
   gpuInit(ctx);
   _rebuildSsbo(ctx);
 
-  if (_ssbo_cpu_data.empty()) {
-    return;
-  }
-
   auto rcfd = ctx->topRenderContextFrameData();
 
   for (auto& layer : _layers) {

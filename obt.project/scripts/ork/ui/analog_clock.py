@@ -364,10 +364,11 @@ class AnalogClock:
 
   def _set_hand_triangle(self, hand_idx, cx, cy, angle, length, width, color):
     """Set vertices for a tapered hand triangle."""
-    # Triangle: tip at length, base at center with width
-    # Negate Y for screen coordinates (Y=0 at top)
+    # Canvas is y-down (y=0 at top). Angle convention: 12 o'clock is
+    # angle = -π/2, so sin(angle) = -1 must land the tip ABOVE the center
+    # (i.e., at smaller y). That means tip_y = cy + sin*length (NOT minus).
     cos_a = math.cos(angle)
-    sin_a = -math.sin(angle)  # Flip Y
+    sin_a = math.sin(angle)
 
     # Perpendicular to (cos_a, sin_a) is (-sin_a, cos_a)
     perp_x = -sin_a * width / 2

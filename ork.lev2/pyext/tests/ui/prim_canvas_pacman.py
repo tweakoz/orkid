@@ -324,7 +324,7 @@ class PacManGame(ComponentizedApplication):
     cell = min(w / self.maze.width, h / self.maze.height)
     ox = (w - self.maze.width * cell) / 2
     oy = (h - self.maze.height * cell) / 2
-    def screen_pos(gx, gy): return ox + gx * cell, h - (oy + gy * cell) - cell
+    def screen_pos(gx, gy): return ox + gx * cell, oy + gy * cell
 
     # Walls
     qi = 0

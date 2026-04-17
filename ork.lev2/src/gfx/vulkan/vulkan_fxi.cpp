@@ -23,9 +23,10 @@ VkFxInterface::VkFxInterface(vkcontext_rawptr_t ctx)
     _default_rasterstate = std::make_shared<lev2::RasterState>();
     _default_rasterstate->_depthtest = EDepthTest::LESS;
     _default_rasterstate->_culltest = ECullTest::PASS_FRONT;
-    _default_rasterstate->_frontface = FLIP_Y_LIKE_OPENGL 
-                                     ? EFrontFace::CLOCKWISE 
-                                     : EFrontFace::COUNTER_CLOCKWISE;
+    // orkid's authoring convention is CCW front-face; the vulkan_rasterstate
+    // mapping is identity regardless of FLIP_Y_LIKE_OPENGL — see
+    // vulkan_rasterstate.cpp for the Y-flip / winding reasoning.
+    _default_rasterstate->_frontface = EFrontFace::COUNTER_CLOCKWISE;
 
     _default_rasterstate->_name = "vkdefault";
     

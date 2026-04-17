@@ -605,7 +605,10 @@ class SceneGraphApp(ComponentizedApplication):
     vp_height = sgvpw.height
 
     norm_x = cur_screen_pos.x / vp_width
-    norm_y = 1.0 - (cur_screen_pos.y / vp_height)
+    # No Y inversion: projectDepthRay expects v2d.y=0 at top of view, and
+    # mouse screen Y is already 0-at-top. The old "1.0 - fy" compensation
+    # was for the now-removed projection-level flip_y.
+    norm_y = cur_screen_pos.y / vp_height
 
     aspect = vp_width / vp_height
     cam_matrices = camdat.computeMatrices(aspect)
