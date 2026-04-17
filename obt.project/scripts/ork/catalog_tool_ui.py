@@ -18,9 +18,8 @@
 #     JSON files, built from a BorderFrame > VPack > (Toolbar + HPack >
 #     Outliner + PropertySheet) widget tree.
 #
-# Coordinate note: layout code uses a top-down Y axis (y=0 at the top),
-# but QuadData uses OpenGL bottom-up coordinates.  Quad positions are
-# therefore flipped as:  quad_y = canvas_height - layout_y - quad_height.
+# Coordinate note: canvas is top-origin (y=0 at the top of the panel);
+# both QuadData and TextPrimitive positions use the same layout y directly.
 ################################################################################
 
 import os, json, copy
@@ -248,9 +247,8 @@ class TestMatchOutlinerModel(lev2.ui.OutlinerModel):
 #     rectangles (buttons, section headers, progress bars, chunk grids).
 #   - The button registry (self.buttons) maps button names to (x,y,w,h)
 #     rects for hit-testing in handleCanvasEvent.
-#   - Layout uses top-down Y (y=0 at top of canvas), but QuadData uses
-#     OpenGL bottom-up coords, so quad positions are flipped:
-#       quad_y = canvas_height - layout_y - quad_height
+#   - Layout uses top-down Y (y=0 at top of canvas); quads and text both
+#     position with the same layout y directly — no flip needed.
 ################################################################################
 
 class CanvasDetailView:
@@ -327,9 +325,8 @@ class CanvasDetailView:
     if self._flash_frames > 0:
       if self._flash_frames == 2 and self._flash_rect is not None:
         fx, fy, fw, fh = self._flash_rect
-        h = max(self.canvas.height, 200)
         qd = lev2.ui.QuadData()
-        qd.setPosition(fx - 2, h - fy - fh)
+        qd.setPosition(fx - 2, fy)
         qd.setSize(fw + 4, fh)
         qd.setColor(vec4(0.3, 0.6, 1.0, 0.35))
         self.bg_prim.addQuad(qd)
@@ -341,7 +338,6 @@ class CanvasDetailView:
     """Draw clickable button quad with hover/danger states.
     ghost=True makes a non-interactive (disabled-looking) button.
     """
-    h = max(self.canvas.height, 200)
     if not ghost:
       self.buttons[name] = (x, y, bw, bh)   # Register for hit-testing
     hovered = not ghost and self.hover_button == name
@@ -356,8 +352,7 @@ class CanvasDetailView:
     else:
       color = vec4(0.20, 0.25, 0.35, 1)
     qd = lev2.ui.QuadData()
-    # Flip Y: layout y is top-down, QuadData y is bottom-up (OpenGL)
-    qd.setPosition(x, h - y - bh)
+    qd.setPosition(x, y)
     qd.setSize(bw, bh)
     qd.setColor(color)
     self.bg_prim.addQuad(qd)
@@ -370,25 +365,25 @@ class CanvasDetailView:
     self._texts["value"].addItem(value, vec2(val_x, y))
 
   def drawSectionHeader(self, title, y, w, h):
-    """Draw a section header with background bar.  h is the canvas height (for Y flip)."""
+    """Draw a section header with background bar.  h unused (retained for API compat)."""
     qd = lev2.ui.QuadData()
-    qd.setPosition(4, h - y - 16)   # Y flip: bottom-up OpenGL coords
+    qd.setPosition(4, y)
     qd.setSize(w - 8, 16)
     qd.setColor(vec4(0.15, 0.15, 0.20, 1))
     self.bg_prim.addQuad(qd)
     self._texts["cdn_hdr"].addItem(title, vec2(8, y))
 
   def drawProgressBar(self, x, y, w, h_bar, fraction, color, bg_color, canvas_h):
-    """Draw a filled progress bar."""
+    """Draw a filled progress bar.  canvas_h unused (retained for API compat)."""
     qd = lev2.ui.QuadData()
-    qd.setPosition(x, canvas_h - y - h_bar - 1)
+    qd.setPosition(x, y)
     qd.setSize(w, h_bar)
     qd.setColor(bg_color)
     self.bg_prim.addQuad(qd)
     fill_w = int(w * fraction)
     if fill_w > 0:
       qd2 = lev2.ui.QuadData()
-      qd2.setPosition(x, canvas_h - y - h_bar - 1)
+      qd2.setPosition(x, y)
       qd2.setSize(fill_w, h_bar)
       qd2.setColor(color)
       self.bg_prim.addQuad(qd2)
@@ -412,7 +407,7 @@ class CanvasDetailView:
       cx = x + col * cell_w
       cy = y + row * 16
       qd = lev2.ui.QuadData()
-      qd.setPosition(cx, canvas_h - cy - 12)   # Y flip
+      qd.setPosition(cx, cy)
       qd.setSize(cell_w - 2, 12)
       if label == "CDN":
         if i < len(cdn_list) and cdn_list[i]:

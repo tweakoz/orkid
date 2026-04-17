@@ -1129,7 +1129,7 @@ class CatalogTool(ComponentizedApplication):
         # LOC cell
         cx_loc = loc_grid_x + col * cell_w
         qd = lev2.ui.QuadData()
-        qd.setPosition(cx_loc, h - cy - (cell_h - cell_margin))
+        qd.setPosition(cx_loc, cy + cell_margin)
         qd.setSize(cell_w - 2 * cell_margin, cell_h - 2 * cell_margin)
         if ns_loc[i]:
           qd.setColor(vec4(0.2, 0.6, 0.2, 1))
@@ -1140,7 +1140,7 @@ class CatalogTool(ComponentizedApplication):
         # CDN cell
         cx_cdn = cdn_grid_x + col * cell_w
         qd2 = lev2.ui.QuadData()
-        qd2.setPosition(cx_cdn, h - cy - (cell_h - cell_margin))
+        qd2.setPosition(cx_cdn, cy + cell_margin)
         qd2.setSize(cell_w - 2 * cell_margin, cell_h - 2 * cell_margin)
         cdn_val = ns_cdn[i]
         if cdn_val is None:
