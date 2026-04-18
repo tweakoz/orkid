@@ -62,6 +62,39 @@ class CodedEcsScene:
     # node-visibility plumbing handles the scene identically to a
     # code-declared or file-loaded runtime.
     self.runtime = None
+    # Optional per-scene camera rig. If left None, the scene uses
+    # the component's shared rig. Scenes opt in by populating these
+    # in onGpuInit (using component.cameralut as the SHARED LUT and
+    # registering under a tag-specific camname, e.g. f"{self.tag}_cam").
+    self.cameralut = None
+    self.camera    = None
+    self.uicam     = None
+    # Optional per-scene skybox (asset path + intensity). Set by the
+    # subclass via class attribute OR by assigning in __init__ after
+    # super() (use self.setSkybox(path, intensity) for token expansion).
+    # Hosts harvest these to preload skybox cache up front and to drive
+    # apply_scene_pbr on scene activation. None = no skybox contribution.
+    self.skybox_path      = self._expandSkyboxPath(
+      getattr(type(self), "skybox_path", None))
+    self.skybox_intensity = float(
+      getattr(type(self), "skybox_intensity", 1.0))
+
+  @staticmethod
+  def _expandSkyboxPath(path):
+    """Expand `<assetcache>/...` or `$VAR/...` tokens via obt.path so
+    PbrCommon.requestRadianceMaps and sg_params.SkyboxTexPathStr both
+    see a real filesystem path. Passes through None / plain strings."""
+    if path and ("<" in path or "$" in path):
+      from obt import path as _obt_path
+      return str(_obt_path.Path(path).expanded)
+    return path
+
+  def setSkybox(self, path, intensity=1.0):
+    """Override per-instance skybox after construction. Expands tokens
+    in `path`. Useful for subclasses that differ only by asset (e.g.
+    ModelScene instantiated N times with different paths)."""
+    self.skybox_path      = self._expandSkyboxPath(path)
+    self.skybox_intensity = float(intensity)
 
   def onGpuInit(self, ctx, component):
     pass
@@ -83,20 +116,31 @@ class CodedEcsScene:
 
 ################################################################################
 
-class MultiEcsSceneComponent(ApplicationComponent):
-  """Currently owns only the fade-transition HFSM.
+class MultiEcsSceneImpl:
+  """Host-agnostic implementation of the multi-ECS-scene machinery.
 
-  The host app still owns everything the FSM's callbacks read or write
-  (fade_node, _active, scene tables, _applyScenePbr, _syncNodeState);
-  the component just holds the FsmData + FsmInstance and exposes
-  begin_transition(tag) + tick(dt) + is_idle.
+  This class holds all the actual logic (FSM, runtime pool, scenegraph
+  wiring, camera rig, skybox cache, node visibility, coded scene
+  registry). It is NOT an ApplicationComponent — it can be embedded
+  anywhere: as the state of `MultiEcsSceneComponent` (for plain
+  ComponentizedApplication hosts, below), or directly inside a hydra
+  client for hosted-ECS scenes.
 
   The app installs the wiring after the fade_node exists by calling
-  buildFsm(app, fade_duration). Subsequent migration steps will pull
-  more state inward."""
+  buildFsm(app, fade_duration).
+
+  Public attributes (read/write by callers):
+    scenegraph, layer_fwd, fade_node    — shared render graph
+    camera, uicam, cameralut            — shared camera rig
+    runtimes        dict tag->EcsRuntime
+    coded_scenes    dict tag->CodedEcsScene
+    scene_nodes     dict tag->list[node]  (populated by sync_node_state)
+    skybox_cache    dict path->RadianceMaps
+    primed          bool property — True once every runtime has staged nodes
+    is_idle         bool property — FSM state
+  """
 
   def __init__(self):
-    super().__init__()
     self.fsm              = None
     self._fsm_idle        = None
     self._fsm_fade_out    = None
@@ -213,6 +257,15 @@ class MultiEcsSceneComponent(ApplicationComponent):
       new = comp.coded_scenes.get(a._active)
       if new is not None:
         new.onActivate()
+      # Rebind viewport to the active scene's camera if the scene
+      # opted in to a per-scene rig. Shared-rig scenes stay on the
+      # component's "spawncam" name. Single-lut invariant: every
+      # camera lives in comp.cameralut, so this is a pure name flip.
+      if hasattr(a, 'sgv') and a.sgv is not None:
+        if new is not None and new.uicam is not None:
+          a.sgv.cameraName = f"{new.tag}_cam"
+        else:
+          a.sgv.cameraName = "spawncam"
       inst.vars.t = 0.0
       a.fade_node.fadeAmount = 1.0
 
@@ -421,22 +474,60 @@ class MultiEcsSceneComponent(ApplicationComponent):
     initial lookAt. Stores all three on the component for the app
     and each EcsRuntime to share. Does NOT touch the viewport — the
     host app is responsible for binding its SceneGraphViewport to
-    the cameraName and routing UI events via handle_camera_event."""
-    self.cameralut = lev2.CameraDataLut()
-    self.camera, self.uicam = setupUiCameraX(
-      cameralut=self.cameralut, camname=camname)
+    the cameraName and routing UI events via handle_camera_event.
+
+    If the host has pre-populated self.cameralut (e.g. the hydra
+    embedding adopts the hydra app's rig before calling setup_camera),
+    the fresh-create branch is skipped and only the initial lookAt
+    is re-applied on the adopted rig."""
+    if self.cameralut is None:
+      self.cameralut = lev2.CameraDataLut()
+      self.camera, self.uicam = setupUiCameraX(
+        cameralut=self.cameralut, camname=camname)
     self.uicam.lookAt(eye, tgt, up)
     self.uicam.updateMatrices()
     self.camera.copyFrom(self.uicam.cameradata)
 
+  def _activeRig(self):
+    """Return (cameralut, camera, uicam) tuple for the active scene,
+    falling back to the shared component rig if the active scene
+    didn't opt in to its own rig."""
+    scene = None
+    if self.fsm is not None:
+      scene = self.coded_scenes.get(self.fsm.vars.app._active) \
+              if hasattr(self.fsm.vars, 'app') else None
+    if scene is not None and scene.uicam is not None:
+      return scene.cameralut, scene.camera, scene.uicam
+    return self.cameralut, self.camera, self.uicam
+
   def handle_camera_event(self, uievent):
-    """Dispatch a UI event to the uicam and copy the updated
-    cameradata back to the main camera. Returns True if the uicam
-    consumed the event, False otherwise."""
-    if self.uicam is None:
+    """Dispatch a UI event to the active rig's uicam and copy the
+    updated cameradata back to its main camera. Returns True if the
+    uicam consumed the event, False otherwise."""
+    _, cam, uicam = self._activeRig()
+    if uicam is None:
       return False
-    handled = self.uicam.uiEventHandler(uievent)
+    handled = uicam.uiEventHandler(uievent)
     if handled:
-      self.uicam.updateMatrices()
-      self.camera.copyFrom(self.uicam.cameradata)
+      uicam.updateMatrices()
+      cam.copyFrom(uicam.cameradata)
     return bool(handled)
+
+
+################################################################################
+# MultiEcsSceneComponent — ApplicationComponent wrapper over MultiEcsSceneImpl.
+#
+# Callers that host inside a ComponentizedApplication (e.g. standalone_ocean*,
+# multiscene.py) register this via `app.addComponent("multiecs",
+# MultiEcsSceneComponent)`. API is 100% inherited from MultiEcsSceneImpl —
+# this subclass exists only so the object also satisfies the
+# ApplicationComponent base-class contract for component registration.
+#
+# Hydra clients that want the same machinery without the ApplicationComponent
+# baggage should import and instantiate `MultiEcsSceneImpl` directly.
+################################################################################
+
+class MultiEcsSceneComponent(MultiEcsSceneImpl, ApplicationComponent):
+  def __init__(self):
+    ApplicationComponent.__init__(self)
+    MultiEcsSceneImpl.__init__(self)
