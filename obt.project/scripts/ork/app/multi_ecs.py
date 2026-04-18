@@ -484,9 +484,10 @@ class MultiEcsSceneImpl:
       self.cameralut = lev2.CameraDataLut()
       self.camera, self.uicam = setupUiCameraX(
         cameralut=self.cameralut, camname=camname)
-    self.uicam.lookAt(eye, tgt, up)
-    self.uicam.updateMatrices()
-    self.camera.copyFrom(self.uicam.cameradata)
+    if hasattr(self,"uicam") and self.uicam!=None:
+      self.uicam.lookAt(eye, tgt, up)
+      self.uicam.updateMatrices()
+      self.camera.copyFrom(self.uicam.cameradata)
 
   def _activeRig(self):
     """Return (cameralut, camera, uicam) tuple for the active scene,
