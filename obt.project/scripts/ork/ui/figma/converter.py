@@ -43,7 +43,6 @@ def _render_stroke(node, ox, oy, stroke_color):
 
     For strokeAlign=INSIDE: uses double stroke-width clipped to the shape.
     For strokeAlign=CENTER (default): uses stroke-width as-is.
-    For strokeAlign=OUTSIDE: uses double stroke-width with inverse clip.
     """
     fill_geom = node.get("fillGeometry", [])
     if not fill_geom:
@@ -51,9 +50,7 @@ def _render_stroke(node, ox, oy, stroke_color):
 
     stroke_weight = node.get("strokeWeight", 1)
     stroke_align = node.get("strokeAlign", "CENTER")
-    bbox = node["absoluteBoundingBox"]
-    x = bbox["x"] - ox
-    y = bbox["y"] - oy
+    transform = _compute_transform(node, ox, oy)
 
     parts = []
     for geom in fill_geom:
@@ -66,19 +63,19 @@ def _render_stroke(node, ox, oy, stroke_color):
             _stroke_clip_counter[0] += 1
             parts.append(
                 f'<defs><clipPath id="{clip_id}">'
-                f'<path d="{path_data}" transform="translate({x},{y})"/>'
+                f'<path d="{path_data}" transform="{transform}"/>'
                 f'</clipPath></defs>'
                 f'<g clip-path="url(#{clip_id})">'
                 f'<path d="{path_data}" fill="none" stroke="{stroke_color}" '
                 f'stroke-width="{stroke_weight * 2}" '
-                f'transform="translate({x},{y})"/>'
+                f'transform="{transform}"/>'
                 f'</g>'
             )
         else:
             parts.append(
                 f'<path d="{path_data}" fill="none" stroke="{stroke_color}" '
                 f'stroke-width="{stroke_weight}" '
-                f'transform="translate({x},{y})"/>'
+                f'transform="{transform}"/>'
             )
 
     return "\n".join(parts) if parts else None
@@ -104,6 +101,69 @@ def _svg_drop_shadow(effect, filter_id="shadow"):
 # Shape rendering — uses fillGeometry paths when available
 # -------------------------------------------------------------------------
 
+def _render_stroke_geometry(node, ox, oy, stroke_color):
+    """Render a node's strokeGeometry as filled SVG paths.
+
+    strokeGeometry contains the pre-computed stroke outlines as filled shapes.
+    Used for stroke-only nodes (no fillGeometry) like line arrows.
+    Applies rotation via the node's relativeTransform matrix.
+    """
+    stroke_geom = node.get("strokeGeometry", [])
+    if not stroke_geom:
+        return None
+
+    transform = _compute_transform(node, ox, oy)
+
+    paths = []
+    for geom in stroke_geom:
+        path_data = geom.get("path", "")
+        if path_data:
+            wind = geom.get("windingRule", "NONZERO")
+            fill_rule = "evenodd" if wind == "EVENODD" else "nonzero"
+            paths.append(
+                f'<path d="{path_data}" fill="{stroke_color}" '
+                f'fill-rule="{fill_rule}" '
+                f'transform="{transform}"/>'
+            )
+    return "\n".join(paths) if paths else None
+
+
+def _compute_transform(node, ox, oy):
+    """Compute the SVG transform for a Figma node.
+
+    For non-rotated nodes: simple translate from absoluteBoundingBox.
+    For rotated nodes: uses the absoluteBoundingBox position but applies
+    rotation around the local center (size/2, size/2), matching how Figma
+    stores fillGeometry in local pre-rotation space.
+    """
+    import math
+    bbox = node.get("absoluteBoundingBox") or {}
+    bx = bbox.get("x", 0) - ox
+    by = bbox.get("y", 0) - oy
+    bw = bbox.get("width", 0)
+    bh = bbox.get("height", 0)
+
+    rotation = node.get("rotation", 0)
+    if abs(rotation) < 0.001:
+        return f"translate({bx},{by})"
+
+    # Node has rotation. fillGeometry is in local (unrotated) space.
+    # The absoluteBoundingBox is the AABB of the rotated shape.
+    # We need to: translate to AABB center, rotate, translate back by half the
+    # *unrotated* size. The unrotated size comes from the 'size' field.
+    size = node.get("size") or {}
+    lw = size.get("x", bw)
+    lh = size.get("y", bh)
+
+    # AABB center
+    cx = bx + bw / 2
+    cy = by + bh / 2
+
+    # SVG: translate to center, rotate, translate back by half local size
+    rot_deg = math.degrees(rotation)
+    return f"translate({cx},{cy}) rotate({rot_deg}) translate({-lw/2},{-lh/2})"
+
+
 def _render_fill_geometry(node, ox, oy, fill):
     """Render a node using its fillGeometry SVG path data.
 
@@ -113,9 +173,7 @@ def _render_fill_geometry(node, ox, oy, fill):
     if not fill_geom:
         return None
 
-    bbox = node["absoluteBoundingBox"]
-    x = bbox["x"] - ox
-    y = bbox["y"] - oy
+    transform = _compute_transform(node, ox, oy)
 
     paths = []
     for geom in fill_geom:
@@ -126,7 +184,7 @@ def _render_fill_geometry(node, ox, oy, fill):
             paths.append(
                 f'<path d="{path_data}" fill="{fill}" '
                 f'fill-rule="{fill_rule}" '
-                f'transform="translate({x},{y})"/>'
+                f'transform="{transform}"/>'
             )
     return "\n".join(paths) if paths else None
 
@@ -179,19 +237,54 @@ def _convert_shape(node, ox, oy, fill_override=None):
 # Text rendering
 # -------------------------------------------------------------------------
 
+def _wrap_text(text, box_width, font_size):
+    """Word-wrap text to fit within box_width using estimated character widths.
+
+    Average character width is approximately 0.6 * fontSize for proportional fonts.
+    """
+    from ork.ui.figma.constants import TEXT_CHAR_WIDTH_RATIO
+    char_width = font_size * TEXT_CHAR_WIDTH_RATIO
+    max_chars = max(1, int(box_width / char_width))
+
+    wrapped = []
+    for paragraph in text.split("\n"):
+        if not paragraph:
+            wrapped.append("")
+            continue
+        words = paragraph.split(" ")
+        current_line = ""
+        for word in words:
+            test = f"{current_line} {word}".strip()
+            if len(test) > max_chars and current_line:
+                wrapped.append(current_line)
+                current_line = word
+            else:
+                current_line = test
+        if current_line:
+            wrapped.append(current_line)
+    return wrapped
+
+
 def _convert_text(node, ox, oy):
-    """Convert a Figma TEXT node to SVG text element."""
-    bbox = node["absoluteBoundingBox"]
-    x = bbox["x"] - ox
-    y = bbox["y"] - oy
-    w = bbox["width"]
-    h = bbox["height"]
+    """Convert a Figma TEXT node to SVG text element with word wrapping."""
+    bbox = node.get("absoluteBoundingBox") or {}
+    x = bbox.get("x", 0) - ox
+    y = bbox.get("y", 0) - oy
+    w = bbox.get("width", 0)
+    h = bbox.get("height", 0)
     fill = _get_solid_fill(node) or "#FFFFFF"
     text = node.get("characters", "")
     style = node.get("style", {})
     font_family = style.get("fontFamily", "sans-serif")
     font_size = style.get("fontSize", 16)
     font_weight = style.get("fontWeight", 400)
+    text_case = style.get("textCase")
+    if text_case == "UPPER":
+        text = text.upper()
+    elif text_case == "LOWER":
+        text = text.lower()
+    elif text_case == "TITLE":
+        text = text.title()
     h_align = style.get("textAlignHorizontal", "LEFT")
     v_align = style.get("textAlignVertical", "TOP")
 
@@ -205,32 +298,39 @@ def _convert_text(node, ox, oy):
         tx = x
         anchor = "start"
 
+    from ork.ui.figma.constants import TEXT_ASCENDER_RATIO, LINE_HEIGHT_MULTIPLIER
+
+    ascender = font_size * TEXT_ASCENDER_RATIO
     if v_align == "CENTER":
-        ty = y + h / 2 + font_size * 0.35
+        ty = y + (h - font_size) / 2 + ascender
     elif v_align == "BOTTOM":
-        ty = y + h
-    else:
-        ty = y + font_size * 0.85
+        ty = y + h - (font_size - ascender)
+    else:  # TOP
+        ty = y + ascender
 
     weight_attr = f' font-weight="{font_weight}"' if font_weight != 400 else ''
 
-    lines = text.split("\n")
-    if len(lines) == 1:
-        return (
-            f'<text x="{tx}" y="{ty}" text-anchor="{anchor}" '
-            f'font-family="{font_family}, monospace" font-size="{font_size}"'
-            f'{weight_attr} fill="{fill}">{text}</text>'
-        )
-    else:
-        tspans = []
-        for i, line in enumerate(lines):
-            line_y = ty + i * font_size * 1.2
-            tspans.append(f'<tspan x="{tx}" y="{line_y}">{line}</tspan>')
-        return (
-            f'<text text-anchor="{anchor}" '
-            f'font-family="{font_family}, monospace" font-size="{font_size}"'
-            f'{weight_attr} fill="{fill}">{"".join(tspans)}</text>'
-        )
+    # Word-wrap to fit the bounding box width. Uses TEXT_CHAR_WIDTH_RATIO
+    # to estimate character widths — tunable via the editor constants.
+    lines = _wrap_text(text, w, font_size) if w > 0 else text.split("\n")
+
+    # Qt's SVG renderer ignores y on <tspan>, so render each line as
+    # a separate <text> element.
+    parts = []
+    common = (f'text-anchor="{anchor}" '
+              f'font-family="{font_family}, sans-serif" font-size="{font_size}"'
+              f'{weight_attr} fill="{fill}"')
+    for i, line in enumerate(lines):
+        if not line:
+            continue
+        line_y = ty + i * font_size * LINE_HEIGHT_MULTIPLIER
+        parts.append(f'<text x="{tx}" y="{line_y}" {common}>{_svg_escape(line)}</text>')
+    return "\n".join(parts)
+
+
+def _svg_escape(text):
+    """Escape special XML characters in text content."""
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 # -------------------------------------------------------------------------
@@ -256,9 +356,7 @@ def _convert_boolean_operation(node, ox, oy):
     # (this is the computed union as SVG paths)
     fg = node.get("fillGeometry", [])
     if fg:
-        bbox = node["absoluteBoundingBox"]
-        x = bbox["x"] - ox
-        y = bbox["y"] - oy
+        transform = _compute_transform(node, ox, oy)
         paths = []
         for geom in fg:
             path_data = geom.get("path", "")
@@ -268,7 +366,7 @@ def _convert_boolean_operation(node, ox, oy):
                 paths.append(
                     f'<path d="{path_data}" fill="{fill}" '
                     f'fill-rule="{fill_rule}" '
-                    f'transform="translate({x},{y})"/>'
+                    f'transform="{transform}"/>'
                 )
         if paths:
             return "\n".join(paths)
@@ -405,10 +503,15 @@ def _render_node(node, ox, oy, parts):
                     shape_parts.append(svg)
 
         if stroke is not None:
-            # Render strokeGeometry (pre-computed stroke outline) as filled path
+            # Try fillGeometry-based stroke first, then strokeGeometry
             sg_svg = _render_stroke(node, ox, oy, stroke)
             if sg_svg:
                 shape_parts.append(sg_svg)
+            else:
+                # Stroke-only nodes (e.g. line arrows) — use strokeGeometry
+                sg2 = _render_stroke_geometry(node, ox, oy, stroke)
+                if sg2:
+                    shape_parts.append(sg2)
 
         if shape_parts:
             combined = "\n".join(shape_parts)

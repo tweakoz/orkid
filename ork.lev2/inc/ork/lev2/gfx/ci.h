@@ -2,6 +2,8 @@
 
 namespace ork::lev2 {
 
+class VertexBufferBase;
+
 enum ImageBindAccess {
   EIBA_READ_ONLY = 0,
   EIBA_WRITE_ONLY = 1,
@@ -31,6 +33,19 @@ struct ComputeInterface {
   // Ensures all SSBO writes from prior dispatches are visible to subsequent dispatches
   // in the same command buffer. Must be called between dependent compute passes.
   virtual void storageBarrier() {}
+
+  // GPU buffer-to-buffer copy within a dispatch phase.
+  // Copies `size` bytes from src SSBO at `src_offset` to dst SSBO at `dst_offset`.
+  virtual void copyBufferRegion(
+      FxShaderStorageBuffer* src, size_t src_offset,
+      FxShaderStorageBuffer* dst, size_t dst_offset,
+      size_t size) {}
+
+  // GPU copy from SSBO to vertex buffer within a dispatch phase.
+  virtual void copySSBOToVertexBuffer(
+      FxShaderStorageBuffer* src, size_t src_offset,
+      VertexBufferBase* dst_vb, size_t dst_offset,
+      size_t size) {}
   #if defined(ENABLE_PYTORCH)
   virtual void copyTensorIntoStorageBuffer(FxShaderStorageBuffer* ssbo, torchtensor_ptr_t tensor, size_t dest_offset) { }
   virtual FxShaderStorageBuffer* storageBufferFromTensor(torchtensor_ptr_t tensor) { return nullptr; }

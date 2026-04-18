@@ -70,7 +70,11 @@ VulkanVertexBuffer::VulkanVertexBuffer(vkcontext_rawptr_t ctx, VertexBufferBase&
   // create vertex buffer object
   /////////////////////////////////////
 
-  _vkbuffer = std::make_shared<VulkanBuffer>(ctx, vtx_buf.GetVtxSize() * vtx_buf.GetMax(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+  VkBufferUsageFlags vb_usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+  if (vtx_buf._transfer_dst) {
+    vb_usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+  }
+  _vkbuffer = std::make_shared<VulkanBuffer>(ctx, vtx_buf.GetVtxSize() * vtx_buf.GetMax(), vb_usage);
 
   /////////////////////////////////////
   // find vertex input configuration

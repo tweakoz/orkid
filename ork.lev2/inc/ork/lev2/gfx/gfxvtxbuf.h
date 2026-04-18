@@ -117,6 +117,7 @@ public:
   mutable bool _locked;
   bool mbInited;
   bool mbRingLock;
+  bool _transfer_dst = false;  // enable GPU copy destination (VK_BUFFER_USAGE_TRANSFER_DST_BIT)
   AABox _aabb;
 
 private:

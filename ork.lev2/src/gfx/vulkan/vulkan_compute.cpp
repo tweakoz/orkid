@@ -321,16 +321,16 @@ void VkComputeInterface::beginDispatchPhase() {
   vkBeginCommandBuffer(_computeCmdBuf, &beginInfo);
 
   // Insert memory barrier: ensure host writes and any prior compute shader writes
-  // are complete and visible before this compute pass reads.
+  // are complete and visible before this compute pass reads or transfers.
   VkMemoryBarrier memoryBarrier{};
   memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
   memoryBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_SHADER_WRITE_BIT;
-  memoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+  memoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_TRANSFER_READ_BIT;
 
   vkCmdPipelineBarrier(
       _computeCmdBuf,
       VK_PIPELINE_STAGE_HOST_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-      VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+      VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
       0,
       1, &memoryBarrier,
       0, nullptr,
@@ -361,20 +361,63 @@ void VkComputeInterface::storageBarrier() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void VkComputeInterface::copyBufferRegion(
+    FxShaderStorageBuffer* src, size_t src_offset,
+    FxShaderStorageBuffer* dst, size_t dst_offset,
+    size_t size) {
+  OrkAssert(_inDispatchPhase && "copyBufferRegion must be called within a dispatch phase");
+  OrkAssert(_computeCmdBuf != VK_NULL_HANDLE);
+  OrkAssert(src && dst);
+
+  auto vk_src = src->_impl.getShared<VulkanBuffer>();
+  auto vk_dst = dst->_impl.getShared<VulkanBuffer>();
+  OrkAssert(vk_src && vk_dst);
+
+  VkBufferCopy region{};
+  region.srcOffset = src_offset;
+  region.dstOffset = dst_offset;
+  region.size = size;
+  vkCmdCopyBuffer(_computeCmdBuf, vk_src->_vkbuffer, vk_dst->_vkbuffer, 1, &region);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkComputeInterface::copySSBOToVertexBuffer(
+    FxShaderStorageBuffer* src, size_t src_offset,
+    VertexBufferBase* dst_vb, size_t dst_offset,
+    size_t size) {
+  OrkAssert(_inDispatchPhase && "copySSBOToVertexBuffer must be called within a dispatch phase");
+  OrkAssert(_computeCmdBuf != VK_NULL_HANDLE);
+  OrkAssert(src && dst_vb);
+
+  auto vk_src = src->_impl.getShared<VulkanBuffer>();
+  auto vk_vb = dst_vb->_impl.getShared<VulkanVertexBuffer>();
+  OrkAssert(vk_src && vk_vb && vk_vb->_vkbuffer);
+
+  VkBufferCopy region{};
+  region.srcOffset = src_offset;
+  region.dstOffset = dst_offset;
+  region.size = size;
+  vkCmdCopyBuffer(_computeCmdBuf, vk_src->_vkbuffer, vk_vb->_vkbuffer->_vkbuffer, 1, &region);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void VkComputeInterface::endDispatchPhase() {
   if (!_inDispatchPhase) {
     return; // Not in dispatch phase
   }
 
-  // Insert memory barrier: ensure compute writes are complete before vertex shader reads
+  // Insert memory barrier: ensure compute writes and transfer writes are
+  // complete before vertex shader reads and vertex input reads
   VkMemoryBarrier memoryBarrier{};
   memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
-  memoryBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+  memoryBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
   memoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
 
   vkCmdPipelineBarrier(
       _computeCmdBuf,
-      VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+      VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
       VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
       0, 1, &memoryBarrier, 0, nullptr, 0, nullptr
   );

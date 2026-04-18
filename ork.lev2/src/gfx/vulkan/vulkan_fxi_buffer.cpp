@@ -54,7 +54,8 @@ void VkFxInterface::unmapUniformBuffer(FxUniformBufferMapping* mapping) {
 FxShaderStorageBuffer* VkFxInterface::createStorageBuffer(size_t length) {
   auto ssbo = new FxShaderStorageBuffer;
   ssbo->_length = length;
-  auto ssbo_buf = ssbo->_impl.makeShared<VulkanBuffer>(_contextVK, length, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+  auto ssbo_buf = ssbo->_impl.makeShared<VulkanBuffer>(_contextVK, length,
+      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
   return ssbo;
 }
 

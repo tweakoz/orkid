@@ -52,6 +52,27 @@ void pyinit_simulation(py::module& module_ecs) {
         auto sg_sys = sim->findSystem<SceneGraphSystem>();
         if (sg_sys) sg_sys->reloadDrawableData(data);
       })
+      .def_property_readonly("sceneGraphDrawableNodes", [](simulation_ptr_t sim) {
+        std::vector<lev2::scenegraph::node_ptr_t> result;
+        auto sg_sys = sim->findSystem<SceneGraphSystem>();
+        if (sg_sys) {
+          sg_sys->_components.atomicOp([&](SceneGraphSystem::component_set_t& comps) {
+            for (auto* comp : comps) {
+              for (auto& [name, nitem] : comp->_nodeitems) {
+                if (nitem && nitem->_sgnode) {
+                  result.push_back(nitem->_sgnode);
+                }
+              }
+            }
+          });
+          for (auto& [name, nitem] : sg_sys->_nodeitems) {
+            if (nitem && nitem->_sgnode) {
+              result.push_back(nitem->_sgnode);
+            }
+          }
+        }
+        return result;
+      })
       /////////////////////////////////////////////////////////////////////////////////
       .def(
           "start",

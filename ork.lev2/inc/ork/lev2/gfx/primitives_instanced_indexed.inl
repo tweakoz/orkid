@@ -35,7 +35,8 @@ struct InstancedIndexedPrimitive {
     Context* ctx,
     std::vector<uint16_t> baseIndices,
     PrimitiveType prim_type,
-    size_t max_instances
+    size_t max_instances,
+    bool transfer_dst = false
   ) {
     _num_instances = max_instances;
     _prim_type = prim_type;
@@ -54,6 +55,7 @@ struct InstancedIndexedPrimitive {
 
     // Create instance vertex buffer
     _instance_vb = std::make_shared<instance_vb_t>(max_instances, 0);
+    _instance_vb->_transfer_dst = transfer_dst;
     auto dst_instances = (instance_t*) ctx->GBI()->LockVB(*_instance_vb, 0, max_instances);
 
     for(uint32_t i = 0; i < max_instances; i++) {

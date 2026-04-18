@@ -640,6 +640,14 @@ struct VkComputeInterface : public ComputeInterface {
   void beginDispatchPhase() final;
   void endDispatchPhase() final;
   void storageBarrier() final;
+  void copyBufferRegion(
+      FxShaderStorageBuffer* src, size_t src_offset,
+      FxShaderStorageBuffer* dst, size_t dst_offset,
+      size_t size) final;
+  void copySSBOToVertexBuffer(
+      FxShaderStorageBuffer* src, size_t src_offset,
+      VertexBufferBase* dst_vb, size_t dst_offset,
+      size_t size) final;
 
   void dispatchCompute(const FxComputeShader* shader, uint32_t numgroups_x, uint32_t numgroups_y, uint32_t numgroups_z) final;
 
