@@ -10,6 +10,12 @@
 
 //#define DEBUG_LATENCY
 
+// Uncomment to force the "no valid audio device" path on the next app
+// launch: clears both input and output selections right before the tier-4
+// check, triggering the macOS dialog + OrkAssert. Test without unplugging
+// hardware. Remember to re-comment before shipping.
+//#define DEBUG_NO_DEVICE_DIALOGUE
+
 #include "CoreAudioDevice.h"
 #include "au.h"
 #include "ca_helpers/CARingBuffer.h"
@@ -21,6 +27,12 @@
 #include <mach/mach_time.h>
 #include <chrono>
 #include <cstdlib>
+#include <cstdio>
+#include <errno.h>
+#include <spawn.h>
+#include <sys/wait.h>
+
+extern char** environ;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::ca {
@@ -112,6 +124,124 @@ void AudioDeviceList::BuildList() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// File-local helpers for tiered audio-device selection.
+//
+// Orkid requires:
+//   • OUTPUT: stereo (2 channels) at 48 kHz
+//   • INPUT : 1 or 2 channels at 48 kHz
+//
+// Selection order (per direction):
+//   tier 1 — ORKID_AUDIO_{INPUT,OUTPUT}_DEVICE env var, matched against the
+//            enumerated device list with the constraints above applied.
+//   tier 2 — CoreAudio's reported system default device, if it passes the
+//            constraint filter. This tier gives us headphones-vs-speakers
+//            and mic-preference for free because macOS already tracks
+//            headphone insertion / default-mic selection at the OS level.
+//   tier 3 — first device in the enumeration that passes the filter.
+//   tier 4 — no suitable device AND the direction is enabled: pop a macOS
+//            dialog and assert. Skipped if the direction is disabled.
+///////////////////////////////////////////////////////////////////////////////
+
+namespace {
+
+constexpr int kDesiredSampleRate = 48000;
+
+static bool _matchesConstraints(
+    const std::shared_ptr<CoreAudioDeviceInfo>& info,
+    bool is_input) {
+  if (!info) return false;
+  int rate = int(info->_format.mSampleRate);
+  if (rate != kDesiredSampleRate) return false;
+  int ch = info->countChannels();
+  if (is_input) return (ch == 1 || ch == 2);
+  return (ch == 2);
+}
+
+static std::shared_ptr<CoreAudioDeviceInfo>
+_findByName(const AudioDeviceList& devlist, const std::string& name, bool is_input) {
+  if (name.empty()) return nullptr;
+  for (const auto& kv : devlist.GetMap()) {
+    if (kv.first == name && _matchesConstraints(kv.second, is_input)) {
+      return kv.second;
+    }
+  }
+  return nullptr;
+}
+
+static AudioDeviceID _getSystemDefaultID(bool is_input) {
+  AudioDeviceID id = kAudioDeviceUnknown;
+  UInt32 sz        = sizeof(id);
+  AudioObjectPropertyAddress addr = {
+      is_input ? kAudioHardwarePropertyDefaultInputDevice
+               : kAudioHardwarePropertyDefaultOutputDevice,
+      kAudioObjectPropertyScopeGlobal,
+      kAudioObjectPropertyElementMain};
+  OSStatus rc = AudioObjectGetPropertyData(kAudioObjectSystemObject, &addr, 0, NULL, &sz, &id);
+  if (rc != noErr) return kAudioDeviceUnknown;
+  return id;
+}
+
+static std::shared_ptr<CoreAudioDeviceInfo>
+_findByID(const AudioDeviceList& devlist, AudioDeviceID id, bool is_input) {
+  if (id == kAudioDeviceUnknown) return nullptr;
+  for (const auto& kv : devlist.GetMap()) {
+    if (kv.second && kv.second->_ID == id && _matchesConstraints(kv.second, is_input)) {
+      return kv.second;
+    }
+  }
+  return nullptr;
+}
+
+static std::shared_ptr<CoreAudioDeviceInfo>
+_firstMatching(const AudioDeviceList& devlist, bool is_input) {
+  for (const auto& kv : devlist.GetMap()) {
+    if (_matchesConstraints(kv.second, is_input)) {
+      return kv.second;
+    }
+  }
+  return nullptr;
+}
+
+// Tier 4 — display a native macOS dialog describing the missing hardware,
+// then assert. osascript runs as a child; waitpid blocks the parent until
+// the user dismisses, so the message is guaranteed to be seen before we
+// crash. Falls through cleanly if osascript fails to launch (headless
+// systems, SIP weirdness) — the assert still fires.
+static void _showMissingAudioDialogAndAssert(bool input_missing, bool output_missing) {
+  const char* which = (input_missing && output_missing) ? "input and output"
+                    : input_missing                     ? "input"
+                                                         : "output";
+  char script[1024];
+  snprintf(script, sizeof(script),
+      "tell application \"System Events\" to activate\n"
+      "display dialog \"No valid audio %s device found.\n\n"
+      "Orkid requires a stereo-capable 48kHz output device and a "
+      "1- or 2-channel 48kHz input device. Please connect suitable "
+      "devices and ensure they are set to 48kHz using Audio/MIDI Setup, "
+      "then relaunch.\" "
+      "with icon stop buttons {\"OK\"} default button \"OK\" "
+      "with title \"Orkid Audio\"",
+      which);
+
+  pid_t pid;
+  char* const argv_buf[] = {
+      (char*)"/usr/bin/osascript",
+      (char*)"-e",
+      script,
+      NULL};
+  int rc = posix_spawn(&pid, argv_buf[0], NULL, NULL, argv_buf, environ);
+  if (rc == 0) {
+    int status;
+    while (waitpid(pid, &status, 0) < 0 && errno == EINTR) { /* retry */ }
+  } else {
+    logerrchannel()->log("CoreAudio: posix_spawn(osascript) failed: rc=%d", rc);
+  }
+  OrkAssert(false && "no valid 48kHz audio device found");
+}
+
+} // anonymous namespace
+
+///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 CoreAudioDevice::CoreAudioDevice(appinitdata_wkptr_t appinitd)
@@ -156,39 +286,89 @@ CoreAudioDevice::CoreAudioDevice(appinitdata_wkptr_t appinitd)
     }
   }
 
-  if( unlocked_appinitdata->_enable_audio_input ) {
-    if(0)logchan_coreaudio->log("looking for Input: <%s>", input_devname.c_str());
-    for (const auto& input : _inputDevList.GetMap()) {
-      auto info   = input.second;
-      auto format = info->_format;
-
-      auto fmtstr = CAStreamBasicDescription::Print(format);
-      if(0)logchan_coreaudio->log(
-          "input id<%d> name<%s> numchan<%d> fmt<%s>", info->_ID, input.first.c_str(), info->countChannels(), fmtstr.c_str());
-
-      if (input.first == input_devname) {
-        _actual_input_channels = info->countChannels();
-        _num_input_channels = unlocked_appinitdata->_audio_input_numchannels;
-        logchan_coreaudio->log("FOUND INPUT DEVICE !!!!! name<%s> device_ch<%d> requested_ch<%zu>",
-                               input.first.c_str(), _actual_input_channels, _num_input_channels);
-        _input_info = info;
+  // ----- INPUT: tier 1 → 2 → 3 -----
+  if (unlocked_appinitdata->_enable_audio_input) {
+    std::shared_ptr<CoreAudioDeviceInfo> info;
+    // tier 1: env-requested name
+    info = _findByName(_inputDevList, input_devname, /*is_input=*/true);
+    // tier 2: CoreAudio system default
+    if (!info) {
+      AudioDeviceID sys_default = _getSystemDefaultID(/*is_input=*/true);
+      info = _findByID(_inputDevList, sys_default, /*is_input=*/true);
+      if (info) {
+        logchan_coreaudio->log(
+            "audio input: requested '%s' not available (not 48kHz-mono/stereo); using system default '%s'",
+            input_devname.c_str(), info->_name.c_str());
       }
+    }
+    // tier 3: first-matching
+    if (!info) {
+      info = _firstMatching(_inputDevList, /*is_input=*/true);
+      if (info) {
+        logchan_coreaudio->log(
+            "audio input: no match for env or system default; using first matching device '%s' (%dch, 48kHz)",
+            info->_name.c_str(), info->countChannels());
+      }
+    }
+    if (info) {
+      _actual_input_channels = info->countChannels();
+      _num_input_channels    = unlocked_appinitdata->_audio_input_numchannels;
+      logchan_coreaudio->log(
+          "FOUND INPUT DEVICE name<%s> device_ch<%d> requested_ch<%zu>",
+          info->_name.c_str(), _actual_input_channels, _num_input_channels);
+      _input_info = info;
     }
   }
-  if( unlocked_appinitdata->_enable_audio_output ) {
-    //logchan_coreaudio->log("looking for Output: <%s>", output_devname.c_str());
-    for (const auto& output : _outputDevList.GetMap()) {
-      auto info   = output.second;
-      auto format = info->_format;
-      //logchan_coreaudio->log("output id<%d> name<%s> numch<%d>", info->_ID, output.first.c_str(), info->countChannels());
-      CAStreamBasicDescription::Print(format);
-      if (output.first == output_devname) {
-        //_inp_dev_name = input.first;
-        //_num_input_channels = info->countChannels();
-        logchan_coreaudio->log("FOUND OUTPUT DEVICE !!!!! name<%s> numch<%d>", output.first.c_str(), info->countChannels());
-        _output_info = info;
+
+  // ----- OUTPUT: tier 1 → 2 → 3 -----
+  if (unlocked_appinitdata->_enable_audio_output) {
+    std::shared_ptr<CoreAudioDeviceInfo> info;
+    // tier 1: env-requested name
+    info = _findByName(_outputDevList, output_devname, /*is_input=*/false);
+    // tier 2: CoreAudio system default
+    if (!info) {
+      AudioDeviceID sys_default = _getSystemDefaultID(/*is_input=*/false);
+      info = _findByID(_outputDevList, sys_default, /*is_input=*/false);
+      if (info) {
+        logchan_coreaudio->log(
+            "audio output: requested '%s' not available (not 48kHz-stereo); using system default '%s'",
+            output_devname.c_str(), info->_name.c_str());
       }
     }
+    // tier 3: first-matching
+    if (!info) {
+      info = _firstMatching(_outputDevList, /*is_input=*/false);
+      if (info) {
+        logchan_coreaudio->log(
+            "audio output: no match for env or system default; using first matching device '%s' (2ch, 48kHz)",
+            info->_name.c_str());
+      }
+    }
+    if (info) {
+      logchan_coreaudio->log(
+          "FOUND OUTPUT DEVICE name<%s> numch<%d>", info->_name.c_str(), info->countChannels());
+      _output_info = info;
+    }
+  }
+
+  // ----- tier 4: required direction missing → macOS dialog + assert -----
+#if defined(DEBUG_NO_DEVICE_DIALOGUE)
+  // Debug-only: force the "no device" path regardless of what tiers 1-3
+  // found, so the macOS dialog can be exercised without unplugging audio
+  // hardware. Clears both selections so the dialog text reads "input and
+  // output" — flip one of these back to _input_info/_output_info if you
+  // want to test the input-only or output-only variants.
+  logerrchannel()->log("CoreAudio: DEBUG_NO_DEVICE_DIALOGUE active — forcing tier-4");
+  _input_info.reset();
+  _output_info.reset();
+#endif
+  bool input_missing  = unlocked_appinitdata->_enable_audio_input  && !_input_info;
+  bool output_missing = unlocked_appinitdata->_enable_audio_output && !_output_info;
+  if (input_missing || output_missing) {
+    logerrchannel()->log(
+        "CoreAudio: tier-4 bail — input_missing=%d output_missing=%d",
+        int(input_missing), int(output_missing));
+    _showMissingAudioDialogAndAssert(input_missing, output_missing);
   }
 }
 
@@ -216,15 +396,16 @@ void CoreAudioDevice::startup() {
   float input_sample_rate  = 0.0f;
   float output_sample_rate = 0.0f;
 
+  // Sample-rate is guaranteed to be 48 kHz by the tier-1/2/3 constraint filter
+  // in the ctor — no need to re-assert here. If _input_info or _output_info is
+  // null, the direction was either disabled or tier-4 would already have fired.
   if (_input_info) {
     _input_impl       = std::make_shared<CoreAudioDeviceImpl>(_input_info);
     input_sample_rate = _input_info->_format.mSampleRate;
-    OrkAssert(int(input_sample_rate) == int(desired_sample_rate));
   }
   if (_output_info) {
     _output_impl       = std::make_shared<CoreAudioDeviceImpl>(_output_info);
     output_sample_rate = _output_info->_format.mSampleRate;
-    OrkAssert(int(output_sample_rate) == int(desired_sample_rate));
   }
 
   _the_synth = synth::instance();
