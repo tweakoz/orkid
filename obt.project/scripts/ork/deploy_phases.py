@@ -670,6 +670,16 @@ def _internalize_python_framework(target_dir, target_venv, homebrew_dir):
         src_stdlib = os.path.join(fw_stdlib_dir, item)
         # Copy into obt_venv/lib/pythonX.Y/ (merging with existing site-packages)
         dst_stdlib = str(target_venv / "lib" / item)
+        # Homebrew's Python 3.14 framework ships a sitecustomize.py that
+        # hijacks site.PREFIXES to include /opt/homebrew and rewrites
+        # sys.base_prefix / sys.executable to Homebrew-specific paths.
+        # Dragging it into a relocatable bundle leaks the dev host's
+        # Homebrew layout into every shipped copy; on user machines it
+        # injects /opt/homebrew/lib/python3.14/site-packages onto sys.path
+        # (which, via _obt_config.py, used to leak into PYTHONPATH and
+        # kill the 3.12 child at `import numpy`). Skip it during copy
+        # and scrub any stale bytecode afterward.
+        _customize_names = ("sitecustomize", "usercustomize")
         if os.path.isdir(dst_stdlib):
           # Merge: copy only what's not already there (site-packages already exists)
           for sub in os.listdir(src_stdlib):
@@ -677,6 +687,8 @@ def _internalize_python_framework(target_dir, target_venv, homebrew_dir):
             dst_sub = os.path.join(dst_stdlib, sub)
             if sub == "site-packages":
               continue  # Don't overwrite our venv's site-packages
+            if sub in (f"{n}.py" for n in _customize_names):
+              continue  # Don't inherit Homebrew's sitecustomize
             if not os.path.exists(dst_sub):
               if os.path.isdir(src_sub):
                 run(["cp", "-a", src_sub, dst_sub], do_log=False)
@@ -686,6 +698,24 @@ def _internalize_python_framework(target_dir, target_venv, homebrew_dir):
         else:
           run(["cp", "-a", src_stdlib, dst_stdlib], do_log=False)
           print(deco.val(f"    Copied stdlib ({item}) into obt_venv/lib/"))
+          # cp -a above pulled in sitecustomize.py; delete it.
+          for _n in _customize_names:
+            _py = os.path.join(dst_stdlib, f"{_n}.py")
+            if os.path.isfile(_py):
+              os.remove(_py)
+        # Scrub any sitecustomize/usercustomize bytecode from __pycache__
+        # regardless of which copy branch ran. Python will still start fine
+        # without a .py even if a stale .pyc is present, but the bundle is
+        # cleaner without them.
+        _cache = os.path.join(dst_stdlib, "__pycache__")
+        if os.path.isdir(_cache):
+          for _f in os.listdir(_cache):
+            if any(_f.startswith(f"{_n}.") and _f.endswith(".pyc")
+                   for _n in _customize_names):
+              try:
+                os.remove(os.path.join(_cache, _f))
+              except OSError:
+                pass
         break
 
 def _create_python_app_stub(target_lib, framework_dep):
@@ -1077,8 +1107,14 @@ _LAUNCH_SCRIPT_TEMPLATE = r'''#!/usr/bin/env bash
 # location, so the deployment can be moved anywhere.
 ###############################################################################
 
-# Compute DEPLOY_ROOT from this script's location
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Compute DEPLOY_ROOT from this script's location.
+# -P / pwd -P resolves symlinks to their physical target so that a symlink
+# pointing at .staging (e.g. from a nested utilities folder) doesn't make
+# DEPLOY_ROOT differ string-wise from .deploy_path on alternating launches.
+# Without this, the relocation fixup ping-pongs ~170 files every time the
+# user alternates between launching a symlink-routed app and a direct-path
+# app — harmless per-launch but wasteful and confusing.
+SCRIPT_DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 DEPLOY_ROOT="$SCRIPT_DIR"
 
 # Sever all connections to any host OBT/Python environment.

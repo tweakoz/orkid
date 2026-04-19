@@ -107,8 +107,39 @@ int main(int argc, char *argv[]) {
     return 2;
   }
 
+  // Walk upward from enclosing looking for a .staging/ dir. This handles:
+  //   • top-level bundles (.../Impossible.app) — enclosing IS the deploy
+  //     root, first iteration hits .staging immediately
+  //   • nested-utility bundles (.../Impossible Utilities/VibeSandbox.app)
+  //     — enclosing is the Utilities folder; .staging lives one level up
+  //   • any deeper nesting used by future deploy layouts
+  // If nothing is found, fall back to the sibling-of-enclosing path so
+  // downstream error messaging stays consistent with the old single-
+  // level assumption.
   char deploy_root[MAX_PATH];
-  snprintf(deploy_root, sizeof(deploy_root), "%s/.staging", enclosing);
+  deploy_root[0] = '\0';
+  {
+    char cur[MAX_PATH];
+    strncpy(cur, enclosing, sizeof(cur) - 1);
+    cur[sizeof(cur) - 1] = '\0';
+    while (cur[0] != '\0' && !(cur[0] == '/' && cur[1] == '\0')) {
+      char candidate[MAX_PATH];
+      snprintf(candidate, sizeof(candidate), "%s/.staging", cur);
+      struct stat st;
+      if (stat(candidate, &st) == 0 && S_ISDIR(st.st_mode)) {
+        strncpy(deploy_root, candidate, sizeof(deploy_root) - 1);
+        deploy_root[sizeof(deploy_root) - 1] = '\0';
+        break;
+      }
+      char *slash = strrchr(cur, '/');
+      if (!slash) break;
+      if (slash == cur) { cur[1] = '\0'; break; }
+      *slash = '\0';
+    }
+    if (deploy_root[0] == '\0') {
+      snprintf(deploy_root, sizeof(deploy_root), "%s/.staging", enclosing);
+    }
+  }
 
   char launch_env[MAX_PATH];
   snprintf(launch_env, sizeof(launch_env), "%s/obt-launch-env", deploy_root);
