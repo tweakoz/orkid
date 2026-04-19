@@ -725,9 +725,15 @@ float SampleOscillator::playNoLoop() {
     iiB = maxindex;
 
   ///////////////
+  // Missing / unloaded sample -> silence. Load failure is warned once at
+  // SampleData::loadFromAudioFile; no per-sample spam on the audio thread.
+  if (sample == nullptr || sample->_sampleBlock == nullptr) {
+    _pbindex = _pbindexNext;
+    return 0.0f;
+  }
   auto sblk = sample->_sampleBlock;
   int64_t blk_end_samples = sample->_blk_end;
-  if (sblk == nullptr || iiA < 0 || iiA >= blk_end_samples || iiB < 0 || iiB >= blk_end_samples) {
+  if (iiA < 0 || iiA >= blk_end_samples || iiB < 0 || iiB >= blk_end_samples) {
     printf("playNoLoop OOB!\n");
     printf("  sblk=%p blk_end_samples=%" PRId64 "\n", (const void*)sblk, blk_end_samples);
     printf("  iiA=%" PRId64 " iiB=%" PRId64 "\n", iiA, iiB);
@@ -813,9 +819,15 @@ float SampleOscillator::playLoopFwd() {
 
   float samp = 0.0f;
 
+  // Missing / unloaded sample -> silence. Load failure is warned once at
+  // SampleData::loadFromAudioFile; no per-sample spam on the audio thread.
+  if (sample == nullptr || sample->_sampleBlock == nullptr) {
+    _pbindex = _pbindexNext;
+    return 0.0f;
+  }
   auto sblk = sample->_sampleBlock;
   int64_t blk_end_samples = sample->_blk_end;
-  if (sblk == nullptr || iiA < 0 || iiA >= blk_end_samples || iiB < 0 || iiB >= blk_end_samples) {
+  if (iiA < 0 || iiA >= blk_end_samples || iiB < 0 || iiB >= blk_end_samples) {
     printf("playLoopFwd OOB!\n");
     printf("  sblk=%p blk_end_samples=%" PRId64 "\n", (const void*)sblk, blk_end_samples);
     printf("  iiA=%" PRId64 " iiB=%" PRId64 "\n", iiA, iiB);

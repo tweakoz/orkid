@@ -198,15 +198,16 @@ class EcsRuntime:
   def update(self,updinfo):
     """Per-frame update: sync camera + tick simulation. Call from _onUpdate."""
     if self.controller and self._sys_ref:
-      UIC = self.uicam.cameradata
-      self.controller.systemNotify(self._sys_ref, tokens.UpdateCamera, {
-        tokens.eye: UIC.eye,
-        tokens.tgt: UIC.target,
-        tokens.up: UIC.up,
-        tokens.near: UIC.near,
-        tokens.far: UIC.far,
-        tokens.fovy: UIC.fovy
-      })
+      if hasattr(self,"uicam") and self.uicam!=None:
+        UIC = self.uicam.cameradata
+        self.controller.systemNotify(self._sys_ref, tokens.UpdateCamera, {
+          tokens.eye: UIC.eye,
+          tokens.tgt: UIC.target,
+          tokens.up: UIC.up,
+          tokens.near: UIC.near,
+          tokens.far: UIC.far,
+          tokens.fovy: UIC.fovy
+        })
     if self.controller:
       self.controller.updateSimulation()
 
