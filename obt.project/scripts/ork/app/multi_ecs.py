@@ -15,6 +15,8 @@
 #   step 6 : component owns the camera rig (opt-out for external camera)
 ################################################################################
 
+import math
+
 from orkengine.core import fsm, vec3, vec4, lev2_pyexdir
 from orkengine import lev2
 from ork.app.application import ApplicationComponent
@@ -78,6 +80,13 @@ class CodedEcsScene:
       getattr(type(self), "skybox_path", None))
     self.skybox_intensity = float(
       getattr(type(self), "skybox_intensity", 1.0))
+    # Optional per-scene initial camera placement applied by the host
+    # when this scene becomes active. `initial_camera_eye` is the world
+    # position the viewer should occupy; `initial_camera_target` is the
+    # look-at point used to derive facing. Either may be a 3-tuple/list
+    # or a vec3. Both None → host falls back to its own config default.
+    self.initial_camera_eye    = getattr(type(self), "initial_camera_eye",    None)
+    self.initial_camera_target = getattr(type(self), "initial_camera_target", None)
 
   @staticmethod
   def _expandSkyboxPath(path):
@@ -161,6 +170,11 @@ class MultiEcsSceneImpl:
     self.cameralut        = None
     self.camera           = None
     self.uicam            = None
+    # Optional VR device handle. The host app publishes this after it
+    # has constructed its VR device so scenes can resolve `observer_eye`
+    # without knowing whether they are running under VR or not. None in
+    # non-VR mode — `observer_eye` then falls through to `camera.eye`.
+    self.vrdev            = None
     # Step 7 state — non-ECS scenes registered by the app
     self.coded_scenes   = {}     # tag -> CodedEcsScene instance
 
@@ -171,6 +185,29 @@ class MultiEcsSceneImpl:
   @property
   def is_idle(self):
     return self.fsm is None or self.fsm.currentState == self._fsm_idle
+
+  @property
+  def observer_eye(self):
+    """World-space viewer eye for scenes that need it (e.g. reflection
+    math). Prefers the VR headset pose when `vrdev` is published and the
+    pose is valid; otherwise returns the shared UI camera's eye. Returns
+    vec3(0,0,0) if neither is available (exceptional — typically means
+    the host hasn't finished setting up its camera rig yet)."""
+    vrdev = self.vrdev
+    if vrdev is not None:
+      try:
+        vp = vrdev.view_pos
+        if not (math.isnan(vp.x) or math.isnan(vp.y) or math.isnan(vp.z)):
+          return vp
+      except Exception:
+        pass
+    cam = self.camera
+    if cam is not None:
+      try:
+        return cam.eye
+      except Exception:
+        pass
+    return vec3(0, 0, 0)
 
   def build_scenegraph(self, ctx, sg_params, fade_color=vec4(0, 0, 0, 1)):
     """Create the shared lev2 scenegraph from sg_params, installing
