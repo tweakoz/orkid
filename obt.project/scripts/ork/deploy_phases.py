@@ -1356,11 +1356,19 @@ def phase6_launch_script(target_dir):
   print(deco.val(f"    Fixed {fixed_count} shebangs to: {portable_shebang}"))
 
   # ---- Step 5: Write deploy path marker ----
+  # Write a sentinel path that cannot match any real install location,
+  # so the obt-launch-env runtime fixup ALWAYS fires on first launch
+  # regardless of where the user drops the bundle. `/dev/null` is a
+  # character device; you cannot create subdirectories under it, so
+  # `/dev/null/.staging` is structurally impossible to ever equal a real
+  # DEPLOY_ROOT. Non-empty so BSD sed accepts it as the first RE. The
+  # sentinel is replaced with the actual DEPLOY_ROOT by the fixup on
+  # first launch.
   print(deco.val(f"\n  Step 5: Writing deploy path marker..."))
   marker_path = target_dir / ".deploy_path"
   with open(str(marker_path), 'w') as f:
-    f.write(str(target_dir) + '\n')
-  print(deco.val(f"    Wrote: {marker_path}"))
+    f.write('/dev/null/.staging\n')
+  print(deco.val(f"    Wrote: {marker_path} (sentinel — forces first-launch fixup)"))
 
   # ---- Step 6: Write deploy mode marker ----
   print(deco.val(f"\n  Step 6: Writing deploy mode marker..."))
