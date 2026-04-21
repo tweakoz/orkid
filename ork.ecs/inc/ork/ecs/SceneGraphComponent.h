@@ -151,6 +151,7 @@ public:
 private:
 
   friend struct SceneGraphSystem;
+  friend struct SceneData;
 
     using oncreatesys_lambda_t = std::function<void(SceneGraphSystem*)>;
     void enqueueOnSystemCreation(oncreatesys_lambda_t l);

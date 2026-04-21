@@ -168,6 +168,10 @@ void pyinit_scene(py::module& module_ecs) {
         }
         return result;
       })
+      .def_property(
+          "node_prefix",
+          [](scenedata_ptr_t scenedata) -> std::string { return scenedata->_node_prefix; },
+          [](scenedata_ptr_t scenedata, std::string p) { scenedata->_node_prefix = p; })
       .def("removeSceneObject", [](scenedata_ptr_t scenedata, sceneobject_ptr_t sobj) {
         scenedata->RemoveSceneObject(sobj);
       })

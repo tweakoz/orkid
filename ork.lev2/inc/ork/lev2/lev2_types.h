@@ -428,8 +428,9 @@ struct CompositorDrawData;
 // to it without having to include the scenegraph header (which would
 // create a circular include via the renderer/compositor stack).
 } // close ork::lev2 so we can open the scenegraph sub-namespace
-namespace ork::lev2::scenegraph { struct Scene; }
+namespace ork::lev2::scenegraph { struct Scene; struct Node; }
 namespace ork::lev2 {
+using sgnode_wkptr_t = std::weak_ptr<scenegraph::Node>;
 struct CompositingContext;
 struct CompositingMorphable;
 struct CompositingPassData;

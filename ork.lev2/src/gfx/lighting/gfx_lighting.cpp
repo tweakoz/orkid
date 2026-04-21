@@ -14,6 +14,7 @@
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/renderer/irendertarget.h>
+#include <ork/lev2/gfx/scenegraph/scenegraph.h>
 #include <ork/math/collision_test.h>
 #include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/reflect/properties/registerX.inl>
@@ -108,6 +109,12 @@ Light::Light(xform_generator_t mtx, const LightData* ld)
   }*/
 }
 Light::~Light() {
+}
+
+bool Light::enabled() const {
+  if (auto n = _sgnode.lock())
+    return n->_enabled;
+  return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -614,6 +621,13 @@ void LightManager::enumerateInPass(const CompositingPassData& CPD, enumeratedlig
        it++) {
     Light* plight = it->second;
 
+    // Honor the owning scenegraph node's enabled flag. Lights with no
+    // owning node (e.g. built-in / direct-constructed) always report
+    // enabled()==true, matching prior behavior.
+    if (!plight->enabled()) {
+      plight->miInFrustumID = -1;
+      continue;
+    }
     if (true) { // plight->IsInFrustum(frustum)) {
       size_t idx = out_lights->_alllights.size();
 
@@ -627,6 +641,25 @@ void LightManager::enumerateInPass(const CompositingPassData& CPD, enumeratedlig
   for (auto pri_item : mGlobalMovingLights._prioritizedLights) {
     for (auto item : pri_item.second) {
       Light* plight = item;
+      auto n  = plight->_sgnode.lock();
+      bool raw_en = n ? n->_enabled : true;
+      bool en = plight->enabled();
+      // Gated: emit only when a light's enabled state flips. Keeps the
+      // log sparse (one line per transition, per light) instead of every
+      // frame. Key on (Light* pointer, enabled state) in a local static.
+      static std::unordered_map<void*, int> _last_en;
+      auto it = _last_en.find((void*)plight);
+      int cur = (int)en;
+      if (it == _last_en.end() || it->second != cur) {
+        _last_en[(void*)plight] = cur;
+        printf("[SGS enumerateInPass] light=%p lnode=%p raw_enabled=%d enabled()=%d name=%s\n",
+               (void*)plight, (void*)n.get(), (int)raw_en, (int)en,
+               n ? n->_name.c_str() : "<no-node>");
+      }
+      if (!en) {
+        plight->miInFrustumID = -1;
+        continue;
+      }
       if (true) { // plight->IsInFrustum(frustum)) {
         size_t idx = out_lights->_alllights.size();
 

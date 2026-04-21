@@ -123,6 +123,13 @@ public:
   SystemDataLut _systemDatas;
   file::Path _sceneScriptPath;
   orkmap<std::string, sceneimportdata_ptr_t> _imports;  // namespace → import record
+  // Prefix prepended to every scenegraph node-name declared by this
+  // scene's archetype SceneGraphComponents and SceneGraphSystem-level
+  // nodedatas. Applied once in prepareForSimulation (idempotent). Lets
+  // multiple scenes share one lev2 Scene without node-name collisions —
+  // downstream consumers (sync_node_state, find-by-name) see the
+  // prefixed names directly. Empty = no prefixing.
+  std::string _node_prefix;
 
   void addImport(sceneimportdata_ptr_t import);
   void removeImport(const std::string& ns);

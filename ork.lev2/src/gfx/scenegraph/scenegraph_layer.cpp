@@ -110,6 +110,11 @@ lightnode_ptr_t Layer::createLightNode(std::string named, light_ptr_t light) {
 
   _lightnodes.atomicOp([rval](Layer::lightnodevect_t& unlocked) { unlocked.push_back(rval); });
 
+  // Bind a weak back-ref so LightManager::enumerateInPass can consult
+  // the node's `_enabled` flag and skip disabled lights without the
+  // lighting layer needing to know about scenegraph structure.
+  light->_sgnode = rval;
+
   auto lmgr = _scene->_lightManager;
   lmgr->mGlobalMovingLights.AddLight(light.get());
 

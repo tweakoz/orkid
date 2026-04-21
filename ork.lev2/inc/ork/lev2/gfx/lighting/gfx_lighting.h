@@ -155,6 +155,17 @@ struct Light : public Drawable {
   float shadowDepthBias() const {
     return _data->GetShadowBias();
   }
+  // Non-owning back-ref to the scenegraph Node (LightNode) that owns
+  // this Light, set by Layer::createLightNode. Lets the renderer's
+  // light-enumeration pass consult the node's `_enabled` flag without
+  // the lighting layer having to include scenegraph headers. Null when
+  // the Light wasn't created via a scenegraph layer (e.g. headlights).
+  sgnode_wkptr_t _sgnode;
+
+  // True if no owning scenegraph node, else the node's `_enabled` bit.
+  // Impl in gfx_lighting.cpp so Node's definition isn't needed here.
+  bool enabled() const;
+
   const LightData* _data;
   xform_generator_t _xformgenerator;
 

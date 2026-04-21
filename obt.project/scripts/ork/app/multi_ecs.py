@@ -485,21 +485,36 @@ class MultiEcsSceneImpl:
       tags.append(catchall_tag)
     self.scene_nodes = { t: [] for t in tags }
 
+    def _classify(node):
+      for tag, fn in filters.items():
+        if fn(node):
+          self.scene_nodes[tag].append(node)
+          return
+      if catchall_tag is not None:
+        self.scene_nodes[catchall_tag].append(node)
+
     for layer_name, layer in self.scenegraph.layers.items():
       for node in layer.drawable_nodes:
-        claimed = False
-        for tag, fn in filters.items():
-          if fn(node):
-            self.scene_nodes[tag].append(node)
-            claimed = True
-            break
-        if not claimed and catchall_tag is not None:
-          self.scene_nodes[catchall_tag].append(node)
+        _classify(node)
+    # Light nodes live in a separate per-layer collection from drawable
+    # nodes; the scenegraph exposes them flattened via lightNodes(). Run
+    # them through the same tag filters so multiple scenes sharing one
+    # scenegraph don't bleed lights across transitions.
+    for lnode in self.scenegraph.lightNodes():
+      _classify(lnode)
 
+    # Gate the log: only emit on transitions so we get a sparse history
+    # instead of per-frame spam. Track last active_tag on self.
+    changed = getattr(self, "_last_sync_active_tag", "<unset>") != active_tag
+    if changed:
+      self._last_sync_active_tag = active_tag
     for tag in tags:
       want = (active_tag == tag)
       for n in self.scene_nodes[tag]:
         n.enabled = want
+        if changed:
+          print(f"[SGS sync_node_state] tag={tag} active={active_tag} "
+                f"enabled={want} name={n.name} repr={n!r}")
 
   ##############################################################################
   # Camera rig — step 6
