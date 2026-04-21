@@ -516,7 +516,7 @@ void SimpleSoundEmitterSystem::_setPannerParams(
 ///////////////////////////////////////////////////////////////////////////////
 
 void SimpleSoundEmitterSystem::_onUpdate(Simulation* inst) {
-
+  return;
   float dt  = inst->deltaTime();
   auto syn  = synth::instance();
 
