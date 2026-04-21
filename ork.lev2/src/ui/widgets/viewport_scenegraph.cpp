@@ -30,7 +30,7 @@ void SceneGraphViewport::Describe() {
 ///////////////////////////////////////////////////////////////////////////////
 
 SceneGraphViewport::SceneGraphViewport(const std::string& name, int x, int y, int w, int h)
-    : Viewport(name, x, y, w, h, fvec4(1, 0, 1, 1), 1.0f) {
+    : Viewport(name, x, y, w, h, fvec4(0, 0, 0, 1), 1.0f) {
   _flipY = false;
 
   // Create embedded UI context for 3D UI surfaces
@@ -124,12 +124,10 @@ void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     auto acqbuf = drwev->_acqdbuf;
 
     if (_override_acqdbuf) {
-      const lev2::DrawQueue* DB = nullptr;
-      while (nullptr == DB) {
-        DB = _scenegraph->_dbufcontext_SG->acquireForReadLocked();
-        if(DB==nullptr){
-            ::usleep(100);
-        }
+      const lev2::DrawQueue* DB = _scenegraph->_dbufcontext_SG->acquireForReadLocked();
+      if (DB == nullptr) {
+        SetDirty();
+        return;
       }
       auto WDB = (lev2::DrawQueue*)DB;
       WDB->setUserProperty("vpID"_crcu, _userID);
