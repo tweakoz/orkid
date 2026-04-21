@@ -102,6 +102,16 @@ void System::_onGpuExit(Simulation* psi, lev2::Context* ctx) {
 }
 void System::_onGpuUpdate(Simulation* psi, lev2::Context* ctx) {
 }
+void System::_onGpuStage(Simulation* psi, lev2::Context* ctx) {
+}
+void System::_onGpuUnstage(Simulation* psi, lev2::Context* ctx) {
+}
+void System::_onGpuActivate(Simulation* psi, lev2::Context* ctx) {
+}
+void System::_onGpuDeactivate(Simulation* psi, lev2::Context* ctx) {
+}
+void System::_onGpuUnlink(Simulation* psi, lev2::Context* ctx) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

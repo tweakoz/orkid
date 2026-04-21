@@ -479,12 +479,12 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
 
   /////////////////////////////////////////
 
-  _onGpuInitOpQueue.atomicOp([](std::vector<void_lambda_t>& unlocked) {
-    for (auto item : unlocked) {
-      item();
-    }
-    unlocked.clear();
-  });
+  // NOTE: the _onGpuInitOpQueue drain moved to _onGpuStage. The queue is
+  // populated by _instantiateDeclaredNodes() called from _onStage, which
+  // runs AFTER _onGpuInit in the phase-locked FSM — so draining here
+  // would be a no-op. The _onGpuStage rendezvous runs immediately after
+  // _onStage on the same render-thread context, so declared drawable
+  // nodes land on the scenegraph before the first frame draws.
 
   // GPU uploads deferred to loading phase (safe for first-run shader compilation)
   auto ph = ctx->newLoadingPhase();
@@ -516,6 +516,18 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
   });
 
   /////////////////////////////////////////
+}
+///////////////////////////////////////////////////////////////////////////////
+void SceneGraphSystem::_onGpuStage(Simulation* psi, lev2::Context* ctx) {
+  // Drain declared-node instantiation lambdas queued by _onStage's call to
+  // _instantiateDeclaredNodes. Under the phase-locked FSM, _onStage runs
+  // immediately before this rendezvous, so the queue is populated now.
+  _onGpuInitOpQueue.atomicOp([](std::vector<void_lambda_t>& unlocked) {
+    for (auto& item : unlocked) {
+      item();
+    }
+    unlocked.clear();
+  });
 }
 ///////////////////////////////////////////////////////////////////////////////
 void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
@@ -838,13 +850,6 @@ void SceneGraphSystem::_onGpuExit(Simulation* psi, lev2::Context* ctx) { // fina
 
 bool SceneGraphSystem::_onLink(Simulation* psi) // final
 {
-  return true;
-}
-void SceneGraphSystem::_onUnLink(Simulation* psi) // final
-{
-}
-///////////////////////////////////////////////////////////////////////////////
-bool SceneGraphSystem::_onStage(Simulation* psi) {
   /////////////////////////////////////////
   // copy in user params
   /////////////////////////////////////////
@@ -881,7 +886,13 @@ bool SceneGraphSystem::_onStage(Simulation* psi) {
   fflush(stdout);
 
   _scene->applyRuntimeParams(_mergedParams);
-
+  return true;
+}
+void SceneGraphSystem::_onUnLink(Simulation* psi) // final
+{
+}
+///////////////////////////////////////////////////////////////////////////////
+bool SceneGraphSystem::_onStage(Simulation* psi) {
   _default_layer = _scene->createLayer("sg_default");
   _scene->createLayer("depth_prepass");
   for (auto item : _SGSD._declaredLayers) {

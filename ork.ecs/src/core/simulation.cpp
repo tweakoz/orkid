@@ -95,16 +95,59 @@ void Simulation::_stashRenderThreadDestructable(svar64_t var){
 
 ///////////////////////////////////////////////////////////////////////////////
 void Simulation::gpuUpdate(lev2::Context* ctx){
+  _currentRenderCtx = ctx;
+  _onGpuThread.store(true, std::memory_order_release);
+
+  // Drain any phases queued from the update thread. Each lambda signals its
+  // waiting future (installed by _runGpuPhaseOnRenderThread).
+  std::vector<gpu_phase_fn_t> phases;
+  {
+    std::lock_guard<std::mutex> lk(_gpuPhaseMutex);
+    phases.swap(_pendingGpuPhases);
+  }
+  for (auto& fn : phases) {
+    fn(ctx);
+  }
+
   _gpuUpdateSMInst->vars()->makeValueForKey<lev2::Context*>("ctx") = ctx;
   fsm::FsmInstance::update(_gpuUpdateSMInst);
+
+  _onGpuThread.store(false, std::memory_order_release);
+  _currentRenderCtx = nullptr;
+}
+///////////////////////////////////////////////////////////////////////////////
+void Simulation::_runGpuPhaseOnRenderThread(gpu_phase_fn_t phase_fn){
+  // Re-entrant from the render thread: run inline with the live context.
+  if (_onGpuThread.load(std::memory_order_acquire)) {
+    phase_fn(_currentRenderCtx);
+    return;
+  }
+  // Otherwise queue and block until render thread drains the queue.
+  auto prom = std::make_shared<std::promise<void>>();
+  auto fut = prom->get_future();
+  {
+    std::lock_guard<std::mutex> lk(_gpuPhaseMutex);
+    _pendingGpuPhases.push_back([phase_fn, prom](lev2::Context* ctx) {
+      phase_fn(ctx);
+      prom->set_value();
+    });
+  }
+  fut.wait();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Simulation::gpuExit(lev2::Context* ctx){
-    SystemLut render_systems;
-    _systems.atomicOp([&](const SystemLut& unlocked) { render_systems = unlocked; });
+    // The update FSM's Terminated state already ran _onGpuExit via rendezvous
+    // as part of the phase-locked reverse teardown. Skip here to avoid
+    // double-invocation. Pre-FSM-rework callers that bypass the Terminated
+    // state path will still get _onGpuExit invoked here as before.
+    if (!_gpuExitDone) {
+      SystemLut render_systems;
+      _systems.atomicOp([&](const SystemLut& unlocked) { render_systems = unlocked; });
 
-    for (auto sys : render_systems) {
-      sys.second->_onGpuExit(this, ctx);
+      for (auto sys : render_systems) {
+        sys.second->_onGpuExit(this, ctx);
+      }
+      _gpuExitDone = true;
     }
 
     // clean up gpuUpdate FSM

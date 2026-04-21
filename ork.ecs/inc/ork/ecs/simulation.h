@@ -13,6 +13,10 @@
 #include <ork/kernel/future.hpp>
 #include <ork/python/wraprawpointer.inl>
 
+#include <atomic>
+#include <future>
+#include <mutex>
+
 #include "types.h"
 #include "controller.h"
 
@@ -213,6 +217,14 @@ private:
   void _enterInitState();
   void _enterSingleStepState();
 
+  // Phase-locked rendezvous between update thread and GPU/render thread.
+  // If caller is already on the render thread (i.e. inside gpuUpdate(ctx)),
+  // phase_fn runs inline with the current ctx. Otherwise phase_fn is queued
+  // and the caller blocks on a future until the next gpuUpdate(ctx) drains
+  // the queue and executes it. Used for ECS init/teardown phases that must
+  // run on the GPU thread with a well-defined sequencing point.
+  void _runGpuPhaseOnRenderThread(std::function<void(lev2::Context*)> phase_fn);
+
   //////////////////////////////////////////////////////////
 
   PoolString genDynamicEntityName();
@@ -313,10 +325,29 @@ private:
 
   Controller::evq_t _current_events;
 
+  // Deprecated: phase-locked init/teardown no longer polls these flags.
+  // Kept for one release to avoid silently breaking any out-of-tree
+  // subclass that happens to reference them. Will be removed in a
+  // follow-up commit.
+  [[deprecated("phase-locked init/teardown supersedes these flags")]]
   bool _needsGpuInit = false;
+  [[deprecated("phase-locked init/teardown supersedes these flags")]]
   bool _needsGpuExit = false;
   bool _waitingForRLock = false;
   varmap::varmap_ptr_t _varmap;
+
+  // Phase-locked rendezvous machinery. _onGpuThread is set true while
+  // gpuUpdate(ctx) is executing so _runGpuPhaseOnRenderThread can detect
+  // re-entry and run inline rather than deadlocking on itself.
+  std::atomic<bool> _onGpuThread{false};
+  lev2::Context* _currentRenderCtx = nullptr;
+  using gpu_phase_fn_t = std::function<void(lev2::Context*)>;
+  std::mutex _gpuPhaseMutex;
+  std::vector<gpu_phase_fn_t> _pendingGpuPhases;
+  // Teardown fires _onGpuExit as part of the update FSM's Terminated state
+  // via rendezvous. Controller::gpuExit is called later (app shutdown) and
+  // must not re-fire the hooks — this flag guards against double-invocation.
+  bool _gpuExitDone = false;
 
   lev2::dbufcontext_ptr_t _dbufctxSIM;
 

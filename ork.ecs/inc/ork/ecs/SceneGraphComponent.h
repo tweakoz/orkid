@@ -211,6 +211,7 @@ struct SceneGraphSystem final : public System {
   void _onDeactivateComponent(SceneGraphComponent* component);
   ///////////////////////////////
   void _onGpuInit(Simulation* psi, lev2::Context* ctx) final;
+  void _onGpuStage(Simulation* psi, lev2::Context* ctx) final;
   void _onGpuExit(Simulation* psi, lev2::Context* ctx) final;
   void _onGpuUpdate(Simulation* psi, lev2::Context* ctx) final;
   ///////////////////////////////

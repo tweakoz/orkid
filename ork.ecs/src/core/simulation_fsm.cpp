@@ -71,15 +71,53 @@ void Simulation::_buildStateMachine() {
   _updateReadySimState->_onenter = [this](fsm::fsminstance_ptr_t inst) {
     logchan_simfsm->log("entering readymode");
     if (inst->currentState() == nullptr) {
-      _needsGpuInit = true;
-      _needsGpuExit = true;
+      // Phase-locked forward init: compose + link on update thread, then a
+      // single rendezvous runs _onGpuInit + _onGpuLink back-to-back on the
+      // render thread before we return. All systems are fully composed AND
+      // linked by the time their GPU hooks fire — no more partial-lut snapshot
+      // races.
       _initialize();
       _compose();
       _link();
+      _runGpuPhaseOnRenderThread([this](lev2::Context* ctx) {
+        SystemLut gpu_systems;
+        _systems.atomicOp([&](const SystemLut& syslut) { gpu_systems = syslut; });
+        for (auto sys : gpu_systems) {
+          sys.second->_onGpuInit(this, ctx);
+        }
+        if (_controller) for (auto& cb : _controller->_onGpuPostInit) cb(this, ctx);
+        for (auto sys : gpu_systems) {
+          sys.second->_onGpuLink(this, ctx);
+        }
+        if (_controller) for (auto& cb : _controller->_onGpuPostLink) cb(this, ctx);
+        // GPU FSM is now ready to run the per-frame _gpuUpdate loop.
+        _gpuUpdateSMInst->changeState(_gpuReadyState);
+      });
     } else if (inst->currentState() == _updateEditSimState) {
+      _runGpuPhaseOnRenderThread([this](lev2::Context* ctx) {
+        SystemLut gpu_systems;
+        _systems.atomicOp([&](const SystemLut& syslut) { gpu_systems = syslut; });
+        for (auto it = gpu_systems.rbegin(); it != gpu_systems.rend(); ++it) {
+          it->second->_gpuUnstage(this, ctx);
+        }
+      });
       _unstage();
     } else if (inst->currentState() == _updateActiveSimState) {
+      _runGpuPhaseOnRenderThread([this](lev2::Context* ctx) {
+        SystemLut gpu_systems;
+        _systems.atomicOp([&](const SystemLut& syslut) { gpu_systems = syslut; });
+        for (auto it = gpu_systems.rbegin(); it != gpu_systems.rend(); ++it) {
+          it->second->_gpuDeactivate(this, ctx);
+        }
+      });
       _deactivate();
+      _runGpuPhaseOnRenderThread([this](lev2::Context* ctx) {
+        SystemLut gpu_systems;
+        _systems.atomicOp([&](const SystemLut& syslut) { gpu_systems = syslut; });
+        for (auto it = gpu_systems.rbegin(); it != gpu_systems.rend(); ++it) {
+          it->second->_gpuUnstage(this, ctx);
+        }
+      });
       _unstage();
     }
   };
@@ -95,7 +133,6 @@ void Simulation::_buildStateMachine() {
   // EDIT STATE
   ////////////////////////////////////////////////////////
   _updateEditSimState->_onenter = [this](fsm::fsminstance_ptr_t inst) {
-    _needsGpuInit = true;
     logchan_simfsm->log("entering editmode");
     //////////////////////////
     // did we come from ready or active state ?
@@ -104,11 +141,25 @@ void Simulation::_buildStateMachine() {
       logchan_simfsm->log(" .. from ready mode");
       lev2::DrawQueue::BeginClearAndSyncReaders();
       _stage();
+      _runGpuPhaseOnRenderThread([this](lev2::Context* ctx) {
+        SystemLut gpu_systems;
+        _systems.atomicOp([&](const SystemLut& syslut) { gpu_systems = syslut; });
+        for (auto sys : gpu_systems) {
+          sys.second->_gpuStage(this, ctx);
+        }
+      });
       lev2::DrawQueue::EndClearAndSyncReaders();
     } else if (inst->currentState() == _updateActiveSimState) {
       logchan_simfsm->log(" .. from active mode");
       lev2::DrawQueue::BeginClearAndSyncReaders();
       ork::opq::assertOnQueue2(opq::updateSerialQueue());
+      _runGpuPhaseOnRenderThread([this](lev2::Context* ctx) {
+        SystemLut gpu_systems;
+        _systems.atomicOp([&](const SystemLut& syslut) { gpu_systems = syslut; });
+        for (auto it = gpu_systems.rbegin(); it != gpu_systems.rend(); ++it) {
+          it->second->_gpuDeactivate(this, ctx);
+        }
+      });
       _deactivate();
       lev2::DrawQueue::EndClearAndSyncReaders();
     } else {
@@ -139,10 +190,15 @@ void Simulation::_buildStateMachine() {
     } else {
       OrkAssert(false);
     }
-    _needsGpuInit = true;
-    _needsGpuExit = true;
 
     _activate();
+    _runGpuPhaseOnRenderThread([this](lev2::Context* ctx) {
+      SystemLut gpu_systems;
+      _systems.atomicOp([&](const SystemLut& syslut) { gpu_systems = syslut; });
+      for (auto sys : gpu_systems) {
+        sys.second->_gpuActivate(this, ctx);
+      }
+    });
 
     ///////////////////////////////////
   };
@@ -172,13 +228,48 @@ void Simulation::_buildStateMachine() {
     DB->Reset();
     _dbufctxSIM->releaseFromWriteLocked(DB);
 
-    // Always deactivate and unstage regardless of current state
+    // Phase-locked reverse teardown. Each GPU phase rendezvouses onto the
+    // render thread in reverse system order before its CPU sibling runs on
+    // the update thread. Uncommitted (never-entered) states are harmlessly
+    // no-op since the new hooks default to empty and the old CPU helpers
+    // already handle "not currently in this state" gracefully.
+    _runGpuPhaseOnRenderThread([this](lev2::Context* ctx) {
+      SystemLut gpu_systems;
+      _systems.atomicOp([&](const SystemLut& syslut) { gpu_systems = syslut; });
+      for (auto it = gpu_systems.rbegin(); it != gpu_systems.rend(); ++it) {
+        it->second->_gpuDeactivate(this, ctx);
+      }
+    });
     _deactivate();
+    _runGpuPhaseOnRenderThread([this](lev2::Context* ctx) {
+      SystemLut gpu_systems;
+      _systems.atomicOp([&](const SystemLut& syslut) { gpu_systems = syslut; });
+      for (auto it = gpu_systems.rbegin(); it != gpu_systems.rend(); ++it) {
+        it->second->_gpuUnstage(this, ctx);
+      }
+    });
     _unstage();
     // Sync with render thread before unlinking — ensures no stale
     // draw queue entries reference systems/components being destroyed
     lev2::DrawQueue::BeginClearAndSyncReaders();
+    _runGpuPhaseOnRenderThread([this](lev2::Context* ctx) {
+      SystemLut gpu_systems;
+      _systems.atomicOp([&](const SystemLut& syslut) { gpu_systems = syslut; });
+      for (auto it = gpu_systems.rbegin(); it != gpu_systems.rend(); ++it) {
+        it->second->_gpuUnlink(this, ctx);
+      }
+    });
     _unlink();
+    _runGpuPhaseOnRenderThread([this](lev2::Context* ctx) {
+      SystemLut gpu_systems;
+      _systems.atomicOp([&](const SystemLut& syslut) { gpu_systems = syslut; });
+      for (auto it = gpu_systems.rbegin(); it != gpu_systems.rend(); ++it) {
+        it->second->_onGpuExit(this, ctx);
+      }
+      // Controller::gpuExit is called later for final FSM cleanup; skip its
+      // _onGpuExit loop so hooks don't fire twice.
+      _gpuExitDone = true;
+    });
     _decompose();
     _uninitialize();
     lev2::DrawQueue::EndClearAndSyncReaders();
@@ -195,36 +286,15 @@ void Simulation::_buildStateMachine() {
   _gpuTerminatedState = _gpuUpdateSMData->newState<fsm::LambdaState>(gpu_root);
   _gpuUpdateSMInst = fsm::FsmInstance::create(_gpuUpdateSMData);
 
-  // GPU INIT STATE
+  // GPU INIT STATE — body intentionally empty. Phase-locked init is now
+  // driven explicitly by rendezvous from the update-thread FSM; this state
+  // exists only as the initial resting state and to let the render FSM's
+  // ren_init wait on a known starting value.
   _gpuInitState->_onupdate = [this](fsm::fsminstance_ptr_t inst) {
-    if (_needsGpuInit) {
-      auto ctx = inst->vars()->typedValueForKey<lev2::Context*>("ctx");
-      OrkAssert(ctx);
-
-      SystemLut gpu_systems;
-      _systems.atomicOp([&](const SystemLut& syslut) { gpu_systems = syslut; });
-
-      for (auto sys : gpu_systems) {
-        sys.second->_onGpuInit(this, ctx.value());
-      }
-      if (_controller) for (auto& cb : _controller->_onGpuPostInit) cb(this, ctx.value());
-      for (auto sys : gpu_systems) {
-        sys.second->_onGpuLink(this, ctx.value());
-      }
-      if (_controller) for (auto& cb : _controller->_onGpuPostLink) cb(this, ctx.value());
-
-      _needsGpuInit = false;
-      _gpuUpdateSMInst->changeState(_gpuReadyState);
-    }
   };
 
   // GPU READY STATE (steady-state per-frame)
   _gpuReadyState->_onupdate = [this](fsm::fsminstance_ptr_t inst) {
-    if (_needsGpuInit) {
-      // re-init triggered by update FSM state change
-      _gpuUpdateSMInst->changeState(_gpuInitState);
-      return;
-    }
     auto ctx = inst->vars()->typedValueForKey<lev2::Context*>("ctx");
     OrkAssert(ctx);
     SystemLut gpu_systems;

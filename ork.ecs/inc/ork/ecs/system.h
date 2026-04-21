@@ -123,6 +123,11 @@ protected:
   void _beginRender() { _onBeginRender(); }
   void _endRender() { _onEndRender(); }
   void _gpuUpdate(Simulation* psi, lev2::Context* ctx) { _onGpuUpdate(psi, ctx); }
+  void _gpuStage     (Simulation* psi, lev2::Context* ctx) { _onGpuStage     (psi, ctx); }
+  void _gpuUnstage   (Simulation* psi, lev2::Context* ctx) { _onGpuUnstage   (psi, ctx); }
+  void _gpuActivate  (Simulation* psi, lev2::Context* ctx) { _onGpuActivate  (psi, ctx); }
+  void _gpuDeactivate(Simulation* psi, lev2::Context* ctx) { _onGpuDeactivate(psi, ctx); }
+  void _gpuUnlink    (Simulation* psi, lev2::Context* ctx) { _onGpuUnlink    (psi, ctx); }
 
   bool _initialize(Simulation* psi);
   void _uninitialize(Simulation* psi);
@@ -143,6 +148,11 @@ protected:
   virtual void _onGpuLink(Simulation* psi, lev2::Context* ctx);
   virtual void _onGpuExit(Simulation* psi, lev2::Context* ctx);
   virtual void _onGpuUpdate(Simulation* psi, lev2::Context* ctx);
+  virtual void _onGpuStage(Simulation* psi, lev2::Context* ctx);
+  virtual void _onGpuUnstage(Simulation* psi, lev2::Context* ctx);
+  virtual void _onGpuActivate(Simulation* psi, lev2::Context* ctx);
+  virtual void _onGpuDeactivate(Simulation* psi, lev2::Context* ctx);
+  virtual void _onGpuUnlink(Simulation* psi, lev2::Context* ctx);
   virtual void _onUpdate(Simulation* inst);
 
   virtual bool _onInitialize(Simulation* psi);
