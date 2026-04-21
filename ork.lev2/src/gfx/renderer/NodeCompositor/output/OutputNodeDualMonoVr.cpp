@@ -302,7 +302,7 @@ ezsecondarywin_ptr_t DualMonoVrOutputNode::createExternalViewer(
 
     if (ext->_mono) {
       // Single eye -> full window, zoom to fit (crop excess)
-      auto uvrect = fvec4(0, 0, 1, 1);
+      auto uvrect = fvec4(0, 1, 1, -1);
       if (impl->_per_eye_width > 0 && impl->_per_eye_height > 0 && w > 0 && h > 0) {
         float tex_aspect = float(impl->_per_eye_width) / float(impl->_per_eye_height);
         float win_aspect = float(w) / float(h);
@@ -314,7 +314,8 @@ ezsecondarywin_ptr_t DualMonoVrOutputNode::createExternalViewer(
           uv_h = tex_aspect / win_aspect;
           uv_y = (1.0f - uv_h) * 0.5f;
         }
-        uvrect = fvec4(uv_x, uv_y, uv_w, uv_h);
+        // Vulkan Y-flip: start at uv_y+uv_h, walk down by -uv_h.
+        uvrect = fvec4(uv_x, uv_y + uv_h, uv_w, -uv_h);
       }
       mtl.bindParamTexture(ext->_fxpColorMap, texL);
       this_buf->Render2dQuadEML(
@@ -327,19 +328,22 @@ ezsecondarywin_ptr_t DualMonoVrOutputNode::createExternalViewer(
                     : nullptr;
       if (!texR) { mtl.end(framedata); fbi->popScissor(); fbi->popViewport(); ctx->endFrame(); return; }
 
+      // Vulkan Y-flip applied to UV rects.
+      const fvec4 flipped_uv(0, 1, 1, -1);
+
       // Left eye -> left half
       mtl.bindParamTexture(ext->_fxpColorMap, texL);
       this_buf->Render2dQuadEML(
           fvec4(-1, -1, 1, 2),
-          fvec4(0, 0, 1, 1),
-          fvec4(0, 0, 1, 1));
+          flipped_uv,
+          flipped_uv);
 
       // Right eye -> right half
       mtl.bindParamTexture(ext->_fxpColorMap, texR);
       this_buf->Render2dQuadEML(
           fvec4(0, -1, 1, 2),
-          fvec4(0, 0, 1, 1),
-          fvec4(0, 0, 1, 1));
+          flipped_uv,
+          flipped_uv);
     }
 
     mtl.end(framedata);
