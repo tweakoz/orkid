@@ -15,7 +15,9 @@
 #   step 6 : component owns the camera rig (opt-out for external camera)
 ################################################################################
 
+import json
 import math
+import re
 
 from orkengine.core import fsm, vec3, vec4, lev2_pyexdir
 from orkengine import lev2
@@ -56,7 +58,15 @@ class CodedEcsScene:
     onGpuUpdate(ctx)          Per-frame GPU tick. Same gating.
   """
 
-  def __init__(self, tag):
+  # Universal default skybox. Subclasses can override by setting their
+  # own class-attr `skybox_path`; scenes that load a `.ecs` file with a
+  # declared skybox will overwrite this at __init__ time via the scan
+  # below; YAML `skybox_path:` and runtime `setSkybox(...)` override
+  # above both of those.
+  skybox_path      = "ork_envmaps|tozenv_nebula"
+  skybox_intensity = 1.0
+
+  def __init__(self, tag, ecs_path=None):
     self.tag     = tag
     # Subclasses that build their own ECS runtime should assign it
     # here in onGpuInit. initCodedScenes harvests the result into
@@ -75,11 +85,21 @@ class CodedEcsScene:
     # subclass via class attribute OR by assigning in __init__ after
     # super() (use self.setSkybox(path, intensity) for token expansion).
     # Hosts harvest these to preload skybox cache up front and to drive
-    # apply_scene_pbr on scene activation. None = no skybox contribution.
+    # apply_scene_pbr on scene activation.
     self.skybox_path      = self._expandSkyboxPath(
       getattr(type(self), "skybox_path", None))
     self.skybox_intensity = float(
       getattr(type(self), "skybox_intensity", 1.0))
+    # Optional .ecs file path. Subclasses opt in by passing ecs_path to
+    # super().__init__; subclass onGpuInit is responsible for the actual
+    # runtime.load_scene(self._ecs_path) call plus any augmentations.
+    # We do the path-token expansion + skybox scan here so every
+    # .ecs-loading scene gets its declared skybox picked up uniformly.
+    self._ecs_path = self._expandEcsPath(ecs_path)
+    if self._ecs_path:
+      sp, si = self._scan_ecs_skybox(self._ecs_path)
+      if sp:
+        self.setSkybox(sp, si)
     # Optional per-scene initial camera placement applied by the host
     # when this scene becomes active. `initial_camera_eye` is the world
     # position the viewer should occupy; `initial_camera_target` is the
@@ -98,12 +118,74 @@ class CodedEcsScene:
       return str(_obt_path.Path(path).expanded)
     return path
 
+  @staticmethod
+  def _expandEcsPath(path):
+    """Expand `<...>` / `$VAR` / `{VAR}` tokens in a .ecs file path so
+    subclasses can pass YAML-style paths and rely on a filesystem-ready
+    value in `self._ecs_path`. Mirrors _expandSkyboxPath's contract.
+    Passes through None / plain strings."""
+    if path and ("<" in path or "$" in path or "{" in path):
+      from obt import path as _obt_path
+      return str(_obt_path.Path(path).expanded)
+    return path
+
+  @staticmethod
+  def _scan_ecs_skybox(ecs_path):
+    """Walk a .ecs JSON for SceneGraphSystemData.userparams keys
+    `SkyboxTexPathStr` + `SkyboxIntensity`. Returns
+    (expanded_path_or_None, intensity_float). Machine-baked absolute
+    paths containing '/assetcache/...' are rewritten to
+    '<assetcache>/...' and then expanded via obt.path so the cache
+    key matches what PbrCommon.requestRadianceMaps resolves on this
+    machine. Returns (None, 1.0) when the file is unparseable, has
+    no SGSData entry, or declares no skybox — callers skip preload
+    and _applyScenePbr no-ops."""
+    try:
+      with open(ecs_path) as f:
+        data = json.load(f)
+    except (OSError, ValueError) as e:
+      print(f"[CodedEcsScene] skybox scan failed for {ecs_path}: {e}")
+      return None, 1.0
+
+    found_path = [None]
+    found_int  = [1.0]
+
+    def walk(node):
+      if isinstance(node, dict):
+        up = node.get("userparams")
+        if isinstance(up, dict):
+          p = up.get("SkyboxTexPathStr")
+          i = up.get("SkyboxIntensity")
+          if isinstance(p, str) and p.startswith("string:"):
+            found_path[0] = p[len("string:"):]
+          if isinstance(i, str) and i.startswith("float:"):
+            try:
+              found_int[0] = float(i[len("float:"):])
+            except ValueError:
+              pass
+        for v in node.values():
+          walk(v)
+      elif isinstance(node, list):
+        for v in node:
+          walk(v)
+
+    walk(data)
+
+    path = found_path[0]
+    if not path:
+      return None, found_int[0]
+    m = re.search(r"/assetcache/(.+)$", path)
+    if m:
+      path = f"<assetcache>/{m.group(1)}"
+    return CodedEcsScene._expandSkyboxPath(path), found_int[0]
+
   def setSkybox(self, path, intensity=1.0):
     """Override per-instance skybox after construction. Expands tokens
     in `path`. Useful for subclasses that differ only by asset (e.g.
     ModelScene instantiated N times with different paths)."""
     self.skybox_path      = self._expandSkyboxPath(path)
     self.skybox_intensity = float(intensity)
+    print(f"[{self.tag}] setSkybox: path={self.skybox_path} intensity={self.skybox_intensity}")
 
   def onGpuInit(self, ctx, component):
     pass
@@ -444,15 +526,20 @@ class MultiEcsSceneImpl:
   # Skybox preload + pbr state application — step 4
   ##############################################################################
 
-  def preload_skyboxes(self, paths):
-    """Sync-preload every unique skybox asset path in `paths` via
-    PbrCommon.requestRadianceMaps and stash the resulting handles in
-    self.skybox_cache (strong refs for process lifetime). Idempotent
-    — paths already in the cache are skipped."""
+  def preload_skyboxes(self, ctx, paths):
+    """Synchronously preload every unique skybox asset path in `paths`
+    and stash the resulting handles in self.skybox_cache (strong refs
+    for process lifetime). Idempotent — paths already in the cache are
+    skipped. Uses PbrCommon.requestRadianceMapsSync which blocks until
+    the asset's LoadRequest partial-load counter hits zero (i.e. every
+    deferred GPU upload for the radiance maps has run), so every entry
+    in skybox_cache is guaranteed GPU-resident on return. After this,
+    apply_scene_pbr is a pure pointer swap that takes effect on the
+    next frame without any upload-in-flight race."""
     for p in paths:
       if p not in self.skybox_cache:
-        self.skybox_cache[p] = lev2.PbrCommon.requestRadianceMaps(p)
-    print(f"[multi_ecs] preloaded skyboxes (sync): {len(self.skybox_cache)}")
+        self.skybox_cache[p] = lev2.PbrCommon.requestRadianceMapsSync(p, ctx)
+    print(f"[multi_ecs] preloaded skyboxes (sync, resident): {len(self.skybox_cache)}")
 
   def apply_scene_pbr(self, skybox_path, skybox_intensity):
     """Apply a scene's pbr_common state to the shared scenegraph:

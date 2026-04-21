@@ -51,6 +51,13 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
                 auto as_str    = as_py_str.cast<std::string>();
                 return pbr::CommonStuff::requestRadianceMapsAsync(as_str);
               })
+          .def_static(
+              "requestRadianceMapsSync",
+              [](py::object path, ctx_t ctx) -> pbr::radiancemaps_ptr_t { //
+                auto as_py_str = py::str(path);
+                auto as_str    = as_py_str.cast<std::string>();
+                return pbr::CommonStuff::requestRadianceMapsSync(as_str, ctx.get());
+              })
           .def(py::init<>())
           .def_property(
               "RadianceMaps",

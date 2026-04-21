@@ -57,7 +57,7 @@ asset::asset_ptr_t RadianceMapsLoader::_doLoadFromDatablock(
 asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
     asset::loadrequest_ptr_t loadreq,
     datablock_ptr_t xir_data) {
-  
+
   // Create asset
   auto asset = std::make_shared<RadianceMapsAsset>();
   auto irrmaps = std::make_shared<pbr::RadianceMaps>();
@@ -65,22 +65,32 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
   asset->_name = loadreq->_asset_path.toStdString();
   std::string base_name = loadreq->_asset_path.getName();
 
+  // Claim one pending unit on the LoadRequest's counter for the entire
+  // concurrent-decode + deferred-GPU-upload chain. The terminal deferred
+  // op below decrements once every upload has finished, letting sync
+  // callers (CommonStuff::requestRadianceMapsSync) block on the counter
+  // hitting zero. Error paths in the concurrent decode must also decrement
+  // or the waiter hangs forever.
+  loadreq->incrementPartialLoadCount();
+
   auto op = [=](){
 
       // Use XIRReader to get raw datablocks
     auto xir_data_result = xir::XIRReader::readXirDatablocks(xir_data);
-    
+
     if (!xir_data_result._valid) {
       printf("XIR data invalid\n");
       loadreq->_assetStatus = "NoData"_crcu;
       if(loadreq->_on_load_failed) loadreq->_on_load_failed();
+      loadreq->decrementPartialLoadCount();
       return;
     }
-    
+
     if (!xir_data_result._is_array_format) {
       printf("ERROR: XIR v1 legacy format no longer supported. Please regenerate radiance maps.\n");
       loadreq->_assetStatus = "InvalidFormat"_crcu;
       if(loadreq->_on_load_failed) loadreq->_on_load_failed();
+      loadreq->decrementPartialLoadCount();
       return;
     }
 
@@ -186,6 +196,13 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
     GfxEnv::GetRef().enqueueDeferredContextOp(brdfSetOp);
     //brdfSetOp(gloadercontext.get());
     //////////////////////////////////////////////////////////////
+    // Terminal completion op — runs AFTER diffuse/specular/brdf because
+    // enqueueDeferredContextOp is FIFO. Decrements the LoadRequest's
+    // partial-load counter to unblock synchronous waiters.
+    auto completionOp = [loadreq](Context*) {
+      loadreq->decrementPartialLoadCount();
+    };
+    GfxEnv::GetRef().enqueueDeferredContextOp(completionOp);
 
     if(0)printf("XIR asset<%p> irrmaps<%p> dtex<%p> stexarray<%p> roughness_levels<%d>\n",
            (void*) asset.get(), (void*) irrmaps.get(),

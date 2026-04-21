@@ -115,6 +115,11 @@ struct CommonStuff : public ork::Object {
   void requestAndRefSkyboxTexture(asset::loadrequest_ptr_t load_req);
   static radiancemaps_ptr_t requestRadianceMaps(const AssetPath& texture_path);
   static radiancemaps_ptr_t requestRadianceMapsAsync(const AssetPath& texture_path);
+  // Blocking variant: returns only after the radiance maps are fully
+  // GPU-resident. Must be called on the GPU thread with a live context
+  // because no other thread drains GfxEnv::_deferredContextOps while
+  // we block — this routine self-pumps that queue.
+  static radiancemaps_ptr_t requestRadianceMapsSync(const AssetPath& texture_path, lev2::Context* ctx);
 
   void onGpuInit(lev2::Context* ctx);
 

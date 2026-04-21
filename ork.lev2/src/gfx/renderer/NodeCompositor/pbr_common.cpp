@@ -8,6 +8,8 @@
 //#include <format>
 //#include <print> // mac also ahead on this...
 #include <algorithm>
+#include <chrono>
+#include <thread>
 #include <ork/pch.h>
 #include <ork/rtti/Class.h>
 #include <ork/kernel/opq.h>
@@ -85,7 +87,7 @@ radiancemaps_ptr_t CommonStuff::requestRadianceMaps(const AssetPath& texture_pat
 radiancemaps_ptr_t CommonStuff::requestRadianceMapsAsync(const AssetPath& texture_path) {
   // Load XIR file directly using the registered XIR loader
   auto load_req = std::make_shared<asset::LoadRequest>(texture_path);
-  
+
   // Load using generic asset mechanism - the XIR extension will route to RadianceMapsLoader
   auto generic_asset = asset::AssetManager<RadianceMapsAsset>::load(load_req);
   if (generic_asset) {
@@ -98,6 +100,31 @@ radiancemaps_ptr_t CommonStuff::requestRadianceMapsAsync(const AssetPath& textur
     }
   }
   return nullptr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+radiancemaps_ptr_t CommonStuff::requestRadianceMapsSync(const AssetPath& texture_path, Context* ctx) {
+  // Kick off the load. RadianceMapsLoader wraps its async decode + three
+  // deferred GPU-upload ops with a terminal deferred op that decrements
+  // the LoadRequest's partial-load counter, so the counter hitting zero
+  // means every layer has finished and the RadianceMaps are GPU-resident.
+  auto load_req = std::make_shared<asset::LoadRequest>(texture_path);
+  auto generic_asset = asset::AssetManager<RadianceMapsAsset>::load(load_req);
+  auto rm_asset = std::dynamic_pointer_cast<RadianceMapsAsset>(generic_asset);
+  if (!rm_asset) return nullptr;
+
+  // Self-pump the deferred context queue while we wait. Caller is on the
+  // GPU thread; no other thread is draining _deferredContextOps during
+  // this blocking period (frame-begin would, but we may be called before
+  // the render loop starts). The concurrent queue runs `op` on its own
+  // worker threads; it enqueues the deferred ops we drain here.
+  auto& env = GfxEnv::GetRef();
+  while (load_req->_partial_load_counter.load() > 0) {
+    env.processDeferredContextOps(ctx);
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  }
+  return rm_asset->_radiance_maps;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
