@@ -1211,7 +1211,7 @@ void VkContext::initializeWindowContext(Window* pWin, CTXBASE* pctxbase) {
   OrkAssert(has_presentation_support);
   ///////////////////////
   _vkpresentation_caps = _swapChainCapsForSurface(_vkpresentationsurface);
-  OrkAssert(_vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_IMMEDIATE_KHR));
+  // IMMEDIATE is not available on Wayland (compositor controls vsync); FIFO is always guaranteed
   OrkAssert(_vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_FIFO_KHR));
   ///////////////////////
   _fbi->_output = std::make_shared<VkSwapChain>(this);

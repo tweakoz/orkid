@@ -88,6 +88,11 @@ std::string CtxGLFW::getClipboardText() const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 static GLFWmonitor* monitorForWindow(GLFWwindow* window) {
+  // Wayland does not expose window positions; fall back to primary monitor
+  if (glfwGetPlatform() == GLFW_PLATFORM_WAYLAND) {
+    return glfwGetPrimaryMonitor();
+  }
+
   int winX, winY;                         // window position
   glfwGetWindowPos(window, &winX, &winY); // get window position
 
@@ -102,8 +107,6 @@ static GLFWmonitor* monitorForWindow(GLFWwindow* window) {
     glfwGetMonitorWorkarea(monitors[i], NULL, NULL, &monitorWidth, &monitorHeight); // get monitor size
 
     if (winX >= monitorX && winX < monitorX + monitorWidth && winY >= monitorY && winY < monitorY + monitorHeight) {
-      // The window is located on this monitor
-      // ...
       return monitors[i];
     }
   }
@@ -293,7 +296,7 @@ void fillEventCursor(
   uiev->miScreenWidth  = w;
   uiev->miScreenHeight = h;
 
-  if (monitor) {
+  if (monitor && glfwGetPlatform() != GLFW_PLATFORM_WAYLAND) {
     int winX, winY;                         // window position
     glfwGetWindowPos(window, &winX, &winY); // get window position
     int screenX = 0;
@@ -866,6 +869,9 @@ void CtxGLFW::_setRefreshPolicy(RefreshPolicyItem newpolicy) { // final
 ///////////////////////////////////////////////////////////////////////////////
 void error_callback(int error, const char* msg) {
   logchan_glfw->log("GLFW ERROR<%d:%s>", error, msg);
+  // GLFW_FEATURE_UNAVAILABLE (0x1000C) is a non-fatal warning on Wayland
+  // (e.g. glfwGetWindowPos is not supported by the Wayland compositor)
+  if (error == 0x1000C) return;
   OrkAssert(false);
 }
 
