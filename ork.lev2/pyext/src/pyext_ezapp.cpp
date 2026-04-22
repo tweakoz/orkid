@@ -138,6 +138,8 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   appinit->_height = py::cast<int>(item.second);
                 } else if (key == "fullscreen") {
                   appinit->_fullscreen = py::cast<bool>(item.second);
+                } else if (key == "displaylink") {
+                  appinit->_displaylink = py::cast<bool>(item.second);
                 } else if (key == "fullscreen_monitor") {
                   appinit->_fullscreen_monitor = py::cast<std::string>(item.second);
                 } else if (key == "enable_always_on_top") {

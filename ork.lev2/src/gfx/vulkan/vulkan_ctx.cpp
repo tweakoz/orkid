@@ -1180,7 +1180,7 @@ void VkContext::initializeWindowContext(Window* pWin, CTXBASE* pctxbase) {
   OrkAssert(_vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_FIFO_KHR));
   ///////////////////////
 #if defined(__APPLE__)
-  bool use_metal_sc = _ginitdata && _ginitdata->_fullscreen;
+  bool use_metal_sc = _ginitdata && _ginitdata->_fullscreen && _ginitdata->_displaylink;
   if (use_metal_sc) {
     logchan_vkctx->log("Apple fullscreen — using VkSwapchainMetal (CVDisplayLink Metal-direct path)");
     _fbi->_output = std::make_shared<VkSwapchainMetal>(this);

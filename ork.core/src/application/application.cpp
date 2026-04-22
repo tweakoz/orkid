@@ -172,6 +172,9 @@ AppInitData::opts_var_map_ptr_t AppInitData::parse() {
   if (_commandline_vars->count("fullscreen")) {
     this->_fullscreen = vars["fullscreen"].as<bool>();
   }
+  if (_commandline_vars->count("displaylink")) {
+    this->_displaylink = vars["displaylink"].as<bool>();
+  }
   if (_commandline_vars->count("offscreen")) {
     this->_offscreen  = vars["offscreen"].as<bool>();
     this->_fullscreen = false;
