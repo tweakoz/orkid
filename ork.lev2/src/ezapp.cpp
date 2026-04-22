@@ -1080,7 +1080,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
 
     auto vrdev = ork::lev2::orkidvr::device();
     if (vrdev) {
-      vrdev->_render_timing_estimator = context->_render_timing_estimator;
+      vrdev->_scan_out_predictor = context->getScanoutPredictor();
       logchan_ezapp->log("Setting gfx context<%p> to vrdevice<%p>.", (void*)context, (void*)vrdev.get());
     }
 

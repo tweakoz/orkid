@@ -62,6 +62,11 @@ struct Timer {
   // Absolute nanoseconds since system boot. Cross-process consistent. No staticInit required.
   static u64    getSystemTick();
 
+#if defined(ORK_OSX) || defined(ORK_IOS)
+  // Convert a mach_absolute_time() value to the same nanosecond unit as getSystemTick().
+  static u64    machAbsoluteToSystemTick(u64 mach_time);
+#endif
+
   // Sleep for a duration in nanoseconds.
   static void   sleepTicks(u64 ticks);
 
@@ -106,6 +111,18 @@ struct AdaptiveWait {
 
   void sleepUntilTick(u64 target_tick);
 
+  // Sleep until an absolute epoch millisecond timestamp (e.g. from Timer::getEpochMS()).
+  // Converts epoch ms -> relative duration -> system ticks, then delegates to sleepUntilTick.
+  // If wake_epoch_ms is already in the past, returns immediately.
+  void sleepUntilEpochMS(double wake_epoch_ms) {
+    double sleep_ms = wake_epoch_ms - Timer::getEpochMS();
+    if (sleep_ms <= 0.0)
+      return;
+    u64 now_tick    = Timer::getSystemTick();
+    u64 sleep_ticks = u64(sleep_ms * double(NS_PER_MS));
+    sleepUntilTick(now_tick + sleep_ticks);
+  }
+
   u64  _spin_margin;
   u64  _margin_min;
   u64  _margin_max;
@@ -144,6 +161,12 @@ struct RunningStats {
            label, _last_value, _count, _min, _max, _mean, stddev());
   }
 
+  // Print every `interval` samples (by total count). No-op otherwise.
+  void printStats(const char* label, u32 interval) const {
+    if (_count > 0 && (_count % interval) == 0)
+      printStats(label);
+  }
+
   double  _min        =  1e300;
   double  _max        = -1e300;
   double  _mean       =  0.0;
@@ -167,28 +190,29 @@ struct TimePredictor {
 
   static constexpr size_t HISTORY_SIZE = 16;
 
-  // Record that the tracked event just occurred at the given epoch ms.
-  // Updates the rolling average interval between occurrences.
-  void markPredictionTarget(double epoch_ms);
+  // Record that the tracked event occurred at the given CLOCK_MONOTONIC tick (ns).
+  // Updates the rolling average interval.
+  void markPredictionTargetTick(u64 tick);
 
-  // Convenience overload — uses Timer::getEpochMS() as the timestamp.
-  void markPredictionTarget();
-
-  // Predicted absolute epoch milliseconds of the next occurrence.
+  // Predicted absolute CLOCK_MONOTONIC tick (ns) of the next occurrence
+  // strictly after now, plus one refresh period for pipeline lag.
   // Returns 0 until 2 marks have been recorded.
-  double predictNextTarget() const;
+  u64 predictNextTargetSystemTick() const;
 
-  double avgIntervalMS() const { return _avg_interval_ms; }
-  double stddevMS() const      { return _stddev_ms; }
+  u64    avgIntervalNS() const { return _avg_interval_ns; }
+  double avgIntervalMS() const { return double(_avg_interval_ns) * MS_PER_NS; }
+  u64    stddevNS() const      { return _stddev_ns; }
+  double stddevMS() const      { return double(_stddev_ns) * MS_PER_NS; }
 
-  double _last_mark_ms    = 0.0;
-  double _avg_interval_ms = 0.0;
-  double _stddev_ms       = 0.0;
-  double _history[HISTORY_SIZE] = {};
-  size_t _history_index   = 0;
-  size_t _history_count   = 0;
-  double _last_prediction = 0.0;
-  RunningStats _epoch_ms_stats;
+  u64    _last_mark_ns      = 0;  // CLOCK_MONOTONIC tick of last mark
+  u64    _avg_interval_ns   = 0;  // rolling average interval in ticks (ns)
+  u64    _stddev_ns         = 0;  // stddev in ticks (ns); sqrt rounded to nearest ns
+  u64    _refresh_period_ns = 0;  // nominal display refresh period (rational, from CVDisplayLink or equivalent)
+  u64    _history[HISTORY_SIZE] = {};  // recent intervals in ticks (ns)
+  size_t _history_index     = 0;
+  size_t _history_count     = 0;
+  u64    _mark_count        = 0;  // absolute mark count, never wraps
+  u64    _last_prediction   = 0;  // CLOCK_MONOTONIC tick
 };
 
 using time_predictor_ptr_t = std::shared_ptr<TimePredictor>;

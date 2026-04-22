@@ -42,6 +42,9 @@ namespace ork::lev2 { class ShmTexConsumer; }
 #include <ork/lev2/gfx/shadman.h>
 
 #define GLFW_INCLUDE_VULKAN
+#if defined(__APPLE__)
+#define GLFW_EXPOSE_NATIVE_COCOA
+#endif
 #include <ork/lev2/glfw/ctx_glfw.h>
 #include <GLFW/glfw3native.h>
 #if defined(__linux__)
@@ -275,6 +278,9 @@ struct VkFramebufferOutput {
   // Submit the primary command buffer and present (or, for offscreen, just submit and wait).
   virtual void submit(vkcontext_rawptr_t ctxVK) = 0;
 
+  // Returns the timing estimator owned by this output, or nullptr for non-swapchain outputs.
+  virtual time_predictor_ptr_t getScanoutPredictor() const { return nullptr; }
+
   // Return the fence for the current frame (before _incrementFrame advances _sub_index).
   vkfence_obj_ptr_t currentFrameFence() const { return _frame_fences[_sub_index]; }
 
@@ -395,6 +401,63 @@ struct VkSwapChain : public VkFramebufferOutput {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
+// VkSwapchainMetal: renders to offscreen VkImage, blits to CAMetalLayer
+// drawable via MTLBlitCommandEncoder immediately after GPU fence. CVDisplayLink
+// drives timing — outputTime->hostTime marks the TimePredictor each vsync.
+// Only compiled on Apple platforms; void* used for ObjC types to keep this
+// header includable from plain C++ translation units.
+////////////////////////////////////////////////////////////////////////////////
+
+#if defined(__APPLE__)
+struct VkSwapchainMetal : public VkFramebufferOutput {
+
+  VkSwapchainMetal(vkcontext_rawptr_t ctxVK);
+  ~VkSwapchainMetal();
+
+  void beginFrame(vkcontext_rawptr_t ctxVK) override final;
+  void endFrame(vkcontext_rawptr_t ctxVK)   override final;
+  void submit(vkcontext_rawptr_t ctxVK)     override final;
+
+  // Called from CVDisplayLink callback — timing estimator only, no blit.
+  void _onVsync(const void* outputTime); // const CVTimeStamp*
+
+  // Blit offscreen texture to a CAMetalDrawable and present.
+  void _blitThenPresent(u32 sub);
+
+  // Check the window's current NSScreen and retarget the CVDisplayLink if it
+  // has moved to a different display (e.g. HMD plugged in after startup).
+  void _checkDisplay();
+
+  void _buildup();
+  void _teardown();
+
+  vkcontext_rawptr_t _contextVK = nullptr;
+
+  // Offscreen render targets — double-buffered by _sub_index.
+  vkimageobj_ptr_t _offscreen_imgobjs[MAX_FRAMES_IN_FLIGHT];
+  // Corresponding MTLTexture pointers (non-owning — MoltenVK retains via VkImage).
+  void* _offscreen_mtltextures[MAX_FRAMES_IN_FLIGHT] = {nullptr};
+
+  // Metal present infrastructure (all ObjC objects stored as void*).
+  void* _metalLayer          = nullptr; // CAMetalLayer* (non-owning, NSView retains)
+  void* _presentCommandQueue = nullptr; // id<MTLCommandQueue> (owned, +1 from newCommandQueue)
+  void* _displayLink         = nullptr; // CVDisplayLinkRef (owned, +1 from Create)
+
+  // Per-slot completion flag: set by Metal GPU addCompletedHandler when the
+  // blit for that slot has finished executing on the GPU. beginFrame() spins
+  // until the slot it needs is no longer being read by Metal.
+  std::atomic<bool> _slot_gpu_done[MAX_FRAMES_IN_FLIGHT] = {true, true};
+
+  // CGDirectDisplayID the CVDisplayLink is currently targeting (0 = not yet set).
+  u32 _current_display_id = 0;
+
+  // Scanout predictor fed from CVDisplayLink ticks — predicts next vsync+1 for VR pose.
+  time_predictor_ptr_t _scan_out_predictor = std::make_shared<TimePredictor>();
+  time_predictor_ptr_t getScanoutPredictor() const override { return _scan_out_predictor; }
+};
+#endif // __APPLE__ && !ORK_NO_METAL_SWAPCHAIN
+
+////////////////////////////////////////////////////////////////////////////////
 // VkFrameBufferInterface - Vulkan framebuffer/rendertarget management.
 //  Owns the output target (_output), manages RTG push/pop, captures, and
 ////////////////////////////////////////////////////////////////////////////////
@@ -440,6 +503,9 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   vkrtgrpimpl_ptr_t _buildRtgImplForMainSurface(rtgroup_rawptr_t rtg);
 
   //////////////////////////////////////////////
+
+  // Ensure a depth buffer exists on rtg at the given size, creating or resizing as needed.
+  void _ensureDepth(rtgroup_ptr_t rtg, int w, int h, const VkRtbCreateOption& depth_opt);
 
   freestyle_mtl_ptr_t utilshader();
   vkrtgrpimpl_ptr_t _createRtGroupImpl(const VkRtgCreateOptions& options);
@@ -799,6 +865,10 @@ public:
   ComputeInterface* CI() final;
   DrawingInterface* DWI() final;
 
+  time_predictor_ptr_t getScanoutPredictor() const final {
+    return (_fbi && _fbi->_output) ? _fbi->_output->getScanoutPredictor() : nullptr;
+  }
+
   ///////////////////////////////////////////////////////////////////////
 
   void makeCurrentContext(void) final;
@@ -928,7 +998,8 @@ public:
   vktexobj_ptr_t _defaultTexImpl2DArray;
   vktexobj_ptr_t _defaultTexImpl3D;
   
-  //////////////////////////////////////////////
+
+
   PFN_vkSetDebugUtilsObjectNameEXT _vkSetDebugUtilsObjectName = nullptr;
   PFN_vkCmdDebugMarkerBeginEXT _vkCmdDebugMarkerBeginEXT      = nullptr;
   PFN_vkCmdDebugMarkerEndEXT _vkCmdDebugMarkerEndEXT          = nullptr;
@@ -988,12 +1059,6 @@ public:
   void suspendRenderPass();
   void resumeRenderPass();
 
-#if defined(__APPLE__)
-  void* _displayLink               = nullptr;
-  double _displayLinkEpochOffsetMS = 0.0;
-  void _startDisplayLink();
-  void _stopDisplayLink();
-#endif
 };
 ///////////////////////////////////////////////////////////////////////////
   struct VkCaptureBufferImpl {

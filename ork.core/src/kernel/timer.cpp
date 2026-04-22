@@ -140,6 +140,10 @@ u64 Timer::getSystemTick() {
   return (mach_absolute_time() * s_numer) / s_denom;
 }
 
+u64 Timer::machAbsoluteToSystemTick(u64 mach_time) {
+  return (mach_time * s_numer) / s_denom;
+}
+
 void Timer::sleepTicks(u64 ticks) {
   mach_wait_until(mach_absolute_time() + (ticks * s_denom) / s_numer);
 }
@@ -280,60 +284,53 @@ void usleep(int microsec) {
 #endif
 ///////////////////////////////////////////////////////////////////////////////
 
-void TimePredictor::markPredictionTarget(double epoch_ms) {
-  // TODO this is WIP. Expiriments need to be done to figure out what is best.
-  // Right now it seems rolling recent history is better than RunningStats
-  // which takes into account infinite time.
-  // epoch_ms is expected target
-  if (_last_mark_ms > 0.0) {
+void TimePredictor::markPredictionTargetTick(u64 tick) {
 
-    // store interal since last
-    double interval = epoch_ms - _last_mark_ms;
-    // _epoch_ms_stats.pollValue(interval);
-    // _epoch_ms_stats.printStats("prediction target delta");
-    // [RunningStats] prediction target delta last:11.1116 count:8032 min:11.1111 max:11.1118 mean:11.1115 stddev:0.0001
+  if (_last_mark_ns > 0) {
+    u64 interval_ns = tick - _last_mark_ns;
 
-    _history[_history_index] = interval;
+    _history[_history_index] = interval_ns;
     _history_index = (_history_index + 1) % HISTORY_SIZE;
     if (_history_count < HISTORY_SIZE)
       _history_count++;
 
-    // rolling average of intervals
-    double sum = 0.0;
+    // Integer average
+    u64 sum = 0;
     for (size_t i = 0; i < _history_count; i++)
       sum += _history[i];
-    _avg_interval_ms = sum / double(_history_count);
+    _avg_interval_ns = sum / u64(_history_count);
 
-    // stddev over history to bias prediction toward later edge of jitter window
+    // Stddev: compute variance in u64, take sqrt via double, round back to u64.
+    // Signed difference handles intervals shorter than the mean.
     if (_history_count > 1) {
-      double m2 = 0.0;
+      u64 m2 = 0;
       for (size_t i = 0; i < _history_count; i++) {
-        double d = _history[i] - _avg_interval_ms;
-        m2 += d * d;
+        s64 d = s64(_history[i]) - s64(_avg_interval_ns);
+        m2 += u64(d * d);
       }
-      _stddev_ms = sqrt(m2 / double(_history_count - 1));
+      _stddev_ns = u64(sqrt(double(m2) / double(_history_count - 1)));
     }
   }
-  _last_mark_ms    = epoch_ms;
-  _last_prediction = predictNextTarget();
+  _last_mark_ns = tick;
+  _mark_count++;
+  _last_prediction = predictNextTargetSystemTick();
 }
 
-void TimePredictor::markPredictionTarget() {
-  markPredictionTarget(Timer::getEpochMS());
-}
-
-double TimePredictor::predictNextTarget() const {
+u64 TimePredictor::predictNextTargetSystemTick() const {
   if (_history_count == 0)
-    return 0.0;
-  
-  // start from last reported scanout, step avg+stddev until past now
-  double interval = _avg_interval_ms + _stddev_ms;
-  double now      = Timer::getEpochMS();
-  double next     = _last_mark_ms;
-  while (next <= now)
-    next += interval;
+    return 0;
 
-  return next;
+  u64 step = _avg_interval_ns;
+  u64 now  = Timer::getSystemTick();
+
+  // Find the next grid tick strictly after now.
+  u64 t = _last_mark_ns;
+  while (t <= now)
+    t += step;
+
+  // Add pipeline lag: rendered frame appears one vsync later (N+1).
+  // Zero until CVDisplayLink sets _refresh_period_ns.
+  return t + _refresh_period_ns;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

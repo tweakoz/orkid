@@ -112,13 +112,8 @@ struct Device {
   virtual void gpuUpdate(RenderContextFrameData& RCFD)              = 0;
   virtual void __composite(Context* targ, Texture* twoeyetex) const = 0;
 
-  // Returns the predicted absolute epoch milliseconds (Timer::getEpochMS() scale)
-  // when the current frame will finish rendering. Used for pose prediction.
-  // Returns 0 if not enough frames have been rendered yet.
-  double predictedRenderFinishEpochMS() const;
-
-  // Shared with the gfx context producing frames for this device.
-  ork::time_predictor_ptr_t _render_timing_estimator; 
+  // Scanout predictor shared with the gfx context — call predictNextTargetSystemTick() for pose prediction.
+  ork::time_predictor_ptr_t _scan_out_predictor;
 
   std::map<std::string, fmtx4> _posemap;
 
