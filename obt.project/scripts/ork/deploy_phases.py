@@ -1169,9 +1169,16 @@ export VIRTUAL_ENV="$DEPLOY_ROOT/obt_venv"
 export PATH="$DEPLOY_ROOT/obt_venv/bin:$DEPLOY_ROOT/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
 # ---- Bash-level relocation fixup (runs BEFORE Python) ----
-# Python cannot start if pyvenv.cfg contains stale paths from the build
-# machine, so we must fix these in bash first.
+# Python cannot start if pyvenv.cfg contains stale paths, so the rewrite
+# must happen in bash before we exec the interpreter.
+#
+# Bundle time writes every text file containing a build path with the
+# sentinel __OBT_DEPLOY_SENTINEL__ in place of the real path, and emits
+# .relocatable_files listing every such file. Launch time reads that
+# manifest and substitutes sentinel -> DEPLOY_ROOT in each entry — no
+# filesystem walk, O(N) where N = relocatable file count.
 _MARKER_FILE="$DEPLOY_ROOT/.deploy_path"
+_MANIFEST="$DEPLOY_ROOT/.relocatable_files"
 _NEED_FIXUP=0
 if [ -f "$_MARKER_FILE" ]; then
   _OLD_ROOT="$(cat "$_MARKER_FILE")"
@@ -1179,55 +1186,25 @@ if [ -f "$_MARKER_FILE" ]; then
     _NEED_FIXUP=1
   fi
 else
-  # First run — write marker, no fixup needed (paths match build)
   echo "$DEPLOY_ROOT" > "$_MARKER_FILE"
 fi
 
 if [ "$_NEED_FIXUP" -eq 1 ]; then
   echo "[deploy-fixup] Relocation detected: $_OLD_ROOT -> $DEPLOY_ROOT"
-  # Fix pyvenv.cfg files (critical — Python won't start without this)
-  for _cfg in "$DEPLOY_ROOT/obt_venv/pyvenv.cfg" "$DEPLOY_ROOT/pyvenv/pyvenv.cfg"; do
-    if [ -f "$_cfg" ]; then
-      sed -i '' "s|$_OLD_ROOT|$DEPLOY_ROOT|g" "$_cfg"
-    fi
-  done
-  # Fix shebangs in venv bin dirs
-  for _bindir in "$DEPLOY_ROOT/obt_venv/bin" "$DEPLOY_ROOT/pyvenv/bin"; do
-    if [ -d "$_bindir" ]; then
-      for _f in "$_bindir"/*; do
-        [ -f "$_f" ] || continue
-        [ -L "$_f" ] && continue
-        head -c 2 "$_f" | grep -q '#!' || continue
-        sed -i '' "s|$_OLD_ROOT|$DEPLOY_ROOT|g" "$_f" 2>/dev/null
-      done
-    fi
-  done
-  # Fix pkg-config and cmake files
-  for _pcdir in "$DEPLOY_ROOT/lib/pkgconfig" "$DEPLOY_ROOT/lib64/pkgconfig"; do
-    if [ -d "$_pcdir" ]; then
-      for _f in "$_pcdir"/*.pc; do
-        [ -f "$_f" ] && sed -i '' "s|$_OLD_ROOT|$DEPLOY_ROOT|g" "$_f"
-      done
-    fi
-  done
-  # cmake files live in nested directories (e.g. lib/cmake/boost_atomic/
-  # boost_atomic-config.cmake) — the old shallow glob only touched the top
-  # level and left ~50 deep files pointing at the dev's staging path.
-  # Walk recursively so package-config files for every installed dep get
-  # rewritten.
-  if [ -d "$DEPLOY_ROOT/lib/cmake" ]; then
-    find "$DEPLOY_ROOT/lib/cmake" -type f -name "*.cmake" \
-      -exec sed -i '' "s|$_OLD_ROOT|$DEPLOY_ROOT|g" {} +
+  if [ ! -f "$_MANIFEST" ]; then
+    echo "[deploy-fixup] FATAL: manifest $_MANIFEST missing — cannot relocate" >&2
+    exit 1
   fi
-  # Shell scripts in $DEPLOY_ROOT/bin (e.g. setup_vars_opencv4.sh) can also
-  # embed the old root path from their build-time generators. Cover them.
-  if [ -d "$DEPLOY_ROOT/bin" ]; then
-    for _f in "$DEPLOY_ROOT"/bin/*.sh; do
-      [ -f "$_f" ] && sed -i '' "s|$_OLD_ROOT|$DEPLOY_ROOT|g" "$_f"
-    done
-  fi
+  _n=0
+  while IFS= read -r _rel; do
+    [ -z "$_rel" ] && continue
+    _f="$DEPLOY_ROOT/$_rel"
+    [ -f "$_f" ] || continue
+    [ -L "$_f" ] && continue
+    sed -i '' "s|$_OLD_ROOT|$DEPLOY_ROOT|g" "$_f" && _n=$((_n+1))
+  done < "$_MANIFEST"
   echo "$DEPLOY_ROOT" > "$_MARKER_FILE"
-  echo "[deploy-fixup] Done."
+  echo "[deploy-fixup] Done ($_n files updated)."
 fi
 
 # Ensure assetcache symlink points to user's global cache
@@ -1355,23 +1332,69 @@ def phase6_launch_script(target_dir):
 
   print(deco.val(f"    Fixed {fixed_count} shebangs to: {portable_shebang}"))
 
-  # ---- Step 5: Write deploy path marker ----
-  # Write a sentinel path that cannot match any real install location,
-  # so the obt-launch-env runtime fixup ALWAYS fires on first launch
-  # regardless of where the user drops the bundle. `/dev/null` is a
-  # character device; you cannot create subdirectories under it, so
-  # `/dev/null/.staging` is structurally impossible to ever equal a real
-  # DEPLOY_ROOT. Non-empty so BSD sed accepts it as the first RE. The
-  # sentinel is replaced with the actual DEPLOY_ROOT by the fixup on
-  # first launch.
-  print(deco.val(f"\n  Step 5: Writing deploy path marker..."))
+  # ---- Step 5: Sentinelize build paths and emit relocation manifest ----
+  # Walk the deploy tree and replace every embedded reference to the build
+  # path with the sentinel __OBT_DEPLOY_SENTINEL__. The launcher's bash
+  # fixup substitutes sentinel -> DEPLOY_ROOT on first launch using the
+  # manifest emitted here, so launch time never has to walk the tree.
+  #
+  # Binaries are skipped (null-byte heuristic). Symlinks are skipped.
+  # The manifest excludes itself, the marker, and the assetcache.
+  print(deco.val(f"\n  Step 5: Sentinelizing build paths..."))
+  SENTINEL = "__OBT_DEPLOY_SENTINEL__"
+  build_path = str(target_dir)
+  build_path_bytes = build_path.encode('utf-8')
+  sentinel_bytes = SENTINEL.encode('utf-8')
+  manifest_path = target_dir / ".relocatable_files"
+  EXCLUDE_DIRS = {'assetcache'}
+  EXCLUDE_FILES = {'.relocatable_files', '.deploy_path'}
+
+  rel_files = []
+  for root, dirs, files in os.walk(str(target_dir)):
+    dirs[:] = [d for d in dirs if d not in EXCLUDE_DIRS]
+    for fname in files:
+      if fname in EXCLUDE_FILES:
+        continue
+      abs_path = os.path.join(root, fname)
+      if os.path.islink(abs_path):
+        continue
+      try:
+        with open(abs_path, 'rb') as f:
+          content = f.read()
+      except (OSError, IOError):
+        continue
+      # Skip binaries (null byte in first 8K is the standard heuristic)
+      if b'\x00' in content[:8192]:
+        continue
+      if build_path_bytes not in content:
+        continue
+      try:
+        with open(abs_path, 'wb') as f:
+          f.write(content.replace(build_path_bytes, sentinel_bytes))
+      except (OSError, IOError) as e:
+        print(deco.val(f"    WARN: failed to rewrite {abs_path}: {e}"))
+        continue
+      rel_files.append(os.path.relpath(abs_path, str(target_dir)))
+
+  rel_files.sort()
+  with open(str(manifest_path), 'w') as f:
+    for rel in rel_files:
+      f.write(rel + '\n')
+  print(deco.val(f"    Sentinelized {len(rel_files)} files"))
+  print(deco.val(f"    Manifest: {manifest_path}"))
+
+  # ---- Step 6: Write deploy path marker ----
+  # Sentinel value matches what Step 5 wrote into the relocatable files,
+  # so the launcher's first run sees marker != DEPLOY_ROOT, runs the
+  # manifest-driven sed pass, and updates the marker to the real path.
+  print(deco.val(f"\n  Step 6: Writing deploy path marker..."))
   marker_path = target_dir / ".deploy_path"
   with open(str(marker_path), 'w') as f:
-    f.write('/dev/null/.staging\n')
+    f.write(SENTINEL + '\n')
   print(deco.val(f"    Wrote: {marker_path} (sentinel — forces first-launch fixup)"))
 
-  # ---- Step 6: Write deploy mode marker ----
-  print(deco.val(f"\n  Step 6: Writing deploy mode marker..."))
+  # ---- Step 7: Write deploy mode marker ----
+  print(deco.val(f"\n  Step 7: Writing deploy mode marker..."))
   deploy_marker = target_dir / ".is_deploy"
   deploy_marker.touch()
   print(deco.val(f"    Wrote: {deploy_marker}"))
