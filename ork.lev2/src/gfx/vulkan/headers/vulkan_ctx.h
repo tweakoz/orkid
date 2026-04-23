@@ -401,11 +401,10 @@ struct VkSwapChain : public VkFramebufferOutput {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-// VkSwapchainMetal: renders to offscreen VkImage, blits to CAMetalLayer
-// drawable via MTLBlitCommandEncoder immediately after GPU fence. CVDisplayLink
-// drives timing — outputTime->hostTime marks the TimePredictor each vsync.
-// Only compiled on Apple platforms; void* used for ObjC types to keep this
-// header includable from plain C++ translation units.
+// VkSwapchainMetal
+//   Blits offscreen VkImages to CAMetalLayer via Metal using 
+//   MTLSharedEvent (VkTimelineSemaphore equivalant) and CVDisplayLink for scanout prediction.
+//   Apple-only; void* used for ObjC types to keep this header C++-includable.
 ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__APPLE__)
@@ -443,10 +442,9 @@ struct VkSwapchainMetal : public VkFramebufferOutput {
   void* _presentCommandQueue = nullptr; // id<MTLCommandQueue> (owned, +1 from newCommandQueue)
   void* _displayLink         = nullptr; // CVDisplayLinkRef (owned, +1 from Create)
 
-  // Per-slot completion flag: set by Metal GPU addCompletedHandler when the
-  // blit for that slot has finished executing on the GPU. beginFrame() spins
-  // until the slot it needs is no longer being read by Metal.
-  std::atomic<bool> _slot_gpu_done[MAX_FRAMES_IN_FLIGHT] = {true, true};
+  // Stores MTLSharedEvent. Metal equivalent of VkTimelineSemaphore.
+  // Used for frame waiting and pacing.
+  void* _timeline = nullptr;
 
   // CGDirectDisplayID the CVDisplayLink is currently targeting (0 = not yet set).
   u32 _current_display_id = 0;

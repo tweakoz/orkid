@@ -55,8 +55,7 @@ void VkSwapchainMetal::_buildup() {
   // vkExportMetalObjectsEXT — must be loaded dynamically
   ////////////////////////////////////////
 
-  auto vkExportMetalObjects = (PFN_vkExportMetalObjectsEXT)
-      vkGetDeviceProcAddr(vkdev, "vkExportMetalObjectsEXT");
+  auto vkExportMetalObjects = (PFN_vkExportMetalObjectsEXT)vkGetDeviceProcAddr(vkdev, "vkExportMetalObjectsEXT");
   OrkAssert(vkExportMetalObjects != nullptr);
 
   ////////////////////////////////////////
@@ -111,6 +110,11 @@ void VkSwapchainMetal::_buildup() {
     id<MTLCommandQueue> q = [mtlDevice newCommandQueue];
     q.label = @"VkSwapchainMetal::present";
     _presentCommandQueue = (void*)q; // owned
+
+    // Timeline event pre-seeded to MAX_FRAMES_IN_FLIGHT so early frames never block.
+    id<MTLSharedEvent> ev = [mtlDevice newSharedEvent];
+    ev.signaledValue = MAX_FRAMES_IN_FLIGHT;
+    _timeline = (void*)ev; // owned
   }
 
   ////////////////////////////////////////
@@ -239,6 +243,10 @@ void VkSwapchainMetal::_teardown() {
       [(id<MTLCommandQueue>)_presentCommandQueue release];
       _presentCommandQueue = nullptr;
     }
+    if (_timeline) {
+      [(id<MTLSharedEvent>)_timeline release];
+      _timeline = nullptr;
+    }
     // _offscreen_mtltextures and _metalLayer are non-owning.
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
       _offscreen_mtltextures[i] = nullptr;
@@ -275,8 +283,7 @@ void VkSwapchainMetal::_checkDisplay() {
     _current_display_id = displayID;
 
     CVTime nom = CVDisplayLinkGetNominalOutputVideoRefreshPeriod(link);
-    double hz  = (nom.timeValue > 0)
-        ? (double)nom.timeScale / (double)nom.timeValue : 0.0;
+    double hz  = (nom.timeValue > 0) ? (double)nom.timeScale / (double)nom.timeValue : 0.0;
     logchan_moltensc->log("_checkDisplay: retargeted to display=0x%x %.2f Hz", displayID, hz);
   }
 }
@@ -289,13 +296,8 @@ void VkSwapchainMetal::beginFrame(vkcontext_rawptr_t ctxVK) {
   // Retarget CVDisplayLink to the window's current screen if it changed.
   _checkDisplay();
 
-  // Wait until Metal GPU has finished reading this slot before Vulkan writes to it.
-  {
-    u32 sub = _sub_index;
-    while (!_slot_gpu_done[sub].load(std::memory_order_acquire))
-      Timer::sleepTicks(100 * NS_PER_US);
-    _slot_gpu_done[sub].store(false, std::memory_order_relaxed);
-  }
+  // Wait for the frame that last used this slot.
+  [(id<MTLSharedEvent>)_timeline waitUntilSignaledValue:_current_frame + 1 timeoutMS:1000];
 
   auto main_rtg  = ctxVK->_fbi->_ensureMainRtg();
   auto main_rtb  = main_rtg->buffer(0);
@@ -378,7 +380,8 @@ void VkSwapchainMetal::_blitThenPresent(u32 sub) {
     id<CAMetalDrawable> drawable = [layer nextDrawable];
     if (!drawable) {
       logchan_moltensc->log("_blitThenPresent: nextDrawable nil — skipping");
-      _slot_gpu_done[sub].store(true, std::memory_order_release);
+      // No GPU work — signal from CPU so the timeline stays in step.
+      ((id<MTLSharedEvent>)_timeline).signaledValue = _current_frame + MAX_FRAMES_IN_FLIGHT + 1;
       return;
     }
 
@@ -396,16 +399,10 @@ void VkSwapchainMetal::_blitThenPresent(u32 sub) {
       destinationOrigin: MTLOriginMake(0, 0, 0)];
     [enc endEncoding];
 
+    [cmd encodeSignalEvent:(id<MTLSharedEvent>)_timeline value:_current_frame + MAX_FRAMES_IN_FLIGHT + 1];
+
     // displaySyncEnabled=YES on the layer handles vsync alignment.
     [cmd presentDrawable:drawable];
-
-    // Signal slot free once Metal GPU finishes the blit.
-    u32 slot   = sub;
-    auto* self = this;
-    [cmd addCompletedHandler:^(id<MTLCommandBuffer>) {
-      self->_slot_gpu_done[slot].store(true, std::memory_order_release);
-    }];
-
     [cmd commit];
   }
 }
@@ -422,8 +419,7 @@ void VkSwapchainMetal::_onVsync(const void* rawOutputTime) {
   _scan_out_predictor->markPredictionTargetTick(scanout_ns);
 
   // videoRefreshPeriod/videoTimeScale is the exact rational refresh period (e.g. 1/90 s).
-  _scan_out_predictor->_refresh_period_ns =
-      (u64(outputTime->videoRefreshPeriod) * NS_PER_SEC) / u64(outputTime->videoTimeScale);
+  _scan_out_predictor->_refresh_period_ns = (u64(outputTime->videoRefreshPeriod) * NS_PER_SEC) / u64(outputTime->videoTimeScale);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
