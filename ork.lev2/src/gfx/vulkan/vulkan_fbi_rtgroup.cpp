@@ -66,6 +66,38 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(const VkRtgCreateOp
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void VkFrameBufferInterface::_ensureDepth(rtgroup_ptr_t rtg, int w, int h, const VkRtbCreateOption& depth_opt) {
+  vkrtgrpimpl_ptr_t rtg_impl;
+  if (auto existing = rtg->_impl.tryAsShared<VkRtGroupImpl>()) {
+    // Resize existing impl.
+    rtg_impl = existing.value();
+    logchan_rtgroup->log("_ensureDepth: resize %dx%d -> %dx%d", rtg_impl->_width, rtg_impl->_height, w, h);
+    rtg_impl->_width  = w;
+    rtg_impl->_height = h;
+    rtg->miW          = w;
+    rtg->miH          = h;
+    if (rtg->_depthBuffer) {
+      rtg->_depthBuffer->_width  = w;
+      rtg->_depthBuffer->_height = h;
+    }
+    if (rtg_impl->_depth_buffer_impl) {
+      logchan_rtgroup->log("_ensureDepth: recreating depth buffer %dx%d", w, h);
+      _vkCreateImageForBuffer(_contextVK, rtg_impl->_depth_buffer_impl, depth_opt);
+    }
+    rtg_impl->_invalidateAttachments(); // transitions handled by FBI
+  } else {
+    // First-time creation.
+    logchan_rtgroup->log("_ensureDepth: creating impl %dx%d", w, h);
+    rtg_impl          = _createRtGroupImpl(rtg.get());
+    rtg_impl->_width  = w;
+    rtg_impl->_height = h;
+    VkRtGroupImpl::assignToRtGroup(rtg_impl, rtg.get());
+    _vkCreateImageForBuffer(_contextVK, rtg_impl->_depth_buffer_impl, depth_opt);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rtgroup) {
   int inumtargets = rtgroup->numImageBuffers();
   //logchan_rtgroup->log("Creating RTG<%p> impl - inumtargets<%d>", rtgroup, inumtargets);

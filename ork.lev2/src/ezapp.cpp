@@ -112,6 +112,7 @@ boost::program_options::options_description_easy_init OrkEzApp::createDefaultOpt
               ("ssaa", po::value<int>()->default_value(1), "ssaa samples(*1,4,9,16,25)") //
               ("forward", po::bool_switch()->default_value(false), "forward renderer")   //
               ("fullscreen", po::bool_switch()->default_value(false), "fullscreen mode") //
+              ("displaylink", po::bool_switch()->default_value(false), "use CVDisplayLink/Metal swapchain for VR timing (fullscreen only, Apple)") //
               ("left", po::value<int>()->default_value(100), "left window offset")       //
               ("top", po::value<int>()->default_value(100), "top window offset")         //
               ("width", po::value<int>()->default_value(1280), "window width")           //
@@ -1080,7 +1081,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
 
     auto vrdev = ork::lev2::orkidvr::device();
     if (vrdev) {
-      vrdev->_render_timing_estimator = context->_render_timing_estimator;
+      vrdev->_scan_out_predictor = context->getScanoutPredictor();
       logchan_ezapp->log("Setting gfx context<%p> to vrdevice<%p>.", (void*)context, (void*)vrdev.get());
     }
 

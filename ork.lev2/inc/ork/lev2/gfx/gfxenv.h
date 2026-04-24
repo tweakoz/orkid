@@ -226,7 +226,11 @@ public:
   pri_rawptr_t PRI() {
     return _primitives_interface.get();
   } // Primitives Interface
-  
+
+  // Returns the scanout predictor for the active output swapchain, or nullptr if unavailable.
+  // Non-null only on fullscreen Apple (VkSwapchainMetal/CVDisplayLink path); null for windowed or non-Apple.
+  virtual time_predictor_ptr_t getScanoutPredictor() const { return nullptr; }
+
   void gpuPreInit(); // Initialize GPU-dependent resources
   void gpuPostInit();
 
@@ -479,7 +483,6 @@ public:
   
   Timer _ctxtimer;
 
-  time_predictor_ptr_t _render_timing_estimator = std::make_shared<TimePredictor>();
   RunningStats _submit_delta_stats;
   double _last_submit_epoch_ms = 0.0;
 

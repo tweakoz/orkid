@@ -6,9 +6,6 @@
 ////////////////////////////////////////////////////////////////
 
 #include "headers/vulkan_ctx.h"
-#if defined(__APPLE__)
-#include <dispatch/dispatch.h>
-#endif
 #if defined(__linux__)
 #include "headers/vk_swapchain_drm.h"
 #endif
@@ -32,7 +29,7 @@ namespace ork::lev2 {
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
-static logchannel_ptr_t logchan_vkctx = logger()->configureChannel("VKCTX", fvec3(1,1,.9),false);
+static logchannel_ptr_t logchan_vkctx = logger()->configureChannel("VKCTX", fvec3(1,1,.9),true);
 static logchannel_ptr_t logchan_vkcap = logger()->configureChannel("VKCAPTURE", fvec3(1,1,.9),false);
 static logchannel_ptr_t logchan_vkprof = logger()->configureChannel("VKPROF", fvec3(0.1, 0.5, 0.9), true);
 
@@ -645,9 +642,6 @@ VkContext::VkContext() {
 ///////////////////////////////////////////////////////
 
 VkContext::~VkContext() {
-#if defined(__APPLE__)
-    _stopDisplayLink();
-#endif
     if (_vkpresentationsurface != VK_NULL_HANDLE && _GVI) {
       printf("VkContext::~VkContext: destroying VkSurface %p\n", (void*)_vkpresentationsurface);
       vkDestroySurfaceKHR(_GVI->_instance, _vkpresentationsurface, nullptr);
@@ -1038,14 +1032,6 @@ void VkContext::_onGpuPostInit() {
 
   //printf("VkContext::_onGpuPostInit: gpuPreInit transitions complete\n");
 
-#if defined(__APPLE__)
-  if (_vkpresentationsurface != VK_NULL_HANDLE) {
-    auto* self = this;
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-      self->_startDisplayLink();
-    });
-  }
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1066,29 +1052,8 @@ void VkContext::_doEndFrame() {
   _doEndPrimaryCommandBuffer();
   _doSubmitPrimaryCommandBuffer();
 
-  // TODO turn into OrkProfiler macro
-  // {
-  //   double now = Timer::getEpochMS();
-  //   if (_last_submit_epoch_ms > 0.0) {
-  //     double delta = now - _last_submit_epoch_ms;
-  //     _submit_delta_stats.pollValue(delta);
-  //     _submit_delta_stats.printStats("primary cmdbuf submit delta");
-  //   }
-  //   _last_submit_epoch_ms = now;
-  // }
-  // [RunningStats] primary cmdbuf submit delta last:9.8372 count:7538 min:5.2849 max:18.7739 mean:11.1116 stddev:1.2483
-
   // read back GPU timestamps now that the GPU has finished executing
   OrkProfilerFrameEnd(CHANNEL_GPU);
-
-#if defined(__APPLE__)
-  // Apple marks the prediction target from vulkan_displaylink.mm
-  // if the context was created with a surface
-  if (_vkpresentationsurface == VK_NULL_HANDLE)
-    _render_timing_estimator->markPredictionTarget();
-#else
-  _render_timing_estimator->markPredictionTarget();
-#endif
 
   ////////////////////////////////////////
 
@@ -1214,7 +1179,18 @@ void VkContext::initializeWindowContext(Window* pWin, CTXBASE* pctxbase) {
   OrkAssert(_vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_IMMEDIATE_KHR));
   OrkAssert(_vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_FIFO_KHR));
   ///////////////////////
+#if defined(__APPLE__)
+  bool use_metal_sc = _ginitdata && _ginitdata->_fullscreen && _ginitdata->_displaylink;
+  if (use_metal_sc) {
+    logchan_vkctx->log("Apple fullscreen — using VkSwapchainMetal (CVDisplayLink Metal-direct path)");
+    _fbi->_output = std::make_shared<VkSwapchainMetal>(this);
+  } else {
+    logchan_vkctx->log("Apple windowed — using VkSwapChain (standard Vulkan path)");
+    _fbi->_output = std::make_shared<VkSwapChain>(this);
+  }
+#else
   _fbi->_output = std::make_shared<VkSwapChain>(this);
+#endif
   logchan_vkctx->log("Window context initialized");
 } 
 
