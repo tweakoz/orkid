@@ -1,7 +1,8 @@
 ////////////////////////////////////////////////////////////////
-// VkSwapchainMetal: renders to offscreen VkImage, blits to CAMetalDrawable
-// immediately after GPU fence. CVDisplayLink drives vsync timing via
-// outputTime->hostTime feeding TimePredictor each frame.
+// VkSwapchainMetal
+//   Renders to offscreen VkImage, blits to CAMetalDrawable.
+//   CVDisplayLink feeds TimePredictor each vsync.
+//   Sleep just long enough that rendering finishes at the next scanout.
 ////////////////////////////////////////////////////////////////
 
 #include "headers/vulkan_ctx.h"
@@ -296,8 +297,22 @@ void VkSwapchainMetal::beginFrame(vkcontext_rawptr_t ctxVK) {
   // Retarget CVDisplayLink to the window's current screen if it changed.
   _checkDisplay();
 
-  // Wait for the frame that last used this slot.
-  [(id<MTLSharedEvent>)_timeline waitUntilSignaledValue:_current_frame + 1 timeoutMS:1000];
+  // Wait until last submission completes. We do this in beginFrame rather than endFrame
+  // so rendering can occur in parallel on GPU with what the CPU needs to still do after submission.
+  [(id<MTLSharedEvent>)_timeline waitUntilSignaledValue:_current_frame timeoutMS:1000];
+
+  // Rendering of this frame will start before the prior frame is fully scanned out.
+  // As actual scanout takes an addtional refresh_ns from submit.
+  // So onVsync for the prior submitted frame will NOT have been called at this point. 
+  // The scanout of the prior frame is in progress while this frame starts to render.
+  // The actual wait for the last vsync, and freeing of a drawable for this frame, occurs at [layer nextDrawable] in blitThenPresent.
+
+  {
+    // Sleep until _last_frame_ns before the target scanout so rendering finishes just in time.
+    u64 target = _scan_out_predictor->predictNextTargetMarginSystemTick();
+    _begin_wait.sleepUntilTick(target - _last_frame_delta_ns);
+    _frame_start_tick = Timer::getSystemTick();
+  }
 
   auto main_rtg  = ctxVK->_fbi->_ensureMainRtg();
   auto main_rtb  = main_rtg->buffer(0);
@@ -360,6 +375,9 @@ void VkSwapchainMetal::submit(vkcontext_rawptr_t ctxVK) {
 
   // Block until GPU render is done, then blit immediately to minimize latency.
   fence->wait();
+
+  _last_frame_delta_ns = Timer::getSystemTick() - _frame_start_tick;
+
   _blitThenPresent(sub);
 
   _incrementFrame();
@@ -378,10 +396,10 @@ void VkSwapchainMetal::_blitThenPresent(u32 sub) {
 
   @autoreleasepool {
     id<CAMetalDrawable> drawable = [layer nextDrawable];
+
     if (!drawable) {
-      logchan_moltensc->log("_blitThenPresent: nextDrawable nil — skipping");
-      // No GPU work — signal from CPU so the timeline stays in step.
-      ((id<MTLSharedEvent>)_timeline).signaledValue = _current_frame + MAX_FRAMES_IN_FLIGHT + 1;
+      logchan_moltensc->log("_blitThenPresent[%u]: nextDrawable nil — skipping", _current_frame);
+      ((id<MTLSharedEvent>)_timeline).signaledValue = _current_frame + 1;
       return;
     }
 
@@ -399,7 +417,7 @@ void VkSwapchainMetal::_blitThenPresent(u32 sub) {
       destinationOrigin: MTLOriginMake(0, 0, 0)];
     [enc endEncoding];
 
-    [cmd encodeSignalEvent:(id<MTLSharedEvent>)_timeline value:_current_frame + MAX_FRAMES_IN_FLIGHT + 1];
+    [cmd encodeSignalEvent:(id<MTLSharedEvent>)_timeline value:_current_frame + 1];
 
     // displaySyncEnabled=YES on the layer handles vsync alignment.
     [cmd presentDrawable:drawable];
@@ -408,7 +426,7 @@ void VkSwapchainMetal::_blitThenPresent(u32 sub) {
 }
 
 ///////////////////////////////////////////////////////
-// CVDisplayLink callback — timing estimator only
+// CVDisplayLink callback
 ///////////////////////////////////////////////////////
 
 void VkSwapchainMetal::_onVsync(const void* rawOutputTime) {
@@ -419,7 +437,9 @@ void VkSwapchainMetal::_onVsync(const void* rawOutputTime) {
   _scan_out_predictor->markPredictionTargetTick(scanout_ns);
 
   // videoRefreshPeriod/videoTimeScale is the exact rational refresh period (e.g. 1/90 s).
-  _scan_out_predictor->_refresh_period_ns = (u64(outputTime->videoRefreshPeriod) * NS_PER_SEC) / u64(outputTime->videoTimeScale);
+  // This used as a set margin offset in the predictor. The final target is scanout_ns + margin_ns as that is when
+  // the frame will actually be physcially seen. However internally all rendering aims to be finished by scanout_ns.
+  _scan_out_predictor->_margin_ns= (u64(outputTime->videoRefreshPeriod) * NS_PER_SEC) / u64(outputTime->videoTimeScale);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

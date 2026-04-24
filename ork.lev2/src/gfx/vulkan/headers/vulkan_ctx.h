@@ -402,9 +402,6 @@ struct VkSwapChain : public VkFramebufferOutput {
 
 ////////////////////////////////////////////////////////////////////////////////
 // VkSwapchainMetal
-//   Blits offscreen VkImages to CAMetalLayer via Metal using 
-//   MTLSharedEvent (VkTimelineSemaphore equivalant) and CVDisplayLink for scanout prediction.
-//   Apple-only; void* used for ObjC types to keep this header C++-includable.
 ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__APPLE__)
@@ -446,10 +443,13 @@ struct VkSwapchainMetal : public VkFramebufferOutput {
   // Used for frame waiting and pacing.
   void* _timeline = nullptr;
 
-  // CGDirectDisplayID the CVDisplayLink is currently targeting (0 = not yet set).
-  u32 _current_display_id = 0;
+  u64 _last_frame_delta_ns = 0; // previous frame duration: _frame_start_tick → fence done
+  u64 _frame_start_tick    = 0; // tick recorded after the JIT sleep
+  AdaptiveWait _begin_wait{ AdaptiveWait::Mode::Precise };
 
-  // Scanout predictor fed from CVDisplayLink ticks — predicts next vsync+1 for VR pose.
+  u32 _current_display_id = 0; // CGDirectDisplayID currently targeted by CVDisplayLink
+
+  // CVDisplayLink-fed predictor for next scanout time; also exposed for VR pose prediction.
   time_predictor_ptr_t _scan_out_predictor = std::make_shared<TimePredictor>();
   time_predictor_ptr_t getScanoutPredictor() const override { return _scan_out_predictor; }
 };

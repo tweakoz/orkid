@@ -316,7 +316,7 @@ void TimePredictor::markPredictionTargetTick(u64 tick) {
   _last_prediction = predictNextTargetSystemTick();
 }
 
-u64 TimePredictor::predictNextTargetSystemTick() const {
+u64 TimePredictor::predictNextTargetMarginSystemTick() const {
   if (_history_count == 0)
     return 0;
 
@@ -328,9 +328,11 @@ u64 TimePredictor::predictNextTargetSystemTick() const {
   while (t <= now)
     t += step;
 
-  // Add pipeline lag: rendered frame appears one vsync later (N+1).
-  // Zero until CVDisplayLink sets _refresh_period_ns.
-  return t + _refresh_period_ns;
+  return t;
+}
+
+u64 TimePredictor::predictNextTargetSystemTick() const {
+  return predictNextTargetMarginSystemTick() + _margin_ns;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

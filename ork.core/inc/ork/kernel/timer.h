@@ -191,12 +191,14 @@ struct TimePredictor {
   static constexpr size_t HISTORY_SIZE = 16;
 
   // Record that the tracked event occurred at the given CLOCK_MONOTONIC tick (ns).
-  // Updates the rolling average interval.
   void markPredictionTargetTick(u64 tick);
 
+  // Predicted absolute CLOCK_MONOTONIC tick (ns) of margin for next occurance.
+  // The time which everything must be done by for it to occur by the target.
+  // (i.e. scanout time - refresh time of display)
+  u64 predictNextTargetMarginSystemTick() const;
+
   // Predicted absolute CLOCK_MONOTONIC tick (ns) of the next occurrence
-  // strictly after now, plus one refresh period for pipeline lag.
-  // Returns 0 until 2 marks have been recorded.
   u64 predictNextTargetSystemTick() const;
 
   u64    avgIntervalNS() const { return _avg_interval_ns; }
@@ -204,15 +206,15 @@ struct TimePredictor {
   u64    stddevNS() const      { return _stddev_ns; }
   double stddevMS() const      { return double(_stddev_ns) * MS_PER_NS; }
 
-  u64    _last_mark_ns      = 0;  // CLOCK_MONOTONIC tick of last mark
-  u64    _avg_interval_ns   = 0;  // rolling average interval in ticks (ns)
-  u64    _stddev_ns         = 0;  // stddev in ticks (ns); sqrt rounded to nearest ns
-  u64    _refresh_period_ns = 0;  // nominal display refresh period (rational, from CVDisplayLink or equivalent)
-  u64    _history[HISTORY_SIZE] = {};  // recent intervals in ticks (ns)
-  size_t _history_index     = 0;
-  size_t _history_count     = 0;
-  u64    _mark_count        = 0;  // absolute mark count, never wraps
-  u64    _last_prediction   = 0;  // CLOCK_MONOTONIC tick
+  u64  _last_mark_ns    = 0;  // CLOCK_MONOTONIC tick of last mark
+  u64  _avg_interval_ns = 0;  // rolling average interval in ticks (ns)
+  u64  _stddev_ns       = 0;  // stddev in ticks (ns); sqrt rounded to nearest ns
+  u64  _margin_ns       = 0;  // ns before target after which you'd overshoot the target
+  u64  _mark_count      = 0;  // absolute mark count, never wraps
+  u64  _last_prediction = 0;  // CLOCK_MONOTONIC tick
+  u64  _history_index   = 0;
+  u64  _history_count   = 0;
+  u64  _history[HISTORY_SIZE] = {};  // recent intervals in ticks (ns)
 };
 
 using time_predictor_ptr_t = std::shared_ptr<TimePredictor>;
