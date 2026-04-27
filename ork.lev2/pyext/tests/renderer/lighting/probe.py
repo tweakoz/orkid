@@ -252,7 +252,7 @@ class LIGHTING_APP(ComponentizedApplication):
 
   def _onGpuUpdate(self, ctx):
     from orkengine.lev2 import ui
-    ui.profiler_sample_begin("MainThread", "probe:onGpuUpdate")
+    ui.profiler_sample_begin("Main", "probe:onGpuUpdate")
 
     def genpos(node, frq, offset, radius=5, yscale=2):
       phase = offset+self.lighttime*frq
@@ -275,7 +275,7 @@ class LIGHTING_APP(ComponentizedApplication):
       for s in self.spotlights:
         s.update(self.lighttime)
 
-    ui.profiler_sample_end("MainThread", "probe:onGpuUpdate")
+    ui.profiler_sample_end("Main", "probe:onGpuUpdate")
 
 ###############################################################################
 
