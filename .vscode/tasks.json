@@ -4,13 +4,6 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "gdb-attach-reminder",
-            "type": "shell",
-            "command": "echo 'NOTE: GDB attach requires one-time setup:'; echo '  sudo setcap cap_sys_ptrace=eip /usr/bin/gdb'; echo '  echo \"set debuginfod enabled off\" >> ~/.gdbinit'",
-            "presentation": { "reveal": "always", "panel": "dedicated", "focus": false },
-            "problemMatcher": []
-        },
-        {
             "label": "run-script",
             "type": "shell",
             "command": "ork.python ${input:scriptPath}",

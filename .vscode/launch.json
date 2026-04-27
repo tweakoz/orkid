@@ -1,8 +1,9 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
+    // If GDB is downloading a ton of debug info on startup, it's because DEBUGINFOD_URLS
+    // is set in your environment (Ubuntu sources it from /etc/debuginfod/elfutils.urls).
+    // Fix: add `export DEBUGINFOD_URLS=""` to your ~/.bashrc, then reopen VS Code.
+    // The setupCommands below also send "set debuginfod enabled off" to GDB directly.
     "configurations": [
         {
             "name": "(gdb) debug python script",
@@ -10,9 +11,6 @@
             "request": "launch",
             "program": "${env:OBT_SUBSPACE_BIN_DIR}/ork.python",
             "args": ["${input:scriptPath}"],
-            "preLaunchTask": "gdb-attach-reminder",
-            "miDebuggerPath": "${workspaceFolder}/.vscode/gdb-nodebuginfod.sh",
-            "miDebuggerArgs": "--init-eval-command=\"set debuginfod enabled off\"",
             "MIMode": "gdb",
             "cwd": "${workspaceFolder}",
             "stopAtEntry": false,
@@ -39,7 +37,6 @@
             "request": "launch",
             "program": "${env:OBT_SUBSPACE_BIN_DIR}/${input:exeName}",
             "args": [],
-            "miDebuggerPath": "${workspaceFolder}/.vscode/gdb-nodebuginfod.sh",
             "MIMode": "gdb",
             "cwd": "${workspaceFolder}",
             "stopAtEntry": false,
@@ -72,9 +69,6 @@
             "request": "attach",
             "processId": "${command:pickProcess}",
             "program": "${env:OBT_SUBSPACE_BIN_DIR}/ork.python",
-            "preLaunchTask": "gdb-attach-reminder",
-            "miDebuggerPath": "${workspaceFolder}/.vscode/gdb-nodebuginfod.sh",
-            "miDebuggerArgs": "--init-eval-command=\"set debuginfod enabled off\"",
             "MIMode": "gdb",
             "setupCommands": [
                 { "text": "-enable-pretty-printing", "ignoreFailures": true },
