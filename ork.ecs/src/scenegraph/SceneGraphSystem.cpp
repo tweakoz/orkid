@@ -500,15 +500,20 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
       }
     } else {
       // Shared scenegraph: upload color array if images have been loaded
-      // (e.g. via allocateColorSlice); skip if no images yet (A-D scenes)
+      // (e.g. via allocateColorSlice); skip if no images yet.
       if (_cookieColorArray && !_cookieColorArray->_images.empty()) {
         ctx->TXI()->updateTextureArray(_cookieColorArray.get());
       }
-      // Init depth array (render target) once
-      if (_cookieDepthArray && !_cookieDepthArray->_gpuInitialized) {
-        ctx->TXI()->initTextureArray2D(_cookieDepthArray.get());
-        _cookieDepthArray->_gpuInitialized = true;
-      }
+      // Depth array is OWNED by the host LightManager in shared mode —
+      // its GPU resource is created/maintained by the host's
+      // lmgr.gpuInit (and the lmgr.gpuInit call below as a fallback).
+      // Do NOT call initTextureArray2D here: it unconditionally
+      // allocates a fresh GPU texture and overwrites the array's
+      // _tex->_impl, orphaning the host-initialized texture. Per-spot
+      // RtGroups created before this point keep a reference to the
+      // orphaned image, while the shader binding follows the new one
+      // — depth writes and reads land on different textures, which
+      // manifests as missing/non-deterministic spotlight shadows.
     }
     if (_scene->_lightManager) {
       _scene->_lightManager->gpuInit(ctx);
