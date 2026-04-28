@@ -1,15 +1,12 @@
 CompileFlags:
-  CompilationDatabase: .
   Add: [-Wno-c99-designator]
 
 InlayHints:
-  Enabled: Yes
-  ParameterNames: Yes
+  Enabled: No
+  ParameterNames: No
   DeducedTypes: No
 
 Index:
+  Background: Build
   External:
     File: ~/.clangd-index.idx
-
-Diagnostics:
-  UnusedIncludes: None

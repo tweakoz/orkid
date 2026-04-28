@@ -1,5 +1,4 @@
 makefile
-.*
 *stag*
 *.blend1
 *.png
@@ -42,3 +41,4 @@ ork.tool/bin
 docs/ork.core/*
 miniorkbuild.ini
 compile_commands.json
+.claude/settings.local.json
