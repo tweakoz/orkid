@@ -121,12 +121,12 @@ int main(int argc, char** argv) {
   // Configuration
   const int NUM_PROCESSES = 16;
   const int SAMPLES_PER_PROCESS = 1<<30;  // 10 million samples per process
-  const uint64_t TOTAL_SAMPLES = NUM_PROCESSES * SAMPLES_PER_PROCESS;
+  const uint64_t TOTAL_SAMPLES = uint64_t(NUM_PROCESSES) * uint64_t(SAMPLES_PER_PROCESS);
   
   printf("Configuration:\n");
   printf("  Processes: %d\n", NUM_PROCESSES);
   printf("  Samples per process: %d\n", SAMPLES_PER_PROCESS);
-  printf("  Total samples: %llu\n", TOTAL_SAMPLES);
+  printf("  Total samples: %llu\n", (ull)TOTAL_SAMPLES);
   printf("\n");
   
   // Realize shared memory and initialize (size defaults to sizeof(T))
@@ -167,7 +167,7 @@ int main(int argc, char** argv) {
     uint64_t rate = (snapshot.total_points - last_total) * 2;  // samples per second
     
     printf("\r  %.1f%% complete | %llu samples | π ≈ %.6f | Rate: %llu samples/sec     ",
-           progress, snapshot.total_points, snapshot.current_pi_estimate, rate);
+           progress, (ull)snapshot.total_points, snapshot.current_pi_estimate, (ull)rate);
     fflush(stdout);
     
     last_total = snapshot.total_points;
@@ -209,8 +209,8 @@ int main(int argc, char** argv) {
   
   printf("=== Final Results ===\n");
   printf("Time: %.3f seconds\n", elapsed);
-  printf("Total samples: %llu\n", final_state.total_points);
-  printf("Inside circle: %llu\n", final_state.inside_circle);
+  printf("Total samples: %llu\n", (ull)final_state.total_points);
+  printf("Inside circle: %llu\n", (ull)final_state.inside_circle);
   printf("Calculated Pi: %.10f\n", final_pi);
   printf("Actual Pi:     %.10f\n", M_PI);
   printf("Error: %.10f (%.4f%%)\n", error, error_percent);
@@ -224,15 +224,15 @@ int main(int argc, char** argv) {
   uint64_t sum_contributions = 0;
   for (int i = 0; i < NUM_PROCESSES; ++i) {
     if (final_state.process_contributions[i] > 0) {
-      printf("Process %d contributed: %llu samples\n", 
-             i, final_state.process_contributions[i]);
+      printf("Process %d contributed: %llu samples\n",
+             i, (ull)final_state.process_contributions[i]);
       sum_contributions += final_state.process_contributions[i];
     }
   }
   
-  printf("\nTotal from contributions: %llu\n", sum_contributions);
-  printf("Total points recorded: %llu\n", final_state.total_points);
-  printf("Checksum: %llu\n", final_state.checksum);
+  printf("\nTotal from contributions: %llu\n", (ull)sum_contributions);
+  printf("Total points recorded: %llu\n", (ull)final_state.total_points);
+  printf("Checksum: %llu\n", (ull)final_state.checksum);
   
   bool sync_correct = (sum_contributions == final_state.total_points) &&
                       (final_state.checksum == final_state.total_points);
@@ -247,8 +247,8 @@ int main(int argc, char** argv) {
   if (error_percent < 1.0) {
     printf("✅ PI ESTIMATE ACCURATE: Error < 1%%\n");
   } else {
-    printf("⚠️  PI ESTIMATE: Error = %.2f%% (expected < 1%% with %llu samples)\n", 
-           error_percent, final_state.total_points);
+    printf("⚠️  PI ESTIMATE: Error = %.2f%% (expected < 1%% with %llu samples)\n",
+           error_percent, (ull)final_state.total_points);
   }
   
   // Performance comparison

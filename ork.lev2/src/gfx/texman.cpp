@@ -420,7 +420,7 @@ texturearraysliceref_ptr_t TextureArray::load(const std::string& path) {
   //_slices_by_path[path] = slice_index;
   if (0)
     printf(
-        "TextureArray<%p>::load slice_index<%zu> path<%s> dim<%d %d> new_slice<%p>\n",
+        "TextureArray<%p>::load slice_index<%zu> path<%s> dim<%zu %zu> new_slice<%p>\n",
         (void*)this,
         slice_index,
         path.c_str(),

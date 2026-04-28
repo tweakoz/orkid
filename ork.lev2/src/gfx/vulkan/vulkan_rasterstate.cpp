@@ -316,7 +316,7 @@ VkRasterState::VkRasterState(rasterstate_ptr_t rstate, int attachment_count, con
       if(0)printf( "VkRasterState<%p:%s> hashed<%016llx> NEW<%d>\n", //
               (void*) this,                                     //
               rstate->_name.c_str(),                            //
-              hashed,                                           //
+              (ull)hashed,                                      //
               _pipeline_bits );
       unlocked[hashed] = _pipeline_bits;
       OrkAssert(_pipeline_bits<256);
@@ -327,7 +327,7 @@ VkRasterState::VkRasterState(rasterstate_ptr_t rstate, int attachment_count, con
       if(0)printf( "VkRasterState<%p:%s> hashed<%016llx> PRV<%d>\n", //
               (void*) this,                                     //
               rstate->_name.c_str(),                            //
-              hashed,                                           //
+              (ull)hashed,                                      //
               _pipeline_bits );
       OrkAssert(_pipeline_bits<256);
       OrkAssert(_pipeline_bits>=0);

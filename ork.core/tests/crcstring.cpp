@@ -7,6 +7,7 @@
 
 #include <utpp/UnitTest++.h>
 #include <ork/util/crc.h>
+#include <ork/orktypes.h>
 
 using namespace ork;
 
@@ -17,6 +18,6 @@ TEST(crcstring_1) {
   CHECK_EQUAL(crc1.hashed(), "crc1"_crcu);
   CHECK_EQUAL(crc2.hashed(), "crc2"_crcu);
 
-  printf("crc1<0x%llx>\n", crc1.hashed());
-  printf("crc2<0x%llx>\n", crc2.hashed());
+  printf("crc1<0x%llx>\n", (ull)crc1.hashed());
+  printf("crc2<0x%llx>\n", (ull)crc2.hashed());
 }

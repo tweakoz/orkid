@@ -68,14 +68,14 @@ int main(int argc, char** argv) {
         msg.write<uint64_t>(computed_value);      // Proof of work
         msg.write<uint64_t>(cumulative_hash);     // Running verification
         
-        printf("Sending message %d (computed: 0x%llx, cumulative: 0x%llx)...\n", 
-               i, computed_value, cumulative_hash);
+        printf("Sending message %d (computed: 0x%llx, cumulative: 0x%llx)...\n",
+               i, (ull)computed_value, (ull)cumulative_hash);
         sender->send(msg);
         
         usleep(100000); // 100ms between messages
       }
       
-      printf("Producer finished successfully (final hash: 0x%llx)\n", cumulative_hash);
+      printf("Producer finished successfully (final hash: 0x%llx)\n", (ull)cumulative_hash);
       
     } catch (const std::exception& e) {
       printf("Producer error: %s\n", e.what());
@@ -122,15 +122,15 @@ int main(int argc, char** argv) {
           // Verify both values match
           if (received_computed != expected_computed) {
             printf("❌ VERIFICATION FAILED: Message %d computed value mismatch!\n", value);
-            printf("   Expected: 0x%llx, Received: 0x%llx\n", expected_computed, received_computed);
+            printf("   Expected: 0x%llx, Received: 0x%llx\n", (ull)expected_computed, (ull)received_computed);
             verification_errors++;
           } else if (received_cumulative != expected_cumulative) {
             printf("❌ VERIFICATION FAILED: Message %d cumulative hash mismatch!\n", value);
-            printf("   Expected: 0x%llx, Received: 0x%llx\n", expected_cumulative, received_cumulative);
+            printf("   Expected: 0x%llx, Received: 0x%llx\n", (ull)expected_cumulative, (ull)received_cumulative);
             verification_errors++;
           } else {
-            printf("✅ Verified message: int=%d, float=%.2f, hash=0x%llx\n", 
-                   value, fvalue, received_computed);
+            printf("✅ Verified message: int=%d, float=%.2f, hash=0x%llx\n",
+                   value, fvalue, (ull)received_computed);
           }
           
           received++;

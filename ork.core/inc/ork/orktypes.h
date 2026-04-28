@@ -59,6 +59,8 @@ typedef int32_t FIX32;
 typedef uint64_t u64, U64;
 typedef int64_t s64, S64;
 typedef int64_t fx64, FX64;
+typedef unsigned long long ull, ULL;
+typedef long long sll, SLL;
 
 #include <ork/math/cfloat.h>
 

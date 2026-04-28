@@ -158,7 +158,7 @@ struct RunningStats {
 
   void printStats(const char* label = "") const {
     printf("[RunningStats] %s last:%.4f count:%lld min:%.4f max:%.4f mean:%.4f stddev:%.4f\n",
-           label, _last_value, _count, _min, _max, _mean, stddev());
+           label, _last_value, (sll)_count, _min, _max, _mean, stddev());
   }
 
   // Print every `interval` samples (by total count). No-op otherwise.
