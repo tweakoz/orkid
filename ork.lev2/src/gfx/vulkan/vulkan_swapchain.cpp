@@ -120,7 +120,7 @@ void VkSwapChain::_buildup() {
   bool dimensions_changed = (_width != width) || (_height != height);
   _width                  = width;
   _height                 = height;
-  
+
   if (dimensions_changed) {
 
     if(0)printf("Swap chain dimensions: requested=%dx%d, clamped=%ux%u\n", width, height, uint32_t(width), uint32_t(height));
@@ -665,6 +665,24 @@ void VkSwapChain::_waitFrame() {
 void VkSwapChain::beginFrame(vkcontext_rawptr_t ctxVK) {
   OrkProfilerSampleScope(CHANNEL_MAIN, "vk:swapchainBeginFrame");
   OrkAssertI(!_acquired, "beginFrame called twice without a submit in between");
+
+  // On Wayland (and some other platforms), vkAcquireNextImageKHR never returns
+  // VK_ERROR_OUT_OF_DATE_KHR / VK_SUBOPTIMAL_KHR when the window is resized —
+  // the compositor just renders the old-sized swapchain images in the new window.
+  // Proactively check the framebuffer size and rebuild if it has changed.
+  // TODO could probably simplify other logic?
+  {
+    auto ctx_glfw = ctxVK->_impl.getShared<VkPlatformObject>()->_ctxbase;
+    auto window   = ctx_glfw->_glfwWindow;
+    int fb_w = 0, fb_h = 0;
+    glfwGetFramebufferSize(window, &fb_w, &fb_h);
+    if (fb_w > 0 && fb_h > 0 && (fb_w != _width || fb_h != _height)) {
+      logchan_swapchain->log("beginFrame: proactive reinit %dx%d -> %dx%d",
+                             _width, _height, fb_w, fb_h);
+      _reinit();
+    }
+  }
+
   _acquireImage(ctxVK);
 
   // Inject the acquired swapchain image directly into the main RTG color buffer.
