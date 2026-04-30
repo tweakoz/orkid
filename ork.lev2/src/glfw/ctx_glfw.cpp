@@ -1131,6 +1131,9 @@ void CtxGLFW::_fire_ui_event() {
   uiev->_uicontext = root ? root->_uicontext : nullptr;
   if (root) {
     uiev->setvpDim(root);
+    if (auto app = dynamic_cast<OrkEzApp*>(OrkEzAppBase::get())) {
+      app->_fireGlobalEvent(uiev);
+    }
     ui::Event::sendToContext(uiev);
     //_pushTimer.Start();
   }

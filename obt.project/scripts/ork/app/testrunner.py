@@ -584,7 +584,7 @@ class TestRunnerFilesystemModel(lev2.ui.FilesystemModel):
 
 class TestRunnerApp:
 
-  def __init__(self, tests, title="Test Runner", width=960, height=480, auto_run=False, default_view="list", theme=None):
+  def __init__(self, tests, title="Test Runner", width=960, height=480, auto_run=False, default_view="icon", theme=None):
     self._auto_run = auto_run
     self._default_view = default_view
     self._theme = dict(theme or DARK_THEME)

@@ -211,6 +211,9 @@ tests = {
                     "_commands": lev2("ui/secondary_window.py"),
                     "_options": { "Fullscreen": ["-f"] },
                 },
+                "Global Events": {
+                    "_commands": lev2("ui/globalevents.py"),
+                },
             },
             "PrimCanvas": {
                 "Clock":    lev2("ui/prim_canvas_clock.py"),

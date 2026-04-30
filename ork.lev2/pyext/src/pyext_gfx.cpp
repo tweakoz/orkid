@@ -426,12 +426,14 @@ void pyinit_gfx(py::module& module_lev2) {
           [](const txi_t& the_txi, //
              texture_ptr_t tex,    //
              image_ptr_t img,      //
-             bool async) {         //
-            the_txi->initTextureFromImage(tex.get(), img, false, async);
+             bool async,           //
+             bool mipmapped) {     //
+            the_txi->initTextureFromImage(tex.get(), img, mipmapped, async);
           },
           py::arg("tex"),
           py::arg("img"),
-          py::arg("async") = true)
+          py::arg("async") = true,
+          py::arg("mipmapped") = false)
       .def(
           "updateTextureArraySlice",           //
           [](const txi_t& the_txi,             //

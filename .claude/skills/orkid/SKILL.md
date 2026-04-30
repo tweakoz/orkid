@@ -113,6 +113,19 @@ val = vm.key             # __getattr__
 setattr(vm, "dotted.key", val)  # For dotted keys
 ```
 
+### Python Import Order (gotcha)
+**Always import `orkengine.core` before `orkengine.lev2`.** lev2's pybind11 init references types registered by core; if lev2 is imported first you get a misleading error:
+```
+ImportError: arg(): could not convert default argument into a Python object (type not registered yet?).
+```
+This applies to scripts, smoke tests, and one-liners alike:
+```bash
+# wrong — fails with the error above
+ork.python -c "from orkengine import lev2; ..."
+# right
+ork.python -c "from orkengine import core; from orkengine import lev2; ..."
+```
+
 ### Python App Skeleton
 ```python
 from orkengine import core, lev2

@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/lev2/ez_secondary_win.h>
+#include <ork/lev2/ezapp.h>
 #include <ork/lev2/glfw/ctx_glfw.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/rtgroup.h>
@@ -314,6 +315,11 @@ void SecondaryWinImpl::_fireEvent(ui::event_ptr_t uiev) {
     uiev->setvpDim(_owner->_uicontext->_top.get());
   } else {
     uiev->_vpdim = fvec2(_width, _height);
+  }
+
+  // App-level global multicast: observers fire before per-window dispatch
+  if (auto app = dynamic_cast<OrkEzApp*>(OrkEzAppBase::get())) {
+    app->_fireGlobalEvent(uiev);
   }
 
   // First try user callback

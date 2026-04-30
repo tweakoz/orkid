@@ -9,6 +9,7 @@
 #include <ork/kernel/string/deco.inl>
 #include <ork/kernel/environment.h>
 #include <ork/python/context.h>
+#include <ork/python/gil_safe_pyobj.h>
 #include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/lev2/gfx/util/movie.inl>
 #include <ork/profiling.inl>
@@ -864,6 +865,32 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               // IMPORTANT: Release GIL because shutdown threads may call Python callbacks
               py::gil_scoped_release release_gil;
               app->shutdown();
+          })
+      ///////////////////////////////////////////////////////
+      // Global event handler multicast — fires for events from any window
+      // (primary + secondary), in addition to per-window dispatch.
+      .def(
+          "addGlobalEventHandler",
+          [](orkezapp_ptr_t app, py::object callback) -> int {
+            auto safe = ork::python::gil_safe_pyobj(callback);
+            return app->addGlobalEventHandler([safe](ui::event_constptr_t ev) {
+              py::gil_scoped_acquire acquire;
+              try {
+                auto pyfn = safe.valueAs<py::object>();
+                (*pyfn)(ev);
+              } catch (py::error_already_set& e) {
+                ezapp_python_traceback(e);
+                e.restore();
+                PyErr_Print();
+              } catch (std::exception& e) {
+                std::cerr << "addGlobalEventHandler exception: " << e.what() << std::endl;
+              }
+            });
+          })
+      .def(
+          "removeGlobalEventHandler",
+          [](orkezapp_ptr_t app, int token) {
+            app->removeGlobalEventHandler(token);
           })
       .def(
           "mainThreadLoop",

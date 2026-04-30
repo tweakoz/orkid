@@ -160,9 +160,10 @@ public:
 };
 ////////////////////////////////////////////////////////////////////////////////
 struct OrkEzApp : public OrkEzAppBase {
-  
+
   using onauddevfn_t = std::function<void(audiodevice_ptr_t)>;
   using onsynfn_t = std::function<void(audio::singularity::synth_ptr_t)>;
+  using globalevcb_t = std::function<void(ui::event_constptr_t)>;
 
   ///////////////////////////////////
   OrkEzApp(appinitdata_ptr_t initdata);
@@ -215,6 +216,15 @@ struct OrkEzApp : public OrkEzAppBase {
   void signalExit();
 
   void enqueueWindowResize(int w, int h);
+
+  // Global event handler multicast. Handlers fire from every window
+  // (primary + secondary) before that window's per-context dispatch runs.
+  // Per-window dispatch is unaffected; this is observer-only.
+  // Token returned by add() is required by remove() — the same callable
+  // can be registered multiple times and each registration has a unique id.
+  int addGlobalEventHandler(globalevcb_t cb);
+  void removeGlobalEventHandler(int token);
+  void _fireGlobalEvent(ui::event_constptr_t ev);
 
   bool isExiting() const;
 
@@ -278,6 +288,11 @@ public:
 
   // Secondary window support (Phase 3)
   std::vector<ezsecondarywin_ptr_t> _secondaryWindows;
+
+  // Global event handler multicast state (see addGlobalEventHandler)
+  std::unordered_map<int, globalevcb_t> _globalEventHandlers;
+  int _nextGlobalHandlerID = 1;
+  mutable std::mutex _globalHandlerMutex;
 
   ezsecondarywin_ptr_t createSecondaryWindow(const EzSecondaryWinConfig& config);
   void closeSecondaryWindow(ezsecondarywin_ptr_t win);

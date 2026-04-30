@@ -414,6 +414,11 @@ class ComponentizedApplication(object):
     # Extract pre_init_fns if provided (used by ecs editor etc.)
     pre_init_fns = args.pop('pre_init_fns', None)
 
+    # Opt-in: when True, register a global event handler that fires for
+    # events from any window (primary or secondary) regardless of focus.
+    # Observer-only — per-window widget dispatch still runs.
+    enable_global_events = args.pop('enable_global_events', False)
+
     # Create ezapp
     if pre_init_fns:
       self.ezapp = lev2.OrkEzApp.createEx(self, pre_init_fns, **args)
@@ -423,6 +428,9 @@ class ComponentizedApplication(object):
     # Standard setup (refresh policy and UI draw)
     if self.ezapp.topWidget is not None:
       self.ezapp.topWidget.enableUiDraw()
+
+    if enable_global_events:
+      self._globalEventToken = self.ezapp.addGlobalEventHandler(self.onGlobalUiEvent)
 
     # Broadcast to components (for early UI setup like overlays)
     for component in self.components_sorted:
@@ -492,6 +500,9 @@ class ComponentizedApplication(object):
   def onAppExit(self):
     # invoked on main thread when the application is exiting
     # immediately after main loop ends
+    if getattr(self, "_globalEventToken", None) is not None:
+      self.ezapp.removeGlobalEventHandler(self._globalEventToken)
+      self._globalEventToken = None
     for component in self.components_sorted:
       component.onAppExit()
 
@@ -675,6 +686,22 @@ class ComponentizedApplication(object):
   def _onUiEvent(self, uievent):
     from orkengine.lev2 import ui
     return ui.HandlerResult()
+
+  ##################################################
+  # Global event handlers — fire for events from ANY window (primary or
+  # secondary) regardless of which has focus. Observer-only: per-window
+  # widget dispatch still runs after this returns.
+  ##################################################
+
+  def onGlobalUiEvent(self, uievent):
+    for component in self.components_sorted:
+      handler = getattr(component, "onGlobalUiEvent", None)
+      if handler is not None:
+        handler(uievent)
+    self._onGlobalUiEvent(uievent)
+
+  def _onGlobalUiEvent(self, uievent):
+    pass
 
 ################################################################################
 # ApplicationComponent

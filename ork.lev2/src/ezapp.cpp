@@ -178,6 +178,41 @@ OrkEzAppBase::OrkEzAppBase(ezappctx_ptr_t ezapp, appinitdata_ptr_t initdata)
   _render_count = 0;
 }
 ///////////////////////////////////////////////////////////////////////////////
+int OrkEzApp::addGlobalEventHandler(globalevcb_t cb) {
+  std::lock_guard<std::mutex> lk(_globalHandlerMutex);
+  int id = _nextGlobalHandlerID++;
+  _globalEventHandlers.emplace(id, std::move(cb));
+  return id;
+}
+///////////////////////////////////////////////////////////////////////////////
+void OrkEzApp::removeGlobalEventHandler(int token) {
+  std::lock_guard<std::mutex> lk(_globalHandlerMutex);
+  _globalEventHandlers.erase(token);
+}
+///////////////////////////////////////////////////////////////////////////////
+void OrkEzApp::_fireGlobalEvent(ui::event_constptr_t ev) {
+  // Snapshot under lock so handlers can safely add/remove during dispatch
+  std::vector<globalevcb_t> snapshot;
+  {
+    std::lock_guard<std::mutex> lk(_globalHandlerMutex);
+    if (_globalEventHandlers.empty())
+      return;
+    snapshot.reserve(_globalEventHandlers.size());
+    for (auto& kv : _globalEventHandlers) {
+      snapshot.push_back(kv.second);
+    }
+  }
+  for (auto& h : snapshot) {
+    try {
+      h(ev);
+    } catch (const std::exception& e) {
+      logchan_ezapp->log("global event handler threw: %s", e.what());
+    } catch (...) {
+      logchan_ezapp->log("global event handler threw unknown exception");
+    }
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::signalExit() {
   _onRunLoopIteration = nullptr;
   finishMovieRecording();
