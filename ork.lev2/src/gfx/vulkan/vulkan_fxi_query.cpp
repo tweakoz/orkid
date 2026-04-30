@@ -181,13 +181,13 @@ fxsamplerset_constptr_t VkFxInterface::samplerSet(FxShader* hfx, const std::stri
 ///////////////////////////////////////////////////////////////////////////////
 const FxComputeShader* VkFxInterface::computeShader(FxShader* pshader, const std::string& name) {
   auto vkshfile = pshader->_internalHandle.get<vkfxsfile_ptr_t>();
-  auto it       = vkshfile->_vk_shaderobjects.find(name);
-  OrkAssert(it != vkshfile->_vk_shaderobjects.end());
+  auto it       = vkshfile->_vk_shaderstages.find(name);
+  OrkAssert(it != vkshfile->_vk_shaderstages.end());
   auto sh_obj = it->second;
   OrkAssert(sh_obj->_STAGE == "compute"_crcu);
 
   // Create compute pipeline object
-  auto compute_pipeline = std::make_shared<VkComputePipelineObject>(_contextVK);
+  auto compute_pipeline = std::make_shared<VkComputePipelineState>(_contextVK);
   bool success = compute_pipeline->createPipeline(sh_obj);
   OrkAssert(success && "Failed to create compute pipeline");
 

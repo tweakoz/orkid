@@ -6,13 +6,14 @@
 ////////////////////////////////////////////////////////////////
 
 #include "headers/vulkan_ctx.h"
-#include "vulkan_ub_layout.inl"
+#include "ork/orkstd.h"
 #include "vulkan_ubo_dynamic.h"
+#include "vulkan_ub_layout.inl"
+#include <cstddef>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/util/hexdump.inl>
 #include <ctime>
 #include <cmath>
-#include <set>
 #include <boost/filesystem.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -22,7 +23,7 @@ static logchannel_ptr_t logchan_vkpipb = logger()->configureChannel("VKPIPB", fv
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkFxInterface::_bindPipeline(VkCommandBuffer cmdbuf, vkpipeline_obj_ptr_t pipeline) {
+void VkFxInterface::_bindPipeline(VkCommandBuffer cmdbuf, vkpipelinestate_rawptr_t pipeline) {
 
   auto fbi    = _contextVK->_fbi;
   auto fbi_vp = fbi->_viewportTracker;
@@ -63,7 +64,7 @@ void VkFxInterface::_bindPipeline(VkCommandBuffer cmdbuf, vkpipeline_obj_ptr_t p
       vkvp.height = fbi_vp->_height;
     }
 
-    if(0)printf( "SETVP<%p> x<%f> y<%f> w<%f> h<%f>\n", pipeline.get(), vkvp.x, vkvp.y, vkvp.width, vkvp.height);
+    if(0)printf( "SETVP<%p> x<%f> y<%f> w<%f> h<%f>\n", pipeline, vkvp.x, vkvp.y, vkvp.width, vkvp.height);
     vkCmdSetViewport(
         cmdbuf, // command buffer
         0,      // first viewport
@@ -82,7 +83,7 @@ void VkFxInterface::_bindPipeline(VkCommandBuffer cmdbuf, vkpipeline_obj_ptr_t p
     vksc.offset.y      = fbi_sc->_y;
     vksc.extent.width  = fbi_sc->_width;
     vksc.extent.height = fbi_sc->_height;
-    if(0)printf( "SETSC<%p> x<%d> y<%d> w<%d> h<%d>\n", pipeline.get(), vksc.offset.x, vksc.offset.y, vksc.extent.width, vksc.extent.height);
+    if(0)printf( "SETSC<%p> x<%d> y<%d> w<%d> h<%d>\n", pipeline, vksc.offset.x, vksc.offset.y, vksc.extent.width, vksc.extent.height);
     vkCmdSetScissor(
         cmdbuf, // command buffer
         0,      // first scissor
@@ -113,12 +114,13 @@ void VkFxInterface::_bindPipeline(VkCommandBuffer cmdbuf, vkpipeline_obj_ptr_t p
   ////////////////////////////////////////
   // bind descriptor set (if changed)
   ////////////////////////////////////////
-  auto prog = _currentVKPASS->_vk_program;
+  auto prog = _currentVKPASS;
   auto desc_set = pipeline->_descriptorSetCache->fetchDescriptorSetForProgram(prog);
 
   if (desc_set) {
     // Bind descriptor set with dynamic offsets from applyPendingUboUpdates
-    if (!pipeline->_dynamic_offsets.empty()) {
+    auto& dynamic_offsets = pipeline->_shader_state->_dynamic_offsets;
+    if (!dynamic_offsets.empty()) {
       vkCmdBindDescriptorSets(
           cmdbuf,
           VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -126,8 +128,8 @@ void VkFxInterface::_bindPipeline(VkCommandBuffer cmdbuf, vkpipeline_obj_ptr_t p
           0, // first set
           1, // set count
           &desc_set->_vkdescset,
-          pipeline->_dynamic_offsets.size(),
-          pipeline->_dynamic_offsets.data());
+          dynamic_offsets.size(),
+          dynamic_offsets.data());
     } else {
       // Fallback to static binding if no dynamic offsets
       _bindGfxDescriptorSetOnSlot(cmdbuf, desc_set, 0);
@@ -138,8 +140,8 @@ void VkFxInterface::_bindPipeline(VkCommandBuffer cmdbuf, vkpipeline_obj_ptr_t p
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkFxInterface::_uploadPipelineData(VkCommandBuffer CB, vkpipeline_obj_ptr_t pipeline) {
-
+void VkFxInterface::_uploadPipelineData(VkCommandBuffer CB, vkpipelinestate_rawptr_t pipeline) {
+  
   // Apply dynamic UBO updates for this draw
   // This allocates per-draw memory and copies shadow buffers
   static uint32_t frame_index = 0; // TODO: Get actual frame index from swapchain
@@ -156,38 +158,42 @@ void VkFxInterface::_uploadPipelineData(VkCommandBuffer CB, vkpipeline_obj_ptr_t
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::_bindVertexBufferOnSlot(VkCommandBuffer cmdbuf, vkvtxbuf_ptr_t vb, size_t slot) {
-  if (true) { //_active_vbs[slot] != vb) {
-    VkDeviceSize offset = 0;
-    vkCmdBindVertexBuffers(
-        cmdbuf,                    // command buffer
-        slot,                      // slot to bind to
-        1,                         // binding count
-        &vb->_vkbuffer->_vkbuffer, // buffers
-        &offset);                  // offsets
-    _active_vbs[slot] = vb;
-  }
+  VkDeviceSize offset = 0;
+  vkCmdBindVertexBuffers(
+      cmdbuf,                    // command buffer
+      slot,                      // slot to bind to
+      1,                         // binding count
+      &vb->_vkbuffer->_vkbuffer, // buffers
+      &offset);                  // offsets
+  _active_vbs[slot] = vb;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkPipelineObject::applyPendingPushConstants(VkCommandBuffer cmdbuf) { //
-  if(not _vk_program->_pushConstantBlock){
+void VkPipelineState::applyPendingPushConstants(VkCommandBuffer cmdbuf) {
+  auto& pending_params = _shader_state->_pending_params;
+  auto& pushdatabuffer = _shader_state->_pushdatabuffer;
+
+  auto* shader = _shader_state->_shader;
+  if(not shader->_pushConstantBlock){
     return;
   }
 
-  auto data_layout = _vk_program->_pushConstantBlock->_data_layout;
-  auto& ranges     = _vk_program->_pushConstantBlock->_ranges;
+  auto& data_layout = shader->_pushConstantBlock->_data_layout;
+  auto& ranges      = shader->_pushConstantBlock->_ranges;
 
   if(ranges.size()==0) return;
-  
-  size_t blocksize = _vk_program->_pushConstantBlock->_blockSize;
 
-  size_t num_params = _vk_program->_pending_params.size();
+  size_t blocksize = shader->_pushConstantBlock->_blockSize;
 
+  size_t num_params = pending_params.size();
 
-  auto data = _vk_program->_pushdatabuffer.data();
+  if(pushdatabuffer.size() < blocksize)
+    pushdatabuffer.resize(blocksize, 0);
 
-  for (auto item : _vk_program->_pending_params) {
+  auto* data = pushdatabuffer.data();
+
+  for (auto item : pending_params) {
     auto dst_offset = data_layout->offsetForParam(item._ork_param);
     if (dst_offset != -1) {
       auto parm_name   = item._ork_param->_name;
@@ -229,18 +235,18 @@ void VkPipelineObject::applyPendingPushConstants(VkCommandBuffer cmdbuf) { //
         data + range.offset // Source data at the range's offset in our buffer
     );
   }
-  _vk_program->_pending_params.clear();
+  pending_params.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-VulkanDescriptorSetCache::VulkanDescriptorSetCache(vkcontext_rawptr_t ctx)
+VulkanDescriptorSetCacheState::VulkanDescriptorSetCacheState(vkcontext_rawptr_t ctx)
     : _ctxVK(ctx) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkPipelineObject::applyPendingUboUpdates(VkCommandBuffer cmdbuf, uint32_t frame_index) {
+void VkPipelineState::applyPendingUboUpdates(VkCommandBuffer cmdbuf, uint32_t frame_index) {
   // Ensure global dynamic UBO system is initialized
   extern VkDynamicUBOSystem* g_dynamic_ubo_system;
   if (!g_dynamic_ubo_system) {
@@ -248,42 +254,43 @@ void VkPipelineObject::applyPendingUboUpdates(VkCommandBuffer cmdbuf, uint32_t f
     return;
   }
 
-  _dynamic_offsets.clear();
+  _shader_state->_dynamic_offsets.clear();
 
   static int log_count = 0;
   bool do_log = (log_count++ < 100);
 
   // Process all UBOs in binding order (already sorted)
-  for (auto* ubo : _uniform_blocks) {
+  for (auto* ubo_state : _shader_state->_ordered_uniform_states) {
     // Allocate dynamic memory for this draw
-    auto allocation = g_dynamic_ubo_system->allocate(ubo->_shadow_buffer.size(), frame_index);
+    auto allocation = g_dynamic_ubo_system->allocate(ubo_state->_shadow_buffer.size(), frame_index);
 
     // Debug: check shadow buffer before copy
-    if (do_log && ubo->_shadow_buffer.size() >= 16) {
-      float* fdata = (float*)ubo->_shadow_buffer.data();
+    if (do_log && ubo_state->_shadow_buffer.size() >= 16) {
+      float* fdata = (float*)ubo_state->_shadow_buffer.data();
       bool has_nan = std::isnan(fdata[0]) || std::isnan(fdata[1]) || std::isnan(fdata[2]) || std::isnan(fdata[3]);
       if (has_nan) {
+        auto* ubo = ubo_state->_shader_uniform_block;
         logchan_vkpipb->log("WARN: UBO<%s> shadow_buffer has NaN! [%g %g %g %g] size=%zu",
                             ubo->_orkparamblock ? ubo->_orkparamblock->_name.c_str() : "?",
                             fdata[0], fdata[1], fdata[2], fdata[3],
-                            ubo->_shadow_buffer.size());
+                            ubo_state->_shadow_buffer.size());
       }
     }
 
     // Copy shadow buffer to dynamic allocation
-    memcpy(allocation.cpu_ptr, ubo->_shadow_buffer.data(), ubo->_shadow_buffer.size());
+    memcpy(allocation.cpu_ptr, ubo_state->_shadow_buffer.data(), ubo_state->_shadow_buffer.size());
 
     // Track offset for descriptor binding
-    _dynamic_offsets.push_back(allocation.dynamic_offset);
+    _shader_state->_dynamic_offsets.push_back(allocation.dynamic_offset);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::_bindGfxDescriptorSetOnSlot(
-    VkCommandBuffer cmdbuf,         //
-    vkdescriptorset_ptr_t desc_set, //
-    size_t slot) {                  //
+    VkCommandBuffer cmdbuf,
+    vkdescriptorsetstate_ptr_t desc_set,
+    size_t slot) {
   OrkAssert(desc_set);
   vkCmdBindDescriptorSets(
       cmdbuf,
@@ -299,18 +306,18 @@ void VkFxInterface::_bindGfxDescriptorSetOnSlot(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-vkdescriptorset_ptr_t VulkanDescriptorSetCache::_createNewDescriptorSetForProgram(vkfxsprg_ptr_t program){
+vkdescriptorsetstate_ptr_t VulkanDescriptorSetCacheState::_createNewDescriptorSetForProgram(vkfxsprg_rawptr_t program){
   auto current_pass = _ctxVK->_fxi->_currentVKPASS;
   auto cur_pipeline = _ctxVK->_fxi->_currentPipeline;
-  OrkAssert(current_pass != nullptr);
-  OrkAssert(cur_pipeline != nullptr);
+  OrkAssertI(current_pass != nullptr, "current pass is null");
+  OrkAssertI(cur_pipeline != nullptr, "current pipeline is null");
   auto merged_resources = current_pass->_merged_resources;
   ////////////////////////
   // make new descriptor set
   ////////////////////////
   
-  static int descset_count             = 0;
-  auto descset_ptr                          = std::make_shared<VulkanDescriptorSet>();
+  static int descset_count = 0;
+  auto descset_ptr         = std::make_shared<VulkanDescriptorSetState>();
 
   VkDescriptorSetAllocateInfo DSAI;
   initializeVkStruct(DSAI, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO);
@@ -366,12 +373,12 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::_createNewDescriptorSetForProgra
 
 ///////////////////////////////////////////////////////////////////////////////
 
-vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkfxsprg_ptr_t vk_program) {
+vkdescriptorsetstate_ptr_t VulkanDescriptorSetCacheState::fetchDescriptorSetForProgram(vkfxsprg_rawptr_t vk_program) {
 
   auto current_pass = _ctxVK->_fxi->_currentVKPASS;
   auto cur_pipeline = _ctxVK->_fxi->_currentPipeline;
-  OrkAssert(current_pass != nullptr);
-  OrkAssert(cur_pipeline != nullptr);
+  OrkAssertI(current_pass != nullptr, "current pass is null");
+  OrkAssertI(cur_pipeline != nullptr, "current pipeline is null");
   auto merged_resources = current_pass->_merged_resources;
   auto shfile = vk_program->_shader_file;
   auto shname = shfile->_shader_name;
@@ -393,9 +400,12 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
   //    we will (over time) expose descriptor sets to higher level systems
   /////////////////////////////////
 
-  uint64_t descset_bits = vk_program->samplersHash();
+  auto shader_state = _ctxVK->_fxi->_current_shader_state;
+  OrkAssertI(shader_state != nullptr, "shader state is null");
+
+  uint64_t descset_bits = shader_state->samplersHash();
   auto it               = _vkDescriptorSetByHash.find(descset_bits);
-  vkdescriptorset_ptr_t descset_ptr = nullptr;
+  vkdescriptorsetstate_ptr_t descset_ptr = nullptr;
   if (it != _vkDescriptorSetByHash.end()) {
     descset_ptr = it->second;
   } else {
@@ -423,17 +433,14 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
 
     // First, handle textures/samplers - ensure ALL samplers from merged resources are bound
     // Build a map of what's already bound (only for texture params)
-    static std::unordered_map<int, vktexobj_ptr_t> bound_textures;
+    static std::unordered_map<int, VulkanTextureObject*> bound_textures;
     bound_textures.clear();
 
-    for (auto it : vk_program->_merged_resource_bindings) {
-      auto param                = it.first;
-      auto [set_id, binding_id] = it.second;
-      // Only process textures here, skip UBOs
-      auto tex_it = vk_program->_textures_by_orkparam.find(param);
-      if (tex_it != vk_program->_textures_by_orkparam.end()) {
-        auto vk_tex                = tex_it->second;
-        bound_textures[binding_id] = vk_tex;
+    for (auto& [param, tex] : shader_state->_textures_by_orkparam) {
+      auto binding_it = vk_program->_merged_resource_bindings.find(param);
+      if (binding_it != vk_program->_merged_resource_bindings.end()) {
+        auto [set_id, binding_id] = binding_it->second;
+        bound_textures[binding_id] = tex.get();
       }
     }
 
@@ -446,7 +453,7 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
 
           switch (binding->type) {
             case VkMergedResourceBinding::Type::Sampler: {
-              vktexobj_ptr_t vk_tex;
+              VulkanTextureObject* vk_tex = nullptr;
 
               // Check if this binding is already bound
               auto bound_it = bound_textures.find(binding->binding_id);
@@ -456,14 +463,14 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
                 // Use default texture for unbound samplers
                 // Determine texture type from datatype string if possible
                 if (binding->datatype.find("Cube") != std::string::npos) {
-                  vk_tex = _ctxVK->_defaultTexImplCube;
+                  vk_tex = _ctxVK->_defaultTexImplCube.get();
                 } else if (
                     binding->datatype.find("Array") != std::string::npos || binding->datatype.find("2DA") != std::string::npos) {
-                  vk_tex = _ctxVK->_defaultTexImpl2DArray;
+                  vk_tex = _ctxVK->_defaultTexImpl2DArray.get();
                 } else if (binding->datatype.find("3D") != std::string::npos) {
-                  vk_tex = _ctxVK->_defaultTexImpl3D;
+                  vk_tex = _ctxVK->_defaultTexImpl3D.get();
                 } else {
-                  vk_tex = _ctxVK->_defaultTexImpl2D; // Default to 2D
+                  vk_tex = _ctxVK->_defaultTexImpl2D.get(); // Default to 2D
                 }
               }
 
@@ -502,7 +509,7 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
             } // case VkMergedResourceBinding::Type::Sampler: {
             case VkMergedResourceBinding::Type::UniformBlock: {
               // Find the corresponding VkFxShaderUniformBlk
-              VkFxShaderUniformBlk* ubo_block = nullptr;
+              VkFxShaderUniformBlock* ubo_block = nullptr;
 
               auto it = vk_program->_vk_uniformblks.find(binding->name);
               if (it != vk_program->_vk_uniformblks.end()) {
@@ -548,11 +555,17 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
                 VkBuffer vk_buffer = VK_NULL_HANDLE;
                 VkDeviceSize buffer_size = ssbo_block->_buffer_size;
 
-                if (ssbo_block->_bound_buffer) {
-                  vk_buffer = ssbo_block->_bound_buffer->_vkbuffer;
-                  buffer_size = ssbo_block->_bound_buffer->_length;
-                } else {
-                  // No SSBO bound - skip descriptor update
+                auto* shader_state = _ctxVK->_fxi->_current_shader_state;
+                if (shader_state) {
+                  auto* ssbo_state = shader_state->storageStateForBlock(ssbo_block);
+                  if (ssbo_state && ssbo_state->_bound_buffer) {
+                    vk_buffer = ssbo_state->_bound_buffer->_vkbuffer;
+                    buffer_size = ssbo_state->_bound_buffer->_length;
+                  }
+                }
+
+                // No SSBO bound — skip descriptor update
+                if (vk_buffer == VK_NULL_HANDLE) {
                   break;
                 }
 
@@ -595,7 +608,6 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
 
 VkFxShaderProgram::VkFxShaderProgram(VkFxShaderFile* file)
     : _shader_file(file) {
-  _pushdatabuffer.reserve(1024); // todo : grow as needed
   _incr_crc64.init();
 }
 

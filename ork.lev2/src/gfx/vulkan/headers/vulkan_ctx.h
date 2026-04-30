@@ -636,15 +636,15 @@ struct VkFxInterface final : public FxInterface {
       const std::string& shadertext,  //
       shadlang::slpcache_ptr_t slp_cache);
 
-  vkpipeline_obj_ptr_t _fetchPipeline( vkvtxbuf_ptr_t vb, vkprimclass_ptr_t primclas);
-  vkpipeline_obj_ptr_t _createPipeline( vkvtxbuf_ptr_t vb,             //
+  vkpipelinestate_rawptr_t _fetchPipeline( vkvtxbuf_ptr_t vb, vkprimclass_ptr_t primclas);
+  vkpipelinestate_ptr_t _createPipeline( vkvtxbuf_ptr_t vb,             //
                                         vkprimclass_ptr_t primclas,    //
                                         vkrasterstate_ptr_t rstate );  //
   // SSBO-only pipelines (no vertex buffer, vertex shader reads from SSBO via gl_VertexID)
-  vkpipeline_obj_ptr_t _fetchPipelineSSBO(vkprimclass_ptr_t primclas);
-  vkpipeline_obj_ptr_t _createPipelineSSBO(vkprimclass_ptr_t primclas, vkrasterstate_ptr_t rstate);
-  void _createPipelineReport(vkpipeline_obj_ptr_t pipeline);           //
-  VkPipelineLayoutCreateInfo _createPipelineLayoutData(vkpipeline_obj_ptr_t pipeline);
+  vkpipelinestate_rawptr_t _fetchPipelineSSBO(vkprimclass_ptr_t primclas);
+  vkpipelinestate_ptr_t _createPipelineSSBO(vkprimclass_ptr_t primclas, vkrasterstate_ptr_t rstate);
+  void _createPipelineReport(vkpipelinestate_ptr_t pipeline);           //
+  VkPipelineLayoutCreateInfo _createPipelineLayoutData(vkpipelinestate_ptr_t pipeline);
   // ubo
   FxUniformBuffer* createUniformBuffer(size_t length) final;
   fxuniformbuffermapping_ptr_t mapUniformBuffer(FxUniformBuffer* b, size_t base, size_t length) final;
@@ -665,36 +665,41 @@ struct VkFxInterface final : public FxInterface {
   void _doPushRasterState(rasterstate_ptr_t rs) final;
   rasterstate_ptr_t _doPopRasterState() final;
 
-  void _bindPipeline(VkCommandBuffer cmdbuf, vkpipeline_obj_ptr_t pipe);
-  void _uploadPipelineData(VkCommandBuffer cmdbuf, vkpipeline_obj_ptr_t pipe);
-  void _bindGfxDescriptorSetOnSlot(VkCommandBuffer cmdbuf, vkdescriptorset_ptr_t desc_set, size_t slot);
+  void _bindPipeline(VkCommandBuffer cmdbuf, vkpipelinestate_rawptr_t pipe);
+  void _uploadPipelineData(VkCommandBuffer cmdbuf, vkpipelinestate_rawptr_t pipe);
+  void _bindGfxDescriptorSetOnSlot(VkCommandBuffer cmdbuf, vkdescriptorsetstate_ptr_t desc_set, size_t slot);
   void _bindVertexBufferOnSlot(VkCommandBuffer cmdbuf, vkvtxbuf_ptr_t vb, size_t slot);
 
-  int _pipelineBitsForShader(vkfxsprg_ptr_t shprog);
+  int _pipelineBitsForShader(vkfxsprg_rawptr_t shprog);
   void _flushDirtyUniformBlocks();
 
+  std::unordered_map<vkfxsprg_rawptr_t, VkFxShaderState> _shader_states;
+  vkfxsstate_rawptr_t _current_shader_state = nullptr;
+
+  std::unordered_map<uint64_t, vkpipelinestate_ptr_t> _pipelines;
+  vkpipelinestate_rawptr_t _currentPipeline = nullptr;
+
   fxtechnique_constptr_t _currentORKTEK = nullptr;
-  VkFxShaderTechnique* _currentVKTEK;
-  vkfxspass_ptr_t _currentVKPASS;
-  vkcontext_rawptr_t _contextVK;
+  vkfxstek_rawptr_t      _currentVKTEK  = nullptr;
+  vkfxsprg_rawptr_t      _currentVKPASS = nullptr;
+  vkcontext_rawptr_t     _contextVK     = nullptr;
+
   std::map<AssetPath, vkfxsfile_ptr_t> _fxshaderfiles;
-  std::unordered_map<uint64_t, vkpipeline_obj_ptr_t> _pipelines;
   shadlang::slpcache_ptr_t _slp_cache;
   priority_stack<rasterstate_ptr_t> _rasterstate_stack;
   rasterstate_ptr_t _rasterstate_top;
   lev2::rasterstate_ptr_t _default_rasterstate;
-  vkpipeline_obj_ptr_t _currentPipeline;
   std::unordered_map<uint64_t, int> _vk_vtxinterface_cache;
   std::unordered_map<uint64_t, int> _vk_geointerface_cache;
-  std::array<vkdescriptorset_ptr_t, 4> _active_gfx_descriptorSets;
+  std::array<vkdescriptorsetstate_ptr_t, 4> _active_gfx_descriptorSets;
   std::array<vkvtxbuf_ptr_t, 4> _active_vbs;
   bool _enable_pipeline_debug = false;
   
   bool _tryBindMergedResource(const FxShaderParam* hpar,
-                                VkMergedResourceBinding::Type expected_type,
+                              VkMergedResourceBinding::Type expected_type,
                               svar64_t resource_data);
-  
-  void _ensureUBORegistered(VkFxShaderUniformBlk* block);
+
+  void _ensureUBORegistered(VkFxShaderUniformBlock* block);
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VkComputeInterface : public ComputeInterface {
@@ -1041,7 +1046,7 @@ public:
   vktxi_ptr_t _txi;
   vkfxi_ptr_t _fxi;
   vkci_ptr_t _ci;
-
+  
   // Output target is now owned by VkFrameBufferInterface as _output.
 
   std::vector<captureasync_ptr_t> _pending_captures;

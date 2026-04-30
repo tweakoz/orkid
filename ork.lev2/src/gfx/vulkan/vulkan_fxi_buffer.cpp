@@ -128,19 +128,19 @@ void VkFxInterface::bindStorageBuffer(const FxShaderStorageBlock* block,
     return;
   }
 
-  // Store binding for later use when creating descriptor sets
-  vk_block->_bound_buffer = vk_buffer;
-  vk_block->_bound_ssbo = buffer;
+  if (!_current_shader_state)
+    return;
 
-  // Mark block as dirty for descriptor set update
-  if (_currentPipeline && _currentPipeline->_vk_program) {
-    auto program = _currentPipeline->_vk_program;
-    auto it = program->_vk_ssbo_blocks.find(block->_name);
-    if (it != program->_vk_ssbo_blocks.end()) {
-      // Track dirty SSBOs (similar to UBOs)
-      _currentPipeline->_dirty_ssbo_blocks.insert(it->second.get());
-    }
-  }
+  // Store binding per-context so concurrent VkContexts don't collide
+  auto* sb_state = _current_shader_state->storageStateForBlock(vk_block);
+  if (!sb_state)
+    return;
+
+  // Store binding for later use when creating descriptor sets
+  sb_state->_bound_buffer        = vk_buffer;
+  sb_state->_bound_ssbo = buffer;
+
+  // _current_shader_state->_dirty_ssbo_blocks.insert(sb_state); // Never consumed?
 }
 
 ///////////////////////////////////////////////////////////////////////////////

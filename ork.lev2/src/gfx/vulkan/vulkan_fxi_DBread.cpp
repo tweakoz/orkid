@@ -415,7 +415,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       if(0)printf("VK_UBO: REUSING UBO<%s> ptr<%p> for shader file\n", str_uniblk_name.c_str(), vk_uniblk.get());
     } else {
       // CREATE NEW BLOCK (first occurrence in this shader file)
-      vk_uniblk                                           = std::make_shared<VkFxShaderUniformBlk>();
+      vk_uniblk                                           = std::make_shared<VkFxShaderUniformBlock>();
       vk_uniblk->_orkparamblock                           = std::make_shared<FxUniformBlock>();
       vk_uniblk->_orkparamblock->_impl.set<vkfxsuniblk_wkptr_t>(vk_uniblk);
       vk_uniblk->_orkparamblock->_name                    = str_uniblk_name; // SET THE NAME!
@@ -511,8 +511,11 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
 
       // Round up to 16-byte alignment
       vk_uniblk->_buffer_size = ((max_offset + last_size + 15) / 16) * 16;
-      vk_uniblk->_shadow_buffer.resize(vk_uniblk->_buffer_size, 0);
-      
+    
+      // vk_uniblk->_shadow_buffer.resize(vk_uniblk->_buffer_size, 0);
+      // shadow_buffer is per-context — allocated eagerly in VkFxShaderState::initForProgram()
+      // However not all shader programs seem to end up with every param? shadow_buffer had considerable unused data?
+
       // Debug names are already set in VulkanBuffer constructor
     } // end if (!is_reused)
   }
@@ -613,7 +616,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
   /////////////////////////////////
   // read shader
   /////////////////////////////////
-  auto read_shader_from_stream = [&]() -> vkfxsobj_ptr_t {
+  auto read_shader_from_stream = [&]() -> vkfxsstage_ptr_t {
     /////////////////////////////////
     // read shader
     /////////////////////////////////
@@ -629,8 +632,8 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     vkfxshader_bin_t shader_bin;
     shader_bin.resize(sh_bytlen / sizeof(uint32_t));
     memcpy(shader_bin.data(), sh_data.data(), sh_bytlen);
-    auto vulkan_shobj                                     = std::make_shared<VulkanFxShaderObject>(_contextVK, shader_bin);
-    vulkan_shaderfile->_vk_shaderobjects[str_shader_name] = vulkan_shobj;
+    auto vulkan_shobj                                     = std::make_shared<VulkanFxShaderStage>(_contextVK, shader_bin);
+    vulkan_shaderfile->_vk_shaderstages[str_shader_name] = vulkan_shobj;
     vulkan_shobj->_name                                   = str_shader_name;
     /////////////////////////////////
     auto num_ismpsets = shader_input_stream->ReadItem<size_t>();
@@ -803,11 +806,9 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       auto str_stages = tecniq_input_stream->ReadIndexedString(chunkreader);
       OrkAssert(str_stages == "VF" or str_stages == "VGF");
 
-      auto vk_pass         = std::make_shared<VkFxShaderPass>();
       auto vk_program      = std::make_shared<VkFxShaderProgram>(vulkan_shaderfile.get());
       vk_program->_tek_name = str_tek_name;
-      vk_pass->_vk_program = vk_program;
-      vk_tek->_vk_passes.push_back(vk_pass);
+      vk_tek->_vk_passes.push_back(vk_program);
       static int prog_index          = 0;
       vk_program->_pipeline_bits_prg = prog_index;
       prog_index++;
@@ -815,7 +816,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
 
       if (str_stages.find("V") != std::string::npos) {
         auto str_vtx_name = tecniq_input_stream->ReadIndexedString(chunkreader);
-        auto vtx_obj      = vulkan_shaderfile->_vk_shaderobjects[str_vtx_name];
+        auto vtx_obj      = vulkan_shaderfile->_vk_shaderstages[str_vtx_name];
         if (vtx_obj == nullptr) {
           printf("vtx_obj<%s> not found\n", str_vtx_name.c_str());
           OrkAssert(false);
@@ -825,7 +826,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
 
       if (str_stages.find("G") != std::string::npos) {
         auto str_geo_name = tecniq_input_stream->ReadIndexedString(chunkreader);
-        auto geo_obj      = vulkan_shaderfile->_vk_shaderobjects[str_geo_name];
+        auto geo_obj      = vulkan_shaderfile->_vk_shaderstages[str_geo_name];
         if (geo_obj == nullptr) {
           printf("geo_obj<%s> not found\n", str_geo_name.c_str());
           OrkAssert(false);
@@ -835,7 +836,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
 
       if (str_stages.find("F") != std::string::npos) {
         auto str_frg_name = tecniq_input_stream->ReadIndexedString(chunkreader);
-        auto frg_obj      = vulkan_shaderfile->_vk_shaderobjects[str_frg_name];
+        auto frg_obj      = vulkan_shaderfile->_vk_shaderstages[str_frg_name];
         if (frg_obj == nullptr) {
           printf("frg_obj<%s> not found\n", str_frg_name.c_str());
           OrkAssert(false);
@@ -916,16 +917,16 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       // PRE-RESOLVE the state block to a rasterstate at load time!
       auto it = vulkan_shaderfile->_stateblock_rasterstates.find(sblk_name);
       if (it != vulkan_shaderfile->_stateblock_rasterstates.end()) {
-        vk_pass->_stateblock_rasterstate = it->second; // Store pre-resolved rasterstate
-        vk_pass->_stateblock_rasterstate->_name = sblk_name;
+        vk_program->_stateblock_rasterstate = it->second; // Store pre-resolved rasterstate
+        vk_program->_stateblock_rasterstate->_name = sblk_name;
       } else {
         printf("Warning: State block '%s' not found for pass\n", sblk_name.c_str());
         // Use a default rasterstate or nullptr
-        vk_pass->_stateblock_rasterstate = nullptr;
+        vk_program->_stateblock_rasterstate = nullptr;
       }
       if(0)printf("TEK<%s> RASTERSTATE<%p:%s>\n",  //
              str_tek_name.c_str(),        //
-             (void*)vk_pass->_stateblock_rasterstate.get(),  //
+             (void*)vk_program->_stateblock_rasterstate.get(),  //
              sblk_name.c_str());
 
       //////////////////////////////////////////////////////////////
@@ -943,7 +944,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       std::map<VkShaderStageFlags, size_t> stage_start_offsets;
       std::map<VkShaderStageFlags, size_t> stage_end_offsets;
 
-      auto uniset_to_pushconstants = [&](vkfxsobj_ptr_t shobj, vkbufferlayout_ptr_t dest_layout) {
+      auto uniset_to_pushconstants = [&](vkfxsstage_ptr_t shobj, vkbufferlayout_ptr_t dest_layout) {
         if (nullptr == shobj->_uniset_refs) {
           return;
         }
@@ -1102,9 +1103,6 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         // - Compute shader (VK_SHADER_STAGE_COMPUTE_BIT)
 
         push_constants->_blockSize = pc_size;
-        vk_program->_pushdatabuffer.clear();
-        vk_program->_pushdatabuffer.resize(pc_size);
-        memset(vk_program->_pushdatabuffer.data(), 0, pc_size);
         vk_program->_pushConstantBlock = push_constants;
       } else {
         // No push constants needed - set nullptr
@@ -1177,7 +1175,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
           }
         }
 
-        vk_pass->_merged_resources = merged_resources;
+        vk_program->_merged_resources = merged_resources;
         
         // Auto-register UBOs in _merged_resource_bindings at load time
         // This ensures descriptor sets can be created for UBOs even when only
@@ -1217,19 +1215,19 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         }
       } else if (next_token == "no_merged_resources") {
         // No merged resources for this pass
-        vk_pass->_merged_resources = std::make_shared<VkMergedResources>();
+        vk_program->_merged_resources = std::make_shared<VkMergedResources>();
       } else {
         // Backward compatibility - assume no merged resources
-        vk_pass->_merged_resources = std::make_shared<VkMergedResources>();
+        vk_program->_merged_resources = std::make_shared<VkMergedResources>();
       }
       ////////////////////////////////////////////////////////////
-      OrkAssert(vk_pass->_merged_resources!=nullptr);
+      OrkAssert(vk_program->_merged_resources!=nullptr);
       ////////////////////////////////////////////////////////////
 
       // orkid side
       auto ork_pass   = new FxShaderPass;
       ork_pass->_name = FormatString("pass-%zu", i);
-      ork_pass->_impl.setShared<VkFxShaderPass>(vk_pass);
+      ork_pass->_impl.setShared<VkFxShaderProgram>(vk_program);
 
       ork_tek->_passes.push_back(ork_pass);
     } //for (size_t i = 0; i < num_passes; i++) {

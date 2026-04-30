@@ -14,16 +14,16 @@ namespace ork::lev2::vulkan {
 static logchannel_ptr_t logchan_vkcomp = logger()->configureChannel("VKCOMP", fvec3(0.2, 1, 0.8), false);
 
 ///////////////////////////////////////////////////////////////////////////////
-// VkComputePipelineObject implementation
+// VkComputePipelineState implementation
 ///////////////////////////////////////////////////////////////////////////////
 
-VkComputePipelineObject::VkComputePipelineObject(vkcontext_rawptr_t ctx)
+VkComputePipelineState::VkComputePipelineState(vkcontext_rawptr_t ctx)
     : _contextVK(ctx) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-VkComputePipelineObject::~VkComputePipelineObject() {
+VkComputePipelineState::~VkComputePipelineState() {
   if (_contextVK && _contextVK->_vkdevice) {
     if (_pipeline != VK_NULL_HANDLE) {
       vkDestroyPipeline(_contextVK->_vkdevice, _pipeline, nullptr);
@@ -42,7 +42,7 @@ VkComputePipelineObject::~VkComputePipelineObject() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkComputePipelineObject::bindStorageBuffer(uint32_t binding_index, VkBuffer buffer, VkDeviceSize size) {
+void VkComputePipelineState::bindStorageBuffer(uint32_t binding_index, VkBuffer buffer, VkDeviceSize size) {
   StorageBufferBinding binding;
   binding.buffer = buffer;
   binding.offset = 0;
@@ -53,14 +53,14 @@ void VkComputePipelineObject::bindStorageBuffer(uint32_t binding_index, VkBuffer
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkComputePipelineObject::bindSampler(uint32_t binding_index, VkDescriptorImageInfo desc_info) {
+void VkComputePipelineState::bindSampler(uint32_t binding_index, VkDescriptorImageInfo desc_info) {
   _sampler_bindings[binding_index] = desc_info;
   _descriptors_dirty = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkComputePipelineObject::updateDescriptorSet() {
+void VkComputePipelineState::updateDescriptorSet() {
   if (!_descriptors_dirty || (_ssbo_bindings.empty() && _sampler_bindings.empty())) {
     return;
   }
@@ -114,7 +114,7 @@ void VkComputePipelineObject::updateDescriptorSet() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool VkComputePipelineObject::createPipeline(vkfxsobj_ptr_t computeShader) {
+bool VkComputePipelineState::createPipeline(vkfxsstage_ptr_t computeShader) {
   if (!computeShader) {
     logchan_vkcomp->log("createPipeline: null compute shader");
     return false;
@@ -467,7 +467,7 @@ void VkComputeInterface::dispatchCompute(
   auto vk_compute_pipeline = shader->_impl.tryAs<vkcompute_pipeline_ptr_t>();
   if (!vk_compute_pipeline) {
     logchan_vkcomp->log("dispatchCompute: shader has no compute pipeline");
-    OrkAssert(false && "Compute shader has no VkComputePipelineObject");
+    OrkAssert(false && "Compute shader has no VkComputePipelineState");
     return;
   }
 
