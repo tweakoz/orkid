@@ -71,7 +71,7 @@ void Widget::setGeometry(Rect newgeo) {
 ///////////////////////////////////////////////////////////
 HandlerResult Widget::handleUiEvent(event_constptr_t ev) {
   Widget* target = doRouteUiEvent(ev);
-  if (_uicontext->_debug_event_routing){
+  if (_uicontext && _uicontext->_debug_event_routing){
     printf("handleuiev target<%s>\n", target ? target->_name.c_str() : "none");
   }
   return target ? target->OnUiEvent(ev) : HandlerResult();
@@ -80,14 +80,14 @@ HandlerResult Widget::handleUiEvent(event_constptr_t ev) {
 int wrstack = 0;
 Widget* Widget::routeUiEvent(event_constptr_t ev) {
   EASY_BLOCK("uictx::RUIEV", profiler::colors::Red);
-  if (_uicontext->_debug_event_routing){
+  if (_uicontext && _uicontext->_debug_event_routing){
     wrstack++;
     auto indent = std::string(wrstack * 2, ' ');
     //printf("%srouteUiEvent self<%s>\n", indent.c_str(), _name.c_str());
   }
   auto ret = _evrouter ? _evrouter(ev) // lambda takes preference
                        : doRouteUiEvent(ev);
-  if (_uicontext->_debug_event_routing){
+  if (_uicontext && _uicontext->_debug_event_routing){
     auto indent = std::string(wrstack * 2, ' ');
     //printf("%srouteUiEvent target<%s>\n", indent.c_str(), ret ? ret->_name.c_str() : "null");
     wrstack--;
