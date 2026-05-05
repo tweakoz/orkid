@@ -201,6 +201,9 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
       culltest = ECullTest::OFF;
     }
 
+    // Bump priority above the technique state block when the material wants
+    // to override its cull (e.g. mtl.doubleSided / PROBE rendering).
+    mut->_rasterstate->_priority = (this->_doubleSided || is_rendering_PROBE) ? (1 << 20) : 0;
     mut->_rasterstate->setCullTest(culltest);
     mut->_rasterstate->setDepthTest(EDepthTest::LEQUALS);
     if (this->_alphaMode == 2) { // BLEND

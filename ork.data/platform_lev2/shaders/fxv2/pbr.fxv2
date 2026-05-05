@@ -9,12 +9,12 @@ state_block sb_no_cull : sb_default {
 	CullTest = OFF;
 }
 ///////////////////////////////////////////////////////////////
+// sb_cullcw kept as an alias of sb_default; vertex-color techniques get
+// the same PASS_FRONT cull as everything else.
 state_block sb_cullcw : sb_default {
-	CullTest = PASS_BACK;
 }
 ///////////////////////////////////////////////////////////////
 state_block sb_cullcw_alpha : sb_default {
-	CullTest = PASS_BACK;
 	BlendMode = ALPHA;
 	DepthMask = false;
 }

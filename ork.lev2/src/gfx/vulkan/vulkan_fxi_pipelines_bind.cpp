@@ -104,6 +104,9 @@ void VkFxInterface::_bindPipeline(VkCommandBuffer cmdbuf, vkpipeline_obj_ptr_t p
   };
   vkCmdSetBlendConstants(cmdbuf, bc);
 
+  // Dynamic cull mode is set in VkFxInterface::applyRasterState, which
+  // runs after per-draw state lambdas have mutated the material rasterstate.
+
   ////////////////////////////////////////
   // upload ubo data and push constants
   ////////////////////////////////////////

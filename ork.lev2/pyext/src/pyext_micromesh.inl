@@ -276,18 +276,18 @@ inline void MicroMesh::updateFromLists(py::object vert_data, py::list face_list)
         }
         case 3: {
           auto& out_tri = _tris.emplace_back();
-          out_tri.push_back(face_list[iidx+2].cast<int>());
-          out_tri.push_back(face_list[iidx+1].cast<int>());
           out_tri.push_back(face_list[iidx+0].cast<int>());
+          out_tri.push_back(face_list[iidx+1].cast<int>());
+          out_tri.push_back(face_list[iidx+2].cast<int>());
           iidx += 3;
           break;
         }
         case 4: {
           auto& out_quad = _quads.emplace_back();
-          out_quad.push_back(face_list[iidx+3].cast<int>());
-          out_quad.push_back(face_list[iidx+2].cast<int>());
-          out_quad.push_back(face_list[iidx+1].cast<int>());
           out_quad.push_back(face_list[iidx+0].cast<int>());
+          out_quad.push_back(face_list[iidx+1].cast<int>());
+          out_quad.push_back(face_list[iidx+2].cast<int>());
+          out_quad.push_back(face_list[iidx+3].cast<int>());
           iidx += 4;
           break;
         }

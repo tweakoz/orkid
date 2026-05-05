@@ -664,6 +664,7 @@ struct VkFxInterface final : public FxInterface {
 
   void _doPushRasterState(rasterstate_ptr_t rs) final;
   rasterstate_ptr_t _doPopRasterState() final;
+  void applyRasterState(const RasterState& rstate) final;
 
   void _bindPipeline(VkCommandBuffer cmdbuf, vkpipeline_obj_ptr_t pipe);
   void _uploadPipelineData(VkCommandBuffer cmdbuf, vkpipeline_obj_ptr_t pipe);
@@ -1005,6 +1006,7 @@ public:
   PFN_vkCmdBeginRendering _vkCmdBeginRenderingKHR             = nullptr;
   PFN_vkCmdEndRendering _vkCmdEndRenderingKHR                 = nullptr;
   PFN_vkCmdInsertDebugUtilsLabelEXT _vkCmdInsertDebugUtilsLabelEXT = nullptr;
+  PFN_vkCmdSetCullModeEXT _vkCmdSetCullModeEXT                = nullptr;
   //////////////////////////////////////////////
   // Buffers pending cleanup - accumulated when no primary CB is active
   // Moved to primary CB's cleanup list when a new primary CB begins

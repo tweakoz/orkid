@@ -137,6 +137,7 @@ class BasicCubeLightApp(object):
       mtl.baseColor = vec4(1, 1, 1, 1)
       mtl.roughnessFactor = roughness
       mtl.metallicFactor = metallic
+      mtl.doubleSided = True  # lit on both sides; exercises the engine's dynamic cull path
       mtl.gpuInit(ctx)
       return mtl
 
