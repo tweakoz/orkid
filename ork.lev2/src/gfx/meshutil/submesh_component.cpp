@@ -131,7 +131,7 @@ void vertex::dump(const std::string& name) const {
   printf(
       "vertex<%s> hash<%llx> pos<%.*e %.*e %.*e> nrm<%.*f %.*f %.*f> uv0<%.*f %.*f> col0<%.*f %.*f %.*f %.*f>\n",
       name.c_str(),
-      hash(),
+      (ull)hash(),
       10,
       mPos.x,
       10,

@@ -147,7 +147,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
   uint64_t rs_pbits = check_plbits_range(vkrstate->_pipeline_bits, 8);
 
   if (0)
-    printf("RS_PBITS<%llx>\n", rs_pbits);
+    printf("RS_PBITS<%llx>\n", (ull)rs_pbits);
 
   // hash renderpass ?
 

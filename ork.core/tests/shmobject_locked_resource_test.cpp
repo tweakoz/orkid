@@ -156,8 +156,8 @@ TEST(ShmLockedResource_ConcurrentStress) {
             uint64_t expected_sum = snapshot.counter1 + snapshot.counter2 + 
                                   snapshot.counter3 + snapshot.counter4;
             if (snapshot.sum_check != expected_sum) {
-              printf("ERROR: Consistency check failed! sum_check=%lu expected=%lu\n",
-                     snapshot.sum_check, expected_sum);
+              printf("ERROR: Consistency check failed! sum_check=%llu expected=%llu\n",
+                     (ull)snapshot.sum_check, (ull)expected_sum);
             }
             break;
           }
@@ -264,11 +264,11 @@ TEST(ShmLockedResource_ConcurrentStress) {
   printf("Time: %.3f seconds\n", elapsed);
   printf("Total operations: %d\n", NUM_THREADS * OPS_PER_THREAD);
   printf("Ops/sec: %.0f\n", (NUM_THREADS * OPS_PER_THREAD) / elapsed);
-  printf("Counter1: %lu\n", final_state.counter1);
-  printf("Counter2: %lu\n", final_state.counter2);
-  printf("Counter3: %lu\n", final_state.counter3);
-  printf("Counter4: %lu\n", final_state.counter4);
-  printf("Sum check: %lu (expected: %lu)\n", final_state.sum_check, expected_sum);
+  printf("Counter1: %llu\n", (ull)final_state.counter1);
+  printf("Counter2: %llu\n", (ull)final_state.counter2);
+  printf("Counter3: %llu\n", (ull)final_state.counter3);
+  printf("Counter4: %llu\n", (ull)final_state.counter4);
+  printf("Sum check: %llu (expected: %llu)\n", (ull)final_state.sum_check, (ull)expected_sum);
   printf("Concurrent access errors: %u\n", final_state.error_count);
   printf("Concurrent detector state: %u (should be 0)\n", final_state.concurrent_access_detector);
   
@@ -364,12 +364,12 @@ TEST(ShmLockedResource_MultiProcess) {
   
   printf("\n=== Multi-Process Test Results ===\n");
   printf("Time: %.3f seconds\n", elapsed);
-  printf("Counter1: %lu\n", final_state.counter1);
-  printf("Counter2: %lu\n", final_state.counter2);
-  printf("Counter3: %lu\n", final_state.counter3);
-  printf("Counter4: %lu\n", final_state.counter4);
-  printf("Total increments: %lu (expected: %lu)\n", expected_sum, expected_total);
-  printf("Sum check: %lu\n", final_state.sum_check);
+  printf("Counter1: %llu\n", (ull)final_state.counter1);
+  printf("Counter2: %llu\n", (ull)final_state.counter2);
+  printf("Counter3: %llu\n", (ull)final_state.counter3);
+  printf("Counter4: %llu\n", (ull)final_state.counter4);
+  printf("Total increments: %llu (expected: %llu)\n", (ull)expected_sum, (ull)expected_total);
+  printf("Sum check: %llu\n", (ull)final_state.sum_check);
   printf("Concurrent access errors: %u\n", final_state.error_count);
   
   CHECK_EQUAL(expected_total, expected_sum);

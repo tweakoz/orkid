@@ -333,7 +333,7 @@ vkvertexinputconfig_ptr_t VkGeometryBufferInterface::vertexInputState(vkvtxbuf_p
   uint64_t vif_hash = vif->_hash; // hashed from shader input layout ordered(semantic, datatype)
 
  if(0)printf("vertexInputState: vif<%s> hash<%016llx> vb_format<%s>\n",
-         vif->_name.c_str(), vif_hash, EVtxStreamFormatToName(vb_format).c_str());
+         vif->_name.c_str(), (ull)vif_hash, EVtxStreamFormatToName(vb_format).c_str());
  
   auto it = vbuf->_vif_to_layout.find(vif_hash);
   if( it != vbuf->_vif_to_layout.end() ){

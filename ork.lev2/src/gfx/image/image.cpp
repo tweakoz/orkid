@@ -28,7 +28,7 @@ Image::Image() {
 }
 Image::~Image(){
   int numimages = g_ImageInstanceCounter.fetch_sub(1);
-  if(0)printf("~Image<%p> <%dx%d> numimages<%d>\n", (void*)this, _width, _height, numimages-1);
+  if(0)printf("~Image<%p> <%zux%zu> numimages<%d>\n", (void*)this, _width, _height, numimages-1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

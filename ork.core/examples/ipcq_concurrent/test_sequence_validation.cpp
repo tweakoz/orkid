@@ -68,15 +68,15 @@ void runProducer(const std::string& queue_name, uint64_t shared_seed) {
             msg.write<uint64_t>(computed_value);      // Proof of work
             msg.write<uint64_t>(cumulative_hash);     // Running verification
             
-            printf("[PRODUCER] Sending message %d (computed: 0x%llx, cumulative: 0x%llx)...\n", 
-                   i, computed_value, cumulative_hash);
+            printf("[PRODUCER] Sending message %d (computed: 0x%llx, cumulative: 0x%llx)...\n",
+                   i, (ull)computed_value, (ull)cumulative_hash);
             fflush(stdout);
             sender->send(msg);
             
             usleep(100000); // 100ms between messages
         }
         
-        printf("[PRODUCER] Producer finished successfully (final hash: 0x%llx)\n", cumulative_hash);
+        printf("[PRODUCER] Producer finished successfully (final hash: 0x%llx)\n", (ull)cumulative_hash);
         fflush(stdout);
         
     } catch (const std::exception& e) {
@@ -149,17 +149,17 @@ void runConsumer(const std::string& queue_name, uint64_t shared_seed) {
                 // Verify both values match
                 if (received_computed != expected_computed) {
                     printf("[CONSUMER] ❌ VERIFICATION FAILED: Message %d computed value mismatch!\n", value);
-                    printf("[CONSUMER]    Expected: 0x%llx, Received: 0x%llx\n", expected_computed, received_computed);
+                    printf("[CONSUMER]    Expected: 0x%llx, Received: 0x%llx\n", (ull)expected_computed, (ull)received_computed);
                     fflush(stdout);
                     verification_errors++;
                 } else if (received_cumulative != expected_cumulative) {
                     printf("[CONSUMER] ❌ VERIFICATION FAILED: Message %d cumulative hash mismatch!\n", value);
-                    printf("[CONSUMER]    Expected: 0x%llx, Received: 0x%llx\n", expected_cumulative, received_cumulative);
+                    printf("[CONSUMER]    Expected: 0x%llx, Received: 0x%llx\n", (ull)expected_cumulative, (ull)received_cumulative);
                     fflush(stdout);
                     verification_errors++;
                 } else {
-                    printf("[CONSUMER] ✅ Verified message: int=%d, float=%.2f, hash=0x%llx\n", 
-                           value, fvalue, received_computed);
+                    printf("[CONSUMER] ✅ Verified message: int=%d, float=%.2f, hash=0x%llx\n",
+                           value, fvalue, (ull)received_computed);
                     fflush(stdout);
                 }
                 
@@ -204,7 +204,7 @@ int main(int argc, char** argv) {
     printf("Using expensive computation for validation\n");
     printf("Queue: %s\n", queue_name.c_str());
     printf("Message size: 8KB, Queue size: 1K entries\n");
-    printf("Test seed: 0x%llx (unique for this run)\n", shared_seed);
+    printf("Test seed: 0x%llx (unique for this run)\n", (ull)shared_seed);
     printf("Test length: %d blocks\n\n", NUM_BLOCKS);
     
     // Fork to create consumer and producer processes

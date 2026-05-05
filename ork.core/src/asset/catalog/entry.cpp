@@ -218,7 +218,7 @@ void AssetEntry::repackage() {
 
   auto tar_data = _archiveAsset(fqid);
   _archive_size = tar_data->length();
-  if(0)printf("[TARX] tar_data out hash<0x%llx>\n", tar_data->hash());
+  if(0)printf("[TARX] tar_data out hash<0x%llx>\n", (ull)tar_data->hash());
   
   ////////////////////////////////////////////////////////
   // Compute content hash from TAR data

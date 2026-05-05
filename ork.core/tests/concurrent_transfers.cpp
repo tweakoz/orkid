@@ -786,7 +786,7 @@ TEST(ConcurrentTransfers_DuplicatePrevention) {
     std::string remote_filename = "duplicate_test_file.dat";
     
     printf("\n[DUPLICATE_TEST] Testing duplicate upload prevention\n");
-    printf("[DUPLICATE_TEST] Test file: %s (%zu bytes)\n", test_file.c_str(), file_size);
+    printf("[DUPLICATE_TEST] Test file: %s (%d bytes)\n", test_file.c_str(), file_size);
     
     // First upload - should succeed
     printf("\n[DUPLICATE_TEST] First upload attempt...\n");

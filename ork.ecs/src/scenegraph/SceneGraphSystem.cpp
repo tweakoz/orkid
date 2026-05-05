@@ -1116,7 +1116,7 @@ void SceneGraphSystem::_onPropertyChanged(token_t name, evdata_t value) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void SceneGraphSystem::_onRequest(impl::sys_response_ptr_t response, token_t reqID, evdata_t data) {
-  printf("SGSYS REQ<%08llx>\n", reqID._hashed);
+  printf("SGSYS REQ<%08llx>\n", (ull)reqID._hashed);
   switch (reqID.hashed()) {
     case CreateNode.hashed(): {
 

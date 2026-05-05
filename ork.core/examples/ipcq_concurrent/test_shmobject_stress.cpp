@@ -143,7 +143,7 @@ void worker_process(int worker_id, const TestConfig& config) {
         
         // PHASE 2: COMPUTE - Announce arrival and do work
         uint64_t my_process_num = data->process_counter.fetch_add(1) + 1;
-        printf("[WORKER %d] Joined as process #%llu\n", worker_id, my_process_num);
+        printf("[WORKER %d] Joined as process #%llu\n", worker_id, (ull)my_process_num);
         
         // Do computational work with timing variations
         Timer work_timer;
@@ -182,8 +182,8 @@ void worker_process(int worker_id, const TestConfig& config) {
             usleep(work_delay * 1000);
         }
         
-        printf("[WORKER %d] Work complete: %llu items, checksum=0x%llx\n", 
-               worker_id, my_work_done, my_checksum);
+        printf("[WORKER %d] Work complete: %llu items, checksum=0x%llx\n",
+               worker_id, (ull)my_work_done, (ull)my_checksum);
         
         // PHASE 3: CLOSE - Coordinate shutdown
         if (data->shutdown_requested.load()) {
@@ -279,7 +279,7 @@ int main(int argc, char** argv) {
             uint64_t work_index = data->work_index.load();
             
             printf("[COORDINATOR] Processes: %llu, Computations: %llu, Work index: %llu, Checksum: 0x%llx\n",
-                   processes, computations, work_index, checksum);
+                   (ull)processes, (ull)computations, (ull)work_index, (ull)checksum);
             
             sleep(1);
         }
@@ -291,7 +291,7 @@ int main(int argc, char** argv) {
         // Wait a bit for acknowledgments
         sleep(1);
         uint64_t shutdown_acks = data->shutdown_counter.load();
-        printf("[COORDINATOR] Shutdown acknowledgments: %llu\n", shutdown_acks);
+        printf("[COORDINATOR] Shutdown acknowledgments: %llu\n", (ull)shutdown_acks);
         
     } catch (const std::exception& e) {
         printf("[COORDINATOR] Shared memory error: %s\n", e.what());
