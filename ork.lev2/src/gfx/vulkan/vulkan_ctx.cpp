@@ -1490,6 +1490,9 @@ void VkContext::_doResizeMainSurface(int iw, int ih) {
     if (main_rtg) {
       main_rtg->Resize(iw, ih);
     }
+    if (auto sc = std::dynamic_pointer_cast<VkSwapChain>(_fbi->_output)) {
+      sc->_pendingReinit = true;
+    }
   });
 }
 

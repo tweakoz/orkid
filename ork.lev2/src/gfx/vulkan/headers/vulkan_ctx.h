@@ -397,7 +397,10 @@ struct VkSwapChain : public VkFramebufferOutput {
   std::vector<VkPipelineStageFlags> _allWaitStages;
 
   // index of the swapchain image currently acquired for rendering; 0xffffffff = none
-  u32 _curSwapWriteImage = 0xffffffff; 
+  u32 _curSwapWriteImage = 0xffffffff;
+  
+  // set by resize callback; drained at beginFrame before _acquireImage
+  bool _pendingReinit = false;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
