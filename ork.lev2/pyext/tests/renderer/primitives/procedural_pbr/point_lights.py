@@ -14,7 +14,7 @@ import math, sys, signal
 import numpy as np
 from orkengine.core import vec3, vec4, quat, mtx4, CrcStringProxy, lev2_pyexdir
 from orkengine import lev2
-from orkengine.lev2 import RigidPrimitive
+from orkengine.lev2 import RigidPrimitive, MicroMesh
 
 lev2_pyexdir.addToSysPath()
 from lev2utils.cameras import setupUiCamera
@@ -26,6 +26,7 @@ tokens = CrcStringProxy()
 ################################################################################
 
 def make_sphere_arrays(radius=1.0, n=12):
+  # Faces are CCW-from-outside; MicroMesh handles winding internally.
   verts, norms = [], []
   for i in range(n + 1):
     lat = math.pi * i / n
@@ -37,14 +38,14 @@ def make_sphere_arrays(radius=1.0, n=12):
       verts.append((x * radius, y * radius, z * radius))
       norms.append((x, y, z))
   w = n * 2
-  indices = []
+  faces = []
   for i in range(n):
     for j in range(w):
       a = i * w + j
       b = a + 1 if j < w - 1 else i * w
       c = a + w
       d = c + 1 if j < w - 1 else (i + 1) * w
-      indices.extend([a, c, b, b, c, d])
+      faces.extend([3, a, b, c, 3, b, d, c])
   nv = len(verts)
   verts_np = np.array(verts, dtype=np.float32)
   norms_np = np.array(norms, dtype=np.float32)
@@ -54,8 +55,7 @@ def make_sphere_arrays(radius=1.0, n=12):
   binormals_np[degen] = np.cross(norms_np[degen], [1, 0, 0])
   lens = np.linalg.norm(binormals_np, axis=1, keepdims=True)
   binormals_np = binormals_np / np.where(lens < 1e-10, 1.0, lens)
-  uvs_np = np.zeros((nv, 2), dtype=np.float32)
-  return verts_np, norms_np, binormals_np, uvs_np, np.array(indices, dtype=np.uint32)
+  return verts_np, norms_np, binormals_np, faces
 
 ################################################################################
 
@@ -84,7 +84,32 @@ class PointLightsApp(object):
     white_img = lev2.Image.createFromFile("src://effect_textures/white.dds")
     normal_img = lev2.Image.createFromFile("src://effect_textures/default_normal.dds")
 
-    sv, sn, sb, su, si = make_sphere_arrays(1.0, 12)
+    def make_solid_color_prim(verts, norms, binormals, faces, color, alpha):
+      n = len(verts)
+      # BGRA pre-swap — see vtxcolor_materials.py for the rationale.
+      colors = np.tile(np.array([color[2], color[1], color[0], alpha],
+                                dtype=np.float32), (n, 1))
+      mesh = MicroMesh.fromVertAndFaceLists(verts, faces)
+      mesh.updateNormals(norms)
+      mesh.updateBinormals(binormals)
+      mesh.updateColors(colors)
+      prim = RigidPrimitive()
+      prim.updateWithMicroMesh(mesh, ctx, tokens.TRIANGLES)
+      return prim
+
+    def make_pbr_material(roughness, metallic, alpha_blend):
+      mtl = lev2.PBRMaterial()
+      mtl.assignImages(ctx, color=white_img, normal=normal_img,
+                       mtlruf=white_img, doConform=True)
+      mtl.baseColor = vec4(1, 1, 1, 1)
+      mtl.roughnessFactor = roughness
+      mtl.metallicFactor = metallic
+      if alpha_blend:
+        mtl.alphaBlend = True
+      mtl.gpuInit(ctx)
+      return mtl
+
+    sv, sn, sb, sf = make_sphere_arrays(1.0, 12)
     self.materials = []
     self.prims = []
 
@@ -97,34 +122,17 @@ class PointLightsApp(object):
     ]
 
     for name, pos, color, roughness, metallic, alpha_blend in configs:
-      nv = len(sv)
-      r, g, b = color
-      colors_np = np.zeros((nv, 4), dtype=np.uint8)
-      colors_np[:, 0] = int(r * 255)
-      colors_np[:, 1] = int(g * 255)
-      colors_np[:, 2] = int(b * 255)
-      colors_np[:, 3] = 76 if alpha_blend else 255
-
-      prim = RigidPrimitive()
-      prim.fromArrays(sv, sn, sb, su, colors_np, si, ctx)
-
-      mtl = lev2.PBRMaterial()
-      mtl.assignImages(ctx, color=white_img, normal=normal_img, mtlruf=white_img, doConform=True)
-      mtl.baseColor = vec4(1, 1, 1, 1)
-      mtl.roughnessFactor = roughness
-      mtl.metallicFactor = metallic
-      if alpha_blend:
-        mtl.alphaBlend = True
-      mtl.gpuInit(ctx)
+      alpha = 0.3 if alpha_blend else 1.0
+      prim = make_solid_color_prim(sv, sn, sb, sf, color, alpha)
+      mtl = make_pbr_material(roughness, metallic, alpha_blend)
       self.materials.append(mtl)
       self.prims.append(prim)
-
       node = prim.createNode(name, self.layer1, mtl)
       node.worldTransform.translation = vec3(*pos)
       node.sortkey = 20 if alpha_blend else 10
 
     # Three orbiting point lights with indicator spheres
-    orb_sv, orb_sn, orb_sb, orb_su, orb_si = make_sphere_arrays(0.12, 6)
+    orb_sv, orb_sn, orb_sb, orb_sf = make_sphere_arrays(0.12, 6)
     light_configs = [
       ("red",   vec3(1.0, 0.2, 0.1)),
       ("green", vec3(0.1, 1.0, 0.2)),
@@ -138,21 +146,9 @@ class PointLightsApp(object):
       light.data.radius = 15.0
       light_node = self.layer1.createLightNode(f"light_{name}", light)
 
-      # Indicator sphere matching light color
-      nv = len(orb_sv)
-      orb_colors = np.zeros((nv, 4), dtype=np.uint8)
-      orb_colors[:, 0] = int(min(color.x, 1.0) * 255)
-      orb_colors[:, 1] = int(min(color.y, 1.0) * 255)
-      orb_colors[:, 2] = int(min(color.z, 1.0) * 255)
-      orb_colors[:, 3] = 255
-      orb_prim = RigidPrimitive()
-      orb_prim.fromArrays(orb_sv, orb_sn, orb_sb, orb_su, orb_colors, orb_si, ctx)
-      orb_mtl = lev2.PBRMaterial()
-      orb_mtl.assignImages(ctx, color=white_img, normal=normal_img, mtlruf=white_img, doConform=True)
-      orb_mtl.baseColor = vec4(1, 1, 1, 1)
-      orb_mtl.roughnessFactor = 0.0
-      orb_mtl.metallicFactor = 0.0
-      orb_mtl.gpuInit(ctx)
+      orb_color = (min(color.x, 1.0), min(color.y, 1.0), min(color.z, 1.0))
+      orb_prim = make_solid_color_prim(orb_sv, orb_sn, orb_sb, orb_sf, orb_color, 1.0)
+      orb_mtl = make_pbr_material(0.0, 0.0, False)
       self.materials.append(orb_mtl)
       self.prims.append(orb_prim)
       orb_node = orb_prim.createNode(f"orb_{name}", self.layer1, orb_mtl)

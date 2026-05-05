@@ -92,6 +92,25 @@ inline void loadVec3Data(std::vector<fvec3>& out_verts, py::object input) {
 }
 
 ///////////////////////////////////////
+// Like loadVec3Data but produces fvec4 from (N,3) (alpha=1) or (N,4) input.
+inline void loadVec4Data(std::vector<fvec4>& out_colors, py::object input) {
+  if (py::isinstance<py::buffer>(input)) {
+    auto info = input.cast<py::buffer>().request();
+    OrkAssert(info.format == py::format_descriptor<float>::format());
+    OrkAssert(info.ndim == 2 && (info.shape[1] == 3 || info.shape[1] == 4));
+    size_t n = info.shape[0], ch = info.shape[1];
+    size_t s0 = info.strides[0]/sizeof(float), s1 = info.strides[1]/sizeof(float);
+    float* p = static_cast<float*>(info.ptr);
+    out_colors.reserve(n);
+    for (size_t i = 0; i < n; i++)
+      out_colors.push_back(fvec4(p[i*s0], p[i*s0+s1], p[i*s0+2*s1],
+                                 ch == 4 ? p[i*s0+3*s1] : 1.0f));
+  } else {
+    for (const auto& c : input.cast<py::list>()) out_colors.push_back(c.cast<fvec4>());
+  }
+}
+
+///////////////////////////////////////
 
 inline void loadVec2Data(std::vector<fvec2>& out_uvs, py::object input) {
   // Try buffer protocol first (numpy arrays, etc.)
@@ -184,7 +203,7 @@ struct MicroMesh {
                        lev2::PrimitiveType primtype = lev2::PrimitiveType::TRIANGLES) const;
 
   std::vector<fvec3> _vertices;
-  std::vector<fvec3> _colors;
+  std::vector<fvec4> _colors;
   std::vector<fvec3> _normals;
   std::vector<fvec2> _uvs;        // Optional UV coordinates
   std::vector<fvec3> _binormals;  // Optional binormals (tangent space)
@@ -216,7 +235,7 @@ inline void MicroMesh::updateVertices(py::object vert_data) {
   loadVec3Data(_vertices, vert_data);
 
   // Initialize colors
-  _colors.resize(_vertices.size(), fvec3(1.0f, 1.0f, 1.0f));
+  _colors.resize(_vertices.size(), fvec4(1.0f, 1.0f, 1.0f, 1.0f));
 
   // Topology unchanged, connectivity still valid
 }
@@ -235,7 +254,7 @@ inline void MicroMesh::updateFromLists(py::object vert_data, py::list face_list)
   loadVec3Data(_vertices, vert_data);
 
   // Initialize colors
-  _colors.resize(_vertices.size(), fvec3(1.0f, 1.0f, 1.0f));
+  _colors.resize(_vertices.size(), fvec4(1.0f, 1.0f, 1.0f, 1.0f));
 
   // Load faces
   bool done_with_faces     = false;
@@ -684,11 +703,9 @@ inline void MicroMesh::updateNormals(py::object normal_data) {
 ///////////////////////////////////////
 
 inline void MicroMesh::updateColors(py::object color_data) {
-  // Update colors from pre-generated list or numpy array
+  // Update colors from pre-generated list or numpy array (RGB or RGBA)
   _colors.clear();
-
-  // Load colors using helper (supports py::list or numpy)
-  loadVec3Data(_colors, color_data);
+  loadVec4Data(_colors, color_data);
 }
 
 ///////////////////////////////////////

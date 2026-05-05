@@ -12,7 +12,7 @@ import math, sys, signal, argparse
 import numpy as np
 from orkengine.core import vec3, vec4, quat, mtx4, CrcStringProxy, lev2_pyexdir
 from orkengine import lev2
-from orkengine.lev2 import RigidPrimitive
+from orkengine.lev2 import RigidPrimitive, MicroMesh
 
 lev2_pyexdir.addToSysPath()
 
@@ -28,6 +28,10 @@ tokens = CrcStringProxy()
 ################################################################################
 
 def make_cube_arrays(size=1.0):
+  # Returns (verts_np, norms_np, binormals_np, faces).
+  # `faces` is a flat [count, i0, i1, i2, ...] list with CCW-from-outside
+  # winding (the natural authored direction). MicroMesh.fromVertAndFaceLists
+  # reverses winding internally to match the vertex-color forward technique.
   h = size / 2.0
   face_data = [
     ((0,0,1),  [(-h,-h,h),(h,-h,h),(h,h,h),(-h,h,h)]),
@@ -37,23 +41,22 @@ def make_cube_arrays(size=1.0):
     ((0,1,0),  [(-h,h,h),(h,h,h),(h,h,-h),(-h,h,-h)]),
     ((0,-1,0), [(-h,-h,-h),(h,-h,-h),(h,-h,h),(-h,-h,h)]),
   ]
-  verts, norms, indices = [], [], []
+  verts, norms, faces = [], [], []
   for (nx, ny, nz), corners in face_data:
     base = len(verts)
     for c in corners:
       verts.append(c)
       norms.append((nx, ny, nz))
-    indices.extend([base, base+2, base+1, base, base+3, base+2])
+    faces.extend([3, base, base+1, base+2, 3, base, base+2, base+3])
   nv = len(verts)
   verts_np = np.array(verts, dtype=np.float32)
   norms_np = np.array(norms, dtype=np.float32)
   binormals_np = np.zeros((nv, 3), dtype=np.float32)
   binormals_np[:, 0] = 1.0
-  uvs_np = np.zeros((nv, 2), dtype=np.float32)
-  indices_np = np.array(indices, dtype=np.uint32)
-  return verts_np, norms_np, binormals_np, uvs_np, indices_np
+  return verts_np, norms_np, binormals_np, faces
 
 def make_sphere_arrays(radius=1.0, n=8):
+  # Same convention as make_cube_arrays: faces are CCW-from-outside.
   verts, norms = [], []
   for i in range(n + 1):
     lat = math.pi * i / n
@@ -65,14 +68,14 @@ def make_sphere_arrays(radius=1.0, n=8):
       verts.append((x * radius, y * radius, z * radius))
       norms.append((x, y, z))
   w = n * 2
-  indices = []
+  faces = []
   for i in range(n):
     for j in range(w):
       a = i * w + j
       b = a + 1 if j < w - 1 else i * w
       c = a + w
       d = c + 1 if j < w - 1 else (i + 1) * w
-      indices.extend([a, c, b, b, c, d])
+      faces.extend([3, a, b, c, 3, b, d, c])
   nv = len(verts)
   verts_np = np.array(verts, dtype=np.float32)
   norms_np = np.array(norms, dtype=np.float32)
@@ -82,8 +85,7 @@ def make_sphere_arrays(radius=1.0, n=8):
   binormals_np[degen] = np.cross(norms_np[degen], [1, 0, 0])
   lens = np.linalg.norm(binormals_np, axis=1, keepdims=True)
   binormals_np = binormals_np / np.where(lens < 1e-10, 1.0, lens)
-  uvs_np = np.zeros((nv, 2), dtype=np.float32)
-  return verts_np, norms_np, binormals_np, uvs_np, np.array(indices, dtype=np.uint32)
+  return verts_np, norms_np, binormals_np, faces
 
 ################################################################################
 
@@ -114,62 +116,51 @@ class BasicCubeLightApp(object):
       obj_color = (0.8, 0.75, 0.7)
       roughness, metallic = 1.0, 0.0
 
+    def make_solid_color_prim(verts, norms, binormals, faces, color):
+      n = len(verts)
+      # BGRA pre-swap: MicroMesh::updateRigidPrim packs colors via
+      # fvec4::ARGBU32 which lands as BGRA in memory; the GPU reads RGBA.
+      colors = np.tile(np.array([color[2], color[1], color[0], 1.0],
+                                dtype=np.float32), (n, 1))
+      mesh = MicroMesh.fromVertAndFaceLists(verts, faces)
+      mesh.updateNormals(norms)
+      mesh.updateBinormals(binormals)
+      mesh.updateColors(colors)
+      prim = RigidPrimitive()
+      prim.updateWithMicroMesh(mesh, ctx, tokens.TRIANGLES)
+      return prim
+
+    def make_pbr_material(roughness, metallic):
+      mtl = lev2.PBRMaterial()
+      mtl.assignImages(ctx, color=white_img, normal=normal_img,
+                       mtlruf=white_img, doConform=True)
+      mtl.baseColor = vec4(1, 1, 1, 1)
+      mtl.roughnessFactor = roughness
+      mtl.metallicFactor = metallic
+      mtl.gpuInit(ctx)
+      return mtl
+
     # Cube
-    cv, cn, cb, cu, ci = make_cube_arrays(size=1.0)
-    nv = len(cv)
-    colors_np = np.zeros((nv, 4), dtype=np.uint8)
-    colors_np[:, 0] = int(obj_color[0] * 255)
-    colors_np[:, 1] = int(obj_color[1] * 255)
-    colors_np[:, 2] = int(obj_color[2] * 255)
-    colors_np[:, 3] = 255
-    self.cube_prim = RigidPrimitive()
-    self.cube_prim.fromArrays(cv, cn, cb, cu, colors_np, ci, ctx)
-    cube_mtl = lev2.PBRMaterial()
-    cube_mtl.assignImages(ctx, color=white_img, normal=normal_img, mtlruf=white_img, doConform=True)
-    cube_mtl.baseColor = vec4(1, 1, 1, 1)
-    cube_mtl.roughnessFactor = roughness
-    cube_mtl.metallicFactor = metallic
-    cube_mtl.gpuInit(ctx)
-    self.cube_mtl = cube_mtl
-    self.cube_node = self.cube_prim.createNode("cube", self.layer1, cube_mtl)
+    cv, cn, cb, cf = make_cube_arrays(size=1.0)
+    self.cube_prim = make_solid_color_prim(cv, cn, cb, cf, obj_color)
+    self.cube_mtl = make_pbr_material(roughness, metallic)
+    self.cube_node = self.cube_prim.createNode("cube", self.layer1, self.cube_mtl)
     self.cube_node.worldTransform.translation = vec3(-0.8, 0, 0)
     self.cube_node.sortkey = 10
 
     # Sphere next to the cube (same material)
-    sv_obj, sn_obj, sb_obj, su_obj, si_obj = make_sphere_arrays(0.6, 12)
-    nv_obj = len(sv_obj)
-    sphere_colors = np.zeros((nv_obj, 4), dtype=np.uint8)
-    sphere_colors[:, 0] = int(obj_color[0] * 255)
-    sphere_colors[:, 1] = int(obj_color[1] * 255)
-    sphere_colors[:, 2] = int(obj_color[2] * 255)
-    sphere_colors[:, 3] = 255
-    self.sphere_prim = RigidPrimitive()
-    self.sphere_prim.fromArrays(sv_obj, sn_obj, sb_obj, su_obj, sphere_colors, si_obj, ctx)
-    sphere_mtl = lev2.PBRMaterial()
-    sphere_mtl.assignImages(ctx, color=white_img, normal=normal_img, mtlruf=white_img, doConform=True)
-    sphere_mtl.baseColor = vec4(1, 1, 1, 1)
-    sphere_mtl.roughnessFactor = roughness
-    sphere_mtl.metallicFactor = metallic
-    sphere_mtl.gpuInit(ctx)
-    self.sphere_mtl = sphere_mtl
-    self.sphere_node = self.sphere_prim.createNode("sphere", self.layer1, sphere_mtl)
+    sv_obj, sn_obj, sb_obj, sf_obj = make_sphere_arrays(0.6, 12)
+    self.sphere_prim = make_solid_color_prim(sv_obj, sn_obj, sb_obj, sf_obj, obj_color)
+    self.sphere_mtl = make_pbr_material(roughness, metallic)
+    self.sphere_node = self.sphere_prim.createNode("sphere", self.layer1, self.sphere_mtl)
     self.sphere_node.worldTransform.translation = vec3(0.8, 0, 0)
     self.sphere_node.sortkey = 10
 
     # Light indicator sphere
-    sv, sn, sb, su, si = make_sphere_arrays(0.08, 6)
-    nv_s = len(sv)
-    orb_colors = np.full((nv_s, 4), 255, dtype=np.uint8)
-    self.orb_prim = RigidPrimitive()
-    self.orb_prim.fromArrays(sv, sn, sb, su, orb_colors, si, ctx)
-    orb_mtl = lev2.PBRMaterial()
-    orb_mtl.assignImages(ctx, color=white_img, normal=normal_img, mtlruf=white_img, doConform=True)
-    orb_mtl.baseColor = vec4(1, 1, 1, 1)
-    orb_mtl.roughnessFactor = 0.0
-    orb_mtl.metallicFactor = 0.0
-    orb_mtl.gpuInit(ctx)
-    self.orb_mtl = orb_mtl
-    self.orb_node = self.orb_prim.createNode("orb", self.layer1, orb_mtl)
+    sv, sn, sb, sf = make_sphere_arrays(0.08, 6)
+    self.orb_prim = make_solid_color_prim(sv, sn, sb, sf, (1.0, 1.0, 1.0))
+    self.orb_mtl = make_pbr_material(0.0, 0.0)
+    self.orb_node = self.orb_prim.createNode("orb", self.layer1, self.orb_mtl)
     self.orb_node.sortkey = 10
 
     # Point light

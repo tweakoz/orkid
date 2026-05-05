@@ -2,7 +2,7 @@
 
 ################################################################################
 # Procedural PBR Materials Test
-# Demonstrates RigidPrimitive.fromArrays with PBR vertex-color technique,
+# Demonstrates MicroMesh + RigidPrimitive with PBR vertex-color technique,
 # per-object roughness/metallic via PBRMaterial, and ModColor tint/opacity.
 # Renders a row of spheres with different PBR material properties.
 # Copyright 1996-2023, Michael T. Mayers.
@@ -14,7 +14,7 @@ import math, sys, signal
 import numpy as np
 from orkengine.core import vec3, vec4, quat, mtx4, CrcStringProxy, lev2_pyexdir
 from orkengine import lev2
-from orkengine.lev2 import RigidPrimitive
+from orkengine.lev2 import RigidPrimitive, MicroMesh
 
 lev2_pyexdir.addToSysPath()
 from lev2utils.cameras import setupUiCamera
@@ -28,7 +28,9 @@ tokens = CrcStringProxy()
 ################################################################################
 
 def make_sphere_arrays(radius=1.0, n=16):
-  """Generate sphere vertex data as numpy arrays for fromArrays."""
+  """Generate sphere data as (verts, norms, binormals, faces) — faces are
+  authored CCW-from-outside; MicroMesh handles winding for the vtxcolor
+  forward technique internally."""
   verts = []
   norms = []
   for i in range(n + 1):
@@ -42,29 +44,25 @@ def make_sphere_arrays(radius=1.0, n=16):
       norms.append((x, y, z))
 
   w = n * 2
-  indices = []
+  faces = []
   for i in range(n):
     for j in range(w):
       a = i * w + j
       b = a + 1 if j < w - 1 else i * w
       c = a + w
       d = c + 1 if j < w - 1 else (i + 1) * w
-      # CW winding for orkid
-      indices.extend([a, c, b, b, c, d])
+      faces.extend([3, a, b, c, 3, b, d, c])
 
   nv = len(verts)
   verts_np = np.array(verts, dtype=np.float32)
   norms_np = np.array(norms, dtype=np.float32)
-  # Compute binormals from normals
   up = np.array([0, 1, 0], dtype=np.float32)
   binormals_np = np.cross(norms_np, up)
   degen = np.linalg.norm(binormals_np, axis=1) < 1e-6
   binormals_np[degen] = np.cross(norms_np[degen], [1, 0, 0])
   lens = np.linalg.norm(binormals_np, axis=1, keepdims=True)
   binormals_np = binormals_np / np.where(lens < 1e-10, 1.0, lens)
-  uvs_np = np.zeros((nv, 2), dtype=np.float32)
-  indices_np = np.array(indices, dtype=np.uint32)
-  return verts_np, norms_np, binormals_np, uvs_np, indices_np
+  return verts_np, norms_np, binormals_np, faces
 
 ################################################################################
 # Material definitions: (name, color_rgb, roughness, metallic, alpha_blend)
@@ -111,7 +109,8 @@ class ProceduralMaterialsApp(object):
     self.normal_img = lev2.Image.createFromFile("src://effect_textures/default_normal.dds")
 
     # Sphere mesh data (shared across all materials)
-    verts_np, norms_np, binormals_np, uvs_np, indices_np = make_sphere_arrays(radius=1.0, n=16)
+    verts_np, norms_np, binormals_np, faces = make_sphere_arrays(radius=1.0, n=16)
+    nv = len(verts_np)
 
     self.material_keep_alive = []
     self.nodes = []
@@ -120,21 +119,20 @@ class ProceduralMaterialsApp(object):
     start_x = -(len(MATERIALS) - 1) * spacing / 2.0
 
     for i, (name, color, roughness, metallic, alpha_blend) in enumerate(MATERIALS):
-      # Create vertex colors
-      nv = len(verts_np)
       r, g, b = color
       a = 0.3 if alpha_blend else 1.0
-      colors_np = np.zeros((nv, 4), dtype=np.uint8)
-      colors_np[:, 0] = int(r * 255)
-      colors_np[:, 1] = int(g * 255)
-      colors_np[:, 2] = int(b * 255)
-      colors_np[:, 3] = int(a * 255)
+      # Pack as BGRA — MicroMesh::updateRigidPrim packs via fvec4::ARGBU32
+      # which lands as BGRA in memory; the GPU reads RGBA, so pre-swap
+      # R/B at the source so visible color matches the requested RGB.
+      colors_np = np.tile(np.array([b, g, r, a], dtype=np.float32), (nv, 1))
 
-      # Create RigidPrimitive via fromArrays
+      mesh = MicroMesh.fromVertAndFaceLists(verts_np, faces)
+      mesh.updateNormals(norms_np)
+      mesh.updateBinormals(binormals_np)
+      mesh.updateColors(colors_np)
       prim = RigidPrimitive()
-      prim.fromArrays(verts_np, norms_np, binormals_np, uvs_np, colors_np, indices_np, ctx)
+      prim.updateWithMicroMesh(mesh, ctx, tokens.TRIANGLES)
 
-      # Create PBR material
       mtl = lev2.PBRMaterial()
       mtl.assignImages(ctx, color=self.white_img, normal=self.normal_img,
                        mtlruf=self.white_img, doConform=True)
@@ -146,7 +144,6 @@ class ProceduralMaterialsApp(object):
       mtl.gpuInit(ctx)
       self.material_keep_alive.append(mtl)
 
-      # Create node
       node = prim.createNode(f"sphere_{name}", self.layer1, mtl)
       node.worldTransform.translation = vec3(start_x + i * spacing, 1.2, 0)
       node.sortkey = 20 if alpha_blend else 10

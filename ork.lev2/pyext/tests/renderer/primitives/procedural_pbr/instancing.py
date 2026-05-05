@@ -17,7 +17,7 @@ import math, sys, signal, random
 import numpy as np
 from orkengine.core import vec3, vec4, quat, mtx4, CrcStringProxy, lev2_pyexdir
 from orkengine import lev2
-from orkengine.lev2 import RigidPrimitive
+from orkengine.lev2 import RigidPrimitive, MicroMesh
 
 lev2_pyexdir.addToSysPath()
 from lev2utils.cameras import setupUiCamera
@@ -33,6 +33,7 @@ NUM_TRANSPARENT = 200
 ################################################################################
 
 def make_sphere_arrays(radius=1.0, n=8):
+  # Faces are CCW-from-outside; MicroMesh handles winding internally.
   verts, norms = [], []
   for i in range(n + 1):
     lat = math.pi * i / n
@@ -44,14 +45,14 @@ def make_sphere_arrays(radius=1.0, n=8):
       verts.append((x * radius, y * radius, z * radius))
       norms.append((x, y, z))
   w = n * 2
-  indices = []
+  faces = []
   for i in range(n):
     for j in range(w):
       a = i * w + j
       b = a + 1 if j < w - 1 else i * w
       c = a + w
       d = c + 1 if j < w - 1 else (i + 1) * w
-      indices.extend([a, c, b, b, c, d])
+      faces.extend([3, a, b, c, 3, b, d, c])
   nv = len(verts)
   verts_np = np.array(verts, dtype=np.float32)
   norms_np = np.array(norms, dtype=np.float32)
@@ -61,8 +62,7 @@ def make_sphere_arrays(radius=1.0, n=8):
   binormals_np[degen] = np.cross(norms_np[degen], [1, 0, 0])
   lens = np.linalg.norm(binormals_np, axis=1, keepdims=True)
   binormals_np = binormals_np / np.where(lens < 1e-10, 1.0, lens)
-  uvs_np = np.zeros((nv, 2), dtype=np.float32)
-  return verts_np, norms_np, binormals_np, uvs_np, np.array(indices, dtype=np.uint32)
+  return verts_np, norms_np, binormals_np, faces
 
 def make_cube_arrays(size=1.0):
   h = size / 2.0
@@ -74,20 +74,19 @@ def make_cube_arrays(size=1.0):
     ((0,1,0),  [(-h,h,h),(h,h,h),(h,h,-h),(-h,h,-h)]),
     ((0,-1,0), [(-h,-h,-h),(h,-h,-h),(h,-h,h),(-h,-h,h)]),
   ]
-  verts, norms, indices = [], [], []
+  verts, norms, faces = [], [], []
   for (nx, ny, nz), corners in face_data:
     base = len(verts)
     for c in corners:
       verts.append(c)
       norms.append((nx, ny, nz))
-    indices.extend([base, base+2, base+1, base, base+3, base+2])
+    faces.extend([3, base, base+1, base+2, 3, base, base+2, base+3])
   nv = len(verts)
   verts_np = np.array(verts, dtype=np.float32)
   norms_np = np.array(norms, dtype=np.float32)
   binormals_np = np.zeros((nv, 3), dtype=np.float32)
   binormals_np[:, 0] = 1.0
-  uvs_np = np.zeros((nv, 2), dtype=np.float32)
-  return verts_np, norms_np, binormals_np, uvs_np, np.array(indices, dtype=np.uint32)
+  return verts_np, norms_np, binormals_np, faces
 
 ################################################################################
 
@@ -120,11 +119,16 @@ class InstancingApp(object):
     self.prims = []
 
     def make_instanced_set(mesh_arrays, count, name, roughness, metallic, alpha_blend=False):
-      v, n, b, u, idx = mesh_arrays
+      v, n, b, faces = mesh_arrays
       nv = len(v)
-      vc = np.full((nv, 4), 255, dtype=np.uint8)
+      # White vertex colors — per-instance colors come from the SSBO modcolors.
+      vc = np.ones((nv, 4), dtype=np.float32)
+      mesh = MicroMesh.fromVertAndFaceLists(v, faces)
+      mesh.updateNormals(n)
+      mesh.updateBinormals(b)
+      mesh.updateColors(vc)
       prim = RigidPrimitive()
-      prim.fromArrays(v, n, b, u, vc, idx, ctx)
+      prim.updateWithMicroMesh(mesh, ctx, tokens.TRIANGLES)
       mtl = lev2.PBRMaterial()
       mtl.assignImages(ctx, color=white_img, normal=normal_img, mtlruf=white_img, doConform=True)
       mtl.baseColor = vec4(1, 1, 1, 1)
