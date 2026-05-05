@@ -7,10 +7,13 @@
 
 #include "headers/vulkan_ctx.h"
 #include <ork/lev2/gfx/shadman.h>
+#include <ork/util/logger.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
+
+static logchannel_ptr_t logchan_vkbuf = logger()->configureChannel("VKBUF", fvec3(0.6, 0.8, 0.4), true);
 
 FxUniformBuffer* VkFxInterface::createUniformBuffer(size_t length) {
   auto ub = new FxUniformBuffer;
@@ -110,37 +113,32 @@ void VkFxInterface::bindStorageBuffer(const FxShaderStorageBlock* block,
 
  if(0) printf("bindStorageBuffer: block<%s> buffer<%p>\n", block ? block->_name.c_str() : "null", buffer);
 
-
-
   if (!block || !buffer) {
     return;
   }
 
   // Get Vulkan-specific implementations
-  auto vk_block_ptr = block->_impl.getShared<VkFxShaderStorageBlock*>();
+  auto& vk_block_ptr = block->_impl.getShared<VkFxShaderStorageBlock*>();
   if (!vk_block_ptr) {
     return;
   }
   auto vk_block = *vk_block_ptr;
 
-  auto vk_buffer = buffer->_impl.getShared<VulkanBuffer>();
+  auto& vk_buffer = buffer->_impl.getShared<VulkanBuffer>();
   if (!vk_buffer) {
     return;
   }
 
-  if (!_current_shader_state)
-    return;
-
   // Store binding per-context so concurrent VkContexts don't collide
-  auto* sb_state = _current_shader_state->storageStateForBlock(vk_block);
-  if (!sb_state)
+  auto* block_state = storageStateForBlock(vk_block);
+  if (!block_state) {
+    logchan_vkbuf->log("bindStorageBuffer: no storage state for block<%s>", block->_name.c_str());
     return;
+  }
 
   // Store binding for later use when creating descriptor sets
-  sb_state->_bound_buffer        = vk_buffer;
-  sb_state->_bound_ssbo = buffer;
-
-  // _current_shader_state->_dirty_ssbo_blocks.insert(sb_state); // Never consumed?
+  block_state->_bound_buffer = vk_buffer;
+  block_state->_bound_ssbo   = buffer;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

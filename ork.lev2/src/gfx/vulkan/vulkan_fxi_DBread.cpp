@@ -806,7 +806,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       auto str_stages = tecniq_input_stream->ReadIndexedString(chunkreader);
       OrkAssert(str_stages == "VF" or str_stages == "VGF");
 
-      auto vk_program      = std::make_shared<VkFxShaderProgram>(vulkan_shaderfile.get());
+      auto vk_program      = std::make_shared<VkFxShaderPass>(vulkan_shaderfile.get());
       vk_program->_tek_name = str_tek_name;
       vk_tek->_vk_passes.push_back(vk_program);
       static int prog_index          = 0;
@@ -1227,7 +1227,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       // orkid side
       auto ork_pass   = new FxShaderPass;
       ork_pass->_name = FormatString("pass-%zu", i);
-      ork_pass->_impl.setShared<VkFxShaderProgram>(vk_program);
+      ork_pass->_impl.setShared<VkFxShaderPass>(vk_program);
 
       ork_tek->_passes.push_back(ork_pass);
     } //for (size_t i = 0; i < num_passes; i++) {

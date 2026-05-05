@@ -73,12 +73,7 @@ struct VkFxShaderUniformBlock : public VkFxShaderDescriptorSetItem {
 struct VkFxShaderUniformBlockState {
   uint32_t                      _binding_id = 0;
   std::vector<uint8_t>          _shadow_buffer;
-  std::vector<dirtyrange_ptr_t> _dirty_ranges;
-  VkFxShaderUniformBlock*         _shader_uniform_block = nullptr;
-
-  void addDirtyRange(size_t offset, size_t size);
-  void coalesceRanges();
-  std::vector<alignedrange_ptr_t> getAlignedRanges(VkDeviceSize atom_size) const;
+  VkFxShaderUniformBlock*       _shader_uniform_block = nullptr;
 };
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -91,25 +86,6 @@ struct VkFxShaderUniformBlkItem {
   size_t _array_length = 0;
   std::shared_ptr<FxShaderParam> _orkparam;
   struct VkFxShaderUniformBlock* _parent_block = nullptr;
-};
-
-////////////////////////////////////////////////////////////////////////////////
-
-struct DirtyRange {
-  size_t offset;
-  size_t size;
-};
-
-////////////////////////////////////////////////////////////////////////////////
-
-struct AlignedRange {
-  VkDeviceSize offset;
-  VkDeviceSize size;
-  
-  static std::shared_ptr<AlignedRange> fromDirtyRange(
-    dirtyrange_ptr_t dirty, 
-    VkDeviceSize atom_size, 
-    VkDeviceSize buffer_size);
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -189,7 +165,7 @@ struct VkFxShaderPushConstantBlock {
 struct VkFxShaderTechnique {
   VkFxShaderTechnique();
   ~VkFxShaderTechnique();
-  std::vector<vkfxsprg_ptr_t> _vk_passes;
+  std::vector<vkfxshaderpass_ptr_t> _vk_passes;
   std::shared_ptr<FxShaderTechnique> _orktechnique;
 };
 
@@ -259,11 +235,11 @@ struct DescBinding {
 /////////////////////////////////////////////////////////////////////////////////
 //  VkFxShaderState
 //    Per-VkContext state for VkFxShaderProgram. Mutable per frame.
-//    Owned by VkFxInterface::_shader_states (inline map values, keyed by program rawptr).
+//    Owned by VkFxInterface::_shader_pass_states (inline map values, keyed by program rawptr).
 //    Shared across all VkPipelineState instances that use the same program.
 /////////////////////////////////////////////////////////////////////////////////
 
-struct VkFxShaderState {
+struct VkFxShaderPassState {
 
   std::unordered_map<fxparam_constptr_t, vktexobj_ptr_t> _textures_by_orkparam;
   std::unordered_map<fxparam_constptr_t, vkbuffer_ptr_t> _uniformbuffers_by_orkparam;
@@ -271,31 +247,16 @@ struct VkFxShaderState {
   std::vector<VkParamSetItem> _pending_params;
   std::vector<uint8_t>        _pushdatabuffer;
 
-  // Per-context UBO shadow buffers — one entry per block in the program, initialised at BeginBlock time.
-  std::unordered_map<VkFxShaderUniformBlock*, VkFxShaderUniformBlockState> _uniform_states;
   std::vector<VkFxShaderUniformBlockState*> _ordered_uniform_states; // Ordered by binding ID
-  std::set<VkFxShaderUniformBlockState*>    _dirty_uniform_blocks;
-  std::vector<uint32_t>                     _dynamic_offsets;
-  
-  // Per-context SSBO bound-buffer state — one entry per SSBO block in the program.
-  std::unordered_map<VkFxShaderStorageBlock*, VkFxShaderStorageBlockState> _storage_states;
   std::vector<VkFxShaderStorageBlockState*> _ordered_storage_states;  // Ordered by binding ID
-  // std::set<VkFxShaderStorageBlockState*> _dirty_ssbo_blocks; // Never consumed?
 
-  // Associated VkFxShaderProgram
-  vkfxsprg_rawptr_t _shader = nullptr;
-
-  // Initialise context vectors for all blocks in prog (idempotent; call at BeginBlock).
-  void initForProgram(vkfxsprg_rawptr_t prog);
-
-  VkFxShaderUniformBlockState* uniformStateForBlock(VkFxShaderUniformBlock* block);
-  VkFxShaderStorageBlockState* storageStateForBlock(VkFxShaderStorageBlock* block);
+  vkfxshaderpass_rawptr_t _shader = nullptr;
 
   uint64_t samplersHash() const;
 };
 
 /////////////////////////////////////////////////////////////////////////////////
-//  VkFxShaderProgram
+//  VkFxShaderPass
 //    A single pass composed of multiple shader stages (vertex, fragment, geometry, etc.).
 //    Immutable. Shared across all VkContexts.
 //    Owned by VkFxShaderTechnique::_vk_passes (shared_ptr). Lifetime == shader asset lifetime.
@@ -303,9 +264,9 @@ struct VkFxShaderState {
 //    Per-context draw-time state belongs in VkFxShaderState.
 /////////////////////////////////////////////////////////////////////////////////
 
-struct VkFxShaderProgram {
+struct VkFxShaderPass {
 
-  VkFxShaderProgram(VkFxShaderFile* file);
+  VkFxShaderPass(VkFxShaderFile* file);
 
   std::string _tek_name;
 
@@ -364,8 +325,8 @@ struct VulkanDescriptorSetCacheState {
 
   VulkanDescriptorSetCacheState(vkcontext_rawptr_t ctx);
 
-  vkdescriptorsetstate_ptr_t fetchDescriptorSetForProgram(vkfxsprg_rawptr_t program);
-  vkdescriptorsetstate_ptr_t    _createNewDescriptorSetForProgram(vkfxsprg_rawptr_t program);
+  vkdescriptorsetstate_ptr_t fetchDescriptorSetForProgram(vkfxshaderpass_rawptr_t program);
+  vkdescriptorsetstate_ptr_t    _createNewDescriptorSetForProgram(vkfxshaderpass_rawptr_t program);
 
   std::unordered_map<uint64_t, vkdescriptorsetstate_ptr_t> _vkDescriptorSetByHash;
   vkcontext_rawptr_t _ctxVK;
@@ -384,7 +345,7 @@ struct VkPipelineState {
   void applyPendingPushConstants(VkCommandBuffer cmdbuf);
   void applyPendingUboUpdates(VkCommandBuffer cmdbuf, uint32_t frame_index);
   
-  VkFxShaderState* _shader_state = nullptr;
+  VkFxShaderPassState* _shader_state = nullptr;
 
   VkGraphicsPipelineCreateInfo _VKGFXPCI;
   VkPipeline _pipeline;

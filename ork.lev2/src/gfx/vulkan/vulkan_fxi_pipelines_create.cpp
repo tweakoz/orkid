@@ -27,7 +27,7 @@ vkpipelinestate_ptr_t VkFxInterface::_createPipeline(
   OrkAssert(_currentVKPASS != nullptr);
   vkpipelinestate_ptr_t pipeline = std::make_shared<VkPipelineState>(_contextVK);
   auto shprog                   = _currentVKPASS;
-  pipeline->_shader_state       = &_shader_states[shprog];
+  pipeline->_shader_state       = &_shader_pass_states[shprog];
   pipeline->_rasterstate        = vkrstate;
   auto fbi                      = _contextVK->_fbi;
   auto gbi                      = _contextVK->_gbi;
@@ -273,7 +273,7 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipelinest
               // Attach shader context's UBO context to the pipeline, recording binding ID.
               //////////////////////////////////////////////////////
 
-              auto* ub_ctx = shader_state->uniformStateForBlock(ubo);
+              auto* ub_ctx = uniformStateForBlock(ubo);
               if (ub_ctx && build_ordered) {
                 ub_ctx->_binding_id = binding->binding_id;
                 shader_state->_ordered_uniform_states.push_back(ub_ctx);
@@ -299,7 +299,7 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipelinest
                 // Attach shader context's SSBO context to the pipeline, recording binding ID.
                 //////////////////////////////////////////////////////
 
-                auto* ssbo_ctx = shader_state->storageStateForBlock(ssbo);
+                auto* ssbo_ctx = storageStateForBlock(ssbo);
                 if (ssbo_ctx && build_ordered) {
                   ssbo_ctx->_binding_id = binding->binding_id;
                   shader_state->_ordered_storage_states.push_back(ssbo_ctx);
@@ -444,7 +444,7 @@ vkpipelinestate_ptr_t VkFxInterface::_createPipelineSSBO(vkprimclass_ptr_t primc
   OrkAssert(_currentVKPASS != nullptr);
   vkpipelinestate_ptr_t pipeline = std::make_shared<VkPipelineState>(_contextVK);
   auto shprog = _currentVKPASS;
-  pipeline->_shader_state       = &_shader_states[shprog];
+  pipeline->_shader_state       = &_shader_pass_states[shprog];
   pipeline->_rasterstate        = vkrstate;
   auto fbi                      = _contextVK->_fbi;
   auto rtg                      = fbi->_active_rtgroup;

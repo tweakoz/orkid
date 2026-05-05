@@ -97,9 +97,12 @@ int VkFxInterface::BeginBlock(fxtechnique_constptr_t tek, const RenderContextIns
     auto& pass = _currentVKTEK->_vk_passes[0];
     _currentVKPASS = pass.get();
 
-    auto& state = _shader_states[_currentVKPASS];
-    state.initForProgram(_currentVKPASS);
-    _current_shader_state = &state;
+    auto& state = _shader_pass_states[_currentVKPASS];
+    if (state._shader != _currentVKPASS) {
+      state._shader = _currentVKPASS;
+      _ensureBlockStates(_currentVKPASS);
+    }
+    _current_shader_pass_state = &state;
   }
   return passcount;
 }
@@ -107,6 +110,11 @@ int VkFxInterface::BeginBlock(fxtechnique_constptr_t tek, const RenderContextIns
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::EndBlock() {
+  _current_shader_pass_state = nullptr;
+  _currentPipeline = nullptr;
+  _currentORKTEK = nullptr;
+  _currentVKTEK  = nullptr;
+  _currentVKPASS = nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -121,7 +129,7 @@ void VkFxInterface::reset() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-int VkFxInterface::_pipelineBitsForShader(vkfxsprg_rawptr_t shprog){
+int VkFxInterface::_pipelineBitsForShader(vkfxshaderpass_rawptr_t shprog){
 
   if(shprog->_pipeline_bits_composite == -1){ // compute ?
 

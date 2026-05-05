@@ -41,6 +41,14 @@ std::pair<uint32_t, VkMergedResourceBinding*> findBindingInMergedResources(
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void VkFxInterface::_logMissingBindState(const std::string& name) {
+  if (_logged_missing_bind_states.insert(name).second) {
+    logchan_vkbpar->log("Needs fix! No block state for param<%s>. This could be causing unnecessary work to occur each cycle!", name.c_str());
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 bool VkFxInterface::_tryBindMergedResource(const FxShaderParam* hpar,
                                            VkMergedResourceBinding::Type expected_type,
                                            svar64_t resource_data) {
@@ -83,11 +91,11 @@ bool VkFxInterface::_tryBindMergedResource(const FxShaderParam* hpar,
   switch (expected_type) {
     case VkMergedResourceBinding::Type::Sampler: {
       auto vktex = resource_data.getShared<VulkanTextureObject>();
-      _current_shader_state->_textures_by_orkparam[hpar] = vktex;
+      _current_shader_pass_state->_textures_by_orkparam[hpar] = vktex;
       break;
     }
     case VkMergedResourceBinding::Type::UniformBlock: {
-      _current_shader_state->_uniformbuffers_by_orkparam[hpar] = resource_data.get<vkbuffer_ptr_t>();
+      _current_shader_pass_state->_uniformbuffers_by_orkparam[hpar] = resource_data.get<vkbuffer_ptr_t>();
       break;
     }
     case VkMergedResourceBinding::Type::StorageBuffer:
@@ -107,26 +115,21 @@ void VkFxInterface::bindParamBool(const FxShaderParam* hpar, const bool bval) {
   if (auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>()) {
     // Push constant path
     uint32_t uval = bval ? 1 : 0;
-    auto& param_set = _current_shader_state->_pending_params.emplace_back();
+    auto& param_set = _current_shader_pass_state->_pending_params.emplace_back();
     param_set._vk_param = as_uniset_item.value();
     param_set._ork_param = param_set._vk_param->_orkparam.get();
     param_set._value.set<uint32_t>(uval);
   }
   else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
-    auto* block_state = _current_shader_state->uniformStateForBlock(as_uniblk_item.value()->_parent_block);
-
-    // This gets call for every param loaded from a shader file. Which ends up with a bunch of redundant bind calls.
-    // Really you only need state for what the shader actually uses. In VkFxShaderState::initForProgram 
-    // it is further explained how you could init only the buffer state needed for what the specific shader needs
-    // reducing redundant buffers. However some change needs to be made further up so this bind doesn't get called for those.
-    // Otherwise you must null guard the block_state.
-    // if (!block_state) return;
+    auto* block_state = uniformStateForBlock(as_uniblk_item.value()->_parent_block);
+    if (!block_state) {
+      _logMissingBindState(hpar->_name);
+      return;
+    }
 
     size_t offset = as_uniblk_item.value()->_offset;
     uint32_t uval = bval ? 1 : 0;
     memcpy(block_state->_shadow_buffer.data() + offset, &uval, 4);
-    block_state->addDirtyRange(offset, 4);
-    _current_shader_state->_dirty_uniform_blocks.insert(block_state);
   }
 }
 
@@ -134,20 +137,22 @@ void VkFxInterface::bindParamBool(const FxShaderParam* hpar, const bool bval) {
 
 void VkFxInterface::bindParamInt(const FxShaderParam* hpar, const int ival) {
   if (auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>()) {
-    auto& param_set = _current_shader_state->_pending_params.emplace_back();
+    auto& param_set = _current_shader_pass_state->_pending_params.emplace_back();
     param_set._vk_param = as_uniset_item.value();
     param_set._ork_param = param_set._vk_param->_orkparam.get();
     param_set._value.set<int32_t>(ival);
     //printf("bindParamInt(uniset) param<%s> val<%d>\n", hpar->_name.c_str(), ival);
   } 
   else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
-    auto* block_state = _current_shader_state->uniformStateForBlock(as_uniblk_item.value()->_parent_block);
+    auto* block_state = uniformStateForBlock(as_uniblk_item.value()->_parent_block);
+    if (!block_state) {
+      _logMissingBindState(hpar->_name);
+      return;
+    }
+
     size_t offset = as_uniblk_item.value()->_offset;
     memcpy(block_state->_shadow_buffer.data() + offset, &ival, 4);
-    block_state->addDirtyRange(offset, 4);
-    _current_shader_state->_dirty_uniform_blocks.insert(block_state);
-    //printf("bindParamInt(uniblk) param<%s> val<%d> offset<%zu>\n", hpar->_name.c_str(), ival, offset);
-  } 
+  }
   else {
     printf("bindParamInt FAILED - param<%s> has unknown impl type\n", hpar->_name.c_str());
   }
@@ -158,17 +163,20 @@ void VkFxInterface::bindParamInt(const FxShaderParam* hpar, const int ival) {
 void VkFxInterface::bindParamVect2(const FxShaderParam* hpar, const fvec2& Vec) {
   if (auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>()) {
     // vec2 is fine as-is for std140 layout (8-byte alignment)
-    auto& param_set = _current_shader_state->_pending_params.emplace_back();
+    auto& param_set = _current_shader_pass_state->_pending_params.emplace_back();
     param_set._vk_param = as_uniset_item.value();
     param_set._ork_param = param_set._vk_param->_orkparam.get();
     param_set._value.set<fvec2>(Vec);
   } 
   else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
-    auto* block_state = _current_shader_state->uniformStateForBlock(as_uniblk_item.value()->_parent_block);
+    auto* block_state = uniformStateForBlock(as_uniblk_item.value()->_parent_block);
+    if (!block_state) {
+      _logMissingBindState(hpar->_name);
+      return;
+    }
+
     size_t offset = as_uniblk_item.value()->_offset;
     memcpy(block_state->_shadow_buffer.data() + offset, Vec.asArray(), 8);
-    block_state->addDirtyRange(offset, 8);
-    _current_shader_state->_dirty_uniform_blocks.insert(block_state);
   }
 }
 
@@ -179,7 +187,7 @@ void VkFxInterface::bindParamVect3(const FxShaderParam* hpar, const fvec3& Vec) 
     // Convert vec3 to vec4 for Vulkan alignment (vec3 requires vec4 alignment in std140)
     fvec4 aligned_vec(Vec.x, Vec.y, Vec.z, 0.0f);
 
-    auto& param_set = _current_shader_state->_pending_params.emplace_back();
+    auto& param_set = _current_shader_pass_state->_pending_params.emplace_back();
     param_set._vk_param = as_uniset_item.value();
     param_set._ork_param = param_set._vk_param->_orkparam.get();
     param_set._value.set<fvec4>(aligned_vec);
@@ -196,8 +204,11 @@ void VkFxInterface::bindParamVect3(const FxShaderParam* hpar, const fvec3& Vec) 
   }*/
 
     // UBO path
-    auto* block_state = _current_shader_state->uniformStateForBlock(as_uniblk_item.value()->_parent_block);
-    
+    auto* block_state = uniformStateForBlock(as_uniblk_item.value()->_parent_block);
+    if (!block_state) {
+      _logMissingBindState(hpar->_name);
+      return;
+    }
 
     auto* block = as_uniblk_item.value();
     size_t offset = block->_offset;
@@ -205,12 +216,6 @@ void VkFxInterface::bindParamVect3(const FxShaderParam* hpar, const fvec3& Vec) 
     // Vec3 needs vec4 alignment in std140
     float data[4] = {Vec.x, Vec.y, Vec.z, 0.0f};
     memcpy(block_state->_shadow_buffer.data() + offset, data, 16);
-
-    // Track dirty range
-    block_state->addDirtyRange(offset, 16);
-
-        // Add block to flush list if not already there
-    _current_shader_state->_dirty_uniform_blocks.insert(block_state);
     
     // Debug logging for EyePostion tracking
     //if (hpar->_name == "EyePostion") {
@@ -231,19 +236,20 @@ void VkFxInterface::bindParamVect3(const FxShaderParam* hpar, const fvec3& Vec) 
 
 void VkFxInterface::bindParamVect4(const FxShaderParam* hpar, const fvec4& Vec) {
   if (auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>()) {
-    auto& param_set = _current_shader_state->_pending_params.emplace_back();
+    auto& param_set = _current_shader_pass_state->_pending_params.emplace_back();
     param_set._vk_param = as_uniset_item.value();
     param_set._ork_param = param_set._vk_param->_orkparam.get();
     param_set._value.set<fvec4>(Vec);
   } 
   else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
-    auto* block_state = _current_shader_state->uniformStateForBlock(as_uniblk_item.value()->_parent_block);
-    
+    auto* block_state = uniformStateForBlock(as_uniblk_item.value()->_parent_block);
+    if (!block_state) {
+      _logMissingBindState(hpar->_name);
+      return;
+    }
 
     size_t offset = as_uniblk_item.value()->_offset;
     memcpy(block_state->_shadow_buffer.data() + offset, Vec.asArray(), 16);
-    block_state->addDirtyRange(offset, 16);
-    _current_shader_state->_dirty_uniform_blocks.insert(block_state);
   }
 }
 
@@ -255,7 +261,12 @@ void VkFxInterface::bindParamVect2Array(const FxShaderParam* hpar, const fvec2* 
     // TODO: Need to implement setArray in svar64_t
   }
   else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
-    auto* block_state = _current_shader_state->uniformStateForBlock(as_uniblk_item.value()->_parent_block);
+    auto* block_state = uniformStateForBlock(as_uniblk_item.value()->_parent_block);
+    if (!block_state) {
+      _logMissingBindState(hpar->_name);
+      return;
+    }
+
     size_t offset = as_uniblk_item.value()->_offset;
 
     // Each vec2 in array takes 16 bytes in std140!
@@ -263,9 +274,6 @@ void VkFxInterface::bindParamVect2Array(const FxShaderParam* hpar, const fvec2* 
       memcpy(block_state->_shadow_buffer.data() + offset + (i * 16), Vec[i].asArray(), 8);
       // 8 bytes padding after each vec2
     }
-
-    block_state->addDirtyRange(offset, icount * 16);
-    _current_shader_state->_dirty_uniform_blocks.insert(block_state);
   }
 }
 
@@ -277,13 +285,15 @@ void VkFxInterface::bindParamVect4Array(const FxShaderParam* hpar, const fvec4* 
     // TODO: Need to implement setArray in svar64_t
   }
   else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
-    auto* block_state = _current_shader_state->uniformStateForBlock(as_uniblk_item.value()->_parent_block);
+    auto* block_state = uniformStateForBlock(as_uniblk_item.value()->_parent_block);
+    if (!block_state) {
+      _logMissingBindState(hpar->_name);
+      return;
+    }
+
     size_t offset = as_uniblk_item.value()->_offset;
 
     memcpy(block_state->_shadow_buffer.data() + offset, Vec, icount * 16);
-
-    block_state->addDirtyRange(offset, icount * 16);
-    _current_shader_state->_dirty_uniform_blocks.insert(block_state);
   }
 }
 
@@ -297,7 +307,12 @@ void VkFxInterface::bindParamFloatArray(const FxShaderParam* hpar, const float* 
   }
   else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
     // UBO - MUST use vec4 stride for arrays!
-    auto* block_state = _current_shader_state->uniformStateForBlock(as_uniblk_item.value()->_parent_block);
+    auto* block_state = uniformStateForBlock(as_uniblk_item.value()->_parent_block);
+    if (!block_state) {
+      _logMissingBindState(hpar->_name);
+      return;
+    }
+
     size_t offset = as_uniblk_item.value()->_offset;
 
     // Each float in array takes 16 bytes in std140!
@@ -305,9 +320,6 @@ void VkFxInterface::bindParamFloatArray(const FxShaderParam* hpar, const float* 
       memcpy(block_state->_shadow_buffer.data() + offset + (i * 16), &pfA[i], 4);
       // Padding bytes are already zero in shadow buffer
     }
-
-    block_state->addDirtyRange(offset, icnt * 16);
-    _current_shader_state->_dirty_uniform_blocks.insert(block_state);
   }
 }
 
@@ -319,16 +331,18 @@ void VkFxInterface::bindParamVect3Array(const FxShaderParam* hpar, const fvec3* 
     // TODO: Need to implement setArray in svar64_t
   }
   else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
-    auto* block_state = _current_shader_state->uniformStateForBlock(as_uniblk_item.value()->_parent_block);
+    auto* block_state = uniformStateForBlock(as_uniblk_item.value()->_parent_block);
+    if (!block_state) {
+      _logMissingBindState(hpar->_name);
+      return;
+    }
+
     size_t offset = as_uniblk_item.value()->_offset;
 
     for (int i = 0; i < icount; i++) {
       float data[4] = {Vec[i].x, Vec[i].y, Vec[i].z, 0.0f};
       memcpy(block_state->_shadow_buffer.data() + offset + (i * 16), data, 16);
     }
-
-    block_state->addDirtyRange(offset, icount * 16);
-    _current_shader_state->_dirty_uniform_blocks.insert(block_state);
   }
 }
 
@@ -336,17 +350,20 @@ void VkFxInterface::bindParamVect3Array(const FxShaderParam* hpar, const fvec3* 
 
 void VkFxInterface::bindParamFloat(const FxShaderParam* hpar, float fA) {
   if (auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>()) {
-    auto& param_set = _current_shader_state->_pending_params.emplace_back();
+    auto& param_set = _current_shader_pass_state->_pending_params.emplace_back();
     param_set._vk_param = as_uniset_item.value();
     param_set._ork_param = param_set._vk_param->_orkparam.get();
     param_set._value.set<float>(fA);
   }
   else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
-    auto* block_state = _current_shader_state->uniformStateForBlock(as_uniblk_item.value()->_parent_block);    
+    auto* block_state = uniformStateForBlock(as_uniblk_item.value()->_parent_block);
+    if (!block_state) {
+      _logMissingBindState(hpar->_name);
+      return;
+    }
+
     size_t offset = as_uniblk_item.value()->_offset;
     memcpy(block_state->_shadow_buffer.data() + offset, &fA, 4);
-    block_state->addDirtyRange(offset, 4);
-    _current_shader_state->_dirty_uniform_blocks.insert(block_state);
   }
   else{
     OrkAssert(false);
@@ -366,26 +383,27 @@ void VkFxInterface::bindParamMatrix(const FxShaderParam* hpar, const fmtx4& Mat)
   if (nan_check_count < 100) {
     const float* fdata = Mat.asArray();
     if (std::isnan(fdata[0]) || std::isnan(fdata[1]) || std::isnan(fdata[4]) || std::isnan(fdata[5])) {
-      if(0)logchan_vkbpar->log("WARN: bindParamMatrix param<%s> has NaN! [%g %g %g %g ...]",
+      logchan_vkbpar->log("WARN: bindParamMatrix param<%s> has NaN! [%g %g %g %g ...]",
                           hpar->_name.c_str(), fdata[0], fdata[1], fdata[2], fdata[3]);
       nan_check_count++;
     }
   }
   if (auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>()) {
-    auto& param_set = _current_shader_state->_pending_params.emplace_back();
+    auto& param_set = _current_shader_pass_state->_pending_params.emplace_back();
     param_set._vk_param = as_uniset_item.value();
     param_set._ork_param = param_set._vk_param->_orkparam.get();
     param_set._value.set<fmtx4>(Mat);
   }
   else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
-    auto* block_state = _current_shader_state->uniformStateForBlock(as_uniblk_item.value()->_parent_block);
-    
+    auto* block_state = uniformStateForBlock(as_uniblk_item.value()->_parent_block);
+    if (!block_state) {
+      _logMissingBindState(hpar->_name);
+      return;
+    }
 
     size_t offset = as_uniblk_item.value()->_offset;
     // fmtx4 should already be 64 bytes, column-major
     memcpy(block_state->_shadow_buffer.data() + offset, &Mat, 64);
-    block_state->addDirtyRange(offset, 64);
-    _current_shader_state->_dirty_uniform_blocks.insert(block_state);
 
   }
   else {
@@ -416,15 +434,18 @@ void VkFxInterface::bindParamMatrix(const FxShaderParam* hpar, const fmtx3& Mat)
       vk_mat3[col][3] = 0.0f; // padding
     }
 
-    auto& param_set = _current_shader_state->_pending_params.emplace_back();
+    auto& param_set = _current_shader_pass_state->_pending_params.emplace_back();
     param_set._vk_param = as_uniset_item.value();
     param_set._ork_param = param_set._vk_param->_orkparam.get();
     param_set._value.set<glm::mat3x4>(vk_mat3);
   }
   else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
     // UBO path - mat3 is 3 columns of vec4 in std140
-    auto* block_state = _current_shader_state->uniformStateForBlock(as_uniblk_item.value()->_parent_block);
-    
+    auto* block_state = uniformStateForBlock(as_uniblk_item.value()->_parent_block);
+    if (!block_state) {
+      _logMissingBindState(hpar->_name);
+      return;
+    }
 
     size_t offset = as_uniblk_item.value()->_offset;
 
@@ -435,10 +456,6 @@ void VkFxInterface::bindParamMatrix(const FxShaderParam* hpar, const fmtx3& Mat)
       };
       memcpy(block_state->_shadow_buffer.data() + offset + (col * 16), column, 16);
     }
-
-    // Track dirty range (48 bytes for mat3)
-    block_state->addDirtyRange(offset, 48);
-    _current_shader_state->_dirty_uniform_blocks.insert(block_state);
   }
 }
 
@@ -450,16 +467,16 @@ void VkFxInterface::bindParamMatrixArray(const FxShaderParam* hpar, const fmtx4*
     // TODO: Need to implement setArray in svar64_t
   }
   else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
-    auto* block_state = _current_shader_state->uniformStateForBlock(as_uniblk_item.value()->_parent_block);
-    
+    auto* block_state = uniformStateForBlock(as_uniblk_item.value()->_parent_block);
+    if (!block_state) {
+      _logMissingBindState(hpar->_name);
+      return;
+    }
 
     size_t offset = as_uniblk_item.value()->_offset;
 
     // fmtx4 should already be 64 bytes, column-major
     memcpy(block_state->_shadow_buffer.data() + offset, MatArray, iCount * 64);
-
-    block_state->addDirtyRange(offset, iCount * 64);
-    _current_shader_state->_dirty_uniform_blocks.insert(block_state);
   }
 }
 
@@ -467,19 +484,20 @@ void VkFxInterface::bindParamMatrixArray(const FxShaderParam* hpar, const fmtx4*
 
 void VkFxInterface::bindParamU32(const FxShaderParam* hpar, uint32_t uval) {
   if (auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>()) {
-    auto& param_set = _current_shader_state->_pending_params.emplace_back();
+    auto& param_set = _current_shader_pass_state->_pending_params.emplace_back();
     param_set._vk_param = as_uniset_item.value();
     param_set._ork_param = param_set._vk_param->_orkparam.get();
     param_set._value.set<uint32_t>(uval);
   }
   else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
-    auto* block_state = _current_shader_state->uniformStateForBlock(as_uniblk_item.value()->_parent_block);
-    
+    auto* block_state = uniformStateForBlock(as_uniblk_item.value()->_parent_block);
+    if (!block_state) {
+      _logMissingBindState(hpar->_name);
+      return;
+    }
 
     size_t offset = as_uniblk_item.value()->_offset;
     memcpy(block_state->_shadow_buffer.data() + offset, &uval, 4);
-    block_state->addDirtyRange(offset, 4);
-    _current_shader_state->_dirty_uniform_blocks.insert(block_state);
   }
 }
 
@@ -487,19 +505,20 @@ void VkFxInterface::bindParamU32(const FxShaderParam* hpar, uint32_t uval) {
 
 void VkFxInterface::bindParamU64(const FxShaderParam* hpar, uint64_t uval) {
   if (auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>()) {
-    auto& param_set = _current_shader_state->_pending_params.emplace_back();
+    auto& param_set = _current_shader_pass_state->_pending_params.emplace_back();
     param_set._vk_param = as_uniset_item.value();
     param_set._ork_param = param_set._vk_param->_orkparam.get();
     param_set._value.set<uint64_t>(uval);
   }
   else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
-    auto* block_state = _current_shader_state->uniformStateForBlock(as_uniblk_item.value()->_parent_block);
-    
+    auto* block_state = uniformStateForBlock(as_uniblk_item.value()->_parent_block);
+    if (!block_state) {
+      _logMissingBindState(hpar->_name);
+      return;
+    }
 
     size_t offset = as_uniblk_item.value()->_offset;
     memcpy(block_state->_shadow_buffer.data() + offset, &uval, 8);
-    block_state->addDirtyRange(offset, 8);
-    _current_shader_state->_dirty_uniform_blocks.insert(block_state);
   }
 }
 
@@ -564,12 +583,15 @@ void VkFxInterface::bindUniformBuffer(const FxUniformBlock* block, FxUniformBuff
   // Copy the external buffer's data into the UBO's shadow buffer
   // This allows the dynamic UBO system to upload it at draw time
   auto src_buffer = vk_buffer.value();
-  auto* block_state = _current_shader_state->uniformStateForBlock(vk_block.get());
+  auto* block_state = uniformStateForBlock(vk_block.get());
+  if (!block_state) {
+    _logMissingBindState(block->_name);
+    return;
+  }
+
   size_t copy_size = std::min(src_buffer->_length, block_state->_shadow_buffer.size());
   if (copy_size > 0) {
     src_buffer->copyToHost(block_state->_shadow_buffer.data(), copy_size);
-    block_state->addDirtyRange(0, copy_size);
-    _current_shader_state->_dirty_uniform_blocks.insert(block_state);
   }
 }
 

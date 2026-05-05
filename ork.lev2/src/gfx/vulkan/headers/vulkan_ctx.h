@@ -670,20 +670,29 @@ struct VkFxInterface final : public FxInterface {
   void _bindGfxDescriptorSetOnSlot(VkCommandBuffer cmdbuf, vkdescriptorsetstate_ptr_t desc_set, size_t slot);
   void _bindVertexBufferOnSlot(VkCommandBuffer cmdbuf, vkvtxbuf_ptr_t vb, size_t slot);
 
-  int _pipelineBitsForShader(vkfxsprg_rawptr_t shprog);
-  void _flushDirtyUniformBlocks();
+  int _pipelineBitsForShader(vkfxshaderpass_rawptr_t shprog);
 
-  std::unordered_map<vkfxsprg_rawptr_t, VkFxShaderState> _shader_states;
-  vkfxsstate_rawptr_t _current_shader_state = nullptr;
+  VkFxShaderUniformBlockState* uniformStateForBlock(VkFxShaderUniformBlock* block);
+  VkFxShaderStorageBlockState* storageStateForBlock(VkFxShaderStorageBlock* block);
 
+  void _ensureBlockStates(vkfxshaderpass_rawptr_t prog);
+  void _logMissingBindState(const std::string& name);
+
+  std::vector<uint32_t> _dynamic_offsets;
+  
+  vkfxshaderpassstate_rawptr_t _current_shader_pass_state = nullptr;
+  vkpipelinestate_rawptr_t     _currentPipeline = nullptr;
+  fxtechnique_constptr_t       _currentORKTEK = nullptr;
+  vkfxstek_rawptr_t            _currentVKTEK  = nullptr;
+  vkfxshaderpass_rawptr_t      _currentVKPASS = nullptr;
+  vkcontext_rawptr_t           _contextVK     = nullptr;
+  
+  std::unordered_map<VkFxShaderUniformBlock*, VkFxShaderUniformBlockState> _uniform_block_states;
+  std::unordered_map<VkFxShaderStorageBlock*, VkFxShaderStorageBlockState> _storage_block_states;
+  
+  std::unordered_map<vkfxshaderpass_rawptr_t, VkFxShaderPassState> _shader_pass_states;
   std::unordered_map<uint64_t, vkpipelinestate_ptr_t> _pipelines;
-  vkpipelinestate_rawptr_t _currentPipeline = nullptr;
-
-  fxtechnique_constptr_t _currentORKTEK = nullptr;
-  vkfxstek_rawptr_t      _currentVKTEK  = nullptr;
-  vkfxsprg_rawptr_t      _currentVKPASS = nullptr;
-  vkcontext_rawptr_t     _contextVK     = nullptr;
-
+  
   std::map<AssetPath, vkfxsfile_ptr_t> _fxshaderfiles;
   shadlang::slpcache_ptr_t _slp_cache;
   priority_stack<rasterstate_ptr_t> _rasterstate_stack;
@@ -693,6 +702,7 @@ struct VkFxInterface final : public FxInterface {
   std::unordered_map<uint64_t, int> _vk_geointerface_cache;
   std::array<vkdescriptorsetstate_ptr_t, 4> _active_gfx_descriptorSets;
   std::array<vkvtxbuf_ptr_t, 4> _active_vbs;
+  std::set<std::string> _logged_missing_bind_states;
   bool _enable_pipeline_debug = false;
   
   bool _tryBindMergedResource(const FxShaderParam* hpar,

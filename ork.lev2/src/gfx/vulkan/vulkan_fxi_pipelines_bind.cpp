@@ -119,8 +119,7 @@ void VkFxInterface::_bindPipeline(VkCommandBuffer cmdbuf, vkpipelinestate_rawptr
 
   if (desc_set) {
     // Bind descriptor set with dynamic offsets from applyPendingUboUpdates
-    auto& dynamic_offsets = pipeline->_shader_state->_dynamic_offsets;
-    if (!dynamic_offsets.empty()) {
+    if (!_dynamic_offsets.empty()) {
       vkCmdBindDescriptorSets(
           cmdbuf,
           VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -128,8 +127,8 @@ void VkFxInterface::_bindPipeline(VkCommandBuffer cmdbuf, vkpipelinestate_rawptr
           0, // first set
           1, // set count
           &desc_set->_vkdescset,
-          dynamic_offsets.size(),
-          dynamic_offsets.data());
+          _dynamic_offsets.size(),
+          _dynamic_offsets.data());
     } else {
       // Fallback to static binding if no dynamic offsets
       _bindGfxDescriptorSetOnSlot(cmdbuf, desc_set, 0);
@@ -146,11 +145,6 @@ void VkFxInterface::_uploadPipelineData(VkCommandBuffer CB, vkpipelinestate_rawp
   // This allocates per-draw memory and copies shadow buffers
   static uint32_t frame_index = 0; // TODO: Get actual frame index from swapchain
   pipeline->applyPendingUboUpdates(CB, frame_index);
-
-  // Flush uniform blocks BEFORE fetching descriptor set
-  // This ensures the GPU buffers have the correct data when bound
-  // Note: With dynamic UBOs, this may become unnecessary
-  _flushDirtyUniformBlocks();
 
   pipeline->applyPendingPushConstants(CB);
 }
@@ -254,7 +248,7 @@ void VkPipelineState::applyPendingUboUpdates(VkCommandBuffer cmdbuf, uint32_t fr
     return;
   }
 
-  _shader_state->_dynamic_offsets.clear();
+  _descriptorSetCache->_ctxVK->_fxi->_dynamic_offsets.clear();
 
   static int log_count = 0;
   bool do_log = (log_count++ < 100);
@@ -281,7 +275,7 @@ void VkPipelineState::applyPendingUboUpdates(VkCommandBuffer cmdbuf, uint32_t fr
     memcpy(allocation.cpu_ptr, ubo_state->_shadow_buffer.data(), ubo_state->_shadow_buffer.size());
 
     // Track offset for descriptor binding
-    _shader_state->_dynamic_offsets.push_back(allocation.dynamic_offset);
+    _descriptorSetCache->_ctxVK->_fxi->_dynamic_offsets.push_back(allocation.dynamic_offset);
   }
 }
 
@@ -306,7 +300,7 @@ void VkFxInterface::_bindGfxDescriptorSetOnSlot(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-vkdescriptorsetstate_ptr_t VulkanDescriptorSetCacheState::_createNewDescriptorSetForProgram(vkfxsprg_rawptr_t program){
+vkdescriptorsetstate_ptr_t VulkanDescriptorSetCacheState::_createNewDescriptorSetForProgram(vkfxshaderpass_rawptr_t program){
   auto current_pass = _ctxVK->_fxi->_currentVKPASS;
   auto cur_pipeline = _ctxVK->_fxi->_currentPipeline;
   OrkAssertI(current_pass != nullptr, "current pass is null");
@@ -373,7 +367,7 @@ vkdescriptorsetstate_ptr_t VulkanDescriptorSetCacheState::_createNewDescriptorSe
 
 ///////////////////////////////////////////////////////////////////////////////
 
-vkdescriptorsetstate_ptr_t VulkanDescriptorSetCacheState::fetchDescriptorSetForProgram(vkfxsprg_rawptr_t vk_program) {
+vkdescriptorsetstate_ptr_t VulkanDescriptorSetCacheState::fetchDescriptorSetForProgram(vkfxshaderpass_rawptr_t vk_program) {
 
   auto current_pass = _ctxVK->_fxi->_currentVKPASS;
   auto cur_pipeline = _ctxVK->_fxi->_currentPipeline;
@@ -400,10 +394,10 @@ vkdescriptorsetstate_ptr_t VulkanDescriptorSetCacheState::fetchDescriptorSetForP
   //    we will (over time) expose descriptor sets to higher level systems
   /////////////////////////////////
 
-  auto shader_state = _ctxVK->_fxi->_current_shader_state;
+  auto shader_state = _ctxVK->_fxi->_current_shader_pass_state;
   OrkAssertI(shader_state != nullptr, "shader state is null");
 
-  uint64_t descset_bits = shader_state->samplersHash();
+  uint64_t descset_bits = _ctxVK->_fxi->_current_shader_pass_state->samplersHash();
   auto it               = _vkDescriptorSetByHash.find(descset_bits);
   vkdescriptorsetstate_ptr_t descset_ptr = nullptr;
   if (it != _vkDescriptorSetByHash.end()) {
@@ -555,13 +549,10 @@ vkdescriptorsetstate_ptr_t VulkanDescriptorSetCacheState::fetchDescriptorSetForP
                 VkBuffer vk_buffer = VK_NULL_HANDLE;
                 VkDeviceSize buffer_size = ssbo_block->_buffer_size;
 
-                auto* shader_state = _ctxVK->_fxi->_current_shader_state;
-                if (shader_state) {
-                  auto* ssbo_state = shader_state->storageStateForBlock(ssbo_block);
-                  if (ssbo_state && ssbo_state->_bound_buffer) {
-                    vk_buffer = ssbo_state->_bound_buffer->_vkbuffer;
-                    buffer_size = ssbo_state->_bound_buffer->_length;
-                  }
+                auto* ssbo_state = _ctxVK->_fxi->storageStateForBlock(ssbo_block);
+                if (ssbo_state && ssbo_state->_bound_buffer) {
+                  vk_buffer = ssbo_state->_bound_buffer->_vkbuffer;
+                  buffer_size = ssbo_state->_bound_buffer->_length;
                 }
 
                 // No SSBO bound — skip descriptor update
@@ -606,7 +597,7 @@ vkdescriptorsetstate_ptr_t VulkanDescriptorSetCacheState::fetchDescriptorSetForP
 
 ///////////////////////////////////////////////////////////////////////////////
 
-VkFxShaderProgram::VkFxShaderProgram(VkFxShaderFile* file)
+VkFxShaderPass::VkFxShaderPass(VkFxShaderFile* file)
     : _shader_file(file) {
   _incr_crc64.init();
 }

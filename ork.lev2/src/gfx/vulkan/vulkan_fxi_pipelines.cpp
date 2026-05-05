@@ -171,7 +171,7 @@ vkpipelinestate_rawptr_t VkFxInterface::_fetchPipeline(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-uint64_t VkFxShaderState::samplersHash() const {
+uint64_t VkFxShaderPassState::samplersHash() const {
   // Always recalculate to pick up changes in texture/SSBO bindings
   boost::Crc64 the_crc;
   the_crc.init();
@@ -180,9 +180,9 @@ uint64_t VkFxShaderState::samplersHash() const {
     the_crc.accumulateItem(tex->_format_hash);
     the_crc.accumulateItem(tex->_imgview_hash.result());
   }
-  // Include SSBO buffer pointers so different SSBOs produce different cache keys
-  for (auto& [blk, ssbo_state] : _storage_states) {
-    the_crc.accumulateItem(reinterpret_cast<uintptr_t>(ssbo_state._bound_buffer.get()));
+  // Include storage buffer pointers so different SSBOs produce different cache keys
+  for (auto* storage_state : _ordered_storage_states) {
+    the_crc.accumulateItem(reinterpret_cast<uintptr_t>(storage_state->_bound_buffer.get()));
   }
   return the_crc.finished();
 }
