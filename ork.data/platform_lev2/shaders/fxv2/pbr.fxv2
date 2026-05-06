@@ -9,8 +9,14 @@ state_block sb_no_cull : sb_default {
 	CullTest = OFF;
 }
 ///////////////////////////////////////////////////////////////
+// sb_cullcw kept as an alias of sb_default; vertex-color techniques get
+// the same PASS_FRONT cull as everything else.
 state_block sb_cullcw : sb_default {
-	CullTest = PASS_BACK;
+}
+///////////////////////////////////////////////////////////////
+state_block sb_cullcw_alpha : sb_default {
+	BlendMode = ALPHA;
+	DepthMask = false;
 }
 ///////////////////////////////////////////////////////////////
 technique PIK_RI_NI {
@@ -55,14 +61,29 @@ technique FWD_CT_NM_RI_NI_MO {
 	vf_pass={vs_forward_test,ps_forward_test,sb_default}
 }
 ///////////////////////////////////////////////////////////////
-technique FWD_CV_NM_RI_NI_MO { 
+technique FWD_CV_NM_RI_NI_MO {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_forward_test_vtxcol,ps_forward_test_vtxcol,sb_cullcw}
+}
+///////////////////////////////////////////////////////////////
+technique FWD_CV_NM_RI_NI_MO_ALPHA {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_test_vtxcol,ps_forward_test_vtxcol_alpha,sb_cullcw_alpha}
 }
 ///////////////////////////////////////////////////////////////
 technique FWD_CT_NM_RI_IN_MO {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_forward_instanced,ps_forward_test,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique FWD_CV_NM_RI_IN_MO {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_instanced_vc,ps_forward_test_vtxcol,sb_cullcw}
+}
+///////////////////////////////////////////////////////////////
+technique FWD_CV_NM_RI_IN_MO_ALPHA {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_instanced_vc,ps_forward_instanced_vtxcol_alpha,sb_cullcw_alpha}
 }
 ///////////////////////////////////////////////////////////////
 technique FWD_CT_NM_SK_NI_MO {

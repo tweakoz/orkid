@@ -527,23 +527,28 @@ void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
           py::arg("micromesh"),
           py::arg("context"),
           py::arg("primitive_type") = nullptr)
-      .def(
-          "fromVertsAndFacesDict",                         //
-          [](meshutil::rigidprim_V12N12B12T8C4_ptr_t prim, //
-             py::object verts,                             //
-             py::list faces,                               //
-             ctx_t context,                                //
-             crcstring_ptr_t primtype) {
-            ////////////////////////////////////////////
-            py::gil_scoped_release release;
-            auto micromesh = std::make_shared<MicroMesh>(verts, faces);
-            auto ptype = primtype ? PrimitiveType(primtype->hashed()) : PrimitiveType::TRIANGLES;
-            micromesh->updateRigidPrim(prim, nullptr, context, ptype);
-          },
-          "Create rigid primitive from vertices (list or numpy array (N,3) float32) and faces",
-          py::arg("verts"), py::arg("faces"), py::arg("context"), py::arg("primitive_type") = nullptr)
       .def("renderEML", [](meshutil::rigidprim_V12N12B12T8C4_ptr_t prim, ctx_t context) { //
         prim->renderEML(context.get());
-      });
+      })
+      .def(
+          "createInstancedNode",
+          [](meshutil::rigidprim_V12N12B12T8C4_ptr_t prim,
+             int count,
+             std::string named,
+             scenegraph::layer_ptr_t layer,
+             material_ptr_t material) -> scenegraph::drawable_node_ptr_t {
+            using drw_t = meshutil::InstancedRigidPrimitiveDrawable<SVtxV12N12B12T8C4>;
+            auto drw = std::make_shared<drw_t>();
+            drw->bindPrimitive(prim, material);
+            drw->resize(count);
+            auto instdata = drw->_instancedata;
+            for (int i = 0; i < count; i++) {
+              instdata->_worldmatrices[i].compose(fvec3(0, 0, 0), fquat(), 0.0f);
+              instdata->_modcolors[i] = fvec4(1, 1, 1, 1);
+            }
+            auto node = layer->createDrawableNode(named, drw);
+            return node;
+          },
+          py::arg("count"), py::arg("name"), py::arg("layer"), py::arg("material"));
 } // void pyinit_gfx_rigidprim(py::module& module_lev2) {
 } // namespace ork::lev2

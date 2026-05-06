@@ -309,6 +309,10 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
                 m->_doubleSided = p;
               })
           .def_property(
+              "alphaBlend",
+              [](pbrmaterial_ptr_t m) -> bool { return m->_alphaBlend; },
+              [](pbrmaterial_ptr_t m, bool v) { m->_alphaBlend = v; })
+          .def_property(
               "pbrcommon",
               [](pbrmaterial_ptr_t mtl) -> pbr::commonstuff_ptr_t { //
                 return mtl->_commonOverride;

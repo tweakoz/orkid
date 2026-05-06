@@ -128,7 +128,7 @@ void pyinit_scenegraph(py::module& module_lev2) {
               "instanceData",
               [](drawable_node_ptr_t drwnode) -> instanceddrawinstancedata_ptr_t {
                 auto drw     = drwnode->_drawable;
-                auto instdrw = std::dynamic_pointer_cast<InstancedModelDrawable>(drw);
+                auto instdrw = std::dynamic_pointer_cast<InstancedDrawable>(drw);
                 instanceddrawinstancedata_ptr_t rval;
                 if (instdrw) {
                   rval = instdrw->_instancedata;
@@ -141,7 +141,7 @@ void pyinit_scenegraph(py::module& module_lev2) {
               "setInstanceMatrix",                                       //
               [](drawable_node_ptr_t node, int instance, fmtx4 matrix) { //
                 auto drw     = node->_drawable;
-                auto instdrw = std::dynamic_pointer_cast<InstancedModelDrawable>(drw);
+                auto instdrw = std::dynamic_pointer_cast<InstancedDrawable>(drw);
                 if (instdrw) {
                   auto instdata                      = instdrw->_instancedata;
                   instdata->_worldmatrices[instance] = matrix;
@@ -154,7 +154,7 @@ void pyinit_scenegraph(py::module& module_lev2) {
               "setInstanceColor",                                             //
               [](drawable_node_ptr_t node, int instance, fvec4 color) { //
                 auto drw     = node->_drawable;
-                auto instdrw = std::dynamic_pointer_cast<InstancedModelDrawable>(drw);
+                auto instdrw = std::dynamic_pointer_cast<InstancedDrawable>(drw);
                 if (instdrw) {
                   auto instdata                  = instdrw->_instancedata;
                   instdata->_modcolors[instance] = color;

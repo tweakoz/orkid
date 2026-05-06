@@ -159,6 +159,9 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
   _device_extensions.push_back(VK_KHR_SAMPLER_YCBCR_CONVERSION_EXTENSION_NAME);
   logchan_vkctx->log("Added YCbCr sampler conversion extension for video decode");
 
+  // dynamic cull mode (so mtl.doubleSided takes effect without rebuilding pipelines)
+  _device_extensions.push_back(VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME);
+
   VkDeviceCreateInfo DCI = {};
   initializeVkStruct(DCI, VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
   DCI.queueCreateInfoCount    = _DQCIs.size();
@@ -171,19 +174,23 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
   VkPhysicalDeviceTimelineSemaphoreFeatures timelineFeatures{};
   VkPhysicalDeviceDynamicRenderingFeatures dynrenderfeat{};
   VkPhysicalDeviceSamplerYcbcrConversionFeatures ycbcrFeatures{};
+  VkPhysicalDeviceExtendedDynamicStateFeaturesEXT extDynStateFeatures{};
 
   initializeVkStruct(timelineFeatures, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES);
   initializeVkStruct(dynrenderfeat, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES);
   initializeVkStruct(ycbcrFeatures, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES);
+  initializeVkStruct(extDynStateFeatures, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT);
 
   timelineFeatures.timelineSemaphore = VK_TRUE;
   dynrenderfeat.dynamicRendering = VK_TRUE;
   ycbcrFeatures.samplerYcbcrConversion = VK_TRUE;
+  extDynStateFeatures.extendedDynamicState = VK_TRUE;
 
   DCI.pNext = (void*) & timelineFeatures;
   timelineFeatures.pNext = (void*) & dynrenderfeat;
   dynrenderfeat.pNext = (void*) & ycbcrFeatures;
-  ycbcrFeatures.pNext = (void*) nullptr;
+  ycbcrFeatures.pNext = (void*) & extDynStateFeatures;
+  extDynStateFeatures.pNext = (void*) nullptr;
 
   VkResult result = vkCreateDevice(_vkphysicaldevice, &DCI, nullptr, &_vkdevice);
   if (result != VK_SUCCESS) {
@@ -214,8 +221,10 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
   // These are needed for both window and offscreen contexts
   _fetchDeviceProcAddr(_vkCmdBeginRenderingKHR, "vkCmdBeginRenderingKHR");
   _fetchDeviceProcAddr(_vkCmdEndRenderingKHR, "vkCmdEndRenderingKHR");
+  _fetchDeviceProcAddr(_vkCmdSetCullModeEXT, "vkCmdSetCullModeEXT");
   OrkAssertI(_vkCmdBeginRenderingKHR != nullptr, "_vkCmdBeginRenderingKHR function pointer is null!");
   OrkAssertI(_vkCmdEndRenderingKHR != nullptr, "_vkCmdEndRenderingKHR function pointer is null!");
+  OrkAssertI(_vkCmdSetCullModeEXT != nullptr, "_vkCmdSetCullModeEXT function pointer is null!");
 
   ////////////////////////////
   // Init Queues
@@ -301,6 +310,7 @@ void VkContext::_initVulkanForWindow(VkSurfaceKHR surface) {
     _vkCmdDebugMarkerInsertEXT = context0->_vkCmdDebugMarkerInsertEXT;
     _vkCmdBeginRenderingKHR = context0->_vkCmdBeginRenderingKHR;
     _vkCmdEndRenderingKHR = context0->_vkCmdEndRenderingKHR;
+    _vkCmdSetCullModeEXT = context0->_vkCmdSetCullModeEXT;
 
     _device_extensions = context0->_device_extensions;
     _num_queue_types = context0->_num_queue_types;
@@ -336,6 +346,7 @@ void VkContext::_initVulkanForOffscreen(DisplayBuffer* pBuf) {
     _vkCmdDebugMarkerInsertEXT = context0->_vkCmdDebugMarkerInsertEXT;
     _vkCmdBeginRenderingKHR = context0->_vkCmdBeginRenderingKHR;
     _vkCmdEndRenderingKHR = context0->_vkCmdEndRenderingKHR;
+    _vkCmdSetCullModeEXT = context0->_vkCmdSetCullModeEXT;
     _device_extensions = context0->_device_extensions;
     _num_queue_types = context0->_num_queue_types;
     _DQCIs = context0->_DQCIs;

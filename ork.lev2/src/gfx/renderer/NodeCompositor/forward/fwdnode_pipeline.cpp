@@ -41,7 +41,6 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
 
   auto L = [mtl](const RenderContextInstData& RCID) {
 
-    //printf( "LIGHTINGLAMBDA\n");
     auto RCFD             = RCID.rcfd();
     auto context    = RCFD->GetTarget();
     auto FXI        = context->FXI();
@@ -202,6 +201,9 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
       culltest = ECullTest::OFF;
     }
 
+    // Bump priority above the technique state block when the material wants
+    // to override its cull (e.g. mtl.doubleSided / PROBE rendering).
+    mut->_rasterstate->_priority = (this->_doubleSided || is_rendering_PROBE) ? (1 << 20) : 0;
     mut->_rasterstate->setCullTest(culltest);
     mut->_rasterstate->setDepthTest(EDepthTest::LEQUALS);
     if (this->_alphaMode == 2) { // BLEND
@@ -313,17 +315,27 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
       }
     } else { // not skinned
       if (permu._instanced) {
-        if (this->_tek_FWD_CT_NM_RI_IN_MO) {
+        if (permu._has_vtxcolors) {
+          if (permu._is_alpha && this->_tek_FWD_CV_NM_RI_IN_MO_ALPHA) {
+            pipeline             = std::make_shared<FxPipeline>(permu);
+            pipeline->_technique = this->_tek_FWD_CV_NM_RI_IN_MO_ALPHA;
+          } else if (this->_tek_FWD_CV_NM_RI_IN_MO) {
+            pipeline             = std::make_shared<FxPipeline>(permu);
+            pipeline->_technique = this->_tek_FWD_CV_NM_RI_IN_MO;
+          }
+        } else if (this->_tek_FWD_CT_NM_RI_IN_MO) {
           pipeline             = std::make_shared<FxPipeline>(permu);
           pipeline->_technique = this->_tek_FWD_CT_NM_RI_IN_MO;
-          //printf( "got fwdtek FWD_CT_NM_RI_IN_MO\n");
         }
       } else {
         if( permu._has_vtxcolors ){
-          if (this->_tek_FWD_CV_NM_RI_NI_MO) {
+          if (permu._is_alpha && this->_tek_FWD_CV_NM_RI_NI_MO_ALPHA) {
+            pipeline             = std::make_shared<FxPipeline>(permu);
+            pipeline->_technique = this->_tek_FWD_CV_NM_RI_NI_MO_ALPHA;
+          }
+          else if (this->_tek_FWD_CV_NM_RI_NI_MO) {
             pipeline             = std::make_shared<FxPipeline>(permu);
             pipeline->_technique = this->_tek_FWD_CV_NM_RI_NI_MO;
-            //printf( "got fwdtek FWD_CV_NM_SK_NI_MO\n");
           }
         }
         else{

@@ -80,7 +80,8 @@ vkpipeline_obj_ptr_t VkFxInterface::_createPipeline(
   ////////////////////////////////////////////////////
 
   std::vector<VkDynamicState> dynamic_states = {
-      VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_BLEND_CONSTANTS};
+      VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_BLEND_CONSTANTS,
+      VK_DYNAMIC_STATE_CULL_MODE_EXT};
   VkPipelineDynamicStateCreateInfo dynamicState = {};
   initializeVkStruct(dynamicState, VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);
   dynamicState.dynamicStateCount = dynamic_states.size();
@@ -524,7 +525,8 @@ vkpipeline_obj_ptr_t VkFxInterface::_createPipelineSSBO(vkprimclass_ptr_t primcl
   ////////////////////////////////////////////////////
 
   std::vector<VkDynamicState> dynamic_states = {
-      VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_BLEND_CONSTANTS};
+      VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_BLEND_CONSTANTS,
+      VK_DYNAMIC_STATE_CULL_MODE_EXT};
   VkPipelineDynamicStateCreateInfo dynamicState = {};
   initializeVkStruct(dynamicState, VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);
   dynamicState.dynamicStateCount = dynamic_states.size();

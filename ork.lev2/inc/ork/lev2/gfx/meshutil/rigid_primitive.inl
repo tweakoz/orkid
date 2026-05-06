@@ -17,6 +17,7 @@
 #include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/lev2/gfx/gfxvtxbuf.h>
 #include <ork/lev2/gfx/gfxmaterial.h>
+#include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/targetinterfaces.h>
 #include <unordered_map>
@@ -128,6 +129,7 @@ template <typename vtx_t> struct RigidPrimitive : public RigidPrimitiveBase {
 
   void fromClusterizer(const XgmClusterizerStd& cluz, lev2::Context* context);
   void renderEML(lev2::Context* context) const; /// draw with context
+  void renderInstancedEML(lev2::Context* context, size_t instance_count) const; /// draw instanced
 
   void renderUnitOrthoWithMaterial(lev2::Context* context, const SRect& vprect, lev2::GfxMaterial* pmat) const;
 
@@ -179,7 +181,11 @@ template <typename vtx_t> struct RigidPrimitive : public RigidPrimitiveBase {
   //////////////////////////////////////////////////////////////////////////////
   void installInCallbackDrawable(lev2::callback_drawable_wkptr_t drw, lev2::material_ptr_t material){
     OrkAssert(material != nullptr);
-    drw.lock()->SetRenderCallback([this,material](lev2::RenderContextInstData& RCID) { //
+    bool is_alpha = false;
+    if (auto as_pbr = std::dynamic_pointer_cast<lev2::PBRMaterial>(material)) {
+      is_alpha = as_pbr->_alphaBlend;
+    }
+    drw.lock()->SetRenderCallback([this,material,is_alpha](lev2::RenderContextInstData& RCID) { //
       auto context = RCID.context();
       auto RCFD = RCID.rcfd();
       lev2::FxPipelinePermutation permu;
@@ -188,6 +194,7 @@ template <typename vtx_t> struct RigidPrimitive : public RigidPrimitiveBase {
       permu._skinned = false;
       permu._is_picking = false;
       permu._has_vtxcolors = true;
+      permu._is_alpha = is_alpha;
       permu._rendering_model = RCFD->_renderingmodel._modelID;
       auto fxcache = material->pipelineCache();
       auto pipeline = fxcache->findPipeline(permu);
@@ -650,6 +657,19 @@ template <typename vtx_t> void RigidPrimitive<vtx_t>::renderEML(lev2::Context* c
   }
 }
 ////////////////////////////////////////////////////////////////////////////////
+template <typename vtx_t> void RigidPrimitive<vtx_t>::renderInstancedEML(lev2::Context* context, size_t instance_count) const {
+  auto gbi = context->GBI();
+  for (auto& cluster : _gpuClusters) {
+    for (auto& primgroup : cluster->_primgroups) {
+      gbi->DrawInstancedIndexedPrimitiveEML(
+          *cluster->_vtxbuffer.get(),
+          *primgroup->_idxbuffer.get(),
+          primgroup->_primtype,
+          instance_count);
+    }
+  }
+}
+////////////////////////////////////////////////////////////////////////////////
 template <typename vtx_t>
 void RigidPrimitive<vtx_t>::renderUnitOrthoWithMaterial(lev2::Context* context, const SRect& vprect, lev2::GfxMaterial* pmat)
     const {
@@ -694,5 +714,78 @@ using rigidprim_V12C4T16_ptr_t      = std::shared_ptr<rigidprim_V12C4T16_t>;
 using rigidprim_V12N12T16_ptr_t     = std::shared_ptr<rigidprim_V12N12T16_t>;
 using rigidprim_V12N12B12T8C4_t     = meshutil::RigidPrimitive<lev2::SVtxV12N12B12T8C4>;
 using rigidprim_V12N12B12T8C4_ptr_t = std::shared_ptr<rigidprim_V12N12B12T8C4_t>;
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename vtx_t>
+struct InstancedRigidPrimitiveDrawable final : public lev2::InstancedDrawable {
+
+  InstancedRigidPrimitiveDrawable() = default;
+
+  void bindPrimitive(std::shared_ptr<RigidPrimitive<vtx_t>> prim, lev2::material_ptr_t material) {
+    _primitive = prim;
+    _material = material;
+    _fxcache = material->pipelineCache();
+  }
+
+  void gpuInit(lev2::Context* ctx) const {
+    auto FXI = ctx->FXI();
+    _instanceSSBO = FXI->createStorageBuffer(k_ssbo_total_size);
+  }
+
+  void enqueueToRenderQueue(lev2::drawqueueitem_constptr_t item, lev2::IRenderer* renderer) const override {
+    auto context = renderer->GetTarget();
+    if (!_instanceSSBO) {
+      gpuInit(context);
+    }
+    lev2::CallbackRenderable& renderable = renderer->enqueueCallback();
+    renderable._drawable = nullptr;
+    renderable._pickID = _pickID;
+    renderable._sortkey = _sortkey;
+    renderable._instanced = true;
+    renderable.SetModColor(fcolor4::White());
+    renderable.SetDrawableDataA(GetUserDataA());
+    renderable.SetDrawableDataB(GetUserDataB());
+    bool is_alpha = false;
+    if (auto as_pbr = std::dynamic_pointer_cast<lev2::PBRMaterial>(_material)) {
+      is_alpha = as_pbr->_alphaBlend;
+    }
+    renderable.SetRenderCallback([this, is_alpha](lev2::RenderContextInstData& RCID) {
+      auto context = RCID.context();
+      auto RCFD = RCID.rcfd();
+      auto FXI = context->FXI();
+      OrkAssert(_count <= k_max_instances);
+      auto instances_copy = _idbuf_pool.begin_pull();
+      auto ssbo_mapped = FXI->mapStorageBuffer(_instanceSSBO, 0, k_ssbo_total_size, lev2::BufferMapAccess::WRITE_ONLY);
+      char* base_ptr = (char*)ssbo_mapped->_mappedaddr;
+      memcpy(base_ptr + k_ssbo_offset_matrices, instances_copy->_worldmatrices.data(), _count * 64);
+      memcpy(base_ptr + k_ssbo_offset_colors, instances_copy->_modcolors.data(), _count * 16);
+      memcpy(base_ptr + k_ssbo_offset_pickids, instances_copy->_pickids.data(), _count * 8);
+      ssbo_mapped->unmap();
+      _idbuf_pool.end_pull(instances_copy);
+      lev2::FxPipelinePermutation permu;
+      permu._stereo = false;
+      permu._instanced = true;
+      permu._skinned = false;
+      permu._is_picking = false;
+      permu._has_vtxcolors = true;
+      permu._is_alpha = is_alpha;
+      permu._rendering_model = RCFD->_renderingmodel._modelID;
+      auto pipeline = _fxcache->findPipeline(permu);
+      OrkAssert(pipeline);
+      pipeline->wrappedDrawCall(RCID, [&]() {
+        if (pipeline->_parInstanceBlock) {
+          FXI->bindStorageBuffer(pipeline->_parInstanceBlock, _instanceSSBO);
+        }
+        _primitive->renderInstancedEML(context, _count);
+      });
+      RCID._isInstanced = false;
+    });
+  }
+
+  std::shared_ptr<RigidPrimitive<vtx_t>> _primitive;
+  lev2::material_ptr_t _material;
+  lev2::fxpipelinecache_constptr_t _fxcache;
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::meshutil

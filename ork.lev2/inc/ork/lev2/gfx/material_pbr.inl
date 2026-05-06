@@ -313,8 +313,11 @@ public:
   // texcolor
 
   fxtechnique_constptr_t _tek_FWD_CT_NM_RI_IN_MO = nullptr;
+  fxtechnique_constptr_t _tek_FWD_CV_NM_RI_IN_MO = nullptr;
+  fxtechnique_constptr_t _tek_FWD_CV_NM_RI_IN_MO_ALPHA = nullptr;
   fxtechnique_constptr_t _tek_FWD_CT_NM_RI_NI_MO = nullptr;
   fxtechnique_constptr_t _tek_FWD_CV_NM_RI_NI_MO = nullptr;
+  fxtechnique_constptr_t _tek_FWD_CV_NM_RI_NI_MO_ALPHA = nullptr;
   fxtechnique_constptr_t _tek_FWD_CT_NM_RI_IN_ST = nullptr;
   fxtechnique_constptr_t _tek_FWD_CT_NM_RI_NI_ST = nullptr;
   
@@ -376,6 +379,7 @@ public:
 
   bool _stereoVtex = false;
   bool _doubleSided = false;
+  bool _alphaBlend = false;
   float _alphaCutoff = 0.0f;
   int _alphaMode = 0; // 0=OPAQUE, 1=MASK, 2=BLEND
 

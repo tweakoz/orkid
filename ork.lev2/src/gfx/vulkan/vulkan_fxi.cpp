@@ -86,6 +86,30 @@ rasterstate_ptr_t VkFxInterface::_doPopRasterState() {
   return popped;
 }
 
+// Sets the dynamic cull mode. Called after per-draw state lambdas have
+// mutated the material rasterstate, mirroring pipeline-create's priority
+// resolution (technique state-block wins on ties; l_rsi bumps the material
+// rasterstate priority for mtl.doubleSided / PROBE rendering).
+void VkFxInterface::applyRasterState(const RasterState& rstate) {
+  auto pri_cb = _contextVK->primary_cb();
+  if (!pri_cb) return;  // not in an active render pass
+
+  const RasterState* effective = &rstate;
+  if (_currentVKPASS && _currentVKPASS->_stateblock_rasterstate) {
+    auto sb_rs = _currentVKPASS->_stateblock_rasterstate;
+    if (sb_rs->_priority >= rstate._priority) {
+      effective = sb_rs.get();
+    }
+  }
+  VkCullModeFlags vk_cull_mode = VK_CULL_MODE_NONE;
+  switch (effective->_culltest) {
+    case ECullTest::OFF:        vk_cull_mode = VK_CULL_MODE_NONE;      break;
+    case ECullTest::PASS_FRONT: vk_cull_mode = VK_CULL_MODE_BACK_BIT;  break;
+    case ECullTest::PASS_BACK:  vk_cull_mode = VK_CULL_MODE_FRONT_BIT; break;
+  }
+  _contextVK->_vkCmdSetCullModeEXT(pri_cb->_vkcmdbuf, vk_cull_mode);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 int VkFxInterface::BeginBlock(fxtechnique_constptr_t tek, const RenderContextInstData& data) {

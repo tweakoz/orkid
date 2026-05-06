@@ -168,7 +168,10 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   _tek_FWD_CT_NM_RI_NI_MO = fxi->technique(_shader, "FWD_CT_NM_RI_NI_MO"s + _shader_suffix);
   _tek_FWD_CV_NM_RI_NI_MO = fxi->technique(_shader, "FWD_CV_NM_RI_NI_MO"s + _shader_suffix);
+  _tek_FWD_CV_NM_RI_NI_MO_ALPHA = fxi->technique(_shader, "FWD_CV_NM_RI_NI_MO_ALPHA"s + _shader_suffix);
   _tek_FWD_CT_NM_RI_IN_MO = fxi->technique(_shader, "FWD_CT_NM_RI_IN_MO"s + _shader_suffix);
+  _tek_FWD_CV_NM_RI_IN_MO = fxi->technique(_shader, "FWD_CV_NM_RI_IN_MO"s + _shader_suffix);
+  _tek_FWD_CV_NM_RI_IN_MO_ALPHA = fxi->technique(_shader, "FWD_CV_NM_RI_IN_MO_ALPHA"s + _shader_suffix);
   _tek_FWD_CT_NM_RI_NI_ST = fxi->technique(_shader, "FWD_CT_NM_RI_NI_ST"s + _shader_suffix);
   _tek_FWD_CT_NM_RI_IN_ST = fxi->technique(_shader, "FWD_CT_NM_RI_IN_ST"s + _shader_suffix);
 
