@@ -58,6 +58,11 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
                 auto as_str    = as_py_str.cast<std::string>();
                 return pbr::CommonStuff::requestRadianceMapsSync(as_str, ctx.get());
               })
+          .def_static(
+              "makeRadianceMapsSolidColor",
+              [](fvec3 color, ctx_t ctx) -> pbr::radiancemaps_ptr_t { //
+                return pbr::CommonStuff::makeRadianceMapsSolidColor(color, ctx.get());
+              })
           .def(py::init<>())
           .def_property(
               "RadianceMaps",

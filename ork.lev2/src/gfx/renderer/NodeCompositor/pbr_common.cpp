@@ -32,6 +32,8 @@
 
 #include <ork/lev2/gfx/radiancemaps_asset.h>
 #include <ork/lev2/gfx/xir_format.h>
+#include <ork/lev2/gfx/material_pbr.inl>
+#include <ork/lev2/gfx/image.h>
 
 #include <ork/profiling.inl>
 #include <ork/asset/Asset.inl>
@@ -144,6 +146,49 @@ radiancemaps_ptr_t CommonStuff::requestRadianceMapsSync(const AssetPath& texture
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
   }
   return rm_asset->_radiance_maps;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+radiancemaps_ptr_t CommonStuff::makeRadianceMapsSolidColor(fvec3 color, Context* ctx) {
+  // Match the standard 10-level / pow(i/9, 0.5) layout produced by xir bakes
+  // so shaders and material parameters see a familiar roughness distribution.
+  constexpr int kNumRoughnessLevels = 10;
+  constexpr float kRoughnessPower   = 0.5f;
+  constexpr int kEnvW               = 16;
+  constexpr int kEnvH               = 8;
+
+  auto irrmaps                  = std::make_shared<RadianceMaps>();
+  irrmaps->_numRoughnessLevels  = kNumRoughnessLevels;
+  irrmaps->_specularRoughnessValues.resize(kNumRoughnessLevels);
+  for (int i = 0; i < kNumRoughnessLevels; ++i) {
+    irrmaps->_specularRoughnessValues[i] =
+        powf(float(i) / float(kNumRoughnessLevels - 1), kRoughnessPower);
+  }
+
+  auto txi = ctx->TXI();
+
+  irrmaps->_filtenvSpecularMapArray =
+      txi->createColorTextureV3Array(color, kEnvW, kEnvH, kNumRoughnessLevels);
+  irrmaps->_filtenvSpecularMapArray->_tex->_debugName = "procSolidSpec";
+
+  // NOTE: createColorTextureV3 declares BGR8 but writes RGB-ordered data,
+  // which swaps R and B on the GPU. Build the diffuse map via the
+  // RGB8-correct Image path instead.
+  auto diffuse_image = std::make_shared<Image>();
+  diffuse_image->initRGB8WithColor(kEnvW, kEnvH, color);
+  auto diffuse_tex         = std::make_shared<Texture>();
+  diffuse_tex->_debugName  = "procSolidDiff";
+  txi->initTextureFromImage(diffuse_tex.get(), diffuse_image, false, false);
+  irrmaps->_filtenvDiffuseMap = diffuse_tex;
+
+  irrmaps->_brdfIntegrationMapGGX    = PBRMaterial::brdfIntegrationMap(ctx, "GGX");
+  irrmaps->_brdfIntegrationMapVelvet = PBRMaterial::brdfIntegrationMap(ctx, "GGXVELVET");
+  irrmaps->_brdfIntegrationMapGGXRIM = PBRMaterial::brdfIntegrationMap(ctx, "GGXRIM");
+  irrmaps->_brdfIntegrationMapBlinn  = PBRMaterial::brdfIntegrationMap(ctx, "BLINN");
+  irrmaps->_brdfIntegrationMapPhong  = PBRMaterial::brdfIntegrationMap(ctx, "PHONG");
+
+  return irrmaps;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -121,6 +121,11 @@ struct CommonStuff : public ork::Object {
   // we block — this routine self-pumps that queue.
   static radiancemaps_ptr_t requestRadianceMapsSync(const AssetPath& texture_path, lev2::Context* ctx);
 
+  // Build an in-memory RadianceMaps where every specular roughness slice and
+  // the diffuse map is a single uniform color. BRDF LUTs come from the
+  // PBRMaterial cache. Must be called on the GPU thread.
+  static radiancemaps_ptr_t makeRadianceMapsSolidColor(fvec3 color, lev2::Context* ctx);
+
   void onGpuInit(lev2::Context* ctx);
 
   radiancemaps_ptr_t _radiance_maps;
