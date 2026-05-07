@@ -108,6 +108,16 @@ ork::lev2::orkezapp_ptr_t pylev2appinit(py::kwargs kwargs) {
         init_data->_height = py::cast<int>(item.second);
       } else if (key == "fullscreen") {
         init_data->_fullscreen = py::cast<bool>(item.second);
+      } else if (key == "fullscreen_mode") {
+        auto mode_str = py::cast<std::string>(item.second);
+        if (mode_str == "windowed") {
+          init_data->_fullscreen_mode = AppInitData::EFullScreenMode::Windowed;
+        } else if (mode_str == "immersive") {
+          init_data->_fullscreen_mode = AppInitData::EFullScreenMode::Immersive;
+        } else {
+          throw std::runtime_error(
+            "createEzApp: fullscreen_mode must be 'windowed' or 'immersive', got: " + mode_str);
+        }
       } else if (key == "fullscreen_monitor") {
         init_data->_fullscreen_monitor = py::cast<std::string>(item.second);
       } else if (key == "enable_always_on_top") {

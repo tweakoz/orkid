@@ -20,6 +20,7 @@
 #include <ork/application/subsystem.h>
 #include <ork/kernel/opq.h>
 #include <ork/util/fsm.h>
+#include <ork/util/crc.h>  // for CrcEnum macro + crc_enum_t (EFullScreenMode below)
 
 #include <set>
 
@@ -114,7 +115,25 @@ struct AppInitData{
   bool _enable_graphics = true;
   bool _std_asset_catalog = true;
 
+  // Fullscreen presentation modes (CrcEnum for Python<->C++ string-keyed
+  // pass-through; values hash via the CrcEnum macro defined in
+  // ork/util/crc.h, so Python sets `fullscreen_mode="windowed"` or
+  // `fullscreen_mode="immersive"` and the C++ side compares against
+  // EFullScreenMode::Windowed / EFullScreenMode::Immersive).
+  //   Immersive — covers the entire panel (under menu-bar / dock). The
+  //               default; matches historical orkid behavior. Use for VR
+  //               mirror windows, kiosk mode, video playback, game-style
+  //               takeover, etc.
+  //   Windowed  — borderless windowed at the workarea size (excludes
+  //               OS menu bar / dock); framebuffer extends only to the
+  //               bottom of the menu bar. Opt-in for apps that want to
+  //               co-exist with the system UI on macOS.
+  enum class EFullScreenMode : ::ork::crc_enum_t {
+    CrcEnum(Windowed),
+    CrcEnum(Immersive),
+  };
   bool _fullscreen = false;
+  EFullScreenMode _fullscreen_mode = EFullScreenMode::Immersive;
   bool _offscreen = false;
   bool _use_drm = false;  // Use DRM direct rendering (Linux only)
   bool _canalwaysontop = false;

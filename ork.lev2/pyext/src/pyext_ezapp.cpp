@@ -139,6 +139,18 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   appinit->_height = py::cast<int>(item.second);
                 } else if (key == "fullscreen") {
                   appinit->_fullscreen = py::cast<bool>(item.second);
+                } else if (key == "fullscreen_mode") {
+                  // String->enum mapping. Stays in sync with EFullScreenMode
+                  // (CrcEnum) in ork/application/application.h.
+                  auto mode_str = py::cast<std::string>(item.second);
+                  if (mode_str == "windowed") {
+                    appinit->_fullscreen_mode = AppInitData::EFullScreenMode::Windowed;
+                  } else if (mode_str == "immersive") {
+                    appinit->_fullscreen_mode = AppInitData::EFullScreenMode::Immersive;
+                  } else {
+                    throw std::runtime_error(
+                      "createEzApp: fullscreen_mode must be 'windowed' or 'immersive', got: " + mode_str);
+                  }
                 } else if (key == "displaylink") {
                   appinit->_displaylink = py::cast<bool>(item.second);
                 } else if (key == "fullscreen_monitor") {

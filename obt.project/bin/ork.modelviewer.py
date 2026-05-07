@@ -7,7 +7,7 @@
 # see http://www.boost.org/LICENSE_1_0.txt
 ################################################################################
 
-import math, random, argparse, sys, os
+import math, random, argparse, sys, os, glob
 from obt import path
 
 ################################################################################
@@ -212,22 +212,20 @@ class SceneGraphApp(ComponentizedApplication):
     self.satset = [0.0,0.1,0.2,0.5,0.75,1.0,1.25,1.5,1.75,2.0]
     self.gamset = [0.8,1.0,1.2,1.4,1.6,1.8,2.0,2.4]
 
-    # Environment map switching
-    self.skybox_names = [
-      "<assetcache>/envmaps2/arena4k.xir",        # pillars of creation (sharp)
-      "<assetcache>/envmaps2/blender_forest.xir",           # ice planet (bright, soft)
-      "<assetcache>/envmaps2/blender_night.xir",          # ocean planet (soft)
-      "<assetcache>/envmaps2/blender_studio.xir",          # the grid  (dark)
-      "<assetcache>/envmaps2/cold4k.xir",           # gothic club (dark)
-      "<assetcache>/envmaps2/desert4k.xir",         # desert planet (bright)
-      "<assetcache>/envmaps2/ocean4k.xir",         # big canyon (bright)
-      "<assetcache>/envmaps2/pillars4k.xir",     # the crossroads (bright)
-      "<assetcache>/envmaps2/tozenv_nebula.xir",        # futuristic city (moderately dark)
-    ]
+    # Environment map switching — discover from <staging>/assetcache/envmaps2/.
+    # Same pattern as shaderballs.py: filesystem-driven so we cycle exactly
+    # the .xir files actually present, not a hardcoded registry list whose
+    # entries may not all be deployed in this staging.
+    stage_dir   = os.environ.get("OBT_STAGE", "")
+    envmap_glob = os.path.join(stage_dir, "assetcache", "envmaps2", "*.xir")
+    envmap_files = sorted(glob.glob(envmap_glob))
+    self.envmap_names = [os.path.splitext(os.path.basename(f))[0] for f in envmap_files]
+    self.envmap_paths = [f"<assetcache>/envmaps2/{n}.xir" for n in self.envmap_names]
+    self.skybox_names = self.envmap_paths   # alias kept for back-compat with existing HUD/handler refs
     self.skybox_cache = dict()
     self.skybox_index = -1
 
-    self.createEzApp(ssaa=ssaa, fullscreen=True)
+    self.createEzApp(ssaa=ssaa, fullscreen=True,fullscreen_mode="windowed")
 
   ##############################################
 
@@ -430,7 +428,9 @@ class SceneGraphApp(ComponentizedApplication):
     exp = self.exposure_values[self.cur_exposure_idx]
     ssao_str = "ON" if self.ssaamode else "OFF"
     sky_idx = self.skybox_index
-    sky_str = self.skybox_names[sky_idx].split("|")[1] if sky_idx >= 0 else "default"
+    sky_str = (self.envmap_names[sky_idx]
+               if sky_idx >= 0 and sky_idx < len(self.envmap_names)
+               else "default")
     exp_str = f"{exp:.2f}" if exp > 0 else "OFF"
     self._hud_drawable.text = (
       f"[A] SSAO: {ssao_str}\n"
@@ -456,14 +456,22 @@ class SceneGraphApp(ComponentizedApplication):
         self.pbr_common.setBRDF(self.brdfset[self.curbrdfi][1])
       ######################
       elif uievent.keycode == ord("E"):
-        self.skybox_index = (self.skybox_index + 1) % len(self.skybox_names)
-        skybox_name = self.skybox_names[self.skybox_index]
-        if skybox_name in self.skybox_cache:
-          skybox = self.skybox_cache[skybox_name]
+        # Cycle envmaps discovered from <staging>/assetcache/envmaps2/.
+        # Path expansion (<assetcache>/...) is handled in the C++
+        # requestRadianceMapsAsync (pbr_common.cpp:_expandIfNeeded), so we
+        # can pass the placeholder-bearing path directly.
+        if len(self.envmap_paths) == 0:
+          print("E: no envmaps found in <staging>/assetcache/envmaps2/")
         else:
-          skybox = PbrCommon.requestRadianceMapsAsync(skybox_name)
-          self.skybox_cache[skybox_name] = skybox
-        self.pbr_common.RadianceMaps = skybox
+          self.skybox_index = (self.skybox_index + 1) % len(self.envmap_paths)
+          path_str = self.envmap_paths[self.skybox_index]
+          if path_str in self.skybox_cache:
+            skybox = self.skybox_cache[path_str]
+          else:
+            skybox = PbrCommon.requestRadianceMapsAsync(path_str)
+            self.skybox_cache[path_str] = skybox
+          self.pbr_common.RadianceMaps = skybox
+          print("ENVMAP", self.envmap_names[self.skybox_index])
       ######################
       elif uievent.keycode == ord("S"):
         self.cursati = (self.cursati + 1) % len(self.satset)

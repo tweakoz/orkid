@@ -427,26 +427,45 @@ void CtxGLFW::Show() {
       }
 
       //////////////////////////////////////
-      // technically "windowed fullscreen"
+      // "windowed fullscreen" — borderless window covering some/all of the
+      // selected monitor. Two sub-modes (EFullScreenMode):
+      //   Windowed  — sized to the monitor's WORKAREA (excludes menu bar /
+      //               dock). Default. Framebuffer ends at menu-bar bottom
+      //               so the OS UI doesn't composite on top of pixels we
+      //               render. The "respectful" behavior; correct for most
+      //               apps on macOS Tahoe (where the menu bar no longer
+      //               auto-hides for borderless windows).
+      //   Immersive — sized to the full vidmode dimensions. The OS menu
+      //               bar / dock stay visible and overlap the top/edges
+      //               of our framebuffer, but the rendering surface is
+      //               the entire panel. Use for VR mirror windows, kiosk,
+      //               game-style takeover, fullscreen video, etc.
       //////////////////////////////////////
       const GLFWvidmode* mode = glfwGetVideoMode(fullscreen_monitor);
       const char* monitorName = glfwGetMonitorName(fullscreen_monitor);
       if (monitorName == nullptr) {
         monitorName = "";
       }
-      float contentScaleX = 1.0f;
-      float contentScaleY = 1.0f;
-      // fetch content scale
-      // glfwGetMonitorContentScale(fullscreen_monitor, &contentScaleX, &contentScaleY);
+      const bool immersive =
+        (_appinitdata->_fullscreen_mode == AppInitData::EFullScreenMode::Immersive);
 
-      _width  = mode->width * contentScaleX;
-      _height = mode->height * contentScaleY;
-      logchan_glfw->log("USING GLFW 'windowed fullscreen on monitor<%s>' ", monitorName);
+      int win_x, win_y, win_w, win_h;
+      if (immersive) {
+        // Full-panel coverage
+        glfwGetMonitorPos(fullscreen_monitor, &win_x, &win_y);
+        win_w = mode->width;
+        win_h = mode->height;
+      } else {
+        // Workarea (excludes menu bar / dock)
+        glfwGetMonitorWorkarea(fullscreen_monitor, &win_x, &win_y, &win_w, &win_h);
+      }
+      _width  = win_w;
+      _height = win_h;
+      logchan_glfw->log("USING GLFW 'windowed fullscreen on monitor<%s>' mode<%s>",
+                       monitorName, immersive ? "immersive" : "windowed");
       logchan_glfw->log("USING GLFW_REFRESH_RATE<%d> ", int(mode->refreshRate));
       logchan_glfw->log("USING GLFW _width<%d> ", _width);
       logchan_glfw->log("USING GLFW _height<%d> ", _height);
-      logchan_glfw->log("USING GLFW contentScaleX<%f> ", contentScaleX);
-      logchan_glfw->log("USING GLFW contentScaleY<%f> ", contentScaleY);
       _appinitdata->_width  = _width;
       _appinitdata->_height = _height;
       //////////////////////////////////////
@@ -462,14 +481,9 @@ void CtxGLFW::Show() {
       glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
       glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);
 
-      // set window position to the top left corner of the monitor here
-      //  goal is to have the window cover the entire monitor (without fullscreen actually active)
-      int mon_x = 0;
-      int mon_y = 0;
-      glfwGetMonitorPos(selected_monitor, &mon_x, &mon_y);
-      _appinitdata->_left = mon_x; // Use directly - already in screen coordinates
-      _appinitdata->_top  = mon_y; // Use directly - already in screen coordinates
-      logchan_glfw->log("Setting window position to monitor position: x<%d> y<%d>", mon_x, mon_y);
+      _appinitdata->_left = win_x;
+      _appinitdata->_top  = win_y;
+      logchan_glfw->log("Setting window position to: x<%d> y<%d>", win_x, win_y);
 
       this->onResize(_width, _height);
       fullscreen_monitor = nullptr; // disable actual fullscreen
