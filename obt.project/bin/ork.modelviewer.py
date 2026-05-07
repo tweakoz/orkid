@@ -214,26 +214,15 @@ class SceneGraphApp(ComponentizedApplication):
 
     # Environment map switching
     self.skybox_names = [
-      "ork_envmaps|pillars4k",        # pillars of creation (sharp)
-      "ork_envmaps|cold4k",           # ice planet (bright, soft)
-      "ork_envmaps|ocean4k",          # ocean planet (soft)
-      "ork_envmaps|arena4k",          # the grid  (dark)
-      "ork_envmaps|club4k",           # gothic club (dark)
-      "ork_envmaps|desert4k",         # desert planet (bright)
-      "ork_envmaps|canyon4k",         # big canyon (bright)
-      "ork_envmaps|crossroads4k",     # the crossroads (bright)
-      "ork_envmaps|futcity4k",        # futuristic city (moderately dark)
-      "ork_envmaps|ethereal4k",       # ethereal plane (medium)
-      "ork_envmaps|tozenv_nebula",    # (purple, soft)
-      "ork_envmaps|tozenv_hellscape", # (red, sharp)
-      "ork_envmaps|blender_studio",   # blender studio (hard shadows)
-      "ork_envmaps|blender_interior", # blender interior (soft)
-      "ork_envmaps|blender_courtyard",# blender courtyard (soft)
-      "ork_envmaps|blender_city",     # blender city (hard)
-      "ork_envmaps|blender_sunrise",  # sunrise (soft)
-      "ork_envmaps|blender_sunset",   # sunset (soft)
-      "ork_envmaps|blender_night",    # night (hard)
-      "ork_envmaps|blender_forest",   # forest (soft)
+      "<assetcache>/envmaps2/arena4k.xir",        # pillars of creation (sharp)
+      "<assetcache>/envmaps2/blender_forest.xir",           # ice planet (bright, soft)
+      "<assetcache>/envmaps2/blender_night.xir",          # ocean planet (soft)
+      "<assetcache>/envmaps2/blender_studio.xir",          # the grid  (dark)
+      "<assetcache>/envmaps2/cold4k.xir",           # gothic club (dark)
+      "<assetcache>/envmaps2/desert4k.xir",         # desert planet (bright)
+      "<assetcache>/envmaps2/ocean4k.xir",         # big canyon (bright)
+      "<assetcache>/envmaps2/pillars4k.xir",     # the crossroads (bright)
+      "<assetcache>/envmaps2/tozenv_nebula.xir",        # futuristic city (moderately dark)
     ]
     self.skybox_cache = dict()
     self.skybox_index = -1
@@ -261,7 +250,7 @@ class SceneGraphApp(ComponentizedApplication):
     sceneparams.DiffuseIntensity = float(diffuintens)
     sceneparams.AmbientLight = vec3(ambiuintens)
     sceneparams.DepthFogDistance = float(1e5)
-    sceneparams.SkyboxTexPathStr = "ork_envmaps|tozenv_nebula"
+    sceneparams.SkyboxTexPathStr = "<assetcache>/envmaps2/cold4k.xir"
     sceneparams.ssaa = ssaa
 
     envmap = args["envmap"]

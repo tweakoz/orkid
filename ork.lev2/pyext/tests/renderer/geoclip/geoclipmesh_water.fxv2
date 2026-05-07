@@ -344,10 +344,16 @@ fragment_shader ps_fwd_ground_mono
 
   PbrData pbd;
   pbd._emissive = false;
-  pbd._metallic = 0.05;
+  // Water is a pure dielectric (n≈1.33 → F0≈0.02). Forcing a small metallic
+  // value gave it a metallic sheen, while roughness=0.7 was frosted-glass
+  // territory and blurred the IBL reflection into a uniform soft glow —
+  // hence the "marshmallow" look. Calm water lives in roughness ~0.05;
+  // choppy water in ~0.15-0.25. signalY here biases roughness with surface
+  // agitation so foamy crests are duller than glassy troughs.
+  pbd._metallic = 0.0;
 
   float ssy      = clamp(signalY, 0, 1);
-  pbd._roughness = 0.7;
+  pbd._roughness = mix(0.05, 0.25, ssy);
   pbd._albedo    = albedo;
   pbd._wpos      = frg_tbn[0].xyz;
   pbd._wnrm      = normal;

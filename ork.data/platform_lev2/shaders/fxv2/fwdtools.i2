@@ -123,7 +123,7 @@ libblock lib_fwd_impl : lib_math //
     // env = env * (1.0 + (pow(dialetric, 2.0)) * 0.33);
 
     vec3 specular_light = ambient + env;
-    vec3 specularC      = specular_light * F0 * SpecularLevel;
+    vec3 specularC      = specular_light * SpecularLevel;
     vec3 specularMask   = clamp(F * brdf.x + brdf.y, 0, 1);
     // FIXED: Removed *2.0 multiplier for glTF 2.0 energy conservation
     vec3 specular       = specularMask * specularC; // * ambocc;
@@ -292,7 +292,10 @@ libblock lib_fwd     //
 
   vec3 _forward_lighting(vec3 modcolor, vec3 eyepos) {
     vec2 uvinvy    = abs(frg_uv0.xy);
-    vec3 albedo    = texture(CNMREA, vec3(uvinvy, 0)).xyz;
+    // ModAlbedo is the per-material albedo multiplier (= mtl->_baseColor).
+    // It modulates the textured albedo here, NOT post-output. This keeps
+    // albedo out of the env-IBL specular path inside _forward_lightingX.
+    vec3 albedo    = texture(CNMREA, vec3(uvinvy, 0)).xyz * ModAlbedo.xyz;
     vec3 TN        = texture(CNMREA, vec3(uvinvy, 1)).xyz;
     vec3 ambrufmtl = texture(CNMREA, vec3(uvinvy, 2)).xyz;
     vec3 emission  = texture(CNMREA, vec3(uvinvy, 3)).xyz;
@@ -317,7 +320,10 @@ libblock lib_fwd     //
 
   vec3 forward_lighting_ntex(vec3 modcolor) {
     vec2 uvinvy    = abs(frg_uv0.xy);
-    vec3 albedo    = modcolor;
+    // No-texture path: ModAlbedo IS the albedo (modulating the implicit
+    // white "no texture" base). modcolor stays a post-multiplier — no
+    // longer doubles as albedo.
+    vec3 albedo    = ModAlbedo.xyz;
     vec3 TN        = vec3(0.5,0.5,1);
     vec3 ambrufmtl = vec3(1, RoughnessFactor, MetallicFactor);
     vec3 emission  = vec3(0,0,0);

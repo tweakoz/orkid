@@ -164,9 +164,17 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
 
     ///////////////////////////////////////////////////////////////////////////
 
+    // ModColor: per-frame post-multiplicative tint (fades, hover, etc.).
+    // Applied AFTER lighting computation. Must NOT carry albedo or it
+    // would multiply through the env-IBL specular path.
+    //
+    // ModAlbedo: per-material multiplicative albedo tint. Applied at the
+    // light-input boundary (modulates the textured CNMREA color sample).
+    // Used by lighting math (diffuse term, F0 metallic mix), not as a
+    // post-multiplier.
     auto modcolor = context->RefModColor();
-    auto final_modcolor = modcolor * mtl->_baseColor;
-    FXI->bindParamVect4(mtl->_parModColor, final_modcolor);
+    FXI->bindParamVect4(mtl->_parModColor,  modcolor);
+    FXI->bindParamVect4(mtl->_parModAlbedo, mtl->_baseColor);
   };
   return L;
 }

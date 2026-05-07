@@ -151,6 +151,11 @@ public:
   fxparam_constptr_t _parRoughnessPower  = nullptr;
   fxparam_constptr_t _parAlphaCutoff     = nullptr;
   fxparam_constptr_t _parModColor        = nullptr;
+  // Per-material multiplicative tint applied to the textured albedo only.
+  // Distinct from _parModColor (which is a post-light-output tint context
+  // state). Conflating the two — what we used to do — caused albedo to leak
+  // into the env-IBL specular path (see fwdnode_pipeline.cpp comment).
+  fxparam_constptr_t _parModAlbedo       = nullptr;
   fxparam_constptr_t _parPickID          = nullptr;
   fxparamblock_constptr_t _parBoneBlock  = nullptr;
 

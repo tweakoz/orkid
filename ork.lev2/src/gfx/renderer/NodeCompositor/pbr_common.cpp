@@ -67,10 +67,27 @@ void CommonStuff::assignEnvTexture(asset::asset_ptr_t texasset) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
+// Path-string expansion helper: resolves <assetcache>/, <stage>/, etc. to
+// real filesystem paths. The scenegraph code that consumes the initial
+// SkyboxTexPathStr (scenegraph.cpp ~L266) does this before constructing a
+// LoadRequest; the request* functions below historically did NOT, so any
+// caller passing a placeholder-bearing path (e.g. "<assetcache>/envmaps2/
+// foo.xir") got a silent nullptr from AssetManager::load → null
+// _radiance_maps → crash in envSpecularTexture(). Centralizing the
+// expansion here keeps callers symmetric with the scenegraph path.
+static AssetPath _expandIfNeeded(const AssetPath& p) {
+  auto s = p.toStdString();
+  if (s.find("<") != std::string::npos) {
+    return AssetPath(file::Path::expandPathString(s));
+  }
+  return p;
+}
+
 radiancemaps_ptr_t CommonStuff::requestRadianceMaps(const AssetPath& texture_path) {
+  auto resolved = _expandIfNeeded(texture_path);
   // Load XIR file directly using the registered XIR loader
-  auto load_req = std::make_shared<asset::LoadRequest>(texture_path);
-  
+  auto load_req = std::make_shared<asset::LoadRequest>(resolved);
+
   // Load using generic asset mechanism - the XIR extension will route to RadianceMapsLoader
   auto generic_asset = asset::AssetManager<RadianceMapsAsset>::load(load_req);
   if (generic_asset) {
@@ -85,8 +102,9 @@ radiancemaps_ptr_t CommonStuff::requestRadianceMaps(const AssetPath& texture_pat
   return nullptr;
 }
 radiancemaps_ptr_t CommonStuff::requestRadianceMapsAsync(const AssetPath& texture_path) {
+  auto resolved = _expandIfNeeded(texture_path);
   // Load XIR file directly using the registered XIR loader
-  auto load_req = std::make_shared<asset::LoadRequest>(texture_path);
+  auto load_req = std::make_shared<asset::LoadRequest>(resolved);
 
   // Load using generic asset mechanism - the XIR extension will route to RadianceMapsLoader
   auto generic_asset = asset::AssetManager<RadianceMapsAsset>::load(load_req);
@@ -105,11 +123,12 @@ radiancemaps_ptr_t CommonStuff::requestRadianceMapsAsync(const AssetPath& textur
 ///////////////////////////////////////////////////////////////////////////////
 
 radiancemaps_ptr_t CommonStuff::requestRadianceMapsSync(const AssetPath& texture_path, Context* ctx) {
+  auto resolved = _expandIfNeeded(texture_path);
   // Kick off the load. RadianceMapsLoader wraps its async decode + three
   // deferred GPU-upload ops with a terminal deferred op that decrements
   // the LoadRequest's partial-load counter, so the counter hitting zero
   // means every layer has finished and the RadianceMaps are GPU-resident.
-  auto load_req = std::make_shared<asset::LoadRequest>(texture_path);
+  auto load_req = std::make_shared<asset::LoadRequest>(resolved);
   auto generic_asset = asset::AssetManager<RadianceMapsAsset>::load(load_req);
   auto rm_asset = std::dynamic_pointer_cast<RadianceMapsAsset>(generic_asset);
   if (!rm_asset) return nullptr;
