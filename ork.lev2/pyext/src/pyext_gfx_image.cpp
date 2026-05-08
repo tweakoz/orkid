@@ -93,6 +93,13 @@ void pyinit_gfx_image(py::module& module_lev2) {
       .def_property_readonly("numcomponents", [](image_ptr_t img) -> int { return img->_numcomponents; })
       .def_property_readonly("bytesPerChannel", [](image_ptr_t img) -> int { return img->_bytesPerChannel; })
       .def_property_readonly("format", [](image_ptr_t img) -> int { return int(img->_format); })
+      // Format name as a string ("RGB8", "BGR8", "RGBA16F", ...). Exposed
+      // so Python tooling can branch on byte order — e.g. honor BGR8/BGRA8
+      // tags when re-packing raw _data bytes (DDS sources commonly arrive
+      // BGR-ordered and the loader tags them accordingly).
+      .def_property_readonly("format_name", [](image_ptr_t img) -> std::string {
+        return EBufferFormatToName(img->_format);
+      })
       .def_property_readonly("data", [](image_ptr_t img) -> datablock_ptr_t { return img->_data; })
       .def("writeToFile", [](image_ptr_t img, const std::string& outpath) {
         img->writeToFile(file::Path(outpath));

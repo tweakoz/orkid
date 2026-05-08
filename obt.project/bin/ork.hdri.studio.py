@@ -28,6 +28,40 @@ from ork.envmap import ROUGHNESS_POWER
 
 tokens = CrcStringProxy()
 
+###############################################################################
+# Channel-order normalization.
+# The C++ Image loader (image_io_oiio.cpp) honors OIIO's reported channel
+# names — DDS sources frequently arrive with channelnames=["B","G","R"] and
+# get tagged EBufferFormat::BGR8 / BGRA8 / etc. The raw bytes in `img.data`
+# are in that on-disk byte order, NOT pre-swapped to RGB. The GPU upload
+# path (convertFormatForPlatform → BGRA8 staging → VK_FORMAT_B8G8R8A8_*)
+# handles that correctly. But Python tooling that np.frombuffer's the raw
+# bytes and indexes by channel must honor the format tag, otherwise R↔B
+# is swapped through the rest of the pipeline.
+###############################################################################
+def _is_bgr_order(img):
+  """True if `img.format_name` indicates B-first byte order (BGR8, BGRA8,
+  etc.). Falls back to False if `format_name` isn't exposed by the C++
+  binding (older builds)."""
+  name = getattr(img, "format_name", "")
+  return name.startswith("BGR")
+
+def _to_rgb_channels(decoded, img):
+  """Given a numpy array shaped [H, W, nc] of pixel data sourced from
+  `img.data`, return an array with channels normalized to RGB(A) order.
+  If `img` is BGR-tagged, swaps channels 0 and 2; otherwise returns
+  `decoded` unchanged. nc==1 / nc==2 sources don't carry a swap concept
+  and pass through."""
+  if not _is_bgr_order(img):
+    return decoded
+  nc = decoded.shape[-1]
+  if nc < 3:
+    return decoded
+  out = decoded.copy()
+  out[..., 0] = decoded[..., 2]   # R = src B
+  out[..., 2] = decoded[..., 0]   # B = src R
+  return out
+
 parser = argparse.ArgumentParser(description="HDRI Environment Map Studio")
 parser.add_argument("-i", "--input", type=str, default=None,
                     help="Source environment map (.exr, .hdr, .png, .dds)")
@@ -578,6 +612,16 @@ class EnvMapStudio(ComponentizedApplication):
   def _load_source(self, ctx):
     """Load source image and setup interactive preview."""
     path = str(Path(self.source_path).resolve())
+    # Debug aid for "image_io.cpp:73 Assertion false" — show resolved path,
+    # file size, and first 16 bytes so we can see what the loader actually
+    # sees before initFromDataBlock asserts on unrecognized magic.
+    try:
+      with open(path, "rb") as _f:
+        _head = _f.read(16)
+      _sz = os.path.getsize(path)
+      print(f"_load_source: path={path}  size={_sz}  head={_head.hex(' ')}")
+    except Exception as _e:
+      print(f"_load_source: cannot stat {path}: {_e}")
     img = lev2.Image.createFromFile(path)
     if not img or img.width == 0:
       print(f"ERROR: Could not load {path}")
@@ -663,6 +707,9 @@ class EnvMapStudio(ComponentizedApplication):
       raw = np.frombuffer(data, dtype=np.uint8).astype(np.float32) / 255.0
 
     pixels = raw.reshape(h, w, nc)
+    # Honor format tag — BGR-ordered sources (e.g. DDS) need swap before
+    # the histogram labels each channel as R/G/B.
+    pixels = _to_rgb_channels(pixels, img)
 
     fig, axes = plt.subplots(2, 1, figsize=(10, 7), facecolor='#111111',
                              gridspec_kw={'height_ratios': [2, 1]})
@@ -850,6 +897,10 @@ class EnvMapStudio(ComponentizedApplication):
       decoded = np.frombuffer(data, dtype=np.float32).copy().reshape(h, w, nc)
     else:
       decoded = np.frombuffer(data, dtype=np.uint8).astype(np.float32).reshape(h, w, nc) / 255.0
+
+    # Honor format tag — BGR-ordered sources (DDS, some TIFFs) arrive with
+    # bytes in B,G,R(,A) order; swap to RGB(A) before treating index 0 as R.
+    decoded = _to_rgb_channels(decoded, img)
 
     # Expand to RGBA
     floats = np.ones((h, w, 4), dtype=np.float32)

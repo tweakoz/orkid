@@ -340,6 +340,14 @@ void TextureInterface::initTextureFromImage(Texture* ptex, image_ptr_t img, bool
       tid._src_format  = EBufferFormat::RGBA8;
       tid._dst_format  = EBufferFormat::RGBA8;
       break;
+    // BGRA8 sources (e.g. 32-bit BGRA DDS like tozenv_basic.dds — OIIO
+    // reports channelnames=["B","G","R","A"] and the loader tags BGRA8).
+    // image_fmt_convert.cpp:821 has the BGRA8→RGBA8 conversion routine.
+    case EBufferFormat::BGRA8:
+      img_to_use = std::make_shared<Image>();
+      img_to_use->convertFromImageToFormat(*img,EBufferFormat::RGBA8);
+      tid._src_format  = EBufferFormat::RGBA8;
+      tid._dst_format  = EBufferFormat::RGBA8;
       break;
     default:
       OrkAssert(false); // unsupported image format
