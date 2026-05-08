@@ -39,7 +39,9 @@ parser.add_argument("-t", "--ssaa", type=int, default=2, help='ssaa')
 parser.add_argument("-u", "--ssao", type=int, default=0, help='SSAO samples')
 parser.add_argument("-L", "--lightmap", type=str, default="", help='set active lightmap')
 parser.add_argument('-r', '--rendermodel', type=str, default='forward', help='rendering model (deferred,forward)')
-parser.add_argument('-S', '--stateDebugger', type=bool, default=False, help='Graphics state debugger')
+parser.add_argument('-S', '--spotlight', type=float, nargs='?', const=1.0, default=None,
+                    help='attach animated spotlight + cookie at INTENSITY (default 1.0); '
+                         'omit the flag entirely to disable')
 parser.add_argument('-E', '--exposure', type=float, default=None, help='enable ACES tonemapper with given exposure')
 parser.add_argument('--list', action="store_true", help='list available model short names')
 
@@ -157,7 +159,8 @@ ssaa = args["ssaa"]
 ssao = args["ssao"]
 lightmap = args["lightmap"]
 rendermodel = args["rendermodel"]
-statedebug = args["stateDebugger"]
+spotlight_intensity = args["spotlight"]   # None if --spotlight not given, else float
+use_spotlight       = (spotlight_intensity is not None)
 
 if args["forceregen"]:
   os.environ["ORKID_LEV2_FORCE_MODEL_REGEN"] = "1"
@@ -180,6 +183,7 @@ if args["encrypt"]:
 from orkengine.core import *
 from orkengine.lev2 import *
 from ork.app.application import ComponentizedApplication
+from ork.app.std_scenegraph import StdSpotLight
 
 def trace_imports(frame, event, arg):
     if event == "import":
@@ -303,7 +307,7 @@ class SceneGraphApp(ComponentizedApplication):
     self.model = XgmModel(modelpath)
     self.sgnode = self.model.createNode("node",self.layer_fwd)
     self.pbr_common = self.scene.pbr_common
-    self.model.debugRenderingModel = tokens.ALL if statedebug else tokens.NONE
+    self.model.debugRenderingModel = tokens.NONE
     self.model.debugPassID = tokens.ALL # PROBE MAIN
     self.model.debugSubPassID = tokens.ALL # tokens.FORWARD_PBR
 
@@ -405,6 +409,47 @@ class SceneGraphApp(ComponentizedApplication):
         self.grid_data.shader_suffix = "_V3"
       self.grid_node = self.layer_fwd.createGridNode("grid",self.grid_data)
       self.grid_node.sortkey = 1
+
+    ###################################
+    # --spotlight: attach the same animated spotlight + cookie that
+    # shaderballs.py sets up. Useful for verifying spot/PBR/specular-
+    # reflection behavior on real models. Cookie textures must be
+    # assigned to the lightingmanager BEFORE its gpuInit, hence the
+    # spotlight setup goes here, not in _onUpdate.
+    ###################################
+    if use_spotlight:
+      from types import SimpleNamespace
+      lmgr = self.scene.lightingmanager
+      sgc_shim = SimpleNamespace(scenegraph=self.scene, layer_fwd=self.layer_fwd)
+      spotlight_marker = XgmModel("data://tests/pbr_calib.glb")
+
+      COOKIE_DIM = 2048
+      color_cookies = TextureArray(w=COOKIE_DIM, h=COOKIE_DIM, slices=4,
+                                   fmt=tokens.RGB8, mipmapped=True)
+      depth_cookies = TextureArray(w=COOKIE_DIM, h=COOKIE_DIM, slices=4,
+                                   fmt=tokens.Z32F, mipmapped=True)
+      color_cookies.needsRadianceCache = False
+      cookie1 = color_cookies.load("src://effect_textures/knob2.png")
+      ctx.TXI.updateTextureArray(color_cookies)
+      depth_cookie1 = depth_cookies.slice(0)
+
+      # Base color matches shaderballs.py (warm white at 10x), scaled by
+      # the user-supplied --spotlight INTENSITY (default 1.0).
+      self.spotlight1 = StdSpotLight(
+        index=0,
+        SGC=sgc_shim,
+        model=spotlight_marker,
+        frq=0.17,
+        color=vec3(1000, 800, 500) * 10.0 * spotlight_intensity,
+        cookie=cookie1,
+        depth_cookie=depth_cookie1,
+        dim=COOKIE_DIM,
+        radius=24,
+        voffset=10,
+        fovbase=45)
+
+      lmgr.spot_cookies_color = color_cookies
+      lmgr.spot_cookies_depth = depth_cookies
 
     self.scene.lightingmanager.gpuInit(ctx)
 
@@ -511,6 +556,8 @@ class SceneGraphApp(ComponentizedApplication):
       self.pbr_common.ssaoNumSamples = ssao
     else:
       self.pbr_common.ssaoNumSamples = 0
+    if hasattr(self, "spotlight1"):
+      self.spotlight1.update(updinfo.absolutetime)
     self.camera.copyFrom(self.uicam.cameradata)
     self.scene.updateScene(self.cameralut)
     self.sgviewport_item.widget.setDirty()

@@ -230,13 +230,13 @@ class SceneGraphApp(ComponentizedApplication):
                                     SGC=SGC,
                                     model=model,
                                     frq=0.17,
-                                    color=vec3(1000,800,500),
+                                    color=vec3(1000,800,500)*10.0,
                                     cookie=cookie1,
                                     depth_cookie=depth_cookie1, 
                                     dim=COOKIE_DIM,
                                     radius=24,
                                     voffset=10,
-                                    fovbase=25)
+                                    fovbase=45)
 
     lmgr.spot_cookies_color = color_cookies
     lmgr.spot_cookies_depth = depth_cookies
