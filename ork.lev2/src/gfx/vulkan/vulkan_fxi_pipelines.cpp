@@ -19,13 +19,13 @@ namespace ork::lev2::vulkan {
 static logchannel_ptr_t logchan_vkpip = logger()->configureChannel("VKPIP", fvec3(1, 1, .2), false);
 ///////////////////////////////////////////////////////////////////////////////
 
-VkPipelineObject::VkPipelineObject(vkcontext_rawptr_t ctx) {
-  _descriptorSetCache = std::make_shared<VulkanDescriptorSetCache>(ctx);
+VkPipelineState::VkPipelineState(vkcontext_rawptr_t ctx) {
+  _descriptorSetCache = std::make_shared<VulkanDescriptorSetCacheState>(ctx);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
+vkpipelinestate_rawptr_t VkFxInterface::_fetchPipeline(
     vkvtxbuf_ptr_t vb,             //
     vkprimclass_ptr_t primclass) { //
 
@@ -33,13 +33,13 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
   auto gbi                = _contextVK->_gbi;
   EVtxStreamFormat vb_fmt = vb->_ork_vtxbuf.meStreamFormat;
 
-  auto shprog = _currentVKPASS->_vk_program;
+  auto shprog = _currentVKPASS;
 
   if (0) {
     printf(
         "_fetchPipeline: tek<%s> shprog<%p> vif<%s>\n",
         _currentORKTEK->_techniqueName.c_str(),
-        shprog.get(),
+        shprog,
         shprog->_vertexinterface ? shprog->_vertexinterface->_name.c_str() : "null");
   }
 
@@ -161,39 +161,28 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
   // find or create pipeline
   ////////////////////////////////////////////////////
 
-  vkpipeline_obj_ptr_t rval;
+  auto& pipeline = _pipelines[pipeline_hash];
+  if (!pipeline) 
+    pipeline = _createPipeline(vb, primclass, vkrstate);
 
-  auto it = _pipelines.find(pipeline_hash);
-  if (it == _pipelines.end()) { // create pipeline
-    rval                      = _createPipeline(vb, primclass, vkrstate);
-    _pipelines[pipeline_hash] = rval;
-  } else { // pipeline already cached!
-    rval = it->second;
-  }
-
-  ////////////////////////////////////////////////////
-  OrkAssert(rval != nullptr);
-  ////////////////////////////////////////////////////
-  return rval;
+  OrkAssert(pipeline != nullptr);
+  return pipeline.get();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-uint64_t VkFxShaderProgram::samplersHash() {
+uint64_t VkFxShaderPassState::samplersHash() const {
   // Always recalculate to pick up changes in texture/SSBO bindings
   boost::Crc64 the_crc;
   the_crc.init();
-  for (auto& it : _textures_by_orkparam) {
-    auto as_vktex  = it.second;
-    the_crc.accumulateItem(reinterpret_cast<uintptr_t>(as_vktex.get()));
-    the_crc.accumulateItem(as_vktex->_format_hash);
-    the_crc.accumulateItem(as_vktex->_imgview_hash.result());
+  for (auto& [param, tex] : _textures_by_orkparam) {
+    the_crc.accumulateItem(reinterpret_cast<uintptr_t>(tex.get()));
+    the_crc.accumulateItem(tex->_format_hash);
+    the_crc.accumulateItem(tex->_imgview_hash.result());
   }
-  // Include SSBO buffer pointers so different SSBOs produce different cache keys
-  for (auto& it : _vk_ssbo_blocks) {
-    auto& ssbo_block = it.second;
-    auto bound = ssbo_block->_bound_buffer;
-    the_crc.accumulateItem(reinterpret_cast<uintptr_t>(bound.get()));
+  // Include storage buffer pointers so different SSBOs produce different cache keys
+  for (auto* storage_state : _ordered_storage_states) {
+    the_crc.accumulateItem(reinterpret_cast<uintptr_t>(storage_state->_bound_buffer.get()));
   }
   return the_crc.finished();
 }
@@ -202,10 +191,10 @@ uint64_t VkFxShaderProgram::samplersHash() {
 // SSBO-only pipeline (no vertex buffer, shader reads from storage buffer)
 ///////////////////////////////////////////////////////////////////////////////
 
-vkpipeline_obj_ptr_t VkFxInterface::_fetchPipelineSSBO(vkprimclass_ptr_t primclass) {
+vkpipelinestate_rawptr_t VkFxInterface::_fetchPipelineSSBO(vkprimclass_ptr_t primclass) {
 
   auto fbi    = _contextVK->_fbi;
-  auto shprog = _currentVKPASS->_vk_program;
+  auto shprog = _currentVKPASS;
 
   ////////////////////////////////////////////////////
   // Get attachment count and formats from active render target group
@@ -298,18 +287,12 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipelineSSBO(vkprimclass_ptr_t primcla
   // find or create pipeline
   ////////////////////////////////////////////////////
 
-  vkpipeline_obj_ptr_t rval;
+  auto& pipeline = _pipelines[pipeline_hash];
+  if (!pipeline)
+    pipeline = _createPipelineSSBO(primclass, vkrstate);
 
-  auto it = _pipelines.find(pipeline_hash);
-  if (it == _pipelines.end()) {
-    rval = _createPipelineSSBO(primclass, vkrstate);
-    _pipelines[pipeline_hash] = rval;
-  } else {
-    rval = it->second;
-  }
-
-  OrkAssert(rval != nullptr);
-  return rval;
+  OrkAssert(pipeline != nullptr);
+  return pipeline.get();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

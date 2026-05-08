@@ -19,15 +19,15 @@ namespace ork::lev2::vulkan {
 static logchannel_ptr_t logchan_vkpipc = logger()->configureChannel("VKPIPC", fvec3(1, 1, .2), false);
 ///////////////////////////////////////////////////////////////////////////////
 
-vkpipeline_obj_ptr_t VkFxInterface::_createPipeline(
+vkpipelinestate_ptr_t VkFxInterface::_createPipeline(
     vkvtxbuf_ptr_t vb,              //
     vkprimclass_ptr_t primclass,    //
     vkrasterstate_ptr_t vkrstate) { //
 
   OrkAssert(_currentVKPASS != nullptr);
-  vkpipeline_obj_ptr_t pipeline = std::make_shared<VkPipelineObject>(_contextVK);
-  auto shprog                   = _currentVKPASS->_vk_program;
-  pipeline->_vk_program         = shprog;
+  vkpipelinestate_ptr_t pipeline = std::make_shared<VkPipelineState>(_contextVK);
+  auto shprog                   = _currentVKPASS;
+  pipeline->_shader_state       = &_shader_pass_states[shprog];
   pipeline->_rasterstate        = vkrstate;
   auto fbi                      = _contextVK->_fbi;
   auto gbi                      = _contextVK->_gbi;
@@ -66,7 +66,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_createPipeline(
   if (shprog->_frgshader)
     stages.push_back(shprog->_frgshader->_shaderstageinfo);
 
-  auto VIF       = shprog->_vertexinterface;
+  auto VIF = shprog->_vertexinterface;
   auto vtx_state = gbi->vertexInputState(vb, VIF);
   OrkAssert(vtx_state);
 
@@ -171,9 +171,9 @@ vkpipeline_obj_ptr_t VkFxInterface::_createPipeline(
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_obj_ptr_t pipeline) {
+VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipelinestate_ptr_t pipeline) {
 
-  auto vk_program = _currentVKPASS->_vk_program;
+  auto vk_program = _currentVKPASS;
   OrkAssert(vk_program != nullptr);
 
   VkPipelineLayoutCreateInfo PLCI;
@@ -226,6 +226,10 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
     // Create descriptor set layout from merged resource data
     ///////////////////////////////////////////////////////////
 
+    // Ordered state vectors are program-level — only build once for the first pipeline.
+    auto* shader_state = pipeline->_shader_state;
+    bool build_ordered = shader_state->_ordered_uniform_states.empty() && shader_state->_ordered_storage_states.empty();
+
     std::vector<VkDescriptorSetLayoutBinding> bindings;
 
     for (const auto& [set_id, sources] : resources->descriptor_sets) {
@@ -262,16 +266,19 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
                 OrkAssert(false);
               }
 
-              VkFxShaderUniformBlk* ubo = ubo_it->second.get();
+              VkFxShaderUniformBlock* ubo = ubo_it->second.get();
               OrkAssert(ubo != nullptr);
               OrkAssert(ubo->_orkparamblock != nullptr);
 
               //////////////////////////////////////////////////////
-              // Track this UBO for the pipeline with its binding ID
+              // Attach shader context's UBO context to the pipeline, recording binding ID.
               //////////////////////////////////////////////////////
 
-              pipeline->_uniform_blocks.push_back(ubo);
-              pipeline->_ubo_by_binding[binding->binding_id] = ubo;
+              auto* ub_ctx = uniformStateForBlock(ubo);
+              if (ub_ctx && build_ordered) {
+                ub_ctx->_binding_id = binding->binding_id;
+                shader_state->_ordered_uniform_states.push_back(ub_ctx);
+              }
 
               break;
             }
@@ -283,18 +290,21 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
               //////////////////////////////////////////////////////
 
               VkFxShaderStorageBlock* ssbo = nullptr;
-              auto it                      = pipeline->_vk_program->_vk_ssbo_blocks.find(binding->name);
-              if (it != pipeline->_vk_program->_vk_ssbo_blocks.end()) {
+              auto it                      = vk_program->_vk_ssbo_blocks.find(binding->name);
+              if (it != vk_program->_vk_ssbo_blocks.end()) {
                 ssbo = it->second.get();
               }
 
               if (ssbo) {
                 //////////////////////////////////////////////////////
-                // Track this SSBO for the pipeline with its binding ID
+                // Attach shader context's SSBO context to the pipeline, recording binding ID.
                 //////////////////////////////////////////////////////
 
-                pipeline->_storage_blocks.push_back(ssbo);
-                pipeline->_ssbo_by_binding[binding->binding_id] = ssbo;
+                auto* ssbo_ctx = storageStateForBlock(ssbo);
+                if (ssbo_ctx && build_ordered) {
+                  ssbo_ctx->_binding_id = binding->binding_id;
+                  shader_state->_ordered_storage_states.push_back(ssbo_ctx);
+                }
               }
 
               //////////////////////////////////////////////////////
@@ -356,7 +366,7 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
         //  is the order in which they appear in the pBindings array passed to
         //  vkCreateDescriptorSetLayout."
         //
-        // We later sort _uniform_blocks by binding_id and build dynamic offsets
+        // We later sort _ubo_states by binding_id and build dynamic offsets
         // from that sorted order. If pBindings isn't also sorted, the dynamic
         // offsets will be consumed in the wrong order, causing each UBO to
         // read from the wrong memory location.
@@ -384,64 +394,33 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
     } // for (const auto& [set_id, sources] : resources->descriptor_sets) {
 
     //////////////////////////////////////////////////////
-    // Sort uniform blocks by binding ID for consistent ordering with dynamic offsets
-    // Build a reverse map to get binding IDs for each UBO
+    // Sort UBO context pointers by (descriptor_set_id, binding_id) for consistent
+    // ordering with dynamic offsets consumed by vkCmdBindDescriptorSets.
     //////////////////////////////////////////////////////
 
-    std::map<VkFxShaderUniformBlk*, uint32_t> ubo_to_binding;
-    for (const auto& [binding_id, ubo] : pipeline->_ubo_by_binding) {
-      ubo_to_binding[ubo] = binding_id;
+    if (build_ordered) {
+      std::sort(
+          shader_state->_ordered_uniform_states.begin(),
+          shader_state->_ordered_uniform_states.end(),
+          [](const VkFxShaderUniformBlockState* a, const VkFxShaderUniformBlockState* b) {
+            auto* blk_a = a->_shader_uniform_block;
+            auto* blk_b = b->_shader_uniform_block;
+            if (blk_a->_descriptor_set_id != blk_b->_descriptor_set_id)
+              return blk_a->_descriptor_set_id < blk_b->_descriptor_set_id;
+            return a->_binding_id < b->_binding_id;
+          });
+
+      std::sort(
+          shader_state->_ordered_storage_states.begin(),
+          shader_state->_ordered_storage_states.end(),
+          [](const VkFxShaderStorageBlockState* a, const VkFxShaderStorageBlockState* b) {
+            auto* blk_a = a->_shader_storage_block;
+            auto* blk_b = b->_shader_storage_block;
+            if (blk_a->_descriptor_set_id != blk_b->_descriptor_set_id)
+              return blk_a->_descriptor_set_id < blk_b->_descriptor_set_id;
+            return a->_binding_id < b->_binding_id;
+          });
     }
-
-    std::sort(
-        pipeline->_uniform_blocks.begin(),
-        pipeline->_uniform_blocks.end(),
-        [&ubo_to_binding](const VkFxShaderUniformBlk* a, const VkFxShaderUniformBlk* b) {
-          // First sort by descriptor set, then by binding within the set
-          if (a->_descriptor_set_id != b->_descriptor_set_id) {
-            return a->_descriptor_set_id < b->_descriptor_set_id;
-          }
-          // Look up binding IDs from the map
-          uint32_t binding_a = ubo_to_binding.at(const_cast<VkFxShaderUniformBlk*>(a));
-          uint32_t binding_b = ubo_to_binding.at(const_cast<VkFxShaderUniformBlk*>(b));
-          return binding_a < binding_b;
-        });
-
-    // Diagnostic: print UBO configuration for this pipeline
-    if (0) {
-      printf(
-          "PIPELINE-CREATE tek<%s>: _uniform_blocks.size()=%zu\n", vk_program->_tek_name.c_str(), pipeline->_uniform_blocks.size());
-      for (size_t i = 0; i < pipeline->_uniform_blocks.size(); i++) {
-        auto* ubo = pipeline->_uniform_blocks[i];
-        printf(
-            "  [%zu] UBO<%s> binding<%u> dset<%zu> shadow_size<%zu>\n",
-            i,
-            ubo->_orkparamblock->_name.c_str(),
-            ubo_to_binding[ubo],
-            ubo->_descriptor_set_id,
-            ubo->_shadow_buffer.size());
-      }
-    }
-
-    // Sort SSBOs by descriptor set and binding for consistent ordering
-    std::map<VkFxShaderStorageBlock*, uint32_t> ssbo_to_binding;
-    for (const auto& [binding_id, ssbo] : pipeline->_ssbo_by_binding) {
-      ssbo_to_binding[ssbo] = binding_id;
-    }
-
-    std::sort(
-        pipeline->_storage_blocks.begin(),
-        pipeline->_storage_blocks.end(),
-        [&ssbo_to_binding](const VkFxShaderStorageBlock* a, const VkFxShaderStorageBlock* b) {
-          // First sort by descriptor set, then by binding within the set
-          if (a->_descriptor_set_id != b->_descriptor_set_id) {
-            return a->_descriptor_set_id < b->_descriptor_set_id;
-          }
-          // Look up binding IDs from the map
-          uint32_t binding_a = ssbo_to_binding.at(const_cast<VkFxShaderStorageBlock*>(a));
-          uint32_t binding_b = ssbo_to_binding.at(const_cast<VkFxShaderStorageBlock*>(b));
-          return binding_a < binding_b;
-        });
 
     PLCI.setLayoutCount = pipeline->_dset_layouts.size();
     PLCI.pSetLayouts    = pipeline->_dset_layouts.data();
@@ -461,12 +440,12 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
 // SSBO-only pipeline creation (no vertex buffer)
 ///////////////////////////////////////////////////////////////////////////////
 
-vkpipeline_obj_ptr_t VkFxInterface::_createPipelineSSBO(vkprimclass_ptr_t primclass, vkrasterstate_ptr_t vkrstate) {
+vkpipelinestate_ptr_t VkFxInterface::_createPipelineSSBO(vkprimclass_ptr_t primclass, vkrasterstate_ptr_t vkrstate) {
 
   OrkAssert(_currentVKPASS != nullptr);
-  vkpipeline_obj_ptr_t pipeline = std::make_shared<VkPipelineObject>(_contextVK);
-  auto shprog                   = _currentVKPASS->_vk_program;
-  pipeline->_vk_program         = shprog;
+  vkpipelinestate_ptr_t pipeline = std::make_shared<VkPipelineState>(_contextVK);
+  auto shprog = _currentVKPASS;
+  pipeline->_shader_state       = &_shader_pass_states[shprog];
   pipeline->_rasterstate        = vkrstate;
   auto fbi                      = _contextVK->_fbi;
   auto rtg                      = fbi->_active_rtgroup;

@@ -18,7 +18,7 @@ namespace ork::lev2::vulkan {
 using namespace shadlang;
 ///////////////////////////////////////////////////////////////////////////////
 
-VulkanFxShaderObject::VulkanFxShaderObject(vkcontext_rawptr_t ctx, vkfxshader_bin_t bin) //
+VulkanFxShaderStage::VulkanFxShaderStage(vkcontext_rawptr_t ctx, vkfxshader_bin_t bin) //
     : _contextVK(ctx)                                                                    //
     , _spirv_binary(bin) {                                                               //
 
@@ -35,7 +35,7 @@ VulkanFxShaderObject::VulkanFxShaderObject(vkcontext_rawptr_t ctx, vkfxshader_bi
   OrkAssert(result == VK_SUCCESS);
 }
 
-VulkanFxShaderObject::~VulkanFxShaderObject() {
+VulkanFxShaderStage::~VulkanFxShaderStage() {
   vkDestroyShaderModule(_contextVK->_vkdevice, _vk_shadermodule, nullptr);
 }
 

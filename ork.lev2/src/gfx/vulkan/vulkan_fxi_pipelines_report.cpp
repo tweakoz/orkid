@@ -16,14 +16,16 @@ namespace ork::lev2::vulkan {
 static logchannel_ptr_t logchan_vkpipcrep = logger()->configureChannel("VKPIPREP", fvec3(1, 1, .2), false);
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkFxInterface::_createPipelineReport(vkpipeline_obj_ptr_t pipeline) {
+
+
+void VkFxInterface::_createPipelineReport(vkpipelinestate_ptr_t pipeline) {
   
   std::string report_filename;
   
   // Only generate report if debug flag is set
   // Generate pipeline report for debugging descriptor set issues
   
-  auto shprog = _currentVKPASS->_vk_program;
+  auto shprog = _currentVKPASS;
   
   // Generate filename matching shader report schema
   // Use shader filename and technique name, process URI like in shader reports
@@ -39,7 +41,7 @@ void VkFxInterface::_createPipelineReport(vkpipeline_obj_ptr_t pipeline) {
   // Find pass index by searching through technique's passes
   int pass_num = 0;
   for (size_t i = 0; i < _currentVKTEK->_vk_passes.size(); ++i) {
-    if (_currentVKTEK->_vk_passes[i] == _currentVKPASS) {
+    if (_currentVKTEK->_vk_passes[i].get() == _currentVKPASS) {
       pass_num = i;
       break;
     }

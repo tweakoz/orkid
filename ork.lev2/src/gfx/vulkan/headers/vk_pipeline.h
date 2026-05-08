@@ -1,11 +1,15 @@
-#pragma once 
-///////////////////////////////////////////////////////////////////////////////
-#include "vk_synchro.h"
-#include "vk_pipeline.h"
+#pragma once
+
+#include <set>
+#include <unordered_map>
+#include <ork/lev2/gfx/shadman.h>
+#include "vk_protos.h"
 #include "vk_merged_resources.h"
-///////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
 struct VkFxShaderUniformSetItem {
   std::string _datatype;
   std::string _identifier;
@@ -14,47 +18,66 @@ struct VkFxShaderUniformSetItem {
   VkShaderStageFlags _shader_stage = 0;  // Which shader stage this parameter belongs to
   size_t _range_index = 0;                // Which push constant range to use
 };
-///////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+
 struct VkFxShaderUniformSampler {
   std::string _datatype;
   std::string _identifier;
   std::shared_ptr<FxShaderParam> _orkparam;
-  vktexobj_ptr_t _current_texture; // Currently bound texture
 };
-///////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+
 struct VkFxShaderUniformSet {
   std::string _name;
   std::unordered_map<std::string, vkfxsunisetitem_ptr_t> _items_by_name;
   std::vector<vkfxsunisetitem_ptr_t> _items_by_order;
 };
-///////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+
 struct VkFxShaderDescriptorSetItem {
   size_t _descriptor_set_id = 0;
 };
-///////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+
 struct VkFxShaderSamplerSet : public VkFxShaderDescriptorSetItem {
   std::unordered_map<std::string, vkfxsunisampler_ptr_t> _samplers_by_name;
   std::vector<vkfxsunisampler_ptr_t> _samplers_by_order;
   svar64_t _impl;
 };
-///////////////////////////////////////////////////////////////////////////////
-struct VkFxShaderUniformBlk : public VkFxShaderDescriptorSetItem {
+
+/////////////////////////////////////////////////////////////////////////////////
+//  VkFxShaderUniformBlk
+//    Shared across all VkContexts — layout/descriptor info only.
+//    Owned by VkFxShaderProgram::_vk_uniformblks (shared_ptr map values).
+/////////////////////////////////////////////////////////////////////////////////
+
+struct VkFxShaderUniformBlock : public VkFxShaderDescriptorSetItem {
   std::shared_ptr<FxUniformBlock> _orkparamblock;
   std::unordered_map<std::string, vkfxsuniblkitem_ptr_t> _items_by_name;
   std::vector<vkfxsuniblkitem_ptr_t> _items_by_order;
-  
-  // Shadow buffer mechanism
-  std::vector<uint8_t> _shadow_buffer;
-  std::vector<dirtyrange_ptr_t> _dirty_ranges;
-  
+
   size_t _buffer_size = 0;
-  std::string _name;         // Name of the uniform block
-  
-  void addDirtyRange(size_t offset, size_t size);
-  void coalesceRanges();
-  std::vector<alignedrange_ptr_t> getAlignedRanges(VkDeviceSize atom_size) const;
+  std::string _name;
 };
-///////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////////////////
+//  VkFxShaderUniformBlkState
+//    Per-VkContext state for VkFxShaderUniformBlk.
+//    Owned by VkFxShaderState::_ubo_states (inline map values).
+/////////////////////////////////////////////////////////////////////////////////
+
+struct VkFxShaderUniformBlockState {
+  uint32_t                      _binding_id = 0;
+  std::vector<uint8_t>          _shadow_buffer;
+  VkFxShaderUniformBlock*       _shader_uniform_block = nullptr;
+};
+
+/////////////////////////////////////////////////////////////////////////////////
+
 struct VkFxShaderUniformBlkItem {
   std::string _datatype;
   std::string _identifier;
@@ -62,55 +85,64 @@ struct VkFxShaderUniformBlkItem {
   bool _is_array = false;
   size_t _array_length = 0;
   std::shared_ptr<FxShaderParam> _orkparam;
-  struct VkFxShaderUniformBlk* _parent_block = nullptr;
+  struct VkFxShaderUniformBlock* _parent_block = nullptr;
 };
-///////////////////////////////////////////////////////////////////////////////
-struct DirtyRange {
-  size_t offset;
-  size_t size;
-};
-///////////////////////////////////////////////////////////////////////////////
-struct AlignedRange {
-  VkDeviceSize offset;
-  VkDeviceSize size;
-  
-  static std::shared_ptr<AlignedRange> fromDirtyRange(
-    dirtyrange_ptr_t dirty, 
-    VkDeviceSize atom_size, 
-    VkDeviceSize buffer_size);
-};
-///////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+
 struct VkFxShaderUniformSetsReference {
   uniset_map_t _unisets;
 };
-///////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+
 struct VkFxShaderUniformBlksReference {
   uniblk_map_t _uniblks;
 };
-///////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////////////////
+//  VkFxShaderStorageBlock
+//    Shared across all VkContexts — layout/descriptor info only.
+//    Owned by VkFxShaderProgram::_vk_ssbo_blocks (shared_ptr map values).
+/////////////////////////////////////////////////////////////////////////////////
+
 struct VkFxShaderStorageBlock : public VkFxShaderDescriptorSetItem {
   std::shared_ptr<FxShaderStorageBlock> _orkstorageblock;
   std::unordered_map<std::string, fxbuffer_member_ptr_t> _members_by_name;
   std::vector<fxbuffer_member_ptr_t> _members_by_order;
 
   size_t _buffer_size = 0;
-  std::string _name;         // Name of the storage block
-  std::string _buffer_name;  // Name of the buffer block in shader
-
-  // Runtime binding
-  vkbuffer_ptr_t _bound_buffer;
-  FxShaderStorageBuffer* _bound_ssbo = nullptr;
+  std::string _name;
+  std::string _buffer_name;
 };
-///////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////////////////
+//  VkFxShaderStorageBlockState
+//    Per-VkContext state for VkFxShaderStorageBlock.
+//    Owned by VkFxShaderState::_ssbo_states (inline map values).
+/////////////////////////////////////////////////////////////////////////////////
+struct VkFxShaderStorageBlockState {
+  VkFxShaderStorageBlock*       _shader_storage_block = nullptr;  // back-pointer to shared block definition
+  uint32_t                      _binding_id = 0;
+  vkbuffer_ptr_t                _bound_buffer;
+  FxShaderStorageBuffer*        _bound_ssbo = nullptr;
+};
+
+/////////////////////////////////////////////////////////////////////////////////
+
 struct VkFxShaderStorageBlocksReference {
   std::map<std::string, std::shared_ptr<VkFxShaderStorageBlock>> _ssbo_blocks;
 };
-///////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+
 struct VkFxShaderSamplerSetsReference {
   static size_t descriptor_set_counter;
   smpset_map_t _smpsets;
 };
-///////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+
 struct VkFxShaderPushConstantBlock {
   uniset_map_t _vtx_unisets;
   uniset_map_t _frg_unisets;
@@ -123,25 +155,31 @@ struct VkFxShaderPushConstantBlock {
   std::vector<VkPushConstantRange> _ranges;
   size_t _blockSize = 0;
 };
-///////////////////////////////////////////////////////////////////////////////
-struct VkFxShaderFile {
-  std::string _shader_name;
-  // shadlang::SHAST::translationunit_ptr_t _trans_unit;
-  std::unordered_map<std::string, vkfxsobj_ptr_t> _vk_shaderobjects;
-  std::unordered_map<std::string, vkfxstek_ptr_t> _vk_techniques;
-  std::unordered_map<std::string, vkfxssmpset_ptr_t> _vk_samplersets;
-  std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
-  std::unordered_map<std::string, vkfxsuniblk_ptr_t> _vk_uniformblks;
-  std::unordered_map<std::string, vkfxssbo_ptr_t> _vk_ssbo_blocks;
-  std::unordered_map<std::string, vkvertexinterface_ptr_t> _vk_vtxinterfaces;
-  std::unordered_map<std::string, rasterstate_ptr_t> _stateblock_rasterstates; // Registry of pre-built rasterstates
-  std::unordered_map<std::string, vkgeometryinterface_ptr_t> _vk_geointerfaces;
-};
-///////////////////////////////////////////////////////////////////////////////
-struct VulkanFxShaderObject {
 
-  VulkanFxShaderObject(vkcontext_rawptr_t ctx, vkfxshader_bin_t bin);
-  ~VulkanFxShaderObject();
+/////////////////////////////////////////////////////////////////////////////////
+//  VkFxShaderTechnique
+//    Shared across all VkContexts. Immutable after load.
+//    Owned by VkFxShaderFile::_vk_techniques (shared_ptr map values).
+/////////////////////////////////////////////////////////////////////////////////
+
+struct VkFxShaderTechnique {
+  VkFxShaderTechnique();
+  ~VkFxShaderTechnique();
+  std::vector<vkfxshaderpass_ptr_t> _vk_passes;
+  std::shared_ptr<FxShaderTechnique> _orktechnique;
+};
+
+/////////////////////////////////////////////////////////////////////////////////
+//  VulkanFxShaderStage
+//    One compiled SPIR-V shader stage (vertex, fragment, geometry, or compute).
+//    Wraps VkShaderModule and VkPipelineShaderStageCreateInfo for one stage.
+//    Owned by VkFxShaderFile::_vk_shaderstages; shared across programs that reuse the same stage.
+/////////////////////////////////////////////////////////////////////////////////
+
+struct VulkanFxShaderStage {
+
+  VulkanFxShaderStage(vkcontext_rawptr_t ctx, vkfxshader_bin_t bin);
+  ~VulkanFxShaderStage();
 
   vkcontext_rawptr_t _contextVK;
   vkfxshader_bin_t _spirv_binary;
@@ -159,48 +197,100 @@ struct VulkanFxShaderObject {
   VkPushConstantRange _vkpc_range;
   std::string _name;
 };
-///////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////////////////
+//  VkFxShaderFile
+//    Shared across all VkContexts. Immutable after load.
+////////////////////////////////////////////////////////////////////////////////
+
+struct VkFxShaderFile {
+  std::string _shader_name;
+  // shadlang::SHAST::translationunit_ptr_t _trans_unit;
+  std::unordered_map<std::string, vkfxsstage_ptr_t> _vk_shaderstages;
+  std::unordered_map<std::string, vkfxstek_ptr_t> _vk_techniques;
+  std::unordered_map<std::string, vkfxssmpset_ptr_t> _vk_samplersets;
+  std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
+  std::unordered_map<std::string, vkfxsuniblk_ptr_t> _vk_uniformblks;
+  std::unordered_map<std::string, vkfxssbo_ptr_t> _vk_ssbo_blocks;
+  std::unordered_map<std::string, vkvertexinterface_ptr_t> _vk_vtxinterfaces;
+  std::unordered_map<std::string, rasterstate_ptr_t> _stateblock_rasterstates; // Registry of pre-built rasterstates
+  std::unordered_map<std::string, vkgeometryinterface_ptr_t> _vk_geointerfaces;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
 struct VkParamSetItem {
   VkFxShaderUniformSetItem* _vk_param = nullptr;
   fxparam_constptr_t _ork_param       = nullptr;
   svar64_t _value;
 };
-///////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+
 struct DescBinding {
   uint32_t _set_id     = 0;
   uint32_t _binding_id = 0;
 };
-///////////////////////////////////////////////////////////////////////////////
-struct VkFxShaderProgram {
 
-  VkFxShaderProgram(VkFxShaderFile* file);
+/////////////////////////////////////////////////////////////////////////////////
+//  VkFxShaderState
+//    Per-VkContext state for VkFxShaderProgram. Mutable per frame.
+//    Owned by VkFxInterface::_shader_pass_states (inline map values, keyed by program rawptr).
+//    Shared across all VkPipelineState instances that use the same program.
+/////////////////////////////////////////////////////////////////////////////////
 
-  uint64_t samplersHash();
+struct VkFxShaderPassState {
+
+  std::unordered_map<fxparam_constptr_t, vktexobj_ptr_t> _textures_by_orkparam;
+  std::unordered_map<fxparam_constptr_t, vkbuffer_ptr_t> _uniformbuffers_by_orkparam;
+
+  std::vector<VkParamSetItem> _pending_params;
+  std::vector<uint8_t>        _pushdatabuffer;
+
+  std::vector<VkFxShaderUniformBlockState*> _ordered_uniform_states; // Ordered by binding ID
+  std::vector<VkFxShaderStorageBlockState*> _ordered_storage_states;  // Ordered by binding ID
+
+  vkfxshaderpass_rawptr_t _shader = nullptr;
+
+  uint64_t samplersHash() const;
+};
+
+/////////////////////////////////////////////////////////////////////////////////
+//  VkFxShaderPass
+//    A single pass composed of multiple shader stages (vertex, fragment, geometry, etc.).
+//    Immutable. Shared across all VkContexts.
+//    Owned by VkFxShaderTechnique::_vk_passes (shared_ptr). Lifetime == shader asset lifetime.
+//    All members populated at load time; treat as read-only at draw time.
+//    Per-context draw-time state belongs in VkFxShaderState.
+/////////////////////////////////////////////////////////////////////////////////
+
+struct VkFxShaderPass {
+
+  VkFxShaderPass(VkFxShaderFile* file);
+
   std::string _tek_name;
 
-  vkfxsobj_ptr_t _vtxshader;
-  vkfxsobj_ptr_t _geoshader;
-  vkfxsobj_ptr_t _tctshader;
-  vkfxsobj_ptr_t _tevshader;
-  vkfxsobj_ptr_t _frgshader;
-  vkfxsobj_ptr_t _comshader;
+  vkfxsstage_ptr_t _vtxshader;
+  vkfxsstage_ptr_t _geoshader;
+  vkfxsstage_ptr_t _tctshader;
+  vkfxsstage_ptr_t _tevshader;
+  vkfxsstage_ptr_t _frgshader;
+  vkfxsstage_ptr_t _comshader;
 
-  vkvertexinterface_ptr_t _vertexinterface;
+  vkvertexinterface_ptr_t   _vertexinterface;
   vkgeometryinterface_ptr_t _geometryinterface;
 
   vkfxpushconstantblk_ptr_t _pushConstantBlock;
 
-  std::vector<VkParamSetItem> _pending_params;
-  std::vector<uint8_t> _pushdatabuffer;
-  std::unordered_map<fxparam_constptr_t, vktexobj_ptr_t> _textures_by_orkparam;
-  std::unordered_map<fxparam_constptr_t, vkbuffer_ptr_t> _uniformbuffers_by_orkparam;
-  
-  // Storage for merged resource bindings (set_id, binding_id)
+  // Storage for merged resource bindings (set_id, binding_id) — populated at load time
   std::unordered_map<fxparam_constptr_t, DescBinding> _merged_resource_bindings;
-  
+
+  // Merged resource descriptors and raster state — populated at load time
+  vk_merged_resources_ptr_t _merged_resources;
+  rasterstate_ptr_t         _stateblock_rasterstate;
+
   int _pipeline_bits_prg       = -1;
   int _pipeline_bits_composite = -1;
-  uint64_t _samplers_hash     = 0;
   std::unordered_map<std::string, vkfxssmpset_ptr_t> _vk_samplersets;
   std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
   std::unordered_map<std::string, vkfxsuniblk_ptr_t> _vk_uniformblks;
@@ -211,80 +301,79 @@ struct VkFxShaderProgram {
   // Synthetic params for auto-registered UBO blocks (to maintain lifetime)
   std::vector<fxparam_ptr_t> _synthetic_ubo_params;
 
-  // Flag indicating this program has SSBO resources that need descriptor binding
+  // Flag indicating this pass has SSBO resources that need descriptor binding
   bool _has_ssbo_resources = false;
 };
-///////////////////////////////////////////////////////////////////////////////
-struct VulkanDescriptorSet {
+
+/////////////////////////////////////////////////////////////////////////////////
+//  VulkanDescriptorSetState
+//    Per-VkContext state for VkDescriptorSet.
+//    Owned by VulkanDescriptorSetCacheState::_vkDescriptorSetByHash (shared_ptr map values).
+/////////////////////////////////////////////////////////////////////////////////
+
+struct VulkanDescriptorSetState {
   VkDescriptorSet _vkdescset;
 };
-///////////////////////////////////////////////////////////////////////////////
-struct VulkanDescriptorSetCache {
 
-  VulkanDescriptorSetCache(vkcontext_rawptr_t ctx);
+/////////////////////////////////////////////////////////////////////////////////
+//  VulkanDescriptorSetCacheState
+//    Per-VkContext descriptor set cache.
+//    Owned by VkPipelineState::_descriptorSetCache (shared_ptr).
+/////////////////////////////////////////////////////////////////////////////////
 
-  vkdescriptorset_ptr_t fetchDescriptorSetForProgram(vkfxsprg_ptr_t program);
-  vkdescriptorset_ptr_t _createNewDescriptorSetForProgram(vkfxsprg_ptr_t program);
+struct VulkanDescriptorSetCacheState {
 
-  std::unordered_map<uint64_t, vkdescriptorset_ptr_t> _vkDescriptorSetByHash;
+  VulkanDescriptorSetCacheState(vkcontext_rawptr_t ctx);
+
+  vkdescriptorsetstate_ptr_t fetchDescriptorSetForProgram(vkfxshaderpass_rawptr_t program);
+  vkdescriptorsetstate_ptr_t    _createNewDescriptorSetForProgram(vkfxshaderpass_rawptr_t program);
+
+  std::unordered_map<uint64_t, vkdescriptorsetstate_ptr_t> _vkDescriptorSetByHash;
   vkcontext_rawptr_t _ctxVK;
 };
-///////////////////////////////////////////////////////////////////////////////
-struct VkPipelineObject {
 
-  VkPipelineObject(vkcontext_rawptr_t ctx);
+/////////////////////////////////////////////////////////////////////////////////
+//  VkPipelineState
+//    Per-VkContext, per-(program × VB format × raster state × RTG) Vulkan pipeline wrapper.
+//    Owned by VkFxInterface::_pipelines (shared_ptr map values, keyed by pipeline hash).
+/////////////////////////////////////////////////////////////////////////////////
+
+struct VkPipelineState {
+
+  VkPipelineState(vkcontext_rawptr_t ctx);
 
   void applyPendingPushConstants(VkCommandBuffer cmdbuf);
   void applyPendingUboUpdates(VkCommandBuffer cmdbuf, uint32_t frame_index);
+  
+  VkFxShaderPassState* _shader_state = nullptr;
 
-  vkfxsprg_ptr_t _vk_program;
   VkGraphicsPipelineCreateInfo _VKGFXPCI;
   VkPipeline _pipeline;
   VkPipelineLayout _pipelineLayout;
-  vkdescriptorsetcache_ptr_t _descriptorSetCache;
+  vkdescriptorsetcache_state_ptr_t _descriptorSetCache;
   vkrasterstate_ptr_t _rasterstate;
-  
+
   vkviewporttracker_ptr_t _viewport;
   vkviewporttracker_ptr_t _scissor;
 
   // Storage for merged resource descriptor set layouts
   std::vector<VkDescriptorSetLayout> _dset_layouts;
-  
-  // Dynamic UBO support
-  std::vector<VkFxShaderUniformBlk*> _uniform_blocks;  // Ordered by binding ID
-  std::map<uint32_t, VkFxShaderUniformBlk*> _ubo_by_binding;  // Quick lookup
-  std::vector<uint32_t> _dynamic_offsets;  // Populated at draw time
-
-  // Dynamic SSBO support
-  std::set<VkFxShaderStorageBlock*> _dirty_ssbo_blocks;
-  std::vector<VkFxShaderStorageBlock*> _storage_blocks;  // Ordered by binding ID
-  std::map<uint32_t, VkFxShaderStorageBlock*> _ssbo_by_binding;  // Quick lookup
 
   // Report filename for debugging descriptor set issues
   std::string _report_filename;
 };
-///////////////////////////////////////////////////////////////////////////////
-struct VkFxShaderPass {
-  vkfxsprg_ptr_t _vk_program;
-  vk_merged_resources_ptr_t _merged_resources;
-  std::set<VkFxShaderUniformBlk*> _dirty_uniform_blocks;
-  rasterstate_ptr_t _stateblock_rasterstate; // Pre-resolved rasterstate from state block
-};
-///////////////////////////////////////////////////////////////////////////////
-struct VkFxShaderTechnique {
-  VkFxShaderTechnique();
-  ~VkFxShaderTechnique();
-  std::vector<vkfxspass_ptr_t> _vk_passes;
-  std::shared_ptr<FxShaderTechnique> _orktechnique;
-};
+
 ///////////////////////////////////////////////////////////////////////////
+
 struct VulkanVertexInterfaceInput {
   std::string _datatype;
   std::string _identifier;
   std::string _semantic;
   size_t _datasize = 0;
 };
-///////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+
 struct VulkanVertexInterface {
   using input_t = VulkanVertexInterfaceInput;
   std::string _name;
@@ -293,14 +382,18 @@ struct VulkanVertexInterface {
   int _pipeline_bits = -1;
   uint64_t _hash     = 0;
 };
-///////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+
 struct VulkanGeometryInterfaceInput {
   std::string _datatype;
   std::string _identifier;
   std::string _semantic;
   size_t _datasize = 0;
 };
-///////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////////////////
+
 struct VulkanGeometryInterface {
   using input_t = VulkanGeometryInterfaceInput;
   std::string _name;
@@ -309,19 +402,24 @@ struct VulkanGeometryInterface {
   int _pipeline_bits = -1;
   uint64_t _hash     = 0;
 };
-///////////////////////////////////////////////////////////////////////////////
-struct VkComputePipelineObject {
 
-  VkComputePipelineObject(vkcontext_rawptr_t ctx);
-  ~VkComputePipelineObject();
+/////////////////////////////////////////////////////////////////////////////////
+//  VkComputePipelineState
+//    Per-VkContext State for compute VkPipeline
+/////////////////////////////////////////////////////////////////////////////////
 
-  bool createPipeline(vkfxsobj_ptr_t computeShader);
+struct VkComputePipelineState {
+
+  VkComputePipelineState(vkcontext_rawptr_t ctx);
+  ~VkComputePipelineState();
+
+  bool createPipeline(vkfxsstage_ptr_t computeShader);
   void bindStorageBuffer(uint32_t binding_index, VkBuffer buffer, VkDeviceSize size);
   void bindSampler(uint32_t binding_index, VkDescriptorImageInfo desc_info);
   void updateDescriptorSet();
 
   vkcontext_rawptr_t _contextVK = nullptr;
-  vkfxsobj_ptr_t _computeShader;              // VulkanFxShaderObject with SPIR-V
+  vkfxsstage_ptr_t _computeShader;              // VulkanFxShaderStage with SPIR-V
 
   VkPipeline _pipeline = VK_NULL_HANDLE;
   VkPipelineLayout _pipelineLayout = VK_NULL_HANDLE;
@@ -345,7 +443,9 @@ struct VkComputePipelineObject {
 
   std::string _name;
 };
-///////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////////////////
+
 struct VkRasterState {
   VkRasterState(rasterstate_ptr_t rstate, int attachment_count = 1, const std::vector<VkFormat>* formats = nullptr);
   VkPipelineRasterizationStateCreateInfo _VKRSCI;
@@ -363,5 +463,7 @@ struct VkRasterState {
 
   static LockedResource<rsmap_t> _global_rasterstate_map;
 };
-///////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////////////////
 } //namespace ork::lev2::vulkan {
+/////////////////////////////////////////////////////////////////////////////////

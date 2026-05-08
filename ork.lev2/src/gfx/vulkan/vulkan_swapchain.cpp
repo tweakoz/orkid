@@ -120,7 +120,7 @@ void VkSwapChain::_buildup() {
   bool dimensions_changed = (_width != width) || (_height != height);
   _width                  = width;
   _height                 = height;
-  
+
   if (dimensions_changed) {
 
     if(0)printf("Swap chain dimensions: requested=%dx%d, clamped=%ux%u\n", width, height, uint32_t(width), uint32_t(height));
@@ -665,6 +665,13 @@ void VkSwapChain::_waitFrame() {
 void VkSwapChain::beginFrame(vkcontext_rawptr_t ctxVK) {
   OrkProfilerSampleScope(CHANNEL_MAIN, "vk:swapchainBeginFrame");
   OrkAssertI(!_acquired, "beginFrame called twice without a submit in between");
+
+  if (_pendingReinit) {
+    logchan_swapchain->log("beginFrame: pending reinit from resize — reinitializing before acquire");
+    _reinit();
+    _pendingReinit = false;
+  }
+
   _acquireImage(ctxVK);
 
   // Inject the acquired swapchain image directly into the main RTG color buffer.

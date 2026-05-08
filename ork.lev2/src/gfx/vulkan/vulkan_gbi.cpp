@@ -613,8 +613,7 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
   auto vk_vbimpl = vtx_buf._impl.getShared<VulkanVertexBuffer>();
   auto fxi       = _contextVK->_fxi;
   auto pipeline  = fxi->_fetchPipeline(vk_vbimpl, primclass);
-  auto pass      = fxi->_currentVKPASS;
-  auto prog      = pass->_vk_program;
+  auto prog      = fxi->_currentVKPASS;;
 
   ///////////////////////
   // bind pipeline
@@ -684,8 +683,7 @@ void VkGeometryBufferInterface::DrawIndexedPrimitiveEML(
   auto vk_ibimpl = idx_buf._impl.getShared<VulkanIndexBuffer>();
   auto fxi       = _contextVK->_fxi;
   auto pipeline  = fxi->_fetchPipeline(vk_vbimpl, primclass);
-  auto pass      = fxi->_currentVKPASS;
-  auto prog      = pass->_vk_program;
+  auto prog      = fxi->_currentVKPASS;
 
   ///////////////////////
   // bind pipeline
@@ -718,7 +716,7 @@ void VkGeometryBufferInterface::DrawIndexedPrimitiveEML(
   // Debug: Log draw with active shader
   if (fxi->_currentPipeline) {
     if(0)printf("UBO_DRAW: pipeline<%p> indices<%d>\n", 
-           (void*)fxi->_currentPipeline.get(), 
+           (void*)fxi->_currentPipeline,
            num_indices);
   }
 
@@ -799,8 +797,7 @@ void VkGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(
   auto vk_ibimpl = idx_buf._impl.getShared<VulkanIndexBuffer>();
   auto fxi       = _contextVK->_fxi;
   auto pipeline  = fxi->_fetchPipeline(vk_vbimpl, primclass);
-  auto pass      = fxi->_currentVKPASS;
-  auto prog      = pass->_vk_program;
+  auto prog      = fxi->_currentVKPASS;
 
   ///////////////////////
   // bind pipeline
@@ -889,8 +886,7 @@ void VkGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(
   auto vk_ibimpl = idx_buf._impl.getShared<VulkanIndexBuffer>();
   auto fxi       = _contextVK->_fxi;
   auto pipeline  = fxi->_fetchPipeline(vk_vbimpl, primclass);
-  auto pass      = fxi->_currentVKPASS;
-  auto prog      = pass->_vk_program;
+  auto prog      = fxi->_currentVKPASS;
 
   auto& CB = _contextVK->primary_cb()->_vkcmdbuf;
   fxi->_bindPipeline(CB, pipeline);

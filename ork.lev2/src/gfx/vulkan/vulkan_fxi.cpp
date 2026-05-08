@@ -118,8 +118,15 @@ int VkFxInterface::BeginBlock(fxtechnique_constptr_t tek, const RenderContextIns
   _currentVKTEK = vk_tek;
   int passcount = (int) vk_tek->_vk_passes.size();
   if(passcount==1){
-    auto pass = _currentVKTEK->_vk_passes[0];
-    _currentVKPASS = pass;
+    auto& pass = _currentVKTEK->_vk_passes[0];
+    _currentVKPASS = pass.get();
+
+    auto& state = _shader_pass_states[_currentVKPASS];
+    if (state._shader != _currentVKPASS) {
+      state._shader = _currentVKPASS;
+      _ensureBlockStates(_currentVKPASS);
+    }
+    _current_shader_pass_state = &state;
   }
   return passcount;
 }
@@ -127,6 +134,11 @@ int VkFxInterface::BeginBlock(fxtechnique_constptr_t tek, const RenderContextIns
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::EndBlock() {
+  _current_shader_pass_state = nullptr;
+  _currentPipeline = nullptr;
+  _currentORKTEK = nullptr;
+  _currentVKTEK  = nullptr;
+  _currentVKPASS = nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -141,7 +153,7 @@ void VkFxInterface::reset() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-int VkFxInterface::_pipelineBitsForShader(vkfxsprg_ptr_t shprog){
+int VkFxInterface::_pipelineBitsForShader(vkfxshaderpass_rawptr_t shprog){
 
   if(shprog->_pipeline_bits_composite == -1){ // compute ?
 
@@ -152,7 +164,7 @@ int VkFxInterface::_pipelineBitsForShader(vkfxsprg_ptr_t shprog){
            vtx_shader->_name.c_str(), //
            frg_shader->_name.c_str(),
            shprog->_pipeline_bits_composite);
-           
+                      
     ////////////////////////////
     // compute VIF bits
     // Combine inputs from ALL vertex interfaces in the inheritance chain
