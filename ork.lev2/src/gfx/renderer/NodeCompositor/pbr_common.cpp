@@ -150,58 +150,18 @@ radiancemaps_ptr_t CommonStuff::requestRadianceMapsSync(const AssetPath& texture
 
 ///////////////////////////////////////////////////////////////////////////////
 
-radiancemaps_ptr_t CommonStuff::makeRadianceMapsSolidColor(fvec3 color, Context* ctx) {
-  // Match the standard 10-level / pow(i/9, 0.5) layout produced by xir bakes
-  // so shaders and material parameters see a familiar roughness distribution.
-  constexpr int kNumRoughnessLevels = 10;
-  constexpr float kRoughnessPower   = 0.5f;
-  constexpr int kEnvW               = 16;
-  constexpr int kEnvH               = 8;
-
-  auto irrmaps                  = std::make_shared<RadianceMaps>();
-  irrmaps->_numRoughnessLevels  = kNumRoughnessLevels;
-  irrmaps->_specularRoughnessValues.resize(kNumRoughnessLevels);
-  for (int i = 0; i < kNumRoughnessLevels; ++i) {
-    irrmaps->_specularRoughnessValues[i] =
-        powf(float(i) / float(kNumRoughnessLevels - 1), kRoughnessPower);
-  }
-
-  auto txi = ctx->TXI();
-
-  irrmaps->_filtenvSpecularMapArray =
-      txi->createColorTextureV3Array(color, kEnvW, kEnvH, kNumRoughnessLevels);
-  irrmaps->_filtenvSpecularMapArray->_tex->_debugName = "procSolidSpec";
-
-  // NOTE: createColorTextureV3 declares BGR8 but writes RGB-ordered data,
-  // which swaps R and B on the GPU. Build the diffuse map via the
-  // RGB8-correct Image path instead.
-  auto diffuse_image = std::make_shared<Image>();
-  diffuse_image->initRGB8WithColor(kEnvW, kEnvH, color);
-  auto diffuse_tex         = std::make_shared<Texture>();
-  diffuse_tex->_debugName  = "procSolidDiff";
-  txi->initTextureFromImage(diffuse_tex.get(), diffuse_image, false, false);
-  irrmaps->_filtenvDiffuseMap = diffuse_tex;
-
-  irrmaps->_brdfIntegrationMapGGX    = PBRMaterial::brdfIntegrationMap(ctx, "GGX");
-  irrmaps->_brdfIntegrationMapVelvet = PBRMaterial::brdfIntegrationMap(ctx, "GGXVELVET");
-  irrmaps->_brdfIntegrationMapGGXRIM = PBRMaterial::brdfIntegrationMap(ctx, "GGXRIM");
-  irrmaps->_brdfIntegrationMapBlinn  = PBRMaterial::brdfIntegrationMap(ctx, "BLINN");
-  irrmaps->_brdfIntegrationMapPhong  = PBRMaterial::brdfIntegrationMap(ctx, "PHONG");
-
-  return irrmaps;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 namespace {
 
-// Linear interpolation between (sorted) gradient stops at parameter t in [0,1].
+constexpr int   kProcNumRoughnessLevels = 10;
+constexpr float kProcRoughnessPower     = 0.5f;
+constexpr int   kProcEnvW               = 32;
+constexpr int   kProcEnvH               = 64;
+
 fvec3 sampleGradientAt(const std::vector<std::pair<float, fvec3>>& stops, float t) {
-  if (t <= stops.front().first)  return stops.front().second;
-  if (t >= stops.back().first)   return stops.back().second;
+  if (t <= stops.front().first) return stops.front().second;
+  if (t >= stops.back().first)  return stops.back().second;
   for (size_t i = 0; i + 1 < stops.size(); ++i) {
-    float t0 = stops[i].first;
-    float t1 = stops[i + 1].first;
+    float t0 = stops[i].first, t1 = stops[i + 1].first;
     if (t >= t0 && t <= t1) {
       float frac = (t1 > t0) ? (t - t0) / (t1 - t0) : 0.0f;
       return stops[i].second * (1.0f - frac) + stops[i + 1].second * frac;
@@ -210,171 +170,174 @@ fvec3 sampleGradientAt(const std::vector<std::pair<float, fvec3>>& stops, float 
   return stops.back().second;
 }
 
-// Solid-angle-weighted full-sphere average (used as the lerp target for
-// high-roughness specular slices, which converge toward an isotropic blur).
-fvec3 sphereAverage(const std::vector<std::pair<float, fvec3>>& stops, int n_samples = 64) {
-  fvec3 acc(0, 0, 0);
-  float w_sum = 0.0f;
-  for (int i = 0; i < n_samples; ++i) {
-    float v = (float(i) + 0.5f) / float(n_samples);
+// Solid-angle-weighted full-sphere average; lerp target for high-roughness slices.
+fvec3 sphereAverage(const std::vector<std::pair<float, fvec3>>& stops, int n = 64) {
+  fvec3 acc(0); float w_sum = 0.0f;
+  for (int i = 0; i < n; ++i) {
+    float v = (float(i) + 0.5f) / float(n);
     float w = sinf(v * float(PI));
     acc   = acc + sampleGradientAt(stops, v) * w;
     w_sum = w_sum + w;
   }
-  return (w_sum > 0.0f) ? acc * (1.0f / w_sum) : fvec3(0, 0, 0);
+  return (w_sum > 0.0f) ? acc * (1.0f / w_sum) : fvec3(0);
 }
 
-// Directional diffuse irradiance: cosine-weighted hemisphere integral of L(ω)
-// for a surface normal at polar angle theta_n from the up-axis. Because the
-// gradient is rotation-symmetric about the up-axis, the result depends only
-// on theta_n (no longitude variation). This is the standard Lambertian IBL
-// integral: E(n) = (1/π) ∫_hemi L(ω) max(0, n·ω) dω.
-fvec3 directionalDiffuse(
-    const std::vector<std::pair<float, fvec3>>& stops,
-    float theta_n) {
-  // n in the y-x plane, WLOG.
-  float nx = sinf(theta_n);
-  float ny = cosf(theta_n);
-
-  constexpr int kThetaSamples = 32;
-  constexpr int kPhiSamples   = 32;
-
-  fvec3 acc(0, 0, 0);
-  float w_sum = 0.0f;
-  for (int it = 0; it < kThetaSamples; ++it) {
-    float theta_w = (float(it) + 0.5f) / float(kThetaSamples) * float(PI);
-    float cy      = cosf(theta_w);
-    float cx      = sinf(theta_w); // also the solid-angle jacobian
-    fvec3 L       = sampleGradientAt(stops, theta_w / float(PI));
-    for (int ip = 0; ip < kPhiSamples; ++ip) {
-      float phi = (float(ip) + 0.5f) / float(kPhiSamples) * 2.0f * float(PI);
-      float ox  = cx * cosf(phi);
-      float dot = nx * ox + ny * cy;
+// Cosine-weighted hemisphere integral E(n) = (1/π) ∫ L(ω) max(0, n·ω) dω,
+// for a surface normal at polar angle theta_n. Rotation-symmetric env so the
+// result depends only on theta_n.
+fvec3 directionalDiffuse(const std::vector<std::pair<float, fvec3>>& stops, float theta_n) {
+  float nx = sinf(theta_n), ny = cosf(theta_n);
+  fvec3 acc(0); float w_sum = 0.0f;
+  constexpr int kT = 32, kP = 32;
+  for (int it = 0; it < kT; ++it) {
+    float theta_w = (float(it) + 0.5f) / float(kT) * float(PI);
+    float cy = cosf(theta_w), cx = sinf(theta_w);
+    fvec3 L = sampleGradientAt(stops, theta_w / float(PI));
+    for (int ip = 0; ip < kP; ++ip) {
+      float phi = (float(ip) + 0.5f) / float(kP) * 2.0f * float(PI);
+      float dot = nx * (cx * cosf(phi)) + ny * cy;
       if (dot > 0.0f) {
         float w = dot * cx;
-        acc     = acc + L * w;
-        w_sum   = w_sum + w;
+        acc   = acc + L * w;
+        w_sum = w_sum + w;
       }
     }
   }
-  return (w_sum > 0.0f) ? acc * (1.0f / w_sum) : fvec3(0, 0, 0);
+  return (w_sum > 0.0f) ? acc * (1.0f / w_sum) : fvec3(0);
 }
 
-// Build an Image where each row's color is the gradient at that V, optionally
-// lerped toward `avg` to simulate roughness-induced blur.
-image_ptr_t buildGradientImage(
-    const std::vector<std::pair<float, fvec3>>& stops,
-    fvec3 avg,
-    float roughness_blend, // 0 = sharp gradient, 1 = uniform avg
-    int w,
-    int h) {
-  auto img             = std::make_shared<Image>();
-  img->_format         = EBufferFormat::RGB8;
+// Image filled with a per-row color via `row_color(v)`.
+template<typename F>
+image_ptr_t buildRowwiseImage(int w, int h, F&& row_color) {
+  auto img              = std::make_shared<Image>();
+  img->_format          = EBufferFormat::RGB8;
   img->_bytesPerChannel = 1;
   img->init(w, h, 3, 1);
-  auto outptr = (uint8_t*)img->_data->data();
+  auto p = (uint8_t*)img->_data->data();
   for (int y = 0; y < h; ++y) {
-    float v       = (h > 1) ? float(y) / float(h - 1) : 0.0f;
-    fvec3 c       = sampleGradientAt(stops, v);
-    fvec3 blended = c * (1.0f - roughness_blend) + avg * roughness_blend;
-    uint8_t r     = uint8_t(std::clamp(blended.x, 0.0f, 1.0f) * 255.0f);
-    uint8_t g     = uint8_t(std::clamp(blended.y, 0.0f, 1.0f) * 255.0f);
-    uint8_t b     = uint8_t(std::clamp(blended.z, 0.0f, 1.0f) * 255.0f);
+    float v = (h > 1) ? float(y) / float(h - 1) : 0.0f;
+    fvec3  c = row_color(v);
+    uint8_t r = uint8_t(std::clamp(c.x, 0.0f, 1.0f) * 255.0f);
+    uint8_t g = uint8_t(std::clamp(c.y, 0.0f, 1.0f) * 255.0f);
+    uint8_t b = uint8_t(std::clamp(c.z, 0.0f, 1.0f) * 255.0f);
     for (int x = 0; x < w; ++x) {
-      int idx          = (y * w + x) * 3;
-      outptr[idx + 0]  = r;
-      outptr[idx + 1]  = g;
-      outptr[idx + 2]  = b;
+      int idx = (y * w + x) * 3;
+      p[idx + 0] = r; p[idx + 1] = g; p[idx + 2] = b;
     }
   }
   return img;
 }
 
+// Uploads in-place: spec slices via updateTextureArraySlice (no
+// VulkanTextureObject realloc), diffuse via initTextureFromImage which
+// reuses the VkImage when format matches.
+void uploadRadianceMapsImages(
+    radiancemaps_ptr_t maps,
+    const std::vector<image_ptr_t>& spec_images,
+    image_ptr_t diffuse_image,
+    Context* ctx) {
+  OrkAssert(int(spec_images.size()) == maps->_numRoughnessLevels);
+  auto txi = ctx->TXI();
+  for (size_t i = 0; i < spec_images.size(); ++i) {
+    auto slice = maps->_filtenvSpecularMapArray->slice(i);
+    txi->updateTextureArraySlice(slice.get(), spec_images[i]);
+  }
+  txi->initTextureFromImage(maps->_filtenvDiffuseMap.get(), diffuse_image, false, false);
+}
+
 } // namespace
 
-radiancemaps_ptr_t CommonStuff::makeRadianceMapsGradient(
-    const std::vector<std::pair<float, fvec3>>& stops, Context* ctx) {
-  OrkAssert(!stops.empty());
+///////////////////////////////////////////////////////////////////////////////
 
-  constexpr int kNumRoughnessLevels = 10;
-  constexpr float kRoughnessPower   = 0.5f;
-  constexpr int kEnvW               = 32;
-  constexpr int kEnvH               = 64;
-
-  auto irrmaps                  = std::make_shared<RadianceMaps>();
-  irrmaps->_numRoughnessLevels  = kNumRoughnessLevels;
-  irrmaps->_specularRoughnessValues.resize(kNumRoughnessLevels);
-  for (int i = 0; i < kNumRoughnessLevels; ++i) {
-    irrmaps->_specularRoughnessValues[i] =
-        powf(float(i) / float(kNumRoughnessLevels - 1), kRoughnessPower);
+radiancemaps_ptr_t CommonStuff::makeProceduralRadianceMaps(Context* ctx) {
+  auto maps = std::make_shared<RadianceMaps>();
+  maps->_numRoughnessLevels = kProcNumRoughnessLevels;
+  maps->_specularRoughnessValues.resize(kProcNumRoughnessLevels);
+  for (int i = 0; i < kProcNumRoughnessLevels; ++i) {
+    maps->_specularRoughnessValues[i] =
+        powf(float(i) / float(kProcNumRoughnessLevels - 1), kProcRoughnessPower);
   }
 
-  fvec3 avg = sphereAverage(stops);
-
-  std::vector<image_ptr_t> spec_images;
-  spec_images.reserve(kNumRoughnessLevels);
-  for (int i = 0; i < kNumRoughnessLevels; ++i) {
-    float r = irrmaps->_specularRoughnessValues[i];
-    spec_images.push_back(buildGradientImage(stops, avg, r, kEnvW, kEnvH));
-  }
+  // Initial allocation — every slice and the diffuse share a single black
+  // image. Subsequent updates use updateTextureArraySlice / initTextureFromImage
+  // on these same texture objects (no descriptor-set churn).
+  auto black = std::make_shared<Image>();
+  black->initRGB8WithColor(kProcEnvW, kProcEnvH, fvec3(0));
 
   auto txi          = ctx->TXI();
   auto specular_arr = std::make_shared<TextureArray>();
-  specular_arr->_tex->_debugName = "procGradSpec";
+  specular_arr->_tex->_debugName = "procRadSpec";
   TextureArrayInitData TID;
-  TID._slices.resize(kNumRoughnessLevels);
-  for (int i = 0; i < kNumRoughnessLevels; ++i) {
+  TID._slices.resize(kProcNumRoughnessLevels);
+  for (int i = 0; i < kProcNumRoughnessLevels; ++i) {
     uint32_t usage_id = CrcString(FormatString("roughness_%d", i).c_str()).hashed();
-    TID._slices[i]    = TextureArrayInitSubItem{usage_id, spec_images[i]};
+    TID._slices[i]    = TextureArrayInitSubItem{usage_id, black};
   }
   txi->initTextureArray2DFromData(specular_arr.get(), TID);
-  // Equirectangular: U wraps (longitude seam), V clamps (no pole bleed
-  // across the wraparound when bilinear filtering at V=0 / V=1). Pairs with
-  // the envtools.i2 sampling using `1.0 - uv.y` instead of `-uv.y`.
-  specular_arr->_tex->TexSamplingMode()._texAddrModeS = TextureAddressMode::WRAP;
-  specular_arr->_tex->TexSamplingMode()._texAddrModeT = TextureAddressMode::CLAMP;
-  specular_arr->_tex->TexSamplingMode()._texAddrModeR = TextureAddressMode::CLAMP;
-  txi->ApplySamplingMode(specular_arr->_tex.get());
-  irrmaps->_filtenvSpecularMapArray = specular_arr;
-
-  // Diffuse: per-row directional irradiance. The disk diffuse baker stores
-  // E for normal-DOWN at texel V=0 and normal-UP at V=1; we match that
-  // convention.
-  auto diffuse_image                = std::make_shared<Image>();
-  diffuse_image->_format            = EBufferFormat::RGB8;
-  diffuse_image->_bytesPerChannel   = 1;
-  diffuse_image->init(kEnvW, kEnvH, 3, 1);
-  auto diff_ptr = (uint8_t*)diffuse_image->_data->data();
-  for (int y = 0; y < kEnvH; ++y) {
-    float v       = (kEnvH > 1) ? float(y) / float(kEnvH - 1) : 0.0f;
-    float theta_n = (1.0f - v) * float(PI);  // V=0 → down, V=1 → up
-    fvec3 c       = directionalDiffuse(stops, theta_n);
-    uint8_t r     = uint8_t(std::clamp(c.x, 0.0f, 1.0f) * 255.0f);
-    uint8_t g     = uint8_t(std::clamp(c.y, 0.0f, 1.0f) * 255.0f);
-    uint8_t b     = uint8_t(std::clamp(c.z, 0.0f, 1.0f) * 255.0f);
-    for (int x = 0; x < kEnvW; ++x) {
-      int idx           = (y * kEnvW + x) * 3;
-      diff_ptr[idx + 0] = r;
-      diff_ptr[idx + 1] = g;
-      diff_ptr[idx + 2] = b;
-    }
+  // Equirectangular: U wraps, V clamps (no pole bleed at the V=0/V=1
+  // boundaries when bilinear-filtering near the poles).
+  for (auto* tex : {specular_arr->_tex.get()}) {
+    tex->TexSamplingMode()._texAddrModeS = TextureAddressMode::WRAP;
+    tex->TexSamplingMode()._texAddrModeT = TextureAddressMode::CLAMP;
+    tex->TexSamplingMode()._texAddrModeR = TextureAddressMode::CLAMP;
+    txi->ApplySamplingMode(tex);
   }
+  maps->_filtenvSpecularMapArray = specular_arr;
+
   auto diffuse_tex        = std::make_shared<Texture>();
-  diffuse_tex->_debugName = "procGradDiff";
-  txi->initTextureFromImage(diffuse_tex.get(), diffuse_image, false, false);
+  diffuse_tex->_debugName = "procRadDiff";
+  txi->initTextureFromImage(diffuse_tex.get(), black, false, false);
   diffuse_tex->TexSamplingMode()._texAddrModeS = TextureAddressMode::WRAP;
   diffuse_tex->TexSamplingMode()._texAddrModeT = TextureAddressMode::CLAMP;
   diffuse_tex->TexSamplingMode()._texAddrModeR = TextureAddressMode::CLAMP;
   txi->ApplySamplingMode(diffuse_tex.get());
-  irrmaps->_filtenvDiffuseMap = diffuse_tex;
+  maps->_filtenvDiffuseMap = diffuse_tex;
 
-  irrmaps->_brdfIntegrationMapGGX    = PBRMaterial::brdfIntegrationMap(ctx, "GGX");
-  irrmaps->_brdfIntegrationMapVelvet = PBRMaterial::brdfIntegrationMap(ctx, "GGXVELVET");
-  irrmaps->_brdfIntegrationMapGGXRIM = PBRMaterial::brdfIntegrationMap(ctx, "GGXRIM");
-  irrmaps->_brdfIntegrationMapBlinn  = PBRMaterial::brdfIntegrationMap(ctx, "BLINN");
-  irrmaps->_brdfIntegrationMapPhong  = PBRMaterial::brdfIntegrationMap(ctx, "PHONG");
+  maps->_brdfIntegrationMapGGX    = PBRMaterial::brdfIntegrationMap(ctx, "GGX");
+  maps->_brdfIntegrationMapVelvet = PBRMaterial::brdfIntegrationMap(ctx, "GGXVELVET");
+  maps->_brdfIntegrationMapGGXRIM = PBRMaterial::brdfIntegrationMap(ctx, "GGXRIM");
+  maps->_brdfIntegrationMapBlinn  = PBRMaterial::brdfIntegrationMap(ctx, "BLINN");
+  maps->_brdfIntegrationMapPhong  = PBRMaterial::brdfIntegrationMap(ctx, "PHONG");
 
-  return irrmaps;
+  return maps;
+}
+
+void CommonStuff::updateRadianceMapsSolidColor(
+    radiancemaps_ptr_t maps, fvec3 color, Context* ctx) {
+  OrkAssert(maps && maps->_filtenvSpecularMapArray);
+  int W = int(maps->_filtenvSpecularMapArray->_width);
+  int H = int(maps->_filtenvSpecularMapArray->_height);
+  auto img = std::make_shared<Image>();
+  img->initRGB8WithColor(W, H, color);
+  std::vector<image_ptr_t> spec(maps->_numRoughnessLevels, img);
+  uploadRadianceMapsImages(maps, spec, img, ctx);
+}
+
+void CommonStuff::updateRadianceMapsGradient(
+    radiancemaps_ptr_t maps,
+    const std::vector<std::pair<float, fvec3>>& stops,
+    Context* ctx) {
+  OrkAssert(maps && maps->_filtenvSpecularMapArray);
+  OrkAssert(!stops.empty());
+  int W = int(maps->_filtenvSpecularMapArray->_width);
+  int H = int(maps->_filtenvSpecularMapArray->_height);
+  fvec3 avg = sphereAverage(stops);
+
+  // Specular slices: gradient at V, lerped toward sphere-average by the
+  // slice's roughness. Diffuse: per-row directional irradiance, V-flipped to
+  // match the disk diffuse baker convention (V=0 → down, V=1 → up).
+  std::vector<image_ptr_t> spec;
+  spec.reserve(maps->_specularRoughnessValues.size());
+  for (float r : maps->_specularRoughnessValues) {
+    spec.push_back(buildRowwiseImage(W, H, [&](float v) {
+      fvec3 c = sampleGradientAt(stops, v);
+      return c * (1.0f - r) + avg * r;
+    }));
+  }
+  auto diff = buildRowwiseImage(W, H, [&](float v) {
+    return directionalDiffuse(stops, (1.0f - v) * float(PI));
+  });
+  uploadRadianceMapsImages(maps, spec, diff, ctx);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

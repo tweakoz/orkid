@@ -59,20 +59,25 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
                 return pbr::CommonStuff::requestRadianceMapsSync(as_str, ctx.get());
               })
           .def_static(
-              "makeRadianceMapsSolidColor",
-              [](fvec3 color, ctx_t ctx) -> pbr::radiancemaps_ptr_t { //
-                return pbr::CommonStuff::makeRadianceMapsSolidColor(color, ctx.get());
+              "makeProceduralRadianceMaps",
+              [](ctx_t ctx) -> pbr::radiancemaps_ptr_t { //
+                return pbr::CommonStuff::makeProceduralRadianceMaps(ctx.get());
               })
           .def_static(
-              "makeRadianceMapsGradient",
-              [](py::list stops, ctx_t ctx) -> pbr::radiancemaps_ptr_t {
+              "updateRadianceMapsSolidColor",
+              [](pbr::radiancemaps_ptr_t maps, fvec3 color, ctx_t ctx) {
+                pbr::CommonStuff::updateRadianceMapsSolidColor(maps, color, ctx.get());
+              })
+          .def_static(
+              "updateRadianceMapsGradient",
+              [](pbr::radiancemaps_ptr_t maps, py::list stops, ctx_t ctx) {
                 std::vector<std::pair<float, fvec3>> cpp_stops;
                 cpp_stops.reserve(stops.size());
                 for (auto handle : stops) {
                   auto tup = handle.cast<py::tuple>();
                   cpp_stops.emplace_back(tup[0].cast<float>(), tup[1].cast<fvec3>());
                 }
-                return pbr::CommonStuff::makeRadianceMapsGradient(cpp_stops, ctx.get());
+                pbr::CommonStuff::updateRadianceMapsGradient(maps, cpp_stops, ctx.get());
               })
           .def(py::init<>())
           .def_property(

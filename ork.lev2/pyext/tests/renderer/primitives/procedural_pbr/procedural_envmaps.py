@@ -9,16 +9,17 @@
 # Press 2: static vertical gradient (sky / horizon / ground).
 # Press 3: time-varying gradient (day-to-night cycle, rebuilt every frame).
 #
-# A row of 9 spheres sweeps roughness 0→1 at metallic=1, plus an extra row at
-# metallic=0, so reflections and diffuse irradiance are both visible against
-# whichever envmap is active.
+# Layout follows scenegraph/shaderballs.py: a 9×9 grid on the floor where the
+# X axis sweeps metallic 0→1 and the Z axis sweeps roughness 0→1, with random
+# colors per sphere. Lets you see the full PBR matrix against the procedural
+# envmap.
 #
 # Copyright 1996-2023, Michael T. Mayers.
 # Distributed under the MIT License
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import math, sys, signal
+import math, sys, signal, random, colorsys
 import numpy as np
 from orkengine.core import vec3, vec4, quat, mtx4, CrcStringProxy, lev2_pyexdir
 from orkengine import lev2
@@ -92,15 +93,12 @@ class ProceduralEnvmapsApp(object):
     super().__init__()
     self.ezapp = lev2.OrkEzApp.create(self, width=1280, height=720)
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
-    setupUiCamera(app=self, eye=vec3(0, 4, 14), tgt=vec3(0, 1, 0))
+    setupUiCamera(app=self, eye=vec3(0, 12, 18), tgt=vec3(0, 1, 0))
     signal.signal(signal.SIGINT, lambda s, f: self.ezapp.signalExit())
     self.time = 0.0
-    self.mode = 2                # default: static gradient
+    self.mode = 2  # default: static gradient
     self.solid_idx = 0
     self.last_radiance_key = None
-    self.pending_radiance = None  # 1-frame defer to avoid pink-flash from
-                                  # not-yet-uploaded textures (Vulkan one-shot
-                                  # transfers drain at the next frame begin)
 
   ##############################################
 
@@ -123,23 +121,28 @@ class ProceduralEnvmapsApp(object):
                                    # if it's GC'd, render dereferences null
     self.nodes = []
 
-    # Two rows: top row metallic=1 (mirror→matte sweep), bottom row metallic=0
-    # (dielectric, lit primarily by the diffuse irradiance map).
-    cols     = 9
-    spacing  = 1.6
-    start_x  = -(cols - 1) * spacing / 2.0
-    rows = [
-      ("metal",    1.0, 1.4),  # y = 1.4
-      ("dielect",  0.0, 0.0),  # y = 0.0
-    ]
-    for row_name, metallic, y_off in rows:
-      for i in range(cols):
-        roughness = i / (cols - 1)
-        # Bright neutral-tan vertex color so both reflection and diffuse read
-        # well against any envmap; (B, G, R, A) ordering for the MicroMesh
-        # ARGBU32 packing convention used elsewhere in these tests.
-        rgb = (0.85, 0.78, 0.7)
-        colors_np = np.tile(np.array([rgb[2], rgb[1], rgb[0], 1.0],
+    # 9×9 grid mirroring scenegraph/shaderballs.py.
+    #   X axis (ix): metallic 0 → 1
+    #   Z axis (iz): roughness 0 → 1
+    # Random colors per sphere via HSV. Camera looks down at the grid so
+    # both top-of-sphere (sky reflection) and front-of-sphere (horizon) are
+    # visible at all (metallic, roughness) combinations.
+    grid_n   = 9
+    spacing  = 1.8
+    origin   = -(grid_n - 1) * spacing / 2.0
+    random.seed(12)
+    for ix in range(grid_n):
+      for iz in range(grid_n):
+        metallic  = ix / float(grid_n - 1)
+        roughness = iz / float(grid_n - 1)
+
+        # HSV → RGB random base color (matches shaderballs convention).
+        h = random.uniform(0, 1)
+        s = random.uniform(0, 0.7)
+        v = random.uniform(0.4, 1.0)
+        r, g, b = colorsys.hsv_to_rgb(h, s, v)
+        # BGRA pre-swap for MicroMesh's ARGBU32 packing convention.
+        colors_np = np.tile(np.array([b, g, r, 1.0],
                                      dtype=np.float32), (nv, 1))
 
         mesh = MicroMesh.fromVertAndFaceLists(verts_np, faces)
@@ -152,14 +155,16 @@ class ProceduralEnvmapsApp(object):
         mtl = lev2.PBRMaterial()
         mtl.assignImages(ctx, color=white_img, normal=normal_img,
                          mtlruf=white_img, doConform=True)
-        mtl.baseColor      = vec4(1, 1, 1, 1)
+        mtl.baseColor       = vec4(1, 1, 1, 1)
         mtl.roughnessFactor = roughness
         mtl.metallicFactor  = metallic
         mtl.gpuInit(ctx)
         self.material_keep_alive.append(mtl)
 
-        node = prim.createNode(f"sphere_{row_name}_{i}", self.layer1, mtl)
-        node.worldTransform.translation = vec3(start_x + i * spacing, 1.0 + y_off, 0)
+        node = prim.createNode(f"sphere_{ix}_{iz}", self.layer1, mtl)
+        node.worldTransform.translation = vec3(origin + ix * spacing,
+                                               1.0,
+                                               origin + iz * spacing)
         node.sortkey = 10
         self.prim_keep_alive.append(prim)
         self.nodes.append(node)
@@ -177,53 +182,54 @@ class ProceduralEnvmapsApp(object):
     self.pbr_common = self.scene.pbr_common
     self.pbr_common.skyboxLevel = 1.0
 
-    print("Procedural envmaps test:")
+    # One procedural radiance maps, reused across all modes via the update*
+    # functions — no texture-object churn so mode 3 can rebuild every frame.
+    self.proc_radiance = lev2.PbrCommon.makeProceduralRadianceMaps(ctx)
+    lev2.PbrCommon.updateRadianceMapsGradient(self.proc_radiance, STATIC_GRADIENT, ctx)
+    self.pbr_common.RadianceMaps = self.proc_radiance
+
+    print("Procedural envmaps test (9×9 grid: X=metallic, Z=roughness):")
     print("  1: solid color (cycles through palette on each press)")
     print("  2: static gradient (sky / horizon / ground)")
     print("  3: time-varying gradient (day-to-night cycle)")
 
   ##############################################
 
-  def _build_radiance_for_mode(self, ctx):
-    """Return (radiance_maps, key) for the current mode and time."""
-    if self.mode == 1:
-      color = SOLID_PALETTE[self.solid_idx % len(SOLID_PALETTE)]
-      key   = ("solid", self.solid_idx)
-      return lev2.PbrCommon.makeRadianceMapsSolidColor(color, ctx), key
-
-    if self.mode == 2:
-      key = ("gradient_static",)
-      return lev2.PbrCommon.makeRadianceMapsGradient(STATIC_GRADIENT, ctx), key
-
-    # mode 3: continuous day-to-night cycle. Quantize the key to the current
-    # time bucket so we rebuild every frame.
-    t = self.time
+  def _stops_for_time(self, t):
+    """Day-to-night cycle gradient stops for mode 3."""
     cycle = (math.sin(t * 0.4) + 1.0) * 0.5  # 0 = night, 1 = day
     sky_top    = vec3(0.02 + 0.20 * cycle, 0.03 + 0.28 * cycle, 0.06 + 0.45 * cycle)
     sky_horiz  = vec3(0.05 + 0.40 * cycle, 0.08 + 0.45 * cycle, 0.10 + 0.55 * cycle)
     horizon_lo = vec3(0.05 + 0.30 * cycle, 0.05 + 0.30 * cycle, 0.05 + 0.30 * cycle)
     nadir      = vec3(0.02 + 0.05 * cycle, 0.02 + 0.05 * cycle, 0.02 + 0.05 * cycle)
-    stops = [
+    return [
       (0.00, sky_top),
       (0.48, sky_horiz),
       (0.52, horizon_lo),
       (1.00, nadir),
     ]
-    return lev2.PbrCommon.makeRadianceMapsGradient(stops, ctx), ("gradient_time", round(t * 60))
 
   ##############################################
 
   def onGpuUpdate(self, ctx):
-    # Swap in last frame's pending maps now that their upload one-shot has
-    # been drained at the start of this frame.
-    if self.pending_radiance is not None:
-      self.pbr_common.RadianceMaps = self.pending_radiance
-      self.pending_radiance = None
-
-    rmaps, key = self._build_radiance_for_mode(ctx)
-    if key != self.last_radiance_key:
-      self.last_radiance_key = key
-      self.pending_radiance  = rmaps
+    # Repopulate the shared radiance maps in place. No new textures are
+    # allocated — the underlying VkImage / TextureArray slices are reused,
+    # so descriptor-set cache entries stay valid forever.
+    if self.mode == 1:
+      key = ("solid", self.solid_idx)
+      if key != self.last_radiance_key:
+        self.last_radiance_key = key
+        color = SOLID_PALETTE[self.solid_idx % len(SOLID_PALETTE)]
+        lev2.PbrCommon.updateRadianceMapsSolidColor(self.proc_radiance, color, ctx)
+    elif self.mode == 2:
+      key = ("gradient_static",)
+      if key != self.last_radiance_key:
+        self.last_radiance_key = key
+        lev2.PbrCommon.updateRadianceMapsGradient(self.proc_radiance, STATIC_GRADIENT, ctx)
+    else:  # mode 3 — rebuild every frame, no leak
+      stops = self._stops_for_time(self.time)
+      lev2.PbrCommon.updateRadianceMapsGradient(self.proc_radiance, stops, ctx)
+      self.last_radiance_key = ("gradient_time",)
 
   ##############################################
 

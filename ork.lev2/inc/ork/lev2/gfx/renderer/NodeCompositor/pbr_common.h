@@ -121,17 +121,19 @@ struct CommonStuff : public ork::Object {
   // we block — this routine self-pumps that queue.
   static radiancemaps_ptr_t requestRadianceMapsSync(const AssetPath& texture_path, lev2::Context* ctx);
 
-  // Build an in-memory RadianceMaps where every specular roughness slice and
-  // the diffuse map is a single uniform color. BRDF LUTs come from the
-  // PBRMaterial cache. Must be called on the GPU thread.
-  static radiancemaps_ptr_t makeRadianceMapsSolidColor(fvec3 color, lev2::Context* ctx);
+  // Allocate procedural RadianceMaps (32x64 RGB8 specular array × 10 slices,
+  // 32x64 RGB8 diffuse, cached BRDF LUTs). Initial content is uniform black;
+  // call one of the update* functions to populate. GPU thread.
+  static radiancemaps_ptr_t makeProceduralRadianceMaps(lev2::Context* ctx);
 
-  // Build an in-memory RadianceMaps from a vertical gradient. Stops are
-  // (t, color) pairs with t in [0,1] mapping top (0) to bottom (1) of the
-  // sphere; must be sorted ascending by t. Higher-roughness slices lerp
-  // toward the hemisphere-weighted average. Must be called on the GPU thread.
-  static radiancemaps_ptr_t makeRadianceMapsGradient(
-      const std::vector<std::pair<float, fvec3>>& stops, lev2::Context* ctx);
+  // Update an existing procedural RadianceMaps in place. Reuses the GPU
+  // textures (no descriptor-set churn), so safe to call every frame.
+  static void updateRadianceMapsSolidColor(
+      radiancemaps_ptr_t maps, fvec3 color, lev2::Context* ctx);
+  static void updateRadianceMapsGradient(
+      radiancemaps_ptr_t maps,
+      const std::vector<std::pair<float, fvec3>>& stops,
+      lev2::Context* ctx);
 
   void onGpuInit(lev2::Context* ctx);
 
