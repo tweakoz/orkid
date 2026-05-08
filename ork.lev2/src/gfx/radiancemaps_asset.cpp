@@ -155,12 +155,18 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
         diffuse_loadreq->_cmipchain = diffuse_cmipchain;
         diffuse_loadreq->_texname = base_name + ".irrdiff";
         ctx->TXI()->_createFromLoadReq(diffuse_loadreq);
+        // Equirectangular: U wraps (longitude seam), V clamps (no pole bleed
+        // across the wraparound when bilinear filtering at V=0 / V=1).
+        diffuse_tex->TexSamplingMode()._texAddrModeS = TextureAddressMode::WRAP;
+        diffuse_tex->TexSamplingMode()._texAddrModeT = TextureAddressMode::CLAMP;
+        diffuse_tex->TexSamplingMode()._texAddrModeR = TextureAddressMode::CLAMP;
+        ctx->TXI()->ApplySamplingMode(diffuse_tex.get());
         irrmaps->_filtenvDiffuseMap = diffuse_tex;
       };
       GfxEnv::GetRef().enqueueDeferredContextOp(diffuseUploadOp);
     }
     //diffuseUploadOp(gloadercontext.get());
-      
+
     //////////////////////////////////////////////////////////////
     // init texture array op (deferrable)
     //////////////////////////////////////////////////////////////
@@ -175,6 +181,10 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
         TID._slices[i] = TextureArrayInitSubItem{usage_id, specular_images[i]};
       }
       txi->initTextureArray2DFromData(specular_texarray.get(), TID);
+      specular_texarray->_tex->TexSamplingMode()._texAddrModeS = TextureAddressMode::WRAP;
+      specular_texarray->_tex->TexSamplingMode()._texAddrModeT = TextureAddressMode::CLAMP;
+      specular_texarray->_tex->TexSamplingMode()._texAddrModeR = TextureAddressMode::CLAMP;
+      txi->ApplySamplingMode(specular_texarray->_tex.get());
       irrmaps->_filtenvSpecularMapArray = specular_texarray;  // Use array instead of single texture
     };
 

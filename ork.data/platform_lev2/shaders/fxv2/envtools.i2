@@ -96,15 +96,21 @@ libblock lib_envmapping
   vec3 env_cube(samplerCube envtex,vec3 normal) {
     return textureLod(envtex, normal,0).xyz;
   }
+  // V mapping: use linear (1.0 - uv.y) instead of -uv.y. Mathematically the
+  // same for non-pole points (under WRAP, fract(-V) == 1-V for V in (0,1)),
+  // but no fract discontinuity at V=0 / V=1, so bilinear filtering at the
+  // literal pole + CLAMP_TO_EDGE on the V axis no longer blends across the
+  // wraparound seam. Fixes both the chrome-ball pole-darkening and the
+  // long-standing diffuse-envmap-upside-down chalk artifact.
   vec3 env_equirectangular_spec_wbias(vec3 normal, sampler2DArray envtex, float slice, float bias) {
     vec3 n  = vec3(normal.x, normal.z, normal.y);
     vec2 uv = env_equirectangularN2UV(n);
-    return textureLod(envtex, vec3(-uv.x, -uv.y,slice),0).xyz;
+    return textureLod(envtex, vec3(-uv.x, 1.0 - uv.y, slice), 0).xyz;
   }
   vec3 env_equirectangular_spec(vec3 normal, sampler2DArray envtex, float slice) {
     vec3 n  = vec3(normal.x, normal.z, normal.y);
     vec2 uv = env_equirectangularN2UV(n);
-    return texture(envtex, vec3(-uv.x, -uv.y,slice)).xyz;
+    return texture(envtex, vec3(-uv.x, 1.0 - uv.y, slice)).xyz;
   }
   vec3 env_equirectangular_spec_flipv(vec3 normal, sampler2DArray envtex, float slice) {
     vec3 n  = vec3(normal.x, normal.y, normal.z);
@@ -122,12 +128,12 @@ libblock lib_envmapping
     vec3 env_equirectangular(vec3 normal, sampler2D envtex, float miplevel) {
     vec3 n  = vec3(normal.x, normal.y, normal.z);
     vec2 uv = env_equirectangularN2UV(n);
-    return textureLod(envtex, vec2(-uv.x, -uv.y), miplevel).xyz;
+    return textureLod(envtex, vec2(-uv.x, 1.0 - uv.y), miplevel).xyz;
   }
   vec3 env_equirectangular2(vec3 normal, sampler2D envtex) {
     vec3 n  = vec3(normal.x, normal.y, normal.z);
     vec2 uv = env_equirectangularN2UVa(n);
-    return textureLod(envtex, vec2(-uv.x, -uv.y),7).xyz;
+    return textureLod(envtex, vec2(-uv.x, 1.0 - uv.y), 7).xyz;
   }
   vec3 env_equirectangularFlipV(vec3 normal, sampler2D envtex, float miplevel) {
     vec3 n  = vec3(normal.x, normal.y, normal.z);

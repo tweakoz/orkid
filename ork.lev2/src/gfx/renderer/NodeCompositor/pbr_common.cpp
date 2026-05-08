@@ -298,8 +298,8 @@ radiancemaps_ptr_t CommonStuff::makeRadianceMapsGradient(
 
   constexpr int kNumRoughnessLevels = 10;
   constexpr float kRoughnessPower   = 0.5f;
-  constexpr int kEnvW               = 16;
-  constexpr int kEnvH               = 32;
+  constexpr int kEnvW               = 32;
+  constexpr int kEnvH               = 64;
 
   auto irrmaps                  = std::make_shared<RadianceMaps>();
   irrmaps->_numRoughnessLevels  = kNumRoughnessLevels;
@@ -328,17 +328,18 @@ radiancemaps_ptr_t CommonStuff::makeRadianceMapsGradient(
     TID._slices[i]    = TextureArrayInitSubItem{usage_id, spec_images[i]};
   }
   txi->initTextureArray2DFromData(specular_arr.get(), TID);
-  // Default sampling (WRAP on all axes) matches the disk-loaded envmap path.
-  // The runtime PBR shader does textureLod(envtex, vec2(-uv.x, -uv.y), ...);
-  // under WRAP, fract(-V) acts as a mirror that lands on the right row for
-  // every fragment except the literal pole — same shared artifact as disk.
+  // Equirectangular: U wraps (longitude seam), V clamps (no pole bleed
+  // across the wraparound when bilinear filtering at V=0 / V=1). Pairs with
+  // the envtools.i2 sampling using `1.0 - uv.y` instead of `-uv.y`.
+  specular_arr->_tex->TexSamplingMode()._texAddrModeS = TextureAddressMode::WRAP;
+  specular_arr->_tex->TexSamplingMode()._texAddrModeT = TextureAddressMode::CLAMP;
+  specular_arr->_tex->TexSamplingMode()._texAddrModeR = TextureAddressMode::CLAMP;
+  txi->ApplySamplingMode(specular_arr->_tex.get());
   irrmaps->_filtenvSpecularMapArray = specular_arr;
 
   // Diffuse: per-row directional irradiance. The disk diffuse baker stores
-  // E for normal-DOWN at texel V=0 and normal-UP at V=1 (its UV2N path
-  // applies n = n * (-1,-1,1) which inverts the V-to-theta mapping). We
-  // mirror that convention so the runtime sampler reads the correct row
-  // for any given world-space surface normal.
+  // E for normal-DOWN at texel V=0 and normal-UP at V=1; we match that
+  // convention.
   auto diffuse_image                = std::make_shared<Image>();
   diffuse_image->_format            = EBufferFormat::RGB8;
   diffuse_image->_bytesPerChannel   = 1;
@@ -361,6 +362,10 @@ radiancemaps_ptr_t CommonStuff::makeRadianceMapsGradient(
   auto diffuse_tex        = std::make_shared<Texture>();
   diffuse_tex->_debugName = "procGradDiff";
   txi->initTextureFromImage(diffuse_tex.get(), diffuse_image, false, false);
+  diffuse_tex->TexSamplingMode()._texAddrModeS = TextureAddressMode::WRAP;
+  diffuse_tex->TexSamplingMode()._texAddrModeT = TextureAddressMode::CLAMP;
+  diffuse_tex->TexSamplingMode()._texAddrModeR = TextureAddressMode::CLAMP;
+  txi->ApplySamplingMode(diffuse_tex.get());
   irrmaps->_filtenvDiffuseMap = diffuse_tex;
 
   irrmaps->_brdfIntegrationMapGGX    = PBRMaterial::brdfIntegrationMap(ctx, "GGX");
