@@ -121,13 +121,9 @@ struct CommonStuff : public ork::Object {
   // we block — this routine self-pumps that queue.
   static radiancemaps_ptr_t requestRadianceMapsSync(const AssetPath& texture_path, lev2::Context* ctx);
 
-  // Allocate procedural RadianceMaps (32x64 RGB8 specular array × 10 slices,
-  // 32x64 RGB8 diffuse, cached BRDF LUTs). Initial content is uniform black;
-  // call one of the update* functions to populate. GPU thread.
+  // Allocate procedural RadianceMaps (black). Populate via update* below.
+  // Update functions reuse the GPU textures, so calling every frame is safe.
   static radiancemaps_ptr_t makeProceduralRadianceMaps(lev2::Context* ctx);
-
-  // Update an existing procedural RadianceMaps in place. Reuses the GPU
-  // textures (no descriptor-set churn), so safe to call every frame.
   static void updateRadianceMapsSolidColor(
       radiancemaps_ptr_t maps, fvec3 color, lev2::Context* ctx);
   static void updateRadianceMapsGradient(

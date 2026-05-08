@@ -121,12 +121,7 @@ class ProceduralEnvmapsApp(object):
                                    # if it's GC'd, render dereferences null
     self.nodes = []
 
-    # 9×9 grid mirroring scenegraph/shaderballs.py.
-    #   X axis (ix): metallic 0 → 1
-    #   Z axis (iz): roughness 0 → 1
-    # Random colors per sphere via HSV. Camera looks down at the grid so
-    # both top-of-sphere (sky reflection) and front-of-sphere (horizon) are
-    # visible at all (metallic, roughness) combinations.
+    # 9×9 grid: X axis = metallic 0→1, Z axis = roughness 0→1, random HSV color.
     grid_n   = 9
     spacing  = 1.8
     origin   = -(grid_n - 1) * spacing / 2.0
@@ -136,7 +131,6 @@ class ProceduralEnvmapsApp(object):
         metallic  = ix / float(grid_n - 1)
         roughness = iz / float(grid_n - 1)
 
-        # HSV → RGB random base color (matches shaderballs convention).
         h = random.uniform(0, 1)
         s = random.uniform(0, 0.7)
         v = random.uniform(0.4, 1.0)
@@ -182,8 +176,7 @@ class ProceduralEnvmapsApp(object):
     self.pbr_common = self.scene.pbr_common
     self.pbr_common.skyboxLevel = 1.0
 
-    # One procedural radiance maps, reused across all modes via the update*
-    # functions — no texture-object churn so mode 3 can rebuild every frame.
+    # One radiance maps object, mutated in place by all modes.
     self.proc_radiance = lev2.PbrCommon.makeProceduralRadianceMaps(ctx)
     lev2.PbrCommon.updateRadianceMapsGradient(self.proc_radiance, STATIC_GRADIENT, ctx)
     self.pbr_common.RadianceMaps = self.proc_radiance
@@ -212,24 +205,20 @@ class ProceduralEnvmapsApp(object):
   ##############################################
 
   def onGpuUpdate(self, ctx):
-    # Repopulate the shared radiance maps in place. No new textures are
-    # allocated — the underlying VkImage / TextureArray slices are reused,
-    # so descriptor-set cache entries stay valid forever.
-    if self.mode == 1:
-      key = ("solid", self.solid_idx)
-      if key != self.last_radiance_key:
-        self.last_radiance_key = key
-        color = SOLID_PALETTE[self.solid_idx % len(SOLID_PALETTE)]
-        lev2.PbrCommon.updateRadianceMapsSolidColor(self.proc_radiance, color, ctx)
-    elif self.mode == 2:
-      key = ("gradient_static",)
-      if key != self.last_radiance_key:
-        self.last_radiance_key = key
-        lev2.PbrCommon.updateRadianceMapsGradient(self.proc_radiance, STATIC_GRADIENT, ctx)
-    else:  # mode 3 — rebuild every frame, no leak
+    if self.mode == 3:
       stops = self._stops_for_time(self.time)
       lev2.PbrCommon.updateRadianceMapsGradient(self.proc_radiance, stops, ctx)
       self.last_radiance_key = ("gradient_time",)
+      return
+    key = ("solid", self.solid_idx) if self.mode == 1 else ("gradient_static",)
+    if key == self.last_radiance_key:
+      return
+    self.last_radiance_key = key
+    if self.mode == 1:
+      color = SOLID_PALETTE[self.solid_idx % len(SOLID_PALETTE)]
+      lev2.PbrCommon.updateRadianceMapsSolidColor(self.proc_radiance, color, ctx)
+    else:
+      lev2.PbrCommon.updateRadianceMapsGradient(self.proc_radiance, STATIC_GRADIENT, ctx)
 
   ##############################################
 

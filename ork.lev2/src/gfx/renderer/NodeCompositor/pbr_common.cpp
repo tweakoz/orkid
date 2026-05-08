@@ -206,31 +206,26 @@ fvec3 directionalDiffuse(const std::vector<std::pair<float, fvec3>>& stops, floa
   return (w_sum > 0.0f) ? acc * (1.0f / w_sum) : fvec3(0);
 }
 
-// Image filled with a per-row color via `row_color(v)`.
+// RGBA32F image filled with a per-row color via `row_color(v)`.
 template<typename F>
 image_ptr_t buildRowwiseImage(int w, int h, F&& row_color) {
   auto img              = std::make_shared<Image>();
-  img->_format          = EBufferFormat::RGB8;
-  img->_bytesPerChannel = 1;
-  img->init(w, h, 3, 1);
-  auto p = (uint8_t*)img->_data->data();
+  img->_format          = EBufferFormat::RGBA32F;
+  img->_bytesPerChannel = 4;
+  img->init(w, h, 4, 4);
+  auto p = (float*)img->_data->data();
   for (int y = 0; y < h; ++y) {
     float v = (h > 1) ? float(y) / float(h - 1) : 0.0f;
-    fvec3  c = row_color(v);
-    uint8_t r = uint8_t(std::clamp(c.x, 0.0f, 1.0f) * 255.0f);
-    uint8_t g = uint8_t(std::clamp(c.y, 0.0f, 1.0f) * 255.0f);
-    uint8_t b = uint8_t(std::clamp(c.z, 0.0f, 1.0f) * 255.0f);
+    fvec3 c = row_color(v);
     for (int x = 0; x < w; ++x) {
-      int idx = (y * w + x) * 3;
-      p[idx + 0] = r; p[idx + 1] = g; p[idx + 2] = b;
+      int idx = (y * w + x) * 4;
+      p[idx + 0] = c.x; p[idx + 1] = c.y; p[idx + 2] = c.z; p[idx + 3] = 1.0f;
     }
   }
   return img;
 }
 
-// Uploads in-place: spec slices via updateTextureArraySlice (no
-// VulkanTextureObject realloc), diffuse via initTextureFromImage which
-// reuses the VkImage when format matches.
+// In-place upload — reuses VkImage / TextureArray slices, no descriptor churn.
 void uploadRadianceMapsImages(
     radiancemaps_ptr_t maps,
     const std::vector<image_ptr_t>& spec_images,
@@ -258,11 +253,7 @@ radiancemaps_ptr_t CommonStuff::makeProceduralRadianceMaps(Context* ctx) {
         powf(float(i) / float(kProcNumRoughnessLevels - 1), kProcRoughnessPower);
   }
 
-  // Initial allocation — every slice and the diffuse share a single black
-  // image. Subsequent updates use updateTextureArraySlice / initTextureFromImage
-  // on these same texture objects (no descriptor-set churn).
-  auto black = std::make_shared<Image>();
-  black->initRGB8WithColor(kProcEnvW, kProcEnvH, fvec3(0));
+  auto black = buildRowwiseImage(kProcEnvW, kProcEnvH, [](float) { return fvec3(0); });
 
   auto txi          = ctx->TXI();
   auto specular_arr = std::make_shared<TextureArray>();
@@ -274,24 +265,23 @@ radiancemaps_ptr_t CommonStuff::makeProceduralRadianceMaps(Context* ctx) {
     TID._slices[i]    = TextureArrayInitSubItem{usage_id, black};
   }
   txi->initTextureArray2DFromData(specular_arr.get(), TID);
-  // Equirectangular: U wraps, V clamps (no pole bleed at the V=0/V=1
-  // boundaries when bilinear-filtering near the poles).
-  for (auto* tex : {specular_arr->_tex.get()}) {
-    tex->TexSamplingMode()._texAddrModeS = TextureAddressMode::WRAP;
-    tex->TexSamplingMode()._texAddrModeT = TextureAddressMode::CLAMP;
-    tex->TexSamplingMode()._texAddrModeR = TextureAddressMode::CLAMP;
-    txi->ApplySamplingMode(tex);
-  }
-  maps->_filtenvSpecularMapArray = specular_arr;
 
   auto diffuse_tex        = std::make_shared<Texture>();
   diffuse_tex->_debugName = "procRadDiff";
   txi->initTextureFromImage(diffuse_tex.get(), black, false, false);
-  diffuse_tex->TexSamplingMode()._texAddrModeS = TextureAddressMode::WRAP;
-  diffuse_tex->TexSamplingMode()._texAddrModeT = TextureAddressMode::CLAMP;
-  diffuse_tex->TexSamplingMode()._texAddrModeR = TextureAddressMode::CLAMP;
-  txi->ApplySamplingMode(diffuse_tex.get());
-  maps->_filtenvDiffuseMap = diffuse_tex;
+
+  // Equirectangular: U wraps, V clamps (no pole bleed at V=0/V=1).
+  auto setEquirectangularSampling = [&](Texture* tex) {
+    tex->TexSamplingMode()._texAddrModeS = TextureAddressMode::WRAP;
+    tex->TexSamplingMode()._texAddrModeT = TextureAddressMode::CLAMP;
+    tex->TexSamplingMode()._texAddrModeR = TextureAddressMode::CLAMP;
+    txi->ApplySamplingMode(tex);
+  };
+  setEquirectangularSampling(specular_arr->_tex.get());
+  setEquirectangularSampling(diffuse_tex.get());
+
+  maps->_filtenvSpecularMapArray = specular_arr;
+  maps->_filtenvDiffuseMap       = diffuse_tex;
 
   maps->_brdfIntegrationMapGGX    = PBRMaterial::brdfIntegrationMap(ctx, "GGX");
   maps->_brdfIntegrationMapVelvet = PBRMaterial::brdfIntegrationMap(ctx, "GGXVELVET");
@@ -307,8 +297,7 @@ void CommonStuff::updateRadianceMapsSolidColor(
   OrkAssert(maps && maps->_filtenvSpecularMapArray);
   int W = int(maps->_filtenvSpecularMapArray->_width);
   int H = int(maps->_filtenvSpecularMapArray->_height);
-  auto img = std::make_shared<Image>();
-  img->initRGB8WithColor(W, H, color);
+  auto img = buildRowwiseImage(W, H, [color](float) { return color; });
   std::vector<image_ptr_t> spec(maps->_numRoughnessLevels, img);
   uploadRadianceMapsImages(maps, spec, img, ctx);
 }
