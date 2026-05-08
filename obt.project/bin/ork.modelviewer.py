@@ -39,7 +39,7 @@ parser.add_argument("-t", "--ssaa", type=int, default=2, help='ssaa')
 parser.add_argument("-u", "--ssao", type=int, default=0, help='SSAO samples')
 parser.add_argument("-L", "--lightmap", type=str, default="", help='set active lightmap')
 parser.add_argument('-r', '--rendermodel', type=str, default='forward', help='rendering model (deferred,forward)')
-parser.add_argument('-S', '--spotlight', type=float, nargs='?', const=1.0, default=None,
+parser.add_argument('-S', '--spotlight', type=float, nargs='?', const=0.2, default=None,
                     help='attach animated spotlight + cookie at INTENSITY (default 1.0); '
                          'omit the flag entirely to disable')
 parser.add_argument('-E', '--exposure', type=float, default=None, help='enable ACES tonemapper with given exposure')
@@ -78,6 +78,8 @@ def build_model_shortname_map():
   return shortname_to_path
 
 shortname_map = build_model_shortname_map()
+# Sorted list of shortnames — used by the M key in the viewport to cycle.
+shortname_list = sorted(shortname_map.keys())
 
 # Handle --list option
 if args["list"]:
@@ -210,11 +212,33 @@ class SceneGraphApp(ComponentizedApplication):
     if ssao>0:
       self.ssaamode = True
     self.curbrdfi = 0
-    self.cursati = 0
-    self.curgami = 0
     self.brdfset = [("GGX",tokens.GGX),("VELVET",tokens.GGXVELVET),("GGXRIM",tokens.GGXRIM),("BLINN",tokens.BLINN),("PHONG",tokens.PHONG)]
-    self.satset = [0.0,0.1,0.2,0.5,0.75,1.0,1.25,1.5,1.75,2.0]
-    self.gamset = [0.8,1.0,1.2,1.4,1.6,1.8,2.0,2.4]
+    # 0.8 inserted into satset for the default — between 0.75 and 1.0.
+    self.satset = [0.0, 0.1, 0.2, 0.5, 0.75, 0.8, 1.0, 1.25, 1.5, 1.75, 2.0]
+    self.gamset = [0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.4]
+    # Default to 0.8 for both saturation and gamma.
+    self.cursati = self.satset.index(0.8)   # = 5
+    self.curgami = self.gamset.index(0.8)   # = 0
+
+    # Spotlight cycling — L cycles brightness scale, Shift-L cycles color.
+    # BASE magnitude is the spotlight's pre-scale intensity (≈ matches the
+    # shaderballs default of vec3(1000,800,500)*10 in raw magnitude).
+    self.spot_base   = 10000.0
+    self.spot_levels = [0.0, 0.1, 0.2, 0.5, 0.75, 1.0, 2.0, 4.0]
+    self.spot_colors = [
+      ("white",  vec3(1.00, 1.00, 1.00)),
+      ("warm",   vec3(1.00, 0.85, 0.65)),  # incandescent / sun
+      ("cold",   vec3(0.70, 0.85, 1.00)),  # cool-white LED
+      ("R",      vec3(1.00, 0.00, 0.00)),
+      ("G",      vec3(0.00, 1.00, 0.00)),
+      ("B",      vec3(0.00, 0.00, 1.00)),
+      ("M",      vec3(1.00, 0.00, 1.00)),
+      ("C",      vec3(0.00, 1.00, 1.00)),
+    ]
+    # Initial level: snap --spotlight INTENSITY to the closest preset.
+    _initial_level = spotlight_intensity 
+    self.spot_level_idx = 2
+    self.spot_color_idx = 1  # warm by default — matches shaderballs visual
 
     # Environment map switching — discover from <staging>/assetcache/envmaps2/.
     # Same pattern as shaderballs.py: filesystem-driven so we cycle exactly
@@ -288,9 +312,9 @@ class SceneGraphApp(ComponentizedApplication):
 
     postNode = PostFxNodeHSVG()
     postNode.hue = 0.0
-    postNode.saturation = 1.0
+    postNode.saturation = self.satset[self.cursati]   # default 0.8
     postNode.value = 1.0
-    postNode.gamma = 1.0
+    postNode.gamma = self.gamset[self.curgami]        # default 0.8
     postNode.gpuInit(ctx,8,8)
     postNode.addToSceneVars(sceneparams,"PostFxChain")
     self.post_node = postNode
@@ -303,6 +327,15 @@ class SceneGraphApp(ComponentizedApplication):
     self.pbr_common.useFloatColorBuffer = True
 
     ######################
+
+    # Find the loaded model's position in shortname_list so the M key
+    # picks up cycling from where we are. Match either by shortname or
+    # by full data:// path (modelpath could be either).
+    self.model_index = -1
+    for _i, _name in enumerate(shortname_list):
+      if _name == modelpath or shortname_map.get(_name) == modelpath:
+        self.model_index = _i
+        break
 
     self.model = XgmModel(modelpath)
     self.sgnode = self.model.createNode("node",self.layer_fwd)
@@ -433,14 +466,18 @@ class SceneGraphApp(ComponentizedApplication):
       ctx.TXI.updateTextureArray(color_cookies)
       depth_cookie1 = depth_cookies.slice(0)
 
-      # Base color matches shaderballs.py (warm white at 10x), scaled by
-      # the user-supplied --spotlight INTENSITY (default 1.0).
+      # Initial color is whatever the L / Shift-L cycle resolves to right
+      # now (defaults: brightness 1.0 unless overridden by --spotlight,
+      # color "warm"). Cycles can re-set at runtime via L / Shift-L.
+      _initial_color = (self.spot_colors[self.spot_color_idx][1]
+                        * self.spot_base
+                        * self.spot_levels[self.spot_level_idx])
       self.spotlight1 = StdSpotLight(
         index=0,
         SGC=sgc_shim,
         model=spotlight_marker,
         frq=0.17,
-        color=vec3(1000, 800, 500) * 10.0 * spotlight_intensity,
+        color=_initial_color,
         cookie=cookie1,
         depth_cookie=depth_cookie1,
         dim=COOKIE_DIM,
@@ -477,15 +514,54 @@ class SceneGraphApp(ComponentizedApplication):
                if sky_idx >= 0 and sky_idx < len(self.envmap_names)
                else "default")
     exp_str = f"{exp:.2f}" if exp > 0 else "OFF"
+    model_str = (shortname_list[self.model_index]
+                 if 0 <= self.model_index < len(shortname_list)
+                 else "(custom)")
+    spot_lvl  = self.spot_levels[self.spot_level_idx]
+    spot_clr  = self.spot_colors[self.spot_color_idx][0]
     self._hud_drawable.text = (
       f"[A] SSAO: {ssao_str}\n"
       f"[B] BRDF: {brdf}\n"
       f"[E] Envmap: {sky_str}\n"
+      f"[M] Model: {model_str}\n"
+      f"[L] Spot brightness: {spot_lvl:g}    [Shift-L] Color: {spot_clr}\n"
       f"[S] Saturation: {sat:.1f}\n"
       f"[G] Gamma: {gam:.1f}\n"
       f"[T] ACES Exposure: {exp_str}\n"
       f"[R] Reset All"
     )
+
+  ##############################################
+
+  def _apply_spot_color(self):
+    """Push the current (level, color) cycle state to the spot's
+    DynamicSpotLight color. No-op if --spotlight wasn't enabled."""
+    if not hasattr(self, "spotlight1"):
+      return
+    level     = self.spot_levels[self.spot_level_idx]
+    color_unit = self.spot_colors[self.spot_color_idx][1]
+    self.spotlight1.spot_light.data.color = color_unit * self.spot_base * level
+
+  ##############################################
+
+  def _swap_model_to_index(self, idx):
+    """Detach the current model node from layer_fwd, load the model at
+    `idx` in shortname_list, and create a fresh sgnode. Wraps if idx is
+    out of range. No-op if shortname_list is empty."""
+    if not shortname_list:
+      print("M: no models in shortname_list (build_model_shortname_map empty)")
+      return
+    self.model_index = idx % len(shortname_list)
+    new_short = shortname_list[self.model_index]
+    new_path  = shortname_map[new_short]
+    if hasattr(self, "sgnode") and self.sgnode is not None:
+      self.layer_fwd.removeDrawableNode(self.sgnode)
+    self.model  = XgmModel(new_path)
+    self.sgnode = self.model.createNode("node", self.layer_fwd)
+    self.model.debugRenderingModel = tokens.NONE
+    self.model.debugPassID    = tokens.ALL
+    self.model.debugSubPassID = tokens.ALL
+    print(f"MODEL [{self.model_index+1}/{len(shortname_list)}] {new_short} -> {new_path}")
 
   ##############################################
 
@@ -518,6 +594,21 @@ class SceneGraphApp(ComponentizedApplication):
           self.pbr_common.RadianceMaps = skybox
           print("ENVMAP", self.envmap_names[self.skybox_index])
       ######################
+      elif uievent.keycode == ord("M"):
+        # Cycle to the next model in the auto-discovered shortname list.
+        self._swap_model_to_index(self.model_index + 1)
+      ######################
+      elif uievent.keycode == ord("L"):
+        # L: cycle spotlight brightness preset.
+        # Shift-L: cycle spotlight color preset.
+        if uievent.shift:
+          self.spot_color_idx = (self.spot_color_idx + 1) % len(self.spot_colors)
+          print("SPOT COLOR", self.spot_colors[self.spot_color_idx][0])
+        else:
+          self.spot_level_idx = (self.spot_level_idx + 1) % len(self.spot_levels)
+          print("SPOT BRIGHTNESS", self.spot_levels[self.spot_level_idx])
+        self._apply_spot_color()
+      ######################
       elif uievent.keycode == ord("S"):
         self.cursati = (self.cursati + 1) % len(self.satset)
         self.post_node.saturation = self.satset[self.cursati]
@@ -534,10 +625,10 @@ class SceneGraphApp(ComponentizedApplication):
         self.ssaamode = False
         self.curbrdfi = 0
         self.pbr_common.setBRDF(self.brdfset[0][1])
-        self.cursati = 5  # 1.0
-        self.post_node.saturation = 1.0
-        self.curgami = 1  # 1.0
-        self.post_node.gamma = 1.0
+        self.cursati = self.satset.index(0.8)   # default 0.8
+        self.post_node.saturation = self.satset[self.cursati]
+        self.curgami = self.gamset.index(0.8)   # default 0.8
+        self.post_node.gamma = self.gamset[self.curgami]
         self.cur_exposure_idx = 0  # OFF
         self.aces_node.exposure = 0.0
       ######################
