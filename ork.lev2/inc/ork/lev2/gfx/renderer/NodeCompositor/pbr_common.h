@@ -126,6 +126,13 @@ struct CommonStuff : public ork::Object {
   // PBRMaterial cache. Must be called on the GPU thread.
   static radiancemaps_ptr_t makeRadianceMapsSolidColor(fvec3 color, lev2::Context* ctx);
 
+  // Build an in-memory RadianceMaps from a vertical gradient. Stops are
+  // (t, color) pairs with t in [0,1] mapping top (0) to bottom (1) of the
+  // sphere; must be sorted ascending by t. Higher-roughness slices lerp
+  // toward the hemisphere-weighted average. Must be called on the GPU thread.
+  static radiancemaps_ptr_t makeRadianceMapsGradient(
+      const std::vector<std::pair<float, fvec3>>& stops, lev2::Context* ctx);
+
   void onGpuInit(lev2::Context* ctx);
 
   radiancemaps_ptr_t _radiance_maps;
