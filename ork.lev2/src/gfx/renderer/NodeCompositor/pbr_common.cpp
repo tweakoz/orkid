@@ -292,16 +292,6 @@ radiancemaps_ptr_t CommonStuff::makeProceduralRadianceMaps(Context* ctx) {
   return maps;
 }
 
-void CommonStuff::updateRadianceMapsSolidColor(
-    radiancemaps_ptr_t maps, fvec3 color, Context* ctx) {
-  OrkAssert(maps && maps->_filtenvSpecularMapArray);
-  int W = int(maps->_filtenvSpecularMapArray->_width);
-  int H = int(maps->_filtenvSpecularMapArray->_height);
-  auto img = buildRowwiseImage(W, H, [color](float) { return color; });
-  std::vector<image_ptr_t> spec(maps->_numRoughnessLevels, img);
-  uploadRadianceMapsImages(maps, spec, img, ctx);
-}
-
 void CommonStuff::updateRadianceMapsGradient(
     radiancemaps_ptr_t maps,
     const std::vector<std::pair<float, fvec3>>& stops,

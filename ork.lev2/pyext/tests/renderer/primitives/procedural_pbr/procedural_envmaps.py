@@ -216,7 +216,7 @@ class ProceduralEnvmapsApp(object):
     self.last_radiance_key = key
     if self.mode == 1:
       color = SOLID_PALETTE[self.solid_idx % len(SOLID_PALETTE)]
-      lev2.PbrCommon.updateRadianceMapsSolidColor(self.proc_radiance, color, ctx)
+      lev2.PbrCommon.updateRadianceMapsGradient(self.proc_radiance, [(0.0, color)], ctx)
     else:
       lev2.PbrCommon.updateRadianceMapsGradient(self.proc_radiance, STATIC_GRADIENT, ctx)
 

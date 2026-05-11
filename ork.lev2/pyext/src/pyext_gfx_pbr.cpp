@@ -64,11 +64,6 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
                 return pbr::CommonStuff::makeProceduralRadianceMaps(ctx.get());
               })
           .def_static(
-              "updateRadianceMapsSolidColor",
-              [](pbr::radiancemaps_ptr_t maps, fvec3 color, ctx_t ctx) {
-                pbr::CommonStuff::updateRadianceMapsSolidColor(maps, color, ctx.get());
-              })
-          .def_static(
               "updateRadianceMapsGradient",
               [](pbr::radiancemaps_ptr_t maps, py::list stops, ctx_t ctx) {
                 std::vector<std::pair<float, fvec3>> cpp_stops;
