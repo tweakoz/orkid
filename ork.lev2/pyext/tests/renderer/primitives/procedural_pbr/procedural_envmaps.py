@@ -2,17 +2,17 @@
 
 ################################################################################
 # Procedural Envmaps Test
-# Demonstrates lev2.PbrCommon.makeRadianceMapsSolidColor and
-# makeRadianceMapsGradient — in-memory radiance maps with no disk lag.
+# Demonstrates lev2.PbrCommon.makeProceduralRadianceMaps +
+# updateRadianceMapsGradient — radiance maps built in memory, no disk lag.
 #
-# Press 1: solid color background (cycles through several colors).
+# Press 1: solid color background (cycles through several colors, sent as a
+#          single-stop gradient).
 # Press 2: static vertical gradient (sky / horizon / ground).
 # Press 3: time-varying gradient (day-to-night cycle, rebuilt every frame).
 #
-# Layout follows scenegraph/shaderballs.py: a 9×9 grid on the floor where the
-# X axis sweeps metallic 0→1 and the Z axis sweeps roughness 0→1, with random
-# colors per sphere. Lets you see the full PBR matrix against the procedural
-# envmap.
+# Layout follows scenegraph/shaderballs.py: a 9×9 sphere grid where the X axis
+# sweeps metallic 0→1 and the Z axis sweeps roughness 0→1, with random
+# per-sphere colors. Shows the full PBR matrix against the procedural envmap.
 #
 # Copyright 1996-2023, Michael T. Mayers.
 # Distributed under the MIT License

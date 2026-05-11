@@ -320,10 +320,9 @@ libblock lib_fwd     //
 
   vec3 forward_lighting_ntex(vec3 modcolor) {
     vec2 uvinvy    = abs(frg_uv0.xy);
-    // No-texture path: per-vertex color (modcolor) and per-material ModAlbedo
-    // both feed albedo as multiplicative factors. With the default white
-    // ModAlbedo this preserves the old "vertex color is albedo" behavior;
-    // setting mtl.baseColor adds a per-material tint on top of vertex colors.
+    // No-texture path: vertex color and per-material ModAlbedo both feed
+    // albedo as multiplicative factors, so mtl.baseColor tints all vertices
+    // uniformly and the default white ModAlbedo leaves vertex color as-is.
     vec3 albedo    = ModAlbedo.xyz * modcolor;
     vec3 TN        = vec3(0.5,0.5,1);
     vec3 ambrufmtl = vec3(1, RoughnessFactor, MetallicFactor);

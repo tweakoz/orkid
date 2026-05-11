@@ -96,12 +96,10 @@ libblock lib_envmapping
   vec3 env_cube(samplerCube envtex,vec3 normal) {
     return textureLod(envtex, normal,0).xyz;
   }
-  // V mapping: use linear (1.0 - uv.y) instead of -uv.y. Mathematically the
-  // same for non-pole points (under WRAP, fract(-V) == 1-V for V in (0,1)),
-  // but no fract discontinuity at V=0 / V=1, so bilinear filtering at the
-  // literal pole + CLAMP_TO_EDGE on the V axis no longer blends across the
-  // wraparound seam. Fixes both the chrome-ball pole-darkening and the
-  // long-standing diffuse-envmap-upside-down chalk artifact.
+  // V mapping uses (1.0 - uv.y) rather than -uv.y. Mathematically equivalent
+  // for non-pole points under WRAP (fract(-V) == 1-V for V in (0,1)), but
+  // without the fract discontinuity at V=0 / V=1 — so bilinear filtering at
+  // the poles plus CLAMP_TO_EDGE on V does not blend across the seam.
   vec3 env_equirectangular_spec_wbias(vec3 normal, sampler2DArray envtex, float slice, float bias) {
     vec3 n  = vec3(normal.x, normal.z, normal.y);
     vec2 uv = env_equirectangularN2UV(n);
