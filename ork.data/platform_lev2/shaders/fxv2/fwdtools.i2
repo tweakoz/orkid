@@ -26,14 +26,14 @@ libblock lib_fwd_impl : lib_math //
     return plc;
   }
   vec3 plcalc_forward(LightCtx plc, PbrData pbd, float lightRadius) {
-    float dist2light    = length(plc._lightdel);
-    float atten         = 1.0 / max(.05, dist2light * dist2light); // prevent infinite light
-    vec3 lightdir       = normalize(plc._lightdel);
-    vec3 halfdir        = normalize(plc._viewdir + lightdir);
-    float angularRadius = atan(lightRadius, dist2light);
-    float ggx           = computeGGX(plc._normal, halfdir, plc._roughness + angularRadius); // Example adjustment
-
-    // float ggx = computeGGX(plc._normal, halfdir, plc._roughness);
+    // Linear distance falloff: atten ramps from 1 at the source to 0 at
+    // lightRadius. intensity and radius are independent controls.
+    float dist_to_light = length(plc._lightdel);
+    float r_ratio    = dist_to_light / max(lightRadius, 1e-4);
+    float atten      = max(0.0, 1.0 - r_ratio);
+    vec3 lightdir    = normalize(plc._lightdel);
+    vec3 halfdir     = normalize(plc._viewdir + lightdir);
+    float ggx        = computeGGX(plc._normal, halfdir, plc._roughness);
     float geo = geometrySmith(plc._normal, plc._viewdir, lightdir, plc._roughness);
     vec3 fres = fresnelSchlickRoughness(satdot(halfdir, plc._viewdir), plc._F0, plc._roughness);
 
@@ -409,10 +409,10 @@ libblock lib_fwd     //
 
   vec3 forward_lighting_ntex(vec3 modcolor) {
     vec2 uvinvy    = abs(frg_uv0.xy);
-    // No-texture path: ModAlbedo IS the albedo (modulating the implicit
-    // white "no texture" base). modcolor stays a post-multiplier — no
-    // longer doubles as albedo.
-    vec3 albedo    = ModAlbedo.xyz;
+    // No-texture path: vertex color and per-material ModAlbedo both feed
+    // albedo as multiplicative factors, so mtl.baseColor tints all vertices
+    // uniformly and the default white ModAlbedo leaves vertex color as-is.
+    vec3 albedo    = ModAlbedo.xyz * modcolor;
     vec3 TN        = vec3(0.5,0.5,1);
     vec3 ambrufmtl = vec3(1, RoughnessFactor, MetallicFactor);
     vec3 emission  = vec3(0,0,0);

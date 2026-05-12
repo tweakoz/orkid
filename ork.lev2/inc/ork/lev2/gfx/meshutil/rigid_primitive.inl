@@ -742,6 +742,11 @@ struct InstancedRigidPrimitiveDrawable final : public lev2::InstancedDrawable {
     renderable._pickID = _pickID;
     renderable._sortkey = _sortkey;
     renderable._instanced = true;
+    // CallbackRenderables come from a pooled fixedvector that does not reset
+    // slots between frames; per-instance matrices already carry world-space
+    // positions, so force identity here to avoid inheriting a stale world
+    // matrix from a prior renderable that happened to land on the same slot.
+    renderable.SetMatrix(fmtx4());
     renderable.SetModColor(fcolor4::White());
     renderable.SetDrawableDataA(GetUserDataA());
     renderable.SetDrawableDataB(GetUserDataB());

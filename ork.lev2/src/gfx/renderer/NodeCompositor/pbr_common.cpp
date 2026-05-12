@@ -32,6 +32,8 @@
 
 #include <ork/lev2/gfx/radiancemaps_asset.h>
 #include <ork/lev2/gfx/xir_format.h>
+#include <ork/lev2/gfx/material_pbr.inl>
+#include <ork/lev2/gfx/image.h>
 
 #include <ork/profiling.inl>
 #include <ork/asset/Asset.inl>
@@ -144,6 +146,199 @@ radiancemaps_ptr_t CommonStuff::requestRadianceMapsSync(const AssetPath& texture
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
   }
   return rm_asset->_radiance_maps;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace {
+
+// Gradient envs are rotation-symmetric about Y, so W only needs to be wide enough for
+// stable bilinear filtering; H resolves the latitude gradient. Roughness curve matches
+// the disk-IBL bake convention in radiancemaps_processor.cpp.
+constexpr int   kProcNumRoughnessLevels = 10;
+constexpr float kProcRoughnessPower     = 0.5f;
+constexpr int   kProcEnvW               = 32;
+constexpr int   kProcEnvH               = 64;
+
+fvec3 sampleGradientAt(const std::vector<std::pair<float, fvec3>>& stops, float t) {
+  if (t <= stops.front().first) return stops.front().second;
+  if (t >= stops.back().first)  return stops.back().second;
+  for (size_t i = 0; i + 1 < stops.size(); ++i) {
+    float t0 = stops[i].first, t1 = stops[i + 1].first;
+    if (t >= t0 && t <= t1) {
+      float frac = (t1 > t0) ? (t - t0) / (t1 - t0) : 0.0f;
+      return stops[i].second * (1.0f - frac) + stops[i + 1].second * frac;
+    }
+  }
+  return stops.back().second;
+}
+
+// Solid-angle-weighted full-sphere average; lerp target for high-roughness slices.
+fvec3 sphereAverage(const std::vector<std::pair<float, fvec3>>& stops, int n = 64) {
+  fvec3 acc(0); float w_sum = 0.0f;
+  for (int i = 0; i < n; ++i) {
+    float v = (float(i) + 0.5f) / float(n);
+    float w = sinf(v * float(PI));
+    acc   = acc + sampleGradientAt(stops, v) * w;
+    w_sum = w_sum + w;
+  }
+  return (w_sum > 0.0f) ? acc * (1.0f / w_sum) : fvec3(0);
+}
+
+// RGBA32F image filled with a per-row color via `row_color(v)`.
+template<typename F>
+image_ptr_t buildRowwiseImage(int w, int h, F&& row_color) {
+  auto img              = std::make_shared<Image>();
+  img->_format          = EBufferFormat::RGBA32F;
+  img->_bytesPerChannel = 4;
+  img->init(w, h, 4, 4);
+  auto p = (float*)img->_data->data();
+  for (int y = 0; y < h; ++y) {
+    float v = (h > 1) ? float(y) / float(h - 1) : 0.0f;
+    fvec3 c = row_color(v);
+    for (int x = 0; x < w; ++x) {
+      int idx = (y * w + x) * 4;
+      p[idx + 0] = c.x; p[idx + 1] = c.y; p[idx + 2] = c.z; p[idx + 3] = 1.0f;
+    }
+  }
+  return img;
+}
+
+// Cosine-weighted hemisphere integral E(n) = (1/π) ∫ L(ω) max(0, n·ω) dω,
+// rasterized into an RGBA32F image (row index ↔ surface normal polar angle).
+// The cosine kernel only depends on (theta_n, theta_w), so we precompute a
+// per-row × per-theta_w table once via a Meyers singleton and per-call work
+// collapses to a length-kT dot product per row.
+image_ptr_t buildDiffuseImage(
+    const std::vector<std::pair<float, fvec3>>& stops, int W, int H) {
+  OrkAssert(H == kProcEnvH);
+  constexpr int kT = 32, kP = 32;
+  struct Kernel { float w[kProcEnvH][kT]; float inv_sum[kProcEnvH]; };
+  static const Kernel kernel = [] {
+    Kernel out{};
+    for (int row = 0; row < kProcEnvH; ++row) {
+      float v_row   = float(row) / float(kProcEnvH - 1);
+      float theta_n = (1.0f - v_row) * float(PI);    // V=0 → down, V=1 → up
+      float nx = sinf(theta_n), ny = cosf(theta_n);
+      float w_sum = 0.0f;
+      for (int it = 0; it < kT; ++it) {
+        float theta_w = (float(it) + 0.5f) / float(kT) * float(PI);
+        float cy = cosf(theta_w), cx = sinf(theta_w);
+        float s = 0.0f;
+        for (int ip = 0; ip < kP; ++ip) {
+          float phi = (float(ip) + 0.5f) / float(kP) * 2.0f * float(PI);
+          float dot = nx * (cx * cosf(phi)) + ny * cy;
+          if (dot > 0.0f) { float w = dot * cx; s += w; w_sum += w; }
+        }
+        out.w[row][it] = s;
+      }
+      out.inv_sum[row] = (w_sum > 0.0f) ? 1.0f / w_sum : 0.0f;
+    }
+    return out;
+  }();
+
+  fvec3 L_table[kT];
+  for (int it = 0; it < kT; ++it)
+    L_table[it] = sampleGradientAt(stops, (float(it) + 0.5f) / float(kT));
+
+  return buildRowwiseImage(W, H, [&](float v) {
+    int row = int(v * (H - 1) + 0.5f);
+    fvec3 acc(0);
+    for (int it = 0; it < kT; ++it) acc = acc + L_table[it] * kernel.w[row][it];
+    return acc * kernel.inv_sum[row];
+  });
+}
+
+// In-place upload — reuses VkImage / TextureArray slices, no descriptor churn.
+void uploadRadianceMapsImages(
+    radiancemaps_ptr_t maps,
+    const std::vector<image_ptr_t>& spec_images,
+    image_ptr_t diffuse_image,
+    Context* ctx) {
+  OrkAssert(int(spec_images.size()) == maps->_numRoughnessLevels);
+  auto txi = ctx->TXI();
+  for (size_t i = 0; i < spec_images.size(); ++i) {
+    auto slice = maps->_filtenvSpecularMapArray->slice(i);
+    txi->updateTextureArraySlice(slice.get(), spec_images[i]);
+  }
+  txi->initTextureFromImage(maps->_filtenvDiffuseMap.get(), diffuse_image, false, false);
+}
+
+} // namespace
+
+///////////////////////////////////////////////////////////////////////////////
+
+radiancemaps_ptr_t CommonStuff::makeProceduralRadianceMaps(Context* ctx) {
+  auto maps = std::make_shared<RadianceMaps>();
+  maps->_numRoughnessLevels = kProcNumRoughnessLevels;
+  maps->_specularRoughnessValues.resize(kProcNumRoughnessLevels);
+  for (int i = 0; i < kProcNumRoughnessLevels; ++i) {
+    maps->_specularRoughnessValues[i] =
+        powf(float(i) / float(kProcNumRoughnessLevels - 1), kProcRoughnessPower);
+  }
+
+  auto black = buildRowwiseImage(kProcEnvW, kProcEnvH, [](float) { return fvec3(0); });
+
+  auto txi          = ctx->TXI();
+  auto specular_arr = std::make_shared<TextureArray>();
+  specular_arr->_tex->_debugName = "procRadSpec";
+  TextureArrayInitData TID;
+  TID._slices.resize(kProcNumRoughnessLevels);
+  for (int i = 0; i < kProcNumRoughnessLevels; ++i) {
+    uint32_t usage_id = CrcString(FormatString("roughness_%d", i).c_str()).hashed();
+    TID._slices[i]    = TextureArrayInitSubItem{usage_id, black};
+  }
+  txi->initTextureArray2DFromData(specular_arr.get(), TID);
+
+  auto diffuse_tex        = std::make_shared<Texture>();
+  diffuse_tex->_debugName = "procRadDiff";
+  txi->initTextureFromImage(diffuse_tex.get(), black, false, false);
+
+  // Equirectangular: U wraps, V clamps (no pole bleed at V=0/V=1).
+  auto setEquirectangularSampling = [&](Texture* tex) {
+    tex->TexSamplingMode()._texAddrModeS = TextureAddressMode::WRAP;
+    tex->TexSamplingMode()._texAddrModeT = TextureAddressMode::CLAMP;
+    tex->TexSamplingMode()._texAddrModeR = TextureAddressMode::CLAMP;
+    txi->ApplySamplingMode(tex);
+  };
+  setEquirectangularSampling(specular_arr->_tex.get());
+  setEquirectangularSampling(diffuse_tex.get());
+
+  maps->_filtenvSpecularMapArray = specular_arr;
+  maps->_filtenvDiffuseMap       = diffuse_tex;
+
+  maps->_brdfIntegrationMapGGX    = PBRMaterial::brdfIntegrationMap(ctx, "GGX");
+  maps->_brdfIntegrationMapVelvet = PBRMaterial::brdfIntegrationMap(ctx, "GGXVELVET");
+  maps->_brdfIntegrationMapGGXRIM = PBRMaterial::brdfIntegrationMap(ctx, "GGXRIM");
+  maps->_brdfIntegrationMapBlinn  = PBRMaterial::brdfIntegrationMap(ctx, "BLINN");
+  maps->_brdfIntegrationMapPhong  = PBRMaterial::brdfIntegrationMap(ctx, "PHONG");
+
+  return maps;
+}
+
+void CommonStuff::updateRadianceMapsGradient(
+    radiancemaps_ptr_t maps,
+    const std::vector<std::pair<float, fvec3>>& stops,
+    Context* ctx) {
+  OrkAssert(maps && maps->_filtenvSpecularMapArray);
+  OrkAssert(!stops.empty());
+  int W = int(maps->_filtenvSpecularMapArray->_width);
+  int H = int(maps->_filtenvSpecularMapArray->_height);
+  fvec3 avg = sphereAverage(stops);
+
+  // Specular slices: gradient at V, lerped toward sphere-average by the
+  // slice's roughness. Diffuse: per-row directional irradiance via the
+  // factored hemisphere integral in buildDiffuseImage.
+  std::vector<image_ptr_t> spec;
+  spec.reserve(maps->_specularRoughnessValues.size());
+  for (float r : maps->_specularRoughnessValues) {
+    spec.push_back(buildRowwiseImage(W, H, [&](float v) {
+      fvec3 c = sampleGradientAt(stops, v);
+      return c * (1.0f - r) + avg * r;
+    }));
+  }
+  auto diff = buildDiffuseImage(stops, W, H);
+  uploadRadianceMapsImages(maps, spec, diff, ctx);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
