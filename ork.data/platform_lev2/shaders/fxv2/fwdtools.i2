@@ -26,14 +26,17 @@ libblock lib_fwd_impl : lib_math //
     return plc;
   }
   vec3 plcalc_forward(LightCtx plc, PbrData pbd, float lightRadius) {
-    float dist2light    = length(plc._lightdel);
-    float atten         = 1.0 / max(.05, dist2light * dist2light); // prevent infinite light
-    vec3 lightdir       = normalize(plc._lightdel);
-    vec3 halfdir        = normalize(plc._viewdir + lightdir);
-    float angularRadius = atan(lightRadius, dist2light);
-    float ggx           = computeGGX(plc._normal, halfdir, plc._roughness + angularRadius); // Example adjustment
-
-    // float ggx = computeGGX(plc._normal, halfdir, plc._roughness);
+    // Linear distance falloff:
+    //   - atten = 1 at the source, ramps linearly to 0 at lightRadius
+    //   - no inverse-square term — intensity and radius are independent
+    //     controls (intensity = peak brightness, radius = lit extent), so
+    //     the lit disc actually reaches the nominal radius on a ground.
+    float dist2light = length(plc._lightdel);
+    float r_ratio    = dist2light / max(lightRadius, 1e-4);
+    float atten      = max(0.0, 1.0 - r_ratio);
+    vec3 lightdir    = normalize(plc._lightdel);
+    vec3 halfdir     = normalize(plc._viewdir + lightdir);
+    float ggx        = computeGGX(plc._normal, halfdir, plc._roughness);
     float geo = geometrySmith(plc._normal, plc._viewdir, lightdir, plc._roughness);
     vec3 fres = fresnelSchlickRoughness(satdot(halfdir, plc._viewdir), plc._F0, plc._roughness);
 
