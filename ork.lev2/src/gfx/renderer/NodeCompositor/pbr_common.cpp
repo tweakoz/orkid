@@ -152,6 +152,9 @@ radiancemaps_ptr_t CommonStuff::requestRadianceMapsSync(const AssetPath& texture
 
 namespace {
 
+// Gradient envs are rotation-symmetric about Y, so W only needs to be wide enough for
+// stable bilinear filtering; H resolves the latitude gradient. Roughness curve matches
+// the disk-IBL bake convention in radiancemaps_processor.cpp.
 constexpr int   kProcNumRoughnessLevels = 10;
 constexpr float kProcRoughnessPower     = 0.5f;
 constexpr int   kProcEnvW               = 32;
@@ -182,30 +185,6 @@ fvec3 sphereAverage(const std::vector<std::pair<float, fvec3>>& stops, int n = 6
   return (w_sum > 0.0f) ? acc * (1.0f / w_sum) : fvec3(0);
 }
 
-// Cosine-weighted hemisphere integral E(n) = (1/π) ∫ L(ω) max(0, n·ω) dω,
-// for a surface normal at polar angle theta_n. Rotation-symmetric env so the
-// result depends only on theta_n.
-fvec3 directionalDiffuse(const std::vector<std::pair<float, fvec3>>& stops, float theta_n) {
-  float nx = sinf(theta_n), ny = cosf(theta_n);
-  fvec3 acc(0); float w_sum = 0.0f;
-  constexpr int kT = 32, kP = 32;
-  for (int it = 0; it < kT; ++it) {
-    float theta_w = (float(it) + 0.5f) / float(kT) * float(PI);
-    float cy = cosf(theta_w), cx = sinf(theta_w);
-    fvec3 L = sampleGradientAt(stops, theta_w / float(PI));
-    for (int ip = 0; ip < kP; ++ip) {
-      float phi = (float(ip) + 0.5f) / float(kP) * 2.0f * float(PI);
-      float dot = nx * (cx * cosf(phi)) + ny * cy;
-      if (dot > 0.0f) {
-        float w = dot * cx;
-        acc   = acc + L * w;
-        w_sum = w_sum + w;
-      }
-    }
-  }
-  return (w_sum > 0.0f) ? acc * (1.0f / w_sum) : fvec3(0);
-}
-
 // RGBA32F image filled with a per-row color via `row_color(v)`.
 template<typename F>
 image_ptr_t buildRowwiseImage(int w, int h, F&& row_color) {
@@ -223,6 +202,51 @@ image_ptr_t buildRowwiseImage(int w, int h, F&& row_color) {
     }
   }
   return img;
+}
+
+// Cosine-weighted hemisphere integral E(n) = (1/π) ∫ L(ω) max(0, n·ω) dω,
+// rasterized into an RGBA32F image (row index ↔ surface normal polar angle).
+// The cosine kernel only depends on (theta_n, theta_w), so we precompute a
+// per-row × per-theta_w table once via a Meyers singleton and per-call work
+// collapses to a length-kT dot product per row.
+image_ptr_t buildDiffuseImage(
+    const std::vector<std::pair<float, fvec3>>& stops, int W, int H) {
+  OrkAssert(H == kProcEnvH);
+  constexpr int kT = 32, kP = 32;
+  struct Kernel { float w[kProcEnvH][kT]; float inv_sum[kProcEnvH]; };
+  static const Kernel kernel = [] {
+    Kernel out{};
+    for (int row = 0; row < kProcEnvH; ++row) {
+      float v_row   = float(row) / float(kProcEnvH - 1);
+      float theta_n = (1.0f - v_row) * float(PI);    // V=0 → down, V=1 → up
+      float nx = sinf(theta_n), ny = cosf(theta_n);
+      float w_sum = 0.0f;
+      for (int it = 0; it < kT; ++it) {
+        float theta_w = (float(it) + 0.5f) / float(kT) * float(PI);
+        float cy = cosf(theta_w), cx = sinf(theta_w);
+        float s = 0.0f;
+        for (int ip = 0; ip < kP; ++ip) {
+          float phi = (float(ip) + 0.5f) / float(kP) * 2.0f * float(PI);
+          float dot = nx * (cx * cosf(phi)) + ny * cy;
+          if (dot > 0.0f) { float w = dot * cx; s += w; w_sum += w; }
+        }
+        out.w[row][it] = s;
+      }
+      out.inv_sum[row] = (w_sum > 0.0f) ? 1.0f / w_sum : 0.0f;
+    }
+    return out;
+  }();
+
+  fvec3 L_table[kT];
+  for (int it = 0; it < kT; ++it)
+    L_table[it] = sampleGradientAt(stops, (float(it) + 0.5f) / float(kT));
+
+  return buildRowwiseImage(W, H, [&](float v) {
+    int row = int(v * (H - 1) + 0.5f);
+    fvec3 acc(0);
+    for (int it = 0; it < kT; ++it) acc = acc + L_table[it] * kernel.w[row][it];
+    return acc * kernel.inv_sum[row];
+  });
 }
 
 // In-place upload — reuses VkImage / TextureArray slices, no descriptor churn.
@@ -303,8 +327,8 @@ void CommonStuff::updateRadianceMapsGradient(
   fvec3 avg = sphereAverage(stops);
 
   // Specular slices: gradient at V, lerped toward sphere-average by the
-  // slice's roughness. Diffuse: per-row directional irradiance, V-flipped to
-  // match the disk diffuse baker convention (V=0 → down, V=1 → up).
+  // slice's roughness. Diffuse: per-row directional irradiance via the
+  // factored hemisphere integral in buildDiffuseImage.
   std::vector<image_ptr_t> spec;
   spec.reserve(maps->_specularRoughnessValues.size());
   for (float r : maps->_specularRoughnessValues) {
@@ -313,9 +337,7 @@ void CommonStuff::updateRadianceMapsGradient(
       return c * (1.0f - r) + avg * r;
     }));
   }
-  auto diff = buildRowwiseImage(W, H, [&](float v) {
-    return directionalDiffuse(stops, (1.0f - v) * float(PI));
-  });
+  auto diff = buildDiffuseImage(stops, W, H);
   uploadRadianceMapsImages(maps, spec, diff, ctx);
 }
 

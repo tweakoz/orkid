@@ -26,13 +26,10 @@ libblock lib_fwd_impl : lib_math //
     return plc;
   }
   vec3 plcalc_forward(LightCtx plc, PbrData pbd, float lightRadius) {
-    // Linear distance falloff:
-    //   - atten = 1 at the source, ramps linearly to 0 at lightRadius
-    //   - no inverse-square term — intensity and radius are independent
-    //     controls (intensity = peak brightness, radius = lit extent), so
-    //     the lit disc actually reaches the nominal radius on a ground.
-    float dist2light = length(plc._lightdel);
-    float r_ratio    = dist2light / max(lightRadius, 1e-4);
+    // Linear distance falloff: atten ramps from 1 at the source to 0 at
+    // lightRadius. intensity and radius are independent controls.
+    float dist_to_light = length(plc._lightdel);
+    float r_ratio    = dist_to_light / max(lightRadius, 1e-4);
     float atten      = max(0.0, 1.0 - r_ratio);
     vec3 lightdir    = normalize(plc._lightdel);
     vec3 halfdir     = normalize(plc._viewdir + lightdir);
