@@ -58,13 +58,13 @@ void InputContext::startMidiInputByIndex(int inputid, midi_callback_t input_call
   logchan_midi->log("startMidiInputByIndex<%d>", inputid );
   auto rtinpimpl = _impl.get<input_impl_t>();
   rtinpimpl->openPort(inputid);
-  rtinpimpl->ignoreTypes( false, true, true );
   // Set our callback function.  This should be done immediately after
   // opening the port to avoid having incoming messages written to the
   // queue.
   rtinpimpl->setCallback(input_callback, userData);
-  // Don't ignore sysex, timing, or active sensing messages.
-  rtinpimpl->ignoreTypes(true, true, true);
+  // Don't ignore sysex or timing (needed for MTC). Active sensing stays
+  // filtered to avoid noise from controllers that spam 0xFE.
+  rtinpimpl->ignoreTypes(false, false, true);
   // Clean up
 }
 int InputContext::numPorts() const {
