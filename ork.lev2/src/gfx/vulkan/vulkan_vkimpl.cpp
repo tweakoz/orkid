@@ -109,15 +109,26 @@ void VulkanInstance::_setupDebugMessenger() {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 vkdeviceinfo_ptr_t VulkanInstance::findDeviceForSurface(VkSurfaceKHR surface){
-  for( auto devinfo : _device_infos ){
-    // Check all queue families, not just queue family 0
-    // Many GPUs (especially on Linux) don't support presentation on queue family 0
+  // Honor _preferred (set by ORKID_GPU_PREFER during loader init) if it
+  // can present to this surface. On hybrid systems the dGPU often
+  // enumerates first, so iterating _device_infos in order would silently
+  // override the user's iGPU preference.
+  auto can_present = [&](vkdeviceinfo_ptr_t devinfo) -> bool {
     for (uint32_t qf_index = 0; qf_index < devinfo->_queueprops.size(); qf_index++) {
       VkBool32 presentSupport = false;
       vkGetPhysicalDeviceSurfaceSupportKHR(devinfo->_phydev, qf_index, surface, &presentSupport);
-      if(presentSupport){
-        return devinfo;
-      }
+      if (presentSupport) return true;
+    }
+    return false;
+  };
+  if (_preferred && can_present(_preferred)) {
+    return _preferred;
+  }
+  for( auto devinfo : _device_infos ){
+    // Check all queue families, not just queue family 0
+    // Many GPUs (especially on Linux) don't support presentation on queue family 0
+    if (can_present(devinfo)) {
+      return devinfo;
     }
   }
   return nullptr;
