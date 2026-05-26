@@ -35,6 +35,35 @@ static logchannel_ptr_t logchan_vkprof = logger()->configureChannel("VKPROF", fv
 
 ////////////////////////////////////////////////////////////////////////////////
 
+// Picks a GPU from the enumerated device list using ORKID_GPU_PREFER:
+//   "discrete"   (default): first discrete GPU, else first device
+//   "integrated": first integrated GPU, else first device
+//   any other value: first device whose name contains the substring
+//     (case-sensitive). Useful to single out a specific GPU on multi-GPU
+//     systems, e.g. ORKID_GPU_PREFER=Radeon.
+static vkdeviceinfo_ptr_t _pickPreferredDevice(const std::vector<vkdeviceinfo_ptr_t>& devs) {
+  if (devs.empty()) return nullptr;
+  const char* env = std::getenv("ORKID_GPU_PREFER");
+  std::string mode = env ? env : "discrete";
+  vkdeviceinfo_ptr_t picked = nullptr;
+  if (mode == "discrete") {
+    for (auto d : devs) if (d->_is_discrete) { picked = d; break; }
+  } else if (mode == "integrated") {
+    for (auto d : devs) {
+      if (d->_devprops.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) { picked = d; break; }
+    }
+  } else {
+    for (auto d : devs) {
+      if (std::string(d->_devprops.deviceName).find(mode) != std::string::npos) { picked = d; break; }
+    }
+  }
+  if (!picked) picked = devs.front();
+  logchan_vkctx->log("ORKID_GPU_PREFER=<%s> picked device <%s>", mode.c_str(), picked->_devprops.deviceName);
+  return picked;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 void VkContext::describeX(class_t* clazz) {
   clazz->annotateTyped<context_factory_t>("context_factory", []() { //
     return std::make_shared<VkContext>();
@@ -354,16 +383,7 @@ void VkContext::_initVulkanForOffscreen(DisplayBuffer* pBuf) {
   }
   else{
     if (nullptr == _GVI->_preferred) {
-      // Prefer discrete GPU if available
-      vkdeviceinfo_ptr_t discrete_device = nullptr;
-      for (auto devinfo : _GVI->_device_infos) {
-        if (devinfo->_is_discrete) {
-          discrete_device = devinfo;
-          break;
-        }
-      }
-      // Use discrete GPU if found, otherwise fall back to first device
-      _GVI->_preferred = discrete_device ? discrete_device : _GVI->_device_infos.front();
+      _GVI->_preferred = _pickPreferredDevice(_GVI->_device_infos);
     }
     auto vk_devinfo = _GVI->_preferred;
     _initVulkanForDevInfo(vk_devinfo);
@@ -1275,7 +1295,12 @@ void VkContext::initializeLoaderContext() {
   bool use_drm        = (_ginitdata && _ginitdata->_use_drm);
   bool glfw_null_plat = (glfwGetPlatform() == GLFW_PLATFORM_NULL);
   if (nullptr == _GVI->_preferred) {
-    if (!use_drm && !glfw_null_plat) {
+    // ORKID_GPU_PREFER takes precedence over findPresentableDevice so a
+    // user can target the iGPU on hybrid systems where the dGPU is
+    // enumerated first.
+    if (std::getenv("ORKID_GPU_PREFER")) {
+      _GVI->_preferred = _pickPreferredDevice(_GVI->_device_infos);
+    } else if (!use_drm && !glfw_null_plat) {
       auto vk_devinfo = _GVI->findPresentableDevice();
       if (vk_devinfo) {
         _GVI->_preferred = vk_devinfo;
@@ -1283,16 +1308,8 @@ void VkContext::initializeLoaderContext() {
       }
     }
 
-    // Fallback: prefer discrete GPU
     if (nullptr == _GVI->_preferred) {
-      vkdeviceinfo_ptr_t discrete_device = nullptr;
-      for (auto devinfo : _GVI->_device_infos) {
-        if (devinfo->_is_discrete) {
-          discrete_device = devinfo;
-          break;
-        }
-      }
-      _GVI->_preferred = discrete_device ? discrete_device : _GVI->_device_infos.front();
+      _GVI->_preferred = _pickPreferredDevice(_GVI->_device_infos);
       logchan_vkctx->log("Loader context: falling back to device <%s>", _GVI->_preferred->_devprops.deviceName);
     }
   }
