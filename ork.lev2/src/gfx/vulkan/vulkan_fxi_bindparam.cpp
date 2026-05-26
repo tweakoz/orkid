@@ -90,8 +90,12 @@ bool VkFxInterface::_tryBindMergedResource(const FxShaderParam* hpar,
 
   switch (expected_type) {
     case VkMergedResourceBinding::Type::Sampler: {
-      auto vktex = resource_data.getShared<VulkanTextureObject>();
-      _current_shader_pass_state->_textures_by_orkparam[hpar] = vktex;
+      auto as_vktex = resource_data.getShared<VulkanTextureObject>();
+      auto& slot = _current_shader_pass_state->_textures_by_orkparam[hpar];
+      if (slot != as_vktex) {
+        slot = as_vktex;
+        _current_shader_pass_state->_samplers_hash = 0;
+      }
       break;
     }
     case VkMergedResourceBinding::Type::UniformBlock: {
@@ -717,7 +721,10 @@ void VkFxInterface::bindParamTexture(const FxShaderParam* hpar, const Texture* p
     //printf("Using default texture for tex<%p:%s> type<%d>\n", pTex, pTex->_debugName.c_str(), pTex->_texType);
   }
 
-  // Try to bind via merged resources
+  // Pass the resolved vk_tex (not pTex). bindParamTexture is called every
+  // frame, so re-resolving Texture::_impl here picks up any vktex swap
+  // (e.g. format change in initTextureFromData) before the descriptor
+  // set is built.
   _tryBindMergedResource(hpar, VkMergedResourceBinding::Type::Sampler, vk_tex);
 }
 

@@ -433,11 +433,12 @@ vkdescriptorsetstate_ptr_t VulkanDescriptorSetCacheState::fetchDescriptorSetForP
     static std::unordered_map<int, VulkanTextureObject*> bound_textures;
     bound_textures.clear();
 
-    for (auto& [param, tex] : shader_state->_textures_by_orkparam) {
+    for (auto& [param, vktex] : shader_state->_textures_by_orkparam) {
       auto binding_it = vk_program->_merged_resource_bindings.find(param);
       if (binding_it != vk_program->_merged_resource_bindings.end()) {
         auto [set_id, binding_id] = binding_it->second;
-        bound_textures[binding_id] = tex.get();
+        if (!vktex) continue;
+        bound_textures[binding_id] = vktex.get();
       }
     }
 

@@ -241,8 +241,16 @@ struct DescBinding {
 
 struct VkFxShaderPassState {
 
+  // bindParamTexture re-resolves Texture::_impl -> vktex every frame and
+  // writes the freshly resolved vktex here, so format-driven swaps in
+  // initTextureFromData (e.g. RGBA8_UNORM -> RGBA32_UINT for SH splat
+  // data) are picked up. On bind we compare the incoming vktex against
+  // the slot's existing value and zero _samplers_hash on change to
+  // force a fresh descriptor set. Per-context (not on the shared
+  // VkFxShaderUniformSampler) so multiple VkContexts don't stomp.
   std::unordered_map<fxparam_constptr_t, vktexobj_ptr_t> _textures_by_orkparam;
   std::unordered_map<fxparam_constptr_t, vkbuffer_ptr_t> _uniformbuffers_by_orkparam;
+  uint64_t _samplers_hash = 0; // 0 means dirty/needs recompute
 
   std::vector<VkParamSetItem> _pending_params;
   std::vector<uint8_t>        _pushdatabuffer;
@@ -252,7 +260,7 @@ struct VkFxShaderPassState {
 
   vkfxshaderpass_rawptr_t _shader = nullptr;
 
-  uint64_t samplersHash() const;
+  uint64_t samplersHash();
 };
 
 /////////////////////////////////////////////////////////////////////////////////

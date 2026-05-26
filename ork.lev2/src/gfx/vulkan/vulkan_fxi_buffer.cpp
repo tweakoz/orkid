@@ -137,7 +137,12 @@ void VkFxInterface::bindStorageBuffer(const FxShaderStorageBlock* block,
   }
 
   // Store binding for later use when creating descriptor sets
-  block_state->_bound_buffer = vk_buffer;
+  if (block_state->_bound_buffer != vk_buffer) {
+    block_state->_bound_buffer = vk_buffer;
+    if (_current_shader_pass_state) {
+      _current_shader_pass_state->_samplers_hash = 0;
+    }
+  }
   block_state->_bound_ssbo   = buffer;
 }
 
