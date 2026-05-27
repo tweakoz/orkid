@@ -12,14 +12,87 @@
 #include <vector>
 #include <string>
 
+#if defined(__APPLE__)
+#include <dlfcn.h>
+#include <dirent.h>
+#endif
+
 //////////////////////////////////////////
 // python launcher with OBT_STAGE support
-// this is mostly needed for macOS (to overcome SIP restrictions on DYLD_LIBRARY_PATH)
-//   DYLD_LIBRARY_PATH is currently needed for Vulkan SDK ICD mechanism
-// maybe it will do more in the future
-// maybe it will be removed in the future
-// for now it takes the place of ork.python in orkid extended python commands with shebangs
+//
+// On Linux this exists to set DYLD_LIBRARY_PATH / sanitizer-injection env vars
+// before execv'ing into the stage python, since SIP would otherwise strip those.
+//
+// On macOS we additionally need this binary to *be* the python process (not
+// just exec into one). macOS 26+ enforces TCC privacy decisions (camera,
+// microphone, etc.) against the running Mach-O image's CFBundleIdentifier.
+// If we execv into pyvenv/bin/python3.12, TCC re-evaluates against that
+// binary's identity (no embedded Info.plist), and AVCaptureSession silently
+// drops all sample buffers even when AVAuthorizationStatus says Authorized.
 //////////////////////////////////////////
+
+#if defined(__APPLE__)
+// Try to load libpython and call Py_BytesMain. Returns the exit code on
+// success, or -1 if libpython couldn't be found / loaded. Caller is expected
+// to fall back to execv on failure.
+// Find libpython3.<minor>.dylib in pyvenv/lib without hard-coding the minor
+// version, so this keeps working when the bundled python is bumped. Returns
+// the full path, or empty string if none found.
+static std::string find_libpython(const std::string& obt_stage) {
+    const std::string libdir = obt_stage + "/pyvenv/lib";
+    DIR* d = opendir(libdir.c_str());
+    if (!d) return "";
+
+    std::string match;
+    while (dirent* ent = readdir(d)) {
+        const std::string name = ent->d_name;
+        // libpython3.<something>.dylib (skip plain "libpython3.dylib" symlinks too — they work either way)
+        if (name.rfind("libpython3", 0) == 0 &&
+            name.size() > 6 && name.compare(name.size() - 6, 6, ".dylib") == 0) {
+            match = libdir + "/" + name;
+            break;
+        }
+    }
+    closedir(d);
+    return match;
+}
+
+static int macos_inproc_python(int argc, char* argv[], const std::string& obt_stage) {
+    const std::string libpython = find_libpython(obt_stage);
+
+    void* handle = libpython.empty()
+        ? nullptr
+        : dlopen(libpython.c_str(), RTLD_NOW | RTLD_GLOBAL);
+    if (!handle) {
+        // Fallback: rely on DYLD_LIBRARY_PATH we set above (resolves via SONAME)
+        handle = dlopen("libpython3.dylib", RTLD_NOW | RTLD_GLOBAL);
+    }
+    if (!handle) {
+        fprintf(stderr, "[ork.python] dlopen libpython (searched %s/pyvenv/lib) failed: %s\n",
+                obt_stage.c_str(), dlerror());
+        return -1;
+    }
+
+    using py_bytes_main_t = int (*)(int, char**);
+    auto Py_BytesMain = reinterpret_cast<py_bytes_main_t>(dlsym(handle, "Py_BytesMain"));
+    if (!Py_BytesMain) {
+        fprintf(stderr, "[ork.python] dlsym Py_BytesMain failed: %s\n", dlerror());
+        return -1;
+    }
+
+    // argv[0] is conventionally the interpreter's own name; rest are forwarded.
+    std::vector<char*> py_argv;
+    py_argv.reserve(static_cast<size_t>(argc) + 1);
+    std::string argv0 = "ork.python";
+    py_argv.push_back(const_cast<char*>(argv0.c_str()));
+    for (int i = 1; i < argc; i++) {
+        py_argv.push_back(argv[i]);
+    }
+    py_argv.push_back(nullptr);
+
+    return Py_BytesMain(static_cast<int>(py_argv.size()) - 1, py_argv.data());
+}
+#endif
 
 int main(int argc, char* argv[]) {
     // Get OBT_STAGE from environment
@@ -28,16 +101,16 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "Error: OBT_STAGE environment variable not set\n");
         return 1;
     }
-    
+
     // Build DYLD_LIBRARY_PATH
     std::string dyld_path = std::string(obt_stage) + "/lib:/opt/homebrew/lib";
-    
+
     // Check if DYLD_LIBRARY_PATH already exists and append if so
     const char* existing_dyld = getenv("DYLD_LIBRARY_PATH");
     if (existing_dyld && strlen(existing_dyld) > 0) {
         dyld_path = dyld_path + ":" + existing_dyld;
     }
-    
+
     // Set the environment variable
     setenv("DYLD_LIBRARY_PATH", dyld_path.c_str(), 1);
 
@@ -88,23 +161,30 @@ int main(int argc, char* argv[]) {
         }
     }
 
+#if defined(__APPLE__)
+    // Run python in-process so TCC sees the embedded Info.plist on this binary.
+    int rc = macos_inproc_python(argc, argv, std::string(obt_stage));
+    if (rc >= 0) return rc;
+    // Fall through to execv on failure (e.g. libpython not findable).
+    fprintf(stderr, "[ork.python] in-process python failed; falling back to execv\n");
+#endif
 
     // Build path to orkids custom python executable
     std::string python_path = std::string(obt_stage) + "/pyvenv/bin/python3";
-    
+
     // Build argument list for execv
     std::vector<char*> exec_args;
     exec_args.push_back(strdup("ork.python"));
-    
+
     // Add all original arguments (script name and any additional args)
     for (int i = 1; i < argc; i++) {
         exec_args.push_back(argv[i]);
     }
     exec_args.push_back(nullptr);
-    
+
     // Execute ork.python with the modified environment
     execv(python_path.c_str(), exec_args.data());
-    
+
     // If we get here, execv failed
     perror("execv failed");
     fprintf(stderr, "Failed to execute: %s\n", python_path.c_str());

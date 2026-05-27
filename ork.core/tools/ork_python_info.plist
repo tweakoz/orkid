@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleIdentifier</key>
+  <string>ork.python</string>
+  <key>CFBundleName</key>
+  <string>ork.python</string>
+  <key>CFBundleExecutable</key>
+  <string>ork.python</string>
+  <key>CFBundleVersion</key>
+  <string>1.0</string>
+  <key>CFBundleShortVersionString</key>
+  <string>1.0</string>
+  <key>NSCameraUsageDescription</key>
+  <string>Tools need camera access for webcam capture, and other vision-based features.</string>
+  <key>NSMicrophoneUsageDescription</key>
+  <string>Tools need microphone access for audio capture and processing.</string>
+  <key>NSHighResolutionCapable</key>
+  <true/>
+</dict>
+</plist>
