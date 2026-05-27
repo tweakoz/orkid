@@ -14,6 +14,18 @@ IF(DEFINED SANITIZER AND NOT SANITIZER STREQUAL "")
   target_compile_definitions(ork.python.wrapper PRIVATE ORK_SANITIZER="${SANITIZER}")
 ENDIF()
 
+# macOS-only: dlopen libpython in-process (no execv) so TCC sees the embedded
+# Info.plist on this binary. See ork_python_wrapper.cpp for the rationale.
+if(APPLE)
+  target_link_libraries(ork.python.wrapper PRIVATE "-ldl")
+  # Embed Info.plist into __TEXT,__info_plist so macOS treats this binary as
+  # its own bundle for TCC purposes (camera, microphone). NSCameraUsageDescription
+  # in the plist is what AVFoundation's permission gate actually reads.
+  target_link_options(ork.python.wrapper PRIVATE
+    "-Wl,-sectcreate,__TEXT,__info_plist,${CMAKE_CURRENT_SOURCE_DIR}/ork_python_info.plist"
+  )
+endif()
+
 install(TARGETS ork.python.wrapper DESTINATION $ENV{OBT_SUBSPACE_BIN_DIR} )
 
 ###############################################################################
