@@ -171,20 +171,28 @@ vkpipelinestate_rawptr_t VkFxInterface::_fetchPipeline(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-uint64_t VkFxShaderPassState::samplersHash() const {
-  // Always recalculate to pick up changes in texture/SSBO bindings
+uint64_t VkFxShaderPassState::samplersHash() {
+  // Cached. bindParam* paths zero _samplers_hash when a binding changes,
+  // forcing a recompute on the next call. 0 is reserved for "dirty".
+  if (_samplers_hash != 0) {
+    return _samplers_hash;
+  }
   boost::Crc64 the_crc;
   the_crc.init();
-  for (auto& [param, tex] : _textures_by_orkparam) {
-    the_crc.accumulateItem(reinterpret_cast<uintptr_t>(tex.get()));
-    the_crc.accumulateItem(tex->_format_hash);
-    the_crc.accumulateItem(tex->_imgview_hash.result());
+  for (auto& [param, vktex] : _textures_by_orkparam) {
+    if (!vktex) continue;
+    the_crc.accumulateItem(reinterpret_cast<uintptr_t>(vktex.get()));
+    the_crc.accumulateItem(vktex->_format_hash);
+    the_crc.accumulateItem(vktex->_imgview_hash.result());
   }
   // Include storage buffer pointers so different SSBOs produce different cache keys
   for (auto* storage_state : _ordered_storage_states) {
     the_crc.accumulateItem(reinterpret_cast<uintptr_t>(storage_state->_bound_buffer.get()));
   }
-  return the_crc.finished();
+  uint64_t result = the_crc.finished();
+  if (result == 0) result = 1; // reserve 0 for "dirty"
+  _samplers_hash = result;
+  return _samplers_hash;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
