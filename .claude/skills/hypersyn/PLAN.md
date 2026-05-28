@@ -14,8 +14,8 @@ The implementation status of each component is the source of truth; when in doub
 | **`ork.hypergraph` Python namespace + asset taxonomy** | **implemented** | `obt.project/scripts/ork/hypergraph/` — see "Namespace layout" section below |
 | **Author-helper utilities** (`hsv()`, `colors` palette, `axis_angle()`, dict-form transforms, nested-form material lobes + TypedDicts) | **implemented** | `obt.project/scripts/ork/hypergraph/colors.py`, `obt.project/scripts/ork/hypergraph/ecs/scene/__init__.py`, `obt.project/scripts/ork/hypergraph/ecs/scene/assets.py` |
 | Runtime hardening (cycle detect, fanout, type check, required, codec-generic setter, MaterializationPhase) | **planned (M0)** | `ork.core/src/dataflow/dataflow_sorter.cpp`, `graph_data.cpp`, `pyext_dataflow.cpp`, `ork.core/inc/ork/dataflow/module.h` |
-| `dflow.dsl` tracing core | **planned (M1)** | `obt.project/scripts/ork/hypergraph/dflow/dsl/` |
-| `particles` DSL vocab (test bed) | **planned (M1)** | `obt.project/scripts/ork/hypergraph/dflow/particles/` |
+| `dflow.dsl` tracing core (trace context, DslNode, Expr, bindings) | **partially implemented (M1.A)** | `obt.project/scripts/ork/hypergraph/dflow/_trace.py`, `_expr.py`, `_bindings.py`, `_lower.py` — core trace + DslNode + Expr + bindings staging all in place; the `dsl/` introspection package (registry, OpInfo, examples API) is M1.B and not yet built |
+| `particles` DSL vocab (test bed) | **partially implemented (M1.A)** | `obt.project/scripts/ork/hypergraph/dflow/particles/` — `ParticleSystem` family base + 22 `chain_op`-based ops covering emitters/forces/attractors/renderers/colliders. **Pending M1.B**: `@op` decorator, registry, `OpInfo`/`PlugSpec`/`ExampleInfo`, source provenance, multi-output op support, examples-per-family directory + indexing |
 | `dflow.validate` subprocess harness | **planned (M2)** | `obt.project/scripts/ork/hypergraph/dflow/validate/`, zmq worker pool |
 | `ptex2d` family + FXV2 codegen | **planned (M3)** | `ork.lev2/{inc,src}/ork/lev2/gfx/ptex2d/`, `obt.project/scripts/ork/hypergraph/dflow/ptex2d/` |
 | `ptex3d` family + PBRMaterial codegen | **planned (M3)** | `ork.lev2/{inc,src}/ork/lev2/gfx/ptex3d/`, `obt.project/scripts/ork/hypergraph/dflow/ptex3d/` |
@@ -126,7 +126,8 @@ PbrMaterial("jade",
 | Milestone | Goal | Gating prerequisite |
 |---|---|---|
 | **M0** | Runtime hardening — make `ork::dataflow` safe for DSL-authored and LLM-authored graphs | — (start here) |
-| **M1** | `dflow.dsl` tracing core + particles family DSL — proves the trace→graphdata round-trip against the existing particles runtime | M0 |
+| **M1.A** | Trace core + particles DSL vocab — proves the trace→graphdata round-trip against the existing particles runtime | M0 |
+| **M1.B** | Op registry + introspection (`@op` decorator, `OpInfo`/`PlugSpec`/`ExampleInfo`, source provenance, multi-output ops, examples-per-family) — exposes the DSL surface to editor/LLM tooling | M1.A |
 | **M2** | `dflow.validate` subprocess harness — zmq REQ/REP worker pool, persistent across editor session and into live-mutable runtimes | M1 |
 | **M3** | Four new families (ptex2d, ptex3d, hypermesh, terrain) — runtime + DSL vocab + materializer for each; uses the codegen + bake patterns | M0, M1, M2 |
 | **M3.5** | Hypermesh rigging + skinning extension — procedural skeleton/weight ops yielding `xgmmodel_ptr_t` with skinning bound; prerequisite for hyperanim | M3 |
