@@ -66,22 +66,26 @@ class JadeScene(Scene):
         "jade_mat_off",
         base_color = base_color, metallic = 0.0, roughness = base_rough)
 
-    mat_half = self.asset.PbrMaterial(
-        "jade_mat_half",
-        base_color        = base_color,
-        metallic          = 0.0,
-        roughness         = base_rough,
-        subsurface_color  = jade_tint,
-        subsurface_radius = jade_radius,
-        subsurface_factor = 0.5,
-        diffuse_transmission_factor = jade_trans_fac * 0.5,
-        diffuse_transmission_color  = jade_trans_color,
-        transmission_factor  = jade_spec_trans * 0.5,
-        transmission_roughness = jade_transmission_roughness,
-        ior                  = jade_ior,
-        attenuation_color    = jade_atten_color,
-        attenuation_distance = jade_atten_distance,
-        iridescence_factor = 0.055)
+    # Nested form (new). Same fields, grouped per glTF extension.
+    # See assets.py:_NESTED_LOBES and the TypedDicts (SubsurfaceLobe,
+    # TransmissionLobe, ...) for the closed inner-key vocabulary.
+    mat_half = self.asset.PbrMaterial("jade_mat_half",
+        base = {"color": base_color, "metallic": 0.0, "roughness": base_rough},
+        subsurface = {
+            "color":  jade_tint,
+            "radius": jade_radius,
+            "factor": 0.5},
+        diffuse_transmission = {
+            "color":  jade_trans_color,
+            "factor": jade_trans_fac * 0.5},
+        transmission = {
+            "factor":    jade_spec_trans * 0.5,
+            "roughness": jade_transmission_roughness},
+        ior = jade_ior,
+        volume = {
+            "attenuation_color":    jade_atten_color,
+            "attenuation_distance": jade_atten_distance},
+        iridescence = {"factor": 0.055})
 
     mat_full = self.asset.PbrMaterial(
         "jade_mat_full",

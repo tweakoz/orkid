@@ -31,8 +31,13 @@
 ###############################################################################
 
 import math
+from typing import TypedDict
 
 from orkengine.core import vec3, vec4, CrcStringProxy
+
+# Imported lazily inside methods to avoid an __init__→assets→__init__ cycle:
+#   ork.ecs.scene.__init__ imports assets at module-load time; assets
+#   reaches back for _Hsv only at PbrMaterial-construction time.
 from orkengine.lev2 import vdb
 from orkengine import lev2 as _lev2
 from orkengine.lev2 import (ImplicitSdfGenData,
@@ -670,6 +675,77 @@ class SphereSdf:
 # but driven by the reflected recipe so round-trip is automatic.
 ###############################################################################
 
+# PBR2 — TypedDict declarations per lobe. Used to give IDE / type-checker
+# (and LLM-prompts that include these) a closed vocabulary for the nested
+# authoring form. `total=False` so every key is optional.
+#
+# Naming convention inside a lobe: drop the lobe-name prefix that the flat
+# form requires. E.g. flat `subsurface_factor` → nested `subsurface={"factor": ...}`.
+
+class BaseLobe(TypedDict, total=False):
+  color: vec4
+  metallic: float
+  roughness: float
+  color_path: str
+  normal_path: str
+  mtlruf_path: str
+
+class TransmissionLobe(TypedDict, total=False):
+  factor: float
+  roughness: float            # P3.D — separate transmission roughness
+
+class VolumeLobe(TypedDict, total=False):
+  thickness_factor: float
+  attenuation_color: vec3
+  attenuation_distance: float
+
+class DiffuseTransmissionLobe(TypedDict, total=False):
+  factor: float
+  color: vec3
+
+class SpecularLobe(TypedDict, total=False):
+  factor: float
+  color: vec3
+
+class ClearcoatLobe(TypedDict, total=False):
+  factor: float
+  roughness: float
+
+class SheenLobe(TypedDict, total=False):
+  factor: float
+  color: vec3
+  roughness: float
+
+class IridescenceLobe(TypedDict, total=False):
+  factor: float
+
+class SubsurfaceLobe(TypedDict, total=False):
+  factor: float
+  color: vec3
+  radius: vec3
+
+# Mapping from nested-form kwarg name → (lobe-name prefix, allowed inner keys).
+# Each inner key maps to a flat name: `flat = prefix + "_" + inner` unless
+# explicitly remapped (the "remap" dict overrides).
+_NESTED_LOBES = {
+  "base": {
+    "remap": {"color": "base_color"},
+    "passthrough": {"metallic", "roughness",
+                    "color_path", "normal_path", "mtlruf_path"},
+  },
+  "transmission":         {"prefix": "transmission",         "keys": {"factor", "roughness"}},
+  "volume":               {"prefix": "volume",               "keys": {"thickness_factor"},
+                           "remap": {"attenuation_color":    "attenuation_color",
+                                     "attenuation_distance": "attenuation_distance"}},
+  "diffuse_transmission": {"prefix": "diffuse_transmission", "keys": {"factor", "color"}},
+  "specular":             {"prefix": "specular",             "keys": {"factor", "color"}},
+  "clearcoat":            {"prefix": "clearcoat",            "keys": {"factor", "roughness"}},
+  "sheen":                {"prefix": "sheen",                "keys": {"factor", "color", "roughness"}},
+  "iridescence":          {"prefix": "iridescence",          "keys": {"factor"}},
+  "subsurface":           {"prefix": "subsurface",           "keys": {"factor", "color", "radius"}},
+}
+
+
 @_register
 class PbrMaterial:
 
@@ -695,14 +771,114 @@ class PbrMaterial:
     "subsurface_factor",
   )
 
+  # Set of top-level kwargs the dispatcher recognizes as "nested-form" blocks.
+  # If any of these appear, the call is treated as nested form; mixing with
+  # the corresponding flat kwarg names is rejected.
+  _NESTED_KEYS = frozenset(_NESTED_LOBES.keys())
+
+  @classmethod
+  def _flatten_nested(cls, lobe_kwargs):
+    """Translate any top-level nested-form blocks into the flat _LOBE_KWARGS
+    surface. Raises on mixed form or unknown inner keys. Returns the merged
+    flat-form dict."""
+    nested_seen = {k: lobe_kwargs.pop(k) for k in list(lobe_kwargs)
+                   if k in cls._NESTED_KEYS}
+    out = dict(lobe_kwargs)  # flat fields stay as-is
+    for lobe_name, block in nested_seen.items():
+      if not isinstance(block, dict):
+        raise TypeError(
+          f"PbrMaterial: {lobe_name}= must be a dict (got {type(block).__name__})")
+      spec = _NESTED_LOBES[lobe_name]
+      prefix      = spec.get("prefix", lobe_name)
+      allowed     = set(spec.get("keys", ()))
+      passthrough = set(spec.get("passthrough", ()))
+      remap       = dict(spec.get("remap", {}))
+      for k, v in block.items():
+        if k in remap:
+          flat_name = remap[k]
+        elif k in passthrough:
+          flat_name = k
+        elif k in allowed:
+          flat_name = f"{prefix}_{k}"
+        else:
+          raise TypeError(
+            f"PbrMaterial: unknown key {lobe_name}[{k!r}]; "
+            f"valid keys for {lobe_name} are "
+            f"{sorted(allowed | passthrough | set(remap.keys()))}")
+        if flat_name in out:
+          raise TypeError(
+            f"PbrMaterial: mixed form — {lobe_name}[{k!r}] resolves to "
+            f"flat kwarg {flat_name!r} which is already provided. "
+            f"Use one form, not both.")
+        out[flat_name] = v
+    return out
+
+  @staticmethod
+  def _coerce_hsv(flat_kwargs, base_color):
+    """In-place coerce any `hsv(...)` values to vec3 or vec4 based on the
+    flat field name. Returns (flat_kwargs, base_color). The base_color
+    positional kwarg is special-cased because it isn't in flat_kwargs."""
+    from ork.ecs.scene import _Hsv, _PBR_VEC3_FIELDS, _PBR_VEC4_FIELDS
+    if isinstance(base_color, _Hsv):
+      base_color = base_color.to_vec4()
+    for k, v in list(flat_kwargs.items()):
+      if not isinstance(v, _Hsv):
+        continue
+      if k in _PBR_VEC4_FIELDS:
+        flat_kwargs[k] = v.to_vec4()
+      elif k in _PBR_VEC3_FIELDS:
+        flat_kwargs[k] = v.to_vec3(field_name=k)
+      else:
+        # Unknown color slot — default to vec3 + alpha assertion. Covers
+        # future glTF lobe additions that take vec3 colors by convention.
+        flat_kwargs[k] = v.to_vec3(field_name=k)
+    return flat_kwargs, base_color
+
   def __init__(self, *,
                base_color=None, metallic=0.0, roughness=1.0,
                color_path="", normal_path="", mtlruf_path="",
                gendata=None,
                **lobe_kwargs):
+    """PbrMaterial author surface. Two equivalent forms:
+
+      Flat (LLM-friendly, glTF-aligned):
+        PbrMaterial("foo", subsurface_color=..., subsurface_factor=..., ...)
+
+      Nested (human-friendly, mirrors glTF JSON structure):
+        PbrMaterial("foo", subsurface={"color": ..., "factor": ...}, ...)
+
+    Forms can be mixed across DIFFERENT lobes but not within one lobe —
+    e.g. transmission={"factor": 0.5} + sheen_color=... is fine, but
+    transmission={"factor": 0.5} + transmission_factor=... is rejected.
+
+    Colors authored via hsv(h, s, v, a=1) auto-convert to vec3 or vec4
+    based on the target slot (vec3 slots assert alpha == 1.0).
+
+    The `base` dict can override metallic/roughness/etc. via the nested form;
+    if neither `base` nor `base_color` is given, defaults apply.
+    See `_NESTED_LOBES` for the full inner-key vocabulary per lobe and
+    `TransmissionLobe` / `SubsurfaceLobe` / etc. TypedDict declarations
+    for IDE-side autocompletion."""
     if gendata is not None:
       self.gendata = gendata
       return
+    # Flatten any nested-form lobe blocks. Errors on unknown keys or mixed form.
+    lobe_kwargs = self._flatten_nested(lobe_kwargs)
+    # Auto-coerce any hsv() values to vec3/vec4 based on field name.
+    lobe_kwargs, base_color = self._coerce_hsv(lobe_kwargs, base_color)
+    # Pull base-block overrides out before the kwargs reach _LOBE_KWARGS.
+    if "base_color"  in lobe_kwargs and base_color is None:
+      base_color  = lobe_kwargs.pop("base_color")
+    if "metallic"    in lobe_kwargs:
+      metallic    = lobe_kwargs.pop("metallic")
+    if "roughness"   in lobe_kwargs:
+      roughness   = lobe_kwargs.pop("roughness")
+    if "color_path"  in lobe_kwargs:
+      color_path  = lobe_kwargs.pop("color_path")
+    if "normal_path" in lobe_kwargs:
+      normal_path = lobe_kwargs.pop("normal_path")
+    if "mtlruf_path" in lobe_kwargs:
+      mtlruf_path = lobe_kwargs.pop("mtlruf_path")
     extras = {}
     for k in self._LOBE_KWARGS:
       if k in lobe_kwargs:
