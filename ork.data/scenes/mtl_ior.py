@@ -17,7 +17,7 @@
 ###############################################################################
 
 from orkengine.core import vec3, vec4, lev2_pyexdir
-from ork.ecs.scene import Scene, Transform
+from ork.hypergraph.ecs.scene import Scene, Transform
 
 lev2_pyexdir.addToSysPath()
 

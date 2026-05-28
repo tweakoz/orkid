@@ -13,7 +13,7 @@ from orkengine import ecs
 from ork.app.application import ComponentizedApplication
 from ork.ui import standard_icons, icon_library
 from ork.editor.ecs_outliner_model import EcsOutlinerModel, _enumerateComponentTypes
-from ork.ecs import EcsRuntime
+from ork.hypergraph.ecs import EcsRuntime
 
 ################################################################################
 # Widget Editor Registry

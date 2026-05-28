@@ -8,11 +8,11 @@
 
 import sys
 
-from ork.dflow import Expr
-from ork.dflow._expr import (
+from ork.hypergraph.dflow import Expr
+from ork.hypergraph.dflow._expr import (
     Const, ContextRef, ParamRef,
 )
-from ork.dflow._lower import lower_to_chain, ChainStage
+from ork.hypergraph.dflow._lower import lower_to_chain, ChainStage
 
 
 def check(cond, msg):

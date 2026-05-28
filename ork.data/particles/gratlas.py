@@ -30,9 +30,9 @@ import math
 from orkengine.core import vec3, vec4, CrcStringProxy
 from orkengine.lev2 import particles, Texture, Image, GfxEnv
 
-from ork.dflow.particles import ParticleSystem
-from ork.dflow import particles as P
-from ork.dflow import Expr
+from ork.hypergraph.dflow.particles import ParticleSystem
+from ork.hypergraph.dflow import particles as P
+from ork.hypergraph.dflow import Expr
 
 tokens = CrcStringProxy()
 

@@ -7,7 +7,7 @@
 # behavior, ...) live in sub-packages and are imported aliased — for example:
 #
 #   from orkengine.lev2 import ParticleSystem
-#   from ork.dflow import particles as P
+#   from ork.hypergraph.dflow import particles as P
 #
 #   class FireExplosion(ParticleSystem):
 #     def __init__(self):

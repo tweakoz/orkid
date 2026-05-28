@@ -818,7 +818,7 @@ class PbrMaterial:
     """In-place coerce any `hsv(...)` values to vec3 or vec4 based on the
     flat field name. Returns (flat_kwargs, base_color). The base_color
     positional kwarg is special-cased because it isn't in flat_kwargs."""
-    from ork.ecs.scene import _Hsv, _PBR_VEC3_FIELDS, _PBR_VEC4_FIELDS
+    from ork.hypergraph.colors import _Hsv, _PBR_VEC3_FIELDS, _PBR_VEC4_FIELDS
     if isinstance(base_color, _Hsv):
       base_color = base_color.to_vec4()
     for k, v in list(flat_kwargs.items()):
@@ -1005,7 +1005,7 @@ class FreestyleMaterial:
 class ParticleSystem:
   """Asset-DSL wrapper for a Python particle DSL class.
 
-  The DSL class must inherit from ork.dflow.particles.ParticleSystem and
+  The DSL class must inherit from ork.hypergraph.dflow.particles.ParticleSystem and
   expose .generatedflow() returning a dataflow.GraphData. Constructor
   kwargs split into:
     * cross-asset references (values are asset wrappers with .gendata.asset_name);
@@ -1102,7 +1102,7 @@ class ParticleSystem:
 
     Re-using ork.dflow.particles.resolve here (rather than duplicating
     path logic) keeps the DSL-loading rules one source of truth."""
-    from ork.dflow.particles.resolve import resolve_dsl_file, load_dsl_class
+    from ork.hypergraph.dflow.particles.resolve import resolve_dsl_file, load_dsl_class
     d = self.gendata
     dsl_path = resolve_dsl_file(d.dsl_file)
     cls      = load_dsl_class(dsl_path, d.dsl_class or None)

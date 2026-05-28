@@ -458,7 +458,7 @@ def _wrap(value):
 # ---- author-facing factory (singleton, imported as `Expr`) ----------------
 
 class _ExprFactory:
-    """Author surface: imported as Expr from ork.dflow. Each attribute or
+    """Author surface: imported as Expr from ork.hypergraph.dflow. Each attribute or
     method returns an Expr tree node ready to feed into bind()."""
 
     # --- source references ---

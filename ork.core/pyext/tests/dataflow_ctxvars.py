@@ -16,9 +16,9 @@ import sys
 from orkengine.core import *
 from orkengine.lev2 import particles
 
-from ork.dflow.particles import ParticleSystem
-from ork.dflow import particles as P
-from ork.dflow import Expr
+from ork.hypergraph.dflow.particles import ParticleSystem
+from ork.hypergraph.dflow import particles as P
+from ork.hypergraph.dflow import Expr
 
 coreappinit()
 
@@ -48,7 +48,7 @@ print(f"PASS: time spec — plug={spec.output_plug_name} policy={spec.policy}")
 # Case 2 — Expr.ptc.unit_age namespace access produces ContextRef
 # ---------------------------------------------------------------------------
 
-from ork.dflow._expr import ContextRef
+from ork.hypergraph.dflow._expr import ContextRef
 ref = Expr.ptc.unit_age
 assert isinstance(ref, ContextRef) and ref.dsl_name == "ptc.unit_age", \
     f"Expr.ptc.unit_age should be ContextRef('ptc.unit_age'); got {ref!r}"
@@ -125,7 +125,7 @@ g_bare = dataflow.GraphData.createShared()
 # add a sprite renderer module so there's somewhere to attach a binding
 spr_mod = g_bare.create("SPR", particles.SpriteRenderer)
 # build a minimal ContextRef + Binding by hand and try to emit it
-from ork.dflow._bindings import Binding, emit_bindings
+from ork.hypergraph.dflow._bindings import Binding, emit_bindings
 binding = Binding(spr_mod, "Size", Expr.ptc.unit_age * 0.5)
 try:
     emit_bindings(g_bare, [binding])

@@ -18,7 +18,7 @@
 ###############################################################################
 
 from orkengine.core import vec3, vec4, lev2_pyexdir
-from ork.ecs.scene import Scene, Transform
+from ork.hypergraph.ecs.scene import Scene, Transform as XF
 
 lev2_pyexdir.addToSysPath()
 
@@ -107,17 +107,17 @@ class JadeScene(Scene):
         clearcoat_roughness  = 0.00)
 
     self.entity("sphere_jade_off",
-      transform=Transform(translation=vec3(-5.5, 0, 0)),
+      transform=XF(translation=vec3(-5.5, 0, 0)),
       components=[SG.component(nodes={
         "n": {"drawable": make_drawable("dr_jade_off", mat_off)},
       })])
     self.entity("sphere_jade_half",
-      transform=Transform(translation=vec3(0, 0, 0)),
+      transform=XF(translation=vec3(0, 0, 0)),
       components=[SG.component(nodes={
         "n": {"drawable": make_drawable("dr_jade_half", mat_half)},
       })])
     self.entity("sphere_jade_full",
-      transform=Transform(translation=vec3(+5.5, 0, 0)),
+      transform=XF(translation=vec3(+5.5, 0, 0)),
       components=[SG.component(nodes={
         "n": {"drawable": make_drawable("dr_jade_full", mat_full)},
       })])

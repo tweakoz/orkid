@@ -3,8 +3,8 @@
 #
 # Usage (per SKILL.md):
 #
-#   from ork.dflow.particles import ParticleSystem
-#   from ork.dflow import particles as P
+#   from ork.hypergraph.dflow.particles import ParticleSystem
+#   from ork.hypergraph.dflow import particles as P
 #
 #   class MyExplosion(ParticleSystem):
 #     def __init__(self):
@@ -29,7 +29,7 @@ from . import ops  # populates ops registry
 from .._context_classes import register_python_class
 # `resolve` imports ParticleSystem from us, so import it at the bottom of
 # this module — re-exported below so callers can do
-# `from ork.dflow.particles import resolve_dsl_file, load_dsl_class`.
+# `from ork.hypergraph.dflow.particles import resolve_dsl_file, load_dsl_class`.
 
 # Register the Python module classes that materialize this family's DSL
 # context variables. The C++ side registered the (DSL name, output plug,
@@ -42,7 +42,7 @@ register_python_class("ptc.unit_age", _lev2_particles.Pool)
 register_python_class("ptc.random",   _lev2_particles.Pool)
 
 # DSL op aliases — CamelCase because each call constructs a new module
-# (analogous to a class instantiation). `from ork.dflow import particles as P`
+# (analogous to a class instantiation). `from ork.hypergraph.dflow import particles as P`
 # then yields P.PoolData(...), P.EllipticalEmitter(...), etc.
 PoolData            = ops.pool_data
 EllipticalEmitter   = ops.elliptical_emitter

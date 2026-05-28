@@ -30,8 +30,8 @@ class ParticleSystem:
 
     Subclass and implement __init__:
 
-        from ork.dflow.particles import ParticleSystem
-        from ork.dflow import particles as P
+        from ork.hypergraph.dflow.particles import ParticleSystem
+        from ork.hypergraph.dflow import particles as P
 
         class FireExplosion(ParticleSystem):
           def __init__(self):

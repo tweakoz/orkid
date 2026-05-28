@@ -40,7 +40,7 @@ from lev2utils.scenegraph import createSceneGraph
 from lev2utils.cameras import setupUiCamera
 
 from ork.app.application import ComponentizedApplication
-from ork.dflow.particles import (
+from ork.hypergraph.dflow.particles import (
     ParticleSystem,                 # noqa: F401 — re-exported here for grep-ability
     resolve_dsl_file,
     load_dsl_class,

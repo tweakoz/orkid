@@ -8,8 +8,8 @@
 import math
 import sys
 
-from ork.dflow import Expr
-from ork.dflow._expr import (
+from ork.hypergraph.dflow import Expr
+from ork.hypergraph.dflow._expr import (
     Const, ContextRef, ParamRef, BinOp, UnaryFn,
     PowExpr, ClampExpr, MinMaxExpr, LerpExpr, Vec3Expr,
     FmodExpr, SmoothstepExpr, QuantizeExpr, CurveExpr,

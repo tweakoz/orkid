@@ -13,8 +13,8 @@ import sys
 from orkengine.core import *
 from orkengine.lev2 import particles
 
-from ork.dflow.particles import ParticleSystem
-from ork.dflow import particles as P
+from ork.hypergraph.dflow.particles import ParticleSystem
+from ork.hypergraph.dflow import particles as P
 
 coreappinit()
 

@@ -9,7 +9,7 @@
 ###############################################################################
 
 from orkengine.core import vec3
-from ork.ecs.scene import Scene, Transform
+from ork.hypergraph.ecs.scene import Scene, Transform
 
 
 class HelloScene(Scene):

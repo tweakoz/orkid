@@ -26,7 +26,7 @@ class EcsRuntime:
     from orkengine.core import vec4, CrcStringProxy, lev2_pyexdir
     from orkengine import lev2, ecs
     from ork.app.application import ComponentizedApplication
-    from ork.ecs import EcsRuntime
+    from ork.hypergraph.ecs import EcsRuntime
 
     lev2_pyexdir.addToSysPath()
 
@@ -120,7 +120,7 @@ class EcsRuntime:
       # explicit ctx) routes material gens through the lev2 loader
       # thread context, matching how live Scene.build()-time materials
       # are constructed.
-      from ork.ecs.scene.assets import wire_scene_data
+      from ork.hypergraph.ecs.scene.assets import wire_scene_data
       # ezapp is needed for HdriToXirGenData bake (PBR2 Phase 0). Other
       # gen kinds ignore it — back-compat with callers passing nothing.
       wire_scene_data(self.scene_data, ezapp=ezapp)

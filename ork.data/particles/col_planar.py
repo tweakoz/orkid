@@ -19,9 +19,9 @@
 from orkengine.core import vec3, vec4, dataflow, CrcStringProxy, lev2_pyexdir
 from orkengine.lev2 import particles, Texture, GfxEnv
 
-from ork.dflow.particles import ParticleSystem
-from ork.dflow import particles as P
-from ork.dflow import Expr as E
+from ork.hypergraph.dflow.particles import ParticleSystem
+from ork.hypergraph.dflow import particles as P
+from ork.hypergraph.dflow import Expr as E
 
 lev2_pyexdir.addToSysPath()
 from lev2utils import shaders

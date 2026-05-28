@@ -32,7 +32,7 @@ from orkengine import core  # core MUST be imported before lev2
 from orkengine import lev2
 from orkengine import ecs
 
-from ork.ecs.scene.resolve import resolve_scene_file, load_scene_class
+from ork.hypergraph.ecs.scene.resolve import resolve_scene_file, load_scene_class
 
 
 def parse_args():

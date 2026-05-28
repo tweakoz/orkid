@@ -20,7 +20,7 @@ from orkengine import ecs
 from orkengine.lev2 import (PostFxNodeHSVG, PostFxNodeACES, PbrCommon,
                             StringDrawableData, ui)
 from ork.app.application import ComponentizedApplication
-from ork.ecs import EcsRuntime
+from ork.hypergraph.ecs import EcsRuntime
 
 tokens = CrcStringProxy()
 
