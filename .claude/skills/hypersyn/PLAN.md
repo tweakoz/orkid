@@ -11,14 +11,16 @@ The implementation status of each component is the source of truth; when in doub
 | `ork::dataflow` runtime (graphs, modules, plugs, sorter) | implemented | `ork.core/{inc,src}/ork/dataflow/` |
 | `ork::lev2::particle` family on dataflow | implemented | `ork.lev2/{inc,src}/ork/lev2/gfx/particle/` |
 | Python imperative graph construction | implemented | `ork.core/pyext/pyext_dataflow.cpp` |
+| **`ork.hypergraph` Python namespace + asset taxonomy** | **implemented** | `obt.project/scripts/ork/hypergraph/` — see "Namespace layout" section below |
+| **Author-helper utilities** (`hsv()`, `colors` palette, `axis_angle()`, dict-form transforms, nested-form material lobes + TypedDicts) | **implemented** | `obt.project/scripts/ork/hypergraph/colors.py`, `obt.project/scripts/ork/hypergraph/ecs/scene/__init__.py`, `obt.project/scripts/ork/hypergraph/ecs/scene/assets.py` |
 | Runtime hardening (cycle detect, fanout, type check, required, codec-generic setter, MaterializationPhase) | **planned (M0)** | `ork.core/src/dataflow/dataflow_sorter.cpp`, `graph_data.cpp`, `pyext_dataflow.cpp`, `ork.core/inc/ork/dataflow/module.h` |
-| `dflow.dsl` tracing core | **planned (M1)** | `obt.project/scripts/ork/dflow/dsl/` |
-| `particles` DSL vocab (test bed) | **planned (M1)** | `obt.project/scripts/ork/dflow/particles/` |
-| `dflow.validate` subprocess harness | **planned (M2)** | `obt.project/scripts/ork/dflow/validate/`, zmq worker pool |
-| `ptex2d` family + FXV2 codegen | **planned (M3)** | `ork.lev2/{inc,src}/ork/lev2/gfx/ptex2d/`, `obt.project/scripts/ork/dflow/ptex2d/` |
-| `ptex3d` family + PBRMaterial codegen | **planned (M3)** | `ork.lev2/{inc,src}/ork/lev2/gfx/ptex3d/`, `obt.project/scripts/ork/dflow/ptex3d/` |
-| `hypermesh` family + mesh/SDF ops | **planned (M3)** | `ork.lev2/{inc,src}/ork/lev2/gfx/hypermesh/`, `obt.project/scripts/ork/dflow/hypermesh/` |
-| `terrain` family + heightfield bake | **planned (M3)** | `ork.lev2/{inc,src}/ork/lev2/gfx/terrain/`, `obt.project/scripts/ork/dflow/terrain/` |
+| `dflow.dsl` tracing core | **planned (M1)** | `obt.project/scripts/ork/hypergraph/dflow/dsl/` |
+| `particles` DSL vocab (test bed) | **planned (M1)** | `obt.project/scripts/ork/hypergraph/dflow/particles/` |
+| `dflow.validate` subprocess harness | **planned (M2)** | `obt.project/scripts/ork/hypergraph/dflow/validate/`, zmq worker pool |
+| `ptex2d` family + FXV2 codegen | **planned (M3)** | `ork.lev2/{inc,src}/ork/lev2/gfx/ptex2d/`, `obt.project/scripts/ork/hypergraph/dflow/ptex2d/` |
+| `ptex3d` family + PBRMaterial codegen | **planned (M3)** | `ork.lev2/{inc,src}/ork/lev2/gfx/ptex3d/`, `obt.project/scripts/ork/hypergraph/dflow/ptex3d/` |
+| `hypermesh` family + mesh/SDF ops | **planned (M3)** | `ork.lev2/{inc,src}/ork/lev2/gfx/hypermesh/`, `obt.project/scripts/ork/hypergraph/dflow/hypermesh/` |
+| `terrain` family + heightfield bake | **planned (M3)** | `ork.lev2/{inc,src}/ork/lev2/gfx/terrain/`, `obt.project/scripts/ork/hypergraph/dflow/terrain/` |
 | Hypermesh procedural rigging + skinning extension | **planned (M3.5)** | extends `ork.lev2/.../hypermesh/` — `bone`/`bone_chain`/`skeleton`/`auto_skin`/`skinned` ops; output `xgmmodel_ptr_t` with skinning bound |
 | Hypergraph coordinator + timeline | **future (M4)** | TBD |
 | `hyperprim` family (parametric props) | **forward** | catalog layer over hypermesh; `xgmmodel_ptr_t` + named PrimSlot dict |
@@ -36,6 +38,88 @@ The implementation status of each component is the source of truth; when in doub
 **Status legend**: *implemented* = exists in code; *planned* = on the M0–M3 roadmap with committed API contract; *forward* = designed with rough spec in SKILL.md, API surface stable enough for hypergraph/ECS planning, no implementation timeline; *future* = vague pointer at the right area, no API committed.
 
 Editor UI uses the current `lev2.ui.PropertySheet` + `ReflectionPropertySheetModel` + composite-widget pattern (see `ork.editor.ecsedit`, `ork.hdri.studio`, `ork.lev2/pyext/tests/ui/widget_pack.py`). Do not extend the legacy `ged` system.
+
+## Namespace layout
+
+The HyperSyn Python authoring stack lives under one top-level package: `ork.hypergraph` (`obt.project/scripts/ork/hypergraph/`). Pre-existing `ork.ecs.*` / `ork.dflow.*` import paths were migrated under this namespace.
+
+```
+hypergraph/
+├── colors.py                  # universal: hsv(), colors palette, _Hsv
+├── asset_core/                # constructors, converters, loaders (infrastructure)
+│   ├── material/              #   PbrMaterial, FreestyleMaterial
+│   ├── sdf/                   #   ImplicitSdf, MeshToSdf, MeshSdf, VdbFileSdf
+│   ├── drawable/              #   VdbGridToDrawable
+│   ├── particle/              #   ParticleSystem
+│   └── probe/                 #   HdriToXir
+├── assets/                    # concrete named asset wrappers (parametric primitives)
+│   ├── sdf/                   #   SphereSdf, ThickSaddleSdf
+│   └── mesh/                  #   HollowFunnelMesh
+├── scenegraph/                # reserved — non-ECS scenegraph (future)
+├── ecs/                       # ECS-coupled Scene DSL + runtime
+│   ├── runtime.py             #   EcsRuntime
+│   └── scene/                 #   Scene, Transform, SceneGraphHandle, axis_angle
+└── dflow/                     # dataflow DSL (M1+ work lands inside)
+```
+
+**Asset taxonomy rule.** `asset_core/<category>/` houses *infrastructure* — generic constructors / converters / loaders (`ImplicitSdf` takes arbitrary GLSL; `MeshToSdf` is a converter; `HdriToXir` loads). `assets/<category>/<name>.py` houses *concrete named things* — recognizable primitives or user-authored content (`SphereSdf`, `ThickSaddleSdf`, future `pillar.py`, `bridge.py`, etc.). Both directories share the same per-output-type subdir taxonomy so the parallel is obvious: "anything SDF-related" lives in two predictable places.
+
+**One class per file.** Each `assets/<category>/<name>.py` defines one wrapper class. Authors writing new content drop new files into `assets/<category>/`. File name → class name maps directly (snake_case → CamelCase).
+
+**Backward-compat (M0 transitional).** During the namespace transition, the per-class files under `asset_core/<category>/` and `assets/<category>/` are *re-export shims* — the class definitions still physically live in `hypergraph/ecs/scene/assets.py`. Import paths from author code are correct on day one; the physical per-file split is a pure code-move follow-up with no public-surface change.
+
+**Convenience re-exports.** `ork.hypergraph.__init__` exposes the most common imports so casual authors can write `from ork.hypergraph import Scene, Transform, axis_angle, hsv, colors`. Granular paths (`from ork.hypergraph.assets.sdf.sphere import SphereSdf`) work for code that wants explicit attribution.
+
+## Author-helper utilities (landed before M1)
+
+These are the ergonomic primitives sitting between the orkengine bindings and the HyperSyn DSL surface. They aren't tied to any specific family but every DSL author / family uses them.
+
+### Color (`ork.hypergraph.colors`)
+
+- **`hsv(h, s, v, a=1.0)`** — lazy HSV color. Auto-coerces to vec3 or vec4 at the consumption slot. Hue in degrees [0, 360], s/v/a in [0, 1]. Assertion if `a != 1` and feeding a vec3 slot.
+- **`colors`** — 64-name palette as `_Hsv` instances: primaries/secondaries (12), neutrals (8), skin tones (skin1..skin6, light→dark), wood (oak1/oak2/mahogany/birch), stone (granite/marble/slate/jade/ruby/sapphire), plants (leaf1/leaf2/grass/moss/sage/autumn), sky/water (skyblue1/skyblue2/sunset/dawn/fog/ocean/lagoon/lake), metals (gold/silver/copper/brass/iron/rust), fire/warm (ember/flame/terracotta/coral), misc (chocolate/wine/lavender/salmon). Used as `colors.oak1`, `colors.skyblue1`, etc. Each entry auto-coerces same as `hsv()`.
+- **`_PBR_VEC3_FIELDS` / `_PBR_VEC4_FIELDS`** — registry used by `PbrMaterial._coerce_hsv` for slot→type dispatch. Updated when new reflected color fields land on materials.
+
+### Transform (`ork.hypergraph.ecs.scene`)
+
+- **`Transform(**kwargs)`** — kwargs-style constructor for `lev2.Transform` (existing).
+- **`axis_angle(axis, angle)`** — orientation DSL helper, returns a quat via `quat.createFromAxisAngle`. Reads cleanly in `transform={"orientation": axis_angle(vec3(0,1,0), math.pi/4)}`.
+- **`_coerce_transform`** — accepts `Transform | dict | None`, returns `Transform | None`. Wired into `Scene.spawner` (every entity/spawner path routes through). Author can pass either form interchangeably:
+  ```python
+  self.entity("statue",
+      transform={"translation": vec3(-5.5, 0, 0),
+                 "orientation": axis_angle(vec3(0, 1, 0), math.pi/4),
+                 "scale": 1.5},
+      components=[...])
+  ```
+
+### PbrMaterial — dual-form authoring (`ork.hypergraph.asset_core.material.pbr`)
+
+PbrMaterial accepts two equivalent forms — flat (LLM-friendly, glTF-aligned) and nested (human-friendly, mirrors glTF JSON structure). Mixing forms across different lobes is allowed; mixing within one lobe is rejected.
+
+```python
+# Flat — preferred for LLM-authored code (long names match glTF spec)
+PbrMaterial("jade", base_color=colors.marble,
+            subsurface_color=colors.jade, subsurface_factor=1.0,
+            transmission_factor=0.15, transmission_roughness=0.3, ior=1.55)
+
+# Nested — preferred for human authoring (visual grouping)
+PbrMaterial("jade",
+    base = {"color": colors.marble, "roughness": 0.85},
+    subsurface = {"color": colors.jade, "factor": 1.0, "radius": vec3(0.15, 0.55, 0.05)},
+    transmission = {"factor": 0.15, "roughness": 0.3},
+    ior = 1.55,
+    volume = {"attenuation_color": colors.jade, "attenuation_distance": 1.0})
+```
+
+**TypedDicts per lobe** (`BaseLobe`, `TransmissionLobe`, `VolumeLobe`, `DiffuseTransmissionLobe`, `SpecularLobe`, `ClearcoatLobe`, `SheenLobe`, `IridescenceLobe`, `SubsurfaceLobe`) declare the closed inner-key vocabulary so IDEs / type checkers can complete and validate inner keys. `_NESTED_LOBES` mapping table drives the flat→nested translation with explicit `remap` rules for fields that don't take a lobe-name prefix (volume's `attenuation_*` fields, base's `color`→`base_color`).
+
+**hsv() coercion at the boundary.** `PbrMaterial._coerce_hsv` walks the kwargs after `_flatten_nested` and converts any `_Hsv` value to vec3 or vec4 per `_PBR_VEC3_FIELDS` / `_PBR_VEC4_FIELDS`. Other code paths (e.g., `PostFxNodeSSSS.subsurface_tint = colors.skin2`) call `.to_vec3()` / `.to_vec4()` manually.
+
+### Implications for forthcoming DSL work
+
+- **M1 `dflow.dsl` should treat `_Hsv`-style "lazy color" + "lazy transform" as a general DSL-node pattern** — any DSL value that defers its concrete type until consumption follows the same shape: an object with `.to_<typeX>()` methods, optionally with assertion on conversion mismatch. The hsv/dict-transform implementations are the reference for how a future `dsl.Vec3Node`, `dsl.QuatNode`, `dsl.FloatNode` should behave at consumption boundaries.
+- **TypedDict-per-section** is the recommended discoverability + LLM-correctness pattern when a DSL surface has multiple named sub-blocks (lobes, families' sink declarations, op output bundles). Use this for P3.F dataflow-codegen materializer output declarations.
 
 ## Milestone roadmap
 
@@ -83,7 +167,7 @@ A team of agents reviewed the spec (see ~/projects/orkid/.claude/projects/-Users
 - **Three runtime modes** (authoring / runtime-static / runtime-live-mutable), not two — validator subprocess persists into live-mutable runtimes for experiences that allow content modification while playing.
 
 ### Folded from HYPERVBOX leverage review (impcore/vibe_sandbox compatibility)
-- **Op registry introspection API** — `ork.dflow.dsl.registry.list_families/list_ops/list_examples/get_op` + `OpInfo`/`PlugSpec`/`ExampleInfo` dataclasses + `op.to_json_schema()` classmethod.
+- **Op registry introspection API** — `ork.hypergraph.dflow.dsl.registry.list_families/list_ops/list_examples/get_op` + `OpInfo`/`PlugSpec`/`ExampleInfo` dataclasses + `op.to_json_schema()` classmethod.
 - **Structured `Diagnostic` dataclass** — replaces raw tuples in `ValidationResult.errors/warnings`; stable `code` field, optional `hint` + `source`.
 - **Examples per family** at `ork.lev2/pyext/tests/hypersyn/<family>/` — runnable visual apps, indexed by `registry.list_examples(family)`, double as CI integration tests; min counts per family.
 - **Source provenance** — `@op` records `(file, line)` of decorated class; `DslNode` records `(file, line)` of call site via `sys._getframe`; both feed `Diagnostic.source` and materializer GLSL `// <file>:<line>` comments.

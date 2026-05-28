@@ -57,11 +57,11 @@ A *family* is a vertical slice of HyperSyn — a base class, a plug-type set, a 
 Each family lives at:
 
 - C++ runtime: `ork.lev2/{inc,src}/ork/lev2/gfx/<family>/`
-- Python DSL base class + family module: `obt.project/scripts/ork/dflow/<family>/__init__.py`
-- DSL op library (one .py per op): `obt.project/scripts/ork/dflow/<family>/ops/`
-- Materializer (Python wrapper around C++ codegen): `obt.project/scripts/ork/dflow/<family>/materialize.py`
+- Python DSL base class + family module: `obt.project/scripts/ork/hypergraph/dflow/<family>/__init__.py`
+- DSL op library (one .py per op): `obt.project/scripts/ork/hypergraph/dflow/<family>/ops/`
+- Materializer (Python wrapper around C++ codegen): `obt.project/scripts/ork/hypergraph/dflow/<family>/materialize.py`
 
-The Python root `ork.dflow.<family>` is a historical handle dating from when every family was a dataflow graph; not every family is strictly dataflow today (see "Family kinds" below). The path stays for consistency.
+The Python root `ork.hypergraph.dflow.<family>` is a historical handle dating from when every family was a dataflow graph; not every family is strictly dataflow today (see "Family kinds" below). The path stays for consistency. (Pre-namespace-refactor the path was `ork.dflow.<family>`; the import-path rewrite preserves the `dflow` segment to keep the convention intact even for non-dataflow families.)
 
 ### Multi-sink materializer outputs
 
@@ -86,7 +86,7 @@ Where collision geometry and visible geometry genuinely share derivation (a wall
 ```python
 class CourtyardWalls(Hypermesh):
     def __init__(self):
-        from ork.dflow import hypermesh as H
+        from ork.hypergraph.dflow import hypermesh as H
         # shared procedural source — one SDF expression
         wall_sdf = H.sdf_subtract(H.sdf_box(extents=(10.6, 4.0, 10.6)),
                                   H.sdf_box(extents=(10.0, 5.0, 10.0)))
@@ -150,8 +150,8 @@ A stateful family's `generatedflow()` still returns a `dflow::graphdata_ptr_t` f
 Each DSL op is a single Python file declaring a class with an imperative `.build(graph, **inputs)` method. The op is registered in a per-family central registry so introspection tools (and the editor) can enumerate available ops without filesystem scanning.
 
 ```python
-# obt.project/scripts/ork/dflow/ptex3d/ops/mix.py
-from ork.dflow.dsl import op, DslNode
+# obt.project/scripts/ork/hypergraph/dflow/ptex3d/ops/mix.py
+from ork.hypergraph.dflow.dsl import op, DslNode
 from ork.ptex3d.types import Float, Vec3, Vec4
 
 @op(family="ptex3d", name="mix")
@@ -177,7 +177,7 @@ class Mix:
 **Multi-output ops.** An op with more than one output (e.g. Worley noise returning `value`, `gradient`, and `cell_id` simultaneously, or surface ops returning a tangent frame) declares each output in `outputs` and `build()` returns a `dict[str, DslNode]` keyed by output name. Callers receive a `DslNodeBundle` exposing each output as an attribute:
 
 ```python
-# obt.project/scripts/ork/dflow/ptex3d/ops/worley.py
+# obt.project/scripts/ork/hypergraph/dflow/ptex3d/ops/worley.py
 @op(family="ptex3d", name="worley")
 class Worley:
     """Worley (cellular) noise: returns nearest-cell distance, gradient, and cell id."""
@@ -213,7 +213,7 @@ hash_   = P.fract(n.cell_id * 0.123)
 
 Single-output ops continue to return a bare `DslNode` from `build()` (the existing `mix` example above); both forms are first-class. `OpInfo.outputs` always reports the full dict (size 1 for the sugar case).
 
-The user-facing call surface uses aliased imports: `from ork.dflow import ptex3d as P` exposes `P.mix`, `P.randnormal`, `P.surfctx`, etc. Each is `lambda *args, **kw: registry["ptex3d"]["mix"].build(_current_graph(), *args, **kw)` (or equivalent). Star-imports are explicitly avoided so module origin stays visible at every call site (debuggability and tooling introspection).
+The user-facing call surface uses aliased imports: `from ork.hypergraph.dflow import ptex3d as P` exposes `P.mix`, `P.randnormal`, `P.surfctx`, etc. Each is `lambda *args, **kw: registry["ptex3d"]["mix"].build(_current_graph(), *args, **kw)` (or equivalent). Star-imports are explicitly avoided so module origin stays visible at every call site (debuggability and tooling introspection).
 
 ### Source provenance
 
@@ -229,10 +229,10 @@ Both feed `Diagnostic.source` (see "Validation") so error markers point at the e
 External tools — editor autocompletion, documentation generators, JSON-schema exporters, type-checkers, code-completion bridges — must enumerate the DSL surface without importing every op module. The op registry exposes:
 
 ```python
-ork.dflow.dsl.registry.list_families() -> list[str]
-ork.dflow.dsl.registry.list_ops(family: str) -> list[OpInfo]
-ork.dflow.dsl.registry.list_examples(family: str) -> list[ExampleInfo]
-ork.dflow.dsl.registry.get_op(family: str, name: str) -> OpInfo | None
+ork.hypergraph.dflow.dsl.registry.list_families() -> list[str]
+ork.hypergraph.dflow.dsl.registry.list_ops(family: str) -> list[OpInfo]
+ork.hypergraph.dflow.dsl.registry.list_examples(family: str) -> list[ExampleInfo]
+ork.hypergraph.dflow.dsl.registry.get_op(family: str, name: str) -> OpInfo | None
 
 @dataclass(frozen=True)
 class OpInfo:
@@ -293,7 +293,7 @@ Reference imperative form: `ork.lev2/pyext/tests/renderer/particles/ptc_elliptic
 
 ```python
 from orkengine.lev2 import ParticleSystem
-from ork.dflow import particles as P
+from ork.hypergraph.dflow import particles as P
 
 class EllipticalSystem(ParticleSystem):
     def __init__(self, app, layer):
@@ -355,7 +355,7 @@ This equivalence is the round-trip test for the DSL machinery.
 
 ```python
 from orkengine.lev2 import Ptex3d
-from ork.dflow import ptex3d as P
+from ork.hypergraph.dflow import ptex3d as P
 
 class LeopardSkin(Ptex3d):
     def __init__(self, ptx3dctx):
@@ -369,7 +369,7 @@ class LeopardSkin(Ptex3d):
 
 Materializing this:
 ```python
-from ork.dflow.ptex3d import materialize
+from ork.hypergraph.dflow.ptex3d import materialize
 artifacts = materialize(LeopardSkin().generatedflow(), ctx)
 if artifacts is None:
     print("shader failed to compile; see diagnostics")
@@ -381,7 +381,7 @@ else:
 
 ```python
 from orkengine.lev2 import Ptex2d
-from ork.dflow import ptex2d as P
+from ork.hypergraph.dflow import ptex2d as P
 
 class StripedPanel(Ptex2d):
     def __init__(self, ptx2dctx, dim=(512, 512)):
@@ -399,9 +399,9 @@ Reference renderer: `ork.lev2/pyext/tests/renderer/geoclip/geoclipmesh_basic.py`
 
 ```python
 from orkengine.lev2 import Terrain
-from ork.dflow import terrain as T
-from ork.dflow import ptex3d as P3      # reused for ground surfacing
-from ork.dflow import hypermesh as HM   # reused for tree models
+from ork.hypergraph.dflow import terrain as T
+from ork.hypergraph.dflow import ptex3d as P3      # reused for ground surfacing
+from ork.hypergraph.dflow import hypermesh as HM   # reused for tree models
 
 class AlpineValley(Terrain):
     def __init__(self):
@@ -452,7 +452,7 @@ class AlpineValley(Terrain):
 
 ```python
 from orkengine.lev2 import Hypermesh
-from ork.dflow import hypermesh as H
+from ork.hypergraph.dflow import hypermesh as H
 
 class HollowSphere(Hypermesh):
     def __init__(self):
@@ -474,7 +474,7 @@ hypermesh authors **procedural** skeletons and skinning weights — not artist-i
 Plug types added: `Skeleton` (wraps `XgmSkeleton`), `BoneRef` (named handle into a skeleton), `WeightMap` (per-vertex per-bone influence weights). Ops sketched:
 
 ```python
-from ork.dflow import hypermesh as H
+from ork.hypergraph.dflow import hypermesh as H
 
 class QuadrupedRig(Hypermesh):
     def __init__(self, body_len=1.2, leg_len=0.6, neck_len=0.4):
@@ -499,7 +499,7 @@ class QuadrupedRig(Hypermesh):
 
 The materializer outputs an `xgmmodel_ptr_t` whose `XgmSkeleton` is the procedural one and whose `XgmMesh` carries proper vertex weights (`SVtxV12N12B12T8I4W4` or similar). The resulting model plugs directly into the renderer's existing skinned-PBR path and is consumed by `hyperanim` as the binding target.
 
-Procedural-skin ops on the roadmap (in `obt.project/scripts/ork/dflow/hypermesh/ops/`): `bone`, `bone_chain`, `bone_mirror`, `skeleton`, `auto_skin` (proximity / heat-diffusion / capsule-influence variants), `paint_weight_region` (SDF-mask-driven manual override), `skinned`, `rigid` (the no-skeleton path; mesh-only output).
+Procedural-skin ops on the roadmap (in `obt.project/scripts/ork/hypergraph/dflow/hypermesh/ops/`): `bone`, `bone_chain`, `bone_mirror`, `skeleton`, `auto_skin` (proximity / heat-diffusion / capsule-influence variants), `paint_weight_region` (SDF-mask-driven manual override), `skinned`, `rigid` (the no-skeleton path; mesh-only output).
 
 ## Validation
 
@@ -665,7 +665,7 @@ Materializer output: `posegraph_ptr_t` exposing `evaluate(time, params) -> xgmlo
 Authoring sketch — the dataflow-shaped piece only:
 ```python
 from orkengine.lev2 import Hyperanim
-from ork.dflow import hyperanim as A
+from ork.hypergraph.dflow import hyperanim as A
 
 class QuadrupedPoseGraph(Hyperanim):
     """Per-frame pose evaluator: given (speed, jaw_open), produces a quadruped pose."""
@@ -736,7 +736,7 @@ Materializer output: `behavior_ptr_t` exposing `step(dt, scene_ctx) -> StateChan
 Authoring sketch:
 ```python
 from orkengine.lev2 import Behavior
-from ork.dflow import behavior as B
+from ork.hypergraph.dflow import behavior as B
 
 class LeopardBehavior(Behavior):
     def __init__(self, pose_graph):
@@ -772,8 +772,8 @@ Representative engine-neutral ops (shipped with orkid):
 
 ```python
 # example consumer-side extension (lives in the consumer's package, not in orkid)
-from ork.dflow.dsl import op
-from ork.dflow.behavior.types import Predicate, Action
+from ork.hypergraph.dflow.dsl import op
+from ork.hypergraph.dflow.behavior.types import Predicate, Action
 
 @op(family="behavior", kind="predicate", name="within_distance")
 class WithinDistance:
@@ -811,7 +811,7 @@ Not a family — a *cross-family context* every materializer reads. A `StyleCont
 
 Determinism requirement: a style hash feeds the materializer cache key, so "same graph + same style" always yields the same cached artifact. Styles are first-class graphs in their own right (authored once, referenced from any other graph).
 
-Lives at `obt.project/scripts/ork/dflow/style/` with a small registry of curated profiles (`new_wave_1983`, `cyberpunk_2077`, `arts_and_crafts_1900`, etc.) plus user-authorable custom profiles.
+Lives at `obt.project/scripts/ork/hypergraph/dflow/style/` with a small registry of curated profiles (`new_wave_1983`, `cyberpunk_2077`, `arts_and_crafts_1900`, etc.) plus user-authorable custom profiles.
 
 ### Out of scope
 
@@ -832,14 +832,14 @@ ork.lev2/inc/ork/lev2/gfx/ptex3d/                 ptex3d runtime
 ork.lev2/inc/ork/lev2/gfx/hypermesh/              hypermesh runtime
 ork.lev2/inc/ork/lev2/gfx/terrain/                terrain runtime (codegen + heightfield bake)
 
-obt.project/scripts/ork/dflow/                    HyperSyn Python root
-obt.project/scripts/ork/dflow/dsl/                trace-mode expression machinery (family-agnostic)
-obt.project/scripts/ork/dflow/validate/           subprocess validation harness (zmq worker pool)
-obt.project/scripts/ork/dflow/particles/          particles DSL vocab + base class
-obt.project/scripts/ork/dflow/ptex2d/             ptex2d DSL vocab + base class + materializer
-obt.project/scripts/ork/dflow/ptex3d/             ptex3d DSL vocab + base class + materializer
-obt.project/scripts/ork/dflow/hypermesh/          hypermesh DSL vocab + base class + materializer
-obt.project/scripts/ork/dflow/terrain/            terrain DSL vocab + base class + materializer
+obt.project/scripts/ork/hypergraph/dflow/                    HyperSyn Python root
+obt.project/scripts/ork/hypergraph/dflow/dsl/                trace-mode expression machinery (family-agnostic)
+obt.project/scripts/ork/hypergraph/dflow/validate/           subprocess validation harness (zmq worker pool)
+obt.project/scripts/ork/hypergraph/dflow/particles/          particles DSL vocab + base class
+obt.project/scripts/ork/hypergraph/dflow/ptex2d/             ptex2d DSL vocab + base class + materializer
+obt.project/scripts/ork/hypergraph/dflow/ptex3d/             ptex3d DSL vocab + base class + materializer
+obt.project/scripts/ork/hypergraph/dflow/hypermesh/          hypermesh DSL vocab + base class + materializer
+obt.project/scripts/ork/hypergraph/dflow/terrain/            terrain DSL vocab + base class + materializer
 
 ork.lev2/pyext/tests/hypersyn/                    HyperSyn example/test root (visual, runnable)
 ork.lev2/pyext/tests/hypersyn/particles/          particle DSL examples (one .py per scene)
@@ -868,7 +868,7 @@ ork/dflow/<family>/
 
 Each family ships runnable visual examples at `ork.lev2/pyext/tests/hypersyn/<family>/`, mirroring the existing `ork.lev2/pyext/tests/renderer/particles/ptc_*.py` convention. Each example is a complete runnable app that constructs a HyperSyn subclass, calls `generatedflow()` → `materialize()`, attaches the resulting artifact to a scenegraph, and renders to screen (the existing visual-test convention — for human inspection, not callback counting).
 
-The registry indexes examples via `ork.dflow.dsl.registry.list_examples(family) -> list[ExampleInfo]`:
+The registry indexes examples via `ork.hypergraph.dflow.dsl.registry.list_examples(family) -> list[ExampleInfo]`:
 
 ```python
 @dataclass(frozen=True)
@@ -897,7 +897,7 @@ When a user asks about authoring procedural content with HyperSyn:
 
 When a user asks how to add a new DSL op:
 
-1. New file at `obt.project/scripts/ork/dflow/<family>/ops/<name>.py`.
+1. New file at `obt.project/scripts/ork/hypergraph/dflow/<family>/ops/<name>.py`.
 2. Class decorated with `@op(family=..., name=...)` declaring `inputs` / `outputs` and a `build(graph, **inputs)` static method.
 3. For codegen families, declare `fxv2_fragment` template string.
 4. Add the op to the family's `ops/__init__.py` registry.
@@ -905,7 +905,7 @@ When a user asks how to add a new DSL op:
 When a user asks how to add a new family:
 
 1. C++ side: family-base `DgModuleData`/`DgModuleInst`, plug traits, plug-template instantiation .cpp, registration in `lev2_init.cpp`, pyext bindings. Follow the particles pattern (`ork.lev2/src/gfx/particles/`).
-2. Python side: `obt.project/scripts/ork/dflow/<family>/` per the file-layout reference.
+2. Python side: `obt.project/scripts/ork/hypergraph/dflow/<family>/` per the file-layout reference.
 3. Materializer: subprocess-safe; return typed artifact or None.
 
 When a user asks about hypergraphs, the timeline, or audio integration: they are **future (M4+)**. The current architecture preserves stable plug IDs, a cross-family type registry, and per-module phase annotations to accommodate them, but no API is committed yet. Don't fabricate one.
