@@ -288,6 +288,13 @@ class EcsPlayer(ComponentizedApplication):
         elif kc == ord("R"):
           self._reset_postfx()
           self._update_hud(); return ui.HandlerResult()
+        elif kc == ord("U"):
+          # PBR2 P3.D — toggle SSSS on/off live for A/B comparison.
+          # Flag lives on pbr_common; PostFxNodeSSSS reads it per-frame.
+          pbc = self.runtime.scenegraph.pbr_common
+          pbc.enable_SSSS = not pbc.enable_SSSS
+          print(f"[SSSS] enable_SSSS = {pbc.enable_SSSS}")
+          self._update_hud(); return ui.HandlerResult()
     return self.runtime.handle_camera_event(uievent)
 
   ##############################################################################

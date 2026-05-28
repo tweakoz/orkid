@@ -152,6 +152,7 @@ class EcsRuntime:
       "SpecularIntensity": 1.0,
       "AmbientLight": vec3(0.0),
       "enable_skybox": True,
+      "use_float_color_buffer": True,
       "clearcolor": vec3(0.08, 0.08, 0.1),
     }
     if params:

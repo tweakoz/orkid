@@ -50,10 +50,10 @@ void ForwardPbrNodeImpl::init(lev2::Context* context, int iw, int ih) {
 
     auto pbrcommon = _node->_pbrcommon;
 
-    EBufferFormat efmt = EBufferFormat::RGBA8;
-    if (pbrcommon->_useFloatColorBuffer) {
-      efmt = EBufferFormat::RGBA32F;
-    }
+    // P3.D DEBUG: hard-coded RGBA32F to isolate banding cause.
+    // Ignores _useFloatColorBuffer flag. Revert after diagnosis.
+    EBufferFormat efmt = EBufferFormat::RGBA32F;
+    (void)pbrcommon;
 
     auto e_msaa = intToMsaaEnum(_ginitdata->_msaa_samples);
     _rtgs_primary  = std::make_shared<RtgSet>(context, iw, ih, e_msaa, "rtgs-main", "color"_crcu);

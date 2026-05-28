@@ -135,7 +135,9 @@ struct SCRIMPL {
 ///////////////////////////////////////////////////////////////////////////////
 ScreenOutputCompositingNode::ScreenOutputCompositingNode()
     : _supersample(0) {
-  _format = EBufferFormat::RGBA8;
+  // P3.D DEBUG: bumped RGBA8 → RGBA16F to remove 8-bit final-output
+  // quantization as the banding suspect. Revert when diagnosis done.
+  _format = EBufferFormat::RGBA16F;
   _impl   = std::make_shared<SCRIMPL>(this);
 }
 ScreenOutputCompositingNode::~ScreenOutputCompositingNode() {

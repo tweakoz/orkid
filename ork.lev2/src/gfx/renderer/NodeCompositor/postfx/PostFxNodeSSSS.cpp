@@ -18,6 +18,7 @@
 #include <ork/reflect/properties/registerX.inl>
 
 #include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeSSSS.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_common.h>
 
 ImplementReflectionX(ork::lev2::PostFxNodeSSSS, "PostFxNodeSSSS");
 
@@ -33,6 +34,10 @@ void PostFxNodeSSSS::describeX(class_t* c) {
       "strength",
       float_range{0.0f, 16.0f},
       &PostFxNodeSSSS::_strength);
+  c->floatProperty(
+      "depth_reject_threshold",
+      float_range{0.0f, 100.0f},
+      &PostFxNodeSSSS::_depth_reject_threshold);
   c->directProperty("subsurface_tint", &PostFxNodeSSSS::_subsurface_tint);
   c->directProperty("debug_mode",      &PostFxNodeSSSS::_debug_mode);
 }
@@ -46,16 +51,16 @@ struct IMPL {
     if (nullptr == _rtg_out) {
       int w = context->mainSurfaceWidth();
       int h = context->mainSurfaceHeight();
-      // Temp RTGs for h-blur and v-blur. RGBA16F preserves the SSS mask
-      // in alpha across both passes + handles HDR diffuse magnitudes.
+      // P3.D DEBUG: bumped from RGBA16F → RGBA32F to take precision off the
+      // table while isolating banding cause. Revert when diagnosis is done.
       _rtg_blurx = std::make_shared<RtGroup>(context, w, h, lev2::MsaaSamples::MSAA_1X);
       _rtg_blury = std::make_shared<RtGroup>(context, w, h, lev2::MsaaSamples::MSAA_1X);
       _rtg_out   = std::make_shared<RtGroup>(context, w, h, lev2::MsaaSamples::MSAA_1X);
-      auto b0 = _rtg_blurx->createRenderTarget(lev2::EBufferFormat::RGBA16F);
+      auto b0 = _rtg_blurx->createRenderTarget(lev2::EBufferFormat::RGBA32F);
       b0->_debugName = "PostFxNodeSSSS::_rtg_blurx";
-      auto b1 = _rtg_blury->createRenderTarget(lev2::EBufferFormat::RGBA16F);
+      auto b1 = _rtg_blury->createRenderTarget(lev2::EBufferFormat::RGBA32F);
       b1->_debugName = "PostFxNodeSSSS::_rtg_blury";
-      auto b2 = _rtg_out->createRenderTarget(lev2::EBufferFormat::RGBA16F);
+      auto b2 = _rtg_out->createRenderTarget(lev2::EBufferFormat::RGBA32F);
       b2->_debugName = "PostFxNodeSSSS::_rtg_out";
 
       _freestyle_mtl = std::make_shared<FreestyleMaterial>();
@@ -67,19 +72,31 @@ struct IMPL {
       _fxpMrtMap0    = _freestyle_mtl->param("MrtMap0");
       _fxpMrtMap1    = _freestyle_mtl->param("MrtMap1");
       _fxpMrtMap2    = _freestyle_mtl->param("MrtMap2");
+      _fxpAuxMap0    = _freestyle_mtl->param("AuxMap0");
       _fxpBlurFactor = _freestyle_mtl->param("BlurFactor");
       _fxpImageW     = _freestyle_mtl->param("image_width");
       _fxpImageH     = _freestyle_mtl->param("image_height");
       _fxpModColor   = _freestyle_mtl->param("ModColor");
       _fxpBlurFactorI = _freestyle_mtl->param("BlurFactorI");
+      _fxpSsssZndcThresh = _freestyle_mtl->param("SsssZndcThresh");
+      _fxpTintColor      = _freestyle_mtl->param("tint_color");
+      _fxpAuxMap0_chk    = _freestyle_mtl->param("AuxMap0");
+      // P3.D init diag — if any is null, the bind is a silent no-op.
+      printf("[PostFxNodeSSSS::init] AuxMap0=%p SsssZndcThresh=%p tint_color=%p ModColor=%p BlurFactor=%p\n",
+             (void*)_fxpAuxMap0, (void*)_fxpSsssZndcThresh, (void*)_fxpTintColor,
+             (void*)_fxpModColor, (void*)_fxpBlurFactor);
+      fflush(stdout);
     }
   }
   ///////////////////////////////////////
   void _render(CompositorDrawData& drawdata) {
     static int frame_count = 0;
     if ((frame_count++ % 60) == 0) {
-      printf("[PostFxNodeSSSS::_render] frame=%d blurfactor=%g strength=%g debug=%d\n",
-             frame_count, _node->_blurfactor, _node->_strength, _node->_debug_mode);
+      printf("[PostFxNodeSSSS::_render] frame=%d blurfactor=%g strength=%g debug=%d "
+             "tint=(%g,%g,%g)\n",
+             frame_count, _node->_blurfactor, _node->_strength, _node->_debug_mode,
+             _node->_subsurface_tint.x, _node->_subsurface_tint.y,
+             _node->_subsurface_tint.z);
       fflush(stdout);
     }
     Context* target = drawdata.context();
@@ -115,10 +132,69 @@ struct IMPL {
       FBI->popScissor();
     };
 
+    // PBR2 P3.D — runtime SSSS gate. When PbrCommon._enable_SSSS is false,
+    // skip blur+composite entirely and pass target0 straight through to
+    // _rtg_out. Lets the next post-fx node consume the lit composite
+    // without the SSSS contribution — live A/B for "is SSSS doing anything?"
+    auto rcfd_pbrcommon = framedata->_pbrcommon;
+    bool sss_enabled = rcfd_pbrcommon ? rcfd_pbrcommon->_enable_SSSS : true;
+    if (!sss_enabled) {
+      target->debugPushGroup("PostFxNodeSSSS::passthrough");
+      FBI->PushRtGroup(_rtg_out.get());
+      _freestyle_mtl->begin(_tek_composite, framedata);
+      _freestyle_mtl->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
+      _freestyle_mtl->bindParamTexture(_fxpMrtMap0, final_rtg->texture(0).get());
+      _freestyle_mtl->bindParamTexture(_fxpMrtMap1, final_rtg->texture(1).get());
+      _freestyle_mtl->bindParamTexture(_fxpMrtMap2, final_rtg->texture(0).get());
+      // ModColor.a = 0 makes tinted_blur = 0 → final = lit + mask*(0 - raw)?
+      // Force debug mode = lit-only path via a sentinel: any value not in
+      // {1,2,3,4} hits the else branch, and we want final = lit. Pass
+      // ModColor.rgb = identity tint and strength = 0 so even the normal
+      // branch reduces to lit + mask*(0 - raw)... — that's wrong, it
+      // subtracts raw. Use a dedicated debug code that the composite
+      // shader's else-fallback recognises: BlurFactorI = 5 → final = lit.
+      _freestyle_mtl->bindParamVec4(_fxpModColor, fvec4(1, 1, 1, 0));
+      _freestyle_mtl->bindParamInt(_fxpBlurFactorI, 5);  // 5 = passthrough lit
+      _freestyle_mtl->bindParamMatrix(_fxpMVP, fmtx4::Identity());
+      rquad(finalw, finalh);
+      _freestyle_mtl->end(framedata);
+      FBI->PopRtGroup();
+      target->debugPopGroup();
+      topcomp->topCPD()._single_pass_stereo = was_stereo;
+      return;
+    }
+
+    // Depth-rejection inputs. P3.D — pull near/far from RCFD user-property
+    // "NEAR_FAR" (set by the ForwardNode at fwdnode_impl_top.cpp:376).
+    // Falls back to (0.1, 100) if the property isn't published. Earlier
+    // attempt with drawdata.computeViewData() returned (0,1) defaults
+    // because the CPD stack is in a different state by post-fx time.
+    auto depth_tex = final_rtg->depthTexture();
+    fvec2 near_far(0.1f, 100.0f);
+    auto try_nf = framedata->tryUserProperty<fvec2>("NEAR_FAR"_crcu);
+    if (try_nf) {
+      near_far = try_nf.value();
+    }
+    fvec4 zndc_thresh(near_far.x, near_far.y,
+                      _node->_depth_reject_threshold, 0.0f);
+
+    // P3.D diagnostic — print every 60 frames.
+    {
+      static int diag_count = 0;
+      if ((diag_count++ % 60) == 0) {
+        printf("[PostFxNodeSSSS::diag] depth_tex=%p near=%g far=%g "
+               "threshold=%g final_rtg=%dx%d (NEAR_FAR found=%d)\n",
+               (void*)depth_tex.get(),
+               near_far.x, near_far.y, _node->_depth_reject_threshold,
+               finalw, finalh, (int)bool(try_nf));
+        fflush(stdout);
+      }
+    }
+
     target->debugPushGroup("PostFxNodeSSSS::render");
     {
       ////////////////////////////////
-      // Pass 1: horizontal blur of target1.
+      // Pass 1: horizontal blur of target1, depth-rejected per-tap.
       ////////////////////////////////
       FBI->PushRtGroup(_rtg_blurx.get());
       _freestyle_mtl->begin(_tek_blurx, framedata);
@@ -127,12 +203,14 @@ struct IMPL {
       _freestyle_mtl->bindParamInt(_fxpImageW, finalw);
       _freestyle_mtl->bindParamInt(_fxpImageH, finalh);
       _freestyle_mtl->bindParamTexture(_fxpMrtMap0, final_rtg->texture(1).get());
+      _freestyle_mtl->bindParamTexture(_fxpAuxMap0, depth_tex.get());
+      _freestyle_mtl->bindParamVec4(_fxpSsssZndcThresh, zndc_thresh);
       _freestyle_mtl->bindParamMatrix(_fxpMVP, fmtx4::Identity());
       rquad(finalw, finalh);
       _freestyle_mtl->end(framedata);
       FBI->PopRtGroup();
       ////////////////////////////////
-      // Pass 2: vertical blur of blurx output.
+      // Pass 2: vertical blur of blurx output, same depth gate.
       ////////////////////////////////
       FBI->PushRtGroup(_rtg_blury.get());
       _freestyle_mtl->begin(_tek_blury, framedata);
@@ -141,12 +219,16 @@ struct IMPL {
       _freestyle_mtl->bindParamInt(_fxpImageW, finalw);
       _freestyle_mtl->bindParamInt(_fxpImageH, finalh);
       _freestyle_mtl->bindParamTexture(_fxpMrtMap0, _rtg_blurx->texture(0).get());
+      _freestyle_mtl->bindParamTexture(_fxpAuxMap0, depth_tex.get());
+      _freestyle_mtl->bindParamVec4(_fxpSsssZndcThresh, zndc_thresh);
       _freestyle_mtl->bindParamMatrix(_fxpMVP, fmtx4::Identity());
       rquad(finalw, finalh);
       _freestyle_mtl->end(framedata);
       FBI->PopRtGroup();
       ////////////////////////////////
       // Pass 3: composite. lit + mask * (blurred - raw).
+      // Also binds depth + Zndc params so debug_mode=6 can visualize
+      // linear depth from the same source the blur uses.
       ////////////////////////////////
       FBI->PushRtGroup(_rtg_out.get());
       _freestyle_mtl->begin(_tek_composite, framedata);
@@ -154,7 +236,13 @@ struct IMPL {
       _freestyle_mtl->bindParamTexture(_fxpMrtMap0, final_rtg->texture(0).get());
       _freestyle_mtl->bindParamTexture(_fxpMrtMap1, final_rtg->texture(1).get());
       _freestyle_mtl->bindParamTexture(_fxpMrtMap2, _rtg_blury->texture(0).get());
-      _freestyle_mtl->bindParamVec4(_fxpModColor, fvec4(_node->_subsurface_tint, _node->_strength));
+      _freestyle_mtl->bindParamTexture(_fxpAuxMap0, depth_tex.get());
+      _freestyle_mtl->bindParamVec4(_fxpSsssZndcThresh, zndc_thresh);
+      _freestyle_mtl->bindParamVec4(_fxpModColor, fvec4(1,1,1,1));//_node->_subsurface_tint, _node->_strength));
+      // P3.D — bind tint_color from its own UBO (ublk_ssss_composite). The
+      // composite shader now reads this instead of ModColor.
+      _freestyle_mtl->bindParamVec4(_fxpTintColor,
+          fvec4(_node->_subsurface_tint, _node->_strength));
       _freestyle_mtl->bindParamInt(_fxpBlurFactorI, _node->_debug_mode);
       _freestyle_mtl->bindParamMatrix(_fxpMVP, fmtx4::Identity());
       rquad(finalw, finalh);
@@ -177,11 +265,15 @@ struct IMPL {
   const FxShaderParam* _fxpMrtMap0    = nullptr;
   const FxShaderParam* _fxpMrtMap1    = nullptr;
   const FxShaderParam* _fxpMrtMap2    = nullptr;
+  const FxShaderParam* _fxpAuxMap0    = nullptr;
   const FxShaderParam* _fxpBlurFactor = nullptr;
   const FxShaderParam* _fxpImageW     = nullptr;
   const FxShaderParam* _fxpImageH     = nullptr;
   const FxShaderParam* _fxpModColor    = nullptr;
   const FxShaderParam* _fxpBlurFactorI = nullptr;
+  const FxShaderParam* _fxpSsssZndcThresh = nullptr;
+  const FxShaderParam* _fxpTintColor      = nullptr;
+  const FxShaderParam* _fxpAuxMap0_chk    = nullptr;  // diag only
 };
 } // namespace ssss_post
 ///////////////////////////////////////////////////////////////////////////////

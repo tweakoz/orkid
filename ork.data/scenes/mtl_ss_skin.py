@@ -1,6 +1,7 @@
 #!/usr/bin/env ork.python
 ###############################################################################
-# mtl_subsurface.py — PBR2 Phase 3 (P3.D) acid test for KHR_materials_subsurface.
+# mtl_ss_skin.py — PBR2 Phase 3 (P3.D) acid test for KHR_materials_subsurface,
+# **skin variant**: warm pink scatter tint, R bleeds farthest (ear-bleed look).
 #
 # Three white dielectric spheres varying subsurface_factor:
 #
@@ -9,8 +10,8 @@
 #   right  (x=+5.5): subsurface_factor = 1.0  → full scatter
 #
 # All three share subsurface_radius (1.4, 0.5, 0.3) — skin baseline.
-# Per-channel weights in the Jimenez 11-tap kernel produce red-shifted
-# bleed at silhouettes (cheekbone backlight look on a real head).
+# Per-channel weights in the Jimenez 11-tap kernel + warm subsurface_color
+# produce red-shifted bleed at silhouettes (cheekbone backlight look on a head).
 #
 # Diagnostic: with a backlight or grazing-angle envmap term, the right
 # sphere's silhouette should glow warmer (R bleeds farthest); the left
@@ -21,8 +22,10 @@
 # postfx_nodes map + appends "ssss" to postfx_order. The post-fx
 # survives JSON round-trip.
 #
+# See mtl_ss_jade.py for the cool / green-shifted SSS variant.
+#
 # Run:
-#   ork.scene.viewer.py mtl_subsurface
+#   ork.scene.viewer.py mtl_ss_skin
 ###############################################################################
 
 from orkengine.core import vec3, vec4, lev2_pyexdir
@@ -46,11 +49,19 @@ class SubsurfaceScene(Scene):
 
     sphere_sdf = self.asset.SphereSdf("sphere_sdf", radius=2.0)
 
-    # Warm marble base — dielectric, slightly rough.
-    base_color = vec4(0.95, 0.85, 0.78, 1.0)
-    base_rough = 0.45
-    skin_radius = vec3(1.4, 0.5, 0.3)   # mm; R bleeds farthest
-    skin_tint   = vec3(0.85, 0.40, 0.30)
+    # Realistic skin tint baseline:
+    #   - base_color: pale warm flesh (not over-saturated)
+    #   - subsurface_color: soft warm pink — pushes the diffuse a small amount
+    #     toward warm flesh, NOT toward bright red (former (0.85, 0.40, 0.30)
+    #     was a demo-vivid value tuned for visibility, not physical realism)
+    #   - subsurface_radius: relative per-channel scatter depths from
+    #     Jimenez paper (R/G/B ratio ≈ 5:2:1). Absolute scale ≪ before;
+    #     visible effect at typical strength = subtle warm halo at silhouettes,
+    #     not the dominant material look
+    base_color  = vec4(0.5,0.5,0.5,1)   # warm flesh
+    base_rough  = 0.95
+    skin_radius = vec3(0.50, 0.20, 0.10)*5.1        # m; R bleeds farthest
+    skin_tint   = vec3(1.00, 0.65, 0.55)        # soft warm pink
 
     def make_drawable(name, mat):
       return self.asset.VdbGridToDrawable(name, grid=sphere_sdf, material=mat, iso=0.0)

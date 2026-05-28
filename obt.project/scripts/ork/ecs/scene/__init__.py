@@ -739,9 +739,13 @@ class Scene:
       sg_decl = self._systems["SceneGraphSystem"]
       ssss_node = PostFxNodeSSSS()
       ssss_node.subsurface_tint = dominant_sss_gen.subsurface_color
-      # P3.D bring-up: default mode = 0 (normal composite). Debug modes
-      # available: 1=mask, 2=raw diffuse, 3=blurred diffuse, 4=SSSS delta.
-      ssss_node.debug_mode = 0
+      # P3.D — DSL-driven SSSS knobs. C++ defaults are physical baselines;
+      # any scene can override via its own self.scenegraph(...) kwargs in
+      # the future (currently these are scene-DSL-injected with sane values
+      # for the mtl_ss_* acid scenes — 32px reach, energy-preserving gain).
+      ssss_node.blurfactor  = 32.0   # screen-space kernel reach in pixels
+      ssss_node.strength    = 1.0    # energy-conserving; raise for drama
+      ssss_node.debug_mode  = 0      # 0=normal; 1=mask 2=raw 3=blur 4=delta 5=lit 6=depth-tex 7=green 8=uniforms 9=lindepth 10=tint
       sg_decl.sub_calls.append(("addPostFxNode", ("ssss", ssss_node), {}))
       sg_decl.sub_calls.append(("appendPostFxOrder", ("ssss",), {}))
 

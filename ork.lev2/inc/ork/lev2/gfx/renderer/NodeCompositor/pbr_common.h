@@ -160,6 +160,11 @@ struct CommonStuff : public ork::Object {
   float _ssaoFeedback = 0.5;
   bool _useDepthPrepass = true;
   bool _useFloatColorBuffer = false;
+  // PBR2 P3.D — runtime SSSS gate. Default true. When false, PostFxNodeSSSS
+  // passes target0 straight through to its output (no blur, no composite);
+  // the chain downstream sees the lit composite without the subsurface
+  // delta. Useful as a live A/B comparison and as a key-toggle hook.
+  bool _enable_SSSS = true;
   uint64_t _brdftype = 0;
   float _dppZbias = 1.0e-3f;
   bool _enable_skybox = true;

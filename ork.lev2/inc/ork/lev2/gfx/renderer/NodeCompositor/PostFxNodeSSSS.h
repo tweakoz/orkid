@@ -33,16 +33,26 @@ public:
   PostFxNodeSSSS();
   ~PostFxNodeSSSS();
 
+  // P3.D — depth-aware sample rejection threshold, **meters**.
+  // Samples whose linear eye-space depth differs from the center pixel's
+  // by more than this get zero weight in the blur kernel.
+  //   physical skin SSS: 1–2 mm scattering depth → threshold ~0.05 m
+  //   demo / large props: 1–10 m (matches feature size)
+  // Default 10 m is calibrated for the mtl_subsurface scene (4 m spheres
+  // at ~10 m camera distance); production-scale skin scenes should bring
+  // this way down or modulate by the material's _subsurface_radius.
+  float _depth_reject_threshold = 10.0f;
   float _blurfactor    = 12.0f;            // screen-space radius in pixels
                                             // (kernel far taps reach ±2.0× this;
                                             // keep small so samples stay inside
                                             // the surface — otherwise silhouette
                                             // pixels bleed BG into the surface)
-  float _strength      = 3.0f;             // amplify the bleed contribution above physical;
-                                            // strength*tinted_blurred replaces raw_diffuse in
-                                            // the composite. 1.0 = energy-conserving; >1 = make
-                                            // the effect visually dominant (subsurface bleed is
-                                            // subtle physically — almost always cranked in games)
+  float _strength      = 1.0f;             // gain on the tinted-blur contribution.
+                                            // 1.0 = energy-conserving (physically plausible);
+                                            // >1 = visually dominant (subsurface bleed is
+                                            // subtle physically — games often crank to 1.5–3
+                                            // for "dramatic" skin). Set via DSL per-scene
+                                            // when a particular look needs it.
   fvec3 _subsurface_tint = fvec3(1, 1, 1); // color of the blurred-diffuse contribution
                                             // (per-frame override of the dominant subsurface
                                             // material's color; v1 uniform — proper per-pixel

@@ -44,6 +44,25 @@ uniform_block ub_frg_FFX (descriptor_set 0) {
   float Exposure;
 }
 ///////////////////////////////////////////////////////////////
+// PBR2 P3.D — SSSS depth-rejection params. Separate small UBO per
+// [feedback_orkid_ubo_layout] (big shared UBO has alignment traps).
+//   xy = (near, far)  for NDC→linear-eye depth conversion
+//   z  = depth_reject_threshold (eye-space units; samples whose linear
+//        depth differs from center pixel by more than this get zero
+//        weight in the per-channel kernel sum)
+//   w  = unused (vec4 padding)
+uniform_block ublk_ssss_depth(descriptor_set 0) {
+  vec4 SsssZndcThresh;
+}
+///////////////////////////////////////////////////////////////
+// PBR2 P3.D — SSSS composite-pass params. Own UBO to bypass the
+// ModColor-via-ub_frg_FFX failure mode in the composite shader.
+//   rgb = subsurface_tint (the dominant SSS material's color)
+//   a   = strength (gain on the tinted-blur contribution)
+uniform_block ublk_ssss_composite(descriptor_set 0) {
+  vec4 tint_color;
+}
+///////////////////////////////////////////////////////////////
 sampler_set samplers_all (descriptor_set 0) {
   sampler2D MrtMap0;
   sampler2D MrtMap1;
@@ -683,83 +702,187 @@ technique framefx_aces {
 fragment_shader ps_ssss_blurx
   : fif_FFX
   : ub_frg_FFX
+  : ublk_ssss_depth
   : samplers_all {
+  // P3.D — depth-aware separable SSSS blur. AuxMap0 = forward-pass depth.
+  // Each sample's per-channel weight is multiplied by a depth-reject mask:
+  // samples whose linear eye-depth differs from the center pixel's by
+  // more than SsssZndcThresh.z get zero weight → BG (far-plane) samples
+  // are rejected (no BG bleed into silhouette), cross-surface samples
+  // are kept (preserves the natural spread that gives ear-bleed look).
   vec4 center = texture(MrtMap0, frg_uv);
-  if (center.a <= 0.0) {
-    out_clr = center;     // mask=0 → not subsurface; pass through
-  } else {
-    float step_x = BlurFactor / float(image_width);
-    // Mask-weighted accumulation: samples whose mask=0 (not subsurface)
-    // contribute 0, and we renormalize the kernel sum to preserve energy.
-    // Prevents background bleed into the surface at silhouettes.
-    vec3 accum = vec3(0);
-    vec3 wsum  = vec3(0);
-    vec4 s; vec3 k; float m;
-    k = vec3(0.560479, 0.669086, 0.784728);
-    accum += k * center.rgb;  wsum += k;     // center always counts
-    s = texture(MrtMap0, frg_uv + vec2(-2.00 * step_x, 0.0));  m = step(0.001, s.a);
-    k = vec3(0.000874, 0.001717, 0.004640) * m;  accum += k * s.rgb;  wsum += k;
-    s = texture(MrtMap0, frg_uv + vec2(-1.28 * step_x, 0.0));  m = step(0.001, s.a);
-    k = vec3(0.002567, 0.005012, 0.012730) * m;  accum += k * s.rgb;  wsum += k;
-    s = texture(MrtMap0, frg_uv + vec2(-0.72 * step_x, 0.0));  m = step(0.001, s.a);
-    k = vec3(0.007807, 0.014800, 0.038550) * m;  accum += k * s.rgb;  wsum += k;
-    s = texture(MrtMap0, frg_uv + vec2(-0.32 * step_x, 0.0));  m = step(0.001, s.a);
-    k = vec3(0.018960, 0.034910, 0.090140) * m;  accum += k * s.rgb;  wsum += k;
-    s = texture(MrtMap0, frg_uv + vec2(-0.08 * step_x, 0.0));  m = step(0.001, s.a);
-    k = vec3(0.060140, 0.105110, 0.225750) * m;  accum += k * s.rgb;  wsum += k;
-    s = texture(MrtMap0, frg_uv + vec2( 0.08 * step_x, 0.0));  m = step(0.001, s.a);
-    k = vec3(0.060140, 0.105110, 0.225750) * m;  accum += k * s.rgb;  wsum += k;
-    s = texture(MrtMap0, frg_uv + vec2( 0.32 * step_x, 0.0));  m = step(0.001, s.a);
-    k = vec3(0.018960, 0.034910, 0.090140) * m;  accum += k * s.rgb;  wsum += k;
-    s = texture(MrtMap0, frg_uv + vec2( 0.72 * step_x, 0.0));  m = step(0.001, s.a);
-    k = vec3(0.007807, 0.014800, 0.038550) * m;  accum += k * s.rgb;  wsum += k;
-    s = texture(MrtMap0, frg_uv + vec2( 1.28 * step_x, 0.0));  m = step(0.001, s.a);
-    k = vec3(0.002567, 0.005012, 0.012730) * m;  accum += k * s.rgb;  wsum += k;
-    s = texture(MrtMap0, frg_uv + vec2( 2.00 * step_x, 0.0));  m = step(0.001, s.a);
-    k = vec3(0.000874, 0.001717, 0.004640) * m;  accum += k * s.rgb;  wsum += k;
-    // Renormalize so total weight per channel == 1 (energy preserved).
-    accum /= max(wsum, vec3(1e-4));
-    out_clr = vec4(accum, center.a);   // preserve mask for v-pass + composite
-  }
+  float near = SsssZndcThresh.x;
+  float far  = SsssZndcThresh.y;
+  float thr  = SsssZndcThresh.z;
+  float c_d  = texture(AuxMap0, frg_uv).r;
+  float c_ndc = c_d * 2.0 - 1.0;
+  float c_z   = (near * far) / (far + near - c_ndc * (far - near));
+  float step_x = BlurFactor / float(image_width);
+  vec3 accum = vec3(0);
+  vec3 wsum  = vec3(0);
+  vec4 s;
+  vec3 k;
+  float d;
+  float ndc;
+  float z;
+  float w;
+  // center always counts
+  k = vec3(0.560479, 0.669086, 0.784728);
+  accum += k * center.rgb;  wsum += k;
+  // helper macro inlined per tap (fxv2 has no preprocessor macros)
+  s = texture(MrtMap0, frg_uv + vec2(-2.00 * step_x, 0.0));
+  d = texture(AuxMap0, frg_uv + vec2(-2.00 * step_x, 0.0)).r;
+  ndc = d * 2.0 - 1.0;
+  z = (near * far) / (far + near - ndc * (far - near));
+  w = step(abs(z - c_z), thr);
+  k = vec3(0.000874, 0.001717, 0.004640) * w;  accum += k * s.rgb;  wsum += k;
+  s = texture(MrtMap0, frg_uv + vec2(-1.28 * step_x, 0.0));
+  d = texture(AuxMap0, frg_uv + vec2(-1.28 * step_x, 0.0)).r;
+  ndc = d * 2.0 - 1.0;
+  z = (near * far) / (far + near - ndc * (far - near));
+  w = step(abs(z - c_z), thr);
+  k = vec3(0.002567, 0.005012, 0.012730) * w;  accum += k * s.rgb;  wsum += k;
+  s = texture(MrtMap0, frg_uv + vec2(-0.72 * step_x, 0.0));
+  d = texture(AuxMap0, frg_uv + vec2(-0.72 * step_x, 0.0)).r;
+  ndc = d * 2.0 - 1.0;
+  z = (near * far) / (far + near - ndc * (far - near));
+  w = step(abs(z - c_z), thr);
+  k = vec3(0.007807, 0.014800, 0.038550) * w;  accum += k * s.rgb;  wsum += k;
+  s = texture(MrtMap0, frg_uv + vec2(-0.32 * step_x, 0.0));
+  d = texture(AuxMap0, frg_uv + vec2(-0.32 * step_x, 0.0)).r;
+  ndc = d * 2.0 - 1.0;
+  z = (near * far) / (far + near - ndc * (far - near));
+  w = step(abs(z - c_z), thr);
+  k = vec3(0.018960, 0.034910, 0.090140) * w;  accum += k * s.rgb;  wsum += k;
+  s = texture(MrtMap0, frg_uv + vec2(-0.08 * step_x, 0.0));
+  d = texture(AuxMap0, frg_uv + vec2(-0.08 * step_x, 0.0)).r;
+  ndc = d * 2.0 - 1.0;
+  z = (near * far) / (far + near - ndc * (far - near));
+  w = step(abs(z - c_z), thr);
+  k = vec3(0.060140, 0.105110, 0.225750) * w;  accum += k * s.rgb;  wsum += k;
+  s = texture(MrtMap0, frg_uv + vec2( 0.08 * step_x, 0.0));
+  d = texture(AuxMap0, frg_uv + vec2( 0.08 * step_x, 0.0)).r;
+  ndc = d * 2.0 - 1.0;
+  z = (near * far) / (far + near - ndc * (far - near));
+  w = step(abs(z - c_z), thr);
+  k = vec3(0.060140, 0.105110, 0.225750) * w;  accum += k * s.rgb;  wsum += k;
+  s = texture(MrtMap0, frg_uv + vec2( 0.32 * step_x, 0.0));
+  d = texture(AuxMap0, frg_uv + vec2( 0.32 * step_x, 0.0)).r;
+  ndc = d * 2.0 - 1.0;
+  z = (near * far) / (far + near - ndc * (far - near));
+  w = step(abs(z - c_z), thr);
+  k = vec3(0.018960, 0.034910, 0.090140) * w;  accum += k * s.rgb;  wsum += k;
+  s = texture(MrtMap0, frg_uv + vec2( 0.72 * step_x, 0.0));
+  d = texture(AuxMap0, frg_uv + vec2( 0.72 * step_x, 0.0)).r;
+  ndc = d * 2.0 - 1.0;
+  z = (near * far) / (far + near - ndc * (far - near));
+  w = step(abs(z - c_z), thr);
+  k = vec3(0.007807, 0.014800, 0.038550) * w;  accum += k * s.rgb;  wsum += k;
+  s = texture(MrtMap0, frg_uv + vec2( 1.28 * step_x, 0.0));
+  d = texture(AuxMap0, frg_uv + vec2( 1.28 * step_x, 0.0)).r;
+  ndc = d * 2.0 - 1.0;
+  z = (near * far) / (far + near - ndc * (far - near));
+  w = step(abs(z - c_z), thr);
+  k = vec3(0.002567, 0.005012, 0.012730) * w;  accum += k * s.rgb;  wsum += k;
+  s = texture(MrtMap0, frg_uv + vec2( 2.00 * step_x, 0.0));
+  d = texture(AuxMap0, frg_uv + vec2( 2.00 * step_x, 0.0)).r;
+  ndc = d * 2.0 - 1.0;
+  z = (near * far) / (far + near - ndc * (far - near));
+  w = step(abs(z - c_z), thr);
+  k = vec3(0.000874, 0.001717, 0.004640) * w;  accum += k * s.rgb;  wsum += k;
+  accum /= max(wsum, vec3(1e-4));
+  // Preserve mask in alpha for composite gate; mask now comes from
+  // target1.alpha (which the forward shader still writes as
+  // subsurface_factor for PBR materials, 0 for non-PBR).
+  out_clr = vec4(accum, center.a);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_ssss_blury
   : fif_FFX
   : ub_frg_FFX
+  : ublk_ssss_depth
   : samplers_all {
+  // P3.D — vertical depth-aware blur. Matches blurx; only axis differs.
   vec4 center = texture(MrtMap0, frg_uv);
-  if (center.a <= 0.0) {
-    out_clr = center;
-  } else {
-    float step_y = BlurFactor / float(image_height);
-    vec3 accum = vec3(0);
-    vec3 wsum  = vec3(0);
-    vec4 s; vec3 k; float m;
-    k = vec3(0.560479, 0.669086, 0.784728);
-    accum += k * center.rgb;  wsum += k;
-    s = texture(MrtMap0, frg_uv + vec2(0.0, -2.00 * step_y));  m = step(0.001, s.a);
-    k = vec3(0.000874, 0.001717, 0.004640) * m;  accum += k * s.rgb;  wsum += k;
-    s = texture(MrtMap0, frg_uv + vec2(0.0, -1.28 * step_y));  m = step(0.001, s.a);
-    k = vec3(0.002567, 0.005012, 0.012730) * m;  accum += k * s.rgb;  wsum += k;
-    s = texture(MrtMap0, frg_uv + vec2(0.0, -0.72 * step_y));  m = step(0.001, s.a);
-    k = vec3(0.007807, 0.014800, 0.038550) * m;  accum += k * s.rgb;  wsum += k;
-    s = texture(MrtMap0, frg_uv + vec2(0.0, -0.32 * step_y));  m = step(0.001, s.a);
-    k = vec3(0.018960, 0.034910, 0.090140) * m;  accum += k * s.rgb;  wsum += k;
-    s = texture(MrtMap0, frg_uv + vec2(0.0, -0.08 * step_y));  m = step(0.001, s.a);
-    k = vec3(0.060140, 0.105110, 0.225750) * m;  accum += k * s.rgb;  wsum += k;
-    s = texture(MrtMap0, frg_uv + vec2(0.0,  0.08 * step_y));  m = step(0.001, s.a);
-    k = vec3(0.060140, 0.105110, 0.225750) * m;  accum += k * s.rgb;  wsum += k;
-    s = texture(MrtMap0, frg_uv + vec2(0.0,  0.32 * step_y));  m = step(0.001, s.a);
-    k = vec3(0.018960, 0.034910, 0.090140) * m;  accum += k * s.rgb;  wsum += k;
-    s = texture(MrtMap0, frg_uv + vec2(0.0,  0.72 * step_y));  m = step(0.001, s.a);
-    k = vec3(0.007807, 0.014800, 0.038550) * m;  accum += k * s.rgb;  wsum += k;
-    s = texture(MrtMap0, frg_uv + vec2(0.0,  1.28 * step_y));  m = step(0.001, s.a);
-    k = vec3(0.002567, 0.005012, 0.012730) * m;  accum += k * s.rgb;  wsum += k;
-    s = texture(MrtMap0, frg_uv + vec2(0.0,  2.00 * step_y));  m = step(0.001, s.a);
-    k = vec3(0.000874, 0.001717, 0.004640) * m;  accum += k * s.rgb;  wsum += k;
-    accum /= max(wsum, vec3(1e-4));
-    out_clr = vec4(accum, center.a);
-  }
+  float near = SsssZndcThresh.x;
+  float far  = SsssZndcThresh.y;
+  float thr  = SsssZndcThresh.z;
+  float c_d  = texture(AuxMap0, frg_uv).r;
+  float c_ndc = c_d * 2.0 - 1.0;
+  float c_z   = (near * far) / (far + near - c_ndc * (far - near));
+  float step_y = BlurFactor / float(image_height);
+  vec3 accum = vec3(0);
+  vec3 wsum  = vec3(0);
+  vec4 s;
+  vec3 k;
+  float d;
+  float ndc;
+  float z;
+  float w;
+  k = vec3(0.560479, 0.669086, 0.784728);
+  accum += k * center.rgb;  wsum += k;
+  s = texture(MrtMap0, frg_uv + vec2(0.0, -2.00 * step_y));
+  d = texture(AuxMap0, frg_uv + vec2(0.0, -2.00 * step_y)).r;
+  ndc = d * 2.0 - 1.0;
+  z = (near * far) / (far + near - ndc * (far - near));
+  w = step(abs(z - c_z), thr);
+  k = vec3(0.000874, 0.001717, 0.004640) * w;  accum += k * s.rgb;  wsum += k;
+  s = texture(MrtMap0, frg_uv + vec2(0.0, -1.28 * step_y));
+  d = texture(AuxMap0, frg_uv + vec2(0.0, -1.28 * step_y)).r;
+  ndc = d * 2.0 - 1.0;
+  z = (near * far) / (far + near - ndc * (far - near));
+  w = step(abs(z - c_z), thr);
+  k = vec3(0.002567, 0.005012, 0.012730) * w;  accum += k * s.rgb;  wsum += k;
+  s = texture(MrtMap0, frg_uv + vec2(0.0, -0.72 * step_y));
+  d = texture(AuxMap0, frg_uv + vec2(0.0, -0.72 * step_y)).r;
+  ndc = d * 2.0 - 1.0;
+  z = (near * far) / (far + near - ndc * (far - near));
+  w = step(abs(z - c_z), thr);
+  k = vec3(0.007807, 0.014800, 0.038550) * w;  accum += k * s.rgb;  wsum += k;
+  s = texture(MrtMap0, frg_uv + vec2(0.0, -0.32 * step_y));
+  d = texture(AuxMap0, frg_uv + vec2(0.0, -0.32 * step_y)).r;
+  ndc = d * 2.0 - 1.0;
+  z = (near * far) / (far + near - ndc * (far - near));
+  w = step(abs(z - c_z), thr);
+  k = vec3(0.018960, 0.034910, 0.090140) * w;  accum += k * s.rgb;  wsum += k;
+  s = texture(MrtMap0, frg_uv + vec2(0.0, -0.08 * step_y));
+  d = texture(AuxMap0, frg_uv + vec2(0.0, -0.08 * step_y)).r;
+  ndc = d * 2.0 - 1.0;
+  z = (near * far) / (far + near - ndc * (far - near));
+  w = step(abs(z - c_z), thr);
+  k = vec3(0.060140, 0.105110, 0.225750) * w;  accum += k * s.rgb;  wsum += k;
+  s = texture(MrtMap0, frg_uv + vec2(0.0,  0.08 * step_y));
+  d = texture(AuxMap0, frg_uv + vec2(0.0,  0.08 * step_y)).r;
+  ndc = d * 2.0 - 1.0;
+  z = (near * far) / (far + near - ndc * (far - near));
+  w = step(abs(z - c_z), thr);
+  k = vec3(0.060140, 0.105110, 0.225750) * w;  accum += k * s.rgb;  wsum += k;
+  s = texture(MrtMap0, frg_uv + vec2(0.0,  0.32 * step_y));
+  d = texture(AuxMap0, frg_uv + vec2(0.0,  0.32 * step_y)).r;
+  ndc = d * 2.0 - 1.0;
+  z = (near * far) / (far + near - ndc * (far - near));
+  w = step(abs(z - c_z), thr);
+  k = vec3(0.018960, 0.034910, 0.090140) * w;  accum += k * s.rgb;  wsum += k;
+  s = texture(MrtMap0, frg_uv + vec2(0.0,  0.72 * step_y));
+  d = texture(AuxMap0, frg_uv + vec2(0.0,  0.72 * step_y)).r;
+  ndc = d * 2.0 - 1.0;
+  z = (near * far) / (far + near - ndc * (far - near));
+  w = step(abs(z - c_z), thr);
+  k = vec3(0.007807, 0.014800, 0.038550) * w;  accum += k * s.rgb;  wsum += k;
+  s = texture(MrtMap0, frg_uv + vec2(0.0,  1.28 * step_y));
+  d = texture(AuxMap0, frg_uv + vec2(0.0,  1.28 * step_y)).r;
+  ndc = d * 2.0 - 1.0;
+  z = (near * far) / (far + near - ndc * (far - near));
+  w = step(abs(z - c_z), thr);
+  k = vec3(0.002567, 0.005012, 0.012730) * w;  accum += k * s.rgb;  wsum += k;
+  s = texture(MrtMap0, frg_uv + vec2(0.0,  2.00 * step_y));
+  d = texture(AuxMap0, frg_uv + vec2(0.0,  2.00 * step_y)).r;
+  ndc = d * 2.0 - 1.0;
+  z = (near * far) / (far + near - ndc * (far - near));
+  w = step(abs(z - c_z), thr);
+  k = vec3(0.000874, 0.001717, 0.004640) * w;  accum += k * s.rgb;  wsum += k;
+  accum /= max(wsum, vec3(1e-4));
+  out_clr = vec4(accum, center.a);
 }
 ///////////////////////////////////////////////////////////////
 // Composite. MrtMap0 = main lit (target0). MrtMap1 = raw diffuse +
@@ -768,6 +891,8 @@ fragment_shader ps_ssss_blury
 fragment_shader ps_ssss_composite
   : fif_FFX
   : ub_frg_FFX
+  : ublk_ssss_depth
+  : ublk_ssss_composite
   : samplers_all {
   vec3 lit       = texture(MrtMap0, frg_uv).rgb;
   vec4 raw       = texture(MrtMap1, frg_uv);
@@ -775,8 +900,13 @@ fragment_shader ps_ssss_composite
   float mask     = raw.a;
   // BlurFactorI is repurposed as debug mode selector (PostFxNodeSSSS._debug_mode).
   // 0 = normal; 1 = mask only; 2 = raw diffuse; 3 = blurred diffuse;
-  // 4 = SSSS delta contribution (× strength, tinted, masked).
-  vec3 tinted_blur = blurred * ModColor.rgb * ModColor.a;
+  // 4 = SSSS delta contribution (× strength, tinted, masked);
+  // 5 = lit-only passthrough; 6 = linear depth (normalized to [0,1] across near..far).
+  // P3.D — read from ublk_ssss_composite.tint_color instead of ub_frg_FFX.ModColor.
+  // ModColor in the shared big UBO was reading as zero in this shader despite
+  // C++ printf confirming the bind. Own-UBO bypasses that failure mode.
+  vec4 MC = tint_color;
+  vec3 tinted_blur = blurred * MC.rgb * MC.a;
   vec3 final;
   if (BlurFactorI == 1) {
     final = vec3(mask);                              // mask grayscale
@@ -786,6 +916,56 @@ fragment_shader ps_ssss_composite
     final = blurred;                                 // blurred diffuse
   } else if (BlurFactorI == 4) {
     final = mask * (tinted_blur - raw.rgb);          // SSSS delta only
+  } else if (BlurFactorI == 5) {
+    final = lit;                                     // P3.D: lit-only passthrough
+  } else if (BlurFactorI == 6) {
+    // Raw depth_tex with multi-window contrast boost — uniforms-free.
+    // R = stretch around 0.99–1.0 (very high precision near far plane)
+    // G = stretch around 0.95–1.0 (medium)
+    // B = stretch around 0.5–1.0  (broad)
+    // Whichever channel "lights up" tells us the scene's depth range.
+    float d_tex = texture(AuxMap0, frg_uv).r;
+    float r = clamp((d_tex - 0.99) * 100.0, 0.0, 1.0);
+    float g = clamp((d_tex - 0.95) *  20.0, 0.0, 1.0);
+    float b = clamp((d_tex - 0.5)  *   2.0, 0.0, 1.0);
+    final = vec3(r, g, b);
+  } else if (BlurFactorI == 7) {
+    // Sanity check — does the shader even run in debug modes?
+    // Expected: entire frame solid green.
+    final = vec3(0.0, 1.0, 0.0);
+  } else if (BlurFactorI == 8) {
+    // Uniform value visualization. R = near/100, G = far/100, B = threshold/10.
+    // Expected for the saddle scene: R≈0.001 (near=0.1), G≈0.1 (far=10),
+    // B≈0.1 (threshold=1). Mostly G channel visible. If solid black:
+    // the uniform isn't being bound. If R≈G≈B all zero: same.
+    final = vec3(SsssZndcThresh.x * 0.01,
+                 SsssZndcThresh.y * 0.01,
+                 SsssZndcThresh.z * 0.1);
+  } else if (BlurFactorI == 10) {
+    // Direct ModColor.rgb passthrough — solid color the entire frame.
+    // Diagnostic: does the composite shader actually receive ModColor
+    // from the C++ bind? Expected: solid (0.85, 0.4, 0.3) — pinkish-red.
+    // If solid black: ModColor isn't reaching the shader (binding broken
+    // despite C++ printout showing correct values).
+    // If solid white or some other color: wrong value in shader.
+    final = MC.rgb;
+  } else if (BlurFactorI == 9) {
+    // Linear eye-space depth as multi-scale color (uses real near/far uniforms).
+    // R = linear depth / 1m   → visible for 0–1m  range (very close)
+    // G = linear depth / 10m  → visible for 0–10m range (typical scene)
+    // B = linear depth / 100m → visible for 0–100m range (broad)
+    // If all channels black → linearization formula reduces to 0 (near or
+    // far is zero, or NDC convention is wrong). If R-only → very close,
+    // G-only → mid scene, RGB-white → very far. Spheres should show a
+    // smooth color gradient, BG flat at far-plane color.
+    float d_near = SsssZndcThresh.x;
+    float d_far  = SsssZndcThresh.y;
+    float d_tex  = texture(AuxMap0, frg_uv).r;
+    float d_ndc  = d_tex * 2.0 - 1.0;
+    float d_lin  = (d_near * d_far) / (d_far + d_near - d_ndc * (d_far - d_near));
+    final = vec3(clamp(d_lin / 1.0,   0.0, 1.0),
+                 clamp(d_lin / 10.0,  0.0, 1.0),
+                 clamp(d_lin / 100.0, 0.0, 1.0));
   } else {
     final = lit + mask * (tinted_blur - raw.rgb);    // normal composite
   }
