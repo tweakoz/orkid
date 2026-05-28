@@ -131,6 +131,12 @@ void GraphInst::compute(ui::updatedata_ptr_t updata){
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
+void GraphInst::reset(){
+  for( auto item : _ordered_module_insts ){
+    item->onReset(this);
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
 bool GraphInst::isDirty(void) const {
   return false;
 }

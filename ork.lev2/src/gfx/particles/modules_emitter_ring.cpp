@@ -22,6 +22,13 @@ struct RingDirectedEmitter : public DirectedEmitter {
   void computePosDir(float fi, fvec3& pos, fmtx3& basis);
   RingEmitterInst* _emitterModule;
   fvec3 mUserDir;
+  // In-plane reference axis ("X" of the ring's local basis). Direction
+  // is treated as the ring-plane normal; the bitangent is computed via
+  // Direction × Tangent. Authors thread the host entity's local-X here
+  // (typically Expr.entity("X").transformDir(vec3(1,0,0))) to make the
+  // ring rotate with the host. Defaults to world-X so legacy graphs that
+  // don't touch Tangent reproduce the existing world-XZ ring exactly.
+  fvec3 mTangent = fvec3(1, 0, 0);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -62,7 +69,10 @@ struct RingEmitterInst : public ParticleModuleInst {
   floatxf_inp_pluginst_ptr_t _input_emitterspinrate;
 
   fvec3xf_inp_pluginst_ptr_t _input_direction;
+  fvec3xf_inp_pluginst_ptr_t _input_tangent;
   fvec3xf_inp_pluginst_ptr_t _input_offset;
+  fvec4xf_inp_pluginst_ptr_t _input_aux;
+  float_out_pluginst_ptr_t   _output_random;  // pool's Random output
 
   RingDirectedEmitter _directedEmitter;
   EmitterCtx _emitter_context;
@@ -84,7 +94,20 @@ void RingEmitterInst::onLink(GraphInst* inst) {
   _input_emissionradius   = typedInputNamed<FloatXfPlugTraits>("EmissionRadius");
   _input_emitterspinrate  = typedInputNamed<FloatXfPlugTraits>("EmitterSpinRate");
   _input_direction        = typedInputNamed<Vec3XfPlugTraits>("Direction");
+  _input_tangent          = typedInputNamed<Vec3XfPlugTraits>("Tangent");
   _input_offset           = typedInputNamed<Vec3XfPlugTraits>("Offset");
+  _input_aux              = typedInputNamed<Vec4XfPlugTraits>("Aux");
+  auto pool = _graphinst->firstModuleInst<ParticlePoolModuleInst>();
+  if (pool) {
+    _output_random = pool->typedOutputNamed<FloatPlugTraits>("Random");
+  }
+  // Install per-particle aux hook — DirectedEmitter::EmitCB calls this
+  // for each new particle, letting Expr.ptc.random / Expr.rand_range
+  // chains on Aux re-evaluate per particle.
+  _emitter_context.mPerParticleAux = [this](BasicParticle* ptc) {
+    if (_output_random) _output_random->setValue(ptc->mfRandom);
+    ptc->_aux = _input_aux->value();
+  };
 }
 ///////////////////////////////////////////////////////////////////////////////
 void RingEmitterInst::compute(GraphInst* inst, ui::updatedata_ptr_t updata) {
@@ -99,7 +122,10 @@ void RingEmitterInst::compute(GraphInst* inst, ui::updatedata_ptr_t updata) {
     float fdelta = fstep;
     _timeAccumulator -= fstep;
       _reap(fdelta);
-      _emit(fdelta);    
+      auto ptcl_context = inst->_impl.getShared<particle::Context>();
+      if (not (ptcl_context and ptcl_context->_inhibit_emission)) {
+        _emit(fdelta);
+      }
   }
   if (_timeAccumulator < 0.01f) {
     _timeAccumulator = 0.0f;
@@ -127,10 +153,15 @@ void RingEmitterInst::_emit(float fdt) {
   _emitter_context.mDispersion        = _input_dispersionangle->value();
   _directedEmitter.meDirection   = EmitterDirection::CONSTANT;
   _directedEmitter.mUserDir      = _input_direction->value();
+  _directedEmitter.mTangent      = _input_tangent->value();
 
   auto offset = _input_offset->value();
   //printf( "OFFSET<%g %g %g>\n", offset.x, offset.y, offset.z);
   _emitter_context.mPosition          = offset;
+  // mAux is only used when mPerParticleAux is null (legacy path). The hook
+  // we installed in onLink always runs, so mAux is effectively unused now
+  // — kept for compat with any future emitter that bypasses the hook.
+  _emitter_context.mAux               = _input_aux->value();
   _directedEmitter.Emit(_emitter_context);
   float fphaseINC = fspr * fdt;
   mfPhase         = fmodf(mfPhase + fphaseINC, PI2 * 1000.0f);
@@ -164,20 +195,66 @@ void RingDirectedEmitter::computePosDir(float fi, fvec3& pos, fmtx3& basis) {
   float fpz    = sinf(phase);
   float fdx    = cosf(phase + PI_DIV_2);
   float fdz    = sinf(phase + PI_DIV_2);
-  pos          = fvec3((fpx * scaler), 0.0f, (fpz * scaler));
-  if (meDirection == EmitterDirection::USER) {
-    basis.setColumn(0,fvec3(1,0,0));
-    basis.setColumn(1,mUserDir);
-    basis.setColumn(2,fvec3(0,0,1));
-  } else {
-    //dir = fvec3(fdx, 0.0f, fdz);
-    fvec3 DY = fvec3(fdx, 0.0f, fdz).normalized();
-    fvec3 DX = fvec3(0,1,0);
-    fvec3 DZ = DY.crossWith(DX);
 
-    basis.setColumn(0,DX);
-    basis.setColumn(1,DY);
-    basis.setColumn(2,DZ);
+  // Build an orthonormal ring basis:
+  //   Normal     = -mUserDir (Direction is the down-vector by convention,
+  //                so the ring plane's normal flips to point "up" against
+  //                gravity). When mUserDir isn't set (or is degenerate),
+  //                fall back to world-Y.
+  //   Tangent    = mTangent projected onto the plane perpendicular to Normal.
+  //                Defaults to world-X for legacy parity. If the projection
+  //                is degenerate (Tangent parallel to Normal) we synthesize
+  //                a stable fallback.
+  //   Bitangent  = Normal × Tangent.
+  // The ring positions sweep in (Tangent, Bitangent) and the per-particle
+  // emit direction sweeps in the same plane (offset by 90° in phase).
+  fvec3 normal = mUserDir;
+  if (normal.magnitudeSquared() < 1e-8f) {
+    normal = fvec3(0, -1, 0);   // legacy default
+  } else {
+    normal = normal.normalized();
+  }
+  // Convention: ring plane is perpendicular to Direction (which is the
+  // emission direction). Negate so the plane normal points "up" against
+  // emit; the sign doesn't affect the swept ring, only the bitangent's
+  // handedness — kept consistent with the legacy world-XZ orientation
+  // (legacy used DY = (fdx, 0, fdz) and DX = world-Y; here normal plays
+  // the role of "up-out-of-the-plane").
+  fvec3 plane_normal = -normal;
+
+  fvec3 tangent = mTangent;
+  // Project tangent onto the plane perpendicular to plane_normal.
+  tangent       = tangent - plane_normal * tangent.dotWith(plane_normal);
+  if (tangent.magnitudeSquared() < 1e-8f) {
+    // Degenerate (Tangent parallel to Normal). Pick a stable fallback:
+    // world-X unless that's also degenerate, in which case world-Z.
+    tangent = fvec3(1, 0, 0);
+    tangent = tangent - plane_normal * tangent.dotWith(plane_normal);
+    if (tangent.magnitudeSquared() < 1e-8f) {
+      tangent = fvec3(0, 0, 1);
+      tangent = tangent - plane_normal * tangent.dotWith(plane_normal);
+    }
+  }
+  tangent         = tangent.normalized();
+  fvec3 bitangent = plane_normal.crossWith(tangent).normalized();
+
+  // Position swept in the (tangent, bitangent) plane around the ring.
+  pos = tangent * (fpx * scaler) + bitangent * (fpz * scaler);
+
+  if (meDirection == EmitterDirection::USER) {
+    basis.setColumn(0, tangent);
+    basis.setColumn(1, mUserDir);
+    basis.setColumn(2, bitangent);
+  } else {
+    // Per-particle velocity dir sweeps 90° ahead in phase — i.e., tangent
+    // to the ring at the spawn point — also lives in the same plane.
+    fvec3 dy = (tangent * fdx + bitangent * fdz).normalized();
+    fvec3 dx = plane_normal;
+    fvec3 dz = dy.crossWith(dx);
+
+    basis.setColumn(0, dx);
+    basis.setColumn(1, dy);
+    basis.setColumn(2, dz);
   }
 }
 
@@ -197,7 +274,9 @@ static void _reshapeRingEmitterIOs( dataflow::moduledata_ptr_t data ){
   ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionRadius")->_range = {0,10};
   ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmitterSpinRate")->_range = {0,100};
   ModuleData::createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Direction")->_range = {-1,1};
+  ModuleData::createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Tangent")->_range = {-1,1};
   ModuleData::createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Offset")->_range = {-10,10};
+  ParticleModuleData::_initAuxIO(data);
 }
 
 //////////////////////////////////////////////////////////////////////////

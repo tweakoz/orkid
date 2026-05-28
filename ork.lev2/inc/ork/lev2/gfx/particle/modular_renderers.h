@@ -51,7 +51,10 @@ public:
   EDepthTest _depthtest = EDepthTest::OFF;
   BlendingMacro _blending = BlendingMacro::OFF;
 
-  FxShaderStorageBuffer* _cu_vertex_io_buffer    = nullptr;
+  // SSBO binding-slot metadata. The actual particle vertex SSBO is owned
+  // per-renderer-instance (StreakRendererInst / SpriteRendererInst) — was
+  // previously here on the material, but that caused multiple particle
+  // instances using the same material to race on a single SSBO.
   const FxShaderStorageBlock* _cu_storage_block  = nullptr;
   const FxComputeShader* _streakcu_shader              = nullptr;
   const FxComputeShader* _spritecu_shader              = nullptr;
@@ -97,6 +100,32 @@ public:
 };
 
 using gradientmaterial_ptr_t = std::shared_ptr<GradientMaterial>;
+
+/////////////////////////////////////////
+
+// GradientAtlasMaterial — samples a user-supplied 2D texture as a
+// "gradient atlas." Frag shader looks up vec2(unit_age, aux.x), so each
+// row of the atlas is a complete 1D gradient and a particle's aux.x picks
+// which row. The atlas is provided directly (no runtime gradient→texture
+// bake step like GradientMaterial does). Standard blending/depth/color
+// intensity properties match the sibling class.
+struct GradientAtlasMaterial : public MaterialBase {
+  DeclareConcreteX(GradientAtlasMaterial, MaterialBase);
+public:
+  static std::shared_ptr<GradientAtlasMaterial> createShared();
+  GradientAtlasMaterial();
+  void update(const RenderContextInstData& RCID) final;
+  void gpuInit(const RenderContextInstData& RCID) final;
+
+  fxparam_constptr_t _param_atlas       = nullptr;
+  fxparam_constptr_t _param_mod_texture = nullptr;
+  texture_ptr_t      _atlas;                 // the gradient atlas (2D)
+  texture_ptr_t      _modulation_texture;    // sibling concept, optional
+  float              _gradientAlphaIntensity = 1.0f;
+  float              _gradientColorIntensity = 1.0f;
+};
+
+using gradientatlasmaterial_ptr_t = std::shared_ptr<GradientAtlasMaterial>;
 
 /////////////////////////////////////////
 
@@ -199,6 +228,59 @@ public:
 };
 
 using lightmodule_ptr_t = std::shared_ptr<LightRendererData>;
+
+/////////////////////////////////////////
+
+// Kernel shapes for VdbLevelSetRendererData splat. Each describes how a
+// particle's contribution falls off with distance r from its center, in
+// units of Radius. All are zero at r >= Radius (compact support) except
+// GAUSSIAN which decays smoothly to ~0 by ~3 sigma.
+//
+// Underlying values are the CRC of the kernel name (via the _crcu
+// user-defined literal) so that `kernel = tokens.WYVILL` from Python
+// works via a simple `VdbLevelSetKernel(crc->hashed())` cast — same
+// pattern used by BlendingMacro / EDepthTest elsewhere in orkid.
+enum class VdbLevelSetKernel : uint64_t {
+  WYVILL   = "WYVILL"_crcu,   // (1 - r²)³  — smooth, default
+  CUBIC    = "CUBIC"_crcu,    // (1 - r)³   — cheaper, sharper falloff
+  QUARTIC  = "QUARTIC"_crcu,  // (1 - r²)²  — sharper than Wyvill
+  GAUSSIAN = "GAUSSIAN"_crcu, // exp(-α r²) — no compact support, very soft
+};
+
+// VdbLevelSetRenderer — chain terminus that splats live particles into a
+// per-graphinst OpenVDB FloatGrid as a density field, runs marching cubes
+// (openvdb::tools::volumeToMesh) at the IsoLevel threshold, and draws the
+// resulting triangle mesh via an internally-owned RigidPrimitive. Matches
+// the existing per-particle-renderer module shape (registers a _render
+// lambda via ptcl_context->_rcidlambda in onLink).
+//
+// Plugs (FloatXf, uniform-rate):
+//   Radius    — kernel falloff radius in world units (per particle)
+//   Strength  — kernel amplitude multiplier (density contribution per particle)
+//   IsoLevel  — marching-cubes threshold (density value at the iso-surface)
+//
+// Properties (set at construction, not bindable):
+//   _voxelSize — VDB grid voxel size (world units). Smaller = sharper but
+//                quadratic memory cost per particle's splat sphere.
+//   _kernel    — falloff kernel shape (VdbLevelSetKernel enum).
+//   _material  — render material (any FreestyleMaterial / PBR / etc.).
+struct VdbLevelSetRendererData : public RendererModuleData {
+  DeclareConcreteX(VdbLevelSetRendererData, RendererModuleData);
+public:
+  VdbLevelSetRendererData();
+  static std::shared_ptr<VdbLevelSetRendererData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dataflow::GraphInst* ginst) const final;
+  // General lev2 material (PBRMaterial / FreestyleMaterial / etc.) — NOT
+  // a particle-specific MaterialBase. The extracted triangle mesh is
+  // drawn via RigidPrimitive::renderEML through this material's pipeline,
+  // same pattern vdb_sculpt.py uses with shaders.createPbrMaterialWithColor.
+  lev2::material_ptr_t _material;
+  float                _voxelSize = 0.1f;
+  VdbLevelSetKernel    _kernel    = VdbLevelSetKernel::WYVILL;
+  bool                 _sort      = false;
+};
+
+using vdblevelset_module_ptr_t = std::shared_ptr<VdbLevelSetRendererData>;
 
 /////////////////////////////////////////
 } //namespace ork::lev2::particle {

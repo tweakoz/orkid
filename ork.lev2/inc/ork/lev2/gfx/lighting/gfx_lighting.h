@@ -205,6 +205,14 @@ struct LightProbe {
   ProbeActivationMode _activationMode = ProbeActivationMode::ALWAYS;
   bool _active = true;
   bool _dirty = true;
+  // PBR2 Phase 0 — when true, the forward compositor treats the probe
+  // as perpetually dirty: re-renders the cubemap every frame so
+  // reflections respond live to scene changes (sky swap, geometry
+  // motion, etc.). Default false → probe renders once (or when
+  // explicitly _markAllDirty'd by a bake button) and stays static.
+  // Future: paired with autobake-at-tojson to bake static probes
+  // offline; this flag stays as the opt-in for live updates.
+  bool _dynamic = false;
   uint64_t _version = 0;
   std::string _name;
   fmtx4 _worldMatrix; // +y up, right handed
@@ -676,6 +684,11 @@ public:
   GlobalLightContainer mGlobalStationaryLights; // non-moving, potentially animating color or texture (and => not lightmappable)
   LightContainer mGlobalMovingLights;           // moving lights
   lightprobeset_t _lightprobes;
+
+  // PBR2 Phase 0 — find a registered probe by its (entity-name-derived)
+  // _name. Linear scan over the few probes the scene declares (typically
+  // 1-10). Called once at consumer activation time, not per-frame.
+  lightprobe_ptr_t findProbeByName(const std::string& name) const;
 
   void enumerateInPass(const CompositingPassData& CPD, enumeratedlights_ptr_t out_lights) const;
 

@@ -9,11 +9,12 @@
 ///////////////////////////////////////////////////////////////
 storage_interface storage_particles (descriptor_set 0) {
   buffer layout(std430) particles {
-    vec4 camRightSize;          // 0: xyz=camRight, w=unused
-    vec4 camUpCount;            // 16: xyz=camUp, w=numParticles (as float)
-    vec4 particleData[262144];   // 32: pos.xyz, size (per particle)
-    vec4 particleData2[262144];  // vel.xyz, length (per particle, for streaks)
-    vec4 particleData3[262144];  // age, random, unused, unused (per particle)
+    vec4 camRightSize;             // 0:  xyz=camRight (sprites) / camPos (streaks), .w unused
+    vec4 camUpCount;               // 16: xyz=camUp, w=numParticles (as float)
+    vec4 materialParams;           // 32: x=gradient_phase (GradientAtlasMaterial only), yzw=reserved
+    vec4 particleData[262144];     // 48: pos.xyz, size (per particle)
+    vec4 particleData2[262144];    //     vel.xyz, length (per particle, for streaks)
+    vec4 particleData3[262144];    //     age, random, aux.x, aux.y (per particle)
   };
 }
 
@@ -26,7 +27,7 @@ vertex_interface vface_sprite_ssbo
   outputs {
     vec4 frg_clr;
     vec2 frg_uv0;
-    vec2 frg_uv1;  // x=age, y=random
+    vec4 frg_uv1;  // x=age, y=random, z=aux.x, w=aux.y
   }
 }
 
@@ -39,7 +40,7 @@ vertex_interface vface_streak_ssbo
   outputs {
     vec4 frg_clr;
     vec2 frg_uv0;
-    vec2 frg_uv1;  // x=age, y=random
+    vec4 frg_uv1;  // x=age, y=random, z=aux.x, w=aux.y
   }
 }
 
@@ -57,12 +58,15 @@ vertex_shader vs_sprite_ssbo : vface_sprite_ssbo {
 
   // Read particle data from SSBO
   vec4 pd1 = particleData[particleIdx];   // pos.xyz, size
-  vec4 pd3 = particleData3[particleIdx];  // age, random, unused, unused
+  vec4 pd3 = particleData3[particleIdx];  // age, random, aux.x, aux.y
 
   vec3 pos = pd1.xyz;
   float size = pd1.w;
   float age = pd3.x;
   float random = pd3.y;
+  // aux.x gets the per-frame gradient_phase added in so the fragment can
+  // sample the atlas with a single fract() — keeps the frag shader trivial.
+  vec2 aux_xy = vec2(pd3.z + materialParams.x, pd3.w);
 
   // Billboard corner offsets (2 triangles = 6 vertices)
   // Triangle 1: 0,1,2  Triangle 2: 3,4,5 (same as 0,2,3)
@@ -92,7 +96,7 @@ vertex_shader vs_sprite_ssbo : vface_sprite_ssbo {
   gl_Position = MatMVP * vec4(worldPos, 1.0);
   frg_clr = vec4(1.0);
   frg_uv0 = uvs[cornerIdx];
-  frg_uv1 = vec2(age, random);
+  frg_uv1 = vec4(age, random, aux_xy);
 }
 
 ///////////////////////////////////////////////////////////////
@@ -110,7 +114,7 @@ vertex_shader vs_streak_ssbo : vface_streak_ssbo {
   // Read particle data from SSBO
   vec4 pd1 = particleData[particleIdx];   // pos.xyz, width
   vec4 pd2 = particleData2[particleIdx];  // vel.xyz, length
-  vec4 pd3 = particleData3[particleIdx];  // age, random, unused, unused
+  vec4 pd3 = particleData3[particleIdx];  // age, random, aux.x, aux.y
 
   vec3 pos = pd1.xyz;
   float width = pd1.w;
@@ -118,6 +122,9 @@ vertex_shader vs_streak_ssbo : vface_streak_ssbo {
   float len = pd2.w;
   float age = pd3.x;
   float random = pd3.y;
+  // aux.x gets the per-frame gradient_phase added in so the fragment can
+  // sample the atlas with a single fract() — keeps the frag shader trivial.
+  vec2 aux_xy = vec2(pd3.z + materialParams.x, pd3.w);
 
   // Compute streak quad corners
   // Streak goes from pos (head) to pos - vel*length (tail)
@@ -157,7 +164,7 @@ vertex_shader vs_streak_ssbo : vface_streak_ssbo {
   gl_Position = MatMVP * vec4(worldPos, 1.0);
   frg_clr = vec4(1.0);
   frg_uv0 = uvs[idx];
-  frg_uv1 = vec2(age, random);
+  frg_uv1 = vec4(age, random, aux_xy);
 }
 ///////////////////////////////////////////////////////////////
 // Techniques for sprites
@@ -176,6 +183,15 @@ technique tgradparticle_sprites {
   pass p0 {
     vertex_shader   = vs_sprite_ssbo;
     fragment_shader = ps_grad;
+    state_block     = sb_default;
+  }
+}
+
+technique tgradatlasparticle_sprites {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_sprite_ssbo;
+    fragment_shader = ps_grad_atlas;
     state_block     = sb_default;
   }
 }
@@ -215,6 +231,15 @@ technique tgradparticle_streaks {
   pass p0 {
     vertex_shader   = vs_streak_ssbo;
     fragment_shader = ps_grad;
+    state_block     = sb_default;
+  }
+}
+
+technique tgradatlasparticle_streaks {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_streak_ssbo;
+    fragment_shader = ps_grad_atlas;
     state_block     = sb_default;
   }
 }

@@ -131,8 +131,9 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
 
   auto FXI = context->FXI();
 
-  // Create SSBO for particle data (SSBO-based rendering, no compute shaders)
-  _cu_vertex_io_buffer = FXI->createStorageBuffer(16 << 20);
+  // Storage-block binding slot is shared (it's just shader-side metadata).
+  // The actual SSBO buffer is per-renderer-instance now — see
+  // Streak/SpriteRendererInst::_cu_vertex_io_buffer.
   _cu_storage_block = _material->storageBlock("storage_particles");
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -290,8 +291,9 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
 
   auto FXI = context->FXI();
 
-  // Create SSBO for particle data (SSBO-based rendering, no compute shaders)
-  _cu_vertex_io_buffer = FXI->createStorageBuffer(16 << 20);
+  // Storage-block binding slot is shared (it's just shader-side metadata).
+  // The actual SSBO buffer is per-renderer-instance now — see
+  // Streak/SpriteRendererInst::_cu_vertex_io_buffer.
   _cu_storage_block = _material->storageBlock("storage_particles");
 }
 /////////////////////////////////////////////////////////////////////////////////////////////
@@ -338,6 +340,115 @@ void GradientMaterial::update(const RenderContextInstData& RCID) {
     /////////////////////////////////////////
   }
   ///////////////////////////////
+  _material->_rasterstate->setBlendingMacro(_blending);
+  _material->_rasterstate->setWriteMaskZ(false);
+  _material->_rasterstate->setDepthTest(_depthtest);
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
+void GradientAtlasMaterial::describeX(class_t* clazz) {
+  clazz->floatProperty("colorFactor", float_range{-10, 10}, &GradientAtlasMaterial::_gradientColorIntensity);
+  clazz->floatProperty("alphaFactor", float_range{-10, 10}, &GradientAtlasMaterial::_gradientAlphaIntensity);
+  clazz->directEnumProperty("blendmode", &GradientAtlasMaterial::_blending);
+}
+/////////////////////////////////////////////////////////////////////////////////////////////
+GradientAtlasMaterial::GradientAtlasMaterial() {
+  _color = fvec4(1, 1, 1, 1);
+  /////////////////////////////////////////////////////////////////////////
+  // Same per-particle vertex setters as GradientMaterial — the SSBO path
+  // doesn't actually use these (it builds geometry on the GPU from the
+  // SSBO directly), but the base class expects them to be set.
+  /////////////////////////////////////////////////////////////////////////
+  _vertexSetterSprite = [=](sprite_vertex_writer_t& vw,
+                            const BasicParticle* ptc,
+                            float fang,
+                            float size,
+                            uint32_t ucolor) {
+    float fage            = ptc->mfAge;
+    float flspan          = (ptc->mfLifeSpan != 0.0f) ? ptc->mfLifeSpan : 0.01f;
+    float clamped_unitage = std::clamp<float>((fage / flspan), 0, 1);
+    fvec2 uv0(fang, size);
+    fvec2 uv1(ptc->mfRandom, clamped_unitage);
+    vw.AddVertex(sprite_vtx_t(ptc->mPosition, fvec3(0), fvec3(0), uv0, uv1));
+  };
+  _vertexSetterStreak = [](streak_vertex_writer_t& vw,
+                           const BasicParticle* ptc,
+                           fvec2 LW,
+                           fvec3 obj_nrmz) {
+    float fage            = ptc->mfAge;
+    float flspan          = (ptc->mfLifeSpan != 0.0f) ? ptc->mfLifeSpan : 0.01f;
+    float clamped_unitage = std::clamp<float>((fage / flspan), 0, 1);
+    fvec2 uv0(ptc->mfRandom, clamped_unitage);
+    fvec2 uv1(LW.x, LW.y);
+    vw.AddVertex(streak_vtx_t(ptc->mPosition, obj_nrmz, ptc->mVelocity, uv0, uv1));
+  };
+}
+/////////////////////////////////////////////////////////////////////////////////////////////
+std::shared_ptr<GradientAtlasMaterial> GradientAtlasMaterial::createShared() {
+  return std::make_shared<GradientAtlasMaterial>();
+}
+/////////////////////////////////////////////////////////////////////////////////////////////
+void GradientAtlasMaterial::gpuInit(const RenderContextInstData& RCID) {
+  auto context = RCID.context();
+
+  _material = std::make_shared<FreestyleMaterial>();
+  _material->gpuInit(context, "orkshader://particle");
+  _material->_rasterstate->setBlendingMacro(_blending);
+  _material->_rasterstate->setCullTest(ECullTest::OFF);
+  _material->_rasterstate->setDepthTest(_depthtest);
+  _material->_rasterstate->setWriteMaskZ(false);
+  _material->_rasterstate->setDepthTest(EDepthTest::OFF);
+
+  auto fxparameterIV          = _material->param("MatIV");
+  auto fxparameterMVP         = _material->param("MatMVP");
+  auto fxparameterAtlas       = _material->param("GradientMap");  // same uniform slot
+  auto fxparameterColorFactor = _material->param("ColorFactor");
+  auto fxparameterAlphaFactor = _material->param("AlphaFactor");
+  _param_atlas                = fxparameterAtlas;
+  _param_mod_texture          = _material->param("ColorMap");
+  auto pipeline_cache         = _material->pipelineCache();
+
+  _pipeline                = pipeline_cache->findPipeline(RCID);
+  _pipeline->_rasterstate  = _material->_rasterstate;
+  _pipeline->_material_ptr = _material.get();
+
+  _pipeline->bindParam(fxparameterIV,  "RCFD_Camera_IV_Mono"_crcsh);
+  _pipeline->bindParam(fxparameterMVP, "RCFD_Camera_MVP_Mono"_crcsh);
+
+  FxPipeline::varval_generator_t gen_atlas = [=]() -> FxPipeline::varval_t {
+    // Allow swapping the atlas at runtime by re-reading _atlas each frame.
+    return _atlas;
+  };
+  _pipeline->bindParam(fxparameterAtlas, gen_atlas);
+
+  FxPipeline::varval_generator_t gen_modtex = [=]() -> FxPipeline::varval_t {
+    return _modulation_texture;
+  };
+  _pipeline->bindParam(_param_mod_texture, gen_modtex);
+
+  FxPipeline::varval_generator_t colorfactor = [=]() -> FxPipeline::varval_t {
+    return _gradientColorIntensity;
+  };
+  _pipeline->bindParam(fxparameterColorFactor, colorfactor);
+
+  FxPipeline::varval_generator_t alphafactor = [=]() -> FxPipeline::varval_t {
+    return _gradientAlphaIntensity;
+  };
+  _pipeline->bindParam(fxparameterAlphaFactor, alphafactor);
+
+  // New techniques for atlas variants — defined in particle_comshader.i2.
+  _tek_sprites          = _material->technique("tgradatlasparticle_sprites");
+  _tek_streaks          = _material->technique("tgradatlasparticle_streaks");
+  _tek_sprites_stereoCI = _tek_sprites;
+  _tek_streaks_stereoCI = _tek_streaks;
+
+  auto FXI         = context->FXI();
+  _cu_storage_block = _material->storageBlock("storage_particles");
+}
+/////////////////////////////////////////////////////////////////////////////////////////////
+void GradientAtlasMaterial::update(const RenderContextInstData& RCID) {
   _material->_rasterstate->setBlendingMacro(_blending);
   _material->_rasterstate->setWriteMaskZ(false);
   _material->_rasterstate->setDepthTest(_depthtest);
@@ -398,8 +509,9 @@ void TextureMaterial::gpuInit(const RenderContextInstData& RCID) {
 
   auto FXI = context->FXI();
 
-  // Create SSBO for particle data (SSBO-based rendering, no compute shaders)
-  _cu_vertex_io_buffer = FXI->createStorageBuffer(16 << 20);
+  // Storage-block binding slot is shared (it's just shader-side metadata).
+  // The actual SSBO buffer is per-renderer-instance now — see
+  // Streak/SpriteRendererInst::_cu_vertex_io_buffer.
   _cu_storage_block = _material->storageBlock("storage_particles");
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -480,8 +592,9 @@ void TexGridMaterial::gpuInit(const RenderContextInstData& RCID) {
 
   auto FXI = context->FXI();
 
-  // Create SSBO for particle data (SSBO-based rendering, no compute shaders)
-  _cu_vertex_io_buffer = FXI->createStorageBuffer(16 << 20);
+  // Storage-block binding slot is shared (it's just shader-side metadata).
+  // The actual SSBO buffer is per-renderer-instance now — see
+  // Streak/SpriteRendererInst::_cu_vertex_io_buffer.
   _cu_storage_block = _material->storageBlock("storage_particles");
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -525,7 +638,8 @@ namespace ptcl = ork::lev2::particle;
 
 ImplementReflectionX(ptcl::MaterialBase, "psys::MaterialBase");
 ImplementReflectionX(ptcl::FlatMaterial, "psys::FlatMaterial");
-ImplementReflectionX(ptcl::GradientMaterial, "psys::GradientMaterial");
+ImplementReflectionX(ptcl::GradientMaterial,      "psys::GradientMaterial");
+ImplementReflectionX(ptcl::GradientAtlasMaterial, "psys::GradientAtlasMaterial");
 ImplementReflectionX(ptcl::TextureMaterial, "psys::TextureMaterial");
 ImplementReflectionX(ptcl::TexGridMaterial, "psys::TexGridMaterial");
 ImplementReflectionX(ptcl::VolTexMaterial, "psys::VolTexMaterial");

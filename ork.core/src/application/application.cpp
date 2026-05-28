@@ -268,6 +268,7 @@ StdFileSystemInitalizer::StdFileSystemInitalizer(const AppInitData& appinitdata)
   file::setPathExpander("staging",      stage_dir);
   file::setPathExpander("ork_ecsscenes", data_dir / "ecsscenes");
   file::setPathExpander("ork_envmaps", stage_dir / "envmaps");
+  file::setPathExpander("ork_envmaps2", stage_dir / "assetcache" / "envmaps2");
   file::setPathExpander("ork_data",     data_dir);
   file::setPathExpander("ork_testdata", data_dir / "tests");
 

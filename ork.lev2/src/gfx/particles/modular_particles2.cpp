@@ -51,6 +51,12 @@ void ParticleModuleData:: _initPoolIOs(dflow::dgmoduledata_ptr_t data){
   createOutputPlug<ParticleBufferPlugTraits>(data, dflow::EPR_UNIFORM, "pool");
 }
 
+void ParticleModuleData::_initAuxIO(dflow::moduledata_ptr_t data){
+  // Vec4Xf so per-axis transforms can attach if a chain is ever needed
+  // on the consumer side; the Vec4Combine source provides the vec4 value.
+  createInputPlug<dflow::Vec4XfPlugTraits>(data, dflow::EPR_UNIFORM, "Aux");
+}
+
 ParticleModuleInst::ParticleModuleInst(const ParticleModuleData* data, dflow::GraphInst* ginst)
   : DgModuleInst(data,ginst){
 
@@ -77,6 +83,7 @@ bool psys_graph::CanConnect(const dflow::inplugbase* pin, const dflow::outplugba
   brval |= (&pin->GetDataTypeId() == &typeid(ParticleBuffer)) && (&pout->GetDataTypeId() == &typeid(ParticleBuffer));
   brval |= (&pin->GetDataTypeId() == &typeid(float)) && (&pout->GetDataTypeId() == &typeid(float));
   brval |= (&pin->GetDataTypeId() == &typeid(fvec3)) && (&pout->GetDataTypeId() == &typeid(fvec3));
+  brval |= (&pin->GetDataTypeId() == &typeid(fvec4)) && (&pout->GetDataTypeId() == &typeid(fvec4));
   return brval;
 }
 

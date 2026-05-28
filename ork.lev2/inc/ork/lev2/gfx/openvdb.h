@@ -10,6 +10,7 @@
 #include <openvdb/tools/SignedFloodFill.h>
 #include <openvdb/tools/ChangeBackground.h>
 #include <openvdb/tools/VolumeToMesh.h>
+#include <openvdb/tools/MeshToVolume.h>
 #include <openvdb/util/NullInterrupter.h>
 #include <openvdb_ax/compiler/Logger.h>
 #include <openvdb_ax/compiler/VolumeExecutable.h>
@@ -111,8 +112,8 @@ using vdb_grid_test = openvdb::Grid<vdb_tree_test>;
 using vdb_grid_test_ptr_t  = std::shared_ptr<vdb_grid_test>;
 
 using vdb_tree_test_leaf_t = vdb_tree_test::LeafNodeType;                                        // L3 (   8^3 [512] voxels )
-using vdb_tree_test_int2_t = openvdb::v12_0::tree::InternalNode<vdb_tree_test_leaf_t,L2_SIZE>;   // L2 ( 128^3 [2M]  voxels )
-using vdb_tree_test_int1_t = openvdb::v12_0::tree::InternalNode<vdb_tree_test_int2_t,L1_SIZE>;   // L1 (4096^3 [64G] voxels )
+using vdb_tree_test_int2_t = openvdb::v13_0::tree::InternalNode<vdb_tree_test_leaf_t,L2_SIZE>;   // L2 ( 128^3 [2M]  voxels )
+using vdb_tree_test_int1_t = openvdb::v13_0::tree::InternalNode<vdb_tree_test_int2_t,L1_SIZE>;   // L1 (4096^3 [64G] voxels )
 using vdb_tree_test_root_t = vdb_tree_test::RootNodeType;                                        // L0 ??? voxels
 
 ///////////////////////////////////////////////////////////////////////////////

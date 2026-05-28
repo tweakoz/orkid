@@ -16,6 +16,7 @@
 #include <ork/dataflow/plug_data.inl>
 #include <ork/dataflow/plug_inst.inl>
 #include <ork/math/cvector3.hpp> // << use ITyped<fvec3>::serialize specialization (use_custom_serdes)
+#include <ork/math/cvector4.hpp> // << use ITyped<fvec4>::serialize specialization
 #include <ork/math/quaternion.hpp> // << use ITyped<fvec3>::serialize specialization (use_custom_serdes)
 
 namespace ork{
@@ -35,7 +36,13 @@ std::shared_ptr<float> FloatXfPlugTraits::data_to_inst(std::shared_ptr<float> in
 std::shared_ptr<fvec3> Vec3fPlugTraits::data_to_inst(std::shared_ptr<fvec3> inp) {
   return inp;
 }
+std::shared_ptr<fvec4> Vec4fPlugTraits::data_to_inst(std::shared_ptr<fvec4> inp) {
+  return inp;
+}
 std::shared_ptr<fvec3> Vec3XfPlugTraits::data_to_inst(std::shared_ptr<fvec3> inp) {
+  return inp;
+}
+std::shared_ptr<fvec4> Vec4XfPlugTraits::data_to_inst(std::shared_ptr<fvec4> inp) {
   return inp;
 }
 std::shared_ptr<fquat> QuatfPlugTraits::data_to_inst(std::shared_ptr<fquat> inp) {
@@ -222,6 +229,21 @@ template <> outpluginst_ptr_t outplugdata<Vec3fPlugTraits>::createInstance(Modul
 }
 template struct outplugdata<Vec3fPlugTraits>;
 ///////////////////////////////////////////////////////////////////////////////
+// plugdata<fvec4>
+///////////////////////////////////////////////////////////////////////////////
+template <> void inplugdata<Vec4fPlugTraits>::describeX(class_t* clazz) {
+}
+template <> void outplugdata<Vec4fPlugTraits>::describeX(class_t* clazz) {
+}
+template <> inpluginst_ptr_t inplugdata<Vec4fPlugTraits>::createInstance(ModuleInst* minst) const {
+  return std::make_shared<inpluginst<Vec4fPlugTraits>>(this, minst);
+}
+template <> outpluginst_ptr_t outplugdata<Vec4fPlugTraits>::createInstance(ModuleInst* minst) const {
+  return std::make_shared<outpluginst<Vec4fPlugTraits>>(this, minst);
+}
+template struct inplugdata<Vec4fPlugTraits>;
+template struct outplugdata<Vec4fPlugTraits>;
+///////////////////////////////////////////////////////////////////////////////
 // plugdata<fvec3xf>
 ///////////////////////////////////////////////////////////////////////////////
 template <> void inplugdata<Vec3XfPlugTraits>::describeX(class_t* clazz) {
@@ -232,12 +254,26 @@ template <> void inplugdata<Vec3XfPlugTraits>::describeX(class_t* clazz) {
         valout = *(obj_inp->_value);
         },
       [](mytype_t* obj_out, const fvec3& valinp) { //
-        *(obj_out->_value) = valinp; 
+        *(obj_out->_value) = valinp;
         });
 }
 template <> inpluginst_ptr_t inplugdata<Vec3XfPlugTraits>::createInstance(ModuleInst* minst) const {
   return std::make_shared<inpluginst<Vec3XfPlugTraits>>(this, minst);
 }
+///////////////////////////////////////////////////////////////////////////////
+// plugdata<fvec4xf>
+///////////////////////////////////////////////////////////////////////////////
+template <> void inplugdata<Vec4XfPlugTraits>::describeX(class_t* clazz) {
+  using mytype_t = inplugdata<Vec4XfPlugTraits>;
+  clazz->lambdaProperty<mytype_t, fvec4>(
+      "value",
+      [](const mytype_t* obj_inp, fvec4& valout) { valout = *(obj_inp->_value); },
+      [](mytype_t* obj_out, const fvec4& valinp) { *(obj_out->_value) = valinp; });
+}
+template <> inpluginst_ptr_t inplugdata<Vec4XfPlugTraits>::createInstance(ModuleInst* minst) const {
+  return std::make_shared<inpluginst<Vec4XfPlugTraits>>(this, minst);
+}
+template struct inplugdata<Vec4XfPlugTraits>;
 ///////////////////////////////////////////////////////////////////////////////
 // plugdata<fquat>
 ///////////////////////////////////////////////////////////////////////////////
@@ -283,6 +319,9 @@ void vect3inplugdata::describeX(class_t* clazz) {
         &vect3inplugdata::GetValAccessor,
         &vect3inplugdata::SetValAccessor);
   */
+}
+///////////////////////////////////////////////////////////////////////////////
+void vect4inplugdata::describeX(class_t* clazz) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void quatinplugdata::describeX(class_t* clazz) {
@@ -554,6 +593,25 @@ fvec3 fvec3xfdata::transform(const fvec3& input) const {
   return output;
 }
 ///////////////////////////////////////////////////////////////////////////////
+void fvec4xfdata::describeX(class_t* clazz) {
+}
+///////////////////////////////////////////////////////////////////////////////
+fvec4xfdata::fvec4xfdata() {
+  _transformX = std::make_shared<floatxfdata>();
+  _transformY = std::make_shared<floatxfdata>();
+  _transformZ = std::make_shared<floatxfdata>();
+  _transformW = std::make_shared<floatxfdata>();
+}
+///////////////////////////////////////////////////////////////////////////////
+fvec4 fvec4xfdata::transform(const fvec4& input) const {
+  fvec4 output;
+  output.x = _transformX->transform(input.x);
+  output.y = _transformY->transform(input.y);
+  output.z = _transformZ->transform(input.z);
+  output.w = _transformW->transform(input.w);
+  return output;
+}
+///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void fquatxfdata::describeX(class_t* clazz) {
@@ -622,6 +680,7 @@ ImplementReflectionX(dflow::OutPlugData, "dflow::outplugdata");
 
 ImplementReflectionX(dflow::floatxfdata, "dflow::floatxfdata");
 ImplementReflectionX(dflow::fvec3xfdata, "dflow::fvec3xfdata");
+ImplementReflectionX(dflow::fvec4xfdata, "dflow::fvec4xfdata");
 ImplementReflectionX(dflow::fquatxfdata, "dflow::fquatxfdata");
 ImplementReflectionX(dflow::modxfdata, "dflow::modxfdata");
 ImplementReflectionX(dflow::scalexfdata, "dflow::scalexfdata");
@@ -643,6 +702,7 @@ ImplementReflectionX(dflow::floatxfcurvedata, "dflow::floatxfcurvedata");
 
 ImplementReflectionX(dflow::floatinplugdata, "dflow::floatinplugdata");
 ImplementReflectionX(dflow::vect3inplugdata, "dflow::vect3inplugdata");
+ImplementReflectionX(dflow::vect4inplugdata, "dflow::vect4inplugdata");
 ImplementReflectionX(dflow::quatinplugdata, "dflow::quatinplugdata");
 
 ImplementTemplateReflectionX(dflow::outplugdata<dflow::FloatPlugTraits>, "dflow::outplugdata<float>");
@@ -651,11 +711,15 @@ ImplementTemplateReflectionX(dflow::inplugdata<dflow::FloatPlugTraits>, "dflow::
 ImplementTemplateReflectionX(dflow::outplugdata<dflow::Vec3fPlugTraits>, "dflow::outplugdata<vec3>");
 ImplementTemplateReflectionX(dflow::inplugdata<dflow::Vec3fPlugTraits>, "dflow::inplugdata<vec3>");
 
+ImplementTemplateReflectionX(dflow::outplugdata<dflow::Vec4fPlugTraits>, "dflow::outplugdata<vec4>");
+ImplementTemplateReflectionX(dflow::inplugdata<dflow::Vec4fPlugTraits>, "dflow::inplugdata<vec4>");
+
 ImplementTemplateReflectionX(dflow::outplugdata<dflow::QuatfPlugTraits>, "dflow::outplugdata<quat>");
 ImplementTemplateReflectionX(dflow::inplugdata<dflow::QuatfPlugTraits>, "dflow::inplugdata<quat>");
 
 ImplementTemplateReflectionX(dflow::inplugdata<dflow::FloatXfPlugTraits>, "dflow::inplugdata<floatxf>");
 ImplementTemplateReflectionX(dflow::inplugdata<dflow::Vec3XfPlugTraits>, "dflow::inplugdata<vec3xf>");
+ImplementTemplateReflectionX(dflow::inplugdata<dflow::Vec4XfPlugTraits>, "dflow::inplugdata<vec4xf>");
 ImplementTemplateReflectionX(dflow::inplugdata<dflow::QuatXfPlugTraits>, "dflow::inplugdata<quatxf>");
 
 ImplementReflectionX(dflow::nullpassthrudata, "dflow::nullpassthrudata");

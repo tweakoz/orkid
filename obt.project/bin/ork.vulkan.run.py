@@ -17,10 +17,7 @@ def setup_vulkan_env():
     # Get library paths
     obt_dyld_fallback_library_path = str(obt.path.libs())
     dyld_library_path = str(obt.path.libs())
-    
-    if obt.host.IsDarwin:
-        dyld_library_path += ":/opt/homebrew/lib"
-    
+
     # Get current environment values
     env_dyld_library_path = os.environ.get("DYLD_LIBRARY_PATH", "")
     env_obt_dyld_fallback_library_path = os.environ.get("OBT_DYLD_FALLBACK_LIBRARY_PATH", "")

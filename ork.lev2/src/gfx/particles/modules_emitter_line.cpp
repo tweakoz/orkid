@@ -53,6 +53,8 @@ struct LineEmitterInst : public ParticleModuleInst {
 
   fvec3xf_inp_pluginst_ptr_t _input_p1;
   fvec3xf_inp_pluginst_ptr_t _input_p2;
+  fvec4xf_inp_pluginst_ptr_t _input_aux;
+  float_out_pluginst_ptr_t   _output_random;
 
   /*
   
@@ -91,6 +93,11 @@ void LineEmitterInst::onLink(GraphInst* inst) {
   _input_p1 = typedInputNamed<Vec3XfPlugTraits>("P1");
   _input_p2 = typedInputNamed<Vec3XfPlugTraits>("P2");
   _input_dispersionangle  = typedInputNamed<FloatXfPlugTraits>("DispersionAngle");
+  _input_aux              = typedInputNamed<Vec4XfPlugTraits>("Aux");
+  auto pool = _graphinst->firstModuleInst<ParticlePoolModuleInst>();
+  if (pool) {
+    _output_random = pool->typedOutputNamed<FloatPlugTraits>("Random");
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void LineEmitterInst::compute(GraphInst* inst, ui::updatedata_ptr_t updata) {
@@ -124,7 +131,10 @@ void LineEmitterInst::compute(GraphInst* inst, ui::updatedata_ptr_t updata) {
   if (_timeAccumulator >= fdelta) { // limit to 30hz
     _timeAccumulator -= fdelta;
     _reap(fdelta);
-    _emit(fdelta);
+    auto ptcl_context = inst->_impl.getShared<particle::Context>();
+    if (not (ptcl_context and ptcl_context->_inhibit_emission)) {
+      _emit(fdelta);
+    }
   }
   _pool->updateUnitAges();
 }
@@ -193,6 +203,8 @@ void LineEmitterInst::_emit(float fdt) {
       ptc->mVelocity     = dir * _emitter_context.mfEmissionVelocity + _emitter_context.mOffsetVelocity;
       ptc->mLastPosition = pos - (ptc->mVelocity * _emitter_context.mfDeltaTime);
       ptc->mKey          = (void*)_emitter_context.mKey;
+      if (_output_random) _output_random->setValue(ptc->mfRandom);
+      ptc->_aux          = _input_aux->value();
     }
   }
   _emitter_context.mfEmitterMark -= float(icount);
@@ -260,6 +272,7 @@ static void _reshapeLineEmitterIOs( dataflow::moduledata_ptr_t data ){
   ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "DispersionAngle")->_range = {0,1};
   ModuleData::createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "P1")->_range = {-1000.0f, 1000.0f};
   ModuleData::createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "P2")->_range = {-1000.0f, 1000.0f};
+  ParticleModuleData::_initAuxIO(data);
 }
 
 //////////////////////////////////////////////////////////////////////////

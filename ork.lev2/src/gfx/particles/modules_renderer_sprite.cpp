@@ -36,9 +36,12 @@ struct SpriteRendererInst : public ParticleModuleInst {
   void _render(const ork::lev2::RenderContextInstData& RCID);
   const SpriteRendererData* _srd;
   floatxf_inp_pluginst_ptr_t _input_size;
+  floatxf_inp_pluginst_ptr_t _input_gradient_phase;
   float_out_pluginst_ptr_t _output_uage;
   triple_buf_ptr_t _triple_buf;
   sprite_vtxbuf_ptr_t _vertexBuffer;
+  // Per-renderer-instance SSBO. See StreakRendererInst for rationale.
+  FxShaderStorageBuffer* _cu_vertex_io_buffer = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -60,6 +63,7 @@ void SpriteRendererInst::onLink(GraphInst* inst) {
   auto ptcl_context         = inst->_impl.getShared<Context>();
   ptcl_context->_rcidlambda = [this](const RenderContextInstData& RCID) { this->_render(RCID); };
   _input_size               = typedInputNamed<FloatXfPlugTraits>("Size");
+  _input_gradient_phase     = typedInputNamed<FloatXfPlugTraits>("GradientPhase");
 
   auto pool = _graphinst->firstModuleInst<ParticlePoolModuleInst>();
   OrkAssert(pool);
@@ -149,7 +153,11 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   // compute particle dynamic vertex buffer
   //////////////////////////////////////////
   auto render_buffer = _triple_buf->begin_pull();
-  int icnt           = render_buffer->_numParticles;
+  if (not render_buffer) {
+    // Nothing pushed yet — ECS pool slot with no compute history. Bail.
+    return;
+  }
+  int icnt = render_buffer->_numParticles;
   if (0 == icnt) {
     _triple_buf->end_pull(render_buffer);
     return;
@@ -199,6 +207,7 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   }
   //////////////////////////////////////////////////////////////////////////////
   float fsize          = _input_size->value();
+  float fgrad_phase    = _input_gradient_phase->value();
   auto LW              = ork::fvec2(fsize, fsize);
   bool size_is_varying = _input_size->connectedIsVarying();
   //////////////////////////////////////////////////////////////////////////////
@@ -235,23 +244,28 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     }
 
     ///////////////////////////////////////////////////////////////
-    // Fill SSBO with new format:
-    // vec4 camRightSize;          // 0: xyz=camRight, w=unused
-    // vec4 camUpCount;            // 16: xyz=camUp, w=numParticles
-    // vec4 particleData[262144];  // 32: pos.xyz, size
-    // vec4 particleData2[262144]; // 4194336: vel.xyz, length (unused for sprites)
-    // vec4 particleData3[262144]; // 8388640: age, random, unused, unused
+    // SSBO header layout (mirrors storage_particles in particle_comshader.i2):
+    //   0  camRightSize    xyz=camRight, .w unused
+    //   16 camUpCount      xyz=camUp, w=numParticles
+    //   32 materialParams  x=gradient_phase, yzw=reserved
+    //   48 particleData[]  per-particle pos.xyz, size
+    //   48 + 262144*16    particleData2[]  unused for sprites
+    //   48 + 262144*16*2  particleData3[]  per-particle age, random, aux.x, aux.y
     ///////////////////////////////////////////////////////////////
-    auto storage        = material->_cu_vertex_io_buffer;
+    if (not _cu_vertex_io_buffer) {
+      _cu_vertex_io_buffer = FXI->createStorageBuffer(16 << 20);
+    }
+    auto storage        = _cu_vertex_io_buffer;
     size_t mapping_size = 16 << 20; // 16MB (supports 262144 particles × 3 arrays × 16 bytes)
     auto mapped_storage = FXI->mapStorageBuffer(storage, 0, mapping_size, BufferMapAccess::WRITE_ONLY);
 
     mapped_storage->seek(0);
-    // Header: camera vectors and count
+    // Header: camera vectors, count, per-frame material params
     mapped_storage->make<fvec4>(camRight.x, camRight.y, camRight.z, 0.0f);      // offset 0
     mapped_storage->make<fvec4>(camUp.x, camUp.y, camUp.z, float(icnt));        // offset 16
+    mapped_storage->make<fvec4>(fgrad_phase, 0.0f, 0.0f, 0.0f);                 // offset 32 — materialParams
 
-    // particleData array at offset 32: pos.xyz, size
+    // particleData array at offset 48: pos.xyz, size
     if (size_is_varying) {
       for (int i = 0; i < icnt; i++) {
         auto ptcl = get_particle(i);
@@ -267,15 +281,18 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     }
 
     // Skip particleData2 (not used for sprites) - seek to particleData3
-    // particleData2 starts at offset 32 + 262144*16 = 4194336
-    // particleData3 starts at offset 32 + 262144*16*2 = 8388640
-    constexpr size_t particleData3_offset = 32 + 262144 * 16 * 2;
+    // particleData2 starts at offset 48 + 262144*16 = 4194352
+    // particleData3 starts at offset 48 + 262144*16*2 = 8388656
+    constexpr size_t particleData3_offset = 48 + 262144 * 16 * 2;
     mapped_storage->seek(particleData3_offset);
 
-    // particleData3 array: age, random, unused, unused
+    // particleData3 array: x=unit_age, y=mfRandom, z=_aux.x, w=_aux.y.
+    // aux.z/w aren't surfaced to the shader in v1; CPU-side _aux is still
+    // the full vec4 (other consumers could read it directly).
     for (int i = 0; i < icnt; i++) {
       auto ptcl = get_particle(i);
-      mapped_storage->make<fvec4>(ptcl->_unit_age, ptcl->mfRandom, 0.0f, 0.0f);
+      mapped_storage->make<fvec4>(ptcl->_unit_age, ptcl->mfRandom,
+                                   ptcl->_aux.x, ptcl->_aux.y);
     }
 
     FXI->unmapStorageBuffer(mapped_storage.get());
@@ -325,6 +342,7 @@ static void _reshapeSpriteRendererIOs(dataflow::moduledata_ptr_t mdata) {
   ModuleData::createInputPlug<FloatXfPlugTraits>(typed, EPR_UNIFORM, "Size")->_range              = {-10, 10};
   ModuleData::createInputPlug<FloatXfPlugTraits>(typed, EPR_UNIFORM, "GradientIntensity")->_range = {0, 10};
   ModuleData::createInputPlug<FloatXfPlugTraits>(typed, EPR_UNIFORM, "Scale")->_range             = {-10, 10};
+  ModuleData::createInputPlug<FloatXfPlugTraits>(typed, EPR_UNIFORM, "GradientPhase")->_range     = {-1000, 1000};
 }
 
 ///////////////////////////////////////////////////////////////////////////////

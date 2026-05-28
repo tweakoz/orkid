@@ -1200,6 +1200,13 @@ void Simulation::_activateEntities() {
     if (edata->GetArchetype()) {
       edata->GetArchetype()->activateEntity(this, pent);
     }
+    // Static-spawn publication. Dynamic-spawn path is covered separately
+    // by registerActivatedEntity (called from the activate queue
+    // service). Both endpoints share the same publishEntityXf so the
+    // counter and key namespace are unified across static/dynamic.
+    if (edata && !edata->_publishxf_name.empty()) {
+      publishEntityXf(pent, edata->_publishxf_name);
+    }
   }
 }
 ///////////////////////////////////////////////////////////////////////////
@@ -1213,6 +1220,7 @@ void Simulation::_deactivateEntities() {
       if (edata->GetArchetype()) {
         edata->GetArchetype()->deactivateEntity(this, pent);
       }
+      unpublishEntityXf(pent);
     }
   }
 }

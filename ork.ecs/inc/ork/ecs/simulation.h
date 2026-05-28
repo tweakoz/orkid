@@ -148,6 +148,31 @@ struct Simulation {
 
   varmap::varmap_ptr_t varmap() { return _varmap; }
 
+  //////////////////////////////////////////////////////////
+  // Published entity transform registry.
+  //
+  // SpawnData with a non-empty _publishxf_name registers each newly
+  // spawned entity here under a unique key derived from that name:
+  //   1st spawn of "saddle" → key "saddle0"
+  //   2nd spawn of "saddle" → key "saddle1"
+  //   ...
+  // The counter (_publishxf_counts) is monotonically increasing per
+  // base name — never decremented on despawn — so a key, once assigned,
+  // is unique for the lifetime of the Simulation. The value is the
+  // entity's LIVE decompxf_ptr_t (no per-tick snapshot needed; readers
+  // see the current value on deref).
+  //
+  // Consumers (e.g. VdbColliderModuleData::_follow_entity) reach this
+  // through the GraphInst::_resolveEntityXf hook wired by
+  // ParticlesComponent at stage time — modules don't know the
+  // Simulation type, they call back through the resolver function.
+  //////////////////////////////////////////////////////////
+  std::string publishEntityXf(Entity* ent, const std::string& base_name);
+  void unpublishEntityXf(Entity* ent);
+  // Returns the live decompxf_ptr_t (caller composes to fmtx4 if
+  // needed), or nullptr if no entity is registered under `key`.
+  decompxf_ptr_t lookupPublishedXf(const std::string& key) const;
+
 private:
 
   void _resetClock();
@@ -288,6 +313,15 @@ private:
   orkmap<std::string, lev2::LayerData*> _layerdataMap;
   orkmap<PoolString, Entity*> mEntities;
   std::map<spawndata_constptr_t, spawnercontext_ptr_t> _spawnerContexts;
+  // Live entity transform registry — see public publishEntityXf above.
+  std::unordered_map<std::string, decompxf_ptr_t> _published_xfs;
+  std::unordered_map<std::string, size_t> _publishxf_counts;
+  // Reverse index so unpublishEntityXf can find the keys an entity owns
+  // without scanning _published_xfs. An entity from a SpawnData with
+  // _spawnCount > 1 isn't an issue here — each spawn registers under
+  // its own key — but a SpawnData reused for repeated spawns
+  // accumulates keys, so the value side is a small vector.
+  std::unordered_map<Entity*, std::vector<std::string>> _entity_to_publish_keys;
   EntitySet mActiveEntities;
 
   ComponentList mEmptyList;

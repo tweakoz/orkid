@@ -46,6 +46,11 @@ struct CoreAppInit {
     dflow::ModuleData::GetClassStatic();
     dflow::DgModuleData::GetClassStatic();
     dflow::LambdaModuleData::GetClassStatic();
+    dflow::MinModuleData::GetClassStatic();
+    dflow::MaxModuleData::GetClassStatic();
+    dflow::LerpModuleData::GetClassStatic();
+    dflow::PowModuleData::GetClassStatic();
+    dflow::Vec4CombineModuleData::GetClassStatic();
 
     dflow::PlugData::GetClassStatic();
     dflow::InPlugData::GetClassStatic();
@@ -61,6 +66,10 @@ struct CoreAppInit {
     dflow::inplugdata<dflow::Vec3fPlugTraits>::GetClassStatic();
     dflow::outplugdata<dflow::Vec3fPlugTraits>::GetClassStatic();
     dflow::inplugdata<dflow::Vec3XfPlugTraits>::GetClassStatic();
+    dflow::inplugdata<dflow::Vec4fPlugTraits>::GetClassStatic();
+    dflow::outplugdata<dflow::Vec4fPlugTraits>::GetClassStatic();
+    dflow::inplugdata<dflow::Vec4XfPlugTraits>::GetClassStatic();
+    dflow::fvec4xfdata::GetClassStatic();
 
     dflow::floatinplugdata::GetClassStatic();
     dflow::vect3inplugdata::GetClassStatic();

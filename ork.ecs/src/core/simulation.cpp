@@ -256,6 +256,17 @@ void Simulation::registerActivatedEntity(ecs::Entity* pent) {
       cinst->_activate(this);
     }
 
+    /////////////////////////////////////////
+    // Publish entity transform if the SpawnData asked for it.
+    // Done after component activation so any spawn-time transform
+    // adjustments have settled into the dagnode.
+    /////////////////////////////////////////
+    if (auto sd = pent->data()) {
+      if (!sd->_publishxf_name.empty()) {
+        publishEntityXf(pent, sd->_publishxf_name);
+      }
+    }
+
   } else {
     logchan_simulation->log("WARNING, activating an already active entity <%p>\n", pent);
   }
@@ -295,6 +306,8 @@ void Simulation::registerDeactivatedEntity(ecs::Entity* pent) {
     cinst->_deactivate(this);
   }
 
+  unpublishEntityXf(pent);
+
   if (parch){
     parch->deactivateEntity(this, pent);
     parch->unstageEntity(this, pent);
@@ -313,6 +326,37 @@ void Simulation::registerDeactivatedEntity(ecs::Entity* pent) {
 bool Simulation::IsEntityActive(Entity* pent) const {
   auto listit = mActiveEntities.find(pent);
   return (listit != mActiveEntities.end());
+}
+///////////////////////////////////////////////////////////////////////////
+std::string Simulation::publishEntityXf(Entity* ent, const std::string& base_name) {
+  if (base_name.empty() || ent == nullptr) {
+    return std::string();
+  }
+  // Always-suffix scheme: first spawn → "saddle0", next → "saddle1", ...
+  // The counter is monotonic — never decremented — so each key, once
+  // handed out, is unique for the Simulation's lifetime even across
+  // despawn/respawn cycles.
+  size_t idx = _publishxf_counts[base_name]++;
+  std::string key = base_name + std::to_string(idx);
+  auto xf = ent->transform();
+  _published_xfs[key] = xf;
+  _entity_to_publish_keys[ent].push_back(key);
+  return key;
+}
+
+void Simulation::unpublishEntityXf(Entity* ent) {
+  auto it = _entity_to_publish_keys.find(ent);
+  if (it == _entity_to_publish_keys.end()) return;
+  for (const auto& key : it->second) {
+    _published_xfs.erase(key);
+  }
+  _entity_to_publish_keys.erase(it);
+}
+
+decompxf_ptr_t Simulation::lookupPublishedXf(const std::string& key) const {
+  auto it = _published_xfs.find(key);
+  if (it == _published_xfs.end()) return nullptr;
+  return it->second;
 }
 ///////////////////////////////////////////////////////////////////////////
 

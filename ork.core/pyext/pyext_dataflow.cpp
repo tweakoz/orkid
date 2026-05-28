@@ -9,6 +9,8 @@
 #include <ork/dataflow/all.h>
 #include <ork/dataflow/plug_data.inl>
 #include <ork/dataflow/module.inl>
+#include <ork/dataflow/context_variable.h>
+#include <ork/rtti/RTTI.h>
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 using namespace dataflow;
@@ -159,7 +161,10 @@ void pyinit_dataflow(py::module& module_core) {
               "numOutputs",
               [](moduledata_ptr_t m) -> int { //
                 return m->numOutputs();
-              });
+              })
+          .def_property_readonly(
+              "name",
+              [](moduledata_ptr_t m) -> std::string { return m->_name; });
   type_codec->registerStdCodec<moduledata_ptr_t>(moduledata_type);
   /////////////////////////////////////////////////////////////////////////////
   auto dgmoduledata_type = //
@@ -237,6 +242,36 @@ void pyinit_dataflow(py::module& module_core) {
           .def("__repr__", [](lambdamoduledata_ptr_t m) -> std::string {
             return FormatString("LambdaModuleData(%p)", (void*)m.get());
           });
+  /////////////////////////////////////////////////////////////////////////////
+  // Min / Max / Lerp — generic float-in float-out scalar modules. The
+  // HyperSyn DSL lowerer emits these from Expr.min/max/lerp(...) but they
+  // are usable from any dflow graph.
+  /////////////////////////////////////////////////////////////////////////////
+  py::class_<MinModuleData, DgModuleData, minmodule_ptr_t>(dfgmodule, "MinModule")
+      .def_static("createShared", []() -> minmodule_ptr_t { return MinModuleData::createShared(); })
+      .def("__repr__", [](minmodule_ptr_t m) -> std::string {
+        return FormatString("MinModuleData(%p)", (void*)m.get());
+      });
+  py::class_<MaxModuleData, DgModuleData, maxmodule_ptr_t>(dfgmodule, "MaxModule")
+      .def_static("createShared", []() -> maxmodule_ptr_t { return MaxModuleData::createShared(); })
+      .def("__repr__", [](maxmodule_ptr_t m) -> std::string {
+        return FormatString("MaxModuleData(%p)", (void*)m.get());
+      });
+  py::class_<LerpModuleData, DgModuleData, lerpmodule_ptr_t>(dfgmodule, "LerpModule")
+      .def_static("createShared", []() -> lerpmodule_ptr_t { return LerpModuleData::createShared(); })
+      .def("__repr__", [](lerpmodule_ptr_t m) -> std::string {
+        return FormatString("LerpModuleData(%p)", (void*)m.get());
+      });
+  py::class_<PowModuleData, DgModuleData, powmodule_ptr_t>(dfgmodule, "PowModule")
+      .def_static("createShared", []() -> powmodule_ptr_t { return PowModuleData::createShared(); })
+      .def("__repr__", [](powmodule_ptr_t m) -> std::string {
+        return FormatString("PowModuleData(%p)", (void*)m.get());
+      });
+  py::class_<Vec4CombineModuleData, DgModuleData, vec4combinemodule_ptr_t>(dfgmodule, "Vec4CombineModule")
+      .def_static("createShared", []() -> vec4combinemodule_ptr_t { return Vec4CombineModuleData::createShared(); })
+      .def("__repr__", [](vec4combinemodule_ptr_t m) -> std::string {
+        return FormatString("Vec4CombineModuleData(%p)", (void*)m.get());
+      });
   /////////////////////////////////////////////////////////////////////////////
   // todo use trampoline method from https://pybind11.readthedocs.io/en/stable/advanced/classes.html
   //  to allow python subclass of c++ class
@@ -500,8 +535,26 @@ void pyinit_dataflow(py::module& module_core) {
           });
   type_codec->registerStdCodec<floatxfdata_ptr_t>(floatxfdata_type);
   /////////////////////////////////////////////////////////////////////////////
+  // Helper: stringify EPlugRate so the DSL bind-rate validator can compare
+  // against simple names ("uniform" / "varying1" / ...) instead of enum
+  // values we'd otherwise have to expose separately.
+  auto rate_name = [](EPlugRate r) -> std::string {
+    switch (r) {
+      case EPR_EVENT:    return "event";
+      case EPR_UNIFORM:  return "uniform";
+      case EPR_VARYING1: return "varying1";
+      case EPR_VARYING2: return "varying2";
+    }
+    return "unknown";
+  };
   auto inplugdata_type = //
       py::class_<InPlugData, ::ork::Object, inplugdata_ptr_t>(dfgmodule, "InPlugData")
+          .def_property_readonly("rate", [rate_name](inplugdata_ptr_t p) -> std::string {
+            return rate_name(p->_plugrate);
+          })
+          .def_property_readonly("name", [](inplugdata_ptr_t p) -> std::string {
+            return p->_name;
+          })
           .def("__repr__", [](inplugdata_ptr_t p) -> std::string {
             auto clazz     = p->objectClass();
             auto clazzname = clazz->Name();
@@ -532,6 +585,12 @@ void pyinit_dataflow(py::module& module_core) {
   /////////////////////////////////////////////////////////////////////////////
   auto outplugdata_type = //
       py::class_<OutPlugData, ::ork::Object, outplugdata_ptr_t>(dfgmodule, "OutPlugData")
+          .def_property_readonly("rate", [rate_name](outplugdata_ptr_t p) -> std::string {
+            return rate_name(p->_plugrate);
+          })
+          .def_property_readonly("name", [](outplugdata_ptr_t p) -> std::string {
+            return p->_name;
+          })
           .def("__repr__", [](outplugdata_ptr_t p) -> std::string {
             auto clazz     = p->objectClass();
             auto clazzname = clazz->Name();
@@ -542,6 +601,11 @@ void pyinit_dataflow(py::module& module_core) {
   auto graphdata_type = //
       py::class_<GraphData, ::ork::Object, graphdata_ptr_t>(dfgmodule, "GraphData")
           .def_static("createShared", []() -> graphdata_ptr_t { return std::make_shared<GraphData>(); })
+          .def_property_readonly(
+              "num_modules",
+              [](graphdata_ptr_t g) -> size_t { //
+                return g->numModules();
+              })
           .def(
               "createGraphInst",
               [](graphdata_ptr_t g) -> graphinst_ptr_t { //
@@ -554,6 +618,31 @@ void pyinit_dataflow(py::module& module_core) {
               "findModule",
               [](graphdata_ptr_t g, std::string named) -> dgmoduledata_ptr_t { //
                 return g->module(named);
+              })
+          ///////////////////////////////
+          // Find the first module in the graph that is an instance of the
+          // given Python module class (the same class object you'd pass to
+          // graph.create). Returns None if no module matches. Used by the
+          // HyperSyn DSL lowerer to resolve REQUIRE_EXISTING context-var
+          // references (e.g. Expr.ptc.unit_age → find the user's Pool).
+          .def(
+              "findModuleByClass",
+              [](graphdata_ptr_t g, py::object module_clazz) -> dgmoduledata_ptr_t {
+                // module_clazz is a pybind11-wrapped C++ class (e.g.
+                // particles.Pool). Construct an instance via its
+                // createShared factory to get at the rtti::Class* — same
+                // discriminant the module instances carry. (We don't keep
+                // the temporary; just inspect its class.)
+                auto create_shared = module_clazz.attr("createShared");
+                auto probe         = py::cast<dgmoduledata_ptr_t>(create_shared());
+                auto target_class  = probe->objectClass();
+                for (size_t i = 0; i < g->numModules(); ++i) {
+                  auto m = g->module(i);
+                  if (m && m->objectClass() == target_class) {
+                    return m;
+                  }
+                }
+                return nullptr;
               })
           ///////////////////////////////
           ///////////////////////////////
@@ -581,6 +670,48 @@ void pyinit_dataflow(py::module& module_core) {
           .def("__repr__", [](graphdata_ptr_t g) -> std::string { return FormatString("GraphData(%p)", (void*)g.get()); });
   type_codec->registerStdCodec<graphdata_ptr_t>(graphdata_type);
   /////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////
+  // ContextVariableRegistry — exposes the DSL-author-name → (module class,
+  // output plug, policy) mapping populated by each module's describeX().
+  // The Python Expr factory uses this to build its namespace tree at import
+  // time; the lowerer uses it to resolve ContextRef leaves at generatedflow().
+  py::class_<dataflow::ContextVariableRegistry::Spec>(dfgmodule, "ContextVarSpec")
+      .def_readonly("output_plug_name",
+                    &dataflow::ContextVariableRegistry::Spec::_output_plug_name)
+      .def_property_readonly("policy",
+          [](const dataflow::ContextVariableRegistry::Spec& s) -> std::string {
+            switch (s._policy) {
+              case dataflow::ContextVariableRegistry::SINGLETON:        return "singleton";
+              case dataflow::ContextVariableRegistry::REQUIRE_EXISTING: return "require_existing";
+            }
+            return "unknown";
+          })
+      .def_property_readonly("module_class_name",
+          [](const dataflow::ContextVariableRegistry::Spec& s) -> std::string {
+            return s._module_class ? std::string(s._module_class->Name().c_str()) : std::string();
+          })
+      ;
+      // Note: spec.createIn / spec.findIn were intentionally NOT added.
+      // sharedFactory() is only populated by describeX → which only runs
+      // during Class::InitializeClasses → only triggered by
+      // finalizeInitialization() inside lev2appinit (NOT coreappinit). The
+      // HyperSyn emitter needs to work in headless contexts that don't init
+      // lev2's GPU, so it uses the family-package-populated Python class
+      // registry (ork.dflow._context_classes) and graphdata.create /
+      // graphdata.findModuleByClass directly instead.
+
+  auto ctxvar_module = dfgmodule.def_submodule(
+      "context_variables", "HyperSyn DSL context variable registry");
+  ctxvar_module.def("all_names", []() -> std::vector<std::string> {
+    return dataflow::ContextVariableRegistry::instance().allNames();
+  });
+  ctxvar_module.def("lookup",
+      [](const std::string& dsl_name) -> py::object {
+        auto spec_opt = dataflow::ContextVariableRegistry::instance().lookup(dsl_name);
+        if (!spec_opt) return py::none();
+        return py::cast(*spec_opt);
+      });
+  /////////////////////////////////////////////////////////////////////////////
   auto context_type = //
       py::class_<dgcontext, dgcontext_ptr_t>(dfgmodule, "DgContext")
           .def_static("createShared", []() -> dgcontext_ptr_t { return std::make_shared<dgcontext>(); })
@@ -591,6 +722,9 @@ void pyinit_dataflow(py::module& module_core) {
               })
           .def("createVec3RegisterBlock", [](dgcontext_ptr_t ctx, std::string blockname, int count) -> dgregisterblock_ptr_t {
             return ctx->createRegisters<fvec3>(blockname, count);
+          })
+          .def("createVec4RegisterBlock", [](dgcontext_ptr_t ctx, std::string blockname, int count) -> dgregisterblock_ptr_t {
+            return ctx->createRegisters<fvec4>(blockname, count);
           });
   type_codec->registerStdCodec<dgcontext_ptr_t>(context_type);
   /////////////////////////////////////////////////////////////////////////////
@@ -623,6 +757,12 @@ void pyinit_dataflow(py::module& module_core) {
       py::class_<GraphInst, graphinst_ptr_t>(dfgmodule, "GraphInst")
           .def("bindTopology", [](graphinst_ptr_t g, topology_ptr_t t) { g->updateTopology(t); })
           .def("compute", [](graphinst_ptr_t g, ui::updatedata_ptr_t updata) { g->compute(updata); })
+          // Restore the graphinst to a just-instantiated state — every module's
+          // onReset hook fires (Globals clears its first-compute flag so the
+          // next compute recaptures a fresh per-instance time origin; particle
+          // pools release live particles; future modules clear their own
+          // per-instance state). Used by ECS slot recycling.
+          .def("reset", [](graphinst_ptr_t g) { g->reset(); })
           .def_property(
               "impl",
               [](graphinst_ptr_t g) -> py::object { //

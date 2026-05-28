@@ -342,7 +342,56 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
             auto array = mtl->_texArrayCNMREA;
             auto slice = array->slice(0);
             txi->updateTextureArraySlice(slice.get(), img);
-          });
+          })
+          //////////////////////////////////////////////////////////////////////
+          // PBR2 Phase 2 — 8 glTF KHR lobe properties (flag + factor pairs),
+          // 4 color vec3s, and 3 secondary scalars. All exposed under
+          // glTF-spec naming so Scene DSL kwargs map cleanly.
+          //////////////////////////////////////////////////////////////////////
+#define _PBR2_LOBE_PROP_BOOL(pyname, member)                                       \
+  .def_property(pyname,                                                            \
+                [](pbrmaterial_ptr_t m) -> bool { return m->member; },             \
+                [](pbrmaterial_ptr_t m, bool v) { m->member = v; })
+#define _PBR2_LOBE_PROP_FLOAT(pyname, member)                                      \
+  .def_property(pyname,                                                            \
+                [](pbrmaterial_ptr_t m) -> float { return m->member; },            \
+                [](pbrmaterial_ptr_t m, float v) { m->member = v; })
+#define _PBR2_LOBE_PROP_VEC3(pyname, member)                                       \
+  .def_property(pyname,                                                            \
+                [](pbrmaterial_ptr_t m) -> fvec3 { return m->member; },            \
+                [](pbrmaterial_ptr_t m, fvec3 v) { m->member = v; })
+          _PBR2_LOBE_PROP_BOOL("has_transmission",            _hasTransmission)
+          _PBR2_LOBE_PROP_FLOAT("transmission_factor",        _transmissionFactor)
+          _PBR2_LOBE_PROP_BOOL("has_ior",                     _hasIor)
+          _PBR2_LOBE_PROP_FLOAT("ior",                        _ior)
+          _PBR2_LOBE_PROP_BOOL("has_volume",                  _hasVolume)
+          _PBR2_LOBE_PROP_FLOAT("volume_thickness_factor",    _volumeThicknessFactor)
+          _PBR2_LOBE_PROP_BOOL("has_diffuse_transmission",    _hasDiffuseTransmission)
+          _PBR2_LOBE_PROP_FLOAT("diffuse_transmission_factor", _diffuseTransmissionFactor)
+          _PBR2_LOBE_PROP_BOOL("has_specular",                _hasSpecular)
+          _PBR2_LOBE_PROP_FLOAT("specular_factor",            _specularFactor)
+          _PBR2_LOBE_PROP_BOOL("has_clearcoat",               _hasClearcoat)
+          _PBR2_LOBE_PROP_FLOAT("clearcoat_factor",           _clearcoatFactor)
+          _PBR2_LOBE_PROP_BOOL("has_sheen",                   _hasSheen)
+          _PBR2_LOBE_PROP_FLOAT("sheen_factor",               _sheenFactor)
+          _PBR2_LOBE_PROP_BOOL("has_iridescence",             _hasIridescence)
+          _PBR2_LOBE_PROP_FLOAT("iridescence_factor",         _iridescenceFactor)
+          _PBR2_LOBE_PROP_VEC3("sheen_color",                 _sheenColor)
+          _PBR2_LOBE_PROP_VEC3("specular_color",              _specularColor)
+          _PBR2_LOBE_PROP_VEC3("attenuation_color",           _attenuationColor)
+          _PBR2_LOBE_PROP_VEC3("diffuse_transmission_color",  _diffuseTransmissionColor)
+          _PBR2_LOBE_PROP_FLOAT("clearcoat_roughness",        _clearcoatRoughness)
+          _PBR2_LOBE_PROP_FLOAT("sheen_roughness",            _sheenRoughness)
+          _PBR2_LOBE_PROP_FLOAT("attenuation_distance",       _attenuationDistance)
+          // PBR2 Phase 3 (P3.D) — subsurface scattering.
+          _PBR2_LOBE_PROP_BOOL("has_subsurface",              _hasSubsurface)
+          _PBR2_LOBE_PROP_VEC3("subsurface_color",            _subsurfaceColor)
+          _PBR2_LOBE_PROP_VEC3("subsurface_radius",           _subsurfaceRadius)
+          _PBR2_LOBE_PROP_FLOAT("subsurface_factor",          _subsurfaceFactor)
+          ;
+#undef _PBR2_LOBE_PROP_BOOL
+#undef _PBR2_LOBE_PROP_FLOAT
+#undef _PBR2_LOBE_PROP_VEC3
   type_codec->registerStdCodec<pbrmaterial_ptr_t>(pbr_type);
 }
 

@@ -135,14 +135,14 @@ radiancemaps_ptr_t CommonStuff::requestRadianceMapsSync(const AssetPath& texture
   auto rm_asset = std::dynamic_pointer_cast<RadianceMapsAsset>(generic_asset);
   if (!rm_asset) return nullptr;
 
-  // Self-pump the deferred context queue while we wait. Caller is on the
-  // GPU thread; no other thread is draining _deferredContextOps during
-  // this blocking period (frame-begin would, but we may be called before
-  // the render loop starts). The concurrent queue runs `op` on its own
-  // worker threads; it enqueues the deferred ops we drain here.
-  auto& env = GfxEnv::GetRef();
+  // Self-pump ctx's deferred queue while we wait. Caller is on ctx's
+  // owning thread (typically the GPU/render thread) and frame-begin would
+  // normally drive the drain, but this routine may be called before the
+  // render loop starts. We drain ctx's own queue here — Phase 6.3 Variant
+  // B made the queue per-context, so this is now a pump on `ctx` rather
+  // than a global drain.
   while (load_req->_partial_load_counter.load() > 0) {
-    env.processDeferredContextOps(ctx);
+    ctx->processDeferredOps();
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
   }
   return rm_asset->_radiance_maps;

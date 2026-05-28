@@ -41,6 +41,7 @@ fragment_interface fif_concrete
   : ss_frg_fwd {
   outputs {
     layout(location = 0) vec4 out_clr;
+    layout(location = 1) vec4 out_diffuse;   // P3.B
   }
 }
 ///////////////////////////////////////////////////////////////
@@ -170,8 +171,8 @@ fragment_shader ps_concrete_forward
   // ambrufmtl: x=ambient_occ, y=roughness, z=metallic
   vec3 ambrufmtl = vec3(1.0, roughness, 0.0);
 
-  // Forward lighting with PBR
-  vec3 lit = _forward_lightingZ(
+  // Forward lighting with PBR — P3.B returns ShadingResult; split-write MRT.
+  ShadingResult sr = _forward_lightingZ(
     ModColor.xyz,    // modcolor
     albedo,          // albedo
     ambrufmtl,       // (ao, roughness, metallic)
@@ -180,7 +181,10 @@ fragment_shader ps_concrete_forward
     wnrm,            // world normal
     false            // emissive toggle
   );
-  out_clr = vec4(lit, 1.0);
+  out_clr     = vec4(sr.specular + sr.diffuse, 1.0);
+  // P3.D — SSSS mask in alpha.
+  float sss_mask = (has_subsurface != 0) ? subsurface_factor : 0.0;
+  out_diffuse = vec4(sr.diffuse, sss_mask);
 }
 ///////////////////////////////////////////////////////////////
 // Depth prepass

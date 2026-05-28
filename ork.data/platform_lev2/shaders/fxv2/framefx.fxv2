@@ -653,3 +653,154 @@ technique framefx_aces {
   vf_pass = { vs_vtxcolor, ps_aces, sb_default_ffx }
 }
 
+
+///////////////////////////////////////////////////////////////
+// PBR2 Phase 3 (P3.D) — Separable Subsurface Scattering.
+//
+// Pipeline (3 passes via PostFxNodeSSSS):
+//   1. ps_ssss_blurx — read target1 (forward-pass diffuse + sss_mask in
+//      .alpha), do horizontal Jimenez kernel sample. Mask early-out:
+//      pixels with mask=0 pass through unchanged (no SSSS cost).
+//   2. ps_ssss_blury — read blurx output, vertical Jimenez kernel.
+//   3. ps_ssss_composite — read target0 (main lit), target1 (raw diffuse +
+//      mask), v_blur output (blurred diffuse). Output:
+//         final = target0 + mask * (blurred_diffuse - raw_diffuse)
+//      i.e. replace the diffuse term in target0 with the blurred version,
+//      gated by the per-pixel mask. Specular passes through untouched.
+//
+// Kernel: Jimenez 2015 11-tap skin preset. Per-channel weight (RGB) ×
+// offset in "tap units" (.w). The sum of each channel's weights is ~1
+// (energy-preserving). Offsets are scaled at sample time by:
+//   step = BlurFactor / image_dim
+// where BlurFactor (uniform) is the screen-space radius in pixels.
+///////////////////////////////////////////////////////////////
+// Jimenez 2015 skin kernel — hand-unrolled (fxv2 doesn't parse GLSL
+// `const vec4 X[N] = vec4[N](...)` initializer syntax). Each tap is a
+// vec3 weight × scalar offset. R bleeds farthest (heavy weights at far
+// taps), B stays tight. Sum of each channel's weights ≈ 1 (energy-
+// preserving). Center tap (offset 0) carries the most weight.
+///////////////////////////////////////////////////////////////
+fragment_shader ps_ssss_blurx
+  : fif_FFX
+  : ub_frg_FFX
+  : samplers_all {
+  vec4 center = texture(MrtMap0, frg_uv);
+  if (center.a <= 0.0) {
+    out_clr = center;     // mask=0 → not subsurface; pass through
+  } else {
+    float step_x = BlurFactor / float(image_width);
+    // Mask-weighted accumulation: samples whose mask=0 (not subsurface)
+    // contribute 0, and we renormalize the kernel sum to preserve energy.
+    // Prevents background bleed into the surface at silhouettes.
+    vec3 accum = vec3(0);
+    vec3 wsum  = vec3(0);
+    vec4 s; vec3 k; float m;
+    k = vec3(0.560479, 0.669086, 0.784728);
+    accum += k * center.rgb;  wsum += k;     // center always counts
+    s = texture(MrtMap0, frg_uv + vec2(-2.00 * step_x, 0.0));  m = step(0.001, s.a);
+    k = vec3(0.000874, 0.001717, 0.004640) * m;  accum += k * s.rgb;  wsum += k;
+    s = texture(MrtMap0, frg_uv + vec2(-1.28 * step_x, 0.0));  m = step(0.001, s.a);
+    k = vec3(0.002567, 0.005012, 0.012730) * m;  accum += k * s.rgb;  wsum += k;
+    s = texture(MrtMap0, frg_uv + vec2(-0.72 * step_x, 0.0));  m = step(0.001, s.a);
+    k = vec3(0.007807, 0.014800, 0.038550) * m;  accum += k * s.rgb;  wsum += k;
+    s = texture(MrtMap0, frg_uv + vec2(-0.32 * step_x, 0.0));  m = step(0.001, s.a);
+    k = vec3(0.018960, 0.034910, 0.090140) * m;  accum += k * s.rgb;  wsum += k;
+    s = texture(MrtMap0, frg_uv + vec2(-0.08 * step_x, 0.0));  m = step(0.001, s.a);
+    k = vec3(0.060140, 0.105110, 0.225750) * m;  accum += k * s.rgb;  wsum += k;
+    s = texture(MrtMap0, frg_uv + vec2( 0.08 * step_x, 0.0));  m = step(0.001, s.a);
+    k = vec3(0.060140, 0.105110, 0.225750) * m;  accum += k * s.rgb;  wsum += k;
+    s = texture(MrtMap0, frg_uv + vec2( 0.32 * step_x, 0.0));  m = step(0.001, s.a);
+    k = vec3(0.018960, 0.034910, 0.090140) * m;  accum += k * s.rgb;  wsum += k;
+    s = texture(MrtMap0, frg_uv + vec2( 0.72 * step_x, 0.0));  m = step(0.001, s.a);
+    k = vec3(0.007807, 0.014800, 0.038550) * m;  accum += k * s.rgb;  wsum += k;
+    s = texture(MrtMap0, frg_uv + vec2( 1.28 * step_x, 0.0));  m = step(0.001, s.a);
+    k = vec3(0.002567, 0.005012, 0.012730) * m;  accum += k * s.rgb;  wsum += k;
+    s = texture(MrtMap0, frg_uv + vec2( 2.00 * step_x, 0.0));  m = step(0.001, s.a);
+    k = vec3(0.000874, 0.001717, 0.004640) * m;  accum += k * s.rgb;  wsum += k;
+    // Renormalize so total weight per channel == 1 (energy preserved).
+    accum /= max(wsum, vec3(1e-4));
+    out_clr = vec4(accum, center.a);   // preserve mask for v-pass + composite
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_ssss_blury
+  : fif_FFX
+  : ub_frg_FFX
+  : samplers_all {
+  vec4 center = texture(MrtMap0, frg_uv);
+  if (center.a <= 0.0) {
+    out_clr = center;
+  } else {
+    float step_y = BlurFactor / float(image_height);
+    vec3 accum = vec3(0);
+    vec3 wsum  = vec3(0);
+    vec4 s; vec3 k; float m;
+    k = vec3(0.560479, 0.669086, 0.784728);
+    accum += k * center.rgb;  wsum += k;
+    s = texture(MrtMap0, frg_uv + vec2(0.0, -2.00 * step_y));  m = step(0.001, s.a);
+    k = vec3(0.000874, 0.001717, 0.004640) * m;  accum += k * s.rgb;  wsum += k;
+    s = texture(MrtMap0, frg_uv + vec2(0.0, -1.28 * step_y));  m = step(0.001, s.a);
+    k = vec3(0.002567, 0.005012, 0.012730) * m;  accum += k * s.rgb;  wsum += k;
+    s = texture(MrtMap0, frg_uv + vec2(0.0, -0.72 * step_y));  m = step(0.001, s.a);
+    k = vec3(0.007807, 0.014800, 0.038550) * m;  accum += k * s.rgb;  wsum += k;
+    s = texture(MrtMap0, frg_uv + vec2(0.0, -0.32 * step_y));  m = step(0.001, s.a);
+    k = vec3(0.018960, 0.034910, 0.090140) * m;  accum += k * s.rgb;  wsum += k;
+    s = texture(MrtMap0, frg_uv + vec2(0.0, -0.08 * step_y));  m = step(0.001, s.a);
+    k = vec3(0.060140, 0.105110, 0.225750) * m;  accum += k * s.rgb;  wsum += k;
+    s = texture(MrtMap0, frg_uv + vec2(0.0,  0.08 * step_y));  m = step(0.001, s.a);
+    k = vec3(0.060140, 0.105110, 0.225750) * m;  accum += k * s.rgb;  wsum += k;
+    s = texture(MrtMap0, frg_uv + vec2(0.0,  0.32 * step_y));  m = step(0.001, s.a);
+    k = vec3(0.018960, 0.034910, 0.090140) * m;  accum += k * s.rgb;  wsum += k;
+    s = texture(MrtMap0, frg_uv + vec2(0.0,  0.72 * step_y));  m = step(0.001, s.a);
+    k = vec3(0.007807, 0.014800, 0.038550) * m;  accum += k * s.rgb;  wsum += k;
+    s = texture(MrtMap0, frg_uv + vec2(0.0,  1.28 * step_y));  m = step(0.001, s.a);
+    k = vec3(0.002567, 0.005012, 0.012730) * m;  accum += k * s.rgb;  wsum += k;
+    s = texture(MrtMap0, frg_uv + vec2(0.0,  2.00 * step_y));  m = step(0.001, s.a);
+    k = vec3(0.000874, 0.001717, 0.004640) * m;  accum += k * s.rgb;  wsum += k;
+    accum /= max(wsum, vec3(1e-4));
+    out_clr = vec4(accum, center.a);
+  }
+}
+///////////////////////////////////////////////////////////////
+// Composite. MrtMap0 = main lit (target0). MrtMap1 = raw diffuse +
+// mask (target1). MrtMap2 = v-blur output (blurred diffuse).
+// ModColor.rgb = subsurface_tint, ModColor.a = strength (PostFxNodeSSSS).
+fragment_shader ps_ssss_composite
+  : fif_FFX
+  : ub_frg_FFX
+  : samplers_all {
+  vec3 lit       = texture(MrtMap0, frg_uv).rgb;
+  vec4 raw       = texture(MrtMap1, frg_uv);
+  vec3 blurred   = texture(MrtMap2, frg_uv).rgb;
+  float mask     = raw.a;
+  // BlurFactorI is repurposed as debug mode selector (PostFxNodeSSSS._debug_mode).
+  // 0 = normal; 1 = mask only; 2 = raw diffuse; 3 = blurred diffuse;
+  // 4 = SSSS delta contribution (× strength, tinted, masked).
+  vec3 tinted_blur = blurred * ModColor.rgb * ModColor.a;
+  vec3 final;
+  if (BlurFactorI == 1) {
+    final = vec3(mask);                              // mask grayscale
+  } else if (BlurFactorI == 2) {
+    final = raw.rgb;                                 // raw diffuse
+  } else if (BlurFactorI == 3) {
+    final = blurred;                                 // blurred diffuse
+  } else if (BlurFactorI == 4) {
+    final = mask * (tinted_blur - raw.rgb);          // SSSS delta only
+  } else {
+    final = lit + mask * (tinted_blur - raw.rgb);    // normal composite
+  }
+  out_clr = vec4(final, 1.0);
+}
+///////////////////////////////////////////////////////////////
+technique framefx_ssss_blurx {
+  fxconfig = fxcfg_default;
+  vf_pass = { vs_vtxcolor, ps_ssss_blurx, sb_default_ffx }
+}
+technique framefx_ssss_blury {
+  fxconfig = fxcfg_default;
+  vf_pass = { vs_vtxcolor, ps_ssss_blury, sb_default_ffx }
+}
+technique framefx_ssss_composite {
+  fxconfig = fxcfg_default;
+  vf_pass = { vs_vtxcolor, ps_ssss_composite, sb_default_ffx }
+}

@@ -116,28 +116,42 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
     ///////////////////////////////////////////////////////////////////////////
 
     //printf("should_bind_probes<%d> is_rendering_PROBE<%d>\n", int(should_bind_probes), int(is_rendering_PROBE));
-    if(should_bind_probes and (not is_rendering_PROBE)){
-      size_t num_probes = enumlights->_lightprobes.size();
-
-      // technically here we should only bind a set of probes 
-      // that are relevant to the current rendered object
-      // and bind the weight of each probe
-      // for now we will just bind all probes
-
-      auto probe_0 = enumlights->_lightprobes[0];
-      auto probe_tex = probe_0->_cubeTexture;
-
-      //printf( "BINDING PROBES!  count<%d>\n", num_probes );
-      //printf( "binding probetex<%p>\n", probe_tex.get() );
-      FXI->bindParamTexture(mtl->_parProbeReflection, probe_tex.get() );
-      FXI->bindParamTexture(mtl->_parProbeRadiance, probe_tex.get() );
-
-
+    bool probe_active = false;
+    if(not is_rendering_PROBE){
+      // Per-draw probe override (PBR2 P0.4c — set by ParticlesGlobalSystem
+      // from gendata._probe_entity_name → live LightProbe). Routes a
+      // specific probe's cube to this draw, regardless of the global
+      // _lightprobes[0] choice. Empty → fall through to global path.
+      lightprobe_ptr_t chosen_probe;
+      if (RCID._probeOverride) {
+        chosen_probe = RCID._probeOverride;
+      } else if (should_bind_probes && enumlights->_lightprobes.size() > 0) {
+        // Global fallback: first probe wins (same as the old behavior).
+        chosen_probe = enumlights->_lightprobes[0];
+      }
+      if (chosen_probe) {
+        auto probe_tex = chosen_probe->_cubeTexture;
+        FXI->bindParamTexture(mtl->_parProbeReflection, probe_tex.get());
+        FXI->bindParamTexture(mtl->_parProbeRadiance,   probe_tex.get());
+        probe_active = (probe_tex != nullptr);
+      }
     }
-    else{
+    if(not probe_active){
       //printf( "NOT BINDING PROBES black<%p>!\n", mtl->_texCubeBlack.get() );
       FXI->bindParamTexture(mtl->_parProbeReflection, pbrcommon->_texCubeBlack.get() );
       FXI->bindParamTexture(mtl->_parProbeRadiance, pbrcommon->_texCubeBlack.get() );
+    }
+    // has_reflection_probe drives the spec-env vs probe swap in fwdtools.i2.
+    // Inactive path keeps the black cube bound so the sampler is always valid;
+    // shader branches on the flag, not on sampler-null.
+    if(mtl->_parHasReflectionProbe){
+      FXI->bindParamInt(mtl->_parHasReflectionProbe, probe_active ? 1 : 0);
+    }
+    // PBR2 Phase 2 — rendering_probe gates refractive lobes during cubemap
+    // capture. is_rendering_PROBE comes off RCFD["renderingPROBE"], set on
+    // the per-face CPD in fwdnode_impl_sub.cpp before each probe pass.
+    if(mtl->_parRenderingProbe){
+      FXI->bindParamInt(mtl->_parRenderingProbe, is_rendering_PROBE ? 1 : 0);
     }
 
     ///////////////////////////////////////////////////////////////////////////

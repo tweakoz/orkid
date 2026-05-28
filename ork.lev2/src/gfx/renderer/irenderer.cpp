@@ -191,6 +191,13 @@ void IRenderer::_renderCallbackRenderable(const CallbackRenderable& cbren) const
     RCID.SetRenderer(this);
     RCID.setRenderable(&cbren);
     RCID._pickID = cbren._pickID;
+    // PBR2 Phase 0 — propagate per-drawable IBL overrides from the
+    // renderable to RCID so the material's per-draw bind sees them.
+    // ModelDrawable does this in its own Render(); CallbackDrawables
+    // need the propagation here because they don't have a custom
+    // Render() — they just bounce through their callback.
+    RCID._envmapOverride = cbren._envmapOverride;
+    RCID._probeOverride  = cbren._probeOverride;
     context->RefModColor() = cbren._modColor;
     cbren.GetRenderCallback()(RCID);
   }

@@ -549,6 +549,12 @@ struct VkTextureInterface final : public TextureInterface {
   void _initTextureFromRtBuffer(RtBuffer* rtb);
   void initTextureArray2DFromData(TextureArray* array, TextureArrayInitData tid) final;
 
+  // chunked-upload API (see ork/lev2/gfx/txi.h)
+  void reserveTexture(Texture* tex, int w, int h, int num_mips, EBufferFormat fmt) final;
+  void reserveTextureArray(TextureArray* tarr, int w, int h, int num_slices, int num_mips, EBufferFormat fmt) final;
+  void uploadTextureRegion(Texture* tex, const TextureRegionUpload& upload, ::ork::void_lambda_t on_complete) final;
+  void finalizeUpload(Texture* tex, ::ork::void_lambda_t on_complete) final;
+
   /////////////////////////////
   // init a blank texture array
   /////////////////////////////
@@ -845,6 +851,13 @@ public:
 
   ~VkContext();
 
+  // Pre-destruction Vulkan teardown. Releases the presentation
+  // surface (when owned) and drops the device reference while the
+  // owning shared_ptrs are still live. Called from
+  // Context::shutdown(); the eventual ~VkContext is then a no-op
+  // path that skips the surface destroy since the field is null.
+  void _doShutdown() final;
+
   void FxInit();
 
   ///////////////////////////////////////////////////////////////////////
@@ -951,7 +964,10 @@ public:
   VkDevice _vkdevice;
   VkPhysicalDevice _vkphysicaldevice;
   vkdeviceinfo_ptr_t _vkdeviceinfo;
-  VkSurfaceKHR _vkpresentationsurface;
+  // Default-initialized so the loader (offscreen) path, which never
+  // creates a presentation surface, doesn't trip _doShutdown's
+  // vkDestroySurfaceKHR with a poison-pattern uninitialized handle.
+  VkSurfaceKHR _vkpresentationsurface = VK_NULL_HANDLE;
   vkswapchaincaps_ptr_t _vkpresentation_caps;
   std::vector<const char*> _device_extensions;
   size_t _num_queue_types = 0;

@@ -56,6 +56,12 @@ struct EllipticalEmitterInst : public ParticleModuleInst {
 
   fvec3xf_inp_pluginst_ptr_t _input_p1;
   fvec3xf_inp_pluginst_ptr_t _input_p2;
+  fvec4xf_inp_pluginst_ptr_t _input_aux;
+  // Per-particle random source — Pool's "Random" output plug. Emitter
+  // writes the current particle's mfRandom into it before reading
+  // _input_aux per-particle, so Expr.ptc.random (and Expr.rand_range)
+  // bindings on Aux evaluate correctly.
+  float_out_pluginst_ptr_t _output_random;
 
   /*
 
@@ -97,6 +103,15 @@ void EllipticalEmitterInst::onLink(GraphInst* inst) {
   _input_p1               = typedInputNamed<Vec3XfPlugTraits>("P1");
   _input_p2               = typedInputNamed<Vec3XfPlugTraits>("P2");
   _input_dispersionangle  = typedInputNamed<FloatXfPlugTraits>("DispersionAngle");
+  _input_aux              = typedInputNamed<Vec4XfPlugTraits>("Aux");
+
+  // Cache pool's Random output. Will be null in graphs without a pool
+  // (none today since every emitter requires one), so no defensive check
+  // needed in the emit loop.
+  auto pool = _graphinst->firstModuleInst<ParticlePoolModuleInst>();
+  if (pool) {
+    _output_random = pool->typedOutputNamed<FloatPlugTraits>("Random");
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void EllipticalEmitterInst::compute(GraphInst* inst, ui::updatedata_ptr_t updata) {
@@ -130,7 +145,13 @@ void EllipticalEmitterInst::compute(GraphInst* inst, ui::updatedata_ptr_t updata
   if (_timeAccumulator >= fdelta) { // limit to 30hz
     _timeAccumulator -= fdelta;
     _reap(fdelta);
-    _emit(fdelta);
+    // Gate new emissions when the graphinst's particle context has
+    // _inhibit_emission set — ECS DRAINING lets in-flight particles
+    // continue ageing/moving but stops the spigot.
+    auto ptcl_context = inst->_impl.getShared<particle::Context>();
+    if (not (ptcl_context and ptcl_context->_inhibit_emission)) {
+      _emit(fdelta);
+    }
   }
   _pool->updateUnitAges();
 }
@@ -232,6 +253,12 @@ void EllipticalEmitterInst::_emit(float fdt) {
       ptc->mVelocity     = dir * _emitter_context.mfEmissionVelocity;
       ptc->mLastPosition = pos - (ptc->mVelocity * _emitter_context.mfDeltaTime);
       ptc->mKey          = (void*)_emitter_context.mKey;
+      // Per-particle Aux eval — feed this particle's mfRandom into the
+      // pool's Random output so Expr.ptc.random / Expr.rand_range chains
+      // resolve correctly. Uniform-only Aux bindings get the same value
+      // every iteration (cheap; the chain re-pulls).
+      if (_output_random) _output_random->setValue(ptc->mfRandom);
+      ptc->_aux          = _input_aux->value();
     }
   }
   _emitter_context.mfEmitterMark -= float(icount);
@@ -306,6 +333,7 @@ static void _reshapeEllipticalEmitterIOs(dataflow::moduledata_ptr_t data) {
   ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "MaxV")->_range  = {0, 1};
   ModuleData::createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "P1")->_range                = {-1000.0f, 1000.0f};
   ModuleData::createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "P2")->_range                = {-1000.0f, 1000.0f};
+  ParticleModuleData::_initAuxIO(data);
 }
 
 //////////////////////////////////////////////////////////////////////////

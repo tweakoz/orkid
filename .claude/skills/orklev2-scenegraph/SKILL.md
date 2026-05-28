@@ -140,6 +140,25 @@ sgvp.forkDB()  # Required for embedded viewports
 lev2.ui.SceneGraphViewport.gpuUpdateAll(context)
 ```
 
+## Layer Conventions (PBR2 Phase 0)
+
+The forward pipeline knows these layer roles (`fwdnode_impl_top.cpp:k_roles[]`):
+
+| Layer | Purpose | Rendered in probe cubemap? |
+|-------|---------|----------------------------|
+| `depth_prepass` | Depth prepass | yes |
+| `std_forward` | Main scene geometry | yes |
+| `std_editor` | Editor gizmos/grid | no (post-pass, gated on `!_renderingPROBE`) |
+| `probe` | Probe-only geometry | yes |
+| `depth_probe` | Probe depth | yes |
+| `hud_overlay` | HUD text / debug overlays | no (post-pass, gated on `!_renderingPROBE`) |
+
+The probe cubemap CPD calls `assignLayers(probe->renderLayer())` as a hard reset — only that one layer renders during a probe capture. Place HUD/debug content on `hud_overlay`, editor gizmos on `std_editor`, so neither appears in reflection probes.
+
+## Probe Nodes Register With LightManager
+
+`Layer::createProbeNode(name, probe)` adds the probe to `LightManager._lightprobes`, making it discoverable via `LightManager::findProbeByName(name)`. Non-lighting subsystems (e.g. ECS `ParticlesGlobalSystem`) resolve probes by entity name at `_onActivateComponent` time and cache the resolved `lightprobe_ptr_t` on the drawable (`Drawable::_probeOverride`) for per-draw cubemap selection.
+
 ## Render Loop
 
 ```python

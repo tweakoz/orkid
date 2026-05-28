@@ -114,6 +114,7 @@ struct TextureSamplingModeData {
   ETextureMinifyFilterMode _texFiltModeMin  = ETextureMinifyFilterMode::LINEAR;
   ETextureMagnifyFilterMode _texFiltModeMag = ETextureMagnifyFilterMode::LINEAR;
   float _maxAnisotropy                      = 16.0f;
+  int _minMipLevel                          = 0;
   int _maxMipLevel                          = 8;
 };
 
@@ -238,6 +239,13 @@ struct Texture {
   Context* _creatingTarget    = nullptr;
   std::string _debugName;
   bool _isDepthTexture = false;
+  // Streaming textures are double-buffered by the backend: two GPU image
+  // slots are allocated at reserve/init time; each commit (e.g.
+  // finalizeUpload on the chunked path) swaps the back as the new front.
+  // The update path itself can be either chunked sub-region uploads or a
+  // single full-image upload — the streaming flag is orthogonal to how
+  // the back is written. Set this BEFORE reserve/init.
+  bool _streaming = false;
   ETextureSource _source = ETextureSource::NONE;
   texture_provider_ptr_t _update_provider;  // For MOVIE textures: poll to trigger frame updates
   varmap::varmap_ptr_t _vars;

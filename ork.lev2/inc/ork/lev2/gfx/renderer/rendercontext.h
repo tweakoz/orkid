@@ -81,7 +81,8 @@ struct RenderContextInstData {
   const XgmMaterialStateInst* mMaterialInst = nullptr;
   fxpipelinecache_constptr_t _pipeline_cache;
   pickvariant_t _pickID;
-  pbr::radiancemaps_ptr_t _envmapOverride;  // per-drawable env map override
+  pbr::radiancemaps_ptr_t _envmapOverride;  // per-drawable env map override (equirect)
+  lightprobe_ptr_t        _probeOverride;   // per-drawable cube probe override
 };
 
 ///////////////////////////////////////////////////////////////////////////////

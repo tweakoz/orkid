@@ -10,6 +10,7 @@
 #include <ork/kernel/environment.h>
 #include <ork/python/context.h>
 #include <ork/python/gil_safe_pyobj.h>
+#include <ork/lev2/init.h>
 #include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/lev2/gfx/util/movie.inl>
 #include <ork/profiling.inl>
@@ -107,6 +108,21 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
   };
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<OrkEzApp, ork::Application, orkezapp_ptr_t>(module_lev2, "OrkEzApp") //
+      // Process-global accessor — finds the running ezapp without
+      // requiring callers to thread it down. Used by HdriToXir (and any
+      // future asset gen that needs ezapp for inline GPU work) so deep
+      // Scene-time builds can find the app set up by lev2appinit().
+      // Returns the underlying OrkEzApp wrapped as the same shared_ptr
+      // type as lev2appinit returns; None if no app is active.
+      .def_static("current", []() -> py::object {
+            auto raw = OrkEzApp::currentRaw();
+            if (!raw) return py::none();
+            // raw pointer → shared_ptr that DOES NOT delete (alias deleter).
+            // The real shared_ptr is owned by the caller of OrkEzApp::create;
+            // we just need a non-owning handle here.
+            orkezapp_ptr_t holder(raw, [](OrkEzApp*) {});
+            return py::cast(holder);
+          })
       .def_static(
           "create",
           [type_codec](py::object appinstance,py::kwargs kwargs) { //
@@ -493,6 +509,78 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 } catch (py::error_already_set& e) {
                   ezapp_python_traceback(e);
                   printf( "\n\npython exception in onGpuUpdate\n\n");
+                  e.restore();
+                  PyErr_Print();
+                  OrkAssert(false);
+                } catch (std::exception& e) {
+                  std::cerr << e.what();
+                  OrkAssert(false);
+                }
+              });
+            }
+            ////////////////////////////////////////////////////////////////////
+            // Loader-thread hooks. Fire on the loader thread (not main/render),
+            // with gloadercontext as TLS. Use gil_safe_pyobj since the loader
+            // thread is not a Python thread and the callback's holder gets
+            // destroyed there on teardown — bare shared_ptr<py::object> would
+            // crash in _Py_Dealloc without a GIL-safe deleter.
+            ////////////////////////////////////////////////////////////////////
+            if (py::hasattr(appinstance, "onLoaderInit")) {
+              auto safe = ork::python::gil_safe_pyobj(
+                  py::cast<py::object>(appinstance.attr("onLoaderInit")));
+              setOnLoaderInit([safe](context_ptr_t loader_ctx) {
+                py::gil_scoped_acquire acquire;
+                auto fn = safe.valueAs<py::object>();
+                if (!fn) return;
+                try {
+                  (*fn)(ctx_t(loader_ctx.get()));
+                } catch (py::error_already_set& e) {
+                  ezapp_python_traceback(e);
+                  printf("\n\npython exception in onLoaderInit\n\n");
+                  e.restore();
+                  PyErr_Print();
+                  OrkAssert(false);
+                } catch (std::exception& e) {
+                  std::cerr << e.what();
+                  OrkAssert(false);
+                }
+              });
+            }
+            ////////////////////////////////////////////////////////////////////
+            if (py::hasattr(appinstance, "onLoaderUpdate")) {
+              auto safe = ork::python::gil_safe_pyobj(
+                  py::cast<py::object>(appinstance.attr("onLoaderUpdate")));
+              setOnLoaderUpdate([safe](context_ptr_t loader_ctx) {
+                py::gil_scoped_acquire acquire;
+                auto fn = safe.valueAs<py::object>();
+                if (!fn) return;
+                try {
+                  (*fn)(ctx_t(loader_ctx.get()));
+                } catch (py::error_already_set& e) {
+                  ezapp_python_traceback(e);
+                  printf("\n\npython exception in onLoaderUpdate\n\n");
+                  e.restore();
+                  PyErr_Print();
+                  OrkAssert(false);
+                } catch (std::exception& e) {
+                  std::cerr << e.what();
+                  OrkAssert(false);
+                }
+              });
+            }
+            ////////////////////////////////////////////////////////////////////
+            if (py::hasattr(appinstance, "onLoaderExit")) {
+              auto safe = ork::python::gil_safe_pyobj(
+                  py::cast<py::object>(appinstance.attr("onLoaderExit")));
+              setOnLoaderExit([safe](context_ptr_t loader_ctx) {
+                py::gil_scoped_acquire acquire;
+                auto fn = safe.valueAs<py::object>();
+                if (!fn) return;
+                try {
+                  (*fn)(ctx_t(loader_ctx.get()));
+                } catch (py::error_already_set& e) {
+                  ezapp_python_traceback(e);
+                  printf("\n\npython exception in onLoaderExit\n\n");
                   e.restore();
                   PyErr_Print();
                   OrkAssert(false);
@@ -963,6 +1051,17 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
       .def("mainThreadIterCommandLine", [](orkezapp_ptr_t app) { //
             app->_mainThreadLoopIter();
             ork::opq::mainSerialQueue()->Process();
+          })
+      // Headless: pin main-window gfx context's TLS on the calling thread
+      // so contextForCurrentThread() returns it between iter calls. Returns
+      // a non-null GfxContext wrapper for inline GPU use from Python. Must
+      // be called after mainThreadBegin(); auto-unbinds in mainThreadEnd().
+      .def("bindGfxToCurrentThread", [](orkezapp_ptr_t app) -> ctx_t {
+            app->bindGfxToCurrentThread();
+            return ctx_t(app->mainGfxContext());
+          })
+      .def("unbindGfxFromCurrentThread", [](orkezapp_ptr_t app) {
+            app->unbindGfxFromCurrentThread();
           })
       ///////////////////////////////////////////////////////
       // Phase 6: Secondary window methods

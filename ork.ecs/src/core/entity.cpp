@@ -74,8 +74,9 @@ void SpawnData::describeX(SceneObjectClass* clazz) {
   clazz->floatProperty("LifetimeMin", float_range{0, 100000}, &SpawnData::_lifetimeMin);
   clazz->floatProperty("LifetimeMax", float_range{0, 100000}, &SpawnData::_lifetimeMax);
   clazz->directMapProperty("userparams", &SpawnData::_newuserproperties);
+  clazz->directProperty("publishxf_name", &SpawnData::_publishxf_name);
 
-  
+
 }
 ///////////////////////////////////////////////////////////////////////////////
 ConstString SpawnData::GetUserProperty(const ConstString& key) const {

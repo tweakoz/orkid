@@ -54,6 +54,9 @@
 #include "../scripting/Lua/LuaImpl.h"
 
 
+#include <ork/ecs/ParticlesComponent.h>
+#include <ork/ecs/AssetSystem.h>
+
 //#define ENABLE_REFL_REGISTRATION
 
 #if defined(ENABLE_REFL_REGISTRATION)
@@ -167,6 +170,15 @@ struct EcsAppInit {
     RegisterClassX(SceneGraphSystem);
     RegisterClassX(SceneGraphNodeItemData);
 
+    RegisterClassX(ParticlesComponentData);
+    RegisterClassX(ParticlesComponent);
+    RegisterClassX(ParticlesGlobalSystemData);
+    RegisterClassX(ParticlesGlobalSystem);
+
+    // HYPERECS M2b.4
+    RegisterClassX(AssetSystemData);
+    RegisterClassX(AssetSystem);
+
     RegisterClassX(BulletSystemData);
     RegisterClassX(BulletShapeCapsuleData);
     RegisterClassX(BulletShapePlaneData);
@@ -219,6 +231,9 @@ struct EcsAppInit {
     RegisterFamily<PythonComponentData>(ork::AddPooledLiteral("control"));
     RegisterFamily<InterpComponentData>(ork::AddPooledLiteral("control"));
     RegisterFamily<SceneGraphComponentData>(ork::AddPooledLiteral("render"));
+    // ECS-hosted HyperSyn / imperative particle systems. The "particle"
+    // family slot is preallocated as _ParticleFamily at simulation.cpp:67.
+    RegisterFamily<ParticlesComponentData>(ork::AddPooledLiteral("particle"));
     RegisterFamily<BulletObjectComponentData>(ork::AddPooledLiteral("")); // no update
     RegisterFamily<StochWavSoundEmitterData>(ork::AddPooledLiteral("control"));
     RegisterFamily<SimpleSoundEmitterData>(ork::AddPooledLiteral("control"));

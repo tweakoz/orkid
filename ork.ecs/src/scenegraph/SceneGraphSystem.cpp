@@ -87,6 +87,14 @@ void SceneGraphSystemData::describeX(SystemDataClass* clazz) {
   clazz->intProperty("CookieAtlasHeight", int_range{64, 4096}, &SceneGraphSystemData::_cookieAtlasHeight);
   clazz->intProperty("ShadowAtlasWidth", int_range{64, 4096}, &SceneGraphSystemData::_shadowAtlasWidth);
   clazz->intProperty("ShadowAtlasHeight", int_range{64, 4096}, &SceneGraphSystemData::_shadowAtlasHeight);
+
+  clazz->directProperty("skybox_path", &SceneGraphSystemData::_skybox_path);
+  // PBR2 P3.D — reflected post-fx node registry + execution order.
+  // _postfx_nodes survives JSON round-trip via directObjectMapProperty
+  // (same pattern as Archetype::mComponentDatas — polymorphic shared_ptr
+  // to ork::Object subclasses, each carrying its own reflected fields).
+  clazz->directObjectMapProperty("postfx_nodes", &SceneGraphSystemData::_postfx_nodes);
+  clazz->directProperty("postfx_order",          &SceneGraphSystemData::_postfx_order);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -99,20 +107,58 @@ void SceneGraphSystemData::setInternalSceneParam(const varmap::key_t& key, const
   _internalParams->setValueForKey(key, val);
 }
 
+void SceneGraphSystemData::setUserSceneParam(const std::string& key, const varmap::VarMap::value_type& val) {
+  // orklut asserts on duplicate-key AddSorted in single-key mode;
+  // erase any prior entry first so this behaves like dict assignment.
+  auto it = _userParams.find(key);
+  if (it != _userParams.end()) {
+    _userParams.erase(it);
+  }
+  _userParams.AddSorted(key, val);
+}
+
 void SceneGraphSystemData::declareLayer(const std::string& layername) {
   _declaredLayers.push_back(layername);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// PBR2 P3.D — register a PostFxNode under a stable string key. Overwrites
+// on collision. Reflected via _postfx_nodes (directObjectMapProperty);
+// execution order is determined by _postfx_order (separate string).
+// Resolution into the runtime chain happens at _onLink time.
+
+void SceneGraphSystemData::addPostFxNode(const std::string& name, lev2::compositorpostnode_ptr_t node) {
+  _postfx_nodes[name] = node;
+}
+
+void SceneGraphSystemData::appendPostFxOrder(const std::string& name) {
+  // Idempotent: split the current order on commas, skip if name already present.
+  size_t pos = 0;
+  while (pos < _postfx_order.size()) {
+    auto comma = _postfx_order.find(',', pos);
+    auto end   = (comma == std::string::npos) ? _postfx_order.size() : comma;
+    auto tok   = _postfx_order.substr(pos, end - pos);
+    while (!tok.empty() && (tok.front() == ' ' || tok.front() == '\t')) tok.erase(tok.begin());
+    while (!tok.empty() && (tok.back()  == ' ' || tok.back()  == '\t')) tok.pop_back();
+    if (tok == name) return;   // already present
+    pos = (comma == std::string::npos) ? _postfx_order.size() : (comma + 1);
+  }
+  if (!_postfx_order.empty()) _postfx_order += ",";
+  _postfx_order += name;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 void SceneGraphSystemData::declareNodeOnLayer(nodedef_ptr_t ndef) {
-  auto nid           = std::make_shared<SceneGraphNodeItemData>();
-  nid->_nodename     = ndef->_nodename;
-  nid->_drawabledata = ndef->_drawabledata;
-  nid->_layername    = ndef->_layername;
-  nid->_multilayers    = ndef->_multilayers;
-  nid->_xfoverride   = ndef->_transform;
-  nid->_modcolor     = ndef->_modcolor;
+  auto nid                  = std::make_shared<SceneGraphNodeItemData>();
+  nid->_nodename            = ndef->_nodename;
+  nid->_drawabledata        = ndef->_drawabledata;
+  nid->_drawable_asset_name = ndef->_drawable_asset_name;
+  nid->_envmap_path         = ndef->_envmap_path;
+  nid->_layername           = ndef->_layername;
+  nid->_multilayers         = ndef->_multilayers;
+  nid->_xfoverride          = ndef->_transform;
+  nid->_modcolor            = ndef->_modcolor;
 
   _nodedatas[ndef->_nodename] = nid;
 }
@@ -299,7 +345,12 @@ void SceneGraphSystem::_instantiateDeclaredNodes() {
           nitem->_drawable = drwdata->createDrawable();
           nitem->_drawable->_modcolor = drwdata->_modcolor;
         }
-  
+        // PBR2 Phase 0 — per-node HDRI override. NID->_envmap_path has
+        // already been resolved (asset:// → .xir path) by Python-side
+        // wire_scene_data before the SystemData was staged. Empty path
+        // is a no-op inside loadEnvMapOverride.
+        ork::lev2::loadEnvMapOverride(nitem->_drawable.get(), NID->_envmap_path);
+
         if (auto as_instanced = dynamic_pointer_cast<InstancedDrawable>(nitem->_drawable)) {
           auto NODE_ON_LAYER = [=](lev2::scenegraph::layer_ptr_t layer){
             auto node      = layer->createDrawableNode(NID->_nodename, as_instanced);
@@ -688,6 +739,8 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
                   nitem->_drawable = drwdata->createDrawable();
                   nitem->_drawable->_modcolor = drwdata->_modcolor;
                 }
+                // PBR2 Phase 0 — per-node HDRI override (see _onStageComponent above).
+                ork::lev2::loadEnvMapOverride(nitem->_drawable.get(), NID->_envmap_path);
                 nitem->_nodename                      = NID->_nodename;
                 nitem->_data                          = NID;
                 component->_nodeitems[NID->_nodename] = nitem;
@@ -865,6 +918,48 @@ bool SceneGraphSystem::_onLink(Simulation* psi) // final
     auto k = item.first;
     auto v = item.second;
     _mergedParams->setValueForKey(k, v);
+  }
+
+  /////////////////////////////////////////
+  // PBR2 P3.D — assemble the runtime PostFxChain from the reflected
+  // _postfx_nodes map + _postfx_order string. The compositor consumes
+  // the chain from _mergedParams["PostFxChain"] (scenegraph.cpp:424).
+  // Names listed in _postfx_order but absent from _postfx_nodes are
+  // skipped silently; names in the map but absent from order are
+  // unused (lets you stage-disable a node without removing it).
+  /////////////////////////////////////////
+  printf("[SGS::_onLink P3.D] postfx_order=<%s> postfx_nodes.size=%zu\n",
+         _SGSD._postfx_order.c_str(), _SGSD._postfx_nodes.size());
+  fflush(stdout);
+  if (!_SGSD._postfx_order.empty() && !_SGSD._postfx_nodes.empty()) {
+    lev2::postfx_node_chain_t chain;
+    std::string buf = _SGSD._postfx_order;
+    size_t pos = 0;
+    while (pos < buf.size()) {
+      auto comma = buf.find(',', pos);
+      auto end = (comma == std::string::npos) ? buf.size() : comma;
+      auto name = buf.substr(pos, end - pos);
+      // trim whitespace
+      while (!name.empty() && (name.front() == ' ' || name.front() == '\t')) name.erase(name.begin());
+      while (!name.empty() && (name.back()  == ' ' || name.back()  == '\t')) name.pop_back();
+      if (!name.empty()) {
+        auto it = _SGSD._postfx_nodes.find(name);
+        if (it != _SGSD._postfx_nodes.end()) {
+          chain.push_back(it->second);
+        } else {
+          printf("[SGS::_onLink] postfx_order references unknown node <%s> — skipped\n",
+                 name.c_str());
+        }
+      }
+      pos = (comma == std::string::npos) ? buf.size() : (comma + 1);
+    }
+    printf("[SGS::_onLink P3.D] assembled PostFxChain size=%zu\n", chain.size());
+    fflush(stdout);
+    if (!chain.empty()) {
+      varmap::VarMap::value_type val;
+      val.set<lev2::postfx_node_chain_t>(chain);
+      _mergedParams->setValueForKey("PostFxChain", val);
+    }
   }
 
   /////////////////////////////////////////

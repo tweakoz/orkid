@@ -169,33 +169,51 @@ dgmoduleinst_ptr_t DgModuleData::createInstance(GraphInst* ginst) const{
   return std::make_shared<DgModuleInst>(this,ginst);
 }
 size_t DgModuleData::computeMinDepth() const{
+    std::unordered_set<const DgModuleData*> visited;
+    return _computeMinDepth(visited);
+}
+size_t DgModuleData::computeMaxDepth() const{
+    std::unordered_set<const DgModuleData*> visited;
+    return _computeMaxDepth(visited);
+}
+size_t DgModuleData::_computeMinDepth(std::unordered_set<const DgModuleData*>& visited) const{
+    if(!visited.insert(this).second){
+      // cycle — this node is already on the DFS path; stop here.
+      // DgSorter::generateTopology detects the cycle and fails the sort.
+      return 0;
+    }
     size_t min_depth = InPlugData::NOPATH;
     for( auto upstream_input : _inputs ){
       auto upstream_plug = upstream_input->_connectedOutput;
       if(upstream_plug){
         auto upstream_module = typedModuleData<DgModuleData>(upstream_plug->_parent_module);
-        size_t upstream_depth = upstream_module->computeMinDepth()+1;
+        size_t upstream_depth = upstream_module->_computeMinDepth(visited)+1;
         if(upstream_depth<min_depth){
           min_depth = upstream_depth;
         }
       }
     }
+    visited.erase(this);
     if(min_depth==InPlugData::NOPATH)
       return 0;
     return min_depth;
 }
-size_t DgModuleData::computeMaxDepth() const{
+size_t DgModuleData::_computeMaxDepth(std::unordered_set<const DgModuleData*>& visited) const{
+    if(!visited.insert(this).second){
+      return 0;
+    }
     size_t max_depth = 0;
     for( auto upstream_input : _inputs ){
       auto upstream_plug = upstream_input->_connectedOutput;
       if(upstream_plug){
         auto upstream_module = typedModuleData<DgModuleData>(upstream_plug->_parent_module);
-        size_t upstream_depth = upstream_module->computeMaxDepth()+1;
+        size_t upstream_depth = upstream_module->_computeMaxDepth(visited)+1;
         if(upstream_depth>max_depth){
           max_depth = upstream_depth;
         }
       }
     }
+    visited.erase(this);
     return max_depth;
 }
 

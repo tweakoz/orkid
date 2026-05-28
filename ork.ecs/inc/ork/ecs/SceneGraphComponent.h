@@ -26,6 +26,23 @@ struct NodeDef{
   NodeDef();
   std::string _nodename;
   lev2::drawabledata_ptr_t _drawabledata;
+  // Name of an AssetSystemData gen that produced _drawabledata. Set by
+  // higher-level construction (Scene DSL); empty for inline drawables.
+  // Survives JSON round-trip so the post-deserialize wiring step can
+  // re-attach the materialized drawable to nodes whose _drawabledata
+  // was a placeholder (e.g. RigidPrimitiveDrawableData with no runtime
+  // fields populated).
+  std::string _drawable_asset_name;
+  // PBR2 Phase 0 — per-node HDRI override. Two value forms:
+  //   "asset://<name>" — cross-ref to an HdriToXirGenData; resolved to
+  //                       its baked .xir path at load time by
+  //                       wire_scene_data before SG creates the drawable.
+  //   anything else    — literal path, passed straight to
+  //                       ork::lev2::loadEnvMapOverride.
+  // Applied after _drawabledata->createDrawable() in
+  // SceneGraphSystem.cpp; overrides the scene-global skybox for this
+  // node's drawable only.
+  std::string _envmap_path;
   std::string _layername;
   std::vector<std::string> _multilayers;
   decompxf_ptr_t _transform;
@@ -47,6 +64,10 @@ struct SceneGraphNodeItemData : public ork::Object {
 public:
   SceneGraphNodeItemData() : _modcolor(1,1,1,1) {}
   lev2::drawabledata_ptr_t _drawabledata;
+  // See NodeDef::_drawable_asset_name.
+  std::string _drawable_asset_name;
+  // See NodeDef::_envmap_path.
+  std::string _envmap_path;
   std::string _layername;
   std::vector<std::string> _multilayers;
   std::string _nodename;
@@ -132,6 +153,22 @@ public:
 
     void declarePrefetchDrawableData(lev2::drawabledata_ptr_t data);
     void setInternalSceneParam(const varmap::key_t& key, const varmap::VarMap::value_type& val);
+    // Reflected (serializable) counterpart to setInternalSceneParam.
+    // _userParams is the directMapProperty that survives JSON
+    // round-trip; the runtime merge in _onLink layers it over
+    // _internalParams. Author-facing scene configuration (SkyboxTexPathStr,
+    // SkyboxIntensity, etc.) should go through here so JSON preserves it;
+    // setInternalSceneParam is reserved for non-serializable runtime
+    // injections (e.g. outputRTG).
+    void setUserSceneParam(const std::string& key, const varmap::VarMap::value_type& val);
+    // PBR2 P3.D — reflected post-fx node registry. Add a node under a
+    // stable string key (overwrite on collision). Execution order is the
+    // separate _postfx_order string (comma-delimited names). Both
+    // _postfx_nodes and _postfx_order are reflected → JSON round-trip.
+    void addPostFxNode(const std::string& name, lev2::compositorpostnode_ptr_t node);
+    // Append a name to _postfx_order. No-op if name is already present
+    // (substring match on comma boundaries). Adds "," separator as needed.
+    void appendPostFxOrder(const std::string& name);
     void addStaticDrawableData(std::string layername, lev2::drawabledata_ptr_t drw);
     void addStaticDrawable(std::string layername, lev2::drawable_ptr_t drw);
 
@@ -163,6 +200,16 @@ private:
   varmap::varmap_ptr_t _internalParams;
   lev2::rendervar_strmap_t _userParams;
 
+  // PBR2 P3.D — reflected post-fx node registry + execution order.
+  // _postfx_nodes is keyed by stable name; _postfx_order is a
+  // comma-delimited list of names from the map specifying run order.
+  // At _onLink, parsed into the runtime postfx chain pushed to
+  // _userParams["PostFxChain"] (the existing compositor consumer).
+public:
+  std::map<std::string, lev2::compositorpostnode_ptr_t> _postfx_nodes;
+  std::string _postfx_order;
+private:
+
   std::vector<lev2::scenegraph::drawabledatakvpair_ptr_t> _staticDrawableDatas;
   std::vector<lev2::scenegraph::DrawableKvPair> _staticDrawables;
   std::vector<oncreatesys_lambda_t> _onCreateSystemOperations;
@@ -174,6 +221,18 @@ private:
   int _cookieAtlasHeight = 1024;
   int _shadowAtlasWidth  = 1024;
   int _shadowAtlasHeight = 1024;
+
+public:
+  // PBR2 Phase 0 — single skybox source field. Two value forms:
+  //   1. "asset://<asset_name>" — cross-ref to an HdriToXirGenData in the
+  //      Scene's AssetSystemData. wire_scene_data materializes the gen
+  //      (running the bake) and the resulting .xir path is stuffed into
+  //      _userParams["SkyboxTexPathStr"] for the existing SG consumer.
+  //   2. Anything else (e.g. "ork_envmaps|cold4k", "<ork_envmaps2>/x.xir")
+  //      — literal path passed straight through to SkyboxTexPathStr.
+  // Empty = honor whatever _userParams["SkyboxTexPathStr"] was set
+  // directly (back-compat path; bare-string author surface unchanged).
+  std::string _skybox_path;
 };
 
 using sgsystemdata_ptr_t = std::shared_ptr<SceneGraphSystemData>;

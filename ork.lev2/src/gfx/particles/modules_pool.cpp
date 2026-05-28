@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
+#include <ork/dataflow/context_variable.h>
 #include <ork/reflect/properties/registerX.inl>
 #include <ork/lev2/gfx/particle/modular_particles2.h>
 #include <ork/dataflow/module.inl>
@@ -89,6 +90,19 @@ void ParticlePoolModuleInst::onLink(dflow::GraphInst* inst) { // final
   buffer->_pool->Init(_ppd->_poolSize);
 }
 
+void ParticlePoolModuleInst::onReset(dflow::GraphInst* inst) { // final
+  // Drop all live particles — pool->Init(pool_size) reinitializes the
+  // particle pool, releasing every active particle. Reset semantic: next
+  // compute starts from an empty pool, so a recycled ECS slot emits a
+  // fresh burst rather than picking up where the prior slot left off.
+  if (_output) {
+    auto buffer = _output->_value;
+    if (buffer && buffer->_pool) {
+      buffer->_pool->Init(_ppd->_poolSize);
+    }
+  }
+}
+
 using poolmoduleinst_ptr_t = std::shared_ptr<ParticlePoolModuleInst>;
 
 
@@ -99,6 +113,10 @@ static void _reshapePoolIOs( dataflow::moduledata_ptr_t data ){
   auto typed = std::dynamic_pointer_cast<ParticlePoolData>(data);
   ModuleData::createOutputPlug<ParticleBufferPlugTraits>(data, dflow::EPR_UNIFORM, "pool");
   ModuleData::createOutputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_VARYING1, "UnitAge");
+  // Random — stable per-particle scalar in [0,1]. Consumers (emitters in
+  // the per-particle Aux path) write the current particle's mfRandom into
+  // this output before evaluating downstream chains.
+  ModuleData::createOutputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_VARYING1, "Random");
 }
 
 std::shared_ptr<ParticlePoolData> ParticlePoolData::createShared() {
@@ -117,6 +135,28 @@ void ParticlePoolData::describeX(class_t* clazz) {
     _reshapePoolIOs(mdata);
   });
 }
+
+// HyperSyn DSL context variable registration — runs at dylib-load time so the
+// registry is populated before any DSL code executes (see the matching block
+// in modules_global.cpp for the rationale).
+namespace {
+struct _RegisterPoolContextVars {
+  _RegisterPoolContextVars() {
+    using Reg = dataflow::ContextVariableRegistry;
+    Reg::instance().register_("ptc.unit_age", {
+        ._module_class    = ParticlePoolData::GetClassStatic(),
+        ._output_plug_name = "UnitAge",
+        ._policy          = Reg::REQUIRE_EXISTING,
+    });
+    Reg::instance().register_("ptc.random", {
+        ._module_class    = ParticlePoolData::GetClassStatic(),
+        ._output_plug_name = "Random",
+        ._policy          = Reg::REQUIRE_EXISTING,
+    });
+  }
+};
+static _RegisterPoolContextVars _registerPoolCtxVars;
+} // namespace
 
 } // namespace ork::lev2::particle
 

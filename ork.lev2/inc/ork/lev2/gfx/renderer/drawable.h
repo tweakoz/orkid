@@ -361,7 +361,32 @@ struct Drawable {
   uint64_t _drawable_type = 0;  // type identifier for enumeration (e.g. "model"_crcu)
   uint64_t _tag = 0;            // user-defined tag for custom filtering
   pbr::radiancemaps_ptr_t _envmapOverride;  // per-drawable environment map override
+  // Per-drawable cube probe override (live LightProbe). Resolved ONCE
+  // at the perfect time (consumer's _onActivateComponent, after every
+  // probe has gone through _onStageComponent and registered with
+  // LightManager). No per-frame name lookups; the resolved pointer
+  // propagates Drawable → IRenderable → RCID. Distinct from
+  // _envmapOverride: that's a baked equirect (MapSpecularEnv channel);
+  // _probeOverride is the live cube (reflectionPROBE channel).
+  lightprobe_ptr_t _probeOverride;
+  // PBR2 Phase 0 — when true, this drawable is skipped during probe
+  // cubemap captures. Used for noisy/transient drawables that
+  // shouldn't appear in reflections (particles, sprites, FX) or for
+  // visuals that would feedback-loop through their own probe (a
+  // glass surface that's also seen by a probe inside the glass).
+  // Default false; ParticlesDrawableData::createDrawable sets true.
+  bool _excludeFromProbe = false;
 };
+
+// Resolve `envpath` (file path, supports <token>/$ENV expansion) into a
+// RadianceMaps from the process-wide cache and stuff it into
+// drw->_envmapOverride. No-op on empty path. Called by:
+//   1. ModelDrawableData::createDrawable (legacy DrawableData-level
+//      override via _environmentMapPath).
+//   2. SceneGraphSystem post-createDrawable, per-NodeDef override
+//      authored via SG.component(nodes={..."envmap": probe_wrapper})
+//      (PBR2 Phase 0).
+void loadEnvMapOverride(Drawable* drw, const std::string& envpath);
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

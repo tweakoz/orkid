@@ -102,6 +102,11 @@ void CallbackDrawable::enqueueToRenderQueue(drawqueueitem_constptr_t item, lev2:
   renderable.SetDrawableDataB(GetUserDataB());
   renderable.SetModColor(DQDATA._modcolor);
   renderable._drawable = this;
+  // Propagate per-drawable IBL overrides (PBR2 Phase 0).
+  // The Drawable owns the overrides; copy onto the renderable so the
+  // per-draw bind in fwdnode_pipeline.cpp sees them via RCID.
+  renderable._envmapOverride = _envmapOverride;
+  renderable._probeOverride  = _probeOverride;
 }
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////

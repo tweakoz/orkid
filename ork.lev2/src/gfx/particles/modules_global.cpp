@@ -10,6 +10,7 @@
 #include <ork/lev2/gfx/particle/modular_particles2.h>
 #include <ork/dataflow/module.inl>
 #include <ork/dataflow/plug_data.inl>
+#include <ork/dataflow/context_variable.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -43,6 +44,7 @@ struct GlobalModuleInst : dflow::DgModuleInst {
     _outputRelTime->setValue(reltime);
     _outputRelTimeDiv10->setValue(reltimediv10);
     _outputRelTimeDiv100->setValue(reltimediv100);
+    _outputDeltaTime->setValue(updata->_dt);
 
    // printf("computing particle globals<%p> reltime<%g>\n", this, reltime);
 
@@ -63,12 +65,24 @@ struct GlobalModuleInst : dflow::DgModuleInst {
     _outputRelTime       = typedOutputNamed<dflow::FloatPlugTraits>("RelTime");
     _outputRelTimeDiv10  = typedOutputNamed<dflow::FloatPlugTraits>("RelTimeDiv10");
     _outputRelTimeDiv100 = typedOutputNamed<dflow::FloatPlugTraits>("RelTimeDiv100");
+    _outputDeltaTime     = typedOutputNamed<dflow::FloatPlugTraits>("DeltaTime");
 
     _inputTimeBase->_value  = _gmd->typedInputNamed<dflow::FloatPlugTraits>("TimeBase")->_value;
     _inputTimeScale->_value = _gmd->typedInputNamed<dflow::FloatPlugTraits>("TimeScale")->_value;
   }
 
   void onActivate(dflow::GraphInst* inst) final {
+  }
+
+  // Reset to "just-instantiated" state: next compute() recaptures
+  // _timebasebase from the current frame's _abstime, so per-instance time
+  // restarts at 0. Used by ECS slot recycling — an entity slot can be
+  // reset() and re-triggered (e.g. an explosion firing twice) without
+  // creating a fresh graphinst.
+  void onReset(dflow::GraphInst* inst) final {
+    _first_compute = true;
+    _timebasebase  = 0.0f;
+    _timebase      = 0.0f;
   }
 
   const GlobalModuleData* _gmd;
@@ -82,6 +96,7 @@ struct GlobalModuleInst : dflow::DgModuleInst {
   dflow::float_out_pluginst_ptr_t _outputRelTime;
   dflow::float_out_pluginst_ptr_t _outputRelTimeDiv10;
   dflow::float_out_pluginst_ptr_t _outputRelTimeDiv100;
+  dflow::float_out_pluginst_ptr_t _outputDeltaTime;
 
   float _noiseRat = 0.0f;
   float _noisePrv = 0.0f;
@@ -116,6 +131,7 @@ static void _reshapeGlobalIOs( dataflow::moduledata_ptr_t data ){
   auto reltime       = ModuleData::createOutputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "RelTime");
   auto reltimediv10  = ModuleData::createOutputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "RelTimeDiv10");
   auto reltimediv100 = ModuleData::createOutputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "RelTimeDiv100");
+  auto deltatime     = ModuleData::createOutputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "DeltaTime");
 
   timebase->setValue(0.0f);
   timescale->setValue(1.0f);
@@ -148,6 +164,31 @@ void GlobalModuleData::describeX(class_t* clazz) {
     _reshapeGlobalIOs(mdata);
   });
 }
+
+// HyperSyn DSL context variable registration. We use a file-scope static
+// initializer rather than registering inside describeX because describeX only
+// runs during Class::InitializeClasses() (triggered by lev2appinit's GPU
+// bringup) — but the DSL needs the registry populated as soon as the dylib
+// loads, before any DSL author code runs. The static initializer fires at
+// dylib-load time, which happens when Python imports orkengine.lev2.
+namespace {
+struct _RegisterGlobalsContextVars {
+  _RegisterGlobalsContextVars() {
+    using Reg = dataflow::ContextVariableRegistry;
+    Reg::instance().register_("time", {
+        ._module_class    = GlobalModuleData::GetClassStatic(),
+        ._output_plug_name = "RelTime",
+        ._policy          = Reg::SINGLETON,
+    });
+    Reg::instance().register_("dt", {
+        ._module_class    = GlobalModuleData::GetClassStatic(),
+        ._output_plug_name = "DeltaTime",
+        ._policy          = Reg::SINGLETON,
+    });
+  }
+};
+static _RegisterGlobalsContextVars _registerGlobalsCtxVars;
+} // namespace
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::particle

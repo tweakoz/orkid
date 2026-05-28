@@ -73,8 +73,9 @@ VklRtBufferImpl::~VklRtBufferImpl() {
   for (auto& v : _cubeFaceViews) v = VK_NULL_HANDLE;
 
   if (imgobj or impl or hasFaceViews) {
-    // Enqueue cleanup to main thread with proper Vulkan context
-    GfxEnv::GetRef().enqueueDeferredContextOp(
+    // Enqueue cleanup onto this buffer's owning context — drained on that
+    // context's beginFrame (Phase 6.3 Variant B: per-context deferred queue).
+    _contextVK->enqueueDeferredOp(
       [=](Context* ctx) mutable {
         // Destroy cube face views
         if (hasFaceViews && device != VK_NULL_HANDLE) {

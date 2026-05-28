@@ -9,6 +9,7 @@
 #include <ork/lev2/gfx/particle/modular_particles2.h>
 #include <ork/lev2/gfx/particle/modular_emitters.h>
 #include <ork/lev2/gfx/particle/modular_forces.h>
+#include <ork/lev2/gfx/particle/vdbcollider_holder.inl>
 #include <ork/lev2/gfx/particle/modular_renderers.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -91,6 +92,27 @@ void pyinit_gfx_particles(py::module& module_lev2) {
         });
   type_codec->registerStdCodec<ptc::gradientmaterial_ptr_t>(mtl_grad_type);
   /////////////////////////////////////////////////////////////////////////////
+  // GradientAtlasMaterial — gradient-via-2D-texture-atlas. atlas is the
+  // user-provided texture (X = unit_age, Y = aux.x). Same intensity /
+  // modulation_texture controls as GradientMaterial for familiarity.
+  /////////////////////////////////////////////////////////////////////////////
+  auto mtl_atlas_type = //
+      py::class_<ptc::GradientAtlasMaterial, ptc::MaterialBase, ptc::gradientatlasmaterial_ptr_t>(ptc_module, "GradientAtlasMaterial")
+      .def_static("createShared", [] -> ptc::gradientatlasmaterial_ptr_t { return ptc::GradientAtlasMaterial::createShared(); })
+      .def_property("atlas",
+        [](ptc::gradientatlasmaterial_ptr_t m) -> texture_ptr_t { return m->_atlas; },
+        [](ptc::gradientatlasmaterial_ptr_t m, texture_ptr_t t) { m->_atlas = t; })
+      .def_property("colorIntensity",
+        [](ptc::gradientatlasmaterial_ptr_t m) -> float { return m->_gradientColorIntensity; },
+        [](ptc::gradientatlasmaterial_ptr_t m, float v) { m->_gradientColorIntensity = v; })
+      .def_property("alphaIntensity",
+        [](ptc::gradientatlasmaterial_ptr_t m) -> float { return m->_gradientAlphaIntensity; },
+        [](ptc::gradientatlasmaterial_ptr_t m, float v) { m->_gradientAlphaIntensity = v; })
+      .def_property("modulation_texture",
+        [](ptc::gradientatlasmaterial_ptr_t m) -> texture_ptr_t { return m->_modulation_texture; },
+        [](ptc::gradientatlasmaterial_ptr_t m, texture_ptr_t t) { m->_modulation_texture = t; });
+  type_codec->registerStdCodec<ptc::gradientatlasmaterial_ptr_t>(mtl_atlas_type);
+  /////////////////////////////////////////////////////////////////////////////
   auto mtl_tex_type = //
       py::class_<ptc::TextureMaterial, ptc::MaterialBase, ptc::texturematerial_ptr_t>(ptc_module, "TextureMaterial")
       .def_static("createShared", [] -> ptc::texturematerial_ptr_t { return ptc::TextureMaterial::createShared(); })
@@ -146,6 +168,82 @@ void pyinit_gfx_particles(py::module& module_lev2) {
       .def_static("createShared", [] -> ptc::globalmodule_ptr_t { return ptc::GlobalModuleData::createShared(); });
   type_codec->registerStdCodec<ptc::globalmodule_ptr_t>(globmoduledata_type);
   /////////////////////////////////////////////////////////////////////////////
+  // EntityRef — parametric SRT decomposition of a published entity
+  // transform. Created lazily by the DSL lowerer for each unique
+  // Expr.entity("name") reference.
+  auto entrefdata_type = //
+      py::class_<ptc::EntityRefModuleData, ptc::ModuleData, ptc::entityrefmodule_ptr_t>(ptc_module, "EntityRef")
+      .def_static("createShared",
+          [] -> ptc::entityrefmodule_ptr_t {
+            return ptc::EntityRefModuleData::createShared();
+          })
+      .def_static("createWithName",
+          [](std::string name) -> ptc::entityrefmodule_ptr_t {
+            return ptc::EntityRefModuleData::createWithName(name);
+          })
+      .def_property(
+          "entity_name",
+          [](ptc::entityrefmodule_ptr_t e) -> std::string { return e->_entity_name; },
+          [](ptc::entityrefmodule_ptr_t e, std::string v) { e->_entity_name = v; });
+  type_codec->registerStdCodec<ptc::entityrefmodule_ptr_t>(entrefdata_type);
+  /////////////////////////////////////////////////////////////////////////////
+  // TransformPoint — local_point -> host_xf * local_point.
+  auto txp_type = //
+      py::class_<ptc::TransformPointModuleData, ptc::ModuleData, ptc::transform_point_module_ptr_t>(ptc_module, "TransformPoint")
+      .def_static("createShared",
+          [] -> ptc::transform_point_module_ptr_t {
+            return ptc::TransformPointModuleData::createShared();
+          })
+      .def_property(
+          "entity_name",
+          [](ptc::transform_point_module_ptr_t m) -> std::string { return m->_entity_name; },
+          [](ptc::transform_point_module_ptr_t m, std::string v) { m->_entity_name = v; });
+  type_codec->registerStdCodec<ptc::transform_point_module_ptr_t>(txp_type);
+  /////////////////////////////////////////////////////////////////////////////
+  // TransformDir — 3x3 of host_xf applied to a local direction.
+  auto txd_type = //
+      py::class_<ptc::TransformDirModuleData, ptc::ModuleData, ptc::transform_dir_module_ptr_t>(ptc_module, "TransformDir")
+      .def_static("createShared",
+          [] -> ptc::transform_dir_module_ptr_t {
+            return ptc::TransformDirModuleData::createShared();
+          })
+      .def_property(
+          "entity_name",
+          [](ptc::transform_dir_module_ptr_t m) -> std::string { return m->_entity_name; },
+          [](ptc::transform_dir_module_ptr_t m, std::string v) { m->_entity_name = v; });
+  type_codec->registerStdCodec<ptc::transform_dir_module_ptr_t>(txd_type);
+  /////////////////////////////////////////////////////////////////////////////
+  // Vec3Add — A + B = Sum, componentwise.
+  auto v3add_type = //
+      py::class_<ptc::Vec3AddModuleData, ptc::ModuleData, ptc::vec3add_module_ptr_t>(ptc_module, "Vec3Add")
+      .def_static("createShared",
+          [] -> ptc::vec3add_module_ptr_t {
+            return ptc::Vec3AddModuleData::createShared();
+          });
+  type_codec->registerStdCodec<ptc::vec3add_module_ptr_t>(v3add_type);
+  /////////////////////////////////////////////////////////////////////////////
+  // Vec3Combine — three scalar inputs X/Y/Z + one fvec3 output "value".
+  // Emitted by the HyperSyn DSL lowerer for Expr.vec3(...) bindings.
+  auto vec3combinedata_type = //
+      py::class_<ptc::Vec3CombineModuleData, ptc::ModuleData, ptc::vec3combinemodule_ptr_t>(ptc_module, "Vec3Combine")
+      .def_static("createShared", [] -> ptc::vec3combinemodule_ptr_t { return ptc::Vec3CombineModuleData::createShared(); });
+  type_codec->registerStdCodec<ptc::vec3combinemodule_ptr_t>(vec3combinedata_type);
+  /////////////////////////////////////////////////////////////////////////////
+  // Parameters — runtime-mutable scalar source. DSL self.expose(name, default)
+  // adds a named float output plug; gameplay SET_PARAM mutates the value.
+  auto paramsdata_type = //
+      py::class_<ptc::ParametersModuleData, ptc::ModuleData, ptc::parametersmodule_ptr_t>(ptc_module, "Parameters")
+      .def_static("createShared", [] -> ptc::parametersmodule_ptr_t { return ptc::ParametersModuleData::createShared(); })
+      .def("addFloatParam",
+          [](ptc::parametersmodule_ptr_t p, std::string name, float def) {
+            p->addFloatParam(name, def);
+          })
+      .def_property_readonly("param_names",
+          [](ptc::parametersmodule_ptr_t p) -> std::vector<std::string> {
+            return p->paramNames();
+          });
+  type_codec->registerStdCodec<ptc::parametersmodule_ptr_t>(paramsdata_type);
+  /////////////////////////////////////////////////////////////////////////////
   auto poolmoduledata_type = //
       py::class_<ptc::ParticlePoolData, ptc::ModuleData, ptc::poolmodule_ptr_t>(ptc_module, "Pool")
       .def_static("createShared", [] -> ptc::poolmodule_ptr_t { return ptc::ParticlePoolData::createShared(); })
@@ -184,6 +282,14 @@ void pyinit_gfx_particles(py::module& module_lev2) {
       .def_static("createShared", [] -> ptc::gravitymodule_ptr_t { return ptc::GravityModuleData::createShared(); });
   type_codec->registerStdCodec<ptc::gravitymodule_ptr_t>(grvmoduledata_type);
   /////////////////////////////////////////////////////////////////////////////
+  auto dirforcemoduledata_type = //
+      py::class_<ptc::DirectionalForceModuleData, ptc::ModuleData, ptc::directional_force_module_ptr_t>(ptc_module, "DirectionalForce")
+      .def_static("createShared",
+          [] -> ptc::directional_force_module_ptr_t {
+            return ptc::DirectionalForceModuleData::createShared();
+          });
+  type_codec->registerStdCodec<ptc::directional_force_module_ptr_t>(dirforcemoduledata_type);
+  /////////////////////////////////////////////////////////////////////////////
   auto sphamoduledata_type = //
       py::class_<ptc::SphAttractorModuleData, ptc::ModuleData, ptc::sphattractormodule_ptr_t>(ptc_module, "SphAttractor")
       .def_static("createShared", [] -> ptc::sphattractormodule_ptr_t { return ptc::SphAttractorModuleData::createShared(); });
@@ -202,6 +308,12 @@ void pyinit_gfx_particles(py::module& module_lev2) {
   auto turbmoduledata_type = //
       py::class_<ptc::TurbulenceModuleData, ptc::ModuleData, ptc::turbulencemodule_ptr_t>(ptc_module, "Turbulence")
       .def_static("createShared", [] -> ptc::turbulencemodule_ptr_t { return ptc::TurbulenceModuleData::createShared(); });
+  /////////////////////////////////////////////////////////////////////////////
+  py::class_<ptc::CurlNoiseForceModuleData, ptc::ModuleData, ptc::curlnoiseforce_ptr_t>(ptc_module, "CurlNoiseForce")
+      .def_static("createShared", [] -> ptc::curlnoiseforce_ptr_t { return ptc::CurlNoiseForceModuleData::createShared(); });
+  /////////////////////////////////////////////////////////////////////////////
+  py::class_<ptc::PolyDragModuleData, ptc::ModuleData, ptc::polydrag_ptr_t>(ptc_module, "PolyDrag")
+      .def_static("createShared", [] -> ptc::polydrag_ptr_t { return ptc::PolyDragModuleData::createShared(); });
   type_codec->registerStdCodec<ptc::turbulencemodule_ptr_t>(turbmoduledata_type);
   /////////////////////////////////////////////////////////////////////////////
   auto vortmoduledata_type = //
@@ -213,6 +325,52 @@ void pyinit_gfx_particles(py::module& module_lev2) {
       py::class_<ptc::DragModuleData, ptc::ModuleData, ptc::dragmodule_ptr_t>(ptc_module, "Drag")
       .def_static("createShared", [] -> ptc::dragmodule_ptr_t { return ptc::DragModuleData::createShared(); });
   type_codec->registerStdCodec<ptc::dragmodule_ptr_t>(dragmoduledata_type);
+  /////////////////////////////////////////////////////////////////////////////
+  auto planecollidermoduledata_type = //
+      py::class_<ptc::PlaneColliderModuleData, ptc::ModuleData, ptc::planecollider_ptr_t>(ptc_module, "PlaneCollider")
+      .def_static("createShared", [] -> ptc::planecollider_ptr_t { return ptc::PlaneColliderModuleData::createShared(); });
+  type_codec->registerStdCodec<ptc::planecollider_ptr_t>(planecollidermoduledata_type);
+  /////////////////////////////////////////////////////////////////////////////
+  auto spherecollidermoduledata_type = //
+      py::class_<ptc::SphereColliderModuleData, ptc::ModuleData, ptc::spherecollider_ptr_t>(ptc_module, "SphereCollider")
+      .def_static("createShared", [] -> ptc::spherecollider_ptr_t { return ptc::SphereColliderModuleData::createShared(); });
+  type_codec->registerStdCodec<ptc::spherecollider_ptr_t>(spherecollidermoduledata_type);
+  /////////////////////////////////////////////////////////////////////////////
+  auto vdbcollidermoduledata_type = //
+      py::class_<ptc::VdbColliderModuleData, ptc::ModuleData, ptc::vdbcollider_ptr_t>(ptc_module, "VdbCollider")
+      .def_static("createShared", [] -> ptc::vdbcollider_ptr_t { return ptc::VdbColliderModuleData::createShared(); })
+      // .sdf_grid = <FloatGrid> — stores the grid as the collider's SDF
+      // source. Wraps in an opaque holder so the header (modular_forces.h)
+      // stays free of <openvdb> includes. None clears the grid.
+      .def_property(
+          "sdf_grid",
+          [](ptc::vdbcollider_ptr_t m) -> lev2::vdb_floatgrid_ptr_t {
+            if (m->_sdfGrid) return m->_sdfGrid->grid;
+            return nullptr;
+          },
+          [](ptc::vdbcollider_ptr_t m, lev2::vdb_floatgrid_ptr_t g) {
+            if (g) {
+              auto h = std::make_shared<ptc::VdbColliderGridHolder>();
+              h->grid = g;
+              m->_sdfGrid = h;
+            } else {
+              m->_sdfGrid.reset();
+            }
+          })
+      // .follow_entity = "<publish_name>" — when set, the collider
+      // tracks the named entity's world transform every tick. Looked up
+      // via GraphInst::_resolveEntityXf at compute time. Empty (default)
+      // → world-space sampling (legacy behavior). See
+      // SpawnData::_publishxf_name on the publisher side.
+      .def_property(
+          "follow_entity",
+          [](ptc::vdbcollider_ptr_t m) -> std::string {
+            return m->_follow_entity;
+          },
+          [](ptc::vdbcollider_ptr_t m, const std::string& s) {
+            m->_follow_entity = s;
+          });
+  type_codec->registerStdCodec<ptc::vdbcollider_ptr_t>(vdbcollidermoduledata_type);
   /////////////////////////////////////////////////////////////////////////////
   auto lightmoduledata_type = //
       py::class_<ptc::LightRendererData, ptc::ModuleData, ptc::lightmodule_ptr_t>(ptc_module, "LightRenderer")
@@ -255,6 +413,33 @@ void pyinit_gfx_particles(py::module& module_lev2) {
         )
       .def_static("createShared", [] -> ptc::streakmodule_ptr_t { return ptc::StreakRendererData::createShared(); });
   type_codec->registerStdCodec<ptc::streakmodule_ptr_t>(streakmoduledata_type);
+  /////////////////////////////////////////////////////////////////////////////
+  // VdbLevelSetRenderer — splat particles to VDB level set, marching cubes,
+  // draw resulting triangle mesh through the standard material pipeline.
+  /////////////////////////////////////////////////////////////////////////////
+  // Kernel selection follows the BlendingMacro / EDepthTest pattern:
+  // CrcString-keyed. Author writes `renderer.kernel = tokens.Wyvill`
+  // (or .Cubic / .Quartic / .Gaussian). The enum's underlying values
+  // are the CRCs of those names so the cast is direct.
+  auto vdbls_type = //
+      py::class_<ptc::VdbLevelSetRendererData, ptc::ModuleData, ptc::vdblevelset_module_ptr_t>(ptc_module, "VdbLevelSetRenderer")
+      .def_static("createShared", []() -> ptc::vdblevelset_module_ptr_t {
+        return ptc::VdbLevelSetRendererData::createShared();
+      })
+      .def_property("material",
+        [](ptc::vdblevelset_module_ptr_t m) -> material_ptr_t { return m->_material; },
+        [](ptc::vdblevelset_module_ptr_t m, material_ptr_t mat) { m->_material = mat; })
+      .def_property("voxel_size",
+        [](ptc::vdblevelset_module_ptr_t m) -> float { return m->_voxelSize; },
+        [](ptc::vdblevelset_module_ptr_t m, float v) { m->_voxelSize = v; })
+      .def_property("kernel",
+        [](ptc::vdblevelset_module_ptr_t m) -> crcstring_ptr_t {
+          return std::make_shared<CrcString>(uint64_t(m->_kernel));
+        },
+        [](ptc::vdblevelset_module_ptr_t m, crcstring_ptr_t cs) {
+          m->_kernel = ptc::VdbLevelSetKernel(cs->hashed());
+        });
+  type_codec->registerStdCodec<ptc::vdblevelset_module_ptr_t>(vdbls_type);
 }
 
 } //namespace ork::lev2 {

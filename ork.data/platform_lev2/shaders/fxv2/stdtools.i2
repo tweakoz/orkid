@@ -68,7 +68,7 @@ uniform_block ublk_std_depth(descriptor_set 0) {
 ///////////////////////////////////////////////////////////////
 uniform_block ublk_std_pbr(descriptor_set 0) {
   //////////////////////////////
-  vec3 AmbientLevel;          // 0x00 
+  vec3 AmbientLevel;          // 0x00
   vec3 EyePostion;            // 0x10
   vec3 EyePostionL;           // 0x20
   vec3 EyePostionR;           // 0x30
@@ -92,7 +92,81 @@ uniform_block ublk_std_pbr(descriptor_set 0) {
   vec4 AuxB;                  // 0xa0
   //////////////////////////////
   float AlphaCutoff;          // 0xb0
+}
 
+///////////////////////////////////////////////////////////////
+// PBR2 Phase 2 — glTF KHR-extension lobe uniforms.
+//
+// One UBO per extension. Each lobe's libblock inherits ONLY its own
+// UBO, so layout drift in one extension can't affect another (the bug
+// that bit diffuse_transmission_color when everything was crammed into
+// a single block). Within each UBO: strict std140 order — vec4 first,
+// floats second, ints last. Colors use vec4 (.rgb in shader; alpha
+// unused) to dodge vec3 alignment ambiguity entirely.
+///////////////////////////////////////////////////////////////
+// Cross-lobe state — currently just the probe-capture gate. Lobes that
+// need it (transmission, volume) inherit ublk_pbr_state.
+///////////////////////////////////////////////////////////////
+uniform_block ublk_pbr_state(descriptor_set 0) {
+  int rendering_probe;
+}
+///////////////////////////////////////////////////////////////
+uniform_block ublk_pbr_transmission(descriptor_set 0) {
+  float transmission_factor;
+  int   has_transmission;
+}
+///////////////////////////////////////////////////////////////
+uniform_block ublk_pbr_ior(descriptor_set 0) {
+  float ior_value;
+  int   has_ior;
+}
+///////////////////////////////////////////////////////////////
+uniform_block ublk_pbr_volume(descriptor_set 0) {
+  vec4  attenuation_color;
+  float volume_thickness_factor;
+  float attenuation_distance;
+  int   has_volume;
+}
+///////////////////////////////////////////////////////////////
+uniform_block ublk_pbr_diffuse_transmission(descriptor_set 0) {
+  vec4  diffuse_transmission_color;
+  float diffuse_transmission_factor;
+  int   has_diffuse_transmission;
+}
+///////////////////////////////////////////////////////////////
+uniform_block ublk_pbr_specular(descriptor_set 0) {
+  vec4  specular_color;
+  float specular_factor;
+  int   has_specular;
+}
+///////////////////////////////////////////////////////////////
+uniform_block ublk_pbr_clearcoat(descriptor_set 0) {
+  float clearcoat_factor;
+  float clearcoat_roughness;
+  int   has_clearcoat;
+}
+///////////////////////////////////////////////////////////////
+uniform_block ublk_pbr_sheen(descriptor_set 0) {
+  vec4  sheen_color;
+  float sheen_factor;
+  float sheen_roughness;
+  int   has_sheen;
+}
+///////////////////////////////////////////////////////////////
+uniform_block ublk_pbr_iridescence(descriptor_set 0) {
+  float iridescence_factor;
+  int   has_iridescence;
+}
+///////////////////////////////////////////////////////////////
+// PBR2 Phase 3 (P3.D) — KHR_materials_subsurface (in-flight).
+// Per-channel radius drives the SSSS blur kernel scale (mm; skin ~ (1.4,
+// 0.5, 0.3)). factor blends the blurred diffuse back with the raw diffuse
+// at SSSS-composite time. has_subsurface is the gate.
+uniform_block ublk_pbr_subsurface(descriptor_set 0) {
+  vec4  subsurface_color;    // .rgb tint; .a unused
+  vec4  subsurface_radius;   // .rgb per-channel radius; .a unused
+  float subsurface_factor;
+  int   has_subsurface;
 }
 ///////////////////////////////////////////////////////////////
 sampler_set sset_std_lighting (descriptor_set 0) {
@@ -115,10 +189,11 @@ sampler_set sset_std_pbr(descriptor_set 0) {
 ///////////////////////////////////////////////////////////////
 uniform_block ublk_std_lighting (descriptor_set 0) {
   //////////////////////////////
-  vec3 LightMapColors[8];        
+  vec3 LightMapColors[8];
   //////////////////////////////
   int point_light_count;
   int spot_light_count;
+  int has_reflection_probe;
 }
 
 ///////////////////////////////////////////////////////////////
@@ -152,6 +227,7 @@ vertex_interface vif_PC {
 fragment_interface fif_PC : vif_PC {
   outputs {
     layout(location = 0) vec4 out_clr;
+    layout(location = 1) vec4 out_diffuse;   // P3.B sentinel
   }
 }
 ///////////////////////////////////////////////////////////////

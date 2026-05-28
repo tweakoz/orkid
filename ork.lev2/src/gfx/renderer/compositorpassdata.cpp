@@ -128,6 +128,13 @@ const fvec3& CompositingPassData::monoCamZnormal() const {
 
 void CompositingPassData::assignLayers(const std::string& layers) {
   //printf("CPD<%p>::assignLayers layers<%s>\n", (void*) this, layers.c_str());
+  // Reset both containers — assignLayers is a "set to these layers"
+  // operation, not an additive one. Previous behavior left _layernameset
+  // accumulating across calls; that mattered for HasLayer() lookups
+  // after a clone+assign (e.g. the probe-cubemap pass restricting its
+  // layer set; without the clear, the outer HUD layer leaked through).
+  _layernames.clear();
+  _layernameset.clear();
   if (layers.length()) {
     _layernames = SplitString(layers, ',');
   } else {

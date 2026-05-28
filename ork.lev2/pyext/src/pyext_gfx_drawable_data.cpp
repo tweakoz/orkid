@@ -385,7 +385,19 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
           .def_property(
               "emitterRadius",
               [](particles_drawable_data_ptr_t drw) -> float { return drw->_emitterRadius; },
-              [](particles_drawable_data_ptr_t drw, float radius) { drw->_emitterRadius = radius; });
+              [](particles_drawable_data_ptr_t drw, float radius) { drw->_emitterRadius = radius; })
+          // When true, the drawable's internal enqueue lambda skips its own
+          // graphinst->compute() — an external driver (ECS
+          // ParticlesGlobalSystem) is expected to advance compute instead.
+          // See drawable_data.h for full rationale.
+          .def_property(
+              "external_compute",
+              [](particles_drawable_data_ptr_t drw) -> bool { return drw->_externalCompute; },
+              [](particles_drawable_data_ptr_t drw, bool ec) { drw->_externalCompute = ec; })
+          .def_property(
+              "probeEntityName",
+              [](particles_drawable_data_ptr_t drw) -> std::string { return drw->_probeEntityName; },
+              [](particles_drawable_data_ptr_t drw, std::string n) { drw->_probeEntityName = n; });
   type_codec->registerStdCodec<particles_drawable_data_ptr_t>(ptcdrawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto terdrawdata_type = //
@@ -668,6 +680,18 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
               py::arg("vpMatrix"), py::arg("screenPos"),
               py::arg("vpW"), py::arg("vpH"), py::arg("hitRadius") = 12.0f);
   type_codec->registerStdCodec<curvepath_drawabledata_ptr_t>(curvepathdrawdata_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // Free function — extract the live graphinst from a particles drawable
+  // so Python callers can call graphinst.reset() / read .vars / etc. The
+  // C++ accessor is defined in sgnode_particles.cpp and traverses the
+  // drawable's CallbackDrawable user vars. Returns nullptr if the drawable
+  // wasn't produced by ParticlesDrawableData::createDrawable().
+  module_lev2.def(
+      "particles_drawable_graphinst",
+      [](drawable_ptr_t drw) -> dflow::graphinst_ptr_t {
+        return particles_drawable_graphinst(drw);
+      },
+      py::arg("drawable"));
 }
 /////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

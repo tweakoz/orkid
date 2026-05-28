@@ -78,6 +78,14 @@ using rigidprimitive_ptr_t = std::shared_ptr<RigidPrimitiveBase>;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct RigidPrimitiveDrawableData : public lev2::DrawableData {
+  // Reflected only so the polymorphic SceneGraphNodeItemData::_drawabledata
+  // slot serializes the concrete class name (otherwise the serializer
+  // walks up to the abstract DrawableData base and the JSON can't load
+  // back). None of the fields below round-trip — _primitive carries
+  // GPU buffers, _pipeline is per-context, _material is also runtime —
+  // so describeX is empty and the post-load step must rebuild the
+  // primitive + material before render.
+  DeclareConcreteX(RigidPrimitiveDrawableData, lev2::DrawableData);
 
   RigidPrimitiveDrawableData();
   lev2::drawable_ptr_t createDrawable() const final;

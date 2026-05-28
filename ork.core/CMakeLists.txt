@@ -280,8 +280,11 @@ IF(BUILD_IOS_MINIMAL)
     "-framework UIKit"
   )
 
-  # Only link Boost filesystem if available
-  find_package(Boost COMPONENTS filesystem system)
+  # Only link Boost filesystem if available. Pin discovery to OBT staging
+  # so CMake doesn't auto-pick /opt/homebrew/opt/boost on macOS.
+  find_package(Boost COMPONENTS filesystem system
+               HINTS $ENV{OBT_STAGE}/lib/cmake/Boost-1.81.0
+               NO_DEFAULT_PATH)
   if(Boost_FOUND)
     target_link_libraries(ork_core_ios LINK_PRIVATE Boost::filesystem Boost::system)
   endif()

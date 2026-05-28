@@ -87,6 +87,22 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
+struct VarMapTest final : public Object {
+  DeclareConcreteX(VarMapTest, Object);
+
+public:
+  VarMapTest() = default;
+
+  // Reflected via directVarMapProperty — exercises the DirectVarMap
+  // property type and the var_t tagged-string codec end-to-end. Lazy:
+  // starts null; DirectVarMap allocates on first write.
+  varmap::varmap_ptr_t _params;
+};
+
+using varmaptest_ptr_t = std::shared_ptr<VarMapTest>;
+
+////////////////////////////////////////////////////////////////////////////////
+
 struct VectorTest final : public Object {
   DeclareConcreteX(VectorTest, Object);
 

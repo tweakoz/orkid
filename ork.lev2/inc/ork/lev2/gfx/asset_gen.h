@@ -1,0 +1,355 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2026, Michael T. Mayers.
+// Distributed under the MIT License.
+// see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
+////////////////////////////////////////////////////////////////
+
+#pragma once
+
+#include <string>
+#include <ork/object/Object.h>
+#include <ork/rtti/RTTIX.inl>
+#include <ork/math/cvector3.h>
+#include <ork/math/cvector4.h>
+#include <ork/util/Context.h>
+#include <ork/kernel/varmap.inl>
+
+// Reflected DATA wrappers for the HYPERECS asset DSL (M2b).
+//
+// The Python asset gens in ork.ecs.scene.assets each get a thin reflected
+// C++ data class here. The reflected fields are POD (or simple reflected
+// containers) that mirror the Python constructor kwargs 1:1. The actual
+// "materialize" logic remains in Python for M2b — these classes are pure
+// DATA HOLDERS that survive JSON round-trip. M2b's acid test is:
+//
+//   gen  = HollowFunnelMesh(top_outer=8.0, ...).gendata
+//   js   = gen.serializeJson()
+//   gen2 = Object.deserializeJson(js)
+//   assert HollowFunnelMesh._wrap(gen2).build() ≡ HollowFunnelMesh(...).build()
+//
+// Cross-asset references (e.g. MeshToSdf input_mesh) are stored by NAME
+// (string), resolved at materialize time through the Scene-side asset
+// registry (M2b.4). Direct shared_ptr references between gens are not
+// stored on the data — that's what kept M2a from round-tripping.
+
+namespace ork::lev2 {
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct AssetGenData : public ork::Object {
+  DeclareAbstractX(AssetGenData, ork::Object);
+
+public:
+  AssetGenData() = default;
+  ~AssetGenData() override = default;
+
+  // Scene-side asset name (the first arg to self.asset.X("name", ...)).
+  // Used by downstream gens that reference this one by name, and by the
+  // Scene's asset registry for lookup. Defaults to empty for standalone
+  // (Tier 1/2) use where the gen has no name.
+  std::string _asset_name;
+};
+
+using assetgendata_ptr_t = std::shared_ptr<AssetGenData>;
+
+///////////////////////////////////////////////////////////////////////////////
+// ImplicitSdfGenData — reflected fields for the AX-shaded volume
+// voxelizer. This is the universal reflected representation for SDF
+// assets: any shape that can be expressed as an OpenVDB AX volume
+// shader serializes through this type.
+//
+// Domain-specific Python wrappers (ThickSaddleSdf, eventually
+// HollowFunnelSdf, etc.) construct an ImplicitSdfGenData with the
+// right shader source + params and store it as their underlying
+// gendata. They do NOT have their own reflected C++ types — the
+// `shader` string carries the shape definition, and `params` carry
+// the per-instance scalars.
+//
+// _float_params / _int_params split the Python `params` dict by value
+// type so directMapProperty has a concrete value type to reflect.
+///////////////////////////////////////////////////////////////////////////////
+
+struct ImplicitSdfGenData : public AssetGenData {
+  DeclareConcreteX(ImplicitSdfGenData, AssetGenData);
+
+public:
+  ImplicitSdfGenData()           = default;
+  ~ImplicitSdfGenData() override = default;
+
+  std::string     _shader;
+  fvec3           _bbox_min   = fvec3(-1, -1, -1);
+  fvec3           _bbox_max   = fvec3( 1,  1,  1);
+  float           _voxel_size = 0.1f;
+  // 0.0 = "auto" sentinel — the Python wrapper computes the
+  // bbox-diagonal length and stores that BEFORE serialization, so
+  // deserialized objects always carry a concrete value.
+  float           _background = 0.0f;
+  std::string     _grid_name  = "sdf";
+  // Mixed float/int params — reflected via directVarMapProperty
+  // (DirectVarMap routes through the variant-as-tagged-string codec
+  // path that NODEENC<var_t>/decode_value<svar128_t> already provide).
+  // Allocated lazily; DirectVarMap auto-creates it when written.
+  varmap::varmap_ptr_t  _params;
+};
+
+using implicit_sdf_gendata_ptr_t = std::shared_ptr<ImplicitSdfGenData>;
+
+///////////////////////////////////////////////////////////////////////////////
+// PbrMaterialGenData — reflected recipe for a PBRMaterial. Materialize
+// step (Python side) builds the live material via GfxEnv loading
+// context, sets baseColor/metallic/roughness, assigns either path-
+// loaded images OR procedural solid-color images (the
+// shaders.createPbrMaterialWithColor default), and calls gpuInit.
+//
+// Empty color/normal/mtlruf paths → procedural defaults (same as the
+// existing createPbrMaterialWithColor helper). Non-empty paths load
+// the named image via lev2.Image.createFromFile.
+///////////////////////////////////////////////////////////////////////////////
+
+struct PbrMaterialGenData : public AssetGenData {
+  DeclareConcreteX(PbrMaterialGenData, AssetGenData);
+
+public:
+  PbrMaterialGenData()           = default;
+  ~PbrMaterialGenData() override = default;
+
+  fvec4       _base_color  = fvec4(1, 1, 1, 1);
+  float       _metallic    = 0.0f;
+  float       _roughness   = 1.0f;
+  // Texture paths — empty string means "use the procedural
+  // solid-color default" (matches createPbrMaterialWithColor).
+  std::string _color_path;
+  std::string _normal_path;
+  std::string _mtlruf_path;
+
+  // PBR2 Phase 2 — 8 glTF KHR-extension lobes. Each lobe has a `has_<lobe>`
+  // flag (default off) + factor; color-bearing lobes also have a color
+  // vec3. Authored via DSL kwargs (snake_case). Materialize step copies
+  // these onto the live PBRMaterial.
+  bool  _has_transmission           = false;
+  float _transmission_factor        = 0.0f;
+  bool  _has_ior                    = false;
+  float _ior                        = 1.5f;
+  bool  _has_volume                 = false;
+  float _volume_thickness_factor    = 0.0f;
+  bool  _has_diffuse_transmission   = false;
+  float _diffuse_transmission_factor = 0.0f;
+  bool  _has_specular               = false;
+  float _specular_factor            = 1.0f;
+  bool  _has_clearcoat              = false;
+  float _clearcoat_factor           = 0.0f;
+  bool  _has_sheen                  = false;
+  float _sheen_factor               = 0.0f;
+  bool  _has_iridescence            = false;
+  float _iridescence_factor         = 0.0f;
+  fvec3 _sheen_color                = fvec3(0, 0, 0);
+  fvec3 _specular_color             = fvec3(1, 1, 1);
+  fvec3 _attenuation_color          = fvec3(1, 1, 1);
+  fvec3 _diffuse_transmission_color = fvec3(1, 1, 1);
+  float _clearcoat_roughness        = 0.0f;
+  float _sheen_roughness            = 0.0f;
+  float _attenuation_distance       = 1.0f;
+  // PBR2 Phase 3 (P3.D) — KHR_materials_subsurface (in-flight ext).
+  // Screen-space separable subsurface scattering. radius is per-channel
+  // (mm); typical skin = (1.4, 0.5, 0.3) so R bleeds farthest. factor is
+  // the blend strength between blurred and unblurred diffuse.
+  bool  _has_subsurface             = false;
+  fvec3 _subsurface_color           = fvec3(1, 1, 1);
+  fvec3 _subsurface_radius          = fvec3(1, 1, 1);
+  float _subsurface_factor          = 0.0f;
+};
+
+using pbr_material_gendata_ptr_t = std::shared_ptr<PbrMaterialGenData>;
+
+///////////////////////////////////////////////////////////////////////////////
+// FreestyleMaterialGenData — reflected recipe for a FreestyleMaterial
+// (custom shader). Carries the shader source/path + raster state +
+// technique selection. Pipeline parameter bindings are intentionally
+// omitted from this first slice — the binding story lands properly
+// once we have a dataflow-driven shader graph; until then the Python
+// wrapper sets bindings imperatively at materialize time.
+///////////////////////////////////////////////////////////////////////////////
+
+struct FreestyleMaterialGenData : public AssetGenData {
+  DeclareConcreteX(FreestyleMaterialGenData, AssetGenData);
+
+public:
+  FreestyleMaterialGenData()           = default;
+  ~FreestyleMaterialGenData() override = default;
+
+  // Exactly one of _shader_text / _shader_file is meant to be set.
+  // If _shader_text is non-empty, the wrapper calls
+  // gpuInitFromShaderText(name=_shader_name, _shader_text); otherwise
+  // it falls back to gpuInit(_shader_file).
+  std::string _shader_text;
+  std::string _shader_file = "orkshader://manip";
+  std::string _shader_name = "x";
+  // Technique + rendermodel for the FxPipelinePermutation lookup.
+  std::string _technique   = "std_mono_fwd";
+  std::string _rendermodel = "ForwardPBR";
+  // Raster state — stored as token strings; the wrapper resolves them
+  // through CrcStringProxy at materialize time.
+  std::string _blending    = "OFF";
+  std::string _culltest    = "PASS_FRONT";
+  std::string _depthtest   = "LEQUALS";
+};
+
+using freestyle_material_gendata_ptr_t = std::shared_ptr<FreestyleMaterialGenData>;
+
+///////////////////////////////////////////////////////////////////////////////
+// VdbGridToDrawableGenData — reflected fields for a one-shot SDF → mesh
+// → drawable conversion at marching-cubes iso. The input grid is
+// referenced BY NAME (not by direct shared_ptr) so the gen graph
+// survives JSON round-trip; the AssetSystem (M2b.4) resolves the
+// name to a built artifact at materialize time.
+//
+// Material is NOT reflected here. Materials carry textures and
+// shader params that the reflection layer doesn't yet round-trip;
+// the Python MeshToDrawable wrapper holds the material externally
+// and supplies it at build time. Material round-trip is a separate
+// future concern.
+///////////////////////////////////////////////////////////////////////////////
+
+struct VdbGridToDrawableGenData : public AssetGenData {
+  DeclareConcreteX(VdbGridToDrawableGenData, AssetGenData);
+
+public:
+  VdbGridToDrawableGenData()           = default;
+  ~VdbGridToDrawableGenData() override = default;
+
+  // Name of the AssetGenData (e.g. ImplicitSdfGenData) whose output
+  // FloatGrid this drawable visualizes. Empty = grid is being supplied
+  // out-of-band by the Python wrapper (eager/standalone path; no
+  // round-trip resolution needed).
+  std::string _grid_asset_name;
+  // Name of the material asset (PbrMaterialGenData or
+  // FreestyleMaterialGenData) to bind. Empty = material supplied
+  // out-of-band by the Python wrapper.
+  std::string _material_asset_name;
+  float       _iso           = 0.0f;
+  float       _adaptivity    = 0.0f;
+  bool        _flip_windings = true;   // see vdb_drawable.h: SDF default
+};
+
+using vdb_grid_to_drawable_gendata_ptr_t = std::shared_ptr<VdbGridToDrawableGenData>;
+
+///////////////////////////////////////////////////////////////////////////////
+// ParticleSystemGenData — reflected pointer to a Python particle DSL file
+// plus the kwargs that parameterize it. The DSL file is on the search
+// path managed by ork.dflow.particles.resolve (typically ork.data/particles);
+// the named class (auto-detect or _dsl_class) is loaded, instantiated with
+// the recorded kwargs, and its .generatedflow() produces the dataflow
+// GraphData. The Python wrapper wraps that in a ParticlesDrawableData and
+// returns it as the materialized artifact.
+//
+// Cross-asset references that need to survive the round-trip (e.g.
+// collision_sdf → the name of an ImplicitSdfGenData) live in
+// _asset_kwargs; scalar params live in _params. Materialize resolves
+// _asset_kwargs[key] against the in-progress artifact dict and merges
+// the resolved values into the DSL ctor call.
+///////////////////////////////////////////////////////////////////////////////
+
+struct ParticleSystemGenData : public AssetGenData {
+  DeclareConcreteX(ParticleSystemGenData, AssetGenData);
+
+public:
+  ParticleSystemGenData()           = default;
+  ~ParticleSystemGenData() override = default;
+
+  // DSL filename (e.g. "col_vdb") — resolved via the same path logic
+  // ork.particle.viewer.py uses (resolve_dsl_file).
+  std::string _dsl_file;
+  // Optional explicit class name for multi-class files (matches the
+  // --class arg on ork.particle.viewer.py); empty = auto-detect.
+  std::string _dsl_class;
+  // Scalar / vector / etc. kwargs forwarded to the DSL class ctor.
+  // Tagged-variant encoded (same DirectVarMap codec as
+  // ImplicitSdfGenData::_params).
+  varmap::varmap_ptr_t _params;
+  // Map of ctor-kwarg name → AssetSystemData asset name. Each entry
+  // tells the materializer "resolve artifacts[<value>] and pass it as
+  // <key>= when instantiating the DSL class." Encoded as a string-map
+  // so it round-trips cleanly without needing a custom codec.
+  std::map<std::string, std::string> _asset_kwargs;
+  // PBR2 Phase 0 — per-particle-system reflection probe binding. The
+  // probe's baked XIR (at <assetcache>/xirtemp/<entity_name>.xir) is
+  // resolved by wire_scene_data and set as _environmentMapPath on the
+  // particle drawable so loadEnvMapOverride picks it up at stage time.
+  // Empty = no per-drawable override; falls back to scene-global skybox.
+  std::string _probe_entity_name;
+};
+
+using particle_system_gendata_ptr_t = std::shared_ptr<ParticleSystemGenData>;
+
+///////////////////////////////////////////////////////////////////////////////
+// HdriToXirGenData — reflected recipe for a static HDR-to-XIR conversion.
+// The source HDR/PNG/EXR is fed through EnvMapProcessor's prefilter
+// cascade and the resulting prefiltered cube datablock is written to a
+// per-asset .xir under <assetcache>/xirtemp/. NOT a scene-rendered
+// probe — there's no scene awareness here, just an offline image bake.
+// Compare with ProbeComponent which renders the *scene* into a cube.
+// Consumers: SceneGraph SkyboxTexPathStr (via wire_scene_data) and any
+// drawable-level envmap override that points at the resulting .xir.
+///////////////////////////////////////////////////////////////////////////////
+
+struct HdriToXirGenData : public AssetGenData {
+  DeclareConcreteX(HdriToXirGenData, AssetGenData);
+
+public:
+  HdriToXirGenData()           = default;
+  ~HdriToXirGenData() override = default;
+
+  std::string _source_path;   // input HDR/EXR/PNG path (absolute or aliased)
+  int         _levels   = 6;
+  int         _samples  = 128;
+  float       _scale    = 1.0f;
+  float       _clamp    = 16.0f;
+};
+
+using hdri_to_xir_gendata_ptr_t = std::shared_ptr<HdriToXirGenData>;
+
+///////////////////////////////////////////////////////////////////////////////
+// VdbFileSdfGenData — load a pre-baked .vdb file at runtime via
+// openvdb::io::File and yield its FloatGrid. The recipe is just the
+// file path + the grid name to extract; everything else is in the .vdb
+// itself (voxel size, transform, narrow-band width). Counterpart to
+// ImplicitSdfGenData for the "I already have an SDF on disk" case.
+///////////////////////////////////////////////////////////////////////////////
+
+struct VdbFileSdfGenData : public AssetGenData {
+  DeclareConcreteX(VdbFileSdfGenData, AssetGenData);
+
+public:
+  VdbFileSdfGenData()           = default;
+  ~VdbFileSdfGenData() override = default;
+
+  std::string _vdb_path;
+  std::string _grid_name = "sdf";
+};
+
+using vdb_file_sdf_gendata_ptr_t = std::shared_ptr<VdbFileSdfGenData>;
+
+///////////////////////////////////////////////////////////////////////////////
+// MeshSdfGenData — voxelize a triangle mesh loaded from disk into a
+// narrow-band SDF. Counterpart to ImplicitSdfGenData for the "I have a
+// closed mesh and want it as an SDF" case. Materialize step loads the
+// mesh via Assimp, then runs openvdb::tools::meshToLevelSet.
+///////////////////////////////////////////////////////////////////////////////
+
+struct MeshSdfGenData : public AssetGenData {
+  DeclareConcreteX(MeshSdfGenData, AssetGenData);
+
+public:
+  MeshSdfGenData()           = default;
+  ~MeshSdfGenData() override = default;
+
+  std::string _mesh_path;
+  float       _voxel_size = 0.1f;
+  float       _half_width = 3.0f;
+  std::string _grid_name  = "sdf";
+};
+
+using mesh_sdf_gendata_ptr_t = std::shared_ptr<MeshSdfGenData>;
+
+} // namespace ork::lev2

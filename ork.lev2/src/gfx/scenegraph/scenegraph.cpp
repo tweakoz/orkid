@@ -192,6 +192,39 @@ void Scene::applyRuntimeParams(varmap::varmap_ptr_t params) {
   if (!_pbr_common)
     return;
 
+  // PBR2 P3.D — when the scenegraph is INJECTED via the sim varmap
+  // (the `isShared=1` path), the Scene constructor is skipped, which
+  // means the PostFxChain that we set on _mergedParams in
+  // SceneGraphSystem::_onLink never reaches _compositorTechnique.
+  //
+  // PREPEND (not replace): the host (ecsplay, ecsedit, ...) may have
+  // already injected its own post-fx nodes (ACES tonemap, HSVG color-
+  // grade, etc.) via sg_params before the Scene constructor ran. Our
+  // DSL-injected chain (SSSS today; future: more PBR pre-tonemap fx)
+  // belongs BEFORE the host chain because it operates on linear HDR
+  // and the host fx are typically tonemapping / display-space ops.
+  if (_compositorTechnique && params->hasKey("PostFxChain")) {
+    auto& pfxchain = params->valueForKey("PostFxChain");
+    if (auto as_chain = pfxchain.tryAs<postfx_node_chain_t>()) {
+      const auto& dsl_chain = as_chain.value();
+      // Build merged chain: dsl_chain first, then existing nodes.
+      // Dedup by pointer identity (avoids double-add if applyRuntimeParams
+      // gets called twice; each PostCompositingNode is constructed once).
+      postfx_node_chain_t merged;
+      merged.reserve(dsl_chain.size() + _compositorTechnique->_postEffectNodes.size());
+      for (auto& n : dsl_chain) merged.push_back(n);
+      for (auto& n : _compositorTechnique->_postEffectNodes) {
+        bool dup = false;
+        for (auto& m : merged) { if (m == n) { dup = true; break; } }
+        if (!dup) merged.push_back(n);
+      }
+      _compositorTechnique->_postEffectNodes = std::move(merged);
+      printf("[Scene::applyRuntimeParams P3.D] merged PostFxChain size=%zu (dsl=%zu)\n",
+             _compositorTechnique->_postEffectNodes.size(), dsl_chain.size());
+      fflush(stdout);
+    }
+  }
+
   if (auto try_enable_skybox = params->typedValueForKey<bool>("enable_skybox")) {
     _pbr_common->_enable_skybox = try_enable_skybox.value();
   }

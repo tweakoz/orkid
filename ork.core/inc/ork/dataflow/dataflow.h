@@ -18,6 +18,7 @@
 #include <ork/config/config.h>
 
 #include <ork/math/multicurve.h>
+#include <ork/math/TransformNode.h>
 #include <ork/kernel/orkpool.inl>
 #include <ork/event/Event.h>
 #include <ork/rtti/RTTIX.inl>
@@ -25,6 +26,9 @@
 
 #include <ork/kernel/sigslot2.h>
 #include <functional>
+#include <typeindex>
+#include <unordered_map>
+#include <unordered_set>
 
 namespace ork::dataflow {
 
@@ -89,6 +93,11 @@ using moduledata_constptr_t = std::shared_ptr<const ModuleData>;
 using dgmoduledata_constptr_t = std::shared_ptr<const DgModuleData>;
 using inplugdata_constptr_t = std::shared_ptr<const InPlugData>;
 using outplugdata_constptr_t = std::shared_ptr<const OutPlugData>;
+
+// Set of raw DgModuleData pointers — used as a DFS path tracker in cycle-safe
+// recursion (computeMinDepth/MaxDepth), as a cycle-offender list returned from
+// DgSorter, and as the pending-module set in topology generation.
+using dgmoduleset_t = std::unordered_set<const DgModuleData*>;
 
 using scheduler_ptr_t = std::shared_ptr<scheduler>;
 
@@ -210,7 +219,12 @@ public:
   orkvector<DgRegister*> prune(dgmoduledata_ptr_t mod);
   DgRegister* alloc(outplugdata_ptr_t poutplug);
 
-  orkmap<const std::type_info*, dgregisterblock_ptr_t> _registerSets;
+  // Keyed by std::type_index (not raw type_info*) so lookups work across
+  // dylibs. type_info* pointer comparison only works when typeinfo dedups
+  // across shared libraries — which is build-config-dependent and was
+  // unreliable for types instantiated only in core (e.g. Vec4Combine).
+  // type_index falls back to name comparison when pointers differ.
+  std::unordered_map<std::type_index, dgregisterblock_ptr_t> _registerSets;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -332,6 +346,13 @@ struct GraphInst {
   void stage();
   void activate();
   void compute(ui::updatedata_ptr_t updata);
+  // Restore the graphinst to a "just-created" state: every module's onReset
+  // hook runs in topological order, clearing per-instance state (Globals'
+  // first-compute flag, particle pools, RNG, …). The next compute() call
+  // behaves as if it were the first one for this instance. Used by ECS slot
+  // recycling — one ParticlesComponent slot can be reset() and re-triggered
+  // without paying graphinst-creation cost.
+  void reset();
   ////////////////////////////////////////////
   template <typename T> dgmoduleinst_ptr_t firstModuleInst() const {
     for (auto item : _ordered_module_insts) {
@@ -357,7 +378,18 @@ struct GraphInst {
   std::set<int> _outputRegisters;
   varmap::VarMap _vars;
 
-
+  // Optional callback bound by the host (e.g. ParticlesComponent under
+  // ECS) at stage time. Modules call this to query the host's published
+  // entity transform registry by name without knowing the host's
+  // concrete type. Returns the live decompxf_ptr_t on hit, nullptr on
+  // miss. The pointer is the same object the host updates each tick;
+  // consumers compose to fmtx4 only when they actually need the matrix
+  // (e.g. once per VdbCollider compute) instead of paying composition
+  // cost inside the lookup. Standalone (non-ECS) graphs leave the
+  // function unbound — modules see an empty std::function and fall back
+  // to their no-host default. See SpawnData::_publishxf_name +
+  // Simulation::publishEntityXf for the publisher side.
+  std::function<decompxf_ptr_t(const std::string&)> _resolveEntityXf;
 
   svar64_t _impl;
 };

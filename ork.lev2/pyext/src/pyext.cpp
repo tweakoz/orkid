@@ -56,6 +56,7 @@ void pyinit_gfx_pbr(py::module& module_lev2);
 void pyinit_midi(py::module& module_lev2);
 void pyinit_gfx_camera(py::module& module_lev2);
 void pyinit_gfx_openvdb(py::module& module_lev2);
+void pyinit_gfx_asset_gen(py::module& module_lev2);
 void pyinit_vr(py::module& module_lev2);
 void pyinit_movie(py::module& module_lev2);
 void pyinit_shmtexture(py::module& module_lev2);
@@ -149,6 +150,26 @@ ork::lev2::orkezapp_ptr_t pylev2appinit(py::kwargs kwargs) {
         init_data->_disableMouseCursor = py::cast<bool>(item.second);
       } else if (key == "msaa") {
         init_data->_msaa_samples = py::cast<int>(item.second);
+      } else if (key == "use_subsystems") {
+        // Matches the OrkEzApp.create kwargs surface (see pyext_ezapp.cpp).
+        // Accepts a list of subsystem names ['opq','core','gpu','lev2', ...]
+        // and optional custom subsystem objects. Flips on the HFSM init
+        // path (_initForSubsystems) and defers GPU init to subsystem
+        // state-machine transitions instead of the inline ad-hoc path.
+        if (py::isinstance<py::list>(item.second)) {
+          auto subsystem_list = py::cast<py::list>(item.second);
+          init_data->_use_subsystems = true;
+          init_data->_defer_gpu_init = true;
+          for (auto entry : subsystem_list) {
+            if (py::isinstance<py::str>(entry)) {
+              init_data->_enabled_subsystems.insert(py::cast<std::string>(entry));
+            } else {
+              auto subsystem = py::cast<subsystem_ptr_t>(entry);
+              init_data->_custom_subsystems.push_back(subsystem);
+              init_data->_enabled_subsystems.insert(subsystem->_name);
+            }
+          }
+        }
       }
     }
   }
@@ -184,6 +205,15 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   // module_lev2.attr("__name__") = "lev2";
 
   //////////////////////////////////////////////////////////////////////////////
+  // Force orkengine.core to load FIRST so its pybind11 type registry
+  // (fvec4, fmtx4, etc.) is populated before any of lev2's bindings below
+  // try to convert default-arg values like `fvec4(1,1,1,1)` into Python
+  // objects. Pybind11 type sharing across modules requires the dependency
+  // module to be initialized before the dependent module's bindings run —
+  // doing it here at the C++/PYBIND11_MODULE level removes the need for
+  // every Python caller to remember to import orkengine.core first.
+  py::module_::import("orkengine.core");
+  //////////////////////////////////////////////////////////////////////////////
   module_lev2.doc() = "Orkid Lev2 Library (graphics,audio,vr,input,etc..)";
   //////////////////////////////////////////////////////////////////////////////
   module_lev2.def("lev2appinit", &pylev2appinit);
@@ -218,6 +248,7 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   pyinit_gfx_font(module_lev2);
   pyinit_radiance_maps_processor(module_lev2);
   pyinit_gfx_openvdb(module_lev2);
+  pyinit_gfx_asset_gen(module_lev2);
   pyinit_vr(module_lev2);
   pyinit_movie(module_lev2);
   pyinit_shmtexture(module_lev2);

@@ -3,6 +3,7 @@
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/material_pbr.inl>
 ///////////////////////////////////////////////////////////////////////////////
 using namespace ork::lev2;
@@ -50,11 +51,20 @@ struct ParticlesDrawableInst {
   }
   ///////////////////////////////////////////////////////////////
   void _update() {
-    float abs_time    = _timer.SecsSinceStart();
-    _updata->_dt      = abs_time - _updata->_abstime;
-    _updata->_abstime = abs_time;
-    _graphinst->compute(_updata);
+    // Compute path: skipped when an external driver (e.g. ECS
+    // ParticlesGlobalSystem) is responsible for advancing the graphinst.
+    // Mirror the timer + updata state regardless so the external driver
+    // can still call compute() against fresh dt/abstime if it wants to.
+    if (not _data->_externalCompute) {
+      float abs_time    = _timer.SecsSinceStart();
+      _updata->_dt      = abs_time - _updata->_abstime;
+      _updata->_abstime = abs_time;
+      _graphinst->compute(_updata);
+    }
 
+    // Light state update always runs — it reads from the graphinst's vars
+    // which are populated by whoever called compute() (internal or external)
+    // on the previous tick.
     _testlight->_inlineData->mColor  = fvec3(1, 1, 1);
     _testlight->_inlineData->_radius = _data->_emitterRadius;
 
@@ -135,6 +145,7 @@ drawable_ptr_t ParticlesDrawableData::createDrawable() const {
   auto dg_context = std::make_shared<dgcontext>();
   dg_context->createRegisters<float>("ptc_float", 16);
   dg_context->createRegisters<fvec3>("ptc_vec3f", 16);
+  dg_context->createRegisters<fvec4>("ptc_vec4f", 16);
   dg_context->createRegisters<ParticleBufferData>("ptc_buffer", 4);
   auto dg_sorter                       = std::make_shared<DgSorter>(_graphdata.get(), dg_context);
   dg_sorter->_logchannel->_enabled     = true;
@@ -161,6 +172,16 @@ drawable_ptr_t ParticlesDrawableData::createDrawable() const {
   rval->SetUserDataA(impl);
   ptcl_context->_drawable = rval;
   rval->_sortkey          = 20;
+  // PBR2 Phase 0 — apply per-drawable HDRI override read from
+  // DrawableData::_environmentMapPath (set by wire_scene_data from the
+  // ParticleSystem(probe=...) wrapper). Mirrors ModelDrawableData's
+  // _loadEnvMapOverride call.
+  loadEnvMapOverride(rval.get(), _environmentMapPath);
+  // Particles default to NOT appearing in probe cubemap captures —
+  // they're noisy/transient and would feedback-loop through their
+  // own probe override. Authors can flip this if they actually want
+  // particles in reflections (e.g. emissive fireflies in a still scene).
+  rval->_excludeFromProbe = true;
   return rval;
 }
 
@@ -183,6 +204,18 @@ ParticlesDrawableData::ParticlesDrawableData() {
 ///////////////////////////////////////////////////////////////////////////////
 
 ParticlesDrawableData::~ParticlesDrawableData() {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Accessor for external drivers — fish the graphinst out of the drawable
+// created by ParticlesDrawableData::createDrawable(). Used by ECS
+// ParticlesGlobalSystem when _externalCompute is set: the system grabs the
+// graphinst at stage time, calls compute() on it from _onUpdate.
+dataflow::graphinst_ptr_t particles_drawable_graphinst(drawable_ptr_t drw) {
+  if (!drw) return nullptr;
+  auto impl = drw->_implA.getShared<ParticlesDrawableInst>();
+  if (!impl) return nullptr;
+  return impl->_graphinst;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

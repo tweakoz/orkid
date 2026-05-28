@@ -65,11 +65,94 @@ loadingphase_ptr_t Context::newLoadingPhase() {
   return phase;
 }
 
+void Context::submitLoadingPhase(loadingphase_ptr_t phase) {
+  // Atomic publish of a producer-built phase. Pair with `std::make_shared
+  // <LoadingPhase>()` + enqueueOperation(...) locally, then submit. This
+  // closes the race that newLoadingPhase() opens (empty-phase visible
+  // before ops are enqueued) for fire-and-forget producers.
+  _loadingPhases.atomicOp([phase](loadingphase_list_t& unlocked) { unlocked.push_back(phase); });
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Delayed destruction queue — see gfxenv.h declaration for rationale.
+///////////////////////////////////////////////////////////////////////////////
+
+void Context::enqueueDelayedDestroy(::ork::void_lambda_t fn, int delay_frames) {
+  if (!fn) return;
+  PendingDestroy entry{
+    std::move(fn),
+    uint64_t(miTargetFrame) + uint64_t(delay_frames < 0 ? 0 : delay_frames)};
+  _pendingDestroys.atomicOp([&entry](pending_destroy_queue_t& q) {
+    q.push_back(std::move(entry));
+  });
+}
+
+void Context::_processPendingDestroys() {
+  const int budget = _maxDestroysPerFrame;
+  if (budget <= 0) return;
+  std::vector<::ork::void_lambda_t> ripe;
+  ripe.reserve(size_t(budget));
+  _pendingDestroys.atomicOp([&](pending_destroy_queue_t& q) {
+    const uint64_t now = uint64_t(miTargetFrame);
+    while (!q.empty()
+           && ripe.size() < size_t(budget)
+           && q.front()._destroy_at_frame <= now) {
+      ripe.push_back(std::move(q.front()._fn));
+      q.pop_front();
+    }
+  });
+  // Outside the lock: invoke each function, then it (and its captures)
+  // destruct as `ripe` clears at scope end. By construction the wait is
+  // >= MAX_FRAMES_IN_FLIGHT, so vkDestroy* / vkFreeMemory don't stall.
+  for (auto& fn : ripe) {
+    if (fn) fn();
+  }
+}
+
 void LoadingPhase::enqueueOperation(gfxcontext_lambda_t l) {
   _load_operations.atomicOp([l](gfxcontext_lambda_list_t& unlocked) {
     unlocked.push_back(l);
   });
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// Per-context deferred-op queue. Drained at beginFrame against `this`.
+// Migrated from GfxEnv's global queue (Phase 6.3 Variant B) — each context
+// now owns its queue, so there's no cross-context drain race, and the
+// enqueuer picks the target context explicitly.
+///////////////////////////////////////////////////////////////////////////////
+
+void Context::enqueueDeferredOp(ctx_lambda_t op) {
+  // After shutdown(), resource dtors that fire because the Context is
+  // tearing down (VkRtBufferImpl etc.) try to schedule their own
+  // cleanup back onto this queue. The queue is mid-destruction by
+  // then — pushing crashes the LockedResource teardown. Silently drop:
+  // any work that would be deferred this late has nowhere safe to run,
+  // and the resources owning the dtor are about to vanish anyway.
+  if (_shutdown_done) return;
+  _deferredOps.atomicOp([op](deferred_op_queue_t& unlocked) { unlocked.push(op); });
+}
+
+void Context::processDeferredOps() {
+  _deferredOps.atomicOp([this](deferred_op_queue_t& unlocked) {
+    while (!unlocked.empty()) {
+      auto op = unlocked.front();
+      unlocked.pop();
+      op(this);
+    }
+  });
+}
+
+bool Context::hasDeferredOps() const {
+  bool has = false;
+  _deferredOps.atomicOp([&has](const deferred_op_queue_t& unlocked) {
+    has = !unlocked.empty();
+  });
+  return has;
+}
+// No waitForDeferredOps — see gfxenv.h declaration. Polling from the
+// owning thread deadlocks; cross-thread waits should use a completion
+// callback enqueued onto the requesting thread's own context.
 
 void LoadingPhase::join() {
   // Ensure we're not on main thread to prevent deadlock
@@ -134,8 +217,20 @@ void Context::_loadingPhaseOperations() {
       }
     });
     if (phase) {
-      static gfxcontext_lambda_list_t ops;
-      phase->_load_operations.atomicOp([phase](gfxcontext_lambda_list_t& unlocked) {
+      printf("[VKMT-DBG] _loadingPhaseOperations ctx<%p> popped phase<%p>\n",
+             (void*)this, (void*)phase.get());
+      fflush(stdout);
+      // NOTE: this `ops` MUST be a local, not `static`. Multiple contexts
+      // drain their own _loadingPhases concurrently (e.g. loader thread on
+      // gloadercontext + render thread on its own context), so a static
+      // would be a cross-thread race — one thread's snapshot overwriting
+      // another's mid-iteration, leading to torn std::function objects
+      // whose corrupt captures produce shared_ptrs with stale control
+      // blocks (observed: shared_ptr<Texture>::~shared_ptr decrement on
+      // freed memory inside brdfSetOp). Locals reallocate per call; the
+      // cost is trivial vs. correctness.
+      gfxcontext_lambda_list_t ops;
+      phase->_load_operations.atomicOp([&ops](gfxcontext_lambda_list_t& unlocked) {
         ops = unlocked;
         unlocked.clear();
       });
@@ -192,6 +287,7 @@ void Context::beginFrame(bool visual) {
   _doPreBeginFrame();
 
   _processBeginFrameBlockers();
+  _processPendingDestroys();
   _loadingPhaseOperations();
 
 
@@ -227,7 +323,7 @@ void Context::beginFrame(bool visual) {
   // Process deferred context operations
   /////////////////////////////////////
   
-  GfxEnv::GetRef().processDeferredContextOps(this);
+  processDeferredOps();
 
   /////////////////////////////////////
 
@@ -334,6 +430,39 @@ Context::Context()
 ///////////////////////////////////////////////////////////////////////////////
 
 Context::~Context() {
+}
+
+void Context::shutdown() {
+  // Idempotent — second call is a no-op so multiple teardown paths
+  // (e.g. lev2 stopLoaderThread, app shutdown, dtor fallback) can all
+  // call it without coordinating.
+  if (_shutdown_done) return;
+
+  // Phase 1: drain anything already queued, with the device + backend
+  // resources still live. Self-enqueuing ops need multiple passes;
+  // cap the loop to surface a runaway op instead of hanging.
+  constexpr int kMaxDrainPasses = 1024;
+  for (int i = 0; i < kMaxDrainPasses && hasDeferredOps(); ++i) {
+    processDeferredOps();
+  }
+
+  // Phase 2: backend teardown. Subclass releases GPU resources
+  // (VkRtBuffer dtors etc. — they enqueue more cleanup work onto our
+  // queue as they release). Must run BEFORE we set _shutdown_done so
+  // those enqueues actually land.
+  _doShutdown();
+
+  // Phase 3: drain the work the backend just produced.
+  for (int i = 0; i < kMaxDrainPasses && hasDeferredOps(); ++i) {
+    processDeferredOps();
+  }
+
+  // Phase 4: lock down further enqueues. Any later dtors (firing as
+  // shared_ptr chains release during static destruction) will try to
+  // push to this queue while it's mid-destruction — drop them
+  // silently. Any work that arrives this late has nothing live to
+  // process it anyway.
+  _shutdown_done = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

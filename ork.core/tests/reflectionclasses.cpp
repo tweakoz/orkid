@@ -33,6 +33,7 @@ ImplementReflectionX(MathTest, "MathTest");
 ImplementReflectionX(AssetTest, "AssetTest");
 ImplementReflectionX(SharedTest, "SharedTest");
 ImplementReflectionX(MapTest, "MapTest");
+ImplementReflectionX(VarMapTest, "VarMapTest");
 ImplementReflectionX(VectorTest, "VectorTest");
 ImplementReflectionX(ArrayTest, "ArrayTest");
 ImplementReflectionX(InterfaceTest, "InterfaceTest");
@@ -157,6 +158,12 @@ void MapTest::describeX(ObjectClass* clazz) {
       "directstrobj_map", //
       &MapTest::_directstrobjmap);
   ///////////////////////////////////
+}
+///////////////////////////////////////////////////////////////////////////////
+void VarMapTest::describeX(ObjectClass* clazz) {
+  clazz->directVarMapProperty(
+      "params", //
+      &VarMapTest::_params);
 }
 ///////////////////////////////////////////////////////////////////////////////
 VectorTest::VectorTest() {

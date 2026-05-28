@@ -11,8 +11,12 @@
 #include <ork/kernel/environment.h>
 #include <ork/dataflow/all.h>
 #include <ork/lev2/init.h>
+#include <ork/lev2/gfx/asset_gen.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
+#if defined(__APPLE__)
+#include <pthread/qos.h>  // QOS_CLASS_UTILITY for loader thread
+#endif
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/proctex/proctex.h>
@@ -29,6 +33,7 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorPtx.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScaleBias.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeSSSS.h>
 #include <ork/lev2/gfx/scenegraph/scenegraph.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_grid.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_billboard.h>
@@ -42,6 +47,7 @@
 #include <ork/lev2/gfx/particle/modular_emitters.h>
 #include <ork/lev2/gfx/particle/modular_forces.h>
 #include <ork/lev2/gfx/particle/modular_renderers.h>
+#include <ork/lev2/gfx/particle/drawable_data.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/unlit_node.h>
@@ -95,6 +101,133 @@ namespace lev2 {
 
 appinitdata_ptr_t _ginitdata;
 context_ptr_t gloadercontext;
+
+////////////////////////////////////////////////////////////////////////////////
+// Loader thread — owns gloadercontext's frame pump. Lifecycle is bound to
+// gloadercontext: spawned automatically the moment gloadercontext is created
+// (both initModule and ensureLoaderContext paths), stopped explicitly via
+// stopLoaderThread() before gloadercontext is torn down.
+//
+// Why this lives in lev2_init.cpp (not ezapp.cpp): the Python OrkEzApp.create
+// binding goes through initModule() directly and bypasses the free function
+// lev2appinit, so any spawn point inside ezapp.cpp would silently no-op for
+// the Python path. Co-locating with gloadercontext guarantees any caller that
+// brings the context to life also gets a thread pumping it.
+////////////////////////////////////////////////////////////////////////////////
+namespace {
+// Loader-thread hooks. Stored behind a mutex; callbacks are copied locally
+// per-iteration so they can fire without holding the lock (so the Python
+// callback body can take as long as it wants without blocking re-registration).
+struct LoaderHooks {
+  std::mutex mtx;
+  loader_callback_t init_cb;
+  loader_callback_t update_cb;
+  loader_callback_t exit_cb;
+};
+static LoaderHooks g_loader_hooks;
+
+struct LoaderThread {
+  std::thread _thread;
+  std::atomic<bool> _stop{false};
+  std::atomic<bool> _started{false};
+  void start() {
+    bool expected = false;
+    if (!_started.compare_exchange_strong(expected, true)) {
+      return;
+    }
+    _thread = std::thread([this]() {
+      ork::SetCurrentThreadName("loader");
+#if defined(__APPLE__)
+      // Drop QoS so the kernel scheduler prefers the main/render thread
+      // (USER_INTERACTIVE / USER_INITIATED) over loader work whenever
+      // they're contending. The loader still gets full CPU when idle,
+      // just yields under contention. Without this, large XIR uploads
+      // (8K HDRI conversion loops in vulkan_txi_from_array.cpp) can
+      // preempt the render thread for tens of ms → visible stutter.
+      pthread_set_qos_class_self_np(QOS_CLASS_UTILITY, 0);
+#endif
+      ThreadGfxContext tls(gloadercontext.get());
+      bool init_fired = false;
+      while (!_stop.load(std::memory_order_acquire)) {
+        // Fire init hook once, when first registered. Handles the race
+        // where the loader spawns before Python sets the callback.
+        if (!init_fired) {
+          loader_callback_t cb;
+          { std::lock_guard<std::mutex> lk(g_loader_hooks.mtx); cb = g_loader_hooks.init_cb; }
+          if (cb) {
+            cb(gloadercontext);
+            init_fired = true;
+          }
+        }
+        gloadercontext->beginFrame(false);
+        // Fire update hook each iteration between begin/end so any
+        // uploadTextureRegion/etc. work it queues lands in this frame's
+        // submission.
+        {
+          loader_callback_t cb;
+          { std::lock_guard<std::mutex> lk(g_loader_hooks.mtx); cb = g_loader_hooks.update_cb; }
+          if (cb) cb(gloadercontext);
+        }
+        gloadercontext->endFrame();
+        // Throttle: explicit yield + sleep between iterations. The yield
+        // gives the scheduler an opportunity to switch to higher-QoS
+        // threads (render) before this thread re-enters another full
+        // beginFrame/endFrame cycle. The sleep caps the iteration rate
+        // so the loader doesn't busy-spin when idle.
+        std::this_thread::yield();
+        std::this_thread::sleep_for(std::chrono::microseconds(500));
+      }
+      // Fire exit hook before the thread function returns.
+      {
+        loader_callback_t cb;
+        { std::lock_guard<std::mutex> lk(g_loader_hooks.mtx); cb = g_loader_hooks.exit_cb; }
+        if (cb) cb(gloadercontext);
+      }
+    });
+  }
+  void stop() {
+    _stop.store(true, std::memory_order_release);
+    if (_thread.joinable()) _thread.join();
+  }
+};
+static LoaderThread g_loader_thread;
+} // anon
+
+void stopLoaderThread() {
+  // 1. Stop the pump thread so it can no longer produce/consume work.
+  g_loader_thread.stop();
+
+  if (gloadercontext) {
+    // 2. Backend teardown via Context::shutdown() — drains the
+    //    deferred-op queue, calls _doShutdown() (subclass releases
+    //    GPU resources, may enqueue more work), drains again, locks
+    //    the queue against further enqueues. Bind this thread to the
+    //    loader context so resource dtors run with the right gfx-ctx
+    //    on TLS.
+    ThreadGfxContext tls(gloadercontext.get());
+    gloadercontext->shutdown();
+
+    // 3. Release the loader context. Other shared_ptrs to it (e.g.
+    //    GfxEnv-side lambdas captured during initializeWithContext)
+    //    keep it alive until static destruction; the shutdown() flag
+    //    set above ensures any late dtor activity on those refs is
+    //    safe (enqueueDeferredOp silently drops post-shutdown).
+    gloadercontext.reset();
+  }
+}
+
+void setOnLoaderInit(loader_callback_t cb) {
+  std::lock_guard<std::mutex> lk(g_loader_hooks.mtx);
+  g_loader_hooks.init_cb = std::move(cb);
+}
+void setOnLoaderUpdate(loader_callback_t cb) {
+  std::lock_guard<std::mutex> lk(g_loader_hooks.mtx);
+  g_loader_hooks.update_cb = std::move(cb);
+}
+void setOnLoaderExit(loader_callback_t cb) {
+  std::lock_guard<std::mutex> lk(g_loader_hooks.mtx);
+  g_loader_hooks.exit_cb = std::move(cb);
+}
 
 uint64_t GRAPHICS_API = "VULKAN"_crcu;
 
@@ -150,6 +283,10 @@ struct ClassToucher {
           default: {
             gloadercontext = vulkan::createLoaderContext();
             if(0)printf("gloadercontext (VK) <%p>\n", (void*)gloadercontext.get());
+            // Auto-spawn loader thread the moment gloadercontext exists.
+            // Covers all initModule callers (Python OrkEzApp.create binding,
+            // lev2appinit, etc.) without each having to remember to spawn.
+            g_loader_thread.start();
             break;
           }
         }
@@ -221,6 +358,12 @@ struct ClassToucher {
     particle::ParticleModuleData::GetClassStatic();
     particle::ParticlePoolData::GetClassStatic();
     particle::GlobalModuleData::GetClassStatic();
+    particle::EntityRefModuleData::GetClassStatic();
+    particle::TransformPointModuleData::GetClassStatic();
+    particle::TransformDirModuleData::GetClassStatic();
+    particle::Vec3AddModuleData::GetClassStatic();
+    particle::Vec3CombineModuleData::GetClassStatic();
+    particle::ParametersModuleData::GetClassStatic();
 
     particle::RingEmitterData::GetClassStatic();
     particle::EllipticalEmitterData::GetClassStatic();
@@ -228,13 +371,20 @@ struct ClassToucher {
     particle::NozzleEmitterData::GetClassStatic();
 
     particle::GravityModuleData::GetClassStatic();
+    particle::DirectionalForceModuleData::GetClassStatic();
     particle::SphAttractorModuleData::GetClassStatic();
     particle::EllipticalAttractorModuleData::GetClassStatic();
     particle::PointAttractorModuleData::GetClassStatic();
 
     particle::TurbulenceModuleData::GetClassStatic();
+    particle::CurlNoiseForceModuleData::GetClassStatic();
+    particle::PolyDragModuleData::GetClassStatic();
+    particle::VdbLevelSetRendererData::GetClassStatic();
     particle::VortexModuleData::GetClassStatic();
     particle::DragModuleData::GetClassStatic();
+    particle::PlaneColliderModuleData::GetClassStatic();
+    particle::SphereColliderModuleData::GetClassStatic();
+    particle::VdbColliderModuleData::GetClassStatic();
 
     particle::RendererModuleData::GetClassStatic();
     particle::SpriteRendererData::GetClassStatic();
@@ -247,6 +397,7 @@ struct ClassToucher {
     particle::MaterialBase::GetClassStatic();
     particle::FlatMaterial::GetClassStatic();
     particle::GradientMaterial::GetClassStatic();
+    particle::GradientAtlasMaterial::GetClassStatic();
     particle::TextureMaterial::GetClassStatic();
     particle::TexGridMaterial::GetClassStatic();
     particle::VolTexMaterial::GetClassStatic();
@@ -436,6 +587,31 @@ struct ClassToucher {
     RegisterClassX(audio::singularity::SpatializerData);
     RegisterClassX(audio::singularity::PannerSpatializerData);
 
+    // HYPERECS M2b/M3 asset-gen reflected data classes.
+    RegisterClassX(AssetGenData);
+    RegisterClassX(ImplicitSdfGenData);
+    RegisterClassX(PbrMaterialGenData);
+    RegisterClassX(FreestyleMaterialGenData);
+    RegisterClassX(VdbGridToDrawableGenData);
+    RegisterClassX(ParticleSystemGenData);
+    RegisterClassX(HdriToXirGenData);
+    RegisterClassX(VdbFileSdfGenData);
+    RegisterClassX(MeshSdfGenData);
+    // RigidPrimitiveDrawableData: header-only struct; its
+    // reflection definition lives in rigid_primitive_drawdata.cpp.
+    // Touch the class here so the registry knows about it.
+    RegisterClassX(meshutil::RigidPrimitiveDrawableData);
+    // ParticlesDrawableData: the polymorphic value held by
+    // ParticlesComponentData's reflected DrawableData slot. Without an
+    // explicit registry entry, the serializer can't resolve the
+    // concrete-class name (writes class="" then deserialize asserts).
+    RegisterClassX(ParticlesDrawableData);
+    // PBR2 P3.D — Separable Subsurface Scattering post-fx node.
+    // Class registration is needed for the polymorphic reflection on
+    // SceneGraphSystemData::_postfx_nodes (directObjectMapProperty)
+    // to resolve "PostFxNodeSSSS" by class name at deserialize time.
+    RegisterClassX(PostFxNodeSSSS);
+
     //////////////////////////////////////////
   }
 
@@ -529,6 +705,9 @@ context_ptr_t ensureLoaderContext() {
     case "VULKAN"_crcu:
     default: {
       gloadercontext = vulkan::createLoaderContext();
+      // Auto-spawn loader thread on the deferred-init path too (subsystem
+      // mode). Mirror of the initModule path.
+      g_loader_thread.start();
       break;
     }
   }

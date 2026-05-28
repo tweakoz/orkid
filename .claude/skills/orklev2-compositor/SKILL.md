@@ -185,6 +185,37 @@ Each preset returns `RenderPresetContext`:
 - `_outputnode` — output node
 - `_rendernode` — render node
 
+## Forward Pass Roles + HUD Overlay (PBR2 Phase 0)
+
+`fwdnode_impl_top.cpp:k_roles[]` enumerates the layer roles known to the forward pass CPD — `topCPD.HasLayer(name)` returns true only for roles present in this list:
+
+```cpp
+static const char* k_roles[] = {
+  "depth_prepass", "std_forward", "std_editor",
+  "probe", "depth_probe",
+  "hud_overlay",   // PBR2 Phase 0 — overlay layer rendered AFTER scene
+};
+```
+
+### Probe-Cubemap CPD: Hard Layer Reset, not Additive
+
+The probe cubemap pass uses `CompositingPassData::assignLayers(probe->renderLayer())` to **clear** the layer set inherited from `CPD.clone()` (which would otherwise carry `hud_overlay`, `std_editor`, etc. into the cubemap render). `assignLayers` clears both `_layernames` and `_layernameset` before assigning — both containers must be reset, the original implementation only cleared one.
+
+### HUD/Editor Overlay Post-Pass
+
+`_render_colorpass` in `fwdnode_impl_sub.cpp` ends with a separate enqueue for overlay layers, gated on `!_renderingPROBE`:
+
+```cpp
+if (not fpass->_renderingPROBE) {
+  if (_currentDrawQueue->_enableEditorLayers)
+    _currentDrawQueue->enqueueLayerToRenderQueue("std_editor", _currentIRenderer);
+  _currentDrawQueue->enqueueLayerToRenderQueue("hud_overlay", _currentIRenderer);
+  _currentIRenderer->drawEnqueuedRenderables(true);
+}
+```
+
+Probe captures skip the overlay post-pass entirely. The main viewport renders the scene, then the overlay layers as a second `drawEnqueuedRenderables`.
+
 ## CompositorDrawData Properties
 
 Key CRC-hashed properties passed through the pipeline:

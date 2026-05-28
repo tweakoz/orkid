@@ -486,7 +486,14 @@ Context2::~Context2() {
 
   logchan_pyctx->log("pyctx<%p> ~Context2\n", this);
   PyThreadState_Swap(_subPrimaryThreadState);
+  // Python 3.13 removed the cframe indirection — current_frame is now
+  // a direct member of PyThreadState. Clearing it before EndInterpreter
+  // avoids a crash when there's a stale frame attached.
+#if PY_VERSION_HEX >= 0x030D0000
+  _subPrimaryThreadState->current_frame = nullptr;
+#else
   _subPrimaryThreadState->cframe->current_frame = nullptr;
+#endif
   Py_EndInterpreter(_subPrimaryThreadState);
 
   PyThreadState_Swap(_mainInterpreterMyThreadState);

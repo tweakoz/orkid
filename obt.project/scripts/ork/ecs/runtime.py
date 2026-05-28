@@ -93,8 +93,17 @@ class EcsRuntime:
     self.uicam.updateMatrices()
     self.camera.copyFrom(self.uicam.cameradata)
 
-  def load_scene(self, path):
-    """Load scene_data from JSON file. Returns True on success."""
+  def load_scene(self, path, ezapp=None):
+    """Load scene_data from JSON file. Returns True on success.
+
+    After deserialize, walks the SceneData's AssetSystemData and
+    re-materializes every gen (building real GPU artifacts), then
+    patches any SceneGraphComponentData node that has a
+    drawable_asset_name back to the matching live drawable. Without
+    this step the deserialized RigidPrimitiveDrawableData placeholders
+    have empty _primitive/_pipeline/_material and crash in
+    DrawableCache::fetch on first stage.
+    """
     from orkengine.core import Object
     import os
     if not os.path.exists(path):
@@ -103,12 +112,19 @@ class EcsRuntime:
     try:
       json_str = open(path).read()
       obj = Object.deserializeJson(json_str)
-      if obj is not None:
-        self.scene_data = obj
-        return True
-      else:
+      if obj is None:
         print(f"Failed to deserialize: {path}")
         return False
+      self.scene_data = obj
+      # Materialize + post-wire. The loading-context fallback (no
+      # explicit ctx) routes material gens through the lev2 loader
+      # thread context, matching how live Scene.build()-time materials
+      # are constructed.
+      from ork.ecs.scene.assets import wire_scene_data
+      # ezapp is needed for HdriToXirGenData bake (PBR2 Phase 0). Other
+      # gen kinds ignore it — back-compat with callers passing nothing.
+      wire_scene_data(self.scene_data, ezapp=ezapp)
+      return True
     except Exception as e:
       print(f"Load failed: {e}")
       return False
@@ -126,13 +142,15 @@ class EcsRuntime:
     if sgsys_data is None:
       sgsys_data = self.scene_data.addSceneGraphSystem()
       sgsys_data.declareLayer("std_forward")
+      sgsys_data.declareLayer("std_transparent")
+      sgsys_data.declareLayer("hud_overlay")
     defaults = {
       "preset": "ForwardPBR",
       "ssaa": 1,
-      "SkyboxIntensity": 0.5,
+      "SkyboxIntensity": 1.0,
       "DiffuseIntensity": 1.0,
       "SpecularIntensity": 1.0,
-      "AmbientLight": vec3(0.15),
+      "AmbientLight": vec3(0.0),
       "enable_skybox": True,
       "clearcolor": vec3(0.08, 0.08, 0.1),
     }
@@ -151,8 +169,20 @@ class EcsRuntime:
     if enable_pick:
       sg.enablePickHud()
     layer = sg.createLayer("std_forward")
-    self.scenegraph = sg
-    self.layer = layer
+    # PBR2 Phase 2 — std_transparent for transmissive/refractive materials.
+    # Drawn after std_forward (opaques) so the opaque framebuffer is
+    # available for the P2.7 transmission lobe to sample. Empty when no
+    # materials opt in.
+    transparent_layer = sg.createLayer("std_transparent")
+    # HUD/overlay layer — excluded from probe cubemap captures because
+    # ProbeComponent's renderLayer defaults to "std_forward". The main
+    # viewport's forward compositor renders all declared layers, so the
+    # HUD remains visible in the primary frame.
+    hud_layer = sg.createLayer("hud_overlay")
+    self.scenegraph       = sg
+    self.layer            = layer
+    self.transparent_layer = transparent_layer
+    self.hud_layer        = hud_layer
     return sg, layer
 
   def start_simulation(self):

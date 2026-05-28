@@ -741,6 +741,16 @@ void LightManager::Clear() {
   mcollector.Clear();
 }
 
+lightprobe_ptr_t LightManager::findProbeByName(const std::string& name) const {
+  if (name.empty()) return nullptr;
+  for (auto& p : _lightprobes) {
+    if (p && p->_name == name) {
+      return p;
+    }
+  }
+  return nullptr;
+}
+
 void LightManager::gpuInit(Context* ctx) {
   if(_needs_gpu_init){
     if(0)printf("LightManager::gpuInit this=%p color_array=%p depth_array=%p\n",

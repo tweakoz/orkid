@@ -673,15 +673,24 @@ VkContext::VkContext() {
 ///////////////////////////////////////////////////////
 
 VkContext::~VkContext() {
-    if (_vkpresentationsurface != VK_NULL_HANDLE && _GVI) {
-      printf("VkContext::~VkContext: destroying VkSurface %p\n", (void*)_vkpresentationsurface);
-      vkDestroySurfaceKHR(_GVI->_instance, _vkpresentationsurface, nullptr);
-      _vkpresentationsurface = VK_NULL_HANDLE;
-    } else {
-      printf("VkContext::~VkContext: no surface to destroy (surface=%p GVI=%p)\n",
-             (void*)_vkpresentationsurface, (void*)_GVI.get());
-    }
-    _vkdevice = nullptr;
+  // The real teardown moved into _doShutdown() so it runs while owning
+  // shared_ptrs are still live (called from Context::shutdown() in the
+  // lev2/ezapp teardown paths). If shutdown() wasn't called (e.g.
+  // static-destruction path with no explicit teardown), run it here as
+  // a fallback so we don't leak the surface.
+  shutdown();
+}
+
+void VkContext::_doShutdown() {
+  if (_vkpresentationsurface != VK_NULL_HANDLE && _GVI) {
+    printf("VkContext::_doShutdown: destroying VkSurface %p\n", (void*)_vkpresentationsurface);
+    vkDestroySurfaceKHR(_GVI->_instance, _vkpresentationsurface, nullptr);
+    _vkpresentationsurface = VK_NULL_HANDLE;
+  } else {
+    printf("VkContext::_doShutdown: no surface to destroy (surface=%p GVI=%p)\n",
+           (void*)_vkpresentationsurface, (void*)_GVI.get());
+  }
+  _vkdevice = nullptr;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1592,6 +1601,8 @@ uint64_t hashSamplingMode(const TextureSamplingModeData& mode) {
   hasher.accumulateItem(mode._texAddrModeT);
   hasher.accumulateItem(mode._texAddrModeR);
   hasher.accumulateItem(mode._maxAnisotropy);
+  hasher.accumulateItem(mode._minMipLevel);
+  hasher.accumulateItem(mode._maxMipLevel);
   hasher.finish();
   return hasher.result();
 }
@@ -1636,10 +1647,13 @@ vksampler_obj_ptr_t VkContext::_getOrCreateSampler(const TextureSamplingModeData
     sci->maxAnisotropy = 1.0f;
   }
   
-  // LOD settings
+  // LOD settings — honor the sampling mode's mip range so callers can
+  // clamp to a single mip level (set min == max) for inspection / debug.
   sci->mipLodBias = 0.0f;
-  sci->minLod = 0.0f;
-  sci->maxLod = VK_LOD_CLAMP_NONE; // Or texture's max mip level
+  sci->minLod     = float(sampling_mode._minMipLevel);
+  sci->maxLod     = (sampling_mode._maxMipLevel >= 16)
+                  ? VK_LOD_CLAMP_NONE
+                  : float(sampling_mode._maxMipLevel);
   
   // Border color for CLAMP_TO_BORDER mode
   // Default to opaque black (most common)

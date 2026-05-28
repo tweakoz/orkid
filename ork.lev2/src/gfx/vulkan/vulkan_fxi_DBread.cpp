@@ -699,7 +699,11 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         refs->_uniblks[str_uniblk]  = vk_uniblk;
         // printf("  -> UBO<%s> IN DESCRIPTOR_SET<%zu>\n", str_uniblk.c_str(), vk_uniblk->_descriptor_set_id);
       }
-      OrkAssert(refs->_uniblks.size() <= 8);
+      // Defensive cap — not a hardware limit. Vulkan spec minimum for
+      // maxPerStageDescriptorUniformBuffers is 12; MoltenVK + most desktop
+      // GPUs support 16+. Bumped from 8 in PBR2 Phase 2 when the per-lobe
+      // UBO split pushed the PBR fragment shader's UBO count over 8.
+      OrkAssert(refs->_uniblks.size() <= 16);
     }
     /////////////////////////////////
     auto num_issbos = shader_input_stream->ReadItem<size_t>();

@@ -60,6 +60,23 @@ struct TexLoadReq {
 
 using texloadreq_ptr_t = std::shared_ptr<TexLoadReq>;
 
+// Chunked-upload region descriptor. Used by uploadTextureRegion.
+// Data is expected to be in the texture's destination format already;
+// callers convert (e.g., RGB→RGBA) before the upload step. uploadTextureRegion
+// asserts that data_size == extent_w × extent_h × extent_d × bytesPerPixel(fmt).
+struct TextureRegionUpload {
+  int _mip_level     = 0;   // which mip level
+  int _array_layer   = 0;   // for arrays / cubes, which slice (0 for plain 2D)
+  int _offset_x      = 0;   // pixel offset within the mip
+  int _offset_y      = 0;
+  int _offset_z      = 0;   // for 3D textures
+  int _extent_w      = 0;   // pixel extent of this region within the mip
+  int _extent_h      = 0;
+  int _extent_d      = 1;   // for 3D textures (1 for 2D / array slice)
+  const void* _data  = nullptr;
+  size_t _data_size  = 0;
+};
+
 class TextureInterface {
 public:
   TextureInterface(context_rawptr_t ctx);
@@ -85,6 +102,52 @@ public:
 
   virtual void _createFromLoadReq(texloadreq_ptr_t req) {
   }
+
+  //////////////////////////////////////////////////////////
+  // Chunked upload API — reserve GPU storage upfront, fill it via one
+  // or more sub-region uploads, then finalize layout for sampling.
+  //
+  // Usage:
+  //   txi->reserveTexture(tex, w, h, num_mips, fmt);   // VkImage + memory + view
+  //   for each mip / slice / sub-region:
+  //     txi->uploadTextureRegion(tex, region_desc, on_complete);
+  //   txi->finalizeUpload(tex);                         // layout → SHADER_READ
+  //
+  // After reserveTexture: image layout = TRANSFER_DST_OPTIMAL.
+  // After uploadTextureRegion: layout stays TRANSFER_DST_OPTIMAL (no
+  //   per-region transitions; allows many sub-regions to be filled in
+  //   any order without redundant barriers).
+  // After finalizeUpload: layout = SHADER_READ_ONLY_OPTIMAL and the
+  //   texture is safe to bind/sample.
+  //
+  // Each region upload returns asynchronously; the optional
+  // on_complete fires once the GPU has signaled the upload's
+  // completion semaphore.
+  //////////////////////////////////////////////////////////
+
+  virtual void reserveTexture(
+      Texture* tex,
+      int width,
+      int height,
+      int num_mips,
+      EBufferFormat fmt) {}
+
+  virtual void reserveTextureArray(
+      TextureArray* tarr,
+      int width,
+      int height,
+      int num_slices,
+      int num_mips,
+      EBufferFormat fmt) {}
+
+  virtual void uploadTextureRegion(
+      Texture* tex,
+      const TextureRegionUpload& upload,
+      ::ork::void_lambda_t on_complete = nullptr) {}
+
+  virtual void finalizeUpload(
+      Texture* tex,
+      ::ork::void_lambda_t on_complete = nullptr) {}
 
   virtual void ApplySamplingMode(Texture* ptex) {
   }

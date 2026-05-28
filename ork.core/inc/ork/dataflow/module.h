@@ -88,6 +88,13 @@ public:
   fvec2 mgvpos;
   bool _prunable = true;
 
+private:
+  // Cycle-safe recursive helpers — track DFS path via `visited` to terminate
+  // on cycles instead of infinite-looping. On revisit, return 0 (cycle node
+  // contributes nothing); DgSorter::generateTopology detects the cycle
+  // independently and returns nullptr with the offender list.
+  size_t _computeMinDepth(dgmoduleset_t& visited) const;
+  size_t _computeMaxDepth(dgmoduleset_t& visited) const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -146,6 +153,11 @@ struct DgModuleInst : public ModuleInst {
   virtual void onStage(GraphInst* inst) {}
   virtual void onActivate(GraphInst* inst) {}
   virtual void compute(GraphInst* inst,ui::updatedata_ptr_t updata) {}
+  // Called by GraphInst::reset(). Default is a no-op; modules that hold
+  // per-instance state needing a clean re-start (e.g. Globals' first-compute
+  // timebase capture, particle pools' live particles, RNG seeds) override
+  // this. Used by ECS particle slot recycle (A3).
+  virtual void onReset(GraphInst* inst) {}
     
   //void divideWork(scheduler_ptr_t sch, cluster* clus);
   //virtual void _doDivideWork(scheduler_ptr_t sch, cluster* clus);

@@ -6,9 +6,14 @@
 ////////////////////////////////////////////////////////////////
 
 #include "pyext.h"
+#include <ork/ecs/ParticlesComponent.h>
+// pyext is the right place for the full lev2 include — the pyext .so links
+// lev2 anyway and is loaded by Python after lev2's dylib.
+#include <ork/lev2/gfx/particle/drawable_data.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 using ctx_t = ork::python::unmanaged_ptr<::ork::lev2::Context>;
+using pyparticlessys_ptr_t = ork::python::unmanaged_ptr<ork::ecs::ParticlesGlobalSystem>;
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::ecs {
@@ -42,7 +47,15 @@ void pyinit_scenegraph(py::module& module_ecs) {
                      .def_property(
                          "modcolor",
                          [](nodedef_ptr_t ndef) -> fvec4 { return ndef->_modcolor; },
-                         [](nodedef_ptr_t ndef, fvec4 val) { ndef->_modcolor = val; });
+                         [](nodedef_ptr_t ndef, fvec4 val) { ndef->_modcolor = val; })
+                     .def_property(
+                         "drawable_asset_name",
+                         [](nodedef_ptr_t ndef) -> std::string { return ndef->_drawable_asset_name; },
+                         [](nodedef_ptr_t ndef, std::string val) { ndef->_drawable_asset_name = val; })
+                     .def_property(
+                         "envmap_path",
+                         [](nodedef_ptr_t ndef) -> std::string { return ndef->_envmap_path; },
+                         [](nodedef_ptr_t ndef, std::string val) { ndef->_envmap_path = val; });
   type_codec->registerStdCodec<nodedef_ptr_t>(nd_type);
 
   /////////////////////////////////////////////////////////////////////////////////
@@ -67,6 +80,14 @@ void pyinit_scenegraph(py::module& module_ecs) {
           "modcolor",
           [](sgnodeitemdata_ptr_t nid) -> fvec4 { return nid->_modcolor; },
           [](sgnodeitemdata_ptr_t nid, fvec4 val) { nid->_modcolor = val; })
+      .def_property(
+          "drawable_asset_name",
+          [](sgnodeitemdata_ptr_t nid) -> std::string { return nid->_drawable_asset_name; },
+          [](sgnodeitemdata_ptr_t nid, std::string val) { nid->_drawable_asset_name = val; })
+      .def_property(
+          "envmap_path",
+          [](sgnodeitemdata_ptr_t nid) -> std::string { return nid->_envmap_path; },
+          [](sgnodeitemdata_ptr_t nid, std::string val) { nid->_envmap_path = val; })
       .def_property(
           "drawableClassName",
           [](sgnodeitemdata_ptr_t nid) -> std::string {
@@ -121,6 +142,12 @@ void pyinit_scenegraph(py::module& module_ecs) {
             }
             if (kwargs.contains("skip_auto_dpp")) {
               ndef->_skipAutoDepthPrepass = kwargs["skip_auto_dpp"].cast<bool>();
+            }
+            if (kwargs.contains("drawable_asset_name")) {
+              ndef->_drawable_asset_name = kwargs["drawable_asset_name"].cast<std::string>();
+            }
+            if (kwargs.contains("envmap_path")) {
+              ndef->_envmap_path = kwargs["envmap_path"].cast<std::string>();
             }
             sgcd->declareNodeOnLayer(ndef);
           },
@@ -179,6 +206,17 @@ void pyinit_scenegraph(py::module& module_ecs) {
         Parameters:
         name (str): The name of the layer.
      )doc")
+      // PBR2 Phase 0 — single skybox source field. Two forms:
+      //   "asset://<name>" — cross-ref to an HdriToXirGenData; bake runs
+      //                       and resolved .xir path lands in
+      //                       _userParams["SkyboxTexPathStr"].
+      //   anything else    — literal path string, passed through as-is.
+      // Set by Scene.scenegraph(skybox_probe=wrapper) or directly via
+      // self._sgsys.skybox_path = "ork_envmaps|cold4k".
+      .def_property(
+          "skybox_path",
+          [](sgsystemdata_ptr_t sgsys) -> std::string { return sgsys->_skybox_path; },
+          [](sgsystemdata_ptr_t sgsys, std::string v) { sgsys->_skybox_path = v; })
       .def_property_readonly(
           "declaredLayers",
           [](sgsystemdata_ptr_t sgsys) -> std::vector<std::string> {
@@ -196,9 +234,36 @@ void pyinit_scenegraph(py::module& module_ecs) {
               auto key_str     = key.cast<std::string>();
               auto val_obj     = py::reinterpret_borrow<py::object>(value);
               auto val_decoded = type_codec->decode(val_obj);
-              sgsys->setInternalSceneParam(key_str, val_decoded);
+              // Route to _userParams (reflected, JSON-round-trippable),
+              // not _internalParams (transient, runtime-only). Author
+              // params from the Scene DSL must survive serialize.
+              sgsys->setUserSceneParam(key_str, val_decoded);
             }
           })
+      .def(
+          "addPostFxNode",
+          [](sgsystemdata_ptr_t sgsys, const std::string& name, lev2::compositorpostnode_ptr_t node) {
+            sgsys->addPostFxNode(name, node);
+          },
+          R"doc(
+        PBR2 P3.D — register a PostFxNode under a stable string key.
+        Survives JSON round-trip via the reflected _postfx_nodes map.
+        Pair with .postfx_order = "name1,name2,..." to set execution order.
+       )doc")
+      .def_property(
+          "postfx_order",
+          [](sgsystemdata_ptr_t sgsys) -> std::string { return sgsys->_postfx_order; },
+          [](sgsystemdata_ptr_t sgsys, const std::string& v) { sgsys->_postfx_order = v; })
+      .def(
+          "appendPostFxOrder",
+          [](sgsystemdata_ptr_t sgsys, const std::string& name) {
+            sgsys->appendPostFxOrder(name);
+          },
+          R"doc(
+        PBR2 P3.D — append a node name to _postfx_order, idempotent.
+        Use from Scene DSL sub_calls to wire ordering without managing
+        the comma-delimited string directly.
+       )doc")
       .def(
           "declareNodeOnLayer",
           [](sgsystemdata_ptr_t sgsys, py::kwargs kwargs) { //
@@ -227,6 +292,12 @@ void pyinit_scenegraph(py::module& module_ecs) {
             }
             if (kwargs.contains("skip_auto_dpp")) {
               ndef->_skipAutoDepthPrepass = kwargs["skip_auto_dpp"].cast<bool>();
+            }
+            if (kwargs.contains("drawable_asset_name")) {
+              ndef->_drawable_asset_name = kwargs["drawable_asset_name"].cast<std::string>();
+            }
+            if (kwargs.contains("envmap_path")) {
+              ndef->_envmap_path = kwargs["envmap_path"].cast<std::string>();
             }
             sgsys->declareNodeOnLayer(ndef);
           },
@@ -275,6 +346,86 @@ void pyinit_scenegraph(py::module& module_ecs) {
           .def_readwrite("autodraw", &SceneGraphSystem::_autodraw)
           .def_readwrite("autoupdate", &SceneGraphSystem::_autoupdate);
   type_codec->registerStdCodec<pysgsystem_ptr_t>(sgsys_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // ParticlesComponentData — author-configurable component that hosts a
+  // HyperSyn (or imperative) particle graph as an ECS entity. The author
+  // builds a ParticlesDrawableData with its graphdata (typically via the
+  // DSL's generatedflow()) and assigns it to .drawabledata; the system
+  // creates the drawable + scenegraph node at stage time.
+  py::class_<ParticlesComponentData, ComponentData, particlescomponentdata_ptr_t>(
+      module_ecs, "ParticlesComponentData")
+      .def("__repr__",
+          [](const particlescomponentdata_ptr_t& pcd) -> std::string {
+            fxstring<256> fxs;
+            fxs.format("ecs::ParticlesComponentData(%p)", pcd.get());
+            return fxs.c_str();
+          })
+      .def_property("drawabledata",
+          [](particlescomponentdata_ptr_t pcd) -> lev2::particles_drawable_data_ptr_t {
+            return pcd->_drawabledata;
+          },
+          [](particlescomponentdata_ptr_t pcd, lev2::particles_drawable_data_ptr_t val) {
+            pcd->_drawabledata = val;
+          })
+      .def_property("layername",
+          [](particlescomponentdata_ptr_t pcd) -> std::string { return pcd->_layername; },
+          [](particlescomponentdata_ptr_t pcd, std::string val) { pcd->_layername = val; })
+      .def_property("nodename",
+          [](particlescomponentdata_ptr_t pcd) -> std::string { return pcd->_nodename; },
+          [](particlescomponentdata_ptr_t pcd, std::string val) { pcd->_nodename = val; })
+      // Pool of N concurrent slots per component instance. Each START
+      // event grabs the next FREE slot (or evicts the oldest if all
+      // are busy). Default 1 = single-slot (legacy A1/A2 behavior).
+      .def_property("pool_size",
+          [](particlescomponentdata_ptr_t pcd) -> int { return pcd->_pool_size; },
+          [](particlescomponentdata_ptr_t pcd, int val) { pcd->_pool_size = val; })
+      // If > 0, RUNNING slots auto-transition to DRAINING after this
+      // many seconds. 0 = manual STOP only.
+      .def_property("duration",
+          [](particlescomponentdata_ptr_t pcd) -> float { return pcd->_duration; },
+          [](particlescomponentdata_ptr_t pcd, float val) { pcd->_duration = val; })
+      // DRAINING slots recycle to FREE after this many seconds of drain.
+      // Should be ≥ the max particle lifespan in the graph.
+      .def_property("drain_linger",
+          [](particlescomponentdata_ptr_t pcd) -> float { return pcd->_drain_linger; },
+          [](particlescomponentdata_ptr_t pcd, float val) { pcd->_drain_linger = val; })
+      // M3 round-trip: AssetSystemData ParticleSystemGenData name. On
+      // JSON load, the post-deserialize wire step looks this up,
+      // materializes the named asset (instantiates the DSL class +
+      // builds graphdata), and assigns the resulting
+      // ParticlesDrawableData to .drawabledata.
+      .def_property("particles_asset_name",
+          [](particlescomponentdata_ptr_t pcd) -> std::string {
+            return pcd->_particles_asset_name;
+          },
+          [](particlescomponentdata_ptr_t pcd, std::string val) {
+            pcd->_particles_asset_name = val;
+          });
+  /////////////////////////////////////////////////////////////////////////////////
+  // ParticlesGlobalSystemData — minimal marker (no per-scene config in v0).
+  // Authors declare it via ecsscene.declareSystem("ParticlesGlobalSystem")
+  // if any ParticlesComponent uses it; SceneGraphSystem dep is auto-declared
+  // through the component's DoRegisterWithScene.
+  py::class_<ParticlesGlobalSystemData, SystemData, particles_global_system_data_ptr_t>(
+      module_ecs, "ParticlesGlobalSystemData")
+      .def("__repr__",
+          [](const particles_global_system_data_ptr_t& d) -> std::string {
+            fxstring<256> fxs;
+            fxs.format("ecs::ParticlesGlobalSystemData(%p)", d.get());
+            return fxs.c_str();
+          })
+      .def_property(
+          "parallel_compute",
+          [](particles_global_system_data_ptr_t d) -> bool { return d->_parallel_compute; },
+          [](particles_global_system_data_ptr_t d, bool v) { d->_parallel_compute = v; });
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<ParticlesGlobalSystem, pyparticlessys_ptr_t>(module_ecs, "ParticlesGlobalSystem")
+      .def("__repr__",
+          [](pyparticlessys_ptr_t s) -> std::string {
+            fxstring<256> fxs;
+            fxs.format("ecs::ParticlesGlobalSystem(%p)", s.get());
+            return fxs.c_str();
+          });
   /////////////////////////////////////////////////////////////////////////////////
 } // void pyinit_scenegraph(py::module& module_ecs) {
 /////////////////////////////////////////////////////////////////////////////////

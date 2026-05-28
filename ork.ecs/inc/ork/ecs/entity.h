@@ -72,6 +72,17 @@ public:
   // lifetime (0,0 = lives forever)
   float _lifetimeMin = 0.0f;
   float _lifetimeMax = 0.0f;
+
+  // Opt-in publication of the spawned entity's live transform into the
+  // Simulation's _published_xfs registry. Empty (default) → not published.
+  // Non-empty → on each spawn, the entity is registered under this name;
+  // if the name is already taken, an integer suffix (saddle, saddle1,
+  // saddle2, ...) keeps successive instances unique. The decompxf_ptr_t
+  // held in the registry is the LIVE transform pointer — readers see the
+  // current value without any per-tick snapshotting. Consumers like
+  // VdbColliderModuleData::_follow_entity reach this via the
+  // GraphInst::_resolveEntityXf hook bound by ParticlesComponent.
+  std::string _publishxf_name;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

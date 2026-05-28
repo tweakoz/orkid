@@ -116,7 +116,15 @@ void pyinit_scene(py::module& module_ecs) {
                           .def_property(
                             "lifetimeMax",
                             [](spawndata_constptr_t sd) -> float { return sd->_lifetimeMax; },
-                            [](spawndata_ptr_t sd, float val) { sd->_lifetimeMax = val; });
+                            [](spawndata_ptr_t sd, float val) { sd->_lifetimeMax = val; })
+                          // Opt-in publication of the spawned entity's
+                          // live transform under <publishxf_name><N>
+                          // (counter is monotonic per base name). See
+                          // Simulation::publishEntityXf.
+                          .def_property(
+                            "publishxf_name",
+                            [](spawndata_constptr_t sd) -> std::string { return sd->_publishxf_name; },
+                            [](spawndata_ptr_t sd, std::string val) { sd->_publishxf_name = val; });
   type_codec->registerStdCodec<spawndata_ptr_t>(sd_type);
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<SceneData, Object, scenedata_ptr_t>(module_ecs, "SceneData")

@@ -134,6 +134,18 @@ struct fvec3xfinpluginst : public inpluginst<Vec3XfPlugTraits> {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct fvec4xfinpluginst : public inpluginst<Vec4XfPlugTraits> {
+
+  fvec4xfinpluginst(const fvec4xfinplugdata_t* d, ModuleInst* minst);
+
+  const fvec4& value() const final;
+
+  const fvec4xfinplugdata_t* _data = nullptr;
+  mutable fvec4 _xfvalue;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct fquatxfinpluginst : public inpluginst<QuatXfPlugTraits> {
 
   fquatxfinpluginst(const fquatxfinplugdata_t* d, ModuleInst* minst);
@@ -165,6 +177,17 @@ using fvec3xf_inp_pluginst_ptr_t = std::shared_ptr<fvec3xf_inp_pluginst_t>;
 
 using fvec3_out_pluginst_t     = outpluginst<Vec3fPlugTraits>;
 using fvec3_out_pluginst_ptr_t = std::shared_ptr<fvec3_out_pluginst_t>;
+
+//
+
+using fvec4_inp_pluginst_t     = inpluginst<Vec4fPlugTraits>;
+using fvec4_inp_pluginst_ptr_t = std::shared_ptr<fvec4_inp_pluginst_t>;
+
+using fvec4xf_inp_pluginst_t     = inpluginst<Vec4XfPlugTraits>;
+using fvec4xf_inp_pluginst_ptr_t = std::shared_ptr<fvec4xf_inp_pluginst_t>;
+
+using fvec4_out_pluginst_t     = outpluginst<Vec4fPlugTraits>;
+using fvec4_out_pluginst_ptr_t = std::shared_ptr<fvec4_out_pluginst_t>;
 
 //
 

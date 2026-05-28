@@ -116,9 +116,10 @@ struct CommonStuff : public ork::Object {
   static radiancemaps_ptr_t requestRadianceMaps(const AssetPath& texture_path);
   static radiancemaps_ptr_t requestRadianceMapsAsync(const AssetPath& texture_path);
   // Blocking variant: returns only after the radiance maps are fully
-  // GPU-resident. Must be called on the GPU thread with a live context
-  // because no other thread drains GfxEnv::_deferredContextOps while
-  // we block — this routine self-pumps that queue.
+  // GPU-resident. Caller passes the context whose _deferredOps the
+  // loader's terminal swap-op will land on (post Phase 6.3 Variant B:
+  // typically the render context). This routine pumps that context's
+  // deferred queue while polling the load counter.
   static radiancemaps_ptr_t requestRadianceMapsSync(const AssetPath& texture_path, lev2::Context* ctx);
 
   // Allocate procedural RadianceMaps (black). Populate via updateRadianceMapsGradient.

@@ -454,6 +454,17 @@ varmap::varmap_ptr_t SceneData::generateSceneGraphParams() const {
   params->makeValueForKey<float>("SpecularIntensity") = 1.0f;
   params->makeValueForKey<fvec3>("AmbientLevel") = fvec3(1.0f, 1.0f, 1.0f);
   params->makeValueForKey<std::string>("SkyboxTexPathStr") = "nebula";
+  // Overlay any author-set values from SceneGraphSystemData::_userParams
+  // on top of the hardcoded defaults — matches the _onLink merge order
+  // (defaults first, _userParams wins). Lets DSL kwargs like
+  // self.scenegraph(skybox_path=...) actually reach the live scenegraph.
+  for (auto& kv : _systemDatas) {
+    auto sgsd = std::dynamic_pointer_cast<SceneGraphSystemData>(kv.second);
+    if (!sgsd) continue;
+    for (auto item : sgsd->_userParams) {
+      params->setValueForKey(item.first, item.second);
+    }
+  }
   return params;
 }
 ///////////////////////////////////////////////////////////////////////////////

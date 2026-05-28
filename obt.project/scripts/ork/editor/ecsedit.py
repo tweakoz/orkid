@@ -214,6 +214,24 @@ _SVG_LIGHT_PROBE = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64
   <circle cx="32" cy="32" r="4" fill="#00FFFF"/>
 </svg>'''
 
+# Magenta "burst" — small central core with five outward streaks of
+# decreasing radius / opacity, evoking a particle emitter. Distinct
+# from the warm light icons (gold/orange) and the cool probe icon
+# (cyan) so a glance across the viewport reads the entity kind.
+_SVG_PARTICLE = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <circle cx="32" cy="32" r="5" fill="#FF66CC" stroke="#FF00AA" stroke-width="1.5"/>
+  <g fill="#FF66CC" stroke="#FF00AA" stroke-width="1">
+    <circle cx="48" cy="20" r="3" fill-opacity="0.85"/>
+    <circle cx="50" cy="40" r="2.5" fill-opacity="0.7"/>
+    <circle cx="18" cy="46" r="3" fill-opacity="0.85"/>
+    <circle cx="14" cy="24" r="2.5" fill-opacity="0.7"/>
+    <circle cx="32" cy="10" r="2" fill-opacity="0.6"/>
+    <circle cx="32" cy="54" r="2" fill-opacity="0.6"/>
+    <circle cx="56" cy="32" r="1.6" fill-opacity="0.5"/>
+    <circle cx="8"  cy="32" r="1.6" fill-opacity="0.5"/>
+  </g>
+</svg>'''
+
 tokens = CrcStringProxy()
 
 lev2_pyexdir.addToSysPath()
@@ -896,6 +914,7 @@ class EcsEditor(ComponentizedApplication):
     self._point_light_img = icon_library.from_svg_string(_SVG_POINT_LIGHT, icon_size, icon_size)
     self._spot_light_img = icon_library.from_svg_string(_SVG_SPOT_LIGHT, icon_size, icon_size)
     self._light_probe_img = icon_library.from_svg_string(_SVG_LIGHT_PROBE, icon_size, icon_size)
+    self._particle_img = icon_library.from_svg_string(_SVG_PARTICLE, icon_size, icon_size)
 
     # Create initial edit simulation (creates fresh scenegraph + binds to viewport)
     self._createEditSimulation()
@@ -2117,6 +2136,23 @@ class EcsEditor(ComponentizedApplication):
       if self.manip_enabled and self.manip_interface and self._selected_object is not None:
         self.refl_model.notifyExternalValueChanged("")
     elif self._mode == self.PLAYING and self.runtime.controller:
+      # In PLAYING mode, gizmo drags only push to live entities while
+      # the user is actively dragging an axis — otherwise the sim runs
+      # free. SyncTransformBySpawnData on the SceneGraphSystem copies
+      # the gizmo-mutated spawner xf onto the matched live entity's
+      # decompxf (which is the same shared_ptr our published-xf
+      # registry hands out), so colliders / Expr.entity bindings see
+      # the new transform on the very next frame.
+      if (self.manip_enabled
+          and self.manip_interface
+          and self.manip_controller.isDragging
+          and isinstance(self._selected_object, ecs.SpawnData)
+          and self.runtime._sys_ref):
+        self.runtime.controller.systemNotify(
+          self.runtime._sys_ref,
+          tokens.SyncTransformBySpawnData,
+          {tokens.name: self._selected_object.name})
+        self.refl_model.notifyExternalValueChanged("")
       self.runtime.update(updinfo)
 
     # Selection highlight: animate selected spawner's entities red<->white
@@ -2211,6 +2247,41 @@ class EcsEditor(ComponentizedApplication):
         bbdata.screenSize = 15.0
         self._editor_billboard_datas.append(bbdata)
         bb_name = f"ed_{spawner.name}_probe"
+        bb = editor_layer.createBillboardNode(bb_name, bbdata)
+        bb.sortkey = (1 << 31) - 1
+        bb.pickable = True
+        bb.worldTransform.translation = xf.translation
+        if spawner.name not in self._editor_billboards:
+          self._editor_billboards[spawner.name] = []
+        self._editor_billboards[spawner.name].append(bb)
+        if self.runtime._sys_ref and self.runtime.controller:
+          self.runtime.controller.systemNotify(
+            self.runtime._sys_ref,
+            tokens.AttachEditorBillboard,
+            {tokens.spawner: spawner.name, tokens.node: bb})
+
+    # Particle systems — ParticlesComponentData (parallel to ProbeComponentData
+    # above). The particle drawable itself is invisible until emission
+    # starts; the icon gives the entity a permanent picking target so it
+    # stays selectable + draggable in edit mode.
+    for arch in self.scene_data.archetypes:
+      spawners = arch_to_spawners.get(arch, [])
+      if not spawners:
+        continue
+      has_particles = False
+      for comp in arch.components:
+        if isinstance(comp, ecs.ParticlesComponentData):
+          has_particles = True
+          break
+      if not has_particles:
+        continue
+      for spawner in spawners:
+        xf = spawner.transform
+        bbdata = lev2.BillboardDrawableData()
+        bbdata.image = self._particle_img
+        bbdata.screenSize = 30.0
+        self._editor_billboard_datas.append(bbdata)
+        bb_name = f"ed_{spawner.name}_particles"
         bb = editor_layer.createBillboardNode(bb_name, bbdata)
         bb.sortkey = (1 << 31) - 1
         bb.pickable = True

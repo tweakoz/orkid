@@ -33,6 +33,7 @@ struct TestApplication {
     MathTest::GetClassStatic();
     SharedTest::GetClassStatic();
     MapTest::GetClassStatic();
+    VarMapTest::GetClassStatic();
     ArrayTest::GetClassStatic();
     VectorTest::GetClassStatic();
     TheTestInterface::GetClassStatic();

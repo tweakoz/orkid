@@ -305,6 +305,43 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   _parProbeReflection = fxi->parameter(_shader, "reflectionPROBE");
   _parProbeRadiance = fxi->parameter(_shader, "RadiancePROBE");
+  _parHasReflectionProbe = fxi->parameter(_shader, "has_reflection_probe");
+
+  // PBR2 Phase 1 — 8 glTF KHR-extension lobe flag + factor lookups.
+  // Stays nullptr if the shader pipeline doesn't expose them; bindParam*
+  // calls in the lighting lambda tolerate nullptr handles.
+  _parHasTransmission           = fxi->parameter(_shader, "has_transmission");
+  _parTransmissionFactor        = fxi->parameter(_shader, "transmission_factor");
+  _parHasIor                    = fxi->parameter(_shader, "has_ior");
+  _parIor                       = fxi->parameter(_shader, "ior_value");
+  _parHasVolume                 = fxi->parameter(_shader, "has_volume");
+  _parVolumeThicknessFactor     = fxi->parameter(_shader, "volume_thickness_factor");
+  _parHasDiffuseTransmission    = fxi->parameter(_shader, "has_diffuse_transmission");
+  _parDiffuseTransmissionFactor = fxi->parameter(_shader, "diffuse_transmission_factor");
+  _parHasSpecular               = fxi->parameter(_shader, "has_specular");
+  _parSpecularFactor            = fxi->parameter(_shader, "specular_factor");
+  _parHasClearcoat              = fxi->parameter(_shader, "has_clearcoat");
+  _parClearcoatFactor           = fxi->parameter(_shader, "clearcoat_factor");
+  _parHasSheen                  = fxi->parameter(_shader, "has_sheen");
+  _parSheenFactor               = fxi->parameter(_shader, "sheen_factor");
+  _parHasIridescence            = fxi->parameter(_shader, "has_iridescence");
+  _parIridescenceFactor         = fxi->parameter(_shader, "iridescence_factor");
+
+  // PBR2 Phase 2 — color + secondary scalar uniforms.
+  _parSheenColor                = fxi->parameter(_shader, "sheen_color");
+  _parSpecularColor             = fxi->parameter(_shader, "specular_color");
+  _parAttenuationColor          = fxi->parameter(_shader, "attenuation_color");
+  _parDiffuseTransmissionColor  = fxi->parameter(_shader, "diffuse_transmission_color");
+  _parClearcoatRoughness        = fxi->parameter(_shader, "clearcoat_roughness");
+  _parSheenRoughness            = fxi->parameter(_shader, "sheen_roughness");
+  _parAttenuationDistance       = fxi->parameter(_shader, "attenuation_distance");
+  _parRenderingProbe            = fxi->parameter(_shader, "rendering_probe");
+
+  // PBR2 Phase 3 (P3.D) — subsurface scattering uniforms.
+  _parHasSubsurface             = fxi->parameter(_shader, "has_subsurface");
+  _parSubsurfaceColor           = fxi->parameter(_shader, "subsurface_color");
+  _parSubsurfaceRadius          = fxi->parameter(_shader, "subsurface_radius");
+  _parSubsurfaceFactor          = fxi->parameter(_shader, "subsurface_factor");
 
   // printf( "_parLightCookies<%p>\n", _parLightCookies );
 

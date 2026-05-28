@@ -15,6 +15,7 @@
 #include "DirectTypedVector.hpp"
 #include "DirectEnum.inl"
 #include "AccessorTyped.hpp"
+#include "DirectVarMap.h"
 
 namespace ork::object {
 ///////////////////////////////////////////////////////////////////////////
@@ -59,6 +60,17 @@ inline object::PropertyModifier object::ObjectClass::directMapProperty(
   object::PropertyModifier modder;
   auto typed_member = static_cast<MemberMapType Object::*>(member);
   modder._property  = new reflect::DirectTypedMap<MemberMapType>(typed_member);
+  _description.addProperty(name, modder._property);
+  return modder;
+}
+///////////////////////////////////////////////////////////////////////////
+template <typename ClassType>
+inline object::PropertyModifier object::ObjectClass::directVarMapProperty(
+    const char* name, //
+    varmap::varmap_ptr_t ClassType::*member) {
+  object::PropertyModifier modder;
+  auto typed_member = static_cast<varmap::varmap_ptr_t Object::*>(member);
+  modder._property  = new reflect::DirectVarMap(typed_member);
   _description.addProperty(name, modder._property);
   return modder;
 }

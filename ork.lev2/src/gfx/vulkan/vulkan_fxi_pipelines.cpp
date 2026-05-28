@@ -179,11 +179,24 @@ uint64_t VkFxShaderPassState::samplersHash() {
   }
   boost::Crc64 the_crc;
   the_crc.init();
-  for (auto& [param, vktex] : _textures_by_orkparam) {
-    if (!vktex) continue;
-    the_crc.accumulateItem(reinterpret_cast<uintptr_t>(vktex.get()));
-    the_crc.accumulateItem(vktex->_format_hash);
-    the_crc.accumulateItem(vktex->_imgview_hash.result());
+  for (auto& [param, tex] : _textures_by_orkparam) {
+    // Acquire-load _front_idx to synchronize with the streaming swap
+    // callback's release-store. Without this, _imgview_hash (a non-atomic
+    // Crc64) and _descset_sampling (a non-atomic shared_ptr assignment)
+    // can be read mid-write — producing torn / mixed-generation state and
+    // poisoning the descriptor-set cache with H_new → desc_OLD entries
+    // that cause the visible texture to appear to revert a cycle.
+    // We mix the front_idx into the hash too so the cache invalidates
+    // whenever a streaming swap fires (non-streaming textures have
+    // front_idx pinned to 0 so this is a no-op for them).
+    int front_idx = tex->_front_idx.load(std::memory_order_acquire);
+    the_crc.accumulateItem(reinterpret_cast<uintptr_t>(tex.get()));
+    the_crc.accumulateItem(tex->_format_hash);
+    the_crc.accumulateItem(tex->_imgview_hash.result());
+    the_crc.accumulateItem(uint64_t(front_idx));
+    // Sampler is part of the descriptor set's combined-image-sampler binding;
+    // a swap from ApplySamplingMode must invalidate the cached descriptor set.
+    the_crc.accumulateItem(reinterpret_cast<uintptr_t>(tex->_vksampler.get()));
   }
   // Include storage buffer pointers so different SSBOs produce different cache keys
   for (auto* storage_state : _ordered_storage_states) {

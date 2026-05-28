@@ -196,6 +196,53 @@ public:
 
   fxparam_constptr_t _parProbeReflection   = nullptr;
   fxparam_constptr_t _parProbeRadiance   = nullptr;
+  fxparam_constptr_t _parHasReflectionProbe = nullptr;
+
+  // PBR2 Phase 1 — 8 glTF KHR-extension lobe feature flags + factors.
+  // Default off (has_*=0, factor=0); shader libblocks short-circuit when
+  // flag is 0 so disabled lobes incur no shader cost. Each fxparam_constptr_t
+  // is resolved from the shader at gpuInit() — P1.5 will populate them and
+  // bind per-draw. Until P1.3 lands the matching shader uniforms these stay
+  // nullptr (fxi->parameter lookup misses are non-fatal).
+  fxparam_constptr_t _parHasTransmission           = nullptr;
+  fxparam_constptr_t _parTransmissionFactor        = nullptr;
+  fxparam_constptr_t _parHasIor                    = nullptr;
+  fxparam_constptr_t _parIor                       = nullptr;
+  fxparam_constptr_t _parHasVolume                 = nullptr;
+  fxparam_constptr_t _parVolumeThicknessFactor     = nullptr;
+  fxparam_constptr_t _parHasDiffuseTransmission    = nullptr;
+  fxparam_constptr_t _parDiffuseTransmissionFactor = nullptr;
+  fxparam_constptr_t _parHasSpecular               = nullptr;
+  fxparam_constptr_t _parSpecularFactor            = nullptr;
+  fxparam_constptr_t _parHasClearcoat              = nullptr;
+  fxparam_constptr_t _parClearcoatFactor           = nullptr;
+  fxparam_constptr_t _parHasSheen                  = nullptr;
+  fxparam_constptr_t _parSheenFactor               = nullptr;
+  fxparam_constptr_t _parHasIridescence            = nullptr;
+  fxparam_constptr_t _parIridescenceFactor         = nullptr;
+
+  // PBR2 Phase 2 — vec3 color + secondary scalar uniforms for the lobes.
+  // sheen_color defaults (0,0,0) — per glTF spec sheen is OFF when color
+  // is zero. specular/attenuation/diffuse_transmission default (1,1,1)
+  // — modulate against a (future) white default texture.
+  fxparam_constptr_t _parSheenColor                = nullptr;
+  fxparam_constptr_t _parSpecularColor             = nullptr;
+  fxparam_constptr_t _parAttenuationColor          = nullptr;
+  fxparam_constptr_t _parDiffuseTransmissionColor  = nullptr;
+  fxparam_constptr_t _parClearcoatRoughness        = nullptr;
+  fxparam_constptr_t _parSheenRoughness            = nullptr;
+  fxparam_constptr_t _parAttenuationDistance       = nullptr;
+
+  // PBR2 Phase 3 (P3.D) — subsurface UBO uniforms (ublk_pbr_subsurface).
+  fxparam_constptr_t _parHasSubsurface             = nullptr;
+  fxparam_constptr_t _parSubsurfaceColor           = nullptr;
+  fxparam_constptr_t _parSubsurfaceRadius          = nullptr;
+  fxparam_constptr_t _parSubsurfaceFactor          = nullptr;
+  // PBR2 Phase 2 — probe-capture short-circuit for refractive lobes.
+  // Bound per-draw from fwdnode_pipeline.cpp via the RCFD
+  // "renderingPROBE" user-property. Zero on the primary forward pass,
+  // one when capturing into a reflection probe cubemap.
+  fxparam_constptr_t _parRenderingProbe            = nullptr;
 
   fxparam_constptr_t _parUnTexPointLightsCount  = nullptr;
   fxparam_constptr_t _parTexSpotLightsCount   = nullptr;
@@ -381,6 +428,46 @@ public:
   float _metallicFactor  = 0.0f;
   float _roughnessFactor = 1.0f;
   fvec4 _baseColor = fvec4(1, 1, 1, 1);
+
+  // PBR2 Phase 1 — 8-lobe feature flags + factors (per-material).
+  // All default OFF — Phase 1 lands the scaffolding; shader libblocks
+  // and per-draw bindings come in P1.4 / P1.5. Factor defaults match
+  // glTF KHR extension spec defaults (intent-preserving when enabled).
+  bool  _hasTransmission           = false;
+  float _transmissionFactor        = 0.0f;     // KHR_materials_transmission
+  bool  _hasIor                    = false;
+  float _ior                       = 1.5f;     // KHR_materials_ior (dielectric default)
+  bool  _hasVolume                 = false;
+  float _volumeThicknessFactor     = 0.0f;     // KHR_materials_volume
+  bool  _hasDiffuseTransmission    = false;
+  float _diffuseTransmissionFactor = 0.0f;     // KHR_materials_diffuse_transmission
+  bool  _hasSpecular               = false;
+  float _specularFactor            = 1.0f;     // KHR_materials_specular (1.0 = full when enabled)
+  bool  _hasClearcoat              = false;
+  float _clearcoatFactor           = 0.0f;     // KHR_materials_clearcoat
+  bool  _hasSheen                  = false;
+  float _sheenFactor               = 0.0f;     // KHR_materials_sheen
+  bool  _hasIridescence            = false;
+  float _iridescenceFactor         = 0.0f;     // KHR_materials_iridescence
+
+  // PBR2 Phase 2 — lobe color + secondary scalar parameters.
+  // glTF spec defaults: sheen_color = (0,0,0) [sheen OFF when zero];
+  // specular/attenuation/diffuse_transmission color = (1,1,1).
+  fvec3 _sheenColor               = fvec3(0, 0, 0);
+  fvec3 _specularColor            = fvec3(1, 1, 1);
+  fvec3 _attenuationColor         = fvec3(1, 1, 1);
+  fvec3 _diffuseTransmissionColor = fvec3(1, 1, 1);
+  float _clearcoatRoughness       = 0.0f;
+  float _sheenRoughness           = 0.0f;
+  float _attenuationDistance      = 1.0f;   // +Inf in spec; finite here
+
+  // PBR2 Phase 3 (P3.D) — KHR_materials_subsurface (in-flight ext).
+  // Screen-space separable subsurface scattering. radius is per-channel
+  // (mm); skin baseline = (1.4, 0.5, 0.3).
+  bool  _hasSubsurface     = false;
+  fvec3 _subsurfaceColor   = fvec3(1, 1, 1);
+  fvec3 _subsurfaceRadius  = fvec3(1, 1, 1);
+  float _subsurfaceFactor  = 0.0f;
 
   bool _stereoVtex = false;
   bool _doubleSided = false;

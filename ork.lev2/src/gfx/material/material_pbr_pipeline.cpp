@@ -315,6 +315,42 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipeline(const FxPipelinePermutation& per
       pipeline->bindParam(mtl->_parMetallicFactor, mtl->_metallicFactor);
       pipeline->bindParam(mtl->_parRoughnessFactor, mtl->_roughnessFactor);
       pipeline->bindParam(mtl->_parAlphaCutoff, mtl->_alphaCutoff);
+
+      // PBR2 Phase 1 — 8 glTF KHR-extension lobes. bindParam tolerates
+      // nullptr handles (older shaders / non-PBR pipelines that don't
+      // expose these uniforms just skip). Flags default 0 so shader-side
+      // libblocks short-circuit and disabled-lobe cost is one int compare.
+      pipeline->bindParam(mtl->_parHasTransmission,           int(mtl->_hasTransmission ? 1 : 0));
+      pipeline->bindParam(mtl->_parTransmissionFactor,        mtl->_transmissionFactor);
+      pipeline->bindParam(mtl->_parHasIor,                    int(mtl->_hasIor ? 1 : 0));
+      pipeline->bindParam(mtl->_parIor,                       mtl->_ior);
+      pipeline->bindParam(mtl->_parHasVolume,                 int(mtl->_hasVolume ? 1 : 0));
+      pipeline->bindParam(mtl->_parVolumeThicknessFactor,     mtl->_volumeThicknessFactor);
+      pipeline->bindParam(mtl->_parHasDiffuseTransmission,    int(mtl->_hasDiffuseTransmission ? 1 : 0));
+      pipeline->bindParam(mtl->_parDiffuseTransmissionFactor, mtl->_diffuseTransmissionFactor);
+      pipeline->bindParam(mtl->_parHasSpecular,               int(mtl->_hasSpecular ? 1 : 0));
+      pipeline->bindParam(mtl->_parSpecularFactor,            mtl->_specularFactor);
+      pipeline->bindParam(mtl->_parHasClearcoat,              int(mtl->_hasClearcoat ? 1 : 0));
+      pipeline->bindParam(mtl->_parClearcoatFactor,           mtl->_clearcoatFactor);
+      pipeline->bindParam(mtl->_parHasSheen,                  int(mtl->_hasSheen ? 1 : 0));
+      pipeline->bindParam(mtl->_parSheenFactor,               mtl->_sheenFactor);
+      pipeline->bindParam(mtl->_parHasIridescence,            int(mtl->_hasIridescence ? 1 : 0));
+      pipeline->bindParam(mtl->_parIridescenceFactor,         mtl->_iridescenceFactor);
+
+      // PBR2 Phase 2 — vec3 color + secondary scalar uniforms.
+      pipeline->bindParam(mtl->_parSheenColor,                mtl->_sheenColor);
+      pipeline->bindParam(mtl->_parSpecularColor,             mtl->_specularColor);
+      pipeline->bindParam(mtl->_parAttenuationColor,          mtl->_attenuationColor);
+      pipeline->bindParam(mtl->_parDiffuseTransmissionColor,  mtl->_diffuseTransmissionColor);
+      pipeline->bindParam(mtl->_parClearcoatRoughness,        mtl->_clearcoatRoughness);
+      pipeline->bindParam(mtl->_parSheenRoughness,            mtl->_sheenRoughness);
+      pipeline->bindParam(mtl->_parAttenuationDistance,       mtl->_attenuationDistance);
+
+      // PBR2 Phase 3 (P3.D) — subsurface scattering.
+      pipeline->bindParam(mtl->_parHasSubsurface,             int(mtl->_hasSubsurface ? 1 : 0));
+      pipeline->bindParam(mtl->_parSubsurfaceColor,           mtl->_subsurfaceColor);
+      pipeline->bindParam(mtl->_parSubsurfaceRadius,          mtl->_subsurfaceRadius);
+      pipeline->bindParam(mtl->_parSubsurfaceFactor,          mtl->_subsurfaceFactor);
     }
 
     pipeline->_parInstanceBlock = mtl->_parInstanceBlock;

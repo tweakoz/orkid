@@ -358,36 +358,8 @@ dvb_V16T16C16_ptr_t GfxEnv::GetSharedDynamicV16T16C16() {
 // Deferred Context Operations Implementation
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxEnv::enqueueDeferredContextOp(ctx_lambda_t op) {
-  using defctx_opq_t = std::queue<ctx_lambda_t>;
-  _deferredContextOps.atomicOp([op](defctx_opq_t& unlocked) { unlocked.push(op); });
-}
-
-void GfxEnv::processDeferredContextOps(context_rawptr_t ctx) {
-  using defctx_opq_t = std::queue<ctx_lambda_t>;
-  _deferredContextOps.atomicOp([ctx](defctx_opq_t& unlocked) {
-    while (!unlocked.empty()) {
-      auto op = unlocked.front();
-      unlocked.pop();
-      op(ctx);
-    }
-  });
-}
-
-bool GfxEnv::hasDeferredContextOps() const {
-  using defctx_opq_t = std::queue<ctx_lambda_t>;
-  bool has = false;
-  _deferredContextOps.atomicOp([&has](const defctx_opq_t& unlocked) {
-    has = !unlocked.empty();
-  });
-  return has;
-}
-
-void GfxEnv::waitForDeferredContextOps() {
-  while (hasDeferredContextOps()) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-  }
-}
+// Deferred-op machinery moved to Context (Phase 6.3 Variant B). See
+// Context::enqueueDeferredOp / processDeferredOps in gfxctx.cpp.
 
 ///////////////////////////////////////////////////////////////////////////////
 
