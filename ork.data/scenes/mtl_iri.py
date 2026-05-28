@@ -42,8 +42,11 @@ class IridescenceScene(Scene):
 
     sphere_sdf = self.asset.SphereSdf("sphere_sdf", radius=2.0)
 
-    base_color = vec4(0.3,0.3,0.3, 1.0)
-    base_rough = 0.15  # smooth — sharper reflection makes hue shift visible
+    base_color = vec4(0.0,0.0,0.0, 1.0)
+    base_rough = 0.55  # smooth — sharper reflection makes hue shift visible
+    trans_factor  = 0.95
+    trans_ruf     = 0.0
+    ior           = 1.01
 
     def make_drawable(name, mat):
       return self.asset.VdbGridToDrawable(name, grid=sphere_sdf, material=mat, iso=0.0)
@@ -60,8 +63,13 @@ class IridescenceScene(Scene):
 
     mat_full = self.asset.PbrMaterial(
         "irid_mat_full",
-        base_color = base_color, metallic = 0.0, roughness = base_rough,
-        iridescence_factor = 0.25)
+        base_color = base_color, 
+        metallic = 0.0, 
+        roughness = base_rough,
+        transmission_factor    = trans_factor,
+        transmission_roughness = trans_ruf,
+        ior                    = ior,
+        iridescence_factor     = 0.25)
 
     self.entity("sphere_irid_off",
       transform=Transform(translation=vec3(-5.5, 0, 0)),
