@@ -129,6 +129,13 @@ public:
   // these onto the live PBRMaterial.
   bool  _has_transmission           = false;
   float _transmission_factor        = 0.0f;
+  // P3.D — separate transmission roughness (beyond glTF spec; Filament-style).
+  // When _has_transmission_roughness=false, the lobe falls back to the BRDF
+  // _roughness. When true, _transmission_roughness drives the refracted env
+  // sample's mip level independently — letting authors keep a sharp front
+  // BRDF but get a soft / frosted refraction (or vice versa).
+  bool  _has_transmission_roughness = false;
+  float _transmission_roughness     = 0.0f;
   bool  _has_ior                    = false;
   float _ior                        = 1.5f;
   bool  _has_volume                 = false;

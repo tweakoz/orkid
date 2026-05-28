@@ -679,6 +679,7 @@ class PbrMaterial:
   # pass `has_<lobe>=False` to force-disable.
   _LOBE_KWARGS = (
     "has_transmission", "transmission_factor",
+    "has_transmission_roughness", "transmission_roughness",
     "has_ior", "ior",
     "has_volume", "volume_thickness_factor",
     "has_diffuse_transmission", "diffuse_transmission_factor",

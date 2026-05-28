@@ -61,6 +61,8 @@ void PbrMaterialGenData::describeX(object::ObjectClass* clazz) {
   // PBR2 Phase 2 — 8 glTF KHR-extension lobes.
   clazz->directProperty("has_transmission",            &PbrMaterialGenData::_has_transmission);
   clazz->directProperty("transmission_factor",         &PbrMaterialGenData::_transmission_factor);
+  clazz->directProperty("has_transmission_roughness",  &PbrMaterialGenData::_has_transmission_roughness);
+  clazz->directProperty("transmission_roughness",      &PbrMaterialGenData::_transmission_roughness);
   clazz->directProperty("has_ior",                     &PbrMaterialGenData::_has_ior);
   clazz->directProperty("ior",                         &PbrMaterialGenData::_ior);
   clazz->directProperty("has_volume",                  &PbrMaterialGenData::_has_volume);

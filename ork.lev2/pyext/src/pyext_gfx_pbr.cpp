@@ -366,6 +366,8 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
                 [](pbrmaterial_ptr_t m, fvec3 v) { m->member = v; })
           _PBR2_LOBE_PROP_BOOL("has_transmission",            _hasTransmission)
           _PBR2_LOBE_PROP_FLOAT("transmission_factor",        _transmissionFactor)
+          _PBR2_LOBE_PROP_BOOL("has_transmission_roughness",  _hasTransmissionRoughness)
+          _PBR2_LOBE_PROP_FLOAT("transmission_roughness",     _transmissionRoughness)
           _PBR2_LOBE_PROP_BOOL("has_ior",                     _hasIor)
           _PBR2_LOBE_PROP_FLOAT("ior",                        _ior)
           _PBR2_LOBE_PROP_BOOL("has_volume",                  _hasVolume)

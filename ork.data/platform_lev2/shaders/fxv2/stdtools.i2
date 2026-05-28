@@ -113,7 +113,13 @@ uniform_block ublk_pbr_state(descriptor_set 0) {
 ///////////////////////////////////////////////////////////////
 uniform_block ublk_pbr_transmission(descriptor_set 0) {
   float transmission_factor;
+  // P3.D — separate roughness for the refracted env sample. When
+  // has_transmission_roughness is 0, the lobe falls back to surf.roughness
+  // (glTF spec behavior). When set, surf.transmission_roughness drives
+  // the mip level of env_cube_spec_wbias independently of the BRDF roughness.
+  float transmission_roughness;
   int   has_transmission;
+  int   has_transmission_roughness;
 }
 ///////////////////////////////////////////////////////////////
 uniform_block ublk_pbr_ior(descriptor_set 0) {

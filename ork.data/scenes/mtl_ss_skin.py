@@ -59,7 +59,7 @@ class SubsurfaceScene(Scene):
     #     visible effect at typical strength = subtle warm halo at silhouettes,
     #     not the dominant material look
     base_color  = vec4(0.5,0.5,0.5,1)   # warm flesh
-    base_rough  = 0.95
+    base_rough  = 0.85
     skin_radius = vec3(0.50, 0.20, 0.10)*5.1        # m; R bleeds farthest
     skin_tint   = vec3(1.00, 0.65, 0.55)        # soft warm pink
 
@@ -84,9 +84,11 @@ class SubsurfaceScene(Scene):
         base_color        = base_color,
         metallic          = 0.0,
         roughness         = base_rough,
+        diffuse_transmission_factor = 0.25,
+        diffuse_transmission_color  = skin_tint,
         subsurface_color  = skin_tint,
         subsurface_radius = skin_radius,
-        subsurface_factor = 1.0)
+        subsurface_factor = 0.75)
 
     self.entity("sphere_sss_off",
       transform=Transform(translation=vec3(-5.5, 0, 0)),

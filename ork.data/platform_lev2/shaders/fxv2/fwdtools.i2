@@ -74,10 +74,14 @@ libblock lib_fwd_impl : lib_math //
     // Transmission / IOR / volume
     surf.ior                    = (has_ior != 0) ? ior_value : 1.5;
     surf.transmission_factor    = transmission_factor;
+    // P3.D — transmission_roughness falls back to BRDF roughness when unset.
+    surf.transmission_roughness = (has_transmission_roughness != 0)
+                                    ? transmission_roughness : surf.roughness;
     surf.attenuation_color      = attenuation_color;
     surf.attenuation_distance   = attenuation_distance;
     surf.volume_thickness_factor = volume_thickness_factor;
     surf.has_transmission       = has_transmission;
+    surf.has_transmission_roughness = has_transmission_roughness;
     surf.has_ior                = has_ior;
     surf.has_volume             = has_volume;
     // Sheen

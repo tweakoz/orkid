@@ -49,16 +49,19 @@ libblock lib_pbr_transmission
     vec3 refr = refract(-st._V, st._N, 1.0 / ior_eff);
     // Total internal reflection guard (refract returns vec3(0) on TIR).
     if (dot(refr, refr) < 1e-6) return st;
-    // Sample env at slice 0 (sharp). The orkid env convention wants
-    // the negated refracted direction passed to env_equirectangular_spec_wbias.
-    // env_cube_spec_wbias applies the cube/equi axis-convention delta so
-    // the same world direction works for both paths.
+    // P3.D — sample env at a mip level driven by surf.transmission_roughness.
+    // build_surface falls that back to surf.roughness when the material
+    // didn't authore a separate transmission_roughness override, so
+    // glTF-default materials get roughness-driven blur for free; opt-in
+    // materials get an independent knob for art-directable rough glass.
+    float t_mip = (surf.transmission_roughness * surf.transmission_roughness)
+                  * (RoughnessLevels - 1.0);
     vec3 env_refr;
     if (has_reflection_probe != 0) {
-      env_refr = env_cube_spec_wbias(-refr, reflectionPROBE, 0.0) * SkyboxLevel;
+      env_refr = env_cube_spec_wbias(-refr, reflectionPROBE, t_mip) * SkyboxLevel;
     } else {
       env_refr = env_equirectangular_spec_wbias(-refr, MapSpecularEnv,
-                                                0.0, 0.0) * SkyboxLevel;
+                                                t_mip, 0.0) * SkyboxLevel;
     }
     // Schlick Fresnel with the modulated F0 (post-modulatory). The
     // transmitted portion gets (1-F); reflected portion stays in the

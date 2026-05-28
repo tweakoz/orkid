@@ -322,6 +322,8 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipeline(const FxPipelinePermutation& per
       // libblocks short-circuit and disabled-lobe cost is one int compare.
       pipeline->bindParam(mtl->_parHasTransmission,           int(mtl->_hasTransmission ? 1 : 0));
       pipeline->bindParam(mtl->_parTransmissionFactor,        mtl->_transmissionFactor);
+      pipeline->bindParam(mtl->_parHasTransmissionRoughness,  int(mtl->_hasTransmissionRoughness ? 1 : 0));
+      pipeline->bindParam(mtl->_parTransmissionRoughness,     mtl->_transmissionRoughness);
       pipeline->bindParam(mtl->_parHasIor,                    int(mtl->_hasIor ? 1 : 0));
       pipeline->bindParam(mtl->_parIor,                       mtl->_ior);
       pipeline->bindParam(mtl->_parHasVolume,                 int(mtl->_hasVolume ? 1 : 0));

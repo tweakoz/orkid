@@ -312,6 +312,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   // calls in the lighting lambda tolerate nullptr handles.
   _parHasTransmission           = fxi->parameter(_shader, "has_transmission");
   _parTransmissionFactor        = fxi->parameter(_shader, "transmission_factor");
+  _parHasTransmissionRoughness  = fxi->parameter(_shader, "has_transmission_roughness");
+  _parTransmissionRoughness     = fxi->parameter(_shader, "transmission_roughness");
   _parHasIor                    = fxi->parameter(_shader, "has_ior");
   _parIor                       = fxi->parameter(_shader, "ior_value");
   _parHasVolume                 = fxi->parameter(_shader, "has_volume");

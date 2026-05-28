@@ -106,10 +106,12 @@ typeblock types_def {
     // ---- Transmission / IOR / volume ----
     float ior;
     float transmission_factor;
+    float transmission_roughness;  // P3.D — optional override; falls back to roughness when has_transmission_roughness=0
     vec4  attenuation_color;
     float attenuation_distance;
     float volume_thickness_factor;
     int   has_transmission;
+    int   has_transmission_roughness;
     int   has_ior;
     int   has_volume;
     // ---- Sheen ----

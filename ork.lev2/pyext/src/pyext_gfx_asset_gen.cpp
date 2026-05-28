@@ -191,6 +191,7 @@ void pyinit_gfx_asset_gen(py::module& module_lev2) {
               return kwargs.contains(k) ? kwargs[k].cast<bool>() : fallback;
             };
             d->_transmission_factor         = get_f("transmission_factor",        d->_transmission_factor);
+            d->_transmission_roughness      = get_f("transmission_roughness",     d->_transmission_roughness);
             d->_ior                         = get_f("ior",                        d->_ior);
             d->_volume_thickness_factor     = get_f("volume_thickness_factor",    d->_volume_thickness_factor);
             d->_diffuse_transmission_factor = get_f("diffuse_transmission_factor", d->_diffuse_transmission_factor);
@@ -207,6 +208,8 @@ void pyinit_gfx_asset_gen(py::module& module_lev2) {
             d->_attenuation_distance        = get_f("attenuation_distance",       d->_attenuation_distance);
             d->_has_transmission            = get_b("has_transmission",
                                                     kwargs.contains("transmission_factor"));
+            d->_has_transmission_roughness  = get_b("has_transmission_roughness",
+                                                    kwargs.contains("transmission_roughness"));
             d->_has_ior                     = get_b("has_ior",            kwargs.contains("ior"));
             d->_has_volume                  = get_b("has_volume",         kwargs.contains("volume_thickness_factor"));
             d->_has_diffuse_transmission    = get_b("has_diffuse_transmission",
@@ -269,6 +272,8 @@ void pyinit_gfx_asset_gen(py::module& module_lev2) {
                 [](pbr_material_gendata_ptr_t d, fvec3 v) { d->member = v; })
           _PBR2_GEN_PROP_BOOL("has_transmission",             _has_transmission)
           _PBR2_GEN_PROP_FLOAT("transmission_factor",         _transmission_factor)
+          _PBR2_GEN_PROP_BOOL("has_transmission_roughness",   _has_transmission_roughness)
+          _PBR2_GEN_PROP_FLOAT("transmission_roughness",      _transmission_roughness)
           _PBR2_GEN_PROP_BOOL("has_ior",                      _has_ior)
           _PBR2_GEN_PROP_FLOAT("ior",                         _ior)
           _PBR2_GEN_PROP_BOOL("has_volume",                   _has_volume)

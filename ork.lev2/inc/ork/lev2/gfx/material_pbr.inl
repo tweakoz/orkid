@@ -206,6 +206,8 @@ public:
   // nullptr (fxi->parameter lookup misses are non-fatal).
   fxparam_constptr_t _parHasTransmission           = nullptr;
   fxparam_constptr_t _parTransmissionFactor        = nullptr;
+  fxparam_constptr_t _parHasTransmissionRoughness  = nullptr;
+  fxparam_constptr_t _parTransmissionRoughness     = nullptr;
   fxparam_constptr_t _parHasIor                    = nullptr;
   fxparam_constptr_t _parIor                       = nullptr;
   fxparam_constptr_t _parHasVolume                 = nullptr;
@@ -435,6 +437,10 @@ public:
   // glTF KHR extension spec defaults (intent-preserving when enabled).
   bool  _hasTransmission           = false;
   float _transmissionFactor        = 0.0f;     // KHR_materials_transmission
+  // P3.D — optional separate transmission roughness (beyond glTF spec).
+  // When _hasTransmissionRoughness=false, falls back to _roughnessFactor.
+  bool  _hasTransmissionRoughness  = false;
+  float _transmissionRoughness     = 0.0f;
   bool  _hasIor                    = false;
   float _ior                       = 1.5f;     // KHR_materials_ior (dielectric default)
   bool  _hasVolume                 = false;
