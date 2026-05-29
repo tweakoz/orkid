@@ -95,9 +95,9 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
   loadreq->incrementPartialLoadCount();
 
   auto op = [=](){
-    printf("[VKMT-DBG] op start path<%s> gloadercontext<%p> requesting_ctx<%p>\n",
+    if(0)printf("[VKMT-DBG] op start path<%s> gloadercontext<%p> requesting_ctx<%p>\n",
            asset->_name.c_str(), (void*)gloadercontext.get(), (void*)requesting_ctx);
-    fflush(stdout);
+    //fflush(stdout);
 
       // Use XIRReader to get raw datablocks
     auto xir_data_result = xir::XIRReader::readXirDatablocks(xir_data);
@@ -428,12 +428,12 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
 
     // Phase fully populated with all 4 ops — publish atomically. No race
     // window for the loader thread to pop an empty phase.
-    printf("[VKMT-DBG] op submitting LoadingPhase with 4 ops to gloadercontext<%p>\n",
+    if(0)printf("[VKMT-DBG] op submitting LoadingPhase with 4 ops to gloadercontext<%p>\n",
            (void*)gloadercontext.get());
-    fflush(stdout);
+    //fflush(stdout);
     gloadercontext->submitLoadingPhase(loading_phase);
-    printf("[VKMT-DBG] op end path<%s>\n", asset->_name.c_str());
-    fflush(stdout);
+    if(0)printf("[VKMT-DBG] op end path<%s>\n", asset->_name.c_str());
+    //fflush(stdout);
 
     if(0)printf("XIR asset<%p> irrmaps<%p> dtex<%p> stexarray<%p> roughness_levels<%d>\n",
            (void*) asset.get(), (void*) irrmaps.get(),

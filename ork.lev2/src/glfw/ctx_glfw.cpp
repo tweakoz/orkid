@@ -499,7 +499,7 @@ void CtxGLFW::Show() {
 
     auto global = globalOffscreenContext();
 
-    logchan_glfw->log("glfwCreateWindow _width<%d> _height<%d>", _width, _height);
+    //logchan_glfw->log("glfwCreateWindow _width<%d> _height<%d>", _width, _height);
 
     // Set window hints for offscreen mode to prevent focus stealing
     if (_appinitdata->_offscreen) {
@@ -907,7 +907,7 @@ GLFWwindow* CtxGLFW::_apiInitVK() {
       "",      //
       nullptr, //
       nullptr);
-  logchan_glfw->log("VK: offscreen_window<%p>", offscreen_window);
+  //logchan_glfw->log("VK: offscreen_window<%p>", offscreen_window);
   // Reset hints for future windows
   glfwWindowHint(GLFW_FOCUSED, GLFW_TRUE);
   glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
@@ -955,7 +955,7 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
           auto procAddr = (PFN_vkGetInstanceProcAddr)dlsym(h, "vkGetInstanceProcAddr");
           if (procAddr) {
             glfwInitVulkanLoader(procAddr);
-            logchan_glfw->log("Initialized GLFW Vulkan loader from: %s", vk_path.c_str());
+            //logchan_glfw->log("Initialized GLFW Vulkan loader from: %s", vk_path.c_str());
           } else {
             logchan_glfw->log("WARNING: dlsym vkGetInstanceProcAddr failed: %s", dlerror());
           }

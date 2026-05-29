@@ -18,6 +18,7 @@ ImplementReflectionX(ork::lev2::ParticleSystemGenData,    "ParticleSystemGenData
 ImplementReflectionX(ork::lev2::HdriToXirGenData,         "HdriToXirGenData");
 ImplementReflectionX(ork::lev2::VdbFileSdfGenData,        "VdbFileSdfGenData");
 ImplementReflectionX(ork::lev2::MeshSdfGenData,           "MeshSdfGenData");
+ImplementReflectionX(ork::lev2::MeshGenData,              "MeshGenData");
 
 namespace ork::lev2 {
 
@@ -138,6 +139,13 @@ void MeshSdfGenData::describeX(object::ObjectClass* clazz) {
   clazz->directProperty("voxel_size", &MeshSdfGenData::_voxel_size);
   clazz->directProperty("half_width", &MeshSdfGenData::_half_width);
   clazz->directProperty("grid_name",  &MeshSdfGenData::_grid_name);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void MeshGenData::describeX(object::ObjectClass* clazz) {
+  clazz->directProperty("geometry_path",       &MeshGenData::_geometry_path);
+  clazz->directProperty("material_asset_name", &MeshGenData::_material_asset_name);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

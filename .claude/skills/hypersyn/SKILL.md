@@ -285,6 +285,88 @@ class Ptex3d(HyperSynFamily):
         return self._graph
 ```
 
+## Author helpers
+
+Universal vocabulary used across all family examples. These are not family-specific; they live at `ork.hypergraph.*` (above the per-family namespaces) and produce values that drop into any DSL slot expecting a color, transform, or material.
+
+### Colors — `ork.hypergraph.colors`
+
+Four color constructors, all returning a `_LazyColor` subclass that auto-coerces to `vec3` or `vec4` at the consumption slot. Material dispatchers recognize them and convert per-field; other code calls `.to_vec3()` / `.to_vec4()` explicitly. Alpha != 1 fed into a vec3 slot raises `ValueError`.
+
+```python
+from ork.hypergraph import hsv, wavelength, colortemp, colors
+
+base_color       = hsv(0,   1.0, 1.0)        # HSV: hue in degrees [0,360], s/v in [0,1]
+base_color       = hsv(0,   1.0, 1.0, 0.5)   # vec4 with alpha
+subsurface_color = hsv(20,  0.6, 1.0)        # → vec3 (alpha defaults to 1)
+
+laser_red        = wavelength(650)           # visible-spectrum monochromatic, nm
+laser_green      = wavelength(532)
+sodium_yellow    = wavelength(589)           # streetlamp / sodium-D line
+
+candle           = colortemp(1900)           # black-body Kelvin, [1000, 40000]
+tungsten         = colortemp(3200)
+daylight_D65     = colortemp(6500)
+overcast_sky     = colortemp(10000)
+
+car_paint        = colors.ruby               # named palette (64 entries)
+oak_table        = colors.oak1
+horizon_sky      = colors.skyblue1
+```
+
+**Spectrum reference** (for `wavelength(nm)`): 405 violet laser, 450 blue, 532 green laser, 555 peak photopic green, 589 sodium-D yellow, 650 red laser. Returns black outside ~380-780 nm.
+
+**Temperature reference** (for `colortemp(k)`): 1900 K candle, 2800 K incandescent bulb, 3200 K tungsten/halogen, 5500 K noon daylight, 6500 K D65 monitor white, 10000 K cool overcast / open shade.
+
+**Palette** (for `colors.<name>`): primaries (red/green/blue/yellow/cyan/magenta/orange/purple/pink/lime/teal/indigo), neutrals (white/black/gray/lightgray/darkgray/charcoal/cream/tan), skin tones (skin1..skin6, light→dark), wood (oak1/oak2/mahogany/birch), stone (granite/marble/slate/jade/ruby/sapphire), plants (leaf1/leaf2/grass/moss/sage/autumn), sky/water (skyblue1=horizon / skyblue2=zenith / sunset/dawn/fog/ocean/lagoon/lake), metals (gold/silver/copper/brass/iron/rust), fire/warm (ember/flame/terracotta/coral), misc (chocolate/wine/lavender/salmon).
+
+### Transforms — `ork.hypergraph.ecs.scene`
+
+Two equivalent forms. The dict form maps `lev2.Transform` field-for-field; the kwargs form is the same fields as Python keyword arguments. Both are accepted everywhere a transform is expected (`Scene.entity(...)`, `Scene.spawner(...)`).
+
+```python
+from ork.hypergraph import Transform, axis_angle
+from orkengine.core import vec3
+import math
+
+# kwargs form
+xf = Transform(translation=vec3(-5.5, 0, 0))
+
+# equivalent dict form — passed directly to entity/spawner
+self.entity("statue",
+    transform={"translation": vec3(-5.5, 0, 0),
+               "orientation": axis_angle(vec3(0, 1, 0), math.pi/4),
+               "scale": 1.5},
+    components=[...])
+```
+
+**`axis_angle(axis, angle)`** is a thin alias for `quat.createFromAxisAngle` — short name reads better inside transform dicts than the long static-method form.
+
+### PbrMaterial — dual-form authoring (`ork.hypergraph.asset_core.material.pbr`)
+
+Two equivalent forms for the same material — flat (LLM-friendly, glTF-aligned long names) and nested (human-friendly, mirrors glTF JSON structure). Mixing forms across different lobes is allowed; mixing within one lobe is rejected with a clear error.
+
+```python
+# Flat form — preferred when generating from glTF importers or LLM-authored code
+PbrMaterial("jade",
+    base_color = colors.marble,
+    subsurface_color = colors.jade, subsurface_factor = 1.0,
+    transmission_factor = 0.15, transmission_roughness = 0.3, ior = 1.55)
+
+# Nested form — preferred when writing by hand (visual grouping)
+PbrMaterial("jade",
+    base = {"color": colors.marble, "roughness": 0.85},
+    subsurface = {"color": colors.jade, "factor": 1.0,
+                  "radius": vec3(0.15, 0.55, 0.05)},
+    transmission = {"factor": 0.15, "roughness": 0.3},
+    ior = 1.55,
+    volume = {"attenuation_color": colors.jade, "attenuation_distance": 1.0})
+```
+
+**TypedDicts per lobe** (`BaseLobe`, `TransmissionLobe`, `VolumeLobe`, `DiffuseTransmissionLobe`, `SpecularLobe`, `ClearcoatLobe`, `SheenLobe`, `IridescenceLobe`, `SubsurfaceLobe`) declare the closed inner-key vocabulary so IDEs and type checkers can complete and validate keys. The `_NESTED_LOBES` mapping table drives the flat→nested translation with explicit remap rules for fields that don't take a lobe-name prefix (volume's `attenuation_*` fields, base's `color` → `base_color`).
+
+`hsv`/`wavelength`/`colortemp` values auto-coerce per-slot through `PbrMaterial._coerce_hsv` (`isinstance(value, _LazyColor)` check). The same dispatcher pattern applies to any future material-like wrapper.
+
 ## Authoring examples
 
 ### Particles (test bed for the DSL pattern; runtime exists)

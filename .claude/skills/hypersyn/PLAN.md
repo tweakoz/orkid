@@ -12,7 +12,7 @@ The implementation status of each component is the source of truth; when in doub
 | `ork::lev2::particle` family on dataflow | implemented | `ork.lev2/{inc,src}/ork/lev2/gfx/particle/` |
 | Python imperative graph construction | implemented | `ork.core/pyext/pyext_dataflow.cpp` |
 | **`ork.hypergraph` Python namespace + asset taxonomy** | **implemented** | `obt.project/scripts/ork/hypergraph/` — see "Namespace layout" section below |
-| **Author-helper utilities** (`hsv()`, `colors` palette, `axis_angle()`, dict-form transforms, nested-form material lobes + TypedDicts) | **implemented** | `obt.project/scripts/ork/hypergraph/colors.py`, `obt.project/scripts/ork/hypergraph/ecs/scene/__init__.py`, `obt.project/scripts/ork/hypergraph/ecs/scene/assets.py` |
+| **Author-helper utilities** (`hsv()` / `wavelength()` / `colortemp()`, `colors` palette, `axis_angle()`, dict-form transforms, nested-form material lobes + TypedDicts) | **implemented** | `obt.project/scripts/ork/hypergraph/colors.py`, `obt.project/scripts/ork/hypergraph/ecs/scene/__init__.py`, `obt.project/scripts/ork/hypergraph/ecs/scene/assets.py` |
 | Runtime hardening (cycle detect, fanout, type check, required, codec-generic setter, MaterializationPhase) | **planned (M0)** | `ork.core/src/dataflow/dataflow_sorter.cpp`, `graph_data.cpp`, `pyext_dataflow.cpp`, `ork.core/inc/ork/dataflow/module.h` |
 | `dflow.dsl` tracing core (trace context, DslNode, Expr, bindings) | **partially implemented (M1.A)** | `obt.project/scripts/ork/hypergraph/dflow/_trace.py`, `_expr.py`, `_bindings.py`, `_lower.py` — core trace + DslNode + Expr + bindings staging all in place; the `dsl/` introspection package (registry, OpInfo, examples API) is M1.B and not yet built |
 | `particles` DSL vocab (test bed) | **partially implemented (M1.A)** | `obt.project/scripts/ork/hypergraph/dflow/particles/` — `ParticleSystem` family base + 22 `chain_op`-based ops covering emitters/forces/attractors/renderers/colliders. **Pending M1.B**: `@op` decorator, registry, `OpInfo`/`PlugSpec`/`ExampleInfo`, source provenance, multi-output op support, examples-per-family directory + indexing |
@@ -76,8 +76,13 @@ These are the ergonomic primitives sitting between the orkengine bindings and th
 
 ### Color (`ork.hypergraph.colors`)
 
-- **`hsv(h, s, v, a=1.0)`** — lazy HSV color. Auto-coerces to vec3 or vec4 at the consumption slot. Hue in degrees [0, 360], s/v/a in [0, 1]. Assertion if `a != 1` and feeding a vec3 slot.
-- **`colors`** — 64-name palette as `_Hsv` instances: primaries/secondaries (12), neutrals (8), skin tones (skin1..skin6, light→dark), wood (oak1/oak2/mahogany/birch), stone (granite/marble/slate/jade/ruby/sapphire), plants (leaf1/leaf2/grass/moss/sage/autumn), sky/water (skyblue1/skyblue2/sunset/dawn/fog/ocean/lagoon/lake), metals (gold/silver/copper/brass/iron/rust), fire/warm (ember/flame/terracotta/coral), misc (chocolate/wine/lavender/salmon). Used as `colors.oak1`, `colors.skyblue1`, etc. Each entry auto-coerces same as `hsv()`.
+All four constructors below return a `_LazyColor` subclass (`_Hsv`, `_Wavelength`, `_ColorTemp`, or the palette-backing form) that auto-coerces to vec3 or vec4 at the consumption slot. The PbrMaterial dispatcher does it automatically per the field-name registry; other code calls `.to_vec3()` / `.to_vec4()` explicitly. Alpha != 1 fed to a vec3 slot raises `ValueError`.
+
+- **`hsv(h, s, v, a=1.0)`** — HSV-constructed color. Hue in degrees [0, 360], s/v/a in [0, 1].
+- **`wavelength(nm, a=1.0)`** — visible-spectrum monochromatic color via Dan Bruton's piecewise approximation + edge intensity falloff + gamma 0.8. Useful reference points: 405 nm violet laser, 450 nm blue, 532 nm green laser, 555 nm peak photopic, 589 nm sodium-D (streetlamp yellow), 650 nm red laser. Outside ~380-780 nm returns black.
+- **`colortemp(k, a=1.0)`** — black-body color temperature via Tanner Helland's algorithm. Clamped to [1000, 40000] K. Reference points: 1900 K candle flame, 3200 K tungsten/halogen, 5500 K noon daylight, 6500 K D65 monitor white, 10000 K cool overcast.
+- **`colors`** — 64-name palette as `_Hsv` instances: primaries/secondaries (12), neutrals (8), skin tones (skin1..skin6, light→dark), wood (oak1/oak2/mahogany/birch), stone (granite/marble/slate/jade/ruby/sapphire), plants (leaf1/leaf2/grass/moss/sage/autumn), sky/water (skyblue1/skyblue2/sunset/dawn/fog/ocean/lagoon/lake), metals (gold/silver/copper/brass/iron/rust), fire/warm (ember/flame/terracotta/coral), misc (chocolate/wine/lavender/salmon). Used as `colors.oak1`, `colors.skyblue1`, etc.
+- **`_LazyColor`** — common base class. PbrMaterial dispatcher uses `isinstance(value, _LazyColor)` so all four producers are picked up uniformly.
 - **`_PBR_VEC3_FIELDS` / `_PBR_VEC4_FIELDS`** — registry used by `PbrMaterial._coerce_hsv` for slot→type dispatch. Updated when new reflected color fields land on materials.
 
 ### Transform (`ork.hypergraph.ecs.scene`)

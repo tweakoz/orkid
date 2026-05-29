@@ -204,7 +204,7 @@ void pyinit_json_config(py::module& module_core);
 
 PYBIND11_MODULE(_core, module_core) {
 
-  logger()->defaultChannel()->log("initialize ork.core python bindings");
+  //logger()->defaultChannel()->log("initialize ork.core python bindings");
   module_core.doc() = "Orkid Core Library (math,kernel,reflection,ect..)";
   /////////////////////////////////////////////////////////////////////////////////
   module_core.def("coreappinit", &_coreappinit); // legacy name

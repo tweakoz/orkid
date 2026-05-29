@@ -17,7 +17,7 @@
 
 namespace ork::ecs {
 
-static logchannel_ptr_t logchan_event_OK = logger()->configureChannel("ecs.controller",fvec3(0.7,0.7,0));
+static logchannel_ptr_t logchan_event_OK = logger()->getChannel("ecs.controller");
 static logchannel_ptr_t logchan_event_ERR = logger()->configureChannel("ecs.controller.ERR",fvec3(1,0,0));
 
 ///////////////////////////////////////////////////////////////////////////////

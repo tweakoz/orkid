@@ -601,7 +601,7 @@ void OrkEzApp::_initForSubsystems() {
     if (!subsystem->hasParent()) {
       root_subsystems.push_back(subsystem);
     } else {
-      logchan_ezapp->log("  %s is a child (parent: %s), will be initialized by parent",
+      if(0)logchan_ezapp->log("  %s is a child (parent: %s), will be initialized by parent",
                          name.c_str(), subsystem->parent()->_name.c_str());
     }
   }
@@ -609,7 +609,7 @@ void OrkEzApp::_initForSubsystems() {
   // Initialize root subsystems in dependency order using shared utility
   initSubsystemsInOrder(root_subsystems);
 
-  logchan_ezapp->log("HFSM subsystems registered and initialized");
+  if(0)logchan_ezapp->log("HFSM subsystems registered and initialized");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1127,7 +1127,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
     auto vrdev = ork::lev2::orkidvr::device();
     if (vrdev) {
       vrdev->_scan_out_predictor = context->getScanoutPredictor();
-      logchan_ezapp->log("Setting gfx context<%p> to vrdevice<%p>.", (void*)context, (void*)vrdev.get());
+      //logchan_ezapp->log("Setting gfx context<%p> to vrdevice<%p>.", (void*)context, (void*)vrdev.get());
     }
 
     context->beginPrimaryCommandBuffer();

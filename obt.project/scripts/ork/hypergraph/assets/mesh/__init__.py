@@ -1,2 +1,4 @@
 from .hollow_funnel import HollowFunnelMesh
-__all__ = ["HollowFunnelMesh"]
+from .icosphere     import IcoSphere
+from .uvsphere      import UvSphere
+__all__ = ["HollowFunnelMesh", "IcoSphere", "UvSphere"]

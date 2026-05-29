@@ -548,6 +548,32 @@ void pyinit_gfx_asset_gen(py::module& module_lev2) {
               [](mesh_sdf_gendata_ptr_t d) -> std::string { return d->_grid_name; },
               [](mesh_sdf_gendata_ptr_t d, std::string v) { d->_grid_name = v; });
   type_codec->registerStdCodec<mesh_sdf_gendata_ptr_t>(meshsdf_type);
+
+  ///////////////////////////////////////////////////////////////////////////
+  // MeshGenData — baked triangle geometry. The geometry itself lives in a
+  // sidecar .ogeo chunkfile (referenced by path, not inlined into JSON);
+  // material is referenced by name. Materialize reads the chunkfile back into
+  // a Geometry -> MicroMesh -> RigidPrimitive drawable.
+  ///////////////////////////////////////////////////////////////////////////
+  auto meshgen_type =
+      py::class_<MeshGenData, AssetGenData, mesh_gendata_ptr_t>(
+          module_lev2, "MeshGenData")
+          .def(py::init([](py::kwargs kwargs) {
+            auto d = std::make_shared<MeshGenData>();
+            if (kwargs.contains("geometry_path"))       d->_geometry_path       = kwargs["geometry_path"].cast<std::string>();
+            if (kwargs.contains("material_asset_name")) d->_material_asset_name = kwargs["material_asset_name"].cast<std::string>();
+            if (kwargs.contains("asset_name"))          d->_asset_name          = kwargs["asset_name"].cast<std::string>();
+            return d;
+          }))
+          .def_property(
+              "geometry_path",
+              [](mesh_gendata_ptr_t d) -> std::string { return d->_geometry_path; },
+              [](mesh_gendata_ptr_t d, std::string v) { d->_geometry_path = v; })
+          .def_property(
+              "material_asset_name",
+              [](mesh_gendata_ptr_t d) -> std::string { return d->_material_asset_name; },
+              [](mesh_gendata_ptr_t d, std::string v) { d->_material_asset_name = v; });
+  type_codec->registerStdCodec<mesh_gendata_ptr_t>(meshgen_type);
 }
 
 } // namespace ork::lev2

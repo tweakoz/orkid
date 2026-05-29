@@ -592,7 +592,7 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
   //////////////////////////////
   auto ent = component->GetEntity();
   //////////////////////////////
-  printf("[SGS] stage component<%p>\n", (void*) component);
+  if(0)printf("[SGS] stage component<%p>\n", (void*) component);
   this->_components.atomicOp([this,component](SceneGraphSystem::component_set_t& unlocked) { //
     unlocked.insert(component); 
     _numComponents = unlocked.size();                                                        //
@@ -612,7 +612,7 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
         // light ?
         /////////////////////////////////////////////////
         auto as_light = dynamic_pointer_cast<LightData>(drwdata);
-        printf("[SGS::_onStageComponent] NID name=%s drwdata=%p as_light=%p\n",
+        if(0)printf("[SGS::_onStageComponent] NID name=%s drwdata=%p as_light=%p\n",
                NID->_nodename.c_str(), (void*)drwdata.get(), (void*)as_light.get());
         fflush(stdout);
         if (as_light) {
@@ -628,7 +628,7 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
           nitem->_nodename                      = NID->_nodename;
           nitem->_data                          = NID;
           component->_nodeitems[NID->_nodename] = nitem;
-          printf("[SGS::_onStageComponent] LIGHT INJECTED name=%s scene=%p layer=%p lnode=%p\n",
+          if(0)printf("[SGS::_onStageComponent] LIGHT INJECTED name=%s scene=%p layer=%p lnode=%p\n",
                  NID->_nodename.c_str(),
                  (void*)_scene.get(),
                  (void*)layer.get(),
@@ -928,7 +928,7 @@ bool SceneGraphSystem::_onLink(Simulation* psi) // final
   // skipped silently; names in the map but absent from order are
   // unused (lets you stage-disable a node without removing it).
   /////////////////////////////////////////
-  printf("[SGS::_onLink P3.D] postfx_order=<%s> postfx_nodes.size=%zu\n",
+  if(0)printf("[SGS::_onLink P3.D] postfx_order=<%s> postfx_nodes.size=%zu\n",
          _SGSD._postfx_order.c_str(), _SGSD._postfx_nodes.size());
   fflush(stdout);
   if (!_SGSD._postfx_order.empty() && !_SGSD._postfx_nodes.empty()) {
@@ -953,7 +953,7 @@ bool SceneGraphSystem::_onLink(Simulation* psi) // final
       }
       pos = (comma == std::string::npos) ? buf.size() : (comma + 1);
     }
-    printf("[SGS::_onLink P3.D] assembled PostFxChain size=%zu\n", chain.size());
+    if(0)printf("[SGS::_onLink P3.D] assembled PostFxChain size=%zu\n", chain.size());
     fflush(stdout);
     if (!chain.empty()) {
       varmap::VarMap::value_type val;
@@ -977,10 +977,10 @@ bool SceneGraphSystem::_onLink(Simulation* psi) // final
 
   if (!_scene) {
     _scene = std::make_shared<scenegraph::Scene>(_mergedParams);
-    printf("[SGS::_onStage] this=%p INJECTION FAILED — created new scene=%p\n",
+    if(0)printf("[SGS::_onStage] this=%p INJECTION FAILED — created new scene=%p\n",
            (void*)this, (void*)_scene.get());
   } else {
-    printf("[SGS::_onStage] this=%p using scene=%p (isShared=%d)\n",
+    if(0)printf("[SGS::_onStage] this=%p using scene=%p (isShared=%d)\n",
            (void*)this, (void*)_scene.get(), (int)_isSharedScene);
   }
   fflush(stdout);

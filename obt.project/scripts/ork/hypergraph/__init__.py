@@ -23,7 +23,10 @@
 #   from ork.hypergraph import Scene, Transform, hsv, colors
 ###############################################################################
 
-from ork.hypergraph.colors import hsv, colors
+from ork.hypergraph.colors import hsv, wavelength, colortemp, mix, colors
 from ork.hypergraph.ecs.scene import Scene, Transform, axis_angle, SceneGraphHandle
 
-__all__ = ["Scene", "Transform", "axis_angle", "SceneGraphHandle", "hsv", "colors"]
+__all__ = [
+  "Scene", "Transform", "axis_angle", "SceneGraphHandle",
+  "hsv", "wavelength", "colortemp", "mix", "colors",
+]

@@ -35,7 +35,7 @@ struct MoltenVKConfigurator {
 #endif
 
 namespace ork::lev2::vulkan {
-static logchannel_ptr_t logchan_vkimpl = logger()->configureChannel("VKIMPL", fvec3(1,1,0),true);
+static logchannel_ptr_t logchan_vkimpl = logger()->configureChannel("VKIMPL", fvec3(1,1,0),false);
 static logchannel_ptr_t logchan_vkierr = logger()->configureChannel("VKINSTERR", fvec3(1,0,0),true);
 
 vkinstance_ptr_t _GVI = nullptr;

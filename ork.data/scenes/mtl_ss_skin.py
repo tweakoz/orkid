@@ -29,7 +29,7 @@
 ###############################################################################
 
 from orkengine.core import vec3, vec4, lev2_pyexdir
-from ork.hypergraph.ecs.scene import Scene, Transform
+from ork.hypergraph.ecs.scene import Scene, Transform as XF
 
 lev2_pyexdir.addToSysPath()
 
@@ -91,17 +91,17 @@ class SubsurfaceScene(Scene):
         subsurface_factor = 0.75)
 
     self.entity("sphere_sss_off",
-      transform=Transform(translation=vec3(-5.5, 0, 0)),
+      transform=XF(translation=vec3(-5.5, 0, 0)),
       components=[SG.component(nodes={
         "n": {"drawable": make_drawable("dr_sss_off", mat_off)},
       })])
     self.entity("sphere_sss_half",
-      transform=Transform(translation=vec3(0, 0, 0)),
+      transform=XF(translation=vec3(0, 0, 0)),
       components=[SG.component(nodes={
         "n": {"drawable": make_drawable("dr_sss_half", mat_half)},
       })])
     self.entity("sphere_sss_full",
-      transform=Transform(translation=vec3(+5.5, 0, 0)),
+      transform=XF(translation=vec3(+5.5, 0, 0)),
       components=[SG.component(nodes={
         "n": {"drawable": make_drawable("dr_sss_full", mat_full)},
       })])

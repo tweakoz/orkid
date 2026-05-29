@@ -359,4 +359,37 @@ public:
 
 using mesh_sdf_gendata_ptr_t = std::shared_ptr<MeshSdfGenData>;
 
+///////////////////////////////////////////////////////////////////////////////
+// MeshGenData — generic BAKED-GEOMETRY triangle mesh asset.
+//
+// Unlike ImplicitSdfGenData (which carries a recipe — an AX shader + params —
+// and regenerates its grid at materialize), this carries fully evaluated
+// triangle geometry. The geometry itself is NOT inlined into the reflected
+// JSON (that would bloat the scene with thousands of floats per mesh);
+// instead it is baked to a sidecar geometry chunkfile under the asset cache
+// (analogous to HdriToXir's .xir), and only the PATH to that chunkfile is
+// reflected here. The chunkfile is written from Python at author time and
+// read back in C++ at materialize/load time (see meshutil mesh-geometry
+// chunk codec).
+//
+// Material is referenced BY NAME (same convention as VdbGridToDrawableGenData):
+// the live PBRMaterial isn't reflected, so the Python wrapper captures the
+// material asset's name and the materializer resolves it from the in-progress
+// artifact dict at load time.
+///////////////////////////////////////////////////////////////////////////////
+
+struct MeshGenData : public AssetGenData {
+  DeclareConcreteX(MeshGenData, AssetGenData);
+
+public:
+  MeshGenData()           = default;
+  ~MeshGenData() override = default;
+
+  // Path to the baked geometry chunkfile (positions/normals/binormals/indices).
+  std::string _geometry_path;
+  std::string _material_asset_name;
+};
+
+using mesh_gendata_ptr_t = std::shared_ptr<MeshGenData>;
+
 } // namespace ork::lev2

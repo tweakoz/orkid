@@ -24,11 +24,21 @@
 #     is expected to supply a default-configured SG anyway)
 ###############################################################################
 
+import types
+
 from orkengine import lev2
 from orkengine.core import vec3, vec4
 from orkengine.core import Transform as _CoreTransform
 
 from ork.hypergraph.ecs.scene.assets import _ASSET_REGISTRY, _materialize as _materialize_asset
+
+# Trigger registration of every concrete-named asset wrapper that physically
+# lives in ork.hypergraph.assets/<category>/<name>.py (post-refactor location
+# for new wrappers; the asset_core/* shims still point back to assets.py for
+# the older 12 classes). Each `@_register` decorator fires on module load
+# and appends to _ASSET_REGISTRY — Scene._AUTHOR_GLOBALS picks them up at
+# the bottom of this file.
+import ork.hypergraph.assets  # noqa: F401  side-effect: asset registration
 
 
 ###############################################################################
@@ -74,7 +84,8 @@ def _effective_layers(preset, user_layers):
 # `from ork.hypergraph.ecs.scene import hsv, colors` lines stay valid during
 # the migration. New code should import from ork.hypergraph.colors directly.
 from ork.hypergraph.colors import (
-  hsv, colors, _Hsv, _PBR_VEC3_FIELDS, _PBR_VEC4_FIELDS,
+  hsv, wavelength, colortemp, mix, colors,
+  _LazyColor, _Hsv, _PBR_VEC3_FIELDS, _PBR_VEC4_FIELDS,
 )
 
 
@@ -506,12 +517,41 @@ class Scene:
           super().__init__()
           SG = self.scenegraph(preset="ForwardPBR", layers=["std_forward"])
           self.entity("cube",
-            transform=Transform(translation=vec3(0, 0, 0)),
+            transform={"translation": vec3(0, 0, 0)},
             components=[SG.component(nodes={
               "c": {"layer": "std_forward",
                     "drawable": SG.drawables.model("data://tests/pbr_calib.glb")},
             })])
   """
+
+  # Populated at module-bottom (after all asset wrappers are imported and
+  # _ASSET_REGISTRY is fully built). Contains the bare-name vocabulary that
+  # subclass methods see at LOAD_GLOBAL time without polluting their module.
+  _AUTHOR_GLOBALS = None
+
+  def __init_subclass__(cls, **kwargs):
+    """Inject the DSL vocabulary (colors helpers, vec3/4, Transform, axis_angle,
+    every registered asset wrapper) into each method's __globals__ at class
+    creation time. This makes bare-name references work inside Scene-subclass
+    methods *without* polluting the author's module __dict__.
+
+    Mechanism: rebind each function via types.FunctionType with a merged
+    globals dict (helpers first, original module globals on top so explicit
+    author imports always win). The function's __code__ and __closure__ are
+    preserved — super() and existing imports continue to work unchanged."""
+    super().__init_subclass__(**kwargs)
+    helpers = Scene._AUTHOR_GLOBALS
+    if helpers is None:
+      return
+    for attr, val in list(vars(cls).items()):
+      if not isinstance(val, types.FunctionType):
+        continue
+      merged = {**helpers, **val.__globals__}
+      wrapped = types.FunctionType(
+        val.__code__, merged, val.__name__,
+        val.__defaults__, val.__closure__)
+      wrapped.__kwdefaults__ = val.__kwdefaults__
+      setattr(cls, attr, wrapped)
 
   def __init__(self):
     # Pass-1 collections. Python 3.7+ dicts preserve insertion order, which
@@ -812,5 +852,29 @@ __all__ = [
   "axis_angle",
   "SceneGraphHandle",
   "hsv",
+  "wavelength",
+  "colortemp",
   "colors",
 ]
+
+
+# DSL vocabulary surfaced into every Scene subclass's method globals via
+# Scene.__init_subclass__. Populated here (post-class-def) so _ASSET_REGISTRY
+# reflects all wrappers that have been @_register'd by the assets.py import
+# (every PbrMaterial / SphereSdf / VdbGridToDrawable / etc. shows up
+# bare-name to author code with zero imports).
+Scene._AUTHOR_GLOBALS = {
+  # Color constructors + palette
+  "hsv":        hsv,
+  "wavelength": wavelength,
+  "colortemp":  colortemp,
+  "mix":        mix,
+  "colors":     colors,
+  # Math / geometry primitives
+  "vec3":       vec3,
+  "vec4":       vec4,
+  "Transform":  Transform,
+  "axis_angle": axis_angle,
+  # All registered asset wrappers (PbrMaterial, SphereSdf, etc.)
+  **_ASSET_REGISTRY,
+}

@@ -597,6 +597,7 @@ struct ClassToucher {
     RegisterClassX(HdriToXirGenData);
     RegisterClassX(VdbFileSdfGenData);
     RegisterClassX(MeshSdfGenData);
+    RegisterClassX(MeshGenData);
     // RigidPrimitiveDrawableData: header-only struct; its
     // reflection definition lives in rigid_primitive_drawdata.cpp.
     // Touch the class here so the registry knows about it.
@@ -636,7 +637,7 @@ struct Lev2AppInit {
     meshutil::misc_init();    
     registerEnums();
     ///////////////////////////////////////////////////////////////
-    logger()->defaultChannel()->log("initialize OpenVDB....");
+    //logger()->defaultChannel()->log("initialize OpenVDB....");
     /*
     llvm::InitializeAllTargetInfos();
     llvm::InitializeAllTargets();

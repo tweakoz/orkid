@@ -768,7 +768,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               });
             }
             ////////////////////////////////////////////////////////////////////
-            logchan_EZAPP->log("app creation complete app: %p", (void*) rval.get());
+            if(0)logchan_EZAPP->log("app creation complete app: %p", (void*) rval.get());
             return rval;
           })
       ///////////////////////////////////////////////////////

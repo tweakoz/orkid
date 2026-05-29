@@ -476,7 +476,7 @@ Application::Application(appinitdata_ptr_t initdata, bool derived_class_init) {
   // - String pool context creation (if needed)
   // - Subsystem registration (if needed)
 
-  logchan_APP->log("Application(derived_class_init) constructed");
+  //logchan_APP->log("Application(derived_class_init) constructed");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

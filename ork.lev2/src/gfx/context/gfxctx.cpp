@@ -217,9 +217,9 @@ void Context::_loadingPhaseOperations() {
       }
     });
     if (phase) {
-      printf("[VKMT-DBG] _loadingPhaseOperations ctx<%p> popped phase<%p>\n",
+      if(0)printf("[VKMT-DBG] _loadingPhaseOperations ctx<%p> popped phase<%p>\n",
              (void*)this, (void*)phase.get());
-      fflush(stdout);
+      //fflush(stdout);
       // NOTE: this `ops` MUST be a local, not `static`. Multiple contexts
       // drain their own _loadingPhases concurrently (e.g. loader thread on
       // gloadercontext + render thread on its own context), so a static

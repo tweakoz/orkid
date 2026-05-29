@@ -818,11 +818,11 @@ class PbrMaterial:
     """In-place coerce any `hsv(...)` values to vec3 or vec4 based on the
     flat field name. Returns (flat_kwargs, base_color). The base_color
     positional kwarg is special-cased because it isn't in flat_kwargs."""
-    from ork.hypergraph.colors import _Hsv, _PBR_VEC3_FIELDS, _PBR_VEC4_FIELDS
-    if isinstance(base_color, _Hsv):
+    from ork.hypergraph.colors import _LazyColor, _PBR_VEC3_FIELDS, _PBR_VEC4_FIELDS
+    if isinstance(base_color, _LazyColor):
       base_color = base_color.to_vec4()
     for k, v in list(flat_kwargs.items()):
-      if not isinstance(v, _Hsv):
+      if not isinstance(v, _LazyColor):
         continue
       if k in _PBR_VEC4_FIELDS:
         flat_kwargs[k] = v.to_vec4()
@@ -1293,6 +1293,26 @@ def materialize_from_scenedata(scene_data, ctx=None, ezapp=None, material_resolv
     if cn == "HdriToXirGenData":
       wrap = HdriToXir.from_gendata(gen)
       artifacts[gen.asset_name] = wrap.output_path()
+      continue
+    # MeshGenData: baked-geometry mesh drawable. Geometry lives in a sidecar
+    # .ogeo chunkfile (gen.geometry_path); rebuild reads it back. Material is
+    # resolved by name (like VdbGridToDrawable). Late import avoids the
+    # assets <- mesh._common <- asset_core <- assets import cycle.
+    if cn == "MeshGenData":
+      from ork.hypergraph.assets.mesh._common import MeshAsset
+      mat = None
+      if gen.material_asset_name:
+        if gen.material_asset_name not in artifacts:
+          raise KeyError(
+            f"MeshGenData {gen.asset_name!r} references unknown material asset "
+            f"{gen.material_asset_name!r}; declare it earlier")
+        mat = artifacts[gen.material_asset_name]
+      elif material_resolver:
+        mat = material_resolver(gen)
+      if mat is None:
+        continue  # caller opted out for this drawable
+      wrap = MeshAsset.from_gendata(gen, material=mat)
+      artifacts[gen.asset_name] = wrap.build()
       continue
     wrap_cls = _GENDATA_TO_WRAPPER.get(cn)
     if wrap_cls is None:

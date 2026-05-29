@@ -31,7 +31,7 @@
 namespace ork::ecs {
 ///////////////////////////////////////////////////////////////////////////////
 
-static logchannel_ptr_t logchan_simfsm = logger()->configureChannel("ecs.simfsm", fvec3(1.0, 0.9, 0));
+static logchannel_ptr_t logchan_simfsm = logger()->configureChannel("ecs.simfsm", fvec3(1.0, 0.9, 0), false);
 
 struct RootState : public fsm::State {
   RootState(fsm::FsmData* data)
