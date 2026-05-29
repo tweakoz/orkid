@@ -901,6 +901,23 @@ class PbrMaterial:
     inst._ctx = ctx
     return inst
 
+  @property
+  def as_gfx_material(self):
+    """The live PBRMaterial (material_ptr_t), built on first access.
+
+    Read-only property form of _materialize: prefers the factory-cached
+    `.built`, otherwise builds once and caches. build() is non-idempotent
+    (gpuInit uploads GPU buffers), so it must not run twice — hence the cache.
+
+        mat = self.asset.PbrMaterial("m", base_color=..., roughness=0.4)
+        gfxmat = mat.as_gfx_material      # -> live lev2.PBRMaterial
+    """
+    built = getattr(self, "built", None)
+    if built is not None:
+      return built
+    self.built = self.build()
+    return self.built
+
   def build(self):
     d   = self.gendata
     ctx = getattr(self, "_ctx", None) or _lev2.GfxEnv.ref.loadingContext()

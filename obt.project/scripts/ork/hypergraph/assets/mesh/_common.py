@@ -16,8 +16,6 @@ import numpy as np
 from orkengine import lev2 as _lev2
 from orkengine.core import Path as _Path, CrcStringProxy as _Crc
 
-from ork.hypergraph.asset_core import _materialize
-
 _tokens   = _Crc()
 _geocache = None
 
@@ -66,17 +64,17 @@ def build_geometry(verts, tris, normals=None, binormals=None):
 
 
 def _drawable_from_geometry(geo, material):
+  # `material` is a live gfx material (lev2.PBRMaterial) by this point.
+  if material is None:
+    raise RuntimeError("mesh drawable: a material is required")
   ctx  = _lev2.GfxEnv.ref.loadingContext()
   mesh = geo.toMicroMesh()
   prim = _lev2.RigidPrimitive()
   prim.updateWithMicroMesh(mesh, ctx, _tokens.TRIANGLES)
-  mat = _materialize(material)
-  if mat is None:
-    raise RuntimeError("mesh drawable: a material is required")
   # Attach via the material (not a baked pipeline) so the drawable does
   # per-pass technique selection (depth-prepass vs forward); a baked
   # FORWARD_PBR pipeline asserts on unbound PBR_COMMON during the prepass.
-  return prim.createDrawableData(mat)
+  return prim.createDrawableData(material)
 
 
 class MeshAsset:
@@ -91,11 +89,14 @@ class MeshAsset:
   __slots__ = ("gendata", "material", "_geo", "built")
 
   def _init(self, geo, material):
+    # `material` is a PbrMaterial asset wrapper. Capture its asset name (for
+    # the round-trip material reference) and resolve the live gfx material via
+    # the read-only as_gfx_material property.
     mat_name = ""
     if material is not None and hasattr(material, "gendata"):
       mat_name = material.gendata.asset_name or ""
     self.gendata  = _lev2.MeshGenData(material_asset_name=mat_name)
-    self.material = _materialize(material) if material is not None else None
+    self.material = material.as_gfx_material if material is not None else None
     self._geo     = geo
     self.built    = None
 
