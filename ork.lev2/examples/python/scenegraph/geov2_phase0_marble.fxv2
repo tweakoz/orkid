@@ -1,0 +1,162 @@
+///////////////////////////////////////////////////////////////
+// GEOV2 Phase 0 — a CLEAN procedural surface (still hand-authored, no codegen).
+//
+// Polished marble: object-space domain-warped fbm veins, a tasteful palette,
+// low/smooth roughness so the environment IBL does the work. Still driven by
+// the GEOV2 inputs — frg_opos (object space) is the stable pattern coordinate,
+// and `Cd` (frg_clr) subtly tints the base (Cd.w) and tunes vein sharpness
+// (Cd.y) — but tuned to read as a believable material, not a debug pattern.
+// Reuses the stock forward-PBR machine via orkshader:// imports; only the
+// surface fragment is ours.
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default {
+  import "orkshader://mathtools.i2";
+  import "orkshader://misctools.i2";
+  import "orkshader://envtools.i2";
+  import "orkshader://pbrtools.i2";
+  import "orkshader://stdtools.i2";
+  import "orkshader://ssaotools.i2";
+}
+///////////////////////////////////////////////////////////////
+state_block sb_marble : default {
+  CullTest  = PASS_FRONT;
+  DepthTest = LEQUALS;
+  BlendMode = OFF;
+}
+///////////////////////////////////////////////////////////////
+vertex_interface vif_marble : ub_std_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal : NORMAL;
+    vec3 binormal : BINORMAL;
+    vec2 uv0 : TEXCOORD0;
+    vec4 vtxcolor : COLOR0;
+  }
+  outputs {
+    vec4 frg_wpos;
+    vec4 frg_clr;
+    vec2 frg_uv0;
+    mat3 frg_tbn;
+    float frg_camdist;
+    vec3 frg_camz;
+    vec3 frg_opos;
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_interface fif_marble
+  : vif_marble
+  : ub_frg_fwd
+  : storage_fwd_lighting
+  : ss_frg_fwd {
+  outputs {
+    layout(location = 0) vec4 out_clr;
+    layout(location = 1) vec4 out_diffuse;
+  }
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_marble
+  : vif_marble
+  : lib_pbr_vtx
+  : ublk_std_matrices {
+  gl_Position = mvp * position;
+  frg_uv0     = uv0;
+  frg_wpos    = m * position;
+  frg_opos    = position.xyz;
+  frg_clr     = vtxcolor;
+  vec3 wn = normalize(mat3(m) * normal);
+  vec3 wb = normalize(mat3(m) * binormal);
+  vec3 wt = cross(wn, wb);
+  frg_tbn = mat3(wt, wb, wn);
+  frg_camdist = 0.0;
+  frg_camz    = vec3(0, 0, 0);
+}
+///////////////////////////////////////////////////////////////
+libblock lib_marble {
+  // 5-octave fbm over the stock value-noise (lib_mmnoise::noise(vec3))
+  float fbm5(vec3 p) {
+    float v = 0.0, amp = 0.5, fr = 1.0;
+    for (int i = 0; i < 5; i++) {
+      v   += amp * noise(p * fr);
+      amp *= 0.5;
+      fr  *= 2.0;
+    }
+    return v;
+  }
+  // marble vein field at object-space point op (with optional sharpness)
+  float marble_vein(vec3 op, float sharpness) {
+    // gentle domain warp so veins meander
+    vec3 w = vec3(fbm5(op + vec3(11.3)),
+                  fbm5(op + vec3(27.7)),
+                  fbm5(op + vec3(43.1)));
+    vec3 q = op + 0.55 * (w - 0.5);
+    float f = fbm5(q);
+    float s = sin((q.x * 1.4 + f * 2.6) * 3.14159265);
+    return pow(1.0 - abs(s), sharpness);
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_marble_forward
+  : fif_marble
+  : lib_math
+  : lib_brdf
+  : lib_def
+  : lib_fwd
+  : lib_mmnoise
+  : lib_marble
+  : std_forward_all {
+
+  vec3 wnrm = normalize(frg_tbn[2]);
+  vec3 op   = frg_opos * 1.5;          // object-space coord (stable on the mesh)
+
+  float sharp = mix(3.0, 6.0, frg_clr.y);    // Cd.y subtly tunes vein sharpness
+  float vein  = marble_vein(op, sharp);
+
+  // tasteful palette; Cd.w gently warms/cools the base stone
+  vec3 base_cool = vec3(0.86, 0.88, 0.91);
+  vec3 base_warm = vec3(0.92, 0.89, 0.84);
+  vec3 base      = mix(base_cool, base_warm, frg_clr.w);
+  vec3 veincol   = vec3(0.17, 0.19, 0.24);
+  vec3 albedo    = mix(base, veincol, vein * 0.7);
+
+  // polished dielectric: low, smoothly varying roughness — env IBL carries it
+  float lowfreq   = marble_vein(op * 0.35, 2.0);
+  float roughness = mix(0.08, 0.18, lowfreq);
+  float metallic  = 0.0;
+
+  vec3 ambrufmtl = vec3(1.0, roughness, metallic);
+  ShadingResult sr = _forward_lightingZ(
+    ModColor.xyz, albedo, ambrufmtl, vec3(0,0,0), EyePostion, wnrm, false);
+  out_clr     = vec4(sr.specular + sr.diffuse, 1.0);
+  out_diffuse = vec4(sr.diffuse, 0.0);
+}
+///////////////////////////////////////////////////////////////
+// Depth prepass (geometry-only)
+///////////////////////////////////////////////////////////////
+vertex_interface vif_marble_dpp {
+  inputs { vec4 position : POSITION; }
+  outputs { float frg_camz; }
+}
+fragment_interface fif_marble_dpp : vif_marble_dpp {
+  outputs { layout(location = 0) float out_z; }
+}
+vertex_shader vs_marble_dpp : vif_marble_dpp : ublk_std_matrices {
+  vec4 hpos = mvp * position;
+  gl_Position = hpos;
+  frg_camz = hpos.z / hpos.w;
+}
+fragment_shader ps_marble_dpp : fif_marble_dpp {
+  out_z = frg_camz;
+}
+///////////////////////////////////////////////////////////////
+technique FWD_CV_NM_RI_NI_MO {
+  fxconfig = fxcfg_default;
+  vf_pass = { vs_marble, ps_marble_forward, sb_marble }
+}
+technique FWD_CT_NM_RI_NI_MO {
+  fxconfig = fxcfg_default;
+  vf_pass = { vs_marble, ps_marble_forward, sb_marble }
+}
+technique FWD_DEPTHPREPASS_RI_NI_MO {
+  fxconfig = fxcfg_default;
+  vf_pass = { vs_marble_dpp, ps_marble_dpp, sb_marble }
+}
