@@ -34,19 +34,24 @@ def main():
     fbm.inputs.frequency = 3.0            # float plug via the generic inputs proxy
 
     remap = g.create("remap", T.RemapModule)
-    remap.inputs.scale = 0.5
-    remap.inputs.bias = 0.5               # fbm -> ~[0.5,1]
+    remap.inputs.scale = 1.0
+    remap.inputs.bias = 0.0               # fbm -> ~[0.5,1]
 
     terr = g.create("terr", T.TerraceModule)
-    terr.inputs.steps = 6.0
+    terr.inputs.steps = 12.0
     terr.inputs.sharpness = 4.0
+
+    remap2 = g.create("remap2", T.RemapModule)
+    remap2.inputs.scale = 1.0
+    remap2.inputs.bias = 0.0               # fbm -> ~[0.5,1]
 
     cap = g.create("cap", T.CaptureModule)
     cap.path = OUT
 
     g.connect(remap.inputs.In, fbm.outputs.Out)   # DAG edges (input, output)
     g.connect(terr.inputs.In, remap.outputs.Out)
-    g.connect(cap.inputs.In, terr.outputs.Out)
+    g.connect(remap2.inputs.In, terr.outputs.Out)
+    g.connect(cap.inputs.In, remap2.outputs.Out)
 
     stats = T.bake_heightfield(g, ctx, 512)
     ezapp.mainThreadEnd()

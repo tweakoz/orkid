@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+###############################################################################
+# M3: author terrain heightfields in the EXPRESSION-FIRST DSL, generatedflow(),
+# and bake EXR channels. Exercises:
+#   - RollingHills  : pure expression  (fbm * 0.5 + 0.5 -> Terrace)
+#   - FractalRidges : trace-time `for` loop + conditional that UNROLL into DAG
+#                     topology (octaves Fbm+Mul+Add modules; optional Terrace)
+# proving Python control flow runs at trace time (graph metaprogramming), not at
+# bake time. Each bakes to /tmp for visual inspection in Preview.
+###############################################################################
+import os; os.environ["PYTHONUNBUFFERED"] = "1"
+import sys
+from orkengine import core   # core before lev2
+from orkengine import lev2
+from orkengine import ecs
+
+from ork.hypergraph.dflow.terrain import HeightField
+from ork.hypergraph.dflow import terrain as T
+
+DIM = 1024
+
+
+class RollingHills(HeightField):
+    def __init__(self, octaves=6, steps=6):
+        super().__init__()
+        h = T.Fbm(frequency=3.0, octaves=octaves) * 0.5 + 0.5   # operators -> Remap modules
+        self.capture(T.Terrace(h, steps=steps, sharpness=4.0), "height")
+
+
+class FractalRidges(HeightField):
+    # trace-time loop unrolls into `octaves` Fbm+Mul+Add modules; the conditional
+    # includes the Terrace module or not — all resolved before any bake runs.
+    def __init__(self, octaves=5, terrace=True, terrace_steps=8):
+        super().__init__()
+        h, amp, freq, norm = T.Const(0.0), 1.0, 2.0, 0.0
+        for _ in range(octaves):
+            h = h + T.Fbm(frequency=freq, octaves=1) * amp   # accumulate weighted octaves
+            norm += amp
+            amp *= 0.5
+            freq *= 2.0
+        h = h * (1.0 / norm)                                 # normalize the sum -> ~[0,1]
+        if terrace:
+            h = T.Terrace(h, steps=terrace_steps, sharpness=3.0)
+        self.capture(h, "height")
+
+
+def _bake(hf, channel, path, ctx):
+    g = hf.generatedflow()
+    hf.set_capture_path(channel, path)
+    nmods = g.numModules() if hasattr(g, "numModules") else "?"
+    stats = lev2.terrain.bake_heightfield(g, ctx, DIM)
+    print(f"  channels={hf.channels} modules={nmods} stats={stats}", flush=True)
+    return stats
+
+
+def _valid(stats, path):
+    if not (os.path.exists(path) and len(stats) == 1):
+        return False
+    s = stats[0]
+    return (0.0 <= s.min <= s.max <= 1.0001) and (s.max - s.min) > 0.03
+
+
+def main():
+    outs = {"rolling": "/tmp/terrain_rolling.exr", "ridges": "/tmp/terrain_ridges.exr"}
+    for p in outs.values():
+        if os.path.exists(p):
+            os.remove(p)
+
+    ezapp = ecs.headless_appinit(use_subsystems=['opq', 'core', 'gpu', 'lev2'])
+    ezapp.mainThreadBegin()
+    ctx = ezapp.bindGfxToCurrentThread()
+    assert ctx, "bindGfxToCurrentThread() returned null"
+
+    print("RollingHills (pure expression):", flush=True)
+    s1 = _bake(RollingHills(octaves=6, steps=6), "height", outs["rolling"], ctx)
+    print("FractalRidges (trace-time loop unroll + conditional):", flush=True)
+    s2 = _bake(FractalRidges(octaves=5, terrace=True, terrace_steps=8), "height", outs["ridges"], ctx)
+
+    ezapp.mainThreadEnd()
+
+    ok = _valid(s1, outs["rolling"]) and _valid(s2, outs["ridges"])
+    print(f"=== terrain DSL {'PASSED' if ok else 'FAILED'} ===", flush=True)
+    for _, p in outs.items():
+        print(f"    {p} exists={os.path.exists(p)} size={os.path.getsize(p) if os.path.exists(p) else 0}", flush=True)
+    ecs.headless_exit()
+    sys.exit(0 if ok else 1)
+
+
+main()
