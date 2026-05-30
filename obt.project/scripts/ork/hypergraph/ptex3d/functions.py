@@ -248,6 +248,14 @@ def _turb3(p, freq, octaves):
                 P.fbm(q + 43.3, octaves))
 
 
+def domain_warp(p, amount, freq, octaves):
+  """Offset `p` by vector turbulence (3 decorrelated fbm) — bends a regular pattern
+  organic. A reusable pre-pass for voronoi / grids / lattices: warp the coordinate
+  before sampling. `amount` is in the SAME units as `p` (warp the already-scaled
+  pattern-space coordinate so it reads as a fraction of a cell). `octaves` BAKES."""
+  return p + _turb3(p, freq, octaves) * amount
+
+
 def vein_field(p, direction, freq, warp, warp_freq, octaves, sharpness):
   """VOLUMETRIC vein intensity at object-space point `p` (marble / veined stone).
   Warp the point by turbulence, then take a sharpened ridge of a directional sine
@@ -261,5 +269,153 @@ def vein_field(p, direction, freq, warp, warp_freq, octaves, sharpness):
   return P.pow(1.0 - P.abs(band), sharpness)
 
 
-__all__ = ["triplanar", "carbon_weave", "panel_split", "greeble",
-           "box_partition", "brick_lattice", "vein_field"]
+# ── crumple (foil / crinkled-metal normal field) — pure DSL ─────────────────
+def crumple(p, octaves=6, gain=0.55, lacunarity=2.13, antialias=True):
+  """VOLUMETRIC crumple height at object-space point `p` — ridged multi-octave
+  turbulence (a tent `1-|2n-1|` per octave gives sharp creases with flatter facets
+  between, summed across scales for big folds + fine glints). Feed it to displace()
+  and the finite-diff bump turns it into the shattered, faceted normal field that
+  reads as crinkled foil. Normalised to ~[0,1]. `octaves` BAKES (the unrolled
+  sum); `gain`/`lacunarity` bake too (structural). Generic — the metal tint /
+  roughness are the material's job, not this field's.
+
+  ANALYTIC AA: with `antialias`, each octave is faded out as its wavelength drops
+  below the pixel footprint (fwidth(p)) — band-limiting the normal field at its
+  source so sub-pixel creases stop aliasing the specular (instead of relying only
+  on the screen-derivative geometric AA downstream). Distant foil smoothly flattens
+  toward mirror, which is the correct prefiltered result. The footprint is constant
+  across the bump's finite-diff taps, so the gradient stays consistent."""
+  foot = P.length(P.fwidth(p)) if antialias else None
+  h = None
+  amp = 1.0
+  fr  = 1.0
+  tot = 0.0
+  for _ in range(int(octaves)):
+    n     = P.noise(p * fr)
+    ridge = 1.0 - P.abs(n * 2.0 - 1.0)          # tent ridge in [0,1]: sharp creases
+    w     = amp
+    if antialias:
+      w   = w * (1.0 - P.smoothstep(0.5, 1.0, foot * fr))   # drop sub-pixel octaves
+    term  = ridge * w
+    h     = term if h is None else h + term
+    tot  += amp
+    amp  *= gain
+    fr   *= lacunarity
+  return h * (1.0 / tot)
+
+
+# ── wood grain (growth rings + long grain) — pure DSL, volumetric ───────────
+class _WoodFields:
+  __slots__ = ("ring", "band", "grain", "along", "r")
+
+  def __init__(self, ring, band, grain, along, r):
+    self.ring  = ring   # [0,1] sawtooth across each annual ring
+    self.band  = band   # earlywood(0) -> latewood(1) gradient
+    self.grain = grain  # fine long-grain streak noise [0,1]
+    self.along = along  # coordinate along the grain axis
+    self.r     = r      # warped radius from the grain axis
+
+
+def wood_grain(p, axis, ring_freq, ring_warp, warp_freq, octaves,
+               grain_freq=45.0, ring_contrast=2.2, along_squash=0.12, antialias=True):
+  """VOLUMETRIC wood grain at object-space point `p`. Growth rings are concentric
+  cylinders around the grain `axis` (the trunk) — a property of 3-space, so reading
+  them on a surface reproduces the real cut pattern (cathedral arches on a flat
+  cut, straight lines on a quarter cut) with NO triplanar. The radius is domain-
+  warped for organic wavy rings; the long grain is fbm stretched ALONG the axis so
+  the streaks follow the grain. `octaves` BAKES (fbm loop bound); the rest are free
+  to be runtime params. -> _WoodFields(ring, band, grain, along, r).
+
+  ANALYTIC AA: with `antialias`, the ring band (the fract/modulo — the worst
+  aliaser) is faded toward its per-period mean once the ring period drops below a
+  pixel (fwidth of the phase), and the long grain toward its mean when sub-pixel.
+  The footprint is consistent across the bump's finite-diff taps, so the same fade
+  also band-limits the relief. Distant wood smoothly averages to a flat tone."""
+  along = P.dot(p, axis)
+  perp  = p - axis * along
+  r0    = P.length(perp)
+  r     = r0 + ring_warp * (P.fbm(p * warp_freq, octaves) - 0.5)   # wavy rings
+  phase = r * ring_freq
+  ring  = P.fract(phase)                                           # [0,1] per ring
+  band  = P.pow(ring, ring_contrast)                              # earlywood -> latewood
+  gp    = perp + axis * (along * along_squash)                    # squash along axis
+  grain = P.fbm(gp * grain_freq, octaves)                         # long streaks
+  if antialias:
+    # rings: fade the latewood band toward its per-period mean (1/(k+1)) as the
+    # ring period goes sub-pixel — the fract/modulo would otherwise alias hard.
+    rfade = 1.0 - P.smoothstep(0.5, 1.0, P.fwidth(phase))
+    band  = P.mix(1.0 / (ring_contrast + 1.0), band, rfade)
+    # long grain: fade toward its mean (0.5) when the grain frequency is sub-pixel.
+    gfade = 1.0 - P.smoothstep(0.5, 1.0, grain_freq * P.length(P.fwidth(gp)))
+    grain = P.mix(0.5, grain, gfade)
+  return _WoodFields(ring, band, grain, along, r)
+
+
+# ── animal-skin pattern primitives (volumetric, analytic-AA) ────────────────
+class _Spots:
+  __slots__ = ("mask", "f1", "cell", "cell2")
+
+  def __init__(self, mask, f1, cell, cell2):
+    self.mask, self.f1, self.cell, self.cell2 = mask, f1, cell, cell2
+
+
+class _Rosette:
+  __slots__ = ("ring", "fill", "f1", "cell")
+
+  def __init__(self, ring, fill, f1, cell):
+    self.ring, self.fill, self.f1, self.cell = ring, fill, f1, cell
+
+
+def stripes(p, direction, freq, warp, warp_freq, octaves, antialias=True, duty=0.0):
+  """VOLUMETRIC sharp stripes (zebra / tiger). A directional sine band domain-
+  warped by turbulence -> irregular branching stripes, thresholded to a hard edge.
+  -> [0,1] (the two stripe colours). ANALYTIC AA: the edge is a smoothstep over the
+  band's pixel footprint (fwidth), so it never aliases and fades to grey when sub-
+  pixel. `duty` shifts the black/white balance. `octaves` BAKES."""
+  ph = P.dot(p, direction) * freq + warp * (P.fbm(p * warp_freq, octaves) - 0.5)
+  s  = P.sin(ph * 3.14159265) + duty
+  if antialias:
+    fw = P.fwidth(s) + 0.001
+    return P.smoothstep(-fw, fw, s)
+  return P.step(0.0, s)
+
+
+def _maybe_warp(q, warp, warp_freq, octaves):
+  """domain_warp(q, ...) unless warp is a literal 0 — so the (3-fbm) turbulence is
+  only paid for when a warp is actually requested (a param or non-zero constant)."""
+  if isinstance(warp, (int, float)) and warp == 0.0:
+    return q
+  return domain_warp(q, warp, warp_freq, octaves)
+
+
+def spots(p, freq, radius=0.32, softness=0.03, warp=0.0, warp_freq=1.0, octaves=3,
+          antialias=True):
+  """VOLUMETRIC round spots (cheetah). Voronoi disc: 1 inside `radius` of each
+  (jittered) cell centre, 0 outside, with an analytic-AA edge. `warp` domain-warps
+  the (scale-space) input so the spots read organic, not grid-like. Returns
+  _Spots(mask, f1, cell, cell2) — per-spot hashes for size/colour variation."""
+  v  = P.voronoi(_maybe_warp(p * freq, warp, warp_freq, octaves))
+  w  = (P.fwidth(v.f1) + softness) if antialias else softness
+  mask = 1.0 - P.smoothstep(radius - w, radius + w, v.f1)
+  return _Spots(mask, v.f1, v.cell, v.cell2)
+
+
+def rosette(p, freq, ring=0.34, thickness=0.12, break_amount=0.55,
+            break_freq=16.0, octaves=3, warp=0.0, warp_freq=1.0, antialias=True):
+  """VOLUMETRIC leopard/jaguar rosettes — a BROKEN dark ring (annulus of spots)
+  around a centre. Voronoi `f1` gives the radius; an annulus around `ring` is broken
+  into spots by a turbulence threshold. `warp` domain-warps the input for organic,
+  non-grid placement. Returns _Rosette(ring, fill, f1, cell): `ring` = the dark
+  broken-ring intensity [0,1] (AA'd), `fill` = the rosette interior [0,1]. BAKES octaves."""
+  v    = P.voronoi(_maybe_warp(p * freq, warp, warp_freq, octaves))
+  w    = (P.fwidth(v.f1) + 0.01) if antialias else 0.02
+  band = 1.0 - P.smoothstep(0.0, thickness + w, P.abs(v.f1 - ring))   # annulus at `ring`
+  brk  = P.smoothstep(0.5 - break_amount * 0.5, 0.5 + break_amount * 0.5,
+                      P.fbm(p * break_freq, octaves))                 # break into spots
+  fill = 1.0 - P.smoothstep(ring - thickness, ring + w, v.f1)         # interior mask
+  return _Rosette(band * brk, fill, v.f1, v.cell)
+
+
+__all__ = ["triplanar", "carbon_weave", "panel_split", "greeble", "box_partition",
+           "brick_lattice", "domain_warp", "vein_field", "crumple", "wood_grain",
+           "stripes", "spots", "rosette"]

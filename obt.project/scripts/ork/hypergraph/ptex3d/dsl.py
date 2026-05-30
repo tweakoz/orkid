@@ -526,18 +526,49 @@ _FIELD_TYPE = {"albedo": "vec3", "normal": "vec3", "emissive": "vec3",
                "metallic": "float", "roughness": "float", "ao": "float"}
 
 
+# short aliases -> canonical glTF lobe field names (accepted in surface(**lobes)
+# and on the Ptex3d asset). The dict (nested) form is left untouched.
+LOBE_ALIASES = {
+  "transmission":         "transmission_factor",
+  "clearcoat":            "clearcoat_factor",
+  "sheen":                "sheen_factor",
+  "subsurface":           "subsurface_factor",
+  "specular":             "specular_factor",
+  "iridescence":          "iridescence_factor",
+  "diffuse_transmission": "diffuse_transmission_factor",
+  "volume":               "volume_thickness_factor",
+}
+
+
 class Ptex3d:
   """Author surface base. Subclass and, in __init__(self, ctx, **params), build
   expressions and call self.surface(albedo=..., metallic=..., ...)."""
 
   def surface(self, *, albedo=None, metallic=None, roughness=None,
-              normal=None, emissive=None, ao=None):
+              normal=None, emissive=None, ao=None, **lobes):
+    """The 6 TEXTURED channels (albedo/metallic/roughness/normal/emissive/ao) take
+    per-pixel SurfNode expressions. Any extra kwargs are glTF PBR LOBES
+    (transmission/ior/clearcoat/sheen/subsurface/...) — material-level uniforms, so
+    they must be CONSTANTS, not expressions. They flow to the underlying
+    PbrMaterialGenData; a per-instance Ptex3d(...) kwarg overrides the class value."""
     chans = {}
     for name, val in (("albedo", albedo), ("metallic", metallic), ("roughness", roughness),
                       ("normal", normal), ("emissive", emissive), ("ao", ao)):
       if val is not None:
         chans[name] = _wrap(val)
     self._channels = chans
+    if lobes:
+      norm = dict(getattr(self, "_lobes", {}))
+      for k, v in lobes.items():
+        if isinstance(v, SurfNode):
+          raise TypeError(
+            "surface(): PBR lobe %r must be a constant (number / vec / color), not a "
+            "per-pixel expression — lobes are material-level uniforms, not textured. "
+            "The textured channels are albedo/metallic/roughness/normal/emissive/ao." % k)
+        if not isinstance(v, dict):
+          k = LOBE_ALIASES.get(k, k)
+        norm[k] = v
+      self._lobes = norm
 
   def displace(self, height, *, scale=0.05, parallax_steps=0, depth=0.04):
     """Declare a procedural displacement height — a scalar field of `ctx.P_object`
@@ -738,18 +769,20 @@ def _build_ptex3d(dsl_class, name_hint=None, **params):
                                   extra_imports=imports, params=pspecs,
                                   name_hint=name_hint or dsl_class.__name__.lower(),
                                   **height_kwargs)
-  return path, pspecs
+  lobes = dict(getattr(inst, "_lobes", None) or {})   # class-declared PBR lobes
+  return path, pspecs, lobes
 
 
 def materialize_ptex3d(dsl_class, *, name_hint=None, **params):
   """Instantiate a Ptex3d subclass, emit its surface, and bake the .fxv2.
   Returns the cached .fxv2 path."""
-  path, _ = _build_ptex3d(dsl_class, name_hint=name_hint, **params)
+  path, _, _ = _build_ptex3d(dsl_class, name_hint=name_hint, **params)
   return path
 
 
 def materialize_ptex3d_full(dsl_class, *, name_hint=None, **params):
   """Like materialize_ptex3d but also returns the bindable-param specs
-  [(name, gtype, default), ...] — the asset layer pre-binds these defaults and
-  round-trips them in PbrMaterialGenData.shader_params. Returns (path, specs)."""
+  [(name, gtype, default), ...] (the asset layer pre-binds these defaults and
+  round-trips them in PbrMaterialGenData.shader_params) and the class-declared PBR
+  lobes {field: value} from surface(**lobes). Returns (path, specs, lobes)."""
   return _build_ptex3d(dsl_class, name_hint=name_hint, **params)

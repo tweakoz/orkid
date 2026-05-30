@@ -1001,20 +1001,49 @@ def _ptex_param_defaults(pspecs):
 @_register
 class Ptex3d:
 
-  def __init__(self, *, dsl_class=None, gendata=None, **dsl_params):
+  def __init__(self, *, dsl_class=None, gendata=None, **kwargs):
     if gendata is not None:
       self.gendata = gendata
       self._ctx = None
       return
     if dsl_class is None:
       raise TypeError("Ptex3d requires dsl_class= (a ptex3d.dsl.Ptex3d subclass)")
+    # Split the glTF PBR-lobe kwargs (transmission / ior / clearcoat / sheen /
+    # subsurface / specular / iridescence / volume / attenuation / diffuse-trans)
+    # off from the DSL ctor params. The lobes are MATERIAL-LEVEL UBO uniforms that
+    # the stock forward-PBR lighting already consumes — ptex3d's generated shader
+    # routes through the same _forward_lightingX, so they need no per-pixel
+    # SurfaceOut field and no shader change; they pass straight to the GenData
+    # (auto-enabling each has_<lobe>). Set them per-instance, like a PbrMaterial:
+    #     A.Ptex3d("glass", dsl_class=Marble, transmission_factor=0.6, ior=1.45)
+    # (Per-pixel TEXTURING of the lobes isn't wired — these are constants/uniforms.)
     from ork.hypergraph.ptex3d import materialize_ptex3d_full
-    path, pspecs = materialize_ptex3d_full(dsl_class, **dsl_params)
+    from ork.hypergraph.ptex3d.dsl import LOBE_ALIASES
+    # normalize short lobe aliases (transmission -> transmission_factor, ...) before
+    # the split; the dict (nested) form is left for _flatten_nested.
+    for short, canon in LOBE_ALIASES.items():
+      if short in kwargs and not isinstance(kwargs[short], dict):
+        kwargs[canon] = kwargs.pop(short)
+    lobe_keys   = set(PbrMaterial._LOBE_KWARGS) | PbrMaterial._NESTED_KEYS
+    lobe_kwargs = {k: kwargs.pop(k) for k in list(kwargs) if k in lobe_keys}
+    path, pspecs, dsl_lobes = materialize_ptex3d_full(dsl_class, **kwargs)  # kwargs now = DSL params
+    # merge: class-declared lobes (surface(**lobes)) are defaults; per-instance
+    # Ptex3d(...) kwargs override. Then reuse PbrMaterial nested-form + hsv coercion.
+    combined = {**dsl_lobes, **lobe_kwargs}
+    combined = PbrMaterial._flatten_nested(combined)
+    combined, _ = PbrMaterial._coerce_hsv(combined, None)
+    extras = {}
+    for k in PbrMaterial._LOBE_KWARGS:
+      if k in combined:
+        extras[k] = combined.pop(k)
+    if combined:
+      raise TypeError(f"Ptex3d: unexpected kwargs {sorted(combined)}")
     self.gendata = PbrMaterialGenData(
         shaderpath    = path,
         shader_params = _ptex_param_defaults(pspecs),
         metallic      = 1.0,
-        roughness     = 1.0)
+        roughness     = 1.0,
+        **extras)
     self._ctx = None
 
   @classmethod

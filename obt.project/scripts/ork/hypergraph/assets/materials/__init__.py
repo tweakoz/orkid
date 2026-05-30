@@ -17,5 +17,11 @@ from .carbon_fiber import CarbonFiber
 from .spaceship_hull import SpaceshipHull
 from .brick          import Brick
 from .marble         import Marble
+from .foil           import Foil
+from .wood           import Wood, Teak, Oak, Pine
+from .plywood        import Plywood
+from .animal_skin    import Cheetah, Leopard, Zebra, Reptile
 __all__ = ["CrackedMud", "CobbleStone", "LilyPads", "BeachBall", "BasketBall",
-           "SoccerBall", "HoneyComb", "CarbonFiber", "SpaceshipHull", "Brick", "Marble"]
+           "SoccerBall", "HoneyComb", "CarbonFiber", "SpaceshipHull", "Brick",
+           "Marble", "Foil", "Wood", "Teak", "Oak", "Pine", "Plywood",
+           "Cheetah", "Leopard", "Zebra", "Reptile"]
