@@ -18,6 +18,7 @@
 #   vec4 cd;     // Cd — 4D per-vertex SELECTOR (frg_clr), NOT a color
 #   mat3 tbn;    // world tangent/bitangent/normal basis (frg_tbn)
 #   vec3 wnrm;   // world geometric normal  (frg_tbn[2])
+#   vec3 onrm;   // OBJECT-space normal     (frg_onrm) — for surface-aware proctex
 #   vec3 eye;    // camera world position   (EyePostion)
 # and writes any of (defaults pre-set):
 #   o.albedo (vec3=0.8) o.metallic (0) o.roughness (0.5)
@@ -30,7 +31,7 @@ import hashlib
 from orkengine.core import Path as _Path
 
 # Bump when the template/contract changes so cached files regenerate.
-CODEGEN_VERSION = "geov2-ptex-fxv2-3"   # bumped: roughness linearizer band [0.3,1.0]
+CODEGEN_VERSION = "geov2-ptex-fxv2-5"   # bumped: frg_onrm varying (surface-aware proctex)
 
 # The surface output contract (mirrors the eventual PBR2 SurfaceFragment subset).
 SURFACE_OUT_FIELDS = ("albedo", "metallic", "roughness", "normal", "emissive", "ao")
@@ -61,11 +62,28 @@ def _dslcache_dir():
   return _cache_dir
 
 
+def _params_block(params):
+  """params: [(name, gtype, default), ...] -> (block_decl, inherit_clause).
+  Each bindable param is one vec4 member (vec4-padded → std140-safe, and a
+  whole-vec4 write from any bindParam type can never clobber a neighbor)."""
+  if not params:
+    return "", ""
+  members = "\n".join("  vec4 %s;" % name for (name, _gtype, _default) in params)
+  block = (
+    "///////////////////////////////////////////////////////////////\n"
+    "// GEOV2 Phase 3 — bindable runtime uniforms (ctx.param). Each is\n"
+    "// vec4-padded (std140-safe); read swizzled in ptex_surface(). Bind or\n"
+    "// rebind from Python/C++ via material.bindParam(name, value).\n"
+    "uniform_block ublk_ptex_params (descriptor_set 0) {\n%s\n}" % members)
+  return block, " : ublk_ptex_params"
+
+
 def generate_surface_fxv2(surface_body,
                           *,
                           libblock="",
                           lib_inherits=(),
-                          extra_imports=()):
+                          extra_imports=(),
+                          params=()):
   """Assemble a complete forward-PBR .fxv2 around a GLSL surface body.
 
   surface_body : GLSL statements assigning to o.<field> (see module docstring).
@@ -74,17 +92,22 @@ def generate_surface_fxv2(surface_body,
                  "lib_sdftools"); inherited on the surface libblock.
   extra_imports: extra orkshader:// .i2 files the lib_inherits come from beyond
                  the standard set (e.g. "orkshader://sdftools.i2").
+  params       : [(name, gtype, default), ...] bindable runtime uniforms — emits
+                 a ublk_ptex_params block inherited by the surface libblock.
   """
   imports = list(_STD_IMPORTS) + [i for i in extra_imports if i not in _STD_IMPORTS]
   import_lines = "\n".join('  import "%s";' % i for i in imports)
   # the surface libblock inherits its needed noise/util libblocks
   surf_inherits = "".join(" : %s" % n for n in lib_inherits)
   out_struct = "  struct SurfaceOut { vec3 albedo; float metallic; float roughness; vec3 normal; vec3 emissive; float ao; };"
+  params_block, params_inherit = _params_block(params)
 
   return _TEMPLATE.format(
     import_lines=import_lines,
     surf_inherits=surf_inherits,
     out_struct=out_struct,
+    params_block=("\n" + params_block + "\n" if params_block else ""),
+    params_inherit=params_inherit,
     libblock=("\n" + libblock.strip() + "\n" if libblock.strip() else ""),
     surface_body=_indent(surface_body.strip(), 4),
   )
@@ -95,6 +118,7 @@ def materialize_surface_fxv2(surface_body,
                              libblock="",
                              lib_inherits=(),
                              extra_imports=(),
+                             params=(),
                              name_hint="ptex"):
   """Generate + write the .fxv2 to <staging>/dslshadercache/<hint>_<hash>.fxv2.
 
@@ -104,7 +128,8 @@ def materialize_surface_fxv2(surface_body,
   text = generate_surface_fxv2(surface_body,
                                libblock=libblock,
                                lib_inherits=lib_inherits,
-                               extra_imports=extra_imports)
+                               extra_imports=extra_imports,
+                               params=params)
   digest = hashlib.sha1((CODEGEN_VERSION + "\n" + text).encode("utf-8")).hexdigest()[:16]
   path = os.path.join(_dslcache_dir(), "%s_%s.fxv2" % (name_hint, digest))
   if not os.path.exists(path):
@@ -156,6 +181,7 @@ vertex_interface vif_ptex : ub_std_vtx {{
     float frg_camdist;
     vec3 frg_camz;
     vec3 frg_opos;
+    vec3 frg_onrm;
   }}
 }}
 ///////////////////////////////////////////////////////////////
@@ -178,6 +204,7 @@ vertex_shader vs_ptex
   frg_uv0     = uv0;
   frg_wpos    = m * position;
   frg_opos    = position.xyz;
+  frg_onrm    = normalize(normal);          // object-space normal (for surface-aware proctex)
   frg_clr     = vtxcolor;
   vec3 wn = normalize(mat3(m) * normal);
   vec3 wb = normalize(mat3(m) * binormal);
@@ -189,11 +216,11 @@ vertex_shader vs_ptex
 ///////////////////////////////////////////////////////////////
 typeblock types_ptex {{
 {out_struct}
-}}
+}}{params_block}
 ///////////////////////////////////////////////////////////////
-libblock lib_ptex_surface : types_ptex{surf_inherits} {{
+libblock lib_ptex_surface : types_ptex{params_inherit}{surf_inherits} {{
 {libblock}
-  SurfaceOut ptex_surface(vec3 wpos, vec3 opos, vec2 uv, vec4 cd, mat3 tbn, vec3 wnrm, vec3 eye) {{
+  SurfaceOut ptex_surface(vec3 wpos, vec3 opos, vec2 uv, vec4 cd, mat3 tbn, vec3 wnrm, vec3 onrm, vec3 eye) {{
     SurfaceOut o;
     o.albedo   = vec3(0.8);
     o.metallic = 0.0;
@@ -215,7 +242,7 @@ fragment_shader ps_ptex_forward
   : lib_ptex_surface
   : std_forward_all {{
   vec3 wnrm = normalize(frg_tbn[2]);
-  SurfaceOut s = ptex_surface(frg_wpos.xyz, frg_opos, frg_uv0, frg_clr, frg_tbn, wnrm, EyePostion);
+  SurfaceOut s = ptex_surface(frg_wpos.xyz, frg_opos, frg_uv0, frg_clr, frg_tbn, wnrm, normalize(frg_onrm), EyePostion);
   // TEMP roughness linearization (stopgap — REMOVE when the PBR importance-
   // sampling code is calibrated). Maps authored roughness into the
   // perceptually-visible band [0.3, 1.0] (floor 0.3 keeps low cells shiny).

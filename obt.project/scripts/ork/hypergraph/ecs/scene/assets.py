@@ -33,7 +33,7 @@
 import math
 from typing import TypedDict
 
-from orkengine.core import vec3, vec4, CrcStringProxy
+from orkengine.core import vec2, vec3, vec4, CrcStringProxy
 
 # Imported lazily inside methods to avoid an __init__→assets→__init__ cycle:
 #   ork.ecs.scene.__init__ imports assets at module-load time; assets
@@ -943,8 +943,100 @@ class PbrMaterial:
     # the same snake_case names as the GenData.
     for _k in self._LOBE_KWARGS:
       setattr(mat, _k, getattr(d, _k))
+    # GEOV2 Phase 3 — procedural shaderpath override (ptex3d). The generated
+    # .fxv2 must be set BEFORE gpuInit (the internal FreestyleMaterial loads it
+    # there); the bindable uniform_block params only resolve AFTER, so pre-bind
+    # their round-tripped defaults post-gpuInit (they propagate into pipelines
+    # at pipeline-creation, before first draw). See [[project-geometry-type]].
+    shaderpath = getattr(d, "shaderpath", "") or ""
+    if shaderpath:
+      mat.shaderpath = shaderpath
     mat.gpuInit(ctx)
+    if shaderpath:
+      sp = getattr(d, "shader_params", None)
+      if sp is not None:
+        for k in sp.keys():
+          mat.bindParam(k, sp[k])
     return mat
+
+
+###############################################################################
+# Ptex3d — procedural-surface material authored as a ptex3d DSL class
+# (GEOV2 Phase 3). Materializes the DSL to a cached .fxv2, drives a PBRMaterial
+# via shaderpath, and round-trips through the scene as a PbrMaterialGenData
+# carrying shaderpath + the bindable-param defaults (shader_params). No new
+# reflected class — it deserializes straight back to PbrMaterial.
+#
+#   from ork.hypergraph.ptex3d import Ptex3d as Ptex3dBase, P, rgb
+#   class CastMetal(Ptex3dBase):
+#     def __init__(self, ctx, *, cell_scale=4.0):
+#       base = ctx.param("base_color", (0.35, 0.37, 0.40))   # bindable uniform
+#       cell = P.voronoi(ctx.P_object * cell_scale)
+#       self.surface(albedo=base * P.mix(0.45, 1.0, cell.cell),
+#                    metallic=1.0, roughness=P.mix(0.0, 0.9, cell.cell2))
+#
+#   mat = self.asset.Ptex3d("steel", dsl_class=CastMetal, cell_scale=6.0)
+#   mat.as_gfx_material.bindParam("base_color", vec4(0.8, 0.2, 0.1, 1))  # live
+###############################################################################
+
+def _ptex_param_defaults(pspecs):
+  """[(name, gtype, default), ...] -> {name: vec/float} for the shader_params
+  varmap (the pre-bound uniform defaults that round-trip in the GenData)."""
+  from ork.hypergraph.colors import _LazyColor
+  out = {}
+  for (name, gtype, default) in pspecs:
+    if isinstance(default, _LazyColor):
+      default = default.to_vec4() if gtype == "vec4" else default.to_vec3()
+    if gtype == "float":
+      out[name] = float(default)
+    elif gtype == "vec2":
+      out[name] = default if isinstance(default, vec2) else vec2(*default)
+    elif gtype == "vec3":
+      out[name] = default if isinstance(default, vec3) else vec3(*default)
+    elif gtype == "vec4":
+      out[name] = default if isinstance(default, vec4) else vec4(*default)
+  return out
+
+
+@_register
+class Ptex3d:
+
+  def __init__(self, *, dsl_class=None, gendata=None, **dsl_params):
+    if gendata is not None:
+      self.gendata = gendata
+      self._ctx = None
+      return
+    if dsl_class is None:
+      raise TypeError("Ptex3d requires dsl_class= (a ptex3d.dsl.Ptex3d subclass)")
+    from ork.hypergraph.ptex3d import materialize_ptex3d_full
+    path, pspecs = materialize_ptex3d_full(dsl_class, **dsl_params)
+    self.gendata = PbrMaterialGenData(
+        shaderpath    = path,
+        shader_params = _ptex_param_defaults(pspecs),
+        metallic      = 1.0,
+        roughness     = 1.0)
+    self._ctx = None
+
+  @classmethod
+  def from_gendata(cls, gendata, ctx=None):
+    inst = cls(gendata=gendata)
+    inst._ctx = ctx
+    return inst
+
+  @property
+  def as_gfx_material(self):
+    built = getattr(self, "built", None)
+    if built is not None:
+      return built
+    self.built = self.build()
+    return self.built
+
+  def build(self):
+    # Delegate to PbrMaterial.build(), which honors gendata.shaderpath +
+    # shader_params (set above). Ptex3d is author-side sugar; on JSON round-trip
+    # the PbrMaterialGenData deserializes straight to PbrMaterial.
+    return PbrMaterial.from_gendata(self.gendata,
+                                    ctx=getattr(self, "_ctx", None)).build()
 
 
 ###############################################################################

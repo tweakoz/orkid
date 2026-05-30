@@ -175,6 +175,27 @@ void pyinit_gfx_asset_gen(py::module& module_lev2) {
             if (kwargs.contains("color_path"))  d->_color_path  = kwargs["color_path"].cast<std::string>();
             if (kwargs.contains("normal_path")) d->_normal_path = kwargs["normal_path"].cast<std::string>();
             if (kwargs.contains("mtlruf_path")) d->_mtlruf_path = kwargs["mtlruf_path"].cast<std::string>();
+            if (kwargs.contains("shaderpath"))  d->_shaderpath  = kwargs["shaderpath"].cast<std::string>();
+            if (kwargs.contains("shader_params")) {
+              auto params = kwargs["shader_params"].cast<py::dict>();
+              if (params.size() > 0) {
+                if (not d->_shader_params) d->_shader_params = std::make_shared<varmap::VarMap>();
+                for (auto item : params) {
+                  auto k = item.first.cast<std::string>();
+                  auto v = py::reinterpret_borrow<py::object>(item.second);
+                  if (py::isinstance<py::float_>(v) ||
+                      (py::isinstance<py::int_>(v) && !py::isinstance<py::bool_>(v))) {
+                    d->_shader_params->set<float>(k, v.cast<float>());
+                  } else {
+                    bool stored = false;
+                    try { d->_shader_params->set<fvec4>(k, v.cast<fvec4>()); stored = true; } catch (...) {}
+                    if (!stored) { try { d->_shader_params->set<fvec3>(k, v.cast<fvec3>()); stored = true; } catch (...) {} }
+                    if (!stored) { try { d->_shader_params->set<fvec2>(k, v.cast<fvec2>()); stored = true; } catch (...) {} }
+                    if (!stored) d->_shader_params->set<float>(k, v.cast<float>());
+                  }
+                }
+              }
+            }
             if (kwargs.contains("asset_name"))  d->_asset_name  = kwargs["asset_name"].cast<std::string>();
             // PBR2 Phase 2 — 8 glTF KHR-extension lobes. Passing any
             // <lobe>_factor / <lobe>_color kwarg implicitly enables the
@@ -300,6 +321,17 @@ void pyinit_gfx_asset_gen(py::module& module_lev2) {
           _PBR2_GEN_PROP_VEC3("subsurface_color",             _subsurface_color)
           _PBR2_GEN_PROP_VEC3("subsurface_radius",            _subsurface_radius)
           _PBR2_GEN_PROP_FLOAT("subsurface_factor",           _subsurface_factor)
+          .def_property(
+              "shaderpath",
+              [](pbr_material_gendata_ptr_t d) -> std::string { return d->_shaderpath; },
+              [](pbr_material_gendata_ptr_t d, std::string v) { d->_shaderpath = v; })
+          .def_property_readonly(
+              "shader_params",
+              [](pbr_material_gendata_ptr_t d) -> varmap::varmap_ptr_t {
+                if (not d->_shader_params)
+                  d->_shader_params = std::make_shared<varmap::VarMap>();
+                return d->_shader_params;
+              })
           ;
 #undef _PBR2_GEN_PROP_BOOL
 #undef _PBR2_GEN_PROP_FLOAT

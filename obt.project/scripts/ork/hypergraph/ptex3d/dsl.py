@@ -23,10 +23,16 @@
 # _bindings.py target CPU dataflow and are NOT reused).
 ###############################################################################
 
+from orkengine.core import vec2 as _v2, vec3 as _v3, vec4 as _v4
+
 from ork.hypergraph.ptex3d.fxv2_template import materialize_surface_fxv2
 
 _VEC = {1: "float", 2: "vec2", 3: "vec3", 4: "vec4"}
 _SWIZ = set("xyzw") | set("rgba")
+
+# A bindable param is stored vec4-padded in the UBO (std140-safe); read swizzled
+# back down to its logical type at the use site.
+_PARAM_SWIZ = {"float": ".x", "vec2": ".xy", "vec3": ".xyz", "vec4": ""}
 
 
 def _fmt_float(x):
@@ -98,6 +104,22 @@ class CtxRef(SurfNode):
   def _make_key(self): return ("x", self._glsl)
 
 
+class Param(SurfNode):
+  """A bindable runtime uniform — a member of the generated `ublk_ptex_params`
+  block. Stored vec4-padded in the UBO (std140-safe), read swizzled to its
+  logical type. `_default` (a python float / 2-4 tuple / colors.* value) seeds
+  the binding the asset wrapper pre-binds; rebind live from Python or C++ via
+  `material.bindParam(name, value)`."""
+  __slots__ = ("_pname", "_default")
+
+  def __init__(self, pname, gtype, default):
+    super().__init__(gtype)
+    self._pname = pname
+    self._default = default
+
+  def _make_key(self): return ("param", self._pname)
+
+
 class Op(SurfNode):
   """A GLSL builtin/library call or operator. `tmpl` is a format string over
   the arg expressions; `libsrc`/`inherits`/`imports` carry codegen deps."""
@@ -151,10 +173,21 @@ def _wrap(x):
     return Const("true" if x else "false", "bool")
   if isinstance(x, (int, float)):
     return Const(_fmt_float(x), "float")
-  if isinstance(x, (tuple, list)):
-    n = len(x)
+  # orkengine vec2/vec3/vec4 objects (the preferred authoring form)
+  if isinstance(x, _v2):
+    comps = (x.x, x.y)
+  elif isinstance(x, _v3):
+    comps = (x.x, x.y, x.z)
+  elif isinstance(x, _v4):
+    comps = (x.x, x.y, x.z, x.w)
+  elif isinstance(x, (tuple, list)):
+    comps = tuple(x)
+  else:
+    comps = None
+  if comps is not None:
+    n = len(comps)
     if n in (2, 3, 4):
-      return Const("%s(%s)" % (_VEC[n], ", ".join(_fmt_float(v) for v in x)), _VEC[n])
+      return Const("%s(%s)" % (_VEC[n], ", ".join(_fmt_float(v) for v in comps)), _VEC[n])
     raise TypeError("vector literal must be len 2/3/4, got %d" % n)
   # _LazyColor (ork.hypergraph.colors) support — hsv/wavelength/colortemp/colors.*
   if hasattr(x, "to_vec3") and hasattr(x, "to_vec4"):
@@ -189,17 +222,46 @@ float _ptex_shash3(vec3 p) { return fract(sin(dot(p, vec3(127.1,311.7,74.7))) * 
 vec3  _ptex_vhash3(vec3 p) { return fract(sin(vec3(dot(p,vec3(127.1,311.7,74.7)),
                                                    dot(p,vec3(269.5,183.3,246.1)),
                                                    dot(p,vec3(113.5,271.9,124.6)))) * 43758.5453); }
-vec4 _ptex_voronoi(vec3 x) {              // x=F1, y=F2, z=cell-hash, w=cell-hash2
+// x=border coord, onrm=OBJECT-space surface normal (for the surface-aware
+// width correction). Returns: .x=edge (raw 3D border distance, world/coord
+// units), .y=fwedge (the SAME border but width-corrected for how the surface
+// slices the 3D cell-wall — constant apparent width, no screen derivatives so
+// no crease dots), .z/.w = per-cell hashes.
+vec4 _ptex_voronoi(vec3 x, vec3 onrm) {
   vec3 ip = floor(x), fp = fract(x);
-  float f1 = 1e9, f2 = 1e9, idA = 0.0, idB = 0.0;
+  // pass 1 — nearest feature point: remember its cell offset (mg) and the
+  // vector to it (mr), plus the nearest cell's hashes.
+  vec3  mg = vec3(0.0), mr = vec3(0.0);
+  float f1 = 1e9, idA = 0.0, idB = 0.0;
   for (int k=-1;k<=1;k++) for (int j=-1;j<=1;j++) for (int i=-1;i<=1;i++) {
     vec3 g = vec3(float(i), float(j), float(k));
     vec3 r = g + _ptex_vhash3(ip+g) - fp;
     float d = dot(r, r);
-    if (d < f1)      { f2 = f1; f1 = d; idA = _ptex_shash3(ip+g); idB = _ptex_shash3(ip+g+vec3(31.7)); }
-    else if (d < f2) { f2 = d; }
+    if (d < f1) { f1 = d; mr = r; mg = g; idA = _ptex_shash3(ip+g); idB = _ptex_shash3(ip+g+vec3(31.7)); }
   }
-  return vec4(sqrt(f1), sqrt(f2), idA, idB);
+  // pass 2 — UNIFORM-WIDTH border distance (Quilez): min over the nearest
+  // cell's neighbors of the distance to the bisecting plane between the
+  // nearest point and that neighbor; also keep that wall's plane normal.
+  float edge = 1e9;
+  vec3  enrm = onrm;
+  for (int k=-1;k<=1;k++) for (int j=-1;j<=1;j++) for (int i=-1;i<=1;i++) {
+    vec3 g = mg + vec3(float(i), float(j), float(k));
+    vec3 r = g + _ptex_vhash3(ip+g) - fp;
+    vec3 diff = r - mr;
+    float lensq = dot(diff, diff);
+    if (lensq > 1e-5) {                      // skip the nearest point itself
+      vec3  n = diff * inversesqrt(lensq);   // wall plane normal (coord space)
+      float d = dot(0.5*(mr+r), n);
+      if (d < edge) { edge = d; enrm = n; }
+    }
+  }
+  // ANALYTIC width correction: a 3D wall sliced by the surface widens by
+  // 1/sin(angle) at grazing. The surface-tangential gradient magnitude of the
+  // distance field is |n - (n.N)N| = sin(angle); divide it out -> a width that
+  // is uniform along the surface, in coordinate units, and dot-free.
+  float gT = length(enrm - dot(enrm, onrm) * onrm);
+  float fwedge = edge / max(gT, 1e-3);
+  return vec4(edge, fwedge, idA, idB);
 }
 """
 
@@ -238,6 +300,7 @@ class _Ops:
   def floor(self, x): return self._cw1("floor", x)
   def fract(self, x): return self._cw1("fract", x)
   def sqrt(self, x):  return self._cw1("sqrt", x)
+  def fwidth(self, x): return self._cw1("fwidth", x)   # screen-space |dFdx|+|dFdy|
   def normalize(self, x): return self._cw1("normalize", x)
   def saturate(self, x):  x = _wrap(x); return Op("clamp({0}, 0.0, 1.0)", [x], x._type)
 
@@ -268,8 +331,13 @@ class _Ops:
     return Op("_ptex_fbm({0}, %d)" % int(octaves), [_wrap(p)], "float",
               libsrc=_FBM_SRC, inherits=("lib_mmnoise",))
   def voronoi(self, p):
-    node = Op("_ptex_voronoi({0})", [_wrap(p)], "vec4", libsrc=_VORONOI_SRC)
-    return Bundle(node, {"f1": "x", "f2": "y", "cell": "z", "cell2": "w"})
+    # .edge   = raw 3D border distance (world/coord units, unfiltered)
+    # .fwedge = surface-width-corrected border (constant apparent width, no
+    #           screen derivatives -> no crease dots) — use this for seams
+    # .cell / .cell2 = per-cell hashes
+    # (passes the object-space surface normal `onrm` for the correction.)
+    node = Op("_ptex_voronoi({0}, onrm)", [_wrap(p)], "vec4", libsrc=_VORONOI_SRC)
+    return Bundle(node, {"edge": "x", "fwedge": "y", "cell": "z", "cell2": "w"})
 
 
 P = _Ops()
@@ -290,6 +358,18 @@ class SurfaceCtx:
   uv       = property(lambda self: CtxRef("uv",   "vec2"))   # free-range uv
   Cd       = property(lambda self: CtxRef("cd",   "vec4"))   # 4D per-vertex selector
   eye      = property(lambda self: CtxRef("eye",  "vec3"))   # camera world position
+
+  def param(self, name, default):
+    """Declare a bindable runtime uniform. `default` (a python scalar / 2-4
+    tuple / colors.* value) sets both the logical type and the pre-bound value;
+    rebind at runtime via `material.bindParam(name, value)`. The generator emits
+    a `ublk_ptex_params` member (vec4-padded); the asset wrapper round-trips the
+    default in `PbrMaterialGenData.shader_params`."""
+    d = _wrap(default)
+    if d._type not in ("float", "vec2", "vec3", "vec4"):
+      raise TypeError("ctx.param(%r): type must be float/vec2/vec3/vec4, got %s"
+                      % (name, d._type))
+    return Param(name, d._type, default)
 
 
 ###############################################################################
@@ -322,12 +402,19 @@ class _Emitter:
     self.libsrcs = []      # ordered-unique GLSL helper sources
     self.inherits = set()
     self.imports = set()
+    self.params = {}       # insertion-ordered: pname -> (gtype, default)
 
   def expr(self, node):
     if isinstance(node, Const):
       return node._glsl
     if isinstance(node, CtxRef):
       return node._glsl
+    if isinstance(node, Param):
+      if node._pname not in self.params:
+        self.params[node._pname] = (node._type, node._default)
+      # shadlang references uniform_block members by BARE name (like ModColor),
+      # not block.member — read the vec4-padded slot swizzled to logical type.
+      return "%s%s" % (node._pname, _PARAM_SWIZ[node._type])
     if isinstance(node, Swizzle):
       return "%s.%s" % (self.expr(node._src), node._comp)
     if isinstance(node, Op):
@@ -357,7 +444,10 @@ def _coerce(expr, have, want):
 
 
 def emit_surface(channels):
-  """channels: {field -> SurfNode} -> (surface_body, libblock, lib_inherits, extra_imports)."""
+  """channels: {field -> SurfNode} ->
+     (surface_body, libblock, lib_inherits, extra_imports, param_specs).
+  param_specs is an insertion-ordered list of (name, gtype, default) for the
+  bindable runtime uniforms (ctx.param) the surface reads."""
   em = _Emitter()
   assigns = []
   for field, node in channels.items():
@@ -369,15 +459,30 @@ def emit_surface(channels):
   imports = set(em.imports)
   if "lib_mmnoise" in em.inherits:
     imports.add("orkshader://misctools.i2")
-  return body, libblock, sorted(em.inherits), sorted(imports)
+  param_specs = [(name, gt, dflt) for name, (gt, dflt) in em.params.items()]
+  return body, libblock, sorted(em.inherits), sorted(imports), param_specs
 
 
-def materialize_ptex3d(dsl_class, *, name_hint=None, **params):
-  """Instantiate a Ptex3d subclass, emit its surface, and bake the .fxv2."""
+def _build_ptex3d(dsl_class, name_hint=None, **params):
   inst = dsl_class(SurfaceCtx(), **params)
   if not getattr(inst, "_channels", None):
     raise RuntimeError("%s built no surface() channels" % dsl_class.__name__)
-  body, libblock, inherits, imports = emit_surface(inst._channels)
-  return materialize_surface_fxv2(body, libblock=libblock, lib_inherits=inherits,
-                                  extra_imports=imports,
+  body, libblock, inherits, imports, pspecs = emit_surface(inst._channels)
+  path = materialize_surface_fxv2(body, libblock=libblock, lib_inherits=inherits,
+                                  extra_imports=imports, params=pspecs,
                                   name_hint=name_hint or dsl_class.__name__.lower())
+  return path, pspecs
+
+
+def materialize_ptex3d(dsl_class, *, name_hint=None, **params):
+  """Instantiate a Ptex3d subclass, emit its surface, and bake the .fxv2.
+  Returns the cached .fxv2 path."""
+  path, _ = _build_ptex3d(dsl_class, name_hint=name_hint, **params)
+  return path
+
+
+def materialize_ptex3d_full(dsl_class, *, name_hint=None, **params):
+  """Like materialize_ptex3d but also returns the bindable-param specs
+  [(name, gtype, default), ...] — the asset layer pre-binds these defaults and
+  round-trips them in PbrMaterialGenData.shader_params. Returns (path, specs)."""
+  return _build_ptex3d(dsl_class, name_hint=name_hint, **params)

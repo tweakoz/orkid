@@ -11,6 +11,8 @@
 #include <ork/lev2/gfx/terrain/terrain_drawable.h>
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_common.h>
+#include <ork/lev2/gfx/fx_pipeline.h>
+#include <ork/python/gil_safe_pyobj.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -320,6 +322,42 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
                 printf("PBRMaterial<%p> shaderpath<%s>\n", (void*)m.get(), p.c_str());
                 m->_shaderpath = p;
               })
+          // GEOV2 Phase 3 — resolve + bind a uniform_block-member param by name
+          // (a generated ptex3d surface's bindable params). Binds on the material
+          // (_bound_params), which propagate into every pipeline; the internal
+          // _as_freestyle shares _shader so it resolves the handle.
+          .def(
+              "param",
+              [](pbrmaterial_ptr_t m, std::string named) -> pyfxparam_ptr_t {
+                return pyfxparam_ptr_t(m->_as_freestyle ? m->_as_freestyle->param(named) : nullptr);
+              })
+          .def(
+              "bindParam",
+              [type_codec](pbrmaterial_ptr_t m, std::string named, py::object value) {
+                if (not m->_as_freestyle)
+                  return;
+                auto par = m->_as_freestyle->param(named);
+                if (not par)
+                  return;
+                // A 0-arg callable binds a LIVE value re-evaluated every draw
+                // (the generator is carried into each pipeline at creation and
+                // FxPipeline::_set_typed_param evaluates it per-draw). Captured
+                // GIL-safe so off-thread pipeline copies/teardown are safe.
+                if (py::hasattr(value, "__call__")) {
+                  auto safe = ork::python::gil_safe_pyobj(value);
+                  FxPipeline::varval_generator_t gen = [safe, type_codec]() -> FxPipeline::varval_t {
+                    py::gil_scoped_acquire acquire;
+                    auto fn = safe.valueAs<py::object>();
+                    py::object out = (*fn)();
+                    return type_codec->decode(out);
+                  };
+                  m->bindParam(par, FxPipeline::varval_t(gen));
+                } else {
+                  m->bindParam(par, type_codec->decode(value));
+                }
+              },
+              py::arg("name"),
+              py::arg("value"))
           .def_property(
               "doubleSided",
               [](pbrmaterial_ptr_t m) -> bool { //

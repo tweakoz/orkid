@@ -59,6 +59,8 @@ void PbrMaterialGenData::describeX(object::ObjectClass* clazz) {
   clazz->directProperty("color_path",  &PbrMaterialGenData::_color_path);
   clazz->directProperty("normal_path", &PbrMaterialGenData::_normal_path);
   clazz->directProperty("mtlruf_path", &PbrMaterialGenData::_mtlruf_path);
+  clazz->directProperty("shaderpath",  &PbrMaterialGenData::_shaderpath);
+  clazz->directVarMapProperty("shader_params", &PbrMaterialGenData::_shader_params);
   // PBR2 Phase 2 — 8 glTF KHR-extension lobes.
   clazz->directProperty("has_transmission",            &PbrMaterialGenData::_has_transmission);
   clazz->directProperty("transmission_factor",         &PbrMaterialGenData::_transmission_factor);

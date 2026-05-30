@@ -34,8 +34,10 @@ class CastMetal(Ptex3d):
   # so authored 0.0 -> eff 0.3 (shiniest reachable), 1.0 -> eff 1.0.
   # Author the low end near 0 so low-hash cells read glossy ("some shiny bits").
   def __init__(self, ctx, *, cell_scale=4.0, rough=(0.0, 0.9)):
-    cell  = P.voronoi(ctx.P_object * cell_scale)            # .f1 .f2 .cell .cell2
-    seam  = P.smoothstep(0.0, 0.06, cell.f2 - cell.f1)      # 1 interior, 0 at seams
+    cell  = P.voronoi(ctx.P_object * cell_scale)            # .edge .fwedge .cell .cell2
+    # .fwedge = border width-corrected for surface grazing (constant apparent
+    # width, world units, dot-free). Threshold is in coordinate units.
+    seam  = P.smoothstep(0.0, 0.04, cell.fwedge)
     steel = P.mix(rgb(0.35), rgb(0.63), cell.cell)          # flat per-cell tone
     steel = P.mix(steel, steel * rgb(1.06, 0.98, 0.90), ctx.Cd.w)   # Cd.w warm tint
     self.surface(

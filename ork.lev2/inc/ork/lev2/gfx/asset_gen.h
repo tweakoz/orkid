@@ -122,6 +122,16 @@ public:
   std::string _color_path;
   std::string _normal_path;
   std::string _mtlruf_path;
+  // GEOV2 Phase 3 — optional custom fxv2 (a generated ptex3d surface). Empty =
+  // stock PBR shader. When set, PBRMaterial loads this instead; the procedural
+  // surface supplies albedo/metallic/roughness directly (the *Factor fields are
+  // then identity). Lets a Ptex3d round-trip AS a PbrMaterialGenData.
+  std::string _shaderpath;
+  // GEOV2 Phase 3 — bindable uniform_block params the generated shader exposes
+  // (name -> default value, float/vec*). Round-trips the bindable spec; the
+  // materialize step binds these defaults, and they can be overridden live via
+  // PBRMaterial.bindParam(name, value).
+  varmap::varmap_ptr_t _shader_params;
 
   // PBR2 Phase 2 — 8 glTF KHR-extension lobes. Each lobe has a `has_<lobe>`
   // flag (default off) + factor; color-bearing lobes also have a color

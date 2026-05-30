@@ -23,8 +23,10 @@ from ork.hypergraph.ptex3d.dsl import (
   Bundle,
   P,
   rgb,
+  Param,
   emit_surface,
   materialize_ptex3d,
+  materialize_ptex3d_full,
 )
 
 __all__ = [
@@ -40,6 +42,8 @@ __all__ = [
   "Bundle",
   "P",
   "rgb",
+  "Param",
   "emit_surface",
   "materialize_ptex3d",
+  "materialize_ptex3d_full",
 ]
