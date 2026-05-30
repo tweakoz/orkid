@@ -23,8 +23,8 @@ from ork.hypergraph.ptex3d.functions import triplanar, carbon_weave
 
 class CarbonFiber(Ptex3d):
   def __init__(self, ctx, *, scale=4.0, sharpness=1.0,
-               base_color=vec3(0.2, 0.2, 0.25), bump_scale=0.001,
-               gloss=0.03, weft_tint=0.10):
+               base_color=vec3(0.05, 0.05, 0.06125), bump_scale=0.001,
+               gloss=0.01, weft_tint=0.10):
     base   = ctx.param("base_color", base_color)
     bumps  = ctx.param("bump_scale", bump_scale)
     glo    = ctx.param("gloss",      gloss)        # roughness of the tow crowns

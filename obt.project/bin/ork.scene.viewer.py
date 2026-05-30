@@ -114,4 +114,6 @@ def main():
 
 
 if __name__ == "__main__":
-  sys.exit(main())
+  ret = main()
+  ecs.headless_exit()
+  sys.exit(ret)

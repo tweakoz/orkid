@@ -48,6 +48,7 @@
 #include <ork/lev2/gfx/particle/modular_forces.h>
 #include <ork/lev2/gfx/particle/modular_renderers.h>
 #include <ork/lev2/gfx/particle/drawable_data.h>
+#include <ork/lev2/gfx/terrain/dflow/hfdflow.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/unlit_node.h>
@@ -364,6 +365,10 @@ struct ClassToucher {
     particle::Vec3AddModuleData::GetClassStatic();
     particle::Vec3CombineModuleData::GetClassStatic();
     particle::ParametersModuleData::GetClassStatic();
+
+    terrain::TerrainModuleData::GetClassStatic();
+    terrain::FbmModuleData::GetClassStatic();
+    terrain::CaptureModuleData::GetClassStatic();
 
     particle::RingEmitterData::GetClassStatic();
     particle::EllipticalEmitterData::GetClassStatic();
