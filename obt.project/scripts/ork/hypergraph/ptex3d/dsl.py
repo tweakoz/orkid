@@ -427,16 +427,26 @@ class Ptex3d:
         chans[name] = _wrap(val)
     self._channels = chans
 
-  def displace(self, height, *, scale=0.05):
+  def displace(self, height, *, scale=0.05, parallax_steps=0, depth=0.04):
     """Declare a procedural displacement height — a scalar field of `ctx.P_object`
     (0 = recessed, 1 = raised, by convention; GEOV2 §18). Phase 4 drives ANALYTIC
     BUMP from it now (the relief catches light) and parallax-occlusion later. The
     height must be a function of `ctx.P_object` (+ params/constants) so it can be
     re-evaluated at offset/marched coordinates. `scale` sets the bump strength.
     GENERAL but costly — finite-difference (3 height taps/fragment). For a
-    voronoi-edge recession use `displace_cellular` (1 eval, analytic gradient)."""
+    voronoi-edge recession use `displace_cellular` (1 eval, analytic gradient).
+
+    `parallax_steps` > 0 adds PROCEDURAL parallax-occlusion: the surface is
+    evaluated at the marched displaced coordinate (real depth + self-occlusion),
+    not just bump-shaded. EXPENSIVE/TEMPORARY — re-marches the height
+    `parallax_steps`× per fragment (GEOV2 §18.5; a baked-height texture replaces
+    it once auto-uv lands). `parallax_steps` is a BAKE-TIME constant (the march
+    loop bound); 0 (default) = bump only, no march. `depth` is the relief depth
+    in object units (plain float or a `ctx.param`)."""
     self._height = _wrap(height)
-    self._height_scale = float(scale)
+    self._height_scale = _wrap(scale)
+    if parallax_steps > 0:
+      self._parallax = dict(steps=int(parallax_steps), depth=_wrap(depth))
 
   def displace_cellular(self, coord, *, width, scale=0.1):
     """ANALYTIC cellular relief (GEOV2 §18 option 1): the height is
@@ -539,7 +549,7 @@ def emit_height(node, coord="coord"):
   return em.lines, final, libsrcs, sorted(inherits), sorted(imports), params
 
 
-def emit_cellular(coord_node, width_node, scale_node, coord_name="frg_opos"):
+def emit_cellular(coord_node, width_node, scale_node, coord_name="opos"):
   """Emit the cellular-bump inputs: the voronoi coordinate, the crack width, and
   the bump strength, as GLSL evaluated at the fragment's object position (`opos`
   rebound to frg_opos). width/scale may be bindable-param uniforms. Co-emits the
@@ -593,9 +603,23 @@ def _build_ptex3d(dsl_class, name_hint=None, **params):
     inherits = sorted(set(inherits) | set(h_inh))
     imports  = sorted(set(imports) | set(h_imp))
     pspecs   = _merge_param_specs(pspecs, h_params)
+    # scale (+ parallax depth) must emit to single inline exprs (param/const,
+    # no SSA lines) — they're read in the template's bump / march blocks.
+    par = getattr(inst, "_parallax", None)
+    dem = _Emitter(subst={"opos": "opos"})
+    sexpr = _coerce(dem.expr(inst._height_scale), inst._height_scale._type, "float")
+    dexpr = None
+    if par is not None:
+      dexpr = _coerce(dem.expr(par["depth"]), par["depth"]._type, "float")
+    if dem.lines:
+      raise ValueError("displace(scale=/depth=) must be params or constants, not compound expressions")
+    pspecs = _merge_param_specs(pspecs, _emitter_deps(dem)[3])
     height_kwargs = dict(height_body="\n".join(h_lines),
                          height_expr=h_final,
-                         displace_scale=getattr(inst, "_height_scale", 0.05))
+                         displace_scale=sexpr)
+    if par is not None:
+      height_kwargs["parallax_steps"] = par["steps"]
+      height_kwargs["parallax_depth"] = dexpr
 
   libblock = "\n".join(s.strip() for s in libsrcs)
   path = materialize_surface_fxv2(body, libblock=libblock, lib_inherits=inherits,

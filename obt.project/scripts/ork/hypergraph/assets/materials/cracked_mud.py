@@ -1,0 +1,91 @@
+###############################################################################
+# Cracked-mud ptex3d surfaces — reusable GEOV2 procedural materials.
+#
+# A cellular cracked-mud surface (domain-warped voronoi plates, recessed cracks,
+# earthy per-plate tone + dirt grain) in two relief flavors:
+#
+#   CrackedMud     — cheap ANALYTIC cellular bump (1 gradient-voronoi eval,
+#                    GEOV2 §18 option 1). Damp-clay finish so the bump reads.
+#   CrackedMudPOM  — PROCEDURAL parallax occlusion: real crack depth + self-
+#                    occlusion. Matte. EXPENSIVE/TEMPORARY — marches the height
+#                    `steps`x/fragment (GEOV2 §18.5; a baked-height texture
+#                    replaces the march once auto-uv lands).
+#
+# These are ptex3d DSL surface classes — author a material from one via the
+# ptex3d asset wrapper:
+#
+#   from ork.hypergraph.assets.materials import CrackedMud
+#   mat = self.asset.Ptex3d("mud", dsl_class=CrackedMud, cell_scale=5.0)
+#
+# Knobs:
+#   bake-time (ctor kwargs, fold into the shader): cell_scale, steps (POM)
+#   runtime  (ctx.param, bindable via mat.bindParam): base_color, crack, warp,
+#            bump_scale, relief (POM parallax depth)
+###############################################################################
+
+from orkengine.core import vec3
+from ork.hypergraph.ptex3d import Ptex3d, P, rgb
+
+
+def _cracked_mud_fields(ctx, cell_scale):
+  """Build the shared cracked-mud surface fields (the relief technique is added
+  by the concrete class). Returns a dict of the SurfNodes the caller needs."""
+  base  = ctx.param("base_color", vec3(0.50, 0.33, 0.19))   # mud tone (bindable)
+  crack = ctx.param("crack", 0.05)                          # crack width, cell units
+  warp  = ctx.param("warp", 0.30)                           # plate irregularity
+  bumps = ctx.param("bump_scale", 0.025)                    # relief strength
+
+  # domain-warp the cell coordinate -> organic plates (low-octave: runs hot in
+  # the bump/march taps).
+  pc     = ctx.P_object * cell_scale
+  wv     = P.vec3(P.fbm(pc * 0.6, 2), P.fbm(pc * 0.6 + 17.0, 2), P.fbm(pc * 0.6 + 41.0, 2))
+  vcoord = pc + warp * wv
+  cell   = P.voronoi(vcoord)                                # .edge .fwedge .cell .cell2
+  plate  = P.smoothstep(0.0, crack, cell.fwedge)           # 0 in crack, 1 on plate
+
+  tint  = P.mix(rgb(0.70, 0.55, 0.34), rgb(1.05, 0.95, 0.74), cell.cell)
+  mud   = base * tint
+  grain = P.fbm(ctx.P_object * cell_scale * 5.0, 4)
+  mud   = mud * P.mix(0.82, 1.15, grain)
+  mud   = mud * P.mix(0.50, 1.0, P.smoothstep(0.0, crack * 3.0, cell.fwedge))  # darken crack lips
+
+  albedo = P.mix(rgb(0.05, 0.035, 0.022), mud, plate)       # deep crack -> earthy plate
+  return dict(albedo=albedo, cell=cell, vcoord=vcoord, crack=crack,
+              bumps=bumps, plate=plate)
+
+
+class CrackedMud(Ptex3d):
+  """Cracked mud with the cheap ANALYTIC cellular bump. Damp-clay finish (a touch
+  of gloss) so the normal-perturbation relief reads — a pure bump is near-
+  invisible on a fully matte surface."""
+
+  def __init__(self, ctx, *, cell_scale=5.0):
+    f = _cracked_mud_fields(ctx, cell_scale)
+    self.surface(
+      albedo    = f["albedo"],
+      metallic  = 0.0,
+      roughness = P.mix(0.45, 0.70, f["cell"].cell2 * f["plate"]),   # damp clay (bump reads)
+    )
+    self.displace_cellular(f["vcoord"], width=f["crack"] * 2.0, scale=f["bumps"])
+
+
+class CrackedMudPOM(Ptex3d):
+  """Cracked mud with PROCEDURAL parallax occlusion — true crack depth + self-
+  occlusion, so it reads matte (no specular needed). `steps` is a BAKE-TIME
+  constant (the march loop bound). EXPENSIVE/TEMPORARY: re-marches the procedural
+  height `steps`x/fragment (GEOV2 §18.5; swap for a baked-height texture sample
+  once auto-uv lands)."""
+
+  def __init__(self, ctx, *, cell_scale=5.0, steps=12):
+    f = _cracked_mud_fields(ctx, cell_scale)
+    self.surface(
+      albedo    = f["albedo"],
+      metallic  = 0.0,
+      roughness = P.mix(0.95, 0.86, f["cell"].cell2 * f["plate"]),   # matte mud
+    )
+    relief = ctx.param("relief", 0.06)                       # parallax depth, object units
+    height = P.smoothstep(0.0, f["crack"] * 2.0, f["cell"].fwedge)
+    self.displace(height, scale=f["bumps"], parallax_steps=steps, depth=relief)
+
+
+__all__ = ["CrackedMud", "CrackedMudPOM"]

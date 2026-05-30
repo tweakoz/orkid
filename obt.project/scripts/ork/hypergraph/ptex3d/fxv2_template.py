@@ -31,7 +31,7 @@ import hashlib
 from orkengine.core import Path as _Path
 
 # Bump when the template/contract changes so cached files regenerate.
-CODEGEN_VERSION = "geov2-ptex-fxv2-7"   # bumped: analytic cellular bump (gradient voronoi)
+CODEGEN_VERSION = "geov2-ptex-fxv2-8"   # bumped: procedural parallax occlusion march
 
 # The surface output contract (mirrors the eventual PBR2 SurfaceFragment subset).
 SURFACE_OUT_FIELDS = ("albedo", "metallic", "roughness", "normal", "emissive", "ao")
@@ -90,7 +90,8 @@ def _height_blocks(height_body, height_expr, displace_scale):
     crease dots; object-anchored. Overrides `wnrm` before the surface eval."""
   if not (height_expr and str(height_expr).strip()):
     return "", ""
-  s  = repr(float(displace_scale))   # always has a decimal point
+  # scale may be a GLSL expr (bindable param) or a plain number (baked)
+  s  = displace_scale if isinstance(displace_scale, str) else repr(float(displace_scale))
   hb = _indent(height_body.strip(), 4) if height_body.strip() else ""
   height_function = (
     "  // GEOV2 Phase 4 — procedural displacement height (re-evaluable at any\n"
@@ -106,9 +107,9 @@ def _height_blocks(height_body, height_expr, displace_scale):
     "    vec3  _obin = normalize(frg_obin);\n"
     "    vec3  _otan = cross(onrm, _obin);\n"
     "    float _e    = 0.0015;\n"
-    "    float _h0   = ptex_height(frg_opos,            onrm);\n"
-    "    float _du   = ptex_height(frg_opos + _e*_otan, onrm) - _h0;\n"
-    "    float _dv   = ptex_height(frg_opos + _e*_obin, onrm) - _h0;\n"
+    "    float _h0   = ptex_height(opos,            onrm);\n"
+    "    float _du   = ptex_height(opos + _e*_otan, onrm) - _h0;\n"
+    "    float _dv   = ptex_height(opos + _e*_obin, onrm) - _h0;\n"
     "    float _k    = %s / _e;\n"
     "    vec3  _ts   = normalize(vec3(-_du * _k, -_dv * _k, 1.0));\n"
     "    wnrm = normalize(frg_tbn * _ts);\n"
@@ -141,6 +142,47 @@ def _cellular_bump_block(coord_body, coord_expr, width_expr, scale_expr):
     "  }") % (cb, coord_expr, width_expr, scale_expr)
 
 
+def _parallax_block(steps, depth_expr):
+  """GEOV2 §18 — PROCEDURAL parallax occlusion. Marches ptex_height along the
+  tangent-space view ray (object space), updating `opos` to the displaced hit
+  point; the bump + surface then evaluate at `opos`, so the relief shows real
+  parallax + self-occlusion. TEMPORARY/EXPENSIVE: re-runs the height field
+  `steps`× per fragment — replace with a baked-height texture sample once auto-uv
+  lands (GEOV2 §18.5). depth_expr (GLSL, may be a bindable param) is the relief
+  depth in object units; requires the general displace() path (ptex_height)."""
+  if not (steps and depth_expr and str(depth_expr).strip()):
+    return ""
+  n = int(steps)
+  return (
+    "  {  // ===== PROCEDURAL PARALLAX OCCLUSION (TEMPORARY/EXPENSIVE) =====\n"
+    "     // marches ptex_height %d steps/fragment; swap for a baked height\n"
+    "     // texture once auto-uv lands (GEOV2 §18.5).\n"
+    "    vec3  _obin = normalize(frg_obin);\n"
+    "    vec3  _otan = cross(onrm, _obin);\n"
+    "    vec3  _V    = normalize(EyePostion - frg_wpos.xyz);\n"
+    "    float _vN   = max(dot(_V, frg_tbn[2]), 0.05);\n"
+    "    vec2  _Pt   = vec2(dot(_V, frg_tbn[0]), dot(_V, frg_tbn[1])) / _vN * (%s);\n"
+    "    float _dL   = 1.0 / float(%d);\n"
+    "    vec2  _dO   = _Pt / float(%d);\n"
+    "    vec2  _o = vec2(0.0); float _L = 0.0;\n"
+    "    float _d = 1.0 - ptex_height(opos, onrm);\n"
+    "    vec2  _po = _o; float _pL = _L;\n"
+    "    for (int _i = 0; _i < %d; _i++) {       // linear search: bracket the hit\n"
+    "      if (_L >= _d) break;\n"
+    "      _po = _o; _pL = _L;\n"
+    "      _o -= _dO; _L += _dL;\n"
+    "      _d  = 1.0 - ptex_height(opos + _o.x*_otan + _o.y*_obin, onrm);\n"
+    "    }\n"
+    "    for (int _b = 0; _b < 6; _b++) {        // binary search: refine (kills jitter)\n"
+    "      vec2  _m  = 0.5 * (_po + _o);\n"
+    "      float _mL = 0.5 * (_pL + _L);\n"
+    "      float _md = 1.0 - ptex_height(opos + _m.x*_otan + _m.y*_obin, onrm);\n"
+    "      if (_mL < _md) { _po = _m; _pL = _mL; } else { _o = _m; _L = _mL; }\n"
+    "    }\n"
+    "    opos = opos + _o.x*_otan + _o.y*_obin;\n"
+    "  }") % (n, depth_expr, n, n, n)
+
+
 def generate_surface_fxv2(surface_body,
                           *,
                           libblock="",
@@ -153,7 +195,9 @@ def generate_surface_fxv2(surface_body,
                           cellular_body="",
                           cellular_coord="",
                           cellular_width="",
-                          cellular_scale=0.1):
+                          cellular_scale=0.1,
+                          parallax_steps=0,
+                          parallax_depth=""):
   """Assemble a complete forward-PBR .fxv2 around a GLSL surface body.
 
   surface_body : GLSL statements assigning to o.<field> (see module docstring).
@@ -177,6 +221,8 @@ def generate_surface_fxv2(surface_body,
     bump_block = _cellular_bump_block(cellular_body, cellular_coord, cellular_width, cellular_scale)
   else:
     height_function, bump_block = _height_blocks(height_body, height_expr, displace_scale)
+  # PROCEDURAL parallax march (general displace path only — needs ptex_height).
+  parallax_block = _parallax_block(parallax_steps, parallax_depth) if height_function else ""
 
   return _TEMPLATE.format(
     import_lines=import_lines,
@@ -186,6 +232,7 @@ def generate_surface_fxv2(surface_body,
     params_inherit=params_inherit,
     libblock=("\n" + libblock.strip() + "\n" if libblock.strip() else ""),
     height_function=("\n" + height_function + "\n" if height_function else ""),
+    parallax_block=("\n" + parallax_block if parallax_block else ""),
     bump_block=("\n" + bump_block if bump_block else ""),
     surface_body=_indent(surface_body.strip(), 4),
   )
@@ -204,6 +251,8 @@ def materialize_surface_fxv2(surface_body,
                              cellular_coord="",
                              cellular_width="",
                              cellular_scale=0.1,
+                             parallax_steps=0,
+                             parallax_depth="",
                              name_hint="ptex"):
   """Generate + write the .fxv2 to <staging>/dslshadercache/<hint>_<hash>.fxv2.
 
@@ -221,7 +270,9 @@ def materialize_surface_fxv2(surface_body,
                                cellular_body=cellular_body,
                                cellular_coord=cellular_coord,
                                cellular_width=cellular_width,
-                               cellular_scale=cellular_scale)
+                               cellular_scale=cellular_scale,
+                               parallax_steps=parallax_steps,
+                               parallax_depth=parallax_depth)
   digest = hashlib.sha1((CODEGEN_VERSION + "\n" + text).encode("utf-8")).hexdigest()[:16]
   path = os.path.join(_dslcache_dir(), "%s_%s.fxv2" % (name_hint, digest))
   if not os.path.exists(path):
@@ -337,8 +388,10 @@ fragment_shader ps_ptex_forward
   : std_forward_all {{
   vec3 wnrm = normalize(frg_tbn[2]);
   vec3 onrm = normalize(frg_onrm);
+  vec3 opos = frg_opos;        // object position; PARALLAX displaces it, bump + surface read it
+{parallax_block}
 {bump_block}
-  SurfaceOut s = ptex_surface(frg_wpos.xyz, frg_opos, frg_uv0, frg_clr, frg_tbn, wnrm, onrm, EyePostion);
+  SurfaceOut s = ptex_surface(frg_wpos.xyz, opos, frg_uv0, frg_clr, frg_tbn, wnrm, onrm, EyePostion);
   // TEMP roughness linearization (stopgap — REMOVE when the PBR importance-
   // sampling code is calibrated). Maps authored roughness into the
   // perceptually-visible band [0.3, 1.0] (floor 0.3 keeps low cells shiny).

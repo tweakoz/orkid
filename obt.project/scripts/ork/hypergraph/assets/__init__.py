@@ -6,5 +6,5 @@
 # or
 #    from ork.hypergraph.assets.sdf.sphere import SphereSdf
 ###############################################################################
-from . import sdf, mesh
-__all__ = ["sdf", "mesh"]
+from . import sdf, mesh, materials
+__all__ = ["sdf", "mesh", "materials"]
