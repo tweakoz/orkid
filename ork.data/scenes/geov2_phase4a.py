@@ -37,12 +37,16 @@ class CrackedMud(PtexBase):
     base  = ctx.param("base_color", vec3(0.50, 0.33, 0.19))   # mud tone (bindable)
     crack = ctx.param("crack", 0.05)                          # crack width, cell units
     warp  = ctx.param("warp", 0.30)                           # plate irregularity
+    bumps = ctx.param("bump_scale", 0.025)                      # bump strength (bindable)
 
-    # domain-warp the cell coordinate so plates are organic, not lattice-regular
-    pc    = ctx.P_object * cell_scale
-    wv    = P.vec3(P.fbm(pc * 0.6), P.fbm(pc * 0.6 + 17.0), P.fbm(pc * 0.6 + 41.0))
-    cell  = P.voronoi(pc + warp * wv)                          # .edge .fwedge .cell .cell2
-    plate = P.smoothstep(0.0, crack, cell.fwedge)             # 0 in crack, 1 on plate
+    # domain-warp the cell coordinate so plates are organic, not lattice-regular.
+    # 2-octave fbm (low-freq plate shape) — this warp runs in the surface AND in
+    # every analytic-bump tap, so keep its octave count low.
+    pc     = ctx.P_object * cell_scale
+    wv     = P.vec3(P.fbm(pc * 0.6, 2), P.fbm(pc * 0.6 + 17.0, 2), P.fbm(pc * 0.6 + 41.0, 2))
+    vcoord = pc + warp * wv                                    # warped cell coordinate
+    cell   = P.voronoi(vcoord)                                 # .edge .fwedge .cell .cell2
+    plate  = P.smoothstep(0.0, crack, cell.fwedge)            # 0 in crack, 1 on plate
 
     # per-plate earthy tone + fine dirt grain
     tint  = P.mix(rgb(0.70, 0.55, 0.34), rgb(1.05, 0.95, 0.74), cell.cell)
@@ -62,9 +66,10 @@ class CrackedMud(PtexBase):
       roughness = P.mix(0.0, 0.18, cell.cell2 * plate),      # glossy; authored low (eff ~0.3-0.43)
     )
 
-    # Phase 4 — displacement height (plates raised, cracks recessed). Drives the
-    # analytic bump now; parallax-occlusion later. Height is P_object-only.
-    self.displace(P.smoothstep(0.0, crack * 2.0, cell.fwedge), scale=0.02)
+    # Phase 4 — ANALYTIC cellular relief (GEOV2 §18 option 1): plates raised,
+    # cracks recessed, bump from ONE gradient-voronoi eval (no finite-difference
+    # taps). ~3x cheaper than the general self.displace() path. Reuses vcoord.
+    self.displace_cellular(vcoord, width=crack * 2.0, scale=bumps)
 
 
 ###############################################################################

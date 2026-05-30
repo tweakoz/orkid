@@ -265,6 +265,40 @@ vec4 _ptex_voronoi(vec3 x, vec3 onrm) {
 }
 """
 
+# Gradient-returning voronoi for the ANALYTIC cellular bump (GEOV2 §18 option 1).
+# Returns .x = fwedge AND .yzw = the object-space gradient direction of fwedge
+# (the surface-corrected cell-wall normal). One eval replaces the 3 finite-
+# difference height taps — the wall normal IS the height gradient direction, so
+# we get the bump analytically instead of re-marching warp+voronoi per tap.
+# Relies on _ptex_vhash3 from _VORONOI_SRC (always co-emitted; dedup keeps it once).
+_VORONOI_G_SRC = """
+vec4 _ptex_voronoi_g(vec3 x, vec3 onrm) {   // .x=fwedge, .yzw=grad(fwedge) dir
+  vec3 ip = floor(x), fp = fract(x);
+  vec3 mg = vec3(0.0), mr = vec3(0.0);
+  float f1 = 1e9;
+  for (int k=-1;k<=1;k++) for (int j=-1;j<=1;j++) for (int i=-1;i<=1;i++) {
+    vec3 g = vec3(float(i), float(j), float(k));
+    vec3 r = g + _ptex_vhash3(ip+g) - fp;
+    float d = dot(r, r);
+    if (d < f1) { f1 = d; mr = r; mg = g; }
+  }
+  float edge = 1e9; vec3 enrm = onrm;
+  for (int k=-1;k<=1;k++) for (int j=-1;j<=1;j++) for (int i=-1;i<=1;i++) {
+    vec3 g = mg + vec3(float(i), float(j), float(k));
+    vec3 r = g + _ptex_vhash3(ip+g) - fp;
+    vec3 diff = r - mr;
+    float lensq = dot(diff, diff);
+    if (lensq > 1e-5) {
+      vec3 n = diff * inversesqrt(lensq);
+      float d = dot(0.5*(mr+r), n);
+      if (d < edge) { edge = d; enrm = n; }
+    }
+  }
+  float gT = max(length(enrm - dot(enrm, onrm) * onrm), 1e-3);
+  return vec4(edge / gT, enrm / gT);
+}
+"""
+
 _FBM_SRC = """
 float _ptex_fbm(vec3 p, int octaves) {    // value-noise fbm over lib_mmnoise::noise
   float v = 0.0, amp = 0.5, fr = 1.0;
@@ -398,9 +432,20 @@ class Ptex3d:
     (0 = recessed, 1 = raised, by convention; GEOV2 §18). Phase 4 drives ANALYTIC
     BUMP from it now (the relief catches light) and parallax-occlusion later. The
     height must be a function of `ctx.P_object` (+ params/constants) so it can be
-    re-evaluated at offset/marched coordinates. `scale` sets the bump strength."""
+    re-evaluated at offset/marched coordinates. `scale` sets the bump strength.
+    GENERAL but costly — finite-difference (3 height taps/fragment). For a
+    voronoi-edge recession use `displace_cellular` (1 eval, analytic gradient)."""
     self._height = _wrap(height)
     self._height_scale = float(scale)
+
+  def displace_cellular(self, coord, *, width, scale=0.1):
+    """ANALYTIC cellular relief (GEOV2 §18 option 1): the height is
+    `smoothstep(0, width, voronoi(coord).fwedge)` — recessed cracks, raised
+    plates — and the bump comes from ONE gradient-voronoi eval (the cell-wall
+    normal IS the height gradient), not finite differences. ~3× cheaper than
+    `displace`. `coord` is the voronoi coordinate (e.g. the same warped coord the
+    surface samples); `width` the crack width; `scale` the bump strength."""
+    self._cellular = dict(coord=_wrap(coord), width=_wrap(width), scale=_wrap(scale))
 
 
 class _Emitter:
@@ -494,6 +539,21 @@ def emit_height(node, coord="coord"):
   return em.lines, final, libsrcs, sorted(inherits), sorted(imports), params
 
 
+def emit_cellular(coord_node, width_node, scale_node, coord_name="frg_opos"):
+  """Emit the cellular-bump inputs: the voronoi coordinate, the crack width, and
+  the bump strength, as GLSL evaluated at the fragment's object position (`opos`
+  rebound to frg_opos). width/scale may be bindable-param uniforms. Co-emits the
+  gradient-voronoi helper. Returns
+  (lines, coord_expr, width_expr, scale_expr, libsrcs, inherits, imports, params)."""
+  em = _Emitter(subst={"opos": coord_name})
+  cvar = _coerce(em.expr(coord_node), coord_node._type, "vec3")
+  wvar = _coerce(em.expr(width_node), width_node._type, "float")
+  svar = _coerce(em.expr(scale_node), scale_node._type, "float")
+  libsrcs, inherits, imports, params = _emitter_deps(em)
+  libsrcs = _union_ordered(libsrcs, [_VORONOI_SRC, _VORONOI_G_SRC])  # hashes + grad voronoi
+  return em.lines, cvar, wvar, svar, libsrcs, sorted(inherits), sorted(imports), params
+
+
 def _union_ordered(a, b):
   out = list(a)
   for x in b:
@@ -514,8 +574,20 @@ def _build_ptex3d(dsl_class, name_hint=None, **params):
   body, libsrcs, inherits, imports, pspecs = emit_surface(inst._channels)
 
   height_kwargs = {}
-  height = getattr(inst, "_height", None)
-  if height is not None:
+  height   = getattr(inst, "_height", None)
+  cellular = getattr(inst, "_cellular", None)
+  if cellular is not None:
+    c_lines, c_coord, c_width, c_scale, c_libsrcs, c_inh, c_imp, c_params = emit_cellular(
+        cellular["coord"], cellular["width"], cellular["scale"])
+    libsrcs  = _union_ordered(libsrcs, c_libsrcs)
+    inherits = sorted(set(inherits) | set(c_inh))
+    imports  = sorted(set(imports) | set(c_imp))
+    pspecs   = _merge_param_specs(pspecs, c_params)
+    height_kwargs = dict(cellular_body="\n".join(c_lines),
+                         cellular_coord=c_coord,
+                         cellular_width=c_width,
+                         cellular_scale=c_scale)
+  elif height is not None:
     h_lines, h_final, h_libsrcs, h_inh, h_imp, h_params = emit_height(height)
     libsrcs  = _union_ordered(libsrcs, h_libsrcs)        # dedup shared helpers
     inherits = sorted(set(inherits) | set(h_inh))

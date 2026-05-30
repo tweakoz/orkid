@@ -39,7 +39,7 @@ def parse_args():
                       "or explicit path to a .py file")
   p.add_argument("--class", dest="class_name", default=None,
                  help="explicit Scene subclass to load (auto-find used if omitted)")
-  p.add_argument("--ssaa", type=int, default=1, help="SSAA multiplier (0=off)")
+  p.add_argument("-t", "--ssaa", type=int, default=0, help="SSAA multiplier (0=off)")
   p.add_argument("-e", "--edit", action="store_true",
                  help="launch ork.ecsedit.py instead of ork.ecsplay.py")
   p.add_argument("-f", "--fullscreen", action="store_true",

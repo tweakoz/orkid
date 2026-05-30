@@ -31,7 +31,7 @@ import hashlib
 from orkengine.core import Path as _Path
 
 # Bump when the template/contract changes so cached files regenerate.
-CODEGEN_VERSION = "geov2-ptex-fxv2-6"   # bumped: displacement height + analytic bump (Phase 4)
+CODEGEN_VERSION = "geov2-ptex-fxv2-7"   # bumped: analytic cellular bump (gradient voronoi)
 
 # The surface output contract (mirrors the eventual PBR2 SurfaceFragment subset).
 SURFACE_OUT_FIELDS = ("albedo", "metallic", "roughness", "normal", "emissive", "ao")
@@ -100,17 +100,45 @@ def _height_blocks(height_body, height_expr, displace_scale):
     "    return %s;\n"
     "  }") % (hb, height_expr)
   bump_block = (
-    "  {  // analytic bump from ptex_height (object tangent space -> world TBN)\n"
+    "  {  // analytic bump from ptex_height (object tangent space -> world TBN).\n"
+    "     // Forward difference: 3 height taps (h0 reused), not 4 — the height\n"
+    "     // field (warp+voronoi) is the cost, so each tap saved matters.\n"
     "    vec3  _obin = normalize(frg_obin);\n"
     "    vec3  _otan = cross(onrm, _obin);\n"
     "    float _e    = 0.0015;\n"
-    "    float _du   = ptex_height(frg_opos + _e*_otan, onrm) - ptex_height(frg_opos - _e*_otan, onrm);\n"
-    "    float _dv   = ptex_height(frg_opos + _e*_obin, onrm) - ptex_height(frg_opos - _e*_obin, onrm);\n"
-    "    float _k    = %s / (2.0 * _e);\n"
+    "    float _h0   = ptex_height(frg_opos,            onrm);\n"
+    "    float _du   = ptex_height(frg_opos + _e*_otan, onrm) - _h0;\n"
+    "    float _dv   = ptex_height(frg_opos + _e*_obin, onrm) - _h0;\n"
+    "    float _k    = %s / _e;\n"
     "    vec3  _ts   = normalize(vec3(-_du * _k, -_dv * _k, 1.0));\n"
     "    wnrm = normalize(frg_tbn * _ts);\n"
     "  }") % (s,)
   return height_function, bump_block
+
+
+def _cellular_bump_block(coord_body, coord_expr, width_expr, scale_expr):
+  """GEOV2 §18 option 1 — ANALYTIC cellular bump. One gradient-voronoi eval
+  (`_ptex_voronoi_g` returns fwedge + the cell-wall normal = the height gradient
+  direction); the smoothstep slope scales it; project to object tangent space and
+  map to world via the TBN. No finite differences, no per-tap warp re-eval.
+  width_expr / scale_expr are GLSL (may be bindable-param uniforms)."""
+  if not (coord_expr and str(coord_expr).strip()):
+    return ""
+  cb = _indent(coord_body.strip(), 4) if coord_body.strip() else ""
+  return (
+    "  {  // ANALYTIC cellular bump — one gradient-voronoi eval (no finite diffs)\n"
+    "    vec3  _obin = normalize(frg_obin);\n"
+    "    vec3  _otan = cross(onrm, _obin);\n"
+    "%s\n"
+    "    vec4  _vg = _ptex_voronoi_g(%s, onrm);\n"
+    "    float _W  = max(%s, 1e-5);\n"
+    "    float _bs = %s;\n"
+    "    float _u  = clamp(_vg.x / _W, 0.0, 1.0);\n"
+    "    float _sl = 6.0 * _u * (1.0 - _u) / _W;          // d/dx smoothstep(0,_W,fwedge)\n"
+    "    vec3  _grad = _sl * _vg.yzw;                      // grad(height), object space\n"
+    "    vec3  _ts = normalize(vec3(-dot(_grad,_otan) * _bs, -dot(_grad,_obin) * _bs, 1.0));\n"
+    "    wnrm = normalize(frg_tbn * _ts);\n"
+    "  }") % (cb, coord_expr, width_expr, scale_expr)
 
 
 def generate_surface_fxv2(surface_body,
@@ -121,7 +149,11 @@ def generate_surface_fxv2(surface_body,
                           params=(),
                           height_body="",
                           height_expr="",
-                          displace_scale=0.05):
+                          displace_scale=0.05,
+                          cellular_body="",
+                          cellular_coord="",
+                          cellular_width="",
+                          cellular_scale=0.1):
   """Assemble a complete forward-PBR .fxv2 around a GLSL surface body.
 
   surface_body : GLSL statements assigning to o.<field> (see module docstring).
@@ -139,7 +171,12 @@ def generate_surface_fxv2(surface_body,
   surf_inherits = "".join(" : %s" % n for n in lib_inherits)
   out_struct = "  struct SurfaceOut { vec3 albedo; float metallic; float roughness; vec3 normal; vec3 emissive; float ao; };"
   params_block, params_inherit = _params_block(params)
-  height_function, bump_block = _height_blocks(height_body, height_expr, displace_scale)
+  if cellular_coord and str(cellular_coord).strip():
+    # analytic cellular relief: no ptex_height (no finite-diff taps)
+    height_function = ""
+    bump_block = _cellular_bump_block(cellular_body, cellular_coord, cellular_width, cellular_scale)
+  else:
+    height_function, bump_block = _height_blocks(height_body, height_expr, displace_scale)
 
   return _TEMPLATE.format(
     import_lines=import_lines,
@@ -163,6 +200,10 @@ def materialize_surface_fxv2(surface_body,
                              height_body="",
                              height_expr="",
                              displace_scale=0.05,
+                             cellular_body="",
+                             cellular_coord="",
+                             cellular_width="",
+                             cellular_scale=0.1,
                              name_hint="ptex"):
   """Generate + write the .fxv2 to <staging>/dslshadercache/<hint>_<hash>.fxv2.
 
@@ -176,7 +217,11 @@ def materialize_surface_fxv2(surface_body,
                                params=params,
                                height_body=height_body,
                                height_expr=height_expr,
-                               displace_scale=displace_scale)
+                               displace_scale=displace_scale,
+                               cellular_body=cellular_body,
+                               cellular_coord=cellular_coord,
+                               cellular_width=cellular_width,
+                               cellular_scale=cellular_scale)
   digest = hashlib.sha1((CODEGEN_VERSION + "\n" + text).encode("utf-8")).hexdigest()[:16]
   path = os.path.join(_dslcache_dir(), "%s_%s.fxv2" % (name_hint, digest))
   if not os.path.exists(path):
