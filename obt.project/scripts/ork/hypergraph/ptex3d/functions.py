@@ -133,4 +133,74 @@ def greeble(local, panel_id, cover, grid=4.0):
                 [local, panel_id, cover], rtype="float", libsrc=_GREEBLE_SRC)
 
 
-__all__ = ["triplanar", "carbon_weave", "panel_split", "greeble"]
+# ── VOLUMETRIC partition (native 3D — no triplanar, no projection seams) ─────
+def _box_hull_src(coarse, fine):
+  """GLSL for an IMPLICIT recursive 3D box subdivision (a spatial BSP). `fine`
+  times, split the box's longest axis at a hashed position and descend into the
+  half holding the point. Because the partition lives in 3-space, reading it at a
+  surface point has NO projection and NO seams — it's continuous over any shape.
+  Snapshots the panel state at `coarse` levels, then keeps going to `fine` for
+  greebles. -> vec4(coarse_id, coarse_edge, fine_id, fine_edge).
+
+  UNIFORM SEAM WIDTH: a 3D wall-distance read on a surface widens wherever the
+  surface grazes that wall (normal ~|| the wall axis — e.g. a sphere's 6 axis
+  poles), because the distance changes slowly there. We divide each edge by the
+  grazing factor sqrt(1-(axis.n)^2) (the rate the wall-distance changes ALONG the
+  surface), which cancels the widening -> constant on-surface seam width. Both
+  level counts BAKE (loop bounds)."""
+  return ("float _bx_hash(vec3 p){ return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }\n"
+          "vec4 _box_hull_%d_%d(vec3 p, vec3 n) {\n"
+          "  vec3 cmin = floor(p);\n"
+          "  vec3 cmax = cmin + 1.0;\n"
+          "  float id = _bx_hash(cmin);\n"
+          "  float cid = id;\n"
+          "  float cedge = 1.0;\n"
+          "  float cax = 0.0;\n"
+          "  for (int L = 0; L < %d; L++) {\n"
+          "    vec3 sz = cmax - cmin;\n"
+          "    float ax = 0.0; float mx = sz.x;\n"
+          "    if (sz.y > mx) { ax = 1.0; mx = sz.y; }\n"
+          "    if (sz.z > mx) { ax = 2.0; mx = sz.z; }\n"
+          "    if (_bx_hash(vec3(id*2.3 + 1.0, float(L), 7.0)) < 0.2) ax = mod(ax + 1.0, 3.0);\n"
+          "    int axi = int(ax);\n"
+          "    float ht = 0.35 + 0.30 * _bx_hash(vec3(id*1.7 + 3.0, float(L), 1.0));\n"
+          "    float mid = mix(cmin[axi], cmax[axi], ht);\n"
+          "    if (p[axi] < mid) { cmax[axi] = mid; id = _bx_hash(vec3(id + float(L)*0.13, ax, 1.0)); }\n"
+          "    else              { cmin[axi] = mid; id = _bx_hash(vec3(id + float(L)*0.13, ax, 2.0)); }\n"
+          "    if (L == %d) {\n"
+          "      cid = id;\n"
+          "      vec3 a0 = min(p - cmin, cmax - p);\n"
+          "      cedge = min(a0.x, min(a0.y, a0.z));\n"
+          "      cax = 0.0; float m0 = a0.x;\n"
+          "      if (a0.y < m0) { cax = 1.0; m0 = a0.y; }\n"
+          "      if (a0.z < m0) { cax = 2.0; m0 = a0.z; }\n"
+          "    }\n"
+          "  }\n"
+          "  vec3 a1 = min(p - cmin, cmax - p);\n"
+          "  float fedge = min(a1.x, min(a1.y, a1.z));\n"
+          "  float fax = 0.0; float m1 = a1.x;\n"
+          "  if (a1.y < m1) { fax = 1.0; m1 = a1.y; }\n"
+          "  if (a1.z < m1) { fax = 2.0; m1 = a1.z; }\n"
+          "  vec3 cav = vec3(0.0); cav[int(cax)] = 1.0;\n"
+          "  vec3 fav = vec3(0.0); fav[int(fax)] = 1.0;\n"
+          "  float gc = max(sqrt(max(0.0, 1.0 - dot(cav, n)*dot(cav, n))), 0.22);\n"
+          "  float gf = max(sqrt(max(0.0, 1.0 - dot(fav, n)*dot(fav, n))), 0.22);\n"
+          "  return vec4(cid, cedge / gc, id, fedge / gf);\n"
+          "}\n") % (coarse, fine, fine, coarse - 1)
+
+
+def box_partition(p, n, levels=4, sublevels=3):
+  """VOLUMETRIC panel plating + greebles at object-space point `p` — a native 3D
+  recursive box subdivision (no triplanar, no projection seams; continuous over
+  any shape). `n` is the object-space surface normal, used only to keep the seam
+  width uniform across grazing angles. -> vec4(.x=panel id, .y=panel seam dist,
+  .z=greeble-cell id, .w=greeble-cell wall dist). `levels` (panels) and
+  `sublevels` (greeble depth) BAKE as loop bounds. Pair with the finite-diff bump
+  (already 3D)."""
+  c = int(levels)
+  f = int(levels) + int(sublevels)
+  return P.func("_box_hull_%d_%d({0}, {1})" % (c, f), [p, n], rtype="vec4",
+                libsrc=_box_hull_src(c, f))
+
+
+__all__ = ["triplanar", "carbon_weave", "panel_split", "greeble", "box_partition"]

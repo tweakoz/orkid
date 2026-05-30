@@ -23,7 +23,9 @@ class CarbonScene(Scene):
 
     mat = A.Ptex3d("carbon_mtl",
                    dsl_class=CarbonFiber,
-                   scale=12.0)
+                   gloss = 0.0,
+                   bump_scale = 0.001,
+                   scale=4.0)
     drw = A.IcoSphere("carbon_sphere",
                       radius=2.5,
                       subdivisions=5,
