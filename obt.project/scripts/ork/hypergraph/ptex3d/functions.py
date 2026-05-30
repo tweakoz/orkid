@@ -416,6 +416,25 @@ def rosette(p, freq, ring=0.34, thickness=0.12, break_amount=0.55,
   return _Rosette(band * brk, fill, v.f1, v.cell)
 
 
+def cell_lod(coord, lo=0.35, hi=0.85):
+  """Sub-pixel LOD for a unit-cell field (voronoi / grid): 0 = cells resolved,
+  1 = cells smaller than a pixel. Fade DISCRETE per-cell values (cell-hash colours,
+  gaps, relief) toward their mean by this to antialias them — edge-AA (fwidth
+  smoothstep) cannot touch per-cell discontinuities. `coord` is the cell-space
+  coordinate fed to the voronoi/grid (cells ~1 apart)."""
+  return P.smoothstep(lo, hi, P.length(P.fwidth(coord)))
+
+
+def streaks(p, direction, freq, squash=0.12, octaves=4):
+  """Anisotropic noise — fbm of a coordinate COMPRESSED along `direction`, so its
+  features stretch into streaks that follow it (grass blades, brushed metal, hair,
+  fur). -> [0,1]. `octaves` BAKES (fbm loop bound)."""
+  along = P.dot(p, direction)
+  perp  = p - direction * along
+  q     = perp + direction * (along * squash)
+  return P.fbm(q * freq, octaves)
+
+
 __all__ = ["triplanar", "carbon_weave", "panel_split", "greeble", "box_partition",
            "brick_lattice", "domain_warp", "vein_field", "crumple", "wood_grain",
-           "stripes", "spots", "rosette"]
+           "stripes", "spots", "rosette", "streaks", "cell_lod"]

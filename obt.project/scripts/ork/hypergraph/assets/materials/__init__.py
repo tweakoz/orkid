@@ -21,7 +21,9 @@ from .foil           import Foil
 from .wood           import Wood, Teak, Oak, Pine
 from .plywood        import Plywood
 from .animal_skin    import Cheetah, Leopard, Zebra, Reptile
+from .ground         import Dirt, Grass, Gravel, Sand
+from .terrain        import Rock, Snow, Mud
 __all__ = ["CrackedMud", "CobbleStone", "LilyPads", "BeachBall", "BasketBall",
            "SoccerBall", "HoneyComb", "CarbonFiber", "SpaceshipHull", "Brick",
            "Marble", "Foil", "Wood", "Teak", "Oak", "Pine", "Plywood",
-           "Cheetah", "Leopard", "Zebra", "Reptile"]
+           "Cheetah", "Leopard", "Zebra", "Reptile", "Dirt", "Grass", "Gravel", "Sand", "Rock", "Snow", "Mud"]
