@@ -6,7 +6,12 @@
 #     from ork.hypergraph.assets.materials import CrackedMud
 #     mat = self.asset.Ptex3d("mud", dsl_class=CrackedMud, cell_scale=5.0)
 ###############################################################################
-from .cracked_mud import CrackedMud, CrackedMudPOM
-from .cobblestone import CobblestonePOM
-from .lily_pads   import LilyPadsPOM
-__all__ = ["CrackedMud", "CrackedMudPOM", "CobblestonePOM", "LilyPadsPOM"]
+from .cracked_mud import CrackedMud
+from .cobblestone import CobbleStone
+from .lily_pads   import LilyPads
+from .beachball   import BeachBall
+from .basketball  import BasketBall
+from .soccer      import SoccerBall
+from .honeycomb   import HoneyComb
+__all__ = ["CrackedMud", "CobbleStone", "LilyPads", "BeachBall", "BasketBall",
+           "SoccerBall", "HoneyComb"]

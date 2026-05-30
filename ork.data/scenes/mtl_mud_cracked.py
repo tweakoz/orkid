@@ -28,20 +28,18 @@ lev2_pyexdir.addToSysPath()
 class CrackedMudScene(Scene):
 
   def __init__(self):
-    super().__init__()
+    super().__init__()                       # self.SG = default ForwardPBR scenegraph
+    A = self.asset
 
-    SG = self.scenegraph(
-      preset            = "ForwardPBR",
-      skybox_path       = "<ork_envmaps2>/blender_forest.xir",
-      SkyboxIntensity   = 1.0,
-      DiffuseIntensity  = 1.0,
-      SpecularIntensity = 1.0,
-      AmbientLight      = vec3(0.06))
-
-    mat = self.asset.Ptex3d("mud_mtl", dsl_class=CrackedMud, cell_scale=5.0)
-    drw = self.asset.IcoSphere("mud_sphere", radius=2.5, subdivisions=5, material=mat)
+    mat = A.Ptex3d("mud_mtl",
+                   dsl_class=CrackedMud,
+                   cell_scale=5.0)
+    drw = A.IcoSphere("mud_sphere",
+                      radius=2.5,
+                      subdivisions=5,
+                      material=mat)
 
     self.entity(
       "mudball",
       transform  = {"translation": vec3(0, 0, 0)},
-      components = [SG.component(nodes={"n": {"drawable": drw}})])
+      components = [self.SG.component(nodes={"n": {"drawable": drw}})])

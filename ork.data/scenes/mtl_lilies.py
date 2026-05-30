@@ -10,7 +10,7 @@
 
 from orkengine.core import lev2_pyexdir, vec3
 from ork.hypergraph.ecs.scene import Scene
-from ork.hypergraph.assets.materials import LilyPadsPOM
+from ork.hypergraph.assets.materials import LilyPads
 
 lev2_pyexdir.addToSysPath()
 
@@ -18,20 +18,21 @@ lev2_pyexdir.addToSysPath()
 class LiliesScene(Scene):
 
   def __init__(self):
-    super().__init__()
+    super().__init__()                       # self.SG = default ForwardPBR scenegraph
+    A = self.asset
 
-    SG = self.scenegraph(
-      preset            = "ForwardPBR",
-      skybox_path       = "<ork_envmaps2>/blender_forest.xir",
-      SkyboxIntensity   = 1.0,
-      DiffuseIntensity  = 1.0,
-      SpecularIntensity = 1.0,
-      AmbientLight      = vec3(0.06))
-
-    mat = self.asset.Ptex3d("lily_mtl", dsl_class=LilyPadsPOM, cell_scale=1.0, radius=0.6, steps=16, relief=.15)
-    drw = self.asset.IcoSphere("lily_sphere", radius=2.5, subdivisions=5, material=mat)
+    mat = A.Ptex3d("lily_mtl",
+                   dsl_class=LilyPads,
+                   cell_scale=1.0,
+                   radius=0.6,
+                   relief=0.15,
+                   pom_steps=16)
+    drw = A.IcoSphere("lily_sphere",
+                      radius=2.5,
+                      subdivisions=5,
+                      material=mat)
 
     self.entity(
       "lilyball",
       transform  = {"translation": vec3(0, 0, 0)},
-      components = [SG.component(nodes={"n": {"drawable": drw}})])
+      components = [self.SG.component(nodes={"n": {"drawable": drw}})])

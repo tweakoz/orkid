@@ -553,7 +553,12 @@ class Scene:
       wrapped.__kwdefaults__ = val.__kwdefaults__
       setattr(cls, attr, wrapped)
 
-  def __init__(self):
+  # Default scenegraph used by `self.SG` when a scene doesn't declare its own
+  # (default_sg=True). Override per-scene via super().__init__(skybox_path=...,
+  # **sg_params) or by passing default_sg=False and calling self.scenegraph(...).
+  DEFAULT_SKYBOX = "<ork_envmaps2>/blender_forest.xir"
+
+  def __init__(self, *, default_sg=True, skybox_path=None, **sg_params):
     # Pass-1 collections. Python 3.7+ dicts preserve insertion order, which
     # we rely on for deterministic Pass 2 walk.
     self._systems    = {}   # typename → _SystemDecl
@@ -568,6 +573,32 @@ class Scene:
     # Asset DSL namespace: self.asset.<GenName>("name", **kwargs).
     # See ork/ecs/scene/assets.py for the registry of available gens.
     self.asset = _AssetNamespace(self)
+    # self.SG boilerplate: lazily created on first access (so it never clashes
+    # with a scene that declares its own scenegraph()). See the SG property.
+    self._sg_handle    = None
+    self._default_sg   = default_sg
+    self._default_sg_kw = dict(sg_params)
+    if skybox_path is not None:
+      self._default_sg_kw["skybox_path"] = skybox_path
+
+  @property
+  def SG(self):
+    """The scene's SceneGraphHandle. If the scene didn't declare one and
+    default_sg is on, a standard ForwardPBR scenegraph (DEFAULT_SKYBOX, unit
+    intensities, low ambient) is created on first access — so material scenes can
+    skip the boilerplate and just use `self.SG.component(...)`."""
+    if self._sg_handle is None:
+      if not self._default_sg:
+        raise RuntimeError(
+          "self.SG accessed but the scene declared no scenegraph and "
+          "default_sg=False — call self.scenegraph(...) or pass default_sg=True")
+      kw = dict(preset="ForwardPBR",
+                skybox_path=self.DEFAULT_SKYBOX,
+                SkyboxIntensity=1.0, DiffuseIntensity=1.0, SpecularIntensity=1.0,
+                AmbientLight=vec3(0.06))
+      kw.update(self._default_sg_kw)
+      self._sg_handle = self.scenegraph(**kw)
+    return self._sg_handle
 
   # ---------------------------------------------------------------------------
   # Primitive layer — explicit ECS declarations
@@ -683,6 +714,7 @@ class Scene:
                               preset=preset, layers=layers,
                               external=external, params=params)
     self._systems["SceneGraphSystem"] = handle._decl
+    self._sg_handle = handle   # so self.SG reflects an explicitly-declared sg too
     return handle
 
   def entity(self, name, *, transform=None, components=(), spawner=True,

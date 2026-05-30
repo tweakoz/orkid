@@ -4,14 +4,15 @@
 # profile) reads as round pads / pillars rather than cobbles. Kept as its own
 # material because the shape is its own thing.
 #
-#   from ork.hypergraph.assets.materials import LilyPadsPOM
-#   mat = self.asset.Ptex3d("lilies", dsl_class=LilyPadsPOM, cell_scale=4.0)
+#   from ork.hypergraph.assets.materials import LilyPads
+#   mat = self.asset.Ptex3d("lilies", dsl_class=LilyPads, pom_steps=16)
 #
-# EXPENSIVE/TEMPORARY parallax (GEOV2 §18.5; baked-height texture later).
+# ONE class; `pom_steps` gates the relief: 0 (default) = bump only; > 0 = +
+# PROCEDURAL parallax (EXPENSIVE/TEMPORARY, GEOV2 §18.5; baked-height later).
 #
 # Knobs (all are ctor kwargs; the value sets the param default — settable
 # statically from the scene and still runtime-bindable):
-#   bake-time (folds into shader): steps
+#   bake-time (folds into shader): pom_steps
 #   runtime  (uniform, no recompile): cell_scale, base_color, warp, radius,
 #                                     bump_scale, relief, water_color
 ###############################################################################
@@ -20,19 +21,16 @@ from orkengine.core import vec3
 from ork.hypergraph.ptex3d import Ptex3d, P, rgb
 
 
-class LilyPadsPOM(Ptex3d):
-  """Round hemispherical pads/pillars over warped voronoi cells, parallax-
-  occluded. `steps` is a BAKE-TIME constant (the march loop bound)."""
+class LilyPads(Ptex3d):
+  """Round hemispherical pads/pillars over warped voronoi cells. ONE class;
+  `pom_steps` (bake-time) gates the relief: 0 (default) = bump only; > 0 = +
+  PROCEDURAL parallax occlusion (EXPENSIVE/TEMPORARY march, GEOV2 §18.5). Every
+  other knob is a runtime ctx.param (ctor kwarg sets the default)."""
 
-  def __init__(self, ctx, *, cell_scale=4.0, steps=16,
+  def __init__(self, ctx, *, pom_steps=0, cell_scale=4.0,
                base_color=vec3(0.30, 0.45, 0.30),
                warp=0.20, radius=0.70, bump_scale=0.03, relief=0.10,
                water_color=vec3(0.04, 0.16, 0.20)):
-    # Each ctor kwarg sets the ctx.param DEFAULT — so the scene can fix any value
-    # statically (e.g. Ptex3d(dsl_class=LilyPadsPOM, radius=0.8, relief=0.14)),
-    # and it stays runtime-bindable via mat.bindParam(name, ...). Only `steps`
-    # (the march loop bound) is bake-time; everything else is a runtime uniform
-    # (cell_scale is just a coord multiply -> a uniform, so it never recompiles).
     cell_scale = ctx.param("cell_scale", cell_scale)         # cell density (runtime)
     base   = ctx.param("base_color", base_color)              # pad green
     warp   = ctx.param("warp",       warp)                    # cell-shape irregularity
@@ -57,12 +55,11 @@ class LilyPadsPOM(Ptex3d):
     water  = ctx.param("water_color", water_color)            # the gaps are WATER, not black
     albedo = P.mix(water, padcol, pad)                         # pads floating on water
 
-    self.surface(
-      albedo    = albedo,
-      metallic  = 0.0,
-      roughness = P.mix(0.85, 0.55, cell.cell * pad),         # damp pads
-    )
-    self.displace(height, scale=bumps, parallax_steps=steps, depth=relief)
+    # bump-only -> glossier so the dome relief reads; parallax -> damp/matte
+    rough = (P.mix(0.85, 0.55, cell.cell * pad) if pom_steps > 0
+             else P.mix(0.60, 0.35, cell.cell * pad))
+    self.surface(albedo=albedo, metallic=0.0, roughness=rough)
+    self.displace(height, scale=bumps, parallax_steps=pom_steps, depth=relief)
 
 
-__all__ = ["LilyPadsPOM"]
+__all__ = ["LilyPads"]

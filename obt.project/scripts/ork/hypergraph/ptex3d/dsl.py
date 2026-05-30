@@ -311,6 +311,72 @@ float _ptex_fbm(vec3 p, int octaves) {    // value-noise fbm over lib_mmnoise::n
 }
 """
 
+# Reusable 2D hexagonal grid (tile any uv chart). Returns a vec4:
+#   .x = edge distance (0 at a cell border, ~0.5 at the centre) -> seams
+#   .y = per-cell id hash in [0,1] -> colour / variation per cell
+#   .zw = local offset from the cell centre (in-cell patterns)
+_HEXGRID_SRC = """
+float _ptex_hash21(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+vec4 _ptex_hexgrid(vec2 uv) {
+  vec2 r = vec2(1.0, 1.7320508), hh = r * 0.5;
+  vec2 a = mod(uv, r) - hh;
+  vec2 b = mod(uv - hh, r) - hh;
+  vec2 gv;
+  if (dot(a, a) < dot(b, b)) gv = a; else gv = b;
+  vec2 id = uv - gv;
+  vec2 q  = abs(gv);
+  float dc = max(dot(q, vec2(0.5, 0.8660254)), q.x);   // dist from centre, 0.5 at the border
+  return vec4(0.5 - dc, _ptex_hash21(id), gv);
+}
+"""
+
+# IMPLICIT uniform sphere tiling — the spherical Fibonacci lattice (Keinert et al.
+# 2015, "Spherical Fibonacci Mapping"). Closed-form inverse: given a direction +
+# point count n it finds the nearest 2 lattice points (4 candidates) — no stored
+# points, no UV chart, no pole singularity, uniform density, n is just a scalar.
+_SF_SRC = """
+float _sf_madfrac(float a, float b) { return a*b - floor(a*b); }
+vec4 _ptex_spherecells(vec3 p, float n) {   // .x=id hash, .y=F2-F1 gap (~0 at seam), .z=F1 dist
+  vec3 q = normalize(p);
+  float kpi = 3.14159265359;
+  float kph = 1.61803398875;
+  float ang = min(atan(q.z, q.x), kpi);
+  float cosT = q.y;
+  float k = max(2.0, floor(log(n * kpi * sqrt(5.0) * max(0.0001, 1.0 - cosT*cosT)) / log(kph*kph)));
+  float Fk = pow(kph, k) / sqrt(5.0);
+  float F0 = floor(0.5 + Fk);
+  float F1 = floor(0.5 + Fk * kph);
+  float b00 = 2.0*kpi*_sf_madfrac(F0+1.0, kph-1.0) - 2.0*kpi*(kph-1.0);
+  float b01 = 2.0*kpi*_sf_madfrac(F1+1.0, kph-1.0) - 2.0*kpi*(kph-1.0);
+  float b10 = -2.0*F0/n;
+  float b11 = -2.0*F1/n;
+  float det = b00*b11 - b01*b10;
+  float rx = ang;
+  float ry = cosT - (1.0 - 1.0/n);
+  float c0 = floor(( b11*rx - b01*ry) / det);
+  float c1 = floor((-b10*rx + b00*ry) / det);
+  float d1 = 8.0;
+  float d2 = 8.0;
+  float jb = 0.0;
+  for (int s = 0; s < 4; s++) {
+    float su = float(s - 2*(s/2));
+    float sv = float(s/2);
+    float ct = b10*(su+c0) + b11*(sv+c1) + (1.0 - 1.0/n);
+    ct = clamp(ct, -1.0, 1.0)*2.0 - ct;
+    float ii = floor(n*0.5 - ct*n*0.5);
+    float ph = 2.0*kpi*_sf_madfrac(ii, kph-1.0);
+    ct = 1.0 - (2.0*ii + 1.0)/n;
+    float st = sqrt(max(0.0, 1.0 - ct*ct));
+    vec3 pt = vec3(cos(ph)*st, ct, sin(ph)*st);
+    float sd = dot(pt - q, pt - q);
+    if (sd < d1) { d2 = d1; d1 = sd; jb = ii; }
+    else if (sd < d2) { d2 = sd; }
+  }
+  return vec4(fract(sin(jb*12.9898)*43758.5453), sqrt(d2) - sqrt(d1), sqrt(d1), 0.0);
+}
+"""
+
+
 
 ###############################################################################
 # P — the op namespace
@@ -334,7 +400,11 @@ class _Ops:
     x = _wrap(x); return Op("%s({0})" % fn, [x], x._type)
   def sin(self, x):   return self._cw1("sin", x)
   def cos(self, x):   return self._cw1("cos", x)
+  def atan(self, x):  return self._cw1("atan", x)
   def abs(self, x):   return self._cw1("abs", x)
+
+  def atan2(self, y, x):   # GLSL atan(y, x) == atan2; -> angle in [-pi, pi]
+    return Op("atan({0}, {1})", [_wrap(y), _wrap(x)], "float")
   def floor(self, x): return self._cw1("floor", x)
   def fract(self, x): return self._cw1("fract", x)
   def sqrt(self, x):  return self._cw1("sqrt", x)
@@ -379,6 +449,38 @@ class _Ops:
     node = Op("_ptex_voronoi({0}, onrm)", [_wrap(p)], "ptex_voro_t", libsrc=_VORONOI_SRC)
     return Bundle(node, {"f1": "f1", "edge": "edge", "fwedge": "fwedge",
                          "cell": "cellA", "cell2": "cellB"})
+
+  def hexgrid(self, uv):
+    """Reusable 2D hexagonal grid over a vec2 (tile any uv chart — sphere via a
+    projection, a flat surface, etc.). Bundle:
+      .edge = distance to the nearest cell border (0 at border) — seams / tile gap
+              of any width: `P.smoothstep(0, tile_width, hex.edge)`
+      .id   = per-cell hash in [0,1] — colour / roughness / variation per cell"""
+    node = Op("_ptex_hexgrid({0})", [_wrap(uv)], "vec4", libsrc=_HEXGRID_SRC)
+    return Bundle(node, {"edge": "x", "id": "y"})
+
+  def spherecells(self, p, n):
+    """IMPLICIT uniform sphere tiling — the spherical Fibonacci lattice. Given an
+    object-space direction `p` and an (approx) tile count `n` (a runtime scalar —
+    no recompile, no stored points, no UV chart, no pole singularity), returns a
+    bundle:
+      .id   = per-cell hash in [0,1] — colour / variation per cell
+      .edge = the F2-F1 gap (~0 at a cell seam) — seams: smoothstep(0, w, hex.edge)
+      .f1   = chord distance to the cell centre
+    A sphere can't be all-hexagons (Euler -> 12 pentagons), but this is uniform +
+    seamless. For 2D / UV-mapped surfaces use `hexgrid` instead."""
+    node = Op("_ptex_spherecells({0}, {1})", [_wrap(p), _wrap(n)], "vec4", libsrc=_SF_SRC)
+    return Bundle(node, {"id": "x", "edge": "y", "f1": "z"})
+
+  def func(self, tmpl, args, *, rtype="float", libsrc=None, inherits=(), imports=()):
+    """GLSL escape hatch — inject a custom function call for procedural ops that
+    don't fit the core op set (e.g. a hardcoded-point pattern). `tmpl` is a format
+    string over the arg exprs (e.g. "_soccer({0})"); `libsrc` its GLSL definition;
+    `rtype` the result type (swizzle the returned node for multi-output). NOTE:
+    GLSL-specific — won't lower to other backends until the IR op-abstraction
+    refactor (#3); prefer composing core ops where practical."""
+    return Op(tmpl, [_wrap(a) for a in args], rtype,
+              libsrc=libsrc, inherits=tuple(inherits), imports=tuple(imports))
 
 
 P = _Ops()
