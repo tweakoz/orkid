@@ -203,4 +203,40 @@ def box_partition(p, n, levels=4, sublevels=3):
                 libsrc=_box_hull_src(c, f))
 
 
-__all__ = ["triplanar", "carbon_weave", "panel_split", "greeble", "box_partition"]
+# ── VOLUMETRIC brick lattice (running bond, no loop -> all-runtime) ──────────
+_BRICK_SRC = (
+  "float _bk_hash(vec3 p){ return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }\n"
+  "vec4 _brick_lattice(vec3 p, vec3 n, vec3 invf, float bond, float zbond) {\n"
+  "  float course = floor(p.y);\n"
+  "  float par = mod(course, 2.0);            // alternate courses\n"
+  "  vec3 q = p;\n"
+  "  q.x += par * bond;                        // running-bond X offset (0=stack, .5=running)\n"
+  "  q.z += par * zbond;                       // depth-row offset\n"
+  "  vec3 cell = floor(q);\n"
+  "  vec3 f = fract(q);\n"
+  "  float id  = _bk_hash(cell);               // per-brick hash\n"
+  "  float cid = _bk_hash(vec3(course, 17.0, 3.0));   // per-course hash\n"
+  "  vec3 d = min(f, 1.0 - f) * invf;          // per-axis distance to mortar, OBJECT units\n"
+  "  float ax = 0.0; float m = d.x;\n"
+  "  if (d.y < m) { ax = 1.0; m = d.y; }\n"
+  "  if (d.z < m) { ax = 2.0; m = d.z; }\n"
+  "  vec3 av = vec3(0.0); av[int(ax)] = 1.0;   // nearest mortar plane's axis\n"
+  "  float g = max(sqrt(max(0.0, 1.0 - dot(av, n)*dot(av, n))), 0.25);  // grazing factor\n"
+  "  return vec4(id, m / g, f.y, cid);         // uniform-width mortar dist; .z=brick-local up\n"
+  "}\n")
+
+
+def brick_lattice(p, n, invf, bond, zbond):
+  """VOLUMETRIC running-bond brick at object-space point `p` (in brick units —
+  caller scales by the per-axis brick frequency). A periodic 3D lattice, so it
+  has NO loop and every knob is runtime. `n` = object normal (keeps mortar width
+  uniform across grazing angles, like box_partition). `invf` = object units per
+  brick per axis (1/freq) so mortar width is uniform on all joints regardless of
+  brick aspect. `bond`/`zbond` = per-course offsets (0 = stack, 0.5 = running).
+  -> vec4(.x=brick id, .y=mortar dist, .z=brick-local up [0,1], .w=course id)."""
+  return P.func("_brick_lattice({0}, {1}, {2}, {3}, {4})", [p, n, invf, bond, zbond],
+                rtype="vec4", libsrc=_BRICK_SRC)
+
+
+__all__ = ["triplanar", "carbon_weave", "panel_split", "greeble",
+           "box_partition", "brick_lattice"]
