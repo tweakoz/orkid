@@ -31,7 +31,7 @@ import hashlib
 from orkengine.core import Path as _Path
 
 # Bump when the template/contract changes so cached files regenerate.
-CODEGEN_VERSION = "geov2-ptex-fxv2-9"   # bumped: voronoi -> ptex_voro_t struct (+ .f1, DCE-culled)
+CODEGEN_VERSION = "geov2-ptex-fxv2-10"  # bumped: geometric specular AA on the shading normal
 
 # The surface output contract (mirrors the eventual PBR2 SurfaceFragment subset).
 SURFACE_OUT_FIELDS = ("albedo", "metallic", "roughness", "normal", "emissive", "ao")
@@ -399,6 +399,18 @@ fragment_shader ps_ptex_forward
   // perceptually-visible band [0.3, 1.0] (floor 0.3 keeps low cells shiny).
   // Tunable: the affine (scale/bias) sets the band, the pow exponent the curve.
   float _rough = pow(s.roughness * 0.7 + 0.3, 1.0);
+  {{  // GEOMETRIC SPECULAR AA (Kaplanyan 2016 / Tokuyoshi 2017).
+     // The procedural bump injects high-frequency normal detail; on glossy
+     // surfaces the sub-pixel normal spread aliases the highlight. Measure that
+     // spread from screen derivatives of the shading normal and widen the NDF
+     // (raise roughness) to cover it. Identity where the normal is smooth.
+    vec3  _dnx = dFdx(s.normal);
+    vec3  _dny = dFdy(s.normal);
+    float _var = 0.25 * (dot(_dnx, _dnx) + dot(_dny, _dny));   // SPECULAR_AA_VARIANCE
+    float _ker = min(2.0 * _var, 0.18);                        // SPECULAR_AA_THRESHOLD
+    float _a2  = _rough * _rough;                              // -> alpha domain
+    _rough = sqrt(sqrt(clamp(_a2 * _a2 + _ker, 0.0, 1.0)));    // back to perceptual
+  }}
   vec3 ambrufmtl = vec3(s.ao, _rough, s.metallic);   // ambrufmtl.x = AO (inert until PBR2)
   ShadingResult sr = _forward_lightingZ(
     ModColor.xyz, s.albedo, ambrufmtl, s.emissive, EyePostion, s.normal, false);

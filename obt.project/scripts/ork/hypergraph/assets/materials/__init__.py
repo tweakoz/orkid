@@ -13,5 +13,6 @@ from .beachball   import BeachBall
 from .basketball  import BasketBall
 from .soccer      import SoccerBall
 from .honeycomb   import HoneyComb
+from .carbon_fiber import CarbonFiber
 __all__ = ["CrackedMud", "CobbleStone", "LilyPads", "BeachBall", "BasketBall",
-           "SoccerBall", "HoneyComb"]
+           "SoccerBall", "HoneyComb", "CarbonFiber"]

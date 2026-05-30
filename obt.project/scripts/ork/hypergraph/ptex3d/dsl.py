@@ -423,6 +423,8 @@ class _Ops:
     x = _wrap(x); return Op("smoothstep({0}, {1}, {2})", [_wrap(e0), _wrap(e1), x], x._type)
   def pow(self, a, b):
     a = _wrap(a); return Op("pow({0}, {1})", [a, _wrap(b)], a._type)
+  def mod(self, a, b):
+    a = _wrap(a); return Op("mod({0}, {1})", [a, _wrap(b)], a._type)
   def min(self, a, b):
     a = _wrap(a); b = _wrap(b); return Op("min({0}, {1})", [a, b], _binop_type(a._type, b._type))
   def max(self, a, b):
@@ -498,6 +500,7 @@ class SurfaceCtx:
   P        = property(lambda self: CtxRef("wpos", "vec3"))   # world position
   P_object = property(lambda self: CtxRef("opos", "vec3"))   # object-space position
   N        = property(lambda self: CtxRef("wnrm", "vec3"))   # world normal
+  N_object = property(lambda self: CtxRef("onrm", "vec3"))   # object-space normal (triplanar weights)
   uv       = property(lambda self: CtxRef("uv",   "vec2"))   # free-range uv
   Cd       = property(lambda self: CtxRef("cd",   "vec4"))   # 4D per-vertex selector
   eye      = property(lambda self: CtxRef("eye",  "vec3"))   # camera world position

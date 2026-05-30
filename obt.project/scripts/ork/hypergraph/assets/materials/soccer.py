@@ -3,7 +3,8 @@
 #
 # The classic truncated-icosahedron: 12 black pentagons + 20 white hexagons, with
 # recessed seams. Built as a 32-point Voronoi on the sphere — pentagon centers =
-# icosahedron vertices, hexagon centers = dodecahedron vertices. For a surface
+# icosahedron vertices, hexagon centers = icosahedron FACE centroids (the true
+# dual; standard-coordinate dodeca verts are mis-oriented). For a surface
 # direction we find the nearest of the 32 centers (which face) and the gap to the
 # 2nd-nearest (the seam). Bump only (no parallax), matte synthetic-leather PBR.
 #
