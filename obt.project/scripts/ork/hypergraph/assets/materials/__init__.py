@@ -7,4 +7,6 @@
 #     mat = self.asset.Ptex3d("mud", dsl_class=CrackedMud, cell_scale=5.0)
 ###############################################################################
 from .cracked_mud import CrackedMud, CrackedMudPOM
-__all__ = ["CrackedMud", "CrackedMudPOM"]
+from .cobblestone import CobblestonePOM
+from .lily_pads   import LilyPadsPOM
+__all__ = ["CrackedMud", "CrackedMudPOM", "CobblestonePOM", "LilyPadsPOM"]

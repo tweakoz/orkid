@@ -1,4 +1,3 @@
-#!/usr/bin/env ork.python
 ###############################################################################
 # geov2_phase4a.py — cracked mud (GEOV2 ptex3d) as an ECS scene.
 #

@@ -222,12 +222,16 @@ float _ptex_shash3(vec3 p) { return fract(sin(dot(p, vec3(127.1,311.7,74.7))) * 
 vec3  _ptex_vhash3(vec3 p) { return fract(sin(vec3(dot(p,vec3(127.1,311.7,74.7)),
                                                    dot(p,vec3(269.5,183.3,246.1)),
                                                    dot(p,vec3(113.5,271.9,124.6)))) * 43758.5453); }
-// x=border coord, onrm=OBJECT-space surface normal (for the surface-aware
-// width correction). Returns: .x=edge (raw 3D border distance, world/coord
-// units), .y=fwedge (the SAME border but width-corrected for how the surface
-// slices the 3D cell-wall — constant apparent width, no screen derivatives so
-// no crease dots), .z/.w = per-cell hashes.
-vec4 _ptex_voronoi(vec3 x, vec3 onrm) {
+// x=border coord, onrm=OBJECT-space surface normal (for the surface-aware width
+// correction). Returns a ptex_voro_t struct (defined in the types typeblock):
+//   .f1     = distance to the cell's feature point (smooth radial -> domes)
+//   .edge   = raw 3D border distance (world/coord units, unfiltered)
+//   .fwedge = the border width-corrected for how the surface slices the 3D
+//             cell-wall (constant apparent width, no crease dots)
+//   .cellA/.cellB = per-cell hashes
+// Unused members are dead-code-eliminated by the SPIR-V compiler (e.g. a domed
+// surface using only .f1/.cellA pays nothing for pass 2 / fwedge).
+ptex_voro_t _ptex_voronoi(vec3 x, vec3 onrm) {
   vec3 ip = floor(x), fp = fract(x);
   // pass 1 — nearest feature point: remember its cell offset (mg) and the
   // vector to it (mr), plus the nearest cell's hashes.
@@ -261,7 +265,7 @@ vec4 _ptex_voronoi(vec3 x, vec3 onrm) {
   // is uniform along the surface, in coordinate units, and dot-free.
   float gT = length(enrm - dot(enrm, onrm) * onrm);
   float fwedge = edge / max(gT, 1e-3);
-  return vec4(edge, fwedge, idA, idB);
+  return ptex_voro_t(sqrt(f1), edge, fwedge, idA, idB);
 }
 """
 
@@ -365,13 +369,16 @@ class _Ops:
     return Op("_ptex_fbm({0}, %d)" % int(octaves), [_wrap(p)], "float",
               libsrc=_FBM_SRC, inherits=("lib_mmnoise",))
   def voronoi(self, p):
-    # .edge   = raw 3D border distance (world/coord units, unfiltered)
-    # .fwedge = surface-width-corrected border (constant apparent width, no
-    #           screen derivatives -> no crease dots) — use this for seams
-    # .cell / .cell2 = per-cell hashes
-    # (passes the object-space surface normal `onrm` for the correction.)
-    node = Op("_ptex_voronoi({0}, onrm)", [_wrap(p)], "vec4", libsrc=_VORONOI_SRC)
-    return Bundle(node, {"edge": "x", "fwedge": "y", "cell": "z", "cell2": "w"})
+    # Returns a bundle over a ptex_voro_t struct. Fields (unused ones are DCE'd
+    # by the compiler — e.g. a .f1-only dome doesn't pay for the .fwedge pass):
+    #   .f1     = distance to the cell centre/site (smooth radial -> rounded domes)
+    #   .edge   = raw 3D border distance (unfiltered)
+    #   .fwedge = surface-width-corrected border (constant apparent width, dot-free)
+    #   .cell / .cell2 = per-cell hashes
+    # (passes the object-space surface normal `onrm` for the width correction.)
+    node = Op("_ptex_voronoi({0}, onrm)", [_wrap(p)], "ptex_voro_t", libsrc=_VORONOI_SRC)
+    return Bundle(node, {"f1": "f1", "edge": "edge", "fwedge": "fwedge",
+                         "cell": "cellA", "cell2": "cellB"})
 
 
 P = _Ops()

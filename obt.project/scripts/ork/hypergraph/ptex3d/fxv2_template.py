@@ -31,7 +31,7 @@ import hashlib
 from orkengine.core import Path as _Path
 
 # Bump when the template/contract changes so cached files regenerate.
-CODEGEN_VERSION = "geov2-ptex-fxv2-8"   # bumped: procedural parallax occlusion march
+CODEGEN_VERSION = "geov2-ptex-fxv2-9"   # bumped: voronoi -> ptex_voro_t struct (+ .f1, DCE-culled)
 
 # The surface output contract (mirrors the eventual PBR2 SurfaceFragment subset).
 SURFACE_OUT_FIELDS = ("albedo", "metallic", "roughness", "normal", "emissive", "ao")
@@ -213,7 +213,9 @@ def generate_surface_fxv2(surface_body,
   import_lines = "\n".join('  import "%s";' % i for i in imports)
   # the surface libblock inherits its needed noise/util libblocks
   surf_inherits = "".join(" : %s" % n for n in lib_inherits)
-  out_struct = "  struct SurfaceOut { vec3 albedo; float metallic; float roughness; vec3 normal; vec3 emissive; float ao; };"
+  out_struct = (
+    "  struct SurfaceOut { vec3 albedo; float metallic; float roughness; vec3 normal; vec3 emissive; float ao; };\n"
+    "  struct ptex_voro_t { float f1; float edge; float fwedge; float cellA; float cellB; };")
   params_block, params_inherit = _params_block(params)
   if cellular_coord and str(cellular_coord).strip():
     # analytic cellular relief: no ptex_height (no finite-diff taps)

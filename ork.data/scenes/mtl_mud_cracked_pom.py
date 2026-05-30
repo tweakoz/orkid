@@ -1,4 +1,3 @@
-#!/usr/bin/env ork.python
 ###############################################################################
 # geov2_phase4b.py — cracked mud with PROCEDURAL PARALLAX OCCLUSION (GEOV2 §18).
 #
