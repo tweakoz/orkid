@@ -10,21 +10,80 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
+
+namespace dflow = dataflow;
+namespace trn   = terrain;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void pyinit_gfx_terrain(py::module& module_lev2) {
-  // first-slice exerciser: build the fbm -> capture heightfield bake graph and
-  // write `path` (EXR/PNG by extension). dim = square grid resolution.
+  auto trn_module = module_lev2.def_submodule("terrain", "lev2 terrain heightfield compute-dataflow");
+
+  /////////////////////////////////////////////////////////////////////////////
+  // module classes — DgModuleData subclasses. The generic dflow GraphData
+  // create()/connect() + inputs/outputs proxies (pyext_dataflow.cpp) handle
+  // construction, edge-wiring, and float-plug assignment, so each class only
+  // needs createShared + its BAKED scalar(s) exposed (octaves / op / path).
+  // The expression-first DSL (ork.hypergraph.dflow.terrain) composes these.
+  /////////////////////////////////////////////////////////////////////////////
+
+  py::class_<trn::FbmModuleData, dflow::DgModuleData, trn::fbmmoduledata_ptr_t>(trn_module, "FbmModule")
+      .def_static("createShared", []() -> trn::fbmmoduledata_ptr_t { return trn::FbmModuleData::createShared(); })
+      .def_readwrite("octaves", &trn::FbmModuleData::_octaves); // baked loop bound
+
+  py::class_<trn::RemapModuleData, dflow::DgModuleData, trn::remapmoduledata_ptr_t>(trn_module, "RemapModule")
+      .def_static("createShared", []() -> trn::remapmoduledata_ptr_t { return trn::RemapModuleData::createShared(); });
+
+  py::class_<trn::ConstModuleData, dflow::DgModuleData, trn::constmoduledata_ptr_t>(trn_module, "ConstModule")
+      .def_static("createShared", []() -> trn::constmoduledata_ptr_t { return trn::ConstModuleData::createShared(); });
+
+  py::class_<trn::GradientModuleData, dflow::DgModuleData, trn::gradientmoduledata_ptr_t>(trn_module, "GradientModule")
+      .def_static("createShared", []() -> trn::gradientmoduledata_ptr_t { return trn::GradientModuleData::createShared(); });
+
+  py::class_<trn::CombineModuleData, dflow::DgModuleData, trn::combinemoduledata_ptr_t>(trn_module, "CombineModule")
+      .def_static("createShared", []() -> trn::combinemoduledata_ptr_t { return trn::CombineModuleData::createShared(); })
+      .def_readwrite("op", &trn::CombineModuleData::_op); // baked: 0=add 1=sub 2=mul 3=min 4=max 5=mix
+
+  py::class_<trn::TerraceModuleData, dflow::DgModuleData, trn::terracemoduledata_ptr_t>(trn_module, "TerraceModule")
+      .def_static("createShared", []() -> trn::terracemoduledata_ptr_t { return trn::TerraceModuleData::createShared(); });
+
+  py::class_<trn::CaptureModuleData, dflow::DgModuleData, trn::capturemoduledata_ptr_t>(trn_module, "CaptureModule")
+      .def_static("createShared", []() -> trn::capturemoduledata_ptr_t { return trn::CaptureModuleData::createShared(); })
+      // bake-time output path (wrapper-supplied, deliberately NOT serialized — a
+      // stable channel name will carry identity at the asset layer later).
+      .def_property(
+          "path",
+          [](trn::capturemoduledata_ptr_t m) -> std::string { return std::string(m->_path.c_str()); },
+          [](trn::capturemoduledata_ptr_t m, std::string p) { m->_path = ork::file::Path(p.c_str()); });
+
+  /////////////////////////////////////////////////////////////////////////////
+  // FieldStats — per-capture min/max/mean returned by the bake driver.
+  /////////////////////////////////////////////////////////////////////////////
+  py::class_<trn::FieldStats, trn::fieldstats_ptr_t>(trn_module, "FieldStats")
+      .def_readonly("min", &trn::FieldStats::_min)
+      .def_readonly("max", &trn::FieldStats::_max)
+      .def_readonly("mean", &trn::FieldStats::_mean)
+      .def("__repr__", [](trn::fieldstats_ptr_t s) -> std::string {
+        return FormatString("FieldStats(min=%g max=%g mean=%g)", s->_min, s->_max, s->_mean);
+      });
+
+  /////////////////////////////////////////////////////////////////////////////
+  // bake driver — sort, instantiate, dispatch the compute, flush captures to
+  // EXR/PNG (by extension). Returns the per-capture FieldStats list.
+  /////////////////////////////////////////////////////////////////////////////
+  trn_module.def("bake_heightfield", [](dflow::graphdata_ptr_t g, ctx_t ctx, int dim) -> std::vector<trn::fieldstats_ptr_t> {
+    return trn::bakeHeightfield(g, ctx.get(), dim);
+  });
+
+  /////////////////////////////////////////////////////////////////////////////
+  // legacy/test entry points (kept on module_lev2 for the existing llgfx tests)
+  /////////////////////////////////////////////////////////////////////////////
   module_lev2.def("terrain_bake_test", [](ctx_t ctx, std::string path, int dim) {
     terrain::bakeHeightfieldTest(ctx.get(), ork::file::Path(path.c_str()), dim);
   });
-  // bread-and-butter op self-test (Const/Gradient/Combine/Terrace). Returns the
-  // number of FAILED cases (0 == all analytic assertions passed).
   module_lev2.def("terrain_ops_selftest", [](ctx_t ctx, int dim) -> int {
     return terrain::terrainOpsSelfTest(ctx.get(), dim);
   });
-  // serialize->deserialize->bake round-trip gate (the JSON is the portable,
-  // python-decoupled artifact). Returns the number of FAILED checks.
   module_lev2.def("terrain_roundtrip_test", [](ctx_t ctx, int dim) -> int {
     return terrain::terrainRoundTripTest(ctx.get(), dim);
   });
