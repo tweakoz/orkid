@@ -58,7 +58,9 @@ def _uvsphere_verts_tris(radius, segments_u, segments_v):
     b = ring0 + (u + 1) % segments_u
     tris.append([north_idx, b, a])
 
-  # Middle rings — quads split into two triangles
+  # Middle rings — quads split into two triangles. Wound a,b,c / a,c,d so the
+  # shared ring edges run OPPOSITE to the pole fans (outward-facing under
+  # PASS_FRONT cull); the reverse split renders the body inside-out.
   for v in range(len(ring_first) - 1):
     top = ring_first[v]
     bot = ring_first[v + 1]
@@ -67,8 +69,8 @@ def _uvsphere_verts_tris(radius, segments_u, segments_v):
       b = top + (u + 1) % segments_u
       c = bot + (u + 1) % segments_u
       d = bot + u
-      tris.append([a, c, b])
-      tris.append([a, d, c])
+      tris.append([a, b, c])
+      tris.append([a, c, d])
 
   # South cap
   ringN = ring_first[-1]
