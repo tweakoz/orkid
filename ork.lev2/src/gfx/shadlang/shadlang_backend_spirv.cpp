@@ -632,12 +632,21 @@ void SpirvCompiler::_convertUniformBlocks() {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void SpirvCompiler::_convertStorageInterfaces() {
   auto ast_storage_ifs = SHAST::AstNode::collectNodesOfType<SHAST::StorageInterface>(_transu);
-  
+
+  int sif_binding = 0; // pre-assign the binding in declaration order. This runs in
+                       // the ctor (BEFORE DBwrite), unlike the per-shader binding in
+                       // _inheritStorageInterface (which runs at processShader, after
+                       // the metadata is serialized). Matches the inherit counter as
+                       // long as declaration order == storage{} reference order and
+                       // there are no UBOs/samplers ahead of the SSBOs (true for the
+                       // terrain compute ops). _inheritStorageInterface re-stamps the
+                       // same value for the GLSL layout line.
   for (auto ast_storage_if : ast_storage_ifs) {
     auto storage_name = ast_storage_if->typedValueForKey<std::string>("object_name").value();
     auto spirv_sif = std::make_shared<SpirvStorageInterface>();
     _spirvstorageinterfaces[storage_name] = spirv_sif;
     spirv_sif->_name = storage_name;
+    spirv_sif->_binding_id = sif_binding++;
     
     // Get descriptor set ID
     auto dsid_node = ast_storage_if->findFirstChildOfType<DescriptorSetId>();
@@ -971,7 +980,10 @@ void SpirvCompiler::_inheritStorageInterface(
     printf("WARNING: Storage interface '%s' not found in merged resources, using fallback binding\n", storage_name.c_str());
     binding_id = _binding_id++;
   }
-  
+  // record the real binding so it survives reflection -> DBwrite -> DBread and the
+  // compute pipeline can bind by it (NOT by descriptor_set_id, which is the set).
+  spirv_sif->_binding_id = binding_id;
+
   // Emit the GLSL storage buffer declaration
   auto header = FormatString("// Storage interface: %s", storage_name.c_str());
   _appendText(_uniforms_group, header.c_str());

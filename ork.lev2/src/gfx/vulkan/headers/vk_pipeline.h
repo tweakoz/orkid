@@ -112,6 +112,7 @@ struct VkFxShaderStorageBlock : public VkFxShaderDescriptorSetItem {
   std::vector<fxbuffer_member_ptr_t> _members_by_order;
 
   size_t _buffer_size = 0;
+  size_t _binding_id  = 0; // real SPIR-V binding (NOT _descriptor_set_id, which is the set)
   std::string _name;
   std::string _buffer_name;
 };

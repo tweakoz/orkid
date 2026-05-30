@@ -530,6 +530,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     OrkAssert(str_ssbo == "ssbo");
     auto str_ssbo_name = uniforms_input_stream->ReadIndexedString(chunkreader);
     auto dset_id = uniforms_input_stream->ReadItem<size_t>();
+    auto binding_id = uniforms_input_stream->ReadItem<size_t>(); // real SPIR-V binding
     auto str_buffer_name = uniforms_input_stream->ReadIndexedString(chunkreader);
     auto buffer_size = uniforms_input_stream->ReadItem<size_t>();
 
@@ -538,6 +539,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     vk_ssbo->_name = str_ssbo_name;
     vk_ssbo->_buffer_name = str_buffer_name;
     vk_ssbo->_descriptor_set_id = dset_id;
+    vk_ssbo->_binding_id = binding_id;
     vk_ssbo->_buffer_size = buffer_size;
 
     // Create FxShaderStorageBlock

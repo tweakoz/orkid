@@ -84,6 +84,15 @@ struct CaptureRequest {
   ork::file::Path _path;
 };
 
+// min/max/mean of a captured field — returned by the driver so callers (the
+// self-test) can assert against analytically-known expectations.
+struct FieldStats {
+  float _min  = 0.0f;
+  float _max  = 0.0f;
+  float _mean = 0.0f;
+};
+using fieldstats_ptr_t = std::shared_ptr<FieldStats>;
+
 struct BakeEnv {
   Context* _ctx = nullptr;
   int _w        = 0;
@@ -113,11 +122,79 @@ struct FbmModuleData : public TerrainModuleData {
   static std::shared_ptr<FbmModuleData> createShared();
   dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
 
-  float _frequency = 4.0f;
-  int _octaves     = 5;
-  float _amplitude = 1.0f;
+  // float input plugs: "frequency", "amplitude". `octaves` is a baked loop bound.
+  int _octaves = 5;
 };
 using fbmmoduledata_ptr_t = std::shared_ptr<FbmModuleData>;
+
+///////////////////////////////////////////////////////////////////////////////
+// RemapModule — 1-in elementwise: Out = clamp(In*scale + bias, lo, hi). The
+// canary for input-reading modules (proves the multi-SSBO bind + storageBarrier).
+///////////////////////////////////////////////////////////////////////////////
+
+struct RemapModuleData : public TerrainModuleData {
+  DeclareConcreteX(RemapModuleData, TerrainModuleData);
+  RemapModuleData();
+  static std::shared_ptr<RemapModuleData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
+  // image input "In"; float input plugs: "scale","bias","lo","hi". output "Out".
+};
+using remapmoduledata_ptr_t = std::shared_ptr<RemapModuleData>;
+
+///////////////////////////////////////////////////////////////////////////////
+// ConstModule — generator. Out = constant "level" (float plug). 1 SSBO.
+///////////////////////////////////////////////////////////////////////////////
+
+struct ConstModuleData : public TerrainModuleData {
+  DeclareConcreteX(ConstModuleData, TerrainModuleData);
+  ConstModuleData();
+  static std::shared_ptr<ConstModuleData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
+};
+using constmoduledata_ptr_t = std::shared_ptr<ConstModuleData>;
+
+///////////////////////////////////////////////////////////////////////////////
+// GradientModule — generator. Out = dot(uv, (dir_x,dir_y))*scale + bias. 1 SSBO.
+// float plugs: dir_x, dir_y, scale, bias.
+///////////////////////////////////////////////////////////////////////////////
+
+struct GradientModuleData : public TerrainModuleData {
+  DeclareConcreteX(GradientModuleData, TerrainModuleData);
+  GradientModuleData();
+  static std::shared_ptr<GradientModuleData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
+};
+using gradientmoduledata_ptr_t = std::shared_ptr<GradientModuleData>;
+
+///////////////////////////////////////////////////////////////////////////////
+// CombineModule — 2-in: Out = op(A, B). `op` (ctor, baked): 0=add 1=sub 2=mul
+// 3=min 4=max 5=mix. float plug "t" = mix factor. 3 SSBOs (out + A + B).
+///////////////////////////////////////////////////////////////////////////////
+
+enum class CombineOp { ADD = 0, SUB, MUL, MIN, MAX, MIX };
+
+struct CombineModuleData : public TerrainModuleData {
+  DeclareConcreteX(CombineModuleData, TerrainModuleData);
+  CombineModuleData();
+  static std::shared_ptr<CombineModuleData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
+
+  int _op = int(CombineOp::ADD); // baked (selects the GLSL expression)
+};
+using combinemoduledata_ptr_t = std::shared_ptr<CombineModuleData>;
+
+///////////////////////////////////////////////////////////////////////////////
+// TerraceModule — 1-in: quantize to `steps` plateaus with a `sharpness` riser.
+// float plugs: steps, sharpness. 2 SSBOs.
+///////////////////////////////////////////////////////////////////////////////
+
+struct TerraceModuleData : public TerrainModuleData {
+  DeclareConcreteX(TerraceModuleData, TerrainModuleData);
+  TerraceModuleData();
+  static std::shared_ptr<TerraceModuleData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
+};
+using terracemoduledata_ptr_t = std::shared_ptr<TerraceModuleData>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // CaptureModule — sink. Input "In" : GpuComputeImage2D. At bake-flush time the
@@ -139,10 +216,21 @@ using capturemoduledata_ptr_t = std::shared_ptr<CaptureModuleData>;
 // square grid resolution (W=H=dim).
 ///////////////////////////////////////////////////////////////////////////////
 
-void bakeHeightfield(dflow::graphdata_ptr_t graph, Context* ctx, int dim);
+std::vector<fieldstats_ptr_t> bakeHeightfield(dflow::graphdata_ptr_t graph, Context* ctx, int dim);
 
 // first-slice convenience: build a 2-node fbm -> capture graph and bake it to
 // `outpath` (PNG/EXR by extension), the minimal end-to-end exerciser.
 void bakeHeightfieldTest(Context* ctx, const ork::file::Path& outpath, int dim);
+
+// bread-and-butter op self-test: bakes Const/Gradient/Combine(6 ops)/Terrace
+// graphs over Const inputs and asserts each field's min/max/mean against the
+// analytically-known result. Returns the number of FAILED cases (0 == all pass).
+// Writes each field to /tmp/terrain_selftest_<case>.exr for visual inspection.
+int terrainOpsSelfTest(Context* ctx, int dim);
+
+// serialize -> deserialize -> bake round-trip gate: proves a terrain GraphData
+// survives JSON round-trip with no loss (baked scalars _octaves/_op, float plug
+// values, connections) and bakes identical stats. Returns FAILED-check count.
+int terrainRoundTripTest(Context* ctx, int dim);
 
 } // namespace ork::lev2::terrain

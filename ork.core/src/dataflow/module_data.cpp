@@ -111,7 +111,21 @@ void ModuleData::addInput(inplugdata_ptr_t plg) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ModuleData::addOutput(outplugdata_ptr_t plg) {
-  _outputs.push_back(plg);
+  // dedup by name (symmetric with addInput). reshapeIOs runs TWICE on deserialize
+  // (createShared factory + postDeserialize hook); without this, the second pass
+  // appends a duplicate same-named output plug. The connected edge points at the
+  // first, but the module writes the second (_outputsByName is last-wins), so a
+  // reader sees an unallocated buffer. Same-named outputs are unaddressable anyway.
+  auto name       = plg->_name;
+  bool should_add = true;
+  for (auto item : _outputs) {
+    if (name == item->_name) {
+      should_add = false;
+    }
+  }
+  if (should_add) {
+    _outputs.push_back(plg);
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ModuleData::removeInput(inplugdata_ptr_t plg) {

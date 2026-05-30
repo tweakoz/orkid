@@ -135,7 +135,7 @@ bool VkComputePipelineState::createPipeline(vkfxsstage_ptr_t computeShader) {
     logchan_vkcomp->log("createPipeline: _ssbo_refs has %zu blocks", computeShader->_ssbo_refs->_ssbo_blocks.size());
     for (const auto& [name, ssbo] : computeShader->_ssbo_refs->_ssbo_blocks) {
       VkDescriptorSetLayoutBinding binding{};
-      binding.binding = ssbo->_descriptor_set_id;  // Use descriptor_set_id as binding index
+      binding.binding = ssbo->_binding_id;  // real SPIR-V binding (matches the generated GLSL)
       binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
       binding.descriptorCount = 1;
       binding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
@@ -180,8 +180,14 @@ bool VkComputePipelineState::createPipeline(vkfxsstage_ptr_t computeShader) {
   }
 
   //////////////////////////////////////////////////////////
-  // Create descriptor set layout
+  // Create descriptor set layout. Sort bindings ascending — they're gathered
+  // from name-keyed maps (arbitrary order), and MoltenVK's SPIR-V->MSL resource
+  // mapping indexes by binding and asserts on unsorted/sparse input.
   //////////////////////////////////////////////////////////
+  std::sort(layoutBindings.begin(), layoutBindings.end(),
+            [](const VkDescriptorSetLayoutBinding& a, const VkDescriptorSetLayoutBinding& b) {
+              return a.binding < b.binding;
+            });
   VkDescriptorSetLayoutCreateInfo layoutInfo{};
   layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
   layoutInfo.bindingCount = static_cast<uint32_t>(layoutBindings.size());

@@ -18,6 +18,16 @@ void pyinit_gfx_terrain(py::module& module_lev2) {
   module_lev2.def("terrain_bake_test", [](ctx_t ctx, std::string path, int dim) {
     terrain::bakeHeightfieldTest(ctx.get(), ork::file::Path(path.c_str()), dim);
   });
+  // bread-and-butter op self-test (Const/Gradient/Combine/Terrace). Returns the
+  // number of FAILED cases (0 == all analytic assertions passed).
+  module_lev2.def("terrain_ops_selftest", [](ctx_t ctx, int dim) -> int {
+    return terrain::terrainOpsSelfTest(ctx.get(), dim);
+  });
+  // serialize->deserialize->bake round-trip gate (the JSON is the portable,
+  // python-decoupled artifact). Returns the number of FAILED checks.
+  module_lev2.def("terrain_roundtrip_test", [](ctx_t ctx, int dim) -> int {
+    return terrain::terrainRoundTripTest(ctx.get(), dim);
+  });
 }
 
 ///////////////////////////////////////////////////////////////////////////////

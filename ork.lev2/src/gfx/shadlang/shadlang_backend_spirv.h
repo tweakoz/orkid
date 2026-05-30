@@ -88,6 +88,7 @@ struct SpirvStorageInterface {
   std::string _name;
   std::string _buffer_name;  // The name of the buffer block
   size_t _descriptor_set_id = -1;
+  int _binding_id = -1;       // the real SPIR-V binding (emitted into layout(binding=N))
   size_t _buffer_size = 0;
   std::unordered_map<std::string, spirvstorageitem_ptr_t> _items_by_name;
   std::vector<spirvstorageitem_ptr_t> _items_by_order;
