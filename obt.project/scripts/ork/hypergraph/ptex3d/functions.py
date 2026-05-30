@@ -238,5 +238,28 @@ def brick_lattice(p, n, invf, bond, zbond):
                 rtype="vec4", libsrc=_BRICK_SRC)
 
 
+# ── veined mineral (marble) — domain-warped turbulence, pure DSL ────────────
+def _turb3(p, freq, octaves):
+  """A vector turbulence field — 3 decorrelated fbm lobes — used to domain-warp
+  a coordinate (bends a 1D banding into sinuous 3D veins)."""
+  q = p * freq
+  return P.vec3(P.fbm(q,        octaves),
+                P.fbm(q + 19.7, octaves),
+                P.fbm(q + 43.3, octaves))
+
+
+def vein_field(p, direction, freq, warp, warp_freq, octaves, sharpness):
+  """VOLUMETRIC vein intensity at object-space point `p` (marble / veined stone).
+  Warp the point by turbulence, then take a sharpened ridge of a directional sine
+  band -> thin sinuous veins running through the volume (no triplanar; continuous
+  over any shape). -> scalar in [0,1] (1 = on a vein). Built from DSL ops only, so
+  it's free to layer: call twice (coarse + fine, different `direction`/`freq`) and
+  combine for a vein network. `octaves` BAKES (the fbm loop bound); the rest are
+  free to be runtime params."""
+  wp   = p + _turb3(p, warp_freq, octaves) * warp
+  band = P.sin(P.dot(wp, direction) * freq)
+  return P.pow(1.0 - P.abs(band), sharpness)
+
+
 __all__ = ["triplanar", "carbon_weave", "panel_split", "greeble",
-           "box_partition", "brick_lattice"]
+           "box_partition", "brick_lattice", "vein_field"]
