@@ -97,8 +97,12 @@ def list_scene_files(stream=None):
       print(f"  (no .py files)", file=out)
       continue
     any_found = True
-    for f in files:
-      print(f"  {f.stem}", file=out)
+    stems = [f.stem for f in files]
+    per_row = 6
+    col_w = max(len(s) for s in stems) + 2
+    for i in range(0, len(stems), per_row):
+      row = stems[i:i + per_row]
+      print("  " + "".join(s.ljust(col_w) for s in row).rstrip(), file=out)
   if not any_found:
     print("\n(no scene files found; set ORK_SCENES_SEARCH_PATH to override the default)",
           file=sys.stderr)

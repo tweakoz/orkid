@@ -406,7 +406,7 @@ fragment_shader ps_ptex_forward
      // (raise roughness) to cover it. Identity where the normal is smooth.
     vec3  _dnx = dFdx(s.normal);
     vec3  _dny = dFdy(s.normal);
-    float _var = 0.25 * (dot(_dnx, _dnx) + dot(_dny, _dny));   // SPECULAR_AA_VARIANCE
+    float _var = 0.5 * (dot(_dnx, _dnx) + dot(_dny, _dny));   // SPECULAR_AA_VARIANCE
     float _ker = min(2.0 * _var, 0.18);                        // SPECULAR_AA_THRESHOLD
     float _a2  = _rough * _rough;                              // -> alpha domain
     _rough = sqrt(sqrt(clamp(_a2 * _a2 + _ker, 0.0, 1.0)));    // back to perceptual
