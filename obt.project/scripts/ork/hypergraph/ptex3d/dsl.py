@@ -393,9 +393,18 @@ class Ptex3d:
         chans[name] = _wrap(val)
     self._channels = chans
 
+  def displace(self, height, *, scale=0.05):
+    """Declare a procedural displacement height — a scalar field of `ctx.P_object`
+    (0 = recessed, 1 = raised, by convention; GEOV2 §18). Phase 4 drives ANALYTIC
+    BUMP from it now (the relief catches light) and parallax-occlusion later. The
+    height must be a function of `ctx.P_object` (+ params/constants) so it can be
+    re-evaluated at offset/marched coordinates. `scale` sets the bump strength."""
+    self._height = _wrap(height)
+    self._height_scale = float(scale)
+
 
 class _Emitter:
-  def __init__(self):
+  def __init__(self, subst=None):
     self.lines = []
     self.cache = {}        # node.key() -> ssa varname
     self.n = 0
@@ -403,12 +412,15 @@ class _Emitter:
     self.inherits = set()
     self.imports = set()
     self.params = {}       # insertion-ordered: pname -> (gtype, default)
+    # atom-name remap (e.g. {"opos": "coord"}) — lets the height field be emitted
+    # as a function of a marched/offset coordinate rather than the fixed varying.
+    self.subst = subst or {}
 
   def expr(self, node):
     if isinstance(node, Const):
       return node._glsl
     if isinstance(node, CtxRef):
-      return node._glsl
+      return self.subst.get(node._glsl, node._glsl)
     if isinstance(node, Param):
       if node._pname not in self.params:
         self.params[node._pname] = (node._type, node._default)
@@ -443,34 +455,81 @@ def _coerce(expr, have, want):
   raise TypeError("surface channel type mismatch: have %s, want %s" % (have, want))
 
 
+def _emitter_deps(em):
+  """(libsrcs_list, inherits_set, imports_set, param_specs) from an emitter."""
+  imports = set(em.imports)
+  if "lib_mmnoise" in em.inherits:
+    imports.add("orkshader://misctools.i2")
+  params = [(name, gt, dflt) for name, (gt, dflt) in em.params.items()]
+  return list(em.libsrcs), set(em.inherits), imports, params
+
+
 def emit_surface(channels):
   """channels: {field -> SurfNode} ->
-     (surface_body, libblock, lib_inherits, extra_imports, param_specs).
-  param_specs is an insertion-ordered list of (name, gtype, default) for the
-  bindable runtime uniforms (ctx.param) the surface reads."""
+     (surface_body, libsrcs_list, lib_inherits, extra_imports, param_specs).
+  libsrcs_list is the ORDERED-UNIQUE list of GLSL helper sources (kept as a list,
+  not joined, so the caller can dedup it against the height field's helpers —
+  a shared helper like the voronoi must be defined exactly once). param_specs is
+  the insertion-ordered (name, gtype, default) of the bindable uniforms used."""
   em = _Emitter()
   assigns = []
   for field, node in channels.items():
     e = _coerce(em.expr(node), node._type, _FIELD_TYPE[field])
     assigns.append("o.%s = %s;" % (field, e))
   body = "\n".join(em.lines + assigns)
-  libblock = "\n".join(s.strip() for s in em.libsrcs)
-  # imports for the inherited libblocks the body needs
-  imports = set(em.imports)
-  if "lib_mmnoise" in em.inherits:
-    imports.add("orkshader://misctools.i2")
-  param_specs = [(name, gt, dflt) for name, (gt, dflt) in em.params.items()]
-  return body, libblock, sorted(em.inherits), sorted(imports), param_specs
+  libsrcs, inherits, imports, params = _emitter_deps(em)
+  return body, libsrcs, sorted(inherits), sorted(imports), params
+
+
+def emit_height(node, coord="coord"):
+  """Emit a displacement-height expression as the body of
+  `float ptex_height(vec3 coord, vec3 onrm)` — the object-position atom (`opos`)
+  is rebound to `coord`, so the function is re-evaluable at offset/marched
+  coordinates (analytic bump now, parallax later). The height must be a function
+  of `ctx.P_object` (+ params/constants). Returns
+  (lines, final_expr, libsrcs_list, lib_inherits, extra_imports, param_specs)."""
+  em = _Emitter(subst={"opos": coord})
+  final = _coerce(em.expr(node), node._type, "float")
+  libsrcs, inherits, imports, params = _emitter_deps(em)
+  return em.lines, final, libsrcs, sorted(inherits), sorted(imports), params
+
+
+def _union_ordered(a, b):
+  out = list(a)
+  for x in b:
+    if x not in out:
+      out.append(x)
+  return out
+
+
+def _merge_param_specs(a, b):
+  seen = {n for (n, _g, _d) in a}
+  return a + [p for p in b if p[0] not in seen]
 
 
 def _build_ptex3d(dsl_class, name_hint=None, **params):
   inst = dsl_class(SurfaceCtx(), **params)
   if not getattr(inst, "_channels", None):
     raise RuntimeError("%s built no surface() channels" % dsl_class.__name__)
-  body, libblock, inherits, imports, pspecs = emit_surface(inst._channels)
+  body, libsrcs, inherits, imports, pspecs = emit_surface(inst._channels)
+
+  height_kwargs = {}
+  height = getattr(inst, "_height", None)
+  if height is not None:
+    h_lines, h_final, h_libsrcs, h_inh, h_imp, h_params = emit_height(height)
+    libsrcs  = _union_ordered(libsrcs, h_libsrcs)        # dedup shared helpers
+    inherits = sorted(set(inherits) | set(h_inh))
+    imports  = sorted(set(imports) | set(h_imp))
+    pspecs   = _merge_param_specs(pspecs, h_params)
+    height_kwargs = dict(height_body="\n".join(h_lines),
+                         height_expr=h_final,
+                         displace_scale=getattr(inst, "_height_scale", 0.05))
+
+  libblock = "\n".join(s.strip() for s in libsrcs)
   path = materialize_surface_fxv2(body, libblock=libblock, lib_inherits=inherits,
                                   extra_imports=imports, params=pspecs,
-                                  name_hint=name_hint or dsl_class.__name__.lower())
+                                  name_hint=name_hint or dsl_class.__name__.lower(),
+                                  **height_kwargs)
   return path, pspecs
 
 

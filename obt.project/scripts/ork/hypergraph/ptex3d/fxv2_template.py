@@ -31,7 +31,7 @@ import hashlib
 from orkengine.core import Path as _Path
 
 # Bump when the template/contract changes so cached files regenerate.
-CODEGEN_VERSION = "geov2-ptex-fxv2-5"   # bumped: frg_onrm varying (surface-aware proctex)
+CODEGEN_VERSION = "geov2-ptex-fxv2-6"   # bumped: displacement height + analytic bump (Phase 4)
 
 # The surface output contract (mirrors the eventual PBR2 SurfaceFragment subset).
 SURFACE_OUT_FIELDS = ("albedo", "metallic", "roughness", "normal", "emissive", "ao")
@@ -78,12 +78,50 @@ def _params_block(params):
   return block, " : ublk_ptex_params"
 
 
+def _height_blocks(height_body, height_expr, displace_scale):
+  """-> (height_function, bump_block). Empty when no displacement is declared.
+
+  height_function: `float ptex_height(vec3 coord, vec3 onrm)` placed in the
+    surface libblock — a re-evaluable scalar field (drives the bump now, the
+    parallax march later).
+  bump_block: GEOV2 §18 ANALYTIC BUMP — finite-difference ptex_height in OBJECT
+    tangent space (otan/obin from onrm + frg_obinormal), then map the perturbed
+    tangent-space normal to world via the world TBN. No screen derivatives, so no
+    crease dots; object-anchored. Overrides `wnrm` before the surface eval."""
+  if not (height_expr and str(height_expr).strip()):
+    return "", ""
+  s  = repr(float(displace_scale))   # always has a decimal point
+  hb = _indent(height_body.strip(), 4) if height_body.strip() else ""
+  height_function = (
+    "  // GEOV2 Phase 4 — procedural displacement height (re-evaluable at any\n"
+    "  // coordinate; drives the analytic bump, parallax-occlusion later).\n"
+    "  float ptex_height(vec3 coord, vec3 onrm) {\n"
+    "%s\n"
+    "    return %s;\n"
+    "  }") % (hb, height_expr)
+  bump_block = (
+    "  {  // analytic bump from ptex_height (object tangent space -> world TBN)\n"
+    "    vec3  _obin = normalize(frg_obin);\n"
+    "    vec3  _otan = cross(onrm, _obin);\n"
+    "    float _e    = 0.0015;\n"
+    "    float _du   = ptex_height(frg_opos + _e*_otan, onrm) - ptex_height(frg_opos - _e*_otan, onrm);\n"
+    "    float _dv   = ptex_height(frg_opos + _e*_obin, onrm) - ptex_height(frg_opos - _e*_obin, onrm);\n"
+    "    float _k    = %s / (2.0 * _e);\n"
+    "    vec3  _ts   = normalize(vec3(-_du * _k, -_dv * _k, 1.0));\n"
+    "    wnrm = normalize(frg_tbn * _ts);\n"
+    "  }") % (s,)
+  return height_function, bump_block
+
+
 def generate_surface_fxv2(surface_body,
                           *,
                           libblock="",
                           lib_inherits=(),
                           extra_imports=(),
-                          params=()):
+                          params=(),
+                          height_body="",
+                          height_expr="",
+                          displace_scale=0.05):
   """Assemble a complete forward-PBR .fxv2 around a GLSL surface body.
 
   surface_body : GLSL statements assigning to o.<field> (see module docstring).
@@ -101,6 +139,7 @@ def generate_surface_fxv2(surface_body,
   surf_inherits = "".join(" : %s" % n for n in lib_inherits)
   out_struct = "  struct SurfaceOut { vec3 albedo; float metallic; float roughness; vec3 normal; vec3 emissive; float ao; };"
   params_block, params_inherit = _params_block(params)
+  height_function, bump_block = _height_blocks(height_body, height_expr, displace_scale)
 
   return _TEMPLATE.format(
     import_lines=import_lines,
@@ -109,6 +148,8 @@ def generate_surface_fxv2(surface_body,
     params_block=("\n" + params_block + "\n" if params_block else ""),
     params_inherit=params_inherit,
     libblock=("\n" + libblock.strip() + "\n" if libblock.strip() else ""),
+    height_function=("\n" + height_function + "\n" if height_function else ""),
+    bump_block=("\n" + bump_block if bump_block else ""),
     surface_body=_indent(surface_body.strip(), 4),
   )
 
@@ -119,6 +160,9 @@ def materialize_surface_fxv2(surface_body,
                              lib_inherits=(),
                              extra_imports=(),
                              params=(),
+                             height_body="",
+                             height_expr="",
+                             displace_scale=0.05,
                              name_hint="ptex"):
   """Generate + write the .fxv2 to <staging>/dslshadercache/<hint>_<hash>.fxv2.
 
@@ -129,7 +173,10 @@ def materialize_surface_fxv2(surface_body,
                                libblock=libblock,
                                lib_inherits=lib_inherits,
                                extra_imports=extra_imports,
-                               params=params)
+                               params=params,
+                               height_body=height_body,
+                               height_expr=height_expr,
+                               displace_scale=displace_scale)
   digest = hashlib.sha1((CODEGEN_VERSION + "\n" + text).encode("utf-8")).hexdigest()[:16]
   path = os.path.join(_dslcache_dir(), "%s_%s.fxv2" % (name_hint, digest))
   if not os.path.exists(path):
@@ -182,6 +229,7 @@ vertex_interface vif_ptex : ub_std_vtx {{
     vec3 frg_camz;
     vec3 frg_opos;
     vec3 frg_onrm;
+    vec3 frg_obin;
   }}
 }}
 ///////////////////////////////////////////////////////////////
@@ -204,7 +252,8 @@ vertex_shader vs_ptex
   frg_uv0     = uv0;
   frg_wpos    = m * position;
   frg_opos    = position.xyz;
-  frg_onrm    = normalize(normal);          // object-space normal (for surface-aware proctex)
+  frg_onrm    = normalize(normal);          // object-space normal (surface-aware proctex)
+  frg_obin    = normalize(binormal);        // object-space binormal (analytic-bump tangent)
   frg_clr     = vtxcolor;
   vec3 wn = normalize(mat3(m) * normal);
   vec3 wb = normalize(mat3(m) * binormal);
@@ -219,7 +268,7 @@ typeblock types_ptex {{
 }}{params_block}
 ///////////////////////////////////////////////////////////////
 libblock lib_ptex_surface : types_ptex{params_inherit}{surf_inherits} {{
-{libblock}
+{libblock}{height_function}
   SurfaceOut ptex_surface(vec3 wpos, vec3 opos, vec2 uv, vec4 cd, mat3 tbn, vec3 wnrm, vec3 onrm, vec3 eye) {{
     SurfaceOut o;
     o.albedo   = vec3(0.8);
@@ -242,7 +291,9 @@ fragment_shader ps_ptex_forward
   : lib_ptex_surface
   : std_forward_all {{
   vec3 wnrm = normalize(frg_tbn[2]);
-  SurfaceOut s = ptex_surface(frg_wpos.xyz, frg_opos, frg_uv0, frg_clr, frg_tbn, wnrm, normalize(frg_onrm), EyePostion);
+  vec3 onrm = normalize(frg_onrm);
+{bump_block}
+  SurfaceOut s = ptex_surface(frg_wpos.xyz, frg_opos, frg_uv0, frg_clr, frg_tbn, wnrm, onrm, EyePostion);
   // TEMP roughness linearization (stopgap — REMOVE when the PBR importance-
   // sampling code is calibrated). Maps authored roughness into the
   // perceptually-visible band [0.3, 1.0] (floor 0.3 keeps low cells shiny).

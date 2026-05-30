@@ -63,6 +63,11 @@ class CrackedMud(Ptex3d):
       roughness = P.mix(0.95, 0.86, cell.cell2 * plate),     # matte; crack rougher
     )
 
+    # GEOV2 Phase 4 — procedural displacement height: plates raised, cracks
+    # recessed (a smooth ramp out of the crack). Drives the ANALYTIC BUMP now
+    # (cracks catch light), parallax-occlusion later. Height is P_object-only.
+    self.displace(P.smoothstep(0.0, crack * 2.0, cell.fwedge), scale=0.02)
+
 ################################################################################
 
 class Phase3aApp:
