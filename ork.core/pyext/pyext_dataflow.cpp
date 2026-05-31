@@ -101,15 +101,44 @@ void pyinit_dataflow(py::module& module_core) {
                     }
                   }
                 };
+                auto set_fvec2 = [input](fvec2 value) {
+                  auto finplug = std::dynamic_pointer_cast<inplugdata<Vec2fPlugTraits>>(input);
+                  if (finplug) {
+                    finplug->setValue(value);
+                  } else {
+                    OrkAssert(false); // vec2 has no Xf variant
+                  }
+                };
+                auto set_fvec4 = [input](fvec4 value) {
+                  auto finplug = std::dynamic_pointer_cast<inplugdata<Vec4fPlugTraits>>(input);
+                  if (finplug) {
+                    finplug->setValue(value);
+                  } else {
+                    auto xfinplug = std::dynamic_pointer_cast<inplugdata<Vec4XfPlugTraits>>(input);
+                    if (xfinplug) {
+                      xfinplug->setValue(value);
+                    } else {
+                      OrkAssert(false);
+                    }
+                  }
+                };
 
                 if (auto as_float = decoded_value.tryAs<float>()) {
                   set_float(as_float.value());
                 } else if (auto as_int = decoded_value.tryAs<int>()) {
                   set_float(as_int.value());
+                } else if (auto as_fvec2 = decoded_value.tryAs<fvec2>()) {
+                  set_fvec2(as_fvec2.value());
+                } else if (auto as_fvec2_ptr = decoded_value.tryAs<fvec2_ptr_t>()) {
+                  set_fvec2(*as_fvec2_ptr.value());
                 } else if (auto as_fvec3 = decoded_value.tryAs<fvec3>()) {
                   set_fvec3(as_fvec3.value());
                 } else if (auto as_fvec3_ptr = decoded_value.tryAs<fvec3_ptr_t>()) {
                   set_fvec3(*as_fvec3_ptr.value());
+                } else if (auto as_fvec4 = decoded_value.tryAs<fvec4>()) {
+                  set_fvec4(as_fvec4.value());
+                } else if (auto as_fvec4_ptr = decoded_value.tryAs<fvec4_ptr_t>()) {
+                  set_fvec4(*as_fvec4_ptr.value());
                 } else if (auto as_fquat = decoded_value.tryAs<fquat>()) {
                   set_fquat(as_fquat.value());
                 } else if (auto as_fquat_ptr = decoded_value.tryAs<fquat_ptr_t>()) {
@@ -724,6 +753,9 @@ void pyinit_dataflow(py::module& module_core) {
               [](dgcontext_ptr_t ctx, std::string blockname, int count) -> dgregisterblock_ptr_t {
                 return ctx->createRegisters<float>(blockname, count);
               })
+          .def("createVec2RegisterBlock", [](dgcontext_ptr_t ctx, std::string blockname, int count) -> dgregisterblock_ptr_t {
+            return ctx->createRegisters<fvec2>(blockname, count);
+          })
           .def("createVec3RegisterBlock", [](dgcontext_ptr_t ctx, std::string blockname, int count) -> dgregisterblock_ptr_t {
             return ctx->createRegisters<fvec3>(blockname, count);
           })

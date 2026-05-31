@@ -7,6 +7,7 @@
 # in the active trace graph and returns a TerrainNode so it composes downstream.
 ###############################################################################
 
+from orkengine.core import vec2 as _vec2
 from orkengine.lev2 import terrain as _terrain
 from ._node import (
     TerrainNode,
@@ -35,11 +36,11 @@ def fbm(frequency=4.0, amplitude=1.0, octaves=5, name=None):
 
 
 def gradient(dir_x=1.0, dir_y=0.0, scale=1.0, bias=0.0, name=None):
-    """Linear ramp: dot(uv, (dir_x, dir_y)) * scale + bias."""
+    """Linear ramp: dot(uv, dir) * scale + bias, with dir = (dir_x, dir_y)
+    carried as a single vec2 plug."""
     g = graph_or_raise("Gradient")
     m = g.create(name or anon_name("grad", g), _terrain.GradientModule)
-    m.inputs.dir_x = float(dir_x)
-    m.inputs.dir_y = float(dir_y)
+    m.inputs.dir = _vec2(float(dir_x), float(dir_y))
     m.inputs.scale = float(scale)
     m.inputs.bias = float(bias)
     return TerrainNode(m, m.outputs.Out)

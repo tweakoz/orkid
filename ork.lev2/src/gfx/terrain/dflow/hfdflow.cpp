@@ -424,6 +424,14 @@ _floatPlug(dflow::DgModuleInst* inst, const dflow::DgModuleData* data, const cha
   return p;
 }
 
+// same, for a vec2 input plug (e.g. a packed 2D direction/offset).
+static dflow::fvec2_inp_pluginst_ptr_t
+_vec2Plug(dflow::DgModuleInst* inst, const dflow::DgModuleData* data, const char* name) {
+  auto p    = inst->typedInputNamed<dflow::Vec2fPlugTraits>(name);
+  p->_value = data->typedInputNamed<dflow::Vec2fPlugTraits>(name)->_value;
+  return p;
+}
+
 // substitute %KEY% -> val in a shader template
 static void _shadersub(std::string& s, const std::string& key, const std::string& val) {
   size_t pos = 0;
@@ -545,16 +553,16 @@ struct GradientModuleInst : public TerrainComputeInst {
   GradientModuleInst(const GradientModuleData* d, dflow::GraphInst* g) : TerrainComputeInst(d, g), _d(d) {}
   void onLink(dflow::GraphInst*) final {
     _output = typedOutputNamed<HfImagePlugTraits>("Out");
-    _dx = _floatPlug(this, _d, "dir_x");
-    _dy = _floatPlug(this, _d, "dir_y");
+    _dir = _vec2Plug(this, _d, "dir"); // packed (dir_x, dir_y)
     _sc = _floatPlug(this, _d, "scale");
     _bi = _floatPlug(this, _d, "bias");
   }
   void onActivate(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<BakeEnv>();
     _allocOut(env.get(), _output->_value);
+    auto dir = _dir->value();
     auto sh = env->_ctx->FXI()->shaderFromShaderText(
-        "terrain_grad", _grad_text(env->_w, _dx->value(), _dy->value(), _sc->value(), _bi->value()));
+        "terrain_grad", _grad_text(env->_w, dir.x, dir.y, _sc->value(), _bi->value()));
     _cs = env->_ctx->FXI()->computeShader(sh, "cs_grad");
   }
   void compute(dflow::GraphInst* inst, ui::updatedata_ptr_t) final {
@@ -567,9 +575,10 @@ struct GradientModuleInst : public TerrainComputeInst {
   }
   uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
     auto h = DataBlock::createHasher();
-    h->accumulateString("terrain.gradient.v1");
-    h->accumulateItem<float>(_dx->value());
-    h->accumulateItem<float>(_dy->value());
+    h->accumulateString("terrain.gradient.v2"); // v2: dir_x/dir_y -> single vec2 "dir"
+    auto dir = _dir->value();
+    h->accumulateItem<float>(dir.x);
+    h->accumulateItem<float>(dir.y);
     h->accumulateItem<float>(_sc->value());
     h->accumulateItem<float>(_bi->value());
     _mixTail(h, ctx, ih);
@@ -579,13 +588,13 @@ struct GradientModuleInst : public TerrainComputeInst {
 
   const GradientModuleData* _d;
   hfimg_outpluginst_ptr_t _output;
-  dflow::float_inp_pluginst_ptr_t _dx, _dy, _sc, _bi;
+  dflow::fvec2_inp_pluginst_ptr_t _dir;
+  dflow::float_inp_pluginst_ptr_t _sc, _bi;
   const FxComputeShader* _cs = nullptr;
 };
 
 static void _reshapeGradIOs(dataflow::moduledata_ptr_t data) {
-  dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "dir_x")->setValue(1.0f);
-  dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "dir_y")->setValue(0.0f);
+  dflow::ModuleData::createInputPlug<dflow::Vec2fPlugTraits>(data, dflow::EPR_UNIFORM, "dir")->setValue(fvec2(1.0f, 0.0f));
   dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "scale")->setValue(1.0f);
   dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "bias")->setValue(0.0f);
   dflow::ModuleData::createOutputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "Out");
@@ -853,6 +862,16 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(dflow::graphdata_ptr_t graph, Cont
   // asserts. (Distinct per-format pools would need distinct C++ types — later.)
   auto dgctx = std::make_shared<dflow::dgcontext>();
   dgctx->createRegisters<GpuComputeImage2DData>("hf_img", 8);
+  // register pools for the scalar plug types a terrain graph can carry on a
+  // CONNECTED edge. Today every dataflow edge is a GpuComputeImage2D and the
+  // vec2/vec4/float plugs are UNIFORM inputs (which the sorter never allocates a
+  // register for) — but a future module that OUTPUTS a vec2/vec4/float field
+  // would have its output plug keyed here, so register the pools up front (the
+  // sort asserts a non-null register for any connected output, dataflow_sorter
+  // line ~204). Cheap (a small pool each) and keeps the machine complete.
+  dgctx->createRegisters<float>("hf_float", 8);
+  dgctx->createRegisters<fvec2>("hf_vec2", 8);
+  dgctx->createRegisters<fvec4>("hf_vec4", 8);
   auto sorter = std::make_shared<dflow::DgSorter>(graph.get(), dgctx);
   auto topo   = sorter->generateTopology();
   OrkAssert(topo);
@@ -1028,8 +1047,7 @@ int terrainOpsSelfTest(Context* ctx, int dim) {
   auto runGrad = [&](const char* nm, float dx, float dy) -> fieldstats_ptr_t {
     auto g  = std::make_shared<dflow::GraphData>();
     auto gr = GradientModuleData::createShared();
-    gr->typedInputNamed<dflow::FloatPlugTraits>("dir_x")->setValue(dx);
-    gr->typedInputNamed<dflow::FloatPlugTraits>("dir_y")->setValue(dy);
+    gr->typedInputNamed<dflow::Vec2fPlugTraits>("dir")->setValue(fvec2(dx, dy));
     dflow::GraphData::addModule(g, "grad", gr);
     capTo(g, gr, path(nm));
     return bakeHeightfield(g, ctx, dim)[0];

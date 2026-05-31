@@ -154,8 +154,8 @@ struct ConstModuleData : public TerrainModuleData {
 using constmoduledata_ptr_t = std::shared_ptr<ConstModuleData>;
 
 ///////////////////////////////////////////////////////////////////////////////
-// GradientModule — generator. Out = dot(uv, (dir_x,dir_y))*scale + bias. 1 SSBO.
-// float plugs: dir_x, dir_y, scale, bias.
+// GradientModule — generator. Out = dot(uv, dir)*scale + bias. 1 SSBO.
+// vec2 plug: dir (the ramp direction). float plugs: scale, bias.
 ///////////////////////////////////////////////////////////////////////////////
 
 struct GradientModuleData : public TerrainModuleData {

@@ -169,6 +169,14 @@ using float_out_pluginst_ptr_t = std::shared_ptr<float_out_pluginst_t>;
 
 //
 
+using fvec2_inp_pluginst_t     = inpluginst<Vec2fPlugTraits>;
+using fvec2_inp_pluginst_ptr_t = std::shared_ptr<fvec2_inp_pluginst_t>;
+
+using fvec2_out_pluginst_t     = outpluginst<Vec2fPlugTraits>;
+using fvec2_out_pluginst_ptr_t = std::shared_ptr<fvec2_out_pluginst_t>;
+
+//
+
 using fvec3_inp_pluginst_t     = inpluginst<Vec3fPlugTraits>;
 using fvec3_inp_pluginst_ptr_t = std::shared_ptr<fvec3_inp_pluginst_t>;
 

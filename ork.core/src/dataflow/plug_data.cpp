@@ -15,6 +15,7 @@
 #include <ork/dataflow/all.h>
 #include <ork/dataflow/plug_data.inl>
 #include <ork/dataflow/plug_inst.inl>
+#include <ork/math/cvector2.hpp> // << use ITyped<fvec2>::serialize specialization (use_custom_serdes)
 #include <ork/math/cvector3.hpp> // << use ITyped<fvec3>::serialize specialization (use_custom_serdes)
 #include <ork/math/cvector4.hpp> // << use ITyped<fvec4>::serialize specialization
 #include <ork/math/quaternion.hpp> // << use ITyped<fvec3>::serialize specialization (use_custom_serdes)
@@ -31,6 +32,9 @@ std::shared_ptr<float> FloatPlugTraits::data_to_inst(std::shared_ptr<float> inp)
   return inp;
 }
 std::shared_ptr<float> FloatXfPlugTraits::data_to_inst(std::shared_ptr<float> inp) {
+  return inp;
+}
+std::shared_ptr<fvec2> Vec2fPlugTraits::data_to_inst(std::shared_ptr<fvec2> inp) {
   return inp;
 }
 std::shared_ptr<fvec3> Vec3fPlugTraits::data_to_inst(std::shared_ptr<fvec3> inp) {
@@ -223,9 +227,36 @@ template <> inpluginst_ptr_t inplugdata<FloatXfPlugTraits>::createInstance(Modul
   return std::make_shared<inpluginst<FloatXfPlugTraits>>(this, minst);
 }
 ///////////////////////////////////////////////////////////////////////////////
+// plugdata<fvec2>
+///////////////////////////////////////////////////////////////////////////////
+template <> void inplugdata<Vec2fPlugTraits>::describeX(class_t* clazz) {
+  using mytype_t = inplugdata<Vec2fPlugTraits>;
+  clazz->lambdaProperty<mytype_t, fvec2>(
+      "value", //
+      [](const mytype_t* obj_inp, fvec2& valout) { valout = *(obj_inp->_value); },
+      [](mytype_t* obj_out, const fvec2& valinp) { *(obj_out->_value) = valinp; });
+}
+template <> void outplugdata<Vec2fPlugTraits>::describeX(class_t* clazz) {
+}
+template <> inpluginst_ptr_t inplugdata<Vec2fPlugTraits>::createInstance(ModuleInst* minst) const {
+  return std::make_shared<inpluginst<Vec2fPlugTraits>>(this, minst);
+}
+template <> outpluginst_ptr_t outplugdata<Vec2fPlugTraits>::createInstance(ModuleInst* minst) const {
+  return std::make_shared<outpluginst<Vec2fPlugTraits>>(this, minst);
+}
+template struct inplugdata<Vec2fPlugTraits>;
+template struct outplugdata<Vec2fPlugTraits>;
+///////////////////////////////////////////////////////////////////////////////
 // plugdata<fvec3>
 ///////////////////////////////////////////////////////////////////////////////
 template <> void inplugdata<Vec3fPlugTraits>::describeX(class_t* clazz) {
+  using mytype_t = inplugdata<Vec3fPlugTraits>;
+  // reflect the value so a constant vec3 plug round-trips (was empty -> lost on
+  // reload in model-B embedded graphs, same bug as FloatPlug). Mirrors Vec3Xf.
+  clazz->lambdaProperty<mytype_t, fvec3>(
+      "value", //
+      [](const mytype_t* obj_inp, fvec3& valout) { valout = *(obj_inp->_value); },
+      [](mytype_t* obj_out, const fvec3& valinp) { *(obj_out->_value) = valinp; });
 }
 template <> void outplugdata<Vec3fPlugTraits>::describeX(class_t* clazz) {
 }
@@ -240,6 +271,12 @@ template struct outplugdata<Vec3fPlugTraits>;
 // plugdata<fvec4>
 ///////////////////////////////////////////////////////////////////////////////
 template <> void inplugdata<Vec4fPlugTraits>::describeX(class_t* clazz) {
+  using mytype_t = inplugdata<Vec4fPlugTraits>;
+  // reflect the value so a constant vec4 plug round-trips (was empty). Mirrors Vec4Xf.
+  clazz->lambdaProperty<mytype_t, fvec4>(
+      "value", //
+      [](const mytype_t* obj_inp, fvec4& valout) { valout = *(obj_inp->_value); },
+      [](mytype_t* obj_out, const fvec4& valinp) { *(obj_out->_value) = valinp; });
 }
 template <> void outplugdata<Vec4fPlugTraits>::describeX(class_t* clazz) {
 }
@@ -715,6 +752,9 @@ ImplementReflectionX(dflow::quatinplugdata, "dflow::quatinplugdata");
 
 ImplementTemplateReflectionX(dflow::outplugdata<dflow::FloatPlugTraits>, "dflow::outplugdata<float>");
 ImplementTemplateReflectionX(dflow::inplugdata<dflow::FloatPlugTraits>, "dflow::inplugdata<float>");
+
+ImplementTemplateReflectionX(dflow::outplugdata<dflow::Vec2fPlugTraits>, "dflow::outplugdata<vec2>");
+ImplementTemplateReflectionX(dflow::inplugdata<dflow::Vec2fPlugTraits>, "dflow::inplugdata<vec2>");
 
 ImplementTemplateReflectionX(dflow::outplugdata<dflow::Vec3fPlugTraits>, "dflow::outplugdata<vec3>");
 ImplementTemplateReflectionX(dflow::inplugdata<dflow::Vec3fPlugTraits>, "dflow::inplugdata<vec3>");

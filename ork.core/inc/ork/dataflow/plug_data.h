@@ -8,6 +8,7 @@
 #pragma once
 
 #include <ork/dataflow/enum.h>
+#include <ork/math/cvector2.h>
 #include <ork/math/cvector3.h>
 #include <ork/math/cvector4.h>
 #include <ork/math/quaternion.h>
@@ -39,6 +40,15 @@ struct FloatPlugTraits {
   using out_traits_t = FloatPlugTraits;
   static constexpr size_t max_fanout = 0;
   static std::shared_ptr<float> data_to_inst(std::shared_ptr<float> inp);
+};
+struct Vec2fPlugTraits {
+  using elemental_data_type = fvec2;
+  using elemental_inst_type = fvec2;
+  using xformer_t           = nullpassthrudata;
+  using range_type = float_range;
+  using out_traits_t = Vec2fPlugTraits;
+  static constexpr size_t max_fanout = 0;
+  static std::shared_ptr<fvec2> data_to_inst(std::shared_ptr<fvec2> inp);
 };
 struct Vec3fPlugTraits {
   using elemental_data_type = fvec3;

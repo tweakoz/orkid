@@ -63,6 +63,8 @@ struct CoreAppInit {
     dflow::outplugdata<dflow::FloatPlugTraits>::GetClassStatic();
     dflow::inplugdata<dflow::FloatXfPlugTraits>::GetClassStatic();
 
+    dflow::inplugdata<dflow::Vec2fPlugTraits>::GetClassStatic();
+    dflow::outplugdata<dflow::Vec2fPlugTraits>::GetClassStatic();
     dflow::inplugdata<dflow::Vec3fPlugTraits>::GetClassStatic();
     dflow::outplugdata<dflow::Vec3fPlugTraits>::GetClassStatic();
     dflow::inplugdata<dflow::Vec3XfPlugTraits>::GetClassStatic();
