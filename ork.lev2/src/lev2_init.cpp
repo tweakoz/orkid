@@ -376,6 +376,8 @@ struct ClassToucher {
     terrain::SlopeModuleData::GetClassStatic();
     terrain::CurvatureModuleData::GetClassStatic();
     terrain::MaskBlendModuleData::GetClassStatic();
+    terrain::ThermalErodeModuleData::GetClassStatic();
+    terrain::HydroErodeModuleData::GetClassStatic();
     terrain::CaptureModuleData::GetClassStatic();
     // custom image-plug classes MUST be touched too, or JsonDeserializer can't
     // resolve "terrain::hfimg{out,inp}plug" on load (mirrors particlebuf plugs).

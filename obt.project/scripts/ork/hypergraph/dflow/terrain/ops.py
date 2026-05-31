@@ -125,6 +125,50 @@ def curvature(node, scale=1.0, mode="magnitude", radius_m=96.0, name=None):
     return TerrainNode(m, m.outputs.Out)
 
 
+# --- erosion -----------------------------------------------------------------
+
+def erode_thermal(node, iterations=40, talus_deg=33.0, rate=0.15, name=None):
+    """THERMAL (talus) erosion — the slope-relaxation kind (cf. erode_hydro etc.,
+    not yet built). Relax slopes toward the angle of repose over
+    `iterations` steps -> scree/talus, softened ridges, filled hollows. Mass-
+    conserving (material moves downhill, total height preserved). `talus_deg` is the
+    PHYSICAL angle of repose (resolution-independent via the meters model); `rate` is
+    the per-step relaxation (keep <~0.25 for stability); `iterations` is the baked
+    step count. The single op ping-pongs two buffers internally across the steps."""
+    g = graph_or_raise("ThermalErode")
+    if not isinstance(node, TerrainNode):
+        raise TypeError(f"erode expects a terrain node; got {type(node).__name__}")
+    m = g.create(name or anon_name("erode", g), _terrain.ThermalErodeModule)
+    m.iterations = max(1, int(iterations))
+    g.connect(m.inputs.In, node.output_plug)
+    m.inputs.talus_deg = float(talus_deg)
+    m.inputs.rate = float(rate)
+    return TerrainNode(m, m.outputs.Out)
+
+
+def erode_hydro(node, iterations=50, rain=0.012, evaporation=0.015,
+                capacity=0.30, erosion=0.30, deposition=0.30, name=None):
+    """HYDRAULIC erosion (Mei et al. virtual-pipes grid model) — the kind that CARVES
+    channels (unlike erode_thermal, which only relaxes slopes). Rain adds water, water
+    flows downhill through virtual pipes, moving water picks up sediment to a velocity/
+    slope capacity and deposits it where flow slows -> drainage networks, gullies,
+    alluvial fans. `iterations` is the baked sub-pass-cycle count; `rain`/`evaporation`
+    set the water budget; `capacity`/`erosion`/`deposition` are the sediment rates
+    (tune for the look). Heavier than thermal (multi-field sim)."""
+    g = graph_or_raise("HydroErode")
+    if not isinstance(node, TerrainNode):
+        raise TypeError(f"erode_hydro expects a terrain node; got {type(node).__name__}")
+    m = g.create(name or anon_name("hydro", g), _terrain.HydroErodeModule)
+    m.iterations = max(1, int(iterations))
+    g.connect(m.inputs.In, node.output_plug)
+    m.inputs.rain = float(rain)
+    m.inputs.evaporation = float(evaporation)
+    m.inputs.capacity = float(capacity)
+    m.inputs.erosion = float(erosion)
+    m.inputs.deposition = float(deposition)
+    return TerrainNode(m, m.outputs.Out)
+
+
 # --- binary (join) -----------------------------------------------------------
 
 def mix(a, b, t=0.5, name=None):

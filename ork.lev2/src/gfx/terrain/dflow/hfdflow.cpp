@@ -32,6 +32,8 @@ ImplementReflectionX(ork::lev2::terrain::TerraceModuleData, "terrain::TerraceMod
 ImplementReflectionX(ork::lev2::terrain::SlopeModuleData, "terrain::SlopeModuleData");
 ImplementReflectionX(ork::lev2::terrain::CurvatureModuleData, "terrain::CurvatureModuleData");
 ImplementReflectionX(ork::lev2::terrain::MaskBlendModuleData, "terrain::MaskBlendModuleData");
+ImplementReflectionX(ork::lev2::terrain::ThermalErodeModuleData, "terrain::ThermalErodeModuleData");
+ImplementReflectionX(ork::lev2::terrain::HydroErodeModuleData, "terrain::HydroErodeModuleData");
 ImplementReflectionX(ork::lev2::terrain::CaptureModuleData, "terrain::CaptureModuleData");
 
 namespace ork::lev2::terrain {
@@ -1137,6 +1139,395 @@ void MaskBlendModuleData::describeX(class_t* clazz) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// ThermalErodeModule — iterative talus relaxation. One step (gather): a cell sheds
+// material to lower neighbors wherever the height STEP exceeds the talus threshold T.
+// Symmetric pairwise net flow == in(n->C) - out(C->n) summed over 4 neighbors, so it
+// is mass-conserving (each pair's flow is +to one, -from the other) AND parallel-safe
+// (read old, write new). Border neighbors clamp to self -> no flow leaves the domain.
+///////////////////////////////////////////////////////////////////////////////
+
+static std::string _thermal_text(int dim, float talus_thresh, float rate) {
+  std::string t = R"S(
+fxconfig fxcfg_default {}
+storage_interface sif_out (descriptor_set 0) { buffer layout(std430) ob { float odata[%DIMSQ%]; }; }
+storage_interface sif_in  (descriptor_set 0) { buffer layout(std430) ib { float idata[%DIMSQ%]; }; }
+compute_interface iface { storage { sif_out sif_in } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }
+compute_shader cs_thermal : iface {
+  if (gl_GlobalInvocationID.x >= %DIMU% || gl_GlobalInvocationID.y >= %DIMU%) { return; }
+  int  xi = int(gl_GlobalInvocationID.x);
+  int  yi = int(gl_GlobalInvocationID.y);
+  int  W  = int(%DIMU%);
+  uint i  = uint(yi) * %DIMU% + uint(xi);
+  int  xl = (xi > 0)     ? (xi - 1) : xi;   // clamp at border -> closed domain (mass conserved)
+  int  xr = (xi < W - 1) ? (xi + 1) : xi;
+  int  yd = (yi > 0)     ? (yi - 1) : yi;
+  int  yu = (yi < W - 1) ? (yi + 1) : yi;
+  float hC = idata[i];
+  float hL = idata[uint(yi) * %DIMU% + uint(xl)];
+  float hR = idata[uint(yi) * %DIMU% + uint(xr)];
+  float hD = idata[uint(yd) * %DIMU% + uint(xi)];
+  float hU = idata[uint(yu) * %DIMU% + uint(xi)];
+  float T  = float(%T%);
+  // net = sum over neighbors of [ inflow(n->C) - outflow(C->n) ], each = max(step - T, 0).
+  float net = 0.0;
+  net += max((hL - hC) - T, 0.0) - max((hC - hL) - T, 0.0);
+  net += max((hR - hC) - T, 0.0) - max((hC - hR) - T, 0.0);
+  net += max((hD - hC) - T, 0.0) - max((hC - hD) - T, 0.0);
+  net += max((hU - hC) - T, 0.0) - max((hC - hU) - T, 0.0);
+  odata[i] = hC + net * float(%RATE%);
+}
+)S";
+  _shadersub(t, "%DIMSQ%", FormatString("%d", dim * dim));
+  _shadersub(t, "%DIMU%", FormatString("%du", dim));
+  _shadersub(t, "%T%", FormatString("%f", talus_thresh));
+  _shadersub(t, "%RATE%", FormatString("%f", rate));
+  return t;
+}
+
+struct ThermalErodeModuleInst : public TerrainComputeInst {
+  ThermalErodeModuleInst(const ThermalErodeModuleData* d, dflow::GraphInst* g) : TerrainComputeInst(d, g), _d(d) {}
+  void onLink(dflow::GraphInst*) final {
+    _output = typedOutputNamed<HfImagePlugTraits>("Out");
+    _input  = typedInputNamed<HfImagePlugTraits>("In");
+    _talus  = _floatPlug(this, _d, "talus_deg");
+    _rate   = _floatPlug(this, _d, "rate");
+  }
+  void onActivate(dflow::GraphInst* inst) final {
+    auto env = inst->_impl.getShared<BakeEnv>();
+    _allocOut(env.get(), _output->_value);
+    // scratch buffer for the ping-pong (same size as the output field).
+    _scratch = env->_ctx->FXI()->createStorageBuffer(size_t(env->_w) * size_t(env->_h) * sizeof(float));
+    // talus threshold in NORMALIZED height units: the max stable inter-cell step is
+    // tan(angle) * cell_size_m, divided by height_scale to renormalize. PHYSICAL ->
+    // resolution-independent (finer cells -> proportionally smaller stable step).
+    float cell_m = env->_extent_m / float(env->_w);
+    float T      = tanf(_talus->value() * 0.017453293f) * cell_m / env->_height_scale_m;
+    auto sh      = env->_ctx->FXI()->shaderFromShaderText("terrain_thermal", _thermal_text(env->_w, T, _rate->value()));
+    _cs          = env->_ctx->FXI()->computeShader(sh, "cs_thermal");
+  }
+  void compute(dflow::GraphInst* inst, ui::updatedata_ptr_t) final {
+    auto env = inst->_impl.getShared<BakeEnv>();
+    auto ci  = env->_ctx->CI();
+    auto in  = _srcImg(_input);
+    OrkAssert(in && in->_ssbo);
+    int K = _d->_iterations;
+    if (K < 1) K = 1;
+    int g = (env->_w + 7) / 8;
+    FxShaderStorageBuffer* bufs[2] = {_output->_value->_ssbo, _scratch};
+    int cur = (K - 1) & 1; // parity so the FINAL write lands in bufs[0] (=output)
+    // step 0: read the upstream input, write bufs[cur].
+    ci->bindStorageBuffer(_cs, 0, bufs[cur]); // odata (write)
+    ci->bindStorageBuffer(_cs, 1, in->_ssbo); // idata (read)
+    ci->dispatchCompute(_cs, g, g, 1);
+    for (int it = 1; it < K; it++) {
+      // Each iteration must be its OWN submission: this CI keeps a single descriptor
+      // set per pipeline (vulkan_compute.cpp updateDescriptorSet), so a 2nd bind+
+      // dispatch in the SAME command buffer would clobber the 1st (all dispatches
+      // would read the last-bound buffers). endDispatchPhase = submit+WAIT; the
+      // driver opened the first phase and closes the last one after compute() returns.
+      ci->endDispatchPhase();
+      ci->beginDispatchPhase();
+      int nxt = 1 - cur;
+      ci->bindStorageBuffer(_cs, 0, bufs[nxt]); // write
+      ci->bindStorageBuffer(_cs, 1, bufs[cur]); // read previous step
+      ci->dispatchCompute(_cs, g, g, 1);
+      cur = nxt;
+    }
+    // parity gives cur == 0 -> the result is in _output->_value->_ssbo.
+  }
+  uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
+    auto h = DataBlock::createHasher();
+    h->accumulateString("terrain.thermal.v1");
+    h->accumulateItem<int>(_d->_iterations);
+    h->accumulateItem<float>(_talus->value());
+    h->accumulateItem<float>(_rate->value());
+    _mixTail(h, ctx, ih);
+    h->finish();
+    return h->result();
+  }
+
+  const ThermalErodeModuleData* _d;
+  hfimg_outpluginst_ptr_t _output;
+  hfimg_inpluginst_ptr_t _input;
+  dflow::float_inp_pluginst_ptr_t _talus, _rate;
+  FxShaderStorageBuffer* _scratch = nullptr;
+  const FxComputeShader* _cs = nullptr;
+};
+
+static void _reshapeThermalIOs(dataflow::moduledata_ptr_t data) {
+  dflow::ModuleData::createInputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "In");
+  dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "talus_deg")->setValue(33.0f);
+  dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "rate")->setValue(0.15f);
+  dflow::ModuleData::createOutputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "Out");
+}
+ThermalErodeModuleData::ThermalErodeModuleData() {}
+std::shared_ptr<ThermalErodeModuleData> ThermalErodeModuleData::createShared() {
+  auto d = std::make_shared<ThermalErodeModuleData>(); _reshapeThermalIOs(d); return d;
+}
+dflow::dgmoduleinst_ptr_t ThermalErodeModuleData::createInstance(dflow::GraphInst* g) const {
+  return std::make_shared<ThermalErodeModuleInst>(this, g);
+}
+void ThermalErodeModuleData::describeX(class_t* clazz) {
+  clazz->setSharedFactory([]() -> rtti::castable_ptr_t { return ThermalErodeModuleData::createShared(); });
+  clazz->annotateTyped<dataflow::moduleIOreshape_fn_t>("reshapeIOs",
+      [](dataflow::moduledata_ptr_t m) { _reshapeThermalIOs(m); });
+  clazz->directProperty("iterations", &ThermalErodeModuleData::_iterations); // baked step count
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// HydroErodeModule — Mei et al. virtual-pipes hydraulic erosion. 4 shaders run
+// per step: (init once) zero water/sed/flux, copy In->terr; then per iteration
+// (1) FLUX: outflow to 4 neighbors from (terrain+water) height diffs, scaled to
+//     available water; (2) WATER+ERODE: update water depth from flux divergence,
+//     derive velocity, capacity C = Kc*sin(slope)*|v|, erode (C>s) or deposit
+//     (C<s) terrain<->sediment, add rain, evaporate; (3) TRANSPORT: semi-Lagrangian
+//     advect sediment by velocity. Constants A/g/l/dt are baked sensible defaults.
+///////////////////////////////////////////////////////////////////////////////
+
+// fmt the common GLSL header for a hydro pass. orkid allows only ONE buffer per
+// `storage_interface`, so each SSBO is its own interface; `sifaces` is the block of
+// those declarations and `siflist` the space-separated names for `storage { ... }`
+// (their ORDER == the binding indices). `body` is the shader body.
+static std::string _hydro_text(int dim, const char* name, const char* sifaces, const char* siflist,
+                               const char* body, //
+                               float rain, float evap, float capacity, float erosion, float deposition) {
+  std::string t = std::string("\nfxconfig fxcfg_default {}\n") + sifaces +
+    "compute_interface iface { storage { " + siflist + " } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }\n"
+    "compute_shader " + name + " : iface {\n"
+    "  if (gl_GlobalInvocationID.x >= %DIMU% || gl_GlobalInvocationID.y >= %DIMU%) { return; }\n"
+    "  int  xi = int(gl_GlobalInvocationID.x);\n"
+    "  int  yi = int(gl_GlobalInvocationID.y);\n"
+    "  int  W  = int(%DIMU%);\n"
+    "  uint i  = uint(yi) * %DIMU% + uint(xi);\n"
+    "  const float DT = 0.02; const float A = 1.0; const float G = 9.81; const float L = 1.0;\n"
+    "  const float RAIN = float(%RAIN%); const float KE = float(%EVAP%);\n"
+    "  const float KC = float(%CAP%); const float KS = float(%EROS%); const float KD = float(%DEPO%);\n"
+    + body + "\n}\n";
+  _shadersub(t, "%DIMSQ4%", FormatString("%d", dim * dim * 4)); // before %DIMSQ% (prefix)
+  _shadersub(t, "%DIMSQ2%", FormatString("%d", dim * dim * 2));
+  _shadersub(t, "%DIMSQ%", FormatString("%d", dim * dim));
+  _shadersub(t, "%DIMU%", FormatString("%du", dim));
+  _shadersub(t, "%RAIN%", FormatString("%f", rain));
+  _shadersub(t, "%EVAP%", FormatString("%f", evap));
+  _shadersub(t, "%CAP%", FormatString("%f", capacity));
+  _shadersub(t, "%EROS%", FormatString("%f", erosion));
+  _shadersub(t, "%DEPO%", FormatString("%f", deposition));
+  return t;
+}
+
+struct HydroErodeModuleInst : public TerrainComputeInst {
+  HydroErodeModuleInst(const HydroErodeModuleData* d, dflow::GraphInst* g) : TerrainComputeInst(d, g), _d(d) {}
+  void onLink(dflow::GraphInst*) final {
+    _output = typedOutputNamed<HfImagePlugTraits>("Out");
+    _input  = typedInputNamed<HfImagePlugTraits>("In");
+    _rain   = _floatPlug(this, _d, "rain");
+    _evap   = _floatPlug(this, _d, "evaporation");
+    _cap    = _floatPlug(this, _d, "capacity");
+    _eros   = _floatPlug(this, _d, "erosion");
+    _depo   = _floatPlug(this, _d, "deposition");
+  }
+  void onActivate(dflow::GraphInst* inst) final {
+    auto env = inst->_impl.getShared<BakeEnv>();
+    auto fxi = env->_ctx->FXI();
+    int dim  = env->_w;
+    _allocOut(env.get(), _output->_value); // terr A (= output)
+    size_t nf = size_t(dim) * size_t(dim);
+    _terrB = fxi->createStorageBuffer(nf * sizeof(float));
+    _water = fxi->createStorageBuffer(nf * sizeof(float));
+    _sedA  = fxi->createStorageBuffer(nf * sizeof(float));
+    _sedB  = fxi->createStorageBuffer(nf * sizeof(float));
+    _flux  = fxi->createStorageBuffer(nf * 4 * sizeof(float));
+    _vel   = fxi->createStorageBuffer(nf * 2 * sizeof(float));
+    float rn = _rain->value(), ev = _evap->value(), kc = _cap->value(), ks = _eros->value(), kd = _depo->value();
+    // --- INIT: terr = In, water/sed/flux = 0. binds: 0 terr(w) 1 in(r) 2 water(w) 3 sed(w) 4 flux(w)
+    {
+      const char* ifc =
+        "storage_interface si_t (descriptor_set 0) { buffer layout(std430) tb { float terr[%DIMSQ%]; }; }\n"
+        "storage_interface si_i (descriptor_set 0) { buffer layout(std430) ib { float idata[%DIMSQ%]; }; }\n"
+        "storage_interface si_w (descriptor_set 0) { buffer layout(std430) wb { float water[%DIMSQ%]; }; }\n"
+        "storage_interface si_s (descriptor_set 0) { buffer layout(std430) sb { float sed[%DIMSQ%]; }; }\n"
+        "storage_interface si_f (descriptor_set 0) { buffer layout(std430) fb { float flux[%DIMSQ4%]; }; }\n";
+      const char* body =
+        "  terr[i] = idata[i];\n  water[i] = 0.0;\n  sed[i] = 0.0;\n"
+        "  flux[4u*i+0u]=0.0; flux[4u*i+1u]=0.0; flux[4u*i+2u]=0.0; flux[4u*i+3u]=0.0;";
+      _csInit = fxi->computeShader(fxi->shaderFromShaderText("hydro_init",
+          _hydro_text(dim, "cs_hydro_init", ifc, "si_t si_i si_w si_s si_f", body, rn, ev, kc, ks, kd)), "cs_hydro_init");
+    }
+    // --- FLUX: binds 0 flux(rw) 1 terr(r) 2 water(r)
+    {
+      const char* ifc =
+        "storage_interface si_f (descriptor_set 0) { buffer layout(std430) fb { float flux[%DIMSQ4%]; }; }\n"
+        "storage_interface si_t (descriptor_set 0) { buffer layout(std430) tb { float terr[%DIMSQ%]; }; }\n"
+        "storage_interface si_w (descriptor_set 0) { buffer layout(std430) wb { float water[%DIMSQ%]; }; }\n";
+      const char* body =
+        "  float hC = terr[i] + water[i];\n"
+        "  float hL = (xi>0)   ? (terr[i-1u]+water[i-1u]) : hC;\n"
+        "  float hR = (xi<W-1) ? (terr[i+1u]+water[i+1u]) : hC;\n"
+        "  float hD = (yi>0)   ? (terr[i-uint(W)]+water[i-uint(W)]) : hC;\n"
+        "  float hU = (yi<W-1) ? (terr[i+uint(W)]+water[i+uint(W)]) : hC;\n"
+        "  float k = DT*A*G/L;\n"
+        "  float fL = max(0.0, flux[4u*i+0u] + k*(hC-hL));\n"
+        "  float fR = max(0.0, flux[4u*i+1u] + k*(hC-hR));\n"
+        "  float fD = max(0.0, flux[4u*i+2u] + k*(hC-hD));\n"
+        "  float fU = max(0.0, flux[4u*i+3u] + k*(hC-hU));\n"
+        "  float sum = (fL+fR+fD+fU)*DT;\n"
+        "  float kk = (sum>1e-9) ? min(1.0, water[i]*L*L/sum) : 1.0;\n"
+        "  flux[4u*i+0u]=fL*kk; flux[4u*i+1u]=fR*kk; flux[4u*i+2u]=fD*kk; flux[4u*i+3u]=fU*kk;";
+      _csFlux = fxi->computeShader(fxi->shaderFromShaderText("hydro_flux",
+          _hydro_text(dim, "cs_hydro_flux", ifc, "si_f si_t si_w", body, rn, ev, kc, ks, kd)), "cs_hydro_flux");
+    }
+    // --- WATER+ERODE: binds 0 terrOut(w) 1 terrIn(r) 2 water(rw) 3 flux(r) 4 sed(rw) 5 vel(w)
+    {
+      const char* ifc =
+        "storage_interface si_o (descriptor_set 0) { buffer layout(std430) ob { float terr_o[%DIMSQ%]; }; }\n"
+        "storage_interface si_t (descriptor_set 0) { buffer layout(std430) tb { float terr_i[%DIMSQ%]; }; }\n"
+        "storage_interface si_w (descriptor_set 0) { buffer layout(std430) wb { float water[%DIMSQ%]; }; }\n"
+        "storage_interface si_f (descriptor_set 0) { buffer layout(std430) fb { float flux[%DIMSQ4%]; }; }\n"
+        "storage_interface si_s (descriptor_set 0) { buffer layout(std430) sb { float sed[%DIMSQ%]; }; }\n"
+        "storage_interface si_v (descriptor_set 0) { buffer layout(std430) vb { float vel[%DIMSQ2%]; }; }\n";
+      const char* body =
+        "  float b = terr_i[i];\n  float d = water[i] + RAIN;\n"
+        "  float inL = (xi>0)   ? flux[4u*(i-1u)+1u] : 0.0;\n"   // left's R
+        "  float inR = (xi<W-1) ? flux[4u*(i+1u)+0u] : 0.0;\n"   // right's L
+        "  float inD = (yi>0)   ? flux[4u*(i-uint(W))+3u] : 0.0;\n"  // down's U
+        "  float inU = (yi<W-1) ? flux[4u*(i+uint(W))+2u] : 0.0;\n"  // up's D
+        "  float fL=flux[4u*i+0u], fR=flux[4u*i+1u], fD=flux[4u*i+2u], fU=flux[4u*i+3u];\n"
+        "  float outflow = fL+fR+fD+fU;\n"
+        "  float d2 = d + DT*((inL+inR+inD+inU) - outflow)/(L*L);\n"
+        "  if (d2 < 0.0) d2 = 0.0;\n"
+        "  float dWx = ((inL - fL) + (fR - inR))*0.5;\n"
+        "  float dWy = ((inD - fD) + (fU - inU))*0.5;\n"
+        "  float davg = clamp((d+d2)*0.5, 1e-3, 0.5);\n" // CAP the denominator (deep ponds shouldn't kill velocity)
+        "  float u = dWx/(L*davg);\n  float v = dWy/(L*davg);\n"
+        "  float vmag = min(sqrt(u*u+v*v), 4.0);\n"      // clamp velocity for the CAPACITY term only
+        "  float bL=(xi>0)?terr_i[i-1u]:b, bR=(xi<W-1)?terr_i[i+1u]:b;\n"
+        "  float bD=(yi>0)?terr_i[i-uint(W)]:b, bU=(yi<W-1)?terr_i[i+uint(W)]:b;\n"
+        "  float gx=(bR-bL)*0.5*64.0, gy=(bU-bD)*0.5*64.0;\n" // scale normalized [0,1] slope -> real tilt
+        "  float sina = sqrt(gx*gx+gy*gy)/sqrt(gx*gx+gy*gy+1.0);\n"
+        "  sina = max(sina, 0.001);\n"                   // floor far below real slopes (was 0.05 == no slope signal)
+        "  float C = min(KC * sina * vmag, 2.0);\n"      // capacity (KC now has headroom)
+        "  float s = sed[i];\n  float bnew = b; float snew = s;\n"
+        "  if (C > s) { float amt = KS*(C-s);          bnew = b - amt; snew = max(s + amt, 0.0); }\n"  // erode (KS scales; no magic cap)
+        "  else       { float amt = min(KD*(s-C), s);  bnew = b + amt; snew = max(s - amt, 0.0); }\n"  // deposit (<= available sediment)
+        "  terr_o[i] = clamp(bnew, -1.0, 2.0);\n  water[i] = d2*(1.0-KE);\n  sed[i] = snew;\n"
+        "  vel[2u*i+0u]=u; vel[2u*i+1u]=v;";             // store RAW (unclamped) velocity for transport
+      _csWater = fxi->computeShader(fxi->shaderFromShaderText("hydro_water",
+          _hydro_text(dim, "cs_hydro_water", ifc, "si_o si_t si_w si_f si_s si_v", body, rn, ev, kc, ks, kd)), "cs_hydro_water");
+    }
+    // --- TRANSPORT: binds 0 sedOut(w) 1 sedIn(r) 2 vel(r)
+    {
+      const char* ifc =
+        "storage_interface si_o (descriptor_set 0) { buffer layout(std430) ob { float sed_o[%DIMSQ%]; }; }\n"
+        "storage_interface si_i (descriptor_set 0) { buffer layout(std430) ib { float sed_i[%DIMSQ%]; }; }\n"
+        "storage_interface si_v (descriptor_set 0) { buffer layout(std430) vb { float vel[%DIMSQ2%]; }; }\n";
+      const char* body =
+        "  float u=vel[2u*i+0u], v=vel[2u*i+1u];\n"
+        "  float ADV = 100.0;\n"  // advect sediment a MEANINGFUL number of cells/step (u*DT alone was sub-cell)
+        "  float sx = clamp(float(xi) - u*DT*ADV, 0.0, float(W-1));\n"
+        "  float sy = clamp(float(yi) - v*DT*ADV, 0.0, float(W-1));\n"
+        "  int x0=int(floor(sx)), y0=int(floor(sy));\n"
+        "  int x1=min(x0+1,W-1), y1=min(y0+1,W-1);\n"
+        "  float fx=sx-float(x0), fy=sy-float(y0);\n"
+        "  float s00=sed_i[uint(y0*W+x0)], s10=sed_i[uint(y0*W+x1)];\n"
+        "  float s01=sed_i[uint(y1*W+x0)], s11=sed_i[uint(y1*W+x1)];\n"
+        "  sed_o[i] = mix(mix(s00,s10,fx), mix(s01,s11,fx), fy);";
+      _csXport = fxi->computeShader(fxi->shaderFromShaderText("hydro_xport",
+          _hydro_text(dim, "cs_hydro_xport", ifc, "si_o si_i si_v", body, rn, ev, kc, ks, kd)), "cs_hydro_xport");
+    }
+  }
+  void compute(dflow::GraphInst* inst, ui::updatedata_ptr_t) final {
+    auto env = inst->_impl.getShared<BakeEnv>();
+    auto ci  = env->_ctx->CI();
+    auto in  = _srcImg(_input);
+    OrkAssert(in && in->_ssbo);
+    int K = _d->_iterations;
+    if (K < 1) K = 1;
+    int g = (env->_w + 7) / 8;
+    FxShaderStorageBuffer* terr[2] = {_output->_value->_ssbo, _terrB};
+    FxShaderStorageBuffer* sed[2]  = {_sedA, _sedB};
+    auto submitNext = [&]() { ci->endDispatchPhase(); ci->beginDispatchPhase(); }; // descriptor-set gotcha
+    // init (the driver already opened the first phase)
+    ci->bindStorageBuffer(_csInit, 0, terr[0]);
+    ci->bindStorageBuffer(_csInit, 1, in->_ssbo);
+    ci->bindStorageBuffer(_csInit, 2, _water);
+    ci->bindStorageBuffer(_csInit, 3, sed[0]);
+    ci->bindStorageBuffer(_csInit, 4, _flux);
+    ci->dispatchCompute(_csInit, g, g, 1);
+    int tc = 0, sc = 0; // current terr / sed buffer index
+    for (int it = 0; it < K; it++) {
+      submitNext();
+      // pass 1: flux (in place)
+      ci->bindStorageBuffer(_csFlux, 0, _flux);
+      ci->bindStorageBuffer(_csFlux, 1, terr[tc]);
+      ci->bindStorageBuffer(_csFlux, 2, _water);
+      ci->dispatchCompute(_csFlux, g, g, 1);
+      submitNext();
+      // pass 2: water + erode/deposit (terr ping-pong, sed in place, vel out)
+      ci->bindStorageBuffer(_csWater, 0, terr[1 - tc]);
+      ci->bindStorageBuffer(_csWater, 1, terr[tc]);
+      ci->bindStorageBuffer(_csWater, 2, _water);
+      ci->bindStorageBuffer(_csWater, 3, _flux);
+      ci->bindStorageBuffer(_csWater, 4, sed[sc]);
+      ci->bindStorageBuffer(_csWater, 5, _vel);
+      ci->dispatchCompute(_csWater, g, g, 1);
+      tc = 1 - tc;
+      submitNext();
+      // pass 3: sediment transport (sed ping-pong)
+      ci->bindStorageBuffer(_csXport, 0, sed[1 - sc]);
+      ci->bindStorageBuffer(_csXport, 1, sed[sc]);
+      ci->bindStorageBuffer(_csXport, 2, _vel);
+      ci->dispatchCompute(_csXport, g, g, 1);
+      sc = 1 - sc;
+    }
+    // the eroded terrain is in terr[tc]; point the output image at it.
+    _output->_value->_ssbo = terr[tc];
+  }
+  uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
+    auto h = DataBlock::createHasher();
+    h->accumulateString("terrain.hydro.v2"); // v2: real sediment transport + slope scale, caps removed
+    h->accumulateItem<int>(_d->_iterations);
+    h->accumulateItem<float>(_rain->value());
+    h->accumulateItem<float>(_evap->value());
+    h->accumulateItem<float>(_cap->value());
+    h->accumulateItem<float>(_eros->value());
+    h->accumulateItem<float>(_depo->value());
+    _mixTail(h, ctx, ih);
+    h->finish();
+    return h->result();
+  }
+
+  const HydroErodeModuleData* _d;
+  hfimg_outpluginst_ptr_t _output;
+  hfimg_inpluginst_ptr_t _input;
+  dflow::float_inp_pluginst_ptr_t _rain, _evap, _cap, _eros, _depo;
+  FxShaderStorageBuffer *_terrB = nullptr, *_water = nullptr, *_sedA = nullptr, *_sedB = nullptr, *_flux = nullptr, *_vel = nullptr;
+  const FxComputeShader *_csInit = nullptr, *_csFlux = nullptr, *_csWater = nullptr, *_csXport = nullptr;
+};
+
+static void _reshapeHydroIOs(dataflow::moduledata_ptr_t data) {
+  dflow::ModuleData::createInputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "In");
+  dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "rain")->setValue(0.012f);
+  dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "evaporation")->setValue(0.015f);
+  dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "capacity")->setValue(0.30f);
+  dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "erosion")->setValue(0.30f);
+  dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "deposition")->setValue(0.30f);
+  dflow::ModuleData::createOutputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "Out");
+}
+HydroErodeModuleData::HydroErodeModuleData() {}
+std::shared_ptr<HydroErodeModuleData> HydroErodeModuleData::createShared() {
+  auto d = std::make_shared<HydroErodeModuleData>(); _reshapeHydroIOs(d); return d;
+}
+dflow::dgmoduleinst_ptr_t HydroErodeModuleData::createInstance(dflow::GraphInst* g) const {
+  return std::make_shared<HydroErodeModuleInst>(this, g);
+}
+void HydroErodeModuleData::describeX(class_t* clazz) {
+  clazz->setSharedFactory([]() -> rtti::castable_ptr_t { return HydroErodeModuleData::createShared(); });
+  clazz->annotateTyped<dataflow::moduleIOreshape_fn_t>("reshapeIOs",
+      [](dataflow::moduledata_ptr_t m) { _reshapeHydroIOs(m); });
+  clazz->directProperty("iterations", &HydroErodeModuleData::_iterations);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // CaptureModule — records the request; the driver flushes after GPU submit.
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1275,16 +1666,14 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
   ctx->endFrame();
 
   // flush captures: readback each source SSBO and encode by file extension.
-  //   .exr -> RGBA32F float (h,h,h,1), the canonical (lossless) artifact.
-  //   .png -> single-channel 16-bit grayscale, a portable heightmap export. PNG
-  //           can't hold float so OIIO would silently drop to 8-bit; R16UI forces
-  //           the full 16-bit depth.
-  // 16-bit heightmap convention: 0.15 m per LSB, so the full uint16 range spans
-  // 65535 * 0.15 = 9830.25 m = ~32,251 ft (Everest is 29,032 ft, so this clears any
-  // real terrain with headroom) at 15 cm vertical precision. The normalized [0,1]
-  // field maps linearly across that full range (1.0 -> 9830.25 m).
-  constexpr float kMetersPerLSB = 0.15f;
-  constexpr float kFullScaleM   = 65535.0f * kMetersPerLSB; // 9830.25 m (~32,251 ft)
+  //   .exr -> RGBA32F float (h,h,h,1), the canonical (lossless) artifact — keeps the
+  //           TRUE field values (so physical height = value * height_scale_m).
+  //   .png -> single-channel 16-bit grayscale, NORMALIZED to the field's [min,max]
+  //           across the full 16-bit range (auto-exposed for max contrast/precision;
+  //           great for masks/curv that live in a sub-range). PNG can't hold float so
+  //           OIIO would silently drop to 8-bit; R16UI forces the full 16-bit depth.
+  //           The absolute scale is recoverable from the printed/returned FieldStats
+  //           (and the EXR), since the PNG is field-relative.
   std::vector<fieldstats_ptr_t> stats;
   auto fxi = ctx->FXI();
   for (auto& req : env->_captures) {
@@ -1298,9 +1687,9 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
     auto mapping = fxi->mapStorageBuffer(img->_ssbo, 0, n * sizeof(float), BufferMapAccess::READ_ONLY);
     const float* src = (const float*)mapping->_mappedaddr;
 
-    std::vector<float> rgba;             // .exr path
-    std::vector<uint16_t> g16;           // .png path
-    if (as_png) g16.resize(n); else rgba.resize(n * 4);
+    // pass 1: stats (+ build the RGBA32F EXR buffer inline; the EXR keeps true values).
+    std::vector<float> rgba; // .exr path
+    if (not as_png) rgba.resize(n * 4);
     float vmin = 1e30f, vmax = -1e30f;
     double vsum = 0.0;
     for (size_t i = 0; i < n; i++) {
@@ -1308,20 +1697,31 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
       vmin = (v < vmin) ? v : vmin;
       vmax = (v > vmax) ? v : vmax;
       vsum += v;
-      if (as_png) {
-        float c      = v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v); // [0,1] clamp for the integer encode
-        float meters = c * kFullScaleM;                         // normalized [0,1] -> meters
-        g16[i]       = uint16_t(meters / kMetersPerLSB + 0.5f); // quantize at 0.15 m / LSB
-      } else {
+      if (not as_png) {
         rgba[i * 4 + 0] = v;
         rgba[i * 4 + 1] = v;
         rgba[i * 4 + 2] = v;
         rgba[i * 4 + 3] = 1.0f;
       }
     }
-    fxi->unmapStorageBuffer(mapping.get());
     float vmean = float(vsum / double(n));
-    printf("[terrain bake] field stats: min<%g> max<%g> mean<%g>\n", vmin, vmax, vmean);
+
+    // pass 2 (PNG only): NORMALIZE [min,max] -> [0,65535] (full-range contrast). A
+    // flat field (range ~ 0) -> all 0.
+    std::vector<uint16_t> g16; // .png path
+    if (as_png) {
+      g16.resize(n);
+      float range = vmax - vmin;
+      float inv   = (range > 1e-12f) ? (1.0f / range) : 0.0f;
+      for (size_t i = 0; i < n; i++) {
+        float t = (src[i] - vmin) * inv;
+        t       = t < 0.0f ? 0.0f : (t > 1.0f ? 1.0f : t);
+        g16[i]  = uint16_t(t * 65535.0f + 0.5f);
+      }
+    }
+    fxi->unmapStorageBuffer(mapping.get());
+    printf("[terrain bake] field stats: min<%g> max<%g> mean<%g>%s\n", vmin, vmax, vmean,
+           as_png ? "  (png16 normalized to [min,max])" : "");
     auto fs   = std::make_shared<FieldStats>();
     fs->_min  = vmin;
     fs->_max  = vmax;
@@ -1341,7 +1741,7 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
     // heightfields/masks are LINEAR data — tag the PNG linear so it isn't read back
     // through an sRGB curve (the engine-wide PNG default is sRGB; this is opt-in).
     oimg.writeToFile(req._path, /*linear_colorspace=*/ as_png);
-    printf("[terrain bake] wrote <%s> (%dx%d, %s)\n", req._path.c_str(), w, h, as_png ? "png16/linear" : "exr32f");
+    printf("[terrain bake] wrote <%s> (%dx%d, %s)\n", req._path.c_str(), w, h, as_png ? "png16/linear/normalized" : "exr32f");
   }
   return stats;
 }

@@ -59,6 +59,14 @@ void pyinit_gfx_terrain(py::module& module_lev2) {
   py::class_<trn::MaskBlendModuleData, dflow::DgModuleData, trn::maskblendmoduledata_ptr_t>(trn_module, "MaskBlendModule")
       .def_static("createShared", []() -> trn::maskblendmoduledata_ptr_t { return trn::MaskBlendModuleData::createShared(); });
 
+  py::class_<trn::ThermalErodeModuleData, dflow::DgModuleData, trn::thermalerodemoduledata_ptr_t>(trn_module, "ThermalErodeModule")
+      .def_static("createShared", []() -> trn::thermalerodemoduledata_ptr_t { return trn::ThermalErodeModuleData::createShared(); })
+      .def_readwrite("iterations", &trn::ThermalErodeModuleData::_iterations); // baked step count
+
+  py::class_<trn::HydroErodeModuleData, dflow::DgModuleData, trn::hydroerodemoduledata_ptr_t>(trn_module, "HydroErodeModule")
+      .def_static("createShared", []() -> trn::hydroerodemoduledata_ptr_t { return trn::HydroErodeModuleData::createShared(); })
+      .def_readwrite("iterations", &trn::HydroErodeModuleData::_iterations); // baked step count
+
   py::class_<trn::CaptureModuleData, dflow::DgModuleData, trn::capturemoduledata_ptr_t>(trn_module, "CaptureModule")
       .def_static("createShared", []() -> trn::capturemoduledata_ptr_t { return trn::CaptureModuleData::createShared(); })
       // bake-time output path (wrapper-supplied, deliberately NOT serialized — a

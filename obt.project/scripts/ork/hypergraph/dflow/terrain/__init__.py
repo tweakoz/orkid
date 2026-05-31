@@ -36,9 +36,14 @@ Slope     = ops.slope      # Mask by Feature: slope -> [0,1] mask field
 slope     = ops.slope      # lower-case too (reads naturally: steep = T.slope(h))
 Curvature = ops.curvature  # Mask by Feature: curvature (convex/concave/magnitude)
 curvature = ops.curvature
+ErodeThermal = ops.erode_thermal  # thermal (talus) erosion — relaxes slopes
+erode_thermal = ops.erode_thermal
+ErodeHydro = ops.erode_hydro      # hydraulic (pipe-model) erosion — carves channels
+erode_hydro = ops.erode_hydro
 
 __all__ = [
     "HeightField",
     "Fbm", "Gradient", "Const", "Remap", "Terrace", "Clamp", "Mix", "Min", "Max",
     "Slope", "slope", "Curvature", "curvature",
+    "ErodeThermal", "erode_thermal", "ErodeHydro", "erode_hydro",
 ]

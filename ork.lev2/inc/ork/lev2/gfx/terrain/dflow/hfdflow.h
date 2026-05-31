@@ -271,6 +271,50 @@ struct MaskBlendModuleData : public TerrainModuleData {
 using maskblendmoduledata_ptr_t = std::shared_ptr<MaskBlendModuleData>;
 
 ///////////////////////////////////////////////////////////////////////////////
+// ThermalErodeModule — 1-in iterative THERMAL erosion (talus / angle-of-repose).
+// Each of `_iterations` steps moves material from a cell to lower neighbors wherever
+// the inter-cell height STEP exceeds the talus threshold (tan(talus_deg)*cell_size),
+// relaxing slopes toward the angle of repose -> scree/talus, softened ridges, filled
+// hollows. A symmetric pairwise GATHER (read old, write new) is parallel-safe AND
+// mass-conserving (closed domain); the module ping-pongs two SSBOs across the steps.
+// talus_deg is PHYSICAL (meters model) so erosion is resolution-independent. float
+// plugs: talus_deg (angle of repose), rate (per-step relaxation, keep <~0.25). 2 SSBOs.
+///////////////////////////////////////////////////////////////////////////////
+
+struct ThermalErodeModuleData : public TerrainModuleData {
+  DeclareConcreteX(ThermalErodeModuleData, TerrainModuleData);
+  ThermalErodeModuleData();
+  static std::shared_ptr<ThermalErodeModuleData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
+
+  int _iterations = 40; // baked: number of thermal relaxation steps
+};
+using thermalerodemoduledata_ptr_t = std::shared_ptr<ThermalErodeModuleData>;
+
+///////////////////////////////////////////////////////////////////////////////
+// HydroErodeModule — 1-in iterative HYDRAULIC erosion (Mei et al. 2007 "virtual
+// pipes" grid model). Unlike thermal (which only relaxes slopes), this CARVES
+// channels: rain adds water -> water flows to lower neighbors through virtual pipes
+// (flux from terrain+water height differences) -> moving water picks up sediment up
+// to a velocity/slope-dependent CAPACITY and deposits it where flow slows -> drainage
+// networks / gullies / alluvial fans. State fields (terrain, water, sediment, 4-way
+// flux) are stepped over `_iterations` sub-pass cycles (flux -> water+erode -> sediment
+// transport), ping-ponging SSBOs internally. float plugs: rain, evaporation, capacity,
+// erosion, deposition. ~6 SSBOs, 3 dispatches/step (each its own submit). Heavier than
+// thermal; tune the rates for the look.
+///////////////////////////////////////////////////////////////////////////////
+
+struct HydroErodeModuleData : public TerrainModuleData {
+  DeclareConcreteX(HydroErodeModuleData, TerrainModuleData);
+  HydroErodeModuleData();
+  static std::shared_ptr<HydroErodeModuleData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
+
+  int _iterations = 50; // baked: number of hydraulic sub-pass cycles
+};
+using hydroerodemoduledata_ptr_t = std::shared_ptr<HydroErodeModuleData>;
+
+///////////////////////////////////////////////////////////////////////////////
 // CaptureModule — sink. Input "In" : GpuComputeImage2D. At bake-flush time the
 // source SSBO is read back and encoded to `_path` (PNG/EXR by extension).
 ///////////////////////////////////////////////////////////////////////////////
