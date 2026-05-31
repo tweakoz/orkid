@@ -14,6 +14,7 @@
 #include <ork/rtti/downcast.h>
 #include <ork/kernel/mutex.h>
 #include <ork/util/crc64.h>
+#include <ork/kernel/datablock.h> // datablock_ptr_t for the cook-cache hooks (module.h)
 
 #include <ork/config/config.h>
 
@@ -320,6 +321,11 @@ public:
   sigslot2::signal_void_t _sigTopologyUpdated;
 
   bool _topologyDirty;
+  // opt-in per-node cook cache (content-addressed). When true, GraphInst::compute
+  // hashes each node (Merkle: identity-scalars + context + input hashes) and
+  // loads/stores its output via DataBlockCache instead of recomputing. Terrain /
+  // geometry set this; particles leave it false (realtime, every frame differs).
+  bool _cacheable = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -346,6 +352,17 @@ struct GraphInst {
   void stage();
   void activate();
   void compute(ui::updatedata_ptr_t updata);
+  // Merkle-hash every node into its _cookHash: H(identity-scalars, context,
+  // [upstream node hashes]). Cheap — never touches output buffers. Driver sets
+  // _cookContextHash (e.g. terrain dimension) first. Reused by both cachedCompute
+  // (synchronous graphs) and execution-model-specific drivers (the terrain GPU
+  // bake, which must sync per op before reading a node's output back).
+  void computeNodeHashes();
+  // the cook-cache compute path for SYNCHRONOUS graphs: computeNodeHashes() then
+  // per node load-or-(compute+store) inline. GPU graphs (terrain) instead drive
+  // the per-node sync + cache I/O themselves (see bakeHeightfield).
+  void cachedCompute(ui::updatedata_ptr_t updata);
+  uint64_t _cookContextHash = 0;
   // Restore the graphinst to a "just-created" state: every module's onReset
   // hook runs in topological order, clearing per-instance state (Globals'
   // first-compute flag, particle pools, RNG, …). The next compute() call

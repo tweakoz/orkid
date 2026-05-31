@@ -87,6 +87,10 @@ void pyinit_gfx_terrain(py::module& module_lev2) {
   module_lev2.def("terrain_roundtrip_test", [](ctx_t ctx, int dim) -> int {
     return terrain::terrainRoundTripTest(ctx.get(), dim);
   });
+  // per-node cook-cache gate: cold+warm bake, warm must hit the DataBlockCache.
+  module_lev2.def("terrain_cache_test", [](ctx_t ctx, int dim) -> int {
+    return terrain::terrainCacheTest(ctx.get(), dim);
+  });
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -33,6 +33,12 @@
 // registry (M2b.4). Direct shared_ptr references between gens are not
 // stored on the data — that's what kept M2a from round-tripping.
 
+// forward decl — HeightFieldGenData owns a terrain compute GraphData inline
+// (serialized into the scene; the full type is only needed in the .cpp).
+namespace ork::dataflow {
+struct GraphData;
+}
+
 namespace ork::lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////

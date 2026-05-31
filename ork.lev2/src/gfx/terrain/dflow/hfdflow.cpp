@@ -20,6 +20,7 @@
 #include <ork/kernel/string/string.h>
 #include <ork/reflect/serialize/JsonSerializer.h>
 #include <ork/reflect/serialize/JsonDeserializer.h>
+#include <ork/kernel/datacache.h> // DataBlockCache — per-node cook cache
 
 ImplementReflectionX(ork::lev2::terrain::TerrainModuleData, "terrain::TerrainModuleData");
 ImplementReflectionX(ork::lev2::terrain::FbmModuleData, "terrain::FbmModuleData");
@@ -48,6 +49,72 @@ void TerrainModuleData::describeX(class_t* clazz) {
 }
 TerrainModuleData::TerrainModuleData() {
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// TerrainComputeInst — shared base for the GPU compute ops (everything but the
+// Capture sink). Holds the output image plug `_output` and implements the cook-
+// cache hooks: a node's output is the W*H float field in its SSBO, (de)serialized
+// to a datablock. The bake driver syncs per op, so cookStore reads valid data.
+// cookLoad uploads a cached field so downstream ops consume it without recompute.
+///////////////////////////////////////////////////////////////////////////////
+
+struct TerrainComputeInst : public dflow::DgModuleInst {
+  TerrainComputeInst(const dflow::DgModuleData* d, dflow::GraphInst* g)
+      : dflow::DgModuleInst(d, g) {
+  }
+  // the node's output field (resolved by name so we don't shadow each derived
+  // inst's own _output member).
+  gpucomputeimage2d_inst_ptr_t _outImg() const {
+    auto self = const_cast<TerrainComputeInst*>(this);
+    auto outp = self->typedOutputNamed<HfImagePlugTraits>("Out");
+    return outp ? outp->_value : nullptr;
+  }
+
+  datablock_ptr_t cookStore() const final {
+    auto env = _graphinst->_impl.getShared<BakeEnv>();
+    auto img = _outImg();
+    if (not(img and img->_ssbo))
+      return nullptr;
+    size_t n     = size_t(img->_w) * size_t(img->_h);
+    auto fxi     = env->_ctx->FXI();
+    auto mapping = fxi->mapStorageBuffer(img->_ssbo, 0, n * sizeof(float), BufferMapAccess::READ_ONLY);
+    auto db      = std::make_shared<DataBlock>();
+    db->addItem<int>(img->_w);
+    db->addItem<int>(img->_h);
+    db->addItem<int>(img->_channels);
+    db->addData(mapping->_mappedaddr, n * sizeof(float));
+    fxi->unmapStorageBuffer(mapping.get());
+    return db;
+  }
+
+  bool cookLoad(datablock_constptr_t db) final {
+    auto env = _graphinst->_impl.getShared<BakeEnv>();
+    auto img = _outImg();
+    if (not(img and img->_ssbo))
+      return false;
+    DataBlockInputStream istr(db);
+    int w  = istr.getItem<int>();
+    int h  = istr.getItem<int>();
+    int ch = istr.getItem<int>();
+    (void)ch;
+    if (w != img->_w or h != img->_h)
+      return false; // dimension changed -> recompute
+    size_t n     = size_t(w) * size_t(h);
+    auto fxi     = env->_ctx->FXI();
+    auto mapping = fxi->mapStorageBuffer(img->_ssbo, 0, n * sizeof(float), BufferMapAccess::WRITE_ONLY);
+    std::memcpy(mapping->_mappedaddr, istr.current(), n * sizeof(float));
+    fxi->unmapStorageBuffer(mapping.get());
+    return true;
+  }
+
+  // shared tail for every op's cookComputeHash: mix in the bake context (dim)
+  // and the upstream node hashes. Each op prepends its own version salt + params.
+  static void _mixTail(DataBlock::hasher_t h, uint64_t ctx, const std::vector<uint64_t>& ih) {
+    h->accumulateItem<uint64_t>(ctx);
+    for (auto x : ih)
+      h->accumulateItem<uint64_t>(x);
+  }
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 // the compute-shader source for fbm, with DIM / FREQ / OCT / AMP substituted in.
@@ -107,9 +174,9 @@ compute_shader cs_fbm : iface_hf {
 // FbmModule
 ///////////////////////////////////////////////////////////////////////////////
 
-struct FbmModuleInst : public dflow::DgModuleInst {
+struct FbmModuleInst : public TerrainComputeInst {
   FbmModuleInst(const FbmModuleData* data, dflow::GraphInst* ginst)
-      : dflow::DgModuleInst(data, ginst)
+      : TerrainComputeInst(data, ginst)
       , _fmd(data) {
   }
 
@@ -153,6 +220,17 @@ struct FbmModuleInst : public dflow::DgModuleInst {
     ci->bindStorageBuffer(_cs, 0, img->_ssbo);
     ci->dispatchCompute(_cs, groups, groups, 1);
     ci->storageBarrier();
+  }
+
+  uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
+    auto h = DataBlock::createHasher();
+    h->accumulateString("terrain.fbm.v1");
+    h->accumulateItem<int>(_fmd->_octaves);
+    h->accumulateItem<float>(_inFreq->value());
+    h->accumulateItem<float>(_inAmp->value());
+    _mixTail(h, ctx, ih);
+    h->finish();
+    return h->result();
   }
 
   const FbmModuleData* _fmd;
@@ -241,9 +319,9 @@ compute_shader cs_remap : iface_remap {
   return tmpl;
 }
 
-struct RemapModuleInst : public dflow::DgModuleInst {
+struct RemapModuleInst : public TerrainComputeInst {
   RemapModuleInst(const RemapModuleData* data, dflow::GraphInst* ginst)
-      : dflow::DgModuleInst(data, ginst)
+      : TerrainComputeInst(data, ginst)
       , _rmd(data) {
   }
   void onLink(dflow::GraphInst* inst) final {
@@ -285,6 +363,18 @@ struct RemapModuleInst : public dflow::DgModuleInst {
     ci->dispatchCompute(_cs, groups, groups, 1);
     ci->storageBarrier();
   }
+  uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
+    auto h = DataBlock::createHasher();
+    h->accumulateString("terrain.remap.v1");
+    h->accumulateItem<float>(_inScale->value());
+    h->accumulateItem<float>(_inBias->value());
+    h->accumulateItem<float>(_inLo->value());
+    h->accumulateItem<float>(_inHi->value());
+    _mixTail(h, ctx, ih);
+    h->finish();
+    return h->result();
+  }
+
   const RemapModuleData* _rmd;
   hfimg_outpluginst_ptr_t _output;
   hfimg_inpluginst_ptr_t _input;
@@ -372,8 +462,8 @@ compute_shader cs_const : iface {
   return t;
 }
 
-struct ConstModuleInst : public dflow::DgModuleInst {
-  ConstModuleInst(const ConstModuleData* d, dflow::GraphInst* g) : dflow::DgModuleInst(d, g), _d(d) {}
+struct ConstModuleInst : public TerrainComputeInst {
+  ConstModuleInst(const ConstModuleData* d, dflow::GraphInst* g) : TerrainComputeInst(d, g), _d(d) {}
   void onLink(dflow::GraphInst*) final {
     _output = typedOutputNamed<HfImagePlugTraits>("Out");
     _level  = _floatPlug(this, _d, "level");
@@ -392,6 +482,15 @@ struct ConstModuleInst : public dflow::DgModuleInst {
     ci->dispatchCompute(_cs, g, g, 1);
     ci->storageBarrier();
   }
+  uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
+    auto h = DataBlock::createHasher();
+    h->accumulateString("terrain.const.v1");
+    h->accumulateItem<float>(_level->value());
+    _mixTail(h, ctx, ih);
+    h->finish();
+    return h->result();
+  }
+
   const ConstModuleData* _d;
   hfimg_outpluginst_ptr_t _output;
   dflow::float_inp_pluginst_ptr_t _level;
@@ -442,8 +541,8 @@ compute_shader cs_grad : iface {
   return t;
 }
 
-struct GradientModuleInst : public dflow::DgModuleInst {
-  GradientModuleInst(const GradientModuleData* d, dflow::GraphInst* g) : dflow::DgModuleInst(d, g), _d(d) {}
+struct GradientModuleInst : public TerrainComputeInst {
+  GradientModuleInst(const GradientModuleData* d, dflow::GraphInst* g) : TerrainComputeInst(d, g), _d(d) {}
   void onLink(dflow::GraphInst*) final {
     _output = typedOutputNamed<HfImagePlugTraits>("Out");
     _dx = _floatPlug(this, _d, "dir_x");
@@ -466,6 +565,18 @@ struct GradientModuleInst : public dflow::DgModuleInst {
     ci->dispatchCompute(_cs, g, g, 1);
     ci->storageBarrier();
   }
+  uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
+    auto h = DataBlock::createHasher();
+    h->accumulateString("terrain.gradient.v1");
+    h->accumulateItem<float>(_dx->value());
+    h->accumulateItem<float>(_dy->value());
+    h->accumulateItem<float>(_sc->value());
+    h->accumulateItem<float>(_bi->value());
+    _mixTail(h, ctx, ih);
+    h->finish();
+    return h->result();
+  }
+
   const GradientModuleData* _d;
   hfimg_outpluginst_ptr_t _output;
   dflow::float_inp_pluginst_ptr_t _dx, _dy, _sc, _bi;
@@ -525,8 +636,8 @@ compute_shader cs_combine : iface {
   return tmpl;
 }
 
-struct CombineModuleInst : public dflow::DgModuleInst {
-  CombineModuleInst(const CombineModuleData* d, dflow::GraphInst* g) : dflow::DgModuleInst(d, g), _d(d) {}
+struct CombineModuleInst : public TerrainComputeInst {
+  CombineModuleInst(const CombineModuleData* d, dflow::GraphInst* g) : TerrainComputeInst(d, g), _d(d) {}
   void onLink(dflow::GraphInst*) final {
     _output = typedOutputNamed<HfImagePlugTraits>("Out");
     _inA = typedInputNamed<HfImagePlugTraits>("A");
@@ -552,6 +663,16 @@ struct CombineModuleInst : public dflow::DgModuleInst {
     ci->dispatchCompute(_cs, g, g, 1);
     ci->storageBarrier();
   }
+  uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
+    auto h = DataBlock::createHasher();
+    h->accumulateString("terrain.combine.v1");
+    h->accumulateItem<int>(_d->_op);
+    h->accumulateItem<float>(_t->value());
+    _mixTail(h, ctx, ih);
+    h->finish();
+    return h->result();
+  }
+
   const CombineModuleData* _d;
   hfimg_outpluginst_ptr_t _output;
   hfimg_inpluginst_ptr_t _inA, _inB;
@@ -610,8 +731,8 @@ compute_shader cs_terrace : iface {
   return t;
 }
 
-struct TerraceModuleInst : public dflow::DgModuleInst {
-  TerraceModuleInst(const TerraceModuleData* d, dflow::GraphInst* g) : dflow::DgModuleInst(d, g), _d(d) {}
+struct TerraceModuleInst : public TerrainComputeInst {
+  TerraceModuleInst(const TerraceModuleData* d, dflow::GraphInst* g) : TerrainComputeInst(d, g), _d(d) {}
   void onLink(dflow::GraphInst*) final {
     _output = typedOutputNamed<HfImagePlugTraits>("Out");
     _input  = typedInputNamed<HfImagePlugTraits>("In");
@@ -635,6 +756,16 @@ struct TerraceModuleInst : public dflow::DgModuleInst {
     ci->dispatchCompute(_cs, g, g, 1);
     ci->storageBarrier();
   }
+  uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
+    auto h = DataBlock::createHasher();
+    h->accumulateString("terrain.terrace.v1");
+    h->accumulateItem<float>(_steps->value());
+    h->accumulateItem<float>(_sharp->value());
+    _mixTail(h, ctx, ih);
+    h->finish();
+    return h->result();
+  }
+
   const TerraceModuleData* _d;
   hfimg_outpluginst_ptr_t _output;
   hfimg_inpluginst_ptr_t _input;
@@ -703,11 +834,17 @@ void CaptureModuleData::describeX(class_t* clazz) {
   clazz->setSharedFactory([]() -> rtti::castable_ptr_t { return CaptureModuleData::createShared(); });
   clazz->annotateTyped<dataflow::moduleIOreshape_fn_t>(
       "reshapeIOs", [](dataflow::moduledata_ptr_t mdata) { _reshapeCaptureIOs(mdata); });
+  // serialize the channel identity so the graph self-describes its sinks (_path
+  // is machine-specific and stays unreflected — derived from _channel at bake).
+  clazz->directProperty("channel", &CaptureModuleData::_channel);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // driver
 ///////////////////////////////////////////////////////////////////////////////
+
+// cache-hit count from the most recent cacheable bake (for terrainCacheTest).
+static int s_lastCookHits = -1;
 
 std::vector<fieldstats_ptr_t> bakeHeightfield(dflow::graphdata_ptr_t graph, Context* ctx, int dim) {
   // topo-sort. The sorter allocates a register per connected output plug from a
@@ -738,9 +875,35 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(dflow::graphdata_ptr_t graph, Cont
 
   ctx->beginFrame();
   auto ci = ctx->CI();
-  ci->beginDispatchPhase();
-  ginst->compute(updata);
-  ci->endDispatchPhase();
+  if (graph->_cacheable) {
+    // per-node cook cache: Merkle-hash every node (cheap scalars), then per node
+    // either upload its cached field (hit) or dispatch it IN ITS OWN dispatch
+    // phase + read the result back to cache (miss). Per-op submit+wait makes the
+    // inline readback valid. The Capture sink has no cookStore, so it just runs.
+    ginst->_cookContextHash = uint64_t(dim); // context = bake dimension (W=H)
+    ginst->computeNodeHashes();
+    int cook_hits = 0, cook_computes = 0;
+    for (auto inst : ginst->_ordered_module_insts) {
+      auto db = DataBlockCache::findDataBlock(inst->_cookHash);
+      if (db and inst->cookLoad(db)) {
+        // cache HIT — cached field uploaded to the node's SSBO; no GPU dispatch
+        cook_hits++;
+      } else {
+        ci->beginDispatchPhase();
+        inst->compute(ginst.get(), updata);
+        ci->endDispatchPhase(); // submit + WAIT -> this node's output is now valid
+        if (auto store = inst->cookStore())
+          DataBlockCache::setDataBlock(inst->_cookHash, store);
+        cook_computes++;
+      }
+    }
+    printf("[cook] cacheable bake: %d cache-hits, %d computed\n", cook_hits, cook_computes);
+    s_lastCookHits = cook_hits;
+  } else {
+    ci->beginDispatchPhase();
+    ginst->compute(updata);
+    ci->endDispatchPhase();
+  }
   ctx->endFrame();
 
   // flush captures: readback each source SSBO -> RGBA32F EXR (h,h,h,1)
@@ -1011,6 +1174,74 @@ int terrainRoundTripTest(Context* ctx, int dim) {
   }
 
   printf("[roundtrip] %d failure(s)\n", fails);
+  return fails;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// per-node cook cache gate — bake a cacheable graph twice. The cold bake
+// computes + stores every node's field (anonymously, by content hash) in the
+// DataBlockCache; the warm bake (same graph -> same node hashes) loads them, so
+// it must (a) produce a byte-identical field and (b) report cache hits for the
+// compute nodes (only the Capture sink recomputes).
+///////////////////////////////////////////////////////////////////////////////
+
+int terrainCacheTest(Context* ctx, int dim) {
+  int fails = 0;
+
+  auto build = [&](const char* cappath) -> dflow::graphdata_ptr_t {
+    auto g        = std::make_shared<dflow::GraphData>();
+    g->_cacheable = true; // opt in to the per-node cook cache
+    auto fbm      = FbmModuleData::createShared();
+    fbm->_octaves = 5;
+    auto remap    = RemapModuleData::createShared();
+    remap->typedInputNamed<dflow::FloatPlugTraits>("scale")->setValue(0.5f);
+    remap->typedInputNamed<dflow::FloatPlugTraits>("bias")->setValue(0.5f);
+    auto terr = TerraceModuleData::createShared();
+    terr->typedInputNamed<dflow::FloatPlugTraits>("steps")->setValue(6.0f);
+    auto cap   = CaptureModuleData::createShared();
+    cap->_path = ork::file::Path(cappath);
+    dflow::GraphData::addModule(g, "fbm", fbm);
+    dflow::GraphData::addModule(g, "remap", remap);
+    dflow::GraphData::addModule(g, "terr", terr);
+    dflow::GraphData::addModule(g, "cap", cap);
+    g->safeConnect(remap->inputNamed("In"), fbm->outputNamed("Out"));
+    g->safeConnect(terr->inputNamed("In"), remap->outputNamed("Out"));
+    g->safeConnect(cap->inputNamed("In"), terr->outputNamed("Out"));
+    return g;
+  };
+
+  printf("[cachetest] COLD bake:\n");
+  auto s1 = bakeHeightfield(build("/tmp/terrain_cache_cold.exr"), ctx, dim);
+  int cold_hits = s_lastCookHits;
+
+  printf("[cachetest] WARM bake (same graph -> expect cache hits):\n");
+  auto s2 = bakeHeightfield(build("/tmp/terrain_cache_warm.exr"), ctx, dim);
+  int warm_hits = s_lastCookHits;
+
+  auto aeq = [](float a, float b, float tol) {
+    float d = a - b;
+    return (d < 0 ? -d : d) <= tol;
+  };
+  if (s1.size() == 1 and s2.size() == 1) {
+    bool ok = aeq(s1[0]->_min, s2[0]->_min, 1e-6f)   //
+              and aeq(s1[0]->_max, s2[0]->_max, 1e-6f) //
+              and aeq(s1[0]->_mean, s2[0]->_mean, 1e-6f);
+    printf("[cachetest] field cold(mean %.6f) vs warm(mean %.6f) : %s\n", s1[0]->_mean, s2[0]->_mean, ok ? "PASS" : "FAIL");
+    if (not ok)
+      fails++;
+  } else {
+    printf("[cachetest] capture-count mismatch\n");
+    fails++;
+  }
+  // the warm bake must actually have hit the cache for the 3 compute nodes
+  // (fbm/remap/terr); the Capture sink always recomputes.
+  printf("[cachetest] cook hits: cold=%d warm=%d\n", cold_hits, warm_hits);
+  if (warm_hits < 3) {
+    printf("[cachetest] FAIL: warm bake hit cache only %d times (expected >= 3)\n", warm_hits);
+    fails++;
+  }
+
+  printf("[cachetest] %d failure(s)\n", fails);
   return fails;
 }
 

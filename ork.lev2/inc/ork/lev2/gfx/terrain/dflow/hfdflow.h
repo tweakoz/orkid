@@ -207,6 +207,11 @@ struct CaptureModuleData : public TerrainModuleData {
   static std::shared_ptr<CaptureModuleData> createShared();
   dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
 
+  // stable output-channel identity (e.g. "height", "slope") — REFLECTED, so the
+  // serialized graph is self-describing (the bake / dflow editor know the sinks).
+  std::string _channel;
+  // bake-time absolute output path — machine-specific, derived from _channel at
+  // materialize time, deliberately NOT reflected (would not be portable).
   ork::file::Path _path;
 };
 using capturemoduledata_ptr_t = std::shared_ptr<CaptureModuleData>;
@@ -232,5 +237,10 @@ int terrainOpsSelfTest(Context* ctx, int dim);
 // survives JSON round-trip with no loss (baked scalars _octaves/_op, float plug
 // values, connections) and bakes identical stats. Returns FAILED-check count.
 int terrainRoundTripTest(Context* ctx, int dim);
+
+// per-node cook-cache gate: bake a cacheable graph twice; the warm bake must
+// load every compute node's field from the DataBlockCache (content-addressed)
+// and produce a byte-identical result. Returns FAILED-check count.
+int terrainCacheTest(Context* ctx, int dim);
 
 } // namespace ork::lev2::terrain

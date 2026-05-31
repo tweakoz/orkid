@@ -164,6 +164,9 @@ void GraphData::describeX(object::ObjectClass* clazz) {
   con_prop->annotate("editor.visible", false);
   con_prop->annotate("python.visible", false);
   clazz->Description().addProperty("zzz_connections", con_prop);
+
+  // opt-in per-node cook cache flag — round-trips with the (embedded) graph.
+  clazz->directProperty("cacheable", &GraphData::_cacheable);
 }
 ///////////////////////////////////////////////////////////////////////////////
 GraphData::GraphData()

@@ -10,6 +10,7 @@
 #include <ork/application/application.h>
 #include <ork/kernel/orklut.hpp>
 #include <ork/dataflow/all.h>
+#include <ork/kernel/datacache.h> // DataBlockCache (cook cache)
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace dataflow {
@@ -126,8 +127,60 @@ void GraphInst::activate(){
 }
 ///////////////////////////////////////////////////////////////////////////////
 void GraphInst::compute(ui::updatedata_ptr_t updata){
+  if (_graphdata and _graphdata->_cacheable) {
+    cachedCompute(updata);
+    return;
+  }
   for( auto item : _ordered_module_insts ){
     item->compute(this,updata);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Merkle-hash every node into its _cookHash. The per-class virtual
+// cookComputeHash(input_hashes, context) builds the hash from a version salt +
+// the node's own scalar params + the upstream node hashes — cheap, deterministic
+// (no serialized UUIDs), and never touches an output buffer.
+///////////////////////////////////////////////////////////////////////////////
+void GraphInst::computeNodeHashes() {
+  std::unordered_map<const void*, uint64_t> outhash; // outpluginst* -> producer node hash
+  size_t n = _ordered_module_insts.size();
+  for (size_t i = 0; i < n; i++) {
+    auto inst = _ordered_module_insts[i];
+
+    std::vector<uint64_t> input_hashes;
+    input_hashes.reserve(inst->_inputs.size());
+    for (auto inp : inst->_inputs) {
+      uint64_t uh = 0;
+      if (inp->_connectedOutput) {
+        auto it = outhash.find(inp->_connectedOutput.get());
+        if (it != outhash.end())
+          uh = it->second;
+      }
+      input_hashes.push_back(uh);
+    }
+    inst->_cookHash = inst->cookComputeHash(input_hashes, _cookContextHash);
+    for (auto outp : inst->_outputs)
+      outhash[outp.get()] = inst->_cookHash;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// synchronous cook-cache compute: hash all nodes, then per node load-from-cache
+// (skip compute) or compute+store inline. Valid only when compute() produces its
+// output synchronously — GPU graphs sync per op in their own driver instead.
+///////////////////////////////////////////////////////////////////////////////
+void GraphInst::cachedCompute(ui::updatedata_ptr_t updata) {
+  computeNodeHashes();
+  for (auto inst : _ordered_module_insts) {
+    auto db = DataBlockCache::findDataBlock(inst->_cookHash);
+    if (db and inst->cookLoad(db)) {
+      // cache hit — output restored; skip compute()
+    } else {
+      inst->compute(this, updata);
+      if (auto store = inst->cookStore())
+        DataBlockCache::setDataBlock(inst->_cookHash, store);
+    }
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
