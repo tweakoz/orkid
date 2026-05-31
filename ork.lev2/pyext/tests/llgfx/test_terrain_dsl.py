@@ -44,6 +44,17 @@ class FractalRidges(HeightField):
         self.capture(h, "height")
 
 
+class TiltedNoise(HeightField):
+    # exercises the vec2 "dir" plug THROUGH the DSL/pybind setter
+    # (T.Gradient -> m.inputs.dir = vec2(dir_x, dir_y)): a diagonal ramp
+    # (dir is non-axis-aligned, so both components matter) plus fbm detail.
+    def __init__(self, octaves=5):
+        super().__init__()
+        ramp   = T.Gradient(dir_x=0.6, dir_y=0.8, scale=0.5, bias=0.0)
+        detail = T.Fbm(frequency=4.0, octaves=octaves) * 0.25
+        self.capture(T.Clamp(ramp + detail, 0.0, 1.0), "height")
+
+
 def _bake(hf, channel, path, ctx):
     g = hf.generatedflow()
     hf.set_capture_path(channel, path)
@@ -61,7 +72,8 @@ def _valid(stats, path):
 
 
 def main():
-    outs = {"rolling": "/tmp/terrain_rolling.exr", "ridges": "/tmp/terrain_ridges.exr"}
+    outs = {"rolling": "/tmp/terrain_rolling.exr", "ridges": "/tmp/terrain_ridges.exr",
+            "tilted": "/tmp/terrain_tilted.exr"}
     for p in outs.values():
         if os.path.exists(p):
             os.remove(p)
@@ -75,10 +87,12 @@ def main():
     s1 = _bake(RollingHills(octaves=6, steps=6), "height", outs["rolling"], ctx)
     print("FractalRidges (trace-time loop unroll + conditional):", flush=True)
     s2 = _bake(FractalRidges(octaves=5, terrace=True, terrace_steps=8), "height", outs["ridges"], ctx)
+    print("TiltedNoise (vec2 'dir' plug via DSL setter):", flush=True)
+    s3 = _bake(TiltedNoise(octaves=5), "height", outs["tilted"], ctx)
 
     ezapp.mainThreadEnd()
 
-    ok = _valid(s1, outs["rolling"]) and _valid(s2, outs["ridges"])
+    ok = _valid(s1, outs["rolling"]) and _valid(s2, outs["ridges"]) and _valid(s3, outs["tilted"])
     print(f"=== terrain DSL {'PASSED' if ok else 'FAILED'} ===", flush=True)
     for _, p in outs.items():
         print(f"    {p} exists={os.path.exists(p)} size={os.path.getsize(p) if os.path.exists(p) else 0}", flush=True)

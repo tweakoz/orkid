@@ -1126,15 +1126,26 @@ int terrainRoundTripTest(Context* ctx, int dim) {
     cst->typedInputNamed<dflow::FloatPlugTraits>("level")->setValue(0.5f);
     auto comb = CombineModuleData::createShared();
     comb->_op = int(CombineOp::MUL); // non-default baked scalar (default is ADD)
+    // Gradient with a NON-default vec2 "dir" — exercises the vec2 plug VALUE
+    // surviving the JSON round-trip (the inplugdata<Vec2fPlugTraits> reflection).
+    auto grad = GradientModuleData::createShared();
+    grad->typedInputNamed<dflow::Vec2fPlugTraits>("dir")->setValue(fvec2(0.6f, 0.8f)); // default is (1,0)
+    grad->typedInputNamed<dflow::FloatPlugTraits>("scale")->setValue(0.5f);
+    auto comb2 = CombineModuleData::createShared();
+    comb2->_op = int(CombineOp::MUL);
     auto cap  = CaptureModuleData::createShared();
     cap->_path = ork::file::Path(cappath);
     dflow::GraphData::addModule(g, "fbm", fbm);
     dflow::GraphData::addModule(g, "cst", cst);
     dflow::GraphData::addModule(g, "comb", comb);
+    dflow::GraphData::addModule(g, "grad", grad);
+    dflow::GraphData::addModule(g, "comb2", comb2);
     dflow::GraphData::addModule(g, "cap", cap);
     g->safeConnect(comb->inputNamed("A"), fbm->outputNamed("Out"));
     g->safeConnect(comb->inputNamed("B"), cst->outputNamed("Out"));
-    g->safeConnect(cap->inputNamed("In"), comb->outputNamed("Out"));
+    g->safeConnect(comb2->inputNamed("A"), comb->outputNamed("Out"));
+    g->safeConnect(comb2->inputNamed("B"), grad->outputNamed("Out"));
+    g->safeConnect(cap->inputNamed("In"), comb2->outputNamed("Out"));
     return g;
   };
 
@@ -1165,6 +1176,18 @@ int terrainRoundTripTest(Context* ctx, int dim) {
   if (not comb1 or comb1->_op != int(CombineOp::MUL)) {
     printf("[roundtrip] _op LOST (got %d, want %d=MUL)\n", comb1 ? comb1->_op : -1, int(CombineOp::MUL));
     fails++;
+  }
+  // the vec2 "dir" plug VALUE must survive JSON (inplugdata<Vec2fPlugTraits> reflection)
+  auto grad1 = std::dynamic_pointer_cast<GradientModuleData>(g1->module("grad"));
+  if (not grad1) {
+    printf("[roundtrip] clone missing 'grad' module\n");
+    fails++;
+  } else {
+    auto dir = grad1->typedInputNamed<dflow::Vec2fPlugTraits>("dir")->value();
+    bool ok  = aeq(dir.x, 0.6f, 1e-6f) and aeq(dir.y, 0.8f, 1e-6f);
+    printf("[roundtrip] gradient vec2 'dir' got(%.3f, %.3f) want(0.600, 0.800) : %s\n", dir.x, dir.y, ok ? "PASS" : "FAIL");
+    if (not ok)
+      fails++;
   }
 
   // (4) re-supply the capture path (wrapper-owned, deliberately NOT serialized),
