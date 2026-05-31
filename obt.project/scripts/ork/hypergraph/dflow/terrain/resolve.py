@@ -14,17 +14,21 @@ import os
 import sys
 from pathlib import Path
 
-from ork import path as ork_path
 from .base import HeightField
+
+# terrain graph assets live in the hypergraph assets package (peer of
+# assets/mesh). resolve.py is at ork/hypergraph/dflow/terrain/resolve.py, so
+# parents[2] == ork/hypergraph.
+_DEFAULT_TERRAIN_ASSETS = Path(__file__).resolve().parents[2] / "assets" / "terrain"
 
 
 def search_path():
   """Ordered dirs searched for bare DSL names. From ORK_TERRAIN_SEARCH_PATH
-  (colon-separated); default <ork.data>/terrain."""
+  (colon-separated); default <hypergraph>/assets/terrain."""
   raw = os.environ.get("ORK_TERRAIN_SEARCH_PATH")
   if raw:
     return [Path(p).expanduser() for p in raw.split(":") if p]
-  return [Path(ork_path.data) / "terrain"]
+  return [_DEFAULT_TERRAIN_ASSETS]
 
 
 def resolve_dsl_file(arg):

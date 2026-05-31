@@ -25,8 +25,9 @@ def main():
     assert ctx, "bindGfxToCurrentThread() returned null"
 
     # 1) AUTHORING — resolve + run the DSL file once -> embedded graph -> bake.
-    hf = HeightField(dsl_file="rolling_hills", dimension=512, octaves=6, steps=6, ctx=ctx)
-    hf.gendata.asset_name = "rolling_hills"
+    # "hf1" resolves to ork/hypergraph/assets/terrain/hf1.py (HF1 HeightField).
+    hf = HeightField(dsl_file="hf1", dimension=512, octaves=6, steps=6, ctx=ctx)
+    hf.gendata.asset_name = "hf1"
     art1 = hf.build()
     print(f"authored:  {[(k, art1[k]) for k in art1 if k != 'stats']}  stats={art1['stats']}", flush=True)
 
