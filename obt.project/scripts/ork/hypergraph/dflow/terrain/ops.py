@@ -16,6 +16,7 @@ from ._node import (
     make_const,
     make_remap,
     make_combine,
+    make_maskblend,
     OP_MIX,
     OP_MIN,
     OP_MAX,
@@ -74,10 +75,64 @@ def clamp(node, lo=0.0, hi=1.0, name=None):
     return make_remap(node, scale=1.0, bias=0.0, lo=lo, hi=hi, name=name)
 
 
+# --- mask generators ("Mask by Feature") -------------------------------------
+# A mask is just a [0,1] FIELD on the normal terrain plug type — no special type.
+# Generators emit one; apply it compositionally with mix()/masked_by (see _node).
+
+def slope(node, scale=1.0, radius_m=8.0, name=None):
+    """Slope mask: the REAL slope (tan of the terrain angle = rise_m/run_m) of
+    `node`, soft-rolled-off (Reinhard) into [0,1). High on steep faces, ~0 on flats.
+    PRE-BLURRED over a `radius_m`-METER gradient baseline, so it tracks landform
+    slope, not per-pixel noise — and because the param is in meters (converted to
+    texels per-bake from the graph's extent), the graph is resolution-INDEPENDENT.
+    `scale` tunes sensitivity (a 45deg slope reads ~0.5 at scale=1). (Mask by Feature.)"""
+    g = graph_or_raise("Slope")
+    if not isinstance(node, TerrainNode):
+        raise TypeError(f"slope expects a terrain node; got {type(node).__name__}")
+    m = g.create(name or anon_name("slope", g), _terrain.SlopeModule)
+    m.radius_m = float(radius_m)
+    g.connect(m.inputs.In, node.output_plug)
+    m.inputs.scale = float(scale)
+    return TerrainNode(m, m.outputs.Out)
+
+
+# CurvatureModule._mode codes — MUST match enum CurvatureMode in hfdflow.h.
+_CURV_MODE = {"convex": 0, "concave": 1, "magnitude": 2}
+
+
+def curvature(node, scale=1.0, mode="magnitude", radius_m=96.0, name=None):
+    """Curvature mask: a [0,1] field from the band-pass (difference-of-box ~ LoG)
+    curvature of `node`, soft-rolled-off (Reinhard, no hard clamp -> magnitude
+    survives). PRE-BLURRED over a `radius_m`-METER scale, so it tracks landform
+    ridges/valleys, not per-pixel noise — and because the param is in meters
+    (converted to texels per-bake from the graph's extent), the graph is
+    resolution-INDEPENDENT. `mode`:
+      "convex"    -> ridges / peaks   (e.g. snow, exposed rock)
+      "concave"   -> valleys / pits   (e.g. sediment, water pooling)
+      "magnitude" -> both ("where the terrain bends")
+    `scale` tunes sensitivity; `radius_m` picks the curvature scale. An edge ring of
+    width radius_m is 0 (curvature is undefined at the border). (Mask by Feature.)"""
+    g = graph_or_raise("Curvature")
+    if not isinstance(node, TerrainNode):
+        raise TypeError(f"curvature expects a terrain node; got {type(node).__name__}")
+    if mode not in _CURV_MODE:
+        raise ValueError(f"curvature mode must be one of {sorted(_CURV_MODE)}; got {mode!r}")
+    m = g.create(name or anon_name("curv", g), _terrain.CurvatureModule)
+    m.mode = _CURV_MODE[mode]
+    m.radius_m = float(radius_m)
+    g.connect(m.inputs.In, node.output_plug)
+    m.inputs.scale = float(scale)
+    return TerrainNode(m, m.outputs.Out)
+
+
 # --- binary (join) -----------------------------------------------------------
 
 def mix(a, b, t=0.5, name=None):
-    """Linear blend: mix(a, b, t). Scalar operands auto-wrap as Const."""
+    """Linear blend mix(a, b, t). `t` may be a SCALAR (uniform blend, Combine MIX)
+    or a FIELD/TerrainNode (per-texel masked blend, MaskBlend). Scalar a/b operands
+    auto-wrap as Const."""
+    if isinstance(t, TerrainNode):
+        return make_maskblend(a, b, t, name=name)
     return make_combine(a, b, OP_MIX, t=t, name=name)
 
 

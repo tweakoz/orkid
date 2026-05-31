@@ -199,7 +199,7 @@ bool Image::initFromInMemoryFile( std::string fmtguess, //
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Image::writeToFile(const ork::file::Path& outpath) const {
+void Image::writeToFile(const ork::file::Path& outpath, bool linear_colorspace) const {
   auto cstrpath = outpath.c_str();
   auto out      = ImageOutput::create(cstrpath);
   if (!out)
@@ -264,6 +264,14 @@ void Image::writeToFile(const ork::file::Path& outpath) const {
       default:
       OrkAssert(false);
       break;
+  }
+
+  if (linear_colorspace) {
+    // tag as linear data (heightmaps/masks). Without this, integer formats like
+    // PNG default to an sRGB chunk; a data consumer that honors the tag would then
+    // apply an unwanted sRGB->linear curve. Gamma 1.0 == linear gAMA chunk.
+    spec.attribute("oiio:ColorSpace", "Linear");
+    spec.attribute("oiio:Gamma", 1.0f);
   }
 
   out->open(cstrpath, spec);

@@ -89,6 +89,24 @@ def make_combine(a, b, op, *, t=0.5, name=None):
     return TerrainNode(m, m.outputs.Out)
 
 
+def make_maskblend(a, b, mask, *, name=None):
+    """Per-texel blend: out = mix(a, b, mask). `mask` is a FIELD (the masking
+    primitive — b shows through where mask is high). Unlike Combine(MIX), whose
+    `t` is a uniform scalar, this blends by a per-texel field."""
+    g = graph_or_raise("MaskBlend")
+    a = _coerce(a)
+    b = _coerce(b)
+    if not isinstance(mask, TerrainNode):
+        raise TypeError(
+            f"MaskBlend mask must be a terrain field (TerrainNode); got "
+            f"{type(mask).__name__}. For a uniform blend use mix(a, b, t=<scalar>).")
+    m = g.create(name or anon_name("mask", g), _terrain.MaskBlendModule)
+    g.connect(m.inputs.A, a.output_plug)
+    g.connect(m.inputs.B, b.output_plug)
+    g.connect(m.inputs.M, mask.output_plug)
+    return TerrainNode(m, m.outputs.Out)
+
+
 class TerrainNode(DslNode):
     """A DslNode with terrain algebra. Operators lower to Remap (scalar operand,
     affine) or Combine (node operand) modules in the active trace graph."""
@@ -130,6 +148,14 @@ class TerrainNode(DslNode):
 
     def __neg__(self):
         return make_remap(self, scale=-1.0)
+
+    # masking sugar: `base.masked_by(other, mask)` == mix(base, other, mask) ==
+    # Houdini's lerp(input, op(input), mask). `other` shows through where the
+    # [0,1] mask field is high; self elsewhere. e.g.
+    #   steep = T.slope(h)
+    #   h = h.masked_by(h + detail, steep)   # add detail only on steep slopes
+    def masked_by(self, other, mask):
+        return make_maskblend(self, other, mask)
 
     def __repr__(self):
         return f"TerrainNode(module={self._module._name!r})"

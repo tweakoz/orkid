@@ -55,7 +55,9 @@ def parse_args():
   p.add_argument("--dim", "-d", type=int, default=1024, help="bake grid resolution (W=H)")
   p.add_argument("--param", "-p", action="append", dest="params", default=[],
                  metavar="KEY=VALUE", help="DSL constructor kwarg (repeatable)")
-  p.add_argument("--no-open", action="store_true", help="bake only; don't open the EXR")
+  p.add_argument("--png", action="store_true",
+                 help="write+open a 16-bit grayscale PNG (0.15 m/LSB) instead of float EXR")
+  p.add_argument("--no-open", action="store_true", help="bake only; don't open the image")
   p.add_argument("--list", "-l", action="store_true",
                  help="list terrain DSL files in the search path and exit")
   return p.parse_args()
@@ -84,7 +86,7 @@ def main():
     hf = HeightField(dsl_file=args.dsl_file, dsl_class=args.class_name,
                      dimension=args.dim, ctx=ctx, **dsl_kwargs)
     hf.gendata.asset_name = name
-    artifacts = hf.build()
+    artifacts = hf.build(ext="png" if args.png else "exr")
   except (FileNotFoundError, ValueError) as e:
     ezapp.mainThreadEnd()
     ecs.headless_exit()

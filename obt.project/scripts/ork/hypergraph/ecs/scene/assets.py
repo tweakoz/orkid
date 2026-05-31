@@ -1271,7 +1271,8 @@ class ParticleSystem:
 class HeightField:
   """Asset-DSL wrapper for a terrain HeightField DSL class (embedded-graph model)."""
 
-  def __init__(self, *, dsl_file=None, dsl_class=None, dimension=512, gendata=None, ctx=None, **kwargs):
+  def __init__(self, *, dsl_file=None, dsl_class=None, dimension=512,
+               extent_m=4096.0, height_scale_m=9830.25, gendata=None, ctx=None, **kwargs):
     self._ctx = ctx
     if gendata is not None:
       self.gendata = gendata
@@ -1279,23 +1280,31 @@ class HeightField:
     if not dsl_file:
       raise ValueError("HeightField requires dsl_file (terrain DSL .py name or path)")
     # AUTHORING: resolve + run the DSL ONCE -> graph -> embed in the gendata.
+    # extent_m/height_scale_m make the graph resolution-independent: spatial op
+    # params are in meters, converted to texels per-bake from extent_m.
     from ork.hypergraph.dflow.terrain.resolve import resolve_dsl_file, load_dsl_class
     dsl_path = resolve_dsl_file(dsl_file)
     cls      = load_dsl_class(dsl_path, dsl_class or None)
     inst     = cls(**kwargs)                 # scalar kwargs -> DSL ctor (parameterized terrain)
     graph    = inst.generatedflow()
-    self.gendata = HeightFieldGenData(dimension=dimension, graph=graph)
+    self.gendata = HeightFieldGenData(dimension=dimension, extent_m=extent_m,
+                                      height_scale_m=height_scale_m, graph=graph)
 
   @classmethod
   def from_gendata(cls, gendata, ctx=None):
     """Rehydrate from a deserialized gendata — the graph is embedded, so NO DSL."""
     return cls(gendata=gendata, ctx=ctx)
 
-  def build(self):
-    """Bake the embedded graph (cook-cache-backed) -> dict of channel EXR paths +
-    per-channel FieldStats. Channels come from the graph's CaptureModules."""
+  def build(self, ext="exr"):
+    """Bake the embedded graph (cook-cache-backed) -> dict of channel image paths +
+    per-channel FieldStats. Channels come from the graph's CaptureModules.
+    `ext` picks the output format by the capture file extension: "exr" (RGBA32F
+    float, the canonical lossless artifact) or "png" (single-channel 16-bit)."""
     import os as _os
     from orkengine.core import Path as _Path
+    ext = ext.lower().lstrip(".")
+    if ext not in ("exr", "png"):
+      raise ValueError(f"HeightField.build: ext must be 'exr' or 'png', got {ext!r}")
     d     = self.gendata
     graph = d.graph
     if graph is None:
@@ -1309,10 +1318,11 @@ class HeightField:
     channels = []
     for cap in caps:
       ch       = cap.channel or "height"
-      cap.path = _os.path.join(outdir, f"{ch}.exr")   # machine-specific, derived from channel
+      cap.path = _os.path.join(outdir, f"{ch}.{ext}")  # machine-specific, derived from channel
       channels.append(ch)
-    stats  = _lev2.terrain.bake_heightfield(graph, self._ctx, d.dimension)
-    result = {ch: _os.path.join(outdir, f"{ch}.exr") for ch in channels}
+    stats  = _lev2.terrain.bake_heightfield(graph, self._ctx, d.dimension,
+                                            extent_m=d.extent_m, height_scale_m=d.height_scale_m)
+    result = {ch: _os.path.join(outdir, f"{ch}.{ext}") for ch in channels}
     result["stats"] = {ch: stats[i] for i, ch in enumerate(channels)}
     return result
 

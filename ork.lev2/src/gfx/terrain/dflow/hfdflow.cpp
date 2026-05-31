@@ -29,6 +29,9 @@ ImplementReflectionX(ork::lev2::terrain::ConstModuleData, "terrain::ConstModuleD
 ImplementReflectionX(ork::lev2::terrain::GradientModuleData, "terrain::GradientModuleData");
 ImplementReflectionX(ork::lev2::terrain::CombineModuleData, "terrain::CombineModuleData");
 ImplementReflectionX(ork::lev2::terrain::TerraceModuleData, "terrain::TerraceModuleData");
+ImplementReflectionX(ork::lev2::terrain::SlopeModuleData, "terrain::SlopeModuleData");
+ImplementReflectionX(ork::lev2::terrain::CurvatureModuleData, "terrain::CurvatureModuleData");
+ImplementReflectionX(ork::lev2::terrain::MaskBlendModuleData, "terrain::MaskBlendModuleData");
 ImplementReflectionX(ork::lev2::terrain::CaptureModuleData, "terrain::CaptureModuleData");
 
 namespace ork::lev2::terrain {
@@ -802,6 +805,338 @@ void TerraceModuleData::describeX(class_t* clazz) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// SlopeModule — Out = clamp(length(grad(In)) * scale, 0, 1). 2 SSBOs.
+// gradient via central differences taken in UV space (per-texel diff * dim/2),
+// so the result is resolution-independent (a 45deg ramp reads ~constant slope).
+///////////////////////////////////////////////////////////////////////////////
+
+static std::string _slope_text(int dim, float scale, int radius, float slope_factor) {
+  int rb = radius / 2;
+  if (rb < 1) rb = 1; // box radius at each gradient endpoint (denoise)
+  std::string t = R"S(
+fxconfig fxcfg_default {}
+storage_interface sif_out (descriptor_set 0) { buffer layout(std430) ob { float odata[%DIMSQ%]; }; }
+storage_interface sif_in  (descriptor_set 0) { buffer layout(std430) ib { float idata[%DIMSQ%]; }; }
+compute_interface iface { storage { sif_out sif_in } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }
+compute_shader cs_slope : iface {
+  if (gl_GlobalInvocationID.x >= %DIMU% || gl_GlobalInvocationID.y >= %DIMU%) { return; }
+  int  xi = int(gl_GlobalInvocationID.x);
+  int  yi = int(gl_GlobalInvocationID.y);
+  int  W  = int(%DIMU%);
+  uint i  = uint(yi) * %DIMU% + uint(xi);
+  int  M  = %R% + %RB%; // margin = gradient baseline + box radius
+  if (xi < M || yi < M || xi >= W - M || yi >= W - M) { odata[i] = 0.0; return; }
+  // PRE-BLUR: gradient at scale R via a difference of box averages offset by +/-R
+  // (each box radius RB). Denoised -> tracks landform slope, not per-pixel noise.
+  float sL = 0.0;
+  float sR = 0.0;
+  float sD = 0.0;
+  float sU = 0.0;
+  for (int dy = -%RB%; dy <= %RB%; dy++) {
+    for (int dx = -%RB%; dx <= %RB%; dx++) {
+      sL += idata[uint(yi + dy) * %DIMU% + uint(xi - %R% + dx)];
+      sR += idata[uint(yi + dy) * %DIMU% + uint(xi + %R% + dx)];
+      sD += idata[uint(yi - %R% + dy) * %DIMU% + uint(xi + dx)];
+      sU += idata[uint(yi + %R% + dy) * %DIMU% + uint(xi + dx)];
+    }
+  }
+  float n = float((2 * %RB% + 1) * (2 * %RB% + 1));
+  // per-UV gradient: delta over baseline 2R texels == 2R/dim in UV.
+  float gx = (sR - sL) / n * float(%DIM%) / float(2 * %R%);
+  float gy = (sU - sD) / n * float(%DIM%) / float(2 * %R%);
+  // per-UV gradient -> REAL rise/run (tan of the terrain angle): * height_scale/extent.
+  float m  = length(vec2(gx, gy)) * float(%SLOPEFACTOR%) * float(%SCALE%);
+  odata[i] = m / (1.0 + m); // SOFT (Reinhard) rolloff -> [0,1), magnitude survives
+}
+)S";
+  _shadersub(t, "%DIMSQ%", FormatString("%d", dim * dim));
+  _shadersub(t, "%DIMU%", FormatString("%du", dim));
+  _shadersub(t, "%DIM%", FormatString("%d", dim));
+  _shadersub(t, "%RB%", FormatString("%d", rb)); // before %R% (prefix) to avoid clobber
+  _shadersub(t, "%R%", FormatString("%d", radius));
+  _shadersub(t, "%SLOPEFACTOR%", FormatString("%f", slope_factor));
+  _shadersub(t, "%SCALE%", FormatString("%f", scale));
+  return t;
+}
+
+struct SlopeModuleInst : public TerrainComputeInst {
+  SlopeModuleInst(const SlopeModuleData* d, dflow::GraphInst* g) : TerrainComputeInst(d, g), _d(d) {}
+  void onLink(dflow::GraphInst*) final {
+    _output = typedOutputNamed<HfImagePlugTraits>("Out");
+    _input  = typedInputNamed<HfImagePlugTraits>("In");
+    _scale  = _floatPlug(this, _d, "scale");
+  }
+  void onActivate(dflow::GraphInst* inst) final {
+    auto env = inst->_impl.getShared<BakeEnv>();
+    _allocOut(env.get(), _output->_value);
+    int   rtex   = env->radiusTexels(_d->_radius_m);                 // meters -> texels (res-indep)
+    float sfactor = env->_height_scale_m / (env->_extent_m > 0.0f ? env->_extent_m : 1.0f); // -> tan(angle)
+    auto sh = env->_ctx->FXI()->shaderFromShaderText(
+        "terrain_slope", _slope_text(env->_w, _scale->value(), rtex, sfactor));
+    _cs     = env->_ctx->FXI()->computeShader(sh, "cs_slope");
+  }
+  void compute(dflow::GraphInst* inst, ui::updatedata_ptr_t) final {
+    auto env = inst->_impl.getShared<BakeEnv>();
+    auto ci  = env->_ctx->CI();
+    auto in  = _srcImg(_input);
+    OrkAssert(in && in->_ssbo);
+    int g = (env->_w + 7) / 8;
+    ci->bindStorageBuffer(_cs, 0, _output->_value->_ssbo); // odata
+    ci->bindStorageBuffer(_cs, 1, in->_ssbo);              // idata
+    ci->dispatchCompute(_cs, g, g, 1);
+    ci->storageBarrier();
+  }
+  uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
+    auto h = DataBlock::createHasher();
+    h->accumulateString("terrain.slope.v3"); // v3: meter radius + real-angle (res-independent)
+    h->accumulateItem<float>(_d->_radius_m);  // meters (the resolution-independent identity)
+    h->accumulateItem<float>(_scale->value());
+    _mixTail(h, ctx, ih);
+    h->finish();
+    return h->result();
+  }
+
+  const SlopeModuleData* _d;
+  hfimg_outpluginst_ptr_t _output;
+  hfimg_inpluginst_ptr_t _input;
+  dflow::float_inp_pluginst_ptr_t _scale;
+  const FxComputeShader* _cs = nullptr;
+};
+
+static void _reshapeSlopeIOs(dataflow::moduledata_ptr_t data) {
+  dflow::ModuleData::createInputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "In");
+  dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "scale")->setValue(1.0f);
+  dflow::ModuleData::createOutputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "Out");
+}
+SlopeModuleData::SlopeModuleData() {}
+std::shared_ptr<SlopeModuleData> SlopeModuleData::createShared() {
+  auto d = std::make_shared<SlopeModuleData>(); _reshapeSlopeIOs(d); return d;
+}
+dflow::dgmoduleinst_ptr_t SlopeModuleData::createInstance(dflow::GraphInst* g) const {
+  return std::make_shared<SlopeModuleInst>(this, g);
+}
+void SlopeModuleData::describeX(class_t* clazz) {
+  clazz->setSharedFactory([]() -> rtti::castable_ptr_t { return SlopeModuleData::createShared(); });
+  clazz->annotateTyped<dataflow::moduleIOreshape_fn_t>("reshapeIOs",
+      [](dataflow::moduledata_ptr_t m) { _reshapeSlopeIOs(m); });
+  clazz->directProperty("radius_m", &SlopeModuleData::_radius_m); // baked pre-blur / scale (meters)
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// CurvatureModule — Out = mode(Laplacian(In)) * scale, clamped to [0,1]. 2 SSBOs.
+// Laplacian via the 5-point stencil in UV space (second derivative scales by dim^2),
+// so the mask is resolution-independent. Concave (valleys) has positive Laplacian,
+// convex (ridges/peaks) negative. Border cells -> 0 (curvature undefined at edges).
+///////////////////////////////////////////////////////////////////////////////
+
+static std::string _curvature_text(int dim, float scale, int mode, int radius) {
+  // pick the curvature flavor: convex highlights ridges (-lap), concave valleys
+  // (+lap), magnitude both (|lap|).
+  const char* curv = "abs(lap)";
+  switch (CurvatureMode(mode)) {
+    case CurvatureMode::CONVEX:    curv = "(-lap)";    break;
+    case CurvatureMode::CONCAVE:   curv = "(lap)";     break;
+    case CurvatureMode::MAGNITUDE: curv = "abs(lap)";  break;
+  }
+  int ri = radius / 2;
+  if (ri < 1) ri = 1; // inner blur radius (denoise the center end of the band)
+  std::string t = R"S(
+fxconfig fxcfg_default {}
+storage_interface sif_out (descriptor_set 0) { buffer layout(std430) ob { float odata[%DIMSQ%]; }; }
+storage_interface sif_in  (descriptor_set 0) { buffer layout(std430) ib { float idata[%DIMSQ%]; }; }
+compute_interface iface { storage { sif_out sif_in } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }
+compute_shader cs_curvature : iface {
+  if (gl_GlobalInvocationID.x >= %DIMU% || gl_GlobalInvocationID.y >= %DIMU%) { return; }
+  int  xi = int(gl_GlobalInvocationID.x);
+  int  yi = int(gl_GlobalInvocationID.y);
+  int  W  = int(%DIMU%);
+  uint i  = uint(yi) * %DIMU% + uint(xi);
+  // curvature is undefined within `radius` of the border (the box would read OOB) -> 0.
+  if (xi < %R% || yi < %R% || xi >= W - %R% || yi >= W - %R%) { odata[i] = 0.0; return; }
+  // PRE-BLUR: box averages at the inner (RI) and outer (R) radii in one pass. Their
+  // difference is a band-pass (difference-of-box ~ Laplacian-of-Gaussian) curvature
+  // that is inherently denoised -> tracks landform ridges, not per-pixel noise.
+  float osum = 0.0;
+  float isum = 0.0;
+  for (int dy = -%R%; dy <= %R%; dy++) {
+    for (int dx = -%R%; dx <= %R%; dx++) {
+      float s = idata[uint(yi + dy) * %DIMU% + uint(xi + dx)];
+      osum += s;
+      if (abs(dx) <= %RI% && abs(dy) <= %RI%) { isum += s; }
+    }
+  }
+  float outer = osum / float((2 * %R% + 1) * (2 * %R% + 1));
+  float inner = isum / float((2 * %RI% + 1) * (2 * %RI% + 1));
+  // normalize to a per-UV 2nd-derivative scale so `scale` stays ~O(1) across dim/radius.
+  float lap = (outer - inner) * float(%DIM%) * float(%DIM%) / float(%R% * %R%);
+  float c   = %CURV%;                         // convex:(-lap) concave:(lap) magnitude:|lap|
+  float m   = max(c, 0.0) * float(%SCALE%);   // wrong-sign -> 0
+  odata[i]  = m / (1.0 + m);                  // SOFT (Reinhard) rolloff -> [0,1), magnitude survives
+}
+)S";
+  _shadersub(t, "%CURV%", curv);
+  _shadersub(t, "%DIMSQ%", FormatString("%d", dim * dim));
+  _shadersub(t, "%DIMU%", FormatString("%du", dim));
+  _shadersub(t, "%DIM%", FormatString("%d", dim));
+  _shadersub(t, "%RI%", FormatString("%d", ri)); // before %R% (prefix) to avoid clobber
+  _shadersub(t, "%R%", FormatString("%d", radius));
+  _shadersub(t, "%SCALE%", FormatString("%f", scale));
+  return t;
+}
+
+struct CurvatureModuleInst : public TerrainComputeInst {
+  CurvatureModuleInst(const CurvatureModuleData* d, dflow::GraphInst* g) : TerrainComputeInst(d, g), _d(d) {}
+  void onLink(dflow::GraphInst*) final {
+    _output = typedOutputNamed<HfImagePlugTraits>("Out");
+    _input  = typedInputNamed<HfImagePlugTraits>("In");
+    _scale  = _floatPlug(this, _d, "scale");
+  }
+  void onActivate(dflow::GraphInst* inst) final {
+    auto env = inst->_impl.getShared<BakeEnv>();
+    _allocOut(env.get(), _output->_value);
+    int rtex = env->radiusTexels(_d->_radius_m); // meters -> texels (resolution-independent)
+    auto sh  = env->_ctx->FXI()->shaderFromShaderText(
+        "terrain_curvature", _curvature_text(env->_w, _scale->value(), _d->_mode, rtex));
+    _cs      = env->_ctx->FXI()->computeShader(sh, "cs_curvature");
+  }
+  void compute(dflow::GraphInst* inst, ui::updatedata_ptr_t) final {
+    auto env = inst->_impl.getShared<BakeEnv>();
+    auto ci  = env->_ctx->CI();
+    auto in  = _srcImg(_input);
+    OrkAssert(in && in->_ssbo);
+    int g = (env->_w + 7) / 8;
+    ci->bindStorageBuffer(_cs, 0, _output->_value->_ssbo); // odata
+    ci->bindStorageBuffer(_cs, 1, in->_ssbo);              // idata
+    ci->dispatchCompute(_cs, g, g, 1);
+    ci->storageBarrier();
+  }
+  uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
+    auto h = DataBlock::createHasher();
+    h->accumulateString("terrain.curvature.v3"); // v3: meter radius (resolution-independent)
+    h->accumulateItem<int>(_d->_mode);
+    h->accumulateItem<float>(_d->_radius_m); // meters (the resolution-independent identity)
+    h->accumulateItem<float>(_scale->value());
+    _mixTail(h, ctx, ih);
+    h->finish();
+    return h->result();
+  }
+
+  const CurvatureModuleData* _d;
+  hfimg_outpluginst_ptr_t _output;
+  hfimg_inpluginst_ptr_t _input;
+  dflow::float_inp_pluginst_ptr_t _scale;
+  const FxComputeShader* _cs = nullptr;
+};
+
+static void _reshapeCurvatureIOs(dataflow::moduledata_ptr_t data) {
+  dflow::ModuleData::createInputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "In");
+  dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "scale")->setValue(1.0f);
+  dflow::ModuleData::createOutputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "Out");
+}
+CurvatureModuleData::CurvatureModuleData() {}
+std::shared_ptr<CurvatureModuleData> CurvatureModuleData::createShared() {
+  auto d = std::make_shared<CurvatureModuleData>(); _reshapeCurvatureIOs(d); return d;
+}
+dflow::dgmoduleinst_ptr_t CurvatureModuleData::createInstance(dflow::GraphInst* g) const {
+  return std::make_shared<CurvatureModuleInst>(this, g);
+}
+void CurvatureModuleData::describeX(class_t* clazz) {
+  clazz->setSharedFactory([]() -> rtti::castable_ptr_t { return CurvatureModuleData::createShared(); });
+  clazz->annotateTyped<dataflow::moduleIOreshape_fn_t>("reshapeIOs",
+      [](dataflow::moduledata_ptr_t m) { _reshapeCurvatureIOs(m); });
+  // _mode selects the baked GLSL output (convex/concave/magnitude); _radius is the
+  // baked pre-blur/scale. Reflect both so a reloaded graph keeps its curvature flavor.
+  clazz->directProperty("mode", &CurvatureModuleData::_mode);
+  clazz->directProperty("radius_m", &CurvatureModuleData::_radius_m);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// MaskBlendModule — Out = mix(A, B, M). 4 SSBOs (out=0, a=1, b=2, m=3). The
+// masking primitive: B replaces A where the [0,1] mask field M is high.
+///////////////////////////////////////////////////////////////////////////////
+
+static std::string _maskblend_text(int dim) {
+  std::string t = R"S(
+fxconfig fxcfg_default {}
+storage_interface sif_out (descriptor_set 0) { buffer layout(std430) ob { float odata[%DIMSQ%]; }; }
+storage_interface sif_a   (descriptor_set 0) { buffer layout(std430) ab { float adata[%DIMSQ%]; }; }
+storage_interface sif_b   (descriptor_set 0) { buffer layout(std430) bb { float bdata[%DIMSQ%]; }; }
+storage_interface sif_m   (descriptor_set 0) { buffer layout(std430) mb { float mdata[%DIMSQ%]; }; }
+compute_interface iface { storage { sif_out sif_a sif_b sif_m } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }
+compute_shader cs_maskblend : iface {
+  if (gl_GlobalInvocationID.x >= %DIMU% || gl_GlobalInvocationID.y >= %DIMU%) { return; }
+  uint i = gl_GlobalInvocationID.y * %DIMU% + gl_GlobalInvocationID.x;
+  odata[i] = mix(adata[i], bdata[i], clamp(mdata[i], 0.0, 1.0));
+}
+)S";
+  _shadersub(t, "%DIMSQ%", FormatString("%d", dim * dim));
+  _shadersub(t, "%DIMU%", FormatString("%du", dim));
+  return t;
+}
+
+struct MaskBlendModuleInst : public TerrainComputeInst {
+  MaskBlendModuleInst(const MaskBlendModuleData* d, dflow::GraphInst* g) : TerrainComputeInst(d, g), _d(d) {}
+  void onLink(dflow::GraphInst*) final {
+    _output = typedOutputNamed<HfImagePlugTraits>("Out");
+    _inA = typedInputNamed<HfImagePlugTraits>("A");
+    _inB = typedInputNamed<HfImagePlugTraits>("B");
+    _inM = typedInputNamed<HfImagePlugTraits>("M");
+  }
+  void onActivate(dflow::GraphInst* inst) final {
+    auto env = inst->_impl.getShared<BakeEnv>();
+    _allocOut(env.get(), _output->_value);
+    auto sh = env->_ctx->FXI()->shaderFromShaderText("terrain_maskblend", _maskblend_text(env->_w));
+    _cs     = env->_ctx->FXI()->computeShader(sh, "cs_maskblend");
+  }
+  void compute(dflow::GraphInst* inst, ui::updatedata_ptr_t) final {
+    auto env = inst->_impl.getShared<BakeEnv>();
+    auto ci  = env->_ctx->CI();
+    auto a   = _srcImg(_inA);
+    auto b   = _srcImg(_inB);
+    auto m   = _srcImg(_inM);
+    OrkAssert(a && a->_ssbo && b && b->_ssbo && m && m->_ssbo);
+    int g = (env->_w + 7) / 8;
+    ci->bindStorageBuffer(_cs, 0, _output->_value->_ssbo); // odata
+    ci->bindStorageBuffer(_cs, 1, a->_ssbo);               // adata
+    ci->bindStorageBuffer(_cs, 2, b->_ssbo);               // bdata
+    ci->bindStorageBuffer(_cs, 3, m->_ssbo);               // mdata
+    ci->dispatchCompute(_cs, g, g, 1);
+    ci->storageBarrier();
+  }
+  uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
+    auto h = DataBlock::createHasher();
+    h->accumulateString("terrain.maskblend.v1");
+    _mixTail(h, ctx, ih); // identity is fully determined by the 3 input hashes
+    h->finish();
+    return h->result();
+  }
+
+  const MaskBlendModuleData* _d;
+  hfimg_outpluginst_ptr_t _output;
+  hfimg_inpluginst_ptr_t _inA, _inB, _inM;
+  const FxComputeShader* _cs = nullptr;
+};
+
+static void _reshapeMaskBlendIOs(dataflow::moduledata_ptr_t data) {
+  dflow::ModuleData::createInputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "A");
+  dflow::ModuleData::createInputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "B");
+  dflow::ModuleData::createInputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "M");
+  dflow::ModuleData::createOutputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "Out");
+}
+MaskBlendModuleData::MaskBlendModuleData() {}
+std::shared_ptr<MaskBlendModuleData> MaskBlendModuleData::createShared() {
+  auto d = std::make_shared<MaskBlendModuleData>(); _reshapeMaskBlendIOs(d); return d;
+}
+dflow::dgmoduleinst_ptr_t MaskBlendModuleData::createInstance(dflow::GraphInst* g) const {
+  return std::make_shared<MaskBlendModuleInst>(this, g);
+}
+void MaskBlendModuleData::describeX(class_t* clazz) {
+  clazz->setSharedFactory([]() -> rtti::castable_ptr_t { return MaskBlendModuleData::createShared(); });
+  clazz->annotateTyped<dataflow::moduleIOreshape_fn_t>("reshapeIOs",
+      [](dataflow::moduledata_ptr_t m) { _reshapeMaskBlendIOs(m); });
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // CaptureModule — records the request; the driver flushes after GPU submit.
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -855,7 +1190,8 @@ void CaptureModuleData::describeX(class_t* clazz) {
 // cache-hit count from the most recent cacheable bake (for terrainCacheTest).
 static int s_lastCookHits = -1;
 
-std::vector<fieldstats_ptr_t> bakeHeightfield(dflow::graphdata_ptr_t graph, Context* ctx, int dim) {
+std::vector<fieldstats_ptr_t> bakeHeightfield(
+    dflow::graphdata_ptr_t graph, Context* ctx, int dim, float extent_m, float height_scale_m) {
   // topo-sort. The sorter allocates a register per connected output plug from a
   // per-type pool, so the GpuComputeImage2D type MUST have a register block
   // (keyed by the out-plug's data_type_t = GpuComputeImage2DData) or the sort
@@ -879,10 +1215,12 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(dflow::graphdata_ptr_t graph, Cont
   // instantiate
   auto ginst = dflow::GraphData::createGraphInst(graph);
 
-  auto env  = std::make_shared<BakeEnv>();
-  env->_ctx = ctx;
-  env->_w   = dim;
-  env->_h   = dim;
+  auto env             = std::make_shared<BakeEnv>();
+  env->_ctx            = ctx;
+  env->_w              = dim;
+  env->_h              = dim;
+  env->_extent_m       = extent_m;       // world units -> resolution-independent meter params
+  env->_height_scale_m = height_scale_m;
   ginst->_impl.setShared<BakeEnv>(env);
 
   ginst->updateTopology(topo);
@@ -899,7 +1237,18 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(dflow::graphdata_ptr_t graph, Cont
     // either upload its cached field (hit) or dispatch it IN ITS OWN dispatch
     // phase + read the result back to cache (miss). Per-op submit+wait makes the
     // inline readback valid. The Capture sink has no cookStore, so it just runs.
-    ginst->_cookContextHash = uint64_t(dim); // context = bake dimension (W=H)
+    // cook context = everything outside the graph that changes a node's OUTPUT:
+    // the bake resolution AND the world units (meters->texels depends on dim/extent;
+    // real slope depends on height_scale). Node hashes carry the resolution-independent
+    // meter params; this context folds in the per-bake resolution + scale.
+    {
+      auto ch = DataBlock::createHasher();
+      ch->accumulateItem<int>(dim);
+      ch->accumulateItem<float>(extent_m);
+      ch->accumulateItem<float>(height_scale_m);
+      ch->finish();
+      ginst->_cookContextHash = ch->result();
+    }
     ginst->computeNodeHashes();
     int cook_hits = 0, cook_computes = 0;
     for (auto inst : ginst->_ordered_module_insts) {
@@ -925,7 +1274,17 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(dflow::graphdata_ptr_t graph, Cont
   }
   ctx->endFrame();
 
-  // flush captures: readback each source SSBO -> RGBA32F EXR (h,h,h,1)
+  // flush captures: readback each source SSBO and encode by file extension.
+  //   .exr -> RGBA32F float (h,h,h,1), the canonical (lossless) artifact.
+  //   .png -> single-channel 16-bit grayscale, a portable heightmap export. PNG
+  //           can't hold float so OIIO would silently drop to 8-bit; R16UI forces
+  //           the full 16-bit depth.
+  // 16-bit heightmap convention: 0.15 m per LSB, so the full uint16 range spans
+  // 65535 * 0.15 = 9830.25 m = ~32,251 ft (Everest is 29,032 ft, so this clears any
+  // real terrain with headroom) at 15 cm vertical precision. The normalized [0,1]
+  // field maps linearly across that full range (1.0 -> 9830.25 m).
+  constexpr float kMetersPerLSB = 0.15f;
+  constexpr float kFullScaleM   = 65535.0f * kMetersPerLSB; // 9830.25 m (~32,251 ft)
   std::vector<fieldstats_ptr_t> stats;
   auto fxi = ctx->FXI();
   for (auto& req : env->_captures) {
@@ -933,21 +1292,32 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(dflow::graphdata_ptr_t graph, Cont
     int w     = img->_w;
     int h     = img->_h;
     size_t n  = size_t(w) * size_t(h);
+    std::string ps(req._path.c_str());
+    bool as_png = ps.size() >= 4 && (ps.compare(ps.size() - 4, 4, ".png") == 0);
+
     auto mapping = fxi->mapStorageBuffer(img->_ssbo, 0, n * sizeof(float), BufferMapAccess::READ_ONLY);
     const float* src = (const float*)mapping->_mappedaddr;
 
-    std::vector<float> rgba(n * 4);
+    std::vector<float> rgba;             // .exr path
+    std::vector<uint16_t> g16;           // .png path
+    if (as_png) g16.resize(n); else rgba.resize(n * 4);
     float vmin = 1e30f, vmax = -1e30f;
     double vsum = 0.0;
     for (size_t i = 0; i < n; i++) {
-      float v       = src[i];
-      rgba[i * 4 + 0] = v;
-      rgba[i * 4 + 1] = v;
-      rgba[i * 4 + 2] = v;
-      rgba[i * 4 + 3] = 1.0f;
+      float v = src[i];
       vmin = (v < vmin) ? v : vmin;
       vmax = (v > vmax) ? v : vmax;
       vsum += v;
+      if (as_png) {
+        float c      = v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v); // [0,1] clamp for the integer encode
+        float meters = c * kFullScaleM;                         // normalized [0,1] -> meters
+        g16[i]       = uint16_t(meters / kMetersPerLSB + 0.5f); // quantize at 0.15 m / LSB
+      } else {
+        rgba[i * 4 + 0] = v;
+        rgba[i * 4 + 1] = v;
+        rgba[i * 4 + 2] = v;
+        rgba[i * 4 + 3] = 1.0f;
+      }
     }
     fxi->unmapStorageBuffer(mapping.get());
     float vmean = float(vsum / double(n));
@@ -958,13 +1328,20 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(dflow::graphdata_ptr_t graph, Cont
     fs->_mean = vmean;
     stats.push_back(fs);
 
-    Image oimg;
-    oimg.initWithFormat(w, h, EBufferFormat::RGBA32F);
     // engine pattern (vulkan_fbi_capture): write into the Image's datablock via a
-    // const-cast, then OIIO encodes by file extension (.exr -> float EXR).
-    memcpy((void*)oimg._data->data(), rgba.data(), rgba.size() * sizeof(float));
-    oimg.writeToFile(req._path);
-    printf("[terrain bake] wrote <%s> (%dx%d)\n", req._path.c_str(), w, h);
+    // const-cast, then OIIO encodes by file extension.
+    Image oimg;
+    if (as_png) {
+      oimg.initWithFormat(w, h, EBufferFormat::R16UI);
+      memcpy((void*)oimg._data->data(), g16.data(), n * sizeof(uint16_t));
+    } else {
+      oimg.initWithFormat(w, h, EBufferFormat::RGBA32F);
+      memcpy((void*)oimg._data->data(), rgba.data(), rgba.size() * sizeof(float));
+    }
+    // heightfields/masks are LINEAR data — tag the PNG linear so it isn't read back
+    // through an sRGB curve (the engine-wide PNG default is sRGB; this is opt-in).
+    oimg.writeToFile(req._path, /*linear_colorspace=*/ as_png);
+    printf("[terrain bake] wrote <%s> (%dx%d, %s)\n", req._path.c_str(), w, h, as_png ? "png16/linear" : "exr32f");
   }
   return stats;
 }
@@ -1096,6 +1473,111 @@ int terrainOpsSelfTest(Context* ctx, int dim) {
   check("Terrace(.6,4,1)", runTerrace("terr_06", 0.6f, 4.0f, 1.0f), 0.5f, 0.5f, 0.5f, 1e-4f);
   check("Terrace(.7,4,1)", runTerrace("terr_07", 0.7f, 4.0f, 1.0f), 0.75f, 0.75f, 0.75f, 1e-4f);
   check("Terrace(.9,2,1)", runTerrace("terr_09", 0.9f, 2.0f, 1.0f), 1.0f, 1.0f, 1.0f, 1e-4f);
+
+  // --- Slope (pre-blurred gradient + soft rolloff, Mask by Feature) -----------
+  // flat field -> slope 0 everywhere. A unit ramp has gradient magnitude exactly 1
+  // (box-averaging a linear field is exact), so slope = soft_rolloff(1*scale) =
+  // 1/(1+1) = 0.5 uniform in the interior; the border ring (margin radius+box) is 0.
+  // bake the mask-generator cases with extent==height_scale==dim, so 1 texel == 1 m
+  // (radius_m == radius_texels) and the slope factor height_scale/extent == 1.
+  const float E = float(dim);
+  {
+    auto g  = std::make_shared<dflow::GraphData>();
+    auto c  = mkConst(0.5f);
+    auto sl = SlopeModuleData::createShared();
+    sl->_radius_m = 2.0f; // -> 2 texels at extent==dim
+    dflow::GraphData::addModule(g, "c", c);
+    dflow::GraphData::addModule(g, "s", sl);
+    g->safeConnect(sl->inputNamed("In"), c->outputNamed("Out"));
+    capTo(g, sl, path("slope_flat"));
+    check("Slope(flat)", bakeHeightfield(g, ctx, dim, E, E)[0], 0.0f, 0.0f, 0.0f, 1e-4f);
+  }
+  {
+    auto g  = std::make_shared<dflow::GraphData>();
+    auto gr = GradientModuleData::createShared();
+    gr->typedInputNamed<dflow::Vec2fPlugTraits>("dir")->setValue(fvec2(1.0f, 0.0f));
+    auto sl = SlopeModuleData::createShared();
+    sl->_radius_m = 2.0f;
+    dflow::GraphData::addModule(g, "grad", gr);
+    dflow::GraphData::addModule(g, "s", sl);
+    g->safeConnect(sl->inputNamed("In"), gr->outputNamed("Out"));
+    capTo(g, sl, path("slope_ramp"));
+    auto s  = bakeHeightfield(g, ctx, dim, E, E)[0];
+    bool ok = (s->_min < 1e-4f) && aeq(s->_max, 0.5f, 2e-3f) && (s->_mean > 0.3f);
+    printf("[selftest] %-26s min<%.5f> max<%.5f> mean<%.5f> : %s\n", "Slope(ramp,x)",
+           s->_min, s->_max, s->_mean, ok ? "PASS" : "FAIL");
+    if (not ok)
+      fails++;
+  }
+
+  // --- MaskBlend (4 SSBO): per-texel mix(A,B,M) -------------------------------
+  auto runBlend = [&](const char* nm, float a, float b, float mk) -> fieldstats_ptr_t {
+    auto g  = std::make_shared<dflow::GraphData>();
+    auto ca = mkConst(a);
+    auto cb = mkConst(b);
+    auto cm = mkConst(mk);
+    auto mb = MaskBlendModuleData::createShared();
+    dflow::GraphData::addModule(g, "a", ca);
+    dflow::GraphData::addModule(g, "b", cb);
+    dflow::GraphData::addModule(g, "m", cm);
+    dflow::GraphData::addModule(g, "mb", mb);
+    g->safeConnect(mb->inputNamed("A"), ca->outputNamed("Out"));
+    g->safeConnect(mb->inputNamed("B"), cb->outputNamed("Out"));
+    g->safeConnect(mb->inputNamed("M"), cm->outputNamed("Out"));
+    capTo(g, mb, path(nm));
+    return bakeHeightfield(g, ctx, dim)[0];
+  };
+  check("MaskBlend(.2,.8,0)",   runBlend("mask_0",  0.2f, 0.8f, 0.0f),  0.2f, 0.2f, 0.2f, 1e-4f);
+  check("MaskBlend(.2,.8,1)",   runBlend("mask_1",  0.2f, 0.8f, 1.0f),  0.8f, 0.8f, 0.8f, 1e-4f);
+  check("MaskBlend(.2,.8,.25)", runBlend("mask_25", 0.2f, 0.8f, 0.25f), 0.35f, 0.35f, 0.35f, 1e-4f);
+
+  // --- Curvature (band-pass diff-of-box + soft rolloff, Mask by Feature) -------
+  // a flat field has zero curvature (diff-of-box of a constant is 0, soft rolloff
+  // of 0 is 0). A squared ramp uv.x^2 is concave everywhere (positive curvature),
+  // so CONVEX (ridge) -> 0 everywhere and CONCAVE responds (>0, soft-rolled into (0,1)).
+  {
+    auto g  = std::make_shared<dflow::GraphData>();
+    auto c  = mkConst(0.5f);
+    auto cv = CurvatureModuleData::createShared();
+    cv->_mode     = int(CurvatureMode::MAGNITUDE);
+    cv->_radius_m = 4.0f; // -> 4 texels at extent==dim
+    dflow::GraphData::addModule(g, "c", c);
+    dflow::GraphData::addModule(g, "cv", cv);
+    g->safeConnect(cv->inputNamed("In"), c->outputNamed("Out"));
+    capTo(g, cv, path("curv_flat"));
+    check("Curvature(flat)", bakeHeightfield(g, ctx, dim, E, E)[0], 0.0f, 0.0f, 0.0f, 1e-4f);
+  }
+  auto runCurv = [&](const char* nm, int mode, float scale) -> fieldstats_ptr_t {
+    auto g  = std::make_shared<dflow::GraphData>();
+    auto gr = GradientModuleData::createShared(); // value = uv.x
+    gr->typedInputNamed<dflow::Vec2fPlugTraits>("dir")->setValue(fvec2(1.0f, 0.0f));
+    auto sq = CombineModuleData::createShared(); // uv.x * uv.x = uv.x^2
+    sq->_op = int(CombineOp::MUL);
+    auto cv = CurvatureModuleData::createShared();
+    cv->_mode     = mode;
+    cv->_radius_m = 4.0f; // -> 4 texels at extent==dim
+    cv->typedInputNamed<dflow::FloatPlugTraits>("scale")->setValue(scale);
+    dflow::GraphData::addModule(g, "grad", gr);
+    dflow::GraphData::addModule(g, "sq", sq);
+    dflow::GraphData::addModule(g, "cv", cv);
+    g->safeConnect(sq->inputNamed("A"), gr->outputNamed("Out"));
+    g->safeConnect(sq->inputNamed("B"), gr->outputNamed("Out"));
+    g->safeConnect(cv->inputNamed("In"), sq->outputNamed("Out"));
+    capTo(g, cv, path(nm));
+    return bakeHeightfield(g, ctx, dim, E, E)[0];
+  };
+  // convex of a concave (valley-shaped) field -> 0 everywhere (no ridges); border zeroed.
+  check("Curvature(x^2,convex)", runCurv("curv_convex", int(CurvatureMode::CONVEX), 4.0f), 0.0f, 0.0f, 0.0f, 1e-4f);
+  // concave responds: min 0 (border ring), max in (0,1) (soft rolloff never saturates),
+  // interior ~uniform for a quadratic. Robust property check (not an exact pin).
+  {
+    auto s  = runCurv("curv_concave", int(CurvatureMode::CONCAVE), 4.0f);
+    bool ok = (s->_min < 1e-4f) && (s->_max > 0.05f) && (s->_max < 0.999f) && (s->_mean > 0.04f);
+    printf("[selftest] %-26s min<%.5f> max<%.5f> mean<%.5f> : %s\n", "Curvature(x^2,concave)",
+           s->_min, s->_max, s->_mean, ok ? "PASS" : "FAIL");
+    if (not ok)
+      fails++;
+  }
 
   printf("[selftest] %d case(s) FAILED\n", fails);
   return fails;

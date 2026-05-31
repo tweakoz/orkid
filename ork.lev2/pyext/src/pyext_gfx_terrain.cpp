@@ -47,6 +47,18 @@ void pyinit_gfx_terrain(py::module& module_lev2) {
   py::class_<trn::TerraceModuleData, dflow::DgModuleData, trn::terracemoduledata_ptr_t>(trn_module, "TerraceModule")
       .def_static("createShared", []() -> trn::terracemoduledata_ptr_t { return trn::TerraceModuleData::createShared(); });
 
+  py::class_<trn::SlopeModuleData, dflow::DgModuleData, trn::slopemoduledata_ptr_t>(trn_module, "SlopeModule")
+      .def_static("createShared", []() -> trn::slopemoduledata_ptr_t { return trn::SlopeModuleData::createShared(); })
+      .def_readwrite("radius_m", &trn::SlopeModuleData::_radius_m); // baked: pre-blur / scale (meters)
+
+  py::class_<trn::CurvatureModuleData, dflow::DgModuleData, trn::curvaturemoduledata_ptr_t>(trn_module, "CurvatureModule")
+      .def_static("createShared", []() -> trn::curvaturemoduledata_ptr_t { return trn::CurvatureModuleData::createShared(); })
+      .def_readwrite("mode", &trn::CurvatureModuleData::_mode)          // baked: 0=convex 1=concave 2=magnitude
+      .def_readwrite("radius_m", &trn::CurvatureModuleData::_radius_m); // baked: pre-blur / scale (meters)
+
+  py::class_<trn::MaskBlendModuleData, dflow::DgModuleData, trn::maskblendmoduledata_ptr_t>(trn_module, "MaskBlendModule")
+      .def_static("createShared", []() -> trn::maskblendmoduledata_ptr_t { return trn::MaskBlendModuleData::createShared(); });
+
   py::class_<trn::CaptureModuleData, dflow::DgModuleData, trn::capturemoduledata_ptr_t>(trn_module, "CaptureModule")
       .def_static("createShared", []() -> trn::capturemoduledata_ptr_t { return trn::CaptureModuleData::createShared(); })
       // bake-time output path (wrapper-supplied, deliberately NOT serialized — a
@@ -77,9 +89,14 @@ void pyinit_gfx_terrain(py::module& module_lev2) {
   // bake driver — sort, instantiate, dispatch the compute, flush captures to
   // EXR/PNG (by extension). Returns the per-capture FieldStats list.
   /////////////////////////////////////////////////////////////////////////////
-  trn_module.def("bake_heightfield", [](dflow::graphdata_ptr_t g, ctx_t ctx, int dim) -> std::vector<trn::fieldstats_ptr_t> {
-    return trn::bakeHeightfield(g, ctx.get(), dim);
-  });
+  trn_module.def(
+      "bake_heightfield",
+      [](dflow::graphdata_ptr_t g, ctx_t ctx, int dim, float extent_m, float height_scale_m)
+          -> std::vector<trn::fieldstats_ptr_t> {
+        return trn::bakeHeightfield(g, ctx.get(), dim, extent_m, height_scale_m);
+      },
+      py::arg("graph"), py::arg("ctx"), py::arg("dim"),
+      py::arg("extent_m") = 4096.0f, py::arg("height_scale_m") = 9830.25f);
 
   // enumerate a graph's CaptureModule sinks (each carries .channel + .path) so the
   // asset wrapper can derive per-channel output paths on a deserialized graph.

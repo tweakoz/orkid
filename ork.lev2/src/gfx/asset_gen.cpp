@@ -37,6 +37,8 @@ void HeightFieldGenData::describeX(object::ObjectClass* clazz) {
   // so the .ecs is self-contained and loads with no Python / no DSL file.
   clazz->directObjectProperty("graph", &HeightFieldGenData::_graph_data);
   clazz->directProperty("dimension", &HeightFieldGenData::_dimension);
+  clazz->directProperty("extent_m", &HeightFieldGenData::_extent_m);
+  clazz->directProperty("height_scale_m", &HeightFieldGenData::_height_scale_m);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

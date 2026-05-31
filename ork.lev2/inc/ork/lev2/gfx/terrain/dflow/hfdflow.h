@@ -94,10 +94,26 @@ struct FieldStats {
 using fieldstats_ptr_t = std::shared_ptr<FieldStats>;
 
 struct BakeEnv {
-  Context* _ctx = nullptr;
-  int _w        = 0;
-  int _h        = 0;
+  Context* _ctx           = nullptr;
+  int _w                  = 0;
+  int _h                  = 0;
+  // world units (make the graph resolution-independent): spatial op params are in
+  // meters and converted to texels here per-bake. texelsPerMeter() == dim / extent.
+  float _extent_m         = 4096.0f;  // horizontal world size (meters across the field)
+  float _height_scale_m   = 9830.25f; // what normalized height 1.0 means in meters
   std::vector<CaptureRequest> _captures; // collected during compute, flushed after submit
+
+  float texelsPerMeter() const { return (_extent_m > 0.0f) ? (float(_w) / _extent_m) : 1.0f; }
+  // meters -> texel radius, clamped to [1, dim/4] (sub-texel features can't be
+  // resolved; an over-large kernel would border-out the whole field).
+  int radiusTexels(float radius_m) const {
+    int r = int(radius_m * texelsPerMeter() + 0.5f);
+    if (r < 1) r = 1;
+    int rmax = _w / 4;
+    if (rmax < 1) rmax = 1;
+    if (r > rmax) r = rmax;
+    return r;
+  }
 };
 using bakeenv_ptr_t = std::shared_ptr<BakeEnv>;
 
@@ -197,6 +213,64 @@ struct TerraceModuleData : public TerrainModuleData {
 using terracemoduledata_ptr_t = std::shared_ptr<TerraceModuleData>;
 
 ///////////////////////////////////////////////////////////////////////////////
+// SlopeModule — 1-in mask generator ("Mask by Feature: slope"). Out is the
+// gradient magnitude of In, soft-rolled-off (Reinhard m/(1+m)) into [0,1). The
+// gradient is PRE-BLURRED: a difference of box averages offset by +/-`_radius`
+// (each box radius ~radius/2), so it tracks LANDFORM slope at the chosen scale
+// instead of per-pixel noise. float plug: scale (sensitivity). An edge ring of
+// width (radius + box) is 0. A mask is just a [0,1] field on the SAME plug type
+// — apply it compositionally via MaskBlend/mix.
+///////////////////////////////////////////////////////////////////////////////
+
+struct SlopeModuleData : public TerrainModuleData {
+  DeclareConcreteX(SlopeModuleData, TerrainModuleData);
+  SlopeModuleData();
+  static std::shared_ptr<SlopeModuleData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
+
+  float _radius_m = 8.0f; // baked: pre-blur / gradient-baseline scale (METERS)
+};
+using slopemoduledata_ptr_t = std::shared_ptr<SlopeModuleData>;
+
+///////////////////////////////////////////////////////////////////////////////
+// CurvatureModule — 1-in mask generator ("Mask by Feature: curvature"). Curvature
+// is a band-pass of In: difference of two box averages (inner radius ~radius/2,
+// outer `_radius`) — a difference-of-box / Laplacian-of-Gaussian that is inherently
+// PRE-BLURRED, so it tracks LANDFORM ridges/valleys at the chosen scale instead of
+// per-pixel noise. `_mode` selects the flavor: CONVEX = ridges/peaks, CONCAVE =
+// valleys/pits, MAGNITUDE = both. A SOFT (Reinhard m/(1+m)) rolloff maps it to [0,1)
+// so curvature magnitude survives (no hard clamp -> no binary speckle). float plug:
+// scale (sensitivity). Edge ring of width `_radius` is 0 (undefined at the border).
+///////////////////////////////////////////////////////////////////////////////
+
+enum class CurvatureMode { CONVEX = 0, CONCAVE, MAGNITUDE };
+
+struct CurvatureModuleData : public TerrainModuleData {
+  DeclareConcreteX(CurvatureModuleData, TerrainModuleData);
+  CurvatureModuleData();
+  static std::shared_ptr<CurvatureModuleData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
+
+  int _mode       = int(CurvatureMode::MAGNITUDE); // baked (selects the GLSL output)
+  float _radius_m = 96.0f;                          // baked: pre-blur / curvature scale (METERS)
+};
+using curvaturemoduledata_ptr_t = std::shared_ptr<CurvatureModuleData>;
+
+///////////////////////////////////////////////////////////////////////////////
+// MaskBlendModule — 3-in per-texel blend: Out = mix(A, B, M). The masking
+// PRIMITIVE (Houdini's lerp(input, op(input), mask)); M is a [0,1] field. Unlike
+// CombineModule's MIX (a uniform-scalar t), this blends by a per-texel field. 4 SSBOs.
+///////////////////////////////////////////////////////////////////////////////
+
+struct MaskBlendModuleData : public TerrainModuleData {
+  DeclareConcreteX(MaskBlendModuleData, TerrainModuleData);
+  MaskBlendModuleData();
+  static std::shared_ptr<MaskBlendModuleData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
+};
+using maskblendmoduledata_ptr_t = std::shared_ptr<MaskBlendModuleData>;
+
+///////////////////////////////////////////////////////////////////////////////
 // CaptureModule — sink. Input "In" : GpuComputeImage2D. At bake-flush time the
 // source SSBO is read back and encoded to `_path` (PNG/EXR by extension).
 ///////////////////////////////////////////////////////////////////////////////
@@ -221,7 +295,12 @@ using capturemoduledata_ptr_t = std::shared_ptr<CaptureModuleData>;
 // square grid resolution (W=H=dim).
 ///////////////////////////////////////////////////////////////////////////////
 
-std::vector<fieldstats_ptr_t> bakeHeightfield(dflow::graphdata_ptr_t graph, Context* ctx, int dim);
+std::vector<fieldstats_ptr_t> bakeHeightfield(
+    dflow::graphdata_ptr_t graph,
+    Context* ctx,
+    int dim,
+    float extent_m       = 4096.0f,    // horizontal world size (meters) -> resolution independence
+    float height_scale_m = 9830.25f);  // normalized 1.0 in meters (for real slope angles)
 
 // first-slice convenience: build a 2-node fbm -> capture graph and bake it to
 // `outpath` (PNG/EXR by extension), the minimal end-to-end exerciser.

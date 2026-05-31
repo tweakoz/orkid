@@ -326,7 +326,13 @@ public:
   ~HeightFieldGenData() override = default;
 
   ork::dataflow::graphdata_ptr_t _graph_data; // the embedded terrain graph (serialized inline)
-  int _dimension = 512;                       // bake grid resolution (W=H)
+  int _dimension = 512;                       // bake grid resolution (W=H), texels
+  // WORLD units make the graph resolution-INDEPENDENT: spatial op params (slope/
+  // curvature radius, ...) are in meters and converted to texels per-bake. _dimension
+  // is purely a sampling rate; the terrain's meaning is (extent_m, height_scale_m).
+  float _extent_m       = 4096.0f;    // horizontal world size (meters across the field)
+  float _height_scale_m = 9830.25f;   // what normalized height 1.0 means in meters
+                                       // (= 65535 * 0.15, matching the 16-bit PNG 0.15 m/LSB)
 };
 using heightfield_gendata_ptr_t = std::shared_ptr<HeightFieldGenData>;
 

@@ -32,8 +32,13 @@ Clamp    = ops.clamp
 Mix      = ops.mix
 Min      = ops.minimum
 Max      = ops.maximum
+Slope     = ops.slope      # Mask by Feature: slope -> [0,1] mask field
+slope     = ops.slope      # lower-case too (reads naturally: steep = T.slope(h))
+Curvature = ops.curvature  # Mask by Feature: curvature (convex/concave/magnitude)
+curvature = ops.curvature
 
 __all__ = [
     "HeightField",
     "Fbm", "Gradient", "Const", "Remap", "Terrace", "Clamp", "Mix", "Min", "Max",
+    "Slope", "slope", "Curvature", "curvature",
 ]
