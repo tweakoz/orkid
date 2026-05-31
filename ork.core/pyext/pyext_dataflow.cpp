@@ -601,6 +601,10 @@ void pyinit_dataflow(py::module& module_core) {
   auto graphdata_type = //
       py::class_<GraphData, ::ork::Object, graphdata_ptr_t>(dfgmodule, "GraphData")
           .def_static("createShared", []() -> graphdata_ptr_t { return std::make_shared<GraphData>(); })
+          .def_property(
+              "cacheable",
+              [](graphdata_ptr_t g) -> bool { return g->_cacheable; },
+              [](graphdata_ptr_t g, bool v) { g->_cacheable = v; })
           .def_property_readonly(
               "num_modules",
               [](graphdata_ptr_t g) -> size_t { //

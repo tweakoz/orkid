@@ -45,6 +45,7 @@ from orkengine.lev2 import (ImplicitSdfGenData,
                             PbrMaterialGenData,
                             FreestyleMaterialGenData,
                             ParticleSystemGenData,
+                            HeightFieldGenData,
                             HdriToXirGenData,
                             VdbFileSdfGenData,
                             MeshSdfGenData,
@@ -1251,6 +1252,72 @@ class ParticleSystem:
 
 
 ###############################################################################
+# HeightField — terrain heightfield asset. UNLIKE ParticleSystem (dsl_file +
+# re-run Python at load), this EMBEDS the serialized terrain graph in
+# HeightFieldGenData (model B): the DSL runs ONCE here at authoring; the graph
+# round-trips in the scene JSON; reload bakes it with NO Python / NO DSL file.
+#
+#   hf = self.asset.HeightField("rolling_hills",
+#            dsl_file  = "rolling_hills",   # terrain DSL .py (authoring only)
+#            dimension = 1024,
+#            octaves   = 6)                  # scalar kwargs -> DSL ctor
+#
+# build() bakes the embedded graph (cook-cache-backed) and returns a dict:
+#   { "<channel>": "<assetcache>/terrain/<asset>/<channel>.exr", ...,
+#     "stats": { "<channel>": FieldStats } }
+###############################################################################
+
+@_register
+class HeightField:
+  """Asset-DSL wrapper for a terrain HeightField DSL class (embedded-graph model)."""
+
+  def __init__(self, *, dsl_file=None, dsl_class=None, dimension=512, gendata=None, ctx=None, **kwargs):
+    self._ctx = ctx
+    if gendata is not None:
+      self.gendata = gendata
+      return
+    if not dsl_file:
+      raise ValueError("HeightField requires dsl_file (terrain DSL .py name or path)")
+    # AUTHORING: resolve + run the DSL ONCE -> graph -> embed in the gendata.
+    from ork.hypergraph.dflow.terrain.resolve import resolve_dsl_file, load_dsl_class
+    dsl_path = resolve_dsl_file(dsl_file)
+    cls      = load_dsl_class(dsl_path, dsl_class or None)
+    inst     = cls(**kwargs)                 # scalar kwargs -> DSL ctor (parameterized terrain)
+    graph    = inst.generatedflow()
+    self.gendata = HeightFieldGenData(dimension=dimension, graph=graph)
+
+  @classmethod
+  def from_gendata(cls, gendata, ctx=None):
+    """Rehydrate from a deserialized gendata — the graph is embedded, so NO DSL."""
+    return cls(gendata=gendata, ctx=ctx)
+
+  def build(self):
+    """Bake the embedded graph (cook-cache-backed) -> dict of channel EXR paths +
+    per-channel FieldStats. Channels come from the graph's CaptureModules."""
+    import os as _os
+    from orkengine.core import Path as _Path
+    d     = self.gendata
+    graph = d.graph
+    if graph is None:
+      raise RuntimeError(f"HeightField {d.asset_name!r}: gendata carries no embedded graph")
+    if self._ctx is None:
+      raise RuntimeError(f"HeightField {d.asset_name!r}: build() needs a gfx ctx "
+                         f"(pass ctx= to from_gendata / the materializer)")
+    outdir = _Path.expandPathString(f"<assetcache>/terrain/{d.asset_name or 'unnamed'}")
+    _os.makedirs(outdir, exist_ok=True)
+    caps     = _lev2.terrain.capture_modules(graph)
+    channels = []
+    for cap in caps:
+      ch       = cap.channel or "height"
+      cap.path = _os.path.join(outdir, f"{ch}.exr")   # machine-specific, derived from channel
+      channels.append(ch)
+    stats  = _lev2.terrain.bake_heightfield(graph, self._ctx, d.dimension)
+    result = {ch: _os.path.join(outdir, f"{ch}.exr") for ch in channels}
+    result["stats"] = {ch: stats[i] for i, ch in enumerate(channels)}
+    return result
+
+
+###############################################################################
 # HdriToXir — wraps HdriToXirGenData. Bakes an HDR/PNG/EXR source through
 # the sync envmap GPU pipeline (ork.envmap.process_envmap, same path
 # ork.hdri.genxir.py main_sync uses) and writes the result to a deterministic
@@ -1384,6 +1451,7 @@ _GENDATA_TO_WRAPPER = {
   "FreestyleMaterialGenData": FreestyleMaterial,
   "VdbGridToDrawableGenData": VdbGridToDrawable,
   "ParticleSystemGenData":    ParticleSystem,
+  "HeightFieldGenData":       HeightField,
   "HdriToXirGenData":         HdriToXir,
   "VdbFileSdfGenData":        VdbFileSdf,
   "MeshSdfGenData":           MeshSdf,
@@ -1458,7 +1526,7 @@ def materialize_from_scenedata(scene_data, ctx=None, ezapp=None, material_resolv
         f"materialize_from_scenedata: no wrapper for {cn!r}; "
         f"register it in ork.ecs.scene.assets._GENDATA_TO_WRAPPER")
     deps = {}
-    if cn in ("PbrMaterialGenData", "FreestyleMaterialGenData"):
+    if cn in ("PbrMaterialGenData", "FreestyleMaterialGenData", "HeightFieldGenData"):
       deps["ctx"] = ctx
     elif cn == "ParticleSystemGenData":
       deps["artifacts"] = artifacts

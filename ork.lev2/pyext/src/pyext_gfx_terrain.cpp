@@ -54,7 +54,13 @@ void pyinit_gfx_terrain(py::module& module_lev2) {
       .def_property(
           "path",
           [](trn::capturemoduledata_ptr_t m) -> std::string { return std::string(m->_path.c_str()); },
-          [](trn::capturemoduledata_ptr_t m, std::string p) { m->_path = ork::file::Path(p.c_str()); });
+          [](trn::capturemoduledata_ptr_t m, std::string p) { m->_path = ork::file::Path(p.c_str()); })
+      // stable channel identity (serialized) — the asset wrapper derives the
+      // machine-specific path from it at materialize time.
+      .def_property(
+          "channel",
+          [](trn::capturemoduledata_ptr_t m) -> std::string { return m->_channel; },
+          [](trn::capturemoduledata_ptr_t m, std::string c) { m->_channel = c; });
 
   /////////////////////////////////////////////////////////////////////////////
   // FieldStats — per-capture min/max/mean returned by the bake driver.
@@ -73,6 +79,17 @@ void pyinit_gfx_terrain(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////
   trn_module.def("bake_heightfield", [](dflow::graphdata_ptr_t g, ctx_t ctx, int dim) -> std::vector<trn::fieldstats_ptr_t> {
     return trn::bakeHeightfield(g, ctx.get(), dim);
+  });
+
+  // enumerate a graph's CaptureModule sinks (each carries .channel + .path) so the
+  // asset wrapper can derive per-channel output paths on a deserialized graph.
+  trn_module.def("capture_modules", [](dflow::graphdata_ptr_t g) -> std::vector<trn::capturemoduledata_ptr_t> {
+    std::vector<trn::capturemoduledata_ptr_t> out;
+    for (size_t i = 0; i < g->numModules(); i++) {
+      if (auto cap = std::dynamic_pointer_cast<trn::CaptureModuleData>(g->module(i)))
+        out.push_back(cap);
+    }
+    return out;
   });
 
   /////////////////////////////////////////////////////////////////////////////

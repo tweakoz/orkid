@@ -7,6 +7,7 @@
 
 #include "pyext.h"
 #include <ork/lev2/gfx/asset_gen.h>
+#include <ork/dataflow/all.h> // graphdata_ptr_t for HeightFieldGenData.graph
 
 // Pyext bindings for the HYPERECS M2b reflected asset-gen DATA classes.
 //
@@ -479,6 +480,35 @@ void pyinit_gfx_asset_gen(py::module& module_lev2) {
               [](particle_system_gendata_ptr_t d) -> std::string { return d->_probe_entity_name; },
               [](particle_system_gendata_ptr_t d, std::string v) { d->_probe_entity_name = v; });
   type_codec->registerStdCodec<particle_system_gendata_ptr_t>(ps_type);
+
+  ///////////////////////////////////////////////////////////////////////////
+  // HeightFieldGenData — terrain heightfield asset. EMBEDS the serialized
+  // terrain compute graph (.graph) + bake dimension. The Python wrapper
+  // (HeightField in scene/assets.py) runs the DSL once at authoring to fill
+  // .graph; on reload the graph deserializes inline and bakes with no Python.
+  ///////////////////////////////////////////////////////////////////////////
+  auto hf_type = //
+      py::class_<HeightFieldGenData, AssetGenData, heightfield_gendata_ptr_t>(
+          module_lev2, "HeightFieldGenData")
+          .def(py::init([](py::kwargs kwargs) {
+            auto d = std::make_shared<HeightFieldGenData>();
+            if (kwargs.contains("asset_name"))
+              d->_asset_name = kwargs["asset_name"].cast<std::string>();
+            if (kwargs.contains("dimension"))
+              d->_dimension = kwargs["dimension"].cast<int>();
+            if (kwargs.contains("graph"))
+              d->_graph_data = kwargs["graph"].cast<ork::dataflow::graphdata_ptr_t>();
+            return d;
+          }))
+          .def_property(
+              "dimension",
+              [](heightfield_gendata_ptr_t d) -> int { return d->_dimension; },
+              [](heightfield_gendata_ptr_t d, int v) { d->_dimension = v; })
+          .def_property(
+              "graph",
+              [](heightfield_gendata_ptr_t d) -> ork::dataflow::graphdata_ptr_t { return d->_graph_data; },
+              [](heightfield_gendata_ptr_t d, ork::dataflow::graphdata_ptr_t g) { d->_graph_data = g; });
+  type_codec->registerStdCodec<heightfield_gendata_ptr_t>(hf_type);
 
   ///////////////////////////////////////////////////////////////////////////
   // HdriToXirGenData — reflected recipe for a static HDR→XIR conversion.

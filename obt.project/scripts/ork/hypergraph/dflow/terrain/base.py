@@ -50,6 +50,9 @@ class HeightField:
     def __init__(self, **kwargs):
         # Fresh empty graph; DSL ops populate it during user __init__.
         self.graphdata = _dflow.GraphData.createShared()
+        # terrain graphs opt in to the per-node cook cache (content-addressed,
+        # disk-backed). The flag round-trips with the (embedded) graph.
+        self.graphdata.cacheable = True
         # channel name -> CaptureModule (the sink). dict preserves declaration
         # order so the bake's FieldStats list lines up with channels().
         self._captures = {}
@@ -75,6 +78,7 @@ class HeightField:
         g = self.graphdata
         cap = g.create(anon_name("capture", g), _terrain.CaptureModule)
         g.connect(cap.inputs.In, node.output_plug)
+        cap.channel = channel   # self-describe the sink in the graph (round-trips)
         self._captures[channel] = cap
 
     @property

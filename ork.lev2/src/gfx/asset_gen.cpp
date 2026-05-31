@@ -8,8 +8,10 @@
 #include <ork/pch.h>
 #include <ork/reflect/properties/registerX.inl>
 #include <ork/lev2/gfx/asset_gen.h>
+#include <ork/dataflow/all.h> // full GraphData type for HeightFieldGenData's embedded-graph property
 
 ImplementReflectionX(ork::lev2::AssetGenData,             "AssetGenData");
+ImplementReflectionX(ork::lev2::HeightFieldGenData,       "HeightFieldGenData");
 ImplementReflectionX(ork::lev2::ImplicitSdfGenData,       "ImplicitSdfGenData");
 ImplementReflectionX(ork::lev2::PbrMaterialGenData,       "PbrMaterialGenData");
 ImplementReflectionX(ork::lev2::FreestyleMaterialGenData, "FreestyleMaterialGenData");
@@ -26,6 +28,15 @@ namespace ork::lev2 {
 
 void AssetGenData::describeX(object::ObjectClass* clazz) {
   clazz->directProperty("asset_name", &AssetGenData::_asset_name);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void HeightFieldGenData::describeX(object::ObjectClass* clazz) {
+  // the embedded terrain graph serializes inline (owned, NOT a cross-asset ref),
+  // so the .ecs is self-contained and loads with no Python / no DSL file.
+  clazz->directObjectProperty("graph", &HeightFieldGenData::_graph_data);
+  clazz->directProperty("dimension", &HeightFieldGenData::_dimension);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

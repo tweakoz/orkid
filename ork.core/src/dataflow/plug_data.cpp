@@ -184,6 +184,14 @@ inplugdata_ptr_t OutPlugData::connected(size_t idx) const {
 // plugdata<float>
 ///////////////////////////////////////////////////////////////////////////////
 template <> void inplugdata<FloatPlugTraits>::describeX(class_t* clazz) {
+  using mytype_t = inplugdata<FloatPlugTraits>;
+  // reflect the scalar value so a constant float plug round-trips. Without this,
+  // a serialized graph (terrain model-B embedded graph) loses every float plug's
+  // value on reload (it reverts to the reshapeIOs default). Mirrors FloatXf below.
+  clazz->lambdaProperty<mytype_t, float>(
+      "value", //
+      [](const mytype_t* obj_inp, float& valout) { valout = *(obj_inp->_value); },
+      [](mytype_t* obj_out, const float& valinp) { *(obj_out->_value) = valinp; });
 }
 template <> inpluginst_ptr_t inplugdata<FloatPlugTraits>::createInstance(ModuleInst* minst) const {
   return std::make_shared<inpluginst<FloatPlugTraits>>(this, minst);

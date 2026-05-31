@@ -37,6 +37,7 @@
 // (serialized into the scene; the full type is only needed in the .cpp).
 namespace ork::dataflow {
 struct GraphData;
+using graphdata_ptr_t = std::shared_ptr<GraphData>;
 }
 
 namespace ork::lev2 {
@@ -304,6 +305,30 @@ public:
 };
 
 using particle_system_gendata_ptr_t = std::shared_ptr<ParticleSystemGenData>;
+
+///////////////////////////////////////////////////////////////////////////////
+// HeightFieldGenData — terrain heightfield asset. Unlike ParticleSystemGenData
+// (which stores a DSL filename + re-runs Python at load), this EMBEDS the
+// serialized terrain compute GraphData inline (model B): the DSL runs ONCE at
+// authoring to produce the graph; the graph round-trips in the scene JSON, so
+// reload deserializes + bakes with NO Python and NO DSL file. _dimension is the
+// bake grid (W=H). Output channels are self-described by the graph's
+// CaptureModules (each carries a `_channel`); their on-disk paths are derived at
+// materialize time (machine-specific, never serialized). The bake is
+// cook-cache-backed, so a re-materialize of an unchanged graph is all hits.
+///////////////////////////////////////////////////////////////////////////////
+
+struct HeightFieldGenData : public AssetGenData {
+  DeclareConcreteX(HeightFieldGenData, AssetGenData);
+
+public:
+  HeightFieldGenData()           = default;
+  ~HeightFieldGenData() override = default;
+
+  ork::dataflow::graphdata_ptr_t _graph_data; // the embedded terrain graph (serialized inline)
+  int _dimension = 512;                       // bake grid resolution (W=H)
+};
+using heightfield_gendata_ptr_t = std::shared_ptr<HeightFieldGenData>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // HdriToXirGenData — reflected recipe for a static HDR-to-XIR conversion.

@@ -608,6 +608,7 @@ struct ClassToucher {
     RegisterClassX(FreestyleMaterialGenData);
     RegisterClassX(VdbGridToDrawableGenData);
     RegisterClassX(ParticleSystemGenData);
+    RegisterClassX(HeightFieldGenData);
     RegisterClassX(HdriToXirGenData);
     RegisterClassX(VdbFileSdfGenData);
     RegisterClassX(MeshSdfGenData);
