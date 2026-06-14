@@ -158,6 +158,53 @@ def _ensure_caches(bundle):
     os.makedirs(os.path.join(bundle, "dblockcache"), exist_ok=True)
 
 
+def _data_root():
+    """The data install scheme (= <sys.prefix> in a venv) — where the payload tars
+    install and the bundle is unpacked."""
+    try:
+        return pathlib.Path(sysconfig.get_path("data"))
+    except Exception:
+        return pathlib.Path(sys.prefix)
+
+
+def _extract_payloads():
+    """First run / post-upgrade: untar the payload archives into the bundle.
+
+    Payload wheels ship the bundle as opaque .tar blobs under <data>/.orkid_payload/
+    so pip never byte-compiles or mangles the embedded 3.14t files. We untar them
+    into <data>/orkid/, preserving modes + symlinks. Idempotent via a stamp of the
+    tar set; re-extracts when the archives change (a version upgrade)."""
+    import tarfile
+    root = _data_root()
+    pdir = root / ".orkid_payload"
+    if not pdir.is_dir():
+        return                                   # legacy purelib install: files already in place
+    tars = sorted(pdir.glob("*.tar"))
+    if not tars:
+        return
+    bundle = root / "orkid"
+    stamp = bundle / ".payload_stamp"
+    sig = "\n".join("%s:%d" % (t.name, t.stat().st_size) for t in tars)
+    try:
+        if stamp.is_file() and stamp.read_text() == sig:
+            return                               # already unpacked this exact set
+    except OSError:
+        pass
+    if bundle.exists():
+        shutil.rmtree(bundle, ignore_errors=True)
+    for t in tars:
+        with tarfile.open(t, "r") as tf:
+            try:
+                tf.extractall(root, filter="data")   # py3.12+: silences the extraction-filter warning
+            except TypeError:
+                tf.extractall(root)                  # py<3.12 (no filter kwarg)
+    try:
+        stamp.write_text(sig)
+    except OSError:
+        pass
+    print("[orkid] unpacked %d payload archive(s) -> %s" % (len(tars), bundle), file=sys.stderr)
+
+
 def _obt_launch_exe():
     # ork.build installs obt.env.launch.py into the SAME bin dir as this venv's
     # python (and as the ork.python console script). Look next to the interpreter
@@ -175,8 +222,9 @@ def _obt_launch_exe():
 
 
 def _launch(extra_args):
+    _extract_payloads()                 # untar bundle on first run / after a version upgrade
     bundle = _bundle_root()
-    _restore_symlinks(bundle)
+    _restore_symlinks(bundle)           # legacy .symlinks.d installs only; no-op for tar bundles
     _relocate(bundle)
     _ensure_caches(bundle)
     exe = _obt_launch_exe()

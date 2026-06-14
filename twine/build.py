@@ -14,7 +14,7 @@ Produces <repo>/dist/*.whl :
 Symlinks are preserved as symlinks (relative links resolve within orkid/
 after install). The macOS platform version is read from the binaries' minos.
 """
-import argparse, base64, hashlib, os, platform, re, shutil, subprocess, sys, tempfile, zipfile
+import argparse, base64, hashlib, io, os, platform, re, shutil, subprocess, sys, tarfile, tempfile, zipfile
 import pathlib
 
 THIS = pathlib.Path(__file__).resolve().parent
@@ -164,34 +164,35 @@ def build_payload_wheel(spec, staging, rels, distdir, ver, plat):
     name = spec["name"]
     tag = "py3-none-any" if spec["purelib"] else plat
     distinfo = f"{name.replace('-', '_')}-{ver}.dist-info"
-    # Ship the bundle as wheel DATA ({wheel}.data/data/orkid/... -> installs to
-    # <sys.prefix>/orkid) rather than purelib/platlib. pip byte-compiles every .py
-    # under purelib/platlib on install; the bundle is engine code+data run ONLY by
-    # the embedded ork.python (3.14t) and is never imported by the user's python, so
-    # user-python compilation is useless AND fatal on 3.9 (the bundle's 3.10+ `match`
-    # scripts can't parse there, and 3.9's compileall crashes reporting the error).
-    # Data-category files are extracted verbatim, never compiled. The launcher's
-    # _bundle_root() resolves the bundle from the data location at runtime.
+    # Ship this partition as ONE opaque tar blob (under the wheel data dir), NOT as
+    # individual files. Why: pip byte-compiles EVERY installed .py — purelib, platlib
+    # AND data-scheme — on install. That is fatal on user-python 3.9 because the
+    # bundle is run by the embedded ork.python (3.14t) and its stdlib/scripts use
+    # 3.12+ syntax 3.9 can't parse (and 3.9's compileall crashes even reporting it).
+    # pip also drops exec bits and can't create symlinks. A tar dodges all of it: pip
+    # sees one non-.py data file; the launcher untars it on first run, preserving
+    # modes + symlinks natively. (Replaces the per-file copy + S_IFREG exec-bit +
+    # .symlinks.d manifest hacks.)
     datadir = f"{name.replace('-', '_')}-{ver}.data/data"
     out = distdir / _wheel_filename(name, ver, tag)
-    records = []
-    symlinks = []   # (rel, target) — recorded in a manifest; pip can't recreate symlinks
-                    # (it writes the target string as a regular file), so the launcher
-                    # shim recreates them from .symlinks.d/ on first run.
-    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
+    nfiles = nlinks = 0
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w") as tf:   # uncompressed; the wheel zip deflates it
         for rel in rels:
             src = os.path.join(staging, rel)
-            if os.path.islink(src):
-                symlinks.append((rel, os.readlink(src)))
-                continue
-            mode = 0o755 if os.access(src, os.X_OK) else 0o644
-            _add(z, records, f"{datadir}/{P.BUNDLE}/{rel}", abspath=src, mode=mode)
-        if symlinks:
-            man = "".join(f"{r}\t{t}\n" for r, t in sorted(symlinks))
-            _add(z, records, f"{datadir}/{P.BUNDLE}/.symlinks.d/{name.replace('-', '_')}.txt",
-                 data=man.encode())
+            ti = tf.gettarinfo(src, arcname=f"{P.BUNDLE}/{rel}")   # lstat: captures mode + symlink
+            if ti.issym() or ti.islnk():
+                tf.addfile(ti); nlinks += 1
+            elif ti.isreg():
+                with open(src, "rb") as fh:
+                    tf.addfile(ti, fh); nfiles += 1
+    blob = buf.getvalue()
+    records = []
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
+        _add(z, records, f"{datadir}/.orkid_payload/{name.replace('-', '_')}.tar",
+             data=blob, mode=0o644)
         _finish(z, records, distinfo, name, ver, spec["summary"], tag, spec["purelib"])
-    print("      (%d symlinks recorded for shim restore)" % len(symlinks)) if symlinks else None
+    print("      (tar: %d files + %d symlinks, %.1f MB uncompressed)" % (nfiles, nlinks, len(blob)/1e6))
     return out
 
 def build_umbrella_wheel(distdir, ver):
