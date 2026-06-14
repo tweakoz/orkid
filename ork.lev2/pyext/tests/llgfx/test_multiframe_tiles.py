@@ -10,6 +10,7 @@ import sys; sys.stdout.reconfigure(line_buffering=True)
 import struct, time, tempfile, argparse
 from orkengine.core import vec2, vec3, vec4, mtx4
 from orkengine import core, lev2
+from orkengine import ecs
 
 tokens = core.CrcStringProxy()
 
@@ -114,7 +115,7 @@ def main():
     print("Test: Accumulation shader — per-tile, multi-pass")
     print("=" * 70)
 
-    ezapp = lev2.lev2appinit()
+    ezapp = ecs.headless_appinit(use_subsystems=['opq', 'core', 'gpu', 'lev2'])
     gfxenv = lev2.GfxEnv.ref
     ctx = gfxenv.loadingContext()
     fbi = ctx.FBI
@@ -214,4 +215,6 @@ def main():
     return 1 if errors else 0
 
 if __name__ == "__main__":
-    sys.exit(main())
+    rc = main()
+    ecs.headless_exit()
+    sys.exit(rc)

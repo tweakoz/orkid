@@ -7,13 +7,7 @@ make sure email and username set for github
 
 * update to tahoe 26.5 (or whatever is latest)
 * update to xcode 26.x (or whatever is latest)
-* remove homebrew ```sudo rm -rf /opt/homebrew```
-* reinstall homebrew:
-    ```/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"```
-* if you dont want to delete and reinstall homebrew, you probably should at least update it.
-* ```brew install python3```
 * probably want to use bash instead of zsh
-* prepend /opt/homebrew/bin to $PATH - so homebrew's python takes precedence (Apple tends to ship old Pythons).
 * ```xcodebuild -runFirstLaunch``` # agree to Eula I think...
 
 # INITIAL SYSTEM-WIDE SETUP (Ubuntu 24.04/x64)
@@ -35,7 +29,7 @@ make sure email and username set for github
 # OBT SETUP
 
 * ```pip3 install ork.build``` # installs OBT into venv
-* ```obt.versions.py``` : ensure obt version 0.0.303
+* ```obt.versions.py``` : ensure obt version 0.0.305
 * ***(MacOs)*** ```obt.osx.installdeps.py``` # installs homebrew scoped deps
 or
 * ***(Ubuntu 24.04/x64)*** ```obt.ix.installdeps.ubuntu_x86_64.py``` #  installs apt scoped deps
@@ -47,7 +41,7 @@ or
 
 # BUILD ORKID
 
-* ```obt.dep.pipeline.py orkid``` # download and (attempt to) build orkid (builds orkid's deps first)
+* ```obt.dep.pipeline.py orkid``` # download and (attempt to) build orkid (builds orkid's deps first) - should take about 15-20 mins on a modern mac.
 * ```ork.build.py``` # incremental build (only works after orkid was already built and environment relaunched - as $PATHS must be updated)
 
 * Building with profiling: uncomment #define BUILD_WITH_EASY_PROFILER in profiling.inl

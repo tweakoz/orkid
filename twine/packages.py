@@ -76,7 +76,7 @@ UMBRELLA = dict(
     # obt framework (pure-python) — provides obt.env.launch.py that the launchers
     # run against orkid as --stagedir. This is the "base venv provided by
     # the pip-install venv" model; no obt_venv is shipped in the wheels.
-    extra_requires=["ork.build==0.0.303"],
+    extra_requires=["ork.build==0.0.305"],
     entry_points={"console_scripts": [
         # ONLY these land in the user's venv/bin. The bundle's own bin/ (incl. its
         # private `ork.python` wrapper) stays private — surfaced on PATH only

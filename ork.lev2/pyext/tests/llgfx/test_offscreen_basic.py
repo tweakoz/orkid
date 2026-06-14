@@ -10,6 +10,7 @@ import sys
 import time
 from orkengine import core
 from orkengine import lev2
+from orkengine import ecs
 
 tokens = core.CrcStringProxy()
 
@@ -20,7 +21,7 @@ def main():
     
     # Initialize lev2 app with offscreen graphics context
     print("Initializing lev2 app...")
-    ezapp = lev2.lev2appinit()
+    ezapp = ecs.headless_appinit(use_subsystems=['opq', 'core', 'gpu', 'lev2'])
     gfxenv = lev2.GfxEnv.ref
     ctx = gfxenv.loadingContext()
 
@@ -74,4 +75,6 @@ def main():
     return 0
 
 if __name__ == "__main__":
-    sys.exit(main())
+    rc = main()
+    ecs.headless_exit()
+    sys.exit(rc)
