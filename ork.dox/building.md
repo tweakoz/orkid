@@ -29,7 +29,7 @@ make sure email and username set for github
 # OBT SETUP
 
 * ```pip3 install ork.build``` # installs OBT into venv
-* ```obt.versions.py``` : ensure obt version 0.0.305
+* ```obt.versions.py``` : ensure obt version 0.0.307
 * ***(MacOs)*** ```obt.osx.installdeps.py``` # installs homebrew scoped deps
 or
 * ***(Ubuntu 24.04/x64)*** ```obt.ix.installdeps.ubuntu_x86_64.py``` #  installs apt scoped deps
