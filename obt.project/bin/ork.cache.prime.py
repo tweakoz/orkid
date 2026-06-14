@@ -60,7 +60,6 @@ MODELS = [
     "data://tests/pbr_calib.glb",
     "data://tests/pbr_calib_lopoly.glb",
     "data://tests/monkey_pbr.glb",
-    "data://tests/bridge.glb",
 ]
 
 BRDF_TYPES = ["GGX", "GGXVELVET", "GGXRIM", "BLINN", "PHONG"]

@@ -19,7 +19,8 @@ ORKID_SETUP_VULKAN_FN = "export ORKID_GRAPHICS_API=VULKAN; "
 ORKID_SETUP_VULKAN_FN += f"export DYLD_LIBRARY_PATH={ENV_DYLD_LIBRARY_PATH}{DYLD_LIBRARY_PATH}; "
 ORKID_SETUP_VULKAN_FN += f"export DYLD_FALLBACK_LIBRARY_PATH={ENV_OBT_DYLD_FALLBACK_LIBRARY_PATH}{OBT_DYLD_FALLBACK_LIBRARY_PATH}; "
 
-print(ORKID_SETUP_VULKAN_FN)
+if "OBT_NONDEV" not in os.environ:
+  print(ORKID_SETUP_VULKAN_FN)
 # todo figure out how to get DYLD_* to survive bash stack push
 #   alternatively, get rid of vulkan's need for DYLD_* in the first place
 

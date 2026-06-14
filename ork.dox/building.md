@@ -5,8 +5,8 @@ make sure email and username set for github
 
 # INITIAL SYSTEM-WIDE SETUP (Macos)
 
-* update to sequoia 15.4.3 (or whatever is latest)
-* update to xcode 16.3 (or whatever is latest)
+* update to tahoe 26.5 (or whatever is latest)
+* update to xcode 26.x (or whatever is latest)
 * remove homebrew ```sudo rm -rf /opt/homebrew```
 * reinstall homebrew:
     ```/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"```
@@ -42,7 +42,7 @@ or
 
 # STAGING ENV / FOLDER SETUP
 
-* ```obt.env.create.py --stagedir ~/.staging-xxx --wipe --pipeline``` # wipe means remove old staging folder, if exists
+* ```obt.env.create.py --stagedir ~/.staging-xxx --wipe --pipeline``` # wipe means remove old staging folder, if exists, pipeline means build in parallel
 * ```~/.staging-xxx/obt-launch-env``` # launch OBT shell / environment, type exit if you wish to leave
 
 # BUILD ORKID

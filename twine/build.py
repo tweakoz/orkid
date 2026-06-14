@@ -47,7 +47,7 @@ def _wheel_filename(name, ver, tag):
 
 def _metadata(name, ver, summary, requires):
     L = ["Metadata-Version: 2.1", f"Name: {name}", f"Version: {ver}",
-         f"Summary: {summary}", "Requires-Python: >=3.10"]
+         f"Summary: {summary}", "Requires-Python: >=3.9"]
     L += [f"Requires-Dist: {r}" for r in requires]
     return "\n".join(L) + "\n"
 

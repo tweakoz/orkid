@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Install the locally-built orkid wheels into the CURRENT venv.
 
-Assumes you are in an activated venv (Python >=3.10 — ork.build requires it).
-orkid-* wheels come from the local dist/ (never pushed to PyPI); the dev-pinned
-dependency ork.build==0.0.303.dev18 (+ its deps) comes from PyPI.
+Assumes you are in an activated venv (Python >=3.9 — ork.build requires it).
+orkid-* wheels come from the local dist/ (never pushed to PyPI); the pinned
+dependency ork.build==0.0.303 (+ its deps) comes from PyPI.
 
     twine/build.py      # build the wheels first
     twine/test.py       # <- run this from inside your test venv
@@ -25,8 +25,8 @@ def main():
     if not wheels:
         sys.exit("No orkid wheels in %s — run twine/build.py first." % DIST)
 
-    if sys.version_info[:2] < (3, 10):
-        sys.exit("This venv is Python %d.%d; need >=3.10 (ork.build requires it)."
+    if sys.version_info[:2] < (3, 9):
+        sys.exit("This venv is Python %d.%d; need >=3.9 (ork.build requires it)."
                  % sys.version_info[:2])
 
     if sys.prefix == sys.base_prefix:

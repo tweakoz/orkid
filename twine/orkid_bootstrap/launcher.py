@@ -19,6 +19,13 @@ import pathlib
 
 SENTINEL = "__OBT_DEPLOY_SENTINEL__"
 
+# Non-dev (default) `ork.shell` scans only these deps/sdks at launch and uses a
+# git-free prompt — much faster shell entry. `ork.shell --dev` skips all of this
+# and does the full OBT dep/sdk scan (today's behavior). Grow these lists as the
+# minimal runtime surface needs more.
+MINIMAL_DEPS = ["python", "orkid", "vulkan"]   # vulkan dep carries the MoltenVK render env
+MINIMAL_SDKS = []                              # platform-target sdks; none needed at runtime
+
 
 def _bundle_root():
     # <site-packages>/orkid_bootstrap/launcher.py -> <site-packages>/orkid
@@ -163,9 +170,31 @@ def _launch(extra_args):
     os.execv(exe, argv)
 
 
+def _orkid_version():
+    """Version of the installed PyPI `orkid` package (for the minimal prompt)."""
+    try:
+        import importlib.metadata as md
+        return md.version("orkid")
+    except Exception:
+        return ""
+
+
 def ork_shell():
-    """Drop into an interactive OBT shell with orkid's paths (pip LaunchShell)."""
-    _launch(sys.argv[1:])
+    """Drop into an interactive OBT shell with orkid's paths (pip LaunchShell).
+
+    Default is MINIMAL (fast): scans only MINIMAL_DEPS / MINIMAL_SDKS at launch
+    and uses a git-free prompt. Pass `--dev` for the full OBT dep/sdk scan and
+    the git-aware prompt.
+    """
+    argv = sys.argv[1:]
+    dev = "--dev" in argv
+    argv = [a for a in argv if a != "--dev"]
+    if not dev:
+        os.environ["OBT_NONDEV"] = "1"            # master non-dev flag: minimal prompt + quiet env logging
+        os.environ["OBT_MINIMAL_DEPS"] = ":".join(MINIMAL_DEPS)
+        os.environ["OBT_MINIMAL_SDKS"] = ":".join(MINIMAL_SDKS)
+        os.environ["ORKID_VERSION"] = _orkid_version()
+    _launch(argv)
 
 
 def ork_deploy():

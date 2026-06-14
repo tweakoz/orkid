@@ -25,11 +25,14 @@ Software Development Information
 ========
 Installation via PyPi
 
-```pip3 install orkid```
+```pip3 install orkid``` # install it
+```ork.shell --command ork.data.fetch.py``` # run a command in it (without polluting base shell)
+```ork.shell --command ork.cache.prime.py``` # run a command in it (without polluting base shell)
+```ork.shell``` # interactive orkid shell
+```ork.shell --dev``` # interactive orkid development shell
+
 
 [How to build](ork.dox/building.md)
-
-[How to run](ork.dox/running.md)
 
 [GLSLFX shader format docs](ork.dox/gfx/glslfx.md)
 
