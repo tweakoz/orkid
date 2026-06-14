@@ -2,11 +2,12 @@
 ################################################################
 # ork.cache.prime.py - Pre-cache assets (shaders, envmaps, models, BRDF maps)
 #
-# Runs headless (no window) using an offscreen Vulkan context.
-# Triggers DataBlockCache population so subsequent app launches
-# hit warm caches for expensive operations like Assimp->XGM
-# conversion, BRDF integration map computation, shader compilation,
-# and environment map processing.
+# Runs headless (no window) using the ECS headless lifecycle
+# (ecs.headless_appinit + bindGfxToCurrentThread). Triggers
+# DataBlockCache population so subsequent app launches hit warm
+# caches for expensive operations like Assimp->XGM conversion, BRDF
+# integration map computation, shader compilation, and environment
+# map processing.
 #
 # Usage:
 #   ork.cache.prime.py                 # prime everything
@@ -19,6 +20,7 @@
 
 import sys, time, argparse
 from orkengine import core, lev2
+from orkengine import ecs
 
 tokens = core.CrcStringProxy()
 
@@ -131,49 +133,6 @@ def _list_assets():
 
 ###############################################################################
 
-class CachePrimer:
-
-    def __init__(self, args):
-        self._args = args
-        self._prime_all = not (args.shaders or args.envmaps or args.models or args.brdf)
-        self._done_loading = False
-        self._t_start = None
-        self.ezapp = lev2.OrkEzApp.create(self, width=64, height=64, offscreen=True)
-        self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
-
-    def onGpuInit(self, ctx):
-        print("=" * 60)
-        print("ork.cache.prime - headless asset pre-caching")
-        print("=" * 60)
-        self._t_start = time.monotonic()
-
-        if self._prime_all or self._args.shaders:
-            _prime_shaders(ctx)
-
-        if self._prime_all or self._args.envmaps:
-            _prime_envmaps(ctx)
-
-        if self._prime_all or self._args.models:
-            _prime_models(ctx)
-
-        if self._prime_all or self._args.brdf:
-            _prime_brdf(ctx)
-
-        self._done_loading = True
-
-    def onUpdate(self, updinfo):
-        if self._done_loading:
-            dt_total = time.monotonic() - self._t_start
-            print(f"\n{'=' * 60}")
-            print(f"Cache priming complete in {dt_total:.1f}s")
-            print("=" * 60)
-            self.ezapp.signalExit()
-
-    def onUiEvent(self, uievent):
-        return lev2.ui.HandlerResult()
-
-###############################################################################
-
 def main():
     parser = argparse.ArgumentParser(description="Pre-cache Orkid assets (headless)")
     parser.add_argument("--shaders", action="store_true", help="Prime shaders only")
@@ -187,8 +146,35 @@ def main():
         _list_assets()
         return 0
 
-    primer = CachePrimer(args)
-    primer.ezapp.mainThreadLoop()
+    prime_all = not (args.shaders or args.envmaps or args.models or args.brdf)
+
+    # ECS headless lifecycle — inline GPU work on a bound context (no render loop).
+    ezapp = ecs.headless_appinit(use_subsystems=['opq', 'core', 'gpu', 'lev2'])
+    ezapp.mainThreadBegin()
+    ctx = ezapp.bindGfxToCurrentThread()
+    assert ctx, "bindGfxToCurrentThread() returned null"
+
+    print("=" * 60)
+    print("ork.cache.prime - headless asset pre-caching")
+    print("=" * 60)
+    t_start = time.monotonic()
+
+    if prime_all or args.shaders:
+        _prime_shaders(ctx)
+    if prime_all or args.envmaps:
+        _prime_envmaps(ctx)
+    if prime_all or args.models:
+        _prime_models(ctx)
+    if prime_all or args.brdf:
+        _prime_brdf(ctx)
+
+    dt_total = time.monotonic() - t_start
+    print(f"\n{'=' * 60}")
+    print(f"Cache priming complete in {dt_total:.1f}s")
+    print("=" * 60)
+
+    ezapp.mainThreadEnd()
+    ecs.headless_exit()
     return 0
 
 if __name__ == "__main__":
