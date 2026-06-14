@@ -1,3 +1,4 @@
+*.tmp
 makefile
 *stag*
 *.blend1

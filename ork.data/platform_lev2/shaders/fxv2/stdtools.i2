@@ -21,6 +21,14 @@ uniform_block ublk_std_matrices (descriptor_set 0) {
   mat4 inv_vp_r;
   mat4 mvp_l;
   mat4 mvp_r;
+  //
+  // model-view INVERSE-TRANSPOSE (normal matrix, object->view). Bound per-draw in
+  // material_pbr_pipeline.cpp::createBasicStateLambda(). mvit_rot is its 3x3 — the
+  // one used for normals (view-space normal = normalize(mvit_rot * object_normal));
+  // the full mat4 is kept for callers that transform more than a direction. Appended
+  // at the END so existing std140 offsets are unchanged.
+  mat4 mvit;
+  mat3 mvit_rot;
 }
 //
 ///////////////////////////////////////////////////////////////
@@ -41,12 +49,17 @@ sampler_set sset_std_instancing(descriptor_set 0) {
   usampler2D InstanceIds;
 }
 ///////////////////////////////////////////////////////////////
-// SSBO-based instancing - supports up to 65536 instances
+// SSBO-based instancing. The fixed array sizes here ARE the layout contract with
+// InstancedDrawable::k_max_instances / k_ssbo_offset_* (drawable.h) — the two MUST
+// agree or the colors/pickids reads land at the wrong byte offsets (a 1Mi-vs-128Ki
+// divergence here made every instanced-model draw read instance_color = 0 -> BLACK).
+// matrices/colors are fixed-size so their std430 offsets match the C++; only the
+// LAST member may be a size-less runtime array in std430 (the bound SSBO sizes it).
 storage_interface storage_instancing (descriptor_set 0) {
   buffer layout(std430) instances {
-    mat4 _instance_matrices[65536];  // 64 bytes * 65536 = 4MB
-    vec4 _instance_colors[65536];    // 16 bytes * 65536 = 1MB
-    uvec2 _instance_pickids[65536];  // 8 bytes * 65536 = 512KB
+    mat4 _instance_matrices[131072];  // 64B * 128Ki = 8388608  (offset 0)
+    vec4 _instance_colors[131072];    // 16B * 128Ki = 2097152  (offset 8388608)
+    uvec2 _instance_pickids[];        // runtime array          (offset 10485760)
   };
 }
 ///////////////////////////////////////////////////////////////
@@ -68,7 +81,7 @@ uniform_block ublk_std_depth(descriptor_set 0) {
 ///////////////////////////////////////////////////////////////
 uniform_block ublk_std_pbr(descriptor_set 0) {
   //////////////////////////////
-  vec3 AmbientLevel;          // 0x00 
+  vec3 AmbientLevel;          // 0x00
   vec3 EyePostion;            // 0x10
   vec3 EyePostionL;           // 0x20
   vec3 EyePostionR;           // 0x30
@@ -92,7 +105,87 @@ uniform_block ublk_std_pbr(descriptor_set 0) {
   vec4 AuxB;                  // 0xa0
   //////////////////////////////
   float AlphaCutoff;          // 0xb0
+}
 
+///////////////////////////////////////////////////////////////
+// PBR2 Phase 2 — glTF KHR-extension lobe uniforms.
+//
+// One UBO per extension. Each lobe's libblock inherits ONLY its own
+// UBO, so layout drift in one extension can't affect another (the bug
+// that bit diffuse_transmission_color when everything was crammed into
+// a single block). Within each UBO: strict std140 order — vec4 first,
+// floats second, ints last. Colors use vec4 (.rgb in shader; alpha
+// unused) to dodge vec3 alignment ambiguity entirely.
+///////////////////////////////////////////////////////////////
+// Cross-lobe state — currently just the probe-capture gate. Lobes that
+// need it (transmission, volume) inherit ublk_pbr_state.
+///////////////////////////////////////////////////////////////
+uniform_block ublk_pbr_state(descriptor_set 0) {
+  int rendering_probe;
+}
+///////////////////////////////////////////////////////////////
+uniform_block ublk_pbr_transmission(descriptor_set 0) {
+  float transmission_factor;
+  // P3.D — separate roughness for the refracted env sample. When
+  // has_transmission_roughness is 0, the lobe falls back to surf.roughness
+  // (glTF spec behavior). When set, surf.transmission_roughness drives
+  // the mip level of env_cube_spec_wbias independently of the BRDF roughness.
+  float transmission_roughness;
+  int   has_transmission;
+  int   has_transmission_roughness;
+}
+///////////////////////////////////////////////////////////////
+uniform_block ublk_pbr_ior(descriptor_set 0) {
+  float ior_value;
+  int   has_ior;
+}
+///////////////////////////////////////////////////////////////
+uniform_block ublk_pbr_volume(descriptor_set 0) {
+  vec4  attenuation_color;
+  float volume_thickness_factor;
+  float attenuation_distance;
+  int   has_volume;
+}
+///////////////////////////////////////////////////////////////
+uniform_block ublk_pbr_diffuse_transmission(descriptor_set 0) {
+  vec4  diffuse_transmission_color;
+  float diffuse_transmission_factor;
+  int   has_diffuse_transmission;
+}
+///////////////////////////////////////////////////////////////
+uniform_block ublk_pbr_specular(descriptor_set 0) {
+  vec4  specular_color;
+  float specular_factor;
+  int   has_specular;
+}
+///////////////////////////////////////////////////////////////
+uniform_block ublk_pbr_clearcoat(descriptor_set 0) {
+  float clearcoat_factor;
+  float clearcoat_roughness;
+  int   has_clearcoat;
+}
+///////////////////////////////////////////////////////////////
+uniform_block ublk_pbr_sheen(descriptor_set 0) {
+  vec4  sheen_color;
+  float sheen_factor;
+  float sheen_roughness;
+  int   has_sheen;
+}
+///////////////////////////////////////////////////////////////
+uniform_block ublk_pbr_iridescence(descriptor_set 0) {
+  float iridescence_factor;
+  int   has_iridescence;
+}
+///////////////////////////////////////////////////////////////
+// PBR2 Phase 3 (P3.D) — KHR_materials_subsurface (in-flight).
+// Per-channel radius drives the SSSS blur kernel scale (mm; skin ~ (1.4,
+// 0.5, 0.3)). factor blends the blurred diffuse back with the raw diffuse
+// at SSSS-composite time. has_subsurface is the gate.
+uniform_block ublk_pbr_subsurface(descriptor_set 0) {
+  vec4  subsurface_color;    // .rgb tint; .a unused
+  vec4  subsurface_radius;   // .rgb per-channel radius; .a unused
+  float subsurface_factor;
+  int   has_subsurface;
 }
 ///////////////////////////////////////////////////////////////
 sampler_set sset_std_lighting (descriptor_set 0) {
@@ -115,10 +208,11 @@ sampler_set sset_std_pbr(descriptor_set 0) {
 ///////////////////////////////////////////////////////////////
 uniform_block ublk_std_lighting (descriptor_set 0) {
   //////////////////////////////
-  vec3 LightMapColors[8];        
+  vec3 LightMapColors[8];
   //////////////////////////////
   int point_light_count;
   int spot_light_count;
+  int has_reflection_probe;
 }
 
 ///////////////////////////////////////////////////////////////
@@ -152,6 +246,7 @@ vertex_interface vif_PC {
 fragment_interface fif_PC : vif_PC {
   outputs {
     layout(location = 0) vec4 out_clr;
+    layout(location = 1) vec4 out_diffuse;   // P3.B sentinel
   }
 }
 ///////////////////////////////////////////////////////////////
@@ -235,3 +330,28 @@ libblock lib_pbr_vtx_instanced_vc : ublk_std_matrices : storage_instancing {
   }
 } // lib_pbr_vtx_instanced_vc
 ///////////////////////////////////////////////////////////////
+// MATRICES-ONLY instancing: a SEPARATE single-array block so the buffer is fully dynamic
+// (count-sized) — std430 allows one runtime array per block, so matrices get their own block,
+// no colors / pickids. Per-instance color is dropped (frg_clr = white); the material's baseColor
+// shows through. Used by drawables that only need per-instance transforms (e.g. terrain scatter).
+storage_interface storage_inst_mtx (descriptor_set 0) {
+  buffer layout(std430) inst_mtx { mat4 _instance_matrices[]; };   // runtime array -> count-sized
+}
+libblock lib_pbr_vtx_instanced_mtxonly : ublk_std_matrices : storage_inst_mtx {
+  void vs_instanced_mtxonly(vec4 pos, vec3 nrm, vec3 bin) {
+    mat4 instance_matrix = _instance_matrices[gl_InstanceIndex];
+    mat3 instance_rot = mat3(instance_matrix);
+    vec4 cpos         = mv * (instance_matrix * pos);
+    vec3 wnormal      = normalize(instance_rot * nrm);
+    vec3 wbitangent   = normalize(instance_rot * bin);
+    vec3 wtangent     = cross(wbitangent, wnormal);
+    frg_wpos    = m * (instance_matrix * pos);
+    frg_uv0     = uv0 * vec2(1, -1);
+    frg_tbn     = mat3(wtangent, wbitangent, wnormal);
+    frg_camz    = wnormal.xyz;
+    frg_camdist = -cpos.z;
+    frg_clr     = vec4(1.0);   // no per-instance color -> material baseColor shows through
+  }
+} // lib_pbr_vtx_instanced_mtxonly
+///////////////////////////////////////////////////////////////
+// cache-probe2 1781278793

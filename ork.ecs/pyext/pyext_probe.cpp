@@ -44,7 +44,11 @@ void pyinit_probe(py::module& module_ecs) {
           .def_property(
               "renderLayer",
               [](probecompdata_ptr_t cd) -> std::string { return cd->_renderLayer; },
-              [](probecompdata_ptr_t cd, const std::string& val) { cd->_renderLayer = val; });
+              [](probecompdata_ptr_t cd, const std::string& val) { cd->_renderLayer = val; })
+          .def_property(
+              "dynamic",
+              [](probecompdata_ptr_t cd) -> bool { return cd->_dynamic; },
+              [](probecompdata_ptr_t cd, bool val) { cd->_dynamic = val; });
   type_codec->registerStdCodec<probecompdata_ptr_t>(probecompdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto probesysdata_type = //

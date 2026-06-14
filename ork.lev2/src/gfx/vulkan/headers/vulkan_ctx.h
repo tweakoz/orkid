@@ -229,6 +229,26 @@ struct VkGeometryBufferInterface final : public GeometryBufferInterface {
       size_t instance_count,
       size_t first_instance) final;
 
+  // GPU-driven indirect draws (count from a compute-written storage buffer) — see gbi.h.
+  void DrawInstancedIndexedPrimitiveIndirectEML(
+      const VertexBufferBase& VBuf,
+      const IndexBufferBase& IdxBuf,
+      PrimitiveType eType,
+      const FxShaderStorageBuffer* indirect_args,
+      size_t args_offset = 0) final;
+
+  void DrawIndirectEML(
+      PrimitiveType eType,
+      const FxShaderStorageBuffer* indirect_args,
+      size_t args_offset = 0) final;
+
+  void DrawIndexedIndirectEML(
+      const FxShaderStorageBuffer* index_buffer,
+      PrimitiveType eType,
+      const FxShaderStorageBuffer* indirect_args,
+      size_t args_offset = 0,
+      int index_size = 4) final;
+
   //////////////////////////////////////////////
   // nvidia mesh shaders
   //////////////////////////////////////////////
@@ -549,6 +569,12 @@ struct VkTextureInterface final : public TextureInterface {
   void _initTextureFromRtBuffer(RtBuffer* rtb);
   void initTextureArray2DFromData(TextureArray* array, TextureArrayInitData tid) final;
 
+  // chunked-upload API (see ork/lev2/gfx/txi.h)
+  void reserveTexture(Texture* tex, int w, int h, int num_mips, EBufferFormat fmt) final;
+  void reserveTextureArray(TextureArray* tarr, int w, int h, int num_slices, int num_mips, EBufferFormat fmt) final;
+  void uploadTextureRegion(Texture* tex, const TextureRegionUpload& upload, ::ork::void_lambda_t on_complete) final;
+  void finalizeUpload(Texture* tex, ::ork::void_lambda_t on_complete) final;
+
   /////////////////////////////
   // init a blank texture array
   /////////////////////////////
@@ -655,7 +681,10 @@ struct VkFxInterface final : public FxInterface {
   void bindUniformBuffer(const FxUniformBlock* block, FxUniformBuffer* buffer) final;
 
   // ssbo
-  FxShaderStorageBuffer* createStorageBuffer(size_t length) final;
+  FxShaderStorageBuffer* createStorageBuffer(
+      size_t length,
+      StorageBufferUsage usage   = StorageBufferUsage::DEFAULT,
+      BufferResidency    residency = BufferResidency::HOST) final;
   storagebuffermappingptr_t mapStorageBuffer(
       FxShaderStorageBuffer* b,
       size_t base,
@@ -734,15 +763,11 @@ struct VkComputeInterface : public ComputeInterface {
 
   void dispatchCompute(const FxComputeShader* shader, uint32_t numgroups_x, uint32_t numgroups_y, uint32_t numgroups_z) final;
 
-  void dispatchComputeIndirect(const FxComputeShader* shader, int32_t* indirect) final;
+  void dispatchComputeIndirect(const FxComputeShader* shader, FxShaderStorageBuffer* args, size_t args_offset = 0) final;
 
 
   void bindStorageBuffer(const FxComputeShader* shader, uint32_t binding_index, FxShaderStorageBuffer* buffer) final;
-
-#if defined(ENABLE_PYTORCH)
-  FxShaderStorageBuffer* storageBufferFromTensor(torchtensor_ptr_t tensor) final;
-  void copyTensorIntoStorageBuffer(FxShaderStorageBuffer* ssbo, torchtensor_ptr_t tensor, size_t dest_offset) final;
-#endif
+  void bindStorageBufferOnBlock(const FxComputeShader* shader, FxShaderStorageBuffer* buffer, const FxShaderStorageBlock* block) final;
 
   void bindImage(const FxComputeShader* shader, uint32_t binding_index, Texture* tex, ImageBindAccess access) final;
   void bindSampler(const FxComputeShader* shader, uint32_t binding_index, Texture* tex) final;
@@ -759,6 +784,21 @@ struct VkComputeInterface : public ComputeInterface {
   // Dedicated compute command buffer
   VkCommandBuffer _computeCmdBuf = VK_NULL_HANDLE;
   uint32_t _dispatchCount = 0;
+  // bumped each beginDispatchPhase; pipelines recycle their per-dispatch descriptor
+  // set ring when the generation changes (prior-phase command buffer has completed).
+  uint64_t _dispatchGeneration = 0;
+
+  // ---- C.5 P3b: NON-BLOCKING submit (flag: ORK_HM_NB_SUBMIT=1; blocking = the soak-default).
+  // Depth-1 overlap: endDispatchPhase submits with the persistent fence and RETURNS; the wait
+  // happens at the next hazard point — the next beginDispatchPhase (cmdbuf reset + descriptor-ring
+  // recycling + COW-pool reuse all become safe there) or ANY host storage-buffer map (param
+  // rewrites, readbacks). GPU->GPU ordering vs the render needs nothing extra: same VkQueue,
+  // submission order + the end-phase barrier. Waits for the pending phase's fence (no-op if none).
+  void syncPendingDispatch();
+  VkFence _phaseFence  = VK_NULL_HANDLE; // persistent (created on first submit; never destroyed
+                                         // post-shutdown per the teardown-funnel lesson)
+  bool _phasePending   = false;          // a submitted-but-unwaited phase is in flight
+  bool _nonblocking    = false;          // ORK_HM_NB_SUBMIT=1 (read once in the ctor)
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -844,6 +884,30 @@ public:
   ///////////////////////////////////////////////////////////////////////
 
   ~VkContext();
+
+  // Pre-destruction Vulkan teardown. Releases the presentation
+  // surface (when owned) and drops the device reference while the
+  // owning shared_ptrs are still live. Called from
+  // Context::shutdown(); the eventual ~VkContext is then a no-op
+  // path that skips the surface destroy since the field is null.
+  void _doShutdown() final;
+
+  // Vertex/index buffer teardown funneled through the context so it can be gated on shutdown:
+  // BEFORE _doShutdown() it queues the VkBuffer for deferred cleanup (the old destructor body);
+  // AFTER shutdown (device + command buffers gone) it is a NO-OP, avoiding the post-shutdown
+  // destructor abort. Called from ~VulkanVertexBuffer / ~VulkanIndexBuffer.
+  void destroyVertexBuffer(vkbuffer_ptr_t vkbuffer);
+  void destroyIndexBuffer(vkbuffer_ptr_t vkbuffer);
+  // raw-Vulkan-handle teardown, funneled through the context so it is a NO-OP after _doShutdown()
+  // (device gone). Called from VulkanBuffer / VulkanImageObject / VulkanMemoryForImage /
+  // VkComputePipelineState destructors. Bookkeeping (ref counts etc.) stays in those dtors.
+  void destroyBuffer(VkBuffer buffer);
+  void destroyImageMemory(VkDeviceMemory mem);
+  void destroyImageObject(VkImageView view, VkImage image, VkDeviceMemory mem);
+  void destroyComputePipelineState(
+      VkPipeline pipeline, VkPipelineLayout layout,
+      VkDescriptorSetLayout dsl, const std::vector<VkDescriptorPool>& pools);
+  bool _isShutdown = false;
 
   void FxInit();
 
@@ -951,7 +1015,10 @@ public:
   VkDevice _vkdevice;
   VkPhysicalDevice _vkphysicaldevice;
   vkdeviceinfo_ptr_t _vkdeviceinfo;
-  VkSurfaceKHR _vkpresentationsurface;
+  // Default-initialized so the loader (offscreen) path, which never
+  // creates a presentation surface, doesn't trip _doShutdown's
+  // vkDestroySurfaceKHR with a poison-pattern uninitialized handle.
+  VkSurfaceKHR _vkpresentationsurface = VK_NULL_HANDLE;
   vkswapchaincaps_ptr_t _vkpresentation_caps;
   std::vector<const char*> _device_extensions;
   size_t _num_queue_types = 0;

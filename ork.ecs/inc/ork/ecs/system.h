@@ -104,6 +104,12 @@ struct System : public ork::Object {
 public:
   virtual systemkey_t systemTypeDynamic() = 0;
 
+  // RENDER-SYNC systems (the scenegraph) keep updating while the simulation is PAUSED —
+  // the renderer reads the camera from the PUBLISHED draw buffer, so the scene must keep
+  // enqueueing for the view to stay live (view-dependent effects, ui camera). Gameplay
+  // systems return false (default) and hold while paused.
+  virtual bool updatesWhilePaused() const { return false; }
+
   Simulation* simulation() {
     return _simulation;
   }
@@ -111,6 +117,9 @@ public:
   inline const SystemData* sysdata() const { return _systemData; }
 
   void _notify(token_t evID, evdata_t data);
+  // synchronous request entry (public like _notify — the system-SCRIPT path calls
+  // it directly on the update thread; no controller queue involved)
+  void _request(impl::sys_response_ptr_t response, token_t evID, evdata_t data);
   varmap::varmap_ptr_t varmap() { return _varmap; }
   
 protected:
@@ -142,7 +151,6 @@ protected:
   
   void _render(Simulation* psi, ui::drawevent_constptr_t drwev);
   void _renderWithStandardCompositorFrame(Simulation* psi, lev2::standardcompositorframe_ptr_t sframe);
-  void _request(impl::sys_response_ptr_t response, token_t evID, evdata_t data);
 
   virtual void _onGpuInit(Simulation* psi, lev2::Context* ctx);
   virtual void _onGpuLink(Simulation* psi, lev2::Context* ctx);

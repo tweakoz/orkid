@@ -218,6 +218,24 @@ void pyinit_datablock(py::module& module_core) {
               })
           .def_static("setDataBlock", [](uint64_t key, datablock_ptr_t db) { DataBlockCache::setDataBlock(key, db); })
           .def_static("removeDataBlock", [](uint64_t key) { DataBlockCache::removeDataBlock(key); })
+          // namespaced API: <staging>/<cacheName>/<hash>.bin
+          .def_static(
+              "findDataBlockNamed",
+              [](const std::string& cacheName, uint64_t key) -> datablock_ptr_t {
+                return DataBlockCache::findDataBlock(cacheName, key);
+              })
+          .def_static(
+              "setDataBlockNamed",
+              [](const std::string& cacheName, uint64_t key, datablock_ptr_t db) {
+                DataBlockCache::setDataBlock(cacheName, key, db);
+              })
+          .def_static(
+              "removeDataBlockNamed",
+              [](const std::string& cacheName, uint64_t key) { DataBlockCache::removeDataBlock(cacheName, key); })
+          // size-cap a named cache dir (evict oldest-by-mtime until <= maxBytes).
+          .def_static(
+              "evictToSize",
+              [](const std::string& cacheName, uint64_t maxBytes) { DataBlockCache::evictToSize(cacheName, maxBytes); })
           .def_property_readonly_static("totalMemoryConsumed", []() -> size_t { return DataBlockCache::totalMemoryConsumed(); });
 }
 

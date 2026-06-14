@@ -741,6 +741,16 @@ void LightManager::Clear() {
   mcollector.Clear();
 }
 
+lightprobe_ptr_t LightManager::findProbeByName(const std::string& name) const {
+  if (name.empty()) return nullptr;
+  for (auto& p : _lightprobes) {
+    if (p && p->_name == name) {
+      return p;
+    }
+  }
+  return nullptr;
+}
+
 void LightManager::gpuInit(Context* ctx) {
   if(_needs_gpu_init){
     if(0)printf("LightManager::gpuInit this=%p color_array=%p depth_array=%p\n",
@@ -915,10 +925,21 @@ void LightManager::bindEnumeratedToStorageBuffer( Context* ctx,                 
   //////////////////////////////////////////
 
   size_t index = 0;
+  // ORKID_DEBUG_LIGHTS=1 — throttled dump of what actually reaches the GPU
+  // (the post-138a333 linear falloff makes radius LOAD-BEARING: a light
+  // whose radius never made it uploads as a 1m bubble = invisible).
+  static const bool s_debug_lights = (getenv("ORKID_DEBUG_LIGHTS") != nullptr);
+  static int s_dbg_counter = 0;
+  bool dbg_this_frame = s_debug_lights and ((s_dbg_counter++ & 127) == 0);
+  if (dbg_this_frame)
+    printf("[lights] untextured_pointlights<%zu>\n", enumerated_lights->_untexturedpointlights.size());
   for (auto light : enumerated_lights->_untexturedpointlights) {
     auto C                                                    = fvec4(light->color(), light->intensity());
     auto P                                                    = light->worldPosition();
     float R                                                   = light->radius();
+    if (dbg_this_frame)
+      printf("[lights]   pos<%.1f %.1f %.1f> color<%.2f %.2f %.2f> intens<%.2f> radius<%.2f>\n",
+             P.x, P.y, P.z, C.x, C.y, C.z, C.w, R);
     size_t v4_offset                                          = index * vec4_stride;
     pl_mapped->ref<fvec4>(base_color + v4_offset)             = C;
     pl_mapped->ref<fvec4>(base_sizbias + v4_offset)           = fvec4(R, 0, 0, 1);

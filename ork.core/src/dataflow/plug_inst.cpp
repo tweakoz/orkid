@@ -71,16 +71,10 @@ bool InPlugInst::isDirty() const {
 void InPlugInst::_doSetDirty(bool bv) { // override
 }
 bool InPlugInst::connectedIsVarying() const{
-  bool rval = false;
   if( _connectedOutput ){
-    rval = _connectedOutput->isVarying();
-    if(rval){
-      std::string plugname=_plugdata->_name;
-      printf("plug<%s> is varying\n",plugname.c_str());
-    }
+    return _connectedOutput->isVarying();
   }
-
-  return rval;
+  return false;
  }
 
 OutPlugInst::OutPlugInst(const OutPlugData* plugdata, ModuleInst* minst)
@@ -134,6 +128,18 @@ const fvec3& fvec3xfinpluginst::value() const {
 
   _xfvalue = inpluginst<Vec3XfPlugTraits>::value();
 
+  return _xfvalue;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+fvec4xfinpluginst::fvec4xfinpluginst(const fvec4xfinplugdata_t* d, ModuleInst* minst)
+    : inpluginst<Vec4XfPlugTraits>(d, minst)
+    , _data(d) {
+}
+
+const fvec4& fvec4xfinpluginst::value() const {
+  _xfvalue = inpluginst<Vec4XfPlugTraits>::value();
   return _xfvalue;
 }
 

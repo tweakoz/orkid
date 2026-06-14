@@ -70,6 +70,7 @@ struct RenderContextInstData {
 
   bool _isSkinned                   = false;
   bool _isInstanced                 = false;
+  bool _isSSBOSourced               = false; // vertices pulled from an SSBO (FWD_SSBO_CUSTOM variant)
   int miMaterialIndex               = 0;
   int miMaterialPassIndex           = 0;
   const IRenderer* mpActiveRenderer = nullptr;
@@ -81,7 +82,8 @@ struct RenderContextInstData {
   const XgmMaterialStateInst* mMaterialInst = nullptr;
   fxpipelinecache_constptr_t _pipeline_cache;
   pickvariant_t _pickID;
-  pbr::radiancemaps_ptr_t _envmapOverride;  // per-drawable env map override
+  pbr::radiancemaps_ptr_t _envmapOverride;  // per-drawable env map override (equirect)
+  lightprobe_ptr_t        _probeOverride;   // per-drawable cube probe override
 };
 
 ///////////////////////////////////////////////////////////////////////////////

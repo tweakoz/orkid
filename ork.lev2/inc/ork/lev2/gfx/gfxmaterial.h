@@ -137,6 +137,8 @@ public:
   virtual void EndBlock(Context* pTARG)                                                                        = 0;
   fxpipelinecache_constptr_t pipelineCache(fxpipelinepermutation_set_constptr_t perms=nullptr) const;
   virtual fxpipelinecache_constptr_t _doFxPipelineCache(fxpipelinepermutation_set_constptr_t perms) const { return nullptr; }
+  // instanced drawables read this to pick the matrices-only dynamic-block variant (FWD_CT_NM_IM_NI_MO).
+  virtual bool instancedMatricesOnly() const { return false; }
 
   void SetTexture(ETextureDest edest, const TextureContext& htex);
   const TextureContext& GetTexture(ETextureDest edest) const;
@@ -195,7 +197,12 @@ public:
 
   ork::varmap::VarMap _varmap;
   
+  // E.6/2.12 live-rebind contract: every bindParam() bumps the stamp; cached
+  // FxPipelines lazily re-overlay _bound_params when their seen-stamp lags
+  // (FxPipeline::_syncMaterialParams). A rebind AFTER pipelines exist is
+  // therefore live on the next draw — no per-draw closures needed.
   std::unordered_map<fxparam_constptr_t, varval_t> _bound_params;
+  uint64_t _bound_params_stamp = 1;
   std::vector<FxPipeline::statelambda_t> _state_lambdas;
 
   //

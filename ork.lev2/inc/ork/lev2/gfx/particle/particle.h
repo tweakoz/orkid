@@ -17,6 +17,8 @@
 #include <ork/kernel/fixedlut.h>
 #include <ork/rtti/RTTIX.inl>
 #include <random>
+#include <mutex>
+#include <vector>
 
 namespace ork { namespace lev2 { namespace particle {
 
@@ -247,6 +249,12 @@ struct BasicParticle {
   ork::fvec3 mLastVelocity;
   ork::fvec3 mOrigin;
 
+  // Generic per-particle scratch slot. Default vec4(0) at emit; the only
+  // consumer in v1 is GradientAtlasMaterial (samples atlas Y from _aux.x).
+  // Emitters can override via the Aux input plug (#47). Forces and the pool
+  // do not read/write this — it's emitter→renderer only.
+  ork::fvec4 _aux = ork::fvec4(0, 0, 0, 0);
+
   bool IsDead(void) {
     return (mfAge >= mfLifeSpan);
   }
@@ -310,7 +318,51 @@ struct Context {
   EventQueueLut mEventQueueLut;
   float mfCurrentTime;
   drawable_ptr_t _drawable;
-  rcid_lambda_t _rcidlambda;
+  // Per-renderer render lambdas, keyed by the registering renderer INSTANCE
+  // (idempotent across graph re-links — a reset/relink REPLACES, never
+  // duplicates). Draw order is EXPLICIT via the renderer data's reflected
+  // draw_order (lower draws first — smoke under fire); ties keep
+  // registration (link/topo) order via the stable insert.
+  //
+  // THREAD CONTRACT: registration happens on the UPDATE thread (graph link —
+  // which for ECS dynamic spawns can interleave with rendering of already-
+  // attached slots), iteration on the RENDER thread. Mutating the vector
+  // under a reader was an intermittent spawn-time SEGV — so registration
+  // locks, and renderers snapshot via renderLambdas() (tiny copy, per draw).
+  struct RcidLambdaEntry {
+    const void* _key   = nullptr;
+    int _order         = 0;
+    rcid_lambda_t _lambda;
+  };
+  void setRenderLambda(const void* key, int order, rcid_lambda_t lambda) {
+    std::lock_guard<std::mutex> lock(_rcid_mutex);
+    for (auto it = _rcidlambdas.begin(); it != _rcidlambdas.end(); ++it) {
+      if (it->_key == key) { // re-link: remove, then re-insert at sorted spot
+        _rcidlambdas.erase(it);
+        break;
+      }
+    }
+    auto pos = _rcidlambdas.begin();
+    while (pos != _rcidlambdas.end() and pos->_order <= order)
+      ++pos; // insert AFTER equal orders = stable tie-break on link order
+    _rcidlambdas.insert(pos, RcidLambdaEntry{key, order, std::move(lambda)});
+  }
+  std::vector<RcidLambdaEntry> renderLambdas() const {
+    std::lock_guard<std::mutex> lock(_rcid_mutex);
+    return _rcidlambdas;
+  }
+
+private:
+  mutable std::mutex _rcid_mutex;
+  std::vector<RcidLambdaEntry> _rcidlambdas;
+
+public:
+
+  // When true, emitter modules SKIP _emit() in their compute() — existing
+  // particles continue to age/move/render, but no new ones are produced.
+  // Used by ECS ParticlesComponent's DRAINING state (STOP event): freeze
+  // emission while letting in-flight particles complete naturally.
+  bool _inhibit_emission = false;
 
   EventQueue* MergeQueue(Char4 qname);
   EventQueue* FindQueue(Char4 qname);
@@ -368,6 +420,19 @@ struct EmitterCtx {
   fvec3 mLastPosition;
   fvec3 mOffsetVelocity;
   fvec3 _userDirection;
+
+  // Per-emit aux value — written into each new particle's _aux at spawn.
+  // Emitters set this from their Aux input plug before calling Emit().
+  // Default vec4(0) matches the particle struct's default.
+  fvec4 mAux = fvec4(0, 0, 0, 0);
+
+  // Per-particle aux hook. When set, DirectedEmitter calls this for each
+  // newly-spawned particle INSTEAD of writing mAux directly. The emitter
+  // installs a lambda that (a) writes the particle's mfRandom into the
+  // pool's Random output plug, then (b) reads the Aux input plug — so
+  // chains containing Expr.ptc.random / Expr.rand_range evaluate per
+  // particle. When null, the simple per-cohort mAux path is used.
+  std::function<void(BasicParticle*)> mPerParticleAux;
 
   EmitterCtx();
 };

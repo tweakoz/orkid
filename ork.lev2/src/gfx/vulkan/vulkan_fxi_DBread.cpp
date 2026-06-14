@@ -530,6 +530,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     OrkAssert(str_ssbo == "ssbo");
     auto str_ssbo_name = uniforms_input_stream->ReadIndexedString(chunkreader);
     auto dset_id = uniforms_input_stream->ReadItem<size_t>();
+    auto binding_id = uniforms_input_stream->ReadItem<size_t>(); // real SPIR-V binding
     auto str_buffer_name = uniforms_input_stream->ReadIndexedString(chunkreader);
     auto buffer_size = uniforms_input_stream->ReadItem<size_t>();
 
@@ -538,6 +539,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     vk_ssbo->_name = str_ssbo_name;
     vk_ssbo->_buffer_name = str_buffer_name;
     vk_ssbo->_descriptor_set_id = dset_id;
+    vk_ssbo->_binding_id = binding_id;
     vk_ssbo->_buffer_size = buffer_size;
 
     // Create FxShaderStorageBlock
@@ -699,7 +701,11 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         refs->_uniblks[str_uniblk]  = vk_uniblk;
         // printf("  -> UBO<%s> IN DESCRIPTOR_SET<%zu>\n", str_uniblk.c_str(), vk_uniblk->_descriptor_set_id);
       }
-      OrkAssert(refs->_uniblks.size() <= 8);
+      // Defensive cap — not a hardware limit. Vulkan spec minimum for
+      // maxPerStageDescriptorUniformBuffers is 12; MoltenVK + most desktop
+      // GPUs support 16+. Bumped from 8 in PBR2 Phase 2 when the per-lobe
+      // UBO split pushed the PBR fragment shader's UBO count over 8.
+      OrkAssert(refs->_uniblks.size() <= 16);
     }
     /////////////////////////////////
     auto num_issbos = shader_input_stream->ReadItem<size_t>();

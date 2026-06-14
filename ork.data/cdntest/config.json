@@ -2,7 +2,7 @@
   "namespaces": {
     "cdntest": {
       "encryption_key": "api_key",
-      "upload_location": "<cdntest_remote>/upload"
+      "remote_location": "cdntest_remote"
     }
   },
   "locations": {

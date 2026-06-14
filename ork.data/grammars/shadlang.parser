@@ -62,8 +62,8 @@ DataTypeWithUserTypes <| sel {
 }|>
 
 DataDeclaration <| sel {
-  [TypedIdentifier L_SQUARE IntegerLiteral R_SQUARE] : "ArrayDeclaration"
-  [TypedIdentifier] 
+  [TypedIdentifier L_SQUARE opt{IntegerLiteral} R_SQUARE] : "ArrayDeclaration"
+  [TypedIdentifier]
 }|>
 
 SamplerDeclaration <| sel {

@@ -1,0 +1,348 @@
+///////////////////////////////////////////////////////////////////////////////
+// PBR2 Phase 2 — glTF KHR-extension lobe contract.
+//
+// One UBO per extension (ublk_pbr_<lobe> in stdtools.i2). Each libblock
+// inherits ONLY its own UBO so layout drift in one extension can't
+// corrupt another. ublk_pbr_state is shared (just rendering_probe today).
+//
+// Colors are vec4 in the UBO (.rgb used in shader; .a unused). This dodges
+// vec3 alignment ambiguity in std140.
+//
+// fxv2 doesn't support `inout` yet — each lobe takes the state BY VALUE
+// and returns the mutated state. Modern GLSL compilers SROA struct copies
+// into registers; the cost matches an inout reference.
+//
+//   PbrLobeState eval_<lobe>(PbrLobeState st, PbrData pbd, vec3 eyepos);
+///////////////////////////////////////////////////////////////////////////////
+
+import "deftools.i2";
+import "stdtools.i2";
+
+///////////////////////////////////////////////////////////////////////////////
+libblock lib_pbr_transmission
+  : types_def
+  : ublk_pbr_transmission
+  : ublk_pbr_ior
+  : ublk_pbr_volume
+  : ublk_pbr_state
+  : ublk_std_pbr
+  : ublk_std_lighting
+  : lib_envmapping {
+  // KHR_materials_transmission — IBL variant. Sample env_specular in
+  // the Snell-refracted direction (refraction at the front surface);
+  // blend via (1 - F) so high-Fresnel grazing angles favor reflection,
+  // face-on favors transmission. Skip during probe captures.
+  //
+  // Reads ior_value from ublk_pbr_ior. If has_ior=0, falls back to
+  // the glTF default IOR of 1.5.
+  //
+  // v1 is IBL-only: no scene-behind framebuffer sampling. P3 adds the
+  // post-opaque-pass blit + MapOpaqueBackground sampler.
+  PbrLobeState eval_transmission(PbrLobeState st, SurfaceFragment surf, vec3 eyepos) {
+    if (surf.has_transmission == 0)      return st;
+    if (surf.transmission_factor <= 0.0) return st;
+    if (rendering_probe != 0)            return st;  // probe sees opaque-only
+    // Effective IOR — from surf (build_surface already resolved default 1.5).
+    float ior_eff = surf.ior;
+    // Snell refract at the front surface. refract(I, N, eta) takes the
+    // incident vector pointing INTO the surface; eta = n_outer / n_inner.
+    vec3 refr = refract(-st._V, st._N, 1.0 / ior_eff);
+    // Total internal reflection guard (refract returns vec3(0) on TIR).
+    if (dot(refr, refr) < 1e-6) return st;
+    // P3.D — sample env at a mip level driven by surf.transmission_roughness.
+    // build_surface falls that back to surf.roughness when the material
+    // didn't authore a separate transmission_roughness override, so
+    // glTF-default materials get roughness-driven blur for free; opt-in
+    // materials get an independent knob for art-directable rough glass.
+    float t_mip = (surf.transmission_roughness * surf.transmission_roughness)
+                  * (RoughnessLevels - 1.0);
+    vec3 env_refr;
+    if (has_reflection_probe != 0) {
+      env_refr = env_cube_spec_wbias(-refr, reflectionPROBE, t_mip) * SkyboxLevel;
+    } else {
+      env_refr = env_equirectangular_spec_wbias(-refr, MapSpecularEnv,
+                                                t_mip, 0.0) * SkyboxLevel;
+    }
+    // Schlick Fresnel with the modulated F0 (post-modulatory). The
+    // transmitted portion gets (1-F); reflected portion stays in the
+    // front BRDF and isn't double-counted.
+    float NdotV = clamp(dot(st._N, st._V), 0.0, 1.0);
+    vec3  F     = st._F0 + (vec3(1.0) - st._F0) * pow(1.0 - NdotV, 5.0);
+    vec3  oneF  = vec3(1.0) - F;
+    vec3  contribution = surf.transmission_factor * oneF * env_refr;
+    // P2.8 — KHR_materials_volume Beer-Lambert attenuation along the
+    // transmitted ray. Applied here (rather than in eval_volume) so the
+    // attenuation only affects the transmission contribution, not other
+    // accumulator entries. Read the volume params from surf.
+    //   absorbance    = -ln(attenuation_color) / attenuation_distance
+    //   transmittance = exp(-absorbance * volume_thickness_factor)
+    if (surf.has_volume != 0) {
+      vec3  attn_c = max(surf.attenuation_color.rgb, vec3(1e-4));
+      float attn_d = max(surf.attenuation_distance, 1e-4);
+      vec3  absorbance    = -log(attn_c) / attn_d;
+      vec3  transmittance = exp(-absorbance * surf.volume_thickness_factor);
+      contribution *= transmittance;
+    }
+    // P3.B — transmission is a specular-flavored lobe (refracted env
+    // sample). Pushed to the specular bucket.
+    st._accumulator.specular += contribution;
+    // NOTE: no weight_remaining debit yet — proper conservation needs
+    // diffuse/specular split (only diffuse should be attenuated by
+    // transmission). Deferred to Phase 3 alongside the framebuffer
+    // refraction path.
+    return st;
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+libblock lib_pbr_ior
+  : types_def
+  : ublk_pbr_ior {
+  PbrLobeState eval_ior(PbrLobeState st, SurfaceFragment surf, vec3 eyepos) {
+    if (surf.has_ior == 0) return st;
+    // P2.4 — KHR_materials_ior. Derive dielectric F0 from surf.ior:
+    //   F0_dielectric = pow((ior - 1) / (ior + 1), 2)
+    // then mix with metal F0 via st._metallic.
+    float f0d = pow((surf.ior - 1.0) / (surf.ior + 1.0), 2.0);
+    st._F0 = mix(vec3(f0d), st._F0, st._metallic);
+    return st;
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+libblock lib_pbr_volume
+  : types_def
+  : ublk_pbr_volume {
+  // KHR_materials_volume — Beer-Lambert attenuation actually lives in
+  // eval_transmission (lib_pbr_transmission inherits ublk_pbr_volume),
+  // because the attenuation must apply ONLY to the transmission
+  // contribution, not to other accumulator entries. This stub stays
+  // in the dispatch chain for symmetry; the real work is co-located
+  // with transmission.
+  PbrLobeState eval_volume(PbrLobeState st, SurfaceFragment surf, vec3 eyepos) {
+    return st;
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+libblock lib_pbr_diffuse_transmission
+  : types_def
+  : ublk_pbr_diffuse_transmission
+  : ublk_std_pbr
+  : ublk_std_lighting
+  : lib_envmapping {
+  // KHR_materials_diffuse_transmission — light passes through a thin
+  // material and exits the back side as Lambert-distributed scatter.
+  // Used for paper, leaves, lampshades, candle wax. Metals don't
+  // transmit, so the contribution is scaled by (1 - metallic).
+  PbrLobeState eval_diffuse_transmission(PbrLobeState st, SurfaceFragment surf, vec3 eyepos) {
+    if (surf.has_diffuse_transmission == 0)        return st;
+    if (surf.diffuse_transmission_factor <= 0.0)   return st;
+    float dialetric = 1.0 - st._metallic;
+    if (dialetric <= 0.0) return st;
+    // Spec-strict Lambertian diff-trans — sample the integrated back
+    // irradiance at -N (no view-direction dependence). Blurriest slice
+    // (RoughnessLevels-1) = maximally pre-integrated, matching the
+    // Lambertian "all back-hemisphere directions weighted equally"
+    // assumption of glTF KHR_materials_diffuse_transmission.
+    vec3 back_dir = -st._N;
+    vec3 env_back;
+    if (has_reflection_probe != 0) {
+      env_back = env_cube_spec_wbias(back_dir, reflectionPROBE,
+                                     RoughnessLevels - 1.0) * SkyboxLevel;
+    } else {
+      env_back = env_equirectangular_spec_wbias(back_dir, MapSpecularEnv,
+                                                RoughnessLevels - 1.0, 0.0)
+               * SkyboxLevel;
+    }
+    // Per glTF spec — diffuse_transmission_color IS the transmitted tint
+    // (not an albedo modulator); albedo is NOT multiplied here.
+    vec3 dt_tint      = surf.diffuse_transmission_color.rgb * surf.diffuse_transmission_factor;
+    vec3 contribution = dt_tint * env_back * dialetric;
+    // P3.B — diffuse_transmission is Lambertian backside scatter, by
+    // definition diffuse. Pushed to the diffuse bucket so SSSS can blur it.
+    st._accumulator.diffuse += contribution;
+    return st;
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+libblock lib_pbr_specular
+  : types_def
+  : ublk_pbr_specular {
+  PbrLobeState eval_specular(PbrLobeState st, SurfaceFragment surf, vec3 eyepos) {
+    if (surf.has_specular == 0) return st;
+    // P2.5 — KHR_materials_specular. Scale dielectric F0 by specular_factor
+    // and tint by specular_color (preserves metal F0 unchanged).
+    st._F0 = mix(st._F0 * surf.specular_factor * surf.specular_color.rgb, st._F0, st._metallic);
+    return st;
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+libblock lib_pbr_clearcoat
+  : types_def
+  : ublk_pbr_clearcoat
+  : ublk_std_pbr
+  : ublk_std_lighting
+  : lib_envmapping {
+  // KHR_materials_clearcoat — additive 2nd specular lobe with dielectric
+  // F0=0.04 (IOR 1.5 lacquer) and its own roughness, layered on top of
+  // the base BRDF. Energy chain: base BRDF gets multiplied by
+  // (1 - clearcoat_factor * F_cc) so total reflectance ≤ 1.
+  //
+  // No clearcoat normal map yet (scalar-only v1) — clearcoat uses the
+  // base normal. Reads SkyboxLevel + RoughnessLevels from ublk_std_pbr.
+  PbrLobeState eval_clearcoat(PbrLobeState st, SurfaceFragment surf, vec3 eyepos) {
+    if (surf.has_clearcoat == 0)        return st;
+    if (surf.clearcoat_factor <= 0.0)   return st;
+    // Schlick Fresnel with F0=0.04 (dielectric, IOR=1.5).
+    float NdotV = clamp(dot(st._N, st._V), 0.0, 1.0);
+    float F_cc  = 0.04 + (1.0 - 0.04) * pow(1.0 - NdotV, 5.0);
+    // Reflection vector — uses base normal; matches the pre-Phase-2
+    // env sampling convention.
+    vec3 refl = normalize(reflect(-st._V, st._N));
+    refl.x   *= -1.0;
+    refl.z   *= -1.0;
+    // Sample env at slice 0 (sharp mirror prefilter) for the cube path;
+    // probe path uses LOD-based blur driven by clearcoat_roughness.
+    vec3  env_cc;
+    if (has_reflection_probe != 0) {
+      vec3  cube_coord = vec3(-refl.x, refl.y, refl.z);
+      float cc_mip     = (surf.clearcoat_roughness * surf.clearcoat_roughness) * (RoughnessLevels - 1.0);
+      env_cc = textureLod(reflectionPROBE, cube_coord, cc_mip).xyz;
+    } else {
+      vec3 refl_equi = normalize(vec3(refl.x, -refl.y, refl.z));
+      env_cc = env_equirectangular_spec_wbias(refl_equi, MapSpecularEnv, 0.0, 0.0);
+    }
+    vec3 cc_contribution  = surf.clearcoat_factor * F_cc * env_cc * SkyboxLevel;
+    // P3.B — clearcoat is a 2nd specular lobe; specular bucket.
+    st._accumulator.specular += cc_contribution;
+    // Khronos spec — base BRDF attenuated by (1 - factor * F_cc).
+    st._weight_remaining *= (1.0 - surf.clearcoat_factor * F_cc);
+    return st;
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+libblock lib_pbr_sheen
+  : types_def
+  : ublk_pbr_sheen
+  : ublk_std_pbr
+  : ublk_std_lighting
+  : lib_envmapping {
+  // KHR_materials_sheen — Charlie's NDF + Ashikhmin V function for
+  // velvet/fabric appearance. Additive grazing-angle contribution.
+  // Reads SkyboxLevel + MapDiffuseEnv from ublk_std_pbr / sset_std_pbr.
+  PbrLobeState eval_sheen(PbrLobeState st, SurfaceFragment surf, vec3 eyepos) {
+    if (surf.has_sheen == 0) return st;
+    vec3 sheen_intensity = surf.sheen_color.rgb * surf.sheen_factor;
+    float max_sheen = max(max(sheen_intensity.r, sheen_intensity.g),
+                          sheen_intensity.b);
+    if (max_sheen <= 0.0) return st;  // glTF spec — color=0 ⇒ off
+    float NdotV    = clamp(dot(st._N, st._V), 0.0, 1.0);
+    float exponent = mix(5.0, 2.0, clamp(surf.sheen_roughness, 0.0, 1.0));
+    float grazing  = pow(1.0 - NdotV, exponent);
+    // Diffuse-like env sample at +N. Probe path samples at the
+    // blurriest mip to approximate the pre-integrated MapDiffuseEnv;
+    // the cube doesn't have a separate diffuse-irradiance map.
+    vec3 env_diffuse;
+    if (has_reflection_probe != 0) {
+      env_diffuse = env_cube_spec_wbias(st._N, reflectionPROBE,
+                                        RoughnessLevels - 1.0) * SkyboxLevel;
+    } else {
+      env_diffuse = env_equirectangular2(st._N, MapDiffuseEnv) * SkyboxLevel;
+    }
+    vec3 contribution = sheen_intensity * env_diffuse * grazing;
+    // P3.B — sheen is a grazing-angle specular lobe (Charlie BRDF);
+    // specular bucket (NOT diffuse despite using env_diffuse as source).
+    st._accumulator.specular += contribution;
+    return st;
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+libblock lib_pbr_iridescence
+  : types_def
+  : ublk_pbr_iridescence {
+  // KHR_materials_iridescence — thin-film interference. View-angle-
+  // dependent phase shift gives soap-bubble / oil-slick / jewel-beetle
+  // hue rotation. v1 hardcodes film IOR=1.3 and thickness=350 nm
+  // (mid-range of glTF spec's 100..400); P3 will plumb both as uniforms.
+  // Modulatory — mixes st._F0 per-channel toward the interference color.
+  PbrLobeState eval_iridescence(PbrLobeState st, SurfaceFragment surf, vec3 eyepos) {
+    if (surf.has_iridescence == 0)       return st;
+    if (surf.iridescence_factor <= 0.0)  return st;
+    float NdotV = clamp(dot(st._N, st._V), 0.001, 1.0);
+    // Snell — angle inside the film at IOR_film=1.3.
+    float eta2      = 1.3;
+    float sinT1     = sqrt(1.0 - NdotV * NdotV);
+    float sinT2     = sinT1 / eta2;
+    float cosT2     = sqrt(1.0 - sinT2 * sinT2);
+    // Round-trip optical path length through the film (nm).
+    float thickness = 350.0;
+    float opl       = 2.0 * eta2 * thickness * cosT2;
+    // Per-wavelength phase (R=620, G=550, B=470 nm).
+    vec3  phase     = vec3(opl) * vec3(6.28318 / 620.0,
+                                       6.28318 / 550.0,
+                                       6.28318 / 470.0);
+    // Interference fringes — cos(phase) → [-1,1] → [0,1].
+    vec3  interference = vec3(0.5) + 0.5 * vec3(cos(phase.r),
+                                                cos(phase.g),
+                                                cos(phase.b));
+    st._F0 = mix(st._F0, interference, surf.iridescence_factor);
+    return st;
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+// Two-phase dispatch:
+//   MODULATORY (ior, specular, iridescence) — mutate st._F0 / st._F.
+//                                              Must run BEFORE env_lighting
+//                                              so the front BRDF picks up
+//                                              the shifted Fresnel.
+//   ADDITIVE   (sheen, clearcoat, diff_trans, transmission, volume) — push
+//                                              into st._accumulator AND/OR
+//                                              debit st._weight_remaining.
+//                                              Run AFTER env_lighting.
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+libblock lib_pbr_subsurface
+  : types_def
+  : ublk_pbr_subsurface {
+  // KHR_materials_subsurface (in-flight) — screen-space SSSS doesn't have a
+  // per-pixel lobe evaluator in the forward shader. The UBO carries the
+  // material's subsurface params (color, radius, factor, has_*); build_surface()
+  // reads them into the SurfaceFragment and the fragment shader writes
+  // surf.subsurface_factor (gated by has_subsurface) into target1.alpha as the
+  // SSS mask. The actual blur happens in a screen-space post-pass.
+  //
+  // This libblock exists only to bring ublk_pbr_subsurface into scope for
+  // lib_pbr_lobes_all (mirrors lib_pbr_volume's stub pattern).
+}
+///////////////////////////////////////////////////////////////////////////////
+libblock lib_pbr_lobes_all
+  : lib_pbr_ior
+  : lib_pbr_specular
+  : lib_pbr_iridescence
+  : lib_pbr_sheen
+  : lib_pbr_clearcoat
+  : lib_pbr_diffuse_transmission
+  : lib_pbr_transmission
+  : lib_pbr_volume
+  : lib_pbr_subsurface {
+  PbrLobeState eval_pbr_lobes_modulatory(PbrLobeState st, SurfaceFragment surf, vec3 eyepos) {
+    st = eval_ior(st, surf, eyepos);
+    st = eval_specular(st, surf, eyepos);
+    st = eval_iridescence(st, surf, eyepos);
+    return st;
+  }
+  PbrLobeState eval_pbr_lobes_additive(PbrLobeState st, SurfaceFragment surf, vec3 eyepos) {
+    st = eval_sheen(st, surf, eyepos);
+    st = eval_clearcoat(st, surf, eyepos);
+    st = eval_diffuse_transmission(st, surf, eyepos);
+    st = eval_transmission(st, surf, eyepos);
+    st = eval_volume(st, surf, eyepos);
+    return st;
+  }
+  // Combined dispatch retained for any caller that hasn't been migrated to
+  // the modulatory/additive split — runs everything in Khronos order with
+  // env_lighting unaware of F0 mutations (deprecated path).
+  PbrLobeState eval_pbr_lobes(PbrLobeState st, SurfaceFragment surf, vec3 eyepos) {
+    st = eval_pbr_lobes_modulatory(st, surf, eyepos);
+    st = eval_pbr_lobes_additive(st, surf, eyepos);
+    return st;
+  }
+}

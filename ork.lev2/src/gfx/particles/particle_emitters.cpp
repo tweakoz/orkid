@@ -183,6 +183,8 @@ void SpiralEmitterData::describeX(class_t* clazz) {
         ptc->mVelocity     = dir * ctx.mfEmissionVelocity + ctx.mOffsetVelocity;
         ptc->mLastPosition = pos - (ptc->mVelocity * ctx.mfDeltaTime);
         ptc->mKey          = (void*)ctx.mKey;
+        if (ctx.mPerParticleAux) ctx.mPerParticleAux(ptc);
+        else                     ptc->_aux = ctx.mAux;
       }
     }
     ctx.mfEmitterMark -= float(icount);
@@ -242,6 +244,8 @@ void SpiralEmitterData::describeX(class_t* clazz) {
             // ctx.mfEmissionVelocity + ctx.mOffsetVelocity;
             ptc->mLastPosition = pos - (ptc->mVelocity * ctx.mfDeltaTime);
             ptc->mKey          = (void*)ctx.mKey;
+            if (ctx.mPerParticleAux) ctx.mPerParticleAux(ptc);
+            else                     ptc->_aux = ctx.mAux;
           }
         }
       }

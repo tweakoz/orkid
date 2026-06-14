@@ -157,7 +157,7 @@ public:
 
   static std::atomic<int> _gate;
 
-  static const int kmaxlayers = 8;
+  static const int kmaxlayers = 16; // doubled (owner call): role pre-creation + aux channels pushed past 8
   typedef ork::fixedlut<std::string, DrawQueueLayer*, kmaxlayers> LayerLut;
   typedef ork::fixedlut<int, prerendercallback_t, 32> CallbackLut_t;
 
@@ -316,6 +316,20 @@ struct Drawable {
 
   virtual drawqueueitem_ptr_t enqueueOnLayer(const DrawQueueTransferData& xfdata, DrawQueueLayer& buffer) const;
 
+  // Per-frame pre-render GPU hook. Invoked by Scene::gpuUpdate on the render thread BEFORE the
+  // render pass begins (a command buffer is bound, but no render pass is active — so a compute
+  // dispatch is legal here, unlike the render-callback / enqueue path). Default no-op; override
+  // for VIEW-INDEPENDENT GPU work, e.g. uploading per-instance data once per frame. Runs ONCE,
+  // globally (no camera selected yet — see ezapp_topwidget gpuUpdateAll). For view-dependent
+  // work (frustum cull) use onPreRender instead.
+  virtual void onGpuUpdate(lev2::Context* ctx) const {}
+
+  // Per-VIEWPORT pre-render GPU hook. Invoked by Scene::preRender from each SceneGraphViewport's
+  // DoRePaintSurface, BEFORE that viewport's render pass, with the viewport's own CameraMatrices
+  // (correct per-VP camera + aspect). Same compute-legal context as onGpuUpdate. Default no-op;
+  // override for VIEW-DEPENDENT GPU work such as a frustum-cull compute feeding an indirect draw.
+  virtual void onPreRender(lev2::Context* ctx, const CameraMatrices& cammtx) const {}
+
   void SetUserDataA(var_t data) {
     _implA = data;
   }
@@ -353,6 +367,12 @@ struct Drawable {
   on_render_rcid_t _rendercb_user;
   bool mEnabled;
   bool _pickable = true;
+  // Render-EXECUTION gate, read at render time on the render thread (atomic:
+  // toggled from the update thread). Distinct from mEnabled, which gates
+  // enqueue. Lives on the BASE because CallbackRenderable carries arbitrary
+  // drawable types (CallbackDrawable, InstancedModelDrawable, ...) and the
+  // renderer's pre-callback check must be valid for all of them.
+  std::atomic<bool> _renderEnabled{true};
   std::string _name;
   scenegraph::scene_ptr_t _sg;
   scenegraph::node_ptr_t _sgnode;
@@ -361,7 +381,32 @@ struct Drawable {
   uint64_t _drawable_type = 0;  // type identifier for enumeration (e.g. "model"_crcu)
   uint64_t _tag = 0;            // user-defined tag for custom filtering
   pbr::radiancemaps_ptr_t _envmapOverride;  // per-drawable environment map override
+  // Per-drawable cube probe override (live LightProbe). Resolved ONCE
+  // at the perfect time (consumer's _onActivateComponent, after every
+  // probe has gone through _onStageComponent and registered with
+  // LightManager). No per-frame name lookups; the resolved pointer
+  // propagates Drawable → IRenderable → RCID. Distinct from
+  // _envmapOverride: that's a baked equirect (MapSpecularEnv channel);
+  // _probeOverride is the live cube (reflectionPROBE channel).
+  lightprobe_ptr_t _probeOverride;
+  // PBR2 Phase 0 — when true, this drawable is skipped during probe
+  // cubemap captures. Used for noisy/transient drawables that
+  // shouldn't appear in reflections (particles, sprites, FX) or for
+  // visuals that would feedback-loop through their own probe (a
+  // glass surface that's also seen by a probe inside the glass).
+  // Default false; ParticlesDrawableData::createDrawable sets true.
+  bool _excludeFromProbe = false;
 };
+
+// Resolve `envpath` (file path, supports <token>/$ENV expansion) into a
+// RadianceMaps from the process-wide cache and stuff it into
+// drw->_envmapOverride. No-op on empty path. Called by:
+//   1. ModelDrawableData::createDrawable (legacy DrawableData-level
+//      override via _environmentMapPath).
+//   2. SceneGraphSystem post-createDrawable, per-NodeDef override
+//      authored via SG.component(nodes={..."envmap": probe_wrapper})
+//      (PBR2 Phase 0).
+void loadEnvMapOverride(Drawable* drw, const std::string& envpath);
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -485,17 +530,20 @@ struct InstancedDrawable : public Drawable {
   }
   drawqueueitem_ptr_t enqueueOnLayer(const DrawQueueTransferData& xfdata, DrawQueueLayer& buffer) const final;
 
-  // SSBO-based instancing - must match storage_interface storage_instancing in stdtools.i2
-  static constexpr size_t k_max_instances = 65536;
-  // SSBO layout offsets (std430):
+  // SSBO-based instancing — the array sizes in storage_interface storage_instancing
+  // (stdtools.i2) ARE this layout: the shader's fixed array lengths must equal
+  // k_max_instances or the colors/pickids offsets diverge and the shader reads
+  // zeros (black instances). Change BOTH together.
+  static constexpr size_t k_max_instances = 131072;
+  // SSBO layout offsets (std430), at k_max_instances=131072:
   // - matrices: 0 (64 bytes each)
-  // - colors: 64 * k_max_instances = 4194304 (16 bytes each)
-  // - pickids: 4194304 + 16 * k_max_instances = 5242880 (8 bytes each)
-  // - total: 5242880 + 8 * k_max_instances = 5767168 bytes (~5.5MB)
+  // - colors: 64 * k_max_instances = 8388608 (16 bytes each)
+  // - pickids: 8388608 + 16 * k_max_instances = 10485760 (8 bytes each)
+  // - total: 10485760 + 8 * k_max_instances = 11534336 bytes (~11MB)
   static constexpr size_t k_ssbo_offset_matrices = 0;
-  static constexpr size_t k_ssbo_offset_colors   = 64 * k_max_instances;  // 4194304
-  static constexpr size_t k_ssbo_offset_pickids  = k_ssbo_offset_colors + 16 * k_max_instances;  // 5242880
-  static constexpr size_t k_ssbo_total_size      = k_ssbo_offset_pickids + 8 * k_max_instances;  // 5767168
+  static constexpr size_t k_ssbo_offset_colors   = 64 * k_max_instances;  // 8388608
+  static constexpr size_t k_ssbo_offset_pickids  = k_ssbo_offset_colors + 16 * k_max_instances;  // 10485760
+  static constexpr size_t k_ssbo_total_size      = k_ssbo_offset_pickids + 8 * k_max_instances;  // 11534336
 
   mutable FxShaderStorageBuffer* _instanceSSBO = nullptr;
 
@@ -505,6 +553,10 @@ struct InstancedDrawable : public Drawable {
   mutable concurrent_triple_buffer<InstancedDrawableInstanceData> _idbuf_pool;
   mutable int _drawcount = 0;
   size_t _count;
+  // matrices-only instancing: the GPU instance buffer is a COUNT-SIZED matrices-only SSBO (no
+  // colors/pickids), so it is NOT bounded by k_max_instances. Set by the derived drawable before
+  // resize() (which then skips the k_max_instances cap). See project_instanced_matrices_only.
+  bool _matrices_only = false;
 };
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -545,6 +597,7 @@ struct InstancedDrawableInstanceData {
   bool _uses_alloc_free = false;
   bool _uses_picking = false;
   bool _uses_miscdata = false;
+  bool _matrices_only = false;  // when set, only _worldmatrices is allocated/copied (no colors/pickids/misc)
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -559,6 +612,11 @@ struct StringDrawableData : public DrawableData {
   drawable_ptr_t createDrawable() const final;
   std::string _initialString;
   fvec2 _pos2D;
+  // normalized corner anchor: (0,0)=top-left (default, legacy behavior), (0,1)=bottom-left,
+  // (1,0)=top-right, (1,1)=bottom-right. pos2D becomes the offset from the anchored corner —
+  // y-anchored text is BLOCK-HEIGHT compensated (the block's bottom rests on the margin), so a
+  // bottom-left HUD is anchor=(0,1), pos2D=(margin, -margin) at ANY line count / window size.
+  fvec2 _anchor;
   fvec4 _color;
   float _scale = 1.0f;
   std::string _font;
@@ -730,7 +788,6 @@ struct CallbackDrawable : public Drawable {
 
   ICallbackDrawableDataDestroyer* mDataDestroyer;
   lev2::CallbackRenderable::cbtype_t mRenderCallback;
-  std::atomic<bool> _renderEnabled{true};
   Q2LCBType* _enqueueOnLayerCallback;
   Q2LLambdaType _enqueueOnLayerLambda;
   RLCBType _renderLambda;

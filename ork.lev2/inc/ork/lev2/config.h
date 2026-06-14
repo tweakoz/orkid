@@ -23,7 +23,6 @@
 #define ENABLE_ISPC
 #endif
 
-#define ENABLE_PYTORCH
 #define ENABLE_SSBO
 
 #if defined(LINUX)

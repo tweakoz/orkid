@@ -86,6 +86,9 @@ public:
   uint32_t _groupAssign = 1;
   uint32_t _groupCollidesWith = 0xffffffff;
   script_cb_t _collisionCallback;
+  // E.2-walk: forward this body's contacts to the scene's PythonSystem as "Collision"
+  // notifies ({nameA,nameB,point,normal}) — the input/system SCRIPT intercepts them.
+  bool _notifyCollisions = false;
   fvec3 _angularFactor;
   bool _syncShapeScale = false;
   std::string _instanceNodeName;
@@ -245,6 +248,25 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
+// BulletShapeScatterData (E.2-walk follow-on) — ONE static compound collider for a placed
+// ScatterSet: each item contributes a primitive proxy CHILD whose kind+dims come from the
+// SET ITSELF (the placer's per-point proxy_kind/proxy_dims channels, declared at the
+// scatter() sink — NOTHING hardcoded here). Child transforms come from the baked per-item
+// xform (uniform scale folded into the proxy dims; bullet children take rigid transforms).
+// Resolves the .ogeo like ScatterSource: `_ogeo_path` direct, or the PORTABLE
+// <assetcache>/terrain/<scatter_asset>/<sink>.ogeo convention. Broadphase = ONE body;
+// bullet's compound carries an internal AABB tree, so thousands of children stay cheap.
+struct BulletShapeScatterData : public BulletShapeBaseData {
+  DeclareConcreteX(BulletShapeScatterData, BulletShapeBaseData);
+
+public:
+  BulletShapeScatterData();
+  std::string _scatter_asset; // HeightField asset name (the portable reference)
+  std::string _sink;          // scatter sink name on that asset
+  std::string _ogeo_path;     // direct path override (tools; takes precedence)
+};
+using bulletshapescatterdata_ptr_t = std::shared_ptr<BulletShapeScatterData>;
+
 struct BulletShapeTerrainData : public BulletShapeBaseData {
   DeclareConcreteX(BulletShapeTerrainData, BulletShapeBaseData);
 
@@ -262,6 +284,15 @@ public:
   file::Path _heightMapPath;
   float _worldHeight = 1000.0f;
   float _worldSize = 1000.0f;
+  // E.2-walk: the ASSET-WIRED form (preferred). Non-empty = resolve the baked HeightField
+  // artifact <assetcache>/terrain/<hf_asset>/height.exr and take worldSize/worldHeight
+  // from its .terrain.json manifest (extent_m / height_m) — physics collides with EXACTLY
+  // what the chunk renderer draws, from ONE scene declaration. _heightMapPath/_worldSize/
+  // _worldHeight above remain the direct-path override (tools / legacy scenes).
+  // NOTE bullet centers the heightfield AABB: the owning ENTITY must sit at
+  // y = (minH+maxH)/2 * worldHeight; the baked height channel is auto-exposed to [0,1]
+  // exactly, so that is 0.5 * worldHeight (the scene walker/terrain_collider helper does this).
+  std::string _hf_asset;
   lev2::TerrainDrawableData _visualData;
 
 private:

@@ -184,7 +184,10 @@ struct Image {
 
   //////////////////////////
 
-  void writeToFile(const ork::file::Path& outpath) const;
+  // linear_colorspace=true tags the output as linear data (e.g. heightmaps/masks)
+  // instead of the format default (PNG/JPEG otherwise default to sRGB). Opt-in so
+  // ordinary color PNGs keep their sRGB tag.
+  void writeToFile(const ork::file::Path& outpath, bool linear_colorspace = false) const;
   bool readFromFile(const ork::file::Path& inpath);
 
   //////////////////////////

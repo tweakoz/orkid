@@ -87,10 +87,12 @@ void ForwardPbrNodeImpl::_setupCubeFaceCamera(lightprobe_ptr_t probe, int iface)
   fvec3 position = CMATRIX.translation();
 
   // compute projection matrix
+  // Legacy GL→Vulkan Y-flip compensation removed: the rest of the
+  // renderer no longer double-flips, so this per-face flip would now
+  // leave every captured cubemap face upside-down relative to the new
+  // top-left convention (and break the cube→equirect projection in
+  // cube2equirectangular.fxv2).
   _CUBECAM->_pmatrix.perspective(90.0f * DTOR, 1.0f, 0.01f, 1000.0f);
-  fmtx4 flipy;
-  flipy.setScale(1, -1, 1);
-  _CUBECAM->_pmatrix = flipy * _CUBECAM->_pmatrix;
 
   // compute view matrix from cubeface
   switch (iface) {
@@ -140,11 +142,13 @@ void ForwardPbrNodeImpl::_update_env_probes(CompositorDrawData& drawdata) {
     _initProbeBlitMaterial(_currentContext);
   }
 
-  // Phase 2: Render cubemaps only for active + dirty probes
+  // Phase 2: Render cubemaps only for active + dirty probes.
+  // _dynamic probes are always considered dirty (live updates each
+  // frame); _dirty alone covers explicit bake triggers + first-time.
   for (auto probe : _enumeratedLights->_lightprobes) {
     switch (probe->_type) {
       case LightProbeType::REFLECTION: {
-        if (probe->_dirty) {
+        if (probe->_dirty || probe->_dynamic) {
           int prevW = probe->_cubeRenderRTG->width();
           int prevH = probe->_cubeRenderRTG->height();
           if (prevW != probe->dim() or prevH != probe->dim()) {
@@ -153,7 +157,13 @@ void ForwardPbrNodeImpl::_update_env_probes(CompositorDrawData& drawdata) {
 
           CompositingPassData cubemapCPD = CPD.clone();
           cubemapCPD._debugName = FormatString("ProbeCubemapPass<%s>", probe->_name.c_str());
-          cubemapCPD.AddLayer(probe->renderLayer());
+          // Restrict the cubemap pass to ONLY the probe's render layer.
+          // CPD.clone() inherits every layer active on the outer pass,
+          // including HUD/overlay layers (text, debug, etc.) — those
+          // should NOT be baked into the reflection cube. assignLayers
+          // is a hard set (clears prior layers + set), so the cube
+          // captures only world geometry from the probe's chosen layer.
+          cubemapCPD.assignLayers(probe->renderLayer());
 
           if (probe->temporalFrames() > 0) {
             // TAA path (handles SSAA internally if also enabled)
@@ -610,10 +620,6 @@ void ForwardPbrNodeImpl::_render_colorpass(forward_pass_ptr_t fpass) {
 
   _currentContext->debugMarker("ForwardPBR::renderEnqueuedScene::layer<std_forward>");
   _currentDrawQueue->enqueueLayerToRenderQueue(fpass->_fwd_pass_layer, _currentIRenderer);
-  if (_currentDrawQueue->_enableEditorLayers) {
-    _currentContext->debugMarker("ForwardPBR::renderEnqueuedScene::layer<std_editor>");
-    _currentDrawQueue->enqueueLayerToRenderQueue("std_editor", _currentIRenderer);
-  }
 
   _currentRCFD->_renderingmodel = "FORWARD_PBR"_crcu;
   _currentRCFD->_subpassID      = "COLOR"_crcu;
@@ -623,6 +629,74 @@ void ForwardPbrNodeImpl::_render_colorpass(forward_pass_ptr_t fpass) {
   ////////////////////////////////
 
   _currentIRenderer->drawEnqueuedRenderables(true);
+
+  // PBR2 Phase 2 — std_transparent layer. Drawn after opaques so the
+  // (eventual P2.7) transmission lobe can sample the opaque framebuffer
+  // backbuffer pre-overlay. Skipped during probe captures (refractive
+  // lobes short-circuit on rendering_probe anyway). Empty by default —
+  // materials opt in by being placed on this layer.
+  if (not fpass->_renderingPROBE) {
+    _currentContext->debugMarker("ForwardPBR::renderEnqueuedScene::layer<std_transparent>");
+    _currentDrawQueue->enqueueLayerToRenderQueue("std_transparent", _currentIRenderer);
+    _currentIRenderer->drawEnqueuedRenderables(true);
+  }
+
+  // GENERIC AUX CHANNELS (E2B item D) — one extra pass per declared channel:
+  // render layer "aux_<name>" into the channel's own RTG (RGBA16F, primary
+  // dims, NO depth attachment — v1 limit: aux content is not occluded by
+  // scene geometry). The RCFD subpass marker + AUX_CHANNEL property select
+  // each material's aux technique pair (MaterialBase::pipeline returns
+  // nullptr for non-participants — renderers skip). The RTG is published
+  // into the drawdata properties under crc("aux_<name>") for postfx
+  // consumption (PostFxNodeHeatDistort et al). Skipped in probe captures.
+  if (not fpass->_renderingPROBE) {
+    for (const auto& chan : _node->_auxChannels) {
+      std::string layer_name = "aux_" + chan;
+      auto& aux_rtg          = _aux_rtgs[chan];
+      if (nullptr == aux_rtg) {
+        aux_rtg  = std::make_shared<RtGroup>(
+            _currentContext, rtg_out->width(), rtg_out->height(), MsaaSamples::MSAA_1X);
+        auto buf = aux_rtg->createRenderTarget(EBufferFormat::RGBA16F);
+        buf->_debugName = FormatString("FwdAux<%s>", chan.c_str());
+      }
+      aux_rtg->Resize(rtg_out->width(), rtg_out->height());
+      uint64_t chan_key = CrcString(("aux_" + chan).c_str()).hashed();
+      drawdata->_properties[chan_key].set<rtgroup_ptr_t>(aux_rtg);
+      _currentContext->debugMarker(FormatString("ForwardPBR::renderEnqueuedScene::layer<%s>", layer_name.c_str()));
+      _currentRCFD->_subpassID = "AUX"_crcu;
+      _currentRCFD->setUserProperty("AUX_CHANNEL"_crcu, uint64_t(CrcString(chan.c_str()).hashed()));
+      FBI->PushRtGroup(aux_rtg.get());
+      _currentDrawQueue->enqueueLayerToRenderQueue(layer_name, _currentIRenderer);
+      _currentIRenderer->drawEnqueuedRenderables(true);
+      FBI->PopRtGroup();
+      _currentRCFD->unSetUserProperty("AUX_CHANNEL"_crcu);
+      _currentRCFD->_subpassID = "COLOR"_crcu;
+    }
+  }
+
+  // Overlay post-pass — std_editor (gizmos/manipulators) and
+  // hud_overlay (UI text, debug HUD). Drawn AFTER the scene color
+  // pass so they composite on top of world geometry, and skipped
+  // entirely when rendering into a probe cube — both layers are
+  // screen-space UI, not world content that should appear in
+  // reflection bakes. std_editor is gated by _enableEditorLayers
+  // (only the editor sets that); hud_overlay is unconditional
+  // because the layer is empty in scenes that don't use it, so
+  // enqueue is a no-op.
+  if (not fpass->_renderingPROBE) {
+    bool have_overlay = false;
+    if (_currentDrawQueue->_enableEditorLayers) {
+      _currentContext->debugMarker("ForwardPBR::renderEnqueuedScene::layer<std_editor>");
+      _currentDrawQueue->enqueueLayerToRenderQueue("std_editor", _currentIRenderer);
+      have_overlay = true;
+    }
+    _currentContext->debugMarker("ForwardPBR::renderEnqueuedScene::layer<hud_overlay>");
+    _currentDrawQueue->enqueueLayerToRenderQueue("hud_overlay", _currentIRenderer);
+    have_overlay = true;
+    if (have_overlay) {
+      _currentIRenderer->drawEnqueuedRenderables(true);
+    }
+  }
 
 }
 

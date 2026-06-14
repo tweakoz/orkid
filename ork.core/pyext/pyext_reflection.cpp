@@ -33,11 +33,18 @@ using class_pyptr_t               = unmanaged_ptr<rtti::Class>;
 void pyinit_reflection(py::module& module_core) {
   auto type_codec = python::pb11_typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
-    auto class_type_t = py::class_<rtti::Class,class_pyptr_t>(module_core, "Class") //
-      .def_property_readonly("name", [](class_pyptr_t clazz) -> std::string {
+    // Bind the unmanaged_ptr holder *itself* as the Python type (matches the
+    // working pattern in pyext_gfx.cpp's `py::class_<ctx_t>(...)` for GfxContext).
+    // The alternative `py::class_<rtti::Class, class_pyptr_t>` ("T with custom
+    // holder") fails on return-from-lambda — pybind11 has no type_caster path
+    // for a custom holder as return value. Binding the holder as the Python
+    // class avoids that entirely; the .clazz getter can return class_pyptr_t
+    // directly, and methods take it by reference.
+    auto class_type_t = py::class_<class_pyptr_t>(module_core, "Class") //
+      .def_property_readonly("name", [](class_pyptr_t& clazz) -> std::string {
         return clazz->Name().c_str();
       })
-      .def("isSubclassOf", [](class_pyptr_t clazz, class_pyptr_t other) -> bool {
+      .def("isSubclassOf", [](class_pyptr_t& clazz, class_pyptr_t& other) -> bool {
         return clazz->IsSubclassOf(other.get());
       });
   type_codec->registerStdCodec<class_pyptr_t>(class_type_t);

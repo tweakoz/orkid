@@ -8,6 +8,7 @@
 #include "pyext.h"
 #include <ork/lev2/input/inputdevice.h>
 #include <ork/lev2/gfx/terrain/terrain_drawable.h>
+#include <ork/lev2/gfx/terrain/terrain_chunk_drawable.h>
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/scenegraph/sgnode_grid.h>
@@ -22,6 +23,7 @@
 #include <ork/lev2/gfx/scenegraph/sgnode_manipgizmo.h>
 #include <ork/lev2/gfx/particle/drawable_data.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
+#include <ork/lev2/gfx/renderer/compute_drawable.h>
 #include <ork/lev2/gfx/meshutil/rigid_primitive.inl>
 #include <ork/lev2/gfx/image.h>
 
@@ -50,6 +52,91 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
   auto cbdrawabledata_type = //
       py::class_<CallbackDrawableData, DrawableData, callback_drawabledata_ptr_t>(module_lev2, "CallbackDrawableData");
   type_codec->registerStdCodec<callback_drawabledata_ptr_t>(cbdrawabledata_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // ComputeDrawableData — GPU-driven geometry: 1+ compute passes (each with its own SSBO bindings)
+  // run in the drawable's onPreRender, then an indirect draw of the compute-written buffers. All
+  // shaders/buffers/material are python-supplied. (See compute_drawable.h.)
+  auto computedrawabledata_type = //
+      py::class_<ComputeDrawableData, DrawableData, computedrawabledata_ptr_t>(module_lev2, "ComputeDrawableData")
+          .def(py::init<>([]() { return std::make_shared<ComputeDrawableData>(); }))
+          .def(
+              "addComputePass",
+              [](computedrawabledata_ptr_t d,
+                 pyfxcomputeshader_ptr_t shader,
+                 py::list bindings, // list of (storage_block:FxShaderStorageBlock, ssbo:FxShaderStorageBuffer)
+                 uint32_t gx,
+                 uint32_t gy,
+                 uint32_t gz) {
+                // bind by storage-block HANDLE — the binding index is auto-resolved from the
+                // block's reflected SPIR-V binding within the shader (no hardcoded index).
+                std::vector<std::pair<const FxShaderStorageBlock*, FxShaderStorageBuffer*>> binds;
+                for (auto item : bindings) {
+                  auto tup  = item.cast<py::tuple>();
+                  auto blk  = tup[0].cast<pyfxstorage_ptr_t>();
+                  auto ssbo = tup[1].cast<fxshaderstoragebuffer_ptr_t>();
+                  binds.push_back({blk.get(), ssbo.get()});
+                }
+                d->addComputePass(shader.get(), binds, gx, gy, gz);
+              },
+              py::arg("shader"),
+              py::arg("bindings"),
+              py::arg("gx"),
+              py::arg("gy") = 1,
+              py::arg("gz") = 1)
+          .def(
+              "setCameraParams",
+              [](computedrawabledata_ptr_t d, fxshaderstoragebuffer_ptr_t ssbo, size_t offset) {
+                d->setCameraParams(ssbo.get(), offset);
+              },
+              py::arg("ssbo"),
+              py::arg("offset") = 0)
+          .def(
+              "addGraphicsStorage", // bind a storage block (the vertex-source SSBO) onto the render pipeline
+              [](computedrawabledata_ptr_t d, pyfxstorage_ptr_t block, fxshaderstoragebuffer_ptr_t ssbo) {
+                d->addGraphicsStorage(block.get(), ssbo.get());
+              },
+              py::arg("block"),
+              py::arg("ssbo"))
+          .def(
+              "setIndirect",
+              [](computedrawabledata_ptr_t d,
+                 fxshaderstoragebuffer_ptr_t args,
+                 size_t args_offset,
+                 fxshaderstoragebuffer_ptr_t index,
+                 crcstring_ptr_t primtype,
+                 int index_size) {
+                auto pt = primtype ? PrimitiveType(primtype->hashed()) : PrimitiveType::TRIANGLES;
+                d->setIndirect(args.get(), args_offset, index ? index.get() : nullptr, pt, index_size);
+              },
+              py::arg("args"),
+              py::arg("args_offset") = 0,
+              py::arg("index")     = fxshaderstoragebuffer_ptr_t(nullptr),
+              py::arg("primtype")  = crcstring_ptr_t(nullptr),
+              py::arg("index_size") = 4)
+          .def_property(
+              "pipeline", // explicit pipeline (overrides material auto-selection)
+              [](computedrawabledata_ptr_t d) -> fxpipeline_ptr_t { return d->_pipeline; },
+              [](computedrawabledata_ptr_t d, fxpipeline_ptr_t p) { d->_pipeline = p; })
+          .def_property(
+              "material", // auto-selects the pipeline per rendering model (unless pipeline is set)
+              [](computedrawabledata_ptr_t d) -> material_ptr_t { return d->_material; },
+              [](computedrawabledata_ptr_t d, material_ptr_t m) { d->_material = m; })
+          .def_property(
+              "overlay_material", // the OPTIONAL second (overlay) draw's material, e.g. a wireframe lines material
+              [](computedrawabledata_ptr_t d) -> material_ptr_t { return d->_overlayMaterial; },
+              [](computedrawabledata_ptr_t d, material_ptr_t m) { d->_overlayMaterial = m; })
+          .def_property(
+              "instanced", // True -> RCID._isInstanced -> the material's INSTANCED variant (FWD_SSBO_CUSTOM_INSTANCED)
+              [](computedrawabledata_ptr_t d) -> bool { return d->_instanced; },
+              [](computedrawabledata_ptr_t d, bool v) { d->_instanced = v; })
+          .def(
+              "addOverlayGraphicsStorage", // bind a storage block onto the overlay draw's pipeline (overlay pull-VS)
+              [](computedrawabledata_ptr_t d, pyfxstorage_ptr_t block, fxshaderstoragebuffer_ptr_t ssbo) {
+                d->addOverlayGraphicsStorage(block.get(), ssbo.get());
+              },
+              py::arg("block"),
+              py::arg("ssbo"));
+  type_codec->registerStdCodec<computedrawabledata_ptr_t>(computedrawabledata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto mdldrawabledata_type = //
       py::class_<ModelDrawableData, DrawableData, modeldrawabledata_ptr_t>(module_lev2, "ModelDrawableData")
@@ -346,6 +433,10 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
               "pos2D",
               [](string_drawabledata_ptr_t drw) -> fvec2 { return drw->_pos2D; },
               [](string_drawabledata_ptr_t drw, fvec2 val) { drw->_pos2D = val; })
+          .def_property( // normalized corner anchor: (0,0)=top-left (default), (0,1)=bottom-left, ...
+              "anchor",  // pos2D becomes the offset from the anchored corner (block-height compensated on y)
+              [](string_drawabledata_ptr_t drw) -> fvec2 { return drw->_anchor; },
+              [](string_drawabledata_ptr_t drw, fvec2 val) { drw->_anchor = val; })
           .def_property(
               "scale",
               [](string_drawabledata_ptr_t drw) -> float { return drw->_scale; },
@@ -385,7 +476,19 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
           .def_property(
               "emitterRadius",
               [](particles_drawable_data_ptr_t drw) -> float { return drw->_emitterRadius; },
-              [](particles_drawable_data_ptr_t drw, float radius) { drw->_emitterRadius = radius; });
+              [](particles_drawable_data_ptr_t drw, float radius) { drw->_emitterRadius = radius; })
+          // When true, the drawable's internal enqueue lambda skips its own
+          // graphinst->compute() — an external driver (ECS
+          // ParticlesGlobalSystem) is expected to advance compute instead.
+          // See drawable_data.h for full rationale.
+          .def_property(
+              "external_compute",
+              [](particles_drawable_data_ptr_t drw) -> bool { return drw->_externalCompute; },
+              [](particles_drawable_data_ptr_t drw, bool ec) { drw->_externalCompute = ec; })
+          .def_property(
+              "probeEntityName",
+              [](particles_drawable_data_ptr_t drw) -> std::string { return drw->_probeEntityName; },
+              [](particles_drawable_data_ptr_t drw, std::string n) { drw->_probeEntityName = n; });
   type_codec->registerStdCodec<particles_drawable_data_ptr_t>(ptcdrawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto terdrawdata_type = //
@@ -397,6 +500,35 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
               [](terraindrawabledata_ptr_t drw, fvec3 val) { drw->_rock1 = val; })
           .def("writeHmapPath", [](terraindrawabledata_ptr_t drw, std::string path) { drw->_writeHmapPath(path); });
   type_codec->registerStdCodec<terraindrawabledata_ptr_t>(terdrawdata_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // TerrainChunkDrawableData (E.6/D.5) — the reflected GPU chunked-terrain render
+  // description; assets referenced BY NAME, resolved by the load-side wire step.
+  auto tchunk_type = //
+      py::class_<terrain::TerrainChunkDrawableData, DrawableData, terrain::terrain_chunk_drawable_data_ptr_t>(
+          module_lev2, "TerrainChunkDrawableData")
+          .def(py::init([](py::kwargs kwargs) {
+            auto d = std::make_shared<terrain::TerrainChunkDrawableData>();
+            if (kwargs.contains("hf_asset"))
+              d->_hf_asset_name = kwargs["hf_asset"].cast<std::string>();
+            if (kwargs.contains("material_asset"))
+              d->_material_asset_name = kwargs["material_asset"].cast<std::string>();
+            if (kwargs.contains("chunk"))
+              d->_chunk = kwargs["chunk"].cast<int>();
+            return d;
+          }))
+          .def_property(
+              "hf_asset",
+              [](terrain::terrain_chunk_drawable_data_ptr_t d) -> std::string { return d->_hf_asset_name; },
+              [](terrain::terrain_chunk_drawable_data_ptr_t d, std::string v) { d->_hf_asset_name = v; })
+          .def_property(
+              "material_asset",
+              [](terrain::terrain_chunk_drawable_data_ptr_t d) -> std::string { return d->_material_asset_name; },
+              [](terrain::terrain_chunk_drawable_data_ptr_t d, std::string v) { d->_material_asset_name = v; })
+          .def_property(
+              "chunk",
+              [](terrain::terrain_chunk_drawable_data_ptr_t d) -> int { return d->_chunk; },
+              [](terrain::terrain_chunk_drawable_data_ptr_t d, int v) { d->_chunk = v; });
+  type_codec->registerStdCodec<terrain::terrain_chunk_drawable_data_ptr_t>(tchunk_type);
   /////////////////////////////////////////////////////////////////////////////////
   /*auto terdrawinst_type = //
       py::class_<TerrainDrawableInst, terraindrawableinst_ptr_t>(module_lev2, "TerrainDrawableInst")
@@ -668,6 +800,18 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
               py::arg("vpMatrix"), py::arg("screenPos"),
               py::arg("vpW"), py::arg("vpH"), py::arg("hitRadius") = 12.0f);
   type_codec->registerStdCodec<curvepath_drawabledata_ptr_t>(curvepathdrawdata_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // Free function — extract the live graphinst from a particles drawable
+  // so Python callers can call graphinst.reset() / read .vars / etc. The
+  // C++ accessor is defined in sgnode_particles.cpp and traverses the
+  // drawable's CallbackDrawable user vars. Returns nullptr if the drawable
+  // wasn't produced by ParticlesDrawableData::createDrawable().
+  module_lev2.def(
+      "particles_drawable_graphinst",
+      [](drawable_ptr_t drw) -> dflow::graphinst_ptr_t {
+        return particles_drawable_graphinst(drw);
+      },
+      py::arg("drawable"));
 }
 /////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

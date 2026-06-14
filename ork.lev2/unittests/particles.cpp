@@ -72,6 +72,7 @@ TEST(particles_a) {
   auto dg_context = std::make_shared<dgcontext>();
   dg_context->createRegisters<float>("ptc_float", 16);
   dg_context->createRegisters<fvec3>("ptc_vec3f", 16);
+  dg_context->createRegisters<fvec4>("ptc_vec4f", 16);
   dg_context->createRegisters<ParticleBufferData>("ptc_buffer", 4);
 
   ////////////////////////////////////////////////////

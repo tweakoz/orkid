@@ -62,6 +62,10 @@ void SpawnData::describeX(SceneObjectClass* clazz) {
   clazz->directMapProperty("UserProperties", &SpawnData::mUserProperties)
       ->annotate("editor.visible", ConstString("false"));
 
+  // E2A1: autospawn must round-trip — unreflected it fell back to the C++
+  // default (true) on deserialize, so dynamic-only spawners (autospawn=False,
+  // e.g. projectile pools) GHOST-SPAWNED one entity at scene start.
+  clazz->directProperty("AutoSpawn", &SpawnData::_autospawn);
   clazz->directProperty("SpawnCount", &SpawnData::_spawnCount);
   clazz->floatProperty("SpawnInterval", float_range{0, 1000}, &SpawnData::_spawnInterval);
   clazz->floatProperty("StochasticInterval", float_range{0, 1000}, &SpawnData::_stochasticInterval);
@@ -74,8 +78,9 @@ void SpawnData::describeX(SceneObjectClass* clazz) {
   clazz->floatProperty("LifetimeMin", float_range{0, 100000}, &SpawnData::_lifetimeMin);
   clazz->floatProperty("LifetimeMax", float_range{0, 100000}, &SpawnData::_lifetimeMax);
   clazz->directMapProperty("userparams", &SpawnData::_newuserproperties);
+  clazz->directProperty("publishxf_name", &SpawnData::_publishxf_name);
 
-  
+
 }
 ///////////////////////////////////////////////////////////////////////////////
 ConstString SpawnData::GetUserProperty(const ConstString& key) const {

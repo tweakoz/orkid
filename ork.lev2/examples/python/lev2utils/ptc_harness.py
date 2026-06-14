@@ -150,8 +150,8 @@ def gen_sys(scene=None,
   ptc.frq = frq
   ptc.radius = radius
   ptc.DRAG.inputs.drag = 0.999
-  ptc.drawable_data.emitterIntensity = 8.0
-  ptc.drawable_data.emitterRadius = 1.5
+  ptc.drawable_data.emitterIntensity = 800.0
+  ptc.drawable_data.emitterRadius = 100.5
   return ptc
 
 def gen_psys_set(scene,

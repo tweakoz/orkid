@@ -24,6 +24,9 @@
 #include <ork/ecs/entity.inl>
 #include <ork/ecs/scene.inl>
 #include "bullet_impl.h"
+#include <rapidjson/document.h> // E.2-walk: hf_asset manifest parse
+#include <fstream>
+#include <sstream>
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::ecs::BulletShapeTerrainData, "BulletShapeTerrainData");
 ///////////////////////////////////////////////////////////////////////////////
@@ -38,6 +41,9 @@ struct BulletTerrainImpl {
   Entity* _entity                          = nullptr;
   btHeightfieldTerrainShape* _terrainShape = nullptr;
   file::Path _curhfpath;
+  file::Path _resPath;          // E.2-walk: resolved height image (asset-wired or direct)
+  float _resSize   = 1000.0f;   // resolved world extent (manifest extent_m when asset-wired)
+  float _resHeight = 1000.0f;   // resolved world height (manifest height_m when asset-wired)
 
   std::shared_ptr<HeightMap> _phyheightmap;
   hfdrawableinstptr_t _hfinstance;
@@ -56,19 +62,49 @@ using terrain_impl_ptr_t = std::shared_ptr<BulletTerrainImpl>;
 
 BulletTerrainImpl::BulletTerrainImpl(const BulletShapeTerrainData& data)
     : _hfd(data) {
+  // E.2-walk: resolve the ASSET-WIRED form first. hf_asset names a baked HeightField —
+  // the height image is the SAME normalized [0,1] EXR the chunk renderer consumes, and
+  // worldSize/worldHeight come from the .terrain.json manifest, so physics collides with
+  // exactly what renders (one declaration). Direct _heightMapPath/_worldSize/_worldHeight
+  // remain the override when hf_asset is empty.
+  _resPath   = _hfd._heightMapPath;
+  _resSize   = _hfd._worldSize;
+  _resHeight = _hfd._worldHeight;
+  if (not _hfd._hf_asset.empty()) {
+    std::string base = file::Path::expandPathString("<assetcache>/terrain/" + _hfd._hf_asset);
+    _resPath         = file::Path((base + "/height.exr").c_str());
+    std::string manifest_path = base + "/" + _hfd._hf_asset + ".terrain.json";
+    std::ifstream mf(manifest_path);
+    if (mf.good()) {
+      std::stringstream mstrm;
+      mstrm << mf.rdbuf();
+      rapidjson::Document doc;
+      doc.Parse(mstrm.str().c_str());
+      OrkAssert(not doc.HasParseError());
+      _resSize   = doc["scale"]["extent_m"].GetFloat();
+      _resHeight = doc["scale"]["height_m"].GetFloat();
+      printf("BulletShapeTerrain: hf_asset<%s> -> <%s> extent<%g> height<%g>\n",
+             _hfd._hf_asset.c_str(), _resPath.c_str(), _resSize, _resHeight);
+    } else {
+      printf("BulletShapeTerrain: hf_asset<%s> manifest MISSING <%s> — the HeightField asset "
+             "must materialize BEFORE the physics shape (declaration order = dependency order)\n",
+             _hfd._hf_asset.c_str(), manifest_path.c_str());
+      OrkAssert(false);
+    }
+  }
   _subscriber = msgrouter::channel("bshdchanged")->subscribe([=](msgrouter::content_t c) {
-    if (_curhfpath != _hfd._heightMapPath) {
-      printf("Load Heightmap<%s>\n", _hfd._heightMapPath.c_str());
+    if (_curhfpath != _resPath) {
+      printf("Load Heightmap<%s>\n", _resPath.c_str());
       _phyheightmap = std::make_shared<HeightMap>(0, 0);
-      _loadok       = _phyheightmap->Load(_hfd._heightMapPath);
-      _curhfpath    = _hfd._heightMapPath;
+      _loadok       = _phyheightmap->Load(_resPath);
+      _curhfpath    = _resPath;
       int idimx     = _phyheightmap->GetGridSizeX();
       int idimz     = _phyheightmap->GetGridSizeZ();
       printf("idimx<%d> idimz<%d>\n", idimx, idimz);
       assert(idimx == idimz);
     }
-    _phyheightmap->SetWorldSize(_hfd._worldSize, _hfd._worldSize);
-    _phyheightmap->SetWorldHeight(_hfd._worldHeight);
+    _phyheightmap->SetWorldSize(_resSize, _resSize);
+    _phyheightmap->SetWorldHeight(_resHeight);
   });
 
   _subscriber->_handler(nullptr);
@@ -91,7 +127,7 @@ btHeightfieldTerrainShape* BulletTerrainImpl::init_bullet_shape(const ShapeCreat
   int idimz = _phyheightmap->GetGridSizeZ();
 
   float aspect            = float(idimz) / float(idimx);
-  const float kworldsizeX = _hfd._worldSize;
+  const float kworldsizeX = _resSize;
   const float kworldsizeZ = kworldsizeX * aspect;
 
   auto world_controller              = data.mWorld;
@@ -145,6 +181,9 @@ void BulletShapeTerrainData::describeX(object::ObjectClass* clazz) {
   ////////
   clazz->floatProperty("WorldHeight", float_range{0,10000}, &BulletShapeTerrainData::_worldHeight);
   clazz->floatProperty("WorldSize", float_range{1,20000}, &BulletShapeTerrainData::_worldSize);
+  // E.2-walk: the asset-wired form — resolves the baked HeightField artifact + manifest
+  // scale (extent_m/height_m) at shape creation; overrides the three direct props above.
+  clazz->directProperty("hf_asset", &BulletShapeTerrainData::_hf_asset);
   //clazz->directProperty("VisualData", &BulletShapeTerrainData::_visualDataAccessor);
   ////////
 }

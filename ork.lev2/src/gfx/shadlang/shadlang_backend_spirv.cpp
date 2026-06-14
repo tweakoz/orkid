@@ -283,6 +283,23 @@ void SpirvCompiler::_processGlobalRenames() {
 
   const auto& RENAMES = SpirvCompilerGlobals::instance()->_id_renames;
 
+  // FAIL LOUD on DECLARING a builtin-constant name (e.g. `float PI2 = ...`): the rename pass below
+  // substitutes EVERY identifier occurrence with the literal — including the declaration's name —
+  // producing GLSL like `float 6.283185307 = ...` that dies much later in glslang with no usable
+  // message (historically: a silent shader-text dump + SIGTRAP). Catch it here, by name.
+  auto typed_identifiers = SHAST::AstNode::collectNodesOfType<SHAST::TypedIdentifier>(_transu);
+  for (auto it : typed_identifiers) {
+    auto id = it->typedValueForKey<std::string>("identifier_name").value();
+    if (RENAMES.find(id) != RENAMES.end()) {
+      printf(
+          "SHADLANG ERROR: shader declares an identifier named '%s', which is a shadlang BUILTIN "
+          "CONSTANT (substituted with '%s' everywhere it appears). Rename the variable.\n",
+          id.c_str(),
+          RENAMES.find(id)->second.c_str());
+      OrkAssert(false);
+    }
+  }
+
   auto sema_identifiers = SHAST::AstNode::collectNodesOfType<SHAST::SemaIdentifier>(_transu);
   for (auto it : sema_identifiers) {
     auto id     = it->typedValueForKey<std::string>("identifier_name").value();
@@ -446,6 +463,7 @@ void SpirvCompiler::_convertUniformSets() {
 
       if (auto as_array = std::dynamic_pointer_cast<ArrayDeclaration>(d)) {
         auto len_node       = as_array->childAs<SHAST::SemaIntegerLiteral>(1);
+        OrkAssert(len_node && "size-less [] runtime arrays are only valid in storage buffers, not uniform/push-constant blocks");
         item->_is_array     = true;
         auto ary_len_str    = len_node->typedValueForKey<std::string>("literal_value").value();
         item->_array_length = atoi(ary_len_str.c_str());
@@ -514,6 +532,7 @@ void SpirvCompiler::_convertUniformBlocks() {
 
       if (auto as_array = std::dynamic_pointer_cast<ArrayDeclaration>(d)) {
         auto len_node       = as_array->childAs<SHAST::SemaIntegerLiteral>(1);
+        OrkAssert(len_node && "size-less [] runtime arrays are only valid in storage buffers, not uniform/push-constant blocks");
         item->_is_array     = true;
         auto ary_len_str    = len_node->typedValueForKey<std::string>("literal_value").value();
         item->_array_length = atoi(ary_len_str.c_str());
@@ -632,12 +651,21 @@ void SpirvCompiler::_convertUniformBlocks() {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void SpirvCompiler::_convertStorageInterfaces() {
   auto ast_storage_ifs = SHAST::AstNode::collectNodesOfType<SHAST::StorageInterface>(_transu);
-  
+
+  int sif_binding = 0; // pre-assign the binding in declaration order. This runs in
+                       // the ctor (BEFORE DBwrite), unlike the per-shader binding in
+                       // _inheritStorageInterface (which runs at processShader, after
+                       // the metadata is serialized). Matches the inherit counter as
+                       // long as declaration order == storage{} reference order and
+                       // there are no UBOs/samplers ahead of the SSBOs (true for the
+                       // terrain compute ops). _inheritStorageInterface re-stamps the
+                       // same value for the GLSL layout line.
   for (auto ast_storage_if : ast_storage_ifs) {
     auto storage_name = ast_storage_if->typedValueForKey<std::string>("object_name").value();
     auto spirv_sif = std::make_shared<SpirvStorageInterface>();
     _spirvstorageinterfaces[storage_name] = spirv_sif;
     spirv_sif->_name = storage_name;
+    spirv_sif->_binding_id = sif_binding++;
     
     // Get descriptor set ID
     auto dsid_node = ast_storage_if->findFirstChildOfType<DescriptorSetId>();
@@ -706,10 +734,14 @@ void SpirvCompiler::_convertStorageInterfaces() {
             if (tid) {
               auto dt = tid->typedValueForKey<std::string>("data_type").value();
               auto id = tid->typedValueForKey<std::string>("identifier_name").value();
+              // size-less `name[]` -> no SemaIntegerLiteral child -> RUNTIME array (length 0).
+              // Must be the LAST member of the block (std430); the bound SSBO sizes it at runtime.
               auto len_node = as_adecl->childAs<SemaIntegerLiteral>(1);
-              auto ary_len_str = len_node->typedValueForKey<std::string>("literal_value").value();
-              auto ary_len = atoi(ary_len_str.c_str());
-              
+              size_t ary_len = 0;
+              if (len_node) {
+                ary_len = atoi(len_node->typedValueForKey<std::string>("literal_value").value().c_str());
+              }
+
               auto item = std::make_shared<SpirvStorageInterfaceItem>();
               item->_datatype = dt;
               item->_identifier = id;
@@ -737,7 +769,11 @@ void SpirvCompiler::_convertStorageInterfaces() {
                   item->_stride = item->_size;
                 }
 
-                layout.incrementDatatype(dt, ary_len);
+                // runtime array (ary_len==0): contributes 0 static bytes (it's the last member);
+                // its offset is already captured above. Only fixed-size arrays advance the cursor.
+                if (ary_len > 0) {
+                  layout.incrementDatatype(dt, ary_len);
+                }
               } else {
                 printf("WARNING: Unknown datatype '%s' in storage interface array\n", dt.c_str());
                 item->_offset = layout.cursor();
@@ -870,8 +906,9 @@ void SpirvCompiler::_emitMergedPushConstants() {
 
       std::string line = "  ";
       if (item->_is_array) {
-        line += FormatString(
-            "%s %s[%zu]; // from %s", item->_datatype.c_str(), item->_identifier.c_str(), item->_array_length, source_set.c_str());
+        line += item->_array_length
+            ? FormatString("%s %s[%zu]; // from %s", item->_datatype.c_str(), item->_identifier.c_str(), item->_array_length, source_set.c_str())
+            : FormatString("%s %s[]; // from %s (runtime)", item->_datatype.c_str(), item->_identifier.c_str(), source_set.c_str());
       } else {
         line += FormatString("%s %s; // from %s", item->_datatype.c_str(), item->_identifier.c_str(), source_set.c_str());
       }
@@ -971,7 +1008,10 @@ void SpirvCompiler::_inheritStorageInterface(
     printf("WARNING: Storage interface '%s' not found in merged resources, using fallback binding\n", storage_name.c_str());
     binding_id = _binding_id++;
   }
-  
+  // record the real binding so it survives reflection -> DBwrite -> DBread and the
+  // compute pipeline can bind by it (NOT by descriptor_set_id, which is the set).
+  spirv_sif->_binding_id = binding_id;
+
   // Emit the GLSL storage buffer declaration
   auto header = FormatString("// Storage interface: %s", storage_name.c_str());
   _appendText(_uniforms_group, header.c_str());
@@ -991,10 +1031,9 @@ void SpirvCompiler::_inheritStorageInterface(
   // Emit buffer members
   for (auto item : spirv_sif->_items_by_order) {
     if (item->_is_array) {
-      auto member_line = FormatString("  %s %s[%zu];", 
-                                      item->_datatype.c_str(), 
-                                      item->_identifier.c_str(), 
-                                      item->_array_length);
+      auto member_line = item->_array_length
+          ? FormatString("  %s %s[%zu];", item->_datatype.c_str(), item->_identifier.c_str(), item->_array_length)
+          : FormatString("  %s %s[];", item->_datatype.c_str(), item->_identifier.c_str()); // runtime array
       _appendText(_uniforms_group, member_line.c_str());
     } else {
       auto member_line = FormatString("  %s %s;", 
@@ -1301,9 +1340,12 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
             auto dt          = tid->typedValueForKey<std::string>("data_type").value();
             auto id          = tid->typedValueForKey<std::string>("identifier_name").value();
             auto len_node    = as_adecl->childAs<SemaIntegerLiteral>(1);
-            auto ary_len_str = len_node->typedValueForKey<std::string>("literal_value").value();
-            auto ary_len     = atoi(ary_len_str.c_str());
-            _appendText(_interface_group, " %s %s[%d];", dt.c_str(), id.c_str(), ary_len);
+            if (len_node) {
+              auto ary_len = atoi(len_node->typedValueForKey<std::string>("literal_value").value().c_str());
+              _appendText(_interface_group, " %s %s[%d];", dt.c_str(), id.c_str(), ary_len);
+            } else {
+              _appendText(_interface_group, " %s %s[];", dt.c_str(), id.c_str()); // runtime array
+            }
           } else {
             OrkAssert(false);
           }

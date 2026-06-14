@@ -2,7 +2,7 @@
 ork.ui.figma.constants — Configurable constants for Figma design parsing.
 
 All numeric thresholds and defaults used by OrkidFigmaDesign and
-SwiftFigmaDesign are collected here.  The Impossible 2D Editor stores
+SwiftFigmaDesign are collected here.  The 2D Editor stores
 overrides in an "editor" key inside the exported JSON so they persist
 across sessions.
 """

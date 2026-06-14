@@ -13,8 +13,6 @@ import obt.host
 
 OBT_DYLD_FALLBACK_LIBRARY_PATH = str(obt.path.libs())
 DYLD_LIBRARY_PATH = str(obt.path.libs())
-if obt.host.IsDarwin:
-  DYLD_LIBRARY_PATH += ":/opt/homebrew/lib"
 ENV_DYLD_LIBRARY_PATH = ""
 ENV_OBT_DYLD_FALLBACK_LIBRARY_PATH = os.environ.get("OBT_DYLD_FALLBACK_LIBRARY_PATH", "")
 ORKID_SETUP_VULKAN_FN = "export ORKID_GRAPHICS_API=VULKAN; "

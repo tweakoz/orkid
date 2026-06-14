@@ -388,6 +388,8 @@ void pyinit_math_la_t_quat(
           .def("negate", &quat_t::negate)
           .def("normalize", &quat_t::normalizeInPlace)
           .def(py::self * py::self)
+          .def_static("lerp", &quat_t::lerp)   // (a,b,alpha) -> normalized linear interp
+          .def_static("slerp", &quat_t::slerp) // (a,b,alpha) -> constant-velocity spherical interp
           .def(
               "__str__",
               [](const quat_t& v) -> std::string {

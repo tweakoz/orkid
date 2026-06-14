@@ -89,14 +89,7 @@ VulkanVertexBuffer::VulkanVertexBuffer(vkcontext_rawptr_t ctx, VertexBufferBase&
 ///////////////////////////////////////////////////////////////////////////////
 
 VulkanVertexBuffer::~VulkanVertexBuffer() {
-  auto cb = _ctx->primary_cb();
-  if (cb) {
-    cb->_vkbuffers_pending_cleanup.push_back(_vkbuffer);
-  } else {
-    // No active primary CB - queue on context for later cleanup
-    std::lock_guard<std::mutex> lock(_ctx->_vkbuffers_pending_cleanup_mutex);
-    _ctx->_vkbuffers_pending_cleanup.push_back(_vkbuffer);
-  }
+  _ctx->destroyVertexBuffer(_vkbuffer); // queues cleanup (pre-shutdown) or no-ops (post-shutdown)
   _vkbuffer = nullptr;
 }
 
@@ -110,14 +103,7 @@ VulkanIndexBuffer::VulkanIndexBuffer(vkcontext_rawptr_t ctx, size_t length) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 VulkanIndexBuffer::~VulkanIndexBuffer() {
-  auto cb = _ctx->primary_cb();
-  if (cb) {
-    cb->_vkbuffers_pending_cleanup.push_back(_vkbuffer);
-  } else {
-    // No active primary CB - queue on context for later cleanup
-    std::lock_guard<std::mutex> lock(_ctx->_vkbuffers_pending_cleanup_mutex);
-    _ctx->_vkbuffers_pending_cleanup.push_back(_vkbuffer);
-  }
+  _ctx->destroyIndexBuffer(_vkbuffer); // queues cleanup (pre-shutdown) or no-ops (post-shutdown)
   _vkbuffer = nullptr;
 }
 
@@ -396,6 +382,7 @@ vkvertexinputconfig_ptr_t VkGeometryBufferInterface::vertexInputState(vkvtxbuf_p
             , semantic.c_str()
             , shader_datatype.c_str()
             , vbformatstr.c_str() );
+        fflush(stdout);
       OrkAssert(false);
     }
 
@@ -918,6 +905,97 @@ void VkGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(
       0,               // first index
       0,               // vertex offset
       first_instance); // first instance
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// GPU-driven indirect draws. The draw count lives in `indirect_args` (a storage buffer
+// a compute shader wrote); we never read it on the CPU. createStorageBuffer grants the
+// INDIRECT + INDEX usage these need (see vulkan_fxi_buffer.cpp).
+////////////////////////////////////////////////////////////////////////////////
+
+// helper: raw VkBuffer behind an FxShaderStorageBuffer
+static inline VkBuffer _ssbo_vkbuffer(const FxShaderStorageBuffer* ssbo) {
+  auto impl = ssbo->_impl.getShared<VulkanBuffer>();
+  OrkAssert(impl);
+  return impl->_vkbuffer;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// (1) fixed-mesh instanced, INDEXED, indirect. Mirrors DrawInstancedIndexedPrimitiveEML
+// but the instanceCount comes from a VkDrawIndexedIndirectCommand in indirect_args.
+////////////////////////////////////////////////////////////////////////////////
+void VkGeometryBufferInterface::DrawInstancedIndexedPrimitiveIndirectEML(
+    const VertexBufferBase& vtx_buf,
+    const IndexBufferBase& idx_buf,
+    PrimitiveType eType,
+    const FxShaderStorageBuffer* indirect_args,
+    size_t args_offset) {
+
+  auto it_pc = _primclasses.find(uint64_t(eType));
+  OrkAssert(it_pc != _primclasses.end());
+  auto primclass = it_pc->second;
+
+  auto vk_vbimpl = vtx_buf._impl.getShared<VulkanVertexBuffer>();
+  auto vk_ibimpl = idx_buf._impl.getShared<VulkanIndexBuffer>();
+  auto fxi       = _contextVK->_fxi;
+  auto pipeline  = fxi->_fetchPipeline(vk_vbimpl, primclass);
+
+  auto& CB = _contextVK->primary_cb()->_vkcmdbuf;
+  fxi->_bindPipeline(CB, pipeline);
+  fxi->_bindVertexBufferOnSlot(CB, vk_vbimpl, 0);
+
+  auto vk_index_size = idx_buf.indexSize() == 2 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
+  vkCmdBindIndexBuffer(CB, vk_ibimpl->_vkbuffer->_vkbuffer, 0, vk_index_size);
+
+  // one VkDrawIndexedIndirectCommand; instanceCount (and index/first counts) come from the buffer.
+  vkCmdDrawIndexedIndirect(CB, _ssbo_vkbuffer(indirect_args), args_offset, 1, sizeof(VkDrawIndexedIndirectCommand));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// (2) SSBO vertex-pull, NON-indexed, indirect. Empty vertex input (the VS reads vertices
+// from a storage block via gl_VertexIndex); args = VkDrawIndirectCommand.
+////////////////////////////////////////////////////////////////////////////////
+void VkGeometryBufferInterface::DrawIndirectEML(
+    PrimitiveType eType,
+    const FxShaderStorageBuffer* indirect_args,
+    size_t args_offset) {
+
+  auto it_pc = _primclasses.find(uint64_t(eType));
+  OrkAssert(it_pc != _primclasses.end());
+  auto primclass = it_pc->second;
+
+  auto fxi      = _contextVK->_fxi;
+  auto pipeline = fxi->_fetchPipelineSSBO(primclass); // empty vertex input state
+  auto& CB      = _contextVK->primary_cb()->_vkcmdbuf;
+  fxi->_bindPipeline(CB, pipeline);
+
+  vkCmdDrawIndirect(CB, _ssbo_vkbuffer(indirect_args), args_offset, 1, sizeof(VkDrawIndirectCommand));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// (3) SSBO vertex-pull, INDEXED, indirect. Empty vertex input + a compute-written index
+// buffer (an FxShaderStorageBuffer bound as the index buffer); args = VkDrawIndexedIndirectCommand.
+////////////////////////////////////////////////////////////////////////////////
+void VkGeometryBufferInterface::DrawIndexedIndirectEML(
+    const FxShaderStorageBuffer* index_buffer,
+    PrimitiveType eType,
+    const FxShaderStorageBuffer* indirect_args,
+    size_t args_offset,
+    int index_size) {
+
+  auto it_pc = _primclasses.find(uint64_t(eType));
+  OrkAssert(it_pc != _primclasses.end());
+  auto primclass = it_pc->second;
+
+  auto fxi      = _contextVK->_fxi;
+  auto pipeline = fxi->_fetchPipelineSSBO(primclass); // empty vertex input state
+  auto& CB      = _contextVK->primary_cb()->_vkcmdbuf;
+  fxi->_bindPipeline(CB, pipeline);
+
+  auto vk_index_size = (index_size == 2) ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
+  vkCmdBindIndexBuffer(CB, _ssbo_vkbuffer(index_buffer), 0, vk_index_size);
+
+  vkCmdDrawIndexedIndirect(CB, _ssbo_vkbuffer(indirect_args), args_offset, 1, sizeof(VkDrawIndexedIndirectCommand));
 }
 
 //////////////////////////////////////////////

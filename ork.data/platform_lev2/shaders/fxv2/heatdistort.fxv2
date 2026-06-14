@@ -1,0 +1,89 @@
+///////////////////////////////////////////////////////////////
+// heatdistort.fxv2 — E2B item D postfx (PostFxNodeHeatDistort).
+// Refracts the composited frame by the screen-space GRADIENT of the
+// "aux_heat" channel (hot air bends light): uv' = uv - grad(heat)*strength,
+// with optional chromatic spread (r/b sample at offset*(1±chroma)).
+// The heat field is additive sprite blobs — smooth, so its gradient is
+// stable; the flicker comes free from the moving fire particles.
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default {
+  glsl_version = "330";
+}
+///////////////////////////////////////////////////////////////
+uniform_block ublk_hd (descriptor_set 0) {
+  mat4 mvp;
+  vec4 DistortParams; // x=strength (gain on the per-texel gradient), y=chroma, zw=unused
+}
+///////////////////////////////////////////////////////////////
+sampler_set sset_hd (descriptor_set 0) {
+  sampler2D MrtMap0;  // postfx_in (the composited frame)
+  sampler2D HeatMap;  // aux_heat (.r = accumulated heat intensity)
+}
+///////////////////////////////////////////////////////////////
+vertex_interface vif_hd : ublk_hd {
+  inputs {
+    vec4 position : POSITION;
+    vec4 vtxcolor : COLOR0;
+    vec2 uv0 : TEXCOORD0;
+  }
+  outputs {
+    vec2 frg_uv;
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_interface fif_hd : ublk_hd : sset_hd {
+  inputs {
+    vec2 frg_uv;
+  }
+  outputs {
+    vec4 out_clr;
+  }
+}
+///////////////////////////////////////////////////////////////
+state_block sb_hd : default {
+  BlendMode = OFF;
+  DepthTest = OFF;
+  CullTest  = OFF;
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_hd : vif_hd {
+  gl_Position = mvp * position;
+  frg_uv      = uv0;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_hd : fif_hd {
+  float strength = DistortParams.x;
+  float chroma   = DistortParams.y;
+  // WIDE 12-texel differencing step = broad shimmer features (the cheap
+  // stand-in for blurring the heat field before the gradient)
+  vec2 ts = 12.0 / vec2(textureSize(HeatMap, 0));
+  // SOFT-SATURATE the accumulation before differencing: heat is ADDITIVE
+  // (overlapping sprites stack well past 1.0) — unbounded values blow the
+  // gradient up and the warp drags in distant background over the smoke.
+  float hW = 1.0 - exp(-texture(HeatMap, frg_uv - vec2(ts.x, 0.0)).r);
+  float hE = 1.0 - exp(-texture(HeatMap, frg_uv + vec2(ts.x, 0.0)).r);
+  float hS = 1.0 - exp(-texture(HeatMap, frg_uv - vec2(0.0, ts.y)).r);
+  float hN = 1.0 - exp(-texture(HeatMap, frg_uv + vec2(0.0, ts.y)).r);
+  vec2 grad = vec2(hE - hW, hN - hS);
+  vec2 ofs  = -grad * strength * ts; // texel-relative -> resolution-stable
+  // HARD CAP: never pull pixels from farther than ~24 texels — shimmer is a
+  // local refraction, not a smear; keeps nearby smoke/fire coherent.
+  vec2 cap = 24.0 / vec2(textureSize(HeatMap, 0));
+  float ol = length(ofs / cap);
+  if (ol > 1.0)
+    ofs /= ol;
+  vec3 rgb;
+  rgb.r = texture(MrtMap0, frg_uv + ofs * (1.0 + chroma)).r;
+  rgb.g = texture(MrtMap0, frg_uv + ofs).g;
+  rgb.b = texture(MrtMap0, frg_uv + ofs * (1.0 - chroma)).b;
+  out_clr = vec4(rgb, 1.0);
+}
+///////////////////////////////////////////////////////////////
+technique heatdistort {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_hd;
+    fragment_shader = ps_hd;
+    state_block     = sb_hd;
+  }
+}

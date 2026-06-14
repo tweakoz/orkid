@@ -11,6 +11,8 @@
 #include <ork/lev2/gfx/terrain/terrain_drawable.h>
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_common.h>
+#include <ork/lev2/gfx/fx_pipeline.h>
+#include <ork/python/gil_safe_pyobj.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -135,6 +137,10 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
               "skyboxLevel",
               [](pbr::commonstuff_ptr_t pbc) -> float { return pbc->_skyboxLevel; },
               [](pbr::commonstuff_ptr_t pbc, float v) { pbc->_skyboxLevel = v; })
+          .def_property(   // disable the skybox BACKGROUND draw while keeping the env loaded for IBL
+              "enable_skybox",
+              [](pbr::commonstuff_ptr_t pbc) -> bool { return pbc->_enable_skybox; },
+              [](pbr::commonstuff_ptr_t pbc, bool v) { pbc->_enable_skybox = v; })
           .def_property(
               "depthFogDistance",
               [](pbr::commonstuff_ptr_t pbc) -> float { return pbc->_depthFogDistance; },
@@ -155,6 +161,10 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
               "useFloatColorBuffer",
               [](pbr::commonstuff_ptr_t pbc) -> bool { return pbc->_useFloatColorBuffer; },
               [](pbr::commonstuff_ptr_t pbc, bool v) { pbc->_useFloatColorBuffer = v; })
+          .def_property(
+              "enable_SSSS",
+              [](pbr::commonstuff_ptr_t pbc) -> bool { return pbc->_enable_SSSS; },
+              [](pbr::commonstuff_ptr_t pbc, bool v) { pbc->_enable_SSSS = v; })
           .def_property(
               "ssaoNumSamples",
               [](pbr::commonstuff_ptr_t pbc) -> int { return pbc->_ssaoNumSamples; },
@@ -226,6 +236,10 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
                 }
                 m->assignImages(context.get(), color_tex, normal_tex, mtlruf_tex, emissive_tex, ambocc_tex, doConform);
               })
+          .def_property(
+              "instanceMatricesOnly", // set BEFORE gpuInit: instanced pipeline uses the matrices-only
+              [](pbrmaterial_ptr_t m) -> bool { return m->_instanceMatricesOnly; }, // dynamic block (no per-inst color)
+              [](pbrmaterial_ptr_t m, bool v) { m->_instanceMatricesOnly = v; })
           .def_property(
               "metallicFactor",
               [](pbrmaterial_ptr_t m) -> float { //
@@ -316,6 +330,66 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
                 printf("PBRMaterial<%p> shaderpath<%s>\n", (void*)m.get(), p.c_str());
                 m->_shaderpath = p;
               })
+          // GEOV2 Phase 3 — resolve + bind a uniform_block-member param by name
+          // (a generated ptex3d surface's bindable params). Binds on the material
+          // (_bound_params), which propagate into every pipeline; the internal
+          // _as_freestyle shares _shader so it resolves the handle.
+          .def(
+              "param",
+              [](pbrmaterial_ptr_t m, std::string named) -> pyfxparam_ptr_t {
+                return pyfxparam_ptr_t(m->_as_freestyle ? m->_as_freestyle->param(named) : nullptr);
+              })
+          // FxShaderParam-HANDLE overload (restored — the original surface; the
+          // name:str form below resolves through _as_freestyle and is ptex3d-
+          // only, a handle from ANY shader source binds directly). Same deferred
+          // _bound_params contract; LIVE post-creation via the 2.12 rebind stamp.
+          .def(
+              "bindParam",
+              [type_codec](pbrmaterial_ptr_t m, pyfxparam_ptr_t par, py::object value) {
+                if (not par)
+                  return;
+                if (py::hasattr(value, "__call__")) {
+                  auto safe = ork::python::gil_safe_pyobj(value);
+                  FxPipeline::varval_generator_t gen = [safe, type_codec]() -> FxPipeline::varval_t {
+                    py::gil_scoped_acquire acquire;
+                    auto fn = safe.valueAs<py::object>();
+                    py::object out = (*fn)();
+                    return type_codec->decode(out);
+                  };
+                  m->bindParam(par.get(), FxPipeline::varval_t(gen));
+                } else {
+                  m->bindParam(par.get(), type_codec->decode(value));
+                }
+              },
+              py::arg("param"),
+              py::arg("value"))
+          .def(
+              "bindParam",
+              [type_codec](pbrmaterial_ptr_t m, std::string named, py::object value) {
+                if (not m->_as_freestyle)
+                  return;
+                auto par = m->_as_freestyle->param(named);
+                if (not par)
+                  return;
+                // A 0-arg callable binds a LIVE value re-evaluated every draw
+                // (the generator is carried into each pipeline at creation and
+                // FxPipeline::_set_typed_param evaluates it per-draw). Captured
+                // GIL-safe so off-thread pipeline copies/teardown are safe.
+                if (py::hasattr(value, "__call__")) {
+                  auto safe = ork::python::gil_safe_pyobj(value);
+                  FxPipeline::varval_generator_t gen = [safe, type_codec]() -> FxPipeline::varval_t {
+                    py::gil_scoped_acquire acquire;
+                    auto fn = safe.valueAs<py::object>();
+                    py::object out = (*fn)();
+                    return type_codec->decode(out);
+                  };
+                  m->bindParam(par, FxPipeline::varval_t(gen));
+                } else {
+                  m->bindParam(par, type_codec->decode(value));
+                }
+              },
+              py::arg("name"),
+              py::arg("value"))
           .def_property(
               "doubleSided",
               [](pbrmaterial_ptr_t m) -> bool { //
@@ -342,7 +416,58 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
             auto array = mtl->_texArrayCNMREA;
             auto slice = array->slice(0);
             txi->updateTextureArraySlice(slice.get(), img);
-          });
+          })
+          //////////////////////////////////////////////////////////////////////
+          // PBR2 Phase 2 — 8 glTF KHR lobe properties (flag + factor pairs),
+          // 4 color vec3s, and 3 secondary scalars. All exposed under
+          // glTF-spec naming so Scene DSL kwargs map cleanly.
+          //////////////////////////////////////////////////////////////////////
+#define _PBR2_LOBE_PROP_BOOL(pyname, member)                                       \
+  .def_property(pyname,                                                            \
+                [](pbrmaterial_ptr_t m) -> bool { return m->member; },             \
+                [](pbrmaterial_ptr_t m, bool v) { m->member = v; })
+#define _PBR2_LOBE_PROP_FLOAT(pyname, member)                                      \
+  .def_property(pyname,                                                            \
+                [](pbrmaterial_ptr_t m) -> float { return m->member; },            \
+                [](pbrmaterial_ptr_t m, float v) { m->member = v; })
+#define _PBR2_LOBE_PROP_VEC3(pyname, member)                                       \
+  .def_property(pyname,                                                            \
+                [](pbrmaterial_ptr_t m) -> fvec3 { return m->member; },            \
+                [](pbrmaterial_ptr_t m, fvec3 v) { m->member = v; })
+          _PBR2_LOBE_PROP_BOOL("has_transmission",            _hasTransmission)
+          _PBR2_LOBE_PROP_FLOAT("transmission_factor",        _transmissionFactor)
+          _PBR2_LOBE_PROP_BOOL("has_transmission_roughness",  _hasTransmissionRoughness)
+          _PBR2_LOBE_PROP_FLOAT("transmission_roughness",     _transmissionRoughness)
+          _PBR2_LOBE_PROP_BOOL("has_ior",                     _hasIor)
+          _PBR2_LOBE_PROP_FLOAT("ior",                        _ior)
+          _PBR2_LOBE_PROP_BOOL("has_volume",                  _hasVolume)
+          _PBR2_LOBE_PROP_FLOAT("volume_thickness_factor",    _volumeThicknessFactor)
+          _PBR2_LOBE_PROP_BOOL("has_diffuse_transmission",    _hasDiffuseTransmission)
+          _PBR2_LOBE_PROP_FLOAT("diffuse_transmission_factor", _diffuseTransmissionFactor)
+          _PBR2_LOBE_PROP_BOOL("has_specular",                _hasSpecular)
+          _PBR2_LOBE_PROP_FLOAT("specular_factor",            _specularFactor)
+          _PBR2_LOBE_PROP_BOOL("has_clearcoat",               _hasClearcoat)
+          _PBR2_LOBE_PROP_FLOAT("clearcoat_factor",           _clearcoatFactor)
+          _PBR2_LOBE_PROP_BOOL("has_sheen",                   _hasSheen)
+          _PBR2_LOBE_PROP_FLOAT("sheen_factor",               _sheenFactor)
+          _PBR2_LOBE_PROP_BOOL("has_iridescence",             _hasIridescence)
+          _PBR2_LOBE_PROP_FLOAT("iridescence_factor",         _iridescenceFactor)
+          _PBR2_LOBE_PROP_VEC3("sheen_color",                 _sheenColor)
+          _PBR2_LOBE_PROP_VEC3("specular_color",              _specularColor)
+          _PBR2_LOBE_PROP_VEC3("attenuation_color",           _attenuationColor)
+          _PBR2_LOBE_PROP_VEC3("diffuse_transmission_color",  _diffuseTransmissionColor)
+          _PBR2_LOBE_PROP_FLOAT("clearcoat_roughness",        _clearcoatRoughness)
+          _PBR2_LOBE_PROP_FLOAT("sheen_roughness",            _sheenRoughness)
+          _PBR2_LOBE_PROP_FLOAT("attenuation_distance",       _attenuationDistance)
+          // PBR2 Phase 3 (P3.D) — subsurface scattering.
+          _PBR2_LOBE_PROP_BOOL("has_subsurface",              _hasSubsurface)
+          _PBR2_LOBE_PROP_VEC3("subsurface_color",            _subsurfaceColor)
+          _PBR2_LOBE_PROP_VEC3("subsurface_radius",           _subsurfaceRadius)
+          _PBR2_LOBE_PROP_FLOAT("subsurface_factor",          _subsurfaceFactor)
+          ;
+#undef _PBR2_LOBE_PROP_BOOL
+#undef _PBR2_LOBE_PROP_FLOAT
+#undef _PBR2_LOBE_PROP_VEC3
   type_codec->registerStdCodec<pbrmaterial_ptr_t>(pbr_type);
 }
 

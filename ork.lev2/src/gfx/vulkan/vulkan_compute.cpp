@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include "headers/vulkan_ctx.h"
+#include <chrono>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
@@ -24,20 +25,8 @@ VkComputePipelineState::VkComputePipelineState(vkcontext_rawptr_t ctx)
 ///////////////////////////////////////////////////////////////////////////////
 
 VkComputePipelineState::~VkComputePipelineState() {
-  if (_contextVK && _contextVK->_vkdevice) {
-    if (_pipeline != VK_NULL_HANDLE) {
-      vkDestroyPipeline(_contextVK->_vkdevice, _pipeline, nullptr);
-    }
-    if (_pipelineLayout != VK_NULL_HANDLE) {
-      vkDestroyPipelineLayout(_contextVK->_vkdevice, _pipelineLayout, nullptr);
-    }
-    if (_descriptorSetLayout != VK_NULL_HANDLE) {
-      vkDestroyDescriptorSetLayout(_contextVK->_vkdevice, _descriptorSetLayout, nullptr);
-    }
-    if (_descriptorPool != VK_NULL_HANDLE) {
-      vkDestroyDescriptorPool(_contextVK->_vkdevice, _descriptorPool, nullptr);
-    }
-  }
+  if (_contextVK)
+    _contextVK->destroyComputePipelineState(_pipeline, _pipelineLayout, _descriptorSetLayout, _setPools);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -60,11 +49,64 @@ void VkComputePipelineState::bindSampler(uint32_t binding_index, VkDescriptorIma
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkComputePipelineState::updateDescriptorSet() {
-  if (!_descriptors_dirty || (_ssbo_bindings.empty() && _sampler_bindings.empty())) {
-    return;
-  }
+// kSetsPerPool — descriptor sets allocated per pool chunk in the growable ring.
+static constexpr uint32_t kSetsPerPool = 64;
 
+void VkComputePipelineState::_growSetPool() {
+  // append one more descriptor pool holding kSetsPerPool sets for this pipeline's layout.
+  std::vector<VkDescriptorPoolSize> poolSizes;
+  if (_ssboCount > 0)
+    poolSizes.push_back({VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, _ssboCount * kSetsPerPool});
+  if (_uboCount > 0)
+    poolSizes.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, _uboCount * kSetsPerPool});
+  if (_samplerCount > 0)
+    poolSizes.push_back({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, _samplerCount * kSetsPerPool});
+
+  VkDescriptorPoolCreateInfo poolInfo{};
+  poolInfo.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+  poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+  poolInfo.pPoolSizes    = poolSizes.data();
+  poolInfo.maxSets       = kSetsPerPool;
+
+  VkDescriptorPool pool = VK_NULL_HANDLE;
+  VkResult result       = vkCreateDescriptorPool(_contextVK->_vkdevice, &poolInfo, nullptr, &pool);
+  OrkAssert(result == VK_SUCCESS);
+  _setPools.push_back(pool);
+  _poolFreeSlots = kSetsPerPool;
+}
+
+VkDescriptorSet VkComputePipelineState::acquireDescriptorSet(uint64_t generation) {
+  // a new dispatch phase (generation) recycles the ring: prior-phase sets are free
+  // because endDispatchPhase submitted+waited before this generation began.
+  if (generation != _setGeneration) {
+    _setGeneration = generation;
+    _setCursor     = 0;
+  }
+  if (_setCursor < _setRing.size()) {
+    return _setRing[_setCursor++]; // reuse an already-allocated set
+  }
+  // need a brand new set (first time this many dispatches occur in one generation)
+  if (_poolFreeSlots == 0) {
+    _growSetPool();
+  }
+  VkDescriptorSetAllocateInfo allocInfo{};
+  allocInfo.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+  allocInfo.descriptorPool     = _setPools.back();
+  allocInfo.descriptorSetCount = 1;
+  allocInfo.pSetLayouts        = &_descriptorSetLayout;
+  VkDescriptorSet set          = VK_NULL_HANDLE;
+  VkResult result              = vkAllocateDescriptorSets(_contextVK->_vkdevice, &allocInfo, &set);
+  OrkAssert(result == VK_SUCCESS);
+  _poolFreeSlots--;
+  _setRing.push_back(set);
+  _setCursor++;
+  return set;
+}
+
+void VkComputePipelineState::writeDescriptorSet(VkDescriptorSet set) {
+  // populate `set` from the currently-recorded bindings. Always writes (each dispatch
+  // gets a fresh/recycled set), so there is no dirty-skip. Buffer/image infos are
+  // reserved to exact size so .back() pointers stay valid across the loop.
   std::vector<VkWriteDescriptorSet> writes;
   std::vector<VkDescriptorBufferInfo> bufferInfos;
   bufferInfos.reserve(_ssbo_bindings.size());
@@ -73,22 +115,20 @@ void VkComputePipelineState::updateDescriptorSet() {
     VkDescriptorBufferInfo bufferInfo{};
     bufferInfo.buffer = binding.buffer;
     bufferInfo.offset = binding.offset;
-    bufferInfo.range = binding.size;
+    bufferInfo.range  = binding.size;
     bufferInfos.push_back(bufferInfo);
 
     VkWriteDescriptorSet write{};
-    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    write.dstSet = _descriptorSet;
-    write.dstBinding = binding_id;
+    write.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write.dstSet          = set;
+    write.dstBinding      = binding_id;
     write.dstArrayElement = 0;
-    write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    write.descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     write.descriptorCount = 1;
-    write.pBufferInfo = &bufferInfos.back();
+    write.pBufferInfo     = &bufferInfos.back();
     writes.push_back(write);
   }
 
-  // Write sampler descriptors
-  // Store image infos in a stable vector so pointers remain valid
   std::vector<VkDescriptorImageInfo> imageInfos;
   imageInfos.reserve(_sampler_bindings.size());
 
@@ -96,20 +136,18 @@ void VkComputePipelineState::updateDescriptorSet() {
     imageInfos.push_back(img_info);
 
     VkWriteDescriptorSet write{};
-    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    write.dstSet = _descriptorSet;
-    write.dstBinding = binding_id;
+    write.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write.dstSet          = set;
+    write.dstBinding      = binding_id;
     write.dstArrayElement = 0;
-    write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    write.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     write.descriptorCount = 1;
-    write.pImageInfo = &imageInfos.back();
+    write.pImageInfo      = &imageInfos.back();
     writes.push_back(write);
   }
 
-  if(0)printf("updateDescriptorSet<%s>: %zu writes (%zu ssbo, %zu sampler)\n",
-         _name.c_str(), writes.size(), _ssbo_bindings.size(), _sampler_bindings.size());
-  vkUpdateDescriptorSets(_contextVK->_vkdevice, writes.size(), writes.data(), 0, nullptr);
-  _descriptors_dirty = false;
+  if (!writes.empty())
+    vkUpdateDescriptorSets(_contextVK->_vkdevice, writes.size(), writes.data(), 0, nullptr);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -135,7 +173,7 @@ bool VkComputePipelineState::createPipeline(vkfxsstage_ptr_t computeShader) {
     logchan_vkcomp->log("createPipeline: _ssbo_refs has %zu blocks", computeShader->_ssbo_refs->_ssbo_blocks.size());
     for (const auto& [name, ssbo] : computeShader->_ssbo_refs->_ssbo_blocks) {
       VkDescriptorSetLayoutBinding binding{};
-      binding.binding = ssbo->_descriptor_set_id;  // Use descriptor_set_id as binding index
+      binding.binding = ssbo->_binding_id;  // real SPIR-V binding (matches the generated GLSL)
       binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
       binding.descriptorCount = 1;
       binding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
@@ -162,7 +200,7 @@ bool VkComputePipelineState::createPipeline(vkfxsstage_ptr_t computeShader) {
   }
 
   // Add sampler bindings if present
-  printf("createPipeline<%s>: _smpset_refs=%p\n", _name.c_str(), computeShader->_smpset_refs.get());
+  //printf("createPipeline<%s>: _smpset_refs=%p\n", _name.c_str(), computeShader->_smpset_refs.get());
   if (computeShader->_smpset_refs) {
     for (const auto& [name, smpset] : computeShader->_smpset_refs->_smpsets) {
       for (const auto& [samp_name, sampler] : smpset->_samplers_by_name) {
@@ -180,8 +218,30 @@ bool VkComputePipelineState::createPipeline(vkfxsstage_ptr_t computeShader) {
   }
 
   //////////////////////////////////////////////////////////
-  // Create descriptor set layout
+  // Create descriptor set layout. Sort bindings ascending — they're gathered
+  // from name-keyed maps (arbitrary order), and MoltenVK's SPIR-V->MSL resource
+  // mapping indexes by binding and asserts on unsorted/sparse input.
   //////////////////////////////////////////////////////////
+  std::sort(layoutBindings.begin(), layoutBindings.end(),
+            [](const VkDescriptorSetLayoutBinding& a, const VkDescriptorSetLayoutBinding& b) {
+              return a.binding < b.binding;
+            });
+  // diagnostic: dump the resolved bindings; a duplicate or sparse set here is the usual cause of a
+  // compute-pipeline failure (compute-only storage interfaces get fallback binding ids that can
+  // collide across shaders that share an interface).
+  {
+    std::string dump;
+    int prev = -1;
+    bool dup = false, sparse = false;
+    for (const auto& b : layoutBindings) {
+      dump += " " + std::to_string(b.binding);
+      if (int(b.binding) == prev) dup = true;
+      if (int(b.binding) != prev + 1 && prev != -1) sparse = true; // post-sort gap
+      prev = int(b.binding);
+    }
+    printf("computePipeline<%s>: %zu bindings ->%s%s%s\n", _name.c_str(), layoutBindings.size(),
+           dump.c_str(), dup ? "  [DUPLICATE!]" : "", sparse ? "  [SPARSE!]" : "");
+  }
   VkDescriptorSetLayoutCreateInfo layoutInfo{};
   layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
   layoutInfo.bindingCount = static_cast<uint32_t>(layoutBindings.size());
@@ -189,7 +249,7 @@ bool VkComputePipelineState::createPipeline(vkfxsstage_ptr_t computeShader) {
 
   VkResult result = vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &_descriptorSetLayout);
   if (result != VK_SUCCESS) {
-    logchan_vkcomp->log("createPipeline: failed to create descriptor set layout");
+    printf("createPipeline<%s>: FAILED vkCreateDescriptorSetLayout result<%d>\n", _name.c_str(), int(result));
     return false;
   }
 
@@ -207,7 +267,7 @@ bool VkComputePipelineState::createPipeline(vkfxsstage_ptr_t computeShader) {
 
   result = vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &_pipelineLayout);
   if (result != VK_SUCCESS) {
-    logchan_vkcomp->log("createPipeline: failed to create pipeline layout");
+    printf("createPipeline<%s>: FAILED vkCreatePipelineLayout result<%d>\n", _name.c_str(), int(result));
     return false;
   }
 
@@ -223,64 +283,27 @@ bool VkComputePipelineState::createPipeline(vkfxsstage_ptr_t computeShader) {
 
   result = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_pipeline);
   if (result != VK_SUCCESS) {
-    logchan_vkcomp->log("createPipeline: failed to create compute pipeline");
+    printf("createPipeline<%s>: FAILED vkCreateComputePipelines result<%d>\n", _name.c_str(), int(result));
     return false;
   }
 
   //////////////////////////////////////////////////////////
-  // Create descriptor pool
+  // Per-set descriptor type counts (used to size the growable per-dispatch pools
+  // in _growSetPool). The sets themselves are allocated lazily at dispatch time
+  // (acquireDescriptorSet), one per dispatch, so multiple dispatches of this
+  // pipeline can coexist in a single command buffer with distinct bindings.
   //////////////////////////////////////////////////////////
-  if (!layoutBindings.empty()) {
-    // Count descriptor types
-    uint32_t ssboCount = 0, uboCount = 0, samplerCount = 0;
-    for (const auto& binding : layoutBindings) {
-      if (binding.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
-        ssboCount++;
-      } else if (binding.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
-        uboCount++;
-      } else if (binding.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
-        samplerCount++;
-      }
-    }
-
-    std::vector<VkDescriptorPoolSize> poolSizes;
-    if (ssboCount > 0) {
-      poolSizes.push_back({VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, ssboCount});
-    }
-    if (uboCount > 0) {
-      poolSizes.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, uboCount});
-    }
-    if (samplerCount > 0) {
-      poolSizes.push_back({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, samplerCount});
-    }
-
-    VkDescriptorPoolCreateInfo poolInfo{};
-    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-    poolInfo.pPoolSizes = poolSizes.data();
-    poolInfo.maxSets = 1;
-
-    result = vkCreateDescriptorPool(device, &poolInfo, nullptr, &_descriptorPool);
-    if (result != VK_SUCCESS) {
-      logchan_vkcomp->log("createPipeline: failed to create descriptor pool");
-      return false;
-    }
-
-    //////////////////////////////////////////////////////////
-    // Allocate descriptor set
-    //////////////////////////////////////////////////////////
-    VkDescriptorSetAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocInfo.descriptorPool = _descriptorPool;
-    allocInfo.descriptorSetCount = 1;
-    allocInfo.pSetLayouts = &_descriptorSetLayout;
-
-    result = vkAllocateDescriptorSets(device, &allocInfo, &_descriptorSet);
-    if (result != VK_SUCCESS) {
-      logchan_vkcomp->log("createPipeline: failed to allocate descriptor set");
-      return false;
+  _ssboCount = _uboCount = _samplerCount = 0;
+  for (const auto& binding : layoutBindings) {
+    if (binding.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
+      _ssboCount++;
+    } else if (binding.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
+      _uboCount++;
+    } else if (binding.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
+      _samplerCount++;
     }
   }
+  _hasDescriptors = !layoutBindings.empty();
 
   logchan_vkcomp->log("createPipeline: successfully created compute pipeline<%s>", _name.c_str());
   return true;
@@ -293,6 +316,23 @@ bool VkComputePipelineState::createPipeline(vkfxsstage_ptr_t computeShader) {
 VkComputeInterface::VkComputeInterface(vkcontext_rawptr_t ctx)
     : ComputeInterface()
     , _contextVK(ctx) {
+  _nonblocking = (getenv("ORK_HM_NB_SUBMIT") != nullptr); // C.5 P3b flag (blocking = the soak-default)
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// C.5: wait out a submitted-but-unwaited dispatch phase. Called at every hazard point: the next
+// beginDispatchPhase (cmdbuf reset / descriptor-ring recycle / pool reuse) and ANY host
+// storage-buffer map (param rewrites, readbacks). No-op in blocking mode or when nothing pends.
+///////////////////////////////////////////////////////////////////////////////
+
+void VkComputeInterface::syncPendingDispatch() {
+  if (not _phasePending)
+    return;
+  auto w0 = std::chrono::steady_clock::now();
+  vkWaitForFences(_contextVK->_vkdevice, 1, &_phaseFence, VK_TRUE, UINT64_MAX);
+  _gpuWaitAccum += std::chrono::duration<double>(std::chrono::steady_clock::now() - w0).count();
+  vkResetFences(_contextVK->_vkdevice, 1, &_phaseFence);
+  _phasePending = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -301,6 +341,10 @@ void VkComputeInterface::beginDispatchPhase() {
   if (_inDispatchPhase) {
     return; // Already in dispatch phase
   }
+
+  // C.5: a prior non-blocking phase must complete before we reset its command buffer (and before
+  // the descriptor-set rings recycle — the generation bump below assumes the prior phase is DONE).
+  syncPendingDispatch();
 
   // Allocate compute command buffer if needed
   if (_computeCmdBuf == VK_NULL_HANDLE) {
@@ -339,6 +383,9 @@ void VkComputeInterface::beginDispatchPhase() {
 
   _dispatchCount = 0;
   _inDispatchPhase = true;
+  // new generation: per-dispatch descriptor-set rings recycle from cursor 0 (the
+  // prior phase's command buffer has completed, so its sets are free to rewrite).
+  _dispatchGeneration++;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -408,17 +455,20 @@ void VkComputeInterface::endDispatchPhase() {
     return; // Not in dispatch phase
   }
 
-  // Insert memory barrier: ensure compute writes and transfer writes are
-  // complete before vertex shader reads and vertex input reads
+  // Insert memory barrier: ensure compute writes and transfer writes are complete before vertex
+  // shader / vertex input / INDIRECT-command reads (the DrawIndexedIndirect args + index buffers
+  // and the dispatchComputeIndirect args are all compute-written).
   VkMemoryBarrier memoryBarrier{};
   memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
   memoryBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
-  memoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
+  memoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT |
+                                VK_ACCESS_INDEX_READ_BIT | VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
 
   vkCmdPipelineBarrier(
       _computeCmdBuf,
       VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
-      VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+      VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_INPUT_BIT |
+          VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
       0, 1, &memoryBarrier, 0, nullptr, 0, nullptr
   );
 
@@ -427,24 +477,31 @@ void VkComputeInterface::endDispatchPhase() {
 
   // Only submit if we actually dispatched something
   if (_dispatchCount > 0) {
-    // Create fence for this submission
-    VkFenceCreateInfo fenceInfo{};
-    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    VkFence fence;
-    vkCreateFence(_contextVK->_vkdevice, &fenceInfo, nullptr, &fence);
+    if (_phaseFence == VK_NULL_HANDLE) {           // persistent fence (created once; reset per use)
+      VkFenceCreateInfo fenceInfo{};
+      fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+      vkCreateFence(_contextVK->_vkdevice, &fenceInfo, nullptr, &_phaseFence);
+    }
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &_computeCmdBuf;
 
-    _contextVK->_gfxqueue->queueSubmit(&submitInfo, fence);
+    _contextVK->_gfxqueue->queueSubmit(&submitInfo, _phaseFence);
 
-    // Wait for compute to complete before returning
-    vkWaitForFences(_contextVK->_vkdevice, 1, &fence, VK_TRUE, UINT64_MAX);
-    vkDestroyFence(_contextVK->_vkdevice, fence, nullptr);
-
-    logchan_vkcomp->log("endDispatchPhase: submitted and completed %u dispatches", _dispatchCount);
+    if (_nonblocking) {
+      // C.5 P3b: RETURN without waiting — the CPU overlaps this phase's GPU work. The wait
+      // happens at the next hazard point (syncPendingDispatch: next begin / any host map).
+      // GPU->GPU ordering vs the render is free: same queue, submission order + the barrier above.
+      _phasePending = true;
+    } else {
+      auto w0 = std::chrono::steady_clock::now();
+      vkWaitForFences(_contextVK->_vkdevice, 1, &_phaseFence, VK_TRUE, UINT64_MAX);
+      _gpuWaitAccum += std::chrono::duration<double>(std::chrono::steady_clock::now() - w0).count();
+      vkResetFences(_contextVK->_vkdevice, 1, &_phaseFence);
+      logchan_vkcomp->log("endDispatchPhase: submitted and completed %u dispatches", _dispatchCount);
+    }
   }
 
   _inDispatchPhase = false;
@@ -482,21 +539,24 @@ void VkComputeInterface::dispatchCompute(
   OrkAssert(_inDispatchPhase && "Must call beginDispatchPhase before dispatch");
   OrkAssert(_computeCmdBuf != VK_NULL_HANDLE);
 
-  // Update descriptor set if dirty
-  pipeline->updateDescriptorSet();
-
   // Bind compute pipeline
   vkCmdBindPipeline(_computeCmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->_pipeline);
 
-  // Bind descriptor sets
-  if (pipeline->_descriptorSet != VK_NULL_HANDLE) {
+  // Acquire a FRESH descriptor set for THIS dispatch and populate it with the
+  // currently-recorded bindings, then bind it. A fresh set per dispatch is what lets
+  // many dispatches of the same pipeline live in one command buffer (one submit) with
+  // distinct bindings (e.g. a ping-pong relaxation) — previously a single in-place set
+  // forced a submit+wait between every dispatch.
+  if (pipeline->_hasDescriptors) {
+    VkDescriptorSet dset = pipeline->acquireDescriptorSet(_dispatchGeneration);
+    pipeline->writeDescriptorSet(dset);
     vkCmdBindDescriptorSets(
         _computeCmdBuf,
         VK_PIPELINE_BIND_POINT_COMPUTE,
         pipeline->_pipelineLayout,
         0,  // first set
         1,  // set count
-        &pipeline->_descriptorSet,
+        &dset,
         0,      // dynamic offset count
         nullptr // dynamic offsets
     );
@@ -511,9 +571,56 @@ void VkComputeInterface::dispatchCompute(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkComputeInterface::dispatchComputeIndirect(const FxComputeShader* shader, int32_t* indirect) {
-  // TODO: Implement indirect dispatch
-  logchan_vkcomp->log("dispatchComputeIndirect: not implemented");
+// GPU-driven dispatch (C.3): group counts come from a VkDispatchIndirectCommand (x,y,z uint32) at
+// `args_offset` inside a GPU-written SSBO — the compute analogue of DrawIndexedIndirectEML. Same
+// pipeline/descriptor handling as dispatchCompute; only the final command differs.
+void VkComputeInterface::dispatchComputeIndirect(const FxComputeShader* shader, FxShaderStorageBuffer* args, size_t args_offset) {
+  if (!shader) {
+    logchan_vkcomp->log("dispatchComputeIndirect: null shader");
+    return;
+  }
+  auto vk_compute_pipeline = shader->_impl.tryAs<vkcompute_pipeline_ptr_t>();
+  if (!vk_compute_pipeline) {
+    logchan_vkcomp->log("dispatchComputeIndirect: shader has no compute pipeline");
+    OrkAssert(false && "Compute shader has no VkComputePipelineState");
+    return;
+  }
+  auto pipeline = vk_compute_pipeline.value();
+  if (!pipeline || pipeline->_pipeline == VK_NULL_HANDLE) {
+    logchan_vkcomp->log("dispatchComputeIndirect: invalid pipeline");
+    OrkAssert(false && "Invalid compute pipeline");
+    return;
+  }
+  OrkAssert(args != nullptr);
+  OrkAssert((args_offset & 3) == 0 && "indirect args offset must be 4-byte aligned");
+  auto vk_args = args->_impl.getShared<VulkanBuffer>();
+  OrkAssert(vk_args);
+
+  OrkAssert(_inDispatchPhase && "Must call beginDispatchPhase before dispatch");
+  OrkAssert(_computeCmdBuf != VK_NULL_HANDLE);
+
+  vkCmdBindPipeline(_computeCmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->_pipeline);
+
+  // fresh descriptor set per dispatch (same rationale as dispatchCompute above)
+  if (pipeline->_hasDescriptors) {
+    VkDescriptorSet dset = pipeline->acquireDescriptorSet(_dispatchGeneration);
+    pipeline->writeDescriptorSet(dset);
+    vkCmdBindDescriptorSets(
+        _computeCmdBuf,
+        VK_PIPELINE_BIND_POINT_COMPUTE,
+        pipeline->_pipelineLayout,
+        0,  // first set
+        1,  // set count
+        &dset,
+        0,      // dynamic offset count
+        nullptr // dynamic offsets
+    );
+  }
+
+  vkCmdDispatchIndirect(_computeCmdBuf, vk_args->_vkbuffer, VkDeviceSize(args_offset));
+  _dispatchCount++;
+
+  logchan_vkcomp->log("dispatchComputeIndirect: dispatched from GPU args (offset %zu)", args_offset);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -549,28 +656,42 @@ void VkComputeInterface::bindStorageBuffer(
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#if defined(ENABLE_PYTORCH)
-
-FxShaderStorageBuffer* VkComputeInterface::storageBufferFromTensor(torchtensor_ptr_t tensor) {
-  // TODO: Implement tensor-to-SSBO
-  logchan_vkcomp->log("storageBufferFromTensor: not implemented");
-  OrkAssert(false);
-  return nullptr;
-}
-
+// Auto-resolving bind: resolve `block`'s reflected SPIR-V binding within THIS compute
+// shader (by name) — the same _binding_id createPipeline built the descriptor layout from
+// (vulkan_compute.cpp:175). Frees callers from hardcoding an index that must match the
+// merged binding id (non-obvious when the shader shares a storage block with a graphics
+// technique, e.g. FWD_SSBO_CUSTOM where sif_ptex_vtx sits past the lighting storage).
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkComputeInterface::copyTensorIntoStorageBuffer(
-    FxShaderStorageBuffer* ssbo,
-    torchtensor_ptr_t tensor,
-    size_t dest_offset) {
-  // TODO: Implement tensor copy to SSBO
-  logchan_vkcomp->log("copyTensorIntoStorageBuffer: not implemented");
-  OrkAssert(false);
-}
+void VkComputeInterface::bindStorageBufferOnBlock(
+    const FxComputeShader* shader,
+    FxShaderStorageBuffer* buffer,
+    const FxShaderStorageBlock* block) {
 
-#endif
+  if (!shader || !block || !buffer) {
+    logchan_vkcomp->log("bindStorageBufferOnBlock: null shader/block/buffer");
+    return;
+  }
+  auto vk_compute_pipeline = shader->_impl.tryAs<vkcompute_pipeline_ptr_t>();
+  if (!vk_compute_pipeline) {
+    logchan_vkcomp->log("bindStorageBufferOnBlock: shader has no compute pipeline");
+    return;
+  }
+  auto pipeline = vk_compute_pipeline.value();
+  auto cs       = pipeline->_computeShader;
+  if (!cs || !cs->_ssbo_refs) {
+    logchan_vkcomp->log("bindStorageBufferOnBlock: compute shader has no ssbo refs");
+    return;
+  }
+  auto it = cs->_ssbo_refs->_ssbo_blocks.find(block->_name);
+  if (it == cs->_ssbo_refs->_ssbo_blocks.end()) {
+    logchan_vkcomp->log(
+        "bindStorageBufferOnBlock: block<%s> not referenced by compute shader<%s>",
+        block->_name.c_str(), cs->_name.c_str());
+    return;
+  }
+  bindStorageBuffer(shader, uint32_t(it->second->_binding_id), buffer);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

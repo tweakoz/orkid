@@ -87,6 +87,17 @@ void SceneGraphSystemData::describeX(SystemDataClass* clazz) {
   clazz->intProperty("CookieAtlasHeight", int_range{64, 4096}, &SceneGraphSystemData::_cookieAtlasHeight);
   clazz->intProperty("ShadowAtlasWidth", int_range{64, 4096}, &SceneGraphSystemData::_shadowAtlasWidth);
   clazz->intProperty("ShadowAtlasHeight", int_range{64, 4096}, &SceneGraphSystemData::_shadowAtlasHeight);
+
+  clazz->directProperty("skybox_path", &SceneGraphSystemData::_skybox_path);
+  // PBR2 P3.D — reflected post-fx node registry + execution order.
+  // _postfx_nodes survives JSON round-trip via directObjectMapProperty
+  // (same pattern as Archetype::mComponentDatas — polymorphic shared_ptr
+  // to ork::Object subclasses, each carrying its own reflected fields).
+  clazz->directObjectMapProperty("postfx_nodes", &SceneGraphSystemData::_postfx_nodes);
+  // system-level node declarations (shared/instanced group nodes) must round-trip
+  // like the component-level ones always have.
+  clazz->directObjectMapProperty("nodedatas", &SceneGraphSystemData::_nodedatas);
+  clazz->directProperty("postfx_order",          &SceneGraphSystemData::_postfx_order);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -99,20 +110,62 @@ void SceneGraphSystemData::setInternalSceneParam(const varmap::key_t& key, const
   _internalParams->setValueForKey(key, val);
 }
 
+void SceneGraphSystemData::setUserSceneParam(const std::string& key, const varmap::VarMap::value_type& val) {
+  // orklut asserts on duplicate-key AddSorted in single-key mode;
+  // erase any prior entry first so this behaves like dict assignment.
+  auto it = _userParams.find(key);
+  if (it != _userParams.end()) {
+    _userParams.erase(it);
+  }
+  _userParams.AddSorted(key, val);
+}
+
+bool SceneGraphSystemData::hasUserSceneParam(const std::string& key) const {
+  return _userParams.find(key) != _userParams.end();
+}
+
 void SceneGraphSystemData::declareLayer(const std::string& layername) {
   _declaredLayers.push_back(layername);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// PBR2 P3.D — register a PostFxNode under a stable string key. Overwrites
+// on collision. Reflected via _postfx_nodes (directObjectMapProperty);
+// execution order is determined by _postfx_order (separate string).
+// Resolution into the runtime chain happens at _onLink time.
+
+void SceneGraphSystemData::addPostFxNode(const std::string& name, lev2::compositorpostnode_ptr_t node) {
+  _postfx_nodes[name] = node;
+}
+
+void SceneGraphSystemData::appendPostFxOrder(const std::string& name) {
+  // Idempotent: split the current order on commas, skip if name already present.
+  size_t pos = 0;
+  while (pos < _postfx_order.size()) {
+    auto comma = _postfx_order.find(',', pos);
+    auto end   = (comma == std::string::npos) ? _postfx_order.size() : comma;
+    auto tok   = _postfx_order.substr(pos, end - pos);
+    while (!tok.empty() && (tok.front() == ' ' || tok.front() == '\t')) tok.erase(tok.begin());
+    while (!tok.empty() && (tok.back()  == ' ' || tok.back()  == '\t')) tok.pop_back();
+    if (tok == name) return;   // already present
+    pos = (comma == std::string::npos) ? _postfx_order.size() : (comma + 1);
+  }
+  if (!_postfx_order.empty()) _postfx_order += ",";
+  _postfx_order += name;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 void SceneGraphSystemData::declareNodeOnLayer(nodedef_ptr_t ndef) {
-  auto nid           = std::make_shared<SceneGraphNodeItemData>();
-  nid->_nodename     = ndef->_nodename;
-  nid->_drawabledata = ndef->_drawabledata;
-  nid->_layername    = ndef->_layername;
-  nid->_multilayers    = ndef->_multilayers;
-  nid->_xfoverride   = ndef->_transform;
-  nid->_modcolor     = ndef->_modcolor;
+  auto nid                  = std::make_shared<SceneGraphNodeItemData>();
+  nid->_nodename            = ndef->_nodename;
+  nid->_drawabledata        = ndef->_drawabledata;
+  nid->_drawable_asset_name = ndef->_drawable_asset_name;
+  nid->_envmap_path         = ndef->_envmap_path;
+  nid->_layername           = ndef->_layername;
+  nid->_multilayers         = ndef->_multilayers;
+  nid->_xfoverride          = ndef->_transform;
+  nid->_modcolor            = ndef->_modcolor;
 
   _nodedatas[ndef->_nodename] = nid;
 }
@@ -299,26 +352,20 @@ void SceneGraphSystem::_instantiateDeclaredNodes() {
           nitem->_drawable = drwdata->createDrawable();
           nitem->_drawable->_modcolor = drwdata->_modcolor;
         }
-  
+        // PBR2 Phase 0 — per-node HDRI override. NID->_envmap_path has
+        // already been resolved (asset:// → .xir path) by Python-side
+        // wire_scene_data before the SystemData was staged. Empty path
+        // is a no-op inside loadEnvMapOverride.
+        ork::lev2::loadEnvMapOverride(nitem->_drawable.get(), NID->_envmap_path);
+
         if (auto as_instanced = dynamic_pointer_cast<InstancedDrawable>(nitem->_drawable)) {
+          // IDLE-SLOT CONTRACT: unallocated instances stay exactly as
+          // InstancedDrawableInstanceData::resize() initialized them —
+          // ZERO basis (degenerate -> invisible). Do NOT seed positions
+          // here; an idle slot that draws anything is a bug.
           auto NODE_ON_LAYER = [=](lev2::scenegraph::layer_ptr_t layer){
             auto node      = layer->createDrawableNode(NID->_nodename, as_instanced);
             nitem->_sgnode = node;
-            size_t count   = as_instanced->_count;
-            auto idata     = as_instanced->_instancedata;
-            for (size_t i = 0; i < count; i++) {
-
-              int ix   = rand() & 0xffff;
-              int iz   = rand() & 0xffff;
-              float fx = (float(ix) / 32768.0f - 1.0f) * 100.0f;
-              float fz = (float(iz) / 32768.0f - 1.0f) * 100.0f;
-              fvec3 pos(fx, 0, fz);
-
-              idata->_worldmatrices[i].setColumn(3, pos);
-              idata->_modcolors[i] = fvec4(1, 1, 1, 1);
-              idata->_pickids[i]   = 0;
-              //printf( "init instanced<%d>\n", i );
-            }
           };
           auto layers_i = resolveLayerNames(NID.get());
           for (auto& lname : layers_i) {
@@ -541,7 +588,7 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
   //////////////////////////////
   auto ent = component->GetEntity();
   //////////////////////////////
-  printf("[SGS] stage component<%p>\n", (void*) component);
+  if(0)printf("[SGS] stage component<%p>\n", (void*) component);
   this->_components.atomicOp([this,component](SceneGraphSystem::component_set_t& unlocked) { //
     unlocked.insert(component); 
     _numComponents = unlocked.size();                                                        //
@@ -561,7 +608,7 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
         // light ?
         /////////////////////////////////////////////////
         auto as_light = dynamic_pointer_cast<LightData>(drwdata);
-        printf("[SGS::_onStageComponent] NID name=%s drwdata=%p as_light=%p\n",
+        if(0)printf("[SGS::_onStageComponent] NID name=%s drwdata=%p as_light=%p\n",
                NID->_nodename.c_str(), (void*)drwdata.get(), (void*)as_light.get());
         fflush(stdout);
         if (as_light) {
@@ -577,7 +624,7 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
           nitem->_nodename                      = NID->_nodename;
           nitem->_data                          = NID;
           component->_nodeitems[NID->_nodename] = nitem;
-          printf("[SGS::_onStageComponent] LIGHT INJECTED name=%s scene=%p layer=%p lnode=%p\n",
+          if(0)printf("[SGS::_onStageComponent] LIGHT INJECTED name=%s scene=%p layer=%p lnode=%p\n",
                  NID->_nodename.c_str(),
                  (void*)_scene.get(),
                  (void*)layer.get(),
@@ -688,6 +735,8 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
                   nitem->_drawable = drwdata->createDrawable();
                   nitem->_drawable->_modcolor = drwdata->_modcolor;
                 }
+                // PBR2 Phase 0 — per-node HDRI override (see _onStageComponent above).
+                ork::lev2::loadEnvMapOverride(nitem->_drawable.get(), NID->_envmap_path);
                 nitem->_nodename                      = NID->_nodename;
                 nitem->_data                          = NID;
                 component->_nodeitems[NID->_nodename] = nitem;
@@ -734,10 +783,14 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
         }
       }
     }
-    // now check for INSTANCE's
-    if (COMPDATA._INSTANCEDATA) {
+    // now check for INSTANCE's (ptr form from pyext hosts, name form from
+    // deserialized scenes — the name is the serializable contract)
+    std::string instance_group = COMPDATA._INSTANCEDATA //
+                                     ? COMPDATA._INSTANCEDATA->_groupname
+                                     : COMPDATA._instanceNodeName;
+    if (instance_group != "") {
       auto instance        = std::make_shared<lev2::scenegraph::NodeInstance>();
-      instance->_groupname = COMPDATA._INSTANCEDATA->_groupname;
+      instance->_groupname = instance_group;
       // TODO : defer until nodes created ?
       auto it = _nodeitems.find(instance->_groupname);
       OrkAssert(it != _nodeitems.end());
@@ -747,15 +800,19 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
       auto idata                 = group_drawable->_instancedata;
       instance->_idata           = idata;
       int ID                     = idata->allocInstance();
+      if (ID < 0) {
+        // pool exhausted (fail-soft): the entity lives on without a visual;
+        // _INSTANCE stays null so unstage/physics wiring skip cleanly.
+        printf("SceneGraphSystem: instance pool exhausted for group<%s> — entity gets NO visual\n", instance_group.c_str());
+        return;
+      }
       instance->_instance_index  = ID;
       component->_INSTANCE       = instance;
-      //printf( "sgc<%p> instanced sg pseudonode id<%d>\n", this, ID );
-      if(instance){
+      {
         auto ent = component->GetEntity();
         auto sad = ent->_spawnanondata;
         if(sad and sad->_table){
           auto modcolor = (*sad->_table)["modcolor"_tok];
-          //.get<fvec4>();
           if(auto as_v4 = modcolor.tryAs<fvec4>()){
             idata->_modcolors[ID] = as_v4.value();
           }
@@ -868,6 +925,48 @@ bool SceneGraphSystem::_onLink(Simulation* psi) // final
   }
 
   /////////////////////////////////////////
+  // PBR2 P3.D — assemble the runtime PostFxChain from the reflected
+  // _postfx_nodes map + _postfx_order string. The compositor consumes
+  // the chain from _mergedParams["PostFxChain"] (scenegraph.cpp:424).
+  // Names listed in _postfx_order but absent from _postfx_nodes are
+  // skipped silently; names in the map but absent from order are
+  // unused (lets you stage-disable a node without removing it).
+  /////////////////////////////////////////
+  if(0)printf("[SGS::_onLink P3.D] postfx_order=<%s> postfx_nodes.size=%zu\n",
+         _SGSD._postfx_order.c_str(), _SGSD._postfx_nodes.size());
+  fflush(stdout);
+  if (!_SGSD._postfx_order.empty() && !_SGSD._postfx_nodes.empty()) {
+    lev2::postfx_node_chain_t chain;
+    std::string buf = _SGSD._postfx_order;
+    size_t pos = 0;
+    while (pos < buf.size()) {
+      auto comma = buf.find(',', pos);
+      auto end = (comma == std::string::npos) ? buf.size() : comma;
+      auto name = buf.substr(pos, end - pos);
+      // trim whitespace
+      while (!name.empty() && (name.front() == ' ' || name.front() == '\t')) name.erase(name.begin());
+      while (!name.empty() && (name.back()  == ' ' || name.back()  == '\t')) name.pop_back();
+      if (!name.empty()) {
+        auto it = _SGSD._postfx_nodes.find(name);
+        if (it != _SGSD._postfx_nodes.end()) {
+          chain.push_back(it->second);
+        } else {
+          printf("[SGS::_onLink] postfx_order references unknown node <%s> — skipped\n",
+                 name.c_str());
+        }
+      }
+      pos = (comma == std::string::npos) ? buf.size() : (comma + 1);
+    }
+    if(0)printf("[SGS::_onLink P3.D] assembled PostFxChain size=%zu\n", chain.size());
+    fflush(stdout);
+    if (!chain.empty()) {
+      varmap::VarMap::value_type val;
+      val.set<lev2::postfx_node_chain_t>(chain);
+      _mergedParams->setValueForKey("PostFxChain", val);
+    }
+  }
+
+  /////////////////////////////////////////
   // check simulation varmap for an injected scenegraph
   /////////////////////////////////////////
 
@@ -882,10 +981,10 @@ bool SceneGraphSystem::_onLink(Simulation* psi) // final
 
   if (!_scene) {
     _scene = std::make_shared<scenegraph::Scene>(_mergedParams);
-    printf("[SGS::_onStage] this=%p INJECTION FAILED — created new scene=%p\n",
+    if(0)printf("[SGS::_onStage] this=%p INJECTION FAILED — created new scene=%p\n",
            (void*)this, (void*)_scene.get());
   } else {
-    printf("[SGS::_onStage] this=%p using scene=%p (isShared=%d)\n",
+    if(0)printf("[SGS::_onStage] this=%p using scene=%p (isShared=%d)\n",
            (void*)this, (void*)_scene.get(), (int)_isSharedScene);
   }
   fflush(stdout);
@@ -946,6 +1045,21 @@ void SceneGraphSystem::_rt_process() {
 ///////////////////////////////////////////////////////////////////////////////
 void SceneGraphSystem::_onGpuUpdate(Simulation* psi, lev2::Context* ctx) {
   _rt_process();
+  // per-drawable view-INDEPENDENT GPU hook (Drawable::onGpuUpdate — candidate uploads for the
+  // instance cull, GPU-driven geometry recompute, ...). The SGVP widget path fans this out via
+  // SceneGraphViewport::gpuUpdateAll (ezapp_topwidget), but an ECS-OWNED scene never passes
+  // through an SGVP — without this call those drawables never tick.
+  // ONLY when IN a frame: on the windowed ezapp loop, Controller::gpuUpdate fires from the
+  // app _onGpuUpdate callback BEFORE SlotRepaint — OUTSIDE beginFrame, where there is no
+  // primary command buffer (LightManager::gpuInit's texture-array upload null-derefs) and
+  // an early call would also claim the per-frame dedup slot, starving the correct in-frame
+  // call. There the render entries cover the fan-out (Scene::_renderIMPL /
+  // renderWithStandardCompositorFrame call gpuUpdate defensively; first caller per frame
+  // wins). Headless hosts that drive Controller::gpuUpdate inside their frame keep this
+  // early fan-out.
+  if (_scene && ctx->_currentPhase != 0) {
+    _scene->gpuUpdate(ctx);
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void SceneGraphSystem::_onRenderWithStandardCompositorFrame(Simulation* psi, lev2::standardcompositorframe_ptr_t sframe) {

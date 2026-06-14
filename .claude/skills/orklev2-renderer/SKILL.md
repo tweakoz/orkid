@@ -76,7 +76,9 @@ DrawableData : ork::Object (drawable.h:376) — factory pattern
 | `_sortkey` | int | Render sort order |
 | `_drawable_type` | uint64_t | Type ID (e.g., `"model"_crcu`) |
 | `_tag` | uint64_t | User filtering tag |
-| `_envmapOverride` | radiancemaps_ptr_t | Per-drawable IBL override |
+| `_envmapOverride` | radiancemaps_ptr_t | Per-drawable baked-equirect IBL override (MapSpecularEnv channel) |
+| `_probeOverride` | lightprobe_ptr_t | Per-drawable live-cube IBL override (reflectionPROBE channel) |
+| `_excludeFromProbe` | bool | If true, drawable is skipped when `RCFD["renderingPROBE"]` is set |
 | `_properties` | varmap_ptr_t | User properties |
 | `_rendercb` / `_rendercb_user` | on_render_rcid_t | Render callbacks |
 | `_sg` / `_sgnode` | scene/node ptr | Scene graph association |
@@ -84,6 +86,12 @@ DrawableData : ork::Object (drawable.h:376) — factory pattern
 Key methods:
 - `enqueueOnLayer(xfdata, layer)` — add to draw queue layer
 - `enqueueToRenderQueue(item, renderer)` — submit renderables to renderer
+
+### IBL Override Propagation (PBR2 Phase 0)
+
+`_envmapOverride` and `_probeOverride` propagate `Drawable → IRenderable → RCID`. Each subclass's enqueue copies them onto the renderable; `IRenderer::_renderCallbackRenderable` / `_renderModelRenderable` copy renderable → RCID. Consumers (e.g. `fwdnode_pipeline.cpp`) read off RCID per-draw.
+
+`DrawQueue::enqueueLayerToRenderQueue` reads `RCFD["renderingPROBE"_crcu]` once per layer-enqueue; if true, drawables with `_excludeFromProbe == true` are skipped from the inner loop. Particle drawables default to excluded.
 
 ## DrawQueue & Triple Buffering
 

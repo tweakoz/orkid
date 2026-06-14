@@ -174,6 +174,46 @@ drawable_data.graphdata = graphdata
 
 **Materials:** `FlatMaterial`, `GradientMaterial`, `TextureMaterial`, `TexGridMaterial`, `VolTexMaterial`
 
+## ECS Driver: ParticlesGlobalSystem (PBR2 Phase 0)
+
+When particles are driven by ECS (not the drawable's internal timer), `ParticlesDrawableData::_externalCompute` is true and the drawable's `_update()` skips its own `_graphinst->compute()`. The driver is `ork::ecs::ParticlesGlobalSystem` (`ork.ecs/src/scenegraph/ParticlesComponent.cpp`).
+
+### Three-Phase Update
+1. **Gather** (serial): walk active component slots, advance per-slot time, build a `jobs` vector of `{graphinst, abstime}`.
+2. **Compute** (serial OR parallel — see below): for each job, build a stack-local `UpdateData` and call `graphinst->compute(ud)`.
+3. **Bookkeeping** (serial): post-compute slot state transitions, completion, event handling.
+
+### Optional Parallel Compute
+
+`ParticlesGlobalSystemData::_parallel_compute` (bool, opt-in via DSL) fans the compute phase onto `opq::concurrentQueue` with an atomic-int barrier:
+
+```cpp
+if (_PGSD._parallel_compute && jobs.size() > 1) {
+  std::atomic<int> remaining{0};
+  for (auto& j : jobs) {
+    remaining.fetch_add(1, std::memory_order_relaxed);
+    opq::concurrentQueue()->enqueue([j, dt_for_ops, &remaining]() {
+      auto ud = std::make_shared<ui::UpdateData>();
+      ud->_dt = dt_for_ops; ud->_abstime = j.abstime;
+      j.gi->compute(ud);
+      remaining.fetch_sub(1, std::memory_order_release);
+    });
+  }
+  while (remaining.load(std::memory_order_acquire) != 0)
+    std::this_thread::yield();
+}
+```
+
+Each op gets its own stack-local `UpdateData` — no shared mutation. Modules are assumed independent (no cross-graphinst dependencies in compute). Single-job case stays serial. Authors enable via `self.system_data("ParticlesGlobalSystem", parallel_compute=True)` in the Scene DSL.
+
+### Per-Drawable Probe Resolution
+
+`ParticlesDrawableData::_probeEntityName` (runtime field) names a `ProbeComponent` entity. `ParticlesComponent::_onActivateComponent` resolves via `LightManager::findProbeByName(probe_name)` (late, after all probes have staged) and writes the resolved `lightprobe_ptr_t` into each slot's `drawable->_probeOverride`. Authors wire via `ParticleSystem(probe=probe_wrapper, ...)` — see the orklev2-pbr skill for the per-drawable cube override path.
+
+### Default Probe Exclusion
+
+`ParticlesDrawableData::createDrawable` sets `rval->_excludeFromProbe = true` — particles do NOT render into reflection probe cubemaps. Prevents feedback loops where the psys would appear in its own reflection and add noise to subsequent captures. Flip if you want particles in reflections (rare; e.g. emissive fireflies in a still scene).
+
 ## How to Answer
 
 1. For module types: check `modular_emitters.h`, `modular_forces.h`, `modular_renderers.h`
@@ -181,3 +221,4 @@ drawable_data.graphdata = graphdata
 3. For rendering: check `modules_renderer_sprite.cpp` and `renderer_materials.cpp`
 4. For Python usage: check `pyext_gfx_particles.cpp` and `examples/python/scenegraph/particles1.py`
 5. For dataflow fundamentals: consult the **orkcore-dataflow** skill
+6. For ECS-driven particles + parallel compute + per-drawable probes: check `ork.ecs/src/scenegraph/ParticlesComponent.cpp`

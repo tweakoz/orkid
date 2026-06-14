@@ -31,10 +31,34 @@ namespace ork::dataflow {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void ModuleData::describeX(class_t* clazz) {
+  // DATA-DRIVEN modules (e.g. psys Parameters) build plugs from reflected state that
+  // deserializes BEFORE these arrays (derived-class properties precede base-class ones in
+  // the stream). A freshly-constructed instance has no such plugs yet, so the deserializer's
+  // pre-instantiated-slot fetch comes up null — this fallback runs the class's reshapeIOs
+  // (idempotent per the reshape-runs-twice contract) to build them, then the fetch retries.
+  reflect::array_instantiation_fallback_t reshape_now = [](object_ptr_t obj) {
+    if (auto as_mod = std::dynamic_pointer_cast<ModuleData>(obj)) {
+      // IArray::deserialize RESIZES the plug vector to the serialized count before parsing
+      // elements, padding a data-driven module's missing plugs with NULL slots. Strip those
+      // first — reshape rebuilds the real plugs, and a null slot is meaningless to dedup
+      // against (and would crash name comparisons).
+      auto strip_nulls = [](auto& vec) {
+        vec.erase(std::remove(vec.begin(), vec.end(), nullptr), vec.end());
+      };
+      strip_nulls(as_mod->_inputs);
+      strip_nulls(as_mod->_outputs);
+      auto clazz = as_mod->GetClass();
+      if (auto try_reshape = clazz->annotationTyped<moduleIOreshape_fn_t>("reshapeIOs")) {
+        try_reshape.value()(as_mod);
+      }
+    }
+  };
   clazz->directObjectVectorProperty("inputs", &ModuleData::_inputs)
-      ->annotate<bool>("reflect.no_instantiate", true);
+      ->annotate<bool>("reflect.no_instantiate", true)
+      ->annotate<reflect::array_instantiation_fallback_t>("reflect.no_instantiate.fallback", reshape_now);
   clazz->directObjectVectorProperty("outputs", &ModuleData::_outputs)
-      ->annotate<bool>("reflect.no_instantiate", true);
+      ->annotate<bool>("reflect.no_instantiate", true)
+      ->annotate<reflect::array_instantiation_fallback_t>("reflect.no_instantiate.fallback", reshape_now);
 }
 ModuleData::ModuleData(){
 }
@@ -111,7 +135,21 @@ void ModuleData::addInput(inplugdata_ptr_t plg) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ModuleData::addOutput(outplugdata_ptr_t plg) {
-  _outputs.push_back(plg);
+  // dedup by name (symmetric with addInput). reshapeIOs runs TWICE on deserialize
+  // (createShared factory + postDeserialize hook); without this, the second pass
+  // appends a duplicate same-named output plug. The connected edge points at the
+  // first, but the module writes the second (_outputsByName is last-wins), so a
+  // reader sees an unallocated buffer. Same-named outputs are unaddressable anyway.
+  auto name       = plg->_name;
+  bool should_add = true;
+  for (auto item : _outputs) {
+    if (name == item->_name) {
+      should_add = false;
+    }
+  }
+  if (should_add) {
+    _outputs.push_back(plg);
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ModuleData::removeInput(inplugdata_ptr_t plg) {
@@ -169,33 +207,63 @@ dgmoduleinst_ptr_t DgModuleData::createInstance(GraphInst* ginst) const{
   return std::make_shared<DgModuleInst>(this,ginst);
 }
 size_t DgModuleData::computeMinDepth() const{
+    dgmoduleset_t on_path;
+    dgmoduledepthmap_t memo;
+    return _computeMinDepth(on_path, memo);
+}
+size_t DgModuleData::computeMaxDepth() const{
+    dgmoduleset_t on_path;
+    dgmoduledepthmap_t memo;
+    return _computeMaxDepth(on_path, memo);
+}
+size_t DgModuleData::_computeMinDepth(dgmoduleset_t& on_path, dgmoduledepthmap_t& memo) const{
+    // already fully resolved on a prior path — reuse (kills exponential re-walk
+    // of re-convergent / diamond DAGs).
+    auto itmemo = memo.find(this);
+    if(itmemo != memo.end())
+      return itmemo->second;
+    if(!on_path.insert(this).second){
+      // cycle — this node is already on the DFS path; stop here WITHOUT
+      // memoizing (its true depth is path-dependent only in the cyclic case,
+      // which DgSorter::generateTopology detects and fails independently).
+      return 0;
+    }
     size_t min_depth = InPlugData::NOPATH;
     for( auto upstream_input : _inputs ){
       auto upstream_plug = upstream_input->_connectedOutput;
       if(upstream_plug){
         auto upstream_module = typedModuleData<DgModuleData>(upstream_plug->_parent_module);
-        size_t upstream_depth = upstream_module->computeMinDepth()+1;
+        size_t upstream_depth = upstream_module->_computeMinDepth(on_path, memo)+1;
         if(upstream_depth<min_depth){
           min_depth = upstream_depth;
         }
       }
     }
-    if(min_depth==InPlugData::NOPATH)
-      return 0;
-    return min_depth;
+    on_path.erase(this);
+    size_t result = (min_depth==InPlugData::NOPATH) ? 0 : min_depth;
+    memo[this] = result; // fully resolved (not a cycle-cut) — safe to cache
+    return result;
 }
-size_t DgModuleData::computeMaxDepth() const{
+size_t DgModuleData::_computeMaxDepth(dgmoduleset_t& on_path, dgmoduledepthmap_t& memo) const{
+    auto itmemo = memo.find(this);
+    if(itmemo != memo.end())
+      return itmemo->second;
+    if(!on_path.insert(this).second){
+      return 0;
+    }
     size_t max_depth = 0;
     for( auto upstream_input : _inputs ){
       auto upstream_plug = upstream_input->_connectedOutput;
       if(upstream_plug){
         auto upstream_module = typedModuleData<DgModuleData>(upstream_plug->_parent_module);
-        size_t upstream_depth = upstream_module->computeMaxDepth()+1;
+        size_t upstream_depth = upstream_module->_computeMaxDepth(on_path, memo)+1;
         if(upstream_depth>max_depth){
           max_depth = upstream_depth;
         }
       }
     }
+    on_path.erase(this);
+    memo[this] = max_depth; // fully resolved (not a cycle-cut) — safe to cache
     return max_depth;
 }
 

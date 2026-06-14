@@ -14,8 +14,9 @@
 
 /////////////////////////////////////////////////////////////////////////////////////////////////..
 
-using msaaenum_t = ork::lev2::MsaaSamples;
-using blending_t = ork::lev2::BlendingMacro;
+using msaaenum_t  = ork::lev2::MsaaSamples;
+using blending_t  = ork::lev2::BlendingMacro;
+using depthtest_t = ork::lev2::EDepthTest;
 
 /////////////////////////////////////////////////////////////////////////////////////////////////..
 
@@ -51,9 +52,25 @@ template<> class ork::reflect::DirectEnum<blending_t>;
 
 /////////////////////////////////////////////////////////////////////////////////////////////////..
 
+DeclareEnumSerializer(depthtest_t);
+BeginEnumRegistration(depthtest_t);
+    RegisterEnum(depthtest_t, OFF);
+    RegisterEnum(depthtest_t, LESS);
+    RegisterEnum(depthtest_t, LEQUALS);
+    RegisterEnum(depthtest_t, GREATER);
+    RegisterEnum(depthtest_t, GEQUALS);
+    RegisterEnum(depthtest_t, EQUALS);
+    RegisterEnum(depthtest_t, ALWAYS);
+EndEnumRegistration();
+ImplementEnumSerializer(depthtest_t);
+template<> class ork::reflect::DirectEnum<depthtest_t>;
+
+/////////////////////////////////////////////////////////////////////////////////////////////////..
+
 namespace ork::lev2{
     void registerEnums(){
         InvokeEnumRegistration(msaaenum_t);
         InvokeEnumRegistration(blending_t);
+        InvokeEnumRegistration(depthtest_t);
     }
 }

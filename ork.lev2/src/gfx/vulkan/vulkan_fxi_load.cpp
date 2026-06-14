@@ -109,7 +109,7 @@ static file::Path resolveImportPath(
   
   // This will handle both absolute paths (with schemes) and relative paths correctly
   auto resolved = import_file_path.resolveRelativeTo(parent_file_path);
-  if(0)printf("import resolved: parent='%s' import='%s' -> resolved='%s'\n", 
+  if(0)printf("import resolved: parent='%s' import='%s' -> resolved='%s'\n",
          parent_path.c_str(), clean_path.c_str(), resolved.c_str());
   
   return resolved;
@@ -153,7 +153,14 @@ static std::string concatenateShaderWithImports(
           visited);
         result.append(expanded_import);
       } else {
-        result.append("//[[IMPORT_ERROR: Could not read " + resolved_str + "]]\n");
+        // FAIL EARLY (owner call): an unreadable import means its content is
+        // MISSING from the shader-cache hash — edits to that file then
+        // silently fail to invalidate cached chunks (stale-shader bugs that
+        // cost a debugging session). The parser would also fail on this
+        // import; dying HERE names the exact file and parent.
+        printf("vkfxi: FATAL could not read import<%s> (parent<%s>) — its content cannot enter the shader-cache hash\n",
+               resolved_str.c_str(), shader_name.c_str());
+        OrkAssert(false);
       }
       
       result.append("//[[IMPORT_END:" + resolved_str + "]]\n");

@@ -35,36 +35,27 @@ make sure email and username set for github
 # OBT SETUP
 
 * ```pip3 install ork.build``` # installs OBT into venv
-* ```obt.versions.py``` : ensure obt version 0.0.255
+* ```obt.versions.py``` : ensure obt version 0.0.303
 * ***(MacOs)*** ```obt.osx.installdeps.py``` # installs homebrew scoped deps
 or
 * ***(Ubuntu 24.04/x64)*** ```obt.ix.installdeps.ubuntu_x86_64.py``` #  installs apt scoped deps
 
 # STAGING ENV / FOLDER SETUP
 
-* ```obt.env.create.py --stagedir ~/.staging-xxx --wipe``` # wipe means remove old staging folder, if exists
+* ```obt.env.create.py --stagedir ~/.staging-xxx --wipe --pipeline``` # wipe means remove old staging folder, if exists
 * ```~/.staging-xxx/obt-launch-env``` # launch OBT shell / environment, type exit if you wish to leave
 
 # BUILD ORKID
 
-* ```obt.dep.build.py orkid``` # download and (attempt to) build orkid (builds orkid's deps first)
-* after about 30-60 mins, you should get a build error in orkid about missing pytorch header
-* ```obt.dep.build.py pytorch --incremental``` build pytorch
-* ```exit``` # exit current enviroment instance
-* ```~/.staging-xxx/obt-launch-env``` # relaunch OBT shell / environment to reload environment vars 
+* ```obt.dep.pipeline.py orkid``` # download and (attempt to) build orkid (builds orkid's deps first)
 * ```ork.build.py``` # incremental build (only works after orkid was already built and environment relaunched - as $PATHS must be updated)
-* ***(MacOs Only)*** ```obt.osx.macho.fixup.libs.py --all``` # dyld/rpath/installname fixups
-* ***(MacOs Only)*** ```obt.osx.macho.fixup.libs.py --all``` # yes twice (dyld/rpath/installname fixups)
-* ```git lfs fetch --all``` # just in case original orkid clone did not do the lfs fetch for you (may require git lfs install)
-* ```ork.asset.process.py``` # preprocess some assets, wait until see asset_count<11>, then ctrl-c 
 
 * Building with profiling: uncomment #define BUILD_WITH_EASY_PROFILER in profiling.inl
 
 # Test ORKID
 
-* ```obt.goto.orkid``` # goto orkid directory
-* ```./ork.lev2/pyext/tests/renderer/lighting/spotlight_skinned_model.py```
-     this may require a few minutes for some additional asset processing, this is a one-time cost - the result of the processing will get cached
+* ```ork.cache.prime.py``` # preload asset cache
+* ```ork.app.testrunner.py``` # run orkid's visual test suite
 * standard camera controls - mac trackpad (or mouse): 
 
    Maya inspired arrangement - with the Z,X,C keys standing in as L,M,R mouse buttons.

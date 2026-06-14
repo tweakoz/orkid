@@ -150,9 +150,52 @@ void Scene::gpuInit(Context* ctx) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Scene::gpuUpdate(Context* ctx) {
+  // idempotent per render frame: every render entry calls this defensively (SGVP gpuUpdateAll,
+  // the ECS SceneGraphSystem, the direct _renderIMPL paths) — first caller wins, a second
+  // same-frame call (two viewports sharing one scene) is a no-op. Drawable onGpuUpdate hooks
+  // are per-FRAME by contract, never per-view.
+  int frame = ctx->GetTargetFrame();
+  if (frame == _lastGpuUpdateFrame)
+    return;
+  _lastGpuUpdateFrame = frame;
   if (_lightManager && _lightManager->_needs_gpu_init) {
     _lightManager->gpuInit(ctx);
   }
+  // Per-drawable pre-render GPU hook. This runs on the render thread BEFORE the render pass
+  // (see ezapp_topwidget.cpp gpuUpdateAll -> "needs command buffer, but no render pass"), so a
+  // drawable may legally dispatch compute here. Default Drawable::onGpuUpdate is a no-op;
+  // GPU-driven drawables (e.g. instance-cull feeding an indirect draw) override it.
+  _layers.atomicOp([&](const layer_map_t& unlocked) {
+    for (const auto& [name, layer] : unlocked) {
+      layer->_drawable_nodes.atomicOp([&](const Layer::drawablenodevect_t& nodes) {
+        for (const auto& node : nodes) {
+          if (node->_enabled && node->_drawable) {
+            node->_drawable->onGpuUpdate(ctx);
+          }
+        }
+      });
+    }
+  });
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Scene::preRender(Context* ctx, const CameraMatrices& cammtx) {
+  // Per-viewport pre-render fan-out (render thread, BEFORE this viewport's render pass — compute
+  // -legal). Each SceneGraphViewport drives this with ITS OWN camera/aspect, so a drawable shared
+  // across viewports gets onPreRender once per VP with that VP's matrices. Default
+  // Drawable::onPreRender is a no-op; view-dependent drawables (e.g. instance frustum-cull) override.
+  _layers.atomicOp([&](const layer_map_t& unlocked) {
+    for (const auto& [name, layer] : unlocked) {
+      layer->_drawable_nodes.atomicOp([&](const Layer::drawablenodevect_t& nodes) {
+        for (const auto& node : nodes) {
+          if (node->_enabled && node->_drawable) {
+            node->_drawable->onPreRender(ctx, cammtx);
+          }
+        }
+      });
+    }
+  });
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -191,6 +234,39 @@ void Scene::pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord, const V
 void Scene::applyRuntimeParams(varmap::varmap_ptr_t params) {
   if (!_pbr_common)
     return;
+
+  // PBR2 P3.D — when the scenegraph is INJECTED via the sim varmap
+  // (the `isShared=1` path), the Scene constructor is skipped, which
+  // means the PostFxChain that we set on _mergedParams in
+  // SceneGraphSystem::_onLink never reaches _compositorTechnique.
+  //
+  // PREPEND (not replace): the host (ecsplay, ecsedit, ...) may have
+  // already injected its own post-fx nodes (ACES tonemap, HSVG color-
+  // grade, etc.) via sg_params before the Scene constructor ran. Our
+  // DSL-injected chain (SSSS today; future: more PBR pre-tonemap fx)
+  // belongs BEFORE the host chain because it operates on linear HDR
+  // and the host fx are typically tonemapping / display-space ops.
+  if (_compositorTechnique && params->hasKey("PostFxChain")) {
+    auto& pfxchain = params->valueForKey("PostFxChain");
+    if (auto as_chain = pfxchain.tryAs<postfx_node_chain_t>()) {
+      const auto& dsl_chain = as_chain.value();
+      // Build merged chain: dsl_chain first, then existing nodes.
+      // Dedup by pointer identity (avoids double-add if applyRuntimeParams
+      // gets called twice; each PostCompositingNode is constructed once).
+      postfx_node_chain_t merged;
+      merged.reserve(dsl_chain.size() + _compositorTechnique->_postEffectNodes.size());
+      for (auto& n : dsl_chain) merged.push_back(n);
+      for (auto& n : _compositorTechnique->_postEffectNodes) {
+        bool dup = false;
+        for (auto& m : merged) { if (m == n) { dup = true; break; } }
+        if (!dup) merged.push_back(n);
+      }
+      _compositorTechnique->_postEffectNodes = std::move(merged);
+      printf("[Scene::applyRuntimeParams P3.D] merged PostFxChain size=%zu (dsl=%zu)\n",
+             _compositorTechnique->_postEffectNodes.size(), dsl_chain.size());
+      fflush(stdout);
+    }
+  }
 
   if (auto try_enable_skybox = params->typedValueForKey<bool>("enable_skybox")) {
     _pbr_common->_enable_skybox = try_enable_skybox.value();
@@ -421,6 +497,35 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
   _outputNode = _compositorTechnique->tryOutputNodeAs<OutputCompositingNode>();
   _renderNode = _compositorTechnique->tryRenderNodeAs<RenderCompositingNode>();
 
+  // GENERIC AUX CHANNELS (E2B item D): params["AuxChannels"] = CSV of channel
+  // names (e.g. "heat"). MUST configure the render node BEFORE the role
+  // pre-create loop below — each channel contributes an "aux_<name>" role.
+  if (_renderNode) {
+    if (auto try_aux = params->typedValueForKey<std::string>("AuxChannels")) {
+      std::string csv = try_aux.value();
+      size_t pos      = 0;
+      while (pos != std::string::npos) {
+        size_t comma    = csv.find(',', pos);
+        std::string tok = (comma == std::string::npos) ? csv.substr(pos) : csv.substr(pos, comma - pos);
+        if (not tok.empty())
+          _renderNode->_auxChannels.push_back(tok);
+        pos = (comma == std::string::npos) ? std::string::npos : comma + 1;
+      }
+    }
+  }
+
+  // Pre-create every layer ROLE the render node will read (forward:
+  // depth_prepass/std_forward/std_transparent/...). Keyed on the ACTUAL
+  // node via the renderedLayerRoles() virtual — a deferred node declares
+  // its own set, a node that doesn't enumerate roles declares none.
+  // createLayer is idempotent and empty layers are zero-cost; this kills
+  // the under-declared-scene bug class (findLayer hard-asserts, content
+  // silently parked on an unrendered layer).
+  if (_renderNode) {
+    for (const auto& role : _renderNode->renderedLayerRoles())
+      createLayer(role);
+  }
+
   if (params->hasKey("PostFxChain")) {
     auto& pfxchain = params->valueForKey("PostFxChain");
     if (auto as_chain = pfxchain.tryAs<postfx_node_chain_t>()) {
@@ -497,6 +602,16 @@ layer_ptr_t Scene::createLayer(std::string named) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+layer_ptr_t Scene::findLayerMaybe(std::string named) {
+  layer_ptr_t rval;
+  _layers.atomicOp([&](layer_map_t& unlocked) {
+    auto it = unlocked.find(named);
+    if (it != unlocked.end())
+      rval = it->second;
+  });
+  return rval;
+}
 
 layer_ptr_t Scene::findLayer(std::string named) {
 

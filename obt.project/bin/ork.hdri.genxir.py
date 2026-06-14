@@ -39,7 +39,7 @@ def main_async():
     print(f"Output:  {dest_file}")
     print(f"Mode:    async (C++)")
 
-    ezapp = lev2.lev2appinit()
+    ezapp = lev2.lev2appinit(use_subsystems=['opq', 'core', 'gpu', 'lev2'])
 
     ok_to_exit = False
     def onCtrlC(signum, frame):
@@ -125,10 +125,19 @@ def main_sync():
     print(f"Output:  {dest_file}")
     print(f"Mode:    sync (Python)")
 
-    ezapp = lev2.lev2appinit()
-    gfxenv = lev2.GfxEnv.ref
-    ctx = gfxenv.loadingContext()
+    # Subsystem-mode init (HFSM lifecycle) — preferred over ad-hoc for
+    # headless tools. Brings up opq/core/gpu/lev2 subsystems with explicit
+    # dependency wiring; GPU subsystem stands up the offscreen window on
+    # the main thread, and shutdown drains via stopLoaderThread() chain.
+    ezapp = lev2.lev2appinit(use_subsystems=['opq', 'core', 'gpu', 'lev2'])
     ezapp.mainThreadBegin()
+    # bindGfxToCurrentThread pins the main-window gfx context's TLS on the
+    # Python thread so inline GPU work (process_envmap → ctx.TXI/FBI/etc.)
+    # works between iter calls. GfxEnv.loadingContext() would return null
+    # here — loader ctx lives on a dedicated loader thread, not main.
+    # Auto-unbinds in mainThreadEnd().
+    ctx = ezapp.bindGfxToCurrentThread()
+    assert ctx, "ezapp.bindGfxToCurrentThread() returned null — main gfx context not initialized"
 
     start_time = time.time()
     kwargs = dict(debug_dir=debug_dir, verbose=True)

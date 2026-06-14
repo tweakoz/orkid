@@ -5,6 +5,7 @@ fxconfig fxcfg_default {
   glsl_version = "330";
   import "particle_common.i2";
   //import "particle_geoshader.i2";
+  import "particle_ssbo.i2";
   import "particle_comshader.i2";
 }
 ///////////////////////////////////////////////////////////////

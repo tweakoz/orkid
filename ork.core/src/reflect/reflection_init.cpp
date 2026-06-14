@@ -46,6 +46,11 @@ struct CoreAppInit {
     dflow::ModuleData::GetClassStatic();
     dflow::DgModuleData::GetClassStatic();
     dflow::LambdaModuleData::GetClassStatic();
+    dflow::MinModuleData::GetClassStatic();
+    dflow::MaxModuleData::GetClassStatic();
+    dflow::LerpModuleData::GetClassStatic();
+    dflow::PowModuleData::GetClassStatic();
+    dflow::Vec4CombineModuleData::GetClassStatic();
 
     dflow::PlugData::GetClassStatic();
     dflow::InPlugData::GetClassStatic();
@@ -58,9 +63,18 @@ struct CoreAppInit {
     dflow::outplugdata<dflow::FloatPlugTraits>::GetClassStatic();
     dflow::inplugdata<dflow::FloatXfPlugTraits>::GetClassStatic();
 
+    dflow::inplugdata<dflow::Vec2fPlugTraits>::GetClassStatic();
+    dflow::outplugdata<dflow::Vec2fPlugTraits>::GetClassStatic();
     dflow::inplugdata<dflow::Vec3fPlugTraits>::GetClassStatic();
     dflow::outplugdata<dflow::Vec3fPlugTraits>::GetClassStatic();
     dflow::inplugdata<dflow::Vec3XfPlugTraits>::GetClassStatic();
+    dflow::inplugdata<dflow::Vec4fPlugTraits>::GetClassStatic();
+    dflow::outplugdata<dflow::Vec4fPlugTraits>::GetClassStatic();
+    dflow::inplugdata<dflow::Vec4XfPlugTraits>::GetClassStatic();
+    dflow::fvec4xfdata::GetClassStatic();
+
+    dflow::inplugdata<dflow::IntPlugTraits>::GetClassStatic();
+    dflow::outplugdata<dflow::IntPlugTraits>::GetClassStatic();
 
     dflow::floatinplugdata::GetClassStatic();
     dflow::vect3inplugdata::GetClassStatic();
@@ -80,6 +94,17 @@ struct CoreAppInit {
 
     dflow::floatxfdata::GetClassStatic();
     dflow::fvec3xfdata::GetClassStatic();
+    // D.2 (particles model B): the per-plug TRANSFORMER component classes — these serialize on
+    // particle floatxf plugs and MUST be touched or the linker strips their registration and
+    // JsonDeserializer's FindClass asserts on the first particle-graph load.
+    dflow::biasxfdata::GetClassStatic();
+    gradient_fvec4_t::GetClassStatic(); // "GradientV4" — serializes inside psys::GradientMaterial (streak gradients)
+    dflow::scalexfdata::GetClassStatic();
+    dflow::modxfdata::GetClassStatic();
+    dflow::fquatxfdata::GetClassStatic();
+    dflow::vect4inplugdata::GetClassStatic();
+    dflow::quatinplugdata::GetClassStatic();
+    dflow::inplugdata<dflow::QuatXfPlugTraits>::GetClassStatic(); // "dflow::inplugdata<quatxf>" — SPHR/elliptical Orientation plug
 
     //dflow::nullpassthrudata::GetClassStatic();
     //dflow::floatxfpassthrudata::GetClassStatic();

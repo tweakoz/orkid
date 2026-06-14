@@ -64,6 +64,15 @@ void DrawQueue::enqueueLayerToRenderQueue(const std::string& LayerName, lev2::IR
     return;
   }
 
+  // PBR2 Phase 0 — when rendering into a probe cubemap face, skip
+  // drawables marked _excludeFromProbe (particles, noisy FX, etc.).
+  // Probe pass set this via RCFD->setUserProperty("renderingPROBE")
+  // at fwdnode_impl_top.cpp:148. One read per layer-enqueue, then
+  // per-drawable skip — cheap and centralized.
+  bool is_probe_pass = RCFD->hasUserProperty("renderingPROBE"_crcu)
+                      ? RCFD->userPropertyAs<bool>("renderingPROBE"_crcu)
+                      : false;
+
   int numdrawables = 0;
 
   bool do_all = (LayerName == "All");
@@ -74,8 +83,8 @@ void DrawQueue::enqueueLayerToRenderQueue(const std::string& LayerName, lev2::IR
     printf("DrawQueue::enqueueLayerToRenderQueue numlayers<%zu>\n", mLayerLut.size());
     }
   //////////////////////////////////////////////////////////////////////////////////////////////
-  auto do_layer = [target,renderer,&numdrawables,LayerName](const lev2::DrawQueueLayer* player){
-      player->_items.atomicOp([player,target,renderer,&numdrawables,LayerName](const DrawQueueLayer::itemvect_t& unlocked){
+  auto do_layer = [target,renderer,&numdrawables,LayerName,is_probe_pass](const lev2::DrawQueueLayer* player){
+      player->_items.atomicOp([player,target,renderer,&numdrawables,LayerName,is_probe_pass](const DrawQueueLayer::itemvect_t& unlocked){
         int max_index = player->_itemIndex;
         for (int id = 0; id < max_index; id++) {
           auto item = unlocked[id];
@@ -85,6 +94,11 @@ void DrawQueue::enqueueLayerToRenderQueue(const std::string& LayerName, lev2::IR
             printf("DrawQueue::enqueueLayerToRenderQueue layer item <%d> drw<%p>", id, pdrw);
           }
           if (pdrw) {
+            // PBR2 Phase 0 — exclude drawables flagged out of probe
+            // captures (default off; set true on particle drawables).
+            if (is_probe_pass && pdrw->_excludeFromProbe) {
+              continue;
+            }
             numdrawables++;
             pdrw->enqueueToRenderQueue(item, renderer);
           }

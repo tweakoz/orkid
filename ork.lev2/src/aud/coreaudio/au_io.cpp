@@ -80,7 +80,7 @@ OSStatus AuContext::setupOutputBuffers() {
 
   _outputFrameSize = bufferFrameSize;
 
-  logchan_auio->log("OUTBUFFERFRAMESIZE<%d>", int(_outputFrameSize));
+  if(0)logchan_auio->log("OUTBUFFERFRAMESIZE<%d>", int(_outputFrameSize));
 
   //////////////////////////////
   // Get the Stream Format (Output client side)
@@ -729,7 +729,7 @@ bool AuContext::waitForOutputReady(int timeout_ms) {
    usleep(1000); // Sleep for 1ms
  }
  
- logchan_auio->log("Output is ready");
+ if(0)logchan_auio->log("Output is ready");
  return true;
 }
 ///////////////////////////////////////////////////////////////////////////////

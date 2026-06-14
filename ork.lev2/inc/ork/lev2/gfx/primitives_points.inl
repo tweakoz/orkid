@@ -78,12 +78,30 @@ struct PointsPrimitive {
   inline void renderEML(Context* context) {
     auto gbi = context->GBI();
     gbi->_debugNextPrimitive = _debug;
-    if(_vertexBuffer){
-      gbi->DrawPrimitiveEML(*_vertexBuffer, PrimitiveType::POINTS,0,_numpoints);
+    if(_argsSSBO and _indexSSBO){
+      // GPU-generated indexed geometry: vertices pulled from the bound storage block (gl_VertexIndex),
+      // indices from _indexSSBO, draw count from _argsSSBO (a VkDrawIndexedIndirectCommand).
+      gbi->DrawIndexedIndirectEML(_indexSSBO, _primtype, _argsSSBO, 0, 4);
+    }
+    else if(_argsSSBO){
+      // GPU-generated non-indexed geometry: vertex count from _argsSSBO (a VkDrawIndirectCommand).
+      gbi->DrawIndirectEML(_primtype, _argsSSBO);
+    }
+    else if(_vertexBuffer){
+      gbi->DrawPrimitiveEML(*_vertexBuffer, _primtype,0,_numpoints);
     }
     else if(_ssbo){
-      gbi->DrawPrimitiveEML(_ssbo,PrimitiveType::POINTS,0,_numpoints);
+      gbi->DrawPrimitiveEML(_ssbo,_primtype,0,_numpoints);
     }
+  }
+
+  // configure GPU-driven indirect drawing: vertices are pulled from the storage block bound to the
+  // VS (pipeline.bindStorage), the draw count comes from `args` (a compute-written
+  // VkDraw[Indexed]IndirectCommand); pass `index` for the indexed path, nullptr for non-indexed.
+  inline void setIndirect(storagebufferptr_t args, storagebufferptr_t index, PrimitiveType pt) {
+    _argsSSBO  = args;
+    _indexSSBO = index;
+    _primtype  = pt;
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -113,6 +131,9 @@ struct PointsPrimitive {
   fxpipeline_ptr_t _pipeline;
   std::shared_ptr<vtx_buf_t> _vertexBuffer;
   storagebufferptr_t _ssbo;
+  storagebufferptr_t _argsSSBO  = nullptr; // VkDraw[Indexed]IndirectCommand (GPU-written count)
+  storagebufferptr_t _indexSSBO = nullptr; // compute-written indices (indexed-indirect path)
+  PrimitiveType _primtype = PrimitiveType::POINTS;
   bool _debug = false;
 };
 

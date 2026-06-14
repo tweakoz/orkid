@@ -5,8 +5,8 @@ Uses a persistent SSH connection to minimize RTT, then takes multiple
 NTP-style measurements to compute offset statistics.
 
 Usage:
-    ork.hosttimediff.py --host skylix
-    ork.hosttimediff.py --host skylix --samples 20 --interval 0.5
+    ork.hosttimediff.py --host remotehost
+    ork.hosttimediff.py --host user@remotehost --samples 20 --interval 0.5
 """
 
 import argparse

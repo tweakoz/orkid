@@ -8,6 +8,7 @@
 #include <ork/application/application.h>
 #include <ork/kernel/orklut.hpp>
 #include <ork/kernel/opq.h>
+#include <random>
 #include <ork/kernel/string/deco.inl>
 
 #include <ork/lev2/input/inputdevice.h>
@@ -256,6 +257,17 @@ void Simulation::registerActivatedEntity(ecs::Entity* pent) {
       cinst->_activate(this);
     }
 
+    /////////////////////////////////////////
+    // Publish entity transform if the SpawnData asked for it.
+    // Done after component activation so any spawn-time transform
+    // adjustments have settled into the dagnode.
+    /////////////////////////////////////////
+    if (auto sd = pent->data()) {
+      if (!sd->_publishxf_name.empty()) {
+        publishEntityXf(pent, sd->_publishxf_name);
+      }
+    }
+
   } else {
     logchan_simulation->log("WARNING, activating an already active entity <%p>\n", pent);
   }
@@ -295,6 +307,8 @@ void Simulation::registerDeactivatedEntity(ecs::Entity* pent) {
     cinst->_deactivate(this);
   }
 
+  unpublishEntityXf(pent);
+
   if (parch){
     parch->deactivateEntity(this, pent);
     parch->unstageEntity(this, pent);
@@ -315,12 +329,74 @@ bool Simulation::IsEntityActive(Entity* pent) const {
   return (listit != mActiveEntities.end());
 }
 ///////////////////////////////////////////////////////////////////////////
+std::string Simulation::publishEntityXf(Entity* ent, const std::string& base_name) {
+  if (base_name.empty() || ent == nullptr) {
+    return std::string();
+  }
+  // Always-suffix scheme: first spawn → "saddle0", next → "saddle1", ...
+  // The counter is monotonic — never decremented — so each key, once
+  // handed out, is unique for the Simulation's lifetime even across
+  // despawn/respawn cycles.
+  size_t idx = _publishxf_counts[base_name]++;
+  std::string key = base_name + std::to_string(idx);
+  auto xf = ent->transform();
+  _published_xfs[key] = xf;
+  _entity_to_publish_keys[ent].push_back(key);
+  return key;
+}
+
+void Simulation::unpublishEntityXf(Entity* ent) {
+  auto it = _entity_to_publish_keys.find(ent);
+  if (it == _entity_to_publish_keys.end()) return;
+  for (const auto& key : it->second) {
+    _published_xfs.erase(key);
+  }
+  _entity_to_publish_keys.erase(it);
+}
+
+decompxf_ptr_t Simulation::lookupPublishedXf(const std::string& key) const {
+  auto it = _published_xfs.find(key);
+  if (it == _published_xfs.end()) return nullptr;
+  return it->second;
+}
+///////////////////////////////////////////////////////////////////////////
 
 Entity* Simulation::_spawnAnonDynamicEntity(const impl::_SpawnAnonDynamic& SAD) {
   //spawndata_constptr_t spawn_rec, int entref,decompxf_ptr_t ovxf
   auto name   = genDynamicEntityName();
   auto newent = _spawnNamedDynamicEntity(SAD, name);
   return newent;
+}
+
+spawndata_constptr_t Simulation::findSpawner(const std::string& spawner_name) const {
+  auto spawn_rec = GetData()->findTypedObject<SpawnData>(AddPooledString(spawner_name.c_str()));
+  if (not spawn_rec)
+    printf("Simulation::findSpawner: no spawner <%s> in scene\n", spawner_name.c_str());
+  return spawn_rec;
+}
+
+Entity* Simulation::spawnDynamic(spawndata_constptr_t spawner, sad_ptr_t sad) {
+  OrkAssert(spawner);
+  impl::_SpawnAnonDynamic IMPL;
+  IMPL._SAD           = sad;
+  IMPL._spawn_rec     = spawner;
+  // allocate + register a controller ref like the controller spawn command does,
+  // so entityByID/despawn work on script-spawned entities too.
+  uint64_t objID      = _controller->_objectIdCounter.fetch_add(1);
+  IMPL._entref._entID = objID;
+  auto entity         = _spawnAnonDynamicEntity(IMPL);
+  _controller->_mutateObject([&](Controller::id2obj_map_t& unlocked) { unlocked[objID].set<Entity*>(entity); });
+  // the spawner's reflected lifetime applies to SCRIPT spawns exactly as it
+  // does to scheduled spawns (the FSM path) — projectile pools recycle
+  // declaratively via LifetimeMin/Max; _updateEntityLifetimes() reaps.
+  if (entity and (spawner->_lifetimeMin > 0.0f or spawner->_lifetimeMax > 0.0f)) {
+    static thread_local std::mt19937 _dynspawn_rng{std::random_device{}()};
+    float ltMin = spawner->_lifetimeMin;
+    float ltMax = std::max(ltMin, spawner->_lifetimeMax);
+    std::uniform_real_distribution<float> ltDist(ltMin, ltMax);
+    entity->_despawnTime = mGameTime + ltDist(_dynspawn_rng);
+  }
+  return entity;
 }
 
 Entity* Simulation::_spawnNamedDynamicEntity(const impl::_SpawnAnonDynamic& SAD, PoolString name) {

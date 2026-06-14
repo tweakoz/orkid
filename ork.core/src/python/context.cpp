@@ -300,6 +300,20 @@ Context::Context() {
   Py_NoSiteFlag  = 1;
   Py_VerboseFlag = 2;
 
+  // Point the embedded interpreter at the bundle's python home BEFORE init, so it
+  // finds its stdlib. Without this, Py_InitializeEx falls back to libpython's
+  // compile-time prefix (the build host's staging dir), which does not exist in a
+  // deployed/pip bundle -> "Failed to import encodings module". obt sets
+  // OBT_PYTHONHOME to <stage>/pyvenv; fall back to <OBT_STAGE>/pyvenv. Honor an
+  // explicit PYTHONHOME if the caller already set one.
+  if (!::getenv("PYTHONHOME")) {
+    std::string home;
+    if (const char* ph = ::getenv("OBT_PYTHONHOME"))  home = ph;
+    else if (const char* st = ::getenv("OBT_STAGE"))  home = std::string(st) + "/pyvenv";
+    if (!home.empty())
+      ::setenv("PYTHONHOME", home.c_str(), 1);
+  }
+
   // PyOS_StdioReadline=orkpy_readline;
   orkpy_cf.cf_flags = 0;
   Py_InitializeEx(0);
@@ -486,7 +500,14 @@ Context2::~Context2() {
 
   logchan_pyctx->log("pyctx<%p> ~Context2\n", this);
   PyThreadState_Swap(_subPrimaryThreadState);
+  // Python 3.13 removed the cframe indirection — current_frame is now
+  // a direct member of PyThreadState. Clearing it before EndInterpreter
+  // avoids a crash when there's a stale frame attached.
+#if PY_VERSION_HEX >= 0x030D0000
+  _subPrimaryThreadState->current_frame = nullptr;
+#else
   _subPrimaryThreadState->cframe->current_frame = nullptr;
+#endif
   Py_EndInterpreter(_subPrimaryThreadState);
 
   PyThreadState_Swap(_mainInterpreterMyThreadState);

@@ -107,7 +107,7 @@ void setAlwaysOnTop(GLFWwindow *window) {
     windowLevel = CGWindowLevelForKey(kCGFloatingWindowLevelKey);
     ((void(*)(id, SEL, NSUInteger))objc_msgSend)(nsWindow, sel_registerName("setLevel:"), windowLevel);
 }
-void windowToFront(GLFWwindow* window) {
+void windowToFront(GLFWwindow* window, bool keep_on_top) {
     @autoreleasepool {
         NSWindow* nswin = glfwGetCocoaWindow(window);
         if (nswin) {
@@ -121,16 +121,84 @@ void windowToFront(GLFWwindow* window) {
             [nswin makeKeyAndOrderFront:nil];
             [nswin orderFrontRegardless];
 
-            // Set window level temporarily to force it on top
+            // Set window level to force it on top.
             [nswin setLevel:NSFloatingWindowLevel];
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.1 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
-                [nswin setLevel:NSNormalWindowLevel];
-            });
+            // If always-on-top was requested, LEAVE it floating; otherwise the float is only momentary
+            // (just to pop it to front) and we restore the normal level after a beat.
+            if (not keep_on_top) {
+                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.1 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+                    [nswin setLevel:NSNormalWindowLevel];
+                });
+            }
 
             // Force focus
             [nswin makeFirstResponder:nil];
             [nswin makeKeyWindow];
             [nswin makeMainWindow];
+        }
+    }
+}
+///////////////////////////////////////////////////////////////////////////////
+// Set the macOS application name shown in the menu bar / Dock / Cmd-Tab.
+// This is the NSApplication name — NOT the GLFW/NSWindow title. In fullscreen
+// orkid uses a borderless window (no title bar), so the menu bar is the only
+// on-screen surface where the app name appears.
+//
+// macOS derives the bold app-menu name from the process name (CFBundleName for
+// bundled apps; argv0/process name otherwise). We override the process name and
+// also relabel the application menu's first item + its standard items so the
+// change is reflected whether or not GLFW already built a default menu.
+///////////////////////////////////////////////////////////////////////////////
+void setApplicationName(const std::string& name) {
+    @autoreleasepool {
+        NSString* appName = [NSString stringWithUTF8String:name.c_str()];
+        if (appName == nil) return;
+
+        // (1) Process name — drives the bold app-menu title + Dock label for
+        //     non-bundled launches. setProcessName: is a stable (if lightly
+        //     documented) setter; call via selector to avoid header drift.
+        NSProcessInfo* procInfo = [NSProcessInfo processInfo];
+        SEL setProcName = sel_registerName("setProcessName:");
+        if ([procInfo respondsToSelector:setProcName]) {
+            ((void(*)(id, SEL, id))objc_msgSend)(procInfo, setProcName, appName);
+        }
+
+        // (2) Must be a regular app for a menu bar to exist at all.
+        [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
+
+        // (3) Relabel (or build) the application menu so the bold name + the
+        //     About/Hide/Quit items track appName.
+        NSMenu* mainMenu = [NSApp mainMenu];
+        if (mainMenu == nil) {
+            mainMenu = [[NSMenu alloc] init];
+            [NSApp setMainMenu:mainMenu];
+        }
+        NSMenuItem* appMenuItem = nil;
+        if ([mainMenu numberOfItems] > 0) {
+            appMenuItem = [mainMenu itemAtIndex:0];
+        } else {
+            appMenuItem = [[NSMenuItem alloc] init];
+            [mainMenu addItem:appMenuItem];
+        }
+        [appMenuItem setTitle:appName];
+
+        NSMenu* appMenu = [appMenuItem submenu];
+        if (appMenu == nil) {
+            appMenu = [[NSMenu alloc] initWithTitle:appName];
+            [appMenuItem setSubmenu:appMenu];
+            [appMenu addItemWithTitle:[@"About " stringByAppendingString:appName]
+                               action:@selector(orderFrontStandardAboutPanel:)
+                        keyEquivalent:@""];
+            [appMenu addItem:[NSMenuItem separatorItem]];
+            [appMenu addItemWithTitle:[@"Hide " stringByAppendingString:appName]
+                               action:@selector(hide:)
+                        keyEquivalent:@"h"];
+            [appMenu addItem:[NSMenuItem separatorItem]];
+            [appMenu addItemWithTitle:[@"Quit " stringByAppendingString:appName]
+                               action:@selector(terminate:)
+                        keyEquivalent:@"q"];
+        } else {
+            [appMenu setTitle:appName];
         }
     }
 }

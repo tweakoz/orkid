@@ -61,15 +61,29 @@ struct ConnectionsProperty : public reflect::ObjectProperty {
       /////////////////////////
       auto it_inp = gdata->_modules.find(inp_mod_name);
       auto it_out = gdata->_modules.find(out_mod_name);
-      if (it_inp != gdata->_modules.end() and it_out != gdata->_modules.end()) {
-        auto pinp_mod = typedModuleData<DgModuleData>(it_inp->second);
-        auto pout_mod = typedModuleData<DgModuleData>(it_out->second);
-        auto inp_plug  = typedPlugData<InPlugData>(pinp_mod->inputNamed(inp_plg_name));
-        auto out_plug = typedPlugData<OutPlugData>(pout_mod->outputNamed(out_plg_name));
-        if (inp_plug != nullptr && out_plug != nullptr) {
-          gdata->safeConnect(inp_plug, out_plug);
-        }
+      // FAIL LOUD on unresolvable edges. A serialized connection whose module/plug name no longer
+      // resolves means the asset and the engine disagree (rename/removal since save) - silently
+      // dropping the edge used to leave a half-wired graph that computed garbage downstream.
+      if (it_inp == gdata->_modules.end() or it_out == gdata->_modules.end()) {
+        printf(
+            "CONNECTION DESERIALIZE FAILED: module not found for edge %s.%s -> %s.%s (inp_mod %s, out_mod %s)\n",
+            out_mod_name.c_str(), out_plg_name.c_str(), inp_mod_name.c_str(), inp_plg_name.c_str(),
+            (it_inp == gdata->_modules.end()) ? "MISSING" : "ok",
+            (it_out == gdata->_modules.end()) ? "MISSING" : "ok");
+        OrkAssert(false);
       }
+      auto pinp_mod = typedModuleData<DgModuleData>(it_inp->second);
+      auto pout_mod = typedModuleData<DgModuleData>(it_out->second);
+      auto inp_plug = typedPlugData<InPlugData>(pinp_mod->inputNamed(inp_plg_name));
+      auto out_plug = typedPlugData<OutPlugData>(pout_mod->outputNamed(out_plg_name));
+      if (inp_plug == nullptr or out_plug == nullptr) {
+        printf(
+            "CONNECTION DESERIALIZE FAILED: plug not found for edge %s.%s -> %s.%s (inp_plug %s, out_plug %s)\n",
+            out_mod_name.c_str(), out_plg_name.c_str(), inp_mod_name.c_str(), inp_plg_name.c_str(),
+            (inp_plug == nullptr) ? "MISSING" : "ok", (out_plug == nullptr) ? "MISSING" : "ok");
+        OrkAssert(false);
+      }
+      gdata->safeConnect(inp_plug, out_plug);
     }
   }
   //////////////////////////////////////////////////////////////////
@@ -164,6 +178,9 @@ void GraphData::describeX(object::ObjectClass* clazz) {
   con_prop->annotate("editor.visible", false);
   con_prop->annotate("python.visible", false);
   clazz->Description().addProperty("zzz_connections", con_prop);
+
+  // opt-in per-node cook cache flag — round-trips with the (embedded) graph.
+  clazz->directProperty("cacheable", &GraphData::_cacheable);
 }
 ///////////////////////////////////////////////////////////////////////////////
 GraphData::GraphData()
@@ -214,8 +231,36 @@ dgmoduledata_ptr_t GraphData::module(size_t indexed) const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool GraphData::canConnect(inplugdata_constptr_t pin, outplugdata_constptr_t pout) const {
-  return true; // TODO fixme
-  //((&pin->GetDataTypeId()) == (&pout->GetDataTypeId()));
+  // TYPED CONNECTION CHECK (B.1). Both plug sides now record typeid(traits::elemental_data_type)
+  // (see plug_data.inl -- the historical asymmetry made this check impossible, hence the old
+  // `return true //TODO`). Equality compares type_info with a name-string fallback (dylib-safe).
+  //
+  // ROLLOUT: WARN by default -- mismatches are LOGGED but allowed, so existing graphs keep loading
+  // while the family suites soak; set ORK_DFLOW_ENFORCE_TYPED_CONNECT=1 to enforce (reject).
+  if (pin == nullptr or pout == nullptr)
+    return false;
+  const auto& ti = pin->GetDataTypeId();
+  const auto& to = pout->GetDataTypeId();
+  bool type_ok = (ti == to) or (0 == ::strcmp(ti.name(), to.name()));
+  // fan-out contract: max_fanout==0 means UNBOUNDED (a capability, not a limit); else enforce it.
+  size_t maxfan = pout->maxFanOut();
+  bool fan_ok   = (maxfan == 0) or (pout->_connections.size() < maxfan);
+  if (type_ok and fan_ok)
+    return true;
+  static const bool enforce = (::getenv("ORK_DFLOW_ENFORCE_TYPED_CONNECT") != nullptr);
+  auto inmod  = pin->_parent_module;
+  auto outmod = pout->_parent_module;
+  printf(
+      "dflow TYPED-CONNECT %s: %s.%s [%s] -> %s.%s [%s]%s\n",
+      enforce ? "REJECTED" : "WARNING (allowed; set ORK_DFLOW_ENFORCE_TYPED_CONNECT=1 to reject)",
+      outmod ? outmod->_name.c_str() : "?",
+      pout->_name.c_str(),
+      to.name(),
+      inmod ? inmod->_name.c_str() : "?",
+      pin->_name.c_str(),
+      ti.name(),
+      fan_ok ? "" : " [FANOUT EXCEEDED]");
+  return not enforce;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void GraphData::safeConnect(inplugdata_ptr_t inp, outplugdata_ptr_t outp) {
@@ -253,20 +298,8 @@ bool GraphData::postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t sh
   // finish connections
   /////////////////////////////////
 
-  for( auto c : _deser_connections ){
-    //
-    auto out_mod = module(c->_out_module);
-    auto inp_mod = module(c->_inp_module);
-    OrkAssert(out_mod!=nullptr);
-    OrkAssert(inp_mod!=nullptr);
-    //
-    auto out_plug = out_mod->outputNamed(c->_out_plug);
-    auto inp_plug = inp_mod->inputNamed(c->_inp_plug);
-    OrkAssert(out_plug!=nullptr);
-    OrkAssert(inp_plug!=nullptr);
-    //S
-    safeConnect(inp_plug,out_plug);
-  }
+  // (connections are wired by ConnectionsProperty::deserialize - the old _deser_connections
+  //  two-phase path was dead code: the vector was never populated. Removed.)
 
   /////////////////////////////////
   // remove dangling null modules

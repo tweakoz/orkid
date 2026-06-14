@@ -30,6 +30,121 @@ typeblock types_def {
   	float _alpha;
   	vec3 _albedo;
   };
+  /////////////////////////////////////////////////////////
+  // PBR2 Phase 2 — per-pixel lobe accumulation state.
+  // Modulatory lobes (ior, specular, iridescence) mutate _F0 / _F in place;
+  // additive lobes (sheen, clearcoat, diffuse_transmission, transmission,
+  // volume) push contributions into _accumulator and debit _weight_remaining
+  // per the Khronos KHR-extension energy chain.
+  /////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////
+  // PBR2 Phase 3 (P3.B) — lighting decomposed into specular + diffuse
+  // buckets. The fragment-out stage writes the sum to target0 (unchanged
+  // visible result) and `diffuse` separately to target1 for SSSS to
+  // consume. Both terms carry per-pass lobe contributions (additive
+  // lobes know their channel) and modulatory state via PbrLobeState.
+  /////////////////////////////////////////////////////////
+  struct ShadingResult {
+    vec3 specular;
+    vec3 diffuse;
+  };
+  // P3.B — return type for forward_lighting_mono_alpha; carries the
+  // ShadingResult split + alpha so callers can split-write to MRT.
+  struct ForwardAlphaResult {
+    ShadingResult lit;
+    float alpha;
+  };
+  struct PbrLobeState {
+    vec3  _F0;                // base Fresnel reflectance at normal incidence
+    vec3  _F;                 // current view-angle Fresnel (iridescence shifts)
+    vec3  _N;                 // world normal (eyespace fix already applied)
+    vec3  _V;                 // view direction (frag → eye, unit)
+    vec3  _R;                 // reflection vector (mirrored view-dir, unit)
+    float _metallic;
+    float _roughness;
+    float _dialetric;         // 1 - metallic
+    // P3.B — split lobe accumulator. Lobes push to .specular or .diffuse
+    // explicitly (sheen/clearcoat/transmission/volume → specular;
+    // diffuse_transmission → diffuse; subsurface in P3.D → diffuse).
+    ShadingResult _accumulator;
+    float _weight_remaining;  // energy budget: starts 1.0, lobes debit
+  };
+  /////////////////////////////////////////////////////////
+  // PBR2 Phase 3 (P3.A) — per-fragment surface descriptor.
+  //
+  // SurfaceFragment is the FROZEN INPUT to lobe evaluation: all
+  // per-fragment material properties, sourced either from UBOs+texmaps
+  // (the default PbrMaterial path via build_surface()) OR from
+  // node-graph codegen output (future P3.F). PbrLobeState above is the
+  // mutable WORKING STATE that evolves as lobes run.
+  //
+  // Field order matches glTF KHR-extension grouping. All has_* are
+  // explicit ints (mirroring the per-extension UBO flags) so disabling
+  // a lobe via build_surface short-circuits cleanly inside the lobe.
+  // colors use vec4 to dodge std140 vec3 alignment.
+  //
+  // Engine-resolved fields at the end (Filament PixelParams pattern) —
+  // derived once by build_surface so lobes don't recompute.
+  /////////////////////////////////////////////////////////
+  struct SurfaceFragment {
+    // ---- Geometry ----
+    vec3  position_world;
+    vec3  normal_world;
+    float fog_z;
+    float atmos;
+    // ---- Base material ----
+    vec3  base_color;
+    float alpha;
+    vec3  emission;
+    // ---- BRDF core ----
+    float metallic;
+    float roughness;
+    // ---- Tangent frame (P3.E will populate from vertex shader) ----
+    vec3  tangent_world;
+    vec3  anisotropic_tangent;
+    float anisotropic_strength;
+    // ---- Transmission / IOR / volume ----
+    float ior;
+    float transmission_factor;
+    float transmission_roughness;  // P3.D — optional override; falls back to roughness when has_transmission_roughness=0
+    vec4  attenuation_color;
+    float attenuation_distance;
+    float volume_thickness_factor;
+    int   has_transmission;
+    int   has_transmission_roughness;
+    int   has_ior;
+    int   has_volume;
+    // ---- Sheen ----
+    vec4  sheen_color;
+    float sheen_factor;
+    float sheen_roughness;
+    int   has_sheen;
+    // ---- Clearcoat ----
+    vec3  clearcoat_normal_world;
+    float clearcoat_factor;
+    float clearcoat_roughness;
+    int   has_clearcoat;
+    // ---- Specular ext ----
+    vec4  specular_color;
+    float specular_factor;
+    int   has_specular;
+    // ---- Iridescence ----
+    float iridescence_factor;
+    int   has_iridescence;
+    // ---- Diffuse transmission ----
+    vec4  diffuse_transmission_color;
+    float diffuse_transmission_factor;
+    int   has_diffuse_transmission;
+    // ---- Subsurface (P3.D placeholder — fields reserved; lobe TBD) ----
+    vec4  subsurface_color;
+    vec3  subsurface_radius;
+    float subsurface_factor;
+    int   has_subsurface;
+    // ---- Engine-resolved (Filament PixelParams pattern) ----
+    vec3  diffuse_color;        // base_color * (1-metallic)
+    vec3  f0;                   // mix(vec3(0.04), base_color, metallic) — pre-modulation
+    float linear_roughness;     // roughness * roughness
+  };
 }
 
 libblock lib_def 

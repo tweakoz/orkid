@@ -18,8 +18,11 @@
 
 #include <ork/util/Context.hpp>
 #include <ork/kernel/environment.h>
+#include <ork/kernel/datacache.h>
 #include <ork/file/path.h>
 #include <ork/util/logger.h>
+#include <cstdlib>
+#include <cerrno>
 #include <ork/kernel/future.hpp>
 #include <thread>
 #include <chrono>
@@ -268,8 +271,53 @@ StdFileSystemInitalizer::StdFileSystemInitalizer(const AppInitData& appinitdata)
   file::setPathExpander("staging",      stage_dir);
   file::setPathExpander("ork_ecsscenes", data_dir / "ecsscenes");
   file::setPathExpander("ork_envmaps", stage_dir / "envmaps");
+  file::setPathExpander("ork_envmaps2", stage_dir / "assetcache" / "envmaps2");
+  // HyperSyn asset tree alias. (Generated DSL shaders no longer persist here —
+  // owner policy 2026-06-12: they live in <staging>/dslshadercache/<family>,
+  // referenced by the relocatable <staging> token; the .shaders/-next-to-asset
+  // form is retired. The alias stays for asset-tree references generally.)
+  file::setPathExpander("hyperassets", base_dir / "obt.project" / "scripts" / "ork" / "hypergraph" / "assets");
   file::setPathExpander("ork_data",     data_dir);
   file::setPathExpander("ork_testdata", data_dir / "tests");
+
+  //////////////////////////////////////////
+  // Dataflow cook-cache size-cap (once, at process launch).
+  // Cook datablocks (full-res field readbacks) are huge but cheap to regenerate,
+  // so they live in their own <staging>/dflowcache namespace and are evicted
+  // LRU-by-mtime down to a byte cap on startup. Override the cap with
+  // ORKID_DFLOWCACHE_MAX_BYTES (decimal bytes); default 64 GiB.
+  //
+  // The cap MUST exceed one bake's working set or it thrashes: a single bake at
+  // dim 4096 is ~64 MiB/node, so a ~186-node graph is ~12 GiB. If the cap is
+  // smaller, the launch eviction deletes the earliest-topo nodes the very next
+  // bake needs and they get rewritten every run. 64 GiB holds ~5 such bakes.
+  //////////////////////////////////////////
+
+  {
+    uint64_t dflow_cap = 64ULL * 1024 * 1024 * 1024; // 64 GiB
+    std::string capstr;
+    if (genviron.get("ORKID_DFLOWCACHE_MAX_BYTES", capstr) && (false == capstr.empty())) {
+      // parse strictly: reject negatives (strtoull silently wraps "-1" -> UINT64_MAX,
+      // which would defeat the cap), trailing garbage, overflow, and zero. On any of
+      // those, keep the safe default rather than silently disabling eviction.
+      char* endp                = nullptr;
+      errno                     = 0;
+      unsigned long long parsed = strtoull(capstr.c_str(), &endp, 10);
+      bool ok = (capstr.find('-') == std::string::npos) // no negative
+                && (endp != capstr.c_str())             // consumed at least one digit
+                && (*endp == '\0')                       // no trailing garbage
+                && (errno == 0)                          // no overflow
+                && (parsed > 0);                         // nonzero cap
+      if (ok)
+        dflow_cap = uint64_t(parsed);
+      else
+        logchan_APP->log(
+            "ORKID_DFLOWCACHE_MAX_BYTES<%s> invalid; using default %llu bytes",
+            capstr.c_str(),
+            (unsigned long long)dflow_cap);
+    }
+    DataBlockCache::evictToSize("dflowcache", dflow_cap);
+  }
 
   //////////////////////////////////////////
   // Register urlbases (also populates expander table via bidirectional sync)
@@ -475,7 +523,7 @@ Application::Application(appinitdata_ptr_t initdata, bool derived_class_init) {
   // - String pool context creation (if needed)
   // - Subsystem registration (if needed)
 
-  logchan_APP->log("Application(derived_class_init) constructed");
+  //logchan_APP->log("Application(derived_class_init) constructed");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

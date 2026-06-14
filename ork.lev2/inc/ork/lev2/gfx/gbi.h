@@ -93,6 +93,44 @@ public:
       size_t instance_count,
       size_t first_instance) = 0;
 
+  //////////////////////////////////////////////
+  // GPU-driven indirect draws: the draw count (instance/vertex count) is NOT supplied by the
+  // CPU — it is read at draw time from `indirect_args`, a storage buffer a compute shader wrote
+  // (e.g. a cull pass that compacted survivors, or a generator that amplified geometry). No CPU
+  // readback / stall. `indirect_args` must be created with INDIRECT usage (createStorageBuffer
+  // grants it). args_offset is the byte offset of the command within that buffer.
+  //////////////////////////////////////////////
+
+  // (1) fixed-mesh instanced, INDEXED, indirect. Geometry from bound vertex+index buffers
+  // (vertex-cache friendly, reused across instances); instanceCount comes from the GPU buffer.
+  // args = VkDrawIndexedIndirectCommand. The per-instance data (matrices) is the usual instance
+  // SSBO the material binds; the VS indexes it by gl_InstanceIndex.
+  virtual void DrawInstancedIndexedPrimitiveIndirectEML(
+      const VertexBufferBase& VBuf,
+      const IndexBufferBase& IdxBuf,
+      PrimitiveType eType,
+      const FxShaderStorageBuffer* indirect_args,
+      size_t args_offset = 0) = 0;
+
+  // (2) SSBO vertex-pull, NON-indexed, indirect. No vertex/index buffers — the VS reads vertices
+  // from a storage block via gl_VertexIndex (cf. the DrawPrimitiveEML(SSBO,...) overload).
+  // args = VkDrawIndirectCommand (vertexCount/instanceCount/firstVertex/firstInstance).
+  virtual void DrawIndirectEML(
+      PrimitiveType eType,
+      const FxShaderStorageBuffer* indirect_args,
+      size_t args_offset = 0) = 0;
+
+  // (3) SSBO vertex-pull, INDEXED, indirect. Vertices pulled from a storage block (gl_VertexIndex);
+  // indices come from a compute-written storage buffer bound as the index buffer (createStorageBuffer
+  // grants INDEX usage). For compute-generated geometry (L-systems) that wants vertex reuse.
+  // args = VkDrawIndexedIndirectCommand. index_size: 2=uint16, 4=uint32 (compute-gen default).
+  virtual void DrawIndexedIndirectEML(
+      const FxShaderStorageBuffer* index_buffer,
+      PrimitiveType eType,
+      const FxShaderStorageBuffer* indirect_args,
+      size_t args_offset = 0,
+      int index_size = 4) = 0;
+
   virtual void* LockIB(IndexBufferBase& VBuf, int ibase = 0, int icount = 0) = 0;
   virtual void UnLockIB(IndexBufferBase& VBuf)                               = 0;
 

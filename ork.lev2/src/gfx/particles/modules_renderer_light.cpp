@@ -54,9 +54,9 @@ LightRendererInst::LightRendererInst(const LightRendererData* srd, dataflow::Gra
 void LightRendererInst::onLink(GraphInst* inst) {
   _onLink(inst);
   auto ptcl_context         = inst->_impl.getShared<Context>();
-  ptcl_context->_rcidlambda = [this](const RenderContextInstData& RCID) { //
+  ptcl_context->setRenderLambda(this, _srd->_draw_order, [this](const RenderContextInstData& RCID) { //
     this->_render(RCID); //
-  };
+  });
 }
 
 ///////////////////////////////////////////////////////////////////////////////

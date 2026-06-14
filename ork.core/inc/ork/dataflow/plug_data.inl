@@ -41,10 +41,14 @@ template <typename traits> void outplugdata<traits>::setValue(const data_type_t&
 
 template <typename traits>
 inplugdata<traits>::inplugdata(
-    moduledata_ptr_t pmod,                           //
-    EPlugRate epr,                                   //
-    const char* pname)                               //
-    : InPlugData(pmod, epr, typeid(traits), pname) { //
+    moduledata_ptr_t pmod,                                  //
+    EPlugRate epr,                                          //
+    const char* pname)                                      //
+    : InPlugData(pmod, epr, typeid(data_type_t), pname) { // UNIFIED with outplugdata: both sides record
+  // typeid(traits::elemental_data_type) -- the DATA that flows -- so canConnect can compare them.
+  // (Was typeid(traits): asymmetric vs the out-plug's typeid(data_type_t), which made ANY typed
+  // connection check reject everything. Comparing data types also correctly admits float-out ->
+  // floatxf-in: same payload, the transformer is the in-plug's own business.)
   _value = std::make_shared<data_type_t>();
 
   _transformer = std::make_shared<typename traits::xformer_t>();

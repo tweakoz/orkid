@@ -8,7 +8,9 @@
 #pragma once
 
 #include <ork/dataflow/enum.h>
+#include <ork/math/cvector2.h>
 #include <ork/math/cvector3.h>
+#include <ork/math/cvector4.h>
 #include <ork/math/quaternion.h>
 
 namespace ork::dataflow {
@@ -22,10 +24,12 @@ struct fvec3passthrudata;
 struct fquatpassthrudata;
 struct floatxfdata;
 struct fvec3xfdata;
+struct fvec4xfdata;
 struct fquatxfdata;
 
 using floatxfdata_ptr_t = std::shared_ptr<floatxfdata>;
 using fvec3xfdata_ptr_t = std::shared_ptr<fvec3xfdata>;
+using fvec4xfdata_ptr_t = std::shared_ptr<fvec4xfdata>;
 using fquatxfdata_ptr_t = std::shared_ptr<fquatxfdata>;
 
 struct FloatPlugTraits {
@@ -37,6 +41,15 @@ struct FloatPlugTraits {
   static constexpr size_t max_fanout = 0;
   static std::shared_ptr<float> data_to_inst(std::shared_ptr<float> inp);
 };
+struct Vec2fPlugTraits {
+  using elemental_data_type = fvec2;
+  using elemental_inst_type = fvec2;
+  using xformer_t           = nullpassthrudata;
+  using range_type = float_range;
+  using out_traits_t = Vec2fPlugTraits;
+  static constexpr size_t max_fanout = 0;
+  static std::shared_ptr<fvec2> data_to_inst(std::shared_ptr<fvec2> inp);
+};
 struct Vec3fPlugTraits {
   using elemental_data_type = fvec3;
   using elemental_inst_type = fvec3;
@@ -45,6 +58,24 @@ struct Vec3fPlugTraits {
   using out_traits_t = Vec3fPlugTraits;
   static constexpr size_t max_fanout = 0;
   static std::shared_ptr<fvec3> data_to_inst(std::shared_ptr<fvec3> inp);
+};
+struct Vec4fPlugTraits {
+  using elemental_data_type = fvec4;
+  using elemental_inst_type = fvec4;
+  using xformer_t           = nullpassthrudata;
+  using range_type = float_range;
+  using out_traits_t = Vec4fPlugTraits;
+  static constexpr size_t max_fanout = 0;
+  static std::shared_ptr<fvec4> data_to_inst(std::shared_ptr<fvec4> inp);
+};
+struct IntPlugTraits {
+  using elemental_data_type = int;
+  using elemental_inst_type = int;
+  using xformer_t           = nullpassthrudata;
+  using range_type = float_range;            // range is just a UI hint tag; int values fit
+  using out_traits_t = IntPlugTraits;
+  static constexpr size_t max_fanout = 0;
+  static std::shared_ptr<int> data_to_inst(std::shared_ptr<int> inp);
 };
 struct QuatfPlugTraits {
   using elemental_data_type = fquat;
@@ -72,6 +103,15 @@ struct Vec3XfPlugTraits {
   using out_traits_t = Vec3fPlugTraits;
   static constexpr size_t max_fanout = 0;
   static std::shared_ptr<fvec3> data_to_inst(std::shared_ptr<fvec3> inp);
+};
+struct Vec4XfPlugTraits {
+  using elemental_data_type = fvec4;
+  using elemental_inst_type = fvec4;
+  using xformer_t                    = fvec4xfdata;
+  using range_type = float_range;
+  using out_traits_t = Vec4fPlugTraits;
+  static constexpr size_t max_fanout = 0;
+  static std::shared_ptr<fvec4> data_to_inst(std::shared_ptr<fvec4> inp);
 };
 struct QuatXfPlugTraits {
   using elemental_data_type = fquat;
@@ -255,6 +295,17 @@ struct vect3inplugdata : public inplugdata<Vec3fPlugTraits> {
 public:
   vect3inplugdata(moduledata_ptr_t pmod, EPlugRate epr, const char* pname)
       : inplugdata<Vec3fPlugTraits>(pmod, epr, pname) {
+  }
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct vect4inplugdata : public inplugdata<Vec4fPlugTraits> {
+  DeclareAbstractX(vect4inplugdata, inplugdata<Vec4fPlugTraits>);
+
+public:
+  vect4inplugdata(moduledata_ptr_t pmod, EPlugRate epr, const char* pname)
+      : inplugdata<Vec4fPlugTraits>(pmod, epr, pname) {
   }
 };
 
@@ -517,6 +568,18 @@ public:
   orklut<std::string, fvec3passthrudata_ptr_t> _transforms;
 };
 
+struct fvec4xfdata : public ork::Object {
+  DeclareConcreteX(fvec4xfdata, ork::Object);
+
+public:
+  fvec4xfdata();
+  fvec4 transform(const fvec4& input) const;
+  floatxfdata_ptr_t _transformX;
+  floatxfdata_ptr_t _transformY;
+  floatxfdata_ptr_t _transformZ;
+  floatxfdata_ptr_t _transformW;
+};
+
 struct fquatxfdata : public ork::Object {
   DeclareConcreteX(fquatxfdata, ork::Object);
 
@@ -534,10 +597,12 @@ using floatinpplug_ptr_t = std::shared_ptr<inplugdata<FloatPlugTraits>>;
 
 using floatxfinplugdata_t = inplugdata<FloatXfPlugTraits>;
 using fvec3xfinplugdata_t = inplugdata<Vec3XfPlugTraits>;
+using fvec4xfinplugdata_t = inplugdata<Vec4XfPlugTraits>;
 using fquatxfinplugdata_t = inplugdata<QuatXfPlugTraits>;
 
 using floatxfinplugdata_ptr_t = std::shared_ptr<floatxfinplugdata_t>;
 using fvec3xfinplugdata_ptr_t = std::shared_ptr<fvec3xfinplugdata_t>;
+using fvec4xfinplugdata_ptr_t = std::shared_ptr<fvec4xfinplugdata_t>;
 using fquatxfinplugdata_ptr_t = std::shared_ptr<fquatxfinplugdata_t>;
 
 } // namespace ork::dataflow

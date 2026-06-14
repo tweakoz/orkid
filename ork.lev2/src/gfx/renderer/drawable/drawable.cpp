@@ -37,7 +37,7 @@ void DrawableData::describeX(object::ObjectClass* clazz){
   //    ->annotate<ConstString>("editor.semantic", "color");
   clazz->directProperty("EnvironmentMapPath", &DrawableData::_environmentMapPath)
       ->annotate("editor.filetype", "hdr,exr,dds,xir")
-      ->annotate("editor.filebase", "<ork_envmaps>,<assetcache>");
+      ->annotate("editor.filebase", "<ork_envmaps>,<ork_envmaps2>,<assetcache>");
   clazz->intProperty("SortKey", int_range{0, 0x7fffffff}, &DrawableData::_sortkey)
       ->annotate("editor.widget", "SortKeyEditor");
 
@@ -57,6 +57,17 @@ drawable_ptr_t DrawableCache::fetch(drawabledata_ptr_t data){
     return it->second;
   }
   auto drw = data->createDrawable();
+  if (nullptr == drw) {
+    // an UNMATERIALIZED gen (e.g. a MeshGenData with no C++ materializer in a
+    // zero-Python host) yields no drawable — fail LOUD, not with a null deref;
+    // the consumer renders nothing for this node instead of crashing the host.
+    printf(
+        "DrawableCache::fetch: createDrawable() returned NULL for data<%p> class<%s> — "
+        "asset not materialized in this host?\n",
+        (void*)data.get(),
+        data->GetClass()->Name().c_str());
+    return nullptr;
+  }
   drw->_modcolor = data->_modcolor;
   _cache[data]=drw;
   return drw;

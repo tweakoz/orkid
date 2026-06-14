@@ -36,9 +36,18 @@ struct SpriteRendererInst : public ParticleModuleInst {
   void _render(const ork::lev2::RenderContextInstData& RCID);
   const SpriteRendererData* _srd;
   floatxf_inp_pluginst_ptr_t _input_size;
+  floatxf_inp_pluginst_ptr_t _input_gradient_phase;
   float_out_pluginst_ptr_t _output_uage;
   triple_buf_ptr_t _triple_buf;
+  // item E — emission-light temporal smoothing (EMA over compute ticks);
+  // raw per-tick weighted averages twitch as particles cross ramp stops.
+  fvec3 _emission_color_ema;
+  fvec3 _emission_center_ema;
+  float _emission_fade_ema = 0.0f;
+  bool  _emission_seeded   = false;
   sprite_vtxbuf_ptr_t _vertexBuffer;
+  // Per-renderer-instance SSBO. See StreakRendererInst for rationale.
+  FxShaderStorageBuffer* _cu_vertex_io_buffer = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -58,8 +67,9 @@ SpriteRendererInst::SpriteRendererInst(const SpriteRendererData* srd, dataflow::
 void SpriteRendererInst::onLink(GraphInst* inst) {
   _onLink(inst);
   auto ptcl_context         = inst->_impl.getShared<Context>();
-  ptcl_context->_rcidlambda = [this](const RenderContextInstData& RCID) { this->_render(RCID); };
+  ptcl_context->setRenderLambda(this, _srd->_draw_order, [this](const RenderContextInstData& RCID) { this->_render(RCID); });
   _input_size               = typedInputNamed<FloatXfPlugTraits>("Size");
+  _input_gradient_phase     = typedInputNamed<FloatXfPlugTraits>("GradientPhase");
 
   auto pool = _graphinst->firstModuleInst<ParticlePoolModuleInst>();
   OrkAssert(pool);
@@ -86,8 +96,9 @@ void SpriteRendererInst::compute(
   // compute light color
   /////////////////////////////////////
 
-  auto as_grad = dynamic_cast<GradientMaterial*>(material.get());
-  if( true and as_grad ){
+  auto as_grad      = dynamic_cast<GradientMaterial*>(material.get());
+  auto as_freestyle = dynamic_cast<FreestyleParticleMaterial*>(material.get());
+  if( as_grad ){
     auto avg_color = fvec4(0,0,0,0);
     int num_alive = _pool->GetNumAlive();
     int sample_count = 0;
@@ -103,6 +114,64 @@ void SpriteRendererInst::compute(
     //avg_color *= (1.0f/float(sample_count));
     inst->_vars.makeValueForKey<fvec4>("emission_color") = avg_color;
 
+  }
+  else if( as_freestyle ){
+    // item E — the PREMA emission light. Weight each live particle's ramp
+    // sample by its ADDITIVE-ness: w = luminance(rgb) * (1 - occlusion).
+    // Fire (bright, a~0) drives the light; smoke (dark, a>0) contributes
+    // ~nothing — the weighting falls out of the material contract, no
+    // per-system customization needed. Publishes BOTH the light color
+    // (weight-averaged chromaticity, count-faded) and the light CENTER
+    // (weighted centroid — world-space trails park their sgnode at
+    // identity, so the node transform can't position the light).
+    fvec3 sum_rgb(0, 0, 0);
+    fvec3 sum_pos(0, 0, 0);
+    float sum_w     = 0.0f;
+    int   num_alive = _pool->GetNumAlive();
+    for (int i = 0; i < num_alive; i += 2) {
+      BasicParticle* particle = _pool->GetActiveParticle(i);
+      int index = int(std::clamp(particle->_unit_age, 0.0f, 1.0f) * 255.0f);
+      const fvec4& s = as_freestyle->_gradientSamples[index];
+      float lum = (s.x + s.y + s.z) * 0.333333f;
+      // lum^p, p AUTHORED on the material (emission_lum_power): p=1 lets
+      // the brief bright ignition flash dominate (whiter, twitchier);
+      // p<1 biases toward the flame BODY (oranger, steadier).
+      float w = std::pow(lum, as_freestyle->_emission_lum_power) //
+                * (1.0f - std::clamp(s.w, 0.0f, 1.0f));
+      sum_rgb += fvec3(s.x, s.y, s.z) * w;
+      sum_pos += particle->mPosition * w;
+      sum_w   += w;
+    }
+    // temporal smoothing: EMA with the AUTHORED time constant
+    // (emission_smoothing; 0 = raw per-tick) — flicker is a look knob,
+    // owned by the DSL, not engine code. Position tracks 2x faster.
+    float dt  = float(updata->_dt);
+    float tau = as_freestyle->_emission_smoothing;
+    if (sum_w > 1e-4f) {
+      float inv   = 1.0f / sum_w;
+      fvec3 color = sum_rgb * inv * as_freestyle->_gradientColorIntensity //
+                    * as_freestyle->_emission_tint;
+      fvec3 cen   = sum_pos * inv;
+      float fade  = std::min(sum_w * 0.25f, 1.0f);
+      if (tau <= 0.0f or not _emission_seeded) {
+        _emission_color_ema  = color;
+        _emission_center_ema = cen;
+        _emission_fade_ema   = fade;
+        _emission_seeded     = true;
+      } else {
+        float ac = 1.0f - std::exp(-dt / tau);
+        float ap = 1.0f - std::exp(-dt / (tau * 0.5f));
+        _emission_color_ema  = _emission_color_ema + (color - _emission_color_ema) * ac;
+        _emission_center_ema = _emission_center_ema + (cen - _emission_center_ema) * ap;
+        _emission_fade_ema   = _emission_fade_ema + (fade - _emission_fade_ema) * ac;
+      }
+      inst->_vars.makeValueForKey<fvec4>("emission_color")  = fvec4(_emission_color_ema * _emission_fade_ema, 1.0f);
+      inst->_vars.makeValueForKey<fvec4>("emission_center") = fvec4(_emission_center_ema, 1.0f);
+    } else {
+      _emission_seeded = false;
+      inst->_vars.makeValueForKey<fvec4>("emission_color")  = fvec4(0, 0, 0, 0);
+      inst->_vars.makeValueForKey<fvec4>("emission_center") = fvec4(0, 0, 0, 0);
+    }
   }
   else{
     inst->_vars.makeValueForKey<fvec4>("emission_color") = material->_averageColor;
@@ -149,7 +218,11 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   // compute particle dynamic vertex buffer
   //////////////////////////////////////////
   auto render_buffer = _triple_buf->begin_pull();
-  int icnt           = render_buffer->_numParticles;
+  if (not render_buffer) {
+    // Nothing pushed yet — ECS pool slot with no compute history. Bail.
+    return;
+  }
+  int icnt = render_buffer->_numParticles;
   if (0 == icnt) {
     _triple_buf->end_pull(render_buffer);
     return;
@@ -199,6 +272,7 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   }
   //////////////////////////////////////////////////////////////////////////////
   float fsize          = _input_size->value();
+  float fgrad_phase    = _input_gradient_phase->value();
   auto LW              = ork::fvec2(fsize, fsize);
   bool size_is_varying = _input_size->connectedIsVarying();
   //////////////////////////////////////////////////////////////////////////////
@@ -235,23 +309,28 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     }
 
     ///////////////////////////////////////////////////////////////
-    // Fill SSBO with new format:
-    // vec4 camRightSize;          // 0: xyz=camRight, w=unused
-    // vec4 camUpCount;            // 16: xyz=camUp, w=numParticles
-    // vec4 particleData[262144];  // 32: pos.xyz, size
-    // vec4 particleData2[262144]; // 4194336: vel.xyz, length (unused for sprites)
-    // vec4 particleData3[262144]; // 8388640: age, random, unused, unused
+    // SSBO header layout (mirrors storage_particles in particle_comshader.i2):
+    //   0  camRightSize    xyz=camRight, .w unused
+    //   16 camUpCount      xyz=camUp, w=numParticles
+    //   32 materialParams  x=gradient_phase, yzw=reserved
+    //   48 particleData[]  per-particle pos.xyz, size
+    //   48 + 262144*16    particleData2[]  unused for sprites
+    //   48 + 262144*16*2  particleData3[]  per-particle age, random, aux.x, aux.y
     ///////////////////////////////////////////////////////////////
-    auto storage        = material->_cu_vertex_io_buffer;
+    if (not _cu_vertex_io_buffer) {
+      _cu_vertex_io_buffer = FXI->createStorageBuffer(16 << 20);
+    }
+    auto storage        = _cu_vertex_io_buffer;
     size_t mapping_size = 16 << 20; // 16MB (supports 262144 particles × 3 arrays × 16 bytes)
     auto mapped_storage = FXI->mapStorageBuffer(storage, 0, mapping_size, BufferMapAccess::WRITE_ONLY);
 
     mapped_storage->seek(0);
-    // Header: camera vectors and count
+    // Header: camera vectors, count, per-frame material params
     mapped_storage->make<fvec4>(camRight.x, camRight.y, camRight.z, 0.0f);      // offset 0
     mapped_storage->make<fvec4>(camUp.x, camUp.y, camUp.z, float(icnt));        // offset 16
+    mapped_storage->make<fvec4>(fgrad_phase, 0.0f, 0.0f, 0.0f);                 // offset 32 — materialParams
 
-    // particleData array at offset 32: pos.xyz, size
+    // particleData array at offset 48: pos.xyz, size
     if (size_is_varying) {
       for (int i = 0; i < icnt; i++) {
         auto ptcl = get_particle(i);
@@ -267,15 +346,18 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     }
 
     // Skip particleData2 (not used for sprites) - seek to particleData3
-    // particleData2 starts at offset 32 + 262144*16 = 4194336
-    // particleData3 starts at offset 32 + 262144*16*2 = 8388640
-    constexpr size_t particleData3_offset = 32 + 262144 * 16 * 2;
+    // particleData2 starts at offset 48 + 262144*16 = 4194352
+    // particleData3 starts at offset 48 + 262144*16*2 = 8388656
+    constexpr size_t particleData3_offset = 48 + 262144 * 16 * 2;
     mapped_storage->seek(particleData3_offset);
 
-    // particleData3 array: age, random, unused, unused
+    // particleData3 array: x=unit_age, y=mfRandom, z=_aux.x, w=_aux.y.
+    // aux.z/w aren't surfaced to the shader in v1; CPU-side _aux is still
+    // the full vec4 (other consumers could read it directly).
     for (int i = 0; i < icnt; i++) {
       auto ptcl = get_particle(i);
-      mapped_storage->make<fvec4>(ptcl->_unit_age, ptcl->mfRandom, 0.0f, 0.0f);
+      mapped_storage->make<fvec4>(ptcl->_unit_age, ptcl->mfRandom,
+                                   ptcl->_aux.x, ptcl->_aux.y);
     }
 
     FXI->unmapStorageBuffer(mapped_storage.get());
@@ -287,9 +369,18 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     FXI->bindStorageBuffer(material->_cu_storage_block, storage);
     render_time_1b = prender_timer.SecsSinceStart();
 
-    material->update(RCID);
+    // AUX-CHANNEL subpass (E2B item D): pipeline() returns nullptr when the
+    // material doesn't write the active channel — skip the draw. The color
+    // pass earlier this frame already ran material->update() (gradient
+    // re-bake etc.); aux passes don't repeat it.
+    bool aux_pass = (RCID.rcfd()->_subpassID == "AUX"_crcu);
+    if (not aux_pass)
+      material->update(RCID);
     auto pipeline = material->pipeline(RCID, false);
-    auto rstate = material->_material->_rasterstate;
+    if (pipeline) {
+    // the pipeline's rasterstate carries the PASS-correct state (e.g. the
+    // aux pipeline's additive/no-Z); fall back to the material state.
+    auto rstate = pipeline->_rasterstate ? pipeline->_rasterstate : material->_material->_rasterstate;
     rstate->_priority = 1 << 10;
     FXI->pushRasterState(rstate);
     pipeline->wrappedDrawCall(RCID, [&]() {
@@ -301,6 +392,7 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
       FXI->reset();
     });
     FXI->popRasterState();
+    }
     render_time_1c = prender_timer.SecsSinceStart();
   }
 
@@ -325,6 +417,7 @@ static void _reshapeSpriteRendererIOs(dataflow::moduledata_ptr_t mdata) {
   ModuleData::createInputPlug<FloatXfPlugTraits>(typed, EPR_UNIFORM, "Size")->_range              = {-10, 10};
   ModuleData::createInputPlug<FloatXfPlugTraits>(typed, EPR_UNIFORM, "GradientIntensity")->_range = {0, 10};
   ModuleData::createInputPlug<FloatXfPlugTraits>(typed, EPR_UNIFORM, "Scale")->_range             = {-10, 10};
+  ModuleData::createInputPlug<FloatXfPlugTraits>(typed, EPR_UNIFORM, "GradientPhase")->_range     = {-1000, 1000};
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -371,6 +464,7 @@ dgmoduleinst_ptr_t SpriteRendererData::createInstance(dataflow::GraphInst* ginst
 ///////////////////////////////////////////////////////////////////////////////
 
 void RendererModuleData::describeX(class_t* clazz) {
+  clazz->directProperty("draw_order", &RendererModuleData::_draw_order);
 }
 
 RendererModuleData::RendererModuleData() {

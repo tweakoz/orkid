@@ -7,6 +7,13 @@
 
 #pragma once
 
+// fwd — VdbLevelSetRendererData carries a reflected PbrMaterialGenData (the
+// serializable material recipe); the full type lives in lev2/gfx/asset_gen.h.
+namespace ork::lev2 {
+struct PbrMaterialGenData;
+using pbr_material_gendata_ptr_t = std::shared_ptr<PbrMaterialGenData>;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::particle {
 /////////////////////////////////////////
@@ -51,7 +58,24 @@ public:
   EDepthTest _depthtest = EDepthTest::OFF;
   BlendingMacro _blending = BlendingMacro::OFF;
 
-  FxShaderStorageBuffer* _cu_vertex_io_buffer    = nullptr;
+  // GENERIC AUX-CHANNEL techniques (E2B item D). A material may provide a
+  // technique pair for any named aux channel (e.g. "heat" — written into
+  // the forward node's aux RT during the AUX subpass). Keyed by the
+  // CrcString hash of the channel name (matches the RCFD "AUX_CHANNEL"
+  // user property the aux pass publishes). pipeline() returns the entry's
+  // pipeline during an AUX subpass, or nullptr when the material doesn't
+  // write the active channel — renderers SKIP the draw on nullptr.
+  struct AuxTekSet {
+    fxtechnique_constptr_t _tek_sprites = nullptr;
+    fxtechnique_constptr_t _tek_streaks = nullptr;
+    fxpipeline_ptr_t       _pipeline;   // own rasterstate (e.g. additive, no-Z)
+  };
+  std::map<uint64_t, AuxTekSet> _aux_teks;
+
+  // SSBO binding-slot metadata. The actual particle vertex SSBO is owned
+  // per-renderer-instance (StreakRendererInst / SpriteRendererInst) — was
+  // previously here on the material, but that caused multiple particle
+  // instances using the same material to race on a single SSBO.
   const FxShaderStorageBlock* _cu_storage_block  = nullptr;
   const FxComputeShader* _streakcu_shader              = nullptr;
   const FxComputeShader* _spritecu_shader              = nullptr;
@@ -100,6 +124,32 @@ using gradientmaterial_ptr_t = std::shared_ptr<GradientMaterial>;
 
 /////////////////////////////////////////
 
+// GradientAtlasMaterial — samples a user-supplied 2D texture as a
+// "gradient atlas." Frag shader looks up vec2(unit_age, aux.x), so each
+// row of the atlas is a complete 1D gradient and a particle's aux.x picks
+// which row. The atlas is provided directly (no runtime gradient→texture
+// bake step like GradientMaterial does). Standard blending/depth/color
+// intensity properties match the sibling class.
+struct GradientAtlasMaterial : public MaterialBase {
+  DeclareConcreteX(GradientAtlasMaterial, MaterialBase);
+public:
+  static std::shared_ptr<GradientAtlasMaterial> createShared();
+  GradientAtlasMaterial();
+  void update(const RenderContextInstData& RCID) final;
+  void gpuInit(const RenderContextInstData& RCID) final;
+
+  fxparam_constptr_t _param_atlas       = nullptr;
+  fxparam_constptr_t _param_mod_texture = nullptr;
+  texture_ptr_t      _atlas;                 // the gradient atlas (2D)
+  texture_ptr_t      _modulation_texture;    // sibling concept, optional
+  float              _gradientAlphaIntensity = 1.0f;
+  float              _gradientColorIntensity = 1.0f;
+};
+
+using gradientatlasmaterial_ptr_t = std::shared_ptr<GradientAtlasMaterial>;
+
+/////////////////////////////////////////
+
 struct TextureMaterial : public MaterialBase {
   DeclareConcreteX(TextureMaterial, MaterialBase);
 
@@ -108,7 +158,8 @@ public:
   TextureMaterial();
   void update(const RenderContextInstData& RCID) final;
   void gpuInit(const RenderContextInstData& RCID) final;
-  texture_ptr_t _texture;
+  texture_ptr_t _texture;            // runtime (resolved from _texture_asset when null)
+  asset::asset_ptr_t _texture_asset; // REFLECTED — the serializable form
   fxparam_constptr_t _paramColorMap;
   fxparam_constptr_t _parammodcolor;
 };
@@ -125,7 +176,8 @@ public:
   TexGridMaterial();
   void update(const RenderContextInstData& RCID) final;
   void gpuInit(const RenderContextInstData& RCID) final;
-  texture_ptr_t _texture;
+  texture_ptr_t _texture;            // runtime (resolved from _texture_asset when null)
+  asset::asset_ptr_t _texture_asset; // REFLECTED — the serializable form
   fxparam_constptr_t _paramColorMap;
   fxparam_constptr_t _paramGridDim;
   fxparam_constptr_t _parammodcolor;
@@ -133,6 +185,63 @@ public:
 };
 
 using texgridmaterial_ptr_t = std::shared_ptr<TexGridMaterial>;
+
+/////////////////////////////////////////
+// FreestyleParticleMaterial — the composable particle material:
+//   flipbook cookie (texgrid recipe) x gradient ramp over unit_age,
+//   authored for PREMA (premultiplied) compositing so ONE chain morphs
+//   additive fire (gradient w ~ 0) into absorptive smoke (w > 0) per
+//   particle. Geometry-agnostic (sprite + streak technique pair from one
+//   fragment shader). `shader_path` overrides the stock orkshader://particle
+//   with any fxv2 providing tfreestyleparticle_{sprites,streaks} — the
+//   slot DSL-generated shaders (and aux-channel/heat variants) plug into.
+//   ALL authored state is reflected (model-B: live-only state drops on the
+//   embedded-graph round-trip and renders nothing in the C++ host).
+
+struct FreestyleParticleMaterial : public MaterialBase {
+  DeclareConcreteX(FreestyleParticleMaterial, MaterialBase);
+
+public:
+  static std::shared_ptr<FreestyleParticleMaterial> createShared();
+  FreestyleParticleMaterial();
+  void update(const RenderContextInstData& RCID) final;
+  void gpuInit(const RenderContextInstData& RCID) final;
+
+  // reflected (the serializable contract)
+  gradient_fvec4_ptr_t _gradient;              // ramp over unit_age (rgb=color, w=PREMA opacity)
+  asset::asset_ptr_t _texture_asset;           // the flipbook cookie sheet
+  float _gridDim                = 1.0f;        // flipbook grid dimension (1 = static cookie)
+  float _gradientColorIntensity = 1.0f;        // HDR scale on ramp rgb
+  float _gradientAlphaIntensity = 1.0f;        // scale on ramp opacity
+  std::string _shader_path;                    // empty = stock orkshader://particle
+  // emission-light shaping (item E) — AUTHORED look knobs (reflected; the
+  // DSL owns the feel, the C++ compute just obeys):
+  //   smoothing: EMA time-constant (s) on the published light color/pos —
+  //              0 = raw per-tick (max flicker), ~0.2 = breathing glow
+  //   lum_power: per-particle weight = lum^p * (1-occlusion). p=1 lets the
+  //              brief bright ignition flash dominate (whiter, twitchier);
+  //              p<1 biases toward the flame BODY (oranger, steadier)
+  //   tint:      direct multiplier on the published light color
+  float _emission_smoothing = 0.0f;
+  float _emission_lum_power = 1.0f;
+  fvec3 _emission_tint      = fvec3(1, 1, 1);
+
+  // runtime
+  texture_ptr_t _texture;                      // resolved from _texture_asset when null
+  // CPU mirror of the ramp (item E) — the sprite renderer derives the
+  // per-system emission light from it: PREMA makes the weighting implicit
+  // (emissive = the ADDITIVE part: luminance x (1 - occlusion w)), so fire
+  // drives the light and smoke contributes nothing — no per-system hook.
+  fvec4 _gradientSamples[256];
+  fxparam_constptr_t _param_cookie   = nullptr;
+  fxparam_constptr_t _param_gridDim  = nullptr;
+  freestyle_mtl_ptr_t _grad_render_mtl;        // gradient->256x1 RT bake (GradientMaterial recipe)
+  fxpipeline_ptr_t _grad_render_pipeline;
+  texture_ptr_t _gradient_texture;
+  rtgroup_ptr_t _gradient_rtgroup;
+};
+
+using freestyleparticlematerial_ptr_t = std::shared_ptr<FreestyleParticleMaterial>;
 
 /////////////////////////////////////////
 
@@ -155,6 +264,10 @@ struct RendererModuleData : public ParticleModuleData {
   DeclareAbstractX(RendererModuleData, ParticleModuleData);
 public:
   RendererModuleData();
+  // EXPLICIT draw order across a graph's renderers (lower draws first) —
+  // multi-renderer graphs (smoke under fire) must not depend on implicit
+  // link order for blend correctness. Reflected; ties keep link order.
+  int _draw_order = 0;
 };
 
 /////////////////////////////////////////
@@ -199,6 +312,66 @@ public:
 };
 
 using lightmodule_ptr_t = std::shared_ptr<LightRendererData>;
+
+/////////////////////////////////////////
+
+// Kernel shapes for VdbLevelSetRendererData splat. Each describes how a
+// particle's contribution falls off with distance r from its center, in
+// units of Radius. All are zero at r >= Radius (compact support) except
+// GAUSSIAN which decays smoothly to ~0 by ~3 sigma.
+//
+// Underlying values are the CRC of the kernel name (via the _crcu
+// user-defined literal) so that `kernel = tokens.WYVILL` from Python
+// works via a simple `VdbLevelSetKernel(crc->hashed())` cast — same
+// pattern used by BlendingMacro / EDepthTest elsewhere in orkid.
+enum class VdbLevelSetKernel : uint64_t {
+  WYVILL   = "WYVILL"_crcu,   // (1 - r²)³  — smooth, default
+  CUBIC    = "CUBIC"_crcu,    // (1 - r)³   — cheaper, sharper falloff
+  QUARTIC  = "QUARTIC"_crcu,  // (1 - r²)²  — sharper than Wyvill
+  GAUSSIAN = "GAUSSIAN"_crcu, // exp(-α r²) — no compact support, very soft
+};
+
+// VdbLevelSetRenderer — chain terminus that splats live particles into a
+// per-graphinst OpenVDB FloatGrid as a density field, runs marching cubes
+// (openvdb::tools::volumeToMesh) at the IsoLevel threshold, and draws the
+// resulting triangle mesh via an internally-owned RigidPrimitive. Matches
+// the existing per-particle-renderer module shape (registers a _render
+// lambda via ptcl_context->setRenderLambda(this, ...) in onLink).
+//
+// Plugs (FloatXf, uniform-rate):
+//   Radius    — kernel falloff radius in world units (per particle)
+//   Strength  — kernel amplitude multiplier (density contribution per particle)
+//   IsoLevel  — marching-cubes threshold (density value at the iso-surface)
+//
+// Properties (set at construction, not bindable):
+//   _voxelSize — VDB grid voxel size (world units). Smaller = sharper but
+//                quadratic memory cost per particle's splat sphere.
+//   _kernel    — falloff kernel shape (VdbLevelSetKernel enum).
+//   _material  — render material (any FreestyleMaterial / PBR / etc.).
+struct VdbLevelSetRendererData : public RendererModuleData {
+  DeclareConcreteX(VdbLevelSetRendererData, RendererModuleData);
+public:
+  VdbLevelSetRendererData();
+  static std::shared_ptr<VdbLevelSetRendererData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dataflow::GraphInst* ginst) const final;
+  // General lev2 material (PBRMaterial / FreestyleMaterial / etc.) — NOT
+  // a particle-specific MaterialBase. The extracted triangle mesh is
+  // drawn via RigidPrimitive::renderEML through this material's pipeline,
+  // same pattern vdb_sculpt.py uses with shaders.createPbrMaterialWithColor.
+  // RUNTIME-only (a live GPU material can't serialize) — the imperative override.
+  lev2::material_ptr_t _material;
+  // SERIALIZABLE material RECIPE (model B): a reflected PbrMaterialGenData. When the
+  // live _material is null (the post-deserialize case — it silently dropped, which used
+  // to render the blobs INVISIBLE), the renderer inst materializes this lazily at first
+  // render (the D.1 C++ materializer; ctx available there). The DSL authors BOTH: the
+  // live material for in-process parity, the gen for the round-trip.
+  pbr_material_gendata_ptr_t _material_gen;
+  float                _voxelSize = 0.1f;
+  VdbLevelSetKernel    _kernel    = VdbLevelSetKernel::WYVILL;
+  bool                 _sort      = false;
+};
+
+using vdblevelset_module_ptr_t = std::shared_ptr<VdbLevelSetRendererData>;
 
 /////////////////////////////////////////
 } //namespace ork::lev2::particle {

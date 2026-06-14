@@ -71,7 +71,13 @@ void LightProbe::exportEquirectangular(Context* ctx, const fquat& rot, const fil
     material->bindParamMatrix(p_mrot, mtxrot);
     material->bindParamTexture(p_cube, _cubeTexture.get());
     material->bindParamInt(p_flipy, 0);
-    ctx->GBI()->render2dQuadEML(); // full screen quad
+    // Convention-aware fullscreen quad: DWI->fullscreenQuad picks the
+    // right UV-flip + winding based on _isLogicalYUp / _isNativeYUp /
+    // useClockwiseWinding (see dwi.cpp:270). render2dQuadEML applies a
+    // legacy swap that left the equirect's v axis inverted after the
+    // overall Y-flip cleanup; switching to the convention-aware path
+    // lets the shader use v = frg_uv0.y directly (no `1.0 - y` workaround).
+    ctx->DWI()->fullscreenQuad();
     material->end(RCFD);
   }
 

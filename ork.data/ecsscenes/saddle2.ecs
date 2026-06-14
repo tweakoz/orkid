@@ -1,0 +1,3143 @@
+{
+ "root": {
+  "object": {
+   "class": "EcsSceneData",
+   "uuid": "7bb3caf7-f568-4a48-a9e0-74ba28574e2a",
+   "properties": {
+    "Imports": {},
+    "NodePrefix": "",
+    "SceneObjects": {
+     "Arch_particles_a": {
+      "object": {
+       "class": "EcsArchetype",
+       "uuid": "5bd3968a-981b-4202-996b-ee91ca5704ed",
+       "properties": {
+        "Components": {
+         "ParticlesComponentData": {
+          "object": {
+           "class": "ParticlesComponentData",
+           "uuid": "a7eb64e0-79fc-4260-b2ef-259544b3ca03",
+           "properties": {
+            "DrainLinger": 2.0,
+            "DrawableData": {
+             "object": {
+              "class": "ParticlesDrawableData",
+              "uuid": "48a6168c-3783-4006-a026-2d4869561746",
+              "properties": {
+               "emitter_intensity": 1.0,
+               "emitter_radius": 1.0,
+               "external_compute": true,
+               "graphdata": {
+                "object": {
+                 "class": "dflow/graphdata",
+                 "uuid": "93a9f1ef-5b70-4019-b907-f5e05c090ff8",
+                 "properties": {
+                  "Modules": {
+                   "BLOBS": {
+                    "object": {
+                     "class": "psys::VdbLevelSetRendererData",
+                     "uuid": "b2c9b286-fc23-4b08-ae59-a02e21e1df07",
+                     "properties": {
+                      "material_gen": {
+                       "object": {
+                        "class": "PbrMaterialGenData",
+                        "uuid": "bde94913-b669-49b7-8d14-7af8f74531c9",
+                        "properties": {
+                         "attenuation_color": [
+                          0.8500000238418579,
+                          0.9200000166893005,
+                          1.0
+                         ],
+                         "attenuation_distance": 6.0,
+                         "base_color": [
+                          0.0,
+                          0.0,
+                          0.0,
+                          1.0
+                         ],
+                         "clearcoat_factor": 0.0,
+                         "clearcoat_roughness": 0.0,
+                         "color_path": "",
+                         "diffuse_transmission_color": [
+                          1.0,
+                          1.0,
+                          1.0
+                         ],
+                         "diffuse_transmission_factor": 0.0,
+                         "has_clearcoat": false,
+                         "has_diffuse_transmission": false,
+                         "has_ior": true,
+                         "has_iridescence": true,
+                         "has_sheen": false,
+                         "has_specular": false,
+                         "has_subsurface": true,
+                         "has_transmission": true,
+                         "has_transmission_roughness": true,
+                         "has_volume": true,
+                         "ior": 1.5,
+                         "iridescence_factor": 0.25,
+                         "metallic": 1.0,
+                         "mtlruf_path": "",
+                         "normal_path": "",
+                         "roughness": 0.0,
+                         "sampler_textures": {},
+                         "shader_params": {},
+                         "shaderpath": "",
+                         "sheen_color": [
+                          0.0,
+                          0.0,
+                          0.0
+                         ],
+                         "sheen_factor": 0.0,
+                         "sheen_roughness": 0.0,
+                         "specular_color": [
+                          1.0,
+                          1.0,
+                          1.0
+                         ],
+                         "specular_factor": 1.0,
+                         "subsurface_color": [
+                          0.0,
+                          0.0,
+                          1.0
+                         ],
+                         "subsurface_factor": 1.0,
+                         "subsurface_radius": [
+                          0.10000000149011612,
+                          0.10000000149011612,
+                          0.10000000149011612
+                         ],
+                         "transmission_factor": 1.5,
+                         "transmission_roughness": 0.10000000149011612,
+                         "volume_thickness_factor": 0.0,
+                         "asset_name": ""
+                        }
+                       }
+                      },
+                      "sort": false,
+                      "voxel_size": 0.20000000298023224,
+                      "inputs": [
+                       {
+                        "object": {
+                         "class": "psys::ptclbufinpplug",
+                         "uuid": "1ceaeb1f-88fc-4aa9-af35-a0803701be6c",
+                         "properties": {
+                          "name": "pool"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "54259178-0ca9-4ebc-98eb-78c1befadbab",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "d3ed545a-0c92-4bdb-a084-dce8db766b4d",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 1.0,
+                          "name": "Radius"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "c63862d7-8900-423a-abb0-4476d34abda5",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "0a5d1dfe-1d0f-43a7-b950-56e22c162741",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 1.0,
+                          "name": "Strength"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "240b0172-e9dc-40c2-a1e8-6399444b4044",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "a41d3e16-1881-4608-810d-48e2cb36831b",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 0.5,
+                          "name": "IsoLevel"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "574de434-6310-475d-b63d-28c2db070360",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "0e40857c-fb5c-4579-8c6e-640a06b72213",
+                            "properties": {
+                             "Transforms": {
+                              "000_curve": {
+                               "object": {
+                                "class": "dflow::floatxfcurvedata",
+                                "uuid": "973362d2-86d8-4676-84bd-ed2a061bf3b3",
+                                "properties": {
+                                 "Curve": {
+                                  "object": {
+                                   "class": "MultiCurve1D",
+                                   "uuid": "178ddab8-9400-43de-ba89-1cef5c3dfeb4",
+                                   "properties": {
+                                    "Segs": [
+                                     "LINEAR",
+                                     "LINEAR",
+                                     "LINEAR"
+                                    ],
+                                    "Verts": {
+                                     "0": 0.0,
+                                     "0.1": 0.5,
+                                     "0.75": 0.7400000095367432,
+                                     "1": 0.0
+                                    },
+                                    "max": 1.0,
+                                    "min": 0.0
+                                   }
+                                  }
+                                 },
+                                 "do_curve": true
+                                }
+                               }
+                              }
+                             }
+                            }
+                           }
+                          },
+                          "value": 0.0,
+                          "name": "Size"
+                         }
+                        }
+                       }
+                      ],
+                      "outputs": [
+                       {
+                        "object": {
+                         "class": "psys::ptclbufoutplug",
+                         "uuid": "115c0137-21a1-4071-9987-4f1e19ceca13",
+                         "properties": {
+                          "name": "pool"
+                         }
+                        }
+                       }
+                      ]
+                     }
+                    }
+                   },
+                   "EMIT": {
+                    "object": {
+                     "class": "psys::RingEmitterData",
+                     "uuid": "2bfad199-0b1f-4b97-997f-ac5c9e5d4f4f",
+                     "properties": {
+                      "inputs": [
+                       {
+                        "object": {
+                         "class": "psys::ptclbufinpplug",
+                         "uuid": "6f1302c8-ee91-44ba-92ed-714dd41e4b88",
+                         "properties": {
+                          "name": "pool"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "d23bec85-16c9-41ae-94db-f8de5318c2d8",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "0c66f394-e673-4774-a2a4-c1d3ec704cec",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 3.0,
+                          "name": "LifeSpan"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "b71b32fe-1a00-4b86-909a-dd9e8fa8870f",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "5166a181-3247-43ad-85e4-93520f4b3006",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 800.0,
+                          "name": "EmissionRate"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "f874fb86-1175-421f-bd0c-ffd4763aead9",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "d3e89a8e-e85b-45bf-84a1-7db4391b0b65",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 0.5,
+                          "name": "EmissionVelocity"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "6de011e9-8989-4ef0-af83-1758561ca501",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "af18e5b9-4987-465a-bb8f-6fe951fcadef",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 0.0,
+                          "name": "DispersionAngle"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "969b08f6-8c74-4c81-996e-4b4885d5e6f2",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "e5f5ec0f-d7b9-41ad-af4d-e8a2f5979135",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 2.5,
+                          "name": "EmissionRadius"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "8b99db7f-9f46-44f2-bbb5-3707a1c0e326",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "bf0be1c9-a150-4eda-a0a7-b62682bb0572",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 9.0,
+                          "name": "EmitterSpinRate"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<vec3xf>",
+                         "uuid": "658e9b99-4f7b-456e-a901-979039bcb1dd",
+                         "properties": {
+                          "value": [
+                           0.0,
+                           -1.0,
+                           0.0
+                          ],
+                          "name": "Direction"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<vec3xf>",
+                         "uuid": "d1cedef7-6e71-4d3d-92a4-1df4cb4d59b3",
+                         "properties": {
+                          "value": [
+                           1.0,
+                           0.0,
+                           0.0
+                          ],
+                          "name": "Tangent"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<vec3xf>",
+                         "uuid": "e4bd7e3a-46b3-480b-8075-d0f0d3c68302",
+                         "properties": {
+                          "value": [
+                           -8.0,
+                           8.0,
+                           0.0
+                          ],
+                          "name": "Offset"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<vec4xf>",
+                         "uuid": "21c8eb61-f053-490a-98f7-96fa9b850ee9",
+                         "properties": {
+                          "value": [
+                           0.0,
+                           0.0,
+                           0.0,
+                           1.0
+                          ],
+                          "name": "Aux"
+                         }
+                        }
+                       }
+                      ],
+                      "outputs": [
+                       {
+                        "object": {
+                         "class": "psys::ptclbufoutplug",
+                         "uuid": "6db1d0ba-2753-466d-82e9-b624548188fc",
+                         "properties": {
+                          "name": "pool"
+                         }
+                        }
+                       }
+                      ]
+                     }
+                    }
+                   },
+                   "GRAV": {
+                    "object": {
+                     "class": "psys::DirectionalForceModuleData",
+                     "uuid": "98860665-f29d-4cdf-9e33-0533e3c73444",
+                     "properties": {
+                      "inputs": [
+                       {
+                        "object": {
+                         "class": "psys::ptclbufinpplug",
+                         "uuid": "bd4a9c97-0976-4146-bac9-20b16775581b",
+                         "properties": {
+                          "name": "pool"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<vec3xf>",
+                         "uuid": "8c18a4ef-295e-4a03-978f-027e74cd5661",
+                         "properties": {
+                          "value": [
+                           0.0,
+                           -1.0,
+                           0.0
+                          ],
+                          "name": "Direction"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "0f4937ca-4b05-4b00-9a03-22617f56e9b9",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "23dc6dbe-765c-43f1-85d0-185da2eaf25c",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 5.0,
+                          "name": "Magnitude"
+                         }
+                        }
+                       }
+                      ],
+                      "outputs": [
+                       {
+                        "object": {
+                         "class": "psys::ptclbufoutplug",
+                         "uuid": "68c705fa-9cbd-40d3-9abf-8f7f3687b82d",
+                         "properties": {
+                          "name": "pool"
+                         }
+                        }
+                       }
+                      ]
+                     }
+                    }
+                   },
+                   "POOL": {
+                    "object": {
+                     "class": "psys::ParticlePoolData",
+                     "uuid": "c6140831-f426-4e58-aabe-55f4b99cde4d",
+                     "properties": {
+                      "pool_size": 10000,
+                      "unit_age": 1.0,
+                      "inputs": [],
+                      "outputs": [
+                       {
+                        "object": {
+                         "class": "psys::ptclbufoutplug",
+                         "uuid": "6f6c7328-c7f2-40f6-b473-bc53db2e4aa0",
+                         "properties": {
+                          "name": "pool"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::outplugdata<float>",
+                         "uuid": "e50e3503-0eac-4a14-9040-ac84bd33ce6e",
+                         "properties": {
+                          "name": "UnitAge"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::outplugdata<float>",
+                         "uuid": "1d3f92f4-4239-4e0f-b431-d896749bcce4",
+                         "properties": {
+                          "name": "Random"
+                         }
+                        }
+                       }
+                      ]
+                     }
+                    }
+                   },
+                   "TURB": {
+                    "object": {
+                     "class": "psys::TurbulenceModuleData",
+                     "uuid": "41edcda7-18a4-45ab-b825-61449ae38bae",
+                     "properties": {
+                      "inputs": [
+                       {
+                        "object": {
+                         "class": "psys::ptclbufinpplug",
+                         "uuid": "3b79eed4-1c85-4d18-99fe-dcc28301d437",
+                         "properties": {
+                          "name": "pool"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<vec3xf>",
+                         "uuid": "80c8626a-6ec0-4f34-b24a-b46d535c08fc",
+                         "properties": {
+                          "value": [
+                           3.200000047683716,
+                           1.600000023841858,
+                           3.200000047683716
+                          ],
+                          "name": "Amount"
+                         }
+                        }
+                       }
+                      ],
+                      "outputs": [
+                       {
+                        "object": {
+                         "class": "psys::ptclbufoutplug",
+                         "uuid": "68393cfc-dd14-45eb-8624-0d8c5435cbef",
+                         "properties": {
+                          "name": "pool"
+                         }
+                        }
+                       }
+                      ]
+                     }
+                    }
+                   },
+                   "VCOL": {
+                    "object": {
+                     "class": "psys::VdbColliderModuleData",
+                     "uuid": "b6359490-a6dd-4339-a86f-dbe583c324ef",
+                     "properties": {
+                      "follow_entity": "saddle_a0",
+                      "sdf_asset": "saddle_sdf",
+                      "inputs": [
+                       {
+                        "object": {
+                         "class": "psys::ptclbufinpplug",
+                         "uuid": "af6678d2-3511-46cc-9978-e0bd26a90747",
+                         "properties": {
+                          "name": "pool"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "33de9a76-fb4b-4f65-9b14-499cece3d995",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "2abc8866-a584-4d03-be39-ab00ce2632b2",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 0.0,
+                          "name": "Restitution"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "775eea08-8721-448a-985f-2265ac667dfa",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "a68cbadf-d89c-4d02-a2cb-fc9f86e5c7ac",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 0.009999999776482582,
+                          "name": "Friction"
+                         }
+                        }
+                       }
+                      ],
+                      "outputs": [
+                       {
+                        "object": {
+                         "class": "psys::ptclbufoutplug",
+                         "uuid": "7c33a125-842c-4db3-af17-1cd0cedd1728",
+                         "properties": {
+                          "name": "pool"
+                         }
+                        }
+                       }
+                      ],
+                      "sdf_offset": [
+                       0.0,
+                       0.0354,
+                       0.0
+                      ]
+                     }
+                    }
+                   },
+                   "_DSL_TransformDir_ptc_a0_0": {
+                    "object": {
+                     "class": "psys::TransformDirModuleData",
+                     "uuid": "f52f9bd8-2486-498d-b54e-dd6c3d32d699",
+                     "properties": {
+                      "entity_name": "ptc_a0",
+                      "inputs": [
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<vec3>",
+                         "uuid": "23fe1eb5-5e4f-4087-ab12-99e88ab5b5f8",
+                         "properties": {
+                          "value": [
+                           0.0,
+                           -1.0,
+                           0.0
+                          ],
+                          "name": "LocalDir"
+                         }
+                        }
+                       }
+                      ],
+                      "outputs": [
+                       {
+                        "object": {
+                         "class": "dflow::outplugdata<vec3>",
+                         "uuid": "bf0720ca-b3c6-4709-93a6-a4257dc0f8b2",
+                         "properties": {
+                          "name": "WorldDir"
+                         }
+                        }
+                       }
+                      ]
+                     }
+                    }
+                   },
+                   "_DSL_TransformDir_ptc_a0_1": {
+                    "object": {
+                     "class": "psys::TransformDirModuleData",
+                     "uuid": "a3d48b5d-713c-4291-af1d-6b5cf87d9f5f",
+                     "properties": {
+                      "entity_name": "ptc_a0",
+                      "inputs": [
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<vec3>",
+                         "uuid": "3c153ba3-6e6a-45a8-8240-a2e4e5e362f4",
+                         "properties": {
+                          "value": [
+                           1.0,
+                           0.0,
+                           0.0
+                          ],
+                          "name": "LocalDir"
+                         }
+                        }
+                       }
+                      ],
+                      "outputs": [
+                       {
+                        "object": {
+                         "class": "dflow::outplugdata<vec3>",
+                         "uuid": "2b3f326a-4012-4dff-b26c-56dbc45cf767",
+                         "properties": {
+                          "name": "WorldDir"
+                         }
+                        }
+                       }
+                      ]
+                     }
+                    }
+                   },
+                   "_DSL_TransformPoint_ptc_a0_0": {
+                    "object": {
+                     "class": "psys::TransformPointModuleData",
+                     "uuid": "627c0c59-83d6-426c-99f2-262d1eb8d636",
+                     "properties": {
+                      "entity_name": "ptc_a0",
+                      "inputs": [
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<vec3>",
+                         "uuid": "fed5f9b4-1c20-4077-94fa-acb037321075",
+                         "properties": {
+                          "value": [
+                           0.0,
+                           0.0,
+                           0.0
+                          ],
+                          "name": "LocalPoint"
+                         }
+                        }
+                       }
+                      ],
+                      "outputs": [
+                       {
+                        "object": {
+                         "class": "dflow::outplugdata<vec3>",
+                         "uuid": "b97d1260-67ef-48ec-8ade-6efae2f4af15",
+                         "properties": {
+                          "name": "WorldPoint"
+                         }
+                        }
+                       }
+                      ]
+                     }
+                    }
+                   },
+                   "_DSL_Vec3Combine_0": {
+                    "object": {
+                     "class": "psys::Vec3CombineModuleData",
+                     "uuid": "2f547304-1dfe-4e44-8075-d0a5275e2841",
+                     "properties": {
+                      "inputs": [
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "fa4b9792-18ed-4728-995c-2352c050a185",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "b4fcb387-c6f7-49a5-a8e6-d073e25e37bb",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 0.0,
+                          "name": "X"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "e2ad711b-f716-48e6-ab5d-4c1b24989975",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "b1e6a7e0-0727-4906-b7d6-60c416c695ac",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": -1.0,
+                          "name": "Y"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "df690658-433c-4b54-875d-c08eea7d6d2c",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "8979a996-c1f9-4edf-a966-eb8408183dec",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 0.0,
+                          "name": "Z"
+                         }
+                        }
+                       }
+                      ],
+                      "outputs": [
+                       {
+                        "object": {
+                         "class": "dflow::outplugdata<vec3>",
+                         "uuid": "a1818b92-32cf-47f3-82a8-eb25af677423",
+                         "properties": {
+                          "name": "value"
+                         }
+                        }
+                       }
+                      ]
+                     }
+                    }
+                   },
+                   "_DSL_Vec3Combine_1": {
+                    "object": {
+                     "class": "psys::Vec3CombineModuleData",
+                     "uuid": "ab77dd18-1f85-41fb-8995-cf17550b60da",
+                     "properties": {
+                      "inputs": [
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "6c1cfc61-4295-4acd-9a57-2d21e753204c",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "f2dc1fb9-cbbf-4f81-a33c-1806c6b86cb6",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 1.0,
+                          "name": "X"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "047a8eb2-65f9-43c3-a19c-0fa698996f23",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "32968fa1-32be-4fcd-8f53-bbbb82b035dc",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 0.0,
+                          "name": "Y"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "51917896-e730-45c5-8ba9-2200ac4aeb9c",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "29c1b864-66cc-4f27-9a28-b404ac77a00f",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 0.0,
+                          "name": "Z"
+                         }
+                        }
+                       }
+                      ],
+                      "outputs": [
+                       {
+                        "object": {
+                         "class": "dflow::outplugdata<vec3>",
+                         "uuid": "b6d51d7d-3e5b-41c3-9a8c-fc2e3d640dd4",
+                         "properties": {
+                          "name": "value"
+                         }
+                        }
+                       }
+                      ]
+                     }
+                    }
+                   },
+                   "_DSL_Vec3Combine_2": {
+                    "object": {
+                     "class": "psys::Vec3CombineModuleData",
+                     "uuid": "4535de60-7d6f-4403-aeb2-bad70079adf9",
+                     "properties": {
+                      "inputs": [
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "2495e224-6491-444f-b164-b96accb5785f",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "51e28079-5f72-40b8-bc7b-5c06319ae5d1",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 0.0,
+                          "name": "X"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "721b9c0f-b12e-4544-86ea-027b13a32ed3",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "f1b9287e-b5d0-41f8-b152-6a44de7215bd",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 0.0,
+                          "name": "Y"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "4d4b77d4-8670-402f-a56f-1c62c2da34ba",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "ac807a4e-7c74-455d-9475-598629edbb5a",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 0.0,
+                          "name": "Z"
+                         }
+                        }
+                       }
+                      ],
+                      "outputs": [
+                       {
+                        "object": {
+                         "class": "dflow::outplugdata<vec3>",
+                         "uuid": "beea8224-6441-4aa5-83c4-23f523f3d04e",
+                         "properties": {
+                          "name": "value"
+                         }
+                        }
+                       }
+                      ]
+                     }
+                    }
+                   }
+                  },
+                  "cacheable": false,
+                  "zzz_connections": {
+                   "numlinks": 12,
+                   "conn-0": {
+                    "inp_module": "BLOBS",
+                    "inp_plug": "pool",
+                    "out_module": "VCOL",
+                    "out_plug": "pool"
+                   },
+                   "conn-1": {
+                    "inp_module": "BLOBS",
+                    "inp_plug": "Size",
+                    "out_module": "POOL",
+                    "out_plug": "UnitAge"
+                   },
+                   "conn-2": {
+                    "inp_module": "EMIT",
+                    "inp_plug": "pool",
+                    "out_module": "POOL",
+                    "out_plug": "pool"
+                   },
+                   "conn-3": {
+                    "inp_module": "EMIT",
+                    "inp_plug": "Direction",
+                    "out_module": "_DSL_TransformDir_ptc_a0_0",
+                    "out_plug": "WorldDir"
+                   },
+                   "conn-4": {
+                    "inp_module": "EMIT",
+                    "inp_plug": "Tangent",
+                    "out_module": "_DSL_TransformDir_ptc_a0_1",
+                    "out_plug": "WorldDir"
+                   },
+                   "conn-5": {
+                    "inp_module": "EMIT",
+                    "inp_plug": "Offset",
+                    "out_module": "_DSL_TransformPoint_ptc_a0_0",
+                    "out_plug": "WorldPoint"
+                   },
+                   "conn-6": {
+                    "inp_module": "GRAV",
+                    "inp_plug": "pool",
+                    "out_module": "EMIT",
+                    "out_plug": "pool"
+                   },
+                   "conn-7": {
+                    "inp_module": "TURB",
+                    "inp_plug": "pool",
+                    "out_module": "GRAV",
+                    "out_plug": "pool"
+                   },
+                   "conn-8": {
+                    "inp_module": "VCOL",
+                    "inp_plug": "pool",
+                    "out_module": "TURB",
+                    "out_plug": "pool"
+                   },
+                   "conn-9": {
+                    "inp_module": "_DSL_TransformDir_ptc_a0_0",
+                    "inp_plug": "LocalDir",
+                    "out_module": "_DSL_Vec3Combine_0",
+                    "out_plug": "value"
+                   },
+                   "conn-10": {
+                    "inp_module": "_DSL_TransformDir_ptc_a0_1",
+                    "inp_plug": "LocalDir",
+                    "out_module": "_DSL_Vec3Combine_1",
+                    "out_plug": "value"
+                   },
+                   "conn-11": {
+                    "inp_module": "_DSL_TransformPoint_ptc_a0_0",
+                    "inp_plug": "LocalPoint",
+                    "out_module": "_DSL_Vec3Combine_2",
+                    "out_plug": "value"
+                   }
+                  }
+                 }
+                }
+               },
+               "probe_entity_name": "studio_probe_a",
+               "EnvironmentMapPath": "",
+               "SortKey": 0
+              }
+             }
+            },
+            "Duration": 0.0,
+            "LayerName": "std_forward",
+            "NodeName": "",
+            "ParticlesAssetName": "ptc_a",
+            "PoolSize": 1
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "Arch_particles_b": {
+      "object": {
+       "class": "EcsArchetype",
+       "uuid": "2cfdb9a2-709d-469a-9210-531a6a8588cf",
+       "properties": {
+        "Components": {
+         "ParticlesComponentData": {
+          "object": {
+           "class": "ParticlesComponentData",
+           "uuid": "87c27b9c-4302-4245-ac89-52c81add1ae9",
+           "properties": {
+            "DrainLinger": 2.0,
+            "DrawableData": {
+             "object": {
+              "class": "ParticlesDrawableData",
+              "uuid": "429a47b7-e691-432a-a82b-6372336f2f8a",
+              "properties": {
+               "emitter_intensity": 1.0,
+               "emitter_radius": 1.0,
+               "external_compute": true,
+               "graphdata": {
+                "object": {
+                 "class": "dflow/graphdata",
+                 "uuid": "6b132882-f162-4c11-94f2-841b756c0782",
+                 "properties": {
+                  "Modules": {
+                   "BLOBS": {
+                    "object": {
+                     "class": "psys::VdbLevelSetRendererData",
+                     "uuid": "50dba0f6-556c-4629-8fa0-0fa44242ac38",
+                     "properties": {
+                      "material_gen": {
+                       "object": {
+                        "class": "PbrMaterialGenData",
+                        "uuid": "a3f36c1d-b1a0-4c50-a64d-aca6f22efec5",
+                        "properties": {
+                         "attenuation_color": [
+                          0.8500000238418579,
+                          0.9200000166893005,
+                          1.0
+                         ],
+                         "attenuation_distance": 6.0,
+                         "base_color": [
+                          0.0,
+                          0.0,
+                          0.0,
+                          1.0
+                         ],
+                         "clearcoat_factor": 0.0,
+                         "clearcoat_roughness": 0.0,
+                         "color_path": "",
+                         "diffuse_transmission_color": [
+                          1.0,
+                          1.0,
+                          1.0
+                         ],
+                         "diffuse_transmission_factor": 0.0,
+                         "has_clearcoat": false,
+                         "has_diffuse_transmission": false,
+                         "has_ior": true,
+                         "has_iridescence": false,
+                         "has_sheen": false,
+                         "has_specular": false,
+                         "has_subsurface": false,
+                         "has_transmission": true,
+                         "has_transmission_roughness": false,
+                         "has_volume": true,
+                         "ior": 1.2000000476837158,
+                         "iridescence_factor": 0.0,
+                         "metallic": 1.0,
+                         "mtlruf_path": "",
+                         "normal_path": "",
+                         "roughness": 0.0,
+                         "sampler_textures": {},
+                         "shader_params": {},
+                         "shaderpath": "",
+                         "sheen_color": [
+                          0.0,
+                          0.0,
+                          0.0
+                         ],
+                         "sheen_factor": 0.0,
+                         "sheen_roughness": 0.0,
+                         "specular_color": [
+                          1.0,
+                          1.0,
+                          1.0
+                         ],
+                         "specular_factor": 1.0,
+                         "subsurface_color": [
+                          1.0,
+                          1.0,
+                          1.0
+                         ],
+                         "subsurface_factor": 0.0,
+                         "subsurface_radius": [
+                          1.0,
+                          1.0,
+                          1.0
+                         ],
+                         "transmission_factor": 1.25,
+                         "transmission_roughness": 0.0,
+                         "volume_thickness_factor": 0.0,
+                         "asset_name": ""
+                        }
+                       }
+                      },
+                      "sort": false,
+                      "voxel_size": 0.20000000298023224,
+                      "inputs": [
+                       {
+                        "object": {
+                         "class": "psys::ptclbufinpplug",
+                         "uuid": "4108f4f4-907e-426a-8e29-82b3a100eb30",
+                         "properties": {
+                          "name": "pool"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "46b58841-0283-4b4a-9772-b99e531aa7ae",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "c2ba99cb-384d-46b8-9d8c-4793b7ee3a09",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 1.0,
+                          "name": "Radius"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "f591c696-1ab3-4d84-9eae-af310b56e4d5",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "02a23197-01be-4ae2-8f38-015a9ce731ae",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 1.0,
+                          "name": "Strength"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "1ed57fa0-3b04-41d7-bf92-5c9f6e31bb84",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "dbd58c06-05f8-4d82-99f2-7e5b9450624d",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 0.5,
+                          "name": "IsoLevel"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "850c0973-8cd7-438f-a1f0-d8f0237a5019",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "5aa64b9c-bdc2-4f83-99f0-9d20848ee6bc",
+                            "properties": {
+                             "Transforms": {
+                              "000_curve": {
+                               "object": {
+                                "class": "dflow::floatxfcurvedata",
+                                "uuid": "f899c6a6-21c9-4762-afc8-b10b2cb408fc",
+                                "properties": {
+                                 "Curve": {
+                                  "object": {
+                                   "class": "MultiCurve1D",
+                                   "uuid": "51cd4b29-81fb-43b5-b415-1b04112c345a",
+                                   "properties": {
+                                    "Segs": [
+                                     "LINEAR",
+                                     "LINEAR",
+                                     "LINEAR"
+                                    ],
+                                    "Verts": {
+                                     "0": 0.0,
+                                     "0.1": 0.5,
+                                     "0.75": 0.7400000095367432,
+                                     "1": 0.0
+                                    },
+                                    "max": 1.0,
+                                    "min": 0.0
+                                   }
+                                  }
+                                 },
+                                 "do_curve": true
+                                }
+                               }
+                              }
+                             }
+                            }
+                           }
+                          },
+                          "value": 0.0,
+                          "name": "Size"
+                         }
+                        }
+                       }
+                      ],
+                      "outputs": [
+                       {
+                        "object": {
+                         "class": "psys::ptclbufoutplug",
+                         "uuid": "fe414342-cfb1-494a-8152-0c8ccf66fb00",
+                         "properties": {
+                          "name": "pool"
+                         }
+                        }
+                       }
+                      ]
+                     }
+                    }
+                   },
+                   "EMIT": {
+                    "object": {
+                     "class": "psys::RingEmitterData",
+                     "uuid": "7506b6a7-ba3a-4362-b384-c9196de5df19",
+                     "properties": {
+                      "inputs": [
+                       {
+                        "object": {
+                         "class": "psys::ptclbufinpplug",
+                         "uuid": "8d460e6a-b099-48ae-820c-00028b731d55",
+                         "properties": {
+                          "name": "pool"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "6cd30454-5c93-461e-82a3-603f44482d1e",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "36911e30-041b-4eab-9156-5cda25963414",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 3.0,
+                          "name": "LifeSpan"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "78490c3a-3292-4807-b925-748db792adce",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "b9b3966a-909d-494f-a486-6ca698f248f0",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 800.0,
+                          "name": "EmissionRate"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "ec77d9ed-f7a6-40cf-a035-651eab8cd774",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "510a6043-8a42-47e5-8c8f-2d22fed4206e",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 0.5,
+                          "name": "EmissionVelocity"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "e85aaa94-fe19-4dbd-b46e-b9760e001e28",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "03f17817-4bcb-40bc-adc6-3d19c45d2175",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 0.0,
+                          "name": "DispersionAngle"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "b47776d4-fc53-4012-8e40-0519e6304be7",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "5ff189ad-45a1-448b-9ee0-a88fbbfbd469",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 2.5,
+                          "name": "EmissionRadius"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "9f9ba911-f694-4f1f-bfe1-8902f06a7470",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "3877f67f-01c7-44f0-a83f-50777844cdac",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 9.0,
+                          "name": "EmitterSpinRate"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<vec3xf>",
+                         "uuid": "56439770-4817-46cf-aff8-4e3638edfd41",
+                         "properties": {
+                          "value": [
+                           0.0,
+                           -1.0,
+                           0.0
+                          ],
+                          "name": "Direction"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<vec3xf>",
+                         "uuid": "743ed905-ee3e-4839-b0f5-76b3d39ff176",
+                         "properties": {
+                          "value": [
+                           1.0,
+                           0.0,
+                           0.0
+                          ],
+                          "name": "Tangent"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<vec3xf>",
+                         "uuid": "c345ae93-7f0a-4a33-bea8-c5b8cb01068c",
+                         "properties": {
+                          "value": [
+                           8.0,
+                           8.0,
+                           0.0
+                          ],
+                          "name": "Offset"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<vec4xf>",
+                         "uuid": "ef93796b-a9f0-4c9c-91d4-a47edef68706",
+                         "properties": {
+                          "value": [
+                           0.0,
+                           0.0,
+                           0.0,
+                           1.0
+                          ],
+                          "name": "Aux"
+                         }
+                        }
+                       }
+                      ],
+                      "outputs": [
+                       {
+                        "object": {
+                         "class": "psys::ptclbufoutplug",
+                         "uuid": "c9dc9692-c60e-41e5-b384-4c06e955df39",
+                         "properties": {
+                          "name": "pool"
+                         }
+                        }
+                       }
+                      ]
+                     }
+                    }
+                   },
+                   "GRAV": {
+                    "object": {
+                     "class": "psys::DirectionalForceModuleData",
+                     "uuid": "3b43036f-69c5-4f38-9647-102bfa3afcaa",
+                     "properties": {
+                      "inputs": [
+                       {
+                        "object": {
+                         "class": "psys::ptclbufinpplug",
+                         "uuid": "959d020c-0999-4169-a66d-ea6e0d5399ff",
+                         "properties": {
+                          "name": "pool"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<vec3xf>",
+                         "uuid": "15ced6d7-cc0d-4c73-a12f-499f04d9ea4e",
+                         "properties": {
+                          "value": [
+                           0.0,
+                           -1.0,
+                           0.0
+                          ],
+                          "name": "Direction"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "dd92212f-5359-4ba1-b2ed-b67af1bc8dd1",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "eee1b79b-8365-4620-bc91-af1a3e17fb88",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 5.0,
+                          "name": "Magnitude"
+                         }
+                        }
+                       }
+                      ],
+                      "outputs": [
+                       {
+                        "object": {
+                         "class": "psys::ptclbufoutplug",
+                         "uuid": "7f2f7c9d-6165-4523-a21f-7422b48dcd07",
+                         "properties": {
+                          "name": "pool"
+                         }
+                        }
+                       }
+                      ]
+                     }
+                    }
+                   },
+                   "POOL": {
+                    "object": {
+                     "class": "psys::ParticlePoolData",
+                     "uuid": "d1c82d59-d6a5-4950-b52e-6038749eb5e8",
+                     "properties": {
+                      "pool_size": 10000,
+                      "unit_age": 1.0,
+                      "inputs": [],
+                      "outputs": [
+                       {
+                        "object": {
+                         "class": "psys::ptclbufoutplug",
+                         "uuid": "bbb43a6d-03bc-4f53-ad01-6012b479e6dd",
+                         "properties": {
+                          "name": "pool"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::outplugdata<float>",
+                         "uuid": "bd1ac13c-3b42-4aa1-8d55-bc34d004383e",
+                         "properties": {
+                          "name": "UnitAge"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::outplugdata<float>",
+                         "uuid": "b12ffcf8-86b5-4028-9cb7-5df23f9b6b17",
+                         "properties": {
+                          "name": "Random"
+                         }
+                        }
+                       }
+                      ]
+                     }
+                    }
+                   },
+                   "TURB": {
+                    "object": {
+                     "class": "psys::TurbulenceModuleData",
+                     "uuid": "3741d94d-c6cf-4e38-9f17-d5a3c006fadc",
+                     "properties": {
+                      "inputs": [
+                       {
+                        "object": {
+                         "class": "psys::ptclbufinpplug",
+                         "uuid": "9be85170-98fa-49b6-9a88-7cd54e209ed7",
+                         "properties": {
+                          "name": "pool"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<vec3xf>",
+                         "uuid": "aa090d2e-2517-48a2-aa6d-02a9cc104ea8",
+                         "properties": {
+                          "value": [
+                           3.200000047683716,
+                           1.600000023841858,
+                           3.200000047683716
+                          ],
+                          "name": "Amount"
+                         }
+                        }
+                       }
+                      ],
+                      "outputs": [
+                       {
+                        "object": {
+                         "class": "psys::ptclbufoutplug",
+                         "uuid": "487086bb-495a-4f31-8fee-e514ccadea25",
+                         "properties": {
+                          "name": "pool"
+                         }
+                        }
+                       }
+                      ]
+                     }
+                    }
+                   },
+                   "VCOL": {
+                    "object": {
+                     "class": "psys::VdbColliderModuleData",
+                     "uuid": "09013f33-481a-4d68-a6a9-770db93a4168",
+                     "properties": {
+                      "follow_entity": "saddle_b0",
+                      "sdf_asset": "saddle_sdf",
+                      "inputs": [
+                       {
+                        "object": {
+                         "class": "psys::ptclbufinpplug",
+                         "uuid": "202dce3d-da3d-432b-ae2c-9c7c8fc10eab",
+                         "properties": {
+                          "name": "pool"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "2f7602b4-01dc-41f1-9526-227fac4d9801",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "24af3d14-b727-4f6d-955a-e16d48ced8d4",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 0.0,
+                          "name": "Restitution"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "09d45598-55af-49fc-bdc1-ad05a653e8bc",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "c45432a7-9f7a-4cb9-9f96-d5fedf10801c",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 0.009999999776482582,
+                          "name": "Friction"
+                         }
+                        }
+                       }
+                      ],
+                      "outputs": [
+                       {
+                        "object": {
+                         "class": "psys::ptclbufoutplug",
+                         "uuid": "ebb8d4ae-f4be-4601-9b0d-393c9a8ad2f6",
+                         "properties": {
+                          "name": "pool"
+                         }
+                        }
+                       }
+                      ],
+                      "sdf_offset": [
+                       0.0,
+                       0.0354,
+                       0.0
+                      ]
+                     }
+                    }
+                   },
+                   "_DSL_TransformDir_ptc_b0_0": {
+                    "object": {
+                     "class": "psys::TransformDirModuleData",
+                     "uuid": "f5180fb8-4187-4f76-a8bd-364ac194e3f7",
+                     "properties": {
+                      "entity_name": "ptc_b0",
+                      "inputs": [
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<vec3>",
+                         "uuid": "c9125e44-df84-49dd-a7a5-b57d690f0e81",
+                         "properties": {
+                          "value": [
+                           0.0,
+                           -1.0,
+                           0.0
+                          ],
+                          "name": "LocalDir"
+                         }
+                        }
+                       }
+                      ],
+                      "outputs": [
+                       {
+                        "object": {
+                         "class": "dflow::outplugdata<vec3>",
+                         "uuid": "3cd568d0-b1df-4501-bad3-9aefa7ee3342",
+                         "properties": {
+                          "name": "WorldDir"
+                         }
+                        }
+                       }
+                      ]
+                     }
+                    }
+                   },
+                   "_DSL_TransformDir_ptc_b0_1": {
+                    "object": {
+                     "class": "psys::TransformDirModuleData",
+                     "uuid": "2ca22ea8-6896-442f-bd0c-a0c11b08fb50",
+                     "properties": {
+                      "entity_name": "ptc_b0",
+                      "inputs": [
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<vec3>",
+                         "uuid": "5c786060-e2e6-42f6-b718-cf04ebff7cc7",
+                         "properties": {
+                          "value": [
+                           1.0,
+                           0.0,
+                           0.0
+                          ],
+                          "name": "LocalDir"
+                         }
+                        }
+                       }
+                      ],
+                      "outputs": [
+                       {
+                        "object": {
+                         "class": "dflow::outplugdata<vec3>",
+                         "uuid": "cc3710e7-0da0-419f-b5c0-61b18ec43c3a",
+                         "properties": {
+                          "name": "WorldDir"
+                         }
+                        }
+                       }
+                      ]
+                     }
+                    }
+                   },
+                   "_DSL_TransformPoint_ptc_b0_0": {
+                    "object": {
+                     "class": "psys::TransformPointModuleData",
+                     "uuid": "feac87e4-4784-4056-b26b-d89fecba1898",
+                     "properties": {
+                      "entity_name": "ptc_b0",
+                      "inputs": [
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<vec3>",
+                         "uuid": "eee199fa-a988-488b-a461-f0855ad93fe9",
+                         "properties": {
+                          "value": [
+                           0.0,
+                           0.0,
+                           0.0
+                          ],
+                          "name": "LocalPoint"
+                         }
+                        }
+                       }
+                      ],
+                      "outputs": [
+                       {
+                        "object": {
+                         "class": "dflow::outplugdata<vec3>",
+                         "uuid": "02ee1407-52e8-4801-97e8-4418ae261c2e",
+                         "properties": {
+                          "name": "WorldPoint"
+                         }
+                        }
+                       }
+                      ]
+                     }
+                    }
+                   },
+                   "_DSL_Vec3Combine_0": {
+                    "object": {
+                     "class": "psys::Vec3CombineModuleData",
+                     "uuid": "58b068b7-fa8e-4f26-8d08-ea539ac8dbe1",
+                     "properties": {
+                      "inputs": [
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "cb0e24e9-591c-4322-9001-dcf020e1a4e4",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "09f307e3-eb55-472e-8d4c-e6f3231c071f",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 0.0,
+                          "name": "X"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "f1c357ee-de59-48e0-9021-69dd6434ae9e",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "8a767057-6a04-45af-889a-e7f501f7fc61",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": -1.0,
+                          "name": "Y"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "593a30fc-7722-49e2-8138-e02b647f7cda",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "8efa5f5e-d517-4be4-8926-45499efc79ec",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 0.0,
+                          "name": "Z"
+                         }
+                        }
+                       }
+                      ],
+                      "outputs": [
+                       {
+                        "object": {
+                         "class": "dflow::outplugdata<vec3>",
+                         "uuid": "9386c831-fc28-4380-aff5-e0d2b8364ef0",
+                         "properties": {
+                          "name": "value"
+                         }
+                        }
+                       }
+                      ]
+                     }
+                    }
+                   },
+                   "_DSL_Vec3Combine_1": {
+                    "object": {
+                     "class": "psys::Vec3CombineModuleData",
+                     "uuid": "e6dec6c6-75b9-489b-ad82-cea0d1968097",
+                     "properties": {
+                      "inputs": [
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "055adc2b-3731-43a3-b796-de90574396d6",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "4f136bf9-2a51-4b1d-9428-3b6e873c1deb",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 1.0,
+                          "name": "X"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "3552a5f3-462a-4a95-b8ef-7c72edf4893d",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "1cacc59b-99d0-47da-8025-d192658deeb1",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 0.0,
+                          "name": "Y"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "39fa3e64-cc9d-4b9f-ae94-d18f74928481",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "029f5dd4-a23a-45b4-a660-7eea29915605",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 0.0,
+                          "name": "Z"
+                         }
+                        }
+                       }
+                      ],
+                      "outputs": [
+                       {
+                        "object": {
+                         "class": "dflow::outplugdata<vec3>",
+                         "uuid": "a5e98cfd-658e-4cb0-be43-6549f9021a2c",
+                         "properties": {
+                          "name": "value"
+                         }
+                        }
+                       }
+                      ]
+                     }
+                    }
+                   },
+                   "_DSL_Vec3Combine_2": {
+                    "object": {
+                     "class": "psys::Vec3CombineModuleData",
+                     "uuid": "8318d5cf-32b4-4e7d-822a-db962aad16c4",
+                     "properties": {
+                      "inputs": [
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "16243fd9-6505-4cbd-ac06-6a327220bfbe",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "c6b7f364-a179-42e2-b1ec-846174d62f8a",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 0.0,
+                          "name": "X"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "a40f1414-2d31-473d-b24b-ab2e4a7a90cd",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "f113e8cd-c3b7-4da4-8162-347def9abc74",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 0.0,
+                          "name": "Y"
+                         }
+                        }
+                       },
+                       {
+                        "object": {
+                         "class": "dflow::inplugdata<floatxf>",
+                         "uuid": "11022193-e6db-473b-902d-b8b11e3f9bc6",
+                         "properties": {
+                          "Transform": {
+                           "object": {
+                            "class": "dflow::floatxfdata",
+                            "uuid": "153a9936-2f2e-45d8-be29-0aa1993f9b0c",
+                            "properties": {
+                             "Transforms": {}
+                            }
+                           }
+                          },
+                          "value": 0.0,
+                          "name": "Z"
+                         }
+                        }
+                       }
+                      ],
+                      "outputs": [
+                       {
+                        "object": {
+                         "class": "dflow::outplugdata<vec3>",
+                         "uuid": "4c6c1b84-beda-4abc-82e3-0d123b136845",
+                         "properties": {
+                          "name": "value"
+                         }
+                        }
+                       }
+                      ]
+                     }
+                    }
+                   }
+                  },
+                  "cacheable": false,
+                  "zzz_connections": {
+                   "numlinks": 12,
+                   "conn-0": {
+                    "inp_module": "BLOBS",
+                    "inp_plug": "pool",
+                    "out_module": "VCOL",
+                    "out_plug": "pool"
+                   },
+                   "conn-1": {
+                    "inp_module": "BLOBS",
+                    "inp_plug": "Size",
+                    "out_module": "POOL",
+                    "out_plug": "UnitAge"
+                   },
+                   "conn-2": {
+                    "inp_module": "EMIT",
+                    "inp_plug": "pool",
+                    "out_module": "POOL",
+                    "out_plug": "pool"
+                   },
+                   "conn-3": {
+                    "inp_module": "EMIT",
+                    "inp_plug": "Direction",
+                    "out_module": "_DSL_TransformDir_ptc_b0_0",
+                    "out_plug": "WorldDir"
+                   },
+                   "conn-4": {
+                    "inp_module": "EMIT",
+                    "inp_plug": "Tangent",
+                    "out_module": "_DSL_TransformDir_ptc_b0_1",
+                    "out_plug": "WorldDir"
+                   },
+                   "conn-5": {
+                    "inp_module": "EMIT",
+                    "inp_plug": "Offset",
+                    "out_module": "_DSL_TransformPoint_ptc_b0_0",
+                    "out_plug": "WorldPoint"
+                   },
+                   "conn-6": {
+                    "inp_module": "GRAV",
+                    "inp_plug": "pool",
+                    "out_module": "EMIT",
+                    "out_plug": "pool"
+                   },
+                   "conn-7": {
+                    "inp_module": "TURB",
+                    "inp_plug": "pool",
+                    "out_module": "GRAV",
+                    "out_plug": "pool"
+                   },
+                   "conn-8": {
+                    "inp_module": "VCOL",
+                    "inp_plug": "pool",
+                    "out_module": "TURB",
+                    "out_plug": "pool"
+                   },
+                   "conn-9": {
+                    "inp_module": "_DSL_TransformDir_ptc_b0_0",
+                    "inp_plug": "LocalDir",
+                    "out_module": "_DSL_Vec3Combine_0",
+                    "out_plug": "value"
+                   },
+                   "conn-10": {
+                    "inp_module": "_DSL_TransformDir_ptc_b0_1",
+                    "inp_plug": "LocalDir",
+                    "out_module": "_DSL_Vec3Combine_1",
+                    "out_plug": "value"
+                   },
+                   "conn-11": {
+                    "inp_module": "_DSL_TransformPoint_ptc_b0_0",
+                    "inp_plug": "LocalPoint",
+                    "out_module": "_DSL_Vec3Combine_2",
+                    "out_plug": "value"
+                   }
+                  }
+                 }
+                }
+               },
+               "probe_entity_name": "studio_probe_b",
+               "EnvironmentMapPath": "",
+               "SortKey": 0
+              }
+             }
+            },
+            "Duration": 0.0,
+            "LayerName": "std_forward",
+            "NodeName": "",
+            "ParticlesAssetName": "ptc_b",
+            "PoolSize": 1
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "Arch_saddle_a": {
+      "object": {
+       "class": "EcsArchetype",
+       "uuid": "c08e8e43-5e59-4097-a222-c141390380e4",
+       "properties": {
+        "Components": {
+         "SceneGraphComponentData": {
+          "object": {
+           "class": "SceneGraphComponentData",
+           "uuid": "963079bd-cad3-49f4-9782-7d2060bca784",
+           "properties": {
+            "NodeDatas": {
+             "n": {
+              "object": {
+               "class": "SceneGraphNodeItemData",
+               "uuid": "d03a7826-c597-41f2-8216-5753a6bcee6d",
+               "properties": {
+                "DrawableAssetName": "saddle_drawable_a",
+                "DrawableData": {
+                 "object": {
+                  "class": "RigidPrimitiveDrawableData",
+                  "uuid": "d9ffd3c8-7b8a-4f8f-a89d-9bf4c0ed7e7b",
+                  "properties": {
+                   "EnvironmentMapPath": "",
+                   "SortKey": 0
+                  }
+                 }
+                },
+                "EnvmapPath": "",
+                "LayerName": "std_forward",
+                "NodeName": "n"
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "Arch_saddle_b": {
+      "object": {
+       "class": "EcsArchetype",
+       "uuid": "42fa93ab-d250-416a-b9b8-daf510d7fc2e",
+       "properties": {
+        "Components": {
+         "SceneGraphComponentData": {
+          "object": {
+           "class": "SceneGraphComponentData",
+           "uuid": "579ddfbe-4d68-40e5-b3f6-0a34374a8794",
+           "properties": {
+            "NodeDatas": {
+             "n": {
+              "object": {
+               "class": "SceneGraphNodeItemData",
+               "uuid": "c022b484-99c8-4e7a-ada4-d951f2e1e59a",
+               "properties": {
+                "DrawableAssetName": "saddle_drawable_b",
+                "DrawableData": {
+                 "object": {
+                  "class": "RigidPrimitiveDrawableData",
+                  "uuid": "22a9966f-cbf1-4176-9060-c62e73b0458a",
+                  "properties": {
+                   "EnvironmentMapPath": "",
+                   "SortKey": 0
+                  }
+                 }
+                },
+                "EnvmapPath": "",
+                "LayerName": "std_forward",
+                "NodeName": "n"
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "Arch_studio_probe_a": {
+      "object": {
+       "class": "EcsArchetype",
+       "uuid": "5dfcd69e-8299-4969-b0f5-f60d2ca72e57",
+       "properties": {
+        "Components": {
+         "ProbeComponentData": {
+          "object": {
+           "class": "ProbeComponentData",
+           "uuid": "ddd770ad-cbfc-46d4-b0f5-a4d374f96c00",
+           "properties": {
+            "ActivationMode": "ALWAYS",
+            "Dynamic": true,
+            "ImageDimension": 512,
+            "OutputFolder": "/tmp/ecs_probes",
+            "OutputPrefix": "studio_probe_a",
+            "RenderLayer": "std_forward",
+            "Supersample": 0,
+            "TemporalFrames": 0
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "Arch_studio_probe_b": {
+      "object": {
+       "class": "EcsArchetype",
+       "uuid": "5be0ebce-fd1b-46e6-840d-38de962d1f24",
+       "properties": {
+        "Components": {
+         "ProbeComponentData": {
+          "object": {
+           "class": "ProbeComponentData",
+           "uuid": "e9e7423f-9f54-4e1f-a544-924f9be14a3a",
+           "properties": {
+            "ActivationMode": "ALWAYS",
+            "Dynamic": true,
+            "ImageDimension": 512,
+            "OutputFolder": "/tmp/ecs_probes",
+            "OutputPrefix": "studio_probe_b",
+            "RenderLayer": "std_forward",
+            "Supersample": 0,
+            "TemporalFrames": 0
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "particles_a": {
+      "object": {
+       "class": "EcsSpawnData",
+       "uuid": "503efdc1-a1b8-4a75-918d-185721de3edd",
+       "properties": {
+        "Archetype": {
+         "object-ref": {
+          "uuid-ref": "5bd3968a-981b-4202-996b-ee91ca5704ed"
+         }
+        },
+        "DirectionRandomize": 0.0,
+        "InitialDirection": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "InitialSpeed": 0.0,
+        "LifetimeMax": 0.0,
+        "LifetimeMin": 0.0,
+        "MinDistance": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "PositionRandomRadius": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "SpawnCount": 1,
+        "SpawnInterval": 0.0,
+        "StochasticInterval": 0.0,
+        "UserProperties": {},
+        "publishxf_name": "ptc_a",
+        "userparams": {},
+        "DagNodeData": {
+         "object": {
+          "class": "EcsDagNodeData",
+          "uuid": "4bd90678-ceb7-4eb1-833f-e52bc6256b2c",
+          "properties": {
+           "TransformNode": {
+            "object": {
+             "class": "TransformNode",
+             "uuid": "911435a1-d07b-4d75-a738-2043254f526a",
+             "properties": {
+              "transform": {
+               "object": {
+                "class": "DecompTransform",
+                "uuid": "fd94f634-899c-4a77-a7b7-295a1ca03711",
+                "properties": {
+                 "rotation": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                 ],
+                 "translation": [
+                  -8.0,
+                  8.0,
+                  0.0
+                 ],
+                 "uniformScale": 1.0
+                }
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        },
+        "Parent": "scene"
+       }
+      }
+     },
+     "particles_b": {
+      "object": {
+       "class": "EcsSpawnData",
+       "uuid": "54d47df1-90bc-4809-b971-80522bcf7f85",
+       "properties": {
+        "Archetype": {
+         "object-ref": {
+          "uuid-ref": "2cfdb9a2-709d-469a-9210-531a6a8588cf"
+         }
+        },
+        "DirectionRandomize": 0.0,
+        "InitialDirection": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "InitialSpeed": 0.0,
+        "LifetimeMax": 0.0,
+        "LifetimeMin": 0.0,
+        "MinDistance": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "PositionRandomRadius": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "SpawnCount": 1,
+        "SpawnInterval": 0.0,
+        "StochasticInterval": 0.0,
+        "UserProperties": {},
+        "publishxf_name": "ptc_b",
+        "userparams": {},
+        "DagNodeData": {
+         "object": {
+          "class": "EcsDagNodeData",
+          "uuid": "458cc6e8-7cdf-4ef0-b8c1-f98a772efcce",
+          "properties": {
+           "TransformNode": {
+            "object": {
+             "class": "TransformNode",
+             "uuid": "addaa8c5-9119-4fd1-8bfe-9409ecfb719b",
+             "properties": {
+              "transform": {
+               "object": {
+                "class": "DecompTransform",
+                "uuid": "16107629-4a8b-4951-bf90-b59638bfb9a2",
+                "properties": {
+                 "rotation": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                 ],
+                 "translation": [
+                  8.0,
+                  8.0,
+                  0.0
+                 ],
+                 "uniformScale": 1.0
+                }
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        },
+        "Parent": "scene"
+       }
+      }
+     },
+     "saddle_a": {
+      "object": {
+       "class": "EcsSpawnData",
+       "uuid": "a815e90a-7080-406b-b44e-f982dda15854",
+       "properties": {
+        "Archetype": {
+         "object-ref": {
+          "uuid-ref": "c08e8e43-5e59-4097-a222-c141390380e4"
+         }
+        },
+        "DirectionRandomize": 0.0,
+        "InitialDirection": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "InitialSpeed": 0.0,
+        "LifetimeMax": 0.0,
+        "LifetimeMin": 0.0,
+        "MinDistance": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "PositionRandomRadius": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "SpawnCount": 1,
+        "SpawnInterval": 0.0,
+        "StochasticInterval": 0.0,
+        "UserProperties": {},
+        "publishxf_name": "saddle_a",
+        "userparams": {},
+        "DagNodeData": {
+         "object": {
+          "class": "EcsDagNodeData",
+          "uuid": "3067474d-6a60-4d0e-94c4-7c369e8578b8",
+          "properties": {
+           "TransformNode": {
+            "object": {
+             "class": "TransformNode",
+             "uuid": "588dbc77-121b-4226-a3de-361a1cd19c27",
+             "properties": {
+              "transform": {
+               "object": {
+                "class": "DecompTransform",
+                "uuid": "57b07470-01f0-4bfd-9155-c4d62d6db232",
+                "properties": {
+                 "rotation": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                 ],
+                 "translation": [
+                  -8.0,
+                  0.0,
+                  0.0
+                 ],
+                 "uniformScale": 1.0
+                }
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        },
+        "Parent": "scene"
+       }
+      }
+     },
+     "saddle_b": {
+      "object": {
+       "class": "EcsSpawnData",
+       "uuid": "94665e65-0827-4425-9d38-58f53a4fc05e",
+       "properties": {
+        "Archetype": {
+         "object-ref": {
+          "uuid-ref": "42fa93ab-d250-416a-b9b8-daf510d7fc2e"
+         }
+        },
+        "DirectionRandomize": 0.0,
+        "InitialDirection": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "InitialSpeed": 0.0,
+        "LifetimeMax": 0.0,
+        "LifetimeMin": 0.0,
+        "MinDistance": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "PositionRandomRadius": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "SpawnCount": 1,
+        "SpawnInterval": 0.0,
+        "StochasticInterval": 0.0,
+        "UserProperties": {},
+        "publishxf_name": "saddle_b",
+        "userparams": {},
+        "DagNodeData": {
+         "object": {
+          "class": "EcsDagNodeData",
+          "uuid": "2d93cc74-b19e-4793-b4ae-aa716b235f48",
+          "properties": {
+           "TransformNode": {
+            "object": {
+             "class": "TransformNode",
+             "uuid": "3c80687a-e1f7-4d56-b5ab-64ba23153036",
+             "properties": {
+              "transform": {
+               "object": {
+                "class": "DecompTransform",
+                "uuid": "100a162b-efa9-4fee-9b8f-c479ed9ea0f0",
+                "properties": {
+                 "rotation": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                 ],
+                 "translation": [
+                  8.0,
+                  0.0,
+                  0.0
+                 ],
+                 "uniformScale": 1.0
+                }
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        },
+        "Parent": "scene"
+       }
+      }
+     },
+     "studio_probe_a": {
+      "object": {
+       "class": "EcsSpawnData",
+       "uuid": "c6452b02-c9b2-4581-801f-f9012d677d05",
+       "properties": {
+        "Archetype": {
+         "object-ref": {
+          "uuid-ref": "5dfcd69e-8299-4969-b0f5-f60d2ca72e57"
+         }
+        },
+        "DirectionRandomize": 0.0,
+        "InitialDirection": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "InitialSpeed": 0.0,
+        "LifetimeMax": 0.0,
+        "LifetimeMin": 0.0,
+        "MinDistance": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "PositionRandomRadius": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "SpawnCount": 1,
+        "SpawnInterval": 0.0,
+        "StochasticInterval": 0.0,
+        "UserProperties": {},
+        "publishxf_name": "",
+        "userparams": {},
+        "DagNodeData": {
+         "object": {
+          "class": "EcsDagNodeData",
+          "uuid": "7fbd9be9-b159-4781-86ac-cbc9af725a0b",
+          "properties": {
+           "TransformNode": {
+            "object": {
+             "class": "TransformNode",
+             "uuid": "732aa048-cdd9-45d2-b0f9-760f80b54ec8",
+             "properties": {
+              "transform": {
+               "object": {
+                "class": "DecompTransform",
+                "uuid": "eb8f1884-fa20-4ccf-8280-ec49d170e8fb",
+                "properties": {
+                 "rotation": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                 ],
+                 "translation": [
+                  -8.0,
+                  7.5,
+                  0.0
+                 ],
+                 "uniformScale": 1.0
+                }
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        },
+        "Parent": "scene"
+       }
+      }
+     },
+     "studio_probe_b": {
+      "object": {
+       "class": "EcsSpawnData",
+       "uuid": "aecc5320-67a5-4d65-aa21-edc470d09bc3",
+       "properties": {
+        "Archetype": {
+         "object-ref": {
+          "uuid-ref": "5be0ebce-fd1b-46e6-840d-38de962d1f24"
+         }
+        },
+        "DirectionRandomize": 0.0,
+        "InitialDirection": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "InitialSpeed": 0.0,
+        "LifetimeMax": 0.0,
+        "LifetimeMin": 0.0,
+        "MinDistance": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "PositionRandomRadius": [
+         0.0,
+         0.0,
+         0.0
+        ],
+        "SpawnCount": 1,
+        "SpawnInterval": 0.0,
+        "StochasticInterval": 0.0,
+        "UserProperties": {},
+        "publishxf_name": "",
+        "userparams": {},
+        "DagNodeData": {
+         "object": {
+          "class": "EcsDagNodeData",
+          "uuid": "a162bbac-bae5-489d-9cbf-72dd76629ee9",
+          "properties": {
+           "TransformNode": {
+            "object": {
+             "class": "TransformNode",
+             "uuid": "34f5b42c-7683-44fd-9f05-73eb6f4d4a9c",
+             "properties": {
+              "transform": {
+               "object": {
+                "class": "DecompTransform",
+                "uuid": "3712bc2c-3b27-4bd0-9bda-306c2b23b5ff",
+                "properties": {
+                 "rotation": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                 ],
+                 "translation": [
+                  8.0,
+                  7.5,
+                  0.0
+                 ],
+                 "uniformScale": 1.0
+                }
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        },
+        "Parent": "scene"
+       }
+      }
+     }
+    },
+    "ScriptFile": "",
+    "SystemData": {
+     "AssetSystem": {
+      "object": {
+       "class": "AssetSystemData",
+       "uuid": "9f6529d9-f8b7-4667-b864-60b5ad1c53e8",
+       "properties": {
+        "gens": [
+         {
+          "object": {
+           "class": "ImplicitSdfGenData",
+           "uuid": "a82e8e17-0f70-4b05-8a4c-70157c0b86d5",
+           "properties": {
+            "background": 26.844738006591797,
+            "bbox_max": [
+             6.0,
+             10.399999618530273,
+             6.0
+            ],
+            "bbox_min": [
+             -6.0,
+             -10.399999618530273,
+             -6.0
+            ],
+            "grid_name": "sdf",
+            "params": {
+             "a": "float:0.250000",
+             "ex": "float:6.000000",
+             "ez": "float:6.000000",
+             "t": "float:0.800000"
+            },
+            "shader": "\n// Per-voxel world-space position.\nvec3f@pp = getvoxelpws();\nfloat@xx = vec3f@pp.x;\nfloat@yy = vec3f@pp.y;\nfloat@zz = vec3f@pp.z;\n\n// Signed gap to the saddle surface y = a*x*z.\nfloat@sgn = float@yy - f$a * float@xx * float@zz;\n\n// Tangent-plane distance: |F| / |grad F|. grad(y - a*x*z) = (-a*z, 1, -a*x).\nfloat@gx = f$a * float@zz;\nfloat@gz = f$a * float@xx;\nfloat@gm = sqrt(1.0 + float@gx*float@gx + float@gz*float@gz);\nfloat@slab = abs(float@sgn / float@gm) - f$t * 0.5;\n\n// Clip the saddle to a finite (x, z) extent \u2014 box intersection.\nfloat@bx = abs(float@xx) - f$ex;\nfloat@bz = abs(float@zz) - f$ez;\nfloat@box = max(float@bx, float@bz);\n\n// SDF = max(slab, box). Negative inside both \u2192 solid; positive elsewhere.\nf@sdf = max(float@slab, float@box);\n",
+            "voxel_size": 0.05000000074505806,
+            "asset_name": "saddle_sdf"
+           }
+          }
+         },
+         {
+          "object": {
+           "class": "PbrMaterialGenData",
+           "uuid": "02f9f4ed-f874-46f4-876b-a9c5f846178f",
+           "properties": {
+            "attenuation_color": [
+             1.0,
+             1.0,
+             1.0
+            ],
+            "attenuation_distance": 1.0,
+            "base_color": [
+             1.0,
+             1.0,
+             0.0,
+             1.0
+            ],
+            "clearcoat_factor": 0.0,
+            "clearcoat_roughness": 0.0,
+            "color_path": "",
+            "diffuse_transmission_color": [
+             1.0,
+             1.0,
+             1.0
+            ],
+            "diffuse_transmission_factor": 0.0,
+            "has_clearcoat": false,
+            "has_diffuse_transmission": false,
+            "has_ior": false,
+            "has_iridescence": false,
+            "has_sheen": false,
+            "has_specular": false,
+            "has_subsurface": false,
+            "has_transmission": false,
+            "has_transmission_roughness": false,
+            "has_volume": false,
+            "ior": 1.5,
+            "iridescence_factor": 0.0,
+            "metallic": 1.0,
+            "mtlruf_path": "",
+            "normal_path": "",
+            "roughness": 0.0,
+            "sampler_textures": {},
+            "shader_params": {},
+            "shaderpath": "",
+            "sheen_color": [
+             0.0,
+             0.0,
+             0.0
+            ],
+            "sheen_factor": 0.0,
+            "sheen_roughness": 0.0,
+            "specular_color": [
+             1.0,
+             1.0,
+             1.0
+            ],
+            "specular_factor": 1.0,
+            "subsurface_color": [
+             1.0,
+             1.0,
+             1.0
+            ],
+            "subsurface_factor": 0.0,
+            "subsurface_radius": [
+             1.0,
+             1.0,
+             1.0
+            ],
+            "transmission_factor": 0.0,
+            "transmission_roughness": 0.0,
+            "volume_thickness_factor": 0.0,
+            "asset_name": "saddle_mat_a"
+           }
+          }
+         },
+         {
+          "object": {
+           "class": "VdbGridToDrawableGenData",
+           "uuid": "dceb7d0b-2ec9-46bc-bc14-1f74970afb0f",
+           "properties": {
+            "adaptivity": 0.0,
+            "flip_windings": true,
+            "grid_asset_name": "saddle_sdf",
+            "iso": 0.0,
+            "material_asset_name": "saddle_mat_a",
+            "asset_name": "saddle_drawable_a"
+           }
+          }
+         },
+         {
+          "object": {
+           "class": "PbrMaterialGenData",
+           "uuid": "967f5a5e-b30c-4124-89e4-f812c4c95c1a",
+           "properties": {
+            "attenuation_color": [
+             1.0,
+             1.0,
+             1.0
+            ],
+            "attenuation_distance": 1.0,
+            "base_color": [
+             1.0,
+             0.0,
+             1.0,
+             1.0
+            ],
+            "clearcoat_factor": 0.0,
+            "clearcoat_roughness": 0.0,
+            "color_path": "",
+            "diffuse_transmission_color": [
+             1.0,
+             1.0,
+             1.0
+            ],
+            "diffuse_transmission_factor": 0.0,
+            "has_clearcoat": false,
+            "has_diffuse_transmission": false,
+            "has_ior": false,
+            "has_iridescence": false,
+            "has_sheen": false,
+            "has_specular": false,
+            "has_subsurface": false,
+            "has_transmission": false,
+            "has_transmission_roughness": false,
+            "has_volume": false,
+            "ior": 1.5,
+            "iridescence_factor": 0.0,
+            "metallic": 1.0,
+            "mtlruf_path": "",
+            "normal_path": "",
+            "roughness": 0.0,
+            "sampler_textures": {},
+            "shader_params": {},
+            "shaderpath": "",
+            "sheen_color": [
+             0.0,
+             0.0,
+             0.0
+            ],
+            "sheen_factor": 0.0,
+            "sheen_roughness": 0.0,
+            "specular_color": [
+             1.0,
+             1.0,
+             1.0
+            ],
+            "specular_factor": 1.0,
+            "subsurface_color": [
+             1.0,
+             1.0,
+             1.0
+            ],
+            "subsurface_factor": 0.0,
+            "subsurface_radius": [
+             1.0,
+             1.0,
+             1.0
+            ],
+            "transmission_factor": 0.0,
+            "transmission_roughness": 0.0,
+            "volume_thickness_factor": 0.0,
+            "asset_name": "saddle_mat_b"
+           }
+          }
+         },
+         {
+          "object": {
+           "class": "VdbGridToDrawableGenData",
+           "uuid": "cb90bd3a-ca7e-4cd1-b677-9df37f52f5bc",
+           "properties": {
+            "adaptivity": 0.0,
+            "flip_windings": true,
+            "grid_asset_name": "saddle_sdf",
+            "iso": 0.0,
+            "material_asset_name": "saddle_mat_b",
+            "asset_name": "saddle_drawable_b"
+           }
+          }
+         },
+         {
+          "object": {
+           "class": "ParticleSystemGenData",
+           "uuid": "198f6ed0-49af-4890-95f5-4cdcd148254d",
+           "properties": {
+            "asset_kwargs": {
+             "collision_sdf": "saddle_sdf"
+            },
+            "dsl_class": "",
+            "dsl_file": "col_vdb",
+            "graph": {
+             "object-ref": {
+              "uuid-ref": "93a9f1ef-5b70-4019-b907-f5e05c090ff8"
+             }
+            },
+            "params": {
+             "attenuation_color": "fvec3:0.850000,0.920000,1.000000",
+             "attenuation_distance": "float:6.000000",
+             "color": "fvec4:0.000000,0.000000,0.000000,1.000000",
+             "emitter_entity": "string:ptc_a0",
+             "follow_entity": "string:saddle_a0",
+             "ior": "float:1.200000",
+             "metallic": "float:1.000000",
+             "roughness": "float:0.000000",
+             "transmission_factor": "float:1.250000",
+             "volume_thickness_factor": "float:0.000000"
+            },
+            "probe_entity_name": "studio_probe_a",
+            "asset_name": "ptc_a"
+           }
+          }
+         },
+         {
+          "object": {
+           "class": "ParticleSystemGenData",
+           "uuid": "3f191b56-58ca-4233-a469-e0adb31c01ec",
+           "properties": {
+            "asset_kwargs": {
+             "collision_sdf": "saddle_sdf"
+            },
+            "dsl_class": "",
+            "dsl_file": "col_vdb",
+            "graph": {
+             "object-ref": {
+              "uuid-ref": "6b132882-f162-4c11-94f2-841b756c0782"
+             }
+            },
+            "params": {
+             "attenuation_color": "fvec3:0.850000,0.920000,1.000000",
+             "attenuation_distance": "float:6.000000",
+             "color": "fvec4:0.000000,0.000000,0.000000,1.000000",
+             "emitter_entity": "string:ptc_b0",
+             "follow_entity": "string:saddle_b0",
+             "ior": "float:1.200000",
+             "metallic": "float:1.000000",
+             "roughness": "float:0.000000",
+             "transmission_factor": "float:1.250000",
+             "volume_thickness_factor": "float:0.000000"
+            },
+            "probe_entity_name": "studio_probe_b",
+            "asset_name": "ptc_b"
+           }
+          }
+         }
+        ]
+       }
+      }
+     },
+     "ParticlesGlobalSystem": {
+      "object": {
+       "class": "ParticlesGlobalSystemData",
+       "uuid": "ba205f3b-81ad-441b-8ee1-65b725afb843",
+       "properties": {
+        "parallel_compute": true
+       }
+      }
+     },
+     "ProbeSystem": {
+      "object": {
+       "class": "ProbeSystemData",
+       "uuid": "1026695e-5801-47ab-a98c-39478f0f895b",
+       "properties": {}
+      }
+     },
+     "SceneGraphSystem": {
+      "object": {
+       "class": "SceneGraphSystemData",
+       "uuid": "228939ed-efa7-4c8d-af71-e7f2ffef989f",
+       "properties": {
+        "CookieAtlasHeight": 1024,
+        "CookieAtlasWidth": 1024,
+        "Layers": [
+         "std_forward",
+         "std_transparent",
+         "depth_prepass"
+        ],
+        "ShadowAtlasHeight": 1024,
+        "ShadowAtlasWidth": 1024,
+        "drawabledatas": [],
+        "postfx_nodes": {},
+        "postfx_order": "",
+        "skybox_path": "<ork_envmaps2>/blender_courtyard.xir",
+        "userparams": {
+         "AmbientLight": "fvec3:0.000000,0.000000,0.000000",
+         "DiffuseIntensity": "float:1.000000",
+         "SkyboxIntensity": "float:1.000000",
+         "SkyboxTexPathStr": "string:<ork_envmaps2>/blender_courtyard.xir",
+         "SpecularIntensity": "float:1.000000",
+         "clearcolor": "fvec3:0.080000,0.080000,0.100000",
+         "enable_skybox": "bool:1",
+         "preset": "string:ForwardPBR",
+         "ssaa": "int:1",
+         "use_float_color_buffer": "bool:1"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+}

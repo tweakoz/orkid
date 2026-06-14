@@ -38,8 +38,9 @@ void ITypedArray<elem_t>::deserializeElement(serdes::node_ptr_t arynode) const {
     serdes::decode_value<std::string>(childnode->_value, strvalue);
     auto item = enumtype->_str2intmap.find(strvalue);
     OrkAssert(item!=enumtype->_str2intmap.end());
-    auto as_int = static_cast<int>(item->second);
-    auto as_T = static_cast<elem_t>(as_int);
+    // uint64_t end to end — crc-valued enums (crc_enum_t) exceed int range; an int
+    // round-trip sign-extends them into a different value (see serializeElement).
+    auto as_T = static_cast<elem_t>(item->second);
     set(as_T, instance, index);
   } else {
     elem_t value;
@@ -60,12 +61,25 @@ void ITypedArray<elem_t>::serializeElement(serdes::node_ptr_t elemnode) const {
     auto registrar = serdes::EnumRegistrar::instance();
     auto enumtype = registrar->findEnumClass<elem_t>();
     OrkAssert(enumtype!=nullptr);
-    auto item = enumtype->_int2strmap.find(int(value));
-    OrkAssert(item!=enumtype->_int2strmap.end());
+    // uint64_t end to end — the maps are keyed uint64_t(enum_value) (addEnum), and
+    // crc-valued enums (crc_enum_t, e.g. MultiCurveSegmentType) exceed int range:
+    // int(value) goes NEGATIVE and sign-extends to a different uint64 key -> a
+    // registered value misses the map. (The scalar ImplementEnumSerializer always
+    // did this correctly; this array path was first exercised when model B started
+    // serializing curve transformers inside embedded graphs.)
+    auto item = enumtype->_int2strmap.find(uint64_t(value));
+    if (item == enumtype->_int2strmap.end()) {
+      printf(
+          "ITypedArray::serializeElement: enum<%s> value<0x%llx> is NOT a registered "
+          "enumerator — was it set from an unregistered token?\n",
+          enumtype->_name.c_str(),
+          (unsigned long long)uint64_t(value));
+      OrkAssert(false);
+    }
     auto as_str = item->second;
     serdes::enumvalue_ptr_t rewrite = std::make_shared<serdes::EnumValue>();
     rewrite->_name = as_str;
-    rewrite->_value = int(value);
+    rewrite->_value = uint64_t(value);
     elemnode->_value.template set<serdes::enumvalue_ptr_t>(rewrite);
   } else {
     elemnode->_value.template set<elem_t>(value);

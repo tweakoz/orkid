@@ -1,0 +1,198 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2026, Michael T. Mayers.
+// Distributed under the MIT License.
+// see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
+////////////////////////////////////////////////////////////////
+#pragma once
+
+#include <ork/dataflow/all.h>
+#include <memory>
+
+namespace ork::lev2 {
+struct FxShaderStorageBuffer;
+struct Context;
+} // namespace ork::lev2
+
+///////////////////////////////////////////////////////////////////////////////
+// dflow INTERCHANGE — the FAMILY-NEUTRAL GPU-resource-handle plug types (HYPERECS B.3).
+//
+// Cross-family graph edges (terrain -> hypermesh field-input, scatter -> instancing, SDF bridges)
+// carry GPU RESOURCES — a heightfield image, a mesh, an instance set, an SDF grid — not expressions.
+// Those plug types must live OUTSIDE any one family so that any family can produce or consume them.
+// This header is that home. First entry: the 2D compute-image (heightfield channel) plug, promoted
+// from the terrain family (which re-exports these names for source compatibility — the serialized
+// reflection names "terrain::hfimg{out,inp}plug" are PRESERVED, so existing artifacts load
+// unchanged). Mesh / InstanceSet / SDF-grid handles slot in here as their cross-family edges land.
+//
+// A family that wants a type to FLOW through its graphs must also create dgcontext REGISTERS for the
+// type in its drivers (see hmdflow.cpp / hfdflow.cpp createRegisters blocks).
+///////////////////////////////////////////////////////////////////////////////
+
+namespace ork::lev2::dflowgfx {
+
+namespace dflow = ::ork::dataflow;
+
+///////////////////////////////////////////////////////////////////////////////
+// IPrePhaseParams — the FAMILY-NEUTRAL pre-dispatch-phase host-write hook (the realtime-
+// params direction: module params live in SSBOs RE-READ from plugs every eval, so a plug
+// poke — editor, Python, or the clock — takes effect next frame with NO shader recompile).
+// A live driver calls writeParams on every module inst that implements this, BEFORE
+// beginDispatchPhase (a host map mid-phase is invisible). Family compute-inst bases
+// (hypermesh MeshComputeInst, terrain TerrainComputeInst) inherit it with a no-op
+// default; a module opting into runtime params overrides. Bake paths fill the same
+// SSBOs at onActivate, so a bake needs no hook and stays the deterministic t=0 snapshot.
+///////////////////////////////////////////////////////////////////////////////
+
+struct IPrePhaseParams {
+  virtual ~IPrePhaseParams() = default;
+  virtual void writeParams(Context* ctx) {}
+};
+
+///////////////////////////////////////////////////////////////////////////////
+// GpuComputeImage2D — a 2D float field of WxH backed by an SSBO. `_channels` selects R/RG/RGBA
+// (1/2/4 floats per texel). The value carried on a heightfield-channel plug.
+///////////////////////////////////////////////////////////////////////////////
+
+struct GpuComputeImage2DData {
+  int _channels = 1; // 1=R32F, 2=RG32F, 4=RGBA32F (3 packs into 4)
+};
+using gpucomputeimage2d_data_ptr_t = std::shared_ptr<GpuComputeImage2DData>;
+
+struct GpuComputeImage2DInst {
+  GpuComputeImage2DInst(gpucomputeimage2d_data_ptr_t data)
+      : _data(data) {
+  }
+  gpucomputeimage2d_data_ptr_t _data;
+  FxShaderStorageBuffer* _ssbo = nullptr; // the backing buffer (lazily allocated)
+  int _w                       = 0;
+  int _h                       = 0;
+  int _channels                = 1;
+};
+using gpucomputeimage2d_inst_ptr_t = std::shared_ptr<GpuComputeImage2DInst>;
+
+struct HfImagePlugTraits {
+  using elemental_data_type          = GpuComputeImage2DData;
+  using elemental_inst_type          = GpuComputeImage2DInst;
+  using data_impl_type_t             = GpuComputeImage2DData;
+  using inst_impl_type_t             = GpuComputeImage2DInst;
+  using xformer_t                    = dflow::nullpassthrudata;
+  using range_type                   = no_range;
+  using out_traits_t                 = HfImagePlugTraits;
+  static constexpr size_t max_fanout = 0; // a channel may feed many consumers
+  static gpucomputeimage2d_inst_ptr_t data_to_inst(gpucomputeimage2d_data_ptr_t inp);
+};
+
+using hfimg_inplugdata_t      = dflow::inplugdata<HfImagePlugTraits>;
+using hfimg_outplugdata_t     = dflow::outplugdata<HfImagePlugTraits>;
+using hfimg_inpluginst_t      = dflow::inpluginst<HfImagePlugTraits>;
+using hfimg_outpluginst_t     = dflow::outpluginst<HfImagePlugTraits>;
+using hfimg_inpluginst_ptr_t  = std::shared_ptr<hfimg_inpluginst_t>;
+using hfimg_outpluginst_ptr_t = std::shared_ptr<hfimg_outpluginst_t>;
+
+///////////////////////////////////////////////////////////////////////////////
+// InstanceSet — the SECOND GPU-resource-handle (HYPERECS E.2): a set of per-instance
+// placements carried on a plug. matrices = mat4[count] (column-major, the ScatterSet
+// xform layout); attrs = vec4[count] per-instance data (x = type_id, y = variant seed
+// 0..1, z/w free) — the TYPED replacement for the matrix-bottom-row smuggle. _version
+// bumps when a producer refills the buffers (consumers re-bind / re-upload on advance,
+// the GpuMesh._version convention).
+///////////////////////////////////////////////////////////////////////////////
+
+struct InstanceSetData {
+  bool _reserved = false;
+};
+using instanceset_data_ptr_t = std::shared_ptr<InstanceSetData>;
+
+struct InstanceSetInst {
+  InstanceSetInst(instanceset_data_ptr_t data)
+      : _data(data) {
+  }
+  instanceset_data_ptr_t _data;
+  FxShaderStorageBuffer* _matrices = nullptr; // mat4[count], column-major
+  FxShaderStorageBuffer* _attrs    = nullptr; // vec4[count]: x=type_id, y=seed01, z/w free
+  int _count                       = 0;
+  uint64_t _version                = 0;
+  void markChanged() { _version++; }
+};
+using instanceset_inst_ptr_t = std::shared_ptr<InstanceSetInst>;
+
+struct InstanceSetPlugTraits {
+  using elemental_data_type          = InstanceSetData;
+  using elemental_inst_type          = InstanceSetInst;
+  using data_impl_type_t             = InstanceSetData;
+  using inst_impl_type_t             = InstanceSetInst;
+  using xformer_t                    = dflow::nullpassthrudata;
+  using range_type                   = no_range;
+  using out_traits_t                 = InstanceSetPlugTraits;
+  static constexpr size_t max_fanout = 0; // a set may feed many consumers
+  static instanceset_inst_ptr_t data_to_inst(instanceset_data_ptr_t inp);
+};
+
+using instset_inplugdata_t      = dflow::inplugdata<InstanceSetPlugTraits>;
+using instset_outplugdata_t     = dflow::outplugdata<InstanceSetPlugTraits>;
+using instset_inpluginst_t      = dflow::inpluginst<InstanceSetPlugTraits>;
+using instset_outpluginst_t     = dflow::outpluginst<InstanceSetPlugTraits>;
+using instset_inpluginst_ptr_t  = std::shared_ptr<instset_inpluginst_t>;
+using instset_outpluginst_ptr_t = std::shared_ptr<instset_outpluginst_t>;
+
+///////////////////////////////////////////////////////////////////////////////
+// SdfGrid — the THIRD GPU-resource-handle (E.7 / review 3.4): a signed-distance
+// field carried on a plug. TWO representations behind the ONE plug (ratified):
+//   DENSE BRICK (v1) — float[dim.x*dim.y*dim.z] SSBO (x-fastest, then y, then z)
+//   over an axis-aligned world region; the GPU-WRITABLE substrate every per-frame
+//   op needs (voxelize / CSG / marching cubes have no home in nano/openvdb on
+//   our GPU stack). Voxel (i,j,k)'s world position is the voxel CENTER:
+//   p = origin + (i,j,k) * voxel.
+//   NANOVDB (M3) — one contiguous read-optimized sparse blob (baked/track-scale;
+//   in-place VALUE writes legal on fixed topology, no topology edits).
+// Consumers branch on _repr. _version = the producer-refill dirty signal
+// (the GpuMesh/InstanceSet convention).
+///////////////////////////////////////////////////////////////////////////////
+
+struct SdfGridData {
+  bool _reserved = false;
+};
+using sdfgrid_data_ptr_t = std::shared_ptr<SdfGridData>;
+
+enum class SdfRepr : int {
+  DENSE   = 0,
+  NANOVDB = 1,
+};
+
+struct SdfGridInst {
+  SdfGridInst(sdfgrid_data_ptr_t data)
+      : _data(data) {
+  }
+  sdfgrid_data_ptr_t _data;
+  SdfRepr _repr                = SdfRepr::DENSE;
+  FxShaderStorageBuffer* _ssbo = nullptr; // dense: float[dx*dy*dz]; nanovdb: the blob
+  int _dim[3]                  = {0, 0, 0};          // dense brick voxel dims
+  float _origin[3]             = {0.0f, 0.0f, 0.0f}; // world position of voxel (0,0,0)'s CENTER
+  float _voxel                 = 1.0f;               // world voxel size (cubic)
+  float _background            = 1.0e6f;             // far-field / outside value
+  uint64_t _version            = 0;
+  void markChanged() { _version++; }
+};
+using sdfgrid_inst_ptr_t = std::shared_ptr<SdfGridInst>;
+
+struct SdfGridPlugTraits {
+  using elemental_data_type          = SdfGridData;
+  using elemental_inst_type          = SdfGridInst;
+  using data_impl_type_t             = SdfGridData;
+  using inst_impl_type_t             = SdfGridInst;
+  using xformer_t                    = dflow::nullpassthrudata;
+  using range_type                   = no_range;
+  using out_traits_t                 = SdfGridPlugTraits;
+  static constexpr size_t max_fanout = 0; // a grid may feed many consumers
+  static sdfgrid_inst_ptr_t data_to_inst(sdfgrid_data_ptr_t inp);
+};
+
+using sdfgrid_inplugdata_t      = dflow::inplugdata<SdfGridPlugTraits>;
+using sdfgrid_outplugdata_t     = dflow::outplugdata<SdfGridPlugTraits>;
+using sdfgrid_inpluginst_t      = dflow::inpluginst<SdfGridPlugTraits>;
+using sdfgrid_outpluginst_t     = dflow::outpluginst<SdfGridPlugTraits>;
+using sdfgrid_inpluginst_ptr_t  = std::shared_ptr<sdfgrid_inpluginst_t>;
+using sdfgrid_outpluginst_ptr_t = std::shared_ptr<sdfgrid_outpluginst_t>;
+
+} // namespace ork::lev2::dflowgfx

@@ -68,8 +68,8 @@ VulkanMemoryForImage::VulkanMemoryForImage(vkcontext_rawptr_t ctxVK, VkImage ima
 
 VulkanMemoryForImage::~VulkanMemoryForImage() {
   try {
-    if(_ctxVK && _ctxVK->_vkdevice && _vkmem) {
-      vkFreeMemory(_ctxVK->_vkdevice, *_vkmem, nullptr);
+    if(_ctxVK && _vkmem) {
+      _ctxVK->destroyImageMemory(*_vkmem); // no-op post-shutdown
     }
   } catch (...) {
     // Swallow — during static destruction _ctxVK may be dangling.
@@ -272,20 +272,15 @@ VulkanImageObject::VulkanImageObject(vkcontext_rawptr_t ctx, VkImage img, VkImag
 VulkanImageObject::~VulkanImageObject() {
   _imgobjcount.fetch_sub(1);
   try {
-    if(!_ctx || !_ctx->_vkdevice){
-      return;
-    }
-    if (_delete_imageview and (_vkimageview != VK_NULL_HANDLE)) {
-      vkDestroyImageView(_ctx->_vkdevice, _vkimageview, nullptr);
-    }
-    if (_delete_image and (_vkimage != VK_NULL_HANDLE)) {
-      vkDestroyImage(_ctx->_vkdevice, _vkimage, nullptr);
-    }
-    if (_delete_devicemem and (_vkdevicemem != VK_NULL_HANDLE)) {
-      vkFreeMemory(_ctx->_vkdevice, _vkdevicemem, nullptr);
+    if (_ctx) {
+      // pass only the handles this object owns; the funnel no-ops past shutdown.
+      _ctx->destroyImageObject(
+          _delete_imageview   ? _vkimageview : VK_NULL_HANDLE,
+          _delete_image       ? _vkimage     : VK_NULL_HANDLE,
+          _delete_devicemem   ? _vkdevicemem : VK_NULL_HANDLE);
     }
     _vkimage = VK_NULL_HANDLE;
-    _imgmem = nullptr;
+    _imgmem  = nullptr;
   } catch (...) {
     // Swallow — during static destruction _ctx may be dangling.
   }
@@ -296,10 +291,12 @@ std::atomic<int> VulkanBuffer::_buffercount    = 0;
 std::atomic<size_t> VulkanBuffer::_bufferbytes = 0;
 std::atomic<size_t> VulkanBuffer::_bufferSN = 0;
 
-VulkanBuffer::VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsageFlags usage, std::string name)
+VulkanBuffer::VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsageFlags usage, std::string name,
+                           VkMemoryPropertyFlags memprops)
     : _ctxVK(ctxVK)
     , _length(length)
-    , _usage(usage) {
+    , _usage(usage)
+    , _hostVisible((memprops & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0) {
   
   // Debug logging to diagnose zero-length buffer creation
   if (length == 0) {
@@ -321,8 +318,7 @@ VulkanBuffer::VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsag
     _ctxVK->_setObjectDebugName(_vkbuffer, VK_OBJECT_TYPE_BUFFER, name.c_str());
   }
 
-  _memory = std::make_shared<VulkanMemoryForBuffer>(
-      ctxVK, _vkbuffer, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+  _memory = std::make_shared<VulkanMemoryForBuffer>(ctxVK, _vkbuffer, memprops);
   vkBindBufferMemory(ctxVK->_vkdevice, _vkbuffer, *_memory->_vkmem, 0);
   
   // Also set debug name for the memory
@@ -341,8 +337,8 @@ VulkanBuffer::VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsag
 //////////////////////////////////////
 VulkanBuffer::~VulkanBuffer() {
   try {
-    if(_ctxVK && _ctxVK->_vkdevice && _vkbuffer != VK_NULL_HANDLE) {
-      vkDestroyBuffer(_ctxVK->_vkdevice, _vkbuffer, nullptr);
+    if(_ctxVK) {
+      _ctxVK->destroyBuffer(_vkbuffer); // no-op post-shutdown
     }
   } catch (...) {
     // Swallow — during static destruction _ctxVK may be dangling.
@@ -352,30 +348,48 @@ VulkanBuffer::~VulkanBuffer() {
   _memory = nullptr;
 }
 //////////////////////////////////////
-void VulkanBuffer::copyFromHost(const void* src, size_t length) {
-  OrkAssert(length <= _length);
-  void* dst = nullptr;
-  vkMapMemory(_ctxVK->_vkdevice, *_memory->_vkmem, 0, _length, 0, &dst);
-  static size_t _numcopied = 0;
-  static size_t _prvnumcopied = 0;
-  _numcopied += length;
-  if((_numcopied - _prvnumcopied) > (1<<30) ) {
-    //logchan_vkbufmem->log("VulkanBuffer copyFromHost copied<%zu> total<%zu>", length, _numcopied);
-    _prvnumcopied = _numcopied;
+void VulkanBuffer::copyFromHost(const void* src, size_t length, size_t dstOffset) {
+  OrkAssert((dstOffset + length) <= _length);
+  if (not _hostVisible) {                                  // device-local: stage host -> staging -> this
+    auto& st = _ctxVK->_syncTransfer;
+    std::lock_guard<std::mutex> lock(st.mutex);
+    _ctxVK->ensureSyncStagingSize(length);
+    void* sp = st.staging_buffer->map(0, length, 0);
+    std::memcpy(sp, src, length);
+    st.staging_buffer->unmap();
+    _ctxVK->beginSyncTransferCB();
+    VkBufferCopy region{}; region.srcOffset = 0; region.dstOffset = dstOffset; region.size = length;
+    vkCmdCopyBuffer(st.command_buffer_impl->_vkcmdbuf, st.staging_buffer->_vkbuffer, _vkbuffer, 1, &region);
+    _ctxVK->endAndSubmitSyncTransferCB();
+    return;
   }
+  void* dst = this->map(dstOffset, length, 0);
   std::memcpy(dst, src, length);
-  vkUnmapMemory(_ctxVK->_vkdevice, *_memory->_vkmem);
+  this->unmap();
 }
 //////////////////////////////////////
-void VulkanBuffer::copyToHost(void* dst, size_t length) {
-  OrkAssert(length <= _length);
-  void* src = nullptr;
-  vkMapMemory(_ctxVK->_vkdevice, *_memory->_vkmem, 0, length, 0, &src);
+void VulkanBuffer::copyToHost(void* dst, size_t length, size_t srcOffset) {
+  OrkAssert((srcOffset + length) <= _length);
+  if (not _hostVisible) {                                  // device-local: stage this -> staging -> host
+    auto& st = _ctxVK->_syncTransfer;
+    std::lock_guard<std::mutex> lock(st.mutex);
+    _ctxVK->ensureSyncStagingSize(length);
+    _ctxVK->beginSyncTransferCB();
+    VkBufferCopy region{}; region.srcOffset = srcOffset; region.dstOffset = 0; region.size = length;
+    vkCmdCopyBuffer(st.command_buffer_impl->_vkcmdbuf, _vkbuffer, st.staging_buffer->_vkbuffer, 1, &region);
+    _ctxVK->endAndSubmitSyncTransferCB();
+    void* sp = st.staging_buffer->map(0, length, 0);
+    memcpy_fast(dst, sp, length);
+    st.staging_buffer->unmap();
+    return;
+  }
+  void* src = this->map(srcOffset, length, 0);
   memcpy_fast(dst, src, length);
-  vkUnmapMemory(_ctxVK->_vkdevice, *_memory->_vkmem);
+  this->unmap();
 }
 //////////////////////////////////////
 void* VulkanBuffer::map(size_t offset, size_t length, VkMemoryMapFlags flags) {
+  OrkAssert(_hostVisible && "VulkanBuffer::map on a device-local buffer — use copyFromHost/copyToHost (or the FXI staging map path)");
   if (length < 1)
     length = 1;
   void* dst = nullptr;

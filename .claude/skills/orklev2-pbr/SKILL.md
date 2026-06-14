@@ -109,11 +109,26 @@ Per-scene IBL state including:
 - Cached in DataBlockCache with CRC hash
 - Dimensions: 512x512
 
-### Per-Drawable Override
+### Per-Drawable Overrides (Two Distinct IBL Channels — PBR2 Phase 0)
+
+`Drawable` (and the renderable / RCID it propagates to) carries two independent IBL override fields:
+
 ```cpp
-// drawable.h:363
-pbr::radiancemaps_ptr_t _envmapOverride;  // per-drawable environment map override
+// drawable.h
+pbr::radiancemaps_ptr_t _envmapOverride;  // baked equirect — swaps MapSpecularEnv per draw
+lightprobe_ptr_t        _probeOverride;   // live cube — swaps reflectionPROBE per draw
+bool                    _excludeFromProbe = false;
 ```
+
+Both ride the propagation chain `Drawable → IRenderable → RCID`. `fwdnode_pipeline.cpp` picks the per-draw probe binding in this order:
+
+1. `RCID._probeOverride` if set (per-drawable live cube)
+2. `enumlights->_lightprobes[0]` if `should_bind_probes` (scene-global probe)
+3. (otherwise) per-drawable `_envmapOverride` falls back to the equirect path
+
+The shader's `has_reflection_probe` flag is set per-draw based on whether a probe was bound. When the cube channel is active it **wins** over the equirect — the per-drawable equirect override does not reach the shader if any probe is bound globally for the draw.
+
+`_excludeFromProbe` is read by `DrawQueue::enqueueLayerToRenderQueue`: if the active `RCFD` has user-property `"renderingPROBE"_crcu == true`, drawables flagged true are skipped during a probe cubemap capture. Particle drawables default to true (would feedback-loop / add noise to their own reflection).
 
 ## Lightmap Support
 

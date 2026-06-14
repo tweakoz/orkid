@@ -71,7 +71,12 @@ bool VkFxInterface::_tryBindMergedResource(const FxShaderParam* hpar,
   auto [set_id, binding_info] = findBindingInMergedResources(_currentVKPASS->_merged_resources, hpar->_name);
 
   if (!binding_info) {
-    printf("_tryBindMergedResource: param<%s> not found in merged resources\n", hpar->_name.c_str());
+    // once per (program, param): a legitimate miss recurs EVERY draw (e.g. the
+    // forward env binds attempted against a depth-prepass program that has no
+    // env samplers) — unguarded this was per-frame log spam in the player.
+    static thread_local std::set<std::pair<const void*, const FxShaderParam*>> _logged_misses;
+    if (_logged_misses.insert({(const void*)vk_program, hpar}).second)
+      printf("_tryBindMergedResource: param<%s> not found in merged resources\n", hpar->_name.c_str());
     return false;
   }
 

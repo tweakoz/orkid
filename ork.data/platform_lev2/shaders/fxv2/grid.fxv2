@@ -50,6 +50,7 @@ fragment_interface fif_FWDLIT //
   : ss_frg_fwd {              //
   outputs {
     layout(location = 0) vec4 out_clr;
+    layout(location = 1) vec4 out_diffuse;   // P3.B
   }
 }
 ///////////////////////////////////////////////////////////////
@@ -333,8 +334,11 @@ fragment_shader ps_grid_forward_lit_mono : fif_FWDLIT : lib_math //
     : lib_frg_grid                                               //
     : std_forward_all {                                          //
   vec4 gout = grid_output(frg_wpos.xyz);
-  vec3 oc   = forward_lighting_mono(gout.xyz);
-  out_clr   = vec4(oc.xyz, 1);
+  ShadingResult sr = forward_lighting_mono(gout.xyz);
+  out_clr     = vec4(sr.specular + sr.diffuse, 1);
+  // P3.D — SSSS mask in alpha.
+  float sss_mask = (has_subsurface != 0) ? subsurface_factor : 0.0;
+  out_diffuse = vec4(sr.diffuse, sss_mask);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_grid_forward_lit_mono_V4                         //
@@ -347,17 +351,20 @@ fragment_shader ps_grid_forward_lit_mono_V4                         //
     : storage_fwd_lighting                                          //
     : std_forward_all {                                             //
   vec4 gout = grid_output_V4(frg_wpos.xyz);
-  
-  vec3 oc = _forward_lightingZ(
+
+  ShadingResult sr = _forward_lightingZ(
     vec3(1,1,1), // modcolor
     gout.xyz,    // albedo
-    vec3(0,1,0), // ambrufmtl
+    vec3(1,1,0), // ambrufmtl (x=AO; 1.0=unoccluded — AO now consumed by fwd lighting)
     vec3(0,0,0), // emission
     EyePostion,  // eye
     vec3(0,1,0), // normal
     false        // emissive toggle
   );
-  out_clr = vec4(oc, 1);
+  out_clr     = vec4(sr.specular + sr.diffuse, 1);
+  // P3.D — SSSS mask in alpha.
+  float sss_mask = (has_subsurface != 0) ? subsurface_factor : 0.0;
+  out_diffuse = vec4(sr.diffuse, sss_mask);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_grid_forward_lit_mono_V3                        //
@@ -369,7 +376,8 @@ fragment_shader ps_grid_forward_lit_mono_V3                        //
     : lib_frg_grid                                                  //
     : storage_fwd_lighting                                          //
     : std_forward_all {                                             //
-  out_clr = grid_output_V3(frg_wpos.xyz);
+  out_clr     = grid_output_V3(frg_wpos.xyz);
+  out_diffuse = vec4(0);   // P3.B — V3 grid is unlit; no diffuse contribution
 }
 ///////////////////////////////////////////////////////////////
 technique FWD_CT_NM_RI_NI_MO {

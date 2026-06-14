@@ -37,7 +37,6 @@ parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
     OrkAssert(n != nullptr);
     auto name      = remapSkelName(n->mName.data);
     auto node_path = aiNodePathName(n);
-    std::string node_ID = (n->mID.data!=nullptr) ? n->mID.data : "";
     auto itb       = uniqskelnodeset.find(node_path);
     if (itb != uniqskelnodeset.end()) {
       auto prior      = itb->second;
@@ -68,13 +67,16 @@ parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
       }
       printf("prior_path<%s>\n", prior_path.c_str());
       printf("node_path<%s>\n", node_path.c_str());
-      printf("node_ID<%s>\n", node_ID.c_str());
       OrkAssert(false);
     }
     int index                  = uniqskelnodeset.size();
     uniqskelnodeset[node_path] = n;
     auto xgmnode               = std::make_shared<lev2::XgmSkelNode>(name);
-    xgmnode->_ID               = node_ID;
+    // Fall back to node_path as the joint ID. The tweakoz-fork-specific
+    // aiNode::mID field is not present in upstream assimp 6.0.5; nothing
+    // in orkid actually requires a glTF-derived id distinct from path,
+    // and IkChain::bindToJointID needs _jointsByID to have unique keys.
+    xgmnode->_ID               = node_path;
     xgmnode->_path             = node_path;
     xgmnode->miSkelIndex       = index;
     xgmnode->_depth            = depth;
@@ -97,7 +99,6 @@ parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
     // deco::printe(fvec3::Yellow(), xgmnode->_nodeMatrix.dump4x3(), true);
     rval->_xgmskelmap_by_path[node_path] = xgmnode;
     rval->_xgmskelmap_by_name[name]      = xgmnode;
-    rval->_xgmskelmap_by_id[node_ID]     = xgmnode;
   };
 
   visit_ainodes_down(scene->mRootNode, 0, create_skelnodes);
@@ -162,10 +163,9 @@ parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
     //////////////////////////////
     deco::printf(
         fvec3::White(),
-        "par path<%s> depth<%d> id<%s>: \n", //
+        "par path<%s> depth<%d>: \n", //
         ppath.c_str(),
-        pskelnode->_depth,
-        p->mID.data);
+        pskelnode->_depth);
 
     //////////////////////////////
     for (int i = 0; i < p->mNumChildren; ++i) {
@@ -291,7 +291,6 @@ parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
 
       rval->_xgmskelmap_by_path[endeffector->_path] = endeffector;
       rval->_xgmskelmap_by_name[endeffector->_name] = endeffector;
-      rval->_xgmskelmap_by_id[endeffector->_path] = endeffector;
 
       uniqskelnodeset.insert(std::make_pair(endeffector->_path, nullptr));
       node->_childrenX.push_back(endeffector);

@@ -1,6 +1,6 @@
 ---
 name: orklev2-ci
-description: Answer questions about orkid's ComputeInterface (CI), compute shader dispatch, indirect dispatch, SSBO binding for compute, memory barriers, image/sampler binding, dispatch phases, and PyTorch tensor integration. Use when the user asks about compute shaders, GPU compute, or dispatch.
+description: Answer questions about orkid's ComputeInterface (CI), compute shader dispatch, indirect dispatch, SSBO binding for compute, memory barriers, image/sampler binding, dispatch phases. Use when the user asks about compute shaders, GPU compute, or dispatch.
 user-invocable: false
 ---
 
@@ -39,10 +39,6 @@ When answering questions about compute shaders or GPU compute in orkid, consult 
 
 ### Memory Barriers
 - `storageBarrier()` — ensures prior SSBO writes are visible to subsequent dispatches
-
-### PyTorch Integration (ENABLE_PYTORCH builds)
-- `copyTensorIntoStorageBuffer(ssbo, tensor, dest_offset)` — tensor → SSBO
-- `storageBufferFromTensor(tensor)` → `FxShaderStorageBuffer*` — wrap tensor as SSBO
 
 ## Typical Usage
 

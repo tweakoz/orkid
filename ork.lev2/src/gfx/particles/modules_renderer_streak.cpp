@@ -40,9 +40,15 @@ struct StreakRendererInst : public ParticleModuleInst {
   floatxf_inp_pluginst_ptr_t _input_length;
   floatxf_inp_pluginst_ptr_t _input_width;
   floatxf_inp_pluginst_ptr_t _input_scale;
+  floatxf_inp_pluginst_ptr_t _input_gradient_phase;
   float_out_pluginst_ptr_t _output_uage;
   triple_buf_ptr_t _triple_buf;
   streak_vtxbuf_ptr_t _vertexBuffer;
+  // Per-renderer-instance SSBO for particle vertex data. Allocated lazily
+  // on first render (needs Context to construct). Previously lived on
+  // MaterialBase, but sharing across renderer instances caused a race
+  // when multiple particle entities used the same material.
+  FxShaderStorageBuffer* _cu_vertex_io_buffer = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -62,10 +68,11 @@ StreakRendererInst::StreakRendererInst(const StreakRendererData* srd, dataflow::
 void StreakRendererInst::onLink(GraphInst* inst) {
   _onLink(inst);
   auto ptcl_context         = inst->_impl.getShared<Context>();
-  ptcl_context->_rcidlambda = [this](const RenderContextInstData& RCID) { this->_render(RCID); };
+  ptcl_context->setRenderLambda(this, _srd->_draw_order, [this](const RenderContextInstData& RCID) { this->_render(RCID); });
   _input_length             = typedInputNamed<FloatXfPlugTraits>("Length");
   _input_width              = typedInputNamed<FloatXfPlugTraits>("Width");
   _input_scale              = typedInputNamed<FloatXfPlugTraits>("Scale");
+  _input_gradient_phase     = typedInputNamed<FloatXfPlugTraits>("GradientPhase");
 
   auto pool = _graphinst->firstModuleInst<ParticlePoolModuleInst>();
   OrkAssert(pool);
@@ -124,7 +131,14 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   // compute particle dynamic vertex buffer
   //////////////////////////////////////////
   auto render_buffer = _triple_buf->begin_pull();
-  int icnt           = render_buffer->_numParticles;
+  // begin_pull returns nullptr when nothing has been pushed yet — common
+  // for ECS pool slots that are FREE (compute has never run for them).
+  // Drawables for those slots are still enqueued + rendered each frame
+  // but there's no vertex data to draw, so just bail.
+  if (not render_buffer) {
+    return;
+  }
+  int icnt = render_buffer->_numParticles;
   if (0 == icnt) {
     _triple_buf->end_pull(render_buffer);
     return;
@@ -176,6 +190,7 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   float fwidth  = _input_width->value();
   float flength = _input_length->value();
   float fscale  = _input_scale->value();
+  float fgrad_phase = _input_gradient_phase->value();
   auto LW       = ork::fvec2(flength, fwidth);
 
   bool length_is_varying = _input_length->connectedIsVarying();
@@ -213,24 +228,33 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     }
 
     ///////////////////////////////////////////////////////////////
-    // Fill SSBO with new format for streaks:
-    // vec4 camRightSize;          // 0: xyz=camPos (for view direction calculation), w=unused
-    // vec4 camUpCount;            // 16: xyz=camUp, w=numParticles
-    // vec4 particleData[262144];  // 32: pos.xyz, width
-    // vec4 particleData2[262144]; // 4194336: vel.xyz, length
-    // vec4 particleData3[262144]; // 8388640: age, random, unused, unused
+    // SSBO header layout (mirrors storage_particles in particle_comshader.i2):
+    //   0  camRightSize    xyz=camPos (streaks repurpose), .w unused
+    //   16 camUpCount      xyz=camUp, w=numParticles
+    //   32 materialParams  x=gradient_phase, yzw=reserved
+    //   48 particleData[]  per-particle pos.xyz, width
+    //   48 + 262144*16    particleData2[]  per-particle vel.xyz, length
+    //   48 + 262144*16*2  particleData3[]  per-particle age, random, aux.x, aux.y
     ///////////////////////////////////////////////////////////////
-    auto storage        = material->_cu_vertex_io_buffer;
+    // Lazy-allocate this renderer instance's SSBO on first render. Per-
+    // instance, NOT material-shared — see field-decl comment for why.
+    if (not _cu_vertex_io_buffer) {
+      _cu_vertex_io_buffer = FXI->createStorageBuffer(16 << 20);
+    }
+    auto storage        = _cu_vertex_io_buffer;
     size_t mapping_size = 16 << 20; // 16MB (supports 262144 particles × 3 arrays × 16 bytes)
     auto mapped_storage = FXI->mapStorageBuffer(storage, 0, mapping_size, BufferMapAccess::WRITE_ONLY);
 
     mapped_storage->seek(0);
-    // Header: camera position (for view direction) and up vector
-    mapped_storage->make<fvec4>(camPos.x, camPos.y, camPos.z, 0.0f);     // offset 0: camPos for streaks
+    // Header: cam vectors + per-frame material params
+    mapped_storage->make<fvec4>(camPos.x, camPos.y, camPos.z, 0.0f);     // offset 0
     mapped_storage->make<fvec4>(camUp.x, camUp.y, camUp.z, float(icnt)); // offset 16
+    mapped_storage->make<fvec4>(fgrad_phase, 0.0f, 0.0f, 0.0f);          // offset 32 — materialParams
 
     // Fill particle data based on variant
-    // particleData array at offset 32: pos.xyz, width
+    // particleData array at offset 48: pos.xyz, width
+    constexpr size_t particleData_offset = 48;
+    mapped_storage->seek(particleData_offset);
     switch(variant) {
       case 0: // nothing varying
         for (int i = 0; i < icnt; i++) {
@@ -264,8 +288,8 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
         break;
     }
 
-    // particleData2 array at offset 32 + 262144*16 = 4194336: vel.xyz, length
-    constexpr size_t particleData2_offset = 32 + 262144 * 16;
+    // particleData2 array at offset 48 + 262144*16 = 4194352: vel.xyz, length
+    constexpr size_t particleData2_offset = 48 + 262144 * 16;
     mapped_storage->seek(particleData2_offset);
 
     switch(variant) {
@@ -299,13 +323,18 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
         break;
     }
 
-    // particleData3 array at offset 32 + 262144*16*2 = 8388640: age, random, unused, unused
-    constexpr size_t particleData3_offset = 32 + 262144 * 16 * 2;
+    // particleData3 array at offset 48 + 262144*16*2 = 8388656:
+    //   x = unit_age, y = mfRandom, z = _aux.x, w = _aux.y
+    // (aux.z/w are not currently surfaced to the shader; if needed later
+    // add a particleData4 array. The CPU-side _aux vec4 is fully populated;
+    // this is just a shader-visibility limit.)
+    constexpr size_t particleData3_offset = 48 + 262144 * 16 * 2;
     mapped_storage->seek(particleData3_offset);
 
     for (int i = 0; i < icnt; i++) {
       auto ptcl = get_particle(i);
-      mapped_storage->make<fvec4>(ptcl->_unit_age, ptcl->mfRandom, 0.0f, 0.0f);
+      mapped_storage->make<fvec4>(ptcl->_unit_age, ptcl->mfRandom,
+                                   ptcl->_aux.x, ptcl->_aux.y);
     }
 
     FXI->unmapStorageBuffer(mapped_storage.get());
@@ -317,9 +346,18 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     FXI->bindStorageBuffer(material->_cu_storage_block, storage);
     render_time_1b = prender_timer.SecsSinceStart();
 
-    material->update(RCID);
+    // AUX-CHANNEL subpass (E2B item D): pipeline() returns nullptr when the
+    // material doesn't write the active channel — skip the draw. The color
+    // pass earlier this frame already ran material->update() (gradient
+    // re-bake etc.); aux passes don't repeat it.
+    bool aux_pass = (RCID.rcfd()->_subpassID == "AUX"_crcu);
+    if (not aux_pass)
+      material->update(RCID);
     auto pipeline = material->pipeline(RCID, true);
-    auto rstate = material->_material->_rasterstate;
+    if (pipeline) {
+    // the pipeline's rasterstate carries the PASS-correct state (e.g. the
+    // aux pipeline's additive/no-Z); fall back to the material state.
+    auto rstate = pipeline->_rasterstate ? pipeline->_rasterstate : material->_material->_rasterstate;
     rstate->_priority = 1 << 10;
     FXI->pushRasterState(rstate);
     pipeline->wrappedDrawCall(RCID, [&]() {
@@ -331,6 +369,7 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
       FXI->reset();
     });
     FXI->popRasterState();
+    }
     render_time_1c = prender_timer.SecsSinceStart();
   }
 
@@ -356,6 +395,10 @@ static void _reshapeStreakRendererIOs(dataflow::moduledata_ptr_t mdata) {
   ModuleData::createInputPlug<FloatXfPlugTraits>(typed, EPR_UNIFORM, "Width")->_range             = {-10, 10};
   ModuleData::createInputPlug<FloatXfPlugTraits>(typed, EPR_UNIFORM, "GradientIntensity")->_range = {0, 10};
   ModuleData::createInputPlug<FloatXfPlugTraits>(typed, EPR_UNIFORM, "Scale")->_range             = {-10, 10};
+  // GradientPhase: only meaningful when paired with GradientAtlasMaterial.
+  // Shader adds this to particle's aux.x before the V-sample → scrolls the
+  // whole atlas vertically. Range is unbounded (fract() in shader wraps).
+  ModuleData::createInputPlug<FloatXfPlugTraits>(typed, EPR_UNIFORM, "GradientPhase")->_range     = {-1000, 1000};
 }
 
 ///////////////////////////////////////////////////////////////////////////////

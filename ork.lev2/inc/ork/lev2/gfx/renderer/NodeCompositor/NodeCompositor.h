@@ -68,9 +68,28 @@ public:
   virtual lev2::rtgroup_ptr_t GetOutputGroup() const {
     return nullptr;
   }
+  // The layer-name ROLES this render node reads when assembling its frame
+  // (empty = node doesn't enumerate roles). Scene::initWithParams creates
+  // each as a real (empty, zero-cost) layer up front, so content can land
+  // on any role without per-scene declarations — under-declared scenes
+  // (findLayer asserts, nodes silently parked on sg_default) were a
+  // recurring bug class.
+  virtual const std::vector<std::string>& renderedLayerRoles() const {
+    static const std::vector<std::string> s_none;
+    return s_none;
+  }
 
   RenderingModel _renderingmodel;
   std::string _layers;
+  // GENERIC AUX CHANNELS (E2B item D): named auxiliary render targets the
+  // node renders as extra passes. Each channel name X adds layer role
+  // "aux_X" (drawables opt in by attaching to it; materials opt in with an
+  // aux technique pair) and publishes its RTG into the CompositorDrawData
+  // properties under crc("aux_X") for postfx consumption (heat distortion,
+  // glow masks, velocity, ...). Set BEFORE Scene::initWithParams pre-creates
+  // role layers (it reads renderedLayerRoles()). v1 LIMIT: aux RTGs carry no
+  // depth attachment — aux content is not occluded by scene geometry.
+  std::vector<std::string> _auxChannels;
   uint64_t _bufferKey = 0;
   int      _frameIndex = 0;
   uint64_t _debugRenderingModel = "NONE"_crcu;

@@ -27,7 +27,7 @@
 namespace ork::ecs {
 ///////////////////////////////////////////////////////////////////////////////
 
-static logchannel_ptr_t logchan_controller = logger()->configureChannel("ecs.controller", fvec3(0.7, 0.7, 0));
+static logchannel_ptr_t logchan_controller = logger()->configureChannel("ecs.controller", fvec3(0.7, 0.7, 0), false);
 
 using namespace ::ork;
 
@@ -633,6 +633,25 @@ void Controller::startSimulation() {
   TEV->_waitForState = ESimulationTransport::ACTIVATED;
   simevent->_payload.make<impl::transportbarrier_ptr_t>(TEV);
   _enqueueEvent(simevent);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// pause/resume — a CLOCK operation (the FSM PAUSE state): events keep servicing
+// (camera stays live), the renderer keeps the last frame, gameTime holds. Resume
+// continues seamlessly (the ACTIVE onEnter skips re-activation from pause).
+
+void Controller::pauseSimulation() {
+  _simulation.atomicOp([](simulation_ptr_t& unlocked) {
+    if (unlocked->_currentSimulationMode == ESimulationMode::ACTIVE)
+      unlocked->SetSimulationMode(ESimulationMode::PAUSE);
+  });
+}
+
+void Controller::resumeSimulation() {
+  _simulation.atomicOp([](simulation_ptr_t& unlocked) {
+    if (unlocked->_currentSimulationMode == ESimulationMode::PAUSE)
+      unlocked->SetSimulationMode(ESimulationMode::ACTIVE);
+  });
 }
 
 ///////////////////////////////////////////////////////////////////////////////

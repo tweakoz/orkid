@@ -9,6 +9,7 @@
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/gfx/pickbuffer.h>
+#include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
 #include <ork/util/logger.h>
 #include <ork/lev2/gfx/renderer/renderable.h>
@@ -25,6 +26,8 @@ uint64_t FxPipelinePermutation::genIndex() const {
   index += (uint64_t(_is_picking) << 4);
   index += (uint64_t(_has_vtxcolors) << 5);
   index += (uint64_t(_is_alpha) << 6);
+  index += (uint64_t(_is_vertex_ssbo) << 7);
+  index += (uint64_t(_instanced_matrices_only) << 8);
   index += (uint64_t(_rendering_model) << 16);
 
   auto tekovr = uint64_t((const void*)_forced_technique);
@@ -87,6 +90,16 @@ void FxPipeline::wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_
   endBlock(RCID);
 }
 ///////////////////////////////////////////////////////////////////////////////
+void FxPipeline::_syncMaterialParams() {
+  if (_material_ptr == nullptr)
+    return;
+  if (_bound_params_seen == _material_ptr->_bound_params_stamp)
+    return;
+  for (const auto& item : _material_ptr->_bound_params)
+    _params[item.first] = item.second;
+  _bound_params_seen = _material_ptr->_bound_params_stamp;
+}
+///////////////////////////////////////////////////////////////////////////////
 int FxPipeline::beginBlock(const RenderContextInstData& RCID) {
   auto context            = RCID.rcfd()->GetTarget();
   auto FXI                = context->FXI();
@@ -125,6 +138,8 @@ int FxPipeline::beginBlock(const RenderContextInstData& RCID) {
   ///////////////////////////////
   // run individual state items
   ///////////////////////////////
+
+  _syncMaterialParams(); // material-level rebinds go live here (stamp-gated)
 
   if (_debugPrint) {
     printf("FxPipeline<%p:%s>::beginBlock num_params<%zu>\n", this, _debugName.c_str(), _params.size());
@@ -752,6 +767,7 @@ fxpipeline_ptr_t FxPipelineCache::findPipeline(const RenderContextInstData& RCID
 
   permu._skinned          = RCID._isSkinned;
   permu._instanced        = RCID._isInstanced;
+  permu._is_vertex_ssbo   = RCID._isSSBOSourced;
   permu._forced_technique = RCID._forced_technique;
   permu._is_picking       = picking;
   permu._rendering_model  = RCFD->_renderingmodel._modelID;
@@ -773,5 +789,59 @@ fxpipeline_ptr_t FxPipelineCache::findPipeline(const FxPipelinePermutation& perm
     _lut[index] = pipeline;
   }
   return pipeline;
-} ///////////////////////////////////////////////////////////////////////////////
+}
+///////////////////////////////////////////////////////////////////////////////
+// E.6/2.12 gate — exercises the rebind-propagation core (stamp compare +
+// _bound_params overlay) with fabricated param handles; no GPU needed. The
+// full path (bindParam -> beginBlock -> uniform) is covered by the hypermesh
+// paramsink demo/gates. Returns the failure count (0 = pass).
+///////////////////////////////////////////////////////////////////////////////
+int fxPipelineRebindSelfTest() {
+  int fails  = 0;
+  auto CHECK = [&](bool ok, const char* what) {
+    printf("[fxpipeline rebind] %s %s\n", ok ? "PASS" : "FAIL", what);
+    if (not ok)
+      fails++;
+  };
+  auto floatIs = [](const varmap::VarMap::value_type& v, float x) -> bool {
+    auto as_f = v.tryAs<float>();
+    return as_f and (as_f.value() == x);
+  };
+  auto mtl  = std::make_shared<FreestyleMaterial>();
+  auto parA = new FxShaderParam;
+  auto parB = new FxShaderParam;
+  parA->_name = "parA";
+  parB->_name = "parB";
+  // NB: explicitly the BASE bindParam (the deferred _bound_params contract this
+  // test exercises — what pbrmaterial_ptr_t callers get). FreestyleMaterial
+  // SHADOWS bindParam with its immediate-FXI direct-draw variant, which needs
+  // an initialized shader target.
+  auto bind = [&](FxShaderParam* p, float v) { mtl->GfxMaterial::bindParam(p, v); };
+
+  bind(parA, 1.0f); // bound BEFORE the pipeline exists
+  FxPipelinePermutation permu;
+  auto pipe           = std::make_shared<FxPipeline>(permu);
+  pipe->_material_ptr = mtl.get();
+
+  pipe->_syncMaterialParams();
+  CHECK(floatIs(pipe->_params[parA], 1.0f), "pre-creation bind overlays on first sync");
+
+  bind(parA, 2.0f); // REBIND after the pipeline exists (the 2.12 bug)
+  bind(parB, 3.0f); // and a brand-new param
+  pipe->_syncMaterialParams();
+  CHECK(floatIs(pipe->_params[parA], 2.0f), "rebind propagates to a cached pipeline");
+  CHECK(floatIs(pipe->_params[parB], 3.0f), "new param propagates to a cached pipeline");
+
+  pipe->_params.clear(); // clean-stamp path must NOT re-overlay (O(1) skip)
+  pipe->_syncMaterialParams();
+  CHECK(pipe->_params.empty(), "clean stamp skips the overlay");
+
+  bind(parB, 4.0f); // any bind re-arms the overlay
+  pipe->_syncMaterialParams();
+  CHECK(floatIs(pipe->_params[parA], 2.0f) and floatIs(pipe->_params[parB], 4.0f), "stamp bump restores the full overlay");
+
+  printf("=== fxpipeline rebind selftest %s (%d failures) ===\n", fails ? "FAILED" : "PASSED", fails);
+  return fails;
+}
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

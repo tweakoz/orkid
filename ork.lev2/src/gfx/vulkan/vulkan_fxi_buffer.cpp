@@ -8,6 +8,7 @@
 #include "headers/vulkan_ctx.h"
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/util/logger.h>
+#include <cstdlib>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
@@ -54,11 +55,25 @@ void VkFxInterface::unmapUniformBuffer(FxUniformBufferMapping* mapping) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-FxShaderStorageBuffer* VkFxInterface::createStorageBuffer(size_t length) {
-  auto ssbo = new FxShaderStorageBuffer;
+FxShaderStorageBuffer* VkFxInterface::createStorageBuffer(size_t length,
+                                                          StorageBufferUsage usage,
+                                                          BufferResidency residency) {
+  auto ssbo     = new FxShaderStorageBuffer;
   ssbo->_length = length;
-  auto ssbo_buf = ssbo->_impl.makeShared<VulkanBuffer>(_contextVK, length,
-      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+  // TRANSFER_SRC|DST always (staging + buffer-to-buffer copies — free on linear buffers).
+  VkBufferUsageFlags vku = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+  if (usage == StorageBufferUsage::DEFAULT) {  // historical full set (compute SSBO + GPU-driven draw inputs)
+    vku |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+  } else {                                     // precise roles
+    if (usage & StorageBufferUsage::STORAGE)  vku |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    if (usage & StorageBufferUsage::INDEX)    vku |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+    if (usage & StorageBufferUsage::INDIRECT) vku |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+    if (usage & StorageBufferUsage::VERTEX)   vku |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+  }
+  VkMemoryPropertyFlags memprops = (residency == BufferResidency::DEVICE)
+      ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+      : (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+  ssbo->_impl.makeShared<VulkanBuffer>(_contextVK, length, vku, std::string(""), memprops);
   return ssbo;
 }
 
@@ -68,18 +83,27 @@ storagebuffermappingptr_t VkFxInterface::mapStorageBuffer(FxShaderStorageBuffer*
                                                           size_t base, //
                                                           size_t length, //
                                                           BufferMapAccess access) { //
+  // C.5: a host map is a HAZARD POINT for a pending non-blocking dispatch phase (the GPU may
+  // still read what we are about to rewrite, or still be writing what we are about to read) —
+  // wait it out first. No-op in blocking mode / when nothing pends.
+  if (_contextVK->_ci)
+    _contextVK->_ci->syncPendingDispatch();
   auto bufimpl = b->_impl.getShared<VulkanBuffer>();
   auto mapping = std::make_shared<FxShaderStorageBufferMapping>();
   mapping->_buffer = b;
   mapping->_fxi = this;
   mapping->_offset = base;
   mapping->_access = access;
-  if(length == 0) {
-    mapping->_length = bufimpl->_length;
+  mapping->_length = (length == 0) ? bufimpl->_length : length;
+  if (not bufimpl->_hostVisible) {
+    // device-local: back the mapping with a host temp; pre-fill on read, flush on unmap (write).
+    void* temp = std::malloc(mapping->_length);
+    bool reads = (access == BufferMapAccess::READ_ONLY) || (access == BufferMapAccess::READ_WRITE);
+    if (reads) bufimpl->copyToHost(temp, mapping->_length, base);
+    mapping->_mappedaddr = temp;
   } else {
-    mapping->_length = length;
+    mapping->_mappedaddr = bufimpl->map(base, mapping->_length, 0);
   }
-  mapping->_mappedaddr = bufimpl->map(base, mapping->_length, 0);
   return mapping;
 }
 
@@ -87,7 +111,13 @@ storagebuffermappingptr_t VkFxInterface::mapStorageBuffer(FxShaderStorageBuffer*
 
 void VkFxInterface::unmapStorageBuffer(FxShaderStorageBufferMapping* mapping) {
   auto bufimpl = mapping->_buffer->_impl.getShared<VulkanBuffer>();
-  bufimpl->unmap();
+  if (not bufimpl->_hostVisible) {
+    bool writes = (mapping->_access == BufferMapAccess::WRITE_ONLY) || (mapping->_access == BufferMapAccess::READ_WRITE);
+    if (writes) bufimpl->copyFromHost(mapping->_mappedaddr, mapping->_length, mapping->_offset);  // flush staging -> device
+    std::free(mapping->_mappedaddr);
+  } else {
+    bufimpl->unmap();
+  }
   mapping->_impl.make<void*>(nullptr);
   mapping->_mappedaddr = nullptr;
 }
@@ -98,12 +128,8 @@ void VkFxInterface::copyBufferIntoStorageBuffer(FxShaderStorageBuffer* ssbo,
                                                 std::vector<uint8_t> buffer,
                                                 size_t dest_offset) {
   auto bufimpl = ssbo->_impl.getShared<VulkanBuffer>();
-  size_t copy_size = buffer.size();
-  OrkAssert((dest_offset + copy_size) <= ssbo->_length);
-
-  auto mapped = bufimpl->map(dest_offset, copy_size, 0);
-  memcpy(mapped, buffer.data(), copy_size);
-  bufimpl->unmap();
+  OrkAssert((dest_offset + buffer.size()) <= ssbo->_length);
+  bufimpl->copyFromHost(buffer.data(), buffer.size(), dest_offset);  // host-or-staged per residency
 }
 
 ///////////////////////////////////////////////////////////////////////////////

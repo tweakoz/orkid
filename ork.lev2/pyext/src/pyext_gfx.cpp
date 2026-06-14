@@ -12,6 +12,7 @@
 #include <ork/lev2/gfx/gfxvtxbuf.inl>
 #include <ork/lev2/gfx/image.h>
 #include <ork/math/cvector4.h>
+#include <ork/python/gil_safe_pyobj.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -33,8 +34,9 @@ void pyinit_gfx(py::module& module_lev2) {
       py::class_<GfxEnv>(module_lev2, "GfxEnv")
           .def_readonly_static("ref", &GfxEnv::GetRef())
           .def_static("loadingContext", [] -> ctx_t { return ctx_t(ork::lev2::contextForCurrentThread()); })
-          .def("hasDeferredOps", [](GfxEnv& e) -> bool { return e.hasDeferredContextOps(); })
-          .def("waitForDeferredOps", [](GfxEnv& e) { e.waitForDeferredContextOps(); })
+          // hasDeferredOps / waitForDeferredOps moved to Context (Phase 6.3
+          // Variant B: per-context deferred queues). Call on the specific
+          // context, e.g. `GfxEnv.loadingContext().hasDeferredOps()`.
           .def("__repr__", [](const GfxEnv& e) -> std::string {
             fxstring<64> fxs;
             fxs.format("GfxEnv(%p)", &e);
@@ -44,6 +46,11 @@ void pyinit_gfx(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto ctx_type = //
       py::class_<ctx_t>(module_lev2, "GfxContext")
+          // bool(ctx) → False when the underlying Context* is null. Lets
+          // headless scripts `assert ctx` early instead of segfaulting on
+          // the first property access (TXI/FBI/etc.) when loadingContext()
+          // is called before the main thread has stood up the loader ctx.
+          .def("__bool__", [](ctx_t& c) -> bool { return c.get() != nullptr; })
           .def("mainSurfaceWidth", [](ctx_t& c) -> int { return c.get()->mainSurfaceWidth(); })
           .def("mainSurfaceHeight", [](ctx_t& c) -> int { return c.get()->mainSurfaceHeight(); })
           .def("setClipboardText", [](ctx_t& c, const std::string& text) {
@@ -57,6 +64,10 @@ void pyinit_gfx(py::module& module_lev2) {
           .def("makeCurrent", [](ctx_t& c) { c.get()->makeCurrentContext(); })
           .def("beginFrame", [](ctx_t& c) { return c.get()->beginFrame(); })
           .def("endFrame", [](ctx_t& c) { return c.get()->endFrame(); })
+          // Per-context deferred-op queue (Phase 6.3 Variant B). Only the
+          // non-blocking query is exposed — a blocking wait from this
+          // context's own thread would deadlock the drain.
+          .def("hasDeferredOps", [](ctx_t& c) -> bool { return c.get()->hasDeferredOps(); })
           .def("debugPushGroup", [](ctx_t& c, cstrref_t str) { return c.get()->debugPushGroup(str); })
           .def("debugPopGroup", [](ctx_t& c) { return c.get()->debugPopGroup(); })
           .def("debugMarker", [](ctx_t& c, cstrref_t str) { return c.get()->debugMarker(str); })
@@ -177,6 +188,15 @@ void pyinit_gfx(py::module& module_lev2) {
               [](storagebuffermappingptr_t m) -> py::bytes {
                 return py::bytes(reinterpret_cast<const char*>(m->_mappedaddr), m->_length);
               })
+          .def( // host write into a WRITE-mapped buffer (`data` returns a COPY, so it can't be assigned through)
+              "writeBytes",
+              [](storagebuffermappingptr_t m, py::bytes data, size_t offset) {
+                std::string s = data;
+                OrkAssert(offset + s.size() <= m->_length);
+                std::memcpy(reinterpret_cast<char*>(m->_mappedaddr) + offset, s.data(), s.size());
+              },
+              py::arg("data"),
+              py::arg("offset") = 0)
           .def("__repr__", [](storagebuffermappingptr_t m) -> std::string {
             fxstring<256> fxs;
             fxs.format("FxShaderStorageBufferMapping(%p, len=%zu)", m.get(), m->_length);
@@ -337,27 +357,22 @@ void pyinit_gfx(py::module& module_lev2) {
             fxs.format("CI(%p)", gbi.get());
             return fxs.c_str();
           })
-#if defined(ENABLE_PYTORCH)
-      .def(
-          "createShaderStorageBufferFromTensor",
-          [](ci_t& ci, torchtensor_ptr_t tensor) -> fxshaderstoragebuffer_ptr_t {
-            return fxshaderstoragebuffer_ptr_t(ci.get()->storageBufferFromTensor(tensor));
-          })
-      .def(
-          "copyTensorIntoShaderStorageBuffer",
-          [](ci_t& ci, torchtensor_ptr_t tensor, fxshaderstoragebuffer_ptr_t buffer, size_t dest_offset) {
-            ci.get()->copyTensorIntoStorageBuffer(buffer.get(), tensor, dest_offset);
-          })
-#endif
       .def("beginDispatchPhase", [](ci_t& ci) {
         ci.get()->beginDispatchPhase();
       })
       .def("endDispatchPhase", [](ci_t& ci) {
         ci.get()->endDispatchPhase();
       })
+      .def("storageBarrier", [](ci_t& ci) {
+        ci.get()->storageBarrier();
+      })
       .def("dispatch", [](ci_t& ci, pyfxcomputeshader_ptr_t csh, uint32_t numx, uint32_t numy, uint32_t numz) {
         ci.get()->dispatchCompute(csh.get(), numx, numy, numz);
       })
+      .def("dispatchIndirect", [](ci_t& ci, pyfxcomputeshader_ptr_t csh, fxshaderstoragebuffer_ptr_t args, size_t args_offset) {
+        // C.3: group counts from a GPU-written VkDispatchIndirectCommand (x,y,z) at args_offset
+        ci.get()->dispatchComputeIndirect(csh.get(), args.get(), args_offset);
+      }, py::arg("shader"), py::arg("args"), py::arg("args_offset") = 0)
       .def("bindStorageBuffer", [](ci_t& ci, pyfxcomputeshader_ptr_t csh, uint32_t binding_index, fxshaderstoragebuffer_ptr_t buffer) {
         ci.get()->bindStorageBuffer(csh.get(), binding_index, buffer.get());
       })
@@ -446,22 +461,119 @@ void pyinit_gfx(py::module& module_lev2) {
           [](const txi_t& the_txi, texturearray_ptr_t array) {                //
             the_txi->updateTextureArray(array.get());
           })
-#if defined(ENABLE_PYTORCH)
-      .def(
-          "initTextureFromTensor",     //
-          [](const txi_t& the_txi,     //
-             texture_ptr_t ptex,       //
-             torchtensor_ptr_t tensor, //
-             crcstring_ptr_t fmt) {    //
-            auto as_efmt = EBufferFormat(fmt->hashed());
-            the_txi->initTextureFromTensor(ptex.get(), tensor, as_efmt);
-          })
-#endif
       .def(
           "applySamplingMode",
           [](const txi_t& the_txi, texture_ptr_t tex) {
             the_txi->ApplySamplingMode(tex.get());
           })
+      //////////////////////////////////////////
+      // Chunked-upload API (see ork/lev2/gfx/txi.h)
+      //////////////////////////////////////////
+      .def(
+          "reserveTexture",
+          [](const txi_t& the_txi,
+             texture_ptr_t tex,
+             int w,
+             int h,
+             int num_mips,
+             crcstring_ptr_t fmt) {
+            auto efmt = EBufferFormat(fmt->hashed());
+            the_txi->reserveTexture(tex.get(), w, h, num_mips, efmt);
+          },
+          py::arg("tex"),
+          py::arg("w"),
+          py::arg("h"),
+          py::arg("num_mips"),
+          py::arg("fmt"))
+      .def(
+          "reserveTextureArray",
+          [](const txi_t& the_txi,
+             texturearray_ptr_t tarr,
+             int w,
+             int h,
+             int num_slices,
+             int num_mips,
+             crcstring_ptr_t fmt) {
+            auto efmt = EBufferFormat(fmt->hashed());
+            the_txi->reserveTextureArray(tarr.get(), w, h, num_slices, num_mips, efmt);
+          },
+          py::arg("tarr"),
+          py::arg("w"),
+          py::arg("h"),
+          py::arg("num_slices"),
+          py::arg("num_mips"),
+          py::arg("fmt"))
+      .def(
+          "uploadTextureRegion",
+          [](const txi_t& the_txi,
+             texture_ptr_t tex,
+             int mip_level,
+             int array_layer,
+             int offset_x,
+             int offset_y,
+             int offset_z,
+             int extent_w,
+             int extent_h,
+             int extent_d,
+             py::bytes data,
+             py::object on_complete) {
+            TextureRegionUpload up;
+            up._mip_level   = mip_level;
+            up._array_layer = array_layer;
+            up._offset_x    = offset_x;
+            up._offset_y    = offset_y;
+            up._offset_z    = offset_z;
+            up._extent_w    = extent_w;
+            up._extent_h    = extent_h;
+            up._extent_d    = extent_d;
+            // py::bytes is a non-owning view of contiguous bytes; the chunked
+            // upload internally copies into a staging buffer before returning,
+            // so it's safe to use the pointer directly here.
+            char*      bptr = nullptr;
+            Py_ssize_t blen = 0;
+            PyBytes_AsStringAndSize(data.ptr(), &bptr, &blen);
+            up._data      = bptr;
+            up._data_size = size_t(blen);
+            ::ork::void_lambda_t cb = nullptr;
+            if (not on_complete.is_none()) {
+              auto safe = ork::python::gil_safe_pyobj(on_complete);
+              cb = [safe]() {
+                py::gil_scoped_acquire gil;
+                auto fn = safe.valueAs<py::object>();
+                if (fn) (*fn)();
+              };
+            }
+            the_txi->uploadTextureRegion(tex.get(), up, cb);
+          },
+          py::arg("tex"),
+          py::arg("mip_level")   = 0,
+          py::arg("array_layer") = 0,
+          py::arg("offset_x")    = 0,
+          py::arg("offset_y")    = 0,
+          py::arg("offset_z")    = 0,
+          py::arg("extent_w"),
+          py::arg("extent_h"),
+          py::arg("extent_d")    = 1,
+          py::arg("data"),
+          py::arg("on_complete") = py::none())
+      .def(
+          "finalizeUpload",
+          [](const txi_t& the_txi,
+             texture_ptr_t tex,
+             py::object on_complete) {
+            ::ork::void_lambda_t cb = nullptr;
+            if (not on_complete.is_none()) {
+              auto safe = ork::python::gil_safe_pyobj(on_complete);
+              cb = [safe]() {
+                py::gil_scoped_acquire gil;
+                auto fn = safe.valueAs<py::object>();
+                if (fn) (*fn)();
+              };
+            }
+            the_txi->finalizeUpload(tex.get(), cb);
+          },
+          py::arg("tex"),
+          py::arg("on_complete") = py::none())
       .def("__repr__", [](const txi_t& txi) -> std::string {
         fxstring<256> fxs;
         fxs.format("TXI(%p)", txi.get());
@@ -689,6 +801,10 @@ void pyinit_gfx(py::module& module_lev2) {
           .def_property_readonly("width", [](texture_ptr_t self) -> int { return int(self->_width); })
           .def_property_readonly("height", [](texture_ptr_t self) -> int { return int(self->_height); })
           .def_property_readonly("update_provider", [](texture_ptr_t self) -> texture_provider_ptr_t { return self->_update_provider; })
+          .def_property(
+              "streaming",
+              [](texture_ptr_t self) -> bool { return self->_streaming; },
+              [](texture_ptr_t self, bool v) { self->_streaming = v; })
           .def_static("load", [](std::string path) -> texture_ptr_t { return Texture::LoadUnManaged(path); })
           .def_static("declare", [](std::string path) -> texture_ptr_t { return nullptr; })
           .def_property(
@@ -710,7 +826,15 @@ void pyinit_gfx(py::module& module_lev2) {
                 tex->TexSamplingMode()._texAddrModeS = parse(s);
                 tex->TexSamplingMode()._texAddrModeT = parse(t);
                 tex->TexSamplingMode()._texAddrModeR = parse(r);
-              });
+              })
+          .def(
+              "setMipRange",
+              [](texture_ptr_t tex, int min_mip, int max_mip) {
+                tex->TexSamplingMode()._minMipLevel = min_mip;
+                tex->TexSamplingMode()._maxMipLevel = max_mip;
+              },
+              py::arg("min_mip"),
+              py::arg("max_mip"));
 
   // using rawtexptr_t = Texture*;
   type_codec->registerStdCodec<texture_ptr_t>(texture_type);
@@ -923,6 +1047,19 @@ void pyinit_gfx(py::module& module_lev2) {
             OrkAssert(slice < texarray->_images.size());
             auto rval = texarray->_images[slice];
             return rval;
+          })
+      .def_property_readonly(
+          "tex",
+          [](texturearray_ptr_t texarray) -> texture_ptr_t { //
+            return texarray->_tex;
+          })
+      .def_property(
+          "streaming",
+          [](texturearray_ptr_t texarray) -> bool {
+            return texarray->_tex ? texarray->_tex->_streaming : false;
+          },
+          [](texturearray_ptr_t texarray, bool v) {
+            if (texarray->_tex) texarray->_tex->_streaming = v;
           })
       .def("__repr__", [](texturearray_ptr_t texarray) -> std::string {
         fxstring<256> fxs;

@@ -137,10 +137,191 @@ def internalize_host_binary(binary_name, target_dir, homebrew_dir="/opt/homebrew
 # Directories to copy from staging (runtime-essential only)
 RUNTIME_DIRS = ["bin", "lib", "pyvenv", "share"]
 
+# For a RUNTIME_DIR that should ship only a subset, list the kept sub-entries
+# (dir / glob / file, relative to the runtime dir). Dirs absent here are copied
+# wholesale. This drops dev-only share/ content (singularity audio banks ~115MB,
+# cmake, doc, man, …) — keep only what the runtime actually needs.
+RUNTIME_DIR_WHITELISTS = {
+    "share": ["ffmpeg", "fonts", "luajit-2.1"],
+}
+
+# Specific lib/ entries (frameworks / SDK blobs) to drop from the deployment —
+# copied wholesale by the lib/ copy but not needed by the shipped runtime.
+LIB_DROP = ["m3api.framework"]
+
+# CPython stdlib entries (relative to lib/python3*/) to drop from BOTH venvs.
+# All are build-time / GUI / test cruft never used by the shipped runtime:
+#   config-*  -> static libpython.a + Makefile (extension-build only; include/
+#                is already excluded, so source builds aren't possible anyway)
+#   test      -> CPython's own ~36MB test suite
+#   idlelib/tkinter/turtle* -> Tk GUI    ensurepip -> pip bootstrap    pydoc_data -> help text
+# (_sysconfigdata_*.py lives at the stdlib top level, so sysconfig still works.)
+STDLIB_PRUNE = ["test", "config-*", "idlelib", "ensurepip", "lib2to3",
+                "pydoc_data", "turtledemo", "turtle.py", "tkinter"]
+
 # Directories to skip (build intermediates, headers, etc.)
 SKIP_DIRS = {"builds", "include", "buildlogs",
              "nanobind", "sdks", "subspaces", "tempdir",
              "doc", "obt-launch-env"}
+
+###############################################################################
+# Deployment slimming helpers
+###############################################################################
+
+def _strip_static_archives(lib_dir):
+  """Remove .a static libraries from a lib directory tree.
+
+  Static archives are link-time only — never dlopen'd at runtime. The staging
+  lib/ carries the full LLVM/openvdb/boost/png/etc. static closure (~400MB)
+  purely as a build byproduct, so it has no place in a deployment.
+
+  Returns (count_removed, bytes_freed).
+  """
+  lib_dir = str(lib_dir)
+  count = 0
+  freed = 0
+  if not os.path.isdir(lib_dir):
+    return count, freed
+  for dirpath, dirnames, filenames in os.walk(lib_dir):
+    for fname in filenames:
+      if not fname.endswith(".a"):
+        continue
+      fpath = os.path.join(dirpath, fname)
+      try:
+        if not os.path.islink(fpath):
+          freed += os.path.getsize(fpath)
+      except OSError:
+        pass
+      try:
+        os.remove(fpath)
+        count += 1
+      except OSError as e:
+        print(deco.val(f"    WARN: could not remove {fpath}: {e}"))
+  return count, freed
+
+def _copy_tree_whitelist(proj_root, proj_target, tree_rel, entries):
+  """Selectively copy only whitelisted entries of a source tree.
+
+  Used to ship a curated subset of a large source tree (e.g. ork.data, where
+  tests/sounds/misc and most of src/ + platform_lev2/textures are dev-only).
+  Only the listed entries are copied — nothing else in the tree is touched, so
+  this is far cheaper than copy-then-prune.
+
+  Each entry is a path relative to tree_rel and may be:
+    - a directory  → copied wholesale (cp -a, structure preserved)
+    - a glob (contains * ? [) → every match copied, relative structure preserved
+    - a file       → copied
+
+  Returns the number of files copied.
+  """
+  import glob as _glob
+  proj_root = path.Path(proj_root)
+  proj_target = path.Path(proj_target)
+  src_root = proj_root / tree_rel
+  dst_root = proj_target / tree_rel
+  n_files = 0
+
+  if not src_root.exists():
+    print(deco.val(f"    Skipping whitelist {tree_rel}/ (source not found)"))
+    return 0
+
+  for entry in entries:
+    is_glob = any(c in entry for c in "*?[")
+    if is_glob:
+      matches = sorted(_glob.glob(str(src_root / entry), recursive=True))
+      if not matches:
+        print(deco.val(f"    WARNING: whitelist glob matched nothing: {tree_rel}/{entry}"))
+    else:
+      cand = str(src_root / entry)
+      if os.path.exists(cand):
+        matches = [cand]
+      else:
+        print(deco.val(f"    WARNING: whitelist entry not found: {tree_rel}/{entry}"))
+        matches = []
+
+    for m in matches:
+      rel = os.path.relpath(m, str(src_root))
+      dst = dst_root / rel
+      dst.parent.mkdir(parents=True, exist_ok=True)
+      if os.path.isdir(m):
+        run(["cp", "-a", m, str(dst)], do_log=False)
+        n_files += sum(len(fs) for _r, _d, fs in os.walk(m))
+      else:
+        shutil.copy2(m, str(dst))
+        n_files += 1
+
+  print(deco.val(f"    Whitelisted {tree_rel}/ ({len(entries)} rules, {n_files} files)"))
+  return n_files
+
+def _prune_pycache(root):
+  """Remove all __pycache__ directories under root.
+
+  Compiled bytecode is regenerated on first import, so shipping it only adds
+  bulk and risks stale .pyc that embed dev-host paths (the sentinel text-fixup
+  skips binaries, so .pyc never get relocated). Safe to drop wholesale.
+
+  Returns (dirs_removed, bytes_freed).
+  """
+  root = str(root)
+  count = 0
+  freed = 0
+  if not os.path.isdir(root):
+    return count, freed
+  to_remove = []
+  for dirpath, dirnames, filenames in os.walk(root):
+    if "__pycache__" in dirnames:
+      to_remove.append(os.path.join(dirpath, "__pycache__"))
+      dirnames.remove("__pycache__")  # don't descend into it
+  for pc in to_remove:
+    for r2, _d2, f2 in os.walk(pc):
+      for fn in f2:
+        try:
+          fp = os.path.join(r2, fn)
+          if not os.path.islink(fp):
+            freed += os.path.getsize(fp)
+        except OSError:
+          pass
+    shutil.rmtree(pc, ignore_errors=True)
+    count += 1
+  return count, freed
+
+def _prune_stdlib(venv_dir):
+  """Drop build-time/GUI/test stdlib (STDLIB_PRUNE) from a venv's lib/python3*/.
+
+  Returns (entries_removed, bytes_freed).
+  """
+  import glob as _glob
+  venv_dir = path.Path(venv_dir)
+  libdir = venv_dir / "lib"
+  removed = 0
+  freed = 0
+  if not libdir.exists():
+    return removed, freed
+  for pydir in sorted(_glob.glob(str(libdir / "python3*"))):
+    if not os.path.isdir(pydir):
+      continue
+    for entry in STDLIB_PRUNE:
+      for m in _glob.glob(os.path.join(pydir, entry)):
+        try:
+          for r2, _d2, f2 in os.walk(m):
+            for fn in f2:
+              fp = os.path.join(r2, fn)
+              if not os.path.islink(fp):
+                try:
+                  freed += os.path.getsize(fp)
+                except OSError:
+                  pass
+        except OSError:
+          pass
+        if os.path.isdir(m) and not os.path.islink(m):
+          shutil.rmtree(m, ignore_errors=True)
+        else:
+          try:
+            os.remove(m)
+          except OSError:
+            pass
+        removed += 1
+  return removed, freed
 
 def phase1_copy(staging_dir, target_dir, force=False):
   """Deep copy staging to target and internalize homebrew dylib closure.
@@ -182,12 +363,17 @@ def phase1_copy(staging_dir, target_dir, force=False):
   for dirname in RUNTIME_DIRS:
     src = staging_dir / dirname
     dst = target_dir / dirname
-    if src.exists():
+    if not src.exists():
+      print(deco.val(f"    Skipping {dirname}/ (not found)"))
+      continue
+    whitelist = RUNTIME_DIR_WHITELISTS.get(dirname)
+    if whitelist is not None:
+      print(deco.val(f"    Copying {dirname}/ (whitelisted subset)..."))
+      _copy_tree_whitelist(staging_dir, target_dir, dirname, whitelist)
+    else:
       print(deco.val(f"    Copying {dirname}/..."))
       # Use cp -a to preserve symlinks and permissions
       run(["cp", "-a", str(src), str(dst)], do_log=False)
-    else:
-      print(deco.val(f"    Skipping {dirname}/ (not found)"))
 
   # assetcache symlink is created at launch time (obt-launch-env)
   # so it points to the actual user's ~/.obt-global/assetcache
@@ -195,6 +381,50 @@ def phase1_copy(staging_dir, target_dir, force=False):
   # Create empty dblockcache directory
   (target_dir / "dblockcache").mkdir(parents=True, exist_ok=True)
   print(deco.val(f"    Created dblockcache/ (empty)"))
+  # NOTE: the on-disk cook caches (dblockcache ~GBs, dflowcache) are NOT copied
+  # from staging — the copy above is a whitelist (RUNTIME_DIRS = bin/lib/pyvenv/
+  # share). They are build-host scratch and regenerate at runtime; dblockcache
+  # is recreated empty here only because the engine expects the dir to exist.
+
+  # ---- Step 2b: Strip static archives (.a) from lib/ ----
+  print(deco.val(f"\n  Step 2b: Stripping static libraries (.a) from lib/..."))
+  _a_count, _a_bytes = _strip_static_archives(target_dir / "lib")
+  print(deco.val(f"    Removed {_a_count} .a files ({_a_bytes // (1024 * 1024)} MB)"))
+
+  # ---- Step 2b2: Drop unwanted lib/ entries (frameworks / SDK blobs) ----
+  print(deco.val(f"\n  Step 2b2: Dropping unwanted lib/ entries..."))
+  for _name in LIB_DROP:
+    _p = target_dir / "lib" / _name
+    if _p.exists():
+      _sz = 0
+      for _r, _d, _f in os.walk(str(_p)):
+        for _fn in _f:
+          try:
+            _fp = os.path.join(_r, _fn)
+            if not os.path.islink(_fp):
+              _sz += os.path.getsize(_fp)
+          except OSError:
+            pass
+      if _p.is_dir() and not _p.is_symlink():
+        shutil.rmtree(str(_p), ignore_errors=True)
+      else:
+        try:
+          _p.unlink()
+        except OSError:
+          pass
+      print(deco.val(f"    Dropped lib/{_name} ({_sz // (1024 * 1024)} MB)"))
+    else:
+      print(deco.val(f"    lib/{_name} not present (skip)"))
+
+  # ---- Step 2c: Prune __pycache__ from the copied tree ----
+  print(deco.val(f"\n  Step 2c: Pruning __pycache__ ..."))
+  _pc_count, _pc_bytes = _prune_pycache(target_dir)
+  print(deco.val(f"    Removed {_pc_count} __pycache__ dirs ({_pc_bytes // (1024 * 1024)} MB)"))
+
+  # ---- Step 2d: Prune build-time/GUI/test stdlib from the private pyvenv ----
+  print(deco.val(f"\n  Step 2d: Pruning stdlib cruft from pyvenv..."))
+  _sl_count, _sl_bytes = _prune_stdlib(target_dir / "pyvenv")
+  print(deco.val(f"    Removed {_sl_count} stdlib entries ({_sl_bytes // (1024 * 1024)} MB)"))
 
   # ---- Step 3: Copy homebrew dylib closure into target/lib/ ----
   print(deco.val(f"\n  Step 3: Internalizing homebrew dylibs..."))
@@ -423,8 +653,6 @@ def create_symlink_farms(target_dir):
   This function creates symlinks in pyvenv/lib/ pointing to dylibs in lib/,
   ensuring those short rpaths work.
 
-  Also handles torch libs for pytorch3d by symlinking into the nearest
-  resolvable directory.
   """
   target_dir = path.Path(target_dir)
   lib_dir = target_dir / "lib"
@@ -446,33 +674,7 @@ def create_symlink_farms(target_dir):
 
   print(deco.val(f"    Created {count} symlinks in pyvenv/lib/ -> lib/"))
 
-  # Handle torch libs for pytorch3d: find torch/lib/ and symlink into
-  # the nearest directory reachable by pytorch3d's rpath
   pyvenv_site = target_dir / "pyvenv"
-  # Discover torch lib dir dynamically
-  torch_lib = None
-  for root, dirs, files in os.walk(str(pyvenv_site)):
-    if os.path.basename(root) == "lib" and "torch" in os.path.dirname(root):
-      # Check if this is the torch/lib/ directory
-      parent = os.path.basename(os.path.dirname(root))
-      if parent == "torch":
-        torch_lib = root
-        break
-
-  if torch_lib:
-    # pytorch3d's rpath @loader_path/../../.. resolves to site-packages/
-    # Symlink torch dylibs into site-packages/ so pytorch3d can find them
-    site_packages = os.path.dirname(os.path.dirname(torch_lib))
-    torch_count = 0
-    for fname in sorted(os.listdir(torch_lib)):
-      if fname.endswith('.dylib'):
-        link_path = os.path.join(site_packages, fname)
-        if not os.path.exists(link_path):
-          rel = os.path.relpath(os.path.join(torch_lib, fname), site_packages)
-          os.symlink(rel, link_path)
-          torch_count += 1
-    if torch_count:
-      print(deco.val(f"    Created {torch_count} symlinks for torch libs"))
 
 ###############################################################################
 # Phase 3: Verification
@@ -561,6 +763,16 @@ def phase4_obt_venv(target_dir, obt_venv_dir, homebrew_dir="/opt/homebrew", depl
   # ---- Step 6: Copy env.common.sh ----
   print(deco.val(f"\n  Step 6: Bundling env.common.sh..."))
   _bundle_env_common(target_dir, deploy_manifests or [])
+
+  # ---- Step 7: Prune __pycache__ from the copied obt_venv ----
+  print(deco.val(f"\n  Step 7: Pruning __pycache__ from obt_venv..."))
+  _pc_count, _pc_bytes = _prune_pycache(target_venv)
+  print(deco.val(f"    Removed {_pc_count} __pycache__ dirs ({_pc_bytes // (1024 * 1024)} MB)"))
+
+  # ---- Step 8: Prune build-time/GUI/test stdlib from obt_venv ----
+  print(deco.val(f"\n  Step 8: Pruning stdlib cruft from obt_venv..."))
+  _sl_count, _sl_bytes = _prune_stdlib(target_venv)
+  print(deco.val(f"    Removed {_sl_count} stdlib entries ({_sl_bytes // (1024 * 1024)} MB)"))
 
   print(deco.val(f"\n  Phase 4 complete."))
   return True
@@ -1032,6 +1244,12 @@ def phase5_projects(target_dir, project_dirs):
       else:
         print(deco.val(f"    Skipping {rel_file} (not found)"))
 
+    # Selectively copy whitelisted subsets of large source trees (e.g. ork.data)
+    for tree_rel, entries in deploy_manifest.get("tree_whitelists", {}).items():
+      _copy_tree_whitelist(proj_root, proj_target, tree_rel, entries)
+      if tree_rel not in copied_dirs:
+        copied_dirs.append(tree_rel)
+
     # Copy deploy_libs into .staging/lib/ and relocate them
     for lib_rel in deploy_manifest.get("deploy_libs", []):
       src = proj_root / lib_rel
@@ -1073,6 +1291,11 @@ def phase5_projects(target_dir, project_dirs):
   with open(str(manifest_path), 'w') as f:
     json.dump({"projects": manifest_entries}, f, indent=2)
   print(deco.val(f"\n  Wrote {manifest_path}"))
+
+  # Prune __pycache__ from all copied project trees
+  print(deco.val(f"\n  Pruning __pycache__ from projects..."))
+  _pc_count, _pc_bytes = _prune_pycache(projects_dir)
+  print(deco.val(f"    Removed {_pc_count} __pycache__ dirs ({_pc_bytes // (1024 * 1024)} MB)"))
 
   print(deco.val(f"\n  Phase 5 complete."))
   return True
@@ -1214,6 +1437,15 @@ if [ ! -e "$DEPLOY_ROOT/assetcache" ]; then
   ln -s "$_GLOBAL_CACHE" "$DEPLOY_ROOT/assetcache"
 fi
 
+# Ensure envmaps bake-cache symlink points to user's global cache.
+# Baked IBL/envmaps are regenerable runtime output — keep them out of the
+# bundle so they never bloat it (same pattern as assetcache).
+_GLOBAL_ENVMAPS="$HOME/.obt-global/envmaps"
+mkdir -p "$_GLOBAL_ENVMAPS"
+if [ ! -e "$DEPLOY_ROOT/envmaps" ]; then
+  ln -s "$_GLOBAL_ENVMAPS" "$DEPLOY_ROOT/envmaps"
+fi
+
 # Source user/machine-specific configuration (audio devices, CDN keys, etc.)
 if [ -f "$DEPLOY_ROOT/obt_config/env.common.sh" ]; then
   source "$DEPLOY_ROOT/obt_config/env.common.sh"
@@ -1346,7 +1578,7 @@ def phase6_launch_script(target_dir):
   build_path_bytes = build_path.encode('utf-8')
   sentinel_bytes = SENTINEL.encode('utf-8')
   manifest_path = target_dir / ".relocatable_files"
-  EXCLUDE_DIRS = {'assetcache'}
+  EXCLUDE_DIRS = {'assetcache', 'envmaps'}
   EXCLUDE_FILES = {'.relocatable_files', '.deploy_path'}
 
   rel_files = []

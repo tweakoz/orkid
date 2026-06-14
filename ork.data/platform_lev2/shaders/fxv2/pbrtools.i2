@@ -7,6 +7,7 @@ import "stdtools.i2";
 import "mathtools.i2";
 import "ssaotools.i2";
 import "envtools.i2";
+import "pbr_lobes.i2";
 ///////////////////////////////////////////////////////////////
 // Uniform Blocks and Sets
 ///////////////////////////////////////////////////////////////
@@ -100,6 +101,10 @@ fragment_interface iface_forward
   }
   outputs {
     layout(location = 0) vec4 out_color;
+    // PBR2 Phase 3 (P3.B) — diffuse irradiance MRT target. P3.B writes
+    // a green sentinel from every fragment shader to verify plumbing;
+    // P3.D (SSSS) replaces the sentinel with real diffuse irradiance.
+    layout(location = 1) vec4 out_diffuse;
   }
 }
 ///////////////////////////////////////////////////////////////
@@ -110,6 +115,7 @@ fragment_interface fif_skeleton {
   }
   outputs {
     layout(location = 0) vec4 out_color;
+    layout(location = 1) vec4 out_diffuse;   // P3.B sentinel
   }
 }
 ///////////////////////////////////////////////////////////////
@@ -220,7 +226,8 @@ vertex_shader vs_forward_skeleton : vif_PNC : ublk_std_matrices {
   gl_Position = mvp * position;
 }
 fragment_shader ps_forward_skeleton : fif_skeleton {
-  out_color = frg_clr;
+  out_color   = frg_clr;
+  out_diffuse = vec4(0, 0, 0, 0);   // P3.D — non-PBR pass; no diffuse contribution, no SSSS mask
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_vtxcolor : iface_fgbuffer : lib_pbr_frg {
@@ -229,7 +236,8 @@ fragment_shader ps_gbuffer_vtxcolor : iface_fgbuffer : lib_pbr_frg {
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_forward_frgcolor : iface_forward {
-  out_color = frg_clr;
+  out_color   = frg_clr;
+  out_diffuse = vec4(0, 0, 0, 0);   // P3.D — non-PBR pass; no diffuse contribution, no SSSS mask
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_rigid_gbuffer_font : vif_PNBT : lib_pbr_vtx : ublk_std_matrices {
@@ -321,6 +329,17 @@ vertex_shader vs_forward_depthprepass_skinned_mono //
   gl_Position  = hpos;
   frg_depth = (hpos.z) / (hpos.w);
 }
+// instanced depth-prepass: same depth math as the color pass's instanced VS
+// (mvp * instancemtx * position) so the prepass z matches and nothing z-fights.
+vertex_shader vs_forward_depthprepass_instanced_mono //
+  : vif_DPP                                          //
+  : storage_instancing                               //
+  : ublk_std_matrices {                              //
+  mat4 instancemtx = _instance_matrices[gl_InstanceIndex];
+  vec4 hpos    = mvp * (instancemtx * position);
+  gl_Position  = hpos;
+  frg_depth =  (hpos.z/hpos.w);
+}
 fragment_shader ps_forward_depthprepass_mono // 
   : fif_DPP { //
   //gl_FragDepth = frg_depth;
@@ -359,6 +378,7 @@ fragment_interface fif_FWDTEST
   : ss_frg_fwd {
   outputs {
     layout(location = 0) vec4 out_color;
+    layout(location = 1) vec4 out_diffuse;   // P3.B sentinel
   }
 }
 ///////////////////////////////////////////////////////////////
@@ -396,11 +416,12 @@ vertex_interface vif_FWDTESTVC : ub_std_vtx {
 }
 fragment_interface fif_FWDTESTVC
   : vif_FWDTESTVC
-  : ub_frg_fwd 
-  : storage_fwd_lighting 
+  : ub_frg_fwd
+  : storage_fwd_lighting
   : ss_frg_fwd {
   outputs {
     layout(location = 0) vec4 out_color;
+    layout(location = 1) vec4 out_diffuse;   // P3.B sentinel
   }
 }
 vertex_shader vs_forward_test_vtxcol 
@@ -424,7 +445,11 @@ fragment_shader ps_forward_test_vtxcol //
     : lib_def                   //
     : lib_fwd
     : std_forward_all {
-  out_color = vec4(forward_lighting_ntex(frg_clr.xyz) * ModColor.rgb, frg_clr.a * ModColor.a);
+  ShadingResult sr = forward_lighting_ntex(frg_clr.xyz);
+  out_color   = vec4((sr.specular + sr.diffuse) * ModColor.rgb, frg_clr.a * ModColor.a);
+  // P3.D — target1.alpha carries the SSSS mask (factor when has_subsurface).
+  float sss_mask = (has_subsurface != 0) ? subsurface_factor : 0.0;
+  out_diffuse = vec4(sr.diffuse * ModColor.rgb, sss_mask);
 }
 //////////////////////////////////////
 fragment_shader ps_forward_test_vtxcol_alpha //
@@ -434,11 +459,17 @@ fragment_shader ps_forward_test_vtxcol_alpha //
     : lib_def                   //
     : lib_fwd
     : std_forward_all {
-  vec3 lit = forward_lighting_ntex(frg_clr.xyz) * ModColor.rgb;
+  ShadingResult sr = forward_lighting_ntex(frg_clr.xyz);
+  vec3 lit_spec = sr.specular * ModColor.rgb;
+  vec3 lit_diff = sr.diffuse  * ModColor.rgb;
+  vec3 lit      = lit_spec + lit_diff;
   float vtx_alpha = frg_clr.a;
   float lum = dot(lit, vec3(0.2126, 0.7152, 0.0722));
   float boosted = clamp(vtx_alpha + lum * (1.0 - vtx_alpha), vtx_alpha, 1.0);
-  out_color = vec4(lit, boosted * ModColor.a);
+  out_color   = vec4(lit, boosted * ModColor.a);
+  // P3.D — SSSS mask in alpha.
+  float sss_mask = (has_subsurface != 0) ? subsurface_factor : 0.0;
+  out_diffuse = vec4(lit_diff, sss_mask);
 }
 //////////////////////////////////////
 fragment_shader ps_forward_instanced_vtxcol_alpha //
@@ -448,8 +479,12 @@ fragment_shader ps_forward_instanced_vtxcol_alpha //
     : lib_def                   //
     : lib_fwd
     : std_forward_all {
-  vec3 lit = forward_lighting_ntex(frg_clr.xyz);
-  out_color = vec4(lit, frg_clr.a);
+  ShadingResult sr = forward_lighting_ntex(frg_clr.xyz);
+  vec3 lit    = sr.specular + sr.diffuse;
+  out_color   = vec4(lit, frg_clr.a);
+  // P3.D — SSSS mask in alpha.
+  float sss_mask = (has_subsurface != 0) ? subsurface_factor : 0.0;
+  out_diffuse = vec4(sr.diffuse, sss_mask);
 }
 //////////////////////////////////////
 fragment_shader ps_forward_test //
@@ -459,10 +494,13 @@ fragment_shader ps_forward_test //
     : lib_def                   //
     : lib_fwd
     : std_forward_all {
-  vec4 lit = forward_lighting_mono_alpha(frg_clr.xyz*ModColor.xyz);
-  if (AlphaCutoff > 0.0 && lit.a < AlphaCutoff)
+  ForwardAlphaResult far = forward_lighting_mono_alpha(frg_clr.xyz*ModColor.xyz);
+  if (AlphaCutoff > 0.0 && far.alpha < AlphaCutoff)
     discard;
-  out_color = vec4(lit.rgb, 1.0);
+  out_color   = vec4(far.lit.specular + far.lit.diffuse, 1.0);
+  // P3.D — SSSS mask in alpha.
+  float sss_mask = (has_subsurface != 0) ? subsurface_factor : 0.0;
+  out_diffuse = vec4(far.lit.diffuse, sss_mask);
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_forward_instanced
@@ -482,6 +520,18 @@ vertex_shader vs_forward_instanced_vc
   mat4 instancemtx = _instance_matrices[gl_InstanceIndex];
   vec4 instanced_pos = instancemtx * position;
   vs_instanced_vc(position, normal, binormal, vtxcolor);
+  gl_Position = mvp * instanced_pos;
+}
+///////////////////////////////////////////////////////////////
+// MATRICES-ONLY instanced VS: matrices from the dynamic storage_inst_mtx block, no per-instance
+// colors. Pairs with the shared forward fragment (ps_forward_test).
+vertex_shader vs_forward_instanced_mtxonly
+  : vif_FWDTEST
+  : storage_inst_mtx
+  : lib_pbr_vtx_instanced_mtxonly {
+  mat4 instancemtx = _instance_matrices[gl_InstanceIndex];
+  vec4 instanced_pos = instancemtx * position;
+  vs_instanced_mtxonly(position, normal, binormal);
   gl_Position = mvp * instanced_pos;
 }
 ///////////////////////////////////////////////////////////////
@@ -509,10 +559,13 @@ fragment_shader ps_forward_test_fragcolor //
     : lib_def                   //
     : lib_fwd
     : std_forward_all {                 //
-  vec4 lit = forward_lighting_mono_alpha(frg_clr.xyz*ModColor.xyz);
-  if (AlphaCutoff > 0.0 && lit.a < AlphaCutoff)
+  ForwardAlphaResult far = forward_lighting_mono_alpha(frg_clr.xyz*ModColor.xyz);
+  if (AlphaCutoff > 0.0 && far.alpha < AlphaCutoff)
     discard;
-  out_color = lit;
+  out_color   = vec4(far.lit.specular + far.lit.diffuse, far.alpha);
+  // P3.D — SSSS mask in alpha.
+  float sss_mask = (has_subsurface != 0) ? subsurface_factor : 0.0;
+  out_diffuse = vec4(far.lit.diffuse, sss_mask);
 }
 
 ///////////////////////////////////////////////////////////////
@@ -523,14 +576,15 @@ vertex_shader vs_forward_skybox_mono : vif_PC {
   frg_clr     = position;
 }
 ///////////////////////////////////////////////////////////////
-libblock std_forward_all 
+libblock std_forward_all
     : ublk_std_lighting
     : uset_std_viewport
-    : ublk_std_pbr 
+    : ublk_std_pbr
     : ublk_std_matrices
-    : sset_std_lighting 
+    : sset_std_lighting
     : sset_std_pbr
     : sset_std_ssao
+    : lib_pbr_lobes_all  // PBR2 Phase 1 — 8 glTF KHR lobe stubs (no-op default)
   {
   }
 ///////////////////////////////////////////////////////////////
@@ -566,7 +620,8 @@ fragment_shader ps_forward_skybox_mono //
   vec2 uv = env_equirectangularN2UVa(VN_transformed);
   vec3 rgb  = textureLod(MapSpecularEnv, vec3(uv.x, 1.0-uv.y,0.0),0).xyz * SkyboxLevel;
 
-  out_clr = vec4(rgb, 1);
+  out_clr     = vec4(rgb, 1);
+  out_diffuse = vec4(0, 0, 0, 0);   // P3.D — non-PBR pass; no diffuse contribution, no SSSS mask
 
   ///////////////////////
 }
@@ -578,7 +633,8 @@ vertex_shader vs_forward_unlit : vif_PNBT : ublk_std_matrices {
 fragment_shader ps_forward_unlit : iface_forward : sset_std_pbr : ublk_std_pbr {
   vec3 rgb = texture(CNMREA, vec3(frg_uv0,0)).xyz;
   rgb *= ModColor.xyz;
-  out_color = vec4(ModColor.xyz, 1);
+  out_color   = vec4(ModColor.xyz, 1);
+  out_diffuse = vec4(0, 0, 0, 0);   // P3.D — non-PBR pass; no diffuse contribution, no SSSS mask
 }
 ///////////////////////////////////////////////////////////////
 // picking
@@ -709,3 +765,4 @@ vertex_shader vs_pick_skeleton : iface_vtx_pick_skeleton : ublk_std_matrices {
   frg_pickSUBID = pickSUBID;  // Pass bone ID from vertex data
 }
 ///////////////////////////////////////////////////////////////
+// cache-probe 1781278411

@@ -225,7 +225,7 @@ class SwiftFigmaDesign(FigmaDesign):
         for spec in self._screens.values():
             if spec["title"]:
                 return spec["title"]
-        return "Impossible Downloader"
+        return "Downloader"
 
     @property
     def screen_names(self):

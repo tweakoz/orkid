@@ -169,6 +169,17 @@ struct BulletShapeBaseInst {
   svar16_t _impl;
 };
 
+// a shape factory may expand into MANY broadphase entries instead of one compound
+// (per-item static bodies sharing per-type base shapes — bullet's many-instances
+// idiom: small per-body AABBs let broadphase cull, where a single scene-spanning
+// compound forces midphase work onto every query). The factory parks them here
+// (inst->_impl); the system removes + deletes them at component deactivate.
+struct ShapeBatchBodies {
+  std::vector<btRigidBody*> _bodies;
+  std::vector<btCollisionShape*> _ownedShapes; // per-item wrappers + shared bases
+};
+using shapebatch_ptr_t = std::shared_ptr<ShapeBatchBodies>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 class OrkContactResultCallback : public btCollisionWorld::ContactResultCallback {
@@ -178,6 +189,14 @@ public:
     script_cb_t _onContact;
 
     OrkContactResultCallback(btRigidBody* body);
+
+    // build + enqueue the contact payload for a manifold point. Called from the
+    // per-update MANIFOLD SCAN (stepSimulation's persistent manifolds — O(actual
+    // contacts), independent of shape complexity). contactTest is NOT used for
+    // monitoring: against a btCompoundShape it constructs a collision algorithm
+    // per call, which PREALLOCATES a child algorithm PER CHILD — per-tick cost
+    // proportional to scatter density (the observed slowdown).
+    void emitContact(const btManifoldPoint& cp, const btCollisionObject* obj0, const btCollisionObject* obj1);
 
     btScalar addSingleResult(btManifoldPoint& cp,
                              const btCollisionObjectWrapper* colObj0Wrap,
@@ -277,11 +296,13 @@ public:
   btBroadphaseInterface* mBroadPhase;
   btCollisionDispatcher* mDispatcher;
   btSequentialImpulseConstraintSolver* mSolver;
+  btOverlapFilterCallback* _overlapFilter = nullptr;
   const BulletSystemData& _systemData;
   std::string _dbgdrawlayername;
   lev2::DrawQueueTransferData _dbgdrawXF;
   PhysicsDebugger* _debugger = nullptr;
   int mMaxSubSteps;
+  System* _pysys = nullptr; // the scene's PythonSystem, resolved once in _onLink (may be null)
   int mNumSubStepsTaken;
   float mfAvgDtAcc;
   float mfAvgDtCtr;

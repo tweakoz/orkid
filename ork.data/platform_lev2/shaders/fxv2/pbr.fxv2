@@ -76,6 +76,12 @@ technique FWD_CT_NM_RI_IN_MO {
 	vf_pass={vs_forward_instanced,ps_forward_test,sb_default}
 }
 ///////////////////////////////////////////////////////////////
+// matrices-only instanced (dynamic storage_inst_mtx block; no per-instance color)
+technique FWD_CT_NM_IM_NI_MO {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_instanced_mtxonly,ps_forward_test,sb_default}
+}
+///////////////////////////////////////////////////////////////
 technique FWD_CV_NM_RI_IN_MO {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_forward_instanced_vc,ps_forward_test_vtxcol,sb_cullcw}
@@ -105,6 +111,11 @@ technique FWD_DEPTHPREPASS_RI_NI_MO {
 technique FWD_DEPTHPREPASS_SK_NI_MO {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_forward_depthprepass_skinned_mono,ps_forward_depthprepass_mono,sb_dpp}
+}
+///////////////////////////////////////////////////////////////
+technique FWD_DEPTHPREPASS_RI_IN_MO {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_depthprepass_instanced_mono,ps_forward_depthprepass_mono,sb_dpp}
 }
 ///////////////////////////////////////////////////////////////
 technique GBU_CT_VN_RI_NI_MO {

@@ -9,7 +9,7 @@ if __name__ == "__main__":
   args = dh.DebugArgParser()
   env_vars = dh.orkid_debug_env_vars()
   env_vars["DYLD_FALLBACK_LIBRARY_PATH"] = str(path.libs())
-  env_vars["DYLD_LIBRARY_PATH"] = str(path.libs())+":/opt/homebrew/lib"
+  env_vars["DYLD_LIBRARY_PATH"] = str(path.libs())
   env_vars["MVK_CONFIG_LOG_LEVEL"] = "1"
   env_vars["MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS"] = "1"
   env_vars["ORKID_VULKAN_VALIDATE"] = "0"

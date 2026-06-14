@@ -221,7 +221,8 @@ static texture_ptr_t _getbrdfintmap(Context* targ, std::string typname, uint64_t
       tid._data        = dblock->data();
       ctx->TXI()->initTextureFromData(_map.get(), tid);
   };
-  GfxEnv::GetRef().enqueueDeferredContextOp(enq_op);
+  // Deferred-init queued onto the requesting context (Phase 6.3 Variant B).
+  targ->enqueueDeferredOp(enq_op);
   lev2::GfxEnv::releaseLock(LOCK);
   return _map;
 }
@@ -231,17 +232,30 @@ static texture_ptr_t _getbrdfintmap(Context* targ, std::string typname, uint64_t
 texture_ptr_t PBRMaterial::brdfIntegrationMap(Context* targ,std::string type) {
   uint64_t type_hash = CrcString(type.c_str()).hashed();
 
-  static std::unordered_map<uint64_t,texture_ptr_t> _maps;
+  // Process-wide cache. Phase 6.3 made this callable from the loader
+  // thread (XIR brdfSetOp) while the render thread may also call it for
+  // its own materials; pre-6.3 only the render thread touched it.
+  // unordered_map::find/insert are NOT thread-safe, so concurrent calls
+  // corrupted the internal node graph → control-block-double-free crash
+  // observed in shared_ptr<Texture>::~shared_ptr inside operator=.
+  // LockedResource<T> wraps the cache in orkid's idiomatic atomicOp
+  // mutex pattern. _getbrdfintmap returns quickly (it enqueues the
+  // heavy GPU compute to the target ctx's deferred queue and returns
+  // the Texture handle), so holding the lock around it is fine.
+  using texmap_t = std::unordered_map<uint64_t, texture_ptr_t>;
+  static LockedResource<texmap_t> _maps;
 
-  auto it = _maps.find(type_hash);
-  if( it != _maps.end() ){
-    return it->second;
-  }
-  else{
-    auto new_tex = _getbrdfintmap(targ,type,type_hash);
-    _maps[type_hash] = new_tex;
-    return new_tex;
-  }
+  texture_ptr_t result;
+  _maps.atomicOp([&](texmap_t& m) {
+    auto it = m.find(type_hash);
+    if (it != m.end()) {
+      result = it->second;
+    } else {
+      result = _getbrdfintmap(targ, type, type_hash);
+      m[type_hash] = result;
+    }
+  });
+  return result;
 }
 
 /////////////////////////////////////////////////////////////////////////

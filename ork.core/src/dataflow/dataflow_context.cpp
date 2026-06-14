@@ -137,24 +137,24 @@ orkvector<DgRegister*> dgcontext::prune(dgmoduledata_ptr_t pmod) { // we are don
 }
 //////////////////////////////////////////////////////////
 DgRegister* dgcontext::alloc(outplugdata_ptr_t poutplug) {
-  const std::type_info* tinfo = &poutplug->GetDataTypeId();
-  auto itc                    = _registerSets.find(tinfo);
+  std::type_index key(poutplug->GetDataTypeId());
+  auto itc = _registerSets.find(key);
   if (itc != _registerSets.end()) {
     dgregisterblock_ptr_t regs = itc->second;
-    DgRegister* preg      = regs->Alloc();
-    preg->_plug = poutplug;
+    DgRegister* preg           = regs->Alloc();
+    preg->_plug                = poutplug;
     return preg;
   }
   return nullptr;
 }
 //////////////////////////////////////////////////////////
 void dgcontext::_setRegisters(const std::type_info* pinfo, dgregisterblock_ptr_t pregs) {
-  _registerSets[pinfo] = pregs;
+  _registerSets[std::type_index(*pinfo)] = pregs;
 }
 //////////////////////////////////////////////////////////
 dgregisterblock_ptr_t dgcontext::registers(const std::type_info* pinfo) {
-  auto it = _registerSets.find(pinfo);
-  return (it == _registerSets.end()) ? 0 : it->second;
+  auto it = _registerSets.find(std::type_index(*pinfo));
+  return (it == _registerSets.end()) ? nullptr : it->second;
 }
 //////////////////////////////////////////////////////////
 void dgcontext::Clear() {

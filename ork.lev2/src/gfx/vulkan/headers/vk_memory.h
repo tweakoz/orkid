@@ -37,12 +37,16 @@ struct VulkanMemoryForBuffer {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VulkanBuffer {
-  VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsageFlags usage, std::string name = "");
+  // memprops default = the historical HOST_VISIBLE|HOST_COHERENT (directly mappable). Pass
+  // VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT for a GPU-resident buffer — then map/copy route through the
+  // context's _syncTransfer staging (host can't map device-local memory).
+  VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsageFlags usage, std::string name = "",
+               VkMemoryPropertyFlags memprops = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
   ~VulkanBuffer();
 
-  void copyFromHost(const void* src, size_t length);
-  void copyToHost(void* dst, size_t length);
-  void* map(size_t offset, size_t length, VkMemoryMapFlags flags);
+  void copyFromHost(const void* src, size_t length, size_t dstOffset = 0);  // host -> this (staged if device-local)
+  void copyToHost(void* dst, size_t length, size_t srcOffset = 0);          // this -> host (staged if device-local)
+  void* map(size_t offset, size_t length, VkMemoryMapFlags flags);          // host-visible only
   void unmap();
 
   vkcontext_rawptr_t _ctxVK;
@@ -51,6 +55,7 @@ struct VulkanBuffer {
   VkBufferCreateInfo _cinfo;
   VkBuffer _vkbuffer = VK_NULL_HANDLE;
   vkmemforbuf_ptr_t _memory;
+  bool _hostVisible = true;   // false = device-local (map/copy go through staging)
 
   static std::atomic<int> _buffercount;
   static std::atomic<size_t> _bufferbytes;

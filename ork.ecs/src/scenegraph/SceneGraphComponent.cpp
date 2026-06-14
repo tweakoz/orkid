@@ -42,6 +42,11 @@ NodeDef::NodeDef(){
 void SceneGraphNodeItemData::describeX(object::ObjectClass* clazz) {
   clazz->directProperty("NodeName", &SceneGraphNodeItemData::_nodename);
   clazz->directProperty("LayerName", &SceneGraphNodeItemData::_layername);
+  // layers=[...] declarations live here, NOT in LayerName — without this the
+  // deserialized node fell to the unrendered sg_default layer (invisible).
+  clazz->directVectorProperty("MultiLayers", &SceneGraphNodeItemData::_multilayers);
+  clazz->directProperty("DrawableAssetName", &SceneGraphNodeItemData::_drawable_asset_name);
+  clazz->directProperty("EnvmapPath",        &SceneGraphNodeItemData::_envmap_path);
   clazz->directObjectProperty("DrawableData", &SceneGraphNodeItemData::_drawabledata)
       ->annotate<ConstString>("editor.factorylistbase", "DrawableData");
 }
@@ -49,6 +54,7 @@ void SceneGraphNodeItemData::describeX(object::ObjectClass* clazz) {
 void SceneGraphComponentData::describeX(ComponentDataClass* clazz) {
   clazz->directObjectMapProperty("NodeDatas", &SceneGraphComponentData::_nodedatas)
       ->annotate<ConstString>("editor.factorylistbase", "SceneGraphNodeItemData");
+  clazz->directProperty("InstanceNodeName", &SceneGraphComponentData::_instanceNodeName);
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -62,6 +68,8 @@ void SceneGraphComponentData::declareNodeOnLayer( nodedef_ptr_t ndef ) {
   auto nid                  = std::make_shared<SceneGraphNodeItemData>();
   nid->_nodename            = ndef->_nodename;
   nid->_drawabledata        = ndef->_drawabledata;
+  nid->_drawable_asset_name = ndef->_drawable_asset_name;
+  nid->_envmap_path         = ndef->_envmap_path;
   nid->_layername           = ndef->_layername;
   nid->_multilayers         = ndef->_multilayers;
   nid->_xfoverride          = ndef->_transform;

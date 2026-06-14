@@ -383,6 +383,7 @@ void Image::downsample(Image& imgout) const {
               }
               break;
             }
+            case R32F:
             case RGBA32F:
             case RGB32F: {
               auto outpixel = imgout.pixel32f(x, y);

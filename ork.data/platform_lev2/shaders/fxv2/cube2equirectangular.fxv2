@@ -29,9 +29,14 @@ vertex_shader vs_c2e : vif_PT {
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_c2e : fface_c2e {
-  // Match envtools.i2 env_equirectangularUV2N convention
+  // Match envtools.i2 env_equirectangularUV2N convention.
+  // DWI->fullscreenQuad() (called from lightprobe.cpp) applies the
+  // convention-aware UV flip when needed, so frg_uv0.y is already in
+  // the logical top-left frame: y=0 at top → theta=0 = north pole.
+  // FlipY uniform remains in the block for ABI compat with any caller
+  // still binding it.
   float phi   = frg_uv0.x * PI2 - PI;  // longitude: -PI to PI
-  float v     = (FlipY == 1) ? (1.0 - frg_uv0.y) : frg_uv0.y;
+  float v     = frg_uv0.y;
   float theta = v * PI;                // co-latitude: 0 (north) to PI (south)
 
   // sphericalToNormal (Z-up spherical)

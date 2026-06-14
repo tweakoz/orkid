@@ -38,9 +38,12 @@ extern appinitdata_ptr_t _ginitdata;
 static logchannel_ptr_t logchan_glfw = logger()->configureChannel("GLFW", fvec3(0.8, 0.2, 0.6), true);
 void setAlwaysOnTop(GLFWwindow* window);
 void recomputeHIDPI(GLFWwindow* window);
-void windowToFront(GLFWwindow* window);
+void windowToFront(GLFWwindow* window, bool keep_on_top = false);
 void activateWindow(GLFWwindow *window);
 void enableFocusFollowsMouse(GLFWwindow* window);
+#ifdef __APPLE__
+void setApplicationName(const std::string& name);
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 static CtxGLFW* _gctx = nullptr;
@@ -499,7 +502,7 @@ void CtxGLFW::Show() {
 
     auto global = globalOffscreenContext();
 
-    logchan_glfw->log("glfwCreateWindow _width<%d> _height<%d>", _width, _height);
+    //logchan_glfw->log("glfwCreateWindow _width<%d> _height<%d>", _width, _height);
 
     // Set window hints for offscreen mode to prevent focus stealing
     if (_appinitdata->_offscreen) {
@@ -673,7 +676,14 @@ void CtxGLFW::Show() {
   glfwPollEvents();
 #ifdef __APPLE__
   if (not _appinitdata->_offscreen) {
-    windowToFront(_glfwWindow);
+    // Set the macOS application (menu-bar / Dock / Cmd-Tab) name. This is the
+    // NSApplication name, distinct from the GLFW window title — the title bar is
+    // absent in fullscreen (borderless), so the menu bar is the only place the
+    // name shows there.
+    if (not _appinitdata->_application_name.empty()) {
+      setApplicationName(_appinitdata->_application_name);
+    }
+    windowToFront(_glfwWindow, _appinitdata->_canalwaysontop);
     activateWindow(_glfwWindow);
     enableFocusFollowsMouse(_glfwWindow);
   }
@@ -907,7 +917,7 @@ GLFWwindow* CtxGLFW::_apiInitVK() {
       "",      //
       nullptr, //
       nullptr);
-  logchan_glfw->log("VK: offscreen_window<%p>", offscreen_window);
+  //logchan_glfw->log("VK: offscreen_window<%p>", offscreen_window);
   // Reset hints for future windows
   glfwWindowHint(GLFW_FOCUSED, GLFW_TRUE);
   glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
@@ -955,7 +965,7 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
           auto procAddr = (PFN_vkGetInstanceProcAddr)dlsym(h, "vkGetInstanceProcAddr");
           if (procAddr) {
             glfwInitVulkanLoader(procAddr);
-            logchan_glfw->log("Initialized GLFW Vulkan loader from: %s", vk_path.c_str());
+            //logchan_glfw->log("Initialized GLFW Vulkan loader from: %s", vk_path.c_str());
           } else {
             logchan_glfw->log("WARNING: dlsym vkGetInstanceProcAddr failed: %s", dlerror());
           }

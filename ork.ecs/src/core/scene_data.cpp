@@ -330,11 +330,11 @@ void SceneData::prepareForSimulation() {
   // stack prefixes. Empty _node_prefix → skip entirely (no-op for
   // single-scene hosts that don't need namespacing).
   //////////////////////////////
-  printf("[SGS prepareForSimulation] this=%p _node_prefix='%s' "
+  if(0)printf("[SGS prepareForSimulation] this=%p _node_prefix='%s' "
          "systemDatas=%zu sceneObjects=%zu\n",
          (void*)this, _node_prefix.c_str(),
          _systemDatas.size(), _sceneObjects.size());
-  fflush(stdout);
+  //fflush(stdout);
   if (!_node_prefix.empty()) {
     auto& prefix = _node_prefix;
     auto maybe_prefix = [&prefix](std::string& n) {
@@ -345,15 +345,15 @@ void SceneData::prepareForSimulation() {
     // SystemData-level NIDs (SceneGraphSystemData::_nodedatas)
     for (auto& sd_item : _systemDatas) {
       auto as_sgs = std::dynamic_pointer_cast<SceneGraphSystemData>(sd_item.second);
-      printf("[SGS prepareForSimulation sysdata] key=%s as_sgs=%p\n",
+      if(0)printf("[SGS prepareForSimulation sysdata] key=%s as_sgs=%p\n",
              sd_item.first.c_str(), (void*)as_sgs.get());
       if (as_sgs) {
         for (auto& nid_item : as_sgs->_nodedatas) {
           if (nid_item.second) {
-            printf("[SGS prepareForSimulation sgs-NID] before=%s\n",
+            if(0)printf("[SGS prepareForSimulation sgs-NID] before=%s\n",
                    nid_item.second->_nodename.c_str());
             maybe_prefix(nid_item.second->_nodename);
-            printf("[SGS prepareForSimulation sgs-NID] after =%s\n",
+            if(0)printf("[SGS prepareForSimulation sgs-NID] after =%s\n",
                    nid_item.second->_nodename.c_str());
           }
         }
@@ -362,23 +362,23 @@ void SceneData::prepareForSimulation() {
     // Archetype SGC-component NIDs
     for (auto& so_item : _sceneObjects) {
       auto as_arch = std::dynamic_pointer_cast<Archetype>(so_item.second);
-      printf("[SGS prepareForSimulation sceneobj] key=%s is_arch=%d\n",
+      if(0)printf("[SGS prepareForSimulation sceneobj] key=%s is_arch=%d\n",
              so_item.first.c_str(), as_arch ? 1 : 0);
       if (!as_arch) continue;
-      printf("[SGS prepareForSimulation arch] archetype has %zu component datas\n",
+      if(0)printf("[SGS prepareForSimulation arch] archetype has %zu component datas\n",
              as_arch->mComponentDatas.size());
       for (auto& cd_item : as_arch->mComponentDatas) {
         auto cd = std::const_pointer_cast<ComponentData>(cd_item.second);
         auto as_sgc = std::dynamic_pointer_cast<SceneGraphComponentData>(cd);
-        printf("[SGS prepareForSimulation comp] cd=%p as_sgc=%p\n",
+        if(0)printf("[SGS prepareForSimulation comp] cd=%p as_sgc=%p\n",
                (void*)cd.get(), (void*)as_sgc.get());
         if (as_sgc) {
           for (auto& nid_item : as_sgc->_nodedatas) {
             if (nid_item.second) {
-              printf("[SGS prepareForSimulation arch-NID] before=%s\n",
+              if(0)printf("[SGS prepareForSimulation arch-NID] before=%s\n",
                      nid_item.second->_nodename.c_str());
               maybe_prefix(nid_item.second->_nodename);
-              printf("[SGS prepareForSimulation arch-NID] after =%s\n",
+              if(0)printf("[SGS prepareForSimulation arch-NID] after =%s\n",
                      nid_item.second->_nodename.c_str());
             }
           }
@@ -454,6 +454,17 @@ varmap::varmap_ptr_t SceneData::generateSceneGraphParams() const {
   params->makeValueForKey<float>("SpecularIntensity") = 1.0f;
   params->makeValueForKey<fvec3>("AmbientLevel") = fvec3(1.0f, 1.0f, 1.0f);
   params->makeValueForKey<std::string>("SkyboxTexPathStr") = "nebula";
+  // Overlay any author-set values from SceneGraphSystemData::_userParams
+  // on top of the hardcoded defaults — matches the _onLink merge order
+  // (defaults first, _userParams wins). Lets DSL kwargs like
+  // self.scenegraph(skybox_path=...) actually reach the live scenegraph.
+  for (auto& kv : _systemDatas) {
+    auto sgsd = std::dynamic_pointer_cast<SceneGraphSystemData>(kv.second);
+    if (!sgsd) continue;
+    for (auto item : sgsd->_userParams) {
+      params->setValueForKey(item.first, item.second);
+    }
+  }
   return params;
 }
 ///////////////////////////////////////////////////////////////////////////////

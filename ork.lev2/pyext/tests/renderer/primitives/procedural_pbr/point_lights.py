@@ -63,7 +63,8 @@ class PointLightsApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = lev2.OrkEzApp.create(self, width=1280, height=720)
+    self.ezapp = lev2.OrkEzApp.create(self, width=1280, height=720,
+                                      use_subsystems=["opq", "core", "gpu", "lev2"])
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     setupUiCamera(app=self, eye=vec3(0, 4, 10), tgt=vec3(0, 1, 0))
     signal.signal(signal.SIGINT, lambda s, f: self.ezapp.signalExit())
@@ -143,7 +144,7 @@ class PointLightsApp(object):
       light = lev2.DynamicPointLight()
       light.data.color = color
       light.data.intensity = 8.0
-      light.data.radius = 15.0
+      light.data.radius = 1.5
       light_node = self.layer1.createLightNode(f"light_{name}", light)
 
       orb_color = (min(color.x, 1.0), min(color.y, 1.0), min(color.z, 1.0))

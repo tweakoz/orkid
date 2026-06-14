@@ -50,14 +50,19 @@ void ForwardPbrNodeImpl::init(lev2::Context* context, int iw, int ih) {
 
     auto pbrcommon = _node->_pbrcommon;
 
-    EBufferFormat efmt = EBufferFormat::RGBA8;
-    if (pbrcommon->_useFloatColorBuffer) {
-      efmt = EBufferFormat::RGBA32F;
-    }
+    // P3.D DEBUG: hard-coded RGBA32F to isolate banding cause.
+    // Ignores _useFloatColorBuffer flag. Revert after diagnosis.
+    EBufferFormat efmt = EBufferFormat::RGBA32F;
+    (void)pbrcommon;
 
     auto e_msaa = intToMsaaEnum(_ginitdata->_msaa_samples);
     _rtgs_primary  = std::make_shared<RtgSet>(context, iw, ih, e_msaa, "rtgs-main", "color"_crcu);
     _rtgs_primary->addBuffer("ForwardRt0", efmt);
+    // PBR2 Phase 3 (P3.B) — second MRT attachment for diffuse irradiance.
+    // Every forward-pass fragment shader writes to both target0 and target1.
+    // Target1 unused downstream for now (SSSS in P3.D will consume it);
+    // P3.B verifies the plumbing end-to-end with a sentinel constant write.
+    _rtgs_primary->addBuffer("ForwardRt1", efmt);
     static int buffer_index = 0;
     //_rtgs_primary->_debugName = FormatString("FwdNodePri%d", buffer_index++);
 
@@ -155,6 +160,12 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
   rtg_out->_clearMaskDepth = true;
   rtg_out->_clearMaskColor = true;
   rtg_out->buffer(0)->_clearColor  = _node->_pbrcommon->_clearcolor;
+  // P3.B — target1 (diffuse irradiance) cleared to opaque black so SSSS
+  // post-pass sees a clean buffer if a pixel was untouched by the forward
+  // pass (e.g. uncovered viewport background).
+  if(rtg_out->numImageBuffers() > 1) {
+    rtg_out->buffer(1)->_clearColor = fvec4(0, 0, 0, 1);
+  }
   rtg_out->_autoclear      = true;
 
   FBI->setViewport(0,0,_currentWidth, _currentHeight);
@@ -320,12 +331,11 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
   // Overrides redirect or extend any role to custom layer names,
   // enabling layer-swap-based scene isolation.
   {
-    static const char* k_roles[] = {
-      "depth_prepass", "std_forward", "std_editor", "probe", "depth_probe"
-    };
+    // role list lives on the node (ForwardNode::renderedLayerRoles) — the
+    // SINGLE source shared with Scene::initWithParams's layer pre-creation
     std::string layer_csv;
     auto* scene = _node->_pbrcommon ? _node->_pbrcommon->_scene : nullptr;
-    for (auto role : k_roles) {
+    for (const auto& role : _node->renderedLayerRoles()) {
       if (scene) {
         for (const auto& layer : scene->layersForRole(role)) {
           if (!layer_csv.empty()) layer_csv += ",";

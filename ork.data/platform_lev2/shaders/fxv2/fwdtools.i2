@@ -1,14 +1,121 @@
 import "pbrtools.i2";
+import "pbr_lobes.i2";
+///////////////////////////////////////////////////////////////
+// PBR2 Phase 3 (P3.C) — Forward pass output / variant matrix.
+//
+// All forward-pass fragment shaders declare BOTH outputs:
+//   layout(location=0) vec4 out_color    — composed lit RGB + alpha
+//   layout(location=1) vec4 out_diffuse  — diffuse irradiance only (RGB)
+//
+// Where the writes actually land depends on the bound RTG's attachment
+// count; pipelines compile identically for every pass.
+//
+// | Pass                              | RTG attachments | target0          | target1            |
+// |-----------------------------------|-----------------|------------------|--------------------|
+// | Main forward (std_forward)        | 2 (RGBAxx × 2)  | spec+diff+lobes  | diffuse only (SSSS)|
+// | Transparent layer (std_transparent)| 2              | spec+diff+lobes  | diffuse only       |
+// | Probe bake (cube/SSAA/TAA RTGs)   | 1               | spec+diff+lobes  | dropped (no attach)|
+// | Depth prepass                     | 0 (depth only)  | n/a              | n/a                |
+// | Shadow caster                     | 0 (depth only)  | n/a              | n/a                |
+// | Picking (ps_pick — separate iface)| 1 (uvec4 IDs)   | picking ID       | n/a (own iface)    |
+//
+// Vulkan tolerates the location=1 write going to a render pass with
+// no attachment-1 — the write is silently dropped. This matches the
+// correct semantic for probe bakes (cubemaps shouldn't carry SSSS-only
+// diffuse — they want the composed lit color for IBL consumption).
+//
+// SSSS (P3.D) runs as a screen-space post-pass on the main forward
+// output only; never on probe bakes. Pattern matches Filament's
+// camera-tied screen-space convention.
+//
+// Future (deferred): split fragment_interface into MRT vs single-target
+// flavors so the probe-bake pipelines are explicitly one-attachment.
+// Bandwidth saving on N probes × 6 faces; correctness already fine.
 ///////////////////////////////////////////////////////////////
 libblock lib_fwd_impl : lib_math //
     : lib_brdf                   //
     : lib_envmapping             //
     : ublk_frg_fwd_lighting      //
     : lib_def                    //
-    : lib_ssao {                 //
+    : lib_ssao                   //
+    : lib_pbr_lobes_all {        //
 
   vec3 _forward_lighting_int(vec3 modcolor, vec3 eyepos) {
     return vec3(1);
+  }
+  /////////////////////////////////////////////////////////
+  // PBR2 Phase 3 (P3.A) — build the per-fragment surface descriptor
+  // from PbrData + the per-extension UBOs that lib_pbr_lobes_all
+  // already transitively imports. This is the "default sourcing"
+  // path used by standard PbrMaterial; future node-graph codegen
+  // (P3.F) will produce overrides between this call and forward_shading.
+  //
+  // After P3.A's full lobe migration, the per-extension UBOs are only
+  // read here — lobes read from surf fields directly.
+  /////////////////////////////////////////////////////////
+  SurfaceFragment build_surface(PbrData pbd, vec3 emission) {
+    SurfaceFragment surf;
+    // Geometry
+    surf.position_world         = pbd._wpos;
+    surf.normal_world           = pbd._wnrm;
+    surf.fog_z                  = pbd._fogZ;
+    surf.atmos                  = pbd._atmos;
+    // Base material
+    surf.base_color             = pbd._albedo;
+    surf.alpha                  = pbd._alpha;
+    surf.emission               = emission;
+    // BRDF core
+    surf.metallic               = pbd._metallic;
+    surf.roughness              = pbd._roughness;
+    // Tangent frame — P3.E will source from vertex shader; zero for now.
+    surf.tangent_world          = vec3(1, 0, 0);
+    surf.anisotropic_tangent    = vec3(1, 0, 0);
+    surf.anisotropic_strength   = 0.0;
+    // Transmission / IOR / volume
+    surf.ior                    = (has_ior != 0) ? ior_value : 1.5;
+    surf.transmission_factor    = transmission_factor;
+    // P3.D — transmission_roughness falls back to BRDF roughness when unset.
+    surf.transmission_roughness = (has_transmission_roughness != 0)
+                                    ? transmission_roughness : surf.roughness;
+    surf.attenuation_color      = attenuation_color;
+    surf.attenuation_distance   = attenuation_distance;
+    surf.volume_thickness_factor = volume_thickness_factor;
+    surf.has_transmission       = has_transmission;
+    surf.has_transmission_roughness = has_transmission_roughness;
+    surf.has_ior                = has_ior;
+    surf.has_volume             = has_volume;
+    // Sheen
+    surf.sheen_color            = sheen_color;
+    surf.sheen_factor           = sheen_factor;
+    surf.sheen_roughness        = sheen_roughness;
+    surf.has_sheen              = has_sheen;
+    // Clearcoat — second normal not yet wired; reuse base normal.
+    surf.clearcoat_normal_world = pbd._wnrm;
+    surf.clearcoat_factor       = clearcoat_factor;
+    surf.clearcoat_roughness    = clearcoat_roughness;
+    surf.has_clearcoat          = has_clearcoat;
+    // Specular ext
+    surf.specular_color         = specular_color;
+    surf.specular_factor        = specular_factor;
+    surf.has_specular           = has_specular;
+    // Iridescence
+    surf.iridescence_factor     = iridescence_factor;
+    surf.has_iridescence        = has_iridescence;
+    // Diffuse transmission
+    surf.diffuse_transmission_color  = diffuse_transmission_color;
+    surf.diffuse_transmission_factor = diffuse_transmission_factor;
+    surf.has_diffuse_transmission    = has_diffuse_transmission;
+    // Subsurface (P3.D) — read from ublk_pbr_subsurface (the .a of the
+    // vec4 color/radius fields is unused per glTF spec).
+    surf.subsurface_color       = subsurface_color;
+    surf.subsurface_radius      = subsurface_radius.rgb;
+    surf.subsurface_factor      = subsurface_factor;
+    surf.has_subsurface         = has_subsurface;
+    // Engine-resolved (Filament PixelParams pattern)
+    surf.diffuse_color          = pbd._albedo * (1.0 - pbd._metallic);
+    surf.f0                     = mix(vec3(0.04), pbd._albedo, pbd._metallic);
+    surf.linear_roughness       = pbd._roughness * pbd._roughness;
+    return surf;
   }
   LightCtx lcalc_forward(vec3 wpos, PbrData pbd, vec3 eyepos) {
     LightCtx plc;
@@ -25,7 +132,10 @@ libblock lib_fwd_impl : lib_math //
     plc._F0        = mix(metalbase, basecolor, metallic);
     return plc;
   }
-  vec3 plcalc_forward(LightCtx plc, PbrData pbd, float lightRadius) {
+  // P3.B — returns ShadingResult so callers can route diffuse and
+  // specular to their respective channels. Identical math to the prior
+  // single-return version; just keeps the terms separated.
+  ShadingResult plcalc_forward(LightCtx plc, PbrData pbd, float lightRadius) {
     // Linear distance falloff: atten ramps from 1 at the source to 0 at
     // lightRadius. intensity and radius are independent controls.
     float dist_to_light = length(plc._lightdel);
@@ -46,8 +156,10 @@ libblock lib_fwd_impl : lib_math //
     float ndotl        = satdot(plc._normal, lightdir);
     vec3 specular_term = numerator / max(0.0625, denominator);
 
-    return (diffuse_term + specular_term) * atten * ndotl;
-    // return lightdir*(atten*ndotl);
+    ShadingResult r;
+    r.diffuse  = diffuse_term  * atten * ndotl;
+    r.specular = specular_term * atten * ndotl;
+    return r;
   }
   vec3 MRD(PbrData pbd) {
     float metallic_tex  = pbd._metallic;
@@ -59,7 +171,14 @@ libblock lib_fwd_impl : lib_math //
     return vec3(metallic, roughness, dialetric);
   }
 
-  vec3 pbrEnvironmentLightingXXX(PbrData pbd, vec3 eyepos) {
+  // P3.B — returns ShadingResult split into diffuse and specular env
+  // contributions. The original `saturateV((diffuse+specular)*SkyboxLevel)`
+  // semantics are preserved by saturating each channel separately; for
+  // typical PBR scenes the sums match within float epsilon. (The
+  // pre-Phase-3 final saturate was applied to the sum AFTER an
+  // extra SkyboxLevel multiply, which was load-bearing for the
+  // currently-tuned exposure; we keep the multiply for back-compat.)
+  ShadingResult pbrEnvironmentLightingWithF0(PbrData pbd, vec3 eyepos, vec3 F0_override, float matAO) {
 
     vec3 out_color;
 
@@ -86,7 +205,10 @@ libblock lib_fwd_impl : lib_math //
     vec2 brdf      = textureLod(MapBrdfIntegration, vec2(costheta, roughness * 0.99), 0).rg;
     brdf           = clamp(brdf, vec2(0), vec2(1));
     /////////////////////////
-    vec3 F0    = mix(metalbase, basecolor, metallic);
+    // F0_override comes from the modulatory lobe pass (P2.4 ior / P2.5
+    // specular / P2.6 iridescence). When no modulatory lobes are active
+    // it equals mix(0.04, albedo, metallic) — identical to pre-Phase-2.
+    vec3 F0    = F0_override;
     vec3 G0    = mix(metalbase, basecolor, 1.0 - metallic);
     vec3 F     = fresnelSchlickRoughness(costheta, F0, roughness);
     vec3 invF  = (vec3(1) - F);
@@ -97,7 +219,10 @@ libblock lib_fwd_impl : lib_math //
     //  filter sample ambocc
     /////////////////////////
     vec2 ssao_uv = (gl_FragCoord.xy) * InvViewportSize;
-    float ambocc = texture(SSAOMap, ssao_uv).x;
+    // ambocc = screen-space SSAO × material/baked AO (matAO). matAO is 1.0 for every
+    // material except those that route a real AO into ambrufmtl.x (ptex3d surface.ao),
+    // so this is byte-identical for all existing forward materials.
+    float ambocc = texture(SSAOMap, ssao_uv).x * matAO;
     /////////////////////////
     float ambientshade = clamp(dot(N, viewdir), 0, 1) * 0.3 + 0.7;
     vec3 ambient       = AmbientLevel * ambientshade * ambocc;
@@ -106,18 +231,26 @@ libblock lib_fwd_impl : lib_math //
     /////////////////////////
     vec3 diffuse = clamp(basecolor * diffuse_light * dialetric * ambocc, 0, 1);
     /////////////////////////
-    // Sample cubemap probe - adjust for Vulkan coordinate system
-    vec3 refl_probe_coord = vec3(-refl.x, refl.y, refl.z);
-    vec3 probe_REFL       = env_cube(reflectionPROBE, refl_probe_coord).xyz;
+    // Specular env source: when a reflection probe is active, use its
+    // cubemap; otherwise sample the skybox specular IBL (MapSpecularEnv).
+    // has_reflection_probe is set on the binding side (fwdnode_pipeline.cpp)
+    // whenever a probe cube is bound instead of the black cube placeholder.
+    //
+    // NOTE: the probe cube here is RAW radiance (no GGX prefilter chain),
+    // so rough surfaces will look mirror-sharp until a prefilter bake is
+    // landed. This is intentional for the first-cut swap mechanism.
     /////////////////////////
-    vec3 refl_equi = normalize(vec3(refl.x, -refl.y, refl.z));
-    // Use normal for diffuse (Radiance)
-    // vec3 diffuse_env = env_equirectangular(diffn, MapDiffuseEnv, 0);
-    // FIXED: Use standard quadratic roughness-to-mip mapping (glTF 2.0 / UE4 compliant)
-    // Maps roughness [0,1] to mip levels [0, RoughnessLevels-1]
     float mipLevel = (roughness * roughness) * (RoughnessLevels - 1.0);
-    vec3 spec_env = env_equirectangular_spec_wbias(refl_equi, MapSpecularEnv, mipLevel, 3.0);
-    vec3 env      = spec_env + probe_REFL;
+    vec3 env;
+    if (has_reflection_probe != 0) {
+      // Probe path. Vulkan coordinate adjust matches the existing
+      // env_cube(reflectionPROBE, ...) sampling convention.
+      vec3 refl_probe_coord = vec3(-refl.x, refl.y, refl.z);
+      env = textureLod(reflectionPROBE, refl_probe_coord, mipLevel).xyz;
+    } else {
+      vec3 refl_equi = normalize(vec3(refl.x, -refl.y, refl.z));
+      env = env_equirectangular_spec_wbias(refl_equi, MapSpecularEnv, mipLevel, 3.0);
+    }
     // FIXED: Removed dielectric boost for glTF 2.0 compliance (was: env * (1.0 + pow(dialetric,2) * 0.33))
     // Uncomment line below for artistic boost (non-physical):
     // env = env * (1.0 + (pow(dialetric, 2.0)) * 0.33);
@@ -130,9 +263,24 @@ libblock lib_fwd_impl : lib_math //
     // Uncomment line below for artistic boost (non-physical):
     // specular = specularMask * specularC * 2.0;
     /////////////////////////
-    return saturateV((diffuse + specular) * SkyboxLevel);
+    // P3.B — return split. Apply SkyboxLevel + saturate per-channel.
+    ShadingResult r;
+    r.diffuse  = saturateV(diffuse  * SkyboxLevel);
+    r.specular = saturateV(specular * SkyboxLevel);
+    return r;
+  } // pbrEnvironmentLightingWithF0(){
 
-  } // vec3 environmentLighting(){
+  // Back-compat shim — original signature, computes default F0 from
+  // albedo+metallic per glTF 2.0 base, then forwards. Returns the summed
+  // diffuse+specular ShadingResult as vec3 for callers that don't care
+  // about the split.
+  vec3 pbrEnvironmentLightingXXX(PbrData pbd, vec3 eyepos) {
+    vec3 metalbase = vec3(0.04);
+    float metallic = clamp(pbd._metallic * MetallicFactor, 0.02, 0.99);
+    vec3 F0_default = mix(metalbase, pbd._albedo, metallic);
+    ShadingResult r = pbrEnvironmentLightingWithF0(pbd, eyepos, F0_default, 1.0);  // shim: no material AO
+    return r.specular + r.diffuse;
+  }
 
   vec3 _sample_color_cookie(uint slice, float lod, vec2 uv) {
     return textureLod(light_cookie_colors, vec3(uv, slice), lod).xyz;
@@ -143,7 +291,24 @@ libblock lib_fwd_impl : lib_math //
 
   /////////////////////////////////////////////////////////
 
-  vec3 _forward_lightingX(PbrData pbd, vec3 eyepos, vec3 emission, vec3 modcolor) {
+  // P3.B — return ShadingResult so the fragment-out stage can route
+  // diffuse to target1 (MRT) while the existing target0 keeps the
+  // composed lit output (specular + diffuse). The previously summed
+  // emission, light_maps, and lobe accumulators get routed:
+  //   emission   → specular (self-emitted, NOT blurred by SSSS)
+  //   light_maps → diffuse  (baked irradiance — SSSS blurs it)
+  //   lobes      → see PbrLobeState._accumulator (lobes self-route)
+  // modcolor applies to both channels uniformly.
+  ShadingResult _forward_lightingX(PbrData pbd, vec3 eyepos, vec3 emission, vec3 modcolor, float matAO) {
+    /////////////////////////
+    // PBR2 Phase 3 (P3.A) — build the per-fragment surface descriptor.
+    // Future node-graph codegen will override selected fields between
+    // this point and forward_shading; for P3.A the default-build is the
+    // only path. Lobes will read from `surf` once migrated; today they
+    // still read from per-extension UBOs and this descriptor is parallel
+    // (no behavior delta).
+    /////////////////////////
+    SurfaceFragment surf = build_surface(pbd, emission);
     /////////////////////////
     // refl.x *= -1.0;
     /////////////////////////
@@ -156,9 +321,38 @@ libblock lib_fwd_impl : lib_math //
     light_maps      = light_maps + texture(LightMapArray, vec3(frg_uv0, 4)).xyz * LightMapColors[4];
     light_maps      = light_maps + texture(LightMapArray, vec3(frg_uv0, 5)).xyz * LightMapColors[5];
     /////////////////////////
-    // env lighting (HDRI)
+    // PBR2 Phase 2 — build the lobe state EARLY so modulatory lobes
+    // (ior/specular/iridescence) can shift st._F0 BEFORE env_lighting
+    // is computed from it. Additive lobes (sheen/clearcoat/diff_trans/
+    // transmission/volume) run AFTER, populating st._accumulator and
+    // debiting st._weight_remaining.
     /////////////////////////
-    vec3 env_lighting = pbrEnvironmentLightingXXX(pbd, eyepos);
+    vec3  _mrd          = MRD(pbd);
+    vec3  _V_dir        = normalize(eyepos - pbd._wpos);
+    vec3  _R_dir        = normalize(reflect(-_V_dir, pbd._wnrm));
+    vec3  _F0_base      = mix(vec3(0.04), pbd._albedo, _mrd.x);
+    float _NdotV        = clamp(dot(pbd._wnrm, _V_dir), 0.0, 1.0);
+    PbrLobeState st;
+    st._F0               = _F0_base;
+    st._F                = fresnelSchlickRoughness(_NdotV, _F0_base, _mrd.y);
+    st._N                = pbd._wnrm;
+    st._V                = _V_dir;
+    st._R                = _R_dir;
+    st._metallic         = _mrd.x;
+    st._roughness        = _mrd.y;
+    st._dialetric        = _mrd.z;
+    st._accumulator.specular = vec3(0);
+    st._accumulator.diffuse  = vec3(0);
+    st._weight_remaining     = 1.0;
+    // Modulatory lobes — mutate st._F0 (ior, specular) and st._F
+    // (iridescence). Must precede pbrEnvironmentLightingWithF0 so the
+    // front BRDF sees the modified Fresnel.
+    st = eval_pbr_lobes_modulatory(st, surf, eyepos);
+    /////////////////////////
+    // env lighting (HDRI) — now uses post-modulatory F0. P3.B: keeps
+    // diffuse and specular env terms separated for downstream MRT.
+    /////////////////////////
+    ShadingResult env_lighting = pbrEnvironmentLightingWithF0(pbd, eyepos, st._F0, matAO);
     /////////////////////////
     // dynamic lighting
     /////////////////////////
@@ -174,20 +368,26 @@ libblock lib_fwd_impl : lib_math //
     vec3 viewdir = normalize(eyepos - pbd._wpos);
     vec3 refl = normalize(reflect(-viewdir, pbd._wnrm));
     /////////////////////////
-    // point lighting
+    // point lighting — P3.B: accumulate diffuse/specular separately.
     /////////////////////////
-    LightCtx plc        = lcalc_forward(pbd._wpos, pbd, eyepos);
-    vec3 point_lighting = vec3(0, 0, 0);
+    LightCtx plc = lcalc_forward(pbd._wpos, pbd, eyepos);
+    ShadingResult point_lighting;
+    point_lighting.specular = vec3(0);
+    point_lighting.diffuse  = vec3(0);
     for (int i = 0; i < point_light_count; i++) {
       plc._lightdel = _lightpos[i].xyz - pbd._wpos;
       vec3 LC       = _lightcolor[i].xyz * _lightcolor[i].w;
       float LR      = _lightsizbias[i].x;
-      point_lighting += plcalc_forward(plc, pbd, LR) * LC;
+      ShadingResult plr = plcalc_forward(plc, pbd, LR);
+      point_lighting.specular += plr.specular * LC;
+      point_lighting.diffuse  += plr.diffuse  * LC;
     }
     /////////////////////////
     // spot lighting (fwd)
     /////////////////////////
-    vec3 spot_lighting = vec3(0, 0, 0);
+    ShadingResult spot_lighting;
+    spot_lighting.specular = vec3(0);
+    spot_lighting.diffuse  = vec3(0);
     //
     for (int i = 0; i < spot_light_count; i++) {
       int j = i + point_light_count;
@@ -351,15 +551,39 @@ libblock lib_fwd_impl : lib_math //
       // ---- Shadow gates only the diffuse term (occluders block direct
       // ---- light); the cookie reflection is the surface "mirroring the
       // ---- lens" — passes through regardless.
-      spot_lighting += specular_contrib + diffuse_contrib * shadow_factor;
+      // P3.B: keep channels split. specular passes through, diffuse
+      // gated by shadow_factor.
+      spot_lighting.specular += specular_contrib;
+      spot_lighting.diffuse  += diffuse_contrib * shadow_factor;
     }
     //
     /////////////////////////
-    //return env_lighting;
-    //return env_lighting;
-    return (env_lighting + point_lighting + spot_lighting + emission + light_maps) * modcolor;
+    // Additive lobes (sheen / clearcoat / diff_trans / transmission /
+    // volume) run AFTER env+point+spot. Each lobe routes to its own
+    // channel of st._accumulator (P3.B).
+    /////////////////////////
+    st = eval_pbr_lobes_additive(st, surf, eyepos);
+    // Energy chain: lobes that take energy from the base BRDF (sheen,
+    // clearcoat, diffuse_transmission, transmission) debit
+    // _weight_remaining; multiply the base contribution by it. P3.B
+    // applies weight to BOTH channels equally (proper diffuse/spec
+    // conservation refinement is deferred to P3.E).
+    float base_weight = clamp(st._weight_remaining, 0.0, 1.0);
+    /////////////////////////
+    // P3.B — final composite split by channel. emission folded into
+    // specular (self-emitted, NOT blurred by SSSS); light_maps folded
+    // into diffuse (they're baked diffuse irradiance).
+    /////////////////////////
+    ShadingResult result;
+    result.specular = ((env_lighting.specular + point_lighting.specular + spot_lighting.specular) * base_weight
+                      + emission
+                      + st._accumulator.specular) * modcolor;
+    result.diffuse  = ((env_lighting.diffuse  + point_lighting.diffuse  + spot_lighting.diffuse)  * base_weight
+                      + light_maps
+                      + st._accumulator.diffuse) * modcolor;
+    return result;
   }
-  vec3 _forward_lightingZ(vec3 modcolor, vec3 albedo, vec3 ambrufmtl, vec3 emission, vec3 eyepos, vec3 normal, bool emissive) {
+  ShadingResult _forward_lightingZ(vec3 modcolor, vec3 albedo, vec3 ambrufmtl, vec3 emission, vec3 eyepos, vec3 normal, bool emissive) {
     PbrData pbr;
     pbr._emissive  = emissive;
     pbr._albedo    = albedo;
@@ -370,7 +594,7 @@ libblock lib_fwd_impl : lib_math //
     pbr._fogZ      = 0.0;
     pbr._atmos     = 0.0;
     pbr._alpha     = 1.0;
-    return _forward_lightingX(pbr, eyepos, emission, modcolor);
+    return _forward_lightingX(pbr, eyepos, emission, modcolor, ambrufmtl.x);  // ambrufmtl.x = material AO (ptex3d surface.ao)
   }
 }
 
@@ -379,7 +603,9 @@ libblock lib_fwd     //
     : lib_fwd_impl { //
   /////////////////////////////////////////////////////////
 
-  vec3 _forward_lighting(vec3 modcolor, vec3 eyepos) {
+  // P3.B — all forward_lighting_* wrappers return ShadingResult so the
+  // fragment-out stage can split spec→target0 and diffuse→target1.
+  ShadingResult _forward_lighting(vec3 modcolor, vec3 eyepos) {
     vec2 uvinvy    = abs(frg_uv0.xy);
     // ModAlbedo is the per-material albedo multiplier (= mtl->_baseColor).
     // It modulates the textured albedo here, NOT post-output. This keeps
@@ -392,22 +618,31 @@ libblock lib_fwd     //
     bool emissive  = length(TN) < 0.1;
     vec3 normal    = normalize(frg_tbn * N);
     if (!gl_FrontFacing) normal = -normal;
-    return _forward_lightingZ(modcolor, albedo, ambrufmtl, emission, eyepos, normal, emissive) * modcolor;
-    //return vec3(uvinvy,0);
+    // _forward_lightingZ already applies modcolor inside _forward_lightingX;
+    // the historical extra `* modcolor` multiply here is preserved by
+    // applying it to both channels.
+    ShadingResult r = _forward_lightingZ(modcolor, albedo, ambrufmtl, emission, eyepos, normal, emissive);
+    r.specular *= modcolor;
+    r.diffuse  *= modcolor;
+    return r;
   }
 
-  vec3 forward_lighting_mono(vec3 modcolor) {
+  ShadingResult forward_lighting_mono(vec3 modcolor) {
     return _forward_lighting(modcolor, EyePostion);
   }
 
-  vec4 forward_lighting_mono_alpha(vec3 modcolor) {
+  // Per-channel alpha variant. Caller uses (r.lit.diffuse + r.lit.specular)
+  // for tonal output and the alpha separately. Struct lives in deftools.i2.
+  ForwardAlphaResult forward_lighting_mono_alpha(vec3 modcolor) {
     vec2 uvinvy = abs(frg_uv0.xy);
     float alpha = texture(CNMREA, vec3(uvinvy, 0)).a;
-    vec3 rgb    = _forward_lighting(modcolor, EyePostion);
-    return vec4(rgb, alpha);
+    ForwardAlphaResult r;
+    r.lit   = _forward_lighting(modcolor, EyePostion);
+    r.alpha = alpha;
+    return r;
   }
 
-  vec3 forward_lighting_ntex(vec3 modcolor) {
+  ShadingResult forward_lighting_ntex(vec3 modcolor) {
     vec2 uvinvy    = abs(frg_uv0.xy);
     // No-texture path: vertex color and per-material ModAlbedo both feed
     // albedo as multiplicative factors, so mtl.baseColor tints all vertices

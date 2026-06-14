@@ -147,7 +147,7 @@ void synth::nextEffect(outbus_ptr_t bus) {
       assert(nextpreset->_algdata != nullptr); // did you add presets ?
       bus->setBusDSP(nextpreset);
       bus->_fxname = nextpreset->_name;
-      logchan_synth->log("switched to effect<%s>", bus->_fxname.c_str());
+      if(0)logchan_synth->log("switched to effect<%s>", bus->_fxname.c_str());
     }));
   });
 }
@@ -171,7 +171,7 @@ void synth::prevEffect(outbus_ptr_t bus) {
       assert(nextpreset->_algdata != nullptr); // did you add presets ?
       bus->setBusDSP(nextpreset);
       bus->_fxname = nextpreset->_name;
-      logchan_synth->log("switched to effect<%s>", bus->_fxname.c_str());
+      if(0)logchan_synth->log("switched to effect<%s>", bus->_fxname.c_str());
     }));
   });
 }
@@ -192,7 +192,7 @@ void synth::setEffect(outbus_ptr_t bus, std::string name) {
         bus->setBusDSP(nextpreset);
         bus->_fxname      = name;
         bus->_fxcurpreset = it;
-        logchan_synth->log("switched to effect<%s>", name.c_str());
+        if(0)logchan_synth->log("switched to effect<%s>", name.c_str());
       };
       unlocked.insert(std::make_pair(timestamp, deferred_operation));
     });

@@ -63,6 +63,8 @@ struct NozzleEmitterInst : public ParticleModuleInst {
   fvec3xf_inp_pluginst_ptr_t _input_directionZ;
   fvec3xf_inp_pluginst_ptr_t _input_offset;
   fvec3xf_inp_pluginst_ptr_t _input_offset_velocity;
+  fvec4xf_inp_pluginst_ptr_t _input_aux;
+  float_out_pluginst_ptr_t   _output_random;
 
 
   float _updaterate = 30.0f;
@@ -95,6 +97,15 @@ void NozzleEmitterInst::onLink(GraphInst* inst) {
   _input_directionZ       = typedInputNamed<Vec3XfPlugTraits>("DirectionZ");
   _input_offset          = typedInputNamed<Vec3XfPlugTraits>("Offset");
   _input_offset_velocity = typedInputNamed<Vec3XfPlugTraits>("OffsetVelocity");
+  _input_aux             = typedInputNamed<Vec4XfPlugTraits>("Aux");
+  auto pool = _graphinst->firstModuleInst<ParticlePoolModuleInst>();
+  if (pool) {
+    _output_random = pool->typedOutputNamed<FloatPlugTraits>("Random");
+  }
+  _emitter_context.mPerParticleAux = [this](BasicParticle* ptc) {
+    if (_output_random) _output_random->setValue(ptc->mfRandom);
+    ptc->_aux = _input_aux->value();
+  };
 }
 ///////////////////////////////////////////////////////////////////////////////
 void NozzleEmitterInst::compute(GraphInst* inst, ui::updatedata_ptr_t updata) {
@@ -128,7 +139,10 @@ void NozzleEmitterInst::compute(GraphInst* inst, ui::updatedata_ptr_t updata) {
   if (_timeAccumulator >= fdelta) { // limit to 30hz
     _timeAccumulator -= fdelta;
     _reap(fdelta);
-    _emit(fdelta);
+    auto ptcl_context = inst->_impl.getShared<particle::Context>();
+    if (not (ptcl_context and ptcl_context->_inhibit_emission)) {
+      _emit(fdelta);
+    }
   }
   _pool->updateUnitAges();
 }
@@ -149,6 +163,7 @@ void NozzleEmitterInst::_emit(float fdt) {
   //_emitter_context.mPosition          = _input_offset->value();
   fvec3 offsetVel                     = _input_offset_velocity->value();
   _emitter_context.mOffsetVelocity    = offsetVel;
+  _emitter_context.mAux               = _input_aux->value();
   _directedEmitter.Emit(_emitter_context);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -199,6 +214,7 @@ static void _reshapeNozzleEmitterIOs( dataflow::moduledata_ptr_t data ){
   ModuleData::createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "DirectionZ")->_range = {-1,1};
   ModuleData::createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Offset")->_range = {-100,100};
   ModuleData::createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "OffsetVelocity")->_range = {-100,100};
+  ParticleModuleData::_initAuxIO(data);
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -10,6 +10,7 @@ import sys
 import struct
 from orkengine import core
 from orkengine import lev2
+from orkengine import ecs
 
 tokens = core.CrcStringProxy()
 
@@ -44,18 +45,19 @@ def main():
     print("Starting compute shader basic test", flush=True)
     print("="*60, flush=True)
 
-    # Initialize lev2 app with offscreen graphics context
-    print("Initializing lev2 app...", flush=True)
-    ezapp = lev2.lev2appinit()
-    gfxenv = lev2.GfxEnv.ref
-    ctx = gfxenv.loadingContext()
+    # Offscreen GPU lifecycle (mirrors test_terrain_bake.py): subsystem-mode init +
+    # bindGfxToCurrentThread so inline compute/readback runs on a BOUND context. The
+    # legacy lev2appinit()/loadingContext() path yields a null Context(0x0) and
+    # segfaults here.
+    print("Initializing lev2 app (subsystem mode)...", flush=True)
+    ezapp = ecs.headless_appinit(use_subsystems=['opq', 'core', 'gpu', 'lev2'])
+    ezapp.mainThreadBegin()
+    ctx = ezapp.bindGfxToCurrentThread()
+    assert ctx, "bindGfxToCurrentThread() returned null"
 
     print(f"graphics context: {ctx}")
     fxi = ctx.FXI
     ci = ctx.CI
-
-    print("Starting main thread...")
-    ezapp.mainThreadBegin()
 
     # Create SSBO for compute output (256 floats = 1024 bytes)
     num_values = 256
@@ -73,24 +75,14 @@ def main():
     compute_shader = fxi.computeShader(shader, "cs_fill_values")
     print(f"Got compute shader: {compute_shader}")
 
-    # Begin frame (required for command buffer)
-    print("Beginning frame...")
-    ctx.beginFrame()
-
-    # Bind the SSBO and dispatch compute shader
+    # Dispatch like the terrain bake driver (hfdflow.cpp): a dispatch PHASE on the
+    # bound context, no beginFrame/endFrame. endDispatchPhase submits AND waits, so
+    # the SSBO is readable immediately after.
     print(f"Dispatching compute shader with {num_values} work groups...")
     ci.beginDispatchPhase()
     ci.bindStorageBuffer(compute_shader, 0, ssbo)
     ci.dispatch(compute_shader, num_values, 1, 1)
     ci.endDispatchPhase()
-
-    # End frame to submit command buffer
-    print("Ending frame...")
-    ctx.endFrame()
-
-    # Process to ensure GPU work completes
-    print("Processing frame...")
-    ezapp.mainThreadIter()
 
     # Map SSBO and read back results
     print("Reading back SSBO data...", flush=True)
@@ -138,6 +130,7 @@ def main():
         print("Compute shader test FAILED!")
     print("="*60)
 
+    ecs.headless_exit()
     return 0 if errors == 0 else 1
 
 if __name__ == "__main__":

@@ -133,7 +133,6 @@ struct ParsedSkeleton {
   std::string _rootpath;
   skelnodemap_t _xgmskelmap_by_name;
   skelnodemap_t _xgmskelmap_by_path;
-  skelnodemap_t _xgmskelmap_by_id;
   bool _isSkinned = false;
 };
 using parsedskeletonptr_t = std::shared_ptr<ParsedSkeleton>;

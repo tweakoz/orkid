@@ -116,28 +116,42 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
     ///////////////////////////////////////////////////////////////////////////
 
     //printf("should_bind_probes<%d> is_rendering_PROBE<%d>\n", int(should_bind_probes), int(is_rendering_PROBE));
-    if(should_bind_probes and (not is_rendering_PROBE)){
-      size_t num_probes = enumlights->_lightprobes.size();
-
-      // technically here we should only bind a set of probes 
-      // that are relevant to the current rendered object
-      // and bind the weight of each probe
-      // for now we will just bind all probes
-
-      auto probe_0 = enumlights->_lightprobes[0];
-      auto probe_tex = probe_0->_cubeTexture;
-
-      //printf( "BINDING PROBES!  count<%d>\n", num_probes );
-      //printf( "binding probetex<%p>\n", probe_tex.get() );
-      FXI->bindParamTexture(mtl->_parProbeReflection, probe_tex.get() );
-      FXI->bindParamTexture(mtl->_parProbeRadiance, probe_tex.get() );
-
-
+    bool probe_active = false;
+    if(not is_rendering_PROBE){
+      // Per-draw probe override (PBR2 P0.4c — set by ParticlesGlobalSystem
+      // from gendata._probe_entity_name → live LightProbe). Routes a
+      // specific probe's cube to this draw, regardless of the global
+      // _lightprobes[0] choice. Empty → fall through to global path.
+      lightprobe_ptr_t chosen_probe;
+      if (RCID._probeOverride) {
+        chosen_probe = RCID._probeOverride;
+      } else if (should_bind_probes && enumlights->_lightprobes.size() > 0) {
+        // Global fallback: first probe wins (same as the old behavior).
+        chosen_probe = enumlights->_lightprobes[0];
+      }
+      if (chosen_probe) {
+        auto probe_tex = chosen_probe->_cubeTexture;
+        FXI->bindParamTexture(mtl->_parProbeReflection, probe_tex.get());
+        FXI->bindParamTexture(mtl->_parProbeRadiance,   probe_tex.get());
+        probe_active = (probe_tex != nullptr);
+      }
     }
-    else{
+    if(not probe_active){
       //printf( "NOT BINDING PROBES black<%p>!\n", mtl->_texCubeBlack.get() );
       FXI->bindParamTexture(mtl->_parProbeReflection, pbrcommon->_texCubeBlack.get() );
       FXI->bindParamTexture(mtl->_parProbeRadiance, pbrcommon->_texCubeBlack.get() );
+    }
+    // has_reflection_probe drives the spec-env vs probe swap in fwdtools.i2.
+    // Inactive path keeps the black cube bound so the sampler is always valid;
+    // shader branches on the flag, not on sampler-null.
+    if(mtl->_parHasReflectionProbe){
+      FXI->bindParamInt(mtl->_parHasReflectionProbe, probe_active ? 1 : 0);
+    }
+    // PBR2 Phase 2 — rendering_probe gates refractive lobes during cubemap
+    // capture. is_rendering_PROBE comes off RCFD["renderingPROBE"], set on
+    // the per-face CPD in fwdnode_impl_sub.cpp before each probe pass.
+    if(mtl->_parRenderingProbe){
+      FXI->bindParamInt(mtl->_parRenderingProbe, is_rendering_PROBE ? 1 : 0);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -254,6 +268,57 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
 
       }
   };
+  /////////////////////////////////////////////////////////////
+  // SSBO-SOURCED VERTICES (FWD_SSBO_CUSTOM): a first-class vertex variant, like rigid/
+  // instanced/skinned — selected by permu._is_vertex_ssbo, picking the _tek_FWD_SSBO_CUSTOM
+  // technique (compute-generated geometry pulled from an SSBO). Gets the SAME full forward
+  // state (basic raster + lighting + ssao + MVP). Mono only for now. See project_fwd_ssbo_custom.
+  /////////////////////////////////////////////////////////////
+  // SSBO geometry x PER-INSTANCE MATRIX (FWD_SSBO_CUSTOM_INSTANCED): same SSBO-pull vertices, but each is
+  // placed by storage_inst_mtx[gl_InstanceIndex] (the matrices SSBO is bound via the drawable's graphics
+  // storage, like the geometry channels). One indirect draw, instanceCount instances. Checked BEFORE the
+  // plain SSBO case so instanced+ssbo picks the instanced technique.
+  if (permu._is_vertex_ssbo and permu._instanced and this->_tek_FWD_SSBO_CUSTOM_INSTANCED) {
+    pipeline             = std::make_shared<FxPipeline>(permu);
+    pipeline->_technique = this->_tek_FWD_SSBO_CUSTOM_INSTANCED;
+    pipeline->bindParam(this->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
+    pipeline->addStateLambda(createBasicStateLambda(this));
+    pipeline->addStateLambda(createForwardLightingLambda(this));
+    pipeline->addStateLambda(l_rsi);
+    pipeline->addStateLambda(l_ssao);
+    pipeline->_material_ptr = (GfxMaterial*)this;
+    pipeline->_rasterstate  = this->_rasterstate;
+    return pipeline;
+  }
+  if (permu._is_vertex_ssbo and this->_tek_FWD_SSBO_CUSTOM) {
+    pipeline             = std::make_shared<FxPipeline>(permu);
+    pipeline->_technique = this->_tek_FWD_SSBO_CUSTOM;
+    pipeline->bindParam(this->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
+    pipeline->addStateLambda(createBasicStateLambda(this));
+    pipeline->addStateLambda(createForwardLightingLambda(this));
+    pipeline->addStateLambda(l_rsi);
+    pipeline->addStateLambda(l_ssao);
+    pipeline->_material_ptr = (GfxMaterial*)this;
+    pipeline->_rasterstate  = this->_rasterstate;
+    return pipeline;
+  }
+  /////////////////////////////////////////////////////////////
+  // MATRICES-ONLY INSTANCED (FWD_CT_NM_IM_NI_MO): a first-class instanced variant that pulls per-
+  // instance matrices from the dynamic storage_inst_mtx block (no per-instance color). Same forward
+  // state as the other branches. See project_fwd_ssbo_custom (instancing sibling).
+  /////////////////////////////////////////////////////////////
+  if (permu._instanced_matrices_only and this->_tek_FWD_CT_NM_IM_NI_MO) {
+    pipeline             = std::make_shared<FxPipeline>(permu);
+    pipeline->_technique = this->_tek_FWD_CT_NM_IM_NI_MO;
+    pipeline->bindParam(this->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
+    pipeline->addStateLambda(createBasicStateLambda(this));
+    pipeline->addStateLambda(createForwardLightingLambda(this));
+    pipeline->addStateLambda(l_rsi);
+    pipeline->addStateLambda(l_ssao);
+    pipeline->_material_ptr = (GfxMaterial*)this;
+    pipeline->_rasterstate  = this->_rasterstate;
+    return pipeline;
+  }
   /////////////////////////////////////////////////////////////
   // STEREO
   /////////////////////////////////////////////////////////////

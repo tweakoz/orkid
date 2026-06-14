@@ -41,5 +41,11 @@ struct DataTable {
   std::vector<DataKvPair> _items;
 };
 
+// SET_PARAM payload widening (2.20): tolerant numeric decode of an event
+// payload value. svar is EXACT-typed — python floats arrive as doubles, C++
+// literals as ints/doubles — and get<float> ASSERTS on mismatch (HOST-AUTHOR
+// CONTRACT #3). Returns false (caller logs) when the value isn't numeric.
+bool decodeSetParamValue(const svar64_t& v, float& out);
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::ecs

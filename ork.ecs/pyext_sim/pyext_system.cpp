@@ -8,8 +8,8 @@
 #include "pyext.h"
 #include <ork/ecs/simulation.inl>
 #include <ork/ecs/system.h>
-#include <ork/ecs/system.h>
 #include <ork/ecs/datatable.h>
+#include "../src/core/message_private.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace nb = obind;
@@ -55,6 +55,33 @@ void register_system(nb::module_& module_ecssim, python::obind_typecodec_ptr_t t
                            }
                            // auto event = std::make_shared<CrcString>(eventname.c_str());
                            system->_notify(*eventID, decoded);
+                         })
+                         // SYNCHRONOUS query (system-script context = the update
+                         // thread, same as the system's own hooks — a direct
+                         // virtual call, no controller queue). Returns the
+                         // responding system's DataTable, or None if unhandled.
+                         .def("request", [type_codec](pysystem_ptr_t system, //
+                                                      crcstring_ptr_t requestID, //
+                                                      nb::object evdata) -> datatable_ptr_t { //
+                           evdata_t decoded;
+                           if (nb::isinstance<nb::dict>(evdata)) {
+                             auto as_dict = nb::cast<nb::dict>(evdata);
+                             auto dtab    = decoded.makeShared<DataTable>();
+                             DataKey dkey;
+                             for (auto item : as_dict) {
+                               auto key     = nb::cast<crcstring_ptr_t>(item.first);
+                               auto val     = nb::cast<nb::object>(item.second);
+                               auto var_val = type_codec->decode64(val);
+                               dkey._encoded = *key;
+                               (*dtab)[dkey] = var_val;
+                             }
+                           }
+                           auto response = std::make_shared<impl::_SystemResponse>();
+                           system->_request(response, *requestID, decoded);
+                           datatable_ptr_t rval;
+                           if (auto as_tab = response->_responseData.tryAs<datatable_ptr_t>())
+                             rval = as_tab.value();
+                           return rval;
                          });
   type_codec->registerStdCodec<pysystem_ptr_t>(system_type);
   /////////////////////////////////////////////////////////////////////////////////

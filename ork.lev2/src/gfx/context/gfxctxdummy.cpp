@@ -251,6 +251,28 @@ void DuGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(
     size_t first_instance) {
 }
 
+void DuGeometryBufferInterface::DrawInstancedIndexedPrimitiveIndirectEML(
+    const VertexBufferBase& VBuf,
+    const IndexBufferBase& IdxBuf,
+    PrimitiveType eType,
+    const FxShaderStorageBuffer* indirect_args,
+    size_t args_offset) {
+}
+
+void DuGeometryBufferInterface::DrawIndirectEML(
+    PrimitiveType eType,
+    const FxShaderStorageBuffer* indirect_args,
+    size_t args_offset) {
+}
+
+void DuGeometryBufferInterface::DrawIndexedIndirectEML(
+    const FxShaderStorageBuffer* index_buffer,
+    PrimitiveType eType,
+    const FxShaderStorageBuffer* indirect_args,
+    size_t args_offset,
+    int index_size) {
+}
+
 DuTextureInterface::DuTextureInterface(Context& ctx)
     : TextureInterface(&ctx) {
 }

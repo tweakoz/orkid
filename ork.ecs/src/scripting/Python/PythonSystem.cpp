@@ -64,6 +64,9 @@ static logchannel_ptr_t logchan_pysys = logger()->configureChannel("ecs.pysys", 
 ///////////////////////////////////////////////////////////////////////////////
 
 void PythonSystemData::describeX(SystemDataClass* clazz) {
+  // E.2-walk: the scene script REFERENCE must round-trip (a serialized scene previously
+  // lost it — describeX was empty). Path-form keeps the artifact portable across edits.
+  clazz->directProperty("ScriptPath", &PythonSystemData::_sceneScriptPath);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -83,12 +86,19 @@ bool PythonSystem::_reload(Simulation* psi) {
 
   auto scenedata = psi->GetData();
   auto path      = _systemData._sceneScriptPath;
-  auto abspath   = path.toAbsolute();
+  // KNOWN TRAP: a bare toAbsolute() can drop the leading slash of an already-absolute
+  // path (see the HeightFieldGenData::materialize comment) — keep absolute paths as-is.
+  auto abspath = path.isAbsolute() ? path : path.toAbsolute();
 
   if (not abspath.doesPathExist()) {
-    printf("PythonSystem::_reload() script<%s> not found\n", abspath.c_str());
+    // a scene that DECLARES a script must get it — soft-continuing leaves a mute
+    // PythonSystem (notifies silently dropped) and a very confusing black box.
+    printf("PythonSystem::_reload() script<%s> NOT FOUND (declared by the scene — refusing "
+           "to run mute)\n", abspath.c_str());
+    OrkAssert(false);
     return false;
   }
+  logchan_pysys->log("PythonSystem::_reload() loading script<%s>", abspath.c_str());
 
   File scriptfile(abspath, EFM_READ);
   size_t filesize = 0;
@@ -165,6 +175,16 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
     , _systemData(data) {
 
   logchan_pysys->log("PythonSystem::PythonSystem() <%p>", this);
+  // E.2-walk diagnostics/self-defense: a host that did NOT embed the interpreter
+  // (zero-python C++ host with a python-declaring scene) must fail FACTUALLY here,
+  // not wedge the update thread into a black screen.
+  if (not Py_IsInitialized()) {
+    printf("PythonSystem: the MAIN interpreter is NOT initialized — this host did not embed "
+           "python. A scene declaring PythonSystem requires an embedding host "
+           "(ork.ecs.player.exe inits it when the scene declares PythonSystemData).\n");
+    OrkAssert(false);
+  }
+  logchan_pysys->log("PythonSystem: script<%s>", _systemData._sceneScriptPath.c_str());
   _pythonContext = std::make_shared<pyctx_t>();
 
   _varmap->makeSharedForKey<ComponentArray>("components", _activeComponents._linear);

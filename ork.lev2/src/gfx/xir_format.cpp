@@ -13,7 +13,7 @@
 #include <ork/kernel/datablock.h>
 
 namespace ork::lev2::xir {
-static logchannel_ptr_t logchan_xirio = logger()->configureChannel("XIRIO", fvec3(0.8, 0.8, 0.1), true);
+static logchannel_ptr_t logchan_xirio = logger()->configureChannel("XIRIO", fvec3(0.8, 0.8, 0.1), false);
 
 ////////////////////////////////////////////////////////////////////////////////
 // XIRWriter implementation

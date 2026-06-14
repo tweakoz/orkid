@@ -56,6 +56,7 @@ void ProbeComponentData::describeX(ComponentDataClass* clazz) {
   clazz->directEnumProperty("ActivationMode", &ProbeComponentData::_activationMode);
   clazz->intProperty("Supersample", int_range{0, 6}, &ProbeComponentData::_supersample);
   clazz->intProperty("TemporalFrames", int_range{0, 64}, &ProbeComponentData::_temporalFrames);
+  clazz->directProperty("Dynamic", &ProbeComponentData::_dynamic);
 }
 
 ProbeComponentData::ProbeComponentData() {
@@ -158,6 +159,7 @@ void ProbeSystem::_onStageComponent(ProbeComponent* component) {
   probe->_pTemporalFrames = &CD._temporalFrames;
   probe->_pRenderLayer = &CD._renderLayer;
   probe->_dim = CD._imageDim;
+  probe->_dynamic = CD._dynamic;
   probe->_name = ent->data()->GetName().c_str();
 
   // Read from spawner's transform (authoritative in edit mode)
@@ -166,7 +168,10 @@ void ProbeSystem::_onStageComponent(ProbeComponent* component) {
 
   component->_probe = probe;
 
-  // Create ProbeNode on the default layer
+  // Create ProbeNode on the default layer (also adds to
+  // LightManager::_lightprobes — see scenegraph::Layer::createProbeNode;
+  // that's the canonical registry consumers query via
+  // LightManager::findProbeByName at activate time).
   if (_sgSystem && _sgSystem->_default_layer) {
     auto layer = _sgSystem->_default_layer;
     auto name = std::string("probe_") + probe->_name;

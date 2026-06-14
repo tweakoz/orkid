@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
+#include <algorithm>
 #include <ork/kernel/opq.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/renderable.h>
@@ -66,6 +67,15 @@ StringDrawable::StringDrawable(const StringDrawableData* data)
     font->_use_deferred = RCFD->_renderingmodel.isDeferredPBR();
 
     auto pos_2d = data->_pos2D;
+    // corner anchoring (see StringDrawableData::_anchor): offset from the anchored corner, with
+    // the text BLOCK height compensated on y so a bottom anchor rests the block on the margin.
+    const auto& anchor = data->_anchor;
+    if (anchor.x != 0.0f or anchor.y != 0.0f) {
+      int nlines    = 1 + int(std::count(current_string.begin(), current_string.end(), '\n'));
+      float block_h = float(nlines * font->description().miAdvanceHeight);
+      pos_2d.x      = anchor.x * float(w) + pos_2d.x;
+      pos_2d.y      = anchor.y * float(h) + pos_2d.y - anchor.y * block_h;
+    }
 
     FontMan::beginTextBlock(context);
     FontMan::DrawText(context, pos_2d.x, pos_2d.y, current_string.c_str());

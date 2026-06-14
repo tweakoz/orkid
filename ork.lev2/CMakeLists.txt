@@ -138,13 +138,15 @@ target_include_directories (ork_lev2 PRIVATE $ENV{OBT_STAGE}/include/bullet )
 
 
 target_link_libraries(ork_lev2 PRIVATE ${libs} )
-find_package(lunasvg REQUIRED)
+# Pin lunasvg discovery to OBT staging — without HINTS+NO_DEFAULT_PATH
+# CMake auto-discovers /opt/homebrew/lib/cmake/lunasvg on macOS.
+find_package(lunasvg REQUIRED CONFIG
+             HINTS $ENV{OBT_STAGE}/lib/cmake/lunasvg
+             NO_DEFAULT_PATH)
 target_link_libraries(ork_lev2 PRIVATE assimp sndfile shaderc_shared lunasvg::lunasvg )
 
 target_link_libraries(ork_lev2 LINK_PRIVATE Boost::filesystem )
 target_link_libraries(ork_lev2 LINK_PRIVATE ork_ftxui )
-
-ork_torch_opts(ork_lev2) # torch should go last, so it cannot override the other libs
 
 ###################################
 # intel specific

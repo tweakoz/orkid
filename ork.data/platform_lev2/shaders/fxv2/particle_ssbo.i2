@@ -1,0 +1,173 @@
+///////////////////////////////////////////////////////////////
+// particle_ssbo.i2 — the SSBO particle VERTEX machinery, factored out of
+// particle_comshader.i2 so GENERATED freestyle-particle shaders (the
+// FreestyleParticleMaterial shader_path override / HyperSyn fragment DSL)
+// can import the storage block + vfaces + vertex shaders WITHOUT pulling
+// in the stock techniques (duplicate technique names). particle.fxv2
+// imports this BEFORE particle_comshader.i2 (same concatenation order
+// as when this text lived at the top of that file).
+///////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////
+// Particle data structure in SSBO
+// Using vec4 for alignment safety
+///////////////////////////////////////////////////////////////
+storage_interface storage_particles (descriptor_set 0) {
+  buffer layout(std430) particles {
+    vec4 camRightSize;             // 0:  xyz=camRight (sprites) / camPos (streaks), .w unused
+    vec4 camUpCount;               // 16: xyz=camUp, w=numParticles (as float)
+    vec4 materialParams;           // 32: x=gradient_phase (GradientAtlasMaterial only), yzw=reserved
+    vec4 particleData[262144];     // 48: pos.xyz, size (per particle)
+    vec4 particleData2[262144];    //     vel.xyz, length (per particle, for streaks)
+    vec4 particleData3[262144];    //     age, random, aux.x, aux.y (per particle)
+  };
+}
+
+///////////////////////////////////////////////////////////////
+// Vertex interface for SSBO-based sprite rendering
+///////////////////////////////////////////////////////////////
+vertex_interface vface_sprite_ssbo
+  : ublk_vtx
+  : storage_particles {
+  outputs {
+    vec4 frg_clr;
+    vec2 frg_uv0;
+    vec4 frg_uv1;  // x=age, y=random, z=aux.x, w=aux.y
+  }
+}
+
+///////////////////////////////////////////////////////////////
+// Vertex interface for SSBO-based streak rendering
+///////////////////////////////////////////////////////////////
+vertex_interface vface_streak_ssbo
+  : ublk_vtx
+  : storage_particles {
+  outputs {
+    vec4 frg_clr;
+    vec2 frg_uv0;
+    vec4 frg_uv1;  // x=age, y=random, z=aux.x, w=aux.y
+  }
+}
+
+///////////////////////////////////////////////////////////////
+// Sprite vertex shader - billboards using SSBO data
+///////////////////////////////////////////////////////////////
+vertex_shader vs_sprite_ssbo : vface_sprite_ssbo {
+  // 6 vertices per particle (2 triangles)
+  int particleIdx = gl_VertexIndex / 6;
+  int cornerIdx = gl_VertexIndex % 6;
+
+  // Read camera vectors from SSBO
+  vec3 camRight = camRightSize.xyz;
+  vec3 camUp = camUpCount.xyz;
+
+  // Read particle data from SSBO
+  vec4 pd1 = particleData[particleIdx];   // pos.xyz, size
+  vec4 pd3 = particleData3[particleIdx];  // age, random, aux.x, aux.y
+
+  vec3 pos = pd1.xyz;
+  float size = pd1.w;
+  float age = pd3.x;
+  float random = pd3.y;
+  // aux.x gets the per-frame gradient_phase added in so the fragment can
+  // sample the atlas with a single fract() — keeps the frag shader trivial.
+  vec2 aux_xy = vec2(pd3.z + materialParams.x, pd3.w);
+
+  // Billboard corner offsets (2 triangles = 6 vertices)
+  // Triangle 1: 0,1,2  Triangle 2: 3,4,5 (same as 0,2,3)
+  const vec2 offsets[6] = vec2[6](
+    vec2(-1.0, -1.0),  // 0: bottom-left
+    vec2( 1.0, -1.0),  // 1: bottom-right
+    vec2( 1.0,  1.0),  // 2: top-right
+    vec2(-1.0, -1.0),  // 3: bottom-left (same as 0)
+    vec2( 1.0,  1.0),  // 4: top-right (same as 2)
+    vec2(-1.0,  1.0)   // 5: top-left
+  );
+
+  const vec2 uvs[6] = vec2[6](
+    vec2(0.0, 0.0),
+    vec2(1.0, 0.0),
+    vec2(1.0, 1.0),
+    vec2(0.0, 0.0),
+    vec2(1.0, 1.0),
+    vec2(0.0, 1.0)
+  );
+
+  vec2 offset = offsets[cornerIdx];
+
+  // Compute billboard position using camera vectors
+  vec3 worldPos = pos + offset.x * camRight * size + offset.y * camUp * size;
+
+  gl_Position = MatMVP * vec4(worldPos, 1.0);
+  frg_clr = vec4(1.0);
+  frg_uv0 = uvs[cornerIdx];
+  frg_uv1 = vec4(age, random, aux_xy);
+}
+
+///////////////////////////////////////////////////////////////
+// Streak vertex shader - velocity-aligned quads using SSBO data
+///////////////////////////////////////////////////////////////
+vertex_shader vs_streak_ssbo : vface_streak_ssbo {
+  // 6 vertices per particle (2 triangles)
+  int particleIdx = gl_VertexIndex / 6;
+  int cornerIdx = gl_VertexIndex % 6;
+
+  // Read camera position and up from SSBO
+  vec3 camPos = camRightSize.xyz;  // For streaks: camPos stored here
+  vec3 camUp = camUpCount.xyz;
+
+  // Read particle data from SSBO
+  vec4 pd1 = particleData[particleIdx];   // pos.xyz, width
+  vec4 pd2 = particleData2[particleIdx];  // vel.xyz, length
+  vec4 pd3 = particleData3[particleIdx];  // age, random, aux.x, aux.y
+
+  vec3 pos = pd1.xyz;
+  float width = pd1.w;
+  vec3 vel = pd2.xyz;
+  float len = pd2.w;
+  float age = pd3.x;
+  float random = pd3.y;
+  // aux.x gets the per-frame gradient_phase added in so the fragment can
+  // sample the atlas with a single fract() — keeps the frag shader trivial.
+  vec2 aux_xy = vec2(pd3.z + materialParams.x, pd3.w);
+
+  // Compute streak quad corners
+  // Streak goes from pos (head) to pos - vel*length (tail)
+  // Use raw velocity (not normalized) to match GL behavior where streak length
+  // depends on velocity magnitude: tailPos = pos - vel * len
+  vec3 tailPos = pos - vel * len;
+
+  // Cross product with view direction to get camera-facing side
+  vec3 velDir = normalize(vel);
+  vec3 viewDir = normalize(pos - camPos);
+  vec3 side = normalize(cross(velDir, viewDir)) * width;
+
+  // Fallback if velDir parallel to viewDir
+  if (length(side) < 0.001) {
+    side = normalize(cross(velDir, camUp)) * width;
+  }
+
+  // 4 corners: head+side, head-side, tail-side, tail+side
+  // Triangle 1: 0,1,2  Triangle 2: 0,2,3
+  vec3 corners[4];
+  corners[0] = pos + side;      // head right
+  corners[1] = pos - side;      // head left
+  corners[2] = tailPos - side;  // tail left
+  corners[3] = tailPos + side;  // tail right
+
+  const int indices[6] = int[6](0, 1, 2, 0, 2, 3);
+  const vec2 uvs[4] = vec2[4](
+    vec2(1.0, 0.0),  // head right
+    vec2(0.0, 0.0),  // head left
+    vec2(0.0, 1.0),  // tail left
+    vec2(1.0, 1.0)   // tail right
+  );
+
+  int idx = indices[cornerIdx];
+  vec3 worldPos = corners[idx];
+
+  gl_Position = MatMVP * vec4(worldPos, 1.0);
+  frg_clr = vec4(1.0);
+  frg_uv0 = uvs[idx];
+  frg_uv1 = vec4(age, random, aux_xy);
+}

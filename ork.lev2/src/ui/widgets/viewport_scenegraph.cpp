@@ -152,6 +152,19 @@ void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
     comptek->_outputNode = _outputnode;
 
+    // Per-viewport pre-render GPU hook (frustum cull etc.). Resolve THIS viewport's camera +
+    // aspect — the same camera/computeMatrices the compositor uses at assemble — and fan out to
+    // the scene's drawables BEFORE the render pass. View-dependent GPU work that feeds the
+    // upcoming draw (e.g. an instance-cull compute → indirect draw) runs here, per-VP.
+    if (acqbuf && acqbuf->_DB) {
+      auto cam = acqbuf->_DB->cameraData(_cameraname);
+      if (cam) {
+        float aspect = (height() > 0) ? (float(width()) / float(height())) : 1.0f;
+        auto cammtx  = cam->computeMatrices(aspect);
+        _scenegraph->preRender(drwev->GetTarget(), cammtx);
+      }
+    }
+
     _scenegraph->_renderWithAcquiredDrawQueueForRendering(acqbuf);
 
     comptek->_outputNode = orig_onode;

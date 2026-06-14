@@ -12,6 +12,8 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/unlit_node.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeDecompBlur.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeSSSS.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeHeatDistort.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeHSVG.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeACES.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeUser.h>
@@ -164,6 +166,59 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
             return fxs.c_str();
           });
   type_codec->registerStdCodec<decompblur_postnode_ptr_t>(dcblurpostnode_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // PBR2 Phase 3 (P3.D) — Separable Subsurface Scattering post-fx node.
+  auto sssspostnode_type =
+      py::class_<PostFxNodeSSSS, PostCompositingNode, postnode_ssss_ptr_t>(module_lev2, "PostFxNodeSSSS")
+          .def(py::init<>())
+          .def("gpuInit", [](postnode_ssss_ptr_t n, ctx_t ctx, int w, int h) { n->gpuInit(ctx.get(), w, h); })
+          .def_property(
+              "blurfactor",
+              [](postnode_ssss_ptr_t n) -> float { return n->_blurfactor; },
+              [](postnode_ssss_ptr_t n, float v) { n->_blurfactor = v; })
+          .def_property(
+              "strength",
+              [](postnode_ssss_ptr_t n) -> float { return n->_strength; },
+              [](postnode_ssss_ptr_t n, float v) { n->_strength = v; })
+          .def_property(
+              "subsurface_tint",
+              [](postnode_ssss_ptr_t n) -> fvec3 { return n->_subsurface_tint; },
+              [](postnode_ssss_ptr_t n, fvec3 v) { n->_subsurface_tint = v; })
+          .def_property(
+              "debug_mode",
+              [](postnode_ssss_ptr_t n) -> int { return n->_debug_mode; },
+              [](postnode_ssss_ptr_t n, int v) { n->_debug_mode = v; })
+          .def("__repr__", [](postnode_ssss_ptr_t n) -> std::string {
+            fxstring<64> fxs;
+            fxs.format("PostFxNodeSSSS(%p)", n.get());
+            return fxs.c_str();
+          });
+  type_codec->registerStdCodec<postnode_ssss_ptr_t>(sssspostnode_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // E2B item D — heat-distortion post-fx (reads the forward node's generic
+  // "aux_<channel>" RT; declared in scenes via addPostFxNode -> round-trips).
+  auto heatdistortpostnode_type =
+      py::class_<PostFxNodeHeatDistort, PostCompositingNode, postnode_heatdistort_ptr_t>(module_lev2, "PostFxNodeHeatDistort")
+          .def(py::init<>())
+          .def("gpuInit", [](postnode_heatdistort_ptr_t n, ctx_t ctx, int w, int h) { n->gpuInit(ctx.get(), w, h); })
+          .def_property(
+              "strength",
+              [](postnode_heatdistort_ptr_t n) -> float { return n->_strength; },
+              [](postnode_heatdistort_ptr_t n, float v) { n->_strength = v; })
+          .def_property(
+              "chroma",
+              [](postnode_heatdistort_ptr_t n) -> float { return n->_chroma; },
+              [](postnode_heatdistort_ptr_t n, float v) { n->_chroma = v; })
+          .def_property(
+              "channel",
+              [](postnode_heatdistort_ptr_t n) -> std::string { return n->_channel; },
+              [](postnode_heatdistort_ptr_t n, std::string v) { n->_channel = v; })
+          .def("__repr__", [](postnode_heatdistort_ptr_t n) -> std::string {
+            fxstring<64> fxs;
+            fxs.format("PostFxNodeHeatDistort(%p)", n.get());
+            return fxs.c_str();
+          });
+  type_codec->registerStdCodec<postnode_heatdistort_ptr_t>(heatdistortpostnode_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto dchsvgpostnode_type = //
       py::class_<PostFxNodeHSVG, PostCompositingNode, postnode_hsvg_ptr_t>(module_lev2, "PostFxNodeHSVG")

@@ -62,7 +62,10 @@ public:
 
   //////////////////////////////////////////
 
-  virtual FxShaderStorageBuffer* createStorageBuffer(size_t length) { return nullptr; }
+  virtual FxShaderStorageBuffer* createStorageBuffer(
+      size_t length,
+      StorageBufferUsage usage   = StorageBufferUsage::DEFAULT,
+      BufferResidency    residency = BufferResidency::HOST) { return nullptr; }
   virtual void copyBufferIntoStorageBuffer(FxShaderStorageBuffer* ssbo, std::vector<uint8_t> buffer, size_t dest_offset) { }
   virtual storagebuffermappingptr_t mapStorageBuffer(
       FxShaderStorageBuffer* b,

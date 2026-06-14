@@ -67,6 +67,11 @@ struct ForwardPbrNodeImpl {
   rtgroup_ptr_t _rtg_ambocc_accum;
   rtgroup_ptr_t _rtg_ambocc_accum2;
   rtgroup_ptr_t _rtg_cube1_depth_copy;
+  // GENERIC AUX CHANNELS (E2B item D) — one lazily-created RTG per declared
+  // channel (RGBA16F, primary dims, no depth); rendered as an extra pass in
+  // _render_colorpass and published into the CompositorDrawData properties
+  // under crc("aux_<name>") for postfx consumption.
+  std::map<std::string, rtgroup_ptr_t> _aux_rtgs;
   rtgset_ptr_t _rtgs_resolve_msaa;
   fmtx4 _viewOffsetMatrix;
   pbrmaterial_ptr_t _skybox_material;

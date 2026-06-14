@@ -116,8 +116,17 @@ void Simulation::_update_SIMSTATE() {
 
   switch (_currentSimulationMode) {
     case ork::ecs::ESimulationMode::PAUSE: {
-      logchan_simupdate->log("sim<%p> _update_SIMSTATE::PAUSE", (void*)this);
       ork::lev2::InputManager::instance()->poll();
+      // the documented pause clock contract (simulation.h): dt reads 0, gameTime holds
+      mPrevDeltaTime = 0.0f;
+      mDeltaTime     = 0.0f;
+      // RENDER-SYNC systems still update — the renderer reads the CAMERA from the
+      // published draw buffer, so the scenegraph must keep ENQUEUEING for the view to
+      // stay live while everything else is frozen. Gameplay systems hold (trait default).
+      _systems.atomicOp([&](const SystemLut& syslut) { _updsyslutcopy = syslut; });
+      for (auto sys : _updsyslutcopy)
+        if (sys.second->updatesWhilePaused())
+          sys.second->_update(this);
       break;
     }
     case ork::ecs::ESimulationMode::ACTIVE: {

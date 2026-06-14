@@ -298,6 +298,11 @@ GLFX1Backend::GLFX1Backend() {
     }
   });
   registerAstPostCB<ArrayDeclaration>([=](auto adecl) {
+    // size-less `name[]` runtime array: only the TypedIdentifier child, no size child -> emit "[]"
+    // (the sized form emits its [N] via the pre/post-child callbacks below).
+    if (adecl->_children.size() < 2) {
+      emitContinueLine("[]");
+    }
     // Check if we're directly inside a DeclarationStatement (immediate parent)
     int depth = adecl->template hasAncestorOfType<DeclarationStatement>(1);
     bool in_declaration_statement = (depth == 0);
@@ -306,14 +311,12 @@ GLFX1Backend::GLFX1Backend() {
     }
   });
   registerAstPreChildCB<ArrayDeclaration>([=](auto adecl, astnode_ptr_t child) {
-    OrkAssert(adecl->_children.size()==2);
-    if (child == adecl->_children[1]) {
+    if (adecl->_children.size() >= 2 and child == adecl->_children[1]) {
       emitContinueLine("[");
     }
   });
   registerAstPostChildCB<ArrayDeclaration>([=](auto adecl, astnode_ptr_t child) {
-    OrkAssert(adecl->_children.size()==2);
-    if (child == adecl->_children[1]) {
+    if (adecl->_children.size() >= 2 and child == adecl->_children[1]) {
       emitContinueLine("]");
     }
   });

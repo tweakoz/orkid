@@ -41,7 +41,7 @@
 //      allows the child's reads of .staging/.
 //
 // One binary, byte-identical, used by every orkid-based .app across every
-// project (orkid, impcore, uni, ...). Stable cdhash → stable TCC identity →
+// project. Stable cdhash → stable TCC identity →
 // the user grants Full Disk Access once per bundle id, and it persists
 // across re-deploys forever.
 
@@ -108,9 +108,9 @@ int main(int argc, char *argv[]) {
   }
 
   // Walk upward from enclosing looking for a .staging/ dir. This handles:
-  //   • top-level bundles (.../Impossible.app) — enclosing IS the deploy
+  //   • top-level bundles (.../MyApp.app) — enclosing IS the deploy
   //     root, first iteration hits .staging immediately
-  //   • nested-utility bundles (.../Impossible Utilities/VibeSandbox.app)
+  //   • nested-utility bundles (.../MyApp Utilities/SubTool.app)
   //     — enclosing is the Utilities folder; .staging lives one level up
   //   • any deeper nesting used by future deploy layouts
   // If nothing is found, fall back to the sibling-of-enclosing path so

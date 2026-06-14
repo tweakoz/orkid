@@ -16,8 +16,48 @@ namespace nb = obind;
 
 namespace ork::ecssim {
 using eref_ptr_t = std::shared_ptr<EntityRef>;
+
+// a RESOLVED spawner handle (Simulation::findSpawner at link time = the only
+// string lookup); spawn() through it does no name resolution. Bound BY VALUE
+// (a bare shared_ptr<T> binding collides with nanobind's shared_ptr caster);
+// falsy when the spawner was not found.
+struct ScriptSpawner {
+  Simulation* _sim = nullptr;
+  spawndata_constptr_t _rec;
+};
+
 void register_simulation(nb::module_& module_ecssim,python::obind_typecodec_ptr_t type_codec) {
   using namespace ::ork::python;
+  /////////////////////////////////////////////////////////////////////////////////
+  auto spawner_type = clazz<nanobindadapter, ScriptSpawner>(module_ecssim, "Spawner")
+      // pos overrides the spawner transform; vel/avel ride the entity varmap
+      // as "initialVelocity"/"initialAngularVelocity" — the ONE velocity
+      // channel (the FSM's scheduled spawns write the same linear key;
+      // BulletObjectComponent consumes both at activate, which is
+      // queue-deferred, so the post-spawn writes land in time). avel in
+      // rad/s about the given world axis (e.g. topspin for a projectile).
+      // Update-thread context (notify/update hooks). Returns the Entity.
+      .def("spawn", [](const ScriptSpawner& spwn, fvec3 pos, fvec3 vel, float scale, fvec3 avel) -> pyentity_ptr_t {
+        if (not spwn._rec)
+          return pyentity_ptr_t(nullptr);
+        auto sad         = std::make_shared<SpawnAnonDynamic>();
+        sad->_overridexf = std::make_shared<DecompTransform>();
+        sad->_overridexf->_translation  = pos;
+        sad->_overridexf->_uniformScale = scale;
+        auto ent = spwn._sim->spawnDynamic(spwn._rec, sad);
+        if (ent and vel.magnitudeSquared() > 0.0f)
+          ent->_varmap->makeValueForKey<fvec3>("initialVelocity") = vel;
+        if (ent and avel.magnitudeSquared() > 0.0f)
+          ent->_varmap->makeValueForKey<fvec3>("initialAngularVelocity") = avel;
+        return pyentity_ptr_t(ent);
+      }, py::arg("pos"), py::arg("vel") = fvec3(0, 0, 0), py::arg("scale") = 1.0f, py::arg("avel") = fvec3(0, 0, 0))
+      .def("__bool__", [](const ScriptSpawner& spwn) -> bool { return spwn._rec != nullptr; })
+      .def("__repr__", [](const ScriptSpawner& spwn) -> std::string {
+        fxstring<256> fxs;
+        fxs.format("ecssim::Spawner(%s)", spwn._rec ? spwn._rec->GetName().c_str() : "null");
+        return fxs.c_str();
+      });
+  type_codec->registerStdCodec<ScriptSpawner>(spawner_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto sim_type = clazz<nanobindadapter,pysim_ptr_t>(module_ecssim, "Simulation")
        .prop_ro("vars", [](pysim_ptr_t simptr) -> varmap::varmap_ptr_t { return simptr->varmap(); })
@@ -45,6 +85,19 @@ void register_simulation(nb::module_& module_ecssim,python::obind_typecodec_ptr_
         auto ent = simptr->_findEntityFromRef(eref);
         auto wrapped = pyentity_ptr_t(ent);
         return wrapped;
+      })
+      // resolve a scene-declared spawner ONCE (init/link time — the only string
+      // lookup); spawn through the returned handle at event rate. The handle is
+      // FALSY when the scene declares no such spawner.
+      .def("findSpawner", [](pysim_ptr_t simptr, const std::string& name) -> ScriptSpawner {
+        ScriptSpawner spwn;
+        spwn._sim = simptr.get();
+        spwn._rec = simptr->findSpawner(name);
+        return spwn;
+      })
+      .def("despawn", [](pysim_ptr_t simptr, pyentity_ptr_t ent) {
+        if (ent.get())
+          simptr->enqueueDespawnEntity(ent.get());
       });
   type_codec->registerStdCodec<pysim_ptr_t>(sim_type);
 }

@@ -10,6 +10,7 @@
 #include <ork/object/ObjectCategory.h>
 #include <ork/rtti/RTTI.h>
 #include <ork/config/config.h>
+#include <ork/kernel/varmap.inl>
 #include <boost/uuid/uuid.hpp>
 
 namespace ork::reflect {
@@ -72,6 +73,15 @@ public:
 
   template <typename ClassType, typename MemberMapType>
   inline PropertyModifier directMapProperty(const char* name, MemberMapType ClassType::*member);
+
+  // For ork::varmap::varmap_ptr_t members (shared_ptr<VarMap>). Uses
+  // the DirectVarMap property type which reflects via the underlying
+  // VarMap's _themap (std::map<string, var_t>) and routes through the
+  // existing var_t serialization codec (tagged "<type>:<data>" strings).
+  // The shared_ptr may start as nullptr; DirectVarMap lazy-allocates
+  // on first write so deserialization always has a live target.
+  template <typename ClassType>
+  inline PropertyModifier directVarMapProperty(const char* name, varmap::varmap_ptr_t ClassType::*member);
 
   template <typename ClassType, typename MemberArrayType>
   inline PropertyModifier directArrayProperty(const char* name, MemberArrayType ClassType::*member);

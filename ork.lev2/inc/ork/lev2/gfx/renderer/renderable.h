@@ -67,6 +67,11 @@ struct IRenderable {
   var_t _drawDataA;
   var_t _drawDataB;
   bool _view_relative = false;
+  // Per-drawable IBL overrides (PBR2 Phase 0). On the base so any
+  // Renderable subclass — Model, Callback (particles, etc.) —
+  // propagates them through to RCID at draw time.
+  pbr::radiancemaps_ptr_t _envmapOverride;  // baked equirect override (MapSpecularEnv)
+  lightprobe_ptr_t        _probeOverride;   // live cube probe override (reflectionPROBE)
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -89,7 +94,6 @@ struct ModelRenderable : public IRenderable {
   fvec3 _offset;
   fquat _orientation;
   xgmcluster_ptr_t _cluster;
-  pbr::radiancemaps_ptr_t _envmapOverride;  // per-drawable env map override
 };
 
 struct SkeletonRenderable : public IRenderable {

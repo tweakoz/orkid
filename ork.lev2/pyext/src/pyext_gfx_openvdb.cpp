@@ -9,6 +9,7 @@
 #include "_vdb_impl.h"
 #include <pybind11/numpy.h>
 #include <ork/lev2/gfx/gfxvtxbuf.inl>
+#include <ork/lev2/gfx/vdb_drawable.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -46,6 +47,13 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto ovdb = module_lev2.def_submodule("vdb", "OrkidOpenVDBBridge");
   auto ax   = ovdb.def_submodule("ax", "OrkidOpenVDBAxBridge");
+
+  // The full lev2 init (lev2_init.cpp) only runs when initModule() is called
+  // from the app/ezapp construction path. Python scripts that touch vdb/ax
+  // before constructing an app would hit "no LLVM targets registered" inside
+  // openvdb::ax::Compiler. Initializing here makes the bindings self-contained.
+  openvdb::initialize(); // internally idempotent
+  if (!openvdb::ax::isInitialized()) openvdb::ax::initialize();
 
   auto grid_type = py::class_<vdb_basegrid_t, vdb_basegrid_ptr_t>(ovdb, "BaseGrid")
                        .def("activeVoxelCount", [](vdb_basegrid_ptr_t grid) -> uint64_t { return grid->activeVoxelCount(); });
@@ -451,6 +459,37 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
                 grid->fill(bbox, value);
               })
           ///////////////////////////////////////////////////////
+          // Activate every voxel inside an axis-aligned WORLD-space bbox
+          // and set its value. Used by ImplicitSdf (ork.ecs.scene.assets)
+          // to pre-activate the eval region before running an AX volume
+          // shader — AX only iterates active voxels, so the bbox here
+          // determines the eval domain. Unlike fill() above (which has a
+          // latent bug using world coords as index Coord values), this
+          // does proper worldToIndex conversion so the activated bbox
+          // actually matches the requested world-space region.
+          ///////////////////////////////////////////////////////
+          .def(
+              "fillBBox",
+              [](vdb_floatgrid_ptr_t grid, fvec3 mn, fvec3 mx, float value) {
+                py::gil_scoped_release release;
+                const auto& xf = grid->transform();
+                auto mi = xf.worldToIndex(openvdb::Vec3d(mn.x, mn.y, mn.z));
+                auto ma = xf.worldToIndex(openvdb::Vec3d(mx.x, mx.y, mx.z));
+                openvdb::CoordBBox bbox(
+                    openvdb::Coord(
+                        int(std::floor(mi.x())),
+                        int(std::floor(mi.y())),
+                        int(std::floor(mi.z()))),
+                    openvdb::Coord(
+                        int(std::ceil(ma.x())),
+                        int(std::ceil(ma.y())),
+                        int(std::ceil(ma.z()))));
+                grid->fill(bbox, value, /*active=*/true);
+              },
+              py::arg("min"),
+              py::arg("max"),
+              py::arg("value") = 0.0f)
+          ///////////////////////////////////////////////////////
           .def(
               "blitWithBrush",
               [](vdb_floatgrid_ptr_t grid, fvec3 center, vmapf_ptr_t vmap) {
@@ -789,6 +828,18 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
             grids.push_back(grid);
             file.write(grids);
             file.close();
+          })
+          .def_static("loadFromVDB", [](std::string name, py::object path) -> vdb_floatgrid_ptr_t {
+            auto as_str     = py::str(path);
+            auto as_std_str = as_str.cast<std::string>();
+            py::gil_scoped_release release;
+
+            openvdb::io::File file(as_std_str);
+            file.open();
+            openvdb::GridBase::Ptr base_grid = file.readGrid(name);
+            file.close();
+            auto fgrid = openvdb::gridPtrCast<vdb_floatgrid_t>(base_grid);
+            return fgrid;
           });
   type_codec->registerStdCodec<vdb_floatgrid_ptr_t>(ovdb_fgrid_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -935,6 +986,84 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
                               });
   type_codec->registerStdCodec<vdb_vec3grid_ptr_t>(ovdb_v3grid_type);
   /////////////////////////////////////////////////////////////////////////////////
+  // meshToLevelSet — build a narrow-band SDF FloatGrid from a closed
+  // triangle mesh. Wraps openvdb::tools::meshToLevelSet. Inputs:
+  //   verts: list of vec3 world-space vertex positions
+  //   tris:  list of (uint, uint, uint) triangle index tuples
+  //   voxel_size: world units per voxel (smaller = sharper, more memory)
+  //   half_width: SDF band half-width in voxels (default 3 = LEVEL_SET_HALF_WIDTH)
+  // The mesh must be CLOSED — open surfaces give garbage inside/outside.
+  /////////////////////////////////////////////////////////////////////////////////
+  ovdb.def(
+      "meshToLevelSet",
+      [](py::list verts_py, py::list tris_py, float voxel_size, float half_width)
+          -> vdb_floatgrid_ptr_t {
+        std::vector<openvdb::Vec3s> verts;
+        std::vector<openvdb::Vec3I> tris;
+        verts.reserve(verts_py.size());
+        tris.reserve(tris_py.size());
+        for (auto v : verts_py) {
+          auto fv = v.cast<fvec3>();
+          verts.emplace_back(fv.x, fv.y, fv.z);
+        }
+        for (auto t : tris_py) {
+          auto tup = t.cast<py::tuple>();
+          tris.emplace_back(
+              tup[0].cast<uint32_t>(),
+              tup[1].cast<uint32_t>(),
+              tup[2].cast<uint32_t>());
+        }
+        py::gil_scoped_release release;
+        auto xform = openvdb::math::Transform::createLinearTransform(voxel_size);
+        return openvdb::tools::meshToLevelSet<vdb_floatgrid_t>(
+            *xform, verts, tris, half_width);
+      },
+      py::arg("verts"),
+      py::arg("tris"),
+      py::arg("voxel_size") = 0.1f,
+      py::arg("half_width") = float(openvdb::LEVEL_SET_HALF_WIDTH));
+  /////////////////////////////////////////////////////////////////////////////////
+  // gridToDrawable — one-shot conversion of a FloatGrid SDF/level-set
+  // into a renderable Drawable. Internally: marching cubes (volumeToMesh)
+  // → vertex/index arrays with area-weighted smooth normals → exact-size
+  // GPU upload → CallbackDrawable wrapping a RigidPrimitive (whose
+  // lifetime is anchored on the drawable). The same extraction helper
+  // (ork::lev2::vdb::extractMeshFromGrid) is used by VdbLevelSetRenderer
+  // per-frame; this entry point adds the static-asset GPU build on top.
+  //
+  // Usage:
+  //   ctx       = GfxEnv.ref.loadingContext()
+  //   material  = shaders.createPbrMaterialWithColor(ctx=ctx, color=...)
+  //   drawable  = vdb.gridToDrawable(grid, material, iso=0.0)
+  //   # plug `drawable=...` into a SceneGraphComponent node.
+  //
+  // Returns None if the extracted mesh is empty at the given iso.
+  /////////////////////////////////////////////////////////////////////////////////
+  ovdb.def(
+      "gridToDrawable",
+      [](vdb_floatgrid_ptr_t grid,
+         material_ptr_t      material,
+         float               iso,
+         float               adaptivity,
+         bool                flip_windings,
+         py::object          ctx_opt) -> drawabledata_ptr_t {
+        Context* ctx = nullptr;
+        if (ctx_opt.is_none()) {
+          ctx = contextForCurrentThread();
+        } else {
+          ctx = py::cast<ctx_t>(ctx_opt).get();
+        }
+        OrkAssert(ctx);
+        py::gil_scoped_release release;
+        return vdb::gridToDrawable(
+            ctx, grid, material, iso, adaptivity, flip_windings);
+      },
+      py::arg("grid"),
+      py::arg("material"),
+      py::arg("iso")           = 0.0f,
+      py::arg("adaptivity")    = 0.0f,
+      py::arg("flip_windings") = true,
+      py::arg("ctx")           = py::none());
   /////////////////////////////////////////////////////////////////////////////////
 }
 

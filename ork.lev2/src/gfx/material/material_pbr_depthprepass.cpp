@@ -40,7 +40,40 @@ static logchannel_ptr_t logchan_pbr_unl = logger()->configureChannel("mtlpbrDPP"
 fxpipeline_ptr_t PBRMaterial::_createFxPipelineDPP(const FxPipelinePermutation& permu) const {
   fxpipeline_ptr_t pipeline;
 
-  if ((not permu._instanced) and (not permu._skinned)) {
+  // E.4 — INSTANCED SSBO depth-prepass: per-instance matrix placement, depth-only.
+  // Checked BEFORE the non-instanced SSBO branch (which would draw every instance
+  // at identity). Falls through when the material's shader lacks the variant.
+  if (permu._is_vertex_ssbo and permu._instanced and this->_tek_FWD_SSBO_CUSTOM_INSTANCED_DEPTHPREPASS) {
+    pipeline             = std::make_shared<FxPipeline>(permu);
+    pipeline->_technique = this->_tek_FWD_SSBO_CUSTOM_INSTANCED_DEPTHPREPASS;
+    pipeline->bindParam(this->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
+    pipeline->bindParam(this->_paramDppZBias, "RCFD_PBR_DPP_ZBIAS"_crcsh);
+    pipeline->addStateLambda([this](const RenderContextInstData& RCID) {
+      auto mut = const_cast<PBRMaterial*>(this);
+      mut->_rasterstate->setCullTest(this->_doubleSided ? ECullTest::OFF : ECullTest::PASS_FRONT);
+      mut->_rasterstate->setDepthTest(EDepthTest::LEQUALS);
+      mut->_rasterstate->setWriteMaskZ(true);
+      mut->_rasterstate->setWriteMaskRGB(false);
+      mut->_rasterstate->setWriteMaskA(false);
+    });
+  }
+  // SSBO-sourced depth-prepass (FWD_SSBO_CUSTOM_DEPTHPREPASS): a first-class vertex variant, like
+  // the FWD path. Same SSBO-pull `position` -> matching depth, no z-fight with the color pass.
+  else if (permu._is_vertex_ssbo and (not permu._instanced) and this->_tek_FWD_SSBO_CUSTOM_DEPTHPREPASS) {
+    pipeline             = std::make_shared<FxPipeline>(permu);
+    pipeline->_technique = this->_tek_FWD_SSBO_CUSTOM_DEPTHPREPASS;
+    pipeline->bindParam(this->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
+    pipeline->bindParam(this->_paramDppZBias, "RCFD_PBR_DPP_ZBIAS"_crcsh);
+    pipeline->addStateLambda([this](const RenderContextInstData& RCID) {
+      auto mut = const_cast<PBRMaterial*>(this);
+      mut->_rasterstate->setCullTest(this->_doubleSided ? ECullTest::OFF : ECullTest::PASS_FRONT);
+      mut->_rasterstate->setDepthTest(EDepthTest::LEQUALS);
+      mut->_rasterstate->setWriteMaskZ(true);
+      mut->_rasterstate->setWriteMaskRGB(false);
+      mut->_rasterstate->setWriteMaskA(false);
+    });
+  }
+  else if ((not permu._instanced) and (not permu._skinned)) {
     if (permu._stereo and (not permu._vr_mono)) {
       if (this->_tek_FWD_DEPTHPREPASS_RI_NI_ST) {
         pipeline             = std::make_shared<FxPipeline>(permu);
@@ -141,6 +174,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineDPP(const FxPipelinePermutation& 
       pipeline             = std::make_shared<FxPipeline>(permu);
       pipeline->_technique = this->_tek_FWD_DEPTHPREPASS_RI_IN_MO;
       pipeline->bindParam(this->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
+      pipeline->bindParam(this->_paramDppZBias, "RCFD_PBR_DPP_ZBIAS"_crcsh); // the DPP fragment reads it
       pipeline->addStateLambda(createBasicStateLambda(this));
       pipeline->addStateLambda([this](const RenderContextInstData& RCID) {
         auto mut = const_cast<PBRMaterial*>(this);

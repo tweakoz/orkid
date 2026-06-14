@@ -14,10 +14,12 @@
 #include <ork/rtti/downcast.h>
 #include <ork/kernel/mutex.h>
 #include <ork/util/crc64.h>
+#include <ork/kernel/datablock.h> // datablock_ptr_t for the cook-cache hooks (module.h)
 
 #include <ork/config/config.h>
 
 #include <ork/math/multicurve.h>
+#include <ork/math/TransformNode.h>
 #include <ork/kernel/orkpool.inl>
 #include <ork/event/Event.h>
 #include <ork/rtti/RTTIX.inl>
@@ -25,6 +27,10 @@
 
 #include <ork/kernel/sigslot2.h>
 #include <functional>
+#include <optional>
+#include <typeindex>
+#include <unordered_map>
+#include <unordered_set>
 
 namespace ork::dataflow {
 
@@ -89,6 +95,16 @@ using moduledata_constptr_t = std::shared_ptr<const ModuleData>;
 using dgmoduledata_constptr_t = std::shared_ptr<const DgModuleData>;
 using inplugdata_constptr_t = std::shared_ptr<const InPlugData>;
 using outplugdata_constptr_t = std::shared_ptr<const OutPlugData>;
+
+// Set of raw DgModuleData pointers — used as a DFS path tracker in cycle-safe
+// recursion (computeMinDepth/MaxDepth), as a cycle-offender list returned from
+// DgSorter, and as the pending-module set in topology generation.
+using dgmoduleset_t = std::unordered_set<const DgModuleData*>;
+
+// Memoization cache for computeMin/MaxDepth — maps a fully-resolved module to
+// its computed depth so re-convergent (diamond) DAGs are walked in O(V+E)
+// instead of exponentially re-traversing every distinct upstream path.
+using dgmoduledepthmap_t = std::unordered_map<const DgModuleData*, size_t>;
 
 using scheduler_ptr_t = std::shared_ptr<scheduler>;
 
@@ -210,7 +226,12 @@ public:
   orkvector<DgRegister*> prune(dgmoduledata_ptr_t mod);
   DgRegister* alloc(outplugdata_ptr_t poutplug);
 
-  orkmap<const std::type_info*, dgregisterblock_ptr_t> _registerSets;
+  // Keyed by std::type_index (not raw type_info*) so lookups work across
+  // dylibs. type_info* pointer comparison only works when typeinfo dedups
+  // across shared libraries — which is build-config-dependent and was
+  // unreliable for types instantiated only in core (e.g. Vec4Combine).
+  // type_index falls back to name comparison when pointers differ.
+  std::unordered_map<std::type_index, dgregisterblock_ptr_t> _registerSets;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -258,14 +279,6 @@ struct Topology {
   uint64_t _hash = 0;
 };
 
-struct DeserConnection{
-  std::string _inp_module;
-  std::string _inp_plug;
-  std::string _out_module;
-  std::string _out_plug;
-};
-
-using deserconn_ptr_t = std::shared_ptr<DeserConnection>;
 
 struct GraphData : public ork::Object {
 
@@ -302,10 +315,14 @@ public:
 
 
   orklut<std::string, object_ptr_t> _modules;
-  std::vector<deserconn_ptr_t> _deser_connections;
   sigslot2::signal_void_t _sigTopologyUpdated;
 
   bool _topologyDirty;
+  // opt-in per-node cook cache (content-addressed). When true, GraphInst::compute
+  // hashes each node (Merkle: identity-scalars + context + input hashes) and
+  // loads/stores its output via DataBlockCache instead of recomputing. Terrain /
+  // geometry set this; particles leave it false (realtime, every frame differs).
+  bool _cacheable = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -332,6 +349,24 @@ struct GraphInst {
   void stage();
   void activate();
   void compute(ui::updatedata_ptr_t updata);
+  // Merkle-hash every node into its _cookHash: H(identity-scalars, context,
+  // [upstream node hashes]). Cheap — never touches output buffers. Driver sets
+  // _cookContextHash (e.g. terrain dimension) first. Reused by both cachedCompute
+  // (synchronous graphs) and execution-model-specific drivers (the terrain GPU
+  // bake, which must sync per op before reading a node's output back).
+  void computeNodeHashes();
+  // the cook-cache compute path for SYNCHRONOUS graphs: computeNodeHashes() then
+  // per node load-or-(compute+store) inline. GPU graphs (terrain) instead drive
+  // the per-node sync + cache I/O themselves (see bakeHeightfield).
+  void cachedCompute(ui::updatedata_ptr_t updata);
+  uint64_t _cookContextHash = 0;
+  // Restore the graphinst to a "just-created" state: every module's onReset
+  // hook runs in topological order, clearing per-instance state (Globals'
+  // first-compute flag, particle pools, RNG, …). The next compute() call
+  // behaves as if it were the first one for this instance. Used by ECS slot
+  // recycling — one ParticlesComponent slot can be reset() and re-triggered
+  // without paying graphinst-creation cost.
+  void reset();
   ////////////////////////////////////////////
   template <typename T> dgmoduleinst_ptr_t firstModuleInst() const {
     for (auto item : _ordered_module_insts) {
@@ -356,10 +391,52 @@ struct GraphInst {
   std::vector<dgmoduleinst_ptr_t> _ordered_module_insts;
   std::set<int> _outputRegisters;
   varmap::VarMap _vars;
+  // optional per-module compute() timing sink (module CLASS name, seconds of host wall). A family
+  // that wants per-class perf counters installs one (hypermesh HmPerf); null = a single branch.
+  std::function<void(const char*, double)> _moduleTimingSink;
 
+  // Optional callback bound by the host (e.g. ParticlesComponent under
+  // ECS) at stage time. Modules call this to query the host's published
+  // entity transform registry by name without knowing the host's
+  // concrete type. Returns the live decompxf_ptr_t on hit, nullptr on
+  // miss. The pointer is the same object the host updates each tick;
+  // consumers compose to fmtx4 only when they actually need the matrix
+  // (e.g. once per VdbCollider compute) instead of paying composition
+  // cost inside the lookup. Standalone (non-ECS) graphs leave the
+  // function unbound — modules see an empty std::function and fall back
+  // to their no-host default. See SpawnData::_publishxf_name +
+  // Simulation::publishEntityXf for the publisher side.
+  std::function<decompxf_ptr_t(const std::string&)> _resolveEntityXf;
 
-
-  svar64_t _impl;
+  // B.2 (HYPERECS): per-FAMILY environment storage, keyed by TYPE. Replaces the single svar64_t
+  // slot where MeshEnv (hypermesh), BakeEnv (terrain) and particle::Context COLLIDED — last-set-wins
+  // made a mixed-family GraphInst impossible. Same getShared/setShared/makeShared call surface as the
+  // svar slot (every existing call site unchanged); each env TYPE now has its own slot, so families
+  // coexist on one graph — the substrate cross-family edges (field-input, instance-source) require.
+  struct TypeKeyedVars {
+    template <typename T> std::shared_ptr<T> getShared() const {
+      auto it = _vars_by_type.find(std::type_index(typeid(T)));
+      return (it == _vars_by_type.end()) ? nullptr : std::static_pointer_cast<T>(it->second);
+    }
+    template <typename T> void setShared(std::shared_ptr<T> v) {
+      _vars_by_type[std::type_index(typeid(T))] = v;
+    }
+    template <typename T, typename... A> std::shared_ptr<T> makeShared(A&&... args) {
+      auto v = std::make_shared<T>(std::forward<A>(args)...);
+      _vars_by_type[std::type_index(typeid(T))] = v;
+      return v;
+    }
+    // by-VALUE shims matching the old svar call surface (pyext stores a py::object impl handle).
+    template <typename T> std::optional<T> tryAs() const {
+      auto p = getShared<T>();
+      return p ? std::optional<T>(*p) : std::nullopt;
+    }
+    template <typename T> void set(const T& v) {
+      setShared(std::make_shared<T>(v));
+    }
+    std::unordered_map<std::type_index, std::shared_ptr<void>> _vars_by_type;
+  };
+  TypeKeyedVars _impl;
 };
 
 ///////////

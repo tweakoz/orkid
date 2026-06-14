@@ -250,9 +250,12 @@ fragment_shader ps_fwd_ground_mono
   // PBR lighting with analytic normal from the vertex shader.
   // ambrufmtl = (ambient, roughness, metallic). Matte terrain → rough, non-metal.
   vec3 normal     = normalize(frg_tbn[2]);
-  vec3 ambrufmtl  = vec3(0.0, 1, 0.0);
+  vec3 ambrufmtl  = vec3(1.0, 1, 0.0);  // x=AO; 1.0=unoccluded (AO now live in fwd lighting)
   vec3 emission   = vec3(0.0);
-  vec3 final_color = _forward_lightingZ(ModColor.xyz, albedo, ambrufmtl, emission, EyePostion, normal, false);
+  // _forward_lightingZ returns a ShadingResult struct {specular, diffuse}; sum them
+  // into the lit color (matching the geov2 marble shader convention).
+  ShadingResult sr = _forward_lightingZ(ModColor.xyz, albedo, ambrufmtl, emission, EyePostion, normal, false);
+  vec3 final_color = sr.specular + sr.diffuse;
 
   // Near fade-in: modulate color toward BLACK (not alpha) so the terrain
   // stays opaque right up to the camera but darkens into the near plane

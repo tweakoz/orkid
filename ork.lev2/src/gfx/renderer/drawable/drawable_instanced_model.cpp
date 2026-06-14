@@ -27,6 +27,7 @@ namespace ork::lev2 {
 
 void InstancedModelDrawableData::describeX(object::ObjectClass* clazz){
   clazz->directProperty("assetpath", &InstancedModelDrawableData::_assetpath);
+  clazz->directProperty("maxinstances", &InstancedModelDrawableData::_maxinstances);
   clazz->directMapProperty("assetvars", &InstancedModelDrawableData::_assetvars)
       ->annotate("editor.visible", ConstString("false"));
 }

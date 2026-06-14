@@ -24,10 +24,26 @@ struct ComputeInterface {
                                 uint32_t numgroups_y,
                                 uint32_t numgroups_z ) {}
 
-                               
-  virtual void dispatchComputeIndirect(const FxComputeShader* shader, int32_t* indirect) {}
-  
+
+  // GPU-driven dispatch: group counts come from a VkDispatchIndirectCommand (3 uint32: x,y,z)
+  // at `args_offset` within a GPU-written SSBO (DEFAULT-usage storage buffers already carry
+  // INDIRECT usage) — the compute analogue of DrawIndexedIndirectEML. Lets a pipeline size its
+  // next pass off GPU-side counts (scan totals, live edge/face counts) with NO readback.
+  // `args_offset` must be 4-byte aligned.
+  virtual void dispatchComputeIndirect(const FxComputeShader* shader, FxShaderStorageBuffer* args, size_t args_offset = 0) {}
+
   virtual void bindStorageBuffer(const FxComputeShader* shader, uint32_t binding_index, FxShaderStorageBuffer* buffer) {}
+
+  // Auto-resolving bind: look up `block`'s reflected SPIR-V binding within `shader` (by name)
+  // and bind there — so callers never hardcode an index that must match the merged binding id
+  // (which is non-obvious when the shader shares storage with a graphics technique). Distinct
+  // name (not an overload of the index form) so a literal-0 index can't bind ambiguously.
+  virtual void bindStorageBufferOnBlock(const FxComputeShader* shader, FxShaderStorageBuffer* buffer, const FxShaderStorageBlock* block) {}
+
+  // monotonically accumulating seconds the HOST spent blocked on GPU completion (the fence waits
+  // in endDispatchPhase / syncPendingDispatch). Perf instrumentation samples deltas around a
+  // workload to split host-wall into CPU vs GPU-wait (see hypermesh HmPerf).
+  double _gpuWaitAccum = 0.0;
 
   // Insert a shader storage (SSBO) memory barrier within an active dispatch phase.
   // Ensures all SSBO writes from prior dispatches are visible to subsequent dispatches
@@ -46,10 +62,6 @@ struct ComputeInterface {
       FxShaderStorageBuffer* src, size_t src_offset,
       VertexBufferBase* dst_vb, size_t dst_offset,
       size_t size) {}
-  #if defined(ENABLE_PYTORCH)
-  virtual void copyTensorIntoStorageBuffer(FxShaderStorageBuffer* ssbo, torchtensor_ptr_t tensor, size_t dest_offset) { }
-  virtual FxShaderStorageBuffer* storageBufferFromTensor(torchtensor_ptr_t tensor) { return nullptr; }
-  #endif
 
 
   virtual void bindImage(const FxComputeShader* shader, uint32_t binding_index, Texture* tex, ImageBindAccess access) {}

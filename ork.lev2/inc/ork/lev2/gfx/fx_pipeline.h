@@ -47,7 +47,9 @@ struct FxPipelinePermutation {
   bool _has_vtxcolors = false;
   bool _is_alpha = false;
   bool _vr_mono = false;
-  
+  bool _is_vertex_ssbo = false;   // SSBO-sourced vertices -> FWD_SSBO_CUSTOM variant
+  bool _instanced_matrices_only = false;  // instanced from a matrices-only dynamic block (no per-inst color)
+
   fxtechnique_constptr_t _forced_technique = nullptr;
 
 };
@@ -100,6 +102,10 @@ struct FxPipeline {
 
   void _set_typed_param(const RenderContextInstData& RCID, fxparam_constptr_t p, varval_t val);
   void _set_storage(const RenderContextInstData& RCID, fxparamstorageblock_constptr_t p, varval_t val);
+  // E.6/2.12 — re-overlay the parent material's _bound_params when its stamp
+  // moved (called at the top of beginBlock; O(1) compare when clean). Material
+  // rebinds AFTER pipeline creation are therefore live on the next draw.
+  void _syncMaterialParams();
   void addStateLambda(statelambda_t sl){_statelambdas.push_back(sl);}
 
   template <typename T>
@@ -108,6 +114,7 @@ struct FxPipeline {
   }
 
   GfxMaterial* _material_ptr = nullptr;
+  uint64_t _bound_params_seen = 0; // last-synced GfxMaterial::_bound_params_stamp
   rasterstate_ptr_t _rasterstate = nullptr;
   material_ptr_t _sharedMaterial = nullptr;
   fxtechnique_constptr_t _technique = nullptr;
@@ -151,7 +158,13 @@ template <typename MtlClass>
       auto newcache = std::make_shared<FxPipelineCache>();
       newcache->_impl.set<const MtlClass*>(material);
       newcache->_on_miss = [=](const FxPipelinePermutation& permu) -> fxpipeline_ptr_t {
-        return MtlClass::_createFxPipeline(permu,material);
+        auto pipe = MtlClass::_createFxPipeline(permu,material);
+        // generic material backref (rebind propagation): creators that did not
+        // set it (e.g. FreestyleMaterial) get it here, so material->bindParam()
+        // reaches EVERY template-cached pipeline via _syncMaterialParams.
+        if(pipe and (pipe->_material_ptr==nullptr))
+          pipe->_material_ptr = (GfxMaterial*) material;
+        return pipe;
       };
       rval = newcache;
       _fxcachemap[material] = newcache;
@@ -165,5 +178,8 @@ template <typename MtlClass>
 
   std::unordered_map<const MtlClass*,fxpipelinecache_ptr_t> _fxcachemap;
 };
+
+// E.6/2.12 gate — rebind-propagation core selftest (no GPU); returns failure count.
+int fxPipelineRebindSelfTest();
 
 } // namespace ork::lev2

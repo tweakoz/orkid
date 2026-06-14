@@ -31,7 +31,7 @@
 namespace ork::ecs {
 ///////////////////////////////////////////////////////////////////////////////
 
-static logchannel_ptr_t logchan_simfsm = logger()->configureChannel("ecs.simfsm", fvec3(1.0, 0.9, 0));
+static logchannel_ptr_t logchan_simfsm = logger()->configureChannel("ecs.simfsm", fvec3(1.0, 0.9, 0), false);
 
 struct RootState : public fsm::State {
   RootState(fsm::FsmData* data)
@@ -183,22 +183,28 @@ void Simulation::_buildStateMachine() {
     //////////////////////////
     // did we come from ready or pause state ?
     //////////////////////////
+    bool resuming_from_pause = (inst->currentState() == _updatePausedSimState);
     if (inst->currentState() == _updateEditSimState) {
 
-    } else if (inst->currentState() == _updatePausedSimState) {
+    } else if (resuming_from_pause) {
 
     } else {
       OrkAssert(false);
     }
 
-    _activate();
-    _runGpuPhaseOnRenderThread([this](lev2::Context* ctx) {
-      SystemLut gpu_systems;
-      _systems.atomicOp([&](const SystemLut& syslut) { gpu_systems = syslut; });
-      for (auto sys : gpu_systems) {
-        sys.second->_gpuActivate(this, ctx);
-      }
-    });
+    // resume-from-pause is a CLOCK operation, not a lifecycle one — the systems and
+    // components are already activated; re-running _activate would re-fire onActivate
+    // (e.g. particle slots would re-arm).
+    if (not resuming_from_pause) {
+      _activate();
+      _runGpuPhaseOnRenderThread([this](lev2::Context* ctx) {
+        SystemLut gpu_systems;
+        _systems.atomicOp([&](const SystemLut& syslut) { gpu_systems = syslut; });
+        for (auto sys : gpu_systems) {
+          sys.second->_gpuActivate(this, ctx);
+        }
+      });
+    }
 
     ///////////////////////////////////
   };
@@ -213,11 +219,13 @@ void Simulation::_buildStateMachine() {
     OrkAssert(inst->currentState() == _updateActiveSimState);
   };
   _updatePausedSimState->_onupdate = [this](fsm::fsminstance_ptr_t inst) {
+    // PAUSE = the game clock holds but the host stays interactive: events still
+    // service (UpdateCamera keeps steering the view) and _update_SIMSTATE's PAUSE
+    // branch keeps the RENDER-SYNC systems updating (the scenegraph re-enqueues the
+    // draw buffer with the fresh camera — the renderer reads the camera from the DB,
+    // so without this the view freezes with the gameplay).
     _serviceEventQueues();
-    // todo actually render...
-    auto DB = _dbufctxSIM->acquireForWriteLocked();
-    DB->Reset();
-    _dbufctxSIM->releaseFromWriteLocked(DB);
+    this->_update_SIMSTATE();
   };
   ////////////////////////////////////////////////////////
 
@@ -453,6 +461,7 @@ void Simulation::SetSimulationMode(ESimulationMode emode) {
           break;
         case ork::ecs::ESimulationMode::READY:
         case ork::ecs::ESimulationMode::EDIT:
+        case ork::ecs::ESimulationMode::PAUSE: // resume (clock op; activate skipped in onEnter)
           _updateThreadSMInst->changeState(_updateActiveSimState);
           break;
         case ork::ecs::ESimulationMode::ACTIVE:
@@ -467,6 +476,8 @@ void Simulation::SetSimulationMode(ESimulationMode emode) {
       switch (_currentSimulationMode) {
         case ork::ecs::ESimulationMode::ACTIVE:
           _updateThreadSMInst->changeState(_updatePausedSimState);
+          break;
+        case ork::ecs::ESimulationMode::PAUSE:
           break;
         default:
           OrkAssert(false);
@@ -1200,6 +1211,13 @@ void Simulation::_activateEntities() {
     if (edata->GetArchetype()) {
       edata->GetArchetype()->activateEntity(this, pent);
     }
+    // Static-spawn publication. Dynamic-spawn path is covered separately
+    // by registerActivatedEntity (called from the activate queue
+    // service). Both endpoints share the same publishEntityXf so the
+    // counter and key namespace are unified across static/dynamic.
+    if (edata && !edata->_publishxf_name.empty()) {
+      publishEntityXf(pent, edata->_publishxf_name);
+    }
   }
 }
 ///////////////////////////////////////////////////////////////////////////
@@ -1213,6 +1231,7 @@ void Simulation::_deactivateEntities() {
       if (edata->GetArchetype()) {
         edata->GetArchetype()->deactivateEntity(this, pent);
       }
+      unpublishEntityXf(pent);
     }
   }
 }

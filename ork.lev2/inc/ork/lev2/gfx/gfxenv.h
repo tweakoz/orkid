@@ -234,6 +234,15 @@ public:
   void gpuPreInit(); // Initialize GPU-dependent resources
   void gpuPostInit();
 
+  // Pre-destruction hook. Concrete shutdown() is a stable public entry
+  // point; subclasses override _doShutdown() to release backend
+  // resources (Vulkan handles, GL contexts, etc.) BEFORE the static
+  // shared_ptr destruction order kicks in, so the eventual ~Context
+  // runs against a clean slate. Call once; idempotent.
+  void shutdown();
+  virtual void _doShutdown() {}
+  bool _shutdown_done = false;
+
   ///////////////////////////////////////////////////////////////////////
   void triggerFrameDebugCapture();
   virtual void _doTriggerFrameDebugCapture() {
@@ -438,9 +447,74 @@ public:
   //////////////////////////////////////////////////////////
 
   loadingphase_ptr_t newLoadingPhase();
-  
+  // Submit a fully-populated phase atomically. Prefer this over
+  // newLoadingPhase() when fire-and-forgetting (no join()): the producer
+  // can be racing the drainer here. newLoadingPhase() registers an empty
+  // phase immediately, so if the drainer pops+snapshots it before the
+  // producer enqueues any ops, all subsequently-enqueued ops are
+  // orphaned. submitLoadingPhase takes a phase the caller already
+  // populated locally, then publishes it as one atomic step.
+  void submitLoadingPhase(loadingphase_ptr_t phase);
+
   contextexecutor_ptr_t createContextExecutor();
-  
+
+  //////////////////////////////////////////////////////////
+  // Deferred ops — per-context queue drained at beginFrame.
+  // Use for single-step CPU-side state handoff that must run on this
+  // specific context's thread (e.g. assign-new "active texture" swap
+  // produced by a worker context, GPU-handle cleanup tied to this
+  // context's command-pool/device, etc.). Heavier multi-step GPU work
+  // belongs on LoadingPhase, not here.
+  //////////////////////////////////////////////////////////
+
+  void enqueueDeferredOp(ctx_lambda_t op);
+  void processDeferredOps();
+  bool hasDeferredOps() const;
+  // No waitForDeferredOps(): the queue is drained only by this context's
+  // beginFrame() on its owning thread. A blocking wait from that same
+  // thread would stop the drain → deadlock. Forward-progress principle:
+  // a thread should never block waiting for itself to make progress.
+  // If a worker thread needs to know when a deferred op has been consumed,
+  // model it as a completion callback enqueued onto the *worker's* own
+  // context queue, fired from the target op.
+
+  //////////////////////////////////////////////////////////
+  // Delayed destruction — frame-deferred resource cleanup via a lambda
+  // that retains the bits to drop.
+  //
+  // Solves: dropping a large GPU resource (texture, RT buffer, etc.) on
+  // the render thread triggers synchronous vkDestroy*/vkFreeMemory which
+  // on MoltenVK can stall on in-flight GPU commands, producing a black
+  // frame proportional to resource size. The lambda's captures hold the
+  // shared_ptrs alive for N frames (>= MAX_FRAMES_IN_FLIGHT); when the
+  // lambda runs and is then destroyed, the GPU has moved past the
+  // resources, so destructors are fast and non-blocking.
+  //
+  // The function is INVOKED when its frame comes due, then destroyed.
+  // Use the body for explicit cleanup ordering / logging / etc. — or
+  // just let the captures destruct (empty body works fine).
+  //
+  // Throttle: at most `_maxDestroysPerFrame` entries are processed per
+  // beginFrame. Excess ripe entries wait for the next frame. Spreads
+  // cleanup cost during rapid asset cycling.
+  //
+  // Usage:
+  //   render_ctx->enqueueDelayedDestroy(
+  //     [old_diffuse, old_specular]() { /* captures drop here */ }, 3);
+  //////////////////////////////////////////////////////////
+
+  void enqueueDelayedDestroy(::ork::void_lambda_t fn, int delay_frames);
+
+  void setDelayedDestroyThrottle(int max_per_frame) {
+    _maxDestroysPerFrame = max_per_frame;
+  }
+  int getDelayedDestroyThrottle() const { return _maxDestroysPerFrame; }
+  size_t pendingDestroyCount() const {
+    size_t n = 0;
+    _pendingDestroys.atomicOp([&n](const pending_destroy_queue_t& q) { n = q.size(); });
+    return n;
+  }
+
   //////////////////////////////////////////////////////////
   // Rendering conventions for this backend
   //////////////////////////////////////////////////////////
@@ -456,6 +530,19 @@ public:
   std::stack<rcfd_ptr_t> _rcfdstack;
 
   LockedResource<loadingphase_list_t> _loadingPhases;
+  using deferred_op_queue_t = std::queue<ctx_lambda_t>;
+  LockedResource<deferred_op_queue_t> _deferredOps;
+
+  // Delayed-destruction queue + throttle (see enqueueDelayedDestroy above).
+  // The lambda captures the bits to drop; invoking + destroying it after
+  // the frame delay lets captures destruct on the render thread.
+  struct PendingDestroy {
+    ::ork::void_lambda_t _fn;
+    uint64_t _destroy_at_frame;
+  };
+  using pending_destroy_queue_t = std::deque<PendingDestroy>;
+  LockedResource<pending_destroy_queue_t> _pendingDestroys;
+  int _maxDestroysPerFrame = 8;
 
   static const int kiModColorStackMax = 8;
 
@@ -500,6 +587,7 @@ private:
 
   void _processBeginFrameBlockers();
   void _loadingPhaseOperations();
+  void _processPendingDestroys();
   virtual void _onGpuPreInit() {}
   virtual void _onGpuPostInit() {}
   virtual void _doPreBeginFrame() {}
@@ -739,14 +827,6 @@ public:
   }
   
   //////////////////////////////////////////////////////////////////////////////
-  // Deferred Context Operations
-  
-  void enqueueDeferredContextOp(ctx_lambda_t op);
-  void processDeferredContextOps(context_rawptr_t ctx);
-  bool hasDeferredContextOps() const;
-  void waitForDeferredContextOps();
-
-  //////////////////////////////////////////////////////////////////////////////
   // Contex Factory
 
   GfxEnv();
@@ -760,6 +840,18 @@ public:
   }
   void SetMainWindow(Window* pWin) {
     mpMainWindow = pWin;
+  }
+
+  // The main render context — convention for "the longest-lived rendering
+  // thread/context in this process." It outlives the loader thread and any
+  // secondary contexts, so it's the canonical destination for:
+  //   - asset-handoff swap-ops (Phase 6.3 sandbox-and-swap)
+  //   - GPU-resource destruction deferred from arbitrary threads
+  //     (Texture/Buffer destructors → enqueueDeferredOp on this context)
+  // Returns nullptr only during very-early init or post-shutdown.
+  static Context* mainRenderContext() {
+    auto* w = GetRef().mpMainWindow;
+    return w ? w->context() : nullptr;
   }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -829,10 +921,6 @@ protected:
   orkstack<ContextCreationParams> mCreationParams;
   recursive_mutex mGfxEnvMutex;
   bool _initialized = false;
-  
-  // Queue for deferred operations that need a context
-  using defctx_opq_t = std::queue<ctx_lambda_t>;
-  LockedResource<defctx_opq_t> _deferredContextOps;
 
   struct WaitLockData {
     lockset_t _locks;

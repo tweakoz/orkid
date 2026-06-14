@@ -1,0 +1,171 @@
+///////////////////////////////////////////////////////////////
+// GEOV2 Phase 0 — hand-authored custom PBR surface (NO codegen).
+//
+// Proves the substitution hook end-to-end: a PBRMaterial pointed at this
+// .fxv2 via `shaderpath` renders through the stock forward-PBR machinery,
+// selecting our CV technique (vertex-color path) + the depth-prepass, and
+// the four GEOV2 surface inputs all reach the fragment:
+//   frg_clr  (Cd)   — a 4D PER-VERTEX SELECTOR (not a color)
+//   frg_opos        — OBJECT-SPACE position (new varying, §10 enabler)
+//   frg_uv0         — free-range uv (region selector)
+//   frg_wpos        — world position
+// The surface is hand-written (Phase 0); the DSL/codegen is Phase 2+.
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default {
+  import "orkshader://mathtools.i2";
+  import "orkshader://misctools.i2";
+  import "orkshader://envtools.i2";
+  import "orkshader://pbrtools.i2";
+  import "orkshader://stdtools.i2";
+  import "orkshader://ssaotools.i2";
+}
+///////////////////////////////////////////////////////////////
+state_block sb_ptex0 : default {
+  CullTest  = PASS_FRONT;
+  DepthTest = LEQUALS;
+  BlendMode = OFF;
+}
+///////////////////////////////////////////////////////////////
+// Rigid vertex-color-passthrough interface: carries BOTH real uv0 AND
+// vtxcolor(COLOR0), plus an object-space position varying.
+///////////////////////////////////////////////////////////////
+vertex_interface vif_ptex0 : ub_std_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal : NORMAL;
+    vec3 binormal : BINORMAL;
+    vec2 uv0 : TEXCOORD0;
+    vec4 vtxcolor : COLOR0;
+  }
+  outputs {
+    vec4 frg_wpos;
+    vec4 frg_clr;       // Cd — 4D selector
+    vec2 frg_uv0;
+    mat3 frg_tbn;
+    float frg_camdist;
+    vec3 frg_camz;
+    vec3 frg_opos;      // object-space position (GEOV2 §10 enabler)
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_interface fif_ptex0
+  : vif_ptex0
+  : ub_frg_fwd
+  : storage_fwd_lighting
+  : ss_frg_fwd {
+  outputs {
+    layout(location = 0) vec4 out_clr;
+    layout(location = 1) vec4 out_diffuse;
+  }
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_ptex0
+  : vif_ptex0
+  : lib_pbr_vtx
+  : ublk_std_matrices {
+  gl_Position = mvp * position;
+  frg_uv0     = uv0;
+  frg_wpos    = m * position;
+  frg_opos    = position.xyz;   // object-space passthrough
+  frg_clr     = vtxcolor;       // Cd selector passthrough (NOT stamped white)
+
+  vec3 wn = normalize(mat3(m) * normal);
+  vec3 wb = normalize(mat3(m) * binormal);
+  vec3 wt = cross(wn, wb);
+  frg_tbn = mat3(wt, wb, wn);
+
+  frg_camdist = 0.0;
+  frg_camz    = vec3(0, 0, 0);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_ptex0_forward
+  : fif_ptex0
+  : lib_math
+  : lib_brdf
+  : lib_def
+  : lib_fwd
+  : std_forward_all {
+
+  vec3 wnrm = normalize(frg_tbn[2]);
+
+  // ── the four GEOV2 inputs drive the surface (hand-written, no codegen) ──
+  // Cd is a 4D per-vertex SELECTOR, not a color:
+  vec4  cd   = frg_clr;
+  vec3  op   = frg_opos;     // object-space position
+  vec2  uv   = frg_uv0;
+
+  // Cd.w → base-color blend (e.g. top vs bottom of the mesh)
+  vec3 cA = vec3(0.85, 0.18, 0.10);
+  vec3 cB = vec3(0.10, 0.32, 0.90);
+  vec3 albedo = mix(cA, cB, cd.w);
+
+  // object-space banding (proves frg_opos reaches the fragment)
+  float band = 0.5 + 0.5 * sin(op.y * 18.0 + cd.x * 6.2831853);
+  albedo = mix(albedo, albedo * 0.30, band);
+
+  // uv stripes (proves free-range frg_uv0 reaches the fragment)
+  float stripe = step(0.5, fract(uv.x * 8.0));
+  albedo = mix(albedo, vec3(1.0), stripe * 0.18);
+
+  // Cd.y → roughness, Cd.z → metallic (procedural per-fragment PBR params)
+  float roughness = mix(0.20, 0.85, cd.y);
+  float metallic  = cd.z;
+
+  // ambrufmtl: x=ambient_occ (AO deferred to PBR2, =1), y=roughness, z=metallic
+  vec3 ambrufmtl = vec3(1.0, roughness, metallic);
+
+  ShadingResult sr = _forward_lightingZ(
+    ModColor.xyz,    // modcolor
+    albedo,          // albedo
+    ambrufmtl,       // (ao, roughness, metallic)
+    vec3(0,0,0),     // emission
+    EyePostion,      // eye position
+    wnrm,            // world normal
+    false            // emissive toggle
+  );
+  out_clr     = vec4(sr.specular + sr.diffuse, 1.0);
+  float sss_mask = (has_subsurface != 0) ? subsurface_factor : 0.0;
+  out_diffuse = vec4(sr.diffuse, sss_mask);
+}
+///////////////////////////////////////////////////////////////
+// Depth prepass (geometry-only) — mandatory; the forward node drives it.
+///////////////////////////////////////////////////////////////
+vertex_interface vif_ptex0_dpp {
+  inputs {
+    vec4 position : POSITION;
+  }
+  outputs {
+    float frg_camz;
+  }
+}
+fragment_interface fif_ptex0_dpp : vif_ptex0_dpp {
+  outputs {
+    layout(location = 0) float out_z;
+  }
+}
+vertex_shader vs_ptex0_dpp
+  : vif_ptex0_dpp
+  : ublk_std_matrices {
+  vec4 hpos = mvp * position;
+  gl_Position = hpos;
+  frg_camz = hpos.z / hpos.w;
+}
+fragment_shader ps_ptex0_dpp : fif_ptex0_dpp {
+  out_z = frg_camz;
+}
+///////////////////////////////////////////////////////////////
+// Techniques — CV is what our Primitive callback drawable selects
+// (_has_vtxcolors=true); CT aliased to the same fragment for robustness.
+///////////////////////////////////////////////////////////////
+technique FWD_CV_NM_RI_NI_MO {
+  fxconfig = fxcfg_default;
+  vf_pass = { vs_ptex0, ps_ptex0_forward, sb_ptex0 }
+}
+technique FWD_CT_NM_RI_NI_MO {
+  fxconfig = fxcfg_default;
+  vf_pass = { vs_ptex0, ps_ptex0_forward, sb_ptex0 }
+}
+technique FWD_DEPTHPREPASS_RI_NI_MO {
+  fxconfig = fxcfg_default;
+  vf_pass = { vs_ptex0_dpp, ps_ptex0_dpp, sb_ptex0 }
+}

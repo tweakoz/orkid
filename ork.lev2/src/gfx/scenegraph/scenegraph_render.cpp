@@ -191,6 +191,27 @@ void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
     ///////////////////////////////////////
     float TARGW = fbi->GetVPW();
     float TARGH = fbi->GetVPH();
+    ///////////////////////////////////////
+    // per-FRAME drawable hook for the DIRECT render paths: scenes hosted by an SGVP widget or the
+    // ECS SceneGraphSystem already ran this (gpuUpdateAll / _onGpuUpdate) — the per-frame guard
+    // makes this a no-op there. A scene rendered directly (renderOnContext with neither host)
+    // gets its onGpuUpdate (hypermesh live recompute) here, BEFORE the per-view fan-out below.
+    ///////////////////////////////////////
+    gpuUpdate(context);
+    ///////////////////////////////////////
+    // per-view pre-render hook for the DIRECT render paths (renderOnContext — e.g. an ECS
+    // SceneGraphSystem-owned scene, which never passes through a SceneGraphViewport widget).
+    // Without this fan-out, view-dependent drawables (instance frustum-cull -> indirect draw,
+    // per-view compute) NEVER run on those paths. SGVP does the identical camera dance in
+    // DoRePaintSurface (viewport_scenegraph.cpp) — resolve the same camera the compositor uses.
+    ///////////////////////////////////////
+    if (_compositorImpl) {
+      if (auto cam = DB->cameraData(_compositorImpl->_camera_name)) {
+        float aspect = (TARGH > 0.0f) ? (TARGW / TARGH) : 1.0f;
+        auto cammtx  = cam->computeMatrices(aspect);
+        preRender(context, cammtx);
+      }
+    }
     lev2::UiViewportRenderTarget rt(nullptr);
     auto tgtrect            = ViewportRect(0, 0, TARGW, TARGH);
     _topCPD->_irendertarget = &rt;
@@ -430,6 +451,12 @@ void Scene::renderWithStandardCompositorFrame(standardcompositorframe_ptr_t sfra
     sframe->attachDrawQueueContext(_dbufcontext_SG);
     gpuInit(context);
   }
+  // defensive per-frame fan-out (mirrors _renderIMPL): this render entry runs IN-frame, so
+  // it is a legal home for LightManager::gpuInit + the drawable onGpuUpdate hooks. The ECS
+  // SceneGraphSystem only fans out early when its host drives Controller::gpuUpdate inside
+  // a frame; on the windowed loop (out-of-frame gpuUpdate) a render-entry call is the one
+  // that runs. First caller per frame wins (Scene::gpuUpdate dedup).
+  gpuUpdate(context);
 
   _currentRenderer()->setContext(context);
   sframe->compositor = _compositorImpl;

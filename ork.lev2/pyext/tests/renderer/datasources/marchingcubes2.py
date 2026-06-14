@@ -8,7 +8,7 @@
 ################################################################################
 
 import sys, math, threading, time, signal
-import pyvista as pv
+#import pyvista as pv
 import numpy as np
 from obt import path as obt_path
 from noise import pnoise3

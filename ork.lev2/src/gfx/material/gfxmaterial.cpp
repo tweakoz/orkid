@@ -51,6 +51,7 @@ fxpipelinecache_constptr_t GfxMaterial::pipelineCache(fxpipelinepermutation_set_
 void GfxMaterial::bindParam(fxparam_constptr_t p, varval_t v){
   OrkAssert(p!=nullptr);
   _bound_params[p] = v;
+  _bound_params_stamp++; // pipelines re-overlay on their next beginBlock
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -115,6 +116,7 @@ void GfxMaterial::cloneStateFrom(const GfxMaterial& oth) {
 
   _varmap                        = oth._varmap;
   _bound_params                  = oth._bound_params;
+  _bound_params_stamp            = oth._bound_params_stamp;
   _state_lambdas                 = oth._state_lambdas;
 
   _variant                      = oth._variant;

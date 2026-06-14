@@ -35,7 +35,7 @@ struct MoltenVKConfigurator {
 #endif
 
 namespace ork::lev2::vulkan {
-static logchannel_ptr_t logchan_vkimpl = logger()->configureChannel("VKIMPL", fvec3(1,1,0),true);
+static logchannel_ptr_t logchan_vkimpl = logger()->configureChannel("VKIMPL", fvec3(1,1,0),false);
 static logchannel_ptr_t logchan_vkierr = logger()->configureChannel("VKINSTERR", fvec3(1,0,0),true);
 
 vkinstance_ptr_t _GVI = nullptr;
@@ -566,6 +566,10 @@ VkFormatConverter::VkFormatConverter() {
   do_format(EBufferFormat::RGB10A2, VK_FORMAT_A2B10G10R10_UNORM_PACK32);
   do_format(EBufferFormat::RGB32UI, VK_FORMAT_R32G32B32_UINT);
   do_format(EBufferFormat::R8, VK_FORMAT_R8_UNORM);
+  // single-channel 16-bit: normalized-on-read so sampler2D returns raw/65535 in [0,1]
+  // (heightfields baked as png16/R16UI). NOT R16_UINT, which would need usampler2D and
+  // disallow bilinear filtering.
+  do_format(EBufferFormat::R16UI, VK_FORMAT_R16_UNORM);
   do_format(EBufferFormat::RG16F, VK_FORMAT_R16G16_SFLOAT);
   do_format(EBufferFormat::RG32F, VK_FORMAT_R32G32_SFLOAT);
   do_format(EBufferFormat::RGB32F, VK_FORMAT_R32G32B32_SFLOAT);

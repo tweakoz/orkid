@@ -239,6 +239,31 @@ void pyinit_gfx_image(py::module& module_lev2) {
       .def_static("fromSvgStringSquare", [](const std::string& svg, int size) -> image_ptr_t {
         return Image::fromSvgString(svg, size);
       }, py::arg("svg"), py::arg("size"))
+      // to numpy array: img.numpy() -> (h,w,numcomponents) array of uint8 or float32 depending on format
+      .def_property_readonly("numpy", [](image_ptr_t img) -> py::array {
+        // Wrap the Image's pixel buffer as a (H, W, numcomponents) numpy VIEW.
+        // Use the typed py::array_t (shape, ptr, base) ctor: the untyped py::array has
+        // no (shape, strides, ptr, base) overload (it needs a dtype), and array_t
+        // auto-computes the C-contiguous strides, so there's no byte/element math to
+        // get wrong. `base` is the Image's python wrapper — it holds the shared_ptr
+        // (and its DataBlock) alive for as long as the array references the memory.
+        // A const data ptr makes the array read-only (this is a readback view).
+        std::vector<py::ssize_t> shape = {(py::ssize_t)img->_height,
+                                          (py::ssize_t)img->_width,
+                                          (py::ssize_t)img->_numcomponents};
+        py::object base = py::cast(img);
+        if (img->_bytesPerChannel == 1) {
+          return py::array_t<uint8_t>(shape, (const uint8_t*)img->_data->data(), base);
+        } else if (img->_bytesPerChannel == 2) {
+          // integer 2-byte formats (R16UI/RGB16/RGBA16). NOTE: half-float (RGBA16F)
+          // would be misread as uint16 — not used for heightfield/mask readback.
+          return py::array_t<uint16_t>(shape, (const uint16_t*)img->_data->data(), base);
+        } else if (img->_bytesPerChannel == 4) {
+          return py::array_t<float>(shape, (const float*)img->_data->data(), base);
+        } else {
+          throw std::runtime_error("Unsupported bytesPerChannel in Image numpy() conversion");
+        }
+      })
       ;
   type_codec->registerStdCodec<image_ptr_t>(image_type);      
   ///////////////////////////////////////////////////////

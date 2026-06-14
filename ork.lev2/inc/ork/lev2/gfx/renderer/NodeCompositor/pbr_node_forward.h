@@ -27,6 +27,13 @@ public:
   lev2::rtbuffer_ptr_t GetOutput() const final;
   lev2::rtgroup_ptr_t GetOutputGroup() const final;
 
+  // the CANONICAL forward role set (+ one "aux_<name>" role per configured
+  // aux channel) — _render_top assembles the frame from exactly this list,
+  // and Scene::initWithParams pre-creates each as a layer
+  const std::vector<std::string>& renderedLayerRoles() const final;
+
+  mutable std::vector<std::string> _rolesCache; // rebuilt when _auxChannels changes
+
   svar256_t _impl;
   pbr::commonstuff_ptr_t _pbrcommon;
 

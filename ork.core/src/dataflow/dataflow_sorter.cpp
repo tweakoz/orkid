@@ -201,6 +201,7 @@ void DgSorter::enqueueModule(dgmoduledata_ptr_t pmod, int irecd) {
       if (poutplug->isConnected() || (inumincon != 0)) { // if it has input or output connections
         auto& plug_info     = _pluginfomap[poutplug];
         plug_info._register = _dgcontext->alloc(poutplug);
+        OrkAssert(plug_info._register!=nullptr);
         _logchannel_reg->log(
             "ASSIGN module<%s> outplug<%s> assigned register<%s>", //
             pmod->_name.c_str(),                                 //
@@ -344,7 +345,19 @@ topology_ptr_t DgSorter::generateTopology() {
         pending_and_ready.insert(std::make_pair(sort_key, pmod));
       }
     }
-    //
+    if (pending_and_ready.empty()) {
+      // CYCLE DETECTED — every remaining pending module has at least one
+      // pending upstream dependency, so no progress is possible. Without this
+      // check, the outer while-loop would spin forever. Log the offender set
+      // (cycle members + any modules transitively downstream of the cycle)
+      // and abort the sort. The validator subprocess (M2) translates this
+      // nullptr return into Diagnostic{code="CYCLE_DETECTED", ...}.
+      _logchannel->log("CYCLE DETECTED — sort cannot complete; offending modules:");
+      for (dgmoduledata_ptr_t pmod : this->_pending) {
+        _logchannel->log("  cyclic-or-blocked: %s", pmod->_name.c_str());
+      }
+      return nullptr;
+    }
     for (const auto& next : pending_and_ready) {
       this->enqueueModule(next.second, 0);
     }

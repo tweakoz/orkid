@@ -29,7 +29,7 @@ namespace ork::lev2 {
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
-static logchannel_ptr_t logchan_vkctx = logger()->configureChannel("VKCTX", fvec3(1,1,.9),true);
+static logchannel_ptr_t logchan_vkctx = logger()->configureChannel("VKCTX", fvec3(1,1,.9),false);
 static logchannel_ptr_t logchan_vkcap = logger()->configureChannel("VKCAPTURE", fvec3(1,1,.9),false);
 static logchannel_ptr_t logchan_vkprof = logger()->configureChannel("VKPROF", fvec3(0.1, 0.5, 0.9), true);
 
@@ -673,15 +673,102 @@ VkContext::VkContext() {
 ///////////////////////////////////////////////////////
 
 VkContext::~VkContext() {
-    if (_vkpresentationsurface != VK_NULL_HANDLE && _GVI) {
-      printf("VkContext::~VkContext: destroying VkSurface %p\n", (void*)_vkpresentationsurface);
-      vkDestroySurfaceKHR(_GVI->_instance, _vkpresentationsurface, nullptr);
-      _vkpresentationsurface = VK_NULL_HANDLE;
-    } else {
-      printf("VkContext::~VkContext: no surface to destroy (surface=%p GVI=%p)\n",
-             (void*)_vkpresentationsurface, (void*)_GVI.get());
-    }
-    _vkdevice = nullptr;
+  // The real teardown moved into _doShutdown() so it runs while owning
+  // shared_ptrs are still live (called from Context::shutdown() in the
+  // lev2/ezapp teardown paths). If shutdown() wasn't called (e.g.
+  // static-destruction path with no explicit teardown), run it here as
+  // a fallback so we don't leak the surface.
+  shutdown();
+}
+
+void VkContext::_doShutdown() {
+  if (_vkpresentationsurface != VK_NULL_HANDLE && _GVI) {
+    printf("VkContext::_doShutdown: destroying VkSurface %p\n", (void*)_vkpresentationsurface);
+    vkDestroySurfaceKHR(_GVI->_instance, _vkpresentationsurface, nullptr);
+    _vkpresentationsurface = VK_NULL_HANDLE;
+  } else {
+    printf("VkContext::_doShutdown: no surface to destroy (surface=%p GVI=%p)\n",
+           (void*)_vkpresentationsurface, (void*)_GVI.get());
+  }
+  _vkdevice = nullptr;
+  _isShutdown = true; // gates destroyVertexBuffer/destroyIndexBuffer into a no-op past here
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Vertex/index buffer teardown (moved out of ~VulkanVertexBuffer / ~VulkanIndexBuffer).
+// Before shutdown: queue the VkBuffer for deferred cleanup on the primary command buffer if one
+// is active, else on the context's pending-cleanup list. After _doShutdown(): no-op — the device
+// and command buffers are already gone, so there is nothing to queue (and touching them aborts).
+////////////////////////////////////////////////////////////////////////////////
+
+void VkContext::destroyVertexBuffer(vkbuffer_ptr_t vkbuffer) {
+  if (_isShutdown)
+    return;
+  auto cb = primary_cb();
+  if (cb) {
+    cb->_vkbuffers_pending_cleanup.push_back(vkbuffer);
+  } else {
+    // No active primary CB - queue on context for later cleanup
+    std::lock_guard<std::mutex> lock(_vkbuffers_pending_cleanup_mutex);
+    _vkbuffers_pending_cleanup.push_back(vkbuffer);
+  }
+}
+
+void VkContext::destroyIndexBuffer(vkbuffer_ptr_t vkbuffer) {
+  if (_isShutdown)
+    return;
+  auto cb = primary_cb();
+  if (cb) {
+    cb->_vkbuffers_pending_cleanup.push_back(vkbuffer);
+  } else {
+    std::lock_guard<std::mutex> lock(_vkbuffers_pending_cleanup_mutex);
+    _vkbuffers_pending_cleanup.push_back(vkbuffer);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// raw-handle teardown funnels (no-op after _doShutdown — device + handles already gone).
+////////////////////////////////////////////////////////////////////////////////
+
+void VkContext::destroyBuffer(VkBuffer buffer) {
+  if (_isShutdown || _vkdevice == nullptr)
+    return;
+  if (buffer != VK_NULL_HANDLE)
+    vkDestroyBuffer(_vkdevice, buffer, nullptr);
+}
+
+void VkContext::destroyImageMemory(VkDeviceMemory mem) {
+  if (_isShutdown || _vkdevice == nullptr)
+    return;
+  if (mem != VK_NULL_HANDLE)
+    vkFreeMemory(_vkdevice, mem, nullptr);
+}
+
+void VkContext::destroyImageObject(VkImageView view, VkImage image, VkDeviceMemory mem) {
+  if (_isShutdown || _vkdevice == nullptr)
+    return;
+  if (view != VK_NULL_HANDLE)
+    vkDestroyImageView(_vkdevice, view, nullptr);
+  if (image != VK_NULL_HANDLE)
+    vkDestroyImage(_vkdevice, image, nullptr);
+  if (mem != VK_NULL_HANDLE)
+    vkFreeMemory(_vkdevice, mem, nullptr);
+}
+
+void VkContext::destroyComputePipelineState(
+    VkPipeline pipeline, VkPipelineLayout layout,
+    VkDescriptorSetLayout dsl, const std::vector<VkDescriptorPool>& pools) {
+  if (_isShutdown || _vkdevice == nullptr)
+    return;
+  if (pipeline != VK_NULL_HANDLE)
+    vkDestroyPipeline(_vkdevice, pipeline, nullptr);
+  if (layout != VK_NULL_HANDLE)
+    vkDestroyPipelineLayout(_vkdevice, layout, nullptr);
+  if (dsl != VK_NULL_HANDLE)
+    vkDestroyDescriptorSetLayout(_vkdevice, dsl, nullptr);
+  // destroying each pool frees the descriptor sets allocated from it (in _setRing)
+  for (auto pool : pools)
+    vkDestroyDescriptorPool(_vkdevice, pool, nullptr);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -897,7 +984,7 @@ void VkContext::initSyncTransfer() {
   _syncTransfer.staging_buffer = std::make_shared<VulkanBuffer>(
     this,
     _syncTransfer.staging_size,
-    VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+    VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,  // SRC=upload, DST=readback staging
     "syncTransferStaging");
 }
 
@@ -1592,6 +1679,8 @@ uint64_t hashSamplingMode(const TextureSamplingModeData& mode) {
   hasher.accumulateItem(mode._texAddrModeT);
   hasher.accumulateItem(mode._texAddrModeR);
   hasher.accumulateItem(mode._maxAnisotropy);
+  hasher.accumulateItem(mode._minMipLevel);
+  hasher.accumulateItem(mode._maxMipLevel);
   hasher.finish();
   return hasher.result();
 }
@@ -1636,10 +1725,13 @@ vksampler_obj_ptr_t VkContext::_getOrCreateSampler(const TextureSamplingModeData
     sci->maxAnisotropy = 1.0f;
   }
   
-  // LOD settings
+  // LOD settings — honor the sampling mode's mip range so callers can
+  // clamp to a single mip level (set min == max) for inspection / debug.
   sci->mipLodBias = 0.0f;
-  sci->minLod = 0.0f;
-  sci->maxLod = VK_LOD_CLAMP_NONE; // Or texture's max mip level
+  sci->minLod     = float(sampling_mode._minMipLevel);
+  sci->maxLod     = (sampling_mode._maxMipLevel >= 16)
+                  ? VK_LOD_CLAMP_NONE
+                  : float(sampling_mode._maxMipLevel);
   
   // Border color for CLAMP_TO_BORDER mode
   // Default to opaque black (most common)

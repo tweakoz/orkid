@@ -24,7 +24,7 @@ AuContext::AuContext() //
 
 OSStatus AuContext::Init(cadevice_impl_ptr_t indev, cadevice_impl_ptr_t outdev) {
 
-  logchan_audunit->log(
+  if(0)logchan_audunit->log(
       "AuContext::Init() indev<%d> outdev<%d>", //
       indev ? indev->_info->_ID : -1,           //
       outdev ? outdev->_info->_ID : -1);
@@ -41,7 +41,7 @@ OSStatus AuContext::Init(cadevice_impl_ptr_t indev, cadevice_impl_ptr_t outdev) 
     AuCheckErr(err);
   } else {
     // For input-only or output-only, units are already initialized in setup methods
-    logchan_audunit->log("No graph to initialize (input-only or output-only mode)");
+    if(0)logchan_audunit->log("No graph to initialize (input-only or output-only mode)");
   }
 
   // Add latency between the two devices

@@ -1,4 +1,5 @@
 #include <ork/lev2/ezapp.h>
+#include <ork/util/debugserver.h>
 #include <ork/lev2/init.h>
 #include <ork/lev2/subsystem_gpu.h>
 #include <ork/lev2/subsystem_audio.h>
@@ -49,6 +50,9 @@ extern context_ptr_t gloadercontext;
 
 static logchannel_ptr_t logchan_ezapp = logger()->configureChannel("EZAPP", fvec3(0.7, 0.7, 0.9), true);
 
+// Loader thread is now owned by lev2_init.cpp (auto-spawned at
+// gloadercontext creation, stopped via ork::lev2::stopLoaderThread()).
+
 ////////////////////////////////////////////////////////////////////////////////
 EzUiEventInterceptor::EzUiEventInterceptor()
     : Widget("UiEventInterceptor", 0, 0, 0, 0) {
@@ -79,6 +83,9 @@ EzAppContext::EzAppContext(appinitdata_ptr_t initdata)
   ork::SetCurrentThreadName("main");
   _stringpoolctx = std::make_shared<StringPoolContext>();
   StringPoolStack::push(_stringpoolctx);
+  // opt-in in-process debug console (ORKID_DEBUG_SERVER=<sessionid>); query it with
+  // ork.debug.lldbclient.py --debugserver --sessionid <sid> threads
+  debugserver::startFromEnv();
   /////////////////////////////////////////////
   _mainq  = ork::opq::mainSerialQueue();
   _trackq = new opq::TrackCurrent(_mainq);
@@ -226,6 +233,7 @@ void OrkEzApp::enqueueOnRenderer(const void_lambda_t& l) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 static std::atomic<OrkEzApp*> __priv_gapp;
+OrkEzApp* OrkEzApp::currentRaw() { return __priv_gapp.load(); }
 void atexit_app(void) {
   if (__priv_gapp) {
     auto app = __priv_gapp.load();
@@ -276,9 +284,10 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
 ///////////////////////////////////////////////////////////////////////////////
 
 OrkEzApp::~OrkEzApp() {
-  // printf( "OrkEzApp<%p> destructor - joining update thread...\n", this );
-  // printf( "OrkEzApp<%p> destructor - joined update thread\n", this );
-  // printf( "OrkEzApp<%p> terminating drawable buffers..\n", this );
+  // Stop the loader thread before any context/window teardown — it's
+  // pumping gloadercontext->beginFrame at 500µs and would touch a dying
+  // context. Idempotent; safe if already stopped via gpu _onGpuExit.
+  stopLoaderThread();
   if (_mainWindow) {
     DrawQueue::terminateAll();
   }
@@ -478,12 +487,17 @@ void OrkEzApp::_initForSubsystems() {
     auto gpu_impl = getGpuSubsystemImpl(_gpu_subsystem);
     gpu_impl->_onGpuInit = [this]() {
       logchan_ezapp->log("GPU subsystem triggering graphics init");
+      // ensureLoaderContext() creates gloadercontext and auto-spawns the
+      // loader thread (in lev2_init.cpp). Nothing extra needed here.
       auto loader_ctx = ensureLoaderContext();
       logchan_ezapp->log("GPU subsystem loader context: %p", (void*)loader_ctx.get());
       _initGraphicsContext();
     };
     gpu_impl->_onGpuExit = [this]() {
       logchan_ezapp->log("GPU subsystem triggering graphics cleanup");
+      // Stop the loader thread BEFORE the gpu subsystem tears down
+      // gloadercontext — otherwise the thread pumps a dying context.
+      stopLoaderThread();
     };
 
     subsystem_map["gpu"] = _gpu_subsystem;
@@ -591,7 +605,7 @@ void OrkEzApp::_initForSubsystems() {
     if (!subsystem->hasParent()) {
       root_subsystems.push_back(subsystem);
     } else {
-      logchan_ezapp->log("  %s is a child (parent: %s), will be initialized by parent",
+      if(0)logchan_ezapp->log("  %s is a child (parent: %s), will be initialized by parent",
                          name.c_str(), subsystem->parent()->_name.c_str());
     }
   }
@@ -599,7 +613,7 @@ void OrkEzApp::_initForSubsystems() {
   // Initialize root subsystems in dependency order using shared utility
   initSubsystemsInOrder(root_subsystems);
 
-  logchan_ezapp->log("HFSM subsystems registered and initialized");
+  if(0)logchan_ezapp->log("HFSM subsystems registered and initialized");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1117,7 +1131,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
     auto vrdev = ork::lev2::orkidvr::device();
     if (vrdev) {
       vrdev->_scan_out_predictor = context->getScanoutPredictor();
-      logchan_ezapp->log("Setting gfx context<%p> to vrdevice<%p>.", (void*)context, (void*)vrdev.get());
+      //logchan_ezapp->log("Setting gfx context<%p> to vrdevice<%p>.", (void*)context, (void*)vrdev.get());
     }
 
     context->beginPrimaryCommandBuffer();
@@ -1192,17 +1206,6 @@ void OrkEzApp::_mainThreadLoopIter() {
   if (_mainWindow) {
     auto ctx = _mainWindow->_ctqt;
     ctx->_runloopIter();
-
-    // CRITICAL FIX: Also process gloadercontext frames when window exists
-    // This is needed for command-line apps that create a hidden window for Vulkan
-    // The ContextExecutor uses gloadercontext, so we must pump frames on it
-    if (gloadercontext) {
-      gloadercontext->beginFrame(false);
-      gloadercontext->endFrame();
-    }
-  } else {
-    gloadercontext->beginFrame(false);
-    gloadercontext->endFrame();
   }
 
   // Phase 5: Render secondary windows and cleanup closed ones
@@ -1217,12 +1220,40 @@ void OrkEzApp::_mainThreadLoopEnd() {
   closeAllSecondaryWindows();
   _secondaryWindows.clear();
 
+  // Release any persistent main-thread TLS pinned by bindGfxToCurrentThread.
+  // Must come before _runloopEnd which pushes its own stack-scoped tracker.
+  unbindGfxFromCurrentThread();
+
   if (_mainWindow) {
     auto ctx = _mainWindow->_ctqt;
     ctx->_runloopEnd();
   }
   size_t num_prof_blocks = profiler::dumpBlocksToFile("test_profile.prof");
   logchan_ezapp->log( "Dumped %zu profiler blocks to test_profile.prof\n", num_prof_blocks);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Headless-friendly TLS attach: pin the main window's gfx context to the
+// calling thread for the lifetime of the script (until mainThreadEnd or an
+// explicit unbind). Required for inline GPU work from Python — without
+// this, contextForCurrentThread() is null between _runloopIter calls.
+// Idempotent.
+
+Context* OrkEzApp::mainGfxContext() const {
+  if (!_mainWindow || !_mainWindow->_ctqt) return nullptr;
+  return _mainWindow->_ctqt->_target;
+}
+
+void OrkEzApp::bindGfxToCurrentThread() {
+  if (_persistent_main_tls) return;
+  auto target = mainGfxContext();
+  OrkAssert(target && "bindGfxToCurrentThread called before main gfx context exists "
+                      "(must come after mainThreadBegin)");
+  _persistent_main_tls = std::make_unique<ThreadGfxContext>(target);
+}
+
+void OrkEzApp::unbindGfxFromCurrentThread() {
+  _persistent_main_tls.reset();
 }
 ///////////////////////////////////////////////////////////////////////////////
 int OrkEzApp::mainThreadLoop() {
@@ -1351,6 +1382,13 @@ int OrkEzApp::mainThreadLoop() {
   else{
   }
   _mainThreadLoopEnd();
+  // subsystem lifecycle: the HFSM teardown runs AUTOMATICALLY when the loop
+  // ends, so every subsystem-based app exits clean without remembering an
+  // explicit call. Application::shutdown() is idempotent (atomic flag), so an
+  // earlier or later explicit shutdown() is harmless. (Called GIL-free: the
+  // pyext mainThreadLoop binding releases the GIL around this whole loop.)
+  if (_initdata and _initdata->_use_subsystems)
+    shutdown();
   return 0;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -1488,15 +1526,9 @@ ork::lev2::orkezapp_ptr_t lev2appinit(ork::appinitdata_ptr_t init_data) {
   auto ezapp             = ork::lev2::OrkEzApp::create(_init_data);
 
   ork::lev2::initModule(init_data);
-
-  static std::shared_ptr<ork::lev2::ThreadGfxContext> _gthreadgfxctx;
-  _gthreadgfxctx = std::make_shared<ork::lev2::ThreadGfxContext>(ork::lev2::gloadercontext.get());
-
-    if(_init_data->_enable_graphics ){
-        ork::lev2::gloadercontext->makeCurrentContext();
-
-    }
-    init_data->finalizeInitialization();
+  // initModule auto-spawns the loader thread when it creates
+  // gloadercontext. No explicit start here.
+  init_data->finalizeInitialization();
 
   return ezapp;
 }

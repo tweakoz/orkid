@@ -33,6 +33,15 @@ struct PropGroupList {
 };
 using group_list_ptr_t = std::shared_ptr<PropGroupList>;
 
+// "reflect.no_instantiate.fallback" annotation type. A "reflect.no_instantiate" object-array
+// expects the parent to have PRE-instantiated every element (the deserializer only patches
+// values by index). When elements are DATA-DRIVEN — built from sibling reflected state that
+// deserializes before the array — a freshly-constructed parent has no elements yet. This
+// fallback gives the parent one chance to build them from its (already-deserialized) state;
+// the deserializer then retries the slot fetch. Plain function pointer: must fit anno_t
+// (svar64_t) and captures would be a lifetime hazard in a class-static annotation anyway.
+using array_instantiation_fallback_t = void (*)(object_ptr_t);
+
 ////////////////////////////////////////////////////////////////////////////////
 struct ObjectProperty {
 

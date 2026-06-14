@@ -96,6 +96,21 @@ libblock lib_envmapping
   vec3 env_cube(samplerCube envtex,vec3 normal) {
     return textureLod(envtex, normal,0).xyz;
   }
+  // PBR2 Phase 2 — cube probe sampling that matches the world-space
+  // orientation/polarity of env_equirectangular_spec_wbias. Pass the
+  // same `dir` you would pass to the equi function; the wrapper applies
+  // the cube/equi axis-convention delta internally so disparate sampling
+  // sites produce visually consistent env samples regardless of whether
+  // a reflection probe is bound.
+  //
+  // The delta was derived empirically from pbrEnvironmentLightingWithF0
+  // (which has both paths and was visually verified in Phase 0):
+  //   equi  uses: (refl.x, -refl.y, refl.z)
+  //   probe uses: (-refl.x, refl.y, refl.z)
+  // ⇒ probe_dir == (-equi_dir.x, -equi_dir.y, equi_dir.z).
+  vec3 env_cube_spec_wbias(vec3 dir, samplerCube envtex, float miplevel) {
+    return textureLod(envtex, vec3(-dir.x, -dir.y, dir.z), miplevel).xyz;
+  }
   // V mapping uses (1.0 - uv.y) rather than -uv.y. Mathematically equivalent
   // for non-pole points under WRAP (fract(-V) == 1-V for V in (0,1)), but
   // without the fract discontinuity at V=0 / V=1 — so bilinear filtering at

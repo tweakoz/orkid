@@ -414,4 +414,37 @@ enum class BufferMapAccess : crc_enum_t {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+// Buffer memory residency - WHERE the buffer lives. The one caller-facing memory dimension
+// (createStorageBuffer fixes the rest). Exclusive choice (never OR'd) -> CrcEnum is fine.
+///////////////////////////////////////////////////////////////////////////////
+
+enum class BufferResidency : crc_enum_t {
+  CrcEnum(HOST),    // CPU-visible, mapped directly. For buffers the CPU writes/reads often (small
+                    //   per-frame params). HOST_VISIBLE|HOST_COHERENT.
+  CrcEnum(DEVICE),  // GPU-resident VRAM. For buffers the GPU computes/reads every frame and the CPU
+                    //   rarely touches; map()/copy go through a staging buffer. Fast on DISCRETE GPUs
+                    //   (no PCIe-mapped compute). DEVICE_LOCAL + staged.
+};
+
+///////////////////////////////////////////////////////////////////////////////
+// Storage-buffer usage - WHAT roles the buffer plays. OR-combinable bit flags, so NOT a CrcEnum
+// (those are hashes that don't OR). DEFAULT = the historical full set (composited in the backend
+// .cpp); TRANSFER_SRC|DST is always added internally. Specify explicit roles to be precise.
+///////////////////////////////////////////////////////////////////////////////
+
+enum class StorageBufferUsage : uint32_t {
+  DEFAULT  = 0,        // historical full set (STORAGE|TRANSFER_SRC|DST|INDIRECT|INDEX) — composited in the .cpp
+  STORAGE  = 1u << 0,  // SSBO compute read/write (the bulk)
+  INDEX    = 1u << 1,  // also a draw index buffer (compute-written index)
+  INDIRECT = 1u << 2,  // also draw/dispatch indirect args
+  VERTEX   = 1u << 3,  // also a draw vertex buffer (compute-written VBO)
+};
+inline StorageBufferUsage operator|(StorageBufferUsage a, StorageBufferUsage b) {
+  return StorageBufferUsage(uint32_t(a) | uint32_t(b));
+}
+inline bool operator&(StorageBufferUsage a, StorageBufferUsage b) { // membership test
+  return (uint32_t(a) & uint32_t(b)) != 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

@@ -88,7 +88,7 @@ Import: `from orkengine import core, lev2`
 
 ## ork.python
 
-Symlink to Python 3.12 in OBT's isolated venv. Includes torch, numpy, and orkengine modules.
+Symlink to Python 3.14 in OBT's isolated venv. Includes numpy, and orkengine modules.
 
 ```bash
 ork.python script.py     # Run with orkid environment

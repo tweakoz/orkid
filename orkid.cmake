@@ -141,12 +141,18 @@ ENDIF()
 
 SET(BUILD_SHARED_LIBS ON)
 
+# Pin Boost discovery to OBT staging — HINTS + NO_DEFAULT_PATH stops
+# CMake from auto-finding /opt/homebrew/opt/boost on macOS.
 IF(IOS_BUILD)
   # iOS only needs minimal Boost components
-  find_package(Boost REQUIRED COMPONENTS system filesystem)
+  find_package(Boost REQUIRED COMPONENTS system filesystem
+               HINTS $ENV{OBT_STAGE}/lib/cmake/Boost-1.82.0
+               NO_DEFAULT_PATH)
 ELSE()
   # Full build needs all components
-  find_package(Boost REQUIRED COMPONENTS system filesystem program_options)
+  find_package(Boost REQUIRED COMPONENTS system filesystem program_options
+               HINTS $ENV{OBT_STAGE}/lib/cmake/Boost-1.82.0
+               NO_DEFAULT_PATH)
 ENDIF()
 
 #############################################################################################################
@@ -173,13 +179,10 @@ ENDIF()
 
 ################################################################################
 
-IF(APPLE)
-  IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
-    set( HOMEBREW_PREFIX  /usr/local )
-  ELSEIF( "${ARCHITECTURE}" STREQUAL "AARCH64" )
-    set( HOMEBREW_PREFIX  /opt/homebrew )
-  ENDIF()
-ENDIF()
+# Note: HOMEBREW_PREFIX block removed — orkid no longer pulls includes/libs
+# from /opt/homebrew. All previously-brew dependencies (libsodium, xxhash,
+# gmp, mpfr, libsndfile, shaderc) are now OBT-built and live under
+# $ENV{OBT_STAGE}/{include,lib}, which is already on the include/link paths.
 
 ################################################################################
 
@@ -257,6 +260,11 @@ ENDIF()
 
 function(ork_std_target_set_incdirs the_target)
 
+  # obt.pybind11/ before everything else — pybind11 headers live at
+  # $OBT_STAGE/include/obt.pybind11/pybind11/ (see pybind11.py). Putting this
+  # FIRST guarantees `#include <pybind11/...>` always resolves to OBT's
+  # pybind11
+  set_property( TARGET ${the_target} APPEND PROPERTY TGT_INCLUDE_PATHS $ENV{OBT_STAGE}/include/obt.pybind11 )
   set_property( TARGET ${the_target} APPEND PROPERTY TGT_INCLUDE_PATHS $ENV{OBT_STAGE}/include/eigen3 )
   set_property( TARGET ${the_target} APPEND PROPERTY TGT_INCLUDE_PATHS $ENV{OBT_STAGE}/include)
   set_property( TARGET ${the_target} APPEND PROPERTY TGT_INCLUDE_PATHS $ENV{OBT_STAGE}/include/tuio/oscpack)
@@ -274,10 +282,8 @@ function(ork_std_target_set_incdirs the_target)
 
   ENDIF()
 
-  # use homebrew last
-  IF(APPLE)
-    set_property( TARGET ${the_target} APPEND PROPERTY TGT_INCLUDE_PATHS ${HOMEBREW_PREFIX}/include)
-  ENDIF()
+  # (Previously appended ${HOMEBREW_PREFIX}/include here on APPLE; removed —
+  # $ENV{OBT_STAGE}/include is added unconditionally above.)
 
   IF( "${ARCHITECTURE}" STREQUAL "AARCH64" )
     set_property( TARGET ${the_target} APPEND PROPERTY TGT_INCLUDE_PATHS $ENV{OBT_BUILDS}/sse2neon )
@@ -357,34 +363,6 @@ function(ork_std_target_set_opts the_target)
 endfunction()
 
 #############################################################################################################
-IF(APPLE)
-  function(ork_torch_opts the_target)
-  set(TORCHLIB_DIR $ENV{OBT_PYPKG}/torch/lib )
-  target_include_directories(${the_target} SYSTEM PRIVATE $ENV{OBT_PYPKG}/torch/include $ENV{OBT_PYPKG}/torch/include/torch/csrc/api/include )
-  target_link_libraries(${the_target} LINK_PRIVATE ${TORCHLIB_DIR}/libtorch.dylib ${TORCHLIB_DIR}/libtorch_cpu.dylib)
-  target_link_libraries(${the_target} LINK_PRIVATE ${TORCHLIB_DIR}/libtorch_python.dylib)
-  target_link_libraries(${the_target} LINK_PRIVATE ${TORCHLIB_DIR}/libc10.dylib )
-  endfunction()
-ELSEIF(UNIX)
-  function(ork_torch_opts the_target)
-  set(TORCHLIB_DIR $ENV{OBT_PYPKG}/torch/lib )
-  target_include_directories(${the_target} SYSTEM PRIVATE $ENV{OBT_PYPKG}/torch/include $ENV{OBT_PYPKG}/torch/include/torch/csrc/api/include )
-  set(NVCUDA_DIR $ENV{OBT_PYPKG}/nvidia )
-  target_link_directories(${the_target} PUBLIC ${TORCHLIB_DIR} )
-  #target_link_libraries(${the_target} LINK_PRIVATE ${TORCHLIB_DIR}/libtorch.so ${TORCHLIB_DIR}/libtorch_cpu.so ${TORCHLIB_DIR}/libtorch_cuda.so)
-  #target_link_libraries(${the_target} LINK_PUBLIC cuda  )
-  #target_link_libraries(${the_target} LINK_PRIVATE ${NVCUDA_DIR}/cuda_runtime/lib/libcudart.so.12)
-  #target_link_libraries(${the_target} LINK_PUBLIC ${NVCUDA_DIR}/cuda_cupti/lib/libcupti.so.12)
-  #target_link_libraries(${the_target} LINK_PRIVATE ${NVCUDA_DIR}/cublas/lib/libcublas.so.12)
-  #target_link_libraries(${the_target} LINK_PRIVATE ${NVCUDA_DIR}/curand/lib/libcurand.so.10)
-  target_link_libraries(${the_target} LINK_PRIVATE ${TORCHLIB_DIR}/libtorch.so ${TORCHLIB_DIR}/libtorch_cpu.so)
-  target_link_libraries(${the_target} LINK_PRIVATE ${TORCHLIB_DIR}/libtorch_python.so)
-  target_link_libraries(${the_target} LINK_PRIVATE ${TORCHLIB_DIR}/libc10.so )
-
-    endfunction()
-ENDIF()
-
-#############################################################################################################
 
 function(ork_std_target_opts_compiler the_target)
 
@@ -437,7 +415,7 @@ endfunction()
 function(ork_lev2_target_opts_compiler the_target)
   target_include_directories (${the_target} PRIVATE ${ORKROOT}/ork.lev2/inc )
   # suppress pytorch warnings
-  target_compile_options(${the_target} PRIVATE -Wno-gnu-zero-variadic-macro-arguments )
+  #target_compile_options(${the_target} PRIVATE -Wno-gnu-zero-variadic-macro-arguments )
   endfunction()
 
 function(ork_lev2_target_opts_linker the_target)
@@ -446,12 +424,12 @@ function(ork_lev2_target_opts_linker the_target)
   set_target_properties(${the_target} PROPERTIES LINKER_LANGUAGE CXX)
   IF(APPLE)
     set_target_properties(${the_target} PROPERTIES
-      INSTALL_RPATH "$ENV{OBT_STAGE}/lib;$ENV{OBT_PYPKG}/torch/lib"
+      INSTALL_RPATH "$ENV{OBT_STAGE}/lib;"
       BUILD_WITH_INSTALL_RPATH TRUE
     )
   ELSE()
     set_target_properties(${the_target} PROPERTIES
-      INSTALL_RPATH $ENV{OBT_STAGE}/lib:$ENV{OBT_PYPKG}/torch/lib
+      INSTALL_RPATH $ENV{OBT_STAGE}/lib:
       BUILD_WITH_INSTALL_RPATH TRUE
     )
   ENDIF()
@@ -473,10 +451,19 @@ function(ork_ecs_target_opts_linker the_target)
   target_link_libraries(${the_target} LINK_PRIVATE ork_ecs )
   target_link_libraries(${the_target} LINK_PRIVATE Boost::system )
   set_target_properties(${the_target} PROPERTIES LINKER_LANGUAGE CXX)
-  set_target_properties(${the_target} PROPERTIES
-    INSTALL_RPATH $ENV{OBT_PYPKG}/torch/lib
-    BUILD_WITH_INSTALL_RPATH TRUE
+  # NOTE: INSTALL_RPATH REPLACES (does not append)
+  # Keep the full list, same form as the lev2 opts.
+  IF(APPLE)
+    set_target_properties(${the_target} PROPERTIES
+      INSTALL_RPATH "$ENV{OBT_STAGE}/lib;"
+      BUILD_WITH_INSTALL_RPATH TRUE
     )
+  ELSE()
+    set_target_properties(${the_target} PROPERTIES
+      INSTALL_RPATH $ENV{OBT_STAGE}/lib:
+      BUILD_WITH_INSTALL_RPATH TRUE
+    )
+  ENDIF()
 endfunction()
 
 function(ork_std_target_opts_ecs the_target)
@@ -525,7 +512,6 @@ function(setupLev2COM target)
   ork_std_target_opts_exe(${target})
   ork_std_target_opts_core(${target})
   ork_std_target_opts_lev2(${target})
-  ork_torch_opts(${target})
 endfunction()
 
 function(setupLev2EXE target sources)
@@ -624,7 +610,8 @@ function(ork_std_target_opts_linker the_target)
     )
     target_link_libraries(${the_target} LINK_PRIVATE objc ${BOOST_LIBS} )
   ELSEIF(APPLE)
-    target_link_directories(${the_target} PUBLIC ${HOMEBREW_PREFIX}/lib )
+    # (Removed: target_link_directories ${HOMEBREW_PREFIX}/lib — OBT staging
+    # lib dir is already added via private_libdir_list / CMAKE_INSTALL_RPATH.)
     target_link_libraries(${the_target} LINK_PRIVATE m pthread )
     target_link_libraries(${the_target} LINK_PRIVATE
           "-framework AppKit"

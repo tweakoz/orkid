@@ -28,13 +28,19 @@ static bool SHOW_SKELETON() {
 namespace ork::lev2 {
 static logchannel_ptr_t logchan_model = logger()->configureChannel("model",fvec3(0.9,0.2,0.9),false);
 
-static void _loadEnvMapOverride(Drawable* drw, const std::string& envpath) {
+// Public-API mirror declared in drawable.h. Internal call sites below
+// keep the underscore-prefixed name for diff churn; the public function
+// just delegates.
+void loadEnvMapOverride(Drawable* drw, const std::string& envpath) {
   if (envpath.empty()) return;
   auto resolved = file::Path::expandPathString(envpath);
   auto maps = pbr::getRadianceMapCache()->get(resolved);
   if (maps) {
     drw->_envmapOverride = maps;
   }
+}
+static inline void _loadEnvMapOverride(Drawable* drw, const std::string& envpath) {
+  loadEnvMapOverride(drw, envpath);
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -277,6 +283,7 @@ void ModelDrawable::enqueueToRenderQueue(drawqueueitem_constptr_t item, lev2::IR
 
         renderable._sortkey = _sortkey;
         renderable._envmapOverride = _envmapOverride;
+        renderable._probeOverride  = _probeOverride;
 
         if (item->_onrenderable) {
           item->_onrenderable(&renderable);
@@ -354,6 +361,7 @@ void ModelRenderable::Render(const IRenderer* renderer) const {
   RCID->_pipeline_cache = _submeshinst->_fxpipelinecache;
   RCID->_pickID = _pickID;
   RCID->_envmapOverride = _envmapOverride;
+  RCID->_probeOverride  = _probeOverride;
   // context->debugMarker(FormatString("toolrenderer::RenderModel isskinned<%d> owner_as_ent<%p>", int(model->isSkinned()),
   // as_ent));
   ///////////////////////////////////////

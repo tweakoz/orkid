@@ -7,6 +7,7 @@
 
 #include "pyext.h"
 #include <ork/lev2/ui/event.h>
+#include <ork/lev2/init.h>
 #include <ork/ecs/ecs.h>
 #include <ork/kernel/profiler.h>
 #include <iostream>
@@ -32,8 +33,15 @@ void pyinit_stochwav(py::module& module_ecs);
 void pyinit_simplesound(py::module& module_ecs);
 void pyinit_globalsynth(py::module& module_ecs);
 void pyinit_probe(py::module& module_ecs);
+void pyinit_asset_system(py::module& module_ecs);
 
 } // namespace ork::ecs
+
+// Forward declaration of the lev2 process-wide loader context. Lives
+// at ork::lev2::gloadercontext (defined in ork.lev2/src/lev2_init.cpp);
+// pyecs_headless_init binds it to the calling thread's TLS so headless
+// scripts get a valid GfxEnv.loadingContext().
+namespace ork::lev2 { extern context_ptr_t gloadercontext; }
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -51,6 +59,52 @@ struct PseudoArgs {
 #pragma GCC diagnostic pop
 
 using pseudoargs_ptr_t = std::shared_ptr<PseudoArgs>;
+
+// Headless ECS init — runs the same lev2 + ecs reflection-registration
+// + finalize-initialization sequence as ecsappcreate, but does NOT
+// construct an EzApp / spin up a window. The Vulkan loader context
+// (gloadercontext) IS created and bound to the calling thread's TLS
+// so GfxEnv.loadingContext() / lev2::contextForCurrentThread() return
+// it — that lets headless scripts (e.g. ork.scene.tojson.py) run
+// Scene.__init__ code paths that eager-build asset wrappers needing
+// a GPU context (PbrMaterial.build, FloatGrid uploads, etc.).
+//
+// Idempotent: safe to call multiple times in a single process.
+//
+// Pair with pyecs_headless_exit() at script end for clean teardown
+// (drains operation queues, runs Context::shutdown).
+void pyecs_headless_init() {
+  static bool s_done = false;
+  if (s_done) return;
+  s_done = true;
+  auto stringpoolctx = std::make_shared<StringPoolContext>();
+  StringPoolStack::push(stringpoolctx);
+  auto init_data = std::make_shared<ork::AppInitData>();
+  lev2::initModule(init_data);
+  ecs::initModule(init_data);
+  init_data->finalizeInitialization();
+  ::ork::python::GlobalState::instance();
+
+  // Bind gloadercontext to this thread's TLS so loadingContext()
+  // returns it. ThreadGfxContext is RAII (ctor pushes, dtor pops);
+  // we hold it in a process-lifetime static so the push survives
+  // until exit. The extern needs to be fully namespaced — we're in
+  // ork::ecs here, but gloadercontext lives in ork::lev2.
+  if (ork::lev2::gloadercontext) {
+    static auto s_tls = std::make_shared<lev2::ThreadGfxContext>(
+        ork::lev2::gloadercontext.get());
+    (void)s_tls;
+  }
+}
+
+void pyecs_headless_exit() {
+  // lev2::initModule auto-spawns g_loader_thread as soon as
+  // gloadercontext exists. The static-destruction path on Python exit
+  // tries to destroy a still-joinable std::thread → terminate(). Join
+  // it explicitly before draining the op queues.
+  ork::lev2::stopLoaderThread();
+  ork::opq::exit();
+}
 
 ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance, py::kwargs kwargs) {
   auto stringpoolctx = std::make_shared<StringPoolContext>();
@@ -232,6 +286,14 @@ ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance, py::kwargs kwargs
 PYBIND11_MODULE(_ecs, module_ecs) {
   // module_ecs.attr("__name__") = "ecs";
   //////////////////////////////////////////////////////////////////////////////
+  // Force orkengine.core and orkengine.lev2 (in that order) to load before
+  // any of ecs's bindings register, so the pybind11 type registry already
+  // contains fvec4, drawables, scenegraph, etc. when ecs's def() statements
+  // convert their default arg values to Python objects. Same pattern as
+  // orkengine.lev2 — see ork.lev2/pyext/src/pyext.cpp.
+  py::module_::import("orkengine.core");
+  py::module_::import("orkengine.lev2");
+  //////////////////////////////////////////////////////////////////////////////
   module_ecs.doc() = "Orkid Ecs Library (scene/actor composition, simulation)";
   //////////////////////////////////////////////////////////////////////////////
   pyinit_scene(module_ecs);
@@ -251,8 +313,31 @@ PYBIND11_MODULE(_ecs, module_ecs) {
   pyinit_simplesound(module_ecs);
   pyinit_globalsynth(module_ecs);
   pyinit_probe(module_ecs);
+  pyinit_asset_system(module_ecs);
   //////////////////////////////////////////////////////////////////////////////
   module_ecs.def("createApp", &ecsappcreate);
+  module_ecs.def("headless_init", &pyecs_headless_init,
+                 "Headless lev2+ecs reflection init (no EzApp/GPU). "
+                 "Call at the top of a data-only pyext test.");
+  module_ecs.def("headless_exit", &pyecs_headless_exit,
+                 "Drain operation queues — pair with headless_init.");
+  // headless_appinit — like headless_init but ALSO creates an
+  // offscreen ezapp. Use when the headless tool needs to drive GPU
+  // work inline (HdriToXir bake, etc.) — pair with
+  // ezapp.mainThreadBegin() + ezapp.bindGfxToCurrentThread().
+  // kwargs are forwarded to lev2.lev2appinit (use_subsystems=, etc.).
+  module_ecs.def("headless_appinit", [](py::kwargs kwargs) -> ork::lev2::orkezapp_ptr_t {
+        // ECS reflection registration (idempotent via static guard).
+        pyecs_headless_init();
+        // Delegate ezapp creation to lev2's lev2appinit so the kwargs
+        // surface stays single-sourced.
+        auto lev2_mod = py::module_::import("orkengine.lev2");
+        auto fn       = lev2_mod.attr("lev2appinit");
+        py::object rv = fn(**kwargs);
+        return rv.cast<ork::lev2::orkezapp_ptr_t>();
+      },
+      "Headless lev2+ecs init + offscreen ezapp creation. kwargs "
+      "forwarded to lev2.lev2appinit (use_subsystems=, width=, etc.).");
   //////////////////////////////////////////////////////////////////////////////
   module_ecs.def("ecsInitCallback", [](ork::appinitdata_ptr_t appinit) {
     auto stringpoolctx = std::make_shared<StringPoolContext>();

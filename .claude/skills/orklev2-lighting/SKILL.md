@@ -153,11 +153,29 @@ uniform_block ublk_std_lighting {
 | `_supersample` | Supersampling factor |
 | `_temporalFrames` | TAA frame count |
 | `_renderLayer` | Layer name (default: "probe") |
+| `_dynamic` | If true, probe is perpetually dirty — re-rendered every frame |
+| `_dirty` | One-shot dirty flag; cleared after the probe pass renders |
 
 Features:
 - Double-buffered per-face accumulation for TAA
 - `exportEquirectangular(ctx, rotation, path)` — export to equirect image
 - `resize(dim)` — set cube map resolution
+
+### Static vs Dynamic Probes (PBR2 Phase 0)
+
+`fwdnode_impl_sub.cpp` gates the cubemap render on `(probe->_dirty || probe->_dynamic)`:
+- Static (default): rendered once when staged, stays clean. Use for fixed-scene captures.
+- Dynamic: re-rendered every frame. Use when reflections must respond to live scene changes (sky swap, moving geometry). Authors flip via `self.probe(..., dynamic=True)` in the ECS Scene DSL.
+
+### Probe Registry on LightManager (PBR2 Phase 0)
+
+A name-keyed registry on `LightManager` lets non-lighting subsystems resolve probes without ECS coupling:
+
+```cpp
+lightprobe_ptr_t LightManager::findProbeByName(const std::string& name) const;
+```
+
+Linear scan over `_lightprobes` (typically O(few)). Probes register themselves via `SG::Layer::createProbeNode` — no separate registration path. Consumers (e.g. ECS `ParticlesGlobalSystem`) look up by entity name at `_onActivateComponent` time (after all probes have staged) and cache the `lightprobe_ptr_t` on the drawable. No per-frame lookups, no stage-order coupling.
 
 ## Light Cookies
 

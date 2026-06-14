@@ -96,15 +96,17 @@ class StandardSceneGraphComponent(ApplicationComponent):
 
   def __init__(self,
                enable_ui_camera = True,
+               explicit_near_far = False,
                grid_variant="_V4",
                grid_data=None,
                eye=vec3(0,0,5),
                tgt=vec3(0),
                up=vec3(0,1,0),
-               near = 1.0,
-               far = 10000.0,
+               near = 0.25,
+               far = 20000.0,
                sg_params=None,
                post_nodes=None,
+               ssaa=0,
                use_float_color_buffer=True,
                layout_component=None):
     """Initialize StandardSceneGraphComponent.
@@ -118,6 +120,7 @@ class StandardSceneGraphComponent(ApplicationComponent):
     #print(eye)
     super().__init__()
     self.enable_ui_camera = enable_ui_camera
+    self.explicit_near_far = explicit_near_far
     self.grid_variant = grid_variant
     self.grid_data = grid_data
     self.initial_eye = eye
@@ -131,9 +134,10 @@ class StandardSceneGraphComponent(ApplicationComponent):
     sgparam_vm.SkyboxIntensity = 1.0
     sgparam_vm.DiffuseIntensity = 1.0
     sgparam_vm.SpecularIntensity = 1.0
-    sgparam_vm.AmbientLevel = vec3(.125)
+    sgparam_vm.AmbientLevel = vec3(0)
     sgparam_vm.preset = "ForwardPBR"
-    sgparam_vm.SkyboxTexPathStr = "cold"
+    sgparam_vm.SkyboxTexPathStr = "<ork_envmaps2>/cold4k.xir"
+    sgparam_vm.ssaa = int(ssaa)
     if sg_params != None:
       for k,v in sg_params.items():
         setattr(sgparam_vm, k, v)
@@ -199,7 +203,14 @@ class StandardSceneGraphComponent(ApplicationComponent):
                                               tgt=self.initial_tgt,
                                               up=self.initial_up,
                                               near=self.initial_near,
+         
                                               far=self.initial_far)
+
+    self.uicam.explicit_near_far = self.explicit_near_far
+    if self.explicit_near_far:
+      self.uicam.loc_min = self.initial_near
+      self.uicam.loc_max = self.initial_far
+
     if self.using_pbr:
       self.pbr_common = SG.pbr_common
       self.pbr_common.useDepthPrepass = True

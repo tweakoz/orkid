@@ -58,6 +58,26 @@ struct VulkanTextureObject {
   vkimageobj_ptr_t _imgobj[2];       // Ping-pong between two images for async uploads
   int _update_index = 0;             // Which slot is being updated (0 or 1)
 
+  // Chunked-upload double-buffered streaming bookkeeping. Active when the
+  // owning lev2::Texture has _streaming=true. Both _imgobj slots are
+  // allocated at reserve time; uploads write to _imgobj[1 - _front_idx]
+  // ("back"); finalizeUpload flips _front_idx on GPU completion. Render
+  // samples _imgobj[_front_idx] via _descset_sampling, which is repointed
+  // at the new front in the same completion callback.
+  std::atomic<int> _front_idx{0};
+
+  // Swap sequence numbers. `_swap_seq_next` is incremented by each
+  // streaming finalizeUpload to stamp its completion callback. The
+  // callback compares against `_swap_seq_applied` and only applies its
+  // swap if its stamp is the latest; older swaps are dropped.
+  // Reason: orkid's completion semaphore poll iterates an unordered_set,
+  // so when two finalizes are signaled at the same poll they can fire in
+  // hash order rather than submission order. Without the seq check, an
+  // older swap firing after a newer one would revert _front_idx, making
+  // the visible layer appear to "go backwards a frame".
+  std::atomic<uint64_t> _swap_seq_next{0};
+  std::atomic<uint64_t> _swap_seq_applied{0};
+
   // For external memory (IOSurface): VkImages are owned by IoSurfaceTexImpl (1:1 mapping)
   // VulkanExternalTextureImpl manages triple-buffering and provides frames via getLatestFrame()
 

@@ -141,9 +141,13 @@ static file::Path _thispath() {
   auto fn_abspath = path.attr("abspath");
   auto fn_stack   = py::cast<py::function>(inspect.attr("stack"));
 
+  // inspect.stack() -> list[FrameInfo]; FrameInfo is a *named tuple*, not a
+  // list. Casting it to py::list worked under pybind11 2.x (lenient type
+  // tagging) but pybind11 3.x reinterprets the storage as a real list and
+  // PyList_GetItem walks bogus memory. Use the named attribute instead.
   auto the_stack    = py::cast<py::list>(fn_stack());
   auto i0           = the_stack[0];
-  auto i1           = py::cast<py::list>(i0)[1];
+  auto i1           = i0.attr("filename");
   auto abs_path     = fn_abspath(i1);
   auto abs_path_str = py::cast<std::string>(abs_path);
 
@@ -159,9 +163,13 @@ static file::Path _thisdir() {
   auto fn_abspath = path.attr("abspath");
   auto fn_stack   = py::cast<py::function>(inspect.attr("stack"));
 
+  // inspect.stack() -> list[FrameInfo]; FrameInfo is a *named tuple*, not a
+  // list. Casting it to py::list worked under pybind11 2.x (lenient type
+  // tagging) but pybind11 3.x reinterprets the storage as a real list and
+  // PyList_GetItem walks bogus memory. Use the named attribute instead.
   auto the_stack    = py::cast<py::list>(fn_stack());
   auto i0           = the_stack[0];
-  auto i1           = py::cast<py::list>(i0)[1];
+  auto i1           = i0.attr("filename");
   auto abs_path     = fn_abspath(i1);
   auto directory    = fn_dirname(abs_path);
   auto abs_path_str = py::cast<std::string>(directory);
@@ -196,7 +204,7 @@ void pyinit_json_config(py::module& module_core);
 
 PYBIND11_MODULE(_core, module_core) {
 
-  logger()->defaultChannel()->log("initialize ork.core python bindings");
+  //logger()->defaultChannel()->log("initialize ork.core python bindings");
   module_core.doc() = "Orkid Core Library (math,kernel,reflection,ect..)";
   /////////////////////////////////////////////////////////////////////////////////
   module_core.def("coreappinit", &_coreappinit); // legacy name

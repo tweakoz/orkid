@@ -161,7 +161,7 @@ fragment_shader ps_I5      //
   vec3 OC = _forward_lightingZ(
     vec3(1), // modcolor
     C,       // albedo
-    vec3(0,1,0), // ambrufmtl
+    vec3(1,1,0), // ambrufmtl (x=AO; 1.0=unoccluded — AO now consumed by fwd lighting)
     vec3(0), // emission
     EyePostion,
     n,

@@ -24,7 +24,6 @@
 #include <ork/kernel/Array.h>
 #include <ork/kernel/Array.hpp>
 #include <ork/application/application.h>
-#include <FLAC++/decoder.h>
 #include <ork/lev2/aud/singularity/synthdata.h>
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/aud/singularity/krzobjects.h>

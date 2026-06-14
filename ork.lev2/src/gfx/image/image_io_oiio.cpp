@@ -43,12 +43,16 @@ bool Image::initFromInMemoryFile( std::string fmtguess, //
 
   auto name = std::string("inmem.") + fmtguess;
 
+  printf("Image::initFromInMemoryFile: fmtguess<%s> srclen<%zu>\n", fmtguess.c_str(), srclen);
+
   auto in               = ImageInput::open(name, &config);
   const ImageSpec& spec = in->spec();
   _width                = spec.width;
   _height               = spec.height;
   _numcomponents        = spec.nchannels;
   int native_nc         = spec.nchannels;
+
+  printf("oiio read: w<%zu> h<%zu> nc<%zu> fmt<%s>\n", _width, _height, _numcomponents, spec.format.c_str());
   switch (spec.format.basetype) {
     case TypeDesc::UINT8:
       _bytesPerChannel = 1;
@@ -116,6 +120,9 @@ bool Image::initFromInMemoryFile( std::string fmtguess, //
     case TypeDesc::FLOAT:
       _bytesPerChannel = 4;
       switch (_numcomponents) {
+        case 1:
+          _format = EBufferFormat::R32F; // single-channel float (e.g. heightfield EXR)
+          break;
         case 3:
           _format = EBufferFormat::RGBA32F;
           _numcomponents = 4; // promote to 4-channel for GPU compatibility
@@ -177,6 +184,9 @@ bool Image::initFromInMemoryFile( std::string fmtguess, //
   } else if (_format == EBufferFormat::RGBA32F) {
     in->read_image(0, 0, 0, 4, TypeDesc::FLOAT, pixels);
     in->close();
+  } else if (_format == EBufferFormat::R32F) {
+    in->read_image(0, 0, 0, 1, TypeDesc::FLOAT, pixels);
+    in->close();
   } else if (_bytesPerChannel == 2) {
     in->read_image(TypeDesc::UINT16, pixels);
     in->close();
@@ -199,7 +209,7 @@ bool Image::initFromInMemoryFile( std::string fmtguess, //
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Image::writeToFile(const ork::file::Path& outpath) const {
+void Image::writeToFile(const ork::file::Path& outpath, bool linear_colorspace) const {
   auto cstrpath = outpath.c_str();
   auto out      = ImageOutput::create(cstrpath);
   if (!out)
@@ -261,9 +271,22 @@ void Image::writeToFile(const ork::file::Path& outpath) const {
       spec.nchannels    = 4;
       spec.channelnames = {"R", "G", "B", "A"};
       break;
+    case EBufferFormat::R32F:
+      spec.format       = TypeDesc::FLOAT;
+      spec.nchannels    = 1;
+      spec.channelnames = {"R"};
+      break;
       default:
       OrkAssert(false);
       break;
+  }
+
+  if (linear_colorspace) {
+    // tag as linear data (heightmaps/masks). Without this, integer formats like
+    // PNG default to an sRGB chunk; a data consumer that honors the tag would then
+    // apply an unwanted sRGB->linear curve. Gamma 1.0 == linear gAMA chunk.
+    spec.attribute("oiio:ColorSpace", "Linear");
+    spec.attribute("oiio:Gamma", 1.0f);
   }
 
   out->open(cstrpath, spec);

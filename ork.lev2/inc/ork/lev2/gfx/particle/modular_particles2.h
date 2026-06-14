@@ -89,6 +89,11 @@ struct ParticleModuleData : public ModuleData {
 public:
   ParticleModuleData();
   static void _initPoolIOs(dflow::dgmoduledata_ptr_t sub);
+  // Adds the "Aux" Vec4f input plug. Emitters call this from their reshape
+  // function (which gets the base moduledata_ptr_t) so authors can write
+  // emitter.Aux.x/.y/.z/.w bindings — the value is read per-emit and
+  // written into each new particle's _aux.
+  static void _initAuxIO(dflow::moduledata_ptr_t sub);
 
   static particlebufferdata_ptr_t _no_connection;
   particlebufferdata_ptr_t _bufferdata;
@@ -119,6 +124,150 @@ public:
 };
 
 using globalmodule_ptr_t = std::shared_ptr<GlobalModuleData>;
+
+///////////////////////////////////////////////////////////////////////////////
+// EntityRefModuleData — parametric host-entity transform decomposition.
+//
+// Outputs the SRT components of the live transform of an ECS-published
+// entity (looked up via GraphInst::_resolveEntityXf at compute time).
+// One instance per unique entity name in the graph — the HyperSyn DSL
+// lowerer creates them lazily from Expr.entity("name").pos / .quat /
+// .scale references and connects the right output plug to consumers.
+//
+// Standalone graphs (no resolver bound) or unresolved names → outputs
+// stay at the identity defaults (pos=0, unit quat, scale=1), so the
+// DSL author surface degrades gracefully when there's no ECS host.
+struct EntityRefModuleData : public ParticleModuleData {
+  DeclareConcreteX(EntityRefModuleData, ParticleModuleData);
+
+public:
+  static std::shared_ptr<EntityRefModuleData> createShared();
+  static std::shared_ptr<EntityRefModuleData> createWithName(const std::string& name);
+  dflow::dgmoduleinst_ptr_t createInstance(dataflow::GraphInst* ginst) const final;
+
+public:
+  EntityRefModuleData();
+
+  // The published entity key (e.g. "saddle_ptc0") to track. Empty →
+  // module's outputs stay at identity. Set at graph-construction time;
+  // the lowerer assigns this when materializing an Expr.entity(...)
+  // reference. Round-trips through JSON.
+  std::string _entity_name;
+};
+
+using entityrefmodule_ptr_t = std::shared_ptr<EntityRefModuleData>;
+
+///////////////////////////////////////////////////////////////////////////////
+// TransformPointModuleData — apply a published entity's full SRT to a
+// vec3 input (interpreted as a point: includes translation).
+//   world_point = host_xf * local_point
+// DSL: Expr.entity("name").transformPoint(local_vec3). Standalone graphs
+// or unresolved names → output stays equal to input (identity).
+struct TransformPointModuleData : public ParticleModuleData {
+  DeclareConcreteX(TransformPointModuleData, ParticleModuleData);
+
+public:
+  static std::shared_ptr<TransformPointModuleData> createShared();
+  static std::shared_ptr<TransformPointModuleData> createWithName(const std::string& name);
+  dflow::dgmoduleinst_ptr_t createInstance(dataflow::GraphInst* ginst) const final;
+  TransformPointModuleData();
+  std::string _entity_name;
+};
+using transform_point_module_ptr_t = std::shared_ptr<TransformPointModuleData>;
+
+///////////////////////////////////////////////////////////////////////////////
+// TransformDirModuleData — apply a published entity's rotation+scale to
+// a vec3 input (interpreted as a direction: NO translation; the 3x3
+// part of the host_xf, including non-uniform scale, is applied).
+//   world_dir = (host_xf 3x3) * local_dir
+// DSL: Expr.entity("name").transformDir(local_vec3).
+struct TransformDirModuleData : public ParticleModuleData {
+  DeclareConcreteX(TransformDirModuleData, ParticleModuleData);
+
+public:
+  static std::shared_ptr<TransformDirModuleData> createShared();
+  static std::shared_ptr<TransformDirModuleData> createWithName(const std::string& name);
+  dflow::dgmoduleinst_ptr_t createInstance(dataflow::GraphInst* ginst) const final;
+  TransformDirModuleData();
+  std::string _entity_name;
+};
+using transform_dir_module_ptr_t = std::shared_ptr<TransformDirModuleData>;
+
+///////////////////////////////////////////////////////////////////////////////
+// Vec3AddModuleData — two-input componentwise vec3 add. The DSL lowerer
+// emits one of these whenever an Expr addition combines two vec3-typed
+// sources (e.g. Expr.entity(...).transformPoint(...) + Expr.vec3(...)).
+struct Vec3AddModuleData : public ParticleModuleData {
+  DeclareConcreteX(Vec3AddModuleData, ParticleModuleData);
+
+public:
+  static std::shared_ptr<Vec3AddModuleData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dataflow::GraphInst* ginst) const final;
+  Vec3AddModuleData();
+};
+using vec3add_module_ptr_t = std::shared_ptr<Vec3AddModuleData>;
+
+///////////////////////////////////////////////////////////////////////////////
+// Vec3CombineModuleData — takes three scalar (float) inputs X/Y/Z and emits an
+// fvec3 output named "value". Used by the HyperSyn DSL lowerer to materialize
+// Expr.vec3(x, y, z) bindings: each axis lowers independently to its own
+// scalar chain, then combines through this module before connecting to the
+// target vec3 plug.
+struct Vec3CombineModuleData : public ParticleModuleData {
+  DeclareConcreteX(Vec3CombineModuleData, ParticleModuleData);
+
+public:
+  static std::shared_ptr<Vec3CombineModuleData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dataflow::GraphInst* ginst) const final;
+
+public:
+  Vec3CombineModuleData();
+};
+
+using vec3combinemodule_ptr_t = std::shared_ptr<Vec3CombineModuleData>;
+
+///////////////////////////////////////////////////////////////////////////////
+// ParametersModule — runtime-mutable scalar source. The DSL's self.expose()
+// creates one output plug per exposed parameter; downstream chains read the
+// current value via a connection. ECS gameplay code mutates values via
+// componentNotify(SET_PARAM, {name, value}) — the change is visible on the
+// next compute.
+struct ParametersModuleData : public ParticleModuleData {
+  DeclareConcreteX(ParametersModuleData, ParticleModuleData);
+
+public:
+  static std::shared_ptr<ParametersModuleData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dataflow::GraphInst* ginst) const final;
+  ParametersModuleData();
+
+  // Add a float parameter. Creates an output plug with the given name and
+  // records the default. Called by DSL self.expose(name, default). Idempotent
+  // — re-exposing the same name updates the default but doesn't dup the plug.
+  // Param plugs are kept NAME-SORTED: plug values deserialize positionally
+  // (skew gate), and on load the plugs rebuild by iterating _defaults — plug
+  // order must be a deterministic function of the name set on both the
+  // authoring and the rebuild path. std::map (sorted) for the same reason.
+  void addFloatParam(const std::string& name, float default_value);
+
+  float defaultFor(const std::string& name) const;
+  bool  hasParam(const std::string& name) const;
+  std::vector<std::string> paramNames() const;
+
+  std::map<std::string, float> _defaults;
+};
+
+using parametersmodule_ptr_t = std::shared_ptr<ParametersModuleData>;
+
+// Helper for ECS layer / pyext — set a named param on the ParametersModule
+// instance owned by `ginst`. Returns false if no ParametersModule exists in
+// this graphinst or if the name isn't exposed. Cheap (hash lookup).
+bool set_param_on_graphinst(dataflow::graphinst_ptr_t ginst,
+                            const std::string& name, float value);
+
+// Total live particles across every pool module in `ginst`. The ECS layer's
+// drain-completion probe — an orphaned (host-despawned) trail keeps computing
+// with emission inhibited and is released once this reaches zero.
+int aliveCountOnParticleGraph(dataflow::graphinst_ptr_t ginst);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -162,6 +311,7 @@ struct ParticlePoolModuleInst : dflow::DgModuleInst {
   ParticlePoolModuleInst(const ParticlePoolData* data, dflow::GraphInst* ginst);
   void compute(dflow::GraphInst* inst, ui::updatedata_ptr_t updata) final;
   void onLink(dflow::GraphInst* inst) final;
+  void onReset(dflow::GraphInst* inst) final;
 
   particlebuf_outpluginst_ptr_t _output;
   const ParticlePoolData* _ppd;

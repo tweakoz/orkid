@@ -150,25 +150,13 @@ class GeoClipMapApp(ComponentizedApplication):
     gmtl.gpuInit(ctx)
     gmtl.rasterstate.setBlendingMacro(tokens.ALPHA)
 
-    fs = gmtl.freestyle
-    param_fade_near = fs.param("terrainFadeNear")
-    param_fade_far  = fs.param("terrainFadeFar")
-    if param_fade_near:
-      gmtl.bindParam(param_fade_near, TERRAIN_FADE_NEAR)
-    if param_fade_far:
-      gmtl.bindParam(param_fade_far, TERRAIN_FADE_FAR)
-    param_near_fade_dist = fs.param("terrainNearFadeDist")
-    if param_near_fade_dist:
-      gmtl.bindParam(param_near_fade_dist, ALPHA_FADE_NEAR_DISTANCE)
-    param_near_plane = fs.param("terrainNearPlane")
-    if param_near_plane:
-      gmtl.bindParam(param_near_plane, CAMERA_NEAR_PLANE)
-    param_feature_scale = fs.param("terrainFeatureScale")
-    if param_feature_scale:
-      gmtl.bindParam(param_feature_scale, TERRAIN_FEATURE_SCALE)
-    param_base_quad_size = fs.param("BaseQuadSize")
-    if param_base_quad_size:
-      gmtl.bindParam(param_base_quad_size, 1.0)
+    # bindParam now takes the param NAME (str) directly (was: an FxShaderParam handle).
+    gmtl.bindParam("terrainFadeNear",     TERRAIN_FADE_NEAR)
+    gmtl.bindParam("terrainFadeFar",      TERRAIN_FADE_FAR)
+    gmtl.bindParam("terrainNearFadeDist", ALPHA_FADE_NEAR_DISTANCE)
+    gmtl.bindParam("terrainNearPlane",    CAMERA_NEAR_PLANE)
+    gmtl.bindParam("terrainFeatureScale", TERRAIN_FEATURE_SCALE)
+    gmtl.bindParam("BaseQuadSize",        1.0)
 
     #######################################
     # ground drawable

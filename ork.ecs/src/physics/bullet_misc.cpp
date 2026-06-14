@@ -126,8 +126,16 @@ void EntMotionState::setWorldTransform(const btTransform& transform) {
     if (_idata) {
 
       fmtx4 c;
-      c.compose(position, rotation);
+      c.compose(position, rotation, mEntity->transform()->_uniformScale);
       _idata->_worldmatrices[_instance_id] = c;
+      // ALSO write back the ENTITY transform — it is the universal live-pose
+      // source (published-xf, the particle "@host" binding, scripts) and the
+      // instanced render path never reads it (it consumes the idata matrix
+      // above), so without this an instanced entity's transform stays frozen
+      // at its spawn pose and anything tracking it (fire trails!) sits still.
+      auto out_xform          = mEntity->transform();
+      out_xform->_translation = position;
+      out_xform->_rotation    = rotation;
       auto dpos = ork::fvec3_to_dvec3(position);
       auto delta = (dpos-_prevpos).absolute();
       _energy += delta;

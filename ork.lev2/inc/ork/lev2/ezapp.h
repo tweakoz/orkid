@@ -171,6 +171,11 @@ struct OrkEzApp : public OrkEzAppBase {
   ///////////////////////////////////
   static orkezapp_ptr_t create(appinitdata_ptr_t appinitdata);
   static orkezapp_ptr_t createWithScene(varmap::varmap_ptr_t sceneparams);
+  // Process-global accessor — returns the running OrkEzApp (set in the
+  // ctor, cleared in ~OrkEzApp). Lets code that doesn't carry an ezapp
+  // reference (e.g. asset-gen wrappers called deep inside a Scene's
+  // __init__) find the running app. Returns nullptr if no app exists.
+  static OrkEzApp* currentRaw();
   static boost::program_options::options_description_easy_init createDefaultOptions(appinitdata_ptr_t appinitdata, //
                                                             std::string appinfo);
   ///////////////////////////////////
@@ -306,6 +311,18 @@ public:
   void _initForAdHoc();        // Legacy inline init (use_subsystems=false)
   void _initForSubsystems();   // HFSM-driven init (use_subsystems=true)
   void _initGraphicsContext(); // Graphics context creation (called by either path)
+
+  // Headless context attach: keep the main-window gfx context's TLS pinned
+  // on the calling thread (typically the Python main thread). Without this,
+  // CtxGLFW::_runloopBegin/Iter/End each push ThreadGfxContext as a stack
+  // local — so contextForCurrentThread() is null between iter calls and any
+  // inline GPU work from Python (e.g. ork.envmap.process_envmap) segfaults.
+  // Call after mainThreadBegin(). Auto-released in mainThreadEnd().
+  void bindGfxToCurrentThread();
+  void unbindGfxFromCurrentThread();
+  Context* mainGfxContext() const;
+
+  std::unique_ptr<ThreadGfxContext> _persistent_main_tls;
 };
 
 } // namespace ork::lev2

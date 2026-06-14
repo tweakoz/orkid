@@ -171,6 +171,25 @@ class DuGeometryBufferInterface final : public GeometryBufferInterface {
       size_t instance_count,
       size_t first_instance) override;
 
+  void DrawInstancedIndexedPrimitiveIndirectEML(
+      const VertexBufferBase& VBuf,
+      const IndexBufferBase& IdxBuf,
+      PrimitiveType eType,
+      const FxShaderStorageBuffer* indirect_args,
+      size_t args_offset = 0) override;
+
+  void DrawIndirectEML(
+      PrimitiveType eType,
+      const FxShaderStorageBuffer* indirect_args,
+      size_t args_offset = 0) override;
+
+  void DrawIndexedIndirectEML(
+      const FxShaderStorageBuffer* index_buffer,
+      PrimitiveType eType,
+      const FxShaderStorageBuffer* indirect_args,
+      size_t args_offset = 0,
+      int index_size = 4) override;
+
   //////////////////////////////////////////////
 
 public:

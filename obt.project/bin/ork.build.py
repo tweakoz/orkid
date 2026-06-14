@@ -142,6 +142,17 @@ with buildtrace.NestedBuildTrace({ "op": "obt.build.py"}) as nested:
   cmd += ["-DCMAKE_CXX_COMPILER=%s"%clangdep.bin_clangpp]
   cmd += ["-DCMAKE_C_COMPILER=%s"%clangdep.bin_clang]
 
+  # mold linker on Linux. orkid has heavy C++ link steps (ork_core,
+  # ork_lev2, the _core/_lev2/_ecs python-extension .so's) — mold cuts
+  # that link phase sharply. Passed as -D cache vars because this is a direct cmake
+  # invocation — the -D values land straight in the cache. clang (the
+  # orkid compiler, see above) supports -fuse-ld=mold. Linux-gated:
+  # mold is ELF-only; macOS uses Apple's linker.
+  if obt.host.IsLinux:
+    cmd += ["-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=mold"]
+    cmd += ["-DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=mold"]
+    cmd += ["-DCMAKE_MODULE_LINKER_FLAGS=-fuse-ld=mold"]
+
   if obt.host.IsAARCH64:
     cmd += ["-DARCHITECTURE=AARCH64"]
   else:
@@ -197,15 +208,46 @@ with buildtrace.NestedBuildTrace({ "op": "obt.build.py"}) as nested:
   rval = Command(cmd).exec()
 
   if rval==0 and obt.host.IsDarwin:
-    src_spec = PYTHON.site_packages_dir/"torch"/"lib"/"lib*.dylib"
-    dst_spec = obt.path.stage()/"lib/"
-    cmd_str = "cp %s %s/" % (src_spec, dst_spec)
-    print("copying torch dylibs to stage dir")
-    print(cmd_str)
-    os.system(cmd_str)
-    rval = Command(["obt.osx.macho.fixup.libs.py","--orklibs", "--orkpymods"]).exec()
+    #
+    # Macho fixup: on the first successful orkid build into this staging,
+    # walk every dylib in stage/lib (--all) so any non-orkid dep that uses
+    # @executable_path/.. install_names (e.g. libpng built as a framework)
+    # gets normalized to @rpath. After that one-time pass, subsequent
+    # incremental builds only need to fix orkid's own libs/pymods.
+    fixup_marker = obt.path.manifests()/"orkid_macho_first_fixup_done"
+    if fixup_marker.exists():
+      fixup_args = ["--orklibs","--orkpymods"]
+    else:
+      # First-build pass: walk every dylib in stage/lib (--alllibs) AND
+      # every C-extension under orkengine/{core,lev2,ecs,ecssim}
+      # (--orkpymods). Without --orkpymods, _core.so / _lev2.so / _ecs.so /
+      # _ecssim.so retain @executable_path/.. install_names that fail when
+      # the venv python imports them directly.
+      fixup_args = ["--alllibs","--orkpymods"]
+    rval = Command(["obt.osx.macho.fixup.libs.py"]+fixup_args).exec()
+    if rval==0 and not fixup_marker.exists():
+      fixup_marker.touch()
 
-  src = ork_path.pyvenv/"bin"/"python3.12"
+  # Asset cache symlink: assets (downloads, large data files, etc.) can take
+  # a long time to fetch and we want them to survive staging recreation.
+  # On a fresh user, ~/.obt-global/assetcache won't exist yet — create it
+  # (mkdir -p), then link <staging>/assetcache to it so subsequent fresh
+  # stagings reuse the same cache. Runs on every successful build but is
+  # idempotent once both the dir and the link exist.
+  if rval == 0:
+    stage_assetcache  = obt.path.stage()/"assetcache"
+    global_assetcache = obt.path.Path(os.path.expanduser("~/.obt-global/assetcache"))
+    global_assetcache.mkdir(parents=True, exist_ok=True)
+    # exists() returns False for broken symlinks; is_symlink() catches them
+    # so we don't overwrite an existing (even broken) link the user placed.
+    if not stage_assetcache.exists() and not stage_assetcache.is_symlink():
+      os.symlink(str(global_assetcache), str(stage_assetcache))
+
+  # ork.python is built as a custom Mach-O wrapper around the OBT-built
+  # python interpreter (see ork.core/tools/ork_python_wrapper.cpp). The
+  # source python3.<minor> binary lives in $OBT_STAGE/pyvenv/bin/. Use the
+  # python dep's deconame so this isn't pinned to a specific minor version.
+  src = ork_path.pyvenv/"bin"/PYTHON._deconame
   dst = obt.path.stage()/"bin"/"ork.python"
   if rval==0 and (not dst.exists()):
     obt.pathtools.copyfile(src,dst)

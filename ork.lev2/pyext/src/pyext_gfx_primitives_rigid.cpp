@@ -15,10 +15,12 @@
 #include <ork/lev2/gfx/particle/drawable_data.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/meshutil/rigid_primitive.inl>
+#include <ork/lev2/gfx/meshutil/geometry.h>
 #include <ork/lev2/gfx/image.h>
 #include <ork/lev2/gfx/gfxvtxbuf.inl>
 
 #include "pyext.h"
+#include <pybind11/numpy.h>
 #include "pyext_micromesh.inl"
 #include "_vdb_impl.h"
 
@@ -96,6 +98,103 @@ micromesh_ptr_t SmoothingStage::synchronous(stage_ptr_t inp_stage,vdb_vec3grid_p
   }
   current_mesh->computeNormals();
   return current_mesh;
+}
+
+/////////////////////////////////////////////////
+
+/////////////////////////////////////////////////
+// Geometry channel <-> numpy. geom_channel_buffer exposes a typed channel's
+// contiguous AOS storage through the buffer protocol (float-family -> f32,
+// int -> i32; readonly=false), so np.asarray(channel) is a ZERO-COPY,
+// WRITEABLE view (numpy keeps the channel alive via the buffer reference).
+/////////////////////////////////////////////////
+template <typename T> static py::buffer_info geom_channel_buffer(meshutil::GeomChannel<T>& c) {
+  constexpr bool isint    = std::is_same<T, int>::value;
+  using scalar_t          = typename std::conditional<isint, int, float>::type;
+  constexpr ssize_t ssz   = ssize_t(sizeof(scalar_t));
+  constexpr ssize_t ncomp = ssize_t(sizeof(T) / sizeof(scalar_t));
+  ssize_t n               = ssize_t(c._data.size());
+  std::string fmt         = py::format_descriptor<scalar_t>::format();
+  void* ptr               = c._data.data();
+  if (std::is_same<T, fmtx4>::value) // (n,4,4)
+    return py::buffer_info(ptr, ssz, fmt, 3, {n, ssize_t(4), ssize_t(4)}, {ssize_t(sizeof(T)), ssize_t(4) * ssz, ssz}, false);
+  if (ncomp == 1) // (n,)
+    return py::buffer_info(ptr, ssz, fmt, 1, {n}, {ssize_t(sizeof(T))}, false);
+  return py::buffer_info(ptr, ssz, fmt, 2, {n, ncomp}, {ssize_t(sizeof(T)), ssz}, false); // (n,comps)
+}
+
+// np.asarray over the channel's buffer protocol -> zero-copy writeable view.
+static py::object geom_channel_ndarray(meshutil::geomchannel_ptr_t ch) {
+  return py::module::import("numpy").attr("asarray")(py::cast(ch));
+}
+
+// Bulk authoring: create / replace a channel in `attrs` from a numpy/list,
+// inferring float/int + tuple size from the array shape/dtype. Shared by
+// GeomAttributes.set / __setitem__ and the Geometry point-attr sugar.
+static void geom_attrs_set(meshutil::GeomAttributes& attrs, const std::string& name, py::object data) {
+  py::array arr = py::array::ensure(data);
+  if (not arr)
+    throw std::runtime_error("GeomAttributes.set: data must be array-like (list or numpy)");
+  py::buffer_info info = arr.request();
+  if (info.ndim < 1)
+    throw std::runtime_error("GeomAttributes.set: data must have at least one dimension");
+  ssize_t n     = info.shape[0];
+  ssize_t comps = 1;
+  for (ssize_t d = 1; d < info.ndim; d++)
+    comps *= info.shape[d];
+  char kind = arr.dtype().kind();
+  if (kind == 'f') {
+    auto a           = py::array_t<float, py::array::c_style | py::array::forcecast>(arr);
+    const float* src = a.data();
+    switch (comps) {
+      case 1: { auto ch = attrs.createChannel<float>(name); ch->_data.assign(src, src + n); break; }
+      case 2: { auto ch = attrs.createChannel<fvec2>(name); ch->_data.resize(n); std::memcpy(ch->_data.data(), src, size_t(n) * sizeof(fvec2)); break; }
+      case 3: { auto ch = attrs.createChannel<fvec3>(name); ch->_data.resize(n); std::memcpy(ch->_data.data(), src, size_t(n) * sizeof(fvec3)); break; }
+      case 4: { auto ch = attrs.createChannel<fvec4>(name); ch->_data.resize(n); std::memcpy(ch->_data.data(), src, size_t(n) * sizeof(fvec4)); break; }
+      case 16: { auto ch = attrs.createChannel<fmtx4>(name); ch->_data.resize(n); std::memcpy(ch->_data.data(), src, size_t(n) * sizeof(fmtx4)); break; }
+      default: throw std::runtime_error("GeomAttributes.set: unsupported float tuple size (expected 1/2/3/4/16)");
+    }
+  } else if (kind == 'i' or kind == 'u') {
+    if (comps != 1)
+      throw std::runtime_error("GeomAttributes.set: only scalar int channels are supported");
+    auto a         = py::array_t<int, py::array::c_style | py::array::forcecast>(arr);
+    const int* src = a.data();
+    auto ch        = attrs.createChannel<int>(name);
+    ch->_data.assign(src, src + n);
+  } else {
+    throw std::runtime_error("GeomAttributes.set: dtype must be float or int");
+  }
+}
+
+/////////////////////////////////////////////////
+// Per-type Geometry channel binding — strict typed element accessors
+// (get/set/append over fvec3/fvec4/... directly, no py::object) + a zero-copy
+// numpy view via the buffer protocol.
+/////////////////////////////////////////////////
+template <typename T> static void bind_geom_channel(py::module& module_lev2, const char* pyname) {
+  namespace mu = meshutil;
+  py::class_<mu::GeomChannel<T>, mu::GeomChannelBase, mu::geomchannel_typed_ptr_t<T>>(module_lev2, pyname, py::buffer_protocol())
+      .def_buffer([](mu::GeomChannel<T>& c) -> py::buffer_info { return geom_channel_buffer<T>(c); })
+      .def("__len__", [](mu::geomchannel_typed_ptr_t<T> c) -> size_t { return c->_data.size(); })
+      .def("size", [](mu::geomchannel_typed_ptr_t<T> c) -> size_t { return c->_data.size(); })
+      .def(
+          "resize",
+          [](mu::geomchannel_typed_ptr_t<T> c, size_t n) { c->_data.resize(n); },
+          py::arg("count"))
+      .def(
+          "get",
+          [](mu::geomchannel_typed_ptr_t<T> c, int index) -> T { return c->_data.at(index); },
+          py::arg("index"))
+      .def(
+          "set",
+          [](mu::geomchannel_typed_ptr_t<T> c, int index, T value) { c->_data.at(index) = value; },
+          py::arg("index"),
+          py::arg("value"))
+      .def(
+          "append",
+          [](mu::geomchannel_typed_ptr_t<T> c, T value) { c->_data.push_back(value); },
+          py::arg("value"))
+      .def("array", [](mu::geomchannel_typed_ptr_t<T> c) -> py::object { return geom_channel_ndarray(c); });
 }
 
 /////////////////////////////////////////////////
@@ -487,6 +586,21 @@ void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
                 drwdata->_primitive = prim;
                 return drwdata;
               })
+          .def(
+              "createDrawableData",
+              [](meshutil::rigidprimitive_ptr_t prim,                                  //
+                 material_ptr_t material) -> meshutil::rigidprimitive_drawdata_ptr_t { //
+                // Attach via the MATERIAL (not a baked pipeline) so the drawable
+                // does per-pass technique selection — a depth pipeline in the
+                // depth-prepass, the forward-lighting pipeline in the forward
+                // pass. A baked FORWARD_PBR pipeline would run the forward
+                // lighting lambda during the depth-prepass and assert on the
+                // unbound PBR_COMMON frame-property.
+                auto drwdata        = std::make_shared<meshutil::RigidPrimitiveDrawableData>();
+                drwdata->_material  = material;
+                drwdata->_primitive = prim;
+                return drwdata;
+              })
               .def_property(
                   "debugState",
                   [](meshutil::rigidprimitive_ptr_t prim) -> bool {
@@ -536,19 +650,215 @@ void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
              int count,
              std::string named,
              scenegraph::layer_ptr_t layer,
-             material_ptr_t material) -> scenegraph::drawable_node_ptr_t {
+             material_ptr_t material,
+             bool cull) -> scenegraph::drawable_node_ptr_t {
             using drw_t = meshutil::InstancedRigidPrimitiveDrawable<SVtxV12N12B12T8C4>;
             auto drw = std::make_shared<drw_t>();
             drw->bindPrimitive(prim, material);
+            drw->enableCull(cull); // GPU frustum cull -> indirect draw (per-VP, onPreRender)
             drw->resize(count);
             auto instdata = drw->_instancedata;
             for (int i = 0; i < count; i++) {
               instdata->_worldmatrices[i].compose(fvec3(0, 0, 0), fquat(), 0.0f);
-              instdata->_modcolors[i] = fvec4(1, 1, 1, 1);
+              if (not drw->_matrices_only) // _modcolors is empty in matrices-only (no per-instance color)
+                instdata->_modcolors[i] = fvec4(1, 1, 1, 1);
             }
             auto node = layer->createDrawableNode(named, drw);
             return node;
           },
-          py::arg("count"), py::arg("name"), py::arg("layer"), py::arg("material"));
+          py::arg("count"), py::arg("name"), py::arg("layer"), py::arg("material"),
+          py::arg("cull") = false);
+  /////////////////////////////////////////////////////////////////////////////////
+  // Geometry — standalone attribute-based geometry container.
+  // Channels are first-class strictly-typed objects with zero-copy numpy views
+  // (buffer protocol). Attributes are owner-scoped (point/vertex/prim/detail);
+  // Geometry exposes those sets plus __getitem__/__setitem__ sugar over its
+  // POINT attributes, clone(), an .ogeo chunkfile codec, and a MicroMesh
+  // adapter.
+  /////////////////////////////////////////////////////////////////////////////////
+  py::enum_<meshutil::GeomChannelType>(module_lev2, "GeomChannelType")
+      .value("FLOAT", meshutil::GeomChannelType::FLOAT)
+      .value("INT", meshutil::GeomChannelType::INT)
+      .value("VEC2", meshutil::GeomChannelType::VEC2)
+      .value("VEC3", meshutil::GeomChannelType::VEC3)
+      .value("VEC4", meshutil::GeomChannelType::VEC4)
+      .value("QUAT", meshutil::GeomChannelType::QUAT)
+      .value("MTX4", meshutil::GeomChannelType::MTX4);
+  auto geomchannel_base_t =
+      py::class_<meshutil::GeomChannelBase, meshutil::geomchannel_ptr_t>(module_lev2, "GeomChannel")
+          .def("size", [](meshutil::geomchannel_ptr_t c) -> size_t { return c->count(); })
+          .def("__len__", [](meshutil::geomchannel_ptr_t c) -> size_t { return c->count(); })
+          .def_property_readonly("datatype", [](meshutil::geomchannel_ptr_t c) { return c->_datatype; });
+  type_codec->registerStdCodec<meshutil::geomchannel_ptr_t>(geomchannel_base_t);
+  bind_geom_channel<float>(module_lev2, "FloatChannel");
+  bind_geom_channel<int>(module_lev2, "IntChannel");
+  bind_geom_channel<fvec2>(module_lev2, "Vec2Channel");
+  bind_geom_channel<fvec3>(module_lev2, "Vec3Channel");
+  bind_geom_channel<fvec4>(module_lev2, "Vec4Channel");
+  bind_geom_channel<fquat>(module_lev2, "QuatChannel");
+  bind_geom_channel<fmtx4>(module_lev2, "Mtx4Channel");
+  /////////////////////////////////////////////////
+  // GeomAttributes — owner-scoped channel set (point / vertex / prim / detail).
+  // __getitem__ returns a zero-copy writeable numpy view; __setitem__ bulk
+  // creates/replaces the channel (tuple size & float/int inferred).
+  /////////////////////////////////////////////////
+  py::class_<meshutil::GeomAttributes>(module_lev2, "GeomAttributes")
+      .def(
+          "createChannel",
+          [](meshutil::GeomAttributes& self, const std::string& name, meshutil::GeomChannelType t) -> meshutil::geomchannel_ptr_t {
+            switch (t) {
+              case meshutil::GeomChannelType::FLOAT: return self.createChannel<float>(name);
+              case meshutil::GeomChannelType::INT:   return self.createChannel<int>(name);
+              case meshutil::GeomChannelType::VEC2:  return self.createChannel<fvec2>(name);
+              case meshutil::GeomChannelType::VEC3:  return self.createChannel<fvec3>(name);
+              case meshutil::GeomChannelType::VEC4:  return self.createChannel<fvec4>(name);
+              case meshutil::GeomChannelType::QUAT:  return self.createChannel<fquat>(name);
+              case meshutil::GeomChannelType::MTX4:  return self.createChannel<fmtx4>(name);
+            }
+            return nullptr;
+          },
+          py::arg("name"),
+          py::arg("type"))
+      .def(
+          "channel",
+          [](meshutil::GeomAttributes& self, const std::string& name) -> meshutil::geomchannel_ptr_t { return self.channel(name); },
+          py::arg("name"))
+      .def(
+          "hasChannel",
+          [](meshutil::GeomAttributes& self, const std::string& name) { return self.hasChannel(name); },
+          py::arg("name"))
+      .def("__contains__", [](meshutil::GeomAttributes& self, const std::string& name) { return self.hasChannel(name); })
+      .def(
+          "removeChannel",
+          [](meshutil::GeomAttributes& self, const std::string& name) { self.removeChannel(name); },
+          py::arg("name"))
+      .def("channelNames", [](meshutil::GeomAttributes& self) { return self.channelNames(); })
+      .def("__len__", [](meshutil::GeomAttributes& self) { return self.numChannels(); })
+      .def(
+          "set",
+          [](meshutil::GeomAttributes& self, const std::string& name, py::object data) { geom_attrs_set(self, name, data); },
+          py::arg("name"),
+          py::arg("data"))
+      .def("__setitem__", [](meshutil::GeomAttributes& self, const std::string& name, py::object data) { geom_attrs_set(self, name, data); })
+      .def(
+          "get",
+          [](meshutil::GeomAttributes& self, const std::string& name) -> py::object {
+            auto ch = self.channel(name);
+            if (not ch)
+              return py::none();
+            return geom_channel_ndarray(ch);
+          },
+          py::arg("name"))
+      .def("__getitem__", [](meshutil::GeomAttributes& self, const std::string& name) -> py::object {
+        auto ch = self.channel(name);
+        if (not ch)
+          throw py::key_error(name);
+        return geom_channel_ndarray(ch);
+      });
+  /////////////////////////////////////////////////
+  auto geometry_t =
+      py::class_<meshutil::Geometry, meshutil::geometry_ptr_t>(module_lev2, "Geometry")
+          .def(py::init<>())
+          .def_property_readonly("point",  [](meshutil::geometry_ptr_t g) -> meshutil::GeomAttributes& { return g->_point; },  py::return_value_policy::reference_internal)
+          .def_property_readonly("vertex", [](meshutil::geometry_ptr_t g) -> meshutil::GeomAttributes& { return g->_vertex; }, py::return_value_policy::reference_internal)
+          .def_property_readonly("prim",   [](meshutil::geometry_ptr_t g) -> meshutil::GeomAttributes& { return g->_prim; },   py::return_value_policy::reference_internal)
+          .def_property_readonly("detail", [](meshutil::geometry_ptr_t g) -> meshutil::GeomAttributes& { return g->_detail; }, py::return_value_policy::reference_internal)
+          // point-attribute sugar: geo["P"] == geo.point["P"]
+          .def("__getitem__", [](meshutil::geometry_ptr_t g, const std::string& name) -> py::object {
+            auto ch = g->_point.channel(name);
+            if (not ch)
+              throw py::key_error(name);
+            return geom_channel_ndarray(ch);
+          })
+          .def("__setitem__", [](meshutil::geometry_ptr_t g, const std::string& name, py::object data) { geom_attrs_set(g->_point, name, data); })
+          .def("__contains__", [](meshutil::geometry_ptr_t g, const std::string& name) { return g->_point.hasChannel(name); })
+          .def(
+              "addPolys",
+              [](meshutil::geometry_ptr_t geo, py::object indices, int sides) {
+                auto a = py::array_t<int, py::array::c_style | py::array::forcecast>(py::array::ensure(indices));
+                std::vector<int> v(a.data(), a.data() + a.size());
+                geo->addPolys(v, sides);
+              },
+              py::arg("indices"),
+              py::arg("sides") = 3)
+          .def(
+              "addPoly",
+              [](meshutil::geometry_ptr_t geo, py::object point_indices) {
+                auto a = py::array_t<int, py::array::c_style | py::array::forcecast>(py::array::ensure(point_indices));
+                std::vector<int> v(a.data(), a.data() + a.size());
+                geo->addPoly(v);
+              },
+              py::arg("point_indices"))
+          .def("clone", [](meshutil::geometry_ptr_t geo) { return geo->clone(); })
+          .def_property_readonly("num_points", [](meshutil::geometry_ptr_t geo) { return geo->numPoints(); })
+          .def_property_readonly("num_vertices", [](meshutil::geometry_ptr_t geo) { return geo->numVertices(); })
+          .def_property_readonly("num_prims", [](meshutil::geometry_ptr_t geo) { return geo->numPrims(); })
+          .def_property_readonly("num_polys", [](meshutil::geometry_ptr_t geo) { return geo->numPolys(); })
+          .def(
+              "computeFaceNormal",
+              [](meshutil::geometry_ptr_t geo, int ipoly) { return geo->computeFaceNormal(ipoly); },
+              py::arg("ipoly"))
+          .def(
+              "write",
+              [](meshutil::geometry_ptr_t geo, const std::string& path) {
+                py::gil_scoped_release release;
+                geo->writeChunkfile(file::Path(path.c_str()));
+              },
+              py::arg("path"))
+          .def_static(
+              "read",
+              [](const std::string& path) -> meshutil::geometry_ptr_t {
+                py::gil_scoped_release release;
+                return meshutil::Geometry::readChunkfile(file::Path(path.c_str()));
+              },
+              py::arg("path"))
+          .def("toMicroMesh", [](meshutil::geometry_ptr_t geo) -> micromesh_ptr_t {
+            auto P = geo->_point.channelAs<fvec3>("P");
+            if (not P)
+              throw std::runtime_error("Geometry.toMicroMesh: requires a vec3 point 'P' channel");
+            auto mesh       = std::make_shared<MicroMesh>();
+            mesh->_vertices = P->_data;
+            size_t nv       = mesh->_vertices.size();
+            mesh->_colors.assign(nv, fvec4(1, 1, 1, 1));
+            if (auto N = geo->_point.channelAs<fvec3>("N"); N and N->_data.size() == nv)
+              mesh->_normals = N->_data;
+            if (auto B = geo->_point.channelAs<fvec3>("binormal"); B and B->_data.size() == nv)
+              mesh->_binormals = B->_data;
+            if (auto uv = geo->_point.channelAs<fvec2>("uv"); uv and uv->_data.size() == nv)
+              mesh->_uvs = uv->_data;
+            if (auto cd = geo->_point.channelAs<fvec4>("Cd"); cd and cd->_data.size() == nv)
+              mesh->_colors = cd->_data;
+            int np = geo->numPolys();
+            for (int i = 0; i < np; i++) {
+              int cnt        = geo->polyVertexCount(i);
+              const int* idx = geo->polyPointIndices(i);
+              if (cnt == 2) {
+                auto& l = mesh->_lines.emplace_back();
+                l.push_back(idx[0]);
+                l.push_back(idx[1]);
+              } else if (cnt == 3) {
+                auto& t = mesh->_tris.emplace_back();
+                t.push_back(idx[0]);
+                t.push_back(idx[1]);
+                t.push_back(idx[2]);
+              } else if (cnt == 4) {
+                auto& q = mesh->_quads.emplace_back();
+                q.push_back(idx[0]);
+                q.push_back(idx[1]);
+                q.push_back(idx[2]);
+                q.push_back(idx[3]);
+              } else {
+                for (int k = 1; k + 1 < cnt; k++) { // fan-triangulate n-gons
+                  auto& t = mesh->_tris.emplace_back();
+                  t.push_back(idx[0]);
+                  t.push_back(idx[k]);
+                  t.push_back(idx[k + 1]);
+                }
+              }
+            }
+            mesh->_connectivity_dirty = true;
+            return mesh;
+          });
+  type_codec->registerStdCodec<meshutil::geometry_ptr_t>(geometry_t);
 } // void pyinit_gfx_rigidprim(py::module& module_lev2) {
 } // namespace ork::lev2

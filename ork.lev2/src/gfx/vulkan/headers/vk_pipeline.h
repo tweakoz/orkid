@@ -112,6 +112,7 @@ struct VkFxShaderStorageBlock : public VkFxShaderDescriptorSetItem {
   std::vector<fxbuffer_member_ptr_t> _members_by_order;
 
   size_t _buffer_size = 0;
+  size_t _binding_id  = 0; // real SPIR-V binding (NOT _descriptor_set_id, which is the set)
   std::string _name;
   std::string _buffer_name;
 };
@@ -424,7 +425,15 @@ struct VkComputePipelineState {
   bool createPipeline(vkfxsstage_ptr_t computeShader);
   void bindStorageBuffer(uint32_t binding_index, VkBuffer buffer, VkDeviceSize size);
   void bindSampler(uint32_t binding_index, VkDescriptorImageInfo desc_info);
-  void updateDescriptorSet();
+
+  // Per-dispatch descriptor sets. Each dispatch recorded into a command buffer needs
+  // its OWN set, else multiple dispatches of this pipeline in one submit would all
+  // observe the LAST binding (a single set rewritten in place). acquireDescriptorSet
+  // hands out a fresh set per dispatch from a growable ring that is reused across
+  // dispatch phases — a new `generation` (one per beginDispatchPhase) resets the
+  // cursor so prior-phase sets (whose command buffer has completed) are recycled.
+  VkDescriptorSet acquireDescriptorSet(uint64_t generation);
+  void writeDescriptorSet(VkDescriptorSet set); // populate `set` from current bindings
 
   vkcontext_rawptr_t _contextVK = nullptr;
   vkfxsstage_ptr_t _computeShader;              // VulkanFxShaderStage with SPIR-V
@@ -432,8 +441,16 @@ struct VkComputePipelineState {
   VkPipeline _pipeline = VK_NULL_HANDLE;
   VkPipelineLayout _pipelineLayout = VK_NULL_HANDLE;
   VkDescriptorSetLayout _descriptorSetLayout = VK_NULL_HANDLE;
-  VkDescriptorSet _descriptorSet = VK_NULL_HANDLE;
-  VkDescriptorPool _descriptorPool = VK_NULL_HANDLE;  // Per-pipeline pool for simplicity
+
+  // growable per-dispatch descriptor-set ring (see acquireDescriptorSet)
+  void _growSetPool();
+  std::vector<VkDescriptorPool> _setPools; // each holds kSetsPerPool sets; freed in dtor
+  std::vector<VkDescriptorSet>  _setRing;  // all allocated sets, reused across generations
+  size_t   _setCursor = 0;                 // next set to hand out in the current generation
+  uint64_t _setGeneration = 0;             // generation the cursor was last reset on
+  uint32_t _poolFreeSlots = 0;             // unused sets remaining in _setPools.back()
+  uint32_t _ssboCount = 0, _uboCount = 0, _samplerCount = 0; // per-set descriptor counts
+  bool _hasDescriptors = false;            // false => empty layout (no set to bind)
 
   // Storage buffer bindings (binding_id -> buffer info)
   struct StorageBufferBinding {

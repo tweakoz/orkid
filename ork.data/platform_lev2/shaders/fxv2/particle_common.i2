@@ -71,7 +71,7 @@ fragment_interface fface_minimal : ublk_frg : sset_frg {
   inputs {
     vec4 frg_clr;
     vec2 frg_uv0;
-    vec2 frg_uv1;
+    vec4 frg_uv1;  // x=age, y=random, z=aux.x, w=aux.y
   }
   outputs {
     vec4 out_clr;
@@ -81,7 +81,7 @@ fragment_interface fface_psys : ublk_frg : sset_frg {
   inputs {
     vec4 frg_clr;
     vec2 frg_uv0;
-    vec2 frg_uv1;
+    vec4 frg_uv1;  // x=age, y=random, z=aux.x, w=aux.y
   }
   outputs {
     layout(location = 0) vec4 out_clr;
@@ -134,6 +134,22 @@ fragment_shader ps_grad : fface_psys {
   out_clr.w = gmap.w*cmap.w*AlphaFactor;
 }
 ///////////////////////////////////////////////////////////////
+// Gradient-atlas: samples GradientMap (a 2D texture) at
+//   X = unit_age (existing semantic)
+//   Y = aux.x (per-particle, set by emitter via Aux.x = ...)
+// fract() so callers can scroll outside [0,1] safely.
+// ColorMap is the per-particle "cookie" (sprite shape) — same role as in
+// ps_grad. Material binds it to .modulation_texture; if unbound the result
+// is multiplied by whatever the default texture is.
+fragment_shader ps_grad_atlas : fface_psys {
+  float unit_age = clamp(frg_uv1.x, 0.0, 255.0/256.0);
+  float aux_x = fract(frg_uv1.z);
+  vec4 gmap = texture(GradientMap, vec2(unit_age, aux_x));
+  vec4 cmap = texture(ColorMap, frg_uv0.xy);
+  out_clr.xyz = (gmap.xyz * cmap.xyz) * ColorFactor;
+  out_clr.w   = (gmap.w   * cmap.w  ) * AlphaFactor;
+}
+///////////////////////////////////////////////////////////////
 fragment_shader ps_modtexclr : fface_psys {
   vec4 texc      = texture(ColorMap, frg_uv0.xy);
   float alp      = frg_clr.a*texc.a;
@@ -152,7 +168,7 @@ fragment_interface fface_psys_grid : ublk_frg : uset_frg_grid : sset_frg {
   inputs {
     vec4 frg_clr;
     vec2 frg_uv0;
-    vec2 frg_uv1;
+    vec4 frg_uv1;  // x=age, y=random, z=aux.x, w=aux.y
   }
   outputs {
     layout(location = 0) vec4 out_clr;
@@ -175,6 +191,27 @@ fragment_shader ps_modtexclr_grid : fface_psys_grid {
   texc.w = alpha;
 
   out_clr = texc * modcolor;
+}
+///////////////////////////////////////////////////////////////
+// FreestyleParticleMaterial stock fragment: flipbook cookie (the texgrid
+// recipe) x gradient ramp over unit_age. Authored for PREMA (premultiplied)
+// compositing: out.rgb adds, out.a occludes — gradient w ~ 0 = pure additive
+// fire, w > 0 = absorptive smoke; ONE draw morphs fire into smoke per
+// particle. Geometry-agnostic: paired with both sprite and streak VS.
+fragment_shader ps_freestyle_ptc : fface_psys_grid {
+  float unit_age = clamp(frg_uv1.x, 0.0, 255.0/256.0);
+  // flipbook cell from unit age
+  int igridcell = int(unit_age*((GridDim*GridDim)-1.0));
+  float fgridcell = float(igridcell);
+  vec2 gridUV = vec2(mod(fgridcell, GridDim)/GridDim, floor(fgridcell/GridDim)/GridDim);
+  gridUV += frg_uv0.xy/GridDim;
+  vec4 texc = texture(ColorMap, gridUV);
+  // cookie opacity from sheet luminance (effect sheets are additive-style)
+  float cookie_a = length(texc.rgb)*0.5773; // 1/sqrt(3)
+  // ramp over life
+  vec4 gmap = texture(GradientMap, vec2(unit_age, 0.0));
+  out_clr.xyz = (gmap.xyz * texc.xyz) * ColorFactor * modcolor.xyz;
+  out_clr.w   = clamp(gmap.w * cookie_a * AlphaFactor * modcolor.w, 0.0, 1.0);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_volume : fface_psys {

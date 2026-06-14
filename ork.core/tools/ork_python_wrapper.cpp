@@ -80,10 +80,17 @@ static int macos_inproc_python(int argc, char* argv[], const std::string& obt_st
         return -1;
     }
 
-    // argv[0] is conventionally the interpreter's own name; rest are forwarded.
+    // argv[0] must be the venv's python interpreter path (NOT a bare name) so
+    // CPython's path init finds pyvenv.cfg and sets sys.prefix to this venv.
+    // With a bare name it can't locate the venv and falls back to libpython's
+    // compile-time baked prefix (the build host's staging dir), which doesn't
+    // exist on a deployed machine -> Py_FatalError / Abort trap 6. This mirrors
+    // the execv fallback below (obt_stage + "/pyvenv/bin/python3"). It only
+    // changes what Python reports as sys.executable; the running Mach-O image
+    // (and thus the TCC identity) is still this ork.python binary.
     std::vector<char*> py_argv;
     py_argv.reserve(static_cast<size_t>(argc) + 1);
-    std::string argv0 = "ork.python";
+    std::string argv0 = obt_stage + "/pyvenv/bin/python3";
     py_argv.push_back(const_cast<char*>(argv0.c_str()));
     for (int i = 1; i < argc; i++) {
         py_argv.push_back(argv[i]);

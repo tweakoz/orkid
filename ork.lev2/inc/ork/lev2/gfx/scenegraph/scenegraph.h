@@ -238,6 +238,7 @@ struct Scene {
 
   layer_ptr_t createLayer(std::string named); // create or return existing layer (idempotent)
   layer_ptr_t findLayer(std::string named);   // strict: asserts if layer not found
+  layer_ptr_t findLayerMaybe(std::string named); // returns null on miss (no assert)
   layer_ptr_t tryFindLayer(std::string named); // nullable: returns nullptr if layer not found
 
   //////////////////////////////////////////////////////////////////
@@ -271,7 +272,14 @@ struct Scene {
   void _renderWithAcquiredDrawQueueForRendering(acqdrawbuffer_constptr_t acqbuf);
 
   void gpuInit(Context* ctx);
+  // per-FRAME drawable hook fan-out (Drawable::onGpuUpdate). Idempotent per render frame (guarded
+  // on the context's frame counter), so every render entry can call it defensively: SGVP
+  // gpuUpdateAll, the ECS SceneGraphSystem, AND the direct _renderIMPL paths — first caller wins,
+  // a second same-frame call is a no-op (e.g. two viewports sharing one scene).
   void gpuUpdate(Context* ctx);
+  // per-VIEWPORT pre-render fan-out: invoked from SceneGraphViewport::DoRePaintSurface with that
+  // viewport's CameraMatrices; walks enabled drawable nodes and calls Drawable::onPreRender.
+  void preRender(Context* ctx, const CameraMatrices& cammtx);
   void gpuExit(Context* ctx);
 
   void pickWithRay(fray3_constptr_t ray, SgPickBuffer::callback_t callback);
@@ -310,6 +318,7 @@ struct Scene {
   gfxcontext_lambda_t _on_render_complete;
   synchro_ptr_t _synchro;
   float _currentTime = 0.0f;
+  int _lastGpuUpdateFrame = -1; // gpuUpdate's per-frame idempotence stamp (ctx->GetTargetFrame())
   uint32_t _pickFormat = 0;
   bool _doResizeFromMainSurface = false;
   using layer_map_t = std::map<std::string, layer_ptr_t>;

@@ -7,6 +7,7 @@
 
 #include "pyext.h"
 #include <ork/ecs/physics/bullet.h>
+#include <ork/ecs/physics/CharacterController.h> // E.2-walk
 #include <ork/ecs/datatable.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -64,6 +65,10 @@ void pyinit_physics(py::module& module_ecs) {
               [](bulletcompdata_ptr_t physc) -> bool { return physc->_allowSleeping; },
               [](bulletcompdata_ptr_t& physc, bool val) { physc->_allowSleeping = val; })
           .def_property(
+              "notifyCollisions", // E.2-walk: contacts -> PythonSystem "Collision" notifies
+              [](bulletcompdata_ptr_t physc) -> bool { return physc->_notifyCollisions; },
+              [](bulletcompdata_ptr_t& physc, bool val) { physc->_notifyCollisions = val; })
+          .def_property(
               "isKinematic",
               [](bulletcompdata_ptr_t physc) -> bool { return physc->_isKinematic; },
               [](bulletcompdata_ptr_t& physc, bool val) { physc->_isKinematic = val; })
@@ -98,7 +103,7 @@ void pyinit_physics(py::module& module_ecs) {
               [](bulletcompdata_ptr_t physc) -> fvec3 { return physc->_angularFactor; },
               [](bulletcompdata_ptr_t& physc, fvec3 val) { physc->_angularFactor = val; })
           .def_property(
-              "instanceNodeName",
+              "instance_node_name",
               [](bulletcompdata_ptr_t physc) -> std::string { return physc->_instanceNodeName; },
               [](bulletcompdata_ptr_t& physc, std::string val) { physc->_instanceNodeName = val; })
       .def(
@@ -152,6 +157,112 @@ void pyinit_physics(py::module& module_ecs) {
               [](const bulletshapecapsuledata_ptr_t& shape) -> float { return shape->mfExtent; },
               [](bulletshapecapsuledata_ptr_t& shape, float val) { shape->mfExtent = val; });
   type_codec->registerStdCodec<bulletshapecapsuledata_ptr_t>(shapecapsule_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // E.2-walk: per-item proxy compound for a placed ScatterSet (kind+dims ride the items).
+  auto shapescatter_type =
+      py::class_<BulletShapeScatterData, BulletShapeBaseData, bulletshapescatterdata_ptr_t>(module_ecs, "BulletShapeScatterData")
+          .def(py::init<>())
+          .def_property(
+              "scatter_asset",
+              [](const bulletshapescatterdata_ptr_t& shape) -> std::string { return shape->_scatter_asset; },
+              [](bulletshapescatterdata_ptr_t& shape, std::string val) { shape->_scatter_asset = val; })
+          .def_property(
+              "sink",
+              [](const bulletshapescatterdata_ptr_t& shape) -> std::string { return shape->_sink; },
+              [](bulletshapescatterdata_ptr_t& shape, std::string val) { shape->_sink = val; })
+          .def_property(
+              "ogeo_path",
+              [](const bulletshapescatterdata_ptr_t& shape) -> std::string { return shape->_ogeo_path; },
+              [](bulletshapescatterdata_ptr_t& shape, std::string val) { shape->_ogeo_path = val; });
+  type_codec->registerStdCodec<bulletshapescatterdata_ptr_t>(shapescatter_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // E.2-walk: the asset-wired heightfield collider — hf_asset resolves the baked
+  // HeightField artifact + manifest scale, so physics collides with what renders.
+  using bulletshapeterraindata_ptr_t = std::shared_ptr<BulletShapeTerrainData>;
+  auto shapeterrain_type =
+      py::class_<BulletShapeTerrainData, BulletShapeBaseData, bulletshapeterraindata_ptr_t>(module_ecs, "BulletShapeTerrainData")
+          .def(py::init<>())
+          .def_property(
+              "hf_asset",
+              [](const bulletshapeterraindata_ptr_t& shape) -> std::string { return shape->_hf_asset; },
+              [](bulletshapeterraindata_ptr_t& shape, std::string val) { shape->_hf_asset = val; })
+          .def_property(
+              "heightmap_path",
+              [](const bulletshapeterraindata_ptr_t& shape) -> std::string { return shape->_heightMapPath.c_str(); },
+              [](bulletshapeterraindata_ptr_t& shape, std::string val) { shape->_heightMapPath = file::Path(val.c_str()); })
+          .def_property(
+              "world_size",
+              [](const bulletshapeterraindata_ptr_t& shape) -> float { return shape->_worldSize; },
+              [](bulletshapeterraindata_ptr_t& shape, float val) { shape->_worldSize = val; })
+          .def_property(
+              "world_height",
+              [](const bulletshapeterraindata_ptr_t& shape) -> float { return shape->_worldHeight; },
+              [](bulletshapeterraindata_ptr_t& shape, float val) { shape->_worldHeight = val; });
+  type_codec->registerStdCodec<bulletshapeterraindata_ptr_t>(shapeterrain_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // E.2-walk: the reusable walk-on-terrain behavior (CharacterController). Properties
+  // snake_case per the pyext convention; pairs with a sibling capsule BulletObjectComponent.
+  auto charctl_type =
+      py::class_<CharacterControllerComponentData, ComponentData, charactercontrollercomponentdata_ptr_t>(
+          module_ecs, "CharacterControllerComponentData")
+          .def(py::init<>())
+          .def_property(
+              "move_force",
+              [](const charactercontrollercomponentdata_ptr_t& c) -> float { return c->_moveForce; },
+              [](charactercontrollercomponentdata_ptr_t& c, float v) { c->_moveForce = v; })
+          .def_property(
+              "max_speed",
+              [](const charactercontrollercomponentdata_ptr_t& c) -> float { return c->_maxSpeed; },
+              [](charactercontrollercomponentdata_ptr_t& c, float v) { c->_maxSpeed = v; })
+          .def_property(
+              "jump_impulse",
+              [](const charactercontrollercomponentdata_ptr_t& c) -> float { return c->_jumpImpulse; },
+              [](charactercontrollercomponentdata_ptr_t& c, float v) { c->_jumpImpulse = v; })
+          .def_property(
+              "turn_rate",
+              [](const charactercontrollercomponentdata_ptr_t& c) -> float { return c->_turnRate; },
+              [](charactercontrollercomponentdata_ptr_t& c, float v) { c->_turnRate = v; })
+          .def_property(
+              "brake",
+              [](const charactercontrollercomponentdata_ptr_t& c) -> float { return c->_brake; },
+              [](charactercontrollercomponentdata_ptr_t& c, float v) { c->_brake = v; })
+          .def_property(
+              "turn_decay",
+              [](const charactercontrollercomponentdata_ptr_t& c) -> float { return c->_turnDecay; },
+              [](charactercontrollercomponentdata_ptr_t& c, float v) { c->_turnDecay = v; })
+          .def_property(
+              "drive_friction",
+              [](const charactercontrollercomponentdata_ptr_t& c) -> float { return c->_driveFriction; },
+              [](charactercontrollercomponentdata_ptr_t& c, float v) { c->_driveFriction = v; })
+          .def_property(
+              "rest_friction",
+              [](const charactercontrollercomponentdata_ptr_t& c) -> float { return c->_restFriction; },
+              [](charactercontrollercomponentdata_ptr_t& c, float v) { c->_restFriction = v; })
+          .def_property(
+              "eye_height",
+              [](const charactercontrollercomponentdata_ptr_t& c) -> float { return c->_eyeHeight; },
+              [](charactercontrollercomponentdata_ptr_t& c, float v) { c->_eyeHeight = v; })
+          .def_property(
+              "cam_distance",
+              [](const charactercontrollercomponentdata_ptr_t& c) -> float { return c->_camDistance; },
+              [](charactercontrollercomponentdata_ptr_t& c, float v) { c->_camDistance = v; })
+          .def_property(
+              "fovy_deg",
+              [](const charactercontrollercomponentdata_ptr_t& c) -> float { return c->_fovyDeg; },
+              [](charactercontrollercomponentdata_ptr_t& c, float v) { c->_fovyDeg = v; })
+          .def_property(
+              "cam_near",
+              [](const charactercontrollercomponentdata_ptr_t& c) -> float { return c->_camNear; },
+              [](charactercontrollercomponentdata_ptr_t& c, float v) { c->_camNear = v; })
+          .def_property(
+              "cam_far",
+              [](const charactercontrollercomponentdata_ptr_t& c) -> float { return c->_camFar; },
+              [](charactercontrollercomponentdata_ptr_t& c, float v) { c->_camFar = v; })
+          .def_property(
+              "force_name",
+              [](const charactercontrollercomponentdata_ptr_t& c) -> std::string { return c->_forceName; },
+              [](charactercontrollercomponentdata_ptr_t& c, std::string v) { c->_forceName = v; });
+  type_codec->registerStdCodec<charactercontrollercomponentdata_ptr_t>(charctl_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto shapeplane_type =
       py::class_<BulletShapePlaneData, BulletShapeBaseData, bulletshapeplanedata_ptr_t>(module_ecs, "BulletShapePlaneData")

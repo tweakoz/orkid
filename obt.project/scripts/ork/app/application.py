@@ -400,8 +400,13 @@ class ComponentizedApplication(object):
       'height': 720,
       'enable_freerun_ups': True,
       'enable_freerun_fps': True,
-      'msaa': 0,      
-      'ssaa': 0   
+      'msaa': 0,
+      'ssaa': 0,
+      # subsystem-based (HFSM-driven) init is the DEFAULT — the legacy ad-hoc
+      # inline path is deprecated. Teardown runs automatically at the end of
+      # mainThreadLoop() (idempotent; an explicit ezapp.shutdown() is harmless).
+      # Opt OUT with use_subsystems=None (any non-list falls back to ad-hoc).
+      'use_subsystems': ["opq", "core", "gpu", "lev2"],
     }
 
     if os.environ.get("ORKID_DRM_MODE","") != "":

@@ -94,7 +94,8 @@ class InstancingApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = lev2.OrkEzApp.create(self, width=1280, height=720)
+    self.ezapp = lev2.OrkEzApp.create(self, width=1280, height=720,
+                                      use_subsystems=["opq", "core", "gpu", "lev2"])
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     setupUiCamera(app=self, eye=vec3(0, 8, 20), tgt=vec3(0, 2, 0))
     signal.signal(signal.SIGINT, lambda s, f: self.ezapp.signalExit())

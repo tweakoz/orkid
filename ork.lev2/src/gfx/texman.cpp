@@ -112,9 +112,51 @@ Texture::Texture(ipctexture_ptr_t external_memory)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+// Phase-6.3 destructor: defer GPU-resource teardown to the main render
+// thread when dropped from any other thread.
+//
+// Rationale: vkDestroy* / GL deletions must run on a thread with a valid
+// owning context. The main render thread is the longest-lived graphics
+// thread in the process (outlives the loader thread and any worker
+// contexts), so its _deferredOps queue is the canonical safe destination.
+// This makes "drop this Texture anywhere" Just Work without each caller
+// having to think about threads.
+//
+// Fall-through cases (inline destruction):
+//   - no main render context (very early init / post-shutdown)
+//   - already on the render thread
+//   - the texture never acquired backend state (_impl/_impl_2 both empty)
+//
+// _impl is a static_variant holding a shared_ptr to a backend impl, so
+// copying it just bumps a refcount; the original is then cleared so its
+// member-destructor sees an empty variant. _impl_2 follows the same
+// pattern (typical backend impls there are refcount-based external-memory
+// wrappers); if a future backend introduces a unique-ownership impl in
+// _impl_2 we'll need a more careful extraction there.
 Texture::~Texture() {
-  int texcount = _texture_count.fetch_add(-1);
-  // printf( "~Texture::_texture_count: %zu\n", texcount-1 );
+  _texture_count.fetch_add(-1);
+
+  Context* render_ctx = GfxEnv::mainRenderContext();
+  bool needs_defer    = render_ctx
+                     && (contextForCurrentThread() != render_ctx)
+                     && (_impl.isSet() || _impl_2.isSet());
+  if (!needs_defer) {
+    return; // inline member destruction runs normally
+  }
+
+  struct GpuTeardownHolder {
+    svarshp_t _impl;
+    svar16_t  _impl_2;
+  };
+  auto holder = std::make_shared<GpuTeardownHolder>();
+  holder->_impl   = _impl;
+  holder->_impl_2 = _impl_2;
+  _impl.clear();
+  _impl_2.clear();
+  render_ctx->enqueueDeferredOp([holder](Context*) {
+    // Holder destructor runs on the render thread → impl shared_ptrs
+    // refcount-decrement → backend impl destructors → vkDestroy*.
+  });
 }
 
 ///////////////////////////////////////////////////////////////////////////////

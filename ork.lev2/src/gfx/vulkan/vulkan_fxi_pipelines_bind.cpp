@@ -401,6 +401,19 @@ vkdescriptorsetstate_ptr_t VulkanDescriptorSetCacheState::fetchDescriptorSetForP
   OrkAssertI(shader_state != nullptr, "shader state is null");
 
   uint64_t descset_bits = _ctxVK->_fxi->_current_shader_pass_state->samplersHash();
+  // BOUND STORAGE BUFFERS ARE PART OF THE DESCRIPTOR SET, so they must be
+  // part of its cache key. Keyed on samplers alone, N renderer instances
+  // binding their own vertex SSBOs against one SHARED material all hit the
+  // FIRST instance's cached set — every particle trail drew slot 1's buffer
+  // (the "only one fireball" bug). Buffers are stable per instance, so this
+  // stays fully cached (one set per distinct buffer combination).
+  for (auto& [ssbo_name, ssbo_blk] : vk_program->_vk_ssbo_blocks) {
+    auto* ssbo_state = _ctxVK->_fxi->storageStateForBlock(ssbo_blk.get());
+    uint64_t bufbits = (ssbo_state and ssbo_state->_bound_buffer) //
+                           ? uint64_t(ssbo_state->_bound_buffer->_vkbuffer)
+                           : 0ull;
+    descset_bits = descset_bits * 0x9E3779B97F4A7C15ull + bufbits; // hash-combine
+  }
   auto it               = _vkDescriptorSetByHash.find(descset_bits);
   vkdescriptorsetstate_ptr_t descset_ptr = nullptr;
   if (it != _vkDescriptorSetByHash.end()) {
@@ -548,7 +561,9 @@ vkdescriptorsetstate_ptr_t VulkanDescriptorSetCacheState::fetchDescriptorSetForP
                 ssbo_block = it->second.get();
               }
 
-              if (ssbo_block && ssbo_block->_buffer_size > 0) {
+              // NB: do NOT gate on _buffer_size>0 — a SIZE-LESS runtime array (`T x[];`) has 0 static
+              // bytes, but is bound dynamically; its range comes from the bound buffer's length below.
+              if (ssbo_block) {
                 // Check if a buffer is bound
                 VkBuffer vk_buffer = VK_NULL_HANDLE;
                 VkDeviceSize buffer_size = ssbo_block->_buffer_size;

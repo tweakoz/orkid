@@ -78,6 +78,14 @@ using rigidprimitive_ptr_t = std::shared_ptr<RigidPrimitiveBase>;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct RigidPrimitiveDrawableData : public lev2::DrawableData {
+  // Reflected only so the polymorphic SceneGraphNodeItemData::_drawabledata
+  // slot serializes the concrete class name (otherwise the serializer
+  // walks up to the abstract DrawableData base and the JSON can't load
+  // back). None of the fields below round-trip — _primitive carries
+  // GPU buffers, _pipeline is per-context, _material is also runtime —
+  // so describeX is empty and the post-load step must rebuild the
+  // primitive + material before render.
+  DeclareConcreteX(RigidPrimitiveDrawableData, lev2::DrawableData);
 
   RigidPrimitiveDrawableData();
   lev2::drawable_ptr_t createDrawable() const final;
@@ -130,6 +138,31 @@ template <typename vtx_t> struct RigidPrimitive : public RigidPrimitiveBase {
   void fromClusterizer(const XgmClusterizerStd& cluz, lev2::Context* context);
   void renderEML(lev2::Context* context) const; /// draw with context
   void renderInstancedEML(lev2::Context* context, size_t instance_count) const; /// draw instanced
+
+  // GPU-driven instanced draw: instanceCount comes from `indirect_args` (a compute-written SSBO
+  // holding a VkDrawIndexedIndirectCommand) rather than the CPU. args_stride advances the command
+  // per primgroup (0 = one shared command, the single-primgroup cones/spheres case).
+  void renderInstancedIndirectEML(
+      lev2::Context* context,
+      const lev2::FxShaderStorageBuffer* indirect_args,
+      size_t args_stride = 0) const;
+
+  // single-instance bound (LOCAL space) — union of the cluster AABBs + the enclosing sphere.
+  // computed lazily from _gpuClusters; the instanced cull transforms it per instance by the
+  // instance matrix (remember to scale the radius by the instance's max-axis scale).
+  const AABox& localAABB()   const { _ensureBounds(); return _bound_aabb; }
+  const fvec3& boundCenter() const { _ensureBounds(); return _bound_center; }
+  float        boundRadius() const { _ensureBounds(); return _bound_radius; }
+
+  // index count of the FIRST primgroup — seeds the indirect command's indexCount (the cull only
+  // writes instanceCount). Assumes a single-primgroup mesh (cones/spheres); multi-primgroup meshes
+  // would need one command per primgroup (see renderInstancedIndirectEML's args_stride).
+  size_t indexCountFirstPrimGroup() const {
+    for (auto& cluster : _gpuClusters)
+      for (auto& primgroup : cluster->_primgroups)
+        return primgroup->_idxbuffer->GetNumIndices();
+    return 0;
+  }
 
   void renderUnitOrthoWithMaterial(lev2::Context* context, const SRect& vprect, lev2::GfxMaterial* pmat) const;
 
@@ -229,6 +262,30 @@ template <typename vtx_t> struct RigidPrimitive : public RigidPrimitiveBase {
   //////////////////////////////////////////////////////////////////////////////
 
   cluster_ptr_list_t _gpuClusters;
+
+  // union the per-cluster AABBs into one local-space box, then derive the enclosing sphere
+  // (center = box center, radius = half the diagonal). Lazy: all three cluster-build paths
+  // (fromSubMesh / fromClusterizer / gpuLoadFromChunks) just push clusters; bounds resolve on
+  // first query. _gpuClusters is fixed after build, so a one-shot compute is safe.
+  void _ensureBounds() const {
+    if (_bound_valid)
+      return;
+    AABox box;
+    box.BeginGrow();
+    for (auto& c : _gpuClusters) {
+      box.Grow(c->_aabb.Min());
+      box.Grow(c->_aabb.Max());
+    }
+    box.EndGrow();
+    _bound_aabb   = box;
+    _bound_center = box.center();
+    _bound_radius = (box.Max() - box.center()).length(); // half-diagonal encloses the box
+    _bound_valid  = true;
+  }
+  mutable AABox _bound_aabb;
+  mutable fvec3 _bound_center = fvec3(0, 0, 0);
+  mutable float _bound_radius = 0.0f;
+  mutable bool  _bound_valid  = false;
 };
 ///////////////////////////////////////////////////////////////////////////////
 template <typename vtx_t> RigidPrimitive<vtx_t>::RigidPrimitive() {
@@ -671,6 +728,26 @@ template <typename vtx_t> void RigidPrimitive<vtx_t>::renderInstancedEML(lev2::C
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename vtx_t>
+void RigidPrimitive<vtx_t>::renderInstancedIndirectEML(
+    lev2::Context* context,
+    const lev2::FxShaderStorageBuffer* indirect_args,
+    size_t args_stride) const {
+  auto gbi          = context->GBI();
+  size_t cmd_offset = 0; // byte offset of this primgroup's command within indirect_args
+  for (auto& cluster : _gpuClusters) {
+    for (auto& primgroup : cluster->_primgroups) {
+      gbi->DrawInstancedIndexedPrimitiveIndirectEML(
+          *cluster->_vtxbuffer.get(),
+          *primgroup->_idxbuffer.get(),
+          primgroup->_primtype,
+          indirect_args,
+          cmd_offset);
+      cmd_offset += args_stride; // 0 -> every primgroup reads command 0 (single-command meshes)
+    }
+  }
+}
+////////////////////////////////////////////////////////////////////////////////
+template <typename vtx_t>
 void RigidPrimitive<vtx_t>::renderUnitOrthoWithMaterial(lev2::Context* context, const SRect& vprect, lev2::GfxMaterial* pmat)
     const {
   auto mtxi = context->MTXI();
@@ -725,11 +802,28 @@ struct InstancedRigidPrimitiveDrawable final : public lev2::InstancedDrawable {
     _primitive = prim;
     _material = material;
     _fxcache = material->pipelineCache();
+    _matrices_only = material->instancedMatricesOnly(); // -> FWD_CT_NM_IM_NI_MO (matrices from storage_inst_mtx)
   }
 
   void gpuInit(lev2::Context* ctx) const {
     auto FXI = ctx->FXI();
-    _instanceSSBO = FXI->createStorageBuffer(k_ssbo_total_size);
+    // matrices-only: COUNT-SIZED matrices buffers (count*64) + a matrices-only cull (no colors), so
+    // memory scales with the instance count instead of the fixed k_max_instances combined buffer
+    // (matrices 64 + colors 16 + pickids 8 per instance). Otherwise: the combined fixed buffer.
+    size_t inst_bytes = _matrices_only ? ((_count > 0 ? size_t(_count) : size_t(1)) * 64) : k_ssbo_total_size;
+    _instanceSSBO = FXI->createStorageBuffer(inst_bytes);
+    if (_cullEnabled) {
+      // survivors mirrors the instance SSBO layout (matrices[|colors|pickids]) so the VS reads it
+      // identically when bound to _parInstanceBlock. args = VkDrawIndexedIndirectCommand (20B);
+      // cullparams = mat4 vp + vec4 bound + uint count (96B, std430-padded).
+      _survivorsSSBO  = FXI->createStorageBuffer(inst_bytes);
+      _argsSSBO       = FXI->createStorageBuffer(32);
+      _cullParamsSSBO = FXI->createStorageBuffer(96);
+      auto shader = _matrices_only
+          ? FXI->shaderFromShaderText("instance_cull_mtxonly", _cull_shader_text_mtxonly())
+          : FXI->shaderFromShaderText("instance_cull", _cull_shader_text());
+      _cullShader = FXI->computeShader(shader, "cs_cull");
+    }
   }
 
   void enqueueToRenderQueue(lev2::drawqueueitem_constptr_t item, lev2::IRenderer* renderer) const override {
@@ -758,38 +852,242 @@ struct InstancedRigidPrimitiveDrawable final : public lev2::InstancedDrawable {
       auto context = RCID.context();
       auto RCFD = RCID.rcfd();
       auto FXI = context->FXI();
-      OrkAssert(_count <= k_max_instances);
-      auto instances_copy = _idbuf_pool.begin_pull();
-      auto ssbo_mapped = FXI->mapStorageBuffer(_instanceSSBO, 0, k_ssbo_total_size, lev2::BufferMapAccess::WRITE_ONLY);
-      char* base_ptr = (char*)ssbo_mapped->_mappedaddr;
-      memcpy(base_ptr + k_ssbo_offset_matrices, instances_copy->_worldmatrices.data(), _count * 64);
-      memcpy(base_ptr + k_ssbo_offset_colors, instances_copy->_modcolors.data(), _count * 16);
-      memcpy(base_ptr + k_ssbo_offset_pickids, instances_copy->_pickids.data(), _count * 8);
-      ssbo_mapped->unmap();
-      _idbuf_pool.end_pull(instances_copy);
+      OrkAssert(_matrices_only or _count <= k_max_instances);  // matrices-only is count-sized (uncapped)
+      if (not _cullEnabled) {
+        // non-cull path: upload this frame's candidate instances here. (When culling, the upload
+        // happens once per frame in onGpuUpdate — view-independent — and the cull compacts them.)
+        auto instances_copy = _idbuf_pool.begin_pull();
+        if (_matrices_only) {
+          auto ssbo_mapped = FXI->mapStorageBuffer(_instanceSSBO, 0, size_t(_count) * 64, lev2::BufferMapAccess::WRITE_ONLY);
+          memcpy(ssbo_mapped->_mappedaddr, instances_copy->_worldmatrices.data(), _count * 64);
+          ssbo_mapped->unmap();
+        } else {
+          auto ssbo_mapped = FXI->mapStorageBuffer(_instanceSSBO, 0, k_ssbo_total_size, lev2::BufferMapAccess::WRITE_ONLY);
+          char* base_ptr = (char*)ssbo_mapped->_mappedaddr;
+          memcpy(base_ptr + k_ssbo_offset_matrices, instances_copy->_worldmatrices.data(), _count * 64);
+          memcpy(base_ptr + k_ssbo_offset_colors, instances_copy->_modcolors.data(), _count * 16);
+          memcpy(base_ptr + k_ssbo_offset_pickids, instances_copy->_pickids.data(), _count * 8);
+          ssbo_mapped->unmap();
+        }
+        _idbuf_pool.end_pull(instances_copy);
+      }
       lev2::FxPipelinePermutation permu;
       permu._stereo = false;
       permu._instanced = true;
       permu._skinned = false;
       permu._is_picking = false;
-      permu._has_vtxcolors = true;
+      permu._has_vtxcolors = not _matrices_only;   // matrices-only VS (vif_FWDTEST) has no vtxcolor input
       permu._is_alpha = is_alpha;
+      permu._instanced_matrices_only = _matrices_only;  // -> FWD_CT_NM_IM_NI_MO (dynamic storage_inst_mtx)
       permu._rendering_model = RCFD->_renderingmodel._modelID;
       auto pipeline = _fxcache->findPipeline(permu);
       OrkAssert(pipeline);
       pipeline->wrappedDrawCall(RCID, [&]() {
         if (pipeline->_parInstanceBlock) {
-          FXI->bindStorageBuffer(pipeline->_parInstanceBlock, _instanceSSBO);
+          // cull path binds the COMPACTED survivors (the VS reads the same layout by gl_InstanceIndex)
+          FXI->bindStorageBuffer(pipeline->_parInstanceBlock, _cullEnabled ? _survivorsSSBO : _instanceSSBO);
         }
-        _primitive->renderInstancedEML(context, _count);
+        if (_cullEnabled)
+          _primitive->renderInstancedIndirectEML(context, _argsSSBO); // instanceCount from the cull
+        else
+          _primitive->renderInstancedEML(context, _count);
       });
       RCID._isInstanced = false;
     });
   }
 
+  //////////////////////////////////////////////////////////////////////////////
+  // GPU frustum cull (opt-in via enableCull). VIEW-INDEPENDENT upload of the candidate instances
+  // once per frame (onGpuUpdate, no camera), then a PER-VIEWPORT cull compute (onPreRender, with
+  // that VP's CameraMatrices) compacts survivors + writes the indirect draw's instanceCount; the
+  // render callback above draws indirect from the survivors. Compute runs on its own dispatch
+  // phase (submit+wait), so it completes before the render pass reads the results.
+  //////////////////////////////////////////////////////////////////////////////
+
+  void enableCull(bool e) { _cullEnabled = e; }
+
+  void onGpuUpdate(lev2::Context* ctx) const override {
+    if (not _cullEnabled)
+      return;
+    if (not _instanceSSBO)
+      gpuInit(ctx);
+    OrkAssert(_matrices_only or _count <= k_max_instances);  // matrices-only is count-sized (uncapped)
+    // Read the candidate instances straight from _instancedata (the source set by the caller),
+    // NOT the _idbuf_pool triple buffer: the pool is published in enqueueOnLayer, which runs AFTER
+    // onGpuUpdate/onPreRender, so pulling here would get stale/empty data. _instancedata is sized
+    // to _count by resize(). (Fine for the static scatter case; dynamic instances would need a
+    // pre-enqueue publish.)
+    if (not _instancedata)
+      return;
+    size_t n = _count;
+    if (n > _instancedata->_worldmatrices.size())
+      n = _instancedata->_worldmatrices.size();
+    if (n == 0)
+      return;
+    auto FXI = ctx->FXI();
+    if (_matrices_only) {
+      auto m = FXI->mapStorageBuffer(_instanceSSBO, 0, n * 64, lev2::BufferMapAccess::WRITE_ONLY);
+      memcpy(m->_mappedaddr, _instancedata->_worldmatrices.data(), n * 64);
+      m->unmap();
+    } else {
+      auto m = FXI->mapStorageBuffer(_instanceSSBO, 0, k_ssbo_total_size, lev2::BufferMapAccess::WRITE_ONLY);
+      char* base = (char*)m->_mappedaddr;
+      memcpy(base + k_ssbo_offset_matrices, _instancedata->_worldmatrices.data(), n * 64);
+      memcpy(base + k_ssbo_offset_colors,   _instancedata->_modcolors.data(),     n * 16);
+      memcpy(base + k_ssbo_offset_pickids,  _instancedata->_pickids.data(),       n * 8);
+      m->unmap();
+    }
+  }
+
+  void onPreRender(lev2::Context* ctx, const lev2::CameraMatrices& cammtx) const override {
+    if (not _cullEnabled or not _cullShader or not _cullParamsSSBO)
+      return;
+    auto FXI = ctx->FXI();
+    auto CI  = ctx->CI();
+    // cullparams: VP (mat4 @0), bound (cx,cy,cz,radius @64), count (@80).
+    const auto& vp  = cammtx.GetVPMatrix();
+    auto bc         = _primitive->boundCenter();
+    float bound[4]  = {bc.x, bc.y, bc.z, _primitive->boundRadius()};
+    uint32_t count  = uint32_t(_count);
+    auto pm = FXI->mapStorageBuffer(_cullParamsSSBO, 0, 96, lev2::BufferMapAccess::WRITE_ONLY);
+    char* pb = (char*)pm->_mappedaddr;
+    memcpy(pb + 0,  vp.asArray(), 64);
+    memcpy(pb + 64, bound, 16);
+    memcpy(pb + 80, &count, 4);
+    pm->unmap();
+    // args = VkDrawIndexedIndirectCommand: seed indexCount, reset instanceCount to 0 (atomicAdd).
+    uint32_t args[5] = {uint32_t(_primitive->indexCountFirstPrimGroup()), 0u, 0u, 0u, 0u};
+    auto am = FXI->mapStorageBuffer(_argsSSBO, 0, 32, lev2::BufferMapAccess::WRITE_ONLY);
+    memcpy(am->_mappedaddr, args, sizeof(args));
+    am->unmap();
+    // dispatch the cull on its own phase (endDispatchPhase submits + waits -> done before render).
+    int groups = (int(_count) + 63) / 64;
+    if (groups < 1)
+      return;
+    CI->beginDispatchPhase();
+    CI->bindStorageBuffer(_cullShader, 0, _instanceSSBO);
+    CI->bindStorageBuffer(_cullShader, 1, _survivorsSSBO);
+    CI->bindStorageBuffer(_cullShader, 2, _cullParamsSSBO);
+    CI->bindStorageBuffer(_cullShader, 3, _argsSSBO);
+    CI->dispatchCompute(_cullShader, groups, 1, 1);
+    CI->endDispatchPhase();
+  }
+
+  // The instance-cull compute (headless-validated by llgfx/test_compute_cull.py). Reads candidate
+  // world matrices, frustum-tests each instance's bound sphere (local center+radius via the matrix,
+  // radius x max-axis scale) vs the VP, and stream-compacts survivors into the output SSBO with
+  // atomicAdd on the indirect command's instanceCount. The instance-array size is taken from
+  // k_max_instances (the SINGLE source of truth — still must equal storage_instancing in stdtools.i2).
+  static std::string _cull_shader_text() {
+    std::string t = R"SHADER(
+fxconfig fxcfg_default {}
+storage_interface sif_in (descriptor_set 0) {
+  buffer layout(std430) bin { mat4 in_mtx[$NMAX$]; vec4 in_col[$NMAX$]; };
+}
+storage_interface sif_out (descriptor_set 0) {
+  buffer layout(std430) bout { mat4 out_mtx[$NMAX$]; vec4 out_col[$NMAX$]; };
+}
+storage_interface sif_par (descriptor_set 0) {
+  buffer layout(std430) bpar { mat4 u_vp; vec4 u_bound; uint u_count; uint u_p0; uint u_p1; uint u_p2; };
+}
+storage_interface sif_arg (descriptor_set 0) {
+  buffer layout(std430) barg { uint a_indexCount; uint a_instanceCount; uint a_firstIndex; uint a_vertexOffset; uint a_firstInstance; };
+}
+compute_interface iface_cull {
+  storage { sif_in sif_out sif_par sif_arg }
+  inputs { layout(local_size_x = 64, local_size_y = 1, local_size_z = 1); }
+}
+compute_shader cs_cull : iface_cull {
+  uint i = gl_GlobalInvocationID.x;
+  if (i >= u_count) { return; }
+  mat4 M = in_mtx[i];
+  vec3 c = (M * vec4(u_bound.xyz, 1.0)).xyz;
+  float r = u_bound.w * max(length(M[0].xyz), max(length(M[1].xyz), length(M[2].xyz)));
+  vec4 rx = vec4(u_vp[0].x, u_vp[1].x, u_vp[2].x, u_vp[3].x);
+  vec4 ry = vec4(u_vp[0].y, u_vp[1].y, u_vp[2].y, u_vp[3].y);
+  vec4 rz = vec4(u_vp[0].z, u_vp[1].z, u_vp[2].z, u_vp[3].z);
+  vec4 rw = vec4(u_vp[0].w, u_vp[1].w, u_vp[2].w, u_vp[3].w);
+  vec4 pl0 = rw + rx; vec4 pl1 = rw - rx;
+  vec4 pl2 = rw + ry; vec4 pl3 = rw - ry;
+  vec4 pl4 = rz;      vec4 pl5 = rw - rz;
+  bool inside = true;
+  if ((dot(pl0.xyz, c) + pl0.w) < (-r * length(pl0.xyz))) { inside = false; }
+  if ((dot(pl1.xyz, c) + pl1.w) < (-r * length(pl1.xyz))) { inside = false; }
+  if ((dot(pl2.xyz, c) + pl2.w) < (-r * length(pl2.xyz))) { inside = false; }
+  if ((dot(pl3.xyz, c) + pl3.w) < (-r * length(pl3.xyz))) { inside = false; }
+  if ((dot(pl4.xyz, c) + pl4.w) < (-r * length(pl4.xyz))) { inside = false; }
+  if ((dot(pl5.xyz, c) + pl5.w) < (-r * length(pl5.xyz))) { inside = false; }
+  if (inside) {
+    uint slot = atomicAdd(a_instanceCount, 1u);
+    out_mtx[slot] = M;
+    out_col[slot] = in_col[i];
+  }
+}
+)SHADER";
+    const std::string n = std::to_string(k_max_instances);
+    for (size_t p = t.find("$NMAX$"); p != std::string::npos; p = t.find("$NMAX$", p))
+      t.replace(p, 6, n);
+    return t;
+  }
+  // MATRICES-ONLY cull: in/out are SIZE-LESS runtime arrays (`mat4 x[];`) so the candidate + survivor
+  // buffers are count-sized (no k_max_instances cap, no per-instance color). Same frustum test; writes
+  // only out_mtx. Pairs with the FWD_CT_NM_IM_NI_MO render variant. (Requires shadlang [] runtime arrays.)
+  static const char* _cull_shader_text_mtxonly() {
+    return R"SHADER(
+fxconfig fxcfg_default {}
+storage_interface sif_in (descriptor_set 0) {
+  buffer layout(std430) bin { mat4 in_mtx[]; };
+}
+storage_interface sif_out (descriptor_set 0) {
+  buffer layout(std430) bout { mat4 out_mtx[]; };
+}
+storage_interface sif_par (descriptor_set 0) {
+  buffer layout(std430) bpar { mat4 u_vp; vec4 u_bound; uint u_count; uint u_p0; uint u_p1; uint u_p2; };
+}
+storage_interface sif_arg (descriptor_set 0) {
+  buffer layout(std430) barg { uint a_indexCount; uint a_instanceCount; uint a_firstIndex; uint a_vertexOffset; uint a_firstInstance; };
+}
+compute_interface iface_cull {
+  storage { sif_in sif_out sif_par sif_arg }
+  inputs { layout(local_size_x = 64, local_size_y = 1, local_size_z = 1); }
+}
+compute_shader cs_cull : iface_cull {
+  uint i = gl_GlobalInvocationID.x;
+  if (i >= u_count) { return; }
+  mat4 M = in_mtx[i];
+  vec3 c = (M * vec4(u_bound.xyz, 1.0)).xyz;
+  float r = u_bound.w * max(length(M[0].xyz), max(length(M[1].xyz), length(M[2].xyz)));
+  vec4 rx = vec4(u_vp[0].x, u_vp[1].x, u_vp[2].x, u_vp[3].x);
+  vec4 ry = vec4(u_vp[0].y, u_vp[1].y, u_vp[2].y, u_vp[3].y);
+  vec4 rz = vec4(u_vp[0].z, u_vp[1].z, u_vp[2].z, u_vp[3].z);
+  vec4 rw = vec4(u_vp[0].w, u_vp[1].w, u_vp[2].w, u_vp[3].w);
+  vec4 pl0 = rw + rx; vec4 pl1 = rw - rx;
+  vec4 pl2 = rw + ry; vec4 pl3 = rw - ry;
+  vec4 pl4 = rz;      vec4 pl5 = rw - rz;
+  bool inside = true;
+  if ((dot(pl0.xyz, c) + pl0.w) < (-r * length(pl0.xyz))) { inside = false; }
+  if ((dot(pl1.xyz, c) + pl1.w) < (-r * length(pl1.xyz))) { inside = false; }
+  if ((dot(pl2.xyz, c) + pl2.w) < (-r * length(pl2.xyz))) { inside = false; }
+  if ((dot(pl3.xyz, c) + pl3.w) < (-r * length(pl3.xyz))) { inside = false; }
+  if ((dot(pl4.xyz, c) + pl4.w) < (-r * length(pl4.xyz))) { inside = false; }
+  if ((dot(pl5.xyz, c) + pl5.w) < (-r * length(pl5.xyz))) { inside = false; }
+  if (inside) {
+    uint slot = atomicAdd(a_instanceCount, 1u);
+    out_mtx[slot] = M;
+  }
+}
+)SHADER";
+  }
+
   std::shared_ptr<RigidPrimitive<vtx_t>> _primitive;
   lev2::material_ptr_t _material;
   lev2::fxpipelinecache_constptr_t _fxcache;
+  bool _cullEnabled = false;
+  // _matrices_only is inherited from InstancedDrawable (set in bindPrimitive from the material).
+  mutable lev2::FxShaderStorageBuffer* _survivorsSSBO  = nullptr;
+  mutable lev2::FxShaderStorageBuffer* _argsSSBO       = nullptr;
+  mutable lev2::FxShaderStorageBuffer* _cullParamsSSBO = nullptr;
+  mutable const lev2::FxComputeShader* _cullShader     = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

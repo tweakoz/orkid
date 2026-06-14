@@ -189,6 +189,8 @@ const FxComputeShader* VkFxInterface::computeShader(FxShader* pshader, const std
   // Create compute pipeline object
   auto compute_pipeline = std::make_shared<VkComputePipelineState>(_contextVK);
   bool success = compute_pipeline->createPipeline(sh_obj);
+  if (not success)
+    printf("computeShader<%s>: FAILED to create compute pipeline (see createPipeline diagnostics above)\n", name.c_str());
   OrkAssert(success && "Failed to create compute pipeline");
 
   // Create FxComputeShader and store the pipeline

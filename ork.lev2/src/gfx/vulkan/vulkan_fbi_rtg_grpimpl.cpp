@@ -37,8 +37,9 @@ VkRtGroupImpl::~VkRtGroupImpl() {
   auto attachments = __attachments;
   
   if (!color_buffers.empty() || depth_buffer || cmdbuf || attachments) {
-    // Enqueue cleanup to main thread with proper Vulkan context
-    GfxEnv::GetRef().enqueueDeferredContextOp(
+    // Enqueue cleanup onto this RT group's owning context — drained on that
+    // context's beginFrame (Phase 6.3 Variant B: per-context deferred queue).
+    _contextVK->enqueueDeferredOp(
       [=](Context* ctx) {
         // Release shared_ptrs - their destructors will handle cleanup
         // This ensures cleanup happens on the main thread with valid Vulkan context

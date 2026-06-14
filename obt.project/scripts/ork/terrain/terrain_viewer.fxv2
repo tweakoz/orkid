@@ -1,0 +1,141 @@
+///////////////////////////////////////////////////////////////
+// terrain_viewer.fxv2 — forward-PBR surface for the CPU-built terrain mesh
+// (ork.terrain.viewer2.py).
+//
+// The terrain is now a RigidPrimitive whose vertices were displaced on the CPU
+// from the baked heightfield, so this shader does NO height-texture sampling and
+// NO displacement. It is a STANDARD mesh vertex shader: transform the incoming
+// geometry and pass the MESH normal through (world space); the fragment lights
+// with THAT normal (not an analytic/differential one derived from the texture).
+// Reuses the stock forward-PBR machine via orkshader:// imports (the geov2
+// marble convention). Albedo is white for now.
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default {
+  import "orkshader://mathtools.i2";
+  import "orkshader://misctools.i2";
+  import "orkshader://envtools.i2";
+  import "orkshader://pbrtools.i2";
+  import "orkshader://stdtools.i2";
+  import "orkshader://ssaotools.i2";
+}
+///////////////////////////////////////////////////////////////
+state_block sb_terrain : default {
+  CullTest  = OFF;        // mesh is single-sided terrain; don't cull on winding
+  DepthTest = LEQUALS;
+  BlendMode = OFF;
+}
+///////////////////////////////////////////////////////////////
+// RigidPrimitive vertex format = V12N12B12T8C4
+// (position, normal, binormal, uv, color).
+///////////////////////////////////////////////////////////////
+vertex_interface vif_terrain : ub_std_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal : NORMAL;
+    vec3 binormal : BINORMAL;
+    vec2 uv0 : TEXCOORD0;
+    vec4 vtxcolor : COLOR0;
+  }
+  outputs {
+    vec4 frg_wpos;
+    vec4 frg_clr;
+    mat3 frg_tbn;
+    vec3 frg_camz;
+    vec3 frg_opos;
+    vec2 frg_uv0;
+    float frg_camdist;
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_interface fif_terrain
+  : vif_terrain
+  : ub_frg_fwd
+  : storage_fwd_lighting
+  : ss_frg_fwd {
+  outputs {
+    layout(location = 0) vec4 out_clr;
+    layout(location = 1) vec4 out_diffuse;
+  }
+}
+///////////////////////////////////////////////////////////////
+// standard mesh vertex shader — transform geometry, pass the MESH normal
+// through (world space) in frg_tbn[2]. No height_map, no displacement.
+///////////////////////////////////////////////////////////////
+vertex_shader vs_terrain
+  : vif_terrain
+  : lib_pbr_vtx
+  : ublk_std_matrices {
+  vec4 hpos = mvp * position;
+  gl_Position = hpos;
+  frg_uv0     = uv0;
+  frg_wpos    = m * position;
+  frg_opos    = position.xyz;
+  frg_clr     = vtxcolor;
+  vec3 wn = normalize(mat3(m) * normal);     // world-space MESH normal
+  vec3 wb = normalize(mat3(m) * binormal);
+  vec3 wt = cross(wn, wb);
+  frg_tbn = mat3(wt, wb, wn);
+  
+  frg_camdist = hpos.z / hpos.w;
+
+  frg_camz    = normalize(mat3(inverse(transpose(mv))) * (wn*-1));
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_terrain_forward
+  : fif_terrain
+  : lib_math
+  : lib_brdf
+  : lib_def
+  : lib_fwd
+  : std_forward_all {
+
+  // light with the MESH normal passed from the vertex shader (NOT differential).
+  vec3 wnrm = normalize(frg_tbn[2]);
+
+  vec3  albedo    = vec3(1.0);          // white for now
+  float roughness = 1.0;
+  float metallic  = 0.0;
+  vec3 ambrufmtl = vec3(1.0, roughness, metallic);  // x=AO; 1.0=unoccluded (AO now live in fwd lighting)
+  float L = 1;//dot(frg_camz.xyz,vec3(0,1,0))*0.5+0.5;
+  ShadingResult sr = _forward_lightingZ(
+    ModColor.xyz, 
+    (wnrm.xyz*1.0+vec3(0.0))*vec3(pow(L,0.25)), 
+    ambrufmtl, 
+    vec3(0, 0, 0), 
+    EyePostion, 
+    vec3(0), 
+    false);
+  out_clr     = vec4(sr.diffuse, 1.0);
+  out_diffuse = vec4(sr.diffuse, 0.0);
+}
+///////////////////////////////////////////////////////////////
+// depth prepass (geometry-only)
+///////////////////////////////////////////////////////////////
+vertex_interface vif_terrain_dpp {
+  inputs { vec4 position : POSITION; }
+  outputs { float frg_camz; }
+}
+fragment_interface fif_terrain_dpp : vif_terrain_dpp {
+  outputs { layout(location = 0) float out_z; }
+}
+vertex_shader vs_terrain_dpp : vif_terrain_dpp : ublk_std_matrices {
+  vec4 hpos = mvp * position;
+  gl_Position = hpos;
+  frg_camz = hpos.z / hpos.w;
+}
+fragment_shader ps_terrain_dpp : fif_terrain_dpp {
+  out_z = frg_camz;
+}
+///////////////////////////////////////////////////////////////
+technique FWD_CV_NM_RI_NI_MO {
+  fxconfig = fxcfg_default;
+  vf_pass = { vs_terrain, ps_terrain_forward, sb_terrain }
+}
+technique FWD_CT_NM_RI_NI_MO {
+  fxconfig = fxcfg_default;
+  vf_pass = { vs_terrain, ps_terrain_forward, sb_terrain }
+}
+technique FWD_DEPTHPREPASS_RI_NI_MO {
+  fxconfig = fxcfg_default;
+  vf_pass = { vs_terrain_dpp, ps_terrain_dpp, sb_terrain }
+}

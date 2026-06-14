@@ -7,11 +7,6 @@
 
 #include <ork/lev2/config.h>
 
-#if defined(ENABLE_PYTORCH)
-#undef ThreadLocal           // conflicts with c10
-#include <torch/extension.h> // for PyTorch C++ extension
-#endif
-
 #include "pyext.inl"
 #include <pybind11/numpy.h>
 #include <ork/lev2/gfx/gfxvtxbuf.inl>
@@ -100,6 +95,22 @@ void pyinit_gfx_primitives_points(py::module& primitives) {
               [](int numpoints, fxshaderstoragebuffer_ptr_t ssbo) -> primitives::points_v12c4_ptr_t {
                 return std::make_shared<primitives::PointsPrimitive<VtxV12C4>>(numpoints, ssbo.get());
               })
+          .def(
+              // GPU-driven indirect draw: count comes from `args` (a compute-written
+              // VkDraw[Indexed]IndirectCommand); pass `index` (an SSBO of compute-written indices)
+              // for DrawIndexedIndirectEML, or None for non-indexed DrawIndirectEML. Vertices are
+              // pulled from the storage block bound to the VS (pipeline.bindStorage).
+              "setIndirect",
+              [](primitives::points_v12c4_ptr_t prim,
+                 fxshaderstoragebuffer_ptr_t args,
+                 fxshaderstoragebuffer_ptr_t index,
+                 crcstring_ptr_t primtype) {
+                auto pt = primtype ? PrimitiveType(primtype->hashed()) : PrimitiveType::TRIANGLES;
+                prim->setIndirect(args.get(), index ? index.get() : nullptr, pt);
+              },
+              py::arg("args"),
+              py::arg("index") = fxshaderstoragebuffer_ptr_t(nullptr),
+              py::arg("primtype") = crcstring_ptr_t(nullptr))
           .def_property(
               "debug",                                          //
               [](primitives::points_v12c4_ptr_t prim) -> bool { //
@@ -145,46 +156,6 @@ void pyinit_gfx_primitives_points(py::module& primitives) {
                 prim->unlock(context.get());
                 return prim;
               })
-#if defined(ENABLE_PYTORCH)
-          .def(
-              "updatePositionWithTorchTensor",
-              [](primitives::points_v12c4_ptr_t prim, torchtensor_ptr_t l2tensor, size_t start, ctx_t context) {
-                /////////////////////////
-                // wait for tensor to be on CPU
-                /////////////////////////
-                if (0) {
-                  py::gil_scoped_release release;
-                  bool is_cpu = (l2tensor->_state.load() == 1);
-                  while (not is_cpu) {
-                    is_cpu = (l2tensor->_state.load() == 1);
-                    if (not is_cpu) {
-                      ::ork::usleep(10);
-                    }
-                  }
-                }
-                auto as_tt  = l2tensor->_impl.get<torch::Tensor>();
-                bool dim_ok = (as_tt.dim() == 3); // 3rd dim is channels
-                if (not dim_ok) {
-                  printf("ERROR: tensor dim<%d> is not 3\n", int(as_tt.dim()));
-                  OrkAssert(false);
-                }
-                // printf("dim_ok<%d>\n", (int) dim_ok);
-                size_t num_points = as_tt.size(1);
-                OrkAssert(as_tt.is_contiguous());
-                OrkAssert(as_tt.is_cpu());
-                OrkAssert(as_tt.dtype() == torch::kFloat32);
-                OrkAssert((start + num_points) <= prim->_capacity) auto src_data = (const float*)as_tt.data_ptr();
-                auto dst_data                                                    = (VtxV12C4*)prim->lock(context.get(), num_points);
-                for (size_t i = 0; i < num_points; i++) {
-                  size_t j  = (start + i) * 3;
-                  auto& out = dst_data[i];
-                  out.x     = src_data[j + 0];
-                  out.y     = src_data[j + 1];
-                  out.z     = src_data[j + 2];
-                }
-                prim->unlock(context.get());
-              })
-#endif
           .def(
               "updateWithPointsData",
               [](primitives::points_v12c4_ptr_t prim, primitives::pointsdata_ptr_t pdata, ctx_t context) {
@@ -339,84 +310,6 @@ void pyinit_gfx_primitives_points(py::module& primitives) {
               [](int numpoints) -> primitives::points_v12t8_ptr_t {
                 return std::make_shared<primitives::PointsPrimitive<VtxV12T8>>(numpoints);
               })
-#if defined(ENABLE_PYTORCH)
-          .def(
-              "updatePositionWithTorchTensor",
-              [](primitives::points_v12t8_ptr_t prim, torchtensor_ptr_t l2tensor, size_t start, ctx_t context) {
-                /////////////////////////
-                // wait for tensor to be on CPU
-                /////////////////////////
-                if (0) {
-                  py::gil_scoped_release release;
-                  bool is_cpu = (l2tensor->_state.load() == 1);
-                  while (not is_cpu) {
-                    is_cpu = (l2tensor->_state.load() == 1);
-                    if (not is_cpu) {
-                      ::ork::usleep(10);
-                    }
-                  }
-                }
-                auto as_tt  = l2tensor->_impl.get<torch::Tensor>();
-                bool dim_ok = (as_tt.dim() == 3); // 3rd dim is channels
-                if (not dim_ok) {
-                  printf("ERROR: tensor dim<%d> is not 3\n", int(as_tt.dim()));
-                  OrkAssert(false);
-                }
-                // printf("dim_ok<%d>\n", (int) dim_ok);
-                size_t num_points = as_tt.size(1);
-                OrkAssert(as_tt.is_contiguous());
-                OrkAssert(as_tt.is_cpu());
-                OrkAssert(as_tt.dtype() == torch::kFloat32);
-                OrkAssert((start + num_points) <= prim->_capacity) auto src_data = (const float*)as_tt.data_ptr();
-                auto dst_data                                                    = (VtxV12T8*)prim->lock(context.get(), num_points);
-                for (size_t i = 0; i < num_points; i++) {
-                  size_t j  = (start + i) * 3;
-                  auto& out = dst_data[i];
-                  out.pos.x     = src_data[j + 0];
-                  out.pos.y     = src_data[j + 1];
-                  out.pos.z     = src_data[j + 2];
-                }
-                prim->unlock(context.get());
-              })
-              .def(
-                "updateUv0WithTorchTensor",
-                [](primitives::points_v12t8_ptr_t prim, torchtensor_ptr_t l2tensor, size_t start, ctx_t context) {
-                  /////////////////////////
-                  // wait for tensor to be on CPU
-                  /////////////////////////
-                  if (0) {
-                    py::gil_scoped_release release;
-                    bool is_cpu = (l2tensor->_state.load() == 1);
-                    while (not is_cpu) {
-                      is_cpu = (l2tensor->_state.load() == 1);
-                      if (not is_cpu) {
-                        ::ork::usleep(10);
-                      }
-                    }
-                  }
-                  auto as_tt  = l2tensor->_impl.get<torch::Tensor>();
-                  bool dim_ok = (as_tt.dim() == 2); // 3rd dim is channels
-                  if (not dim_ok) {
-                    printf("ERROR: tensor dim<%d> is not 2\n", int(as_tt.dim()));
-                    OrkAssert(false);
-                  }
-                  // printf("dim_ok<%d>\n", (int) dim_ok);
-                  size_t num_points = as_tt.size(1);
-                  OrkAssert(as_tt.is_contiguous());
-                  OrkAssert(as_tt.is_cpu());
-                  OrkAssert(as_tt.dtype() == torch::kFloat32);
-                  OrkAssert((start + num_points) <= prim->_capacity) auto src_data = (const float*)as_tt.data_ptr();
-                  auto dst_data                                                    = (VtxV12T8*)prim->lock(context.get(), num_points);
-                  for (size_t i = 0; i < num_points; i++) {
-                    size_t j  = (start + i) * 2;
-                    auto& out = dst_data[i];
-                    out.uv0.x     = src_data[j + 0];
-                    out.uv0.y     = src_data[j + 1];
-                  }
-                  prim->unlock(context.get());
-                })
-                .def("createNode", createNodeLambdaFromPrimType<primitives::points_v12t8_ptr_t>())
-                #endif
                 ;
   type_codec->registerStdCodec<primitives::points_v12t8_ptr_t>(pointsprim_type);
   /////////////////////////////////////////////////////////////////////////////////

@@ -1,0 +1,244 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2026, Michael T. Mayers.
+// Distributed under the MIT License.
+// see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
+////////////////////////////////////////////////////////////////
+#include "hfdflow_module.h"
+
+ImplementReflectionX(ork::lev2::terrain::FbmModuleData, "terrain::FbmModuleData");
+
+namespace ork::lev2::terrain {
+
+///////////////////////////////////////////////////////////////////////////////
+// the compute-shader source for fbm. E.1b REALTIME PARAMS: frequency / amplitude /
+// domain offset / warp amount are NO LONGER baked into the text — they live in a small
+// params SSBO (binding 1) re-written from the DATA plugs every pre-phase (writeParams),
+// so a plug poke (editor / Python / the clock-driven offset_vel pan) lands next eval
+// with no recompile. Only STRUCTURE stays baked: dims, the octave loop bound, and
+// whether the warp inputs exist.
+///////////////////////////////////////////////////////////////////////////////
+
+static std::string _fbm_compute_text(int dim, int octaves, bool warped) {
+  // optional warp: extra storage interfaces + the per-texel displacement term on `p`.
+  std::string warp_sif  = warped
+      ? "storage_interface sif_wx (descriptor_set 0) { buffer layout(std430) wx_in { float wxdata[%DIMSQ%]; }; }\n"
+        "storage_interface sif_wy (descriptor_set 0) { buffer layout(std430) wy_in { float wydata[%DIMSQ%]; }; }\n"
+      : "";
+  std::string warp_list = warped ? " sif_wx sif_wy" : "";
+  std::string warp_add  = warped
+      ? " + p_wamt * vec2(wxdata[yi * %DIMU% + xi], wydata[yi * %DIMU% + xi])"
+      : "";
+  std::string tmpl = R"SHADER(
+fxconfig fxcfg_default {}
+storage_interface sif_hf (descriptor_set 0) {
+  buffer layout(std430) hf_out { float heights[%DIMSQ%]; };
+}
+storage_interface sif_pm (descriptor_set 0) {
+  buffer layout(std430) pm_in { float p_freq; float p_amp; float p_obx; float p_oby;
+                                float p_wamt; float p_r0; float p_r1; float p_r2; };
+}
+%WARPSIF%compute_interface iface_hf {
+  storage { sif_hf sif_pm%WARPLIST% }
+  inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); }
+}
+compute_shader cs_fbm : iface_hf {
+  if (gl_GlobalInvocationID.x >= %DIMU% || gl_GlobalInvocationID.y >= %DIMU%) { return; }
+  uint xi = gl_GlobalInvocationID.x;
+  uint yi = gl_GlobalInvocationID.y;
+  // domain offset: keep texel (0,0) off the lattice origin. Without it, (0,0)->p=(0,0)
+  // every octave, where sin(dot(0,k))=0 makes the hash 0 -> fbm(0,0)=0 = a degenerate
+  // global-min sink that erosion deepens into a corner crater. The offset means no texel
+  // maps to a fixed lattice point across octaves, so there is no reinforced sink anywhere.
+  // p_obx/p_oby = the anti-degeneracy base + user offset + offset_vel*time (HOST-composed);
+  // the optional WARP term bends the base domain per-texel BEFORE the octave loop.
+  vec2 p = vec2(float(xi), float(yi)) / float(%DIM%) * p_freq + vec2(p_obx, p_oby)%WARPADD%;
+  float sum = 0.0, ampl = 1.0, nrm = 0.0;
+  for (int o = 0; o < %OCT%; o++) {
+    vec2 ip = floor(p);
+    vec2 fp = fract(p);
+    vec2 u  = fp * fp * (3.0 - 2.0 * fp);
+    float a = fract(sin(dot(ip + vec2(0.0, 0.0), vec2(127.1, 311.7))) * 43758.5453);
+    float b = fract(sin(dot(ip + vec2(1.0, 0.0), vec2(127.1, 311.7))) * 43758.5453);
+    float c = fract(sin(dot(ip + vec2(0.0, 1.0), vec2(127.1, 311.7))) * 43758.5453);
+    float d = fract(sin(dot(ip + vec2(1.0, 1.0), vec2(127.1, 311.7))) * 43758.5453);
+    float n = mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+    sum += ampl * n;
+    nrm += ampl;
+    ampl *= 0.5;
+    p *= 2.0;
+  }
+  heights[yi * %DIMU% + xi] = (sum / nrm) * p_amp;
+}
+)SHADER";
+  // sized SSBO array (shadlang wants a concrete length, not a runtime array)
+  auto sub = [&](const std::string& key, const std::string& val) {
+    size_t pos = 0;
+    while ((pos = tmpl.find(key, pos)) != std::string::npos) {
+      tmpl.replace(pos, key.size(), val);
+      pos += val.size();
+    }
+  };
+  // inject the optional-warp fragments FIRST (they contain %DIMSQ%/%DIMU% themselves).
+  sub("%WARPSIF%", warp_sif);
+  sub("%WARPLIST%", warp_list);
+  sub("%WARPADD%", warp_add);
+  sub("%DIMSQ%", FormatString("%d", dim * dim));
+  sub("%DIMU%", FormatString("%du", dim));
+  sub("%DIM%", FormatString("%d", dim));
+  sub("%OCT%", FormatString("%d", octaves));
+  return tmpl;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// FbmModule
+///////////////////////////////////////////////////////////////////////////////
+
+struct FbmModuleInst : public TerrainComputeInst {
+  FbmModuleInst(const FbmModuleData* data, dflow::GraphInst* ginst)
+      : TerrainComputeInst(data, ginst)
+      , _fmd(data) {
+  }
+
+  void onLink(dflow::GraphInst* inst) final {
+    _output  = typedOutputNamed<HfImagePlugTraits>("Out");
+    _inWarpX = typedInputNamed<HfImagePlugTraits>("warp_x");
+    _inWarpY = typedInputNamed<HfImagePlugTraits>("warp_y");
+  }
+
+  // runtime params are re-read from the DATA plugs (the pokeable channel — m.inputs.* sets
+  // the moduledata; the inst snapshots here, the inset/extrude idiom). offset_vel * abstime
+  // composes the clock-driven pan (env clock: 0 in a bake -> deterministic t=0 snapshot).
+  void _fillParams(BakeEnv* env) {
+    auto fxi      = env->_ctx->FXI();
+    float freq    = *(_fmd->typedInputNamed<dflow::FloatPlugTraits>("frequency")->_value);
+    float amp     = *(_fmd->typedInputNamed<dflow::FloatPlugTraits>("amplitude")->_value);
+    fvec2 off     = *(_fmd->typedInputNamed<dflow::Vec2fPlugTraits>("offset")->_value);
+    fvec2 vel     = *(_fmd->typedInputNamed<dflow::Vec2fPlugTraits>("offset_vel")->_value);
+    float wamt    = *(_fmd->typedInputNamed<dflow::FloatPlugTraits>("warp_amt")->_value);
+    float t       = float(env->_abstime);
+    float pm[8]   = {freq, amp,
+                     11.7f + off.x + vel.x * t,  // anti-degeneracy base + user offset + pan
+                     31.3f + off.y + vel.y * t,
+                     wamt, 0.0f, 0.0f, 0.0f};
+    auto mp = fxi->mapStorageBuffer(_pm, 0, sizeof(pm), BufferMapAccess::WRITE_ONLY);
+    std::memcpy(mp->_mappedaddr, pm, sizeof(pm));
+    fxi->unmapStorageBuffer(mp.get());
+  }
+
+  // SETUP (SSBO alloc + shader compile) happens here — onActivate runs during
+  // updateTopology, BEFORE the bake's beginFrame/dispatch-phase. Only STRUCTURE bakes
+  // into the text (dims, octave loop bound, warp presence); the scalar params go to the
+  // params SSBO, seeded here at t=0 and re-written per eval by writeParams.
+  void onActivate(dflow::GraphInst* inst) final {
+    auto env  = inst->_impl.getShared<BakeEnv>();
+    auto fxi  = env->_ctx->FXI();
+    int dim   = env->_w;
+    auto img  = _output->_value; // GpuComputeImage2DInst (created via data_to_inst)
+    img->_w        = dim;
+    img->_h        = dim;
+    img->_channels = 1;
+    img->_ssbo     = fxi->createStorageBuffer(size_t(dim) * size_t(dim) * sizeof(float));
+
+    // connections are resolved in updateTopology BEFORE activate(), so the warp inputs
+    // are known here: warp is active only when BOTH displacement fields are connected.
+    _warped   = (_srcImg(_inWarpX) != nullptr) and (_srcImg(_inWarpY) != nullptr);
+    auto text = _fbm_compute_text(dim, _fmd->_octaves, _warped);
+    auto shdr = fxi->shaderFromShaderText("terrain_fbm", text);
+    _cs       = fxi->computeShader(shdr, "cs_fbm");
+    _pm       = fxi->createStorageBuffer(8 * sizeof(float));
+    _fillParams(env.get());
+  }
+
+  // IPrePhaseParams — the live host (and the bake driver, uniformly) calls this before
+  // each dispatch phase: params re-read from the plugs -> live-editable + time-driven.
+  void writeParams(Context* ctx) final {
+    auto env = _graphinst->_impl.getShared<BakeEnv>();
+    if (env and _pm)
+      _fillParams(env.get());
+  }
+
+  // DISPATCH only (inside the dispatch phase). A barrier after each dispatch makes
+  // this module's writes visible to downstream modules' reads.
+  void compute(dflow::GraphInst* inst, ui::updatedata_ptr_t updata) final {
+    auto env   = inst->_impl.getShared<BakeEnv>();
+    auto ci    = env->_ctx->CI();
+    auto img   = _output->_value;
+    int groups = (env->_w + 7) / 8;
+    ci->bindStorageBuffer(_cs, 0, img->_ssbo);
+    ci->bindStorageBuffer(_cs, 1, _pm);
+    if (_warped) { // bindings 2/3 — the per-texel domain displacement fields (wx/wy)
+      ci->bindStorageBuffer(_cs, 2, _srcImg(_inWarpX)->_ssbo);
+      ci->bindStorageBuffer(_cs, 3, _srcImg(_inWarpY)->_ssbo);
+    }
+    ci->dispatchCompute(_cs, groups, groups, 1);
+    ci->storageBarrier();
+  }
+
+  uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
+    auto h = DataBlock::createHasher();
+    h->accumulateString("terrain.fbm.v4"); // v4: runtime params SSBO (E.1b)
+    h->accumulateItem<int>(_fmd->_octaves);
+    h->accumulateItem<float>(*(_fmd->typedInputNamed<dflow::FloatPlugTraits>("frequency")->_value));
+    h->accumulateItem<float>(*(_fmd->typedInputNamed<dflow::FloatPlugTraits>("amplitude")->_value));
+    auto off = *(_fmd->typedInputNamed<dflow::Vec2fPlugTraits>("offset")->_value);
+    h->accumulateItem<float>(off.x);
+    h->accumulateItem<float>(off.y);
+    // offset_vel deliberately NOT hashed: a bake is the t=0 snapshot, where the output is
+    // velocity-invariant — hashing it would only split otherwise-identical cache entries.
+    h->accumulateItem<int>(_warped ? 1 : 0);
+    if (_warped)
+      h->accumulateItem<float>(*(_fmd->typedInputNamed<dflow::FloatPlugTraits>("warp_amt")->_value));
+    _mixTail(h, ctx, ih);
+    h->finish();
+    return h->result();
+  }
+
+  const FbmModuleData* _fmd;
+  hfimg_outpluginst_ptr_t _output;
+  hfimg_inpluginst_ptr_t _inWarpX, _inWarpY;
+  FxShaderStorageBuffer* _pm = nullptr;
+  bool _warped = false;
+  const FxComputeShader* _cs = nullptr;
+};
+
+static void _reshapeFbmIOs(dataflow::moduledata_ptr_t data) {
+  auto freq = dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "frequency");
+  auto amp  = dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "amplitude");
+  freq->setValue(4.0f);
+  amp->setValue(1.0f);
+  // constant domain offset (lattice-cell units) — pan / reseed the field.
+  dflow::ModuleData::createInputPlug<dflow::Vec2fPlugTraits>(data, dflow::EPR_UNIFORM, "offset")->setValue(fvec2(0.0f, 0.0f));
+  // E.1b: domain pan VELOCITY (lattice-cells / second) — effective offset = offset + offset_vel * abstime,
+  // fed by the family env clock (B.4). Zero = static. Serializes as a plug value (declarative animation).
+  dflow::ModuleData::createInputPlug<dflow::Vec2fPlugTraits>(data, dflow::EPR_UNIFORM, "offset_vel")->setValue(fvec2(0.0f, 0.0f));
+  // fused domain warp: per-texel (wx,wy) displacement fields + scalar amount. Both image
+  // inputs unconnected -> plain fbm (no warp storage interfaces emitted).
+  dflow::ModuleData::createInputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "warp_x");
+  dflow::ModuleData::createInputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "warp_y");
+  dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "warp_amt")->setValue(1.0f);
+  dflow::ModuleData::createOutputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "Out");
+}
+
+FbmModuleData::FbmModuleData() {
+}
+std::shared_ptr<FbmModuleData> FbmModuleData::createShared() {
+  auto data = std::make_shared<FbmModuleData>();
+  _reshapeFbmIOs(data);
+  return data;
+}
+dflow::dgmoduleinst_ptr_t FbmModuleData::createInstance(dflow::GraphInst* ginst) const {
+  return std::make_shared<FbmModuleInst>(this, ginst);
+}
+void FbmModuleData::describeX(class_t* clazz) {
+  clazz->setSharedFactory([]() -> rtti::castable_ptr_t { return FbmModuleData::createShared(); });
+  clazz->annotateTyped<dataflow::moduleIOreshape_fn_t>(
+      "reshapeIOs", [](dataflow::moduledata_ptr_t mdata) { _reshapeFbmIOs(mdata); });
+  // _octaves is a BAKED loop bound (not a plug) — reflect it so the serialized
+  // graph self-describes (the JSON is the portable, python-decoupled artifact).
+  clazz->directProperty("octaves", &FbmModuleData::_octaves);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+} // namespace ork::lev2::terrain

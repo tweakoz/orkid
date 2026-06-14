@@ -88,6 +88,16 @@ public:
   fvec2 mgvpos;
   bool _prunable = true;
 
+private:
+  // Cycle-safe, memoized recursive helpers. `on_path` tracks the current DFS
+  // path to terminate on cycles (return 0 — cycle node contributes nothing;
+  // DgSorter::generateTopology detects the cycle independently and returns
+  // nullptr with the offender list). `memo` caches each fully-resolved module's
+  // depth so re-convergent (diamond) DAGs are walked in O(V+E) rather than
+  // re-traversing every distinct upstream path (which is exponential in the
+  // number of reconvergence points — e.g. deep iterated erosion graphs).
+  size_t _computeMinDepth(dgmoduleset_t& on_path, dgmoduledepthmap_t& memo) const;
+  size_t _computeMaxDepth(dgmoduleset_t& on_path, dgmoduledepthmap_t& memo) const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -146,6 +156,31 @@ struct DgModuleInst : public ModuleInst {
   virtual void onStage(GraphInst* inst) {}
   virtual void onActivate(GraphInst* inst) {}
   virtual void compute(GraphInst* inst,ui::updatedata_ptr_t updata) {}
+
+  ////////////////////////////////////////////
+  // cook cache (only used when the owning GraphData is _cacheable). The node's
+  // content hash is computed by GraphInst::computeCooked; these two hooks are the
+  // TYPE-SPECIFIC serialize/load of this node's output. Default = not cacheable
+  // (cookStore returns null -> always recompute), so modules opt in by overriding.
+  uint64_t _cookHash = 0;
+  // this node's CONTENT hash = f( version-salt, own scalar params, context,
+  // [upstream node hashes] ). Per-class override (each adds a version salt so a
+  // change to the op's logic invalidates its cache). Default 0 = no identity
+  // (sinks / uncacheable nodes). Never hashes output buffers — cheap.
+  virtual uint64_t cookComputeHash(const std::vector<uint64_t>& input_hashes, uint64_t context) const { return 0; }
+  // serialize this node's freshly-computed output to a datablock (e.g. SSBO
+  // readback). null = don't cache this node.
+  virtual datablock_ptr_t cookStore() const { return nullptr; }
+  // restore this node's output FROM a cached datablock (e.g. upload to an SSBO),
+  // so downstream nodes can consume it without this node recomputing. Return true
+  // if the load succeeded (then compute() is skipped).
+  virtual bool cookLoad(datablock_constptr_t db) { return false; }
+  ////////////////////////////////////////////
+  // Called by GraphInst::reset(). Default is a no-op; modules that hold
+  // per-instance state needing a clean re-start (e.g. Globals' first-compute
+  // timebase capture, particle pools' live particles, RNG seeds) override
+  // this. Used by ECS particle slot recycle (A3).
+  virtual void onReset(GraphInst* inst) {}
     
   //void divideWork(scheduler_ptr_t sch, cluster* clus);
   //virtual void _doDivideWork(scheduler_ptr_t sch, cluster* clus);

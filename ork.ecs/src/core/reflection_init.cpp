@@ -32,6 +32,7 @@
 #include "../scripting/Python/PythonImpl.h"
 
 #include <ork/ecs/physics/bullet.h>
+#include <ork/ecs/physics/CharacterController.h>
 #include "../physics/bullet_impl.h"
 
 #include <ork/lev2/gfx/scenegraph/sgnode_curvepath.h>
@@ -53,6 +54,10 @@
 #include "ProbeComponent_impl.h"
 #include "../scripting/Lua/LuaImpl.h"
 
+
+#include <ork/ecs/ParticlesComponent.h>
+#include <ork/ecs/AssetSystem.h>
+#include <ork/ecs/HypermeshComponent.h>
 
 //#define ENABLE_REFL_REGISTRATION
 
@@ -167,6 +172,21 @@ struct EcsAppInit {
     RegisterClassX(SceneGraphSystem);
     RegisterClassX(SceneGraphNodeItemData);
 
+    RegisterClassX(ParticlesComponentData);
+    RegisterClassX(ParticlesComponent);
+    RegisterClassX(ParticlesGlobalSystemData);
+    RegisterClassX(ParticlesGlobalSystem);
+
+    // HYPERECS M2b.4
+    RegisterClassX(AssetSystemData);
+    RegisterClassX(AssetSystem);
+
+    // HYPERECS D.3
+    RegisterClassX(HypermeshComponentData);
+    RegisterClassX(HypermeshComponent);
+    RegisterClassX(HypermeshSystemData);
+    RegisterClassX(HypermeshSystem);
+
     RegisterClassX(BulletSystemData);
     RegisterClassX(BulletShapeCapsuleData);
     RegisterClassX(BulletShapePlaneData);
@@ -174,12 +194,18 @@ struct EcsAppInit {
     RegisterClassX(BulletShapeMeshData);
     RegisterClassX(BulletShapeCapsuleData);
     RegisterClassX(BulletShapeTerrainData);
+    RegisterClassX(BulletShapeScatterData); // E.2-walk: per-item proxy compound
     RegisterClassX(BulletObjectComponentData);
     RegisterClassX(BulletObjectForceControllerData);
     RegisterClassX(DirectionalForceData);
 
     RegisterClassX(BulletObjectComponent);
     RegisterClassX(BulletSystem);
+
+    RegisterClassX(CharacterControllerComponentData); // E.2-walk: reusable walk-on-terrain behavior
+    RegisterClassX(CharacterControllerComponent);
+    RegisterClassX(CharacterControllerSystemData);
+    RegisterClassX(CharacterControllerSystem);
 
     RegisterClassX(lev2::CurvePathDrawableData);
 
@@ -219,7 +245,12 @@ struct EcsAppInit {
     RegisterFamily<PythonComponentData>(ork::AddPooledLiteral("control"));
     RegisterFamily<InterpComponentData>(ork::AddPooledLiteral("control"));
     RegisterFamily<SceneGraphComponentData>(ork::AddPooledLiteral("render"));
+    // ECS-hosted HyperSyn / imperative particle systems. The "particle"
+    // family slot is preallocated as _ParticleFamily at simulation.cpp:67.
+    RegisterFamily<ParticlesComponentData>(ork::AddPooledLiteral("particle"));
     RegisterFamily<BulletObjectComponentData>(ork::AddPooledLiteral("")); // no update
+    // hypermesh computes in-frame on the render thread; no per-component update tick.
+    RegisterFamily<HypermeshComponentData>(ork::AddPooledLiteral("")); // no update
     RegisterFamily<StochWavSoundEmitterData>(ork::AddPooledLiteral("control"));
     RegisterFamily<SimpleSoundEmitterData>(ork::AddPooledLiteral("control"));
     RegisterFamily<ProbeComponentData>(ork::AddPooledLiteral("")); // no update

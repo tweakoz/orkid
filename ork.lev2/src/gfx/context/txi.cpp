@@ -334,6 +334,12 @@ void TextureInterface::initTextureFromImage(Texture* ptex, image_ptr_t img, bool
       tid._src_format  = img->_format;
       tid._dst_format  = img->_format;
       break;
+    case EBufferFormat::R32F:
+      // single-channel float (heightfield) -> VK_FORMAT_R32_SFLOAT; sampler2D
+      // returns the raw value in .r (NOT unorm-normalized). Kept single-channel.
+      tid._src_format  = img->_format;
+      tid._dst_format  = img->_format;
+      break;
     case EBufferFormat::BGR8:
       img_to_use = std::make_shared<Image>();
       img_to_use->convertFromImageToFormat(*img,EBufferFormat::RGBA8);

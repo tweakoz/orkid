@@ -311,7 +311,7 @@ def create_sphere_strip_data(radius=1.0, lat_segments=24, lon_segments=32):
 class PrimitiveTypesApp:
     def __init__(self):
         super().__init__()
-        self.ezapp = OrkEzApp.create(self, height=720, width=1280)
+        self.ezapp = OrkEzApp.create(self, height=720, width=1280, use_subsystems=["opq", "core", "gpu", "lev2"])
         self.ezapp.setRefreshPolicy(RefreshFastest, 0)
         setupUiCamera(app=self, eye=vec3(10, 8, 10), tgt=vec3(0, 0, 0))
 

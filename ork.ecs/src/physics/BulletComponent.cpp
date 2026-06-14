@@ -58,11 +58,13 @@ void BulletObjectComponentData::describeX(ComponentDataClass* clazz) {
   clazz->floatProperty("Mass", float_range{0, 1000}, &BulletObjectComponentData::_mass);
   clazz->floatProperty("LinearDamping", float_range{0, 1}, &BulletObjectComponentData::_linearDamping);
   clazz->floatProperty("AngularDamping", float_range{0, 1}, &BulletObjectComponentData::_angularDamping);
+  clazz->directProperty("NotifyCollisions", &BulletObjectComponentData::_notifyCollisions);
 
   clazz->directProperty("AllowSleeping", &BulletObjectComponentData::_allowSleeping);
   clazz->directProperty("IsKinematic", &BulletObjectComponentData::_isKinematic);
   clazz->directProperty("Disable", &BulletObjectComponentData::_disablePhysics);
   clazz->directProperty("SyncShapeScale", &BulletObjectComponentData::_syncShapeScale);
+  clazz->directProperty("InstanceNodeName", &BulletObjectComponentData::_instanceNodeName);
 
   clazz->directObjectMapProperty("ForceControllers", &BulletObjectComponentData::_forcedatas)
       ->annotate<ConstString>("editor.factorylistbase", "BulletObjectForceControllerData");

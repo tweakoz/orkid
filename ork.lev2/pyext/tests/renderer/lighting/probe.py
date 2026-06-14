@@ -74,6 +74,7 @@ class LIGHTING_APP(ComponentizedApplication):
     sceneparams.AmbientLight = vec3(0.01)
     sceneparams.DepthFogDistance = float(10000)
     sceneparams.supersample = 1
+    sceneparams.SkyboxTexPathStr = "<ork_envmaps2>/tozenv_nebula.xir"
 
     sceneparams.preset = "ForwardPBR"
 

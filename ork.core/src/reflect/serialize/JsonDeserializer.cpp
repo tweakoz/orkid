@@ -367,7 +367,28 @@ object_ptr_t JsonDeserializer::_parseObjectNode(serdes::node_ptr_t dsernode) {
                 (void*) aryobj.get(), aryclazz->Name().c_str(), //
                 index, top_prop_as_obj_array->_name.c_str(), //
                 (void*) instance_out.get() );
-        OrkAssert(instance_out!=nullptr);
+        if (instance_out == nullptr) {
+          // DATA-DRIVEN elements: the parent builds this array from sibling reflected state
+          // (already deserialized — derived-class properties precede these arrays). Give it
+          // one chance to do so, then retry the slot.
+          auto fallback = top_prop->annotation("reflect.no_instantiate.fallback") //
+                              .tryAs<array_instantiation_fallback_t>();
+          if (fallback) {
+            fallback.value()(aryobj);
+            top_prop_as_obj_array->get(instance_out, aryobj, index);
+          }
+        }
+        if (instance_out == nullptr) {
+          printf(
+              "JsonDeserializer: no_instantiate array property<%s> on class<%s> has no "
+              "pre-instantiated element at index<%d> (element class<%s>) — the parent's "
+              "constructor/fallback did not build enough elements.\n",
+              top_prop_as_obj_array->_name.c_str(),
+              aryclazz->Name().c_str(),
+              index,
+              classstr);
+          OrkAssert(false);
+        }
         break;
       }
       case NodeType::ARRAY_ELEMENT_OBJECT:

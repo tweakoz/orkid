@@ -111,6 +111,8 @@ struct Controller {
 	void stageSimulation();
 	void startSimulation();
 	void stopSimulation();
+	void pauseSimulation();  // clock-hold: events/camera live, last frame persists
+	void resumeSimulation(); // seamless (no re-activation)
 	void endSimulation();
 
 	simulation_ptr_t simulation() const;

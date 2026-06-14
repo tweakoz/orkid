@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
+#include <chrono>
 
 #include <ork/kernel/orklut.hpp>
 #include <ork/math/basicfilters.h>
@@ -26,6 +27,7 @@
 #include <ork/ecs/datatable.h>
 
 #include "bullet_impl.h"
+#include <unordered_map>
 #include <ork/kernel/profiler.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -113,6 +115,8 @@ BulletSystem::~BulletSystem() {
     delete mDispatcher;
   if (mBroadPhase)
     delete mBroadPhase;
+  if (_overlapFilter)
+    delete _overlapFilter;
 
   if (_debugger) {
     delete _debugger;
@@ -132,12 +136,17 @@ void BulletSystem::_onLinkComponent(BulletObjectComponent* component) {
   auto entity       = component->GetEntity();
   auto compdata     = &component->mBOCD;
   auto instancedata = compdata->_INSTANCEDATA;
-  if (instancedata) {
+  // instance pairing is BY GROUP NAME (the serializable contract); the legacy
+  // shared-ptr form still resolves through its groupname.
+  std::string bname = instancedata ? instancedata->_groupname : compdata->_instanceNodeName;
+  if (bname != "") {
     auto sgcomp = entity->typedComponent<SceneGraphComponent>();
-    // if both SG and physics instancedatas are the same
-    //  then both components are referencing to the same instance
-    if (sgcomp and (sgcomp->_SGCD._INSTANCEDATA == instancedata)) {
-      component->_mySGcomponentForInstancing = sgcomp;
+    if (sgcomp) {
+      const auto& SGCD  = sgcomp->_SGCD;
+      std::string sname = SGCD._INSTANCEDATA ? SGCD._INSTANCEDATA->_groupname : SGCD._instanceNodeName;
+      if (sname == bname) {
+        component->_mySGcomponentForInstancing = sgcomp;
+      }
     }
   }
 }
@@ -222,9 +231,39 @@ void BulletSystem::_onActivateComponent(BulletObjectComponent* component) {
         rigid_body =
             this->AddLocalRigidBody(shape_create_data.mEntity, mass, btTrans, pshape, CDATA._groupAssign, CDATA._groupCollidesWith);
 
-        if (CDATA._collisionCallback != nullptr) {
-          auto collision_tester         = std::make_shared<OrkContactResultCallback>(rigid_body);
-          collision_tester->_onContact  = CDATA._collisionCallback;
+        if (CDATA._collisionCallback != nullptr or CDATA._notifyCollisions) {
+          auto collision_tester = std::make_shared<OrkContactResultCallback>(rigid_body);
+          auto py_cb            = CDATA._collisionCallback;
+          bool do_notify        = CDATA._notifyCollisions;
+          // E.2-walk: _notifyCollisions forwards each contact to the scene's PythonSystem
+          // as a "Collision" notify ({nameA,nameB,pointA,normalOnB,...}) — the system
+          // SCRIPT intercepts (onSystemNotify). Runs at deferred-invocation drain time on
+          // the update thread (the same in-thread direct-call pattern as camera publish).
+          // TRANSITION dedup (the 1-FPS lesson): a resting body contacts EVERY tick
+          // (480 UPS) — forwarding each one into the python sub-interpreter (GIL bind +
+          // call per manifold point) collapses the update rate. Gameplay wants ENTER
+          // events: notify per other-entity only when contact (re)begins, re-armed
+          // after a 0.25s touch gap. Persistent contact -> ONE notify, then silence.
+          struct NotifyDedup {
+            std::unordered_map<uint64_t, float> _lastSeen;
+          };
+          auto dedup = std::make_shared<NotifyDedup>();
+          collision_tester->_onContact = [this, py_cb, do_notify, dedup](const evdata_t& data) {
+            if (py_cb)
+              py_cb(data);
+            if (do_notify) {
+              const auto& table = *data.getShared<DataTable>();
+              uint64_t other    = table["entrefB"_tok].get<EntityRef>()._entID;
+              const float now   = simulation()->gameTime();
+              auto it           = dedup->_lastSeen.find(other);
+              const bool enter  = (it == dedup->_lastSeen.end()) or ((now - it->second) > 0.25f);
+              dedup->_lastSeen[other] = now;
+              if (enter) {
+                if (_pysys) // resolved once in _onLink
+                  _pysys->_notify("Collision"_tok, data); // compile-time token, PUBLIC notify entry
+              }
+            }
+          };
           component->_collisionCallback = collision_tester;
           collision_tester->_system     = this;
           _collisionCallbacks.insert(collision_tester);
@@ -236,8 +275,16 @@ void BulletSystem::_onActivateComponent(BulletObjectComponent* component) {
           rigid_body->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
           ballowsleep = false;
         }
-        rigid_body->setActivationState(ballowsleep ? WANTS_DEACTIVATION : DISABLE_DEACTIVATION);
-        rigid_body->activate();
+        if (rigid_body->isStaticObject() and not CDATA._isKinematic) {
+          // static world geometry must read INACTIVE: an active static partner
+          // forces narrowphase on every pair it touches each substep (and
+          // WANTS_DEACTIVATION never transitions for statics — they would stay
+          // active forever). Sleeping is the correct steady state.
+          rigid_body->forceActivationState(ISLAND_SLEEPING);
+        } else {
+          rigid_body->setActivationState(ballowsleep ? WANTS_DEACTIVATION : DISABLE_DEACTIVATION);
+          rigid_body->activate();
+        }
         if (DEBUG_LOG) {
           logchan_bull->log("BulletObjectComponent<%p> rigid_body<%p>", (void*)component, (void*)rigid_body);
         }
@@ -246,6 +293,19 @@ void BulletSystem::_onActivateComponent(BulletObjectComponent* component) {
         if (component->mBOCD._angularFactor.magnitude() > 0.1f) {
           rigid_body->setAngularFactor(orkv3tobtv3(component->mBOCD._angularFactor));
         }
+
+        // launch velocity — the ONE per-spawn velocity channel: the entity
+        // varmap's "initialVelocity", written by BOTH the FSM's scheduled
+        // spawns (InitialSpeed/InitialDirection/DirectionRandomize) and the
+        // script Spawner.spawn(vel=...) path. This consume is what makes the
+        // long-written-never-read FSM channel live.
+        if (auto iv = entity->_varmap->typedValueForKey<fvec3>("initialVelocity"))
+          rigid_body->setLinearVelocity(orkv3tobtv3(iv.value()));
+        // angular twin (Spawner.spawn(avel=...)): rad/s about a world axis —
+        // projectile topspin that converts to forward drive on a frictional
+        // contact. Respects the angularFactor lock set above when present.
+        if (auto iav = entity->_varmap->typedValueForKey<fvec3>("initialAngularVelocity"))
+          rigid_body->setAngularVelocity(orkv3tobtv3(iav.value()));
       }
     }
 
@@ -277,12 +337,16 @@ void BulletSystem::_onActivateComponent(BulletObjectComponent* component) {
     }
   }
 
-  // instance tracking (WIP)
+  // instance pairing — wire the motion state to the SG component's instance
+  // slot. For DYNAMIC spawns the SG stage render-op runs after this activate,
+  // so the callback fires later; for STATIC (autospawned) entities the render
+  // op may already have drained between the stage and activate phases — in
+  // that case _INSTANCE already exists and we wire IMMEDIATELY (the callback
+  // would never fire; this was the silent never-wired hole).
   if (component->_mySGcomponentForInstancing) {
-    component->_mySGcomponentForInstancing->_onInstanceCreated = [=]() {
-      // at this point this entity's SG component should be staged
-      // and therefore SG component's _INSTANCE should be already created
-      auto instance = component->_mySGcomponentForInstancing->_INSTANCE;
+    auto sgcomp = component->_mySGcomponentForInstancing;
+    auto wire   = [=]() {
+      auto instance = sgcomp->_INSTANCE;
       OrkAssert(instance);
       component->_sginstance_id = instance->_instance_index;
       OrkAssert(component->_sginstance_id >= 0);
@@ -291,6 +355,10 @@ void BulletSystem::_onActivateComponent(BulletObjectComponent* component) {
       entmotionstate->_instance_id = component->_sginstance_id;
       entmotionstate->_idata       = idata;
     };
+    if (sgcomp->_INSTANCE)
+      wire();
+    else
+      sgcomp->_onInstanceCreated = wire;
   }
 }
 
@@ -307,6 +375,22 @@ void BulletSystem::_onDeactivateComponent(BulletObjectComponent* component) {
       world->removeRigidBody(rigid_body);
       delete rigid_body;
       component->_rigidbody = nullptr;
+    }
+    // batch-expanded shapes (e.g. scatter proxies): the factory parked its
+    // per-item static bodies on the shape inst — remove them with the component.
+    if (auto shapeinst = component->_shapeinst) {
+      if (auto try_batch = shapeinst->_impl.tryAs<shapebatch_ptr_t>()) {
+        auto batch = try_batch.value();
+        for (auto body : batch->_bodies) {
+          world->removeRigidBody(body);
+          delete body->getMotionState();
+          delete body;
+        }
+        for (auto shape : batch->_ownedShapes)
+          delete shape;
+        batch->_bodies.clear();
+        batch->_ownedShapes.clear();
+      }
     }
   }
 
@@ -375,6 +459,50 @@ OrkContactResultCallback::OrkContactResultCallback(btRigidBody* body) //
     : monitoredBody(body) {                                           //
 }
 
+void OrkContactResultCallback::emitContact(
+    const btManifoldPoint& cp,
+    const btCollisionObject* colObj0,
+    const btCollisionObject* colObj1) {
+
+  if (not _onContact)
+    return;
+
+  btRigidBody* body0 = (btRigidBody*)colObj0;
+  btRigidBody* body1 = (btRigidBody*)colObj1;
+
+  const btVector3& ptA       = cp.getPositionWorldOnA();
+  const btVector3& ptB       = cp.getPositionWorldOnB();
+  const btVector3& normalOnB = cp.m_normalWorldOnB;
+  int group0                 = colObj0->getBroadphaseHandle()->m_collisionFilterGroup;
+  int group1                 = colObj1->getBroadphaseHandle()->m_collisionFilterGroup;
+
+  auto invocation = std::make_shared<deferred_script_invokation>();
+
+  invocation->_cb = _onContact;
+
+  auto& datatable            = *invocation->_data.makeShared<DataTable>();
+  auto entA                  = (Entity*)body0->getUserPointer();
+  auto entB                  = (Entity*)body1->getUserPointer();
+  EntityRef erefA            = {entA->_entref};
+  EntityRef erefB            = {entB->_entref};
+  datatable["entityA"_tok]   = pyentity_ptr_t(entA);
+  datatable["entityB"_tok]   = pyentity_ptr_t(entB);
+  datatable["entrefA"_tok]   = erefA;
+  datatable["entrefB"_tok]   = erefB;
+  datatable["groupA"_tok]    = group0;
+  datatable["groupB"_tok]    = group1;
+  datatable["pointA"_tok]    = btv3toorkv3(ptA);
+  datatable["pointB"_tok]    = btv3toorkv3(ptB);
+  datatable["normalOnB"_tok] = btv3toorkv3(normalOnB).normalized();
+  // E.2-walk: plain entity NAMES for script-side interception (the python wrappers
+  // above are host-specific; names are universal).
+  datatable["nameA"_tok]     = std::string(entA->name().c_str());
+  datatable["nameB"_tok]     = std::string(entB->name().c_str());
+
+  auto sim = _system->simulation();
+  sim->_enqueueDeferredInvokation(invocation);
+}
+
 btScalar OrkContactResultCallback::addSingleResult(
     btManifoldPoint& cp,
     const btCollisionObjectWrapper* colObj0Wrap,
@@ -387,39 +515,7 @@ btScalar OrkContactResultCallback::addSingleResult(
   btRigidBody* body1 = (btRigidBody*)colObj1Wrap->getCollisionObject();
 
   if (body0 == monitoredBody || body1 == monitoredBody) {
-
-    if (_onContact) {
-      const btCollisionObject* colObj0 = colObj0Wrap->getCollisionObject();
-      const btCollisionObject* colObj1 = colObj1Wrap->getCollisionObject();
-
-      const btVector3& ptA       = cp.getPositionWorldOnA();
-      const btVector3& ptB       = cp.getPositionWorldOnB();
-      const btVector3& normalOnB = cp.m_normalWorldOnB;
-      int group0                 = colObj0->getBroadphaseHandle()->m_collisionFilterGroup;
-      int group1                 = colObj1->getBroadphaseHandle()->m_collisionFilterGroup;
-
-      auto invocation = std::make_shared<deferred_script_invokation>();
-
-      invocation->_cb = _onContact;
-
-      auto& datatable            = *invocation->_data.makeShared<DataTable>();
-      auto entA                  = (Entity*)body0->getUserPointer();
-      auto entB                  = (Entity*)body1->getUserPointer();
-      EntityRef erefA            = {entA->_entref};
-      EntityRef erefB            = {entB->_entref};
-      datatable["entityA"_tok]   = pyentity_ptr_t(entA);
-      datatable["entityB"_tok]   = pyentity_ptr_t(entB);
-      datatable["entrefA"_tok]   = erefA;
-      datatable["entrefB"_tok]   = erefB;
-      datatable["groupA"_tok]    = group0;
-      datatable["groupB"_tok]    = group1;
-      datatable["pointA"_tok]    = btv3toorkv3(ptA);
-      datatable["pointB"_tok]    = btv3toorkv3(ptB);
-      datatable["normalOnB"_tok] = btv3toorkv3(normalOnB).normalized();
-
-      auto sim = _system->simulation();
-      sim->_enqueueDeferredInvokation(invocation);
-    }
+    emitContact(cp, colObj0Wrap->getCollisionObject(), colObj1Wrap->getCollisionObject());
   }
 
   return 0;
@@ -465,6 +561,35 @@ void BulletSystem::InitWorld() {
   mDynamicsWorld->getSolverInfo().m_numIterations = 30;
   mDynamicsWorld->setInternalTickCallback(BulletSystemInternalTickCallback, _simulation);
   mDynamicsWorld->setDebugDrawer(_debugger);
+  // bullet DEFAULTS to recomputing EVERY object's AABB each substep
+  // (m_forceUpdateAllAabbs=true) — with thousands of static scatter bodies that
+  // is O(objects) dbvt churn per substep (measured: step=1000ms/s at 8.4k
+  // statics, scaling with density). Off = only ACTIVE objects refresh their
+  // AABBs, which is the entire point of static+sleeping bodies. Anything that
+  // teleports a body while it is asleep must activate() it (or call
+  // updateSingleAabb) so the broadphase sees the move.
+  mDynamicsWorld->setForceUpdateAllAabbs(false);
+  // never CREATE static<->static broadphase pairs. A world-spanning AABB (the
+  // terrain heightfield) overlaps every static scatter body — without this
+  // filter that is one pair PER ROCK, each narrowphase-dispatched per substep
+  // whenever either partner reads as active (measured: step=1000ms/s at 8.4k
+  // statics). Bullet can never produce a useful result from a static-static
+  // pair; reject them before the pair cache.
+  struct StaticPairFilter : public btOverlapFilterCallback {
+    bool needBroadphaseCollision(btBroadphaseProxy* p0, btBroadphaseProxy* p1) const final {
+      bool collides = (p0->m_collisionFilterGroup & p1->m_collisionFilterMask) //
+                  and (p1->m_collisionFilterGroup & p0->m_collisionFilterMask);
+      if (collides) {
+        auto o0 = (btCollisionObject*)p0->m_clientObject;
+        auto o1 = (btCollisionObject*)p1->m_clientObject;
+        if (o0->isStaticObject() and o1->isStaticObject())
+          collides = false;
+      }
+      return collides;
+    }
+  };
+  _overlapFilter = new StaticPairFilter;
+  mDynamicsWorld->getPairCache()->setOverlapFilterCallback(_overlapFilter);
   // auto G = orkv3tobtv3(_systemData.GetGravity());
   // mDynamicsWorld->setGravity(G);
 
@@ -493,6 +618,10 @@ bool BulletSystem::_onLink(Simulation* psi) {
   OrkAssert(_sgsystem != nullptr);
 
   _sgsystem->_addStaticDrawable("std_forward", _debugDrawable);
+
+  // resolved ONCE — the collision-notify path forwards to it at event rate
+  // (null when the scene declares no PythonSystem).
+  _pysys = psi->_findSystemFromName("PythonSystem");
 
   return true;
 }
@@ -650,6 +779,15 @@ void BulletSystem::_onUpdate(Simulation* inst) {
         /////////////////////////////////////////
       }
 
+      // diagnostic wall-clock telemetry (the profiler scopes compile out in
+      // release builds): ms spent in step vs collision-scan, printed every 2s.
+      static double _diag_step_ms = 0.0, _diag_scan_ms = 0.0;
+      static double _diag_last_print = 0.0;
+      auto _diag_now = [] {
+        return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+      };
+
+      double _diag_t0 = _diag_now();
       {
         OrkProfilerSampleScope(CHANNEL_UPDATE, "bullet::stepSimulation");
         int a = mDynamicsWorld->stepSimulation(fdts, mMaxSubSteps, ffts);
@@ -657,13 +795,56 @@ void BulletSystem::_onUpdate(Simulation* inst) {
         int m = std::min(a, b); // ? a : b; // ork::min()
         mNumSubStepsTaken += m;
       }
+      double _diag_t1 = _diag_now();
+      _diag_step_ms += (_diag_t1 - _diag_t0) * 1000.0;
 
       {
         OrkProfilerSampleScope(CHANNEL_UPDATE, "bullet::collisions");
-        for (auto callback : _collisionCallbacks) {
-          auto body = callback->monitoredBody;
-          mDynamicsWorld->contactTest(body, *callback);
+        // MANIFOLD SCAN, not contactTest. stepSimulation already produced the
+        // persistent contact manifolds (broadphase-culled, incrementally updated);
+        // reading them is O(actual contacts). contactTest re-runs narrowphase per
+        // call — and against a btCompoundShape it constructs a collision algorithm
+        // that PREALLOCATES one child algorithm PER COMPOUND CHILD, making the
+        // per-tick cost proportional to scatter density (the observed 1-FPS
+        // slowdown at ~4k rocks). Never query what the step already computed.
+        if (not _collisionCallbacks.empty()) {
+          auto dispatcher = mDynamicsWorld->getDispatcher();
+          const int nman  = dispatcher->getNumManifolds();
+          for (int i = 0; i < nman; i++) {
+            auto manifold  = dispatcher->getManifoldByIndexInternal(i);
+            const int ncon = manifold->getNumContacts();
+            if (0 == ncon)
+              continue;
+            auto body0 = manifold->getBody0();
+            auto body1 = manifold->getBody1();
+            for (auto callback : _collisionCallbacks) {
+              auto mon = callback->monitoredBody;
+              if (body0 == mon or body1 == mon) {
+                // deepest point only — gameplay wants THE contact, not the patch
+                int best = 0;
+                for (int c = 1; c < ncon; c++)
+                  if (manifold->getContactPoint(c).getDistance() < manifold->getContactPoint(best).getDistance())
+                    best = c;
+                callback->emitContact(manifold->getContactPoint(best), body0, body1);
+              }
+            }
+          }
         }
+      }
+      double _diag_t2 = _diag_now();
+      _diag_scan_ms += (_diag_t2 - _diag_t1) * 1000.0;
+      if ((_diag_t2 - _diag_last_print) > 2.0) {
+        if (_diag_last_print != 0.0) {
+          const double span = _diag_t2 - _diag_last_print;
+          printf(
+              "bullet timing: step=%.2fms/s scan=%.3fms/s objects=%d\n",
+              _diag_step_ms / span,
+              _diag_scan_ms / span,
+              mDynamicsWorld->getNumCollisionObjects());
+        }
+        _diag_step_ms    = 0.0;
+        _diag_scan_ms    = 0.0;
+        _diag_last_print = _diag_t2;
       }
     }
 
