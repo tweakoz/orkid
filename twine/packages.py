@@ -17,7 +17,7 @@ orkid/pyvenv and pip never has to match it (the hython model). Pure data
 + the umbrella are `py3-none-any`.
 """
 
-VERSION = "0.1.6"   # single source of truth — build.py stamps it into every wheel
+VERSION = "0.1.7"   # single source of truth — build.py stamps it into every wheel
                     # filename, METADATA, and the umbrella's Requires-Dist pins.
                     # (> the published 0.0.1 stub / broken 0.1.0 / 0.1.1 / 0.1.2 / 0.1.3 / 0.1.4 / 0.1.5)
 BUNDLE = "orkid"      # install dir under site-packages (== reconstituted .staging)

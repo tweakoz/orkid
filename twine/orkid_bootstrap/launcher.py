@@ -15,6 +15,7 @@ import os
 import shlex
 import shutil
 import sys
+import sysconfig
 import pathlib
 
 SENTINEL = "__OBT_DEPLOY_SENTINEL__"
@@ -28,14 +29,28 @@ MINIMAL_SDKS = []                              # platform-target sdks; none need
 
 
 def _bundle_root():
-    # <site-packages>/orkid_bootstrap/launcher.py -> <site-packages>/orkid
+    # The payload bundle ships as wheel DATA -> installs to <data-scheme>/orkid
+    # (= <sys.prefix>/orkid in a venv). Older purelib builds put it next to this
+    # shim at <site-packages>/orkid; we check that too for backward compatibility.
     here = pathlib.Path(__file__).resolve().parent          # orkid_bootstrap/
-    bundle = here.parent / "orkid"
-    if not bundle.is_dir():
-        sys.exit("orkid: bundle not found at %s\n"
-                 "  Install the payload packages too: `pip install orkid` pulls\n"
-                 "  orkid-engine / orkid-libdeps / orkid-python / orkid-data / ..." % bundle)
-    return str(bundle)
+    candidates, seen = [], set()
+    def _add(p):
+        p = pathlib.Path(p) / "orkid"
+        if str(p) not in seen:
+            seen.add(str(p)); candidates.append(p)
+    try:
+        _add(sysconfig.get_path("data"))                    # wheel-data install location
+    except Exception:
+        pass
+    _add(sys.prefix)                                        # = data scheme for a venv
+    _add(here.parent)                                       # legacy purelib (next to this shim)
+    for bundle in candidates:
+        if bundle.is_dir():
+            return str(bundle)
+    sys.exit("orkid: bundle not found (looked in: %s).\n"
+             "  Install the payload packages too: `pip install orkid` pulls\n"
+             "  orkid-engine / orkid-libdeps / orkid-bin / orkid-data."
+             % ", ".join(str(c) for c in candidates))
 
 
 def _write(path, text):

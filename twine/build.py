@@ -164,6 +164,15 @@ def build_payload_wheel(spec, staging, rels, distdir, ver, plat):
     name = spec["name"]
     tag = "py3-none-any" if spec["purelib"] else plat
     distinfo = f"{name.replace('-', '_')}-{ver}.dist-info"
+    # Ship the bundle as wheel DATA ({wheel}.data/data/orkid/... -> installs to
+    # <sys.prefix>/orkid) rather than purelib/platlib. pip byte-compiles every .py
+    # under purelib/platlib on install; the bundle is engine code+data run ONLY by
+    # the embedded ork.python (3.14t) and is never imported by the user's python, so
+    # user-python compilation is useless AND fatal on 3.9 (the bundle's 3.10+ `match`
+    # scripts can't parse there, and 3.9's compileall crashes reporting the error).
+    # Data-category files are extracted verbatim, never compiled. The launcher's
+    # _bundle_root() resolves the bundle from the data location at runtime.
+    datadir = f"{name.replace('-', '_')}-{ver}.data/data"
     out = distdir / _wheel_filename(name, ver, tag)
     records = []
     symlinks = []   # (rel, target) — recorded in a manifest; pip can't recreate symlinks
@@ -176,10 +185,10 @@ def build_payload_wheel(spec, staging, rels, distdir, ver, plat):
                 symlinks.append((rel, os.readlink(src)))
                 continue
             mode = 0o755 if os.access(src, os.X_OK) else 0o644
-            _add(z, records, f"{P.BUNDLE}/{rel}", abspath=src, mode=mode)
+            _add(z, records, f"{datadir}/{P.BUNDLE}/{rel}", abspath=src, mode=mode)
         if symlinks:
             man = "".join(f"{r}\t{t}\n" for r, t in sorted(symlinks))
-            _add(z, records, f"{P.BUNDLE}/.symlinks.d/{name.replace('-', '_')}.txt",
+            _add(z, records, f"{datadir}/{P.BUNDLE}/.symlinks.d/{name.replace('-', '_')}.txt",
                  data=man.encode())
         _finish(z, records, distinfo, name, ver, spec["summary"], tag, spec["purelib"])
     print("      (%d symlinks recorded for shim restore)" % len(symlinks)) if symlinks else None
