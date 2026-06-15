@@ -194,10 +194,14 @@ def _extract_payloads():
         shutil.rmtree(bundle, ignore_errors=True)
     for t in tars:
         with tarfile.open(t, "r") as tf:
+            # fully_trusted: this is OUR OWN bundle. The 'data' filter rejects the
+            # bundle's legitimate absolute symlinks (e.g. bin/os-python) with
+            # AbsoluteLinkError; 'fully_trusted' preserves the pre-3.12 permissive
+            # behavior (allow absolute/.. symlinks + all modes).
             try:
-                tf.extractall(root, filter="data")   # py3.12+: silences the extraction-filter warning
+                tf.extractall(root, filter="fully_trusted")   # py3.12+
             except TypeError:
-                tf.extractall(root)                  # py<3.12 (no filter kwarg)
+                tf.extractall(root)                           # py<3.12 (no filter kwarg)
     try:
         stamp.write_text(sig)
     except OSError:
