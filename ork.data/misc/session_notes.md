@@ -727,7 +727,7 @@ OrkAssertI(fence != nullptr, "_frameFences must be populated in _buildup() befor
 ### I/O Preferences
 
 - **Real I/O**: Use stdio, POSIX, boost::filesystem
-- **No abstractions**: Avoid FileEnv wrapper until it is refactored.
+- **FileEnv**: Use the FileEnv abstraction for engine file access — it is the current, supported path. A FileEnv refactor is planned but deferred; keep using it as-is until then. (Raw stdio/POSIX/boost::filesystem below remain fine for direct, low-level I/O.)
 - **Direct operations**: `fopen`, `fread`, `fwrite` for C-style
 - **Boost for paths**: `boost::filesystem` for path manipulation
 

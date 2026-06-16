@@ -741,6 +741,28 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
   type_codec->registerStdCodec<vroutnode_ptr_t>(vroutnode_type);
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
+  using dualmonovroutnode_ptr_t = std::shared_ptr<DualMonoVrOutputNode>;
+  auto dmvroutnode_type         = //
+      py::class_<DualMonoVrOutputNode, OutputCompositingNode, dualmonovroutnode_ptr_t>(module_lev2, "DualMonoVrOutputNode")
+          .def(
+              "createExternalViewer",
+              [](dualmonovroutnode_ptr_t self, orkezapp_ptr_t app, const EzSecondaryWinConfig& cfg, bool mono) -> ezsecondarywin_ptr_t {
+                return self->createExternalViewer(app, cfg, mono);
+              },
+              py::arg("app"),
+              py::arg("cfg"),
+              py::arg("mono") = true)
+          .def("closeExternalViewer", [](dualmonovroutnode_ptr_t self) { //
+            self->closeExternalViewer();
+          })
+          .def("__repr__", [](dualmonovroutnode_ptr_t n) -> std::string {
+            fxstring<64> fxs;
+            fxs.format("DualMonoVrOutputNode(%p)", n.get());
+            return fxs.c_str();
+          });
+  type_codec->registerStdCodec<dualmonovroutnode_ptr_t>(dmvroutnode_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
   auto rtgoutnode_type = //
       py::class_<RtGroupOutputCompositingNode, OutputCompositingNode, compositoroutnode_rtgroup_ptr_t>(
           module_lev2, "RtGroupOutputCompositingNode")

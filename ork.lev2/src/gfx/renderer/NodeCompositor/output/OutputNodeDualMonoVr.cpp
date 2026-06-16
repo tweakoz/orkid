@@ -217,7 +217,8 @@ struct DMVRIMPL {
   std::shared_ptr<StereoCameraMatrices> _stereomatrices;
   std::shared_ptr<CameraMatrices> _tmpcameramatrices;
 
-  DualMonoVrOutputNode* _vrnode = nullptr;
+  DualMonoVrOutputNode* _vrnode                               = nullptr;
+  const orkidvr::StandardVrPresentation* _installedPresentation = nullptr;
   CompositingPassData _CPD;
   fmtx4 _viewOffsetMatrix;
   bool _doinit  = true;
@@ -455,6 +456,19 @@ compdrawdata_fn_t DualMonoVrOutputNode::createAssembler(nodecompositortechnique_
 void DualMonoVrOutputNode::composite(CompositorDrawData& drawdata) {
   drawdata.context()->debugPushGroup("DualMonoVrOutputNode::composite");
   auto impl = _impl.get<DMVRIMPL_ptr_t>();
+  /////////////////////////////////////////////////////////////////////////////
+  // adopt the device's standard VR presentation (host-configured, C++-executed).
+  //  install / refresh the per-eye distortion pass when it changes; a null
+  //  presentation falls back to the fixed blit below.
+  /////////////////////////////////////////////////////////////////////////////
+  {
+    auto pres     = orkidvr::device()->_presentation;
+    auto pres_raw = pres.get();
+    if (pres_raw != impl->_installedPresentation) {
+      _distortion_lambda           = pres_raw ? pres_raw->genLambda() : distortion_lambda_t();
+      impl->_installedPresentation = pres_raw;
+    }
+  }
   /////////////////////////////////////////////////////////////////////////////
   // DMVR compositor
   /////////////////////////////////////////////////////////////////////////////

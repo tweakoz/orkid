@@ -10,6 +10,7 @@
 #include "NodeCompositor.h"
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/ez_secondary_win.h>
+#include <ork/lev2/vr/vr.h> // DistortionRect, distortion_lambda_t
 
 namespace ork::lev2 {
 
@@ -17,14 +18,6 @@ namespace ork::lev2 {
 /// VrOutputNode : OutputCompositingNode responsible for output to a VR device
 ///   implies stereo rendering..
 ///////////////////////////////////////////////////////////////////////////////
-
-struct DistortionRect {
-  Texture* _inp_tex;
-  SRect _out_vprect;
-  char _eye = 0; //'L' or 'R'
-};
-
-using distortion_lambda_t = std::function<void(rcfd_ptr_t RCFD,DistortionRect drect)>;
 
 class VrOutputNode final : public OutputCompositingNode {
   DeclareConcreteX(VrOutputNode, OutputCompositingNode);

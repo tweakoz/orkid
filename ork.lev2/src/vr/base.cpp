@@ -98,8 +98,62 @@ void Device::resetCalibration(){
 
 ////////////////////////////////////////////////////////////////////////////////
 
+void Device::setTrackedPose(const fvec3& pos, const fquat& orient, const fvec3& linvel, const fvec3& angvel) {
+  _trackedPos         = pos;
+  _trackedQuat        = orient;
+  _trackedLinVel      = linvel;
+  _trackedAngVel      = angvel;
+  _trackedCaptureTick = Timer::getSystemTick();   // age the pose from here
+  _trackedPoseValid   = true;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void Device::_predictHmdPose() {
+
+  ////////////////////////////////////////
+  // lead = scan-out prediction (adaptive) + host bias
+  ////////////////////////////////////////
+
+  float t = _predictionBias;
+  if (_scan_out_predictor && _trackedCaptureTick > 0) {
+    u64 scanout = _scan_out_predictor->predictNextTargetSystemTick();
+    if (scanout > _trackedCaptureTick)               // lead = predicted scan-out - pose age
+      t += float(double(scanout - _trackedCaptureTick) * 1e-9);
+  }
+
+  ////////////////////////////////////////
+  // extrapolate the tracked pose by its kinematics
+  ////////////////////////////////////////
+
+  fvec3 pos  = _trackedPos + _trackedLinVel * t;
+  fquat q    = _trackedQuat;
+  float wmag = _trackedAngVel.magnitude();
+  if (wmag > 1e-6f) {
+    fvec3 axis = _trackedAngVel * (1.0f / wmag);
+    fquat dq;
+    dq.fromAxisAngle(fvec4(axis, wmag * t));
+    q = dq * q;                 // world-frame angular velocity => left-multiply
+    q.normalizeInPlace();
+  }
+
+  ////////////////////////////////////////
+  // build the view matrix (optional conjugate, then inverse)
+  ////////////////////////////////////////
+
+  fquat quse = _poseConjugate ? q.conjugate() : q;
+  fmtx4 world;
+  world.compose(pos, quse, 1.0f);
+  std::lock_guard<std::mutex> lock(_posemap_mutex);
+  _posemap["hmd"] = world.inverse();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 void Device::_updatePosesCommon() {
   EASY_BLOCK("vr-upc");
+  if (_trackedPoseValid)
+    _predictHmdPose();   // extrapolate host pose to scan-out + bias, write _posemap["hmd"]
   fmtx4 hmd, eyeL, eyeR;
   {
     // _posemap written from pose processor thread; lock on read to avoid data race
@@ -207,6 +261,16 @@ void Device::_updatePosesCommon() {
 
   fmtx4 lmv = fmtx4::multiply_ltor(cmv,eyeL);
   fmtx4 rmv = fmtx4::multiply_ltor(cmv,eyeR);
+
+  ////////////////////////////////////////
+  // per-eye view adjust (canting / toe-in) from the host presentation, if set.
+  //  applied in eye-view space; identity by default (no canting).
+  ////////////////////////////////////////
+
+  if (_presentation) {
+    lmv = fmtx4::multiply_ltor(lmv, _presentation->_eyeViewTransform[0]);
+    rmv = fmtx4::multiply_ltor(rmv, _presentation->_eyeViewTransform[1]);
+  }
 
   _hmdinputgroup->setChannel("leye.matrix").as<fmtx4>(lmv);
   _hmdinputgroup->setChannel("ceye.matrix").as<fmtx4>(cmv);

@@ -1,13 +1,18 @@
 #!/usr/bin/env ork.python
 
 ################################################################################
-# lev2 sample which renders a scenegraph, optionally in VR mode
+# lev2 sample which renders a scenegraph in VR (stereo) mode.
 # Copyright 1996-2023, Michael T. Mayers.
 # Distributed under the MIT License
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
+# Subsystem-startup/shutdown lifecycle via ComponentizedApplication (the
+# HFSM-driven path; the legacy ad-hoc inline init is deprecated). Lifecycle
+# hooks are the underscore-prefixed template methods (_onGpuInit / _onUpdate /
+# _onUiEvent / _onGpuExit); teardown runs automatically at mainThreadLoop() end.
+################################################################################
 
-import math, random, argparse, sys, signal
+import math, argparse
 from orkengine.core import *
 from orkengine.lev2 import *
 
@@ -19,61 +24,51 @@ from lev2utils.shaders import *
 from lev2utils.misc import *
 from lev2utils.primitives import createGridData
 from lev2utils.scenegraph import createSceneGraph
+from ork.app.application import ComponentizedApplication
 
 ################################################################################
 
 parser = argparse.ArgumentParser(description='scenegraph example')
 parser.add_argument("--variant", type=int, default=0, help='grid shader variant (1-3)')
-################################################################################
-
 args = vars(parser.parse_args())
 variant = args["variant"]
+
 ################################################################################
 
-class StereoApp1(object):
+class StereoApp1(ComponentizedApplication):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,fullscreen=False,ssaa=2)
-    self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     self.cameralut = CameraDataLut()
-
-    setupUiCamera(app=self,eye=vec3(0,12,15))
-
-    def onCtrlC(signum, frame):
-      print("signalling EXIT to ezapp")
-      self.ezapp.signalExit()
-
-    signal.signal(signal.SIGINT, onCtrlC)
+    self.ezapp_args = { "fullscreen": False, "ssaa": 2 }
+    self.createEzApp()                                   # subsystem-based by default
+    setupUiCamera(app=self, eye=vec3(0, 12, 15))
 
   ##############################################
 
-  def onGpuInit(self,ctx):
+  def _onGpuInit(self, ctx):
 
     self.vrdev = orkidvr.novr_device()
     self.vrdev.camera = "vrcam"
     self.vrdev.width = 1280
     self.vrdev.height = 1280
     self.IVP = mtx4()
-    
+
     vars = VarMap()
     vars.SkyboxIntensity = float(1.5)
     vars.DiffuseIntensity = float(1)
     vars.SkyboxTexPathStr = "nebula"
-    #vars.enable_skybox = False
-    #vars.clearcolor = vec3(1,1,1)
-    
-    createSceneGraph(app=self,rendermodel="FWDPBRVRDM",vars=vars)    
-    onode = self.outputnode # created by createSceneGraph
+
+    createSceneGraph(app=self, rendermodel="FWDPBRVRDM", vars=vars)
+    onode = self.outputnode  # created by createSceneGraph
     def onCameraChange(cdd):
       eyeindex = cdd.rendererProperty(tokens.eyeindex)
       viewdata = cdd.viewdata
-      self.IVP = viewdata.IVPM # mono IVP
-      #print(f"eyeindex: {eyeindex} IVP {self.IVP}")
+      self.IVP = viewdata.IVPM  # mono IVP
     onode.onCameraChange(lambda cdd: onCameraChange(cdd))
     onode.flipY = True
-    
+
     ###################################
 
     self.grid_data = createGridData()
@@ -85,53 +80,58 @@ class StereoApp1(object):
       self.grid_data.shader_suffix = "_V3"
     elif variant == 4:
       self.grid_data.shader_suffix = "_V4"
-    self.grid_node = self.layer1.createDrawableNodeFromData("grid",self.grid_data)
+    self.grid_node = self.layer1.createDrawableNodeFromData("grid", self.grid_data)
     self.grid_node.sortkey = 1
     self.scene.lightingmanager.gpuInit(ctx)
 
   ##############################################
 
-  def onUiEvent(self,uievent):
+  def _onUiEvent(self, uievent):
     handled = self.uicam.uiEventHandler(uievent)
     if handled:
-      self.camera.copyFrom( self.uicam.cameradata )
-    return lev2.ui.HandlerResult()
+      self.camera.copyFrom(self.uicam.cameradata)
+    return ui.HandlerResult()
 
   ################################################
 
-  def onUpdate(self,updinfo):
+  def _onUpdate(self, updinfo):
+
+    if self._shutting_down:
+      return
 
     abstime = updinfo.absolutetime
-    
+
     ########################################
-    # stereo viewing setup  
+    # stereo viewing setup
     ########################################
 
-    # projection matrix
     self.vrdev.FOVD = 90    # degrees
-    self.vrdev.IPD = 0.065 # meters
-    self.vrdev.near = 0.1  # meters
-    self.vrdev.far = 1e5   # meters
+    self.vrdev.IPD = 0.065  # meters
+    self.vrdev.near = 0.1   # meters
+    self.vrdev.far = 1e5    # meters
 
-    x = math.sin(abstime*0.125)
-    z = -math.cos(abstime*0.125)
+    x = math.sin(abstime * 0.125)
+    z = -math.cos(abstime * 0.125)
 
-    xf_hmd = mtx4.lookAt( vec3(x,0.1,z)*-5,   # eye
-                          vec3(0,0,0),        # tgt
-                          vec3(0,1,0))        # up
+    xf_hmd = mtx4.lookAt(vec3(x, 0.1, z) * -5,   # eye
+                         vec3(0, 0, 0),          # tgt
+                         vec3(0, 1, 0))          # up
 
-    self.vrdev.setPoseMatrix("hmd",xf_hmd)
-    
+    self.vrdev.setPoseMatrix("hmd", xf_hmd)
+
     ########################################
 
-    self.scene.updateScene(self.cameralut) 
-    
+    self.scene.updateScene(self.cameralut)
+
+  ################################################
+  # GPU exit — drop references in a defined order so scene resources
+  # tear down before lev2 shuts down the context.
   ################################################
 
-  def onGpuUpdate(self,ctx):
-    # just need a mainthread python callback
-    # so python can process ctrl-c signals...
-    pass 
+  def _onGpuExit(self, ctx):
+    self.grid_node = None
+    self.grid_data = None
+    self.scene = None
 
 ###############################################################################
 
