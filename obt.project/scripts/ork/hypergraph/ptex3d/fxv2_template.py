@@ -414,6 +414,24 @@ def _ssbo_block(ssbo_layout, ssbo_lib, ssbo_vs_body, ssbo_compute, ssbo_vs_inher
     "%s") % (layout, extra_blocks, lib_block, vtx_outputs, inh, body, vs_tail, post, dpp_block, inst_block, compute_block)
 
 
+# unlit/blend support: the FS "shade" block (lit lighting vs unlit emissive) + the rasterstate
+# tokens are parameterized so surface_mode + blend select the output. `%s` = the alpha expr
+# (s.opacity when blending, else 1.0). lit-opaque defaults keep the generated FS byte-identical.
+_LIT_SHADE = (
+  "  vec3 ambrufmtl = vec3(s.ao, _rough, s.metallic);   // ambrufmtl.x = AO -> _forward_lightingZ threads it to ambient/diffuse IBL (matAO)\n"
+  "  ShadingResult sr = _forward_lightingZ(\n"
+  "    ModColor.xyz, s.albedo, ambrufmtl, s.emissive, EyePostion, s.normal, false);\n"
+  "  out_clr     = vec4(sr.specular + sr.diffuse, %s);\n"
+  "  out_diffuse = vec4(sr.diffuse, 0.0);")
+_UNLIT_SHADE = (
+  "  out_clr     = vec4(s.emissive, %s);   // unlit: emissive color straight out, no lighting\n"
+  "  out_diffuse = vec4(0.0);")
+_BLEND_TOK = {"off": "OFF", "alpha": "ALPHA", "additive": "ADDITIVE", "alpha_additive": "ALPHA_ADDITIVE"}
+_DTEST_TOK = {"off": "OFF", "less": "LESS", "leq": "LEQUALS", "lequals": "LEQUALS",
+              "greater": "GREATER", "always": "ALWAYS"}
+_CULL_TOK  = {"off": "OFF", "none": "OFF", "front": "PASS_FRONT", "back": "PASS_BACK"}
+
+
 def generate_surface_fxv2(surface_body,
                           *,
                           libblock="",
@@ -440,7 +458,12 @@ def generate_surface_fxv2(surface_body,
                           ssbo_instanced=False,
                           surf_storage="",
                           surf_storage_inherits=(),
-                          surf_body_append=""):
+                          surf_body_append="",
+                          surface_mode="lit",
+                          blend="off",
+                          depth_test="leq",
+                          depth_write=True,
+                          cull="front"):
   """Assemble a complete forward-PBR .fxv2 around a GLSL surface body.
 
   surf_storage          : optional storage_interface decl(s) the FRAGMENT surface reads (e.g. a
@@ -473,7 +496,7 @@ def generate_surface_fxv2(surface_body,
   # the surface libblock inherits its needed noise/util libblocks
   surf_inherits = "".join(" : %s" % n for n in lib_inherits)
   out_struct = (
-    "  struct SurfaceOut { vec3 albedo; float metallic; float roughness; vec3 normal; vec3 emissive; float ao; };\n"
+    "  struct SurfaceOut { vec3 albedo; float metallic; float roughness; vec3 normal; vec3 emissive; float ao; float opacity; };\n"
     "  struct ptex_voro_t { float f1; float edge; float fwedge; float cellA; float cellB; };")
   params_block, params_inherit = _params_block(params)
   samplers_block, samplers_inherit = _samplers_block(samplers)
@@ -506,7 +529,19 @@ def generate_surface_fxv2(surface_body,
                             ssbo_extra_blocks=ssbo_extra_blocks, ssbo_vs_post=ssbo_vs_post,
                             ssbo_instanced=ssbo_instanced)
 
+  # unlit/blend: pick the FS shade body (lit lighting vs unlit emissive) + the rasterstate tokens.
+  _alpha       = "s.opacity" if str(blend) != "off" else "1.0"
+  fs_shade     = (_LIT_SHADE if surface_mode == "lit" else _UNLIT_SHADE) % _alpha
+  st_blend     = _BLEND_TOK[blend]
+  st_depthtest = _DTEST_TOK[depth_test]
+  st_cull      = _CULL_TOK[cull]
+  st_depthmask = "ON" if depth_write else "OFF"
   return _TEMPLATE.format(
+    fs_shade=fs_shade,
+    st_blend=st_blend,
+    st_depthtest=st_depthtest,
+    st_cull=st_cull,
+    st_depthmask=st_depthmask,
     import_lines=import_lines,
     surf_inherits=surf_inherits,
     out_struct=out_struct,
@@ -557,6 +592,11 @@ def materialize_surface_fxv2(surface_body,
                              surf_storage="",
                              surf_storage_inherits=(),
                              surf_body_append="",
+                             surface_mode="lit",
+                             blend="off",
+                             depth_test="leq",
+                             depth_write=True,
+                             cull="front",
                              name_hint="ptex"):
   """Generate + write the .fxv2 to <staging>/dslshadercache/ptex3d/<hint>_<hash>.fxv2.
 
@@ -591,7 +631,12 @@ def materialize_surface_fxv2(surface_body,
                                ssbo_instanced=ssbo_instanced,
                                surf_storage=surf_storage,
                                surf_storage_inherits=surf_storage_inherits,
-                               surf_body_append=surf_body_append)
+                               surf_body_append=surf_body_append,
+                               surface_mode=surface_mode,
+                               blend=blend,
+                               depth_test=depth_test,
+                               depth_write=depth_write,
+                               cull=cull)
   digest = hashlib.sha1((CODEGEN_VERSION + "\n" + text).encode("utf-8")).hexdigest()[:16]
   fname  = "%s_%s.fxv2" % (name_hint, digest)
   return dslcache_write("ptex3d", fname, text)
@@ -619,9 +664,10 @@ fxconfig fxcfg_default {{
 }}
 ///////////////////////////////////////////////////////////////
 state_block sb_ptex : default {{
-  CullTest  = PASS_FRONT;
-  DepthTest = LEQUALS;
-  BlendMode = OFF;
+  CullTest  = {st_cull};
+  DepthTest = {st_depthtest};
+  DepthMask = {st_depthmask};
+  BlendMode = {st_blend};
 }}
 ///////////////////////////////////////////////////////////////
 vertex_interface vif_ptex : ub_std_vtx {{
@@ -668,6 +714,7 @@ libblock lib_ptex_surface : types_ptex{params_inherit}{samplers_inherit}{surf_in
     o.normal   = wnrm;
     o.emissive = vec3(0.0);
     o.ao       = 1.0;
+    o.opacity  = 1.0;
 {surface_body}
     return o;
   }}
@@ -704,11 +751,7 @@ fragment_shader ps_ptex_forward
     float _a2  = _rough * _rough;                              // -> alpha domain
     _rough = sqrt(sqrt(clamp(_a2 * _a2 + _ker, 0.0, 1.0)));    // back to perceptual
   }}
-  vec3 ambrufmtl = vec3(s.ao, _rough, s.metallic);   // ambrufmtl.x = AO -> _forward_lightingZ threads it to ambient/diffuse IBL (matAO)
-  ShadingResult sr = _forward_lightingZ(
-    ModColor.xyz, s.albedo, ambrufmtl, s.emissive, EyePostion, s.normal, false);
-  out_clr     = vec4(sr.specular + sr.diffuse, 1.0);
-  out_diffuse = vec4(sr.diffuse, 0.0);
+{fs_shade}
 }}
 ///////////////////////////////////////////////////////////////
 // Depth prepass (geometry-only)

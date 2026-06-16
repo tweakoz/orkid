@@ -639,6 +639,32 @@ class Hypermesh:
     self.graphdata.connect(m.inputs.In, src.outputs.Out)
     return m
 
+  # ---- GENERIC per-vertex GPU compute: run an arbitrary fxv2 compute kernel (shadertext) over the
+  #      input mesh's vertices. The kernel binds iP@0 (input POSITION), oP@1 (produced POSITION),
+  #      EXPRP@2 (8 vec4 runtime params), control@3 ({uint p_nv; uint p_mode; ...}). Topology + every
+  #      OTHER channel pass through; only POSITION is produced (chain smooth_normals to refresh shading).
+  #      New per-vertex behaviors (ripple/twist/bend/noise-displace) are authored as shader TEXT here —
+  #      NO new C++ (the GpuCompute counterpart of terrain's ExprModule). `params` = up to 8 (x,y,z,w)
+  #      tuples seeded into the exprp plugs (poke m.set_expr_param4(slot,x,y,z,w) to animate live);
+  #      `time_slot` >= 0 = the EXPRP slot the module feeds from the C++ clock (abstime/dt -> .x/.y). ----
+  def gpu_compute(self, src, shadertext, kernel="cs_main", params=None, time_slot=None):
+    m = _lev2.hypermesh.GpuCompute.createShared()
+    m.shadertext = str(shadertext)
+    m.kernel     = str(kernel)
+    if time_slot is not None:
+      m.time_slot = int(time_slot)
+    if params:
+      if len(params) > 8:
+        raise ValueError("gpu_compute: at most 8 vec4 runtime params (got %d)" % len(params))
+      flat = []
+      for p in params:
+        p = list(p) + [0.0] * (4 - len(p))
+        flat += [float(p[0]), float(p[1]), float(p[2]), float(p[3])]
+      m.set_expr_params(flat)
+    self._add(m, "gpu_compute")
+    self.graphdata.connect(m.inputs.In, src.outputs.Out)
+    return m
+
   # ---- E.1 CROSS-FAMILY: displace vertex positions by a TERRAIN FIELD authored in the SAME graph.
   #      `field` is a TerrainNode — the output of T.* ops / TerrainNode algebra called while this
   #      Hypermesh is composing (its trace context routes them into this graph):

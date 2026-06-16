@@ -421,6 +421,30 @@ vec4 _ptex_spherecells(vec3 p, float n) {   // .x=id hash, .y=F2-F1 gap (~0 at s
 ###############################################################################
 
 class _Ops:
+  # ---- external extension hook (ork.hypergraph.registry) ----
+  # Any op name NOT defined natively below falls back to the shared DSL op registry, so external
+  # packages (e.g. orkflow) can add ptex3d surface ops via `@op("ptex3d","name")` and call them as
+  # P.<name>(...) with NO edit to this class. Native methods always win (this runs only when normal
+  # attribute lookup misses). Dunders are never intercepted (pickling/copy probe them).
+  def __getattr__(self, name):
+    if name.startswith("__"):
+      raise AttributeError(name)
+    from ork.hypergraph.registry import get_op
+    fn = get_op("ptex3d", name)
+    if fn is None:
+      raise AttributeError(
+          f"ptex3d DSL has no op '{name}' — define it natively, or register it from any package: "
+          f"`from ork.hypergraph.registry import op; @op('ptex3d','{name}')`")
+    return fn
+
+  def register(self, name, fn=None):
+    """Register a ptex3d surface op -> callable as P.<name>(...). Decorator or direct:
+       P.register('marble')(fn)   |   P.register('marble', fn)."""
+    from ork.hypergraph.registry import register_op
+    if fn is None:
+      return lambda f: register_op("ptex3d", name, f)
+    return register_op("ptex3d", name, fn)
+
   # constructors / colors
   def vec2(self, *a): return self._vec(2, a)
   def vec3(self, *a): return self._vec(3, a)
@@ -590,7 +614,7 @@ class SurfaceCtx:
 ###############################################################################
 
 _FIELD_TYPE = {"albedo": "vec3", "normal": "vec3", "emissive": "vec3",
-               "metallic": "float", "roughness": "float", "ao": "float"}
+               "metallic": "float", "roughness": "float", "ao": "float", "opacity": "float"}
 
 
 # short aliases -> canonical glTF lobe field names (accepted in surface(**lobes)
@@ -760,18 +784,23 @@ class Ptex3d:
     return Ptex3d._cracked_mud_fields(ctx, **kw)["albedo"]
 
   def surface(self, *, albedo=None, metallic=None, roughness=None,
-              normal=None, emissive=None, ao=None, **lobes):
-    """The 6 TEXTURED channels (albedo/metallic/roughness/normal/emissive/ao) take
-    per-pixel SurfNode expressions. Any extra kwargs are glTF PBR LOBES
-    (transmission/ior/clearcoat/sheen/subsurface/...) — material-level uniforms, so
-    they must be CONSTANTS, not expressions. They flow to the underlying
-    PbrMaterialGenData; a per-instance Ptex3d(...) kwarg overrides the class value."""
+              normal=None, emissive=None, ao=None, opacity=None,
+              blend="off", depth_test="leq", depth_write=True, cull="front", **lobes):
+    """LIT PBR surface. The TEXTURED channels (albedo/metallic/roughness/normal/emissive/ao + the
+    optional per-pixel `opacity`) take SurfNode expressions. Extra kwargs are glTF PBR LOBES
+    (transmission/ior/clearcoat/sheen/subsurface/...) — material-level CONSTANT uniforms.
+    Rasterstate (default = opaque, byte-identical to before): `blend` off/alpha/additive,
+    `depth_test` leq/less/always/off, `depth_write`, `cull` front/back/off. Set blend!="off" +
+    `opacity=` for TRANSPARENT lit PBR (e.g. RELIGHTABLE gaussians: per-splat BRDF + gaussian
+    alpha). For an UNLIT emissive surface (standard 3DGS / skybox / FX), use self.unlit(...)."""
     chans = {}
     for name, val in (("albedo", albedo), ("metallic", metallic), ("roughness", roughness),
-                      ("normal", normal), ("emissive", emissive), ("ao", ao)):
+                      ("normal", normal), ("emissive", emissive), ("ao", ao), ("opacity", opacity)):
       if val is not None:
         chans[name] = _wrap(val)
     self._channels = chans
+    self._surface_mode = "lit"
+    self._raster = dict(blend=blend, depth_test=depth_test, depth_write=depth_write, cull=cull)
     if lobes:
       norm = dict(getattr(self, "_lobes", {}))
       for k, v in lobes.items():
@@ -784,6 +813,20 @@ class Ptex3d:
           k = LOBE_ALIASES.get(k, k)
         norm[k] = v
       self._lobes = norm
+
+  def unlit(self, color, opacity=1.0, *, blend="alpha", depth_test="leq", depth_write=False, cull="off"):
+    """UNLIT emissive surface: out_clr = (color, opacity), NO scene lighting. For standard 3DGS
+    splats (radiance baked into the color), skyboxes, FX overlays, emissive UI. `color` (vec3) and
+    `opacity` (float) are SurfNode expressions or constants. Rasterstate defaults to TRANSPARENT
+    (alpha blend, depth-test-on, depth-WRITE-off, no cull) — unlit's common use; override via
+    blend/depth_test/depth_write/cull. (LIT PBR + alpha — e.g. RELIGHTABLE gaussians, which carry
+    a per-splat BRDF — uses surface(..., blend="alpha", opacity=...) instead.)"""
+    chans = {"emissive": _wrap(color)}
+    if opacity is not None:
+      chans["opacity"] = _wrap(opacity)
+    self._channels = chans
+    self._surface_mode = "unlit"
+    self._raster = dict(blend=blend, depth_test=depth_test, depth_write=depth_write, cull=cull)
 
   def fragment_storage(self, storage_decl, *, inherits=(), append=""):
     """Declare a FRAGMENT-side storage_interface the surface reads + raw GLSL appended AFTER the DSL
@@ -1080,9 +1123,14 @@ def _build_ptex3d(dsl_class, name_hint=None, vertex_source=None, **params):
   # Owner policy (2026-06-12): generated shaders live in the per-family staging
   # cache (<staging>/dslshadercache/ptex3d), referenced by the relocatable
   # <staging> token — never persisted in the source tree (B.5c .shaders/ RETIRED).
+  # unlit/blend: the sink (surface()/unlit()) records the FS mode + the rasterstate; thread them
+  # to the codegen. Defaults (lit / opaque) keep every existing material byte-identical.
+  _mode   = getattr(inst, "_surface_mode", "lit")
+  _raster = getattr(inst, "_raster", {})
   path = materialize_surface_fxv2(body, libblock=libblock, lib_inherits=inherits,
                                   extra_imports=imports, params=pspecs, samplers=samplers,
                                   name_hint=name_hint or dsl_class.__name__.lower(),
+                                  surface_mode=_mode, **_raster,
                                   **height_kwargs, **vskw, **matkw)
   lobes = dict(getattr(inst, "_lobes", None) or {})   # class-declared PBR lobes
   return path, pspecs, lobes

@@ -118,6 +118,36 @@ void pyinit_gfx_hypermesh(py::module& module_lev2) {
       })
       .def_readwrite("time_slot", &hm::ExtrudeFacesData::_time_slot)  // S.time bridge: EXPRP slot fed by the C++ clock
       .def("set_masks", [](hm::extrudefacesdata_ptr_t e, std::vector<uint32_t> m) { e->_part_masks = m; });
+  // GENERIC per-vertex GPU compute: an arbitrary fxv2 compute kernel (shadertext) authored from the DSL,
+  // run per input vertex (iP -> oP), with 8 vec4 runtime param plugs + the S.time bridge. No new C++ per op.
+  py::class_<hm::GpuComputeModuleData, dflow::DgModuleData, hm::gpucomputemoduledata_ptr_t>(hmmod, "GpuCompute")
+      .def_static("createShared", []() -> hm::gpucomputemoduledata_ptr_t { return hm::GpuComputeModuleData::createShared(); })
+      // the authored fxv2 compute kernel TEXT + its entry-point — the portable, reflected op identity.
+      .def_property("shadertext", [](hm::gpucomputemoduledata_ptr_t d) { return d->_shadertext; },
+                                  [](hm::gpucomputemoduledata_ptr_t d, std::string s) { d->_shadertext = s; })
+      .def_property("kernel",     [](hm::gpucomputemoduledata_ptr_t d) { return d->_kernel; },
+                                  [](hm::gpucomputemoduledata_ptr_t d, std::string s) { d->_kernel = s; })
+      .def_readwrite("dispatch_mode", &hm::GpuComputeModuleData::_dispatch_mode)
+      .def_readwrite("time_slot",     &hm::GpuComputeModuleData::_time_slot)  // S.time bridge: EXPRP slot fed by the C++ clock
+      // B.4: the 8 vec4 runtime params are REAL input plugs ("exprp{slot}") — these write PLUG VALUES
+      // (serialized with the asset; snapshotted by writeParams). set_expr_params seeds the array; param4 pokes one.
+      .def("set_expr_params", [](hm::gpucomputemoduledata_ptr_t d, std::vector<float> v) {
+        int nslots = std::min<int>(hm::kMaxExprParams, int(v.size() / 4));
+        for (int k = 0; k < nslots; k++) {
+          auto plg = std::dynamic_pointer_cast<dflow::inplugdata<dflow::Vec4fPlugTraits>>(
+              d->inputNamed(FormatString("exprp%d", k)));
+          if (plg)
+            plg->setValue(fvec4(v[k * 4 + 0], v[k * 4 + 1], v[k * 4 + 2], v[k * 4 + 3]));
+        }
+      })
+      .def("set_expr_param4", [](hm::gpucomputemoduledata_ptr_t d, int slot, float x, float y, float z, float w) {
+        if (slot < 0 or slot >= hm::kMaxExprParams)
+          return;
+        auto plg = std::dynamic_pointer_cast<dflow::inplugdata<dflow::Vec4fPlugTraits>>(
+            d->inputNamed(FormatString("exprp%d", slot)));
+        if (plg)
+          plg->setValue(fvec4(x, y, z, w));
+      });
   py::class_<hm::InsetData, dflow::DgModuleData, hm::insetdata_ptr_t>(hmmod, "Inset")  // face -> collar + inner poly
       .def_static("createShared", []() -> hm::insetdata_ptr_t { return hm::InsetData::createShared(); })
       .def_readwrite("slot", &hm::InsetData::_slot)

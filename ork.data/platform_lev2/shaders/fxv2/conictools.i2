@@ -1,0 +1,51 @@
+///////////////////////////////////////////////////////////////
+// conictools.i2 — generic screen-space conic / 2D-gaussian math.
+//
+//  Project a 3D covariance to a 2D screen ellipse (EWA resampling / Zwicker
+//  perspective Jacobian), eigen-decompose a symmetric 2x2, evaluate a 2D gaussian,
+//  build a rotation from a quaternion. This is generic point/ellipse projection +
+//  image-resampling math — useful for anisotropic point sprites, AO/bokeh disks,
+//  elliptical-gaussian renderers, etc. It is NOT specific to any one renderer.
+//
+//  Use: a shader inherits the libblock — e.g.  vertex_shader vs_x : iface : lib_conic
+//  then calls conic_project_cov2d(...) / conic_eigen2x2(...) / conic_gaussian2d(...).
+///////////////////////////////////////////////////////////////
+libblock lib_conic {
+
+  // quaternion -> 3x3 rotation matrix. q = (x,y,z,w) with .w the scalar part.
+  mat3 conic_quat_to_mat3(vec4 q) {
+    float x = q.x, y = q.y, z = q.z, w = q.w;
+    return mat3(
+      1.0 - 2.0 * (y * y + z * z), 2.0 * (x * y + w * z),       2.0 * (x * z - w * y),         // col 0
+      2.0 * (x * y - w * z),       1.0 - 2.0 * (x * x + z * z), 2.0 * (y * z + w * x),         // col 1
+      2.0 * (x * z + w * y),       2.0 * (y * z - w * x),       1.0 - 2.0 * (x * x + y * y));  // col 2
+  }
+
+  // 3x3 symmetric covariance -> 2x2 screen conic, returned as (a, b, c) of [a b; b c],
+  // via the perspective-projection Jacobian (EWA splatting, Zwicker et al.).
+  //   cov3  : world/object-space 3x3 covariance (symmetric)
+  //   cam   : view-space position of the center
+  //   Rinv  : transpose of the view rotation (camera -> world), i.e. transpose(mat3(view))
+  //   focal : (0.5 * viewport.x * P[0][0], 0.5 * viewport.y * P[1][1])
+  vec3 conic_project_cov2d(mat3 cov3, vec3 cam, mat3 Rinv, vec2 focal) {
+    float iz2 = 1.0 / (cam.z * cam.z);
+    vec3 j0 = (focal.x / cam.z) * Rinv[0] - (focal.x * cam.x * iz2) * Rinv[2];
+    vec3 j1 = (focal.y / cam.z) * Rinv[1] - (focal.y * cam.y * iz2) * Rinv[2];
+    return vec3(dot(j0, cov3 * j0), dot(j0, cov3 * j1), dot(j1, cov3 * j1));
+  }
+
+  // eigen-decompose a symmetric 2x2 [a b; b c] (abc = (a, b, c)).
+  //   returns (lambda1, lambda2, major_axis_dir.x, major_axis_dir.y), lambda1 >= lambda2.
+  vec4 conic_eigen2x2(vec3 abc) {
+    float a = abc.x, b = abc.y, c = abc.z;
+    float mid = 0.5 * (a + c);
+    float rad = length(vec2(0.5 * (a - c), b));
+    float l1 = mid + rad, l2 = mid - rad;
+    return vec4(l1, l2, normalize(vec2(b, l1 - a)));
+  }
+
+  // 2D gaussian weight. d = offset in unit-ellipse space, k = sharpness.
+  float conic_gaussian2d(vec2 d, float k) {
+    return exp2(-0.7213475205 * k * dot(d, d));
+  }
+}

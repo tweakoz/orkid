@@ -425,6 +425,7 @@ struct ClassToucher {
     hypermesh::GidAssignData::GetClassStatic();
     hypermesh::MaterialParamSinkData::GetClassStatic(); // E.6/2.12: material UBO param by name
     hypermesh::ScatterSourceData::GetClassStatic(); // E.2: the typed instance edge source
+    hypermesh::GpuComputeModuleData::GetClassStatic(); // generic per-vertex GPU compute (shader-text deformer, no new C++)
     hypermesh::mesh_outplugdata_t::GetClassStatic();
     hypermesh::mesh_inplugdata_t::GetClassStatic();
     dflowgfx::instset_outplugdata_t::GetClassStatic(); // E.2: InstanceSet interchange plugs

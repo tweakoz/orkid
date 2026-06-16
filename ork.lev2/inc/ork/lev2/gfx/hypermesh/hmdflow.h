@@ -648,6 +648,33 @@ struct DisplaceBySdfData : public MeshModuleData {
 using displacebysdfdata_ptr_t = std::shared_ptr<DisplaceBySdfData>;
 
 ///////////////////////////////////////////////////////////////////////////////
+// GpuComputeModule — a GENERIC per-vertex GPU compute op. Runs an arbitrary fxv2 compute kernel
+// supplied as reflected DATA (`_shadertext` + `_kernel`), so new per-vertex GPU behaviors
+// (ripple / twist / bend / noise-displace / ...) are authored as shader TEXT from the DSL with
+// NO new C++ — the GpuCompute counterpart of terrain's ExprModule. 1 mesh-in, 1 mesh-out. The
+// kernel binds: iP (input POSITION) @0, oP (produced POSITION) @1, EXPRP (8 vec4 runtime params,
+// the kMaxExprParams plug set) @2, control { p_nv, p_mode, ... } @3. Topology + every OTHER channel
+// PASSES THROUGH (alias); only POSITION is produced — chain recompute_tbn to refresh shading.
+// `_dispatch_mode` 0 = one invocation per VERTEX. `_time_slot` >= 0 = the EXPRP slot the module
+// feeds from MeshEnv abstime/dt (the S.time bridge). The reflected fields ARE the op identity —
+// the base MeshComputeInst::cookComputeHash hashes them automatically (no per-inst hash). See the .cpp.
+///////////////////////////////////////////////////////////////////////////////
+
+struct GpuComputeModuleData : public MeshModuleData {
+  DeclareConcreteX(GpuComputeModuleData, MeshModuleData);
+  GpuComputeModuleData();
+  static std::shared_ptr<GpuComputeModuleData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
+  std::string _shadertext;         // the authored fxv2 compute SHADER TEXT (the portable artifact)
+  std::string _kernel = "cs_main"; // the compute_shader entry-point name within it
+  int _dispatch_mode  = 0;         // 0 = one invocation per VERTEX (groups = (nv+63)/64)
+  int _time_slot      = -1;        // EXPRP slot fed from MeshEnv abstime/dt (-1 = none); the S.time bridge
+  // 8 generic vec4 runtime params live as INPUT PLUGS "exprp0".."exprp7" (the kMaxExprParams contract) —
+  // serialized as plug values, poked from Python, snapshotted to the EXPRP SSBO each frame.
+};
+using gpucomputemoduledata_ptr_t = std::shared_ptr<GpuComputeModuleData>;
+
+///////////////////////////////////////////////////////////////////////////////
 // TemporalSmoothModule — inter-frame EMA on POSITION (+ NORMAL): a low-pass over TIME that damps
 // cross-frame jitter on a deforming mesh. Holds a PERSISTENT previous-frame buffer in the Inst (it
 // survives recompute() across frames, NOT a recycled pool channel). Per vertex:
