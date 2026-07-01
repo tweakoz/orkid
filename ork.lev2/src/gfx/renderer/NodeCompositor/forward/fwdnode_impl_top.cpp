@@ -317,7 +317,18 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
   // passes + the sampling-layout transition. The per-view cull reads the resulting HZB SSBO off the Scene
   // next preRender. (MSAA: also depends on the depth resolve into the single-sample _imgobj working.)
   if (auto* hzbscene = _node->_pbrcommon ? _node->_pbrcommon->_scene : nullptr) {
-    if (_rtg_primary and _rtg_primary->_depthBuffer and _rtg_primary->_depthBuffer->_texture) {
+    // require the depth texture's backend impl: it's created lazily on the rtg's
+    // first render, so on frame 1 there is no prior depth to build the HZB from —
+    // dispatching anyway leaves u_depth unbound (validation error).
+    // note: Texture::_impl default-initializes to nullptr_t, which counts as
+    // "set" for the variant — so exclude that explicitly.
+    bool depth_impl_ready = _rtg_primary and _rtg_primary->_depthBuffer //
+                            and _rtg_primary->_depthBuffer->_texture;
+    if (depth_impl_ready) {
+      const auto& tex_impl = _rtg_primary->_depthBuffer->_texture->_impl;
+      depth_impl_ready     = tex_impl.isSet() and not tex_impl.isA<std::nullptr_t>();
+    }
+    if (depth_impl_ready) {
       if (not hzbscene->_hzb)
         hzbscene->_hzb = std::make_shared<ork::lev2::HZBBuilder>();
       FBI->transitionDepthForSampling(_rtg_primary);

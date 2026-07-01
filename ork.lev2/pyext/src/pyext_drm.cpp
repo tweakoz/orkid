@@ -69,46 +69,17 @@ void pyinit_drm(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
 
   module_lev2.def("enumerateDrmMonitors", []() -> drm::monitor_vect_t {
-    // Try to find an available DRM card
-    int drm_fd = -1;
-    for (int i = 0; i < 10; i++) {
-      char path[32];
-      snprintf(path, sizeof(path), "/dev/dri/card%d", i);
-      drm_fd = open(path, O_RDWR | O_CLOEXEC);
-      if (drm_fd >= 0) break;
-    }
-
-    if (drm_fd < 0) {
-      throw std::runtime_error("Failed to open any DRM device (/dev/dri/card*)");
-    }
-
-    auto monitors = drm::DRMContext::enumerateMonitors(drm_fd);
-    close(drm_fd);
-    return monitors;
-  }, "Enumerate all DRM monitors on the system");
+    return drm::DRMContext::enumerateAllMonitors();
+  }, "Enumerate all DRM monitors across every /dev/dri/card* on the system");
 
   module_lev2.def("printDrmMonitors", [](const drm::monitor_vect_t& monitors) {
     drm::DRMContext::printMonitors(monitors);
   }, "Print formatted list of DRM monitors", py::arg("monitors"));
 
   module_lev2.def("printDrmMonitors", []() {
-    // Try to find an available DRM card
-    int drm_fd = -1;
-    for (int i = 0; i < 10; i++) {
-      char path[32];
-      snprintf(path, sizeof(path), "/dev/dri/card%d", i);
-      drm_fd = open(path, O_RDWR | O_CLOEXEC);
-      if (drm_fd >= 0) break;
-    }
-
-    if (drm_fd < 0) {
-      throw std::runtime_error("Failed to open any DRM device (/dev/dri/card*)");
-    }
-
-    auto monitors = drm::DRMContext::enumerateMonitors(drm_fd);
-    close(drm_fd);
+    auto monitors = drm::DRMContext::enumerateAllMonitors();
     drm::DRMContext::printMonitors(monitors);
-  }, "Enumerate and print all DRM monitors");
+  }, "Enumerate and print all DRM monitors across every /dev/dri/card*");
 
 #endif // __linux__
 }

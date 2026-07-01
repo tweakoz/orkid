@@ -179,9 +179,17 @@ int main(int argc, char* argv[]) {
     // Build path to orkids custom python executable
     std::string python_path = std::string(obt_stage) + "/pyvenv/bin/python3";
 
-    // Build argument list for execv
+    // Build argument list for execv.
+    // argv[0] MUST be the venv's python interpreter path (NOT a bare name) so
+    // CPython's path init finds pyvenv.cfg and sets sys.prefix to this venv.
+    // With a bare name ("ork.python") it can't locate the venv and falls back
+    // to libpython's compile-time baked prefix (the build host's staging dir) —
+    // which loads the wrong orkengine on the build host and, on a deployed
+    // machine where that dir is absent, aborts with Py_FatalError. This mirrors
+    // the macOS in-process path above (macos_inproc_python), which sets argv0 to
+    // this same path for the identical reason.
     std::vector<char*> exec_args;
-    exec_args.push_back(strdup("ork.python"));
+    exec_args.push_back(strdup(python_path.c_str()));
 
     // Add all original arguments (script name and any additional args)
     for (int i = 1; i < argc; i++) {

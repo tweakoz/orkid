@@ -19,10 +19,35 @@ import shutil
 import subprocess
 import sys
 
-from obt import path, pathtools, macos, deco as deco_mod
+from obt import path, pathtools, host, macos, deco as deco_mod
 from obt.command import run
 
 deco = deco_mod.Deco()
+
+###############################################################################
+# Platform relocation backend
+#
+# macOS relocates Mach-O binaries via obt.macos (otool / install_name_tool /
+# codesign, @rpath/@loader_path). Linux relocates ELF binaries via obt.linux
+# (patchelf / ldd, $ORIGIN, no signing). Phases dispatch on IS_LINUX / IS_OSX;
+# the platform-neutral scaffolding (copy / prune / whitelist / project include /
+# sentinelize / manifest / markers) is fully shared.
+###############################################################################
+
+IS_LINUX = host.IsLinux
+IS_OSX = host.IsOsx
+if IS_LINUX:
+  from obt import linux as elf
+
+def _is_native_binary(p):
+  """True if p is a native loadable binary for the host (ELF on Linux, Mach-O on macOS)."""
+  return elf.is_elf_binary(str(p)) if IS_LINUX else macos.is_macho_binary(str(p))
+
+def _discover_binaries(root, skip_dirs=None):
+  """Discover all native binaries under root (ELF on Linux, Mach-O on macOS)."""
+  if IS_LINUX:
+    return elf.discover_elf_files(root, skip_dirs=skip_dirs)
+  return macos.discover_macho_files(root, skip_dirs=skip_dirs)
 
 class _TeeWriter:
   """Write to both a file and the original stream."""
@@ -79,11 +104,31 @@ def internalize_host_binary(binary_name, target_dir, homebrew_dir="/opt/homebrew
   os.chmod(str(target_binary), 0o755)
   print(deco.val(f"    Copied: {real_path} -> bin/{binary_name}"))
 
-  # Check if it's a Mach-O binary (could be a script)
-  if not macos.is_macho_binary(str(target_binary)):
-    print(deco.val(f"    {binary_name} is not a Mach-O binary — no dylib fixup needed"))
+  # Check if it's a native binary (could be a script)
+  if not _is_native_binary(target_binary):
+    print(deco.val(f"    {binary_name} is not a native binary — no lib fixup needed"))
     return True
 
+  # ---- Linux (ELF): internalize the binary's external .so closure into lib/,
+  # then set an $ORIGIN rpath. No id-change, no codesign. ----
+  if IS_LINUX:
+    walker = elf.ElfDependencyWalker(target_dir)
+    walker.seed_files = [target_binary]
+    walker.walk()
+    copied = []
+    for libpath in sorted(walker.get_bundle_closure()):
+      dest = elf.internalize_lib(libpath, target_lib)
+      if dest:
+        copied.append(dest)
+    print(deco.val(f"    Internalized {len(copied)} libs for {binary_name}"))
+    relocator = elf.ElfRelocator(target_dir)
+    relocator.relocate_binary(target_binary)
+    for dest in copied:
+      if elf.is_elf_binary(dest):
+        relocator.relocate_binary(dest, is_dylib=True)
+    return True
+
+  # ---- macOS (Mach-O): internalize the homebrew dylib closure ----
   # Walk its homebrew dylib closure
   walker = macos.MachoDependencyWalker(target_dir, homebrew_dir)
   walker.seed_files = [target_binary]
@@ -351,12 +396,25 @@ def phase1_copy(staging_dir, target_dir, force=False):
 
   target_dir.mkdir(parents=True, exist_ok=True)
 
-  # ---- Step 1: Walk staging to discover homebrew closure ----
+  # ---- Step 1: Walk staging to discover the external lib closure ----
+  # (homebrew dylib closure on macOS; the third-party .so closure on Linux)
   print(deco.val(f"\n  Step 1: Discovering dependencies..."))
-  walker = macos.MachoDependencyWalker(staging_dir)
-  walker.walk()
-  homebrew_closure = walker.get_homebrew_closure()
-  print(deco.val(f"  Homebrew closure: {len(homebrew_closure)} dylibs"))
+  if IS_LINUX:
+    walker = elf.ElfDependencyWalker(staging_dir)
+    walker.walk()
+    external_closure = walker.get_bundle_closure()
+    _missing = walker.get_missing()
+    if _missing:
+      print(deco.val(f"  WARNING: {len(_missing)} NEEDED libs unresolved from "
+                     f"staging (will be MISSING in the bundle):"))
+      for _m in sorted(_missing):
+        print(deco.val(f"      {_m}"))
+    print(deco.val(f"  External closure: {len(external_closure)} .so files"))
+  else:
+    walker = macos.MachoDependencyWalker(staging_dir)
+    walker.walk()
+    external_closure = walker.get_homebrew_closure()
+    print(deco.val(f"  Homebrew closure: {len(external_closure)} dylibs"))
 
   # ---- Step 2: Copy runtime directories ----
   print(deco.val(f"\n  Step 2: Copying runtime directories..."))
@@ -426,36 +484,46 @@ def phase1_copy(staging_dir, target_dir, force=False):
   _sl_count, _sl_bytes = _prune_stdlib(target_dir / "pyvenv")
   print(deco.val(f"    Removed {_sl_count} stdlib entries ({_sl_bytes // (1024 * 1024)} MB)"))
 
-  # ---- Step 3: Copy homebrew dylib closure into target/lib/ ----
-  print(deco.val(f"\n  Step 3: Internalizing homebrew dylibs..."))
+  # ---- Step 3: Copy the external lib closure into target/lib/ ----
+  print(deco.val(f"\n  Step 3: Internalizing external libraries..."))
   target_lib = target_dir / "lib"
   target_lib.mkdir(parents=True, exist_ok=True)
   copied_count = 0
   skipped_frameworks = []
 
-  for hb_path in sorted(homebrew_closure):
-    basename = os.path.basename(hb_path)
-    dest_path = target_lib / basename
+  if IS_LINUX:
+    # ELF: copy the real .so and recreate its SONAME symlink chain so the
+    # loader resolves it by SONAME within lib/.
+    for so_path in sorted(external_closure):
+      if elf.internalize_lib(so_path, target_lib):
+        copied_count += 1
+      else:
+        print(deco.val(f"    WARNING: not found: {so_path}"))
+    print(deco.val(f"    Copied {copied_count} external .so files (SONAME-linked)"))
+  else:
+    for hb_path in sorted(external_closure):
+      basename = os.path.basename(hb_path)
+      dest_path = target_lib / basename
 
-    # Skip if already exists (from staging lib/ copy)
-    if dest_path.exists():
-      continue
+      # Skip if already exists (from staging lib/ copy)
+      if dest_path.exists():
+        continue
 
-    # Handle framework references specially
-    if ".framework/" in hb_path:
-      skipped_frameworks.append(hb_path)
-      continue
+      # Handle framework references specially
+      if ".framework/" in hb_path:
+        skipped_frameworks.append(hb_path)
+        continue
 
-    # Resolve symlinks to get the real file
-    real_path = os.path.realpath(hb_path)
-    if not os.path.isfile(real_path):
-      print(deco.val(f"    WARNING: not found: {hb_path}"))
-      continue
+      # Resolve symlinks to get the real file
+      real_path = os.path.realpath(hb_path)
+      if not os.path.isfile(real_path):
+        print(deco.val(f"    WARNING: not found: {hb_path}"))
+        continue
 
-    shutil.copy2(real_path, str(dest_path))
-    copied_count += 1
+      shutil.copy2(real_path, str(dest_path))
+      copied_count += 1
 
-  print(deco.val(f"    Copied {copied_count} homebrew dylibs"))
+    print(deco.val(f"    Copied {copied_count} homebrew dylibs"))
   if skipped_frameworks:
     print(deco.val(f"    Skipped {len(skipped_frameworks)} framework references:"))
     for fw in skipped_frameworks:
@@ -463,10 +531,13 @@ def phase1_copy(staging_dir, target_dir, force=False):
 
   # ---- Step 4: Ensure libpython is in target/lib/ ----
   print(deco.val(f"\n  Step 4: Ensuring libpython is in lib/..."))
+  # macOS: libpython3.X.dylib ; Linux: libpython3.X.so / .so.1.0
+  _libpy_ok = (lambda n: n.startswith("libpython") and ".so" in n) if IS_LINUX \
+              else (lambda n: n.startswith("libpython") and n.endswith(".dylib"))
   pyvenv_lib = target_dir / "pyvenv" / "lib"
   if pyvenv_lib.exists():
     for item in pyvenv_lib.iterdir():
-      if item.name.startswith("libpython") and item.name.endswith(".dylib"):
+      if _libpy_ok(item.name):
         dest = target_lib / item.name
         if not dest.exists():
           if item.is_symlink():
@@ -520,10 +591,13 @@ def fix_text_in_tree(search_root, replacements, label_root=None):
     old_str = str(old_str)
     new_str = str(new_str)
 
-    # Use grep to find files containing the old string
+    # Use grep to find files containing the old string. -I makes grep skip
+    # binary files entirely (grep -rl otherwise LISTS binaries that merely
+    # contain the path bytes — e.g. an ELF interpreter with the staging path in
+    # its RUNPATH — and rewriting one as text below corrupts it).
     try:
       result = subprocess.run(
-        ["grep", "-rl", old_str, str(search_root)],
+        ["grep", "-rlI", old_str, str(search_root)],
         capture_output=True, text=True, timeout=60)
     except:
       continue
@@ -531,9 +605,17 @@ def fix_text_in_tree(search_root, replacements, label_root=None):
     for fpath in result.stdout.strip().splitlines():
       if not fpath or not os.path.isfile(fpath):
         continue
-      if macos.is_macho_binary(fpath):
-        continue
       if fpath.endswith('.pyc'):
+        continue
+      # Robust, format-agnostic binary guard (defense-in-depth beyond grep -I):
+      # a null byte in the first 8K means binary — never rewrite it as text.
+      # (macos.is_macho_binary was used here before, but it returns False for
+      # ELF, so it failed to protect Linux binaries.)
+      try:
+        with open(fpath, 'rb') as _bf:
+          if b'\x00' in _bf.read(8192):
+            continue
+      except (OSError, IOError):
         continue
       try:
         with open(fpath, 'r', errors='replace') as f:
@@ -624,8 +706,18 @@ def phase2_relocate(target_dir, old_staging_dir, homebrew_dir="/opt/homebrew"):
   target_dir = path.Path(target_dir)
 
   print(deco.val("=" * 60))
-  print(deco.val("Phase 2: Mach-O Relocation"))
+  print(deco.val(f"Phase 2: {'ELF' if IS_LINUX else 'Mach-O'} Relocation"))
   print(deco.val("=" * 60))
+
+  if IS_LINUX:
+    # ELF: rewrite every object's RPATH to a $ORIGIN-relative reach to lib/.
+    # NEEDED entries are bare SONAMEs (resolved via RPATH) so there is no
+    # per-dependency rewrite; there is no id-change and no codesign. The
+    # $ORIGIN rpath (DT_RPATH, transitive) makes symlink farms unnecessary.
+    relocator = elf.ElfRelocator(target_dir)
+    relocator.relocate_all()
+    print(deco.val(f"\n  Phase 2 complete."))
+    return
 
   relocator = macos.MachoRelocator(target_dir)
   relocator.relocate_all(old_staging_dir, homebrew_dir)
@@ -695,7 +787,7 @@ def phase3_verify(target_dir):
   print(deco.val("Phase 3: Verification"))
   print(deco.val("=" * 60))
 
-  verifier = macos.MachoVerifier(target_dir)
+  verifier = elf.ElfVerifier(target_dir) if IS_LINUX else macos.MachoVerifier(target_dir)
   ok = verifier.verify()
   verifier.dump_report()
 
@@ -748,12 +840,16 @@ def phase4_obt_venv(target_dir, obt_venv_dir, homebrew_dir="/opt/homebrew", depl
   print(deco.val(f"\n  Step 2: Resolving Python interpreter..."))
   _resolve_venv_python(target_venv, homebrew_dir)
 
-  # ---- Step 3: Copy Python framework dylib + stdlib into target ----
-  print(deco.val(f"\n  Step 3: Internalizing Python framework..."))
-  _internalize_python_framework(target_dir, target_venv, homebrew_dir)
+  # ---- Step 3: Internalize the Python runtime (interpreter shared lib + stdlib)
+  if IS_LINUX:
+    print(deco.val(f"\n  Step 3: Internalizing libpython + stdlib..."))
+    _internalize_python_linux(target_dir, target_venv)
+  else:
+    print(deco.val(f"\n  Step 3: Internalizing Python framework..."))
+    _internalize_python_framework(target_dir, target_venv, homebrew_dir)
 
-  # ---- Step 4: Relocate Mach-O binaries in obt_venv ----
-  print(deco.val(f"\n  Step 4: Relocating Mach-O binaries..."))
+  # ---- Step 4: Relocate native binaries in obt_venv ----
+  print(deco.val(f"\n  Step 4: Relocating {'ELF' if IS_LINUX else 'Mach-O'} binaries..."))
   _relocate_obt_venv_machos(target_dir, target_venv, obt_venv_dir, homebrew_dir)
 
   # ---- Step 5: Fix text references ----
@@ -791,7 +887,12 @@ def _resolve_venv_python(target_venv, homebrew_dir):
     if item.startswith("python3.") and not item.endswith("-config"):
       if os.path.islink(str(full)):
         link_target = os.readlink(str(full))
-        if homebrew_dir in link_target or "/opt/" in link_target:
+        real_target = os.path.realpath(str(full))
+        # Linux: any base interpreter outside the venv (usually /usr/bin/pythonX.Y).
+        # macOS: the homebrew python symlink specifically.
+        outside_venv = not real_target.startswith(str(target_venv) + os.sep)
+        if (outside_venv if IS_LINUX
+            else (homebrew_dir in link_target or "/opt/" in link_target)):
           python_link = full
           python_version = item
           break
@@ -813,14 +914,23 @@ def _resolve_venv_python(target_venv, homebrew_dir):
   print(deco.val(f"    Replaced {python_version} symlink with real binary"))
   print(deco.val(f"    Source: {real_binary}"))
 
-  # Fix the convenience symlinks (python, python3) to point locally
+  # Fix the convenience symlinks (python, python3) to point at the bundled
+  # versioned interpreter.
   for alias in ["python", "python3"]:
     alias_path = target_bin / alias
     if os.path.islink(str(alias_path)):
       link_dest = os.readlink(str(alias_path))
-      # If it points to the versioned name, it's already correct (relative)
       if link_dest == python_version:
         print(deco.val(f"    {alias} -> {python_version} (ok)"))
+      elif IS_LINUX:
+        # On Linux a venv ships these as ABSOLUTE symlinks to the base
+        # interpreter (e.g. /usr/bin/python3); left as-is the deployed launcher
+        # would run the HOST/runtime python (wrong version, no obt) instead of
+        # the bundled one. Repoint them relatively. (macOS: unchanged — the
+        # original only reported, never rewrote these.)
+        os.unlink(str(alias_path))
+        os.symlink(python_version, str(alias_path))
+        print(deco.val(f"    Repointed {alias} -> {python_version} (was {link_dest})"))
 
 def _internalize_python_framework(target_dir, target_venv, homebrew_dir):
   """Copy the Python framework dylib into target/lib/ for the OBT venv's python."""
@@ -1004,10 +1114,103 @@ def _create_python_app_stub(target_lib, framework_dep):
 
   print(deco.val(f"    Created Python.app stub in lib/Resources/"))
 
+def _internalize_python_linux(target_dir, target_venv):
+  """Internalize the OBT venv's Python runtime on Linux: copy libpython*.so into
+  lib/ (if the interpreter links it dynamically), $ORIGIN-relocate the
+  interpreter, and copy the base stdlib next to the venv so it runs without the
+  host python. The ELF analog of _internalize_python_framework (no framework,
+  no Python.app stub, no codesign)."""
+  target_dir = path.Path(target_dir)
+  target_lib = target_dir / "lib"
+  target_lib.mkdir(parents=True, exist_ok=True)
+
+  # Locate the real ELF interpreter (Step 2 already replaced the symlink with a copy)
+  python_bin = None
+  py_version = None
+  for item in sorted(os.listdir(str(target_venv / "bin"))):
+    full = str(target_venv / "bin" / item)
+    if item.startswith("python3.") and not item.endswith("-config"):
+      if os.path.isfile(full) and not os.path.islink(full) and elf.is_elf_binary(full):
+        python_bin = full
+        py_version = item          # e.g. "python3.12"
+        break
+  if not python_bin:
+    print(deco.val(f"    No ELF python interpreter found in obt_venv/bin/."))
+    return
+
+  # Copy libpython*.so into lib/ if the interpreter depends on it dynamically
+  libpy = None
+  for soname, tgt in elf.ldd_resolve(python_bin).items():
+    if soname.startswith("libpython") and tgt:
+      if elf.internalize_lib(tgt, target_lib):
+        libpy = soname
+        print(deco.val(f"    Internalized {soname} -> lib/"))
+  if not libpy:
+    print(deco.val(f"    (interpreter has no dynamic libpython — statically linked)"))
+
+  # $ORIGIN-relocate the interpreter so it finds libpython in lib/
+  elf.ElfRelocator(target_dir).relocate_binary(python_bin)
+
+  # Copy the base stdlib next to the venv (base prefix from pyvenv.cfg 'home')
+  base_prefix = None
+  cfg = target_venv / "pyvenv.cfg"
+  if cfg.exists():
+    for line in open(str(cfg)):
+      if line.strip().startswith("home"):
+        home = line.split("=", 1)[1].strip()
+        base_prefix = os.path.dirname(home.rstrip("/"))   # /usr/bin -> /usr
+        break
+  if not base_prefix:
+    base_prefix = os.path.dirname(os.path.dirname(os.path.realpath(python_bin)))
+  src_stdlib = os.path.join(base_prefix, "lib", py_version)
+  dst_stdlib = str(target_venv / "lib" / py_version)
+  if not os.path.isdir(src_stdlib):
+    print(deco.val(f"    WARNING: base stdlib not found: {src_stdlib}"))
+    return
+  if os.path.isdir(dst_stdlib):
+    for sub in os.listdir(src_stdlib):
+      if sub == "site-packages":
+        continue                       # keep the venv's own site-packages
+      src_sub = os.path.join(src_stdlib, sub)
+      dst_sub = os.path.join(dst_stdlib, sub)
+      if not os.path.exists(dst_sub):
+        if os.path.isdir(src_sub):
+          run(["cp", "-a", src_sub, dst_sub], do_log=False)
+        else:
+          shutil.copy2(src_sub, dst_sub)
+    print(deco.val(f"    Copied stdlib ({py_version}) into obt_venv/lib/ (merged)"))
+  else:
+    run(["cp", "-a", src_stdlib, dst_stdlib], do_log=False)
+    print(deco.val(f"    Copied stdlib ({py_version}) into obt_venv/lib/"))
+
+  # Debian/Ubuntu's python patches site.py to look for 'dist-packages' instead
+  # of 'site-packages'. Once the venv is self-hosting (home points in-bundle so
+  # prefix==base_prefix), site.py treats it as a base Debian install and scans
+  # dist-packages — missing the venv's actual packages (obt, ork.build, ...) in
+  # site-packages. Symlink dist-packages -> site-packages so they're found under
+  # either convention.
+  sp = os.path.join(dst_stdlib, "site-packages")
+  dp = os.path.join(dst_stdlib, "dist-packages")
+  if os.path.isdir(sp) and not os.path.exists(dp):
+    os.symlink("site-packages", dp)
+    print(deco.val(f"    Linked dist-packages -> site-packages (Debian site.py compat)"))
+
 def _relocate_obt_venv_machos(target_dir, target_venv, old_venv_dir, homebrew_dir):
-  """Relocate Mach-O binaries in the OBT venv."""
+  """Relocate native binaries in the OBT venv (ELF on Linux, Mach-O on macOS)."""
   target_dir = path.Path(target_dir)
   lib_dir = target_dir / "lib"
+
+  # ---- Linux: $ORIGIN-relocate every ELF in obt_venv (incl. the interpreter) ----
+  if IS_LINUX:
+    all_elfs = elf.discover_elf_files(target_venv)
+    relocator = elf.ElfRelocator(target_dir)
+    for e in all_elfs:
+      try:
+        relocator.relocate_binary(e)
+      except Exception as ex:
+        print(deco.val(f"    WARNING: relocate failed for {e}: {ex}"))
+    print(deco.val(f"    Relocated {len(all_elfs)} ELF binaries in obt_venv/"))
+    return
 
   # Find all Mach-O files in the obt_venv
   all_machos = macos.discover_macho_files(target_venv)
@@ -1104,9 +1307,15 @@ def _fix_obt_venv_text(target_dir, target_venv, old_venv_dir, homebrew_dir):
     # e.g. "home = /opt/homebrew/opt/python@3.14/bin" → "home = <target_venv>/bin"
     new_lines = []
     for line in new_content.splitlines():
-      if line.startswith("home = ") and homebrew_str in line:
+      # On Linux the base python (home=/usr/bin) is NOT bundled — so point the
+      # venv at ITSELF: the bundled interpreter + the stdlib copied into
+      # obt_venv/lib/pythonX.Y by _internalize_python_linux. This makes the venv
+      # self-contained (works even where the host base python is absent or a
+      # different version, e.g. inside a Flatpak runtime). These paths get
+      # sentinelized in Phase 6 so they relocate at launch.
+      if line.startswith("home = ") and (IS_LINUX or homebrew_str in line):
         new_lines.append(f"home = {new_venv_str}/bin")
-      elif line.startswith("executable = ") and homebrew_str in line:
+      elif line.startswith("executable = ") and (IS_LINUX or homebrew_str in line):
         # Find the python version from the existing executable line
         py_basename = os.path.basename(line.split(" = ", 1)[1].strip())
         new_lines.append(f"executable = {new_venv_str}/bin/{py_basename}")
@@ -1259,7 +1468,10 @@ def phase5_projects(target_dir, project_dirs):
       dst = target_dir / "lib" / src.name
       print(deco.val(f"    Installing lib {src.name} → lib/"))
       shutil.copy2(str(src), str(dst))
-      if macos.is_macho_binary(str(dst)):
+      if IS_LINUX:
+        if elf.is_elf_binary(str(dst)):
+          elf.ElfRelocator(target_dir).relocate_binary(str(dst), is_dylib=True)
+      elif macos.is_macho_binary(str(dst)):
         relocator = macos.MachoRelocator(target_dir)
         relocator.relocate_binary(str(dst), old_prefixes=[], is_dylib=True)
         subprocess.run(
@@ -1338,7 +1550,7 @@ def phase5_5_dep_fixups(target_dir):
 _LAUNCH_SCRIPT_TEMPLATE = r'''#!/usr/bin/env bash
 ###############################################################################
 # obt-launch-env — Relocatable OBT environment launcher
-# Generated by ork.deploy.macos.relocatable.py (Phase 6)
+# Generated by ork deploy (Phase 6)
 #
 # This script is self-locating: it computes all paths relative to its own
 # location, so the deployment can be moved anywhere.
@@ -1381,6 +1593,12 @@ unset DYLD_FALLBACK_LIBRARY_PATH
 unset PKG_CONFIG
 unset PKG_CONFIG_PATH
 unset LUA_PATH
+# Sever EVERY host OBT_*/ORKID_* var (belt-and-suspenders beyond the explicit
+# unsets above). When launched from an existing OBT shell — or a sandbox like
+# Flatpak that forwards the caller's environment — stale OBT_MODULES_PATH /
+# OBT_BIN_PRIV_DIR / etc. would override the deploy's self-configuration and
+# point back at host paths (loading host dep modules, prepending host bins).
+for _v in ${!OBT_*} ${!ORKID_*}; do unset "$_v"; done
 export PYTHONNOUSERSITE=1
 
 # Bootstrap the OBT framework venv.
@@ -1430,20 +1648,38 @@ if [ "$_NEED_FIXUP" -eq 1 ]; then
   echo "[deploy-fixup] Done ($_n files updated)."
 fi
 
-# Ensure assetcache symlink points to user's global cache
-_GLOBAL_CACHE="$HOME/.obt-global/assetcache"
-mkdir -p "$_GLOBAL_CACHE"
-if [ ! -e "$DEPLOY_ROOT/assetcache" ]; then
-  ln -s "$_GLOBAL_CACHE" "$DEPLOY_ROOT/assetcache"
-fi
-
-# Ensure envmaps bake-cache symlink points to user's global cache.
-# Baked IBL/envmaps are regenerable runtime output — keep them out of the
-# bundle so they never bloat it (same pattern as assetcache).
-_GLOBAL_ENVMAPS="$HOME/.obt-global/envmaps"
-mkdir -p "$_GLOBAL_ENVMAPS"
-if [ ! -e "$DEPLOY_ROOT/envmaps" ]; then
-  ln -s "$_GLOBAL_ENVMAPS" "$DEPLOY_ROOT/envmaps"
+# ---- Effective stage dir + writable caches ----
+# OBT (Python) and the engine (C++, via $OBT_STAGE) resolve the mutable dirs as
+# <stage>/{assetcache,envmaps,dblockcache,tempdir}. Those MUST be writable; the
+# convention is to symlink them to the user's global ~/.obt-global/<name>.
+#
+#   * writable DEPLOY_ROOT  -> symlink the caches into it directly (classic).
+#   * read-only DEPLOY_ROOT (a deployed bundle, e.g. a Flatpak /app) -> build a
+#     writable "stage mirror" in $HOME: symlink every read-only tree entry, and
+#     point the mutable dirs at ~/.obt-global. OBT_STAGE is then the mirror, so
+#     every <stage>/assetcache lookup (Python and C++) lands in the writable
+#     ~/.obt-global/assetcache. $ORIGIN rpaths still resolve (symlinks resolve to
+#     the real /app/orkid/lib) and the sentinel-baked text paths stay readable.
+_OG="$HOME/.obt-global"
+mkdir -p "$_OG/assetcache" "$_OG/envmaps" "$_OG/dblockcache" "$_OG/tempdir"
+_MUTABLE="assetcache envmaps dblockcache tempdir"
+STAGE_DIR="$DEPLOY_ROOT"
+if [ -w "$DEPLOY_ROOT" ]; then
+  for _w in assetcache envmaps; do
+    [ -e "$DEPLOY_ROOT/$_w" ] || ln -s "$_OG/$_w" "$DEPLOY_ROOT/$_w" 2>/dev/null || true
+  done
+else
+  STAGE_DIR="$_OG/stage"
+  mkdir -p "$STAGE_DIR"
+  for _e in "$DEPLOY_ROOT"/* "$DEPLOY_ROOT"/.[!.]*; do
+    [ -e "$_e" ] || continue
+    _b="$(basename "$_e")"
+    case " $_MUTABLE " in *" $_b "*) continue ;; esac
+    ln -sfn "$_e" "$STAGE_DIR/$_b"
+  done
+  for _w in $_MUTABLE; do
+    ln -sfn "$_OG/$_w" "$STAGE_DIR/$_w"
+  done
 fi
 
 # Source user/machine-specific configuration (audio devices, CDN keys, etc.)
@@ -1466,7 +1702,7 @@ NUM_CORES=$(sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 4)
 # Launch OBT environment — invoke python explicitly to bypass hardcoded shebangs
 exec "$DEPLOY_ROOT/obt_venv/bin/python3" \
   "$DEPLOY_ROOT/obt_venv/bin/obt.env.launch.py" \
-  --stagedir "$DEPLOY_ROOT" \
+  --stagedir "$STAGE_DIR" \
   --numcores "$NUM_CORES" \
   "${OBT_PROJECT_ARGS[@]}" \
   "$@"
@@ -1491,8 +1727,13 @@ def phase6_launch_script(target_dir):
   # ---- Step 1: Generate obt-launch-env ----
   print(deco.val(f"\n  Step 1: Generating obt-launch-env..."))
   launch_script = target_dir / "obt-launch-env"
+  launch_content = _LAUNCH_SCRIPT_TEMPLATE.lstrip('\n')
+  if IS_LINUX:
+    # GNU sed uses `sed -i` (no separate backup-suffix arg); BSD/macOS sed
+    # requires `sed -i ''`. The template is authored BSD-style, so fix it here.
+    launch_content = launch_content.replace("sed -i '' ", "sed -i ")
   with open(str(launch_script), 'w') as f:
-    f.write(_LAUNCH_SCRIPT_TEMPLATE.lstrip('\n'))
+    f.write(launch_content)
   os.chmod(str(launch_script), 0o755)
   print(deco.val(f"    Wrote: {launch_script}"))
 
@@ -1507,30 +1748,37 @@ def phase6_launch_script(target_dir):
     else:
       print(deco.val(f"    bin/{bin_name} already present"))
 
-  # ---- Step 3: Create MoltenVK ICD manifest ----
-  # The vulkan dep module expects the ICD JSON at builds/moltenvk/Package/Latest/
-  # MoltenVK/dylib/macOS/MoltenVK_icd.json (relative to OBT_STAGE).
-  # The dylib itself is already in lib/libMoltenVk.dylib.
-  print(deco.val(f"\n  Step 3: Setting up MoltenVK ICD..."))
-  mvk_icd_dir = target_dir / "builds" / "moltenvk" / "Package" / "Latest" / "MoltenVK" / "dylib" / "macOS"
-  mvk_icd_dir.mkdir(parents=True, exist_ok=True)
-  mvk_icd_json = mvk_icd_dir / "MoltenVK_icd.json"
-  mvk_dylib_link = mvk_icd_dir / "libMoltenVk.dylib"
-  # Write ICD JSON pointing to co-located dylib
-  with open(str(mvk_icd_json), 'w') as f:
-    f.write('{\n')
-    f.write('    "file_format_version" : "1.0.0",\n')
-    f.write('    "ICD": {\n')
-    f.write('        "library_path": "./libMoltenVK.dylib",\n')
-    f.write('        "api_version" : "1.4.0",\n')
-    f.write('        "is_portability_driver" : true\n')
-    f.write('    }\n')
-    f.write('}\n')
-  # Symlink the dylib from lib/
-  if not mvk_dylib_link.exists():
-    rel = os.path.relpath(str(target_dir / "lib" / "libMoltenVk.dylib"), str(mvk_icd_dir))
-    os.symlink(rel, str(mvk_dylib_link))
-  print(deco.val(f"    Created ICD JSON + dylib symlink"))
+  # ---- Step 3: Create MoltenVK ICD manifest (macOS only) ----
+  # MoltenVK is the Vulkan-on-Metal translation layer — macOS only. On Linux the
+  # native Vulkan loader (libvulkan.so.1) and the GPU driver ICDs are host-
+  # provided (see obt.linux keep-on-host policy / the flatpak GL extension), so
+  # there is nothing to wire up here.
+  if IS_LINUX:
+    print(deco.val(f"\n  Step 3: MoltenVK ICD — skipped (Linux uses host Vulkan loader)"))
+  else:
+    # The vulkan dep module expects the ICD JSON at builds/moltenvk/Package/Latest/
+    # MoltenVK/dylib/macOS/MoltenVK_icd.json (relative to OBT_STAGE).
+    # The dylib itself is already in lib/libMoltenVk.dylib.
+    print(deco.val(f"\n  Step 3: Setting up MoltenVK ICD..."))
+    mvk_icd_dir = target_dir / "builds" / "moltenvk" / "Package" / "Latest" / "MoltenVK" / "dylib" / "macOS"
+    mvk_icd_dir.mkdir(parents=True, exist_ok=True)
+    mvk_icd_json = mvk_icd_dir / "MoltenVK_icd.json"
+    mvk_dylib_link = mvk_icd_dir / "libMoltenVk.dylib"
+    # Write ICD JSON pointing to co-located dylib
+    with open(str(mvk_icd_json), 'w') as f:
+      f.write('{\n')
+      f.write('    "file_format_version" : "1.0.0",\n')
+      f.write('    "ICD": {\n')
+      f.write('        "library_path": "./libMoltenVK.dylib",\n')
+      f.write('        "api_version" : "1.4.0",\n')
+      f.write('        "is_portability_driver" : true\n')
+      f.write('    }\n')
+      f.write('}\n')
+    # Symlink the dylib from lib/
+    if not mvk_dylib_link.exists():
+      rel = os.path.relpath(str(target_dir / "lib" / "libMoltenVk.dylib"), str(mvk_icd_dir))
+      os.symlink(rel, str(mvk_dylib_link))
+    print(deco.val(f"    Created ICD JSON + dylib symlink"))
 
   # ---- Step 4: Fix shebangs in obt_venv/bin/*.py ----
   print(deco.val(f"\n  Step 4: Fixing shebangs in obt_venv/bin/..."))
@@ -2040,7 +2288,10 @@ def run_deploy(deploy_config):
 
   # Special modes
   if args.walk_only:
-    walker = macos.MachoDependencyWalker(staging_dir, args.homebrew)
+    if IS_LINUX:
+      walker = elf.ElfDependencyWalker(staging_dir)
+    else:
+      walker = macos.MachoDependencyWalker(staging_dir, args.homebrew)
     walker.walk()
     walker.dump_manifest()
     return
@@ -2112,16 +2363,29 @@ def run_deploy(deploy_config):
     if not ok:
       sys.exit(1)
 
+  # Phases 7 (.app bundles) and 8 (.dmg) are macOS-specific packaging. On Linux
+  # the equivalent packaging is produced by a separate driver (relocatable
+  # tarball / AppImage / Flatpak via ork.deploy.ix.flatpak.py), so phases 1-6
+  # produce the self-contained relocatable tree and packaging stops here.
   if phase in ("7", "all"):
-    ok = phase7_app_bundles(infra_dir, target_dir, deploy_config)
-    if not ok:
-      sys.exit(1)
+    if IS_LINUX:
+      if phase == "7":
+        print(deco.val("  Phase 7 (.app bundles) is macOS-only — nothing to do on Linux."))
+    else:
+      ok = phase7_app_bundles(infra_dir, target_dir, deploy_config)
+      if not ok:
+        sys.exit(1)
 
   if phase in ("8", "all"):
-    figma_json = deploy_config.get("figma_json") if deploy_config else None
-    ok = phase8_archive(target_dir, figma_json=figma_json)
-    if not ok:
-      sys.exit(1)
+    if IS_LINUX:
+      if phase == "8":
+        print(deco.val("  Phase 8 (.dmg) is macOS-only — use the Linux packaging "
+                       "driver (tarball / AppImage / flatpak) instead."))
+    else:
+      figma_json = deploy_config.get("figma_json") if deploy_config else None
+      ok = phase8_archive(target_dir, figma_json=figma_json)
+      if not ok:
+        sys.exit(1)
 
   if phase == "all":
     print(deco.val("\n" + "=" * 60))
