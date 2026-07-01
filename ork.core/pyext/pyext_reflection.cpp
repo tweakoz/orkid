@@ -173,7 +173,11 @@ void pyinit_reflection(py::module& module_core) {
                     auto refprop = pitem.second;
                     auto propname = refprop->_name;
                     if(propname==key){
-                      if( auto as_int = dynamic_cast<ityped_int*>(refprop) ){
+                      if( auto as_bool = dynamic_cast<ityped_bool*>(refprop) ){
+                        as_bool->set(value.cast<bool>(),obj);
+                        return;
+                      }
+                      else if( auto as_int = dynamic_cast<ityped_int*>(refprop) ){
                         auto variant = proxy->_codec->decode(value);
                         as_int->set(variant.get<int>(),obj);
                         return;
