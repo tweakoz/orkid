@@ -181,12 +181,12 @@ class ColVdbSystem(ParticleSystem):
       emit_vel     = base_velocity
 
     self.emitter = P.RingEmitter(self.ptc_pool, name="EMIT",
-                                 LifeSpan=3.0,
-                                 EmissionRate=300,
+                                 LifeSpan=2.5,
+                                 EmissionRate=100,
                                  EmissionVelocity=emit_vel,
                                  EmissionRadius=emit_radius,
-                                 DispersionAngle=0.0,
-                                 EmitterSpinRate=9.0,
+                                 DispersionAngle=0.5,
+                                 EmitterSpinRate=19.0,
                                  Direction=emit_dir,
                                  Tangent=emit_tangent,
                                  Offset=emit_offset)

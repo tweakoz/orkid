@@ -72,6 +72,12 @@ vdb_floatgrid_ptr_t materializeImplicitSdf(const ImplicitSdfGenData& gen) {
   openvdb::ax::Compiler compiler;
   auto ve = compiler.compile<vdb_volume_exec_t>(gen._shader, cdata);
   ve->execute(*grid);
+  // NOTE: leave the grid GRID_UNKNOWN. openvdb's volumeToMesh winds a GRID_UNKNOWN
+  // (generic) negative-inside grid CCW front-face (rasterstate default) with NO flip —
+  // tagging GRID_LEVEL_SET inverts volumeToMesh's winding (it would then require a flip
+  // again). So the flip_windings=false default is correct here precisely because the grid
+  // is generic. (The VdbLevelSetRenderer sets GRID_LEVEL_SET because its own mesher handles
+  // that class's winding; this asset path does not.)
   return grid;
 }
 

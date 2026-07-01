@@ -413,6 +413,10 @@ vkdescriptorsetstate_ptr_t VulkanDescriptorSetCacheState::fetchDescriptorSetForP
                            ? uint64_t(ssbo_state->_bound_buffer->_vkbuffer)
                            : 0ull;
     descset_bits = descset_bits * 0x9E3779B97F4A7C15ull + bufbits; // hash-combine
+    // OFFSET is part of the descriptor identity (sub-range bind): same buffer, distinct offset ->
+    // distinct set, else the second tier draw reuses the first tier's offset-0 descriptor.
+    uint64_t offbits = ssbo_state ? uint64_t(ssbo_state->_bound_offset) : 0ull;
+    descset_bits = descset_bits * 0x9E3779B97F4A7C15ull + offbits;
   }
   auto it               = _vkDescriptorSetByHash.find(descset_bits);
   vkdescriptorsetstate_ptr_t descset_ptr = nullptr;
@@ -568,10 +572,12 @@ vkdescriptorsetstate_ptr_t VulkanDescriptorSetCacheState::fetchDescriptorSetForP
                 VkBuffer vk_buffer = VK_NULL_HANDLE;
                 VkDeviceSize buffer_size = ssbo_block->_buffer_size;
 
+                VkDeviceSize bind_offset = 0;
                 auto* ssbo_state = _ctxVK->_fxi->storageStateForBlock(ssbo_block);
                 if (ssbo_state && ssbo_state->_bound_buffer) {
                   vk_buffer = ssbo_state->_bound_buffer->_vkbuffer;
                   buffer_size = ssbo_state->_bound_buffer->_length;
+                  bind_offset = ssbo_state->_bound_offset; // sub-range bind (0 = whole)
                 }
 
                 // No SSBO bound — skip descriptor update
@@ -581,8 +587,10 @@ vkdescriptorsetstate_ptr_t VulkanDescriptorSetCacheState::fetchDescriptorSetForP
 
                 VkDescriptorBufferInfo buffer_info = {};
                 buffer_info.buffer = vk_buffer;
-                buffer_info.offset = 0;
-                buffer_info.range = buffer_size;
+                // sub-range: descriptor reads [bind_offset, end). offset must satisfy
+                // minStorageBufferOffsetAlignment (the caller pads strides; we just forward it).
+                buffer_info.offset = bind_offset;
+                buffer_info.range  = (bind_offset < buffer_size) ? (buffer_size - bind_offset) : buffer_size;
                 buffer_infos.push_back(buffer_info);
 
                 VkWriteDescriptorSet DWRITE = {};

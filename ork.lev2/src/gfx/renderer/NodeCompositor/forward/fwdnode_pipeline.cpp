@@ -236,6 +236,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
     }
     mut->_rasterstate->setWriteMaskRGB(true);
     mut->_rasterstate->setWriteMaskA(true);
+    mut->_rasterstate->setAlphaToCoverage(false); // default off; the impostor branch turns it on (no leak to meshes)
   };
   ////////////////////////////////////////////////
   // ssao lambda
@@ -268,6 +269,36 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
 
       }
   };
+  // NOTE: the impostor atlas + ImpCenter/ImpGrid are bound PER-DRAW by the drawable's bucket loop
+  // (ComputeDrawable::_renderIndirect) — NOT here as a material state lambda. The base PBRMaterial is SHARED
+  // across all variants (one "tree_bark"), so a material-level bind would collapse every impostor to the
+  // last-baked atlas; each bucket binds its OWN variant's atlas just before its draw.
+  /////////////////////////////////////////////////////////////
+  // LOD IMPOSTOR (FWD_SSBO_CUSTOM_IMPOSTOR): billboard quad built in the VS from gl_VertexID + the SSBO
+  // per-instance matrix; surface() samples the baked atlas. Checked FIRST so an impostor tier never falls
+  // through to the mesh SSBO branches. Gets the IDENTICAL forward state (basic raster + lighting + ssao +
+  // MVP) — the whole point: the impostor color-matches the mesh because it runs the same lighting.
+  /////////////////////////////////////////////////////////////
+  if (permu._is_impostor and this->_tek_FWD_SSBO_CUSTOM_IMPOSTOR) {
+    pipeline             = std::make_shared<FxPipeline>(permu);
+    pipeline->_technique = this->_tek_FWD_SSBO_CUSTOM_IMPOSTOR;
+    pipeline->bindParam(this->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh); // model=identity -> = VP
+    pipeline->bindParam(this->_paramIV,  "RCFD_Camera_IV_Mono"_crcsh);  // inverse-view: the billboard basis
+    pipeline->addStateLambda(createBasicStateLambda(this));
+    pipeline->addStateLambda(createForwardLightingLambda(this)); // SAME forward lighting as the mesh tiers
+    pipeline->addStateLambda(l_rsi);
+    pipeline->addStateLambda(l_ssao);
+    // (atlas + ImpCenter/ImpGrid bound per-draw in the bucket loop — see note above; shared material.)
+    // A2C: the impostor FS writes silhouette coverage as alpha -> MSAA coverage mask (order-independent edge
+    // AA). Depth-write stays ON (l_rsi) so impostors still occlude correctly; the distance fade is a hashed
+    // screen-door discard in the FS (both order-independent — no back-to-front sort needed).
+    pipeline->addStateLambda([this](const RenderContextInstData&) {
+      const_cast<PBRMaterial*>(this)->_rasterstate->setAlphaToCoverage(true);
+    });
+    pipeline->_material_ptr = (GfxMaterial*)this;
+    pipeline->_rasterstate  = this->_rasterstate;
+    return pipeline;
+  }
   /////////////////////////////////////////////////////////////
   // SSBO-SOURCED VERTICES (FWD_SSBO_CUSTOM): a first-class vertex variant, like rigid/
   // instanced/skinned — selected by permu._is_vertex_ssbo, picking the _tek_FWD_SSBO_CUSTOM

@@ -27,10 +27,20 @@ void register_system(nb::module_& module_ecssim, python::obind_typecodec_ptr_t t
                          .prop_ro("vars", [](pysystem_ptr_t system) -> varmap::varmap_ptr_t {
                            return system->varmap();
                          })
+                         // FALSY when the wrapper is null — findSystemByName() returns a null-wrapped
+                         // System for a MISSING system (not Python None), so scripts test presence with
+                         // `if sys:` / `if not sys:` (NOT `is None`).
+                         .def("__bool__", [](pysystem_ptr_t system) -> bool {
+                           return system.get() != nullptr;
+                         })
                          .def(
                              "__repr__",
                              [](pysystem_ptr_t system) -> std::string {
                                fxstring<256> fxs;
+                               if (not system.get()) { // null-wrapper (missing system) — must NOT deref sysdata()
+                                 fxs.format("ecssim::System(null)");
+                                 return fxs.c_str();
+                               }
                                auto clazz = system->sysdata()->objectClass();
                                fxs.format("ecssim::System(%p) class<%s>", system.get(), clazz->Name().c_str());
                                return fxs.c_str();
@@ -55,6 +65,28 @@ void register_system(nb::module_& module_ecssim, python::obind_typecodec_ptr_t t
                            }
                            // auto event = std::make_shared<CrcString>(eventname.c_str());
                            system->_notify(*eventID, decoded);
+                         })
+                         // RENDER/GPU-thread notify — same payload encoding as notify(),
+                         // but routed to System::_onGpuNotify. A script's onSystemGpuUpdate
+                         // (render tick) uses this so its SetHmdPose lands on the render
+                         // thread (co-located w/ the camera build).
+                         .def("gpuNotify", [type_codec](pysystem_ptr_t system, //
+                                                        crcstring_ptr_t eventID, //
+                                                        nb::object evdata) { //
+                           evdata_t decoded;
+                           if (nb::isinstance<nb::dict>(evdata)){
+                             auto as_dict = nb::cast<nb::dict>(evdata);
+                             auto dtab    = decoded.makeShared<DataTable>();
+                             DataKey dkey;
+                             for (auto item : as_dict) {
+                               auto key = nb::cast<crcstring_ptr_t>(item.first);
+                               auto val = nb::cast<nb::object>(item.second);
+                               auto var_val = type_codec->decode64(val);
+                               dkey._encoded = *key;
+                               (*dtab)[dkey] = var_val;
+                             }
+                           }
+                           system->_gpuNotify(*eventID, decoded);
                          })
                          // SYNCHRONOUS query (system-script context = the update
                          // thread, same as the system's own hooks — a direct

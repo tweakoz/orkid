@@ -290,6 +290,18 @@ libblock lib_frg_grid {
     float gMajor = filteredGrid(paramMajor, dpdxMajor, dpdyMajor, widthMajor);
     float gMinor = filteredGrid(paramMinor, dpdxMinor, dpdyMinor, widthMinor);
 
+    // Minor-grid distance fade: the minor lines (10x the major frequency) go
+    // sub-Nyquist quickly, so fade their coverage to zero by EYE DISTANCE,
+    // between AuxB.y (begin) and AuxB.z (end), in world units. end <= begin
+    // disables the fade (the default GridDrawableData has both = 0).
+    float minorFadeBegin = AuxB.y;
+    float minorFadeEnd   = AuxB.z;
+    float eyeDist        = length(pos - EyePostion);
+    float minorFade      = (minorFadeEnd > minorFadeBegin)
+                         ? (1.0 - smoothstep(minorFadeBegin, minorFadeEnd, eyeDist))
+                         : 1.0;
+    gMinor *= minorFade;
+
     // Default base color setup (might be overridden based on axis logic)
     vec3 basecolor = ModColor.xyz;
 

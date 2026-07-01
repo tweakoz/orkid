@@ -68,6 +68,11 @@ void SpriteRendererInst::onLink(GraphInst* inst) {
   _onLink(inst);
   auto ptcl_context         = inst->_impl.getShared<Context>();
   ptcl_context->setRenderLambda(this, _srd->_draw_order, [this](const RenderContextInstData& RCID) { this->_render(RCID); });
+  // PRE-RENDER GPU upload (render-pass-safe): refresh the material's gradient LUT texture.
+  ptcl_context->setGpuUpdateLambda(this, [this](ork::lev2::Context* ctx) {
+    if (_srd->_material)
+      _srd->_material->onGpuUpdate(ctx);
+  });
   _input_size               = typedInputNamed<FloatXfPlugTraits>("Size");
   _input_gradient_phase     = typedInputNamed<FloatXfPlugTraits>("GradientPhase");
 
@@ -359,6 +364,16 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
       mapped_storage->make<fvec4>(ptcl->_unit_age, ptcl->mfRandom,
                                    ptcl->_aux.x, ptcl->_aux.y);
     }
+
+    // gradient LUT (256 entries) at the TAIL of the SSBO (after the 3 particle arrays) —
+    // the VS samples it by unit_age into frg_clr. White for non-gradient materials. This is
+    // a host write to mapped memory, so it's render-pass-agnostic (the gradient texture
+    // upload could never land in this all-mid-pass particle path).
+    constexpr size_t gradientLUT_offset = 48 + size_t(262144) * 16 * 3;
+    mapped_storage->seek(gradientLUT_offset);
+    const fvec4* lut = material->_gradientSamples;
+    for (int i = 0; i < 256; i++)
+      mapped_storage->make<fvec4>(lut[i].x, lut[i].y, lut[i].z, lut[i].w);
 
     FXI->unmapStorageBuffer(mapped_storage.get());
     render_time_1a = prender_timer.SecsSinceStart();

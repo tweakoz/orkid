@@ -26,7 +26,8 @@ class SaddleScene(Scene):
         SkyboxIntensity    = 1.0,
         DiffuseIntensity   = 1.0,
         SpecularIntensity  = 1.0,
-        AmbientLight       = vec3(0.0))
+        AmbientLight       = vec3(0.0),
+        msaa = 2 )
 
     self.system_data("ParticlesGlobalSystem") # this ECS has a ParticlesGlobalSystem
 
@@ -52,19 +53,25 @@ class SaddleScene(Scene):
 
     saddle_drawable = self.asset.VdbGridToDrawable(
         "saddle_drawable",
+        flip_windings = False,
         grid     = saddle_sdf,
         material = mat_saddle,
         iso      = 0.0)
 
-    self.entity("saddle_visual", # visual entity: render the saddle
-      transform=Transform(translation=vec3(0, 0, 0)),
-      publish_xf="saddle",       # publish this entity's XF so we can use in Particle System
-      components=[SG.component(nodes={
-        # layer omitted → SG handle's primary layer (std_forward under
-        # ForwardPBR). depth_prepass participation is automatic
-        # (NodeDef._skipAutoDepthPrepass defaults false on the C++ side).
-        "n": {"drawable": saddle_drawable},
-      })])
+    if True:
+      self.entity("saddle_collider", # visual entity: render the saddle
+        transform=Transform(translation=vec3(0, 0, 0)),
+        publish_xf="saddle",       # publish this entity's XF so we can use in Particle System
+      )
+      self.entity("saddle_visual", # visual entity: render the saddle
+        transform=Transform(translation=vec3(0, -0.5, 0)),
+        #publish_xf="saddle",       # publish this entity's XF so we can use in Particle System
+        components=[SG.component(nodes={
+          # layer omitted → SG handle's primary layer (std_forward under
+          # ForwardPBR). depth_prepass participation is automatic
+          # (NodeDef._skipAutoDepthPrepass defaults false on the C++ side).
+          "n": {"drawable": saddle_drawable},
+        })])
 
     ##########################
     # The Particle Entity

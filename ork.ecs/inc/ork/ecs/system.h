@@ -117,6 +117,11 @@ public:
   inline const SystemData* sysdata() const { return _systemData; }
 
   void _notify(token_t evID, evdata_t data);
+  // GPU/RENDER-thread notify channel — the analogue of _notify, but routed to
+  // _onGpuNotify (overridden by render-sync systems). A system SCRIPT running in
+  // PythonSystem::_onGpuUpdate (render thread) calls this so its notify is handled
+  // on the render thread (e.g. SetHmdPose applied co-located with the camera build).
+  void _gpuNotify(token_t evID, evdata_t data);
   // synchronous request entry (public like _notify — the system-SCRIPT path calls
   // it directly on the update thread; no controller queue involved)
   void _request(impl::sys_response_ptr_t response, token_t evID, evdata_t data);
@@ -177,6 +182,9 @@ protected:
   virtual void _onRender(Simulation* psi, ui::drawevent_constptr_t drwev);
   virtual void _onRenderWithStandardCompositorFrame(Simulation* psi, lev2::standardcompositorframe_ptr_t sframe);
   virtual void _onNotify(token_t evID, evdata_t data);
+  // GPU/RENDER-thread notify handler (default no-op). Render-sync systems override
+  // to service notifies that must run on the render thread (see _gpuNotify).
+  virtual void _onGpuNotify(token_t evID, evdata_t data);
   virtual void _onRequest(impl::sys_response_ptr_t response, token_t evID, evdata_t data);
   virtual void _onPropertyChanged(token_t name, evdata_t value);
 

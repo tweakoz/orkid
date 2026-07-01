@@ -54,8 +54,30 @@ public:
   PythonSystemData();
   ///////////////////////////////////////////////////////
 
-  file::Path _sceneScriptPath;
+  file::Path _sceneScriptPath;            // the PRIMARY system script (back-compat, single)
+  std::string _sceneScriptPathsCSV;       // ADDITIONAL system scripts, ';'-joined absolute paths.
+                                          // Each runs as its OWN system-scoped script (own namespace,
+                                          // all onSystem* hooks) — lets a scene COMPOSE input/behavior
+                                          // (e.g. walk_input + a VR head-pose script) on one PythonSystem.
   ork::ecs::System* createSystem(ork::ecs::Simulation* pinst) const final;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+// One ADDITIONAL system-scoped script: its own globals namespace + the onSystem* hooks it defines.
+// The PythonSystem fans every hook to the primary script AND each of these, so InputKey/update/etc.
+// reach all of them. Scripts are isolated (separate namespaces) and communicate only via the sim.
+///////////////////////////////////////////////////////////////////////////////
+struct PythonSysScript {
+  obind::object _ns;               // the script's globals dict (keeps the fns alive)
+  obind::object _onInit;
+  obind::object _onLink;
+  obind::object _onActivate;
+  obind::object _onStage;
+  obind::object _onNotify;
+  obind::object _onUpdate;
+  obind::object _onGpuUpdate;
+  obind::object _onCompActivate;
+  obind::object _onCompDeactivate;
 };
 
 struct PythonComponent : public ecs::Component {
@@ -83,6 +105,15 @@ public:
   SceneGraphComponent* _mySGcomponentForInstancing = nullptr;
   int _sginstance_id = -1;
 
+  // ----- per-entity component script (PythonComponentData ScriptFile) -----
+  // The PER-COMPONENT script — distinct from the PythonSystem scene script.
+  // Runs in its OWN namespace; onUpdate(component, updinfo) fires each frame
+  // from PythonSystem::_onUpdate (before the SG world-matrix sync). Lets a
+  // single entity carry declarative behavior (e.g. a spin) right in the .ecs.
+  obind::object _scriptNamespace; // the script's globals dict (keeps the fns alive)
+  obind::object _pyOnActivate;    // onActivate(component)        [optional]
+  obind::object _pyOnUpdate;      // onUpdate(component, updinfo)  [optional]
+  bool _scriptLoaded = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -103,10 +134,12 @@ public:
 
   void _onActivateComponent(PythonComponent* component);
   void _onDeactivateComponent(PythonComponent* component);
+  void _loadComponentScript(PythonComponent* component); // idempotent; subinterp must be bound
 
   bool _onLink(Simulation* psi) final;
   void _onUnLink(Simulation* psi) final;
   void _onUpdate(Simulation* inst) final;
+  void _onGpuUpdate(Simulation* psi, lev2::Context* ctx) final;  // render-tick: runs onSystemGpuUpdate
   bool _onStage(Simulation* psi) final;
   void _onUnstage(Simulation* inst) final;
   bool _onActivate(Simulation* psi) final;
@@ -114,6 +147,7 @@ public:
   void _onNotify(token_t evID, evdata_t data) final;
 
   bool _reload(Simulation* psi);
+  void _loadExtraScripts(); // load PythonSystemData._sceneScriptPathsCSV -> _extraScripts (own namespaces)
 
   template <typename Arg>
   auto process_arg(Arg&& arg) {
@@ -145,6 +179,7 @@ public:
   system_update_lambda_t _onSystemUpdate;
   obind::object _systemScript;
   obind::object _pymethodOnSystemUpdate;
+  obind::object _pymethodOnSystemGpuUpdate;   // optional render-tick hook: onSystemGpuUpdate(sim)
   obind::object _pymethodOnSystemInit;
   obind::object _pymethodOnSystemLink;
   obind::object _pymethodOnSystemActivate;
@@ -154,7 +189,12 @@ public:
   obind::object _pymethodOnComponentActivate;
   obind::object _pymethodOnComponentDeactivate;
 
+  // ADDITIONAL system-scoped scripts (PythonSystemData._sceneScriptPathsCSV). Each runs alongside
+  // the primary _pymethod* script; every dispatch site fans to the primary AND all of these.
+  std::vector<PythonSysScript> _extraScripts;
+
   const PythonSystemData& _systemData;
+  int _updateCounter = 0; // frame counter fed to component-script updinfo
 
   //int mScriptRef;
 };

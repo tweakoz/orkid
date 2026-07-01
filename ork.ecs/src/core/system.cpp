@@ -275,6 +275,17 @@ void System::_notify(token_t evID, evdata_t data) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void System::_gpuNotify(token_t evID, evdata_t data) {
+  _onGpuNotify(evID, data);
+}
+
+void System::_onGpuNotify(token_t evID, evdata_t data) {
+  // default: no-op — render-sync systems (e.g. SceneGraphSystem) override this to
+  // service notifies that must run on the render/gpu thread.
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void System::_request(impl::sys_response_ptr_t response, token_t evID, evdata_t data) {
   //printf( "System::_request<%08llx>\n", (ull)evID._hashed );
   this->_onRequest(response, evID, data);

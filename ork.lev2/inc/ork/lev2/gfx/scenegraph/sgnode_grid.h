@@ -31,6 +31,8 @@ public:
   float _extent = 100.0f;
   float _majorTileDim = 1.0f;
   float _minorTileDim = 0.1f;
+  float _minorFadeBegin = 0.0f; // eye-distance (world units) where the minor grid starts fading
+  float _minorFadeEnd   = 0.0f; // ...and where it's fully gone; <= begin => no fade (default)
   std::string _shader_suffix = "";
 };
 

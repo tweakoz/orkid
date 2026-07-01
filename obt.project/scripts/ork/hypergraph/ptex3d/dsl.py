@@ -604,8 +604,13 @@ class SurfaceCtx:
     """Sample a bound 2D texture `name` (a real sampler2D uniform) at `uv` (default ctx.uv).
     Returns a vec4 — swizzle .r/.x for a single-channel (R32F) map. Attach a Texture at runtime
     via material.bindParam(name, texture). `default` is the constant used in a compute bake (which
-    has no sampler). E.g.:  d = ctx.tex("FlowMap").x ;  albedo = albedo * (0.5 + d)."""
+    has no sampler). E.g.:  d = ctx.tex("FlowMap").x ;  albedo = albedo * (0.5 + d).
+
+    `name` may also be a CaptureRef (from self.capture(...)): then it resolves to sampler <target>
+    swizzled to the ref's slot — so ctx.tex(c_alb) is a vec3, ctx.tex(c_ao) is a float, etc."""
     u = self.uv if uv is None else _wrap(uv)
+    if isinstance(name, CaptureRef):
+      return getattr(TexSample(name.target, u, default), name.slot)
     return TexSample(name, u, default)
 
 
@@ -615,6 +620,25 @@ class SurfaceCtx:
 
 _FIELD_TYPE = {"albedo": "vec3", "normal": "vec3", "emissive": "vec3",
                "metallic": "float", "roughness": "float", "ao": "float", "opacity": "float"}
+
+_WIDTH = {"float": 1, "vec2": 2, "vec3": 3, "vec4": 4}
+
+
+class CaptureRef:
+  """Handle returned by self.capture(target, expr, slot) — the explicit connection between a baked
+  image and the reconstruction (visible in the user's file, not hidden in C++). Carries the physical
+  texture name (`target` — one cached file <target>.png, one sampler <target>, one bake MRT), the
+  packed component slot (`slot`, e.g. 'xyz'/'w'/'zw'), and the value width. `ctx.tex(ref)` resolves it:
+  samples sampler `target`, swizzles `slot` -> a node of the natural width."""
+  __slots__ = ("target", "slot", "width")
+
+  def __init__(self, target, slot, width):
+    self.target = target
+    self.slot   = slot
+    self.width  = width
+
+  def __repr__(self):
+    return "CaptureRef(%r.%s)" % (self.target, self.slot)
 
 
 # short aliases -> canonical glTF lobe field names (accepted in surface(**lobes)
@@ -785,7 +809,8 @@ class Ptex3d:
 
   def surface(self, *, albedo=None, metallic=None, roughness=None,
               normal=None, emissive=None, ao=None, opacity=None,
-              blend="off", depth_test="leq", depth_write=True, cull="front", **lobes):
+              blend="off", depth_test="leq", depth_write=True, cull="front",
+              alpha_to_coverage=False, **lobes):
     """LIT PBR surface. The TEXTURED channels (albedo/metallic/roughness/normal/emissive/ao + the
     optional per-pixel `opacity`) take SurfNode expressions. Extra kwargs are glTF PBR LOBES
     (transmission/ior/clearcoat/sheen/subsurface/...) — material-level CONSTANT uniforms.
@@ -800,7 +825,9 @@ class Ptex3d:
         chans[name] = _wrap(val)
     self._channels = chans
     self._surface_mode = "lit"
-    self._raster = dict(blend=blend, depth_test=depth_test, depth_write=depth_write, cull=cull)
+    # A2C (order-independent foliage): fragment alpha -> MSAA coverage; needs an MSAA RTG + per-pixel opacity.
+    self._raster = dict(blend=blend, depth_test=depth_test, depth_write=depth_write, cull=cull,
+                        alpha_to_coverage=alpha_to_coverage)
     if lobes:
       norm = dict(getattr(self, "_lobes", {}))
       for k, v in lobes.items():
@@ -814,7 +841,53 @@ class Ptex3d:
         norm[k] = v
       self._lobes = norm
 
-  def unlit(self, color, opacity=1.0, *, blend="alpha", depth_test="leq", depth_write=False, cull="off"):
+  def capture(self, target, expr, slot=None):
+    """Declare a NAMED capture of a specific DSL output for the proctex texture-bake. Captures that
+    share a `target` PACK into one RGBA texture (one cached file `<target>.png`, one sampler `<target>`,
+    one bake MRT). `slot` ('x'/'xy'/'xyz'/'w'/'zw'/...) places `expr` in the target's components; omit
+    it to auto-assign the next free components by the expr's width. Returns a CaptureRef the
+    reconstruction (surface_stored) samples via ctx.tex(ref). See the design report §5.1."""
+    e = _wrap(expr)
+    w = _WIDTH.get(e._type)
+    if w is None:
+      raise TypeError("capture(%r): expr type %r not bakeable (need float/vec2/vec3/vec4)" % (target, e._type))
+    used = self.__dict__.setdefault("_capture_used", {})   # target -> list of used component indices
+    cur  = used.setdefault(target, [])
+    if slot is None:
+      free = [i for i in range(4) if i not in cur]
+      if len(free) < w:
+        raise ValueError("capture target %r overflow: needs %d comps, %d free" % (target, w, len(free)))
+      comps = free[:w]
+      slot  = "".join("xyzw"[i] for i in comps)
+    else:
+      if any(c not in "xyzw" for c in slot):
+        raise ValueError("capture(%r): bad slot %r (use x/y/z/w)" % (target, slot))
+      comps = ["xyzw".index(c) for c in slot]
+      if len(comps) != w:
+        raise ValueError("capture(%r): slot %r has %d comps but expr is width %d" % (target, slot, len(comps), w))
+      for i in comps:
+        if i in cur:
+          raise ValueError("capture(%r): component %r already packed" % (target, "xyzw"[i]))
+    cur.extend(comps)
+    ref = CaptureRef(target, slot, w)
+    self.__dict__.setdefault("_captures", []).append((target, slot, e, ref))
+    return ref
+
+  def surface_stored(self, *, albedo=None, metallic=None, roughness=None,
+                     normal=None, emissive=None, ao=None, opacity=None):
+    """The STORED reconstruction surface — sampled from the captures (ctx.tex(ref)) instead of the
+    live proc. A FULL DSL expression context: combine sampled captures with cheap live detail
+    (the hybrid path). Compiled as ptex_surface when the material materializes in mode='stored';
+    ignored in mode='proc' (which compiles surface())."""
+    chans = {}
+    for nm, val in (("albedo", albedo), ("metallic", metallic), ("roughness", roughness),
+                    ("normal", normal), ("emissive", emissive), ("ao", ao), ("opacity", opacity)):
+      if val is not None:
+        chans[nm] = _wrap(val)
+    self._stored_channels = chans
+
+  def unlit(self, color, opacity=1.0, *, blend="alpha", depth_test="leq", depth_write=False, cull="off",
+            alpha_to_coverage=False):
     """UNLIT emissive surface: out_clr = (color, opacity), NO scene lighting. For standard 3DGS
     splats (radiance baked into the color), skyboxes, FX overlays, emissive UI. `color` (vec3) and
     `opacity` (float) are SurfNode expressions or constants. Rasterstate defaults to TRANSPARENT
@@ -826,7 +899,8 @@ class Ptex3d:
       chans["opacity"] = _wrap(opacity)
     self._channels = chans
     self._surface_mode = "unlit"
-    self._raster = dict(blend=blend, depth_test=depth_test, depth_write=depth_write, cull=cull)
+    self._raster = dict(blend=blend, depth_test=depth_test, depth_write=depth_write, cull=cull,
+                        alpha_to_coverage=alpha_to_coverage)
 
   def fragment_storage(self, storage_decl, *, inherits=(), append=""):
     """Declare a FRAGMENT-side storage_interface the surface reads + raw GLSL appended AFTER the DSL
@@ -986,6 +1060,35 @@ def emit_surface(channels):
   return body, libsrcs, sorted(inherits), sorted(imports), params, list(em.samplers)
 
 
+def emit_captures(captures):
+  """captures: [(target, slot, node, ref), ...] (captures sharing a `target` PACK into one RGBA) ->
+     (capture_body, libsrcs, lib_inherits, imports, param_specs, samplers, targets).
+  capture_body assembles each target's vec4 from its packed exprs (default 0.0 in unfilled
+  components) as `c.<target> = vec4(c0,c1,c2,c3);`, run inside the generated ptex_capture() (same
+  signature/env/helpers as ptex_surface, so the capture exprs evaluate identically to the proc)."""
+  em = _Emitter()
+  targets  = []                 # ordered-unique target names (one MRT location each)
+  bytarget = {}                 # target -> [(slot, gtype, glsl_var), ...]
+  for (target, slot, node, ref) in captures:
+    if target not in bytarget:
+      bytarget[target] = []
+      targets.append(target)
+    glsl = em.expr(node)        # SSA (CSE shared across all captures)
+    bytarget[target].append((slot, node._type, glsl))
+  assigns = []
+  for target in targets:
+    comps = ["0.0", "0.0", "0.0", "0.0"]
+    for (slot, gtype, glsl) in bytarget[target]:
+      w = _WIDTH[gtype]
+      for k, ch in enumerate(slot):
+        idx = "xyzw".index(ch)
+        comps[idx] = glsl if w == 1 else "%s.%s" % (glsl, "xyzw"[k])
+    assigns.append("c.%s = vec4(%s);" % (target, ", ".join(comps)))
+  body = "\n".join(em.lines + assigns)
+  libsrcs, inherits, imports, params = _emitter_deps(em)
+  return body, libsrcs, sorted(inherits), sorted(imports), params, list(em.samplers), targets
+
+
 def emit_height(node, coord="coord"):
   """Emit a displacement-height expression as the body of
   `float ptex_height(vec3 coord, vec3 wpos, vec3 wnrm, vec3 onrm, vec2 uv, vec4 cd,
@@ -1059,11 +1162,38 @@ def _merge_param_specs(a, b):
   return a + [p for p in b if p[0] not in seen]
 
 
-def _build_ptex3d(dsl_class, name_hint=None, vertex_source=None, **params):
+def _build_ptex3d(dsl_class, name_hint=None, vertex_source=None, mode="proc", **params):
+  # impostor (geometry-LOD bake source, whole-surface fixed MRT) and the terrain texture-bake both
+  # emit a capture technique. Pop BOTH unconditionally so neither leaks into the surface DSL.
+  _wants_impostor = bool(params.pop("impostor", False))
+  _wants_capture  = bool(params.pop("capture", False))
   inst = dsl_class(SurfaceCtx(), **params)
-  if not getattr(inst, "_channels", None):
-    raise RuntimeError("%s built no surface() channels" % dsl_class.__name__)
-  body, libsrcs, inherits, imports, pspecs, samplers = emit_surface(inst._channels)
+  caps         = getattr(inst, "_captures", None)
+  stored_chans = getattr(inst, "_stored_channels", None)
+  capture_kwargs = {}
+  # EXPLICIT-CAPTURE STORED mode: render surface_stored(); bake the named/packed captures (§5).
+  if mode == "stored" and caps:
+    if not stored_chans:
+      raise RuntimeError("%s: mode='stored' declares captures but no surface_stored()" % dsl_class.__name__)
+    body, libsrcs, inherits, imports, pspecs, samplers = emit_surface(stored_chans)
+    cap_body, c_libs, c_inh, c_imp, c_params, c_samps, targets = emit_captures(caps)
+    libsrcs  = _union_ordered(libsrcs, c_libs)          # union helpers (capture exprs need their own)
+    inherits = sorted(set(inherits) | set(c_inh))
+    imports  = sorted(set(imports) | set(c_imp))
+    pspecs   = _merge_param_specs(pspecs, c_params)
+    # SPLIT the sampler sets: the FORWARD declares only surface_stored's samplers (`samplers`); the capture
+    # exprs' samplers go to a capture-only set (lib_ptex_capture). Metal caps 16 samplers/stage, so the
+    # forward must NOT carry the channel samplers (FlowMetrics/...) it never uses (else MSL out-of-bounds).
+    cap_only_samplers = [s for s in c_samps if s not in samplers]
+    wants_capture  = True
+    capture_kwargs = dict(capture_body=cap_body, capture_targets=tuple(targets),
+                          capture_samplers=tuple(cap_only_samplers))
+  else:
+    # mode='proc' (live) OR impostor (whole-surface fixed-MRT capture): render surface().
+    if not getattr(inst, "_channels", None):
+      raise RuntimeError("%s built no surface() channels" % dsl_class.__name__)
+    body, libsrcs, inherits, imports, pspecs, samplers = emit_surface(inst._channels)
+    wants_capture = _wants_impostor or _wants_capture
 
   height_kwargs = {}
   height   = getattr(inst, "_height", None)
@@ -1111,6 +1241,14 @@ def _build_ptex3d(dsl_class, name_hint=None, vertex_source=None, **params):
   if vertex_source is not None:
     vskw = (vertex_source.as_material_kwargs()
             if hasattr(vertex_source, "as_material_kwargs") else dict(vertex_source))
+    # a vertex_source may contribute bindable params (e.g. a VertexDisplace's WindDir/Time) — merge them
+    # into ublk_ptex_params so they get pipeline block-state + bind by name (its VS inherits the block).
+    # A provider-token default (Time = RCFD_TIME) survives as a crcstring shader_param: the engine binds
+    # its per-frame value via fx_pipeline's named-param providers (no per-frame host code).
+    if hasattr(vertex_source, "displace_params"):
+      dp = vertex_source.displace_params()
+      if dp:
+        pspecs = _merge_param_specs(pspecs, dp)
   # a material may declare a FRAGMENT-side storage block it reads + a raw surface-body append (e.g.
   # the hypermesh TopoView material reads a per-triangle face-id buffer via gl_PrimitiveID). Declared
   # on the instance by self.fragment_storage(...) — see Ptex3d.fragment_storage.
@@ -1130,16 +1268,16 @@ def _build_ptex3d(dsl_class, name_hint=None, vertex_source=None, **params):
   path = materialize_surface_fxv2(body, libblock=libblock, lib_inherits=inherits,
                                   extra_imports=imports, params=pspecs, samplers=samplers,
                                   name_hint=name_hint or dsl_class.__name__.lower(),
-                                  surface_mode=_mode, **_raster,
-                                  **height_kwargs, **vskw, **matkw)
+                                  surface_mode=_mode, wants_capture=wants_capture, **_raster,
+                                  **height_kwargs, **vskw, **matkw, **capture_kwargs)
   lobes = dict(getattr(inst, "_lobes", None) or {})   # class-declared PBR lobes
-  return path, pspecs, lobes
+  return path, pspecs, lobes, capture_kwargs.get("capture_targets", ())
 
 
 def materialize_ptex3d(dsl_class, *, name_hint=None, vertex_source=None, **params):
   """Instantiate a Ptex3d subclass, emit its surface, and bake the .fxv2.
   Returns the cached .fxv2 path."""
-  path, _, _ = _build_ptex3d(dsl_class, name_hint=name_hint, vertex_source=vertex_source, **params)
+  path = _build_ptex3d(dsl_class, name_hint=name_hint, vertex_source=vertex_source, **params)[0]
   return path
 
 

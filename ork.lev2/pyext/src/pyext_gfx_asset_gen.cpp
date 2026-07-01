@@ -189,6 +189,12 @@ void pyinit_gfx_asset_gen(py::module& module_lev2) {
                 for (auto item : params) {
                   auto k = item.first.cast<std::string>();
                   auto v = py::reinterpret_borrow<py::object>(item.second);
+                  // a CrcString value = a named fx-pipeline PROVIDER token (e.g. tokens.RCFD_TIME):
+                  // the engine supplies the per-frame value (clock, etc.). Store as crcstring_ptr_t;
+                  // fx_pipeline resolves it each frame (and the varmap codec round-trips it by hash).
+                  bool stored_crc = false;
+                  try { d->_shader_params->set<crcstring_ptr_t>(k, v.cast<crcstring_ptr_t>()); stored_crc = true; } catch (...) {}
+                  if (stored_crc) continue;
                   if (py::isinstance<py::float_>(v) ||
                       (py::isinstance<py::int_>(v) && !py::isinstance<py::bool_>(v))) {
                     d->_shader_params->set<float>(k, v.cast<float>());

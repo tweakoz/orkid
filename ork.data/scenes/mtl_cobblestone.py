@@ -44,4 +44,4 @@ class CobbleStoneScene(Scene):
     self.entity(
       "cobbleball",
       transform  = {"translation": vec3(0, 0, 0)},
-      components = [self.SG.component(nodes={"n": {"drawable": drw}})])
+      components = [self.spinner(), self.SG.component(nodes={"n": {"drawable": drw}})])

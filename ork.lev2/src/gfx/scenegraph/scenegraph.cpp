@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/lev2/gfx/scenegraph/scenegraph.h>
+#include <ork/lev2/gfx/renderphasestats.h> // perf HUD render-phase timing sink
 #include <ork/lev2/ui/event.h>
 #include <ork/application/application.h>
 #include <ork/reflect/properties/registerX.inl>
@@ -158,6 +159,7 @@ void Scene::gpuUpdate(Context* ctx) {
   if (frame == _lastGpuUpdateFrame)
     return;
   _lastGpuUpdateFrame = frame;
+  RenderPhaseScope _sgu("gpuUpdate"); // perf HUD: in-frame drawable gpu fan-out (hypermesh compute etc.)
   if (_lightManager && _lightManager->_needs_gpu_init) {
     _lightManager->gpuInit(ctx);
   }
@@ -181,21 +183,56 @@ void Scene::gpuUpdate(Context* ctx) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Scene::preRender(Context* ctx, const CameraMatrices& cammtx) {
+  RenderPhaseScope _spr("preRender"); // perf HUD: per-view drawable prep (terrain/hm cull fan-out)
   // Per-viewport pre-render fan-out (render thread, BEFORE this viewport's render pass — compute
   // -legal). Each SceneGraphViewport drives this with ITS OWN camera/aspect, so a drawable shared
   // across viewports gets onPreRender once per VP with that VP's matrices. Default
   // Drawable::onPreRender is a no-op; view-dependent drawables (e.g. instance frustum-cull) override.
+  //
+  // THE single shared injection point for CullFrustumScale across all 5 3D programs: every render
+  // path pushes its RCFD onto the context BEFORE calling preRender (the _renderIMPL family at
+  // scenegraph_render.cpp:184; the SGVP family at ezapp_topwidget.cpp:89), so stamping the frame-
+  // global value here as an RCFD user property reaches every per-view cull (which read it back via
+  // ctx->topRenderContextFrameData()) with ONE edit. Replaces the VR ORKEXP_VRCULL_MARGIN env and
+  // the per-drawable cull_tighten.
+  if (auto rcfd = ctx->topRenderContextFrameData()) {
+    rcfd->setUserProperty("CullFrustumScale"_crc, _cullFrustumScale);
+    // HZB 1-phase occlusion source: the pyramid built (from LAST frame's depth) during the previous
+    // frame's forward render, stored on this Scene. Stamp the ptr as a uint64_t HANDLE (NOT a raw
+    // HZBBuilder* — that took a setUserProperty path that didn't round-trip; CullFrustumScale, a POD
+    // float on the same RCFD, reaches the cull fine) so every per-view cull can read it back.
+    rcfd->setUserProperty("HZB"_crc, uint64_t(reinterpret_cast<uintptr_t>(_hzb.get())));
+  }
+  // onPreRender is a per-drawable-per-VIEW hook (cull, animation, etc.) — it takes only the view
+  // (ctx + cammtx), NOT a layer. A drawable enqueued in multiple layers (e.g. depth_prepass AND
+  // std_forward, which render the SAME geometry into the depth pre-pass and the color pass) must be
+  // prepared exactly ONCE per view; running it per-layer double-dispatches the GPU cull. Dedupe by
+  // drawable so each unique drawable's onPreRender fires once regardless of layer membership.
+  std::unordered_set<const void*> prerendered;
+  // BATCH per-view culls into ONE compute submit: open a single dispatch phase around the whole
+  // drawable fan-out so every drawable's per-view cull (hypermesh instance cull, terrain HZB cull —
+  // however many variants this scene defines) records into one command buffer / one submit+WAIT,
+  // instead of a submit+WAIT per drawable. beginDispatchPhase/endDispatchPhase are reentrant
+  // (ref-counted), so each cull's own begin/end nests harmlessly and only this outer end submits.
+  auto _cull_ci = ctx->CI();
+  if (_cull_ci)
+    _cull_ci->beginDispatchPhase();
   _layers.atomicOp([&](const layer_map_t& unlocked) {
     for (const auto& [name, layer] : unlocked) {
       layer->_drawable_nodes.atomicOp([&](const Layer::drawablenodevect_t& nodes) {
         for (const auto& node : nodes) {
-          if (node->_enabled && node->_drawable) {
+          if (node->_enabled && node->_drawable && prerendered.insert(node->_drawable.get()).second) {
             node->_drawable->onPreRender(ctx, cammtx);
           }
         }
       });
     }
   });
+  if (_cull_ci)
+    _cull_ci->endDispatchPhase();
+  // Instanced-hypermesh + terrain cull results accumulate into CullStats during the fan-out above;
+  // CullStats::commit() (once per frame in _renderIMPL) publishes them for the perf HUD's [hmcull] /
+  // [terraincull] lines.
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -356,6 +393,13 @@ void Scene::applyRuntimeParams(varmap::varmap_ptr_t params) {
   if (auto try_diffuseLevel = params->tryKeyAsNumber("DiffuseIntensity")) {
     _pbr_common->_diffuseLevel = try_diffuseLevel.value();
   }
+  // Frame-global cull-frustum scale (>1 widen/cull-less, 1.0 exact, <1 narrow/cull-more). Parsed
+  // here in the shared apply block (reached by BOTH initWithParams and applyRuntimeParams) so every
+  // program — ECS player, SGVP viewers, VR — picks it up the same way as DiffuseIntensity. Only set
+  // when present, so the member default (1.0, or 1.3 for VR presets) stands when the param is absent.
+  if (auto try_cullFrustumScale = params->tryKeyAsNumber("CullFrustumScale")) {
+    _cullFrustumScale = try_cullFrustumScale.value();
+  }
   if (auto try_ambientLevel = params->typedValueForKey<fvec3>("AmbientLight")) {
     _pbr_common->_ambientLevel = try_ambientLevel.value();
   }
@@ -459,11 +503,14 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outrnode     = nodetek->tryRenderNodeAs<pbr::ForwardNode>();
     _pbr_common     = outrnode->_pbrcommon;
+    _cullFrustumScale = 1.3f; // VR default margin (1-frame-stale HMD pose + both eyes); a host
+                              // CullFrustumScale scenegraph param overrides via applyRuntimeParams below
   } else if (preset_upper == "FWDPBRVRDM") {
     _compositorPreset = _compositorData->presetForwardPBRVRDM(_renderPresetData);
     auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outrnode     = nodetek->tryRenderNodeAs<pbr::ForwardNode>();
     _pbr_common     = outrnode->_pbrcommon;
+    _cullFrustumScale = 1.3f; // VR default margin (see FWDPBRVR); host param overrides below
     OrkAssert(_pbr_common);
   } else if (preset_upper == "PICKTEST") {
     auto cdata = std::make_shared<CompositingData>();

@@ -335,7 +335,8 @@ public:
   std::string _material_asset_name;
   float       _iso           = 0.0f;
   float       _adaptivity    = 0.0f;
-  bool        _flip_windings = true;   // see vdb_drawable.h: SDF default
+  bool        _flip_windings = false;  // SDF default: openvdb winds negative-inside grids OUTWARD (CCW
+                                       // front-face). Set true only for HIGH-inside density/fog grids (see vdb_drawable.h).
 };
 
 using vdb_grid_to_drawable_gendata_ptr_t = std::shared_ptr<VdbGridToDrawableGenData>;

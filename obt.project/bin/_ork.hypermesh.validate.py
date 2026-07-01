@@ -115,7 +115,7 @@ class ValidatorApp(ComponentizedApplication):
       except Exception: self._asset_file = self._asset_path
       self._asset = asset_cls()
       self._live  = self._asset.materialize_live(ctx)            # may raise on a bad graph -> ERROR
-      cdd, _gmtl  = make_drawable(self._live, ctx, animated=False, material_cls=None,
+      cdd, _gmtl = make_drawable(self._live, ctx, animated=False, material_cls=None,
                                   instances=getattr(self._asset, "instances", None))  # asset opts into instancing
       self.node   = self.SGC.layer_fwd.createDrawableNodeFromData("hmvalidate", cdd)
       # keep the skybox LOADED (it's the IBL light source — the geometry must be lit to be visible) but

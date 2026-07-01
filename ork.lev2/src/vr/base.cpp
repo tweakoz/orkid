@@ -98,11 +98,14 @@ void Device::resetCalibration(){
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void Device::setTrackedPose(const fvec3& pos, const fquat& orient, const fvec3& linvel, const fvec3& angvel) {
+void Device::setTrackedPose(const fvec3& pos, const fquat& orient, const fvec3& linvel, const fvec3& angvel,
+                            const fvec3& linacc, const fvec3& angacc) {
   _trackedPos         = pos;
   _trackedQuat        = orient;
   _trackedLinVel      = linvel;
   _trackedAngVel      = angvel;
+  _trackedLinAcc      = linacc;
+  _trackedAngAcc      = angacc;
   _trackedCaptureTick = Timer::getSystemTick();   // age the pose from here
   _trackedPoseValid   = true;
 }
@@ -116,23 +119,33 @@ void Device::_predictHmdPose() {
   ////////////////////////////////////////
 
   float t = _predictionBias;
+  //printf("scanout_pred<%p> tick<%llu>\n", (void*) _scan_out_predictor.get(), _trackedCaptureTick, t );
   if (_scan_out_predictor && _trackedCaptureTick > 0) {
     u64 scanout = _scan_out_predictor->predictNextTargetSystemTick();
-    if (scanout > _trackedCaptureTick)               // lead = predicted scan-out - pose age
+    if (scanout > _trackedCaptureTick){               // lead = predicted scan-out - pose age
       t += float(double(scanout - _trackedCaptureTick) * 1e-9);
+    }
   }
+  //t *= 0.75;
 
   ////////////////////////////////////////
-  // extrapolate the tracked pose by its kinematics
+  // extrapolate the tracked pose by its kinematics (2nd-order: vel + ½·acc·t²).
+  // acc is the SDK-provided linear/angular acceleration; zero => 1st-order. The
+  // accel term is a small correction that mostly helps at the onset/arrest of fast
+  // head motion (where constant-velocity lags); it can amplify accel noise, so the
+  // host can null it (send zero acc) to fall back to 1st-order.
   ////////////////////////////////////////
 
-  fvec3 pos  = _trackedPos + _trackedLinVel * t;
+  float ht2  = 0.5f * t * t;
+  fvec3 pos  = _trackedPos + _trackedLinVel * t + _trackedLinAcc * ht2;
   fquat q    = _trackedQuat;
-  float wmag = _trackedAngVel.magnitude();
-  if (wmag > 1e-6f) {
-    fvec3 axis = _trackedAngVel * (1.0f / wmag);
+  // integrated angular displacement vector over the lead: ω·t + ½·α·t²
+  fvec3 rotvec = _trackedAngVel * t + _trackedAngAcc * ht2;
+  float ang    = rotvec.magnitude();
+  if (ang > 1e-6f) {
+    fvec3 axis = rotvec * (1.0f / ang);
     fquat dq;
-    dq.fromAxisAngle(fvec4(axis, wmag * t));
+    dq.fromAxisAngle(fvec4(axis, ang));   // ang already folds in t (and ½·t²)
     q = dq * q;                 // world-frame angular velocity => left-multiply
     q.normalizeInPlace();
   }

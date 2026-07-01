@@ -223,6 +223,11 @@ public:
   virtual ImmInterface* IMI() {
     return 0;
   } // Immediate Mode Interface (optional)
+  // Max hardware MSAA sample count supported for color+depth render targets (device limit).
+  // Base = 1 (no MSAA); the Vulkan backend overrides from VkPhysicalDeviceLimits.
+  virtual int msaaMaxSamples() {
+    return 1;
+  }
   pri_rawptr_t PRI() {
     return _primitives_interface.get();
   } // Primitives Interface

@@ -118,6 +118,10 @@ ork::lev2::orkezapp_ptr_t pylev2appinit(py::kwargs kwargs) {
         }
       } else if (key == "fullscreen_monitor") {
         init_data->_fullscreen_monitor = py::cast<std::string>(item.second);
+      } else if (key == "hidpi") {
+        // Opt into a backing-scaled (Retina) framebuffer. Default is LoDPI to
+        // save fillrate; HiDPI must be explicitly requested.
+        init_data->_allowHIDPI = py::cast<bool>(item.second);
       } else if (key == "enable_always_on_top") {
         init_data->_canalwaysontop = py::cast<bool>(item.second);
       } else if (key == "enable_graphics") {

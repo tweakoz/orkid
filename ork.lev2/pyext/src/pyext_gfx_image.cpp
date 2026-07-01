@@ -186,6 +186,15 @@ void pyinit_gfx_image(py::module& module_lev2) {
         result->resizedOf(*img, w, h);
         return result;
       }, py::arg("w"), py::arg("h"))
+      // High-quality anti-aliased resample (float / heightmap capable, arbitrary ratio). filter = a token
+      // from the CrcStringProxy: tokens.BOX / TRIANGLE / BSPLINE / MITCHELL / CATMULL_ROM / LANCZOS3
+      // (default MITCHELL). Use a RINGING-FREE filter (TRIANGLE / BSPLINE / BOX) for heightmaps.
+      .def("resampled", [](image_ptr_t img, int w, int h, crcstring_ptr_t filter) -> image_ptr_t {
+        auto result = std::make_shared<Image>();
+        auto f = filter ? Image::ResampleFilter(filter->hashed()) : Image::ResampleFilter::MITCHELL;
+        result->resampledOf(*img, w, h, f);
+        return result;
+      }, py::arg("w"), py::arg("h"), py::arg("filter") = crcstring_ptr_t(nullptr))
       .def("toXTXDataBlock", [](image_ptr_t img) -> py::bytes {
         // Package this image as a single-level XTX mipchain datablock
         CompressedImageMipChain mipchain;

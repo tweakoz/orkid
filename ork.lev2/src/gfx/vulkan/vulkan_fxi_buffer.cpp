@@ -135,9 +135,10 @@ void VkFxInterface::copyBufferIntoStorageBuffer(FxShaderStorageBuffer* ssbo,
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::bindStorageBuffer(const FxShaderStorageBlock* block,
-                                      FxShaderStorageBuffer* buffer) {
+                                      FxShaderStorageBuffer* buffer,
+                                      size_t byte_offset) {
 
- if(0) printf("bindStorageBuffer: block<%s> buffer<%p>\n", block ? block->_name.c_str() : "null", buffer);
+ if(0) printf("bindStorageBuffer: block<%s> buffer<%p> offset<%zu>\n", block ? block->_name.c_str() : "null", buffer, byte_offset);
 
   if (!block || !buffer) {
     return;
@@ -162,9 +163,12 @@ void VkFxInterface::bindStorageBuffer(const FxShaderStorageBlock* block,
     return;
   }
 
-  // Store binding for later use when creating descriptor sets
-  if (block_state->_bound_buffer != vk_buffer) {
+  // Store binding for later use when creating descriptor sets. The OFFSET is part of the binding
+  // identity: the same buffer at a new offset needs a fresh descriptor set (sub-range LOD draws bind
+  // ONE OUT_M at per-tier offsets within a frame), so invalidate the per-pass hash on either change.
+  if (block_state->_bound_buffer != vk_buffer || block_state->_bound_offset != VkDeviceSize(byte_offset)) {
     block_state->_bound_buffer = vk_buffer;
+    block_state->_bound_offset = VkDeviceSize(byte_offset);
     if (_current_shader_pass_state) {
       _current_shader_pass_state->_samplers_hash = 0;
     }

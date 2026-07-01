@@ -205,7 +205,7 @@ bool VkComputePipelineState::createPipeline(vkfxsstage_ptr_t computeShader) {
     for (const auto& [name, smpset] : computeShader->_smpset_refs->_smpsets) {
       for (const auto& [samp_name, sampler] : smpset->_samplers_by_name) {
         VkDescriptorSetLayoutBinding binding{};
-        binding.binding = smpset->_descriptor_set_id;  // Use descriptor_set_id as binding index
+        binding.binding = sampler->_binding_id;  // real SPIR-V binding (matches GLSL; bound AFTER the SSBOs)
         binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         binding.descriptorCount = 1;
         binding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
@@ -239,7 +239,7 @@ bool VkComputePipelineState::createPipeline(vkfxsstage_ptr_t computeShader) {
       if (int(b.binding) != prev + 1 && prev != -1) sparse = true; // post-sort gap
       prev = int(b.binding);
     }
-    printf("computePipeline<%s>: %zu bindings ->%s%s%s\n", _name.c_str(), layoutBindings.size(),
+    if(0)printf("computePipeline<%s>: %zu bindings ->%s%s%s\n", _name.c_str(), layoutBindings.size(),
            dump.c_str(), dup ? "  [DUPLICATE!]" : "", sparse ? "  [SPARSE!]" : "");
   }
   VkDescriptorSetLayoutCreateInfo layoutInfo{};
@@ -338,8 +338,9 @@ void VkComputeInterface::syncPendingDispatch() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkComputeInterface::beginDispatchPhase() {
-  if (_inDispatchPhase) {
-    return; // Already in dispatch phase
+  if (_phaseDepth++ > 0) {
+    return; // nested begin — the outer phase is already open (reentrant: a per-view fan-out
+            // batches every drawable's cull into this one phase / one submit)
   }
 
   // C.5: a prior non-blocking phase must complete before we reset its command buffer (and before
@@ -451,6 +452,12 @@ void VkComputeInterface::copySSBOToVertexBuffer(
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkComputeInterface::endDispatchPhase() {
+  if (_phaseDepth == 0) {
+    return; // unbalanced end (no open phase)
+  }
+  if (--_phaseDepth > 0) {
+    return; // nested end — defer the submit+barrier to the OUTERMOST end (all culls in one submit)
+  }
   if (!_inDispatchPhase) {
     return; // Not in dispatch phase
   }
@@ -737,7 +744,7 @@ void VkComputeInterface::bindSampler(
 
   // Use the active sampling descriptor
   VkDescriptorImageInfo desc_info = *vktex->_descset_sampling;
-  printf("bindSampler: binding=%u imageView=%p sampler=%p layout=%d\n",
+  if(0)printf("bindSampler: binding=%u imageView=%p sampler=%p layout=%d\n",
          binding_index, (void*)desc_info.imageView, (void*)desc_info.sampler, (int)desc_info.imageLayout);
   pipeline->bindSampler(binding_index, desc_info);
 }

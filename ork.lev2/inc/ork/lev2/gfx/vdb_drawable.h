@@ -37,16 +37,15 @@ using mesh_vtx_t = SVtxV12N12B12T8C4;
 // set to a degenerate zero box, and the function returns. Callers must
 // gate any GPU upload on out_idxs.empty().
 //
-// flip_windings: OpenVDB's volumeToMesh outputs CCW winding when viewed
-// from the LOW-value side of the iso surface. For density fields where
-// "inside" is HIGH (e.g. particle metaball splats with background=0),
-// low-value side = exterior → outward normals — leave flip_windings
-// false. For signed-distance fields where "inside" is NEGATIVE (e.g.
-// meshToLevelSet output), low-value side = interior → INWARD normals.
-// Pass flip_windings=true for SDFs to invert the index winding (and
-// thereby the smoothed normals). gridToDrawable's MeshToDrawable
-// caller in assets.py defaults to true since the asset DSL chain is
-// dominated by SDF inputs.
+// flip_windings: OpenVDB's volumeToMesh winds faces by SIGN — it treats
+// `value < isovalue` as INSIDE (VolumeToMesh.h::isInsideValue) and reverses the
+// quad order for inside cells, giving ONE globally-consistent orientation that is
+// SHAPE-INDEPENDENT. For SDFs (inside = NEGATIVE / low value — ImplicitSdf,
+// meshToLevelSet) that orientation is OUTWARD and reads correctly against the CCW
+// front face (rasterstate.h), so leave flip_windings FALSE (the default). Pass
+// TRUE only when the SOLID is the HIGH side — a density/fog grid where "inside" is
+// high (e.g. metaball splats with background=0): openvdb then oriented for the low
+// region, so the winding must be flipped. The knob is retained for that case.
 void extractMeshFromGrid(
     const vdb_floatgrid_t&    grid,
     float                     iso,
@@ -75,7 +74,7 @@ drawabledata_ptr_t gridToDrawable(
     material_ptr_t      material,
     float               iso           = 0.0f,
     float               adaptivity    = 0.0f,
-    bool                flip_windings = true);
+    bool                flip_windings = false);
 
 } // namespace vdb
 } // namespace ork::lev2

@@ -26,14 +26,23 @@ VulkanRenderInfo::VulkanRenderInfo(VkRtGroupImpl* rtgi) {
     auto vkfmt   = bufimpl->_vkfmt;
     VkRenderingAttachmentInfo rai;
     initializeVkStruct(rai, VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO);
-    // Use slice view from descriptor if available, otherwise use image view
-    rai.imageView   = bufimpl->_descriptorInfo.imageView != VK_NULL_HANDLE
-                      ? bufimpl->_descriptorInfo.imageView
-                      : bufimpl->_imgobj->_vkimageview;
-    rai.imageLayout = bufimpl->_currentLayout;
-    rai.resolveMode = VK_RESOLVE_MODE_NONE;
-    // rai.resolveImageView = VkImageView();
-    // rai.resolveImageLayout = VkImageLayout();
+    // The single-sample image view (descriptor slice if present, else the resolve-target _imgobj).
+    VkImageView single_view = bufimpl->_descriptorInfo.imageView != VK_NULL_HANDLE
+                              ? bufimpl->_descriptorInfo.imageView
+                              : bufimpl->_imgobj->_vkimageview;
+    if (bufimpl->_msaa_imgobj) {
+      // MSAA: render INTO the multisample image, resolve DOWN to the single-sample image at
+      // endRendering (the resolve is free; everything downstream samples the resolved _imgobj).
+      rai.imageView          = bufimpl->_msaa_imgobj->_vkimageview;
+      rai.imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+      rai.resolveMode        = VK_RESOLVE_MODE_AVERAGE_BIT;
+      rai.resolveImageView   = single_view;
+      rai.resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    } else {
+      rai.imageView   = single_view;
+      rai.imageLayout = bufimpl->_currentLayout;
+      rai.resolveMode = VK_RESOLVE_MODE_NONE;
+    }
     rai.loadOp           = rtgi->_autoclear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
     rai.storeOp          = VK_ATTACHMENT_STORE_OP_STORE;
     auto cc = bufimpl->_clear_color;
@@ -55,14 +64,28 @@ VulkanRenderInfo::VulkanRenderInfo(VkRtGroupImpl* rtgi) {
   auto dbuf_impl = rtgi->_depth_buffer_impl;
   if (dbuf_impl) {
     initializeVkStruct(_rainfo_depth, VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO);
-    // Use slice view from descriptor if available, otherwise use image view
-    _rainfo_depth.imageView   = dbuf_impl->_descriptorInfo.imageView != VK_NULL_HANDLE //
-                              ? dbuf_impl->_descriptorInfo.imageView //
-                              : dbuf_impl->_imgobj->_vkimageview; //
-    _rainfo_depth.imageLayout = dbuf_impl->_currentLayout;
-    _rainfo_depth.resolveMode = VK_RESOLVE_MODE_NONE;
-    //_rainfo_depth.resolveImageView = VkImageView();
-    //_rainfo_depth.resolveImageLayout = VkImageLayout();
+    // Single-sample depth view (descriptor slice if present, else the resolve-target _imgobj).
+    VkImageView single_depth = dbuf_impl->_descriptorInfo.imageView != VK_NULL_HANDLE //
+                             ? dbuf_impl->_descriptorInfo.imageView //
+                             : dbuf_impl->_imgobj->_vkimageview; //
+    if (dbuf_impl->_msaa_imgobj) {
+      // MSAA depth: depth-test against the multisample depth. Resolve to the single-sample copy
+      // ONLY in a depth-WRITE pass (the prepass) so DEPTH_MAP samplers (SSAO/water) read a valid
+      // single-sample depth; in the read-only color pass we don't re-resolve (prepass already did).
+      _rainfo_depth.imageView   = dbuf_impl->_msaa_imgobj->_vkimageview;
+      _rainfo_depth.imageLayout = dbuf_impl->_currentLayout;
+      if (not rtgi->_depthReadOnlyMode) {
+        _rainfo_depth.resolveMode        = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
+        _rainfo_depth.resolveImageView   = single_depth;
+        _rainfo_depth.resolveImageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+      } else {
+        _rainfo_depth.resolveMode = VK_RESOLVE_MODE_NONE;
+      }
+    } else {
+      _rainfo_depth.imageView   = single_depth;
+      _rainfo_depth.imageLayout = dbuf_impl->_currentLayout;
+      _rainfo_depth.resolveMode = VK_RESOLVE_MODE_NONE;
+    }
     _rainfo_depth.loadOp                        = rtgi->_autoclear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
     _rainfo_depth.storeOp                       = VK_ATTACHMENT_STORE_OP_STORE;
     _rainfo_depth.clearValue.depthStencil.depth = 1.0f;

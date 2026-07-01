@@ -104,14 +104,18 @@ vkpipelinestate_ptr_t VkFxInterface::_createPipeline(
 
   VkPipelineMultisampleStateCreateInfo MSAA = {};
   initializeVkStruct(MSAA, VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);
-  MSAA.sampleShadingEnable   = VK_FALSE;              // Enable/Disable sample shading
-  MSAA.rasterizationSamples  = VK_SAMPLE_COUNT_1_BIT; // No multisampling
+  // rasterizationSamples MUST match the target RtGroup's color/depth attachment sample count
+  // (the multisample images created in _vkCreateImageForBuffer). Pipelines are cached per RtGroup,
+  // so the MSAA forward RTG gets MSAA pipelines and other RTGs stay 1x.
+  MSAA.sampleShadingEnable   = VK_FALSE;
+  MSAA.rasterizationSamples  = (VkSampleCountFlagBits)msaaEnumToInt(rtg->_msaa_samples);
   MSAA.minSampleShading      = 1.0f;                  // Minimum fraction for sample shading; closer to 1 is smoother
   MSAA.pSampleMask           = nullptr;               // Optional
-  MSAA.alphaToCoverageEnable = VK_FALSE;              // Enable/Disable alpha to coverage
+  MSAA.alphaToCoverageEnable =                        // A2C from the material raster state (order-independent
+      (pipeline->_rasterstate and pipeline->_rasterstate->_alphaToCoverage) ? VK_TRUE : VK_FALSE; // foliage)
   MSAA.alphaToOneEnable      = VK_FALSE;              // Enable/Disable alpha to one
 
-  PIPE_CREATE_INFO.pMultisampleState = &MSAA; // msaa_impl->_VKSTATE; // todo : dynamic
+  PIPE_CREATE_INFO.pMultisampleState = &MSAA;
 
   ////////////////////////////////////////////////////
   // raster states
@@ -529,7 +533,7 @@ vkpipelinestate_ptr_t VkFxInterface::_createPipelineSSBO(vkprimclass_ptr_t primc
   VkPipelineMultisampleStateCreateInfo MSAA = {};
   initializeVkStruct(MSAA, VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);
   MSAA.sampleShadingEnable   = VK_FALSE;
-  MSAA.rasterizationSamples  = VK_SAMPLE_COUNT_1_BIT;
+  MSAA.rasterizationSamples  = (VkSampleCountFlagBits)msaaEnumToInt(rtg->_msaa_samples); // match RTG attachments
   MSAA.minSampleShading      = 1.0f;
   MSAA.pSampleMask           = nullptr;
   MSAA.alphaToCoverageEnable = VK_FALSE;

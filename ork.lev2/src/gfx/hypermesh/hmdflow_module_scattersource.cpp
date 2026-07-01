@@ -41,6 +41,82 @@ ImplementTemplateReflectionX(dgfx::instset_inplugdata_t, "dflowgfx::instsetinplu
 
 namespace ork::lev2::hypermesh {
 
+///////////////////////////////////////////////////////////////////////////////
+// fillInstanceSetFromScatter — the family-neutral scatter resolution, lifted out
+// of ScatterSourceInst::onActivate so a DRAWABLE can resolve the same baked
+// ScatterSet WITHOUT a graph module (LOD: one InstanceSet shared across N LOD
+// meshes, resolved ONCE at the drawable, not once per geometry graph). Reads the
+// .ogeo, filters by type_id (-1 = whole set), fills iset->{_count,_matrices,_attrs}.
+// Idempotent — safe to re-call (a shared asset re-filtered per type). Leaves count
+// 0 (and bumps _version) when the set is missing or the type selects nothing.
+///////////////////////////////////////////////////////////////////////////////
+void fillInstanceSetFromScatter(
+    Context* ctx,
+    dflowgfx::instanceset_inst_ptr_t iset,
+    const std::string& scatter_asset,
+    const std::string& sink,
+    const std::string& ogeo_path,
+    int type_id) {
+  auto fxi = ctx->FXI();
+  std::string path = (not ogeo_path.empty())
+                         ? ogeo_path
+                         : file::Path::expandPathString(
+                               "<assetcache>/terrain/" + scatter_asset + "/" + sink + ".ogeo");
+  if (not std::filesystem::exists(path)) {
+    printf(
+        "fillInstanceSetFromScatter: ScatterSet MISSING <%s> — the HeightField asset must "
+        "materialize (and place its sinks) BEFORE this resolves (declaration order = dependency "
+        "order). Emitting an empty set.\n",
+        path.c_str());
+    iset->_count = 0;
+    iset->markChanged();
+    return;
+  }
+  auto geo = meshutil::Geometry::readChunkfile(file::Path(path.c_str()));
+  OrkAssert(geo);
+  auto chX = geo->_point.channelAs<fmtx4>("xform");
+  auto chT = geo->_point.channelAs<int>("type_id");
+  auto chS = geo->_point.channelAs<int>("variant_seed");
+  OrkAssert(chX and chT);
+  const int total = int(chX->_data.size());
+
+  // filter by type (one typed hypermesh node per type; -1 = the whole set)
+  std::vector<int> sel;
+  sel.reserve(total);
+  for (int i = 0; i < total; i++)
+    if (type_id < 0 or chT->_data[i] == type_id)
+      sel.push_back(i);
+  const int N = int(sel.size());
+
+  iset->_count = N;
+  if (N == 0) {
+    iset->markChanged();
+    return; // a legitimately-empty type: 0 instances draw (count rides the indirect args)
+  }
+  iset->_matrices = fxi->createStorageBuffer(size_t(N) * sizeof(fmtx4));
+  iset->_attrs    = fxi->createStorageBuffer(size_t(N) * 4 * sizeof(float));
+  {
+    auto m   = fxi->mapStorageBuffer(iset->_matrices, 0, size_t(N) * sizeof(fmtx4), BufferMapAccess::WRITE_ONLY);
+    auto dst = (fmtx4*)m->_mappedaddr;
+    for (int i = 0; i < N; i++)
+      dst[i] = chX->_data[sel[i]];
+    fxi->unmapStorageBuffer(m.get());
+  }
+  {
+    auto m   = fxi->mapStorageBuffer(iset->_attrs, 0, size_t(N) * 16, BufferMapAccess::WRITE_ONLY);
+    auto dst = (float*)m->_mappedaddr;
+    for (int i = 0; i < N; i++) {
+      const int s    = sel[i];
+      dst[i * 4 + 0] = float(chT->_data[s]);                               // x = type_id (raw)
+      dst[i * 4 + 1] = chS ? float(chS->_data[s] % 1000) / 1000.0f : 0.0f; // y = variant seed 0..1
+      dst[i * 4 + 2] = 0.0f;
+      dst[i * 4 + 3] = 1.0f;
+    }
+    fxi->unmapStorageBuffer(m.get());
+  }
+  iset->markChanged();
+}
+
 // ScatterSourceModule — see hmdflow.h. Reads the baked ScatterSet .ogeo ONCE at
 // onActivate and fills the InstanceSet's matrices + attrs SSBOs (a STATIC set, v1 —
 // a dynamic/streamed source later just refills + markChanged()s; consumers key on
@@ -53,74 +129,12 @@ struct ScatterSourceInst : public MeshComputeInst {
     _output = typedOutputNamed<dflowgfx::InstanceSetPlugTraits>("Out");
   }
 
-  std::string _resolvePath() const {
-    if (not _d->_ogeo_path.empty())
-      return _d->_ogeo_path;
-    OrkAssert(not _d->_scatter_asset.empty() and not _d->_sink.empty());
-    return file::Path::expandPathString(
-        "<assetcache>/terrain/" + _d->_scatter_asset + "/" + _d->_sink + ".ogeo");
-  }
-
   void onActivate(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<MeshEnv>();
-    auto fxi = env->_ctx->FXI();
-    auto path = _resolvePath();
-    if (not std::filesystem::exists(path)) {
-      printf(
-          "ScatterSource<%s>: ScatterSet MISSING <%s> — the HeightField asset must materialize "
-          "(and place its sinks) BEFORE this graph activates (declaration order = dependency "
-          "order). Refusing to emit an empty set silently.\n",
-          _dgmodule_data->_name.c_str(), path.c_str());
-      OrkAssert(false);
-    }
-    auto geo = meshutil::Geometry::readChunkfile(file::Path(path.c_str()));
-    OrkAssert(geo);
-    auto chX = geo->_point.channelAs<fmtx4>("xform");
-    auto chT = geo->_point.channelAs<int>("type_id");
-    auto chS = geo->_point.channelAs<int>("variant_seed");
-    OrkAssert(chX and chT);
-    const int total = int(chX->_data.size());
-
-    // filter by type (one typed hypermesh node per type; -1 = the whole set)
-    std::vector<int> sel;
-    sel.reserve(total);
-    for (int i = 0; i < total; i++)
-      if (_d->_type_id < 0 or chT->_data[i] == _d->_type_id)
-        sel.push_back(i);
-    const int N = int(sel.size());
-
-    auto iset = _output->_value; // InstanceSetInst (created via data_to_inst)
-    iset->_count = N;
-    if (N == 0) {
-      printf("ScatterSource<%s>: type_id<%d> selects ZERO of %d instances in <%s>\n",
-             _dgmodule_data->_name.c_str(), _d->_type_id, total, path.c_str());
-      iset->markChanged();
-      return; // a legitimately-empty type: 0 instances draw (count rides the indirect args)
-    }
-    iset->_matrices = fxi->createStorageBuffer(size_t(N) * sizeof(fmtx4));
-    iset->_attrs    = fxi->createStorageBuffer(size_t(N) * 4 * sizeof(float));
-    {
-      auto m = fxi->mapStorageBuffer(iset->_matrices, 0, size_t(N) * sizeof(fmtx4), BufferMapAccess::WRITE_ONLY);
-      auto dst = (fmtx4*)m->_mappedaddr;
-      for (int i = 0; i < N; i++)
-        dst[i] = chX->_data[sel[i]];
-      fxi->unmapStorageBuffer(m.get());
-    }
-    {
-      auto m = fxi->mapStorageBuffer(iset->_attrs, 0, size_t(N) * 16, BufferMapAccess::WRITE_ONLY);
-      auto dst = (float*)m->_mappedaddr;
-      for (int i = 0; i < N; i++) {
-        const int s   = sel[i];
-        dst[i * 4 + 0] = float(chT->_data[s]);                                        // x = type_id (raw)
-        dst[i * 4 + 1] = chS ? float(chS->_data[s] % 1000) / 1000.0f : 0.0f;          // y = variant seed 0..1
-        dst[i * 4 + 2] = 0.0f;
-        dst[i * 4 + 3] = 1.0f;
-      }
-      fxi->unmapStorageBuffer(m.get());
-    }
-    iset->markChanged();
-    printf("ScatterSource<%s>: %d/%d instances (type_id %d) from <%s>\n",
-           _dgmodule_data->_name.c_str(), N, total, _d->_type_id, path.c_str());
+    // graph-carried scatter (E.2): delegate to the lifted resolver so the drawable
+    // (LOD) path and the graph path share one code path. _ogeo_path wins when set.
+    fillInstanceSetFromScatter(
+        env->_ctx, _output->_value, _d->_scatter_asset, _d->_sink, _d->_ogeo_path, _d->_type_id);
   }
 
   void compute(dflow::GraphInst*, ui::updatedata_ptr_t) final {} // static set: nothing per-frame

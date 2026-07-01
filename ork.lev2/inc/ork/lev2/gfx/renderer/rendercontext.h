@@ -71,6 +71,7 @@ struct RenderContextInstData {
   bool _isSkinned                   = false;
   bool _isInstanced                 = false;
   bool _isSSBOSourced               = false; // vertices pulled from an SSBO (FWD_SSBO_CUSTOM variant)
+  bool _isImpostor                  = false; // LOD impostor billboard -> FWD_SSBO_CUSTOM_IMPOSTOR variant
   int miMaterialIndex               = 0;
   int miMaterialPassIndex           = 0;
   const IRenderer* mpActiveRenderer = nullptr;

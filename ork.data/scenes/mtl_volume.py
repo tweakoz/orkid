@@ -87,16 +87,16 @@ class VolumeScene(Scene):
 
     self.entity("sphere_vol_clear",
       transform=Transform(translation=vec3(-5.5, 0, 0)),
-      components=[SG.component(nodes={
+      components=[self.spinner(), SG.component(nodes={
         "n": {"drawable": make_drawable("dr_vol_clear", mat_clear)},
       })])
     self.entity("sphere_vol_amber",
       transform=Transform(translation=vec3(0, 0, 0)),
-      components=[SG.component(nodes={
+      components=[self.spinner(), SG.component(nodes={
         "n": {"drawable": make_drawable("dr_vol_amber", mat_amber)},
       })])
     self.entity("sphere_vol_cobalt",
       transform=Transform(translation=vec3(+5.5, 0, 0)),
-      components=[SG.component(nodes={
+      components=[self.spinner(), SG.component(nodes={
         "n": {"drawable": make_drawable("dr_vol_cobalt", mat_cobalt)},
       })])

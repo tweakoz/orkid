@@ -778,6 +778,109 @@ struct ScatterSourceData : public MeshModuleData {
 };
 using scattersourcedata_ptr_t = std::shared_ptr<ScatterSourceData>;
 
+// growth model. Keep in sync with the Python `Archetype` IntEnum in the hypermesh DSL.
+enum class LArchetype : int {
+  Sympodial = 0, // repeated forking — trees, shrubs, cholla
+  Conifer   = 1, // monopodial leader + whorls of drooping laterals
+  Saguaro   = 2, // columnar trunk + arms that curl up (children=0 → barrel)
+  Ocotillo  = 3, // many basal whips splaying out
+};
+
+///////////////////////////////////////////////////////////////////////////////
+// LSystemModule (L-system family, M1) — PRODUCES the XfNodeGraph spine (ork::hyper).
+// v1 runs a hardcoded bracketed parametric L-system (recursive turtle) at onActivate
+// and fills one XfNode per branch joint. The reflected LRuleSet grammar replaces the
+// hardcoded rule later; this proves the module + XfNodeGraph plug + skinner contract.
+///////////////////////////////////////////////////////////////////////////////
+struct LSystemModuleData : public MeshModuleData {
+  DeclareConcreteX(LSystemModuleData, MeshModuleData);
+  LSystemModuleData();
+  static std::shared_ptr<LSystemModuleData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
+  int   _archetype    = 0;      // growth model: 0 sympodial 1 conifer 2 saguaro 3 ocotillo
+  int   _depth        = 7;      // recursion depth / trunk length (per archetype)
+  int   _budget       = 4000;   // hard node cap (bake-cost bound)
+  int   _children     = 2;      // branches per fork (or stems/whorl count per archetype)
+  int   _internodes   = 1;      // segments per shoot (>1 = curved branches under tropism)
+  int   _seed         = 1;      // deterministic stochastic seed
+  float _seg_len      = 0.5f;   // base segment length
+  float _base_radius  = 0.08f;  // trunk radius
+  float _branch_angle = 35.0f;  // lateral pitch off the parent heading (degrees)
+  float _roll         = 137.5f; // phyllotaxis divergence roll between successive shoots (degrees)
+  float _len_decay    = 0.78f;  // length scale per generation
+  float _rad_decay    = 0.72f;  // radius ratio per branch level (child/parent; "10-20% per level" = 0.8-0.9)
+  float _taper        = 0.0f;   // along-shoot radius reduction (0 = cylindrical .. 1 = to a point)
+  float _tropism      = 0.0f;   // gravitropism bend/internode toward +Y (>0 up, <0 droop), radians
+  float _jitter       = 0.0f;   // 0..1 master stochastic-chaos amount (scales the channels below)
+  float _apical       = 0.0f;   // 0..1 apical dominance (leader child continues straighter)
+  // per-channel chaos weights (effective chaos = _jitter * _jit_X) — break up synthetic regularity
+  float _jit_azimuth  = 0.8f;   // lateral azimuth spread (breaks radial symmetry)
+  float _jit_pitch    = 0.35f;  // branch-pitch variation
+  float _jit_length   = 0.5f;   // branch-length variation
+  float _jit_spacing  = 0.3f;   // whorl / internode spacing variation
+  float _jit_drop     = 0.25f;  // probability of dropping a lateral (asymmetric gaps)
+  float _jit_wave     = 0.25f;  // per-internode heading waviness along a shoot
+};
+using lsystemmoduledata_ptr_t = std::shared_ptr<LSystemModuleData>;
+
+///////////////////////////////////////////////////////////////////////////////
+// LSweepModule (L-system family, M1 = G0b) — the SKINNER. XfNodeGraph -> GpuMesh:
+// one `_sides`-gon ring per node, `_sides` quads per parent->child edge (swept
+// generalized cylinder). v1 builds on the CPU from the XfNodeGraph CPU mirror.
+///////////////////////////////////////////////////////////////////////////////
+struct LSweepModuleData : public MeshModuleData {
+  DeclareConcreteX(LSweepModuleData, MeshModuleData);
+  LSweepModuleData();
+  static std::shared_ptr<LSweepModuleData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
+  int   _sides        = 6;    // ring resolution (tube cross-section n-gon)
+  int   _cap_segments = 3;    // rounded end-cap sub-rings (0 = flat n-gon)
+  float _cap_round    = 1.0f; // cap dome height as a fraction of ring radius (1 = hemisphere)
+};
+using lsweepmoduledata_ptr_t = std::shared_ptr<LSweepModuleData>;
+
+///////////////////////////////////////////////////////////////////////////////
+// LeafScatterModule (L-system family) — broadleaf ORGAN placer. Reads the SAME XfNodeGraph skeleton
+// that LSweep skins, and emits a leaf-card GpuMesh: at high-generation nodes (twig tips) it places
+// `_per_node` leaves by PHYLLOTAXIS (golden-angle `_roll` around the node heading, drooped `_pitch`
+// from it), each a quad (`_style` 0) or a 2-quad cross (1). Separate leaf mesh (merged/instanced
+// downstream). CPU build, like LSweep. UV0.xy = card uv (the MATERIAL owns texture vs procedural);
+// COLOR.x = flutter weight (0 petiole .. 1 tip), COLOR.y = a per-leaf hash (hue/phase variation).
+///////////////////////////////////////////////////////////////////////////////
+struct LeafScatterModuleData : public MeshModuleData {
+  DeclareConcreteX(LeafScatterModuleData, MeshModuleData);
+  LeafScatterModuleData();
+  static std::shared_ptr<LeafScatterModuleData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
+  int   _style    = 0;      // 0 = single quad, 1 = 2-quad cross
+  int   _per_node = 3;      // leaf cards placed per eligible node
+  float _min_gen  = 4.0f;   // only nodes with _attrs[1] (generation) >= this bear leaves
+  float _size     = 0.35f;  // leaf blade length
+  float _aspect   = 0.6f;   // blade width / length
+  float _roll     = 137.5f; // phyllotactic golden angle (deg) between successive leaves
+  float _pitch    = 50.0f;  // leaf droop from the stem heading (deg)
+  float _jitter   = 0.25f;  // 0..1 random pitch/roll/size jitter
+  int   _seed     = 1;
+};
+using leafscattermoduledata_ptr_t = std::shared_ptr<LeafScatterModuleData>;
+
+///////////////////////////////////////////////////////////////////////////////
+// MergeMeshData — concatenate two input GpuMeshes (A, B) into one, tagging each source's faces with
+// its own gid (A -> _gid_a, B -> _gid_b) so a multi-material BucketDraw routes them to distinct
+// materials. The CPU concat (vertex/topology readback of both inputs, vidx/face_offset rebasing,
+// __tags gid band) runs in onTopologyReady — both inputs must be host-readable. The canonical use is
+// BAKING a leaf-card mesh INTO a tree trunk so the whole tree is ONE instanceable, single-cull mesh.
+///////////////////////////////////////////////////////////////////////////////
+struct MergeMeshData : public MeshModuleData {
+  DeclareConcreteX(MergeMeshData, MeshModuleData);
+  MergeMeshData();
+  static std::shared_ptr<MergeMeshData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
+  int _gid_a = 0; // gid stamped on input A's faces (bark / trunk)
+  int _gid_b = 1; // gid stamped on input B's faces (leaves / organs)
+};
+using mergemeshdata_ptr_t = std::shared_ptr<MergeMeshData>;
+
 ///////////////////////////////////////////////////////////////////////////////
 // BitOpModule — __tags BIT-BANKING. mesh -> mesh passthrough that rewrites a width-bit destination
 // band of the uint32 `__tags` channel from one or two source bands (per element):
@@ -951,16 +1054,58 @@ livehypermesh_ptr_t materializeLive(dflow::graphdata_ptr_t graph, Context* ctx, 
 // storage_inst_mtx and instAttr to storage_inst_attr LAST (after the viz slots) in python.
 struct MeshRenderBuffers {
   FxShaderStorageBuffer* _faceid   = nullptr;
-  FxShaderStorageBuffer* _instMtx  = nullptr;
+  FxShaderStorageBuffer* _instMtx  = nullptr;  // the cull's interleaved OUT_M (tier 0 at offset 0)
   FxShaderStorageBuffer* _instAttr = nullptr;
+  // Phase 3b LOD tiers: one entry per EXTRA tier (1..N-1). hm_drawable adds a draw per (tier × gid)
+  // binding _instMtx/_instAttr at _instByteOffset via the graphics sub-range bind (the VS reads the
+  // tier's OUT_M slice from gl_InstanceIndex==0). _args = the tier's own indirect command array
+  // (instanceCount stamped by the cull's per-tier fanout); _index = the tier mesh's index buffer.
+  struct TierDraw {
+    FxShaderStorageBuffer* _args  = nullptr;
+    FxShaderStorageBuffer* _index = nullptr;
+    size_t _instByteOffset        = 0;
+  };
+  std::vector<TierDraw> _lodTiers;
 };
+// Resolve a baked ScatterSet (.ogeo) into an InstanceSet WITHOUT a graph module —
+// the family-neutral scatter resolution lifted from ScatterSourceInst (see
+// hmdflow_module_scattersource.cpp). A drawable calls this to bind instances at
+// the drawable level (LOD: one set resolved ONCE, shared across N LOD meshes),
+// rather than carrying a ScatterSource node in every geometry graph. Fills
+// iset->{_count,_matrices,_attrs}; leaves count 0 if the set is missing/empty.
+// ogeoPath wins when non-empty; else resolves <assetcache>/terrain/<asset>/<sink>.ogeo.
+void fillInstanceSetFromScatter(
+    Context* ctx, dflowgfx::instanceset_inst_ptr_t iset,
+    const std::string& scatterAsset, const std::string& sink,
+    const std::string& ogeoPath, int typeId);
+
 MeshRenderBuffers setupMeshRender(
     ComputeDrawableData* cdd, livehypermesh_ptr_t live, Context* ctx, bool animated, bool faceViz,
     bool tagViz = false, bool wireframe = false,
     int instanceCount = 1, const std::vector<float>& instanceMatrices = {},
     const std::vector<int>& boundGids = {},   // E.3: gids with their own material (others fold to slot 0)
     bool cull = false,                        // E.4: per-view GPU frustum cull (instanced only)
-    const fvec4& cullBound = fvec4(0, 0, 0, 0)); // object-space sphere (xyz=center, w=radius; w<=0 = cull off)
+    const fvec4& cullBound = fvec4(0, 0, 0, 0), // object-space sphere (xyz=center, w=radius; w<=0 = cull off)
+    int cullSlabs = 1,            // occludee decomposition: 1 = whole-mesh AABB, N = N vertical slabs
+    float cullTightness = 1.0f,   // occludee box scale about center (<1 culls harder; 1 = geometric)
+    float cullDistance = 0.0f,    // radial distance cull from the eye in meters (0 = off)
+    // Phase 3c — DISTANCE LOD. lodLives[i] is the mesh drawn for instances beyond lodDistances[i] meters
+    // (ascending). One shared instance set, partitioned by the cull into tier 0 (the main `live`) + these
+    // tiers; each tier is its own on-GPU triangulator reading its OUT_M slice via the sub-range bind.
+    const std::vector<livehypermesh_ptr_t>& lodLives = {},
+    const std::vector<float>& lodDistances = {},
+    // LOD step #3 — IMPOSTOR tiers: EXTRA-tier indices (parallel to lodLives/lodDistances) whose tier draws
+    // a baked hemi-oct billboard, not a mesh. Those lodLives[i] are null; the base mesh's PBR atlas is baked
+    // once (the main material needs the FWD_SSBO_CUSTOM_CAPTURE technique — Ptex3d(impostor=True)) and the
+    // cull routes the band's instances to one camera-facing quad each (the FWD_SSBO_CUSTOM_IMPOSTOR tek).
+    const std::vector<int>& impostorTiers = {},
+    // gid -> material (E.3 multi-material): the impostor bake renders each gid bucket with ITS material's
+    // capture technique, so a multi-material mesh (tree bark/branch/leaf) bakes per-region into the atlas.
+    const std::map<int, pbrmaterial_ptr_t>& gidMaterials = {},
+    int impostorGrid = 8,    // hemi-oct atlas view count (grid×grid); from imposter(grid=)
+    int impostorTile = 512,  // per-view atlas tile pixels (atlas = grid*tile square); from imposter(tile=)
+    int impostorSsaa = 2,    // bake supersample factor (render tile*ssaa per view); from imposter(ssaa=)
+    int impostorMsaa = 4);   // bake multisample count; from imposter(msaa=)
 
 // foundation gate: bake ripple (+ ripple->subdivide chain + box) graphs, read the indexed
 // topology back and assert vert/corner/face counts + bbox + a sample normal. Returns FAILED count.

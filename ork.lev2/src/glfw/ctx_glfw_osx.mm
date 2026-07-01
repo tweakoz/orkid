@@ -9,6 +9,8 @@
 #include <Cocoa/Cocoa.h>
 #include <Foundation/Foundation.h>
 #include <CoreData/CoreData.h>
+#include <QuartzCore/QuartzCore.h>
+#include <QuartzCore/CAMetalLayer.h>
 #include <ork/kernel/objc.h>
 #include <objc/objc.h>
 #include <objc/message.h>
@@ -82,6 +84,54 @@ bool _HIDPI() {
   // determine if we are on a retina display
   return false;
 }
+///////////////////////////////////////////////////////////////////////////////
+// Reconcile the window's CAMetalLayer with its actual backing scale. See the
+// declaration in ctx_glfw.cpp for the full rationale (mixed-DPI multi-monitor
+// bug). glfwCreateWindowSurface makes the content view layer-backed with a
+// CAMetalLayer; if the window was created on a different-DPI display than the
+// one it ends up on, that layer's contentsScale is stale. MoltenVK derives
+// surfaceCaps.currentExtent from layer.drawableSize, so a stale scale desyncs
+// the swapchain from the render framebuffer. Set both contentsScale and
+// drawableSize explicitly from the live backingScaleFactor.
+///////////////////////////////////////////////////////////////////////////////
+bool syncMetalLayerScale(GLFWwindow *window, bool allow_hidpi, int* out_w, int* out_h){
+  @autoreleasepool {
+    NSWindow* nsWindow = glfwGetCocoaWindow(window);
+    NSView* view = nsWindow ? [nsWindow contentView] : nil;
+    CGRect bounds = view ? [view bounds] : CGRectZero;
+    // Intended render scale: LoDPI (1.0) unless HiDPI was explicitly requested.
+    const CGFloat backing = nsWindow ? [nsWindow backingScaleFactor] : 1.0;
+    const CGFloat scale   = allow_hidpi ? backing : 1.0;
+    const CGSize  wantDrawable = CGSizeMake(bounds.size.width  * scale,
+                                            bounds.size.height * scale);
+    if (out_w) *out_w = int(wantDrawable.width);
+    if (out_h) *out_h = int(wantDrawable.height);
+
+    if (!view) return false;
+    CALayer* baseLayer = [view layer];
+    if (![baseLayer isKindOfClass:[CAMetalLayer class]]) return false;
+    CAMetalLayer* metalLayer = (CAMetalLayer*)baseLayer;
+
+    bool changed = false;
+    if (metalLayer.contentsScale != scale) {
+      metalLayer.contentsScale = scale;
+      changed = true;
+    }
+    CGSize cur = metalLayer.drawableSize;
+    if (cur.width != wantDrawable.width || cur.height != wantDrawable.height) {
+      metalLayer.drawableSize = wantDrawable;
+      changed = true;
+    }
+    if (changed) {
+      printf("syncMetalLayerScale: allow_hidpi<%d> backing<%g> scale<%g> bounds<%gx%g> -> drawableSize<%gx%g>\n",
+             int(allow_hidpi), (double)backing, (double)scale,
+             (double)bounds.size.width, (double)bounds.size.height,
+             (double)wantDrawable.width, (double)wantDrawable.height);
+    }
+    return changed;
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
 void activateWindow(GLFWwindow *window) {
    auto ctx = (CtxGLFW*)glfwGetWindowUserPointer(window);
     //printf("MacOs Activate Window<%p> w<%d> h<%d>\n", window, ctx->_width, ctx->_height);
@@ -199,6 +249,29 @@ void setApplicationName(const std::string& name) {
                         keyEquivalent:@"q"];
         } else {
             [appMenu setTitle:appName];
+        }
+    }
+}
+///////////////////////////////////////////////////////////////////////////////
+// True-fullscreen presentation. orkid's fullscreen window is already borderless
+// (GLFW: monitor set OR !decorated → NSWindowStyleMaskBorderless), so there is
+// NO title bar. What remains visible is the macOS MENU BAR: on macOS Tahoe the
+// OS no longer auto-hides it for a borderless covering window (that regression is
+// exactly why "windowed fullscreen" — sized to the workarea — was added). For
+// ORKEXP_TRUE_FULLSCREEN we instead claim the whole panel and hide the menu bar +
+// Dock explicitly. This also makes the window an unobstructed full-screen surface,
+// the precondition for macOS to promote it off the windowed compositor path.
+//
+// NSApplicationPresentationHideMenuBar is only legal together with HideDock (or
+// AutoHideDock) — set them as a pair or AppKit rejects the whole options value.
+///////////////////////////////////////////////////////////////////////////////
+void setFullscreenPresentation(bool enable) {
+    @autoreleasepool {
+        if (enable) {
+            [NSApp setPresentationOptions:(NSApplicationPresentationHideMenuBar |
+                                           NSApplicationPresentationHideDock)];
+        } else {
+            [NSApp setPresentationOptions:NSApplicationPresentationDefault];
         }
     }
 }

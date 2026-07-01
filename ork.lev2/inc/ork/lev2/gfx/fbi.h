@@ -117,6 +117,12 @@ public:
   // One-shot: the mode resets after the next matching PopRtGroup so the
   // next frame starts in normal read/write depth-attachment mode again.
   virtual void transitionDepthForSampling(rtgroup_ptr_t rtg) {}
+  // Counterpart to the above: force an rtg back into normal depth-write mode.
+  // A depth-WRITE pass (e.g. the depth-prepass) calls this before its push so
+  // a prior transitionDepthForSampling() (which leaks its read-only flag if no
+  // matching PopRtGroup intervenes — e.g. a compute-side depth sample) cannot
+  // suppress the MSAA depth resolve into the single-sample sampled image.
+  virtual void transitionDepthForWriting(rtgroup_ptr_t rtg) {}
 
   int GetVPX() {
     return viewport()._x;

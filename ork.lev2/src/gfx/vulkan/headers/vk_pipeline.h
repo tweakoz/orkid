@@ -24,6 +24,7 @@ struct VkFxShaderUniformSetItem {
 struct VkFxShaderUniformSampler {
   std::string _datatype;
   std::string _identifier;
+  int _binding_id = -1; // real SPIR-V binding (matches the generated GLSL; set by DBread, after the SSBOs)
   std::shared_ptr<FxShaderParam> _orkparam;
 };
 
@@ -127,6 +128,10 @@ struct VkFxShaderStorageBlockState {
   uint32_t                      _binding_id = 0;
   vkbuffer_ptr_t                _bound_buffer;
   FxShaderStorageBuffer*        _bound_ssbo = nullptr;
+  // sub-range bind: descriptor reads [_bound_offset, end). Same buffer at DIFFERENT offsets must hash
+  // to DISTINCT descriptor sets (else the second draw reuses the first's offset) — see the descset_bits
+  // combine in vulkan_fxi_pipelines_bind.cpp. Must satisfy minStorageBufferOffsetAlignment. 0 = whole.
+  VkDeviceSize                  _bound_offset = 0;
 };
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -483,6 +488,7 @@ struct VkRasterState {
   int _attachment_count = 1;
   uint64_t _rasterstate_hash = 0; // Hash of rasterstate content for cache invalidation
   RasterState* _ork_rasterstate = nullptr;
+  bool _alphaToCoverage = false;  // copied from the ork RasterState; read at pipeline-create (MSAA state)
 
   using rsmap_t = std::unordered_map<uint64_t, int>;
 

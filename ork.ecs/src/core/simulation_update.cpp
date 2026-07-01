@@ -17,6 +17,7 @@
 #include <ork/ecs/scene.h>
 #include <ork/ecs/system.h>
 #include <ork/ecs/controller.h>
+#include <ork/ecs/system_stats.h> // perf HUD: per-system timing
 #include <ork/ecs/scene.inl>
 #include "message_private.h"
 #include <ork/util/logger.h>
@@ -188,8 +189,10 @@ void Simulation::_update_SIMSTATE() {
       ///////////////////////////////
 
       _systems.atomicOp([&](const SystemLut& syslut) { _updsyslutcopy = syslut; });
-      for (auto sys : _updsyslutcopy)
+      for (auto sys : _updsyslutcopy) {
+        SystemStatScope _ss('u', sys.first); // perf HUD: per-system update-thread time
         sys.second->_update(this);
+      }
 
       ///////////////////////////////
       break;

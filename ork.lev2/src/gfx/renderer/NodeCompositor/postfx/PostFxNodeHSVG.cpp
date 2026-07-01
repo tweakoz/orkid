@@ -14,7 +14,7 @@
 #include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/material_freestyle.h>
-#include <ork/reflect/properties/register.h>
+#include <ork/reflect/properties/registerX.inl> // template DEFINITIONS — needed to instantiate floatProperty<>()
 
 #include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeHSVG.h>
 
@@ -24,6 +24,12 @@ ImplementReflectionX(ork::lev2::PostFxNodeHSVG, "PostFxNodeHSVG");
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 void PostFxNodeHSVG::describeX(class_t* c) {
+  // reflect the grade params so they SERIALIZE (tojson) and round-trip to the player; without these
+  // the deserialized node falls back to the header defaults (sat/value/gamma = 1 -> no grade applied).
+  c->floatProperty("hue", float_range{-1.0f, 1.0f}, &PostFxNodeHSVG::_hue);
+  c->floatProperty("saturation", float_range{0.0f, 4.0f}, &PostFxNodeHSVG::_saturation);
+  c->floatProperty("value", float_range{0.0f, 4.0f}, &PostFxNodeHSVG::_value);
+  c->floatProperty("gamma", float_range{0.0f, 4.0f}, &PostFxNodeHSVG::_gamma);
 }
 ///////////////////////////////////////////////////////////////////////////////
 namespace posteffect_hsvg {

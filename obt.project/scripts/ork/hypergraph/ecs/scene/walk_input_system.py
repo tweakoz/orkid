@@ -19,6 +19,11 @@ tokens = CrcStringProxy()
 # GLFW cursor keycodes (what ezapp uievents carry); letters are ASCII uppercase.
 KEY_RIGHT, KEY_LEFT, KEY_DOWN, KEY_UP = 262, 263, 264, 265
 KEY_SLASH = 47  # '/' -> shoot
+KEY_LSHIFT, KEY_RSHIFT = 340, 344   # shift held -> sprint (SetSprint scales move_force + max_speed)
+KEY_CAPSLOCK = 280                  # caps lock = AUTOWALK toggle (hands-free auto-forward). GLFW reports it
+                                    # held while the LED is on (down on lock-on, up on lock-off), so
+                                    # held(280) == autowalk engaged; W/S still override it.
+SPRINT = 5.0                        # sprint multiplier; shared default so a VR locomotion layer + walker agree
 
 # SHOOT TUNING (script-owned, like PARAMS)
 SHOOT_SPEED   = 30.0   # m/s muzzle speed
@@ -72,6 +77,8 @@ def _send_state(simulation):
   W    = simulation.vars.walk
   held = W.keys.__contains__
   mz   = (5.0 if held(ord("W")) else 0.0) - (5.0 if held(ord("S")) else 0.0)
+  if held(KEY_CAPSLOCK) and mz == 0.0:   # AUTOWALK: caps lock -> auto-forward; W adds, S brakes/reverses
+    mz = 5.0
   mx   = (1.0 if held(ord("D")) else 0.0) - (1.0 if held(ord("A")) else 0.0)
   turn = (0.3 if held(KEY_RIGHT) else 0.0) - (0.3 if held(KEY_LEFT) else 0.0)
   # cursor UP = look up (positive semantic pitch = view/camera rises)
@@ -79,6 +86,10 @@ def _send_state(simulation):
   W.charctl.notify(tokens.MoveInput,  {tokens.x: float(mx), tokens.z: float(mz)})
   W.charctl.notify(tokens.TurnInput,  {tokens.rate: float(turn)})
   W.charctl.notify(tokens.PitchInput, {tokens.rate: float(pitch)})
+  # SHIFT -> sprint: scale move_force + max_speed (the C++ controller SETS the scale, not accumulates,
+  # so in a VR+walker scene where a VR locomotion layer also sends this, the matching value is harmless).
+  sprint = SPRINT if (held(KEY_LSHIFT) or held(KEY_RSHIFT)) else 1.0
+  W.charctl.notify(tokens.SetSprint, {tokens.scale: float(sprint)})
 
 
 def _shoot(simulation):

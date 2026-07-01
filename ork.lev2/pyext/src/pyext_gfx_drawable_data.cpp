@@ -301,6 +301,14 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
               [](griddrawabledataptr_t drw) -> float { return drw->_minorTileDim; },
               [](griddrawabledataptr_t drw, float val) { drw->_minorTileDim = val; })
           .def_property(
+              "minor_fade_begin",
+              [](griddrawabledataptr_t drw) -> float { return drw->_minorFadeBegin; },
+              [](griddrawabledataptr_t drw, float val) { drw->_minorFadeBegin = val; })
+          .def_property(
+              "minor_fade_end",
+              [](griddrawabledataptr_t drw) -> float { return drw->_minorFadeEnd; },
+              [](griddrawabledataptr_t drw, float val) { drw->_minorFadeEnd = val; })
+          .def_property(
               "shader_suffix",
               [](griddrawabledataptr_t drw) -> std::string { return drw->_shader_suffix; },
               [](griddrawabledataptr_t drw, std::string val) { drw->_shader_suffix = val; });
@@ -514,6 +522,16 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
               d->_material_asset_name = kwargs["material_asset"].cast<std::string>();
             if (kwargs.contains("chunk"))
               d->_chunk = kwargs["chunk"].cast<int>();
+            if (kwargs.contains("render_dimension"))
+              d->_render_dimension = kwargs["render_dimension"].cast<int>();
+            if (kwargs.contains("capture_mode"))
+              d->_capture_mode = kwargs["capture_mode"].cast<std::string>();
+            if (kwargs.contains("capture_res"))
+              d->_capture_res = kwargs["capture_res"].cast<int>();
+            if (kwargs.contains("capture_dir"))
+              d->_capture_dir = kwargs["capture_dir"].cast<std::string>();
+            if (kwargs.contains("capture_targets"))
+              d->_capture_targets = kwargs["capture_targets"].cast<std::vector<std::string>>();
             return d;
           }))
           .def_property(

@@ -8,6 +8,7 @@
 #include "pyext.h"
 #include <ork/ecs/simulation.inl>
 #include <ork/ecs/datatable.h>
+#include <ork/event/Event.h> // ui::UpdateData == the component-script "updinfo"
 
 /////////////////////////////////////////////////////////////////////////////////
 
@@ -58,6 +59,21 @@ void register_simulation(nb::module_& module_ecssim,python::obind_typecodec_ptr_
         return fxs.c_str();
       });
   type_codec->registerStdCodec<ScriptSpawner>(spawner_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // updinfo — the per-frame timing handed to a PythonComponent's onUpdate
+  // (onUpdate(component, updinfo)). Read-only; reuses ork::ui::UpdateData. Bound
+  // BY VALUE (the ScriptSpawner pattern — a bare shared_ptr<T> binding collides
+  // with nanobind's shared_ptr caster).
+  auto updinfo_type = clazz<nanobindadapter, ::ork::ui::UpdateData>(module_ecssim, "UpdateInfo")
+      .prop_ro("dt",      [](const ::ork::ui::UpdateData& u) -> double { return u._dt; })
+      .prop_ro("abstime", [](const ::ork::ui::UpdateData& u) -> double { return u._abstime; })
+      .prop_ro("counter", [](const ::ork::ui::UpdateData& u) -> int { return u._counter; })
+      .def("__repr__", [](const ::ork::ui::UpdateData& u) -> std::string {
+        fxstring<128> fxs;
+        fxs.format("UpdateInfo(dt=%g abstime=%g counter=%d)", u._dt, u._abstime, u._counter);
+        return fxs.c_str();
+      });
+  type_codec->registerStdCodec<::ork::ui::UpdateData>(updinfo_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto sim_type = clazz<nanobindadapter,pysim_ptr_t>(module_ecssim, "Simulation")
        .prop_ro("vars", [](pysim_ptr_t simptr) -> varmap::varmap_ptr_t { return simptr->varmap(); })

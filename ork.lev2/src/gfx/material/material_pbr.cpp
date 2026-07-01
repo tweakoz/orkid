@@ -183,6 +183,13 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   // SSBO-sourced vertex variant (ptex3d FWD_SSBO_CUSTOM); no suffix — null for materials without it.
   _tek_FWD_SSBO_CUSTOM            = fxi->technique(_shader, "FWD_SSBO_CUSTOM");
   _tek_FWD_SSBO_CUSTOM_INSTANCED = fxi->technique(_shader, "FWD_SSBO_CUSTOM_INSTANCED");  // null unless ssbo_instanced
+  _tek_FWD_SSBO_CUSTOM_CAPTURE   = fxi->technique(_shader, "FWD_SSBO_CUSTOM_CAPTURE");     // impostor bake (MRT); null unless ssbo
+  _tek_FWD_SSBO_CUSTOM_IMPOSTOR  = fxi->technique(_shader, "FWD_SSBO_CUSTOM_IMPOSTOR");    // impostor billboard; null unless impostor=True
+  _parImpAlbedo     = fxi->parameter(_shader, "ImpAlbedo");
+  _parImpNormal     = fxi->parameter(_shader, "ImpNormal");
+  _parImpMetalRough = fxi->parameter(_shader, "ImpMetalRough");
+  _parImpCenter     = fxi->parameter(_shader, "ImpCenter");
+  _parImpGrid       = fxi->parameter(_shader, "ImpGrid");
   _tek_FWD_SSBO_CUSTOM_DEPTHPREPASS = fxi->technique(_shader, "FWD_SSBO_CUSTOM_DEPTHPREPASS");
   _tek_FWD_SSBO_CUSTOM_INSTANCED_DEPTHPREPASS = fxi->technique(_shader, "FWD_SSBO_CUSTOM_INSTANCED_DEPTHPREPASS"); // E.4
   _tek_FWD_CT_NM_IM_NI_MO        = fxi->technique(_shader, "FWD_CT_NM_IM_NI_MO");  // matrices-only instanced

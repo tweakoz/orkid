@@ -30,6 +30,12 @@ void ForwardPbrNodeImpl::_render_dpp(forward_pass_ptr_t fpass) {
   _currentRCFD->_subpassID      = "DEPTH_PREPASS"_crcu;
 
   _currentContext->debugPushGroup("ForwardPBR::depth-pre pass");
+  // The prepass WRITES depth, so it must resolve MSAA depth into the
+  // single-sample sampled image. Clear any leaked read-only flag (e.g. from
+  // the HZB's compute-side depth sample, which transitions for sampling with
+  // no matching PopRtGroup) so the resolve isn't suppressed. See
+  // VkFrameBufferInterface::transitionDepthForWriting.
+  FBI->transitionDepthForWriting(rtg_out);
   FBI->PushRtGroup(rtg_out.get());
   _currentIRenderer->drawEnqueuedRenderables(true);
   FBI->PopRtGroup();

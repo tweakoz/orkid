@@ -56,6 +56,10 @@ struct NODEENC<varmap::var_t> {
       encoded = "fvec4:" + std::to_string(v.x) + "," + std::to_string(v.y) + "," + std::to_string(v.z) + "," + std::to_string(v.w);
     } else if (value.isA<std::string>()) {
       encoded = "string:" + value.get<std::string>();
+    } else if (value.isA<crcstring_ptr_t>()) {
+      // a named fx-pipeline provider token (e.g. RCFD_TIME). Store its hash — the provider registry
+      // is hash-keyed, so the name isn't needed to resolve it on load (decode_value reconstructs it).
+      encoded = "crcstr:" + std::to_string(value.get<crcstring_ptr_t>()->hashed());
     } else {
       encoded = "null:";
     }

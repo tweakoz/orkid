@@ -127,8 +127,9 @@ fragment_shader ps_modtex : fface_psys {
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_grad : fface_psys {
-  float unit_age = clamp(frg_uv1.x, 0.0, 255.0/256.0);
-  vec4 gmap = texture(GradientMap, vec2(unit_age, 0.0));
+  // gradient ramp comes from the SSBO LUT, sampled by unit_age in the VS -> frg_clr (the
+  // particle render path is all-mid-pass, so the gradient can't be a texture upload).
+  vec4 gmap = frg_clr;
   vec4 cmap = texture(ColorMap, frg_uv0.xy);
   out_clr.xyz = (gmap.xyz*cmap.xyz)*ColorFactor;
   out_clr.w = gmap.w*cmap.w*AlphaFactor;

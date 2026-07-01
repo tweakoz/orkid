@@ -42,8 +42,8 @@ void NoVrDevice::_updatePoses(RenderContextFrameData& RCFD) {
   fmtx4 eyel_t, eyel_r, eyel_s;
   fmtx4 eyer_t, eyer_r, eyer_s;
 
-  eyel_t.setTranslation(-_IPD * 0.5, 0, 0);
-  eyer_t.setTranslation(+_IPD * 0.5, 0, 0);
+  eyel_t.setTranslation(+_IPD * 0.5, 0, 0);
+  eyer_t.setTranslation(-_IPD * 0.5, 0, 0);
 
   _posemap["eyel"] = eyel_t*eyel_r*eyel_s;
   _posemap["eyer"] = eyer_t*eyer_r*eyer_s;

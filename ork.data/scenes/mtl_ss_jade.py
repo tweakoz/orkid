@@ -108,16 +108,16 @@ class JadeScene(Scene):
 
     self.entity("sphere_jade_off",
       transform=XF(translation=vec3(-5.5, 0, 0)),
-      components=[SG.component(nodes={
+      components=[self.spinner(), SG.component(nodes={
         "n": {"drawable": make_drawable("dr_jade_off", mat_off)},
       })])
     self.entity("sphere_jade_half",
       transform=XF(translation=vec3(0, 0, 0)),
-      components=[SG.component(nodes={
+      components=[self.spinner(), SG.component(nodes={
         "n": {"drawable": make_drawable("dr_jade_half", mat_half)},
       })])
     self.entity("sphere_jade_full",
       transform=XF(translation=vec3(+5.5, 0, 0)),
-      components=[SG.component(nodes={
+      components=[self.spinner(), SG.component(nodes={
         "n": {"drawable": make_drawable("dr_jade_full", mat_full)},
       })])

@@ -18,8 +18,19 @@
 ////////////////////////////////////////////////////////////////
 #include "hmdflow_module.h"
 #include <chrono>
+#include <filesystem> // impostor atlas dump dir (ORKID_IMPOSTOR_DUMP)
 #include <ork/lev2/gfx/renderer/compute_drawable.h>
+#include <ork/lev2/gfx/renderphasestats.h> // perf HUD: hypermesh-gen compute timing
+#include <ork/lev2/gfx/renderer/hzb.h> // HZBBuilder — the per-view occlusion source (read from the RCFD)
 #include <ork/lev2/gfx/terrain/dflow/hfdflow.h> // terrain::BakeEnv — the clock mirror for field subgraphs (E.1b)
+// impostor bake (A2): offscreen MRT capture of the base mesh from hemi-octahedral angles.
+#include <ork/lev2/gfx/rtgroup.h>
+#include <ork/lev2/gfx/camera/cameradata.h>
+#include <ork/lev2/gfx/renderer/compositor.h>
+#include <ork/lev2/gfx/material_pbr.inl>
+#include <ork/lev2/gfx/material_freestyle.h>
+#include <ork/lev2/gfx/image.h>
+#include <ork/kernel/datacache.h>
 
 namespace ork::lev2::hypermesh {
 
@@ -267,22 +278,110 @@ static std::string _instcull_text() {
   return R"S(
 fxconfig fxcfg_default {}
 storage_interface cif_par (descriptor_set 0) { buffer layout(std430) cpar {
-  mat4 u_vp; vec4 u_bound; uint u_count; uint u_visible; uint u_p0; uint u_p1; }; }
+  // HOST-WRITTEN prefix [0,128) (writeParams) ...
+  mat4 u_vp; vec4 u_bound; vec4 u_eye_cd; uint u_count; float u_tighten;
+  uint u_hzb_w; uint u_hzb_h; uint u_hzb_mips; uint u_hzb_mode;
+  uint u_num_bounds; float u_box_scale;
+  // ... then SHADER-OWNED stat counters at the tail: the host must NEVER write these (a host write
+  // of a host-visible buffer shadows the GPU's atomic writes on readback), so they live past the
+  // host-written prefix and are reset by cs_cull_reset each frame.
+  uint u_visible; uint u_occluded; uint u_frustum; }; }
+// u_eye_cd: xyz = camera eye (world), w = cull_distance (meters; 0 = no distance cull)
 storage_interface cif_inm  (descriptor_set 0) { buffer layout(std430) cinm  { mat4 IN_M[];  }; }
 storage_interface cif_outm (descriptor_set 0) { buffer layout(std430) coutm { mat4 OUT_M[]; }; }
 storage_interface cif_ina  (descriptor_set 0) { buffer layout(std430) cina  { vec4 IN_A[];  }; }
 storage_interface cif_outa (descriptor_set 0) { buffer layout(std430) couta { vec4 OUT_A[]; }; }
 storage_interface cif_arg  (descriptor_set 0) { buffer layout(std430) carg  { uint ARG[];  }; }
 storage_interface cif_bnd  (descriptor_set 0) { buffer layout(std430) cbnd  { uint BND[];  }; }
-compute_interface ciface { storage { cif_par cif_inm cif_outm cif_ina cif_outa cif_arg cif_bnd }
+storage_interface cif_hzb  (descriptor_set 0) { buffer layout(std430) chzb  { float HZB[]; }; }
+// per-variant OCCLUDEE decomposition: K object-space AABBs, 2 vec4 each (min @2k, max @2k+1). K=1
+// is the whole-mesh AABB; K=n is a tighter shape decomposition (vertical slabs / clusters). An
+// instance is occluded iff ALL K sub-boxes are occluded — the tight, correct hidden test.
+storage_interface cif_bnds (descriptor_set 0) { buffer layout(std430) cbnds { vec4 BOUNDS[]; }; }
+// LOD tiers (Phase 3): bin each visible instance by eye-distance into u_num_tiers ranges.
+// VIS[t] = per-tier visible count. OUT_M / OUT_A are INTERLEAVED — tier t's compacted instances
+// live at [t*u_count, t*u_count + VIS[t]) — so N draws read tier-offset ranges via firstInstance.
+// u_lod_dist.{x,y,z} = the up-to-3 tier boundaries (ascending). u_num_tiers=1 -> tier 0 only,
+// VIS[0] == u_visible, OUT_M[0..] == the legacy single-output layout (byte-identical).
+storage_interface cif_lod (descriptor_set 0) { buffer layout(std430) clod {
+  uint u_num_tiers; uint _lpad0; uint _lpad1; uint _lpad2; vec4 u_lod_dist; uint VIS[4]; }; }
+// Perf: u_fanout_tier moved OUT of clod into its own per-dispatch buffer so the N tier
+// fanouts can run in ONE dispatch phase (each binds its own pre-written tier index) instead
+// of a separate submit+WAIT+readback per tier (the fixed ~5.5ms hm-cull overhead). VIS[]
+// stays shared in clod (cull writes it, every fanout reads it).
+storage_interface cif_tier (descriptor_set 0) { buffer layout(std430) ctier { uint u_fanout_tier; }; }
+compute_interface ciface { storage { cif_par cif_inm cif_outm cif_ina cif_outa cif_arg cif_bnd cif_hzb cif_bnds cif_lod cif_tier }
                            inputs { layout(local_size_x = 64); } }
+////////////////////////////////////////
+// HZB occlusion: is the bounding sphere fully BEHIND last-frame's depth over its screen footprint?
+// Standard-Z (smaller=nearer); HZB holds the MAX (farthest nearest-surface) depth per texel. The
+// sphere is occluded iff its NEAREST ndc-z is still > the MAX occluder depth over its screen AABB.
+// Conservative: any corner crossing the near plane -> NOT occluded (never over-cull). shadlang needs
+// free functions in a libblock the shader INHERITS; it references ciface's globals (HZB[], u_vp,
+// u_hzb_*) — storage/uniforms are emitted before libblocks so they're in scope (mirrors lib_pha).
+libblock lib_hzb {
+  // occlusion of ONE object-space AABB [bmin,bmax] transformed by the instance matrix M. Returns true
+  // if that sub-box is fully behind last-frame's depth over its screen footprint.
+  bool hzb_box_occluded(mat4 M, vec3 bmin, vec3 bmax) {
+    // tightness: scale the box about its center. <1 SHRINKS (more aggressive occlusion — good for
+    // sparse foliage you can see through; risks pop) ; >1 grows (safer). 1.0 = geometric AABB.
+    vec3 ctr = (bmin + bmax) * 0.5;
+    vec3 hlf = (bmax - bmin) * 0.5 * u_box_scale;
+    vec3 smin = ctr - hlf;
+    vec3 smax = ctr + hlf;
+    vec3 ndcmin = vec3( 1.0e9);
+    vec3 ndcmax = vec3(-1.0e9);
+    bool safe = true;
+    for (int k = 0; k < 8; k++) {
+      vec3 obj = vec3(((k & 1) != 0) ? smax.x : smin.x,
+                      ((k & 2) != 0) ? smax.y : smin.y,
+                      ((k & 4) != 0) ? smax.z : smin.z);
+      vec4 clip = u_vp * (M * vec4(obj, 1.0));
+      if (clip.w <= 0.0001) { safe = false; }
+      vec3 ndc = clip.xyz / max(clip.w, 0.0001);
+      ndcmin = min(ndcmin, ndc);
+      ndcmax = max(ndcmax, ndc);
+    }
+    if (safe) {
+      // screen-space UV AABB. The HZB is built from the depth texture via texelFetch (texel row 0 =
+      // framebuffer top), so ndc.y must be FLIPPED to address it (Vulkan ndc.y up here): a terrain
+      // rock in the lower screen must map to the lower texel rows, not the upper (sky) rows.
+      vec2 uvmin = clamp(vec2(ndcmin.x * 0.5 + 0.5, 1.0 - (ndcmax.y * 0.5 + 0.5)), 0.0, 1.0);
+      vec2 uvmax = clamp(vec2(ndcmax.x * 0.5 + 0.5, 1.0 - (ndcmin.y * 0.5 + 0.5)), 0.0, 1.0);
+      float znear_obj = ndcmin.z;
+      // pick the mip where the AABB spans ~1-2 mip0 texels, so a 2x2 fetch covers the footprint
+      float ex = (uvmax.x - uvmin.x) * float(u_hzb_w);
+      float ey = (uvmax.y - uvmin.y) * float(u_hzb_h);
+      int mip = int(ceil(log2(max(max(ex, ey), 1.0))));
+      mip = clamp(mip, 0, int(u_hzb_mips) - 1);
+      // mip dims + float-offset (recompute the deterministic pyramid packing)
+      uint mw = max(1u, u_hzb_w >> uint(mip));
+      uint mh = max(1u, u_hzb_h >> uint(mip));
+      uint moff = 0u;
+      uint ow = u_hzb_w; uint oh = u_hzb_h;
+      for (int j = 0; j < mip; j++) { moff += ow * oh; ow = max(1u, ow >> 1u); oh = max(1u, oh >> 1u); }
+      ivec2 mxd = ivec2(int(mw) - 1, int(mh) - 1);
+      ivec2 t0 = clamp(ivec2(int(uvmin.x * float(mw)), int(uvmin.y * float(mh))), ivec2(0), mxd);
+      ivec2 t1 = clamp(ivec2(int(uvmax.x * float(mw)), int(uvmax.y * float(mh))), ivec2(0), mxd);
+      float occ = HZB[moff + uint(t0.y) * mw + uint(t0.x)];
+      occ = max(occ, HZB[moff + uint(t0.y) * mw + uint(t1.x)]);
+      occ = max(occ, HZB[moff + uint(t1.y) * mw + uint(t0.x)]);
+      occ = max(occ, HZB[moff + uint(t1.y) * mw + uint(t1.x)]);
+      return znear_obj > occ; // nearest point of the sphere behind the farthest occluder -> hidden
+    }
+    return false;
+  }
+}
 ////////////////////////////////////////
 compute_shader cs_cull_reset : ciface {
   if (gl_GlobalInvocationID.x != 0u) { return; }
-  u_visible = 0u;
+  u_visible  = 0u;
+  u_occluded = 0u;
+  u_frustum  = 0u;
+  VIS[0] = 0u; VIS[1] = 0u; VIS[2] = 0u; VIS[3] = 0u;
 }
 ////////////////////////////////////////
-compute_shader cs_cull : ciface {
+compute_shader cs_cull : ciface : lib_hzb {
   uint i = gl_GlobalInvocationID.x;
   if (i >= u_count) { return; }
   mat4 M  = IN_M[i];
@@ -292,20 +391,48 @@ compute_shader cs_cull : ciface {
   vec4 ry = vec4(u_vp[0].y, u_vp[1].y, u_vp[2].y, u_vp[3].y);
   vec4 rz = vec4(u_vp[0].z, u_vp[1].z, u_vp[2].z, u_vp[3].z);
   vec4 rw = vec4(u_vp[0].w, u_vp[1].w, u_vp[2].w, u_vp[3].w);
-  vec4 pl0 = rw + rx; vec4 pl1 = rw - rx;
-  vec4 pl2 = rw + ry; vec4 pl3 = rw - ry;
+  // u_tighten (>1) narrows the side planes -> the cull frustum is NARROWER than the view (objects
+  // pop at the screen edges, demonstrating the cull). 1.0 = exact view frustum. near/far unchanged.
+  vec4 sx = rx * u_tighten; vec4 sy = ry * u_tighten;
+  vec4 pl0 = rw + sx; vec4 pl1 = rw - sx;
+  vec4 pl2 = rw + sy; vec4 pl3 = rw - sy;
   vec4 pl4 = rz;      vec4 pl5 = rw - rz;
   bool inside = true;
+  // distance cull (cheap radial reject): cull beyond cull_distance from the eye. w<=0 = disabled.
+  if (u_eye_cd.w > 0.0) { if (length(c - u_eye_cd.xyz) > u_eye_cd.w) { inside = false; } }
   if ((dot(pl0.xyz, c) + pl0.w) < (-r * length(pl0.xyz))) { inside = false; }
   if ((dot(pl1.xyz, c) + pl1.w) < (-r * length(pl1.xyz))) { inside = false; }
   if ((dot(pl2.xyz, c) + pl2.w) < (-r * length(pl2.xyz))) { inside = false; }
   if ((dot(pl3.xyz, c) + pl3.w) < (-r * length(pl3.xyz))) { inside = false; }
   if ((dot(pl4.xyz, c) + pl4.w) < (-r * length(pl4.xyz))) { inside = false; }
   if ((dot(pl5.xyz, c) + pl5.w) < (-r * length(pl5.xyz))) { inside = false; }
+  if (inside) { atomicAdd(u_frustum, 1u); } // passed frustum (pre-occlusion count)
+  // HZB occlusion (mode 0 = off, 1 = count-only verify, 2 = cull). Frustum-visible only. The instance
+  // is occluded iff EVERY one of its K sub-boxes is occluded (a tree's tight slabs cull behind a near
+  // tree where the fat whole-mesh box never could). The && short-circuits -> early-out on the first
+  // visible sub-box. K=0 (no bounds) -> all_occ false -> never culled (safe).
+  if (inside && (u_hzb_mode != 0u)) {
+    bool all_occ = (u_num_bounds > 0u);
+    for (uint b = 0u; b < u_num_bounds; b++) {
+      all_occ = all_occ && hzb_box_occluded(M, BOUNDS[2u * b].xyz, BOUNDS[2u * b + 1u].xyz);
+    }
+    if (all_occ) {
+      atomicAdd(u_occluded, 1u);
+      if (u_hzb_mode == 2u) { inside = false; }
+    }
+  }
   if (inside) {
-    uint slot = atomicAdd(u_visible, 1u);
-    OUT_M[slot] = M;
-    OUT_A[slot] = IN_A[i];
+    atomicAdd(u_visible, 1u);  // total visible (stats + N=1 fanout parity)
+    // LOD tier: the highest tier whose lower boundary the eye-distance crosses (tier 0 = nearest).
+    // Unrolled (no dynamic vec indexing); guards keep unused tiers inert when u_num_tiers is small.
+    float dist = length(c - u_eye_cd.xyz);
+    uint tier = 0u;
+    if ((u_num_tiers > 1u) && (dist >= u_lod_dist.x)) { tier = 1u; }
+    if ((u_num_tiers > 2u) && (dist >= u_lod_dist.y)) { tier = 2u; }
+    if ((u_num_tiers > 3u) && (dist >= u_lod_dist.z)) { tier = 3u; }
+    uint slot = atomicAdd(VIS[tier], 1u);
+    OUT_M[tier * u_count + slot] = M;   // INTERLEAVED: tier t at [t*u_count, ..)
+    OUT_A[tier * u_count + slot] = IN_A[i];
   }
 }
 ////////////////////////////////////////
@@ -316,11 +443,19 @@ compute_shader cs_cull_fanout : ciface {
   if (s >= 4096u) { return; }
   bool bound = (s == 0u) || (((BND[s >> 5u] >> (s & 31u)) & 1u) != 0u);
   if (bound) {
-    ARG[s * 5u + 1u] = u_visible;
+    ARG[s * 5u + 1u] = VIS[u_fanout_tier]; // instanceCount for the tier being fanned (N=1: VIS[0]==u_visible)
+    ARG[s * 5u + 4u] = 0u;                 // firstInstance 0 — the graphics sub-range bind slices OUT_M
   }
 }
 )S";
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// Per-FRAME cull stats. There is one MeshInstCull per instanced hypermesh variant (scn_forest = 16
+// tree variants); each accumulates its per-view readback into CullStats (ork.lev2 renderphasestats.h),
+// which the ork.ecs.player perf HUD renders as the [hmcull] line. CullStats::commit() (once per frame
+// in _renderIMPL) publishes; readback happens ONLY while the HUD enables it (off = zero cost).
+///////////////////////////////////////////////////////////////////////////////
 
 struct MeshInstCull {
   Context* _ctx                        = nullptr;
@@ -334,7 +469,23 @@ struct MeshInstCull {
   FxShaderStorageBuffer* _srcAttr      = nullptr;
   FxShaderStorageBuffer* _args         = nullptr; // the triangulator's 4096-slot command array
   FxShaderStorageBuffer* _boundGidMask = nullptr;
-  fvec4 _bound; // xyz = object-space center, w = radius
+  FxShaderStorageBuffer* _hzbDummy     = nullptr; // bound at slot 7 when no HZB (mode 0 never reads it)
+  FxShaderStorageBuffer* _boundsSSBO   = nullptr; // slot 8: K object-space AABBs (2 vec4 each, min/max)
+  FxShaderStorageBuffer* _lodSSBO      = nullptr; // slot 9: clod { num_tiers, lod_dist, VIS[4] }
+  int _numBounds = 0;                             // K (0 => occlusion never culls — safe)
+  float _boxScale = 1.0f;                         // per-variant occludee tightness (<1 = cull harder)
+  float _cullDistance = 0.0f;                     // per-variant radial distance cull (0 = off)
+  // LOD (Phase 3): partition visible instances into _numTiers eye-distance ranges. _lodDist[0..2] =
+  // the ascending tier boundaries (meters). _numTiers=1 => single tier (legacy, OUT_M not interleaved).
+  int _numTiers = 1;
+  float _lodDist[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+  // Phase 3b — per-tier triangulator args + gid masks (one entry per LOD tier; [0] = the main tri's).
+  // The fanout runs once per tier (its own phase, u_fanout_tier host-bumped), stamping VIS[t] into that
+  // tier's indirect instanceCount. Empty -> single-tier (uses _args/_boundGidMask).
+  std::vector<FxShaderStorageBuffer*> _tierArgs;
+  std::vector<FxShaderStorageBuffer*> _tierGidMask;
+  std::vector<FxShaderStorageBuffer*> _tierIdxBuf; // per-tier fanout index (pre-written = t) -> one dispatch phase
+  fvec4 _bound; // xyz = object-space center, w = radius (the SPHERE — frustum test only)
   int _count = 0;
 
   void build(Context* ctx, int count) {
@@ -345,51 +496,176 @@ struct MeshInstCull {
     _cs_reset  = fxi->computeShader(sh, "cs_cull_reset");
     _cs_cull   = fxi->computeShader(sh, "cs_cull");
     _cs_fanout = fxi->computeShader(sh, "cs_cull_fanout");
-    _params    = fxi->createStorageBuffer(64 + 16 + 16);
-    _culledMtx  = fxi->createStorageBuffer(size_t(count) * 64);
-    _culledAttr = fxi->createStorageBuffer(size_t(count) * 16);
+    _params    = fxi->createStorageBuffer(160); // cpar: mat4(64) + 2*vec4(32) + 11 scalars(44) = 140, round up
+    // OUT_M/OUT_A are tier-INTERLEAVED: _numTiers * count slots (tier t at [t*count, ..)). N=1 => count.
+    const size_t tslots = size_t(std::max(1, _numTiers)) * size_t(count);
+    _culledMtx  = fxi->createStorageBuffer(tslots * 64);
+    _culledAttr = fxi->createStorageBuffer(tslots * 16);
+    _hzbDummy   = fxi->createStorageBuffer(16);
+    _boundsSSBO = fxi->createStorageBuffer(32); // dummy (1 box) until setBounds; _numBounds stays 0
+    _lodSSBO    = fxi->createStorageBuffer(48); // clod: uint(4)+pad(12)+vec4(16)+uint[4](16)
+  }
+  // OCCLUDEE decomposition: a flat list of K object-space AABBs (each pushed as {min.xyz,0},{max.xyz,0}).
+  // K=1 = whole-mesh AABB; K=n = vertical slabs / clusters. The cull occludes iff ALL K are occluded.
+  void setBounds(Context* ctx, const std::vector<fvec4>& minmax) {
+    if (minmax.empty()) return;
+    auto fxi    = ctx->FXI();
+    _boundsSSBO = fxi->createStorageBuffer(minmax.size() * 16);
+    auto m = fxi->mapStorageBuffer(_boundsSSBO, 0, minmax.size() * 16, BufferMapAccess::WRITE_ONLY);
+    std::memcpy(m->_mappedaddr, minmax.data(), minmax.size() * 16);
+    fxi->unmapStorageBuffer(m.get());
+    _numBounds = int(minmax.size()) / 2;
   }
   void perView(Context* ctx, const CameraMatrices& cammtx) {
-    // params: PRE-phase host write (vp + bound + count; visible zeroed in-phase)
-    struct P { float vp[16]; float bound[4]; uint32_t count; uint32_t visible; uint32_t p0; uint32_t p1; } p;
+    // params: PRE-phase host write of the PREFIX ONLY (vp..box_scale). The stat counters
+    // (visible/occluded/frustum) live at the TAIL and are GPU-owned (cs_cull_reset zeroes + cs_cull
+    // atomicAdds): the host must not write them, or the host-visible-buffer readback shadows the GPU
+    // writes (confirmed via a host sentinel). Layout MUST match cif_par's std430.
+    struct P { float vp[16]; float bound[4]; float eye_cd[4]; uint32_t count; float tighten;
+               uint32_t hzb_w; uint32_t hzb_h; uint32_t hzb_mips; uint32_t hzb_mode;
+               uint32_t num_bounds; float box_scale;
+               uint32_t visible; uint32_t occluded; uint32_t frustum; } p;
+    const size_t P_PREFIX = 128; // offsetof(P, visible): mat4(64)+2*vec4(32)+8*4(32); host writes only this
     std::memcpy(p.vp, cammtx.GetVPMatrix().asArray(), 64);
     p.bound[0] = _bound.x; p.bound[1] = _bound.y; p.bound[2] = _bound.z; p.bound[3] = _bound.w;
-    p.count = uint32_t(_count); p.visible = 0; p.p0 = p.p1 = 0;
+    const float* iv = cammtx.GetIVMatrix().asArray(); // inverse-view translation = eye (col-major)
+    p.eye_cd[0] = iv[12]; p.eye_cd[1] = iv[13]; p.eye_cd[2] = iv[14]; p.eye_cd[3] = _cullDistance;
+    // CullFrustumScale: frame-global cull aggressiveness stamped onto the RCFD in Scene::preRender
+    // (>1 widen/cull-less, 1.0 exact, <1 narrow/cull-more). The shader's u_tighten is the INVERSE
+    // (>1 NARROWS — hmdflow_render.cpp:295-297), so feed 1/scale. Replaces the per-drawable _tighten
+    // AND the VR ORKEXP_VRCULL_MARGIN — one frame-global knob drives desktop, SGVP, and VR identically.
+    float cfs = 1.0f;
+    auto rcfd = ctx->topRenderContextFrameData();
+    if (rcfd)
+      if (auto v = rcfd->tryUserProperty<float>("CullFrustumScale"_crc))
+        cfs = v.value();
+    p.count = uint32_t(_count); p.tighten = (cfs > 0.0f) ? (1.0f / cfs) : 1.0f;
+    // HZB 1-phase occlusion: the pyramid built from LAST frame's depth, stamped into the RCFD in
+    // Scene::preRender. mode: 0 off, 1 count-only (verify, don't cull), 2 cull. ORKID_HZB_OCCLUSION
+    // selects the mode (default 2 once verified); absent/invalid HZB -> mode 0 (frustum-only, safe).
+    static const int s_mode = []() { const char* e = getenv("ORKID_HZB_OCCLUSION"); return e ? atoi(e) : 2; }();
+    HZBBuilder* hzb = nullptr;
+    if (rcfd)
+      if (auto v = rcfd->tryUserProperty<uint64_t>("HZB"_crc))
+        hzb = reinterpret_cast<HZBBuilder*>(uintptr_t(v.value()));
+    bool hzb_ok = hzb and hzb->_valid and hzb->_ssbo and (s_mode != 0);
+    p.hzb_w = hzb_ok ? uint32_t(hzb->_baseW) : 0u;
+    p.hzb_h = hzb_ok ? uint32_t(hzb->_baseH) : 0u;
+    p.hzb_mips = hzb_ok ? uint32_t(hzb->_mips) : 0u;
+    p.hzb_mode = hzb_ok ? uint32_t(s_mode) : 0u;
+    p.num_bounds = uint32_t(_numBounds);
+    p.box_scale  = _boxScale;
     auto fxi = ctx->FXI();
-    auto m   = fxi->mapStorageBuffer(_params, 0, sizeof(p), BufferMapAccess::WRITE_ONLY);
-    std::memcpy(m->_mappedaddr, &p, sizeof(p));
+    // write ONLY the host prefix — leave the GPU-owned stat counters (tail) untouched.
+    auto m   = fxi->mapStorageBuffer(_params, 0, P_PREFIX, BufferMapAccess::WRITE_ONLY);
+    std::memcpy(m->_mappedaddr, &p, P_PREFIX);
     fxi->unmapStorageBuffer(m.get());
+    // LOD config host-write (PRE-phase): num_tiers + boundaries; VIS[] zeroed (cs_cull_reset re-zeros
+    // on GPU, the cull fills, we read back below). Layout MUST match clod's std430.
+    // clod std430 layout (MUST match the shader): num_tiers, fanout_tier, pad, lod_dist, VIS[4].
+    struct L { uint32_t num_tiers; uint32_t fanout_tier; uint32_t pad[2]; float lod_dist[4]; uint32_t vis[4]; };
+    {
+      L lc;
+      lc.num_tiers   = uint32_t(std::max(1, _numTiers));
+      lc.fanout_tier = 0u; // tier 0's fanout rides the reset+cull phase
+      lc.pad[0] = lc.pad[1] = 0u;
+      for (int t = 0; t < 4; t++) { lc.lod_dist[t] = _lodDist[t]; lc.vis[t] = 0u; }
+      auto lm = fxi->mapStorageBuffer(_lodSSBO, 0, sizeof(lc), BufferMapAccess::WRITE_ONLY);
+      std::memcpy(lm->_mappedaddr, &lc, sizeof(lc));
+      fxi->unmapStorageBuffer(lm.get());
+    }
+    FxShaderStorageBuffer* hzbssbo = hzb_ok ? hzb->_ssbo : _hzbDummy;
     auto ci   = ctx->CI();
-    auto bind = [&](const FxComputeShader* cs) {
+    // tier 0's args/gidMask default to the main tri's; per-tier fanout rebinds slots 5/6.
+    FxShaderStorageBuffer* args0 = _tierArgs.empty()    ? _args         : _tierArgs[0];
+    FxShaderStorageBuffer* gid0  = _tierGidMask.empty() ? _boundGidMask : _tierGidMask[0];
+    auto bind = [&](const FxComputeShader* cs,
+                    FxShaderStorageBuffer* args,
+                    FxShaderStorageBuffer* gidmask,
+                    FxShaderStorageBuffer* tieridx) {
       ci->bindStorageBuffer(cs, 0, _params);
       ci->bindStorageBuffer(cs, 1, _srcMtx);
       ci->bindStorageBuffer(cs, 2, _culledMtx);
       ci->bindStorageBuffer(cs, 3, _srcAttr);
       ci->bindStorageBuffer(cs, 4, _culledAttr);
-      ci->bindStorageBuffer(cs, 5, _args);
-      ci->bindStorageBuffer(cs, 6, _boundGidMask);
+      ci->bindStorageBuffer(cs, 5, args);
+      ci->bindStorageBuffer(cs, 6, gidmask);
+      ci->bindStorageBuffer(cs, 7, hzbssbo);
+      ci->bindStorageBuffer(cs, 8, _boundsSSBO);
+      ci->bindStorageBuffer(cs, 9, _lodSSBO);
+      ci->bindStorageBuffer(cs, 10, tieridx); // cif_tier: the fanout reads its tier here (cull/reset ignore)
     };
+    // Per-tier fanout-index buffers (pre-written ONCE; the tier index never changes). Giving each
+    // fanout its OWN tiny tier buffer is what lets all tier fanouts batch into the SINGLE dispatch
+    // phase below — replacing the old per-tier separate submit+WAIT+readback (the fixed ~5.5ms
+    // hm-cull overhead that was independent of instance count). cull/reset bind [0] (unused by them).
+    if (int(_tierIdxBuf.size()) != _numTiers) {
+      _tierIdxBuf.resize(size_t(std::max(1, _numTiers)), nullptr);
+      for (int t = 0; t < int(_tierIdxBuf.size()); t++) {
+        if (not _tierIdxBuf[t])
+          _tierIdxBuf[t] = fxi->createStorageBuffer(16);
+        uint32_t tv = uint32_t(t);
+        auto     tm = fxi->mapStorageBuffer(_tierIdxBuf[t], 0, 4, BufferMapAccess::WRITE_ONLY);
+        std::memcpy(tm->_mappedaddr, &tv, 4);
+        fxi->unmapStorageBuffer(tm.get());
+      }
+    }
+    FxShaderStorageBuffer* tidx0 = _tierIdxBuf.empty() ? _hzbDummy : _tierIdxBuf[0];
+
+    // ONE dispatch phase: reset -> cull -> ALL tier fanouts. Was N phases (N submit+WAIT + N readbacks);
+    // now one submit (+ one WAIT, or fully async under ORK_HM_NB_SUBMIT). The tier fanouts write DISJOINT
+    // args buffers and only READ the cull's VIS[], so they need no barrier between them — just the
+    // post-cull barrier so they see VIS[]. The trailing endDispatchPhase barrier hands args -> indirect draw.
     ci->beginDispatchPhase();
-    bind(_cs_reset);
+    bind(_cs_reset, args0, gid0, tidx0);
     ci->dispatchCompute(_cs_reset, 1, 1, 1);
     ci->storageBarrier();
-    bind(_cs_cull);
+    bind(_cs_cull, args0, gid0, tidx0);
     ci->dispatchCompute(_cs_cull, (uint32_t(_count) + 63) / 64, 1, 1);
     ci->storageBarrier();
-    bind(_cs_fanout);
+    bind(_cs_fanout, args0, gid0, tidx0); // tier 0 (VIS[0])
     ci->dispatchCompute(_cs_fanout, 4096 / 64, 1, 1);
-    ci->endDispatchPhase(); // submit + WAIT -> u_visible readable below
-    // ORKID_DEBUG_CULL=1 — throttled visibility readback (the phase waited)
-    static const bool s_dbg = (getenv("ORKID_DEBUG_CULL") != nullptr);
-    static int s_ctr        = 0;
-    if (s_dbg and ((s_ctr++ & 127) == 0)) {
-      struct P { float vp[16]; float bound[4]; uint32_t count; uint32_t visible; uint32_t p0; uint32_t p1; } rb;
+    for (int t = 1; t < _numTiers && t < int(_tierArgs.size()); t++) {
+      bind(_cs_fanout, _tierArgs[t], _tierGidMask[t], _tierIdxBuf[t]); // VIS[t]
+      ci->dispatchCompute(_cs_fanout, 4096 / 64, 1, 1);
+    }
+    ci->endDispatchPhase(); // ONE submit (+ WAIT) -> u_visible / args readable below
+    // Accumulate THIS variant into the per-frame CullStats total (the phase waited, so the readback is
+    // ready). The perf HUD renders the aggregate [hmcull] line; readback happens ONLY while the HUD
+    // enables it (off = zero cost). CullStats::commit() (once per frame in _renderIMPL) publishes.
+    if (CullStats::instance().enabled()) {
+      // MUST match cif_par std430: stat counters (visible/occluded/frustum) at the TAIL (GPU-owned).
+      struct P { float vp[16]; float bound[4]; float eye_cd[4]; uint32_t count; float tighten;
+                 uint32_t hzb_w; uint32_t hzb_h; uint32_t hzb_mips; uint32_t hzb_mode;
+                 uint32_t num_bounds; float box_scale;
+                 uint32_t visible; uint32_t occluded; uint32_t frustum; } rb;
       auto m = fxi->mapStorageBuffer(_params, 0, sizeof(rb), BufferMapAccess::READ_ONLY);
       std::memcpy(&rb, m->_mappedaddr, sizeof(rb));
       fxi->unmapStorageBuffer(m.get());
-      printf("[instcull] count<%u> visible<%u> bound<%.2f %.2f %.2f r=%.2f> vp0<%.3f %.3f %.3f %.3f>\n",
-             rb.count, rb.visible, rb.bound[0], rb.bound[1], rb.bound[2], rb.bound[3],
-             rb.vp[0], rb.vp[5], rb.vp[10], rb.vp[14]);
+      CullStats::instance().addHyperVariant(rb.count, rb.frustum, rb.visible, rb.occluded);
+    }
+    // LOD partition verification (Phase 3 3a): read the per-tier counts and assert the camera-
+    // independent invariant sum(VIS[t]) == total visible (exhaustive + disjoint partition). Only when
+    // multi-tier (N=1 has nothing to check). ORKID_DEBUG_LOD=1.
+    static const bool s_dbglod = (getenv("ORKID_DEBUG_LOD") != nullptr);
+    if (s_dbglod and _numTiers > 1) {
+      struct L { uint32_t num_tiers; uint32_t pad[3]; float lod_dist[4]; uint32_t vis[4]; } lc;
+      auto lm = fxi->mapStorageBuffer(_lodSSBO, 0, sizeof(lc), BufferMapAccess::READ_ONLY);
+      std::memcpy(&lc, lm->_mappedaddr, sizeof(lc));
+      fxi->unmapStorageBuffer(lm.get());
+      // MUST match cif_par std430: u_visible is now at the TAIL (offset 128), not right after count.
+      struct PR { float vp[16]; float bound[4]; float eye_cd[4]; uint32_t count; float tighten;
+                  uint32_t hzb_w; uint32_t hzb_h; uint32_t hzb_mips; uint32_t hzb_mode;
+                  uint32_t num_bounds; float box_scale; uint32_t visible; } pr;
+      auto pm = fxi->mapStorageBuffer(_params, 0, sizeof(pr), BufferMapAccess::READ_ONLY);
+      std::memcpy(&pr, pm->_mappedaddr, sizeof(pr));
+      fxi->unmapStorageBuffer(pm.get());
+      uint32_t s = 0;
+      for (int t = 0; t < _numTiers; t++) s += lc.vis[t];
+      printf("[lodpart] tiers<%d> dist<%.0f %.0f %.0f> VIS[%u %u %u %u] sum<%u> visible<%u> %s\n",
+             _numTiers, _lodDist[0], _lodDist[1], _lodDist[2],
+             lc.vis[0], lc.vis[1], lc.vis[2], lc.vis[3], s, pr.visible,
+             (s == pr.visible) ? "OK" : "*** MISMATCH ***");
     }
   }
 };
@@ -556,6 +832,406 @@ struct MeshRenderTri {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+///////////////////////////////////////////////////////////////////////////////
+// Impostor bake (A2) — render the base mesh from a hemi-octahedral grid of ortho angles into a
+// 3-target PBR MRT atlas (albedo+coverage / world-normal+ao / metal+rough), mip it, and (for now)
+// dump the three atlases to PNG. Off-compositor camera: ortho V/P on the matrix stack, so the capture
+// material's MVP provider falls back to MTXI->RefVPMatrix() (EyePostion -> 0; fine for Solid).
+//
+// SPLIT to honor the in-frame + async contract (the cubemap probe renders the same way):
+//   prepareImpostorBake()  = COMPUTE half  — triangulate + bounds + MRT RTG + capture pipeline,
+//                            at materialization (NO render pass active; compute dispatch is legal).
+//   renderInFrame()        = GRAPHICS half — the per-cell ortho draws as a PRE-PASS inside an active
+//                            graphics frame (the drawable's per-view one-shot hook), then mips + the
+//                            ASYNC PNG capture (rtg/tri/pipe kept alive via the capture lambda).
+///////////////////////////////////////////////////////////////////////////////
+struct ImpostorBakeJob {
+  livehypermesh_ptr_t            _live;
+  std::shared_ptr<MeshRenderTri> _tri;      // the bake's OWN tri (its args carry instanceCount=1)
+  std::shared_ptr<MeshRenderTri> _mainTri;  // the MAIN render's tri — its clean/dirty state is the readiness gate
+  bool                           _triDone = false; // the bake tri has been dispatched (topology was valid)
+  rtgroup_ptr_t                  _rtg;
+  rtbuffer_ptr_t                 _bAlb, _bNrm, _bMR;
+  // one capture pipeline per gid bucket (gid 0 = base material, then each bound-gid material). renderInFrame
+  // draws each bucket (args offset gid*20) with ITS material's capture technique, so a multi-material mesh
+  // (tree: bark/branch/leaf) bakes correctly per-region into the one atlas.
+  std::vector<std::pair<int, fxpipeline_ptr_t>> _gidPipes;
+  std::vector<freestyle_mtl_ptr_t>              _gidCfs; // parallel: each gid's freestyle view, to RE-BIND the
+                                                         // current (re-pooled) vertex channels each bake frame
+  fvec3                          _center;
+  float                          _radius  = 1.0f;
+  int                            _gridN   = 8;
+  int                            _tileRes = 128;
+  int                            _nverts  = 0;
+  std::string                    _outBase;
+  bool                           _done = false;
+  // the BILLBOARD draw side (the far tier): the impostor draws with the BASE PBRMaterial via its
+  // FWD_SSBO_CUSTOM_IMPOSTOR technique (the atlas is bound on the material; permu._is_impostor selects it),
+  // plus a 6-index quad + indirect args. The drawable emits a bucket from these.
+  material_ptr_t                 _impMtl;                  // = the base material (boulder_mat), drawn impostor
+  const FxShaderStorageBlock*    _impInstBlock = nullptr; // storage_inst_mtx (the instance matrices)
+  FxShaderStorageBuffer*         _quadIndex = nullptr;    // 0,1,2,0,2,3
+  FxShaderStorageBuffer*         _quadArgs  = nullptr;    // VkDrawIndexedIndirectCommand {6, VIS[tier], 0,0,0}
+  FxShaderStorageBuffer*         _quadGidMask = nullptr;  // slot-0-only bound mask for the tier fanout
+  FxShaderStorageBuffer*         _bakeArgs    = nullptr;  // copy of the main tri's per-gid args, instanceCount forced to 1
+  // GRAPHICS half — runs inside an active graphics frame. Returns true once it has captured (or there is
+  // nothing to capture); returns false while the mesh tri is still dirty so the caller RETRIES next frame.
+  bool renderInFrame(Context* ctx);
+};
+using impostorbakejob_ptr_t = std::shared_ptr<ImpostorBakeJob>;
+
+// Impostor atlas dump location (ORKID_IMPOSTOR_DUMP). Default /tmp/orkid_impostor; if the env value is a
+// PATH (contains '/'), that directory is used instead. Created once; the destination is printed once so it
+// is always easy to find the PNGs (one numbered set imp<N>_{albedo,normal,mr}.png per baked variant).
+static std::string impostorDumpDir() {
+  const char* e   = getenv("ORKID_IMPOSTOR_DUMP");
+  std::string dir = (e and std::string(e).find('/') != std::string::npos) ? std::string(e)
+                                                                          : std::string("/tmp/orkid_impostor");
+  static bool s_once = false;
+  if (not s_once) {
+    s_once = true;
+    std::error_code ec;
+    std::filesystem::create_directories(dir, ec);
+    printf("================================================================\n");
+    printf("ORKID_IMPOSTOR_DUMP -> %s/imp<N>_{albedo,normal,mr}.png\n", dir.c_str());
+    printf("================================================================\n");
+  }
+  return dir;
+}
+
+static impostorbakejob_ptr_t prepareImpostorBake(
+    Context* ctx, livehypermesh_ptr_t live, pbrmaterial_ptr_t mtl,
+    const std::map<int, pbrmaterial_ptr_t>& gidMaterials,
+    std::shared_ptr<MeshRenderTri> mainTri,
+    int gridN, int tileRes, int ssaa, int msaa, float maxDist, const std::string& outBase) {
+  auto mesh = live ? live->_mesh : nullptr;
+  if (not mesh) return nullptr;
+  auto captech = mtl ? mtl->_tek_FWD_SSBO_CUSTOM_CAPTURE : nullptr;
+  auto fsmtl   = mtl ? mtl->_as_freestyle : nullptr;
+  if (not captech or not fsmtl) {
+    printf("bakeImpostor: material has no capture technique (opt-in with impostor=True)\n");
+    return nullptr;
+  }
+  static const char* kChan[5] = {"sif_ptex_vtx", "sif_N", "sif_B", "sif_uv", "sif_clr"};
+  auto ci  = ctx->CI();
+  auto fxi = ctx->FXI();
+  auto job = std::make_shared<ImpostorBakeJob>();
+  job->_live = live; job->_gridN = gridN; job->_tileRes = tileRes; job->_outBase = outBase;
+
+  // REUSE the MAIN render's tri ENTIRELY (its _triIndex + per-gid _args) — byte-identical triangulation to
+  // the viewport, so the leaf-card faces CANNOT triangulate differently in the bake. The capture VS is
+  // non-instanced (ignores gl_InstanceIndex), so the culled instanceCount in the args just draws that many
+  // perfectly-overlapping object-space copies (== one); renderInFrame gates on this tri being clean.
+  job->_mainTri = mainTri;
+  job->_tri     = mainTri;
+
+  // object-space bound (position readback)
+  fvec3 bmin(0, 0, 0), bmax(0, 0, 0);
+  int nv = mesh->_num_verts;
+  if (auto pch = mesh->channel(MeshChannel::POSITION)) {
+    if (nv > 0) {
+      std::vector<float> P(size_t(nv) * 4);
+      auto m = fxi->mapStorageBuffer(pch->_ssbo, 0, size_t(nv) * 16, BufferMapAccess::READ_ONLY);
+      std::memcpy(P.data(), m->_mappedaddr, size_t(nv) * 16);
+      fxi->unmapStorageBuffer(m.get());
+      bmin = bmax = fvec3(P[0], P[1], P[2]);
+      for (int i = 1; i < nv; i++) {
+        fvec3 p(P[i * 4], P[i * 4 + 1], P[i * 4 + 2]);
+        bmin = fvec3(std::min(bmin.x, p.x), std::min(bmin.y, p.y), std::min(bmin.z, p.z));
+        bmax = fvec3(std::max(bmax.x, p.x), std::max(bmax.y, p.y), std::max(bmax.z, p.z));
+      }
+    }
+  }
+  job->_nverts = nv;
+  job->_center = (bmin + bmax) * 0.5f;
+  float radius = (bmax - bmin).length() * 0.5f;
+  job->_radius = (radius <= 0.0f) ? 1.0f : radius * 1.05f;
+
+  // MRT RTG (3 targets + depth), auto-mipped. SSAA = render each view at tileRes*ssaa (the atlas is stored
+  // at that supersampled resolution; trilinear+mips downsample at sample time). MSAA = multisample the bake
+  // RTG (resolves to the single-sample atlas). Both reduce the captured-geometry aliasing (esp. leaf edges).
+  ssaa = std::max(1, ssaa);
+  int effTile = tileRes * ssaa;
+  int atlas   = gridN * effTile;
+  tileRes     = effTile;                                       // renderInFrame viewports use the supersampled tile
+  MsaaSamples msaaEnum = (msaa >= 8) ? MsaaSamples::MSAA_8X
+                       : (msaa >= 4) ? MsaaSamples::MSAA_4X
+                       : (msaa >= 2) ? MsaaSamples::MSAA_2X
+                                     : MsaaSamples::MSAA_1X;
+  static int s_atlasId = 0;                                   // unique id per baked variant (GPU-debug tracking)
+  std::string aname = "impostorAtlas" + std::to_string(s_atlasId++);
+  auto rtg  = std::make_shared<RtGroup>(ctx, atlas, atlas, msaaEnum);
+  rtg->_name = aname;
+  job->_bAlb = rtg->createRenderTarget(EBufferFormat::RGBA8);
+  job->_bNrm = rtg->createRenderTarget(EBufferFormat::RGBA8); // octa-encoded normal+ao; 8-bit is fine for a far impostor
+  job->_bMR  = rtg->createRenderTarget(EBufferFormat::RGBA8);
+  // debug names + TRILINEAR sampling on the atlas textures. The default min-filter is LINEAR (bilinear,
+  // mip-0 ONLY) — so the generated mip chain was never sampled and the minified billboards aliased hard.
+  // presetTrilinearClamp samples the mip chain; clamp (not wrap) avoids sampling across the atlas edge.
+  const char* chans[3] = {"_albedo", "_normal", "_metalrough"};
+  for (int t = 0; t < 3; t++)
+    if (auto tex = rtg->texture(t)) {
+      tex->_debugName = aname + chans[t];
+      auto& sm = tex->TexSamplingMode();
+      sm._texFiltModeMin = ETextureMinifyFilterMode::LINEAR_MIPMAP_LINEAR; // trilinear: sample the mip chain
+      sm._texFiltModeMag = ETextureMagnifyFilterMode::LINEAR;
+      sm._texAddrModeS   = TextureAddressMode::CLAMP; // don't sample across the atlas edge / into other tiles
+      sm._texAddrModeT   = TextureAddressMode::CLAMP;
+      sm._maxMipLevel    = 16;
+    }
+  job->_bAlb->_mipgen = RtBuffer::EMG_AUTOCOMPUTE;
+  job->_bNrm->_mipgen = RtBuffer::EMG_AUTOCOMPUTE;
+  job->_bMR->_mipgen  = RtBuffer::EMG_AUTOCOMPUTE;
+  // PREMULTIPLIED atlas: every channel (incl. alpha=coverage) clears to 0 so the silhouette's bilinear/mip
+  // blend is a coverage-weighted sum — the uncovered background contributes nothing (the FS unpremultiplies
+  // by the blended coverage). a:0 also drives the coverage-cutout discard.
+  job->_bAlb->_clearColor = fvec4(0, 0, 0, 0);
+  job->_bNrm->_clearColor = fvec4(0, 0, 0, 0);
+  job->_bMR->_clearColor  = fvec4(0, 0, 0, 0);
+  rtg->createDepthBuffer(EBufferFormat::Z32F, true);
+  rtg->_autoclear = true;
+  job->_rtg = rtg;
+
+  // capture pipeline (freestyle cache + FORCED technique; the PBR cache asserts on it) + bind channels.
+  // One per material — the base (gid 0) + each bound-gid material. The freestyle forced-technique pipeline
+  // does NOT auto-bind the std matrices (the PBR forward builder does), so bind the ones vs_ptex_ssbo uses
+  // to their providers (no CPD -> MTXI/RCID fallback = our pushed ortho V/P + identity model): mvp
+  // (gl_Position), m (frg_wpos), mrot (the world NORMAL: wnormal = mrot*nrm; without it the normal is black).
+  auto buildCapturePipe = [&](pbrmaterial_ptr_t m) -> fxpipeline_ptr_t {
+    auto ctek = m ? m->_tek_FWD_SSBO_CUSTOM_CAPTURE : nullptr;
+    auto cfs  = m ? m->_as_freestyle : nullptr;
+    if (not ctek or not cfs) return nullptr;
+    FxPipelinePermutation permu;
+    permu._is_vertex_ssbo   = true;
+    permu._forced_technique = ctek;
+    auto pipe = cfs->pipelineCache()->findPipeline(permu);
+    if (pipe) {
+      for (int c = 0; c < 5; c++)
+        if (auto blk = cfs->storageBlock(kChan[c]))
+          if (auto ch = mesh->channel(MeshChannel(c)))
+            pipe->bindStorage(blk, ch->_ssbo);
+      if (auto p = cfs->param("mvp"))  pipe->bindParam(p, "RCFD_Camera_MVP_Mono"_crcsh);
+      if (auto p = cfs->param("m"))    pipe->bindParam(p, "RCFD_M"_crcsh);
+      if (auto p = cfs->param("mrot")) pipe->bindParam(p, "RCFD_Model_Rot"_crcsh);
+    }
+    return pipe;
+  };
+  job->_gidPipes.push_back({0, buildCapturePipe(mtl)}); // gid 0 = base material (the default bucket)
+  job->_gidCfs.push_back(mtl->_as_freestyle);
+  for (auto& [gid, gm] : gidMaterials) {                // each bound gid draws its bucket with its material
+    job->_gidPipes.push_back({gid, buildCapturePipe(gm)});
+    job->_gidCfs.push_back(gm->_as_freestyle);
+  }
+  if (getenv("ORKID_IMPOSTOR_DUMP")) { // diagnostics: which gid buckets have a capture pipe
+    printf("bakeImpostor[%s]: faces=%d  gid-pipes:", outBase.c_str(), mesh->_num_faces);
+    for (auto& gp : job->_gidPipes)
+      printf(" gid%d=%s", gp.first, gp.second ? "ok" : "NOPIPE");
+    printf("\n");
+  }
+
+  // Phase B — the BILLBOARD draw side. The impostor is drawn by the BASE PBRMaterial (the same boulder_mat)
+  // via its FWD_SSBO_CUSTOM_IMPOSTOR technique (selected by permu._is_impostor) — so it gets the IDENTICAL
+  // forward PBR lighting as the mesh LOD tiers (color-matched), NOT a separate hand-lit material. Here we
+  // just hand the material its baked atlas + grid/radius (bound by the forward pipeline's impostor branch)
+  // and grab its instance-matrix block; the drawable emits a bucket carrying the quad + the cull tier slice.
+  {
+    mtl->bindImpostorAtlas(rtg->texture(0), rtg->texture(1), rtg->texture(2),
+                           job->_center, job->_radius, float(gridN), maxDist);
+    job->_impMtl       = mtl;                                  // the impostor draws with the BASE material
+    job->_impInstBlock = fsmtl->storageBlock("storage_inst_mtx");
+    printf("bakeImpostor: atlas bound to material<%p> instblk<%p> tek<%p>\n",
+           (void*)mtl.get(), (void*)job->_impInstBlock, (void*)mtl->_tek_FWD_SSBO_CUSTOM_IMPOSTOR);
+    // quad index (0,1,2,0,2,3) + indirect args (slot 0): indexCount=6, instanceCount=0. The cull's per-tier
+    // fanout (cs_cull_fanout, slot 0 always bound) stamps instanceCount = VIS[tier] — so only the impostor
+    // band's instances draw a billboard; the matrix slice rides the cull's OUT_M tier offset.
+    job->_quadIndex = fxi->createStorageBuffer(6 * 4);
+    {
+      uint32_t idx[6] = {0, 1, 2, 0, 2, 3};
+      auto m          = fxi->mapStorageBuffer(job->_quadIndex, 0, 6 * 4, BufferMapAccess::WRITE_ONLY);
+      std::memcpy(m->_mappedaddr, idx, 6 * 4);
+      fxi->unmapStorageBuffer(m.get());
+    }
+    job->_quadArgs = fxi->createStorageBuffer(5 * 4);
+    {
+      uint32_t arg[5] = {6u, 0u, 0u, 0u, 0u};
+      auto m          = fxi->mapStorageBuffer(job->_quadArgs, 0, 5 * 4, BufferMapAccess::WRITE_ONLY);
+      std::memcpy(m->_mappedaddr, arg, 5 * 4);
+      fxi->unmapStorageBuffer(m.get());
+    }
+    // a slot-0-only bound mask (128 uints, bit 0 set) for the impostor tier's fanout — keeps the stamp on the
+    // quad's single command regardless of the base mesh's gid set.
+    job->_bakeArgs    = fxi->createStorageBuffer(16 * 5 * 4); // 16 gid slots; filled in renderInFrame (instanceCount=1)
+    job->_quadGidMask = fxi->createStorageBuffer(128 * 4);
+    {
+      uint32_t mask[128] = {1u};
+      auto m             = fxi->mapStorageBuffer(job->_quadGidMask, 0, sizeof(mask), BufferMapAccess::WRITE_ONLY);
+      std::memcpy(m->_mappedaddr, mask, sizeof(mask));
+      fxi->unmapStorageBuffer(m.get());
+    }
+  }
+  return job;
+}
+
+bool ImpostorBakeJob::renderInFrame(Context* ctx) {
+  if (_done) return true;
+  auto mesh = _live ? _live->_mesh : nullptr;
+  if (_gidPipes.empty() or not _rtg or not _tri or not mesh) return true; // nothing to capture — don't retry
+  // GATE: the MAIN render's tri must be clean -> _liveRecompute has triangulated the current topology AND
+  // waited on the graph compute (endDispatchPhase submit+wait). Until then, retry next frame — NEVER capture
+  // stale topology. This is the "100% valid topology + sync" guarantee.
+  if (not _mainTri or _mainTri->topoDirty(mesh)) return false;
+  // _tri IS the main tri (already triangulated + synced by _liveRecompute's endDispatchPhase submit+wait),
+  // so its _triIndex/_args are valid here — nothing to dispatch; we draw the viewport's exact triangulation.
+  _done = true;
+  // The main tri's per-gid args carry the CULLED instanceCount (VIS — 0 when this variant has no near trees
+  // at the bake frame -> blank atlas). Copy them with instanceCount forced to 1: the capture VS is non-
+  // instanced, so 1 object-space draw is correct regardless of the cull. firstIndex/indexCount are untouched.
+  {
+    auto fxiB = ctx->FXI();
+    uint32_t bargs[16 * 5] = {0};
+    {
+      auto m = fxiB->mapStorageBuffer(_tri->_args, 0, sizeof(bargs), BufferMapAccess::READ_ONLY);
+      std::memcpy(bargs, m->_mappedaddr, sizeof(bargs));
+      fxiB->unmapStorageBuffer(m.get());
+    }
+    for (auto& gp : _gidPipes) bargs[gp.first * 5 + 1] = 1u;
+    auto m = fxiB->mapStorageBuffer(_bakeArgs, 0, sizeof(bargs), BufferMapAccess::WRITE_ONLY);
+    std::memcpy(m->_mappedaddr, bargs, sizeof(bargs));
+    fxiB->unmapStorageBuffer(m.get());
+  }
+  // DEBUG OBJ: dump the EXACT renderable geometry the capture draws (positions indexed by _triIndex, per gid)
+  // so the bake's leaf topology can be inspected as a mesh (trimesh/numpy) instead of from the atlas PNG.
+  if (getenv("ORKID_IMPOSTOR_DUMP")) {
+    auto fxiD = ctx->FXI();
+    int  nv   = mesh->_num_verts;
+    std::vector<float> P(size_t(nv) * 4, 0.0f);
+    if (auto pch = mesh->channel(MeshChannel::POSITION)) {
+      auto m = fxiD->mapStorageBuffer(pch->_ssbo, 0, size_t(nv) * 16, BufferMapAccess::READ_ONLY);
+      std::memcpy(P.data(), m->_mappedaddr, size_t(nv) * 16);
+      fxiD->unmapStorageBuffer(m.get());
+    }
+    uint32_t args[16 * 5] = {0};
+    {
+      auto m = fxiD->mapStorageBuffer(_tri->_args, 0, sizeof(args), BufferMapAccess::READ_ONLY);
+      std::memcpy(args, m->_mappedaddr, sizeof(args));
+      fxiD->unmapStorageBuffer(m.get());
+    }
+    uint32_t maxidx = 0;
+    for (auto& gp : _gidPipes) { uint32_t e = args[gp.first * 5 + 2] + args[gp.first * 5 + 0]; if (e > maxidx) maxidx = e; }
+    std::vector<uint32_t> idx(maxidx ? maxidx : 1u, 0u);
+    if (maxidx) {
+      auto m = fxiD->mapStorageBuffer(_tri->_triIndex, 0, maxidx * 4, BufferMapAccess::READ_ONLY);
+      std::memcpy(idx.data(), m->_mappedaddr, maxidx * 4);
+      fxiD->unmapStorageBuffer(m.get());
+    }
+    std::string opath = _outBase + ".obj";
+    if (FILE* of = fopen(opath.c_str(), "w")) {
+      for (int v = 0; v < nv; v++) fprintf(of, "v %f %f %f\n", P[v * 4], P[v * 4 + 1], P[v * 4 + 2]);
+      for (auto& gp : _gidPipes) {
+        int gid = gp.first;
+        uint32_t fi = args[gid * 5 + 2], ic = args[gid * 5 + 0];
+        fprintf(of, "o gid%d\n", gid);
+        for (uint32_t t = fi; t + 2 < fi + ic && (t + 2) < maxidx; t += 3)
+          fprintf(of, "f %u %u %u\n", idx[t] + 1, idx[t + 1] + 1, idx[t + 2] + 1);
+      }
+      fclose(of);
+      printf("bakeImpostor: wrote %s (nv=%d, indices=%u)\n", opath.c_str(), nv, maxidx);
+    }
+  }
+  // RE-BIND each capture pipe's vertex channels to the mesh's CURRENT (re-pooled) SSBOs. The pipes were built
+  // at materialize, but dynamic topology (the leaf merge) re-pools the channel buffers -> the capture would
+  // otherwise pull the leaf indices from the STALE trunk-only position buffer (out of bounds -> spaghetti).
+  {
+    static const char* kChanRB[5] = {"sif_ptex_vtx", "sif_N", "sif_B", "sif_uv", "sif_clr"};
+    for (size_t k = 0; k < _gidPipes.size(); k++) {
+      auto pipe = _gidPipes[k].second;
+      auto cfs  = (k < _gidCfs.size()) ? _gidCfs[k] : nullptr;
+      if (not pipe or not cfs) continue;
+      for (int c = 0; c < 5; c++)
+        if (auto blk = cfs->storageBlock(kChanRB[c]))
+          if (auto ch = mesh->channel(MeshChannel(c)))
+            pipe->bindStorage(blk, ch->_ssbo);
+    }
+  }
+  auto fbi  = ctx->FBI();
+  auto gbi  = ctx->GBI();
+  auto mtxi = ctx->MTXI();
+  auto txi  = ctx->TXI();
+  auto rcfd = std::make_shared<RenderContextFrameData>(ctx);
+  fbi->PushRtGroup(_rtg.get());
+  for (int j = 0; j < _gridN; j++) {
+    for (int i = 0; i < _gridN; i++) {
+      float u  = (float(i) + 0.5f) / float(_gridN);
+      float v  = (float(j) + 0.5f) / float(_gridN);
+      float ex = u * 2.0f - 1.0f, ey = v * 2.0f - 1.0f;
+      fvec3 dir((ex + ey) * 0.5f, 0.0f, (ex - ey) * 0.5f); // hemi-oct: Y-up upper hemisphere
+      dir.y = 1.0f - std::abs(dir.x) - std::abs(dir.z);
+      dir   = dir.normalized();
+      fvec3 eye = _center + dir * (_radius * 2.0f);
+      fvec3 up  = (std::abs(dir.y) > 0.99f) ? fvec3(0, 0, 1) : fvec3(0, 1, 0);
+      fmtx4 V, P;
+      V.lookAt(eye, _center, up);
+      P.ortho(-_radius, _radius, _radius, -_radius, 0.01f, _radius * 4.0f);
+      mtxi->PushPMatrix(P);
+      mtxi->PushVMatrix(V);
+      mtxi->PushMMatrix(fmtx4::Identity());
+      ViewportRect vp(i * _tileRes, j * _tileRes, _tileRes, _tileRes);
+      fbi->pushViewport(vp);
+      fbi->pushScissor(vp);
+      RenderContextInstData RCID(rcfd);
+      RCID._isSSBOSourced = true;
+      // draw each gid bucket with ITS capture pipeline (args offset gid*20) — the atlas accumulates the
+      // per-region surfaces (bark trunk / branch / leaf), depth-tested so closer buckets occlude.
+      for (auto& gp : _gidPipes) {
+        if (not gp.second) continue;
+        int gid = gp.first;
+        gp.second->wrappedDrawCall(RCID, [&]() {
+          gbi->DrawIndexedIndirectEML(_tri->_triIndex, PrimitiveType::TRIANGLES, _bakeArgs, size_t(gid) * 20, 4);
+        });
+      }
+      fbi->popScissor();
+      fbi->popViewport();
+      mtxi->PopPMatrix();
+      mtxi->PopVMatrix();
+      mtxi->PopMMatrix();
+    }
+  }
+  // PopRtGroup (usage "user") transitions the 3 color targets to SHADER_READ_ONLY; generateMipMaps' blit
+  // chain leaves them shader-readable too — so after this the atlas is directly sampleable by the billboard
+  // pass IN THE SAME FRAME. (Do NOT captureAsFormat here on the live path: the PNG readback transitions the
+  // textures to host-read, un-doing the shader-read layout and tripping the bindParam layout assert.)
+  fbi->PopRtGroup();
+  txi->generateMipMaps(_rtg->texture(0).get());
+  txi->generateMipMaps(_rtg->texture(1).get());
+  txi->generateMipMaps(_rtg->texture(2).get());
+  // BUILD the trilinear sampler NOW — the textures are GPU-initialized + mipped at this point. Setting the
+  // TexSamplingMode fields at create time is not enough: ApplySamplingMode early-returns if the texture is
+  // not yet initialized, so the sampler stayed at the point/mip-0 default -> the holes + aliasing.
+  for (int t = 0; t < 3; t++)
+    if (auto tex = _rtg->texture(t)) txi->ApplySamplingMode(tex.get());
+  if (getenv("ORKID_IMPOSTOR_DUMP"))
+    printf("bakeImpostor: atlas %dx%d  _num_mips=%d (1 => generateMipMaps no-op -> impostor aliases)\n",
+           _gridN * _tileRes, _gridN * _tileRes, _rtg->texture(0)->_num_mips);
+  // Opt-in PNG dump for offline atlas verification only (ORKID_IMPOSTOR_DUMP=1). This consumes the atlas as
+  // a host readback, so the billboard draw must NOT also run this frame — guard the live draw accordingly.
+  if (getenv("ORKID_IMPOSTOR_DUMP")) {
+    const char* names[3]   = {"albedo", "normal", "mr"};
+    rtbuffer_ptr_t bufs[3] = {_bAlb, _bNrm, _bMR};
+    auto rtg = _rtg; auto tri = _tri; auto pipes = _gidPipes; // keep alive past the async readback
+    for (int t = 0; t < 3; t++) {
+      auto capbuf = std::make_shared<CaptureBuffer>();
+      std::string path = _outBase + "_" + names[t] + ".png";
+      fbi->captureAsFormat(bufs[t].get(), capbuf, EBufferFormat::RGBA8, [capbuf, path, rtg, tri, pipes, rcfd]() {
+        capbuf->_image->writeToFile(file::Path(path.c_str()));
+        printf("bakeImpostor: wrote %s\n", path.c_str());
+      });
+    }
+  }
+  printf("bakeImpostor: %dx%d hemi-oct atlas (tile %d, %d verts) center<%.2f %.2f %.2f> r<%.2f>\n",
+         _gridN, _gridN, _tileRes, _nverts, _center.x, _center.y, _center.z, _radius);
+  return true;
+}
+
 // faceViz=true -> the per-triangle source-face-id buffer (_triFace) is exposed + kept refreshed for the
 // face-visualization FS (which reads TFd[gl_PrimitiveID]); returns that buffer so make_drawable can bind
 // it to the FS storage block (graphics-storage index 5, right after the 5 vertex channels). Returns null
@@ -563,14 +1239,35 @@ struct MeshRenderTri {
 MeshRenderBuffers setupMeshRender(
     ComputeDrawableData* cdd, livehypermesh_ptr_t live, Context* ctx, bool animated, bool faceViz,
     bool tagViz, bool wireframe, int instanceCount, const std::vector<float>& instanceMatrices,
-    const std::vector<int>& boundGids, bool cull, const fvec4& cullBound) {
+    const std::vector<int>& boundGids, bool cull, const fvec4& cullBound,
+    int cullSlabs, float cullTightness, float cullDistance,
+    const std::vector<livehypermesh_ptr_t>& lodLives, const std::vector<float>& lodDistances,
+    const std::vector<int>& impostorTiers,
+    const std::map<int, pbrmaterial_ptr_t>& gidMaterials,
+    int impostorGrid, int impostorTile, int impostorSsaa, int impostorMsaa) {
   faceViz = faceViz or tagViz; // the tag-viz FS indexes __tags by the per-triangle face id (slot 5)
+  auto isImpostorTier = [&](int extraIdx) {
+    return std::find(impostorTiers.begin(), impostorTiers.end(), extraIdx) != impostorTiers.end();
+  };
   auto tri = std::make_shared<MeshRenderTri>();
   tri->_wireframe = wireframe;
   tri->_boundGids = boundGids; // E.3: the fold mask (everything else lands in slot 0)
   tri->build(ctx);
   auto mesh0 = live->_mesh;
   tri->ensureIndex(mesh0 ? mesh0->_num_corners : 1);
+  // Phase 3c — one triangulator per EXTRA LOD tier (its own distinct mesh/topology). Captured by the
+  // live hook (each triangulates its own static mesh on the first frame) and turned into tier draws.
+  std::vector<std::shared_ptr<MeshRenderTri>>      lodTris;
+  std::vector<livehypermesh_ptr_t>                 lodTierLives;
+  for (auto& ll : lodLives) {
+    auto lt          = std::make_shared<MeshRenderTri>();
+    lt->_boundGids   = boundGids; // same gid set as tier 0 (per-tier materials mirror the base)
+    lt->build(ctx);
+    auto lm = ll ? ll->_mesh : nullptr;
+    lt->ensureIndex(lm ? lm->_num_corners : 1);
+    lodTris.push_back(lt);
+    lodTierLives.push_back(ll);
+  }
   // INSTANCING: cs_reset writes instanceCount into the indirect command.
   // E.2 TYPED EDGE: a graph-carried InstanceSet (live->_instances, a ScatterSource output)
   // IS the instance source — its matrices + attrs SSBOs bind as-is, count from the set.
@@ -615,14 +1312,77 @@ MeshRenderBuffers setupMeshRender(
   // bound gid slot's indirect command. Requires a positive bound radius.
   FxShaderStorageBuffer* gfx_instMtx  = tri->_instMtx;
   FxShaderStorageBuffer* gfx_instAttr = inst_attr;
+  std::vector<MeshRenderBuffers::TierDraw> lodTiers; // Phase 3b: extra LOD tiers (hm_drawable -> buckets)
   if (cull and tri->_instCount > 1 and tri->_instMtx) {
-    if (cullBound.w <= 0.0f) {
-      printf("hypermesh::setupMeshRender: cull requested but bound radius <= 0 — cull DISABLED\n");
+    // E.4 cull bound: AUTO (w<=0) computes the object-space sphere once from a position readback of
+    // the materialized mesh (+5% pad) — shared by the scene (HypermeshDrawableData) AND the python
+    // make_drawable paths. Animated meshes that outgrow their static bounds should pass cullBound.
+    fvec4 bound = cullBound;
+    std::vector<fvec4> occBounds; // OCCLUDEE = K object-space AABBs (2 vec4 each); K=1 AABB or N slabs
+    if (bound.w <= 0.0f and live->_mesh) {
+      int nv   = live->_mesh->_num_verts;
+      auto pch = live->_mesh->channel(MeshChannel::POSITION);
+      if (nv > 0 and pch) {
+        auto fxi = ctx->FXI();
+        std::vector<float> P(size_t(nv) * 4);
+        auto m = fxi->mapStorageBuffer(pch->_ssbo, 0, size_t(nv) * 16, BufferMapAccess::READ_ONLY);
+        std::memcpy(P.data(), m->_mappedaddr, size_t(nv) * 16);
+        fxi->unmapStorageBuffer(m.get());
+        fvec3 bmin(P[0], P[1], P[2]), bmax = bmin;
+        for (int i = 1; i < nv; i++) {
+          fvec3 p(P[i * 4], P[i * 4 + 1], P[i * 4 + 2]);
+          bmin = fvec3(std::min(bmin.x, p.x), std::min(bmin.y, p.y), std::min(bmin.z, p.z));
+          bmax = fvec3(std::max(bmax.x, p.x), std::max(bmax.y, p.y), std::max(bmax.z, p.z));
+        }
+        bound = fvec4((bmin + bmax) * 0.5f, (bmax - bmin).length() * 0.5f * 1.05f); // SPHERE = frustum only
+        // occludee decomposition (drives occlusion): K=1 whole-mesh AABB, or N vertical slabs (bin P by
+        // Y) — slabs separate a thin trunk from a wide canopy so each part occludes independently.
+        int K = std::max(1, cullSlabs);
+        if (K <= 1) {
+          occBounds = {fvec4(bmin.x, bmin.y, bmin.z, 0), fvec4(bmax.x, bmax.y, bmax.z, 0)};
+        } else {
+          float y0 = bmin.y, dy = (bmax.y - bmin.y) / float(K);
+          std::vector<fvec3> smn(K, fvec3(1e30f, 1e30f, 1e30f)), smx(K, fvec3(-1e30f, -1e30f, -1e30f));
+          std::vector<bool>  used(K, false);
+          for (int i = 0; i < nv; i++) {
+            fvec3 p(P[i * 4], P[i * 4 + 1], P[i * 4 + 2]);
+            int s = dy > 0.0f ? std::max(0, std::min(K - 1, int((p.y - y0) / dy))) : 0;
+            smn[s] = fvec3(std::min(smn[s].x, p.x), std::min(smn[s].y, p.y), std::min(smn[s].z, p.z));
+            smx[s] = fvec3(std::max(smx[s].x, p.x), std::max(smx[s].y, p.y), std::max(smx[s].z, p.z));
+            used[s] = true;
+          }
+          for (int s = 0; s < K; s++)
+            if (used[s]) {
+              occBounds.push_back(fvec4(smn[s].x, smn[s].y, smn[s].z, 0));
+              occBounds.push_back(fvec4(smx[s].x, smx[s].y, smx[s].z, 0));
+            }
+        }
+        printf("hypermesh::setupMeshRender: auto cull bound c<%.2f %.2f %.2f> r<%.2f> occ_boxes<%d>\n",
+               bound.x, bound.y, bound.z, bound.w, int(occBounds.size() / 2));
+      }
+    }
+    if (bound.w <= 0.0f) {
+      printf("hypermesh::setupMeshRender: cull requested but no bound (empty mesh) — cull DISABLED\n");
     } else {
       auto culler = std::make_shared<MeshInstCull>();
-      culler->build(ctx, tri->_instCount);
-      culler->_bound  = cullBound;
-      culler->_srcMtx = tri->_instMtx;
+      // Phase 3c — DISTANCE LOD: tier 0 = the main mesh, tiers 1..N = lodLives at lodDistances (clamped
+      // to 4 tiers / 3 boundaries). _numTiers set BEFORE build so OUT_M sizes for all tiers.
+      int nLod = std::min(int(lodLives.size()), 3); // up to 3 extra tiers (4 total)
+      culler->_numTiers = 1 + nLod;
+      for (int i = 0; i < nLod && i < int(lodDistances.size()); i++)
+        culler->_lodDist[i] = lodDistances[i];
+      culler->build(ctx, tri->_instCount); // sizes OUT_M by _numTiers — set tiers FIRST
+      culler->_bound    = bound;
+      culler->_boxScale = (cullTightness > 0.0f) ? cullTightness : 1.0f; // per-variant occludee tightness
+      culler->_cullDistance = cullDistance;                              // 0 = no distance cull
+      // explicit cullBound (no mesh readback) -> the sphere's cube as the single occludee box.
+      if (occBounds.empty()) {
+        fvec3 c(bound.x, bound.y, bound.z);
+        occBounds = {fvec4(c.x - bound.w, c.y - bound.w, c.z - bound.w, 0),
+                     fvec4(c.x + bound.w, c.y + bound.w, c.z + bound.w, 0)};
+      }
+      culler->setBounds(ctx, occBounds);
+      culler->_srcMtx  = tri->_instMtx;
       if (inst_attr) {
         culler->_srcAttr = inst_attr;
       } else { // matrices-only: a zeroed attr source keeps the shader uniform
@@ -635,6 +1395,70 @@ MeshRenderBuffers setupMeshRender(
       }
       culler->_args         = tri->_args;
       culler->_boundGidMask = tri->_boundGidMask;
+      // Phase 3c — LOD tiers. tier 0 = the main draw (tri, OUT_M offset 0). Each EXTRA tier draws its OWN
+      // LOD mesh (lodTris[t-1], distinct topology -> its own triangulated args carrying its indexCount;
+      // the per-tier fanout only stamps instanceCount=VIS[t]) and reads its OUT_M slice at offset t*count.
+      // hm_drawable turns _lodTiers into bucket draws (main + gid materials, mirroring tier 0).
+      culler->_tierArgs    = {tri->_args};
+      culler->_tierGidMask = {tri->_boundGidMask};
+      // LOD step #3 — the bake reads the base material's FWD_SSBO_CUSTOM_CAPTURE technique (impostor=True).
+      auto pbrBase = std::dynamic_pointer_cast<PBRMaterial>(cdd->_material);
+      for (int t = 1; t < culler->_numTiers; t++) {
+        int    extraIdx = t - 1;
+        size_t tierOff  = size_t(t) * size_t(tri->_instCount) * 64; // this tier's OUT_M slice (sub-range bind)
+        // IMPOSTOR tier — bake the base mesh's hemi-oct atlas ONCE (in-frame) and draw one camera-facing
+        // billboard per band instance; the matrix slice IS this tier's OUT_M offset, instanceCount = VIS[t]
+        // (the cull's per-tier fanout stamps the quad's single command — slot-0-only mask).
+        // ORKID_IMPOSTOR_DUMP: bake + write the atlas PNGs to /tmp/orkid_impostor/ (one numbered set per
+        // baked variant) instead of drawing the billboards — the readback transitions the atlas to host-read,
+        // which the billboard sample can't use (so the live draw is suppressed this mode). See impostorDumpDir.
+        static int  s_impDumpIdx = 0;
+        const bool  s_impDump    = (getenv("ORKID_IMPOSTOR_DUMP") != nullptr);
+        std::string outBase      = s_impDump ? (impostorDumpDir() + "/imp" + std::to_string(s_impDumpIdx++))
+                                             : std::string("impostor"); // non-dump: name unused (no readback)
+        impostorbakejob_ptr_t job =
+            (isImpostorTier(extraIdx) and pbrBase)
+                ? prepareImpostorBake(ctx, live, pbrBase, gidMaterials, tri, impostorGrid, impostorTile,
+                                      impostorSsaa, impostorMsaa, cullDistance, outBase)
+                : nullptr;
+        if (job and job->_impMtl and job->_impInstBlock and pbrBase->_tek_FWD_SSBO_CUSTOM_IMPOSTOR) {
+          auto prev           = cdd->_oneShotRender; // chain: multiple impostor tiers each bake their atlas
+          cdd->_oneShotRender = [prev, job](Context* c) -> bool {
+            bool a = prev ? prev(c) : true;      // each link retries independently until its tri is clean;
+            bool b = job->renderInFrame(c);      // the chain reports done only when EVERY bake has captured.
+            return a and b;
+          };
+          culler->_tierArgs.push_back(job->_quadArgs);
+          culler->_tierGidMask.push_back(job->_quadGidMask);
+          if (not s_impDump) { // dump mode samples the host-read atlas -> skip the billboard draw (no crash)
+            ComputeDrawable::BucketDraw imp;
+            imp._material       = job->_impMtl;       // the BASE PBRMaterial (SHARED across variants), drawn impostor
+            imp._isImpostor     = true;               // -> RCID._isImpostor -> FWD_SSBO_CUSTOM_IMPOSTOR + fwd lighting
+            imp._indexSSBO      = job->_quadIndex;
+            imp._argsSSBO       = job->_quadArgs;
+            imp._instMtxBlock   = job->_impInstBlock; // storage_inst_mtx, bound at the tier slice of...
+            imp._instMtxBuf     = culler->_culledMtx; // ...the cull's interleaved OUT_M
+            imp._instByteOffset = tierOff;
+            // THIS variant's atlas + params, bound PER-DRAW (the shared material can't hold per-variant atlases).
+            imp._impAtlasAlbedo     = job->_rtg->texture(0);
+            imp._impAtlasNormal     = job->_rtg->texture(1);
+            imp._impAtlasMetalRough = job->_rtg->texture(2);
+            imp._impCenter          = fvec4(job->_center.x, job->_center.y, job->_center.z, job->_radius);
+            imp._impGrid            = fvec4(float(job->_gridN), cullDistance, 0.0f, 0.0f);
+            imp._parImpAlbedo       = pbrBase->_parImpAlbedo;
+            imp._parImpNormal       = pbrBase->_parImpNormal;
+            imp._parImpMetalRough   = pbrBase->_parImpMetalRough;
+            imp._parImpCenter       = pbrBase->_parImpCenter;
+            imp._parImpGrid         = pbrBase->_parImpGrid;
+            cdd->_bucketDraws.push_back(imp);
+          }
+        } else { // MESH tier (legacy LOD path): its own triangulated args/index, OUT_M slice via hm_drawable
+          auto& lt = lodTris[t - 1];
+          culler->_tierArgs.push_back(lt->_args);
+          culler->_tierGidMask.push_back(lt->_boundGidMask);
+          lodTiers.push_back({lt->_args, lt->_triIndex, tierOff});
+        }
+      }
       cdd->_perViewCompute  = [culler](Context* c, const CameraMatrices& m) { culler->perView(c, m); };
       gfx_instMtx  = culler->_culledMtx;
       gfx_instAttr = culler->_culledAttr;
@@ -646,9 +1470,27 @@ MeshRenderBuffers setupMeshRender(
 
   // the per-frame, IN-FRAME hook (ComputeDrawable::onPreRender runs this; _passes stays empty). One
   // dispatch phase: (animated) graph re-eval -> triangulate -> refresh the drawable's live bindings.
-  cdd->_liveRecompute = [tri, live, animated, faceViz, tagViz, wireframe](Context* ctx, ComputeDrawable* drw) {
+  cdd->_liveRecompute = [tri, live, animated, faceViz, tagViz, wireframe, lodTris, lodTierLives](
+                            Context* ctx, ComputeDrawable* drw) {
     auto mesh = live->_mesh;
     if (not mesh) return;
+    // Phase 3c — triangulate each EXTRA LOD tier's (static, distinct) mesh once. topoDirty is true on
+    // the first build (rides the main mesh's frame-0 dirty, before the clean early-return below); static
+    // tiers go clean after and cost nothing. Each writes its OWN args (indexCount); no clone needed.
+    {
+      auto lci = ctx->CI();
+      for (size_t k = 0; k < lodTris.size(); k++) {
+        auto& lt   = lodTris[k];
+        auto  lm   = (k < lodTierLives.size() and lodTierLives[k]) ? lodTierLives[k]->_mesh : nullptr;
+        if (not lm or not lt->topoDirty(lm)) continue;
+        lt->ensureIndex(lm->_num_corners);
+        lt->writeParams(lm->_num_faces, lm->face("__tags") != nullptr);
+        lci->beginDispatchPhase();
+        lt->dispatch(lm);
+        lci->endDispatchPhase();
+        lt->ackTopo(lm);
+      }
+    }
     // ---- B.4 CLOCK FEED: the LIVE path's time source (steady, incremental). Fills the family env
     // (module writeParams reads it — e.g. the extrude S.time slot) AND the graph UpdateData (module
     // compute() parity with the ECS host contract). BAKE paths never run this hook -> stay t=0.
@@ -705,6 +1547,7 @@ MeshRenderBuffers setupMeshRender(
         tri->ensureIndex(mesh->_num_corners);
         tri->writeParams(mesh->_num_faces, mesh->face("__tags") != nullptr);
       }
+      uint64_t _hmgen_t0 = ork::Timer::getSystemTick(); // perf HUD
       ci->beginDispatchPhase();
       live->_ginst->compute(live->_updata);
       if (pre_dirty) {
@@ -712,6 +1555,8 @@ MeshRenderBuffers setupMeshRender(
         tri->dispatch(mesh);
       }
       ci->endDispatchPhase(); // submit + WAIT
+      RenderPhaseStats::instance().add(
+          "hypermesh-gen", double(ork::Timer::getSystemTick() - _hmgen_t0) * 1.0e-6); // perf HUD
       if (pre_dirty) {
         tri->ackTopo(mesh);   // ack POST-phase: absorbs same-frame compute-time bumps the in-phase
         triangulated = true;  // triangulate already saw (it ran after the barrier)
@@ -739,8 +1584,11 @@ MeshRenderBuffers setupMeshRender(
       auto ch = mesh->channel(MeshChannel(int(i))); // render order P,N,B,uv,color (see make_drawable)
       if (ch) drw->_graphicsStorage[i].second = ch->_ssbo;
     }
-    // E.3: each gid bucket's storage list shares the same first-5-channels contract
+    // E.3: each gid bucket's storage list shares the same first-5-channels contract. LOD TIER buckets
+    // (3c) carry their OWN distinct mesh (_indexSSBO set) + static bindings -> skip them (refreshing to
+    // the MAIN mesh's channels would corrupt them).
     for (auto& bucket : drw->_bucketDraws) {
+      if (bucket._indexSSBO) continue; // LOD tier bucket
       size_t bn = bucket._graphicsStorage.size();
       for (size_t i = 0; i < bn && i < 5; i++) {
         auto ch = mesh->channel(MeshChannel(int(i)));
@@ -774,6 +1622,9 @@ MeshRenderBuffers setupMeshRender(
   out._faceid   = faceViz ? tri->_triFace : nullptr;
   out._instMtx  = gfx_instMtx;   // E.4: the CULLED buffers when the cull is active
   out._instAttr = gfx_instAttr;
+  out._lodTiers = std::move(lodTiers); // Phase 3b: extra LOD tier draws (hm_drawable builds buckets)
+  // LOD step #3 — the IMPOSTOR far tier is wired above in the cull tier loop (impostorTiers): bake hook +
+  // billboard bucket bound to the band's OUT_M slice. (The ORKID_IMPOSTOR_BAKE env probe is retired.)
   return out;
 }
 

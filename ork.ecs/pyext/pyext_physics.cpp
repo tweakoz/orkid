@@ -197,7 +197,11 @@ void pyinit_physics(py::module& module_ecs) {
           .def_property(
               "world_height",
               [](const bulletshapeterraindata_ptr_t& shape) -> float { return shape->_worldHeight; },
-              [](bulletshapeterraindata_ptr_t& shape, float val) { shape->_worldHeight = val; });
+              [](bulletshapeterraindata_ptr_t& shape, float val) { shape->_worldHeight = val; })
+          .def_property(
+              "render_dimension",
+              [](const bulletshapeterraindata_ptr_t& shape) -> int { return shape->_render_dimension; },
+              [](bulletshapeterraindata_ptr_t& shape, int val) { shape->_render_dimension = val; });
   type_codec->registerStdCodec<bulletshapeterraindata_ptr_t>(shapeterrain_type);
   /////////////////////////////////////////////////////////////////////////////////
   // E.2-walk: the reusable walk-on-terrain behavior (CharacterController). Properties

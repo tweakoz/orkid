@@ -83,16 +83,16 @@ class SpecularScene(Scene):
 
     self.entity("sphere_spec_off",
       transform=Transform(translation=vec3(-5.5, 0, 0)),
-      components=[SG.component(nodes={
+      components=[self.spinner(), SG.component(nodes={
         "n": {"drawable": make_drawable("dr_spec_off", mat_off)},
       })])
     self.entity("sphere_spec_default",
       transform=Transform(translation=vec3(0, 0, 0)),
-      components=[SG.component(nodes={
+      components=[self.spinner(), SG.component(nodes={
         "n": {"drawable": make_drawable("dr_spec_default", mat_default)},
       })])
     self.entity("sphere_spec_tinted",
       transform=Transform(translation=vec3(+5.5, 0, 0)),
-      components=[SG.component(nodes={
+      components=[self.spinner(), SG.component(nodes={
         "n": {"drawable": make_drawable("dr_spec_tinted", mat_tinted)},
       })])

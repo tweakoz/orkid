@@ -836,7 +836,7 @@ void BulletSystem::_onUpdate(Simulation* inst) {
       if ((_diag_t2 - _diag_last_print) > 2.0) {
         if (_diag_last_print != 0.0) {
           const double span = _diag_t2 - _diag_last_print;
-          printf(
+          if(0)printf(
               "bullet timing: step=%.2fms/s scan=%.3fms/s objects=%d\n",
               _diag_step_ms / span,
               _diag_scan_ms / span,

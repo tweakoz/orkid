@@ -680,6 +680,23 @@ public:
         return def_prop_rw_static(name_, getter, nullptr, extra...);
     }
 
+    // ---- pybind11-compatible spellings (the shared math .inl uses these names) ----
+    template <typename Getter, typename Setter, typename... Extra>
+    NB_INLINE class_ &def_property(const char *name_, Getter &&getter, Setter &&setter,
+                                   const Extra &...extra) {
+        return def_prop_rw(name_, (detail::forward_t<Getter>) getter,
+                           (detail::forward_t<Setter>) setter, extra...);
+    }
+    template <typename Getter, typename... Extra>
+    NB_INLINE class_ &def_property_readonly(const char *name_, Getter &&getter,
+                                            const Extra &...extra) {
+        return def_prop_ro(name_, (detail::forward_t<Getter>) getter, extra...);
+    }
+    // obind has no buffer protocol — accept the .def_buffer(...) call and ignore it (the lambda still
+    // compiles; the matrix/plane types simply aren't numpy-bufferable in this module).
+    template <typename Func>
+    NB_INLINE class_ &def_buffer(Func &&) { return *this; }
+
     template <typename C, typename D, typename... Extra>
     NB_INLINE class_ &def_rw(const char *name, D C::*p,
                              const Extra &...extra) {

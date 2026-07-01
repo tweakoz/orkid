@@ -73,7 +73,7 @@ class ClearcoatScene(Scene):
 
     self.entity("saddle_brushed",
       transform=Transform(translation=vec3(-4, 0, 0)),
-      components=[SG.component(nodes={
+      components=[self.spinner(), SG.component(nodes={
         "n": {"drawable": drawable_brushed},
       })])
 
@@ -98,6 +98,6 @@ class ClearcoatScene(Scene):
 
     self.entity("saddle_lacquered",
       transform=Transform(translation=vec3(+4, 0, 0)),
-      components=[SG.component(nodes={
+      components=[self.spinner(), SG.component(nodes={
         "n": {"drawable": drawable_lacquered},
       })])

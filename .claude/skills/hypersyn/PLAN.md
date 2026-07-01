@@ -16,12 +16,15 @@ The implementation status of each component is the source of truth; when in doub
 | Runtime hardening (cycle detect, fanout, type check, required, codec-generic setter, MaterializationPhase) | **planned (M0)** | `ork.core/src/dataflow/dataflow_sorter.cpp`, `graph_data.cpp`, `pyext_dataflow.cpp`, `ork.core/inc/ork/dataflow/module.h` |
 | `dflow.dsl` tracing core (trace context, DslNode, Expr, bindings) | **partially implemented (M1.A)** | `obt.project/scripts/ork/hypergraph/dflow/_trace.py`, `_expr.py`, `_bindings.py`, `_lower.py` — core trace + DslNode + Expr + bindings staging all in place; the `dsl/` introspection package (registry, OpInfo, examples API) is M1.B and not yet built |
 | `particles` DSL vocab (test bed) | **partially implemented (M1.A)** | `obt.project/scripts/ork/hypergraph/dflow/particles/` — `ParticleSystem` family base + 22 `chain_op`-based ops covering emitters/forces/attractors/renderers/colliders. **Pending M1.B**: `@op` decorator, registry, `OpInfo`/`PlugSpec`/`ExampleInfo`, source provenance, multi-output op support, examples-per-family directory + indexing |
-| `dflow.validate` subprocess harness | **planned (M2)** | `obt.project/scripts/ork/hypergraph/dflow/validate/`, zmq worker pool |
+| `dflow.validate` subprocess harness | **planned (M2)** — genuinely unbuilt; NOT the same-named hypermesh meshvet (`_ork.hypermesh.validate.py`) which is an unrelated per-asset trimesh check | `obt.project/scripts/ork/hypergraph/dflow/validate/`, zmq worker pool |
 | `ptex2d` family + FXV2 codegen | **planned (M3)** | `ork.lev2/{inc,src}/ork/lev2/gfx/ptex2d/`, `obt.project/scripts/ork/hypergraph/dflow/ptex2d/` |
 | `ptex3d` family + PBRMaterial codegen | **planned (M3)** | `ork.lev2/{inc,src}/ork/lev2/gfx/ptex3d/`, `obt.project/scripts/ork/hypergraph/dflow/ptex3d/` |
-| `hypermesh` family + mesh/SDF ops | **planned (M3)** | `ork.lev2/{inc,src}/ork/lev2/gfx/hypermesh/`, `obt.project/scripts/ork/hypergraph/dflow/hypermesh/` |
+| `hypermesh` family + mesh/SDF ops | **partially implemented** (GPU-native mesh ops, gid, cull, cook-cache, displace-by-field, instancing all LANDED — see HYPERECS_PLAN Stage E) | `ork.lev2/{inc,src}/ork/lev2/gfx/hypermesh/`, `obt.project/scripts/ork/hypergraph/dflow/hypermesh/` |
+| `sdf` family + SDF brick / CSG / marching-tetrahedra | **shipped (E.7 track: M0–M2 LANDED; M3 NanoVDB reserved/unbuilt)** | `ork.lev2/src/gfx/sdf/`, `obt.project/scripts/ork/hypergraph/dflow/sdf/` |
 | `terrain` family + heightfield bake | **planned (M3)** | `ork.lev2/{inc,src}/ork/lev2/gfx/terrain/`, `obt.project/scripts/ork/hypergraph/dflow/terrain/` |
-| Hypermesh procedural rigging + skinning extension | **planned (M3.5)** | extends `ork.lev2/.../hypermesh/` — `bone`/`bone_chain`/`skeleton`/`auto_skin`/`skinned` ops; output `xgmmodel_ptr_t` with skinning bound |
+| Hypermesh procedural rigging + skinning | **planned (feasibility-gated; bigger than M3.5 implies)** — gated on the `XfNodeGraph` interchange plug, writable `XgmSkeleton` bindings + a `XfNodeGraph→XgmSkeleton` flattener, AND a NEW GPU-skinning render path (no skinned hypermesh VS exists). Sized L+, not a thin extension. | `ork.lev2/.../hypermesh/`; see `UNIFIED_SUBSTRATE.md` §15–§16 |
+| **Structural spine** (`XfNodeGraph` interchange plug + sweep + rewrite/grammar engine) | **foundation LANDED (2026-06-25)** — the `XfNodeGraph` interchange currency (G0a), the `LSweep` skinner (G0b), and the L-system slice (G1) are in code; the grammar generalization + creature/city milestones are forward | `ork.lev2/.../gfx/dflow/interchange.h` (`XfNode*`), `hmdflow_module_lsystem/lsweep.cpp`; spec in `UNIFIED_SUBSTRATE.md` §11–§16 |
+| New generator families (`lsystem` + space-colonization / phyllotaxis / tensor-field / straight-skeleton) | **`lsystem` LANDED (M1); the rest forward** — each = a rule vocabulary + interpret kernel + sink topology assertion over `XfNodeGraph` | `lsystem` shipped (`hmdflow_module_lsystem.cpp`, `scn_lsystem.py`); rest gated on the spine; spec in `UNIFIED_SUBSTRATE.md` §12–§14 |
 | Hypergraph coordinator + timeline | **future (M4)** | TBD |
 | `hyperprim` family (parametric props) | **forward** | catalog layer over hypermesh; `xgmmodel_ptr_t` + named PrimSlot dict |
 | `hyperarch` family (CGA-grammar architecture) | **forward** | grammar-rule mesh+slot generation; composes ptex3d for facades, hyperprim for openings |
@@ -134,12 +137,34 @@ PbrMaterial("jade",
 | **M1.A** | Trace core + particles DSL vocab — proves the trace→graphdata round-trip against the existing particles runtime | M0 |
 | **M1.B** | Op registry + introspection (`@op` decorator, `OpInfo`/`PlugSpec`/`ExampleInfo`, source provenance, multi-output ops, examples-per-family) — exposes the DSL surface to editor/LLM tooling | M1.A |
 | **M2** | `dflow.validate` subprocess harness — zmq REQ/REP worker pool, persistent across editor session and into live-mutable runtimes | M1 |
-| **M3** | Four new families (ptex2d, ptex3d, hypermesh, terrain) — runtime + DSL vocab + materializer for each; uses the codegen + bake patterns | M0, M1, M2 |
+| **M3** | HyperSyn DSL-vocab + materializer layer per family. NOTE: the *runtimes* for particles / ptex3d / hypermesh / terrain / sdf already LANDED (see the Status table + HYPERECS_PLAN Stages A–E); M3’s real remaining scope is `ptex2d` (the only genuinely unbuilt family) plus the trace-then-materialize DSL wrappers over the shipped runtimes | M0, M1, M2 |
 | **M3.5** | Hypermesh rigging + skinning extension — procedural skeleton/weight ops yielding `xgmmodel_ptr_t` with skinning bound; prerequisite for hyperanim | M3 |
 | **M4** | Hypergraph coordinator + timeline — cross-family graph composition + phased materialization scheduling | M3 |
 | **M5** | Singularity + sequence DSL families — audio-reactive cross-family use cases | M3, M4 (and needs cycle-permitting subgraphs for audio feedback) |
 | **M6** | Node-graph editor canvas — `DgGraphCanvas` widget on `PrimCanvas` consuming `DgModuleData::mgvpos`; round-trips with file format | M3 (and benefits from validator harness from M2) |
 | **Forward** | hyperprim, hyperarch, hypercity, hyperanim, hyperlight, hypershot, behavior, StyleContext — each rough-specced in SKILL.md; implementation order TBD when M3 stabilizes. `behavior` is the first **stateful** family (FSM runtime, not dataflow); see "Family kinds" in SKILL.md | M3 (hyperanim additionally needs M3.5; behavior needs the validator harness from M2 + FSM-specific check rules) |
+
+## Structural-spine milestones (forests-adjacent; feasibility-gated)
+
+> The holistic substrate review (`UNIFIED_SUBSTRATE.md` §11–§16) adds a *structural / topology* spine
+> (one `XfNodeGraph` currency + one rewrite engine + shared ops) on top of the expression-IR substrate.
+> A 9-verdict feasibility pass found the naive G0–G3 order infeasible-as-written and reshaped it. The
+> milestones below are the feasibility-adjusted order. **G0a/G0b/G1 LANDED (2026-06-25)** — the foundational
+> `XfNodeGraph` plug + `LSweep` skinner + L-system slice are in code; **G2a/G3 remain forward** and await an
+> owner sequencing call vs the LOCKED racer-first gate (A3 #5). Each is GREEN only when it renders (or passes
+> an OBJ/SSBO readback oracle where nothing skins yet).
+
+| Milestone | Goal | Feasibility note |
+|---|---|---|
+| **G0a** ✅ LANDED | `XfNodeGraph` interchange plug (reflected, JSON round-trips, registers in BOTH grammar + both hmdflow dgctx blocks) + Python host-fill authoring | Mechanical `SdfGrid`-recipe copy; but it is a `GpuMesh`-SHAPED type (CSR edges + `_slots` + dual-version dirty), NOT a byte-for-byte `InstanceSet` copy. |
+| **G0b** ✅ LANDED | `sweep`/`LSweep` module (`XfNodeGraph`→GpuMesh) — renders a swept tube | Transported profile frame is NEW shader math; reuses only the extrude ring-field buffers + `cs_face_seg` stitching. **DROP `BONEIDX`/`BONEWT` (no consumer); rename `skin/sweep`→`sweep`.** |
+| **G1** ✅ LANDED (v1) | L-system family (M1): `LSystemModule` produces an `XfNodeGraph` skeleton (v1 = hardcoded bracketed parametric grammar, CPU-side at activate), `LSweep` skins it. Forward: reflected-`LRuleSet` grammar (rules as JSON, NOT the GLSL SelExpr ABI) + GPU rewrite; terrain-slope `Field` bias. | Landed as the vertical slice; the general rewrite engine + branch-capable/data-dependent topology remain the forward part. |
+| **G2a** | `radial_repeat` (mirror's rotational sibling) + Python `LegChain` over existing `extrude_faces` → static 8-legged GpuMesh (vocab+interpreter, GENERATION half only) | Feasible M. The skeleton/skin/DRIVE half is deferred behind: writable `XgmSkeleton` bindings → SKELETON sink+plug → a NEW GPU-skin render path → `auto_skin` → `bake_skeleton`. Sized L, NOT 'no new engine'. |
+| **G3** | Building: (U1) NEW mesh-merge/join module first → (U2) footprint→walls→roof authored in the imperative DSL (roof = extrude+inset cap, NOT straight-skeleton) → (U3) optional thin split/repeat layer lowering onto U1+U2 | G3-as-written infeasible: no scope IR, no mesh-merge (every module single-input), no multi-sink materializer, straight-skeleton is a separate multi-week algorithm. **Decouple from G2** — a building grammar needs no creature vocabulary. |
+
+**First commitment G0a + G0b + G1 — LANDED (2026-06-25).** Next: reflected-`LRuleSet` grammar generalization
++ GPU L-system, then G2a/G3. The forests-vs-racer tension is an owner sequencing call (the racer gate is
+unchanged either way).
 
 ## M0 — Runtime hardening checklist
 

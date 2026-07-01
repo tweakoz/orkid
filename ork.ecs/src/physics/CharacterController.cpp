@@ -150,6 +150,25 @@ void CharacterControllerSystem::_onNotify(token_t evID, evdata_t data) {
       }
       break;
     }
+    case MoveBasisYaw._hashed: { // VR: override the MOVE basis with a world yaw (gaze + playspace)
+      const auto& table = *data.getShared<DataTable>();
+      _moveBasisYaw   = table["yaw"_tok].get<float>();
+      _moveBasisValid = true;
+      break;
+    }
+    case SetAimDir._hashed: { // VR: override the look dir CameraRay returns (gaze + lob pitch)
+      const auto& table = *data.getShared<DataTable>();
+      _aimLook = fvec3(table["dx"_tok].get<float>(),
+                       table["dy"_tok].get<float>(),
+                       table["dz"_tok].get<float>()).normalized();
+      _aimValid = true;
+      break;
+    }
+    case SetSprint._hashed: { // transient boost on move_force + max_speed (e.g. shift)
+      const auto& table = *data.getShared<DataTable>();
+      _sprintScale = table["scale"_tok].get<float>();
+      break;
+    }
     case TurnInput._hashed: {
       const auto& table = *data.getShared<DataTable>();
       _turn = table["rate"_tok].get<float>();
@@ -203,7 +222,7 @@ void CharacterControllerSystem::_onRequest(impl::sys_response_ptr_t response, to
     case CameraRay._hashed: { // the current camera ray (stashed by the camera publish)
       auto table          = std::make_shared<DataTable>();
       (*table)["pos"_tok] = _lastEye;
-      (*table)["dir"_tok] = _lastLook;
+      (*table)["dir"_tok] = _aimValid ? _aimLook : _lastLook; // VR: gaze+lob override (SetAimDir)
       response->_responseData.set<datatable_ptr_t>(table);
       break;
     }
@@ -228,8 +247,9 @@ void CharacterControllerSystem::_onUpdate(Simulation* psi) {
 
     // EFFECTIVE tuning: script overrides (SetParams) win over the reflected data —
     // the input script owns the feel without recompiles or re-serializes.
-    const float eff_force = (_ovrMoveForce >= 0.0f) ? _ovrMoveForce : c->_CCD._moveForce;
-    const float eff_maxspd = (_ovrMaxSpeed >= 0.0f) ? _ovrMaxSpeed : c->_CCD._maxSpeed;
+    // sprint (SetSprint) scales BOTH so the body can actually REACH the higher speed clamp.
+    const float eff_force = ((_ovrMoveForce >= 0.0f) ? _ovrMoveForce : c->_CCD._moveForce) * _sprintScale;
+    const float eff_maxspd = ((_ovrMaxSpeed >= 0.0f) ? _ovrMaxSpeed : c->_CCD._maxSpeed) * _sprintScale;
     const float eff_brake = (_ovrBrake >= 0.0f) ? _ovrBrake : c->_CCD._brake;
     const float eff_turn = (_ovrTurnRate >= 0.0f) ? _ovrTurnRate : c->_CCD._turnRate;
     const float eff_jump = (_ovrJumpImpulse >= 0.0f) ? _ovrJumpImpulse : c->_CCD._jumpImpulse;
@@ -256,10 +276,16 @@ void CharacterControllerSystem::_onUpdate(Simulation* psi) {
     const fvec3 fwd(sinf(c->_heading), 0.0f, -cosf(c->_heading));
     const fvec3 right(cosf(c->_heading), 0.0f, sinf(c->_heading)); // fwd x up
 
+    // MOVE basis: the per-character heading, OR (VR) a world yaw fed via MoveBasisYaw so WASD
+    // follows the HMD gaze. Only the DRIVE uses it; the camera/_lastLook below stay on _heading.
+    const float move_yaw = _moveBasisValid ? _moveBasisYaw : c->_heading;
+    const fvec3 drive_fwd(sinf(move_yaw), 0.0f, -cosf(move_yaw));
+    const fvec3 drive_right(cosf(move_yaw), 0.0f, sinf(move_yaw));
+
     // drive the declared walk force (mutating the force DATA is the established
     // live-poke channel — the inst reads it every physics step): z along the
-    // heading, x strafe; diagonals normalized so they don't outrun max force.
-    fvec3 drive = fwd * _moveZ + right * _moveX;
+    // move basis, x strafe; diagonals normalized so they don't outrun max force.
+    fvec3 drive = drive_fwd * _moveZ + drive_right * _moveX;
     float dmag  = drive.magnitude();
     if (dmag > 1.0f)
       drive = drive * (1.0f / dmag), dmag = 1.0f;

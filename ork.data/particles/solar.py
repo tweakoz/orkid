@@ -67,14 +67,14 @@ class CurlXfSystem(ParticleSystem):
     self.material = particles.GradientMaterial.createShared()
     self.material.blending = tokens.ADDITIVE
     self.material.depthtest = tokens.OFF
-    self.material.colorIntensity = 1.2
+    self.material.colorIntensity = 0.7
     self.material.gradient.setColorStops({
       0.0: vec4(0.0, 0.0, 0.0, 1),
       0.3: vec4(1.0, 0.4, 0.2, 0.8),
       0.6: vec4(1.0, 0.85, 0.5, 1),
       1.0: vec4(0.1, 0.0, 0.0, 0),
     })
-    self.material.modulation_texture = Texture.load("src://effect_textures/ptc3.png")
+    self.material.modtexture_asset = "src://effect_textures/ptc3.png"  # serializable asset (round-trips to the ECS player; live modulation_texture does not)
 
     self.streaks = P.StreakRenderer(self.curl, name="STRK",
                                     material=self.material,

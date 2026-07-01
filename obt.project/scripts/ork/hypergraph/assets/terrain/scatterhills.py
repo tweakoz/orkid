@@ -23,7 +23,7 @@ class ScatterHills(HeightField):
 
     alt = T.normalize(h)
     self.scatter("rocks",
-        density = 0.005,             # ~rocks/m^2 over the kept mask (4x denser)
+        density = 0.010,             # ~rocks/m^2 over the kept mask (4x denser)
         seed    = 31,
         align   = "normal",
         scale   = (1.0, 2.6),

@@ -28,6 +28,7 @@ uint64_t FxPipelinePermutation::genIndex() const {
   index += (uint64_t(_is_alpha) << 6);
   index += (uint64_t(_is_vertex_ssbo) << 7);
   index += (uint64_t(_instanced_matrices_only) << 8);
+  index += (uint64_t(_is_impostor) << 9);
   index += (uint64_t(_rendering_model) << 16);
 
   auto tekovr = uint64_t((const void*)_forced_technique);
@@ -68,9 +69,10 @@ void FxPipeline::bindParam(fxparam_constptr_t p, varval_t v) {
   _params[p] = v;
 }
 /////////////////////////////////////////////////////////////////////////
-void FxPipeline::bindStorage(fxparamstorageblock_constptr_t p, varval_t v) {
+void FxPipeline::bindStorage(fxparamstorageblock_constptr_t p, varval_t v, size_t byte_offset) {
   OrkAssert(p != nullptr);
-  _storages[p] = v;
+  _storages[p]        = v;
+  _storage_offsets[p] = byte_offset; // sub-range bind (0 = whole)
 }
 /////////////////////////////////////////////////////////////////////////
 void FxPipeline::bindUniformBuffer(fxuniformblock_constptr_t p, varval_t v) {
@@ -156,7 +158,9 @@ int FxPipeline::beginBlock(const RenderContextInstData& RCID) {
   for (auto item : _storages) {
     fxparamstorageblock_constptr_t stor = item.first;
     const auto& val                     = item.second;
-    _set_storage(RCID, stor, val);
+    auto oit                            = _storage_offsets.find(stor);
+    size_t byte_offset                  = (oit != _storage_offsets.end()) ? oit->second : 0;
+    _set_storage(RCID, stor, val, byte_offset);
   }
 
   ///////////////////////////////
@@ -171,19 +175,19 @@ int FxPipeline::beginBlock(const RenderContextInstData& RCID) {
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void FxPipeline::_set_storage(const RenderContextInstData& RCID, fxparamstorageblock_constptr_t p, varval_t val) {
+void FxPipeline::_set_storage(const RenderContextInstData& RCID, fxparamstorageblock_constptr_t p, varval_t val, size_t byte_offset) {
   auto context = RCID.rcfd()->GetTarget();
   auto RCFD    = RCID.rcfd();
   auto FXI     = context->FXI();
   if (auto as_ssbo = val.tryAs<storagebufferptr_t>()) {
-    FXI->bindStorageBuffer(p, as_ssbo.value());
+    FXI->bindStorageBuffer(p, as_ssbo.value(), byte_offset);
   }
   else if (auto as_crcstr = val.tryAs<crcstring_ptr_t>()) {
     const auto& crcstr = *as_crcstr.value().get();
     switch (crcstr.hashed()) {
       case "LMGR_LIGHTING_STORAGE"_crcu: {
         auto pl_buffer = PBRMaterial::lightingDataBuffer(context);
-        FXI->bindStorageBuffer(p, pl_buffer);
+        FXI->bindStorageBuffer(p, pl_buffer, byte_offset);
         break;
       }
       default:
@@ -768,6 +772,7 @@ fxpipeline_ptr_t FxPipelineCache::findPipeline(const RenderContextInstData& RCID
   permu._skinned          = RCID._isSkinned;
   permu._instanced        = RCID._isInstanced;
   permu._is_vertex_ssbo   = RCID._isSSBOSourced;
+  permu._is_impostor      = RCID._isImpostor;
   permu._forced_technique = RCID._forced_technique;
   permu._is_picking       = picking;
   permu._rendering_model  = RCFD->_renderingmodel._modelID;

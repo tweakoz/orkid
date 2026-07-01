@@ -35,6 +35,7 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeSSSS.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeHeatDistort.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeHSVG.h>
 #include <ork/lev2/gfx/scenegraph/scenegraph.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_grid.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_billboard.h>
@@ -383,6 +384,7 @@ struct ClassToucher {
     terrain::TerraceModuleData::GetClassStatic();
     terrain::SlopeModuleData::GetClassStatic();
     terrain::CurvatureModuleData::GetClassStatic();
+    terrain::RelaxUvModuleData::GetClassStatic();
     terrain::MaskBlendModuleData::GetClassStatic();
     terrain::ThermalErodeModuleData::GetClassStatic();
     terrain::EroxModuleData::GetClassStatic();
@@ -425,11 +427,17 @@ struct ClassToucher {
     hypermesh::GidAssignData::GetClassStatic();
     hypermesh::MaterialParamSinkData::GetClassStatic(); // E.6/2.12: material UBO param by name
     hypermesh::ScatterSourceData::GetClassStatic(); // E.2: the typed instance edge source
+    hypermesh::LSystemModuleData::GetClassStatic(); // M1: L-system producer of the XfNodeGraph spine
+    hypermesh::LSweepModuleData::GetClassStatic();  // M1/G0b: XfNodeGraph -> GpuMesh skinner (swept tube)
+    hypermesh::LeafScatterModuleData::GetClassStatic(); // organ: phyllotactic leaf-card scatter on the skeleton (touch -> reflect props -> cook-hash param sensitivity)
+    hypermesh::MergeMeshData::GetClassStatic();         // concat two meshes + per-source gid (bake leaves into trunk)
     hypermesh::GpuComputeModuleData::GetClassStatic(); // generic per-vertex GPU compute (shader-text deformer, no new C++)
     hypermesh::mesh_outplugdata_t::GetClassStatic();
     hypermesh::mesh_inplugdata_t::GetClassStatic();
     dflowgfx::instset_outplugdata_t::GetClassStatic(); // E.2: InstanceSet interchange plugs
     dflowgfx::instset_inplugdata_t::GetClassStatic();
+    dflowgfx::xfng_outplugdata_t::GetClassStatic(); // M1: XfNodeGraph (ork::hyper) interchange plugs
+    dflowgfx::xfng_inplugdata_t::GetClassStatic();
     // E.7 — the sdfgrid family + its interchange plugs
     dflowgfx::sdfgrid_outplugdata_t::GetClassStatic();
     dflowgfx::sdfgrid_inplugdata_t::GetClassStatic();
@@ -698,6 +706,9 @@ struct ClassToucher {
     // E2B item D — heat-distortion post-fx node (same polymorphic-map
     // deserialize requirement as SSSS above).
     RegisterClassX(PostFxNodeHeatDistort);
+    // HSVG grade post-fx node — same polymorphic-map deserialize requirement;
+    // without this touch the .ecs "class":"PostFxNodeHSVG" fails objclazz lookup.
+    RegisterClassX(PostFxNodeHSVG);
 
     //////////////////////////////////////////
   }

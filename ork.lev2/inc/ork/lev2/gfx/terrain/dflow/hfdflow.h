@@ -309,6 +309,23 @@ struct CurvatureModuleData : public TerrainModuleData {
 using curvaturemoduledata_ptr_t = std::shared_ptr<CurvatureModuleData>;
 
 ///////////////////////////////////////////////////////////////////////////////
+// RelaxUvModule — equal-area UV relaxation (the slope-stretch fix). In = height; Out = RGBA
+// (relaxed_uv.xy + normal.x,z), Binormal = RGBA (relaxed binormal.xyz + 1). See the .cpp for the
+// linearized-OT algorithm. Outputs feed the chunk VS's uv0 + tangent frame (downsampled on load).
+///////////////////////////////////////////////////////////////////////////////
+
+struct RelaxUvModuleData : public TerrainModuleData {
+  DeclareConcreteX(RelaxUvModuleData, TerrainModuleData);
+  RelaxUvModuleData();
+  static std::shared_ptr<RelaxUvModuleData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
+
+  float _strength   = 1.0f; // warp gain: psi-gradient (texels) -> uv displacement. 0 = planar.
+  int   _iterations = 0;    // Poisson Jacobi sweeps (0 = auto ~ 4*dim, capped)
+};
+using relaxuvmoduledata_ptr_t = std::shared_ptr<RelaxUvModuleData>;
+
+///////////////////////////////////////////////////////////////////////////////
 // MaskBlendModule — 3-in per-texel blend: Out = mix(A, B, M). The masking
 // PRIMITIVE (Houdini's lerp(input, op(input), mask)); M is a [0,1] field. Unlike
 // CombineModule's MIX (a uniform-scalar t), this blends by a per-texel field. 4 SSBOs.

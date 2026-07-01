@@ -89,52 +89,7 @@ from ork.hypergraph.colors import (
 )
 
 
-def Transform(**kwargs):
-  """Kwargs-style constructor for lev2.Transform.
-
-  Author writes:
-      transform=Transform(translation=vec3(0, 5, 0))
-
-  Equivalent dict form, used inline at the entity/spawner boundary:
-      transform={"translation": vec3(0, 5, 0)}
-
-  Implementation: constructs the underlying reflected Transform via the
-  no-arg ctor and applies each kwarg via setattr."""
-  xf = _CoreTransform()
-  for k, v in kwargs.items():
-    setattr(xf, k, v)
-  return xf
-
-
-def axis_angle(axis, angle):
-  """Orientation DSL constructor — axis-angle → quat.
-
-  axis : fvec3 (any non-zero rotation axis; auto-normalized by the C++ side)
-  angle: radians
-
-  Returns a quat, ready to drop into transform={"orientation": axis_angle(...)}.
-  Thin alias for quat.createFromAxisAngle — short name reads better in
-  transform dicts than the long static-method form."""
-  from orkengine.core import quat
-  return quat.createFromAxisAngle(axis, float(angle))
-
-
-def _coerce_transform(t):
-  """Accept Transform, dict, or None → Transform or None.
-
-  Used at every entity/spawner boundary so authors can drop in either:
-      transform=Transform(translation=vec3(-5, 0, 0))
-  or:
-      transform={"translation": vec3(-5, 0, 0),
-                 "orientation": axis_angle(vec3(0, 1, 0), math.pi/4),
-                 "scale": 1.5}
-  or simply omit the kwarg (None → no transform decl)."""
-  if t is None or isinstance(t, _CoreTransform):
-    return t
-  if isinstance(t, dict):
-    return Transform(**t)
-  raise TypeError(
-    f"transform must be a Transform, dict, or None; got {type(t).__name__}")
+from ork.hypergraph.ecs.scene._helpers import Transform, axis_angle, _coerce_transform
 
 
 ###############################################################################
@@ -549,7 +504,12 @@ class SceneGraphHandle:
 # The Scene base class.
 ###############################################################################
 
-class Scene:
+from ork.hypergraph.ecs.scene._terrain import TerrainMixin
+from ork.hypergraph.ecs.scene._walker import WalkerMixin
+from ork.hypergraph.ecs.scene._projectiles import ProjectilesMixin
+
+
+class Scene(TerrainMixin, WalkerMixin, ProjectilesMixin):
   """Tier 3 declarative ECS scene composite. Subclass and declare your scene
   in __init__; call build(sd) to lower into a reflected ecs.SceneData.
 
@@ -711,6 +671,23 @@ class Scene:
         kwargs["layername"] += "".join(",aux_" + c for c in self.SG._aux_channels)
     return _ComponentDecl(typename=typename, kwargs=kwargs)
 
+  def spinner(self):
+    """Auto-rotation behavior: a PythonComponent running the shared _spin.py
+    (constant rate about world +Y — the rate lives in _spin.py, one value for
+    every example scene). Ensures the host PythonSystem. Returns a fresh
+    _ComponentDecl — drop one into each entity that should spin::
+
+        self.entity("ball", transform=...,
+                    components=[self.SG.component(nodes={...}), self.spinner()])
+
+    No rate kwarg by design: PythonComponentData carries no per-component data
+    slot, so a rate here couldn't be honored. Edit _spin.py to change it (or add
+    a reflected float to PythonComponentData first)."""
+    import os as _os
+    self._ensure_system("PythonSystem")
+    script = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "_spin.py")
+    return self.declare_component("PythonComponent", scriptFile=script)
+
   ##############################################################################
   # E.2-walk — the REUSABLE walk-on-terrain library (declarative; plays in the
   # pure-C++ player). terrain_collider() declares a static bullet heightfield
@@ -725,203 +702,32 @@ class Scene:
     if typename not in self._systems:
       self.system_data(typename, **kwargs)
 
-  def terrain_collider(self, hf_asset, *, name="terrain_collider",
-                       friction=0.9, restitution=0.05, gravity=None):
-    """Static heightfield collider for a baked HeightField asset. `hf_asset` is the
-    asset wrapper (or its name string); physics scale comes from the asset's manifest
-    at load. Bullet centers the heightfield AABB, and the baked height channel is
-    auto-exposed to [0,1] EXACTLY — so the entity sits at y = 0.5 * height_scale_m
-    (taken from the wrapper; pass a wrapper, not a bare string, unless you place the
-    entity yourself). Ensures BulletSystem (default gravity -9.8 if absent)."""
-    from orkengine import ecs as _ecs
-    explicit = gravity is not None
-    if gravity is None:
-      gravity = vec3(0.0, -9.8, 0.0)
-    self._ensure_system("BulletSystem", linGravity=gravity)
-    if explicit:  # an EXPLICIT gravity is authoritative regardless of helper order
-      self._systems["BulletSystem"].kwargs["linGravity"] = gravity
-    gd     = getattr(hf_asset, "gendata", None)
-    aname  = getattr(gd, "asset_name", None) or str(hf_asset)
-    h_m    = float(getattr(gd, "height_scale_m", 0.0)) if gd is not None else 0.0
-    shape  = _ecs.BulletShapeTerrainData()
-    shape.hf_asset = aname
-    cdecl  = self.declare_component(
-        "BulletObjectComponent",
-        shape=shape, mass=0.0, friction=float(friction), restitution=float(restitution))
-    return self.entity(
-        name,
-        transform=Transform(translation=vec3(0.0, 0.5 * h_m, 0.0)),
-        components=[cdecl])
+  def append_system_script(self, script_path):
+    """Append an ADDITIONAL composable system-scoped script to the PythonSystem (creating the
+    system if absent). Every such script runs alongside the primary `systemUpdateScript` — each
+    gets its own namespace and all the onSystem* hooks (InputKey, update, render-tick, ...). Use
+    this to LAYER behavior (e.g. a VR head-pose script) onto whatever the scene already declared,
+    without clobbering its primary input/logic script."""
+    ps = self._systems.get("PythonSystem")
+    if ps is None:
+      self.system_data("PythonSystem", systemScripts=[script_path])
+      return
+    scripts = list(ps.kwargs.get("systemScripts", []))
+    if script_path not in scripts:
+      scripts.append(script_path)
+    ps.kwargs["systemScripts"] = scripts
 
-  def scatter_collider(self, hf_asset, *, sink, name=None,
-                       friction=0.8, restitution=0.1):
-    """ONE static compound collider for a placed ScatterSet: each item contributes a
-    primitive proxy whose KIND+DIMS ride the set itself (declared at the scatter() sink
-    via colliders={type: ("sphere", r) | ("capsule", r, h) | ("box", x, y, z)} — nothing
-    hardcoded here). The entity sits at the ORIGIN (item transforms are absolute world).
-    Broadphase cost = one body; bullet's compound AABB tree handles thousands of items."""
-    from orkengine import ecs as _ecs
-    self._ensure_system("BulletSystem", linGravity=vec3(0.0, -9.8, 0.0))
-    gd    = getattr(hf_asset, "gendata", None)
-    aname = getattr(gd, "asset_name", None) or str(hf_asset)
-    shape = _ecs.BulletShapeScatterData()
-    shape.scatter_asset = aname
-    shape.sink          = str(sink)
-    cdecl = self.declare_component(
-        "BulletObjectComponent",
-        shape=shape, mass=0.0, friction=float(friction), restitution=float(restitution))
-    return self.entity(name or ("%s_%s_collider" % (aname, sink)),
-                       transform=Transform(translation=vec3(0.0, 0.0, 0.0)),
-                       components=[cdecl])
+  def _set_primary_system_script(self, script_path):
+    """Set the PythonSystem's PRIMARY script (systemUpdateScript), creating the system if absent;
+    keep an already-declared primary. Distinct from the composable EXTRA scripts
+    (append_system_script / systemScripts) and ORDER-INDEPENDENT with respect to them — so a
+    walker() primary and a VR-appended head-pose script compose regardless of declaration order."""
+    ps = self._systems.get("PythonSystem")
+    if ps is None:
+      self.system_data("PythonSystem", systemUpdateScript=script_path)
+    else:
+      ps.kwargs.setdefault("systemUpdateScript", script_path)
 
-  def walker(self, *, name="walker", spawn=None, radius=0.5, height=1.8, mass=80.0,
-             move_force=2400.0, max_speed=6.0, jump_impulse=0.0, turn_rate=2.5,
-             eye_height=None, cam_distance=8.0, fovy_deg=45.0,
-             cam_near=0.1, cam_far=1000.0, brake=10.0, turn_decay=6.0,
-             drive_friction=0.0, rest_friction=2.0,
-             friction=0.6, restitution=0.0, gravity=None, force_name="walkforce"):
-    """The walkable character: an upright-locked capsule (angularFactor (0,1,0) — the
-    FPS-example recipe) + a declared DirectionalForce + a CharacterControllerComponent
-    that consumes host-forwarded InputKey controller messages and publishes the camera.
-    Dimensions (radius/height), drive (move_force/max_speed/jump), and camera
-    (eye_height/cam_distance; 0 = first person) are all reflected — the whole behavior
-    round-trips in the .ecs. Ensures BulletSystem + CharacterControllerSystem.
-
-    turn_decay — angular ease-out (1/s) after a turn/pitch key releases (~3/decay
-    seconds to coast to a stop; huge = snap-stop).
-    drive_friction / rest_friction — the controller OWNS the capsule's contact
-    friction asymmetrically: ~0 while driving (zero-drag feel), high at rest so
-    the character sits still on hills (rest_friction 2.0 holds ~63° slopes —
-    needs static colliders carrying friction ~1.0; bullet combines contact
-    friction multiplicatively). The bullet-component friction= kwarg only sets
-    the initial value before the controller takes over."""
-    import os as _os
-    from orkengine import ecs as _ecs
-    # gravity precedence: an EXPLICIT gravity= on any helper is authoritative
-    # regardless of helper order; otherwise the first declaration's value rides
-    # (explicit system_data("BulletSystem", linGravity=...) first also works).
-    explicit_gravity = gravity is not None
-    if gravity is None:
-      gravity = vec3(0.0, -9.8, 0.0)
-    self._ensure_system("BulletSystem", linGravity=gravity)
-    if explicit_gravity:
-      self._systems["BulletSystem"].kwargs["linGravity"] = gravity
-    self._ensure_system("CharacterControllerSystem")
-    # the INPUT TRANSLATION layer (owner-ratified): a PythonSystem script translates the
-    # host's raw InputKey messages into semantic controller actions. walker() ships the
-    # default keymap script; declare your own PythonSystem FIRST to override it.
-    self._ensure_system(
-        "PythonSystem",
-        systemUpdateScript=_os.path.join(_os.path.dirname(_os.path.abspath(__file__)),
-                                         "walk_input_system.py"))
-    if spawn is None:
-      spawn = vec3(0.0, 10.0, 0.0)
-    capsule        = _ecs.BulletShapeCapsuleData()
-    capsule.radius = float(radius)
-    capsule.extent = float(height)
-    force = _ecs.DirectionalForceData()
-    phys  = self.declare_component(
-        "BulletObjectComponent",
-        shape=capsule, mass=float(mass), friction=float(friction),
-        restitution=float(restitution),        # 0: a character does not bounce
-        angularFactor=vec3(0.0, 1.0, 0.0),     # upright lock
-        angularDamping=0.5, linearDamping=0.02,  # near-zero: the controller brakes on
-                                                 # release; holding a key fights NOTHING
-        notifyCollisions=True)                   # contacts -> PythonSystem "Collision"
-                                                 # notifies (the system script intercepts)
-    phys.sub_calls.append(("declareForce", (force_name, force), {}))
-    ctl = self.declare_component(
-        "CharacterControllerComponent",
-        move_force=float(move_force), max_speed=float(max_speed),
-        jump_impulse=float(jump_impulse), turn_rate=float(turn_rate),
-        eye_height=float(height if eye_height is None else eye_height),
-        cam_distance=float(cam_distance), fovy_deg=float(fovy_deg),
-        cam_near=float(cam_near), cam_far=float(cam_far), brake=float(brake),
-        turn_decay=float(turn_decay),
-        drive_friction=float(drive_friction), rest_friction=float(rest_friction),
-        force_name=str(force_name))
-    return self.entity(name, transform=Transform(translation=spawn),
-                       components=[phys, ctl])
-
-  def projectile_pool(self, name="ball_spawner", *,
-                      model="data://tests/pbr_calib_lopoly.glb",
-                      radius=0.25, mass=3.0,
-                      friction=0.9, restitution=0.9, angular_damping=0.05,
-                      max_count=256, lifetime=8.0,
-                      node_name=None, layers=None, trail=None,
-                      trail_delay=0.0):
-    """Shootable-projectile pool (the walker()-style library call): ONE
-    system-level instanced node (capacity max_count) + a physics+visual
-    archetype paired BY NAME + a dynamic-only spawner with lifetime
-    recycling. An input script shoots through the spawner handle::
-
-        spawner = simulation.findSpawner("ball_spawner")     # once, at link
-        spawner.spawn(pos=..., vel=dir*speed, avel=spin, scale=...)
-
-    The SHOOT policy (key, speed, offset, spin) belongs to the input
-    script; this call owns the DATA (shape, mass, contact response,
-    capacity, recycling). NOTE bullet combines contact friction and
-    restitution multiplicatively — static colliders (terrain_collider /
-    scatter_collider) should carry ~1.0 for the projectile's own values
-    to read as its effective response. Returns the _SpawnerDecl.
-
-    trail — optional ParticleSystem asset wrapper (e.g. a fireball.py
-    FireTrail declared with emitter_entity="@host"): every spawned
-    projectile gets its own ParticlesComponent whose emitter follows
-    the projectile's live transform; particles live in WORLD space, so
-    the trail stays behind the flight path. Despawn removes the trail
-    with the entity.
-
-    trail_delay — seconds before the trail IGNITES after the projectile
-    spawns (the component-level StartDelay), so the fire doesn't start
-    right in the shooter's face. At 30 m/s, 0.1s ≈ 3m of clearance."""
-    from orkengine import ecs as _ecs
-    self._ensure_system("BulletSystem", linGravity=vec3(0.0, -9.8, 0.0))
-    node_name = node_name or (name + "_node")
-    self.SG.instanced_node(node_name, model=model, capacity=max_count,
-                           layers=layers)
-    shape        = _ecs.BulletShapeSphereData()
-    shape.radius = float(radius)
-    arch = self.archetype(name + "_arch")
-    self.component(
-        arch,
-        "BulletObjectComponent",
-        shape              = shape,
-        mass               = float(mass),
-        friction           = float(friction),
-        restitution        = float(restitution),
-        angularDamping     = float(angular_damping),
-        instance_node_name = node_name)
-    self.component(
-        arch,
-        "SceneGraphComponent",
-        instance_node_name = node_name)
-    if trail is not None:
-      # particles REQUIRE the declared hosting system (components only link
-      # to declared systems; ParticlesComponent asserts at link otherwise —
-      # dynamic-spawn archetypes never trip the composition auto-register).
-      self._ensure_system("ParticlesGlobalSystem")
-      # layername must be EXPLICIT here — THE LAYER TRAP: the C++ fallback
-      # for an empty layername is the SG's "sg_default", which the forward
-      # compositor's fixed role set never renders (particles compute but
-      # silently never draw — the exact D.5 hypermesh lesson). The DSL's
-      # declare_component() special-case defaults it, but this is the
-      # PRIMITIVE component path, which does not. std_transparent draws
-      # AFTER std_forward — the trail composites OVER its own projectile.
-      trail_layers = "std_transparent"
-      if getattr(self.SG, "_aux_channels", None):
-        # item D: the trail also renders into every declared aux channel
-        # (e.g. aux_heat) — materials without that technique pair skip.
-        trail_layers += "".join(",aux_" + c for c in self.SG._aux_channels)
-      self.component(
-          arch,
-          "ParticlesComponent",
-          drawabledata = trail,
-          layername    = trail_layers,
-          pool_size    = 1,
-          duration     = 0.0,
-          start_delay  = float(trail_delay))
-    return self.spawner(name, arch, autospawn=False, lifetime=lifetime)
 
   def spawner(self, name, arch, *, autospawn=True, transform=None,
               publish_xf="", lifetime=None):

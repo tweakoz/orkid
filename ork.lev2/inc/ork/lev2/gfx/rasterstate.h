@@ -39,6 +39,7 @@ struct RasterState {
   void setPolygonMode(EPolygonMode pm);
   void setFrontFace(EFrontFace ff);
   void setBlendingMacro(BlendingMacro bm);
+  void setAlphaToCoverage(bool b);
 
   // Invalidate cached implementation (call after direct member assignment)
   void invalidate();
@@ -52,6 +53,7 @@ struct RasterState {
   bool _depthBiasEnable : 1 = false;
   bool _rasterizerDiscard : 1 = false;
   bool _blendEnable : 1 = false;
+  bool _alphaToCoverage : 1 = false;   // A2C: fragment alpha -> MSAA coverage mask (order-independent foliage)
 
   float _depthBiasSlopeFactor = 0.0f;
   float _depthBiasConstantFactor = 0.0f;

@@ -73,16 +73,16 @@ class IridescenceScene(Scene):
 
     self.entity("sphere_irid_off",
       transform=Transform(translation=vec3(-5.5, 0, 0)),
-      components=[SG.component(nodes={
+      components=[self.spinner(), SG.component(nodes={
         "n": {"drawable": make_drawable("dr_irid_off", mat_off)},
       })])
     self.entity("sphere_irid_half",
       transform=Transform(translation=vec3(0, 0, 0)),
-      components=[SG.component(nodes={
+      components=[self.spinner(), SG.component(nodes={
         "n": {"drawable": make_drawable("dr_irid_half", mat_half)},
       })])
     self.entity("sphere_irid_full",
       transform=Transform(translation=vec3(+5.5, 0, 0)),
-      components=[SG.component(nodes={
+      components=[self.spinner(), SG.component(nodes={
         "n": {"drawable": make_drawable("dr_irid_full", mat_full)},
       })])

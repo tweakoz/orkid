@@ -13,6 +13,7 @@
 #include <ork/kernel/datablock.h>
 #include <ork/kernel/varmap.inl>
 #include <ork/util/generator.inl>
+#include <ork/util/crc.h>
 
 namespace ork {
   namespace chunkfile {
@@ -128,6 +129,24 @@ struct Image {
 
   void resizedOf(const Image& inp, int w, int h);
   void downsample(Image& imgout) const;
+
+  // High-quality separable filtered resample to (w,h). UNLIKE resizedOf (fixed 2x2 bilinear — aliases on
+  // large downsamples, and asserts on R32F), this scales the filter support with the reduction ratio
+  // (true anti-aliasing), handles ARBITRARY ratios, is texel-center aligned, and runs in float internally
+  // so the float HEIGHTMAP formats (R32F / RGB32F / RGBA32F) work as well as 8-bit RGBA.
+  // Filter choice: Box / Triangle / BSpline are RINGING-FREE — use these for HEIGHTMAPS (ringing would
+  // synthesize spurious peaks/pits). Mitchell is the high-quality general default; CatmullRom / Lanczos3
+  // are sharper but ring. (16-bit / half-float inputs are not yet supported here — convert first.)
+  enum class ResampleFilter : crc_enum_t {
+    CrcEnum(BOX),         // ringing-free  (heightmap-safe)
+    CrcEnum(TRIANGLE),    // ringing-free  (heightmap-safe)
+    CrcEnum(BSPLINE),     // ringing-free, smooth (heightmap-safe)
+    CrcEnum(MITCHELL),    // high-quality general default
+    CrcEnum(CATMULL_ROM), // sharp, mild ringing
+    CrcEnum(LANCZOS3),    // sharpest, rings
+  };
+  // Python: pass a token from the CrcStringProxy, e.g. tokens.TRIANGLE — its CRC == CrcEnum(TRIANGLE).
+  void resampledOf(const Image& inp, int w, int h, ResampleFilter filter = ResampleFilter::MITCHELL);
   void gaussianBlur(Image& imgout, float kernel_size) const;
 
   // Separable convolution with optional threshold
@@ -206,7 +225,7 @@ struct Image {
   size_t _width         = 0;
   size_t _height        = 0;
   size_t _depth         = 1;
-  size_t _numcomponents = 4; // 3 or 4
+  size_t _numcomponents = 4; // 1 (R/LUM), 3 (RGB), or 4 (RGBA)
   size_t _bytesPerChannel = 1;
   mutable uint64_t _contentHash = 0;
   std::string _debugName;

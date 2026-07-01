@@ -20,6 +20,9 @@ storage_interface storage_particles (descriptor_set 0) {
     vec4 particleData[262144];     // 48: pos.xyz, size (per particle)
     vec4 particleData2[262144];    //     vel.xyz, length (per particle, for streaks)
     vec4 particleData3[262144];    //     age, random, aux.x, aux.y (per particle)
+    vec4 gradientLUT[256];         //     256-entry gradient ramp (RGBA), written per-frame by
+                                   //     the renderer; the VS samples it by unit_age into frg_clr.
+                                   //     White for non-gradient materials (frg_clr pass-through).
   };
 }
 
@@ -99,7 +102,7 @@ vertex_shader vs_sprite_ssbo : vface_sprite_ssbo {
   vec3 worldPos = pos + offset.x * camRight * size + offset.y * camUp * size;
 
   gl_Position = MatMVP * vec4(worldPos, 1.0);
-  frg_clr = vec4(1.0);
+  frg_clr = gradientLUT[clamp(int(age * 256.0), 0, 255)]; // gradient ramp -> fragment (white if none)
   frg_uv0 = uvs[cornerIdx];
   frg_uv1 = vec4(age, random, aux_xy);
 }
@@ -167,7 +170,7 @@ vertex_shader vs_streak_ssbo : vface_streak_ssbo {
   vec3 worldPos = corners[idx];
 
   gl_Position = MatMVP * vec4(worldPos, 1.0);
-  frg_clr = vec4(1.0);
+  frg_clr = gradientLUT[clamp(int(age * 256.0), 0, 255)]; // gradient ramp -> fragment (white if none)
   frg_uv0 = uvs[idx];
   frg_uv1 = vec4(age, random, aux_xy);
 }

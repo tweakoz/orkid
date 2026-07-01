@@ -148,6 +148,20 @@ SpirvCompiler::SpirvCompiler(transunit_ptr_t transu, bool vulkan)
   _convertUniformSets();
   _convertUniformBlocks();
   _convertStorageInterfaces();
+
+  // Samplers bind AFTER the storage interfaces (+ uniform blocks) in the descriptor set, so adding a
+  // sampler to a compute interface never SHIFTS the SSBO bindings: the SSBO _binding_id stays stable
+  // across shaders that do / don't use the sampler (the global per-resource binding model — DBwrite
+  // serializes ONE binding per resource — can't otherwise represent a per-shader shift). Mirrors the
+  // SSBO sif_binding pre-assign in _convertStorageInterfaces; the sampler binding is serialized
+  // (DBwrite/DBread) and used by the compute descriptor (vulkan_compute) INSTEAD of descriptor_set_id
+  // (which is the SET, not the binding). Resolves the sampler+SSBO compute-pipeline binding collision.
+  {
+    int smp_binding = int(_spirvstorageinterfaces.size()) + int(_spirvuniformblks.size());
+    for (auto& smpset_item : _spirvsamplersets)
+      for (auto& smp_item : smpset_item.second->_samplers_by_name)
+        smp_item.second->_binding_id = smp_binding++;
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -807,9 +821,16 @@ void SpirvCompiler::_inheritSamplerSet(
     // Try to find binding ID from merged resources first
     int binding_id = _findBindingIdFromMergedResources(id, unisetname);
     if (binding_id == -1) {
-      // Fallback to original behavior if not found in merged resources
-      binding_id = _binding_id;
-      _binding_id++;
+      // COMPUTE shaders: use the ctor pre-assign that binds samplers AFTER the SSBOs/UBOs (so a sampler
+      // never shifts the SSBO bindings; vulkan_compute's descriptor reads this value). Do NOT consume
+      // the live _binding_id counter — that numbers the SSBO/UBO space. GRAPHICS shaders keep the
+      // original live-counter behavior (their descriptor path / merged-resources flow is unchanged).
+      if (std::dynamic_pointer_cast<ComputeShader>(_shader)) {
+        binding_id = int(item.second->_binding_id);
+      } else {
+        binding_id = _binding_id;
+        _binding_id++;
+      }
     }
 
     auto line = FormatString(

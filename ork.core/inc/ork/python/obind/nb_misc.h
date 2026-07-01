@@ -11,13 +11,31 @@ NAMESPACE_BEGIN(NB_NAMESPACE)
 
 struct gil_scoped_acquire {
 public:
-    gil_scoped_acquire() noexcept : state(PyGILState_Ensure()) { }
-    ~gil_scoped_acquire() { PyGILState_Release(state); }
+    // REENTRANT / sub-interpreter-safe. If a thread state is already current on
+    // this OS thread, the GIL is held and there is nothing to do — and we MUST NOT
+    // call PyGILState_Ensure(): it is main-interpreter bound, so under a
+    // sub-interpreter on the main thread it would try to attach the main-interp
+    // gilstate thread-state over the current sub tstate → CPython
+    // "_PyThreadState_Attach: non-NULL old thread state" fatal. (This is the exact
+    // py_deleter case — a python-owning shared_ptr destructing while the sub-interp
+    // is bound on the render thread.) Only Ensure when truly GIL-less. The stock
+    // obind copy unconditionally Ensure'd; the real nanobind acquire is reentrant.
+    gil_scoped_acquire() noexcept {
+        if (_PyThreadState_UncheckedGet() == nullptr) {
+            state     = PyGILState_Ensure();
+            _acquired = true;
+        }
+    }
+    ~gil_scoped_acquire() {
+        if (_acquired)
+            PyGILState_Release(state);
+    }
     gil_scoped_acquire(const gil_scoped_acquire &) = delete;
     gil_scoped_acquire& operator=(const gil_scoped_acquire &) = delete;
 
 private:
-    const PyGILState_STATE state;
+    PyGILState_STATE state{};
+    bool             _acquired = false;
 };
 
 class gil_scoped_release {

@@ -38,6 +38,50 @@ void pyinit_gfx_hypermesh(py::module& module_lev2) {
   py::class_<hm::BoxData, dflow::DgModuleData, hm::boxdata_ptr_t>(hmmod, "Box")
       .def_static("createShared", []() -> hm::boxdata_ptr_t { return hm::BoxData::createShared(); })
       .def("set_mask", [](hm::boxdata_ptr_t d, std::vector<uint32_t> m) { d->_mask = m; });
+  py::class_<hm::LSystemModuleData, dflow::DgModuleData, hm::lsystemmoduledata_ptr_t>(hmmod, "LSystemModule")
+      .def_static("createShared", []() -> hm::lsystemmoduledata_ptr_t { return hm::LSystemModuleData::createShared(); })
+      .def_readwrite("archetype", &hm::LSystemModuleData::_archetype)
+      .def_readwrite("depth", &hm::LSystemModuleData::_depth)
+      .def_readwrite("budget", &hm::LSystemModuleData::_budget)
+      .def_readwrite("children", &hm::LSystemModuleData::_children)
+      .def_readwrite("internodes", &hm::LSystemModuleData::_internodes)
+      .def_readwrite("seed", &hm::LSystemModuleData::_seed)
+      .def_readwrite("seg_len", &hm::LSystemModuleData::_seg_len)
+      .def_readwrite("base_radius", &hm::LSystemModuleData::_base_radius)
+      .def_readwrite("branch_angle", &hm::LSystemModuleData::_branch_angle)
+      .def_readwrite("roll", &hm::LSystemModuleData::_roll)
+      .def_readwrite("len_decay", &hm::LSystemModuleData::_len_decay)
+      .def_readwrite("rad_decay", &hm::LSystemModuleData::_rad_decay)
+      .def_readwrite("taper", &hm::LSystemModuleData::_taper)
+      .def_readwrite("tropism", &hm::LSystemModuleData::_tropism)
+      .def_readwrite("jitter", &hm::LSystemModuleData::_jitter)
+      .def_readwrite("apical", &hm::LSystemModuleData::_apical)
+      .def_readwrite("jit_azimuth", &hm::LSystemModuleData::_jit_azimuth)
+      .def_readwrite("jit_pitch", &hm::LSystemModuleData::_jit_pitch)
+      .def_readwrite("jit_length", &hm::LSystemModuleData::_jit_length)
+      .def_readwrite("jit_spacing", &hm::LSystemModuleData::_jit_spacing)
+      .def_readwrite("jit_drop", &hm::LSystemModuleData::_jit_drop)
+      .def_readwrite("jit_wave", &hm::LSystemModuleData::_jit_wave);
+  py::class_<hm::LSweepModuleData, dflow::DgModuleData, hm::lsweepmoduledata_ptr_t>(hmmod, "LSweepModule")
+      .def_static("createShared", []() -> hm::lsweepmoduledata_ptr_t { return hm::LSweepModuleData::createShared(); })
+      .def_readwrite("sides", &hm::LSweepModuleData::_sides)
+      .def_readwrite("cap_segments", &hm::LSweepModuleData::_cap_segments)
+      .def_readwrite("cap_round", &hm::LSweepModuleData::_cap_round);
+  py::class_<hm::LeafScatterModuleData, dflow::DgModuleData, hm::leafscattermoduledata_ptr_t>(hmmod, "LeafScatterModule")
+      .def_static("createShared", []() -> hm::leafscattermoduledata_ptr_t { return hm::LeafScatterModuleData::createShared(); })
+      .def_readwrite("style", &hm::LeafScatterModuleData::_style)
+      .def_readwrite("per_node", &hm::LeafScatterModuleData::_per_node)
+      .def_readwrite("min_gen", &hm::LeafScatterModuleData::_min_gen)
+      .def_readwrite("size", &hm::LeafScatterModuleData::_size)
+      .def_readwrite("aspect", &hm::LeafScatterModuleData::_aspect)
+      .def_readwrite("roll", &hm::LeafScatterModuleData::_roll)
+      .def_readwrite("pitch", &hm::LeafScatterModuleData::_pitch)
+      .def_readwrite("jitter", &hm::LeafScatterModuleData::_jitter)
+      .def_readwrite("seed", &hm::LeafScatterModuleData::_seed);
+  py::class_<hm::MergeMeshData, dflow::DgModuleData, hm::mergemeshdata_ptr_t>(hmmod, "MergeMesh")
+      .def_static("createShared", []() -> hm::mergemeshdata_ptr_t { return hm::MergeMeshData::createShared(); })
+      .def_readwrite("gid_a", &hm::MergeMeshData::_gid_a)
+      .def_readwrite("gid_b", &hm::MergeMeshData::_gid_b);
   py::class_<hm::SortTestData, dflow::DgModuleData, hm::sorttestdata_ptr_t>(hmmod, "SortTest")
       .def_static("createShared", []() -> hm::sorttestdata_ptr_t { return hm::SortTestData::createShared(); })
       .def_readwrite("n", &hm::SortTestData::_n);
@@ -435,10 +479,11 @@ void pyinit_gfx_hypermesh(py::module& module_lev2) {
       "setupMeshRender",
       [_ssbo](computedrawabledata_ptr_t cdd, hm::livehypermesh_ptr_t live, ctx_t ctx, bool animated,
               bool face_viz, bool tag_viz, bool wireframe, int instance_count,
-              std::vector<float> instance_matrices)
+              std::vector<float> instance_matrices, std::vector<int> bound_gids,
+              bool cull, fvec4 cull_bound)
           -> std::tuple<fxshaderstoragebuffer_ptr_t, fxshaderstoragebuffer_ptr_t, fxshaderstoragebuffer_ptr_t> {
         auto handles = hm::setupMeshRender(cdd.get(), live, ctx.get(), animated, face_viz, tag_viz, wireframe,
-                                           instance_count, instance_matrices);
+                                           instance_count, instance_matrices, bound_gids, cull, cull_bound);
         // (faceid for the face/tag-viz FS, matrices for storage_inst_mtx, attrs for
         //  storage_inst_attr — the E.2 typed per-instance data) — any may be null.
         return {_ssbo(handles._faceid), _ssbo(handles._instMtx), _ssbo(handles._instAttr)};
@@ -451,7 +496,46 @@ void pyinit_gfx_hypermesh(py::module& module_lev2) {
       py::arg("tag_viz")  = false,
       py::arg("wireframe") = false,
       py::arg("instance_count") = 1,
-      py::arg("instance_matrices") = std::vector<float>());
+      py::arg("instance_matrices") = std::vector<float>(),
+      py::arg("bound_gids") = std::vector<int>(),    // E.3: gids that get their own per-gid bucket draw
+      py::arg("cull") = false,                       // E.4: per-view GPU frustum cull (instanced only)
+      py::arg("cull_bound") = fvec4(0, 0, 0, 0));    // object-space sphere; w<=0 = auto (mesh-readback bound)
+
+  // E.3 — build the per-gid BUCKET draws (the make_drawable port of hm_drawable.cpp's bucket loop):
+  // one extra indexed-indirect draw per (gid -> material), args offset = gid*20, with that material's
+  // OWN storage-block list (the 5 vertex channels + the instance blocks). Call AFTER setupMeshRender
+  // (whose bound_gids built the per-gid args slots) — pass its instmtx/instattr handles back in.
+  hmmod.def(
+      "addGidBuckets",
+      [](computedrawabledata_ptr_t cdd, hm::livehypermesh_ptr_t live,
+         std::map<int, pbrmaterial_ptr_t> gid_materials, bool instanced,
+         fxshaderstoragebuffer_ptr_t instmtx, fxshaderstoragebuffer_ptr_t instattr) {
+        static const char* kChanBlocks[5] = {"sif_ptex_vtx", "sif_N", "sif_B", "sif_uv", "sif_clr"};
+        for (auto& [gid, gm] : gid_materials) {
+          auto gfs = gm->_as_freestyle;
+          if (not gfs)
+            continue;
+          ComputeDrawable::BucketDraw bucket;
+          bucket._material   = gm;
+          bucket._argsOffset = size_t(gid) * 20;
+          for (int i = 0; i < 5; i++) {
+            auto block = gfs->storageBlock(kChanBlocks[i]);
+            auto chan  = live->_mesh->channel(hypermesh::MeshChannel(i));
+            if (block and chan)
+              bucket._graphicsStorage.push_back({block, chan->_ssbo});
+          }
+          if (instanced and instmtx) {
+            if (auto blk = gfs->storageBlock("storage_inst_mtx"))
+              bucket._graphicsStorage.push_back({blk, instmtx.get()});
+            if (instattr)
+              if (auto blk = gfs->storageBlock("storage_inst_attr"))
+                bucket._graphicsStorage.push_back({blk, instattr.get()});
+          }
+          cdd->_bucketDraws.push_back(bucket);
+        }
+      },
+      py::arg("cdd"), py::arg("live"), py::arg("gid_materials"), py::arg("instanced") = false,
+      py::arg("instmtx") = fxshaderstoragebuffer_ptr_t(), py::arg("instattr") = fxshaderstoragebuffer_ptr_t());
 
   // ---- D.3: HypermeshDrawableData — the reflected (round-trippable) hypermesh render
   //      description; the C++ port of make_drawable. createDrawable() materializes LAZILY
@@ -478,12 +562,54 @@ void pyinit_gfx_hypermesh(py::module& module_lev2) {
               d->_vtx_budget = kwargs["vtx_budget"].cast<int>();
             if (kwargs.contains("instance_matrices"))
               d->_instance_matrices = kwargs["instance_matrices"].cast<std::vector<float>>();
-            if (kwargs.contains("instance_source"))
-              d->_instance_source_name = kwargs["instance_source"].cast<std::string>();
+            // instance_source: a bare name (legacy/vestigial) OR a tuple
+            // (scatter_asset, sink[, type_id]) for DRAWABLE-LEVEL resolution (LOD/Phase 2 —
+            // the drawable resolves the baked ScatterSet itself; one shared set -> N LOD meshes).
+            if (kwargs.contains("instance_source")) {
+              auto src = kwargs["instance_source"];
+              if (py::isinstance<py::str>(src)) {
+                d->_instance_source_name = src.cast<std::string>();
+              } else {
+                auto t                     = src.cast<py::sequence>();
+                d->_instance_scatter_asset = t[0].cast<std::string>();
+                d->_instance_sink          = t[1].cast<std::string>();
+                d->_instance_type_id       = (py::len(t) > 2) ? t[2].cast<int>() : -1;
+              }
+            }
+            // Phase 3c — DISTANCE LOD: parallel arrays of coarser graphs + ascending distance boundaries.
+            if (kwargs.contains("lod_graphs"))
+              d->_lod_graphs = kwargs["lod_graphs"].cast<std::vector<dflow::graphdata_ptr_t>>();
+            if (kwargs.contains("lod_distances"))
+              d->_lod_distances = kwargs["lod_distances"].cast<std::vector<float>>();
+            if (kwargs.contains("impostor_lods")) // LOD step #3: extra-tier indices that draw billboards
+              d->_impostor_lods = kwargs["impostor_lods"].cast<std::vector<int>>();
+            if (kwargs.contains("impostor_grid")) // imposter(grid=): hemi-oct atlas view count
+              d->_impostor_grid = kwargs["impostor_grid"].cast<int>();
+            if (kwargs.contains("impostor_tile")) // imposter(tile=): per-view atlas tile pixels
+              d->_impostor_tile = kwargs["impostor_tile"].cast<int>();
+            if (kwargs.contains("impostor_ssaa")) // imposter(ssaa=): bake supersample factor
+              d->_impostor_ssaa = kwargs["impostor_ssaa"].cast<int>();
+            if (kwargs.contains("impostor_msaa")) // imposter(msaa=): bake multisample count
+              d->_impostor_msaa = kwargs["impostor_msaa"].cast<int>();
+            if (kwargs.contains("lod_materials")) { // {lod_index: material asset name}
+              for (auto item : kwargs["lod_materials"].cast<py::dict>())
+                d->_lod_material_assets[std::to_string(item.first.cast<int>())] =
+                    item.second.cast<std::string>();
+            }
+            if (kwargs.contains("instance_ogeo_path")) // direct .ogeo (tools/viewers; wins over asset+sink)
+              d->_instance_ogeo_path = kwargs["instance_ogeo_path"].cast<std::string>();
+            if (kwargs.contains("instance_type_id"))
+              d->_instance_type_id = kwargs["instance_type_id"].cast<int>();
             if (kwargs.contains("cull"))      // E.4: per-view GPU instance cull
               d->_cull = kwargs["cull"].cast<bool>();
             if (kwargs.contains("cull_bound")) // object-space sphere; w<=0 = auto
               d->_cull_bound = kwargs["cull_bound"].cast<fvec4>();
+            if (kwargs.contains("cull_slabs"))     // occludee decomposition: 1 = AABB, N = vertical slabs
+              d->_cull_slabs = kwargs["cull_slabs"].cast<int>();
+            if (kwargs.contains("cull_tightness")) // occludee box scale (<1 culls harder)
+              d->_cull_tightness = kwargs["cull_tightness"].cast<float>();
+            if (kwargs.contains("cull_distance"))  // radial distance cull from the eye (meters; 0 = off)
+              d->_cull_distance = kwargs["cull_distance"].cast<float>();
             if (kwargs.contains("gid_materials")) { // E.3: {gid: material asset name}
               for (auto item : kwargs["gid_materials"].cast<py::dict>()) {
                 int gid          = item.first.cast<int>();

@@ -34,7 +34,7 @@ class CircuitSystem(ParticleSystem):
     self.ptc_pool = P.PoolData(size=80000, name="POOL")
 
     self.emitter = P.EllipticalEmitter(self.ptc_pool, name="EMITN",
-                                       EmissionVelocity=0.1,
+                                       EmissionVelocity=0.01,
                                        DispersionAngle=180,
                                        LifeSpan=0.5,
                                        Scalar=3,
@@ -51,7 +51,7 @@ class CircuitSystem(ParticleSystem):
                             Frequency=0.3, 
                             InpNoise = 0.3,
                             InpNoiseFreq = 3.7,
-                            Speed=7.1,
+                            Speed=1.1,
                             CellSize=0.0,
                             Levels=0)
 
@@ -59,7 +59,7 @@ class CircuitSystem(ParticleSystem):
     self.material = particles.GradientMaterial.createShared()
     self.material.blending = tokens.ADDITIVE
     self.material.depthtest = tokens.OFF
-    self.material.colorIntensity = 1.5
+    self.material.colorIntensity = 1.0
     self.material.gradient.setColorStops({
       0.0: vec4(1.0, 1.0, 1.0, 1),     # hot white
       0.2: vec4(0.4, 1.0, 0.7, 1),     # mint
@@ -67,7 +67,7 @@ class CircuitSystem(ParticleSystem):
       0.8: vec4(0.5, 0.4, 0.2, 0.5),   # deep green trace
       1.0: vec4(0.0, 0.05, 0.0, 0),
     })
-    self.material.modulation_texture = Texture.load("src://effect_textures/knob2")
+    self.material.modtexture_asset = "src://effect_textures/knob2"  # serializable asset (round-trips to the ECS player; live modulation_texture does not)
 
     self.streaks = P.StreakRenderer(self.curl, name="STRK",
                                     material=self.material,

@@ -28,4 +28,4 @@ class MudScene(Scene):
 
     self.entity("mud",
                 transform={"translation": vec3(0, 0, 0)},
-                components=[self.SG.component(nodes={"n": {"drawable": drw}})])
+                components=[self.spinner(), self.SG.component(nodes={"n": {"drawable": drw}})])

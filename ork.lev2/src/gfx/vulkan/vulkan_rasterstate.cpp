@@ -142,6 +142,10 @@ VkRasterState::VkRasterState(rasterstate_ptr_t rstate, int attachment_count, con
   _VKCBATT.blendEnable = rstate->_blendEnable ? VK_TRUE : VK_FALSE;
 
   hasher.accumulateItem(rstate->_blendEnable);
+  // A2C is part of the MSAA pipeline state (set in _createPipeline) — it MUST be in the rasterstate
+  // hash, or two states differing ONLY in alphaToCoverage collide to the same _pipeline_bits cache slot.
+  hasher.accumulateItem(rstate->_alphaToCoverage);
+  _alphaToCoverage = rstate->_alphaToCoverage; // carry to pipeline-create (MSAA.alphaToCoverageEnable)
 
   auto do_blend_factor = [&](BlendingFactor bf) -> VkBlendFactor {
 

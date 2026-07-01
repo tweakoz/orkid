@@ -28,6 +28,48 @@ from ork.hypergraph.ecs.scene.resolve import (
 )
 
 
+def _apply_scene_wrap(scene_class, args):
+  """Generic scene-class wrap hook — orkid ships only the MECHANISM.
+
+  When ORKEXP_SCENE_WRAP names a `<module>:<func>` (module = a .py file path OR
+  an importable module name), import that callable and let it return a wrapped
+  Scene subclass to author in place of the loaded one. The host uses this to
+  inject a presentation/behavior overlay (a different render preset, extra
+  systems, ...) onto an ARBITRARY scene without that scene knowing — the overlay
+  is entirely host-supplied, so no specifics live in the engine. The callable
+  receives `(scene_class, args)` (args = this viewer's parsed argparse namespace,
+  opaque/best-effort) and returns a Scene subclass. No-op when the env var is
+  unset — returns the class unchanged."""
+  spec = os.environ.get("ORKEXP_SCENE_WRAP")
+  if not spec:
+    return scene_class
+  target, sep, func = spec.partition(":")
+  if not sep or not func:
+    raise ValueError(f"ORKEXP_SCENE_WRAP must be '<module>:<func>'; got {spec!r}")
+  import importlib
+  if target.endswith(".py") or os.sep in target:
+    # If the loaded scene already imported this EXACT file as a module (e.g. a
+    # host base class it subclasses), REUSE that module. Loading a second copy
+    # via spec_from_file_location would mint duplicate class objects, silently
+    # breaking the identity checks (isinstance/issubclass) the wrap relies on.
+    real = os.path.realpath(target)
+    mod = next((m for m in list(sys.modules.values())
+                if getattr(m, "__file__", None)
+                and os.path.realpath(m.__file__) == real), None)
+    if mod is None:
+      import importlib.util
+      ms = importlib.util.spec_from_file_location("_orkexp_scene_wrap_mod", target)
+      if ms is None or ms.loader is None:
+        raise ImportError(f"cannot load scene-wrap module from {target!r}")
+      mod = importlib.util.module_from_spec(ms)
+      ms.loader.exec_module(mod)
+  else:
+    mod = importlib.import_module(target)
+  wrapped = getattr(mod, func)(scene_class, args)
+  print(f"ork.scene.viewer: scene wrap {spec} → {wrapped.__name__}", file=sys.stderr)
+  return wrapped
+
+
 def parse_args():
   p = argparse.ArgumentParser(
     description="Tier 3 Scene viewer — tojson(scene) → ork.ecs.player.exe")
@@ -48,6 +90,20 @@ def parse_args():
                  help="SSAA multiplier (passed through to the player / ecsedit)")
   p.add_argument("-f", "--fullscreen", action="store_true",
                  help="fullscreen (passed through to the player / ecsedit)")
+  p.add_argument("-W", "--width", type=int, default=0,
+                 help="initial window width when not fullscreen (0=default)")
+  p.add_argument("-H", "--height", type=int, default=0,
+                 help="initial window height when not fullscreen (0=default)")
+  p.add_argument("--hidpi", action="store_true",
+                 help="render at the display's backing (Retina) scale; default is LoDPI to save fillrate")
+  p.add_argument("--offscreen", action="store_true",
+                 help="headless (no window): with --movie records a movie, else renders forever as fast as it can (player only)")
+  p.add_argument("--movie", default=None, metavar="PATH",
+                 help="record an offscreen movie to PATH (mp4; implies --offscreen)")
+  p.add_argument("--movieframes", type=int, default=None,
+                 help="movie frame count (with --movie; player default 300)")
+  p.add_argument("--moviefps", type=float, default=None,
+                 help="movie fps (with --movie; player default 60)")
   p.add_argument("--list", "-l", action="store_true",
                  help="list all scenes found in ORK_SCENES_SEARCH_PATH and exit")
   p.add_argument("--keep-json", action="store_true",
@@ -70,6 +126,15 @@ def main():
     scene_class = load_scene_class(scene_path, args.class_name)
   except (FileNotFoundError, ValueError) as e:
     print(f"ork.scene.viewer: {e}", file=sys.stderr)
+    return 2
+
+  # Generic scene-wrap hook — when ORKEXP_SCENE_WRAP names a host wrap, let it
+  # overlay the loaded scene (e.g. force an alternate render preset). Fail loud
+  # rather than silently authoring the un-wrapped scene.
+  try:
+    scene_class = _apply_scene_wrap(scene_class, args)
+  except Exception as e:
+    print(f"ork.scene.viewer: scene wrap failed: {e}", file=sys.stderr)
     return 2
 
   print(f"ork.scene.viewer: {scene_class.__name__} ← {scene_path}",
@@ -100,6 +165,10 @@ def main():
     tf.close()
     out_path = tf.name
 
+  if args.edit and (args.offscreen or args.movie):
+    print("ork.scene.viewer: --offscreen/--movie are player-only; ignored in --edit mode",
+          file=sys.stderr)
+
   if args.edit:
     # the EDITOR stays Python (ecsedit) — same -s CLI as before.
     runner = shutil.which("ork.ecsedit.py")
@@ -109,6 +178,12 @@ def main():
     cmd = [runner, "-s", out_path, "--ssaa", str(args.ssaa)]
     if args.fullscreen:
       cmd.append("-f")
+    if args.width > 0:
+      cmd += ["--width", str(args.width)]
+    if args.height > 0:
+      cmd += ["--height", str(args.height)]
+    if args.hidpi:
+      cmd.append("--hidpi")
   else:
     # PLAYBACK is the C++ player — the one true loader/wire/render path.
     runner = shutil.which("ork.ecs.player.exe")
@@ -124,8 +199,24 @@ def main():
       cmd += ["--roundtrip", str(args.roundtrip)]
     if args.fullscreen:
       cmd += ["--fullscreen"]
+    if args.width > 0:
+      cmd += ["--width", str(args.width)]
+    if args.height > 0:
+      cmd += ["--height", str(args.height)]
+    if args.hidpi:
+      cmd += ["--hidpi"]
     if args.ssaa and args.ssaa > 1:
       cmd += ["--ssaa", str(args.ssaa)]
+    # OFFSCREEN (headless, player only): with --movie record a clip; without, render
+    # forever as fast as it can (perf/soak). --movie implies offscreen in the player.
+    if args.movie:
+      cmd += ["--movie", args.movie]
+      if args.moviefps is not None:
+        cmd += ["--moviefps", str(args.moviefps)]
+      if args.movieframes is not None:
+        cmd += ["--movieframes", str(args.movieframes)]
+    elif args.offscreen:
+      cmd += ["--offscreen-forever"]
 
   print(f"ork.scene.viewer: wrote {out_path} ({len(js)} bytes); launching {os.path.basename(runner)}",
         file=sys.stderr)

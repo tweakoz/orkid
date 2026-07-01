@@ -108,7 +108,7 @@ class DiffuseTransmissionScene(Scene):
 
     self.entity("leaf_opaque",
       transform=Transform(translation=vec3(0, 0, -4)),
-      components=[SG.component(nodes={
+      components=[self.spinner(), SG.component(nodes={
         "n": {"drawable": drawable_opaque},
       })])
 
@@ -136,6 +136,6 @@ class DiffuseTransmissionScene(Scene):
 
     self.entity("leaf_translucent",
       transform=Transform(translation=vec3(0, 0, +4)),
-      components=[SG.component(nodes={
+      components=[self.spinner(), SG.component(nodes={
         "n": {"drawable": drawable_translucent},
       })])

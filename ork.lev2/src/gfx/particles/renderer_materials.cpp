@@ -42,6 +42,10 @@ void MaterialBase::describeX(class_t* clazz) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 MaterialBase::MaterialBase() {
+  // gradient LUT defaults to WHITE so non-gradient materials pass frg_clr through unchanged
+  // (the shared VS multiplies nothing); GradientMaterial overwrites it from its gradient.
+  for (int i = 0; i < 256; i++)
+    _gradientSamples[i] = fvec4(1, 1, 1, 1);
   _vertexSetterSprite = [](sprite_vertex_writer_t& vw, //
                            const BasicParticle* ptc,   //
                            float fang,                 //
@@ -228,27 +232,14 @@ std::shared_ptr<GradientMaterial> GradientMaterial::createShared() {
 void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   auto context = RCID.context();
   ////////////////////////////////////////////////////////////////////
-  _grad_render_mtl = std::make_shared<FreestyleMaterial>();
-  _grad_render_mtl->gpuInit(context, "orkshader://ui2");
-  FxPipelinePermutation permu;
-  permu._forced_technique                = _grad_render_mtl->technique("ui_gradwalpha");
-  auto grad_render_cache                 = _grad_render_mtl->pipelineCache();
-  _grad_render_pipeline                  = grad_render_cache->findPipeline(permu);
-  auto grad_par_mvp                      = _grad_render_mtl->param("mvp");
-  auto grad_par_time                     = _grad_render_mtl->param("time");
-  FxPipeline::varval_generator_t gen_mtx = [=]() -> FxPipeline::varval_t { return context->MTXI()->Ortho(0, 256, 0, 1, 0, 1); };
-  _grad_render_pipeline->bindParam(grad_par_mvp, gen_mtx);
-  _grad_render_pipeline->bindParam(grad_par_time, 0.0f);
-  _gradient_rtgroup = std::make_shared<RtGroup>(context, 256, 1);
-  auto rtb0         = _gradient_rtgroup->createRenderTarget(EBufferFormat::RGBA8);
-  _gradient_texture = rtb0->_texture;
-  _gradient_texture->TexSamplingMode()._texAddrModeS = TextureAddressMode::CLAMP;
-  _gradient_texture->TexSamplingMode()._texAddrModeT = TextureAddressMode::CLAMP;
-  context->TXI()->ApplySamplingMode(_gradient_texture.get());
-  ////////////////////////////////////////////////////////////////////
-  for( int i=0; i<256; i++ ){
-    _gradientSamples[i] = _gradient->sample(float(i)/256.0f);
+  // Gradient is delivered to the shader through the per-frame particle SSBO (a 256-entry LUT
+  // the renderer writes from _gradientSamples), NOT a texture: the particle render path is
+  // entirely inside a render pass, so a texture upload can't land (the VR/forward black-gradient
+  // bug). Seed _gradientSamples here; onGpuUpdate re-samples it when the stops change.
+  for (int i = 0; i < 256; i++) {
+    _gradientSamples[i] = _gradient->sample(float(i) / 256.0f);
   }
+  _gradient_resampled = true;
   ////////////////////////////////////////////////////////////////////
   _material = std::make_shared<FreestyleMaterial>();
   _material->gpuInit(context, "orkshader://particle");
@@ -260,7 +251,6 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
 
   auto fxparameterIV          = _material->param("MatIV");
   auto fxparameterMVP         = _material->param("MatMVP");
-  auto fxparameterGradMap     = _material->param("GradientMap");
   auto fxparameterColorFactor = _material->param("ColorFactor");
   auto fxparameterAlphaFactor = _material->param("AlphaFactor");
   _param_mod_texture          = _material->param("ColorMap");
@@ -272,7 +262,6 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
 
   _pipeline->bindParam(fxparameterIV, "RCFD_Camera_IV_Mono"_crcsh);
   _pipeline->bindParam(fxparameterMVP, "RCFD_Camera_MVP_Mono"_crcsh);
-  _pipeline->bindParam(fxparameterGradMap, _gradient_texture);
 
   FxPipeline::varval_generator_t gen_tex = [=]() -> FxPipeline::varval_t {
     auto as_tex = std::dynamic_pointer_cast<TextureAsset>(_modulation_texture_asset);
@@ -318,51 +307,28 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
 }
 /////////////////////////////////////////////////////////////////////////////////////////////
 void GradientMaterial::update(const RenderContextInstData& RCID) {
-
-  auto context = RCID.context();
-  auto FXI     = context->FXI();
-  auto FBI     = context->FBI();
-  auto GBI     = context->GBI();
-  ///////////////////////////////
-  if (1) {
-    VtxWriter<SVtxV16T16C16> vw;
-    gradientGeometry( //
-        context,      //
-        *_gradient,   //
-        vw,
-        0,   //
-        0,   //
-        256, //
-        1);
-    _grad_render_mtl->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
-    _grad_render_mtl->_rasterstate->setWriteMaskRGB(true);
-    _grad_render_mtl->_rasterstate->setWriteMaskA(true);
-    _grad_render_mtl->_rasterstate->setWriteMaskZ(true);
-    _grad_render_mtl->_rasterstate->setDepthTest(EDepthTest::OFF);
-    _grad_render_mtl->_rasterstate->setCullTest(ECullTest::OFF);
-    /////////////////////////////////////////
-    // ensure this operation is not stereo
-    //  as that will mess up viewport settings
-    /////////////////////////////////////////
-    auto& CPD        = (CompositingPassData&)RCID.rcfd()->topCPD();
-    bool prev_stereo = CPD.isSinglePassStereo();
-    CPD.setSinglePassStereo(false);
-    /////////////////////////////////////////
-    _grad_render_pipeline->_debugPrint = false;
-    FBI->PushRtGroup(_gradient_rtgroup.get());
-    _grad_render_pipeline->wrappedDrawCall(RCID, [&]() { //
-      GBI->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
-    });
-    CPD.setSinglePassStereo(prev_stereo);
-    FBI->PopRtGroup();
-    _averageColor = _gradient->average();
-    FXI->reset();
-    /////////////////////////////////////////
-  }
-  ///////////////////////////////
+  // The gradient LUT texture is now uploaded in onGpuUpdate (render-pass-safe), NOT baked
+  // here mid-pass via a nested render-to-texture (the retired VR/forward black-gradient bug).
+  // Keep only the live rasterstate sync — _blending can change at runtime.
   _material->_rasterstate->setBlendingMacro(_blending);
   _material->_rasterstate->setWriteMaskZ(false);
   _material->_rasterstate->setDepthTest(_depthtest);
+}
+/////////////////////////////////////////////////////////////////////////////////////////////
+// PRE-RENDER (onGpuUpdate): re-sample the gradient into _gradientSamples WHEN IT CHANGED, so
+// the renderer can copy the LUT into the per-frame SSBO. CPU-only (no GPU op) — safe to run
+// with a render pass active. Dirty-gated so animated stops cost a re-sample only on change.
+void GradientMaterial::onGpuUpdate(ork::lev2::Context* ctx) {
+  fvec4 newsamples[256];
+  for (int i = 0; i < 256; i++)
+    newsamples[i] = _gradient->sample(float(i) / 256.0f);
+  bool changed = (not _gradient_resampled) //
+                 or (memcmp(newsamples, _gradientSamples, sizeof(_gradientSamples)) != 0);
+  if (not changed)
+    return;
+  memcpy(_gradientSamples, newsamples, sizeof(_gradientSamples));
+  _averageColor      = _gradient->average();
+  _gradient_resampled = true;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////

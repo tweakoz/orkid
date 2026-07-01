@@ -167,6 +167,10 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                     throw std::runtime_error(
                       "createEzApp: fullscreen_mode must be 'windowed' or 'immersive', got: " + mode_str);
                   }
+                } else if (key == "hidpi") {
+                  // Opt into a backing-scaled (Retina) framebuffer. Default is
+                  // LoDPI to save fillrate; HiDPI must be explicitly requested.
+                  appinit->_allowHIDPI = py::cast<bool>(item.second);
                 } else if (key == "displaylink") {
                   appinit->_displaylink = py::cast<bool>(item.second);
                 } else if (key == "fullscreen_monitor") {

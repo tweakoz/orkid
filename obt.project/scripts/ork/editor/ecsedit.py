@@ -268,6 +268,7 @@ class EcsEditor(ComponentizedApplication):
     self._init_height = kwargs.get("height", 900)
     self._init_ssaa = kwargs.get("ssaa", 0)
     self._init_temporal = kwargs.get("temporal", 0)
+    self._init_hidpi = kwargs.get("hidpi", False)
 
     # Shared ECS runtime (camera, scenegraph, simulation lifecycle)
     self.runtime = EcsRuntime()
@@ -313,6 +314,8 @@ class EcsEditor(ComponentizedApplication):
     )
     if self._init_fullscreen:
       ezapp_kwargs["fullscreen"] = True
+    if self._init_hidpi:
+      ezapp_kwargs["hidpi"] = True
     self.createEzApp(**ezapp_kwargs)
 
   ##############################################################################

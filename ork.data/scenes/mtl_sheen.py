@@ -32,9 +32,9 @@ class SheenScene(Scene):
         preset             = "ForwardPBR",
         skybox_path        = "<ork_envmaps2>/tozenv_nebula.xir",
         SkyboxIntensity    = 1.0,
-        DiffuseIntensity   = 1.0,
-        SpecularIntensity  = 1.0,
-        AmbientLight       = vec3(0.06))
+        DiffuseIntensity   = 2.0,
+        SpecularIntensity  = 2.0,
+        AmbientLight       = vec3(0.0))
 
     ##########################
     # Billowy SDF — thick wavy sheet via two-frequency sin/cos modulation
@@ -118,7 +118,7 @@ class SheenScene(Scene):
 
     self.entity("cloth_plain",
       transform=Transform(translation=vec3(-4, 0, 0)),
-      components=[SG.component(nodes={
+      components=[self.spinner(), SG.component(nodes={
         "n": {"drawable": drawable_plain},
       })])
 
@@ -144,6 +144,6 @@ class SheenScene(Scene):
 
     self.entity("cloth_sheen",
       transform=Transform(translation=vec3(+4, 0, 0)),
-      components=[SG.component(nodes={
+      components=[self.spinner(), SG.component(nodes={
         "n": {"drawable": drawable_sheen},
       })])

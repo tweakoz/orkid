@@ -21,6 +21,13 @@
 #include <ork/lev2/gfx/material_freestyle.h>
 
 ///////////////////////////////////////////////////////////////////////////////
+// HZB occlusion builder lives in ork::lev2; fwd-declared here so Scene can hold one (shared_ptr,
+// type-erased deleter) without pulling the full hzb.h into this already-heavy header.
+namespace ork::lev2 {
+struct HZBBuilder;
+using hzbbuilder_ptr_t = std::shared_ptr<HZBBuilder>;
+} // namespace ork::lev2
+///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::scenegraph {
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -318,6 +325,13 @@ struct Scene {
   gfxcontext_lambda_t _on_render_complete;
   synchro_ptr_t _synchro;
   float _currentTime = 0.0f;
+  // Frame-global cull-frustum scale (unifies the old VR ORKEXP_VRCULL_MARGIN + per-drawable
+  // cull_tighten). >1 widens (cull-less), 1.0 = exact view, <1 narrows (cull-more). Parsed from the
+  // "CullFrustumScale" scenegraph param, stamped onto the RCFD in Scene::preRender, read by every
+  // per-view cull (MeshInstCull / terrain ComputeDrawable). VR presets default this to 1.3.
+  float _cullFrustumScale = 1.0f;
+  hzbbuilder_ptr_t _hzb; // 1-phase occlusion HZB: built frame-end by the ForwardNode from THIS frame's
+                         // depth, stamped into the RCFD in preRender for NEXT frame's per-view cull.
   int _lastGpuUpdateFrame = -1; // gpuUpdate's per-frame idempotence stamp (ctx->GetTargetFrame())
   uint32_t _pickFormat = 0;
   bool _doResizeFromMainSurface = false;

@@ -219,7 +219,11 @@ struct Device {
   //  writes _posemap["hmd"]. Setting the "hmd" pose directly disables this.
   //  setTrackedPose stamps the receive time (Timer::getSystemTick, ns) internally;
   //  _predictHmdPose differences the predicted scan-out tick against it for the lead.
-  void setTrackedPose(const fvec3& pos, const fquat& orient, const fvec3& linvel, const fvec3& angvel);
+  //  linacc/angacc (optional, default 0) enable 2nd-order extrapolation; the host
+  //  forwards the SDK-provided linear/angular acceleration (when the tracking source
+  //  publishes it). Zero acc => 1st-order (constant velocity) — backward compatible.
+  void setTrackedPose(const fvec3& pos, const fquat& orient, const fvec3& linvel, const fvec3& angvel,
+                      const fvec3& linacc = fvec3(), const fvec3& angacc = fvec3());
   void _predictHmdPose();
 
   uint32_t _width      = 128;
@@ -252,6 +256,8 @@ struct Device {
   fquat _trackedQuat;
   fvec3 _trackedLinVel;
   fvec3 _trackedAngVel;
+  fvec3 _trackedLinAcc;             // SDK linear accel (2nd-order term); 0 => 1st-order
+  fvec3 _trackedAngAcc;             // SDK angular accel (2nd-order term); 0 => 1st-order
   uint64_t _trackedCaptureTick = 0; // Timer::getSystemTick (ns) when setTrackedPose was called
   float _predictionBias   = 0.0f;   // additional lead (s) on top of the scan-out prediction
   bool  _poseConjugate    = true;   // conjugate orient before composing the world matrix

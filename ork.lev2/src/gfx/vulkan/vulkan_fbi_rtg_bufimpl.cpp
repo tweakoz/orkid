@@ -57,6 +57,7 @@ VklRtBufferImpl::VklRtBufferImpl(vkcontext_rawptr_t ctxVK, VkRtGroupImpl* par, u
 VklRtBufferImpl::~VklRtBufferImpl() {
   // Capture resources that need cleanup
   vkimageobj_ptr_t imgobj = _imgobj;
+  vkimageobj_ptr_t msaa_imgobj = _msaa_imgobj;   // MSAA render image (null unless multisampled)
   vktexobj_ptr_t impl = nullptr;
   if (_teximpl.tryAsShared<VulkanTextureObject>()) {
     impl = _teximpl.getShared<VulkanTextureObject>();
@@ -68,11 +69,12 @@ VklRtBufferImpl::~VklRtBufferImpl() {
   VkDevice device = _contextVK ? _contextVK->_vkdevice : VK_NULL_HANDLE;
 
   _imgobj = nullptr; // Clear the image object to avoid dangling pointers
+  _msaa_imgobj = nullptr; // ditto for the MSAA render image (released on the deferred queue below)
   _teximpl.clear(); // Clear the texture implementation variant
   _hasCubeFaceViews = false;
   for (auto& v : _cubeFaceViews) v = VK_NULL_HANDLE;
 
-  if (imgobj or impl or hasFaceViews) {
+  if (imgobj or impl or hasFaceViews or msaa_imgobj) {
     // Enqueue cleanup onto this buffer's owning context — drained on that
     // context's beginFrame (Phase 6.3 Variant B: per-context deferred queue).
     _contextVK->enqueueDeferredOp(
@@ -87,6 +89,7 @@ VklRtBufferImpl::~VklRtBufferImpl() {
         }
         imgobj = nullptr;
         impl = nullptr;
+        msaa_imgobj = nullptr;   // release the MSAA render image on the safe deferred queue too
       });
   }
 }
@@ -194,6 +197,31 @@ void _vkCreateImageForBuffer(
   OrkAssert(OK == VK_SUCCESS);
   bufferimpl->_currentLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Reset layout to undefined after creation
   imgobj->_currentLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Also set on the image object
+  ///////////////////////////////////////////////////
+  // MSAA: the image just created (_imgobj) is the SINGLE-sample resolve target (sampled, unchanged).
+  // When the parent RtGroup is multisampled, ALSO create the multisample image the render pass
+  // renders into; VulkanRenderInfo wires it as the color/depth attachment and resolves DOWN to
+  // _imgobj at endRendering. Render-only: attachment usage, NO sampled/transfer (those live on the
+  // resolve target). Same format + view type as _imgobj.
+  bufferimpl->_msaa_imgobj = nullptr;
+  int msaa_samples = (bufferimpl->_rtg_impl and bufferimpl->_rtg_impl->_rtgroup)
+                   ? msaaEnumToInt(bufferimpl->_rtg_impl->_rtgroup->_msaa_samples) : 1;
+  if (msaa_samples > 1) {
+    auto MVKICI     = makeVKICI(w, h, 1, options._format, 1);
+    MVKICI->samples = (VkSampleCountFlagBits)msaa_samples;
+    MVKICI->usage   = (effective_usage == "depth"_crcu)
+                    ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
+                    : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    auto msaa_imgobj = std::make_shared<VulkanImageObject>(ctxVK, MVKICI);
+    auto MIVCI = createImageViewInfo2D(
+        msaa_imgobj->_vkimage, bufferimpl->_vkfmt,
+        VkFormatConverter::_instance.aspectForUsage(effective_usage));
+    VkResult MOK = vkCreateImageView(ctxVK->_vkdevice, MIVCI.get(), nullptr, &msaa_imgobj->_vkimageview);
+    OrkAssert(MOK == VK_SUCCESS);
+    msaa_imgobj->_currentLayout    = VK_IMAGE_LAYOUT_UNDEFINED;
+    bufferimpl->_msaa_imgobj       = msaa_imgobj;
+    bufferimpl->_attachmentDesc.samples = (VkSampleCountFlagBits)msaa_samples;
+  }
   ///////////////////////////////////////////////////
   //logchan_rtbi->log("IMAGE: Created image %p, initial layout %d", (void*)vkimage, bufferimpl->_currentLayout);
 }
@@ -319,23 +347,47 @@ void VklRtBufferImpl::_transitionImage(vkpricmdbufimpl_ptr_t cb, const VkTransit
 ///////////////////////////////////////////////////////////////////////////////
 
 void VklRtBufferImpl::_transitionToRenderTarget(vkpricmdbufimpl_ptr_t cb) { //
+  const VkTransitionParams* p = nullptr;
   switch( _usage) {
     case "color"_crcu: // color attachment
-      _transitionImage(cb, kToRenderTargetColor);
+    case "swapchain"_crcu: // present attachment
+      p = &kToRenderTargetColor;
       break;
     case "depth"_crcu: // depth attachment
-      if (_rtg_impl && _rtg_impl->_depthReadOnlyMode) {
-        _transitionImage(cb, kToRenderTargetDepthReadOnly);
-      } else {
-        _transitionImage(cb, kToRenderTargetDepth);
-      }
-      break;
-    case "swapchain"_crcu: // present attachment
-      _transitionImage(cb, kToRenderTargetColor);
+      p = (_rtg_impl && _rtg_impl->_depthReadOnlyMode) ? &kToRenderTargetDepthReadOnly : &kToRenderTargetDepth;
       break;
     default:
       OrkAssert(false);
-      break;
+      return;
+  }
+  _transitionImage(cb, *p);             // the resolve target (or the only image when MSAA off)
+  if (_msaa_imgobj)                     // MSAA: the multisample render attachment moves with it
+    _transitionMsaaImage(cb, *p);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Transition the MSAA render image (mirror of _transitionImage but on _msaa_imgobj). The
+// multisample image is never sampled — it lives in the attachment layout, gets rendered into,
+// and is resolved down to _imgobj at endRendering.
+///////////////////////////////////////////////////////////////////////////////
+void VklRtBufferImpl::_transitionMsaaImage(vkpricmdbufimpl_ptr_t cb, const VkTransitionParams& p) {
+  if (not _msaa_imgobj)
+    return;
+  VkImage img = _msaa_imgobj->_vkimage;
+  if (_contextVK->_renderPassActive) {
+    _msaa_imgobj->_currentLayout = p.layout;
+    return;
+  }
+  if (_msaa_imgobj->_currentLayout == VK_IMAGE_LAYOUT_UNDEFINED || _msaa_imgobj->_currentLayout != p.layout) {
+    auto barrier = createImageBarrier(img, _msaa_imgobj->_currentLayout, p.layout, p.srcAccess, p.dstAccess);
+    barrier->subresourceRange.aspectMask = VkFormatConverter::_instance.aspectForUsage(_usage);
+    if (_msaa_imgobj->_cinfo) {
+      barrier->subresourceRange.layerCount = _msaa_imgobj->_cinfo->arrayLayers;
+      barrier->subresourceRange.levelCount = _msaa_imgobj->_cinfo->mipLevels;
+    }
+    vkCmdPipelineBarrier(cb->_vkcmdbuf, p.srcStage, p.dstStage, VK_DEPENDENCY_BY_REGION_BIT,
+                         0, nullptr, 0, nullptr, 1, barrier.get());
+    _msaa_imgobj->_currentLayout = p.layout;
   }
 }
 

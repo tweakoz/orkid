@@ -6,6 +6,7 @@
 #include <ork/lev2/gfx/gfxvtxbuf.inl>
 #include <ork/lev2/gfx/image.h>
 #include <ork/kernel/opq.h>
+#include <ork/reflect/properties/registerX.inl>
 ///////////////////////////////////////////////////////////////////////////////
 using namespace ork::lev2;
 ImplementReflectionX(ork::lev2::GridDrawableData, "GridDrawableData");
@@ -138,7 +139,9 @@ void GridDrawableImpl::_render(const RenderContextInstData& RCID) {
   pipeline->wrappedDrawCall(RCID, [&]() {
     pipeline->_set_typed_param(
         RCID, _paramAuxA, fvec4(_griddata->_intensityA, _griddata->_intensityB, _griddata->_intensityC, _griddata->_intensityD));
-    pipeline->_set_typed_param(RCID, _paramAuxB, fvec4(_griddata->_lineWidth, 0, 0, 0));
+    // AuxB: x=lineWidth, y=minorFadeBegin, z=minorFadeEnd (eye-distance fade for the V4 minor grid).
+    pipeline->_set_typed_param(
+        RCID, _paramAuxB, fvec4(_griddata->_lineWidth, _griddata->_minorFadeBegin, _griddata->_minorFadeEnd, 0));
 
     _pbrmaterial->_rasterstate->setCullTest(ECullTest::OFF);
     if (_griddata->_shader_suffix == "_V3") {
@@ -166,6 +169,26 @@ void GridDrawableImpl::renderGrid(RenderContextInstData& RCID) { // static
 ///////////////////////////////////////////////////////////////////////////////
 
 void GridDrawableData::describeX(class_t* c) {
+  // Reflect the authorable render parameters so a grid round-trips through the
+  // ECS scene serializer into the zero-Python player (tojson -> ork.ecs.player).
+  // Without these, a deserialized grid falls back to ctor defaults and ignores
+  // the scene's extent/tiling/appearance. The image_ptr_t members are an
+  // in-memory alternative to the texpaths and are not reflected here.
+  c->directProperty("ShaderSuffix", &GridDrawableData::_shader_suffix);
+  c->directProperty("Extent", &GridDrawableData::_extent);
+  c->directProperty("MajorTileDim", &GridDrawableData::_majorTileDim);
+  c->directProperty("MinorTileDim", &GridDrawableData::_minorTileDim);
+  c->directProperty("MinorFadeBegin", &GridDrawableData::_minorFadeBegin);
+  c->directProperty("MinorFadeEnd", &GridDrawableData::_minorFadeEnd);
+  c->directProperty("LineWidth", &GridDrawableData::_lineWidth);
+  c->directProperty("ModColor", &GridDrawableData::_modcolor);
+  c->directProperty("IntensityA", &GridDrawableData::_intensityA);
+  c->directProperty("IntensityB", &GridDrawableData::_intensityB);
+  c->directProperty("IntensityC", &GridDrawableData::_intensityC);
+  c->directProperty("IntensityD", &GridDrawableData::_intensityD);
+  c->directProperty("ColorTexPath", &GridDrawableData::_colortexpath);
+  c->directProperty("NormalTexPath", &GridDrawableData::_normaltexpath);
+  c->directProperty("MtlRufTexPath", &GridDrawableData::_mtlruftexpath);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

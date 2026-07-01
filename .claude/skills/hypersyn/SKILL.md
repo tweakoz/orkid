@@ -42,7 +42,8 @@ A *family* is a vertical slice of HyperSyn — a base class, a plug-type set, a 
 | `particles` | `ParticleBuffer` | `graphinst_ptr_t` (runtime exec) | planned |
 | `ptex2d` | `Image2DBuffer`, scalar/vec | `texture_ptr_t` (FXV2 → RT pool) | planned |
 | `ptex3d` | `Vec3`, `Float`, `SurfaceCtx` | `pbrmaterial_ptr_t` { rigid, instanced, skinned } | planned |
-| `hypermesh` | `MeshBuffer`, `SDFGridRef` (openvdb), `Skeleton`, `WeightMap` | multi-sink: `mesh` → `xgmmodel_ptr_t`, `collider` → `shapedata_ptr_t`, `sdf` → `sdfgrid_ptr_t`, `skeleton` → `xgmskeleton_ptr_t` | planned |
+| `hypermesh` | `MeshBuffer`, `SdfGrid` (DENSE; NANOVDB reserved), `XfNodeGraph` (LANDED — the L-system spine), `Skeleton`-adapter (planned) | multi-sink: `mesh` → `xgmmodel_ptr_t`, `collider` → `shapedata_ptr_t`, `sdf` → `sdfgrid_ptr_t`, `skeleton` → `xgmskeleton_ptr_t` | partial (mesh/SDF/L-system ops shipped) |
+| `sdf` | `SdfGrid` { DENSE shipped, NANOVDB reserved/unbuilt } | dense brick (GPU-writable) + mesh via marching tetrahedra (`SdfToMesh`); future NanoVDB blob | **shipped (E.7 track)** — see note below table |
 | `terrain` | `HeightExpr`, `BiomeMask`, `ScatterSet`, `Spline` | multi-sink: `terrain` → `GeoClipMapDrawable` + baked `Heightfield` (CPU + bullet) + child instanced drawables + path drawables | planned |
 | `hyperprim` | `PrimSlot`, `Float`, `Vec3`, `MeshRef` | multi-sink: `mesh` → `xgmmodel_ptr_t`, `collider` → `shapedata_ptr_t`, plus named-slot dict (cake/lamppost/bench parametric props) | forward |
 | `hyperarch` | `Footprint`, `Storey`, `Facade`, `Opening`, `Roof` | multi-sink: `mesh` → `xgmmodel_ptr_t` bundle, `collider` → `shapedata_ptr_t`, `nav_mesh` → `navmesh_ptr_t`, plus opening-slot dict | forward |
@@ -53,6 +54,24 @@ A *family* is a vertical slice of HyperSyn — a base class, a plug-type set, a 
 | `behavior` | `State`, `Transition`, `Predicate`, `SceneQuery`, `EventStream` | `behavior_ptr_t` (stateful FSM runtime wrapping `FsmInstance`; drives pose graphs, particle systems, etc.) | forward |
 | `singularity` | audio signal, MIDI event | `program_ptr_t` (synth program) | future |
 | `sequence` | event stream, automation lane | `sequence_ptr_t` (timeline) | future |
+
+> **`sdf` family (shipped, E.7 track).** SDF is a first-class shipped dataflow family with its own 6
+> C++ modules under `ork.lev2/src/gfx/sdf/` (`SdfEval`, `MeshToSdf`, `Csg`, `SdfToMesh`, …) and a Python
+> algebra at `obt.project/scripts/ork/hypergraph/dflow/sdf/` (sphere/box/capsule, `|`/`&`/`−`,
+> `smooth_union`, `.offset`). Plug type: `SdfGrid` (the third `interchange.h` GPU-resource handle).
+> Materializer sinks: a **dense voxel brick** (GPU-writable; voxelize / CSG / marching-tetrahedra) and a
+> **mesh** via `SdfToMesh`. It is primarily consumed *within* hypermesh workflows (booleans-as-SDF per
+> A3 #4) but is a standalone family in its own right. **NANOVDB is DECLARED-but-UNBUILT:** the
+> `SdfRepr::NANOVDB` enum slot exists in `interchange.h` reserved for milestone M3, but only the DENSE
+> representation is implemented today — consumers must not branch on an unimplemented repr.
+
+> **`XfNodeGraph` / structural spine (foundation LANDED 2026-06-25; advanced layer forward).** The shared
+> transform-graph currency that lets flora / cities / creatures be thin specializations — and the one
+> rewrite/grammar engine that drives them — are specified in `UNIFIED_SUBSTRATE.md` §11–§16. The
+> `XfNodeGraph` currency (G0a), the `LSweep` skinner (G0b), and the first generator — the **`lsystem`
+> family** (G1, M1) — are in code (`interchange.h`, `hmdflow_module_lsystem/lsweep.cpp`). Forward: the
+> reflected-grammar generalization + GPU rewrite, the other generators (space-colonization / phyllotaxis /
+> tensor-field / straight-skeleton siblings), and the creature rig/skin path — all land on `XfNodeGraph`.
 
 Each family lives at:
 
@@ -553,7 +572,22 @@ class HollowSphere(Hypermesh):
 
 hypermesh authors **procedural** skeletons and skinning weights — not artist-imported assets (asset import is out of scope; see "Out of scope" at the end). Use cases include parametric characters (quadruped/biped generators), procedural plant rigs (per-frond bones), and structural rigs (cable / chain / rope).
 
-Plug types added: `Skeleton` (wraps `XgmSkeleton`), `BoneRef` (named handle into a skeleton), `WeightMap` (per-vertex per-bone influence weights). Ops sketched:
+Plug types (RECONCILED with the structural-spine decision in `UNIFIED_SUBSTRATE.md` §11): there is no
+standalone `Skeleton`/`WeightMap` plug type. A skeleton is a **`XfNodeGraph` tagged `SKELETON`** (the
+family-neutral transform-graph currency) plus a thin **`XfNodeGraph → XgmSkeleton` adapter** at the bake
+seam; `WeightMap` = the already-reserved `BONEIDX`/`BONEWT` GpuMesh channels; `BoneRef` = a Python-side
+`int` index into the `XfNodeGraph`. Ops sketched:
+
+> **STATUS (feasibility-gated, UNBUILT).** This entire rigging+skinning surface is gated on three
+> foundations that do NOT exist today and must land first, in order: (1) the `XfNodeGraph` interchange
+> plug + a `skeleton` sink; (2) writable `XgmSkeleton` Python bindings (the binding is read-only today)
+> + the `XfNodeGraph → XgmSkeleton` flattener (a C++ function mirroring `meshutil_import_assimp_skeleton.cpp`
+> — the genuinely buildable M-sized piece); (3) a GPU-skinning render path consuming `BONEIDX`/`BONEWT`
+> (a new FWD_SSBO_CUSTOM skinned variant + bone-matrix SSBO — none exists). `auto_skin`'s weight compute
+> is itself M-sized but produces invisible data until (3) lands. `XgmJointProperties` has no
+> limits/orient fields, so joint limits are a separate rig-props unit, not part of this. See
+> `UNIFIED_SUBSTRATE.md` §16 for the full feasibility-adjusted order. The sketch below is the target
+> authoring shape, not a committed near-term API.
 
 ```python
 from ork.hypergraph.dflow import hypermesh as H
@@ -585,7 +619,15 @@ Procedural-skin ops on the roadmap (in `obt.project/scripts/ork/hypergraph/dflow
 
 ## Validation
 
-`orkengine.dflow.validate(graph) -> ValidationResult` is the always-on safety net for editor-driven authoring. It sends the graph (serialized via the existing `ConnectionsProperty` JSON path) over a **zmq REQ/REP socket** to a long-lived worker process from a pre-warmed pool. Workers import orkid once at startup (the editor shows a one-time "Initializing validator..." progress bar to hide the 0.3–3s cold-import cost) and stay resident for the editor session. Each `validate(graph)` call is sub-ms RTT against a warm worker. The same transport scales from local-only (`ipc://` or `inproc://`) to cross-machine for distributed sims when that need arrives.
+`orkengine.dflow.validate(graph) -> ValidationResult` is the always-on safety net for editor-driven authoring. **(STATUS: PLANNED, M2 — not yet built.)** It sends the graph (serialized via the existing `ConnectionsProperty` JSON path) over a **zmq REQ/REP socket** to a long-lived worker process from a pre-warmed pool.
+
+> **Disambiguation (important).** The planned `dflow.validate` harness is a *family-neutral dataflow
+> graph validator* and is genuinely unbuilt (nothing exists under `obt.project/scripts/ork/hypergraph/`
+> by this name). It is NOT the existing `_ork.hypermesh.validate.py` mesh-vet ("meshvet") tool under
+> `pyext/tests/` — that is a per-asset trimesh/artist-vet render-time geometry check for a specific mesh,
+> unrelated to this graph validator. When `dflow.validate` lands it must live under
+> `obt.project/scripts/ork/hypergraph/dflow/validate/`. Do not read the same-named meshvet tool as
+> evidence that this harness already exists. Workers import orkid once at startup (the editor shows a one-time "Initializing validator..." progress bar to hide the 0.3–3s cold-import cost) and stay resident for the editor session. Each `validate(graph)` call is sub-ms RTT against a warm worker. The same transport scales from local-only (`ipc://` or `inproc://`) to cross-machine for distributed sims when that need arrives.
 
 On the worker, validate:
 
@@ -971,7 +1013,7 @@ Examples serve double duty as integration test fixtures: the validate+materializ
 
 When a user asks about authoring procedural content with HyperSyn:
 
-1. Identify the **family** they want (particles / ptex2d / ptex3d / hypermesh / future).
+1. Identify the **family** they want (particles / ptex2d / ptex3d / hypermesh / sdf / terrain / future). `sdf` is a shipped standalone family (see the sdf note in Core concepts); `terrain`, `hypermesh` ship mesh/SDF/heightfield ops. The structural-spine families (`lsystem` + flora/city/creature siblings) are planned and gated on `XfNodeGraph` — see `UNIFIED_SUBSTRATE.md` §11–§16.
 2. Show the **subclass + `__init__` + `self.<sink>(...)`** pattern (the trace).
 3. Show **`generatedflow()` → `validate()` → `materialize()`** for the full pipeline.
 4. For codegen families (ptex2d, ptex3d), explain the **FXV2 fragment** mechanism and show how an op declares its fragment template.

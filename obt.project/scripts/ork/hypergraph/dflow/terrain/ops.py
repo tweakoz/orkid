@@ -447,6 +447,8 @@ from collections import namedtuple as _namedtuple
 Flow3DResult = _namedtuple("Flow3DResult", ["dir", "discharge", "metrics"])  # three TerrainNodes
 # fill_closed_basins outputs: .filled dem + two RGBA basin-info images.
 FillBasinsResult = _namedtuple("FillBasinsResult", ["filled", "basin", "center_pit"])
+# relax_uv outputs: .uv (RGBA: relaxed uv.xy + normal.x,z) and .binormal (RGBA: relaxed binormal.xyz + 1).
+RelaxUvResult = _namedtuple("RelaxUvResult", ["uv", "binormal"])
 
 
 def flow3d(node, exponent=1.1, iterations=0, log_compress=True, slope_scale=10.0,
@@ -483,6 +485,31 @@ def flow3d(node, exponent=1.1, iterations=0, log_compress=True, slope_scale=10.0
     return Flow3DResult(dir=TerrainNode(m, m.outputs.Out),
                         discharge=TerrainNode(m, m.outputs.Discharge),
                         metrics=TerrainNode(m, m.outputs.Metrics))
+
+
+def relax_uv(node, strength=1.0, iterations=0, name=None):
+    """EQUAL-AREA UV RELAXATION (the slope-stretch fix). ONE module, TWO RGBA outputs:
+      .uv       — RGBA: R,G = relaxed UV in [0,1] (warped so texels/PHYSICAL-area is ~uniform; the
+                  unit-square boundary stays pinned so UVs never leave [0,1]); B,A = geometric normal
+                  x,z (n.y reconstructed +sqrt in the VS — parameterization-invariant).
+      .binormal — RGBA: x,y,z = the RELAXED binormal (dP/du of the relaxed UV, orthonormal to the
+                  normal — the one frame axis the relaxation perturbs); A=1.
+    The chunk VS reads .uv into uv0 and the precomputed normal/binormal frame (tangent = cross(N,B)),
+    dropping the live finite-diff taps. `strength` is the warp gain (0 = planar UV); `iterations` the
+    Poisson Jacobi sweeps (0 = auto ~ 4*dim). Pure function of the height -> cook-cached.
+
+        r = T.relax_uv(h, strength=1.0)
+        self.capture(r.uv, "relaxed_uv"); self.capture(r.binormal, "binormal")
+    """
+    g = graph_or_raise("RelaxUv")
+    if not isinstance(node, TerrainNode):
+        raise TypeError(f"relax_uv expects a terrain node; got {type(node).__name__}")
+    m = g.create(name or anon_name("relaxuv", g), _terrain.RelaxUvModule)
+    g.connect(m.inputs.In, node.output_plug)
+    m.strength = float(strength)
+    m.iterations = int(iterations)
+    return RelaxUvResult(uv=TerrainNode(m, m.outputs.Out),
+                         binormal=TerrainNode(m, m.outputs.Binormal))
 
 
 def flow_erode(node, discharge, niter=1, dt=1.0, k_erode=0.02, k_deposit=0.02, m=0.5, n=1.0,

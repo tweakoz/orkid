@@ -21,6 +21,16 @@ class CarbonScene(Scene):
     super().__init__()                       # self.SG = default ForwardPBR scenegraph
     A = self.asset
 
+    self.scenegraph(
+        preset            = "ForwardPBR",
+        skybox_path       = "<ork_envmaps2>/desert4k.xir",
+        SkyboxIntensity   = 1.0,
+        DiffuseIntensity  = 4.0,
+        SpecularIntensity = 1.0,
+        AmbientLight      = vec3(0.00),
+        msaa = 2,
+        ssaa = 1)
+
     mat = A.Ptex3d("carbon_mtl",
                    dsl_class=CarbonFiber,
                    gloss = 0.0,
@@ -33,4 +43,4 @@ class CarbonScene(Scene):
 
     self.entity("carbon",
                 transform={"translation": vec3(0, 0, 0)},
-                components=[self.SG.component(nodes={"n": {"drawable": drw}})])
+                components=[self.spinner(), self.SG.component(nodes={"n": {"drawable": drw}})])

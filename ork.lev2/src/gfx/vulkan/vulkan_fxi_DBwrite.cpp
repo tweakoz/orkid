@@ -272,6 +272,7 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
       for (auto item : spirv_smpset->_samplers_by_name) {
         uniforms_stream->AddIndexedString(item.second->_datatype, chunkwriter);
         uniforms_stream->AddIndexedString(item.second->_identifier, chunkwriter);
+        uniforms_stream->AddItem<size_t>(size_t(item.second->_binding_id)); // real SPIR-V binding (after the SSBOs)
       }
     }
   };

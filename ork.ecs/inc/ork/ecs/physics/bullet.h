@@ -293,6 +293,10 @@ public:
   // y = (minH+maxH)/2 * worldHeight; the baked height channel is auto-exposed to [0,1]
   // exactly, so that is 0.5 * worldHeight (the scene walker/terrain_collider helper does this).
   std::string _hf_asset;
+  // 0 => collide at the EXR's full (bake) resolution. >0 => the heightmap is loaded as a lev2::Image and
+  // high-quality-resampled (ringing-free, Image::resampledOf) DOWN to this grid, so physics collides with
+  // exactly the downsampled surface the render mesh draws (terrain render_dimension). Set by terrain().
+  int _render_dimension = 0;
   lev2::TerrainDrawableData _visualData;
 
 private:

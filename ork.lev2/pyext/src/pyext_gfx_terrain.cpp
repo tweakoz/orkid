@@ -76,6 +76,11 @@ void pyinit_gfx_terrain(py::module& module_lev2) {
       .def_readwrite("mode", &trn::CurvatureModuleData::_mode)          // baked: 0=convex 1=concave 2=magnitude
       .def_readwrite("radius_m", &trn::CurvatureModuleData::_radius_m); // baked: pre-blur / scale (meters)
 
+  py::class_<trn::RelaxUvModuleData, dflow::DgModuleData, trn::relaxuvmoduledata_ptr_t>(trn_module, "RelaxUvModule")
+      .def_static("createShared", []() -> trn::relaxuvmoduledata_ptr_t { return trn::RelaxUvModuleData::createShared(); })
+      .def_readwrite("strength", &trn::RelaxUvModuleData::_strength)     // warp gain (0 = planar)
+      .def_readwrite("iterations", &trn::RelaxUvModuleData::_iterations); // Poisson Jacobi sweeps (0 = auto)
+
   py::class_<trn::MaskBlendModuleData, dflow::DgModuleData, trn::maskblendmoduledata_ptr_t>(trn_module, "MaskBlendModule")
       .def_static("createShared", []() -> trn::maskblendmoduledata_ptr_t { return trn::MaskBlendModuleData::createShared(); });
 

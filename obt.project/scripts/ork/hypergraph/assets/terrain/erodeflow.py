@@ -69,6 +69,19 @@ class Material(Ptex3d):
       albedo *= C
       #self.displace(aoo, scale=1.5, parallax_steps=4, depth=0.3)                      # finite-diff analytic bump -> o.normal
       self.surface(albedo=albedo, metallic=0, roughness=rough, ao=AO*aoo)
+      # EXPLICIT CAPTURES (terrain mode="stored"): bake the COSTLY composite (strata + flow tint +
+      # cracked-mud + the sampled flow/basin channels) into a packed PBR atlas, then reconstruct from it.
+      #   base.rgb = albedo, base.a = roughness ;  nrmao.rgb = world normal, nrmao.a = ao
+      c_alb = self.capture("base",  albedo,  "xyz")
+      c_rgh = self.capture("base",  rough,   "w")
+      c_nrm = self.capture("nrmao", ctx.N,   "xyz")
+      c_ao  = self.capture("nrmao", AO*aoo,  "w")
+      self.surface_stored(
+          albedo    = ctx.tex(c_alb),
+          metallic  = 0,
+          roughness = ctx.tex(c_rgh),
+          normal    = ctx.tex(c_nrm),
+          ao        = ctx.tex(c_ao))
 ###############################################################################
 class ErodeFlow(HeightField):
     EXTENT_M = 16384.0
@@ -115,7 +128,7 @@ class ErodeFlow(HeightField):
         #############################
         # second erosion pass (add a bit of hifreq detail back in)
         #############################
-        iters = 2
+        iters = 5
         for i in range(int(iters)):
           fi = i/float(iters)
           fii = 1.0 - fi
@@ -147,4 +160,9 @@ class ErodeFlow(HeightField):
         self.capture(fcb.basin,      "basin",      cache=True)   # RGBA: spill/depth/id/mask
         self.capture(fcb.center_pit, "center_pit", cache=True)   # RGBA: 3D offset to pit + dist
         self.capture(fcb.filled-z, "fill_depth", cache=True)
+        # EQUAL-AREA UV RELAXATION (slope-stretch fix): captures "relaxed_uv" + "binormal". In mode='stored'
+        # the proctex atlas is rasterized + sampled in this relaxed space, so the deep eroded canyons/cliffs
+        # get an equal texel budget (sharper) instead of the planar parameterization starving steep faces.
+        # The grid-baked channels above stay PLANAR — the material samples them at planar uv during the bake.
+        self.relax_uv(z)
         self.z = z   # final height node — subclasses (e.g. scatter) build masks off it

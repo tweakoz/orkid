@@ -95,6 +95,17 @@ struct ParticlesDrawableInst {
     }
   }
   ///////////////////////////////////////////////////////////////
+  // PRE-RENDER GPU hook (render thread, NO active render pass): fan out the particle
+  // context's gpuUpdate lambdas — each renderer refreshes its material's gradient LUT
+  // texture via a CPU upload (the render-pass-safe replacement for the old mid-pass bake).
+  void _gpuUpdate(ork::lev2::Context* ctx) {
+    auto ptcl_context = _graphinst->_impl.getShared<particle::Context>();
+    for (auto& entry : ptcl_context->gpuUpdateLambdas()) {
+      if (entry._lambda)
+        entry._lambda(ctx);
+    }
+  }
+  ///////////////////////////////////////////////////////////////
   void _render(const RenderContextInstData& RCID) {
 
     if (_LM) {
@@ -206,6 +217,7 @@ drawable_ptr_t ParticlesDrawableData::createDrawable() const {
   auto rval                   = std::make_shared<CallbackDrawable>(nullptr);
   rval->_drawable_type        = "particles"_crcu;
   rval->_enqueueOnLayerLambda = [impl](drawqueueitem_constptr_t cdb) { impl->_update(); };
+  rval->setOnGpuUpdateLambda([impl](ork::lev2::Context* ctx) { impl->_gpuUpdate(ctx); });
   rval->SetRenderCallback(ParticlesDrawableInst::renderParticles);
   rval->SetUserDataA(impl);
   ptcl_context->_drawable = rval;

@@ -14,6 +14,9 @@
 #include <ork/math/cvector4.h>
 #include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_common.h>
+#include <ork/lev2/vr/vr.h>   // ECS-VR: register a NoVrDevice for a VR rendermodel preset
+#include <ork/lev2/gfx/material_freestyle.h>   // ECS-VR: build the host-supplied distortion present
+#include <cctype>
 
 #include <ork/lev2/lev2_asset_cache.inl>
 #include <ork/ecs/ecs.h>
@@ -29,6 +32,8 @@
 #include <ork/kernel/profiler.h>
 #include <ork/lev2/gfx/texman.h>
 
+///////////////////////////////////////////////////////////////////////////////
+namespace ork::lev2 { extern appinitdata_ptr_t _ginitdata; } // global appinit (MSAA level sink)
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ecs {
 ///////////////////////////////////////////////////////////////////////////////
@@ -404,6 +409,107 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
   _scene->_dbufcontext_SG = sim->dbufcontext();
 
   _scene->gpuInit(ctx);
+
+  /////////////////////////////////////////
+  // ECS-VR (phase 1): a VR rendermodel (FWDPBRVR / FWDPBRVRDM) draws stereo via a tracking device,
+  // registered globally, that supplies the per-eye poses. Unlike the python presentation (which
+  // creates app.vrdev), the ECS playback path has nothing wiring one up — so create + register a
+  // NoVrDevice here and seed an identity head pose so the compositor renders immediately. Live
+  // head pose arrives later via the SetHmdPose message (orkidvr::device()->setTrackedPose).
+  /////////////////////////////////////////
+  if (auto try_preset = _mergedParams->typedValueForKey<std::string>("preset")) {
+    std::string preset_uc = try_preset.value();
+    for (auto& c : preset_uc)
+      c = char(std::toupper((unsigned char)c));
+    // MSAA level (scene param `msaa`): 0=off,1=2x,2=4x,3=8x,4=16x. Feed the global appinit the
+    // forward node reads at its (lazy, first-render) RTG init — which happens after this scene
+    // setup, so the value is in place. Device-clamped + RGBA16F applied there. Applies to BOTH
+    // FWDPBR and FWDPBRVRDM (VR inherits the same forward RTG). Only set when explicitly provided.
+    if (auto v = _mergedParams->tryKeyAsNumber("msaa")) {
+      if (::ork::lev2::_ginitdata)
+        ::ork::lev2::_ginitdata->_msaa_samples = int(v.value());
+      logchan_sgsys->log("ECS scene MSAA level<%d>", int(v.value()));
+    }
+    if (preset_uc.rfind("FWDPBRVR", 0) == 0) { // FWDPBRVR or FWDPBRVRDM
+      auto vrdev          = ::ork::lev2::orkidvr::novr::novr_device();
+      vrdev->_camera_name = "vrcam";
+      vrdev->_width       = 1280;
+      vrdev->_height      = 1280;
+      ::ork::lev2::orkidvr::setDevice(vrdev);
+      vrdev->setTrackedPose(fvec3(0, 0, 0), fquat(), fvec3(0, 0, 0), fvec3(0, 0, 0));
+      // Host-supplied DEVICE calibration (scene params; engine defaults otherwise). _poseConjugate
+      // defaults true (the conj_inv handedness); IPD<0 swaps L/R (the cross-eye fix).
+      constexpr float D2R = 0.01745329252f, R2D = 57.29577951f;
+      if (auto v = _mergedParams->tryKeyAsNumber("VrIPD"))       vrdev->_IPD            = float(v.value());
+      // VrFov is in DEGREES (vertical); _fov is stored in RADIANS (the FOVD pyext setter does
+      // _fov = deg*DTOR, and novr.cpp perspective() consumes radians despite the misleading comment).
+      if (auto v = _mergedParams->tryKeyAsNumber("VrFov"))       vrdev->_fov            = float(v.value()) * D2R;
+      if (auto v = _mergedParams->tryKeyAsNumber("VrNear"))      vrdev->_near           = float(v.value());
+      if (auto v = _mergedParams->tryKeyAsNumber("VrFar"))       vrdev->_far            = float(v.value());
+      if (auto v = _mergedParams->tryKeyAsNumber("VrPredAhead")) vrdev->_predictionBias = float(v.value());
+      logchan_sgsys->log("ECS-VR: device IPD=%g fovDeg=%g near=%g far=%g pred=%g poseConj=%d",
+                         vrdev->_IPD, vrdev->_fov * R2D, vrdev->_near, vrdev->_far,
+                         vrdev->_predictionBias, int(vrdev->_poseConjugate));
+      // Host-supplied per-eye distortion present (vr.h: "the distortion shader and the calibration
+      // values are supplied by the host"). The engine only BUILDS device->_presentation from
+      // declarative scene params — NO shader/optics baked here. Absent VrDistortShader => null
+      // _presentation => the VR output node's flat blit (raw stereo). Live pose -> SetHmdPose.
+      if (auto try_shader = _mergedParams->typedValueForKey<std::string>("VrDistortShader")) {
+        auto distort_mtl = std::make_shared<::ork::lev2::FreestyleMaterial>();
+        distort_mtl->gpuInit(ctx, try_shader.value().c_str());   // HOST shader path (absolute), not an orkid asset
+        auto pres       = std::make_shared<::ork::lev2::orkidvr::StandardVrPresentation>();
+        pres->_material = distort_mtl;
+        // Sane baselines: the StandardVrPresentation STRUCT defaults (lensCenter (0.5,0.5),
+        // distortion 0) are NOT valid for this shader's "frg_uv0 + LensCenter" + radial-grad usage
+        // — lensCenter must be a ~0 OFFSET (else the distortion centers at the corner) and grad>0.
+        // Start centered + passthrough; the host params override.
+        pres->_distortionR = pres->_distortionG = pres->_distortionB = fvec4(1.0f, 0.0f, 0.0f, 0.0f);
+        pres->_lensCenter[0] = pres->_lensCenter[1] = fvec2(0.0f, 0.0f);
+        bool got_d = false, got_lc = false;
+        if (auto d = _mergedParams->typedValueForKey<fvec4>("VrDistortion")) {
+          pres->_distortionR = d.value();    // achromatic (R=G=B); per-channel is VrDistortionR/G/B [future]
+          pres->_distortionG = d.value();
+          pres->_distortionB = d.value();
+          got_d = true;
+        }
+        // per-eye lens center packed into ONE vec4 (left.xy, right.zw): vec2 user-params don't
+        // round-trip through the .ecs, vec4 does. (0,0,0,0) = centered; headset IPD = (-hw/2,0,+hw/2,0).
+        if (auto lc = _mergedParams->typedValueForKey<fvec4>("VrLensCenter")) {
+          auto v = lc.value();
+          pres->_lensCenter[0] = fvec2(v.x, v.y);
+          pres->_lensCenter[1] = fvec2(v.z, v.w);
+          got_lc = true;
+        }
+        // per-eye PRESENT rotation (panel orientation), carried in MatMVP: VrEyeRot = vec4(rotL_deg,
+        // rotR_deg, 0, 0). The headset panel is mounted rotated -> typically (-90, 90).
+        bool got_er = false;
+        if (auto er = _mergedParams->typedValueForKey<fvec4>("VrEyeRot")) {
+          auto v               = er.value();
+          constexpr float D2R  = 0.01745329252f;
+          pres->_eyeTransform[0] = fquat(fvec3(0.0f, 0.0f, 1.0f), v.x * D2R).toMatrix();
+          pres->_eyeTransform[1] = fquat(fvec3(0.0f, 0.0f, 1.0f), v.y * D2R).toMatrix();
+          got_er = true;
+        }
+        // per-eye RENDER-time view CANT (toe-in) -> _eyeViewTransform (base.cpp:266), rotation about
+        // the vertical (Y) axis in eye-view space (BEFORE the present-time panel VrEyeRot). VrCant =
+        // vec4(cantL_deg, cantR_deg, 0, 0); for toe-in L/R take opposite signs. Identity if absent.
+        bool got_ct = false;
+        if (auto ct = _mergedParams->typedValueForKey<fvec4>("VrCant")) {
+          auto v               = ct.value();
+          constexpr float D2R  = 0.01745329252f;
+          pres->_eyeViewTransform[0] = fquat(fvec3(0.0f, 1.0f, 0.0f), v.x * D2R).toMatrix();
+          pres->_eyeViewTransform[1] = fquat(fvec3(0.0f, 1.0f, 0.0f), v.y * D2R).toMatrix();
+          got_ct = true;
+        }
+        vrdev->_presentation = pres;
+        logchan_sgsys->log("ECS-VR: host present<%s> (VrDistortion=%d VrLensCenter=%d VrEyeRot=%d VrCant=%d) preset<%s>",
+                           try_shader.value().c_str(), int(got_d), int(got_lc), int(got_er), int(got_ct), try_preset.value().c_str());
+      } else {
+        logchan_sgsys->log("ECS-VR: registered NoVrDevice (no VrDistortShader -> flat blit) for preset<%s>",
+                           try_preset.value().c_str());
+      }
+    }
+  }
 
   /////////////////////////////////////////
   // preload statically declared drawables (and -> assets)
@@ -1028,6 +1134,10 @@ void SceneGraphSystem::_onUpdate(Simulation* psi) // final
 {
   OrkProfilerSampleScope(CHANNEL_UPDATE, "SceneGraphSystem::_onUpdate");
   if (_scene && _autoupdate) {
+    // drive the renderer clock from the authoritative ECS sim time (stops on pause). The scene
+    // render publishes this as RCFD["time"], which fx_pipeline's RCFD_TIME named-param provider binds
+    // into any shader uniform tagged with it (VS wind, animated materials, ...) — no per-material code.
+    _scene->_currentTime = psi->gameTime();
     _scene->enqueueToRenderer(_camlut);
   }
 }
@@ -1077,9 +1187,61 @@ void SceneGraphSystem::_onRender(Simulation* psi, ui::drawevent_constptr_t drwev
 
 ///////////////////////////////////////////////////////////////////////////////
 
+// Apply a head pose (pos/orient + optional linear/angular velocity + optional
+// linear/angular ACCELERATION) to the VR device. Shared by _onNotify (sim-tick
+// poll) and _onGpuNotify (render-tick poll) so the device application is identical
+// regardless of which thread polled it. The accel keys (la*/aa*) are optional —
+// absent => 0 => the device falls back to 1st-order extrapolation.
+void SceneGraphSystem::_applyHmdPose(evdata_t data) {
+  const auto& table = *data.getShared<DataTable>();
+  if (auto dev = ::ork::lev2::orkidvr::device()) {
+    fvec3 pos(table["px"_tok].get<float>(), table["py"_tok].get<float>(), table["pz"_tok].get<float>());
+    fquat ori(table["qx"_tok].get<float>(), table["qy"_tok].get<float>(),
+              table["qz"_tok].get<float>(), table["qw"_tok].get<float>());
+    auto optf = [&table](const char* k) -> float {
+      DataKey dk; dk._encoded.set<CrcString>(CrcString(k));
+      auto v = table.find(dk);
+      return v.valid() ? v._encoded.get<float>() : 0.0f;
+    };
+    fvec3 linvel(optf("lvx"), optf("lvy"), optf("lvz"));
+    fvec3 angvel(optf("avx"), optf("avy"), optf("avz"));
+    fvec3 linacc(optf("lax"), optf("lay"), optf("laz"));
+    fvec3 angacc(optf("aax"), optf("aay"), optf("aaz"));
+    dev->setTrackedPose(pos, ori, linvel, angvel, linacc, angacc);
+    // optional live override of the prediction lead (VrPredAhead): the host may
+    // send "pred" (seconds) to retune the bias at runtime (e.g. a [ ] key). Only
+    // when PRESENT (0.0 is a valid bias, so test validity, don't use optf).
+    DataKey pdk; pdk._encoded.set<CrcString>(CrcString("pred"));
+    auto pv = table.find(pdk);
+    if (pv.valid())
+      dev->_predictionBias = pv._encoded.get<float>();
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+// Render/gpu-thread notify handler — a script's onSystemGpuUpdate (render tick)
+// fires SetHmdPose here (via system->_gpuNotify) so the pose lands on the render
+// thread, co-located with the device camera build (no cross-thread pose race).
+void SceneGraphSystem::_onGpuNotify(token_t evID, evdata_t data) {
+  switch (evID.hashed()) {
+    case "SetHmdPose"_crcu:
+      _applyHmdPose(data);
+      break;
+    default:
+      break;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void SceneGraphSystem::_onNotify(token_t evID, evdata_t data) {
 
   switch (evID.hashed()) {
+    case "SetHmdPose"_crcu: {
+      _applyHmdPose(data);
+      break;
+    }
     case ResizeFromMainSurface._hashed: {
       auto resize_op = [=]() {
         if (_scene) {

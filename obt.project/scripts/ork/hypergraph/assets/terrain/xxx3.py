@@ -6,9 +6,11 @@
 # (strata terrace + the inline XXX3Mat height/slope material) is identical to xxx2.
 #   ork.terrain.viewer2.py xxx3
 ###############################################################################
+from orkengine.core import vec3
 from ork.hypergraph.dflow.terrain import HeightField
 from ork.hypergraph.dflow import terrain as T
 from ork.hypergraph.ptex3d import Ptex3d, P   # Ptex3d: the inline material base (same file)
+from ork.hypergraph.assets.materials.terrain.solid import Solid
 from ork.hypergraph.colors import hsv
 _TAU = 6.28318530718
 ###############################################################################
@@ -117,7 +119,7 @@ class XXX3Mat(Ptex3d):
 
     def __init__(self, ctx, *,
                  height_scale  = 4000.0,
-                 mottle_scale  = 0.08,                       # the ONE shared noise frequency (broad mottle)
+                 mottle_scale  = 0.28,                       # the ONE shared noise frequency (broad mottle)
                  grass_lo = 0.26,
                  grass_hi = 0.39,           # h01: dirt -> grass (low ground)
                  rock_lo  = 0.42, 
@@ -125,8 +127,8 @@ class XXX3Mat(Ptex3d):
                  snow_lo  = 0.72,                            # h01: rock -> snow (up to 1.0)
                  rock_slope_lo = 0.75, 
                  rock_slope_hi = 0.80, # slope: gentle -> cliff -> rock
-                 dirt_color   = hsv( 10.0, 0.25, 0.5),       # 2-variant dirt/grass/rock (mottle blends each)
-                 dirt_color2  = hsv( 18.0, 0.20, 0.30),
+                 dirt_color   = hsv( 30.0, 0.25, 0.25),       # 2-variant dirt/grass/rock (mottle blends each)
+                 dirt_color2  = hsv( 48.0, 0.20, 0.10),
                  grass_color  = hsv(129.4, 0.15, 0.25),
                  grass_color2 = hsv(110.0, 0.10, 0.12),
                  rock_color   = hsv(  240.0, 0.1, 0.30),
@@ -153,7 +155,8 @@ class XXX3Mat(Ptex3d):
         slope = P.saturate(1.0 - ctx.N.y)       # 0 flat .. 1 vertical (mesh normal)
         p     = ctx.P_object
 
-        mot   = P.fbm_aa(p * msc, 6)
+        mot   = P.fbm_aa(p * msc, 7, 0.5)
+        #mot   = P.fbm(p * msc)
         dirt  = P.mix(cdrt, cdrt2, mot)
         grass = P.mix(cgrs, cgrs2, mot)
         rock  = P.mix(crok, crok2, mot)
@@ -186,6 +189,16 @@ class XXX3Mat(Ptex3d):
         rough = P.saturate(P.sqrt(rough * rough + P.min(0.4, n_var * 2.0)))
         self.surface(albedo=albedo, metallic=0.0, roughness=rough, ao=ao)
 
+        c_alb = self.capture("base",  albedo,  "xyz")
+        c_rgh = self.capture("base",  rough,   "w")
+        c_nrm = self.capture("nrmao", ctx.N,   "xyz")
+        c_ao  = self.capture("nrmao", ao,      "w")
+        self.surface_stored(
+            albedo    = ctx.tex(c_alb),
+            metallic  = 0,
+            roughness = ctx.tex(c_rgh),
+            normal    = ctx.tex(c_nrm),
+            ao        = ctx.tex(c_ao))
     # bind_textures() is inherited from Ptex3d — it just consumes SAMPLER_CHANNELS above.
 
 
@@ -196,7 +209,7 @@ class XXX3(HeightField):
     # shader lives IN THIS FILE (XXX3Mat above) -> MATERIAL_CLASS. Pure height/slope color
     # (no texture); the terraces supply the strata structure. Defaults are fine, so no params.
     MATERIAL_CLASS  = XXX3Mat
-    MATERIAL_PARAMS = {}
+    MATERIAL_PARAMS = {}#{"albedo":hsv(40,.20,0.2)}
 
     def __init__(self,iters = 16):
         ####################################
@@ -230,8 +243,11 @@ class XXX3(HeightField):
         # blended TERRACE toward the eroded height (so drainage detail survives), then a
         # light lpf to soften the risers into plausible benches.
         ####################################
+        self._height = ero_out   # exposed for subclasses that add scatter masks (treeline/slope)
         self.capture(ero_out,"height",cache=True)
         self.capture(ero_out,"normal",cache=True)
         self.capture(flow.dir,"flow_dir",cache=True)
         self.capture(flow.discharge,"flow_discharge",cache=True)
         self.capture(flow.metrics,"flow_metrics",cache=True)
+        #self.relax_uv(self._height)
+       

@@ -15,6 +15,7 @@
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/pri.h>
 #include <ork/lev2/gfx/texman.h>
+#include <ork/lev2/gfx/image.h> // E.2-walk: the collider loads + high-quality-resamples its heightmap as a lev2::Image
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/pickbuffer.h>
@@ -45,7 +46,14 @@ struct BulletTerrainImpl {
   float _resSize   = 1000.0f;   // resolved world extent (manifest extent_m when asset-wired)
   float _resHeight = 1000.0f;   // resolved world height (manifest height_m when asset-wired)
 
-  std::shared_ptr<HeightMap> _phyheightmap;
+  // E.2-walk: the collider's heightmap is loaded as a TRANSIENT lev2::Image (EXR via OIIO),
+  // high-quality-resampled DOWN to _render_dimension when set; its channel-0 heights are copied into
+  // _heightData and the Image is then freed (only _heightData persists). _heightData is kept ALIVE here
+  // because btHeightfieldTerrainShape stores the data POINTER (it does not copy).
+  std::vector<float> _heightData;
+  int   _gridDim = 0;
+  float _minH    = 0.0f;
+  float _maxH    = 1.0f;
   hfdrawableinstptr_t _hfinstance;
   const BulletShapeTerrainData& _hfd;
   msgrouter::subscriber_t _subscriber;
@@ -94,17 +102,40 @@ BulletTerrainImpl::BulletTerrainImpl(const BulletShapeTerrainData& data)
   }
   _subscriber = msgrouter::channel("bshdchanged")->subscribe([=](msgrouter::content_t c) {
     if (_curhfpath != _resPath) {
-      printf("Load Heightmap<%s>\n", _resPath.c_str());
-      _phyheightmap = std::make_shared<HeightMap>(0, 0);
-      _loadok       = _phyheightmap->Load(_resPath);
-      _curhfpath    = _resPath;
-      int idimx     = _phyheightmap->GetGridSizeX();
-      int idimz     = _phyheightmap->GetGridSizeZ();
-      printf("idimx<%d> idimz<%d>\n", idimx, idimz);
-      assert(idimx == idimz);
+      // load the heightmap as a lev2::Image (EXR -> R32F / RGBA32F via OIIO)
+      auto img = lev2::Image::createFromFile(_resPath.c_str());
+      OrkAssert(img and img->_width > 0 and img->_width == img->_height);
+      int src_dim = int(img->_width);
+      int rdim    = _hfd._render_dimension;
+      // high-quality DOWNsample to the render grid (ringing-free TRIANGLE — no spurious collision bumps),
+      // so the collider surface == the visible downsampled mesh (terrain render_dimension).
+      if (rdim > 0 and rdim < src_dim) {
+        auto ds = std::make_shared<lev2::Image>();
+        ds->resampledOf(*img, rdim, rdim, lev2::Image::ResampleFilter::TRIANGLE);
+        img = ds;
+        printf("BulletShapeTerrain: collider resampled %d -> %d (Image::resampledOf TRIANGLE)\n", src_dim, rdim);
+      }
+      const bool f32 = (img->_bytesPerChannel == 4);
+      OrkAssert(f32 or img->_bytesPerChannel == 1); // float EXR (R32F/RGBA32F) or 8-bit PNG (legacy direct path)
+      _gridDim     = int(img->_width);
+      const int nc = int(img->_numcomponents);
+      _heightData.resize(size_t(_gridDim) * size_t(_gridDim));
+      _minH = 1e30f;
+      _maxH = -1e30f;
+      for (int y = 0; y < _gridDim; y++)
+        for (int x = 0; x < _gridDim; x++) {
+          float h = f32 ? img->pixel32f(x, y)[0]                            // channel 0 = height
+                        : (float(img->pixel8(x, y)[0]) * (1.0f / 255.0f));  // 8-bit -> normalized [0,1]
+          _heightData[size_t(y) * _gridDim + x] = h;
+          _minH                                 = std::min(_minH, h);
+          _maxH                                 = std::max(_maxH, h);
+        }
+      img.reset(); // heights are copied into _heightData -> free the Image buffer now (only _heightData persists)
+      _loadok    = true;
+      _curhfpath = _resPath;
+      printf("BulletShapeTerrain: Image heightmap<%s> dim<%d> nc<%d> min<%g> max<%g>\n",
+             _resPath.c_str(), _gridDim, nc, _minH, _maxH);
     }
-    _phyheightmap->SetWorldSize(_resSize, _resSize);
-    _phyheightmap->SetWorldHeight(_resHeight);
   });
 
   _subscriber->_handler(nullptr);
@@ -123,8 +154,8 @@ btHeightfieldTerrainShape* BulletTerrainImpl::init_bullet_shape(const ShapeCreat
   if (false == _loadok)
     return nullptr;
 
-  int idimx = _phyheightmap->GetGridSizeX();
-  int idimz = _phyheightmap->GetGridSizeZ();
+  int idimx = _gridDim; // lev2::Image grid (== _render_dimension when downsampled, else the EXR res)
+  int idimz = _gridDim;
 
   float aspect            = float(idimz) / float(idimx);
   const float kworldsizeX = _resSize;
@@ -136,20 +167,20 @@ btHeightfieldTerrainShape* BulletTerrainImpl::init_bullet_shape(const ShapeCreat
   btVector3 grav = orkv3tobtv3(world_data.GetGravity());
 
   //////////////////////////////////////////
-  // hook it up to bullet if present
+  // hook it up to bullet (heights from the lev2::Image, kept alive in _heightData)
   //////////////////////////////////////////
 
-  float ftoth = _phyheightmap->GetMaxHeight() - _phyheightmap->GetMinHeight();
+  float ftoth = _maxH - _minH;
 
-  auto pdata = _phyheightmap->GetHeightData();
+  auto pdata = _heightData.data();
 
   _terrainShape = new btHeightfieldTerrainShape(
       idimx,
       idimz,        // w,h
       (void*)pdata, // data
       ftoth,        // heightScale
-      _phyheightmap->GetMinHeight(),
-      _phyheightmap->GetMaxHeight(),
+      _minH,
+      _maxH,
       1,         // upAxis,
       PHY_FLOAT, // usefloat heightDataType,
       true);     // flipQuadEdges );
@@ -157,14 +188,14 @@ btHeightfieldTerrainShape* BulletTerrainImpl::init_bullet_shape(const ShapeCreat
   //_terrainShape->setUseDiamondSubdivision(true);
   _terrainShape->setUseZigzagSubdivision(true);
 
-  float fworldsizeX = _phyheightmap->GetWorldSizeX();
-  float fworldsizeZ = _phyheightmap->GetWorldSizeZ();
+  float fworldsizeX = _resSize;
+  float fworldsizeZ = _resSize; // square heightfield
 
   float scalex = fworldsizeX / float(idimx);
   float scalez = fworldsizeZ / float(idimz);
   float scaley = 1.0f;
 
-  _terrainShape->setLocalScaling(btVector3(scalex, _phyheightmap->GetWorldHeight(), scalez));
+  _terrainShape->setLocalScaling(btVector3(scalex, _resHeight, scalez));
 
   printf("_terrainShape<%p>\n", _terrainShape);
 
@@ -184,6 +215,7 @@ void BulletShapeTerrainData::describeX(object::ObjectClass* clazz) {
   // E.2-walk: the asset-wired form — resolves the baked HeightField artifact + manifest
   // scale (extent_m/height_m) at shape creation; overrides the three direct props above.
   clazz->directProperty("hf_asset", &BulletShapeTerrainData::_hf_asset);
+  clazz->directProperty("render_dimension", &BulletShapeTerrainData::_render_dimension);
   //clazz->directProperty("VisualData", &BulletShapeTerrainData::_visualDataAccessor);
   ////////
 }

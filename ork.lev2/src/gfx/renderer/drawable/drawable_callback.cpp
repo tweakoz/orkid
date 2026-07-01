@@ -51,6 +51,14 @@ void CallbackDrawable::setEnqueueOnLayerCallback(Q2LCBType cb) {
 void CallbackDrawable::setEnqueueOnLayerLambda(Q2LLambdaType cb) {
   _enqueueOnLayerLambda = cb;
 }
+///////////////////////////////////////////////////////////////////////////////
+void CallbackDrawable::setOnGpuUpdateLambda(GpuUpdLambdaType cb) {
+  _onGpuUpdateLambda = cb;
+}
+void CallbackDrawable::onGpuUpdate(lev2::Context* ctx) const {
+  if (_onGpuUpdateLambda)
+    _onGpuUpdateLambda(ctx);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

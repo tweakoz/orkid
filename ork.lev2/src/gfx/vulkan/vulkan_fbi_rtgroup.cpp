@@ -431,5 +431,36 @@ void VkFrameBufferInterface::transitionDepthForSampling(rtgroup_ptr_t rtg) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Counterpart to transitionDepthForSampling: force the rtg back into normal
+// depth-WRITE mode. transitionDepthForSampling's read-only flag is one-shot
+// "reset by the next matching PopRtGroup" — but a compute-side depth sample
+// (e.g. the HZB build) transitions WITHOUT any push/pop pair, so the flag
+// leaks into the following depth-prepass. With _depthReadOnlyMode==true the
+// renderinfo sets resolveMode=NONE (vulkan_ctx_renderinfo.cpp), so the MSAA
+// depth is never resolved into the single-sample _imgobj that everything
+// samples — it stays at the clear value. A depth-WRITE pass calls this
+// before its push to guarantee the resolve fires. We clear ONLY the flag +
+// cached renderinfo; the actual layout transition back to an attachment
+// layout is handled by the next _pushRtGroup() → _transitionToRenderTarget().
+///////////////////////////////////////////////////////////////////////////////
+
+void VkFrameBufferInterface::transitionDepthForWriting(rtgroup_ptr_t rtg) {
+  if (not rtg) return;
+  auto try_impl = rtg->_impl.tryAsShared<VkRtGroupImpl>();
+  if (not try_impl) return;
+  auto impl = try_impl.value();
+  if (not impl->_depth_buffer_impl) return;
+
+  if (not impl->_depthReadOnlyMode) return; // already write-mode; nothing to do
+
+  impl->_depthReadOnlyMode = false;
+
+  // Drop cached renderinfo so the next renderinfo() rebuilds with the depth
+  // attachment in write mode and resolveMode = SAMPLE_ZERO.
+  impl->_rinfo_retain = nullptr;
+  impl->_rinfo_resume_retain = nullptr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::vulkan
 ///////////////////////////////////////////////////////////////////////////////

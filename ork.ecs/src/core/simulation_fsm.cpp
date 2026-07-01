@@ -20,6 +20,7 @@
 #include <ork/ecs/system.h>
 #include <ork/ecs/controller.h>
 #include <ork/ecs/scene.inl>
+#include <ork/ecs/system_stats.h> // perf HUD: per-system timing
 #include <ork/ecs/datatable.h>
 #include <ork/util/logger.h>
 #include <ork/kernel/profiler.h>
@@ -308,6 +309,7 @@ void Simulation::_buildStateMachine() {
     SystemLut gpu_systems;
     _systems.atomicOp([&](const SystemLut& syslut) { gpu_systems = syslut; });
     for (auto sys : gpu_systems) {
+      SystemStatScope _ss('g', sys.first); // perf HUD: per-system gpuUpdate time
       sys.second->_gpuUpdate(this, ctx.value());
     }
   };
@@ -378,8 +380,10 @@ void Simulation::_buildStateMachine() {
         }
         {
           OrkProfilerSampleScope(CHANNEL_MAIN, "ecs::fsm_render::render");
-          for (auto sys : render_systems)
+          for (auto sys : render_systems) {
+            SystemStatScope _ss('r', sys.first); // perf HUD: per-system render time
             sys.second->_render(this, _currentdrwev);
+          }
         }
         {
           OrkProfilerSampleScope(CHANNEL_MAIN, "ecs::fsm_render::endRender");

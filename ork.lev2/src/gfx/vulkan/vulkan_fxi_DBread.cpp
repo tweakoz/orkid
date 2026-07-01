@@ -251,6 +251,9 @@ void read_stateblocks(VkFxShaderFile* vulkan_shaderfile, chunkfile::InputStream*
         bool enabled = (value == "ON" || value == "true");
         rstate->setWriteMaskRGB(enabled);
         rstate->setWriteMaskA(enabled);
+      } else if (key == "AlphaToCoverage") {
+        // A2C: fragment alpha -> MSAA coverage mask (order-independent foliage; needs an MSAA RTG)
+        rstate->setAlphaToCoverage(value == "ON" || value == "true");
       }
       // Add more state items as needed
     }
@@ -331,9 +334,11 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     for (size_t j = 0; j < num_samplers; j++) {
       auto str_sampler_datatype   = uniforms_input_stream->ReadIndexedString(chunkreader);
       auto str_sampler_identifier = uniforms_input_stream->ReadIndexedString(chunkreader);
+      auto sampler_binding_id     = uniforms_input_stream->ReadItem<size_t>(); // real SPIR-V binding (after the SSBOs)
       auto vk_samp                = std::make_shared<VkFxShaderUniformSampler>();
       vk_samp->_datatype          = str_sampler_datatype;
       vk_samp->_identifier        = str_sampler_identifier;
+      vk_samp->_binding_id        = int(sampler_binding_id);
       auto ork_param              = std::make_shared<FxShaderParam>();
       vk_samp->_orkparam          = ork_param;
       vk_samp->_orkparam->_name   = str_sampler_identifier;

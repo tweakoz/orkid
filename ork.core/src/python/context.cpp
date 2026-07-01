@@ -519,6 +519,11 @@ Context2::~Context2() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context2::bindSubInterpreter() {
+  // Held until unbindSubInterpreter — serializes the whole sub-interp critical
+  // section across the update + render threads (see _subInterpMutex). Acquire the
+  // C++ mutex BEFORE touching any Python thread-state (consistent lock order: mutex
+  // then GIL — no deadlock, the sub-GIL is only ever taken after this lock).
+  _subInterpMutex.lock();
   PyThreadState* current = _PyThreadState_UncheckedGet();
   if (current) {
     _saveInterpreter = PyEval_SaveThread();
@@ -535,6 +540,7 @@ void Context2::unbindSubInterpreter() {
   if (_saveInterpreter) {
     PyEval_RestoreThread(_saveInterpreter);
   }
+  _subInterpMutex.unlock();   // paired with the lock() in bindSubInterpreter
 }
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -77,6 +77,24 @@ bool VkContext::HaveExtension(const std::string& extname) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Max hardware MSAA sample count usable for BOTH color and depth render targets.
+// Intersect the two device limits and return the highest power-of-2 supported
+// (Apple/MoltenVK typically caps at 4x, sometimes 8x). Used to clamp the requested
+// --msaa level so we never ask for an unsupported sample count.
+///////////////////////////////////////////////////////////////////////////////
+int VkContext::msaaMaxSamples() {
+  if (not _vkdeviceinfo)
+    return 1;
+  VkSampleCountFlags flags = _vkdeviceinfo->_devprops.limits.framebufferColorSampleCounts &
+                             _vkdeviceinfo->_devprops.limits.framebufferDepthSampleCounts;
+  if (flags & VK_SAMPLE_COUNT_16_BIT) return 16;
+  if (flags & VK_SAMPLE_COUNT_8_BIT)  return 8;
+  if (flags & VK_SAMPLE_COUNT_4_BIT)  return 4;
+  if (flags & VK_SAMPLE_COUNT_2_BIT)  return 2;
+  return 1;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Vulkan Context Internal Init
 ///////////////////////////////////////////////////////////////////////////////
 

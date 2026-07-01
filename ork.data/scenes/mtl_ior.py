@@ -68,16 +68,16 @@ class IorScene(Scene):
 
     self.entity("sphere_ior_low",
       transform=Transform(translation=vec3(-5.5, 0, 0)),
-      components=[SG.component(nodes={
+      components=[self.spinner(), SG.component(nodes={
         "n": {"drawable": make_drawable("dr_ior_low", mat_low)},
       })])
     self.entity("sphere_ior_mid",
       transform=Transform(translation=vec3( 0, 0, 0)),
-      components=[SG.component(nodes={
+      components=[self.spinner(), SG.component(nodes={
         "n": {"drawable": make_drawable("dr_ior_mid", mat_mid)},
       })])
     self.entity("sphere_ior_high",
       transform=Transform(translation=vec3(+5.5, 0, 0)),
-      components=[SG.component(nodes={
+      components=[self.spinner(), SG.component(nodes={
         "n": {"drawable": make_drawable("dr_ior_high", mat_high)},
       })])

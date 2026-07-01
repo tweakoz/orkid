@@ -125,6 +125,13 @@ void RasterState::setRasterizerDiscard(bool b){
   _rasterizerDiscard = b;
 }
 /////////////////////////////////////////////////////////////////////////
+void RasterState::setAlphaToCoverage(bool b){
+  if(b != _alphaToCoverage){
+    _impl.clear();
+  }
+  _alphaToCoverage = b;
+}
+/////////////////////////////////////////////////////////////////////////
 void RasterState::setBlendEnable(bool b){
   _updateBlendingTechnique(false);
   if(b != _blendEnable){

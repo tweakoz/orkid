@@ -83,7 +83,7 @@ class EllipticalExposedSystem(ParticleSystem):
       0.5: vec4(.2, .4, 1, 1),
       1.0: vec4(0, 0, 0, 1),
     })
-    self.material.modulation_texture = Texture.load("src://effect_textures/knob2")
+    self.material.modtexture_asset = "src://effect_textures/knob2"  # serializable asset (round-trips to the ECS player; live modulation_texture does not)
 
     # ---- renderer ----
 

@@ -596,7 +596,7 @@ StorageInterface <|[
    R_CURLY
  ]|>
  
- stateblock_key <| sel{ KW_BLENDMODE KW_CULLTEST KW_DEPTHTEST KW_DEPTHMASK } |>
+ stateblock_key <| sel{ KW_BLENDMODE KW_CULLTEST KW_DEPTHTEST KW_DEPTHMASK KW_ALPHATOCOVERAGE } |>
 
 sblock_item <|[
     stateblock_key EQUALS IDENTIFIER SEMICOLON

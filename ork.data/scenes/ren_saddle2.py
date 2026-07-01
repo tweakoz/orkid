@@ -68,6 +68,7 @@ class TwoSaddlesScene(Scene):
 
     drawable_a = self.asset.VdbGridToDrawable(
         "saddle_drawable_a",
+        flip_windings = False,
         grid     = saddle_sdf,
         material = mat_a,
         iso      = 0.0)
@@ -91,6 +92,7 @@ class TwoSaddlesScene(Scene):
 
     drawable_b = self.asset.VdbGridToDrawable(
         "saddle_drawable_b",
+        flip_windings = False,
         grid     = saddle_sdf,
         material = mat_b,
         iso      = 0.0)

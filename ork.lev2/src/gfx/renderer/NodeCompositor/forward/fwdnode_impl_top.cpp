@@ -11,6 +11,7 @@
 // assembly (forward decl in lev2_types.h isn't enough — we call a
 // member function, so require the full Scene definition here).
 #include <ork/lev2/gfx/scenegraph/scenegraph.h>
+#include <ork/lev2/gfx/renderer/hzb.h>
 
 namespace ork::lev2 {
 extern appinitdata_ptr_t _ginitdata;
@@ -38,6 +39,28 @@ ForwardPbrNodeImpl::~ForwardPbrNodeImpl() {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Build (or rebuild) the MSAA-aware primary RtgSet. --msaa LEVEL (0=off,1=2x,...) -> hw sample count,
+// clamped to the device max. RGBA32F is too heavy to multisample, so color drops to RGBA16F when MSAA
+// is on. Records the level it built at (_msaa_level_built) so DoRender can rebuild if the scene `msaa=`
+// param arrives AFTER this node's early doGpuInit() build (the param set order vs node init isn't fixed).
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void ForwardPbrNodeImpl::_buildPrimaryRtgs(lev2::Context* context, int iw, int ih) {
+  int   level    = _ginitdata ? _ginitdata->_msaa_samples : 0;
+  int   reqcount = msaaEnumToInt(msaaLevelToSamples(level));
+  int   devmax   = context->msaaMaxSamples();
+  int   clamped  = (reqcount < devmax) ? reqcount : devmax;
+  auto  e_msaa   = msaaSamplesFromInt(clamped);
+  bool  msaa_on  = (clamped > 1);
+  EBufferFormat efmt = msaa_on ? EBufferFormat::RGBA16F : EBufferFormat::RGBA32F;
+  _msaa_level_built  = level;
+  if (msaa_on)
+    logchan_pbr_fwd->log("ForwardPBR MSAA: level<%d> -> %dx (device max %d), color=RGBA16F", level, clamped, devmax);
+  _rtgs_primary = std::make_shared<RtgSet>(context, iw, ih, e_msaa, "rtgs-main", "color"_crcu);
+  _rtgs_primary->addBuffer("ForwardRt0", efmt);
+  _rtgs_primary->addBuffer("ForwardRt1", efmt);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void ForwardPbrNodeImpl::init(lev2::Context* context, int iw, int ih) {
 
@@ -50,19 +73,11 @@ void ForwardPbrNodeImpl::init(lev2::Context* context, int iw, int ih) {
 
     auto pbrcommon = _node->_pbrcommon;
 
-    // P3.D DEBUG: hard-coded RGBA32F to isolate banding cause.
-    // Ignores _useFloatColorBuffer flag. Revert after diagnosis.
-    EBufferFormat efmt = EBufferFormat::RGBA32F;
     (void)pbrcommon;
 
-    auto e_msaa = intToMsaaEnum(_ginitdata->_msaa_samples);
-    _rtgs_primary  = std::make_shared<RtgSet>(context, iw, ih, e_msaa, "rtgs-main", "color"_crcu);
-    _rtgs_primary->addBuffer("ForwardRt0", efmt);
-    // PBR2 Phase 3 (P3.B) — second MRT attachment for diffuse irradiance.
-    // Every forward-pass fragment shader writes to both target0 and target1.
-    // Target1 unused downstream for now (SSSS in P3.D will consume it);
-    // P3.B verifies the plumbing end-to-end with a sentinel constant write.
-    _rtgs_primary->addBuffer("ForwardRt1", efmt);
+    // The MSAA-aware primary RtgSet (color MRTs + msaa). Built here AND re-buildable per-frame in
+    // DoRender if the scene `msaa=` level changes after this early init (see _buildPrimaryRtgs).
+    _buildPrimaryRtgs(context, iw, ih);
     static int buffer_index = 0;
     //_rtgs_primary->_debugName = FormatString("FwdNodePri%d", buffer_index++);
 
@@ -282,11 +297,32 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
   _currentWidth  = drawdata.property("OutputWidth"_crcu).get<int>();
   _currentHeight = drawdata.property("OutputHeight"_crcu).get<int>();
 
+  // The scene `msaa=` level can land AFTER this node's early doGpuInit() build (param-set order
+  // vs node init isn't fixed). Rebuild the primary RtgSet here, once, when the level changed.
+  if (_ginitdata and _ginitdata->_msaa_samples != _msaa_level_built) {
+    _buildPrimaryRtgs(context, _currentWidth, _currentHeight);
+  }
+
   uint64_t rtg_key = _node->_bufferKey;
   _rtg_primary    = _rtgs_primary->fetch(rtg_key);
 
   if (_rtg_primary->width() != _currentWidth or _rtg_primary->height() != _currentHeight) {
     _rtg_primary->Resize(_currentWidth, _currentHeight);
+  }
+
+  // 1-phase occlusion HZB — built at FRAME START from LAST frame's depth. _rtg_primary is keyed-fetched
+  // (line above), so before this frame's passes overwrite it, its depth holds the PREVIOUS frame's
+  // resolved + GPU-COMPLETE depth (that frame's command buffer already presented). Building here (not at
+  // frame end) fixes the hazard where the HZB's OWN compute submission ran before this frame's depth
+  // passes + the sampling-layout transition. The per-view cull reads the resulting HZB SSBO off the Scene
+  // next preRender. (MSAA: also depends on the depth resolve into the single-sample _imgobj working.)
+  if (auto* hzbscene = _node->_pbrcommon ? _node->_pbrcommon->_scene : nullptr) {
+    if (_rtg_primary and _rtg_primary->_depthBuffer and _rtg_primary->_depthBuffer->_texture) {
+      if (not hzbscene->_hzb)
+        hzbscene->_hzb = std::make_shared<ork::lev2::HZBBuilder>();
+      FBI->transitionDepthForSampling(_rtg_primary);
+      hzbscene->_hzb->build(context, _rtg_primary->_depthBuffer->_texture);
+    }
   }
 
   //////////////////////////////////////////////////////

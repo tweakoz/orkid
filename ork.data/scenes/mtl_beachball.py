@@ -19,6 +19,16 @@ class BeachBallScene(Scene):
     super().__init__()                       # self.SG = default ForwardPBR scenegraph
     A = self.asset
 
+    self.scenegraph(
+        preset            = "ForwardPBR",
+        skybox_path       = "<ork_envmaps2>/blender_forest.xir",
+        SkyboxIntensity   = 1.0,
+        DiffuseIntensity  = 1.0,
+        SpecularIntensity = 1.0,
+        AmbientLight      = vec3(0.00),
+        msaa = 2,
+        ssaa = 1)
+
     mat = A.Ptex3d("beach_mtl",
                    dsl_class=BeachBall,
                    panels=6,
@@ -30,4 +40,4 @@ class BeachBallScene(Scene):
 
     self.entity("beachball",
                 transform={"translation": vec3(0, 0, 0)},
-                components=[self.SG.component(nodes={"n": {"drawable": drw}})])
+                components=[self.spinner(), self.SG.component(nodes={"n": {"drawable": drw}})])

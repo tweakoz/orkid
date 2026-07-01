@@ -13,6 +13,8 @@
 
 #include <math.h>
 #include <algorithm>
+#include <functional>
+#include <vector>
 
 namespace ork::lev2 {
 ////////////////////////////////////////////////////////////////
@@ -221,6 +223,140 @@ void Image::resizedOf(const Image& inp, int w, int h) {
       printf("unknown format <%08x>\n", (uint32_t) inp._format );
       OrkAssert(false);
       break;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// resampledOf — high-quality separable filtered resample (anti-aliased, arbitrary ratio, float-capable).
+// Two passes (horizontal then vertical). The filter support STRETCHES with the reduction ratio, so a
+// downsample integrates the whole source footprint per output texel (no aliasing — unlike fixed 2x2
+// bilinear). Texel-center aligned to match the renderer's heights sampling ((t+0.5)/dim). Runs in float
+// internally, so the float heightmap formats (R32F / RGB32F / RGBA32F) work as well as 8-bit.
+///////////////////////////////////////////////////////////////////////////////
+namespace {
+
+inline double _rs_sinc(double x) {
+  if (x == 0.0)
+    return 1.0;
+  const double PI = 3.14159265358979323846;
+  x *= PI;
+  return std::sin(x) / x;
+}
+
+// cubic filter family parameterized by (B,C): BSpline=(1,0), Mitchell=(1/3,1/3), CatmullRom=(0,1/2).
+inline double _rs_cubic(double x, double B, double C) {
+  x         = std::abs(x);
+  double x2 = x * x, x3 = x2 * x;
+  if (x < 1.0)
+    return ((12.0 - 9.0 * B - 6.0 * C) * x3 + (-18.0 + 12.0 * B + 6.0 * C) * x2 + (6.0 - 2.0 * B)) / 6.0;
+  if (x < 2.0)
+    return ((-B - 6.0 * C) * x3 + (6.0 * B + 30.0 * C) * x2 + (-12.0 * B - 48.0 * C) * x + (8.0 * B + 24.0 * C)) / 6.0;
+  return 0.0;
+}
+
+struct RsFilter {
+  double _radius;
+  std::function<double(double)> _k;
+};
+
+RsFilter _rs_filterDef(Image::ResampleFilter f) {
+  using RF = Image::ResampleFilter;
+  switch (f) {
+    case RF::BOX:         return {0.5, [](double x) { return (std::abs(x) <= 0.5) ? 1.0 : 0.0; }};
+    case RF::TRIANGLE:    return {1.0, [](double x) { x = std::abs(x); return (x < 1.0) ? (1.0 - x) : 0.0; }};
+    case RF::BSPLINE:     return {2.0, [](double x) { return _rs_cubic(x, 1.0, 0.0); }};
+    case RF::MITCHELL:    return {2.0, [](double x) { return _rs_cubic(x, 1.0 / 3.0, 1.0 / 3.0); }};
+    case RF::CATMULL_ROM: return {2.0, [](double x) { return _rs_cubic(x, 0.0, 0.5); }};
+    case RF::LANCZOS3:    return {3.0, [](double x) { x = std::abs(x); return (x < 3.0) ? (_rs_sinc(x) * _rs_sinc(x / 3.0)) : 0.0; }};
+  }
+  return {1.0, [](double x) { x = std::abs(x); return (x < 1.0) ? (1.0 - x) : 0.0; }};
+}
+
+struct RsContrib {
+  int _start = 0;
+  std::vector<float> _w;
+};
+
+// per-output-pixel source taps + normalized weights for one axis (texel-center, ratio-scaled support).
+std::vector<RsContrib> _rs_axis(int src, int dst, const RsFilter& fd) {
+  std::vector<RsContrib> out(dst);
+  const double scale   = double(dst) / double(src);
+  const double fscale  = (scale < 1.0) ? scale : 1.0; // stretch filter on downsample => anti-alias
+  const double support = fd._radius / fscale;
+  for (int i = 0; i < dst; i++) {
+    const double center = (double(i) + 0.5) / scale - 0.5; // dst -> src texel center
+    const int lo        = int(std::ceil(center - support));
+    const int hi        = int(std::floor(center + support));
+    RsContrib c;
+    c._start   = lo;
+    double sum = 0.0;
+    for (int s = lo; s <= hi; s++) {
+      double w = fd._k((double(s) - center) * fscale);
+      c._w.push_back(float(w));
+      sum += w;
+    }
+    if (sum > 0.0)
+      for (auto& w : c._w)
+        w = float(double(w) / sum);
+    out[i] = std::move(c);
+  }
+  return out;
+}
+
+} // anonymous namespace
+
+void Image::resampledOf(const Image& inp, int w, int h, ResampleFilter filter) {
+  const int nc   = int(inp._numcomponents);
+  const bool f32 = (inp._bytesPerChannel == 4);
+  const bool u8  = (inp._bytesPerChannel == 1);
+  OrkAssert(f32 or u8); // float (R32F/RGB32F/RGBA32F) or 8-bit; convert 16-bit/half first
+  const int sw = int(inp._width);
+  const int sh = int(inp._height);
+
+  this->init(w, h, inp._numcomponents, inp._bytesPerChannel);
+  _format    = inp._format;
+  _debugName = inp._debugName + "_resampled";
+
+  const RsFilter fd = _rs_filterDef(filter);
+  const auto cx     = _rs_axis(sw, w, fd);
+  const auto cy     = _rs_axis(sh, h, fd);
+
+  auto getf = [&](int x, int y, int c) -> float {
+    x = std::clamp(x, 0, sw - 1);
+    y = std::clamp(y, 0, sh - 1);
+    return f32 ? inp.pixel32f(x, y)[c] : (float(inp.pixel8(x, y)[c]) * (1.0f / 255.0f));
+  };
+
+  // pass 1 (horizontal): inp(sw x sh) -> tmp(w x sh), in float
+  std::vector<float> tmp(size_t(w) * size_t(sh) * size_t(nc), 0.0f);
+  for (int y = 0; y < sh; y++) {
+    for (int x = 0; x < w; x++) {
+      const RsContrib& c = cx[x];
+      for (int ch = 0; ch < nc; ch++) {
+        double acc = 0.0;
+        for (size_t k = 0; k < c._w.size(); k++)
+          acc += double(c._w[k]) * double(getf(c._start + int(k), y, ch));
+        tmp[(size_t(y) * size_t(w) + size_t(x)) * size_t(nc) + size_t(ch)] = float(acc);
+      }
+    }
+  }
+
+  // pass 2 (vertical): tmp(w x sh) -> this(w x h)
+  for (int y = 0; y < h; y++) {
+    const RsContrib& c = cy[y];
+    for (int x = 0; x < w; x++) {
+      for (int ch = 0; ch < nc; ch++) {
+        double acc = 0.0;
+        for (size_t k = 0; k < c._w.size(); k++) {
+          const int sy = std::clamp(c._start + int(k), 0, sh - 1);
+          acc += double(c._w[k]) * double(tmp[(size_t(sy) * size_t(w) + size_t(x)) * size_t(nc) + size_t(ch)]);
+        }
+        if (f32)
+          this->pixel32f(x, y)[ch] = float(acc);
+        else
+          this->pixel8(x, y)[ch] = uint8_t(std::clamp(float(acc) * 255.0f + 0.5f, 0.0f, 255.0f));
+      }
+    }
   }
 }
 

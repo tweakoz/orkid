@@ -308,7 +308,7 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
       hn[i]   = t < 0.0f ? 0.0f : (t > 1.0f ? 1.0f : t);
     }
     fxi->unmapStorageBuffer(mapping.get());
-    printf("[terrain bake] field stats: min<%g> max<%g> mean<%g>  (normalized to [min,max])\n",
+    if(0)printf("[terrain bake] field stats: min<%g> max<%g> mean<%g>  (normalized to [min,max])\n",
            vmin, vmax, vmean);
 
     // split the capture's channel list ("height", or "height,normal", ...).
@@ -409,7 +409,7 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
       // heightfields/masks/normals are LINEAR data — tag PNG linear (engine PNG default
       // is sRGB). EXR is always linear float.
       oimg.writeToFile(ork::file::Path(path.c_str()), /*linear_colorspace=*/ as_png);
-      printf("[terrain bake] wrote <%s> (%dx%d, %s/%s)\n", path.c_str(), w, h,
+      if(0)printf("[terrain bake] wrote <%s> (%dx%d, %s/%s)\n", path.c_str(), w, h,
              ch.c_str(), as_png ? "png" : "exr");
 
       // one FieldStats per emitted channel (all derive from the same field), so the

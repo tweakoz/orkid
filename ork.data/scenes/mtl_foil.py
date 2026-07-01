@@ -22,6 +22,15 @@ class FoilScene(Scene):
     super().__init__()                       # self.SG = default ForwardPBR scenegraph
     A = self.asset
 
+    SG = self.scenegraph(
+        preset             = "ForwardPBR",
+        skybox_path        = "<ork_envmaps2>/blender_forest.xir",
+        SkyboxIntensity    = 1.0,
+        DiffuseIntensity   = 1.0,
+        SpecularIntensity  = 1.0,
+        AmbientLight       = vec3(0.0),
+        msaa = 3)
+
     mat = A.Ptex3d("foil_mtl",
                    dsl_class=Foil,
                    scale=6.0,
@@ -33,4 +42,4 @@ class FoilScene(Scene):
 
     self.entity("foil",
                 transform={"translation": vec3(0, 0, 0)},
-                components=[self.SG.component(nodes={"n": {"drawable": drw}})])
+                components=[self.spinner(), self.SG.component(nodes={"n": {"drawable": drw}})])

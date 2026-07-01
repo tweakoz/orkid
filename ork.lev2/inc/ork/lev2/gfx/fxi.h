@@ -104,7 +104,11 @@ public:
   }
   virtual void bindUniformBuffer(const FxUniformBlock* block, FxUniformBuffer* buffer) {
   }
-  virtual void bindStorageBuffer(const FxShaderStorageBlock* block, FxShaderStorageBuffer* buffer) {
+  // byte_offset binds a SUB-RANGE of the buffer (descriptor reads [byte_offset, end)). Must satisfy
+  // the device minStorageBufferOffsetAlignment. The SAME buffer at distinct offsets resolves to
+  // distinct descriptor sets (the offset is part of the cache key). 0 = whole buffer (legacy).
+  virtual void bindStorageBuffer(
+      const FxShaderStorageBlock* block, FxShaderStorageBuffer* buffer, size_t byte_offset = 0) {
   }
 
   FxInterface();

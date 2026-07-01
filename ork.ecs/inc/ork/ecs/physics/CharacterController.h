@@ -124,6 +124,10 @@ public:
   // PythonSystem; the scene's input SCRIPT translates user actions into THESE — so the
   // keymap is scene data, and this system knows nothing about keys.
   //   MoveInput  {x: float, z: float}   drive in heading space (z fwd/back, x strafe), -1..1
+  //   MoveBasisYaw {yaw: float}         VR ONLY: override the MOVE basis with this world yaw
+  //              (radians) instead of the per-character heading — so WASD follows the HMD GAZE
+  //              (the VR layer feeds gaze_yaw + playspace_yaw). The camera/heading are untouched;
+  //              desktop never sends it. Sticky once set (resent each tick by the VR script).
   //   TurnInput  {rate: float}          heading yaw rate scale, -1..1
   //   PitchInput {rate: float}          camera pitch rate scale, -1..1 (positive = camera up)
   //   Jump       {}                     one-shot
@@ -131,6 +135,13 @@ public:
   //               turn_decay?, drive_friction?, rest_friction?: float}
   //              runtime OVERRIDES of the reflected tuning (any subset) — the input
   //              script owns the FEEL, no C++ recompile, no scene re-serialize.
+  //   SetAimDir  {dx, dy, dz: float}   VR ONLY: override the look direction that CameraRay
+  //              returns (the VR layer feeds the HMD gaze + a lob pitch) — so the scene's
+  //              `/`-shoot aims down the VR camera with no VR knowledge in the input script.
+  //              Sticky once set; desktop never sends it so CameraRay returns the real camera.
+  //   SetSprint  {scale: float}        transient multiplier on BOTH move_force and max_speed
+  //              (a sprint/boost held by an input script — e.g. shift). 1.0 = normal; resent
+  //              each tick (a script drives it from the live key state).
   // SYNCHRONOUS QUERIES (system-script context — the script runs on the update
   // thread, so system.request() is a direct call, not a controller round-trip):
   //   CameraRay  {} -> {pos: vec3, dir: vec3}  the current eye + full 3D look
@@ -138,10 +149,13 @@ public:
   //              a projectile, raycast, ...) — this system only owns the camera
   //              math it already computes.
   static constexpr auto MoveInput  = "MoveInput"_ecstok;
+  static constexpr auto MoveBasisYaw = "MoveBasisYaw"_ecstok;
   static constexpr auto TurnInput  = "TurnInput"_ecstok;
   static constexpr auto PitchInput = "PitchInput"_ecstok;
   static constexpr auto Jump       = "Jump"_ecstok;
   static constexpr auto SetParams  = "SetParams"_ecstok;
+  static constexpr auto SetAimDir  = "SetAimDir"_ecstok;
+  static constexpr auto SetSprint  = "SetSprint"_ecstok;
   static constexpr auto CameraRay  = "CameraRay"_ecstok;
 
   CharacterControllerSystem(const CharacterControllerSystemData& data, Simulation* psi);
@@ -162,6 +176,12 @@ protected:
   // semantic action state (written by _onNotify from the input script, read by _onUpdate)
   float _moveX = 0.0f, _moveZ = 0.0f; // strafe / fwd drive, -1..1
   float _turn = 0.0f, _pitchRate = 0.0f;
+  // VR view-relative drive: when valid (MoveBasisYaw message), the walk force uses _moveBasisYaw
+  // as the move basis instead of the per-character heading — so WASD follows the HMD gaze. The
+  // camera/heading are unchanged; desktop never sends it so _moveBasisValid stays false.
+  float _moveBasisYaw   = 0.0f;
+  bool  _moveBasisValid = false;
+  float _sprintScale    = 1.0f; // SetSprint: transient multiplier on move_force + max_speed (shift-boost)
   // smoothed turn/pitch rates: instant attack while held, exp tail (TurnDecay) on release
   float _turnVel = 0.0f, _pitchVel = 0.0f;
   float _jumpTTL = 0.0f; // buffered jump request (seconds remaining)
@@ -173,6 +193,10 @@ protected:
   int _dbgNotifies = 0;                                 // first-N semantic-message log
   // latest camera ray (stashed each update by the camera publish; consumed by Shoot)
   fvec3 _lastEye, _lastLook = fvec3(0, 0, -1);
+  // VR aim override (SetAimDir): when valid, CameraRay returns this look dir (HMD gaze + lob)
+  // instead of _lastLook. The eye stays _lastEye (the walker eye — fine, the ball spawns ahead).
+  fvec3 _aimLook        = fvec3(0, 0, -1);
+  bool  _aimValid       = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

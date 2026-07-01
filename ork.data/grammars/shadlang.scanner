@@ -132,6 +132,7 @@ KW_BLENDMODE        <| "BlendMode" |>
 KW_CULLTEST         <| "CullTest" |>
 KW_DEPTHTEST        <| "DepthTest" |>
 KW_DEPTHMASK        <| "DepthMask" |>
+KW_ALPHATOCOVERAGE  <| "AlphaToCoverage" |>
 KW_FXCONFIG         <| "fxconfig" |>
 KW_LIBBLOCK         <| "libblock" |>
 KW_TYPEBLOCK        <| "typeblock" |>

@@ -154,6 +154,26 @@ class HeightField:
         from .ops import expr_field
         self.capture(expr_field(P.saturate(self._eval_expr(expr))), channel, cache=cache)
 
+    def relax_uv(self, node, *, strength=1.0, iterations=0):
+        """EQUAL-AREA UV RELAXATION (the slope-stretch fix). Adds a T.relax_uv on the height
+        `node` and captures its two channels — "relaxed_uv" (RGBA: relaxed uv.xy + geometric
+        normal.x,z) and "binormal" (RGBA: relaxed binormal.xyz). The chunk drawable loads + (decouple)
+        downsamples these into per-vertex SSBO arrays so the VS reads uv0 + the precomputed tangent
+        frame: steep faces get an equal texel budget (texels/physical-area ~uniform) and the VS goes
+        tap-light. Pure function of the height -> cook-cached. One line after capturing height:
+
+            self.capture(h, "height")
+            self.relax_uv(h)
+        """
+        from .ops import relax_uv as _relax_op
+        r = _relax_op(node, strength=strength, iterations=iterations)
+        # cache=True: the relax is a pure function of the height -> cook-cacheable. capture() defaults to
+        # cache=False which disables the disk cook cache for the WHOLE bake (any one cache=False turns it
+        # off) — so without this the entire erosion graph recomputes every run (the slow non-cached startup).
+        self.capture(r.uv, "relaxed_uv", cache=True)
+        self.capture(r.binormal, "binormal", cache=True)
+        return r
+
     def hfdisplacement(self, expr, into, *extra, mask=None):
         """Displace the height field `into` by a ptex3d expression that READS the current
         height: the bake sets ctx.P_object.y / ctx.P.y = in0 * height_m (PHYSICAL), so the

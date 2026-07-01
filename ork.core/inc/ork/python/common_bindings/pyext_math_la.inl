@@ -20,6 +20,17 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::python {
 ///////////////////////////////////////////////////////////////////////////////
+// These bindings compile against TWO `py::` flavors — pybind11 (most modules) and obind/nanobind
+// (the ecssim module, which #defines ORK_PY_IS_OBIND before including this). obind has no buffer
+// protocol, and spells the factory constructor `new_` where pybind11 spells it `init` — bridge both.
+#if defined(ORK_PY_IS_OBIND)
+#  define ORK_PY_BUFPROTO          /* obind: no buffer-protocol tag */
+#  define ORK_PY_INIT  py::new_    /* obind factory constructor */
+#else
+#  define ORK_PY_BUFPROTO  , pybind11::buffer_protocol()
+#  define ORK_PY_INIT  py::init
+#endif
+///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
 void pyinit_math_la_t_vec(
@@ -438,7 +449,7 @@ void pyinit_math_la_t(
 
   /////////////////////////////////////////////////////////////////////////////////
   auto mtx3_type = //
-      py::class_<mat3_t>(module_core, mat3_name.c_str(), pybind11::buffer_protocol())
+      py::class_<mat3_t>(module_core, mat3_name.c_str() ORK_PY_BUFPROTO)
           //////////////////////////////////////////////////////////////////////////
           .def_buffer([](mat3_t& mtx) -> pybind11::buffer_info {
             auto data = mtx.asArray(); // Pointer to buffer
@@ -496,8 +507,7 @@ void pyinit_math_la_t(
   auto mat4_type = //
       py::class_<mat4_t>(
           module_core,
-          mat4_name.c_str(),
-          pybind11::buffer_protocol(),
+          mat4_name.c_str() ORK_PY_BUFPROTO,
           "4x4 GLM derived matrix class supporting buffer protocol.\n\n"
           "This class represents a 4x4 matrix and supports the buffer protocol,\n"
           "allowing it to be used in contexts that require direct buffer access.\n"
@@ -697,7 +707,7 @@ void pyinit_math_la_t(
   type_codec->registerStdCodecBIG<mat4_t>(mat4_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto ray3_type = //
-      py::class_<ray3_t>(module_core, ray3_name.c_str(), pybind11::buffer_protocol())
+      py::class_<ray3_t>(module_core, ray3_name.c_str() ORK_PY_BUFPROTO)
           //////////////////////////////////////////////////////////////////////////
           .def(py::init<const vec3_t&, const vec3_t&>())
           .def_property_readonly("origin", [](ray3_t ray) -> vec3_t { return ray.mOrigin; })
@@ -721,7 +731,7 @@ void pyinit_math_la_t(
   type_codec->registerStdCodec<fray3_ptr_t>(ray3_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto plane_t_type =
-      py::class_<plane_t>(module_core, plane_name.c_str(), pybind11::buffer_protocol())
+      py::class_<plane_t>(module_core, plane_name.c_str() ORK_PY_BUFPROTO)
           //////////////////////////////////////////////////////////////////////////
           .def_buffer([](plane_t& plane) -> pybind11::buffer_info {
             auto data = &plane.n.x; // Pointer to buffer
@@ -785,7 +795,7 @@ void pyinit_math_la_t(
   auto frustum_type =
       py::class_<frustum_t, frustum_ptr_t>(module_core, frustum_name.c_str())
           .def(py::init<>())
-          .def(py::init([](const mat4_t& VMatrix, const mat4_t& PMatrix) {
+          .def(ORK_PY_INIT([](const mat4_t& VMatrix, const mat4_t& PMatrix) {
             auto rval = std::make_shared<frustum_t>();
             rval->set(VMatrix, PMatrix);
             return rval;

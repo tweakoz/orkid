@@ -1128,12 +1128,6 @@ void OrkEzApp::_mainThreadLoopBegin() {
   ctx->_onGpuInit = [this](lev2::Context* context) {
     //logchan_ezapp->log("BEGIN OrkEzApp::_onGpuInit");
 
-    auto vrdev = ork::lev2::orkidvr::device();
-    if (vrdev) {
-      vrdev->_scan_out_predictor = context->getScanoutPredictor();
-      //logchan_ezapp->log("Setting gfx context<%p> to vrdevice<%p>.", (void*)context, (void*)vrdev.get());
-    }
-
     context->beginPrimaryCommandBuffer();
     //logchan_ezapp->log("_initdata->_enable_audio<%d>", (int)_initdata->_enable_audio);
 

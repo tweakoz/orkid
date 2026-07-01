@@ -46,7 +46,7 @@ def resolve_asset(name):   # CLI: list + exit on unknown (the reload path calls 
 ################################################################################
 
 def _build_app(asset_cls, *, asset_path, path_mode, asset_modname, val_argv, label,
-               fullscreen=False, watch=False, ssaa=1):
+               fullscreen=False, watch=False, ssaa=None, msaa=None):
   from ork.app.application import ComponentizedApplication
   from ork.app.std_scenegraph import StandardSceneGraphComponent
   from ork.hypergraph.dflow.hypermesh import make_drawable
@@ -75,11 +75,18 @@ def _build_app(asset_cls, *, asset_path, path_mode, asset_modname, val_argv, lab
       self._env_cache = {}; self._env_idx = -1
       self.SGC = self.addComponent(
         "std_scenegraph", StandardSceneGraphComponent,
-        eye=vec3(6, 5, 9), tgt=vec3(0, 0, 0), up=vec3(0, 1, 0),
-        grid_variant=None, ssaa=ssaa, post_nodes=[self._aces, self._hsvg])
+        eye=vec3(6, 5, 9), tgt=vec3(0, 0, 0), up=vec3(0, 1, 0), 
+        grid_variant=None, 
+        msaa=msaa,
+        ssaa=ssaa, post_nodes=[self._aces, self._hsvg])
       # in --watch mode keep the window above the editor/terminal for the iterative edit loop.
+      # MSAA is an APPINIT param (-> appinit._msaa_samples, the forward node's MSAA RtGroup), NOT a
+      # scenegraph param like ssaa (which the SGC sets above). 0=off,1=2x,2=4x,3=8x,4=16x. Needed for
+      # alpha-to-coverage foliage.
       self.createEzApp(name="OrkHypermeshViewer",
                        fullscreen=fullscreen,
+                       ssaa=ssaa,
+                       msaa=msaa,
                        enable_always_on_top=watch)
 
     def _onGpuInit(self, ctx):
@@ -107,20 +114,32 @@ def _build_app(asset_cls, *, asset_path, path_mode, asset_modname, val_argv, lab
       # the triangulator + per-frame in-frame hook (onPreRender) re-evaluate the graph when animated.
       from ork.hypergraph.assets.materials.hypermesh import GroupView, TopoView
       from ork.hypergraph.assets.materials.terrain.solid import Solid
+      from ork.hypergraph.dflow.hypermesh import HmMaterial as _HmMat
       _white = vec3(1.0, 1.0, 1.0)
-      self._mat_modes = [("asset",  type(self._asset).MATERIAL_CLASS, vec3(0.70, 0.74, 0.80), 0.5,  None),
-                         ("white",  Solid,     _white, 0.5,  0.0),
-                         ("mirror", Solid,     _white, 0.0,  1.0),
-                         ("mirror2", Solid,     _white, 0.2,  1.0),
-                         ("x3", Solid,     vec3(0.3, 0.7, 0.3), 1.0,  0.0),
-                         ("groups", GroupView, None,   0.9,  None),
-                         ("faces",  TopoView,  None,   0.8,  None)]
+      # the asset's OWN materials become ONE "asset" [M] mode applied PER-GID (E.3): the gid-0/None
+      # material is the main draw, gid>0 materials each get their own bucket draw (same mesh, per-gid
+      # args slot). The inspect modes (white/mirror/...) apply a single material across ALL polys.
+      # Each mode = (name, primary HmMaterial, {gid: HmMaterial}).
+      try:    _asset_mats = list(self._asset.materials() or [])
+      except Exception: _asset_mats = []
+      _primary  = next((m for m in _asset_mats if m.gid in (None, 0)), None)
+      _gid_mats = {int(m.gid): m for m in _asset_mats if m.gid not in (None, 0)}
+      if _primary is None:   # asset declared 0 (or only gid>0) materials -> the viewer's own default
+        _primary = _HmMat(type(self._asset).MATERIAL_CLASS, albedo=vec3(0.70, 0.74, 0.80), roughness=0.5)
+      _asset_name = _primary.name + ("+%dgid" % len(_gid_mats) if _gid_mats else "")
+      self._mat_modes = [(_asset_name, _primary, _gid_mats),
+                         ("white",   _HmMat(Solid, albedo=_white, roughness=0.5, metallic=0.0), {}),
+                         ("mirror",  _HmMat(Solid, albedo=_white, roughness=0.0, metallic=1.0), {}),
+                         ("mirror2", _HmMat(Solid, albedo=_white, roughness=0.2, metallic=1.0), {}),
+                         ("x3",      _HmMat(Solid, albedo=vec3(0.3, 0.7, 0.3), roughness=1.0, metallic=0.0), {}),
+                         ("groups",  _HmMat(GroupView, roughness=0.9), {}),
+                         ("faces",   _HmMat(TopoView,  roughness=0.8), {})]
       self._mat_idx   = 0                            # start on the asset's own material ([M] cycles modes)
       self.node       = None
       self._matctr    = 0
       self._wireframe  = False                       # [W] toggles a wireframe (polygon-edge LINE) overlay
       self._wire_color = vec3(0.0, 0.0, 0.0)         # definable wireframe color (default black)
-      self._wire_bias  = 0.0006                      # clip-space depth bias toward viewer -> lines on top
+      self._wire_bias  = 0.0001                      # clip-space depth bias toward viewer -> lines on top
       self._update_frozen = False                    # [SPACE] freezes the asset's onUpdate (hold a rotation/pose)
       self._apply_material(ctx)
       print("hypermesh viewer: [M] cycle material — asset / white / mirror / groups / faces", flush=True)
@@ -166,15 +185,24 @@ def _build_app(asset_cls, *, asset_path, path_mode, asset_modname, val_argv, lab
     # work inline on the event/main thread (the ork.modelviewer.py [M]-swap idiom). The live GraphInst
     # + its pooled mesh buffers are shared; only the material + render triangulator are rebuilt.
     def _apply_material(self, ctx):
-      name, mtl_cls, albedo, rough, metallic = self._mat_modes[self._mat_idx]
+      name, prim, gid_mats = self._mat_modes[self._mat_idx]   # primary HmMaterial + {gid: HmMaterial}
       if self.node is not None:
         self.SGC.layer_fwd.removeDrawableNode(self.node)
         self.node = None
-      cdd, self._gmtl = make_drawable(self._live, ctx, animated=self._animated, material_cls=mtl_cls,
-                                      albedo=albedo, roughness=rough, metallic=metallic,   # None -> default
+      cdd, self._gmtl = make_drawable(
+                                      self._live, ctx, animated=self._animated,
+                                      material_cls=prim.material_cls, albedo=prim.albedo,
+                                      roughness=prim.roughness, metallic=prim.metallic,   # None -> default
+                                      vtx_displace=prim.vtx_displace,                  # VS animation (Wind) — SHARED
+                                      gid_materials=(gid_mats or None),         # E.3: per-gid bucket draws
                                       wireframe=self._wireframe, wire_color=self._wire_color,
                                       wire_bias=self._wire_bias,
-                                      instances=getattr(self._asset, "instances", None))  # asset opts into instancing
+                                      instances=getattr(self._asset, "instances", None),  # asset opts into instancing
+                                      cull=getattr(self._asset, "cull", False),           # E.4: asset opts into GPU frustum cull
+                                      cull_bound=getattr(self._asset, "cull_bound", None)) # None -> auto (mesh-readback bound)
+      # NB: a clock-driven displace (Wind reads Time) needs NO per-frame code here — the engine feeds
+      # Time via the standard RCFD_TIME provider, declared once on the material at build. Viewer stays
+      # general-purpose: no asset/displace-specific uniform names.
       self._sink_last = {}     # E.6/2.12 — fresh material: re-apply every MaterialParamSink value
       self._matctr += 1
       self.node = self.SGC.layer_fwd.createDrawableNodeFromData("hypermesh_%d" % self._matctr, cdd)
@@ -189,7 +217,7 @@ def _build_app(asset_cls, *, asset_path, path_mode, asset_modname, val_argv, lab
       self._hud.text = (
         "[M] Material: %s\n"      % mat +
         "[W] Wireframe: %s\n"     % ("on" if self._wireframe else "off") +
-        ("[SPACE] pause: %s\n" % ("FROZEN (onUpdate + clock)" if self._update_frozen else "running") if self._animated else "") +
+        ("[SPACE] pause: %s\n" % ("FROZEN (onUpdate)" if self._update_frozen else "running") if self._animated else "") +
         "[E] Envmap: %s\n"        % env +
         "[S] Saturation: %.1f\n"  % self._satset[self._sati] +
         "[G] Gamma: %.1f\n"       % self._gamset[self._gami] +
@@ -386,7 +414,9 @@ if __name__ == "__main__":
                       help="explicit asset .py path (bypasses search; CREATED from a cube template if missing) "
                            "— e.g. -w -i /tmp/xxx.py to start + iterate on a new test asset")
   parser.add_argument("-f", "--fullscreen", action="store_true", default=False, help="fullscreen")
-  parser.add_argument("-t", "--ssaa", type=int, default=1, help="supersample antialiasing (SSAA) factor; default 1")
+  parser.add_argument("-t", "--ssaa", type=int, default=0, help="supersample antialiasing (SSAA) factor; default 1")
+  parser.add_argument("-m", "--msaa", type=int, default=2,
+                      help="MSAA level (0=off,1=2x,2=4x,3=8x,4=16x); needed for alpha-to-coverage foliage")
   parser.add_argument("-w", "--watch", action="store_true", default=False,
                       help="watch the asset .py; on change, validate it offscreen in a subprocess and "
                            "live-reload only if validation passes (iterative edit workflow)")
@@ -402,13 +432,13 @@ if __name__ == "__main__":
     asset_cls = load_asset_from_path(asset_path)
     app = _build_app(asset_cls, asset_path=asset_path, path_mode=True, asset_modname=PATH_MODNAME,
                      val_argv=[_VALIDATOR, "-i", asset_path, "-o", _watch_obj], label=os.path.basename(asset_path),
-                     fullscreen=a.fullscreen, watch=a.watch, ssaa=a.ssaa)
+                     fullscreen=a.fullscreen, watch=a.watch, ssaa=a.ssaa, msaa=a.msaa)
   elif a.asset:                                          # search mode (filename stem under assets/hypermesh/)
     asset_cls = resolve_asset(a.asset)
     app = _build_app(asset_cls, asset_path=os.path.join(assets_dir(), a.asset + ".py"), path_mode=False,
                      asset_modname="ork.hypergraph.assets.hypermesh." + a.asset,
                      val_argv=[_VALIDATOR, a.asset, "-o", _watch_obj], label=a.asset,
-                     fullscreen=a.fullscreen, watch=a.watch, ssaa=a.ssaa)
+                     fullscreen=a.fullscreen, watch=a.watch, ssaa=a.ssaa, msaa=a.msaa)
   else:
     list_assets()       # nothing specified -> list + exit, no window
     sys.exit(0)

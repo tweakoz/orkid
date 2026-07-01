@@ -77,6 +77,8 @@ Flow3D = ops.flow3d               # continuous flow field: RGBA dir/slope (.dir)
 flow3d = ops.flow3d
 FlowErode = ops.flow_erode        # continuous flow-map erosion+deposition step (z, discharge) — no SFD tree
 flow_erode = ops.flow_erode
+RelaxUv = ops.relax_uv            # equal-area UV relaxation (slope-stretch fix): .uv (relaxed uv+normal) + .binormal
+relax_uv = ops.relax_uv
 FillClosedBasins = ops.fill_closed_basins  # detect+fill CLOSED basins w/ persistence (min_depth) control
 fill_closed_basins = ops.fill_closed_basins
 Normalize = ops.normalize         # explicit [min,max]->[out_lo,out_hi] rescale (vs the flush auto-exposure)
@@ -99,6 +101,7 @@ __all__ = [
     "BasinFill", "basin_fill",
     "Flow3D", "flow3d",
     "FlowErode", "flow_erode",
+    "RelaxUv", "relax_uv",
     "FillClosedBasins", "fill_closed_basins",
     "Normalize", "normalize",
     "ExprField", "expr_field",

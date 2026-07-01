@@ -39,8 +39,17 @@ struct MaterialBase : public ork::Object {
 public:
   virtual void gpuInit(const RenderContextInstData& RCID) = 0;
   virtual void update(const RenderContextInstData& RCID){}
+  // PRE-RENDER hook (render thread) — GradientMaterial overrides it to re-sample its gradient
+  // into _gradientSamples (CPU only, dirty-gated) so the renderer can write the LUT into the
+  // per-frame SSBO. Default no-op.
+  virtual void onGpuUpdate(ork::lev2::Context* ctx){}
   MaterialBase();
   fxpipeline_ptr_t pipeline(const RenderContextInstData& RCID, bool streaks);
+  // Gradient color LUT (256 entries) delivered to the shader via the per-frame particle SSBO
+  // (NOT a texture — the particle render path is entirely inside a render pass, so a texture
+  // upload can't land). Defaults to WHITE (set in the MaterialBase ctor) so non-gradient
+  // materials pass frg_clr through unchanged; GradientMaterial fills it from its gradient.
+  fvec4 _gradientSamples[256];
 
   freestyle_mtl_ptr_t _material;
   fxpipeline_ptr_t _pipeline;
@@ -107,6 +116,7 @@ public:
   GradientMaterial();
   void update(const RenderContextInstData& RCID) final;
   void gpuInit(const RenderContextInstData& RCID) final;
+  void onGpuUpdate(ork::lev2::Context* ctx) final; // (re)upload the gradient LUT, dirty-gated
   fxparam_constptr_t _param_mod_texture;
   gradient_fvec4_ptr_t _gradient;
   freestyle_mtl_ptr_t _grad_render_mtl;
@@ -115,7 +125,7 @@ public:
   rtgroup_ptr_t _gradient_rtgroup;
   asset::asset_ptr_t _modulation_texture_asset;
   texture_ptr_t _modulation_texture;
-  fvec4 _gradientSamples[256];
+  bool _gradient_resampled = false;       // false until the first onGpuUpdate re-sample
   float _gradientAlphaIntensity = 1.0f;
   float _gradientColorIntensity = 1.0f;
 };
@@ -232,7 +242,6 @@ public:
   // per-system emission light from it: PREMA makes the weighting implicit
   // (emissive = the ADDITIVE part: luminance x (1 - occlusion w)), so fire
   // drives the light and smoke contributes nothing — no per-system hook.
-  fvec4 _gradientSamples[256];
   fxparam_constptr_t _param_cookie   = nullptr;
   fxparam_constptr_t _param_gridDim  = nullptr;
   freestyle_mtl_ptr_t _grad_render_mtl;        // gradient->256x1 RT bake (GradientMaterial recipe)

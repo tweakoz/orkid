@@ -53,6 +53,10 @@ struct ComputeDrawable : public CallbackDrawable {
   // with the view's camera matrices): the hypermesh instance cull writes its
   // params + dispatches here (index-bound raw-FXI compute, its own phase).
   std::function<void(Context*, const CameraMatrices&)> _perViewCompute;
+  // optional ONE-SHOT in-frame render hook (runs in onPreRender, inside the active graphics frame but
+  // BEFORE the main render pass — a legal place for a nested PushRtGroup pre-pass). Used by the impostor
+  // bake (renders the hemi-oct atlas once); self-clears after firing (mutable: onPreRender is const).
+  mutable std::function<bool(Context*)> _oneShotRender; // returns true when done (cleared); false = retry next frame
   // optional: re-evaluate a live dataflow graph IN-FRAME (its own dispatch phase). Runs in
   // onGpuUpdate (once per frame, ahead of every viewport); used by the hypermesh live path
   // (writeParams + ginst->compute()). It also gets the drawable so it can REFRESH the
@@ -61,6 +65,10 @@ struct ComputeDrawable : public CallbackDrawable {
   std::function<void(Context*, ComputeDrawable*)> _liveRecompute;
   FxShaderStorageBuffer* _camParamsSSBO = nullptr; // C++ writes CamBlk{vp,ivp,eye,misc} here each frame
   size_t _camParamsOffset               = 0;
+  // HZB 1-phase occlusion (terrain cull): the cull shader's read-only sif_hzb block. When set,
+  // onPreRender fetches the per-frame HZB pyramid from the RCFD, packs base w/h/mips into CamBlk.misc
+  // .yzw, and binds the HZB SSBO to this block on every pass each frame (a dummy when unavailable).
+  const FxShaderStorageBlock* _hzbBlock = nullptr;
   // render pipeline selection: if _pipeline is set it is used verbatim (override). Otherwise, if
   // _material is set, the pipeline comes from the STANDARD path — findPipeline(RCID) with
   // RCID._isSSBOSourced=true, so the material's cache picks its FWD_SSBO_CUSTOM variant (+ forward
@@ -102,6 +110,39 @@ struct ComputeDrawable : public CallbackDrawable {
     material_ptr_t _material;
     size_t _argsOffset = 0;
     std::vector<std::pair<const FxShaderStorageBlock*, FxShaderStorageBuffer*>> _graphicsStorage;
+    // LOD TIER overrides (Phase 3b): when _indexSSBO/_argsSSBO are set this bucket draws its OWN
+    // mesh (a distance LOD tier) rather than the main mesh — distinct topology -> distinct index +
+    // args. _instByteOffset binds the SHARED instance buffer (the cull's interleaved OUT_M / attrs)
+    // at this tier's byte offset via the sub-range storage bind, so the VS reads its slice from
+    // gl_InstanceIndex==0 (NO baseInstance). _instBlocks name the storage_inst_mtx/attr blocks of
+    // THIS bucket's material to re-bind at the offset (block handles are per-shader). 0/null = inherit.
+    FxShaderStorageBuffer* _indexSSBO = nullptr; // null -> drawable's _indexSSBO
+    FxShaderStorageBuffer* _argsSSBO  = nullptr; // null -> drawable's _argsSSBO
+    size_t _instByteOffset            = 0;       // OUT_M/attrs sub-range offset (0 = whole / tier 0)
+    const FxShaderStorageBlock* _instMtxBlock  = nullptr;
+    FxShaderStorageBuffer*      _instMtxBuf     = nullptr;
+    const FxShaderStorageBlock* _instAttrBlock = nullptr;
+    FxShaderStorageBuffer*      _instAttrBuf    = nullptr;
+    // explicit pipeline override (impostor billboard: a forced-technique FreestyleMaterial pipeline,
+    // not the material's RCID-selected one). When set, used verbatim instead of findPipeline.
+    fxpipeline_ptr_t _pipeline;
+    // LOD impostor: draw through the material's NORMAL forward pipeline but with the _isImpostor RCID flag
+    // set, so findPipeline selects FWD_SSBO_CUSTOM_IMPOSTOR (billboard VS + atlas surface) and the material
+    // binds the SAME forward lighting as the mesh tiers (color-matched).
+    bool _isImpostor = false;
+    // PER-VARIANT impostor atlas + params, bound PER-DRAW (the base PBRMaterial is SHARED across all variants,
+    // so binding the atlas onto the material collapses every impostor to the last-baked one). The param
+    // handles come from the (shared) material; the textures/values are this variant's own.
+    texture_ptr_t _impAtlasAlbedo;
+    texture_ptr_t _impAtlasNormal;
+    texture_ptr_t _impAtlasMetalRough;
+    fvec4 _impCenter = fvec4(0, 0, 0, 1); // xyz = object-space bbox center, w = bound radius
+    fvec4 _impGrid   = fvec4(8, 0, 0, 0); // x = grid N, y = max draw distance
+    fxparam_constptr_t _parImpAlbedo     = nullptr;
+    fxparam_constptr_t _parImpNormal     = nullptr;
+    fxparam_constptr_t _parImpMetalRough = nullptr;
+    fxparam_constptr_t _parImpCenter     = nullptr;
+    fxparam_constptr_t _parImpGrid       = nullptr;
   };
   std::vector<BucketDraw> _bucketDraws;
 };
@@ -129,6 +170,7 @@ struct ComputeDrawableData : public DrawableData {
 
   std::vector<ComputeDrawablePass> _passes;
   std::function<void(Context*, const CameraMatrices&)> _perViewCompute; // E.4 (see ComputeDrawable)
+  std::function<bool(Context*)> _oneShotRender;                         // A2 impostor bake (see ComputeDrawable)
   std::function<void(Context*, ComputeDrawable*)> _liveRecompute; // in-frame live re-eval (see ComputeDrawable)
   FxShaderStorageBuffer* _camParamsSSBO = nullptr;
   size_t _camParamsOffset               = 0;

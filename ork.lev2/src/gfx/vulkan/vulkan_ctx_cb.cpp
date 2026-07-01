@@ -61,7 +61,7 @@ secondary_commandbuffer_ptr_t VkContext::_beginRecordCommandBuffer(std::string n
       }
     }
 
-    inheritanceRenderingInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT; // or from rtg
+    inheritanceRenderingInfo.rasterizationSamples = (VkSampleCountFlagBits)msaaEnumToInt(rtg->_msaa_samples); // match RTG attachments
 
     INHINFO.pNext             = &inheritanceRenderingInfo;
   } else {

@@ -29,6 +29,7 @@ struct VklRtBufferImpl {
   ~VklRtBufferImpl();
 
   void _transitionImage(vkpricmdbufimpl_ptr_t cb, const VkTransitionParams& params);
+  void _transitionMsaaImage(vkpricmdbufimpl_ptr_t cb, const VkTransitionParams& params); // _msaa_imgobj only
   void _transitionToRenderTarget(vkpricmdbufimpl_ptr_t cb);
   void _transitionToTexture(vkpricmdbufimpl_ptr_t cb);
   void _transitionToHostRead(vkpricmdbufimpl_ptr_t cb);
@@ -48,6 +49,10 @@ struct VklRtBufferImpl {
   VkDescriptorImageInfo _descriptorInfo;
   VkImageLayout _currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
   vkimageobj_ptr_t _imgobj;
+  // MSAA: when the parent RtGroup is multisampled, _imgobj stays the SINGLE-sample resolve target
+  // (everything samples it, unchanged) and _msaa_imgobj is the multisample image the render pass
+  // actually renders into, resolved DOWN to _imgobj at endRendering. null when MSAA is off.
+  vkimageobj_ptr_t _msaa_imgobj;
   svar64_t _teximpl;
   fvec4 _clear_color;
   float _clear_depth = 1.0f;

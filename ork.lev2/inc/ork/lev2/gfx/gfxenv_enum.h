@@ -15,6 +15,7 @@ namespace ork::lev2 {
 
 enum class MsaaSamples {
   MSAA_1X = 1,
+  MSAA_2X = 2,
   MSAA_4X = 4,
   MSAA_8X = 8,
   MSAA_9X = 9,
@@ -25,6 +26,11 @@ enum class MsaaSamples {
 
 int msaaEnumToInt( const MsaaSamples& samples );
 MsaaSamples intToMsaaEnum( int ival );
+// HARDWARE MSAA helpers (power-of-2 sample counts only — distinct from the N^2 SSAA grids
+// that share this enum). msaaLevelToSamples maps the --msaa LEVEL (0=off,1=2x,2=4x,3=8x,4=16x);
+// msaaSamplesFromInt maps a literal sample COUNT back to the enum (for device-max clamping).
+MsaaSamples msaaLevelToSamples( int level );
+MsaaSamples msaaSamplesFromInt( int count );
 
 ///////////////////////////////////////////////////////////////////////////////
 

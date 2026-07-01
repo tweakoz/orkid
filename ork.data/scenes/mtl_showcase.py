@@ -44,7 +44,9 @@ class ShowcaseScene(Scene):
       SkyboxIntensity    = 1.0,
       DiffuseIntensity   = 1.0,
       SpecularIntensity  = 1.0,
-      AmbientLight       = vec3(0.04))
+      AmbientLight       = vec3(0),
+      msaa = 2,
+      ssaa = 1 )
 
     # Direct icosphere mesh — subdivisions=4 → 5120 triangles, 2562 vertices.
     # Per-vertex outward-pointing normals (analytic sphere), so no marching-
@@ -61,7 +63,7 @@ class ShowcaseScene(Scene):
       self.entity(
         f"ent_{name}",
         transform={"translation": vec3(x0 + col * dx, 0, z0 + row * dz)},
-        components=[SG.component(nodes={"n": {"drawable": drw}})])
+        components=[self.spinner(), SG.component(nodes={"n": {"drawable": drw}})])
 
     ##########################################################################
     # Row 0 — METALS. metallic=1, sorted by roughness across the full range

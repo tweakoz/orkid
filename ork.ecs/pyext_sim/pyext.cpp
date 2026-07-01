@@ -19,6 +19,7 @@ namespace py = obind;
 using namespace obind::literals;
 using adapter_t = ork::python::nanobindadapter;
 
+#define ORK_PY_IS_OBIND 1   // pyext_math_la.inl: use obind spellings (no buffer protocol; new_ factory)
 #include <ork/python/common_bindings/pyext_math_la.inl>
 #include <ork/python/common_bindings/pyext_crcstring.inl>
 #include <ork/python/common_bindings/pyext_varmap.inl>
@@ -42,8 +43,9 @@ void _ecssim_init_classes(module_t &module_ecssim) {
 
   ork::python::_init_crcstring<adapter_t>(module_ecssim, type_codec_nb);
   ork::python::_init_varmap<adapter_t>(module_ecssim, type_codec_nb);
-  ork::python::pyinit_math_la_t_vec<float>(module_ecssim, "", type_codec_nb);
-  ork::python::pyinit_math_la_t_quat<float>(module_ecssim, "", type_codec_nb);
+  ork::python::pyinit_math_la_t<float>(module_ecssim, "", type_codec_nb);
+  //ork::python::pyinit_math_la_t_vec<float>(module_ecssim, "", type_codec_nb);
+  //ork::python::pyinit_math_la_t_quat<float>(module_ecssim, "", type_codec_nb);
   register_datatable(module_ecssim,type_codec_nb);
   register_simulation(module_ecssim,type_codec_nb);
   register_system(module_ecssim,type_codec_nb);

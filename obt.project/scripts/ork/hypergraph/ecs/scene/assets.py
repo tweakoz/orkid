@@ -378,7 +378,7 @@ class VdbGridToDrawable:
   """
 
   def __init__(self, *, grid=None, material=None,
-               iso=0.0, adaptivity=0.0, flip_windings=True,
+               iso=0.0, adaptivity=0.0, flip_windings=False,
                gendata=None):
     if gendata is not None:
       # Wrap an existing reflected data object (deserialized path).
@@ -1017,8 +1017,15 @@ def _ptex_param_defaults(pspecs):
   """[(name, gtype, default), ...] -> {name: vec/float} for the shader_params
   varmap (the pre-bound uniform defaults that round-trip in the GenData)."""
   from ork.hypergraph.colors import _LazyColor
+  from orkengine.core import CrcString
   out = {}
   for (name, gtype, default) in pspecs:
+    if isinstance(default, CrcString):
+      # a named fx-pipeline PROVIDER token (e.g. tokens.RCFD_TIME). The value is supplied per-frame
+      # by the engine, NOT a constant — bind the crcstring as-is (fx_pipeline resolves it); gtype is
+      # only the uniform-slot type. Round-trips through the shader_params varmap codec by hash.
+      out[name] = default
+      continue
     if isinstance(default, _LazyColor):
       default = default.to_vec4() if gtype == "vec4" else default.to_vec3()
     # hsv()/wavelength()/colortemp() return raw vec3 (no alpha) — upgrade
@@ -1073,7 +1080,8 @@ class Ptex3d:
         kwargs[canon] = kwargs.pop(short)
     lobe_keys   = set(PbrMaterial._LOBE_KWARGS) | PbrMaterial._NESTED_KEYS
     lobe_kwargs = {k: kwargs.pop(k) for k in list(kwargs) if k in lobe_keys}
-    path, pspecs, dsl_lobes = materialize_ptex3d_full(dsl_class, vertex_source=vertex_source, **kwargs)  # kwargs now = DSL params
+    path, pspecs, dsl_lobes, capture_targets = materialize_ptex3d_full(dsl_class, vertex_source=vertex_source, **kwargs)  # kwargs now = DSL params
+    self.capture_targets = list(capture_targets)   # explicit-capture target names, in codegen/MRT order
     # merge: class-declared lobes (surface(**lobes)) are defaults; per-instance
     # Ptex3d(...) kwargs override. Then reuse PbrMaterial nested-form + hsv coercion.
     combined = {**dsl_lobes, **lobe_kwargs}
@@ -1367,6 +1375,18 @@ class ParticleSystem:
 # BY NAME (resolved from the AssetSystem artifact registry at load).
 ###############################################################################
 
+class _ImposterTier:
+  """Marker for an impostor LOD tier in a drawable_data lods={dist: ...} chain (see Hypermesh.imposter()).
+  `_mesh` is the fallback/placeholder Hypermesh (drawn if the bake is unavailable); grid×grid = atlas views;
+  ssaa = bake supersample factor (render tile*ssaa per view), msaa = bake multisample count."""
+  def __init__(self, mesh, grid, tile, ssaa, msaa):
+    self._mesh = mesh
+    self._grid = grid
+    self._tile = tile
+    self._ssaa = ssaa
+    self._msaa = msaa
+
+
 @_register
 class Hypermesh:
   """Asset-DSL wrapper for a hypermesh DSL class (embedded-graph model B)."""
@@ -1385,6 +1405,28 @@ class Hypermesh:
         dsl_file   = getattr(dsl_class, "__module__", "") or "",
         vtx_budget = vtx_budget)
     self._animated = bool(inst.is_animated)
+    # remembered so fork()/imposter() can re-evaluate the same DSL at overridden params (LOD chain).
+    self._dsl_class  = dsl_class
+    self._dsl_kwargs = dict(kwargs)
+    self._vtx_budget = vtx_budget
+
+  def fork(self, **overrides):
+    """A derived LOD mesh: re-run THIS hypermesh's DSL with `overrides` merged over the original
+    kwargs (e.g. fork(depth=3) for a reduced tree). Returns an UNREGISTERED Hypermesh wrapper meant
+    to live in a drawable_data lods={dist: mesh} chain — chainable: base.fork(...).fork(...)."""
+    if not hasattr(self, "_dsl_class"):
+      raise RuntimeError("fork() needs an authoring Hypermesh (built from dsl_class), not a rehydrated one.")
+    return Hypermesh(dsl_class=self._dsl_class, ctx=self._ctx,
+                     vtx_budget=self._vtx_budget, **{**self._dsl_kwargs, **overrides})
+
+  def imposter(self, grid=8, tile=256, ssaa=1, msaa=2):
+    """The FAR-tier impostor LOD (hemi-octahedral billboard). Returns a marker the drawable_data lods chain
+    holds at its distance, e.g. lods={..., 600.0: boulders.fork(subdivisions=0).imposter()}. The TIER routes
+    that distance band's instances (via the GPU cull) to ONE camera-facing quad each, sampling a PBR atlas
+    baked once at materialize from the base mesh — so the base material MUST carry the capture technique
+    (Ptex3d(impostor=True)). THIS hypermesh (the one .imposter() is called on) is the mesh that draws if the
+    bake is unavailable, so call it on a CHEAP mesh (a coarse fork). grid×grid = the atlas view count."""
+    return _ImposterTier(self, grid, tile, ssaa, msaa)
 
   @classmethod
   def from_gendata(cls, gendata, ctx=None, artifacts=None):
@@ -1401,7 +1443,7 @@ class Hypermesh:
       return None
     return self.gendata.materialize(ctx)     # -> LiveHypermesh (pure C++)
 
-  def drawable_data(self, *, material=None, materials=None, animated=None, **viz):
+  def drawable_data(self, *, material=None, materials=None, animated=None, lods=None, **viz):
     """Round-trippable HypermeshDrawableData for an ECS HypermeshComponent.
     `material` is a Ptex3d/PbrMaterial wrapper (referenced BY asset name) or a bare
     name string. `materials` (E.3) = {gid: wrapper-or-name} — faces whose __tags gid
@@ -1416,6 +1458,42 @@ class Hypermesh:
     kwargs = {}
     if materials:
       kwargs["gid_materials"] = {int(g): _name_of(m) for g, m in materials.items()}
+    # Phase 3c — DISTANCE LOD: lods={dist: hypermesh} (or {dist: (hypermesh, material)} to draw that tier
+    # with its OWN material — the far-LOD case). tier 0 (this asset, the base) draws near; each dist>0
+    # entry is a coarser mesh drawn beyond that many meters. Parallel arrays, ascending distance.
+    if lods:
+      extra = sorted(((float(d), m) for d, m in lods.items() if float(d) > 0.0), key=lambda kv: kv[0])
+      if extra:
+        graphs, dists, lodmats, impostors = [], [], {}, []
+        imp_grid, imp_tile, imp_ssaa, imp_msaa = 8, 512, 2, 4
+        for idx, (d, entry) in enumerate(extra):
+          # an impostor tier carries no mesh of its own — its _mesh is the bake-unavailable fallback (a
+          # cheap mesh); the C++ cull routes the band to billboards (impostor_lods names this tier index).
+          # grid×grid = atlas view count, tile = per-view pixels (atlas = grid*tile square) — the bake reads
+          # these from imposter(grid=, tile=), NOT hardcoded.
+          if isinstance(entry, _ImposterTier):
+            mesh, mat = entry._mesh, None
+            impostors.append(idx)
+            imp_grid, imp_tile = entry._grid, entry._tile
+            imp_ssaa, imp_msaa = entry._ssaa, entry._msaa
+          elif isinstance(entry, tuple):
+            mesh, mat = entry[0], entry[1]
+          else:
+            mesh, mat = entry, None
+          graphs.append(mesh.gendata.graph)
+          dists.append(d)
+          if mat is not None:
+            lodmats[idx] = _name_of(mat)
+        kwargs["lod_graphs"]    = graphs
+        kwargs["lod_distances"] = dists
+        if lodmats:
+          kwargs["lod_materials"] = lodmats
+        if impostors:
+          kwargs["impostor_lods"] = impostors
+          kwargs["impostor_grid"] = int(imp_grid)
+          kwargs["impostor_tile"] = int(imp_tile)
+          kwargs["impostor_ssaa"] = int(imp_ssaa)
+          kwargs["impostor_msaa"] = int(imp_msaa)
     return HypermeshDrawableData(
         graph          = self.gendata.graph,
         material_asset = mtl_name,
@@ -1433,12 +1511,17 @@ class Hypermesh:
 #
 #   hf = self.asset.HeightField("rolling_hills",
 #            dsl_file  = "rolling_hills",   # terrain DSL .py (authoring only)
-#            dimension = 1024,
+#            dimension = 1024,              # this heightfield's grid res = the bake/compute res
 #            octaves   = 6)                  # scalar kwargs -> DSL ctor
 #
 # build() bakes the embedded graph (cook-cache-backed) and returns a dict:
 #   { "<channel>": "<assetcache>/terrain/<asset>/<channel>.exr", ...,
 #     "stats": { "<channel>": FieldStats } }
+#
+# NOTE: `dimension` here is THIS heightfield's grid resolution — the bake/COMPUTE res (the EXRs are
+# dimension x dimension). It has no render counterpart at this layer. When wired through
+# self.terrain(), it is driven from terrain()'s `bake_dimension`; terrain()'s separate
+# `render_dimension` is the downsampled render-mesh grid (NOT this).
 ###############################################################################
 
 @_register

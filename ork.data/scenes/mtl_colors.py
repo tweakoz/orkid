@@ -62,7 +62,7 @@ class ColorsScene(Scene):
       self.entity(
         f"ent_{name}",
         transform={"translation": vec3(x0 + col * dx, 0, z0 + row * dz)},
-        components=[SG.component(nodes={"n": {"drawable": drw}})])
+        components=[self.spinner(), SG.component(nodes={"n": {"drawable": drw}})])
 
     ##########################################################################
     # Row 0 — hsv() hue sweep. Same saturation/value, hue marching 0 → 300°

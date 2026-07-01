@@ -387,6 +387,28 @@ public:
   // the (generated) shader declares it. Selected via permu._is_vertex_ssbo. See project_fwd_ssbo_custom.
   fxtechnique_constptr_t _tek_FWD_SSBO_CUSTOM = nullptr;
   fxtechnique_constptr_t _tek_FWD_SSBO_CUSTOM_INSTANCED = nullptr;   // SSBO geometry x per-instance matrix (gl_InstanceIndex)
+  fxtechnique_constptr_t _tek_FWD_SSBO_CUSTOM_CAPTURE = nullptr;     // impostor bake: SSBO pull -> raw PBR to MRT (no lighting)
+  // LOD impostor billboard: SSBO instance-matrix pull -> camera-facing quad -> surface() samples the baked
+  // atlas -> the SAME forward PBR lighting (_forward_lightingZ). Selected via permu._is_impostor. The atlas
+  // textures + grid/radius are set on the material after the bake (bindImpostorAtlas) and bound by the
+  // forward pipeline's impostor branch. Null unless the (generated, impostor=True) shader declares it.
+  fxtechnique_constptr_t _tek_FWD_SSBO_CUSTOM_IMPOSTOR = nullptr;
+  fxparam_constptr_t _parImpAlbedo     = nullptr;
+  fxparam_constptr_t _parImpNormal     = nullptr;
+  fxparam_constptr_t _parImpMetalRough = nullptr;
+  fxparam_constptr_t _parImpCenter     = nullptr;
+  fxparam_constptr_t _parImpGrid       = nullptr;
+  texture_ptr_t _impostorAtlasAlbedo;
+  texture_ptr_t _impostorAtlasNormal;
+  texture_ptr_t _impostorAtlasMetalRough;
+  fvec4 _impostorCenter = fvec4(0, 0, 0, 1); // xyz = object-space bbox center, w = bound radius
+  fvec4 _impostorGrid   = fvec4(8, 0, 0, 0); // x = hemi-oct grid N, y = max draw distance (fade-out / cull)
+  void bindImpostorAtlas(texture_ptr_t alb, texture_ptr_t nrm, texture_ptr_t mr,
+                         const fvec3& center, float radius, float gridN, float maxDist) {
+    _impostorAtlasAlbedo = alb; _impostorAtlasNormal = nrm; _impostorAtlasMetalRough = mr;
+    _impostorCenter = fvec4(center.x, center.y, center.z, radius);
+    _impostorGrid   = fvec4(gridN, maxDist, 0, 0);
+  }
   fxtechnique_constptr_t _tek_FWD_SSBO_CUSTOM_DEPTHPREPASS = nullptr;
   fxtechnique_constptr_t _tek_FWD_SSBO_CUSTOM_INSTANCED_DEPTHPREPASS = nullptr; // E.4
 

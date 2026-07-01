@@ -204,6 +204,10 @@ uint64_t MeshComputeInst::cookComputeHash(const std::vector<uint64_t>& input_has
 
 static constexpr int kHmCookFmt = 0x484D4B31; // 'HMK1' — bump if the layout below changes
 
+// topology-setup cascade fixpoint bound: how many (onTopologyReady-pass + re-eval) rounds before giving
+// up. Real chains (extrude->extrude, merge<-select->assign_gid) settle in 2-3; this only caps a bug.
+static constexpr int kTopoCascadeMax = 16;
+
 datablock_ptr_t MeshComputeInst::cookStore() const {
   auto mesh = _outMesh();
   if (not mesh or mesh->_channels.empty() or not mesh->_vidx or not mesh->_face_offsets)
@@ -492,6 +496,7 @@ gpumesh_ptr_t bakeMesh(dflow::graphdata_ptr_t graph, Context* ctx, int vtx_budge
   dgctx->createRegisters<dflowgfx::GpuComputeImage2DData>("hm_hfimage", 64); // interchange (B.3); 64 = terrain expression chains fan wide
   dgctx->createRegisters<dflowgfx::InstanceSetData>("hm_instset", 16);        // interchange (E.2): the typed instance edge
   dgctx->createRegisters<dflowgfx::SdfGridData>("hm_sdfgrid", 16);            // interchange (E.7): the SDF boolean chain
+  dgctx->createRegisters<::ork::hyper::XfNodeGraphData>("hm_xfng", 16);       // interchange (G0a): the XfNodeGraph transform-graph spine
   dgctx->createRegisters<int>("hm_int", 256);
   dgctx->createRegisters<float>("hm_float", 256);
   dgctx->createRegisters<fvec2>("hm_vec2", 64);
@@ -536,16 +541,23 @@ gpumesh_ptr_t bakeMesh(dflow::graphdata_ptr_t graph, Context* ctx, int vtx_budge
     ctx->endFrame();
   };
   evalOnce();
-  // topology-setup: now that producers' GPU topology is computed + synced, let modules that need it on
-  // the CPU (subdivide) read it back + build their tables; re-eval if any did (their eval-1 was a stub).
-  // Cook-loaded nodes skip (their output is final; they never compute, so no tables needed).
-  bool need_reeval = false;
-  for (auto inst : ginst->_ordered_module_insts)
-    if (auto mci = std::dynamic_pointer_cast<MeshComputeInst>(inst))
-      if (not cook_loaded.count(inst.get()))
-        need_reeval |= mci->onTopologyReady(ctx);
-  if (need_reeval)
-    evalOnce();
+  // topology-setup cascade: producers' GPU topology is now computed + synced, so modules that need it on
+  // the CPU (subdivide read-back tables, merge CPU concat) build their output HERE; re-eval after EACH so
+  // the next module reads its upstream's BUILT topology, and LOOP to a fixpoint so a chain that settles
+  // over several evals converges instead of reading a half-wired input (e.g. a merge fed by a
+  // select->assign_gid passthrough that wires its topology one eval late). The bound only backstops a
+  // pathological always-defer; real chains settle in 2-3 passes. Cook-loaded nodes skip (output final).
+  for (int pass = 0; pass < kTopoCascadeMax; pass++) {
+    bool any = false;
+    for (auto inst : ginst->_ordered_module_insts)
+      if (auto mci = std::dynamic_pointer_cast<MeshComputeInst>(inst))
+        if (not cook_loaded.count(inst.get()) and mci->onTopologyReady(ctx)) {
+          any = true;
+          evalOnce();
+        }
+    if (not any)
+      break;
+  }
   if (graph->_cacheable)
     _cookStorePass(ginst, cook_loaded); // after the final endDispatchPhase (submit+WAIT)
 
@@ -604,6 +616,7 @@ livehypermesh_ptr_t materializeLive(dflow::graphdata_ptr_t graph, Context* ctx, 
   live->_dgctx->createRegisters<dflowgfx::GpuComputeImage2DData>("hm_hfimage", 64); // interchange (B.3); terrain chains fan wide
   live->_dgctx->createRegisters<dflowgfx::InstanceSetData>("hm_instset", 16);       // interchange (E.2): the typed instance edge
   live->_dgctx->createRegisters<dflowgfx::SdfGridData>("hm_sdfgrid", 16);           // interchange (E.7): the SDF boolean chain
+  live->_dgctx->createRegisters<::ork::hyper::XfNodeGraphData>("hm_xfng", 16);      // interchange (G0a): the XfNodeGraph transform-graph spine
   live->_dgctx->createRegisters<int>("hm_int", 256);
   live->_dgctx->createRegisters<float>("hm_float", 256);
   live->_dgctx->createRegisters<fvec2>("hm_vec2", 64);
@@ -641,13 +654,19 @@ livehypermesh_ptr_t materializeLive(dflow::graphdata_ptr_t graph, Context* ctx, 
   // topology. A single pass + one re-eval is insufficient for CHAINED topology ops (extrude -> extrude):
   // the downstream op would build its boundary tables against the upstream's passthrough (pre-built)
   // output, then compute against the real (different-sized) output -> GPU OOB / hang.
-  for (auto inst : live->_ginst->_ordered_module_insts) {
-    auto mci = std::dynamic_pointer_cast<MeshComputeInst>(inst);
-    if (mci and not live->_cookLoaded.count(inst.get()) and mci->onTopologyReady(ctx)) {
-      if (own_frame) ctx->beginFrame();
-      live->recompute(ctx);
-      if (own_frame) ctx->endFrame();
+  for (int pass = 0; pass < kTopoCascadeMax; pass++) {
+    bool any = false;
+    for (auto inst : live->_ginst->_ordered_module_insts) {
+      auto mci = std::dynamic_pointer_cast<MeshComputeInst>(inst);
+      if (mci and not live->_cookLoaded.count(inst.get()) and mci->onTopologyReady(ctx)) {
+        any = true;
+        if (own_frame) ctx->beginFrame();
+        live->recompute(ctx);
+        if (own_frame) ctx->endFrame();
+      }
     }
+    if (not any) // fixpoint: a chain settling over several evals (merge <- select->assign_gid) converges
+      break;
   }
   // E.6/2.19 — store the misses now that the cascade settled (outputs FINAL, last
   // dispatch phase submitted + waited -> inline readback valid).

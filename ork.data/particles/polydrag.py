@@ -34,12 +34,12 @@ class PolyDragSystem(ParticleSystem):
   def __init__(self):
     super().__init__()
 
-    self.ptc_pool = P.PoolData(size=40000, name="POOL")
+    self.ptc_pool = P.PoolData(size=60000, name="POOL")
 
     self.emitter = P.EllipticalEmitter(self.ptc_pool, name="EMITN",
                                        EmissionVelocity=1.1,
-                                       DispersionAngle=0,
-                                       LifeSpan=4.0,
+                                       DispersionAngle=1.5,
+                                       LifeSpan=3.0,
                                        Scalar=3,
                                        EmissionRate=10000,
                                        MinU=0, MaxU=1,
@@ -60,7 +60,7 @@ class PolyDragSystem(ParticleSystem):
     # particle achieves after a curl spike. Particles whose post-launch
     # velocity is small barely feel it; the fast ones get braked quickly.
     self.drag = P.PolyDrag(self.curl, name="DRAG",
-                           Constant=25.0,
+                           Constant=15.0,
                            Linear=0.0,
                            Quadratic=0.8,    # main brake
                            Cubic=0.4)        # snaps top speed flat
@@ -74,12 +74,12 @@ class PolyDragSystem(ParticleSystem):
     self.material.colorIntensity = 1.5
     self.material.gradient.setColorStops({
       0.0: vec4(1.0, 1.0, 1.0, 1),
-      0.2: vec4(1.0, 0.7, 1.0, 1),
-      0.5: vec4(0.8, 0.3, 1.0, 0.9),
-      0.8: vec4(0.3, 0.0, 0.5, 0.5),
-      1.0: vec4(0.05, 0.0, 0.1, 0),
+      0.2: vec4(1.0, 1.0, 0.7, 1),
+      0.5: vec4(0.8, 1.0, 0.3, 0.9),
+      0.8: vec4(0.5, 0.3, 0.0, 0.5),
+      1.0: vec4(0.05, 0.05, 0.0, 0),
     })
-    self.material.modulation_texture = Texture.load("src://effect_textures/knob2")
+    self.material.modtexture_asset = "src://effect_textures/knob2"  # serializable asset (round-trips to the ECS player; live modulation_texture does not)
 
     self.streaks = P.StreakRenderer(self.turbulence, name="STRK",
                                     material=self.material,

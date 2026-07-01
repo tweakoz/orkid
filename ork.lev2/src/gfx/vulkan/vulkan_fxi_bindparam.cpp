@@ -43,7 +43,7 @@ std::pair<uint32_t, VkMergedResourceBinding*> findBindingInMergedResources(
 
 void VkFxInterface::_logMissingBindState(const std::string& name) {
   if (_logged_missing_bind_states.insert(name).second) {
-    logchan_vkbpar->log("Needs fix! No block state for param<%s>. This could be causing unnecessary work to occur each cycle!", name.c_str());
+    if(0)logchan_vkbpar->log("Needs fix! No block state for param<%s>. This could be causing unnecessary work to occur each cycle!", name.c_str());
   }
 }
 

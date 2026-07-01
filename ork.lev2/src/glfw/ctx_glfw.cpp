@@ -43,6 +43,19 @@ void activateWindow(GLFWwindow *window);
 void enableFocusFollowsMouse(GLFWwindow* window);
 #ifdef __APPLE__
 void setApplicationName(const std::string& name);
+void setFullscreenPresentation(bool enable);
+// Force the window's CAMetalLayer contentsScale + drawableSize to the INTENDED
+// render scale: allow_hidpi ? window.backingScaleFactor : 1.0. Needed because
+// the Vulkan surface/layer is created (glfwCreateWindowSurface) while the window
+// may still be at Cocoa's default placement — on a mixed-DPI multi-monitor setup
+// that can be the wrong-scale display, leaving the layer's contentsScale stale.
+// Vulkan surfaceCaps.currentExtent = layer.drawableSize, so a stale scale desyncs
+// the swapchain from the render FBO (symptom: only a quadrant of the scene is
+// presented). We render LoDPI by default (fillrate) and treat HiDPI as opt-in,
+// so this pins the layer to the intended scale regardless of which monitor the
+// window was born on. Writes the applied drawable pixel size to out_w/out_h.
+// Returns true if it changed anything. Safe no-op if the layer isn't a CAMetalLayer.
+bool syncMetalLayerScale(GLFWwindow* window, bool allow_hidpi, int* out_w, int* out_h);
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -181,8 +194,14 @@ static void _glfw_callback_contentScaleChanged(GLFWwindow* window, float sw, flo
   auto ctxbase = (CtxGLFW*)glfwGetWindowUserPointer(window);
   if (nullptr == ctxbase)
     return;
-  ctxbase->_contentScaleX = sw;
-  ctxbase->_contentScaleY = sh;
+  // _contentScaleX/Y is the EFFECTIVE window->framebuffer ratio used by the
+  // winresized path, not the raw monitor DPI scale. We render LoDPI by default
+  // (fillrate); HiDPI is opt-in via AppInitData::_allowHIDPI. So collapse the
+  // monitor scale to 1.0 unless HiDPI was explicitly requested — otherwise a
+  // Retina monitor's 2.0 would double resize dimensions against a LoDPI surface.
+  const bool allow_hidpi = ctxbase->_appinitdata && ctxbase->_appinitdata->_allowHIDPI;
+  ctxbase->_contentScaleX = allow_hidpi ? sw : 1.0f;
+  ctxbase->_contentScaleY = allow_hidpi ? sh : 1.0f;
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_focusChanged(GLFWwindow* window, int focus) {
@@ -374,6 +393,14 @@ void CtxGLFW::Show() {
         _appinitdata->_allowHIDPI ? GLFW_TRUE : GLFW_FALSE);
 #endif
 
+    // M2PL — TRUE (exclusive) fullscreen vs the default windowed-fullscreen (borderless window).
+    // ORKEXP_TRUE_FULLSCREEN=1 passes the real monitor handle to glfwCreateWindow (GLFW exclusive
+    // fullscreen → macOS direct-scanout fast path, bypassing the window-server compositor that owns
+    // the ~3-frame present queue) AND skips the post-show glfwSetWindowPos (which would kick a
+    // fullscreen window back to windowed/title-bar). Default 0 = today's windowed-fullscreen.
+    const bool true_fullscreen = [](){ const char* v = getenv("ORKEXP_TRUE_FULLSCREEN");
+                                       return v && atoi(v) != 0; }();
+
     if (_appinitdata->_fullscreen) {
 
       std::string desired_monitor_name = _appinitdata->_fullscreen_monitor;
@@ -449,7 +476,7 @@ void CtxGLFW::Show() {
       if (monitorName == nullptr) {
         monitorName = "";
       }
-      const bool immersive =
+      const bool immersive = true;
         (_appinitdata->_fullscreen_mode == AppInitData::EFullScreenMode::Immersive);
 
       int win_x, win_y, win_w, win_h;
@@ -489,7 +516,17 @@ void CtxGLFW::Show() {
       logchan_glfw->log("Setting window position to: x<%d> y<%d>", win_x, win_y);
 
       this->onResize(_width, _height);
-      fullscreen_monitor = nullptr; // disable actual fullscreen
+      // Both windowed-fullscreen AND ORKEXP_TRUE_FULLSCREEN use a borderless WINDOW (monitor
+      // nulled) covering the full immersive panel. We deliberately do NOT keep the monitor handle:
+      // that triggers GLFW exclusive fullscreen → CGDisplaySetDisplayMode, which on the Retina
+      // built-in picks a mismatched mode (letterbox outline) and thrashes the Metal swapchain
+      // against the changed mode (→ ~2 FPS). The difference for TRUE_FULLSCREEN is purely that we
+      // hide the macOS menu bar + Dock after show (below) so the covering window owns the entire
+      // panel — the precondition for macOS to promote it to the direct-scanout path, WITHOUT a
+      // display-mode change.
+      fullscreen_monitor = nullptr; // borderless covering window, no display-mode change
+      if (true_fullscreen)
+        logchan_glfw->log("USING TRUE fullscreen (borderless-immersive + menu-bar hidden, ORKEXP_TRUE_FULLSCREEN)");
     } // fullscreen
 
     switch (GRAPHICS_API) {
@@ -499,6 +536,12 @@ void CtxGLFW::Show() {
       default:
         break;
     }
+
+    // Render LoDPI by default (fillrate); opt into a backing-scaled (Retina)
+    // framebuffer only when explicitly requested. GLFW_SCALE_FRAMEBUFFER=FALSE
+    // makes the framebuffer track the window's POINT size, so the CAMetalLayer,
+    // swapchain and render FBO all sit at 1:1 with the logical window size.
+    glfwWindowHint(GLFW_SCALE_FRAMEBUFFER, _appinitdata->_allowHIDPI ? GLFW_TRUE : GLFW_FALSE);
 
     auto global = globalOffscreenContext();
 
@@ -657,14 +700,43 @@ void CtxGLFW::Show() {
     glfwSetWindowAttrib(_glfwWindow, GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
     glfwShowWindow(_glfwWindow);
 
-    // Re-apply position after window is shown for fullscreen mode
+    // Re-apply position after show so the borderless window sits at the monitor origin and
+    // covers the full panel. Applies to both windowed-fullscreen and ORKEXP_TRUE_FULLSCREEN
+    // (both are borderless windows now — no exclusive fullscreen to be kicked out of).
     if (_appinitdata->_fullscreen) {
       glfwSetWindowPos(_glfwWindow, _appinitdata->_left, _appinitdata->_top);
       logchan_glfw->log("Re-positioning window after show to: x<%d> y<%d>", _appinitdata->_left, _appinitdata->_top);
     }
   }
-  _appinitdata->_width  = (_appinitdata->_width * _contentScaleX);
-  _appinitdata->_height = (_appinitdata->_height * _contentScaleY);
+  if (not _appinitdata->_offscreen) {
+#ifdef __APPLE__
+    // The window is now shown + positioned on its FINAL monitor. Pin the
+    // CAMetalLayer to the intended render scale (LoDPI by default, HiDPI only if
+    // _allowHIDPI) and take the applied drawable pixel size as the render-surface
+    // size. This keeps the layer (-> swapchain surfaceCaps.currentExtent) and the
+    // render FBO in lockstep regardless of which monitor the window was born on;
+    // otherwise a mixed-DPI setup leaves the layer stale and the swapchain builds
+    // smaller than the FBO -> only a quadrant of the scene is presented.
+    int render_w = 0, render_h = 0;
+    syncMetalLayerScale(_glfwWindow, _appinitdata->_allowHIDPI, &render_w, &render_h);
+    _appinitdata->_width  = render_w;
+    _appinitdata->_height = render_h;
+#else
+    // Authoritative render-surface pixel size = the actual framebuffer (the size
+    // the swapchain reads via glfwGetFramebufferSize -> caps.currentExtent, and
+    // what the fb-resize callback feeds onResize()). GLFW_SCALE_FRAMEBUFFER was
+    // set from _allowHIDPI, so this is already LoDPI/HiDPI as intended.
+    int fb_w = 0, fb_h = 0;
+    glfwGetFramebufferSize(_glfwWindow, &fb_w, &fb_h);
+    _appinitdata->_width  = fb_w;
+    _appinitdata->_height = fb_h;
+#endif
+  } else {
+    // Offscreen has no real window/drawable; keep the content-scale multiply
+    // (_contentScaleX defaults to 1.0 with no callback, so this is a no-op).
+    _appinitdata->_width  = (_appinitdata->_width * _contentScaleX);
+    _appinitdata->_height = (_appinitdata->_height * _contentScaleY);
+  }
   _width                = _appinitdata->_width;
   _height               = _appinitdata->_height;
 
@@ -686,6 +758,17 @@ void CtxGLFW::Show() {
     windowToFront(_glfwWindow, _appinitdata->_canalwaysontop);
     activateWindow(_glfwWindow);
     enableFocusFollowsMouse(_glfwWindow);
+    // ORKEXP_TRUE_FULLSCREEN: borderless covering window is already title-bar-free;
+    // hide the macOS menu bar + Dock so it owns the whole panel (Tahoe won't auto-hide
+    // it) and presents as an unobstructed full-screen surface. Default off — no change
+    // to normal windowed-fullscreen. Done last so app activation can't un-hide it.
+    {
+      const char* tfs_env = getenv("ORKEXP_TRUE_FULLSCREEN");
+      if (_appinitdata->_fullscreen and tfs_env and atoi(tfs_env) != 0) {
+        setFullscreenPresentation(true);
+        logchan_glfw->log("TRUE fullscreen: hiding macOS menu bar + Dock (ORKEXP_TRUE_FULLSCREEN)");
+      }
+    }
   }
 #endif
 

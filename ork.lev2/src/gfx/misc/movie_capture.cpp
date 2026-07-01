@@ -132,8 +132,14 @@ void MovieCaptureContext::_encodingThreadFunc() {
   size_t total_audio_samples = 0;
   auto str_audio = std::dynamic_pointer_cast<StrAudioDevice>(_settings->_audiodevice);
 
-  // Flush any samples that are in the audio buffer before the capture starts.
-  auto _ = str_audio->extractSamples(str_audio->availableSamples());
+  // Flush any samples buffered before capture starts. NULL-SAFE: with no streaming
+  // audio device (a video-only capture / audio-less scene) str_audio is null — skip
+  // the flush and let the encode loop run video-only (can_audio below is already
+  // guarded). Previously this unconditional deref crashed on a null device.
+  if (str_audio) {
+    auto flushed = str_audio->extractSamples(str_audio->availableSamples());
+    (void)flushed;
+  }
 
   bool hold_until_empty = true;
   while (_encoding_running or hold_until_empty) {

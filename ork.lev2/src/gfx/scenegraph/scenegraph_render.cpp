@@ -6,8 +6,10 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/lev2/gfx/scenegraph/scenegraph.h>
+#include <ork/lev2/gfx/renderphasestats.h> // perf HUD render-phase timing sink
 #include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/lev2/ui/event.h>
+#include <ork/lev2/vr/vr.h>
 #include <ork/util/logger.h>
 #include <ork/profiling.inl>
 
@@ -206,10 +208,45 @@ void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
     // DoRePaintSurface (viewport_scenegraph.cpp) — resolve the same camera the compositor uses.
     ///////////////////////////////////////
     if (_compositorImpl) {
-      if (auto cam = DB->cameraData(_compositorImpl->_camera_name)) {
-        float aspect = (TARGH > 0.0f) ? (TARGW / TARGH) : 1.0f;
-        auto cammtx  = cam->computeMatrices(aspect);
-        preRender(context, cammtx);
+      // VR-aware cull camera. This per-view fan-out feeds view-dependent compute (terrain /
+      // instance GPU frustum cull) the frustum it culls against. In VR the actual draw uses the
+      // head-tracked stereo EYE cameras — but those are computed LATER, per-eye, inside the VR
+      // output node's compositor-assemble pass (below), invisible here. So without this branch
+      // the cull would use the mono UI/ez camera and cull terrain against where the desktop
+      // camera looks, not the head. Fix (combined-frustum cull-once): when genuinely in VR, cull
+      // ONCE against the HEAD (center) camera. _centercamera is last frame's HMD pose (1-frame
+      // stale) — fine for culling given the margin. The widening that covers both eyes + head-
+      // rotation slack is NO LONGER a projection widen here: it is the frame-global CullFrustumScale
+      // applied uniformly in the cull shader (u_tighten = 1/scale; stamped in Scene::preRender; VR
+      // presets default it to 1.3). Doing it here too (the old subPerspective(-m,-m,m,m)) would
+      // DOUBLE-widen, so we pass the EXACT head projection — one knob (CullFrustumScale) now drives
+      // desktop, SGVP, and VR culling identically. Gate on _trackedPoseValid, NOT _active: a default
+      // NoVrDevice (_active=true, _centercamera allocated) is installed even in desktop, but only a
+      // real VR host feeds tracked poses — so this never misfires on a flat run. (Replaces the old
+      // ORKEXP_VRCULL_MARGIN env + subPerspective widen.)
+      auto vrdev = orkidvr::device();
+      if (vrdev and vrdev->_active and vrdev->_trackedPoseValid and vrdev->_centercamera) {
+        const auto& head = *vrdev->_centercamera;
+        CameraMatrices cullcam;
+        cullcam.setCustomView(head.GetVMatrix());
+        cullcam.setCustomProjection(head.GetPMatrix());
+        preRender(context, cullcam);
+      } else {
+        // Resolve the desktop draw camera. The UI SceneGraphViewport sets _camera_name
+        // (viewport_scenegraph.cpp), but the ECS player NEVER does — it leaves the default
+        // "" — so DB->cameraData("") misses and the per-view fan-out (instance cull, per-view
+        // compute) silently never runs in the desktop player. Fall back to "spawncam" (the
+        // canonical ECS player camera, registered by SceneGraphSystem and tracked live by the
+        // walker), matching the cameras->find("spawncam") above. Without this, cull works in the
+        // editor/viewer and in VR but is a no-op in the desktop player.
+        auto camname = _compositorImpl->_camera_name;
+        if (camname.empty())
+          camname = "spawncam";
+        if (auto cam = DB->cameraData(camname)) {
+          float aspect = (TARGH > 0.0f) ? (TARGW / TARGH) : 1.0f;
+          auto cammtx  = cam->computeMatrices(aspect);
+          preRender(context, cammtx);
+        }
       }
     }
     lev2::UiViewportRenderTarget rt(nullptr);
@@ -235,8 +272,14 @@ void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
     CDD->_properties["simrunning"_crcu].set<bool>(true);
     CDD->_properties["DB"_crcu].set<const DrawQueue*>(DB);
     CDD->_cimpl = _compositorImpl;
-    _compositorImpl->assemble(*CDD);
-    _compositorImpl->composite(*CDD);
+    {
+      RenderPhaseScope _s("assemble");
+      _compositorImpl->assemble(*CDD);
+    }
+    {
+      RenderPhaseScope _s("composite");
+      _compositorImpl->composite(*CDD);
+    }
     _compositorImpl->popCPD();
     context->popRenderContextFrameData();
     CDD->_RCFD = nullptr;
@@ -248,6 +291,9 @@ void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
     if (_on_render_complete) {
       _on_render_complete(context);
     }
+    // publish this frame's render-phase timings + cull-result counts (perf HUD reads the snapshots)
+    RenderPhaseStats::instance().commit();
+    CullStats::instance().commit();
 
     ////////////////////////////////////////////////////////////////////////////
     // debug picking here, so it shows up in renderdoc (within frame boundaries)

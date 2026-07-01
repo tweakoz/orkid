@@ -121,7 +121,7 @@ class ClearcoatCarScene(Scene):
 
     self.entity("car_matte",
       transform=Transform(translation=vec3(0, 0, -2.5)),
-      components=[SG.component(nodes={
+      components=[self.spinner(), SG.component(nodes={
         "n": {"drawable": drawable_matte},
       })])
 
@@ -145,6 +145,6 @@ class ClearcoatCarScene(Scene):
 
     self.entity("car_lacquer",
       transform=Transform(translation=vec3(0, 0, +2.5)),
-      components=[SG.component(nodes={
+      components=[self.spinner(), SG.component(nodes={
         "n": {"drawable": drawable_lacquer},
       })])

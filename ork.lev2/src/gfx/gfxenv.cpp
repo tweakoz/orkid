@@ -72,6 +72,9 @@ int msaaEnumToInt(const MsaaSamples& samples) {
     case MsaaSamples::MSAA_1X:
       convsamples = 1;
       break;
+    case MsaaSamples::MSAA_2X:
+      convsamples = 2;
+      break;
     case MsaaSamples::MSAA_4X:
       convsamples = 4;
       break;
@@ -119,6 +122,26 @@ MsaaSamples intToMsaaEnum(int samples) {
       break;
   }
   return rval;
+}
+
+MsaaSamples msaaLevelToSamples(int level) {
+  // --msaa LEVEL -> hardware sample count (power-of-2). 0=off. Caller clamps to device max.
+  switch (level) {
+    case 0:  return MsaaSamples::MSAA_1X;   // off
+    case 1:  return MsaaSamples::MSAA_2X;   // 2x  (2x1)
+    case 2:  return MsaaSamples::MSAA_4X;   // 4x  (2x2)
+    case 3:  return MsaaSamples::MSAA_8X;   // 8x  (4x2)
+    default: return MsaaSamples::MSAA_16X;  // 16x (4x4) and above -> clamp at 16
+  }
+}
+
+MsaaSamples msaaSamplesFromInt(int count) {
+  // literal sample COUNT -> enum (round DOWN to a valid hw count; used after device-max clamp).
+  if (count >= 16) return MsaaSamples::MSAA_16X;
+  if (count >= 8)  return MsaaSamples::MSAA_8X;
+  if (count >= 4)  return MsaaSamples::MSAA_4X;
+  if (count >= 2)  return MsaaSamples::MSAA_2X;
+  return MsaaSamples::MSAA_1X;
 }
 
 std::string EBufferFormatToName(EBufferFormat fmt) {

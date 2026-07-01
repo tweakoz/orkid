@@ -505,6 +505,7 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   void blit(rtgroup_ptr_t src, rtgroup_ptr_t dst) final;
   void downsample2x2(rtgroup_ptr_t src, rtgroup_ptr_t dst) final;
   void transitionDepthForSampling(rtgroup_ptr_t rtg) final;
+  void transitionDepthForWriting(rtgroup_ptr_t rtg) final;
 
   //////////////////////////////////////////////
 
@@ -691,7 +692,7 @@ struct VkFxInterface final : public FxInterface {
       size_t length,
       BufferMapAccess access) final;
   void unmapStorageBuffer(FxShaderStorageBufferMapping* mapping) final;
-  void bindStorageBuffer(const FxShaderStorageBlock* block, FxShaderStorageBuffer* buffer);
+  void bindStorageBuffer(const FxShaderStorageBlock* block, FxShaderStorageBuffer* buffer, size_t byte_offset = 0) final;
   void copyBufferIntoStorageBuffer(FxShaderStorageBuffer* ssbo, std::vector<uint8_t> buffer, size_t dest_offset) final;
 
   void _doPushRasterState(rasterstate_ptr_t rs) final;
@@ -779,6 +780,8 @@ struct VkComputeInterface : public ComputeInterface {
   vkcontext_rawptr_t _contextVK;
   vkfxi_ptr_t _fxi;
   bool _inDispatchPhase = false;
+  int  _phaseDepth = 0; // reentrancy: begin/endDispatchPhase nest so a per-view fan-out can batch
+                        // EVERY drawable's cull into ONE submit (only the outermost end submits)
   bool _didSuspendRenderPass = false;
 
   // Dedicated compute command buffer
@@ -945,6 +948,7 @@ public:
   TextureInterface* TXI() final;
   ComputeInterface* CI() final;
   DrawingInterface* DWI() final;
+  int msaaMaxSamples() final;   // from VkPhysicalDeviceLimits framebufferColor+DepthSampleCounts
 
   time_predictor_ptr_t getScanoutPredictor() const final {
     return (_fbi && _fbi->_output) ? _fbi->_output->getScanoutPredictor() : nullptr;

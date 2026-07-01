@@ -13,11 +13,43 @@
 #   m = H.Hypermesh(); n = m.ripple(grid=64); m.output(m.subdivide(n))
 #   live = m.materialize_live(ctx); cdd, mtl = H.make_drawable(live, ctx, animated=True)
 ###############################################################################
+from enum import IntEnum
 from orkengine.core import dataflow as _dflow
+from orkengine.core import CrcStringProxy as _CrcStringProxy
 from orkengine import lev2 as _lev2
+
+# named fx-pipeline provider tokens (fx_pipeline.cpp FxPipelineNamedParamProviders). A shader_param
+# whose value is one of these is fed PER-FRAME by the engine, not baked: _tokens.RCFD_TIME = the scene
+# clock. Used as a vertex-displace param default so a clock-driven displace needs no per-frame host code.
+_tokens = _CrcStringProxy()
 
 # vertex-channel semantic ids (match the C++ MeshChannel enum order)
 P, N, B, UV, COLOR = 0, 1, 2, 3, 4
+
+
+class Archetype(IntEnum):
+  """L-system growth model — keep in sync with the C++ LArchetype enum (hmdflow.h)."""
+  SYMPODIAL = 0   # repeated forking — trees, shrubs, cholla
+  CONIFER   = 1   # monopodial leader + whorls of drooping laterals
+  SAGUARO   = 2   # columnar trunk + arms that curl up (children=0 -> barrel)
+  OCOTILLO  = 3   # many basal whips splaying out
+
+
+class LeafStyle(IntEnum):
+  """Leaf-card geometry — keep in sync with the C++ LeafScatterModuleData::_style (hmdflow.h)."""
+  SINGLE = 0   # one quad per leaf (cheapest; alpha-mask / A2C gives the silhouette)
+  CROSS  = 1   # two perpendicular quads per leaf (fuller, holds up at grazing angles)
+
+
+# per-archetype known-good chaos-channel defaults (effective chaos = jitter * jit_X). Every
+# generator is routed through these params; a channel a given form doesn't use is a harmless
+# no-op. A jit_* kwarg left None picks the value for that archetype here.
+_ARCH_JIT = {
+  Archetype.SYMPODIAL: dict(jit_azimuth=0.5, jit_pitch=0.35, jit_length=0.5, jit_spacing=0.3, jit_drop=0.25, jit_wave=0.25),
+  Archetype.CONIFER:   dict(jit_azimuth=0.8, jit_pitch=0.35, jit_length=0.5, jit_spacing=0.3, jit_drop=0.25, jit_wave=0.25),
+  Archetype.SAGUARO:   dict(jit_azimuth=0.6, jit_pitch=0.35, jit_length=0.5, jit_spacing=0.3, jit_drop=0.25, jit_wave=0.05),
+  Archetype.OCOTILLO:  dict(jit_azimuth=1.2, jit_pitch=0.5,  jit_length=0.5, jit_spacing=0.3, jit_drop=0.25, jit_wave=0.3),
+}
 
 # the selection DSL (SelExpr atoms/builders + MaskOp factories) — re-export so assets can write
 #   from ork.hypergraph.dflow.hypermesh import S, sel_normal_dir, group, replace, add, POLY
@@ -127,6 +159,13 @@ class Hypermesh:
   MATERIAL_CLASS = None   # ptex3d material to render with (like terrain assets); None -> Solid. Assign
                           # a hypermesh material (e.g. assets.materials.hypermesh.TopoView) to override.
 
+  def materials(self):
+    """The material(s) this asset renders ITSELF with — a list of HmMaterial (applied by the hypermesh
+    viewer + scene). Default = ONE derived from MATERIAL_CLASS (back-compat; None -> Solid). Override to
+    declare 0 (let the viewer pick its own material) or MORE (partition the mesh into per-gid draws via
+    assign_gid). A material may carry a `displace` (VS-side animation, e.g. Wind(...)) — see ls_anim."""
+    return [HmMaterial(self.MATERIAL_CLASS)]
+
   def __init__(self):
     self.graphdata = _dflow.GraphData.createShared()
     self._terminal = None
@@ -184,6 +223,85 @@ class Hypermesh:
     m.inputs.size = float(size)
     self._set_gen_mask(m, mask)
     return self._add(m, "box")
+
+  def lsystem(self, archetype=Archetype.SYMPODIAL, depth=7, seg_len=0.5, base_radius=0.08, sides=6,
+              budget=4000, children=2, internodes=1, seed=1, branch_angle=35.0,
+              roll=137.5, len_decay=0.78, rad_decay=0.72, taper=0.0, tropism=0.0,
+              jitter=0.0, apical=0.0, cap_segments=3, cap_round=1.0,
+              jit_azimuth=None, jit_pitch=None, jit_length=None, jit_spacing=None,
+              jit_drop=None, jit_wave=None):
+    # L-system FAMILY (M1): an LSystemModule grows a parametric/stochastic XfNodeGraph
+    # branch skeleton, an LSweepModule skins it to a swept-tube GpuMesh. Returns the
+    # (mesh) sweep node. `archetype`: 0 sympodial 1 conifer 2 saguaro 3 ocotillo.
+    ls = _lev2.hypermesh.LSystemModule.createShared()
+    ls.archetype    = int(archetype)
+    ls.depth        = int(depth)
+    ls.budget       = int(budget)
+    ls.children     = int(children)
+    ls.internodes   = int(internodes)
+    ls.seed         = int(seed)
+    ls.seg_len      = float(seg_len)
+    ls.base_radius  = float(base_radius)
+    ls.branch_angle = float(branch_angle)
+    ls.roll         = float(roll)
+    ls.len_decay    = float(len_decay)
+    ls.rad_decay    = float(rad_decay)
+    ls.taper        = float(taper)
+    ls.tropism      = float(tropism)
+    ls.jitter       = float(jitter)
+    ls.apical       = float(apical)
+    # chaos channels: a None kwarg falls back to this archetype's known-good default
+    _jd = _ARCH_JIT.get(Archetype(int(archetype)), _ARCH_JIT[Archetype.SYMPODIAL])
+    _pick = lambda v, key: _jd[key] if v is None else v
+    ls.jit_azimuth  = float(_pick(jit_azimuth, "jit_azimuth"))
+    ls.jit_pitch    = float(_pick(jit_pitch,   "jit_pitch"))
+    ls.jit_length   = float(_pick(jit_length,  "jit_length"))
+    ls.jit_spacing  = float(_pick(jit_spacing, "jit_spacing"))
+    ls.jit_drop     = float(_pick(jit_drop,    "jit_drop"))
+    ls.jit_wave     = float(_pick(jit_wave,    "jit_wave"))
+    self._skeleton = self._add(ls, "lsystem")                 # produces XfNodeGraph (the skeleton hub —
+                                                              # organs (leaves/needles/thorns) branch off it)
+    sw = _lev2.hypermesh.LSweepModule.createShared()
+    sw.sides        = int(sides)
+    sw.cap_segments = int(cap_segments)
+    sw.cap_round    = float(cap_round)
+    self.graphdata.connect(sw.inputs.In, ls.outputs.Out)      # XfNodeGraph edge
+    return self._add(sw, "lsweep")                            # produces the GpuMesh
+
+  def leaves(self, skeleton=None, *, style=LeafStyle.SINGLE, per_node=3, min_gen=4.0, size=0.35,
+             aspect=0.6, roll=137.5, pitch=50.0, jitter=0.25, seed=1):
+    # BROADLEAF ORGAN placer — reads the L-system SKELETON (XfNodeGraph; defaults to the last lsystem()'s)
+    # and emits a leaf-card GpuMesh: per high-generation node, `per_node` cards by phyllotaxis (golden-angle
+    # `roll` around the node heading, drooped `pitch`). `style` LeafStyle.SINGLE (quad) | CROSS (2 quads). The
+    # card UV0 lets the MATERIAL texture or proceduralize the leaf; COLOR.x = flutter weight (0..1 tip).
+    skel = skeleton if skeleton is not None else getattr(self, "_skeleton", None)
+    if skel is None:
+      raise ValueError("leaves(): no skeleton — call lsystem() first, or pass skeleton=<lsystem node>")
+    m = _lev2.hypermesh.LeafScatterModule.createShared()
+    m.style    = int(style)                                   # LeafStyle.SINGLE / CROSS (IntEnum -> 0/1)
+    m.per_node = int(per_node)
+    m.min_gen  = float(min_gen)
+    m.size     = float(size)
+    m.aspect   = float(aspect)
+    m.roll     = float(roll)
+    m.pitch    = float(pitch)
+    m.jitter   = float(jitter)
+    m.seed     = int(seed)
+    self.graphdata.connect(m.inputs.In, skel.outputs.Out)     # XfNodeGraph edge (the skeleton)
+    return self._add(m, "leaves")                             # produces the leaf-card GpuMesh
+
+  def merge(self, a, b, *, gid_a=0, gid_b=1):
+    # CONCAT two meshes into one, stamping each source's faces with its own gid (`a` -> gid_a, `b` -> gid_b)
+    # so a multi-material drawable routes them to distinct materials. The canonical use is BAKING a leaf-card
+    # mesh (b) INTO a trunk mesh (a): the result is ONE mesh -> one instance, one frustum-cull, two materials.
+    # gid_a / gid_b = None PRESERVES that source's existing gids (e.g. a trunk that already assign_gid'd its
+    # upper branches into gid 1 keeps that split; pass gid_b=2 for the leaves -> bark/branch/leaf = 3 gids).
+    m = _lev2.hypermesh.MergeMesh.createShared()
+    m.gid_a = -1 if gid_a is None else int(gid_a)
+    m.gid_b = -1 if gid_b is None else int(gid_b)
+    self.graphdata.connect(m.inputs.A, a.outputs.Out)         # mesh edge (gid_a faces)
+    self.graphdata.connect(m.inputs.B, b.outputs.Out)         # mesh edge (gid_b faces)
+    return self._add(m, "merge")                             # produces the combined GpuMesh
 
   def sorttest(self, n=252):
     # Regression harness for the MeshSort GPU primitive (verts encode a stably-sorted key/payload
@@ -815,32 +933,157 @@ def materialize_live_graph(graphdata, ctx, vtx_budget=1 << 20):
 # attrs by gl_VertexID (== gl_VertexIndex, the index-aware builtin -> dereferences the index buffer).
 ###############################################################################
 
+# --- VERTEX DISPLACE (opt-in, generalized) ----------------------------------------------------------
+# A VertexDisplace primitive is a DSL-authored object-space vertex deformation that the render source
+# GENERATES into the pull VS (it appends `position.xyz += f(...)` before the mvp transform). It is OFF
+# by default — wind/ripple/etc. make no sense for most hypermeshes, so you only attach one explicitly:
+#   GpuMeshRenderSource(vtx_displace=Wind(amp=0.06, freq=2.0, dir=(1,0,0)))   # a tree
+#   GpuMeshRenderSource(vtx_displace=[Wind(...), Ripple(...)])                 # composable
+# Protocol (each primitive implements): glsl_func() = a pure lib function; params() = the bindable
+# uniforms it reads as [(name, gtype, default)] specs (merged into the material's ublk_ptex_params);
+# glsl_call() = the VS-body line. NOTHING is baked — values ride as uniforms, so the generated shader
+# text is value-INDEPENDENT (changing amp/freq/dir is a param rebind, not a recompile). A param whose
+# default is a provider token (_tokens.RCFD_TIME, a core CrcStringProxy) is fed per-frame BY THE ENGINE via the
+# standard fx-pipeline provider — so a clock-driven displace needs ZERO per-frame host code anywhere
+# (viewer, scene, zero-Python player all animate identically). The mesh stays STATIC + cacheable.
+class VertexDisplace:
+  wants_inst_data = False          # True -> the codegen exposes a `vec4 inst_data` local to glsl_call:
+                                   # the per-instance attr (_instance_attrs[gl_InstanceIndex]) in the
+                                   # INSTANCED VS, vec4(0) otherwise. For per-tree modulation (wind phase).
+  def glsl_func(self): return ""   # lib function(s), uniform-free (values passed as args)
+  def params(self):    return []   # [(name, gtype, default), ...] -> ublk_ptex_params members
+  def glsl_call(self): return ""   # one line, modifies `position` (reads the params below + inst_data)
+
+
+class Wind(VertexDisplace):
+  """Time-varying horizontal sway, weighted by height so the trunk base stays planted and the canopy
+  moves most (a cantilever shear). amp = radians-ish per unit height at peak; freq = oscillation rate;
+  dir = world sway direction. The clock is the standard RCFD_TIME provider (the scene clock, fed by the
+  engine each frame) — no per-frame host code. PER-TREE variation (instanced): the per-instance attr
+  vec4 carries (phase01, amp_delta, freq_delta) -> each tree sways at its own phase/amp/freq off the
+  material base (0 = neutral, so a single non-instanced tree is unchanged). Set it in the instance
+  matrix bottom row (m[0..2].w) -> _instance_attrs.xyz."""
+  wants_inst_data = True
+  def __init__(self, amp=0.06, freq=2.0, dir=(1.0, 0.0, 0.0)):
+    self.amp = float(amp); self.freq = float(freq); self.dir = tuple(float(c) for c in dir)
+  def params(self):
+    # WindDir/WindParams default to the DSL values (bound ONCE at material creation, like albedo).
+    # Time's default is the RCFD_TIME provider TOKEN: the engine binds the scene clock into it every
+    # frame through fx_pipeline's named-param providers — the SAME standard path as MatMVP/modcolor.
+    # (fxv2_template pads every ublk_ptex_params member to vec4; Time is read as .x in glsl_call.)
+    return [("WindDir",    "vec4",  (self.dir[0], self.dir[1], self.dir[2], 0.0)),
+            ("WindParams", "vec4",  (self.amp, self.freq, 0.0, 0.0)),
+            ("Time",       "float", _tokens.RCFD_TIME)]
+  def glsl_func(self):
+    return ("vec3 hm_wind(vec3 p, float h, vec3 dir, float amp, float freq, float t, vec3 inst){\n"
+            "  // per-tree: inst.x = phase (cycles), inst.y/z = amp/freq DELTAS (0 = neutral).\n"
+            "  amp  *= (1.0 + inst.y);\n"
+            "  freq *= (1.0 + inst.z);\n"
+            "  return dir * (amp * h * sin(t*freq + inst.x*6.2831853 + p.x*0.3 + p.z*0.3));\n}")
+  def glsl_call(self):
+    return ("position.xyz += hm_wind(position.xyz, max(position.y,0.0), "
+            "WindDir.xyz, WindParams.x, WindParams.y, Time.x, inst_data.xyz);")
+
+
+class LeafFlutter(VertexDisplace):
+  """Per-LEAF high-frequency flutter LAYERED ON TOP of the bulk Wind (compose them:
+  vtx_displace=[Wind(...), LeafFlutter(...)]). Flaps each card along its OWN normal, scaled by the tip
+  weight (COLOR.x: 0 at the petiole .. 1 at the tip, so the blade flexes and the base stays put) and
+  phased per-leaf (COLOR.y hash) so neighbouring leaves desync — the canopy shimmers RELATIVE to the
+  branches it rides. Same RCFD_TIME clock as Wind (the shared Time UBO member dedups). amp = flap depth
+  (world units at the tip), freq = shimmer rate."""
+  def __init__(self, amp=0.03, freq=8.0):
+    self.amp = float(amp); self.freq = float(freq)
+  def params(self):
+    return [("FlutterParams", "vec4",  (self.amp, self.freq, 0.0, 0.0)),
+            ("Time",          "float", _tokens.RCFD_TIME)]
+  def glsl_func(self):
+    return ("vec3 hm_flutter(vec3 nrm, float w, float ph, float amp, float freq, float t){\n"
+            "  // w = tip weight (0 base..1 tip); ph = per-leaf phase hash. flap along the card normal.\n"
+            "  return nrm * (amp * w * sin(t*freq + ph*6.2831853));\n}")
+  def glsl_call(self):
+    return ("position.xyz += hm_flutter(normal, vtxcolor.x, vtxcolor.y, "
+            "FlutterParams.x, FlutterParams.y, Time.x);")
+
+
+class HmMaterial:
+  """A material a hypermesh asset declares for ITSELF (so the viewer / a scene render it without the
+  caller authoring one). `material_cls` = a ptex3d material class (None -> Solid). `vtx_displace` = an
+  optional VertexDisplace (e.g. Wind(...)) for VS-side vertex animation. `gid` (optional, int) = the
+  assign_gid bucket this material paints — declaring MULTIPLE HmMaterials with distinct gids PARTITIONS
+  the mesh into separate per-gid draws. albedo/roughness/metallic = surface knobs (None -> default)."""
+  def __init__(self, material_cls=None, *, albedo=None, roughness=0.55, metallic=None,
+               vtx_displace=None, gid=None, name="asset"):
+    self.material_cls = material_cls
+    self.albedo       = albedo
+    self.roughness    = roughness
+    self.metallic     = metallic
+    self.vtx_displace = vtx_displace
+    self.gid          = gid
+    self.name         = name
+
+
 class GpuMeshRenderSource:
   """The VERTEX side of the hypermesh render: the FWD_SSBO_CUSTOM pull VS that reads P/N/B/uv/color
   from the SoA channel SSBOs by gl_VertexID (== gl_VertexIndex for the indexed draw). Material-agnostic
   — the surface fragment comes from whichever ptex3d material the asset selects (Solid, TopoView, ...).
   `instanced=True` ALSO generates the FWD_SSBO_CUSTOM_INSTANCED technique: each vertex is placed by a
   per-instance matrix (storage_inst_mtx[gl_InstanceIndex]); the matrix bottom row carries 3 data floats
-  -> frg_clr. The same SoA geometry is shared by all instances (one graph eval, one triangulate, N draws)."""
-  def __init__(self, instanced=False):
+  -> frg_clr. The same SoA geometry is shared by all instances (one graph eval, one triangulate, N draws).
+  `vtx_displace=` (None | a VertexDisplace | list) opts a DSL-authored object-space VS deformation in."""
+  def __init__(self, instanced=False, vtx_displace=None):
     self._instanced = bool(instanced)
+    if vtx_displace is None:
+      self._vtx_displace = []
+    else:
+      self._vtx_displace = list(vtx_displace) if isinstance(vtx_displace, (list, tuple)) else [vtx_displace]
+
+  def displace_params(self):
+    """[(name, gtype, default), ...] across all displace primitives -> merged into the material's
+    ublk_ptex_params (the bindable block the VS inherits). Static specs (WindDir/WindParams) bind once
+    at creation; a provider-token default (Time = tokens.RCFD_TIME) is fed per-frame by the engine via
+    fx_pipeline's named-param providers — no per-frame host code, no displace-specific render plumbing.
+    Params shared by several primitives (notably Time) collapse to ONE UBO member (dedup by name)."""
+    seen, out = set(), []
+    for d in self._vtx_displace:
+      for spec in d.params():
+        if spec[0] in seen:
+          continue
+        seen.add(spec[0])
+        out.append(spec)
+    return out
+
   def as_material_kwargs(self):
+    extra = (
+      "storage_interface sif_N   (descriptor_set 0) { buffer layout(std430) hm_nb { vec4 Nd[];  }; }\n"
+      "storage_interface sif_B   (descriptor_set 0) { buffer layout(std430) hm_bb { vec4 Bd[];  }; }\n"
+      "storage_interface sif_uv  (descriptor_set 0) { buffer layout(std430) hm_ub { vec4 UVd[]; }; }\n"
+      "storage_interface sif_clr (descriptor_set 0) { buffer layout(std430) hm_cb { vec4 Cd[];  }; }\n")
+    inherits = ["sif_N", "sif_B", "sif_uv", "sif_clr"]
+    body = (
+      "uint i = uint(gl_VertexID);\n"   # indexed draw: gl_VertexID renames to gl_VertexIndex (vert index)
+      "vec4 position = Pd[i];\n"
+      "vec3 normal   = Nd[i].xyz;\n"
+      "vec3 binormal = Bd[i].xyz;\n"
+      "vec2 uv0      = UVd[i].xy;\n"
+      "vec4 vtxcolor = Cd[i];")
+    lib = ""
+    if self._vtx_displace:  # opt-in: the displace uniforms live in ublk_ptex_params (a REAL bindable param
+                        # block — pipeline block-state + bindParam by name; see displace_params()). The VS
+                        # inherits that block, plus the pure lib funcs + the appended position calls.
+      inherits.append("ublk_ptex_params")
+      lib = "\n".join(d.glsl_func() for d in self._vtx_displace)
+      body += "\n" + "\n".join(d.glsl_call() for d in self._vtx_displace)
     return dict(
       ssbo_layout="vec4 Pd[];",   # P lives in sif_ptex_vtx (runtime array; indexed draw -> gl_VertexIndex)
-      ssbo_extra_blocks=(
-        "storage_interface sif_N   (descriptor_set 0) { buffer layout(std430) hm_nb { vec4 Nd[];  }; }\n"
-        "storage_interface sif_B   (descriptor_set 0) { buffer layout(std430) hm_bb { vec4 Bd[];  }; }\n"
-        "storage_interface sif_uv  (descriptor_set 0) { buffer layout(std430) hm_ub { vec4 UVd[]; }; }\n"
-        "storage_interface sif_clr (descriptor_set 0) { buffer layout(std430) hm_cb { vec4 Cd[];  }; }\n"),
-      ssbo_vs_inherits=("sif_N", "sif_B", "sif_uv", "sif_clr"),
-      ssbo_vs_body=(
-        "uint i = uint(gl_VertexID);\n"   # indexed draw: gl_VertexID renames to gl_VertexIndex (vert index)
-        "vec4 position = Pd[i];\n"
-        "vec3 normal   = Nd[i].xyz;\n"
-        "vec3 binormal = Bd[i].xyz;\n"
-        "vec2 uv0      = UVd[i].xy;\n"
-        "vec4 vtxcolor = Cd[i];"),
+      ssbo_extra_blocks=extra,
+      ssbo_lib=lib,               # displace functions (empty when no displace -> output unchanged)
+      ssbo_vs_inherits=tuple(inherits),
+      ssbo_vs_body=body,
       ssbo_instanced=self._instanced,
+      # any displace that reads per-instance data (Wind: per-tree phase/amp/freq) -> the codegen
+      # exposes `inst_data` to the VS body (the per-instance attr when instanced, vec4(0) otherwise).
+      ssbo_wants_inst_data=any(getattr(d, "wants_inst_data", False) for d in self._vtx_displace),
       ssbo_compute="")
 
 # block name (in the generated material) -> GpuMesh vertex-channel id, in render-bind order.
@@ -875,7 +1118,8 @@ class GpuMeshWireSource:
 
 
 def make_drawable(live, ctx, *, animated=False, material_cls=None, roughness=0.55, albedo=None,
-                  metallic=None, wireframe=False, wire_color=None, wire_bias=0.0006, instances=None):
+                  metallic=None, wireframe=False, wire_color=None, wire_bias=0.0006, instances=None,
+                  vtx_displace=None, gid_materials=None, cull=False, cull_bound=None):
   """ComputeDrawableData that renders a LIVE hypermesh through a ptex3d material (auto-selected
   FWD_SSBO_CUSTOM pipeline). Binds each vertex-channel SSBO to its block, then installs the on-GPU
   render-time triangulator + per-frame in-frame hook via setupMeshRender (which also sets the
@@ -914,7 +1158,8 @@ def make_drawable(live, ctx, *, animated=False, material_cls=None, roughness=0.5
                      "floats were passed — one instance source per drawable")
   instanced = graph_instanced or inst_count > 1
   mesh = live.mesh
-  wrap = Ptex3dAsset(dsl_class=material_cls, vertex_source=GpuMeshRenderSource(instanced=instanced), **kw)
+  wrap = Ptex3dAsset(dsl_class=material_cls,
+                     vertex_source=GpuMeshRenderSource(instanced=instanced, vtx_displace=vtx_displace), **kw)
   wrap._ctx = ctx
   gmtl = wrap.as_gfx_material
   fs   = gmtl.freestyle
@@ -925,9 +1170,37 @@ def make_drawable(live, ctx, *, animated=False, material_cls=None, roughness=0.5
     cdd.addGraphicsStorage(fs.storage(blockname), mesh.channel_ssbo(chan))
   # on-GPU fan-triangulate -> DrawIndexedIndirect + the per-frame in-frame recompute/refresh hook.
   # wireframe also builds a per-edge LINE index buffer + configures the drawable's OVERLAY draw (below).
+  # E.3 — per-gid bucket materials (the make_drawable port of the scene path): build each gid's
+  # material like the main, collect bound_gids so setupMeshRender allocates a per-gid args slot.
+  gid_mtls = {}
+  if gid_materials:
+    from ork.hypergraph.assets.materials.terrain.solid import Solid as _Solid
+    for _g, _spec in gid_materials.items():
+      _gkw = dict(roughness=getattr(_spec, "roughness", 0.55))
+      if getattr(_spec, "albedo", None)   is not None: _gkw["albedo"]   = _spec.albedo
+      if getattr(_spec, "metallic", None) is not None: _gkw["metallic"] = _spec.metallic
+      # PER-GID vtx_displace: a gid material uses its OWN displace if it declared one, else inherits the
+      # main's. CAVEAT: gid faces that SHARE verts with the main draw (e.g. an upper-branch split off the
+      # trunk) MUST match the main's displace or the shared boundary verts TEAR — that's the author's
+      # responsibility. SEPARATE geometry (leaf cards baked in) shares no verts, so it can carry its own
+      # displace (e.g. + LeafFlutter) freely. None -> inherit the main displace (safe default).
+      _gvd = getattr(_spec, "vtx_displace", None)
+      if _gvd is None:
+        _gvd = vtx_displace
+      _gwrap = Ptex3dAsset(dsl_class=(getattr(_spec, "material_cls", None) or _Solid),
+                           vertex_source=GpuMeshRenderSource(instanced=instanced, vtx_displace=_gvd), **_gkw)
+      _gwrap._ctx = ctx
+      gid_mtls[int(_g)] = _gwrap.as_gfx_material
+  # E.4 per-view GPU frustum cull (instanced only): cull_bound = object-space sphere (cx,cy,cz,r);
+  # None / w<=0 -> setupMeshRender AUTO-computes it from a one-time mesh position readback (+5% pad).
+  from orkengine.core import vec4 as _vec4
+  _cb = _vec4(0, 0, 0, 0) if cull_bound is None else (
+        cull_bound if isinstance(cull_bound, _vec4) else _vec4(*cull_bound))
+  # on-GPU fan-triangulate -> DrawIndexedIndirect + the per-frame in-frame recompute/refresh hook.
   triface, instmtx, instattr = _lev2.hypermesh.setupMeshRender(
       cdd, live, ctx, animated, face_viz, tag_viz, wireframe,
-      instance_count=inst_count, instance_matrices=inst_floats)
+      instance_count=inst_count, instance_matrices=inst_floats, bound_gids=sorted(gid_mtls.keys()),
+      cull=bool(cull), cull_bound=_cb)
   if face_viz:                                          # per-triangle face-id buffer -> FS (graphics-storage 5)
     cdd.addGraphicsStorage(fs.storage("sif_triface"), triface)
   if tag_viz:                                           # the __tags FACE channel -> FS (graphics-storage 6)
@@ -936,6 +1209,8 @@ def make_drawable(live, ctx, *, animated=False, material_cls=None, roughness=0.5
     cdd.addGraphicsStorage(fs.storage("storage_inst_mtx"), instmtx)  # bound LAST (the live-refresh loop only touches <=slot 6)
     if instattr is not None:                            # vec4[i]: x=type_id, y=seed01 -> frg_clr (replaces the bottom-row smuggle)
       cdd.addGraphicsStorage(fs.storage("storage_inst_attr"), instattr)
+  if gid_mtls:   # E.3: one extra indexed-indirect draw per bound gid, each with its OWN material + storage
+    _lev2.hypermesh.addGidBuckets(cdd, live, gid_mtls, instanced, instmtx, instattr)
   if wireframe:                                         # OVERLAY: draw the polygon edges as flat LINES on top
     from orkengine.core import vec3 as _vec3
     from ork.hypergraph.assets.materials.hypermesh.lines import Lines
@@ -951,4 +1226,6 @@ def make_drawable(live, ctx, *, animated=False, material_cls=None, roughness=0.5
       cdd.addOverlayGraphicsStorage(wfs.storage("storage_inst_mtx"), instmtx)  # overlay slot 2 (refresh touches <=1)
       if instattr is not None:
         cdd.addOverlayGraphicsStorage(wfs.storage("storage_inst_attr"), instattr)  # overlay slot 3
+  # the SHARED vtx_displace (above) gives every gid bucket material the same Time provider param, so a
+  # clock-driven deformation (Wind) sways all buckets identically (no tear) with NO per-frame host code.
   return cdd, gmtl

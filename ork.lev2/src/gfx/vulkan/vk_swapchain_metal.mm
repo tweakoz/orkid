@@ -14,12 +14,63 @@
 #import <Metal/Metal.h>
 #import <CoreVideo/CoreVideo.h>
 #include <vulkan/vulkan_metal.h>
+#include <ork/lev2/vr/vr.h>
+#include <mutex>
+#include <cstdint>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
 static auto logchan_moltensc = logger()->configureChannel("VKSCMETAL", fvec3(0.5, 0.8, 1.0), true);
+
+///////////////////////////////////////////////////////
+// M2PL motion-to-photon instrumentation. Per frame we capture the render-start tick (≈ pose
+// latch) and the scanout TARGET the predictor returns; in the drawable's presentedTime
+// handler we read the ACTUAL photon time and compare. drawable.presentedTime is in the
+// CACurrentMediaTime (mach) domain, so ×1e9 == Timer::getSystemTick() ns — same clock.
+//   true_m2p   = actual_photon − render_start   (ground-truth pipeline depth)
+//   pred_lead  = scanout_target − render_start  (what the predictor leads by)
+//   target_err = scanout_target − actual_photon (honest if ≈0; + over-target, − under-target)
+// One swapchain + render thread sets the per-frame statics in begin/present order; the
+// async present handler accumulates under a mutex and logs every 120 frames.
+static uint64_t s_dbg_latch   = 0;
+static uint64_t s_dbg_spred   = 0;
+static uint64_t s_dbg_refresh = 11111111;   // one refresh period (ns); 90Hz default
+
+// M2PL Stage 5 — RACE-THE-BEAM. ORKEXP_PRESENT_LEAD_MS (default 0 = unchanged): finish rendering
+// this many ms BEFORE the target vsync so the present catches THAT vsync instead of the next one,
+// cutting ~1 refresh (~11ms) of present→scanout latency. When >0 the predictor margin is zeroed so
+// _predictHmdPose targets the vsync we race into (keeps target_err≈0). Too small vs render-jitter
+// ⇒ missed vsync ⇒ that frame falls back to next-vsync (true_m2p spike); dial up until stable.
+static uint64_t s_present_lead_ns  = 0;
+static bool     s_present_lead_read = false;
+
+// M2PL — low-latency present. vsync-OFF measurement proved the ~25ms (3-frame) enqueued-present
+// FLOOR is the macOS deep vsync present QUEUE (vsync-off → ~0.66 frame). presentsWithTransaction
+// presents as soon as the work is SCHEDULED (commit → waitUntilScheduled → [drawable present])
+// instead of queuing deep, while displaySyncEnabled still aligns scanout to vsync (NO tearing).
+// ORKEXP_PRESENT_TRANSACTION=1 to enable. Default 0 = today's deep-queued presentDrawable.
+static bool s_present_transaction = false;
+
+// M2PL — present-at-time (anti-bloat). Triple-buffering (maximumDrawableCount=3) cures the
+// nextDrawable starvation, but in a GPU-heavy scene a render spike fills the 3-deep queue and at
+// steady 120fps (producer==consumer) it NEVER drains → enqueued_present climbs to ~3 frames and
+// stays (classic buffer bloat; target_err drifts negative while pred_lead stays pinned). Fix: pin
+// each frame to its predicted scanout slot via [cmd presentDrawable:atTime:] so the queue can't
+// bloat past one frame's lead. The target is s_dbg_spred (this frame's predicted photon tick, mach
+// ns) → seconds (CACurrentMediaTime domain). ORKEXP_PRESENT_AT_TIME=1 to enable. Default 0.
+static bool s_present_at_time      = false;
+static bool s_present_at_time_read = false;
+
+static std::mutex s_dbg_mtx;
+static uint64_t s_dbg_n = 0;
+static int64_t  s_dbg_m2p_sum = 0, s_dbg_m2p_min = 0, s_dbg_m2p_max = 0, s_dbg_lead_sum = 0, s_dbg_err_sum = 0;
+// M2PL ATW-ceiling: split true_m2p into the RENDER portion (frame_start→fence, where onGpuPresent
+// would latch = what ATW RECOVERS) vs the ENQUEUED-PRESENT portion (fence→photon: drawable queue +
+// vsync = the irreducible ATW FLOOR). render = _last_frame_delta_ns; present = m2p − render.
+static uint64_t s_dbg_render = 0;          // per-frame snapshot (frame_start→fence)
+static int64_t  s_dbg_render_sum = 0, s_dbg_present_sum = 0;
 
 ///////////////////////////////////////////////////////
 
@@ -39,7 +90,7 @@ static CVReturn _cvdl_callback(
 
 VkSwapchainMetal::VkSwapchainMetal(vkcontext_rawptr_t ctxVK)
     : _contextVK(ctxVK) {
-  _buildup();
+  _buildup();  
 }
 
 VkSwapchainMetal::~VkSwapchainMetal() {
@@ -104,8 +155,24 @@ void VkSwapchainMetal::_buildup() {
     layer.device              = mtlDevice;
     layer.pixelFormat         = MTLPixelFormatBGRA8Unorm;
     layer.framebufferOnly     = NO;
-    layer.maximumDrawableCount = 2;
+    // Triple-buffer. With only 2 drawables, nextDrawable() in _blitThenPresent BLOCKS (up to
+    // ~1s) whenever both drawables are still in-flight — which happens the instant the compositor
+    // holds them longer: direct-scanout (ORKEXP_TRUE_FULLSCREEN) or vsync-aligned pacing. That
+    // starvation IS the 2-FPS stall. 3 is the CAMetalLayer maximum and the standard low-latency-
+    // game choice: always a free drawable to render into while two are in flight, and (because we
+    // still present the freshest frame each loop) it adds NO latency here. ORKEXP_MAX_DRAWABLES
+    // overrides (legal values 2 or 3) for A/B.
+    NSUInteger maxdraw = 3;
+    if (const char* v = getenv("ORKEXP_MAX_DRAWABLES")) { int n = atoi(v); if (n == 2 || n == 3) maxdraw = (NSUInteger)n; }
+    layer.maximumDrawableCount = maxdraw;
+    logchan_moltensc->log("maximumDrawableCount = %lu (ORKEXP_MAX_DRAWABLES)", (unsigned long)maxdraw);
     layer.displaySyncEnabled  = YES;
+    // M2PL low-latency present (see s_present_transaction). Set the layer flag here; the present
+    // path in _blitThenPresent branches on it. displaySync stays on (vsync-aligned scanout, no tear).
+    if (const char* v = getenv("ORKEXP_PRESENT_TRANSACTION")) s_present_transaction = (atoi(v) != 0);
+    layer.presentsWithTransaction = s_present_transaction ? YES : NO;
+    logchan_moltensc->log("M2PL presentsWithTransaction = %d (ORKEXP_PRESENT_TRANSACTION)",
+                          (int)s_present_transaction);
     _metalLayer = (void*)layer; // non-owning
 
     id<MTLCommandQueue> q = [mtlDevice newCommandQueue];
@@ -294,6 +361,12 @@ void VkSwapchainMetal::_checkDisplay() {
 ///////////////////////////////////////////////////////
 
 void VkSwapchainMetal::beginFrame(vkcontext_rawptr_t ctxVK) {
+
+  auto vrdev = ork::lev2::orkidvr::device();
+  if (vrdev and (vrdev->_scan_out_predictor==nullptr)) {
+    vrdev->_scan_out_predictor = _scan_out_predictor;
+  }
+
   // Retarget CVDisplayLink to the window's current screen if it changed.
   _checkDisplay();
 
@@ -309,9 +382,25 @@ void VkSwapchainMetal::beginFrame(vkcontext_rawptr_t ctxVK) {
 
   {
     // Sleep until _last_frame_ns before the target scanout so rendering finishes just in time.
+    if (!s_present_lead_read) {
+      s_present_lead_read = true;
+      const char* v = getenv("ORKEXP_PRESENT_LEAD_MS");
+      s_present_lead_ns = v ? (u64)(atof(v) * 1.0e6) : 0;
+      logchan_moltensc->log("M2PL race-the-beam: present_lead = %.2f ms (ORKEXP_PRESENT_LEAD_MS)",
+                            double(s_present_lead_ns) * 1e-6);
+    }
     u64 target = _scan_out_predictor->predictNextTargetMarginSystemTick();
-    _begin_wait.sleepUntilTick(target - _last_frame_delta_ns);
+    // Race-the-beam: wake present_lead_ns EARLIER so render finishes before the target vsync and
+    // the present catches it (not the next). Guard underflow → sleepUntilTick(past) renders ASAP.
+    u64 wake = (target > _last_frame_delta_ns) ? (target - _last_frame_delta_ns) : 0;
+    wake = (wake > s_present_lead_ns) ? (wake - s_present_lead_ns) : 0;
+    _begin_wait.sleepUntilTick(wake);
     _frame_start_tick = Timer::getSystemTick();
+    // M2PL: snapshot the latch tick + the scanout TARGET for this frame (the device's
+    // _predictHmdPose queries the same predictor a touch later during render-assemble).
+    s_dbg_latch   = _frame_start_tick;
+    s_dbg_spred   = _scan_out_predictor->predictNextTargetSystemTick();
+    s_dbg_refresh = _scan_out_predictor->_margin_ns;
   }
 
   auto main_rtg  = ctxVK->_fbi->_ensureMainRtg();
@@ -419,9 +508,69 @@ void VkSwapchainMetal::_blitThenPresent(u32 sub) {
 
     [cmd encodeSignalEvent:(id<MTLSharedEvent>)_timeline value:_current_frame + 1];
 
-    // displaySyncEnabled=YES on the layer handles vsync alignment.
-    [cmd presentDrawable:drawable];
-    [cmd commit];
+    // M2PL instrumentation — true motion-to-photon for THIS frame via its actual scanout time.
+    {
+      uint64_t latch = s_dbg_latch, spred = s_dbg_spred, refresh = s_dbg_refresh;
+      uint64_t render_ns = _last_frame_delta_ns;   // frame_start→fence (the ATW latch point)
+      [drawable addPresentedHandler:^(id<MTLDrawable> d){
+        double pt = d.presentedTime;                  // seconds, CACurrentMediaTime (mach) domain
+        if (pt <= 0.0 || latch == 0) return;          // 0 ⇒ dropped/never shown
+        uint64_t actual = (uint64_t)(pt * 1.0e9);     // ×1e9 == Timer::getSystemTick() ns
+        if (actual <= latch) return;
+        int64_t m2p  = (int64_t)actual - (int64_t)latch;   // render-start → photon (ground truth)
+        int64_t lead = (int64_t)spred  - (int64_t)latch;   // scanout target − render-start
+        int64_t err  = (int64_t)spred  - (int64_t)actual;  // target − actual photon (≈0 = honest)
+        int64_t render  = (int64_t)render_ns;          // frame_start→fence (ATW recovers this)
+        int64_t present = m2p - render;                 // fence→photon (enqueued present = ATW floor)
+        std::lock_guard<std::mutex> lk(s_dbg_mtx);
+        if (s_dbg_n == 0) { s_dbg_m2p_min = m2p; s_dbg_m2p_max = m2p; }
+        else { if (m2p < s_dbg_m2p_min) s_dbg_m2p_min = m2p; if (m2p > s_dbg_m2p_max) s_dbg_m2p_max = m2p; }
+        s_dbg_m2p_sum += m2p; s_dbg_lead_sum += lead; s_dbg_err_sum += err;
+        s_dbg_render_sum += render; s_dbg_present_sum += present; s_dbg_n++;
+        if (s_dbg_n >= 120) {
+          double inv = 1.0 / double(s_dbg_n);
+          double rf  = (refresh > 0) ? double(refresh) : 11111111.0;
+          logchan_moltensc->log(
+            "M2PL photon: true_m2p avg=%.1f min=%.1f max=%.1f ms (~%.2f frames) | "
+            "pred_lead avg=%.1f ms (~%.2f frames) | target_err avg=%+.1f ms",
+            s_dbg_m2p_sum*inv*1e-6, double(s_dbg_m2p_min)*1e-6, double(s_dbg_m2p_max)*1e-6,
+            (s_dbg_m2p_sum*inv)/rf,
+            s_dbg_lead_sum*inv*1e-6, (s_dbg_lead_sum*inv)/rf,
+            s_dbg_err_sum*inv*1e-6);
+          // ATW ceiling: render (recoverable by latching at onGpuPresent) vs enqueued-present (floor)
+          logchan_moltensc->log(
+            "M2PL split: render avg=%.1f ms (~%.2f f, ATW recovers) | enqueued_present avg=%.1f ms (~%.2f f, ATW FLOOR)",
+            s_dbg_render_sum*inv*1e-6, (s_dbg_render_sum*inv)/rf,
+            s_dbg_present_sum*inv*1e-6, (s_dbg_present_sum*inv)/rf);
+          s_dbg_n=0; s_dbg_m2p_sum=0; s_dbg_lead_sum=0; s_dbg_err_sum=0;
+          s_dbg_render_sum=0; s_dbg_present_sum=0;
+        }
+      }];
+    }
+
+    if (!s_present_at_time_read) {
+      s_present_at_time_read = true;
+      if (const char* v = getenv("ORKEXP_PRESENT_AT_TIME")) s_present_at_time = (atoi(v) != 0);
+      logchan_moltensc->log("M2PL present-at-time = %d (ORKEXP_PRESENT_AT_TIME)", (int)s_present_at_time);
+    }
+
+    // displaySyncEnabled=YES on the layer handles vsync alignment (no tearing) every branch.
+    if (s_present_at_time && s_dbg_spred != 0) {
+      // Anti-bloat: pin this frame to its predicted scanout slot. Metal won't show it before `when`,
+      // so frames can't queue ahead of their lead and the 3-deep pool can't bloat to +2 frames.
+      // s_dbg_spred is the predicted photon tick (mach ns) captured for THIS frame in beginFrame.
+      double when = double(s_dbg_spred) * 1.0e-9; // → seconds, CACurrentMediaTime (mach) domain
+      [cmd presentDrawable:drawable atTime:when];
+      [cmd commit];
+    } else if (s_present_transaction) {
+      // M2PL low-latency: present as soon as the work is SCHEDULED, not deep-queued.
+      [cmd commit];
+      [cmd waitUntilScheduled];
+      [drawable present];
+    } else {
+      [cmd presentDrawable:drawable];
+      [cmd commit];
+    }
   }
 }
 
@@ -437,9 +586,12 @@ void VkSwapchainMetal::_onVsync(const void* rawOutputTime) {
   _scan_out_predictor->markPredictionTargetTick(scanout_ns);
 
   // videoRefreshPeriod/videoTimeScale is the exact rational refresh period (e.g. 1/90 s).
-  // This used as a set margin offset in the predictor. The final target is scanout_ns + margin_ns as that is when
-  // the frame will actually be physcially seen. However internally all rendering aims to be finished by scanout_ns.
-  _scan_out_predictor->_margin_ns= (u64(outputTime->videoRefreshPeriod) * NS_PER_SEC) / u64(outputTime->videoTimeScale);
+  // This is the predictor margin: the photon for a frame lands one refresh AFTER the vsync its
+  // render finishes into (present catches the NEXT vsync). _predictHmdPose targets scanout+margin.
+  // M2PL Stage 5: when racing the beam (present_lead>0) the present catches the SAME vsync the
+  // render finishes into, so the photon == that vsync ⇒ margin 0 (predict to the nearer vsync).
+  u64 refresh_ns = (u64(outputTime->videoRefreshPeriod) * NS_PER_SEC) / u64(outputTime->videoTimeScale);
+  _scan_out_predictor->_margin_ns = (s_present_lead_ns > 0) ? 0 : refresh_ns;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

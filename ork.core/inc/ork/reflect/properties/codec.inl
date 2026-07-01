@@ -11,6 +11,7 @@
 #include <ork/reflect/properties/codec.h>
 #include <ork/math/cvector4.h>
 #include <ork/kernel/varmap.inl>
+#include <ork/util/crc.h>   // crcstring_ptr_t — a provider-token varmap value (NODEENC/decode below)
 #include <cstdio>
 
 namespace ork{
@@ -117,6 +118,11 @@ inline void decode_value(var_t val_inp, svar128_t& val_out) {
       val_out.set<fvec4>(fvec4(x, y, z, w));
     } else if (type_name == "string") {
       val_out.set<std::string>(data);
+    } else if (type_name == "crcstr") {
+      // a named fx-pipeline provider token (CrcString, e.g. RCFD_TIME) — serialized by its hash
+      // (the provider registry is hash-keyed; the name isn't needed). Reconstruct so fx_pipeline
+      // binds the per-frame value (the engine clock, etc.) into this param every frame.
+      val_out.set<crcstring_ptr_t>(std::make_shared<CrcString>(uint64_t(std::stoull(data))));
     }
   }
 }

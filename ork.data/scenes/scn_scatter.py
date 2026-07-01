@@ -37,12 +37,13 @@ MAX_BALLS = 256    # instanced-node capacity
 
 
 class Boulder(HypermeshDSL):
-  """Valley rock (type 0): a chunky low-poly sphere, placed by the 'rocks' sink."""
-  def __init__(self):
+  """Valley rock (type 0): a chunky low-poly sphere, placed by the 'rocks' sink.
+  subdivisions is parametric so fork(subdivisions=0) yields a coarser distance-LOD mesh."""
+  def __init__(self, subdivisions=3):
     super().__init__()
-    n = self.icosphere(radius=1.1, subdivisions=1)
-    self.output(self.face_normals(n))
-    self.instance_source(scatter_asset="terra", sink="rocks", type_id=0)
+    n = self.icosphere(radius=1.1, subdivisions=subdivisions)
+    self.output(self.smooth_normals(n))
+    # scatter-free geometry: the bridge moved to drawable_data(instance_source=...)
 
 
 class Shard(HypermeshDSL):
@@ -60,7 +61,7 @@ class Shard(HypermeshDSL):
     n = self.select(n, S.P.y > 0.6 * 3.2, op=replace(group(0)))
     n = self.assign_gid(n, gid=1, slot=0)          # the spike tip
     self.output(n)
-    self.instance_source(scatter_asset="terra", sink="rocks", type_id=1)
+    # scatter-free geometry: the bridge moved to drawable_data(instance_source=...)
 
 
 class ScatterScene(Scene):
@@ -86,6 +87,10 @@ class ScatterScene(Scene):
         DiffuseIntensity   = 1.0,
         SpecularIntensity  = 1.0,
         AmbientLight       = vec3(0.0),
+        CullFrustumScale   = 0.75,   # TEMP A/B TEST: narrow cull frustum (cull-more) — revert after
+        DepthPrepass       = True,   # resolves a single-sample depth (the HZB occlusion source) + early-Z
+        msaa = 2,
+        ssaa = 0,
         aux_channels       = ["heat"],
         postfx             = [("heatdistort", heat_fx)])
 
@@ -124,7 +129,15 @@ class ScatterScene(Scene):
         "boulder_mat",
         dsl_class     = Solid,
         vertex_source = GpuMeshRenderSource(instanced=True),
-        albedo        = hsv(200,0.3,0.7),
+        albedo        = hsv(200,0.35,0.7),
+        roughness     = 1.0,
+        instance_variation = 0.0,   # E.4: per-instance brightness from seed01 (frg_clr)
+        impostor      = True)        # opt-in the FWD_SSBO_CUSTOM_CAPTURE technique (impostor bake source)
+    boulder_mat2 = self.asset.Ptex3d(
+        "boulder_mat2",
+        dsl_class     = Solid,
+        vertex_source = GpuMeshRenderSource(instanced=True),
+        albedo        = hsv(240,0.3,0.8),
         roughness     = 1.0,
         instance_variation = 0.35)   # E.4: per-instance brightness from seed01 (frg_clr)
 
@@ -208,8 +221,8 @@ class ScatterScene(Scene):
         height       = 2.3,
         mass         = 80.0,
         move_force   = 6200.0,
-        max_speed    = 20.0,    # 20 mph
-        jump_impulse = 260.0,  # ~3.2 m/s takeoff
+        max_speed    = 10.0,    # 20 mph
+        jump_impulse = 1260.0,  # ~3.2 m/s takeoff
         brake        = 10.0,   # release -> stop in ~0.3s; no drag while driving
         eye_height   = 0.85,   # eyes ~1.85m above ground (capsule center +0.85)
         cam_distance = 0.0,    # loc 0: first person — pure rotation at the pivot
@@ -238,7 +251,18 @@ class ScatterScene(Scene):
         "boulders0",
         components = [self.declare_component(
             "HypermeshComponent",
-            drawabledata = boulders.drawable_data(material=boulder_mat, cull=True),
+            drawabledata = boulders.drawable_data(material=boulder_mat, cull=True,
+                                                  instance_source=("terra", "rocks", 0),
+                                                  # DISTANCE LOD: lod0 = full boulder (near); lod1 = coarse
+                                                  # (subdiv 0) boulder past 100m (its own material); lod2 =
+                                                  # the IMPOSTOR — past 250m the cull routes the band to a
+                                                  # baked hemi-oct billboard per instance (boulder_mat carries
+                                                  # impostor=True -> the capture technique). One shared scatter
+                                                  # routes to all three tiers; .imposter() rides the coarse
+                                                  # fork as its bake-unavailable fallback mesh.
+                                                  lods={0.0: boulders,
+                                                        150.0: boulders.fork(subdivisions=1),
+                                                        300.0: boulders.fork(subdivisions=0).imposter()}),
             layername    = "std_forward",
             nodename     = "hm_boulders")])
 
@@ -247,9 +271,10 @@ class ScatterScene(Scene):
         components = [self.declare_component(
             "HypermeshComponent",
             drawabledata = shards.drawable_data(
-                material  = shard_mat,
-                materials = {1: shard_tip_mat},    # E.3: per-gid bucket draw
-                cull      = True),                 # E.4: per-view GPU frustum cull
+                material        = shard_mat,
+                materials       = {1: shard_tip_mat},    # E.3: per-gid bucket draw
+                cull            = True,                  # E.4: per-view GPU frustum cull
+                instance_source = ("terra", "rocks", 1)),
             layername    = "std_forward",
             nodename     = "hm_shards")])
 

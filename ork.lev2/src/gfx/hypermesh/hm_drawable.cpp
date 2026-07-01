@@ -33,6 +33,15 @@ static logchannel_ptr_t logchan_hmdrw = logger()->configureChannel("HYPERMESH", 
 
 void HypermeshDrawableData::describeX(object::ObjectClass* clazz) {
   clazz->directObjectProperty("graph", &HypermeshDrawableData::_graphdata);
+  // Phase 3c — DISTANCE LOD: parallel arrays (coarser graph per ascending distance boundary).
+  clazz->directObjectVectorProperty("lod_graphs", &HypermeshDrawableData::_lod_graphs);
+  clazz->directVectorProperty("lod_distances", &HypermeshDrawableData::_lod_distances);
+  clazz->directVectorProperty("impostor_lods", &HypermeshDrawableData::_impostor_lods); // extra-tier idx -> billboard tier
+  clazz->directProperty("impostor_grid", &HypermeshDrawableData::_impostor_grid);       // atlas view count (grid×grid)
+  clazz->directProperty("impostor_tile", &HypermeshDrawableData::_impostor_tile);       // per-view atlas tile pixels
+  clazz->directProperty("impostor_ssaa", &HypermeshDrawableData::_impostor_ssaa);       // bake supersample factor
+  clazz->directProperty("impostor_msaa", &HypermeshDrawableData::_impostor_msaa);       // bake multisample count
+  clazz->directMapProperty("lod_materials", &HypermeshDrawableData::_lod_material_assets); // LOD idx str -> mtl name
   clazz->directProperty("material_asset", &HypermeshDrawableData::_material_asset_name);
   clazz->directProperty("animated", &HypermeshDrawableData::_animated);
   clazz->directProperty("face_viz", &HypermeshDrawableData::_face_viz);
@@ -41,11 +50,19 @@ void HypermeshDrawableData::describeX(object::ObjectClass* clazz) {
   clazz->directProperty("vtx_budget", &HypermeshDrawableData::_vtx_budget);
   clazz->directVectorProperty("instance_matrices", &HypermeshDrawableData::_instance_matrices);
   clazz->directProperty("instance_source", &HypermeshDrawableData::_instance_source_name);
+  // LOD/Phase 2 — drawable-level instance source (portable asset+sink+type, or direct ogeo)
+  clazz->directProperty("instance_scatter_asset", &HypermeshDrawableData::_instance_scatter_asset);
+  clazz->directProperty("instance_sink", &HypermeshDrawableData::_instance_sink);
+  clazz->directProperty("instance_ogeo_path", &HypermeshDrawableData::_instance_ogeo_path);
+  clazz->directProperty("instance_type_id", &HypermeshDrawableData::_instance_type_id);
   // E.3 — per-gid material bindings (gid-as-string -> material asset name)
   clazz->directMapProperty("gid_materials", &HypermeshDrawableData::_gid_material_assets);
   // E.4 — per-view GPU instance cull
   clazz->directProperty("cull", &HypermeshDrawableData::_cull);
   clazz->directProperty("cull_bound", &HypermeshDrawableData::_cull_bound);
+  clazz->directProperty("cull_slabs", &HypermeshDrawableData::_cull_slabs);
+  clazz->directProperty("cull_tightness", &HypermeshDrawableData::_cull_tightness);
+  clazz->directProperty("cull_distance", &HypermeshDrawableData::_cull_distance);
 }
 
 HypermeshDrawableData::HypermeshDrawableData() {
@@ -123,6 +140,26 @@ drawable_ptr_t HypermeshDrawableData::createDrawable() const {
         }
         self->_resolved_gid_materials[gid] = gm;
       }
+      // per-LOD material overrides (same retry contract): resolve each before building so tier draws
+      // never flicker their material in.
+      for (const auto& [lod_str, mtl_name] : self->_lod_material_assets) {
+        int lod = atoi(lod_str.c_str());
+        if (self->_resolved_lod_materials.count(lod))
+          continue;
+        pbrmaterial_ptr_t lm;
+        if (self->_material_resolver_named)
+          lm = self->_material_resolver_named(mtl_name);
+        if (not lm) {
+          if (not state->_warned_mtl) {
+            logchan_hmdrw->log(
+                "HypermeshDrawable: LOD<%d> material asset<%s> not resolved yet — skipping frames",
+                lod, mtl_name.c_str());
+            state->_warned_mtl = true;
+          }
+          return;
+        }
+        self->_resolved_lod_materials[lod] = lm;
+      }
       if (not self->_graphdata) {
         logchan_hmdrw->log("HypermeshDrawable: NULL graphdata — drawable is inert");
         state->_built = true; // nothing will ever change; stop re-checking
@@ -134,6 +171,16 @@ drawable_ptr_t HypermeshDrawableData::createDrawable() const {
       auto live = materializeLive(self->_graphdata, ctx, self->_vtx_budget);
       OrkAssert(live and live->_mesh);
       self->_live = live;
+      // LOD/Phase 2 — a DRAWABLE-LEVEL instance source resolves the baked ScatterSet HERE
+      // (decoupled from the geometry graph), so one shared InstanceSet routes to N LOD meshes.
+      // Overrides any graph-carried ScatterSource. Resolved once, on this first build.
+      if (not self->_instance_sink.empty() or not self->_instance_ogeo_path.empty()) {
+        auto iset = std::make_shared<dflowgfx::InstanceSetInst>(nullptr);
+        fillInstanceSetFromScatter(
+            ctx, iset, self->_instance_scatter_asset, self->_instance_sink,
+            self->_instance_ogeo_path, self->_instance_type_id);
+        live->_instances = iset;
+      }
       auto mtl   = self->_resolved_material;
       auto fsmtl = mtl->_as_freestyle;
       OrkAssert(fsmtl); // ptex3d materials are freestyle-backed (generated fxv2)
@@ -158,35 +205,24 @@ drawable_ptr_t HypermeshDrawableData::createDrawable() const {
       std::vector<int> bound_gids;
       for (const auto& [gid, gm] : self->_resolved_gid_materials)
         bound_gids.push_back(gid);
-      // E.4 — the cull bound: AUTO (w<=0) computes the object-space sphere once
-      // from a position readback of the materialized mesh (+5% pad). Animated
-      // meshes that outgrow their static bounds should override cull_bound.
-      fvec4 cull_bound = self->_cull_bound;
-      if (self->_cull and instanced and cull_bound.w <= 0.0f) {
-        int nv   = live->_mesh->_num_verts;
-        auto pch = live->_mesh->channel(MeshChannel::POSITION);
-        if (nv > 0 and pch) {
-          auto fxi = ctx->FXI();
-          std::vector<float> P(size_t(nv) * 4);
-          auto m = fxi->mapStorageBuffer(pch->_ssbo, 0, size_t(nv) * 16, BufferMapAccess::READ_ONLY);
-          std::memcpy(P.data(), m->_mappedaddr, size_t(nv) * 16);
-          fxi->unmapStorageBuffer(m.get());
-          fvec3 bmin(P[0], P[1], P[2]), bmax = bmin;
-          for (int i = 1; i < nv; i++) {
-            fvec3 p(P[i * 4], P[i * 4 + 1], P[i * 4 + 2]);
-            bmin = fvec3(std::min(bmin.x, p.x), std::min(bmin.y, p.y), std::min(bmin.z, p.z));
-            bmax = fvec3(std::max(bmax.x, p.x), std::max(bmax.y, p.y), std::max(bmax.z, p.z));
-          }
-          fvec3 c = (bmin + bmax) * 0.5f;
-          float r = (bmax - bmin).length() * 0.5f * 1.05f;
-          cull_bound = fvec4(c, r);
-          logchan_hmdrw->log("HypermeshDrawable: auto cull bound c<%.2f %.2f %.2f> r<%.2f>", c.x, c.y, c.z, r);
-        }
+      // E.4 — the cull bound is AUTO (object-space sphere from a one-time mesh position readback)
+      // inside setupMeshRender when _cull_bound.w<=0; an explicit _cull_bound overrides it (e.g. an
+      // animated mesh that outgrows its static bounds). Same path as the python make_drawable.
+      // Phase 3c — materialize each LOD tier graph to its own live (static distinct mesh). Parallel to
+      // _lod_distances; passed to setupMeshRender as tiers 1..N. Empty -> single tier (legacy).
+      std::vector<livehypermesh_ptr_t> lod_lives;
+      for (auto& g : self->_lod_graphs) {
+        auto llive = g ? materializeLive(g, ctx, self->_vtx_budget) : nullptr;
+        lod_lives.push_back(llive);
       }
       auto handles = setupMeshRender(
           cdd.get(), live, ctx, self->_animated, face_viz, tag_viz, self->_wireframe,
           inst_count, self->_instance_matrices, bound_gids,
-          self->_cull and instanced, cull_bound);
+          self->_cull and instanced, self->_cull_bound,
+          self->_cull_slabs, self->_cull_tightness, self->_cull_distance,
+          lod_lives, self->_lod_distances, self->_impostor_lods,
+          self->_resolved_gid_materials, self->_impostor_grid, self->_impostor_tile,
+          self->_impostor_ssaa, self->_impostor_msaa);
       // E.3 — one extra indexed-indirect draw per bound gid: same index buffer,
       // args offset = gid slot * 20 bytes, OWN material + OWN storage-block list
       // (block handles are per-shader; first 5 entries = the vertex channels,
@@ -211,6 +247,53 @@ drawable_ptr_t HypermeshDrawableData::createDrawable() const {
               bucket._graphicsStorage.push_back({blk, handles._instAttr});
         }
         cdd->_bucketDraws.push_back(bucket);
+      }
+      // Phase 3b — LOD TIER DRAWS: each extra distance tier redraws the mesh (main material + every gid
+      // material, mirroring tier 0) from its OWN indirect args (the per-tier fanout stamped its
+      // instanceCount=VIS[t]) and its tier mesh's index, binding the SHARED OUT_M/attrs at the tier's
+      // byte offset via the graphics sub-range bind (VS reads the slice from gl_InstanceIndex==0).
+      for (size_t lt = 0; lt < handles._lodTiers.size(); lt++) {
+        const auto& tier = handles._lodTiers[lt];
+        // the tier draws its OWN (coarser) mesh — its index buffer references the TIER mesh's verts, so
+        // its vertex channels MUST come from the tier mesh, not the main (live) mesh (same-mesh 3b hid
+        // this; distinct LOD meshes expose it -> the far tier read the wrong verts -> nothing rendered).
+        auto tier_mesh = (lt < lod_lives.size() and lod_lives[lt]) ? lod_lives[lt]->_mesh : nullptr;
+        auto add_tier_bucket = [&](material_ptr_t mat, freestyle_mtl_ptr_t fs, size_t argsOff) {
+          if (not fs or not tier_mesh)
+            return;
+          ComputeDrawable::BucketDraw b;
+          b._material       = mat;
+          b._argsOffset     = argsOff;
+          b._indexSSBO      = tier._index;
+          b._argsSSBO       = tier._args;
+          b._instByteOffset = tier._instByteOffset;
+          for (int i = 0; i < 5; i++) {
+            auto block = fs->storageBlock(kChanBlocks[i]);
+            auto chan  = tier_mesh->channel(MeshChannel(i));
+            if (block and chan)
+              b._graphicsStorage.push_back({block, chan->_ssbo});
+          }
+          if (instanced and handles._instMtx) { // bound at the tier offset (NOT in _graphicsStorage)
+            b._instMtxBlock = fs->storageBlock("storage_inst_mtx");
+            b._instMtxBuf   = handles._instMtx;
+            if (handles._instAttr) {
+              b._instAttrBlock = fs->storageBlock("storage_inst_attr");
+              b._instAttrBuf   = handles._instAttr;
+            }
+          }
+          cdd->_bucketDraws.push_back(b);
+        };
+        // PER-LOD material override: draw the WHOLE tier mesh with one material (gid slot 0; the cull's
+        // per-tier fanout stamps instanceCount into every bound slot, but only slot 0 is drawn here).
+        // Otherwise mirror tier 0 — the main material + each gid bucket.
+        auto lod_over = self->_resolved_lod_materials.find(int(lt));
+        if (lod_over != self->_resolved_lod_materials.end()) {
+          add_tier_bucket(lod_over->second, lod_over->second->_as_freestyle, 0);
+        } else {
+          add_tier_bucket(mtl, fsmtl, 0); // the main material (gid slot 0)
+          for (const auto& [gid, gm] : self->_resolved_gid_materials)
+            add_tier_bucket(gm, gm->_as_freestyle, size_t(gid) * 20);
+        }
       }
       if (face_viz and handles._faceid)
         cdd->addGraphicsStorage(fsmtl->storageBlock("sif_triface"), handles._faceid);
@@ -270,6 +353,7 @@ drawable_ptr_t HypermeshDrawableData::createDrawable() const {
       drawable->_overlayIndexSize       = cdd->_overlayIndexSize;
       drawable->_bucketDraws            = cdd->_bucketDraws;
       drawable->_perViewCompute         = cdd->_perViewCompute; // E.4: the per-view cull hook
+      drawable->_oneShotRender          = cdd->_oneShotRender;  // A2: the one-shot impostor-bake hook
       //////////////////////////////////////////////////////////////////
       // E.6/2.12 — collect MaterialParamSinks: resolve each sink's param
       // name against EVERY material this drawable binds (main + gid
@@ -327,6 +411,11 @@ drawable_ptr_t HypermeshDrawableData::createDrawable() const {
           m->bindParam(par, v);
       }
     }
+    // NB: no per-frame clock feed here. A VS-wind material (GpuMeshRenderSource(displace=Wind())) reads
+    // the standard `Time` uniform, whose value is the RCFD_TIME provider — bound ONCE at material build
+    // (asset_gen.cpp) and supplied every frame BY THE ENGINE through fx_pipeline's named-param providers
+    // (same path as MatMVP/modcolor). Works identically on the main material and every gid bucket, in
+    // the viewer, a scene, and the zero-Python player — no displace-specific code in this drawable.
   };
 
   auto draw_raw = drw.get();

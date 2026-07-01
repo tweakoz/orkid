@@ -49,6 +49,7 @@ struct FxPipelinePermutation {
   bool _vr_mono = false;
   bool _is_vertex_ssbo = false;   // SSBO-sourced vertices -> FWD_SSBO_CUSTOM variant
   bool _instanced_matrices_only = false;  // instanced from a matrices-only dynamic block (no per-inst color)
+  bool _is_impostor = false;      // LOD impostor: billboard VS + atlas-sampling surface -> FWD_SSBO_CUSTOM_IMPOSTOR
 
   fxtechnique_constptr_t _forced_technique = nullptr;
 
@@ -97,11 +98,14 @@ struct FxPipeline {
   void endBlock(const RenderContextInstData& RCID);
   void bindParam(fxparam_constptr_t p, varval_t v);
   void bindUniformBuffer(fxuniformblock_constptr_t p, varval_t v);
-  void bindStorage(fxparamstorageblock_constptr_t p, varval_t v);
+  // byte_offset binds a SUB-RANGE of the buffer (descriptor reads [byte_offset, end)). The same buffer
+  // bound at distinct offsets resolves to distinct descriptor sets — sub-range LOD draws bind one
+  // OUT_M at per-tier offsets within a frame. Must satisfy minStorageBufferOffsetAlignment. 0 = whole.
+  void bindStorage(fxparamstorageblock_constptr_t p, varval_t v, size_t byte_offset = 0);
   void wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_t drawcall);
 
   void _set_typed_param(const RenderContextInstData& RCID, fxparam_constptr_t p, varval_t val);
-  void _set_storage(const RenderContextInstData& RCID, fxparamstorageblock_constptr_t p, varval_t val);
+  void _set_storage(const RenderContextInstData& RCID, fxparamstorageblock_constptr_t p, varval_t val, size_t byte_offset = 0);
   // E.6/2.12 — re-overlay the parent material's _bound_params when its stamp
   // moved (called at the top of beginBlock; O(1) compare when clean). Material
   // rebinds AFTER pipeline creation are therefore live on the next draw.
@@ -122,6 +126,7 @@ struct FxPipeline {
   std::unordered_map<fxparam_constptr_t, varval_t> _params;
   std::unordered_map<fxuniformblock_constptr_t, varval_t> _uniformbuffers;
   std::unordered_map<fxparamstorageblock_constptr_t, varval_t> _storages;
+  std::unordered_map<fxparamstorageblock_constptr_t, size_t>   _storage_offsets; // sub-range byte offset (default 0)
   std::vector<statelambda_t> _statelambdas;
   fxparamstorageblock_constptr_t _parInstanceBlock = nullptr;
   svar64_t _impl;

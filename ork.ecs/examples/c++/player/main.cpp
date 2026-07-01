@@ -18,7 +18,17 @@
 //   per-frame: update + gpuUpdate + render  simulation on the update thread, GPU work +
 //                                           draw on the render thread
 //
-// usage:  ork.ecs.player.exe <scene.ecs>  [--adhoc] [--camdist <d>] [--camheight <h>]
+// usage:  ork.ecs.player.exe <scene.ecs>  [--camdist <d>] [--camheight <h>]
+//
+// OFFSCREEN (headless, no window) — prime load-time bakes / record a clip:
+//   --offscreen              hidden window; render until the scene settles, then exit
+//                            (primes the terrain proctex disk cache with no window)
+//   --frames <N>             safety cap on offscreen frames (default 1200; normal exit
+//                            is driven by load-settle, not this count)
+//   --movie <path>           record an OFFSCREEN movie to <path> (implies --offscreen)
+//   --moviefps <F>           movie frame rate (default 60)
+//   --movieframes <N>        movie length in frames (default 300)
+// (ork.scene.materialize.py wraps --offscreen; ork.scene.viewer.py is the windowed path.)
 //
 // input (mirrors ork.ecsplay.py):
 //   mouse / trackpad       EzUiCam orbit / pan / zoom
@@ -29,14 +39,16 @@
 //   Cmd+Down Arrow         stop the simulation
 //   Space                  pause / resume (host-side: the update tick holds)
 //
-// startup: uses the NEW HFSM subsystem-driven init (use_subsystems) — the first C++
-// host to do so; pass --adhoc to fall back to the legacy inline init for comparison.
+// startup: always the HFSM subsystem-driven init (the first C++ host to use it).
 //
 ////////////////////////////////////////////////////////////////
 
 #include <ork/kernel/string/deco.inl>
 #include <ork/kernel/timer.h>
+#include <ork/kernel/async_tracker.h> // offscreen exit waits for pending async work (terrain texbake) to drain
+#include <ork/application/application.h>
 #include <ork/lev2/ezapp.h>
+#include <ork/lev2/gfx/util/movie.inl> // offscreen movie capture (MovieCaptureSettings)
 #include <ork/lev2/gfx/camera/uicam.h>
 #include <ork/ecs/physics/CharacterController.h> // E.2-walk: input forwarding + camera yield
 #include <ork/ecs/pysys/PythonComponent.h>          // E.2-walk: scene-declared input-script routing
@@ -61,6 +73,10 @@
 #include <filesystem>
 #include <fstream>
 #include <sstream>
+#include <iostream>
+#include <boost/program_options.hpp>
+
+#include "perfhud.h" // on-screen perf HUD (~ key)
 
 using namespace std::string_literals;
 using namespace ork;
@@ -72,41 +88,76 @@ using namespace ork::ecs;
 int main(int argc, char** argv, char** envp) {
 
   //////////////////////////////////////////////////////////
-  // args: <scene.ecs> [--adhoc] [--camdist d] [--camheight h]
+  // args — boost::program_options. Positional <scene> + flags; `--help`/`-h` prints the
+  // option list and the available scenes. Unregistered args are tolerated (the launcher /
+  // environment may inject extras), matching the old hand-rolled loop's leniency.
   //////////////////////////////////////////////////////////
 
+  namespace po = boost::program_options;
+
   std::string scene_path;
-  bool use_subsystems = true;
-  float cam_dist      = 20.0f;
-  float cam_height    = 8.0f;
-  float auto_roundtrip = 0.0f; // gate 1.7 scripted: fire the live round-trip at T+N sec
-  float auto_walk      = 0.0f; // E.2-walk scripted: hold W for N seconds through the message channel
-  bool want_fullscreen = false;
-  int want_ssaa        = 0;    // 0/1 = off
-  for (int i = 1; i < argc; i++) {
-    std::string arg = argv[i];
-    if (arg == "--adhoc")
-      use_subsystems = false;
-    else if (arg == "--camdist" and (i + 1) < argc)
-      cam_dist = atof(argv[++i]);
-    else if (arg == "--camheight" and (i + 1) < argc)
-      cam_height = atof(argv[++i]);
-    else if (arg == "--roundtrip" and (i + 1) < argc)
-      auto_roundtrip = atof(argv[++i]);
-    else if (arg == "--autowalk" and (i + 1) < argc)
-      auto_walk = atof(argv[++i]); // E.2-walk gate: hold W for N seconds (t=1..1+N) via InputKey messages
-    else if (arg == "--fullscreen" or arg == "-f")
-      want_fullscreen = true;
-    else if ((arg == "--ssaa" or arg == "-t") and (i + 1) < argc)
-      want_ssaa = atoi(argv[++i]); // supersample multiplier -> the SG screen node (scenegraph.cpp "ssaa")
-    else if (arg == "-s" and (i + 1) < argc)
-      scene_path = argv[++i];
-    else if (arg[0] != '-')
-      scene_path = arg;
+  float cam_dist        = 20.0f;
+  float cam_height      = 8.0f;
+  float auto_roundtrip  = 0.0f; // gate 1.7 scripted: fire the live round-trip at T+N sec
+  float auto_walk       = 0.0f; // E.2-walk scripted: hold W for N seconds through the message channel
+  bool  want_fullscreen = false;
+  bool  want_hidpi      = false; // default LoDPI (fillrate); opt into Retina backing scale
+  int   want_width      = 0;    // 0 = use AppInitData default; windowed initial width
+  int   want_height     = 0;    // 0 = use AppInitData default; windowed initial height
+  int   want_ssaa       = 0;    // 0/1 = off
+  // OFFSCREEN (headless) mode — hidden window, render until the scene settles, then exit.
+  // ork.scene.materialize.py uses it to PRIME the disk cache (terrain texbake) with no
+  // window; --movie additionally records a clip.
+  bool  offscreen        = false;
+  bool  offscreen_forever = false; // headless render indefinitely (no settle-exit; kill to stop)
+  int   offscreen_frames = 0;     // safety cap (0 -> default chosen below)
+  std::string movie_path;         // --movie PATH (implies offscreen)
+  float movie_fps        = 60.0f;
+  int   movie_frames     = 0;     // 0 -> default 300
+
+  po::options_description desc(
+      "ork.ecs.player.exe — pure-C++ ECS scene player\n"
+      "usage: ork.ecs.player.exe <scene.ecs | shortname> [options]\n\noptions");
+  desc.add_options()
+      ("help,h", "show this help (and the available scenes) and exit")
+      ("scene,s", po::value<std::string>(&scene_path), "scene .ecs path or short name (also accepted positionally)")
+      ("camdist", po::value<float>(&cam_dist)->default_value(20.0f), "orbit camera distance")
+      ("camheight", po::value<float>(&cam_height)->default_value(8.0f), "orbit camera height")
+      ("roundtrip", po::value<float>(&auto_roundtrip)->default_value(0.0f), "scripted live serdes round-trip at T+N seconds")
+      ("autowalk", po::value<float>(&auto_walk)->default_value(0.0f), "walk scenes: scripted hold-W for N seconds")
+      ("fullscreen,f", po::bool_switch(&want_fullscreen), "fullscreen window")
+      ("width,W", po::value<int>(&want_width)->default_value(0), "initial window width (windowed mode; 0=default)")
+      ("height,H", po::value<int>(&want_height)->default_value(0), "initial window height (windowed mode; 0=default)")
+      ("hidpi", po::bool_switch(&want_hidpi), "render at the display's backing (Retina) scale; default is LoDPI to save fillrate")
+      ("ssaa,t", po::value<int>(&want_ssaa)->default_value(0), "supersample multiplier (>1 enables SSAA)")
+      ("offscreen", po::bool_switch(&offscreen), "headless: hidden window, render until settled, then exit (prime caches)")
+      ("offscreen-forever", po::bool_switch(&offscreen_forever), "headless: render indefinitely, unthrottled, no settle-exit (kill to stop; ignores --movie)")
+      ("frames", po::value<int>(&offscreen_frames)->default_value(0), "offscreen frame safety-cap (0=auto 1200; normal exit is load-settle driven)")
+      ("movie,m", po::value<std::string>(&movie_path), "record an offscreen movie to PATH (mp4; implies --offscreen)")
+      ("moviefps,F", po::value<float>(&movie_fps)->default_value(60.0f), "movie frame rate")
+      ("movieframes,l", po::value<int>(&movie_frames)->default_value(0), "movie length in frames (0=300)");
+
+  po::positional_options_description pos;
+  pos.add("scene", 1);
+
+  po::variables_map vm;
+  try {
+    po::store(po::command_line_parser(argc, argv)
+                  .options(desc)
+                  .positional(pos)
+                  .allow_unregistered() // tolerate launcher/env-injected args (old loop ignored unknowns)
+                  .run(),
+              vm);
+    po::notify(vm);
+  } catch (const std::exception& e) {
+    printf("ork.ecs.player: argument error: %s\n", e.what());
+    std::cout << desc << std::endl;
+    return 1;
   }
+
   //////////////////////////////////////////////////////////
   // SHORT-NAME resolution + discovery (mirrors the python viewers): a bare name
-  // resolves to <workspace>/ork.data/ecsscenes/<name>.ecs; no args (or a miss)
+  // resolves to <workspace>/ork.data/ecsscenes/<name>.ecs; --help / no scene / a miss
   // lists what's available there.
   //////////////////////////////////////////////////////////
 
@@ -114,8 +165,7 @@ int main(int argc, char** argv, char** envp) {
   if (const char* ws = getenv("ORKID_WORKSPACE_DIR"))
     scenes_dir = std::string(ws) + "/ork.data/ecsscenes";
 
-  auto list_scenes = [&]() {
-    printf("usage: ork.ecs.player.exe <scene.ecs | shortname> [--adhoc] [--camdist d] [--camheight h]\n");
+  auto print_scenes = [&]() {
     if (scenes_dir.empty() or not std::filesystem::is_directory(scenes_dir)) {
       printf("(no ork.data/ecsscenes directory found via ORKID_WORKSPACE_DIR)\n");
       return;
@@ -130,8 +180,14 @@ int main(int argc, char** argv, char** envp) {
       printf("  %s\n", n.c_str());
   };
 
+  if (vm.count("help")) {
+    std::cout << desc << std::endl;
+    print_scenes();
+    return 0;
+  }
   if (scene_path.empty()) {
-    list_scenes();
+    std::cout << desc << std::endl;
+    print_scenes();
     return 1;
   }
   // bare short name (no slash, no .ecs) -> the scenes dir
@@ -143,7 +199,7 @@ int main(int argc, char** argv, char** envp) {
   std::ifstream scene_file(scene_path);
   if (not scene_file.good()) {
     printf("ork.ecs.player: scene file not found: %s\n", scene_path.c_str());
-    list_scenes();
+    print_scenes();
     return 1;
   }
   std::stringstream scene_json_strm;
@@ -156,11 +212,59 @@ int main(int argc, char** argv, char** envp) {
   //////////////////////////////////////////////////////////
 
   auto init_data = std::make_shared<ork::AppInitData>(argc, argv, envp);
-  if (use_subsystems) {
-    init_data->_fullscreen         = want_fullscreen;
-    init_data->_use_subsystems     = true;
-    init_data->_defer_gpu_init     = true;
-    init_data->_enabled_subsystems = {"opq", "core", "gpu", "lev2"};
+  init_data->_fullscreen         = want_fullscreen;
+  init_data->_fullscreen_mode    = ork::AppInitData::EFullScreenMode::Immersive;
+  init_data->_allowHIDPI         = want_hidpi;
+  if (want_width  > 0) init_data->_width  = want_width;
+  if (want_height > 0) init_data->_height = want_height;
+  init_data->_use_subsystems     = true;
+  init_data->_defer_gpu_init     = true;
+  init_data->_enabled_subsystems = {"opq", "core", "gpu", "lev2"};
+  if (const char* v = getenv("ORKEXP_FULLSCREEN")) init_data->_fullscreen = (atoi(v) != 0);
+  if (const char* v = getenv("ORKID_HIDPI"))       init_data->_allowHIDPI = (atoi(v) != 0);
+  if (const char* v = getenv("ORKEXP_LEFT"))       init_data->_left   = atoi(v);
+  if (const char* v = getenv("ORKEXP_TOP"))        init_data->_top    = atoi(v);
+  if (const char* v = getenv("ORKEXP_WIDTH"))      init_data->_width  = atoi(v);
+  if (const char* v = getenv("ORKEXP_HEIGHT"))     init_data->_height = atoi(v);
+  if (const char* v = getenv("ORKEXP_MONITOR"))    init_data->_fullscreen_monitor = v;
+  if (const char* v = getenv("ORKEXP_DISPLAYLINK")) init_data->_displaylink = (atoi(v) != 0);
+
+  //////////////////////////////////////////////////////////
+  // OFFSCREEN: hidden window (GLFW_VISIBLE=false, no swapchain), still a full
+  // _mainWindow + render thread, so mainThreadLoop renders frames headless. The
+  // onDraw frame-budget below drives capture + signalExit. --movie implies offscreen.
+  //////////////////////////////////////////////////////////
+  if (not movie_path.empty())
+    offscreen = true;
+  if (offscreen_forever) {
+    offscreen  = true;   // headless
+    movie_path = "";     // forever is the no-movie soak/perf path
+  }
+  if (offscreen) {
+    init_data->_offscreen = true;
+    if (offscreen_forever) {
+      deco::printf(fvec3::Yellow(), "ork.ecs.player: OFFSCREEN-FOREVER mode (unthrottled, no settle-exit; kill to stop)\n");
+    }
+    if (not movie_path.empty()) {
+      // movie capture's encoder thread reads samples from a STREAMING audio device
+      // (StrAudioDevice). Provide one — silent if the scene has no synth — so A/V
+      // capture works and the encoder never derefs a null device. ASYNC_REALTIME
+      // (no _audio_stream_sync) keeps it compatible with the player's freerun loop.
+      init_data->_enable_audio  = true;
+      init_data->_audio_ioclass = "STREAM";
+    }
+    if (movie_frames <= 0)
+      movie_frames = 300;
+    // offscreen_frames is a SAFETY CAP (max frames if the loader never settles); the
+    // normal exit is driven by the load-idle + settle state machine in onDraw. A raw
+    // frame count alone is unreliable — at offscreen freerun N frames elapse in well
+    // under a second while async asset streaming takes seconds, so a small budget exits
+    // BEFORE the deferred terrain texbake fires (the bug this replaces).
+    if (offscreen_frames <= 0)
+      offscreen_frames = movie_path.empty() ? 1200 : (600 + movie_frames);
+    if (not offscreen_forever)
+      deco::printf(fvec3::Yellow(), "ork.ecs.player: OFFSCREEN mode (cap<%d frames>%s)\n",
+                   offscreen_frames, movie_path.empty() ? "" : (" movie<" + movie_path + ">").c_str());
   }
 
   // CLASS REGISTRATION ORDER: ecs::initModule must run BEFORE OrkEzApp::create — the
@@ -176,10 +280,13 @@ int main(int argc, char** argv, char** envp) {
   ecs::initModule(init_data); // ecs (+ lev2, guarded) class registration
   auto ezapp = OrkEzApp::create(init_data);
 
+  // on-screen performance HUD — the '~' key cycles OFF -> TEXT -> TEXT+GRAPH.
+  ork::ecs::player::PerfHud perfhud;
+  perfhud.init(ezapp);
+
   deco::printf(
       fvec3::Yellow(),
-      "ork.ecs.player: %s startup, scene<%s> (%zu bytes)\n",
-      use_subsystems ? "SUBSYSTEM (HFSM)" : "ad-hoc",
+      "ork.ecs.player: SUBSYSTEM (HFSM) startup, scene<%s> (%zu bytes)\n",
       scene_path.c_str(),
       scene_json.size());
 
@@ -196,6 +303,16 @@ int main(int argc, char** argv, char** envp) {
   Timer fps_timer;
   fps_timer.Start();
   int framecounter = 0;
+  // OFFSCREEN exit state machine (materialize / movie): wait for the loader to settle,
+  // then a render margin (the deferred terrain texbake fires + writes its cache), then
+  // exit — or start/stop a movie recording.
+  int  os_frame     = 0;   // total offscreen frames rendered
+  int  os_idle      = 0;   // consecutive loader-idle frames (no in-flight async loads)
+  int  os_settle    = 0;   // frames since the scene settled
+  int  os_movie     = 0;   // movie frames recorded
+  int  os_drain     = 0;   // post-record drain frames (pump GPU so captures finish)
+  int  os_phase     = 0;   // 0=WAIT 1=SETTLE 2=MOVIE 3=DONE
+  bool os_saw_async = false; // observed registered async work (a bake) — wait for it to drain
 
   // controller swaps (Cmd+Right restart) happen on the update thread while the render
   // thread reads `controller` in gpuUpdate/draw — one small mutex covers all of it.
@@ -252,7 +369,9 @@ int main(int argc, char** argv, char** envp) {
   auto uicam            = std::make_shared<EzUiCam>();
   uicam->_constrainZ    = true;
   uicam->_fov           = 65.0f * DTOR;
-  uicam->_base_zmoveamt = 2.0f;
+  uicam->near_min          = 0.75;
+  uicam->far_max           = 100000.0;
+  uicam->_base_zmoveamt = 0.05f;
   uicam->mfLoc          = cam_dist;
   uicam->lookAt(fvec3(cam_dist, cam_height, cam_dist), fvec3(0, 2, 0), fvec3(0, 1, 0));
   uicam->updateMatrices();
@@ -456,6 +575,12 @@ int main(int argc, char** argv, char** envp) {
 
   ezapp->onUiEvent([&](ui::event_constptr_t ev) -> ui::HandlerResult {
     if (ev->_eventcode == ui::EventCode::KEY_DOWN) {
+      // '~' / '`' (grave) cycles the perf HUD: OFF -> TEXT -> TEXT+GRAPH. Handle it
+      // BEFORE the walk/PythonSystem key-forwarding below so the scene can't swallow it.
+      if (ev->miKeyCode == '`' or ev->miKeyCode == '~') {
+        perfhud.cycleMode();
+        return ui::HandlerResult();
+      }
       if (ev->mbSUPER) {
         if (ev->miKeyCode == 262) { // Cmd+Right Arrow -> restart NEW simulation
           sim_request = REQ_RESTART;
@@ -508,7 +633,10 @@ int main(int argc, char** argv, char** envp) {
     // E.2-walk: INPUT AS CONTROLLER MESSAGES — forward plain key transitions to the
     // CharacterControllerSystem (the host-agnostic input channel; a future PythonSystem
     // can route the same messages). EXACT-typed svar values (int).
-    if (walk_mode and (ev->_eventcode == ui::EventCode::KEY_DOWN or ev->_eventcode == ui::EventCode::KEY_UP) and
+    // The player does NOT interpret game keys — it just DELIVERS raw key transitions to the scene's
+    // PythonSystem whenever one exists. The python input SCRIPT owns the keymap (walk actions, locomotion, …); "walk vs locomotion" is a python concern, never a host flag.
+    if (pysys_mode and
+        (ev->_eventcode == ui::EventCode::KEY_DOWN or ev->_eventcode == ui::EventCode::KEY_UP) and
         not ev->mbSUPER) {
       controller_ptr_t c;
       {
@@ -519,8 +647,6 @@ int main(int argc, char** argv, char** envp) {
         auto keytab = std::make_shared<DataTable>();
         (*keytab)["key"_tok]  = int(ev->miKeyCode);
         (*keytab)["down"_tok] = int(ev->_eventcode == ui::EventCode::KEY_DOWN ? 1 : 0);
-        // RAW keys go to the scene's input SCRIPT (PythonSystem) — it owns the keymap
-        // and translates to semantic CharacterControllerSystem actions.
         static int dbg_fwd = 0;
         if (dbg_fwd < 8) {
           dbg_fwd++;
@@ -529,7 +655,7 @@ int main(int argc, char** argv, char** envp) {
         }
         c->systemNotify(pysystem, "InputKey"_tok, keytab);
       }
-      return ui::HandlerResult();
+      // fall through: the orbit cam may also process it (unused when a system publishes the camera).
     }
     if (uicam->UIEventHandler(ev))
       uicam->updateMatrices();
@@ -607,6 +733,7 @@ int main(int argc, char** argv, char** envp) {
   //////////////////////////////////////////////////////////
 
   ezapp->onDraw([&](ui::drawevent_constptr_t drwev) {
+    perfhud.frameBegin();
     controller_ptr_t c;
     {
       std::lock_guard<std::mutex> lock(ctl_mutex);
@@ -614,12 +741,104 @@ int main(int argc, char** argv, char** envp) {
     }
     if (c)
       c->render(drwev);
+    // MOVIE CAPTURE pump — the movie frame lambda normally fires in the EzTopWidget
+    // draw path (uicontext->draw), but the player renders the ECS scene directly via
+    // this onDraw and never enters that path, so the lambda was never called and the
+    // recording came out empty/invalid. Invoke it here, AFTER the scene has rendered
+    // into the main RtGroup the lambda captures. No-op unless recording is active.
+    if (ezapp->_movie_record_frame_lambda)
+      ezapp->_movie_record_frame_lambda(drwev->GetTarget());
+    // perf HUD draws AFTER the movie pump so it never burns into a recording.
+    perfhud.frameEndAndDraw(drwev->GetTarget());
     framecounter++;
     if (fps_timer.SecsSinceStart() > 5.0f) {
       float FPS = float(framecounter) / fps_timer.SecsSinceStart();
       deco::printf(fvec3::White(), "ork.ecs.player FPS<%g>\n", FPS);
       fps_timer.Start();
       framecounter = 0;
+    }
+    ////////////////////////////////////////////
+    // OFFSCREEN exit — driven by the ASYNC-WORK registry, not a frame count. The
+    // deferred terrain texbake registers itself as pending async work and clears it
+    // when the disk cache is written; we (WAIT) until that drains (a scene with NO
+    // registered async work falls back to loader-idle + a warmup), (SETTLE) render a
+    // short margin so lighting settles + any GPU work flushes, then exit — or (MOVIE)
+    // record the budget + finalize. offscreen_frames is a hang-guard cap.
+    ////////////////////////////////////////////
+    if (offscreen and not offscreen_forever) {
+      os_frame++;
+      auto cq           = opq::concurrentQueue();
+      bool loader_idle  = cq and (cq->_numPendingOperations.load() == 0)
+                             and (cq->_numInFlight.load() == 0);
+      int  async_pend   = ork::asyncWorkPending();
+      if (async_pend > 0)
+        os_saw_async = true;
+      os_idle = loader_idle ? (os_idle + 1) : 0;
+      // Exit only when BOTH the registered async work (terrain texbake) has drained AND
+      // the loader has gone quiet for a sustained run. The loader-idle requirement is the
+      // fix for the "--offscreen hangs / --movie survives" bug: exiting while a lazy load
+      // (e.g. the envmap, requested only once the terrain first renders) is still in flight
+      // strands its GPU upload and DEADLOCKS teardown — the movie path only escaped it by
+      // running long enough for the load to finish. The os_frame floor bridges the brief
+      // idle window BEFORE that lazy load is even requested.
+      bool bakes_done = (not os_saw_async) or (async_pend == 0);
+      bool loads_done = (os_idle >= 45) and (os_frame >= 90);
+      bool ready      = bakes_done and loads_done;
+      bool cap        = (os_frame >= offscreen_frames);
+      switch (os_phase) {
+        case 0: // WAIT for bakes to drain AND the loader to go quiet (clean teardown)
+          if (ready or cap) {
+            os_phase  = 1;
+            os_settle = 0;
+            deco::printf(fvec3::Yellow(),
+                         "ork.ecs.player: OFFSCREEN settled frame<%d> async<%s> idle<%d>%s — settling\n",
+                         os_frame, ork::asyncWorkSummary().c_str(), os_idle, cap ? " (CAP)" : "");
+          }
+          break;
+        case 1: // SETTLE — short margin (lighting / flush) before exit or recording
+          os_settle++;
+          if (os_settle >= 20 or cap) {
+            if (not movie_path.empty()) {
+              auto settings             = std::make_shared<MovieCaptureSettings>();
+              settings->_filename       = movie_path;
+              settings->_fps            = int(movie_fps);
+              settings->_preset_name    = "high";
+              settings->_max_queue_size = 300;
+              ezapp->enableMovieRecording(settings);
+              deco::printf(fvec3::Yellow(), "ork.ecs.player: OFFSCREEN MOVIE -> %s (%d frames @ %d fps)\n",
+                           movie_path.c_str(), movie_frames, int(movie_fps));
+              os_phase = 2;
+              os_movie = 0;
+            } else {
+              deco::printf(fvec3::Green(), "ork.ecs.player: OFFSCREEN materialize done (frame %d) — exiting\n", os_frame);
+              ezapp->signalExit();
+              os_phase = 3;
+            }
+          }
+          break;
+        case 2: // MOVIE — record movie_frames, then DRAIN before finalize. finishMovieRecording
+                // (terminate) blocks the render thread until the frame queue empties, but the
+                // queue only drains while THIS thread keeps pumping the GPU (captures are async).
+                // So stop enqueuing and pump a margin of frames first — else terminate deadlocks
+                // on its own last in-flight capture (the empty 48-byte / no-moov file bug).
+          if (os_movie < movie_frames and not cap) {
+            os_movie++; // the capture pump above grabbed this frame
+          } else {
+            if (ezapp->_movie_record_frame_lambda) {
+              ezapp->_movie_record_frame_lambda = nullptr; // stop enqueuing new frames
+              deco::printf(fvec3::Yellow(), "ork.ecs.player: movie captured %d frames — draining\n", os_movie);
+            }
+            os_drain++;
+            if (os_drain >= 30 or cap) {     // pumped enough for the encoder to drain the queue
+              ezapp->finishMovieRecording(); // queue now empty -> terminate returns promptly
+              deco::printf(fvec3::Green(), "ork.ecs.player: movie recording finished (%d frames)\n", os_movie);
+              ezapp->signalExit();
+              os_phase = 3;
+            }
+          }
+          break;
+        default: break;
+      }
     }
   });
 

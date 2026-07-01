@@ -352,9 +352,36 @@ struct Context {
     return _rcidlambdas;
   }
 
+  // Per-renderer PRE-RENDER GPU lambdas: invoked from the drawable's onGpuUpdate (render
+  // thread, BEFORE any render pass begins — so a texture upload / compute dispatch is legal
+  // here, unlike the render lambdas which run mid-pass). Same register-on-update-thread /
+  // iterate-on-render-thread contract as the render lambdas; keyed idempotently by renderer
+  // instance. Used to upload the gradient LUT texture each frame-when-dirty (replaces the old
+  // mid-pass render-to-texture bake, which is illegal nested inside the forward pass).
+  using gpu_update_lambda_t = std::function<void(ork::lev2::Context*)>;
+  struct GpuUpdateEntry {
+    const void* _key = nullptr;
+    gpu_update_lambda_t _lambda;
+  };
+  void setGpuUpdateLambda(const void* key, gpu_update_lambda_t lambda) {
+    std::lock_guard<std::mutex> lock(_rcid_mutex);
+    for (auto it = _gpuUpdateLambdas.begin(); it != _gpuUpdateLambdas.end(); ++it) {
+      if (it->_key == key) {
+        _gpuUpdateLambdas.erase(it);
+        break;
+      }
+    }
+    _gpuUpdateLambdas.push_back(GpuUpdateEntry{key, std::move(lambda)});
+  }
+  std::vector<GpuUpdateEntry> gpuUpdateLambdas() const {
+    std::lock_guard<std::mutex> lock(_rcid_mutex);
+    return _gpuUpdateLambdas;
+  }
+
 private:
   mutable std::mutex _rcid_mutex;
   std::vector<RcidLambdaEntry> _rcidlambdas;
+  std::vector<GpuUpdateEntry> _gpuUpdateLambdas;
 
 public:
 

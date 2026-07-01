@@ -773,6 +773,7 @@ struct CallbackDrawable : public Drawable {
   using RLCBType      = std::function<void(RenderContextInstData& RCID)>;
   using Q2LCBType     = void(drawqueueitem_constptr_t cdb);
   using Q2LLambdaType = std::function<void(drawqueueitem_constptr_t)>;
+  using GpuUpdLambdaType = std::function<void(lev2::Context*)>;
 
   CallbackDrawable(DrawableContainer* owner);
   ~CallbackDrawable();
@@ -783,6 +784,8 @@ struct CallbackDrawable : public Drawable {
   void setRenderLambda(RLCBType cb);
   void setEnqueueOnLayerCallback(Q2LCBType cb);
   void setEnqueueOnLayerLambda(Q2LLambdaType cb);
+  void setOnGpuUpdateLambda(GpuUpdLambdaType cb);  // pre-render, render-pass-safe GPU hook
+  void onGpuUpdate(lev2::Context* ctx) const override;
   void enqueueToRenderQueue(drawqueueitem_constptr_t item, lev2::IRenderer* renderer) const override;
   drawqueueitem_ptr_t enqueueOnLayer(const DrawQueueTransferData& xfdata, DrawQueueLayer& buffer) const override;
 
@@ -791,6 +794,7 @@ struct CallbackDrawable : public Drawable {
   Q2LCBType* _enqueueOnLayerCallback;
   Q2LLambdaType _enqueueOnLayerLambda;
   RLCBType _renderLambda;
+  GpuUpdLambdaType _onGpuUpdateLambda;
 };
 
 struct CallbackDrawableData : public DrawableData {

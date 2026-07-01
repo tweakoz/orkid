@@ -40,6 +40,7 @@ struct ForwardPbrNodeImpl {
   ForwardPbrNodeImpl(ForwardNode* node);
   ~ForwardPbrNodeImpl();
   void init(lev2::Context* context, int iw, int ih);
+  void _buildPrimaryRtgs(lev2::Context* context, int iw, int ih); // MSAA-aware primary RtgSet (re-buildable)
   void _render_top(CompositorDrawData& drawdata);
   void _render_dppskyssaocolor(forward_pass_ptr_t fpass);
   void _render_dpp(forward_pass_ptr_t fpass);
@@ -118,6 +119,7 @@ struct ForwardPbrNodeImpl {
   compositorimpl_ptr_t _currentCIMPL = nullptr;
   int _currentWidth              = 0;
   int _currentHeight             = 0;
+  int _msaa_level_built          = -1;  // the --msaa LEVEL _rtgs_primary was built at (-1 = never)
 
   forward_pass_ptr_t _primary_pass;
 

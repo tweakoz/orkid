@@ -7,6 +7,7 @@
 
 #pragma once
 #include <string>
+#include <mutex>
 
 extern "C" {
   #include <Python.h>
@@ -73,6 +74,16 @@ struct Context2 {
   void bindSubInterpreter();
   void unbindSubInterpreter();
   bool _subGILheld = false;
+  // Serializes bind→(script)→unbind so the SINGLE _subPrimaryThreadState +
+  // _saveInterpreter scratch are never raced across OS threads. Required now that
+  // the sub-interpreter is entered from BOTH the update thread (PythonSystem::_onUpdate)
+  // AND the render thread (PythonSystem::_onGpuUpdate): without this, the render-thread
+  // PyEval_RestoreThread(_subPrimaryThreadState) attaches a tstate the update thread
+  // still owns → CPython "_PyThreadState_Attach: non-NULL old thread state" abort. The
+  // sub-interp has its OWN GIL (OWN_GIL), so the two threads could never execute Python
+  // concurrently anyway — this only ORDERS the attach/detach the GIL already serializes
+  // (no parallelism lost). recursive_: tolerate a same-thread nested bind.
+  std::recursive_mutex _subInterpMutex;
 };
 
 using context2_ptr_t = std::shared_ptr<Context2>;

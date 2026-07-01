@@ -1,16 +1,29 @@
 # HYPERECS — orkid declarative authoring tiers (standalone graph → ECS scene composite)
 
-> **STATUS (2026-06-10):** this remains the live DESIGN doc for the (unbuilt) Tier-3 Scene composite — current
-> STATE lives in `HYPERECS_JUN10.md` (this dir) and the execution ordering in `HYPERECS_PLAN_JUN10.md` (its Appendix A6
-> indexes this doc's standing commitments). Known corrections vs reality, verified file:line in the JUN10 review:
-> (1) `AssetSystem` C++ is today a NO-OP data carrier — all materialization is Python (the §3.4 description is the
-> target, not the present); (2) the stage-then-swap completes in **2–3 frames**, not the single frame §3.6 states
-> (barrier-protected, no tearing — update the spec when implementing); (3) the scene-level type registry (§5.5) is
-> designed, not landed. The chaining-vs-`with` syntax experiment (formerly `HYPERECS_EXP_CHAIN_WITH.md`, retired)
-> validated this doc's kwargs-first choice: chaining as primary sugar, `with` only for 4+ children without
-> cross-refs, implicit thread-local context rejected as invisible coupling.
+> **STATUS (2026-06-30):** the three-tier authoring model described here is **implemented and in daily use**.
+> This doc is now the DESIGN + IMPLEMENTATION-STATUS reference; the remaining *open* (unimplemented) work lives
+> in the lean `HYPERECS_PLAN_JUN10.md` (same dir — its Appendix A holds the locked contracts, A6 indexes this
+> doc's standing commitments).
+>
+> **What is landed:**
+> - **Tier 1/2** — standalone + parameterized single-graph HyperSyn authoring (the permanent path; never removed).
+> - **Tier 3 — the ECS Scene composite** — the `ork.hypergraph.ecs.scene` Python surface (a `Scene` with
+>   system-handle namespaces + entity/spawner sugar + the dual-use asset DSL; e.g. `self.terrain(...)`,
+>   `self.walker(...)`, `self.projectile_pool(...)`, `self.scenegraph(...)`) → reflected `.ecs` → the pure-C++
+>   `ork.ecs.player.exe` host (zero-Python playback; the D.5 host demo, owner-verified). This is the live
+>   playback path (`ork.scene.viewer.py` = tojson → player).
+> - **The C++ materializers (§3.4) are REAL** — `AssetSystemData::materializeAll` (`ork.ecs/.../AssetSystem.cpp`)
+>   + the `PbrMaterial`/`HeightField`/`Hypermesh` gendata `materialize()` (`ork.lev2/.../asset_gen.cpp`).
+>   No longer the Python-only no-op an earlier draft warned about.
+>
+> **Reality-vs-spec deltas to keep in mind while reading:** (1) stage-then-swap completes in **2–3 frames**,
+> not the single frame §3.6 states (barrier-protected, no tearing); (2) a few described sub-features remain
+> partial — see the plan's "Open work." The retired `HYPERECS_JUN10.md` scorecard is gone; status now lives
+> here + the plan's Status section. (Design-decision record: the chaining-vs-`with` syntax experiment validated
+> this doc's kwargs-first choice — chaining as primary sugar, `with` only for 4+ children without cross-refs,
+> implicit thread-local context rejected as invisible coupling.)
 
-Working understanding as of 2026-05-25. Merged from three planning docs (since retired; see the status note above) and grounded against the canonical HyperSyn contract at `.claude/skills/hypersyn/SKILL.md` (920 lines) + `PLAN.md`. The contract is referenced throughout; nothing in this doc supersedes SKILL.md without explicit callout.
+Grounded against the canonical HyperSyn contract at `.claude/skills/hypersyn/SKILL.md` + `PLAN.md`. The contract is referenced throughout; nothing in this doc supersedes SKILL.md without explicit callout.
 
 ---
 
@@ -18,11 +31,12 @@ Working understanding as of 2026-05-25. Merged from three planning docs (since r
 
 | Doc | Scope | Status |
 |---|---|---|
-| `SKILL.md` (orkid `.claude/skills/hypersyn`) | The HyperSyn contract — families, Ops, Phases, registry, validator subprocess, materialize semantics. **Canonical.** | Active (~70 KB) |
-| `PLAN.md` (alongside SKILL.md) | Milestone breakdown M0–M5 for HyperSyn implementation | Active |
-| **`HYPERECS.md`** (this doc) | The three-tier authoring model — from standalone HyperSyn graph → ECS scene composite; declarative-then-reflected workflow; editor round-trip | Current design |
+| `SKILL.md` (orkid `.claude/skills/hypersyn`) | The HyperSyn contract — families, Ops, Phases, registry, validator subprocess, materialize semantics. **Canonical.** | Active |
+| `PLAN.md` (alongside SKILL.md) | HyperSyn milestone/status breakdown | Active |
+| `HYPERECS_PLAN_JUN10.md` (this dir) | HYPERECS **open work** + the locked contracts (Appendix A) | Active |
+| **`HYPERECS.md`** (this doc) | The three-tier authoring model — standalone HyperSyn graph → ECS scene composite; declarative-then-reflected workflow; editor round-trip | Design + current status (Tier 1–3 landed) |
 
-This document focuses on what `SKILL.md` defers as "ECS instantiation (future, lines 570–579)" and "Hypergraph composition (M4, lines 609–620, 838–851)." Those become load-bearing as soon as users want to author entire ECS scenes (particles + physics + sound + scenegraph) in one declarative Python file. Crucially, this document **adds** that surface without removing the existing standalone HyperSyn authoring path — both coexist permanently.
+This document covers what `SKILL.md` originally deferred as "ECS instantiation (future)" and "Hypergraph composition" — now **built**: users author entire ECS scenes (particles + physics + sound + scenegraph) in one declarative Python file (`ork.hypergraph.ecs.scene`). Crucially, this surface was **added** without removing the existing standalone HyperSyn authoring path — both coexist permanently.
 
 ---
 
@@ -697,6 +711,17 @@ Net contract: open a JSON in any Python process that has imported the same libra
 ---
 
 ## 6. HyperSyn integration — effortless from user side (Tiers 1–3)
+
+> **Cross-ref (2026-06-24, updated 2026-06-25).** The HyperSyn family surface this section integrates has
+> grown a *structural / topology* spine — a shared `XfNodeGraph` transform-graph currency + one rewrite/grammar
+> engine that make flora / cities / creatures thin specializations. That spine is specified in
+> `.claude/skills/hypersyn/UNIFIED_SUBSTRATE.md` §11–§16; its **foundation LANDED 2026-06-25** (the
+> `XfNodeGraph` interchange plug + the `lsystem` generator family), with the grammar generalization +
+> creature/city/skinning milestones still forward. It changes nothing about the Tier-1/2/3 contract here:
+> new generator families (`lsystem` shipped; creature/city grammars forward) plug into the Scene composite
+> exactly as §6.3 describes — each contributes Ops, a materializer, and a Scene verb.
+> The `sdf` family is now a shipped standalone family (see SKILL.md), consumable from any tier the same
+> way hypermesh is. No claim in this doc is superseded.
 
 The Scene composite must make HyperSyn graph authoring **identical** to how it works today, just hostable inside a larger structure. Three concrete promises:
 

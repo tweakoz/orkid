@@ -38,7 +38,25 @@ public:
   // reflected (authored) state
   ///////////////////////////////////////////////////////////////
 
-  dflow::graphdata_ptr_t _graphdata;     // the embedded hypermesh graph (model B)
+  dflow::graphdata_ptr_t _graphdata;     // the embedded hypermesh graph (model B); LOD tier 0
+  // Phase 3c — DISTANCE LOD. _lod_graphs[i] is the coarser mesh graph drawn for instances beyond
+  // _lod_distances[i] meters (ascending, parallel arrays; up to 3 entries -> 4 tiers). Authored via
+  // drawable_data(lods={dist: forked_hypermesh}); materialized to N lives + fed to setupMeshRender.
+  std::vector<dflow::graphdata_ptr_t> _lod_graphs;
+  std::vector<float> _lod_distances;
+  // LOD step #3 — IMPOSTOR tiers. Each entry is an index into the EXTRA-tier arrays (_lod_graphs /
+  // _lod_distances) whose tier draws a baked hemi-octahedral billboard instead of a mesh: its _lod_graphs
+  // slot is null (no mesh), the base mesh's PBR atlas is baked once at materialize, and the cull routes
+  // that distance band's instances to one camera-facing quad each. Authored via lods={dist: m.imposter()}.
+  std::vector<int> _impostor_lods;
+  int _impostor_grid = 8;   // hemi-oct atlas view count (grid×grid); from imposter(grid=)
+  int _impostor_tile = 512; // per-view atlas tile pixels (atlas = grid*tile square); from imposter(tile=)
+  int _impostor_ssaa = 2;   // bake supersample factor (render tile*ssaa per view, resolve down); imposter(ssaa=)
+  int _impostor_msaa = 4;   // bake multisample count; from imposter(msaa=)
+  // optional PER-LOD material override (LOD-index-as-string -> material asset NAME). A tier with an
+  // entry draws its WHOLE mesh with that one material (the far-LOD case: a cheaper shader); a tier with
+  // no entry mirrors tier 0 (the main material + its gid buckets). Resolved by the host like _gid_*.
+  std::map<std::string, std::string> _lod_material_assets;
   std::string _material_asset_name;      // PbrMaterialGenData asset to bind (artifact registry key)
   bool _animated  = false;               // re-evaluate the graph each frame (S.time assets)
   bool _face_viz  = false;               // per-triangle face-id buffer -> the face-viz FS
@@ -52,6 +70,16 @@ public:
   // matrices SSBO dynamically. Reflected now so authored scenes can carry the reference;
   // unused until the typed instance edge lands.
   std::string _instance_source_name;
+  // LOD/Phase 2 — DRAWABLE-LEVEL instance source. When _instance_sink (portable) or
+  // _instance_ogeo_path (direct) is set, the drawable resolves the baked ScatterSet
+  // ITSELF (fillInstanceSetFromScatter) at first build and binds live->_instances —
+  // decoupled from the geometry graph, so the same shared InstanceSet can route to N
+  // LOD meshes. Overrides any graph-carried ScatterSource. Authored via
+  // drawable_data(instance_source=(asset, sink, type_id)).
+  std::string _instance_scatter_asset; // portable: HeightField asset name
+  std::string _instance_sink;          // portable: scatter sink name -> .../<asset>/<sink>.ogeo
+  std::string _instance_ogeo_path;     // direct: explicit .ogeo path (tools/viewers; wins)
+  int _instance_type_id = -1;          // filter to one scatter type (-1 = whole set)
 
   ///////////////////////////////////////////////////////////////
   // runtime state (NEVER reflected)
@@ -68,11 +96,19 @@ public:
   // 5% — override for meshes that ANIMATE beyond their static bounds).
   bool _cull = false;
   fvec4 _cull_bound = fvec4(0, 0, 0, 0);
+  // occludee decomposition for HZB occlusion (tighter than the cull sphere): cull_slabs 1 = whole-mesh
+  // AABB (default), N = N vertical slabs (thin trunk / wide canopy occlude independently). cull_tightness
+  // scales the occludee box about its center (<1 culls harder — good for see-through foliage; 1 = exact).
+  int _cull_slabs = 1;
+  float _cull_tightness = 1.0f;
+  float _cull_distance = 0.0f; // radial distance cull from the eye (meters; 0 = off)
   // E.3 — per-gid material bindings (gid-as-string -> material asset NAME;
   // reflected). Faces whose __tags gid matches draw with that material in
   // their own bucket; unbound gids fold to the default _material_asset_name.
   std::map<std::string, std::string> _gid_material_assets;
   mutable std::map<int, pbrmaterial_ptr_t> _resolved_gid_materials;
+  // resolved per-LOD material overrides (LOD index -> material); same by-name resolver contract.
+  mutable std::map<int, pbrmaterial_ptr_t> _resolved_lod_materials;
   // generic by-name resolver (ECS installs it; same retry contract as
   // _material_resolver — polled each frame until every gid material yields)
   mutable std::function<pbrmaterial_ptr_t(const std::string&)> _material_resolver_named;

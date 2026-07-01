@@ -106,6 +106,7 @@ class StandardSceneGraphComponent(ApplicationComponent):
                far = 20000.0,
                sg_params=None,
                post_nodes=None,
+               msaa=0,
                ssaa=0,
                use_float_color_buffer=True,
                layout_component=None):
@@ -138,6 +139,7 @@ class StandardSceneGraphComponent(ApplicationComponent):
     sgparam_vm.preset = "ForwardPBR"
     sgparam_vm.SkyboxTexPathStr = "<ork_envmaps2>/cold4k.xir"
     sgparam_vm.ssaa = int(ssaa)
+    sgparam_vm.msaa = int(msaa)
     if sg_params != None:
       for k,v in sg_params.items():
         setattr(sgparam_vm, k, v)
@@ -295,6 +297,11 @@ class StandardSceneGraphComponent(ApplicationComponent):
    if self.app._shutting_down:
      return
    try:
+     # publish the app clock to the renderer: the scene render exposes this as RCFD["time"], which
+     # fx_pipeline's RCFD_TIME named-param provider binds into any shader uniform tagged with it (VS
+     # wind, animated materials, ...) — the general scene clock, no per-asset code. (ECS apps drive
+     # this from SceneGraphSystem::_onUpdate via the sim gameTime instead.)
+     self.scenegraph.scenetime = updinfo.absolutetime
      self.scenegraph.updateScene(self.cameralut)  # update and enqueue all scenenodes
      self.SGVP.widget.setDirty()
    except RuntimeError:

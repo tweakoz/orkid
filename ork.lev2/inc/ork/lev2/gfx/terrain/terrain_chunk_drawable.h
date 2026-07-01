@@ -40,6 +40,13 @@ public:
   std::string _hf_asset_name;       // HeightFieldGenData asset (its artifact = the manifest path)
   std::string _material_asset_name; // ptex3d material authored with TerrainChunkVertexSource
   int _chunk = 128;                 // chunk size — must match the value the material was authored with
+  int _render_dimension = 0;        // render-mesh + physics grid res (0 => == manifest dim). The manifest
+                                    // dim is the BAKE resolution; heights downsample bake_dim -> this for
+                                    // the render SSBO. The material bake stays at the full manifest dim.
+  std::string _capture_mode = "proc"; // "proc" (live) | "stored" (terrain proctex texture-bake)
+  int _capture_res = 2048;            // baked atlas resolution (stored mode)
+  std::string _capture_dir;           // (legacy) author-derived cache dir; unused by the same-session bind
+  std::vector<std::string> _capture_targets; // explicit-capture target names (MRT order) -> N atlas textures
 
   ///////////////////////////////////////////////////////////////
   // runtime (NEVER reflected) — wire-resolved before first render
