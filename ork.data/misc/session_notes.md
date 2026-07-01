@@ -227,9 +227,9 @@ These tools use a pre-built SQLite database of parsed C++ entities. They underst
 
 ```bash
 # When you need to understand CLASS/STRUCT structure
-ork.cpp.search.py Camera              # Find all entities with "Camera" 
-ork.cpp.search.py -t class UiCamera   # Find specific class
-ork.cpp.search.py -t objects Camera   # Find both classes AND structs
+ork.cpp.db.search.py Camera              # Find all entities with "Camera" 
+ork.cpp.db.search.py -t class UiCamera   # Find specific class
+ork.cpp.db.search.py -t objects Camera   # Find both classes AND structs
 ork.cpp.members.py CameraData         # See all members of a type
 
 # When you need to trace REFERENCES
@@ -296,7 +296,7 @@ ork.cpp.db.files.py show txi.cpp          # Display file with line numbers
 #### Pattern 1: "I need to understand how a class works"
 ```bash
 # Step 1: Find the class
-ork.cpp.search.py TextureInterface
+ork.cpp.db.search.py TextureInterface
 
 # Step 2: See its members
 ork.cpp.members.py ork::lev2::TextureInterface
@@ -311,7 +311,7 @@ ork.cpp.references.py "ork::lev2::TextureInterface"
 #### Pattern 2: "I need to find where something is defined"
 ```bash
 # For types/classes - use database first
-ork.cpp.search.py EBufferFormat
+ork.cpp.db.search.py EBufferFormat
 
 # For functions - use text search
 ork.find.py "LoadTexture.*\{"     # Find function definitions
@@ -333,7 +333,7 @@ ork.cpp.enums.py --hash 0xE15695B7
 #### Pattern 4: "I need to trace through a codebase"
 ```bash
 # Start with high-level search
-ork.cpp.search.py -t objects Texture
+ork.cpp.db.search.py -t objects Texture
 
 # Pick interesting class, see members
 ork.cpp.members.py ork::lev2::Texture
@@ -350,11 +350,11 @@ ork.find.py "_contentHash =" | head -20
 **Pain Point 1: "No results found" with database tools**
 ```bash
 # DON'T do this:
-ork.cpp.search.py ork::lev2::Camera  # Too specific, might fail
+ork.cpp.db.search.py ork::lev2::Camera  # Too specific, might fail
 
 # DO this instead:
-ork.cpp.search.py Camera              # Search broadly first
-ork.cpp.search.py -t objects Camera   # Then narrow by type
+ork.cpp.db.search.py Camera              # Search broadly first
+ork.cpp.db.search.py -t objects Camera   # Then narrow by type
 ```
 
 **Pain Point 2: Need to see actual code, not just references**
@@ -374,13 +374,13 @@ ork.find.py Context                   # Too broad, hundreds of results
 # DO refine your search:
 ork.find.py "class Context"           # More specific
 ork.find.py "Context::" | grep cpp    # Method implementations only
-ork.cpp.search.py -t class Context    # Use database for structured search
+ork.cpp.db.search.py -t class Context    # Use database for structured search
 ```
 
 **Pain Point 4: Not sure of exact name**
 ```bash
 # Use wildcards and patterns
-ork.cpp.search.py "*Camera*"          # Database search with wildcards
+ork.cpp.db.search.py "*Camera*"          # Database search with wildcards
 ork.find.py "[Cc]amera"                # Text search with regex
 ork.cpp.enums.py "ork::lev2::*"       # All enums in namespace
 ```
@@ -390,7 +390,7 @@ ork.cpp.enums.py "ork::lev2::*"       # All enums in namespace
 ```
 Need to find something?
 ├── Is it a C++ entity (class/struct/enum)?
-│   ├── YES → Start with ork.cpp.search.py
+│   ├── YES → Start with ork.cpp.db.search.py
 │   │   ├── Found it? → Use ork.cpp.members.py for details
 │   │   └── Not found? → Try without namespace, use wildcards
 │   └── NO → Use ork.find.py
@@ -417,13 +417,13 @@ Need to find something?
 
 2. **Use JSON output for complex analysis**: Database tools support --json for scripting:
    ```bash
-   ork.cpp.search.py Camera --json | jq '.entities[].canonical_name'
+   ork.cpp.db.search.py Camera --json | jq '.entities[].canonical_name'
    ```
 
 3. **Combine tools in pipelines**:
    ```bash
    # Find all classes that inherit from Object
-   ork.cpp.search.py -t class --all --json | \
+   ork.cpp.db.search.py -t class --all --json | \
      jq -r '.entities[].canonical_name' | \
      xargs -I{} ork.cpp.inhtree.py {} 2>/dev/null | \
      grep "ork::Object"
@@ -436,9 +436,9 @@ Need to find something?
 
 5. **When in doubt, start broad**: It's easier to filter down than to guess exact names:
    ```bash
-   ork.cpp.search.py Texture           # Start here
-   ork.cpp.search.py -t class Texture  # Then narrow
-   ork.cpp.search.py -t class -n ork::lev2 Texture  # Then filter more
+   ork.cpp.db.search.py Texture           # Start here
+   ork.cpp.db.search.py -t class Texture  # Then narrow
+   ork.cpp.db.search.py -t class -n ork::lev2 Texture  # Then filter more
    ```
 
 **Statistical trigger**: The colorized file:line:content format with ANSI codes provides superior information extraction speed compared to native Grep tool which requires multiple calls and manual correlation.

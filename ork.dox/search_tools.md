@@ -21,7 +21,7 @@ ork.cpp.db.build.py -m core lev2  # Build multiple modules
 
 ## Core Search Tools
 
-### ork.cpp.search.py
+### ork.cpp.db.search.py
 
 Advanced entity search with multiple filters and output formats.
 
@@ -29,42 +29,42 @@ Advanced entity search with multiple filters and output formats.
 
 ```bash
 # Search for classes/structs by name
-ork.cpp.search.py Camera           # Find entities with "Camera" in the name
-ork.cpp.search.py "^Camera$"       # Exact match using regex
-ork.cpp.search.py "Camera.*Data"   # Regex pattern matching
+ork.cpp.db.search.py Camera           # Find entities with "Camera" in the name
+ork.cpp.db.search.py "^Camera$"       # Exact match using regex
+ork.cpp.db.search.py "Camera.*Data"   # Regex pattern matching
 
 # Search by entity type
-ork.cpp.search.py -t class UiCamera        # Only classes
-ork.cpp.search.py -t struct CameraData     # Only structs
-ork.cpp.search.py -t enum EBufferFormat    # Only enums
-ork.cpp.search.py -t typedef ptr           # Only typedefs
-ork.cpp.search.py -t namespace lev2        # Find namespaces
-ork.cpp.search.py -t objects Camera        # Both classes and structs
+ork.cpp.db.search.py -t class UiCamera        # Only classes
+ork.cpp.db.search.py -t struct CameraData     # Only structs
+ork.cpp.db.search.py -t enum EBufferFormat    # Only enums
+ork.cpp.db.search.py -t typedef ptr           # Only typedefs
+ork.cpp.db.search.py -t namespace lev2        # Find namespaces
+ork.cpp.db.search.py -t objects Camera        # Both classes and structs
 
 # Search within specific namespace
-ork.cpp.search.py -n ork::lev2 Camera      # Search in ork::lev2 namespace
-ork.cpp.search.py -n ork::ecs Component    # Search in ork::ecs namespace
+ork.cpp.db.search.py -n ork::lev2 Camera      # Search in ork::lev2 namespace
+ork.cpp.db.search.py -n ork::ecs Component    # Search in ork::ecs namespace
 
 # Output formats
-ork.cpp.search.py Camera --json            # JSON output for scripting
-ork.cpp.search.py Camera --files           # Show only file paths
-ork.cpp.search.py Camera --summary         # Minimal summary view
+ork.cpp.db.search.py Camera --json            # JSON output for scripting
+ork.cpp.db.search.py Camera --files           # Show only file paths
+ork.cpp.db.search.py Camera --summary         # Minimal summary view
 ```
 
 #### Advanced Features
 
 ```bash
 # Combine filters
-ork.cpp.search.py -t class -n ork::lev2 Context
+ork.cpp.db.search.py -t class -n ork::lev2 Context
 
 # Case-insensitive search
-ork.cpp.search.py -i camera
+ork.cpp.db.search.py -i camera
 
 # Show all entities of a type
-ork.cpp.search.py -t enum 
+ork.cpp.db.search.py -t enum 
 
 # Limit results
-ork.cpp.search.py Camera --limit 10
+ork.cpp.db.search.py Camera --limit 10
 ```
 
 #### Output Format
@@ -234,7 +234,7 @@ ork.crcstring.py R8
 
 ```bash
 # Find all renderer implementations
-ork.cpp.search.py Renderer
+ork.cpp.db.search.py Renderer
 ork.cpp.inhtree.py ork::lev2::IRenderer
 
 # Explore a specific renderer
@@ -255,7 +255,7 @@ ork.cpp.references.py "ork::lev2::Context::mDisplayModes"
 
 ```bash
 # Find all buffer format enums
-ork.cpp.search.py -t enum Buffer
+ork.cpp.db.search.py -t enum Buffer
 
 # See enum values
 ork.cpp.enums.py EBufferFormat
@@ -270,31 +270,31 @@ ork.cpp.enums.py --hash 0xe15695b7  # lowercase hex also works
 
 ```bash
 # Find all smart pointer typedefs
-ork.cpp.search.py -t typedef "_ptr"
+ork.cpp.db.search.py -t typedef "_ptr"
 
 # See what a typedef resolves to
-ork.cpp.search.py -t typedef camera_node_ptr_t
+ork.cpp.db.search.py -t typedef camera_node_ptr_t
 ```
 
 ### 5. Namespace Exploration
 
 ```bash
 # Find all namespaces
-ork.cpp.search.py -t namespace 
+ork.cpp.db.search.py -t namespace 
 
 # Find everything in a namespace
-ork.cpp.search.py -n ork::lev2 
+ork.cpp.db.search.py -n ork::lev2 
 ```
 
 ### 6. API Discovery
 
 ```bash
 # Find all methods named "render"
-ork.cpp.search.py "::render$"
+ork.cpp.db.search.py "::render$"
 
 # Find all begin/end method pairs
-ork.cpp.search.py "^begin" --json | jq '.entities[].canonical_name'
-ork.cpp.search.py "^end" --json | jq '.entities[].canonical_name'
+ork.cpp.db.search.py "^begin" --json | jq '.entities[].canonical_name'
+ork.cpp.db.search.py "^end" --json | jq '.entities[].canonical_name'
 ```
 
 ## Implementation Notes
@@ -363,7 +363,7 @@ ork.cpp.db.build.py -m <modules>  # Rebuild affected modules
 
 ```bash
 # Find classes with no references
-for class in $(ork.cpp.search.py -t class --json | jq -r '.entities[].canonical_name'); do
+for class in $(ork.cpp.db.search.py -t class --json | jq -r '.entities[].canonical_name'); do
   refs=$(ork.cpp.references.py "$class" --json | jq '.total_references')
   if [ "$refs" = "0" ]; then
     echo "Unused: $class"
@@ -375,7 +375,7 @@ done
 
 ```bash
 # Export all class information
-ork.cpp.search.py -t class --json > classes.json
+ork.cpp.db.search.py -t class --json > classes.json
 
 # Extract public API
 ork.cpp.members.py ClassName --json | jq '.members[] | select(.access_level == "PUBLIC")'
