@@ -104,6 +104,13 @@ struct DRMContext {
     DRMContext(char deviceLetter, int modeIndex);
     ~DRMContext();
 
+    // Put the display back: restore the pre-app CRTC if it had a real framebuffer,
+    // else DISABLE the CRTC (blank). Idempotent. Called from CtxDRM::_runloopEnd
+    // explicitly — the dtor also calls it, but the known teardown segfault means the
+    // dtor often never runs, which used to leave the monitor scanning a freed FB
+    // (garbage stripes) after every app exit/kill.
+    void restoreCrtc();
+
     void waitForVblank();
 
     // Static helpers

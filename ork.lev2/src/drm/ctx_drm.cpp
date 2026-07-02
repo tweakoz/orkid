@@ -322,8 +322,13 @@ void CtxDRM::_runloopEnd() {
     }
 
     //////////////////////////////
-    // DRM context will restore CRTC automatically (RAII)
+    // Put the display back NOW — the RAII restore in ~DRMContext often never runs
+    // (known teardown segfault), which left the monitor scanning a freed FB
+    // (garbage stripes) after every exit/kill.
     //////////////////////////////
+
+    if (_drmctx)
+        _drmctx->restoreCrtc();
 
     _runstate = 3;
 }

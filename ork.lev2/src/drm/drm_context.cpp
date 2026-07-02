@@ -470,16 +470,31 @@ DRMContext::DRMContext(char deviceLetter, int modeIndex) {
     logchan_drm->log("DRM context created successfully");
 }
 
-DRMContext::~DRMContext() {
-    logchan_drm->log("Destroying DRM context");
-
-    // Restore DRM
-    if (saved_crtc) {
+void DRMContext::restoreCrtc() {
+    if (drm_fd < 0)
+        return;
+    if (saved_crtc and saved_crtc->buffer_id) {
+        // a real framebuffer was on screen before us (e.g. a console) — put it back
         drmModeSetCrtc(drm_fd, saved_crtc->crtc_id, saved_crtc->buffer_id,
                        saved_crtc->x, saved_crtc->y,
                        &connector_id, 1, &saved_crtc->mode);
-        drmModeFreeCrtc(saved_crtc);
+    } else if (crtc_id) {
+        // nothing was displaying before us — disable the CRTC so the monitor goes
+        // black instead of scanning out our soon-to-be-freed framebuffer
+        drmModeSetCrtc(drm_fd, crtc_id, 0, 0, 0, nullptr, 0, nullptr);
     }
+    if (saved_crtc) {
+        drmModeFreeCrtc(saved_crtc);
+        saved_crtc = nullptr;
+    }
+    crtc_id = 0; // idempotence: second call no-ops
+}
+
+DRMContext::~DRMContext() {
+    logchan_drm->log("Destroying DRM context");
+
+    // Restore DRM (no-op if _runloopEnd already did it)
+    restoreCrtc();
 
     // Cleanup framebuffers and dmabufs
     for (uint32_t i = 0; i < SWAP_CHAIN_SIZE; i++) {

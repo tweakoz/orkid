@@ -22,6 +22,10 @@
 #include <ork/reflect/serialize/JsonDeserializer.h>
 #include <ork/kernel/datacache.h> // DataBlockCache — per-node cook cache
 #include <unordered_set>
+#include <filesystem>
+#include <fstream>
+#include <iomanip>
+#include <cinttypes>
 #include "hfdflow_module.h"
 
 ImplementReflectionX(ork::lev2::terrain::TerrainModuleData, "terrain::TerrainModuleData");
@@ -73,11 +77,84 @@ struct CaptureModuleInst : public dflow::DgModuleInst {
     // _value, which is an empty default) — that's where the producer set _ssbo.
     auto out = std::dynamic_pointer_cast<hfimg_outpluginst_t>(_input->_connectedOutput);
     OrkAssert(out);
-    env->_captures.push_back(CaptureRequest{out->_value, _cmd->_channel, _cmd->_path});
+    env->_captures.push_back(CaptureRequest{out->_value, _cmd->_channel, _cmd->_path, _cookKey});
   }
   const CaptureModuleData* _cmd;
   hfimg_inpluginst_ptr_t _input;
+  uint64_t _cookKey = 0; // set by the bake driver's currency pass (0 = cache disabled)
 };
+
+///////////////////////////////////////////////////////////////////////////////
+// Capture-currency sidecar — "<output-file>.cookhash", one text line carrying the
+// capture key (producer cook-hash mix) AND the channel's FieldStats. The stats ride
+// along because the caller's manifest (asset_gen) needs min/max/mean even when the
+// capture is skipped — a currency hit must return the SAME stats the original flush
+// did. Version-prefixed; any parse failure = not current = re-bake (never trust).
+///////////////////////////////////////////////////////////////////////////////
+
+static void _writeCaptureSidecar(const std::string& imgpath, uint64_t key, const FieldStats& fs) {
+  std::ofstream out(imgpath + ".cookhash", std::ios::trunc);
+  if (out)
+    out << "hfcap1 hash<" << std::hex << key << std::dec //
+        << "> channel<" << fs._channel                   //
+        << "> min<" << std::setprecision(9) << fs._min   //
+        << "> max<" << fs._max                           //
+        << "> mean<" << fs._mean << ">\n";
+}
+
+static bool _readCaptureSidecar(const std::string& imgpath, uint64_t expect_key, fieldstats_ptr_t& out_stats) {
+  std::error_code ec;
+  if (not std::filesystem::exists(imgpath, ec)) // the image itself must exist too
+    return false;
+  std::ifstream in(imgpath + ".cookhash");
+  if (not in)
+    return false;
+  std::string line;
+  std::getline(in, line);
+  uint64_t key = 0;
+  char chname[128] = {0};
+  float mn = 0.0f, mx = 0.0f, me = 0.0f;
+  if (sscanf(line.c_str(), "hfcap1 hash<%" SCNx64 "> channel<%127[^>]> min<%g> max<%g> mean<%g>", //
+             &key, chname, &mn, &mx, &me) != 5)
+    return false;
+  if (key != expect_key)
+    return false;
+  out_stats           = std::make_shared<FieldStats>();
+  out_stats->_min     = mn;
+  out_stats->_max     = mx;
+  out_stats->_mean    = me;
+  out_stats->_channel = chname;
+  return true;
+}
+
+// shared channel-list splitter (flush + currency pass must agree exactly)
+static std::vector<std::string> _splitCaptureChannels(const std::string& cs, const char* fallback) {
+  std::vector<std::string> out;
+  size_t start = 0;
+  while (start <= cs.size()) {
+    size_t comma   = cs.find(',', start);
+    size_t len     = (comma == std::string::npos) ? std::string::npos : (comma - start);
+    std::string tk = cs.substr(start, len);
+    if (not tk.empty())
+      out.push_back(tk);
+    if (comma == std::string::npos)
+      break;
+    start = comma + 1;
+  }
+  if (out.empty())
+    out.push_back(fallback);
+  return out;
+}
+
+// per-channel output path: substitute "{channel}" in the template if present
+static std::string _capturePathForChannel(const ork::file::Path& tmpl, const std::string& ch) {
+  std::string path = ork::file::Path::expandPathString(std::string(tmpl.c_str()));
+  const std::string mark = "{channel}";
+  size_t pos = path.find(mark);
+  if (pos != std::string::npos)
+    path.replace(pos, mark.size(), ch);
+  return path;
+}
 
 static void _reshapeCaptureIOs(dataflow::moduledata_ptr_t data) {
   dflow::ModuleData::createInputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "In");
@@ -108,11 +185,40 @@ void CaptureModuleData::describeX(class_t* clazz) {
 // BakeEnv allocation arena — see the declaration notes in hfdflow.h.
 ///////////////////////////////////////////////////////////////////////////////
 
+// Bake-buffer residency policy for DISCRETE GPUs (PCIEopt.md §6): iterative bake
+// computes (eflow-class flow sims) against HOST planes run GPU-100% but PCIe-BUS-bound
+// (measured 8.8 GB/s rx + 2.8 GB/s tx for 29+ min) — VRAM-resident the same compute is
+// O(minutes→seconds). So big planes go DEVICE_LOCAL under a live-bytes budget; beyond
+// the budget they degrade to HOST (forest-class multi-10GB transient peaks must never
+// OOM the 24GB card — §4 sequencing trap). Small allocations (per-eval params SSBOs)
+// ALWAYS stay HOST: on DEVICE every CPU map/write is a synchronous staged submit+wait
+// (see ork.dox/vk_deferred_updates_postmortem.md — the deferral that made those cheap
+// was removed). CPU touches of DEVICE planes (cook-cache load/store, capture EXR reads,
+// mid-graph readback modules) route through the staged copy paths, which the per-op
+// submit+WAIT bake driver makes safe. On UMA (apple) the budget is 0 = pure-HOST as
+// before: a DL-only request there would force the staged map path for zero benefit.
+// ORKID_BAKE_DEVICE_MB overrides the budget (0 disables the policy entirely).
+static size_t _bakeDeviceBudgetBytes() {
+  static size_t s_budget = []() -> size_t {
+    if (const char* e = getenv("ORKID_BAKE_DEVICE_MB"))
+      return size_t(atoll(e)) << 20;
+#if defined(__APPLE__)
+    return 0; // UMA: HOST already is device-local
+#else
+    return size_t(8192) << 20; // 8GB default — leaves the render path plenty of VRAM headroom
+#endif
+  }();
+  return s_budget;
+}
+static constexpr size_t kBakeDeviceMinBytes = size_t(1) << 20; // planes only; params stay HOST
+
 FxShaderStorageBuffer* BakeEnv::createStorageBuffer(size_t length) {
-  // residency class 0 = HOST (today's only class). The budgeted-DEVICE bake policy
-  // (PCIEopt §6 proposal, linux lane) picks the class here — the pool key already
-  // carries it so reuse can never cross residency classes.
-  const int res_class = 0;
+  // Residency class for the pool key: 0 = HOST, 1 = DEVICE. The budgeted-DEVICE policy
+  // (comment above) picks DEVICE for big planes while the live-bytes budget holds; the
+  // (size, class) pool key guarantees reuse never crosses residency classes.
+  bool want_device = (length >= kBakeDeviceMinBytes)                     //
+                 and ((_device_bytes + length) <= _bakeDeviceBudgetBytes());
+  const int res_class = want_device ? 1 : 0;
   const poolkey_t key{length, res_class};
   if (_lazy_acquire) {
     // frontier mode: serve from the (size, residency)-classed free-list when possible.
@@ -127,7 +233,12 @@ FxShaderStorageBuffer* BakeEnv::createStorageBuffer(size_t length) {
       return buf;
     }
   }
-  auto buf = _ctx->FXI()->createStorageBuffer(length);
+  auto fxi = _ctx->FXI();
+  auto buf = want_device //
+      ? fxi->createStorageBuffer(length, StorageBufferUsage::DEFAULT, BufferResidency::DEVICE)
+      : fxi->createStorageBuffer(length);
+  if (want_device)
+    _device_bytes += length;
   _allocs.push_back(buf);
   _alloc_size[buf] = key;
   _arena_bytes += length;
@@ -173,7 +284,8 @@ void BakeEnv::freeAllocs() {
   _pool_free.clear();
   _pool_free_set.clear();
   _alloc_size.clear();
-  _arena_bytes = 0;
+  _arena_bytes  = 0;
+  _device_bytes = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -232,6 +344,9 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
 
   ctx->beginFrame();
   auto ci = ctx->CI();
+  // FieldStats recovered from capture-currency sidecars (skipped sinks) — appended to
+  // the flush's stats before return so the caller's manifest contract holds either way.
+  std::vector<fieldstats_ptr_t> current_stats;
   if (graph->_cacheable) {
     // per-node cook cache: Merkle-hash every node (cheap scalars), then per node
     // either upload its cached field (hit) or dispatch it IN ITS OWN dispatch
@@ -287,7 +402,12 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
     // the full plane is fetched from disk only when a needed hit actually LOADS
     // (below), and released right after upload. Reading whole entries here held
     // ~33GB of planes for a warm 4096 bake (the 40+GB load-RSS incident).
+    // ORKID_COOK_DEBUG=1: record WHY a node isn't a hit (printed if it dispatches:
+    // no-cache-entry = hash not on disk; probe-reject = entry fails validation;
+    // not-cacheable-type = not a TerrainComputeInst).
+    static const bool s_cookdbg = (getenv("ORKID_COOK_DEBUG") != nullptr);
     std::vector<bool> hit(N, false), needed(N, false), sink(N, false);
+    std::vector<const char*> missreason(N, nullptr); // cookdbg: why not a cache hit
     for (size_t i = 0; i < N; i++) {
       auto inst = order[i];
       sink[i]   = (inst->numOutputs() == 0); // Capture — always runs, reads at flush
@@ -296,6 +416,10 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
           auto hdr = DataBlockCache::findDataBlockPrefix("dflowcache", inst->_cookHash, 256);
           if (hdr and tci->cookProbe(hdr, dim, dim))
             hit[i] = true;
+          else
+            missreason[i] = hdr ? "probe-reject" : "no-cache-entry";
+        } else {
+          missreason[i] = "not-cacheable-type";
         }
       }
     }
@@ -306,10 +430,66 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
       for (int o = 0; o < order[i]->numOutputs(); o++)
         producer_of[order[i]->output(o).get()] = i;
 
-    // --- demand (reverse-topo): sinks always run; a dispatching node pulls its producers
+    // --- capture-currency: a Capture sink whose on-disk outputs carry a sidecar
+    // matching its CURRENT key (producer cook-hash + channels + path template + a
+    // format salt) does not need to run — and (demand below) pulls NOTHING upstream.
+    // A fully-current bake therefore computes zero nodes, reads zero cache blobs and
+    // re-encodes zero files. The sidecar also returns the channel FieldStats (the
+    // caller's manifest contract). Any missing/mismatched file → the sink runs and the
+    // flush rewrites images + sidecars.
+    std::vector<bool> capcurrent(N, false);
+    for (size_t i = 0; i < N; i++) {
+      if (not sink[i] or not do_disk_cache)
+        continue;
+      auto cap = std::dynamic_pointer_cast<CaptureModuleInst>(order[i]);
+      if (not cap)
+        continue;
+      // producer hash: the sink's single input's connected producer node
+      uint64_t prod_hash = 0;
+      for (auto inp : cap->_inputs)
+        if (inp->_connectedOutput) {
+          auto it = producer_of.find(inp->_connectedOutput.get());
+          if (it != producer_of.end())
+            prod_hash = order[it->second]->_cookHash;
+        }
+      auto ch = DataBlock::createHasher();
+      ch->accumulateItem<int>(0x6f0a0001); // capture-currency format salt
+      ch->accumulateItem<uint64_t>(prod_hash);
+      ch->accumulateString(cap->_cmd->_channel);
+      ch->accumulateString(std::string(cap->_cmd->_path.c_str()));
+      ch->finish();
+      cap->_cookKey = ch->result(); // flush writes sidecars with this when the sink runs
+      // current only if EVERY emitted channel's image + sidecar match the key. An EMPTY
+      // channel list never claims currency: the flush's fallback channel name differs by
+      // branch (mono "height" vs multi "field") and the plan can't know which applies.
+      if (cap->_cmd->_channel.empty())
+        continue;
+      auto channels = _splitCaptureChannels(cap->_cmd->_channel, "field");
+      bool all_ok   = true;
+      std::vector<fieldstats_ptr_t> sstats;
+      for (auto& chname : channels) {
+        fieldstats_ptr_t fs;
+        if (_readCaptureSidecar(_capturePathForChannel(cap->_cmd->_path, chname), cap->_cookKey, fs))
+          sstats.push_back(fs);
+        else {
+          all_ok = false;
+          break;
+        }
+      }
+      if (all_ok) {
+        capcurrent[i] = true;
+        for (auto& fs : sstats)
+          current_stats.push_back(fs);
+        if (s_cookdbg)
+          printf("[cookdbg] CAPTURE-CURRENT sink<%s> key<0x%zx> (%zu files)\n", //
+                 cap->_abstract_module_data->_name.c_str(), size_t(cap->_cookKey), channels.size());
+      }
+    }
+
+    // --- demand (reverse-topo): non-current sinks run; a dispatching node pulls its producers
     for (size_t ri = N; ri > 0; ri--) {
       size_t j = ri - 1;
-      if (sink[j])
+      if (sink[j] and not capcurrent[j])
         needed[j] = true;
       if (not(needed[j] and not hit[j]))
         continue; // hit or unneeded -> reads nothing
@@ -381,6 +561,10 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
           if (auto store = inst->cookStore())
             DataBlockCache::setDataBlock("dflowcache", inst->_cookHash, store);
         }
+        if (s_cookdbg) // name every node that actually DISPATCHES + why it wasn't a hit
+          printf("[cookdbg] COMPUTED node<%s> hash<0x%zx> reason<%s>\n", //
+                 inst->_abstract_module_data->_name.c_str(), size_t(inst->_cookHash),
+                 missreason[i] ? missreason[i] : "?");
         cook_computes++;
       }
       // scratch back to the pool — everything this node acquired EXCEPT what its
@@ -399,13 +583,14 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
     }
     if (do_disk_cache)
       printf(
-          "[cook] cacheable bake: %d cache-loaded, %d demand-skipped, %d computed | arena peak %.1f MB, %d pool reuses\n",
+          "[cook] cacheable bake: %d cache-loaded, %d demand-skipped, %d computed | arena peak %.1f MB (%.1f MB device), %d pool reuses\n",
           cook_loaded, cook_skipped, cook_computes, double(env->_peak_arena_bytes) / (1024.0 * 1024.0),
-          env->_pool_reuses);
+          double(env->_device_bytes) / (1024.0 * 1024.0), env->_pool_reuses);
     else
       printf(
-          "[cook] cache DISABLED (capture cache=False): %d computed, %d demand-skipped, 0 disk I/O | arena peak %.1f MB, %d pool reuses\n",
-          cook_computes, cook_skipped, double(env->_peak_arena_bytes) / (1024.0 * 1024.0), env->_pool_reuses);
+          "[cook] cache DISABLED (capture cache=False): %d computed, %d demand-skipped, 0 disk I/O | arena peak %.1f MB (%.1f MB device), %d pool reuses\n",
+          cook_computes, cook_skipped, double(env->_peak_arena_bytes) / (1024.0 * 1024.0),
+          double(env->_device_bytes) / (1024.0 * 1024.0), env->_pool_reuses);
     // cache-SATISFIED count: loaded + demand-skipped (a skipped node is satisfied
     // by the cache too — nothing dispatched against it needed recomputing). Keeps
     // terrainCacheTest's invariant: warm bake recomputes nothing but the sink.
@@ -470,6 +655,8 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
         printf("[terrain bake] wrote <%s> (%dx%d, RGBA32F, %dch passthrough)\n", path.c_str(), w, h, nch);
         auto fs = std::make_shared<FieldStats>(); fs->_min = 0.0f; fs->_max = 1.0f; fs->_mean = 0.0f;
         fs->_channel = ch;
+        if (req._cookkey) // capture-currency: next unchanged bake skips this file
+          _writeCaptureSidecar(path, req._cookkey, *fs);
         stats.push_back(fs);
       }
       continue;
@@ -612,9 +799,16 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
       fs->_max     = vmax;
       fs->_mean    = vmean;
       fs->_channel = ch;
+      if (req._cookkey) // capture-currency: next unchanged bake skips this file
+        _writeCaptureSidecar(path, req._cookkey, *fs);
       stats.push_back(fs);
     }
   }
+
+  // stats recovered from capture-currency sidecars (sinks that never ran this bake) —
+  // consumers key by _channel name, so append order is irrelevant.
+  for (auto& fs : current_stats)
+    stats.push_back(fs);
 
   // the bake's outputs are fully consumed (cook cache stored, captures encoded to
   // files) and ginst dies at return — free the whole graph's GPU buffers. GPU-idle

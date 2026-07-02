@@ -64,6 +64,9 @@ struct CaptureRequest {
   gpucomputeimage2d_inst_ptr_t _img; // the SOURCE field (resolved from the connected output)
   std::string _channels;             // comma-joined output channels ("height" or "height,normal")
   ork::file::Path _path;             // path template; "{channel}" is substituted per channel at flush
+  uint64_t _cookkey = 0;             // capture-currency key (producer cook-hash mix) — the flush
+                                     // writes it to a "<file>.cookhash" sidecar so an unchanged
+                                     // bake can skip the capture entirely next run. 0 = no sidecar.
 };
 
 // min/max/mean of a captured field — returned by the driver so callers (the
@@ -169,6 +172,10 @@ struct BakeEnv {
   size_t _arena_bytes      = 0; // bytes currently backed by real VK allocations
   size_t _peak_arena_bytes = 0; // high-water mark — THE WS4 A/B metric
   int _pool_reuses         = 0; // acquisitions served from the free-list
+  // DISCRETE-GPU residency budget (PCIEopt §6): bytes of this arena currently
+  // DEVICE_LOCAL. Big planes allocate DEVICE until the budget is spent, then degrade
+  // to HOST (forest-class >24GB transient peaks must never OOM VRAM). UMA/apple: 0.
+  size_t _device_bytes     = 0;
 };
 using bakeenv_ptr_t = std::shared_ptr<BakeEnv>;
 
