@@ -1039,6 +1039,11 @@ public:
   primary_commandbuffer_ptr_t _defaultCommandBuffer;
   vkpricmdbufimpl_ptr_t _defaultCommandBufferImpl;
   vkpricmdbufimpl_ptr_t _cmdbufcurpri_gfx;
+  // tracks whether the current primary CB is in the RECORDING state. Init-time
+  // code (e.g. hypermesh materialize) may cycle whole frames inside an outer
+  // begin/endPrimaryCommandBuffer pair — the outer end must then no-op instead
+  // of calling vkEndCommandBuffer on a non-recording CB.
+  bool _pricb_recording = false;
   vkpricmdbufimpl_ptr_t primary_cb();
 
   // Synchronous transfer resources (for out-of-frame texture uploads)

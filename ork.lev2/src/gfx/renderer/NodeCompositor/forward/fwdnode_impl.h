@@ -120,6 +120,10 @@ struct ForwardPbrNodeImpl {
   int _currentWidth              = 0;
   int _currentHeight             = 0;
   int _msaa_level_built          = -1;  // the --msaa LEVEL _rtgs_primary was built at (-1 = never)
+  // rtg keys whose depth passes have completed at least once since (re)build/resize.
+  // The frame-start HZB build samples LAST frame's depth — until a key is seeded
+  // that depth image is UNDEFINED and must not be sampled.
+  std::unordered_set<uint64_t> _hzb_seeded_rtgs;
 
   forward_pass_ptr_t _primary_pass;
 

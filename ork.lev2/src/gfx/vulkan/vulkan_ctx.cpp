@@ -963,6 +963,37 @@ void VkContext::makeCurrentContext() {
 
 void VkContext::_doBeginPrimaryCommandBuffer() {
   ////////////////////////
+  // If a primary CB is still recording (init-time code that cycles whole
+  // frames or double-begins — e.g. hypermesh materialize inside ezapp's
+  // gpu-init begin/end pair), FLUSH it synchronously instead of abandoning
+  // it: init work already recorded there (blank texture-array clears and
+  // layout transitions, font uploads) must actually execute.
+  ////////////////////////
+  if (_pricb_recording and _defaultCommandBuffer) {
+    auto CB       = primary_cb();
+    CB->_recorded = true;
+    vkEndCommandBuffer(CB->_vkcmdbuf);
+    _pricb_recording = false;
+
+    VkSubmitInfo SI;
+    initializeVkStruct(SI, VK_STRUCTURE_TYPE_SUBMIT_INFO);
+    SI.commandBufferCount = 1;
+    SI.pCommandBuffers    = &CB->_vkcmdbuf;
+
+    VkFenceCreateInfo fenceInfo{};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    VkFence fence;
+    vkCreateFence(_vkdevice, &fenceInfo, nullptr, &fence);
+    _gfxqueue->queueSubmit(&SI, fence);
+    vkWaitForFences(_vkdevice, 1, &fence, VK_TRUE, UINT64_MAX);
+    vkDestroyFence(_vkdevice, fence, nullptr);
+
+    _pri_cmdbuf_pool.deallocate(_defaultCommandBuffer);
+    _defaultCommandBuffer     = nullptr;
+    _defaultCommandBufferImpl = nullptr;
+    _cmdbufcurpri_gfx         = nullptr;
+  }
+  ////////////////////////
   // Check if command buffer pool is healthy
   ////////////////////////
   // logchan_vkctx->log("  Allocating command buffer from pool (available: %zu)", _pri_cmdbuf_pool.available());
@@ -1014,16 +1045,24 @@ void VkContext::_doBeginPrimaryCommandBuffer() {
   CBBI_GFX.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
   CBBI_GFX.pInheritanceInfo = nullptr;
   vkBeginCommandBuffer(primary_cb()->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
+  _pricb_recording = true;
 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_doEndPrimaryCommandBuffer() {
+  // init-time code may have cycled whole frames (begin/endFrame) inside an
+  // outer begin/end pair — endFrame already ended and submitted the pri CB,
+  // so ending again here would hit a non-RECORDING command buffer.
+  if (not _pricb_recording) {
+    return;
+  }
   auto CB = primary_cb();
   if(0)printf( "END priCB<%p> impl<%p> vkhandle<%p>\n", (void*)_defaultCommandBuffer.get(), (void*)CB.get(), (void*)CB->_vkcmdbuf );
   CB->_recorded = true;
   vkEndCommandBuffer(CB->_vkcmdbuf);
+  _pricb_recording = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1213,6 +1252,16 @@ void VkContext::_onGpuPostInit() {
   // This ensures all texture array transitions are executed before first frame
 
   //printf("VkContext::_onGpuPostInit: Submitting gpuPreInit command buffer\n");
+
+  // If gpu-init code cycled whole frames (e.g. hypermesh materialize), the
+  // last endFrame already ended+submitted the pri CB and returned it to the
+  // pool (_defaultCommandBuffer == nullptr) — nothing left to submit here.
+  if (nullptr == _defaultCommandBuffer or nullptr == _cmdbufcurpri_gfx) {
+    _defaultCommandBuffer     = nullptr;
+    _defaultCommandBufferImpl = nullptr;
+    _cmdbufcurpri_gfx         = nullptr;
+    return;
+  }
 
   // During init, we haven't started a frame yet, so we can't use the swapchain submit path
   // Do a simple direct submit without presentation semaphores

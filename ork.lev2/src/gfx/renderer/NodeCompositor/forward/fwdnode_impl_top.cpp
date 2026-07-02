@@ -299,8 +299,10 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
 
   // The scene `msaa=` level can land AFTER this node's early doGpuInit() build (param-set order
   // vs node init isn't fixed). Rebuild the primary RtgSet here, once, when the level changed.
+  bool rtg_fresh = false;
   if (_ginitdata and _ginitdata->_msaa_samples != _msaa_level_built) {
     _buildPrimaryRtgs(context, _currentWidth, _currentHeight);
+    rtg_fresh = true;
   }
 
   uint64_t rtg_key = _node->_bufferKey;
@@ -308,7 +310,10 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
 
   if (_rtg_primary->width() != _currentWidth or _rtg_primary->height() != _currentHeight) {
     _rtg_primary->Resize(_currentWidth, _currentHeight);
+    rtg_fresh = true;
   }
+  if (rtg_fresh)
+    _hzb_seeded_rtgs.erase(rtg_key); // fresh depth image — unseeded until re-rendered
 
   // 1-phase occlusion HZB — built at FRAME START from LAST frame's depth. _rtg_primary is keyed-fetched
   // (line above), so before this frame's passes overwrite it, its depth holds the PREVIOUS frame's
@@ -317,12 +322,14 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
   // passes + the sampling-layout transition. The per-view cull reads the resulting HZB SSBO off the Scene
   // next preRender. (MSAA: also depends on the depth resolve into the single-sample _imgobj working.)
   if (auto* hzbscene = _node->_pbrcommon ? _node->_pbrcommon->_scene : nullptr) {
-    // require the depth texture's backend impl: it's created lazily on the rtg's
-    // first render, so on frame 1 there is no prior depth to build the HZB from —
-    // dispatching anyway leaves u_depth unbound (validation error).
+    // only sample LAST frame's depth if this rtg's depth passes have actually
+    // completed at least once since (re)build/resize — otherwise the depth image
+    // is UNDEFINED (or the texture has no backend impl yet) and dispatching
+    // leaves u_depth unbound / samples an invalid layout (validation errors).
     // note: Texture::_impl default-initializes to nullptr_t, which counts as
     // "set" for the variant — so exclude that explicitly.
-    bool depth_impl_ready = _rtg_primary and _rtg_primary->_depthBuffer //
+    bool depth_impl_ready = (_hzb_seeded_rtgs.count(rtg_key) != 0) and _rtg_primary //
+                            and _rtg_primary->_depthBuffer //
                             and _rtg_primary->_depthBuffer->_texture;
     if (depth_impl_ready) {
       const auto& tex_impl = _rtg_primary->_depthBuffer->_texture->_impl;
@@ -447,6 +454,7 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
   RCFD->_passID = "PRIMARY"_crcu;
 
   _render_dppskyssaocolor(_primary_pass);
+  _hzb_seeded_rtgs.insert(rtg_key); // depth passes complete — next frame's HZB may sample this depth
 
   CIMPL->popCPD();
 

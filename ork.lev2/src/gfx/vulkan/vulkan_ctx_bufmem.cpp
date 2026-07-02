@@ -256,6 +256,17 @@ VulkanImageObject::VulkanImageObject(vkcontext_rawptr_t ctx, vkimagecreateinfo_p
   if((_serial_number&0xff)==0){
     logchan_vkbufmem->log("VulkanImageObject<%p> SN<%zu> numalive<%d>", (void*)this, _serial_number, count );
   }
+  if (getenv("ORKID_VK_IMAGE_TRACE")) {
+    printf(
+        "[VKIMGTRACE] vkimage<%p> name<%s> fmt<%d> extent<%ux%ux%u> usage<0x%x>\n",
+        (void*)_vkimage,
+        name.c_str(),
+        int(cinfo->format),
+        cinfo->extent.width,
+        cinfo->extent.height,
+        cinfo->extent.depth,
+        unsigned(cinfo->usage));
+  }
 }
 VulkanImageObject::VulkanImageObject(vkcontext_rawptr_t ctx, VkImage img, VkImageView vkimgview, VkFormat fmt)
     : _ctx(ctx)
