@@ -453,66 +453,33 @@ drawable_ptr_t TerrainChunkDrawableData::createDrawable() const {
     int render_cps    = (render_dim + chunk - 1) / chunk;
     int render_nchunk = render_cps * render_cps;
     //////////////////////////////////////////////////////////////////
-    // 3b. DOWNSAMPLE hi-res heights (bake_dim) -> render heights (render_dim) by BILINEAR resample at the
-    //     SAME texel-center convention terr_pos uses ((t+0.5)/dim). render_dim==bake_dim => identity copy.
+    // 3b. DOWNSAMPLE hi-res (bake_dim) -> the render grid (render_dim) with the SAME FILTERED
+    //     resampler the Bullet collider uses (Image::resampledOf TRIANGLE) — one sampling
+    //     convention for physics + visuals. The old hand-rolled bilinear POINT-TAP is only
+    //     valid at ratios <= ~1: at NON-INTEGER bake/render ratios its per-texel fractional
+    //     phase produces moire banding (height AND the frame channels -> lighting/color
+    //     artifacts), and at ratios > 2 it skips source texels outright (aliasing).
     //////////////////////////////////////////////////////////////////
-    std::vector<float> heights(size_t(render_dim) * render_dim);
-    if (render_dim == bake_dim) {
-      heights = heights_hi;
-    } else {
-      const double s = double(bake_dim) / double(render_dim);
-      auto tap = [&](int x, int z) -> float {
-        x = std::clamp(x, 0, bake_dim - 1);
-        z = std::clamp(z, 0, bake_dim - 1);
-        return heights_hi[size_t(z) * bake_dim + x];
-      };
-      for (int rz = 0; rz < render_dim; rz++) {
-        double hz = (double(rz) + 0.5) * s - 0.5;
-        int z0    = int(std::floor(hz));
-        float fz  = float(hz - z0);
-        for (int rx = 0; rx < render_dim; rx++) {
-          double hx = (double(rx) + 0.5) * s - 0.5;
-          int x0    = int(std::floor(hx));
-          float fx  = float(hx - x0);
-          float h0  = tap(x0, z0) * (1.0f - fx) + tap(x0 + 1, z0) * fx;
-          float h1  = tap(x0, z0 + 1) * (1.0f - fx) + tap(x0 + 1, z0 + 1) * fx;
-          heights[size_t(rz) * render_dim + rx] = h0 * (1.0f - fz) + h1 * fz;
-        }
-      }
-    }
+    auto resampleF = [&](const std::vector<float>& src, int C) -> std::vector<float> {
+      if (render_dim == bake_dim)
+        return src;
+      OrkAssert(C == 1 or C == 4);
+      Image simg;
+      simg.initWithFormat(bake_dim, bake_dim, (C == 1) ? EBufferFormat::R32F : EBufferFormat::RGBA32F);
+      std::memcpy((void*)simg._data->data(), src.data(), src.size() * sizeof(float));
+      Image dimg;
+      dimg.resampledOf(simg, render_dim, render_dim, Image::ResampleFilter::TRIANGLE);
+      std::vector<float> out(size_t(render_dim) * render_dim * C);
+      std::memcpy(out.data(), dimg._data->data(), out.size() * sizeof(float));
+      return out;
+    };
+    std::vector<float> heights = resampleF(heights_hi, 1);
     //////////////////////////////////////////////////////////////////
     // 3c. RELAX interleave — when relaxed, the per-vertex SSBO array is stride-8 [h, uv.xy, nrm.xz, bn.xyz].
     //     The RENDER array uses the DOWNSAMPLED channels (matching the downsampled heights); the BAKE array
     //     (stashed below) uses FULL-res channels so the atlas rasterizes in full-res relaxed space. Mono =>
     //     the array is just the flat heights (stride 1). Mirrors gpu_chunk.py TerrainChunkVertexSource(relax).
     //////////////////////////////////////////////////////////////////
-    auto downsampleN = [&](const std::vector<float>& src, int C) -> std::vector<float> {
-      if (render_dim == bake_dim)
-        return src;
-      std::vector<float> dst(size_t(render_dim) * render_dim * C);
-      const double s = double(bake_dim) / double(render_dim);
-      auto tap       = [&](int x, int z, int c) -> float {
-        x = std::clamp(x, 0, bake_dim - 1);
-        z = std::clamp(z, 0, bake_dim - 1);
-        return src[(size_t(z) * bake_dim + x) * C + c];
-      };
-      for (int rz = 0; rz < render_dim; rz++) {
-        double hz = (double(rz) + 0.5) * s - 0.5;
-        int z0    = int(std::floor(hz));
-        float fz  = float(hz - z0);
-        for (int rx = 0; rx < render_dim; rx++) {
-          double hx = (double(rx) + 0.5) * s - 0.5;
-          int x0    = int(std::floor(hx));
-          float fx  = float(hx - x0);
-          for (int c = 0; c < C; c++) {
-            float a = tap(x0, z0, c) * (1.0f - fx) + tap(x0 + 1, z0, c) * fx;
-            float b = tap(x0, z0 + 1, c) * (1.0f - fx) + tap(x0 + 1, z0 + 1, c) * fx;
-            dst[(size_t(rz) * render_dim + rx) * C + c] = a * (1.0f - fz) + b * fz;
-          }
-        }
-      }
-      return dst;
-    };
     // interleave height + relaxed_uv(RGBA=uv.xy,nrm.xz) + binormal(RGBA=bn.xyz,1) -> stride-8 at grid gdim.
     auto interleave8 = [](const std::vector<float>& h, const std::vector<float>& ruv,
                           const std::vector<float>& bnm, int gdim) -> std::vector<float> {
@@ -534,8 +501,8 @@ drawable_ptr_t TerrainChunkDrawableData::createDrawable() const {
     // (terr_pos + the depth-prepass keep mono's cache density; the frame is read only by the color VS).
     std::vector<float> framerender;
     if (relax) {
-      auto ruv_r  = downsampleN(ruv_hi, 4);
-      auto bnm_r  = downsampleN(bnm_hi, 4);
+      auto ruv_r  = resampleF(ruv_hi, 4);
+      auto bnm_r  = resampleF(bnm_hi, 4);
       framerender = interleave8(heights, ruv_r, bnm_r, render_dim);
     }
     size_t CAM_OFF     = 0;

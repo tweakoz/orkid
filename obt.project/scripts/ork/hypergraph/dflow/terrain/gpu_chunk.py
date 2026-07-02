@@ -170,6 +170,12 @@ class TerrainChunkVertexSource:
       "else                   { dR = 1u; dC = 1u; }\n"
       "uint tx = baseC + dC;\n"
       "uint tz = baseR + dR;\n"
+      # PARTIAL CHUNKS (u_dim %% chunk != 0 -> the last chunk row/col is partial, e.g. 64 spare
+      # cells at u_dim=1600 chunk=128): cells whose corner-0 lies fully beyond the grid collapse
+      # to a point (zero-area -> rasterizer culls). Without this their clamped-height taps
+      # stretch a wide flat apron past the +X/+Z terrain edges. Divisible dims have no such
+      # cells (baseC max == u_dim-1), so this line is inert there.
+      "if (baseC >= u_dim || baseR >= u_dim) { tx = 0u; tz = 0u; }\n"
       % (self._VP, self._CP, self._CP, self._VP, self._C, self._C, self._C, self._C))
     if self.relax:
       # RELAX: precomputed tangent frame + BOTH uv parameterizations. The frame comes from the

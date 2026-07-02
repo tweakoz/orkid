@@ -41,7 +41,7 @@ class ErodeFlowScene(Scene):
     self.terrain(
         "erodeflow",
         dsl_file  = "erodeflow",
-        render_dimension = 1024,
+        render_dimension = 1600,
         mode      = "stored",   # Phase-1: capture the proctex to <assetcache>/ptex3d_capture/<key>/ (cached)
         bake_dimension  = 4096,
         bake_res  = 4096,                
