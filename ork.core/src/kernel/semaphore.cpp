@@ -6,6 +6,8 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/kernel/semaphore.h>
+#include <chrono>
+#include <cstdint>
 
 #if defined(ORK_OSX)
 #include <sys/time.h>
@@ -32,6 +34,20 @@ void semaphore::wait() {
     mCondition.wait(lock.mLockImpl);
   }
   mCount.fetch_sub(1);
+}
+
+bool semaphore::wait_for(uint64_t usec) {
+  ork::mutex::unique_lock lock(mMutex);
+  auto deadline = std::chrono::steady_clock::now() + std::chrono::microseconds(usec);
+  while (mCount.load() <= 0) {
+    if (mCondition.wait_until(lock.mLockImpl, deadline) == std::cv_status::timeout) {
+      if (mCount.load() <= 0) // re-check: a notify can land right at the deadline
+        return false;
+      break;
+    }
+  }
+  mCount.fetch_sub(1);
+  return true;
 }
 
 condition_variable::condition_variable(bool do_init) {
