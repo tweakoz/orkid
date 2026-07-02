@@ -87,6 +87,21 @@ void AppInitData::setArgs(int argc, char** argv, char** envp) {
     genviron.get("ORKID_AUDIO_FRAMESIZE", framesize_str);
     desired_framesize = atoi(framesize_str.c_str());
   }
+#if defined(__linux__)
+  // Force DRM direct rendering (e.g. ORKID_DRM_MODE=c0) without needing app
+  // plumbing. Runs at AppInitData construction — before the loader context is
+  // created — so Vulkan GPU selection matches the DRM card. An explicit
+  // drm_mode_id kwarg (OrkEzApp.create) is applied later and takes precedence.
+  if (genviron.has("ORKID_DRM_MODE")) {
+    std::string drm_mode_str;
+    genviron.get("ORKID_DRM_MODE", drm_mode_str);
+    if (!drm_mode_str.empty()) {
+      _use_drm  = true;
+      _drm_mode = drm_mode_str;
+      printf("USING DRM (ORKID_DRM_MODE): mode=%s\n", _drm_mode.c_str());
+    }
+  }
+#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////

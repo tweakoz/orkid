@@ -64,6 +64,8 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
     asset::loadrequest_ptr_t loadreq,
     datablock_ptr_t xir_data) {
 
+  static const bool s_xirdbg = (getenv("ORKID_XIR_DEBUG") != nullptr);
+
   // Create asset
   auto asset = std::make_shared<RadianceMapsAsset>();
   auto irrmaps = std::make_shared<pbr::RadianceMaps>();
@@ -95,7 +97,7 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
   loadreq->incrementPartialLoadCount();
 
   auto op = [=](){
-    if(0)printf("[VKMT-DBG] op start path<%s> gloadercontext<%p> requesting_ctx<%p>\n",
+    if(s_xirdbg)printf("[VKMT-DBG] op start path<%s> gloadercontext<%p> requesting_ctx<%p>\n",
            asset->_name.c_str(), (void*)gloadercontext.get(), (void*)requesting_ctx);
     //fflush(stdout);
 
@@ -120,7 +122,7 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
 
     bool has_diffuse = xir_data_result._diffuse_data && xir_data_result._diffuse_data->length() > 0;
 
-    if(0)printf("XIR v2 array format: diffuse size: %zu, %d roughness levels\n",
+    if(s_xirdbg)printf("XIR v2 array format: diffuse size: %zu, %d roughness levels\n",
            has_diffuse ? xir_data_result._diffuse_data->length() : 0,
            xir_data_result._num_roughness_levels);
 
@@ -325,6 +327,8 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
       if (!target_ctx) {
         target_ctx = GfxEnv::mainRenderContext();
       }
+      if (s_xirdbg)
+        printf("[VKMT-DBG] handoffOp target_ctx<%p> num_semas<%zu>\n", (void*)target_ctx, our_semas->size());
       auto swap_op = [
           irrmaps,
           loadreq,
@@ -346,6 +350,8 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
         // vkFreeMemory and we get a black frame proportional to the
         // texture's mip count / total memory.
         constexpr int kDelayFrames = 3; // > MAX_FRAMES_IN_FLIGHT
+        if (s_xirdbg)
+          printf("[VKMT-DBG] swap_op FIRED on ctx<%p>\n", (void*)render_ctx_drain);
         if (render_ctx_drain) {
           auto old_diffuse = irrmaps->_filtenvDiffuseMap;
           auto old_specular = irrmaps->_filtenvSpecularMapArray;
@@ -409,6 +415,8 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
           }
         }
         if (all_signaled) {
+          if (s_xirdbg)
+            printf("[VKMT-DBG] poll_op all semas signaled, enqueueing swap_op on ctx<%p>\n", (void*)target_ctx);
           target_ctx->enqueueDeferredOp(swap_op);
           // poll_op self-ref drops naturally — no further re-enqueue.
         } else {
@@ -428,14 +436,14 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
 
     // Phase fully populated with all 4 ops — publish atomically. No race
     // window for the loader thread to pop an empty phase.
-    if(0)printf("[VKMT-DBG] op submitting LoadingPhase with 4 ops to gloadercontext<%p>\n",
+    if(s_xirdbg)printf("[VKMT-DBG] op submitting LoadingPhase with 4 ops to gloadercontext<%p>\n",
            (void*)gloadercontext.get());
     //fflush(stdout);
     gloadercontext->submitLoadingPhase(loading_phase);
-    if(0)printf("[VKMT-DBG] op end path<%s>\n", asset->_name.c_str());
+    if(s_xirdbg)printf("[VKMT-DBG] op end path<%s>\n", asset->_name.c_str());
     //fflush(stdout);
 
-    if(0)printf("XIR asset<%p> irrmaps<%p> dtex<%p> stexarray<%p> roughness_levels<%d>\n",
+    if(s_xirdbg)printf("XIR asset<%p> irrmaps<%p> dtex<%p> stexarray<%p> roughness_levels<%d>\n",
            (void*) asset.get(), (void*) irrmaps.get(),
            diffuse_tex ? diffuse_tex.get() : nullptr,
            specular_texarray.get(), num_roughness_levels);

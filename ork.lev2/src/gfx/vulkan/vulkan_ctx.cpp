@@ -8,6 +8,8 @@
 #include "headers/vulkan_ctx.h"
 #if defined(__linux__)
 #include "headers/vk_swapchain_drm.h"
+#include <sys/stat.h>
+#include <sys/sysmacros.h>
 #endif
 #include "vulkan_captureasync.h"
 #include "vulkan_ubo_dynamic.h"
@@ -61,6 +63,74 @@ static vkdeviceinfo_ptr_t _pickPreferredDevice(const std::vector<vkdeviceinfo_pt
   logchan_vkctx->log("ORKID_GPU_PREFER=<%s> picked device <%s>", mode.c_str(), picked->_devprops.deviceName);
   return picked;
 }
+
+#if defined(__linux__)
+// Match a Vulkan physical device to a DRM card node so rendering and KMS
+// scanout happen on the same GPU — dma-buf framebuffers cannot cross GPUs
+// (on this multi-GPU path the first discrete GPU is not necessarily the one
+// driving the selected connector).
+static vkdeviceinfo_ptr_t _pickDeviceForDrmRdev(
+    const std::vector<vkdeviceinfo_ptr_t>& devs, //
+    dev_t rdev) {
+  int64_t card_major = major(rdev);
+  int64_t card_minor = minor(rdev);
+  for (auto d : devs) {
+    if (d->_extension_set.count(VK_EXT_PHYSICAL_DEVICE_DRM_EXTENSION_NAME) == 0)
+      continue;
+    VkPhysicalDeviceDrmPropertiesEXT drm_props = {};
+    drm_props.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT;
+    VkPhysicalDeviceProperties2 props2 = {};
+    props2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+    props2.pNext = &drm_props;
+    vkGetPhysicalDeviceProperties2(d->_phydev, &props2);
+    bool primary_match = drm_props.hasPrimary && //
+                         drm_props.primaryMajor == card_major && //
+                         drm_props.primaryMinor == card_minor;
+    bool render_match = drm_props.hasRender && //
+                        drm_props.renderMajor == card_major && //
+                        drm_props.renderMinor == card_minor;
+    if (primary_match || render_match) {
+      logchan_vkctx->log("matched vulkan device <%s> to DRM card <%ld:%ld>", d->_devprops.deviceName, card_major, card_minor);
+      return d;
+    }
+  }
+  logchan_vkctx->log("WARNING: no vulkan device matches DRM card <%ld:%ld>", card_major, card_minor);
+  return nullptr;
+}
+
+static vkdeviceinfo_ptr_t _pickDeviceForDrmCard(
+    const std::vector<vkdeviceinfo_ptr_t>& devs, //
+    const std::string& card_path) {
+  struct stat st;
+  if (::stat(card_path.c_str(), &st) != 0 || !S_ISCHR(st.st_mode))
+    return nullptr;
+  return _pickDeviceForDrmRdev(devs, st.st_rdev);
+}
+
+static vkdeviceinfo_ptr_t _pickDeviceForDrmFd(
+    const std::vector<vkdeviceinfo_ptr_t>& devs, //
+    int drm_fd) {
+  struct stat st;
+  if (::fstat(drm_fd, &st) != 0 || !S_ISCHR(st.st_mode))
+    return nullptr;
+  return _pickDeviceForDrmRdev(devs, st.st_rdev);
+}
+
+// Resolve the requested DRM mode string (e.g. "c0") to its owning card and
+// pick the matching Vulkan device.
+static vkdeviceinfo_ptr_t _pickDeviceForDrmMode(
+    const std::vector<vkdeviceinfo_ptr_t>& devs, //
+    const std::string& drm_mode) {
+  if (drm_mode.empty())
+    return nullptr;
+  char letter = ::tolower(drm_mode[0]);
+  for (auto mon : drm::DRMContext::enumerateAllMonitors()) {
+    if (mon->device_letter == letter && !mon->card_path.empty())
+      return _pickDeviceForDrmCard(devs, mon->card_path);
+  }
+  return nullptr;
+}
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -158,8 +228,11 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
 
   // Only request swapchain extension for windowed (non-offscreen) rendering
   // In headless/offscreen mode, swapchain is not needed and may not be available
+  // In DRM mode the instance has no VK_KHR_surface, and presentation goes through
+  // dma-buf/KMS (vulkan_swapchain_drm.cpp), so VK_KHR_swapchain must not be requested
   bool is_offscreen = (_ginitdata && _ginitdata->_offscreen);
-  if (!is_offscreen) {
+  bool use_drm      = (_ginitdata && _ginitdata->_use_drm);
+  if (!is_offscreen && !use_drm) {
     _device_extensions.push_back("VK_KHR_swapchain");
   }
   if (_GVI->_debugEnabled) {
@@ -890,6 +963,37 @@ void VkContext::makeCurrentContext() {
 
 void VkContext::_doBeginPrimaryCommandBuffer() {
   ////////////////////////
+  // If a primary CB is still recording (init-time code that cycles whole
+  // frames or double-begins — e.g. hypermesh materialize inside ezapp's
+  // gpu-init begin/end pair), FLUSH it synchronously instead of abandoning
+  // it: init work already recorded there (blank texture-array clears and
+  // layout transitions, font uploads) must actually execute.
+  ////////////////////////
+  if (_pricb_recording and _defaultCommandBuffer) {
+    auto CB       = primary_cb();
+    CB->_recorded = true;
+    vkEndCommandBuffer(CB->_vkcmdbuf);
+    _pricb_recording = false;
+
+    VkSubmitInfo SI;
+    initializeVkStruct(SI, VK_STRUCTURE_TYPE_SUBMIT_INFO);
+    SI.commandBufferCount = 1;
+    SI.pCommandBuffers    = &CB->_vkcmdbuf;
+
+    VkFenceCreateInfo fenceInfo{};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    VkFence fence;
+    vkCreateFence(_vkdevice, &fenceInfo, nullptr, &fence);
+    _gfxqueue->queueSubmit(&SI, fence);
+    vkWaitForFences(_vkdevice, 1, &fence, VK_TRUE, UINT64_MAX);
+    vkDestroyFence(_vkdevice, fence, nullptr);
+
+    _pri_cmdbuf_pool.deallocate(_defaultCommandBuffer);
+    _defaultCommandBuffer     = nullptr;
+    _defaultCommandBufferImpl = nullptr;
+    _cmdbufcurpri_gfx         = nullptr;
+  }
+  ////////////////////////
   // Check if command buffer pool is healthy
   ////////////////////////
   // logchan_vkctx->log("  Allocating command buffer from pool (available: %zu)", _pri_cmdbuf_pool.available());
@@ -941,16 +1045,24 @@ void VkContext::_doBeginPrimaryCommandBuffer() {
   CBBI_GFX.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
   CBBI_GFX.pInheritanceInfo = nullptr;
   vkBeginCommandBuffer(primary_cb()->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
+  _pricb_recording = true;
 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_doEndPrimaryCommandBuffer() {
+  // init-time code may have cycled whole frames (begin/endFrame) inside an
+  // outer begin/end pair — endFrame already ended and submitted the pri CB,
+  // so ending again here would hit a non-RECORDING command buffer.
+  if (not _pricb_recording) {
+    return;
+  }
   auto CB = primary_cb();
   if(0)printf( "END priCB<%p> impl<%p> vkhandle<%p>\n", (void*)_defaultCommandBuffer.get(), (void*)CB.get(), (void*)CB->_vkcmdbuf );
   CB->_recorded = true;
   vkEndCommandBuffer(CB->_vkcmdbuf);
+  _pricb_recording = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1141,6 +1253,16 @@ void VkContext::_onGpuPostInit() {
 
   //printf("VkContext::_onGpuPostInit: Submitting gpuPreInit command buffer\n");
 
+  // If gpu-init code cycled whole frames (e.g. hypermesh materialize), the
+  // last endFrame already ended+submitted the pri CB and returned it to the
+  // pool (_defaultCommandBuffer == nullptr) — nothing left to submit here.
+  if (nullptr == _defaultCommandBuffer or nullptr == _cmdbufcurpri_gfx) {
+    _defaultCommandBuffer     = nullptr;
+    _defaultCommandBufferImpl = nullptr;
+    _cmdbufcurpri_gfx         = nullptr;
+    return;
+  }
+
   // During init, we haven't started a frame yet, so we can't use the swapchain submit path
   // Do a simple direct submit without presentation semaphores
 
@@ -1247,11 +1369,61 @@ void VkContext::initializeDRMContext(Window* pWin, CTXBASE* pctxbase) {
   logchan_vkctx->log("DRM: dimensions set to actual mode: %dx%d", miW, miH);
   _vkpresentationsurface = VK_NULL_HANDLE;
   ///////////////////////
-  auto vk_devinfo = _GVI->_preferred ? _GVI->_preferred : (_GVI->_device_infos.empty() ? nullptr : _GVI->_device_infos[0]);
+  // rendering must happen on the GPU that owns the opened DRM card — the
+  // scanout dma-buf cannot be imported across GPUs
+  auto vk_devinfo = _pickDeviceForDrmFd(_GVI->_device_infos, ctxdrm->_drmctx->drm_fd);
+  if (nullptr == vk_devinfo) {
+    vk_devinfo = _GVI->_preferred ? _GVI->_preferred : (_GVI->_device_infos.empty() ? nullptr : _GVI->_device_infos[0]);
+  } else if (_GVI->_preferred && (_GVI->_preferred != vk_devinfo)) {
+    logchan_vkctx->log(
+        "WARNING: DRM card GPU <%s> differs from share-group GPU <%s> — resources are not shareable across devices",
+        vk_devinfo->_devprops.deviceName,
+        _GVI->_preferred->_devprops.deviceName);
+  }
   OrkAssert(vk_devinfo != nullptr);
   logchan_vkctx->log("DRM mode: using device <%s>", vk_devinfo->_devprops.deviceName);
-  _initVulkanForDevInfo(vk_devinfo);
-  _initVulkanCommon();
+
+  // Share the existing (loader) context's VkDevice when it lives on the same
+  // physical GPU — the loader thread uploads textures on its device, and those
+  // handles are only valid in contexts sharing that VkDevice. Creating a
+  // separate device here leaves every loader-uploaded texture invalid in the
+  // DRM context (skybox/radiance maps silently render as placeholder content).
+  vkcontext_rawptr_t share_ctx = nullptr;
+  if (_GVI->_contexts.size() >= 1) {
+    auto context0 = *_GVI->_contexts.begin();
+    if (context0->_vkphysicaldevice == vk_devinfo->_phydev) {
+      share_ctx = context0;
+    } else {
+      logchan_vkctx->log(
+          "WARNING: DRM mode: existing context device <%s> != DRM card device <%s> — creating separate VkDevice; "
+          "loader-uploaded resources will NOT be shareable",
+          context0->_vkdeviceinfo ? context0->_vkdeviceinfo->_devprops.deviceName : "?",
+          vk_devinfo->_devprops.deviceName);
+    }
+  }
+  if (share_ctx) {
+    logchan_vkctx->log("DRM mode: sharing existing VkDevice with context<%p>", (void*)share_ctx);
+    _vkdevice                  = share_ctx->_vkdevice;
+    _vkdeviceinfo              = share_ctx->_vkdeviceinfo;
+    _vkphysicaldevice          = share_ctx->_vkphysicaldevice;
+    _gfxqueue                  = share_ctx->_gfxqueue;
+    _vkqfid_transfer           = share_ctx->_vkqfid_transfer;
+    _vkqfid_compute            = share_ctx->_vkqfid_compute;
+    _vkSetDebugUtilsObjectName = share_ctx->_vkSetDebugUtilsObjectName;
+    _vkCmdDebugMarkerBeginEXT  = share_ctx->_vkCmdDebugMarkerBeginEXT;
+    _vkCmdDebugMarkerEndEXT    = share_ctx->_vkCmdDebugMarkerEndEXT;
+    _vkCmdDebugMarkerInsertEXT = share_ctx->_vkCmdDebugMarkerInsertEXT;
+    _vkCmdBeginRenderingKHR    = share_ctx->_vkCmdBeginRenderingKHR;
+    _vkCmdEndRenderingKHR      = share_ctx->_vkCmdEndRenderingKHR;
+    _vkCmdSetCullModeEXT       = share_ctx->_vkCmdSetCullModeEXT;
+    _device_extensions         = share_ctx->_device_extensions;
+    _num_queue_types           = share_ctx->_num_queue_types;
+    _DQCIs                     = share_ctx->_DQCIs;
+    _initVulkanCommon();
+  } else {
+    _initVulkanForDevInfo(vk_devinfo);
+    _initVulkanCommon();
+  }
   ///////////////////////
   if (_GVI->_debugEnabled) {
     _fetchDeviceProcAddr(_vkSetDebugUtilsObjectName, "vkSetDebugUtilsObjectNameEXT");
@@ -1405,7 +1577,15 @@ void VkContext::initializeLoaderContext() {
     // enumerated first.
     if (std::getenv("ORKID_GPU_PREFER")) {
       _GVI->_preferred = _pickPreferredDevice(_GVI->_device_infos);
-    } else if (!use_drm && !glfw_null_plat) {
+    }
+#if defined(__linux__)
+    else if (use_drm) {
+      // must render on the GPU that owns the selected DRM card, otherwise
+      // scanout dma-buf import fails (multi-GPU)
+      _GVI->_preferred = _pickDeviceForDrmMode(_GVI->_device_infos, _ginitdata->_drm_mode);
+    }
+#endif
+    else if (!use_drm && !glfw_null_plat) {
       auto vk_devinfo = _GVI->findPresentableDevice();
       if (vk_devinfo) {
         _GVI->_preferred = vk_devinfo;

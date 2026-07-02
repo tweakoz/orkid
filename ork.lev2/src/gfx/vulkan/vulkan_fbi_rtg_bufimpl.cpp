@@ -189,6 +189,17 @@ void _vkCreateImageForBuffer(
   auto& vkimage       = imgobj->_vkimage;
   bufferimpl->_imgobj = imgobj;
   ///////////////////////////////////////////////////
+  // debug-name the image (rtg name + usage) so validation errors identify it
+  {
+    auto rtg = bufferimpl->_rtg_impl ? bufferimpl->_rtg_impl->_rtgroup : nullptr;
+    std::string dbg_name = FormatString(
+        "%s.%s.%dx%d",
+        (rtg and rtg->_name.length()) ? rtg->_name.c_str() : "rtg",
+        (effective_usage == "depth"_crcu) ? "depth" : "color",
+        w, h);
+    ctxVK->_setObjectDebugName(vkimage, VK_OBJECT_TYPE_IMAGE, dbg_name.c_str());
+  }
+  ///////////////////////////////////////////////////
   auto IVCI = createImageViewInfo2D(
       vkimage,            //
       bufferimpl->_vkfmt, //

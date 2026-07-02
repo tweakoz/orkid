@@ -802,6 +802,25 @@ struct VkComputeInterface : public ComputeInterface {
                                          // post-shutdown per the teardown-funnel lesson)
   bool _phasePending   = false;          // a submitted-but-unwaited phase is in flight
   bool _nonblocking    = false;          // ORK_HM_NB_SUBMIT=1 (read once in the ctor)
+
+  // ---- deferred small WRITE_ONLY updates to DEVICE-resident buffers.
+  // On discrete GPUs, unmapStorageBuffer's staged copyFromHost costs a full
+  // submit+fence round-trip (~0.5-1ms) even for a 16-byte header write — the
+  // dominant per-eval cost of the hypermesh writeParams pre-phase. Instead the
+  // bytes are stashed here and recorded as vkCmdUpdateBuffer at the next
+  // beginDispatchPhase (single transfer->compute barrier). Deferred-visibility
+  // semantics are correct for the writeParams -> dispatch pattern; a host READ
+  // of a buffer with a pending update applies that update synchronously first.
+  struct PendingBufferUpdate {
+    std::shared_ptr<VulkanBuffer> _buffer;
+    size_t _offset = 0;
+    std::vector<uint8_t> _data;
+  };
+  void enqueueDeferredBufferUpdate(std::shared_ptr<VulkanBuffer> buf, size_t offset, const void* data, size_t length);
+  void applyPendingUpdatesFor(const std::shared_ptr<VulkanBuffer>& buf); // sync flush (host read-your-writes)
+  void _flushDeferredBufferUpdates();                                    // records into _computeCmdBuf
+  std::vector<PendingBufferUpdate> _pendingBufferUpdates;
+  std::mutex _pendingBufferUpdatesMutex;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1039,6 +1058,11 @@ public:
   primary_commandbuffer_ptr_t _defaultCommandBuffer;
   vkpricmdbufimpl_ptr_t _defaultCommandBufferImpl;
   vkpricmdbufimpl_ptr_t _cmdbufcurpri_gfx;
+  // tracks whether the current primary CB is in the RECORDING state. Init-time
+  // code (e.g. hypermesh materialize) may cycle whole frames inside an outer
+  // begin/endPrimaryCommandBuffer pair — the outer end must then no-op instead
+  // of calling vkEndCommandBuffer on a non-recording CB.
+  bool _pricb_recording = false;
   vkpricmdbufimpl_ptr_t primary_cb();
 
   // Synchronous transfer resources (for out-of-frame texture uploads)
