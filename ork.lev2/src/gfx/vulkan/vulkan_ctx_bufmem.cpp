@@ -486,8 +486,24 @@ VulkanBuffer::VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsag
 //////////////////////////////////////
 VulkanBuffer::~VulkanBuffer() {
   try {
-    if(_ctxVK) {
-      _ctxVK->destroyBuffer(_vkbuffer); // no-op post-shutdown
+    if (_ctxVK) {
+      if (_deferredDestroy) {
+        // last ref may drop on ANY thread while a recorded CB still references the
+        // buffer — hand the VK objects to the context's delayed-destroy queue (>=
+        // frames in flight). The lambda holds _memory alive; vkFreeMemory (and the
+        // memtrace FREE accounting in ~VulkanMemoryForBuffer) runs at drain time.
+        // VkContexts persist to process end (teardown-funnel convention), so the
+        // captured raw ctx outlives the queue; post-shutdown the funnel no-ops.
+        auto ctx   = _ctxVK;
+        auto vkbuf = _vkbuffer;
+        auto mem   = _memory;
+        _ctxVK->enqueueDelayedDestroy([ctx, vkbuf, mem]() {
+          ctx->destroyBuffer(vkbuf); // no-op post-shutdown
+        }, 3);
+      } else {
+        // GPU-idle contract (bake arena / FXI destroyStorageBuffer): reclaim NOW.
+        _ctxVK->destroyBuffer(_vkbuffer); // no-op post-shutdown
+      }
     }
   } catch (...) {
     // Swallow — during static destruction _ctxVK may be dangling.

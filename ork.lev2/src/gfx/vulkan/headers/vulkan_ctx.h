@@ -686,6 +686,7 @@ struct VkFxInterface final : public FxInterface {
       size_t length,
       StorageBufferUsage usage   = StorageBufferUsage::DEFAULT,
       BufferResidency    residency = BufferResidency::HOST) final;
+  void destroyStorageBuffer(FxShaderStorageBuffer* buffer) final; // immediate (GPU-idle contract)
   storagebuffermappingptr_t mapStorageBuffer(
       FxShaderStorageBuffer* b,
       size_t base,
@@ -1128,6 +1129,11 @@ public:
   //////////////////////////////////////////////
   std::vector<VkSemaphore> _oneShotSignalSemaphores;
   std::vector<uint64_t> _oneShotSignalValues;
+  // completion semaphores of the one-shot CBs recorded into THIS frame's primary CB
+  // (coupled in _doPreBeginFrame's drain; consumed by _doSubmitPrimaryCommandBuffer).
+  // A CB enqueued mid-frame (loading-phase ops) executes NEXT frame — its semaphore
+  // must signal on THAT frame's submit, not this one's.
+  std::vector<vkcompletionsemaphore_ptr_t> _thisFrameOneShotSemas;
   //////////////////////////////////////////////
 
   vkdwi_ptr_t _dwi;

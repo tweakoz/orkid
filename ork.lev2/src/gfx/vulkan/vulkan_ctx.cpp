@@ -1070,14 +1070,18 @@ void VkContext::_doEndPrimaryCommandBuffer() {
 void VkContext::_doSubmitPrimaryCommandBuffer(){
   OrkProfilerSampleScope(CHANNEL_MAIN, "vk:doSubmitPrimaryCommandBuffer");
 
-  // Drain pending completion semaphores from async secondary CBs into the
-  // one-shot lists. _doBeginFrame handles removal via its erase_if pass.
-  _pendingOneShotSemas.atomicOp([&](vkcompsema_set_t& unlocked) {
-    for (auto& semaphore : unlocked) {
-      _oneShotSignalSemaphores.push_back(semaphore->_vksema);
-      _oneShotSignalValues.push_back(1);
-    }
-  });
+  // Signal ONLY the semaphores whose one-shot CBs were recorded into THIS frame's
+  // primary CB (coupled in _doPreBeginFrame). Sweeping the whole _pendingOneShotSemas
+  // set here signaled a frame EARLY for any CB enqueued mid-frame (loading-phase ops
+  // enqueue AFTER _doPreBeginFrame's drain, so their commands execute NEXT frame):
+  // isSignalled() went true before the GPU copy ran -> premature staging-buffer
+  // recycle + premature radiance-map publish (the silent linux load death).
+  // _pendingOneShotSemas remains the poll/_onComplete registry (_doBeginFrame).
+  for (auto& semaphore : _thisFrameOneShotSemas) {
+    _oneShotSignalSemaphores.push_back(semaphore->_vksema);
+    _oneShotSignalValues.push_back(1);
+  }
+  _thisFrameOneShotSemas.clear();
 
   // Associate captures with the current frame fence before submitting to the GPU
   auto frame_fence = _fbi->_output->currentFrameFence();
@@ -1199,7 +1203,12 @@ void VkContext::_doPreBeginFrame() {
     //printf("VkContext<%p> executing %zu one-shot secondary command buffers\n", (void*)this, num_one_shot);
     for (auto one_shot : unlocked) {
       enqueueSecondaryCommandBuffer(one_shot);
-    }  
+      // couple this CB's completion semaphore to THIS frame's submit — it must
+      // signal only when the frame CONTAINING the commands completes.
+      auto impl = one_shot->_impl.getShared<VkSecondaryCommandBufferImpl>();
+      if (impl->_completionSemaphore)
+        _thisFrameOneShotSemas.push_back(impl->_completionSemaphore);
+    }
     unlocked.clear();
   });
 }

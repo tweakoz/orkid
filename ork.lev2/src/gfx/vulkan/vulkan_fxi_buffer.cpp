@@ -191,6 +191,19 @@ void VkFxInterface::unmapStorageBuffer(FxShaderStorageBufferMapping* mapping) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+// GPU-idle contract (fxi.h): the caller guarantees no in-flight CB references the
+// buffer, so skip the deferred queue — bulk bake-teardown frees (hundreds of 64MB
+// planes) would otherwise trickle out at the delayed-destroy drain budget.
+void VkFxInterface::destroyStorageBuffer(FxShaderStorageBuffer* buffer) {
+  if (nullptr == buffer)
+    return;
+  if (auto impl = buffer->_impl.getShared<VulkanBuffer>())
+    impl->_deferredDestroy = false;
+  delete buffer;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void VkFxInterface::copyBufferIntoStorageBuffer(FxShaderStorageBuffer* ssbo,
                                                 std::vector<uint8_t> buffer,
                                                 size_t dest_offset) {
