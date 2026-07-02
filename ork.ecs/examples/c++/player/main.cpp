@@ -114,6 +114,7 @@ int main(int argc, char** argv, char** envp) {
   std::string movie_path;         // --movie PATH (implies offscreen)
   float movie_fps        = 60.0f;
   int   movie_frames     = 0;     // 0 -> default 300
+  std::string snapshot_path;      // --snapshot PATH (implies offscreen): settled frame -> PNG
 
   po::options_description desc(
       "ork.ecs.player.exe — pure-C++ ECS scene player\n"
@@ -135,7 +136,8 @@ int main(int argc, char** argv, char** envp) {
       ("frames", po::value<int>(&offscreen_frames)->default_value(0), "offscreen frame safety-cap (0=auto 1200; normal exit is load-settle driven)")
       ("movie,m", po::value<std::string>(&movie_path), "record an offscreen movie to PATH (mp4; implies --offscreen)")
       ("moviefps,F", po::value<float>(&movie_fps)->default_value(60.0f), "movie frame rate")
-      ("movieframes,l", po::value<int>(&movie_frames)->default_value(0), "movie length in frames (0=300)");
+      ("movieframes,l", po::value<int>(&movie_frames)->default_value(0), "movie length in frames (0=300)")
+      ("snapshot", po::value<std::string>(&snapshot_path), "write the settled offscreen frame to PATH (png; implies --offscreen; agent/CI eyeball)");
 
   po::positional_options_description pos;
   pos.add("scene", 1);
@@ -236,9 +238,12 @@ int main(int argc, char** argv, char** envp) {
   //////////////////////////////////////////////////////////
   if (not movie_path.empty())
     offscreen = true;
+  if (not snapshot_path.empty())
+    offscreen = true;    // --snapshot implies offscreen (movie wins if both are given)
   if (offscreen_forever) {
     offscreen  = true;   // headless
     movie_path = "";     // forever is the no-movie soak/perf path
+    snapshot_path = "";
   }
   if (offscreen) {
     init_data->_offscreen = true;
@@ -311,8 +316,10 @@ int main(int argc, char** argv, char** envp) {
   int  os_settle    = 0;   // frames since the scene settled
   int  os_movie     = 0;   // movie frames recorded
   int  os_drain     = 0;   // post-record drain frames (pump GPU so captures finish)
-  int  os_phase     = 0;   // 0=WAIT 1=SETTLE 2=MOVIE 3=DONE
+  int  os_phase     = 0;   // 0=WAIT 1=SETTLE 2=MOVIE 3=DONE 4=SNAPSHOT-drain
   bool os_saw_async = false; // observed registered async work (a bake) — wait for it to drain
+  int  os_snapdrain = 0;   // frames pumped while the snapshot's async readback lands
+  auto os_snap_done = std::make_shared<std::atomic<bool>>(false); // set by the capture callback
 
   // controller swaps (Cmd+Right restart) happen on the update thread while the render
   // thread reads `controller` in gpuUpdate/draw — one small mutex covers all of it.
@@ -809,6 +816,23 @@ int main(int argc, char** argv, char** envp) {
                            movie_path.c_str(), movie_frames, int(movie_fps));
               os_phase = 2;
               os_movie = 0;
+            } else if (not snapshot_path.empty()) {
+              // SNAPSHOT: async-capture the settled main-RTG color buffer to PNG (the movie
+              // lambda's incantation, one frame), then pump until the readback lands (phase 4).
+              auto ctx    = drwev->GetTarget();
+              auto fbi    = ctx->FBI();
+              auto rtb    = fbi->_main_rtg->buffer(0);
+              auto capbuf = std::make_shared<CaptureBuffer>();
+              auto done   = os_snap_done;
+              std::string path = snapshot_path;
+              fbi->captureAsFormat(rtb.get(), capbuf, EBufferFormat::RGBA8, [capbuf, path, done]() {
+                capbuf->_image->writeToFile(file::Path(path.c_str()));
+                printf("ork.ecs.player: SNAPSHOT wrote %s\n", path.c_str());
+                done->store(true);
+              });
+              deco::printf(fvec3::Yellow(), "ork.ecs.player: OFFSCREEN SNAPSHOT -> %s (draining readback)\n",
+                           snapshot_path.c_str());
+              os_phase = 4;
             } else {
               deco::printf(fvec3::Green(), "ork.ecs.player: OFFSCREEN materialize done (frame %d) — exiting\n", os_frame);
               ezapp->signalExit();
@@ -835,6 +859,16 @@ int main(int argc, char** argv, char** envp) {
               ezapp->signalExit();
               os_phase = 3;
             }
+          }
+          break;
+        case 4: // SNAPSHOT — pump frames until the async readback wrote the PNG, then exit
+          os_snapdrain++;
+          if (os_snap_done->load() or os_snapdrain >= 120 or cap) {
+            if (not os_snap_done->load())
+              deco::printf(fvec3::Red(), "ork.ecs.player: SNAPSHOT readback never landed (%d drain frames)\n", os_snapdrain);
+            deco::printf(fvec3::Green(), "ork.ecs.player: OFFSCREEN snapshot done (frame %d) — exiting\n", os_frame);
+            ezapp->signalExit();
+            os_phase = 3;
           }
           break;
         default: break;

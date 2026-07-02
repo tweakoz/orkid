@@ -173,11 +173,21 @@ void VkFxInterface::unmapStorageBuffer(FxShaderStorageBufferMapping* mapping) {
   auto bufimpl = mapping->_buffer->_impl.getShared<VulkanBuffer>();
   if (not bufimpl->_hostVisible) {
     bool writes = (mapping->_access == BufferMapAccess::WRITE_ONLY) || (mapping->_access == BufferMapAccess::READ_WRITE);
-    // small WRITE_ONLY updates defer to the next dispatch phase (vkCmdUpdateBuffer)
+    // small WRITE_ONLY updates CAN defer to the next dispatch phase (vkCmdUpdateBuffer)
     // instead of a synchronous staged copy (submit+fence per write — the dominant
-    // hypermesh writeParams cost on discrete GPUs). vkCmdUpdateBuffer requires
-    // 4-byte-aligned offset/size and <= 64KB.
-    bool deferrable = writes                                                  //
+    // hypermesh writeParams cost on discrete GPUs; ~8x racer graph-eval when enabled).
+    // vkCmdUpdateBuffer requires 4-byte-aligned offset/size and <= 64KB.
+    //
+    // !!! DEFERRAL PERMANENTLY DISABLED (2026-07-02) — CORRECTNESS BUG, ROOT CAUSE UNKNOWN.
+    // With deferral on, warm-cook-cached static hypermesh scenes (scn_forest / scn_scatter /
+    // scn_kush) render NO hypermeshes; this synchronous path is the owner-verified-correct
+    // behavior (was env ORKID_VK_DISABLE_DEFERRED_UPDATES=1). THREE fix families were tried
+    // and DISPROVEN by windowed A/B — do NOT retry them; read the postmortem FIRST:
+    //     ork.dox/vk_deferred_updates_postmortem.md
+    // (the enqueue/flush machinery below is kept intact for that reimplementation effort).
+    constexpr bool kDeferralEnabled = false;
+    bool deferrable = kDeferralEnabled                                        //
+                      and writes                                              //
                       and (mapping->_access == BufferMapAccess::WRITE_ONLY)   //
                       and (_contextVK->_ci != nullptr)                        //
                       and (mapping->_length <= 65536)                         //
