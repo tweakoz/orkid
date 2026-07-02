@@ -113,6 +113,17 @@ struct BakeEnv {
     if (r > rmax) r = rmax;
     return r;
   }
+
+  // bake-scoped GPU allocation ARENA: every terrain-module SSBO (plug outputs AND
+  // module-internal scratch) allocates through here so the owning driver can free
+  // the whole graph's buffers when the eval's outputs have been consumed. Plug
+  // aliasing (erox publishes one of its ping-pong buffers as its output) makes
+  // per-plug ownership ambiguous — the arena dedups, so each buffer frees exactly
+  // once. A LIVE/cross-family host (persistent graph) simply never calls
+  // freeAllocs and keeps today's persistent-buffer behavior.
+  FxShaderStorageBuffer* createStorageBuffer(size_t length);
+  void freeAllocs(); // caller guarantees GPU idle for these buffers (post per-op sync / endFrame)
+  std::vector<FxShaderStorageBuffer*> _allocs;
 };
 using bakeenv_ptr_t = std::shared_ptr<BakeEnv>;
 

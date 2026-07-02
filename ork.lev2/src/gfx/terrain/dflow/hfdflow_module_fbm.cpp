@@ -138,7 +138,7 @@ struct FbmModuleInst : public TerrainComputeInst {
     img->_w        = dim;
     img->_h        = dim;
     img->_channels = 1;
-    img->_ssbo     = fxi->createStorageBuffer(size_t(dim) * size_t(dim) * sizeof(float));
+    img->_ssbo     = env->createStorageBuffer(size_t(dim) * size_t(dim) * sizeof(float));
 
     // connections are resolved in updateTopology BEFORE activate(), so the warp inputs
     // are known here: warp is active only when BOTH displacement fields are connected.
@@ -146,7 +146,7 @@ struct FbmModuleInst : public TerrainComputeInst {
     auto text = _fbm_compute_text(dim, _fmd->_octaves, _warped);
     auto shdr = fxi->shaderFromShaderText("terrain_fbm", text);
     _cs       = fxi->computeShader(shdr, "cs_fbm");
-    _pm       = fxi->createStorageBuffer(8 * sizeof(float));
+    _pm       = env->createStorageBuffer(8 * sizeof(float));
     _fillParams(env.get());
   }
 

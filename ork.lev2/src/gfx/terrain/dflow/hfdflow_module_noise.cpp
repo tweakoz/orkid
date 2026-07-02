@@ -206,7 +206,7 @@ struct NoiseModuleInst : public TerrainComputeInst {
     img->_w        = dim;
     img->_h        = dim;
     img->_channels = 1;
-    img->_ssbo     = fxi->createStorageBuffer(size_t(dim) * size_t(dim) * sizeof(float));
+    img->_ssbo     = env->createStorageBuffer(size_t(dim) * size_t(dim) * sizeof(float));
 
     // warp active only when BOTH displacement fields are connected (resolved pre-activate).
     // only STRUCTURE bakes into the text; scalars ride the params SSBO (seeded at t=0 here).
@@ -214,7 +214,7 @@ struct NoiseModuleInst : public TerrainComputeInst {
     auto text = _noise_compute_text(dim, _nmd->_octaves, _nmd->_basis, _warped);
     auto shdr = fxi->shaderFromShaderText("terrain_noise", text);
     _cs       = fxi->computeShader(shdr, "cs_noise");
-    _pm       = fxi->createStorageBuffer(8 * sizeof(float));
+    _pm       = env->createStorageBuffer(8 * sizeof(float));
     _fillParams(env.get());
   }
 

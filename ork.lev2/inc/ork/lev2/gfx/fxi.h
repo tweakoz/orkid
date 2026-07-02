@@ -66,6 +66,9 @@ public:
       size_t length,
       StorageBufferUsage usage   = StorageBufferUsage::DEFAULT,
       BufferResidency    residency = BufferResidency::HOST) { return nullptr; }
+  // caller must guarantee the GPU is done with the buffer (post fence-wait / endFrame);
+  // backend GPU-object destruction routes through the teardown-gated destroyX funnels.
+  virtual void destroyStorageBuffer(FxShaderStorageBuffer* buffer); // defined in fxi.cpp (needs the complete type)
   virtual void copyBufferIntoStorageBuffer(FxShaderStorageBuffer* ssbo, std::vector<uint8_t> buffer, size_t dest_offset) { }
   virtual storagebuffermappingptr_t mapStorageBuffer(
       FxShaderStorageBuffer* b,

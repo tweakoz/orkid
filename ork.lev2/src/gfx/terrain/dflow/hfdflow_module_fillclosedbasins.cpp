@@ -163,9 +163,9 @@ struct FillClosedBasinsModuleInst : public TerrainComputeInst {
     size_t n = size_t(dim) * size_t(dim);
     _allocOut(env.get(), _output->_value);                          // mono filled
     _outBasin->_value->_w = dim;  _outBasin->_value->_h = dim;  _outBasin->_value->_channels = 4;
-    _outBasin->_value->_ssbo  = fxi->createStorageBuffer(n * 4 * sizeof(float));
+    _outBasin->_value->_ssbo  = env->createStorageBuffer(n * 4 * sizeof(float));
     _outCenter->_value->_w = dim; _outCenter->_value->_h = dim; _outCenter->_value->_channels = 4;
-    _outCenter->_value->_ssbo = fxi->createStorageBuffer(n * 4 * sizeof(float));
+    _outCenter->_value->_ssbo = env->createStorageBuffer(n * 4 * sizeof(float));
   }
   void compute(dflow::GraphInst* inst, ui::updatedata_ptr_t) final {
     auto env = inst->_impl.getShared<BakeEnv>();

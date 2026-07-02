@@ -9,6 +9,7 @@
 #include "vulkan_ub_layout.inl"
 #include "../shadlang/shadlang_backend_spirv.h"
 #include <ork/file/chunkfile.inl>
+#include <atomic>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
@@ -820,10 +821,10 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       auto vk_program      = std::make_shared<VkFxShaderPass>(vulkan_shaderfile.get());
       vk_program->_tek_name = str_tek_name;
       vk_tek->_vk_passes.push_back(vk_program);
-      static int prog_index          = 0;
-      vk_program->_pipeline_bits_prg = prog_index;
-      prog_index++;
-      OrkAssert(prog_index < 256);
+      // atomic: globally unique program index (shader loads may run concurrently)
+      static std::atomic<int> prog_index(0);
+      vk_program->_pipeline_bits_prg = prog_index.fetch_add(1);
+      OrkAssert(vk_program->_pipeline_bits_prg < 255);
 
       if (str_stages.find("V") != std::string::npos) {
         auto str_vtx_name = tecniq_input_stream->ReadIndexedString(chunkreader);

@@ -69,7 +69,7 @@ struct ThermalErodeModuleInst : public TerrainComputeInst {
     auto env = inst->_impl.getShared<BakeEnv>();
     _allocOut(env.get(), _output->_value);
     // scratch buffer for the ping-pong (same size as the output field).
-    _scratch = env->_ctx->FXI()->createStorageBuffer(size_t(env->_w) * size_t(env->_h) * sizeof(float));
+    _scratch = env->createStorageBuffer(size_t(env->_w) * size_t(env->_h) * sizeof(float));
     // talus threshold in NORMALIZED height units: the max stable inter-cell step is
     // tan(angle) * cell_size_m, divided by height_scale to renormalize. PHYSICAL ->
     // resolution-independent (finer cells -> proportionally smaller stable step).

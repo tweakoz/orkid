@@ -13,6 +13,8 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#include <mutex>
+
 #include <ork/lev2/lev2_types.h>
 #include <ork/asset/Asset.h>
 #include <ork/asset/FileAssetLoader.h>
@@ -144,6 +146,7 @@ public:
   asset::asset_ptr_t _doLoadAsset(asset::loadrequest_ptr_t loadreq) final;
   void destroy(asset::asset_ptr_t asset) override;
   std::unordered_map<std::string, asset::asset_ptr_t> _shader_cache;
+  std::mutex _shader_cache_mutex; // guards _shader_cache (map only, not loads)
 };
 using shaderloader_ptr_t = std::shared_ptr<FxShaderLoader>;
 

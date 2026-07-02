@@ -167,7 +167,7 @@ inline void _allocOut(BakeEnv* env, gpucomputeimage2d_inst_ptr_t img) {
   img->_w        = env->_w;
   img->_h        = env->_h;
   img->_channels = 1;
-  img->_ssbo     = env->_ctx->FXI()->createStorageBuffer(size_t(env->_w) * size_t(env->_h) * sizeof(float));
+  img->_ssbo     = env->createStorageBuffer(size_t(env->_w) * size_t(env->_h) * sizeof(float));
 }
 
 

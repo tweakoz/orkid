@@ -74,13 +74,13 @@ struct EroxModuleInst : public TerrainComputeInst {
     int dim  = env->_w;
     _allocOut(env.get(), _output->_value); // terr A (= output)
     size_t nf = size_t(dim) * size_t(dim);
-    _terrB = fxi->createStorageBuffer(nf * sizeof(float));
-    _water = fxi->createStorageBuffer(nf * sizeof(float));
-    _sedA  = fxi->createStorageBuffer(nf * sizeof(float));
-    _sedB  = fxi->createStorageBuffer(nf * sizeof(float));
-    _flux  = fxi->createStorageBuffer(nf * 4 * sizeof(float));
-    _vel   = fxi->createStorageBuffer(nf * 2 * sizeof(float));
-    _params= fxi->createStorageBuffer(16 * sizeof(float)); // physical scalars, filled per-compute
+    _terrB = env->createStorageBuffer(nf * sizeof(float));
+    _water = env->createStorageBuffer(nf * sizeof(float));
+    _sedA  = env->createStorageBuffer(nf * sizeof(float));
+    _sedB  = env->createStorageBuffer(nf * sizeof(float));
+    _flux  = env->createStorageBuffer(nf * 4 * sizeof(float));
+    _vel   = env->createStorageBuffer(nf * 2 * sizeof(float));
+    _params= env->createStorageBuffer(16 * sizeof(float)); // physical scalars, filled per-compute
 
     // shaders are now param-INDEPENDENT (only dim varies) -> compiled once / disk-cache
     // hits across param tweaks; the physical scalars are uploaded to _params at compute().

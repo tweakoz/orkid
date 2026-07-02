@@ -282,6 +282,7 @@ asset_ptr_t FxShaderLoader::_doLoadAsset(asset::loadrequest_ptr_t loadreq) {
 
   // Check cache first (unless caller explicitly bypasses)
   if (loadreq->_enable_cache) {
+    std::lock_guard<std::mutex> lock(_shader_cache_mutex);
     auto it = _shader_cache.find(path.c_str());
     if (it != _shader_cache.end()) {
       return it->second;
@@ -305,7 +306,11 @@ asset_ptr_t FxShaderLoader::_doLoadAsset(asset::loadrequest_ptr_t loadreq) {
   
   // Cache the loaded shader (unless cache bypassed)
   if (loadreq->_enable_cache) {
-    _shader_cache[path.c_str()] = pshader;
+    // atomic find-or-insert: if another thread cached this path while
+    //  we were loading, return the first-cached asset
+    std::lock_guard<std::mutex> lock(_shader_cache_mutex);
+    auto it_inserted = _shader_cache.insert(std::make_pair(path.c_str(), pshader));
+    return it_inserted.first->second;
   }
 
   return pshader;
@@ -316,6 +321,7 @@ asset_ptr_t FxShaderLoader::_doLoadAsset(asset::loadrequest_ptr_t loadreq) {
     if (shader_asset) {
       // Remove from cache
       auto name = shader_asset->GetFxShader()->mName;
+      std::lock_guard<std::mutex> lock(_shader_cache_mutex);
       auto it = _shader_cache.find(name);
       if (it != _shader_cache.end()) {
         _shader_cache.erase(it);

@@ -728,6 +728,7 @@ struct VkFxInterface final : public FxInterface {
   std::unordered_map<uint64_t, vkpipelinestate_ptr_t> _pipelines;
   
   std::map<AssetPath, vkfxsfile_ptr_t> _fxshaderfiles;
+  std::mutex _fxshaderfiles_mutex; // guards _fxshaderfiles (map only, not compiles)
   shadlang::slpcache_ptr_t _slp_cache;
   priority_stack<rasterstate_ptr_t> _rasterstate_stack;
   rasterstate_ptr_t _rasterstate_top;

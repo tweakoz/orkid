@@ -69,7 +69,7 @@ struct CombineModuleInst : public TerrainComputeInst {
     if (_isMix) {
       // blend factor t is RUNTIME (so a varying t doesn't recompile). Fill here, in onActivate
       // (pre-dispatch-phase: a host map mid-phase is not visible).
-      _params = fxi->createStorageBuffer(4 * sizeof(float));
+      _params = env->createStorageBuffer(4 * sizeof(float));
       float P[4] = {_t->value(), 0.0f, 0.0f, 0.0f};
       auto m = fxi->mapStorageBuffer(_params, 0, sizeof(P), BufferMapAccess::WRITE_ONLY);
       std::memcpy(m->_mappedaddr, P, sizeof(P));

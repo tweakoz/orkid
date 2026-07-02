@@ -21,6 +21,7 @@
 #include <ork/reflect/serialize/JsonSerializer.h>
 #include <ork/reflect/serialize/JsonDeserializer.h>
 #include <ork/kernel/datacache.h> // DataBlockCache — per-node cook cache
+#include <unordered_set>
 #include "hfdflow_module.h"
 
 ImplementReflectionX(ork::lev2::terrain::TerrainModuleData, "terrain::TerrainModuleData");
@@ -101,6 +102,25 @@ void CaptureModuleData::describeX(class_t* clazz) {
   clazz->directProperty("channel", &CaptureModuleData::_channel);
   // per-bake cook-cache opt-out (round-trips with the graph).
   clazz->directProperty("cache", &CaptureModuleData::_cache);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// BakeEnv allocation arena — see the declaration notes in hfdflow.h.
+///////////////////////////////////////////////////////////////////////////////
+
+FxShaderStorageBuffer* BakeEnv::createStorageBuffer(size_t length) {
+  auto buf = _ctx->FXI()->createStorageBuffer(length);
+  _allocs.push_back(buf);
+  return buf;
+}
+
+void BakeEnv::freeAllocs() {
+  auto fxi = _ctx->FXI();
+  std::unordered_set<FxShaderStorageBuffer*> freed;
+  for (auto b : _allocs)
+    if (b and freed.insert(b).second)
+      fxi->destroyStorageBuffer(b);
+  _allocs.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -422,6 +442,12 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
       stats.push_back(fs);
     }
   }
+
+  // the bake's outputs are fully consumed (cook cache stored, captures encoded to
+  // files) and ginst dies at return — free the whole graph's GPU buffers. GPU-idle
+  // holds here: the cacheable path syncs per op, and every storage-buffer map above
+  // is itself a pending-dispatch hazard point that waits.
+  env->freeAllocs();
   return stats;
 }
 

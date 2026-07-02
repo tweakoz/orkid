@@ -181,13 +181,13 @@ struct Flow3DModuleInst : public TerrainComputeInst {
     size_t n = size_t(dim) * size_t(dim);
     // "Out" + "Metrics" are RGBA32F (4/cell) — allocate manually (not the mono _allocOut).
     _outField->_value->_w = dim; _outField->_value->_h = dim; _outField->_value->_channels = 4;
-    _outField->_value->_ssbo = fxi->createStorageBuffer(n * 4 * sizeof(float));
+    _outField->_value->_ssbo = env->createStorageBuffer(n * 4 * sizeof(float));
     _outMetrics->_value->_w = dim; _outMetrics->_value->_h = dim; _outMetrics->_value->_channels = 4;
-    _outMetrics->_value->_ssbo = fxi->createStorageBuffer(n * 4 * sizeof(float));
+    _outMetrics->_value->_ssbo = env->createStorageBuffer(n * 4 * sizeof(float));
     _allocOut(env.get(), _outDis->_value); // mono discharge
-    _wt   = fxi->createStorageBuffer(n * 8 * sizeof(float));
-    _accA = fxi->createStorageBuffer(n * sizeof(float));
-    _accB = fxi->createStorageBuffer(n * sizeof(float));
+    _wt   = env->createStorageBuffer(n * 8 * sizeof(float));
+    _accA = env->createStorageBuffer(n * sizeof(float));
+    _accB = env->createStorageBuffer(n * sizeof(float));
     float cell    = (dim > 0) ? (env->_extent_m / float(dim)) : 1.0f;
     float aspect  = env->_height_scale_m / cell;          // slope:     grad  * height_m/texel_m
     float aspect2 = env->_height_scale_m / (cell * cell); // curvature: lap   * height_m/texel_m²

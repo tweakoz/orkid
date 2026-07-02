@@ -195,6 +195,19 @@ static bool terrainTexBake(Context* ctx, const TerrainChunkDrawableData* self, T
     std::memcpy(m->_mappedaddr, st->_frame.data(), st->_frame.size() * 4);
     fxi->unmapStorageBuffer(m.get());
   }
+  // bake-only intermediates: released at EVERY exit below. The atlas draw is RECORDED into
+  // this frame's CB (executes at submit), so GPU destruction defers past the frames in
+  // flight; the host stashes are one-shot uploads (a hypothetical re-bake self-aborts
+  // loudly on the missing stash instead of mis-baking). ~272MB GPU + ~144MB host @2048² relaxed.
+  auto release_bake = [ctx, fxi, bakeSSBO, bakeFrame, st]() {
+    ctx->enqueueDelayedDestroy([fxi, bakeSSBO, bakeFrame]() {
+      fxi->destroyStorageBuffer(bakeSSBO);
+      if (bakeFrame)
+        fxi->destroyStorageBuffer(bakeFrame);
+    }, 3);
+    st->_heights = std::vector<float>();
+    st->_frame   = std::vector<float>();
+  };
   //////////////////////////////////////////////////////////////////
   // 2. MRT atlas — N targets (one per capture group) + depth, auto-mipped, trilinear. Terrain is opaque +
   //    fills the whole atlas (coverage=1), so MSAA_1X suffices. Target t = the capture FS's out_<targets[t]>.
@@ -233,6 +246,7 @@ static bool terrainTexBake(Context* ctx, const TerrainChunkDrawableData* self, T
   auto pipe               = cfs->pipelineCache()->findPipeline(permu);
   if (not pipe) {
     logchan_tcd->log("TERRAIN-TEXBAKE: no capture pipeline");
+    release_bake();
     return true;
   }
   if (auto blk = cfs->storageBlock("sif_ptex_vtx"))
@@ -244,6 +258,7 @@ static bool terrainTexBake(Context* ctx, const TerrainChunkDrawableData* self, T
     else {
       logchan_tcd->log("TERRAIN-TEXBAKE: relax frame stashed but material<%s> lacks sif_terra_frame — abort",
                        self->_material_asset_name.c_str());
+      release_bake();
       return true;
     }
   }
@@ -337,6 +352,7 @@ static bool terrainTexBake(Context* ctx, const TerrainChunkDrawableData* self, T
   logchan_tcd->log("TERRAIN-TEXBAKE: %dx%d atlas, %d targets (first<%s>) mtl<%s> -> %s",
                    atlas, atlas, N, targets[0].c_str(), self->_material_asset_name.c_str(),
                    dump ? "DUMPED" : "BOUND");
+  release_bake();
   return true;
 }
 } // namespace

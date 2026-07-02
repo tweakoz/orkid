@@ -180,7 +180,7 @@ struct PhaModuleInst : public TerrainComputeInst {
   void onActivate(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<BakeEnv>();
     _allocOut(env.get(), _output->_value);
-    _params = env->_ctx->FXI()->createStorageBuffer(16 * sizeof(float));
+    _params = env->createStorageBuffer(16 * sizeof(float));
     auto sh = env->_ctx->FXI()->shaderFromShaderText("terrain_pha", _pha_text(env->_w, _d->_octaves));
     _cs     = env->_ctx->FXI()->computeShader(sh, "cs_pha");
     _fillParams(env.get()); // pre-dispatch-phase fill (a host map mid-phase is not visible)

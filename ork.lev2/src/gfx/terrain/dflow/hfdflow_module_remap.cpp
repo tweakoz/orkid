@@ -79,7 +79,7 @@ struct RemapModuleInst : public TerrainComputeInst {
     img->_w        = dim;
     img->_h        = dim;
     img->_channels = 1;
-    img->_ssbo     = fxi->createStorageBuffer(size_t(dim) * size_t(dim) * sizeof(float));
+    img->_ssbo     = env->createStorageBuffer(size_t(dim) * size_t(dim) * sizeof(float));
 
     auto text = _remap_compute_text(dim, _inScale->value(), _inBias->value(), _inLo->value(), _inHi->value());
     auto shdr = fxi->shaderFromShaderText("terrain_remap", text);

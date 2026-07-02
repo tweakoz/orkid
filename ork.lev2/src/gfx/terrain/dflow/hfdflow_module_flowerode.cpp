@@ -122,8 +122,8 @@ struct FlowErodeModuleInst : public TerrainComputeInst {
     int dim  = env->_w;
     _allocOut(env.get(), _output->_value);
     size_t n = size_t(dim) * size_t(dim);
-    _zA = fxi->createStorageBuffer(n * sizeof(float));
-    _zB = fxi->createStorageBuffer(n * sizeof(float));
+    _zA = env->createStorageBuffer(n * sizeof(float));
+    _zB = env->createStorageBuffer(n * sizeof(float));
     float cell      = (dim > 0) ? (env->_extent_m / float(dim)) : 1.0f;
     float inv_texel = 1.0f / cell;                  // slope = |grad z_phys| / texel_m
     float hm        = env->_height_scale_m;

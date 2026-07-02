@@ -104,7 +104,7 @@ struct NormalizeModuleInst : public TerrainComputeInst {
     auto fxi = env->_ctx->FXI();
     int dim  = env->_w;
     _allocOut(env.get(), _output->_value);
-    _minmax = fxi->createStorageBuffer(2 * sizeof(uint32_t));
+    _minmax = env->createStorageBuffer(2 * sizeof(uint32_t));
 
     auto build = [&](const char* entry, std::string text) -> const FxComputeShader* {
       _nrm_sub(text, "%KEY%", _NRM_KEY);

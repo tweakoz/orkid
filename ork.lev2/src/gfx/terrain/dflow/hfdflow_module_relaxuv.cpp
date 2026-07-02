@@ -391,21 +391,21 @@ struct RelaxUvModuleInst : public TerrainComputeInst {
     double omega = 2.0 / (1.0 + std::sin(M_PI / double(cdim)));
     // outputs (RGBA32F) — at full bake dim
     _outUv->_value->_w = dim; _outUv->_value->_h = dim; _outUv->_value->_channels = 4;
-    _outUv->_value->_ssbo = fxi->createStorageBuffer(n * 4 * sizeof(float));
+    _outUv->_value->_ssbo = env->createStorageBuffer(n * 4 * sizeof(float));
     _outBn->_value->_w = dim; _outBn->_value->_h = dim; _outBn->_value->_channels = 4;
-    _outBn->_value->_ssbo = fxi->createStorageBuffer(n * 4 * sizeof(float));
+    _outBn->_value->_ssbo = env->createStorageBuffer(n * 4 * sizeof(float));
     // scratch — density at FULL res, box-averaged to the COARSE relax grid (Poisson/warp run coarse)
-    _rhoF = fxi->createStorageBuffer(n * sizeof(float));      // full-res density
-    _rho  = fxi->createStorageBuffer(nC * sizeof(float));     // coarse density, then reused as the RHS f
-    _psi  = fxi->createStorageBuffer(nC * sizeof(float));     // SOR solves IN PLACE (no ping-pong)
+    _rhoF = env->createStorageBuffer(n * sizeof(float));      // full-res density
+    _rho  = env->createStorageBuffer(nC * sizeof(float));     // coarse density, then reused as the RHS f
+    _psi  = env->createStorageBuffer(nC * sizeof(float));     // SOR solves IN PLACE (no ping-pong)
     { // seed psi = 0 (solver start). Pre-dispatch (onActivate) so we never map a buffer mid-graph.
       auto m = fxi->mapStorageBuffer(_psi, 0, nC * sizeof(float), BufferMapAccess::WRITE_ONLY);
       std::memset(m->_mappedaddr, 0, nC * sizeof(float));
       fxi->unmapStorageBuffer(m.get());
     }
-    _uvC  = fxi->createStorageBuffer(nC * 2 * sizeof(float)); // coarse relaxed uv
-    _uv   = fxi->createStorageBuffer(n  * 2 * sizeof(float)); // upsampled to full dim (frame reads this)
-    _sum  = fxi->createStorageBuffer(sizeof(uint32_t));
+    _uvC  = env->createStorageBuffer(nC * 2 * sizeof(float)); // coarse relaxed uv
+    _uv   = env->createStorageBuffer(n  * 2 * sizeof(float)); // upsampled to full dim (frame reads this)
+    _sum  = env->createStorageBuffer(sizeof(uint32_t));
     // shaders — density/frame at DIM, boxavg/rhs/SOR/warp at CDIM, upsample bridges cdim->dim
     _csReset   = fxi->computeShader(fxi->shaderFromShaderText("terrain_relax_reset",   _reset_text()), "cs_reset");
     _csDensity = fxi->computeShader(fxi->shaderFromShaderText("terrain_relax_density", _density_text(dim, aspect)), "cs_density");

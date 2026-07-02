@@ -13,6 +13,7 @@
 #include <ork/lev2/gfx/texman.h>
 #include <ork/object/AutoConnector.h>
 #include <ork/lev2/lev2_asset.h>
+#include <ork/lev2/gfx/shadman.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -22,6 +23,13 @@ namespace ork { namespace lev2 {
 
 FxInterface::FxInterface()
     : _activeShader(0) {
+}
+
+// out-of-line: FxShaderStorageBuffer is incomplete in fxi.h. Deleting it drops the
+// backend impl (shared VulkanBuffer), whose own destruction routes through the
+// teardown-gated destroyX funnels.
+void FxInterface::destroyStorageBuffer(FxShaderStorageBuffer* buffer) {
+  delete buffer;
 }
 
 void FxInterface::pushRasterState(rasterstate_ptr_t rs){

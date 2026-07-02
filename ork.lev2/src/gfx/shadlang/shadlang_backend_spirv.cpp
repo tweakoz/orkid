@@ -7,7 +7,10 @@
 
 #include <ork/lev2/gfx/shadlang.h>
 #include <ork/util/parser_peg.h>
+#include <ork/kernel/environment.h>
 #include "shadlang_backend_spirv.h"
+#include <atomic>
+#include <thread>
 
 namespace ork::lev2::shadlang::spirv {
 using namespace SHAST;
@@ -1483,17 +1486,46 @@ void SpirvCompiler::_compileShader(shaderc_shader_kind shader_type) {
       "main",                                                       // entry point name
       options);
 
-  printf("// shader<%s>:\n%s\n", _shader_name.c_str(), as_glsl.c_str());
-  if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
+  ///////////////////////////////////////////////////////
+  // full-GLSL stdout dump gated behind ORKID_SHADER_DEBUG_DUMP
+  //  (unconditional dumps would serialize parallel compiles on stdout)
+  //  always dump on compile failure so errors stay diagnosable
+  ///////////////////////////////////////////////////////
+
+  static const bool debug_dump = [] {
+    std::string ORKID_SHADER_DEBUG_DUMP;
+    if (genviron.get("ORKID_SHADER_DEBUG_DUMP", ORKID_SHADER_DEBUG_DUMP) && !ORKID_SHADER_DEBUG_DUMP.empty()) {
+      return ORKID_SHADER_DEBUG_DUMP == "1";
+    }
+    return false;
+  }();
+
+  bool compile_ok = (result.GetCompilationStatus() == shaderc_compilation_status_success);
+  if (debug_dump or (not compile_ok)) {
+    printf("// shader<%s>:\n%s\n", _shader_name.c_str(), as_glsl.c_str());
+  }
+  if (not compile_ok) {
     std::cerr << result.GetErrorMessage();
       fflush(stdout);
       fflush(stderr);
     OrkAssert(false);
   }
-  auto output_path = file::Path::temp_dir() / FormatString("%s.glsl", _shader_name.c_str());
+
+  ///////////////////////////////////////////////////////
+  // dump GLSL + SPIR-V to temp files
+  //  filenames are unique per invocation (thread-id + serial) so
+  //  concurrent compiles of identically named stages do not collide
+  ///////////////////////////////////////////////////////
+
+  static std::atomic<uint64_t> _dump_serial(0);
+  size_t dump_tid  = std::hash<std::thread::id>{}(std::this_thread::get_id());
+  size_t dump_seq  = size_t(_dump_serial.fetch_add(1));
+  auto dump_suffix = FormatString("t%zx.n%zu", dump_tid, dump_seq);
+
+  auto output_path = file::Path::temp_dir() / FormatString("%s.%s.glsl", _shader_name.c_str(), dump_suffix.c_str());
   bool OK          = File::writeString(output_path, as_glsl);
 
-  output_path   = file::Path::temp_dir() / FormatString("%s.spv", _shader_name.c_str());
+  output_path   = file::Path::temp_dir() / FormatString("%s.%s.spv", _shader_name.c_str(), dump_suffix.c_str());
   _spirv_binary = shader_bin_t(result.cbegin(), result.cend());
   File::writeBinary(output_path, _spirv_binary.data(), _spirv_binary.size() * sizeof(uint32_t));
   OrkAssert(not _assert_on_done);

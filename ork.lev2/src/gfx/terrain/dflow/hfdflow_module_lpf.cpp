@@ -104,8 +104,8 @@ struct LpfModuleInst : public TerrainComputeInst {
     auto fxi = env->_ctx->FXI();
     int dim  = env->_w;
     _allocOut(env.get(), _output->_value);
-    _tmp    = fxi->createStorageBuffer(size_t(dim) * size_t(dim) * sizeof(float));
-    _params = fxi->createStorageBuffer(4 * sizeof(float)); // {inv2s2, blend, _, _}; filled below
+    _tmp    = env->createStorageBuffer(size_t(dim) * size_t(dim) * sizeof(float));
+    _params = env->createStorageBuffer(4 * sizeof(float)); // {inv2s2, blend, _, _}; filled below
     // RADIUS must bake (loop bound), so BUCKET it to the next power of two (min 4): every cutoff
     // in a bucket shares one shader -> a cutoff sweep compiles one shader, not one per value.
     float sigma = _sigmaTexels(env.get());
