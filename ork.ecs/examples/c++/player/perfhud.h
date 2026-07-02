@@ -71,6 +71,13 @@ struct PerfHud {
   std::deque<float> _hist;          // frame-ms ring (~2 s)
   static constexpr size_t kHistMax = 256;
 
+  // ORKID_PLAYER_HUD_STDOUT=<secs>: periodically print the stats text to stdout
+  // (headless/DRM/scripted runs where the on-screen HUD can't be read). Works with
+  // the on-screen mode OFF, so the cull readbacks stay disabled and don't perturb
+  // perf measurements.
+  double _stdout_period = 0.0;
+  Timer  _stdout_timer;
+
   // lazily-created graph draw resources
   std::shared_ptr<FreestyleMaterial>                  _mtl;
   std::shared_ptr<DynamicVertexBuffer<SVtxV16T16C16>> _vbuf;
@@ -81,6 +88,12 @@ struct PerfHud {
     _frame_timer.Start();
     if (const char* v = getenv("ORKID_PLAYER_HUD"))
       _mode = atoi(v) % NUM_MODES;
+    if (const char* v = getenv("ORKID_PLAYER_HUD_STDOUT")) {
+      _stdout_period = atof(v);
+      if (_stdout_period <= 0.0)
+        _stdout_period = 2.0;
+      _stdout_timer.Start();
+    }
   }
   void cycleMode() { _mode = (_mode + 1) % NUM_MODES; }
 
@@ -114,6 +127,11 @@ struct PerfHud {
       _frame_ms_max_disp = _frame_ms_max;
       _frame_ms_max      = 0.0f;
       _rate_timer.Start();
+    }
+    if (_stdout_period > 0.0 and _stdout_timer.SecsSinceStart() >= _stdout_period) {
+      _stdout_timer.Start();
+      printf("[perfhud]\n%s\n", _statsText().c_str());
+      fflush(stdout);
     }
     if (_mode == OFF)
       return;

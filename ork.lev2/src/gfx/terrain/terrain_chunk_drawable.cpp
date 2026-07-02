@@ -536,7 +536,10 @@ drawable_ptr_t TerrainChunkDrawableData::createDrawable() const {
     // 4. the SSBO + heights upload (+ the relax frame SSBO)
     //////////////////////////////////////////////////////////////////
     auto fxi  = ctx->FXI();
-    auto ssbo = fxi->createStorageBuffer(TOTAL);
+    // BAR: GPU reads the dense heights + VIS every pass; the CPU's per-frame touches (CamBlk
+    // write in drawable_compute, tiny) stay direct-mapped forward writes. Not DEVICE — that
+    // would turn each per-frame CamBlk map into a synchronous staged submit+wait.
+    auto ssbo = fxi->createStorageBuffer(TOTAL, StorageBufferUsage::DEFAULT, BufferResidency::BAR);
     { // u_dim (runtime grid dim) -> VIS header slot 2 @VIS_OFF+8. Uploaded ONCE; the per-frame reset
       // compute never touches it (survives reset). The VS/cull read it instead of a baked literal.
       uint32_t udim = uint32_t(render_dim);   // RENDER grid dim (mesh is downsampled to this)
@@ -551,7 +554,9 @@ drawable_ptr_t TerrainChunkDrawableData::createDrawable() const {
     }
     FxShaderStorageBuffer* frameSSBO = nullptr;
     if (relax) { // stride-8 [h, uv.xy, nrm.xz, bn.xyz] @render_dim — bound to sif_terra_frame below
-      frameSSBO = fxi->createStorageBuffer(framerender.size() * 4);
+      // DEVICE: written ONCE here (the map below becomes a one-time staged upload), then
+      // GPU-read-only every pass — the biggest per-frame PCIe re-read in the terrain path.
+      frameSSBO = fxi->createStorageBuffer(framerender.size() * 4, StorageBufferUsage::DEFAULT, BufferResidency::DEVICE);
       auto m = fxi->mapStorageBuffer(frameSSBO, 0, framerender.size() * 4, BufferMapAccess::WRITE_ONLY);
       std::memcpy(m->_mappedaddr, framerender.data(), framerender.size() * 4);
       fxi->unmapStorageBuffer(m.get());

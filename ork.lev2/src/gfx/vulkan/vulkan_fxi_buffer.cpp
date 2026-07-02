@@ -70,9 +70,21 @@ FxShaderStorageBuffer* VkFxInterface::createStorageBuffer(size_t length,
     if (usage & StorageBufferUsage::INDIRECT) vku |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
     if (usage & StorageBufferUsage::VERTEX)   vku |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
   }
-  VkMemoryPropertyFlags memprops = (residency == BufferResidency::DEVICE)
-      ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-      : (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+  VkMemoryPropertyFlags memprops;
+  switch (residency) {
+    case BufferResidency::DEVICE: // GPU-only VRAM; map()/copy staged
+      memprops = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+      break;
+    case BufferResidency::BAR: // CPU-writable VRAM window; degrades to HOST via _findMemoryType /
+                               // alloc-retry when absent or full (see vulkan_ctx_bufmem.cpp)
+      memprops = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                 VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+      break;
+    case BufferResidency::HOST:
+    default:
+      memprops = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+      break;
+  }
   ssbo->_impl.makeShared<VulkanBuffer>(_contextVK, length, vku, std::string(""), memprops);
   return ssbo;
 }
