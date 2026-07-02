@@ -98,9 +98,9 @@ class ForestScene(Scene):
     # TERRAIN FIRST — bakes the relief AND the "trees" scatter the variants read.
     self.terrain(TERRAIN, 
                  dsl_file         = "xxx3_trees", 
-                 chunk            = 160,
+                 chunk            = 128,
                  bake_dimension   = 4096,                
-                 render_dimension = 1600,
+                 render_dimension = 1024,
                  bake_res         = 4096,                
                  walkable         = True,
                  mode             = "stored",   # Phase-1: capture the proctex to <assetcache>/ptex3d_capture/<key>/ (cached)

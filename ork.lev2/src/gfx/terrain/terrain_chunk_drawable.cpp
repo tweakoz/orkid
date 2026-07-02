@@ -71,9 +71,9 @@ struct TcBootstrap {
   // stashed by _liveRecompute for the texture-bake one-shot (terrainTexBake)
   FxShaderStorageBuffer* _ssbo = nullptr;
   int   _dim = 0, _chunk = 0, _nchunk = 0, _vpc = 0;
-  int   _vstride = 1;                 // per-vertex SSBO floats @HEIGHTS_OFF: 1 (mono height) or 8 (relax interleaved)
   float _extent_m = 0.0f, _height_m = 0.0f;
-  std::vector<float> _heights;        // the bake's per-vertex array (BAKE-res; flat heights if mono, stride-8 interleaved if relax)
+  std::vector<float> _heights;        // the bake's DENSE height array (BAKE-res, stride 1 — both modes)
+  std::vector<float> _frame;          // relax: the bake's stride-8 frame array [h,uv.xy,nrm.xz,bn.xyz] (BAKE-res); empty = mono
   std::shared_ptr<RtGroup> _bake_rtg; // stored mode: the baked atlas, bound onto the material (kept alive)
 };
 
@@ -146,16 +146,15 @@ static bool terrainTexBake(Context* ctx, const TerrainChunkDrawableData* self, T
   // heights[] is the trailing RUNTIME array; the fixed-cap per-chunk arrays precede it (chunk_y first,
   // 8-aligned for vec2). MUST mirror gpu_chunk.py. STEP1: bake_dim == dim, so maxnc == nchunk.
   const int    maxnc       = nchunk;
-  const int    vstride     = st->_vstride;                        // 1 (mono) or 8 (relax interleaved) — mirrors gpu_chunk.py
   const size_t ARGS_OFF    = 160;
   const size_t VIS_OFF     = 176;
   const size_t CHUNKY_OFF  = 192;                                 // vec2 chunk_y[MAXNC] (unused by bake)
   const size_t VLIST_OFF   = CHUNKY_OFF + size_t(maxnc) * 8;      // uint v_list[MAXNC]
-  const size_t HEIGHTS_OFF = VLIST_OFF + size_t(maxnc) * 4;       // float heights[] (runtime, last; stride vstride)
-  const size_t TOTAL       = HEIGHTS_OFF + size_t(dim) * size_t(dim) * size_t(vstride) * 4;
-  if (st->_heights.size() != size_t(dim) * size_t(dim) * size_t(vstride)) {
+  const size_t HEIGHTS_OFF = VLIST_OFF + size_t(maxnc) * 4;       // float heights[] (runtime, last; DENSE stride 1)
+  const size_t TOTAL       = HEIGHTS_OFF + size_t(dim) * size_t(dim) * 4;
+  if (st->_heights.size() != size_t(dim) * size_t(dim)) {
     logchan_tcd->log("TERRAIN-TEXBAKE: heights not stashed (size<%zu> expected<%zu>) — abort",
-                     st->_heights.size(), size_t(dim) * size_t(dim) * size_t(vstride));
+                     st->_heights.size(), size_t(dim) * size_t(dim));
     return true;
   }
   auto bakeSSBO = fxi->createStorageBuffer(TOTAL);
@@ -184,6 +183,16 @@ static bool terrainTexBake(Context* ctx, const TerrainChunkDrawableData* self, T
   { // heights[] (terr_pos reads them) — the stashed copy from _liveRecompute
     auto m = fxi->mapStorageBuffer(bakeSSBO, HEIGHTS_OFF, st->_heights.size() * 4, BufferMapAccess::WRITE_ONLY);
     std::memcpy(m->_mappedaddr, st->_heights.data(), st->_heights.size() * 4);
+    fxi->unmapStorageBuffer(m.get());
+  }
+  // relax: the FULL-res frame array (sif_terra_frame, its own buffer) — the cap VS reads ruv/frame
+  // from it so the atlas rasterizes in full-res relaxed space. Mono: empty, no buffer, no bind.
+  FxShaderStorageBuffer* bakeFrame = nullptr;
+  if (not st->_frame.empty()) {
+    OrkAssert(st->_frame.size() == size_t(dim) * size_t(dim) * 8);
+    bakeFrame = fxi->createStorageBuffer(st->_frame.size() * 4);
+    auto m = fxi->mapStorageBuffer(bakeFrame, 0, st->_frame.size() * 4, BufferMapAccess::WRITE_ONLY);
+    std::memcpy(m->_mappedaddr, st->_frame.data(), st->_frame.size() * 4);
     fxi->unmapStorageBuffer(m.get());
   }
   //////////////////////////////////////////////////////////////////
@@ -228,6 +237,16 @@ static bool terrainTexBake(Context* ctx, const TerrainChunkDrawableData* self, T
   }
   if (auto blk = cfs->storageBlock("sif_ptex_vtx"))
     pipe->bindStorage(blk, bakeSSBO); // the all-chunks bake buffer (not the cull-overwritten shared one)
+  if (bakeFrame) {                    // relax: the cap VS also pulls the frame SSBO
+    auto blk = cfs->storageBlock("sif_terra_frame");
+    if (blk)
+      pipe->bindStorage(blk, bakeFrame);
+    else {
+      logchan_tcd->log("TERRAIN-TEXBAKE: relax frame stashed but material<%s> lacks sif_terra_frame — abort",
+                       self->_material_asset_name.c_str());
+      return true;
+    }
+  }
   if (auto p = cfs->param("mvp"))
     pipe->bindParam(p, "RCFD_Camera_MVP_Mono"_crcsh);
   if (auto p = cfs->param("m"))
@@ -388,12 +407,12 @@ drawable_ptr_t TerrainChunkDrawableData::createDrawable() const {
       heights_hi[i] = px[i * spec.nchannels];
     //////////////////////////////////////////////////////////////////
     // 2b. RELAX channels (opt-in via the DSL self.relax_uv(h)): when the manifest carries a relaxed_uv
-    //     channel, the per-vertex SSBO array is INTERLEAVED stride 8 (mirrors gpu_chunk.py relax=True):
-    //     [h, uv.x, uv.y, nrm.x, nrm.z, bn.x, bn.y, bn.z]. relaxed_uv.exr = RGBA(uv.x,uv.y,nrm.x,nrm.z);
-    //     binormal.exr = RGBA(bn.x,bn.y,bn.z,1). Both baked at bake_dim; loaded as 4-channel RGBA.
+    //     channel, a SEPARATE stride-8 frame SSBO [h, uv.x, uv.y, nrm.x, nrm.z, bn.x, bn.y, bn.z] is
+    //     built and bound to sif_terra_frame (mirrors gpu_chunk.py relax=True; heights[] stays dense).
+    //     relaxed_uv.exr = RGBA(uv.x,uv.y,nrm.x,nrm.z); binormal.exr = RGBA(bn.x,bn.y,bn.z,1).
+    //     Both baked at bake_dim; loaded as 4-channel RGBA.
     //////////////////////////////////////////////////////////////////
     const bool relax    = doc["channels"].HasMember("relaxed_uv");
-    const int  vstride  = relax ? 8 : 1;
     std::vector<float> ruv_hi, bnm_hi; // bake_dim^2 * 4 (RGBA), only when relax
     auto loadRGBA4 = [&](const char* chan) -> std::vector<float> {
       std::string f = doc["channels"][chan]["file"].GetString();
@@ -510,13 +529,14 @@ drawable_ptr_t TerrainChunkDrawableData::createDrawable() const {
       }
       return out;
     };
-    std::vector<float> vtxrender;
+    // relax: the RENDER-res frame array (its own SSBO, bound to sif_terra_frame) — the DOWNSAMPLED
+    // channels, matching the downsampled heights. heights[] itself stays DENSE stride-1 in BOTH modes
+    // (terr_pos + the depth-prepass keep mono's cache density; the frame is read only by the color VS).
+    std::vector<float> framerender;
     if (relax) {
-      auto ruv_r = downsampleN(ruv_hi, 4);
-      auto bnm_r = downsampleN(bnm_hi, 4);
-      vtxrender  = interleave8(heights, ruv_r, bnm_r, render_dim);
-    } else {
-      vtxrender = heights; // flat stride-1
+      auto ruv_r  = downsampleN(ruv_hi, 4);
+      auto bnm_r  = downsampleN(bnm_hi, 4);
+      framerender = interleave8(heights, ruv_r, bnm_r, render_dim);
     }
     size_t CAM_OFF     = 0;
     size_t ARGS_OFF    = 160; // after CamBlk (64+64+16+16)
@@ -525,12 +545,12 @@ drawable_ptr_t TerrainChunkDrawableData::createDrawable() const {
     // (chunk_y first for vec2 8-alignment), sized at maxnc (BAKE chunk count). MUST mirror gpu_chunk.py.
     size_t CHUNKY_OFF  = 192;                                               // vec2 chunk_y[MAXNC] @192
     size_t VLIST_OFF   = CHUNKY_OFF + size_t(maxnc) * 8;                    // uint v_list[MAXNC]
-    size_t HEIGHTS_OFF = VLIST_OFF + size_t(maxnc) * 4;                     // float heights[] (runtime, last; stride vstride)
-    size_t TOTAL       = HEIGHTS_OFF + size_t(render_dim) * render_dim * size_t(vstride) * 4; // render buffer (downsampled)
+    size_t HEIGHTS_OFF = VLIST_OFF + size_t(maxnc) * 4;                     // float heights[] (runtime, last; DENSE)
+    size_t TOTAL       = HEIGHTS_OFF + size_t(render_dim) * render_dim * 4; // render buffer (downsampled)
     (void)vpc;
     (void)extent_m;
     //////////////////////////////////////////////////////////////////
-    // 4. the SSBO + heights upload
+    // 4. the SSBO + heights upload (+ the relax frame SSBO)
     //////////////////////////////////////////////////////////////////
     auto fxi  = ctx->FXI();
     auto ssbo = fxi->createStorageBuffer(TOTAL);
@@ -541,10 +561,16 @@ drawable_ptr_t TerrainChunkDrawableData::createDrawable() const {
       std::memcpy(m->_mappedaddr, &udim, 4);
       fxi->unmapStorageBuffer(m.get());
     }
-    { // the per-vertex array @HEIGHTS_OFF — flat heights (mono) or stride-8 interleaved (relax); terr_pos
-      // reads heights[(cz*u_dim+cx)*vstride] either way (vstride baked into the generated shader).
-      auto m = fxi->mapStorageBuffer(ssbo, HEIGHTS_OFF, vtxrender.size() * 4, BufferMapAccess::WRITE_ONLY);
-      std::memcpy(m->_mappedaddr, vtxrender.data(), vtxrender.size() * 4);
+    { // the DENSE heights @HEIGHTS_OFF — terr_pos reads heights[cz*u_dim+cx] in both modes
+      auto m = fxi->mapStorageBuffer(ssbo, HEIGHTS_OFF, heights.size() * 4, BufferMapAccess::WRITE_ONLY);
+      std::memcpy(m->_mappedaddr, heights.data(), heights.size() * 4);
+      fxi->unmapStorageBuffer(m.get());
+    }
+    FxShaderStorageBuffer* frameSSBO = nullptr;
+    if (relax) { // stride-8 [h, uv.xy, nrm.xz, bn.xyz] @render_dim — bound to sif_terra_frame below
+      frameSSBO = fxi->createStorageBuffer(framerender.size() * 4);
+      auto m = fxi->mapStorageBuffer(frameSSBO, 0, framerender.size() * 4, BufferMapAccess::WRITE_ONLY);
+      std::memcpy(m->_mappedaddr, framerender.data(), framerender.size() * 4);
       fxi->unmapStorageBuffer(m.get());
     }
     //////////////////////////////////////////////////////////////////
@@ -586,6 +612,20 @@ drawable_ptr_t TerrainChunkDrawableData::createDrawable() const {
     auto cdd       = std::make_shared<ComputeDrawableData>();
     cdd->_material = mtl;
     cdd->addGraphicsStorage(sif, ssbo);
+    const FxShaderStorageBlock* frame_sif = nullptr;
+    if (relax) { // the relax frame SSBO — every VS variant inherits sif_terra_frame (dpp's reads DCE)
+      frame_sif = fsmtl->storageBlock("sif_terra_frame");
+      if (not frame_sif) {
+        logchan_tcd->log(
+            "TerrainChunkDrawable: manifest<%s> is RELAXED but material<%s> lacks sif_terra_frame "
+            "(stale material — re-materialize the scene) — abort",
+            self->_resolved_manifest.c_str(),
+            self->_material_asset_name.c_str());
+        state->_built = true;
+        return;
+      }
+      cdd->addGraphicsStorage(frame_sif, frameSSBO);
+    }
     cdd->setCameraParams(ssbo, CAM_OFF);
     int cull_groups = (render_nchunk + 63) / 64;   // dispatch over the RENDER chunk grid
     struct PassDef { const char* _name; int _gx; };
@@ -603,7 +643,12 @@ drawable_ptr_t TerrainChunkDrawableData::createDrawable() const {
         state->_built = true;
         return;
       }
-      cdd->addComputePass(cs, {{sif, ssbo}}, p._gx, 1, 1);
+      // relax: the compute interface inherits sif_terra_frame (dense-binding requirement — see
+      // gpu_chunk.py cif_terrain), so its pipeline layout includes it; bind the buffer per pass.
+      if (frame_sif)
+        cdd->addComputePass(cs, {{sif, ssbo}, {frame_sif, frameSSBO}}, p._gx, 1, 1);
+      else
+        cdd->addComputePass(cs, {{sif, ssbo}}, p._gx, 1, 1);
     }
     cdd->setIndirect(ssbo, ARGS_OFF, nullptr, PrimitiveType::TRIANGLES, 4);
     //////////////////////////////////////////////////////////////////
@@ -630,12 +675,15 @@ drawable_ptr_t TerrainChunkDrawableData::createDrawable() const {
     state->_chunk    = chunk;
     state->_nchunk   = maxnc;        // bake chunk count (== the array cap)
     state->_vpc      = vpc;
-    state->_vstride  = vstride;       // 1 (mono) or 8 (relax) — the bake builds its array at this stride
     state->_extent_m = extent_m;
     state->_height_m = height_m;
-    if (self->_capture_mode == "stored" or getenv("ORKID_TERRAIN_TEXBAKE_DUMP"))
-      // HI-RES (bake_dim^2); the bake rasterizes the surface into the atlas at uv0 (relaxed if interleaved).
-      state->_heights = relax ? interleave8(heights_hi, ruv_hi, bnm_hi, bake_dim) : heights_hi;
+    if (self->_capture_mode == "stored" or getenv("ORKID_TERRAIN_TEXBAKE_DUMP")) {
+      // HI-RES (bake_dim^2): dense heights (both modes) + the stride-8 frame (relax) — the bake
+      // rasterizes the surface into the atlas at the FULL-res relaxed uv from the frame SSBO.
+      state->_heights = heights_hi;
+      if (relax)
+        state->_frame = interleave8(heights_hi, ruv_hi, bnm_hi, bake_dim);
+    }
     state->_cdd   = cdd;
     state->_built = true;
     logchan_tcd->log(
