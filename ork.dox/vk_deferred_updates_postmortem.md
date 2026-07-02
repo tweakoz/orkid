@@ -1,11 +1,12 @@
 # VK deferred buffer updates — postmortem (2026-07-02)
 
-**Status: the optimization is PERMANENTLY DISABLED** (`kDeferralEnabled = false` in
-`VkFxInterface::unmapStorageBuffer`, `vulkan_fxi_buffer.cpp`) after a correctness bug that
-three fix attempts failed to resolve. This document exists so the next attempt starts from
-the disproof evidence instead of re-deriving it. The enqueue/flush machinery
+**Status: the optimization is REMOVED from the tree** after a correctness bug that three
+fix attempts failed to resolve. `VkFxInterface::unmapStorageBuffer` (`vulkan_fxi_buffer.cpp`)
+is back to the always-synchronous staged copy. This document exists so the next attempt
+starts from the disproof evidence instead of re-deriving it. The enqueue/flush machinery
 (`VkComputeInterface::enqueueDeferredBufferUpdate` / `_flushDeferredBufferUpdates` /
-`applyPendingUpdatesFor`) is intact in-tree.
+`applyPendingUpdatesFor`) lives only in git history now — recover it with
+`git log -S enqueueDeferredBufferUpdate` (introduced on the toz-2026-jul01-drm branch).
 
 ## What the optimization was
 
@@ -85,7 +86,27 @@ exist, and none should be invented (owner decision).
   Offscreen self-verification is currently impossible (offscreen composite renders black
   for every scene — separate bug; `--snapshot` in ork.ecs.player is ready once fixed).
 
-## How to re-enable for experiments
+## Postscript (2026-07-02): the bug outlived the disable via the cook cache
 
-Flip `kDeferralEnabled` in `vulkan_fxi_buffer.cpp` (or re-gate it on an env var). The
-machinery it feeds is unchanged from the DRM branch.
+After the disable (and later full removal of the machinery), scn_scatter still rendered its
+gid-1 bucket wrong (shard tips lost their gold material). Root cause: cooks that ran while
+deferral was enabled wrote WRONG results into `<staging>/dflowcache` — the assign-gid/select
+dispatches ran without their param-SSBO writes landing, so the cooked gid channel had every
+face in bucket 0. Content-addressed caching then re-served the poisoned artifact forever:
+the graph content (hash) never changed, so no re-cook, and no runtime fix could help.
+Confirmed by moving the cache aside and re-cooking under the clean build (gold tips returned).
+
+LESSON: a GPU-correctness bug's blast radius includes every artifact COOKED while it was
+live, not just what it renders. Recovery protocol for any such incident: after the code fix,
+invalidate (move aside) every cook cache written during the bug window. The "deferral OFF →
+correct" A/B verified mesh PRESENCE on warm caches — it could not catch stale-but-loadable
+poisoned artifacts.
+
+## How to reattempt
+
+The machinery is no longer in-tree. Recover the last state of it (enqueue/dedupe,
+phase-begin flush, read-your-writes apply) from git history:
+`git log -S enqueueDeferredBufferUpdate` — it entered on the toz-2026-jul01-drm branch and
+was removed after the disable commit (`015ecc0f2`, "sychro fix (but slower)"). Start from
+hypothesis H1 (hang pending updates on the VulkanBuffer, not a per-context CI) rather than
+re-porting the old per-context design.

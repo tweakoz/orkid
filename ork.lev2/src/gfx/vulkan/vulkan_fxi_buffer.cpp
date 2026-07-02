@@ -144,12 +144,8 @@ storagebuffermappingptr_t VkFxInterface::mapStorageBuffer(FxShaderStorageBuffer*
     // device-local: back the mapping with a host temp; pre-fill on read, flush on unmap (write).
     void* temp = std::malloc(mapping->_length);
     bool reads = (access == BufferMapAccess::READ_ONLY) || (access == BufferMapAccess::READ_WRITE);
-    if (reads) {
-      // read-your-writes: deferred updates targeting this buffer must land first
-      if (_contextVK->_ci)
-        _contextVK->_ci->applyPendingUpdatesFor(bufimpl);
+    if (reads)
       bufimpl->copyToHost(temp, mapping->_length, base);
-    }
     mapping->_mappedaddr = temp;
     if (trace)
       MapTraceStats::instance()._stageNs += (_nsNow() - t1);
@@ -173,31 +169,12 @@ void VkFxInterface::unmapStorageBuffer(FxShaderStorageBufferMapping* mapping) {
   auto bufimpl = mapping->_buffer->_impl.getShared<VulkanBuffer>();
   if (not bufimpl->_hostVisible) {
     bool writes = (mapping->_access == BufferMapAccess::WRITE_ONLY) || (mapping->_access == BufferMapAccess::READ_WRITE);
-    // small WRITE_ONLY updates CAN defer to the next dispatch phase (vkCmdUpdateBuffer)
-    // instead of a synchronous staged copy (submit+fence per write — the dominant
-    // hypermesh writeParams cost on discrete GPUs; ~8x racer graph-eval when enabled).
-    // vkCmdUpdateBuffer requires 4-byte-aligned offset/size and <= 64KB.
-    //
-    // !!! DEFERRAL PERMANENTLY DISABLED (2026-07-02) — CORRECTNESS BUG, ROOT CAUSE UNKNOWN.
-    // With deferral on, warm-cook-cached static hypermesh scenes (scn_forest / scn_scatter /
-    // scn_kush) render NO hypermeshes; this synchronous path is the owner-verified-correct
-    // behavior (was env ORKID_VK_DISABLE_DEFERRED_UPDATES=1). THREE fix families were tried
-    // and DISPROVEN by windowed A/B — do NOT retry them; read the postmortem FIRST:
-    //     ork.dox/vk_deferred_updates_postmortem.md
-    // (the enqueue/flush machinery below is kept intact for that reimplementation effort).
-    constexpr bool kDeferralEnabled = false;
-    bool deferrable = kDeferralEnabled                                        //
-                      and writes                                              //
-                      and (mapping->_access == BufferMapAccess::WRITE_ONLY)   //
-                      and (_contextVK->_ci != nullptr)                        //
-                      and (mapping->_length <= 65536)                         //
-                      and ((mapping->_length & 3) == 0)                       //
-                      and ((mapping->_offset & 3) == 0);
-    if (deferrable) {
-      _contextVK->_ci->enqueueDeferredBufferUpdate(bufimpl, mapping->_offset, mapping->_mappedaddr, mapping->_length);
-    } else if (writes) {
+    // MUST stay synchronous: a deferred-update optimization here (stash small WRITE_ONLY
+    // writes, replay as vkCmdUpdateBuffer at the next dispatch phase) shipped a correctness
+    // bug (warm-cook-cached static hypermesh scenes rendered nothing) and was removed —
+    // read ork.dox/vk_deferred_updates_postmortem.md before reattempting.
+    if (writes)
       bufimpl->copyFromHost(mapping->_mappedaddr, mapping->_length, mapping->_offset); // flush staging -> device
-    }
     std::free(mapping->_mappedaddr);
     if (trace)
       MapTraceStats::instance()._stageNs += (_nsNow() - t0);
