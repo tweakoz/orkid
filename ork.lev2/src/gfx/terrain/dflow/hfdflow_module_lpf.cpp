@@ -87,7 +87,7 @@ struct LpfModuleInst : public TerrainComputeInst {
                                                      : _cutoff->value();
     return std::max(cutoff_texels / 6.0f, 0.25f);
   }
-  // sigma + blend -> params SSBO. Filled in onActivate (pre-dispatch-phase: a host map mid-phase
+  // sigma + blend -> params SSBO. Filled in bakeAcquire (pre-dispatch-phase: a host map mid-phase
   // is not visible). sigma clamped so 3*sigma stays inside the baked loop bound.
   void _fillParams(BakeEnv* env) {
     float sigma  = std::min(_sigmaTexels(env), float(_rmax) / 3.0f);
@@ -99,7 +99,7 @@ struct LpfModuleInst : public TerrainComputeInst {
     std::memcpy(m->_mappedaddr, P, sizeof(P));
     fxi->unmapStorageBuffer(m.get());
   }
-  void onActivate(dflow::GraphInst* inst) final {
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<BakeEnv>();
     auto fxi = env->_ctx->FXI();
     int dim  = env->_w;

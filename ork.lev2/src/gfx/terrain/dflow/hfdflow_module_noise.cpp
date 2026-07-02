@@ -198,7 +198,7 @@ struct NoiseModuleInst : public TerrainComputeInst {
     fxi->unmapStorageBuffer(mp.get());
   }
 
-  void onActivate(dflow::GraphInst* inst) final {
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env  = inst->_impl.getShared<BakeEnv>();
     auto fxi  = env->_ctx->FXI();
     int dim   = env->_w;

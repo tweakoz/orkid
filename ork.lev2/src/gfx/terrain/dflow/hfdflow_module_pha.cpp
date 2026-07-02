@@ -177,7 +177,7 @@ struct PhaModuleInst : public TerrainComputeInst {
     std::memcpy(m->_mappedaddr, P, sizeof(P));
     fxi->unmapStorageBuffer(m.get());
   }
-  void onActivate(dflow::GraphInst* inst) final {
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<BakeEnv>();
     _allocOut(env.get(), _output->_value);
     _params = env->createStorageBuffer(16 * sizeof(float));

@@ -99,7 +99,7 @@ struct NormalizeModuleInst : public TerrainComputeInst {
     _hi     = _floatPlug(this, _d, "out_hi");
   }
 
-  void onActivate(dflow::GraphInst* inst) final {
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<BakeEnv>();
     auto fxi = env->_ctx->FXI();
     int dim  = env->_w;

@@ -156,7 +156,7 @@ struct FillClosedBasinsModuleInst : public TerrainComputeInst {
     _input     = typedInputNamed<HfImagePlugTraits>("In");
     _minDepth  = _floatPlug(this, _d, "min_depth");
   }
-  void onActivate(dflow::GraphInst* inst) final {
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<BakeEnv>();
     auto fxi = env->_ctx->FXI();
     int dim  = env->_w;

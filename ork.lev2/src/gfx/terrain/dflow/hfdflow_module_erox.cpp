@@ -68,7 +68,7 @@ struct EroxModuleInst : public TerrainComputeInst {
     _creep   = _floatPlug(this, _d, "creep_m2ps");
     _exag    = _floatPlug(this, _d, "exaggerated_height_m");
   }
-  void onActivate(dflow::GraphInst* inst) final {
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<BakeEnv>();
     auto fxi = env->_ctx->FXI();
     int dim  = env->_w;
@@ -192,7 +192,7 @@ struct EroxModuleInst : public TerrainComputeInst {
     }
   }
   // derive the physical per-step scalars from the meters model + plug values and upload them
-  // to the params SSBO. Reads the PLUGS at compute() time (not onActivate), so a sweep can
+  // to the params SSBO. Reads the PLUGS at compute() time (not bakeAcquire), so a sweep can
   // vary params and re-run compute() without recompiling. Also sets _iterations.
   void _fillParams(BakeEnv* env) {
     int dim = env->_w;

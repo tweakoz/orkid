@@ -65,7 +65,7 @@ struct ThermalErodeModuleInst : public TerrainComputeInst {
     _rate   = _floatPlug(this, _d, "rate");
     _exag   = _floatPlug(this, _d, "exaggerated_height_m");
   }
-  void onActivate(dflow::GraphInst* inst) final {
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<BakeEnv>();
     _allocOut(env.get(), _output->_value);
     // scratch buffer for the ping-pong (same size as the output field).

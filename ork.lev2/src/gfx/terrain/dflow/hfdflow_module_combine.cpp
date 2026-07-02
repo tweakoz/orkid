@@ -59,7 +59,7 @@ struct CombineModuleInst : public TerrainComputeInst {
     _inB = typedInputNamed<HfImagePlugTraits>("B");
     _t   = _floatPlug(this, _d, "t");
   }
-  void onActivate(dflow::GraphInst* inst) final {
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<BakeEnv>();
     auto fxi = env->_ctx->FXI();
     _allocOut(env.get(), _output->_value);
@@ -67,7 +67,7 @@ struct CombineModuleInst : public TerrainComputeInst {
     auto sh = fxi->shaderFromShaderText("terrain_combine", _combine_text(env->_w, _d->_op));
     _cs     = fxi->computeShader(sh, "cs_combine");
     if (_isMix) {
-      // blend factor t is RUNTIME (so a varying t doesn't recompile). Fill here, in onActivate
+      // blend factor t is RUNTIME (so a varying t doesn't recompile). Fill here, in bakeAcquire
       // (pre-dispatch-phase: a host map mid-phase is not visible).
       _params = env->createStorageBuffer(4 * sizeof(float));
       float P[4] = {_t->value(), 0.0f, 0.0f, 0.0f};
