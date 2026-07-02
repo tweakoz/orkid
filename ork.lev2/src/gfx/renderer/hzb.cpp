@@ -91,7 +91,8 @@ void HZBBuilder::_ensure(Context* ctx, int dW, int dH) {
     auto sh    = fxi->shaderFromShaderText("hzb_build", _hzb_text());
     _cs_mip0   = fxi->computeShader(sh, "cs_hzb_mip0");
     _cs_reduce = fxi->computeShader(sh, "cs_hzb_reduce");
-    _params    = fxi->createStorageBuffer(sizeof(HParams));
+    // BAR: tiny, CPU-written per frame (forward memcpy), GPU-read per dispatch.
+    _params    = fxi->createStorageBuffer(sizeof(HParams), StorageBufferUsage::DEFAULT, BufferResidency::BAR);
   }
   if (dW == _depthW and dH == _depthH and _ssbo)
     return; // dims unchanged — reuse the pyramid SSBO
@@ -115,7 +116,10 @@ void HZBBuilder::_ensure(Context* ctx, int dW, int dH) {
   _offsets.push_back(off); // total at [_mips]
   _mips = mips;
   // NOTE: on resize this leaks the prior _ssbo (raw FXI buffer; resize is rare — P1).
-  _ssbo = fxi->createStorageBuffer(size_t(off) * sizeof(float));
+  // DEVICE: the pyramid is GPU-written (build computes) and GPU-read (cull shaders) every
+  // frame — in sysram it crossed PCIe BOTH ways per frame. The only CPU read is the
+  // ORKID_DEBUG_HZB throttled sanity readback, which routes through the staged copyToHost.
+  _ssbo = fxi->createStorageBuffer(size_t(off) * sizeof(float), StorageBufferUsage::DEFAULT, BufferResidency::DEVICE);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

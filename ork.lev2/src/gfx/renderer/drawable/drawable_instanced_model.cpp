@@ -96,7 +96,10 @@ void InstancedModelDrawable::bindModel(xgmmodel_ptr_t model) {
 ///////////////////////////////////////////////////////////////////////////////
 void InstancedModelDrawable::gpuInit(Context* ctx) const {
   auto FXI = ctx->FXI();
-  _instanceSSBO = FXI->createStorageBuffer(k_ssbo_total_size);
+  // BAR: CPU rewrites the instance data every frame (forward memcpys in the render callback),
+  // GPU reads it every pass — BAR keeps the direct-map write path and makes the GPU reads
+  // VRAM-local. Degrades per-allocation to HOST sysram when the BAR heap is exhausted.
+  _instanceSSBO = FXI->createStorageBuffer(k_ssbo_total_size, StorageBufferUsage::DEFAULT, BufferResidency::BAR);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void InstancedModelDrawable::enqueueToRenderQueue(

@@ -144,6 +144,20 @@ uint32_t VkContext::_findMemoryType(    //
       return i;
     }
   }
+  // Preference-ordered degrade: a DEVICE_LOCAL|HOST_VISIBLE request is asking for a
+  // BAR/ReBAR window — on parts without one (no-ReBAR discrete, some drivers) fall back
+  // to plain host-visible sysram rather than asserting. The caller's map()/write path is
+  // identical either way (_hostVisible keys off the REQUESTED HV bit). A pure
+  // DEVICE_LOCAL request (no HV) still asserts below — degrading that would silently
+  // change GPU-read perf class and mapability expectations.
+  if ((properties & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) and (properties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) {
+    VkMemoryPropertyFlags degraded = properties & ~VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+      if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & degraded) == degraded) {
+        return i;
+      }
+    }
+  }
   OrkAssert(false);
   return 0;
 }
@@ -228,6 +242,19 @@ VulkanMemoryForBuffer::VulkanMemoryForBuffer(vkcontext_rawptr_t ctxVK, VkBuffer 
   VkResult OK = vkAllocateMemory(_ctxVK->_vkdevice, _allocinfo.get(), nullptr, _vkmem.get());
   if (VkMemTrace::enabled())
     VkMemTrace::instance().onAlloc("BUF", _ctxVK, size_t(_memreq->size), memprops, _allocinfo->memoryTypeIndex, OK);
+  // A DEVICE_LOCAL|HOST_VISIBLE request targets the BAR window, which on non-ReBAR-sized
+  // parts is tiny (often 256MB) — heap exhaustion there is an expected steady state, not
+  // a bug. Degrade to plain host-visible sysram and retry once (memtrace logs both
+  // attempts, so the degrade is visible in the trace).
+  if (OK != VK_SUCCESS                                            //
+      and (memprops & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)        //
+      and (memprops & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) {     //
+    VkMemoryPropertyFlags degraded = memprops & ~VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    _allocinfo->memoryTypeIndex    = _ctxVK->_findMemoryType(_memreq->memoryTypeBits, degraded);
+    OK = vkAllocateMemory(_ctxVK->_vkdevice, _allocinfo.get(), nullptr, _vkmem.get());
+    if (VkMemTrace::enabled())
+      VkMemTrace::instance().onAlloc("BUF", _ctxVK, size_t(_memreq->size), degraded, _allocinfo->memoryTypeIndex, OK);
+  }
   OrkAssert(OK == VK_SUCCESS);
 }
 

@@ -74,7 +74,15 @@ VulkanVertexBuffer::VulkanVertexBuffer(vkcontext_rawptr_t ctx, VertexBufferBase&
   if (vtx_buf._transfer_dst) {
     vb_usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
   }
-  _vkbuffer = std::make_shared<VulkanBuffer>(ctx, vtx_buf.GetVtxSize() * vtx_buf.GetMax(), vb_usage);
+  // STATIC VBs (write-once mesh data) live DEVICE_LOCAL: uploaded once through the sync
+  // staging path (Lock/UnLock branch below), then every per-frame GPU read is VRAM-local
+  // instead of a PCIe fetch. Dynamic VBs keep the historical direct-mapped HV|HC ring.
+  VkMemoryPropertyFlags memprops = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+  if (vtx_buf.IsStatic()) {
+    vb_usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    memprops = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+  }
+  _vkbuffer = std::make_shared<VulkanBuffer>(ctx, vtx_buf.GetVtxSize() * vtx_buf.GetMax(), vb_usage, "", memprops);
 
   /////////////////////////////////////
   // find vertex input configuration
@@ -95,11 +103,17 @@ VulkanVertexBuffer::~VulkanVertexBuffer() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-VulkanIndexBuffer::VulkanIndexBuffer(vkcontext_rawptr_t ctx, size_t length) {
+VulkanIndexBuffer::VulkanIndexBuffer(vkcontext_rawptr_t ctx, size_t length, bool device_local) {
   OrkAssert(length > 0);
   _ctx = ctx;
 
-  _vkbuffer = std::make_shared<VulkanBuffer>(ctx, length, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+  VkBufferUsageFlags ib_usage    = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+  VkMemoryPropertyFlags memprops = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+  if (device_local) { // static IBs: one-time staged upload, VRAM-local GPU reads (see VulkanVertexBuffer)
+    ib_usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    memprops = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+  }
+  _vkbuffer = std::make_shared<VulkanBuffer>(ctx, length, ib_usage, "", memprops);
 }
 ///////////////////////////////////////////////////////////////////////////////
 VulkanIndexBuffer::~VulkanIndexBuffer() {
@@ -465,7 +479,20 @@ void* VkGeometryBufferInterface::LockVB(VertexBufferBase& vtx_buf, int ivbase, i
 
   if(0)printf("LockVB ivbase<%d> ivcount<%d> isizebytes<%zu> isizebytes_max<%zu> is_static<%d>\n", ivbase, ivcount, isizebytes, isizebytes_max, int(is_static));
 
-  if (is_static) {
+  if (not vk_impl->_vkbuffer->_hostVisible) {
+    // DEVICE-resident (static) VB: hand out a host temp; UnLockVB stages it up. Pre-fill
+    // from the device copy on a RE-lock so read-modify-write (and const read-locks) stay
+    // correct — first lock skips that (nothing uploaded yet).
+    if (isizebytes == 0) // ivcount=0 means "whole buffer" (map()'s length<1 clamp used to absorb this)
+      isizebytes = isizebytes_max;
+    OrkAssert(vk_impl->_lock_temp == nullptr);
+    vk_impl->_lock_temp     = std::malloc(isizebytes);
+    vk_impl->_lock_temp_len = isizebytes;
+    vk_impl->_lock_temp_off = is_static ? 0 : ibasebytes;
+    if (vk_impl->_ever_uploaded)
+      vk_impl->_vkbuffer->copyToHost(vk_impl->_lock_temp, isizebytes, vk_impl->_lock_temp_off);
+    vertex_memory = vk_impl->_lock_temp;
+  } else if (is_static) {
     OrkAssert(ibasebytes == 0); // TODO change api to not require offset for static buffers
     vertex_memory = vk_impl->_vkbuffer->map(0, isizebytes, 0);
   } else {
@@ -482,7 +509,14 @@ void* VkGeometryBufferInterface::LockVB(VertexBufferBase& vtx_buf, int ivbase, i
 void VkGeometryBufferInterface::UnLockVB(VertexBufferBase& vtx_buf) {
   auto vk_impl = vtx_buf._impl.getShared<VulkanVertexBuffer>();
   OrkAssert(vtx_buf.IsLocked());
-  vk_impl->_vkbuffer->unmap();
+  if (vk_impl->_lock_temp) { // DEVICE-resident: stage the temp up, then release it
+    vk_impl->_vkbuffer->copyFromHost(vk_impl->_lock_temp, vk_impl->_lock_temp_len, vk_impl->_lock_temp_off);
+    std::free(vk_impl->_lock_temp);
+    vk_impl->_lock_temp     = nullptr;
+    vk_impl->_ever_uploaded = true;
+  } else {
+    vk_impl->_vkbuffer->unmap();
+  }
   vtx_buf.Unlock();
   //printf("UnLockVB\n");
 }
@@ -515,13 +549,14 @@ void VkGeometryBufferInterface::ReleaseVB(VertexBufferBase& vtx_buf) {
 
 void* VkGeometryBufferInterface::LockIB(IndexBufferBase& idx_buf, int ivbase, int icount) {
   _contextVK->makeCurrentContext(); // TODO probably dont need this with queues
+  bool is_static = idx_buf.IsStatic();
+
+  if(icount==0){ // icount fixup MUST precede the byte-size math: the XGM loader locks with
+    icount=idx_buf.GetNumIndices(); // icount=0 meaning "whole buffer" (a 0-length lock used
+  }                                 // to limp through map()'s length<1 clamp)
+
   size_t ibasebytes = ivbase * idx_buf.indexSize();
   size_t isizebytes = icount * idx_buf.indexSize();
-  bool is_static    = idx_buf.IsStatic();
-
-  if(icount==0){
-    icount=idx_buf.GetNumIndices();
-  }
 
   //////////////////////////////////////////////////////////
   // create or reference the ibo
@@ -533,12 +568,21 @@ void* VkGeometryBufferInterface::LockIB(IndexBufferBase& idx_buf, int ivbase, in
   } else {
     size_t size_in_bytes = icount * idx_buf.indexSize();
     OrkAssert(size_in_bytes > 0);
-    vk_impl               = std::make_shared<VulkanIndexBuffer>(_contextVK, size_in_bytes);
+    vk_impl               = std::make_shared<VulkanIndexBuffer>(_contextVK, size_in_bytes, is_static);
     idx_buf._impl.setShared(vk_impl);
   }
   void* index_memory = nullptr;
   //////////////////////////////////////////////////////////
-  if (is_static) {
+  if (not vk_impl->_vkbuffer->_hostVisible) {
+    // DEVICE-resident (static) IB: host temp now, staged upload at UnLockIB (see LockVB)
+    OrkAssert(vk_impl->_lock_temp == nullptr);
+    vk_impl->_lock_temp     = std::malloc(isizebytes);
+    vk_impl->_lock_temp_len = isizebytes;
+    vk_impl->_lock_temp_off = is_static ? 0 : ibasebytes;
+    if (vk_impl->_ever_uploaded)
+      vk_impl->_vkbuffer->copyToHost(vk_impl->_lock_temp, isizebytes, vk_impl->_lock_temp_off);
+    index_memory = vk_impl->_lock_temp;
+  } else if (is_static) {
     OrkAssert(ibasebytes == 0); // TODO change api to not require offset for static buffers
     index_memory = vk_impl->_vkbuffer->map(0, isizebytes, 0);
   } else {
@@ -554,7 +598,14 @@ void VkGeometryBufferInterface::UnLockIB(IndexBufferBase& idx_buf) {
   auto vk_impl = idx_buf._impl.getShared<VulkanIndexBuffer>();
   OrkAssert(idx_buf._locked);
   idx_buf._locked = false;
-  vk_impl->_vkbuffer->unmap();
+  if (vk_impl->_lock_temp) { // DEVICE-resident: stage the temp up, then release it
+    vk_impl->_vkbuffer->copyFromHost(vk_impl->_lock_temp, vk_impl->_lock_temp_len, vk_impl->_lock_temp_off);
+    std::free(vk_impl->_lock_temp);
+    vk_impl->_lock_temp     = nullptr;
+    vk_impl->_ever_uploaded = true;
+  } else {
+    vk_impl->_vkbuffer->unmap();
+  }
   // OrkAssert(idx_buf.IsLocked());
 }
 //////////////////////////
