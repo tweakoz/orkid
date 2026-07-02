@@ -151,10 +151,18 @@ struct BakeEnv {
   bool _lazy_acquire = false; // frontier mode (bake driver only — see block comment)
 
   std::vector<FxShaderStorageBuffer*> _allocs;
-  // pool state (all inert unless _lazy_acquire)
-  std::unordered_map<size_t, std::vector<FxShaderStorageBuffer*>> _pool_free; // size-class -> free buffers
-  std::unordered_set<FxShaderStorageBuffer*> _pool_free_set;                  // membership (double-release guard)
-  std::unordered_map<FxShaderStorageBuffer*, size_t> _alloc_size;             // buffer -> byte size
+  // pool state (all inert unless _lazy_acquire).
+  // FREE-LIST KEY = (byte size, residency class): PCIEopt syncpoint-2 prep — the linux
+  // budgeted-DEVICE bake policy decides residency inside createStorageBuffer, and pool
+  // reuse must never hand a HOST-pooled plane where DEVICE was chosen (or vice versa).
+  // Today every allocation is class 0 (HOST); the policy patch supplies the real class.
+  using poolkey_t = std::pair<size_t, int>; // (bytes, residency class)
+  struct PoolKeyHash {
+    size_t operator()(const poolkey_t& k) const { return k.first * 31 + size_t(k.second); }
+  };
+  std::unordered_map<poolkey_t, std::vector<FxShaderStorageBuffer*>, PoolKeyHash> _pool_free;
+  std::unordered_set<FxShaderStorageBuffer*> _pool_free_set;      // membership (double-release guard)
+  std::unordered_map<FxShaderStorageBuffer*, poolkey_t> _alloc_size; // buffer -> (bytes, class)
   std::vector<FxShaderStorageBuffer*> _scope;                                 // current node's acquisitions
   bool _in_scope = false;
   // frontier metrics (reported by the driver at bake end)

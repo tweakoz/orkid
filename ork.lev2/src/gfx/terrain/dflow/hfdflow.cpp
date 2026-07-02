@@ -109,9 +109,14 @@ void CaptureModuleData::describeX(class_t* clazz) {
 ///////////////////////////////////////////////////////////////////////////////
 
 FxShaderStorageBuffer* BakeEnv::createStorageBuffer(size_t length) {
+  // residency class 0 = HOST (today's only class). The budgeted-DEVICE bake policy
+  // (PCIEopt §6 proposal, linux lane) picks the class here — the pool key already
+  // carries it so reuse can never cross residency classes.
+  const int res_class = 0;
+  const poolkey_t key{length, res_class};
   if (_lazy_acquire) {
-    // frontier mode: serve from the size-classed free-list when possible.
-    auto it = _pool_free.find(length);
+    // frontier mode: serve from the (size, residency)-classed free-list when possible.
+    auto it = _pool_free.find(key);
     if (it != _pool_free.end() and not it->second.empty()) {
       auto buf = it->second.back();
       it->second.pop_back();
@@ -124,7 +129,7 @@ FxShaderStorageBuffer* BakeEnv::createStorageBuffer(size_t length) {
   }
   auto buf = _ctx->FXI()->createStorageBuffer(length);
   _allocs.push_back(buf);
-  _alloc_size[buf] = length;
+  _alloc_size[buf] = key;
   _arena_bytes += length;
   if (_arena_bytes > _peak_arena_bytes)
     _peak_arena_bytes = _arena_bytes;
