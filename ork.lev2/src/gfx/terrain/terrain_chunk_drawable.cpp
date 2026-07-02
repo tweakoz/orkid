@@ -206,7 +206,7 @@ static bool terrainTexBake(Context* ctx, const TerrainChunkDrawableData* self, T
         fxi->destroyStorageBuffer(bakeFrame);
     }, 3);
     st->_heights = std::vector<float>();
-    st->_frame   = std::vector<float>();
+    st->_frame   = std::vector<uint32_t>(); // fp16-packed frame (stride-5 u32) since 190963a75
   };
   //////////////////////////////////////////////////////////////////
   // 2. MRT atlas — N targets (one per capture group) + depth, auto-mipped, trilinear. Terrain is opaque +
