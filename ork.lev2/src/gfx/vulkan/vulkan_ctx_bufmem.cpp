@@ -8,11 +8,131 @@
 #include "headers/vulkan_ctx.h"
 #include <ork/util/crc64.h>
 #include <ork/kernel/memcpy.inl>
+#include <map>
+#include <mutex>
+#include <unistd.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 static auto logchan_vkbufmem = logger()->configureChannel("VKBUFMEM", fvec3(0.5, 0.5, 0.5), false);
+
+///////////////////////////////////////////////////////////////////////////////
+// H-MEM1 instrumentation (~/LOADX.md): ORKID_VK_MEMTRACE=<path|1> logs every
+// buffer/image vkAllocateMemory + free to a file (default
+// /tmp/orkid_memtrace_<pid>.log): requested vs GRANTED memory-type flags, owning
+// heap, per-heap live totals. Allocation FAILURES dump all heap totals before the
+// assert fires, so an OOM death leaves its evidence on disk. Not covered:
+// swapchain / external-image allocations (fixed, few).
+///////////////////////////////////////////////////////////////////////////////
+
+static thread_local std::string g_vkmemtrace_tag; // resource owners set this around the Memory ctor
+
+struct VkMemTrace {
+  static bool enabled() {
+    static bool e = (getenv("ORKID_VK_MEMTRACE") != nullptr);
+    return e;
+  }
+  static VkMemTrace& instance() {
+    static VkMemTrace t;
+    return t;
+  }
+  VkMemTrace() {
+    const char* v    = getenv("ORKID_VK_MEMTRACE");
+    std::string path = (v and strlen(v) > 1) ? v : FormatString("/tmp/orkid_memtrace_%d.log", int(getpid()));
+    _file = fopen(path.c_str(), "w");
+    printf("[VKMEMTRACE] writing to <%s>\n", path.c_str());
+    if (_file) {
+      fprintf(_file, "# orkid VK memory trace (H-MEM1) pid<%d>\n", int(getpid()));
+      fflush(_file);
+    }
+  }
+  static std::string _flags(VkMemoryPropertyFlags f) {
+    std::string s;
+    auto add = [&](const char* t) { s += s.empty() ? t : (std::string("|") + t); };
+    if (f & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) add("DL");
+    if (f & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) add("HV");
+    if (f & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) add("HC");
+    if (f & VK_MEMORY_PROPERTY_HOST_CACHED_BIT) add("HCACHE");
+    if (f & VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT) add("LAZY");
+    return s.empty() ? "none" : s;
+  }
+  static const char* _result(VkResult r) {
+    switch (r) {
+      case VK_SUCCESS: return "OK";
+      case VK_ERROR_OUT_OF_DEVICE_MEMORY: return "OUT_OF_DEVICE_MEMORY";
+      case VK_ERROR_OUT_OF_HOST_MEMORY: return "OUT_OF_HOST_MEMORY";
+      default: {
+        static thread_local char buf[32];
+        snprintf(buf, sizeof(buf), "VkResult(%d)", int(r));
+        return buf;
+      }
+    }
+  }
+  struct DevInfo {
+    VkPhysicalDeviceMemoryProperties _props;
+    int64_t _heapLive[VK_MAX_MEMORY_HEAPS] = {0};
+  };
+  DevInfo& _dev(vkcontext_rawptr_t ctx) { // caller holds _mtx
+    auto phy = ctx->_vkphysicaldevice;
+    auto it  = _devs.find(phy);
+    if (it != _devs.end())
+      return it->second;
+    auto& dev = _devs[phy];
+    vkGetPhysicalDeviceMemoryProperties(phy, &dev._props);
+    VkPhysicalDeviceProperties pdp;
+    vkGetPhysicalDeviceProperties(phy, &pdp);
+    if (_file) {
+      fprintf(_file, "[DEVICE] name<%s> heaps<%u> types<%u>\n", pdp.deviceName, dev._props.memoryHeapCount, dev._props.memoryTypeCount);
+      for (uint32_t h = 0; h < dev._props.memoryHeapCount; h++)
+        fprintf(
+            _file, "[HEAP %u] size<%.0fMB> device_local<%d>\n", h,
+            double(dev._props.memoryHeaps[h].size) / 1048576.0,
+            int((dev._props.memoryHeaps[h].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) != 0));
+      for (uint32_t t = 0; t < dev._props.memoryTypeCount; t++)
+        fprintf(
+            _file, "[TYPE %u] heap<%u> flags<%s>\n", t, dev._props.memoryTypes[t].heapIndex,
+            _flags(dev._props.memoryTypes[t].propertyFlags).c_str());
+      fflush(_file);
+    }
+    return dev;
+  }
+  void onAlloc(const char* kind, vkcontext_rawptr_t ctx, size_t size, VkMemoryPropertyFlags req, uint32_t typeIdx, VkResult res) {
+    std::lock_guard<std::mutex> lk(_mtx);
+    if (nullptr == _file)
+      return;
+    auto& dev     = _dev(ctx);
+    uint32_t heap = dev._props.memoryTypes[typeIdx].heapIndex;
+    if (res == VK_SUCCESS)
+      dev._heapLive[heap] += int64_t(size);
+    fprintf(
+        _file, "[%s %s seq<%zu>] size<%zu> req<%s> type<%u> typeflags<%s> heap<%u> heaplive<%.1fMB/%.0fMB> result<%s> tag<%s>\n",
+        (res == VK_SUCCESS) ? "ALLOC" : "FAIL", kind, _seq++, size,
+        _flags(req).c_str(), typeIdx, _flags(dev._props.memoryTypes[typeIdx].propertyFlags).c_str(), heap,
+        double(dev._heapLive[heap]) / 1048576.0, double(dev._props.memoryHeaps[heap].size) / 1048576.0,
+        _result(res), g_vkmemtrace_tag.c_str());
+    if (res != VK_SUCCESS)
+      for (uint32_t h = 0; h < dev._props.memoryHeapCount; h++)
+        fprintf(
+            _file, "[FAILDUMP] heap<%u> live<%.1fMB> size<%.0fMB>\n", h,
+            double(dev._heapLive[h]) / 1048576.0, double(dev._props.memoryHeaps[h].size) / 1048576.0);
+    fflush(_file);
+  }
+  void onFree(const char* kind, vkcontext_rawptr_t ctx, size_t size, uint32_t typeIdx) {
+    std::lock_guard<std::mutex> lk(_mtx);
+    if (nullptr == _file)
+      return;
+    auto& dev     = _dev(ctx);
+    uint32_t heap = dev._props.memoryTypes[typeIdx].heapIndex;
+    dev._heapLive[heap] -= int64_t(size);
+    fprintf(_file, "[FREE %s seq<%zu>] size<%zu> heap<%u> heaplive<%.1fMB>\n", kind, _seq++, size, heap, double(dev._heapLive[heap]) / 1048576.0);
+    fflush(_file);
+  }
+  std::mutex _mtx;
+  FILE* _file = nullptr;
+  size_t _seq = 0;
+  std::map<VkPhysicalDevice, DevInfo> _devs;
+};
 uint32_t VkContext::_findMemoryType(    //
     uint32_t typeFilter,                //
     VkMemoryPropertyFlags properties) { //
@@ -53,6 +173,8 @@ VulkanMemoryForImage::VulkanMemoryForImage(vkcontext_rawptr_t ctxVK, VkImage ima
   _allocinfo->memoryTypeIndex = _ctxVK->_findMemoryType(_memreq->memoryTypeBits, memprops);
 
   VkResult OK = vkAllocateMemory(_ctxVK->_vkdevice, _allocinfo.get(), nullptr, _vkmem.get());
+  if (VkMemTrace::enabled())
+    VkMemTrace::instance().onAlloc("IMG", _ctxVK, size_t(_memreq->size), memprops, _allocinfo->memoryTypeIndex, OK);
   OrkAssert(OK == VK_SUCCESS);
 
   OK = vkBindImageMemory(_ctxVK->_vkdevice, _vkimage, *_vkmem, 0);
@@ -69,6 +191,8 @@ VulkanMemoryForImage::VulkanMemoryForImage(vkcontext_rawptr_t ctxVK, VkImage ima
 VulkanMemoryForImage::~VulkanMemoryForImage() {
   try {
     if(_ctxVK && _vkmem) {
+      if (VkMemTrace::enabled() && _memreq && _allocinfo)
+        VkMemTrace::instance().onFree("IMG", _ctxVK, size_t(_memreq->size), _allocinfo->memoryTypeIndex);
       _ctxVK->destroyImageMemory(*_vkmem); // no-op post-shutdown
     }
   } catch (...) {
@@ -102,12 +226,16 @@ VulkanMemoryForBuffer::VulkanMemoryForBuffer(vkcontext_rawptr_t ctxVK, VkBuffer 
   _allocinfo->memoryTypeIndex = _ctxVK->_findMemoryType(_memreq->memoryTypeBits, memprops);
 
   VkResult OK = vkAllocateMemory(_ctxVK->_vkdevice, _allocinfo.get(), nullptr, _vkmem.get());
+  if (VkMemTrace::enabled())
+    VkMemTrace::instance().onAlloc("BUF", _ctxVK, size_t(_memreq->size), memprops, _allocinfo->memoryTypeIndex, OK);
   OrkAssert(OK == VK_SUCCESS);
 }
 
 VulkanMemoryForBuffer::~VulkanMemoryForBuffer() {
   try {
     if(_ctxVK && _ctxVK->_vkdevice && _vkmem) {
+      if (VkMemTrace::enabled() && _memreq && _allocinfo)
+        VkMemTrace::instance().onFree("BUF", _ctxVK, size_t(_memreq->size), _allocinfo->memoryTypeIndex);
       vkFreeMemory(_ctxVK->_vkdevice, *_vkmem, nullptr);
     }
   } catch (...) {
@@ -244,7 +372,13 @@ VulkanImageObject::VulkanImageObject(vkcontext_rawptr_t ctx, vkimagecreateinfo_p
   VkResult ok = vkCreateImage(_ctx->_vkdevice, cinfo.get(), nullptr, &_vkimage);
   //OrkAssert((uint64_t)_vkimage != 0xdc00000000dcULL)
   OrkAssert(VK_SUCCESS == ok);
+  if (VkMemTrace::enabled())
+    g_vkmemtrace_tag = FormatString(
+        "%s|fmt<%d>|%ux%ux%u|mips<%u>", name.c_str(), int(cinfo->format), cinfo->extent.width, cinfo->extent.height,
+        cinfo->extent.depth, cinfo->mipLevels);
   _imgmem = std::make_shared<VulkanMemoryForImage>(_ctx, _vkimage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+  if (VkMemTrace::enabled())
+    g_vkmemtrace_tag.clear();
   if (name != "") {
     _ctx->_setObjectDebugName(_vkimage, VK_OBJECT_TYPE_IMAGE, name.c_str());
     std::string mem_name = name + "_mem";
@@ -329,7 +463,11 @@ VulkanBuffer::VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsag
     _ctxVK->_setObjectDebugName(_vkbuffer, VK_OBJECT_TYPE_BUFFER, name.c_str());
   }
 
+  if (VkMemTrace::enabled())
+    g_vkmemtrace_tag = FormatString("%s|usage<0x%x>", name.c_str(), unsigned(usage));
   _memory = std::make_shared<VulkanMemoryForBuffer>(ctxVK, _vkbuffer, memprops);
+  if (VkMemTrace::enabled())
+    g_vkmemtrace_tag.clear();
   vkBindBufferMemory(ctxVK->_vkdevice, _vkbuffer, *_memory->_vkmem, 0);
   
   // Also set debug name for the memory
