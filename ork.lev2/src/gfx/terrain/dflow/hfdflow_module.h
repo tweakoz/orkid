@@ -132,12 +132,16 @@ struct TerrainComputeInst : public dflow::DgModuleInst, public dflowgfx::IPrePha
   }
 
   // WS4 FRONTIER: validate a cache entry BEFORE any buffer exists (the demand plan
-  // classifies hit/miss up front; bakeAcquire runs only for nodes that run). Mirrors
-  // every cookLoad rejection that doesn't need live state: format magic, output
-  // count, per-output dims vs the bake dims. Channel count is trusted from the
-  // datablock (a channel-layout change is an algo change and MUST bump the node's
-  // version salt -> different hash -> no entry found). If cookLoad fails after this
-  // probe passed, that is a probe/load disagreement — a bug, not a recompute case.
+  // classifies hit/miss up front; bakeAcquire runs only for nodes that run).
+  // PREFIX-SAFE (RSS fix): the caller passes only the first ~256 bytes of the entry
+  // (DataBlockCache::findDataBlockPrefix) — pulling whole 64MB planes off disk to
+  // inspect headers made warm-bake planning read ~33GB it never used. So this checks
+  // format magic, output count, and the FIRST present output's dims (later outputs'
+  // headers sit past their predecessors' plane data, beyond any prefix — all outputs
+  // share the bake dims by construction, and content is hash-protected). Channel
+  // count is trusted (a channel-layout change is an algo change and MUST bump the
+  // node's version salt -> different hash -> no entry found). If cookLoad fails
+  // after this probe passed, that is a probe/load bug, not a recompute case.
   bool cookProbe(datablock_constptr_t db, int expect_w, int expect_h) const {
     DataBlockInputStream istr(db);
     if (istr.getItem<int>() != kCookFmt) return false;
@@ -145,14 +149,13 @@ struct TerrainComputeInst : public dflow::DgModuleInst, public dflowgfx::IPrePha
     if (nout != numOutputs())            return false;
     for (int o = 0; o < nout; o++) {
       int present = istr.getItem<int>();
-      if (not present) continue;
+      if (not present) continue; // absent marker only — next output's header is adjacent
       int w  = istr.getItem<int>();
       int h  = istr.getItem<int>();
       int ch = istr.getItem<int>();
-      if (w != expect_w or h != expect_h or ch < 1) return false;
-      istr.advance(size_t(w) * size_t(h) * size_t(ch) * sizeof(float));
+      return (w == expect_w and h == expect_h and ch >= 1); // first present output decides
     }
-    return true;
+    return true; // all outputs absent — nothing to contradict
   }
 
   // shared tail for every op's cookComputeHash: mix in the bake context (dim)

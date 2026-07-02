@@ -283,19 +283,19 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
     auto& order    = ginst->_ordered_module_insts;
     const size_t N = order.size();
 
-    // --- classify: sink / cache-hit (probe-validated, no buffers needed yet)
-    std::vector<datablock_ptr_t> dbs(N, nullptr);
+    // --- classify: sink / cache-hit. Probe via PREFIX reads (~256B of header) —
+    // the full plane is fetched from disk only when a needed hit actually LOADS
+    // (below), and released right after upload. Reading whole entries here held
+    // ~33GB of planes for a warm 4096 bake (the 40+GB load-RSS incident).
     std::vector<bool> hit(N, false), needed(N, false), sink(N, false);
     for (size_t i = 0; i < N; i++) {
       auto inst = order[i];
       sink[i]   = (inst->numOutputs() == 0); // Capture — always runs, reads at flush
       if (do_disk_cache and not sink[i]) {
         if (auto tci = std::dynamic_pointer_cast<TerrainComputeInst>(inst)) {
-          auto db = DataBlockCache::findDataBlock("dflowcache", inst->_cookHash);
-          if (db and tci->cookProbe(db, dim, dim)) {
-            dbs[i] = db;
+          auto hdr = DataBlockCache::findDataBlockPrefix("dflowcache", inst->_cookHash, 256);
+          if (hdr and tci->cookProbe(hdr, dim, dim))
             hit[i] = true;
-          }
         }
       }
     }
@@ -362,8 +362,11 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
       if (auto tci = std::dynamic_pointer_cast<TerrainComputeInst>(inst))
         tci->bakeAcquire(ginst.get()); // outputs + scratch, pool-served (lazy mode)
       if (hit[i]) {
-        // cache HIT — cached field uploaded to the node's (just-acquired) SSBO
-        bool loaded = inst->cookLoad(dbs[i]);
+        // cache HIT — fetch the FULL entry now (probe read only a header prefix),
+        // upload to the node's (just-acquired) SSBO, release the host copy at
+        // scope end. Namespaced cache entries are not retained in RAM (RSS fix).
+        auto db     = DataBlockCache::findDataBlock("dflowcache", inst->_cookHash);
+        bool loaded = db and inst->cookLoad(db);
         OrkAssert(loaded); // probe passed; a failure here is a probe/load bug, not a recompute case
         cook_loaded++;
       } else {

@@ -37,6 +37,39 @@ static void _touchCacheFile(const std::string& cache_path) {
   last_write_time(cache_path, std::time(nullptr), ec);
 }
 //////////////////////////////////////////////////////////////////////////////
+// in-memory retention policy: ONLY the legacy default namespace retains blocks in
+// _blockmap (shaders/textures/xgm rely on repeated in-memory hits). Namespaced
+// caches (dflowcache) hold hundreds of 16-64MB cook planes — retain-forever pinned
+// 40-80GB of host RSS across a cold terrain/hypermesh/eflow cook (WS4/RSS fix
+// 2026-07-02); they are write-through/read-through and the OS page cache absorbs
+// intra-process re-reads.
+static bool _retainInMemory(const std::string& cacheName) {
+  return cacheName == DataBlockCache::kDefaultCache;
+}
+
+// plain disk read of a cache entry (no map interaction). max_len 0 = whole file.
+static datablock_ptr_t _readFromDisk(const std::string& cache_path, size_t max_len) {
+  using namespace boost::filesystem;
+  if (not exists(cache_path))
+    return nullptr;
+  FILE* fin = fopen(cache_path.c_str(), "rb");
+  if (not fin) // guard: a stat'd-but-unopenable file (perms/race) is a miss, not a crash
+    return nullptr;
+  size_t len = file_size(cache_path);
+  if (max_len and len > max_len)
+    len = max_len;
+  auto rval   = std::make_shared<DataBlock>();
+  rval->_name = cache_path;
+  rval->reserve(len);
+  void* pdata    = malloc(len);
+  size_t numread = fread(pdata, 1, len, fin);
+  OrkAssert(numread == len);
+  fclose(fin);
+  rval->addData(pdata, len);
+  free(pdata);
+  return rval;
+}
+
 // shared find core. The in-memory _blockmap is keyed by the content hash alone
 // (a CAS invariant: same hash => same bytes regardless of namespace), so only
 // the on-disk path is namespaced. touchOnHit is enabled for the namespaced API
@@ -47,30 +80,18 @@ static datablock_ptr_t _findCore(const std::string& cacheName, uint64_t key, boo
   auto& inst           = DataBlockCache::instance();
   datablock_ptr_t rval = nullptr;
   auto cache_path      = DataBlockCache::_generateCachePath(cacheName, key);
-  inst._blockmap.atomicOp([&rval, key, cache_path](datablockmap_t& m) {
+  const bool retain    = _retainInMemory(cacheName);
+  // the map may hold the block regardless of namespace (CAS: same hash = same bytes)
+  inst._blockmap.atomicOp([&rval, key](datablockmap_t& m) {
     auto it = m.find(key);
-    if (it == m.end()) {
-      using namespace boost::filesystem;
-      if (exists(cache_path)) {
-        FILE* fin = fopen(cache_path.c_str(), "rb");
-        if (fin) { // guard: a stat'd-but-unopenable file (perms/race) is a miss, not a crash
-          rval        = std::make_shared<DataBlock>();
-          size_t len  = file_size(cache_path);
-          rval->_name = cache_path;
-          rval->reserve(len);
-          void* pdata    = malloc(len);
-          size_t numread = fread(pdata, 1, len, fin);
-          OrkAssert(numread == len);
-          fclose(fin);
-          rval->addData(pdata, len);
-          free(pdata);
-          m[key] = rval;
-        }
-      }
-    } else {
+    if (it != m.end())
       rval = it->second;
-    }
   });
+  if (not rval) {
+    rval = _readFromDisk(cache_path, 0);
+    if (rval and retain)
+      inst._blockmap.atomicOp([&rval, key](datablockmap_t& m) { m[key] = rval; });
+  }
   if (rval and touchOnHit)
     _touchCacheFile(cache_path);
   return rval;
@@ -93,6 +114,14 @@ std::string DataBlockCache::_generateCachePath(uint64_t key) {
 datablock_ptr_t DataBlockCache::findDataBlock(const std::string& cacheName, uint64_t key) {
   return _findCore(cacheName, key, /*touchOnHit*/ true);
 }
+datablock_ptr_t DataBlockCache::findDataBlockPrefix(const std::string& cacheName, uint64_t key, size_t max_len) {
+  if (not _enabled)
+    return nullptr;
+  // never serves from / inserts into the in-memory map (a truncated block there
+  // would poison a later full read) and never touches mtime (planning must not
+  // perturb the eviction LRU).
+  return _readFromDisk(_generateCachePath(cacheName, key), max_len);
+}
 datablock_ptr_t DataBlockCache::findDataBlock(uint64_t key) {
   return _findCore(kDefaultCache, key, /*touchOnHit*/ false);
 }
@@ -100,20 +129,19 @@ datablock_ptr_t DataBlockCache::findDataBlock(uint64_t key) {
 void DataBlockCache::setDataBlock(const std::string& cacheName, uint64_t key, datablock_ptr_t item, bool cacheable) {
   auto& inst      = instance();
   auto cache_path = _generateCachePath(cacheName, key);
-  inst._blockmap.atomicOp([item, key, cache_path, cacheable](datablockmap_t& m) {
-    m[key] = item;
-    using namespace boost::filesystem;
-    if (cacheable) {
-      logchan_dcache->log("writing to cache <%s>", cache_path.c_str());
-      FILE* fout = fopen(cache_path.c_str(), "wb");
-      if (fout) { // guard: disk-full / perms during a large bake should skip, not crash
-        fwrite(item->data(), item->length(), 1, fout);
-        fclose(fout);
-      } else {
-        logchan_dcache->log("WARNING: cache write failed (could not open) <%s>", cache_path.c_str());
-      }
+  if (_retainInMemory(cacheName)) {
+    inst._blockmap.atomicOp([item, key](datablockmap_t& m) { m[key] = item; });
+  } // namespaced: write-through only — no in-memory retention (see _retainInMemory)
+  if (cacheable) {
+    logchan_dcache->log("writing to cache <%s>", cache_path.c_str());
+    FILE* fout = fopen(cache_path.c_str(), "wb");
+    if (fout) { // guard: disk-full / perms during a large bake should skip, not crash
+      fwrite(item->data(), item->length(), 1, fout);
+      fclose(fout);
+    } else {
+      logchan_dcache->log("WARNING: cache write failed (could not open) <%s>", cache_path.c_str());
     }
-  });
+  }
 }
 void DataBlockCache::setDataBlock(uint64_t key, datablock_ptr_t item, bool cacheable) {
   setDataBlock(kDefaultCache, key, item, cacheable);
