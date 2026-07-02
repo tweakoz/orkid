@@ -109,9 +109,53 @@ void CaptureModuleData::describeX(class_t* clazz) {
 ///////////////////////////////////////////////////////////////////////////////
 
 FxShaderStorageBuffer* BakeEnv::createStorageBuffer(size_t length) {
+  if (_lazy_acquire) {
+    // frontier mode: serve from the size-classed free-list when possible.
+    auto it = _pool_free.find(length);
+    if (it != _pool_free.end() and not it->second.empty()) {
+      auto buf = it->second.back();
+      it->second.pop_back();
+      _pool_free_set.erase(buf);
+      _pool_reuses++;
+      if (_in_scope)
+        _scope.push_back(buf);
+      return buf;
+    }
+  }
   auto buf = _ctx->FXI()->createStorageBuffer(length);
   _allocs.push_back(buf);
+  _alloc_size[buf] = length;
+  _arena_bytes += length;
+  if (_arena_bytes > _peak_arena_bytes)
+    _peak_arena_bytes = _arena_bytes;
+  if (_in_scope)
+    _scope.push_back(buf);
   return buf;
+}
+
+void BakeEnv::releaseToPool(FxShaderStorageBuffer* buf) {
+  if (nullptr == buf)
+    return;
+  if (not _pool_free_set.insert(buf).second)
+    return; // already free (plug aliasing) — releasing twice would double-lend it
+  auto it = _alloc_size.find(buf);
+  OrkAssert(it != _alloc_size.end()); // released a buffer this arena never created
+  _pool_free[it->second].push_back(buf);
+}
+
+void BakeEnv::beginNodeScope() {
+  OrkAssert(not _in_scope);
+  _scope.clear();
+  _in_scope = true;
+}
+
+void BakeEnv::endNodeScope(const std::unordered_set<FxShaderStorageBuffer*>& keep) {
+  OrkAssert(_in_scope);
+  _in_scope = false;
+  for (auto b : _scope)
+    if (keep.find(b) == keep.end())
+      releaseToPool(b);
+  _scope.clear();
 }
 
 void BakeEnv::freeAllocs() {
@@ -121,6 +165,10 @@ void BakeEnv::freeAllocs() {
     if (b and freed.insert(b).second)
       fxi->destroyStorageBuffer(b);
   _allocs.clear();
+  _pool_free.clear();
+  _pool_free_set.clear();
+  _alloc_size.clear();
+  _arena_bytes = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -163,6 +211,11 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
   env->_height_scale_m = height_scale_m;
   env->_per_op_sync      = true; // THIS driver syncs per op (the cook loop / capture flush below)
   env->_flushes_captures = true;
+  // WS4 FRONTIER: only the cacheable path runs the per-op-synced cook loop below,
+  // which is what makes lazy acquire + pooled release GPU-safe. The non-cacheable
+  // path records the whole graph in ONE dispatch phase, so it keeps eager
+  // activate-time allocation (the onActivate shim honors this flag).
+  env->_lazy_acquire = graph->_cacheable;
   ginst->_impl.setShared<BakeEnv>(env);
 
   ginst->updateTopology(topo);
@@ -209,14 +262,105 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
       }
       ginst->computeNodeHashes();
     }
-    int cook_hits = 0, cook_computes = 0;
-    for (auto inst : ginst->_ordered_module_insts) {
-      // terrain cook datablocks (full-res field readbacks) land in the evictable
-      // <staging>/dflowcache namespace, separate from the shared dblockcache.
-      auto db = do_disk_cache ? DataBlockCache::findDataBlock("dflowcache", inst->_cookHash) : nullptr;
-      if (db and inst->cookLoad(db)) {
-        // cache HIT — cached field uploaded to the node's SSBO; no GPU dispatch
-        cook_hits++;
+    ////////////////////////////////////////////////////////////////////////
+    // WS4 FRONTIER — demand-driven plan over the topo order, THEN the loop.
+    //
+    // A cache-HIT node never reads its inputs (compute is skipped), so demand
+    // propagates upstream only through nodes that will DISPATCH. Consequences:
+    //  * a node nobody (transitively) dispatches against is SKIPPED outright —
+    //    no buffer, no disk read, no upload. A fully-warm bake touches only the
+    //    capture sources.
+    //  * each surviving buffer is released back to the env pool at its LAST
+    //    dispatching reader (capture sources stay pinned — the flush below
+    //    reads them after the loop; freeAllocs reclaims them at bake end).
+    // Per-op submit+WAIT makes mid-loop reuse GPU-safe (see BakeEnv notes).
+    ////////////////////////////////////////////////////////////////////////
+    auto& order    = ginst->_ordered_module_insts;
+    const size_t N = order.size();
+
+    // --- classify: sink / cache-hit (probe-validated, no buffers needed yet)
+    std::vector<datablock_ptr_t> dbs(N, nullptr);
+    std::vector<bool> hit(N, false), needed(N, false), sink(N, false);
+    for (size_t i = 0; i < N; i++) {
+      auto inst = order[i];
+      sink[i]   = (inst->numOutputs() == 0); // Capture — always runs, reads at flush
+      if (do_disk_cache and not sink[i]) {
+        if (auto tci = std::dynamic_pointer_cast<TerrainComputeInst>(inst)) {
+          auto db = DataBlockCache::findDataBlock("dflowcache", inst->_cookHash);
+          if (db and tci->cookProbe(db, dim, dim)) {
+            dbs[i] = db;
+            hit[i] = true;
+          }
+        }
+      }
+    }
+
+    // --- producer map: output-pluginst -> node index (same walk computeNodeHashes uses)
+    std::unordered_map<const void*, size_t> producer_of;
+    for (size_t i = 0; i < N; i++)
+      for (int o = 0; o < order[i]->numOutputs(); o++)
+        producer_of[order[i]->output(o).get()] = i;
+
+    // --- demand (reverse-topo): sinks always run; a dispatching node pulls its producers
+    for (size_t ri = N; ri > 0; ri--) {
+      size_t j = ri - 1;
+      if (sink[j])
+        needed[j] = true;
+      if (not(needed[j] and not hit[j]))
+        continue; // hit or unneeded -> reads nothing
+      for (auto inp : order[j]->_inputs)
+        if (inp->_connectedOutput) {
+          auto it = producer_of.find(inp->_connectedOutput.get());
+          if (it != producer_of.end())
+            needed[it->second] = true;
+        }
+    }
+
+    // --- release schedule: for each producer OUTPUT PLUG, the last dispatching
+    // reader's index. Sink-read plugs are pinned (flush reads them post-loop).
+    // Buffers resolve from the plug AT RELEASE TIME (erox aliases its output to a
+    // ping-pong buffer during compute, so the pointer is only final after it runs).
+    std::unordered_map<const void*, size_t> last_reader; // outpluginst -> index
+    std::unordered_set<const void*> pinned;
+    for (size_t j = 0; j < N; j++) {
+      for (auto inp : order[j]->_inputs) {
+        if (not inp->_connectedOutput)
+          continue;
+        auto key = (const void*)inp->_connectedOutput.get();
+        if (sink[j])
+          pinned.insert(key);
+        else if (needed[j] and not hit[j])
+          last_reader[key] = j; // ascending j -> ends at the LAST reader
+      }
+    }
+    std::vector<std::vector<dflow::outpluginst_ptr_t>> release_at(N);
+    for (size_t j = 0; j < N; j++)
+      for (int o = 0; o < order[j]->numOutputs(); o++) {
+        auto op  = order[j]->output(o);
+        auto key = (const void*)op.get();
+        if (pinned.count(key))
+          continue;
+        auto it = last_reader.find(key);
+        if (it != last_reader.end())
+          release_at[it->second].push_back(op);
+      }
+
+    // --- the loop
+    int cook_loaded = 0, cook_computes = 0, cook_skipped = 0;
+    for (size_t i = 0; i < N; i++) {
+      auto inst = order[i];
+      if (not needed[i]) {
+        cook_skipped++;
+        continue; // no acquire, no disk read, no upload
+      }
+      env->beginNodeScope();
+      if (auto tci = std::dynamic_pointer_cast<TerrainComputeInst>(inst))
+        tci->bakeAcquire(ginst.get()); // outputs + scratch, pool-served (lazy mode)
+      if (hit[i]) {
+        // cache HIT — cached field uploaded to the node's (just-acquired) SSBO
+        bool loaded = inst->cookLoad(dbs[i]);
+        OrkAssert(loaded); // probe passed; a failure here is a probe/load bug, not a recompute case
+        cook_loaded++;
       } else {
         // family-neutral pre-phase host write (E.1b realtime-params mechanism; at the
         // bake's t=0 this equals the onActivate fill — uniform, not behavioral).
@@ -231,12 +375,33 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
         }
         cook_computes++;
       }
+      // scratch back to the pool — everything this node acquired EXCEPT what its
+      // output plugs publish (read NOW, post-compute: erox finalized its alias).
+      std::unordered_set<FxShaderStorageBuffer*> keep;
+      for (int o = 0; o < inst->numOutputs(); o++)
+        if (auto op = std::dynamic_pointer_cast<hfimg_outpluginst_t>(inst->output(o)))
+          if (op->_value and op->_value->_ssbo)
+            keep.insert(op->_value->_ssbo);
+      env->endNodeScope(keep);
+      // upstream buffers whose last dispatching reader was this node
+      for (auto& op : release_at[i])
+        if (auto hop = std::dynamic_pointer_cast<hfimg_outpluginst_t>(op))
+          if (hop->_value)
+            env->releaseToPool(hop->_value->_ssbo);
     }
     if (do_disk_cache)
-      printf("[cook] cacheable bake: %d cache-hits, %d computed\n", cook_hits, cook_computes);
+      printf(
+          "[cook] cacheable bake: %d cache-loaded, %d demand-skipped, %d computed | arena peak %.1f MB, %d pool reuses\n",
+          cook_loaded, cook_skipped, cook_computes, double(env->_peak_arena_bytes) / (1024.0 * 1024.0),
+          env->_pool_reuses);
     else
-      printf("[cook] cache DISABLED (capture cache=False): %d computed, 0 disk I/O\n", cook_computes);
-    s_lastCookHits = cook_hits;
+      printf(
+          "[cook] cache DISABLED (capture cache=False): %d computed, %d demand-skipped, 0 disk I/O | arena peak %.1f MB, %d pool reuses\n",
+          cook_computes, cook_skipped, double(env->_peak_arena_bytes) / (1024.0 * 1024.0), env->_pool_reuses);
+    // cache-SATISFIED count: loaded + demand-skipped (a skipped node is satisfied
+    // by the cache too — nothing dispatched against it needed recomputing). Keeps
+    // terrainCacheTest's invariant: warm bake recomputes nothing but the sink.
+    s_lastCookHits = cook_loaded + cook_skipped;
   } else {
     for (auto inst : ginst->_ordered_module_insts) // family-neutral pre-phase (see above)
       if (auto pp = std::dynamic_pointer_cast<dflowgfx::IPrePhaseParams>(inst))

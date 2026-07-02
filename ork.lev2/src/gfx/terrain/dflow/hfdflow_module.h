@@ -46,6 +46,24 @@ struct TerrainComputeInst : public dflow::DgModuleInst, public dflowgfx::IPrePha
   // live-editable (editor pokes land next frame, no recompile). Default no-op; the bake
   // driver also calls it pre-phase (uniform mechanism — t=0 makes it equal onActivate).
   void writeParams(Context* ctx) override {}
+
+  // WS4 FRONTIER: a module's GPU buffer acquisition (plug outputs + internal
+  // scratch) lives HERE, not in onActivate. Under a legacy/live driver the
+  // onActivate shim below invokes it at activate time — identical behavior to the
+  // old code. The per-op-synced bake driver sets env->_lazy_acquire and calls
+  // bakeAcquire itself just before the node runs (and only if the demand plan
+  // says the node runs at all), so a bake's peak is the live frontier, not the
+  // whole graph. CONTRACT: after the bake driver releases a node's scratch back
+  // to the pool, the module's scratch members dangle — safe for a bake (each
+  // node runs exactly once); live graphs never release, so their members stay
+  // valid across per-frame computes.
+  virtual void bakeAcquire(dflow::GraphInst* inst) {}
+
+  void onActivate(dflow::GraphInst* inst) override {
+    auto env = inst->_impl.getShared<BakeEnv>();
+    if (not(env and env->_lazy_acquire))
+      bakeAcquire(inst);
+  }
   // the node's output field (resolved by name so we don't shadow each derived
   // inst's own _output member).
   gpucomputeimage2d_inst_ptr_t _outImg() const {
@@ -113,6 +131,30 @@ struct TerrainComputeInst : public dflow::DgModuleInst, public dflowgfx::IPrePha
     return true;
   }
 
+  // WS4 FRONTIER: validate a cache entry BEFORE any buffer exists (the demand plan
+  // classifies hit/miss up front; bakeAcquire runs only for nodes that run). Mirrors
+  // every cookLoad rejection that doesn't need live state: format magic, output
+  // count, per-output dims vs the bake dims. Channel count is trusted from the
+  // datablock (a channel-layout change is an algo change and MUST bump the node's
+  // version salt -> different hash -> no entry found). If cookLoad fails after this
+  // probe passed, that is a probe/load disagreement — a bug, not a recompute case.
+  bool cookProbe(datablock_constptr_t db, int expect_w, int expect_h) const {
+    DataBlockInputStream istr(db);
+    if (istr.getItem<int>() != kCookFmt) return false;
+    int nout = istr.getItem<int>();
+    if (nout != numOutputs())            return false;
+    for (int o = 0; o < nout; o++) {
+      int present = istr.getItem<int>();
+      if (not present) continue;
+      int w  = istr.getItem<int>();
+      int h  = istr.getItem<int>();
+      int ch = istr.getItem<int>();
+      if (w != expect_w or h != expect_h or ch < 1) return false;
+      istr.advance(size_t(w) * size_t(h) * size_t(ch) * sizeof(float));
+    }
+    return true;
+  }
+
   // shared tail for every op's cookComputeHash: mix in the bake context (dim)
   // and the upstream node hashes. Each op prepends its own version salt + params.
   static void _mixTail(DataBlock::hasher_t h, uint64_t ctx, const std::vector<uint64_t>& ih) {
@@ -162,7 +204,7 @@ inline void _shadersub(std::string& s, const std::string& key, const std::string
   }
 }
 
-// every op's output buffer is W*H R32F; allocate it once (onActivate, pre-frame)
+// every op's output buffer is W*H R32F; acquired via bakeAcquire (pre-node in a frontier bake, activate-time under legacy/live drivers)
 inline void _allocOut(BakeEnv* env, gpucomputeimage2d_inst_ptr_t img) {
   img->_w        = env->_w;
   img->_h        = env->_h;

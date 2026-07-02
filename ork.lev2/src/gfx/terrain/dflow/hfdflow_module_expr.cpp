@@ -40,7 +40,7 @@ struct ExprModuleInst : public TerrainComputeInst {
   // %DIM%/%EXTENT_M%/%HEIGHT_M% holes are filled here from BakeEnv (physical
   // scale) — so the authored body is resolution-independent at trace time and
   // the disk shader cache hits per distinct (dim,extent,height).
-  void onActivate(dflow::GraphInst* inst) final {
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<BakeEnv>();
     auto fxi = env->_ctx->FXI();
     int dim  = env->_w;

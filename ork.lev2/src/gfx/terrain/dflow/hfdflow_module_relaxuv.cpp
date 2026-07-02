@@ -376,7 +376,7 @@ struct RelaxUvModuleInst : public TerrainComputeInst {
     _outBn = typedOutputNamed<HfImagePlugTraits>("Binormal"); // RGBA: binormal.xyz + 1
     _input = typedInputNamed<HfImagePlugTraits>("In");        // height
   }
-  void onActivate(dflow::GraphInst* inst) final {
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<BakeEnv>();
     auto fxi = env->_ctx->FXI();
     int dim  = env->_w;
@@ -398,7 +398,7 @@ struct RelaxUvModuleInst : public TerrainComputeInst {
     _rhoF = env->createStorageBuffer(n * sizeof(float));      // full-res density
     _rho  = env->createStorageBuffer(nC * sizeof(float));     // coarse density, then reused as the RHS f
     _psi  = env->createStorageBuffer(nC * sizeof(float));     // SOR solves IN PLACE (no ping-pong)
-    { // seed psi = 0 (solver start). Pre-dispatch (onActivate) so we never map a buffer mid-graph.
+    { // seed psi = 0 (solver start). Pre-dispatch (bakeAcquire runs between phases) so we never map a buffer mid-graph.
       auto m = fxi->mapStorageBuffer(_psi, 0, nC * sizeof(float), BufferMapAccess::WRITE_ONLY);
       std::memset(m->_mappedaddr, 0, nC * sizeof(float));
       fxi->unmapStorageBuffer(m.get());
@@ -440,7 +440,7 @@ struct RelaxUvModuleInst : public TerrainComputeInst {
     ci->bindStorageBuffer(_csRhs, 0, _rho);
     ci->bindStorageBuffer(_csRhs, 1, _sum);
     ci->dispatchCompute(_csRhs, gC, gC, 1); ci->storageBarrier();
-    // 3) red-black SOR: solve laplacian(psi)=f at COARSE res, IN PLACE. psi seeded 0 in onActivate.
+    // 3) red-black SOR: solve laplacian(psi)=f at COARSE res, IN PLACE. psi seeded 0 in bakeAcquire.
     //    One sweep = red half-dispatch + black half-dispatch (barrier between: black reads red's writes).
     for (int it = 0; it < _iters; it++) {
       ci->bindStorageBuffer(_csSorR, 0, _psi);

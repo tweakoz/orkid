@@ -27,6 +27,8 @@
 #include <ork/file/path.h>
 #include <vector>
 #include <memory>
+#include <unordered_map>
+#include <unordered_set>
 
 #include <ork/lev2/gfx/dflow/interchange.h>
 
@@ -121,9 +123,44 @@ struct BakeEnv {
   // per-plug ownership ambiguous — the arena dedups, so each buffer frees exactly
   // once. A LIVE/cross-family host (persistent graph) simply never calls
   // freeAllocs and keeps today's persistent-buffer behavior.
+  //
+  // WS4 FRONTIER MODE (_lazy_acquire, set ONLY by the per-op-synced bake driver):
+  // module allocations move from onActivate to bakeAcquire (the driver calls it
+  // just before the node runs), createStorageBuffer becomes a size-classed POOL
+  // acquire, and the driver returns buffers at their last dispatching reader.
+  // Reuse is GPU-safe because the cook loop submits+WAITs per node — a released
+  // buffer's producer/consumers have fully executed before it is handed out
+  // again. Peak collapses from whole-graph to the live frontier. LIVE/cross-family
+  // envs leave _lazy_acquire false: allocation stays at activate, nothing is
+  // released mid-eval (the WS6 "persistent" class), and the pool is inert.
   FxShaderStorageBuffer* createStorageBuffer(size_t length);
   void freeAllocs(); // caller guarantees GPU idle for these buffers (post per-op sync / endFrame)
+
+  // return a buffer to the size-classed free-list for reuse by a later node.
+  // Caller (the bake driver) guarantees the GPU is done with it (per-op sync) and
+  // that no live plug still publishes it. Dedup'd: releasing the same pointer
+  // twice (plug aliasing) is a no-op the second time.
+  void releaseToPool(FxShaderStorageBuffer* buf);
+  // node-scoped scratch: the driver brackets each node's run; endNodeScope returns
+  // every buffer acquired during the scope EXCEPT those a plug currently publishes
+  // (the keep set is read AFTER compute — erox picks its output ping-pong buffer
+  // at compute end).
+  void beginNodeScope();
+  void endNodeScope(const std::unordered_set<FxShaderStorageBuffer*>& keep);
+
+  bool _lazy_acquire = false; // frontier mode (bake driver only — see block comment)
+
   std::vector<FxShaderStorageBuffer*> _allocs;
+  // pool state (all inert unless _lazy_acquire)
+  std::unordered_map<size_t, std::vector<FxShaderStorageBuffer*>> _pool_free; // size-class -> free buffers
+  std::unordered_set<FxShaderStorageBuffer*> _pool_free_set;                  // membership (double-release guard)
+  std::unordered_map<FxShaderStorageBuffer*, size_t> _alloc_size;             // buffer -> byte size
+  std::vector<FxShaderStorageBuffer*> _scope;                                 // current node's acquisitions
+  bool _in_scope = false;
+  // frontier metrics (reported by the driver at bake end)
+  size_t _arena_bytes      = 0; // bytes currently backed by real VK allocations
+  size_t _peak_arena_bytes = 0; // high-water mark — THE WS4 A/B metric
+  int _pool_reuses         = 0; // acquisitions served from the free-list
 };
 using bakeenv_ptr_t = std::shared_ptr<BakeEnv>;
 

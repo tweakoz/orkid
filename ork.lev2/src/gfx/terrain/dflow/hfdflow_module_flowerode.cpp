@@ -116,7 +116,7 @@ struct FlowErodeModuleInst : public TerrainComputeInst {
     _input  = typedInputNamed<HfImagePlugTraits>("In");
     _disch  = typedInputNamed<HfImagePlugTraits>("Discharge");
   }
-  void onActivate(dflow::GraphInst* inst) final {
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<BakeEnv>();
     auto fxi = env->_ctx->FXI();
     int dim  = env->_w;

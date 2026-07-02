@@ -42,7 +42,7 @@ struct MaskBlendModuleInst : public TerrainComputeInst {
     _inB = typedInputNamed<HfImagePlugTraits>("B");
     _inM = typedInputNamed<HfImagePlugTraits>("M");
   }
-  void onActivate(dflow::GraphInst* inst) final {
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<BakeEnv>();
     _allocOut(env.get(), _output->_value);
     auto sh = env->_ctx->FXI()->shaderFromShaderText("terrain_maskblend", _maskblend_text(env->_w));

@@ -71,7 +71,7 @@ struct RemapModuleInst : public TerrainComputeInst {
     _inLo->_value    = _rmd->typedInputNamed<dflow::FloatPlugTraits>("lo")->_value;
     _inHi->_value    = _rmd->typedInputNamed<dflow::FloatPlugTraits>("hi")->_value;
   }
-  void onActivate(dflow::GraphInst* inst) final {
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env  = inst->_impl.getShared<BakeEnv>();
     auto fxi  = env->_ctx->FXI();
     int dim   = env->_w;

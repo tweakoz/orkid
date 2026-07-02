@@ -37,7 +37,7 @@ struct ConstModuleInst : public TerrainComputeInst {
     _output = typedOutputNamed<HfImagePlugTraits>("Out");
     _level  = _floatPlug(this, _d, "level");
   }
-  void onActivate(dflow::GraphInst* inst) final {
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<BakeEnv>();
     _allocOut(env.get(), _output->_value);
     auto sh = env->_ctx->FXI()->shaderFromShaderText("terrain_const", _const_text(env->_w, _level->value()));

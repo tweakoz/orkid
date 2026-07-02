@@ -126,11 +126,13 @@ struct FbmModuleInst : public TerrainComputeInst {
     fxi->unmapStorageBuffer(mp.get());
   }
 
-  // SETUP (SSBO alloc + shader compile) happens here — onActivate runs during
-  // updateTopology, BEFORE the bake's beginFrame/dispatch-phase. Only STRUCTURE bakes
-  // into the text (dims, octave loop bound, warp presence); the scalar params go to the
-  // params SSBO, seeded here at t=0 and re-written per eval by writeParams.
-  void onActivate(dflow::GraphInst* inst) final {
+  // SETUP (SSBO alloc + shader compile) happens here — under a legacy/live driver the
+  // onActivate shim runs it during updateTopology, BEFORE the bake's beginFrame; under
+  // the frontier bake driver it runs just before this node's dispatch phase (either
+  // way, never mid-phase). Only STRUCTURE bakes into the text (dims, octave loop
+  // bound, warp presence); the scalar params go to the params SSBO, seeded here at
+  // t=0 and re-written per eval by writeParams.
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env  = inst->_impl.getShared<BakeEnv>();
     auto fxi  = env->_ctx->FXI();
     int dim   = env->_w;

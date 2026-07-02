@@ -45,7 +45,7 @@ struct GradientModuleInst : public TerrainComputeInst {
     _sc = _floatPlug(this, _d, "scale");
     _bi = _floatPlug(this, _d, "bias");
   }
-  void onActivate(dflow::GraphInst* inst) final {
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<BakeEnv>();
     _allocOut(env.get(), _output->_value);
     auto dir = _dir->value();

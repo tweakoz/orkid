@@ -79,7 +79,7 @@ struct CurvatureModuleInst : public TerrainComputeInst {
     _input  = typedInputNamed<HfImagePlugTraits>("In");
     _scale  = _floatPlug(this, _d, "scale");
   }
-  void onActivate(dflow::GraphInst* inst) final {
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<BakeEnv>();
     _allocOut(env.get(), _output->_value);
     int rtex = env->radiusTexels(_d->_radius_m); // meters -> texels (resolution-independent)

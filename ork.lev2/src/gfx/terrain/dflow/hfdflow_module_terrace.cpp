@@ -47,7 +47,7 @@ struct TerraceModuleInst : public TerrainComputeInst {
     _steps  = _floatPlug(this, _d, "steps");
     _sharp  = _floatPlug(this, _d, "sharpness");
   }
-  void onActivate(dflow::GraphInst* inst) final {
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<BakeEnv>();
     _allocOut(env.get(), _output->_value);
     auto sh = env->_ctx->FXI()->shaderFromShaderText("terrain_terrace", _terrace_text(env->_w, _steps->value(), _sharp->value()));
