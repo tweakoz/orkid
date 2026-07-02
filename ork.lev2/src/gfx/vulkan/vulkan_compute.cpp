@@ -325,6 +325,71 @@ VkComputeInterface::VkComputeInterface(vkcontext_rawptr_t ctx)
 // storage-buffer map (param rewrites, readbacks). No-op in blocking mode or when nothing pends.
 ///////////////////////////////////////////////////////////////////////////////
 
+void VkComputeInterface::enqueueDeferredBufferUpdate(
+    std::shared_ptr<VulkanBuffer> buf, //
+    size_t offset,
+    const void* data,
+    size_t length) {
+  std::lock_guard<std::mutex> lk(_pendingBufferUpdatesMutex);
+  // exact-key dedupe (same buffer+offset+size): last write wins, and avoids a
+  // transfer-transfer hazard between two vkCmdUpdateBuffers on the same range.
+  for (auto& u : _pendingBufferUpdates) {
+    if (u._buffer == buf and u._offset == offset and u._data.size() == length) {
+      std::memcpy(u._data.data(), data, length);
+      return;
+    }
+  }
+  PendingBufferUpdate u;
+  u._buffer = buf;
+  u._offset = offset;
+  u._data.assign((const uint8_t*)data, (const uint8_t*)data + length);
+  _pendingBufferUpdates.push_back(std::move(u));
+}
+
+// host read-your-writes: a host READ of a buffer with pending deferred updates
+// must see them — apply those entries synchronously (staged copy) and drop them.
+void VkComputeInterface::applyPendingUpdatesFor(const std::shared_ptr<VulkanBuffer>& buf) {
+  std::vector<PendingBufferUpdate> to_apply;
+  {
+    std::lock_guard<std::mutex> lk(_pendingBufferUpdatesMutex);
+    for (auto it = _pendingBufferUpdates.begin(); it != _pendingBufferUpdates.end();) {
+      if (it->_buffer == buf) {
+        to_apply.push_back(std::move(*it));
+        it = _pendingBufferUpdates.erase(it);
+      } else {
+        ++it;
+      }
+    }
+  }
+  for (auto& u : to_apply)
+    u._buffer->copyFromHost(u._data.data(), u._data.size(), u._offset);
+}
+
+void VkComputeInterface::_flushDeferredBufferUpdates() {
+  std::vector<PendingBufferUpdate> updates;
+  {
+    std::lock_guard<std::mutex> lk(_pendingBufferUpdatesMutex);
+    updates.swap(_pendingBufferUpdates);
+  }
+  if (updates.empty())
+    return;
+  for (auto& u : updates)
+    vkCmdUpdateBuffer(_computeCmdBuf, u._buffer->_vkbuffer, u._offset, u._data.size(), u._data.data());
+  // transfer writes -> visible to this phase's dispatches
+  VkMemoryBarrier bar{};
+  bar.sType         = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+  bar.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+  bar.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+  vkCmdPipelineBarrier(
+      _computeCmdBuf,
+      VK_PIPELINE_STAGE_TRANSFER_BIT,
+      VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+      0,
+      1, &bar,
+      0, nullptr,
+      0, nullptr);
+}
+
 void VkComputeInterface::syncPendingDispatch() {
   if (not _phasePending)
     return;
@@ -381,6 +446,10 @@ void VkComputeInterface::beginDispatchPhase() {
       0, nullptr,
       0, nullptr
   );
+
+  // deferred small WRITE_ONLY updates (param/header writes) — recorded here as
+  // vkCmdUpdateBuffer instead of a synchronous submit+fence per write.
+  _flushDeferredBufferUpdates();
 
   _dispatchCount = 0;
   _inDispatchPhase = true;

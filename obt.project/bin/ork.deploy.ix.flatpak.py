@@ -196,13 +196,17 @@ def gen_manifest(ctx_files, runtime_version, scrub_maps=(), redact_home=None):
         "/app/share/metainfo /app/share/icons/hicolor/512x512/apps",
         # copy the relocatable tree wholesale into /app/orkid
         "cp -a staging/. /app/orkid/",
-        # BAKE the sentinel fixup while /app is writable (runtime is read-only):
-        # rewrite __OBT_DEPLOY_SENTINEL__ -> /app/orkid in every relocatable file,
-        # then set the marker so the launcher's runtime fixup is a no-op.
-        "if [ -f /app/orkid/.relocatable_files ]; then "
+        # BAKE the relocation fixup while /app is writable (runtime is read-only):
+        # rewrite the tree's CURRENT root -> /app/orkid across every relocatable
+        # file, then set the marker so the launcher's runtime fixup is a no-op.
+        # The current root is the tree's .deploy_path value: the sentinel
+        # (__OBT_DEPLOY_SENTINEL__) for a fresh deploy, OR the install path when
+        # packaging an already-installed pip bundle (`ork.deploy` from pip).
+        "_OLD=$(cat /app/orkid/.deploy_path 2>/dev/null); "
+        "if [ -n \"$_OLD\" ] && [ \"$_OLD\" != /app/orkid ] && [ -f /app/orkid/.relocatable_files ]; then "
         "while IFS= read -r rel; do f=\"/app/orkid/$rel\"; "
         "if [ -f \"$f\" ] && [ ! -L \"$f\" ]; then "
-        "sed -i \"s|__OBT_DEPLOY_SENTINEL__|/app/orkid|g\" \"$f\"; fi; "
+        "sed -i \"s|$_OLD|/app/orkid|g\" \"$f\"; fi; "
         "done < /app/orkid/.relocatable_files; fi",
         "printf '%s' /app/orkid > /app/orkid/.deploy_path",
         # ---- Scrub build-time dev cruft from the distributable ----
@@ -293,6 +297,13 @@ def main():
         if not staging.exists():
             sys.exit(f"ERROR: --bundle not found: {staging}")
         print(f"Reusing relocatable tree: {staging}")
+    elif args.staging and (Path(args.staging) / ".is_deploy").exists():
+        # $OBT_STAGE is already a deployed, relocatable tree — e.g. `ork.deploy`
+        # run from a pip-installed orkid (the analog of building a .dmg from a
+        # pip install on macOS). Package it directly; the build-time bake reads
+        # its .deploy_path (the install path) and relocates it to /app/orkid.
+        staging = Path(args.staging)
+        print(f"Packaging the deployed bundle directly: {staging}")
     else:
         if not args.staging:
             sys.exit("ERROR: no --bundle and no --staging/$OBT_STAGE.")

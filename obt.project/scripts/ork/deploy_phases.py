@@ -244,6 +244,138 @@ def _strip_static_archives(lib_dir):
         print(deco.val(f"    WARN: could not remove {fpath}: {e}"))
   return count, freed
 
+def _strip_elf_binaries(root):
+  """Strip debug symbols from ELF binaries (Linux only).
+
+  Our compiled outputs ship with full debug_info — libork_lev2.so is 263MB
+  unstripped vs ~24MB stripped, and there is ~1.9GB of debug symbols across the
+  tree. Runtime needs none of it; it only bloats distributables (fatal for PyPI
+  wheels, which have a 100MB/file limit). Uses `strip --strip-unneeded`, which
+  preserves the dynamic symbols required to LOAD shared objects (and RPATH/
+  RUNPATH), so relocation and $ORIGIN loading are unaffected. Opt out with
+  ORKID_DEPLOY_NOSTRIP=1. Returns (count, bytes_freed).
+  """
+  if os.environ.get("ORKID_DEPLOY_NOSTRIP"):
+    print(deco.val("    (ORKID_DEPLOY_NOSTRIP set — keeping debug symbols)"))
+    return 0, 0
+  strip = shutil.which("strip")
+  if not strip:
+    print(deco.val("    WARNING: 'strip' not found — shipping unstripped binaries"))
+    return 0, 0
+  n = 0
+  freed = 0
+  for dirpath, dirnames, filenames in os.walk(str(root)):
+    for fname in filenames:
+      fp = os.path.join(dirpath, fname)
+      if os.path.islink(fp) or not os.path.isfile(fp):
+        continue
+      if not elf.is_elf_binary(fp):
+        continue
+      try:
+        before = os.path.getsize(fp)
+        r = subprocess.run([strip, "--strip-unneeded", fp], capture_output=True)
+        if r.returncode == 0:
+          freed += before - os.path.getsize(fp)
+          n += 1
+      except OSError:
+        pass
+  return n, freed
+
+# Runtime-slimming lists for Linux distributables (pip wheels / flatpak). These
+# are dev/example-only payload the engine never needs at runtime; optional deps
+# can be re-added into the bundled venv on demand (`ork.python -m pip install
+# <x>` — installs against the private 3.14t interpreter, the right ABI). This is
+# NOT the same as removing them from ork.build's pydefaults (dev staging keeps
+# them so examples still work in-tree) — we only prune the SHIPPED copy.
+# Opt out entirely with ORKID_DEPLOY_FULL=1.
+# Dev / notebook / viz python packages not needed by the engine runtime. NOTE:
+# matplotlib IS used by two content tools (ork.hdri.studio.py / ork.hdri.xirview
+# .py) — removing it means those two need `ork.python -m pip install matplotlib`.
+# The jupyter/notebook/plotly/debugpy set is examples/tests-only.
+_SLIM_SITEPKGS = ["playwright", "numba", "llvmlite",
+                  "matplotlib", "plotly", "debugpy",
+                  "jupyterlab", "notebook", "widgetsnbextension", "jupyter_builder"]
+# Qt5 IS removable once its only two consumers (the dev GUI tools bin/iv and
+# bin/profiler_gui, below) are pruned — nothing else in the bundle references
+# it. icu is NOT removable (needed by libxml2 + libboost_locale, independent of
+# Qt5), so it stays.
+_SLIM_LIB_GLOBS = ["libQt5*.so*"]
+# bin/: test/example executables, the two Qt5 GUI dev tools, and build-time
+# tools. IMPORTANT: this removes the LLVM command-line TOOLS (bin/llvm-*) only —
+# the LLVM *library* (lib/libLLVM.so) is KEPT, because OpenVDB AX JIT-compiles
+# against it at runtime (libopenvdb_ax NEEDs libLLVM.so.18). Nothing at runtime
+# shells out to cmake/ispc/llvm tools.
+_SLIM_BIN_GLOBS = ["ork.test.*", "ork.example.*",
+                   "iv", "profiler_gui",                   # Qt5 GUI dev tools (VDB viewer / profiler)
+                   "cmake", "ccmake", "cpack", "ctest",    # CMake build tools
+                   "ispc",                                 # SPMD compiler (build-time)
+                   "llvm-*", "obj2yaml", "yaml2obj",       # LLVM CLI dev tools (lib kept)
+                   "vdb_print", "FileCheck", "lli-child-target"]  # VDB/LLVM test tools
+                   # (oiiotool intentionally KEPT — OpenImageIO texture/image tool)
+
+def _slim_linux_runtime(target_dir):
+  """Prune dev/example-only payload from a Linux runtime deploy. Returns
+  (items_removed, bytes_freed)."""
+  import glob as _glob
+  if os.environ.get("ORKID_DEPLOY_FULL"):
+    print(deco.val("    (ORKID_DEPLOY_FULL set — keeping dev/example payload)"))
+    return 0, 0
+  target_dir = path.Path(target_dir)
+  removed = 0
+  freed = 0
+  def _rm(p):
+    nonlocal removed, freed
+    if os.path.islink(p) or os.path.isfile(p):
+      try:
+        freed += os.path.getsize(p)
+      except OSError:
+        pass
+      try:
+        os.remove(p); removed += 1
+      except OSError:
+        pass
+    elif os.path.isdir(p):
+      for r, _d, fs in os.walk(p):
+        for fn in fs:
+          fp = os.path.join(r, fn)
+          if not os.path.islink(fp):
+            try:
+              freed += os.path.getsize(fp)
+            except OSError:
+              pass
+      shutil.rmtree(p, ignore_errors=True); removed += 1
+  # site-packages python deps (dir + <name>.libs + <name>-*.dist-info)
+  for sp in _glob.glob(str(target_dir / "pyvenv" / "lib" / "python3*" / "site-packages")):
+    for name in _SLIM_SITEPKGS:
+      for m in (_glob.glob(os.path.join(sp, name))
+                + _glob.glob(os.path.join(sp, name + ".libs"))
+                + _glob.glob(os.path.join(sp, name + "-*.dist-info"))):
+        _rm(m)
+  # native libs pulled in transitively but unused at runtime
+  for g in _SLIM_LIB_GLOBS:
+    for m in _glob.glob(str(target_dir / "lib" / g)):
+      _rm(m)
+  # test/example executables
+  for g in _SLIM_BIN_GLOBS:
+    for m in _glob.glob(str(target_dir / "bin" / g)):
+      _rm(m)
+  # jupyter labextension static bundles under share/, and Windows .pdb debug
+  # files (dead weight on Linux) anywhere in the venv.
+  for m in _glob.glob(str(target_dir / "pyvenv" / "share" / "jupyter")):
+    _rm(m)
+  # Windows .pdb (dead on Linux) + cython build sources (.c/.pyx — the compiled
+  # .so is what's imported at runtime). Skip include/ dirs so C headers shipped
+  # for building extensions against numpy/scipy are preserved.
+  pyvenv = target_dir / "pyvenv"
+  if pyvenv.exists():
+    for r, _d, fs in os.walk(str(pyvenv)):
+      if (os.sep + "include" + os.sep) in (r + os.sep):
+        continue
+      for fn in fs:
+        if fn.endswith((".pdb", ".c", ".pyx")):
+          _rm(os.path.join(r, fn))
+  return removed, freed
+
 def _copy_tree_whitelist(proj_root, proj_target, tree_rel, entries):
   """Selectively copy only whitelisted entries of a source tree.
 
@@ -547,6 +679,18 @@ def phase1_copy(staging_dir, target_dir, force=False):
           print(deco.val(f"    Copied {item.name} to lib/"))
         else:
           print(deco.val(f"    {item.name} already in lib/"))
+
+  # ---- Step 4a: Slim dev/example payload (Linux runtime deploy) ----
+  if IS_LINUX:
+    print(deco.val(f"\n  Step 4a: Slimming dev/example payload..."))
+    _sl_count, _sl_bytes = _slim_linux_runtime(target_dir)
+    print(deco.val(f"    Removed {_sl_count} items ({_sl_bytes // (1024 * 1024)} MB freed)"))
+
+  # ---- Step 4b: Strip ELF debug symbols (Linux) ----
+  if IS_LINUX:
+    print(deco.val(f"\n  Step 4b: Stripping ELF debug symbols..."))
+    _st_count, _st_bytes = _strip_elf_binaries(target_dir)
+    print(deco.val(f"    Stripped {_st_count} ELF binaries ({_st_bytes // (1024 * 1024)} MB freed)"))
 
   # ---- Step 5: Fix text files with hardcoded staging paths ----
   print(deco.val(f"\n  Step 5: Fixing text files with hardcoded paths..."))

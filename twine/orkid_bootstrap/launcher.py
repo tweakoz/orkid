@@ -265,12 +265,19 @@ def ork_shell():
 
 
 def ork_deploy():
-    """Build a relocatable .app/.dmg FROM this pip-installed orkid bundle.
+    """Build a distributable FROM this pip-installed orkid bundle.
 
-    Runs the bundled ork.deploy.macos.relocatable.py against orkid (which
-    is $OBT_STAGE inside the OBT env). e.g.  ork.deploy --target ~/Desktop/MyApp
+    Runs the platform's bundled deploy script against orkid (= $OBT_STAGE inside
+    the OBT env), mirroring the same command on both platforms:
+      macOS -> .app + .dmg   (ork.deploy.macos.relocatable.py)
+      Linux -> .flatpak      (ork.deploy.ix.flatpak.py — packages this already-
+               deployed pip bundle directly; needs flatpak + flatpak-builder)
+    e.g.  ork.deploy --outfile ~/Orkid.flatpak     (Linux)
+          ork.deploy --target  ~/Desktop/MyApp     (macOS)
     """
-    cmd = shlex.join(["ork.deploy.macos.relocatable.py"] + sys.argv[1:])
+    script = ("ork.deploy.ix.flatpak.py" if sys.platform.startswith("linux")
+              else "ork.deploy.macos.relocatable.py")
+    cmd = shlex.join([script] + sys.argv[1:])
     _launch(["--command", cmd])
 
 
