@@ -140,7 +140,7 @@ class TerrainMixin:
       # WITHOUT changing _terr_src -> the cap_dir would collide and the player would bind the STALE atlas.
       # Bump this token whenever the relax module's output changes (mirror of the C++ cook salt). Only
       # added when relaxed, so non-relaxed terrains keep their existing cache keys.
-      _relax_tok = "relaxuv.v4-coarse" if relax else "norelax"
+      _relax_tok = "relaxuv.v5-cap512" if relax else "norelax"
       _terr_key  = "\x00".join([_terr_src, repr(sorted((dsl_kwargs or {}).items())),
                                 str(bake_dim), str(extent_m), str(height_m),
                                 str(visible_y_bias), str(chunk), _relax_tok])

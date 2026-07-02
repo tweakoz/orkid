@@ -5,6 +5,7 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 #include "hfdflow_module.h"
+#include <cmath>
 
 ImplementReflectionX(ork::lev2::terrain::RelaxUvModuleData, "terrain::RelaxUvModuleData");
 
@@ -18,13 +19,25 @@ namespace ork::lev2::terrain {
 // so baked detail smears on cliffs. This module warps the UV so each texel covers ~equal
 // surface area, KEEPING the unit-square boundary fixed (UVs stay in [0,1]).
 //
-// ALGORITHM (linearized optimal transport — fully Eulerian Jacobi stencils, no global
+// ALGORITHM (linearized optimal transport — fully Eulerian compute stencils, no global
 // solve, no point advection; the same compute-pass-iteration idiom as erox/flow3d):
-//   rho   = sqrt(1+|grad h|^2)                            // surface-area density (>1 on slopes)
-//   solve  laplacian(psi) = (rho - mean(rho))  (Neumann)  // Jacobi, N iterations
+//   rho   = sqrt(1+|grad h|^2)   at FULL res              // surface-area density (>1 on slopes)
+//   box-average rho -> the coarse relax grid              // area is an INTEGRAL: average the density,
+//                                                         // never re-derive it from a smoothed height
+//   solve  laplacian(psi) = (rho/mean - 1)  (Neumann)     // red-black SOR (in place, omega ~ 2/(1+sin(pi/N)))
 //   uv    = planar + strength * grad(psi) / dim           // high-rho regions EXPAND -> more texels
 // Neumann BC makes grad(psi) tangential at the border, so the boundary slides along the
 // unit-square edges and the map stays in [0,1] for free.
+// SOLVER NOTE: plain Jacobi CANNOT converge this — its lowest-mode error factor is
+// 1 - pi^2/(2 N^2) per sweep (~60k sweeps at N=256); the shipped 1024 sweeps left the warp
+// ~7% built (measured: +-5 texel warp, zero equal-area benefit). Red-black SOR at omega_opt
+// converges the low mode ~1e-5 within the same ~1024-sweep budget.
+//
+// INPUT CONTRACT (the v5 amplitude fix): the height this module receives MUST be in the same
+// normalization the capture writer stores ([0,1] stretch) — base.py relax_uv() inserts
+// T.normalize(node) — because the renderer consumes stored_height * HEIGHT_M and the frame
+// normals/binormals/rho computed here are used side-by-side with that. Feeding the raw
+// un-stretched height flattens every slope quantity by exactly (max-min) of the height.
 //
 // It ALSO precomputes the per-vertex tangent frame so the render VS goes tap-light:
 //   normal   = geometric surface normal (parameterization-INVARIANT)         -> "Out".zw  (n.x,n.z; n.y=+sqrt)
@@ -37,7 +50,19 @@ namespace ork::lev2::terrain {
 //   "Binormal" RGBA = (binormal.x,  binormal.y,   binormal.z, 1)
 ///////////////////////////////////////////////////////////////////////////////
 
-static constexpr double kSumFix = 4096.0; // fixed-point scale for the atomic-uint density sum
+// fixed-point scale for the atomic-uint density-mean sum. Accumulated over the COARSE grid
+// (cdim^2 cells x rho up to ~16 x kSumFix) — 256 keeps the worst case ~1.1e9 at cdim=512,
+// safely under uint32 (4096 was borderline even at cdim=256 once rho is computed at honest
+// amplitude). Mean quantization bias ~0.2% at 256 — irrelevant (it divides out of rho/mean).
+static constexpr double kSumFix = 256.0;
+
+// COARSE relax-grid cap. A fold-free map redistributes area as a low-frequency deformation, so
+// the Poisson/warp run on this capped grid and the uv upsamples. The cap bounds what the warp
+// can equalize: the WITHIN-CELL demand it cannot reach has starvation-p99 ~1.31 at 256 vs
+// ~1.19 at 512 (measured, erodeflow 2048) — 256 mathematically cannot hit the <=1.3 quality
+// gate. 512 is safe now that the solver CONVERGES (the old 512 fold sweep ran the unconverged
+// Jacobi); the per-vertex fold guard in cs_warp still backstops. HASHED into the cook key.
+static constexpr int kRelaxCap = 512;
 
 // 0) clear the density accumulator (single uint)
 static std::string _reset_text() {
@@ -49,36 +74,39 @@ compute_shader cs_reset : iface { sdata[0] = 0u; }
 )S";
 }
 
-// 0a) DOWNSAMPLE the full-res height (dim) -> a COARSE grid (cdim) by bilinear sampling at the coarse
-//     texel centers. The relaxation runs on this coarse height: a fold-free (bijective) UV map can only
-//     redistribute area as a LOW-FREQUENCY deformation, so driving it from the sharp full-res density
-//     self-intersects (folds). Coarse density -> smooth warp -> no folds (and ~(dim/cdim)^2 less Jacobi).
-static std::string _downsample_text(int dim, int cdim) {
+// 0a) BOX-AVERAGE the full-res density (dim) -> the coarse relax grid (cdim), and atomic-sum the
+//     coarse means for the global mean. Area is an INTEGRAL quantity: averaging rho preserves each
+//     coarse cell's true surface-area demand, whereas the old height-downsample-then-gradient
+//     UNDERESTIMATED thin canyon walls (gradients of a smoothed height). The relaxation still runs
+//     coarse (a fold-free map redistributes area at low frequency; ~(dim/cdim)^2 less solver work).
+static std::string _boxavg_text(int dim, int cdim) {
   std::string t = R"S(
 fxconfig fxcfg_default {}
-storage_interface si_in  (descriptor_set 0) { buffer layout(std430) ib { float hin[%DIMSQ%]; }; }
-storage_interface si_out (descriptor_set 0) { buffer layout(std430) ob { float hout[%CDIMSQ%]; }; }
-compute_interface iface { storage { si_in si_out } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }
-compute_shader cs_downsample : iface {
+storage_interface si_rf  (descriptor_set 0) { buffer layout(std430) ib { float rin[%DIMSQ%]; }; }
+storage_interface si_rc  (descriptor_set 0) { buffer layout(std430) ob { float rout[%CDIMSQ%]; }; }
+storage_interface si_sum (descriptor_set 0) { buffer layout(std430) sb { uint  sdata[1]; }; }
+compute_interface iface { storage { si_rf si_rc si_sum } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }
+compute_shader cs_boxavg : iface {
   if (gl_GlobalInvocationID.x >= %CDIMU% || gl_GlobalInvocationID.y >= %CDIMU%) { return; }
-  int cx = int(gl_GlobalInvocationID.x); int cy = int(gl_GlobalInvocationID.y);
-  int D  = int(%DIMU%); uint Du = %DIMU%;
-  float r  = float(%DIMU%) / float(%CDIMU%);
-  float fx = (float(cx) + 0.5) * r - 0.5;          // dim-space sample center
-  float fz = (float(cy) + 0.5) * r - 0.5;
-  int x0 = int(floor(fx)); int z0 = int(floor(fz));
-  float tx = fx - float(x0); float tz = fz - float(z0);
-  int x0c = clamp(x0,   0, D-1); int x1c = clamp(x0+1, 0, D-1);
-  int z0c = clamp(z0,   0, D-1); int z1c = clamp(z0+1, 0, D-1);
-  float h00 = hin[uint(z0c)*Du+uint(x0c)]; float h10 = hin[uint(z0c)*Du+uint(x1c)];
-  float h01 = hin[uint(z1c)*Du+uint(x0c)]; float h11 = hin[uint(z1c)*Du+uint(x1c)];
-  hout[uint(cy)*%CDIMU%+uint(cx)] = mix(mix(h00,h10,tx), mix(h01,h11,tx), tz);
+  int cx = int(gl_GlobalInvocationID.x); int cz = int(gl_GlobalInvocationID.y);
+  int D  = int(%DIMU%);
+  float r = float(%DIMU%) / float(%CDIMU%);
+  int x0 = int(floor(float(cx) * r)); int x1 = min(int(floor(float(cx + 1) * r)), D);
+  int z0 = int(floor(float(cz) * r)); int z1 = min(int(floor(float(cz + 1) * r)), D);
+  float acc = 0.0; int cnt = 0;
+  for (int z = z0; z < z1; z++) {
+    for (int x = x0; x < x1; x++) { acc += rin[uint(z) * %DIMU% + uint(x)]; cnt = cnt + 1; }
+  }
+  float m = (cnt > 0) ? (acc / float(cnt)) : 1.0;
+  rout[uint(cz) * %CDIMU% + uint(cx)] = m;
+  atomicAdd(sdata[0], uint(m * %SUMFIX%));
 }
 )S";
   _shadersub(t, "%DIMSQ%",  FormatString("%d", dim * dim));
   _shadersub(t, "%CDIMSQ%", FormatString("%d", cdim * cdim));
   _shadersub(t, "%DIMU%",   FormatString("%du", dim));
   _shadersub(t, "%CDIMU%",  FormatString("%du", cdim));
+  _shadersub(t, "%SUMFIX%", FormatString("%g", kSumFix));
   return t;
 }
 
@@ -99,14 +127,17 @@ compute_shader cs_upsample : iface {
   float fx = (float(dx) + 0.5) * r - 0.5;          // coarse-space sample center
   float fz = (float(dz) + 0.5) * r - 0.5;
   int x0 = int(floor(fx)); int z0 = int(floor(fz));
-  float tx = fx - float(x0); float tz = fz - float(z0);
-  int x0c = clamp(x0,   0, C-1); int x1c = clamp(x0+1, 0, C-1);
-  int z0c = clamp(z0,   0, C-1); int z1c = clamp(z0+1, 0, C-1);
+  // BORDER: clamp the tap PAIR (not each tap) and let the weight run outside [0,1] -> linear
+  // EXTRAPOLATION at the edges. Per-tap clamping made the outer ~dim/cdim/2 full-res texels
+  // CONSTANT: a det=0 rim of zero-area bake triangles (uncovered atlas edge) + smeared border.
+  int x0c = clamp(x0, 0, C-2); int x1c = x0c + 1;
+  int z0c = clamp(z0, 0, C-2); int z1c = z0c + 1;
+  float tx = fx - float(x0c); float tz = fz - float(z0c);
   vec2 c00 = vec2(cuv[2u*(uint(z0c)*Cu+uint(x0c))+0u], cuv[2u*(uint(z0c)*Cu+uint(x0c))+1u]);
   vec2 c10 = vec2(cuv[2u*(uint(z0c)*Cu+uint(x1c))+0u], cuv[2u*(uint(z0c)*Cu+uint(x1c))+1u]);
   vec2 c01 = vec2(cuv[2u*(uint(z1c)*Cu+uint(x0c))+0u], cuv[2u*(uint(z1c)*Cu+uint(x0c))+1u]);
   vec2 c11 = vec2(cuv[2u*(uint(z1c)*Cu+uint(x1c))+0u], cuv[2u*(uint(z1c)*Cu+uint(x1c))+1u]);
-  vec2 uv  = mix(mix(c00,c10,tx), mix(c01,c11,tx), tz);
+  vec2 uv  = clamp(mix(mix(c00,c10,tx), mix(c01,c11,tx), tz), vec2(0.0), vec2(1.0));
   uint i = uint(dz)*%DIMU% + uint(dx);
   udata[2u*i+0u] = uv.x;
   udata[2u*i+1u] = uv.y;
@@ -119,14 +150,14 @@ compute_shader cs_upsample : iface {
   return t;
 }
 
-// 1) rho = sqrt(1+|grad h|^2)  (physical slope), and atomic-sum rho for the mean
+// 1) rho = sqrt(1+|grad h|^2)  (physical slope) at FULL res — cs_boxavg then averages it to the
+//    coarse relax grid (and accumulates the mean there; no atomics needed here).
 static std::string _density_text(int dim, float aspect) {
   std::string t = R"S(
 fxconfig fxcfg_default {}
 storage_interface si_h   (descriptor_set 0) { buffer layout(std430) hb { float hdata[%DIMSQ%]; }; }
 storage_interface si_rho (descriptor_set 0) { buffer layout(std430) rb { float rdata[%DIMSQ%]; }; }
-storage_interface si_sum (descriptor_set 0) { buffer layout(std430) sb { uint  sdata[1]; }; }
-compute_interface iface { storage { si_h si_rho si_sum } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }
+compute_interface iface { storage { si_h si_rho } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }
 compute_shader cs_density : iface {
   if (gl_GlobalInvocationID.x >= %DIMU% || gl_GlobalInvocationID.y >= %DIMU%) { return; }
   int  xi = int(gl_GlobalInvocationID.x);
@@ -138,15 +169,12 @@ compute_shader cs_density : iface {
   float hu = hdata[(yi<W-1) ? i+Wu : i];
   float gx = (hr - hl) * 0.5 * float(%ASPECT%);   // physical slope d(h_m)/d(x_m)
   float gz = (hu - hd) * 0.5 * float(%ASPECT%);
-  float rho = sqrt(1.0 + gx*gx + gz*gz);          // surface-area density (>=1)
-  rdata[i] = rho;
-  atomicAdd(sdata[0], uint(rho * %SUMFIX%));
+  rdata[i] = sqrt(1.0 + gx*gx + gz*gz);           // surface-area density (>=1)
 }
 )S";
   _shadersub(t, "%DIMSQ%", FormatString("%d", dim * dim));
   _shadersub(t, "%DIMU%", FormatString("%du", dim));
   _shadersub(t, "%ASPECT%", FormatString("%g", aspect));
-  _shadersub(t, "%SUMFIX%", FormatString("%g", kSumFix));
   return t;
 }
 
@@ -171,28 +199,36 @@ compute_shader cs_rhs : iface {
   return t;
 }
 
-// 3) one Jacobi sweep of laplacian(psi)=f, Neumann (clamped neighbors). out=slot0, in=slot1, f=slot2.
-static std::string _jacobi_text(int dim) {
+// 3) one red-black SOR half-sweep of laplacian(psi)=f, Neumann (clamped neighbors), IN PLACE.
+//    psi=slot0, f=slot1. Emitted TWICE (parity 0=red, 1=black); a full sweep = red then black
+//    with a barrier between. In-place is race-free: a cell's 4 neighbors are all the OTHER
+//    parity (the edge self-clamp reads the thread's OWN cell before it writes). omega is the
+//    optimal over-relaxation 2/(1+sin(pi/N)) — this is what makes the low-frequency mode
+//    (the actual warp) converge within ~O(N) sweeps where plain Jacobi needs ~O(N^2 ln).
+static std::string _sor_text(int dim, int parity, double omega) {
   std::string t = R"S(
 fxconfig fxcfg_default {}
-storage_interface si_o (descriptor_set 0) { buffer layout(std430) ob { float odata[%DIMSQ%]; }; }
-storage_interface si_i (descriptor_set 0) { buffer layout(std430) ib { float idata[%DIMSQ%]; }; }
+storage_interface si_p (descriptor_set 0) { buffer layout(std430) pb { float pdata[%DIMSQ%]; }; }
 storage_interface si_f (descriptor_set 0) { buffer layout(std430) fb { float fdata[%DIMSQ%]; }; }
-compute_interface iface { storage { si_o si_i si_f } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }
-compute_shader cs_jacobi : iface {
+compute_interface iface { storage { si_p si_f } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }
+compute_shader cs_sor_p%PARITY% : iface {
   if (gl_GlobalInvocationID.x >= %DIMU% || gl_GlobalInvocationID.y >= %DIMU%) { return; }
   int  xi = int(gl_GlobalInvocationID.x);
   int  yi = int(gl_GlobalInvocationID.y);
+  if (((uint(xi) + uint(yi)) & 1u) != %PARITY%u) { return; }
   int  W  = int(%DIMU%); uint Wu = %DIMU%; uint i = uint(yi)*Wu + uint(xi);
-  float pl = idata[(xi>0)   ? i-1u : i];   // Neumann: reflect the edge (no flux)
-  float pr = idata[(xi<W-1) ? i+1u : i];
-  float pd = idata[(yi>0)   ? i-Wu : i];
-  float pu = idata[(yi<W-1) ? i+Wu : i];
-  odata[i] = (pl + pr + pd + pu - fdata[i]) * 0.25;   // laplacian(psi)=f, unit texel spacing
+  float pl = pdata[(xi>0)   ? i-1u : i];   // Neumann: reflect the edge (no flux)
+  float pr = pdata[(xi<W-1) ? i+1u : i];
+  float pd = pdata[(yi>0)   ? i-Wu : i];
+  float pu = pdata[(yi<W-1) ? i+Wu : i];
+  float gs = (pl + pr + pd + pu - fdata[i]) * 0.25;   // Gauss-Seidel target (lap(psi)=f, unit spacing)
+  pdata[i] = pdata[i] + float(%OMEGA%) * (gs - pdata[i]);
 }
 )S";
   _shadersub(t, "%DIMSQ%", FormatString("%d", dim * dim));
   _shadersub(t, "%DIMU%", FormatString("%du", dim));
+  _shadersub(t, "%PARITY%", FormatString("%d", parity));
+  _shadersub(t, "%OMEGA%", FormatString("%.9g", omega));
   return t;
 }
 
@@ -345,40 +381,38 @@ struct RelaxUvModuleInst : public TerrainComputeInst {
     auto fxi = env->_ctx->FXI();
     int dim  = env->_w;
     size_t n = size_t(dim) * size_t(dim);
-    // COARSE relaxation grid: the deformation is low-frequency, so solve it on a capped grid (fold-free,
-    // best equal-area, ~(dim/cdim)^2 less Jacobi) and upsample the uv. The FRAME (normal/binormal) still
-    // runs at full dim. RELAX_CAP picked from the fold sweep (<=~2k stays fold-free; 512 is the sweet spot).
-    const int RELAX_CAP = 256;
-    int   cdim   = std::min(dim, RELAX_CAP);
+    // COARSE relaxation grid (see kRelaxCap). The FRAME (normal/binormal) still runs at full dim.
+    int   cdim   = std::min(dim, kRelaxCap);
     _cdim = cdim;
     size_t nC    = size_t(cdim) * size_t(cdim);
-    float cell   = (dim  > 0) ? (env->_extent_m / float(dim))  : 1.0f;  // full-res cell (frame normals)
-    float cellC  = (cdim > 0) ? (env->_extent_m / float(cdim)) : 1.0f;  // coarse cell (relax density)
-    float aspect = env->_height_scale_m / cellC; // d(h_m)/d(x_m) per unit normalized-height gradient (COARSE)
+    float cell   = (dim  > 0) ? (env->_extent_m / float(dim))  : 1.0f;  // full-res cell
+    float aspect = env->_height_scale_m / cell; // d(h_m)/d(x_m) per unit normalized-height gradient (FULL res)
+    // optimal SOR over-relaxation for the 2D Poisson problem at grid size cdim
+    double omega = 2.0 / (1.0 + std::sin(M_PI / double(cdim)));
     // outputs (RGBA32F) — at full bake dim
     _outUv->_value->_w = dim; _outUv->_value->_h = dim; _outUv->_value->_channels = 4;
     _outUv->_value->_ssbo = fxi->createStorageBuffer(n * 4 * sizeof(float));
     _outBn->_value->_w = dim; _outBn->_value->_h = dim; _outBn->_value->_channels = 4;
     _outBn->_value->_ssbo = fxi->createStorageBuffer(n * 4 * sizeof(float));
-    // scratch — COARSE (density/Poisson/warp run here)
-    _hC   = fxi->createStorageBuffer(nC * sizeof(float));     // downsampled height
-    _rho  = fxi->createStorageBuffer(nC * sizeof(float));     // density, then reused as the Poisson RHS f
-    _psiA = fxi->createStorageBuffer(nC * sizeof(float));
-    _psiB = fxi->createStorageBuffer(nC * sizeof(float));
-    { // seed psi = 0 (Jacobi start). Pre-dispatch (onActivate) so we never map a buffer mid-graph.
-      auto m = fxi->mapStorageBuffer(_psiA, 0, nC * sizeof(float), BufferMapAccess::WRITE_ONLY);
+    // scratch — density at FULL res, box-averaged to the COARSE relax grid (Poisson/warp run coarse)
+    _rhoF = fxi->createStorageBuffer(n * sizeof(float));      // full-res density
+    _rho  = fxi->createStorageBuffer(nC * sizeof(float));     // coarse density, then reused as the RHS f
+    _psi  = fxi->createStorageBuffer(nC * sizeof(float));     // SOR solves IN PLACE (no ping-pong)
+    { // seed psi = 0 (solver start). Pre-dispatch (onActivate) so we never map a buffer mid-graph.
+      auto m = fxi->mapStorageBuffer(_psi, 0, nC * sizeof(float), BufferMapAccess::WRITE_ONLY);
       std::memset(m->_mappedaddr, 0, nC * sizeof(float));
       fxi->unmapStorageBuffer(m.get());
     }
     _uvC  = fxi->createStorageBuffer(nC * 2 * sizeof(float)); // coarse relaxed uv
     _uv   = fxi->createStorageBuffer(n  * 2 * sizeof(float)); // upsampled to full dim (frame reads this)
     _sum  = fxi->createStorageBuffer(sizeof(uint32_t));
-    // shaders — relax passes at CDIM, downsample/upsample bridge dim<->cdim, frame at DIM
-    _csDownsample = fxi->computeShader(fxi->shaderFromShaderText("terrain_relax_down", _downsample_text(dim, cdim)), "cs_downsample");
+    // shaders — density/frame at DIM, boxavg/rhs/SOR/warp at CDIM, upsample bridges cdim->dim
     _csReset   = fxi->computeShader(fxi->shaderFromShaderText("terrain_relax_reset",   _reset_text()), "cs_reset");
-    _csDensity = fxi->computeShader(fxi->shaderFromShaderText("terrain_relax_density", _density_text(cdim, aspect)), "cs_density");
+    _csDensity = fxi->computeShader(fxi->shaderFromShaderText("terrain_relax_density", _density_text(dim, aspect)), "cs_density");
+    _csBoxavg  = fxi->computeShader(fxi->shaderFromShaderText("terrain_relax_boxavg",  _boxavg_text(dim, cdim)), "cs_boxavg");
     _csRhs     = fxi->computeShader(fxi->shaderFromShaderText("terrain_relax_rhs",     _rhs_text(cdim)), "cs_rhs");
-    _csJacobi  = fxi->computeShader(fxi->shaderFromShaderText("terrain_relax_jacobi",  _jacobi_text(cdim)), "cs_jacobi");
+    _csSorR    = fxi->computeShader(fxi->shaderFromShaderText("terrain_relax_sor0",    _sor_text(cdim, 0, omega)), "cs_sor_p0");
+    _csSorB    = fxi->computeShader(fxi->shaderFromShaderText("terrain_relax_sor1",    _sor_text(cdim, 1, omega)), "cs_sor_p1");
     _csWarp    = fxi->computeShader(fxi->shaderFromShaderText("terrain_relax_warp",    _warp_text(cdim, _d->_strength)), "cs_warp");
     _csUpsample= fxi->computeShader(fxi->shaderFromShaderText("terrain_relax_up",      _upsample_text(dim, cdim)), "cs_upsample");
     _csFrame   = fxi->computeShader(fxi->shaderFromShaderText("terrain_relax_frame",   _frame_text(dim, cell, env->_height_scale_m)), "cs_frame");
@@ -391,34 +425,36 @@ struct RelaxUvModuleInst : public TerrainComputeInst {
     OrkAssert(in && in->_ssbo);
     int gD = (env->_w + 7) / 8;       // full bake-dim dispatch
     int gC = (_cdim + 7) / 8;         // coarse relax-grid dispatch
-    // 0) DOWNSAMPLE full-res height -> coarse height (the relax grid)
-    ci->bindStorageBuffer(_csDownsample, 0, in->_ssbo);
-    ci->bindStorageBuffer(_csDownsample, 1, _hC);
-    ci->dispatchCompute(_csDownsample, gC, gC, 1); ci->storageBarrier();
-    // 1) clear sum, density (+ atomic mean accumulate) — on the COARSE height
+    // 0) clear the mean accumulator
     ci->bindStorageBuffer(_csReset, 0, _sum);
     ci->dispatchCompute(_csReset, 1, 1, 1); ci->storageBarrier();
-    ci->bindStorageBuffer(_csDensity, 0, _hC);
-    ci->bindStorageBuffer(_csDensity, 1, _rho);
-    ci->bindStorageBuffer(_csDensity, 2, _sum);
-    ci->dispatchCompute(_csDensity, gC, gC, 1); ci->storageBarrier();
+    // 1) density at FULL res (honest cliff demand), then box-average -> coarse (+ mean accumulate)
+    ci->bindStorageBuffer(_csDensity, 0, in->_ssbo);
+    ci->bindStorageBuffer(_csDensity, 1, _rhoF);
+    ci->dispatchCompute(_csDensity, gD, gD, 1); ci->storageBarrier();
+    ci->bindStorageBuffer(_csBoxavg, 0, _rhoF);
+    ci->bindStorageBuffer(_csBoxavg, 1, _rho);
+    ci->bindStorageBuffer(_csBoxavg, 2, _sum);
+    ci->dispatchCompute(_csBoxavg, gC, gC, 1); ci->storageBarrier();
     // 2) RHS f = rho/mean - 1  (in place in _rho)
     ci->bindStorageBuffer(_csRhs, 0, _rho);
     ci->bindStorageBuffer(_csRhs, 1, _sum);
     ci->dispatchCompute(_csRhs, gC, gC, 1); ci->storageBarrier();
-    // 3) Jacobi: solve laplacian(psi)=f at COARSE res. psi seeded to 0 in onActivate (clean Neumann start).
-    FxShaderStorageBuffer* cur = _psiA; FxShaderStorageBuffer* nxt = _psiB;
+    // 3) red-black SOR: solve laplacian(psi)=f at COARSE res, IN PLACE. psi seeded 0 in onActivate.
+    //    One sweep = red half-dispatch + black half-dispatch (barrier between: black reads red's writes).
     for (int it = 0; it < _iters; it++) {
-      ci->bindStorageBuffer(_csJacobi, 0, nxt);
-      ci->bindStorageBuffer(_csJacobi, 1, cur);
-      ci->bindStorageBuffer(_csJacobi, 2, _rho);
-      ci->dispatchCompute(_csJacobi, gC, gC, 1); std::swap(cur, nxt);
+      ci->bindStorageBuffer(_csSorR, 0, _psi);
+      ci->bindStorageBuffer(_csSorR, 1, _rho);
+      ci->dispatchCompute(_csSorR, gC, gC, 1); ci->storageBarrier();
+      ci->bindStorageBuffer(_csSorB, 0, _psi);
+      ci->bindStorageBuffer(_csSorB, 1, _rho);
+      ci->dispatchCompute(_csSorB, gC, gC, 1);
       if (((it + 1) % 64) == 0) { ci->endDispatchPhase(); ci->beginDispatchPhase(); }
       else ci->storageBarrier();
     }
-    // 4) warp -> coarse relaxed uv  (cur holds the converged psi)
+    // 4) warp -> coarse relaxed uv  (psi holds the converged solution)
     ci->bindStorageBuffer(_csWarp, 0, _uvC);
-    ci->bindStorageBuffer(_csWarp, 1, cur);
+    ci->bindStorageBuffer(_csWarp, 1, _psi);
     ci->dispatchCompute(_csWarp, gC, gC, 1); ci->storageBarrier();
     // 5) UPSAMPLE coarse uv -> full-dim uv
     ci->bindStorageBuffer(_csUpsample, 0, _uvC);
@@ -433,7 +469,11 @@ struct RelaxUvModuleInst : public TerrainComputeInst {
   }
   uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
     auto h = DataBlock::createHasher();
-    h->accumulateString("terrain.relaxuv.v4"); // v4: COARSE-grid relax (fold-free low-freq) + upsample; fold-safe warp
+    // v5: red-black SOR (Jacobi never converged -> zero equal-area), full-res rho box-averaged
+    // (was gradients of a smoothed height), border-extrapolating upsample (was det=0 rim), and the
+    // amplitude contract (normalized input via base.py). MIRROR any bump in _terrain.py _relax_tok.
+    h->accumulateString("terrain.relaxuv.v5");
+    h->accumulateItem<int>(kRelaxCap);  // the cap changes the output — cache must be sensitive to it
     h->accumulateItem<float>(_d->_strength);
     h->accumulateItem<int>(_d->_iterations);
     _mixTail(h, ctx, ih);
@@ -446,18 +486,18 @@ struct RelaxUvModuleInst : public TerrainComputeInst {
   hfimg_outpluginst_ptr_t _outBn;
   hfimg_inpluginst_ptr_t _input;
   int _cdim = 0;                              // coarse relax grid dim (<= bake dim)
-  FxShaderStorageBuffer* _hC   = nullptr;     // downsampled (coarse) height
-  FxShaderStorageBuffer* _rho  = nullptr;     // coarse density / Poisson RHS
-  FxShaderStorageBuffer* _psiA = nullptr;     // coarse psi (ping)
-  FxShaderStorageBuffer* _psiB = nullptr;     // coarse psi (pong)
+  FxShaderStorageBuffer* _rhoF = nullptr;     // FULL-res density
+  FxShaderStorageBuffer* _rho  = nullptr;     // coarse (box-averaged) density / Poisson RHS
+  FxShaderStorageBuffer* _psi  = nullptr;     // coarse psi (SOR solves in place)
   FxShaderStorageBuffer* _uvC  = nullptr;     // coarse relaxed uv
   FxShaderStorageBuffer* _uv   = nullptr;     // full-dim upsampled uv (frame reads this)
   FxShaderStorageBuffer* _sum  = nullptr;
-  const FxComputeShader* _csDownsample = nullptr;
   const FxComputeShader* _csReset   = nullptr;
   const FxComputeShader* _csDensity = nullptr;
+  const FxComputeShader* _csBoxavg  = nullptr;
   const FxComputeShader* _csRhs     = nullptr;
-  const FxComputeShader* _csJacobi  = nullptr;
+  const FxComputeShader* _csSorR    = nullptr; // red half-sweep (parity 0)
+  const FxComputeShader* _csSorB    = nullptr; // black half-sweep (parity 1)
   const FxComputeShader* _csWarp    = nullptr;
   const FxComputeShader* _csUpsample= nullptr;
   const FxComputeShader* _csFrame   = nullptr;

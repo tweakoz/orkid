@@ -167,7 +167,14 @@ class TerrainChunkVertexSource:
       # + the stored forward frg_uv0 to it). Carrying both lets the material pick per-technique (no overload).
       tail = (
         "vec3 P = terr_pos(tx, tz);\n"
-        "uint vbase = (tz * u_dim + tx) * 8u;\n"
+        # CLAMP the frame reads: tx/tz legitimately reach u_dim at the far row/col (the mesh
+        # extends half a texel past the last texel center), and unlike terr_pos (which clamps
+        # internally) a raw (tz*u_dim+tx) would read the NEXT ROW's texel 0 on the right edge
+        # and PAST THE BUFFER on the far row (robustness zeros -> normalize(0) -> NaN TBN).
+        # uv0/P/Prelax stay on the unclamped indices (planar uv must reach 1.0 at the edge).
+        "uint vx = min(tx, u_dim - 1u);\n"
+        "uint vz = min(tz, u_dim - 1u);\n"
+        "uint vbase = (vz * u_dim + vx) * 8u;\n"
         "vec2 ruv = vec2(heights[vbase + 1u], heights[vbase + 2u]);   // RELAXED uv (atlas param)\n"
         "vec2 uv0 = vec2((float(tx) + 0.5) / float(%s), (float(tz) + 0.5) / float(%s));   // PLANAR grid uv\n"
         "float _nx = heights[vbase + 3u]; float _nz = heights[vbase + 4u];\n"

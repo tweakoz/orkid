@@ -249,5 +249,5 @@ class XXX3(HeightField):
         self.capture(flow.dir,"flow_dir",cache=True)
         self.capture(flow.discharge,"flow_discharge",cache=True)
         self.capture(flow.metrics,"flow_metrics",cache=True)
-        #self.relax_uv(self._height)
+        self.relax_uv(self._height)
        

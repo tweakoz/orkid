@@ -165,8 +165,14 @@ class HeightField:
             self.capture(h, "height")
             self.relax_uv(h)
         """
-        from .ops import relax_uv as _relax_op
-        r = _relax_op(node, strength=strength, iterations=iterations)
+        from .ops import relax_uv as _relax_op, normalize as _normalize_op
+        # AMPLITUDE CONTRACT: the capture writer stretches scalar channels to [0,1] on write
+        # ((src-min)/range), and the renderer/collider/atlas all consume that STRETCHED height
+        # x HEIGHT_M. The relax module's physical-slope quantities (rho density, frame normal,
+        # binormal) must be computed at the SAME amplitude, or they come out flat by exactly
+        # (max-min) of the height (measured 3.03x on erodeflow). normalize() applies the
+        # identical clamp((x-min)/range) rescale on GPU, so the module sees the stored height.
+        r = _relax_op(_normalize_op(node), strength=strength, iterations=iterations)
         # cache=True: the relax is a pure function of the height -> cook-cacheable. capture() defaults to
         # cache=False which disables the disk cook cache for the WHOLE bake (any one cache=False turns it
         # off) — so without this the entire erosion graph recomputes every run (the slow non-cached startup).
