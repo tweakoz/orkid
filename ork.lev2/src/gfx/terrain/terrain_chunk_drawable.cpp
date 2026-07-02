@@ -73,7 +73,7 @@ struct TcBootstrap {
   int   _dim = 0, _chunk = 0, _nchunk = 0, _vpc = 0;
   float _extent_m = 0.0f, _height_m = 0.0f;
   std::vector<float> _heights;        // the bake's DENSE height array (BAKE-res, stride 1 — both modes)
-  std::vector<float> _frame;          // relax: the bake's stride-8 frame array [h,uv.xy,nrm.xz,bn.xyz] (BAKE-res); empty = mono
+  std::vector<uint32_t> _frame;       // relax: the bake's stride-5 PACKED frame [uv.x/y fp32-bits, half2(nrm.xz), half2(bn.xy), half2(bn.z,0)] (BAKE-res); empty = mono
   std::shared_ptr<RtGroup> _bake_rtg; // stored mode: the baked atlas, bound onto the material (kept alive)
 };
 
@@ -189,7 +189,7 @@ static bool terrainTexBake(Context* ctx, const TerrainChunkDrawableData* self, T
   // from it so the atlas rasterizes in full-res relaxed space. Mono: empty, no buffer, no bind.
   FxShaderStorageBuffer* bakeFrame = nullptr;
   if (not st->_frame.empty()) {
-    OrkAssert(st->_frame.size() == size_t(dim) * size_t(dim) * 8);
+    OrkAssert(st->_frame.size() == size_t(dim) * size_t(dim) * 5); // stride-5 packed (WS4 fp16)
     bakeFrame = fxi->createStorageBuffer(st->_frame.size() * 4);
     auto m = fxi->mapStorageBuffer(bakeFrame, 0, st->_frame.size() * 4, BufferMapAccess::WRITE_ONLY);
     std::memcpy(m->_mappedaddr, st->_frame.data(), st->_frame.size() * 4);
@@ -423,7 +423,7 @@ drawable_ptr_t TerrainChunkDrawableData::createDrawable() const {
       heights_hi[i] = px[i * spec.nchannels];
     //////////////////////////////////////////////////////////////////
     // 2b. RELAX channels (opt-in via the DSL self.relax_uv(h)): when the manifest carries a relaxed_uv
-    //     channel, a SEPARATE stride-8 frame SSBO [h, uv.x, uv.y, nrm.x, nrm.z, bn.x, bn.y, bn.z] is
+    //     channel, a SEPARATE stride-5 PACKED frame SSBO [uv fp32-bits ×2, half2(nrm.xz), half2(bn.xy), half2(bn.z,0)] is
     //     built and bound to sif_terra_frame (mirrors gpu_chunk.py relax=True; heights[] stays dense).
     //     relaxed_uv.exr = RGBA(uv.x,uv.y,nrm.x,nrm.z); binormal.exr = RGBA(bn.x,bn.y,bn.z,1).
     //     Both baked at bake_dim; loaded as 4-channel RGBA.
@@ -491,35 +491,47 @@ drawable_ptr_t TerrainChunkDrawableData::createDrawable() const {
     };
     std::vector<float> heights = resampleF(heights_hi, 1);
     //////////////////////////////////////////////////////////////////
-    // 3c. RELAX interleave — when relaxed, the per-vertex SSBO array is stride-8 [h, uv.xy, nrm.xz, bn.xyz].
+    // 3c. RELAX pack — when relaxed, the per-vertex SSBO array is stride-5 uints (WS4 fp16 packing).
     //     The RENDER array uses the DOWNSAMPLED channels (matching the downsampled heights); the BAKE array
     //     (stashed below) uses FULL-res channels so the atlas rasterizes in full-res relaxed space. Mono =>
     //     the array is just the flat heights (stride 1). Mirrors gpu_chunk.py TerrainChunkVertexSource(relax).
     //////////////////////////////////////////////////////////////////
-    // interleave height + relaxed_uv(RGBA=uv.xy,nrm.xz) + binormal(RGBA=bn.xyz,1) -> stride-8 at grid gdim.
-    auto interleave8 = [](const std::vector<float>& h, const std::vector<float>& ruv,
-                          const std::vector<float>& bnm, int gdim) -> std::vector<float> {
-      std::vector<float> out(size_t(gdim) * gdim * 8);
+    // pack relaxed_uv(RGBA=uv.xy,nrm.xz) + binormal(RGBA=bn.xyz,1) -> stride-5 UINT at grid gdim.
+    // WS4 fp16: uv stays fp32 (bitcast — atlas param; fp16 would quantize ~2 atlas texels near
+    // 1.0), normal/binormal pack as fp16 pairs (~1e-4 component error, fine for lighting/TBN).
+    // The old slot-0 height is DROPPED (no shader reads it — terr_pos uses the dense heights[]).
+    // 32B -> 20B per texel. MUST mirror gpu_chunk.py frame_block/vs_body (stride 5u decode).
+    auto pack_frame5 = [](const std::vector<float>& ruv,
+                          const std::vector<float>& bnm, int gdim) -> std::vector<uint32_t> {
+      auto f2h = [](float f) -> uint32_t { // same semantics as image_fmt_convert float_to_half
+        uint32_t bits;
+        std::memcpy(&bits, &f, 4);
+        uint32_t sign = (bits >> 16) & 0x8000;
+        int32_t exp32 = int32_t((bits >> 23) & 0xFF) - 127 + 15;
+        uint32_t mant = (bits & 0x007FFFFF);
+        if (exp32 <= 0) return sign;            // underflow to zero
+        if (exp32 >= 31) return sign | 0x7C00;  // overflow to inf
+        return sign | (uint32_t(exp32) << 10) | (mant >> 13);
+      };
+      auto h2 = [&](float a, float b) -> uint32_t { return f2h(a) | (f2h(b) << 16); };
+      std::vector<uint32_t> out(size_t(gdim) * gdim * 5);
       for (size_t i = 0; i < size_t(gdim) * gdim; i++) {
-        out[i * 8 + 0] = h[i];            // height
-        out[i * 8 + 1] = ruv[i * 4 + 0];  // uv.x
-        out[i * 8 + 2] = ruv[i * 4 + 1];  // uv.y
-        out[i * 8 + 3] = ruv[i * 4 + 2];  // normal.x
-        out[i * 8 + 4] = ruv[i * 4 + 3];  // normal.z
-        out[i * 8 + 5] = bnm[i * 4 + 0];  // binormal.x
-        out[i * 8 + 6] = bnm[i * 4 + 1];  // binormal.y
-        out[i * 8 + 7] = bnm[i * 4 + 2];  // binormal.z
+        std::memcpy(&out[i * 5 + 0], &ruv[i * 4 + 0], 4);      // uv.x (fp32 bits)
+        std::memcpy(&out[i * 5 + 1], &ruv[i * 4 + 1], 4);      // uv.y (fp32 bits)
+        out[i * 5 + 2] = h2(ruv[i * 4 + 2], ruv[i * 4 + 3]);   // normal.x | normal.z
+        out[i * 5 + 3] = h2(bnm[i * 4 + 0], bnm[i * 4 + 1]);   // binormal.x | binormal.y
+        out[i * 5 + 4] = h2(bnm[i * 4 + 2], 0.0f);             // binormal.z | pad
       }
       return out;
     };
     // relax: the RENDER-res frame array (its own SSBO, bound to sif_terra_frame) — the DOWNSAMPLED
     // channels, matching the downsampled heights. heights[] itself stays DENSE stride-1 in BOTH modes
     // (terr_pos + the depth-prepass keep mono's cache density; the frame is read only by the color VS).
-    std::vector<float> framerender;
+    std::vector<uint32_t> framerender;
     if (relax) {
       auto ruv_r  = resampleF(ruv_hi, 4);
       auto bnm_r  = resampleF(bnm_hi, 4);
-      framerender = interleave8(heights, ruv_r, bnm_r, render_dim);
+      framerender = pack_frame5(ruv_r, bnm_r, render_dim);
     }
     size_t CAM_OFF     = 0;
     size_t ARGS_OFF    = 160; // after CamBlk (64+64+16+16)
@@ -550,7 +562,7 @@ drawable_ptr_t TerrainChunkDrawableData::createDrawable() const {
       fxi->unmapStorageBuffer(m.get());
     }
     FxShaderStorageBuffer* frameSSBO = nullptr;
-    if (relax) { // stride-8 [h, uv.xy, nrm.xz, bn.xyz] @render_dim — bound to sif_terra_frame below
+    if (relax) { // stride-5 packed frame @render_dim — bound to sif_terra_frame below
       frameSSBO = fxi->createStorageBuffer(framerender.size() * 4);
       auto m = fxi->mapStorageBuffer(frameSSBO, 0, framerender.size() * 4, BufferMapAccess::WRITE_ONLY);
       std::memcpy(m->_mappedaddr, framerender.data(), framerender.size() * 4);
@@ -661,11 +673,11 @@ drawable_ptr_t TerrainChunkDrawableData::createDrawable() const {
     state->_extent_m = extent_m;
     state->_height_m = height_m;
     if (self->_capture_mode == "stored" or getenv("ORKID_TERRAIN_TEXBAKE_DUMP")) {
-      // HI-RES (bake_dim^2): dense heights (both modes) + the stride-8 frame (relax) — the bake
-      // rasterizes the surface into the atlas at the FULL-res relaxed uv from the frame SSBO.
+      // HI-RES (bake_dim^2): dense heights (both modes) + the stride-5 packed frame (relax) — the
+      // bake rasterizes the surface into the atlas at the FULL-res relaxed uv from the frame SSBO.
       state->_heights = heights_hi;
       if (relax)
-        state->_frame = interleave8(heights_hi, ruv_hi, bnm_hi, bake_dim);
+        state->_frame = pack_frame5(ruv_hi, bnm_hi, bake_dim);
     }
     state->_cdd   = cdd;
     state->_built = true;

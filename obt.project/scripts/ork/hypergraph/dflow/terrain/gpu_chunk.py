@@ -41,8 +41,9 @@ class TerrainChunkVertexSource:
     self.hscale = float(height_m)
     self.chunk  = int(chunk)
     # RELAXED-UV mode (the slope-stretch fix). When on, the per-vertex relaxed uv + tangent frame
-    # live in a SEPARATE stride-8 runtime SSBO (sif_terra_frame: [h, uv.xy, nrm.xz, bn.xyz]; slot 0
-    # mirrors the bake interleave but the VS never reads it) consumed ONLY by the color/cap VS.
+    # live in a SEPARATE stride-5 UINT runtime SSBO (sif_terra_frame — WS4 fp16 packing:
+    # [0,1]=uv fp32-bitcast, [2]=half2(nrm.xz), [3]=half2(bn.xy), [4]=half2(bn.z,0);
+    # the old slot-0 height was never read and is dropped) consumed ONLY by the color/cap VS.
     # heights[] stays DENSE stride-1 so terr_pos and the DEPTH-PREPASS keep mono's bandwidth
     # (8 verts per 32B cache line — an interleaved heights[] made the dpp touch one line PER vertex,
     # a regression that grew with render_dimension^2). The dflow RelaxUvModule bakes the frame;
@@ -77,8 +78,9 @@ class TerrainChunkVertexSource:
     self.VLIST_OFF   = self.CHUNKY_OFF + self.maxnc * 8         # uint v_list[MAXNC]
     self.HEIGHTS_OFF = self.VLIST_OFF + self.maxnc * 4          # float heights[] (runtime, last; DENSE stride 1)
     self.TOTAL       = self.HEIGHTS_OFF + self.dimsq * 4        # render buffer (heights always dense)
-    # relax: the frame SSBO (separate buffer bound to sif_terra_frame) — stride 8 floats/vertex
-    self.FRAME_TOTAL = (self.dimsq * 8 * 4) if self.relax else 0
+    # relax: the frame SSBO (separate buffer bound to sif_terra_frame) — stride 5 uints/vertex
+    # (WS4 fp16 packing; was 8 floats = 32B, now 20B)
+    self.FRAME_TOTAL = (self.dimsq * 5 * 4) if self.relax else 0
 
   # ---- GLSL tokens -----------------------------------------------------------
   # DIM-derived quantities are RUNTIME (read u_dim, the CPU-uploaded grid dim) so the shader is
@@ -120,11 +122,16 @@ class TerrainChunkVertexSource:
 
   @property
   def frame_block(self):
-    """The relax frame storage block (SEPARATE buffer; runtime-sized stride-8 float array).
-    Declared as an extra vertex storage block so EVERY VS variant (forward/cap/dpp/instanced)
-    inherits it uniformly; only the color/cap tail actually reads it (dpp's dead reads DCE)."""
+    """The relax frame storage block (SEPARATE buffer; runtime-sized stride-5 UINT array —
+    WS4 fp16 packing: [0,1]=RELAXED uv as fp32 bitcasts (atlas-param precision: fp16 would
+    quantize ~2 atlas texels near 1.0), [2]=packHalf2x16(nrm.x, nrm.z),
+    [3]=packHalf2x16(bn.x, bn.y), [4]=packHalf2x16(bn.z, 0). The old slot-0 height was never
+    read (terr_pos reads the dense heights[]) and is dropped: 32B -> 20B per texel. MUST
+    mirror the C++ packer (terrain_chunk_drawable.cpp pack_frame5). Declared as an extra
+    vertex storage block so EVERY VS variant (forward/cap/dpp/instanced) inherits it
+    uniformly; only the color/cap tail actually reads it (dpp's dead reads DCE)."""
     return ("storage_interface sif_terra_frame (descriptor_set 0) {\n"
-            "  buffer layout(std430) terra_frame_blk { float tframe[]; };\n"
+            "  buffer layout(std430) terra_frame_blk { uint tframe[]; };\n"
             "}")
 
   @property
@@ -179,8 +186,9 @@ class TerrainChunkVertexSource:
       % (self._VP, self._CP, self._CP, self._VP, self._C, self._C, self._C, self._C))
     if self.relax:
       # RELAX: precomputed tangent frame + BOTH uv parameterizations. The frame comes from the
-      # SEPARATE sif_terra_frame SSBO (stride 8: [0]=height(unused) [1,2]=RELAXED uv [3,4]=normal.x,z
-      # [5,6,7]=binormal) — heights[] stays dense for terr_pos/dpp. normal.y reconstructed +sqrt.
+      # SEPARATE sif_terra_frame SSBO (stride-5 uints — WS4 fp16: [0,1]=uv fp32-bitcast,
+      # [2]=half2(normal.x,z), [3]=half2(binormal.xy), [4]=half2(binormal.z, 0)) — heights[]
+      # stays dense for terr_pos/dpp. normal.y reconstructed +sqrt.
       # uv0 = PLANAR grid uv (the default ctx.uv; channel taps + existing materials, UNCHANGED
       # meaning); ruv = RELAXED uv (the atlas parameterization — the material routes the cap-VS
       # gl_Position + the stored forward frg_uv0 to it). Both carried: material picks per-technique.
@@ -193,12 +201,13 @@ class TerrainChunkVertexSource:
         # uv0/P/Prelax stay on the unclamped indices (planar uv must reach 1.0 at the edge).
         "uint vx = min(tx, u_dim - 1u);\n"
         "uint vz = min(tz, u_dim - 1u);\n"
-        "uint vbase = (vz * u_dim + vx) * 8u;\n"
-        "vec2 ruv = vec2(tframe[vbase + 1u], tframe[vbase + 2u]);   // RELAXED uv (atlas param)\n"
+        "uint vbase = (vz * u_dim + vx) * 5u;\n"
+        "vec2 ruv = vec2(uintBitsToFloat(tframe[vbase + 0u]), uintBitsToFloat(tframe[vbase + 1u]));   // RELAXED uv (atlas param, fp32)\n"
         "vec2 uv0 = vec2((float(tx) + 0.5) / float(%s), (float(tz) + 0.5) / float(%s));   // PLANAR grid uv\n"
-        "float _nx = tframe[vbase + 3u]; float _nz = tframe[vbase + 4u];\n"
+        "vec2 _nxz = unpackHalf2x16(tframe[vbase + 2u]);\n"
+        "float _nx = _nxz.x; float _nz = _nxz.y;\n"
         "vec3 normal = vec3(_nx, sqrt(max(0.0, 1.0 - _nx*_nx - _nz*_nz)), _nz);\n"
-        "vec3 binormal = vec3(tframe[vbase + 5u], tframe[vbase + 6u], tframe[vbase + 7u]);\n"
+        "vec3 binormal = vec3(unpackHalf2x16(tframe[vbase + 3u]), unpackHalf2x16(tframe[vbase + 4u]).x);\n"
         "vec4 position = vec4(P, 1.0);\n"
         # RELAXED world position: worldXZ at the RELAXED uv ((ruv-0.5)*extent), planar height for depth.
         # The cap-VS atlas bake rasterizes this via the ortho mvp (gl_Position = mvp*Prelax) — the SAME
