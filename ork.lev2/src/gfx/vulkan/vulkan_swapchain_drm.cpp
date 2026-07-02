@@ -656,11 +656,26 @@ void VkSwapChainDRM::_waitPresentFrame(vkcontext_rawptr_t ctxVK) {
         _drmContext->displayingImage = _sub_index;
         logchan_vkdrm->log("Initial mode set complete, display active");
     } else {
+        // ORKID_DRM_NOVSYNC=1: async (tearing) flips — don't wait for vblank.
+        // Falls back to vsynced flips if the driver rejects ASYNC for this plane.
+        static int s_novsync = (getenv("ORKID_DRM_NOVSYNC") != nullptr) ? 1 : 0;
+        uint32_t flip_flags = DRM_MODE_PAGE_FLIP_EVENT;
+        if (s_novsync == 1)
+            flip_flags |= DRM_MODE_PAGE_FLIP_ASYNC;
         int ret = drmModePageFlip(_drmContext->drm_fd,
+                                  _drmContext->crtc_id,
+                                  _drmContext->fb_ids[_sub_index],
+                                  flip_flags,
+                                  _drmContext);
+        if (ret < 0 && s_novsync == 1) {
+            logchan_vkdrm->log("async page flip rejected (ret=%d) — falling back to vsync flips", ret);
+            s_novsync = -1; // don't retry async
+            ret = drmModePageFlip(_drmContext->drm_fd,
                                   _drmContext->crtc_id,
                                   _drmContext->fb_ids[_sub_index],
                                   DRM_MODE_PAGE_FLIP_EVENT,
                                   _drmContext);
+        }
         if (ret < 0) {
             logchan_vkdrm->log("ERROR: drmModePageFlip failed (ret=%d)", ret);
             throw std::runtime_error("Page flip failed");
