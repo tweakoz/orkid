@@ -15,7 +15,8 @@ class TerrainMixin:
 
   def terrain(self, name, *, render_dimension=512, bake_dimension=None, chunk=128, dsl_file=None,
               dsl_class=None, dsl_kwargs=None, walkable=False, visible_y_bias=0.0,
-              capture=False, mode="proc", bake_res=2048):
+              capture=False, mode="proc", bake_res=2048,
+              spawn=None):
     """Self-describing chunked-terrain entity. Loads the terrain DSL class and reads its
     OWN physical scale + look — EXTENT_M / HEIGHT_M / MATERIAL_CLASS / MATERIAL_PARAMS, and
     the material's SAMPLER_CHANNELS — exactly the attrs ork.terrain.viewer2.py reads. Wires
@@ -182,8 +183,12 @@ class TerrainMixin:
       # MOUNTAIN-CLIMBING defaults: move_force 8000 N over an 80 kg body at g=19.8 climbs
       # slopes up to atan(8000/(80*19.8)) ≈ 78°. rest_friction holds you still on the slope
       # at rest; the static collider carries friction 1.0 so the character's own values read.
+      # spawn: callers SHOULD pass one measured against their baked terrain (the
+      # noise basis owns the relief — after the 2026-07 ihash basis change the old
+      # height_m*0.5 default put scn_forest ~500m underground). Default stays the
+      # legacy half-height for scenes that still fit it.
       walker_kw = dict(
-          spawn        = vec3(0.0, height_m*0.5, 0.0),
+          spawn        = spawn if spawn is not None else vec3(0.0, height_m*0.5, 0.0),
           cam_near     = 2.0,        # NOT 0.1 — far depth precision is dominated by near; 0.1 on a big
                                      # cam_far Z-fights the distant terrain into oblivion (see VrNear=1.0)
           cam_far      = 100000.0,   # generous flat far (clears any terrain) — sizing it to extent_m was

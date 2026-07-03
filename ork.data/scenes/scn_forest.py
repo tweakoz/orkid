@@ -98,6 +98,10 @@ class ForestScene(Scene):
     # TERRAIN FIRST — bakes the relief AND the "trees" scatter the variants read.
     self.terrain(TERRAIN, 
                  dsl_file         = "xxx3_trees", 
+                 # ground at origin ≈ 2510m under the ihash noise basis (stored h 0.627
+                 # x height_m 4000, sampled from the baked height.exr center texel) —
+                 # spawn a short drop above it, NOT height_m*0.5 (=2000m: underground).
+                 spawn            = vec3(0.0, 2545.0, 0.0),
                  chunk            = 128,
                  bake_dimension   = 4096,                
                  render_dimension = 1024,
