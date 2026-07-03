@@ -1228,6 +1228,16 @@ void VkContext::ensureSyncStagingSize(size_t needed) {
   }
 }
 
+size_t VkContext::deviceLocalHeapBytes() const {
+  VkPhysicalDeviceMemoryProperties props;
+  vkGetPhysicalDeviceMemoryProperties(_vkphysicaldevice, &props);
+  size_t best = 0;
+  for (uint32_t h = 0; h < props.memoryHeapCount; h++)
+    if (props.memoryHeaps[h].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
+      best = std::max(best, size_t(props.memoryHeaps[h].size));
+  return best;
+}
+
 void VkContext::ensureSyncReadbackStagingSize(size_t needed) {
   if (needed > _syncTransfer.readback_size) {
     logchan_vkctx->log("Growing sync READBACK staging buffer: %zu -> %zu bytes",

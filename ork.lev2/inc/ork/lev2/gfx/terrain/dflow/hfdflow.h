@@ -67,6 +67,12 @@ struct CaptureRequest {
   uint64_t _cookkey = 0;             // capture-currency key (producer cook-hash mix) — the flush
                                      // writes it to a "<file>.cookhash" sidecar so an unchanged
                                      // bake can skip the capture entirely next run. 0 = no sidecar.
+  // INCREMENTAL FLUSH (default): the raw field (w*h*channels floats), read back the
+  // moment the sink ran, so the source plane releases to the pool immediately instead
+  // of staying VRAM-pinned until the post-loop flush (the accumulated pinned sources
+  // are what spilled eflow's frontier past the DEVICE budget). Null under
+  // ORKID_BAKE_DEFERRED_FLUSH=1 (the flush maps the live SSBO as before).
+  std::shared_ptr<std::vector<float>> _hostcopy;
 };
 
 // min/max/mean of a captured field — returned by the driver so callers (the

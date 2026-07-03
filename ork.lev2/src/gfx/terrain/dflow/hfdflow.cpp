@@ -201,14 +201,21 @@ void CaptureModuleData::describeX(class_t* clazz) {
 // submit+WAIT bake driver makes safe. On UMA (apple) the budget is 0 = pure-HOST as
 // before: a DL-only request there would force the staged map path for zero benefit.
 // ORKID_BAKE_DEVICE_MB overrides the budget (0 disables the policy entirely).
-static size_t _bakeDeviceBudgetBytes() {
-  static size_t s_budget = []() -> size_t {
+static size_t _bakeDeviceBudgetBytes(Context* ctx) {
+  static size_t s_budget = [ctx]() -> size_t {
     if (const char* e = getenv("ORKID_BAKE_DEVICE_MB"))
       return size_t(atoll(e)) << 20;
 #if defined(__APPLE__)
     return 0; // UMA: HOST already is device-local
 #else
-    return size_t(8192) << 20; // 8GB default — leaves the render path plenty of VRAM headroom
+    // VRAM-SCALED default: the fixed 8GB spilled eflow's ~22GB cold frontier to HOST
+    // (per-op profile 2026-07-03: 708s of bus-bound GPU stall at rx ~10GB/s). Leave a
+    // fixed render-path headroom instead — bakes run at load time when render demand
+    // is small, and the arena frees entirely at bake end.
+    size_t heap = ctx ? ctx->deviceLocalHeapBytes() : 0;
+    if (heap > (size_t(10) << 30))
+      return heap - (size_t(6) << 30); // 3090: 24GB -> 18GB budget
+    return size_t(8192) << 20; // small/unknown cards keep the conservative 8GB
 #endif
   }();
   return s_budget;
@@ -220,7 +227,7 @@ FxShaderStorageBuffer* BakeEnv::createStorageBuffer(size_t length) {
   // (comment above) picks DEVICE for big planes while the live-bytes budget holds; the
   // (size, class) pool key guarantees reuse never crosses residency classes.
   bool want_device = (length >= kBakeDeviceMinBytes)                     //
-                 and ((_device_bytes + length) <= _bakeDeviceBudgetBytes());
+                 and ((_device_bytes + length) <= _bakeDeviceBudgetBytes(_ctx));
   const int res_class = want_device ? 1 : 0;
   const poolkey_t key{length, res_class};
   if (_lazy_acquire) {
@@ -509,9 +516,15 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
     }
 
     // --- release schedule: for each producer OUTPUT PLUG, the last dispatching
-    // reader's index. Sink-read plugs are pinned (flush reads them post-loop).
+    // reader's index. INCREMENTAL FLUSH (default): a sink counts as a normal last
+    // reader — its field is read back to host the moment it runs (below), so the
+    // plane needs no post-loop pinning. ORKID_BAKE_DEFERRED_FLUSH=1 restores the
+    // old behavior (pin sink-read plugs; the post-loop flush maps the live SSBOs) —
+    // costs O(#sinks) planes of VRAM for the whole bake, which is what spilled
+    // eflow's frontier past the DEVICE budget (2026-07-03 profile).
     // Buffers resolve from the plug AT RELEASE TIME (erox aliases its output to a
     // ping-pong buffer during compute, so the pointer is only final after it runs).
+    static const bool s_deferred_flush = (getenv("ORKID_BAKE_DEFERRED_FLUSH") != nullptr);
     std::unordered_map<const void*, size_t> last_reader; // outpluginst -> index
     std::unordered_set<const void*> pinned;
     for (size_t j = 0; j < N; j++) {
@@ -519,7 +532,7 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
         if (not inp->_connectedOutput)
           continue;
         auto key = (const void*)inp->_connectedOutput.get();
-        if (sink[j])
+        if (sink[j] and s_deferred_flush)
           pinned.insert(key);
         else if (needed[j] and not hit[j])
           last_reader[key] = j; // ascending j -> ends at the LAST reader
@@ -549,6 +562,7 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
     double bp_acq = 0, bp_par = 0, bp_dsp = 0, bp_sto = 0, bp_dsk = 0;
     double bp_wait = 0; // pure vkWaitForFences inside dispatch ~= real GPU execution
     double bp_max_dsp = 0, bp_max_sto = 0;
+    size_t ncap_readback = 0; // incremental flush: captures already read back to host
     size_t bp_bytes = 0;
     std::string bp_max_dsp_n, bp_max_sto_n;
     const double bp_loop0 = bp_now();
@@ -604,6 +618,24 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
                  inst->_abstract_module_data->_name.c_str(), size_t(inst->_cookHash),
                  missreason[i] ? missreason[i] : "?");
         cook_computes++;
+      }
+      // INCREMENTAL FLUSH readback: this sink's request was just recorded and per-op
+      // sync makes the source field valid — copy it to host NOW so the source plane
+      // releases below (release_at) instead of pinning until the post-loop flush.
+      // Encode/stats/sidecars still happen in the flush, from the host copy.
+      if (sink[i] and not s_deferred_flush) {
+        auto fxi_rb = ctx->FXI();
+        for (size_t ri = ncap_readback; ri < env->_captures.size(); ri++) {
+          auto& req = env->_captures[ri];
+          auto img  = req._img;
+          if (not(img and img->_ssbo))
+            continue;
+          int rch    = (img->_channels < 1) ? 1 : img->_channels;
+          size_t cnt = size_t(img->_w) * size_t(img->_h) * size_t(rch);
+          req._hostcopy = std::make_shared<std::vector<float>>(cnt);
+          fxi_rb->readStorageBuffer(img->_ssbo, 0, cnt * sizeof(float), req._hostcopy->data());
+        }
+        ncap_readback = env->_captures.size();
       }
       // scratch back to the pool — everything this node acquired EXCEPT what its
       // output plugs publish (read NOW, post-compute: erox finalized its alias).
@@ -711,13 +743,21 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
     // (no [min,max] normalize, no synthesized normal). EXR only (float); PNG would quantize.
     if (img->_channels >= 2) {
       int nch = img->_channels;
-      auto mcmap = fxi->mapStorageBuffer(img->_ssbo, 0, n * size_t(nch) * sizeof(float), BufferMapAccess::READ_ONLY);
-      const float* mc = (const float*)mcmap->_mappedaddr;
       auto rgba = std::make_shared<std::vector<float>>(n * 4, 0.0f);
-      for (size_t i = 0; i < n; i++)
-        for (int c = 0; c < 4; c++)
-          (*rgba)[i * 4 + c] = (c < nch) ? mc[i * size_t(nch) + size_t(c)] : (c == 3 ? 1.0f : 0.0f);
-      fxi->unmapStorageBuffer(mcmap.get());
+      if (req._hostcopy) { // incremental flush: field already read back at sink-run time
+        const float* mc = req._hostcopy->data();
+        for (size_t i = 0; i < n; i++)
+          for (int c = 0; c < 4; c++)
+            (*rgba)[i * 4 + c] = (c < nch) ? mc[i * size_t(nch) + size_t(c)] : (c == 3 ? 1.0f : 0.0f);
+        req._hostcopy.reset();
+      } else { // deferred mode: the plane stayed pinned; map the live SSBO
+        auto mcmap = fxi->mapStorageBuffer(img->_ssbo, 0, n * size_t(nch) * sizeof(float), BufferMapAccess::READ_ONLY);
+        const float* mc = (const float*)mcmap->_mappedaddr;
+        for (size_t i = 0; i < n; i++)
+          for (int c = 0; c < 4; c++)
+            (*rgba)[i * 4 + c] = (c < nch) ? mc[i * size_t(nch) + size_t(c)] : (c == 3 ? 1.0f : 0.0f);
+        fxi->unmapStorageBuffer(mcmap.get());
+      }
       // one job per capture: emit the SAME RGBA under each name (the list form of
       // capture() — one readback, one image per name).
       auto mchans = split_channels(req._channels, "field");
@@ -742,10 +782,13 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
       continue;
     }
 
-    // SERIAL part: read the field back off the GPU into a host copy, then hand the
-    // whole CPU tail to a worker.
-    auto raw = std::make_shared<std::vector<float>>(n);
-    {
+    // SERIAL part: the field's host copy — already read back at sink-run time
+    // (incremental flush), or mapped off the live pinned SSBO (deferred mode) —
+    // then the whole CPU tail goes to a worker.
+    std::shared_ptr<std::vector<float>> raw = req._hostcopy;
+    req._hostcopy.reset();
+    if (not raw) {
+      raw = std::make_shared<std::vector<float>>(n);
       auto mapping = fxi->mapStorageBuffer(img->_ssbo, 0, n * sizeof(float), BufferMapAccess::READ_ONLY);
       memcpy(raw->data(), mapping->_mappedaddr, n * sizeof(float));
       fxi->unmapStorageBuffer(mapping.get());

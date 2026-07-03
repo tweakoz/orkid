@@ -1076,6 +1076,7 @@ public:
   void initSyncTransfer();
   void ensureSyncStagingSize(size_t needed);
   void ensureSyncReadbackStagingSize(size_t needed);
+  size_t deviceLocalHeapBytes() const final; // largest DEVICE_LOCAL heap (residency budget scaling)
   void beginSyncTransferCB();
   void endAndSubmitSyncTransferCB();
 

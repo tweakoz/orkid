@@ -270,6 +270,12 @@ public:
   void debugMarker(const std::string str);
   virtual void debugMarker(const std::string str, const fvec4& color) {
   }
+  ///////////////////////////////////////////////////////////////////////
+  /// size of the largest DEVICE_LOCAL memory heap (0 = unknown/UMA) — lets
+  /// residency budgets scale to the card instead of hardcoding.
+  virtual size_t deviceLocalHeapBytes() const {
+    return 0;
+  }
 
   ///////////////////////////////////////////////////////////////////////
   /// make rendercontext current on current thread
