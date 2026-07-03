@@ -740,7 +740,10 @@ void OrkEzApp::joinUpdate(Context* ctx) {
       _mainq->Process();
     }
     //logger()->defaultChannel()->log("OrkEzApp<%p> joinUpdate:2", this);
-    _update_queue->drain();
+    // bounded: the update thread services its queue as its final act, so this
+    // is normally instant — but an op enqueued after that last service (or an
+    // op that itself re-enqueues) must not wedge shutdown forever.
+    _update_queue->drain(5.0f);
     _update_thread.join();
     //logger()->defaultChannel()->log("OrkEzApp<%p> joinUpdate:3", this);
     DrawQueue::ClearAndSyncWriters();
@@ -925,11 +928,15 @@ void OrkEzApp::_mainThreadLoopBegin() {
     float target_ups = _initdata->_target_ups;
     float target_fps = _initdata->_target_fps;
 
+    // UPDRUNNING must be live BEFORE _onUpdateInit: the init runs the scene
+    // load, which rendezvouses with the gpu/main threads, and joinUpdate()'s
+    // pump loop keys on this flag — raised any later, an exit requested
+    // mid-load skips the pump and bare-joins a blocked loader (Ctrl-C wedge).
+    _appstate.fetch_or(KAPPSTATEFLAG_UPDRUNNING);
+
     // first time init ?
     if (_mainWindow && _mainWindow->_onUpdateInit)
       _mainWindow->_onUpdateInit();
-
-    _appstate.fetch_or(KAPPSTATEFLAG_UPDRUNNING);
 
     ////////////////////////////////////////
     // FREERUNNING MODE: Wall clock, existing behavior
@@ -1106,6 +1113,13 @@ void OrkEzApp::_mainThreadLoopBegin() {
     if (!_initdata->_use_subsystems) {
       _audioExit();
     }
+
+    // FINAL update-serial-queue service. When an exit request pre-empts the
+    // update loop entirely (Ctrl-C mid-load), ops enqueued during the load —
+    // and by _onUpdateExit just above — have never been processed, and this
+    // thread is their only legal processor. Leaving them queued wedges
+    // joinUpdate()'s drain on the main thread.
+    opq::updateSerialQueue()->Process();
   };
 
   if (not _mainWindow) {

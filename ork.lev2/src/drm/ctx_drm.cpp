@@ -90,13 +90,23 @@ static void atexit_restore_terminal() {
 }
 
 // Signal handler for Ctrl-C (ASYNC-SIGNAL-SAFE)
+static volatile sig_atomic_t g_signal_count = 0;
+
 static void drm_signal_handler(int signum) {
     if (signum == SIGINT || signum == SIGTERM) {
         // Restore terminal FIRST (async-signal-safe)
         restore_terminal_async_safe();
 
+        // signalExit() only sets a flag the main loop polls — mid-bake that
+        // can be minutes away. A repeat signal must not be ignorable.
+        if (++g_signal_count >= 2) {
+            const char msg2[] = "\nSecond signal - forcing immediate exit.\n";
+            write(STDERR_FILENO, msg2, sizeof(msg2) - 1);
+            _exit(130);
+        }
+
         // Write message using async-signal-safe write()
-        const char msg[] = "\nSignal received, exiting...\n";
+        const char msg[] = "\nSignal received, exiting... (repeat to force)\n";
         write(STDERR_FILENO, msg, sizeof(msg) - 1);
 
         // Signal exit to main loop
@@ -274,7 +284,11 @@ void CtxDRM::_runloopBegin() {
         _target->gpuPostInit(); // Initialize Context GPU resources
     }
 
-    _runstate = 1;
+    // _onGpuInit runs the whole scene load/bake synchronously — a Ctrl-C
+    // during it lands in signalExit() (_runstate=2) and must not be
+    // clobbered here, or the exit request is erased and the app runs on.
+    if (_runstate == 0)
+        _runstate = 1;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -898,8 +912,11 @@ void CtxDRM::_initTerminalInput() {
         // Set terminal to raw mode
         struct termios raw = g_terminal_state.original_termios;
 
-        // Disable canonical mode, echo, signals
-        raw.c_lflag &= ~(ICANON | ECHO | ISIG);
+        // Disable canonical mode and echo. ISIG stays ON: the kernel line
+        // discipline must keep turning Ctrl-C/Ctrl-Z into SIGINT/SIGTSTP,
+        // because the in-band 0x03 fallback below only works while the input
+        // pump is polled — a synchronous bake starves it for minutes.
+        raw.c_lflag &= ~(ICANON | ECHO);
 
         // Disable special processing of CR/NL
         raw.c_iflag &= ~(ICRNL | INLCR);
