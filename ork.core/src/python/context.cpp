@@ -12,6 +12,7 @@
 #include <ork/kernel/debug.h>
 #include <ork/util/logger.h>
 #include <ork/python/context.h>
+#include <atomic>
 #include <ork/util/stl_ext.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <stdio.h>
@@ -335,6 +336,18 @@ Context::~Context() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// gil_safe_obind liveness flag (declared in gil_safe_obind.h — defined here,
+// WITHOUT the obind headers, because this TU is pybind11-side and the two
+// binding families must not meet in one translation unit). Tracks the ecssim
+// SUB-interpreter: Py_IsInitialized() alone cannot catch its death while the
+// main interpreter lives on.
+///////////////////////////////////////////////////////////////////////////////
+std::atomic<bool>& obind_interpreter_alive() {
+  static std::atomic<bool> _alive(true);
+  return _alive;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -469,6 +482,7 @@ Context2::Context2() {
   pyconfig.check_multi_interp_extensions = 1;
   auto status                            = Py_NewInterpreterFromConfig(&_subPrimaryThreadState, &pyconfig);
   OrkAssert(PyStatus_IsError(status) == 0);
+  obind_interpreter_alive().store(true); // ecssim sub-interpreter (re)born — arm gil_safe_obind decrefs
 
   _subGILheld = true;
   _subInterpreter = fetchPyInterpreterState(_subPrimaryThreadState);
@@ -508,6 +522,10 @@ Context2::~Context2() {
 #else
   _subPrimaryThreadState->cframe->current_frame = nullptr;
 #endif
+  // ecssim sub-interpreter dying: disarm gil_safe_obind decrefs FIRST — any
+  // wrapper destroyed after this point (e.g. ~Simulation member varmaps) must
+  // leak its handle instead of Py_DECREFing into freed interpreter state.
+  obind_interpreter_alive().store(false);
   Py_EndInterpreter(_subPrimaryThreadState);
 
   PyThreadState_Swap(_mainInterpreterMyThreadState);

@@ -338,7 +338,10 @@ void Simulation::_buildStateMachine() {
   ren_init_state->_onenter = [this](fsm::fsminstance_ptr_t inst) {};
   //
   ren_init_state->_onupdate = [=](fsm::fsminstance_ptr_t inst) {
-    if (_gpuUpdateSMInst->currentState() == _gpuReadyState) {
+    // gpuExit() nulls _gpuUpdateSMInst BEFORE its final render-FSM pumps — an
+    // offscreen/early exit can still have this FSM sitting in INIT (null-deref
+    // crash, exit-245 residual 2026-07-02). No gpu FSM => nothing to wait for.
+    if (_gpuUpdateSMInst and _gpuUpdateSMInst->currentState() == _gpuReadyState) {
       if (auto sframe = inst->vars()->typedValueForKey<lev2::standardcompositorframe_ptr_t>("sframe")) {
         sframe.value()->attachDrawQueueContext(_dbufctxSIM);
       }

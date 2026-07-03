@@ -10,6 +10,7 @@
 #include <ork/kernel/datablock.h>
 #include <ork/kernel/fixedstring.hpp>
 #include <ork/python/pycodec.inl>
+#include <ork/python/gil_safe_obind.h>
 #include <iostream>
 
 namespace py = obind;
@@ -72,6 +73,8 @@ py::object NanoCodecImpl::encode(const varval_t& val) const {
       return py::none();
     } else if (auto as_vmap = val.tryAs<varmap::VarMap>()) {
       return py::none();
+    } else if (auto as_safe = val.tryAs<ork::python::gil_safe_obind>()) {
+      return as_safe.value().ref(); // caller holds the GIL on encode paths
     } else if (auto as_pycall = val.tryAs<py::callable>()) {
       return as_pycall.value();
     } else if (auto as_pyobj = val.tryAs<py::object>()) {
@@ -117,6 +120,8 @@ py::object NanoCodecImpl::encode64(const svar64_t& val) const {
       return py::none();
     } else if (auto as_vmap = val.tryAs<varmap::VarMap>()) {
       return py::none();
+    } else if (auto as_safe = val.tryAs<ork::python::gil_safe_obind>()) {
+      return as_safe.value().ref(); // caller holds the GIL on encode paths
     } else if (auto as_pycall = val.tryAs<py::callable>()) {
       return as_pycall.value();
     } else if (auto as_pyobj = val.tryAs<py::object>()) {
@@ -143,12 +148,12 @@ varval_t NanoCodecImpl::decode(const py::object& val) const {
       return rval;
     }
   }
-  if (py::isinstance<py::callable>(val)) {
-    rval.set<py::callable>(py::cast<py::callable>(val));
-    return rval;
-  }
-  else if (py::isinstance<py::object>(val)) {
-    rval.set<py::object>(py::cast<py::object>(val));
+  if (py::isinstance<py::object>(val)) {
+    // unregistered python value/callable: store a GIL-SAFE wrapper, never a raw
+    // obind handle — a raw object's dtor Py_DECREFs from whatever thread/state
+    // drops the last ref (the cmd-q ~Simulation crash, 2026-07-02). callable-ness
+    // survives in the PyObject itself; encode() hands the same object back.
+    rval.set<ork::python::gil_safe_obind>(ork::python::gil_safe_obind(py::cast<py::object>(val)));
     return rval;
   }
   std::cout << "BadValue: " << py::cast<std::string>(val) << std::endl;
@@ -170,12 +175,10 @@ svar64_t NanoCodecImpl::decode64(const py::object& val) const {
       return rval;
     }
   }
-  if (py::isinstance<py::callable>(val)) {
-    rval.set<py::callable>(py::cast<py::callable>(val));
-    return rval;
-  }
-  else if (py::isinstance<py::object>(val)) {
-    rval.set<py::object>(py::cast<py::callable>(val));
+  if (py::isinstance<py::object>(val)) {
+    // see decode() — GIL-safe wrapper, never a raw obind handle. (also fixes the
+    // old object->callable mis-cast that lived here.)
+    rval.set<ork::python::gil_safe_obind>(ork::python::gil_safe_obind(py::cast<py::object>(val)));
     return rval;
   }
   std::cout << "decode64 :: BadValue: " << py::cast<std::string>(val) << std::endl;
