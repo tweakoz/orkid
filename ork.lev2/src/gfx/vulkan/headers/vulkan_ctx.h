@@ -693,6 +693,8 @@ struct VkFxInterface final : public FxInterface {
       size_t length,
       BufferMapAccess access) final;
   void unmapStorageBuffer(FxShaderStorageBufferMapping* mapping) final;
+  void readStorageBuffer(FxShaderStorageBuffer* b, size_t base, size_t length, void* dst) final;
+  void writeStorageBuffer(FxShaderStorageBuffer* b, size_t base, size_t length, const void* src) final;
   void bindStorageBuffer(const FxShaderStorageBlock* block, FxShaderStorageBuffer* buffer, size_t byte_offset = 0) final;
   void copyBufferIntoStorageBuffer(FxShaderStorageBuffer* ssbo, std::vector<uint8_t> buffer, size_t dest_offset) final;
 

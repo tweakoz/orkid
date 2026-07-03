@@ -76,6 +76,11 @@ public:
       size_t length,
       BufferMapAccess access) { return nullptr; }
   virtual void unmapStorageBuffer(FxShaderStorageBufferMapping* mapping) {}
+  // direct transfers into/out of CALLER memory. Unlike a READ/WRITE map round-trip,
+  // no backend temp is allocated — bulk readers (cook-cache store/load) hand in
+  // their final destination and each byte crosses host memory once.
+  virtual void readStorageBuffer(FxShaderStorageBuffer* b, size_t base, size_t length, void* dst) {}
+  virtual void writeStorageBuffer(FxShaderStorageBuffer* b, size_t base, size_t length, const void* src) {}
 
   //////////////////////////////////////////
   // new descriptorset api

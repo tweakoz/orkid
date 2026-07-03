@@ -9,6 +9,7 @@
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/util/logger.h>
 #include <cstdlib>
+#include <ork/kernel/memcpy.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
@@ -199,6 +200,42 @@ void VkFxInterface::unmapStorageBuffer(FxShaderStorageBufferMapping* mapping) {
     MapTraceStats::instance()._unmaps++;
   mapping->_impl.make<void*>(nullptr);
   mapping->_mappedaddr = nullptr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Direct transfers into/out of caller memory — the temp-free alternative to a
+// READ/WRITE map round-trip (no per-call std::malloc of the full plane; bulk
+// cook-cache readers pass their final destination). Same C.5 hazard rule as
+// mapStorageBuffer: a pending non-blocking dispatch phase must complete first.
+
+void VkFxInterface::readStorageBuffer(FxShaderStorageBuffer* b, size_t base, size_t length, void* dst) {
+  if (_contextVK->_ci)
+    _contextVK->_ci->syncPendingDispatch();
+  auto bufimpl = b->_impl.getShared<VulkanBuffer>();
+  if (length == 0)
+    length = bufimpl->_length;
+  if (not bufimpl->_hostVisible) {
+    bufimpl->copyToHost(dst, length, base); // staged: device -> cached readback staging -> dst
+    return;
+  }
+  void* src = bufimpl->map(base, length, 0);
+  memcpy_fast(dst, src, length);
+  bufimpl->unmap();
+}
+
+void VkFxInterface::writeStorageBuffer(FxShaderStorageBuffer* b, size_t base, size_t length, const void* src) {
+  if (_contextVK->_ci)
+    _contextVK->_ci->syncPendingDispatch();
+  auto bufimpl = b->_impl.getShared<VulkanBuffer>();
+  if (length == 0)
+    length = bufimpl->_length;
+  if (not bufimpl->_hostVisible) {
+    bufimpl->copyFromHost(src, length, base); // staged: src -> WC upload staging -> device
+    return;
+  }
+  void* dst = bufimpl->map(base, length, 0);
+  memcpy_fast(dst, src, length);
+  bufimpl->unmap();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

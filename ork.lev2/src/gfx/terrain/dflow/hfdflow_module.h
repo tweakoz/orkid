@@ -115,6 +115,14 @@ struct TerrainComputeInst : public dflow::DgModuleInst, public dflowgfx::IPrePha
     return f;
   }
 
+  // fp32 scratch reused across nodes (grow-once, thread-local): the fp16 paths need a
+  // host-side fp32 image of the plane; a per-node malloc re-pays ~63MB of first-touch
+  // page faults on every node of a cold cook.
+  static std::vector<float>& _cookScratch() {
+    static thread_local std::vector<float> s;
+    return s;
+  }
+
   // Cache ALL output plugs at their TRUE size (w*h*channels floats). The original version cached only
   // the "Out" plug at mono size — which silently corrupted any multi-output and/or multi-channel (RGBA)
   // module (e.g. flow3d) on a cache HIT: the extra outputs were never restored (compute is skipped) and
@@ -124,6 +132,20 @@ struct TerrainComputeInst : public dflow::DgModuleInst, public dflowgfx::IPrePha
     auto fxi = env->_ctx->FXI();
     auto db  = std::make_shared<DataBlock>();
     int nout = numOutputs();
+    // EXACT pre-size (kills the append-growth realloc/memmove chain), then each
+    // plane is read back ONCE, straight into its final resting place in the
+    // datablock (readStorageBuffer: no per-plane map temp, no second memcpy).
+    size_t total = 2 * sizeof(int);
+    for (int o = 0; o < nout; o++) {
+      auto op  = std::dynamic_pointer_cast<hfimg_outpluginst_t>(output(o));
+      auto img = op ? op->_value : nullptr;
+      if (not(img and img->_ssbo)) { total += sizeof(int); continue; }
+      int ch     = (img->_channels < 1) ? 1 : img->_channels;
+      size_t cnt = size_t(img->_w) * size_t(img->_h) * size_t(ch);
+      bool half  = cookHalfOutput(op->_plugdata->_name);
+      total += 5 * sizeof(int) + cnt * (half ? sizeof(uint16_t) : sizeof(float));
+    }
+    db->reserve(total);
     db->addItem<int>(kCookFmt);
     db->addItem<int>(nout);
     for (int o = 0; o < nout; o++) {
@@ -138,26 +160,23 @@ struct TerrainComputeInst : public dflow::DgModuleInst, public dflowgfx::IPrePha
       db->addItem<int>(img->_h);
       db->addItem<int>(ch);
       db->addItem<int>(half ? 1 : 0); // precision (v4)
-      auto mapping = fxi->mapStorageBuffer(img->_ssbo, 0, cnt * sizeof(float), BufferMapAccess::READ_ONLY);
       if (not half) {
-        db->addData(mapping->_mappedaddr, cnt * sizeof(float));
-        fxi->unmapStorageBuffer(mapping.get());
+        void* dst = db->allocateBlock(cnt * sizeof(float));
+        fxi->readStorageBuffer(img->_ssbo, 0, cnt * sizeof(float), dst);
       } else {
         // QUANTIZE AT PRODUCTION: halves to disk, and the quantized-expanded values
         // written BACK to the live SSBO — downstream consumers and captures see
         // exactly what a warm load will upload (cache contract stays bit-exact).
-        const float* src = (const float*)mapping->_mappedaddr;
-        std::vector<uint16_t> halves(cnt);
-        std::vector<float> rounded(cnt);
+        auto& scratch = _cookScratch();
+        if (scratch.size() < cnt)
+          scratch.resize(cnt);
+        fxi->readStorageBuffer(img->_ssbo, 0, cnt * sizeof(float), scratch.data());
+        auto* hd = (uint16_t*)db->allocateBlock(cnt * sizeof(uint16_t));
         for (size_t i = 0; i < cnt; i++) {
-          halves[i]  = _f32tof16(src[i]);
-          rounded[i] = _f16tof32(halves[i]);
+          hd[i]      = _f32tof16(scratch[i]);
+          scratch[i] = _f16tof32(hd[i]); // rounded, in place
         }
-        fxi->unmapStorageBuffer(mapping.get());
-        db->addData(halves.data(), cnt * sizeof(uint16_t));
-        auto wb = fxi->mapStorageBuffer(img->_ssbo, 0, cnt * sizeof(float), BufferMapAccess::WRITE_ONLY);
-        std::memcpy(wb->_mappedaddr, rounded.data(), cnt * sizeof(float));
-        fxi->unmapStorageBuffer(wb.get());
+        fxi->writeStorageBuffer(img->_ssbo, 0, cnt * sizeof(float), scratch.data());
       }
     }
     return db;
@@ -182,19 +201,21 @@ struct TerrainComputeInst : public dflow::DgModuleInst, public dflowgfx::IPrePha
       if (not(img and img->_ssbo)) return false;
       int curch = (img->_channels < 1) ? 1 : img->_channels;
       if (w != img->_w or h != img->_h or ch != curch) return false; // dim/channels changed -> recompute
-      size_t cnt   = size_t(w) * size_t(h) * size_t(ch);
-      auto mapping = fxi->mapStorageBuffer(img->_ssbo, 0, cnt * sizeof(float), BufferMapAccess::WRITE_ONLY);
+      size_t cnt = size_t(w) * size_t(h) * size_t(ch);
       if (prec == 0) {
-        std::memcpy(mapping->_mappedaddr, istr.current(), cnt * sizeof(float));
+        // upload straight from the datablock's memory — no map temp, no extra copy
+        fxi->writeStorageBuffer(img->_ssbo, 0, cnt * sizeof(float), istr.current());
         istr.advance(cnt * sizeof(float));
       } else {
         const uint16_t* halves = (const uint16_t*)istr.current();
-        float* dst             = (float*)mapping->_mappedaddr;
+        auto& scratch          = _cookScratch();
+        if (scratch.size() < cnt)
+          scratch.resize(cnt);
         for (size_t i = 0; i < cnt; i++)
-          dst[i] = _f16tof32(halves[i]);
+          scratch[i] = _f16tof32(halves[i]);
+        fxi->writeStorageBuffer(img->_ssbo, 0, cnt * sizeof(float), scratch.data());
         istr.advance(cnt * sizeof(uint16_t));
       }
-      fxi->unmapStorageBuffer(mapping.get());
     }
     return true;
   }
