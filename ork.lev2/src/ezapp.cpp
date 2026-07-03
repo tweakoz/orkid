@@ -712,15 +712,30 @@ void OrkEzApp::_initGraphicsContext() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void OrkEzApp::joinUpdate() {
+void OrkEzApp::joinUpdate(Context* ctx) {
   uint64_t prevappsate = _appstate.fetch_or(KAPPSTATEFLAG_JOINING);
   ////////////////////////////////////////////////
   bool has_joined_already = bool(prevappsate & KAPPSTATEFLAG_JOINING);
   ////////////////////////////////////////////////
   if (not has_joined_already) {
+    // JOINS MUST PUMP (the LOADX §1.1 principle, shutdown edition): the update thread
+    // may be blocked inside a GPU-phase rendezvous (Simulation::_runGpuPhaseOnRenderThread
+    // future.wait) that only the gpu-update chain services — and the render loop that
+    // used to invoke that chain has already exited when we get here. A bare join
+    // deadlocked EVERY offscreen/materialize exit (main: joinUpdate/Thread::join;
+    // update: __assoc_sub_state::wait — sampled 2026-07-02). So keep servicing _mainq
+    // AND the gpu-update hook until the update thread has actually left its loop.
+    while (checkAppState(KAPPSTATEFLAG_UPDRUNNING)) {
+      {
+        opq::TrackCurrent opqtest(_mainq);
+        _mainq->Process();
+      }
+      if (ctx and _mainWindow and _mainWindow->_onGpuUpdate)
+        _mainWindow->_onGpuUpdate(ctx);
+      ork::usleep(1000);
+    }
     //logger()->defaultChannel()->log("OrkEzApp<%p> joinUpdate:1", this);
     for( int i=0; i<100; i++ ) {
-      //checkAppState(KAPPSTATEFLAG_UPDRUNNING)) {
       opq::TrackCurrent opqtest(_mainq);
       _mainq->Process();
     }
@@ -1182,7 +1197,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
   ///////////////////////////////
 
   ctx->_onGpuExit = [this](lev2::Context* context) {
-    joinUpdate();
+    joinUpdate(context);
     if (_moviecapcontext) {
       _moviecapcontext->terminate();
     }

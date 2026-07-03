@@ -1020,6 +1020,14 @@ public:
   //////////////////////////////////////////////
   VkDevice _vkdevice;
   VkPhysicalDevice _vkphysicaldevice;
+  // WS3: PERSISTED pipeline cache (<staging>/vkpipelinecache/<pipelineCacheUUID>.bin).
+  // Owner = the context that CREATED the device (vkCreateDevice path); shared-device
+  // contexts (loader/offscreen) borrow the handle. Saved+destroyed in _doShutdown.
+  // vkCreate*Pipelines use of the cache is internally synchronized per the vk spec.
+  VkPipelineCache _vkPipelineCache = VK_NULL_HANDLE;
+  bool _ownsPipelineCache          = false;
+  void _initPipelineCache();
+  void _savePipelineCache();
   vkdeviceinfo_ptr_t _vkdeviceinfo;
   // Default-initialized so the loader (offscreen) path, which never
   // creates a presentation surface, doesn't trip _doShutdown's

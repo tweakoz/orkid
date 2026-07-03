@@ -337,6 +337,8 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
 
   _fetchDeviceProcAddr(_vkSetDebugUtilsObjectName, "vkSetDebugUtilsObjectNameEXT");
 
+  _initPipelineCache(); // WS3: seed the persisted pipeline cache (this ctx owns the device)
+
   // Load device function pointers needed for rendering
   // These are needed for both window and offscreen contexts
   _fetchDeviceProcAddr(_vkCmdBeginRenderingKHR, "vkCmdBeginRenderingKHR");
@@ -419,6 +421,7 @@ void VkContext::_initVulkanForWindow(VkSurfaceKHR surface) {
     // Existing device is compatible, reuse it
     logchan_vkctx->log("Reusing existing device for window (validated presentation support)");
     _vkdevice = context0->_vkdevice;
+    _vkPipelineCache = context0->_vkPipelineCache; // borrowed (owner saves/destroys)
     _vkdeviceinfo = context0->_vkdeviceinfo;
     _vkphysicaldevice = context0->_vkphysicaldevice;
     _gfxqueue = context0->_gfxqueue;
@@ -455,6 +458,7 @@ void VkContext::_initVulkanForOffscreen(DisplayBuffer* pBuf) {
   if(_GVI->_contexts.size()>=1){
     auto context0 = *_GVI->_contexts.begin();
     _vkdevice = context0->_vkdevice;
+    _vkPipelineCache = context0->_vkPipelineCache; // borrowed (owner saves/destroys)
     _vkdeviceinfo = context0->_vkdeviceinfo;
     _vkphysicaldevice = context0->_vkphysicaldevice;
     _gfxqueue = context0->_gfxqueue;
@@ -772,7 +776,92 @@ VkContext::~VkContext() {
   shutdown();
 }
 
+
+///////////////////////////////////////////////////////////////////////////////
+// WS3: persisted VkPipelineCache. Disk format = raw vkGetPipelineCacheData blob;
+// the leading VkPipelineCacheHeaderVersionOne is validated against the physical
+// device before use (stale driver/device -> start empty). One file per
+// pipelineCacheUUID under <staging>/vkpipelinecache/.
+///////////////////////////////////////////////////////////////////////////////
+
+static std::string _pipelineCachePath(VkPhysicalDevice physdev) {
+  VkPhysicalDeviceProperties props;
+  vkGetPhysicalDeviceProperties(physdev, &props);
+  std::string uuid_hex;
+  for (int i = 0; i < VK_UUID_SIZE; i++)
+    uuid_hex += FormatString("%02x", int(props.pipelineCacheUUID[i]));
+  auto dir = file::Path::stage_dir() / "vkpipelinecache";
+  std::error_code ec;
+  std::filesystem::create_directories(dir.c_str(), ec);
+  return (dir / FormatString("%s.bin", uuid_hex.c_str())).toStdString();
+}
+
+void VkContext::_initPipelineCache() {
+  std::vector<uint8_t> initial;
+  auto path = _pipelineCachePath(_vkphysicaldevice);
+  if (FILE* fin = fopen(path.c_str(), "rb")) {
+    fseek(fin, 0, SEEK_END);
+    long len = ftell(fin);
+    fseek(fin, 0, SEEK_SET);
+    if (len > 32) { // must at least hold the v1 header
+      initial.resize(size_t(len));
+      if (fread(initial.data(), 1, size_t(len), fin) != size_t(len))
+        initial.clear();
+    }
+    fclose(fin);
+  }
+  if (not initial.empty()) { // validate header vs THIS device (spec: app's job)
+    VkPhysicalDeviceProperties props;
+    vkGetPhysicalDeviceProperties(_vkphysicaldevice, &props);
+    uint32_t hdr_ver = 0, hdr_vendor = 0, hdr_device = 0;
+    memcpy(&hdr_ver, initial.data() + 4, 4);
+    memcpy(&hdr_vendor, initial.data() + 8, 4);
+    memcpy(&hdr_device, initial.data() + 12, 4);
+    bool valid = (hdr_ver == VK_PIPELINE_CACHE_HEADER_VERSION_ONE)  //
+                 and (hdr_vendor == props.vendorID)                 //
+                 and (hdr_device == props.deviceID)                 //
+                 and (0 == memcmp(initial.data() + 16, props.pipelineCacheUUID, VK_UUID_SIZE));
+    if (not valid) {
+      logchan_vkctx->log("pipelinecache<%s>: stale header (driver/device changed) — starting empty", path.c_str());
+      initial.clear();
+    }
+  }
+  VkPipelineCacheCreateInfo PCCI;
+  initializeVkStruct(PCCI, VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO);
+  PCCI.initialDataSize = initial.size();
+  PCCI.pInitialData    = initial.empty() ? nullptr : initial.data();
+  VkResult OK          = vkCreatePipelineCache(_vkdevice, &PCCI, nullptr, &_vkPipelineCache);
+  if (OK != VK_SUCCESS) { // never fatal — pipelines just build uncached
+    logchan_vkctx->log("pipelinecache: vkCreatePipelineCache failed<%d> — continuing uncached", int(OK));
+    _vkPipelineCache = VK_NULL_HANDLE;
+    return;
+  }
+  _ownsPipelineCache = true;
+  logchan_vkctx->log("pipelinecache<%s>: seeded with %zu bytes", path.c_str(), initial.size());
+}
+
+void VkContext::_savePipelineCache() {
+  if (not _ownsPipelineCache or _vkPipelineCache == VK_NULL_HANDLE or _vkdevice == nullptr)
+    return;
+  size_t len = 0;
+  if (vkGetPipelineCacheData(_vkdevice, _vkPipelineCache, &len, nullptr) == VK_SUCCESS and len > 0) {
+    std::vector<uint8_t> data(len);
+    if (vkGetPipelineCacheData(_vkdevice, _vkPipelineCache, &len, data.data()) == VK_SUCCESS) {
+      auto path = _pipelineCachePath(_vkphysicaldevice);
+      if (FILE* fout = fopen(path.c_str(), "wb")) {
+        fwrite(data.data(), 1, len, fout);
+        fclose(fout);
+        logchan_vkctx->log("pipelinecache<%s>: saved %zu bytes", path.c_str(), len);
+      }
+    }
+  }
+  vkDestroyPipelineCache(_vkdevice, _vkPipelineCache, nullptr);
+  _vkPipelineCache   = VK_NULL_HANDLE;
+  _ownsPipelineCache = false;
+}
+
 void VkContext::_doShutdown() {
+  _savePipelineCache(); // WS3: persist + destroy (owner only; device still valid here)
   if (_vkpresentationsurface != VK_NULL_HANDLE && _GVI) {
     printf("VkContext::_doShutdown: destroying VkSurface %p\n", (void*)_vkpresentationsurface);
     vkDestroySurfaceKHR(_GVI->_instance, _vkpresentationsurface, nullptr);

@@ -32,6 +32,10 @@ struct semaphore {
   semaphore(const char* name);
   void notify();
   void wait();
+  // timed wait: true = signaled (count consumed), false = timed out (count untouched).
+  // Lets a worker block on real work (instant wake on notify) with a bounded backstop
+  // against any notify-less state change — replaces poll-sleep loops (OpqThread::run).
+  bool wait_for(uint64_t usec);
 
 private:
   ork::mutex mMutex;

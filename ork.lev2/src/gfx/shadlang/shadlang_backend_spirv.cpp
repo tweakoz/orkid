@@ -273,18 +273,32 @@ void SpirvCompiler::_beginShader(shader_ptr_t shader) {
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void SpirvCompiler::processShader(shader_ptr_t sh) {
+  auto emitted  = emitShader(sh);
+  _spirv_binary = compileGlslToSpirv(emitted._name, emitted._glsl, emitted._kind);
+  OrkAssert(not _assert_on_done);
+}
+
+SpirvCompiler::EmittedShader SpirvCompiler::emitShader(shader_ptr_t sh) {
   _beginShader(sh);
+  shaderc_shader_kind kind;
   if (auto as_vsh = std::dynamic_pointer_cast<VertexShader>(sh)) {
-    _compileShader(shaderc_glsl_vertex_shader);
+    kind = shaderc_glsl_vertex_shader;
   } else if (auto as_gsh = std::dynamic_pointer_cast<GeometryShader>(sh)) {
-    _compileShader(shaderc_glsl_geometry_shader);
+    kind = shaderc_glsl_geometry_shader;
   } else if (auto as_fsh = std::dynamic_pointer_cast<FragmentShader>(sh)) {
-    _compileShader(shaderc_glsl_fragment_shader);
+    kind = shaderc_glsl_fragment_shader;
   } else if (auto as_csh = std::dynamic_pointer_cast<ComputeShader>(sh)) {
-    _compileShader(shaderc_glsl_compute_shader);
+    kind = shaderc_glsl_compute_shader;
   } else {
     OrkAssert(false);
+    kind = shaderc_glsl_vertex_shader; // unreachable
   }
+  EmittedShader out;
+  out._name = "";
+  out._glsl = _emitShaderGLSL(kind);
+  out._kind = kind;
+  out._name = _shader_name; // set by _emitShaderGLSL
+  return out;
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void SpirvCompiler::_appendText(miscgroupnode_ptr_t grp, const char* formatstring, ...) {
@@ -1408,6 +1422,13 @@ void SpirvCompiler::_inheritExtension(semainhext_ptr_t extension_node) {
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void SpirvCompiler::_compileShader(shaderc_shader_kind shader_type) {
+  auto as_glsl  = _emitShaderGLSL(shader_type);
+  _spirv_binary = compileGlslToSpirv(_shader_name, as_glsl, shader_type);
+  OrkAssert(not _assert_on_done);
+}
+
+// EMISSION half — mutates the transunit AST + compiler members; single-thread only.
+std::string SpirvCompiler::_emitShaderGLSL(shaderc_shader_kind shader_type) {
 
   ///////////////////////////////////////////////////////
   // shut up InheritListItem's
@@ -1472,10 +1493,13 @@ void SpirvCompiler::_compileShader(shaderc_shader_kind shader_type) {
   ///////////////////////////////////////////////////////
 
   auto as_glsl = shadlang::toGLFX1(_shader_group);
+  return as_glsl;
+}
 
-  ///////////////////////////////////////////////////////
-  // compile with shaderc
-  ///////////////////////////////////////////////////////
+// COMPILE half — pure function of (name, glsl, kind); per-call-local shaderc state,
+// safe to run on N workers concurrently (WS3 parallel JIT).
+shader_bin_t SpirvCompiler::compileGlslToSpirv(
+    const std::string& shader_name, const std::string& as_glsl, shaderc_shader_kind shader_type) {
 
   shaderc::Compiler compiler;
   shaderc::CompileOptions options;
@@ -1502,7 +1526,7 @@ void SpirvCompiler::_compileShader(shaderc_shader_kind shader_type) {
 
   bool compile_ok = (result.GetCompilationStatus() == shaderc_compilation_status_success);
   if (debug_dump or (not compile_ok)) {
-    printf("// shader<%s>:\n%s\n", _shader_name.c_str(), as_glsl.c_str());
+    printf("// shader<%s>:\n%s\n", shader_name.c_str(), as_glsl.c_str());
   }
   if (not compile_ok) {
     std::cerr << result.GetErrorMessage();
@@ -1522,13 +1546,13 @@ void SpirvCompiler::_compileShader(shaderc_shader_kind shader_type) {
   size_t dump_seq  = size_t(_dump_serial.fetch_add(1));
   auto dump_suffix = FormatString("t%zx.n%zu", dump_tid, dump_seq);
 
-  auto output_path = file::Path::temp_dir() / FormatString("%s.%s.glsl", _shader_name.c_str(), dump_suffix.c_str());
+  auto output_path = file::Path::temp_dir() / FormatString("%s.%s.glsl", shader_name.c_str(), dump_suffix.c_str());
   bool OK          = File::writeString(output_path, as_glsl);
 
-  output_path   = file::Path::temp_dir() / FormatString("%s.%s.spv", _shader_name.c_str(), dump_suffix.c_str());
-  _spirv_binary = shader_bin_t(result.cbegin(), result.cend());
-  File::writeBinary(output_path, _spirv_binary.data(), _spirv_binary.size() * sizeof(uint32_t));
-  OrkAssert(not _assert_on_done);
+  output_path = file::Path::temp_dir() / FormatString("%s.%s.spv", shader_name.c_str(), dump_suffix.c_str());
+  auto spirv_binary = shader_bin_t(result.cbegin(), result.cend());
+  File::writeBinary(output_path, spirv_binary.data(), spirv_binary.size() * sizeof(uint32_t));
+  return spirv_binary;
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 // Helper function to find binding ID from merged resources in the transunit

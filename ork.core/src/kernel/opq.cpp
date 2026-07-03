@@ -331,11 +331,26 @@ void OpqThread::run() // virtual
 
   _timer.Start();
 
+  bool worked_last = false;
+
   while (EPOQSTATE_OK2KILL != _state.load()) {
 
-    int quanta = quantaForProfile(q->_perf_profile);
-    dispersed_sleep(slindex++, quanta); // semaphores are slowing us down
-    // popq->mSemaphore.wait(); // wait for an op (without spinning)
+    // Block on the queue's counting semaphore (every ConcurrencyGroup::enqueue and
+    // every lock/terminate transition notifies it) with a bounded timeout backstop —
+    // instant wake on real work, and any hypothetically notify-less state change is
+    // still observed within one backstop. Replaces the old dispersed_sleep POLL, which
+    // burned ~56% of load-phase CPU samples as idle-pool churn (LOADX 2026-07-02) and
+    // added up to a full sleep quantum of latency to every op. A worker that just
+    // processed skips the wait and drains hot.
+    if (not worked_last) {
+      int quanta             = quantaForProfile(q->_perf_profile);
+      uint64_t backstop_usec = uint64_t(quanta) * 8;
+      if (backstop_usec < 2000)  backstop_usec = 2000;  // floor: don't busy-churn low-latency pools
+      if (backstop_usec > 20000) backstop_usec = 20000; // cap: state changes seen within 20ms worst-case
+      q->mSemaphore.wait_for(backstop_usec);
+    }
+    (void)slindex;
+    worked_last = false;
 
     switch (_state.load()) {
 
@@ -343,7 +358,13 @@ void OpqThread::run() // virtual
         bool item_processed = q->Process();
         if (item_processed) {
           _timer.Start();
-          slindex = 0;
+          slindex     = 0;
+          worked_last = true;
+          // an op COMPLETING can make a concurrency-group-deferred op runnable, and
+          // enqueue's notify for it may already be consumed — hand the baton to an
+          // idle sibling instead of leaving it to the timeout backstop.
+          if (q->_numPendingOperations.load() > 0)
+            q->mSemaphore.notify();
         }
         break;
       }

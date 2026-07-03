@@ -281,7 +281,7 @@ bool VkComputePipelineState::createPipeline(vkfxsstage_ptr_t computeShader) {
   pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
   pipelineInfo.basePipelineIndex = -1;
 
-  result = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_pipeline);
+  result = vkCreateComputePipelines(device, _contextVK->_vkPipelineCache, 1, &pipelineInfo, nullptr, &_pipeline);
   if (result != VK_SUCCESS) {
     printf("createPipeline<%s>: FAILED vkCreateComputePipelines result<%d>\n", _name.c_str(), int(result));
     return false;
