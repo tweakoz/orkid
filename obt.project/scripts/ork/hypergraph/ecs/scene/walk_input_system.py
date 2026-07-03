@@ -63,6 +63,11 @@ def onSystemInit(simulation):
 
 def onSystemLink(simulation):
   W = simulation.vars.walk
+  # spawn-scouting aid: resolved once; onSystemUpdate prints the walker position
+  # every ~10s so a scene author can walk somewhere and copy the coordinates into
+  # terrain(spawn=vec3(...)). Falsy when the scene has no "walker" entity.
+  W.walker_ent = simulation.findEntityByName("walker")
+  W.pos_print_next = 10.0
   W.charctl = simulation.findSystemByName("CharacterControllerSystem")
   W.charctl.notify(tokens.SetParams,
                    {getattr(tokens, k): float(v) for k, v in PARAMS.items()})
@@ -148,6 +153,14 @@ _selftest = {"mode": __import__("os").environ.get("ORK_WALK_SELFTEST", ""),
 
 
 def onSystemUpdate(simulation):
+  # position beacon (throttled): gameTime-based so pause stalls it with the sim.
+  W = simulation.vars.walk
+  if W.walker_ent:
+    t = simulation.gameTime
+    if t >= W.pos_print_next:
+      W.pos_print_next = t + 10.0
+      p = W.walker_ent.translation
+      print("[walker] t=%.0fs pos = vec3(%.1f, %.1f, %.1f)   # terrain(spawn=...)" % (t, p.x, p.y, p.z), flush=True)
   if _selftest["mode"]:
     _selftest["count"] += 1
     if _selftest["count"] == 1000:

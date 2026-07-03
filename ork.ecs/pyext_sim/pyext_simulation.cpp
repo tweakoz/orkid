@@ -102,6 +102,12 @@ void register_simulation(nb::module_& module_ecssim,python::obind_typecodec_ptr_
         auto wrapped = pyentity_ptr_t(ent);
         return wrapped;
       })
+      // resolve a scene-declared entity BY NAME (init/link-time lookup — resolve
+      // once, hold the handle). Loose match; None-ish (null) when absent.
+      .def("findEntityByName", [](pysim_ptr_t simptr, const std::string& name) -> pyentity_ptr_t {
+        auto ent = simptr->findEntityLoose(AddPooledString(name.c_str()));
+        return pyentity_ptr_t(ent);
+      })
       // resolve a scene-declared spawner ONCE (init/link time — the only string
       // lookup); spawn through the returned handle at event rate. The handle is
       // FALSY when the scene declares no such spawner.
