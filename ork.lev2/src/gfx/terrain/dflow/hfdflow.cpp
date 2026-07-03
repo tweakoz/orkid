@@ -19,6 +19,8 @@
 #include <ork/dataflow/plug_inst.inl>
 #include <ork/kernel/string/string.h>
 #include <chrono>
+#include <map>
+#include <algorithm>
 #include <ork/reflect/serialize/JsonSerializer.h>
 #include <ork/reflect/serialize/JsonDeserializer.h>
 #include <ork/kernel/datacache.h> // DataBlockCache — per-node cook cache
@@ -563,6 +565,10 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
     double bp_wait = 0; // pure vkWaitForFences inside dispatch ~= real GPU execution
     double bp_max_dsp = 0, bp_max_sto = 0;
     size_t ncap_readback = 0; // incremental flush: captures already read back to host
+    // per-module-CLASS rollup — the cost model for the strategic cache-point set
+    // (cache a class iff its recompute cost beats its blob load cost).
+    struct BpClass { double dsp = 0, wait = 0, sto = 0; size_t bytes = 0; int n = 0; };
+    std::map<std::string, BpClass> bp_class;
     size_t bp_bytes = 0;
     std::string bp_max_dsp_n, bp_max_sto_n;
     const double bp_loop0 = bp_now();
@@ -598,8 +604,11 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
         if (s_bakeprof) {
           double t = bp_now(), d = t - bp_t0;
           bp_dsp += d; bp_t0 = t;
-          bp_wait += ci->_gpuWaitAccum - bp_w0;
+          double w = ci->_gpuWaitAccum - bp_w0;
+          bp_wait += w;
           if (d > bp_max_dsp) { bp_max_dsp = d; bp_max_dsp_n = inst->_abstract_module_data->_name; }
+          auto& bc = bp_class[inst->_abstract_module_data->GetClass()->Name().c_str()];
+          bc.dsp += d; bc.wait += w; bc.n++;
         }
         if (do_disk_cache) {
           if (auto store = inst->cookStore()) {
@@ -608,6 +617,8 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
               bp_sto += d; bp_t0 = t;
               bp_bytes += store->length();
               if (d > bp_max_sto) { bp_max_sto = d; bp_max_sto_n = inst->_abstract_module_data->_name; }
+              auto& bc = bp_class[inst->_abstract_module_data->GetClass()->Name().c_str()];
+              bc.sto += d; bc.bytes += store->length();
             }
             DataBlockCache::setDataBlock("dflowcache", inst->_cookHash, store);
             if (s_bakeprof) { double t = bp_now(); bp_dsk += t - bp_t0; bp_t0 = t; }
@@ -665,6 +676,16 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
       printf(
           "[cookprof] per-node avg: dispatch %.3fs (wait %.3fs), store %.3fs, disk %.3fs\n",
           bp_dsp / cook_computes, bp_wait / cook_computes, bp_sto / cook_computes, bp_dsk / cook_computes);
+      // per-class cost model (sorted by compute cost): cache-point candidates are the
+      // classes whose per-node recompute exceeds a blob load (~0.1s-class).
+      std::vector<std::pair<std::string, BpClass>> bcl(bp_class.begin(), bp_class.end());
+      std::sort(bcl.begin(), bcl.end(),
+                [](auto& a, auto& b) { return (a.second.dsp + a.second.sto) > (b.second.dsp + b.second.sto); });
+      for (auto& item : bcl)
+        printf("[cookprof] class %-40s n<%3d> dispatch %7.2fs (wait %7.2fs) avg %.3fs | store %6.2fs %6.1fMB\n",
+               item.first.c_str(), item.second.n, item.second.dsp, item.second.wait,
+               item.second.dsp / std::max(1, item.second.n), item.second.sto,
+               double(item.second.bytes) / (1024.0 * 1024.0));
     }
     if (do_disk_cache)
       printf(
