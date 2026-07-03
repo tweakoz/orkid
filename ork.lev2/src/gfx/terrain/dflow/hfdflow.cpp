@@ -18,6 +18,7 @@
 #include <ork/dataflow/plug_data.inl>
 #include <ork/dataflow/plug_inst.inl>
 #include <ork/kernel/string/string.h>
+#include <chrono>
 #include <ork/reflect/serialize/JsonSerializer.h>
 #include <ork/reflect/serialize/JsonDeserializer.h>
 #include <ork/kernel/datacache.h> // DataBlockCache — per-node cook cache
@@ -538,15 +539,29 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
 
     // --- the loop
     int cook_loaded = 0, cook_computes = 0, cook_skipped = 0;
+    // ORKID_BAKE_PROFILE=1: wall-time attribution of the serial cook loop, per
+    // computed node: acquire / params / dispatch(record+submit+WAIT) /
+    // store(staged readback+serialize) / disk(fwrite) / other(loop residual).
+    static const bool s_bakeprof = (getenv("ORKID_BAKE_PROFILE") != nullptr);
+    auto bp_now = []() -> double {
+      return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    };
+    double bp_acq = 0, bp_par = 0, bp_dsp = 0, bp_sto = 0, bp_dsk = 0;
+    double bp_max_dsp = 0, bp_max_sto = 0;
+    size_t bp_bytes = 0;
+    std::string bp_max_dsp_n, bp_max_sto_n;
+    const double bp_loop0 = bp_now();
     for (size_t i = 0; i < N; i++) {
       auto inst = order[i];
       if (not needed[i]) {
         cook_skipped++;
         continue; // no acquire, no disk read, no upload
       }
+      double bp_t0 = s_bakeprof ? bp_now() : 0.0;
       env->beginNodeScope();
       if (auto tci = std::dynamic_pointer_cast<TerrainComputeInst>(inst))
         tci->bakeAcquire(ginst.get()); // outputs + scratch, pool-served (lazy mode)
+      if (s_bakeprof) { double t = bp_now(); bp_acq += t - bp_t0; bp_t0 = t; }
       if (hit[i]) {
         // cache HIT — fetch the FULL entry now (probe read only a header prefix),
         // upload to the node's (just-acquired) SSBO, release the host copy at
@@ -560,12 +575,26 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
         // bake's t=0 this equals the onActivate fill — uniform, not behavioral).
         if (auto pp = std::dynamic_pointer_cast<dflowgfx::IPrePhaseParams>(inst))
           pp->writeParams(ctx);
+        if (s_bakeprof) { double t = bp_now(); bp_par += t - bp_t0; bp_t0 = t; }
         ci->beginDispatchPhase();
         inst->compute(ginst.get(), updata);
         ci->endDispatchPhase(); // submit + WAIT -> this node's output is now valid
+        if (s_bakeprof) {
+          double t = bp_now(), d = t - bp_t0;
+          bp_dsp += d; bp_t0 = t;
+          if (d > bp_max_dsp) { bp_max_dsp = d; bp_max_dsp_n = inst->_abstract_module_data->_name; }
+        }
         if (do_disk_cache) {
-          if (auto store = inst->cookStore())
+          if (auto store = inst->cookStore()) {
+            if (s_bakeprof) {
+              double t = bp_now(), d = t - bp_t0;
+              bp_sto += d; bp_t0 = t;
+              bp_bytes += store->length();
+              if (d > bp_max_sto) { bp_max_sto = d; bp_max_sto_n = inst->_abstract_module_data->_name; }
+            }
             DataBlockCache::setDataBlock("dflowcache", inst->_cookHash, store);
+            if (s_bakeprof) { double t = bp_now(); bp_dsk += t - bp_t0; bp_t0 = t; }
+          }
         }
         if (s_cookdbg) // name every node that actually DISPATCHES + why it wasn't a hit
           printf("[cookdbg] COMPUTED node<%s> hash<0x%zx> reason<%s>\n", //
@@ -586,6 +615,18 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
         if (auto hop = std::dynamic_pointer_cast<hfimg_outpluginst_t>(op))
           if (hop->_value)
             env->releaseToPool(hop->_value->_ssbo);
+    }
+    if (s_bakeprof and cook_computes > 0) {
+      double bp_loop = bp_now() - bp_loop0;
+      double bp_oth  = bp_loop - (bp_acq + bp_par + bp_dsp + bp_sto + bp_dsk);
+      printf(
+          "[cookprof] loop %.1fs over %d computed | acquire %.1fs | params %.1fs | dispatch %.1fs "
+          "(max %.3fs @%s) | store %.1fs (max %.3fs @%s, %.1f MB read back) | disk %.1fs | other %.1fs\n",
+          bp_loop, cook_computes, bp_acq, bp_par, bp_dsp, bp_max_dsp, bp_max_dsp_n.c_str(), bp_sto,
+          bp_max_sto, bp_max_sto_n.c_str(), double(bp_bytes) / (1024.0 * 1024.0), bp_dsk, bp_oth);
+      printf(
+          "[cookprof] per-node avg: dispatch %.3fs, store %.3fs, disk %.3fs\n",
+          bp_dsp / cook_computes, bp_sto / cook_computes, bp_dsk / cook_computes);
     }
     if (do_disk_cache)
       printf(
