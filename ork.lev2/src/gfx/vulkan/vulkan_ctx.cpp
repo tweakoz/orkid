@@ -14,6 +14,7 @@
 #include "vulkan_captureasync.h"
 #include "vulkan_ubo_dynamic.h"
 #include <ork/lev2/gfx/image.h>
+#include <filesystem> // WS3 pipeline-cache dir creation (mac libc++ includes transitively; libstdc++ doesn't)
 
 #define USE_OIIO
 #if defined(USE_OIIO)

@@ -26,7 +26,8 @@ namespace dflow = ::ork::dataflow;
 
 // v2 header buffer layout (bytes): counts(16: num_verts,num_corners,num_faces,flags) + bbox(32) = 48, padded to 64.
 // (the render's DrawIndexedIndirect args are a SEPARATE render-owned buffer; the header is for readback.)
-static constexpr int kMeshHeaderBytes = 64;
+static constexpr int kMeshHeaderBytes     = 64;
+static constexpr int kMeshHeaderUsedBytes = 48; // writers fill counts+bbox only; the pad is never written
 
 ///////////////////////////////////////////////////////////////////////////////
 // shared helpers
