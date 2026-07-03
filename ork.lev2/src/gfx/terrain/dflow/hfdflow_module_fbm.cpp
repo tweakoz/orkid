@@ -42,26 +42,41 @@ storage_interface sif_pm (descriptor_set 0) {
   storage { sif_hf sif_pm%WARPLIST% }
   inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); }
 }
-compute_shader cs_fbm : iface_hf {
+libblock lib_fbmhash {
+  // DETERMINISTIC integer lattice hash (lowbias32 mix) — replaces
+  // fract(sin(dot(..))*43758..), whose vendor-approximated sin() made mac and linux
+  // generate entirely different noise from identical params (the cross-platform
+  // terrain divergence, PCIEopt.md §6). The seed is RUNTIME data (params SSBO p_r0);
+  // seed changes never rebuild the shader.
+  float _fbmhash21(vec2 cell, uint seed) { // [0,1)
+    uvec2 q = uvec2(ivec2(cell)) * uvec2(1597334673u, 3812015801u);
+    uint n = q.x ^ q.y ^ (seed * 0x9e3779b9u);
+    n ^= n >> 16; n *= 0x7feb352du; n ^= n >> 15; n *= 0x846ca68bu; n ^= n >> 16;
+    return float(n >> 8) * (1.0 / 16777216.0);
+  }
+}
+compute_shader cs_fbm : iface_hf : lib_fbmhash {
   if (gl_GlobalInvocationID.x >= %DIMU% || gl_GlobalInvocationID.y >= %DIMU%) { return; }
   uint xi = gl_GlobalInvocationID.x;
   uint yi = gl_GlobalInvocationID.y;
-  // domain offset: keep texel (0,0) off the lattice origin. Without it, (0,0)->p=(0,0)
-  // every octave, where sin(dot(0,k))=0 makes the hash 0 -> fbm(0,0)=0 = a degenerate
-  // global-min sink that erosion deepens into a corner crater. The offset means no texel
-  // maps to a fixed lattice point across octaves, so there is no reinforced sink anywhere.
+  // domain offset: keep texel (0,0) off the lattice origin so no texel maps to a FIXED
+  // lattice point across octaves (a reinforced value there becomes a degenerate sink
+  // erosion deepens into a crater — originally sin(0)=0 pinned it to the global min;
+  // the integer hash un-pins the VALUE but the offset stays: fixed-point reinforcement
+  // is basis-independent).
   // p_obx/p_oby = the anti-degeneracy base + user offset + offset_vel*time (HOST-composed);
   // the optional WARP term bends the base domain per-texel BEFORE the octave loop.
   vec2 p = vec2(float(xi), float(yi)) / float(%DIM%) * p_freq + vec2(p_obx, p_oby)%WARPADD%;
+  uint sd = uint(p_r0); // lattice-hash seed — runtime data, no shader rebuild on change
   float sum = 0.0, ampl = 1.0, nrm = 0.0;
   for (int o = 0; o < %OCT%; o++) {
     vec2 ip = floor(p);
     vec2 fp = fract(p);
     vec2 u  = fp * fp * (3.0 - 2.0 * fp);
-    float a = fract(sin(dot(ip + vec2(0.0, 0.0), vec2(127.1, 311.7))) * 43758.5453);
-    float b = fract(sin(dot(ip + vec2(1.0, 0.0), vec2(127.1, 311.7))) * 43758.5453);
-    float c = fract(sin(dot(ip + vec2(0.0, 1.0), vec2(127.1, 311.7))) * 43758.5453);
-    float d = fract(sin(dot(ip + vec2(1.0, 1.0), vec2(127.1, 311.7))) * 43758.5453);
+    float a = _fbmhash21(ip + vec2(0.0, 0.0), sd);
+    float b = _fbmhash21(ip + vec2(1.0, 0.0), sd);
+    float c = _fbmhash21(ip + vec2(0.0, 1.0), sd);
+    float d = _fbmhash21(ip + vec2(1.0, 1.0), sd);
     float n = mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
     sum += ampl * n;
     nrm += ampl;
@@ -120,7 +135,7 @@ struct FbmModuleInst : public TerrainComputeInst {
     float pm[8]   = {freq, amp,
                      11.7f + off.x + vel.x * t,  // anti-degeneracy base + user offset + pan
                      31.3f + off.y + vel.y * t,
-                     wamt, 0.0f, 0.0f, 0.0f};
+                     wamt, float(_fmd->_seed), 0.0f, 0.0f}; // p_r0 = lattice-hash seed
     auto mp = fxi->mapStorageBuffer(_pm, 0, sizeof(pm), BufferMapAccess::WRITE_ONLY);
     std::memcpy(mp->_mappedaddr, pm, sizeof(pm));
     fxi->unmapStorageBuffer(mp.get());
@@ -179,8 +194,9 @@ struct FbmModuleInst : public TerrainComputeInst {
 
   uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
     auto h = DataBlock::createHasher();
-    h->accumulateString("terrain.fbm.v4"); // v4: runtime params SSBO (E.1b)
+    h->accumulateString("terrain.fbm.v5"); // v5: deterministic integer lattice hash (was vendor-sin)
     h->accumulateItem<int>(_fmd->_octaves);
+    h->accumulateItem<int>(_fmd->_seed);
     h->accumulateItem<float>(*(_fmd->typedInputNamed<dflow::FloatPlugTraits>("frequency")->_value));
     h->accumulateItem<float>(*(_fmd->typedInputNamed<dflow::FloatPlugTraits>("amplitude")->_value));
     auto off = *(_fmd->typedInputNamed<dflow::Vec2fPlugTraits>("offset")->_value);
@@ -239,6 +255,7 @@ void FbmModuleData::describeX(class_t* clazz) {
   // _octaves is a BAKED loop bound (not a plug) — reflect it so the serialized
   // graph self-describes (the JSON is the portable, python-decoupled artifact).
   clazz->directProperty("octaves", &FbmModuleData::_octaves);
+  clazz->directProperty("seed", &FbmModuleData::_seed);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

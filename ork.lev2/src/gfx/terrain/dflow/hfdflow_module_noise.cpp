@@ -21,10 +21,10 @@ namespace ork::lev2::terrain {
 // basis enum -> the libblock call substituted into the octave loop.
 static const char* _noise_basis_call(int basis) {
   switch (basis) {
-    case 1:  return "_nsimplex(p)";
-    case 2:  return "_nworley(p)";
-    case 3:  return "_nvoronoi(p)";
-    default: return "_nperlin(p)";   // 0
+    case 1:  return "_nsimplex(p, sd)";
+    case 2:  return "_nworley(p, sd)";
+    case 3:  return "_nvoronoi(p, sd)";
+    default: return "_nperlin(p, sd)";   // 0
   }
 }
 
@@ -59,25 +59,43 @@ storage_interface sif_pm (descriptor_set 0) {
   inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); }
 }
 libblock lib_tnoise {
+  // DETERMINISTIC integer lattice hash (lowbias32 mix — same family the hypermesh
+  // shaders use). Replaces fract(sin(dot(..))*43758..): sin() at large arguments is
+  // vendor-approximated, so mac(Apple) and linux(NVIDIA) generated ENTIRELY different
+  // noise fields from identical params — the cross-platform terrain divergence
+  // (PCIEopt.md §6). Lattice cells are exact integer-valued floats; hashing in the
+  // uint domain is bit-exact on every GPU. The seed is RUNTIME data (params SSBO
+  // p_r0) so seed changes never rebuild the shader.
+  uint _ihash_u(vec2 cell, uint seed) {
+    uvec2 q = uvec2(ivec2(cell)) * uvec2(1597334673u, 3812015801u);
+    uint n = q.x ^ q.y ^ (seed * 0x9e3779b9u);
+    n ^= n >> 16; n *= 0x7feb352du; n ^= n >> 15; n *= 0x846ca68bu; n ^= n >> 16;
+    return n;
+  }
+  float _ihash21(vec2 cell, uint seed) { // [0,1)
+    return float(_ihash_u(cell, seed) >> 8) * (1.0 / 16777216.0);
+  }
   // signed 2D hash -> gradient / feature-point offset in [-1,1].
-  vec2 _nhash2(vec2 p) {
-    p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
-    return -1.0 + 2.0 * fract(sin(p) * 43758.5453123);
+  vec2 _nhash2(vec2 cell, uint seed) {
+    uint n = _ihash_u(cell, seed);
+    return -1.0 + 2.0 * vec2(float(n & 0xffffu), float(n >> 16)) * (1.0 / 65535.0);
   }
   vec3 _npermute(vec3 x) { return mod(((x * 34.0) + 1.0) * x, 289.0); }
   // PERLIN — gradient (lattice) noise, quintic-smoothed; remapped to ~[0,1].
-  float _nperlin(vec2 p) {
+  float _nperlin(vec2 p, uint seed) {
     vec2 i = floor(p); vec2 f = fract(p);
     vec2 u = f * f * (3.0 - 2.0 * f);
-    float a = dot(_nhash2(i + vec2(0.0, 0.0)), f - vec2(0.0, 0.0));
-    float b = dot(_nhash2(i + vec2(1.0, 0.0)), f - vec2(1.0, 0.0));
-    float c = dot(_nhash2(i + vec2(0.0, 1.0)), f - vec2(0.0, 1.0));
-    float d = dot(_nhash2(i + vec2(1.0, 1.0)), f - vec2(1.0, 1.0));
+    float a = dot(_nhash2(i + vec2(0.0, 0.0), seed), f - vec2(0.0, 0.0));
+    float b = dot(_nhash2(i + vec2(1.0, 0.0), seed), f - vec2(1.0, 0.0));
+    float c = dot(_nhash2(i + vec2(0.0, 1.0), seed), f - vec2(0.0, 1.0));
+    float d = dot(_nhash2(i + vec2(1.0, 1.0), seed), f - vec2(1.0, 1.0));
     float n = mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
     return 0.5 + 0.5 * n;
   }
   // SIMPLEX — Ashima/McEwan 2D simplex (webgl-noise); remapped to ~[0,1].
-  float _nsimplex(vec2 v) {
+  // permute-based (mod-289 polynomial, exact in fp32 => already cross-vendor
+  // deterministic); takes seed only for a uniform basis-call signature, ignores it.
+  float _nsimplex(vec2 v, uint seed) {
     const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
     vec2 i  = floor(v + dot(v, C.yy));
     vec2 x0 = v - i + dot(i, C.xx);
@@ -98,13 +116,13 @@ libblock lib_tnoise {
     return 0.5 + 0.5 * (130.0 * dot(m, g));
   }
   // WORLEY (cellular F1) — distance to the nearest scattered feature point.
-  float _nworley(vec2 p) {
+  float _nworley(vec2 p, uint seed) {
     vec2 ip = floor(p); vec2 fp = fract(p);
     float f1 = 8.0;
     for (int j = -1; j <= 1; j++) {
       for (int i = -1; i <= 1; i++) {
         vec2 g = vec2(float(i), float(j));
-        vec2 o = 0.5 + 0.5 * _nhash2(ip + g);
+        vec2 o = 0.5 + 0.5 * _nhash2(ip + g, seed);
         vec2 r = g + o - fp;
         f1 = min(f1, dot(r, r));
       }
@@ -112,19 +130,19 @@ libblock lib_tnoise {
     return sqrt(f1);
   }
   // VORONOI — value of the nearest feature point's cell (flat random per cell).
-  float _nvoronoi(vec2 p) {
+  float _nvoronoi(vec2 p, uint seed) {
     vec2 ip = floor(p); vec2 fp = fract(p);
     float f1 = 8.0; vec2 cell = vec2(0.0);
     for (int j = -1; j <= 1; j++) {
       for (int i = -1; i <= 1; i++) {
         vec2 g = vec2(float(i), float(j));
-        vec2 o = 0.5 + 0.5 * _nhash2(ip + g);
+        vec2 o = 0.5 + 0.5 * _nhash2(ip + g, seed);
         vec2 r = g + o - fp;
         float d = dot(r, r);
         if (d < f1) { f1 = d; cell = ip + g; }
       }
     }
-    return fract(sin(dot(cell, vec2(127.1, 311.7))) * 43758.5453);
+    return _ihash21(cell, seed);
   }
 }
 compute_shader cs_noise : iface_hf : lib_tnoise {
@@ -136,6 +154,7 @@ compute_shader cs_noise : iface_hf : lib_tnoise {
   // `offset` folds in; the optional WARP term bends the base domain per-texel (every octave
   // inherits it through p *= 2.0).
   vec2 p = vec2(float(xi), float(yi)) / float(%DIM%) * p_freq + vec2(p_obx, p_oby)%WARPADD%;
+  uint sd = uint(p_r0); // lattice-hash seed — runtime data, no shader rebuild on change
   float sum = 0.0, ampl = 1.0, nrm = 0.0;
   for (int o = 0; o < %OCT%; o++) {     // octaves==1 -> pure primitive; >1 -> fBm-stacked
     sum += ampl * %BASISCALL%;
@@ -192,7 +211,7 @@ struct NoiseModuleInst : public TerrainComputeInst {
     float wamt    = *(_nmd->typedInputNamed<dflow::FloatPlugTraits>("warp_amt")->_value);
     float t       = float(env->_abstime);
     float pm[8]   = {freq, amp, 11.7f + off.x + vel.x * t, 31.3f + off.y + vel.y * t,
-                     wamt, 0.0f, 0.0f, 0.0f};
+                     wamt, float(_nmd->_seed), 0.0f, 0.0f}; // p_r0 = lattice-hash seed
     auto mp = fxi->mapStorageBuffer(_pm, 0, sizeof(pm), BufferMapAccess::WRITE_ONLY);
     std::memcpy(mp->_mappedaddr, pm, sizeof(pm));
     fxi->unmapStorageBuffer(mp.get());
@@ -242,9 +261,10 @@ struct NoiseModuleInst : public TerrainComputeInst {
 
   uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
     auto h = DataBlock::createHasher();
-    h->accumulateString("terrain.noise.v3"); // v3: runtime params SSBO (E.1b)
+    h->accumulateString("terrain.noise.v4"); // v4: deterministic integer lattice hash (was vendor-sin)
     h->accumulateItem<int>(_nmd->_basis);
     h->accumulateItem<int>(_nmd->_octaves);
+    h->accumulateItem<int>(_nmd->_seed);
     h->accumulateItem<float>(*(_nmd->typedInputNamed<dflow::FloatPlugTraits>("frequency")->_value));
     h->accumulateItem<float>(*(_nmd->typedInputNamed<dflow::FloatPlugTraits>("amplitude")->_value));
     auto off = *(_nmd->typedInputNamed<dflow::Vec2fPlugTraits>("offset")->_value);
@@ -302,6 +322,7 @@ void NoiseModuleData::describeX(class_t* clazz) {
   // the serialized graph self-describes (the JSON is the portable, python-decoupled artifact).
   clazz->directProperty("basis", &NoiseModuleData::_basis);
   clazz->directProperty("octaves", &NoiseModuleData::_octaves);
+  clazz->directProperty("seed", &NoiseModuleData::_seed);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
