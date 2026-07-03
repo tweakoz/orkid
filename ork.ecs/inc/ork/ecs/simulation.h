@@ -8,6 +8,7 @@
 #pragma once
 
 #include <ork/lev2/gfx/camera/cameradata.h>
+#include <ork/lev2/gfx/loadjoinset.h>
 #include <ork/math/TransformNode.h>
 #include <ork/util/fsm.h>
 #include <ork/kernel/future.hpp>
@@ -296,6 +297,13 @@ private:
   fsm::fsminstance_ptr_t _updateThreadSMInst;
   fsm::fsminstance_ptr_t _renderThreadSMInst;
   fsm::fsminstance_ptr_t _gpuUpdateSMInst;
+
+  // LOADX WS1: per-load-wave spawn/join set. Systems' _onGpuInit may SPAWN
+  // (workers/io/loader-phases/adopted asset requests); the READY rendezvous
+  // JOINS (pumping) between the init and link loops, so every _onGpuLink sees
+  // completed loads. Fresh instance per wave (created just before init).
+  lev2::loadjoinset_ptr_t _loadJoinSet;
+  lev2::loadjoinset_ptr_t loadJoinSet() const { return _loadJoinSet; }
 
   fsm::lambdastate_ptr_t _updateReadySimState;
   fsm::lambdastate_ptr_t _updateEditSimState;

@@ -13,6 +13,9 @@
 #include <ork/ecs/SceneGraphComponent.h>        // D.5: node-item drawable/envmap patching
 #include <ork/ecs/ParticlesComponent.h>         // D.5: particles_asset_name patching
 #include <ork/ecs/archetype.h>
+#include <ork/lev2/gfx/loadjoinset.h> // WS1: parallel channel-texture decodes
+#include <ork/lev2/gfx/image.h>
+#include <filesystem>
 #include <ork/lev2/gfx/material_pbr.inl> // D.1 stage 3: the C++ wire step materializes materials
 #include <ork/lev2/gfx/hypermesh/hmdflow.h> // D.3: hypermesh gens materialize to LiveHypermesh
 #include <ork/lev2/gfx/asset_gen_vdb.h>     // D.5: ImplicitSdf / VdbGridToDrawable / ParticleSystem
@@ -117,9 +120,38 @@ void AssetSystemData::materializeAll(lev2::Context* ctx, varmap::VarMap& artifac
           hf->_material_asset.c_str());
       continue;
     }
+    // WS1 (LoadJoinSet proof adoption): the channel EXRs are multi-hundred-MB
+    // decodes — fan the DECODES out to workers and join (pumping), then do the
+    // GPU uploads + binds serially on ctx. Order of binds preserved.
+    struct ChannelBindJob {
+      std::string _sampler;
+      std::string _path;
+      std::string _who;
+      lev2::image_ptr_t _img;
+    };
+    auto jobs = std::make_shared<std::vector<ChannelBindJob>>();
     for (const auto& [channel, sampler] : hf->_channel_samplers)
-      lev2::PbrMaterialGenData::bindSamplerTexture(
-          mtl, ctx, sampler, hf->channelPath(channel), "HeightField<" + hf->_asset_name + ">↔material<" + hf->_material_asset + ">");
+      jobs->push_back(ChannelBindJob{
+          sampler,
+          ork::file::Path::expandPathString(hf->channelPath(channel)),
+          "HeightField<" + hf->_asset_name + ">↔material<" + hf->_material_asset + ">",
+          nullptr});
+    lev2::LoadJoinSet ljs("terrain_channel_decode");
+    for (size_t ji = 0; ji < jobs->size(); ji++) {
+      auto job = &(*jobs)[ji];
+      if (not std::filesystem::exists(job->_path)) {
+        printf(
+            "%s: sampler<%s> texture<%s> MISSING — binding skipped "
+            "(is the producing asset declared in the scene?)\n",
+            job->_who.c_str(), job->_sampler.c_str(), job->_path.c_str());
+        continue;
+      }
+      ljs.spawnOnWorkers([job]() { job->_img = lev2::Image::createFromFile(job->_path); });
+    }
+    ljs.join(ctx);
+    for (auto& job : *jobs)
+      if (job._img)
+        lev2::PbrMaterialGenData::bindSamplerImage(mtl, ctx, job._sampler, job._img, job._who);
   }
 }
 

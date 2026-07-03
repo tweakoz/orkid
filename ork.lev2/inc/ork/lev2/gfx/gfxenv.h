@@ -474,6 +474,10 @@ public:
 
   void enqueueDeferredOp(ctx_lambda_t op);
   void processDeferredOps();
+  // WS1: public bounded drain of this context's loading phases (30ms budget per
+  // call — same drain frame-begin uses). For pump-while-waiting joins
+  // (LoadJoinSet) that run OUTSIDE the frame loop. Caller must own this ctx.
+  void pumpLoadingPhases() { _loadingPhaseOperations(); }
   bool hasDeferredOps() const;
   // No waitForDeferredOps(): the queue is drained only by this context's
   // beginFrame() on its owning thread. A blocking wait from that same

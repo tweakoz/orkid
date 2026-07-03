@@ -142,7 +142,21 @@ bool PbrMaterialGenData::bindSamplerTexture(
     return false;
   }
   auto img = Image::createFromFile(path);
-  auto tex = std::make_shared<Texture>();
+  return bindSamplerImage(mat, ctx, sampler, img, who);
+}
+
+bool PbrMaterialGenData::bindSamplerImage(
+    pbrmaterial_ptr_t mat, Context* ctx, const std::string& sampler, image_ptr_t img, const std::string& who) {
+  auto par = mat->_as_freestyle ? mat->_as_freestyle->param(sampler) : nullptr;
+  if (not par) {
+    printf("%s: shader has no sampler param<%s> — binding skipped\n", who.c_str(), sampler.c_str());
+    return false;
+  }
+  if (not img) {
+    printf("%s: sampler<%s> image decode FAILED — binding skipped\n", who.c_str(), sampler.c_str());
+    return false;
+  }
+  auto tex        = std::make_shared<Texture>();
   tex->_debugName = sampler;
   ctx->TXI()->initTextureFromImage(tex.get(), img, false /*mipmapped*/, false /*async*/);
   mat->bindParam(par, tex);
