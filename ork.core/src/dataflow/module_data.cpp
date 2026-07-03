@@ -188,6 +188,9 @@ it!=mDependencies.end(); it++ )
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void DgModuleData::describeX(class_t* clazz) {
+  // per-node cook-cache override (see header) — round-trips with the graph so an
+  // authored cache point survives serialization; absent in old graphs -> -1.
+  clazz->directProperty("cachepoint", &DgModuleData::_cachepoint);
 }
 ///////////////////////////////////////////////////////////////////////////////
 DgModuleData::DgModuleData()

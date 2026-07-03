@@ -87,6 +87,22 @@ struct TerrainComputeInst : public dflow::DgModuleInst, public dflowgfx::IPrePha
   // quantization changes the output, so downstream Merkle keys must change with it.
   virtual bool cookHalfOutput(const std::string& output_name) const { return false; }
 
+  // STRATEGIC CACHE POINTS (PCIEopt 84dec67): only classes whose recompute beats a
+  // blob load (~0.1s NVMe+upload) default to cook-caching — Flow3D, FillClosedBasins,
+  // BasinFill, RelaxUv, ThermalErode per the measured cost model. Everything else
+  // recomputes on warm bakes (the demand planner resumes per fork from the deepest
+  // clean cached cut — no planner changes). Per-node DSL override: the reflected
+  // "cachepoint" property on DgModuleData (-1 class default / 0 never / 1 always).
+  // ORKID_COOK_CACHE_ALL=1 restores cache-everything (cross-machine blob audits).
+  virtual bool cookCacheDefault() const { return false; }
+  bool cookIsCachePoint() const {
+    static const bool s_cache_all = (getenv("ORKID_COOK_CACHE_ALL") != nullptr);
+    if (s_cache_all)
+      return true;
+    int ov = _dgmodule_data->_cachepoint;
+    return (ov >= 0) ? (ov != 0) : cookCacheDefault();
+  }
+
   // fp32<->fp16 bit converters (same semantics as image_fmt_convert / pack_frame5).
   static uint16_t _f32tof16(float f) {
     uint32_t bits;

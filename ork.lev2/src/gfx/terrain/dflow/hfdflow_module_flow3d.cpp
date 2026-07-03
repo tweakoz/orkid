@@ -233,6 +233,7 @@ struct Flow3DModuleInst : public TerrainComputeInst {
     return output_name == "Out" or output_name == "Metrics";
   }
 
+  bool cookCacheDefault() const final { return true; } // measured cache-point class (PCIEopt 84dec67)
   uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
     auto h = DataBlock::createHasher();
     h->accumulateString("terrain.flow3d.v4"); // v4: Out/Metrics fp16 cook quantization; v3: + Metrics output

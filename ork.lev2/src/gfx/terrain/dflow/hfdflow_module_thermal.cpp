@@ -111,6 +111,7 @@ struct ThermalErodeModuleInst : public TerrainComputeInst {
     }
     // parity gives cur == 0 -> the result is in _output->_value->_ssbo.
   }
+  bool cookCacheDefault() const final { return true; } // measured cache-point class (PCIEopt 84dec67)
   uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
     auto h = DataBlock::createHasher();
     h->accumulateString("terrain.thermal.v2"); // v2: erosion_exaggerated_height_m plug

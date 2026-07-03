@@ -202,6 +202,7 @@ struct FillClosedBasinsModuleInst : public TerrainComputeInst {
     return output_name == "Basin" or output_name == "CenterPit";
   }
 
+  bool cookCacheDefault() const final { return true; } // measured cache-point class (PCIEopt 84dec67)
   uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
     auto h = DataBlock::createHasher();
     h->accumulateString("terrain.fillclosedbasins.v2"); // v2: Basin/CenterPit fp16 cook quantization; v1: CPU union-find merge tree

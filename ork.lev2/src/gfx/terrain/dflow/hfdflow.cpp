@@ -429,11 +429,18 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
                sink[i] ? " (sink)" : "");
       if (do_disk_cache and not sink[i]) {
         if (auto tci = std::dynamic_pointer_cast<TerrainComputeInst>(inst)) {
-          auto hdr = DataBlockCache::findDataBlockPrefix("dflowcache", inst->_cookHash, 256);
-          if (hdr and tci->cookProbe(hdr, dim, dim))
-            hit[i] = true;
-          else
-            missreason[i] = hdr ? "probe-reject" : "no-cache-entry";
+          // STRATEGIC CACHE POINTS: only cache-point classes probe (and store, below).
+          // A non-cache-point node is never a hit, so warm demand walks through it to
+          // the deepest clean cached cut on each fork and recomputes the cheap segment.
+          if (not tci->cookIsCachePoint()) {
+            missreason[i] = "not-a-cache-point";
+          } else {
+            auto hdr = DataBlockCache::findDataBlockPrefix("dflowcache", inst->_cookHash, 256);
+            if (hdr and tci->cookProbe(hdr, dim, dim))
+              hit[i] = true;
+            else
+              missreason[i] = hdr ? "probe-reject" : "no-cache-entry";
+          }
         } else {
           missreason[i] = "not-cacheable-type";
         }
@@ -610,7 +617,11 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
           auto& bc = bp_class[inst->_abstract_module_data->GetClass()->Name().c_str()];
           bc.dsp += d; bc.wait += w; bc.n++;
         }
-        if (do_disk_cache) {
+        bool store_this = do_disk_cache;
+        if (store_this and not sink[i])
+          if (auto tci = std::dynamic_pointer_cast<TerrainComputeInst>(inst))
+            store_this = tci->cookIsCachePoint(); // strategic cache points: store only at cuts
+        if (store_this) {
           if (auto store = inst->cookStore()) {
             if (s_bakeprof) {
               double t = bp_now(), d = t - bp_t0;

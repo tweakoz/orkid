@@ -87,6 +87,11 @@ public:
   graphdata_ptr_t _parent;
   fvec2 mgvpos;
   bool _prunable = true;
+  // strategic cook-cache point override (per-node DSL marker, reflected as
+  // "cachepoint"): -1 = module-class default decides, 0 = never cache this
+  // node's output, 1 = always cache it. Consumed by cook-cache drivers
+  // (terrain bake); inert elsewhere.
+  int _cachepoint = -1;
 
 private:
   // Cycle-safe, memoized recursive helpers. `on_path` tracks the current DFS

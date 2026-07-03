@@ -172,6 +172,7 @@ struct BasinFillModuleInst : public TerrainComputeInst {
     std::memcpy(om->_mappedaddr, filled.data(), n * sizeof(float));
     fxi->unmapStorageBuffer(om.get());
   }
+  bool cookCacheDefault() const final { return true; } // measured cache-point class (PCIEopt 84dec67)
   uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
     auto h = DataBlock::createHasher();
     h->accumulateString("terrain.basinfill.v1"); // priority-flood depression fill (CPU)
