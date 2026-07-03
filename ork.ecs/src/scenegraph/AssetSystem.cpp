@@ -49,6 +49,28 @@ System* AssetSystemData::createSystem(ecs::Simulation* psim) const {
 }
 
 void AssetSystemData::materializeAll(lev2::Context* ctx, varmap::VarMap& artifacts) const {
+  // WS2 pass A — fan the PURE-CPU gens out to workers (LoadJoinSet) before the
+  // ordered pass below. Today that is the OpenVDB AX voxelizations (CPU-heavy,
+  // per-call-local ax::Compiler; openvdb::ax::initialize ran once at lev2 init).
+  // GPU-cook gens (terrain bake, hypermesh, materials) STAY SERIAL on ctx —
+  // cross-context GPU cooking is postmortem territory (see PCIEopt §9 / the
+  // deferred-updates postmortem) and is not attempted here. Results are keyed
+  // by GEN INSTANCE so duplicate asset names cannot race a shared slot.
+  std::map<const lev2::AssetGenData*, lev2::vdb_floatgrid_ptr_t> sdf_results;
+  {
+    // create every slot BEFORE any worker runs (stable node addresses)
+    for (auto gen : _gens)
+      if (auto sdf = std::dynamic_pointer_cast<lev2::ImplicitSdfGenData>(gen))
+        sdf_results[sdf.get()] = nullptr;
+    lev2::LoadJoinSet ljs("assetsys_cpu_gens");
+    for (auto gen : _gens)
+      if (auto sdf = std::dynamic_pointer_cast<lev2::ImplicitSdfGenData>(gen)) {
+        auto slot = &sdf_results[sdf.get()];
+        ljs.spawnOnWorkers([slot, sdf]() { *slot = lev2::materializeImplicitSdf(*sdf); });
+      }
+    ljs.join(ctx);
+  }
+  // pass B — the ordered materialize (original semantics; SDF branch consumes pass A)
   for (auto gen : _gens) {
     if (not gen)
       continue;
@@ -63,7 +85,8 @@ void AssetSystemData::materializeAll(lev2::Context* ctx, varmap::VarMap& artifac
       artifacts.makeValueForKey<lev2::hypermesh::livehypermesh_ptr_t>(name) = hm->materialize(ctx);
     } else if (auto sdf = std::dynamic_pointer_cast<lev2::ImplicitSdfGenData>(gen)) {
       // D.5: AX voxelize -> FloatGrid (consumed by VdbGridToDrawable + collider sdf refs)
-      artifacts.makeValueForKey<lev2::vdb_floatgrid_ptr_t>(name) = lev2::materializeImplicitSdf(*sdf);
+      // WS2: voxelized on workers in pass A above — consume the slot.
+      artifacts.makeValueForKey<lev2::vdb_floatgrid_ptr_t>(name) = sdf_results[sdf.get()];
     } else if (auto ptc = std::dynamic_pointer_cast<lev2::ParticleSystemGenData>(gen)) {
       // D.5: embedded graph -> ParticlesDrawableData (+ sdf_asset resolution + probe stamp)
       artifacts.makeValueForKey<lev2::particles_drawable_data_ptr_t>(name) =
