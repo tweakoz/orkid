@@ -525,6 +525,20 @@ void CtxDRM::_processKeyboardEvent(void* event_ptr) {
             break;
     }
 
+    // CAPS LOCK: emulate GLFW's lock-state semantics (walk_input's autowalk relies
+    // on "held while the LED is on"). The physical PRESS toggles the lock — emit
+    // KEY_DOWN when it engages and KEY_UP when it disengages; swallow the physical
+    // RELEASE (passing it through would un-stick the key immediately).
+    if (linux_key == KEY_CAPSLOCK) {
+        if (not pressed)
+            return;
+        _capsLockState = not _capsLockState;
+        uiev->_eventcode = _capsLockState ? ui::EventCode::KEY_DOWN : ui::EventCode::KEY_UP;
+        uiev->miKeyCode  = glfw_key;
+        _fire_ui_event();
+        return;
+    }
+
     // Fire UI keyboard event
     uiev->_eventcode = pressed ? ui::EventCode::KEY_DOWN : ui::EventCode::KEY_UP;
     uiev->miKeyCode = glfw_key;

@@ -85,6 +85,9 @@ private:
     bool _ctrlDown = false;
     bool _altDown = false;
     bool _superDown = false;
+    // emulated caps-LOCK state (GLFW semantics: the key reads as held while the
+    // lock is engaged) — raw libinput only reports the physical press/release
+    bool _capsLockState = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
