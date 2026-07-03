@@ -21,6 +21,8 @@
 #include <ork/reflect/serialize/JsonSerializer.h>
 #include <ork/reflect/serialize/JsonDeserializer.h>
 #include <ork/kernel/datacache.h> // DataBlockCache — per-node cook cache
+#include <ork/kernel/opq.h>       // concurrent queue — parallel capture encodes (WS7)
+#include <ork/kernel/semaphore.h>
 #include <unordered_set>
 #include <filesystem>
 #include <fstream>
@@ -614,11 +616,44 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
   // since both encodings are field-relative.
   std::vector<fieldstats_ptr_t> stats;
   auto fxi = ctx->FXI();
-  for (auto& req : env->_captures) {
+  // WS7 (LOADX): SSBO readbacks stay SERIAL on the bound context, but each capture's
+  // CPU tail — stats, normalize, Scharr normal synthesis, EXR/PNG encode, file write,
+  // sidecar — fans out to the concurrent queue and joins before return. The encodes
+  // were the dominant cold-bake cost after the cook itself (67s of serial 4096² EXR
+  // work in the linux scn_forest profile); they are per-file independent. Per-request
+  // stats land in their own slot so the returned FLUSH order is unchanged.
+  const size_t nreq = env->_captures.size();
+  std::vector<std::vector<fieldstats_ptr_t>> req_stats(nreq);
+  ork::semaphore flush_sema("terra_capflush");
+  int njobs = 0;
+
+  // split a comma-joined channel list ("height,normal") into trimmed tokens.
+  auto split_channels = [](const std::string& cs, const char* fallback) {
+    std::vector<std::string> out;
+    size_t start = 0;
+    while (start <= cs.size()) {
+      size_t comma   = cs.find(',', start);
+      size_t len     = (comma == std::string::npos) ? std::string::npos : (comma - start);
+      std::string tk = cs.substr(start, len);
+      while (not tk.empty() and tk.front() == ' ') tk.erase(tk.begin());
+      while (not tk.empty() and tk.back() == ' ') tk.pop_back();
+      if (not tk.empty()) out.push_back(tk);
+      if (comma == std::string::npos) break;
+      start = comma + 1;
+    }
+    if (out.empty()) out.push_back(fallback);
+    return out;
+  };
+
+  for (size_t ri = 0; ri < nreq; ri++) {
+    auto& req = env->_captures[ri];
     auto img  = req._img; // GpuComputeImage2DInst (the producer's output value)
     int w     = img->_w;
     int h     = img->_h;
     size_t n  = size_t(w) * size_t(h);
+    std::string path_tpl = std::string(req._path.c_str());
+    uint64_t cookkey     = req._cookkey;
+    auto slot            = &req_stats[ri];
 
     // MULTI-CHANNEL capture (e.g. flow3d's RGBA flow field): the producer wrote `_channels`
     // interleaved floats/cell, already display-ready. Pass through to an RGBA32F EXR verbatim
@@ -627,43 +662,50 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
       int nch = img->_channels;
       auto mcmap = fxi->mapStorageBuffer(img->_ssbo, 0, n * size_t(nch) * sizeof(float), BufferMapAccess::READ_ONLY);
       const float* mc = (const float*)mcmap->_mappedaddr;
-      std::vector<float> rgba(n * 4, 0.0f);
+      auto rgba = std::make_shared<std::vector<float>>(n * 4, 0.0f);
       for (size_t i = 0; i < n; i++)
         for (int c = 0; c < 4; c++)
-          rgba[i * 4 + c] = (c < nch) ? mc[i * size_t(nch) + size_t(c)] : (c == 3 ? 1.0f : 0.0f);
+          (*rgba)[i * 4 + c] = (c < nch) ? mc[i * size_t(nch) + size_t(c)] : (c == 3 ? 1.0f : 0.0f);
       fxi->unmapStorageBuffer(mcmap.get());
-      // split the (comma-joined) channel names and emit the SAME RGBA under each name (the list
-      // form of capture() — one readback, one image per name). All names get the verbatim RGBA.
-      std::vector<std::string> mchans;
-      { const std::string cs = req._channels; size_t start = 0;
-        while (start <= cs.size()) {
-          size_t comma = cs.find(',', start);
-          size_t len   = (comma == std::string::npos) ? std::string::npos : (comma - start);
-          std::string tk = cs.substr(start, len);
-          if (not tk.empty()) mchans.push_back(tk);
-          if (comma == std::string::npos) break;
-          start = comma + 1;
+      // one job per capture: emit the SAME RGBA under each name (the list form of
+      // capture() — one readback, one image per name).
+      auto mchans = split_channels(req._channels, "field");
+      opq::concurrentQueue()->enqueue([=, &flush_sema]() {
+        for (auto& ch : mchans) {
+          std::string path = ork::file::Path::expandPathString(path_tpl);
+          { const std::string mark = "{channel}"; size_t pos = path.find(mark);
+            if (pos != std::string::npos) path.replace(pos, mark.size(), ch); }
+          Image oimg; oimg.initWithFormat(w, h, EBufferFormat::RGBA32F);
+          memcpy((void*)oimg._data->data(), rgba->data(), rgba->size() * sizeof(float));
+          oimg.writeToFile(ork::file::Path(path.c_str()), /*linear=*/false);
+          printf("[terrain bake] wrote <%s> (%dx%d, RGBA32F, %dch passthrough)\n", path.c_str(), w, h, nch);
+          auto fs = std::make_shared<FieldStats>(); fs->_min = 0.0f; fs->_max = 1.0f; fs->_mean = 0.0f;
+          fs->_channel = ch;
+          if (cookkey) // capture-currency: next unchanged bake skips this file
+            _writeCaptureSidecar(path, cookkey, *fs);
+          slot->push_back(fs);
         }
-        if (mchans.empty()) mchans.push_back("field"); }
-      for (auto& ch : mchans) {
-        std::string path = ork::file::Path::expandPathString(std::string(req._path.c_str()));
-        { const std::string mark = "{channel}"; size_t pos = path.find(mark);
-          if (pos != std::string::npos) path.replace(pos, mark.size(), ch); }
-        Image oimg; oimg.initWithFormat(w, h, EBufferFormat::RGBA32F);
-        memcpy((void*)oimg._data->data(), rgba.data(), rgba.size() * sizeof(float));
-        oimg.writeToFile(ork::file::Path(path.c_str()), /*linear=*/false);
-        printf("[terrain bake] wrote <%s> (%dx%d, RGBA32F, %dch passthrough)\n", path.c_str(), w, h, nch);
-        auto fs = std::make_shared<FieldStats>(); fs->_min = 0.0f; fs->_max = 1.0f; fs->_mean = 0.0f;
-        fs->_channel = ch;
-        if (req._cookkey) // capture-currency: next unchanged bake skips this file
-          _writeCaptureSidecar(path, req._cookkey, *fs);
-        stats.push_back(fs);
-      }
+        flush_sema.notify();
+      }, "terra_capflush_mc");
+      njobs++;
       continue;
     }
 
-    auto mapping = fxi->mapStorageBuffer(img->_ssbo, 0, n * sizeof(float), BufferMapAccess::READ_ONLY);
-    const float* src = (const float*)mapping->_mappedaddr;
+    // SERIAL part: read the field back off the GPU into a host copy, then hand the
+    // whole CPU tail to a worker.
+    auto raw = std::make_shared<std::vector<float>>(n);
+    {
+      auto mapping = fxi->mapStorageBuffer(img->_ssbo, 0, n * sizeof(float), BufferMapAccess::READ_ONLY);
+      memcpy(raw->data(), mapping->_mappedaddr, n * sizeof(float));
+      fxi->unmapStorageBuffer(mapping.get());
+    }
+    auto channels = split_channels(req._channels, "height");
+    // world scale for the normal gradient (assumes a square field, W==H==dim).
+    float texel_m  = (w > 0) ? (env->_extent_m / float(w)) : 1.0f;
+    float vscale_m = env->_height_scale_m;
+
+    opq::concurrentQueue()->enqueue([=, &flush_sema]() {
+    const float* src = raw->data();
 
     // pass 1: field stats.
     float vmin = 1e30f, vmax = -1e30f;
@@ -687,36 +729,15 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
       float t = (src[i] - vmin) * inv;
       hn[i]   = t < 0.0f ? 0.0f : (t > 1.0f ? 1.0f : t);
     }
-    fxi->unmapStorageBuffer(mapping.get());
     if(0)printf("[terrain bake] field stats: min<%g> max<%g> mean<%g>  (normalized to [min,max])\n",
            vmin, vmax, vmean);
-
-    // split the capture's channel list ("height", or "height,normal", ...).
-    std::vector<std::string> channels;
-    {
-      const std::string cs = req._channels;
-      size_t start = 0;
-      while (start <= cs.size()) {
-        size_t comma   = cs.find(',', start);
-        size_t len     = (comma == std::string::npos) ? std::string::npos : (comma - start);
-        std::string tk = cs.substr(start, len);
-        if (not tk.empty()) channels.push_back(tk);
-        if (comma == std::string::npos) break;
-        start = comma + 1;
-      }
-      if (channels.empty()) channels.push_back("height");
-    }
-
-    // world scale for the normal gradient (assumes a square field, W==H==dim).
-    float texel_m  = (w > 0) ? (env->_extent_m / float(w)) : 1.0f;
-    float vscale_m = env->_height_scale_m;
 
     // emit one image per requested channel — the source field was read back ONCE above.
     for (auto& ch : channels) {
       // resolve the per-channel path: substitute "{channel}" in the template if present
       // (multi-channel asset bakes), else use the path verbatim (single-channel / test
       // callers that pass a literal path).
-      std::string path = ork::file::Path::expandPathString(std::string(req._path.c_str()));
+      std::string path = ork::file::Path::expandPathString(path_tpl);
       {
         const std::string mark = "{channel}";
         size_t pos = path.find(mark);
@@ -799,11 +820,24 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
       fs->_max     = vmax;
       fs->_mean    = vmean;
       fs->_channel = ch;
-      if (req._cookkey) // capture-currency: next unchanged bake skips this file
-        _writeCaptureSidecar(path, req._cookkey, *fs);
-      stats.push_back(fs);
+      if (cookkey) // capture-currency: next unchanged bake skips this file
+        _writeCaptureSidecar(path, cookkey, *fs);
+      slot->push_back(fs);
     }
+    flush_sema.notify();
+    }, "terra_capflush");
+    njobs++;
   }
+
+  // JOIN: every capture job signals once. Encodes/writes/sidecars are complete —
+  // and the on-disk products consistent — before bakeHeightfield returns.
+  for (int j = 0; j < njobs; j++)
+    flush_sema.wait();
+  // append per-request stats in FLUSH (request) order — same contract as the old
+  // serial loop (consumers key by _channel, tests index within a single capture).
+  for (auto& rs : req_stats)
+    for (auto& fs : rs)
+      stats.push_back(fs);
 
   // stats recovered from capture-currency sidecars (sinks that never ran this bake) —
   // consumers key by _channel name, so append order is irrelevant.
