@@ -202,7 +202,7 @@ uint64_t MeshComputeInst::cookComputeHash(const std::vector<uint64_t>& input_has
   return h->result();
 }
 
-static constexpr int kHmCookFmt = 0x484D4B31; // 'HMK1' — bump if the layout below changes
+static constexpr int kHmCookFmt = 0x484D4B32; // 'HMK2' — bump if the layout below changes (v2: header pad zeroed)
 
 // topology-setup cascade fixpoint bound: how many (onTopologyReady-pass + re-eval) rounds before giving
 // up. Real chains (extrude->extrude, merge<-select->assign_gid) settle in 2-3; this only caps a bug.
@@ -274,7 +274,18 @@ datablock_ptr_t MeshComputeInst::cookStore() const {
     return nullptr;
   putbuf(mesh->_vidx->_ssbo, size_t(mesh->_num_corners) * 4);
   putbuf(mesh->_face_offsets->_ssbo, size_t(mesh->_num_faces + 1) * 4);
-  putbuf(mesh->_header, kMeshHeaderBytes); // exact blob -> no layout knowledge here
+  if (ok) { // header: canonicalize — writers fill counts+bbox (48B) only, so the mapped
+    //  pad bytes are stale pool/staging garbage and would make bit-identical cooks
+    //  produce differing blobs. Zero the pad in the SERIALIZED copy only.
+    auto m = mesh->_header ? fxi->mapStorageBuffer(mesh->_header, 0, kMeshHeaderBytes, BufferMapAccess::READ_ONLY) : nullptr;
+    if (not m or not m->_mappedaddr)
+      return nullptr;
+    uint8_t hdr[kMeshHeaderBytes];
+    std::memcpy(hdr, m->_mappedaddr, kMeshHeaderBytes);
+    fxi->unmapStorageBuffer(m.get());
+    std::memset(hdr + kMeshHeaderUsedBytes, 0, kMeshHeaderBytes - kMeshHeaderUsedBytes);
+    db->addData(hdr, kMeshHeaderBytes);
+  }
   return ok ? db : nullptr;
 }
 
