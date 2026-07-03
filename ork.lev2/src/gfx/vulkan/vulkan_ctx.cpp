@@ -18,6 +18,7 @@
 #define USE_OIIO
 #if defined(USE_OIIO)
 #include <OpenImageIO/imageio.h>
+#include <filesystem> // pipeline-cache dir creation (libstdc++ needs the explicit include)
 OIIO_NAMESPACE_USING
 #endif
 
