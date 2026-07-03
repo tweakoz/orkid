@@ -1228,6 +1228,23 @@ void VkContext::ensureSyncStagingSize(size_t needed) {
   }
 }
 
+void VkContext::ensureSyncReadbackStagingSize(size_t needed) {
+  if (needed > _syncTransfer.readback_size) {
+    logchan_vkctx->log("Growing sync READBACK staging buffer: %zu -> %zu bytes",
+                       _syncTransfer.readback_size, needed);
+    // HOST_CACHED is the whole point: the CPU READS this memory (copyToHost's
+    // memcpy), and reads from the default write-combined staging run ~150MB/s.
+    _syncTransfer.readback_buffer = std::make_shared<VulkanBuffer>(
+      this,
+      needed,
+      VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+      "syncTransferReadback",
+      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
+          VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
+    _syncTransfer.readback_size = needed;
+  }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::beginSyncTransferCB() {

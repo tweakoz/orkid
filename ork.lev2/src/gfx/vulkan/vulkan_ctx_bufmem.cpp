@@ -565,14 +565,16 @@ void VulkanBuffer::copyToHost(void* dst, size_t length, size_t srcOffset) {
   if (not _hostVisible) {                                  // device-local: stage this -> staging -> host
     auto& st = _ctxVK->_syncTransfer;
     std::lock_guard<std::mutex> lock(st.mutex);
-    _ctxVK->ensureSyncStagingSize(length);
+    // readback staging is HOST_CACHED (the CPU reads it below) and TRANSFER_DST —
+    // CPU reads from the write-combined upload staging run ~150MB/s.
+    _ctxVK->ensureSyncReadbackStagingSize(length);
     _ctxVK->beginSyncTransferCB();
     VkBufferCopy region{}; region.srcOffset = srcOffset; region.dstOffset = 0; region.size = length;
-    vkCmdCopyBuffer(st.command_buffer_impl->_vkcmdbuf, _vkbuffer, st.staging_buffer->_vkbuffer, 1, &region);
+    vkCmdCopyBuffer(st.command_buffer_impl->_vkcmdbuf, _vkbuffer, st.readback_buffer->_vkbuffer, 1, &region);
     _ctxVK->endAndSubmitSyncTransferCB();
-    void* sp = st.staging_buffer->map(0, length, 0);
+    void* sp = st.readback_buffer->map(0, length, 0);
     memcpy_fast(dst, sp, length);
-    st.staging_buffer->unmap();
+    st.readback_buffer->unmap();
     return;
   }
   void* src = this->map(srcOffset, length, 0);

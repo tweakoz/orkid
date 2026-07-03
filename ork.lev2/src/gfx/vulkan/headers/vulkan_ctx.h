@@ -1060,14 +1060,20 @@ public:
   struct SyncTransferResources {
     primary_commandbuffer_ptr_t command_buffer;
     vkpricmdbufimpl_ptr_t command_buffer_impl;
-    vkbuffer_ptr_t staging_buffer;
+    vkbuffer_ptr_t staging_buffer;  // upload direction: WC host memory (fast CPU writes)
     size_t staging_size = 0;
+    // readback direction gets its OWN staging in HOST_CACHED memory: CPU reads from
+    // write-combined memory run ~150MB/s (measured — made the terrain cook's 34GB of
+    // blob readbacks take 220s); cached memory reads at full memcpy speed.
+    vkbuffer_ptr_t readback_buffer;
+    size_t readback_size = 0;
     std::mutex mutex;
   };
   SyncTransferResources _syncTransfer;
 
   void initSyncTransfer();
   void ensureSyncStagingSize(size_t needed);
+  void ensureSyncReadbackStagingSize(size_t needed);
   void beginSyncTransferCB();
   void endAndSubmitSyncTransferCB();
 
