@@ -230,12 +230,18 @@ struct Flow3DModuleInst : public TerrainComputeInst {
   // notes — quantize-at-production keeps warm==cold bit-exact). Version salt
   // bumped alongside: the quantization changes the output.
   bool cookHalfOutput(const std::string& output_name) const final {
-    return output_name == "Out" or output_name == "Metrics";
+    if (output_name == "Out" or output_name == "Metrics")
+      return true;
+    // Discharge in log-compress mode is ln(1+area): peaks ~ln(2.7e8)≈19.4, fp16 ulp
+    // there ≈0.016 in ln-space (~1.6% multiplicative on area) — solver-input grade,
+    // same perturbation class as the approved Out/Metrics. RAW mode is drainage
+    // area in m² (reaches ~1e8 → fp16 inf) and stays fp32.
+    return output_name == "Discharge" and _d->_log_compress;
   }
 
   uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
     auto h = DataBlock::createHasher();
-    h->accumulateString("terrain.flow3d.v4"); // v4: Out/Metrics fp16 cook quantization; v3: + Metrics output
+    h->accumulateString("terrain.flow3d.v5"); // v5: + Discharge fp16 (log-compress only); v4: Out/Metrics fp16 cook quantization
     h->accumulateItem<float>(_d->_exponent);
     h->accumulateItem<int>(_d->_iterations);
     h->accumulateItem<int>(_d->_log_compress ? 1 : 0);
