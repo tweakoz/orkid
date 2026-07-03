@@ -1,4 +1,5 @@
 DataType       <|[
+    opt{ KW_PRECISE }
     opt{ KW_IN }
     opt{ KW_CONST }
     sel{ KW_FLOAT   KW_UINT KW_INT 

@@ -56,6 +56,11 @@ libblock lib_fbmhash {
   }
 }
 compute_shader cs_fbm : iface_hf : lib_fbmhash {
+  // CROSS-PLATFORM BIT-PARITY (PCIEopt precise experiment): every float in the
+  // octave chain is `precise` -> glslang decorates the contributing ops
+  // NoContraction in SPIR-V, forcing NVIDIA and Metal to the same fma/contraction
+  // behavior. Without it the two backends drift ~3.6e-07 on fbm_0 and downstream
+  // threshold/erode nodes amplify the ULPs into boundary flips.
   if (gl_GlobalInvocationID.x >= %DIMU% || gl_GlobalInvocationID.y >= %DIMU%) { return; }
   uint xi = gl_GlobalInvocationID.x;
   uint yi = gl_GlobalInvocationID.y;
@@ -66,24 +71,27 @@ compute_shader cs_fbm : iface_hf : lib_fbmhash {
   // is basis-independent).
   // p_obx/p_oby = the anti-degeneracy base + user offset + offset_vel*time (HOST-composed);
   // the optional WARP term bends the base domain per-texel BEFORE the octave loop.
-  vec2 p = vec2(float(xi), float(yi)) / float(%DIM%) * p_freq + vec2(p_obx, p_oby)%WARPADD%;
+  precise vec2 p = vec2(float(xi), float(yi)) / float(%DIM%) * p_freq + vec2(p_obx, p_oby)%WARPADD%;
   uint sd = uint(p_r0); // lattice-hash seed — runtime data, no shader rebuild on change
-  float sum = 0.0, ampl = 1.0, nrm = 0.0;
+  precise float sum = 0.0;
+  precise float ampl = 1.0;
+  precise float nrm = 0.0;
   for (int o = 0; o < %OCT%; o++) {
-    vec2 ip = floor(p);
-    vec2 fp = fract(p);
-    vec2 u  = fp * fp * (3.0 - 2.0 * fp);
-    float a = _fbmhash21(ip + vec2(0.0, 0.0), sd);
-    float b = _fbmhash21(ip + vec2(1.0, 0.0), sd);
-    float c = _fbmhash21(ip + vec2(0.0, 1.0), sd);
-    float d = _fbmhash21(ip + vec2(1.0, 1.0), sd);
-    float n = mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+    precise vec2 ip = floor(p);
+    precise vec2 fp = fract(p);
+    precise vec2 u  = fp * fp * (3.0 - 2.0 * fp);
+    precise float a = _fbmhash21(ip + vec2(0.0, 0.0), sd);
+    precise float b = _fbmhash21(ip + vec2(1.0, 0.0), sd);
+    precise float c = _fbmhash21(ip + vec2(0.0, 1.0), sd);
+    precise float d = _fbmhash21(ip + vec2(1.0, 1.0), sd);
+    precise float n = mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
     sum += ampl * n;
     nrm += ampl;
     ampl *= 0.5;
     p *= 2.0;
   }
-  heights[yi * %DIMU% + xi] = (sum / nrm) * p_amp;
+  precise float outh = (sum / nrm) * p_amp;
+  heights[yi * %DIMU% + xi] = outh;
 }
 )SHADER";
   // sized SSBO array (shadlang wants a concrete length, not a runtime array)
@@ -194,7 +202,7 @@ struct FbmModuleInst : public TerrainComputeInst {
 
   uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
     auto h = DataBlock::createHasher();
-    h->accumulateString("terrain.fbm.v5"); // v5: deterministic integer lattice hash (was vendor-sin)
+    h->accumulateString("terrain.fbm.v6"); // v6: precise/NoContraction octave chain (cross-platform fma parity); v5: integer lattice hash
     h->accumulateItem<int>(_fmd->_octaves);
     h->accumulateItem<int>(_fmd->_seed);
     h->accumulateItem<float>(*(_fmd->typedInputNamed<dflow::FloatPlugTraits>("frequency")->_value));

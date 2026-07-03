@@ -139,6 +139,7 @@ KW_TYPEBLOCK        <| "typeblock" |>
 KW_IMPORT           <| "import" |>
 KW_PRAGMA_TYPELIB   <| "pragma_typelib" |>
 KW_CONST            <| "const" |>
+KW_PRECISE          <| "precise" |>
 KW_IN               <| "in" |>
 
 KW_DESCSET          <| "descriptor_set" |>
