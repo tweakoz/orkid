@@ -83,10 +83,17 @@ void Simulation::_buildStateMachine() {
       _runGpuPhaseOnRenderThread([this](lev2::Context* ctx) {
         SystemLut gpu_systems;
         _systems.atomicOp([&](const SystemLut& syslut) { gpu_systems = syslut; });
+        // LOADX WS1: fresh spawn/join set for this load wave. Systems' _onGpuInit
+        // SPAWN independent loads (workers/io/loader phases/asset requests); the
+        // join below PUMPS ctx until they resolve, so all _onGpuLink hooks see
+        // completed loads. Systems that spawn nothing are unaffected (join is a
+        // no-op on an empty set) — the rendezvous ORDER is unchanged.
+        _loadJoinSet = std::make_shared<lev2::LoadJoinSet>("simulation_gpuinit");
         for (auto sys : gpu_systems) {
           sys.second->_onGpuInit(this, ctx);
         }
         if (_controller) for (auto& cb : _controller->_onGpuPostInit) cb(this, ctx);
+        _loadJoinSet->join(ctx); // pump: deferred ops + loading phases (LOADX §1.1)
         for (auto sys : gpu_systems) {
           sys.second->_onGpuLink(this, ctx);
         }

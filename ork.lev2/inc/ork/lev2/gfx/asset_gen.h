@@ -52,6 +52,8 @@ namespace ork::lev2 {
 struct Context;
 struct PBRMaterial;
 using pbrmaterial_ptr_t = std::shared_ptr<PBRMaterial>;
+struct Image;
+using image_ptr_t = std::shared_ptr<Image>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -212,6 +214,10 @@ public:
   // (the D.4 binding, factored for reuse: PbrMaterialGenData::materialize AND the
   // E.6/2.20 terrain↔material post-pass). Missing param/file skips LOUDLY (`who` tags
   // the log). With the 2.12 rebind contract the bind is live in every cached pipeline.
+  // WS1: pre-decoded variant — the caller decoded the image off-thread
+  // (LoadJoinSet fan-out); this does only the GPU upload + bind (ctx thread).
+  static bool bindSamplerImage(
+      pbrmaterial_ptr_t mat, Context* ctx, const std::string& sampler, image_ptr_t img, const std::string& who);
   static bool bindSamplerTexture(
       pbrmaterial_ptr_t mtl, Context* ctx, const std::string& sampler, const std::string& path_in, const std::string& who);
 
