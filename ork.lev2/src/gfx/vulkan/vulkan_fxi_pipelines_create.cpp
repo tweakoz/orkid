@@ -146,8 +146,8 @@ vkpipelinestate_ptr_t VkFxInterface::_createPipeline(
   ///////////////////////////////////////////////////
 
   OK = vkCreateGraphicsPipelines(
-      _contextVK->_vkdevice, // device
-      VK_NULL_HANDLE,        // pipeline cache
+      _contextVK->_vkdevice,        // device
+      _contextVK->_vkPipelineCache, // persisted pipeline cache (WS3)
       1,                     // count
       &PIPE_CREATE_INFO,     // create info
       nullptr,               // allocator
@@ -564,7 +564,7 @@ vkpipelinestate_ptr_t VkFxInterface::_createPipelineSSBO(vkprimclass_ptr_t primc
   // create the graphics pipeline
   ///////////////////////////////////////////////////
 
-  OK = vkCreateGraphicsPipelines(_contextVK->_vkdevice, VK_NULL_HANDLE, 1, &PIPE_CREATE_INFO, nullptr, &pipeline->_pipeline);
+  OK = vkCreateGraphicsPipelines(_contextVK->_vkdevice, _contextVK->_vkPipelineCache, 1, &PIPE_CREATE_INFO, nullptr, &pipeline->_pipeline);
 
   if (OK != VK_SUCCESS) {
     printf("_createPipelineSSBO: vkCreateGraphicsPipelines failed with VkResult=%d\n", OK);
