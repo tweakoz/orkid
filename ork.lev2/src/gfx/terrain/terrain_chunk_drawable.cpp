@@ -29,6 +29,7 @@
 #include <ork/util/crc.h>
 #include <ork/util/logger.h>
 #include <ork/kernel/async_tracker.h>     // register the stored-mode texbake as pending async work
+#include <ork/kernel/datablock.h>         // terrain-products digest (atlas currency)
 #include <filesystem>
 #include <cstring>
 
@@ -67,6 +68,7 @@ struct TcBootstrap {
   bool _built  = false;
   bool _warned = false;
   bool _baked  = false;                       // ORKID_TERRAIN_TEXBAKE_DUMP one-shot guard
+  bool _stale_atlas = false;                  // proc mode: products snapshot mismatched at materialize -> re-capture
   std::shared_ptr<ComputeDrawableData> _cdd;  // keeps configured state alive
   // stashed by _liveRecompute for the texture-bake one-shot (terrainTexBake)
   FxShaderStorageBuffer* _ssbo = nullptr;
@@ -97,11 +99,59 @@ static std::string terrainTexBakeDumpDir() {
   return dir;
 }
 
+// Digest of the terrain PRODUCTS' .cookhash sidecars (the input-derived cook keys the
+// hfdflow bake writes next to each product EXR). The baked atlas samples those products,
+// but the python-side cap_dir key can only see the terrain's AUTHORED inputs — a C++
+// cook-salt re-key (e.g. an fbm version bump) changes the products without changing the
+// dir name, so the warm bind would hold a stale atlas forever. This digest is the
+// missing content half of the key; captured as a snapshot at bake time, compared on
+// every warm bind.
+static std::string terrainProductsDigest(const std::string& manifest_path) {
+  auto dir = std::filesystem::path(manifest_path).parent_path();
+  std::map<std::string, std::string> sidecars; // filename-sorted for stability
+  std::error_code ec;
+  for (auto& de : std::filesystem::directory_iterator(dir, ec)) {
+    if (de.path().extension() == ".cookhash") {
+      std::ifstream f(de.path());
+      std::stringstream ss;
+      ss << f.rdbuf();
+      sidecars[de.path().filename().string()] = ss.str();
+    }
+  }
+  if (sidecars.empty())
+    return ""; // nothing to compare against — currency check degrades to a no-op
+  auto ch = DataBlock::createHasher();
+  ch->accumulateItem<int>(0x74706431); // 'tpd1' snapshot format salt
+  for (auto& item : sidecars) {
+    ch->accumulateString(item.first);
+    ch->accumulateString(item.second);
+  }
+  ch->finish();
+  char buf[64];
+  snprintf(buf, sizeof(buf), "tpd1-%016llx-n%zu", (unsigned long long)ch->result(), sidecars.size());
+  return std::string(buf);
+}
+
 static bool terrainTexBake(Context* ctx, const TerrainChunkDrawableData* self, TcBootstrap* st) {
   if (st->_baked)
     return true;
   if (not st->_built or not st->_ssbo)
     return false; // wait for _liveRecompute to build + upload the SSBO
+  // PROC-mode atlas currency: python bound a cached atlas at materialize because its
+  // (input-derived) cap_dir key matched — but the products snapshot check at
+  // materialize (where the bake stashes are decided) may have found the CONTENT half
+  // of the key stale (product re-key: cook salts, graph edits). Current -> the warm
+  // bind stands, no bake. Stale -> fall through and re-capture with full stored
+  // semantics (bake -> write cache+snapshot -> bind-back overrides the stale
+  // samplers python bound).
+  bool force_recapture = false;
+  if (self->_capture_mode == "proc" and not getenv("ORKID_TERRAIN_TEXBAKE_DUMP")) {
+    if (not st->_stale_atlas) {
+      st->_baked = true;
+      return true;
+    }
+    force_recapture = true;
+  }
   auto mtl  = self->_resolved_material;
   auto cfs  = mtl ? mtl->_as_freestyle : nullptr;
   auto ctek = mtl ? mtl->_tek_FWD_SSBO_CUSTOM_CAPTURE : nullptr;
@@ -122,7 +172,7 @@ static bool terrainTexBake(Context* ctx, const TerrainChunkDrawableData* self, T
   //    inspection (no bind); otherwise (stored) the textures are bound BACK onto this material so its
   //    surface_stored() samples them this frame (same-session bake-then-bind, the impostor pattern).
   //////////////////////////////////////////////////////////////////
-  const bool stored = (self->_capture_mode == "stored");
+  const bool stored = (self->_capture_mode == "stored") or force_recapture;
   const bool dump   = (getenv("ORKID_TERRAIN_TEXBAKE_DUMP") != nullptr);
   int atlas = stored ? std::max(64, self->_capture_res) : 2048;
   if (const char* r = getenv("ORKID_TERRAIN_TEXBAKE_RES")) { int v = atoi(r); if (v >= 64) atlas = v; }
@@ -319,6 +369,13 @@ static bool terrainTexBake(Context* ctx, const TerrainChunkDrawableData* self, T
         capbuf->_image->writeToFile(file::Path(path.c_str()));
         printf("TERRAIN-TEXBAKE: cached %s\n", path.c_str());
       });
+    }
+    // snapshot the product cook keys this atlas was captured against — the warm-bind
+    // currency check above compares against this on every proc-mode run.
+    auto digest = terrainProductsDigest(self->_resolved_manifest);
+    if (not digest.empty()) {
+      std::ofstream snapf(cacheDir / "products.cookhash", std::ios::trunc);
+      snapf << digest << "\n";
     }
   }
   for (int t = 0; t < N; t++)
@@ -677,7 +734,27 @@ drawable_ptr_t TerrainChunkDrawableData::createDrawable() const {
     state->_vpc      = vpc;
     state->_extent_m = extent_m;
     state->_height_m = height_m;
-    if (self->_capture_mode == "stored" or getenv("ORKID_TERRAIN_TEXBAKE_DUMP")) {
+    // PROC-mode atlas currency (checked HERE because the bake stashes below are only
+    // built when a bake will actually run): the python cap_dir key is input-derived
+    // and can't see C++ cook-salt re-keys (e.g. fbm v6) — compare the products
+    // snapshot the atlas was captured against with the (post-product-bake, fresh)
+    // sidecars. Mismatch or missing snapshot -> the one-shot re-captures.
+    if (self->_capture_mode == "proc" and not self->_capture_dir.empty()
+        and not getenv("ORKID_TERRAIN_TEXBAKE_DUMP")) {
+      auto digest = terrainProductsDigest(self->_resolved_manifest);
+      std::string snap;
+      {
+        std::ifstream f(std::filesystem::path(self->_capture_dir) / "products.cookhash");
+        std::getline(f, snap);
+      }
+      if (not digest.empty() and digest != snap) {
+        logchan_tcd->log(
+            "TERRAIN-TEXBAKE: STALE atlas (terrain products re-keyed) dir<%s> — will re-capture",
+            self->_capture_dir.c_str());
+        state->_stale_atlas = true;
+      }
+    }
+    if (self->_capture_mode == "stored" or state->_stale_atlas or getenv("ORKID_TERRAIN_TEXBAKE_DUMP")) {
       // HI-RES (bake_dim^2): dense heights (both modes) + the stride-5 packed frame (relax) — the
       // bake rasterizes the surface into the atlas at the FULL-res relaxed uv from the frame SSBO.
       state->_heights = heights_hi;
@@ -703,8 +780,12 @@ drawable_ptr_t TerrainChunkDrawableData::createDrawable() const {
   // (ork.scene.materialize.py / the player's --offscreen exit) knows when the disk cache has been
   // written, instead of guessing with a frame count. The one-shot returns true exactly once (then it
   // is cleared), so the matching asyncWorkEnd fires once whether the bake succeeded or self-skipped.
-  if (self->_capture_mode == "stored" or getenv("ORKID_TERRAIN_TEXBAKE_DUMP")) {
-    const bool track = (self->_capture_mode == "stored");
+  // proc mode with a disk atlas ALSO registers the one-shot: it runs the products-
+  // snapshot currency check post-bake and self-clears without baking when current
+  // (re-captures when stale — see terrainTexBake).
+  const bool cap_check = (self->_capture_mode == "proc" and not self->_capture_dir.empty());
+  if (self->_capture_mode == "stored" or cap_check or getenv("ORKID_TERRAIN_TEXBAKE_DUMP")) {
+    const bool track = (self->_capture_mode == "stored") or cap_check;
     if (track)
       asyncWorkBegin("terrain_texbake");
     drw->_oneShotRender = [self, state, track](Context* ctx) -> bool {
