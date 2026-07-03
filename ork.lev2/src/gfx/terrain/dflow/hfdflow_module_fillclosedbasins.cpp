@@ -195,9 +195,16 @@ struct FillClosedBasinsModuleInst : public TerrainComputeInst {
     wb(_outBasin->_value->_ssbo,   basin.data(),  n * 4 * sizeof(float));
     wb(_outCenter->_value->_ssbo,  center.data(), n * 4 * sizeof(float));
   }
+  // WS4 fp16 wave: these planes quantize/store at fp16 (see TerrainComputeInst
+  // notes — quantize-at-production keeps warm==cold bit-exact). Version salt
+  // bumped alongside: the quantization changes the output.
+  bool cookHalfOutput(const std::string& output_name) const final {
+    return output_name == "Basin" or output_name == "CenterPit";
+  }
+
   uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
     auto h = DataBlock::createHasher();
-    h->accumulateString("terrain.fillclosedbasins.v1"); // CPU union-find merge tree + persistence cut
+    h->accumulateString("terrain.fillclosedbasins.v2"); // v2: Basin/CenterPit fp16 cook quantization; v1: CPU union-find merge tree
     h->accumulateItem<float>(_minDepth->value());
     _mixTail(h, ctx, ih);
     h->finish();

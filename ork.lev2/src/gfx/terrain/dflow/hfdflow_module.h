@@ -74,7 +74,46 @@ struct TerrainComputeInst : public dflow::DgModuleInst, public dflowgfx::IPrePha
 
   // cook-cache format magic. Bump if the on-disk layout below changes; also makes any pre-existing
   // (single-output, mono) cache entries self-invalidate (their first int won't equal this) -> recompute.
-  static constexpr int kCookFmt = 0x7c0d0003;
+  // v4 (WS4 fp16 wave): per-output PRECISION byte after ch; prec==1 -> the plane is stored as
+  // fp16 halves on disk AND was quantized to the fp16 grid IN THE LIVE SSBO at production
+  // (cookStore writes the quantized values back), so a warm load is BIT-IDENTICAL to the cold
+  // cook that produced it — quantize-at-production keeps the cache contract exact.
+  static constexpr int kCookFmt = 0x7c0d0004;
+
+  // WS4 fp16 wave: which outputs quantize/store at fp16. OPT-IN by output name; default
+  // fp32. Owner rules: heights stay fp32 (any plane feeding the height chain); relaxed-uv
+  // planes stay fp32 (fp16 uv = ~2 atlas texels of error at 4096 — the frame-pack analysis).
+  // A module that opts an output in MUST bump its cookComputeHash version salt — the
+  // quantization changes the output, so downstream Merkle keys must change with it.
+  virtual bool cookHalfOutput(const std::string& output_name) const { return false; }
+
+  // fp32<->fp16 bit converters (same semantics as image_fmt_convert / pack_frame5).
+  static uint16_t _f32tof16(float f) {
+    uint32_t bits;
+    std::memcpy(&bits, &f, 4);
+    uint32_t sign = (bits >> 16) & 0x8000;
+    int32_t exp32 = int32_t((bits >> 23) & 0xFF) - 127 + 15;
+    uint32_t mant = (bits & 0x007FFFFF);
+    if (exp32 <= 0) return uint16_t(sign);           // underflow to zero
+    if (exp32 >= 31) return uint16_t(sign | 0x7C00); // overflow to inf
+    return uint16_t(sign | (uint32_t(exp32) << 10) | (mant >> 13));
+  }
+  static float _f16tof32(uint16_t h) {
+    uint32_t sign = (uint32_t(h) & 0x8000u) << 16;
+    uint32_t exp  = (h >> 10) & 0x1F;
+    uint32_t mant = h & 0x3FF;
+    uint32_t bits;
+    if (exp == 0) {
+      bits = sign; // zero (denorms flushed at pack time)
+    } else if (exp == 31) {
+      bits = sign | 0x7F800000u | (mant << 13); // inf/nan
+    } else {
+      bits = sign | ((exp - 15 + 127) << 23) | (mant << 13);
+    }
+    float f;
+    std::memcpy(&f, &bits, 4);
+    return f;
+  }
 
   // Cache ALL output plugs at their TRUE size (w*h*channels floats). The original version cached only
   // the "Out" plug at mono size — which silently corrupted any multi-output and/or multi-channel (RGBA)
@@ -93,13 +132,33 @@ struct TerrainComputeInst : public dflow::DgModuleInst, public dflowgfx::IPrePha
       if (not(img and img->_ssbo)) { db->addItem<int>(0); continue; } // absent -> marker 0
       int ch     = (img->_channels < 1) ? 1 : img->_channels;
       size_t cnt = size_t(img->_w) * size_t(img->_h) * size_t(ch);
+      bool half  = cookHalfOutput(op->_plugdata->_name);
       db->addItem<int>(1);
       db->addItem<int>(img->_w);
       db->addItem<int>(img->_h);
       db->addItem<int>(ch);
+      db->addItem<int>(half ? 1 : 0); // precision (v4)
       auto mapping = fxi->mapStorageBuffer(img->_ssbo, 0, cnt * sizeof(float), BufferMapAccess::READ_ONLY);
-      db->addData(mapping->_mappedaddr, cnt * sizeof(float));
-      fxi->unmapStorageBuffer(mapping.get());
+      if (not half) {
+        db->addData(mapping->_mappedaddr, cnt * sizeof(float));
+        fxi->unmapStorageBuffer(mapping.get());
+      } else {
+        // QUANTIZE AT PRODUCTION: halves to disk, and the quantized-expanded values
+        // written BACK to the live SSBO — downstream consumers and captures see
+        // exactly what a warm load will upload (cache contract stays bit-exact).
+        const float* src = (const float*)mapping->_mappedaddr;
+        std::vector<uint16_t> halves(cnt);
+        std::vector<float> rounded(cnt);
+        for (size_t i = 0; i < cnt; i++) {
+          halves[i]  = _f32tof16(src[i]);
+          rounded[i] = _f16tof32(halves[i]);
+        }
+        fxi->unmapStorageBuffer(mapping.get());
+        db->addData(halves.data(), cnt * sizeof(uint16_t));
+        auto wb = fxi->mapStorageBuffer(img->_ssbo, 0, cnt * sizeof(float), BufferMapAccess::WRITE_ONLY);
+        std::memcpy(wb->_mappedaddr, rounded.data(), cnt * sizeof(float));
+        fxi->unmapStorageBuffer(wb.get());
+      }
     }
     return db;
   }
@@ -114,9 +173,10 @@ struct TerrainComputeInst : public dflow::DgModuleInst, public dflowgfx::IPrePha
     for (int o = 0; o < nout; o++) {
       int present = istr.getItem<int>();
       if (not present) continue;
-      int w  = istr.getItem<int>();
-      int h  = istr.getItem<int>();
-      int ch = istr.getItem<int>();
+      int w    = istr.getItem<int>();
+      int h    = istr.getItem<int>();
+      int ch   = istr.getItem<int>();
+      int prec = istr.getItem<int>(); // v4: 0=f32, 1=f16
       auto op  = std::dynamic_pointer_cast<hfimg_outpluginst_t>(output(o));
       auto img = op ? op->_value : nullptr;
       if (not(img and img->_ssbo)) return false;
@@ -124,9 +184,17 @@ struct TerrainComputeInst : public dflow::DgModuleInst, public dflowgfx::IPrePha
       if (w != img->_w or h != img->_h or ch != curch) return false; // dim/channels changed -> recompute
       size_t cnt   = size_t(w) * size_t(h) * size_t(ch);
       auto mapping = fxi->mapStorageBuffer(img->_ssbo, 0, cnt * sizeof(float), BufferMapAccess::WRITE_ONLY);
-      std::memcpy(mapping->_mappedaddr, istr.current(), cnt * sizeof(float));
+      if (prec == 0) {
+        std::memcpy(mapping->_mappedaddr, istr.current(), cnt * sizeof(float));
+        istr.advance(cnt * sizeof(float));
+      } else {
+        const uint16_t* halves = (const uint16_t*)istr.current();
+        float* dst             = (float*)mapping->_mappedaddr;
+        for (size_t i = 0; i < cnt; i++)
+          dst[i] = _f16tof32(halves[i]);
+        istr.advance(cnt * sizeof(uint16_t));
+      }
       fxi->unmapStorageBuffer(mapping.get());
-      istr.advance(cnt * sizeof(float));
     }
     return true;
   }
@@ -150,10 +218,11 @@ struct TerrainComputeInst : public dflow::DgModuleInst, public dflowgfx::IPrePha
     for (int o = 0; o < nout; o++) {
       int present = istr.getItem<int>();
       if (not present) continue; // absent marker only — next output's header is adjacent
-      int w  = istr.getItem<int>();
-      int h  = istr.getItem<int>();
-      int ch = istr.getItem<int>();
-      return (w == expect_w and h == expect_h and ch >= 1); // first present output decides
+      int w    = istr.getItem<int>();
+      int h    = istr.getItem<int>();
+      int ch   = istr.getItem<int>();
+      int prec = istr.getItem<int>(); // v4 precision byte
+      return (w == expect_w and h == expect_h and ch >= 1 and (prec == 0 or prec == 1));
     }
     return true; // all outputs absent — nothing to contradict
   }

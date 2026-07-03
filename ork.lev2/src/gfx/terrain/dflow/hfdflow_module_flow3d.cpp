@@ -226,9 +226,16 @@ struct Flow3DModuleInst : public TerrainComputeInst {
     ci->bindStorageBuffer(_csField, 4, _outMetrics->_value->_ssbo);
     ci->dispatchCompute(_csField, g, g, 1); ci->storageBarrier();
   }
+  // WS4 fp16 wave: these planes quantize/store at fp16 (see TerrainComputeInst
+  // notes — quantize-at-production keeps warm==cold bit-exact). Version salt
+  // bumped alongside: the quantization changes the output.
+  bool cookHalfOutput(const std::string& output_name) const final {
+    return output_name == "Out" or output_name == "Metrics";
+  }
+
   uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
     auto h = DataBlock::createHasher();
-    h->accumulateString("terrain.flow3d.v3"); // v3: + Metrics output (R=flatness, G=curvature, B=wetness)
+    h->accumulateString("terrain.flow3d.v4"); // v4: Out/Metrics fp16 cook quantization; v3: + Metrics output
     h->accumulateItem<float>(_d->_exponent);
     h->accumulateItem<int>(_d->_iterations);
     h->accumulateItem<int>(_d->_log_compress ? 1 : 0);

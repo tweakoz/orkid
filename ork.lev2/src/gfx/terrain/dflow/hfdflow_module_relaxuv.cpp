@@ -467,12 +467,19 @@ struct RelaxUvModuleInst : public TerrainComputeInst {
     ci->bindStorageBuffer(_csFrame, 3, _uv);
     ci->dispatchCompute(_csFrame, gD, gD, 1); ci->storageBarrier();
   }
+  // WS4 fp16 wave: these planes quantize/store at fp16 (see TerrainComputeInst
+  // notes — quantize-at-production keeps warm==cold bit-exact). Version salt
+  // bumped alongside: the quantization changes the output.
+  bool cookHalfOutput(const std::string& output_name) const final {
+    return output_name == "Binormal";
+  }
+
   uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
     auto h = DataBlock::createHasher();
     // v5: red-black SOR (Jacobi never converged -> zero equal-area), full-res rho box-averaged
     // (was gradients of a smoothed height), border-extrapolating upsample (was det=0 rim), and the
     // amplitude contract (normalized input via base.py). MIRROR any bump in _terrain.py _relax_tok.
-    h->accumulateString("terrain.relaxuv.v5");
+    h->accumulateString("terrain.relaxuv.v6"); // v6: Binormal fp16 cook quantization (Out/uv stays fp32 — atlas precision)
     h->accumulateItem<int>(kRelaxCap);  // the cap changes the output — cache must be sensitive to it
     h->accumulateItem<float>(_d->_strength);
     h->accumulateItem<int>(_d->_iterations);
