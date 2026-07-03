@@ -14,6 +14,7 @@
 #include <ork/asset/AssetSet.h>
 #include <ork/util/RingLink.hpp>
 #include <ork/asset/AssetManager.h>
+#include <ork/kernel/opq.h>
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::asset {
 ///////////////////////////////////////////////////////////////////////////////
@@ -38,6 +39,33 @@ AssetManager<AssetType>::load(const AssetPath& pth) {
   auto asset = loader->load(loadreq);
   gLock.UnLock();
   return std::dynamic_pointer_cast<AssetType>(asset);
+}
+///////////////////////////////////////////////////////////////////////////////
+// WS5: worker-pool load. The ticket is taken HERE (not in the worker) so a
+// joiner that adopts the request immediately after this call can never see
+// a zero counter while the load is still queued. loader->load() sets
+// lreq->_asset before FileAssetLoader's own inner ticket releases, so by the
+// time THIS ticket releases the asset pointer is published.
+template <typename AssetType>
+inline void AssetManager<AssetType>::loadAsync(loadrequest_ptr_t lreq) {
+  lreq->incrementPartialLoadCount();
+  opq::concurrentQueue()->enqueue([lreq]() {
+    auto loader = getLoader<AssetType>();
+    if (loader->_concurrent) {
+      loader->load(lreq);
+    } else {
+      gLock.Lock();
+      loader->load(lreq);
+      gLock.UnLock();
+    }
+    lreq->decrementPartialLoadCount();
+  });
+}
+///////////////////////////////////////////////////////////////////////////////
+template <typename AssetType>
+inline typename AssetManager<AssetType>::typed_asset_ptr_t //
+AssetManager<AssetType>::assetAs(loadrequest_ptr_t lreq) {
+  return std::dynamic_pointer_cast<AssetType>(lreq->_asset);
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::asset

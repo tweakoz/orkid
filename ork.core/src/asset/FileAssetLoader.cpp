@@ -16,7 +16,9 @@
 #include <ork/file/file.h>
 #include <ork/kernel/Array.h>
 #include <ork/kernel/string/string.h>
+#include <ork/kernel/thread.h>
 #include <ork/file/path.h>
+#include <chrono>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::asset {
@@ -221,6 +223,12 @@ asset_ptr_t FileAssetLoader::load(loadrequest_ptr_t loadreq) {
     return nullptr;
   }
   ///////////////////////////////////////////////////////////////////////////////
+  // WS5 diagnostic: ORKID_TRACE_ASSET_LOADS=1 prints every file-asset load
+  // with its blocking cost and the thread it ran on — the data that decides
+  // which call sites convert to loadAsync.
+  static const bool trace_loads = (getenv("ORKID_TRACE_ASSET_LOADS") != nullptr);
+  auto t0 = std::chrono::steady_clock::now();
+  ///////////////////////////////////////////////////////////////////////////////
   loadreq->incrementPartialLoadCount();
   auto asset = _doLoadAsset(loadreq);
   if (asset){
@@ -229,6 +237,14 @@ asset_ptr_t FileAssetLoader::load(loadrequest_ptr_t loadreq) {
     loadreq->_asset = asset;
   }
   loadreq->decrementPartialLoadCount();
+  if (trace_loads) {
+    double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+    printf(
+        "[ASSLOAD] %8.2fms thread<%s> path<%s>\n",
+        ms,
+        ork::GetCurrentThreadName().c_str(),
+        loadreq->_asset_path.c_str());
+  }
   return asset;
 }
 
