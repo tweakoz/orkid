@@ -547,6 +547,7 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
       return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
     };
     double bp_acq = 0, bp_par = 0, bp_dsp = 0, bp_sto = 0, bp_dsk = 0;
+    double bp_wait = 0; // pure vkWaitForFences inside dispatch ~= real GPU execution
     double bp_max_dsp = 0, bp_max_sto = 0;
     size_t bp_bytes = 0;
     std::string bp_max_dsp_n, bp_max_sto_n;
@@ -576,12 +577,14 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
         if (auto pp = std::dynamic_pointer_cast<dflowgfx::IPrePhaseParams>(inst))
           pp->writeParams(ctx);
         if (s_bakeprof) { double t = bp_now(); bp_par += t - bp_t0; bp_t0 = t; }
+        double bp_w0 = s_bakeprof ? ci->_gpuWaitAccum : 0.0;
         ci->beginDispatchPhase();
         inst->compute(ginst.get(), updata);
         ci->endDispatchPhase(); // submit + WAIT -> this node's output is now valid
         if (s_bakeprof) {
           double t = bp_now(), d = t - bp_t0;
           bp_dsp += d; bp_t0 = t;
+          bp_wait += ci->_gpuWaitAccum - bp_w0;
           if (d > bp_max_dsp) { bp_max_dsp = d; bp_max_dsp_n = inst->_abstract_module_data->_name; }
         }
         if (do_disk_cache) {
@@ -625,8 +628,11 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
           bp_loop, cook_computes, bp_acq, bp_par, bp_dsp, bp_max_dsp, bp_max_dsp_n.c_str(), bp_sto,
           bp_max_sto, bp_max_sto_n.c_str(), double(bp_bytes) / (1024.0 * 1024.0), bp_dsk, bp_oth);
       printf(
-          "[cookprof] per-node avg: dispatch %.3fs, store %.3fs, disk %.3fs\n",
-          bp_dsp / cook_computes, bp_sto / cook_computes, bp_dsk / cook_computes);
+          "[cookprof] dispatch split: fence-wait %.1fs (~real GPU) | record+submit %.1fs (CPU-side)\n",
+          bp_wait, bp_dsp - bp_wait);
+      printf(
+          "[cookprof] per-node avg: dispatch %.3fs (wait %.3fs), store %.3fs, disk %.3fs\n",
+          bp_dsp / cook_computes, bp_wait / cook_computes, bp_sto / cook_computes, bp_dsk / cook_computes);
     }
     if (do_disk_cache)
       printf(
