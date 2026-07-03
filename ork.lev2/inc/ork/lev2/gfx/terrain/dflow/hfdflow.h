@@ -202,6 +202,9 @@ struct FbmModuleData : public TerrainModuleData {
 
   // float input plugs: "frequency", "amplitude". `octaves` is a baked loop bound.
   int _octaves = 5;
+  // lattice-hash seed — RUNTIME data (rides the params SSBO p_r0 slot), so seed changes
+  // never rebuild the shader. Exact through the float slot for |seed| < 2^24.
+  int _seed = 0;
 };
 using fbmmoduledata_ptr_t = std::shared_ptr<FbmModuleData>;
 
@@ -221,6 +224,9 @@ struct NoiseModuleData : public TerrainModuleData {
   // baked scalars (not plugs): noise basis primitive + fBm octave count.
   int _basis   = 0;   // 0 perlin / 1 simplex / 2 worley-F1 / 3 voronoi
   int _octaves = 1;   // 1 = pure primitive; >1 = fBm-stacked
+  // lattice-hash seed — RUNTIME data (params SSBO p_r0), never rebuilds the shader.
+  // NOTE: the simplex basis (permute-based) ignores it.
+  int _seed = 0;
 };
 using noisemoduledata_ptr_t = std::shared_ptr<NoiseModuleData>;
 

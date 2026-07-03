@@ -411,6 +411,10 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
     for (size_t i = 0; i < N; i++) {
       auto inst = order[i];
       sink[i]   = (inst->numOutputs() == 0); // Capture — always runs, reads at flush
+      if (s_cookdbg) // full topo map (node -> cook hash) for offline blob forensics
+        printf("[cookdbg] PLAN i<%zu> node<%s> hash<0x%zx>%s\n", i,
+               inst->_abstract_module_data->_name.c_str(), size_t(inst->_cookHash),
+               sink[i] ? " (sink)" : "");
       if (do_disk_cache and not sink[i]) {
         if (auto tci = std::dynamic_pointer_cast<TerrainComputeInst>(inst)) {
           auto hdr = DataBlockCache::findDataBlockPrefix("dflowcache", inst->_cookHash, 256);
