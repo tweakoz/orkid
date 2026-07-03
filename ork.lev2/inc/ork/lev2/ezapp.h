@@ -212,7 +212,8 @@ struct OrkEzApp : public OrkEzAppBase {
   int mainThreadLoop();
   void setSceneRunLoop(scenegraph::scene_ptr_t scene);
 
-  void joinUpdate();
+  // ctx (when provided) lets the join PUMP the gpu-update chain — see joinUpdate impl.
+  void joinUpdate(Context* ctx = nullptr);
   bool checkAppState(uint64_t singlebitmask) const;
   void OnTimer();
 
