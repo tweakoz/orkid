@@ -261,7 +261,7 @@ dual-version dirty — actually mirror `GpuMesh`, NOT `InstanceSet`; do not clai
 
 | Op | Decision | Reuse / home |
 |---|---|---|
-| **sweep** (`XfNodeGraph` → GpuMesh) | NEW; the single biggest new geometry op, build first. Sweep a profile along the node chain = multiseg-extrude tube generalized to arbitrary parent-chains. **(Renamed from `skin/sweep`: `skin`/bone-channel writing is a SEPARATE later unit, gated on a skinned consumer — see §16.)** | builds on `hmdflow_module_extrude.cpp` (FA/FB/FC ring-field buffers + `cs_face_seg` stitching reused; the transported profile frame is NEW shader math). |
+| **sweep** (`XfNodeGraph` → GpuMesh) | **LANDED 2026-06-25 as `LSweep`** (`hmdflow_module_lsweep.cpp`: CPU v1, sides/cap params, radius from `_attrs[0]`, stable-vs-topo rebuild split; GPU-compute port = owner-ratified follow-up). `skin`/bone-channel writing remains a SEPARATE later unit, gated on a skinned consumer — see §16. | CPU build from the XfNodeGraph mirror; the GPU port will reuse the extrude ring-field/stitch machinery. |
 | **auto_skin** (GpuMesh + Skeleton → weights) | NEW; proximity-first GPU compute (nearest-k bone, capsule distance). Self-defends (Maya-grade) or fails loudly. Heat-diffusion deferred (BasinFill multigrid is the prior art). **Gated on a skinned render consumer (none exists today).** | `DisplaceBySdf` per-vertex-vs-resource pattern is the template; verify via SSBO/OBJ readback oracle, not render. |
 | **instance_at_slots** (`XfNodeGraph._slots` → InstanceSet) | Fill `InstanceSetInst` from the slots side-table. | `interchange.h` (E.2 machinery). |
 | **field_sample** | A genuine NEW family-neutral position→{value,gradient} query op over `GpuComputeImage2D`/`SdfGrid`. **It does NOT exist today** (the `DisplaceByField`/`DisplaceBySdf` sampling is inline kernel text, two divergent blocks). First extract a shared shadlang `lib_fieldsample`, then wrap it. There is NO separate `scene_query` op to merge — that name is fictional. | extract from `displace.cpp` (bilinear 2D) + `displace_sdf.cpp` (trilinear 3D phi+grad). |
@@ -389,14 +389,15 @@ grammar engine + hyperanim. See SKILL.md for the per-family plug-type registry e
 | City | tensor-field streets | XfNodeGraph(STREET) | gid (road class), instance_at_slots (props), field_sample | block-cycle/parcel/navmesh (separate ops) |
 | Terrain (shipped) | terrain compute | GpuComputeImage2D, ScatterSet | field_sample, multi-sink | — |
 
-## 15. Sequencing — the forests-vs-racer tension (surfaced, not silently resolved)
+## 15. Sequencing — RESOLVED by the owner (2026-07-04)
 
-The holistic seed says forests-first; the docs LOCK racer-first as the ratified acceptance gate
-(A3 #5). These drive *different* shared primitives (forests → XfNodeGraph+grammar+sweep+scatter;
-racer → hard-surface+gid, both shipped) and **do not conflict at the engine layer**. Recommendation for
-the owner: the first grammar milestone is a single L-system tree — the cheapest end-to-end exercise of
-the new spine, forests-adjacent, leaving the racer as the unchanged hypermesh gate. This is a
-sequencing call for the owner, not a silent reconciliation.
+*(Historical framing: the holistic seed said forests-first; the docs locked racer-first as the
+ratified acceptance gate (A3 #5); these drive different shared primitives and never conflicted at
+the engine layer.)* **Owner resolution 2026-07-04: the racer-first gate is retired as a sequencing
+constraint. Sequencing optimizes the holistic outcome — rich, natural, beautiful scenes at VR
+performance, minimum procedural-DSL code, DSL that reads clearly. The racer remains a valid gate
+ASSET for hard-surface/gid work.** The concrete milestone order under this directive lives in
+`~/JUL04_GRAMMARS.md` (grammar-as-data → buildings → organs/slots → creature gen → skinning).
 
 ## 16. Feasibility-adjusted build order (the honest scope)
 
@@ -452,9 +453,10 @@ sequencing call for the owner, not a silent reconciliation.
   'no new engine' — size it L, not a free byproduct of vocab.
 
 **G3 — CGA building (decouple from G2; build the missing join first).** (G3-as-written is infeasible.)
-- (U1) Build a **mesh-merge / multi-input join** module first (`hmdflow_module_merge` + `H.merge`,
-  channel-union + gid preservation + vidx remap, meshvet-checked) — the load-bearing missing primitive
-  (every hmdflow module is single-input; nothing combines two meshes today).
+- (U1) ~~Build a **mesh-merge / multi-input join** module first~~ **LANDED 2026-06-26**
+  (`hmdflow_module_merge.cpp` + `H.merge(a,b,gid_a=,gid_b=)` — binary concat, per-source gid restamp,
+  vidx/CSR rebase in `onTopologyReady`, eval-1 passthrough). N-ary = chained merges. U2 is
+  therefore unblocked today.
 - (U2) A footprint→walls→roof building authored DIRECTLY in the imperative DSL (extrude storeys; place
   window face-sets via select+gid; merge via U1; flat/hipped roof as extrude+inset cap — **NOT**
   straight-skeleton). Proves an architectural asset renders end-to-end with multi-material gid.
@@ -628,5 +630,6 @@ oracle pattern), renders, and scatters as instances; deterministic given seed.
 branch-junction blending; auto-LOD/impostor; the string-form parser if not done in M.
 
 This is the forests-first head of the §16 order (G0a → G1 rewrite → G0b skin) — the v1 slice **LANDED
-2026-06-25**; the grammar generalization beyond it is **NOT yet scheduled against the LOCKED racer-first
-gate (HYPERECS_PLAN A3 #5)** — an owner sequencing call.
+2026-06-25** (and the v2 archetype/jitter/wind/organ/forest wave 2026-06-26). Sequencing beyond it was
+**resolved by the owner 2026-07-04** (holistic-outcome ordering, racer gate retired as a constraint —
+see §15); the reflected-`LRuleSet` milestone is specified in `~/JUL04_GRAMMARS.md` §GR-1.

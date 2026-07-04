@@ -9,7 +9,7 @@ per step) has **LANDED**. Its detailed per-item landing log is preserved in git 
 
 ---
 
-## Status (as of 2026-06-30)
+## Status (as of 2026-07-04)
 
 Stages A–E of the original ordered plan are implemented:
 
@@ -24,8 +24,15 @@ Stages A–E of the original ordered plan are implemented:
 - **D — the C++ host spine:** the `PbrMaterial`/`HeightField`/`Hypermesh` gendata materializers +
   `AssetSystem::materializeAll` wire step + `HypermeshComponent`, through the pure-C++ HYPERECS host demo.
 - **E — the cross-family features:** DisplaceByField, typed InstanceSet edges, gid bucketing + multi-material
-  draw, per-view GPU cull + instanced depth-prepass, the **SDF family** (M0–M2: dense brick, `MeshToSdf`
-  voxelize, `Csg` + marching-tetrahedra `SdfToMesh`), and the **L-system structural-spine slice** (see A7).
+  draw, per-view GPU cull + instanced depth-prepass, the **SDF family** (M0–M2 + M4: dense brick,
+  `MeshToSdf` voxelize, `Csg` + marching-tetrahedra `SdfToMesh` incl. fully-GPU live counts + weld,
+  `Redistance` JFA, `DisplaceBySdf` conform/offset/scalar, cook-hash — only M3/NanoVDB remains), and
+  the **L-system structural-spine slice + flora render wave** (see item 4 / A7).
+
+Post-2026-06-30 substrate campaign (LOADX, 07-01→07-04 — serves A3 #6 discrete-GPU-first): warm
+scn_forest settles in 2.7 s; bake arena 52.5 GB → ~1.5 GB (frontier pool + zero-reader release);
+cold eflow 30 min → ~9 min on the 3090 and dropping; strategic cook cache-points (per-fork
+resume; forest blobs 34 GB → ~4 GB); blob fp16 wave; mac↔linux bit-parity; exit-crash class fixed.
 
 See `HYPERECS.md` for what each of these provides at the authoring surface.
 
@@ -33,25 +40,43 @@ See `HYPERECS.md` for what each of these provides at the authoring surface.
 
 ## Open work — what is NOT yet implemented
 
-1. **64-bit `MeshEdges` key widening** (A.3 → deferred to C.2's sort work; never completed). Only the
-   fail-loud 65,536-vert gate + wholesale CPU-build fallback exist (`hmdflow_module_subdivide.cpp:683`,
-   `hmdflow.h:109`). The true widening (two-pass stable sort + key regather — `MeshSort` permutes a single
-   payload) is open; meshes ≥65,536 verts fall back to the CPU builder.
+1. **64-bit `MeshEdges` key widening** — **DROPPED (owner, 2026-07-04)**. The fail-loud 65,536-vert gate +
+   wholesale CPU-build fallback (`hmdflow_module_subdivide.cpp:683`, `hmdflow.h:109`) are the accepted
+   steady state. Revisit only if a real asset hits the gate in a hot path.
 
 2. **C.5 non-blocking submit — default-flip + N-buffering.** `ORK_HM_NB_SUBMIT=1` enables the depth-1
    overlap; **blocking is still the default** pending soak (`vulkan_compute.cpp:319`). N-buffered param
    buffers + phase-coalescing were deliberately skipped at depth-1 (future if profiling demands).
 
-3. **SDF family M3 / M4.** M0–M2 landed. **M3 = the NanoVDB sparse read/transport blob** — DECLARED but
-   UNBUILT (no `nanovdb` code in `ork.lev2/src/gfx/sdf/`; a hand-ported PNanoVDB read subset, gated on the
-   obt nanovdb headers). **M4 = cross-family + cook** (SDF as a first-class edge into other families).
+3. **SDF family — only M3 remains.** *(Corrected 2026-07-04: an earlier revision of this doc listed M4 as
+   open — M4 in fact SHIPPED 2026-06-13: M4a `Redistance` (JFA eikonal), M4b `DisplaceBySdf`
+   conform/offset/scalar (the cross-family edge, + Taubin fairing + `TemporalSmooth`), M4c
+   `SdfComputeInst::cookComputeHash`.)* **M3 = the NanoVDB sparse read/transport blob** — DECLARED but
+   UNBUILT (no `nanovdb` code in `ork.lev2/src/gfx/sdf/`; sources vendored at
+   `<staging>/builds/openvdb/nanovdb` but headers NOT installed — obt dep change is step 0). Remaining
+   post-M3 cross-family/cook surface (brick cook-store, particle GPU collider, ptex3d distance signal):
+   **implementation spec `~/JUL04_SDFM3M4.md`.**
 
 4. **Structural spine — advanced milestones.** The **foundation is LANDED** (see A7): G0a the `XfNodeGraph`
-   interchange currency, G0b the `LSweep` skinner, G1 the L-system family (M1, hardcoded grammar + CPU
-   sweep). Still open: reflected-`LRuleSet` grammar generalization + GPU L-system rewrite, `radial_repeat`,
-   `LegChain`/creature vocab, city/building grammar, `auto_skin` + a GPU-skinning render path,
-   straight-skeleton, space-colonization. Full design in `UNIFIED_SUBSTRATE.md` §11–§17. Not yet sequenced
-   against the racer-first gate (A3 #5) — an owner call.
+   interchange currency, G0b the `LSweep` skinner, G1 the L-system family (v2: four hardcoded archetype
+   generators + tropism/jitter channels + parallel-transport frames + CPU sweep). **Also landed (the
+   2026-06-26 flora wave, previously unrecorded here): `MergeMesh` (`hmdflow_module_merge.cpp` — the
+   join module an earlier revision listed as the missing G3 prerequisite), `LeafScatter` organs, the
+   procedural A2C leaf material, VS wind (`VertexDisplace`/`Wind`/`LeafFlutter`, per-instance wind
+   groups, `RCFD_TIME` provider clock), per-gid asset materials, E.4 cull on the viewer path, the
+   4096-tree @120fps instanced forest, and `scn_forest` (2 species × 8 seeds, terrain-scatter
+   instancing, impostor LOD).** Still open: reflected-`LRuleSet` grammar generalization + GPU L-system
+   rewrite; XfSlot/`instance_at_slots` (XfSlot exists but NO producer populates it); `radial_repeat`;
+   `LegChain`/creature vocab; city/building grammar (merge prerequisite now met — buildable via the
+   imperative DSL today); `auto_skin` + a GPU-skinning render path (recon 2026-07-04: nothing
+   transfers — `FWD_SSBO_CUSTOM*` has no bone channels; only `skintools.i2` math is inheritable;
+   `XgmSkeleton` pyext is read-only); straight-skeleton; space-colonization. Full design in
+   `UNIFIED_SUBSTRATE.md` §11–§17.
+   **SEQUENCING RESOLVED (owner, 2026-07-04): the racer-first gate is retired as a sequencing constraint.**
+   Sequencing now optimizes the HOLISTIC outcome: rich, natural, beautiful scenes at VR performance with
+   the minimum procedural-DSL code, where the DSL reads clearly. (The racer remains a valid gate ASSET for
+   hard-surface/gid acceptance whenever that capability class is touched — it just no longer orders the
+   roadmap.) Implementation specs: `~/JUL04_SDFM3M4.md` + `~/JUL04_GRAMMARS.md` (authored 2026-07-04).
 
 5. **Minor / deferred.**
    - **Plug-transformer ALWAYS-APPLY** behavior + suite soak (B.5(e)). The `_transformer` plug is reflected
@@ -137,13 +162,15 @@ forests-vs-racer sequencing call) lives in `.claude/skills/hypersyn/UNIFIED_SUBS
   placer; Python `lsystem()`/`lsweep()` verbs; `scn_lsystem.py`). v1 = a hardcoded bracketed parametric
   grammar run CPU-side at activate; reflected-`LRuleSet` + GPU rewrite is the next step.
 - **Forward (UNBUILT):** reflected-`LRuleSet` grammar generalization + GPU L-system; `radial_repeat`;
-  `LegChain`/creature vocab; city/building grammar (needs a mesh-merge/join module first); `auto_skin` +
+  `LegChain`/creature vocab; city/building grammar (its mesh-merge prerequisite LANDED 2026-06-26 —
+  `MergeMesh`, binary concat + per-source gid); `auto_skin` +
   `bake_skeleton` + a NEW GPU-skinning render path; straight-skeleton; space-colonization / phyllotaxis /
   tensor-field generators. `GidAssign` (A1, E.3) and `MirrorModule` are mesh-locked (`MeshComputeInst` over
   GpuMesh SoA) — promoting them to operate on any tagged `XfNodeGraph` is post-foundation work.
 - Rule predicates are trace-time Python over abstract symbols — they DO NOT serialize as the
   `kPredicateABIVersion` GLSL SelExpr ABI (that ABI is a GPU per-mesh-element predicate; using it for
   production rules is a category error).
-- The feasibility-adjusted build order (G0a/G0b/G1 done; G2a creature-vocab; G3 building with mesh-merge
-  first) is in `UNIFIED_SUBSTRATE.md` §16. The advanced milestones are NOT yet scheduled against the LOCKED
-  racer-first gate (A3 #5) — an owner sequencing call.
+- The feasibility-adjusted build order (G0a/G0b/G1 done; G2a creature-vocab; G3 building — its
+  mesh-merge prerequisite now landed) is in `UNIFIED_SUBSTRATE.md` §16. **Sequencing resolved by the
+  owner 2026-07-04 (holistic-outcome ordering — see item 4); the concrete milestone order lives in
+  `~/JUL04_GRAMMARS.md`.**
