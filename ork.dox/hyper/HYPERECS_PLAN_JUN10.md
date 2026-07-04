@@ -174,3 +174,24 @@ forests-vs-racer sequencing call) lives in `.claude/skills/hypersyn/UNIFIED_SUBS
   mesh-merge prerequisite now landed) is in `UNIFIED_SUBSTRATE.md` §16. **Sequencing resolved by the
   owner 2026-07-04 (holistic-outcome ordering — see item 4); the concrete milestone order lives in
   `~/JUL04_GRAMMARS.md`.**
+
+## A8. Shader-recompile minimization (owner, LOCKED 2026-07-04)
+
+All compute/shader-generating DSL work must distinguish **PARAMETRIC** from **STRUCTURAL** state:
+
+- **PARAMETRIC** — any value a user might tweak from their DSL, *especially* anything they may want
+  to tweak in realtime — MUST ride in a UBO / SSBO / runtime plug and bind at runtime. It must NOT
+  be inlined as a constant into generated fxv2/GLSL text. Tweak = `bindParam` rebind (the 2.12
+  rebind contract makes these live), never a recompile.
+- **STRUCTURAL** — things that genuinely change the code's shape (loop bounds that size unrollings,
+  topology/plug wiring, expression *structure*, array dimensioning) MAY bake, and version-salt the
+  cook/shader identity when they do.
+
+Precedents that already comply (the templates to copy): the VS-wind `WindDir`/`WindParams` uniforms
+(value-independent shader text — owner-required), terrain runtime-params SSBO (scales in the SSBO,
+only bucket loop bounds bake), ptex3d `ctx.param` tweakables, `SdfEval`'s dim/extent/center/offset
+runtime plugs, the `EXPRP` plug channel (`kMaxExprParams`), and named fx-pipeline providers
+(`RCFD_TIME`) for engine-fed per-frame values. Secondary benefit: value-independent generated text
+maximizes `dslshadercache` hits across assets differing only in parameters (the cache hashes
+expanded shader text). Applies to ALL families — hypermesh, sdf, ptex3d, terrain, grammars — and to
+both render (fxv2) and compute (shadlang) codegen.
