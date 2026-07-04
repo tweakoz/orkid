@@ -557,6 +557,17 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
         auto it = last_reader.find(key);
         if (it != last_reader.end())
           release_at[it->second].push_back(op);
+        else if (needed[j])
+          // ZERO-READER output: no dispatching consumer anywhere downstream —
+          // either unconnected (the eflow loop's 37 flow3d nodes publish Out +
+          // Metrics that nothing reads: 2×256MiB × 37 ≈ 18.5GB of the measured
+          // 21.3GB frontier) or every reader is a hit/skip, which reads nothing.
+          // Release at the producer's own index (fires right after it computes
+          // or cookLoads — hit uploads leak these planes identically). Without
+          // this the plane squats in the pool until bake end: "free at last
+          // reader" never triggers when there is no reader. releaseToPool's
+          // free-set dedup keeps plug aliasing (erox pingpong) safe.
+          release_at[j].push_back(op);
       }
 
     // --- the loop
