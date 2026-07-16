@@ -1529,7 +1529,7 @@ class HeightField:
   """Asset-DSL wrapper for a terrain HeightField DSL class (embedded-graph model)."""
 
   def __init__(self, *, dsl_file=None, dsl_class=None, dimension=512,
-               extent_m=4096.0, height_scale_m=9830.25, gendata=None, ctx=None,
+               extent_m=4096.0, gendata=None, ctx=None,
                material=None, channel_samplers=None, **kwargs):
     # E.6/2.20 — the terrain↔material contract rides the TERRAIN asset: `material`
     # names the shading material asset; `channel_samplers` maps baked channel ->
@@ -1543,8 +1543,8 @@ class HeightField:
     if not dsl_file:
       raise ValueError("HeightField requires dsl_file (terrain DSL .py name or path)")
     # AUTHORING: resolve + run the DSL ONCE -> graph -> embed in the gendata.
-    # extent_m/height_scale_m make the graph resolution-independent: spatial op
-    # params are in meters, converted to texels per-bake from extent_m.
+    # extent_m makes the graph resolution-independent: spatial op params are in
+    # meters, converted to texels per-bake (heights are TRUE METERS on the plugs).
     from ork.hypergraph.dflow.terrain.resolve import resolve_dsl_file, load_dsl_class
     dsl_path = resolve_dsl_file(dsl_file)
     cls      = load_dsl_class(dsl_path, dsl_class or None)
@@ -1553,7 +1553,7 @@ class HeightField:
     # keep the live DSL instance (legacy scatter fallback for pre-D.4 flows).
     self._dsl_inst = inst
     self.gendata = HeightFieldGenData(dimension=dimension, extent_m=extent_m,
-                                      height_scale_m=height_scale_m, graph=graph)
+                                      graph=graph)
     if material:
       self.gendata.material_asset = str(material)
     if channel_samplers:
@@ -1638,24 +1638,24 @@ class HeightField:
         cap.path = _os.path.join(outdir, "{channel}." + ext)
       channels.extend(ch_list)
     stats  = _lev2.terrain.bake_heightfield(graph, self._ctx, d.dimension,
-                                            extent_m=d.extent_m, height_scale_m=d.height_scale_m)
+                                            extent_m=d.extent_m)
     result = {ch: _os.path.join(outdir, f"{ch}.{ext}") for ch in channels}
     # stats return in FLUSH (topo) order; `channels` is name-sorted module order — key by the
     # self-describing .channel (index-zipping shuffles stats across channels)
     _by_ch = {st.channel: st for st in stats}
     result["stats"] = {ch: _by_ch.get(ch) for ch in channels}
     # persist the SCALE CONTRACT next to the channel images: the authoritative,
-    # self-describing physical scale + per-channel fit ranges that every consumer
+    # self-describing physical scale + per-channel stats that every consumer
     # (viewer, CPU mask sampler, physics, segmentation) reads instead of hardcoding.
-    # height_scale_m IS the physical height here (erosion exaggeration lives in the graph).
+    # v2 NATURAL UNITS: stored heights ARE meters (exaggeration lives in the graph).
     from ork.hypergraph.dflow.terrain.manifest import TerrainManifest
-    _SEMANTIC = {"height": "height_normalized", "normal": "normal_world"}
+    _SEMANTIC = {"height": "height_meters", "normal": "normal_world"}
     ch_meta = {ch: {"file": result[ch], "semantic": _SEMANTIC.get(ch, ch),
                     "min": st.min, "max": st.max, "mean": st.mean}
                for ch, st in result["stats"].items()}
     manifest_path = _os.path.join(outdir, f"{d.asset_name or 'unnamed'}.terrain.json")
     TerrainManifest.write(manifest_path,
-        extent_m=d.extent_m, height_m=d.height_scale_m, dim=d.dimension,
+        extent_m=d.extent_m, dim=d.dimension,
         channels=ch_meta, format=ext, provenance={"asset_name": d.asset_name or ""})
     result["manifest"] = manifest_path
     # POST-BAKE: scatter sinks (mask-driven placement). MESH-AGNOSTIC — one ScatterSet .ogeo
@@ -1698,7 +1698,7 @@ class HeightField:
       for ch in sink.type_channels:
         chans[ch] = result[ch]
       opath = _os.path.join(outdir, f"{sink.name}.ogeo")
-      n     = _lev2.terrain.scatter_place_ogeo(sink, chans, d.extent_m, d.height_scale_m, opath)
+      n     = _lev2.terrain.scatter_place_ogeo(sink, chans, d.extent_m, opath)
       result["scatters"][sink.name] = {"path": opath, "count": n,
                                        "types": list(sink.type_names),
                                        "assets": dict(sink.type_assets),

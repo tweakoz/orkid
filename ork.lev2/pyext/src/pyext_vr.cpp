@@ -18,6 +18,11 @@ void pyinit_vr(py::module& module_lev2) {
   vrmodule.def("novr_device", [type_codec]() -> orkidvr::device_ptr_t { //
       return orkidvr::novr::novr_device();
   });
+  // The ACTIVE device — whatever GfxInit selected (openxr when ORKID_VR_DRIVER=openxr
+  //  and a runtime bound, else NoVR). Content apps ask for this and check .active.
+  vrmodule.def("device", [type_codec]() -> orkidvr::device_ptr_t { //
+      return orkidvr::device();
+  });
   /////////////////////////////////////////////////////////////////////////////////
   auto vrdevice_type = //
       py::class_<orkidvr::Device, orkidvr::device_ptr_t>(module_lev2, "Device")

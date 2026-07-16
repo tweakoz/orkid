@@ -30,7 +30,9 @@ libblock lib_nrm {
 }
 )S";
 
-static std::string _nrm_init_text(int dim) {
+// DIM is RUNTIME data (params SSBO p_dimf) — dim changes never rebuild the shader; the
+// field arrays are runtime-sized. The reduce/rescale passes bind it (init has no field).
+static std::string _nrm_init_text() {
   std::string t = R"S(
 fxconfig fxcfg_default {}
 storage_interface sif_mm (descriptor_set 0) { buffer layout(std430) mb { uint mmdata[2]; }; }
@@ -45,16 +47,18 @@ compute_shader cs_nrm_init : iface {
   return t;
 }
 
-static std::string _nrm_reduce_text(int dim) {
+static std::string _nrm_reduce_text() {
   std::string t = R"S(
 fxconfig fxcfg_default {}
-storage_interface sif_in (descriptor_set 0) { buffer layout(std430) ib { float idata[%DIMSQ%]; }; }
+storage_interface sif_in (descriptor_set 0) { buffer layout(std430) ib { float idata[]; }; }
 storage_interface sif_mm (descriptor_set 0) { buffer layout(std430) mb { uint  mmdata[2]; }; }
-compute_interface iface { storage { sif_in sif_mm } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }
+storage_interface sif_pm (descriptor_set 0) { buffer layout(std430) pm_in { float p_dimf; }; }
+compute_interface iface { storage { sif_in sif_mm sif_pm } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }
 %KEY%
 compute_shader cs_nrm_reduce : iface : lib_nrm {
-  if (gl_GlobalInvocationID.x >= %DIMU% || gl_GlobalInvocationID.y >= %DIMU%) { return; }
-  uint i = gl_GlobalInvocationID.y * %DIMU% + gl_GlobalInvocationID.x;
+  uint u_dim = uint(p_dimf); // RUNTIME grid dim (params SSBO) — no rebuild on dim change
+  if (gl_GlobalInvocationID.x >= u_dim || gl_GlobalInvocationID.y >= u_dim) { return; }
+  uint i = gl_GlobalInvocationID.y * u_dim + gl_GlobalInvocationID.x;
   uint e = f2u(idata[i]);
   atomicMin(mmdata[0], e);
   atomicMax(mmdata[1], e);
@@ -63,17 +67,19 @@ compute_shader cs_nrm_reduce : iface : lib_nrm {
   return t;
 }
 
-static std::string _nrm_rescale_text(int dim, float lo, float hi) {
+static std::string _nrm_rescale_text(float lo, float hi) {
   std::string t = R"S(
 fxconfig fxcfg_default {}
-storage_interface sif_out (descriptor_set 0) { buffer layout(std430) ob { float odata[%DIMSQ%]; }; }
-storage_interface sif_in  (descriptor_set 0) { buffer layout(std430) ib { float idata[%DIMSQ%]; }; }
+storage_interface sif_out (descriptor_set 0) { buffer layout(std430) ob { float odata[]; }; }
+storage_interface sif_in  (descriptor_set 0) { buffer layout(std430) ib { float idata[]; }; }
 storage_interface sif_mm  (descriptor_set 0) { buffer layout(std430) mb { uint  mmdata[2]; }; }
-compute_interface iface { storage { sif_out sif_in sif_mm } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }
+storage_interface sif_pm  (descriptor_set 0) { buffer layout(std430) pm_in { float p_dimf; }; }
+compute_interface iface { storage { sif_out sif_in sif_mm sif_pm } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }
 %KEY%
 compute_shader cs_nrm_rescale : iface : lib_nrm {
-  if (gl_GlobalInvocationID.x >= %DIMU% || gl_GlobalInvocationID.y >= %DIMU%) { return; }
-  uint i = gl_GlobalInvocationID.y * %DIMU% + gl_GlobalInvocationID.x;
+  uint u_dim = uint(p_dimf); // RUNTIME grid dim (params SSBO) — no rebuild on dim change
+  if (gl_GlobalInvocationID.x >= u_dim || gl_GlobalInvocationID.y >= u_dim) { return; }
+  uint i = gl_GlobalInvocationID.y * u_dim + gl_GlobalInvocationID.x;
   float mn = u2f(mmdata[0]);
   float mx = u2f(mmdata[1]);
   float d  = mx - mn;
@@ -99,24 +105,27 @@ struct NormalizeModuleInst : public TerrainComputeInst {
     _hi     = _floatPlug(this, _d, "out_hi");
   }
 
-  void onActivate(dflow::GraphInst* inst) final {
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<BakeEnv>();
     auto fxi = env->_ctx->FXI();
-    int dim  = env->_w;
     _allocOut(env.get(), _output->_value);
-    _minmax = fxi->createStorageBuffer(2 * sizeof(uint32_t));
+    _minmax = env->createStorageBuffer(2 * sizeof(uint32_t));
 
     auto build = [&](const char* entry, std::string text) -> const FxComputeShader* {
       _nrm_sub(text, "%KEY%", _NRM_KEY);
-      _nrm_sub(text, "%DIMSQ%", FormatString("%d", dim * dim));
-      _nrm_sub(text, "%DIMU%",  FormatString("%du", dim));
       _nrm_sub(text, "%LO%", FormatString("%f", _lo->value()));
       _nrm_sub(text, "%HI%", FormatString("%f", _hi->value()));
       return fxi->computeShader(fxi->shaderFromShaderText(entry, text), entry);
     };
-    _csInit    = build("cs_nrm_init",    _nrm_init_text(dim));
-    _csReduce  = build("cs_nrm_reduce",  _nrm_reduce_text(dim));
-    _csRescale = build("cs_nrm_rescale", _nrm_rescale_text(dim, _lo->value(), _hi->value()));
+    _csInit    = build("cs_nrm_init",    _nrm_init_text());
+    _csReduce  = build("cs_nrm_reduce",  _nrm_reduce_text());
+    _csRescale = build("cs_nrm_rescale", _nrm_rescale_text(_lo->value(), _hi->value()));
+
+    _pm        = env->createStorageBuffer(sizeof(float)); // p_dimf = RUNTIME grid dim
+    float dimf = float(env->_w);
+    auto mp    = fxi->mapStorageBuffer(_pm, 0, sizeof(dimf), BufferMapAccess::WRITE_ONLY);
+    std::memcpy(mp->_mappedaddr, &dimf, sizeof(dimf));
+    fxi->unmapStorageBuffer(mp.get());
   }
 
   void compute(dflow::GraphInst* inst, ui::updatedata_ptr_t) final {
@@ -135,12 +144,14 @@ struct NormalizeModuleInst : public TerrainComputeInst {
     // pass 2: atomic min/max reduce over the field
     ci->bindStorageBuffer(_csReduce, 0, in->_ssbo);
     ci->bindStorageBuffer(_csReduce, 1, _minmax);
+    ci->bindStorageBuffer(_csReduce, 2, _pm);      // p_dimf (RUNTIME grid dim)
     ci->dispatchCompute(_csReduce, g, g, 1);
     next();
     // pass 3: rescale [min,max] -> [lo,hi]
     ci->bindStorageBuffer(_csRescale, 0, out);
     ci->bindStorageBuffer(_csRescale, 1, in->_ssbo);
     ci->bindStorageBuffer(_csRescale, 2, _minmax);
+    ci->bindStorageBuffer(_csRescale, 3, _pm);     // p_dimf (RUNTIME grid dim)
     ci->dispatchCompute(_csRescale, g, g, 1);
     ci->storageBarrier();
   }
@@ -160,6 +171,7 @@ struct NormalizeModuleInst : public TerrainComputeInst {
   hfimg_inpluginst_ptr_t _input;
   dflow::float_inp_pluginst_ptr_t _lo, _hi;
   FxShaderStorageBuffer* _minmax = nullptr;
+  FxShaderStorageBuffer* _pm = nullptr;
   const FxComputeShader *_csInit = nullptr, *_csReduce = nullptr, *_csRescale = nullptr;
 };
 

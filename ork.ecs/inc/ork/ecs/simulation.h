@@ -8,6 +8,7 @@
 #pragma once
 
 #include <ork/lev2/gfx/camera/cameradata.h>
+#include <ork/lev2/gfx/loadjoinset.h>
 #include <ork/math/TransformNode.h>
 #include <ork/util/fsm.h>
 #include <ork/kernel/future.hpp>
@@ -87,6 +88,10 @@ struct Simulation {
   void render(ui::drawevent_constptr_t drwev);
   void renderWithStandardCompositorFrame(lev2::standardcompositorframe_ptr_t sframe);
   void gpuUpdate(lev2::Context* ctx);
+  // Single-threaded (headless/test) combined pump: runs _update() AND the GPU phase on
+  // the calling thread (which must hold ctx). Any GPU rendezvous the update queues runs
+  // INLINE instead of blocking for a gpuUpdate() that a single thread can never deliver.
+  void updateWithGpu(lev2::Context* ctx);
   void gpuExit(lev2::Context* ctx);
 
   ///////////////////////////////////////////////////
@@ -256,6 +261,10 @@ private:
   // run on the GPU thread with a well-defined sequencing point.
   void _runGpuPhaseOnRenderThread(std::function<void(lev2::Context*)> phase_fn);
 
+  // Swap out and execute the queued GPU phases with ctx (shared by gpuUpdate and
+  // updateWithGpu; same swap-under-mutex the render thread uses to drain the queue).
+  void _drainGpuPhases(lev2::Context* ctx);
+
   //////////////////////////////////////////////////////////
 
   PoolString genDynamicEntityName();
@@ -296,6 +305,13 @@ private:
   fsm::fsminstance_ptr_t _updateThreadSMInst;
   fsm::fsminstance_ptr_t _renderThreadSMInst;
   fsm::fsminstance_ptr_t _gpuUpdateSMInst;
+
+  // LOADX WS1: per-load-wave spawn/join set. Systems' _onGpuInit may SPAWN
+  // (workers/io/loader-phases/adopted asset requests); the READY rendezvous
+  // JOINS (pumping) between the init and link loops, so every _onGpuLink sees
+  // completed loads. Fresh instance per wave (created just before init).
+  lev2::loadjoinset_ptr_t _loadJoinSet;
+  lev2::loadjoinset_ptr_t loadJoinSet() const { return _loadJoinSet; }
 
   fsm::lambdastate_ptr_t _updateReadySimState;
   fsm::lambdastate_ptr_t _updateEditSimState;

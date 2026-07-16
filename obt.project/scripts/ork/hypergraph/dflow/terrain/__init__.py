@@ -20,6 +20,13 @@
 
 from .base import HeightField
 from . import ops
+from . import doc as _doc
+# Explicit grouping constructs (owner sign-off 2026-07-09; L-A/V-A/G-A/S-B). These
+# capture STRUCTURE into the document (vs raw Python for/if, which flattens):
+#   with T.loop(N, carry=init) as L: ...   @T.group def f(...): ...   T.switch(sel, ...)
+loop   = _doc.loop
+group  = _doc.group
+switch = _doc.switch
 # ParameterPacks (cross-domain, from dflow core). NOTE: T.mix is the FIELD blend
 # (TerrainNodes); T.lerp here is the VALUE/PACK blend (float/vec lerp, quat slerp).
 from .._parampack import ParamPack, lerp as _pp_lerp
@@ -85,6 +92,11 @@ Normalize = ops.normalize         # explicit [min,max]->[out_lo,out_hi] rescale 
 normalize = ops.normalize
 ExprField = ops.expr_field        # bake a ptex3d SurfNode to a field (unified substrate; backs hfbake)
 expr_field = ops.expr_field
+expr_field_raw = ops.expr_field_raw   # COMPILED-blob escape hatch (the .py writer emits this)
+Expr = ops.expr                   # editor-authorable expression node from a ptex3d SOURCE STRING
+expr = ops.expr
+Bypass = ops.bypass               # mark a node bypassed (structural pass-through); returns node
+bypass = ops.bypass
 
 __all__ = [
     "HeightField",
@@ -104,6 +116,8 @@ __all__ = [
     "RelaxUv", "relax_uv",
     "FillClosedBasins", "fill_closed_basins",
     "Normalize", "normalize",
-    "ExprField", "expr_field",
+    "ExprField", "expr_field", "expr_field_raw",
+    "Expr", "expr", "Bypass", "bypass",
     "ParamPack", "lerp",
+    "loop", "group", "switch",
 ]

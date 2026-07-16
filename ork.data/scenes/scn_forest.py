@@ -86,8 +86,11 @@ class ForestScene(Scene):
         DiffuseIntensity  = 3.0,
         SpecularIntensity = 1.0,
         AmbientLight      = vec3(0.0),
-        CullFrustumScale   = 0.90,   # TEMP A/B TEST: narrow cull frustum (cull-more) — revert after
-        DepthPrepass       = True,   # resolves a single-sample depth (the HZB occlusion source) + early-Z
+        CullFrustumScale   = 0.90,   # OWNER DEBUG AID (deliberate): narrow cull frustum so culling
+                                     # is VISIBLE at view edges — keep until owner says otherwise
+        DepthPrepass       = False,  # TEST TOGGLE (invisibility bisection): prepass suspected of stereo-matrix
+                                     # mismatch (drawn-but-invisible = color pass z-fails vs misplaced prepass depth).
+                                     # Revert to True once the prepass is verified/fixed under DMVR.
         msaa = 2,
         ssaa = 0,
         postfx = [("hsvg", postNode)],  # post-fx chain (list order = apply order); reflected -> round-trips
@@ -96,11 +99,19 @@ class ForestScene(Scene):
     self.system_data("HypermeshSystem")
 
     # TERRAIN FIRST — bakes the relief AND the "trees" scatter the variants read.
-    self.terrain(TERRAIN, 
-                 dsl_file         = "xxx3_trees", 
-                 chunk            = 160,
+    self.terrain(TERRAIN,
+                 dsl_file         = "xxx3_trees",
+                 # spawn ABOVE the terrain's GLOBAL max so the drop-in always finds ground.
+                 # Baked xxx3 height (true meters, natural-units era — read from the
+                 # .terrain.json manifest at HEAD): min 1164.7, max 1815.9, mean 1450.8.
+                 # The old y=868.9 was tuned against the PRE-natural-units bake ("ground
+                 # ~2510m") and sat BELOW today's global min -> spawned underground,
+                 # free-fell forever (looked like dead input). If the relief changes,
+                 # re-read the manifest; the walker kill-Z respawn self-defends regardless.
+                 spawn            = vec3(-8398.7, 1900.0, 7889.3),
+                 chunk            = 128,
                  bake_dimension   = 4096,                
-                 render_dimension = 1600,
+                 render_dimension = 1024,
                  bake_res         = 4096,                
                  walkable         = True,
                  mode             = "stored",   # Phase-1: capture the proctex to <assetcache>/ptex3d_capture/<key>/ (cached)

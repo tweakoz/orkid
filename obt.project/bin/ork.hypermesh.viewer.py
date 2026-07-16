@@ -14,7 +14,7 @@
 # ComputeDrawable redraws the updated SoA channels. Assets without animate() render static-live.
 ################################################################################
 
-import sys, os, time, glob, importlib, subprocess, tempfile
+import sys, os, time, glob, importlib, subprocess, tempfile, math
 from orkengine.core import vec2, vec3, vec4, CrcStringProxy   # core before lev2
 from orkengine import lev2
 from ork.hypergraph.assets.hypermesh._resolve import (   # shared with _ork.hypermesh.validate.py
@@ -73,6 +73,9 @@ def _build_app(asset_cls, *, asset_path, path_mode, asset_modname, val_argv, lab
       self._env_names = [os.path.splitext(os.path.basename(f))[0] for f in sorted(glob.glob(_eg))]
       self._env_paths = ["<ork_envmaps2>/%s.xir" % n for n in self._env_names]   # IBL/reflection source
       self._env_cache = {}; self._env_idx = -1
+      self._turntable = False       # [R] slow turntable on the subject (1 turn / 8s) — gauge async-load niceness
+      self._tt_t0 = 0.0             # absolutetime at which the current spin started
+      self._tt_base = 0.0          # azimuth (radians) the spin started from
       self.SGC = self.addComponent(
         "std_scenegraph", StandardSceneGraphComponent,
         eye=vec3(6, 5, 9), tgt=vec3(0, 0, 0), up=vec3(0, 1, 0), 
@@ -222,9 +225,11 @@ def _build_app(asset_cls, *, asset_path, path_mode, asset_modname, val_argv, lab
         "[S] Saturation: %.1f\n"  % self._satset[self._sati] +
         "[G] Gamma: %.1f\n"       % self._gamset[self._gami] +
         "[T] ACES Exposure: %s\n"  % ("%.2f" % exp if exp > 0 else "OFF") +
+        "[R] Turntable: %s\n"     % ("ON (1 turn/8s)" if self._turntable else "off") +
         "[P] Perf stats: %s"      % ("on" if self._show_perf else "off"))
 
     def _onUpdate(self, updinfo):
+      self._last_abstime = updinfo.absolutetime   # for the [R] turntable toggle t0
       # animated does NOT imply a python onUpdate (S.time / offset_vel fields are C++-clock-driven);
       # only call it on assets that define one. [SPACE] freezes it -> the asset's plugs stop advancing.
       if self._animated and not self._update_frozen and hasattr(self._asset, "onUpdate"):
@@ -242,6 +247,20 @@ def _build_app(asset_cls, *, asset_path, path_mode, asset_modname, val_argv, lab
       if self._show_perf:
         txt = lev2.hypermesh.perfStats()
         self._perf_hud.text = txt if txt else "perf: collecting (first 5s window)..."
+      if self._turntable:
+        # 1 rotation / 8s about the subject; fixed elevation, orbit radius/height
+        # taken from the initial eye. Overrides mouse orbit while active.
+        ie = self.SGC.initial_eye
+        radius = math.hypot(ie.x, ie.z)
+        height = ie.y
+        ang    = self._tt_base + 2.0 * math.pi * (updinfo.absolutetime - self._tt_t0) / 8.0
+        eye    = vec3(radius * math.cos(ang), height, radius * math.sin(ang))
+        self.SGC.uicam.lookAt(eye, self.SGC.initial_tgt, vec3(0, 1, 0))
+        # sync uicam -> the cameralut camera the render reads (the mouse-orbit path
+        # does exactly this after uiEventHandler; lookAt alone never reaches render)
+        self.SGC.uicam.updateMatrices()
+        self.SGC.camera.copyFrom(self.SGC.uicam.cameradata)
+        self.SGC.SGVP.widget.setDirty()   # keep the dirty-driven render repainting for a static subject
       self.SGC.scenegraph.updateScene(self.SGC.cameralut)
 
     def _onUiEvent(self, uievent):
@@ -293,6 +312,15 @@ def _build_app(asset_cls, *, asset_path, path_mode, asset_modname, val_argv, lab
       if uievent.code == tokens.KEY_DOWN.hashed and uievent.keycode == ord("T"):
         self._expi = (self._expi + 1) % len(self._expset)
         self._aces.exposure = self._expset[self._expi]
+        self._update_hud()
+        return lev2.ui.HandlerResult()
+      if uievent.code == tokens.KEY_DOWN.hashed and uievent.keycode == ord("R"):
+        self._turntable = not self._turntable
+        if self._turntable:
+          ie = self.SGC.initial_eye
+          self._tt_base = math.atan2(ie.z, ie.x)   # start from the initial azimuth (no jump on the FIRST toggle)
+          self._tt_t0   = getattr(self, "_last_abstime", 0.0)
+        print("hypermesh turntable: %s (1 turn / 8s)" % ("ON" if self._turntable else "OFF"), flush=True)
         self._update_hud()
         return lev2.ui.HandlerResult()
       if uievent.code == tokens.KEY_DOWN.hashed and uievent.keycode == ord("O"):

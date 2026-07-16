@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 #include "hfdflow_module.h"
 #include <queue>
+#include <cstring>
 
 ImplementReflectionX(ork::lev2::terrain::BasinFillModuleData, "terrain::BasinFillModuleData");
 
@@ -28,7 +29,7 @@ namespace ork::lev2::terrain {
 // flats still drain toward the outlet (Priority-Flood+Epsilon); 0 = pure flat fill.
 ///////////////////////////////////////////////////////////////////////////////
 
-static void _priorityFlood(const float* z, float* out, int W, int H, float eps) {
+static void _priorityFloodStdHeap(const float* z, float* out, int W, int H, float eps) {
   const int n = W * H;
   std::vector<char> closed(size_t(n), 0);
   using PE = std::pair<float, int>; // (elevation, index); min-heap
@@ -60,14 +61,91 @@ static void _priorityFlood(const float* z, float* out, int W, int H, float eps) 
   }
 }
 
+// float -> order-preserving uint32 key (flip sign bit for non-negatives, all bits for
+// negatives — the standard radix-sort float trick; total order matches operator<).
+static inline uint32_t _floodKey(float f) {
+  uint32_t u;
+  std::memcpy(&u, &f, sizeof(u));
+  return (u & 0x80000000u) ? ~u : (u | 0x80000000u);
+}
+
+// MONOTONE RADIX HEAP variant: priority-flood only ever pushes keys >= the last popped
+// key (fill = max(nz, e[+eps]) >= e), the textbook monotone-PQ case, so a radix heap
+// pops in EXACT non-decreasing elevation order — the same semantics as the binary heap
+// (ties are benign: equal keys mean equal pop level mean identical fills), for O(1)
+// amortized ops instead of O(log n) comparisons over ~33M heap ops per 4096^2 node.
+// The std::priority_queue version above was 40% of the whole cold forest cook
+// (perf: __adjust_heap + compute, ~3.1s per basin node); ORKID_BASINFILL_STDHEAP=1
+// selects it for A/B. The pop level e is recovered from out[] (always written before
+// push), so entries carry only (key, index).
+static void _priorityFloodRadix(const float* z, float* out, int W, int H, float eps) {
+  const int n = W * H;
+  std::vector<char> closed(size_t(n), 0);
+  struct Ent { uint32_t k; int i; };
+  std::vector<Ent> buckets[33];
+  uint32_t last = 0; // floor: max key popped so far (monotone invariant: pushes >= last)
+  size_t count = 0;
+  auto bidx = [](uint32_t k, uint32_t floor) -> int {
+    return (k == floor) ? 0 : (32 - __builtin_clz(k ^ floor));
+  };
+  auto push = [&](uint32_t k, int i) { buckets[bidx(k, last)].push_back({k, i}); count++; };
+  auto seed = [&](int idx) {
+    if (!closed[idx]) { closed[idx] = 1; out[idx] = z[idx]; push(_floodKey(z[idx]), idx); }
+  };
+  for (int x = 0; x < W; x++) { seed(x); seed((H - 1) * W + x); }       // top + bottom rows
+  for (int y = 0; y < H; y++) { seed(y * W); seed(y * W + (W - 1)); }   // left + right cols
+  const int dx[8] = {-1, 1, 0, 0, -1, -1, 1, 1};
+  const int dy[8] = {0, 0, -1, 1, -1, 1, -1, 1};                         // 8-connectivity (D8)
+  while (count) {
+    if (buckets[0].empty()) {
+      // advance the floor: smallest nonempty bucket holds the next minimum; entries
+      // redistribute to strictly lower buckets relative to the new floor (amortized
+      // O(1) moves per element over the whole flood).
+      int j = 1;
+      while (buckets[j].empty()) j++;
+      uint32_t mn = buckets[j][0].k;
+      for (auto& e : buckets[j]) mn = std::min(mn, e.k);
+      last = mn;
+      for (auto& e : buckets[j]) buckets[bidx(e.k, last)].push_back(e);
+      buckets[j].clear();
+    }
+    Ent top = buckets[0].back(); // bucket 0 holds keys == last exactly; any order is fine
+    buckets[0].pop_back();
+    count--;
+    int c   = top.i;
+    float e = out[c];
+    int cx = c % W, cy = c / W;
+    for (int k8 = 0; k8 < 8; k8++) {
+      int nx = cx + dx[k8], ny = cy + dy[k8];
+      if (nx < 0 || nx >= W || ny < 0 || ny >= H) continue;
+      int ni = ny * W + nx;
+      if (closed[ni]) continue;
+      float nz   = z[ni];
+      float fill = (nz > e) ? nz : (e + eps); // raise to spill level (+eps for drainage)
+      closed[ni] = 1;
+      out[ni]    = fill;
+      push(_floodKey(fill), ni);
+    }
+  }
+}
+
+static void _priorityFlood(const float* z, float* out, int W, int H, float eps) {
+  static const bool s_stdheap = (getenv("ORKID_BASINFILL_STDHEAP") != nullptr);
+  if (s_stdheap)
+    _priorityFloodStdHeap(z, out, W, H, eps);
+  else
+    _priorityFloodRadix(z, out, W, H, eps);
+}
+
 struct BasinFillModuleInst : public TerrainComputeInst {
   BasinFillModuleInst(const BasinFillModuleData* d, dflow::GraphInst* g) : TerrainComputeInst(d, g), _d(d) {}
   void onLink(dflow::GraphInst*) final {
     _output = typedOutputNamed<HfImagePlugTraits>("Out");
     _input  = typedInputNamed<HfImagePlugTraits>("In");
     _eps    = _floatPlug(this, _d, "epsilon");
+    _blend  = _floatPlug(this, _d, "blend");
   }
-  void onActivate(dflow::GraphInst* inst) final {
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<BakeEnv>();
     _allocOut(env.get(), _output->_value); // output SSBO (no shaders — this is a CPU module)
   }
@@ -89,16 +167,24 @@ struct BasinFillModuleInst : public TerrainComputeInst {
     const float* z = static_cast<const float*>(im->_mappedaddr);
     std::vector<float> filled(n);
     _priorityFlood(z, filled.data(), W, H, _eps->value());
+    // `blend` crossfades filled vs the ORIGINAL input (the lpf idiom; CPU op -> CPU mix):
+    // 0 = passthrough, 1 (default) = fully filled — the ==1.0 branch is a bit-exact no-op.
+    float blend = std::min(std::max(_blend->value(), 0.0f), 1.0f);
+    if (blend < 1.0f)
+      for (size_t i = 0; i < n; i++)
+        filled[i] = z[i] + (filled[i] - z[i]) * blend;
     fxi->unmapStorageBuffer(im.get());
     // write the filled field to the output (consumed by a later node's phase)
     auto om = fxi->mapStorageBuffer(_output->_value->_ssbo, 0, n * sizeof(float), BufferMapAccess::WRITE_ONLY);
     std::memcpy(om->_mappedaddr, filled.data(), n * sizeof(float));
     fxi->unmapStorageBuffer(om.get());
   }
+  bool cookCacheDefault() const final { return true; } // measured cache-point class (cost-model analysis)
   uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
     auto h = DataBlock::createHasher();
-    h->accumulateString("terrain.basinfill.v1"); // priority-flood depression fill (CPU)
+    h->accumulateString("terrain.basinfill.v2"); // v2: runtime blend crossfade (CPU mix)
     h->accumulateItem<float>(_eps->value());
+    h->accumulateItem<float>(_blend->value());
     _mixTail(h, ctx, ih);
     h->finish();
     return h->result();
@@ -107,13 +193,15 @@ struct BasinFillModuleInst : public TerrainComputeInst {
   const BasinFillModuleData* _d;
   hfimg_outpluginst_ptr_t _output;
   hfimg_inpluginst_ptr_t _input;
-  dflow::float_inp_pluginst_ptr_t _eps;
+  dflow::float_inp_pluginst_ptr_t _eps, _blend;
 };
 
 static void _reshapeBasinFillIOs(dataflow::moduledata_ptr_t data) {
   dflow::ModuleData::createInputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "In");
   // per-step drainage gradient (normalized height units); 0 = pure flat fill.
   dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "epsilon")->setValue(0.0f);
+  // crossfade filled vs original: 0 = passthrough, 1 = fully filled (default).
+  dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "blend")->setValue(1.0f);
   dflow::ModuleData::createOutputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "Out");
 }
 BasinFillModuleData::BasinFillModuleData() {}

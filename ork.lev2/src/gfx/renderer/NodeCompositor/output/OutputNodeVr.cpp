@@ -181,6 +181,12 @@ struct VRIMPL {
     /////////////////////////////////////////////////////////////////////////////
 
     if (use_vr){
+      // Feed the world/root transform into the device user matrix. _updatePosesCommon
+      //  (invoked by gpuUpdate below, this same frame) composes cmv = usermtx*base*hmd,
+      //  so the eye cameras carry the walker's world placement — every draw path then
+      //  works in true-WORLD space with no per-draw root compose. rootmatrix is the
+      //  spawncam VIEW matrix (world->root), exactly the convention usermtx wants.
+      orkidvr::device()->_usermtxgen = [rootmatrix]() -> fmtx4 { return rootmatrix; };
       orkidvr::device()->gpuUpdate(*RCFD);
     }
 
@@ -195,7 +201,6 @@ struct VRIMPL {
     drawdata._properties["simcammtx"_crcu].set<const CameraMatrices*>(VRDEV->_centercamera.get());
 
     if (use_vr and VRDEV->_supportsStereo) {
-      RCFD->setUserProperty("vrroot"_crc, rootmatrix);
       _stereomatrices->_left  = VRDEV->_leftcamera;
       _stereomatrices->_right = VRDEV->_rightcamera;
       _stereomatrices->_mono  = VRDEV->_leftcamera;
@@ -266,6 +271,13 @@ void VrOutputNode::endAssemble(CompositorDrawData& drawdata) {
 void VrOutputNode::composite(CompositorDrawData& drawdata) {
   drawdata.context()->debugPushGroup("VrOutputNode::composite");
   auto impl = _impl.get<std::shared_ptr<VRIMPL>>();
+  // one-shot: proves the VR output node's composite() is reached at all.
+  static bool s_vrout_first = false;
+  if (not s_vrout_first) {
+    s_vrout_first = true;
+    printf("[VROUT] VrOutputNode::composite first entry.\n");
+    fflush(stdout);
+  }
   /////////////////////////////////////////////////////////////////////////////
   // VR compositor
   /////////////////////////////////////////////////////////////////////////////
@@ -364,11 +376,29 @@ void VrOutputNode::composite(CompositorDrawData& drawdata) {
         } else {
           drawdata.context()->debugPushGroup("VrOutputNode::to_hmd");
           const auto& vrdev = orkidvr::device();
+          // one-shot: last gate before the device composite — states whether the
+          // wide two-eye texture will actually be handed to the runtime this run.
+          static bool s_tohmd_first = false;
+          if (not s_tohmd_first) {
+            s_tohmd_first = true;
+            bool will_composite = (vrdev and vrdev->_active);
+            printf("[VROUT] VrOutputNode::composite to_hmd branch (vrdev=%d active=%d) — __composite %s.\n",
+                   int(vrdev != nullptr),
+                   int(vrdev ? vrdev->_active : false),
+                   will_composite ? "WILL be called" : "will NOT be called");
+            fflush(stdout);
+          }
           auto& mtl         = impl->_blit2screenmtl;
           auto inp_rtg      = drawdata._properties["final_outgroup"_crcu].get<rtgroup_ptr_t>();
           auto this_buf     = context->FBI()->GetThisBuffer();
           // fbi->PushRtGroup(nullptr);//impl->_rtg);
-          // vrdev->__composite(context, tex);
+          // X3: hand the wide two-eye texture to the active VR device's compositor.
+          //  NoVR::__composite is a genuine no-op (the desktop-mirror blit below is
+          //  the presentation), so this is byte-identical for NoVR; OpenXrDevice
+          //  copies into its swapchain + xrEndFrame here. Gated on device activity.
+          if (vrdev and vrdev->_active) {
+            vrdev->__composite(context, tex);
+          }
           mtl.begin(impl->_fxtechnique1x1, framedata);
 
           mtl.bindParamTexture(impl->_fxpColorMap, tex);
@@ -411,7 +441,28 @@ void VrOutputNode::composite(CompositorDrawData& drawdata) {
         }
 
         drawdata.context()->debugPopGroup();
+      } else {
+        static bool s_vrout_notex = false;
+        if (not s_vrout_notex) {
+          s_vrout_notex = true;
+          printf("[VROUT] VrOutputNode::composite — final_out buffer has NULL texture(); HMD composite SKIPPED.\n");
+          fflush(stdout);
+        }
       }
+    } else {
+      static bool s_vrout_nobuf = false;
+      if (not s_vrout_nobuf) {
+        s_vrout_nobuf = true;
+        printf("[VROUT] VrOutputNode::composite — final_out RtBuffer is NULL; HMD composite SKIPPED.\n");
+        fflush(stdout);
+      }
+    }
+  } else {
+    static bool s_vrout_nofinal = false;
+    if (not s_vrout_nofinal) {
+      s_vrout_nofinal = true;
+      printf("[VROUT] VrOutputNode::composite — 'final_out' property missing or not an RtBuffer*; HMD composite SKIPPED.\n");
+      fflush(stdout);
     }
   }
   drawdata.context()->debugPopGroup();

@@ -80,6 +80,9 @@ void pyinit_controller(py::module& module_ecs) {
       .def("gpuUpdate", [](controller_ptr_t ctrl, ctx_t ctx) {
          ctrl->gpuUpdate(ctx.get());
        })
+      .def("updateWithGpu", [](controller_ptr_t ctrl, ctx_t ctx) {
+         ctrl->updateWithGpu(ctx.get());
+       })
       ///////////////////////////
       .def("installRenderCallbackOnEzApp", [](controller_ptr_t ctrl,lev2::orkezapp_ptr_t ezapp) {
          py::gil_scoped_release release; //

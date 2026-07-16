@@ -109,7 +109,22 @@ struct SpirvCompiler {
   SpirvCompiler(transunit_ptr_t _transu, bool vulkan);
   SpirvCompiler(transunit_ptr_t _transu, bool vulkan, const std::map<int, std::map<std::string, MergedShaderResources::ResourceBinding>>& merged_resources);
   void processShader(shader_ptr_t sh);
-  
+
+  // WS3 parallel-JIT split. GLSL EMISSION mutates the shared transunit AST and
+  // compiler members, so it must stay on ONE thread (shaders emitted one at a
+  // time); the shaderc GLSL->SPIR-V compile is a pure function of
+  // (name, glsl, kind) and safely fans out across workers.
+  //   emitShader        = processShader minus the compile (returns the GLSL)
+  //   compileGlslToSpirv = the compile — per-call-local state, thread-safe
+  // processShader() == compileGlslToSpirv(emitShader()) into _spirv_binary.
+  struct EmittedShader {
+    std::string _name;
+    std::string _glsl;
+    shaderc_shader_kind _kind;
+  };
+  EmittedShader emitShader(shader_ptr_t sh);
+  static shader_bin_t compileGlslToSpirv(const std::string& name, const std::string& glsl, shaderc_shader_kind kind);
+
 
 private:
 
@@ -133,6 +148,7 @@ private:
 
   void _beginShader(shader_ptr_t sh);
   void _compileShader(shaderc_shader_kind shader_type);
+  std::string _emitShaderGLSL(shaderc_shader_kind shader_type); // emission half of _compileShader (single-thread)
 
   std::string _ifLayoutHeader(astnode_ptr_t layout_node, int iloc=-1);
   std::string _ifTypedId(astnode_ptr_t tid_node);

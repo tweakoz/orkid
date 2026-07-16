@@ -43,26 +43,38 @@ VulkanFxShaderStage::~VulkanFxShaderStage() {
 
 bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader) {
   pshader->mName = input_path.c_str();
-  auto it = _fxshaderfiles.find(input_path);
   vkfxsfile_ptr_t vulkan_shaderfile;
   ////////////////////////////////////////////
   // if not yet loaded, load...
   ////////////////////////////////////////////
-  if (it != _fxshaderfiles.end()) { // shader already loaded...
-    vulkan_shaderfile = it->second;
-  } else { // load
+  {
+    std::lock_guard<std::mutex> lock(_fxshaderfiles_mutex);
+    auto it = _fxshaderfiles.find(input_path);
+    if (it != _fxshaderfiles.end()) { // shader already loaded...
+      vulkan_shaderfile = it->second;
+    }
+  }
+  if (nullptr == vulkan_shaderfile) { // load
     auto str_read = ork::File::readAsString(input_path);
     OrkAssert(str_read != nullptr);
     if(0)printf("load shader from path<%s>\n", input_path.c_str());
     // Create the parser cache with the top-level path
     auto slp_cache = std::make_shared<ShadLangParserCache>();
     slp_cache->_toplevel_path = file::Path(input_path.c_str());
-    vulkan_shaderfile          = _loadShaderFromShaderText(pshader, input_path.c_str(), str_read->_data, slp_cache);
-    _fxshaderfiles[input_path] = vulkan_shaderfile;
+    vulkan_shaderfile = _loadShaderFromShaderText(pshader, input_path.c_str(), str_read->_data, slp_cache);
+    ////////////////////////////////////////////
+    // atomic find-or-insert: if another thread compiled the same
+    //  shader while we did, first insert wins in the map — this
+    //  pshader keeps its own shaderfile (its technique/param
+    //  pointers reference it via _internalHandle)
+    ////////////////////////////////////////////
+    std::lock_guard<std::mutex> lock(_fxshaderfiles_mutex);
+    _fxshaderfiles.insert(std::make_pair(input_path, vulkan_shaderfile));
   }
   bool OK = (vulkan_shaderfile != nullptr);
   if (OK) {
-    vulkan_shaderfile->_shader_name = input_path.c_str();
+    // note: _shader_name was already set (pre-publish) by _loadShaderFromShaderText;
+    //  re-writing it here on a cache hit would race against other threads
     pshader->_internalHandle.set<vkfxsfile_ptr_t>(vulkan_shaderfile);
   }
   return OK;
@@ -79,8 +91,11 @@ FxShader* VkFxInterface::shaderFromShaderText(const std::string& name, const std
   vkfxsfile_ptr_t vulkan_shaderfile = _loadShaderFromShaderText(shader, name, shadertext, slp_cache);
   if (vulkan_shaderfile) {
     shader->_internalHandle.set<vkfxsfile_ptr_t>(vulkan_shaderfile);
-    _fxshaderfiles[name]            = vulkan_shaderfile;
-    vulkan_shaderfile->_shader_name = name;
+    vulkan_shaderfile->_shader_name = name; // set before publishing to the map
+    {
+      std::lock_guard<std::mutex> lock(_fxshaderfiles_mutex);
+      _fxshaderfiles[name] = vulkan_shaderfile;
+    }
   } else {
     delete shader;
     shader = nullptr;

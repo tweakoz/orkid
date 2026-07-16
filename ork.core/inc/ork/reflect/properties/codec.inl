@@ -9,6 +9,7 @@
 #pragma once
 
 #include <ork/reflect/properties/codec.h>
+#include <ork/math/cvector2.h>
 #include <ork/math/cvector4.h>
 #include <ork/kernel/varmap.inl>
 #include <ork/util/crc.h>   // crcstring_ptr_t — a provider-token varmap value (NODEENC/decode below)
@@ -55,6 +56,24 @@ template <>void encode_key(std::string& keystr_out, const PoolString& key_inp);
 template <>void encode_key(std::string& keystr_out, const std::string& key_inp);
 template <>void encode_key(std::string& keystr_out, rtti::Class* const& key_inp);
 template <>void encode_key(std::string& keystr_out, object::ObjectClass* const& key_inp);
+
+////////////////////////////////////////////////////////////////////////////////
+
+template <> //
+inline void decode_value(var_t val_inp, fvec2& val_out) {
+  if( auto as_fvec2 = val_inp.tryAs<fvec2>() ){
+    val_out = as_fvec2.value();
+  }
+  else if( auto as_var_array_t = val_inp.tryAs<var_array_t>() ){
+    auto& var_array = as_var_array_t.value();
+    OrkAssert(var_array.size() == 2);
+    val_out.x = var_array[0].get<double>();
+    val_out.y = var_array[1].get<double>();
+  }
+  else{
+    OrkAssert(false);
+  }
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 

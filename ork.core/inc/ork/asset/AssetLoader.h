@@ -30,6 +30,13 @@ struct AssetLoader {
 
   static void registerLoaderForExtension(std::string, assetloader_ptr_t);
   static LockedResource<loader_by_ext_map_t> _loaders_by_ext;
+
+  // WS5: a loader that sets this declares load() safe to run concurrently
+  // with other load() calls of the same type (its _doLoadAsset touches only
+  // request-local state and thread-safe caches). AssetManager<T>::loadAsync
+  // skips the per-type gLock for such loaders, letting decodes run in
+  // parallel on the worker pool.
+  bool _concurrent = false;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -85,8 +85,18 @@ public:
 
   Affinity mAffinity;
   graphdata_ptr_t _parent;
-  fvec2 mgvpos;
   bool _prunable = true;
+  // strategic cook-cache point override (per-node DSL marker, reflected as
+  // "cachepoint"): -1 = module-class default decides, 0 = never cache this
+  // node's output, 1 = always cache it. Consumed by cook-cache drivers
+  // (terrain bake); inert elsewhere.
+  int _cachepoint = -1;
+  // BYPASS (structural editor state, reflected as "bypassed"): a bypassed module is a
+  // transparent PASS-THROUGH — every DATA-DEPENDENCY read of a downstream input resolves
+  // this module's output to its own first matching-type connected input instead
+  // (resolveConnectedOutput), so the module drops out of the dependency / cook-Merkle
+  // chain WITHOUT being deleted. Round-trips with the graph. false = normal (materialized).
+  bool _bypassed = false;
 
 private:
   // Cycle-safe, memoized recursive helpers. `on_path` tracks the current DFS

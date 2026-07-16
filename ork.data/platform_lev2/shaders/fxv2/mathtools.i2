@@ -2,16 +2,30 @@ import "orkshader://stdtools.i2";
 
 libblock lib_math {
 
+  // DETERMINISTIC hashes (lowbias32 mix on the exact input BIT patterns — same
+  // family as the terrain cook's lib_tnoise). Replaces fract(sin(..)*43758..):
+  // sin() at the arguments these get (fcoord-scale dots -> 1e5-class) is
+  // vendor-approximated, so NVIDIA and Apple produced STRUCTURALLY different
+  // values from identical inputs — the same divergence class fixed in the
+  // cook-side noise, here feeding pbr_filterenv's IBL sample jitter (so
+  // per-machine-generated XIRs could never match).
+  uint mix32(uint n) {
+    n ^= n >> 16; n *= 0x7feb352du; n ^= n >> 15; n *= 0x846ca68bu; n ^= n >> 16;
+    return n;
+  }
+
   float rand(vec2 co) {
-    return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
+    uint n = (floatBitsToUint(co.x) * 1597334673u) ^ (floatBitsToUint(co.y) * 3812015801u);
+    return float(mix32(n) >> 8) * (1.0 / 16777216.0);
   }
 
   float hash1(float n) {
-    return fract(sin(n) * 43758.5453123);
+    return float(mix32(floatBitsToUint(n)) >> 8) * (1.0 / 16777216.0);
   }
 
   float hash2(vec2 p) {
-    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+    uint n = (floatBitsToUint(p.x) * 0x9e3779b9u) ^ (floatBitsToUint(p.y) * 0x85ebca6bu);
+    return float(mix32(n) >> 8) * (1.0 / 16777216.0);
   }
   
   vec3 rcp(vec3 inp) {

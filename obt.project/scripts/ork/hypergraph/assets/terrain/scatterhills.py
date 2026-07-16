@@ -7,18 +7,18 @@
 
 from ork.hypergraph.dflow.terrain import HeightField
 from ork.hypergraph.dflow import terrain as T
+from ork.hypergraph.units import meters
 
 
 class ScatterHills(HeightField):
-  # REALISTIC, NAVIGABLE proportions: 2km x 2km, 100m total relief. Rolling fbm
+  # REALISTIC, NAVIGABLE proportions: 2km x 2km, ~100m default relief. Rolling fbm
   # (no terracing — at this scale terrace risers become unwalkable cliffs);
   # typical slopes ~5-15 deg, walkable by the 2m capsule at 10mph.
   EXTENT_M = 2048.0
-  HEIGHT_M = 100.0
 
-  def __init__(self, octaves=6):
+  def __init__(self, octaves=6, relief=meters(100)):
     super().__init__()
-    h = T.fbm(frequency=3.0, octaves=octaves) * 0.75 + T.fbm(frequency=10.0) * 0.25
+    h = (T.fbm(frequency=3.0, octaves=octaves) * 0.75 + T.fbm(frequency=10.0) * 0.25) * relief
     self.capture(h, "height")
 
     alt = T.normalize(h)

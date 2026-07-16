@@ -15,24 +15,30 @@ namespace ork::lev2::terrain {
 // interface: odata at binding 0, idata at binding 1 (declaration order).
 ///////////////////////////////////////////////////////////////////////////////
 
-static std::string _remap_compute_text(int dim, float scale, float bias, float lo, float hi) {
+// DIM is RUNTIME data (params SSBO p_dimf, binding 2) — dim changes never rebuild the
+// shader; the field arrays are runtime-sized. scale/bias/lo/hi stay baked.
+static std::string _remap_compute_text(float scale, float bias, float lo, float hi) {
   std::string tmpl = R"SHADER(
 fxconfig fxcfg_default {}
 storage_interface sif_out (descriptor_set 0) {
-  buffer layout(std430) ob { float odata[%DIMSQ%]; };
+  buffer layout(std430) ob { float odata[]; };
 }
 storage_interface sif_in (descriptor_set 0) {
-  buffer layout(std430) ib { float idata[%DIMSQ%]; };
+  buffer layout(std430) ib { float idata[]; };
+}
+storage_interface sif_pm (descriptor_set 0) {
+  buffer layout(std430) pm_in { float p_dimf; };
 }
 compute_interface iface_remap {
-  storage { sif_out sif_in }
+  storage { sif_out sif_in sif_pm }
   inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); }
 }
 compute_shader cs_remap : iface_remap {
-  if (gl_GlobalInvocationID.x >= %DIMU% || gl_GlobalInvocationID.y >= %DIMU%) { return; }
+  uint u_dim = uint(p_dimf); // RUNTIME grid dim (params SSBO) — no rebuild on dim change
+  if (gl_GlobalInvocationID.x >= u_dim || gl_GlobalInvocationID.y >= u_dim) { return; }
   uint xi = gl_GlobalInvocationID.x;
   uint yi = gl_GlobalInvocationID.y;
-  uint i  = yi * %DIMU% + xi;
+  uint i  = yi * u_dim + xi;
   float v = idata[i] * float(%SCALE%) + float(%BIAS%);
   odata[i] = clamp(v, float(%LO%), float(%HI%));
 }
@@ -44,8 +50,6 @@ compute_shader cs_remap : iface_remap {
       pos += val.size();
     }
   };
-  sub("%DIMSQ%", FormatString("%d", dim * dim));
-  sub("%DIMU%", FormatString("%du", dim));
   sub("%SCALE%", FormatString("%f", scale));
   sub("%BIAS%", FormatString("%f", bias));
   sub("%LO%", FormatString("%f", lo));
@@ -71,7 +75,7 @@ struct RemapModuleInst : public TerrainComputeInst {
     _inLo->_value    = _rmd->typedInputNamed<dflow::FloatPlugTraits>("lo")->_value;
     _inHi->_value    = _rmd->typedInputNamed<dflow::FloatPlugTraits>("hi")->_value;
   }
-  void onActivate(dflow::GraphInst* inst) final {
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env  = inst->_impl.getShared<BakeEnv>();
     auto fxi  = env->_ctx->FXI();
     int dim   = env->_w;
@@ -79,11 +83,16 @@ struct RemapModuleInst : public TerrainComputeInst {
     img->_w        = dim;
     img->_h        = dim;
     img->_channels = 1;
-    img->_ssbo     = fxi->createStorageBuffer(size_t(dim) * size_t(dim) * sizeof(float));
+    img->_ssbo     = env->createStorageBuffer(size_t(dim) * size_t(dim) * sizeof(float));
 
-    auto text = _remap_compute_text(dim, _inScale->value(), _inBias->value(), _inLo->value(), _inHi->value());
+    auto text = _remap_compute_text(_inScale->value(), _inBias->value(), _inLo->value(), _inHi->value());
     auto shdr = fxi->shaderFromShaderText("terrain_remap", text);
     _cs       = fxi->computeShader(shdr, "cs_remap");
+    _pm        = env->createStorageBuffer(sizeof(float)); // p_dimf = RUNTIME grid dim
+    float dimf = float(dim);
+    auto mp    = fxi->mapStorageBuffer(_pm, 0, sizeof(dimf), BufferMapAccess::WRITE_ONLY);
+    std::memcpy(mp->_mappedaddr, &dimf, sizeof(dimf));
+    fxi->unmapStorageBuffer(mp.get());
   }
   void compute(dflow::GraphInst* inst, ui::updatedata_ptr_t updata) final {
     auto env   = inst->_impl.getShared<BakeEnv>();
@@ -94,6 +103,7 @@ struct RemapModuleInst : public TerrainComputeInst {
     int groups = (env->_w + 7) / 8;
     ci->bindStorageBuffer(_cs, 0, out->_ssbo); // odata
     ci->bindStorageBuffer(_cs, 1, in->_ssbo);  // idata
+    ci->bindStorageBuffer(_cs, 2, _pm);        // p_dimf (RUNTIME grid dim)
     ci->dispatchCompute(_cs, groups, groups, 1);
     ci->storageBarrier();
   }
@@ -113,6 +123,7 @@ struct RemapModuleInst : public TerrainComputeInst {
   hfimg_outpluginst_ptr_t _output;
   hfimg_inpluginst_ptr_t _input;
   dflow::float_inp_pluginst_ptr_t _inScale, _inBias, _inLo, _inHi;
+  FxShaderStorageBuffer* _pm = nullptr;
   const FxComputeShader* _cs = nullptr;
 };
 

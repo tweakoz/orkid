@@ -317,6 +317,18 @@ public:
   fast_set<BulletObjectComponent*> _sleptDynamicComponents;
   tsl::robin_set<orkcontactcallback_ptr_t> _collisionCallbacks;
   tsl::robin_pg_set<BulletObjectComponent*> _deactivation_queue;
+  // deferred terrain hot-reload polls (keyed by the terrain impl pointer). A same-path terrain
+  // rebake flags the impl (msgrouter, possibly on the GPU thread); _onUpdate drains these on the
+  // update thread — the safe point to mutate heightfield data the sim steps read.
+  std::map<const void*, std::function<void()>> _terrainReloadPolls;
+  // SELF-DEFENSE terrain floor: terrain colliders report their world-Y surface span here at
+  // shape creation so the character controller can NAME an underground spawn (spawn.y below the
+  // terrain minimum ⇒ ground contact impossible) and recover the fall to walkable ground. The
+  // span is the UNION across all registered terrain colliders (entity at y=0 == baked meters).
+  void _registerTerrainYSpan(float minY, float maxY);
+  bool  _hasTerrainFloor = false;
+  float _terrainMinY     = 0.0f;
+  float _terrainMaxY     = 0.0f;
 };
 
 

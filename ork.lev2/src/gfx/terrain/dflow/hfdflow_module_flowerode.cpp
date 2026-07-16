@@ -24,29 +24,31 @@ namespace ork::lev2::terrain {
 
 static constexpr int kSubmitChunk = 64;
 
-// one continuous erosion+deposition step, in PHYSICAL meters (z is z_norm*height_m). slope = |grad z|
+// one continuous erosion+deposition step, in PHYSICAL meters (z is in meters). slope = |grad z|
 // / texel_m (true rise/run); erode/deposit are in meters; the clamp bounds change to a fraction of the
 // physical local relief -> dt/k_* are now meaningful magnitudes, clamp_frac is a true safety guard.
 // si_i=z_in si_d=discharge si_o=z_out. inv_texel = 1/texel_m.
-static std::string _fe_step_text(int dim, float inv_texel, float dt, float k_erode, float k_deposit,
+static std::string _fe_step_text(float dt, float k_erode, float k_deposit,
                                  float m, float n, float dep_m, float flat_k, float clamp_frac,
                                  bool disch_log) {
   std::string t = std::string(
     "\nfxconfig fxcfg_default {}\n"
-    "storage_interface si_i (descriptor_set 0) { buffer layout(std430) ib { float zin[%DIMSQ%]; }; }\n"
-    "storage_interface si_d (descriptor_set 0) { buffer layout(std430) db { float disch[%DIMSQ%]; }; }\n"
-    "storage_interface si_o (descriptor_set 0) { buffer layout(std430) ob { float zout[%DIMSQ%]; }; }\n"
-    "compute_interface iface { storage { si_i si_d si_o } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }\n"
+    "storage_interface si_i (descriptor_set 0) { buffer layout(std430) ib { float zin[]; }; }\n"
+    "storage_interface si_d (descriptor_set 0) { buffer layout(std430) db { float disch[]; }; }\n"
+    "storage_interface si_o (descriptor_set 0) { buffer layout(std430) ob { float zout[]; }; }\n"
+    "storage_interface si_p (descriptor_set 0) { buffer layout(std430) pb { float p_dimf; float p_invtexel; }; }\n"
+    "compute_interface iface { storage { si_i si_d si_o si_p } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }\n"
     "compute_shader cs_fe_step : iface {\n"
-    "  if (gl_GlobalInvocationID.x >= %DIMU% || gl_GlobalInvocationID.y >= %DIMU%) { return; }\n"
+    "  uint u_dim = uint(p_dimf);\n"
+    "  if (gl_GlobalInvocationID.x >= u_dim || gl_GlobalInvocationID.y >= u_dim) { return; }\n"
     "  int  xi = int(gl_GlobalInvocationID.x);\n"
     "  int  yi = int(gl_GlobalInvocationID.y);\n"
-    "  int  W  = int(%DIMU%); uint Wu = %DIMU%; uint i = uint(yi)*Wu + uint(xi);\n"
+    "  int  W  = int(u_dim); uint Wu = u_dim; uint i = uint(yi)*Wu + uint(xi);\n"
     "  float zc = zin[i];\n"
     "  if (xi==0 || yi==0 || xi==W-1 || yi==W-1) { zout[i] = zc; return; }\n"   // boundary = base level
     "  float zl = zin[i-1u]; float zr = zin[i+1u]; float zd = zin[i-Wu]; float zu = zin[i+Wu];\n"
     "  float gx = (zr - zl) * 0.5; float gy = (zu - zd) * 0.5;\n"               // grad of PHYSICAL z (meters)
-    "  float slope = sqrt(gx*gx + gy*gy) * float(%INVTEXEL%);\n"                // physical rise/run
+    "  float slope = sqrt(gx*gx + gy*gy) * p_invtexel;\n"                       // physical rise/run (dim-derived -> RUNTIME)
     "  float flatv = 1.0 / (1.0 + slope * float(%FLATK%));\n"                   // flat is a GLSL keyword
     "  float d = disch[i];\n"
     "  float A = %AEXPR%;\n"                                                    // raw drainage area
@@ -61,7 +63,6 @@ static std::string _fe_step_text(int dim, float inv_texel, float dt, float k_ero
     "  zout[i] = zc + dz;\n"
     "}\n");
   _shadersub(t, "%AEXPR%", disch_log ? "exp(min(d,30.0)) - 1.0" : "d");
-  _shadersub(t, "%INVTEXEL%", FormatString("%g", inv_texel));
   _shadersub(t, "%DT%",      FormatString("%g", dt));
   _shadersub(t, "%KERODE%",  FormatString("%g", k_erode));
   _shadersub(t, "%KDEPOSIT%",FormatString("%g", k_deposit));
@@ -70,42 +71,43 @@ static std::string _fe_step_text(int dim, float inv_texel, float dt, float k_ero
   _shadersub(t, "%DEPM%",    FormatString("%g", dep_m));
   _shadersub(t, "%FLATK%",   FormatString("%g", flat_k));
   _shadersub(t, "%CLAMPF%",  FormatString("%g", clamp_frac));
-  _shadersub(t, "%DIMSQ%", FormatString("%d", dim * dim));
-  _shadersub(t, "%DIMU%", FormatString("%du", dim));
   return t;
 }
 
-// z_in (normalized [0,1]) -> physical meters: o = i*height_m.  si_o=z(phys) si_i=in(norm).
-static std::string _fe_zin_text(int dim, float height_m) {
+// z_in copy into the ping-pong (heights are METERS already): o = i_.  si_o=z si_i=in.
+static std::string _fe_zin_text() {
   std::string t = std::string(
     "\nfxconfig fxcfg_default {}\n"
-    "storage_interface si_o (descriptor_set 0) { buffer layout(std430) ob { float o[%DIMSQ%]; }; }\n"
-    "storage_interface si_i (descriptor_set 0) { buffer layout(std430) ib { float i_[%DIMSQ%]; }; }\n"
-    "compute_interface iface { storage { si_o si_i } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }\n"
+    "storage_interface si_o (descriptor_set 0) { buffer layout(std430) ob { float o[]; }; }\n"
+    "storage_interface si_i (descriptor_set 0) { buffer layout(std430) ib { float i_[]; }; }\n"
+    "storage_interface si_p (descriptor_set 0) { buffer layout(std430) pb { float p_dimf; }; }\n"
+    "compute_interface iface { storage { si_o si_i si_p } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }\n"
     "compute_shader cs_fe_zin : iface {\n"
-    "  if (gl_GlobalInvocationID.x >= %DIMU% || gl_GlobalInvocationID.y >= %DIMU%) { return; }\n"
-    "  uint k = gl_GlobalInvocationID.y*%DIMU% + gl_GlobalInvocationID.x; o[k] = i_[k] * float(%HM%);\n"
+    "  uint u_dim = uint(p_dimf);\n"
+    "  if (gl_GlobalInvocationID.x >= u_dim || gl_GlobalInvocationID.y >= u_dim) { return; }\n"
+    "  uint k = gl_GlobalInvocationID.y*u_dim + gl_GlobalInvocationID.x; o[k] = i_[k];\n"
     "}\n");
-  _shadersub(t, "%HM%", FormatString("%g", height_m));
-  _shadersub(t, "%DIMSQ%", FormatString("%d", dim * dim));
-  _shadersub(t, "%DIMU%", FormatString("%du", dim));
   return t;
 }
 
-// physical meters -> normalized [0,1] output: o = i/height_m.  si_o=out(norm) si_i=z(phys).
-static std::string _fe_zout_text(int dim, float height_m) {
+// meters output, crossfaded vs the ORIGINAL input (the lpf `blend` idiom; RUNTIME param —
+// mix(x,y,1.0) is NOT bit-exact y, so full blend selects the eroded value EXACTLY).
+// si_o=out si_i=z(eroded) si_g=original.
+static std::string _fe_zout_text() {
   std::string t = std::string(
     "\nfxconfig fxcfg_default {}\n"
-    "storage_interface si_o (descriptor_set 0) { buffer layout(std430) ob { float o[%DIMSQ%]; }; }\n"
-    "storage_interface si_i (descriptor_set 0) { buffer layout(std430) ib { float i_[%DIMSQ%]; }; }\n"
-    "compute_interface iface { storage { si_o si_i } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }\n"
+    "storage_interface si_o (descriptor_set 0) { buffer layout(std430) ob { float o[]; }; }\n"
+    "storage_interface si_i (descriptor_set 0) { buffer layout(std430) ib { float i_[]; }; }\n"
+    "storage_interface si_g (descriptor_set 0) { buffer layout(std430) gb { float g_[]; }; }\n"
+    "storage_interface si_p (descriptor_set 0) { buffer layout(std430) pb { float p_dimf; float p_invtexel; float p_blend; }; }\n"
+    "compute_interface iface { storage { si_o si_i si_g si_p } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }\n"
     "compute_shader cs_fe_zout : iface {\n"
-    "  if (gl_GlobalInvocationID.x >= %DIMU% || gl_GlobalInvocationID.y >= %DIMU%) { return; }\n"
-    "  uint k = gl_GlobalInvocationID.y*%DIMU% + gl_GlobalInvocationID.x; o[k] = i_[k] * float(%INVHM%);\n"
+    "  uint u_dim = uint(p_dimf);\n"
+    "  if (gl_GlobalInvocationID.x >= u_dim || gl_GlobalInvocationID.y >= u_dim) { return; }\n"
+    "  uint k = gl_GlobalInvocationID.y*u_dim + gl_GlobalInvocationID.x;\n"
+    "  // full blend selects i_ EXACTLY (mix lowers to x+(y-x)*a — NOT bit-exact y at a=1)\n"
+    "  o[k] = (p_blend >= 1.0) ? i_[k] : mix(g_[k], i_[k], p_blend);\n"
     "}\n");
-  _shadersub(t, "%INVHM%", FormatString("%g", (height_m > 0.0f) ? (1.0f / height_m) : 1.0f));
-  _shadersub(t, "%DIMSQ%", FormatString("%d", dim * dim));
-  _shadersub(t, "%DIMU%", FormatString("%du", dim));
   return t;
 }
 
@@ -116,22 +118,32 @@ struct FlowErodeModuleInst : public TerrainComputeInst {
     _input  = typedInputNamed<HfImagePlugTraits>("In");
     _disch  = typedInputNamed<HfImagePlugTraits>("Discharge");
   }
-  void onActivate(dflow::GraphInst* inst) final {
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<BakeEnv>();
     auto fxi = env->_ctx->FXI();
     int dim  = env->_w;
     _allocOut(env.get(), _output->_value);
     size_t n = size_t(dim) * size_t(dim);
-    _zA = fxi->createStorageBuffer(n * sizeof(float));
-    _zB = fxi->createStorageBuffer(n * sizeof(float));
+    _zA = env->createStorageBuffer(n * sizeof(float));
+    _zB = env->createStorageBuffer(n * sizeof(float));
+    // dim AND the dim-DERIVED physical scalar (inv_texel) are RUNTIME data now — one
+    // compiled step shader serves every dim. PARITY: the old literal was %g-formatted,
+    // so the uploaded float is %g-ROUNDTRIPPED to match the parsed literal exactly.
     float cell      = (dim > 0) ? (env->_extent_m / float(dim)) : 1.0f;
-    float inv_texel = 1.0f / cell;                  // slope = |grad z_phys| / texel_m
-    float hm        = env->_height_scale_m;
+    float inv_texel = 1.0f / cell;                  // slope = |grad z| / texel_m (z in meters)
+    float blend = std::min(std::max(_d->_blend, 0.0f), 1.0f);
+    _params = env->createStorageBuffer(3 * sizeof(float));
+    { float pm[3] = {float(dim),
+                     strtof(FormatString("%g", inv_texel).c_str(), nullptr),
+                     blend};
+      auto mp = fxi->mapStorageBuffer(_params, 0, sizeof(pm), BufferMapAccess::WRITE_ONLY);
+      std::memcpy(mp->_mappedaddr, pm, sizeof(pm));
+      fxi->unmapStorageBuffer(mp.get()); }
     _csStep = fxi->computeShader(fxi->shaderFromShaderText("terrain_fe_step",
-                  _fe_step_text(dim, inv_texel, _d->_dt, _d->_k_erode, _d->_k_deposit, _d->_m, _d->_n,
+                  _fe_step_text(_d->_dt, _d->_k_erode, _d->_k_deposit, _d->_m, _d->_n,
                                 _d->_dep_m, _d->_flat_k, _d->_clamp_frac, _d->_disch_log)), "cs_fe_step");
-    _csZin  = fxi->computeShader(fxi->shaderFromShaderText("terrain_fe_zin",  _fe_zin_text(dim, hm)),  "cs_fe_zin");
-    _csZout = fxi->computeShader(fxi->shaderFromShaderText("terrain_fe_zout", _fe_zout_text(dim, hm)), "cs_fe_zout");
+    _csZin  = fxi->computeShader(fxi->shaderFromShaderText("terrain_fe_zin",  _fe_zin_text()),  "cs_fe_zin");
+    _csZout = fxi->computeShader(fxi->shaderFromShaderText("terrain_fe_zout", _fe_zout_text()), "cs_fe_zout");
     _niter = (_d->_niter < 1) ? 1 : _d->_niter;
   }
   void compute(dflow::GraphInst* inst, ui::updatedata_ptr_t) final {
@@ -141,24 +153,28 @@ struct FlowErodeModuleInst : public TerrainComputeInst {
     auto dis = _srcImg(_disch);
     OrkAssert(in && in->_ssbo && dis && dis->_ssbo);
     int g = (env->_w + 7) / 8;
-    // z (physical meters) = input * height_m
+    // z (meters) = copy of input
     ci->bindStorageBuffer(_csZin, 0, _zA); ci->bindStorageBuffer(_csZin, 1, in->_ssbo);
+    ci->bindStorageBuffer(_csZin, 2, _params);
     ci->dispatchCompute(_csZin, g, g, 1); ci->storageBarrier();
     FxShaderStorageBuffer* cur = _zA; FxShaderStorageBuffer* nxt = _zB;
     for (int it = 0; it < _niter; it++) {
       ci->bindStorageBuffer(_csStep, 0, cur); ci->bindStorageBuffer(_csStep, 1, dis->_ssbo);
       ci->bindStorageBuffer(_csStep, 2, nxt);
+      ci->bindStorageBuffer(_csStep, 3, _params);
       ci->dispatchCompute(_csStep, g, g, 1); std::swap(cur, nxt);
       if (((it + 1) % kSubmitChunk) == 0) { ci->endDispatchPhase(); ci->beginDispatchPhase(); }
       else ci->storageBarrier();
     }
-    // output (normalized) = z / height_m
+    // output (meters) = mix(original, eroded z, blend)
     ci->bindStorageBuffer(_csZout, 0, _output->_value->_ssbo); ci->bindStorageBuffer(_csZout, 1, cur);
+    ci->bindStorageBuffer(_csZout, 2, in->_ssbo);
+    ci->bindStorageBuffer(_csZout, 3, _params);
     ci->dispatchCompute(_csZout, g, g, 1); ci->storageBarrier();
   }
   uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
     auto h = DataBlock::createHasher();
-    h->accumulateString("terrain.flowerode.v2.physical"); // erode in physical z*height_m (meaningful dt/k_*)
+    h->accumulateString("terrain.flowerode.v4.meters"); // v4: heights in meters (zin/zout are copies, no height_scale)
     h->accumulateItem<int>(_d->_niter);
     h->accumulateItem<float>(_d->_dt);
     h->accumulateItem<float>(_d->_k_erode);
@@ -168,6 +184,7 @@ struct FlowErodeModuleInst : public TerrainComputeInst {
     h->accumulateItem<float>(_d->_dep_m);
     h->accumulateItem<float>(_d->_flat_k);
     h->accumulateItem<float>(_d->_clamp_frac);
+    h->accumulateItem<float>(_d->_blend);
     h->accumulateItem<int>(_d->_disch_log ? 1 : 0);
     _mixTail(h, ctx, ih);
     h->finish();
@@ -178,6 +195,7 @@ struct FlowErodeModuleInst : public TerrainComputeInst {
   hfimg_outpluginst_ptr_t _output;
   hfimg_inpluginst_ptr_t _input, _disch;
   FxShaderStorageBuffer *_zA = nullptr, *_zB = nullptr;
+  FxShaderStorageBuffer *_params = nullptr; // runtime grid dim (p_dimf), filled in bakeAcquire
   const FxComputeShader *_csStep = nullptr, *_csZin = nullptr, *_csZout = nullptr;
   int _niter = 1;
 };
@@ -207,6 +225,7 @@ void FlowErodeModuleData::describeX(class_t* clazz) {
   clazz->directProperty("dep_m", &FlowErodeModuleData::_dep_m);
   clazz->directProperty("flat_k", &FlowErodeModuleData::_flat_k);
   clazz->directProperty("clamp_frac", &FlowErodeModuleData::_clamp_frac);
+  clazz->directProperty("blend", &FlowErodeModuleData::_blend);
   clazz->directProperty("disch_log", &FlowErodeModuleData::_disch_log);
 }
 

@@ -165,6 +165,7 @@ template class DirectTyped<fmtx4>;
 template class DirectTyped<Quaternion<float>>;
 template class ITyped<TransformNode>;
 template class DirectTypedMap<orkmap<float, fvec4>>;
+template class DirectTypedMap<orkmap<std::string, fvec2>>; // GraphData::_editor_layout
 // template class DirectTyped<orkvector<fvec2> >;
 // template class ITyped<ork::Object*>;
 // template class DirectTyped<ork::Object*>;

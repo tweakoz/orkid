@@ -120,6 +120,11 @@ StaticTexFileLoader::StaticTexFileLoader()
     : FileAssetLoader(TextureAsset::GetClassStatic()) {
   initLoadersForUriProto("data://");
   initLoadersForUriProto("lev2://");
+  // WS5: _doLoadAsset touches only request-local state, the thread-safe
+  // DataBlockCache, and the CPU-side TXI decode paths (the GPU tail
+  // self-defers to mainSerialQueue = the context-owner thread). Safe to
+  // run in parallel with itself → loadAsync skips the per-type gLock.
+  _concurrent = true;
 }
 
 asset_ptr_t StaticTexFileLoader::_doLoadAsset(ork::asset::loadrequest_ptr_t loadreq) {
@@ -128,6 +133,14 @@ asset_ptr_t StaticTexFileLoader::_doLoadAsset(ork::asset::loadrequest_ptr_t load
   texture_asset->GetTexture()->_vars   = loadreq->_asset_vars;
   texture_asset->_load_request          = loadreq;
   auto context = lev2::contextForCurrentThread();
+  if (nullptr == context) {
+    // WS5: worker-pool load (no TLS-bound context). Decode against the main
+    // render context's TXI — the decode is pure CPU, and the GPU tail is
+    // enqueued to mainSerialQueue exactly as a render-thread load would, so
+    // GPU submission flow is byte-identical to the sync path.
+    context = GfxEnv::mainRenderContext();
+  }
+  OrkAssert(context != nullptr);
 
   auto txi = context->TXI();
   bool bOK = false;
@@ -282,6 +295,7 @@ asset_ptr_t FxShaderLoader::_doLoadAsset(asset::loadrequest_ptr_t loadreq) {
 
   // Check cache first (unless caller explicitly bypasses)
   if (loadreq->_enable_cache) {
+    std::lock_guard<std::mutex> lock(_shader_cache_mutex);
     auto it = _shader_cache.find(path.c_str());
     if (it != _shader_cache.end()) {
       return it->second;
@@ -305,7 +319,11 @@ asset_ptr_t FxShaderLoader::_doLoadAsset(asset::loadrequest_ptr_t loadreq) {
   
   // Cache the loaded shader (unless cache bypassed)
   if (loadreq->_enable_cache) {
-    _shader_cache[path.c_str()] = pshader;
+    // atomic find-or-insert: if another thread cached this path while
+    //  we were loading, return the first-cached asset
+    std::lock_guard<std::mutex> lock(_shader_cache_mutex);
+    auto it_inserted = _shader_cache.insert(std::make_pair(path.c_str(), pshader));
+    return it_inserted.first->second;
   }
 
   return pshader;
@@ -316,6 +334,7 @@ asset_ptr_t FxShaderLoader::_doLoadAsset(asset::loadrequest_ptr_t loadreq) {
     if (shader_asset) {
       // Remove from cache
       auto name = shader_asset->GetFxShader()->mName;
+      std::lock_guard<std::mutex> lock(_shader_cache_mutex);
       auto it = _shader_cache.find(name);
       if (it != _shader_cache.end()) {
         _shader_cache.erase(it);

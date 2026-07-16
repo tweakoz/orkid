@@ -25,34 +25,26 @@ PlugInst::~PlugInst() {
 
 InPlugInst::InPlugInst(const InPlugData* inplugdata, ModuleInst* minst)
     : PlugInst(inplugdata, minst) {
+  // live-edit re-wire: when the DATA edge changes (editor connect/disconnect, the
+  // select-as-output bake re-point), any live inst follows. TYPE-AGNOSTIC and
+  // tolerant: the producer may not exist in THIS inst's graph (an older-shape inst
+  // outliving a data-side edit) — follow what resolves, clear what doesn't, never
+  // assert (the old float-only cast here aborted the editor on image-plug re-points,
+  // and a disconnect fired it with a null producer).
   _connectionPlugConnectionChanged = inplugdata->_sigPlugConnectionChanged.connect([=]() {
     auto conplugdata = inplugdata->_connectedOutput;
-    printf(
-        "!!! inplugdata<%p:%s> connection changed conplugdata<%p:%s>\n",
-        (void*)inplugdata,
-        inplugdata->_name.c_str(),
-        (void*)conplugdata.get(),
-        conplugdata->_name.c_str());
-
-    if (conplugdata) {
-      auto ginst = minst->_graphinst;
-      auto conmodulename = conplugdata->_parent_module->_name;
-      auto it_conmodule = ginst->_module_inst_map.find(conmodulename);
-      OrkAssert(it_conmodule != ginst->_module_inst_map.end());
-      auto conmoduleinst = it_conmodule->second;
-      auto conpluginst = conmoduleinst->outputNamed(conplugdata->_name);
-      _connectedOutput = conpluginst;
-      printf(
-          "!!! inpluginst<%p:%s> connection changed conpluginst<%p:%s>\n",
-          (void*)this,
-          inplugdata->_name.c_str(),
-          (void*)conpluginst.get(),
-          conplugdata->_name.c_str());
-    
-      auto out_plug = typedPlugInst<outpluginst<FloatPlugTraits>>(_connectedOutput);
-      OrkAssert(out_plug);
-    
+    if (not conplugdata) {
+      _connectedOutput = nullptr; // disconnected at the data level -> mirror it
+      return;
     }
+    auto ginst         = minst->_graphinst;
+    auto conmodulename = conplugdata->_parent_module->_name;
+    auto it_conmodule  = ginst->_module_inst_map.find(conmodulename);
+    if (it_conmodule == ginst->_module_inst_map.end()) {
+      _connectedOutput = nullptr; // producer not in this inst graph (older shape)
+      return;
+    }
+    _connectedOutput = it_conmodule->second->outputNamed(conplugdata->_name);
   });
 }
 

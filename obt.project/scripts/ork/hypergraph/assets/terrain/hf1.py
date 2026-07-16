@@ -10,5 +10,6 @@ from ork.hypergraph.dflow import terrain as T
 class HF1(HeightField):
     def __init__(self, octaves=6, steps=6):
         super().__init__()
-        h = T.Fbm(frequency=3.0, octaves=octaves) * 0.5 + 0.5
-        self.capture(T.Terrace(h, steps=steps, sharpness=4.0), "height")
+        AMPLITUDE_M = 4000.0   # authored vertical relief in meters (natural units)
+        h = (T.Fbm(frequency=3.0, octaves=octaves) * 0.5 + 0.5) * AMPLITUDE_M
+        self.capture(T.Terrace(h, step_m=AMPLITUDE_M / steps, sharpness=4.0), "height")

@@ -11,9 +11,30 @@
 #include <ork/dataflow/module.inl>
 #include <ork/dataflow/context_variable.h>
 #include <ork/rtti/RTTI.h>
+#include <ork/rtti/Class.h>
+#include <ork/object/ObjectClass.h>
+#include <ork/reflect/Description.h>
+#include <ork/reflect/properties/ITyped.h>
+#include <ork/reflect/properties/ITypedArray.h>
+#include <ork/reflect/properties/IObjectArray.h>
+#include <ork/reflect/properties/IObjectMap.h>
+#include <cxxabi.h>
+#include <stack>
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 using namespace dataflow;
+///////////////////////////////////////////////////////////////////////////////
+// runtime demangle of a plug's flowing-data type (GetDataTypeId) — the same type
+// identity GraphData::canConnect uses for edge validation, rendered human-readable
+// so an editor can color/validate typed edges.
+static std::string dflow_demangle(const std::type_info& ti) {
+  int status            = 0;
+  const char* demangled = abi::__cxa_demangle(ti.name(), nullptr, nullptr, &status);
+  std::string rval      = (status == 0 and demangled) ? std::string(demangled) : std::string(ti.name());
+  if (demangled)
+    free((void*)demangled);
+  return rval;
+}
 ///////////////////////////////////////////////////////////////////////////////
 void pyinit_dataflow(py::module& module_core) {
   auto dfgmodule  = module_core.def_submodule("dataflow", "core dataflow operations");
@@ -39,11 +60,8 @@ void pyinit_dataflow(py::module& module_core) {
           .def(
               "__getattr__",                                                         //
               [type_codec](input_proxy_ptr_t proxy, std::string key) -> py::object { //
-                auto m         = proxy->_module;
-                auto input     = m->inputNamed(key);
-                auto clazzname = input->objectClass()->Name();
-                if (0)
-                  printf("inputNamed<%s:%s>\n", key.c_str(), clazzname.c_str());
+                auto m     = proxy->_module;
+                auto input = m->inputNamed(key);
                 if (input) {
                   return type_codec->encode(input);
                 }
@@ -54,7 +72,10 @@ void pyinit_dataflow(py::module& module_core) {
               [type_codec](input_proxy_ptr_t proxy, std::string key, py::object value) { //
                 auto m     = proxy->_module;
                 auto input = m->inputNamed(key);
-                OrkAssert(input);
+                if (not input) { // loud PYTHON error, not a process abort — name the plug
+                  throw py::attribute_error(FormatString(
+                      "dataflow module<%s> has no input plug '%s'", m->_name.c_str(), key.c_str()));
+                }
                 auto decoded_value = type_codec->decode(value);
 
                 ////////////////////////////////////////////////
@@ -247,6 +268,10 @@ void pyinit_dataflow(py::module& module_core) {
               })
           .def_property_readonly("mindepth", [](dgmoduledata_ptr_t m) -> size_t { return m->computeMinDepth(); })
           .def_property_readonly("maxdepth", [](dgmoduledata_ptr_t m) -> size_t { return m->computeMaxDepth(); })
+          .def_property(
+              "bypassed",
+              [](dgmoduledata_ptr_t m) -> bool { return m->_bypassed; },
+              [](dgmoduledata_ptr_t m, bool v) { m->_bypassed = v; })
           .def("__repr__", [](dgmoduledata_ptr_t m) -> std::string {
             auto clazz     = m->objectClass();
             auto clazzname = clazz->Name();
@@ -596,6 +621,22 @@ void pyinit_dataflow(py::module& module_core) {
           .def_property_readonly("name", [](inplugdata_ptr_t p) -> std::string {
             return p->_name;
           })
+          // EDGE INTROSPECTION (E1) — the flowing-data type name (edge coloring/validation),
+          // the owning module name, and this input's connected producer output (redraw a
+          // loaded graph). _connectedOutput is the RAW physical edge (bypass-agnostic) so the
+          // introspected topology matches what serialization writes.
+          .def_property_readonly("type_name", [](inplugdata_ptr_t p) -> std::string {
+            return dflow_demangle(p->GetDataTypeId());
+          })
+          .def_property_readonly("module_name", [](inplugdata_ptr_t p) -> std::string {
+            return p->_parent_module ? p->_parent_module->_name : std::string();
+          })
+          .def_property_readonly("is_connected", [](inplugdata_ptr_t p) -> bool {
+            return p->isConnected();
+          })
+          .def_property_readonly("connected_output", [](inplugdata_ptr_t p) -> outplugdata_ptr_t {
+            return p->_connectedOutput; // null -> None
+          })
           // E.6/2.12 — generic READ of a data plug's current value (symmetry with the
           // module.inputs __setattr__ pokes); viewer-side MaterialParamSink drains use it.
           .def_property_readonly("value", [](inplugdata_ptr_t p) -> py::object {
@@ -647,6 +688,24 @@ void pyinit_dataflow(py::module& module_core) {
           .def_property_readonly("name", [](outplugdata_ptr_t p) -> std::string {
             return p->_name;
           })
+          // EDGE INTROSPECTION (E1) — flowing-data type name, owning module name, and the
+          // fan-out: every input plug this output feeds, as (module, plug) pairs.
+          .def_property_readonly("type_name", [](outplugdata_ptr_t p) -> std::string {
+            return dflow_demangle(p->GetDataTypeId());
+          })
+          .def_property_readonly("module_name", [](outplugdata_ptr_t p) -> std::string {
+            return p->_parent_module ? p->_parent_module->_name : std::string();
+          })
+          .def_property_readonly("connections", [](outplugdata_ptr_t p) -> py::list {
+            py::list rval;
+            for (auto inp : p->_connections) {
+              py::dict d;
+              d["module"] = inp->_parent_module ? inp->_parent_module->_name : std::string();
+              d["plug"]   = inp->_name;
+              rval.append(d);
+            }
+            return rval;
+          })
           .def("__repr__", [](outplugdata_ptr_t p) -> std::string {
             auto clazz     = p->objectClass();
             auto clazzname = clazz->Name();
@@ -661,10 +720,76 @@ void pyinit_dataflow(py::module& module_core) {
               "cacheable",
               [](graphdata_ptr_t g) -> bool { return g->_cacheable; },
               [](graphdata_ptr_t g, bool v) { g->_cacheable = v; })
+          .def_property(
+              "output_node",
+              [](graphdata_ptr_t g) -> std::string { return g->_output_node; },
+              [](graphdata_ptr_t g, std::string v) { g->_output_node = v; })
           .def_property_readonly(
               "num_modules",
               [](graphdata_ptr_t g) -> size_t { //
                 return g->numModules();
+              })
+          ///////////////////////////////
+          // EDITOR NODE LAYOUT (E1) — GRAPH-level module-name -> canvas position. Round-trips
+          // with the graph JSON and NEVER enters per-node cook hashing (that hashes each
+          // MODULE's reflected state; layout rides the graph, not the module).
+          .def(
+              "setNodePos",
+              [](graphdata_ptr_t g, std::string named, float x, float y) { //
+                g->_editor_layout[named] = fvec2(x, y);
+              })
+          .def(
+              "nodePos",
+              [](graphdata_ptr_t g, std::string named) -> py::object {
+                auto it = g->_editor_layout.find(named);
+                if (it == g->_editor_layout.end())
+                  return py::none();
+                return py::cast(it->second); // fvec2
+              })
+          .def(
+              "clearNodePos",
+              [](graphdata_ptr_t g, std::string named) { //
+                g->_editor_layout.erase(named);
+              })
+          .def_property_readonly(
+              "node_layout",
+              [](graphdata_ptr_t g) -> py::dict {
+                py::dict rval;
+                for (const auto& item : g->_editor_layout)
+                  rval[py::str(item.first)] = py::cast(item.second);
+                return rval;
+              })
+          ///////////////////////////////
+          // EDGE INTROSPECTION (E1) — every typed edge in the graph as a flat descriptor
+          // list: (out_module, out_plug, out_type) -> (in_module, in_plug, in_type). Walks
+          // each module's input plugs following the RAW _connectedOutput (bypass-agnostic,
+          // matching the serialized edge set) — enough to redraw a loaded graph.
+          .def(
+              "edges",
+              [](graphdata_ptr_t g) -> py::list {
+                py::list rval;
+                for (size_t im = 0; im < g->numModules(); im++) {
+                  auto m = g->module(im);
+                  if (not m)
+                    continue;
+                  int nin = m->numInputs();
+                  for (int ip = 0; ip < nin; ip++) {
+                    auto inp  = m->input(ip);
+                    auto outp = inp->_connectedOutput;
+                    if (not outp)
+                      continue;
+                    auto outmod = outp->_parent_module;
+                    py::dict e;
+                    e["out_module"] = outmod ? outmod->_name : std::string();
+                    e["out_plug"]   = outp->_name;
+                    e["out_type"]   = dflow_demangle(outp->GetDataTypeId());
+                    e["in_module"]  = m->_name;
+                    e["in_plug"]    = inp->_name;
+                    e["in_type"]    = dflow_demangle(inp->GetDataTypeId());
+                    rval.append(e);
+                  }
+                }
+                return rval;
               })
           .def(
               "createGraphInst",
@@ -840,6 +965,170 @@ void pyinit_dataflow(py::module& module_core) {
               })
           .def("__repr__", [](graphinst_ptr_t g) -> std::string { return FormatString("GraphInst(%p)", (void*)g.get()); });
   type_codec->registerStdCodec<graphinst_ptr_t>(graphinst_type);
+  /////////////////////////////////////////////////////////////////////////////
+  // NODE-TYPE ENUMERATION + CLASS-LEVEL PLUG SCHEMA (E1)
+  //
+  // reflection-first: the rtti class tree IS the node registry. moduleClasses()
+  // walks the DgModuleData subtree (concrete/factory-bearing classes only) exposing
+  // reflected PROPERTIES + their annotations. plugSpec() returns a class's plug schema
+  // WITHOUT the caller instantiating a module — derived internally by building ONE
+  // scratch ModuleData via the reflection factory (which runs reshapeIOs), reading its
+  // _inputs/_outputs, then discarding it. Result cached per class (drift-proof: no
+  // hand-maintained table; schema always tracks the code).
+  /////////////////////////////////////////////////////////////////////////////
+
+  // an ObjectProperty's scalar annotations as a python dict (non-scalar annotations —
+  // e.g. the reshapeIOs functor — are skipped).
+  auto anno_to_py = [](reflect::ObjectProperty* prop) -> py::dict {
+    py::dict rval;
+    for (auto& item : prop->_annotations) {
+      const auto& key = item.first;
+      auto val        = item.second;
+      std::string keystr = key.c_str();
+      if (auto s = val.tryAs<ConstString>())
+        rval[py::str(keystr)] = std::string(s.value().c_str());
+      else if (auto ss = val.tryAs<std::string>())
+        rval[py::str(keystr)] = ss.value();
+      else if (auto b = val.tryAs<bool>())
+        rval[py::str(keystr)] = b.value();
+      else if (auto i = val.tryAs<int>())
+        rval[py::str(keystr)] = i.value();
+      else if (auto f = val.tryAs<float>())
+        rval[py::str(keystr)] = f.value();
+      else if (auto d = val.tryAs<double>())
+        rval[py::str(keystr)] = d.value();
+      // else: non-scalar annotation — not surfaced.
+    }
+    return rval;
+  };
+
+  // coarse reflected-property type label for editor widget selection.
+  auto prop_type_name = [](reflect::ObjectProperty* prop) -> std::string {
+    if (dynamic_cast<reflect::ITyped<int>*>(prop))          return "int";
+    if (dynamic_cast<reflect::ITyped<float>*>(prop))        return "float";
+    if (dynamic_cast<reflect::ITyped<std::string>*>(prop))  return "string";
+    if (dynamic_cast<reflect::ITyped<bool>*>(prop))         return "bool";
+    if (dynamic_cast<reflect::ITypedArray<int>*>(prop))     return "int[]";
+    if (dynamic_cast<reflect::ITypedArray<float>*>(prop))   return "float[]";
+    if (dynamic_cast<reflect::IObjectArray*>(prop))         return "object[]";
+    if (dynamic_cast<reflect::IObjectMap*>(prop))           return "object_map";
+    return "other";
+  };
+
+  dfgmodule.def("moduleClasses", [anno_to_py, prop_type_name]() -> py::list {
+    py::list rval;
+    auto* base = rtti::Class::FindClass("dflow::DgModuleData");
+    if (not base)
+      return rval;
+    std::stack<rtti::Class*> stk; // circular sibling lists -> iterative DFS
+    stk.push(base);
+    while (not stk.empty()) {
+      auto* clazz = stk.top();
+      stk.pop();
+      if (clazz != base and clazz->hasFactory()) { // concrete/instantiable only (abstract bases skipped)
+        py::dict d;
+        std::string name = clazz->Name().c_str();
+        d["name"]        = name;
+        auto pos         = name.find("::"); // family tag = reflected-name namespace prefix (drift-proof)
+        d["family"]      = (pos != std::string::npos) ? name.substr(0, pos) : std::string();
+        py::list props;
+        std::set<std::string> seen; // own props win over inherited on name collision
+        auto* objclazz                   = dynamic_cast<object::ObjectClass*>(clazz);
+        const reflect::Description* desc = objclazz ? &objclazz->Description() : nullptr;
+        while (desc) {
+          for (auto pitem : desc->properties()) {
+            reflect::ObjectProperty* prop = pitem.second;
+            std::string pn                = prop->_name;
+            if (seen.count(pn))
+              continue;
+            seen.insert(pn);
+            py::dict pd;
+            pd["name"]        = pn;
+            pd["type"]        = prop_type_name(prop);
+            pd["annotations"] = anno_to_py(prop);
+            props.append(pd);
+          }
+          desc = desc->parent();
+        }
+        d["properties"] = props;
+        rval.append(d);
+      }
+      rtti::Class* first_child = clazz->FirstChild();
+      rtti::Class* child       = first_child;
+      while (child) {
+        stk.push(child);
+        child = (child->NextSibling() == first_child) ? nullptr : child->NextSibling();
+      }
+    }
+    return rval;
+  });
+
+  // per-class plug schema, lazily derived + cached. A scratch instance is built ONCE per
+  // class and discarded; failures are reported loudly and cached as "no schema" so the
+  // enumeration never crashes and never retries a faulting class.
+  struct PlugEntry {
+    std::string _name, _type, _rate;
+  };
+  struct ModuleSchema {
+    std::vector<PlugEntry> _inputs, _outputs;
+    bool _built  = false;
+    bool _failed = false;
+  };
+  auto schema_cache = std::make_shared<std::map<std::string, ModuleSchema>>();
+
+  dfgmodule.def("plugSpec", [schema_cache, rate_name](const std::string& classname) -> py::object {
+    auto& cache = *schema_cache;
+    auto it     = cache.find(classname);
+    if (it == cache.end()) {
+      ModuleSchema sch;
+      auto* clazz = rtti::Class::FindClass(classname);
+      if (not clazz or not clazz->hasSharedFactory()) {
+        printf("dflow.plugSpec: class <%s> is abstract/unregistered (no shared factory) — skipping\n", classname.c_str());
+        sch._failed = true;
+      } else {
+        try {
+          auto castable = clazz->sharedFactory()(); // runs createShared -> reshapeIOs
+          auto mod      = std::dynamic_pointer_cast<DgModuleData>(castable);
+          if (not mod) {
+            printf("dflow.plugSpec: scratch instance of <%s> is not a DgModuleData — skipping\n", classname.c_str());
+            sch._failed = true;
+          } else {
+            for (auto inp : mod->_inputs)
+              sch._inputs.push_back({inp->_name, dflow_demangle(inp->GetDataTypeId()), rate_name(inp->_plugrate)});
+            for (auto outp : mod->_outputs)
+              sch._outputs.push_back({outp->_name, dflow_demangle(outp->GetDataTypeId()), rate_name(outp->_plugrate)});
+            sch._built = true;
+          }
+        } catch (const std::exception& e) {
+          printf("dflow.plugSpec: scratch construction FAILED for class <%s>: %s — skipping\n", classname.c_str(), e.what());
+          sch._failed = true;
+        } catch (...) {
+          printf("dflow.plugSpec: scratch construction FAILED for class <%s> (unknown) — skipping\n", classname.c_str());
+          sch._failed = true;
+        }
+      }
+      it = cache.emplace(classname, sch).first;
+    }
+    const auto& sch = it->second;
+    if (not sch._built)
+      return py::none();
+    auto emit = [](const std::vector<PlugEntry>& v) -> py::list {
+      py::list l;
+      for (auto& e : v) {
+        py::dict d;
+        d["name"] = e._name;
+        d["type"] = e._type;
+        d["rate"] = e._rate;
+        l.append(d);
+      }
+      return l;
+    };
+    py::dict rval;
+    rval["class"]   = classname;
+    rval["inputs"]  = emit(sch._inputs);
+    rval["outputs"] = emit(sch._outputs);
+    return rval;
+  });
   /////////////////////////////////////////////////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////////////////////

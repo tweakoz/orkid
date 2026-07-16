@@ -3,7 +3,7 @@
 # The erosion pipeline is IDENTICAL to xxx.py; the only addition is, at the very
 # end, an hfdisplacement that snaps the eroded height to strata-band elevations so
 # the geometry forms benches that COINCIDE with the strata a material shades
-# (terrace_strata reads the current height via ctx.P_object.y = in0 * height_m).
+# (terrace_strata reads the current height via ctx.P_object.y = in0, TRUE METERS).
 #
 # REQUIRES the Phase-2 build (multi-input ExprModule + hfdisplacement). For the
 # benches to line up EXACTLY with hmview's strata, set STRATA_PERIOD_M to hmview's
@@ -16,8 +16,10 @@ from ork.hypergraph.ptex3d import Ptex3d, P   # Ptex3d: the inline material base
 from ork.hypergraph.colors import hsv
 _TAU = 6.28318530718
 ###############################################################################
-# erosion-only vertical exaggeration (meters that normalized 1.0 is DURING erosion).
-EROSION_HEIGHT_M = 4000.0
+# authored vertical relief in meters (natural units; heights are TRUE METERS). The old
+# EROSION_HEIGHT_M equaled HEIGHT_M here (4000), so at meter scale the erosion ops already
+# see exactly the relief they used to — no exaggeration remap needed (ratio 1.0).
+AMPLITUDE_M = 4000.0
 # strata terracing — ONE source of truth (STRATA_PERIOD_M); the material's strata_freq
 # is DERIVED from it so the shaded bands sit at the same elevations as the benches.
 SCALE           = 0.04      # hmview detail-frequency multiplier (ctx.param "scale")
@@ -33,7 +35,6 @@ P_FBM = T.ParamPack(
 P_THERM = T.ParamPack(
     talus_deg=16.0,
     rate=0.10,
-    exaggerated_height_m=EROSION_HEIGHT_M,
     iterations=570 )
 ###############################################################################
 P_EROX = T.ParamPack(
@@ -44,8 +45,7 @@ P_EROX = T.ParamPack(
     capacity_Kc=0.1,
     erosion_rate_per_s=3.0,
     deposition_rate_per_s=1.0,
-    creep_m2ps=16.0,
-    exaggerated_height_m=EROSION_HEIGHT_M )
+    creep_m2ps=16.0 )
 ###############################################################################
 P_PHA = T.ParamPack(
     strength=0.07,
@@ -56,7 +56,7 @@ P_PHA = T.ParamPack(
     normalization=0.5,
     lacunarity=2.0,
     gain=0.5,
-    default_height=0.5,
+    default_height=0.5*AMPLITUDE_M,   # mid-height reference is a VALUE on the height axis (meters)
     octaves=1 )
 ###############################################################################
 
@@ -74,11 +74,11 @@ def strata_phase(ctx, scl, sfrq):
 def terrace_strata(ctx):
     """Snap the current height so its strata phase lands on a band boundary -> geometric
     benches coincide EXACTLY with XXX2Mat's bands (same strata_phase). Reads the current
-    height via ctx.P_object.y (= in0 * height_m). Soft riser so the steps aren't razor."""
+    height via ctx.P_object.y (= in0, TRUE METERS). Soft riser so the steps aren't razor."""
     ph  = strata_phase(ctx, SCALE, STRATA_FREQ)
     phs = P.floor(ph) + P.smoothstep(0.30, 0.70, P.fract(ph))   # snap to integer band; soft riser
     dy  = (phs - ph) / (SCALE * STRATA_FREQ)                     # elevation shift (m) onto the band
-    return (ctx.P_object.y + dy) / ctx.height_m                 # normalized snapped height
+    return ctx.P_object.y + dy                                   # snapped height in meters
 
 
 class XXX2Mat(Ptex3d):
@@ -154,9 +154,8 @@ class XXX2Mat(Ptex3d):
 
 
 class XXX2(HeightField):
-    # ---- authored PHYSICAL world scale (erosion exaggeration is per-op EROSION_HEIGHT_M) ----
+    # ---- authored PHYSICAL world scale (heights are TRUE METERS; no exaggeration plug) ----
     EXTENT_M = 32768.0
-    HEIGHT_M = 4000.0
     # shader lives IN THIS FILE (XXX2Mat above) -> MATERIAL_CLASS. Pure height/slope color
     # (no texture); the terraces supply the strata structure. Defaults are fine, so no params.
     MATERIAL_CLASS  = XXX2Mat
@@ -167,11 +166,13 @@ class XXX2(HeightField):
         super().__init__()
         ero_out = T.Const(0)
         ####################################
-        base = T.Fbm( P_FBM ) * 0.5 + 0.5
+        base = (T.Fbm( P_FBM ) * 0.5 + 0.5) * AMPLITUDE_M
         ero_bas = base*0.03
         ####################################
-        for i in range(0,iters):
-          ero_inp = ero_out+ero_bas
+        # T.loop (not raw for): the document keeps ONE loop group per pass (editor-
+        # collapsible, count editable). ero_bas is loop-invariant (created outside).
+        with T.loop(iters, ero_out=ero_out) as L:
+          ero_inp = L.ero_out+ero_bas
           bfill = T.basin_fill(ero_inp)
           bfill = (ero_inp*0.90)+(bfill*0.1)
           thr_out = T.erode_thermal( bfill,P_THERM)
@@ -180,11 +181,13 @@ class XXX2(HeightField):
           xxx_out = (erox_out*0.9) + (pha_out*0.1)
           terr     = self.hfdisplacement(terrace_strata, xxx_out)
           terr_out = T.Mix(xxx_out, terr, 0.1)
-          ero_out = T.lpf(terr_out, cutoff_m=4)
+          L.ero_out = T.lpf(terr_out, cutoff_m=4)
+        ero_out = L.ero_out
         ####################################
-        for i in range(0,iters*2):
-          bfill = T.basin_fill(ero_out)
-          ero_out = (ero_out*0.95)+(bfill*0.05)
+        with T.loop(iters*2, ero_out=ero_out) as L:
+          bfill = T.basin_fill(L.ero_out)
+          L.ero_out = (L.ero_out*0.95)+(bfill*0.05)
+        ero_out = L.ero_out
         lpf_out = T.lpf(ero_out, cutoff_m=4)
         ero_out = (ero_out*0.15)+(lpf_out*0.85)
         lpf_out = T.lpf(ero_out, cutoff_m=2)

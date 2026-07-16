@@ -150,11 +150,10 @@ FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
     FXI->bindParamMatrix(mtl->_paramM, worldmatrix);
 
     if (stereocams) {
-      fmtx4 vrroot;
-      if (auto as_mtx = RCID.rcfd()->tryUserProperty<fmtx4>("vrroot"_crc)) {
-        vrroot = as_mtx.value();
-      }
-
+      // The walker/world-root offset is folded into the eye VIEW matrices themselves
+      // (Device::_updatePosesCommon composes usermtx into cmv, fed by the VR output node),
+      // so every draw path — this standard one and the SSBO-custom mono paths alike —
+      // transforms a true-WORLD position by the eye camera. No per-draw root compose.
       OrkAssert(mtl->_paramVPL);
       OrkAssert(mtl->_paramVPR);
 
@@ -170,8 +169,8 @@ FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
       }
       FXI->bindParamMatrix(mtl->_paramVPL, VPL);
       FXI->bindParamMatrix(mtl->_paramVPR, VPR);
-      FXI->bindParamMatrix(mtl->_paramMVPL, stereocams->MVPL(vrroot * worldmatrix));
-      FXI->bindParamMatrix(mtl->_paramMVPR, stereocams->MVPR(vrroot * worldmatrix));
+      FXI->bindParamMatrix(mtl->_paramMVPL, stereocams->MVPL(worldmatrix));
+      FXI->bindParamMatrix(mtl->_paramMVPR, stereocams->MVPR(worldmatrix));
 
       FXI->bindParamVect3(mtl->_paramEyePostionL, VL.inverse().translation());
       FXI->bindParamVect3(mtl->_paramEyePostionR, VR.inverse().translation());

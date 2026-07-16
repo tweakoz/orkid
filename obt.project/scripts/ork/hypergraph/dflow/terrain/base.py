@@ -2,28 +2,32 @@
 # ork.hypergraph.dflow.terrain.base — HeightField family base class.
 #
 # User code subclasses HeightField and builds the heightfield DAG in __init__ via
-# the expression-first terrain DSL. The base class:
-#  - allocates a fresh dflow.GraphData on construction
-#  - opens a trace context so DSL ops/operators target that graph
+# the expression-first terrain DSL. The base class (owner law L2 — the C++ object
+# graph is a DERIVED artifact):
+#  - builds a structured DOCUMENT on construction (doc.py; the single source of
+#    truth: nodes, params, connections, captures, and explicit groups)
+#  - opens a trace context whose "graph" is the document's recorder, so DSL ops /
+#    operators record into the document (never into a live GraphData)
 #  - exposes self.capture(node, channel) to record output channels (multi-sink:
 #    a terrain bake emits several channels — height, slope, masks, ...)
-#  - generatedflow() closes the trace and returns the populated GraphData
+#  - generatedflow() closes the trace and DERIVES a fresh dflow.GraphData from the
+#    document via document.elaborate() — the sole GraphData constructor
 #
 # Materialization is a BAKE: lev2.terrain.bake_heightfield(graphdata, ctx, dim)
 # runs the compute DAG once and writes one EXR/PNG per capture channel. The base
 # stays out of the bake — the asset wrapper (later) assigns per-channel paths via
 # set_capture_path() then calls the driver.
 #
-# __init__ takes **kwargs so the same class is reusable parameterized: loop
-# bounds / conditionals in __init__ read kwargs the asset/scene supplies (Python
-# control flow runs at TRACE time and unrolls into DAG topology).
+# __init__ takes **kwargs so the same class is reusable parameterized. Explicit
+# constructs (T.loop / @T.group / T.switch) capture STRUCTURE into the document;
+# raw Python for/if remains legal but flattens on import (with a visible notice).
 ###############################################################################
 
 from collections import namedtuple as _namedtuple
-from orkengine.core import dataflow as _dflow
 from orkengine.lev2 import terrain as _terrain
 from .._trace import enter_trace, leave_trace, current_graph
 from ._node import TerrainNode, anon_name
+from .doc import TerrainDoc, to_json, assert_no_pending_iter, _clear_param_pending
 
 _TAU = 6.28318530718
 
@@ -66,14 +70,13 @@ class HeightField:
     """
 
     # ---- authored world scale (PHYSICAL) ---------------------------------------
-    # A terrain DSL OWNS its world dimensions; consumers (the viewer, the asset
-    # wrapper, segmentation/placement tools) READ these instead of hardcoding.
-    # Subclasses override. These are the FINAL PHYSICAL scale — what the mesh renders
-    # at and what every measurement (normals, slope, curvature, segmentation) uses.
-    # The EROSION vertical exaggeration is NOT here: it is scoped to the erosion ops
-    # (erode_thermal/erox `exaggerated_height_m`), authored where erosion is.
+    # A terrain DSL OWNS its horizontal extent; consumers (the viewer, the asset
+    # wrapper, segmentation/placement tools) READ it instead of hardcoding.
+    # Subclasses override. NATURAL UNITS: height VALUES on the graph are TRUE METERS
+    # (a generator's amplitude IS meters; every measurement and erosion op reads
+    # meters) — there is NO vertical scale constant and NO implied exaggeration
+    # (exaggerate by authoring a remap/affine, visibly, where you want it).
     EXTENT_M = 32768.0   # XZ meters the heightfield spans (centered at origin)
-    HEIGHT_M = 4000.0    # FINAL physical meters that a normalized height of 1.0 represents
 
     # ---- suggested display material (authoring metadata; the bake ignores it) --------
     # The terrain "knows" how it wants to be shaded. MATERIAL names a known material
@@ -89,21 +92,24 @@ class HeightField:
     MATERIAL_CLASS = None
 
     def __init__(self, **kwargs):
-        # Fresh empty graph; DSL ops populate it during user __init__.
-        self.graphdata = _dflow.GraphData.createShared()
-        # terrain graphs opt in to the per-node cook cache (content-addressed,
-        # disk-backed). The flag round-trips with the (embedded) graph.
-        self.graphdata.cacheable = True
-        # channel name -> CaptureModule (the sink). dict preserves declaration
+        # L2 — the trace builds a structured DOCUMENT, never a GraphData. DSL ops
+        # target the document's recorder graph (which duck-types GraphData); the
+        # flat dflow.GraphData is DERIVED later by document.elaborate() and is the
+        # sole GraphData ork.terrain ever constructs.
+        self._doc = TerrainDoc()
+        self.graphdata = None            # set to the elaborated graph by generatedflow()
+        self._cap_map = {}               # channel -> real (elaborated) CaptureModule
+        # channel name -> capture-node proxy (the sink). dict preserves declaration
         # order so the bake's FieldStats list lines up with channels().
         self._captures = {}
         # name -> ScatterSpec: POST-bake placement sinks (see scatter()). Lives on the
         # python instance (bake-time only); the persisted artifact is the ScatterSet .ogeo.
+        # DSL-side state reflected separately into HeightFieldGenData.scatters — NOT GraphData.
         self._scatters = {}
         # **kwargs accepted + ignored at the base — subclasses opt in by
         # declaring their own signature (parameterized terrain). Open the trace;
         # generatedflow() closes it.
-        self._prev_trace = enter_trace(self.graphdata)
+        self._prev_trace = enter_trace(self._doc.graph)
 
     def capture(self, node, channel, cache=False):
         """Record an output channel. Creates a CaptureModule fed by `node`,
@@ -130,11 +136,12 @@ class HeightField:
         for c in chans:
             if c in self._captures:
                 raise ValueError(f"duplicate capture channel {c!r}")
-        g = self.graphdata
+        g = self._doc.graph
         cap = g.create(anon_name("capture", g), _terrain.CaptureModule)
         g.connect(cap.inputs.In, node.output_plug)
         cap.channel = ",".join(chans)  # comma-joined; the bake splits + emits one image/channel
         cap.cache = bool(cache)        # per-bake cook-cache opt-out (round-trips)
+        self._doc.record_capture(cap, chans)
         for c in chans:
             self._captures[c] = cap    # each channel name resolves to this (shared) cap
 
@@ -166,6 +173,11 @@ class HeightField:
             self.relax_uv(h)
         """
         from .ops import relax_uv as _relax_op
+        # AMPLITUDE CONTRACT (natural units): heights are TRUE METERS and the capture writes
+        # them verbatim — the renderer/collider/atlas consume exactly what the relax module
+        # sees, so the physical-slope quantities (rho density, frame normal, binormal) are
+        # computed at the REAL amplitude. (The old normalize-before-relax matched the flush's
+        # auto-exposure; both are gone together — reintroducing either alone skews slopes.)
         r = _relax_op(node, strength=strength, iterations=iterations)
         # cache=True: the relax is a pure function of the height -> cook-cacheable. capture() defaults to
         # cache=False which disables the disk cook cache for the WHOLE bake (any one cache=False turns it
@@ -176,7 +188,7 @@ class HeightField:
 
     def hfdisplacement(self, expr, into, *extra, mask=None):
         """Displace the height field `into` by a ptex3d expression that READS the current
-        height: the bake sets ctx.P_object.y / ctx.P.y = in0 * height_m (PHYSICAL), so the
+        height: the bake sets ctx.P_object.y / ctx.P.y = in0 (heights are TRUE METERS), so the
         SAME strata(ctx) that shades a Ptex3d material also DISPLACES here — baked terraces
         coincide with the shaded bands. `into` wires to ctx.input(0); `extra` TerrainNodes
         wire to ctx.input(1).. (masks/warps/flow). Returns the displaced height node (capture
@@ -311,18 +323,84 @@ class HeightField:
         return tuple(self._captures.keys())
 
     def set_capture_path(self, channel, path):
-        """Assign a channel's on-disk output path before bake_heightfield()."""
+        """Assign a channel's on-disk output path before bake_heightfield(). Routes to
+        the DERIVED CaptureModule (the bake consumes the elaborated graph), and records
+        it on the document so re-elaboration / doc-JSON round-trip keep the path."""
         if channel not in self._captures:
             raise KeyError(f"no such capture channel {channel!r}; have {self.channels}")
-        self._captures[channel].path = str(path)
+        self._captures[channel].path = str(path)   # record on the document (proxy)
+        if channel in self._cap_map:                # already elaborated -> set on the real module
+            self._cap_map[channel].path = str(path)
 
-    def generatedflow(self):
-        """Close the trace and return the populated dflow.GraphData. Idempotent —
-        re-calling just returns the same graph."""
+    def select_output(self, node):
+        """Mark `node` as the graph's DISPLAY output (select-as-output), recorded on the
+        DOCUMENT (a doc-level field, serialized in doc-JSON, re-emitted by the .py writer).
+        elaborate() stamps graph.output_node from it (unless an editor SESSION display node
+        overrides), so the C++ bake re-points the height/normal captures to it and drops the
+        rest. Returns `node` so it chains after a capture line."""
+        if not isinstance(node, TerrainNode):
+            raise TypeError(
+                f"select_output expects a terrain node (output of a T.* op or operator); "
+                f"got {type(node).__name__}")
+        self._doc.set_select_output(node._output_plug.node)
+        return node
+
+    def document(self):
+        """The structured document (the single source of truth, L2)."""
+        return self._doc
+
+    def to_doc_json(self):
+        """Serialize the document to the editor-native doc-JSON dict."""
+        return to_json(self._doc)
+
+    def close_trace(self):
+        """Close the trace WITHOUT elaborating — the DOCUMENT is complete after this
+        (L2). Document-only callers (the editor loads/binds the doc BEFORE the engine
+        init) stop here: elaborate() creates REAL modules and needs the initialized
+        engine since LoopModule step 3 (the reshape builds boundary plugs). Idempotent."""
         if self._is_tracing():
             leave_trace(self._prev_trace)
             self._prev_trace = None
+            self._purge_anon_counters()
+            # a coerced L.i that no plug set claimed (outside any loop) is a LOUD error.
+            assert_no_pending_iter("at the end of the terrain trace")
+            # drop any unclaimed E0 param-float tokens (folded ptex3d / arithmetic uses); the
+            # runtime's finalize flags such params structural.
+            _clear_param_pending()
+
+    def generatedflow(self):
+        """Close the trace and DERIVE the flat dflow.GraphData from the document via
+        document.elaborate() (L2). Idempotent — re-calling returns the same graph."""
+        self.close_trace()
+        if self.graphdata is None:
+            self._emit_flatten_notice()
+            self.graphdata, self._cap_map = self._doc.elaborate()
         return self.graphdata
 
     def _is_tracing(self):
-        return current_graph() is self.graphdata
+        return current_graph() is self._doc.graph
+
+    def _purge_anon_counters(self):
+        # trouble #3: no counter survives between traces — drop this trace's entries
+        # (keyed by the recorder's id) so a re-trace re-numbers from zero.
+        from . import _node
+        gid = id(self._doc.graph)
+        for key in [k for k in _node._anon_counters if k[0] == gid]:
+            _node._anon_counters.pop(key, None)
+
+    def _emit_flatten_notice(self):
+        # L1: raw Python for/while in the DSL author's __init__ imports as FLATTENED
+        # topology — announce it once (the explicit constructs round-trip; raw loops
+        # do not). Best-effort AST scan; silent if the source is unavailable.
+        try:
+            import ast, inspect, textwrap
+            src = inspect.getsource(type(self).__init__)
+            tree = ast.parse(textwrap.dedent(src))
+            n = sum(isinstance(x, (ast.For, ast.While)) for x in ast.walk(tree))
+            if n:
+                print(f"[terrain] flattened on import: {type(self).__name__}.__init__ "
+                      f"has {n} raw Python loop(s) — unrolled into flat topology "
+                      f"(explicit T.loop/@T.group/T.switch round-trip; raw for/while do not).",
+                      flush=True)
+        except (OSError, TypeError, SyntaxError):
+            pass

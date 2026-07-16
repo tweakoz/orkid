@@ -15,11 +15,11 @@ from ork.hypergraph.dflow import terrain as T
 
 class Flow3D(HeightField):
     EXTENT_M = 16384.0
-    HEIGHT_M = 1000.0
 
     def __init__(self):
         super().__init__()
-        h      = T.Fbm(frequency=6.0, octaves=8) * 0.5 + 0.5
+        AMPLITUDE_M = 1000.0   # authored vertical relief in meters (natural units)
+        h      = (T.Fbm(frequency=6.0, octaves=8) * 0.5 + 0.5) * AMPLITUDE_M
         filled = T.basin_fill(h)               # exact CPU priority-flood (through-drainage)
         f      = T.flow3d(filled)              # .dir, .discharge, .metrics
         self.capture(f.dir, "flowdir")         # RGBA: R,G=direction  B=slope        -> flowdir.exr

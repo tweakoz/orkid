@@ -33,6 +33,13 @@ public:
   ~OutputCompositingNode();
   virtual void gpuInit(lev2::Context* pTARG, int w, int h) {
   }
+  // Per-frame GPU update hook, invoked exactly ONCE per rendered frame from the
+  //  compositing technique's assemble entry, BEFORE any eye/render work — regardless
+  //  of how many eyes/views the node's assembler goes on to render. VR output nodes
+  //  drive the device frame update (xrWaitFrame/xrBeginFrame/xrLocateViews) here.
+  //  Default no-op — non-VR output nodes are untouched.
+  virtual void onGpuUpdate(CompositorDrawData& drawdata) {
+  }
   virtual void beginAssemble(CompositorDrawData& drawdata) {
   }
   virtual void endAssemble(CompositorDrawData& drawdata) {

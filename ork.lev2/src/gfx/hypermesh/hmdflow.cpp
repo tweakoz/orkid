@@ -202,7 +202,7 @@ uint64_t MeshComputeInst::cookComputeHash(const std::vector<uint64_t>& input_has
   return h->result();
 }
 
-static constexpr int kHmCookFmt = 0x484D4B31; // 'HMK1' — bump if the layout below changes
+static constexpr int kHmCookFmt = 0x484D4B32; // 'HMK2' — bump if the layout below changes (v2: header pad zeroed)
 
 // topology-setup cascade fixpoint bound: how many (onTopologyReady-pass + re-eval) rounds before giving
 // up. Real chains (extrude->extrude, merge<-select->assign_gid) settle in 2-3; this only caps a bug.
@@ -274,7 +274,18 @@ datablock_ptr_t MeshComputeInst::cookStore() const {
     return nullptr;
   putbuf(mesh->_vidx->_ssbo, size_t(mesh->_num_corners) * 4);
   putbuf(mesh->_face_offsets->_ssbo, size_t(mesh->_num_faces + 1) * 4);
-  putbuf(mesh->_header, kMeshHeaderBytes); // exact blob -> no layout knowledge here
+  if (ok) { // header: canonicalize — writers fill counts+bbox (48B) only, so the mapped
+    //  pad bytes are stale pool/staging garbage and would make bit-identical cooks
+    //  produce differing blobs. Zero the pad in the SERIALIZED copy only.
+    auto m = mesh->_header ? fxi->mapStorageBuffer(mesh->_header, 0, kMeshHeaderBytes, BufferMapAccess::READ_ONLY) : nullptr;
+    if (not m or not m->_mappedaddr)
+      return nullptr;
+    uint8_t hdr[kMeshHeaderBytes];
+    std::memcpy(hdr, m->_mappedaddr, kMeshHeaderBytes);
+    fxi->unmapStorageBuffer(m.get());
+    std::memset(hdr + kMeshHeaderUsedBytes, 0, kMeshHeaderBytes - kMeshHeaderUsedBytes);
+    db->addData(hdr, kMeshHeaderBytes);
+  }
   return ok ? db : nullptr;
 }
 
@@ -578,34 +589,103 @@ gpumesh_ptr_t bakeMesh(dflow::graphdata_ptr_t graph, Context* ctx, int vtx_budge
 // only its dispatch phase, never beginFrame/endFrame (doing so cycles the per-frame depth/SSAO/RT
 // buffers behind the renderer's back -> screen-space artifacts). writeParams is pre-phase (host map
 // mid-phase is invisible); the dispatch reads them.
+// #33 — evict any still-cook-loaded node whose input plug was POKED since cook-load, cascading
+// downstream. The DSL marks a graph cacheable when it isn't time-animated (obt.project .../hypermesh
+// __init__.py) and can't know a caller will `inputs.X = ...` a plug between frames; that poke writes
+// the DATA-side plug (which the module inst reads live), but the whole node is skipped as a
+// disk-restored final while it stays in _cookLoaded — so the poke is never re-read. SEAM: this
+// observes the family-neutral plug-write clock (a pure OBSERVABLE added to dflow — no evaluation
+// semantics key off it) at the hypermesh level, so generic dflow behaves identically for every other
+// family. Returns the freshly-evicted set (its members never ran onTopologyReady under cook-load, so
+// the caller re-runs the topology cascade over them).
+static std::set<dflow::DgModuleInst*> _evictPokedCookNodes(LiveHypermesh* live) {
+  std::set<dflow::DgModuleInst*> evicted;
+  if (live->_cookLoaded.empty())
+    return evicted;
+  uint64_t now = dflow::peekPlugWriteClock();
+  if (now == live->_cookLoadEpoch)
+    return evicted; // no plug written anywhere since the last check — fast steady-state exit
+  // topo order (producers precede consumers), so an upstream eviction is visible when we reach a consumer.
+  for (auto inst : live->_ginst->_ordered_module_insts) {
+    if (not live->_cookLoaded.count(inst.get()))
+      continue;
+    bool hit = false;
+    // (a) one of THIS node's own input plug VALUES was poked after cook-load
+    for (auto ip : inst->_dgmodule_data->_inputs)
+      if (ip->_writeEpoch > live->_cookLoadEpoch) { hit = true; break; }
+    // (b) CASCADE: an already-evicted UPSTREAM producer feeds this node (else the producer would
+    //     recompute while this frozen consumer skipped -> a half-frozen graph). Untouched independent
+    //     chains have no evicted producer and KEEP their cook-load skip (the E.6 perf point).
+    if (not hit)
+      for (auto ipi : inst->_inputs)
+        if (ipi->_connectedOutput and ipi->_connectedOutput->_moduleinst and
+            evicted.count(static_cast<dflow::DgModuleInst*>(ipi->_connectedOutput->_moduleinst))) {
+          hit = true;
+          break;
+        }
+    if (hit)
+      evicted.insert(inst.get());
+  }
+  for (auto e : evicted)
+    live->_cookLoaded.erase(e);
+  live->_cookLoadEpoch = now; // pokes consumed; the next recompute only sees writes after this
+  return evicted;
+}
+
 void LiveHypermesh::recompute(Context* ctx) {
   using clk = std::chrono::steady_clock;
-  auto g0   = clk::now();
-  for (auto inst : _ginst->_ordered_module_insts) {
-    if (_cookLoaded.count(inst.get())) // E.6/2.19: disk-restored nodes are final
-      continue;
-    if (auto pp = std::dynamic_pointer_cast<dflowgfx::IPrePhaseParams>(inst)) { // family-neutral pre-phase
-      auto t0 = clk::now();
-      pp->writeParams(ctx);
-      HmPerf::instance().addModule(
-          inst->_dgmodule_data->GetClass()->Name().c_str(),
-          std::chrono::duration<double>(clk::now() - t0).count());
+  // one full eval pass: family-neutral pre-phase host-writes + the skipping dispatch. Factored so the
+  // topology cascade (below) can re-eval between onTopologyReady calls, exactly like materializeLive.
+  auto core = [this, ctx]() {
+    auto g0 = clk::now();
+    for (auto inst : _ginst->_ordered_module_insts) {
+      if (_cookLoaded.count(inst.get())) // E.6/2.19: disk-restored nodes are final
+        continue;
+      if (auto pp = std::dynamic_pointer_cast<dflowgfx::IPrePhaseParams>(inst)) { // family-neutral pre-phase
+        auto t0 = clk::now();
+        pp->writeParams(ctx);
+        HmPerf::instance().addModule(
+            inst->_dgmodule_data->GetClass()->Name().c_str(),
+            std::chrono::duration<double>(clk::now() - t0).count());
+      }
+    }
+    auto ci    = ctx->CI();
+    double gw0 = ci->_gpuWaitAccum;
+    ci->beginDispatchPhase();
+    // direct per-inst loop, NOT GraphInst::compute — a cacheable graph would take the
+    // core's synchronous cachedCompute branch there (wrong for GPU graphs), and the
+    // cook-loaded nodes must be skipped.
+    _computeSkipping(_ginst, _updata, _cookLoaded);
+    ci->endDispatchPhase();
+    HmPerf::instance().addGraph(
+        std::chrono::duration<double>(clk::now() - g0).count(),
+        ci->_gpuWaitAccum - gw0,
+        _mesh ? _mesh->_num_faces : 0,
+        _mesh ? _mesh->_num_verts : 0);
+    HmPerf::instance().report();
+  };
+
+  // #33: un-freeze any cook-loaded node a caller poked (+ its downstream) BEFORE this eval.
+  auto evicted = _evictPokedCookNodes(this);
+  core();
+  // Freshly-evicted nodes were disk-restored, so they never ran onTopologyReady — a topology op
+  // (subdivide/inset/extrude) would otherwise sit in passthrough forever. Run the same topology-setup
+  // cascade materializeLive does, but only over the evicted set (re-eval after each build so a chained
+  // consumer reads its upstream's BUILT topology). Untouched cook-loaded nodes are never revisited.
+  if (not evicted.empty()) {
+    for (int pass = 0; pass < kTopoCascadeMax; pass++) {
+      bool any = false;
+      for (auto inst : _ginst->_ordered_module_insts) {
+        auto mci = std::dynamic_pointer_cast<MeshComputeInst>(inst);
+        if (mci and evicted.count(inst.get()) and mci->onTopologyReady(ctx)) {
+          any = true;
+          core();
+        }
+      }
+      if (not any)
+        break;
     }
   }
-  auto ci = ctx->CI();
-  double gw0 = ci->_gpuWaitAccum;
-  ci->beginDispatchPhase();
-  // direct per-inst loop, NOT GraphInst::compute — a cacheable graph would take the
-  // core's synchronous cachedCompute branch there (wrong for GPU graphs), and the
-  // cook-loaded nodes must be skipped.
-  _computeSkipping(_ginst, _updata, _cookLoaded);
-  ci->endDispatchPhase();
-  HmPerf::instance().addGraph(
-      std::chrono::duration<double>(clk::now() - g0).count(),
-      ci->_gpuWaitAccum - gw0,
-      _mesh ? _mesh->_num_faces : 0,
-      _mesh ? _mesh->_num_verts : 0);
-  HmPerf::instance().report();
 }
 
 livehypermesh_ptr_t materializeLive(dflow::graphdata_ptr_t graph, Context* ctx, int vtx_budget) {
@@ -638,8 +718,12 @@ livehypermesh_ptr_t materializeLive(dflow::graphdata_ptr_t graph, Context* ctx, 
   live->_updata->_dt      = 0.0f;
   // E.6/2.19 — cacheable (STATIC) graphs: restore disk-cached nodes before the first
   // eval; recompute() skips them, the misses compute, the store pass runs post-cascade.
-  if (graph->_cacheable)
+  if (graph->_cacheable) {
     live->_cookLoaded = _cookLoadPass(live->_ginst);
+    // #33: snapshot the plug-write clock AFTER all authoring writes (DSL construction) but
+    // before any caller poke — recompute() evicts cook nodes whose plugs advance past this.
+    live->_cookLoadEpoch = dflow::peekPlugWriteClock();
+  }
   // ONE-TIME setup: alloc + compile + first eval. Historically called OUTSIDE a frame
   // (e.g. _onGpuInit) and wrapped in its own throwaway frame; the D.3 lazy bootstrap
   // (HypermeshDrawableData's first onGpuUpdate) lands here mid-frame, where the evals'

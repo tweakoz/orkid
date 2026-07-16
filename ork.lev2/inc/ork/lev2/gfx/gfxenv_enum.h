@@ -430,6 +430,14 @@ enum class BufferResidency : crc_enum_t {
   CrcEnum(DEVICE),  // GPU-resident VRAM. For buffers the GPU computes/reads every frame and the CPU
                     //   rarely touches; map()/copy go through a staging buffer. Fast on DISCRETE GPUs
                     //   (no PCIe-mapped compute). DEVICE_LOCAL + staged.
+  CrcEnum(BAR),     // GPU-resident VRAM that stays CPU-mappable (the ReBAR window). For buffers the
+                    //   CPU WRITES every frame (forward memcpy only — the window is write-combined,
+                    //   never CPU-read through it) and the GPU reads every frame: CPU writes land
+                    //   directly in VRAM, GPU reads stay local instead of fetching over PCIe per use.
+                    //   Best-effort: degrades to HOST when no BAR memory type exists or the (small,
+                    //   often 256MB) BAR heap is full — the direct-map code path is identical either
+                    //   way. On UMA parts DL|HV|HC is the normal type, so this is a no-op change
+                    //   there. DEVICE_LOCAL|HOST_VISIBLE|HOST_COHERENT.
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -60,6 +60,7 @@ template <typename traits> const typename inplugdata<traits>::data_type_t& inplu
 
 template <typename traits> void inplugdata<traits>::setValue(const data_type_t& v) {
   (*_value) = v;
+  this->_writeEpoch = bumpPlugWriteClock(); // stamp the write (observable for live cook-cache eviction)
 }
 
 } // namespace ork::dataflow

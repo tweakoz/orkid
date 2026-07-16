@@ -17,7 +17,6 @@ xf = mtx4.composed(
     0.01 )
 
 class Voronoi(HeightField):
-    HEIGHT_M       = 4000.0
     MATERIAL_CLASS = Fbm
     MATERIAL_PARAMS = {
       "albedo": vec3(0.25),
@@ -27,6 +26,8 @@ class Voronoi(HeightField):
       "aa": 0.5
     }
 
-    def __init__(self, frequency=6.0, octaves=2):   # octaves=1 = pure primitive
+    def __init__(self, frequency=6.0, octaves=2, amplitude_m=4000.0):   # octaves=1 = pure primitive
         super().__init__()
-        self.capture(T.worleyf1(frequency=frequency, octaves=octaves), "height")
+        # amplitude_m IS the relief in TRUE METERS (natural units) — a Terrain Parameter.
+        self.capture(T.worleyf1(frequency=frequency, octaves=octaves,
+                            amplitude=float(amplitude_m)), "height")

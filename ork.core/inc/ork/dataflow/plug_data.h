@@ -18,6 +18,14 @@ namespace ork::dataflow {
 typedef std::string MorphKey;
 typedef std::string MorphGroup;
 
+// PLUG-WRITE CLOCK — a monotonic process-global counter bumped every time an INPUT plug's
+// VALUE is written (inplugdata::setValue). It is a pure OBSERVABLE: no dataflow evaluation
+// semantics depend on it, so it changes nothing for any family. A live consumer snapshots
+// the current value once (e.g. hypermesh cook-load) and compares each plug's _writeEpoch to
+// detect a poke that happened AFTER that snapshot. bump() returns the new value; peek() reads.
+uint64_t bumpPlugWriteClock();
+uint64_t peekPlugWriteClock();
+
 struct nullpassthrudata;
 struct floatpassthrudata;
 struct fvec3passthrudata;
@@ -201,6 +209,9 @@ public:
   orkvector<outplugdata_ptr_t> _internalOutputConnections; // which output plugs IN THE SAME MODULE are connected to me ?
   morphable_ptr_t mpMorphable;
   mutable sigslot2::signal_void_t _sigPlugConnectionChanged;
+  // plug-write clock stamp at this plug's last setValue (0 = never written). See bumpPlugWriteClock().
+  // OBSERVABLE ONLY — read by live cook-cache eviction; no evaluation semantics key off it.
+  uint64_t _writeEpoch = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -225,6 +236,14 @@ public:
   mutable orkvector<inplugdata_ptr_t> _connections;
 };
 
+///////////////////////////////////////////////////////////////////////////////
+// BYPASS RESOLVER — resolve an input plug's connected output THROUGH any _bypassed
+// producer module(s) to the first non-bypassed output that actually feeds it. Every
+// read that expresses a DATA DEPENDENCY (inst wiring, cook-hash chain, depth/order
+// sort) routes through here so a bypassed module is a transparent pass-through rather
+// than a flattened-away edge. Returns nullptr for an unconnected input, and the raw
+// connected output when nothing upstream is bypassed. Impl in plug_data.cpp.
+outplugdata_ptr_t resolveConnectedOutput(inplugdata_ptr_t inp);
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename traits> //

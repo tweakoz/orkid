@@ -16,7 +16,6 @@ xf = mtx4.composed(
     0.01 )
 
 class Perlin(HeightField):
-    HEIGHT_M       = 2000.0
     MATERIAL_CLASS = Fbm
     MATERIAL_PARAMS = {
       "albedo": vec3(0.25),
@@ -26,6 +25,8 @@ class Perlin(HeightField):
       "aa": 0.5
     }
 
-    def __init__(self, frequency=8.0, octaves=1):   # octaves=1 = pure primitive
+    def __init__(self, frequency=8.0, octaves=1, amplitude_m=2000.0):   # octaves=1 = pure primitive
         super().__init__()
-        self.capture(T.perlin(frequency=frequency, octaves=octaves), "height")
+        # amplitude_m IS the relief in TRUE METERS (natural units) — a Terrain Parameter.
+        self.capture(T.perlin(frequency=frequency, octaves=octaves,
+                            amplitude=float(amplitude_m)), "height")

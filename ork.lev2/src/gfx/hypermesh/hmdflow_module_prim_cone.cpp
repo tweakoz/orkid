@@ -124,13 +124,17 @@ struct ConeInst : public MeshComputeInst {
     int vcap = meshNextPow2(_nverts), ccap = meshNextPow2(_ncorners), fcap = meshNextPow2(_nfaces + 1);
     if (vcap != _vcap or ccap != _ccap or fcap != _fcap) {       // size-class changed -> re-pool
       auto env = _graphinst->_impl.getShared<MeshEnv>();
-      allocMesh(env, out, _nverts, _ncorners, _nfaces,
+      allocMesh(env, out, _nverts, _ncorners, _nfaces,           // allocMesh markTopoChanged()es
                 {MeshChannel::POSITION, MeshChannel::NORMAL, MeshChannel::BINORMAL,
                  MeshChannel::UV0, MeshChannel::COLOR});
       _vcap = vcap; _ccap = ccap; _fcap = fcap;
     } else {                                                      // same buffers; just update counts
       out->_num_verts = _nverts; out->_num_corners = _ncorners; out->_num_faces = _nfaces;
+      // #33 secondary: a WITHIN-class `sides` change re-emits connectivity (cs_topo runs each frame)
+      // but re-pooled nothing — mark topo-dirty by hand so topology consumers (subdivide) rebuild.
+      if (sides != _lastSides) out->markTopoChanged();
     }
+    _lastSides = sides;
     if (_params) {
       float P4[4] = {*(_d->typedInputNamed<dflow::FloatPlugTraits>("radius")->_value),
                      *(_d->typedInputNamed<dflow::FloatPlugTraits>("height")->_value), float(sides), 0.0f};
@@ -171,6 +175,7 @@ struct ConeInst : public MeshComputeInst {
   dflow::float_inp_pluginst_ptr_t _radius, _height;
   dflow::int_inp_pluginst_ptr_t _sides;
   int _nverts = 0, _nfaces = 0, _ncorners = 0, _vcap = -1, _ccap = -1, _fcap = -1;
+  int _lastSides = -1;   // #33: last `sides` value emitted (within-class change -> markTopoChanged)
   FxShaderStorageBuffer* _params   = nullptr;
   const FxComputeShader* _cs_setup = nullptr;
   const FxComputeShader* _cs_verts = nullptr;

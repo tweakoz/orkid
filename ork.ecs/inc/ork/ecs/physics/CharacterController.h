@@ -74,6 +74,18 @@ public:
   float _fovyDeg     = 45.0f;
   float _camNear     = 0.1f;
   float _camFar      = 1000.0f;
+  float _killZDrop   = 0.0f;    // KILL-Z self-defense (OPT-IN, <=0 = DISABLED — owner call after a
+                                // too-tight default preempted a legitimate long fall): if >0 and the
+                                // body falls more than this many
+                                // metres below its SPAWN y it is teleported home with zeroed
+                                // velocity (the fell-out-of-the-world guard; 0 = disabled)
+  float _spawnAboveGround = 5.0f; // SPAWN GROUND-SNAP (ON by default, <=0 = exact authored spawn):
+                                  // when the scene has a terrain floor, the authored spawn Y is
+                                  // ADVISORY — a downward raycast at spawn XZ places the capsule
+                                  // FEET this many metres above the actual static ground. Kills
+                                  // both spawn-height footguns at once: underground spawns (never
+                                  // contact) and sky spawns (terminal-velocity tunneling THROUGH
+                                  // the heightfield).
   std::string _forceName = "walkforce"; // the declared DirectionalForce on the bullet component
 };
 
@@ -97,6 +109,19 @@ public:
   float _heading                     = 0.0f;    // yaw (radians; 0 = -Z forward)
   float _pitch                       = 0.34f;   // camera pitch (radians; clamped ±1.2)
   float _appliedFriction             = -1.0f;   // last friction pushed to the body (switch detect)
+  // SELF-DEFENSE runtime state (not reflected — derived at play time):
+  fvec3 _spawnPos;                   // the KILL-Z respawn target (captured on first body resolve,
+                                     // REWRITTEN by the ground-snap so respawns land on the snap)
+  bool  _spawnValid      = false;
+  bool  _spawnSnapDone   = false;    // ground-snap resolved (snapped, gave up, or disabled)
+  bool  _grounded        = false;    // ground-contact state, edge-detected for the transition logs
+  bool  _everGrounded    = false;    // has contact EVER been acquired (gates the 5s no-contact WARN)
+  bool  _warnedNoContact = false;    // one-shot latch for the 5s no-contact WARN
+  bool  _warnedUnderground = false;  // one-shot latch for the spawn-below-terrain-min WARN
+  float _spawnAge        = 0.0f;     // seconds since spawn (drives the 5s no-contact WARN)
+  float _contactScanAccum = 0.0f;    // ~10Hz throttle for the manifold contact scan
+  float _contactLogAccum = 1000.0f;  // rate-limit (1/s) for contact-edge logs (big = first edge logs)
+  float _killZLogAccum   = 1000.0f;  // rate-limit (2s) for KILL-Z respawn logs (big = first fires)
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -130,15 +155,21 @@ public:
   //              desktop never sends it. Sticky once set (resent each tick by the VR script).
   //   TurnInput  {rate: float}          heading yaw rate scale, -1..1
   //   PitchInput {rate: float}          camera pitch rate scale, -1..1 (positive = camera up)
+  //   TurnStep   {radians: float}       DISCRETE heading step — adds directly to _heading (no
+  //              rate integration). For positional camera-yaw controls (e.g. face-button dpad);
+  //              frame-timing robust where a rate pulse is not.
+  //   PitchStep  {radians: float}       DISCRETE pitch step — adds to _pitch, clamped to the same
+  //              ±1.2 limits the PitchInput rate honors. Positive = camera up.
   //   Jump       {}                     one-shot
   //   SetParams  {move_force?, max_speed?, brake?, turn_rate?, jump_impulse?,
   //               turn_decay?, drive_friction?, rest_friction?: float}
   //              runtime OVERRIDES of the reflected tuning (any subset) — the input
   //              script owns the FEEL, no C++ recompile, no scene re-serialize.
-  //   SetAimDir  {dx, dy, dz: float}   VR ONLY: override the look direction that CameraRay
-  //              returns (the VR layer feeds the HMD gaze + a lob pitch) — so the scene's
-  //              `/`-shoot aims down the VR camera with no VR knowledge in the input script.
-  //              Sticky once set; desktop never sends it so CameraRay returns the real camera.
+  //   SetAimDir  {dx, dy, dz: float}   override the look direction CameraRay returns.
+  //              In XR the system PRODUCES this itself (_onGpuUpdate feeds the rendered
+  //              center-camera gaze every render tick — '/'-shoot aims down viewspace Z-out
+  //              with no VR knowledge in the input script), so a script override only wins
+  //              on desktop; desktop otherwise returns the real walker camera (_lastLook).
   //   SetSprint  {scale: float}        transient multiplier on BOTH move_force and max_speed
   //              (a sprint/boost held by an input script — e.g. shift). 1.0 = normal; resent
   //              each tick (a script drives it from the live key state).
@@ -152,6 +183,8 @@ public:
   static constexpr auto MoveBasisYaw = "MoveBasisYaw"_ecstok;
   static constexpr auto TurnInput  = "TurnInput"_ecstok;
   static constexpr auto PitchInput = "PitchInput"_ecstok;
+  static constexpr auto TurnStep   = "TurnStep"_ecstok;
+  static constexpr auto PitchStep  = "PitchStep"_ecstok;
   static constexpr auto Jump       = "Jump"_ecstok;
   static constexpr auto SetParams  = "SetParams"_ecstok;
   static constexpr auto SetAimDir  = "SetAimDir"_ecstok;
@@ -166,6 +199,11 @@ public:
 protected:
   bool _onLink(Simulation* psi) final;
   void _onUpdate(Simulation* psi) final;
+  // VR view-direction locomotion PRODUCER (render-tick): when a device owns HMD presentation,
+  // reads the raw HMD gaze yaw and feeds _moveBasisYaw so WASD/stick drive follows the head.
+  // Co-located on the render thread with the device camera build (the _applyHmdPose precedent);
+  // desktop/NoVR falls through the predicate -> _moveBasisValid stays false -> heading basis.
+  void _onGpuUpdate(Simulation* psi, lev2::Context* ctx) final;
   void _onNotify(token_t evID, evdata_t data) final;
   void _onRequest(impl::sys_response_ptr_t response, token_t evID, evdata_t data) final;
 
@@ -181,6 +219,7 @@ protected:
   // camera/heading are unchanged; desktop never sends it so _moveBasisValid stays false.
   float _moveBasisYaw   = 0.0f;
   bool  _moveBasisValid = false;
+  bool  _viewLocoLogged = false; // one-shot latch for the view-direction-locomotion ENGAGED log
   float _sprintScale    = 1.0f; // SetSprint: transient multiplier on move_force + max_speed (shift-boost)
   // smoothed turn/pitch rates: instant attack while held, exp tail (TurnDecay) on release
   float _turnVel = 0.0f, _pitchVel = 0.0f;

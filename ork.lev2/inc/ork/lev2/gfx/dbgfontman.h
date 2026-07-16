@@ -149,6 +149,7 @@ struct FontMan { //: public NoRttiSingleton<FontMan> {
 
   void _addFont(fontdesc_ptr_t fdesc);
   void _gpuInit(Context* pTARG);
+  void _gpuExit(Context* pTARG);
 
   void _beginTextBlockWithState(Context* pTARG, textblockstate_ptr_t tbstate);
   void _endTextBlockWithState(Context* pTARG, textblockstate_ptr_t tbstate);
@@ -171,6 +172,10 @@ struct FontMan { //: public NoRttiSingleton<FontMan> {
   static int stringHeight(int numlines);
 
   static void gpuInit(Context* pTARG);
+  // Release all font GPU resources on the render thread while the context is
+  // still live (orderly teardown funnel) — see fontman_base.cpp. Prevents the
+  // atexit static-destruction SIGSEGV where ~Font touches a freed Context.
+  static void gpuExit(Context* pTARG);
 
   static void DrawText(Context* pTARG, int iX, int iY, const char* pFmt, ...);
   static void DrawCenteredText(Context* pTARG, int iY, const char* pFmt, ...);

@@ -101,6 +101,11 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
                 return load_req;
               })
           .def(
+              "refilterSkybox",
+              [](pbr::commonstuff_ptr_t pbc, std::string raw_source_path) { // MT2 §2.6 in-scene refilter
+                pbc->refilterSkybox(ork::file::Path(raw_source_path));
+              })
+          .def(
               "setBRDF",
               [](pbr::commonstuff_ptr_t pbc, crcstring_ptr_t fmt) { //
                 pbc->_brdftype = fmt->hashed();

@@ -516,12 +516,28 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
           module_lev2, "TerrainChunkDrawableData")
           .def(py::init([](py::kwargs kwargs) {
             auto d = std::make_shared<terrain::TerrainChunkDrawableData>();
+            // ops-self-defend: an unknown kwarg RAISES instead of vanishing — a silently
+            // dropped field here desyncs the shader-text layout from the buffer layout
+            // (the layout_dim_cap incident: mesh discontinuities with green gates).
+            static const std::set<std::string> known = {
+                "hf_asset", "material_asset", "debug_material_assets", "chunk",
+                "layout_dim_cap", "render_dimension", "capture_mode", "capture_res",
+                "capture_dir", "capture_targets"};
+            for (auto item : kwargs) {
+              auto key = item.first.cast<std::string>();
+              if (known.find(key) == known.end())
+                throw std::invalid_argument("TerrainChunkDrawableData: unknown kwarg '" + key + "'");
+            }
             if (kwargs.contains("hf_asset"))
               d->_hf_asset_name = kwargs["hf_asset"].cast<std::string>();
             if (kwargs.contains("material_asset"))
               d->_material_asset_name = kwargs["material_asset"].cast<std::string>();
+            if (kwargs.contains("debug_material_assets"))
+              d->_debug_material_assets = kwargs["debug_material_assets"].cast<std::vector<std::string>>();
             if (kwargs.contains("chunk"))
               d->_chunk = kwargs["chunk"].cast<int>();
+            if (kwargs.contains("layout_dim_cap"))
+              d->_layout_dim_cap = kwargs["layout_dim_cap"].cast<int>();
             if (kwargs.contains("render_dimension"))
               d->_render_dimension = kwargs["render_dimension"].cast<int>();
             if (kwargs.contains("capture_mode"))

@@ -52,6 +52,16 @@ public:
     std::lock_guard<std::mutex> lk(_mtx);
     return _published;
   }
+  // Read a phase's THIS-FRAME accumulated ms before commit() publishes it.
+  // Read-only: unlike add()/commit() it never mutates _accum (a bare `[]`
+  // lookup would insert a stray zero entry that later shows up in the HUD).
+  // Used by MT0 (JUL05_GPUMICROTASK) to tap the present-idle measurement the
+  // instant it lands, without waiting for this tick's commit().
+  double peekMs(const char* name) {
+    std::lock_guard<std::mutex> lk(_mtx);
+    auto it = _accum.find(name);
+    return it != _accum.end() ? it->second.ms : 0.0;
+  }
 
 private:
   std::mutex                              _mtx;

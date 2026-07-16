@@ -15,22 +15,24 @@ namespace ork::lev2::terrain {
 // masking primitive: B replaces A where the [0,1] mask field M is high.
 ///////////////////////////////////////////////////////////////////////////////
 
-static std::string _maskblend_text(int dim) {
+// DIM is RUNTIME data (params SSBO p_dimf, binding 4) — dim changes never rebuild the
+// shader; the field arrays are runtime-sized.
+static std::string _maskblend_text() {
   std::string t = R"S(
 fxconfig fxcfg_default {}
-storage_interface sif_out (descriptor_set 0) { buffer layout(std430) ob { float odata[%DIMSQ%]; }; }
-storage_interface sif_a   (descriptor_set 0) { buffer layout(std430) ab { float adata[%DIMSQ%]; }; }
-storage_interface sif_b   (descriptor_set 0) { buffer layout(std430) bb { float bdata[%DIMSQ%]; }; }
-storage_interface sif_m   (descriptor_set 0) { buffer layout(std430) mb { float mdata[%DIMSQ%]; }; }
-compute_interface iface { storage { sif_out sif_a sif_b sif_m } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }
+storage_interface sif_out (descriptor_set 0) { buffer layout(std430) ob { float odata[]; }; }
+storage_interface sif_a   (descriptor_set 0) { buffer layout(std430) ab { float adata[]; }; }
+storage_interface sif_b   (descriptor_set 0) { buffer layout(std430) bb { float bdata[]; }; }
+storage_interface sif_m   (descriptor_set 0) { buffer layout(std430) mb { float mdata[]; }; }
+storage_interface sif_pm  (descriptor_set 0) { buffer layout(std430) pm_in { float p_dimf; }; }
+compute_interface iface { storage { sif_out sif_a sif_b sif_m sif_pm } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }
 compute_shader cs_maskblend : iface {
-  if (gl_GlobalInvocationID.x >= %DIMU% || gl_GlobalInvocationID.y >= %DIMU%) { return; }
-  uint i = gl_GlobalInvocationID.y * %DIMU% + gl_GlobalInvocationID.x;
+  uint u_dim = uint(p_dimf); // RUNTIME grid dim (params SSBO) — no rebuild on dim change
+  if (gl_GlobalInvocationID.x >= u_dim || gl_GlobalInvocationID.y >= u_dim) { return; }
+  uint i = gl_GlobalInvocationID.y * u_dim + gl_GlobalInvocationID.x;
   odata[i] = mix(adata[i], bdata[i], clamp(mdata[i], 0.0, 1.0));
 }
 )S";
-  _shadersub(t, "%DIMSQ%", FormatString("%d", dim * dim));
-  _shadersub(t, "%DIMU%", FormatString("%du", dim));
   return t;
 }
 
@@ -42,11 +44,17 @@ struct MaskBlendModuleInst : public TerrainComputeInst {
     _inB = typedInputNamed<HfImagePlugTraits>("B");
     _inM = typedInputNamed<HfImagePlugTraits>("M");
   }
-  void onActivate(dflow::GraphInst* inst) final {
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<BakeEnv>();
+    auto fxi = env->_ctx->FXI();
     _allocOut(env.get(), _output->_value);
-    auto sh = env->_ctx->FXI()->shaderFromShaderText("terrain_maskblend", _maskblend_text(env->_w));
-    _cs     = env->_ctx->FXI()->computeShader(sh, "cs_maskblend");
+    auto sh = fxi->shaderFromShaderText("terrain_maskblend", _maskblend_text());
+    _cs     = fxi->computeShader(sh, "cs_maskblend");
+    _pm        = env->createStorageBuffer(sizeof(float)); // p_dimf = RUNTIME grid dim
+    float dimf = float(env->_w);
+    auto mp    = fxi->mapStorageBuffer(_pm, 0, sizeof(dimf), BufferMapAccess::WRITE_ONLY);
+    std::memcpy(mp->_mappedaddr, &dimf, sizeof(dimf));
+    fxi->unmapStorageBuffer(mp.get());
   }
   void compute(dflow::GraphInst* inst, ui::updatedata_ptr_t) final {
     auto env = inst->_impl.getShared<BakeEnv>();
@@ -60,6 +68,7 @@ struct MaskBlendModuleInst : public TerrainComputeInst {
     ci->bindStorageBuffer(_cs, 1, a->_ssbo);               // adata
     ci->bindStorageBuffer(_cs, 2, b->_ssbo);               // bdata
     ci->bindStorageBuffer(_cs, 3, m->_ssbo);               // mdata
+    ci->bindStorageBuffer(_cs, 4, _pm);                    // p_dimf (RUNTIME grid dim)
     ci->dispatchCompute(_cs, g, g, 1);
     ci->storageBarrier();
   }
@@ -74,6 +83,7 @@ struct MaskBlendModuleInst : public TerrainComputeInst {
   const MaskBlendModuleData* _d;
   hfimg_outpluginst_ptr_t _output;
   hfimg_inpluginst_ptr_t _inA, _inB, _inM;
+  FxShaderStorageBuffer* _pm = nullptr;
   const FxComputeShader* _cs = nullptr;
 };
 

@@ -68,6 +68,10 @@ class TerrainPbrApp(ComponentizedApplication):
         FXI = ctx.FXI
         self.terr = FXI.createShaderStorageBufferWithLength(vs.TOTAL)
         FXI.copyDataIntoShaderStorageBuffer(synth_height(), self.terr, vs.HEIGHTS_OFF)
+        # u_dim (render grid dim) into the VIS header — the cull compute reads it to derive
+        # nchunk; left 0 it culls every chunk (invisible terrain). Raw-Python SSBO consumers
+        # must upload it (the C++ TerrainChunkDrawableData path does this natively).
+        vs.upload_dim(FXI, self.terr)
 
         # STANDARD path: hand the ComputeDrawable the MATERIAL — at render it calls findPipeline(RCID)
         # with RCID._isSSBOSourced=true, so the material's cache picks its FWD_SSBO_CUSTOM variant

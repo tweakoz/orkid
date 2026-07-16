@@ -46,6 +46,14 @@ struct CoreAppInit {
     dflow::ModuleData::GetClassStatic();
     dflow::DgModuleData::GetClassStatic();
     dflow::LambdaModuleData::GetClassStatic();
+    // composite (subgraph / loop) modules + their reflected boundary tables. Every
+    // embedded class MUST be touched or the nested GraphData-in-module round-trip
+    // deserializes it as an empty "class": "" (the dflow serialization gotcha).
+    dflow::SubGraphPromotion::GetClassStatic();
+    dflow::LoopCarry::GetClassStatic();
+    dflow::LoopIterFeed::GetClassStatic();
+    dflow::SubGraphModuleData::GetClassStatic();
+    dflow::LoopModuleData::GetClassStatic();
     dflow::MinModuleData::GetClassStatic();
     dflow::MaxModuleData::GetClassStatic();
     dflow::LerpModuleData::GetClassStatic();

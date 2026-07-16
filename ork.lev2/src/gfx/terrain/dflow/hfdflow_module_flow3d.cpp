@@ -26,18 +26,20 @@ namespace ork::lev2::terrain {
 static constexpr int kAutoCap     = 1024;
 static constexpr int kSubmitChunk = 128;
 
-// 8 normalized MFD out-weights / cell. si_w=weights[8N] si_i=dem.
-static std::string _f3_weights_text(int dim, float p) {
+// 8 normalized MFD out-weights / cell. si_w=weights[8N] si_i=dem. dim is RUNTIME (si_p.p_dimf).
+static std::string _f3_weights_text(float p) {
   std::string t = std::string(
     "\nfxconfig fxcfg_default {}\n"
-    "storage_interface si_w (descriptor_set 0) { buffer layout(std430) wb { float wdata[%WSQ%]; }; }\n"
-    "storage_interface si_i (descriptor_set 0) { buffer layout(std430) ib { float idata[%DIMSQ%]; }; }\n"
-    "compute_interface iface { storage { si_w si_i } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }\n"
+    "storage_interface si_w (descriptor_set 0) { buffer layout(std430) wb { float wdata[]; }; }\n"
+    "storage_interface si_i (descriptor_set 0) { buffer layout(std430) ib { float idata[]; }; }\n"
+    "storage_interface si_p (descriptor_set 0) { buffer layout(std430) pb { float p_dimf; }; }\n"
+    "compute_interface iface { storage { si_w si_i si_p } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }\n"
     "compute_shader cs_f3_weights : iface {\n"
-    "  if (gl_GlobalInvocationID.x >= %DIMU% || gl_GlobalInvocationID.y >= %DIMU%) { return; }\n"
+    "  uint u_dim = uint(p_dimf);\n"
+    "  if (gl_GlobalInvocationID.x >= u_dim || gl_GlobalInvocationID.y >= u_dim) { return; }\n"
     "  int  xi = int(gl_GlobalInvocationID.x);\n"
     "  int  yi = int(gl_GlobalInvocationID.y);\n"
-    "  int  W  = int(%DIMU%); uint Wu = %DIMU%; uint i = uint(yi)*Wu + uint(xi);\n"
+    "  int  W  = int(u_dim); uint Wu = u_dim; uint i = uint(yi)*Wu + uint(xi);\n"
     "  float zc = idata[i];\n"
     "  float d0 = (xi<W-1) ? (zc-idata[i+1u]) : -1.0;\n"
     "  float d1 = (xi>0)   ? (zc-idata[i-1u]) : -1.0;\n"
@@ -56,39 +58,37 @@ static std::string _f3_weights_text(int dim, float p) {
     "  wdata[b+0u]=w0*inv; wdata[b+1u]=w1*inv; wdata[b+2u]=w2*inv; wdata[b+3u]=w3*inv;\n"
     "  wdata[b+4u]=w4*inv; wdata[b+5u]=w5*inv; wdata[b+6u]=w6*inv; wdata[b+7u]=w7*inv;\n"
     "}\n");
-  _shadersub(t, "%WSQ%", FormatString("%d", 8 * dim * dim));
-  _shadersub(t, "%DIMSQ%", FormatString("%d", dim * dim));
-  _shadersub(t, "%DIMU%", FormatString("%du", dim));
   _shadersub(t, "%P%", FormatString("%g", p));
   return t;
 }
 
-static std::string _f3_init_text(int dim) {
-  std::string t = std::string(
+static std::string _f3_init_text() {
+  return std::string(
     "\nfxconfig fxcfg_default {}\n"
-    "storage_interface si_o (descriptor_set 0) { buffer layout(std430) ob { float odata[%DIMSQ%]; }; }\n"
-    "compute_interface iface { storage { si_o } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }\n"
+    "storage_interface si_o (descriptor_set 0) { buffer layout(std430) ob { float odata[]; }; }\n"
+    "storage_interface si_p (descriptor_set 0) { buffer layout(std430) pb { float p_dimf; }; }\n"
+    "compute_interface iface { storage { si_o si_p } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }\n"
     "compute_shader cs_f3_init : iface {\n"
-    "  if (gl_GlobalInvocationID.x >= %DIMU% || gl_GlobalInvocationID.y >= %DIMU%) { return; }\n"
-    "  uint i = gl_GlobalInvocationID.y*%DIMU% + gl_GlobalInvocationID.x; odata[i] = 1.0;\n"
+    "  uint u_dim = uint(p_dimf);\n"
+    "  if (gl_GlobalInvocationID.x >= u_dim || gl_GlobalInvocationID.y >= u_dim) { return; }\n"
+    "  uint i = gl_GlobalInvocationID.y*u_dim + gl_GlobalInvocationID.x; odata[i] = 1.0;\n"
     "}\n");
-  _shadersub(t, "%DIMSQ%", FormatString("%d", dim * dim));
-  _shadersub(t, "%DIMU%", FormatString("%du", dim));
-  return t;
 }
 
-static std::string _f3_accum_text(int dim) {
+static std::string _f3_accum_text() {
   std::string t = std::string(
     "\nfxconfig fxcfg_default {}\n"
-    "storage_interface si_o (descriptor_set 0) { buffer layout(std430) ob { float odata[%DIMSQ%]; }; }\n"
-    "storage_interface si_a (descriptor_set 0) { buffer layout(std430) ab { float adata[%DIMSQ%]; }; }\n"
-    "storage_interface si_w (descriptor_set 0) { buffer layout(std430) wb { float wdata[%WSQ%]; }; }\n"
-    "compute_interface iface { storage { si_o si_a si_w } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }\n"
+    "storage_interface si_o (descriptor_set 0) { buffer layout(std430) ob { float odata[]; }; }\n"
+    "storage_interface si_a (descriptor_set 0) { buffer layout(std430) ab { float adata[]; }; }\n"
+    "storage_interface si_w (descriptor_set 0) { buffer layout(std430) wb { float wdata[]; }; }\n"
+    "storage_interface si_p (descriptor_set 0) { buffer layout(std430) pb { float p_dimf; }; }\n"
+    "compute_interface iface { storage { si_o si_a si_w si_p } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }\n"
     "compute_shader cs_f3_accum : iface {\n"
-    "  if (gl_GlobalInvocationID.x >= %DIMU% || gl_GlobalInvocationID.y >= %DIMU%) { return; }\n"
+    "  uint u_dim = uint(p_dimf);\n"
+    "  if (gl_GlobalInvocationID.x >= u_dim || gl_GlobalInvocationID.y >= u_dim) { return; }\n"
     "  int  xi = int(gl_GlobalInvocationID.x);\n"
     "  int  yi = int(gl_GlobalInvocationID.y);\n"
-    "  int  W  = int(%DIMU%); uint Wu = %DIMU%; uint i = uint(yi)*Wu + uint(xi);\n"
+    "  int  W  = int(u_dim); uint Wu = u_dim; uint i = uint(yi)*Wu + uint(xi);\n"
     "  float a = 1.0;\n"
     "  if (xi<W-1)          { uint nb=i+1u;     a += wdata[8u*nb+1u]*adata[nb]; }\n"
     "  if (xi>0)            { uint nb=i-1u;     a += wdata[8u*nb+0u]*adata[nb]; }\n"
@@ -100,33 +100,31 @@ static std::string _f3_accum_text(int dim) {
     "  if (xi>0&&yi>0)      { uint nb=i-Wu-1u;  a += wdata[8u*nb+4u]*adata[nb]; }\n"
     "  odata[i] = a;\n"
     "}\n");
-  _shadersub(t, "%WSQ%", FormatString("%d", 8 * dim * dim));
-  _shadersub(t, "%DIMSQ%", FormatString("%d", dim * dim));
-  _shadersub(t, "%DIMU%", FormatString("%du", dim));
   return t;
 }
 
 // gradient -> RGBA flow field (dir,slope), mono discharge, AND a metrics RGBA (flatness, curvature,
 // wetness). central-difference -∇z + Laplacian, CLAMP_TO_EDGE. Slope/curvature are PHYSICAL
-// (resolution-INVARIANT): slope = grad * aspect (height_m/texel_m); curvature = lap * aspect2
-// (height_m/texel_m²) ≈ ∇²z in 1/m. si_i=dem si_a=acc si_o=Out(RGBA) si_d=discharge(mono)
+// (resolution-INVARIANT): heights are METERS, so slope = grad * aspect (1/texel_m); curvature =
+// lap * aspect2 (1/texel_m²) ≈ ∇²z in 1/m. si_i=dem si_a=acc si_o=Out(RGBA) si_d=discharge(mono)
 // si_m=Metrics(RGBA: flatness, curvature, wetness, 1).
-static std::string _f3_field_text(int dim, float cell_area, float aspect, float aspect2,
-                                  float slope_scale, float flat_scale, float curv_scale,
+static std::string _f3_field_text(float slope_scale, float flat_scale, float curv_scale,
                                   float twi_scale, bool log_compress) {
   std::string t = std::string(
     "\nfxconfig fxcfg_default {}\n"
-    "storage_interface si_i (descriptor_set 0) { buffer layout(std430) ib { float idata[%DIMSQ%]; }; }\n"
-    "storage_interface si_a (descriptor_set 0) { buffer layout(std430) ab { float adata[%DIMSQ%]; }; }\n"
-    "storage_interface si_o (descriptor_set 0) { buffer layout(std430) ob { float odata[%RGBASQ%]; }; }\n"
-    "storage_interface si_d (descriptor_set 0) { buffer layout(std430) db { float ddata[%DIMSQ%]; }; }\n"
-    "storage_interface si_m (descriptor_set 0) { buffer layout(std430) mb { float mdata[%RGBASQ%]; }; }\n"
-    "compute_interface iface { storage { si_i si_a si_o si_d si_m } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }\n"
+    "storage_interface si_i (descriptor_set 0) { buffer layout(std430) ib { float idata[]; }; }\n"
+    "storage_interface si_a (descriptor_set 0) { buffer layout(std430) ab { float adata[]; }; }\n"
+    "storage_interface si_o (descriptor_set 0) { buffer layout(std430) ob { float odata[]; }; }\n"
+    "storage_interface si_d (descriptor_set 0) { buffer layout(std430) db { float ddata[]; }; }\n"
+    "storage_interface si_m (descriptor_set 0) { buffer layout(std430) mb { float mdata[]; }; }\n"
+    "storage_interface si_p (descriptor_set 0) { buffer layout(std430) pb { float p_dimf; float p_cellarea; float p_aspect; float p_aspect2; }; }\n"
+    "compute_interface iface { storage { si_i si_a si_o si_d si_m si_p } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }\n"
     "compute_shader cs_f3_field : iface {\n"
-    "  if (gl_GlobalInvocationID.x >= %DIMU% || gl_GlobalInvocationID.y >= %DIMU%) { return; }\n"
+    "  uint u_dim = uint(p_dimf);\n"
+    "  if (gl_GlobalInvocationID.x >= u_dim || gl_GlobalInvocationID.y >= u_dim) { return; }\n"
     "  int  xi = int(gl_GlobalInvocationID.x);\n"
     "  int  yi = int(gl_GlobalInvocationID.y);\n"
-    "  int  W  = int(%DIMU%); uint Wu = %DIMU%; uint i = uint(yi)*Wu + uint(xi);\n"
+    "  int  W  = int(u_dim); uint Wu = u_dim; uint i = uint(yi)*Wu + uint(xi);\n"
     "  float zc = idata[i];\n"
     "  float zl = idata[(xi>0)   ? i-1u : i];\n"
     "  float zr = idata[(xi<W-1) ? i+1u : i];\n"
@@ -136,33 +134,27 @@ static std::string _f3_field_text(int dim, float cell_area, float aspect, float 
     "  float gm = sqrt(gx*gx + gy*gy);\n"
     "  float il = (gm > 1e-12) ? (1.0/gm) : 0.0;\n"
     "  float dxn = -gx * il; float dyn = -gy * il;\n"               // unit downhill flow dir (scale-free)
-    "  float slope = gm * float(%ASPECT%);\n"                       // PHYSICAL slope = rise/run
+    "  float slope = gm * p_aspect;\n"                              // PHYSICAL slope = rise/run (dim-derived -> RUNTIME)
     "  uint b = 4u*i;\n"
     "  odata[b+0u] = dxn*0.5 + 0.5;\n"
     "  odata[b+1u] = dyn*0.5 + 0.5;\n"
     "  odata[b+2u] = clamp(slope * float(%SLOPESCALE%), 0.0, 1.0);\n"
     "  odata[b+3u] = 1.0;\n"
-    "  float area = adata[i] * float(%CELLAREA%);\n"
+    "  float area = adata[i] * p_cellarea;\n"
     "  ddata[i] = %OUTEXPR%;\n"
     // ---- metrics ----
     "  float flatv = 1.0 / (1.0 + slope * float(%FLATSCALE%));\n"             // flat areas -> 1 (flat is a GLSL keyword)
-    "  float curv = ((zl+zr+zd+zu) - 4.0*zc) * float(%ASPECT2%);\n"          // physical ∇²z (1/m); >0 concave (valley)
+    "  float curv = ((zl+zr+zd+zu) - 4.0*zc) * p_aspect2;\n"                 // physical ∇²z (1/m); >0 concave (valley)
     "  float curvd = clamp(0.5 + curv * float(%CURVSCALE%), 0.0, 1.0);\n"    // 0.5=flat, >0.5 valley, <0.5 ridge
     "  float twi = log(max(area,1.0)) - log(max(slope,1e-4));\n"            // wetness index ln(A/slope)
     "  float wet = clamp(twi / float(%TWISCALE%), 0.0, 1.0);\n"
     "  mdata[b+0u] = flatv; mdata[b+1u] = curvd; mdata[b+2u] = wet; mdata[b+3u] = 1.0;\n"  // R=flatness G=curvature B=wetness
     "}\n");
   _shadersub(t, "%OUTEXPR%", log_compress ? "log(1.0 + area)" : "area");
-  _shadersub(t, "%CELLAREA%", FormatString("%g", cell_area));
-  _shadersub(t, "%ASPECT%", FormatString("%g", aspect));
-  _shadersub(t, "%ASPECT2%", FormatString("%g", aspect2));
   _shadersub(t, "%SLOPESCALE%", FormatString("%g", slope_scale));
   _shadersub(t, "%FLATSCALE%", FormatString("%g", flat_scale));
   _shadersub(t, "%CURVSCALE%", FormatString("%g", curv_scale));
   _shadersub(t, "%TWISCALE%", FormatString("%g", twi_scale));
-  _shadersub(t, "%RGBASQ%", FormatString("%d", 4 * dim * dim));
-  _shadersub(t, "%DIMSQ%", FormatString("%d", dim * dim));
-  _shadersub(t, "%DIMU%", FormatString("%du", dim));
   return t;
 }
 
@@ -174,28 +166,39 @@ struct Flow3DModuleInst : public TerrainComputeInst {
     _outMetrics = typedOutputNamed<HfImagePlugTraits>("Metrics");
     _input      = typedInputNamed<HfImagePlugTraits>("In");
   }
-  void onActivate(dflow::GraphInst* inst) final {
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<BakeEnv>();
     auto fxi = env->_ctx->FXI();
     int dim  = env->_w;
     size_t n = size_t(dim) * size_t(dim);
     // "Out" + "Metrics" are RGBA32F (4/cell) — allocate manually (not the mono _allocOut).
     _outField->_value->_w = dim; _outField->_value->_h = dim; _outField->_value->_channels = 4;
-    _outField->_value->_ssbo = fxi->createStorageBuffer(n * 4 * sizeof(float));
+    _outField->_value->_ssbo = env->createStorageBuffer(n * 4 * sizeof(float));
     _outMetrics->_value->_w = dim; _outMetrics->_value->_h = dim; _outMetrics->_value->_channels = 4;
-    _outMetrics->_value->_ssbo = fxi->createStorageBuffer(n * 4 * sizeof(float));
+    _outMetrics->_value->_ssbo = env->createStorageBuffer(n * 4 * sizeof(float));
     _allocOut(env.get(), _outDis->_value); // mono discharge
-    _wt   = fxi->createStorageBuffer(n * 8 * sizeof(float));
-    _accA = fxi->createStorageBuffer(n * sizeof(float));
-    _accB = fxi->createStorageBuffer(n * sizeof(float));
+    _wt   = env->createStorageBuffer(n * 8 * sizeof(float));
+    _accA = env->createStorageBuffer(n * sizeof(float));
+    _accB = env->createStorageBuffer(n * sizeof(float));
+    // dim AND the dim-DERIVED physical scalars (cellarea/aspect/aspect2) are RUNTIME
+    // data now — one compiled shader set serves every dim. PARITY: the old literals
+    // were %g-formatted, so the uploaded floats are %g-ROUNDTRIPPED to match the
+    // parsed literals exactly. The one 4-float buffer backs every kernel's si_p
+    // (the non-field kernels declare only the leading p_dimf — layout-compatible).
     float cell    = (dim > 0) ? (env->_extent_m / float(dim)) : 1.0f;
-    float aspect  = env->_height_scale_m / cell;          // slope:     grad  * height_m/texel_m
-    float aspect2 = env->_height_scale_m / (cell * cell); // curvature: lap   * height_m/texel_m²
-    _csWeights = fxi->computeShader(fxi->shaderFromShaderText("terrain_f3_weights", _f3_weights_text(dim, _d->_exponent)), "cs_f3_weights");
-    _csInit    = fxi->computeShader(fxi->shaderFromShaderText("terrain_f3_init",    _f3_init_text(dim)), "cs_f3_init");
-    _csAccum   = fxi->computeShader(fxi->shaderFromShaderText("terrain_f3_accum",   _f3_accum_text(dim)), "cs_f3_accum");
+    float aspect  = 1.0f / cell;          // slope:     grad(h_m) / texel_m   (heights in meters)
+    float aspect2 = 1.0f / (cell * cell); // curvature: lap(h_m)  / texel_m²  (heights in meters)
+    auto gq = [](float v) { return strtof(FormatString("%g", v).c_str(), nullptr); };
+    _params = env->createStorageBuffer(4 * sizeof(float));
+    { float pm[4] = {float(dim), gq(cell * cell), gq(aspect), gq(aspect2)};
+      auto mp = fxi->mapStorageBuffer(_params, 0, sizeof(pm), BufferMapAccess::WRITE_ONLY);
+      std::memcpy(mp->_mappedaddr, pm, sizeof(pm));
+      fxi->unmapStorageBuffer(mp.get()); }
+    _csWeights = fxi->computeShader(fxi->shaderFromShaderText("terrain_f3_weights", _f3_weights_text(_d->_exponent)), "cs_f3_weights");
+    _csInit    = fxi->computeShader(fxi->shaderFromShaderText("terrain_f3_init",    _f3_init_text()), "cs_f3_init");
+    _csAccum   = fxi->computeShader(fxi->shaderFromShaderText("terrain_f3_accum",   _f3_accum_text()), "cs_f3_accum");
     _csField   = fxi->computeShader(fxi->shaderFromShaderText("terrain_f3_field",
-                     _f3_field_text(dim, cell * cell, aspect, aspect2, _d->_slope_scale,
+                     _f3_field_text(_d->_slope_scale,
                                     _d->_flat_scale, _d->_curv_scale, _d->_twi_scale, _d->_log_compress)), "cs_f3_field");
     _iters = (_d->_iterations > 0) ? _d->_iterations : std::min(dim, kAutoCap);
     if (_iters < 1) _iters = 1;
@@ -208,13 +211,16 @@ struct Flow3DModuleInst : public TerrainComputeInst {
     int g = (env->_w + 7) / 8;
     // 1) MFD weights + 2) acc=1 + 3) Jacobi gather (discharge)
     ci->bindStorageBuffer(_csWeights, 0, _wt); ci->bindStorageBuffer(_csWeights, 1, in->_ssbo);
+    ci->bindStorageBuffer(_csWeights, 2, _params);
     ci->dispatchCompute(_csWeights, g, g, 1); ci->storageBarrier();
     ci->bindStorageBuffer(_csInit, 0, _accA);
+    ci->bindStorageBuffer(_csInit, 1, _params);
     ci->dispatchCompute(_csInit, g, g, 1); ci->storageBarrier();
     FxShaderStorageBuffer* cur = _accA; FxShaderStorageBuffer* nxt = _accB;
     for (int it = 0; it < _iters; it++) {
       ci->bindStorageBuffer(_csAccum, 0, nxt); ci->bindStorageBuffer(_csAccum, 1, cur);
       ci->bindStorageBuffer(_csAccum, 2, _wt);
+      ci->bindStorageBuffer(_csAccum, 3, _params);
       ci->dispatchCompute(_csAccum, g, g, 1); std::swap(cur, nxt);
       if (((it + 1) % kSubmitChunk) == 0) { ci->endDispatchPhase(); ci->beginDispatchPhase(); }
       else ci->storageBarrier();
@@ -224,11 +230,26 @@ struct Flow3DModuleInst : public TerrainComputeInst {
     ci->bindStorageBuffer(_csField, 2, _outField->_value->_ssbo);
     ci->bindStorageBuffer(_csField, 3, _outDis->_value->_ssbo);
     ci->bindStorageBuffer(_csField, 4, _outMetrics->_value->_ssbo);
+    ci->bindStorageBuffer(_csField, 5, _params);
     ci->dispatchCompute(_csField, g, g, 1); ci->storageBarrier();
   }
+  // WS4 fp16 wave: these planes quantize/store at fp16 (see TerrainComputeInst
+  // notes — quantize-at-production keeps warm==cold bit-exact). Version salt
+  // bumped alongside: the quantization changes the output.
+  bool cookHalfOutput(const std::string& output_name) const final {
+    if (output_name == "Out" or output_name == "Metrics")
+      return true;
+    // Discharge in log-compress mode is ln(1+area): peaks ~ln(2.7e8)≈19.4, fp16 ulp
+    // there ≈0.016 in ln-space (~1.6% multiplicative on area) — solver-input grade,
+    // same perturbation class as the approved Out/Metrics. RAW mode is drainage
+    // area in m² (reaches ~1e8 → fp16 inf) and stays fp32.
+    return output_name == "Discharge" and _d->_log_compress;
+  }
+
+  bool cookCacheDefault() const final { return true; } // measured cache-point class (cost-model analysis)
   uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
     auto h = DataBlock::createHasher();
-    h->accumulateString("terrain.flow3d.v3"); // v3: + Metrics output (R=flatness, G=curvature, B=wetness)
+    h->accumulateString("terrain.flow3d.v6"); // v6: heights in meters (dropped height_scale from aspect/aspect2); v5: + Discharge fp16
     h->accumulateItem<float>(_d->_exponent);
     h->accumulateItem<int>(_d->_iterations);
     h->accumulateItem<int>(_d->_log_compress ? 1 : 0);
@@ -245,6 +266,7 @@ struct Flow3DModuleInst : public TerrainComputeInst {
   hfimg_outpluginst_ptr_t _outField, _outDis, _outMetrics;
   hfimg_inpluginst_ptr_t _input;
   FxShaderStorageBuffer *_wt = nullptr, *_accA = nullptr, *_accB = nullptr;
+  FxShaderStorageBuffer *_params = nullptr; // runtime grid dim (p_dimf), filled in bakeAcquire
   const FxComputeShader *_csWeights = nullptr, *_csInit = nullptr, *_csAccum = nullptr, *_csField = nullptr;
   int _iters = 1;
 };

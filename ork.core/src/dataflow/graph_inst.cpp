@@ -92,7 +92,11 @@ void GraphInst::updateTopology(topology_ptr_t topo){
       auto it_lut = input2dataLUT.find(input_inst);
       OrkAssert(it_lut!=input2dataLUT.end());
       auto input_data = it_lut->second;
-      auto connected = input_data->_connectedOutput;
+      // BYPASS SPLICE (load-bearing): wire the INST connection to the RESOLVED producer
+      // output, skipping any _bypassed pass-through module. Every downstream inst-level
+      // read (compute, cook-hash chain, terrain demand planner) then sees the real
+      // producer automatically — a bypassed module simply never gets referenced.
+      auto connected = resolveConnectedOutput(input_data);
       if(connected){
 
         auto it_con = data2outputLUT.find(connected);

@@ -42,10 +42,12 @@ void pyinit_gfx_terrain(py::module& module_lev2) {
       .def_readwrite("octaves", &trn::NoiseModuleData::_octaves);  // baked loop bound (1 = primitive)
 
   // ExprModule — generic expression generator (the unified procedural substrate);
-  // `shadertext` is the full compute text emitted by the ptex3d codegen.
+  // `shadertext` is the full compute text emitted by the ptex3d codegen; `expr_source`
+  // is the authored expression string (editor T.expr) the DSL recompiles shadertext from.
   py::class_<trn::ExprModuleData, dflow::DgModuleData, trn::exprmoduledata_ptr_t>(trn_module, "ExprModule")
       .def_static("createShared", []() -> trn::exprmoduledata_ptr_t { return trn::ExprModuleData::createShared(); })
-      .def_readwrite("shadertext", &trn::ExprModuleData::_shadertext);
+      .def_readwrite("shadertext", &trn::ExprModuleData::_shadertext)
+      .def_readwrite("expr_source", &trn::ExprModuleData::_expr_source);
 
   // NormalizeModule — explicit [min,max]->[out_lo,out_hi] rescale (float plugs).
   py::class_<trn::NormalizeModuleData, dflow::DgModuleData, trn::normalizemoduledata_ptr_t>(trn_module, "NormalizeModule")
@@ -130,6 +132,7 @@ void pyinit_gfx_terrain(py::module& module_lev2) {
       .def_readwrite("dep_m", &trn::FlowErodeModuleData::_dep_m)
       .def_readwrite("flat_k", &trn::FlowErodeModuleData::_flat_k)
       .def_readwrite("clamp_frac", &trn::FlowErodeModuleData::_clamp_frac)
+      .def_readwrite("blend", &trn::FlowErodeModuleData::_blend)
       .def_readwrite("disch_log", &trn::FlowErodeModuleData::_disch_log);
 
   // FillClosedBasinsModule — detect+fill closed basins w/ persistence control (min_depth is a plug).
@@ -158,6 +161,138 @@ void pyinit_gfx_terrain(py::module& module_lev2) {
           [](trn::capturemoduledata_ptr_t m, bool c) { m->_cache = c; });
 
   /////////////////////////////////////////////////////////////////////////////
+  // LoopIterFeed — READ-ONLY inspection of one per-iteration index feed (the doc
+  // layer's L.i). `values` is the per-iteration TABLE (empty => affine scale/bias).
+  // Used by the V-A oracle to assert the feed a loop carries without unrolling.
+  /////////////////////////////////////////////////////////////////////////////
+  py::class_<dflow::LoopIterFeed, dflow::loopiterfeed_ptr_t>(trn_module, "LoopIterFeed")
+      .def_property_readonly("inner_module", [](dflow::loopiterfeed_ptr_t f) -> std::string { return f->_inner_module; })
+      .def_property_readonly("inner_plug", [](dflow::loopiterfeed_ptr_t f) -> std::string { return f->_inner_plug; })
+      .def_property_readonly("scale", [](dflow::loopiterfeed_ptr_t f) -> float { return f->_scale; })
+      .def_property_readonly("bias", [](dflow::loopiterfeed_ptr_t f) -> float { return f->_bias; })
+      .def_property_readonly("values", [](dflow::loopiterfeed_ptr_t f) -> std::vector<float> { return f->_values; });
+
+  // nested (subgraph/loop) cook counters from the last bake — (computes, loads).
+  // The g2 loop-cache oracle reads these: the per-iteration recompute/load counts
+  // live here, NOT on the host [cook] line (which only sees the loop NODE).
+  trn_module.def("last_subgraph_cook_counts", []() -> py::tuple {
+    auto p = trn::lastSubgraphCookCounts();
+    return py::make_tuple(p.first, p.second);
+  });
+
+  /////////////////////////////////////////////////////////////////////////////
+  // Composite (subgraph / loop) modules — a group / loop that OWNS a nested graph
+  // (the Houdini subnet model). The nested body, the NAMED boundary promotions
+  // (addressable by name) and (loops) the count + carries round-trip with the graph.
+  // Bypass / output-marker / serialization fall out of the ONE module code path.
+  /////////////////////////////////////////////////////////////////////////////
+  py::class_<trn::TerrainSubGraphModuleData, dflow::DgModuleData, trn::terrainsubgraphmoduledata_ptr_t>(
+      trn_module, "SubGraphModule")
+      .def_static("createShared", []() -> trn::terrainsubgraphmoduledata_ptr_t {
+        return trn::TerrainSubGraphModuleData::createShared();
+      })
+      .def_property_readonly(
+          "subgraph", [](trn::terrainsubgraphmoduledata_ptr_t m) -> dflow::graphdata_ptr_t { return m->_subgraph; })
+      .def(
+          "promoteInput",
+          [](trn::terrainsubgraphmoduledata_ptr_t m, std::string outer, std::string inner_module, std::string inner_plug) {
+            auto p           = std::make_shared<dflow::SubGraphPromotion>();
+            p->_outer        = outer;
+            p->_inner_module = inner_module;
+            p->_inner_plug   = inner_plug;
+            m->_promoted_inputs.push_back(p);
+          })
+      .def(
+          "promoteOutput",
+          [](trn::terrainsubgraphmoduledata_ptr_t m, std::string outer, std::string inner_module, std::string inner_plug) {
+            auto p           = std::make_shared<dflow::SubGraphPromotion>();
+            p->_outer        = outer;
+            p->_inner_module = inner_module;
+            p->_inner_plug   = inner_plug;
+            m->_promoted_outputs.push_back(p);
+          })
+      // (re)build the boundary plugs from the promotion tables — call after promoting.
+      .def("reshape", [](trn::terrainsubgraphmoduledata_ptr_t m) {
+        auto clazz = m->GetClass();
+        if (auto r = clazz->annotationTyped<dflow::moduleIOreshape_fn_t>("reshapeIOs"))
+          r.value()(m);
+      });
+
+  py::class_<trn::TerrainLoopModuleData, dflow::DgModuleData, trn::terrainloopmoduledata_ptr_t>(
+      trn_module, "LoopModule")
+      .def_static("createShared", []() -> trn::terrainloopmoduledata_ptr_t {
+        return trn::TerrainLoopModuleData::createShared();
+      })
+      .def_property_readonly(
+          "subgraph", [](trn::terrainloopmoduledata_ptr_t m) -> dflow::graphdata_ptr_t { return m->_subgraph; })
+      // READ-ONLY view of the per-iteration index feeds (the doc layer's L.i, as
+      // affine or value-table). The V-A oracle asserts the feed a loop carries.
+      .def_property_readonly(
+          "iter_feeds",
+          [](trn::terrainloopmoduledata_ptr_t m) -> std::vector<dflow::loopiterfeed_ptr_t> { return m->_iter_feeds; })
+      .def_property(
+          "count", //
+          [](trn::terrainloopmoduledata_ptr_t m) -> int { return m->_count; },
+          [](trn::terrainloopmoduledata_ptr_t m, int c) { m->_count = c; })
+      .def(
+          "promoteInput",
+          [](trn::terrainloopmoduledata_ptr_t m, std::string outer, std::string inner_module, std::string inner_plug) {
+            auto p           = std::make_shared<dflow::SubGraphPromotion>();
+            p->_outer        = outer;
+            p->_inner_module = inner_module;
+            p->_inner_plug   = inner_plug;
+            m->_promoted_inputs.push_back(p);
+          })
+      .def(
+          "promoteOutput",
+          [](trn::terrainloopmoduledata_ptr_t m, std::string outer, std::string inner_module, std::string inner_plug) {
+            auto p           = std::make_shared<dflow::SubGraphPromotion>();
+            p->_outer        = outer;
+            p->_inner_module = inner_module;
+            p->_inner_plug   = inner_plug;
+            m->_promoted_outputs.push_back(p);
+          })
+      .def(
+          "addCarry",
+          [](trn::terrainloopmoduledata_ptr_t m, std::string name, std::string promoted_input, std::string promoted_output) {
+            auto c              = std::make_shared<dflow::LoopCarry>();
+            c->_name            = name;
+            c->_promoted_input  = promoted_input;
+            c->_promoted_output = promoted_output;
+            m->_carries.push_back(c);
+          })
+      .def(
+          "addIterFeed",
+          [](trn::terrainloopmoduledata_ptr_t m, std::string inner_module, std::string inner_plug, float scale, float bias) {
+            auto f           = std::make_shared<dflow::LoopIterFeed>();
+            f->_inner_module = inner_module;
+            f->_inner_plug   = inner_plug;
+            f->_scale        = scale;
+            f->_bias         = bias;
+            m->_iter_feeds.push_back(f);
+          },
+          py::arg("inner_module"), py::arg("inner_plug"), py::arg("scale") = 1.0f, py::arg("bias") = 0.0f)
+      .def(
+          "addIterFeedTable",
+          // per-iteration VALUE TABLE (WINS over affine): the doc layer fills `values` by
+          // evaluating an arbitrary (e.g. quadratic) L.i expression once per iteration, so a
+          // non-affine L.i param survives without unrolling. Re-elaborate regenerates it.
+          [](trn::terrainloopmoduledata_ptr_t m, std::string inner_module, std::string inner_plug,
+             std::vector<float> values) {
+            auto f           = std::make_shared<dflow::LoopIterFeed>();
+            f->_inner_module = inner_module;
+            f->_inner_plug   = inner_plug;
+            f->_values       = values;
+            m->_iter_feeds.push_back(f);
+          },
+          py::arg("inner_module"), py::arg("inner_plug"), py::arg("values"))
+      .def("reshape", [](trn::terrainloopmoduledata_ptr_t m) {
+        auto clazz = m->GetClass();
+        if (auto r = clazz->annotationTyped<dflow::moduleIOreshape_fn_t>("reshapeIOs"))
+          r.value()(m);
+      });
+
+  /////////////////////////////////////////////////////////////////////////////
   // FieldStats — per-capture min/max/mean returned by the bake driver.
   /////////////////////////////////////////////////////////////////////////////
   py::class_<trn::FieldStats, trn::fieldstats_ptr_t>(trn_module, "FieldStats")
@@ -175,12 +310,12 @@ void pyinit_gfx_terrain(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////
   trn_module.def(
       "bake_heightfield",
-      [](dflow::graphdata_ptr_t g, ctx_t ctx, int dim, float extent_m, float height_scale_m)
+      [](dflow::graphdata_ptr_t g, ctx_t ctx, int dim, float extent_m)
           -> std::vector<trn::fieldstats_ptr_t> {
-        return trn::bakeHeightfield(g, ctx.get(), dim, extent_m, height_scale_m);
+        return trn::bakeHeightfield(g, ctx.get(), dim, extent_m);
       },
       py::arg("graph"), py::arg("ctx"), py::arg("dim"),
-      py::arg("extent_m") = 4096.0f, py::arg("height_scale_m") = 9830.25f);
+      py::arg("extent_m") = 4096.0f);
 
   /////////////////////////////////////////////////////////////////////////////
   // E.2 — the C++ scatter placer. Runs one ScatterSinkData against baked channel
@@ -191,13 +326,13 @@ void pyinit_gfx_terrain(py::module& module_lev2) {
   trn_module.def(
       "scatter_place_ogeo",
       [](scattersink_data_ptr_t sink, std::map<std::string, std::string> channel_paths,
-         float extent_m, float height_m, std::string out_path) -> int {
-        auto geo = trn::scatterPlace(*sink, channel_paths, extent_m, height_m);
+         float extent_m, std::string out_path) -> int {
+        auto geo = trn::scatterPlace(*sink, channel_paths, extent_m);
         OrkAssert(geo);
         geo->writeChunkfile(file::Path(out_path.c_str()));
         return geo->numPoints();
       },
-      py::arg("sink"), py::arg("channel_paths"), py::arg("extent_m"), py::arg("height_m"),
+      py::arg("sink"), py::arg("channel_paths"), py::arg("extent_m"),
       py::arg("out_path"));
 
   // enumerate a graph's CaptureModule sinks (each carries .channel + .path) so the
@@ -226,6 +361,10 @@ void pyinit_gfx_terrain(py::module& module_lev2) {
   // per-node cook-cache gate: cold+warm bake, warm must hit the DataBlockCache.
   module_lev2.def("terrain_cache_test", [](ctx_t ctx, int dim) -> int {
     return terrain::terrainCacheTest(ctx.get(), dim);
+  });
+  // SubGraphModule gate: round-trip + N->N+k per-iteration cache oracle + composite bypass.
+  module_lev2.def("terrain_subgraph_test", [](ctx_t ctx, int dim) -> int {
+    return terrain::terrainSubgraphTest(ctx.get(), dim);
   });
   // hypermesh GPU-mesh dataflow foundation gate (bake a PrimitiveModule, readback-assert).
   module_lev2.def("hypermesh_foundation_selftest", [](ctx_t ctx) -> int {

@@ -256,6 +256,37 @@ void Context::_loadingPhaseOperations() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+bool Context::_runOneLoadingPhase() {
+  // MT1 (JUL05_GPUMICROTASK §2.5, T6): pop and run exactly ONE loading phase.
+  // The budget is checked BETWEEN phases by the scheduler, never inside one —
+  // the ops within a phase may have ordering dependencies (T6).
+  loadingphase_ptr_t phase = nullptr;
+  _loadingPhases.atomicOp([&phase](loadingphase_list_t& unlocked) {
+    if (unlocked.size()) {
+      phase = unlocked.front();
+      unlocked.pop_front();
+    }
+  });
+  if (nullptr == phase)
+    return false; // queue empty
+
+  // T5: `ops` MUST be a LOCAL, not `static` — see the identical note in
+  // _loadingPhaseOperations. Concurrent per-context drainers (loader thread +
+  // render thread) sharing a static snapshot tore std::function captures and
+  // corrupted shared_ptr control blocks. Locals reallocate per call.
+  gfxcontext_lambda_list_t ops;
+  phase->_load_operations.atomicOp([&ops](gfxcontext_lambda_list_t& unlocked) {
+    ops = unlocked;
+    unlocked.clear();
+  });
+  for (auto op : ops)
+    op(this);
+  ops.clear();
+  return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void Context::beginPrimaryCommandBuffer() {
   _doBeginPrimaryCommandBuffer();
 }
@@ -288,7 +319,17 @@ void Context::beginFrame(bool visual) {
 
   _processBeginFrameBlockers();
   _processPendingDestroys();
-  _loadingPhaseOperations();
+
+  // MT1 (JUL05_GPUMICROTASK §2.5): the LoadingPhase drain generalizes — loading
+  // phases become CLIENT #1 of the per-context microtask scheduler, drained
+  // under the measured per-frame budget (§2.2/§2.3). ORKID_MT_DISABLE=1 restores
+  // the EXACT legacy fixed-30ms drain (the A/B lever; the legacy function stays
+  // compiled + callable per the spec's parity window, remove after MT2 gates).
+  static const bool mt_disabled = (std::getenv("ORKID_MT_DISABLE") != nullptr);
+  if (mt_disabled)
+    _loadingPhaseOperations();
+  else
+    _microtaskScheduler.runFrameSlices(this);
 
 
   /////////////////////////////////////

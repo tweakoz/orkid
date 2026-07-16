@@ -16,20 +16,25 @@ namespace ork::lev2::terrain {
 // so the result is resolution-independent (a 45deg ramp reads ~constant slope).
 ///////////////////////////////////////////////////////////////////////////////
 
-static std::string _slope_text(int dim, float scale, int radius, float slope_factor) {
+static std::string _slope_text(float scale, int radius, float slope_factor) {
   int rb = radius / 2;
   if (rb < 1) rb = 1; // box radius at each gradient endpoint (denoise)
+  // DIM is RUNTIME data (params SSBO p_dimf, binding 2) — dim changes never rebuild the
+  // shader; the field arrays are runtime-sized. The per-UV gradient uses p_dimf as a
+  // MULTIPLY (no reciprocal). Radius/slope_factor/scale stay baked.
   std::string t = R"S(
 fxconfig fxcfg_default {}
-storage_interface sif_out (descriptor_set 0) { buffer layout(std430) ob { float odata[%DIMSQ%]; }; }
-storage_interface sif_in  (descriptor_set 0) { buffer layout(std430) ib { float idata[%DIMSQ%]; }; }
-compute_interface iface { storage { sif_out sif_in } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }
+storage_interface sif_out (descriptor_set 0) { buffer layout(std430) ob { float odata[]; }; }
+storage_interface sif_in  (descriptor_set 0) { buffer layout(std430) ib { float idata[]; }; }
+storage_interface sif_pm  (descriptor_set 0) { buffer layout(std430) pm_in { float p_dimf; }; }
+compute_interface iface { storage { sif_out sif_in sif_pm } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }
 compute_shader cs_slope : iface {
-  if (gl_GlobalInvocationID.x >= %DIMU% || gl_GlobalInvocationID.y >= %DIMU%) { return; }
+  uint u_dim = uint(p_dimf); // RUNTIME grid dim (params SSBO) — no rebuild on dim change
+  if (gl_GlobalInvocationID.x >= u_dim || gl_GlobalInvocationID.y >= u_dim) { return; }
   int  xi = int(gl_GlobalInvocationID.x);
   int  yi = int(gl_GlobalInvocationID.y);
-  int  W  = int(%DIMU%);
-  uint i  = uint(yi) * %DIMU% + uint(xi);
+  int  W  = int(u_dim);
+  uint i  = uint(yi) * u_dim + uint(xi);
   int  M  = %R% + %RB%; // margin = gradient baseline + box radius
   if (xi < M || yi < M || xi >= W - M || yi >= W - M) { odata[i] = 0.0; return; }
   // PRE-BLUR: gradient at scale R via a difference of box averages offset by +/-R
@@ -40,24 +45,22 @@ compute_shader cs_slope : iface {
   float sU = 0.0;
   for (int dy = -%RB%; dy <= %RB%; dy++) {
     for (int dx = -%RB%; dx <= %RB%; dx++) {
-      sL += idata[uint(yi + dy) * %DIMU% + uint(xi - %R% + dx)];
-      sR += idata[uint(yi + dy) * %DIMU% + uint(xi + %R% + dx)];
-      sD += idata[uint(yi - %R% + dy) * %DIMU% + uint(xi + dx)];
-      sU += idata[uint(yi + %R% + dy) * %DIMU% + uint(xi + dx)];
+      sL += idata[uint(yi + dy) * u_dim + uint(xi - %R% + dx)];
+      sR += idata[uint(yi + dy) * u_dim + uint(xi + %R% + dx)];
+      sD += idata[uint(yi - %R% + dy) * u_dim + uint(xi + dx)];
+      sU += idata[uint(yi + %R% + dy) * u_dim + uint(xi + dx)];
     }
   }
   float n = float((2 * %RB% + 1) * (2 * %RB% + 1));
   // per-UV gradient: delta over baseline 2R texels == 2R/dim in UV.
-  float gx = (sR - sL) / n * float(%DIM%) / float(2 * %R%);
-  float gy = (sU - sD) / n * float(%DIM%) / float(2 * %R%);
-  // per-UV gradient -> REAL rise/run (tan of the terrain angle): * height_scale/extent.
+  float gx = (sR - sL) / n * p_dimf / float(2 * %R%);
+  float gy = (sU - sD) / n * p_dimf / float(2 * %R%);
+  // per-UV gradient -> REAL rise/run (tan of the terrain angle): heights are METERS, so
+  // dividing the per-UV height delta by extent gives d(h_m)/d(x_m) directly (* 1/extent).
   float m  = length(vec2(gx, gy)) * float(%SLOPEFACTOR%) * float(%SCALE%);
   odata[i] = m / (1.0 + m); // SOFT (Reinhard) rolloff -> [0,1), magnitude survives
 }
 )S";
-  _shadersub(t, "%DIMSQ%", FormatString("%d", dim * dim));
-  _shadersub(t, "%DIMU%", FormatString("%du", dim));
-  _shadersub(t, "%DIM%", FormatString("%d", dim));
   _shadersub(t, "%RB%", FormatString("%d", rb)); // before %R% (prefix) to avoid clobber
   _shadersub(t, "%R%", FormatString("%d", radius));
   _shadersub(t, "%SLOPEFACTOR%", FormatString("%f", slope_factor));
@@ -72,14 +75,20 @@ struct SlopeModuleInst : public TerrainComputeInst {
     _input  = typedInputNamed<HfImagePlugTraits>("In");
     _scale  = _floatPlug(this, _d, "scale");
   }
-  void onActivate(dflow::GraphInst* inst) final {
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<BakeEnv>();
+    auto fxi = env->_ctx->FXI();
     _allocOut(env.get(), _output->_value);
     int   rtex   = env->radiusTexels(_d->_radius_m);                 // meters -> texels (res-indep)
-    float sfactor = env->_height_scale_m / (env->_extent_m > 0.0f ? env->_extent_m : 1.0f); // -> tan(angle)
-    auto sh = env->_ctx->FXI()->shaderFromShaderText(
-        "terrain_slope", _slope_text(env->_w, _scale->value(), rtex, sfactor));
-    _cs     = env->_ctx->FXI()->computeShader(sh, "cs_slope");
+    float sfactor = 1.0f / (env->_extent_m > 0.0f ? env->_extent_m : 1.0f); // heights in meters -> tan(angle)
+    auto sh = fxi->shaderFromShaderText(
+        "terrain_slope", _slope_text(_scale->value(), rtex, sfactor));
+    _cs     = fxi->computeShader(sh, "cs_slope");
+    _pm        = env->createStorageBuffer(sizeof(float)); // p_dimf = RUNTIME grid dim
+    float dimf = float(env->_w);
+    auto mp    = fxi->mapStorageBuffer(_pm, 0, sizeof(dimf), BufferMapAccess::WRITE_ONLY);
+    std::memcpy(mp->_mappedaddr, &dimf, sizeof(dimf));
+    fxi->unmapStorageBuffer(mp.get());
   }
   void compute(dflow::GraphInst* inst, ui::updatedata_ptr_t) final {
     auto env = inst->_impl.getShared<BakeEnv>();
@@ -89,12 +98,13 @@ struct SlopeModuleInst : public TerrainComputeInst {
     int g = (env->_w + 7) / 8;
     ci->bindStorageBuffer(_cs, 0, _output->_value->_ssbo); // odata
     ci->bindStorageBuffer(_cs, 1, in->_ssbo);              // idata
+    ci->bindStorageBuffer(_cs, 2, _pm);                    // p_dimf (RUNTIME grid dim)
     ci->dispatchCompute(_cs, g, g, 1);
     ci->storageBarrier();
   }
   uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
     auto h = DataBlock::createHasher();
-    h->accumulateString("terrain.slope.v3"); // v3: meter radius + real-angle (res-independent)
+    h->accumulateString("terrain.slope.v4"); // v4: heights in meters (dropped height_scale); v3: meter radius + real-angle
     h->accumulateItem<float>(_d->_radius_m);  // meters (the resolution-independent identity)
     h->accumulateItem<float>(_scale->value());
     _mixTail(h, ctx, ih);
@@ -106,6 +116,7 @@ struct SlopeModuleInst : public TerrainComputeInst {
   hfimg_outpluginst_ptr_t _output;
   hfimg_inpluginst_ptr_t _input;
   dflow::float_inp_pluginst_ptr_t _scale;
+  FxShaderStorageBuffer* _pm = nullptr;
   const FxComputeShader* _cs = nullptr;
 };
 

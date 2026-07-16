@@ -4,7 +4,7 @@
 # procedural substrate: self.hfbake / hfmask / hfdisplacement).
 #
 # Counterpart to fxv2_template.py (the FRAGMENT shell). The text carries
-# %DIMU%/%DIMSQ%/%EXTENT_M%/%HEIGHT_M% placeholders the C++ ExprModule fills per
+# %DIMU%/%DIMSQ%/%EXTENT_M% placeholders the C++ ExprModule fills per
 # bake (BakeEnv, PHYSICAL scale). The shell defines the atoms the body references:
 #   opos / wpos : world position of the texel (origin-centered XZ; texel-CENTER)
 #   onrm        : object normal (up; a heightfield generator has no surface yet)
@@ -19,8 +19,8 @@
 def build_field_shader(lines, final, libsrcs=(), inherits=(), n_inputs=0):
   """Full compute shader text (with %placeholders%) computing one scalar field.
      lines/final come from emit_compute_field; libsrcs/inherits are its deps.
-     n_inputs: image inputs to declare (In0..); input 0 is the current height
-     (sets ctx.P_object.y = in0*height_m), the rest reachable as ctx.input(k)."""
+     n_inputs: image inputs to declare (In0..); input 0 is the current height in
+     METERS (sets ctx.P_object.y = in0), the rest reachable as ctx.input(k)."""
   use_noise = ("lib_mmnoise" in inherits) or ("lib_pnoise" in inherits)
   imports = 'import "orkshader://pnoise.i2";\n' if use_noise else ""
 
@@ -56,10 +56,10 @@ def build_field_shader(lines, final, libsrcs=(), inherits=(), n_inputs=0):
       % (k, k, k) for k in range(n_inputs))
   in_list  = "".join(" sif_in%d" % k for k in range(n_inputs))
   in_reads = "".join("  float in%d = in%ddata[i];\n" % (k, k) for k in range(n_inputs))
-  # CONVENTION: input 0 is the current HEIGHT (normalized). Set the surface elevation
-  # to in0 * height_m (PHYSICAL) so ctx.P_object.y / ctx.P.y match what a fragment
-  # material sees -> the SAME strata(ctx) shades AND displaces (the unification).
-  ypos = "in0data[i] * float(%HEIGHT_M%)" if n_inputs >= 1 else "0.0"
+  # CONVENTION: input 0 is the current HEIGHT in METERS (natural units). Set the surface
+  # elevation to in0 directly so ctx.P_object.y / ctx.P.y match what a fragment material
+  # sees -> the SAME strata(ctx) shades AND displaces (the unification).
+  ypos = "in0data[i]" if n_inputs >= 1 else "0.0"
 
   # NB: concatenate (don't %-format) — the literal "%DIMU%" would be misread as a spec.
   write = "odata[i] = " + final + ";"
@@ -85,7 +85,6 @@ storage_interface sif_out (descriptor_set 0) {{
   vec3 wpos = opos;                    // ctx.P
   vec3 onrm = vec3(0.0, 1.0, 0.0);     // ctx.N_object
   float footprint = float(%EXTENT_M%) / float(%DIMU%);            // ctx.footprint = texel size
-  float height_m  = float(%HEIGHT_M%);  // ctx.height_m
   float extent_m  = float(%EXTENT_M%);  // ctx.extent_m
   {body}
 }}

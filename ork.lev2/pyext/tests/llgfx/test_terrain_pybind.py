@@ -9,6 +9,7 @@
 ###############################################################################
 import os; os.environ["PYTHONUNBUFFERED"] = "1"
 import sys
+import math
 from orkengine import core   # core before lev2
 from orkengine import lev2
 from orkengine import ecs
@@ -38,7 +39,7 @@ def main():
     remap.inputs.bias = 0.0               # fbm -> ~[0.5,1]
 
     terr = g.create("terr", T.TerraceModule)
-    terr.inputs.steps = 12.0
+    terr.inputs.step_m = 1.0 / 12.0   # meters per plateau (fixture field spans ~[0.5,1] m -> ~6 benches)
     terr.inputs.sharpness = 4.0
 
     remap2 = g.create("remap2", T.RemapModule)
@@ -60,8 +61,8 @@ def main():
     print(f"stats: {stats}", flush=True)
     ok = (os.path.exists(OUT)
           and len(stats) == 1
-          and 0.0 <= s.min <= s.max <= 1.0001
-          and (s.max - s.min) > 0.05)     # non-trivial terraced field
+          and math.isfinite(s.min) and math.isfinite(s.max) and s.min <= s.max
+          and (s.max - s.min) > 0.05)     # non-trivial terraced field (heights = raw meters)
     print(f"=== terrain pybind {'PASSED' if ok else 'FAILED'} ===", flush=True)
     print(f"    {OUT} exists={os.path.exists(OUT)} size={os.path.getsize(OUT) if os.path.exists(OUT) else 0}", flush=True)
     ecs.headless_exit()

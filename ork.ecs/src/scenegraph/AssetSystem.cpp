@@ -13,11 +13,15 @@
 #include <ork/ecs/SceneGraphComponent.h>        // D.5: node-item drawable/envmap patching
 #include <ork/ecs/ParticlesComponent.h>         // D.5: particles_asset_name patching
 #include <ork/ecs/archetype.h>
+#include <ork/lev2/gfx/loadjoinset.h> // WS1: parallel channel-texture decodes
+#include <ork/lev2/gfx/image.h>
+#include <filesystem>
 #include <ork/lev2/gfx/material_pbr.inl> // D.1 stage 3: the C++ wire step materializes materials
 #include <ork/lev2/gfx/hypermesh/hmdflow.h> // D.3: hypermesh gens materialize to LiveHypermesh
 #include <ork/lev2/gfx/asset_gen_vdb.h>     // D.5: ImplicitSdf / VdbGridToDrawable / ParticleSystem
 #include <ork/lev2/gfx/terrain/terrain_chunk_drawable.h> // D.5 +terrain: by-name resolution
 #include <ork/lev2/gfx/particle/drawable_data.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_common.h> // v1b: eager skybox radiance warm
 #include <ork/file/path.h>
 
 ImplementReflectionX(ork::ecs::AssetSystemData, "AssetSystemData");
@@ -46,6 +50,28 @@ System* AssetSystemData::createSystem(ecs::Simulation* psim) const {
 }
 
 void AssetSystemData::materializeAll(lev2::Context* ctx, varmap::VarMap& artifacts) const {
+  // WS2 pass A — fan the PURE-CPU gens out to workers (LoadJoinSet) before the
+  // ordered pass below. Today that is the OpenVDB AX voxelizations (CPU-heavy,
+  // per-call-local ax::Compiler; openvdb::ax::initialize ran once at lev2 init).
+  // GPU-cook gens (terrain bake, hypermesh, materials) STAY SERIAL on ctx —
+  // cross-context GPU cooking is postmortem territory (see the deferred-updates
+  // postmortem, ork.dox) and is not attempted here. Results are keyed
+  // by GEN INSTANCE so duplicate asset names cannot race a shared slot.
+  std::map<const lev2::AssetGenData*, lev2::vdb_floatgrid_ptr_t> sdf_results;
+  {
+    // create every slot BEFORE any worker runs (stable node addresses)
+    for (auto gen : _gens)
+      if (auto sdf = std::dynamic_pointer_cast<lev2::ImplicitSdfGenData>(gen))
+        sdf_results[sdf.get()] = nullptr;
+    lev2::LoadJoinSet ljs("assetsys_cpu_gens");
+    for (auto gen : _gens)
+      if (auto sdf = std::dynamic_pointer_cast<lev2::ImplicitSdfGenData>(gen)) {
+        auto slot = &sdf_results[sdf.get()];
+        ljs.spawnOnWorkers([slot, sdf]() { *slot = lev2::materializeImplicitSdf(*sdf); });
+      }
+    ljs.join(ctx);
+  }
+  // pass B — the ordered materialize (original semantics; SDF branch consumes pass A)
   for (auto gen : _gens) {
     if (not gen)
       continue;
@@ -60,7 +86,8 @@ void AssetSystemData::materializeAll(lev2::Context* ctx, varmap::VarMap& artifac
       artifacts.makeValueForKey<lev2::hypermesh::livehypermesh_ptr_t>(name) = hm->materialize(ctx);
     } else if (auto sdf = std::dynamic_pointer_cast<lev2::ImplicitSdfGenData>(gen)) {
       // D.5: AX voxelize -> FloatGrid (consumed by VdbGridToDrawable + collider sdf refs)
-      artifacts.makeValueForKey<lev2::vdb_floatgrid_ptr_t>(name) = lev2::materializeImplicitSdf(*sdf);
+      // WS2: voxelized on workers in pass A above — consume the slot.
+      artifacts.makeValueForKey<lev2::vdb_floatgrid_ptr_t>(name) = sdf_results[sdf.get()];
     } else if (auto ptc = std::dynamic_pointer_cast<lev2::ParticleSystemGenData>(gen)) {
       // D.5: embedded graph -> ParticlesDrawableData (+ sdf_asset resolution + probe stamp)
       artifacts.makeValueForKey<lev2::particles_drawable_data_ptr_t>(name) =
@@ -117,9 +144,38 @@ void AssetSystemData::materializeAll(lev2::Context* ctx, varmap::VarMap& artifac
           hf->_material_asset.c_str());
       continue;
     }
+    // WS1 (LoadJoinSet proof adoption): the channel EXRs are multi-hundred-MB
+    // decodes — fan the DECODES out to workers and join (pumping), then do the
+    // GPU uploads + binds serially on ctx. Order of binds preserved.
+    struct ChannelBindJob {
+      std::string _sampler;
+      std::string _path;
+      std::string _who;
+      lev2::image_ptr_t _img;
+    };
+    auto jobs = std::make_shared<std::vector<ChannelBindJob>>();
     for (const auto& [channel, sampler] : hf->_channel_samplers)
-      lev2::PbrMaterialGenData::bindSamplerTexture(
-          mtl, ctx, sampler, hf->channelPath(channel), "HeightField<" + hf->_asset_name + ">↔material<" + hf->_material_asset + ">");
+      jobs->push_back(ChannelBindJob{
+          sampler,
+          ork::file::Path::expandPathString(hf->channelPath(channel)),
+          "HeightField<" + hf->_asset_name + ">↔material<" + hf->_material_asset + ">",
+          nullptr});
+    lev2::LoadJoinSet ljs("terrain_channel_decode");
+    for (size_t ji = 0; ji < jobs->size(); ji++) {
+      auto job = &(*jobs)[ji];
+      if (not std::filesystem::exists(job->_path)) {
+        printf(
+            "%s: sampler<%s> texture<%s> MISSING — binding skipped "
+            "(is the producing asset declared in the scene?)\n",
+            job->_who.c_str(), job->_sampler.c_str(), job->_path.c_str());
+        continue;
+      }
+      ljs.spawnOnWorkers([job]() { job->_img = lev2::Image::createFromFile(job->_path); });
+    }
+    ljs.join(ctx);
+    for (auto& job : *jobs)
+      if (job._img)
+        lev2::PbrMaterialGenData::bindSamplerImage(mtl, ctx, job._sampler, job._img, job._who);
   }
 }
 
@@ -197,6 +253,25 @@ varmap::varmap_ptr_t materializeAndWireScene(scenedata_ptr_t scenedata, lev2::Co
               printf(
                   "materializeAndWireScene: terrain material asset<%s> did not materialize\n",
                   tcd->_material_asset_name.c_str());
+            // [M] material-override: resolve the scene-declared debug materials GENERICALLY from
+            // the reflected debug_material_assets list (data-driven — a new debug look is a Python-
+            // only change, no C++ edit). _mode_materials[0] = declared (identity for mode 0); [i+1] =
+            // the i-th named material. A named-but-MISSING asset FAILS LOUDLY (ops-self-defend) and
+            // its slot stays null so the render falls back to the declared material for that mode.
+            tcd->_mode_materials.clear();
+            tcd->_mode_materials.reserve(1 + tcd->_debug_material_assets.size());
+            tcd->_mode_materials.push_back(tcd->_resolved_material); // mode 0 = declared
+            for (const auto& dbgname : tcd->_debug_material_assets) {
+              if (auto dm = artifacts->typedValueForKey<lev2::pbrmaterial_ptr_t>(dbgname))
+                tcd->_mode_materials.push_back(dm.value());
+              else {
+                printf(
+                    "materializeAndWireScene: terrain debug material asset<%s> did not materialize "
+                    "-- [M] mode skipped (falls back to declared)\n",
+                    dbgname.c_str());
+                tcd->_mode_materials.push_back(nullptr); // keep index alignment with the label list
+              }
+            }
           }
           // re-attach the materialized drawable by name
           if (not nid->_drawable_asset_name.empty()) {
@@ -291,9 +366,53 @@ varmap::varmap_ptr_t materializeAndWireScene(scenedata_ptr_t scenedata, lev2::Co
     varmap::VarMap::value_type val;
     val.set<std::string>(resolved);
     sgsd->setUserSceneParam("SkyboxTexPathStr", val);
+
+    // v1b Join-narrowing (JUL05 Appendix C step 2): FIRE the skybox radiance
+    // load NOW. This runs on the render thread's onGpuInit, well before
+    // startSimulation drives the sim's link rendezvous — which is where the
+    // compositor LAZILY requests the skybox today. That lazy request lands
+    // AFTER the offscreen settle gate exits, so the settled frame it snapshots
+    // has a black sky + black IBL (#27). Warming the shared RadianceMapCache
+    // here streams the decode during the settle window; the load self-registers
+    // as async work (radiancemaps_asset asyncWorkBegin) so the settle gate WAITS
+    // for it, and the compositor consume (requestAndRefSkyboxTexture) resolves
+    // this same cached, by-then-filled object. NON-BLOCKING: warm and return,
+    // never join. Scheduler-independent (helps the legacy drain too).
+    if (ctx)
+      lev2::pbr::getRadianceMapCache()->get(resolved);
   }
 
   return artifacts;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// [M] the ordered debug-material asset names declared on the scene's (first) terrain chunk
+// drawable — the player derives its material-cycle labels + length from this DATA (no hardcoded
+// mode table). Walks the same archetype/component/node path as the wire step. Empty when the
+// scene has no terrain or declares no debug materials.
+///////////////////////////////////////////////////////////////////////////////
+
+std::vector<std::string> terrainDebugMaterialAssets(scenedata_ptr_t scenedata) {
+  if (not scenedata)
+    return {};
+  for (const auto& so_item : scenedata->GetSceneObjects()) {
+    auto arch = std::dynamic_pointer_cast<Archetype>(so_item.second);
+    if (not arch)
+      continue;
+    for (const auto& comp_item : arch->componentdata()) {
+      auto sgcd = std::dynamic_pointer_cast<SceneGraphComponentData>(
+          std::const_pointer_cast<ComponentData>(comp_item.second));
+      if (not sgcd)
+        continue;
+      for (auto& nd_item : sgcd->_nodedatas) {
+        auto nid = nd_item.second;
+        if (nid)
+          if (auto tcd = std::dynamic_pointer_cast<lev2::terrain::TerrainChunkDrawableData>(nid->_drawabledata))
+            return tcd->_debug_material_assets; // first terrain wins (the player cycles one set)
+      }
+    }
+  }
+  return {};
 }
 
 ///////////////////////////////////////////////////////////////////////////////

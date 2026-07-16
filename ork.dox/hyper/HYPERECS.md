@@ -1,9 +1,11 @@
 # HYPERECS — orkid declarative authoring tiers (standalone graph → ECS scene composite)
 
-> **STATUS (2026-06-30):** the three-tier authoring model described here is **implemented and in daily use**.
+> **STATUS (2026-07-04):** the three-tier authoring model described here is **implemented and in daily use**.
 > This doc is now the DESIGN + IMPLEMENTATION-STATUS reference; the remaining *open* (unimplemented) work lives
 > in the lean `HYPERECS_PLAN_JUN10.md` (same dir — its Appendix A holds the locked contracts, A6 indexes this
-> doc's standing commitments).
+> doc's standing commitments). Forward-work implementation specs (2026-07-04, owner-sequenced by holistic
+> outcome): `~/JUL04_SDFM3M4.md` (SDF NanoVDB + cross-family reach) and `~/JUL04_GRAMMARS.md` (LRuleSet
+> grammars, buildings, creatures).
 >
 > **What is landed:**
 > - **Tier 1/2** — standalone + parameterized single-graph HyperSyn authoring (the permanent path; never removed).

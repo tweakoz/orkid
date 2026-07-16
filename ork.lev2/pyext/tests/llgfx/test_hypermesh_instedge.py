@@ -25,10 +25,9 @@ from ork.hypergraph.dflow import terrain as T
 
 class EdgeHF(HeightField):
   EXTENT_M = 128.0
-  HEIGHT_M = 20.0
   def __init__(self):
     super().__init__()
-    h = T.fbm(frequency=3.0, octaves=4) * 0.5 + 0.5
+    h = (T.fbm(frequency=3.0, octaves=4) * 0.5 + 0.5) * 20.0  # TRUE METERS
     self.capture(h, "height")
     alt = T.normalize(h)
     self.scatter("rocks",
@@ -47,11 +46,7 @@ def render_frames(scene, ctx, camlut, n):
     time.sleep(0.005)
 
 
-def main():
-  ezapp = ecs.headless_appinit(use_subsystems=['opq', 'core', 'gpu', 'lev2'])
-  ezapp.mainThreadBegin()
-  ctx = ezapp.bindGfxToCurrentThread()
-  assert ctx, "bindGfxToCurrentThread() returned null"
+def run(ez, ctx):
   ok = False
   try:
     from ork.hypergraph.ecs.scene.assets import HeightField
@@ -68,7 +63,7 @@ def main():
     open(dsl_path, "w").write(DSL)
 
     # 1. bake + place (the C++ placer)
-    hf = HeightField(dsl_file=dsl_path, dimension=128, extent_m=128.0, height_scale_m=20.0, ctx=ctx)
+    hf = HeightField(dsl_file=dsl_path, dimension=128, extent_m=128.0, ctx=ctx)
     hf.gendata.asset_name = "edge_hf"
     art = hf.build()
     sc = art["scatters"]["rocks"]
@@ -125,11 +120,21 @@ def main():
   except Exception:
     import traceback
     traceback.print_exc()
-  finally:
-    ezapp.mainThreadEnd()
-    print("=== hypermesh instance-edge (E.2) gate %s ===" % ("PASSED" if ok else "FAILED"), flush=True)
-    ecs.headless_exit()
-    sys.exit(0 if ok else 1)
+  return {"instance_edge": ok}
 
 
-main()
+def main():
+  ez = ecs.headless_appinit(use_subsystems=['opq', 'core', 'gpu', 'lev2'])
+  ez.mainThreadBegin()
+  ctx = ez.bindGfxToCurrentThread()
+  assert ctx, "bindGfxToCurrentThread() returned null"
+  results = run(ez, ctx)
+  ez.mainThreadEnd()
+  ok = all(results.values())
+  print("=== hypermesh instance-edge (E.2) gate %s ===" % ("PASSED" if ok else "FAILED"), flush=True)
+  ecs.headless_exit()
+  sys.exit(0 if ok else 1)
+
+
+if __name__ == "__main__":
+  main()

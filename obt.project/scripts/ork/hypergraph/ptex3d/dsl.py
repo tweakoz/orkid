@@ -578,14 +578,13 @@ class SurfaceCtx:
   footprint = property(lambda self: CtxRef("footprint", "float"))  # per-texel/per-pixel footprint —
   #   target-polymorphic: fragment ~ length(fwidth(p)); bake = texel size extent_m/dim. The portable
   #   substitute for screen derivatives so AA logic (fbm_aa/aa_ramp) can run in a compute bake.
-  height_m  = property(lambda self: CtxRef("height_m", "float"))   # BAKE: physical meters for normalized 1.0
   extent_m  = property(lambda self: CtxRef("extent_m", "float"))   # BAKE: XZ world span (meters)
 
   def input(self, k):
     """BAKE-only: value of image input In{k} at this texel (hfdisplacement/multi-input
-    ExprModule). Input 0 is the CURRENT HEIGHT (also folded into ctx.P_object.y =
-    in0*height_m, so the same strata(ctx) shades AND displaces); extra fields wire to
-    In1.. ."""
+    ExprModule). Input 0 is the CURRENT HEIGHT in METERS (also folded into
+    ctx.P_object.y = in0, so the same strata(ctx) shades AND displaces); extra fields
+    wire to In1.. ."""
     return CtxRef("in%d" % int(k), "float")
 
   def param(self, name, default):

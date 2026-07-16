@@ -13,6 +13,7 @@
 #include <ork/asset/catalog/request.h>
 #include <ork/kernel/datablock.h>
 #include <ork/util/logger.h>
+#include <ork/util/crc.h>
 
 namespace ork::asset {
 
@@ -47,7 +48,18 @@ asset_ptr_t HybridAssetLoader::load(loadrequest_ptr_t loadreq) {
   if (dblock) {
     return _doLoadFromDatablock(loadreq, dblock);
   }
-  
+
+  // A load was requested and nothing could produce bytes: fail LOUDLY.
+  // The silent-nullptr variant of this path shipped black skyboxes (missing
+  // <ork_envmaps2>/*.xir on a fresh machine renders as a black sky + black
+  // env-IBL with zero console output) — undiagnosable from the render alone.
+  fprintf(stderr,
+          "\033[1;31m[HYBLOAD] ASSET NOT FOUND: '%s' (resolved '%s') — "
+          "renderers consuming this asset will output black\033[0m\n",
+          path.c_str(), path.toAbsolute().c_str());
+  loadreq->_assetStatus = "FileNotFound"_crcu;
+  if (loadreq->_on_load_failed)
+    loadreq->_on_load_failed();
   return nullptr;
 }
 

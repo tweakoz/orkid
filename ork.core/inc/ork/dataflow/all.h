@@ -6,4 +6,6 @@
 #include "plug_inst.h"
 #include "module.h"
 #include "basic_modules.h"
+#include "subgraph_module.h"
+#include "cook_driver.h"
 #include "scheduler.h"

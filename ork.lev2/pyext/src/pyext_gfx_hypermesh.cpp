@@ -38,8 +38,146 @@ void pyinit_gfx_hypermesh(py::module& module_lev2) {
   py::class_<hm::BoxData, dflow::DgModuleData, hm::boxdata_ptr_t>(hmmod, "Box")
       .def_static("createShared", []() -> hm::boxdata_ptr_t { return hm::BoxData::createShared(); })
       .def("set_mask", [](hm::boxdata_ptr_t d, std::vector<uint32_t> m) { d->_mask = m; });
+  // ---- GR1.a: the LRuleSet grammar-as-data schema (6 reflected types). Hand-written bindings
+  //      (createShared + kwargs-init + whole-vector .def_property object-array setters) because the
+  //      generic reflection proxy is READ-ONLY for object arrays (T3). kind/op ints mirror lruleset.h.
+  auto lexpr_type = //
+      py::class_<hm::LExpr, ork::Object, hm::lexpr_ptr_t>(hmmod, "LExpr")
+          .def_static("createShared", []() -> hm::lexpr_ptr_t { return std::make_shared<hm::LExpr>(); })
+          .def(py::init([](py::kwargs kw) {
+            auto d = std::make_shared<hm::LExpr>();
+            if (kw.contains("kind"))     d->_kind  = kw["kind"].cast<int>();
+            if (kw.contains("constant")) d->_const = kw["constant"].cast<float>();
+            if (kw.contains("ref"))      d->_ref   = kw["ref"].cast<std::string>();
+            if (kw.contains("op"))       d->_op    = kw["op"].cast<int>();
+            if (kw.contains("args"))     d->_args  = kw["args"].cast<std::vector<hm::lexpr_ptr_t>>();
+            return d;
+          }))
+          .def_property("kind",     [](hm::lexpr_ptr_t d) { return d->_kind; },  [](hm::lexpr_ptr_t d, int v) { d->_kind = v; })
+          .def_property("constant", [](hm::lexpr_ptr_t d) { return d->_const; }, [](hm::lexpr_ptr_t d, float v) { d->_const = v; })
+          .def_property("ref",      [](hm::lexpr_ptr_t d) { return d->_ref; },   [](hm::lexpr_ptr_t d, std::string v) { d->_ref = std::move(v); })
+          .def_property("op",       [](hm::lexpr_ptr_t d) { return d->_op; },    [](hm::lexpr_ptr_t d, int v) { d->_op = v; })
+          .def_property("args", // whole-vector object-array setter (T3)
+                        [](hm::lexpr_ptr_t d) -> std::vector<hm::lexpr_ptr_t> { return d->_args; },
+                        [](hm::lexpr_ptr_t d, std::vector<hm::lexpr_ptr_t> v) { d->_args = std::move(v); });
+  type_codec->registerStdCodec<hm::lexpr_ptr_t>(lexpr_type);
+
+  auto lsymdef_type = //
+      py::class_<hm::LSymbolDef, ork::Object, hm::lsymboldef_ptr_t>(hmmod, "LSymbolDef")
+          .def_static("createShared", []() -> hm::lsymboldef_ptr_t { return std::make_shared<hm::LSymbolDef>(); })
+          .def(py::init([](py::kwargs kw) {
+            auto d = std::make_shared<hm::LSymbolDef>();
+            if (kw.contains("name"))     d->_name     = kw["name"].cast<std::string>();
+            if (kw.contains("defaults")) d->_defaults = kw["defaults"].cast<std::map<std::string, float>>();
+            return d;
+          }))
+          .def_property("name",     [](hm::lsymboldef_ptr_t d) { return d->_name; }, [](hm::lsymboldef_ptr_t d, std::string v) { d->_name = std::move(v); })
+          .def_property("defaults",
+                        [](hm::lsymboldef_ptr_t d) -> std::map<std::string, float> { return d->_defaults; },
+                        [](hm::lsymboldef_ptr_t d, std::map<std::string, float> v) { d->_defaults = std::move(v); });
+  type_codec->registerStdCodec<hm::lsymboldef_ptr_t>(lsymdef_type);
+
+  auto lparam_type = //
+      py::class_<hm::LParamBinding, ork::Object, hm::lparam_binding_ptr_t>(hmmod, "LParamBinding")
+          .def_static("createShared", []() -> hm::lparam_binding_ptr_t { return std::make_shared<hm::LParamBinding>(); })
+          .def(py::init([](py::kwargs kw) {
+            auto d = std::make_shared<hm::LParamBinding>();
+            if (kw.contains("key"))   d->_key   = kw["key"].cast<std::string>();
+            if (kw.contains("value")) d->_value = kw["value"].cast<hm::lexpr_ptr_t>();
+            return d;
+          }))
+          .def_property("key",   [](hm::lparam_binding_ptr_t d) { return d->_key; }, [](hm::lparam_binding_ptr_t d, std::string v) { d->_key = std::move(v); })
+          .def_property("value", // nullable single object
+                        [](hm::lparam_binding_ptr_t d) -> hm::lexpr_ptr_t { return d->_value; },
+                        [](hm::lparam_binding_ptr_t d, hm::lexpr_ptr_t v) { d->_value = std::move(v); });
+  type_codec->registerStdCodec<hm::lparam_binding_ptr_t>(lparam_type);
+
+  auto lturtle_type = //
+      py::class_<hm::LTurtleOp, ork::Object, hm::lturtleop_ptr_t>(hmmod, "LTurtleOp")
+          .def_static("createShared", []() -> hm::lturtleop_ptr_t { return std::make_shared<hm::LTurtleOp>(); })
+          .def(py::init([](py::kwargs kw) {
+            auto d = std::make_shared<hm::LTurtleOp>();
+            if (kw.contains("kind"))     d->_kind     = kw["kind"].cast<int>();
+            if (kw.contains("params"))   d->_params   = kw["params"].cast<std::vector<hm::lparam_binding_ptr_t>>();
+            if (kw.contains("gid"))      d->_gid      = kw["gid"].cast<uint32_t>();
+            if (kw.contains("symbol"))   d->_symbol   = kw["symbol"].cast<std::string>();
+            if (kw.contains("children")) d->_children = kw["children"].cast<std::vector<hm::lturtleop_ptr_t>>();
+            if (kw.contains("weights"))  d->_weights  = kw["weights"].cast<std::vector<float>>();
+            if (kw.contains("guard"))    d->_guard    = kw["guard"].cast<hm::lexpr_ptr_t>();
+            return d;
+          }))
+          .def_property("kind",   [](hm::lturtleop_ptr_t d) { return d->_kind; },   [](hm::lturtleop_ptr_t d, int v) { d->_kind = v; })
+          .def_property("gid",    [](hm::lturtleop_ptr_t d) { return d->_gid; },    [](hm::lturtleop_ptr_t d, uint32_t v) { d->_gid = v; })
+          .def_property("symbol", [](hm::lturtleop_ptr_t d) { return d->_symbol; }, [](hm::lturtleop_ptr_t d, std::string v) { d->_symbol = std::move(v); })
+          .def_property("params",
+                        [](hm::lturtleop_ptr_t d) -> std::vector<hm::lparam_binding_ptr_t> { return d->_params; },
+                        [](hm::lturtleop_ptr_t d, std::vector<hm::lparam_binding_ptr_t> v) { d->_params = std::move(v); })
+          .def_property("children",
+                        [](hm::lturtleop_ptr_t d) -> std::vector<hm::lturtleop_ptr_t> { return d->_children; },
+                        [](hm::lturtleop_ptr_t d, std::vector<hm::lturtleop_ptr_t> v) { d->_children = std::move(v); })
+          .def_property("weights",
+                        [](hm::lturtleop_ptr_t d) -> std::vector<float> { return d->_weights; },
+                        [](hm::lturtleop_ptr_t d, std::vector<float> v) { d->_weights = std::move(v); })
+          .def_property("guard", // nullable single object
+                        [](hm::lturtleop_ptr_t d) -> hm::lexpr_ptr_t { return d->_guard; },
+                        [](hm::lturtleop_ptr_t d, hm::lexpr_ptr_t v) { d->_guard = std::move(v); });
+  type_codec->registerStdCodec<hm::lturtleop_ptr_t>(lturtle_type);
+
+  auto lruledef_type = //
+      py::class_<hm::LRuleDef, ork::Object, hm::lruledef_ptr_t>(hmmod, "LRuleDef")
+          .def_static("createShared", []() -> hm::lruledef_ptr_t { return std::make_shared<hm::LRuleDef>(); })
+          .def(py::init([](py::kwargs kw) {
+            auto d = std::make_shared<hm::LRuleDef>();
+            if (kw.contains("lhs"))    d->_lhs    = kw["lhs"].cast<std::string>();
+            if (kw.contains("guard"))  d->_guard  = kw["guard"].cast<hm::lexpr_ptr_t>();
+            if (kw.contains("weight")) d->_weight = kw["weight"].cast<float>();
+            if (kw.contains("rhs"))    d->_rhs    = kw["rhs"].cast<std::vector<hm::lturtleop_ptr_t>>();
+            return d;
+          }))
+          .def_property("lhs",    [](hm::lruledef_ptr_t d) { return d->_lhs; },    [](hm::lruledef_ptr_t d, std::string v) { d->_lhs = std::move(v); })
+          .def_property("weight", [](hm::lruledef_ptr_t d) { return d->_weight; }, [](hm::lruledef_ptr_t d, float v) { d->_weight = v; })
+          .def_property("guard", // nullable single object
+                        [](hm::lruledef_ptr_t d) -> hm::lexpr_ptr_t { return d->_guard; },
+                        [](hm::lruledef_ptr_t d, hm::lexpr_ptr_t v) { d->_guard = std::move(v); })
+          .def_property("rhs",
+                        [](hm::lruledef_ptr_t d) -> std::vector<hm::lturtleop_ptr_t> { return d->_rhs; },
+                        [](hm::lruledef_ptr_t d, std::vector<hm::lturtleop_ptr_t> v) { d->_rhs = std::move(v); });
+  type_codec->registerStdCodec<hm::lruledef_ptr_t>(lruledef_type);
+
+  auto lruleset_type = //
+      py::class_<hm::LRuleSet, ork::Object, hm::lruleset_ptr_t>(hmmod, "LRuleSet")
+          .def_static("createShared", []() -> hm::lruleset_ptr_t { return std::make_shared<hm::LRuleSet>(); })
+          .def(py::init([](py::kwargs kw) {
+            auto d = std::make_shared<hm::LRuleSet>();
+            if (kw.contains("symbols"))        d->_symbols       = kw["symbols"].cast<std::vector<hm::lsymboldef_ptr_t>>();
+            if (kw.contains("axiom"))          d->_axiom         = kw["axiom"].cast<std::vector<hm::lturtleop_ptr_t>>();
+            if (kw.contains("rules"))          d->_rules         = kw["rules"].cast<std::vector<hm::lruledef_ptr_t>>();
+            if (kw.contains("depth"))          d->_depth         = kw["depth"].cast<uint32_t>();
+            if (kw.contains("segment_budget")) d->_segmentBudget = kw["segment_budget"].cast<uint32_t>();
+            if (kw.contains("seed"))           d->_seed          = kw["seed"].cast<uint32_t>();
+            return d;
+          }))
+          .def_property("depth",          [](hm::lruleset_ptr_t d) { return d->_depth; },         [](hm::lruleset_ptr_t d, uint32_t v) { d->_depth = v; })
+          .def_property("segment_budget", [](hm::lruleset_ptr_t d) { return d->_segmentBudget; }, [](hm::lruleset_ptr_t d, uint32_t v) { d->_segmentBudget = v; })
+          .def_property("seed",           [](hm::lruleset_ptr_t d) { return d->_seed; },          [](hm::lruleset_ptr_t d, uint32_t v) { d->_seed = v; })
+          .def_property("symbols",
+                        [](hm::lruleset_ptr_t d) -> std::vector<hm::lsymboldef_ptr_t> { return d->_symbols; },
+                        [](hm::lruleset_ptr_t d, std::vector<hm::lsymboldef_ptr_t> v) { d->_symbols = std::move(v); })
+          .def_property("axiom",
+                        [](hm::lruleset_ptr_t d) -> std::vector<hm::lturtleop_ptr_t> { return d->_axiom; },
+                        [](hm::lruleset_ptr_t d, std::vector<hm::lturtleop_ptr_t> v) { d->_axiom = std::move(v); })
+          .def_property("rules",
+                        [](hm::lruleset_ptr_t d) -> std::vector<hm::lruledef_ptr_t> { return d->_rules; },
+                        [](hm::lruleset_ptr_t d, std::vector<hm::lruledef_ptr_t> v) { d->_rules = std::move(v); });
+  type_codec->registerStdCodec<hm::lruleset_ptr_t>(lruleset_type);
+
   py::class_<hm::LSystemModuleData, dflow::DgModuleData, hm::lsystemmoduledata_ptr_t>(hmmod, "LSystemModule")
       .def_static("createShared", []() -> hm::lsystemmoduledata_ptr_t { return hm::LSystemModuleData::createShared(); })
+      // GR1.a: the reflected grammar (nullable). Setting it does NOT change runtime behavior in this
+      // slice — the legacy archetype path stays the default; the GR1.b evaluator will consume it.
+      .def_property("grammar",
+                    [](hm::lsystemmoduledata_ptr_t d) -> hm::lruleset_ptr_t { return d->_grammar; },
+                    [](hm::lsystemmoduledata_ptr_t d, hm::lruleset_ptr_t g) { d->_grammar = std::move(g); })
       .def_readwrite("archetype", &hm::LSystemModuleData::_archetype)
       .def_readwrite("depth", &hm::LSystemModuleData::_depth)
       .def_readwrite("budget", &hm::LSystemModuleData::_budget)
@@ -62,6 +200,49 @@ void pyinit_gfx_hypermesh(py::module& module_lev2) {
       .def_readwrite("jit_spacing", &hm::LSystemModuleData::_jit_spacing)
       .def_readwrite("jit_drop", &hm::LSystemModuleData::_jit_drop)
       .def_readwrite("jit_wave", &hm::LSystemModuleData::_jit_wave);
+  // ---- GR1.b: the evaluator TEST SEAM (pure CPU — the determinism/hand-count/budget gates drive
+  //      derive() headless, no GPU). `_deriveLRuleSet` runs the two-pass rewrite+interpret and returns
+  //      the derived XfNode buffer (raw bytes for memcmp determinism + unpacked fields for hand-count);
+  //      `_moduleIdentityHash` exposes the cook-identity hash so the same gate asserts BOTH are stable.
+  hmmod.def(
+      "_deriveLRuleSet",
+      [](hm::lruleset_ptr_t grammar, hm::lsystemmoduledata_ptr_t env) -> py::dict {
+        OrkAssert(grammar);
+        hm::lsystemmoduledata_ptr_t P = env ? env : hm::LSystemModuleData::createShared();
+        ork::hyper::xfnode_vect nodes;
+        ork::hyper::xfslot_vect slots;
+        hm::deriveLRuleSet(grammar.get(), P.get(), nodes, slots);
+        py::dict d;
+        py::list parents, positions, radii, tags, slotl;
+        std::string raw;
+        raw.reserve(nodes.size() * 88);
+        for (auto& n : nodes) {
+          parents.append(n._parent);
+          positions.append(n._xform[12]);
+          positions.append(n._xform[13]);
+          positions.append(n._xform[14]);
+          radii.append(n._attrs[0]);
+          tags.append(n._tags);
+          raw.append(reinterpret_cast<const char*>(n._xform), 16 * sizeof(float));
+          raw.append(reinterpret_cast<const char*>(&n._parent), sizeof(uint32_t));
+          raw.append(reinterpret_cast<const char*>(n._attrs), 4 * sizeof(float));
+          raw.append(reinterpret_cast<const char*>(&n._tags), sizeof(uint32_t));
+        }
+        for (auto& s : slots)
+          slotl.append(py::make_tuple(s._node, s._tag));
+        d["count"]     = int(nodes.size());
+        d["parents"]   = parents;
+        d["positions"] = positions;
+        d["radii"]     = radii;
+        d["tags"]      = tags;
+        d["slots"]     = slotl;
+        d["bytes"]     = py::bytes(raw);
+        return d;
+      },
+      py::arg("grammar"), py::arg("env") = hm::lsystemmoduledata_ptr_t());
+  hmmod.def("_moduleIdentityHash", [](hm::lsystemmoduledata_ptr_t mod) -> uint64_t {
+    return hm::hypermeshModuleIdentityHash(mod.get());
+  });
   py::class_<hm::LSweepModuleData, dflow::DgModuleData, hm::lsweepmoduledata_ptr_t>(hmmod, "LSweepModule")
       .def_static("createShared", []() -> hm::lsweepmoduledata_ptr_t { return hm::LSweepModuleData::createShared(); })
       .def_readwrite("sides", &hm::LSweepModuleData::_sides)

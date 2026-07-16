@@ -145,8 +145,10 @@ bool DgSorter::hasPendingInputs(dgmoduledata_ptr_t mod) const {
   int inumins      = mod->numInputs();
   for (int ip = 0; ip < inumins; ip++) {
     auto pinplug = mod->input(ip);
-    if (pinplug->_connectedOutput) {
-      auto pout    = pinplug->_connectedOutput;
+    // BYPASS: resolve through pass-through producers so readiness keys off the real
+    // upstream (a bypassed module drops out — the consumer depends on its source).
+    auto pout = resolveConnectedOutput(pinplug);
+    if (pout) {
       auto pconcon = typedModuleData<DgModuleData>(pout->_parent_module);
       auto it      = _pending.find(pconcon);
       if (pconcon == mod &&
@@ -295,8 +297,9 @@ void DgSorter::dumpInputs(dgmoduledata_ptr_t mod) const {
   int inumins = mod->numInputs();
   for (int ip = 0; ip < inumins; ip++) {
     const auto pinplug = mod->input(ip);
-    if (pinplug->_connectedOutput) {
-      auto poutplug     = pinplug->_connectedOutput;
+    // BYPASS: dump the RESOLVED source so the register/order log tells the truth.
+    auto poutplug = resolveConnectedOutput(pinplug);
+    if (poutplug) {
       auto pconcon      = typedModuleData<DgModuleData>(poutplug->_parent_module);
       auto it_plug_info = _pluginfomap.find(poutplug);
       auto& plug_info   = it_plug_info->second;

@@ -8,6 +8,7 @@
 #pragma once
 
 #include <ork/kernel/varmap.inl>
+#include <ork/math/cvector4.h>
 #include <functional>
 #include <vector>
 #include <map>
@@ -15,6 +16,20 @@
 #include <memory>
 
 namespace ork::ui {
+
+////////////////////////////////////////////////////////////////////
+// OutlinerBadge: a per-row toggle cell. Models that don't override
+// getBadges() render exactly as before — the badge column is fully
+// optional.
+////////////////////////////////////////////////////////////////////
+
+struct OutlinerBadge {
+  std::string id;                              // reported to the badge-click callback
+  std::string glyph;                           // short label drawn in the cell
+  fvec4 color   = fvec4(0.7f, 0.7f, 0.7f, 1.0f);
+  bool active   = false;                       // filled when on, dim when off
+  bool enabled  = true;                        // greyed + click-inert when false
+};
 
 ////////////////////////////////////////////////////////////////////
 // OutlinerFactory: Describes a type of item that can be created
@@ -60,6 +75,10 @@ struct OutlinerModel {
 
   // Get optional value/metadata for an item
   virtual svar128_t getValue(const std::string& key) const { return svar128_t(); }
+
+  // Optional per-row toggle badges (drawn right-aligned; clicks fire the
+  // Outliner's _onBadgeClick). Default: none — column is invisible.
+  virtual std::vector<OutlinerBadge> getBadges(const std::string& key) const { return {}; }
 
   //////////////////////////////////////////////////////////////
   // Rename support

@@ -9,6 +9,7 @@
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/util/logger.h>
 #include <cstdlib>
+#include <ork/kernel/memcpy.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
@@ -70,24 +71,80 @@ FxShaderStorageBuffer* VkFxInterface::createStorageBuffer(size_t length,
     if (usage & StorageBufferUsage::INDIRECT) vku |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
     if (usage & StorageBufferUsage::VERTEX)   vku |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
   }
-  VkMemoryPropertyFlags memprops = (residency == BufferResidency::DEVICE)
-      ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-      : (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+  VkMemoryPropertyFlags memprops;
+  switch (residency) {
+    case BufferResidency::DEVICE: // GPU-only VRAM; map()/copy staged
+      memprops = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+      break;
+    case BufferResidency::BAR: // CPU-writable VRAM window; degrades to HOST via _findMemoryType /
+                               // alloc-retry when absent or full (see vulkan_ctx_bufmem.cpp)
+      memprops = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                 VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+      break;
+    case BufferResidency::HOST:
+    default:
+      memprops = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+      break;
+  }
   ssbo->_impl.makeShared<VulkanBuffer>(_contextVK, length, vku, std::string(""), memprops);
   return ssbo;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
+// env-gated (ORKID_FXI_MAP_TRACE=1) profiling of the storage-buffer map path —
+// accumulates where the time goes and prints a summary every 5s.
+struct MapTraceStats {
+  std::atomic<uint64_t> _syncNs{0}, _mapNs{0}, _unmapNs{0}, _stageNs{0};
+  std::atomic<uint64_t> _maps{0}, _unmaps{0};
+  double _windowStart = 0.0;
+  static MapTraceStats& instance() {
+    static MapTraceStats s;
+    return s;
+  }
+  static bool enabled() {
+    static bool e = (getenv("ORKID_FXI_MAP_TRACE") != nullptr);
+    return e;
+  }
+  void report() {
+    double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    if (_windowStart == 0.0) {
+      _windowStart = now;
+      return;
+    }
+    if ((now - _windowStart) < 5.0)
+      return;
+    printf(
+        "[FXIMAPTRACE] 5s: maps<%zu> unmaps<%zu> syncWait<%.2fms> vkMap<%.2fms> vkUnmap<%.2fms> staging<%.2fms>\n",
+        size_t(_maps.exchange(0)),
+        size_t(_unmaps.exchange(0)),
+        1e-6 * double(_syncNs.exchange(0)),
+        1e-6 * double(_mapNs.exchange(0)),
+        1e-6 * double(_unmapNs.exchange(0)),
+        1e-6 * double(_stageNs.exchange(0)));
+    _windowStart = now;
+  }
+};
+static inline uint64_t _nsNow() {
+  return std::chrono::duration_cast<std::chrono::nanoseconds>(
+             std::chrono::steady_clock::now().time_since_epoch())
+      .count();
+}
+
 storagebuffermappingptr_t VkFxInterface::mapStorageBuffer(FxShaderStorageBuffer* b, //
                                                           size_t base, //
                                                           size_t length, //
                                                           BufferMapAccess access) { //
+  bool trace = MapTraceStats::enabled();
   // C.5: a host map is a HAZARD POINT for a pending non-blocking dispatch phase (the GPU may
   // still read what we are about to rewrite, or still be writing what we are about to read) —
   // wait it out first. No-op in blocking mode / when nothing pends.
-  if (_contextVK->_ci)
+  if (_contextVK->_ci) {
+    uint64_t t0 = trace ? _nsNow() : 0;
     _contextVK->_ci->syncPendingDispatch();
+    if (trace)
+      MapTraceStats::instance()._syncNs += (_nsNow() - t0);
+  }
   auto bufimpl = b->_impl.getShared<VulkanBuffer>();
   auto mapping = std::make_shared<FxShaderStorageBufferMapping>();
   mapping->_buffer = b;
@@ -95,14 +152,24 @@ storagebuffermappingptr_t VkFxInterface::mapStorageBuffer(FxShaderStorageBuffer*
   mapping->_offset = base;
   mapping->_access = access;
   mapping->_length = (length == 0) ? bufimpl->_length : length;
+  uint64_t t1 = trace ? _nsNow() : 0;
   if (not bufimpl->_hostVisible) {
     // device-local: back the mapping with a host temp; pre-fill on read, flush on unmap (write).
     void* temp = std::malloc(mapping->_length);
     bool reads = (access == BufferMapAccess::READ_ONLY) || (access == BufferMapAccess::READ_WRITE);
-    if (reads) bufimpl->copyToHost(temp, mapping->_length, base);
+    if (reads)
+      bufimpl->copyToHost(temp, mapping->_length, base);
     mapping->_mappedaddr = temp;
+    if (trace)
+      MapTraceStats::instance()._stageNs += (_nsNow() - t1);
   } else {
     mapping->_mappedaddr = bufimpl->map(base, mapping->_length, 0);
+    if (trace)
+      MapTraceStats::instance()._mapNs += (_nsNow() - t1);
+  }
+  if (trace) {
+    MapTraceStats::instance()._maps++;
+    MapTraceStats::instance().report();
   }
   return mapping;
 }
@@ -110,16 +177,78 @@ storagebuffermappingptr_t VkFxInterface::mapStorageBuffer(FxShaderStorageBuffer*
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::unmapStorageBuffer(FxShaderStorageBufferMapping* mapping) {
+  bool trace  = MapTraceStats::enabled();
+  uint64_t t0 = trace ? _nsNow() : 0;
   auto bufimpl = mapping->_buffer->_impl.getShared<VulkanBuffer>();
   if (not bufimpl->_hostVisible) {
     bool writes = (mapping->_access == BufferMapAccess::WRITE_ONLY) || (mapping->_access == BufferMapAccess::READ_WRITE);
-    if (writes) bufimpl->copyFromHost(mapping->_mappedaddr, mapping->_length, mapping->_offset);  // flush staging -> device
+    // MUST stay synchronous: a deferred-update optimization here (stash small WRITE_ONLY
+    // writes, replay as vkCmdUpdateBuffer at the next dispatch phase) shipped a correctness
+    // bug (warm-cook-cached static hypermesh scenes rendered nothing) and was removed —
+    // read ork.dox/vk_deferred_updates_postmortem.md before reattempting.
+    if (writes)
+      bufimpl->copyFromHost(mapping->_mappedaddr, mapping->_length, mapping->_offset); // flush staging -> device
     std::free(mapping->_mappedaddr);
+    if (trace)
+      MapTraceStats::instance()._stageNs += (_nsNow() - t0);
   } else {
     bufimpl->unmap();
+    if (trace)
+      MapTraceStats::instance()._unmapNs += (_nsNow() - t0);
   }
+  if (trace)
+    MapTraceStats::instance()._unmaps++;
   mapping->_impl.make<void*>(nullptr);
   mapping->_mappedaddr = nullptr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Direct transfers into/out of caller memory — the temp-free alternative to a
+// READ/WRITE map round-trip (no per-call std::malloc of the full plane; bulk
+// cook-cache readers pass their final destination). Same C.5 hazard rule as
+// mapStorageBuffer: a pending non-blocking dispatch phase must complete first.
+
+void VkFxInterface::readStorageBuffer(FxShaderStorageBuffer* b, size_t base, size_t length, void* dst) {
+  if (_contextVK->_ci)
+    _contextVK->_ci->syncPendingDispatch();
+  auto bufimpl = b->_impl.getShared<VulkanBuffer>();
+  if (length == 0)
+    length = bufimpl->_length;
+  if (not bufimpl->_hostVisible) {
+    bufimpl->copyToHost(dst, length, base); // staged: device -> cached readback staging -> dst
+    return;
+  }
+  void* src = bufimpl->map(base, length, 0);
+  memcpy_fast(dst, src, length);
+  bufimpl->unmap();
+}
+
+void VkFxInterface::writeStorageBuffer(FxShaderStorageBuffer* b, size_t base, size_t length, const void* src) {
+  if (_contextVK->_ci)
+    _contextVK->_ci->syncPendingDispatch();
+  auto bufimpl = b->_impl.getShared<VulkanBuffer>();
+  if (length == 0)
+    length = bufimpl->_length;
+  if (not bufimpl->_hostVisible) {
+    bufimpl->copyFromHost(src, length, base); // staged: src -> WC upload staging -> device
+    return;
+  }
+  void* dst = bufimpl->map(base, length, 0);
+  memcpy_fast(dst, src, length);
+  bufimpl->unmap();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+// GPU-idle contract (fxi.h): the caller guarantees no in-flight CB references the
+// buffer, so skip the deferred queue — bulk bake-teardown frees (hundreds of 64MB
+// planes) would otherwise trickle out at the delayed-destroy drain budget.
+void VkFxInterface::destroyStorageBuffer(FxShaderStorageBuffer* buffer) {
+  if (nullptr == buffer)
+    return;
+  if (auto impl = buffer->_impl.getShared<VulkanBuffer>())
+    impl->_deferredDestroy = false;
+  delete buffer;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

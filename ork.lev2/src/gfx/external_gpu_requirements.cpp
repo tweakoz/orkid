@@ -1,0 +1,51 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2023, Michael T. Mayers.
+// Distributed under the MIT License.
+// see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
+////////////////////////////////////////////////////////////////
+
+#include <ork/lev2/gfx/external_gpu_requirements.h>
+#include <ork/orkstd.h>
+
+////////////////////////////////////////////////////////////////////////////////
+namespace ork::lev2 {
+////////////////////////////////////////////////////////////////////////////////
+
+static ExternalGpuRequirements _g_reqs;
+static bool _g_reqs_registered = false; // a producer (or the backend) populated the slot
+static bool _g_reqs_locked     = false; // the Vulkan instance has been created
+
+////////////////////////////////////////////////////////////////////////////////
+
+void setExternalGpuRequirements(const ExternalGpuRequirements& reqs) {
+  OrkAssertI(
+      not _g_reqs_locked,
+      "setExternalGpuRequirements() called after Vulkan instance creation; external GPU "
+      "requirements must be registered BEFORE graphics init");
+  _g_reqs            = reqs;
+  _g_reqs_registered = true;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+const ExternalGpuRequirements* externalGpuRequirements() {
+  return _g_reqs_registered ? &_g_reqs : nullptr;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+ExternalGpuRequirements* _externalGpuRequirementsMutable() {
+  _g_reqs_registered = true;
+  return &_g_reqs;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void _lockExternalGpuRequirements() {
+  _g_reqs_locked = true;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+} // namespace ork::lev2
+////////////////////////////////////////////////////////////////////////////////

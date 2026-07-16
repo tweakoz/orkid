@@ -101,6 +101,10 @@ bool NodeCompositingTechnique::assemble(CompositorDrawData& drawdata) {
   drawdata.context()->debugPushGroup("NodeCompositingTechnique::assemble");
   if (_outputNode and _renderNode) {
     rval = true;
+    // once-per-frame device update, BEFORE the assembler runs any eye/render work
+    //  (see OutputCompositingNode::onGpuUpdate). The assembler may render N eyes/views,
+    //  but the frame-pacing hook fires exactly once here.
+    _outputNode->onGpuUpdate(drawdata);
     _assemblerFn(drawdata);
   }
   drawdata.context()->debugPopGroup();
@@ -112,6 +116,15 @@ void NodeCompositingTechnique::composite(CompositorDrawData& drawdata) {
     auto render = _renderNode->GetOutput();
     if (render) { // todo get post...
       _outputNode->composite(drawdata);
+    } else {
+      // chain-killing silent skip: render node produced no output, so the output
+      // node's composite() (and any VR __composite) never runs. Name it once.
+      static bool s_warned_nullout = false;
+      if (not s_warned_nullout) {
+        s_warned_nullout = true;
+        printf("[VROUT] NodeCompositingTechnique::composite — _renderNode->GetOutput() is NULL; output node composite SKIPPED (no frame reaches the sink).\n");
+        fflush(stdout);
+      }
     }
   }
 }

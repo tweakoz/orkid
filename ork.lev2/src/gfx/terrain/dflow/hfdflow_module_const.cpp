@@ -14,19 +14,21 @@ namespace ork::lev2::terrain {
 // ConstModule — Out = level. 1 SSBO.
 ///////////////////////////////////////////////////////////////////////////////
 
-static std::string _const_text(int dim, float level) {
+// DIM is RUNTIME data (params SSBO p_dimf) — dim changes never rebuild the shader;
+// the output array is runtime-sized. Only `level` stays baked into the text.
+static std::string _const_text(float level) {
   std::string t = R"S(
 fxconfig fxcfg_default {}
-storage_interface sif_out (descriptor_set 0) { buffer layout(std430) ob { float odata[%DIMSQ%]; }; }
-compute_interface iface { storage { sif_out } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }
+storage_interface sif_out (descriptor_set 0) { buffer layout(std430) ob { float odata[]; }; }
+storage_interface sif_pm (descriptor_set 0) { buffer layout(std430) pm_in { float p_dimf; }; }
+compute_interface iface { storage { sif_out sif_pm } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }
 compute_shader cs_const : iface {
-  if (gl_GlobalInvocationID.x >= %DIMU% || gl_GlobalInvocationID.y >= %DIMU%) { return; }
-  uint i = gl_GlobalInvocationID.y * %DIMU% + gl_GlobalInvocationID.x;
+  uint u_dim = uint(p_dimf); // RUNTIME grid dim (params SSBO) — no rebuild on dim change
+  if (gl_GlobalInvocationID.x >= u_dim || gl_GlobalInvocationID.y >= u_dim) { return; }
+  uint i = gl_GlobalInvocationID.y * u_dim + gl_GlobalInvocationID.x;
   odata[i] = float(%LEVEL%);
 }
 )S";
-  _shadersub(t, "%DIMSQ%", FormatString("%d", dim * dim));
-  _shadersub(t, "%DIMU%", FormatString("%du", dim));
   _shadersub(t, "%LEVEL%", FormatString("%f", level));
   return t;
 }
@@ -37,17 +39,24 @@ struct ConstModuleInst : public TerrainComputeInst {
     _output = typedOutputNamed<HfImagePlugTraits>("Out");
     _level  = _floatPlug(this, _d, "level");
   }
-  void onActivate(dflow::GraphInst* inst) final {
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<BakeEnv>();
+    auto fxi = env->_ctx->FXI();
     _allocOut(env.get(), _output->_value);
-    auto sh = env->_ctx->FXI()->shaderFromShaderText("terrain_const", _const_text(env->_w, _level->value()));
-    _cs     = env->_ctx->FXI()->computeShader(sh, "cs_const");
+    auto sh = fxi->shaderFromShaderText("terrain_const", _const_text(_level->value()));
+    _cs     = fxi->computeShader(sh, "cs_const");
+    _pm        = env->createStorageBuffer(sizeof(float)); // p_dimf = RUNTIME grid dim
+    float dimf = float(env->_w);
+    auto mp    = fxi->mapStorageBuffer(_pm, 0, sizeof(dimf), BufferMapAccess::WRITE_ONLY);
+    std::memcpy(mp->_mappedaddr, &dimf, sizeof(dimf));
+    fxi->unmapStorageBuffer(mp.get());
   }
   void compute(dflow::GraphInst* inst, ui::updatedata_ptr_t) final {
     auto env = inst->_impl.getShared<BakeEnv>();
     auto ci  = env->_ctx->CI();
     int g    = (env->_w + 7) / 8;
     ci->bindStorageBuffer(_cs, 0, _output->_value->_ssbo);
+    ci->bindStorageBuffer(_cs, 1, _pm);
     ci->dispatchCompute(_cs, g, g, 1);
     ci->storageBarrier();
   }
@@ -63,6 +72,7 @@ struct ConstModuleInst : public TerrainComputeInst {
   const ConstModuleData* _d;
   hfimg_outpluginst_ptr_t _output;
   dflow::float_inp_pluginst_ptr_t _level;
+  FxShaderStorageBuffer* _pm = nullptr;
   const FxComputeShader* _cs = nullptr;
 };
 

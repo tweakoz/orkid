@@ -611,6 +611,8 @@ using pbr_deferred_context_ptr_t = std::shared_ptr<pbr::deferrednode::DeferredCo
 struct InputGroup;
 struct InputManager;
 struct InputDevice;
+struct GamepadDevice;
+using gamepaddevice_ptr_t   = std::shared_ptr<GamepadDevice>;
 using inputgroup_ptr_t      = std::shared_ptr<InputGroup>;
 using inputgroup_constptr_t = std::shared_ptr<const InputGroup>;
 using inputdevice_ptr_t      = std::shared_ptr<InputDevice>;

@@ -38,7 +38,9 @@ class XXX3Scene(Scene):
     self.terrain(
         "xxx3",
         dsl_file  = "xxx3",
-        render_dimension = 1024,
+        render_dimension = 2048,
+        bake_dimension  = 4096,
+        bake_res  = 4096,                
         walkable  = True)
 
     self.projectile_pool(fire=True)   # '/' shoots fireballs (gaze-aimed in VR)

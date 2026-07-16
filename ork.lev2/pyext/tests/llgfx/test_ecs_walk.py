@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 ###############################################################################
-# E.2-walk gate — walk-on-terrain through the REAL pipeline: ren_scatter (terrain +
+# E.2-walk gate — walk-on-terrain through the REAL pipeline: scn_scatter (terrain +
 # scatter + terrain_collider + walker library calls) → tojson → ork.ecs.player.exe.
 # NOTE: this gate launches the PLAYER (a transient window, self-terminated) — the
 # walk path is host+physics+camera, not headless-renderable.
@@ -26,7 +26,7 @@ ECS    = os.path.join(TMP, "walk_gate.ecs")
 
 # scale constants come FROM THE SCENE SOURCE (they were once duplicated here
 # and silently went stale when the scene was rescaled 512/60 -> 2048/250)
-_SCENE_SRC = open(os.path.join(REPO, "ork.data", "scenes", "ren_scatter.py")).read()
+_SCENE_SRC = open(os.path.join(REPO, "ork.data", "scenes", "scn_scatter.py")).read()
 HEIGHT_M = float(re.search(r"^HEIGHT_M\s*=\s*([\d.]+)", _SCENE_SRC, re.M).group(1))
 EXTENT_M = float(re.search(r"^EXTENT_M\s*=\s*([\d.]+)", _SCENE_SRC, re.M).group(1))
 
@@ -64,7 +64,7 @@ def sample_height_exr(x, z, extent_m=EXTENT_M):
 def main():
   os.makedirs(TMP, exist_ok=True)
   # 1. author + serialize (subprocess — its own lifecycle)
-  rc = subprocess.call(["ork.scene.tojson.py", "-i", "ren_scatter", "-o", ECS])
+  rc = subprocess.call(["ork.scene.tojson.py", "-i", "scn_scatter", "-o", ECS])
   assert rc == 0, "tojson failed"
 
   # 2. run the player with scripted walking; kill after the window.
@@ -107,7 +107,7 @@ def main():
     assert dist > 5.0, "autowalk produced only %.2fm displacement (input channel dead?)" % dist
 
     # ALIGNMENT PROBE: rest height ≈ baked terrain height at the final (x,z).
-    # capsule rest offset = extent/2 + radius ≈ 1.4 (ren_scatter walker dims);
+    # capsule rest offset = extent/2 + radius ≈ 1.4 (scn_scatter walker dims);
     # tolerance covers nearest-texel + slope within a texel.
     x, y, z = pos[-1]
     th = sample_height_exr(x, z)

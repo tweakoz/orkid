@@ -34,6 +34,7 @@ namespace ork::lev2 { class ShmTexConsumer; }
 #include <ork/file/chunkfile.inl>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/gfxenv.h>
+#include <ork/lev2/gfx/gpumicrotask.h>
 #include <ork/lev2/gfx/shadlang.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/texman.h>
@@ -301,6 +302,10 @@ struct VkFramebufferOutput {
   // Returns the timing estimator owned by this output, or nullptr for non-swapchain outputs.
   virtual time_predictor_ptr_t getScanoutPredictor() const { return nullptr; }
 
+  // True when this output's present path itself paces the render loop to a frame cadence
+  // (a blocking/display-locked present). Base default false (offscreen / non-blocking).
+  virtual bool providesFramePacing() const { return false; }
+
   // Return the fence for the current frame (before _incrementFrame advances _sub_index).
   vkfence_obj_ptr_t currentFrameFence() const { return _frame_fences[_sub_index]; }
 
@@ -394,6 +399,11 @@ struct VkSwapChain : public VkFramebufferOutput {
   void endFrame(vkcontext_rawptr_t ctxVK)   override final;
   void submit(vkcontext_rawptr_t ctxVK)     override final;
 
+  // FIFO/FIFO_RELAXED block at vblank → they pace the loop. MAILBOX/IMMEDIATE do not.
+  bool providesFramePacing() const override final {
+    return (_presentMode == VK_PRESENT_MODE_FIFO_KHR) or (_presentMode == VK_PRESENT_MODE_FIFO_RELAXED_KHR);
+  }
+
   void _reinit();
   void _buildup();
   void _teardown();
@@ -418,7 +428,10 @@ struct VkSwapChain : public VkFramebufferOutput {
 
   // index of the swapchain image currently acquired for rendering; 0xffffffff = none
   u32 _curSwapWriteImage = 0xffffffff;
-  
+
+  // present mode selected in _buildup — drives providesFramePacing() (FIFO=vsync-paced).
+  VkPresentModeKHR _presentMode = VK_PRESENT_MODE_FIFO_KHR;
+
   // set by resize callback; drained at beginFrame before _acquireImage
   bool _pendingReinit = false;
 };
@@ -436,6 +449,9 @@ struct VkSwapchainMetal : public VkFramebufferOutput {
   void beginFrame(vkcontext_rawptr_t ctxVK) override final;
   void endFrame(vkcontext_rawptr_t ctxVK)   override final;
   void submit(vkcontext_rawptr_t ctxVK)     override final;
+
+  // beginFrame sleeps until the predicted scanout (race-the-beam) → display-locked pacing.
+  bool providesFramePacing() const override final { return true; }
 
   // Called from CVDisplayLink callback — timing estimator only, no blit.
   void _onVsync(const void* outputTime); // const CVTimeStamp*
@@ -686,12 +702,15 @@ struct VkFxInterface final : public FxInterface {
       size_t length,
       StorageBufferUsage usage   = StorageBufferUsage::DEFAULT,
       BufferResidency    residency = BufferResidency::HOST) final;
+  void destroyStorageBuffer(FxShaderStorageBuffer* buffer) final; // immediate (GPU-idle contract)
   storagebuffermappingptr_t mapStorageBuffer(
       FxShaderStorageBuffer* b,
       size_t base,
       size_t length,
       BufferMapAccess access) final;
   void unmapStorageBuffer(FxShaderStorageBufferMapping* mapping) final;
+  void readStorageBuffer(FxShaderStorageBuffer* b, size_t base, size_t length, void* dst) final;
+  void writeStorageBuffer(FxShaderStorageBuffer* b, size_t base, size_t length, const void* src) final;
   void bindStorageBuffer(const FxShaderStorageBlock* block, FxShaderStorageBuffer* buffer, size_t byte_offset = 0) final;
   void copyBufferIntoStorageBuffer(FxShaderStorageBuffer* ssbo, std::vector<uint8_t> buffer, size_t dest_offset) final;
 
@@ -728,6 +747,7 @@ struct VkFxInterface final : public FxInterface {
   std::unordered_map<uint64_t, vkpipelinestate_ptr_t> _pipelines;
   
   std::map<AssetPath, vkfxsfile_ptr_t> _fxshaderfiles;
+  std::mutex _fxshaderfiles_mutex; // guards _fxshaderfiles (map only, not compiles)
   shadlang::slpcache_ptr_t _slp_cache;
   priority_stack<rasterstate_ptr_t> _rasterstate_stack;
   rasterstate_ptr_t _rasterstate_top;
@@ -787,6 +807,10 @@ struct VkComputeInterface : public ComputeInterface {
   // Dedicated compute command buffer
   VkCommandBuffer _computeCmdBuf = VK_NULL_HANDLE;
   uint32_t _dispatchCount = 0;
+  // transfer (buffer-copy) commands recorded this phase. A copy-ONLY phase (no compute
+  // dispatch) still holds GPU work that must be submitted — the outermost endDispatchPhase
+  // submits when EITHER count is non-zero (dispatchCount alone drives the descriptor-set ring).
+  uint32_t _transferCount = 0;
   // bumped each beginDispatchPhase; pipelines recycle their per-dispatch descriptor
   // set ring when the generation changes (prior-phase command buffer has completed).
   uint64_t _dispatchGeneration = 0;
@@ -843,6 +867,43 @@ struct VkProfilerChannel final : ProfilerChannel {
   void sampleEnd(SampleProfilerSeries* series) override;
 };
 
+///////////////////////////////////////////////////////////////////////////////
+// MT0 (JUL05_GPUMICROTASK §2.4): dedicated, ALWAYS-ON whole-frame GPU timer.
+// Same query-pool idiom as VkProfilerChannel above, but never gated by
+// ORK_PROFILER_ENABLE (T3) — this is the engine's only always-on GPU timing
+// primitive. One begin/end pair per frame for now (MT1 subdivides into
+// per-slice brackets within the same pool, out of scope here).
+///////////////////////////////////////////////////////////////////////////////
+
+struct VkGpuSliceTimer final : public GpuSliceTimer {
+  static constexpr uint32_t kNumQueries = 64;
+  // Query-pair RING with lag-2 NON-WAITING reads. The first Linux/RADV gate run
+  // proved why: a WAIT_BIT read right after submit wedged the amdgpu GPU in
+  // kernel dma_fence_wait (that submit does NOT fully resolve the frame there,
+  // unlike MoltenVK's blocking path). This timer must NEVER wait: frame N reads
+  // frame N-2's pair with AVAILABILITY, and "not ready" is simply gpu_ms=-1
+  // (GpuFrameTiming falls back to present-idle for that frame).
+  static constexpr uint32_t kRingDepth = 4; // pairs; > MAX_FRAMES_IN_FLIGHT(2)
+
+  VkDevice        _device       = VK_NULL_HANDLE;
+  VkQueryPool     _query_pool   = VK_NULL_HANDLE;
+  VkCommandBuffer _cmdbuf       = VK_NULL_HANDLE; // this frame's primary CB (not owned)
+  double          _tickToMs     = 1.0;
+  uint64_t        _frameCounter = 0; // advanced once per frame (in readbackFrameMs)
+
+  VkGpuSliceTimer(VkDevice device, float timestamp_period_ns);
+  ~VkGpuSliceTimer() override;
+
+  // The primary CB pool-recycles a new VkCommandBuffer handle every frame —
+  // caller must repoint this before beginFrame().
+  void setCmdBuf(VkCommandBuffer cb) { _cmdbuf = cb; }
+
+  void  beginFrame() override;
+  void  endFrame() override;
+  float readbackFrameMs() override;
+};
+using vkgpuslicetimer_ptr_t = std::shared_ptr<VkGpuSliceTimer>;
+
 ////////////////////////////////////////////////////////////////////////////////
 // VkThreadedQueue
 //   Wraps a single VkQueue with a mutex so multiple threads can safely submit
@@ -856,7 +917,12 @@ struct VkThreadedQueue {
   // Using Mutex for now. Only used in debug scenarios.
   // If using in production should switch to MPMC queue.
   // However would need to reworked the swap reinit logc to no need to wait.
-  std::mutex _submit_mutex;
+  //
+  // Recursive because an external client bound to this queue (e.g. an XR runtime
+  // that submits inside its own frame-submission calls) is serialized by holding
+  // this across the whole external-submit region — and the engine's own composite
+  // blit nested inside that region re-enters queueSubmit on the same thread.
+  std::recursive_mutex _submit_mutex;
 
   VkResult queueSubmit(const VkSubmitInfo* pSubmits, VkFence fence);
   VkResult queuePresent(const VkPresentInfoKHR* pPresentInfo);
@@ -928,6 +994,7 @@ public:
   void _doBeginPrimaryCommandBuffer() final;
   void _doEndPrimaryCommandBuffer() final;
   void _doSubmitPrimaryCommandBuffer() final;
+  void _doExecuteInlineGpuJob(const void_lambda_t& record) final;
   void _onGpuPreInit() final;
   void _onGpuPostInit() final;
   //////////////////////////////////////////////
@@ -952,6 +1019,17 @@ public:
 
   time_predictor_ptr_t getScanoutPredictor() const final {
     return (_fbi && _fbi->_output) ? _fbi->_output->getScanoutPredictor() : nullptr;
+  }
+
+  bool displayProvidesFramePacing() const final {
+    return (_fbi && _fbi->_output) ? _fbi->_output->providesFramePacing() : false;
+  }
+
+  // The graphics queue may be handed to an external client (e.g. an XR runtime)
+  // that submits to it inside its own frame-submission calls; expose that queue's
+  // submit mutex so the caller can serialize the whole external-submit region.
+  std::recursive_mutex* externalSubmitMutex() const final {
+    return _gfxqueue ? &_gfxqueue->_submit_mutex : nullptr;
   }
 
   ///////////////////////////////////////////////////////////////////////
@@ -1018,6 +1096,14 @@ public:
   //////////////////////////////////////////////
   VkDevice _vkdevice;
   VkPhysicalDevice _vkphysicaldevice;
+  // WS3: PERSISTED pipeline cache (<staging>/vkpipelinecache/<pipelineCacheUUID>.bin).
+  // Owner = the context that CREATED the device (vkCreateDevice path); shared-device
+  // contexts (loader/offscreen) borrow the handle. Saved+destroyed in _doShutdown.
+  // vkCreate*Pipelines use of the cache is internally synchronized per the vk spec.
+  VkPipelineCache _vkPipelineCache = VK_NULL_HANDLE;
+  bool _ownsPipelineCache          = false;
+  void _initPipelineCache();
+  void _savePipelineCache();
   vkdeviceinfo_ptr_t _vkdeviceinfo;
   // Default-initialized so the loader (offscreen) path, which never
   // creates a presentation surface, doesn't trip _doShutdown's
@@ -1039,20 +1125,32 @@ public:
   primary_commandbuffer_ptr_t _defaultCommandBuffer;
   vkpricmdbufimpl_ptr_t _defaultCommandBufferImpl;
   vkpricmdbufimpl_ptr_t _cmdbufcurpri_gfx;
+  // tracks whether the current primary CB is in the RECORDING state. Init-time
+  // code (e.g. hypermesh materialize) may cycle whole frames inside an outer
+  // begin/endPrimaryCommandBuffer pair — the outer end must then no-op instead
+  // of calling vkEndCommandBuffer on a non-recording CB.
+  bool _pricb_recording = false;
   vkpricmdbufimpl_ptr_t primary_cb();
 
   // Synchronous transfer resources (for out-of-frame texture uploads)
   struct SyncTransferResources {
     primary_commandbuffer_ptr_t command_buffer;
     vkpricmdbufimpl_ptr_t command_buffer_impl;
-    vkbuffer_ptr_t staging_buffer;
+    vkbuffer_ptr_t staging_buffer;  // upload direction: WC host memory (fast CPU writes)
     size_t staging_size = 0;
+    // readback direction gets its OWN staging in HOST_CACHED memory: CPU reads from
+    // write-combined memory run ~150MB/s (measured — made the terrain cook's 34GB of
+    // blob readbacks take 220s); cached memory reads at full memcpy speed.
+    vkbuffer_ptr_t readback_buffer;
+    size_t readback_size = 0;
     std::mutex mutex;
   };
   SyncTransferResources _syncTransfer;
 
   void initSyncTransfer();
   void ensureSyncStagingSize(size_t needed);
+  void ensureSyncReadbackStagingSize(size_t needed);
+  size_t deviceLocalHeapBytes() const final; // largest DEVICE_LOCAL heap (residency budget scaling)
   void beginSyncTransferCB();
   void endAndSubmitSyncTransferCB();
 
@@ -1122,6 +1220,11 @@ public:
   //////////////////////////////////////////////
   std::vector<VkSemaphore> _oneShotSignalSemaphores;
   std::vector<uint64_t> _oneShotSignalValues;
+  // completion semaphores of the one-shot CBs recorded into THIS frame's primary CB
+  // (coupled in _doPreBeginFrame's drain; consumed by _doSubmitPrimaryCommandBuffer).
+  // A CB enqueued mid-frame (loading-phase ops) executes NEXT frame — its semaphore
+  // must signal on THAT frame's submit, not this one's.
+  std::vector<vkcompletionsemaphore_ptr_t> _thisFrameOneShotSemas;
   //////////////////////////////////////////////
 
   vkdwi_ptr_t _dwi;
@@ -1144,9 +1247,23 @@ public:
   
   bool _renderPassActive = false;
   vkrtgrpimpl_ptr_t _activeRenderPassRTG = nullptr;
-  
+
   void suspendRenderPass();
   void resumeRenderPass();
+
+  //////////////////////////////////////////////
+  // MT0 (JUL05_GPUMICROTASK §2.4, SHADOW MODE): always-on GPU frame timing.
+  // Measures + logs only — nothing here is enforced (no scheduler yet, MT1).
+  // _gpuTimestampsSupported is decided ONCE at context init (the T2 caps
+  // guard: timestampComputeAndGraphics + queue-family timestampValidBits,
+  // escape-hatched by ORKID_MT_NO_TIMESTAMPS=1) in _initVulkanForDevInfo.
+  // _mtSliceTimer stays null when unsupported — that null IS the fallback
+  // path (gpu_ms=-1 into _mtFrameTiming, which then uses present-idle).
+  //////////////////////////////////////////////
+  bool                  _gpuTimestampsSupported = false;
+  vkgpuslicetimer_ptr_t _mtSliceTimer;
+  GpuFrameTiming        _mtFrameTiming;
+  Timer                 _mtFrameWallTimer; // cpu-frame-wall input to _mtFrameTiming
 
 };
 ///////////////////////////////////////////////////////////////////////////

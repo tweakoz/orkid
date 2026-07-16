@@ -10,6 +10,7 @@
 ###############################################################################
 import os; os.environ["PYTHONUNBUFFERED"] = "1"
 import sys
+import math
 from orkengine import core   # core before lev2
 from orkengine import lev2
 from orkengine import ecs
@@ -18,27 +19,23 @@ from orkengine.core import Object   # serializeJson / deserializeJson
 from ork.hypergraph.dflow.terrain import HeightField
 from ork.hypergraph.dflow import terrain as T
 
-DIM = 512
+DIM = 256
 OUT = "/tmp/terrain_asset_height.exr"
 
 
 class RollingHills(HeightField):
-    def __init__(self, octaves=5, steps=6):
+    def __init__(self, octaves=5, step_m=1.0/6.0):
         super().__init__()
         h = T.Fbm(frequency=3.0, octaves=octaves) * 0.5 + 0.5
-        self.capture(T.Terrace(h, steps=steps, sharpness=4.0), "height")
+        self.capture(T.Terrace(h, step_m=step_m, sharpness=4.0), "height")
 
 
-def main():
+def run(ez, ctx):
     if os.path.exists(OUT):
         os.remove(OUT)
-    ezapp = ecs.headless_appinit(use_subsystems=['opq', 'core', 'gpu', 'lev2'])
-    ezapp.mainThreadBegin()
-    ctx = ezapp.bindGfxToCurrentThread()
-    assert ctx, "bindGfxToCurrentThread() returned null"
 
     # AUTHORING: run the DSL ONCE -> graph -> embed in the gendata.
-    hf    = RollingHills(octaves=6, steps=6)
+    hf    = RollingHills(octaves=6, step_m=1.0/6.0)
     graph = hf.generatedflow()
     gd    = lev2.HeightFieldGenData(asset_name="rolling_hills", dimension=DIM, graph=graph,
                                     # E.6/2.20 — the terrain↔material contract (serdes coverage)
@@ -75,8 +72,6 @@ def main():
         cap.path = OUT if cap.channel == "height" else f"/tmp/terrain_asset_{cap.channel}.exr"
     stats = lev2.terrain.bake_heightfield(graph2, ctx, dim2)
 
-    ezapp.mainThreadEnd()
-
     # BAKE-EQUALITY (2.20): deserialize(serialize(graph)) must bake the IDENTICAL field.
     with open(REF, "rb") as f:
         ref_bytes = f.read()
@@ -84,17 +79,33 @@ def main():
         out_bytes = f.read()
     bake_equal = (ref_bytes == out_bytes) and len(ref_bytes) > 0
 
-    ok = (os.path.exists(OUT)
-          and dim2 == DIM
-          and chans == ["height"]
-          and len(stats) == 1
-          and 0.0 <= stats[0].min <= stats[0].max <= 1.0001
-          and bake_equal)
-    print(f"=== terrain asset round-trip {'PASSED' if ok else 'FAILED'} ===", flush=True)
+    results = {
+        "out_exists": os.path.exists(OUT),
+        "dim_roundtrip": dim2 == DIM,
+        "channels": chans == ["height"],
+        "stats_len": len(stats) == 1,
+        "stats_sane": len(stats) == 1 and math.isfinite(stats[0].min) and stats[0].min <= stats[0].max,
+        "bake_equal": bake_equal,
+    }
     print(f"    {OUT} exists={os.path.exists(OUT)} stats={stats}", flush=True)
     print(f"    BAKE-EQUALITY: {len(ref_bytes)} bytes, identical={bake_equal}", flush=True)
+    return results
+
+
+def main():
+    ez = ecs.headless_appinit(use_subsystems=['opq', 'core', 'gpu', 'lev2'])
+    ez.mainThreadBegin()
+    ctx = ez.bindGfxToCurrentThread()
+    assert ctx, "bindGfxToCurrentThread() returned null"
+    results = run(ez, ctx)
+    ez.mainThreadEnd()
+    ok = all(results.values())
+    print(f"=== terrain asset round-trip {'PASSED' if ok else 'FAILED'} ===", flush=True)
+    for k, v in results.items():
+        print(f"    {k}: {'ok' if v else 'FAIL'}", flush=True)
     ecs.headless_exit()
     sys.exit(0 if ok else 1)
 
 
-main()
+if __name__ == "__main__":
+    main()

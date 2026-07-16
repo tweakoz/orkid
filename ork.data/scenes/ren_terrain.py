@@ -16,6 +16,7 @@ from orkengine.lev2 import TerrainChunkDrawableData
 from ork.hypergraph.ecs.scene import Scene, Transform
 from ork.hypergraph.dflow.terrain.gpu_chunk import TerrainChunkVertexSource
 from ork.hypergraph.assets.materials.terrain.solid import Solid
+from ork.hypergraph.units import meters
 
 lev2_pyexdir.addToSysPath()
 
@@ -56,13 +57,14 @@ class TerrainScene(Scene):
         dsl_file       = "voronoi",
         dimension      = DIM,
         extent_m       = EXTENT_M,
-        height_scale_m = HEIGHT_M)
+        amplitude      = meters(HEIGHT_M))   # voronoi DSL kwarg — relief in TRUE METERS
 
     terra_mat = self.asset.Ptex3d(
         "terra_mat",
         dsl_class     = Solid,
+        # natural-units era: heights[] is TRUE METERS — no height scale on the vertex source
         vertex_source = TerrainChunkVertexSource(
-            dim=DIM, extent_m=EXTENT_M, height_m=HEIGHT_M, chunk=CHUNK),
+            dim=DIM, extent_m=EXTENT_M, chunk=CHUNK),
         albedo        = vec3(0.45, 0.42, 0.35),
         roughness     = 0.9)
 

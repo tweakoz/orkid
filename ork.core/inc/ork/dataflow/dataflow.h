@@ -18,6 +18,7 @@
 
 #include <ork/config/config.h>
 
+#include <ork/math/cvector2.h>
 #include <ork/math/multicurve.h>
 #include <ork/math/TransformNode.h>
 #include <ork/kernel/orkpool.inl>
@@ -323,6 +324,19 @@ public:
   // loads/stores its output via DataBlockCache instead of recomputing. Terrain /
   // geometry set this; particles leave it false (realtime, every frame differs).
   bool _cacheable = false;
+  // SELECT-AS-OUTPUT marker (structural editor state, reflected as "output_node"): the
+  // module NAME to treat as the graph's display output, or empty for none. The terrain
+  // bake driver re-points height/normal captures to this node's "Out" and drops the rest
+  // — the C++-backed equivalent of the doc layer's display-capture rewiring, so the
+  // marker survives serialization instead of being flattened at elaborate time.
+  std::string _output_node;
+  // EDITOR NODE LAYOUT (reflected as "editor_layout"): module NAME -> canvas position.
+  // Lives on the GRAPH, deliberately NOT on the module, because per-module cook identity
+  // (hypermeshModuleIdentityHash / GraphInst::computeNodeHashes) serializes each MODULE's
+  // reflected JSON — a per-module position field would make every node DRAG a cook-cache
+  // miss. Here it rides the graph, round-trips with the JSON, and never enters node hashing.
+  // Absent in old saves -> empty map (pure editor data, no bake semantics).
+  std::map<std::string, fvec2> _editor_layout;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

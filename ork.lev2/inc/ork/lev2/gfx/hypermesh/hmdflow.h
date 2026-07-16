@@ -48,6 +48,7 @@ struct ComputeDrawable;
 } // namespace ork::lev2
 
 #include <ork/lev2/gfx/dflow/interchange.h> // family-neutral GPU-resource plug types (B.3)
+#include <ork/lev2/gfx/hypermesh/lruleset.h> // GR1.a: the reflected LRuleSet grammar (LSystem _grammar)
 
 namespace ork::lev2::hypermesh {
 
@@ -797,6 +798,9 @@ struct LSystemModuleData : public MeshModuleData {
   LSystemModuleData();
   static std::shared_ptr<LSystemModuleData> createShared();
   dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
+  // GR1.a: the reflected grammar (nullable). Unused by any runtime path in this slice — the
+  // GR1.b evaluator derives it; the legacy archetype path (below) stays the default while null.
+  lruleset_ptr_t _grammar;
   int   _archetype    = 0;      // growth model: 0 sympodial 1 conifer 2 saguaro 3 ocotillo
   int   _depth        = 7;      // recursion depth / trunk length (per archetype)
   int   _budget       = 4000;   // hard node cap (bake-cost bound)
@@ -822,6 +826,17 @@ struct LSystemModuleData : public MeshModuleData {
   float _jit_wave     = 0.25f;  // per-internode heading waviness along a shoot
 };
 using lsystemmoduledata_ptr_t = std::shared_ptr<LSystemModuleData>;
+
+// GR1.b — the grammar EVALUATOR (defined in hmdflow_lruleset.cpp, the schema TU). Derives `grammar`
+// (pass 1 rewrite + pass 2 turtle-interpret) into the XfNodeGraph node/slot buffers, reading `env`'s
+// reflected scalars as the LExpr PARAM environment (A8: numbers flow through params, never folded into
+// the grammar). PURE CPU / bake-time (boundary 5): the caller (LSystemModuleInst::_buildSkeleton) runs
+// _buildFrames + the GPU upload afterward, so the determinism/budget gates can drive this headless.
+void deriveLRuleSet(
+    const LRuleSet*             grammar,
+    const LSystemModuleData*    env,
+    ::ork::hyper::xfnode_vect&  out_nodes,
+    ::ork::hyper::xfslot_vect&  out_slots);
 
 ///////////////////////////////////////////////////////////////////////////////
 // LSweepModule (L-system family, M1 = G0b) — the SKINNER. XfNodeGraph -> GpuMesh:
@@ -977,6 +992,11 @@ struct LiveHypermesh {
   // (cookLoad hit). recompute() skips them (their output is final; cacheable
   // graphs are STATIC by the DSL contract). Populated once by materializeLive.
   std::set<dflow::DgModuleInst*> _cookLoaded;
+  // #33 LIVE-POKE EVICTION — the dflow plug-write clock snapshot taken right after cook-load.
+  // recompute() evicts any still-cook-loaded node whose input-plug _writeEpoch exceeds this
+  // (a poke AFTER materialize) plus everything downstream, so the DSL's cacheable=static
+  // heuristic can't freeze a caller that pokes plugs. Advances as pokes are consumed.
+  uint64_t _cookLoadEpoch = 0;
   // E.2: the graph's terminal InstanceSet (a ScatterSource output), discovered like _mesh;
   // null = not an instanced graph. setupMeshRender binds it (matrices + attrs SSBOs).
   dflowgfx::instanceset_inst_ptr_t _instances;

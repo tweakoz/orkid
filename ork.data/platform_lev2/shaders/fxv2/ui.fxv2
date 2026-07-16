@@ -78,6 +78,16 @@ state_block sb_lerpblend : sb_default {
   DepthMask = OFF;
 }
 ///////////////////////////////////////////////////////////////
+// premultiplied-alpha OVER: (Src*1) + (Dst*(1-SrcAlpha)). For compositing a
+// premultiplied RT (foreground rendered over a transparent clear) into a target
+// without the straight-alpha double-darken / halo.
+state_block sb_prema : sb_default {
+  BlendMode = PREMA;
+  CullTest  = OFF;
+  DepthTest = ALWAYS;
+  DepthMask = OFF;
+}
+///////////////////////////////////////////////////////////////
 state_block sb_additive : sb_default {
   BlendMode = ADDITIVE;
   CullTest  = OFF;
@@ -272,6 +282,33 @@ technique uitextured {
   }
 }
 ///////////////////////////////////////////////////////////////
+// Same as uitextured but with the ALPHA state_block BAKED IN. On Vulkan the blend
+// enable/factors are pipeline-baked from the resolved rasterstate and the pass
+// state_block wins the resolution — a runtime setBlendingMacro(ALPHA) on a
+// FreestyleMaterial (whose _rasterstate is never pushed on the FXI stack) cannot
+// override sb_default's BlendMode=OFF. So a translucent textured quad MUST select a
+// technique whose state_block is already ALPHA (the pattern FontMan's uitext uses).
+technique uitextured_alpha {
+  fxconfig = fxcfg_default;
+  pass p0C {
+    vertex_shader   = vs_uitext;
+    fragment_shader = ps_uitextured;
+    state_block     = sb_lerpblend;
+  }
+}
+///////////////////////////////////////////////////////////////
+// Composite a PREMULTIPLIED textured quad (e.g. a HUD RT rendered over a transparent
+// clear) — no straight-alpha halo/double-darken. Sample the texture AS-IS (already
+// premultiplied) and blend PREMA. The overlay panel uses this for its text layer.
+technique uitextured_prema {
+  fxconfig = fxcfg_default;
+  pass p0C {
+    vertex_shader   = vs_uitext;
+    fragment_shader = ps_uitextured;
+    state_block     = sb_prema;
+  }
+}
+///////////////////////////////////////////////////////////////
 technique uitextured_aa {
   fxconfig = fxcfg_default;
   pass p0C {
@@ -307,6 +344,25 @@ technique uidev_modcolor {
     vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_modclr;
     state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+// Flat ModColor quad, ALPHA-blended — a solid translucent slate (e.g. the HUD panel's
+// dark backing drawn straight over the scene before the premultiplied text layer).
+// Uses vs_uitext (position/color0/uv0 — matches the V16T16C16 vertex format the HUD
+// panel draws; vs_modcolor's vif_VTXCOL demands a TEXCOORD1 that format lacks) and a
+// texture-free fragment that just emits ModColor.
+fragment_interface iface_fmodc : push_constants {
+  inputs { vec2 frg_uv; }
+  outputs { vec4 out_clr; }
+}
+fragment_shader ps_modonly : iface_fmodc { out_clr = ModColor; }
+technique uidev_modcolor_alpha {
+  fxconfig = fxcfg_default;
+  pass p0E {
+    vertex_shader   = vs_uitext;
+    fragment_shader = ps_modonly;
+    state_block     = sb_lerpblend;
   }
 }
 ///////////////////////////////////////////////////////////////

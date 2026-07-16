@@ -380,6 +380,13 @@ void OpenVrDevice::__composite(lev2::Context* targ, Texture* twoeyetex) const  {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// OpenVR uses the wide two-eye submit path (__composite) and does not own a per-eye
+// runtime swapchain — the per-eye handoff is a genuine no-op here.
+void OpenVrDevice::__compositeStereo(
+    lev2::Context* targ, Texture* texL, Texture* texR, Texture* depthTexL, Texture* depthTexR) const {
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 void OpenVrDevice::_updatePoses() {
   EASY_BLOCK("openvr-upd");

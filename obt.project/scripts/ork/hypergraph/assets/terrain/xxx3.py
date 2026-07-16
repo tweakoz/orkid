@@ -14,8 +14,11 @@ from ork.hypergraph.assets.materials.terrain.solid import Solid
 from ork.hypergraph.colors import hsv
 _TAU = 6.28318530718
 ###############################################################################
-# erosion-only vertical exaggeration (meters that normalized 1.0 is DURING erosion).
-EROSION_HEIGHT_M = 4000.0
+# NATURAL UNITS: heights are TRUE METERS on the graph — the base fbm is authored at
+# RELIEF_M and every op (erosion included) acts on real meters. (The old normalized
+# [0,1]+HEIGHT_M form eroded at an equal EROSION_HEIGHT_M=4000, so this is the same
+# physical regime — no exaggeration remap needed.)
+RELIEF_M = 5000.0
 # strata terracing — ONE source of truth (STRATA_PERIOD_M); the material's strata_freq
 # is DERIVED from it so the shaded bands sit at the same elevations as the benches.
 SCALE           = 0.04      # hmview detail-frequency multiplier (ctx.param "scale")
@@ -36,7 +39,6 @@ P_FBM = T.ParamPack(
 P_THERM = T.ParamPack(
     talus_deg=16.0,
     rate=0.10,
-    exaggerated_height_m=EROSION_HEIGHT_M,
     iterations=570 )
 ###############################################################################
 P_EROX = T.ParamPack(
@@ -47,8 +49,7 @@ P_EROX = T.ParamPack(
     capacity_Kc=0.1,
     erosion_rate_per_s=3.0,
     deposition_rate_per_s=1.0,
-    creep_m2ps=16.0,
-    exaggerated_height_m=EROSION_HEIGHT_M )
+    creep_m2ps=16.0 )
 ###############################################################################
 P_PHA = T.ParamPack(
     strength=0.07,
@@ -59,7 +60,8 @@ P_PHA = T.ParamPack(
     normalization=0.5,
     lacunarity=2.0,
     gain=0.5,
-    default_height=0.5,
+    default_height=0.5*RELIEF_M,   # mid-height reference (METERS)
+    fade_width=0.15*RELIEF_M,      # valley<->peak fade window (METERS; old 0.15 of [0,1])
     octaves=1 )
 ###############################################################################
 
@@ -77,11 +79,11 @@ def strata_phase(ctx, scl, sfrq):
 def terrace_strata(ctx):
     """Snap the current height so its strata phase lands on a band boundary -> geometric
     benches coincide EXACTLY with XXX3Mat's bands (same strata_phase). Reads the current
-    height via ctx.P_object.y (= in0 * height_m). Soft riser so the steps aren't razor."""
+    height via ctx.P_object.y (= in0 — TRUE METERS). Soft riser so the steps aren't razor."""
     ph  = strata_phase(ctx, SCALE, STRATA_FREQ)
     phs = P.floor(ph) + P.smoothstep(0.30, 0.70, P.fract(ph))   # snap to integer band; soft riser
     dy  = (phs - ph) / (SCALE * STRATA_FREQ)                     # elevation shift (m) onto the band
-    return (ctx.P_object.y + dy) / ctx.height_m                 # normalized snapped height
+    return ctx.P_object.y + dy                                  # snapped height (meters)
 
 
 def descend_basins(node, *, strength=DESCEND_STRENGTH, playa=PLAYA,
@@ -203,9 +205,8 @@ class XXX3Mat(Ptex3d):
 
 
 class XXX3(HeightField):
-    # ---- authored PHYSICAL world scale (erosion exaggeration is per-op EROSION_HEIGHT_M) ----
+    # ---- authored PHYSICAL world scale (heights are TRUE METERS; relief = RELIEF_M) ----
     EXTENT_M = 32768.0
-    HEIGHT_M = 4000.0
     # shader lives IN THIS FILE (XXX3Mat above) -> MATERIAL_CLASS. Pure height/slope color
     # (no texture); the terraces supply the strata structure. Defaults are fine, so no params.
     MATERIAL_CLASS  = XXX3Mat
@@ -216,11 +217,13 @@ class XXX3(HeightField):
         super().__init__()
         ero_out = T.Const(0)
         ####################################
-        base = T.Fbm( P_FBM ) * 0.5 + 0.5
+        base = (T.Fbm( P_FBM ) * 0.5 + 0.5) * RELIEF_M   # TRUE METERS (0..RELIEF_M)
         ero_bas = base*0.03
         ####################################
-        for i in range(0,iters):
-          ero_inp = ero_out+ero_bas
+        # T.loop (not raw for): the document keeps ONE loop group per pass (editor-
+        # collapsible, count editable). ero_bas is loop-invariant (created outside).
+        with T.loop(iters, ero_out=ero_out) as L:
+          ero_inp = L.ero_out+ero_bas
           bfill = T.basin_fill(ero_inp)
           bfill = (ero_inp*0.90)+(bfill*0.1)
           thr_out = T.erode_thermal( bfill,P_THERM)
@@ -229,15 +232,19 @@ class XXX3(HeightField):
           xxx_out = (erox_out*0.9) + (pha_out*0.1)
           terr     = self.hfdisplacement(terrace_strata, xxx_out)
           terr_out = T.Mix(xxx_out, terr, 0.1)
-          ero_out = T.lpf(terr_out, cutoff_m=4)
+          L.ero_out = T.lpf(terr_out, cutoff_m=4)
+        ero_out = L.ero_out
         ####################################
-        for i in range(0,DESCEND_ITERS):
-          ero_out = descend_basins(ero_out, strength=DESCEND_STRENGTH)
+        with T.loop(DESCEND_ITERS, ero_out=ero_out) as L:
+          L.ero_out = descend_basins(L.ero_out, strength=DESCEND_STRENGTH)
+        ero_out = L.ero_out
         lpf_out = T.lpf(ero_out, cutoff_m=4)
         ero_out = (ero_out*0.15)+(lpf_out*0.85)
         lpf_out = T.lpf(ero_out, cutoff_m=2)
         ero_out = (ero_out*0.15)+(lpf_out*0.85)                # B.2: per-basin spill elevation (debug)
         flow    = T.flow3d(ero_out)     # MFD drainage area, log-compressed
+
+        ero_out = T.normalize(ero_out,out_lo=0.0,out_hi=RELIEF_M)
         ####################################
         # STRATA TERRACING (the unified-substrate addition): snap to band elevations,
         # blended TERRACE toward the eroded height (so drainage detail survives), then a
@@ -247,7 +254,9 @@ class XXX3(HeightField):
         self.capture(ero_out,"height",cache=True)
         self.capture(ero_out,"normal",cache=True)
         self.capture(flow.dir,"flow_dir",cache=True)
-        self.capture(flow.discharge,"flow_discharge",cache=True)
+        # EXPLICIT [0,1] for the FlowMap sampler (natural units: the flush no longer
+        # auto-exposes — a raw log-discharge > 1 turns the material AO pow() NaN-black).
+        self.capture(T.normalize(flow.discharge),"flow_discharge",cache=True)
         self.capture(flow.metrics,"flow_metrics",cache=True)
-        #self.relax_uv(self._height)
+        self.relax_uv(self._height)
        

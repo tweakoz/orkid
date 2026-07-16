@@ -8,7 +8,7 @@ from ork.hypergraph.ptex3d import Ptex3d, P
 from ork.hypergraph.colors import hsv
 from orkengine.core import vec3, vec2
 ###############################################################################
-HSCALE = 2500.0
+HSCALE = 4000.0
 ###############################################################################
 class Material(Ptex3d):
 
@@ -85,7 +85,6 @@ class Material(Ptex3d):
 ###############################################################################
 class ErodeFlow(HeightField):
     EXTENT_M = 16384.0
-    HEIGHT_M = HSCALE
     MATERIAL_CLASS  = Material
     MATERIAL_PARAMS = {}
 
@@ -93,19 +92,20 @@ class ErodeFlow(HeightField):
         super().__init__()
         # offset the 2D field domain by the world XZ origin -> position-decorrelated terrain
         # (offset is in lattice-cell units, so this reseeds per origin). field axes = world X,Z.
-        z = T.fbm(offset=vec2(origin.x, origin.z), frequency=6.0, octaves=5) * 0.5 + 0.5
+        z = (T.fbm(offset=vec2(origin.x, origin.z), frequency=6.0, octaves=5) * 0.5 + 0.5) * HSCALE
         z = T.basin_fill(z,blend=0.5)
-        z = T.terrace(z,steps=32,blend=0.75)
-        flow = None
+        z = T.terrace(z,step_m=HSCALE/32.0,blend=0.75)   # 32 plateaus over the [0,HSCALE] range
         #############################
         # first erosion pass (low freq features)
+        # T.loop (not raw for): the document keeps ONE loop group (editor-collapsible,
+        # count editable). filt uses L.i arithmetic; fii*fii (L.i exprs have no pow).
         #############################
-        for i in range(int(iters)):
-          fi = i/float(iters)
+        with T.loop(int(iters), z=z) as L:
+          fi = L.i/float(iters)
           fii = 1.0 - fi
-          filt = 2+(pow(fii,2)*128)  # smoothstep filter for the blend (optional) 
-          flow = T.flow3d(z)
-          z    = T.flow_erode(z, flow.discharge,
+          filt = 2+((fii*fii)*128)  # smoothstep filter for the blend (optional)
+          flow = T.flow3d(L.z)
+          zz   = T.flow_erode(L.z, flow.discharge,
                               dt=0.5,           # ~1  (NOT 1000 — past ~1 the relief clamp saturates)
                               k_erode=0.5,      # incision strength        (0.05–0.3)
                               k_deposit=0.05,    # 0 = pure incision; raise to ~0.03 for valley fans
@@ -113,8 +113,9 @@ class ErodeFlow(HeightField):
                               dep_m=0.5,        # deposition AREA exponent  (~0.5 — was 20.5 !)
                               clamp_frac=1.0,
                               blend = 1.0)   # master per-step amount = fraction of local relief
-          z = T.erode_thermal(z, iterations=8, blend=1.0)  # smooth the jaggedness from discrete steps (NOT the flow-erode clamp )
-          z = T.lpf(z, cutoff_m=filt,blend = 1.0)    
+          zz = T.erode_thermal(zz, iterations=8, blend=1.0)  # smooth the jaggedness from discrete steps (NOT the flow-erode clamp )
+          L.z = T.lpf(zz, cutoff_m=filt,blend = 1.0)
+        z = L.z
         #############################
         # first filter pass (remove hifreq detail, progressively)
         #############################
@@ -129,12 +130,12 @@ class ErodeFlow(HeightField):
         # second erosion pass (add a bit of hifreq detail back in)
         #############################
         iters = 5
-        for i in range(int(iters)):
-          fi = i/float(iters)
+        with T.loop(int(iters), z=z) as L:
+          fi = L.i/float(iters)
           fii = 1.0 - fi
-          filt = 2+(pow(fii,2)*40)  # smoothstep filter for the blend (optional) 
-          flow = T.flow3d(z)
-          z    = T.flow_erode(z, flow.discharge,
+          filt = 2+((fii*fii)*40)  # smoothstep filter for the blend (optional)
+          flow = T.flow3d(L.z)
+          zz   = T.flow_erode(L.z, flow.discharge,
                               dt=0.15,           # ~1  (NOT 1000 — past ~1 the relief clamp saturates)
                               k_erode=0.5,      # incision strength        (0.05–0.3)
                               k_deposit=0.05,    # 0 = pure incision; raise to ~0.03 for valley fans
@@ -142,24 +143,38 @@ class ErodeFlow(HeightField):
                               dep_m=0.5,        # deposition AREA exponent  (~0.5 — was 20.5 !)
                               clamp_frac=1.0,
                               blend = 1.0)   # master per-step amount = fraction of local relief
-          z = T.lpf(z, cutoff_m=filt,blend = 1.0)    
+          L.z = T.lpf(zz, cutoff_m=filt,blend = 1.0)
+        z = L.z
+        #############################
+        # METERS CALIBRATION (natural-units): the raw fbm->terrace->erode chain only
+        # occupies ~30% of [0,HSCALE] (multi-octave fbm never reaches its extremes,
+        # basin_fill lifts the lows — a 15000 HSCALE baked [9679..14200], relief 4521m
+        # on a 9.7km pedestal). Pre-natural-units the bake's flush AUTO-EXPOSED [0,1]
+        # x height-scale, so HSCALE read as true relief anyway. Make that contract
+        # EXPLICIT: pin the eroded field to [0, HSCALE] — HSCALE == total relief in
+        # METERS, floor at 0 (affine rescale; erosion shape untouched). Downstream
+        # consumers (fcb min_depth=0.02*HSCALE, the material's h01=y/HSCALE strata
+        # bands) now agree with the same meters.
+        #############################
+        z = T.normalize(z, out_lo=0.0, out_hi=HSCALE)
         #############################
         # gen shader data
         #############################
         zf = T.basin_fill(z,blend=1.0)
-        fcb = T.fill_closed_basins(z, min_depth=0.02)
+        fcb = T.fill_closed_basins(z, min_depth=0.02*HSCALE)   # min_depth is METERS (was normalized)
         flow = T.flow3d(z)
         #############################
         # captures
         #############################
-        self.capture(flow.discharge, "flow_discharge", cache=True)
+        # EXPLICIT [0,1] for the material samplers (the flush no longer auto-exposes).
+        self.capture(T.normalize(flow.discharge), "flow_discharge", cache=True)
         self.capture(flow.metrics,   "flow_metrics",   cache=True)
         self.capture(z, "height", cache=True)
         self.capture(z, "normal", cache=True)
         self.capture(fcb.filled,        "filled",      cache=True)   # mono pour-point elevation
         self.capture(fcb.basin,      "basin",      cache=True)   # RGBA: spill/depth/id/mask
         self.capture(fcb.center_pit, "center_pit", cache=True)   # RGBA: 3D offset to pit + dist
-        self.capture(fcb.filled-z, "fill_depth", cache=True)
+        self.capture(T.normalize(fcb.filled-z), "fill_depth", cache=True)
         # EQUAL-AREA UV RELAXATION (slope-stretch fix): captures "relaxed_uv" + "binormal". In mode='stored'
         # the proctex atlas is rasterized + sampled in this relaxed space, so the deep eroded canyons/cliffs
         # get an equal texel budget (sharper) instead of the planar parameterization starving steep faces.

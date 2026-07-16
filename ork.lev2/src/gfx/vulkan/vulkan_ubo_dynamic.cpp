@@ -29,12 +29,20 @@ void VkDynamicUBOSystem::init(vkcontext_rawptr_t ctx) {
   if(0)printf("VkDynamicUBOSystem: Creating global buffer of %zu MB (alignment=%zu, chunk_size=%zu)\n",
          _buffer_size / (1024*1024), _actual_alignment, chunk_size);
   
-  // Use VulkanBuffer constructor - it handles all the Vulkan setup
+  // Use VulkanBuffer constructor - it handles all the Vulkan setup.
+  // Request DEVICE_LOCAL|HOST_VISIBLE|HOST_COHERENT = the BAR/ReBAR window: CPU writes
+  // through the persistent map land in VRAM-visible memory, so the GPU's per-draw UBO
+  // reads stay local instead of fetching over PCIe every draw. Degrades to plain
+  // HOST_VISIBLE sysram when no BAR type exists or the BAR heap is full
+  // (_findMemoryType / VulkanMemoryForBuffer fallback). BAR memory is write-combined:
+  // this mapping must stay WRITE-ONLY from the CPU (the only writer is the shadow-buffer
+  // memcpy in applyPendingUboUpdates — keep it that way).
   _global_buffer = std::make_shared<VulkanBuffer>(
-    ctx, 
-    _buffer_size, 
+    ctx,
+    _buffer_size,
     VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-    "DynamicUBO"
+    "DynamicUBO",
+    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
   );
   
   // Map the entire buffer persistently for CPU writes

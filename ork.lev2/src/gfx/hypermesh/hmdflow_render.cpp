@@ -21,6 +21,7 @@
 #include <filesystem> // impostor atlas dump dir (ORKID_IMPOSTOR_DUMP)
 #include <ork/lev2/gfx/renderer/compute_drawable.h>
 #include <ork/lev2/gfx/renderphasestats.h> // perf HUD: hypermesh-gen compute timing
+#include <ork/lev2/gfx/renderer/cull_debug.h> // ORKID_DISABLE_FRUSTUM_CULL / _OCCLUSION_CULL debug levers
 #include <ork/lev2/gfx/renderer/hzb.h> // HZBBuilder — the per-view occlusion source (read from the RCFD)
 #include <ork/lev2/gfx/terrain/dflow/hfdflow.h> // terrain::BakeEnv — the clock mirror for field subgraphs (E.1b)
 // impostor bake (A2): offscreen MRT capture of the base mesh from hemi-octahedral angles.
@@ -387,25 +388,29 @@ compute_shader cs_cull : ciface : lib_hzb {
   mat4 M  = IN_M[i];
   vec3 c  = (M * vec4(u_bound.xyz, 1.0)).xyz;
   float r = u_bound.w * max(length(M[0].xyz), max(length(M[1].xyz), length(M[2].xyz)));
-  vec4 rx = vec4(u_vp[0].x, u_vp[1].x, u_vp[2].x, u_vp[3].x);
-  vec4 ry = vec4(u_vp[0].y, u_vp[1].y, u_vp[2].y, u_vp[3].y);
-  vec4 rz = vec4(u_vp[0].z, u_vp[1].z, u_vp[2].z, u_vp[3].z);
-  vec4 rw = vec4(u_vp[0].w, u_vp[1].w, u_vp[2].w, u_vp[3].w);
-  // u_tighten (>1) narrows the side planes -> the cull frustum is NARROWER than the view (objects
-  // pop at the screen edges, demonstrating the cull). 1.0 = exact view frustum. near/far unchanged.
-  vec4 sx = rx * u_tighten; vec4 sy = ry * u_tighten;
-  vec4 pl0 = rw + sx; vec4 pl1 = rw - sx;
-  vec4 pl2 = rw + sy; vec4 pl3 = rw - sy;
-  vec4 pl4 = rz;      vec4 pl5 = rw - rz;
   bool inside = true;
-  // distance cull (cheap radial reject): cull beyond cull_distance from the eye. w<=0 = disabled.
-  if (u_eye_cd.w > 0.0) { if (length(c - u_eye_cd.xyz) > u_eye_cd.w) { inside = false; } }
-  if ((dot(pl0.xyz, c) + pl0.w) < (-r * length(pl0.xyz))) { inside = false; }
-  if ((dot(pl1.xyz, c) + pl1.w) < (-r * length(pl1.xyz))) { inside = false; }
-  if ((dot(pl2.xyz, c) + pl2.w) < (-r * length(pl2.xyz))) { inside = false; }
-  if ((dot(pl3.xyz, c) + pl3.w) < (-r * length(pl3.xyz))) { inside = false; }
-  if ((dot(pl4.xyz, c) + pl4.w) < (-r * length(pl4.xyz))) { inside = false; }
-  if ((dot(pl5.xyz, c) + pl5.w) < (-r * length(pl5.xyz))) { inside = false; }
+  // u_tighten < 0 is the ORKID_DISABLE_FRUSTUM_CULL sentinel (host-stamped): skip ALL frustum + distance
+  // rejects so every instance is treated visible. Otherwise u_tighten (>1) narrows the side planes -> the
+  // cull frustum is NARROWER than the view (objects pop at the screen edges). 1.0 = exact view; near/far
+  // unchanged. Occlusion (below) still applies when frustum is disabled unless it too is disabled.
+  if (u_tighten >= 0.0) {
+    vec4 rx = vec4(u_vp[0].x, u_vp[1].x, u_vp[2].x, u_vp[3].x);
+    vec4 ry = vec4(u_vp[0].y, u_vp[1].y, u_vp[2].y, u_vp[3].y);
+    vec4 rz = vec4(u_vp[0].z, u_vp[1].z, u_vp[2].z, u_vp[3].z);
+    vec4 rw = vec4(u_vp[0].w, u_vp[1].w, u_vp[2].w, u_vp[3].w);
+    vec4 sx = rx * u_tighten; vec4 sy = ry * u_tighten;
+    vec4 pl0 = rw + sx; vec4 pl1 = rw - sx;
+    vec4 pl2 = rw + sy; vec4 pl3 = rw - sy;
+    vec4 pl4 = rz;      vec4 pl5 = rw - rz;
+    // distance cull (cheap radial reject): cull beyond cull_distance from the eye. w<=0 = disabled.
+    if (u_eye_cd.w > 0.0) { if (length(c - u_eye_cd.xyz) > u_eye_cd.w) { inside = false; } }
+    if ((dot(pl0.xyz, c) + pl0.w) < (-r * length(pl0.xyz))) { inside = false; }
+    if ((dot(pl1.xyz, c) + pl1.w) < (-r * length(pl1.xyz))) { inside = false; }
+    if ((dot(pl2.xyz, c) + pl2.w) < (-r * length(pl2.xyz))) { inside = false; }
+    if ((dot(pl3.xyz, c) + pl3.w) < (-r * length(pl3.xyz))) { inside = false; }
+    if ((dot(pl4.xyz, c) + pl4.w) < (-r * length(pl4.xyz))) { inside = false; }
+    if ((dot(pl5.xyz, c) + pl5.w) < (-r * length(pl5.xyz))) { inside = false; }
+  }
   if (inside) { atomicAdd(u_frustum, 1u); } // passed frustum (pre-occlusion count)
   // HZB occlusion (mode 0 = off, 1 = count-only verify, 2 = cull). Frustum-visible only. The instance
   // is occluded iff EVERY one of its K sub-boxes is occluded (a tree's tight slabs cull behind a near
@@ -539,7 +544,11 @@ struct MeshInstCull {
     if (rcfd)
       if (auto v = rcfd->tryUserProperty<float>("CullFrustumScale"_crc))
         cfs = v.value();
-    p.count = uint32_t(_count); p.tighten = (cfs > 0.0f) ? (1.0f / cfs) : 1.0f;
+    // ORKID_DISABLE_FRUSTUM_CULL debug lever: stamp the pass-all sentinel (u_tighten < 0) so cs_cull
+    // skips the frustum + distance rejects (occlusion, if enabled, still applies). Cached bool, no cost
+    // when unset. u_tighten is otherwise 1/scale, always > 0, so a negative value is unambiguous.
+    p.count = uint32_t(_count);
+    p.tighten = cullFrustumDisabled() ? -1.0f : ((cfs > 0.0f) ? (1.0f / cfs) : 1.0f);
     // HZB 1-phase occlusion: the pyramid built from LAST frame's depth, stamped into the RCFD in
     // Scene::preRender. mode: 0 off, 1 count-only (verify, don't cull), 2 cull. ORKID_HZB_OCCLUSION
     // selects the mode (default 2 once verified); absent/invalid HZB -> mode 0 (frustum-only, safe).
@@ -548,7 +557,7 @@ struct MeshInstCull {
     if (rcfd)
       if (auto v = rcfd->tryUserProperty<uint64_t>("HZB"_crc))
         hzb = reinterpret_cast<HZBBuilder*>(uintptr_t(v.value()));
-    bool hzb_ok = hzb and hzb->_valid and hzb->_ssbo and (s_mode != 0);
+    bool hzb_ok = hzb and hzb->_valid and hzb->_ssbo and (s_mode != 0) and not cullOcclusionDisabled();
     p.hzb_w = hzb_ok ? uint32_t(hzb->_baseW) : 0u;
     p.hzb_h = hzb_ok ? uint32_t(hzb->_baseH) : 0u;
     p.hzb_mips = hzb_ok ? uint32_t(hzb->_mips) : 0u;

@@ -167,7 +167,7 @@ def expr_field(surfnode, inputs=(), name=None):
     Backs HeightField.hfbake/hfmask/hfdisplacement; `surfnode` is a ptex3d dsl SurfNode
     (e.g. P.sin(...) over ctx.P_object). `inputs` is a list of upstream TerrainNodes wired
     to In0..In{n-1} and read in the expression via ctx.input(k) — input 0 is the current
-    height (ctx.P_object.y = in0*height_m). Bake-portable ops only (no view-dependent atoms)."""
+    height (ctx.P_object.y = in0 — TRUE METERS). Bake-portable ops only (no view-dependent atoms)."""
     from ork.hypergraph.ptex3d.dsl import emit_compute_field
     from ork.hypergraph.ptex3d.compute_template import build_field_shader
     g = graph_or_raise("ExprField")
@@ -183,6 +183,88 @@ def expr_field(surfnode, inputs=(), name=None):
     for k, src in enumerate(inputs):   # In0..In{n-1}, contiguous (matches the bind order)
         g.connect(getattr(m.inputs, "In%d" % k), src.output_plug)
     return TerrainNode(m, m.outputs.Out)
+
+
+def expr_field_raw(inputs, shadertext, name=None):
+    """REGENERATED-CODE escape hatch (the .py writer emits this for authored expression
+    nodes): build an ExprModule from its COMPILED shader text verbatim. Author NEW
+    expressions with hfbake / expr_field / the editor's T.expr node — this form exists so
+    a document containing an expression node still saves to a RUNNABLE .py. Edit the
+    original authored function, never the embedded text."""
+    g = graph_or_raise("ExprFieldRaw")
+    m = g.create(name or anon_name("expr", g), _terrain.ExprModule)
+    m.shadertext = str(shadertext)
+    for k, src in enumerate(inputs):   # In0..In{n-1}, contiguous (matches the bind order)
+        g.connect(getattr(m.inputs, "In%d" % k), src.output_plug)
+    return TerrainNode(m, m.outputs.Out)
+
+
+def _compile_expr_source(source, n_inputs):
+    """Evaluate a T.expr SOURCE STRING to a ptex3d scalar SurfNode and codegen the
+    ExprModule compute shadertext. SHARED by T.expr (trace) and doc.elaborate (rebake
+    recompile) so both take the identical eval+codegen path. The eval namespace is the
+    fresh-ctx idiom of HeightField._eval_expr: {"ctx": SurfaceCtx(), "P": P}. Raises a
+    clear TerrainDocParamError naming the problem (bad syntax / non-scalar expression /
+    ctx.input(k) beyond the connected inputs) — ops self-defend, never a silent bad shader."""
+    from ork.hypergraph.dflow.terrain.doc import TerrainDocParamError
+    from ork.hypergraph.ptex3d import P
+    from ork.hypergraph.ptex3d.dsl import SurfaceCtx, emit_compute_field
+    from ork.hypergraph.ptex3d.compute_template import build_field_shader
+    try:
+        surfnode = eval(source, {"ctx": SurfaceCtx(), "P": P})  # authoring DSL string
+    except Exception as e:
+        raise TerrainDocParamError(
+            f"T.expr: could not evaluate expression source {source!r} "
+            f"({type(e).__name__}: {e}) — use ctx.input(k) / P.* over ctx.P_object.")
+    try:
+        lines, final, libsrcs, inherits, imports, params, in_idx = emit_compute_field(surfnode)
+    except Exception as e:
+        raise TerrainDocParamError(
+            f"T.expr: {source!r} is not a bakeable scalar ptex3d expression "
+            f"({type(e).__name__}: {e}).")
+    if in_idx and max(in_idx) >= n_inputs:
+        raise TerrainDocParamError(
+            f"T.expr: expression references ctx.input({max(in_idx)}) but only {n_inputs} "
+            f"input(s) were connected (T.expr inputs=...).")
+    return build_field_shader(lines, final, libsrcs, inherits, n_inputs=n_inputs)
+
+
+def expr(source, inputs=(), name=None):
+    """Editor-authorable EXPRESSION node: compile a ptex3d expression SOURCE STRING to a
+    terrain field via the generic ExprModule. The source is evaluated with `ctx` (a fresh
+    ptex3d SurfaceCtx) and `P` in scope — the SAME authoring surface as expr_field / hfbake,
+    but as a STRING so it round-trips (saved .py re-emits T.expr, propsheet edits recompile).
+    `inputs` are upstream TerrainNodes wired to In0..In{n-1}, read in the expression via
+    ctx.input(k) (input 0 = the current height, ctx.P_object.y = in0, TRUE METERS). Both the
+    compiled shadertext AND the source are recorded on the module (source drives re-authoring;
+    shadertext is the bake artifact). Errors raise a clear TerrainDocParamError."""
+    g = graph_or_raise("Expr")
+    inputs = list(inputs)
+    text = _compile_expr_source(source, len(inputs))
+    m = g.create(name or anon_name("expr", g), _terrain.ExprModule)
+    m.shadertext = text
+    # B1 (ExprModule.expr_source): reflected source that drives re-author + rebake recompile.
+    # Feature-guarded so a pre-rebuild binary degrades to the compiled-blob path (expr_field_raw).
+    if hasattr(m, "expr_source"):
+        m.expr_source = source
+    for k, src in enumerate(inputs):   # In0..In{n-1}, contiguous (matches the bind order)
+        if not isinstance(src, TerrainNode):
+            raise TypeError(f"T.expr input {k} must be a terrain node; got {type(src).__name__}")
+        g.connect(getattr(m.inputs, "In%d" % k), src.output_plug)
+    return TerrainNode(m, m.outputs.Out)
+
+
+def bypass(node, flag=True):
+    """Mark a node BYPASSED (structural pass-through) — the DSL / editor form of the bypass
+    toggle. Sets the flag through the node's module proxy so the DOCUMENT records it (badges /
+    undo / doc-JSON, validated bypassable) and it forwards to the real module; elaborate then
+    forwards DocNode.bypassed onto the elaborated module, where the C++ resolveConnectedOutput
+    splices it out of the dependency chain. Returns `node` so it chains. Loud on a source node
+    or capture (nothing to pass through)."""
+    if not isinstance(node, TerrainNode):
+        raise TypeError(f"bypass expects a terrain node; got {type(node).__name__}")
+    node.module.bypassed = bool(flag)
+    return node
 
 
 def pow(node, exponent, name=None):
@@ -220,16 +302,21 @@ def remap(node, scale=1.0, bias=0.0, lo=0.0, hi=1.0, name=None):
     return make_remap(node, scale=scale, bias=bias, lo=lo, hi=hi, name=name)
 
 
-def terrace(node, steps=4.0, sharpness=1.0, blend=1.0, name=None):
-    """Quantize to `steps` plateaus with a `sharpness` riser. `blend` (0..1, default 1.0)
-    crossfades the terraced result against the input: 0 = passthrough, partial = softer/
-    shallower benches; may also be a TerrainNode (per-texel mask)."""
+def terrace(node, step_m=100.0, sharpness=1.0, blend=1.0, name=None):
+    """Quantize to plateaus `step_m` METERS apart with a `sharpness` riser (natural
+    units: benches land at multiples of step_m regardless of the terrain's range).
+    `blend` (0..1, default 1.0) crossfades the terraced result against the input:
+    0 = passthrough, partial = softer/shallower benches. A SCALAR blend rides the
+    module's RUNTIME params (params SSBO, propsheet-editable, no recompile); a
+    TerrainNode (per-texel mask) routes through a post-op MaskBlend."""
     g = graph_or_raise("Terrace")
     m = g.create(name or anon_name("terr", g), _terrain.TerraceModule)
     g.connect(m.inputs.In, node.output_plug)
-    m.inputs.steps = float(steps)
+    m.inputs.step_m = float(step_m)
     m.inputs.sharpness = float(sharpness)
-    return _blend_out(node, TerrainNode(m, m.outputs.Out), blend)
+    m.inputs.blend = 1.0 if isinstance(blend, TerrainNode) else float(blend)
+    out = TerrainNode(m, m.outputs.Out)
+    return _blend_out(node, out, blend) if isinstance(blend, TerrainNode) else out
 
 
 def clamp(node, lo=0.0, hi=1.0, name=None):
@@ -362,8 +449,8 @@ def erode_thermal(node, *packs, iterations=40, blend=1.0, name=None, **overrides
 
 def erox(node, *packs, blend=1.0, name=None, **overrides):
     """PHYSICAL hydraulic erosion (Mei et al. virtual-pipes) in METERS / SECONDS, so the
-    bake is RESOLUTION-INDEPENDENT. cell_size_m = extent_m/dim and height_scale_m bridge
-    grid<->world (real slope = rise_m/run_m); the timestep dt is CFL-derived
+    bake is RESOLUTION-INDEPENDENT. Heights are TRUE METERS; cell_size_m = extent_m/dim
+    (real slope = rise_m/run_m); the timestep dt is CFL-derived
     (dt = 0.5*cell_size_m/flow_speed_max_mps) so iterations = ceil(sim_time_s/dt) scale with
     dim to hold the SAME physical time + diffusion, and every RATE is *dt -> the result
     converges across resolution. Unlike a stochastic particle sim, this is a
@@ -430,17 +517,21 @@ def basin_fill(node, epsilon=0.0, blend=1.0, name=None):
     point so every cell has a downhill path to the boundary (no interior local minima remain;
     filled basins become flat lakes). The rest of the terrain is untouched. Priority-Flood
     (Barnes 2014), exact + one pass — a CPU op (reads the field back, floods, writes; cost
-    ~O(n log n), so heavy at very high dim). `epsilon` (normalized height units, default
+    ~O(n log n), so heavy at very high dim). `epsilon` (METERS, default
     0 = flat fill) adds a tiny per-step drainage gradient so filled flats still route to the
     outlet. Use to pre-condition terrain for flow-based erosion, fill spurious pits between
-    uplift+erode passes, or carve lakes."""
+    uplift+erode passes, or carve lakes. `blend` (0..1, default 1.0) crossfades filled vs
+    original: a SCALAR is a module param (propsheet-editable, partial fills); a TerrainNode
+    mask routes through a post-op MaskBlend."""
     g = graph_or_raise("BasinFill")
     if not isinstance(node, TerrainNode):
         raise TypeError(f"basin_fill expects a terrain node; got {type(node).__name__}")
     m = g.create(name or anon_name("basin", g), _terrain.BasinFillModule)
     g.connect(m.inputs.In, node.output_plug)
     m.inputs.epsilon = float(epsilon)
-    return _blend_out(node, TerrainNode(m, m.outputs.Out), blend)
+    m.inputs.blend = 1.0 if isinstance(blend, TerrainNode) else float(blend)
+    out = TerrainNode(m, m.outputs.Out)
+    return _blend_out(node, out, blend) if isinstance(blend, TerrainNode) else out
 
 
 from collections import namedtuple as _namedtuple
@@ -522,11 +613,11 @@ def flow_erode(node, discharge, niter=1, dt=1.0, k_erode=0.02, k_deposit=0.02, m
     ±clamp_frac·(local relief) so a cell can never invert -> unconditionally bounded (no implicit
     solve, no spikes). Boundary held fixed (base level).
 
-    Per cell, per step:  slope=|grad z|*(height_m/texel_m) (physical);  flatv=1/(1+slope*flat_k);
+    Per cell, per step:  slope=|grad z_m|/texel_m (heights are TRUE METERS);  flatv=1/(1+slope*flat_k);
     A=discharge (exp() if disch_log);  erode=dt*k_erode*A^m*slope^n;  deposit=dt*k_deposit*flatv*A^dep_m;
     dz=clamp(deposit-erode, +/- clamp_frac*local_relief);  z+=dz  (boundary held fixed).
 
-    ARGS / how to tune (NOTE z is normalized [0,1] but A is m^2, so clamp_frac*local_relief is the
+    ARGS / how to tune (z is METERS and A is m^2; clamp_frac*local_relief is the
     DOMINANT per-step magnitude; dt/k_* mostly set WHICH cells erode vs deposit — use dt~1, not <<1):
       niter      : internal steps with A HELD FIXED (cheap, A goes stale). Leave 1 and loop
                    flow3d->flow_erode in the DSL so A is recomputed as channels deepen.
@@ -541,6 +632,9 @@ def flow_erode(node, discharge, niter=1, dt=1.0, k_erode=0.02, k_deposit=0.02, m
       clamp_frac : MASTER amount-per-step knob (fraction of local relief); also the stability guard.
                    lower=gentle/smooth, higher(->1)=aggressive.  0.3-0.7
       disch_log  : True if discharge is log(1+A) (T.flow3d default) -> exp() to raw A.
+      blend      : crossfade eroded result vs ORIGINAL input (0..1, default 1 = full erosion).
+                   A SCALAR is a module param (propsheet-editable, RUNTIME params SSBO);
+                   a TerrainNode mask routes through a post-op MaskBlend.
 
     Crisp dendritic incision recipe (chain in the DSL, ~30 iters):
         z = T.basin_fill(z)
@@ -561,7 +655,9 @@ def flow_erode(node, discharge, niter=1, dt=1.0, k_erode=0.02, k_deposit=0.02, m
     mod.k_erode = float(k_erode); mod.k_deposit = float(k_deposit)
     mod.m = float(m); mod.n = float(n); mod.dep_m = float(dep_m)
     mod.flat_k = float(flat_k); mod.clamp_frac = float(clamp_frac); mod.disch_log = bool(disch_log)
-    return _blend_out(node, TerrainNode(mod, mod.outputs.Out), blend)
+    mod.blend = 1.0 if isinstance(blend, TerrainNode) else float(blend)
+    out = TerrainNode(mod, mod.outputs.Out)
+    return _blend_out(node, out, blend) if isinstance(blend, TerrainNode) else out
 
 
 def fill_closed_basins(node, min_depth=0.0, name=None):
@@ -579,7 +675,7 @@ def fill_closed_basins(node, min_depth=0.0, name=None):
       .basin       RGBA: R=spill(pour elev) G=depth(spill-z) B=per-basin shade A=closed mask.
       .center_pit  RGBA: RGB=3D offset (meters) from the cell to its basin PIT (deepest cell) A=dist.
 
-    min_depth (D, normalized height units): keep only basins whose persistence (pour - pit) >= D;
+    min_depth (D, METERS): keep only basins whose persistence (pour - pit) >= D;
     shallower sub-basins merge into their parent. 0 = finest (every pit a basin); larger = coarser
     (the dial that fixes basin_fill's uncontrolled nesting). Independent of upstream basin_fill."""
     g = graph_or_raise("FillClosedBasins")
@@ -607,11 +703,12 @@ def pha(node, *packs, octaves=5, blend=1.0, name=None, **overrides):
       normalization  phacelle magnitude normalization [0,1]
       lacunarity     per-octave frequency multiplier
       gain           per-octave magnitude multiplier
-      default_height mid-height reference (fadeTarget 0); valley<-1 peak>+1 over +/-0.15
+      default_height mid-height reference (fadeTarget 0), METERS
+      fade_width     valley<->peak fade window around default_height, METERS (default 600)
       octaves        baked gully-octave count (NOT a plug; stays an explicit kwarg)
     Float params accept kwargs and/or ParamPacks (explicit kwargs override packs); defaults:
     strength=0.22, gully_weight=0.5, detail=1.5, scale=0.15, cell_scale=0.7, normalization=0.5,
-    lacunarity=2.0, gain=0.5, default_height=0.5.
+    lacunarity=2.0, gain=0.5, default_height=0.5, fade_width=600.0.
     `blend` (0..1 scalar OR a per-texel TerrainNode field mask) crossfades the filtered result
     against the input — 0 = passthrough, 1 = full effect, a field = erode only where it's high
     (same path every process op's `blend` takes; a field routes through MaskBlend)."""

@@ -21,10 +21,10 @@ namespace ork::lev2::terrain {
 // basis enum -> the libblock call substituted into the octave loop.
 static const char* _noise_basis_call(int basis) {
   switch (basis) {
-    case 1:  return "_nsimplex(p)";
-    case 2:  return "_nworley(p)";
-    case 3:  return "_nvoronoi(p)";
-    default: return "_nperlin(p)";   // 0
+    case 1:  return "_nsimplex(p, sd)";
+    case 2:  return "_nworley(p, sd)";
+    case 3:  return "_nvoronoi(p, sd)";
+    default: return "_nperlin(p, sd)";   // 0
   }
 }
 
@@ -36,48 +36,69 @@ static const char* _noise_basis_call(int basis) {
 // live in a params SSBO (binding 1) re-written from the DATA plugs every pre-phase —
 // live-editable + offset_vel time pan. Only STRUCTURE bakes: dims, octave bound, basis,
 // warp presence. When `warped`, wx/wy ride bindings 2/3.
-static std::string _noise_compute_text(int dim, int octaves, int basis, bool warped) {
+static std::string _noise_compute_text(int octaves, int basis, bool warped) {
   std::string warp_sif  = warped
-      ? "storage_interface sif_wx (descriptor_set 0) { buffer layout(std430) wx_in { float wxdata[%DIMSQ%]; }; }\n"
-        "storage_interface sif_wy (descriptor_set 0) { buffer layout(std430) wy_in { float wydata[%DIMSQ%]; }; }\n"
+      ? "storage_interface sif_wx (descriptor_set 0) { buffer layout(std430) wx_in { float wxdata[]; }; }\n"
+        "storage_interface sif_wy (descriptor_set 0) { buffer layout(std430) wy_in { float wydata[]; }; }\n"
       : "";
   std::string warp_list = warped ? " sif_wx sif_wy" : "";
   std::string warp_add  = warped
-      ? " + p_wamt * vec2(wxdata[yi * %DIMU% + xi], wydata[yi * %DIMU% + xi])"
+      ? " + p_wamt * vec2(wxdata[yi * u_dim + xi], wydata[yi * u_dim + xi])"
       : "";
+  // DIM is RUNTIME data (params SSBO p_dimf) — dim changes never rebuild the shader; the
+  // storage arrays are runtime-sized. Only STRUCTURE bakes (dims->runtime, octave bound,
+  // basis, warp presence).
   std::string tmpl = R"SHADER(
 fxconfig fxcfg_default {}
 storage_interface sif_hf (descriptor_set 0) {
-  buffer layout(std430) hf_out { float heights[%DIMSQ%]; };
+  buffer layout(std430) hf_out { float heights[]; };
 }
 storage_interface sif_pm (descriptor_set 0) {
   buffer layout(std430) pm_in { float p_freq; float p_amp; float p_obx; float p_oby;
-                                float p_wamt; float p_r0; float p_r1; float p_r2; };
+                                float p_wamt; float p_r0; float p_dimf; float p_r2; };
 }
 %WARPSIF%compute_interface iface_hf {
   storage { sif_hf sif_pm%WARPLIST% }
   inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); }
 }
 libblock lib_tnoise {
+  // DETERMINISTIC integer lattice hash (lowbias32 mix — same family the hypermesh
+  // shaders use). Replaces fract(sin(dot(..))*43758..): sin() at large arguments is
+  // vendor-approximated, so mac(Apple) and linux(NVIDIA) generated ENTIRELY different
+  // noise fields from identical params — the cross-platform terrain divergence
+  // class. Lattice cells are exact integer-valued floats; hashing in the
+  // uint domain is bit-exact on every GPU. The seed is RUNTIME data (params SSBO
+  // p_r0) so seed changes never rebuild the shader.
+  uint _ihash_u(vec2 cell, uint seed) {
+    uvec2 q = uvec2(ivec2(cell)) * uvec2(1597334673u, 3812015801u);
+    uint n = q.x ^ q.y ^ (seed * 0x9e3779b9u);
+    n ^= n >> 16; n *= 0x7feb352du; n ^= n >> 15; n *= 0x846ca68bu; n ^= n >> 16;
+    return n;
+  }
+  float _ihash21(vec2 cell, uint seed) { // [0,1)
+    return float(_ihash_u(cell, seed) >> 8) * (1.0 / 16777216.0);
+  }
   // signed 2D hash -> gradient / feature-point offset in [-1,1].
-  vec2 _nhash2(vec2 p) {
-    p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
-    return -1.0 + 2.0 * fract(sin(p) * 43758.5453123);
+  vec2 _nhash2(vec2 cell, uint seed) {
+    uint n = _ihash_u(cell, seed);
+    return -1.0 + 2.0 * vec2(float(n & 0xffffu), float(n >> 16)) * (1.0 / 65535.0);
   }
   vec3 _npermute(vec3 x) { return mod(((x * 34.0) + 1.0) * x, 289.0); }
   // PERLIN — gradient (lattice) noise, quintic-smoothed; remapped to ~[0,1].
-  float _nperlin(vec2 p) {
+  float _nperlin(vec2 p, uint seed) {
     vec2 i = floor(p); vec2 f = fract(p);
     vec2 u = f * f * (3.0 - 2.0 * f);
-    float a = dot(_nhash2(i + vec2(0.0, 0.0)), f - vec2(0.0, 0.0));
-    float b = dot(_nhash2(i + vec2(1.0, 0.0)), f - vec2(1.0, 0.0));
-    float c = dot(_nhash2(i + vec2(0.0, 1.0)), f - vec2(0.0, 1.0));
-    float d = dot(_nhash2(i + vec2(1.0, 1.0)), f - vec2(1.0, 1.0));
+    float a = dot(_nhash2(i + vec2(0.0, 0.0), seed), f - vec2(0.0, 0.0));
+    float b = dot(_nhash2(i + vec2(1.0, 0.0), seed), f - vec2(1.0, 0.0));
+    float c = dot(_nhash2(i + vec2(0.0, 1.0), seed), f - vec2(0.0, 1.0));
+    float d = dot(_nhash2(i + vec2(1.0, 1.0), seed), f - vec2(1.0, 1.0));
     float n = mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
     return 0.5 + 0.5 * n;
   }
   // SIMPLEX — Ashima/McEwan 2D simplex (webgl-noise); remapped to ~[0,1].
-  float _nsimplex(vec2 v) {
+  // permute-based (mod-289 polynomial, exact in fp32 => already cross-vendor
+  // deterministic); takes seed only for a uniform basis-call signature, ignores it.
+  float _nsimplex(vec2 v, uint seed) {
     const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
     vec2 i  = floor(v + dot(v, C.yy));
     vec2 x0 = v - i + dot(i, C.xx);
@@ -98,13 +119,13 @@ libblock lib_tnoise {
     return 0.5 + 0.5 * (130.0 * dot(m, g));
   }
   // WORLEY (cellular F1) — distance to the nearest scattered feature point.
-  float _nworley(vec2 p) {
+  float _nworley(vec2 p, uint seed) {
     vec2 ip = floor(p); vec2 fp = fract(p);
     float f1 = 8.0;
     for (int j = -1; j <= 1; j++) {
       for (int i = -1; i <= 1; i++) {
         vec2 g = vec2(float(i), float(j));
-        vec2 o = 0.5 + 0.5 * _nhash2(ip + g);
+        vec2 o = 0.5 + 0.5 * _nhash2(ip + g, seed);
         vec2 r = g + o - fp;
         f1 = min(f1, dot(r, r));
       }
@@ -112,30 +133,34 @@ libblock lib_tnoise {
     return sqrt(f1);
   }
   // VORONOI — value of the nearest feature point's cell (flat random per cell).
-  float _nvoronoi(vec2 p) {
+  float _nvoronoi(vec2 p, uint seed) {
     vec2 ip = floor(p); vec2 fp = fract(p);
     float f1 = 8.0; vec2 cell = vec2(0.0);
     for (int j = -1; j <= 1; j++) {
       for (int i = -1; i <= 1; i++) {
         vec2 g = vec2(float(i), float(j));
-        vec2 o = 0.5 + 0.5 * _nhash2(ip + g);
+        vec2 o = 0.5 + 0.5 * _nhash2(ip + g, seed);
         vec2 r = g + o - fp;
         float d = dot(r, r);
         if (d < f1) { f1 = d; cell = ip + g; }
       }
     }
-    return fract(sin(dot(cell, vec2(127.1, 311.7))) * 43758.5453);
+    return _ihash21(cell, seed);
   }
 }
 compute_shader cs_noise : iface_hf : lib_tnoise {
-  if (gl_GlobalInvocationID.x >= %DIMU% || gl_GlobalInvocationID.y >= %DIMU%) { return; }
+  uint u_dim = uint(p_dimf); // RUNTIME grid dim (params SSBO) — no rebuild on dim change
+  if (gl_GlobalInvocationID.x >= u_dim || gl_GlobalInvocationID.y >= u_dim) { return; }
   uint xi = gl_GlobalInvocationID.x;
   uint yi = gl_GlobalInvocationID.y;
   // domain offset (as FbmModule): keep texel (0,0) off the lattice origin so no fixed
   // point is reinforced across octaves (would be a degenerate sink for erosion). The user
   // `offset` folds in; the optional WARP term bends the base domain per-texel (every octave
   // inherits it through p *= 2.0).
-  vec2 p = vec2(float(xi), float(yi)) / float(%DIM%) * p_freq + vec2(p_obx, p_oby)%WARPADD%;
+  // * (1.0/p_dimf), not / p_dimf: the old LITERAL dim divide was compiler-folded to a
+  // reciprocal multiply — replicate it so runtime-dim output stays bit-identical.
+  vec2 p = vec2(float(xi), float(yi)) * (1.0 / p_dimf) * p_freq + vec2(p_obx, p_oby)%WARPADD%;
+  uint sd = uint(p_r0); // lattice-hash seed — runtime data, no shader rebuild on change
   float sum = 0.0, ampl = 1.0, nrm = 0.0;
   for (int o = 0; o < %OCT%; o++) {     // octaves==1 -> pure primitive; >1 -> fBm-stacked
     sum += ampl * %BASISCALL%;
@@ -143,7 +168,7 @@ compute_shader cs_noise : iface_hf : lib_tnoise {
     ampl *= 0.5;
     p *= 2.0;
   }
-  heights[yi * %DIMU% + xi] = (sum / nrm) * p_amp;
+  heights[yi * u_dim + xi] = (sum / nrm) * p_amp;
 }
 )SHADER";
   auto sub = [&](const std::string& key, const std::string& val) {
@@ -153,13 +178,10 @@ compute_shader cs_noise : iface_hf : lib_tnoise {
       pos += val.size();
     }
   };
-  // inject the optional-warp fragments FIRST (they contain %DIMSQ%/%DIMU% themselves).
+  // inject the optional-warp fragments FIRST (they carry the runtime-dim forms themselves).
   sub("%WARPSIF%", warp_sif);
   sub("%WARPLIST%", warp_list);
   sub("%WARPADD%", warp_add);
-  sub("%DIMSQ%", FormatString("%d", dim * dim));
-  sub("%DIMU%", FormatString("%du", dim));
-  sub("%DIM%", FormatString("%d", dim));
   sub("%OCT%", FormatString("%d", octaves));
   sub("%BASISCALL%", _noise_basis_call(basis));
   return tmpl;
@@ -192,13 +214,14 @@ struct NoiseModuleInst : public TerrainComputeInst {
     float wamt    = *(_nmd->typedInputNamed<dflow::FloatPlugTraits>("warp_amt")->_value);
     float t       = float(env->_abstime);
     float pm[8]   = {freq, amp, 11.7f + off.x + vel.x * t, 31.3f + off.y + vel.y * t,
-                     wamt, 0.0f, 0.0f, 0.0f};
+                     wamt, float(_nmd->_seed),   // p_r0 = lattice-hash seed
+                     float(env->_w), 0.0f};      // p_dimf = RUNTIME grid dim
     auto mp = fxi->mapStorageBuffer(_pm, 0, sizeof(pm), BufferMapAccess::WRITE_ONLY);
     std::memcpy(mp->_mappedaddr, pm, sizeof(pm));
     fxi->unmapStorageBuffer(mp.get());
   }
 
-  void onActivate(dflow::GraphInst* inst) final {
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env  = inst->_impl.getShared<BakeEnv>();
     auto fxi  = env->_ctx->FXI();
     int dim   = env->_w;
@@ -206,15 +229,15 @@ struct NoiseModuleInst : public TerrainComputeInst {
     img->_w        = dim;
     img->_h        = dim;
     img->_channels = 1;
-    img->_ssbo     = fxi->createStorageBuffer(size_t(dim) * size_t(dim) * sizeof(float));
+    img->_ssbo     = env->createStorageBuffer(size_t(dim) * size_t(dim) * sizeof(float));
 
     // warp active only when BOTH displacement fields are connected (resolved pre-activate).
     // only STRUCTURE bakes into the text; scalars ride the params SSBO (seeded at t=0 here).
     _warped   = (_srcImg(_inWarpX) != nullptr) and (_srcImg(_inWarpY) != nullptr);
-    auto text = _noise_compute_text(dim, _nmd->_octaves, _nmd->_basis, _warped);
+    auto text = _noise_compute_text(_nmd->_octaves, _nmd->_basis, _warped);
     auto shdr = fxi->shaderFromShaderText("terrain_noise", text);
     _cs       = fxi->computeShader(shdr, "cs_noise");
-    _pm       = fxi->createStorageBuffer(8 * sizeof(float));
+    _pm       = env->createStorageBuffer(8 * sizeof(float));
     _fillParams(env.get());
   }
 
@@ -242,9 +265,10 @@ struct NoiseModuleInst : public TerrainComputeInst {
 
   uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
     auto h = DataBlock::createHasher();
-    h->accumulateString("terrain.noise.v3"); // v3: runtime params SSBO (E.1b)
+    h->accumulateString("terrain.noise.v4"); // v4: deterministic integer lattice hash (was vendor-sin)
     h->accumulateItem<int>(_nmd->_basis);
     h->accumulateItem<int>(_nmd->_octaves);
+    h->accumulateItem<int>(_nmd->_seed);
     h->accumulateItem<float>(*(_nmd->typedInputNamed<dflow::FloatPlugTraits>("frequency")->_value));
     h->accumulateItem<float>(*(_nmd->typedInputNamed<dflow::FloatPlugTraits>("amplitude")->_value));
     auto off = *(_nmd->typedInputNamed<dflow::Vec2fPlugTraits>("offset")->_value);
@@ -302,6 +326,7 @@ void NoiseModuleData::describeX(class_t* clazz) {
   // the serialized graph self-describes (the JSON is the portable, python-decoupled artifact).
   clazz->directProperty("basis", &NoiseModuleData::_basis);
   clazz->directProperty("octaves", &NoiseModuleData::_octaves);
+  clazz->directProperty("seed", &NoiseModuleData::_seed);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

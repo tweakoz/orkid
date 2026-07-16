@@ -8,6 +8,7 @@
 #include <ork/pch.h>
 #include <ork/lev2/gfx/renderer/compute_drawable.h>
 #include <ork/lev2/gfx/renderphasestats.h> // perf HUD: terrain/hm cull timing
+#include <ork/lev2/gfx/renderer/cull_debug.h> // ORKID_DISABLE_FRUSTUM_CULL / _OCCLUSION_CULL debug levers
 #include <ork/lev2/gfx/renderer/hzb.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/gfx/gfxenv.h>
@@ -52,7 +53,7 @@ void ComputeDrawable::onPreRender(Context* ctx, const CameraMatrices& cammtx) co
   int hzb_w = 0, hzb_h = 0, hzb_mips = 0;
   if (_hzbBlock) {
     static const int s_hzbMode = []() { const char* e = getenv("ORKID_HZB_OCCLUSION"); return e ? atoi(e) : 2; }();
-    if (s_hzbMode != 0)
+    if (s_hzbMode != 0 and not cullOcclusionDisabled()) // ORKID_DISABLE_OCCLUSION_CULL: leave hzbBuf null -> misc.y==0 -> cull stays frustum-only
       if (auto rcfd = ctx->topRenderContextFrameData())
         if (auto v = rcfd->tryUserProperty<uint64_t>("HZB"_crc)) {
           auto* hzb = reinterpret_cast<HZBBuilder*>(uintptr_t(v.value()));
@@ -86,6 +87,11 @@ void ComputeDrawable::onPreRender(Context* ctx, const CameraMatrices& cammtx) co
     if (auto rcfd = ctx->topRenderContextFrameData())
       if (auto v = rcfd->tryUserProperty<float>("CullFrustumScale"_crc))
         cfs = v.value();
+    // ORKID_DISABLE_FRUSTUM_CULL debug lever: stamp the pass-all sentinel (misc.x < 0) so cs_terrain_cull
+    // skips the frustum reject (all chunks treated visible; occlusion, if enabled, still applies). Cached
+    // bool, no cost when unset. cfs is otherwise > 0, so a negative value is unambiguous.
+    if (cullFrustumDisabled())
+      cfs = -1.0f;
     blk.misc[0] = cfs;
     // misc.yzw = HZB base w/h/mips for the occlusion test (0 => unavailable, cull skips occlusion).
     blk.misc[1] = float(hzb_w);

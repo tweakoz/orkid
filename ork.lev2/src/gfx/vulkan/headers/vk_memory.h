@@ -56,6 +56,13 @@ struct VulkanBuffer {
   VkBuffer _vkbuffer = VK_NULL_HANDLE;
   vkmemforbuf_ptr_t _memory;
   bool _hostVisible = true;   // false = device-local (map/copy go through staging)
+  // TWO-TIER destruction (fxssboptr_t groundwork): by default the dtor DEFERS the VK
+  // object destruction onto the owning context's delayed-destroy queue (>= frames in
+  // flight) — safe for a last shared_ptr ref dropping on any thread while a recorded CB
+  // still references the buffer. A caller that GUARANTEES GPU-idle (the bake arena via
+  // FXI destroyStorageBuffer) clears this first for immediate reclamation, so bulk bake
+  // teardowns don't queue up behind the frame-budgeted drain.
+  bool _deferredDestroy = true;
 
   static std::atomic<int> _buffercount;
   static std::atomic<size_t> _bufferbytes;

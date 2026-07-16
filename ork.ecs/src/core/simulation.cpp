@@ -95,10 +95,7 @@ void Simulation::_stashRenderThreadDestructable(svar64_t var){
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void Simulation::gpuUpdate(lev2::Context* ctx){
-  _currentRenderCtx = ctx;
-  _onGpuThread.store(true, std::memory_order_release);
-
+void Simulation::_drainGpuPhases(lev2::Context* ctx){
   // Drain any phases queued from the update thread. Each lambda signals its
   // waiting future (installed by _runGpuPhaseOnRenderThread).
   std::vector<gpu_phase_fn_t> phases;
@@ -109,12 +106,58 @@ void Simulation::gpuUpdate(lev2::Context* ctx){
   for (auto& fn : phases) {
     fn(ctx);
   }
+}
+///////////////////////////////////////////////////////////////////////////////
+namespace {
+// RAII: mark the calling thread as the GPU thread for the scope's duration so
+// _runGpuPhaseOnRenderThread runs phases inline. Saves+restores the prior values
+// so a nested/re-entrant scope leaves the outer marker intact, and clears loudly
+// on the exception path.
+struct GpuThreadScope {
+  GpuThreadScope(std::atomic<bool>& flag, lev2::Context*& ctxslot, lev2::Context* ctx)
+      : _flag(flag), _ctxslot(ctxslot) {
+    _prevOnGpu = _flag.exchange(true, std::memory_order_acq_rel);
+    _prevCtx   = _ctxslot;
+    _ctxslot   = ctx;
+  }
+  ~GpuThreadScope() {
+    _ctxslot = _prevCtx;
+    _flag.store(_prevOnGpu, std::memory_order_release);
+  }
+  std::atomic<bool>& _flag;
+  lev2::Context*& _ctxslot;
+  bool _prevOnGpu = false;
+  lev2::Context* _prevCtx = nullptr;
+};
+} // namespace
+///////////////////////////////////////////////////////////////////////////////
+void Simulation::gpuUpdate(lev2::Context* ctx){
+  _currentRenderCtx = ctx;
+  _onGpuThread.store(true, std::memory_order_release);
+
+  _drainGpuPhases(ctx);
 
   _gpuUpdateSMInst->vars()->makeValueForKey<lev2::Context*>("ctx") = ctx;
   fsm::FsmInstance::update(_gpuUpdateSMInst);
 
   _onGpuThread.store(false, std::memory_order_release);
   _currentRenderCtx = nullptr;
+}
+///////////////////////////////////////////////////////////////////////////////
+void Simulation::updateWithGpu(lev2::Context* ctx){
+  // Single-threaded (headless/test) pump. Marking THIS thread as the GPU thread
+  // around _update() makes any _runGpuPhaseOnRenderThread the update queues run
+  // inline with ctx instead of rendezvousing with a gpuUpdate() that will never
+  // come. The trailing drain+FSM tick then does the render-thread work (draining
+  // any phase another thread raced onto the queue just before the marker was set)
+  // — the same drain+tick gpuUpdate() runs, so the GPU FSM advances identically.
+  {
+    GpuThreadScope scope(_onGpuThread, _currentRenderCtx, ctx);
+    _update();
+    _drainGpuPhases(ctx);
+    _gpuUpdateSMInst->vars()->makeValueForKey<lev2::Context*>("ctx") = ctx;
+    fsm::FsmInstance::update(_gpuUpdateSMInst);
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Simulation::_runGpuPhaseOnRenderThread(gpu_phase_fn_t phase_fn){

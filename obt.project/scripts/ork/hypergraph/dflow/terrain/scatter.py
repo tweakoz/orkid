@@ -79,15 +79,15 @@ def _sample(field, u, v):
     return field[yi, xi]
 
 
-def place(spec, channel_paths, *, extent_m, height_m):
+def place(spec, channel_paths, *, extent_m):
     """Run a ScatterSpec against the baked channels -> (lev2.Geometry, count). MESH-AGNOSTIC.
     channel_paths: {channel_name -> EXR path} (height + the spec's per-type weight channels).
-    PARITY REFERENCE for the C++ placer (see the header block)."""
+    Heights are TRUE METERS (natural units). PARITY REFERENCE for the C++ placer."""
     from orkengine.lev2 import Geometry
-    extent_m = float(extent_m); height_m = float(height_m)
+    extent_m = float(extent_m)
     seed = int(spec.seed) & 0xFFFFFFFF
 
-    height  = _read_channel(channel_paths["height"])                       # (H,W) normalized [0,1]
+    height  = _read_channel(channel_paths["height"])                       # (H,W) TRUE METERS
     weights = [_read_channel(channel_paths[ch]) for (_, ch) in spec.types] # K x (H,W)
     H, W = height.shape
     K = len(weights)
@@ -132,12 +132,12 @@ def place(spec, channel_paths, *, extent_m, height_m):
 
     # --- positions: x,z from world; y from the baked height ---
     px = wx[idx]; pz = wz[idx]
-    py = _sample(height, u[idx], v[idx]) * height_m
+    py = _sample(height, u[idx], v[idx])
     pos = np.stack([px, py, pz], axis=1).astype(np.float32)       # (N,3)
 
     # --- normals from the height gradient (physical meters) ---
     if spec.align == "normal":
-        gz, gx = np.gradient(height * height_m)                   # d/d(row=z), d/d(col=x)
+        gz, gx = np.gradient(height)                              # d/d(row=z), d/d(col=x) (meters)
         nx = -_sample(gx, u[idx], v[idx]) / (extent_m / W)
         nz = -_sample(gz, u[idx], v[idx]) / (extent_m / H)
         nrm = np.stack([nx, np.ones_like(nx), nz], axis=1)

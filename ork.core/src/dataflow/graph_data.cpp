@@ -181,6 +181,15 @@ void GraphData::describeX(object::ObjectClass* clazz) {
 
   // opt-in per-node cook cache flag — round-trips with the (embedded) graph.
   clazz->directProperty("cacheable", &GraphData::_cacheable);
+  // select-as-output marker (see header) — the display-output module name round-trips
+  // with the graph so the marker is honored at bake instead of rewired at elaborate time.
+  clazz->directProperty("output_node", &GraphData::_output_node);
+  // editor node layout (see header) — module NAME -> canvas position. GRAPH-level (never
+  // per-module) so dragging a node is not a cook-cache miss; hidden from the generic
+  // property sheet / python properties proxy (dedicated setNodePos/nodePos pyext access).
+  clazz->directMapProperty("editor_layout", &GraphData::_editor_layout) //
+      ->annotate("editor.visible", false)
+      ->annotate("python.visible", false);
 }
 ///////////////////////////////////////////////////////////////////////////////
 GraphData::GraphData()

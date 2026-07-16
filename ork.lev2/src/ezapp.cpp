@@ -295,6 +295,29 @@ OrkEzApp::~OrkEzApp() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// VR windowless policy. When the ACTIVE VR device owns HMD presentation (it imports
+//  its own swapchain from the XR runtime and presents to the headset directly), the
+//  app must NOT open an on-screen window — there is no surface to create, and building
+//  a window-present swapchain would collide with the presentation the runtime owns.
+//  Forcing _offscreen routes BOTH the platform window (hidden) and the main context
+//  (no presentation surface) down the already-proven offscreen branch, so the per-frame
+//  render tick — which drives the compositor's VR output node (xrWaitFrame/xrBeginFrame
+//  in gpuUpdate, xrEndFrame in __composite) — keeps firing exactly as it would with a
+//  window. Gated on _active so a VR device whose runtime was absent (preGraphicsInit
+//  cleared _active) stays windowed. A device that does not own HMD presentation (NoVR,
+//  desktop preview) is untouched. Must run AFTER graphics init settled the device state
+//  (ensureLoaderContext → postGraphicsInit) and BEFORE the window is created.
+///////////////////////////////////////////////////////////////////////////////
+
+static void _applyVrWindowlessPolicy(appinitdata_ptr_t initdata) {
+  auto vrdev = orkidvr::device();
+  if (vrdev and vrdev->_active and vrdev->ownsHmdPresentation() and not initdata->_offscreen) {
+    initdata->_offscreen = true;
+    logchan_ezapp->log("VR device owns HMD presentation — main context is WINDOWLESS (offscreen; no window, no present surface)");
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Legacy ad-hoc initialization (use_subsystems=false)
 // Graphics and audio are initialized inline in constructor
 ///////////////////////////////////////////////////////////////////////////////
@@ -317,6 +340,9 @@ void OrkEzApp::_initForAdHoc() {
     logchan_ezapp->log("initializing graphics");
     fflush(stdout);
     _appstate = 0;
+
+    // VR that owns HMD presentation → windowless main context (before window creation).
+    _applyVrWindowlessPolicy(_initdata);
 
     _uicontext = std::make_shared<ui::Context>();
 
@@ -635,6 +661,11 @@ void OrkEzApp::_initGraphicsContext() {
   //fflush(stdout);
   _appstate = 0;
 
+  // VR that owns HMD presentation → windowless main context. Safe here: this runs from
+  //  the GPU subsystem's _onGpuInit, AFTER ensureLoaderContext()/postGraphicsInit have
+  //  settled the device state, and BEFORE the window is created just below.
+  _applyVrWindowlessPolicy(_initdata);
+
   _uicontext = std::make_shared<ui::Context>();
 
   //////////////////////////////////////////////
@@ -712,20 +743,38 @@ void OrkEzApp::_initGraphicsContext() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void OrkEzApp::joinUpdate() {
+void OrkEzApp::joinUpdate(Context* ctx) {
   uint64_t prevappsate = _appstate.fetch_or(KAPPSTATEFLAG_JOINING);
   ////////////////////////////////////////////////
   bool has_joined_already = bool(prevappsate & KAPPSTATEFLAG_JOINING);
   ////////////////////////////////////////////////
   if (not has_joined_already) {
+    // JOINS MUST PUMP (the LOADX §1.1 principle, shutdown edition): the update thread
+    // may be blocked inside a GPU-phase rendezvous (Simulation::_runGpuPhaseOnRenderThread
+    // future.wait) that only the gpu-update chain services — and the render loop that
+    // used to invoke that chain has already exited when we get here. A bare join
+    // deadlocked EVERY offscreen/materialize exit (main: joinUpdate/Thread::join;
+    // update: __assoc_sub_state::wait — sampled 2026-07-02). So keep servicing _mainq
+    // AND the gpu-update hook until the update thread has actually left its loop.
+    while (checkAppState(KAPPSTATEFLAG_UPDRUNNING)) {
+      {
+        opq::TrackCurrent opqtest(_mainq);
+        _mainq->Process();
+      }
+      if (ctx and _mainWindow and _mainWindow->_onGpuUpdate)
+        _mainWindow->_onGpuUpdate(ctx);
+      ork::usleep(1000);
+    }
     //logger()->defaultChannel()->log("OrkEzApp<%p> joinUpdate:1", this);
     for( int i=0; i<100; i++ ) {
-      //checkAppState(KAPPSTATEFLAG_UPDRUNNING)) {
       opq::TrackCurrent opqtest(_mainq);
       _mainq->Process();
     }
     //logger()->defaultChannel()->log("OrkEzApp<%p> joinUpdate:2", this);
-    _update_queue->drain();
+    // bounded: the update thread services its queue as its final act, so this
+    // is normally instant — but an op enqueued after that last service (or an
+    // op that itself re-enqueues) must not wedge shutdown forever.
+    _update_queue->drain(5.0f);
     _update_thread.join();
     //logger()->defaultChannel()->log("OrkEzApp<%p> joinUpdate:3", this);
     DrawQueue::ClearAndSyncWriters();
@@ -910,11 +959,15 @@ void OrkEzApp::_mainThreadLoopBegin() {
     float target_ups = _initdata->_target_ups;
     float target_fps = _initdata->_target_fps;
 
+    // UPDRUNNING must be live BEFORE _onUpdateInit: the init runs the scene
+    // load, which rendezvouses with the gpu/main threads, and joinUpdate()'s
+    // pump loop keys on this flag — raised any later, an exit requested
+    // mid-load skips the pump and bare-joins a blocked loader (Ctrl-C wedge).
+    _appstate.fetch_or(KAPPSTATEFLAG_UPDRUNNING);
+
     // first time init ?
     if (_mainWindow && _mainWindow->_onUpdateInit)
       _mainWindow->_onUpdateInit();
-
-    _appstate.fetch_or(KAPPSTATEFLAG_UPDRUNNING);
 
     ////////////////////////////////////////
     // FREERUNNING MODE: Wall clock, existing behavior
@@ -1091,6 +1144,13 @@ void OrkEzApp::_mainThreadLoopBegin() {
     if (!_initdata->_use_subsystems) {
       _audioExit();
     }
+
+    // FINAL update-serial-queue service. When an exit request pre-empts the
+    // update loop entirely (Ctrl-C mid-load), ops enqueued during the load —
+    // and by _onUpdateExit just above — have never been processed, and this
+    // thread is their only legal processor. Leaving them queued wedges
+    // joinUpdate()'s drain on the main thread.
+    opq::updateSerialQueue()->Process();
   };
 
   if (not _mainWindow) {
@@ -1127,6 +1187,10 @@ void OrkEzApp::_mainThreadLoopBegin() {
 
   ctx->_onGpuInit = [this](lev2::Context* context) {
     //logchan_ezapp->log("BEGIN OrkEzApp::_onGpuInit");
+
+    // A fresh main render context is coming up — clear any shutdown latch left
+    // by a prior app lifetime (re-init safety). Normal runtime keeps it false.
+    GfxEnv::setGpuShutdownComplete(false);
 
     context->beginPrimaryCommandBuffer();
     //logchan_ezapp->log("_initdata->_enable_audio<%d>", (int)_initdata->_enable_audio);
@@ -1182,7 +1246,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
   ///////////////////////////////
 
   ctx->_onGpuExit = [this](lev2::Context* context) {
-    joinUpdate();
+    joinUpdate(context);
     if (_moviecapcontext) {
       _moviecapcontext->terminate();
     }
@@ -1190,6 +1254,16 @@ void OrkEzApp::_mainThreadLoopBegin() {
     if (_mainWindow->_onGpuExit) {
       _mainWindow->_onGpuExit(context);
   }
+    // Release GPU state owned by process-lifetime singletons NOW, on the render
+    // thread with the context still live, so their destructors don't fire at
+    // atexit against a freed Context. FontMan is the known reproducer.
+    FontMan::gpuExit(context);
+    // Orderly GPU teardown funnel: scene/app gpuExit has run against the still
+    // live context (real vkDestroy*), and no more frames will be drawn. Latch
+    // GPU-shutdown so mainRenderContext() reports null and any GPU-resource
+    // destructor that fires later during static teardown no-ops rather than
+    // dereferencing the Context that OrkEzApp teardown is about to free.
+    GfxEnv::setGpuShutdownComplete(true);
   };
   ctx->_runloopBegin();
 }
@@ -1277,6 +1351,38 @@ int OrkEzApp::mainThreadLoop() {
       //  Synchronization controlled by gfx acquire.
       ////////////////////////////////////////
 
+      ////////////////////////////////////////
+      // Frame-pacing decision (one-shot). The freerun render loop must be gated by exactly
+      // ONE pacer. Whenever the display/output path already owns a blocking (or display-
+      // locked) sync primitive — the XR runtime's xrWaitFrame, a FIFO/vsync swapchain, the
+      // Apple race-the-beam scanout sleep, or DRM vblank — the loop rides that alone;
+      // layering an internal governor on top would beat against it (aperiodic period
+      // skips/doubles → pose-time jumps in VR). The internal target-fps governor paces the
+      // loop ONLY when nothing else gates it (a real on-screen surface with a non-blocking
+      // present). Headless/offscreen (no display, no XR) is left ungated and SILENT — the
+      // battery/self-test paths stay byte-identical. NB: the update thread's own pacing
+      // (below, 480 UPS grid) is independent and untouched.
+      ////////////////////////////////////////
+
+      auto pace_ctx   = mainGfxContext();
+      auto pace_vrdev = orkidvr::device();
+      bool xr_owns    = pace_vrdev and pace_vrdev->_active and pace_vrdev->ownsHmdPresentation();
+      bool vsync_paced      = (not xr_owns) and pace_ctx and pace_ctx->displayProvidesFramePacing();
+      bool internal_governor = (not xr_owns) and (not vsync_paced) and (not _initdata->_offscreen);
+
+      const double gov_fps = (_initdata->_target_fps > 0.0) ? double(_initdata->_target_fps) : 60.0;
+      AdaptiveWait gov_wait{AdaptiveWait::Mode::Precise};
+      u64 gov_step_ticks = u64(double(NS_PER_SEC) / gov_fps);
+      u64 gov_grid_tick  = Timer::getSystemTick() + gov_step_ticks;
+
+      if (xr_owns)
+        logchan_ezapp->log("frame pacing: xr-runtime — XR runtime owns presentation; internal render governor disabled.");
+      else if (vsync_paced)
+        logchan_ezapp->log("frame pacing: vsync-present — blocking/display-locked present owns render cadence; internal render governor disabled.");
+      else if (internal_governor)
+        logchan_ezapp->log("frame pacing: internal governor (tgt %g fps) — no display sync primitive.", gov_fps);
+      // else: offscreen/headless, no on-screen pacer to name — stays silent (byte-identical).
+
       while (ctx->_runstate == 1) {
         OrkProfilerFrameBegin(CHANNEL_MAIN, CpuProfilerChannel, {.capture_fps = true});
         OrkProfilerSampleBegin(CHANNEL_MAIN, SERIES_EZAPP_MAIN_FREERUN);
@@ -1314,6 +1420,14 @@ int OrkEzApp::mainThreadLoop() {
             max_frame_time = 0.0;
             fps_timer.Start();
           }
+        }
+
+        // Internal frame governor — engaged ONLY when nothing else gates the loop (no XR
+        // runtime, no vsync/blocking present, real on-screen surface). Absolute-grid wait
+        // self-corrects overshoot; sleepUntilTick(past) renders ASAP when behind.
+        if (internal_governor) {
+          gov_wait.sleepUntilTick(gov_grid_tick);
+          gov_grid_tick += gov_step_ticks;
         }
 
         OrkProfilerSampleEnd(CHANNEL_MAIN, SERIES_EZAPP_MAIN_FREERUN);

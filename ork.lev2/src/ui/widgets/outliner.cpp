@@ -10,6 +10,7 @@
 #include <ork/lev2/ui/event.h>
 #include <ork/lev2/ui/style.h>
 #include <ork/lev2/ui/context.h>
+#include <algorithm>
 
 namespace ork::ui {
 
@@ -352,8 +353,18 @@ void Outliner::DoLayout() {
 /////////////////////////////////////////////////////////////////////////
 void Outliner::_rebuildVisibleItems() {
   _visible_items.clear();
+  _badge_columns.clear();
   if (_model) {
     _addItemsRecursive("", 0);
+  }
+  // badge ids -> columns (union across rows, first-seen order) so every row's
+  // badges line up vertically.
+  for (const auto& item : _visible_items) {
+    for (const auto& b : item.badges) {
+      if (std::find(_badge_columns.begin(), _badge_columns.end(), b.id) == _badge_columns.end()) {
+        _badge_columns.push_back(b.id);
+      }
+    }
   }
   _needs_rebuild = false;
   _clampScrollOffset();
@@ -379,6 +390,7 @@ void Outliner::_addItemsRecursive(const std::string& parent_key, int depth) {
     item.depth = depth;
     item.has_children = _model->hasChildren(child_key);
     item.is_expanded = isExpanded(child_key);
+    item.badges = _model->getBadges(child_key);
 
     _visible_items.push_back(item);
 
@@ -395,6 +407,35 @@ int Outliner::_getItemIndexAt(int local_y) const {
   int index = adjusted_y / _item_height;
   if (index >= 0 && index < (int)_visible_items.size()) {
     return index;
+  }
+  return -1;
+}
+
+/////////////////////////////////////////////////////////////////////////
+// local x of a badge column (columns are right-aligned as one block).
+int Outliner::_badgeColumnX(int column) const {
+  int ncols = (int)_badge_columns.size();
+  int block_w = ncols * _badge_size + (ncols - 1) * _badge_gap;
+  int x0 = _geometry._w - _badge_right_margin - block_w;
+  return x0 + column * (_badge_size + _badge_gap);
+}
+
+/////////////////////////////////////////////////////////////////////////
+// the index into item.badges of the badge cell under localX, or -1 (also -1
+// when the pointer is over a column this row has no badge in).
+int Outliner::_badgeIndexAt(const VisibleItem& item, int localX) const {
+  int ncols = (int)_badge_columns.size();
+  if (ncols == 0 || item.badges.empty())
+    return -1;
+  for (int c = 0; c < ncols; c++) {
+    int bx = _badgeColumnX(c);
+    if (localX >= bx && localX < bx + _badge_size) {
+      for (int i = 0; i < (int)item.badges.size(); i++) {
+        if (item.badges[i].id == _badge_columns[c])
+          return i;
+      }
+      return -1;
+    }
   }
   return -1;
 }
@@ -626,7 +667,14 @@ HandlerResult Outliner::DoOnUiEvent(event_constptr_t ev) {
           const auto& item = _visible_items[index];
           int arrow_x = item.depth * _indent_width;
 
-          if (item.has_children && localX >= arrow_x && localX < arrow_x + _indent_width) {
+          int badge_index = _badgeIndexAt(item, localX);
+          if (badge_index >= 0) {
+            // badge cells toggle without touching the selection
+            const auto& badge = item.badges[badge_index];
+            if (badge.enabled && _onBadgeClick) {
+              _onBadgeClick(item.key, badge.id);
+            }
+          } else if (item.has_children && localX >= arrow_x && localX < arrow_x + _indent_width) {
             // Toggle expand/collapse
             setExpanded(item.key, !item.is_expanded);
             _rebuildVisibleItems();
@@ -1093,6 +1141,105 @@ void Outliner::DoDraw(drawevent_constptr_t drwev) {
           theme->drawTriangle(tri_x, tri_y, tri_size, tri_size, drwev, &tri_style, rotation);
         }
         y_pos += _item_height;
+      }
+    }
+
+    // Draw model badges (right-aligned toggle column; empty for models that
+    // don't provide badges)
+    {
+      auto rs = defmtl->_rasterstate;
+      auto omacro = rs->_blendingMacro;
+      auto omode = defmtl->meUIColorMode;
+
+      size_t glyph_chars = 0;
+      int y_pos2 = -_scroller._scroll_offset;
+      for (const auto& item : _visible_items) {
+        if (y_pos2 + _item_height >= 0 && y_pos2 < _geometry._h) {
+          for (const auto& b : item.badges)
+            glyph_chars += b.glyph.length();
+        }
+        y_pos2 += _item_height;
+      }
+
+      rs->setBlendingMacro(lev2::BlendingMacro::ALPHA);
+      rs->setDepthTest(lev2::EDepthTest::OFF);
+      fxi->pushRasterState(rs);
+      defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+
+      y_pos2 = -_scroller._scroll_offset;
+      for (const auto& item : _visible_items) {
+        if (y_pos2 + _item_height < 0) {
+          y_pos2 += _item_height;
+          continue;
+        }
+        if (y_pos2 >= _geometry._h)
+          break;
+        if (!item.badges.empty()) {
+          int item_abs_x, item_abs_y;
+          LocalToRoot(0, y_pos2, item_abs_x, item_abs_y);
+          int by = item_abs_y + (_item_height - _badge_size) / 2;
+          for (const auto& b : item.badges) {
+            auto cit = std::find(_badge_columns.begin(), _badge_columns.end(), b.id);
+            if (cit == _badge_columns.end())
+              continue;
+            int bx = item_abs_x + _badgeColumnX((int)(cit - _badge_columns.begin()));
+            // slot outline (always visible so the cell reads as a toggle)
+            fvec4 slot = b.color * (b.enabled ? 0.30f : 0.10f);
+            slot.w = 1.0f;
+            tgt->PushModColor(slot);
+            primi->RenderQuadAtZ(defmtl.get(), bx, bx + _badge_size, by, by + _badge_size,
+                                 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+            tgt->PopModColor();
+            if (b.active && b.enabled) {
+              fvec4 fill = b.color;
+              fill.w = 1.0f;
+              tgt->PushModColor(fill);
+              primi->RenderQuadAtZ(defmtl.get(), bx + 1, bx + _badge_size - 1, by + 1,
+                                   by + _badge_size - 1, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+              tgt->PopModColor();
+            }
+          }
+        }
+        y_pos2 += _item_height;
+      }
+      fxi->popRasterState();
+      rs->_blendingMacro = omacro;
+      defmtl->meUIColorMode = omode;
+
+      // badge glyphs (single-letter labels)
+      if (_font && glyph_chars > 0) {
+        lev2::FontMan::PushFont(_font);
+        tgt->PushModColor(fvec4(0, 0, 0, 1));
+        lev2::FontMan::beginTextBlock(tgt, glyph_chars);
+        auto& fdesc = _font->description();
+        y_pos2 = -_scroller._scroll_offset;
+        for (const auto& item : _visible_items) {
+          if (y_pos2 + _item_height < 0) {
+            y_pos2 += _item_height;
+            continue;
+          }
+          if (y_pos2 >= _geometry._h)
+            break;
+          if (!item.badges.empty()) {
+            int item_abs_x, item_abs_y;
+            LocalToRoot(0, y_pos2, item_abs_x, item_abs_y);
+            int gy = item_abs_y + (_item_height - fdesc.miAdvanceHeight) / 2;
+            for (const auto& b : item.badges) {
+              if (b.glyph.empty() || !(b.active && b.enabled))
+                continue;
+              auto cit = std::find(_badge_columns.begin(), _badge_columns.end(), b.id);
+              if (cit == _badge_columns.end())
+                continue;
+              int bx = item_abs_x + _badgeColumnX((int)(cit - _badge_columns.begin()));
+              int gx = bx + (_badge_size - fdesc.miAdvanceWidth * (int)b.glyph.length()) / 2;
+              lev2::FontMan::DrawText(tgt, gx, gy, b.glyph.c_str());
+            }
+          }
+          y_pos2 += _item_height;
+        }
+        lev2::FontMan::endTextBlock(tgt);
+        tgt->PopModColor();
+        lev2::FontMan::PopFont();
       }
     }
 

@@ -263,6 +263,14 @@ void pyinit_physics(py::module& module_ecs) {
               [](const charactercontrollercomponentdata_ptr_t& c) -> float { return c->_camFar; },
               [](charactercontrollercomponentdata_ptr_t& c, float v) { c->_camFar = v; })
           .def_property(
+              "kill_z_drop",
+              [](const charactercontrollercomponentdata_ptr_t& c) -> float { return c->_killZDrop; },
+              [](charactercontrollercomponentdata_ptr_t& c, float v) { c->_killZDrop = v; })
+          .def_property(
+              "spawn_above_ground",
+              [](const charactercontrollercomponentdata_ptr_t& c) -> float { return c->_spawnAboveGround; },
+              [](charactercontrollercomponentdata_ptr_t& c, float v) { c->_spawnAboveGround = v; })
+          .def_property(
               "force_name",
               [](const charactercontrollercomponentdata_ptr_t& c) -> std::string { return c->_forceName; },
               [](charactercontrollercomponentdata_ptr_t& c, std::string v) { c->_forceName = v; });

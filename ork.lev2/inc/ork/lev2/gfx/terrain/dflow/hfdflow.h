@@ -27,6 +27,9 @@
 #include <ork/file/path.h>
 #include <vector>
 #include <memory>
+#include <utility>
+#include <unordered_map>
+#include <unordered_set>
 
 #include <ork/lev2/gfx/dflow/interchange.h>
 
@@ -62,6 +65,15 @@ struct CaptureRequest {
   gpucomputeimage2d_inst_ptr_t _img; // the SOURCE field (resolved from the connected output)
   std::string _channels;             // comma-joined output channels ("height" or "height,normal")
   ork::file::Path _path;             // path template; "{channel}" is substituted per channel at flush
+  uint64_t _cookkey = 0;             // capture-currency key (producer cook-hash mix) — the flush
+                                     // writes it to a "<file>.cookhash" sidecar so an unchanged
+                                     // bake can skip the capture entirely next run. 0 = no sidecar.
+  // INCREMENTAL FLUSH (default): the raw field (w*h*channels floats), read back the
+  // moment the sink ran, so the source plane releases to the pool immediately instead
+  // of staying VRAM-pinned until the post-loop flush (the accumulated pinned sources
+  // are what spilled eflow's frontier past the DEVICE budget). Null under
+  // ORKID_BAKE_DEFERRED_FLUSH=1 (the flush maps the live SSBO as before).
+  std::shared_ptr<std::vector<float>> _hostcopy;
 };
 
 // min/max/mean of a captured field — returned by the driver so callers (the
@@ -96,10 +108,10 @@ struct BakeEnv {
   double _dt              = 0.0;
   // world units (make the graph resolution-independent): spatial op params are in
   // meters and converted to texels here per-bake. texelsPerMeter() == dim / extent.
+  // NATURAL UNITS: height VALUES are true meters on the plugs — there is NO vertical
+  // scale constant anywhere (no height_scale_m, no per-op exaggeration; exaggeration is
+  // AUTHORED via remap nodes). Only the horizontal texel size gives fields physicality.
   float _extent_m         = 4096.0f;  // horizontal world size (meters across the field)
-  float _height_scale_m   = 9830.25f; // PHYSICAL: what normalized height 1.0 means in meters
-                                      // (measurements: normal/slope/curvature). Erosion uses
-                                      // its OWN per-op exaggerated_height_m, NOT this.
   std::vector<CaptureRequest> _captures; // collected during compute, flushed after submit
 
   float texelsPerMeter() const { return (_extent_m > 0.0f) ? (float(_w) / _extent_m) : 1.0f; }
@@ -113,6 +125,64 @@ struct BakeEnv {
     if (r > rmax) r = rmax;
     return r;
   }
+
+  // bake-scoped GPU allocation ARENA: every terrain-module SSBO (plug outputs AND
+  // module-internal scratch) allocates through here so the owning driver can free
+  // the whole graph's buffers when the eval's outputs have been consumed. Plug
+  // aliasing (erox publishes one of its ping-pong buffers as its output) makes
+  // per-plug ownership ambiguous — the arena dedups, so each buffer frees exactly
+  // once. A LIVE/cross-family host (persistent graph) simply never calls
+  // freeAllocs and keeps today's persistent-buffer behavior.
+  //
+  // WS4 FRONTIER MODE (_lazy_acquire, set ONLY by the per-op-synced bake driver):
+  // module allocations move from onActivate to bakeAcquire (the driver calls it
+  // just before the node runs), createStorageBuffer becomes a size-classed POOL
+  // acquire, and the driver returns buffers at their last dispatching reader.
+  // Reuse is GPU-safe because the cook loop submits+WAITs per node — a released
+  // buffer's producer/consumers have fully executed before it is handed out
+  // again. Peak collapses from whole-graph to the live frontier. LIVE/cross-family
+  // envs leave _lazy_acquire false: allocation stays at activate, nothing is
+  // released mid-eval (the WS6 "persistent" class), and the pool is inert.
+  FxShaderStorageBuffer* createStorageBuffer(size_t length);
+  void freeAllocs(); // caller guarantees GPU idle for these buffers (post per-op sync / endFrame)
+
+  // return a buffer to the size-classed free-list for reuse by a later node.
+  // Caller (the bake driver) guarantees the GPU is done with it (per-op sync) and
+  // that no live plug still publishes it. Dedup'd: releasing the same pointer
+  // twice (plug aliasing) is a no-op the second time.
+  void releaseToPool(FxShaderStorageBuffer* buf);
+  // node-scoped scratch: the driver brackets each node's run; endNodeScope returns
+  // every buffer acquired during the scope EXCEPT those a plug currently publishes
+  // (the keep set is read AFTER compute — erox picks its output ping-pong buffer
+  // at compute end).
+  void beginNodeScope();
+  void endNodeScope(const std::unordered_set<FxShaderStorageBuffer*>& keep);
+
+  bool _lazy_acquire = false; // frontier mode (bake driver only — see block comment)
+
+  std::vector<FxShaderStorageBuffer*> _allocs;
+  // pool state (all inert unless _lazy_acquire).
+  // FREE-LIST KEY = (byte size, residency class): PCIe-residency prep — the linux
+  // budgeted-DEVICE bake policy decides residency inside createStorageBuffer, and pool
+  // reuse must never hand a HOST-pooled plane where DEVICE was chosen (or vice versa).
+  // Today every allocation is class 0 (HOST); the policy patch supplies the real class.
+  using poolkey_t = std::pair<size_t, int>; // (bytes, residency class)
+  struct PoolKeyHash {
+    size_t operator()(const poolkey_t& k) const { return k.first * 31 + size_t(k.second); }
+  };
+  std::unordered_map<poolkey_t, std::vector<FxShaderStorageBuffer*>, PoolKeyHash> _pool_free;
+  std::unordered_set<FxShaderStorageBuffer*> _pool_free_set;      // membership (double-release guard)
+  std::unordered_map<FxShaderStorageBuffer*, poolkey_t> _alloc_size; // buffer -> (bytes, class)
+  std::vector<FxShaderStorageBuffer*> _scope;                                 // current node's acquisitions
+  bool _in_scope = false;
+  // frontier metrics (reported by the driver at bake end)
+  size_t _arena_bytes      = 0; // bytes currently backed by real VK allocations
+  size_t _peak_arena_bytes = 0; // high-water mark — THE WS4 A/B metric
+  int _pool_reuses         = 0; // acquisitions served from the free-list
+  // DISCRETE-GPU residency budget: bytes of this arena currently
+  // DEVICE_LOCAL. Big planes allocate DEVICE until the budget is spent, then degrade
+  // to HOST (forest-class >24GB transient peaks must never OOM VRAM). UMA/apple: 0.
+  size_t _device_bytes     = 0;
 };
 using bakeenv_ptr_t = std::shared_ptr<BakeEnv>;
 
@@ -139,6 +209,9 @@ struct FbmModuleData : public TerrainModuleData {
 
   // float input plugs: "frequency", "amplitude". `octaves` is a baked loop bound.
   int _octaves = 5;
+  // lattice-hash seed — RUNTIME data (rides the params SSBO p_r0 slot), so seed changes
+  // never rebuild the shader. Exact through the float slot for |seed| < 2^24.
+  int _seed = 0;
 };
 using fbmmoduledata_ptr_t = std::shared_ptr<FbmModuleData>;
 
@@ -158,6 +231,9 @@ struct NoiseModuleData : public TerrainModuleData {
   // baked scalars (not plugs): noise basis primitive + fBm octave count.
   int _basis   = 0;   // 0 perlin / 1 simplex / 2 worley-F1 / 3 voronoi
   int _octaves = 1;   // 1 = pure primitive; >1 = fBm-stacked
+  // lattice-hash seed — RUNTIME data (params SSBO p_r0), never rebuilds the shader.
+  // NOTE: the simplex basis (permute-based) ignores it.
+  int _seed = 0;
 };
 using noisemoduledata_ptr_t = std::shared_ptr<NoiseModuleData>;
 
@@ -165,9 +241,10 @@ using noisemoduledata_ptr_t = std::shared_ptr<NoiseModuleData>;
 // ExprModule — GENERIC compute generator for the unified procedural substrate.
 // Runs a Python-authored GLSL expression body (emitted from a ptex3d SurfNode by
 // emit_compute_field) over the grid into the output field. The FULL compute
-// shader text — with %DIMU%/%DIMSQ%/%DIM%/%EXTENT_M%/%HEIGHT_M% placeholders the
-// bake substitutes per-resolution — is stored as a reflected string (so the
-// embedded graph self-describes / round-trips). Entry point: cs_expr.
+// shader text — with %DIMU%/%DIMSQ%/%DIM%/%EXTENT_M% placeholders the bake
+// substitutes per-resolution (heights are TRUE METERS; no vertical-scale hole) —
+// is stored as a reflected string (so the embedded graph self-describes /
+// round-trips). Entry point: cs_expr.
 // Backs self.hfbake/hfmask now; self.hfdisplacement (input-reading) later.
 ///////////////////////////////////////////////////////////////////////////////
 struct ExprModuleData : public TerrainModuleData {
@@ -176,7 +253,11 @@ struct ExprModuleData : public TerrainModuleData {
   static std::shared_ptr<ExprModuleData> createShared();
   dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
 
-  std::string _shadertext; // full compute text w/ %DIMU%/%DIMSQ%/%EXTENT_M%/%HEIGHT_M% holes
+  std::string _shadertext; // full compute text w/ %DIMU%/%DIMSQ%/%EXTENT_M% holes
+  // AUTHORED source (editor T.expr): the Python expression string _shadertext was compiled
+  // from (empty = a legacy authored-function node / expr_field — no re-authoring). Reflected
+  // so a propsheet edit round-trips; the terrain DSL recompiles _shadertext from it on rebake.
+  std::string _expr_source;
 };
 using exprmoduledata_ptr_t = std::shared_ptr<ExprModuleData>;
 
@@ -497,6 +578,7 @@ struct FlowErodeModuleData : public TerrainModuleData {
   float _dep_m      = 0.5f;    // deposition drainage-area exponent
   float _flat_k     = 8.0f;    // flatness = 1/(1+slope*flat_k)
   float _clamp_frac = 0.5f;    // max per-step change as a fraction of local relief (stability)
+  float _blend      = 1.0f;    // crossfade eroded vs ORIGINAL input (lpf idiom); RUNTIME param
   bool  _disch_log  = true;    // discharge input is log(1+A) (T.flow default) -> exp() to raw A
 };
 using flowerodemoduledata_ptr_t = std::shared_ptr<FlowErodeModuleData>;
@@ -542,6 +624,29 @@ struct CaptureModuleData : public TerrainModuleData {
 using capturemoduledata_ptr_t = std::shared_ptr<CaptureModuleData>;
 
 ///////////////////////////////////////////////////////////////////////////////
+// Composite (subgraph / loop) modules — the GENERIC composite runtime lives in core
+// (dflow::SubGraphModuleInst / LoopModuleInst); these thin subclasses exist ONLY to
+// attach the terrain reshapeIOs (HfImage boundary-plug typing) via describeX and
+// inherit the core createInstance (which returns the core insts). The GPU cook work
+// those insts delegate to is terrain's TerrainCookDriver (hfdflow.cpp), stocked on the
+// GraphInst _impl by bakeHeightfield / the nested-inst builder.
+///////////////////////////////////////////////////////////////////////////////
+
+struct TerrainSubGraphModuleData : public dflow::SubGraphModuleData {
+  DeclareConcreteX(TerrainSubGraphModuleData, dflow::SubGraphModuleData);
+  TerrainSubGraphModuleData();
+  static std::shared_ptr<TerrainSubGraphModuleData> createShared();
+};
+using terrainsubgraphmoduledata_ptr_t = std::shared_ptr<TerrainSubGraphModuleData>;
+
+struct TerrainLoopModuleData : public dflow::LoopModuleData {
+  DeclareConcreteX(TerrainLoopModuleData, dflow::LoopModuleData);
+  TerrainLoopModuleData();
+  static std::shared_ptr<TerrainLoopModuleData> createShared();
+};
+using terrainloopmoduledata_ptr_t = std::shared_ptr<TerrainLoopModuleData>;
+
+///////////////////////////////////////////////////////////////////////////////
 // Driver — sort, instantiate, run the compute, flush captures. `dim` is the
 // square grid resolution (W=H=dim).
 ///////////////////////////////////////////////////////////////////////////////
@@ -550,8 +655,8 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
     dflow::graphdata_ptr_t graph,
     Context* ctx,
     int dim,
-    float extent_m       = 4096.0f,    // horizontal world size (meters) -> resolution independence
-    float height_scale_m = 9830.25f);  // normalized 1.0 in meters (for real slope angles)
+    float extent_m = 4096.0f);  // horizontal world size (meters) -> resolution independence
+                                // (heights are TRUE METERS on the plugs — no vertical scale)
 
 // first-slice convenience: build a 2-node fbm -> capture graph and bake it to
 // `outpath` (PNG/EXR by extension), the minimal end-to-end exerciser.
@@ -572,5 +677,19 @@ int terrainRoundTripTest(Context* ctx, int dim);
 // load every compute node's field from the DataBlockCache (content-addressed)
 // and produce a byte-identical result. Returns FAILED-check count.
 int terrainCacheTest(Context* ctx, int dim);
+
+// SubGraphModule gate (STEP 2): hand-build a LoopModule (body = a low-iteration
+// thermal erode) inside a host graph, bake it, and assert (a) JSON round-trip
+// preserves subgraph+count+promotions and the clone bakes identically, (b) the
+// N->N+k oracle: rebaking with count+2 recomputes EXACTLY 2 more nested iterations
+// (the first N cache-load), (c) module bypass on the composite splices it out
+// (== a bake without the loop). Returns FAILED-check count.
+int terrainSubgraphTest(Context* ctx, int dim);
+
+// nested (subgraph/loop) cook counters from the LAST bakeHeightfield: the per-
+// iteration recompute / cache-load counts a LoopModule accumulates INTERNALLY (the
+// host [cook] line only sees the loop NODE, not its nested body iterations). Returns
+// (computes, loads). The g2 loop-cache oracle reads these to prove N->N+k reuse.
+std::pair<int, int> lastSubgraphCookCounts();
 
 } // namespace ork::lev2::terrain

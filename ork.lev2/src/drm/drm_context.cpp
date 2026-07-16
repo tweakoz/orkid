@@ -127,16 +127,17 @@ std::string DRMContext::_parseEDID(const uint8_t* edid, size_t size) {
     return "Unknown";
 }
 
-monitor_vect_t DRMContext::enumerateMonitors(int drm_fd) {
-    monitor_vect_t monitors;
+void DRMContext::_enumerateCard(int drm_fd,
+                                const std::string& card_path,
+                                char& next_letter,
+                                monitor_vect_t& out) {
 
     drmModeRes* res = drmModeGetResources(drm_fd);
     if (!res) {
-        logchan_drm->log("Failed to get DRM resources");
-        return monitors;
+        // Not all DRM nodes are KMS-capable (e.g. render-only nodes); skip quietly.
+        logchan_drm->log("No DRM resources on %s (skipping)", card_path.c_str());
+        return;
     }
-
-    char device_letter = 'a';
 
     for (int i = 0; i < res->count_connectors; i++) {
         drmModeConnector* connector = drmModeGetConnector(drm_fd, res->connectors[i]);
@@ -150,8 +151,10 @@ monitor_vect_t DRMContext::enumerateMonitors(int drm_fd) {
             continue;
         }
 
+        char device_letter = next_letter;
         auto monitor = std::make_shared<Monitor>(device_letter, connector->connector_id);
         monitor->connected = true;
+        monitor->card_path = card_path;
         monitor->connector_type = Monitor::getConnectorTypeName(connector->connector_type);
 
         // Build connector name
@@ -184,13 +187,40 @@ monitor_vect_t DRMContext::enumerateMonitors(int drm_fd) {
             }
         }
 
-        monitors.push_back(monitor);
+        out.push_back(monitor);
         drmModeFreeConnector(connector);
 
-        device_letter++;
+        next_letter++;
     }
 
     drmModeFreeResources(res);
+}
+
+monitor_vect_t DRMContext::enumerateMonitors(int drm_fd) {
+    // Single-fd enumeration (backward-compatible helper).
+    monitor_vect_t monitors;
+    char next_letter = 'a';
+    _enumerateCard(drm_fd, "", next_letter, monitors);
+    return monitors;
+}
+
+monitor_vect_t DRMContext::enumerateAllMonitors() {
+    // Scan every /dev/dri/card* node and merge connected monitors, assigning
+    // global device letters in card order. On multi-GPU systems the first
+    // openable card is often an onboard VGA DAC, not the GPU driving the real
+    // display, so enumerating only the first card hides the actual monitor.
+    monitor_vect_t monitors;
+    char next_letter = 'a';
+
+    for (int i = 0; i < 10; i++) {
+        char path[32];
+        snprintf(path, sizeof(path), "/dev/dri/card%d", i);
+        int fd = open(path, O_RDWR | O_CLOEXEC);
+        if (fd < 0) continue;
+        _enumerateCard(fd, path, next_letter, monitors);
+        close(fd);
+    }
+
     return monitors;
 }
 
@@ -204,6 +234,9 @@ void DRMContext::printMonitors(const monitor_vect_t& monitors) {
 
     for (const auto& monitor : monitors) {
         printf("Device %c:\n", monitor->device_letter);
+        if (!monitor->card_path.empty()) {
+            printf("  Card: %s\n", monitor->card_path.c_str());
+        }
         printf("  Connector: %s (%s)\n", monitor->connector_name.c_str(), monitor->connector_type.c_str());
         printf("  Brand: %s\n", monitor->brand.c_str());
 
@@ -220,24 +253,8 @@ void DRMContext::printMonitors(const monitor_vect_t& monitors) {
 }
 
 void DRMContext::listMonitorsAndExit() {
-    // Enumerate available DRM cards
-    int drm_fd = -1;
-    for (int i = 0; i < 10; i++) {
-        char path[32];
-        snprintf(path, sizeof(path), "/dev/dri/card%d", i);
-        drm_fd = open(path, O_RDWR | O_CLOEXEC);
-        if (drm_fd >= 0) break;
-    }
-
-    if (drm_fd < 0) {
-        printf("Error: Failed to open any DRM device (/dev/dri/card*)\n");
-        exit(1);
-    }
-
-    auto monitors = enumerateMonitors(drm_fd);
+    auto monitors = enumerateAllMonitors();
     printMonitors(monitors);
-
-    close(drm_fd);
     exit(0);
 }
 
@@ -322,24 +339,10 @@ void DRMContext::waitForVblank() {
 DRMContext::DRMContext(char deviceLetter, int modeIndex) {
     logchan_drm->log("Creating DRM context for device %c, mode %d", deviceLetter, modeIndex);
 
-    // Open DRM device - enumerate available cards
+    // Enumerate monitors across ALL cards so 'deviceLetter' maps consistently
+    // with what the user saw from the monitor listing.
     drm_fd = -1;
-    for (int i = 0; i < 10; i++) {
-        char path[32];
-        snprintf(path, sizeof(path), "/dev/dri/card%d", i);
-        drm_fd = open(path, O_RDWR | O_CLOEXEC);
-        if (drm_fd >= 0) {
-            logchan_drm->log("Opened DRM device: %s", path);
-            break;
-        }
-    }
-
-    if (drm_fd < 0) {
-        throw std::runtime_error("Failed to open any DRM device (/dev/dri/card*)");
-    }
-
-    // Enumerate monitors
-    auto monitors = enumerateMonitors(drm_fd);
+    auto monitors = enumerateAllMonitors();
 
     // Find requested monitor
     monitor_ptr_t selected_monitor = nullptr;
@@ -351,7 +354,6 @@ DRMContext::DRMContext(char deviceLetter, int modeIndex) {
     }
 
     if (!selected_monitor) {
-        close(drm_fd);
         char error_msg[256];
         snprintf(error_msg, sizeof(error_msg),
                 "Device '%c' not found. Available devices:", deviceLetter);
@@ -359,6 +361,20 @@ DRMContext::DRMContext(char deviceLetter, int modeIndex) {
         printMonitors(monitors);
         throw std::runtime_error(error_msg);
     }
+
+    // Open the specific card that owns the selected monitor (NOT just the first
+    // openable card - that may be an onboard VGA DAC on a multi-GPU box).
+    drm_fd = open(selected_monitor->card_path.c_str(), O_RDWR | O_CLOEXEC);
+    if (drm_fd < 0) {
+        char error_msg[256];
+        snprintf(error_msg, sizeof(error_msg),
+                "Failed to open DRM device '%s' for device '%c'",
+                selected_monitor->card_path.c_str(), deviceLetter);
+        logchan_drm->log("ERROR: %s", error_msg);
+        throw std::runtime_error(error_msg);
+    }
+    logchan_drm->log("Opened DRM device: %s (device %c)",
+                     selected_monitor->card_path.c_str(), deviceLetter);
 
     if (!selected_monitor->connected) {
         close(drm_fd);
@@ -454,16 +470,31 @@ DRMContext::DRMContext(char deviceLetter, int modeIndex) {
     logchan_drm->log("DRM context created successfully");
 }
 
-DRMContext::~DRMContext() {
-    logchan_drm->log("Destroying DRM context");
-
-    // Restore DRM
-    if (saved_crtc) {
+void DRMContext::restoreCrtc() {
+    if (drm_fd < 0)
+        return;
+    if (saved_crtc and saved_crtc->buffer_id) {
+        // a real framebuffer was on screen before us (e.g. a console) — put it back
         drmModeSetCrtc(drm_fd, saved_crtc->crtc_id, saved_crtc->buffer_id,
                        saved_crtc->x, saved_crtc->y,
                        &connector_id, 1, &saved_crtc->mode);
-        drmModeFreeCrtc(saved_crtc);
+    } else if (crtc_id) {
+        // nothing was displaying before us — disable the CRTC so the monitor goes
+        // black instead of scanning out our soon-to-be-freed framebuffer
+        drmModeSetCrtc(drm_fd, crtc_id, 0, 0, 0, nullptr, 0, nullptr);
     }
+    if (saved_crtc) {
+        drmModeFreeCrtc(saved_crtc);
+        saved_crtc = nullptr;
+    }
+    crtc_id = 0; // idempotence: second call no-ops
+}
+
+DRMContext::~DRMContext() {
+    logchan_drm->log("Destroying DRM context");
+
+    // Restore DRM (no-op if _runloopEnd already did it)
+    restoreCrtc();
 
     // Cleanup framebuffers and dmabufs
     for (uint32_t i = 0; i < SWAP_CHAIN_SIZE; i++) {

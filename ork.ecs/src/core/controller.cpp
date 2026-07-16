@@ -130,6 +130,23 @@ void Controller::gpuUpdate(lev2::Context* ctx) {
 
 ///////////////////////////////////////////////////////////////////////////
 
+void Controller::updateWithGpu(lev2::Context* ctx) {
+  // Single-threaded pump: mirrors update() (sim tick + deferred script invokations)
+  // but the sim runs its GPU phase inline instead of rendezvousing across threads.
+  std::vector<deferred_script_invokation_ptr_t> _invokations;
+
+  _simulation.atomicOp([&](simulation_ptr_t& unlocked) {
+    unlocked->updateWithGpu(ctx);
+    _invokations = unlocked->dequeueDeferredInvokations();
+  });
+
+  for (auto item : _invokations) {
+    item->_cb(item->_data);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////
+
 void Controller::render(ui::drawevent_constptr_t drwev) {
   auto sim = _simulation._unprotected_ref();
   if (sim) {

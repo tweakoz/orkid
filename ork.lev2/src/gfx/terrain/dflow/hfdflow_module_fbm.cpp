@@ -15,63 +15,91 @@ namespace ork::lev2::terrain {
 // domain offset / warp amount are NO LONGER baked into the text — they live in a small
 // params SSBO (binding 1) re-written from the DATA plugs every pre-phase (writeParams),
 // so a plug poke (editor / Python / the clock-driven offset_vel pan) lands next eval
-// with no recompile. Only STRUCTURE stays baked: dims, the octave loop bound, and
+// with no recompile. Only STRUCTURE stays baked: the octave loop bound and
 // whether the warp inputs exist.
 ///////////////////////////////////////////////////////////////////////////////
 
-static std::string _fbm_compute_text(int dim, int octaves, bool warped) {
+static std::string _fbm_compute_text(int octaves, bool warped) {
   // optional warp: extra storage interfaces + the per-texel displacement term on `p`.
+  // DIM is RUNTIME data (params SSBO p_dimf) — dim changes never rebuild the shader;
+  // the storage arrays are runtime-sized.
   std::string warp_sif  = warped
-      ? "storage_interface sif_wx (descriptor_set 0) { buffer layout(std430) wx_in { float wxdata[%DIMSQ%]; }; }\n"
-        "storage_interface sif_wy (descriptor_set 0) { buffer layout(std430) wy_in { float wydata[%DIMSQ%]; }; }\n"
+      ? "storage_interface sif_wx (descriptor_set 0) { buffer layout(std430) wx_in { float wxdata[]; }; }\n"
+        "storage_interface sif_wy (descriptor_set 0) { buffer layout(std430) wy_in { float wydata[]; }; }\n"
       : "";
   std::string warp_list = warped ? " sif_wx sif_wy" : "";
   std::string warp_add  = warped
-      ? " + p_wamt * vec2(wxdata[yi * %DIMU% + xi], wydata[yi * %DIMU% + xi])"
+      ? " + p_wamt * vec2(wxdata[yi * u_dim + xi], wydata[yi * u_dim + xi])"
       : "";
   std::string tmpl = R"SHADER(
 fxconfig fxcfg_default {}
 storage_interface sif_hf (descriptor_set 0) {
-  buffer layout(std430) hf_out { float heights[%DIMSQ%]; };
+  buffer layout(std430) hf_out { float heights[]; };
 }
 storage_interface sif_pm (descriptor_set 0) {
   buffer layout(std430) pm_in { float p_freq; float p_amp; float p_obx; float p_oby;
-                                float p_wamt; float p_r0; float p_r1; float p_r2; };
+                                float p_wamt; float p_r0; float p_dimf; float p_r2; };
 }
 %WARPSIF%compute_interface iface_hf {
   storage { sif_hf sif_pm%WARPLIST% }
   inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); }
 }
-compute_shader cs_fbm : iface_hf {
-  if (gl_GlobalInvocationID.x >= %DIMU% || gl_GlobalInvocationID.y >= %DIMU%) { return; }
+libblock lib_fbmhash {
+  // DETERMINISTIC integer lattice hash (lowbias32 mix) — replaces
+  // fract(sin(dot(..))*43758..), whose vendor-approximated sin() made mac and linux
+  // generate entirely different noise from identical params (the cross-platform
+  // terrain divergence). The seed is RUNTIME data (params SSBO p_r0);
+  // seed changes never rebuild the shader.
+  float _fbmhash21(vec2 cell, uint seed) { // [0,1)
+    uvec2 q = uvec2(ivec2(cell)) * uvec2(1597334673u, 3812015801u);
+    uint n = q.x ^ q.y ^ (seed * 0x9e3779b9u);
+    n ^= n >> 16; n *= 0x7feb352du; n ^= n >> 15; n *= 0x846ca68bu; n ^= n >> 16;
+    return float(n >> 8) * (1.0 / 16777216.0);
+  }
+}
+compute_shader cs_fbm : iface_hf : lib_fbmhash {
+  // CROSS-PLATFORM BIT-PARITY (the precise-qualifier experiment): every float in the
+  // octave chain is `precise` -> glslang decorates the contributing ops
+  // NoContraction in SPIR-V, forcing NVIDIA and Metal to the same fma/contraction
+  // behavior. Without it the two backends drift ~3.6e-07 on fbm_0 and downstream
+  // threshold/erode nodes amplify the ULPs into boundary flips.
+  uint u_dim = uint(p_dimf);   // RUNTIME grid dim (params SSBO) — no rebuild on dim change
+  if (gl_GlobalInvocationID.x >= u_dim || gl_GlobalInvocationID.y >= u_dim) { return; }
   uint xi = gl_GlobalInvocationID.x;
   uint yi = gl_GlobalInvocationID.y;
-  // domain offset: keep texel (0,0) off the lattice origin. Without it, (0,0)->p=(0,0)
-  // every octave, where sin(dot(0,k))=0 makes the hash 0 -> fbm(0,0)=0 = a degenerate
-  // global-min sink that erosion deepens into a corner crater. The offset means no texel
-  // maps to a fixed lattice point across octaves, so there is no reinforced sink anywhere.
+  // domain offset: keep texel (0,0) off the lattice origin so no texel maps to a FIXED
+  // lattice point across octaves (a reinforced value there becomes a degenerate sink
+  // erosion deepens into a crater — originally sin(0)=0 pinned it to the global min;
+  // the integer hash un-pins the VALUE but the offset stays: fixed-point reinforcement
+  // is basis-independent).
   // p_obx/p_oby = the anti-degeneracy base + user offset + offset_vel*time (HOST-composed);
   // the optional WARP term bends the base domain per-texel BEFORE the octave loop.
-  vec2 p = vec2(float(xi), float(yi)) / float(%DIM%) * p_freq + vec2(p_obx, p_oby)%WARPADD%;
-  float sum = 0.0, ampl = 1.0, nrm = 0.0;
+  // * (1.0/p_dimf), not / p_dimf: with the old LITERAL dim the compiler folded the
+  // divide into a reciprocal multiply — replicate it so runtime-dim output stays
+  // bit-identical to the v6 baked-dim caches.
+  precise vec2 p = vec2(float(xi), float(yi)) * (1.0 / p_dimf) * p_freq + vec2(p_obx, p_oby)%WARPADD%;
+  uint sd = uint(p_r0); // lattice-hash seed — runtime data, no shader rebuild on change
+  precise float sum = 0.0;
+  precise float ampl = 1.0;
+  precise float nrm = 0.0;
   for (int o = 0; o < %OCT%; o++) {
-    vec2 ip = floor(p);
-    vec2 fp = fract(p);
-    vec2 u  = fp * fp * (3.0 - 2.0 * fp);
-    float a = fract(sin(dot(ip + vec2(0.0, 0.0), vec2(127.1, 311.7))) * 43758.5453);
-    float b = fract(sin(dot(ip + vec2(1.0, 0.0), vec2(127.1, 311.7))) * 43758.5453);
-    float c = fract(sin(dot(ip + vec2(0.0, 1.0), vec2(127.1, 311.7))) * 43758.5453);
-    float d = fract(sin(dot(ip + vec2(1.0, 1.0), vec2(127.1, 311.7))) * 43758.5453);
-    float n = mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+    precise vec2 ip = floor(p);
+    precise vec2 fp = fract(p);
+    precise vec2 u  = fp * fp * (3.0 - 2.0 * fp);
+    precise float a = _fbmhash21(ip + vec2(0.0, 0.0), sd);
+    precise float b = _fbmhash21(ip + vec2(1.0, 0.0), sd);
+    precise float c = _fbmhash21(ip + vec2(0.0, 1.0), sd);
+    precise float d = _fbmhash21(ip + vec2(1.0, 1.0), sd);
+    precise float n = mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
     sum += ampl * n;
     nrm += ampl;
     ampl *= 0.5;
     p *= 2.0;
   }
-  heights[yi * %DIMU% + xi] = (sum / nrm) * p_amp;
+  precise float outh = (sum / nrm) * p_amp;
+  heights[yi * u_dim + xi] = outh;
 }
 )SHADER";
-  // sized SSBO array (shadlang wants a concrete length, not a runtime array)
   auto sub = [&](const std::string& key, const std::string& val) {
     size_t pos = 0;
     while ((pos = tmpl.find(key, pos)) != std::string::npos) {
@@ -79,13 +107,9 @@ compute_shader cs_fbm : iface_hf {
       pos += val.size();
     }
   };
-  // inject the optional-warp fragments FIRST (they contain %DIMSQ%/%DIMU% themselves).
   sub("%WARPSIF%", warp_sif);
   sub("%WARPLIST%", warp_list);
   sub("%WARPADD%", warp_add);
-  sub("%DIMSQ%", FormatString("%d", dim * dim));
-  sub("%DIMU%", FormatString("%du", dim));
-  sub("%DIM%", FormatString("%d", dim));
   sub("%OCT%", FormatString("%d", octaves));
   return tmpl;
 }
@@ -120,17 +144,20 @@ struct FbmModuleInst : public TerrainComputeInst {
     float pm[8]   = {freq, amp,
                      11.7f + off.x + vel.x * t,  // anti-degeneracy base + user offset + pan
                      31.3f + off.y + vel.y * t,
-                     wamt, 0.0f, 0.0f, 0.0f};
+                     wamt, float(_fmd->_seed),   // p_r0 = lattice-hash seed
+                     float(env->_w), 0.0f};      // p_dimf = RUNTIME grid dim
     auto mp = fxi->mapStorageBuffer(_pm, 0, sizeof(pm), BufferMapAccess::WRITE_ONLY);
     std::memcpy(mp->_mappedaddr, pm, sizeof(pm));
     fxi->unmapStorageBuffer(mp.get());
   }
 
-  // SETUP (SSBO alloc + shader compile) happens here — onActivate runs during
-  // updateTopology, BEFORE the bake's beginFrame/dispatch-phase. Only STRUCTURE bakes
-  // into the text (dims, octave loop bound, warp presence); the scalar params go to the
-  // params SSBO, seeded here at t=0 and re-written per eval by writeParams.
-  void onActivate(dflow::GraphInst* inst) final {
+  // SETUP (SSBO alloc + shader compile) happens here — under a legacy/live driver the
+  // onActivate shim runs it during updateTopology, BEFORE the bake's beginFrame; under
+  // the frontier bake driver it runs just before this node's dispatch phase (either
+  // way, never mid-phase). Only STRUCTURE bakes into the text (dims, octave loop
+  // bound, warp presence); dim + the scalar params go to the params SSBO, seeded here at
+  // t=0 and re-written per eval by writeParams.
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env  = inst->_impl.getShared<BakeEnv>();
     auto fxi  = env->_ctx->FXI();
     int dim   = env->_w;
@@ -138,15 +165,15 @@ struct FbmModuleInst : public TerrainComputeInst {
     img->_w        = dim;
     img->_h        = dim;
     img->_channels = 1;
-    img->_ssbo     = fxi->createStorageBuffer(size_t(dim) * size_t(dim) * sizeof(float));
+    img->_ssbo     = env->createStorageBuffer(size_t(dim) * size_t(dim) * sizeof(float));
 
     // connections are resolved in updateTopology BEFORE activate(), so the warp inputs
     // are known here: warp is active only when BOTH displacement fields are connected.
     _warped   = (_srcImg(_inWarpX) != nullptr) and (_srcImg(_inWarpY) != nullptr);
-    auto text = _fbm_compute_text(dim, _fmd->_octaves, _warped);
+    auto text = _fbm_compute_text(_fmd->_octaves, _warped);
     auto shdr = fxi->shaderFromShaderText("terrain_fbm", text);
     _cs       = fxi->computeShader(shdr, "cs_fbm");
-    _pm       = fxi->createStorageBuffer(8 * sizeof(float));
+    _pm       = env->createStorageBuffer(8 * sizeof(float));
     _fillParams(env.get());
   }
 
@@ -177,8 +204,9 @@ struct FbmModuleInst : public TerrainComputeInst {
 
   uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
     auto h = DataBlock::createHasher();
-    h->accumulateString("terrain.fbm.v4"); // v4: runtime params SSBO (E.1b)
+    h->accumulateString("terrain.fbm.v6"); // v6: precise/NoContraction octave chain (cross-platform fma parity); v5: integer lattice hash
     h->accumulateItem<int>(_fmd->_octaves);
+    h->accumulateItem<int>(_fmd->_seed);
     h->accumulateItem<float>(*(_fmd->typedInputNamed<dflow::FloatPlugTraits>("frequency")->_value));
     h->accumulateItem<float>(*(_fmd->typedInputNamed<dflow::FloatPlugTraits>("amplitude")->_value));
     auto off = *(_fmd->typedInputNamed<dflow::Vec2fPlugTraits>("offset")->_value);
@@ -237,6 +265,7 @@ void FbmModuleData::describeX(class_t* clazz) {
   // _octaves is a BAKED loop bound (not a plug) — reflect it so the serialized
   // graph self-describes (the JSON is the portable, python-decoupled artifact).
   clazz->directProperty("octaves", &FbmModuleData::_octaves);
+  clazz->directProperty("seed", &FbmModuleData::_seed);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

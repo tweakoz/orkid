@@ -12,6 +12,7 @@
 #include <ork/lev2/gfx/rtgroup.h>
 
 #include <ork/lev2/glfw/ctx_glfw.h>
+#include <ork/lev2/vr/vr.h>
 #if defined(__linux__)
 #include <ork/lev2/drm/ctx_drm.h>
 #endif
@@ -132,6 +133,15 @@ void Window::initContext() {
       // Use offscreen context for offscreen mode
       _sharedcontext->initializeOffscreenContext(this);
     } else {
+      // Fail loud, not cryptic: a VR device that owns HMD presentation imports its own
+      //  swapchain and presents to the headset directly — there is no on-screen surface
+      //  to create. Reaching the window path means the windowless policy was not applied
+      //  upstream; assert here with a named reason rather than dying inside
+      //  glfwCreateWindowSurface (Vulkan: window-surface extensions not found).
+      auto vrdev = orkidvr::device();
+      OrkAssertI(
+          not(vrdev and vrdev->_active and vrdev->ownsHmdPresentation()),
+          "VR device owns HMD presentation but a window context was requested — the app must come up windowless (offscreen)");
       // Use window context for normal mode
       _sharedcontext->initializeWindowContext(this, mpCTXBASE);
     }

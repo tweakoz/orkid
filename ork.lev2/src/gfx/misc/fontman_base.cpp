@@ -227,4 +227,39 @@ void FontMan::_gpuInit(Context* pTARG) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void FontMan::gpuExit(Context* pTARG) {
+  instance()->_gpuExit(pTARG);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Symmetric counterpart to _gpuInit. Called from the orderly GPU teardown
+// funnel (OrkEzApp gpuExit) on the render thread with the context still live.
+// FontMan is a process-lifetime Meyers singleton, so without this its Fonts —
+// and each Font's Texture / FreestyleMaterial / FxPipeline (whose param cache
+// holds the font Texture) — would otherwise release at atexit, long after the
+// window and its VkContext are freed, dereferencing a dangling context in the
+// Texture/VulkanBuffer destructors (the offscreen-player teardown SIGSEGV).
+// Dropping those refs here runs the destructors now, against a live context.
+///////////////////////////////////////////////////////////////////////////////
+
+void FontMan::_gpuExit(Context* pTARG) {
+  if (_doGpuInit)
+    return; // GPU state was never created (or already released)
+  pTARG->makeCurrentContext();
+  for (auto& font : _fontvect) {
+    if (not font)
+      continue;
+    // release only the GPU-owning handles; the CPU-side descriptor (_fontdesc)
+    // stays intact so a later gpuInit can reload (re-init safety).
+    font->_pipe_stereo      = nullptr;
+    font->_tek_stereo_text  = nullptr;
+    font->_fs_material      = nullptr;
+    font->_materialDeferred = nullptr;
+    font->_texture          = nullptr;
+  }
+  _doGpuInit = true; // a subsequent gpuInit reloads GPU state
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 } // namespace ork::lev2

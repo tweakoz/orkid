@@ -19,17 +19,18 @@ namespace ork::lev2::terrain {
 // drainage-like gullies along the downslope direction. Because it is a smooth function
 // of continuous uv, it is naturally RESOLUTION-INDEPENDENT (like fbm) and SPECKLE-FREE
 // (no grid instability), fast (one dispatch), and predictable. 2 SSBOs (out + in) + a
-// params SSBO (tweak without recompile). octaves is a baked loop bound; the rest are
-// physical-ish float plugs in P[16]:
+// params SSBO (tweak without recompile). octaves is a baked loop bound; dim is RUNTIME
+// (P[9], arrays runtime-sized) so the text is dim-independent; the rest are physical-ish
+// float plugs in P[16]:
 //   0 strength 1 gully_weight 2 detail 3 scale 4 cell_scale 5 normalization
-//   6 lacunarity 7 gain 8 default_height
+//   6 lacunarity 7 gain 8 default_height 9 dim
 ///////////////////////////////////////////////////////////////////////////////
 
-static std::string _pha_text(int dim, int octaves) {
+static std::string _pha_text(int octaves) {
   std::string t = R"PHA(
 fxconfig fxcfg_default {}
-storage_interface si_o (descriptor_set 0) { buffer layout(std430) ob { float odata[%DIMSQ%]; }; }
-storage_interface si_i (descriptor_set 0) { buffer layout(std430) ib { float idata[%DIMSQ%]; }; }
+storage_interface si_o (descriptor_set 0) { buffer layout(std430) ob { float odata[]; }; }
+storage_interface si_i (descriptor_set 0) { buffer layout(std430) ib { float idata[]; }; }
 storage_interface si_p (descriptor_set 0) { buffer layout(std430) pb { float P[16]; }; }
 compute_interface iface { storage { si_o si_i si_p } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }
 libblock lib_pha {
@@ -115,33 +116,33 @@ libblock lib_pha {
   }
 }
 compute_shader cs_pha : iface : lib_pha {
-  if (gl_GlobalInvocationID.x >= %DIMU% || gl_GlobalInvocationID.y >= %DIMU%) { return; }
+  uint u_dim = uint(P[9]);
+  if (gl_GlobalInvocationID.x >= u_dim || gl_GlobalInvocationID.y >= u_dim) { return; }
   int  xi = int(gl_GlobalInvocationID.x);
   int  yi = int(gl_GlobalInvocationID.y);
-  int  W  = int(%DIMU%);
-  uint i  = uint(yi) * %DIMU% + uint(xi);
+  int  W  = int(u_dim);
+  uint i  = uint(yi) * u_dim + uint(xi);
   float STRENGTH=P[0]; float GULLYW=P[1]; float DETAIL=P[2]; float SCALE=P[3];
   float CELLSCALE=P[4]; float NORMALIZ=P[5]; float LAC=P[6]; float GAIN=P[7]; float DEFH=P[8];
+  float DIMF=P[9]; // runtime grid dim as float (reciprocal-multiply for the old /float(dim))
+  float FADEW=P[10]; // fade window in FIELD UNITS (meters) around DEFH
   float h  = idata[i];
   float hL = (xi>0)   ? idata[i-1u] : h;
   float hR = (xi<W-1) ? idata[i+1u] : h;
   float hD = (yi>0)   ? idata[i-uint(W)] : h;
   float hU = (yi<W-1) ? idata[i+uint(W)] : h;
-  float gx = (hR - hL) * 0.5 * float(%DIM%); // d height / d uv
-  float gy = (hU - hD) * 0.5 * float(%DIM%);
+  float gx = (hR - hL) * 0.5 * DIMF; // d height / d uv
+  float gy = (hU - hD) * 0.5 * DIMF;
   vec3  has = vec3(h, gx, gy);
-  float fadeTarget = clamp((h - DEFH) / 0.15, -1.0, 1.0);
+  float fadeTarget = clamp((h - DEFH) / FADEW, -1.0, 1.0);
   vec4  ROUND  = vec4(0.1, 0.0, 0.1, 2.0); // demo defaults (ridge,crease,init-mult,octave-mult)
   vec4  ONSET  = vec4(0.7, 1.25, 2.8, 1.5);
   vec2  ASLOPE = vec2(0.7, 1.0);
-  vec2  p = vec2(float(xi), float(yi)) / float(%DIM%);
+  vec2  p = vec2(float(xi), float(yi)) * (1.0 / DIMF);
   vec4  hd = ErosionFilter(p, has, fadeTarget, STRENGTH, GULLYW, DETAIL, ROUND, ONSET, ASLOPE, SCALE, LAC, GAIN, CELLSCALE, NORMALIZ);
   odata[i] = h + hd.x;
 }
 )PHA";
-  _shadersub(t, "%DIMSQ%", FormatString("%d", dim * dim));
-  _shadersub(t, "%DIMU%", FormatString("%du", dim));
-  _shadersub(t, "%DIM%", FormatString("%d", dim));
   _shadersub(t, "%OCT%", FormatString("%d", octaves));
   return t;
 }
@@ -160,6 +161,7 @@ struct PhaModuleInst : public TerrainComputeInst {
     _lac      = _floatPlug(this, _d, "lacunarity");
     _gain     = _floatPlug(this, _d, "gain");
     _defh     = _floatPlug(this, _d, "default_height");
+    _fadew    = _floatPlug(this, _d, "fade_width");
   }
   void _fillParams(BakeEnv* env) {
     float P[16] = {0};
@@ -172,16 +174,18 @@ struct PhaModuleInst : public TerrainComputeInst {
     P[6] = _lac->value();
     P[7] = _gain->value();
     P[8] = _defh->value();
+    P[9] = float(env->_w); // grid dim (runtime, was baked into text)
+    P[10] = std::max(_fadew->value(), 1e-6f); // fade window (FIELD UNITS = meters)
     auto fxi = env->_ctx->FXI();
     auto m   = fxi->mapStorageBuffer(_params, 0, sizeof(P), BufferMapAccess::WRITE_ONLY);
     std::memcpy(m->_mappedaddr, P, sizeof(P));
     fxi->unmapStorageBuffer(m.get());
   }
-  void onActivate(dflow::GraphInst* inst) final {
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<BakeEnv>();
     _allocOut(env.get(), _output->_value);
-    _params = env->_ctx->FXI()->createStorageBuffer(16 * sizeof(float));
-    auto sh = env->_ctx->FXI()->shaderFromShaderText("terrain_pha", _pha_text(env->_w, _d->_octaves));
+    _params = env->createStorageBuffer(16 * sizeof(float));
+    auto sh = env->_ctx->FXI()->shaderFromShaderText("terrain_pha", _pha_text(_d->_octaves));
     _cs     = env->_ctx->FXI()->computeShader(sh, "cs_pha");
     _fillParams(env.get()); // pre-dispatch-phase fill (a host map mid-phase is not visible)
   }
@@ -199,7 +203,7 @@ struct PhaModuleInst : public TerrainComputeInst {
   }
   uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
     auto h = DataBlock::createHasher();
-    h->accumulateString("terrain.pha.v1"); // procedural phacelle erosion filter
+    h->accumulateString("terrain.pha.v2"); // v2: natural units (fade_width plug, meters)
     h->accumulateItem<int>(_d->_octaves);
     h->accumulateItem<float>(_strength->value());
     h->accumulateItem<float>(_gully->value());
@@ -210,6 +214,7 @@ struct PhaModuleInst : public TerrainComputeInst {
     h->accumulateItem<float>(_lac->value());
     h->accumulateItem<float>(_gain->value());
     h->accumulateItem<float>(_defh->value());
+    h->accumulateItem<float>(_fadew->value());
     _mixTail(h, ctx, ih);
     h->finish();
     return h->result();
@@ -218,7 +223,7 @@ struct PhaModuleInst : public TerrainComputeInst {
   const PhaModuleData* _d;
   hfimg_outpluginst_ptr_t _output;
   hfimg_inpluginst_ptr_t _input;
-  dflow::float_inp_pluginst_ptr_t _strength, _gully, _detail, _scale, _cell, _norm, _lac, _gain, _defh;
+  dflow::float_inp_pluginst_ptr_t _strength, _gully, _detail, _scale, _cell, _norm, _lac, _gain, _defh, _fadew;
   FxShaderStorageBuffer* _params = nullptr;
   const FxComputeShader* _cs = nullptr;
 };
@@ -233,8 +238,10 @@ static void _reshapePhaIOs(dataflow::moduledata_ptr_t data) {
   dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "normalization")->setValue(0.5f);
   dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "lacunarity")->setValue(2.0f);
   dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "gain")->setValue(0.5f);
-  // mid-height reference: height that maps to fadeTarget 0 (valley=-1 .. peak=+1 over +/-0.15)
+  // mid-height reference: height that maps to fadeTarget 0 (valley=-1 .. peak=+1 over
+  // +/-fade_width). NATURAL UNITS: both are FIELD VALUES = meters.
   dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "default_height")->setValue(0.5f);
+  dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "fade_width")->setValue(600.0f);
   dflow::ModuleData::createOutputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "Out");
 }
 PhaModuleData::PhaModuleData() {}

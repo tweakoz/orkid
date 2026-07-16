@@ -188,6 +188,13 @@ it!=mDependencies.end(); it++ )
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void DgModuleData::describeX(class_t* clazz) {
+  // per-node cook-cache override (see header) — round-trips with the graph so an
+  // authored cache point survives serialization; absent in old graphs -> -1.
+  clazz->directProperty("cachepoint", &DgModuleData::_cachepoint);
+  // bypass flag (see header) — round-trips with the graph so a bypassed pass-through
+  // survives serialization instead of being flattened at elaborate time; absent in
+  // old graphs -> false.
+  clazz->directProperty("bypassed", &DgModuleData::_bypassed);
 }
 ///////////////////////////////////////////////////////////////////////////////
 DgModuleData::DgModuleData()
@@ -230,7 +237,9 @@ size_t DgModuleData::_computeMinDepth(dgmoduleset_t& on_path, dgmoduledepthmap_t
     }
     size_t min_depth = InPlugData::NOPATH;
     for( auto upstream_input : _inputs ){
-      auto upstream_plug = upstream_input->_connectedOutput;
+      // BYPASS: resolve through pass-through producers so depth reflects the real
+      // data dependency (a bypassed module drops out of the path).
+      auto upstream_plug = resolveConnectedOutput(upstream_input);
       if(upstream_plug){
         auto upstream_module = typedModuleData<DgModuleData>(upstream_plug->_parent_module);
         size_t upstream_depth = upstream_module->_computeMinDepth(on_path, memo)+1;
@@ -253,7 +262,9 @@ size_t DgModuleData::_computeMaxDepth(dgmoduleset_t& on_path, dgmoduledepthmap_t
     }
     size_t max_depth = 0;
     for( auto upstream_input : _inputs ){
-      auto upstream_plug = upstream_input->_connectedOutput;
+      // BYPASS: resolve through pass-through producers so depth reflects the real
+      // data dependency (a bypassed module drops out of the path).
+      auto upstream_plug = resolveConnectedOutput(upstream_input);
       if(upstream_plug){
         auto upstream_module = typedModuleData<DgModuleData>(upstream_plug->_parent_module);
         size_t upstream_depth = upstream_module->_computeMaxDepth(on_path, memo)+1;

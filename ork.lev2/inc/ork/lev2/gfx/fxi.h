@@ -66,6 +66,9 @@ public:
       size_t length,
       StorageBufferUsage usage   = StorageBufferUsage::DEFAULT,
       BufferResidency    residency = BufferResidency::HOST) { return nullptr; }
+  // caller must guarantee the GPU is done with the buffer (post fence-wait / endFrame);
+  // backend GPU-object destruction routes through the teardown-gated destroyX funnels.
+  virtual void destroyStorageBuffer(FxShaderStorageBuffer* buffer); // defined in fxi.cpp (needs the complete type)
   virtual void copyBufferIntoStorageBuffer(FxShaderStorageBuffer* ssbo, std::vector<uint8_t> buffer, size_t dest_offset) { }
   virtual storagebuffermappingptr_t mapStorageBuffer(
       FxShaderStorageBuffer* b,
@@ -73,6 +76,11 @@ public:
       size_t length,
       BufferMapAccess access) { return nullptr; }
   virtual void unmapStorageBuffer(FxShaderStorageBufferMapping* mapping) {}
+  // direct transfers into/out of CALLER memory. Unlike a READ/WRITE map round-trip,
+  // no backend temp is allocated — bulk readers (cook-cache store/load) hand in
+  // their final destination and each byte crosses host memory once.
+  virtual void readStorageBuffer(FxShaderStorageBuffer* b, size_t base, size_t length, void* dst) {}
+  virtual void writeStorageBuffer(FxShaderStorageBuffer* b, size_t base, size_t length, const void* src) {}
 
   //////////////////////////////////////////
   // new descriptorset api

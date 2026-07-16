@@ -96,6 +96,8 @@ def parse_args():
                  help="initial window height when not fullscreen (0=default)")
   p.add_argument("--hidpi", action="store_true",
                  help="render at the display's backing (Retina) scale; default is LoDPI to save fillrate")
+  p.add_argument("--vr", action="store_true",
+                 help="VR: present on the HMD through the active XR runtime (player only; needs ORKID_VR_DRIVER=openxr + a live runtime, else NoVR desktop fallback)")
   p.add_argument("--offscreen", action="store_true",
                  help="headless (no window): with --movie records a movie, else renders forever as fast as it can (player only)")
   p.add_argument("--movie", default=None, metavar="PATH",
@@ -207,6 +209,10 @@ def main():
       cmd += ["--hidpi"]
     if args.ssaa and args.ssaa > 1:
       cmd += ["--ssaa", str(args.ssaa)]
+    # VR (player only): route the scene onto the HMD via the active XR runtime. Thin
+    # passthrough — the player owns the runtime check + NoVR fallback. One playback path.
+    if args.vr:
+      cmd += ["--vr"]
     # OFFSCREEN (headless, player only): with --movie record a clip; without, render
     # forever as fast as it can (perf/soak). --movie implies offscreen in the player.
     if args.movie:

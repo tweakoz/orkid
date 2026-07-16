@@ -31,6 +31,8 @@
 #include <ork/math/misc_math.h>
 
 #include <ork/lev2/gfx/radiancemaps_asset.h>
+#include <ork/lev2/gfx/radiancemaps_processor.h>
+#include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/xir_format.h>
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/image.h>
@@ -352,11 +354,18 @@ radiancemap_cache_ptr_t getRadianceMapCache() {
 }
 
 radiancemaps_ptr_t RadianceMapCache::get(const AssetPath& path) {
+  // Normalize the key to the EXPANDED filesystem path so a raw
+  // "<ork_envmaps2>/x.xir" (the form the v1b eager warm hands us at scene-data
+  // wire time) and the already-expanded path the compositor consume builds
+  // resolve to the SAME entry — hence the SAME progressively-filled RadianceMaps
+  // object. Without this, the two forms key two entries -> two decodes -> the
+  // render binds a fresh empty-until-async copy and the first frame is black.
+  auto expanded = _expandIfNeeded(path);
   std::lock_guard<std::mutex> lock(_mutex);
-  auto key = path.toStdString();
+  auto key = expanded.toStdString();
   auto it = _cache.find(key);
   if (it != _cache.end()) return it->second;
-  auto maps = CommonStuff::requestRadianceMaps(path);
+  auto maps = CommonStuff::requestRadianceMaps(expanded);
   _cache[key] = maps;
   return maps;
 }
@@ -367,12 +376,76 @@ void RadianceMapCache::clear() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void CommonStuff::requestAndRefSkyboxTexture(asset::loadrequest_ptr_t load_req) {
-  auto generic_asset = asset::AssetManager<RadianceMapsAsset>::load(load_req);
-  if( auto as_radmaps = std::dynamic_pointer_cast<RadianceMapsAsset>(generic_asset) ){
-    _radiance_maps = as_radmaps->_radiance_maps;
-    if(0)printf("RARST: asset<%p> irrmaps<%p> pbrcommon<%p>\n", (void*) as_radmaps.get(), (void*) _radiance_maps.get(), (void*) this  );
+
+void RadianceMapCache::refilter(const AssetPath& raw_source_path, radiancemaps_ptr_t target) {
+  if (nullptr == target) {
+    logchan_pbrcom->log("RadianceMapCache::refilter: null target radiance maps — ignoring");
+    return;
   }
+  auto* ctx = GfxEnv::mainRenderContext();
+  if (nullptr == ctx) {
+    logchan_pbrcom->log("RadianceMapCache::refilter: no main render context — cannot schedule refilter");
+    OrkAssert(false);
+    return;
+  }
+
+  // Load the raw env map synchronously and pump its deferred GPU upload so the
+  // texture is resident on the render context before the microtask binds it
+  // (same pattern as EnvMapProcessor::processToXIRDataBlockAsync). refilter is
+  // called on the render thread, so mainSerialQueue's upload lands here.
+  auto resolved             = _expandIfNeeded(raw_source_path);
+  auto load_req             = std::make_shared<asset::LoadRequest>(resolved);
+  load_req->_gpu_load_async = false;
+  auto texasset             = asset::AssetManager<TextureAsset>::load(load_req);
+  if (!texasset || !texasset->GetTexture()) {
+    logchan_pbrcom->log("RadianceMapCache::refilter: could not load raw env map <%s>", resolved.c_str());
+    OrkAssert(false);
+    return;
+  }
+  auto rawenvmap = texasset->GetTexture();
+  while (opq::mainSerialQueue()->Process()) {}
+
+  auto ext = resolved.getExtension();
+  std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+  bool is_equirectangular = (ext == "exr" || ext == "hdr");
+  bool is_hdr_source      = (ext == "exr" || ext == "hdr");
+
+  if (is_equirectangular) {
+    rawenvmap->TexSamplingMode()._texAddrModeS = TextureAddressMode::WRAP;
+    rawenvmap->TexSamplingMode()._texAddrModeT = TextureAddressMode::CLAMP;
+    rawenvmap->TexSamplingMode()._texAddrModeR = TextureAddressMode::CLAMP;
+    ctx->TXI()->ApplySamplingMode(rawenvmap.get());
+  }
+
+  // Enqueue on the WINDOW context's scheduler (T11). The scheduler wraps the
+  // task in asyncWorkBegin/End for us — the settle/exit gate covers the refilter.
+  auto task = EnvMapProcessor::createRadiancePrefilterMicrotask(
+      rawenvmap, is_equirectangular, is_hdr_source, target, nullptr);
+  ctx->_microtaskScheduler.enqueue(task);
+  logchan_pbrcom->log("RadianceMapCache::refilter: enqueued microtask for <%s> on window scheduler", resolved.c_str());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void CommonStuff::refilterSkybox(const AssetPath& raw_source_path) {
+  if (nullptr == _radiance_maps) {
+    logchan_pbrcom->log("CommonStuff::refilterSkybox: no bound radiance maps to swap into");
+    return;
+  }
+  getRadianceMapCache()->refilter(raw_source_path, _radiance_maps);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void CommonStuff::requestAndRefSkyboxTexture(asset::loadrequest_ptr_t load_req) {
+  // Route through the shared RadianceMapCache rather than a raw
+  // AssetManager::load. AssetManager has no dedup, so a raw load here decodes a
+  // FRESH RadianceMaps that is empty until its async decode lands — and in the
+  // offscreen player this consume runs at the sim's link rendezvous, AFTER the
+  // settle gate has already snapshotted the black sky (#27). The cache lets the
+  // v1b eager warm (fired at scene-data wire time, streamed during the settle
+  // window) publish the SAME object we bind here, so the first compositor frame
+  // is lit. Same bind, same member — only the load is now shared, not re-run.
+  _radiance_maps = getRadianceMapCache()->get(load_req->_asset_path);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -13,5 +13,7 @@ from .solid    import Solid
 from .fbm      import Fbm
 from .worleyf1 import WorleyF1
 from .voronoi  import Voronoi
+from .debug    import DebugNormals, DebugSlope, DebugWhite, DebugHeadlight, DebugRimlight
 
-__all__ = ["Solid", "Fbm", "WorleyF1", "Voronoi"]
+__all__ = ["Solid", "Fbm", "WorleyF1", "Voronoi",
+           "DebugNormals", "DebugSlope", "DebugWhite", "DebugHeadlight", "DebugRimlight"]

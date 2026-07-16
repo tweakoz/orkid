@@ -10,30 +10,27 @@
 #   * Horizontal: X,Z in [-extent_m/2, +extent_m/2], centered at origin. The uv map
 #     is  uv = xz/extent_m + 0.5  with TEXEL-CENTER sampling (matches the GPU
 #     sampler2D LINEAR convention and the viewer's CPU bilinear).
-#   * Vertical (D1 — stored anchor): a stored normalized height h in [0,1] is
-#       Y_m = h * height_m            # stored 1.0 == height_m meters
-#     `height_m` is the FINAL PHYSICAL scale (NOT the erosion exaggeration, which is
-#     authored inside the graph on the erode ops and never reaches here).
-#   * Per-channel (min,max,mean) are the raw graph-output FieldStats the stored [0,1]
-#     was fit from — provenance: recover graph-space, compare bakes, drive segmentation
-#     metric queries. (height: world-height stats; normal: component stats; etc.)
+#   * Vertical (v2 — NATURAL UNITS): stored heights ARE world meters (Y_m = h).
+#     There is no vertical scale constant; exaggeration is authored in the graph
+#     (remap nodes) and lands in the stored meters like everything else.
+#   * Per-channel (min,max,mean) are the raw FieldStats of the stored field —
+#     provenance: compare bakes, frame cameras/spawns, drive segmentation metrics.
 #
-# A measurement (normal/slope/curvature/segmentation) reads `height_m`+`extent_m`
-# here; the bake computes those measurements on the post-erosion field at this
-# physical scale, so they match what the consumer renders.
+# A measurement (normal/slope/curvature/segmentation) reads `extent_m` here; heights
+# arrive in meters, so measurements match what the consumer renders by construction.
 ###############################################################################
 
 import json
 import os
 from dataclasses import dataclass, field
 
-_VERSION = 1
+_VERSION = 2  # v2: NATURAL UNITS (stored heights are meters; no height_m key)
 
 
 @dataclass
 class ChannelInfo:
     file: str                    # basename, resolved relative to the manifest dir
-    semantic: str = ""           # "height_normalized" | "normal_world" | mask name | ...
+    semantic: str = ""           # "height_meters" | "normal_world" | mask name | ...
     min: float = 0.0             # raw FieldStats over the captured field
     max: float = 0.0
     mean: float = 0.0
@@ -42,10 +39,9 @@ class ChannelInfo:
 @dataclass
 class TerrainManifest:
     """The persisted scale contract for one terrain bake. Load with `.load(path)`;
-    consumers read `extent_m`/`height_m`/`dim` + per-channel ranges and use the
-    world<->uv and height-in-meters helpers instead of hardcoding scale."""
+    consumers read `extent_m`/`dim` + per-channel ranges and use the world<->uv
+    helpers instead of hardcoding scale. Stored heights are TRUE METERS (v2)."""
     extent_m: float
-    height_m: float                          # PHYSICAL: stored 1.0 -> height_m meters
     dim: int
     format: str = "exr"                      # channel image extension
     origin_m: tuple = (0.0, 0.0, 0.0)
@@ -57,7 +53,7 @@ class TerrainManifest:
 
     # ---- write -------------------------------------------------------------
     @classmethod
-    def write(cls, path, *, extent_m, height_m, dim, channels, format="exr",
+    def write(cls, path, *, extent_m, dim, channels, format="exr",
               origin_m=(0.0, 0.0, 0.0), up_axis="y", provenance=None):
         """Serialize a manifest JSON to `path`. `channels` maps name -> dict with
         keys file/semantic/min/max/mean (file is stored as a basename). Returns path."""
@@ -74,11 +70,10 @@ class TerrainManifest:
             "version":  _VERSION,
             "scale": {
                 "extent_m":  float(extent_m),
-                "height_m":  float(height_m),     # PHYSICAL (stored 1.0 -> height_m m)
                 "dim":       int(dim),
                 "origin_m":  list(origin_m),
                 "up_axis":   up_axis,
-                "height_anchor": "stored_unit",   # D1: stored 1.0 == height_m meters
+                "height_anchor": "meters",        # v2: stored heights ARE world meters
             },
             "format":     format,
             "channels":   chans,
@@ -101,7 +96,6 @@ class TerrainManifest:
                  for n, c in doc.get("channels", {}).items()}
         m = cls(
             extent_m=float(sc.get("extent_m", 1.0)),
-            height_m=float(sc.get("height_m", 1.0)),
             dim=int(sc.get("dim", 0)),
             format=doc.get("format", "exr"),
             origin_m=tuple(sc.get("origin_m", (0.0, 0.0, 0.0))),
@@ -127,15 +121,10 @@ class TerrainManifest:
         ox, _, oz = self.origin_m
         return (ox + (u - 0.5) * self.extent_m, oz + (v - 0.5) * self.extent_m)
 
-    def height_meters(self, h01):
-        """Stored normalized height [0,1] -> physical meters (D1: stored 1.0 == height_m)."""
-        return h01 * self.height_m
-
-    def graph_value(self, h01, channel="height"):
-        """Recover the raw graph-space value a stored [0,1] sample came from, using the
-        channel's recorded fit range (for metric queries / cross-bake comparison)."""
-        c = self.channels[channel]
-        return c.min + h01 * (c.max - c.min)
+    def graph_value(self, h, channel="height"):
+        """v2 identity: stored values ARE the graph values (true meters); kept for the
+        cross-bake metric callers that predate natural units."""
+        return h
 
 
 __all__ = ["TerrainManifest", "ChannelInfo"]

@@ -9,6 +9,7 @@
 
 #include <ork/lev2/config.h>
 #include <ork/lev2/gfx/camera/cameradata.h>
+#include <ork/lev2/gfx/external_gpu_requirements.h>
 #include <ork/kernel/msgrouter.inl>
 #include <ork/lev2/input/inputdevice.h>
 #include <ork/math/cmatrix4.h>
@@ -193,6 +194,51 @@ struct Device {
   virtual void gpuUpdate(RenderContextFrameData& RCFD)              = 0;
   virtual void __composite(Context* targ, Texture* twoeyetex) const = 0;
 
+  // Per-eye handoff for the runtime-owned dual-mono presentation path. Hands the two
+  //  FINAL per-eye COLOR textures to the device, which blits each into its half of the
+  //  ONE wide runtime swapchain image and submits the frame (mirrors __composite, which
+  //  takes one pre-packed wide two-eye texture). Genuine no-op on devices that do NOT
+  //  own HMD presentation (NoVR / desktop preview / OpenVR wide-path); the real work
+  //  lives in the XR-runtime device.
+  //  depthTexL/depthTexR (optional) are the matching per-eye DEPTH textures. When a
+  //  device supports the runtime's depth-layer contract (XR_KHR_composition_layer_depth)
+  //  and both are supplied, it converts them to the runtime's reverse-Z D16 depth
+  //  swapchain and chains a per-view depth layer so the runtime does positional
+  //  (depth-based) reprojection. Null (the default) → color-only reprojection, exactly
+  //  the prior behavior; devices that do not own HMD presentation ignore them.
+  virtual void __compositeStereo(
+      Context* targ,
+      Texture* texL,
+      Texture* texR,
+      Texture* depthTexL = nullptr,
+      Texture* depthTexR = nullptr) const = 0;
+
+  // Two-phase graphics-init seam (X1). A driver that must shape Vulkan creation
+  //  (e.g. an OpenXR device) publishes its instance/device extensions, API-version
+  //  window and required physical device into reqs BEFORE the Vulkan instance is
+  //  created; after the main context's device+queue exist it receives them via
+  //  postGraphicsInit to bind its session. Both default to no-ops (NoVR path).
+  virtual void preGraphicsInit(ExternalGpuRequirements& reqs) {}
+  virtual void postGraphicsInit(const GraphicsBindingInfo& binding) {}
+
+  // True when this device owns presentation to the HMD directly — it imports its own
+  //  swapchain from the XR runtime and presents to the headset itself. Such a device
+  //  makes the host app WINDOWLESS: there is no on-screen surface to create, and
+  //  attempting to build a window-present swapchain would collide with the presentation
+  //  the runtime already owns. The app-init path routes the main context down the
+  //  offscreen (no-window, no-surface) branch when this is true AND the device is active.
+  //  Default false — NoVR and the desktop-preview path present through the normal window.
+  virtual bool ownsHmdPresentation() const { return false; }
+
+  // Post-instance / pre-device seam (X2). Some producers (an OpenXR device) can
+  //  only resolve the REQUIRED physical device once the Vulkan instance exists
+  //  (its handle does not exist before instance creation). Called with the just-
+  //  created VkInstance (opaque uint64) after VulkanInstance construction and
+  //  BEFORE logical-device creation, so the producer can write the required
+  //  physical device into the backend-internal requirements slot in time for the
+  //  device-creation chokepoint to honor it. Default is a no-op (NoVR path).
+  virtual void resolvePhysicalDevice(uint64_t vkInstance) {}
+
   // Scanout predictor shared with the gfx context — call predictNextTargetSystemTick() for pose prediction.
   ork::time_predictor_ptr_t _scan_out_predictor;
 
@@ -237,6 +283,10 @@ struct Device {
 
   bool _active                      = false;
   bool _supportsStereo              = false;
+  // Per-scene toggle for publishing a depth layer to a runtime that supports depth-based
+  //  reprojection. Data-driven (the VrDepthPublish scene param sets it via the ECS VR-preset
+  //  block); a device that owns HMD presentation consults it before chaining depth. Default ON.
+  bool _publishDepth                = true;
   float _stereoTileRotationDegreesL = 0.0f;
   float _stereoTileRotationDegreesR = 0.0f;
 
@@ -309,6 +359,8 @@ struct OpenVrDevice final : public Device {
 
   // void __gpuUpdate(RenderContextFrameData& RCFD);
   void __composite(Context* targ, Texture* twoeyetex) const final;
+  void __compositeStereo(
+      Context* targ, Texture* texL, Texture* texR, Texture* depthTexL, Texture* depthTexR) const final;
 
   _ovr::IVRSystem* _hmd;
   _ovr::TrackedDevicePose_t _trackedPoses[_ovr::k_unMaxTrackedDeviceCount];
@@ -335,6 +387,8 @@ struct NoVrDevice final : public Device {
 
   // void __gpuUpdate(RenderContextFrameData& RCFD);
   void __composite(Context* targ, Texture* twoeyetex) const final;
+  void __compositeStereo(
+      Context* targ, Texture* texL, Texture* texR, Texture* depthTexL, Texture* depthTexR) const final;
 
   msgrouter::subscriber_t _qtmousesubsc;
   msgrouter::subscriber_t _qtkbdownsubs;

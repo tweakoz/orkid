@@ -11,16 +11,16 @@ ImplementReflectionX(ork::lev2::terrain::CombineModuleData, "terrain::CombineMod
 namespace ork::lev2::terrain {
 
 ///////////////////////////////////////////////////////////////////////////////
-// CombineModule — Out = op(A, B). 3 SSBOs (out=0, a=1, b=2). For MIX, the blend
-// factor `t` is a RUNTIME param (params SSBO si_p, binding 3) — NOT baked — so
-// T.mix(a, b, scalar) does NOT compile a shader per blend value (same pattern as
-// lpf/erox). That makes "blend any operator vs its input" — T.mix(z, T.op(z), t) —
-// the general, recompile-free way to crossfade erosion/basin/etc. at partial strength.
+// CombineModule — Out = op(A, B). 4 SSBOs (out=0, a=1, b=2, params=3). Both the MIX
+// blend factor `t` (params P[0]) AND the grid dim (params P[1]) are RUNTIME — NOT
+// baked — so T.mix(a, b, scalar) does NOT compile a shader per blend value and dim
+// changes never rebuild the shader (same pattern as lpf/erox). That makes "blend any
+// operator vs its input" — T.mix(z, T.op(z), t) — the general, recompile-free way to
+// crossfade erosion/basin/etc. at partial strength.
 ///////////////////////////////////////////////////////////////////////////////
 
-static std::string _combine_text(int dim, int op) {
+static std::string _combine_text(int op) {
   const char* expr = "adata[i] + bdata[i]";
-  bool is_mix = (CombineOp(op) == CombineOp::MIX);
   switch (CombineOp(op)) {
     case CombineOp::ADD: expr = "adata[i] + bdata[i]"; break;
     case CombineOp::SUB: expr = "adata[i] - bdata[i]"; break;
@@ -29,25 +29,22 @@ static std::string _combine_text(int dim, int op) {
     case CombineOp::MAX: expr = "max(adata[i], bdata[i])"; break;
     case CombineOp::MIX: expr = "mix(adata[i], bdata[i], P[0])"; break;   // P[0]=t, RUNTIME (params SSBO)
   }
+  // params SSBO is ALWAYS present now (carries dim): P[0]=t (MIX blend), P[1]=dim.
   std::string storages =
-    "storage_interface sif_out (descriptor_set 0) { buffer layout(std430) ob { float odata[%DIMSQ%]; }; }\n"
-    "storage_interface sif_a   (descriptor_set 0) { buffer layout(std430) ab { float adata[%DIMSQ%]; }; }\n"
-    "storage_interface sif_b   (descriptor_set 0) { buffer layout(std430) bb { float bdata[%DIMSQ%]; }; }\n";
-  std::string silist = "sif_out sif_a sif_b";                 // bindings: 0=out 1=a 2=b
-  if (is_mix) {
-    storages += "storage_interface sif_p (descriptor_set 0) { buffer layout(std430) pb { float P[4]; }; }\n";
-    silist = "sif_out sif_a sif_b sif_p";                     // + binding 3 = params (t)
-  }
+    "storage_interface sif_out (descriptor_set 0) { buffer layout(std430) ob { float odata[]; }; }\n"
+    "storage_interface sif_a   (descriptor_set 0) { buffer layout(std430) ab { float adata[]; }; }\n"
+    "storage_interface sif_b   (descriptor_set 0) { buffer layout(std430) bb { float bdata[]; }; }\n"
+    "storage_interface sif_p   (descriptor_set 0) { buffer layout(std430) pb { float P[4]; }; }\n";
+  std::string silist = "sif_out sif_a sif_b sif_p";           // bindings: 0=out 1=a 2=b 3=params
   std::string tmpl = std::string("\nfxconfig fxcfg_default {}\n") + storages +
     "compute_interface iface { storage { " + silist + " } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }\n"
     "compute_shader cs_combine : iface {\n"
-    "  if (gl_GlobalInvocationID.x >= %DIMU% || gl_GlobalInvocationID.y >= %DIMU%) { return; }\n"
-    "  uint i = gl_GlobalInvocationID.y * %DIMU% + gl_GlobalInvocationID.x;\n"
+    "  uint u_dim = uint(P[1]);\n"  // RUNTIME grid dim (params SSBO) — no rebuild on dim change
+    "  if (gl_GlobalInvocationID.x >= u_dim || gl_GlobalInvocationID.y >= u_dim) { return; }\n"
+    "  uint i = gl_GlobalInvocationID.y * u_dim + gl_GlobalInvocationID.x;\n"
     "  odata[i] = %EXPR%;\n"
     "}\n";
   _shadersub(tmpl, "%EXPR%", expr);
-  _shadersub(tmpl, "%DIMSQ%", FormatString("%d", dim * dim));
-  _shadersub(tmpl, "%DIMU%", FormatString("%du", dim));
   return tmpl;
 }
 
@@ -59,22 +56,19 @@ struct CombineModuleInst : public TerrainComputeInst {
     _inB = typedInputNamed<HfImagePlugTraits>("B");
     _t   = _floatPlug(this, _d, "t");
   }
-  void onActivate(dflow::GraphInst* inst) final {
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<BakeEnv>();
     auto fxi = env->_ctx->FXI();
     _allocOut(env.get(), _output->_value);
-    _isMix = (CombineOp(_d->_op) == CombineOp::MIX);
-    auto sh = fxi->shaderFromShaderText("terrain_combine", _combine_text(env->_w, _d->_op));
+    auto sh = fxi->shaderFromShaderText("terrain_combine", _combine_text(_d->_op));
     _cs     = fxi->computeShader(sh, "cs_combine");
-    if (_isMix) {
-      // blend factor t is RUNTIME (so a varying t doesn't recompile). Fill here, in onActivate
-      // (pre-dispatch-phase: a host map mid-phase is not visible).
-      _params = fxi->createStorageBuffer(4 * sizeof(float));
-      float P[4] = {_t->value(), 0.0f, 0.0f, 0.0f};
-      auto m = fxi->mapStorageBuffer(_params, 0, sizeof(P), BufferMapAccess::WRITE_ONLY);
-      std::memcpy(m->_mappedaddr, P, sizeof(P));
-      fxi->unmapStorageBuffer(m.get());
-    }
+    // t (MIX blend) AND dim are RUNTIME (params SSBO). Fill here, in bakeAcquire
+    // (pre-dispatch-phase: a host map mid-phase is not visible). P[0]=t, P[1]=dim.
+    _params = env->createStorageBuffer(4 * sizeof(float));
+    float P[4] = {_t->value(), float(env->_w), 0.0f, 0.0f};
+    auto m = fxi->mapStorageBuffer(_params, 0, sizeof(P), BufferMapAccess::WRITE_ONLY);
+    std::memcpy(m->_mappedaddr, P, sizeof(P));
+    fxi->unmapStorageBuffer(m.get());
   }
   void compute(dflow::GraphInst* inst, ui::updatedata_ptr_t) final {
     auto env = inst->_impl.getShared<BakeEnv>();
@@ -86,7 +80,7 @@ struct CombineModuleInst : public TerrainComputeInst {
     ci->bindStorageBuffer(_cs, 0, _output->_value->_ssbo); // odata
     ci->bindStorageBuffer(_cs, 1, a->_ssbo);               // adata
     ci->bindStorageBuffer(_cs, 2, b->_ssbo);               // bdata
-    if (_isMix) ci->bindStorageBuffer(_cs, 3, _params);    // P[0] = t (MIX only)
+    ci->bindStorageBuffer(_cs, 3, _params);                // P[0]=t (MIX), P[1]=dim
     ci->dispatchCompute(_cs, g, g, 1);
     ci->storageBarrier();
   }
@@ -104,7 +98,6 @@ struct CombineModuleInst : public TerrainComputeInst {
   hfimg_outpluginst_ptr_t _output;
   hfimg_inpluginst_ptr_t _inA, _inB;
   dflow::float_inp_pluginst_ptr_t _t;
-  bool _isMix = false;
   FxShaderStorageBuffer* _params = nullptr;
   const FxComputeShader* _cs = nullptr;
 };

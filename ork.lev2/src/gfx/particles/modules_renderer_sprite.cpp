@@ -323,7 +323,10 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     //   48 + 262144*16*2  particleData3[]  per-particle age, random, aux.x, aux.y
     ///////////////////////////////////////////////////////////////
     if (not _cu_vertex_io_buffer) {
-      _cu_vertex_io_buffer = FXI->createStorageBuffer(16 << 20);
+      // BAR: CPU-written every frame (forward writes through the mapping below), GPU-read
+      // by the particle passes — VRAM-local reads, direct-map writes. Degrades to HOST
+      // when the BAR heap is exhausted.
+      _cu_vertex_io_buffer = FXI->createStorageBuffer(16 << 20, StorageBufferUsage::DEFAULT, BufferResidency::BAR);
     }
     auto storage        = _cu_vertex_io_buffer;
     size_t mapping_size = 16 << 20; // 16MB (supports 262144 particles × 3 arrays × 16 bytes)

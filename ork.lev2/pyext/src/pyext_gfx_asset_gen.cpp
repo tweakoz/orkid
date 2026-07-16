@@ -538,8 +538,6 @@ void pyinit_gfx_asset_gen(py::module& module_lev2) {
               d->_dimension = kwargs["dimension"].cast<int>();
             if (kwargs.contains("extent_m"))
               d->_extent_m = kwargs["extent_m"].cast<float>();
-            if (kwargs.contains("height_scale_m"))
-              d->_height_scale_m = kwargs["height_scale_m"].cast<float>();
             if (kwargs.contains("graph"))
               d->_graph_data = kwargs["graph"].cast<ork::dataflow::graphdata_ptr_t>();
             // E.6/2.20 — the terrain↔material contract (see asset_gen.h)
@@ -557,10 +555,6 @@ void pyinit_gfx_asset_gen(py::module& module_lev2) {
               "extent_m",
               [](heightfield_gendata_ptr_t d) -> float { return d->_extent_m; },
               [](heightfield_gendata_ptr_t d, float v) { d->_extent_m = v; })
-          .def_property(
-              "height_scale_m",
-              [](heightfield_gendata_ptr_t d) -> float { return d->_height_scale_m; },
-              [](heightfield_gendata_ptr_t d, float v) { d->_height_scale_m = v; })
           .def_property(
               "graph",
               [](heightfield_gendata_ptr_t d) -> ork::dataflow::graphdata_ptr_t { return d->_graph_data; },

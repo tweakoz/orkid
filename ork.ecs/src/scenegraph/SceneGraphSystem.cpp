@@ -431,15 +431,41 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
       logchan_sgsys->log("ECS scene MSAA level<%d>", int(v.value()));
     }
     if (preset_uc.rfind("FWDPBRVR", 0) == 0) { // FWDPBRVR or FWDPBRVRDM
-      auto vrdev          = ::ork::lev2::orkidvr::novr::novr_device();
-      vrdev->_camera_name = "vrcam";
-      vrdev->_width       = 1280;
-      vrdev->_height      = 1280;
-      ::ork::lev2::orkidvr::setDevice(vrdev);
-      vrdev->setTrackedPose(fvec3(0, 0, 0), fquat(), fvec3(0, 0, 0), fvec3(0, 0, 0));
+      // Device selection. If an XR-runtime device is ALREADY active (selected pre-Vulkan
+      // from ORKID_VR_DRIVER, session up — it OWNS HMD presentation), KEEP it: clobbering
+      // it with a NoVrDevice would strand the live headset. Only when there is no live XR
+      // device do we register a NoVrDevice (the desktop stereo-preview path).
+      auto active_dev = ::ork::lev2::orkidvr::device();
+      bool xr_active  = active_dev and active_dev->_active and active_dev->ownsHmdPresentation();
+      ::ork::lev2::orkidvr::device_ptr_t vrdev;
+      if (xr_active) {
+        vrdev = active_dev;
+        logchan_sgsys->log("ECS-VR: using ACTIVE XR-runtime device (ownsHmdPresentation) for preset<%s>",
+                           try_preset.value().c_str());
+      } else {
+        auto novr     = ::ork::lev2::orkidvr::novr::novr_device();
+        novr->_width  = 1280;
+        novr->_height = 1280;
+        ::ork::lev2::orkidvr::setDevice(novr);
+        novr->setTrackedPose(fvec3(0, 0, 0), fquat(), fvec3(0, 0, 0), fvec3(0, 0, 0));
+        vrdev = novr;
+      }
+      // Camera contract: the ECS scene publishes exactly ONE camera in its LUT
+      // (_camlut["spawncam"] == _camera) — the very camera the host's per-frame
+      // UpdateCamera notify drives. The VR output node looks up VRDEV->_camera_name in
+      // the DB camera LUT for the world (root) view, onto which the XR head pose composes
+      // at render time. "spawncam" is the only name that resolves; "vrcam" never did.
+      vrdev->_camera_name = "spawncam";
       // Host-supplied DEVICE calibration (scene params; engine defaults otherwise). _poseConjugate
       // defaults true (the conj_inv handedness); IPD<0 swaps L/R (the cross-eye fix).
       constexpr float D2R = 0.01745329252f, R2D = 57.29577951f;
+      // Sane baselines mirroring the stereo_grid reference (the bare Device struct default
+      // _fov=90 is *radians*, an invalid frustum). A scene forced into VR by the host (no
+      // VR-authored params) still projects correctly; any Vr* scene param below overrides.
+      vrdev->_fov  = 90.0f * D2R;
+      vrdev->_IPD  = 0.065f;
+      vrdev->_near = 0.1f;
+      vrdev->_far  = 1e5f;
       if (auto v = _mergedParams->tryKeyAsNumber("VrIPD"))       vrdev->_IPD            = float(v.value());
       // VrFov is in DEGREES (vertical); _fov is stored in RADIANS (the FOVD pyext setter does
       // _fov = deg*DTOR, and novr.cpp perspective() consumes radians despite the misleading comment).
@@ -447,9 +473,15 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
       if (auto v = _mergedParams->tryKeyAsNumber("VrNear"))      vrdev->_near           = float(v.value());
       if (auto v = _mergedParams->tryKeyAsNumber("VrFar"))       vrdev->_far            = float(v.value());
       if (auto v = _mergedParams->tryKeyAsNumber("VrPredAhead")) vrdev->_predictionBias = float(v.value());
-      logchan_sgsys->log("ECS-VR: device IPD=%g fovDeg=%g near=%g far=%g pred=%g poseConj=%d",
+      // VrDepthPublish (bool/number, default ON): per-scene toggle for depth-layer publishing to
+      //  a depth-reprojection runtime. A depth-owning device (OpenXR) consults _publishDepth
+      //  before chaining depth; 0 keeps the runtime in color-only/BASIC reprojection for scenes
+      //  where the positional (tessellation) path misbehaves. Sanctioned per-scene mechanism; the
+      //  global emergency override env ORKID_XR_NO_DEPTH=1 wins over this param.
+      if (auto v = _mergedParams->tryKeyAsNumber("VrDepthPublish")) vrdev->_publishDepth = (v.value() != 0.0);
+      logchan_sgsys->log("ECS-VR: device IPD=%g fovDeg=%g near=%g far=%g pred=%g poseConj=%d publishDepth=%d",
                          vrdev->_IPD, vrdev->_fov * R2D, vrdev->_near, vrdev->_far,
-                         vrdev->_predictionBias, int(vrdev->_poseConjugate));
+                         vrdev->_predictionBias, int(vrdev->_poseConjugate), int(vrdev->_publishDepth));
       // Host-supplied per-eye distortion present (vr.h: "the distortion shader and the calibration
       // values are supplied by the host"). The engine only BUILDS device->_presentation from
       // declarative scene params — NO shader/optics baked here. Absent VrDistortShader => null
@@ -505,7 +537,7 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
         logchan_sgsys->log("ECS-VR: host present<%s> (VrDistortion=%d VrLensCenter=%d VrEyeRot=%d VrCant=%d) preset<%s>",
                            try_shader.value().c_str(), int(got_d), int(got_lc), int(got_er), int(got_ct), try_preset.value().c_str());
       } else {
-        logchan_sgsys->log("ECS-VR: registered NoVrDevice (no VrDistortShader -> flat blit) for preset<%s>",
+        logchan_sgsys->log("ECS-VR: no VrDistortShader -> flat blit (raw stereo) for preset<%s>",
                            try_preset.value().c_str());
       }
     }
@@ -1258,6 +1290,37 @@ void SceneGraphSystem::_onNotify(token_t evID, evdata_t data) {
           int numsamps = as_int.value();
           _scene->_pbr_common->_ssaoNumSamples = numsamps;
         }
+      break;
+    }
+    // Interactive envmap swap (#43-proven path): re-filter the IBL from the named
+    // .xir and live-swap it into the bound _radiance_maps. Fired by the player's
+    // --devkeys [E] cycle (host owns the cycle list); the async kick is thread-safe
+    // and the pointer swap is the same benign race the python viewer accepts.
+    case "SetEnvmap"_crcu: {
+      const auto& table = *data.getShared<DataTable>();
+      auto path         = table["path"_tok].get<std::string>();
+      if (_scene and _scene->_pbr_common) {
+        auto maps = _scene->_pbr_common->requestRadianceMapsAsync(AssetPath(path.c_str()));
+        if (maps)
+          _scene->_pbr_common->_radiance_maps = maps;
+        else // self-defend: a bad path would null the maps and crash envSpecularTexture()
+          printf("SceneGraphSystem: SetEnvmap FAILED to load <%s> — keeping current maps\n", path.c_str());
+      }
+      break;
+    }
+    // Terrain material-override cycle (SetEnvmap sibling): the player's --devkeys [M] key
+    // cycles declared(0)/normals(1)/slope(2)/white(3) and fires this. The mode lands on
+    // pbr_common (runtime-only, like enable_SSSS); the terrain drawable's render lambda reads
+    // it via the RCFD "PBR_COMMON" userProperty and forces the matching debug technique
+    // (ptex3d FWD_SSBO_CUSTOM_NORMALS/SLOPE/WHITE, PATH 1). Mode 0 = declared = today's path.
+    case "SetTerrainMaterialMode"_crcu: {
+      // DATA-DRIVEN: just carry the mode INDEX to pbr_common; the terrain drawable interprets +
+      // clamps it against its own resolved-material list (no mode-name table / fixed count here).
+      const auto& table = *data.getShared<DataTable>();
+      int mode          = table["mode"_tok].get<int>();
+      if (_scene and _scene->_pbr_common)
+        _scene->_pbr_common->_terrainMaterialMode = mode;
+      printf("SceneGraphSystem: SetTerrainMaterialMode -> mode %d\n", mode);
       break;
     }
     case UpdateCamera._hashed: {

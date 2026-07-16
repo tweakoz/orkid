@@ -12,7 +12,7 @@
 # _onUiEvent / _onGpuExit); teardown runs automatically at mainThreadLoop() end.
 ################################################################################
 
-import math, argparse
+import math, argparse, os
 from orkengine.core import *
 from orkengine.lev2 import *
 
@@ -30,8 +30,11 @@ from ork.app.application import ComponentizedApplication
 
 parser = argparse.ArgumentParser(description='scenegraph example')
 parser.add_argument("--variant", type=int, default=0, help='grid shader variant (1-3)')
+parser.add_argument("--vr", action="store_true",
+                    help='use the ACTIVE VR device (orkidvr.device()); falls back to NoVR when no runtime')
 args = vars(parser.parse_args())
 variant = args["variant"]
+use_vr = args["vr"]
 
 ################################################################################
 
@@ -49,10 +52,26 @@ class StereoApp1(ComponentizedApplication):
 
   def _onGpuInit(self, ctx):
 
-    self.vrdev = orkidvr.novr_device()
-    self.vrdev.camera = "vrcam"
-    self.vrdev.width = 1280
-    self.vrdev.height = 1280
+    # Device selection. WITHOUT --vr this is byte-identical to before: the NoVR
+    #  device with the 1280x1280 config. WITH --vr, use the ACTIVE device that
+    #  GfxInit selected; only when that is a live OpenXR session do we defer the
+    #  view sizes to the runtime (it owns them). No runtime -> graceful NoVR path.
+    self.active_openxr = False
+    if use_vr:
+      dev = orkidvr.device()
+      if dev is not None and dev.active and os.environ.get("ORKID_VR_DRIVER") == "openxr":
+        self.active_openxr = True
+
+    if self.active_openxr:
+      self.vrdev = orkidvr.device()
+      self.vrdev.camera = "vrcam"   # scene contract; runtime owns width/height/pose
+    else:
+      if use_vr:
+        print("[stereo_grid] --vr: no active OpenXR runtime — falling back to NoVR path")
+      self.vrdev = orkidvr.novr_device()
+      self.vrdev.camera = "vrcam"
+      self.vrdev.width = 1280
+      self.vrdev.height = 1280
     self.IVP = mtx4()
 
     vars = VarMap()
@@ -110,14 +129,18 @@ class StereoApp1(ComponentizedApplication):
     self.vrdev.near = 0.1   # meters
     self.vrdev.far = 1e5    # meters
 
-    x = math.sin(abstime * 0.125)
-    z = -math.cos(abstime * 0.125)
+    # Under a live OpenXR session the runtime OWNS the head pose + projections
+    #  (gpuUpdate rewrites _posemap each frame); don't fight it with a synthetic
+    #  orbiting pose. The NoVR path keeps the original demo motion.
+    if not self.active_openxr:
+      x = math.sin(abstime * 0.125)
+      z = -math.cos(abstime * 0.125)
 
-    xf_hmd = mtx4.lookAt(vec3(x, 0.1, z) * -5,   # eye
-                         vec3(0, 0, 0),          # tgt
-                         vec3(0, 1, 0))          # up
+      xf_hmd = mtx4.lookAt(vec3(x, 0.1, z) * -5,   # eye
+                           vec3(0, 0, 0),          # tgt
+                           vec3(0, 1, 0))          # up
 
-    self.vrdev.setPoseMatrix("hmd", xf_hmd)
+      self.vrdev.setPoseMatrix("hmd", xf_hmd)
 
     ########################################
 

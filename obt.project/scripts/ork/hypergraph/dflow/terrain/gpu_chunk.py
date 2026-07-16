@@ -15,7 +15,7 @@
 # offsets, and the per-pass dispatch sizes.
 #
 # Geometry matches HeightField._build_terrain_mesh_arrays' sampling convention (texel-center world
-# coords, height = heights[row*DIM+col] * HEIGHT_M) so collider/camera-follow and the visual align.
+# coords, height = heights[row*DIM+col] — TRUE METERS) so collider/camera-follow and the visual align.
 ###############################################################################
 
 
@@ -31,21 +31,24 @@ class TerrainChunkVertexSource:
     mat4 c_vp; mat4 c_ivp; vec4 c_eye; vec4 c_misc;   // CamBlk @0   (ComputeDrawable.setCameraParams)
     uint a_vc,a_ic,a_fv,a_fi;                          // VkDrawIndirectCommand @ARGS_OFF
     uint v_count,v_frustum_count,u_dim,v_total_count;  // visible-chunk header @VIS_OFF (u_dim=runtime grid dim)
+    vec2 u_ybounds;                                    // world height [min,max] METERS @YB_OFF (CPU upload)
     uint v_list[NCHUNK];                               // visible chunk indices @VLIST_OFF
-    float heights[DIM*DIM];                            // heightfield @HEIGHTS_OFF (CPU upload)
+    float heights[DIM*DIM];                            // heightfield @HEIGHTS_OFF (TRUE METERS, CPU upload)
   """
 
-  def __init__(self, dim, extent_m, height_m, chunk=128, y_bias=0.0, bake_dim=None, relax=False):
+  def __init__(self, dim, extent_m, chunk=128, y_bias=0.0, bake_dim=None, relax=False):
     self.dim    = int(dim)
     self.extent = float(extent_m)
-    self.hscale = float(height_m)
     self.chunk  = int(chunk)
-    # RELAXED-UV mode (the slope-stretch fix). When on, the per-vertex SSBO array is INTERLEAVED
-    # (stride 8: height, relaxed_uv.xy, normal.xz, binormal.xyz) instead of mono heights (stride 1),
-    # and the VS reads uv0 + the precomputed tangent frame from it (dropping the live finite-diff taps).
-    # The dflow RelaxUvModule bakes the frame; the C++ fills vtxdata. relax=False is byte-identical to before.
+    # RELAXED-UV mode (the slope-stretch fix). When on, the per-vertex relaxed uv + tangent frame
+    # live in a SEPARATE stride-5 UINT runtime SSBO (sif_terra_frame — WS4 fp16 packing:
+    # [0,1]=uv fp32-bitcast, [2]=half2(nrm.xz), [3]=half2(bn.xy), [4]=half2(bn.z,0);
+    # the old slot-0 height was never read and is dropped) consumed ONLY by the color/cap VS.
+    # heights[] stays DENSE stride-1 so terr_pos and the DEPTH-PREPASS keep mono's bandwidth
+    # (8 verts per 32B cache line — an interleaved heights[] made the dpp touch one line PER vertex,
+    # a regression that grew with render_dimension^2). The dflow RelaxUvModule bakes the frame;
+    # the C++ fills BOTH buffers. relax=False is byte-identical to before.
     self.relax   = bool(relax)
-    self._vstride = 8 if self.relax else 1
     self.ybias  = float(y_bias)   # constant world-Y offset on the VISIBLE mesh (physics-vs-render
                                   # alignment). NOT in the normal taps (a constant cancels). Baked.
     # DIM is a RUNTIME uniform (u_dim, in the VIS header) — NOT baked into the shader — so one compiled
@@ -68,13 +71,20 @@ class TerrainChunkVertexSource:
     self.CAM_OFF     = 0
     self.ARGS_OFF    = 160                                      # after CamBlk (64+64+16+16)
     self.VIS_OFF     = 176
+    # GLOBAL world-height bounds [min,max] METERS (CPU-computed @materialize from the actual field)
+    # — the frustum cull's conservative vertical box (heights are true meters; there is no scale
+    # constant to build a 0..hscale box from anymore). vec2, 8-aligned @192.
+    self.YB_OFF      = 192
     # per-chunk WORLD-Y bounds [minY, maxY] (CPU-computed @materialize) — the TIGHT vertical extent the
-    # HZB occlusion test needs (the conservative 0..hscale box never occludes; a valley chunk's real
+    # HZB occlusion test needs (the conservative global box never occludes; a valley chunk's real
     # max-Y lets it cull behind a nearer ridge). vec2 stride 8 in std430.
-    self.CHUNKY_OFF  = 192                                      # vec2 chunk_y[MAXNC]  (8-aligned @192)
+    self.CHUNKY_OFF  = 200                                      # vec2 chunk_y[MAXNC]  (8-aligned @200)
     self.VLIST_OFF   = self.CHUNKY_OFF + self.maxnc * 8         # uint v_list[MAXNC]
-    self.HEIGHTS_OFF = self.VLIST_OFF + self.maxnc * 4          # float heights[]/vtxdata[] (runtime, last)
-    self.TOTAL       = self.HEIGHTS_OFF + self.dimsq * self._vstride * 4  # render buffer (stride 1 mono / 8 relax)
+    self.HEIGHTS_OFF = self.VLIST_OFF + self.maxnc * 4          # float heights[] (runtime, last; DENSE stride 1)
+    self.TOTAL       = self.HEIGHTS_OFF + self.dimsq * 4        # render buffer (heights always dense)
+    # relax: the frame SSBO (separate buffer bound to sif_terra_frame) — stride 5 uints/vertex
+    # (WS4 fp16 packing; was 8 floats = 32B, now 20B)
+    self.FRAME_TOTAL = (self.dimsq * 5 * 4) if self.relax else 0
 
   # ---- GLSL tokens -----------------------------------------------------------
   # DIM-derived quantities are RUNTIME (read u_dim, the CPU-uploaded grid dim) so the shader is
@@ -108,29 +118,43 @@ class TerrainChunkVertexSource:
       "mat4 c_vp; mat4 c_ivp; vec4 c_eye; vec4 c_misc;   // CamBlk @0\n"
       "uint a_vc; uint a_ic; uint a_fv; uint a_fi;        // VkDrawIndirectCommand @%d\n"
       "uint v_count; uint v_frustum_count; uint u_dim; uint v_total_count;  // header @%d (u_dim=runtime grid dim, CPU upload)\n"
+      "vec2 u_ybounds;                                    // world height [min,max] METERS @%d (CPU upload)\n"
       "vec2 chunk_y[%d];                                  // per-chunk world [minY,maxY] @%d (cap MAXNC, CPU upload)\n"
       "uint v_list[%d];                                   // visible chunk indices @%d (cap MAXNC)\n"
-      "float heights[];                                   // heightfield @%d (RUNTIME-sized: u_dim*u_dim, CPU upload)"
-      % (self.ARGS_OFF, self.VIS_OFF, self.maxnc, self.CHUNKY_OFF,
+      "float heights[];                                   // heightfield @%d (RUNTIME-sized: u_dim*u_dim, TRUE METERS, CPU upload)"
+      % (self.ARGS_OFF, self.VIS_OFF, self.YB_OFF, self.maxnc, self.CHUNKY_OFF,
          self.maxnc, self.VLIST_OFF, self.HEIGHTS_OFF))
+
+  @property
+  def frame_block(self):
+    """The relax frame storage block (SEPARATE buffer; runtime-sized stride-5 UINT array —
+    WS4 fp16 packing: [0,1]=RELAXED uv as fp32 bitcasts (atlas-param precision: fp16 would
+    quantize ~2 atlas texels near 1.0), [2]=packHalf2x16(nrm.x, nrm.z),
+    [3]=packHalf2x16(bn.x, bn.y), [4]=packHalf2x16(bn.z, 0). The old slot-0 height was never
+    read (terr_pos reads the dense heights[]) and is dropped: 32B -> 20B per texel. MUST
+    mirror the C++ packer (terrain_chunk_drawable.cpp pack_frame5). Declared as an extra
+    vertex storage block so EVERY VS variant (forward/cap/dpp/instanced) inherits it
+    uniformly; only the color/cap tail actually reads it (dpp's dead reads DCE)."""
+    return ("storage_interface sif_terra_frame (descriptor_set 0) {\n"
+            "  buffer layout(std430) terra_frame_blk { uint tframe[]; };\n"
+            "}")
 
   @property
   def lib(self):
     # terr_pos: texel-center world coord + height tap (matches _build_terrain_mesh_arrays).
-    # relax mode interleaves the per-vertex array (stride 8) — the height is component 0.
+    # heights[] is DENSE stride-1 in both modes (the relax frame lives in sif_terra_frame).
     D = self._D
-    hread = ("heights[(cz * %s + cx) * %du]" % (D, self._vstride)) if self.relax \
-            else ("heights[cz * %s + cx]" % D)
+    hread = "heights[cz * %s + cx]" % D
     return (
       "vec3 terr_pos(uint tx, uint tz) {\n"
       "  uint cx = min(tx, %s - 1u);\n"
       "  uint cz = min(tz, %s - 1u);\n"
       "  float x = ((float(tx) + 0.5) / float(%s) - 0.5) * %s;\n"
       "  float z = ((float(tz) + 0.5) / float(%s) - 0.5) * %s;\n"
-      "  float y = %s * %s + (%s);\n"
+      "  float y = %s + (%s);\n"
       "  return vec3(x, y, z);\n"
       "}" % (D, D, D, _f(self.extent),
-             D, _f(self.extent), hread, _f(self.hscale), _f(self.ybias)))
+             D, _f(self.extent), hread, _f(self.ybias)))
 
   @property
   def vs_body(self):
@@ -158,21 +182,37 @@ class TerrainChunkVertexSource:
       "else                   { dR = 1u; dC = 1u; }\n"
       "uint tx = baseC + dC;\n"
       "uint tz = baseR + dR;\n"
+      # PARTIAL CHUNKS (u_dim %% chunk != 0 -> the last chunk row/col is partial, e.g. 64 spare
+      # cells at u_dim=1600 chunk=128): cells whose corner-0 lies fully beyond the grid collapse
+      # to a point (zero-area -> rasterizer culls). Without this their clamped-height taps
+      # stretch a wide flat apron past the +X/+Z terrain edges. Divisible dims have no such
+      # cells (baseC max == u_dim-1), so this line is inert there.
+      "if (baseC >= u_dim || baseR >= u_dim) { tx = 0u; tz = 0u; }\n"
       % (self._VP, self._CP, self._CP, self._VP, self._C, self._C, self._C, self._C))
     if self.relax:
-      # RELAX: precomputed tangent frame + BOTH uv parameterizations from the interleaved per-vertex array
-      # (stride 8: [0]=height [1,2]=RELAXED uv [3,4]=normal.x,z [5,6,7]=binormal). normal.y reconstructed
-      # +sqrt. uv0 = PLANAR grid uv (the default ctx.uv; channel taps + existing materials, UNCHANGED
-      # meaning); ruv = RELAXED uv (the atlas parameterization — the material routes the cap-VS gl_Position
-      # + the stored forward frg_uv0 to it). Carrying both lets the material pick per-technique (no overload).
+      # RELAX: precomputed tangent frame + BOTH uv parameterizations. The frame comes from the
+      # SEPARATE sif_terra_frame SSBO (stride-5 uints — WS4 fp16: [0,1]=uv fp32-bitcast,
+      # [2]=half2(normal.x,z), [3]=half2(binormal.xy), [4]=half2(binormal.z, 0)) — heights[]
+      # stays dense for terr_pos/dpp. normal.y reconstructed +sqrt.
+      # uv0 = PLANAR grid uv (the default ctx.uv; channel taps + existing materials, UNCHANGED
+      # meaning); ruv = RELAXED uv (the atlas parameterization — the material routes the cap-VS
+      # gl_Position + the stored forward frg_uv0 to it). Both carried: material picks per-technique.
       tail = (
         "vec3 P = terr_pos(tx, tz);\n"
-        "uint vbase = (tz * u_dim + tx) * 8u;\n"
-        "vec2 ruv = vec2(heights[vbase + 1u], heights[vbase + 2u]);   // RELAXED uv (atlas param)\n"
+        # CLAMP the frame reads: tx/tz legitimately reach u_dim at the far row/col (the mesh
+        # extends half a texel past the last texel center), and unlike terr_pos (which clamps
+        # internally) a raw (tz*u_dim+tx) would read the NEXT ROW's texel 0 on the right edge
+        # and PAST THE BUFFER on the far row (robustness zeros -> normalize(0) -> NaN TBN).
+        # uv0/P/Prelax stay on the unclamped indices (planar uv must reach 1.0 at the edge).
+        "uint vx = min(tx, u_dim - 1u);\n"
+        "uint vz = min(tz, u_dim - 1u);\n"
+        "uint vbase = (vz * u_dim + vx) * 5u;\n"
+        "vec2 ruv = vec2(uintBitsToFloat(tframe[vbase + 0u]), uintBitsToFloat(tframe[vbase + 1u]));   // RELAXED uv (atlas param, fp32)\n"
         "vec2 uv0 = vec2((float(tx) + 0.5) / float(%s), (float(tz) + 0.5) / float(%s));   // PLANAR grid uv\n"
-        "float _nx = heights[vbase + 3u]; float _nz = heights[vbase + 4u];\n"
+        "vec2 _nxz = unpackHalf2x16(tframe[vbase + 2u]);\n"
+        "float _nx = _nxz.x; float _nz = _nxz.y;\n"
         "vec3 normal = vec3(_nx, sqrt(max(0.0, 1.0 - _nx*_nx - _nz*_nz)), _nz);\n"
-        "vec3 binormal = vec3(heights[vbase + 5u], heights[vbase + 6u], heights[vbase + 7u]);\n"
+        "vec3 binormal = vec3(unpackHalf2x16(tframe[vbase + 3u]), unpackHalf2x16(tframe[vbase + 4u]).x);\n"
         "vec4 position = vec4(P, 1.0);\n"
         # RELAXED world position: worldXZ at the RELAXED uv ((ruv-0.5)*extent), planar height for depth.
         # The cap-VS atlas bake rasterizes this via the ortho mvp (gl_Position = mvp*Prelax) — the SAME
@@ -205,12 +245,21 @@ class TerrainChunkVertexSource:
   def compute(self):
     # reset -> cull (2D frustum test per chunk, append survivors) -> finalize (vertexCount).
     tw = "(%s / float(u_dim))" % _f(self.extent)   # runtime texel->world scale (was the baked extent/dim)
-    return (
-      # sif_hzb: the read-only max-depth HZB pyramid (SEPARATE SSBO, bound per-frame by
-      # ComputeDrawable::onPreRender). Compute-only (the VS doesn't use it); shares descriptor_set 0,
-      # gets a declaration-order binding after sif_ptex_vtx (sif_binding pre-assign).
+    # RELAX: the compute must ALSO inherit sif_terra_frame (it never reads it) so its binding set stays
+    # DENSE and consistent with the program-level ids. The compute stage gets per-shader FALLBACK bindings
+    # (sequential, inheritance order) while the pipeline LAYOUT uses the program-level declaration-order
+    # ids — a graphics-only block between sif_ptex_vtx and sif_hzb desynchronizes them (layout {0,2} vs
+    # stage {0,1}) and vkCreateComputePipelines fails (-3, MoltenVK). Inherit order MUST match the
+    # program declaration order: sif_ptex_vtx, sif_terra_frame, sif_hzb.
+    frame_inh = " : sif_terra_frame" if self.relax else ""
+    # sif_hzb: the read-only max-depth HZB pyramid (SEPARATE SSBO, bound per-frame by
+    # ComputeDrawable::onPreRender). Compute-only (the VS doesn't use it); shares descriptor_set 0,
+    # gets a declaration-order binding after sif_ptex_vtx (sif_binding pre-assign).
+    header = (
       "storage_interface sif_hzb (descriptor_set 0) { buffer layout(std430) hzb_blk { float HZB[]; }; }\n"
-      "compute_interface cif_terrain : sif_ptex_vtx : sif_hzb { inputs { layout(local_size_x = 64); } }\n"
+      "compute_interface cif_terrain : sif_ptex_vtx%s : sif_hzb { inputs { layout(local_size_x = 64); } }\n"
+      % frame_inh)
+    return header + (
       "////////////////////////////////////////\n"
       "compute_shader cs_terrain_reset : cif_terrain {\n"
       "%s"  # runtime cps/nchunk preamble (from u_dim)
@@ -228,26 +277,31 @@ class TerrainChunkVertexSource:
       "  float x1 = ((float((cx + 1u) * %s) + 0.5) / float(%s) - 0.5) * %s;\n"
       "  float z0 = ((float(cz * %s) + 0.5) / float(%s) - 0.5) * %s;\n"
       "  float z1 = ((float((cz + 1u) * %s) + 0.5) / float(%s) - 0.5) * %s;\n"
-      # FRUSTUM box: CONSERVATIVE full height range 0..hscale (a tight per-chunk box wrongly frustum-
+      # FRUSTUM box: CONSERVATIVE global height range u_ybounds (a tight per-chunk box wrongly frustum-
       # culls chunks whose real terrain sits below the view planes — e.g. the chunk underfoot, lower
       # than eye level -> a hole). The TIGHT per-chunk box is for the OCCLUSION test only (below).
-      "  vec3 mn = vec3(x0, 0.0, z0);\n"
-      "  vec3 mx = vec3(x1, %s, z1);\n"
-      "  vec4 rx = vec4(c_vp[0].x, c_vp[1].x, c_vp[2].x, c_vp[3].x);\n"
-      "  vec4 ry = vec4(c_vp[0].y, c_vp[1].y, c_vp[2].y, c_vp[3].y);\n"
-      "  vec4 rz = vec4(c_vp[0].z, c_vp[1].z, c_vp[2].z, c_vp[3].z);\n"
-      "  vec4 rw = vec4(c_vp[0].w, c_vp[1].w, c_vp[2].w, c_vp[3].w);\n"
-      "  vec4 pl[6];\n"
-      "  // CullFrustumScale (c_misc.x, frame-global, from RCFD via ComputeDrawable::onPreRender):\n"
-      "  // >1 widens / cull-less, 1.0 exact, <1 narrows. t = 1/scale scales the four SIDE planes\n"
-      "  // (same sense as the hypermesh MeshInstCull u_tighten); near/far (pl[4],pl[5]) unchanged.\n"
-      "  float t = (c_misc.x > 0.0) ? (1.0 / c_misc.x) : 1.0;\n"
-      "  vec4 sx = rx * t; vec4 sy = ry * t;\n"
-      "  pl[0] = rw + sx; pl[1] = rw - sx; pl[2] = rw + sy; pl[3] = rw - sy; pl[4] = rz; pl[5] = rw - rz;\n"
+      # Heights are TRUE METERS; the CPU uploads the field's actual [min,max] (no scale constant).
+      "  vec3 mn = vec3(x0, u_ybounds.x, z0);\n"
+      "  vec3 mx = vec3(x1, u_ybounds.y, z1);\n"
       "  bool inside = true;\n"
-      "  for (int p = 0; p < 6; p++) {\n"
-      "    vec3 pv = vec3(pl[p].x >= 0.0 ? mx.x : mn.x, pl[p].y >= 0.0 ? mx.y : mn.y, pl[p].z >= 0.0 ? mx.z : mn.z);\n"
-      "    if ((dot(pl[p].xyz, pv) + pl[p].w) < 0.0) { inside = false; }\n"
+      "  // c_misc.x < 0 is the ORKID_DISABLE_FRUSTUM_CULL sentinel (host-stamped): skip the frustum reject\n"
+      "  // so all chunks are treated visible (occlusion below, if enabled, still applies).\n"
+      "  if (c_misc.x >= 0.0) {\n"
+      "    vec4 rx = vec4(c_vp[0].x, c_vp[1].x, c_vp[2].x, c_vp[3].x);\n"
+      "    vec4 ry = vec4(c_vp[0].y, c_vp[1].y, c_vp[2].y, c_vp[3].y);\n"
+      "    vec4 rz = vec4(c_vp[0].z, c_vp[1].z, c_vp[2].z, c_vp[3].z);\n"
+      "    vec4 rw = vec4(c_vp[0].w, c_vp[1].w, c_vp[2].w, c_vp[3].w);\n"
+      "    vec4 pl[6];\n"
+      "    // CullFrustumScale (c_misc.x, frame-global, from RCFD via ComputeDrawable::onPreRender):\n"
+      "    // >1 widens / cull-less, 1.0 exact, <1 narrows. t = 1/scale scales the four SIDE planes\n"
+      "    // (same sense as the hypermesh MeshInstCull u_tighten); near/far (pl[4],pl[5]) unchanged.\n"
+      "    float t = (c_misc.x > 0.0) ? (1.0 / c_misc.x) : 1.0;\n"
+      "    vec4 sx = rx * t; vec4 sy = ry * t;\n"
+      "    pl[0] = rw + sx; pl[1] = rw - sx; pl[2] = rw + sy; pl[3] = rw - sy; pl[4] = rz; pl[5] = rw - rz;\n"
+      "    for (int p = 0; p < 6; p++) {\n"
+      "      vec3 pv = vec3(pl[p].x >= 0.0 ? mx.x : mn.x, pl[p].y >= 0.0 ? mx.y : mn.y, pl[p].z >= 0.0 ? mx.z : mn.z);\n"
+      "      if ((dot(pl[p].xyz, pv) + pl[p].w) < 0.0) { inside = false; }\n"
+      "    }\n"
       "  }\n"
       "  if (inside) { atomicAdd(v_frustum_count, 1u); }   // passed frustum (pre-occlusion count)\n"
       # HZB occlusion (1-phase): cull the chunk if its NEAREST screen depth is behind the HZB MAX over
@@ -329,7 +383,6 @@ class TerrainChunkVertexSource:
          self._NC, self._CP, self._CP,
          self._C, self._D, _f(self.extent), self._C, self._D, _f(self.extent),
          self._C, self._D, _f(self.extent), self._C, self._D, _f(self.extent),
-         _f(self.hscale),   # frustum mx.y = conservative full height range
          self._dim_preamble(want_nchunk=False), # sort preamble (cps only)
          # sort args: (CPS, CHUNK, halfchunk, texel->world(runtime tw), halfextent) per coord (xa,za,xb,zb)
          self._CP, self._C, _f(self.chunk / 2.0 + 0.5), tw, _f(0.5 * self.extent),
@@ -341,13 +394,19 @@ class TerrainChunkVertexSource:
   # ---- material delegation ---------------------------------------------------
   def as_material_kwargs(self):
     """The dict spliced into Ptex3d(vertex_source=...) -> materialize_surface_fxv2(ssbo_*)."""
-    return dict(ssbo_layout=self.layout,
-                ssbo_lib=self.lib,
-                ssbo_vs_body=self.vs_body,
-                ssbo_compute=self.compute,
-                # relax => the vs_body provides a `ruv` local (relaxed uv); the material routes the atlas
-                # param (cap-VS gl_Position + stored forward frg_uv0) to it. False => planar uv0 throughout.
-                relax_uv=self.relax)
+    kw = dict(ssbo_layout=self.layout,
+              ssbo_lib=self.lib,
+              ssbo_vs_body=self.vs_body,
+              ssbo_compute=self.compute,
+              # relax => the vs_body provides a `ruv` local (relaxed uv); the material routes the atlas
+              # param (cap-VS gl_Position + stored forward frg_uv0) to it. False => planar uv0 throughout.
+              relax_uv=self.relax)
+    if self.relax:
+      # the frame SSBO: declared as an extra vertex storage block + inherited by every VS variant
+      # (the SoA-channel mechanism). The C++ drawable binds the buffer to sif_terra_frame.
+      kw["ssbo_extra_blocks"] = self.frame_block
+      kw["ssbo_vs_inherits"]  = ("sif_terra_frame",)
+    return kw
 
   # ---- ComputeDrawable consumer contract ------------------------------------
   def compute_passes(self):
@@ -357,3 +416,30 @@ class TerrainChunkVertexSource:
             ("cs_terrain_cull",     cull_groups, 1, 1),
             ("cs_terrain_sort",     1,           1, 1),   # near-to-far for early-Z
             ("cs_terrain_finalize", 1,           1, 1)]
+
+  # ---- runtime-dim (u_dim) upload — THE shared Python seam --------------------
+  # DIM is a RUNTIME uniform read from the VIS header (u_dim @VIS_OFF+8), NOT a baked literal
+  # (res-decoupling, commit e82564dcd): the cull compute derives nchunk = ceil(u_dim/CHUNK)^2
+  # from it and `if (ci >= nchunk) return;` culls EVERY chunk when it reads 0 -> a zero-vertex
+  # indirect draw -> INVISIBLE terrain. The C++ ECS drawable uploads it
+  # (terrain_chunk_drawable.cpp); EVERY Python parity setup that builds the SSBO + uploads
+  # heights itself MUST also call upload_dim(), or the terrain never draws.
+
+  def upload_dim(self, fxi, ssbo):
+    """Upload the RENDER grid dim (u_dim) into the VIS header slot 2 (@VIS_OFF+8). One uint32
+    (the int path of copyDataIntoShaderStorageBuffer writes a 4-byte int32 — bit-identical to
+    the uint the shader reads; a numpy array would float-cast). The per-frame reset never
+    touches this slot (survives reset). Mirrors terrain_chunk_drawable.cpp's write. CALL IT ON
+    EVERY ground (re)build / heights re-upload with the CURRENT render dim — the editor rebakes
+    at multiple dims (preview vs full-res), so a once-at-init upload is not enough."""
+    fxi.copyDataIntoShaderStorageBuffer(int(self.dim), ssbo, self.VIS_OFF + 8)
+
+  def read_dim(self, fxi, ssbo):
+    """Read back the uploaded u_dim (VIS header slot 2 @VIS_OFF+8) as an int — the upload's
+    landing-offset check for headless gates."""
+    import struct
+    from orkengine.core import CrcStringProxy
+    m = fxi.mapStorageBuffer(ssbo, self.VIS_OFF + 8, 4, CrcStringProxy().READ_ONLY)
+    b = bytes(m.data)
+    fxi.unmapStorageBuffer(m)
+    return struct.unpack("<i", b[:4])[0]

@@ -69,7 +69,6 @@ enum ScatterStream : uint64_t {
 std::shared_ptr<meshutil::Geometry> scatterPlace(
     const ScatterSinkData& sink,
     const std::map<std::string, std::string>& channel_paths,
-    float extent_m,
-    float height_m);
+    float extent_m);
 
 } // namespace ork::lev2::terrain

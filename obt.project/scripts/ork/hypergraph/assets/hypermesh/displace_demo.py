@@ -27,7 +27,7 @@ class DisplaceDemo(Hypermesh):
     # PANNING fbm relief (offset_vel -> rolls over time), softly terraced, with
     # finer counter-panning fbm detail on top.
     h = T.fbm(frequency=5.0, offset_vel=(0.35, 0.12))
-    h = T.terrace(h, steps=32.0, sharpness=2.5) * 0.8 \
+    h = T.terrace(h, step_m=1.0/32.0, sharpness=2.5) * 0.8 \
         + T.fbm(frequency=18.0, offset_vel=(-0.06, 0.025)) * 0.05
     h = T.lpf(h, cutoff_m=10)
     n = self.displace(n, field=h, amount=HEIGHT, extent=EXTENT, mode="y", field_dim=1024)

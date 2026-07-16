@@ -343,19 +343,26 @@ struct LSystemModuleInst : public MeshComputeInst {
     // --- run the rewrite + turtle interpret on the CPU ---
     xng->_nodes.clear();
     xng->_slots.clear();
-    uint32_t root = _emit(xng->_nodes, fvec3(0, 0, 0), fvec3(0, 1, 0), _d->_base_radius, 0, 0xffffffffu);
-    Turtle T{xng->_nodes, _d, uint32_t(std::max(1, _d->_seed)), std::max(16, _d->_budget)};
-    switch (LArchetype(_d->_archetype)) {
-      case LArchetype::Conifer:  T.conifer(root);  break;
-      case LArchetype::Saguaro:  T.saguaro(root);  break;
-      case LArchetype::Ocotillo: T.ocotillo(root); break;
-      case LArchetype::Sympodial:
-      default:
-        T.sympodial(fvec3(0, 0, 0), fvec3(0, 1, 0), _d->_seg_len, _d->_base_radius, 0,
-                    std::max(1, _d->_depth), root, _d->_tropism);
-        break;
+    if (_d->_grammar) {
+      // GR1.b: reflected grammar present → derive it (rewrite + turtle-interpret) INSTEAD of the
+      // hardcoded archetype switch. The 21 scalar props are the LExpr PARAM env (A8). The legacy path
+      // below is untouched + stays the default (null _grammar) through the GR1.d parity window (T12).
+      deriveLRuleSet(_d->_grammar.get(), _d, xng->_nodes, xng->_slots);
+    } else {
+      uint32_t root = _emit(xng->_nodes, fvec3(0, 0, 0), fvec3(0, 1, 0), _d->_base_radius, 0, 0xffffffffu);
+      Turtle T{xng->_nodes, _d, uint32_t(std::max(1, _d->_seed)), std::max(16, _d->_budget)};
+      switch (LArchetype(_d->_archetype)) {
+        case LArchetype::Conifer:  T.conifer(root);  break;
+        case LArchetype::Saguaro:  T.saguaro(root);  break;
+        case LArchetype::Ocotillo: T.ocotillo(root); break;
+        case LArchetype::Sympodial:
+        default:
+          T.sympodial(fvec3(0, 0, 0), fvec3(0, 1, 0), _d->_seg_len, _d->_base_radius, 0,
+                      std::max(1, _d->_depth), root, _d->_tropism);
+          break;
+      }
     }
-    _buildFrames(xng->_nodes); // parallel-transport frames → no ring twist on vertical runs
+    _buildFrames(xng->_nodes); // parallel-transport frames → no ring twist on vertical runs (both paths)
     const int N = int(xng->_nodes.size());
     xng->_count = N;
 
@@ -415,9 +422,16 @@ struct LSystemModuleInst : public MeshComputeInst {
   bool _announced = false; // print the node-count line once
 };
 
-// cook salt ties to THIS TU's compile time, so any grammar change auto-invalidates the
-// downstream LSweep cook-cache on rebuild (LSystem feeds LSweep's input hash) — no manual bump.
+// cook salt. Two disjoint salts keep the grammar + legacy paths from EVER sharing a cache entry (T12).
+//
+//  * grammar path (T9): a CONTENT salt. Unlike the __DATE__ salt below, a content salt does NOT
+//    auto-bust the cache on rebuild — so a C++ evaluator change (derive/turtle/RNG) leaves stale cooks
+//    in place SILENTLY. Therefore `evalv=N` is a MANDATORY MANUAL BUMP on ANY change to deriveLRuleSet /
+//    the turtle interpret / the counter-hash RNG in hmdflow_lruleset.cpp. Bump it or ship stale geometry.
+//  * legacy archetype path: keeps the __DATE__/__TIME__ salt (auto-busts every rebuild) — deleted at GR1.d.
 const char* LSystemModuleInst::_cookSalt() const {
+  if (_d->_grammar)
+    return "lsystem lsys.v3-ruleset evalv=1";
   return "lsystem " __DATE__ " " __TIME__;
 }
 
@@ -438,6 +452,9 @@ void LSystemModuleData::describeX(class_t* clazz) {
   clazz->setSharedFactory([]() -> rtti::castable_ptr_t { return LSystemModuleData::createShared(); });
   clazz->annotateTyped<dataflow::moduleIOreshape_fn_t>(
       "reshapeIOs", [](dataflow::moduledata_ptr_t m) { _reshapeLSystemIOs(m); });
+  // GR1.a: the reflected grammar rides the module (nullable directObjectProperty). Flows into
+  // hypermeshModuleIdentityHash automatically; unused by any runtime path until GR1.b's evaluator.
+  clazz->directObjectProperty("grammar", &LSystemModuleData::_grammar);
   clazz->directProperty("archetype", &LSystemModuleData::_archetype);
   clazz->directProperty("depth", &LSystemModuleData::_depth);
   clazz->directProperty("budget", &LSystemModuleData::_budget);

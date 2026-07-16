@@ -22,6 +22,7 @@
 #include <ork/kernel/string/string.h>
 #include <ork/util/parser.inl>
 #include "shadlang_impl.h"
+#include <atomic>
 
 #if defined(USE_ORKSL_LANG)
 
@@ -45,9 +46,10 @@ void dumpAstNode(astnode_ptr_t node) {
 ///////////////////////////////////////////////////////////////////////////////
 
 AstNode::AstNode() {
-  static int gid = 0;
-  _nodeID        = gid++;
-  _uservars      = std::make_shared<varmap::VarMap>();
+  // atomic: AST nodes are created on the (future multi-threaded) shader compile path
+  static std::atomic<int> gid(0);
+  _nodeID   = gid.fetch_add(1);
+  _uservars = std::make_shared<varmap::VarMap>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

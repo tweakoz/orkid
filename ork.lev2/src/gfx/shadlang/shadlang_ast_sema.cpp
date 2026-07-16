@@ -43,22 +43,28 @@ void _procdatatype(
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 std::string _dt_extract_type(dt_ptr_t dt_node, match_ptr_t dt_match) {
-  auto seq     = dt_match->asShared<Sequence>();
-  auto _inp    = seq->itemAsShared<Optional>(0)->_subitem;
-  auto _const  = seq->itemAsShared<Optional>(1)->_subitem;
-  auto dt_name = seq->itemAsShared<OneOf>(2)->_selected;
+  auto seq      = dt_match->asShared<Sequence>();
+  auto _precise = seq->itemAsShared<Optional>(0)->_subitem; // NoContraction (cross-platform fma parity)
+  auto _inp     = seq->itemAsShared<Optional>(1)->_subitem;
+  auto _const   = seq->itemAsShared<Optional>(2)->_subitem;
+  auto dt_name  = seq->itemAsShared<OneOf>(3)->_selected;
   auto dt_cm   = dt_name->asShared<ClassMatch>();
 
   auto type_name = dt_cm->_token->text;
   dt_node->setValueForKey<bool>("has_attr_inp", (_inp != nullptr));
   dt_node->setValueForKey<bool>("has_attr_const", (_const != nullptr));
+  dt_node->setValueForKey<bool>("has_attr_precise", (_precise != nullptr));
   dt_node->setValueForKey<std::string>("base_type", type_name);
   if (_inp) {
     type_name = "in " + type_name;
   }
   if (_const) {
     type_name = "const " + type_name;
-  } else {
+  }
+  if (_precise) {
+    // emitted verbatim into GLSL -> glslang decorates the contributing ops
+    // NoContraction in SPIR-V (cross-platform fma/contraction parity).
+    type_name = "precise " + type_name;
   }
 
   return type_name;
@@ -217,14 +223,17 @@ void _semaNameTypedIdentifers(impl::ShadLangParser* slp, astnode_ptr_t top) {
         auto cm   = sel0.value()->_selected->asShared<ClassMatch>();
         type_name = cm->_token->text;
       } else {
-        // DataType - has OneOf at index 2 (after two Optionals)
-        auto sel2 = seq->tryItemAsShared<OneOf>(2);
-        if (sel2) {
-          auto cm   = sel2.value()->_selected->asShared<ClassMatch>();
-          type_name = cm->_token->text;
-        } else {
-          OrkAssert(false);
+        // DataType — the type OneOf follows the leading qualifier Optionals
+        // (precise/in/const). SCAN for it instead of hardcoding the index, so
+        // adding a qualifier to the grammar can't silently break this again.
+        for (size_t qi = 0; qi < seq->_items.size(); qi++) {
+          if (auto selq = seq->tryItemAsShared<OneOf>(qi)) {
+            auto cm   = selq.value()->_selected->asShared<ClassMatch>();
+            type_name = cm->_token->text;
+            break;
+          }
         }
+        OrkAssert(type_name.length());
       }
     }
 

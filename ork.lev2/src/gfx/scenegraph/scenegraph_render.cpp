@@ -220,12 +220,15 @@ void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
       // applied uniformly in the cull shader (u_tighten = 1/scale; stamped in Scene::preRender; VR
       // presets default it to 1.3). Doing it here too (the old subPerspective(-m,-m,m,m)) would
       // DOUBLE-widen, so we pass the EXACT head projection — one knob (CullFrustumScale) now drives
-      // desktop, SGVP, and VR culling identically. Gate on _trackedPoseValid, NOT _active: a default
-      // NoVrDevice (_active=true, _centercamera allocated) is installed even in desktop, but only a
-      // real VR host feeds tracked poses — so this never misfires on a flat run. (Replaces the old
-      // ORKEXP_VRCULL_MARGIN env + subPerspective widen.)
+      // desktop, SGVP, and VR culling identically. Gate: _trackedPoseValid covers hosts that FEED
+      // tracked poses (externally-hosted VR); ownsHmdPresentation() covers the XR-runtime device,
+      // which never sets _trackedPoseValid (it means "extrapolate a host pose" there — the runtime
+      // bypasses the extrapolator every frame, so the old gate silently demoted VR culling to the
+      // walker camera: position followed, HEAD DIRECTION ignored — culled content lagged head
+      // turns on the rig). NoVrDevice is _active on desktop but matches neither predicate, so
+      // flat runs still never misfire. (Replaces the old ORKEXP_VRCULL_MARGIN env + widen.)
       auto vrdev = orkidvr::device();
-      if (vrdev and vrdev->_active and vrdev->_trackedPoseValid and vrdev->_centercamera) {
+      if (vrdev and vrdev->_active and (vrdev->_trackedPoseValid or vrdev->ownsHmdPresentation()) and vrdev->_centercamera) {
         const auto& head = *vrdev->_centercamera;
         CameraMatrices cullcam;
         cullcam.setCustomView(head.GetVMatrix());

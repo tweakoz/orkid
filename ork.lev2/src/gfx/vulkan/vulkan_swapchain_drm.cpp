@@ -62,6 +62,8 @@ void VkSwapChainDRM::_buildup() {
     logchan_vkdrm->log("Building DRM swapchain resources");
 
     _createExportableImages();
+    if (_useLinearScanout)
+        _createScanoutImages();
     _exportImagesToDRM();
 
     ///////////////////////////////////////////////////
@@ -119,6 +121,14 @@ void VkSwapChainDRM::_teardown() {
             vkFreeMemory(device, _imageMemories[i], nullptr);
             _imageMemories[i] = VK_NULL_HANDLE;
         }
+        if (_scanoutImages[i]) {
+            vkDestroyImage(device, _scanoutImages[i], nullptr);
+            _scanoutImages[i] = VK_NULL_HANDLE;
+        }
+        if (_scanoutMemories[i]) {
+            vkFreeMemory(device, _scanoutMemories[i], nullptr);
+            _scanoutMemories[i] = VK_NULL_HANDLE;
+        }
     }
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -170,6 +180,7 @@ void VkSwapChainDRM::_createExportableImages() {
     // Step 2: Find a modifier that supports COLOR_ATTACHMENT
     uint64_t selectedModifier = DRM_FORMAT_MOD_INVALID;
     uint64_t fallbackModifier = DRM_FORMAT_MOD_INVALID;
+    bool linear_can_transfer_dst = false;
 
     logchan_vkdrm->log("Available DRM modifiers:");
     for (const auto& prop : modifierProps) {
@@ -177,6 +188,10 @@ void VkSwapChainDRM::_createExportableImages() {
         logchan_vkdrm->log("  0x%016lx - COLOR_ATTACHMENT: %s",
                            prop.drmFormatModifier,
                            supportsColorAttachment ? "YES" : "NO");
+
+        if (prop.drmFormatModifier == DRM_FORMAT_MOD_LINEAR) {
+            linear_can_transfer_dst = (prop.drmFormatModifierTilingFeatures & VK_FORMAT_FEATURE_TRANSFER_DST_BIT);
+        }
 
         if (supportsColorAttachment) {
             if (prop.drmFormatModifier == DRM_FORMAT_MOD_LINEAR) {
@@ -201,6 +216,13 @@ void VkSwapChainDRM::_createExportableImages() {
     }
 
     _drmModifier = selectedModifier;
+
+    // When rendering must use a vendor tiled modifier, scan out via LINEAR
+    // copy-target images so the display decode is unambiguous.
+    // ORKID_DRM_DIRECT_SCANOUT=1 forces the old direct (tiled) scanout for A/B testing.
+    bool force_direct = (std::getenv("ORKID_DRM_DIRECT_SCANOUT") != nullptr);
+    _useLinearScanout = (selectedModifier != DRM_FORMAT_MOD_LINEAR) && linear_can_transfer_dst && !force_direct;
+    logchan_vkdrm->log("scanout mode: %s", _useLinearScanout ? "LINEAR-copy" : "direct");
 
     // Get function pointers
     auto vkGetImageDrmFormatModifierPropertiesEXT =
@@ -256,6 +278,8 @@ void VkSwapChainDRM::_createExportableImages() {
         imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
         imageInfo.tiling = VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT;
         imageInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        if (_useLinearScanout)
+            imageInfo.usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
@@ -287,8 +311,15 @@ void VkSwapChainDRM::_createExportableImages() {
         VkMemoryRequirements& memRequirements = memRequirements2.memoryRequirements;
 
         // Allocate exportable memory
+        // dma-buf export requires dedicated allocation on some drivers (e.g. NVIDIA);
+        // always use it — scanout images are one-image-per-allocation anyway
+        VkMemoryDedicatedAllocateInfo dedicatedAllocInfo = {};
+        dedicatedAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO;
+        dedicatedAllocInfo.image = _images[i];
+
         VkExportMemoryAllocateInfo exportAllocInfo = {};
         exportAllocInfo.sType = VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO;
+        exportAllocInfo.pNext = &dedicatedAllocInfo;
         exportAllocInfo.handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT;
 
         VkMemoryAllocateInfo allocInfo = {};
@@ -376,6 +407,118 @@ void VkSwapChainDRM::_createExportableImages() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Create LINEAR copy-target images for scanout (non-LINEAR render modifier)
+///////////////////////////////////////////////////////////////////////////////
+
+void VkSwapChainDRM::_createScanoutImages() {
+    logchan_vkdrm->log("Creating %u LINEAR scanout images", MAX_FRAMES_IN_FLIGHT);
+
+    VkDevice device = _contextVK->_vkdevice;
+    VkPhysicalDevice physicalDevice = _contextVK->_vkphysicaldevice;
+
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+
+    uint64_t linearModifier = DRM_FORMAT_MOD_LINEAR;
+
+    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        VkImageDrmFormatModifierListCreateInfoEXT modifierListInfo = {};
+        modifierListInfo.sType = VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_LIST_CREATE_INFO_EXT;
+        modifierListInfo.drmFormatModifierCount = 1;
+        modifierListInfo.pDrmFormatModifiers = &linearModifier;
+
+        VkExternalMemoryImageCreateInfo externalInfo = {};
+        externalInfo.sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO;
+        externalInfo.pNext = &modifierListInfo;
+        externalInfo.handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT;
+
+        VkImageCreateInfo imageInfo = {};
+        imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        imageInfo.pNext = &externalInfo;
+        imageInfo.imageType = VK_IMAGE_TYPE_2D;
+        imageInfo.format = _imageFormat;
+        imageInfo.extent.width = _width;
+        imageInfo.extent.height = _height;
+        imageInfo.extent.depth = 1;
+        imageInfo.mipLevels = 1;
+        imageInfo.arrayLayers = 1;
+        imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+        imageInfo.tiling = VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT;
+        imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+        VkResult result = vkCreateImage(device, &imageInfo, nullptr, &_scanoutImages[i]);
+        if (result != VK_SUCCESS) {
+            logchan_vkdrm->log("ERROR: Failed to create LINEAR scanout image %u (result=%d)", i, result);
+            throw std::runtime_error("Failed to create LINEAR scanout image");
+        }
+
+        VkMemoryRequirements2 memRequirements2 = {};
+        memRequirements2.sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2;
+
+        VkImageMemoryRequirementsInfo2 memReqInfo = {};
+        memReqInfo.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2;
+        memReqInfo.image = _scanoutImages[i];
+        vkGetImageMemoryRequirements2(device, &memReqInfo, &memRequirements2);
+        VkMemoryRequirements& memRequirements = memRequirements2.memoryRequirements;
+
+        VkMemoryDedicatedAllocateInfo dedicatedAllocInfo = {};
+        dedicatedAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO;
+        dedicatedAllocInfo.image = _scanoutImages[i];
+
+        VkExportMemoryAllocateInfo exportAllocInfo = {};
+        exportAllocInfo.sType = VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO;
+        exportAllocInfo.pNext = &dedicatedAllocInfo;
+        exportAllocInfo.handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT;
+
+        VkMemoryAllocateInfo allocInfo = {};
+        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        allocInfo.pNext = &exportAllocInfo;
+        allocInfo.allocationSize = memRequirements.size;
+        allocInfo.memoryTypeIndex = UINT32_MAX;
+
+        for (uint32_t j = 0; j < memProperties.memoryTypeCount; j++) {
+            if ((memRequirements.memoryTypeBits & (1 << j)) &&
+                (memProperties.memoryTypes[j].propertyFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)) {
+                allocInfo.memoryTypeIndex = j;
+                break;
+            }
+        }
+        if (allocInfo.memoryTypeIndex == UINT32_MAX) {
+            logchan_vkdrm->log("ERROR: no exportable memory type for scanout image");
+            throw std::runtime_error("No suitable memory type found");
+        }
+
+        result = vkAllocateMemory(device, &allocInfo, nullptr, &_scanoutMemories[i]);
+        if (result != VK_SUCCESS) {
+            logchan_vkdrm->log("ERROR: Failed to allocate scanout memory %u (result=%d)", i, result);
+            throw std::runtime_error("Failed to allocate Vulkan memory");
+        }
+
+        VkBindImageMemoryInfo bindInfo = {};
+        bindInfo.sType = VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO;
+        bindInfo.image = _scanoutImages[i];
+        bindInfo.memory = _scanoutMemories[i];
+        bindInfo.memoryOffset = 0;
+        vkBindImageMemory2(device, 1, &bindInfo);
+
+        VkImageSubresource subresource = {};
+        subresource.aspectMask = VK_IMAGE_ASPECT_MEMORY_PLANE_0_BIT_EXT;
+        vkGetImageSubresourceLayout(device, _scanoutImages[i], &subresource, &_scanoutLayouts[i]);
+
+        _scanoutVkLayouts[i] = VK_IMAGE_LAYOUT_UNDEFINED;
+
+        if (i == 0) {
+            logchan_vkdrm->log("LINEAR scanout layout: offset=%lu, size=%lu, rowPitch=%lu",
+                               _scanoutLayouts[i].offset, _scanoutLayouts[i].size, _scanoutLayouts[i].rowPitch);
+        }
+    }
+
+    logchan_vkdrm->log("Successfully created %u LINEAR scanout images", MAX_FRAMES_IN_FLIGHT);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Export images to DRM framebuffers
 // Ported from ~/drmvk/vk.inl:412-470
 ///////////////////////////////////////////////////////////////////////////////
@@ -393,10 +536,15 @@ void VkSwapChainDRM::_exportImagesToDRM() {
     }
 
     for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        // scanout source: LINEAR copy-target images when active, else the render images
+        VkDeviceMemory scan_mem            = _useLinearScanout ? _scanoutMemories[i] : _imageMemories[i];
+        const VkSubresourceLayout& scan_lo = _useLinearScanout ? _scanoutLayouts[i] : _imageLayouts[i];
+        uint64_t scan_modifier             = _useLinearScanout ? DRM_FORMAT_MOD_LINEAR : _drmModifier;
+
         // Export as dmabuf fd
         VkMemoryGetFdInfoKHR getFdInfo = {};
         getFdInfo.sType = VK_STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR;
-        getFdInfo.memory = _imageMemories[i];
+        getFdInfo.memory = scan_mem;
         getFdInfo.handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT;
 
         VkResult result = vkGetMemoryFdKHR(device, &getFdInfo, &_drmContext->dmabuf_fds[i]);
@@ -407,9 +555,9 @@ void VkSwapChainDRM::_exportImagesToDRM() {
 
         // Import dmabuf to DRM with modifier
         uint32_t handles[4] = {0};
-        uint32_t pitches[4] = {(uint32_t)_imageLayouts[i].rowPitch, 0, 0, 0};
-        uint32_t offsets[4] = {(uint32_t)_imageLayouts[i].offset, 0, 0, 0};
-        uint64_t modifiers[4] = {_drmModifier, 0, 0, 0};
+        uint32_t pitches[4] = {(uint32_t)scan_lo.rowPitch, 0, 0, 0};
+        uint32_t offsets[4] = {(uint32_t)scan_lo.offset, 0, 0, 0};
+        uint64_t modifiers[4] = {scan_modifier, 0, 0, 0};
 
         int ret = drmPrimeFDToHandle(drm_fd, _drmContext->dmabuf_fds[i], &handles[0]);
         if (ret < 0) {
@@ -508,11 +656,26 @@ void VkSwapChainDRM::_waitPresentFrame(vkcontext_rawptr_t ctxVK) {
         _drmContext->displayingImage = _sub_index;
         logchan_vkdrm->log("Initial mode set complete, display active");
     } else {
+        // ORKID_DRM_NOVSYNC=1: async (tearing) flips — don't wait for vblank.
+        // Falls back to vsynced flips if the driver rejects ASYNC for this plane.
+        static int s_novsync = (getenv("ORKID_DRM_NOVSYNC") != nullptr) ? 1 : 0;
+        uint32_t flip_flags = DRM_MODE_PAGE_FLIP_EVENT;
+        if (s_novsync == 1)
+            flip_flags |= DRM_MODE_PAGE_FLIP_ASYNC;
         int ret = drmModePageFlip(_drmContext->drm_fd,
+                                  _drmContext->crtc_id,
+                                  _drmContext->fb_ids[_sub_index],
+                                  flip_flags,
+                                  _drmContext);
+        if (ret < 0 && s_novsync == 1) {
+            logchan_vkdrm->log("async page flip rejected (ret=%d) — falling back to vsync flips", ret);
+            s_novsync = -1; // don't retry async
+            ret = drmModePageFlip(_drmContext->drm_fd,
                                   _drmContext->crtc_id,
                                   _drmContext->fb_ids[_sub_index],
                                   DRM_MODE_PAGE_FLIP_EVENT,
                                   _drmContext);
+        }
         if (ret < 0) {
             logchan_vkdrm->log("ERROR: drmModePageFlip failed (ret=%d)", ret);
             throw std::runtime_error("Page flip failed");
@@ -545,11 +708,72 @@ void VkSwapChainDRM::beginFrame(vkcontext_rawptr_t ctxVK) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkSwapChainDRM::endFrame(vkcontext_rawptr_t ctxVK) {
-  // Transition DRM image COLOR_ATTACHMENT_OPTIMAL -> GENERAL for DRM scanout
   auto main_rtg  = ctxVK->_fbi->_ensureMainRtg();
   auto main_rtb  = main_rtg->buffer(0);
   auto main_rtbi = main_rtb->_impl.getShared<VklRtBufferImpl>();
+  auto cmdbuf    = ctxVK->primary_cb()->_vkcmdbuf;
 
+  if (_useLinearScanout) {
+    // Copy the tiled render image into this frame's LINEAR scanout image
+
+    auto src_bar = createImageBarrier(
+        main_rtbi->_imgobj->_vkimage,
+        main_rtbi->_currentLayout,
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        VK_ACCESS_TRANSFER_READ_BIT);
+    src_bar->subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+
+    auto dst_bar = createImageBarrier(
+        _scanoutImages[_sub_index],
+        VK_IMAGE_LAYOUT_UNDEFINED, // discard previous contents
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        (VkAccessFlagBits)0,
+        VK_ACCESS_TRANSFER_WRITE_BIT);
+    dst_bar->subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+
+    VkImageMemoryBarrier pre_bars[2] = {*src_bar, *dst_bar};
+    vkCmdPipelineBarrier(
+        cmdbuf,
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        VK_PIPELINE_STAGE_TRANSFER_BIT,
+        0, 0, nullptr, 0, nullptr,
+        2, pre_bars);
+
+    VkImageCopy region = {};
+    region.srcSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+    region.dstSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+    region.extent = {uint32_t(_width), uint32_t(_height), 1};
+    vkCmdCopyImage(
+        cmdbuf,
+        main_rtbi->_imgobj->_vkimage,
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        _scanoutImages[_sub_index],
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        1, &region);
+
+    auto scan_bar = createImageBarrier(
+        _scanoutImages[_sub_index],
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        VK_IMAGE_LAYOUT_GENERAL,
+        VK_ACCESS_TRANSFER_WRITE_BIT,
+        (VkAccessFlagBits)0);
+    scan_bar->subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+
+    vkCmdPipelineBarrier(
+        cmdbuf,
+        VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+        0, 0, nullptr, 0, nullptr,
+        1, scan_bar.get());
+
+    _scanoutVkLayouts[_sub_index] = VK_IMAGE_LAYOUT_GENERAL;
+    main_rtbi->_currentLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    main_rtbi->_imgobj->_currentLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    return;
+  }
+
+  // Direct scanout: transition DRM image COLOR_ATTACHMENT_OPTIMAL -> GENERAL
   auto imgbar = createImageBarrier(
       main_rtbi->_imgobj->_vkimage,
       main_rtbi->_currentLayout,

@@ -12,6 +12,9 @@
 # "ball_spawner"; silently disabled otherwise — the spawner HANDLE is fetched once
 # at link, no name lookups at event time).
 ###############################################################################
+import math
+import time
+
 from orkengine.ecssim import *
 
 tokens = CrcStringProxy()
@@ -24,6 +27,32 @@ KEY_CAPSLOCK = 280                  # caps lock = AUTOWALK toggle (hands-free au
                                     # held while the LED is on (down on lock-on, up on lock-off), so
                                     # held(280) == autowalk engaged; W/S still override it.
 SPRINT = 5.0                        # sprint multiplier; shared default so a VR locomotion layer + walker agree
+
+# GAMEPAD (S1): the host forwards the pad as abstract tokens — GamepadButton {button, down}
+# (edge, like InputKey) + GamepadAxes {lx,ly,rx,ry,l2,r2,connected} (per-tick analog). THIS
+# script owns the pad mapping (DUAL-DPAD scheme): LEFT stick + LEFT dpad = locomotion;
+# FACE BUTTONS = a right-dpad of DISCRETE camera-angle steps; R1 = jump; right stick unbound.
+# Button ids arrive as crcstring tokens; cache their hashes once.
+GP_CROSS      = tokens.CROSS.hashed
+GP_TRIANGLE   = tokens.TRIANGLE.hashed
+GP_SQUARE     = tokens.SQUARE.hashed
+GP_CIRCLE     = tokens.CIRCLE.hashed
+GP_L1         = tokens.L1.hashed
+GP_R1         = tokens.R1.hashed
+GP_DPAD_UP    = tokens.DPAD_UP.hashed
+GP_DPAD_DOWN  = tokens.DPAD_DOWN.hashed
+GP_DPAD_LEFT  = tokens.DPAD_LEFT.hashed
+GP_DPAD_RIGHT = tokens.DPAD_RIGHT.hashed
+GP_DEADZONE   = 0.15   # stick deadzone before analog contributes
+
+# FACE BUTTONS as a RIGHT-DPAD of DISCRETE CAMERA STEPS (positional, per PRESS EDGE — not
+# held-repeat; held-repeat is a possible follow-up). TRIANGLE(top)=pitch up, CROSS(bottom)=
+# pitch down, SQUARE(left)=yaw left, CIRCLE(right)=yaw right. The C++ controller consumes
+# these as TurnStep/PitchStep (absolute radian deltas), frame-timing robust where a rate is not.
+YAW_STEP_DEG   = 15.0  # per-press camera yaw step (SQUARE / CIRCLE)
+PITCH_STEP_DEG = 10.0  # per-press camera pitch step (TRIANGLE / CROSS)
+YAW_STEP_RAD   = YAW_STEP_DEG * math.pi / 180.0
+PITCH_STEP_RAD = PITCH_STEP_DEG * math.pi / 180.0
 
 # SHOOT TUNING (script-owned, like PARAMS)
 SHOOT_SPEED   = 30.0   # m/s muzzle speed
@@ -54,6 +83,21 @@ class WalkInput:
   def __init__(self):
     self.keys = set()
     self.dbg_events = 0
+    self.gp_axes = None      # latest analog snapshot (dict) while a pad is connected, else None
+    self.gp_buttons = set()  # currently-held gamepad button hashes
+    self.r2_held = False     # R2 trigger-as-button latch (fire on press edge, hysteresis)
+    # STAGE-3 liveness (script): per ~5s counters of gamepad messages received + charctl
+    # sends dispatched. Prints only after a gamepad message has been seen (silent with no
+    # pad), only when nonzero OR just transitioned to zero. rx dies -> notify dispatch
+    # stopped upstream; sends alive but no motion -> character controller / sim backlog.
+    self.gp_seen = False
+    self.rx_btn = 0
+    self.rx_axes = 0
+    self.sends = 0
+    self.live_t0 = None
+    self.rx_btn_wasnz = False
+    self.rx_axes_wasnz = False
+    self.sends_wasnz = False
 
 
 def onSystemInit(simulation):
@@ -63,6 +107,11 @@ def onSystemInit(simulation):
 
 def onSystemLink(simulation):
   W = simulation.vars.walk
+  # spawn-scouting aid: resolved once; onSystemUpdate prints the walker position
+  # every ~10s so a scene author can walk somewhere and copy the coordinates into
+  # terrain(spawn=vec3(...)). Falsy when the scene has no "walker" entity.
+  W.walker_ent = simulation.findEntityByName("walker")
+  W.pos_print_next = 10.0
   W.charctl = simulation.findSystemByName("CharacterControllerSystem")
   W.charctl.notify(tokens.SetParams,
                    {getattr(tokens, k): float(v) for k, v in PARAMS.items()})
@@ -76,18 +125,49 @@ def onSystemLink(simulation):
 def _send_state(simulation):
   W    = simulation.vars.walk
   held = W.keys.__contains__
-  mz   = (5.0 if held(ord("W")) else 0.0) - (5.0 if held(ord("S")) else 0.0)
-  if held(KEY_CAPSLOCK) and mz == 0.0:   # AUTOWALK: caps lock -> auto-forward; W adds, S brakes/reverses
-    mz = 5.0
-  mx   = (1.0 if held(ord("D")) else 0.0) - (1.0 if held(ord("A")) else 0.0)
+  # LOCOMOTION — |MoveInput| IS the SPEED SCALE (controller semantic: <=1 analog fraction
+  # of base speed; >1 multiplies force AND max speed, clamped 4x controller-side).
+  # Per-source scales (owner call): KEYBOARD 1x · L-DPAD 2x · L-STICK 4x(*deflection).
+  # Each source's direction is normalized BEFORE scaling so diagonals don't outrun it.
+  def _dirscale(x, z, scale):
+    m = math.sqrt(x * x + z * z)
+    if m < 1e-6: return (0.0, 0.0)
+    return (x / m * scale, z / m * scale)
+  kz = (1.0 if held(ord("W")) else 0.0) - (1.0 if held(ord("S")) else 0.0)
+  if held(KEY_CAPSLOCK) and kz == 0.0:   # AUTOWALK: caps lock -> auto-forward; W adds, S brakes/reverses
+    kz = 1.0
+  kx = (1.0 if held(ord("D")) else 0.0) - (1.0 if held(ord("A")) else 0.0)
+  kx, kz = _dirscale(kx, kz, 1.0)        # keyboard: 1x base speed
   turn = (0.3 if held(KEY_RIGHT) else 0.0) - (0.3 if held(KEY_LEFT) else 0.0)
   # cursor UP = look up (positive semantic pitch = view/camera rises)
   pitch = (0.3 if held(KEY_UP) else 0.0) - (0.3 if held(KEY_DOWN) else 0.0)
+  ax = W.gp_axes
+  gpb = W.gp_buttons
+  # L-DPAD: continuous, 2x
+  dx = (1.0 if GP_DPAD_RIGHT in gpb else 0.0) - (1.0 if GP_DPAD_LEFT in gpb else 0.0)
+  dz = (1.0 if GP_DPAD_UP in gpb else 0.0) - (1.0 if GP_DPAD_DOWN in gpb else 0.0)
+  dx, dz = _dirscale(dx, dz, 2.0)
+  # L-STICK: analog, up to 4x at full deflection (direction from the stick, magnitude
+  # = 4 * deflection; square-gate diagonals clamped to deflection 1).
+  sx = sz = 0.0
+  if ax:
+    def _dz(v): return 0.0 if -GP_DEADZONE < v < GP_DEADZONE else v
+    rx, rz = _dz(ax["lx"]), -_dz(ax["ly"])   # stick up (ly<0) -> forward
+    m = math.sqrt(rx * rx + rz * rz)
+    if m > 1e-6:
+      sx, sz = (rx / m) * 4.0 * min(m, 1.0), (rz / m) * 4.0 * min(m, 1.0)
+    # RIGHT STICK: unbound — camera angle is the FACE BUTTONS (discrete TurnStep/PitchStep).
+  mx = kx + dx + sx
+  mz = kz + dz + sz                     # stacked sources exceed 4? controller clamps at 4x
+  turn  = max(-0.3, min(0.3, turn))
+  pitch = max(-0.3, min(0.3, pitch))
+  W.sends += 1  # STAGE-3 liveness: script -> character-controller dispatch
   W.charctl.notify(tokens.MoveInput,  {tokens.x: float(mx), tokens.z: float(mz)})
   W.charctl.notify(tokens.TurnInput,  {tokens.rate: float(turn)})
   W.charctl.notify(tokens.PitchInput, {tokens.rate: float(pitch)})
-  # SHIFT -> sprint: scale move_force + max_speed (the C++ controller SETS the scale, not accumulates,
-  # so in a VR+walker scene where a VR locomotion layer also sends this, the matching value is harmless).
+  # SPRINT: keyboard SHIFT only (the C++ controller SETS the scale, not accumulates). Gamepad
+  # sprint is unbound — R1 is JUMP now; L3 (left-stick click) is the ready pad-sprint candidate:
+  #   if GP_L3 in gpb: sprint = SPRINT
   sprint = SPRINT if (held(KEY_LSHIFT) or held(KEY_RSHIFT)) else 1.0
   W.charctl.notify(tokens.SetSprint, {tokens.scale: float(sprint)})
 
@@ -141,6 +221,55 @@ def onSystemNotify(simulation, evID, table):
     else:
       W.keys.discard(key)
     _send_state(simulation)
+    return
+  if evID.hashed == tokens.GamepadButton.hashed:  # GAMEPAD: abstract button edge (token id)
+    W = simulation.vars.walk
+    W.gp_seen = True
+    W.rx_btn += 1
+    h = table[tokens.button].hashed
+    down = table[tokens.down]
+    if down:
+      W.gp_buttons.add(h)
+      if h == GP_R1:  # R1 -> one-shot jump (was CROSS; CROSS is now a camera-down step)
+        W.charctl.notify(tokens.Jump, {})
+      # FACE BUTTONS as a right-dpad of DISCRETE CAMERA STEPS (per press edge):
+      elif h == GP_TRIANGLE:  # top    -> pitch step UP
+        W.charctl.notify(tokens.PitchStep, {tokens.radians: float(PITCH_STEP_RAD)})
+      elif h == GP_CROSS:     # bottom -> pitch step DOWN
+        W.charctl.notify(tokens.PitchStep, {tokens.radians: float(-PITCH_STEP_RAD)})
+      elif h == GP_SQUARE:    # left   -> yaw step LEFT
+        W.charctl.notify(tokens.TurnStep, {tokens.radians: float(-YAW_STEP_RAD)})
+      elif h == GP_CIRCLE:    # right  -> yaw step RIGHT
+        W.charctl.notify(tokens.TurnStep, {tokens.radians: float(YAW_STEP_RAD)})
+    else:
+      W.gp_buttons.discard(h)
+    if W.dbg_events < 8:
+      W.dbg_events += 1
+      print("[walk_input] GamepadButton hash=0x%x down=%s" % (h, down), flush=True)
+    _send_state(simulation)
+    return
+  if evID.hashed == tokens.GamepadAxes.hashed:  # GAMEPAD: per-tick analog snapshot
+    W = simulation.vars.walk
+    W.gp_seen = True
+    W.rx_axes += 1
+    if table[tokens.connected]:
+      W.gp_axes = {"lx": table[tokens.lx], "ly": table[tokens.ly],
+                   "rx": table[tokens.rx], "ry": table[tokens.ry],
+                   "l2": table[tokens.l2], "r2": table[tokens.r2]}
+      # R2 TRIGGER = FIRE (same _shoot as '/'): analog trigger as a button — edge on
+      # press with HYSTERESIS (>0.5 fires, must fall below 0.3 to re-arm) so a held
+      # half-squeeze can't machine-gun on axis jitter.
+      r2 = W.gp_axes["r2"]
+      if not W.r2_held and r2 > 0.5:
+        W.r2_held = True
+        _shoot(simulation)
+      elif W.r2_held and r2 < 0.3:
+        W.r2_held = False
+    else:  # pad unplugged -> zero everything the pad was driving
+      W.gp_axes = None
+      W.gp_buttons.clear()
+      W.r2_held = False
+    _send_state(simulation)
 
 
 _selftest = {"mode": __import__("os").environ.get("ORK_WALK_SELFTEST", ""),
@@ -148,6 +277,30 @@ _selftest = {"mode": __import__("os").environ.get("ORK_WALK_SELFTEST", ""),
 
 
 def onSystemUpdate(simulation):
+  # position beacon (throttled): gameTime-based so pause stalls it with the sim.
+  W = simulation.vars.walk
+  # STAGE-3 liveness heartbeat (throttled ~5s wall-clock; silent until a pad is seen).
+  if W.gp_seen:
+    now = time.monotonic()
+    if W.live_t0 is None:
+      W.live_t0 = now
+    if now - W.live_t0 >= 5.0:
+      W.live_t0 = now
+      if (W.rx_btn or W.rx_axes or W.sends
+          or W.rx_btn_wasnz or W.rx_axes_wasnz or W.sends_wasnz):
+        print("[walk_input] rx btn=%d axes=%d sends=%d/5s" % (W.rx_btn, W.rx_axes, W.sends), flush=True)
+      W.rx_btn_wasnz = W.rx_btn > 0
+      W.rx_axes_wasnz = W.rx_axes > 0
+      W.sends_wasnz = W.sends > 0
+      W.rx_btn = 0
+      W.rx_axes = 0
+      W.sends = 0
+  if W.walker_ent:
+    t = simulation.gameTime
+    if t >= W.pos_print_next:
+      W.pos_print_next = t + 10.0
+      p = W.walker_ent.translation
+      print("[walker] t=%.0fs pos = vec3(%.1f, %.1f, %.1f)   # terrain(spawn=...)" % (t, p.x, p.y, p.z), flush=True)
   if _selftest["mode"]:
     _selftest["count"] += 1
     if _selftest["count"] == 1000:

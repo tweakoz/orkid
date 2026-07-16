@@ -52,6 +52,8 @@ namespace ork::lev2 {
 struct Context;
 struct PBRMaterial;
 using pbrmaterial_ptr_t = std::shared_ptr<PBRMaterial>;
+struct Image;
+using image_ptr_t = std::shared_ptr<Image>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -212,6 +214,10 @@ public:
   // (the D.4 binding, factored for reuse: PbrMaterialGenData::materialize AND the
   // E.6/2.20 terrain↔material post-pass). Missing param/file skips LOUDLY (`who` tags
   // the log). With the 2.12 rebind contract the bind is live in every cached pipeline.
+  // WS1: pre-decoded variant — the caller decoded the image off-thread
+  // (LoadJoinSet fan-out); this does only the GPU upload + bind (ctx thread).
+  static bool bindSamplerImage(
+      pbrmaterial_ptr_t mat, Context* ctx, const std::string& sampler, image_ptr_t img, const std::string& who);
   static bool bindSamplerTexture(
       pbrmaterial_ptr_t mtl, Context* ctx, const std::string& sampler, const std::string& path_in, const std::string& who);
 
@@ -426,18 +432,17 @@ public:
   int _dimension = 512;                       // bake grid resolution (W=H), texels
   // WORLD units make the graph resolution-INDEPENDENT: spatial op params (slope/
   // curvature radius, ...) are in meters and converted to texels per-bake. _dimension
-  // is purely a sampling rate; the terrain's meaning is (extent_m, height_scale_m).
+  // is purely a sampling rate; the terrain's horizontal meaning is extent_m. Heights
+  // are TRUE METERS end-to-end (baked EXR + drawable SSBO) — no normalized-height scale.
   float _extent_m       = 4096.0f;    // horizontal world size (meters across the field)
-  float _height_scale_m = 9830.25f;   // what normalized height 1.0 means in meters
-                                       // (= 65535 * 0.15, matching the 16-bit PNG 0.15 m/LSB)
 
   // E.6/2.20 — the terrain↔material CONTRACT, owned by the TERRAIN asset (single
   // source of truth): which material shades this terrain (+ which baked channels
   // feed which of its sampler uniforms). materializeAll's post-pass derives each
   // channel's deterministic <assetcache> path and binds it onto the resolved
   // material — no hand-synced path strings on the material side. The physical
-  // params leg of the contract is the trio above (dimension/extent_m/height_-
-  // scale_m), already reflected + carried by the .terrain.json manifest.
+  // params leg of the contract is the pair above (dimension/extent_m), already
+  // reflected + carried by the .terrain.json manifest (heights are TRUE METERS).
   std::string _material_asset;                          // shading material asset name ("" = none)
   std::map<std::string, std::string> _channel_samplers; // baked channel -> sampler uniform name
 

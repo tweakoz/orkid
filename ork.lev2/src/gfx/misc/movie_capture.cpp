@@ -245,9 +245,33 @@ void MovieCaptureContext::_encodingThreadFunc() {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 void MovieCaptureContext::terminate() {
-  while(not _frame_queue.empty()) {
+  // BOUNDED drain (task #42 secondary). The encoder thread pops a queued frame
+  // only once its GPU capture future signals ready; if a future's readback
+  // never completes — e.g. its BGRA->RGBA conversion was left sitting on an idle
+  // opq::concurrentQueue after the render loop stopped pumping — this wait (and
+  // the encoder's own not-empty loop) would spin FOREVER, hanging teardown. So
+  // wait a bounded window for a graceful drain, then DROP whatever never
+  // signaled: a truncated clip beats a hung, GPU-holding process. (The original
+  // loop also touched _frame_queue without the mutex.)
+  const double kTerminateDrainSecs = 8.0;
+  ork::Timer   t;
+  t.Start();
+  for (;;) {
+    std::unique_lock<std::mutex> lock(_queue_mutex);
+    if (_frame_queue.empty())
+      break;
+    if (t.SecsSinceStart() > kTerminateDrainSecs) {
+      logchan_moviecap->log(
+          "MovieCaptureContext::terminate: dropping %zu undrained frame(s) after %.1fs "
+          "(GPU capture never signaled) to avoid a teardown hang",
+          _frame_queue.size(), kTerminateDrainSecs);
+      _frame_queue.clear();      // let the encoder's not-empty loop finish
+      _queue_cv.notify_all();
+      break;
+    }
+    lock.unlock();
     logchan_moviecap->log("MovieCaptureContext::terminate waiting for encoding to stop...");
-    usleep(1<<20);
+    usleep(1 << 18); // 0.26s
   }
 
   if (_terminated.exchange(true)) {

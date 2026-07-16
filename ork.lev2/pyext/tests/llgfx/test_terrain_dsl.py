@@ -10,6 +10,7 @@
 ###############################################################################
 import os; os.environ["PYTHONUNBUFFERED"] = "1"
 import sys
+import math
 from orkengine import core   # core before lev2
 from orkengine import lev2
 from orkengine import ecs
@@ -68,7 +69,10 @@ def _valid(stats, path):
     if not (os.path.exists(path) and len(stats) == 1):
         return False
     s = stats[0]
-    return (0.0 <= s.min <= s.max <= 1.0001) and (s.max - s.min) > 0.03
+    # natural units: stats are the RAW field values (meters) — assert sanity, not [0,1]
+    import math
+    return (math.isfinite(s.min) and math.isfinite(s.max) and s.min <= s.max
+            and (s.max - s.min) > 0.03)
 
 
 def main():

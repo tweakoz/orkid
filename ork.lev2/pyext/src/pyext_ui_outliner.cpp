@@ -46,6 +46,15 @@ public:
         key);
   }
 
+  std::vector<ui::OutlinerBadge> getBadges(const std::string& key) const override {
+    py::gil_scoped_acquire acquire;
+    PYBIND11_OVERRIDE(
+        std::vector<ui::OutlinerBadge>,
+        ui::OutlinerModel,
+        getBadges,
+        key);
+  }
+
   // getValue returns py::object in Python, we convert via codec
   svar128_t getValue(const std::string& key) const override {
     py::gil_scoped_acquire acquire;
@@ -153,6 +162,34 @@ void pyinit_ui_outliner(py::module& uimodule) {
   auto type_codec = python::pb11_typecodec_t::instance();
 
   /////////////////////////////////////////////////////////////////////////////////
+  // OutlinerBadge (per-row toggle cell descriptor returned by model.getBadges)
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<ui::OutlinerBadge>(uimodule, "OutlinerBadge")
+      .def(
+          py::init([](std::string id, std::string glyph, fvec4 color, bool active, bool enabled) {
+            ui::OutlinerBadge b;
+            b.id = std::move(id);
+            b.glyph = std::move(glyph);
+            b.color = color;
+            b.active = active;
+            b.enabled = enabled;
+            return b;
+          }),
+          py::arg("id"),
+          py::arg("glyph") = "",
+          py::arg("color") = fvec4(0.7f, 0.7f, 0.7f, 1.0f),
+          py::arg("active") = false,
+          py::arg("enabled") = true)
+      .def_readwrite("id", &ui::OutlinerBadge::id)
+      .def_readwrite("glyph", &ui::OutlinerBadge::glyph)
+      .def_readwrite("color", &ui::OutlinerBadge::color)
+      .def_readwrite("active", &ui::OutlinerBadge::active)
+      .def_readwrite("enabled", &ui::OutlinerBadge::enabled)
+      .def("__repr__", [](const ui::OutlinerBadge& b) {
+        return "OutlinerBadge(id=" + b.id + ", active=" + (b.active ? "True" : "False") + ")";
+      });
+
+  /////////////////////////////////////////////////////////////////////////////////
   // OutlinerModel base class (can be subclassed in Python)
   /////////////////////////////////////////////////////////////////////////////////
   auto outliner_model_type = //
@@ -161,6 +198,7 @@ void pyinit_ui_outliner(py::module& uimodule) {
           .def("getChildren", &ui::OutlinerModel::getChildren)
           .def("getDisplayName", &ui::OutlinerModel::getDisplayName)
           .def("hasChildren", &ui::OutlinerModel::hasChildren)
+          .def("getBadges", &ui::OutlinerModel::getBadges)
           .def(
               "getValue",
               [type_codec](ui::outliner_model_ptr_t model, const std::string& key) -> py::object {
@@ -378,6 +416,14 @@ void pyinit_ui_outliner(py::module& uimodule) {
                 outliner->_onDoubleClick = [callback](const std::string& key) {
                   py::gil_scoped_acquire acquire;
                   callback(py::cast(key));
+                };
+              })
+          .def(
+              "onBadgeClick",
+              [](ui::outliner_ptr_t outliner, py::object callback) { //
+                outliner->_onBadgeClick = [callback](const std::string& key, const std::string& badge_id) {
+                  py::gil_scoped_acquire acquire;
+                  callback(key, badge_id);
                 };
               })
           .def(

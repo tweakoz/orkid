@@ -30,6 +30,7 @@
 #include <ork/kernel/datablock.h>
 #include <ork/object/AutoConnector.h>
 #include <ork/lev2/lev2_types.h>
+#include <ork/lev2/gfx/gpumicrotask.h>
 #include <ork/util/Context.h>
 #include <ork/kernel/shared_pool.inl>
 
@@ -236,6 +237,22 @@ public:
   // Non-null only on fullscreen Apple (VkSwapchainMetal/CVDisplayLink path); null for windowed or non-Apple.
   virtual time_predictor_ptr_t getScanoutPredictor() const { return nullptr; }
 
+  // True when the active display/output path itself gates the render loop to a frame
+  // cadence — i.e. it owns a BLOCKING (or display-locked) present primitive: a FIFO/vsync
+  // swapchain, the Apple race-the-beam scanout sleep, or DRM vblank. When true the render
+  // loop must NOT layer its own frame governor on top (that would beat against the display
+  // pacer). False for headless/offscreen outputs and non-blocking present modes
+  // (MAILBOX/IMMEDIATE), where the loop is otherwise ungated. XR-runtime presentation
+  // (xrWaitFrame) is a separate pacer handled at the app-level VR gate, not here.
+  virtual bool displayProvidesFramePacing() const { return false; }
+
+  // Serialization handle for an external client (e.g. an XR runtime) that submits to
+  // the engine's bound graphics queue inside its own frame-submission calls. A caller
+  // handing the queue to such a client holds this across the whole external-submit
+  // region so it serializes against every engine-side submit. Recursive so the engine's
+  // own submits nested inside that region don't deadlock. Base: no shared queue (nullptr).
+  virtual std::recursive_mutex* externalSubmitMutex() const { return nullptr; }
+
   void gpuPreInit(); // Initialize GPU-dependent resources
   void gpuPostInit();
 
@@ -269,6 +286,12 @@ public:
   /// insert marker into commandstream (for renderdoc,apitrace,nsight,etc..)
   void debugMarker(const std::string str);
   virtual void debugMarker(const std::string str, const fvec4& color) {
+  }
+  ///////////////////////////////////////////////////////////////////////
+  /// size of the largest DEVICE_LOCAL memory heap (0 = unknown/UMA) — lets
+  /// residency budgets scale to the card instead of hardcoding.
+  virtual size_t deviceLocalHeapBytes() const {
+    return 0;
   }
 
   ///////////////////////////////////////////////////////////////////////
@@ -474,6 +497,35 @@ public:
 
   void enqueueDeferredOp(ctx_lambda_t op);
   void processDeferredOps();
+  // WS1: public bounded drain of this context's loading phases (30ms budget per
+  // call — same drain frame-begin uses). For pump-while-waiting joins
+  // (LoadJoinSet) that run OUTSIDE the frame loop. Caller must own this ctx.
+  //
+  // MT1 (JUL05_GPUMICROTASK §2.5): pumpLoadingPhases keeps the LEGACY, unbudgeted
+  // drain semantics VERBATIM — LoadJoinSet::join is a deliberate blocking drain
+  // outside the frame loop and must never be throttled by the scheduler's
+  // per-frame budget. The in-frame drain (beginFrame:291) routes through the
+  // scheduler's LoadingPhaseMicrotask instead (client #1).
+  void pumpLoadingPhases() { _loadingPhaseOperations(); }
+  // MT1: run ONE loading phase (T6 phase granularity) with the T5 torn-function
+  // snapshot discipline. Returns true if a phase was run (there may be more),
+  // false if the queue was empty. Called by LoadingPhaseMicrotask::runSlice.
+  bool _runOneLoadingPhase();
+
+  // MT2 (JUL05_GPUMICROTASK §2.6 / T7 option "a"): run `record` (rtgroup
+  // render + captureAsFormat) as a SELF-CONTAINED GPU job on a dedicated
+  // command buffer, submit it, WAIT on its fence, then read back any capture
+  // it recorded. Must be called on the context-owner thread mid-frame (the
+  // beginFrame drain point) — the outer frame's primary CB (with its MT0
+  // timer / profiler BEGIN already written) is saved + restored untouched.
+  //
+  // This is what makes a microtask slice's CPU-wall reflect its REAL GPU cost
+  // so the scheduler's §2.3 budget loop can throttle it across frames (option
+  // "b" — recording into the frame CB without a wait — collapses to a tiny
+  // measured cost, defeating the budget). The fence wait counts against the
+  // slice budget (T8); the readback happens on a fully-drained single-submit
+  // CB, never with other compute in flight (MoltenVK reboot rule §1.6).
+  void executeInlineGpuJob(const void_lambda_t& record) { _doExecuteInlineGpuJob(record); }
   bool hasDeferredOps() const;
   // No waitForDeferredOps(): the queue is drained only by this context's
   // beginFrame() on its owning thread. A blocking wait from that same
@@ -538,6 +590,12 @@ public:
   using deferred_op_queue_t = std::queue<ctx_lambda_t>;
   LockedResource<deferred_op_queue_t> _deferredOps;
 
+  // MT1 (JUL05_GPUMICROTASK): one scheduler per Context (T11). All background
+  // GPU work — LoadingPhase (client #1) today, radiance/cook slices later —
+  // trickles through it under the measured per-frame budget. Auto-detects
+  // REALTIME (WINDOW) vs UNBOUNDED (offscreen/loader) from meTargetType (T13).
+  GpuMicrotaskScheduler _microtaskScheduler;
+
   // Delayed-destruction queue + throttle (see enqueueDelayedDestroy above).
   // The lambda captures the bits to drop; invoking + destroying it after
   // the frame delay lets captures destruct on the render thread.
@@ -598,6 +656,10 @@ private:
   virtual void _doPreBeginFrame() {}
   virtual void _doBeginFrame() = 0;
   virtual void _doEndFrame()   = 0;
+  // MT2 (§2.6): default fallback just runs the record lambda inline (no
+  // self-contained submit — degrades on backends without a primary-CB pool,
+  // e.g. the dummy context). VkContext overrides with the real scoped submit.
+  virtual void _doExecuteInlineGpuJob(const void_lambda_t& record) { record(); }
   virtual load_token_t _doBeginLoad() {
     return nullptr;
   }
@@ -855,9 +917,25 @@ public:
   //     (Texture/Buffer destructors → enqueueDeferredOp on this context)
   // Returns nullptr only during very-early init or post-shutdown.
   static Context* mainRenderContext() {
+    // Post-shutdown mpMainWindow dangles (window + its Context are freed in
+    // OrkEzApp teardown, before atexit). Report null honestly so late/static
+    // Texture destructors take the inline fall-through instead of deferring
+    // onto a dead context. Checked first so we never dereference the singleton.
+    if (gpuShutdownComplete())
+      return nullptr;
     auto* w = GetRef().mpMainWindow;
     return w ? w->context() : nullptr;
   }
+
+  // GPU-shutdown latch — true once the main render context is torn down (set
+  // in the orderly gpuExit funnel, cleared when a fresh context comes up).
+  // While set: mainRenderContext() reports null, and Vulkan resource
+  // destructors that fire during static (atexit) teardown no-op instead of
+  // dereferencing a freed Context (the "no-op post-shutdown" convention the
+  // vulkan funnels document). Backed by a process-lifetime atomic, so it is
+  // safe to read after the GfxEnv singleton itself would be gone.
+  static bool gpuShutdownComplete();
+  static void setGpuShutdownComplete(bool v);
 
 //////////////////////////////////////////////////////////////////////////////
 #if defined(_WIN32) && (!(defined(_XBOX)))

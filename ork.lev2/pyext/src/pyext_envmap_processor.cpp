@@ -75,6 +75,19 @@ void pyinit_radiance_maps_processor(py::module& module_lev2) {
           return EnvMapProcessor::processToXIRDataBlockAsync(
             file::Path(input_path));
         })
+      .def_static("processToXIRViaMicrotask",  // MT2 §3 gate b byte-identity harness
+        [](const std::string& input_path, const std::string& output_path) -> bool {
+          auto future   = EnvMapProcessor::processToXIRDataBlockAsyncViaMicrotask(file::Path(input_path));
+          auto xir_data = future->get(); // block for the sliced bake to complete
+          if (!xir_data)
+            return false;
+          return (File::saveDatablock(file::Path(output_path), xir_data) == EFEC_FILE_OK);
+        })
+      .def_static("processToXIRDataBlockAsyncViaMicrotask",
+        [](const std::string& input_path) -> xirprocessfuture_ptr_t {
+          return EnvMapProcessor::processToXIRDataBlockAsyncViaMicrotask(
+            file::Path(input_path));
+        })
       .def_static("writeXIR",
         [](py::list specular_images,
            py::list roughness_values,

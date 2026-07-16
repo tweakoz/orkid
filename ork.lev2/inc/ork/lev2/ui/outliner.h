@@ -68,10 +68,14 @@ struct Outliner : public Widget {
   std::function<void(const std::string& key)> _onShiftEnter; // if set, overrides default startAdding
   std::function<void(const std::string& key)> _onDoubleClick;
   std::function<void(const std::string& selected_key, int keycode)> _onKeyDown;
+  std::function<void(const std::string& key, const std::string& badge_id)> _onBadgeClick;
 
   // Appearance
   int _item_height = 20;
   int _indent_width = 16;
+  int _badge_size = 12;         // model badge cell (right-aligned toggle column)
+  int _badge_gap = 4;
+  int _badge_right_margin = 14; // clears the scroll indicator
   fvec4 _bgcolor = fvec4(0.1f, 0.1f, 0.1f, 1.0f);
   fvec4 _text_color = fvec4(1.0f, 1.0f, 1.0f, 1.0f);
   fvec4 _selected_color = fvec4(0.3f, 0.5f, 0.8f, 1.0f);
@@ -95,6 +99,7 @@ private:
     int depth;
     bool has_children;
     bool is_expanded;
+    std::vector<OutlinerBadge> badges; // cached at rebuild (model calls off the draw path)
   };
 
   void _rebuildVisibleItems();
@@ -102,7 +107,14 @@ private:
   void _clampScrollOffset();
   int _getItemIndexAt(int local_y) const;
   std::string _getItemKeyAt(int local_y) const;
+  int _badgeColumnX(int column) const;
+  int _badgeIndexAt(const VisibleItem& item, int localX) const;
   void _subscribeToModel();
+
+  // badge ids form COLUMNS (union across visible rows, first-seen order) so the
+  // same badge lands at the same x on every row; rows without a given badge
+  // leave that cell empty.
+  std::vector<std::string> _badge_columns;
 
   outliner_model_ptr_t _model;
   std::unordered_set<std::string> _selected_keys;

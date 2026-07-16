@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
+#include <ork/kernel/msgrouter.inl> // rebake-completion broadcast ("bshdchanged") to live artifact consumers
 #include <ork/reflect/properties/registerX.inl>
 #include <ork/lev2/gfx/asset_gen.h>
 #include <ork/dataflow/all.h> // full GraphData type for HeightFieldGenData's embedded-graph property
@@ -22,6 +23,8 @@
 #include <ork/reflect/properties/ITypedMap.hpp>
 #include <filesystem>
 #include <sstream>
+#include <fstream>
+#include <cmath>
 #include <iomanip>
 
 ImplementReflectionX(ork::lev2::AssetGenData,             "AssetGenData");
@@ -142,7 +145,21 @@ bool PbrMaterialGenData::bindSamplerTexture(
     return false;
   }
   auto img = Image::createFromFile(path);
-  auto tex = std::make_shared<Texture>();
+  return bindSamplerImage(mat, ctx, sampler, img, who);
+}
+
+bool PbrMaterialGenData::bindSamplerImage(
+    pbrmaterial_ptr_t mat, Context* ctx, const std::string& sampler, image_ptr_t img, const std::string& who) {
+  auto par = mat->_as_freestyle ? mat->_as_freestyle->param(sampler) : nullptr;
+  if (not par) {
+    printf("%s: shader has no sampler param<%s> — binding skipped\n", who.c_str(), sampler.c_str());
+    return false;
+  }
+  if (not img) {
+    printf("%s: sampler<%s> image decode FAILED — binding skipped\n", who.c_str(), sampler.c_str());
+    return false;
+  }
+  auto tex        = std::make_shared<Texture>();
   tex->_debugName = sampler;
   ctx->TXI()->initTextureFromImage(tex.get(), img, false /*mipmapped*/, false /*async*/);
   mat->bindParam(par, tex);
@@ -190,31 +207,75 @@ std::string HeightFieldGenData::materialize(Context* ctx, const std::string& ext
     for (const auto& c : ch_list)
       channels.push_back(c);
   }
-  auto stats = terrain::bakeHeightfield(_graph_data, ctx, _dimension, _extent_m, _height_scale_m);
+  // STALE-PARAMS GUARD — the final products + the bake's capture-currency skip are NAME-keyed
+  // (<assetcache>/terrain/<name>/<channel>.<ext>), NOT dim-keyed: a prior bake's artifacts at a
+  // DIFFERENT dim/extent/height get served for the CURRENT request (cook line "0 cache-loaded, N
+  // demand-skipped, 0 computed"), and this function then rewrites the manifest at the requested dim
+  // while the stale EXRs keep the old dim — so TerrainChunkDrawable asserts spec.width==manifest.dim.
+  // Validate the on-disk manifest against the REQUESTED params; on mismatch, delete the stale products
+  // (channel EXRs + capture-currency .cookhash sidecars + the manifest) so the bake RECOMPUTES.
+  std::string manifest_path = outdir + "/" + name + ".terrain.json";
+  {
+    std::ifstream mprev(manifest_path);
+    if (mprev.good()) {
+      std::stringstream ss;
+      ss << mprev.rdbuf();
+      std::string prev = ss.str();
+      auto num_after = [&](const char* key, bool& found) -> double {
+        auto p = prev.find(key);
+        if (p == std::string::npos) { found = false; return 0.0; }
+        p = prev.find(':', p);
+        if (p == std::string::npos) { found = false; return 0.0; }
+        found = true;
+        return std::strtod(prev.c_str() + p + 1, nullptr);
+      };
+      bool fd = false, fe = false;
+      int old_dim    = int(num_after("\"dim\"", fd));
+      double old_ext = num_after("\"extent_m\"", fe);
+      // NB: a version-1 manifest (which carried a now-removed "height_m" key) is
+      // simply treated as-is here; its missing height key never crashes, and a
+      // schema/params drift otherwise trips the dim/extent mismatch → rebake.
+      bool mismatch = (fd and old_dim != _dimension)
+                   or (fe and std::fabs(old_ext - double(_extent_m)) > 1e-3);
+      if (mismatch) {
+        printf("terrain<%s>: bake params changed (dim %d->%d, extent %g->%g) — "
+               "invalidating stale artifacts, recomputing\n",
+               name.c_str(), old_dim, _dimension, old_ext, double(_extent_m));
+        std::error_code ec;
+        for (const auto& ch : channels) {
+          std::string f = outdir + "/" + ch + "." + ext;
+          std::filesystem::remove(f, ec);
+          std::filesystem::remove(f + ".cookhash", ec);
+        }
+        std::filesystem::remove(manifest_path, ec);
+      }
+    }
+  }
+  auto stats = terrain::bakeHeightfield(_graph_data, ctx, _dimension, _extent_m);
   // stats return in FLUSH (topo) order, channels enumerate in name-sorted module order — key by
   // the self-describing _channel name (index-zipping the two shuffles stats across channels)
   std::map<std::string, terrain::fieldstats_ptr_t> stats_by_ch;
   for (const auto& st : stats)
     if (st)
       stats_by_ch[st->_channel] = st;
-  // the manifest (TerrainManifest.write schema, version 1). Hand-formatted: the schema is small
-  // and fixed; consumers PARSE it (byte layout irrelevant, key set is the contract).
+  // the manifest (TerrainManifest.write schema, version 2). Hand-formatted: the schema is small
+  // and fixed; consumers PARSE it (byte layout irrelevant, key set is the contract). Version 2
+  // dropped the "height_m" scale key: heights are TRUE METERS end-to-end (no normalized scale).
   auto sem = [](const std::string& ch) -> std::string {
-    if (ch == "height") return "height_normalized";
+    if (ch == "height") return "height_meters";
     if (ch == "normal") return "normal_world";
     return ch;
   };
   std::ostringstream js;
   js << std::setprecision(9);  // float max_digits10: the manifest is the authoritative scale contract
   js << "{\n";
-  js << "  \"version\": 1,\n";
+  js << "  \"version\": 2,\n";
   js << "  \"scale\": {\n";
   js << "    \"extent_m\": " << double(_extent_m) << ",\n";
-  js << "    \"height_m\": " << double(_height_scale_m) << ",\n";
   js << "    \"dim\": " << _dimension << ",\n";
   js << "    \"origin_m\": [0.0, 0.0, 0.0],\n";
   js << "    \"up_axis\": \"y\",\n";
-  js << "    \"height_anchor\": \"stored_unit\"\n";
+  js << "    \"height_anchor\": \"meters\"\n";
   js << "  },\n";
   js << "  \"format\": \"" << ext << "\",\n";
   js << "  \"channels\": {\n";
@@ -240,7 +301,7 @@ std::string HeightFieldGenData::materialize(Context* ctx, const std::string& ext
   js << "    \"asset_name\": \"" << _asset_name << "\"\n";
   js << "  }\n";
   js << "}\n";
-  std::string manifest_path = outdir + "/" + name + ".terrain.json";
+  // manifest_path declared above (stale-params guard); rewritten now at the requested params.
   {
     FILE* f = fopen(manifest_path.c_str(), "w");
     OrkAssert(f != nullptr);
@@ -259,7 +320,7 @@ std::string HeightFieldGenData::materialize(Context* ctx, const std::string& ext
     chans["height"] = outdir + "/height." + ext;
     for (const auto& ch : sink->_type_channels)
       chans[ch] = outdir + "/" + ch + "." + ext;
-    auto geo = terrain::scatterPlace(*sink, chans, _extent_m, _height_scale_m);
+    auto geo = terrain::scatterPlace(*sink, chans, _extent_m);
     if (not geo) {
       printf("HeightFieldGenData<%s>: scatter sink<%s> FAILED to place (missing channels?)\n",
              name.c_str(), sink->_name.c_str());
@@ -270,6 +331,12 @@ std::string HeightFieldGenData::materialize(Context* ctx, const std::string& ext
     printf("terrain scatter (C++): %s -> %d points -> %s\n",
            sink->_name.c_str(), geo->numPoints(), opath.c_str());
   }
+  // REBAKE NOTIFY: height.exr + the manifest were just (re)written at this asset's path. A same-path
+  // rebake overwrites in place, so live consumers that keyed off the path alone would never notice.
+  // Broadcast the completion (lev2 must not link ecs — msgrouter is the decoupled seam; the ecs
+  // Bullet terrain collider subscribes to this channel and re-stamps + reloads the new heights).
+  // Harmless on the FIRST bake (no subscriber yet — the collider loads on its own construction).
+  msgrouter::channel("bshdchanged")->post(nullptr);
   return manifest_path;
 }
 
@@ -290,7 +357,6 @@ void HeightFieldGenData::describeX(object::ObjectClass* clazz) {
   clazz->directObjectVectorProperty("scatters", &HeightFieldGenData::_scatters);
   clazz->directProperty("dimension", &HeightFieldGenData::_dimension);
   clazz->directProperty("extent_m", &HeightFieldGenData::_extent_m);
-  clazz->directProperty("height_scale_m", &HeightFieldGenData::_height_scale_m);
   // E.6/2.20 — the terrain↔material contract rides the TERRAIN asset
   clazz->directProperty("material_asset", &HeightFieldGenData::_material_asset);
   clazz->directMapProperty("channel_samplers", &HeightFieldGenData::_channel_samplers);

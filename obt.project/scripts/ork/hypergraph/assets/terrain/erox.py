@@ -22,7 +22,8 @@
 #   erosion_rate_per_s            incision strength on fast/steep flow
 #   deposition_rate_per_s         fan/valley-floor build-up in slow flow
 #   creep_m2ps                    LOW = sharper walls (but must stay >0 to kill checkerboard)
-# Bigger relief: bump exaggerated_height_m in EROX (erosion-scoped vertical exaggeration).
+# Bigger relief: raise AMPLITUDE_M (the authored vertical relief) — erosion now acts on
+# the TRUE meter heights (natural units; there is no erosion-scoped exaggeration knob).
 ###############################################################################
 from ork.hypergraph.dflow.terrain import HeightField
 from ork.hypergraph.dflow import terrain as T
@@ -44,12 +45,19 @@ EROX = dict(
 class Erox(HeightField):
     def __init__(self):
         super().__init__()
-        h = T.Fbm(frequency=9.2, octaves=7) * 0.5 + 0.5
+        AMPLITUDE_M = 4000.0   # authored vertical relief in meters (natural units)
+        h = (T.Fbm(frequency=9.2, octaves=7) * 0.5 + 0.5) * AMPLITUDE_M
         # hydraulic (incise) + thermal (slump walls to talus), interleaved — the Houdini
         # pairing. Re-running erox re-reads the carved terrain so channels deepen each pass.
-        for i in range(30):
-            h = T.erox(h, **EROX)
-            #h = T.erode_thermal(h, talus_deg=35.0, rate=0.10, iterations=120)
+        # T.loop (not raw for): the document keeps the loop as ONE group node — the editor
+        # outliner collapses it and the pass count is an editable STRUCTURAL param.
+        with T.loop(30, h=h) as L:
+            L.h = T.erox(L.h, **EROX)
+            #L.h = T.erode_thermal(L.h, talus_deg=35.0, rate=0.10, iterations=120)
+        h = L.h
         h = T.lpf(h, cutoff_m=10)   # settle single-texel noise; keep landform detail
-        self.capture(h, "height")
-        self.capture(h, "normal")
+        # cache=True: ONE cache=False capture disables the disk cook cache for the WHOLE
+        # bake — every editor rebuild would re-run the full erosion sim. Cached, an edit
+        # recomputes only the affected subgraph (a tail-node bypass = capture re-copy only).
+        self.capture(h, "height", cache=True)
+        self.capture(h, "normal", cache=True)

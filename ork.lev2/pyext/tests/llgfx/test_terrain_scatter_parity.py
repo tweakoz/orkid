@@ -24,10 +24,9 @@ from ork.hypergraph.dflow import terrain as T
 
 class ParityHF(HeightField):
   EXTENT_M = 256.0
-  HEIGHT_M = 40.0
   def __init__(self):
     super().__init__()
-    h = T.fbm(frequency=3.0, octaves=4) * 0.5 + 0.5
+    h = (T.fbm(frequency=3.0, octaves=4) * 0.5 + 0.5) * 40.0  # TRUE METERS
     self.capture(h, "height")
     alt = T.normalize(h)
     self.scatter("props",
@@ -72,11 +71,7 @@ def compare(name, geo_py, n_py, ogeo_path, n_cpp):
   print("PARITY %s PASS (n=%d, Perr=%.2e, Xerr=%.2e)" % (name, n_py, perr, xerr), flush=True)
 
 
-def main():
-  ezapp = ecs.headless_appinit(use_subsystems=['opq', 'core', 'gpu', 'lev2'])
-  ezapp.mainThreadBegin()
-  ctx = ezapp.bindGfxToCurrentThread()
-  assert ctx, "bindGfxToCurrentThread() returned null"
+def run(ez, ctx):
   ok = False
   try:
     from ork.hypergraph.ecs.scene.assets import HeightField
@@ -89,14 +84,13 @@ def main():
     dsl_path = os.path.join(tmpdir, "parity_hf.py")
     open(dsl_path, "w").write(DSL)
 
-    hf = HeightField(dsl_file=dsl_path, dimension=256, extent_m=256.0, height_scale_m=40.0, ctx=ctx)
+    hf = HeightField(dsl_file=dsl_path, dimension=256, extent_m=256.0, ctx=ctx)
     hf.gendata.asset_name = "parity_hf"
     art = hf.build()
     assert "scatters" in art and "props" in art["scatters"] and "sparse" in art["scatters"], \
         "wrapper did not place the scatters (C++ placer path dead)"
 
     extent_m = hf.gendata.extent_m
-    height_m = hf.gendata.height_scale_m
     sinks = {s.name: s for s in hf.gendata.scatters}
 
     # numpy REFERENCE placements against the SAME baked channels
@@ -112,7 +106,7 @@ def main():
       chans = {"height": art["height"]}
       for ch in sink.type_channels:
         chans[ch] = art[ch]
-      geo_py, n_py = pyscatter.place(spec, chans, extent_m=extent_m, height_m=height_m)
+      geo_py, n_py = pyscatter.place(spec, chans, extent_m=extent_m)
       compare(name, geo_py, n_py, art["scatters"][name]["path"], art["scatters"][name]["count"])
 
     # count-mode actually subsampled? (sparse declared count=64 over a dense const mask)
@@ -127,8 +121,8 @@ def main():
       chans[ch] = art[ch]
     o1 = os.path.join(tmpdir, "parity_det_a.ogeo")
     o2 = os.path.join(tmpdir, "parity_det_b.ogeo")
-    n1 = lev2.terrain.scatter_place_ogeo(sink, chans, extent_m, height_m, o1)
-    n2 = lev2.terrain.scatter_place_ogeo(sink, chans, extent_m, height_m, o2)
+    n1 = lev2.terrain.scatter_place_ogeo(sink, chans, extent_m, o1)
+    n2 = lev2.terrain.scatter_place_ogeo(sink, chans, extent_m, o2)
     assert n1 == n2 and open(o1, "rb").read() == open(o2, "rb").read(), \
         "C++ placer is not deterministic"
     print("PARITY determinism PASS (two C++ runs byte-identical, n=%d)" % n1, flush=True)
@@ -136,11 +130,21 @@ def main():
   except Exception:
     import traceback
     traceback.print_exc()
-  finally:
-    ezapp.mainThreadEnd()
-    print("=== terrain scatter parity gate %s ===" % ("PASSED" if ok else "FAILED"), flush=True)
-    ecs.headless_exit()
-    sys.exit(0 if ok else 1)
+  return {"scatter_parity": ok}
 
 
-main()
+def main():
+  ez = ecs.headless_appinit(use_subsystems=['opq', 'core', 'gpu', 'lev2'])
+  ez.mainThreadBegin()
+  ctx = ez.bindGfxToCurrentThread()
+  assert ctx, "bindGfxToCurrentThread() returned null"
+  results = run(ez, ctx)
+  ez.mainThreadEnd()
+  ok = all(results.values())
+  print("=== terrain scatter parity gate %s ===" % ("PASSED" if ok else "FAILED"), flush=True)
+  ecs.headless_exit()
+  sys.exit(0 if ok else 1)
+
+
+if __name__ == "__main__":
+  main()

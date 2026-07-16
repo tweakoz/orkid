@@ -207,6 +207,17 @@ with buildtrace.NestedBuildTrace({ "op": "obt.build.py"}) as nested:
 
   rval = Command(cmd).exec()
 
+  if rval==0 and obt.host.IsLinux:
+    #
+    # ELF fixup: the Linux analog of the Mach-O fixup below. Third-party
+    # deps install RUNPATH-less libs into stage/lib whose inter-lib NEEDED
+    # entries only resolve via LD_LIBRARY_PATH — which the dev env must not
+    # carry (staged libLLVM on the global loader path breaks system clang).
+    # Unlike macOS there is no first-run marker: the sweep only patches
+    # objects with NO rpath, so it is idempotent and cheap, and any dep
+    # rebuild can reintroduce bare libs at any time.
+    rval = Command(["obt.ix.elf.fixup.libs.py","--alllibs","--orkpymods"]).exec()
+
   if rval==0 and obt.host.IsDarwin:
     #
     # Macho fixup: on the first successful orkid build into this staging,

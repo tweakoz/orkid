@@ -16,6 +16,7 @@
 #include <ork/kernel/varmap.inl>
 #include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/lev2/gfx/gfxvtxbuf.h>
+#include <ork/lev2/gfx/renderer/cull_debug.h> // ORKID_DISABLE_FRUSTUM_CULL debug lever
 #include <ork/lev2/gfx/gfxmaterial.h>
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/gfxmodel.h>
@@ -949,11 +950,15 @@ struct InstancedRigidPrimitiveDrawable final : public lev2::InstancedDrawable {
     auto bc         = _primitive->boundCenter();
     float bound[4]  = {bc.x, bc.y, bc.z, _primitive->boundRadius()};
     uint32_t count  = uint32_t(_count);
+    // u_p0 (@84): ORKID_DISABLE_FRUSTUM_CULL flag. 1 -> cs_cull skips the 6 plane tests (every instance
+    // compacted as visible). Cached bool, no cost when unset; the shader defaults to full frustum when 0.
+    uint32_t disable_frustum = lev2::cullFrustumDisabled() ? 1u : 0u;
     auto pm = FXI->mapStorageBuffer(_cullParamsSSBO, 0, 96, lev2::BufferMapAccess::WRITE_ONLY);
     char* pb = (char*)pm->_mappedaddr;
     memcpy(pb + 0,  vp.asArray(), 64);
     memcpy(pb + 64, bound, 16);
     memcpy(pb + 80, &count, 4);
+    memcpy(pb + 84, &disable_frustum, 4);
     pm->unmap();
     // args = VkDrawIndexedIndirectCommand: seed indexCount, reset instanceCount to 0 (atomicAdd).
     uint32_t args[5] = {uint32_t(_primitive->indexCountFirstPrimGroup()), 0u, 0u, 0u, 0u};
@@ -1007,16 +1012,20 @@ compute_shader cs_cull : iface_cull {
   vec4 ry = vec4(u_vp[0].y, u_vp[1].y, u_vp[2].y, u_vp[3].y);
   vec4 rz = vec4(u_vp[0].z, u_vp[1].z, u_vp[2].z, u_vp[3].z);
   vec4 rw = vec4(u_vp[0].w, u_vp[1].w, u_vp[2].w, u_vp[3].w);
-  vec4 pl0 = rw + rx; vec4 pl1 = rw - rx;
-  vec4 pl2 = rw + ry; vec4 pl3 = rw - ry;
-  vec4 pl4 = rz;      vec4 pl5 = rw - rz;
   bool inside = true;
-  if ((dot(pl0.xyz, c) + pl0.w) < (-r * length(pl0.xyz))) { inside = false; }
-  if ((dot(pl1.xyz, c) + pl1.w) < (-r * length(pl1.xyz))) { inside = false; }
-  if ((dot(pl2.xyz, c) + pl2.w) < (-r * length(pl2.xyz))) { inside = false; }
-  if ((dot(pl3.xyz, c) + pl3.w) < (-r * length(pl3.xyz))) { inside = false; }
-  if ((dot(pl4.xyz, c) + pl4.w) < (-r * length(pl4.xyz))) { inside = false; }
-  if ((dot(pl5.xyz, c) + pl5.w) < (-r * length(pl5.xyz))) { inside = false; }
+  // u_p0 == 1 is the ORKID_DISABLE_FRUSTUM_CULL flag (host-stamped): skip the frustum reject so every
+  // instance is stream-compacted as visible.
+  if (u_p0 == 0u) {
+    vec4 pl0 = rw + rx; vec4 pl1 = rw - rx;
+    vec4 pl2 = rw + ry; vec4 pl3 = rw - ry;
+    vec4 pl4 = rz;      vec4 pl5 = rw - rz;
+    if ((dot(pl0.xyz, c) + pl0.w) < (-r * length(pl0.xyz))) { inside = false; }
+    if ((dot(pl1.xyz, c) + pl1.w) < (-r * length(pl1.xyz))) { inside = false; }
+    if ((dot(pl2.xyz, c) + pl2.w) < (-r * length(pl2.xyz))) { inside = false; }
+    if ((dot(pl3.xyz, c) + pl3.w) < (-r * length(pl3.xyz))) { inside = false; }
+    if ((dot(pl4.xyz, c) + pl4.w) < (-r * length(pl4.xyz))) { inside = false; }
+    if ((dot(pl5.xyz, c) + pl5.w) < (-r * length(pl5.xyz))) { inside = false; }
+  }
   if (inside) {
     uint slot = atomicAdd(a_instanceCount, 1u);
     out_mtx[slot] = M;
@@ -1061,16 +1070,20 @@ compute_shader cs_cull : iface_cull {
   vec4 ry = vec4(u_vp[0].y, u_vp[1].y, u_vp[2].y, u_vp[3].y);
   vec4 rz = vec4(u_vp[0].z, u_vp[1].z, u_vp[2].z, u_vp[3].z);
   vec4 rw = vec4(u_vp[0].w, u_vp[1].w, u_vp[2].w, u_vp[3].w);
-  vec4 pl0 = rw + rx; vec4 pl1 = rw - rx;
-  vec4 pl2 = rw + ry; vec4 pl3 = rw - ry;
-  vec4 pl4 = rz;      vec4 pl5 = rw - rz;
   bool inside = true;
-  if ((dot(pl0.xyz, c) + pl0.w) < (-r * length(pl0.xyz))) { inside = false; }
-  if ((dot(pl1.xyz, c) + pl1.w) < (-r * length(pl1.xyz))) { inside = false; }
-  if ((dot(pl2.xyz, c) + pl2.w) < (-r * length(pl2.xyz))) { inside = false; }
-  if ((dot(pl3.xyz, c) + pl3.w) < (-r * length(pl3.xyz))) { inside = false; }
-  if ((dot(pl4.xyz, c) + pl4.w) < (-r * length(pl4.xyz))) { inside = false; }
-  if ((dot(pl5.xyz, c) + pl5.w) < (-r * length(pl5.xyz))) { inside = false; }
+  // u_p0 == 1 is the ORKID_DISABLE_FRUSTUM_CULL flag (host-stamped): skip the frustum reject so every
+  // instance is stream-compacted as visible.
+  if (u_p0 == 0u) {
+    vec4 pl0 = rw + rx; vec4 pl1 = rw - rx;
+    vec4 pl2 = rw + ry; vec4 pl3 = rw - ry;
+    vec4 pl4 = rz;      vec4 pl5 = rw - rz;
+    if ((dot(pl0.xyz, c) + pl0.w) < (-r * length(pl0.xyz))) { inside = false; }
+    if ((dot(pl1.xyz, c) + pl1.w) < (-r * length(pl1.xyz))) { inside = false; }
+    if ((dot(pl2.xyz, c) + pl2.w) < (-r * length(pl2.xyz))) { inside = false; }
+    if ((dot(pl3.xyz, c) + pl3.w) < (-r * length(pl3.xyz))) { inside = false; }
+    if ((dot(pl4.xyz, c) + pl4.w) < (-r * length(pl4.xyz))) { inside = false; }
+    if ((dot(pl5.xyz, c) + pl5.w) < (-r * length(pl5.xyz))) { inside = false; }
+  }
   if (inside) {
     uint slot = atomicAdd(a_instanceCount, 1u);
     out_mtx[slot] = M;

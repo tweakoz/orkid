@@ -39,6 +39,14 @@
 //   Cmd+Down Arrow         stop the simulation
 //   Space                  pause / resume (host-side: the update tick holds)
 //
+// --devkeys (OPT-IN; default OFF): viewer-grade dev keys (the C++ lowering of
+//   ork.ecsplay.py's controls). Injects an ACES+HSVG postfx chain (the "viewer look" —
+//   the ACES curve changes the image even before any key), then:
+//     E  cycle envmap    G  gamma    T  ACES exposure    H  saturation
+//     M  terrain material (declared + scene debug looks)    R  reset post-fx
+//   plus an always-on upper-left key legend (deterministic; absent flagless).
+//   Flagless is byte-identical to the scene-authored look.
+//
 // startup: always the HFSM subsystem-driven init (the first C++ host to use it).
 //
 ////////////////////////////////////////////////////////////////
@@ -50,6 +58,10 @@
 #include <ork/lev2/ezapp.h>
 #include <ork/lev2/gfx/util/movie.inl> // offscreen movie capture (MovieCaptureSettings)
 #include <ork/lev2/gfx/camera/uicam.h>
+#include <ork/lev2/input/gamepaddevice.h> // S1 gamepad: digital day-1 remap (pad -> the same InputKey channel as the keyboard)
+#include <ork/lev2/vr/vr.h> // --vr: query the active XR device (orkidvr::device()) to select the VR render model
+#include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeACES.h> // --devkeys viewer-look postfx (tonemap)
+#include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeHSVG.h> // --devkeys viewer-look postfx (gamma/saturation)
 #include <ork/ecs/physics/CharacterController.h> // E.2-walk: input forwarding + camera yield
 #include <ork/ecs/pysys/PythonComponent.h>          // E.2-walk: scene-declared input-script routing
 #include <ork/python/context.h>                     // embedded interpreter (OPT-IN: scene declares PythonSystem)
@@ -77,6 +89,7 @@
 #include <boost/program_options.hpp>
 
 #include "perfhud.h" // on-screen perf HUD (~ key)
+#include "keyshud.h" // --devkeys on-screen key legend (always-on with --devkeys)
 
 using namespace std::string_literals;
 using namespace ork;
@@ -114,6 +127,17 @@ int main(int argc, char** argv, char** envp) {
   std::string movie_path;         // --movie PATH (implies offscreen)
   float movie_fps        = 60.0f;
   int   movie_frames     = 0;     // 0 -> default 300
+  std::string snapshot_path;      // --snapshot PATH (implies offscreen): settled frame -> PNG
+  int   snapshot_frame   = 0;     // --snapshot-frame N: capture N frames AFTER first-lit (0=at first-lit)
+  // --devkeys: OPT-IN interactive viewer-grade dev keys (mirror ork.ecsplay.py). DEFAULT OFF
+  // so a flagless run is byte-identical to the scene-authored look. When ON the player injects
+  // an ACES+HSVG postfx chain (the "viewer look" — ACES changes the image even before any key).
+  bool  devkeys          = false;
+  std::string devkeys_script;     // TEST HOOK: comma list LABEL:FRAME firing dev keys through the same handler
+  // --vr: play the scene on the HMD through the active XR runtime (the FWDPBRVRDM render model).
+  // Opt-in; only takes effect when an XR device is actually up (the stereo_grid condition). No
+  // runtime -> NoVR fallback: the scene plays on the desktop exactly as without --vr.
+  bool  want_vr          = false;
 
   po::options_description desc(
       "ork.ecs.player.exe — pure-C++ ECS scene player\n"
@@ -134,8 +158,13 @@ int main(int argc, char** argv, char** envp) {
       ("offscreen-forever", po::bool_switch(&offscreen_forever), "headless: render indefinitely, unthrottled, no settle-exit (kill to stop; ignores --movie)")
       ("frames", po::value<int>(&offscreen_frames)->default_value(0), "offscreen frame safety-cap (0=auto 1200; normal exit is load-settle driven)")
       ("movie,m", po::value<std::string>(&movie_path), "record an offscreen movie to PATH (mp4; implies --offscreen)")
-      ("moviefps,F", po::value<float>(&movie_fps)->default_value(60.0f), "movie frame rate")
-      ("movieframes,l", po::value<int>(&movie_frames)->default_value(0), "movie length in frames (0=300)");
+      ("moviefps", po::value<float>(&movie_fps)->default_value(60.0f), "movie frame rate")
+      ("movieframes,l", po::value<int>(&movie_frames)->default_value(0), "movie length in frames (0=300)")
+      ("snapshot,S", po::value<std::string>(&snapshot_path), "write the settled offscreen frame to PATH (png; implies --offscreen; agent/CI eyeball)")
+      ("snapshot-frame,F", po::value<int>(&snapshot_frame)->default_value(0), "capture --snapshot N frames AFTER the composite first goes lit (deterministic; 0=at first-lit)")
+      ("devkeys", po::bool_switch(&devkeys), "enable interactive viewer-grade dev keys [E cycle envmap, G gamma, T ACES exposure, H saturation, M terrain material (declared + scene-declared debug looks), R reset] + an always-on on-screen key legend. INJECTS an ACES+HSVG postfx chain, so the look changes (the 'viewer look') even before any keypress. Default OFF = scene-authored look, byte-identical to today.")
+      ("devkeys-script", po::value<std::string>(&devkeys_script)->default_value(""), "TEST HOOK (implies --devkeys): comma list LABEL:FRAME (e.g. \"E:120,G:180,CMDR:60\") firing dev keys through the SAME handler at update-tick FRAME; LABEL is E/G/T/H/M/R or CMDR (the live round-trip)")
+      ("vr", po::bool_switch(&want_vr), "VR: present the scene on the HMD through the active XR runtime (selects the FWDPBRVRDM render model). Requires ORKID_VR_DRIVER=openxr + a live runtime; with no runtime this falls back to normal desktop playback (a one-line notice, no crash).");
 
   po::positional_options_description pos;
   pos.add("scene", 1);
@@ -154,6 +183,8 @@ int main(int argc, char** argv, char** envp) {
     std::cout << desc << std::endl;
     return 1;
   }
+  if (not devkeys_script.empty())
+    devkeys = true; // the test hook drives the dev-key handler, so the chain must be present
 
   //////////////////////////////////////////////////////////
   // SHORT-NAME resolution + discovery (mirrors the python viewers): a bare name
@@ -236,9 +267,12 @@ int main(int argc, char** argv, char** envp) {
   //////////////////////////////////////////////////////////
   if (not movie_path.empty())
     offscreen = true;
+  if (not snapshot_path.empty())
+    offscreen = true;    // --snapshot implies offscreen (movie wins if both are given)
   if (offscreen_forever) {
     offscreen  = true;   // headless
     movie_path = "";     // forever is the no-movie soak/perf path
+    snapshot_path = "";
   }
   if (offscreen) {
     init_data->_offscreen = true;
@@ -284,6 +318,24 @@ int main(int argc, char** argv, char** envp) {
   ork::ecs::player::PerfHud perfhud;
   perfhud.init(ezapp);
 
+  // ALPHA ORACLE (mac-verifiable, no VR needed): ORKID_PERFHUD_ALPHA_ORACLE routes the VR
+  //  panel RT render onto the desktop path and reads the RT back — proving the panel
+  //  TEXTURE carries a translucent bg (alpha ~0.5) and solid text (alpha ~1). This is the
+  //  SUSPECT-A check for the panel-translucency fix. One-shot print, then the run settles out.
+  bool alpha_oracle = getenv("ORKID_PERFHUD_ALPHA_ORACLE") != nullptr;
+  if (alpha_oracle) {
+    perfhud._vrmode = true; // frameEndAndDraw -> _renderPanelRT (populates perfhud._hudRTG)
+    perfhud._mode   = ork::ecs::player::PerfHud::TEXT;
+  }
+  // ORKID_FORCE_DMVR: run the REAL DualMonoVr path on the desktop (NoVr preview) so the
+  //  actual _drawHudPanel eye-pass executes headless on mac — the panel lands in both down
+  //  buffers and the desktop mirror. Pair with --snapshot to eyeball a see-through panel.
+  bool force_dmvr = getenv("ORKID_FORCE_DMVR") != nullptr;
+
+  // --devkeys key legend HUD (always-on when --devkeys; upper-left). Deterministic content.
+  ork::ecs::player::KeysHud keyshud;
+  keyshud._enabled = devkeys;
+
   deco::printf(
       fvec3::Yellow(),
       "ork.ecs.player: SUBSYSTEM (HFSM) startup, scene<%s> (%zu bytes)\n",
@@ -311,8 +363,28 @@ int main(int argc, char** argv, char** envp) {
   int  os_settle    = 0;   // frames since the scene settled
   int  os_movie     = 0;   // movie frames recorded
   int  os_drain     = 0;   // post-record drain frames (pump GPU so captures finish)
-  int  os_phase     = 0;   // 0=WAIT 1=SETTLE 2=MOVIE 3=DONE
+  int  os_phase     = 0;   // 0=WAIT 1=SETTLE 2=MOVIE 3=DONE 4=SNAPSHOT-drain
   bool os_saw_async = false; // observed registered async work (a bake) — wait for it to drain
+  int  os_snapdrain = 0;   // frames pumped while the snapshot's async readback lands
+  auto os_snap_done = std::make_shared<std::atomic<bool>>(false); // set once a LIT frame is written
+  // SNAPSHOT capture state (phase 4). The single blind capture-at-settle this
+  // replaces landed in the composite's post-settle warmup window (the offscreen
+  // settle gate keys on loader-idle, which fires ~10-30 frames BEFORE the
+  // compositor first writes a non-black frame into _main_rtg) AND leaned on a
+  // one-shot async-readback callback that never fired while the loader sat idle
+  // (its BGRA->RGBA conversion is enqueued on opq::concurrentQueue, whose worker
+  // pool parks itself when idle — so a lone task issued at quiescence was not
+  // serviced until teardown). Both are why --snapshot wrote all-black PNGs
+  // (task #42). The movie path never hit either: it captures EVERY frame (past
+  // the warmup, and keeping the concurrentQueue busy) and POLLS the future's
+  // isReady() rather than waiting on a callback. This mirrors that: re-issue a
+  // capture each drain frame, poll it, and only accept a frame with real
+  // content — self-adjusting past the warmup with no magic settle count.
+  captureasync_ptr_t  snap_future;        // in-flight capture (one at a time)
+  capturebuffer_ptr_t snap_capbuf;        // its readback buffer
+  capturebuffer_ptr_t snap_last_capbuf;   // last landed frame (lit if we got one; else black fallback)
+  int  snap_issue_drain = 0;                    // os_snapdrain when snap_future was issued (stale-future guard)
+  int  snap_first_lit   = -1;                   // os_snapdrain at which the composite FIRST went lit (-1=not yet)
 
   // controller swaps (Cmd+Right restart) happen on the update thread while the render
   // thread reads `controller` in gpuUpdate/draw — one small mutex covers all of it.
@@ -377,6 +449,203 @@ int main(int argc, char** argv, char** envp) {
   uicam->updateMatrices();
 
   //////////////////////////////////////////////////////////
+  // --devkeys — OPT-IN viewer-grade dev keys (the C++ lowering of ork.ecsplay.py's
+  // E/S/G/T/R controls). The player OWNS the ACES+HSVG postfx nodes: injected into
+  // the scene's SceneGraphSystemData before bind, then poked per-frame from the UI
+  // thread (DoRender re-reads _exposure/_gamma/_saturation — the same benign race the
+  // python viewer accepts, no camera writes so no VR gating needed). Envmap [E] routes
+  // through the SG system's SetEnvmap notify (host owns the cycle list). Everything here
+  // is inert unless `devkeys` — a flagless run never creates a node or touches the scene.
+  // KEY MAP (bare, no super): E=envmap  G=gamma  T=ACES exposure  H=saturation  M=terrain mat  R=reset.
+  // Saturation is 'H': python's 'S' is a walk-move key, and 'C' is an EzUiCam dolly modifier
+  // (X/C/V = pan/dolly/zoom) — the devkeys block owns ONLY E/G/T/H/M/R and falls through for the rest.
+  //////////////////////////////////////////////////////////
+  const std::vector<float> satset = {0.0f, 0.1f, 0.2f, 0.5f, 0.75f, 0.8f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f};
+  const std::vector<float> gamset = {0.8f, 1.0f, 1.2f, 1.4f, 1.6f, 1.8f, 2.0f, 2.4f};
+  const std::vector<float> expset = {0.0f, 0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f, 3.0f, 5.0f};
+  auto idx_of = [](const std::vector<float>& v, float x) {
+    return int(std::find(v.begin(), v.end(), x) - v.begin());
+  };
+  const int sat_def = idx_of(satset, 1.0f), gam_def = idx_of(gamset, 1.0f), exp_def = idx_of(expset, 1.0f);
+  int sat_idx = sat_def, gam_idx = gam_def, exp_idx = exp_def;
+  std::vector<std::string> envmap_paths; // "<assetcache>/envmaps2/<name>.xir"
+  std::vector<std::string> envmap_names;
+  int envmap_index = -1;
+  std::shared_ptr<PostFxNodeACES> aces_node;
+  std::shared_ptr<PostFxNodeHSVG> hsvg_node;
+  if (devkeys) {
+    aces_node              = std::make_shared<PostFxNodeACES>();
+    hsvg_node              = std::make_shared<PostFxNodeHSVG>();
+    aces_node->_exposure   = expset[exp_idx];
+    hsvg_node->_hue        = 0.0f;
+    hsvg_node->_saturation = satset[sat_idx];
+    hsvg_node->_value      = 1.0f;
+    hsvg_node->_gamma      = gamset[gam_idx];
+    // Envmap cycle list — filesystem-driven (mirrors ecsplay.py): only files present.
+    if (const char* stg = getenv("OBT_STAGE")) {
+      auto dir = std::string(stg) + "/assetcache/envmaps2";
+      if (std::filesystem::is_directory(dir)) {
+        std::vector<std::string> names;
+        for (const auto& e : std::filesystem::directory_iterator(dir))
+          if (e.path().extension() == ".xir")
+            names.push_back(e.path().stem().string());
+        std::sort(names.begin(), names.end());
+        for (const auto& n : names) {
+          envmap_names.push_back(n);
+          envmap_paths.push_back("<assetcache>/envmaps2/" + n + ".xir");
+        }
+      }
+    }
+    deco::printf(fvec3::Yellow(),
+                 "ork.ecs.player: --devkeys ON (viewer look: ACES+HSVG) envmaps<%zu> keys[E/G/T/H/M/R]\n",
+                 envmap_paths.size());
+  }
+
+  // [M] TERRAIN MATERIAL-OVERRIDE cycle: mode 0 = declared (EXACTLY today's path, no override);
+  // modes 1..N are the scene-declared debug materials. The label list + cycle LENGTH are DATA,
+  // derived at load from the terrain drawable's reflected debug_material_assets — so adding a
+  // debug look needs no player edit. Mode 0 stays byte-identical. The mode rides a systemNotify
+  // to the SG system (SetEnvmap pattern); the SG system routes it to the terrain drawable(s).
+  int mat_mode = 0;
+  std::vector<std::string> matmode_labels = {"declared"}; // [0]=declared; [1..] filled from scene at load
+  auto matmode_label = [&](int m) -> const char* {
+    return (m >= 0 and m < int(matmode_labels.size())) ? matmode_labels[m].c_str() : "declared";
+  };
+
+  // Rebuild the always-on --devkeys legend from the CURRENT cycle state. DETERMINISTIC —
+  // key names + values only (no fps/clock/frame counters) so the snapshot byte-identity
+  // gates hold. Called at the end of every fire_devkey and once at startup.
+  auto update_keys_hud = [&]() {
+    std::string env = (envmap_index >= 0 and envmap_index < int(envmap_names.size()))
+                          ? envmap_names[envmap_index]
+                          : "(scene default)";
+    keyshud.setState(env, gamset[gam_idx], expset[exp_idx], satset[sat_idx], matmode_label(mat_mode));
+    // Deterministic, timing-independent observable of the on-screen legend's CURRENT content
+    // (the HUD gate keys on this to distinguish a stale legend from an updated one).
+    deco::printf(fvec3::Cyan(),
+                 "ork.ecs.player: keyshud [E]%s [G]%.2f [T]%.2f [H]%.2f [M]%s\n",
+                 env.c_str(), gamset[gam_idx], expset[exp_idx], satset[sat_idx], matmode_label(mat_mode));
+  };
+
+  // The dev-key action, factored so the real key handler (onUiEvent) and the scripted
+  // test hook (onUpdate) drive the IDENTICAL path. Safe to call from either thread — the
+  // envmap notify mirrors the autowalk send-key pattern; the postfx pokes are plain float
+  // writes the render thread re-reads (the accepted benign race).
+  auto fire_devkey = [&](int keycode) {
+    switch (keycode) {
+      case 'E': {
+        if (envmap_paths.empty()) {
+          deco::printf(fvec3::Yellow(), "ork.ecs.player: [E] no envmaps in <stage>/assetcache/envmaps2\n");
+          break;
+        }
+        envmap_index = (envmap_index + 1) % int(envmap_paths.size());
+        controller_ptr_t c;
+        sys_ref_t sgs;
+        {
+          std::lock_guard<std::mutex> lock(ctl_mutex);
+          c   = controller;
+          sgs = sgsystem;
+        }
+        if (c) {
+          auto tab           = std::make_shared<DataTable>();
+          (*tab)["path"_tok] = envmap_paths[envmap_index];
+          c->systemNotify(sgs, "SetEnvmap"_tok, tab);
+          deco::printf(fvec3::Green(), "ork.ecs.player: [E] envmap -> %s\n", envmap_names[envmap_index].c_str());
+        }
+        break;
+      }
+      case 'G':
+        gam_idx = (gam_idx + 1) % int(gamset.size());
+        if (hsvg_node)
+          hsvg_node->_gamma = gamset[gam_idx];
+        deco::printf(fvec3::Green(), "ork.ecs.player: [G] gamma -> %g\n", gamset[gam_idx]);
+        break;
+      case 'T':
+        exp_idx = (exp_idx + 1) % int(expset.size());
+        if (aces_node)
+          aces_node->_exposure = expset[exp_idx];
+        deco::printf(fvec3::Green(), "ork.ecs.player: [T] ACES exposure -> %g\n", expset[exp_idx]);
+        break;
+      case 'H': // saturation — NOT 'C' (EzUiCam reserves X/C/V for pan/dolly/zoom)
+        sat_idx = (sat_idx + 1) % int(satset.size());
+        if (hsvg_node)
+          hsvg_node->_saturation = satset[sat_idx];
+        deco::printf(fvec3::Green(), "ork.ecs.player: [H] saturation -> %g\n", satset[sat_idx]);
+        break;
+      case 'M': {
+        // cycle over the DATA-derived label list (declared + scene debug materials). A scene with
+        // no debug materials => size 1 => M stays at mode 0 (a no-op, already logged at load).
+        mat_mode = (mat_mode + 1) % int(matmode_labels.size());
+        controller_ptr_t c;
+        sys_ref_t sgs;
+        {
+          std::lock_guard<std::mutex> lock(ctl_mutex);
+          c   = controller;
+          sgs = sgsystem;
+        }
+        if (c) {
+          auto tab           = std::make_shared<DataTable>();
+          (*tab)["mode"_tok] = mat_mode;
+          c->systemNotify(sgs, "SetTerrainMaterialMode"_tok, tab);
+          deco::printf(fvec3::Green(), "ork.ecs.player: [M] terrain material -> %s (mode %d)\n",
+                       matmode_label(mat_mode), mat_mode);
+        }
+        break;
+      }
+      case 'R':
+        sat_idx = sat_def;
+        gam_idx = gam_def;
+        exp_idx = exp_def;
+        if (hsvg_node) {
+          hsvg_node->_saturation = satset[sat_idx];
+          hsvg_node->_gamma      = gamset[gam_idx];
+        }
+        if (aces_node)
+          aces_node->_exposure = expset[exp_idx];
+        deco::printf(fvec3::Green(), "ork.ecs.player: [R] reset post-fx\n");
+        break;
+      default:
+        break;
+    }
+    update_keys_hud(); // reflect the new state in the always-on legend
+  };
+
+  // --devkeys-script: parse "LABEL:FRAME,..." into scripted key events fired on the
+  // update thread when the tick reaches FRAME. CMDR fires the live round-trip (Cmd+R).
+  struct DevKeyEvent {
+    int  keycode = 0;
+    bool cmdr    = false;
+    int  frame   = 0;
+    bool fired   = false;
+  };
+  std::vector<DevKeyEvent> devkey_events;
+  if (not devkeys_script.empty()) {
+    std::stringstream ss(devkeys_script);
+    std::string item;
+    while (std::getline(ss, item, ',')) {
+      auto colon = item.find(':');
+      if (colon == std::string::npos)
+        continue;
+      std::string label = item.substr(0, colon);
+      DevKeyEvent dke;
+      dke.frame = atoi(item.substr(colon + 1).c_str());
+      if (label == "CMDR")
+        dke.cmdr = true;
+      else if (not label.empty()) {
+        char c0 = label[0];
+        if (c0 >= 'a' and c0 <= 'z')
+          c0 = char(c0 - 'a' + 'A');
+        dke.keycode = (unsigned char)c0;
+      }
+      devkey_events.push_back(dke);
+    }
+    deco::printf(fvec3::Yellow(), "ork.ecs.player: --devkeys-script parsed %zu event(s)\n", devkey_events.size());
+  }
+  int devkey_tick = 0;
+  if (devkeys)
+    update_keys_hud(); // seed the legend with the default cycle state (before any keypress)
+
+  //////////////////////////////////////////////////////////
   // gpuInit — the whole Goal-C chain happens HERE, in C++:
   //   deserialize -> materialize+wire -> bind -> createSimulation
   //////////////////////////////////////////////////////////
@@ -395,16 +664,89 @@ int main(int argc, char** argv, char** envp) {
     // 2. the C++ wire step (materializeAll + by-name component patching)
     ////////////////////////////////////////////
     auto artifacts = materializeAndWireScene(scenedata, ctx);
+    ////////////////////////////////////////////
+    // [M] derive the material-cycle labels from scene DATA (the terrain drawable's reflected
+    // debug_material_assets) — no hardcoded mode table. Label = the asset-name suffix after
+    // "_dbg_". Empty list => the [M] cycle is a no-op (logged once here).
+    ////////////////////////////////////////////
+    {
+      auto dbg_assets = terrainDebugMaterialAssets(scenedata);
+      matmode_labels.assign(1, std::string("declared"));
+      for (const auto& a : dbg_assets) {
+        auto pos = a.rfind("_dbg_");
+        matmode_labels.push_back(pos != std::string::npos ? a.substr(pos + 5) : a);
+      }
+      if (dbg_assets.empty())
+        deco::printf(fvec3::Yellow(),
+                     "ork.ecs.player: no terrain debug materials declared -- [M] is a no-op\n");
+      else
+        deco::printf(fvec3::Green(),
+                     "ork.ecs.player: [M] terrain material cycle -> %zu debug mode(s)\n",
+                     dbg_assets.size());
+    }
     if (want_ssaa > 1) { // host display preference -> the SG screen node (link copies userparams)
       for (const auto& it : scenedata->getSystemDatas())
         if (auto sgd = std::dynamic_pointer_cast<SceneGraphSystemData>(it.second))
           sgd->setUserSceneParam("ssaa", want_ssaa);
       deco::printf(fvec3::Yellow(), "ork.ecs.player: ssaa<%d>\n", want_ssaa);
     }
+    ////////////////////////////////////////////
+    // --vr: select the VR render model (FWDPBRVRDM) — but ONLY when an XR runtime is
+    // actually up. The XR device was selected pre-Vulkan from ORKID_VR_DRIVER and, by
+    // now (post graphics-init), is _active iff its session came up. This is the same
+    // gate stereo_grid.py uses. Forcing the preset here (a user scene param, like ssaa
+    // above) routes BOTH the compositor (presetForwardPBRVRDM) and the SceneGraphSystem
+    // VR-device wiring, which keeps the active XR device and drives stereo. No runtime ->
+    // leave the scene's declared (desktop) preset untouched: byte-identical to no --vr.
+    ////////////////////////////////////////////
+    if (want_vr) {
+      auto vrdev      = ::ork::lev2::orkidvr::device();
+      const char* drv = getenv("ORKID_VR_DRIVER");
+      bool vr_active  = vrdev and vrdev->_active and drv and (std::string(drv) == "openxr");
+      if (vr_active) {
+        for (const auto& it : scenedata->getSystemDatas())
+          if (auto sgd = std::dynamic_pointer_cast<SceneGraphSystemData>(it.second))
+            sgd->setUserSceneParam("preset", std::string("FWDPBRVRDM"));
+        // perf HUD goes to its VR path: content -> offscreen RT -> head-locked panel in
+        //  both eyes (DualMonoVr node). The pad L1 (left bumper) toggles it (see onUpdate).
+        perfhud._vrmode = true;
+        deco::printf(fvec3::Green(),
+                     "ork.ecs.player: --vr ACTIVE — XR runtime up, render model FWDPBRVRDM\n");
+      } else {
+        deco::printf(fvec3::Yellow(),
+                     "ork.ecs.player: --vr requested but NO active XR runtime — NoVR fallback, desktop playback\n");
+      }
+    }
+    // ORKID_FORCE_DMVR (eye-pass verification): force the DualMonoVr preset on desktop so
+    //  SceneGraphSystem spins up a NoVr device and runs the REAL DM composite (+ _drawHudPanel)
+    //  headless — no HMD needed. Independent of --vr's openxr gate.
+    if (force_dmvr) {
+      for (const auto& it : scenedata->getSystemDatas())
+        if (auto sgd = std::dynamic_pointer_cast<SceneGraphSystemData>(it.second))
+          sgd->setUserSceneParam("preset", std::string("FWDPBRVRDM"));
+      perfhud._vrmode = true;
+      deco::printf(fvec3::Yellow(), "ork.ecs.player: ORKID_FORCE_DMVR — desktop NoVr DMVR preview (eye-pass verification)\n");
+    }
     deco::printf(
         fvec3::Green(),
         "ork.ecs.player: materialized + wired (%zu artifacts)\n",
         artifacts->_themap.size());
+    ////////////////////////////////////////////
+    // 2b. --devkeys: splice the player-owned ACES+HSVG chain into the SG system data
+    // BEFORE bind (the reflected _postfx_nodes/_postfx_order are consumed at _onLink).
+    // additive with any scene-declared chain (e.g. "ssss"). NodeCompositor gpuInits
+    // registered nodes for us — we never gpuInit these ourselves.
+    ////////////////////////////////////////////
+    if (devkeys) {
+      for (const auto& it : scenedata->getSystemDatas())
+        if (auto sgd = std::dynamic_pointer_cast<SceneGraphSystemData>(it.second)) {
+          sgd->addPostFxNode("aces", aces_node);
+          sgd->addPostFxNode("hsvg", hsvg_node);
+          sgd->appendPostFxOrder("aces");
+          sgd->appendPostFxOrder("hsvg");
+        }
+      deco::printf(fvec3::Yellow(), "ork.ecs.player: --devkeys injected ACES+HSVG postfx chain\n");
+    }
     ////////////////////////////////////////////
     // 3. standard ECS lifecycle (trace-ecs shape)
     ////////////////////////////////////////////
@@ -446,6 +788,29 @@ int main(int argc, char** argv, char** envp) {
 
   bool auto_rt_fired = false;
   bool aw_down = false, aw_up = false; // --autowalk state
+  // S1 gamepad state-forwarding (update thread). Lazily created only when the scene has a
+  // PythonSystem to consume it; the PYTHON input script owns the pad->locomotion mapping.
+  gamepaddevice_ptr_t gamepad;
+  // HUD toggle (VR): host-side rising edge on L1 (left bumper), plain button. Independent
+  //  of the pad->python forwarding below (the L1 bit still forwards as a GamepadButton).
+  bool gp_l1_hud_prev = false;
+  bool gp_connected_latch = false; // forward only after the pad reports connected once
+  bool gp_prev_connected  = false; // send one final frame on the connected->disconnected edge
+  uint32_t gp_prev_buttons = 0;    // for button edge-diff (release-all on disconnect)
+  // GamepadAxes rate limit. The update thread ticks at ~480 UPS; forwarding a snapshot per
+  // tick floods the sim's notify queue through a PYTHON handler (+4 charctl notifies each)
+  // faster than it drains — latency compounds until input appears dead. Buttons stay
+  // edge-forwarded (sparse). Axes forward on CHANGE (>eps, min ~16ms apart) or a 100ms
+  // heartbeat, plus always the final disconnect frame.
+  float gp_sent_axes[6]  = {0, 0, 0, 0, 0, 0};
+  double gp_last_axes_t  = -1.0; // abstime of last GamepadAxes send
+  // STAGE-2 liveness (player forward): counts messages actually forwarded per ~5s window.
+  // Prints only after the pad has connected (silent with no pad), only when nonzero OR just
+  // transitioned to zero. btn dies -> button dispatch stopped; axes dies -> gating/rate-limit
+  // or the update thread wedged.
+  int gp_fwd_btn = 0, gp_fwd_axes = 0;
+  double gp_fwd_live_t0 = -1.0;
+  bool gp_fwd_btn_wasnz = false, gp_fwd_axes_wasnz = false;
   ezapp->onUpdate([&](ui::updatedata_ptr_t updata) {
     abstime = updata->_abstime;
     if (auto_roundtrip > 0.0f and not auto_rt_fired and abstime >= auto_roundtrip) {
@@ -478,6 +843,121 @@ int main(int argc, char** argv, char** envp) {
         aw_up = true;
         send_key('W', 0);
         deco::printf(fvec3::Yellow(), "ork.ecs.player: AUTOWALK end\n");
+      }
+    }
+    // S1 gamepad -> the scene's PythonSystem (the host does NOT map the pad; the python input
+    // script owns pad->locomotion, exactly as it owns the keymap for InputKey). Two channels:
+    //   GamepadButton {button: <token>, down: int}  — edge transitions (mirrors InputKey; the
+    //                                                  abstract button id rides as a crcstring
+    //                                                  token so python reads tokens.CROSS, ...).
+    //   GamepadAxes   {lx,ly,rx,ry,l2,r2: float, connected: int} — per-tick analog snapshot.
+    // Gated on a PythonSystem consumer AND on the pad reporting connected at least once
+    // (zero traffic when no pad); on disconnect every held button is released and one final
+    // connected=0 frame is sent so the script can zero its inputs.
+    // Sample the pad when the scene forwards it to python OR when the VR perf HUD needs
+    //  the L2 toggle. On a keyboardless VR rig this is the only way to raise the HUD.
+    bool hud_pad = perfhud._vrmode.load();
+    if (pysys_mode or hud_pad) {
+      if (not gamepad)
+        gamepad = GamepadDevice::instance(); // linux: spins up the joydev reader thread
+      GamepadState gp = gamepad->sample();
+      // HUD toggle (VR): host-side L1 (left bumper) rising edge. Consumed HERE; the L1 bit
+      //  ALSO forwards to python as a GamepadButton (walk sprint moved to R1-only so this
+      //  toggle doesn't blip sprint) — no input conflict.
+      if (hud_pad) {
+        bool l1 = gp.connected and gp.buttonDown(GamepadButtonId::L1);
+        if (l1 and not gp_l1_hud_prev) {
+          perfhud.toggleShown();
+          deco::printf(fvec3::Cyan(), "ork.ecs.player: [pad L1] perf HUD %s\n",
+                       perfhud._mode.load() ? "ON" : "OFF");
+        }
+        gp_l1_hud_prev = l1;
+      }
+      if (pysys_mode) {
+      if (gp.connected)
+        gp_connected_latch = true;
+      if (gp_connected_latch and (gp.connected or gp_prev_connected)) {
+        controller_ptr_t c;
+        {
+          std::lock_guard<std::mutex> lock(ctl_mutex);
+          c = controller;
+        }
+        if (c) {
+          // button edge transitions (on disconnect gp.buttons==0 releases everything held)
+          uint32_t changed = gp.buttons ^ gp_prev_buttons;
+          for (size_t i = 0; i < kNumGamepadButtons; i++) {
+            uint32_t bit = (1u << i);
+            if (not(changed & bit))
+              continue;
+            auto btntab             = std::make_shared<DataTable>();
+            (*btntab)["button"_tok] = std::make_shared<CrcString>(uint64_t(kGamepadButtonOrder[i]));
+            (*btntab)["down"_tok]   = int((gp.buttons & bit) ? 1 : 0);
+            c->systemNotify(pysystem, "GamepadButton"_tok, btntab);
+            gp_fwd_btn++;
+          }
+          gp_prev_buttons = gp.buttons;
+          // analog snapshot — rate-limited (see gp_sent_axes above): change-driven at
+          // <=60Hz + 100ms heartbeat + always the disconnect edge. NOT per-tick.
+          const float ax_now[6] = {gp.lx, gp.ly, gp.rx, gp.ry, gp.l2, gp.r2};
+          bool ax_changed       = false;
+          for (int a = 0; a < 6; a++)
+            if (std::fabs(ax_now[a] - gp_sent_axes[a]) > 1e-3f)
+              ax_changed = true;
+          double since       = (gp_last_axes_t < 0.0) ? 1e9 : (abstime - gp_last_axes_t);
+          bool disconnect_edge = (not gp.connected) and gp_prev_connected;
+          bool send_axes     = disconnect_edge                     //
+                           or (ax_changed and since >= 0.016)      //
+                           or (since >= 0.100);
+          if (send_axes) {
+            auto axtab                = std::make_shared<DataTable>();
+            (*axtab)["lx"_tok]        = float(gp.lx);
+            (*axtab)["ly"_tok]        = float(gp.ly);
+            (*axtab)["rx"_tok]        = float(gp.rx);
+            (*axtab)["ry"_tok]        = float(gp.ry);
+            (*axtab)["l2"_tok]        = float(gp.l2);
+            (*axtab)["r2"_tok]        = float(gp.r2);
+            (*axtab)["connected"_tok] = int(gp.connected ? 1 : 0);
+            c->systemNotify(pysystem, "GamepadAxes"_tok, axtab);
+            gp_fwd_axes++;
+            for (int a = 0; a < 6; a++)
+              gp_sent_axes[a] = ax_now[a];
+            gp_last_axes_t = abstime;
+          }
+        }
+      }
+      gp_prev_connected = gp.connected;
+      // STAGE-2 liveness heartbeat (throttled ~5s; silent until a pad has connected)
+      if (gp_connected_latch) {
+        if (gp_fwd_live_t0 < 0.0)
+          gp_fwd_live_t0 = abstime;
+        if (abstime - gp_fwd_live_t0 >= 5.0) {
+          gp_fwd_live_t0 = abstime;
+          if (gp_fwd_btn > 0 or gp_fwd_axes > 0 or gp_fwd_btn_wasnz or gp_fwd_axes_wasnz)
+            deco::printf(fvec3::Cyan(), "[GAMEPAD] fwd btn=%d axes=%d/5s\n", gp_fwd_btn, gp_fwd_axes);
+          gp_fwd_btn_wasnz = (gp_fwd_btn > 0);
+          gp_fwd_axes_wasnz = (gp_fwd_axes > 0);
+          gp_fwd_btn = 0;
+          gp_fwd_axes = 0;
+        }
+      }
+      } // if (pysys_mode) — pad->python forwarding
+    }
+    // --devkeys-script (test hook): fire scripted dev keys through the SAME handler once
+    // the update tick reaches each event's frame. CMDR sets roundtrip_requested — the very
+    // atomic the real Cmd+R handler sets — proving post-round-trip keys still act.
+    if (devkeys and not devkey_events.empty()) {
+      devkey_tick++;
+      for (auto& dke : devkey_events) {
+        if (dke.fired or devkey_tick < dke.frame)
+          continue;
+        dke.fired = true;
+        if (dke.cmdr) {
+          deco::printf(fvec3::Yellow(), "ork.ecs.player: [devkeys-script] CMDR round-trip @ tick %d\n", devkey_tick);
+          roundtrip_requested = true;
+        } else {
+          deco::printf(fvec3::Yellow(), "ork.ecs.player: [devkeys-script] key<%c> @ tick %d\n", char(dke.keycode), devkey_tick);
+          fire_devkey(dke.keycode);
+        }
       }
     }
     ////////////////////////////////////////////
@@ -580,6 +1060,19 @@ int main(int argc, char** argv, char** envp) {
       if (ev->miKeyCode == '`' or ev->miKeyCode == '~') {
         perfhud.cycleMode();
         return ui::HandlerResult();
+      }
+      // --devkeys: bare E/G/T/H/M/R drive the viewer-look controls. Consumed here (before
+      // the walk/PythonSystem forward below) ONLY when --devkeys AND only for keys we OWN;
+      // every other key (incl. the EzUiCam X/C/V pan/dolly/zoom chords) falls through
+      // untouched to the uicam handler below. Flagless these all fall through, so behavior
+      // is byte-identical to today. Cmd+R stays the round-trip (SUPER block below); none of
+      // E/G/T/H/M/R collide with a walk movement key or a camera modifier.
+      if (devkeys and not ev->mbSUPER) {
+        int kc = ev->miKeyCode;
+        if (kc == 'E' or kc == 'G' or kc == 'T' or kc == 'H' or kc == 'M' or kc == 'R') {
+          fire_devkey(kc);
+          return ui::HandlerResult();
+        }
       }
       if (ev->mbSUPER) {
         if (ev->miKeyCode == 262) { // Cmd+Right Arrow -> restart NEW simulation
@@ -708,6 +1201,21 @@ int main(int argc, char** argv, char** envp) {
                 "unreflected or unstable state in the live scene!\n",
                 js_a.size(),
                 js_b.size());
+          // --devkeys STALENESS FIX: the clone deserialized FRESH aces/hsvg node
+          // instances (the reflected postfx chain round-trips through JSON), so the
+          // player's held pointers would go stale after the restart. Re-point the
+          // clone's entries back to the player-owned originals BEFORE wiring, so the
+          // key handlers keep driving the live chain. (Byte-compare above already ran
+          // on the pristine clone, so this doesn't perturb the serdes audit.)
+          if (devkeys) {
+            for (const auto& it : fresh->getSystemDatas())
+              if (auto sgd = std::dynamic_pointer_cast<SceneGraphSystemData>(it.second)) {
+                if (sgd->_postfx_nodes.count("aces"))
+                  sgd->_postfx_nodes["aces"] = aces_node;
+                if (sgd->_postfx_nodes.count("hsvg"))
+                  sgd->_postfx_nodes["hsvg"] = hsvg_node;
+              }
+          }
           materializeAndWireScene(fresh, ctx);
           {
             std::lock_guard<std::mutex> lock(ctl_mutex);
@@ -750,6 +1258,141 @@ int main(int argc, char** argv, char** envp) {
       ezapp->_movie_record_frame_lambda(drwev->GetTarget());
     // perf HUD draws AFTER the movie pump so it never burns into a recording.
     perfhud.frameEndAndDraw(drwev->GetTarget());
+    // ALPHA ORACLE — two stages, both mac-runnable (no VR). Poll pattern mirrors --snapshot
+    //  so the device-local readbacks don't stall.
+    //   S1 (SUSPECT A): read the panel RT -> bg alpha ~0.5, text alpha ~1.
+    //   S2 (SUSPECT B, the eye-pass blend): composite the panel RT over a KNOWN red buffer
+    //       with the EXACT eye-pass technique (orkshader://ui uitextured_alpha) and read a
+    //       bg-covered corner. Blended => R~128; opaque(bug) => R~0; no-draw => R~255.
+    if (alpha_oracle) {
+      static int                 ora_frame = 0;
+      static int                 ora_phase = 0; // 0=issue S1,1=wait S1,2=render+issue S2,3=wait S2,4=done
+      static captureasync_ptr_t  ora_fut;
+      static capturebuffer_ptr_t ora_buf;
+      static std::shared_ptr<FreestyleMaterial>                  ora_mtl;
+      static rtgroup_ptr_t                                       ora_rtg;
+      static std::shared_ptr<DynamicVertexBuffer<SVtxV16T16C16>> ora_vb;
+      ora_frame++;
+      auto octx = drwev->GetTarget();
+      auto ofbi = octx->FBI();
+      // ---- S1: issue panel-RT capture ----
+      if (ora_phase == 0 and ora_frame >= 8 and perfhud._hudRTG) {
+        ora_fut   = ofbi->captureAsFormat(perfhud._hudRTG->buffer(0).get(),
+                                        (ora_buf = std::make_shared<CaptureBuffer>()), EBufferFormat::RGBA8);
+        ora_phase = 1;
+      }
+      if (ora_phase == 1 and ora_fut and ora_fut->isReady()) {
+        auto img = ora_buf ? ora_buf->_image : nullptr;
+        if (img and img->_data) {
+          const uint8_t* p = img->_data->data();
+          int            W = int(img->_width), H = int(img->_height);
+          // The RT is now PREMULTIPLIED FOREGROUND (text over transparent, NO slate).
+          //  (c) panel bg (2,2, above text) => transparent (a~0). (a) glyph-box background =>
+          //  ALSO transparent (a~0), same as bg (no slate to punch -> no boxes). (b) glyph
+          //  core => premultiplied green (rgb=color*coverage, a=coverage ~high). A
+          //  "dark-but-opaque" texel (rgb~0 AND a>60) would be a leftover slate/box.
+          auto AT = [&](int x, int y, int c) { return int(p[(size_t(y) * W + x) * 4 + c]); };
+          int  bg_r = AT(2,2,0), bg_g = AT(2,2,1), bg_b = AT(2,2,2), bg_a = AT(2,2,3);
+          int  core_a = 0, core_r = 0, core_g = 0, core_b = 0; // brightest green stroke
+          long dark_opaque = 0;                         // dark AND non-transparent = box/slate defect
+          long ah[4] = {0,0,0,0};                       // alpha histogram: 0-10,11-140,141-230,231-255
+          for (int y = 0; y < H; y++)
+            for (int x = 0; x < W; x++) {
+              int r = AT(x,y,0), g = AT(x,y,1), b = AT(x,y,2), a = AT(x,y,3);
+              ah[a<=10?0 : a<=140?1 : a<=230?2 : 3]++;
+              if (g > 128) { if (a > core_a) { core_a = a; core_r = r; core_g = g; core_b = b; } }
+              else if (r < 40 and g < 40 and b < 40 and a > 60) dark_opaque++;
+            }
+          bool pass = (bg_a <= 12) and (core_a >= 205) and (dark_opaque == 0);
+          printf("[perfhud-oracle-S1] premult foreground RT %dx%d\n"
+                 "   (c) panel_bg      rgba<%d,%d,%d,%d> (want a~0, transparent)\n"
+                 "   (a) dark-opaque (leftover slate/box) texels<%ld> (want 0)\n"
+                 "   (b) glyph core    rgba<%d,%d,%d,%d> (want a>205, premult green)\n"
+                 "   alpha histogram [0-10]=%ld [11-140]=%ld [141-230]=%ld [231-255]=%ld\n"
+                 "   => %s\n",
+                 W, H, bg_r, bg_g, bg_b, bg_a, dark_opaque,
+                 core_r, core_g, core_b, core_a, ah[0], ah[1], ah[2], ah[3], pass ? "PASS" : "FAIL");
+          fflush(stdout);
+        }
+        ora_fut = nullptr; ora_buf = nullptr; ora_phase = 2;
+      }
+      // ---- S2: composite panel over RED with the eye-pass technique, then capture ----
+      if (ora_phase == 2 and perfhud._hudRTG) {
+        int TW = perfhud._hudRTG->width(), TH = perfhud._hudRTG->height();
+        if (not ora_mtl) { ora_mtl = std::make_shared<FreestyleMaterial>(); ora_mtl->gpuInit(octx, "orkshader://ui"); }
+        if (not ora_rtg) {
+          ora_rtg  = std::make_shared<RtGroup>(octx, TW, TH, MsaaSamples::MSAA_1X);
+          auto b   = ora_rtg->createRenderTarget(EBufferFormat::RGBA8);
+          b->_clearColor = fvec4(1, 0, 0, 1); // known "scene" color = RED
+        } else if (ora_rtg->width() != TW or ora_rtg->height() != TH) ora_rtg->Resize(TW, TH);
+        if (not ora_vb) { ora_vb = std::make_shared<DynamicVertexBuffer<SVtxV16T16C16>>(64, 0); ora_vb->SetRingLock(true); }
+        auto RCFD  = std::make_shared<RenderContextFrameData>(octx);
+        ofbi->PushRtGroup(ora_rtg.get()); // autoclear -> RED (the "scene")
+        ViewportRect vp(0, 0, TW, TH); ofbi->pushViewport(vp); ofbi->pushScissor(vp);
+        auto quad = [&]() {
+          VtxWriter<SVtxV16T16C16> vw; vw.Lock(octx, ora_vb.get(), 6);
+          fvec4 c(1, 1, 1, 1);
+          auto AV = [&](float x, float y, float u, float v) { vw.AddVertex(SVtxV16T16C16(fvec3(x, y, 0), fvec4(u, v, 0, 0), c)); };
+          AV(-1,-1,0,0); AV(1,-1,1,0); AV(1,1,1,1); AV(-1,-1,0,0); AV(1,1,1,1); AV(-1,1,0,1);
+          vw.UnLock(octx);
+          octx->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
+        };
+        // EXACT two-pass eye-pass: LAYER 1 slate (uidev_modcolor_alpha, ModColor (0,0,0,0.5))
+        //  over RED => (127,0,0); LAYER 2 premult text (uitextured_prema) PREMA over the slate.
+        ora_mtl->begin(ora_mtl->technique("uidev_modcolor_alpha"), RCFD);
+        ora_mtl->bindParamMatrix(ora_mtl->param("mvp"), fmtx4::Identity());
+        ora_mtl->bindParamVec4(ora_mtl->param("ModColor"), fvec4(0, 0, 0, 0.5f));
+        quad();
+        ora_mtl->end(RCFD);
+        ora_mtl->begin(ora_mtl->technique("uitextured_prema"), RCFD);
+        ora_mtl->bindParamMatrix(ora_mtl->param("mvp"), fmtx4::Identity());
+        ora_mtl->bindParamTexture(ora_mtl->param("ColorMap"), perfhud._hudRTG->texture(0).get());
+        ora_mtl->bindParamVec4(ora_mtl->param("ModColor"), fvec4(1, 1, 1, 1));
+        quad();
+        ora_mtl->end(RCFD);
+        ofbi->popScissor(); ofbi->popViewport(); ofbi->PopRtGroup();
+        ora_fut   = ofbi->captureAsFormat(ora_rtg->buffer(0).get(),
+                                        (ora_buf = std::make_shared<CaptureBuffer>()), EBufferFormat::RGBA8);
+        ora_phase = 3;
+      }
+      if (ora_phase == 3 and ora_fut and ora_fut->isReady()) {
+        auto img = ora_buf ? ora_buf->_image : nullptr;
+        if (img and img->_data) {
+          if (const char* pp = getenv("ORKID_PERFHUD_ORACLE_PNG")) img->writeToFile(file::Path(pp));
+          const uint8_t* p = img->_data->data();
+          int            W = int(img->_width), H = int(img->_height);
+          auto AT = [&](int x, int y, int c) { return int(p[(size_t(y) * W + x) * 4 + c]); };
+          int  cR = AT(2,2,0), cG = AT(2,2,1), cB = AT(2,2,2);         // corner = slate over red
+          // non-green (bg/slate/box/hole) texels: their RED must stay ~127 (slate). A box =>
+          //  R<<127 (dark), a hole => R>>127 (full red bleeds through). Count anomalies.
+          int  nonGreen_Rmin = 255, nonGreen_Rmax = 0, axx = -1, axy = -1;
+          long anomalies = 0;
+          int  gcR = 0, gcG = 0, gcB = 0, gcGmax = 0;                  // brightest-green glyph core
+          for (int y = 0; y < H; y++)
+            for (int x = 0; x < W; x++) {
+              int r = AT(x,y,0), g = AT(x,y,1), b = AT(x,y,2);
+              if (g > 128 and g > r) { if (g > gcGmax) { gcGmax = g; gcR = r; gcG = g; gcB = b; } }
+              else { // bg/slate/box/hole
+                nonGreen_Rmin = std::min(nonGreen_Rmin, r);
+                if (r > nonGreen_Rmax) { nonGreen_Rmax = r; axx = x; axy = y; }
+                if (r < 60 or r > 210) anomalies++;                    // real box (dark) / hole (full red)
+              }
+            }
+          bool pass = (cR >= 110 and cR <= 145 and cG <= 20) and (anomalies == 0) and (gcGmax >= 150);
+          printf("[perfhud-oracle-S2-eyepass] two-pass (slate+premult text) over RED(255,0,0):\n"
+                 "   corner(bg) rgb<%d,%d,%d> (want ~127,0,0 = slate)\n"
+                 "   non-green RED range [%d..%d] (maxR @(%d,%d), W-1=%d) box/hole_anomalies<%ld> (want 0)\n"
+                 "   glyph core rgb<%d,%d,%d> (want green over slate)\n"
+                 "   => %s\n",
+                 cR, cG, cB, nonGreen_Rmin, nonGreen_Rmax, axx, axy, W-1, anomalies, gcR, gcG, gcB, pass ? "PASS" : "FAIL");
+          fflush(stdout);
+        }
+        ora_fut = nullptr; ora_buf = nullptr; ora_phase = 4;
+      }
+    }
+    // --devkeys key legend — same post-movie-pump placement; upper-left (no perfhud overlap).
+    // Drawn BEFORE the offscreen snapshot capture below so the HUD lands in --snapshot PNGs.
+    keyshud.draw(drwev->GetTarget());
     framecounter++;
     if (fps_timer.SecsSinceStart() > 5.0f) {
       float FPS = float(framecounter) / fps_timer.SecsSinceStart();
@@ -809,6 +1452,17 @@ int main(int argc, char** argv, char** envp) {
                            movie_path.c_str(), movie_frames, int(movie_fps));
               os_phase = 2;
               os_movie = 0;
+            } else if (not snapshot_path.empty()) {
+              // SNAPSHOT: enter the capture/verify drain (phase 4). The actual
+              // capture is issued THERE, per-frame, so it lands on a warm
+              // (non-black) composite frame rather than this settle boundary.
+              // --snapshot-frame N overrides the first-lit heuristic: hold in
+              // the drain and only capture once os_frame >= N (deterministic).
+              deco::printf(fvec3::Yellow(), "ork.ecs.player: OFFSCREEN SNAPSHOT -> %s (%s)\n",
+                           snapshot_path.c_str(),
+                           snapshot_frame > 0 ? "capture+verify drain, +N after first-lit" : "capture+verify drain");
+              os_phase     = 4;
+              os_snapdrain = 0;
             } else {
               deco::printf(fvec3::Green(), "ork.ecs.player: OFFSCREEN materialize done (frame %d) — exiting\n", os_frame);
               ezapp->signalExit();
@@ -832,6 +1486,92 @@ int main(int argc, char** argv, char** envp) {
             if (os_drain >= 30 or cap) {     // pumped enough for the encoder to drain the queue
               ezapp->finishMovieRecording(); // queue now empty -> terminate returns promptly
               deco::printf(fvec3::Green(), "ork.ecs.player: movie recording finished (%d frames)\n", os_movie);
+              ezapp->signalExit();
+              os_phase = 3;
+            }
+          }
+          break;
+        case 4: // SNAPSHOT — re-issue a capture each frame, poll it, accept the first LIT frame.
+          os_snapdrain++;
+          {
+            static const int kSnapWarmup   = 5;   // let a couple of frames render before the first grab
+            static const int kSnapCap      = 600; // give up (write last frame) after this many drain frames
+            static const int kFutureStale  = 30;  // a future un-ready this long => drop it + re-issue (queue was parked)
+            auto ctx = drwev->GetTarget();
+            auto fbi = ctx->FBI();
+            auto rtb = fbi->_main_rtg->buffer(0);
+            // (1) Harvest an in-flight capture once its readback lands.
+            if (snap_future) {
+              if (snap_future->isReady()) {
+                auto img = snap_capbuf ? snap_capbuf->_image : nullptr;
+                // "Lit" = enough pixels with a non-zero COLOR channel. Scan RGB
+                // only (skip alpha: main_rtg clears to opaque black (0,0,0,255),
+                // so counting alpha bytes would read a black frame as lit) and
+                // require a real pixel population (a stray pixel isn't a render).
+                size_t lit_px = 0, tot_px = 0;
+                uint8_t rgbmax = 0;
+                if (img and img->_data) {
+                  const uint8_t* p = img->_data->data();
+                  size_t         n = img->_data->length();
+                  tot_px = n / 4;
+                  for (size_t i = 0; i + 3 < n; i += 4) {
+                    uint8_t r = p[i], g = p[i + 1], b = p[i + 2];
+                    uint8_t m = std::max(r, std::max(g, b));
+                    if (m > rgbmax) rgbmax = m;
+                    if (r or g or b) lit_px++;
+                  }
+                }
+                bool has_color = (tot_px > 0) and (lit_px * 1000 >= tot_px); // >=0.1% pixels colored
+                // Record when the composite FIRST goes lit; then --snapshot-frame
+                // N accepts N drain-frames LATER (relative to first-lit, so the
+                // caller need not know the variable settle/warmup). N=0 => accept
+                // at first-lit (the default/auto behavior).
+                if (has_color and snap_first_lit < 0)
+                  snap_first_lit = os_snapdrain;
+                bool lit = has_color and (snap_first_lit >= 0)
+                           and (os_snapdrain >= snap_first_lit + snapshot_frame);
+                const char* probe_tag = (not has_color) ? "black" : (lit ? "LIT" : "wait");
+                printf("ork.ecs.player: SNAPSHOT probe drain<%d> px<%zu> lit_px<%zu> rgbmax<%d> => %s\n",
+                       os_snapdrain, tot_px, lit_px, int(rgbmax), probe_tag);
+                snap_last_capbuf = snap_capbuf; // remember the newest landed frame (fallback)
+                if (lit) {
+                  img->writeToFile(file::Path(snapshot_path.c_str()));
+                  printf("ork.ecs.player: SNAPSHOT wrote %s (lit, drain %d)\n", snapshot_path.c_str(), os_snapdrain);
+                  os_snap_done->store(true);
+                }
+                snap_future = nullptr;
+                snap_capbuf = nullptr;
+              } else if (os_snapdrain - snap_issue_drain > kFutureStale) {
+                // Readback never completed (idle concurrentQueue) — drop it and
+                // re-issue; the fresh per-frame captures keep the pool awake.
+                snap_future = nullptr;
+                snap_capbuf = nullptr;
+              }
+            }
+            // (2) No capture in flight and not done yet — issue a fresh one
+            //     (every drain frame past warmup: needed to detect first-lit and
+            //     then to keep sampling until first-lit + snapshot_frame).
+            if (not os_snap_done->load() and not snap_future and os_snapdrain >= kSnapWarmup) {
+              snap_capbuf      = std::make_shared<CaptureBuffer>();
+              snap_future      = fbi->captureAsFormat(rtb.get(), snap_capbuf, EBufferFormat::RGBA8);
+              snap_issue_drain = os_snapdrain;
+            }
+            // (3) Exit when we have a lit frame or ran out of the drain's OWN budget.
+            //     NOT on `cap` (the settle safety-cap): a CAP-settled-but-rendering
+            //     scene (scn_forest's terrain_texbake stalls offscreen, so it never
+            //     genuinely settles) must still get its full kSnapCap drain to capture
+            //     a lit frame — else the already-true cap aborts on drain frame 1.
+            if (os_snap_done->load() or os_snapdrain >= kSnapCap) {
+              if (not os_snap_done->load()) {
+                // Never observed a lit frame — write the last thing we captured (so
+                // there is always an output) and flag it loudly.
+                deco::printf(fvec3::Red(),
+                             "ork.ecs.player: SNAPSHOT never went lit (%d drain frames) — writing last captured frame\n",
+                             os_snapdrain);
+                if (snap_last_capbuf and snap_last_capbuf->_image)
+                  snap_last_capbuf->_image->writeToFile(file::Path(snapshot_path.c_str()));
+              }
+              deco::printf(fvec3::Green(), "ork.ecs.player: OFFSCREEN snapshot done (frame %d) — exiting\n", os_frame);
               ezapp->signalExit();
               os_phase = 3;
             }

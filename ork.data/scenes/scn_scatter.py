@@ -22,6 +22,7 @@ from ork.hypergraph.dflow.terrain.gpu_chunk import TerrainChunkVertexSource
 from ork.hypergraph.assets.materials.terrain.solid import Solid
 from ork.hypergraph.assets.materials.terrain.ground import Ground
 from ork.hypergraph.colors import hsv
+from ork.hypergraph.units import meters
 
 lev2_pyexdir.addToSysPath()
 
@@ -107,15 +108,17 @@ class ScatterScene(Scene):
         dsl_file       = "scatterhills",
         dimension      = DIM,
         extent_m       = EXTENT_M,
-        height_scale_m = HEIGHT_M)
+        relief         = meters(HEIGHT_M))
 
     # GROUND NOISE (10mph optical flow): patch band 64m..4m mixes dirt<->dry-grass,
     # detail band 4m..0.06m modulates brightness — both band-limited (clean at 2km).
     terra_mat = self.asset.Ptex3d(
         "terra_mat",
         dsl_class     = Ground,
+        # natural-units era: heights[] is TRUE METERS — the vertex source takes no
+        # height scale (HEIGHT_M lives only in the DSL relief above).
         vertex_source = TerrainChunkVertexSource(
-            dim=DIM, extent_m=EXTENT_M, height_m=HEIGHT_M, chunk=CHUNK),
+            dim=DIM, extent_m=EXTENT_M, chunk=CHUNK),
         albedo_lo     = hsv(200,0.2,0.7),
         albedo_hi     = hsv(200,0.1,0.75),
         detail        = 0.35,

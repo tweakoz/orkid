@@ -281,7 +281,7 @@ bool VkComputePipelineState::createPipeline(vkfxsstage_ptr_t computeShader) {
   pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
   pipelineInfo.basePipelineIndex = -1;
 
-  result = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_pipeline);
+  result = vkCreateComputePipelines(device, _contextVK->_vkPipelineCache, 1, &pipelineInfo, nullptr, &_pipeline);
   if (result != VK_SUCCESS) {
     printf("createPipeline<%s>: FAILED vkCreateComputePipelines result<%d>\n", _name.c_str(), int(result));
     return false;
@@ -383,6 +383,7 @@ void VkComputeInterface::beginDispatchPhase() {
   );
 
   _dispatchCount = 0;
+  _transferCount = 0;
   _inDispatchPhase = true;
   // new generation: per-dispatch descriptor-set rings recycle from cursor 0 (the
   // prior phase's command buffer has completed, so its sets are free to rewrite).
@@ -426,6 +427,7 @@ void VkComputeInterface::copyBufferRegion(
   region.dstOffset = dst_offset;
   region.size = size;
   vkCmdCopyBuffer(_computeCmdBuf, vk_src->_vkbuffer, vk_dst->_vkbuffer, 1, &region);
+  _transferCount++; // a copy-only phase must still submit (see endDispatchPhase gate)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -447,6 +449,7 @@ void VkComputeInterface::copySSBOToVertexBuffer(
   region.dstOffset = dst_offset;
   region.size = size;
   vkCmdCopyBuffer(_computeCmdBuf, vk_src->_vkbuffer, vk_vb->_vkbuffer->_vkbuffer, 1, &region);
+  _transferCount++; // a copy-only phase must still submit (see endDispatchPhase gate)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -482,8 +485,9 @@ void VkComputeInterface::endDispatchPhase() {
   // End the compute command buffer
   vkEndCommandBuffer(_computeCmdBuf);
 
-  // Only submit if we actually dispatched something
-  if (_dispatchCount > 0) {
+  // Only submit if we recorded GPU work — a compute dispatch OR a buffer-copy transfer
+  // (a copy-only phase, e.g. a SubGraph/Loop carry copy, has no dispatch but must submit).
+  if (_dispatchCount > 0 || _transferCount > 0) {
     if (_phaseFence == VK_NULL_HANDLE) {           // persistent fence (created once; reset per use)
       VkFenceCreateInfo fenceInfo{};
       fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;

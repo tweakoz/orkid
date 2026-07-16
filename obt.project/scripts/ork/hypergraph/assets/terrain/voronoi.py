@@ -8,6 +8,7 @@
 ###############################################################################
 from ork.hypergraph.dflow.terrain import HeightField
 from ork.hypergraph.dflow import terrain as T
+from ork.hypergraph.units import cycles, meters
 from ork.hypergraph.assets.materials.terrain import Fbm
 from orkengine.core import vec3, mtx4, quat
 
@@ -17,7 +18,6 @@ xf = mtx4.composed(
     0.01 )
 
 class Voronoi(HeightField):
-    HEIGHT_M       = 2000.0
     MATERIAL_CLASS = Fbm
     MATERIAL_PARAMS = {
       "albedo": vec3(0.25),
@@ -27,6 +27,10 @@ class Voronoi(HeightField):
       "aa": 0.5
     }
 
-    def __init__(self, frequency=8.0, octaves=1):   # octaves=1 = pure primitive
+    def __init__(self, frequency=cycles(8), octaves=1, amplitude=meters(2000)):  # octaves=1 = pure primitive
         super().__init__()
-        self.capture(T.voronoi(frequency=frequency, octaves=octaves), "height")
+        # TYPED LITERALS (E0 part 2): frequency is spatial frequency (cycles across the map),
+        # amplitude IS the relief in TRUE METERS — the units ride the value, so the unit
+        # suffix comes off the name (amplitude_m -> amplitude). A Terrain Parameter.
+        self.capture(T.voronoi(frequency=frequency, octaves=octaves,
+                            amplitude=amplitude), "height")

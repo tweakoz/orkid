@@ -36,6 +36,7 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeSSSS.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeHeatDistort.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeHSVG.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeACES.h>
 #include <ork/lev2/gfx/scenegraph/scenegraph.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_grid.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_billboard.h>
@@ -44,6 +45,7 @@
 #include <ork/lev2/gfx/scenegraph/sgnode_imposter.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/vr/vr.h>
+#include <ork/lev2/vr/openxr.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/particle/modular_particles2.h>
 #include <ork/lev2/gfx/particle/modular_emitters.h>
@@ -248,6 +250,7 @@ namespace dummy{
 }
 
 void registerEnums();
+bool selectVrDeviceFromEnv(); // OPENXR X2 — defined below; selects OpenXR device pre-Vulkan.
 
 
 struct ClassToucher {
@@ -273,6 +276,15 @@ struct ClassToucher {
           GRAPHICS_API  = "DUMMY"_crcu;
         }
       }
+
+      ////////////////////////////////////////
+      // OPENXR X2: select the VR device (from ORKID_VR_DRIVER) BEFORE the loader
+      //  context is created, so an OpenXR device participates in the X1 pre-graphics
+      //  seam. The non-deferred path creates the loader context immediately below;
+      //  the deferred/subsystem path creates it later (GfxInit re-selects there).
+      ////////////////////////////////////////
+
+      selectVrDeviceFromEnv();
 
       ////////////////////////////////////////
       // Create loader context now unless deferred for subsystem mode
@@ -395,6 +407,10 @@ struct ClassToucher {
     terrain::FlowErodeModuleData::GetClassStatic();
     terrain::FillClosedBasinsModuleData::GetClassStatic();
     terrain::CaptureModuleData::GetClassStatic();
+    // composite (subgraph / loop) terrain runtime subclasses — the core dflow schema
+    // (SubGraphModuleData/LoopModuleData + bindings) is touched in reflection_init.cpp.
+    terrain::TerrainSubGraphModuleData::GetClassStatic();
+    terrain::TerrainLoopModuleData::GetClassStatic();
     // custom image-plug classes MUST be touched too, or JsonDeserializer can't
     // resolve "terrain::hfimg{out,inp}plug" on load (mirrors particlebuf plugs).
     terrain::hfimg_outplugdata_t::GetClassStatic();
@@ -432,6 +448,15 @@ struct ClassToucher {
     hypermesh::LeafScatterModuleData::GetClassStatic(); // organ: phyllotactic leaf-card scatter on the skeleton (touch -> reflect props -> cook-hash param sensitivity)
     hypermesh::MergeMeshData::GetClassStatic();         // concat two meshes + per-source gid (bake leaves into trunk)
     hypermesh::GpuComputeModuleData::GetClassStatic(); // generic per-vertex GPU compute (shader-text deformer, no new C++)
+    // GR1.a — the LRuleSet grammar-as-data schema. SIX independent touches (T1): each serializes
+    // as a sub-object inside LSystemModuleData._grammar; an untouched class strips to "class": ""
+    // in the JSON + FindClass-null-deserializes SILENTLY. All six, always.
+    hypermesh::LExpr::GetClassStatic();
+    hypermesh::LSymbolDef::GetClassStatic();
+    hypermesh::LTurtleOp::GetClassStatic();
+    hypermesh::LParamBinding::GetClassStatic();
+    hypermesh::LRuleDef::GetClassStatic();
+    hypermesh::LRuleSet::GetClassStatic();
     hypermesh::mesh_outplugdata_t::GetClassStatic();
     hypermesh::mesh_inplugdata_t::GetClassStatic();
     dflowgfx::instset_outplugdata_t::GetClassStatic(); // E.2: InstanceSet interchange plugs
@@ -709,6 +734,10 @@ struct ClassToucher {
     // HSVG grade post-fx node — same polymorphic-map deserialize requirement;
     // without this touch the .ecs "class":"PostFxNodeHSVG" fails objclazz lookup.
     RegisterClassX(PostFxNodeHSVG);
+    // ACES tonemap post-fx node — the player's --devkeys injects it into the SG
+    // _postfx_nodes map, so the Cmd+R round-trip re-deserializes "PostFxNodeACES";
+    // without this touch that FindClass fails objclazz (JsonDeserializer assert).
+    RegisterClassX(PostFxNodeACES);
 
     //////////////////////////////////////////
   }
@@ -721,7 +750,42 @@ struct ClassToucher {
 
 using classinit_ptr_t = std::shared_ptr<ClassToucher>;
 
+// OPENXR X2 minimal instantiation. When ORKID_VR_DRIVER=openxr (and ENABLE_OPENXR),
+// select the OpenXR device (a process singleton) as the active VR device. Idempotent
+// — safe to call from multiple init sites. Returns true when OpenXR was selected.
+// Must run BEFORE the backend creates its Vulkan instance so OpenXrDevice::
+// preGraphicsInit participates in the X1 seam; the loader context is created inside
+// the ClassToucher (non-deferred) OR in bindGfxToCurrentThread (deferred/subsystem),
+// so this is invoked at both the ClassToucher graphics-init site (before that
+// createLoaderContext) and GfxInit (which covers the deferred path).
+bool selectVrDeviceFromEnv() {
+#if defined(ENABLE_OPENXR)
+  std::string drv;
+  if (genviron.get("ORKID_VR_DRIVER", drv) and drv == "openxr") {
+    auto xrdev = ork::lev2::orkidvr::openxr_::openxr_device();
+    ork::lev2::orkidvr::setDevice(xrdev);
+    return true;
+  }
+#endif
+  return false;
+}
+
 void GfxInit(const std::string& gfxlayer) {
+#if defined(ENABLE_OPENXR)
+  // Pose/FOV math self-test (no runtime, no scene): prints verdict lines a repo
+  // test greps. Runs regardless of the selected driver.
+  {
+    std::string st;
+    if (genviron.get("ORKID_OPENXR_SELFTEST", st) and st == "1")
+      ork::lev2::orkidvr::openxr_::runSelfTests();
+  }
+#endif
+  // If its pre-graphics phase already failed (no runtime), the OpenXR device stays
+  // inactive and downstream behaves as NoVR-equivalent (the SceneGraphSystem VR-
+  // preset path re-defaults to NoVR; X4 owns making the success path stick). Full
+  // driver selection/pybind is a later slice.
+  if (selectVrDeviceFromEnv())
+    return;
   auto def_vrdev = std::make_shared<ork::lev2::orkidvr::novr::NoVrDevice>();
   ork::lev2::orkidvr::setDevice(def_vrdev);
 }

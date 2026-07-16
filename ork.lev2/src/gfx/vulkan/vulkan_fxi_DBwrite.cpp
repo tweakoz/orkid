@@ -9,6 +9,8 @@
 #include "vulkan_ub_layout.inl"
 #include "../shadlang/shadlang_backend_spirv.h"
 #include <ork/file/chunkfile.inl>
+#include <ork/kernel/opq.h>       // WS3 parallel shader JIT
+#include <ork/kernel/semaphore.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
@@ -388,11 +390,27 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
 
   size_t num_shaders_written = 0;
 
-  auto write_shader_to_stream = [&](astnode_ptr_t shader_node, //
-                                    std::string shader_type) { //
+  // WS3 PARALLEL JIT — three passes:
+  //   1) EMIT (serial): GLSL emission mutates the shared transunit AST + compiler
+  //      members, so shaders are emitted one at a time in deterministic order.
+  //   2) COMPILE (parallel): shaderc GLSL->SPIR-V is a pure function of
+  //      (name, glsl, kind) — one job per shader on the concurrent queue.
+  //   3) WRITE (serial): original order, so the chunkfile bytes are identical to
+  //      the old serial path (the shader-cache format does not change).
+  struct PendingShaderCompile {
+    shadlang::SHAST::astnode_ptr_t _node;
+    std::string _type_string;
+    shadlang::spirv::SpirvCompiler::EmittedShader _emitted;
+    shadlang::spirv::shader_bin_t _binary;
+  };
+  std::vector<PendingShaderCompile> pending_compiles;
+
+  auto write_shader_to_stream = [&](astnode_ptr_t shader_node,          //
+                                    std::string shader_type,            //
+                                    const shadlang::spirv::shader_bin_t& spirv_binary) { //
     auto sh_name  = shader_node->typedValueForKey<std::string>("object_name").value();
-    auto sh_data  = (uint8_t*)SPC->_spirv_binary.data();
-    size_t sh_len = SPC->_spirv_binary.size() * sizeof(uint32_t);
+    auto sh_data  = (uint8_t*)spirv_binary.data();
+    size_t sh_len = spirv_binary.size() * sizeof(uint32_t);
     shader_stream->AddIndexedString("shader", chunkwriter);
     shader_stream->AddIndexedString(shader_type, chunkwriter);
     shader_stream->AddIndexedString(sh_name, chunkwriter);
@@ -443,40 +461,46 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
   };
 
   //////////////////
-  // vertex shaders
+  // pass 1: EMIT all shaders (serial — AST-mutating), in deterministic order
   //////////////////
 
-  for (auto vshader : vtx_shaders) {
-    SPC->processShader(vshader);
-    write_shader_to_stream(vshader, "vertex");
+  for (auto vshader : vtx_shaders)
+    pending_compiles.push_back({vshader, "vertex", SPC->emitShader(vshader), {}});
+  for (auto gshader : geo_shaders)
+    pending_compiles.push_back({gshader, "geometry", SPC->emitShader(gshader), {}});
+  for (auto fshader : frg_shaders)
+    pending_compiles.push_back({fshader, "fragment", SPC->emitShader(fshader), {}});
+  for (auto cshader : cu_shaders)
+    pending_compiles.push_back({cshader, "compute", SPC->emitShader(cshader), {}});
+
+  //////////////////
+  // pass 2: COMPILE on workers (shaderc is per-call-local); join before writing
+  //////////////////
+
+  if (pending_compiles.size() > 1) {
+    ork::semaphore compile_sema("vkfx_parallel_jit");
+    for (auto& pc : pending_compiles) {
+      auto pcp = &pc;
+      opq::concurrentQueue()->enqueue([pcp, &compile_sema]() {
+        pcp->_binary = shadlang::spirv::SpirvCompiler::compileGlslToSpirv(
+            pcp->_emitted._name, pcp->_emitted._glsl, pcp->_emitted._kind);
+        compile_sema.notify();
+      }, "vkfx_jit");
+    }
+    for (size_t j = 0; j < pending_compiles.size(); j++)
+      compile_sema.wait();
+  } else {
+    for (auto& pc : pending_compiles)
+      pc._binary = shadlang::spirv::SpirvCompiler::compileGlslToSpirv(
+          pc._emitted._name, pc._emitted._glsl, pc._emitted._kind);
   }
 
   //////////////////
-  // fragment shaders
+  // pass 3: WRITE in the original deterministic order
   //////////////////
 
-  for (auto gshader : geo_shaders) {
-    SPC->processShader(gshader);
-    write_shader_to_stream(gshader, "geometry");
-  }
-
-  //////////////////
-  // fragment shaders
-  //////////////////
-
-  for (auto fshader : frg_shaders) {
-    SPC->processShader(fshader);
-    write_shader_to_stream(fshader, "fragment");
-  }
-
-  //////////////////
-  // compute shaders
-  //////////////////
-
-  for (auto cshader : cu_shaders) {
-    SPC->processShader(cshader); //
-    write_shader_to_stream(cshader, "compute");
-  }
+  for (auto& pc : pending_compiles)
+    write_shader_to_stream(pc._node, pc._type_string, pc._binary);
 
   //////////////////
   // state blocks

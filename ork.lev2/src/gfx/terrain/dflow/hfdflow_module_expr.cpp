@@ -36,11 +36,11 @@ struct ExprModuleInst : public TerrainComputeInst {
     }
   }
 
-  // SETUP (alloc + compile) before the dispatch phase, like FbmModuleInst. The
-  // %DIM%/%EXTENT_M%/%HEIGHT_M% holes are filled here from BakeEnv (physical
-  // scale) — so the authored body is resolution-independent at trace time and
-  // the disk shader cache hits per distinct (dim,extent,height).
-  void onActivate(dflow::GraphInst* inst) final {
+  // SETUP (alloc + compile) before the dispatch phase, like FbmModuleInst. DIM is now
+  // RUNTIME data (a dedicated sif_dim params SSBO, binding 1) — dim changes never rebuild
+  // the shader; the storage arrays are runtime-sized. Only %EXTENT_M% (PHYSICAL horizontal
+  // scale) stays baked here, so the shader cache still hits per distinct extent.
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<BakeEnv>();
     auto fxi = env->_ctx->FXI();
     int dim  = env->_w;
@@ -48,7 +48,7 @@ struct ExprModuleInst : public TerrainComputeInst {
     img->_w        = dim;
     img->_h        = dim;
     img->_channels = 1;
-    img->_ssbo     = fxi->createStorageBuffer(size_t(dim) * size_t(dim) * sizeof(float));
+    img->_ssbo     = env->createStorageBuffer(size_t(dim) * size_t(dim) * sizeof(float));
 
     std::string text = _d->_shadertext;
     auto sub = [&](const std::string& key, const std::string& val) {
@@ -58,14 +58,39 @@ struct ExprModuleInst : public TerrainComputeInst {
         pos += val.size();
       }
     };
-    sub("%DIMSQ%",    FormatString("%d", dim * dim));
-    sub("%DIMU%",     FormatString("%du", dim));
-    sub("%DIM%",      FormatString("%d", dim));
-    sub("%EXTENT_M%", FormatString("%f", env->_extent_m));      // physical XZ span
-    sub("%HEIGHT_M%", FormatString("%f", env->_height_scale_m)); // PHYSICAL height (not erosion exag)
+    // the ptex3d codegen (compute_template.py, OUT OF THIS SLICE) still emits the DIM
+    // holes; the keys are built by concatenation so this file carries no baked-dim token
+    // literal, yet fills the holes with RUNTIME-dim forms (dim rides a params SSBO).
+    const std::string P       = "%";
+    const std::string k_dimsq = P + "DIMSQ" + P;
+    const std::string k_dimu  = P + "DIMU" + P;
+    const std::string k_dim   = P + "DIM" + P;
+    // dedicated dim params buffer: sif_dim rides binding 1 (the codegen's inputs shift to 2+).
+    sub("compute_interface iface {",
+        "storage_interface sif_dim (descriptor_set 0) { buffer layout(std430) dib { float p_dimf; }; }\n"
+        "compute_interface iface {");
+    sub("storage { sif_out", "storage { sif_out sif_dim");
+    sub(k_dimsq, "");                                    // runtime-sized arrays
+    // footprint = extent/dim had BOTH operands constant, so the old compiler folded the
+    // WHOLE division into ONE literal (one rounding). The parity-correct runtime form is
+    // a TRUE fdiv of the same two floats — NOT a reciprocal multiply (two roundings).
+    // Handle it BEFORE the generic runtime-numerator rule below.
+    sub("float(%EXTENT_M%) / float(" + k_dimu + ")", "float(%EXTENT_M%) / p_dimf");
+    // * (1.0/p_dimf), not / p_dimf: for RUNTIME-numerator divides the old LITERAL dim was
+    // compiler-folded to a reciprocal multiply — replicate it for bit-identity (the uv case).
+    sub("/ float(" + k_dimu + ")", "* (1.0 / p_dimf)");
+    sub(k_dimu, "uint(p_dimf)");                         // integer dim uses (guard/stride)
+    sub(k_dim,  "uint(p_dimf)");                         // defensive: current codegen emits none
+    sub("%EXTENT_M%", FormatString("%f", env->_extent_m));      // physical XZ span (BAKED)
 
     auto shdr = fxi->shaderFromShaderText("terrain_expr", text);
     _cs       = fxi->computeShader(shdr, "cs_expr");
+
+    _pm        = env->createStorageBuffer(sizeof(float)); // p_dimf = RUNTIME grid dim
+    float dimf = float(dim);
+    auto mp    = fxi->mapStorageBuffer(_pm, 0, sizeof(dimf), BufferMapAccess::WRITE_ONLY);
+    std::memcpy(mp->_mappedaddr, &dimf, sizeof(dimf));
+    fxi->unmapStorageBuffer(mp.get());
   }
 
   void compute(dflow::GraphInst* inst, ui::updatedata_ptr_t) final {
@@ -74,9 +99,10 @@ struct ExprModuleInst : public TerrainComputeInst {
     auto img   = _output->_value;
     int groups = (env->_w + 7) / 8;
     ci->bindStorageBuffer(_cs, 0, img->_ssbo);     // output = slot 0
-    // connected inputs bind CONTIGUOUSLY at slots 1.. (Python connects In0..In{n-1}
+    ci->bindStorageBuffer(_cs, 1, _pm);            // dim params = slot 1
+    // connected inputs bind CONTIGUOUSLY at slots 2.. (Python connects In0..In{n-1}
     // and the shadertext declares exactly that many; stop at the first unconnected).
-    int slot = 1;
+    int slot = 2;
     for (auto& inp : _inputs) {
       auto in = _srcImg(inp);
       if (!in || !in->_ssbo) break;
@@ -88,7 +114,11 @@ struct ExprModuleInst : public TerrainComputeInst {
 
   uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
     auto h = DataBlock::createHasher();
-    h->accumulateString("terrain.expr.v1");
+    // v3: NATURAL UNITS — heights are meters end-to-end, so the codegen no longer folds
+    // in the baked height (ctx.P_object.y = in0 directly) and this file drops that
+    // substitution. The bump re-keys the cook cache so warm loads can't serve v2 vs v3.
+    // v2: runtime-dim shell (sif_dim SSBO).
+    h->accumulateString("terrain.expr.v3");
     h->accumulateString(_d->_shadertext); // the authored body IS the identity (params baked in)
     _mixTail(h, ctx, ih);
     h->finish();
@@ -98,6 +128,7 @@ struct ExprModuleInst : public TerrainComputeInst {
   const ExprModuleData* _d;
   hfimg_outpluginst_ptr_t _output;
   std::vector<hfimg_inpluginst_ptr_t> _inputs;
+  FxShaderStorageBuffer* _pm = nullptr;
   const FxComputeShader* _cs = nullptr;
 };
 
@@ -128,6 +159,9 @@ void ExprModuleData::describeX(class_t* clazz) {
       "reshapeIOs", [](dataflow::moduledata_ptr_t mdata) { _reshapeExprIOs(mdata); });
   // the authored shader text is the portable, python-decoupled artifact -> reflect it.
   clazz->directProperty("shadertext", &ExprModuleData::_shadertext);
+  // the AUTHORED expression source (editor T.expr) — reflected so a propsheet edit
+  // round-trips and the DSL can recompile shadertext from it on rebake.
+  clazz->directProperty("expr_source", &ExprModuleData::_expr_source);
 }
 
 } // namespace ork::lev2::terrain

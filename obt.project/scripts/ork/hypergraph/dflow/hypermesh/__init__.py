@@ -229,11 +229,20 @@ class Hypermesh:
               roll=137.5, len_decay=0.78, rad_decay=0.72, taper=0.0, tropism=0.0,
               jitter=0.0, apical=0.0, cap_segments=3, cap_round=1.0,
               jit_azimuth=None, jit_pitch=None, jit_length=None, jit_spacing=None,
-              jit_drop=None, jit_wave=None):
+              jit_drop=None, jit_wave=None, grammar=None):
     # L-system FAMILY (M1): an LSystemModule grows a parametric/stochastic XfNodeGraph
     # branch skeleton, an LSweepModule skins it to a swept-tube GpuMesh. Returns the
-    # (mesh) sweep node. `archetype`: 0 sympodial 1 conifer 2 saguaro 3 ocotillo.
+    # (mesh) sweep node.
+    #   grammar=  : GR-1 REFLECTED path — a reflected LRuleSet (from the ork.hypergraph.dflow.lsystem
+    #               DSL: an LRuleSet, an Lsystem subclass/instance, or a builder). The C++ evaluator
+    #               (derive() in _buildSkeleton) rewrites+turtle-interprets it into the XfNodeGraph.
+    #               The 21 scalar params below stay live as the grammar's PARAM environment (A8).
+    #   archetype=: LEGACY hardcoded-procedure path (0 sympodial 1 conifer 2 saguaro 3 ocotillo) —
+    #               the default while grammar is None (deleted at GR1.d). `archetype`: 0..3.
     ls = _lev2.hypermesh.LSystemModule.createShared()
+    if grammar is not None:
+      from ork.hypergraph.dflow.lsystem import resolve_grammar
+      ls.grammar = resolve_grammar(grammar)   # reflected LRuleSet -> LSystemModuleData._grammar
     ls.archetype    = int(archetype)
     ls.depth        = int(depth)
     ls.budget       = int(budget)

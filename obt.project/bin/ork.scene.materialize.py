@@ -60,6 +60,12 @@ def parse_args():
                  help="also record an offscreen movie to PATH (mp4)")
   p.add_argument("--moviefps", type=float, default=60.0, help="movie fps (with --movie)")
   p.add_argument("--movieframes", type=int, default=None, help="movie frame count (with --movie)")
+  p.add_argument("--snapshot", "-S", default=None, metavar="PATH",
+                 help="write the settled offscreen frame to PATH (png) — the #42 capture-on-warm-frame path")
+  p.add_argument("--snapshot-frame", type=int, default=0, metavar="N",
+                 help="capture --snapshot N frames after first-lit (deterministic; 0=at first-lit)")
+  p.add_argument("-F", dest="fcount", type=int, default=0, metavar="N",
+                 help="frame count, context-sensitive: --snapshot-frame with -S, --movieframes with --movie")
   p.add_argument("--list", action="store_true", help="list available scenes")
   return p.parse_args()
 
@@ -139,8 +145,17 @@ def main():
     cmd += ["--frames", str(args.frames)]
   if args.movie:
     cmd += ["--movie", args.movie, "--moviefps", str(args.moviefps)]
-    if args.movieframes:
-      cmd += ["--movieframes", str(args.movieframes)]
+    _mf = args.movieframes or args.fcount      # explicit --movieframes, else context -F
+    if _mf:
+      cmd += ["--movieframes", str(_mf)]
+  if args.snapshot and args.movie:
+    print("ork.scene.materialize: --snapshot/-S and --movie are mutually exclusive", file=sys.stderr)
+    sys.exit(2)
+  if args.snapshot:
+    cmd += ["--snapshot", args.snapshot]
+    _sf = args.snapshot_frame or args.fcount   # explicit --snapshot-frame, else context -F
+    if _sf:
+      cmd += ["--snapshot-frame", str(_sf)]
   print(f"ork.scene.materialize: launching {os.path.basename(runner)} {' '.join(cmd[1:])}",
         file=sys.stderr)
   rc = subprocess.run(cmd).returncode
@@ -155,6 +170,9 @@ def main():
       exists = os.path.isfile(pp)
       ok = ok and exists
       print(f"   [{'OK ' if exists else 'MISS'}] {pp}", file=sys.stderr)
+  if args.snapshot:
+    sok = os.path.isfile(args.snapshot)
+    print(f"   [{'OK ' if sok else 'MISS'}] snapshot {args.snapshot}", file=sys.stderr)
   if args.movie:
     mok = os.path.isfile(args.movie)
     ok = ok and mok

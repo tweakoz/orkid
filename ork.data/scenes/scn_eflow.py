@@ -41,10 +41,11 @@ class ErodeFlowScene(Scene):
     self.terrain(
         "erodeflow",
         dsl_file  = "erodeflow",
+        spawn=vec3(-630.3, 969.4, 282.5),
         render_dimension = 1600,
         mode      = "stored",   # Phase-1: capture the proctex to <assetcache>/ptex3d_capture/<key>/ (cached)
-        bake_dimension  = 2048,
-        bake_res  = 4096,                
+        bake_dimension  = 1600,
+        bake_res  = 1600,                
         walkable  = True)
 
     self.projectile_pool(fire=True)   # '/' shoots fireballs (gaze-aimed in VR)

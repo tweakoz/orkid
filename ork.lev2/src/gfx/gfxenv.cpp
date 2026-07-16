@@ -460,6 +460,24 @@ void GfxEnv::atomicOp(recursive_mutex::atomicop_t op) {
 }
 
 /////////////////////////////////////////////////////////////////////////
+// GPU-shutdown latch. Namespace-scope atomic (constant-initialized,
+// trivially destructible) so it outlives every GPU-owning object and stays
+// readable from destructors that run during atexit static teardown.
+/////////////////////////////////////////////////////////////////////////
+
+namespace {
+std::atomic<bool> g_gpu_shutdown_complete{false};
+}
+
+bool GfxEnv::gpuShutdownComplete() {
+  return g_gpu_shutdown_complete.load();
+}
+
+void GfxEnv::setGpuShutdownComplete(bool v) {
+  g_gpu_shutdown_complete.store(v);
+}
+
+/////////////////////////////////////////////////////////////////////////
 
 void GfxEnv::RegisterWinContext(Window* pWin) {
   // orkprintf("GfxEnv::RegisterWinContext\n");

@@ -14,11 +14,13 @@ from ork.hypergraph.dflow.terrain import HeightField
 from ork.hypergraph.dflow import terrain as T
 ###############################################################################
 LERP = 1.0
-# erosion-only vertical exaggeration (meters that normalized 1.0 is DURING erosion).
-# Scoped to the erode ops below via their `exaggerated_height_m` param — NOT a world
-# scale (the physical world height is XXX.HEIGHT_M). Erosion is nonlinear in slope, so
-# the carve is authored at this exaggerated relief; measurements stay physical.
-EROSION_HEIGHT_M = 164000.0
+# authored vertical relief in meters (natural units; heights are TRUE METERS end-to-end).
+AMPLITUDE_M = 4000.0
+# AUTHORED erosion exaggeration (replaces the old per-op `exaggerated_height_m` plug):
+# the thermal op carves at ERO_EXAG x the true relief via a visible remap (scale up
+# before, scale back after). Erosion is nonlinear in slope, so this authors strong
+# carving at gentle true relief. (Old EROSION_HEIGHT_M=164000 at a 4000 m world -> 41x.)
+ERO_EXAG = 41.0
 ###############################################################################
 P1_FBM = T.ParamPack(
     frequency=4.2, 
@@ -32,12 +34,10 @@ P2_FBM = T.ParamPack(
 P1_THERM = T.ParamPack(
     talus_deg=16.0,
     rate=0.15,
-    exaggerated_height_m=EROSION_HEIGHT_M,
     iterations=50 )
 P2_THERM = T.ParamPack(
     talus_deg=16.0,
     rate=0.10,
-    exaggerated_height_m=EROSION_HEIGHT_M,
     iterations=170 )
 ###############################################################################
 P1_EROX = T.ParamPack(
@@ -48,8 +48,7 @@ P1_EROX = T.ParamPack(
     capacity_Kc=2.5,
     erosion_rate_per_s=1.0,
     deposition_rate_per_s=1.0,
-    creep_m2ps=16.0,
-    exaggerated_height_m=EROSION_HEIGHT_M )
+    creep_m2ps=16.0 )
 P2_EROX = T.ParamPack(
     sim_time_s=3.5,
     rain_mps=0.06,
@@ -58,8 +57,7 @@ P2_EROX = T.ParamPack(
     capacity_Kc=5.5,
     erosion_rate_per_s=3.0,
     deposition_rate_per_s=1.0,
-    creep_m2ps=16.0,
-    exaggerated_height_m=EROSION_HEIGHT_M )
+    creep_m2ps=16.0 )
 ###############################################################################
 P1_PHA = T.ParamPack(
     strength=0.01,
@@ -70,7 +68,7 @@ P1_PHA = T.ParamPack(
     normalization=0.5,
     lacunarity=2.0,
     gain=0.5,
-    default_height=0.5,
+    default_height=0.5*AMPLITUDE_M,   # mid-height reference is a VALUE on the height axis (meters)
     octaves=1 )
 P2_PHA = T.ParamPack(
     strength=0.17,
@@ -81,31 +79,34 @@ P2_PHA = T.ParamPack(
     normalization=0.5,
     lacunarity=2.0,
     gain=0.5,
-    default_height=0.5,
+    default_height=0.5*AMPLITUDE_M,   # mid-height reference is a VALUE on the height axis (meters)
     octaves=1 )
 ###############################################################################
 
 class XXX(HeightField):
     # ---- authored PHYSICAL world scale (read by the viewer / asset / segmentation) ----
-    # The erosion exaggeration is NOT here — it's EROSION_HEIGHT_M, wired into the erode
-    # ParamPacks above via `exaggerated_height_m` (erosion-scoped, not a world scale).
+    # Heights are TRUE METERS (natural units). The erosion exaggeration is authored above
+    # as ERO_EXAG (a visible remap around the thermal op), not a hidden per-op plug.
     EXTENT_M = 32768.0    # XZ meters the heightfield spans (centered at origin)
-    HEIGHT_M = 4000.0     # FINAL physical meters that a normalized height of 1.0 represents
 
     def __init__(self,iters = 64):
         ####################################
         super().__init__()
         ero_out = T.Const(0)
         ####################################
-        base = T.Fbm( T.lerp(P1_FBM,P2_FBM,LERP) ) * 0.5 + 0.5        
+        base = (T.Fbm( T.lerp(P1_FBM,P2_FBM,LERP) ) * 0.5 + 0.5) * AMPLITUDE_M
         ero_bas = base*0.03
         ####################################
-        for i in range(0,iters):
-          ero_inp = ero_out+ero_bas
-          ero_out = T.basin_fill(ero_inp,blend=0.5) 
-          ero_out = T.erode_thermal( ero_out,T.lerp(P1_THERM,P2_THERM,LERP))
-          flow = T.flow3d(ero_out)
-          ero_out = T.flow_erode(ero_out, flow.discharge,
+        # T.loop (not raw for): the document keeps ONE loop group (editor-collapsible,
+        # count editable). ero_bas is loop-invariant (created outside, read each pass).
+        with T.loop(iters, ero_out=ero_out) as L:
+          ero_inp = L.ero_out+ero_bas
+          eo = T.basin_fill(ero_inp,blend=0.5)
+          # AUTHORED exaggeration remap (replaces exaggerated_height_m): carve at ERO_EXAG x
+          # the true relief, then scale back to true meters.
+          eo = T.erode_thermal( eo*ERO_EXAG, T.lerp(P1_THERM,P2_THERM,LERP)) * (1.0/ERO_EXAG)
+          flow = T.flow3d(eo)
+          eo = T.flow_erode(eo, flow.discharge,
                               dt=8.5,           # ~1  (NOT 1000 — past ~1 the relief clamp saturates)
                               k_erode=0.5,      # incision strength        (0.05–0.3)
                               k_deposit=0.05,    # 0 = pure incision; raise to ~0.03 for valley fans
@@ -113,8 +114,9 @@ class XXX(HeightField):
                               dep_m=0.5,        # deposition AREA exponent  (~0.5 — was 20.5 !)
                               clamp_frac=8.0,
                               blend = 1.0)   # master per-step amount = fraction of local relief
-          ero_out = T.pha(ero_out,T.lerp(P1_PHA,P2_PHA,LERP),blend=0.1)          
-          ero_out = T.lpf(ero_out, cutoff_m=2, blend=0.35)  
+          eo = T.pha(eo,T.lerp(P1_PHA,P2_PHA,LERP),blend=0.1)
+          L.ero_out = T.lpf(eo, cutoff_m=2, blend=0.35)
+        ero_out = L.ero_out
         ####################################
         ero_out = T.basin_fill(ero_out, blend=0.5) 
         ero_out = T.lpf(ero_out, cutoff_m=16, blend=0.35)  

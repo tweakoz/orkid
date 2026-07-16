@@ -26,8 +26,8 @@ namespace ork::lev2::terrain {
 // Self-contained CPU build (sorted-cell union-find = the watershed MERGE TREE, exact, handles
 // flats — which terrace/lpf produce). Process cells low->high; each new local min starts a basin
 // (pit elevation = its floor); when a cell joins two basins it's their SADDLE (pour point) and the
-// shallower basin merges into the deeper. Per basin: persistence = pour - pit. `min_depth` (D) keeps
-// only basins whose persistence >= D, merging shallower sub-basins into their parent -> the level dial.
+// shallower basin merges into the deeper. Per basin: persistence = pour - pit (METERS). `min_depth`
+// (D, meters) keeps only basins whose persistence >= D, merging shallower sub-basins into their parent.
 // The domain boundary is a virtual OUTLET basin (pit = -inf) so edge-draining regions are never closed.
 //
 // Outputs:
@@ -37,7 +37,7 @@ namespace ork::lev2::terrain {
 //   CenterPit (RGBA) : RGB=3D offset (meters) from the cell to its basin PIT (deepest cell) A=dist(m).
 ///////////////////////////////////////////////////////////////////////////////
 
-static void _fillClosedBasins(const float* z, int W, int H, float D, float cell_m, float hscale_m,
+static void _fillClosedBasins(const float* z, int W, int H, float D, float cell_m,
                               float* o_filled, float* o_basin /*4n*/, float* o_center /*4n*/) {
   const int n = W * H;
   // ---- merge tree (sorted-cell union-find) ---------------------------------------------------
@@ -140,7 +140,7 @@ static void _fillClosedBasins(const float* z, int W, int H, float D, float cell_
       int pc = b_pit_cell[b];
       float dxm = float((i % W) - (pc % W)) * cell_m;
       float dzm = float((i / W) - (pc / W)) * cell_m;
-      float dhm = (zc - z[pc]) * hscale_m;
+      float dhm = (zc - z[pc]);   // meters (heights are natural units)
       o_center[4 * i + 0] = dxm; o_center[4 * i + 1] = dhm; o_center[4 * i + 2] = dzm;
       o_center[4 * i + 3] = std::sqrt(dxm * dxm + dzm * dzm + dhm * dhm);
     } else { o_center[4 * i + 0] = o_center[4 * i + 1] = o_center[4 * i + 2] = o_center[4 * i + 3] = 0.0f; }
@@ -156,16 +156,16 @@ struct FillClosedBasinsModuleInst : public TerrainComputeInst {
     _input     = typedInputNamed<HfImagePlugTraits>("In");
     _minDepth  = _floatPlug(this, _d, "min_depth");
   }
-  void onActivate(dflow::GraphInst* inst) final {
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<BakeEnv>();
     auto fxi = env->_ctx->FXI();
     int dim  = env->_w;
     size_t n = size_t(dim) * size_t(dim);
     _allocOut(env.get(), _output->_value);                          // mono filled
     _outBasin->_value->_w = dim;  _outBasin->_value->_h = dim;  _outBasin->_value->_channels = 4;
-    _outBasin->_value->_ssbo  = fxi->createStorageBuffer(n * 4 * sizeof(float));
+    _outBasin->_value->_ssbo  = env->createStorageBuffer(n * 4 * sizeof(float));
     _outCenter->_value->_w = dim; _outCenter->_value->_h = dim; _outCenter->_value->_channels = 4;
-    _outCenter->_value->_ssbo = fxi->createStorageBuffer(n * 4 * sizeof(float));
+    _outCenter->_value->_ssbo = env->createStorageBuffer(n * 4 * sizeof(float));
   }
   void compute(dflow::GraphInst* inst, ui::updatedata_ptr_t) final {
     auto env = inst->_impl.getShared<BakeEnv>();
@@ -184,7 +184,7 @@ struct FillClosedBasinsModuleInst : public TerrainComputeInst {
     auto im = fxi->mapStorageBuffer(in->_ssbo, 0, n * sizeof(float), BufferMapAccess::READ_ONLY);
     const float* z = static_cast<const float*>(im->_mappedaddr);
     std::vector<float> filled(n), basin(n * 4), center(n * 4);
-    _fillClosedBasins(z, W, H, _minDepth->value(), cell, env->_height_scale_m,
+    _fillClosedBasins(z, W, H, _minDepth->value(), cell,
                       filled.data(), basin.data(), center.data());
     fxi->unmapStorageBuffer(im.get());
     auto wb = [&](FxShaderStorageBuffer* ssbo, const float* src, size_t bytes) {
@@ -195,9 +195,17 @@ struct FillClosedBasinsModuleInst : public TerrainComputeInst {
     wb(_outBasin->_value->_ssbo,   basin.data(),  n * 4 * sizeof(float));
     wb(_outCenter->_value->_ssbo,  center.data(), n * 4 * sizeof(float));
   }
+  // WS4 fp16 wave: these planes quantize/store at fp16 (see TerrainComputeInst
+  // notes — quantize-at-production keeps warm==cold bit-exact). Version salt
+  // bumped alongside: the quantization changes the output.
+  bool cookHalfOutput(const std::string& output_name) const final {
+    return output_name == "Basin" or output_name == "CenterPit";
+  }
+
+  bool cookCacheDefault() const final { return true; } // measured cache-point class (cost-model analysis)
   uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
     auto h = DataBlock::createHasher();
-    h->accumulateString("terrain.fillclosedbasins.v1"); // CPU union-find merge tree + persistence cut
+    h->accumulateString("terrain.fillclosedbasins.v3"); // v3: heights in meters (min_depth + pit offsets in meters); v2: fp16 quantization
     h->accumulateItem<float>(_minDepth->value());
     _mixTail(h, ctx, ih);
     h->finish();
@@ -212,8 +220,8 @@ struct FillClosedBasinsModuleInst : public TerrainComputeInst {
 
 static void _reshapeFCBIOs(dataflow::moduledata_ptr_t data) {
   dflow::ModuleData::createInputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "In");
-  // persistence threshold (normalized height units): keep basins with (pour - pit) >= min_depth;
-  // shallower sub-basins merge into their parent. 0 = finest (every pit); larger = coarser.
+  // persistence threshold in METERS (heights are natural units): keep basins with
+  // (pour - pit) >= min_depth; shallower sub-basins merge into their parent. 0 = finest.
   dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "min_depth")->setValue(0.0f);
   dflow::ModuleData::createOutputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "Out");
   dflow::ModuleData::createOutputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "Basin");

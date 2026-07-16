@@ -60,8 +60,11 @@ bool TextureInterface::_loadDDSTexture(texture_ptr_t ptex, datablock_ptr_t datab
   if (ptex->_vars->hasKey("loadimmediate")) {
     lamb();
   } else {
-    auto ph = _ctx->newLoadingPhase();
+    // build locally + submit atomically — newLoadingPhase() races the
+    // drainer (see gfxenv.h), which a worker-thread load (WS5) WILL lose.
+    auto ph = std::make_shared<LoadingPhase>();
     ph->enqueueOperation([=](Context* ctx) { lamb(); });
+    _ctx->submitLoadingPhase(ph);
   }
 
   ///////////////////////////////////////////////

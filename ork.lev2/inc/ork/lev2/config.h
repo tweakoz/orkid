@@ -23,6 +23,13 @@
 #define ENABLE_ISPC
 #endif
 
+// OpenXR (OPENXR X-ladder): the native IP-clean XR driver. Enabled on Linux and
+// Apple; the loader is discovered at runtime (XR_RUNTIME_JSON / active_runtime.json),
+// so a build with ENABLE_OPENXR runs identically to NoVR when no runtime is present.
+#if defined(LINUX) or defined(__APPLE__)
+#define ENABLE_OPENXR
+#endif
+
 #define ENABLE_SSBO
 
 #if defined(LINUX)

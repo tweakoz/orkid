@@ -71,6 +71,10 @@ ork_std_target_opts(ork_lev2)
 set( libs ork_core )
 list(APPEND libs OpenImageIO OpenImageIO_Util )
 list(APPEND libs portaudio rtmidi rnnoise )
+# OpenXR loader (OPENXR X-ladder): staged libopenxr_loader in $OBT_STAGE/lib,
+# headers under $OBT_STAGE/include/openxr (already on the include path). Gated in
+# C++ by ENABLE_OPENXR (config.h), which is defined for both Linux and Apple.
+list(APPEND libs openxr_loader )
 list(APPEND libs avformat avcodec swscale swresample avutil )
 list(APPEND libs ConvexDecomposition Bullet3Geometry LinearMath )
 

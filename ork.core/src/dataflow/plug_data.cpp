@@ -7,6 +7,8 @@
 
 #include <ork/pch.h>
 
+#include <atomic>
+#include <mutex>
 #include <ork/application/application.h>
 #include <ork/reflect/properties/registerX.inl>
 #include <ork/reflect/editorsupport/std_annotations.inl>
@@ -27,6 +29,14 @@ template class orklut<std::string,ork::dataflow::floatxfitembasedata_ptr_t>;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::dataflow {
 bool gbGRAPHLIVE = false;
+
+///////////////////////////////////////////////////////////////////////////////
+// plug-write clock — see plug_data.h. std::atomic so an update-thread poke + a render-thread
+// read (the documented cross-thread plug channel) don't tear; monotonic, never reset.
+static std::atomic<uint64_t> s_plugWriteClock{0};
+uint64_t bumpPlugWriteClock() { return ++s_plugWriteClock; }
+uint64_t peekPlugWriteClock() { return s_plugWriteClock.load(); }
+///////////////////////////////////////////////////////////////////////////////
 
 std::shared_ptr<float> FloatPlugTraits::data_to_inst(std::shared_ptr<float> inp) {
   return inp;
@@ -172,6 +182,63 @@ size_t InPlugData::computeMinDepth(dgmoduledata_constptr_t to_module) const {
         to_module->_name.c_str(),
         depth);
   return depth;
+}
+///////////////////////////////////////////////////////////////////////////////
+// bypass resolver — see plug_data.h. Warn ONCE per offending module (the sort walks
+// this repeatedly) when a _bypassed module has no pass-through input, so an ill-formed
+// bypass is loud but not a per-call spam.
+///////////////////////////////////////////////////////////////////////////////
+static void _warnBypassNotHonorable(const DgModuleData* owner, const char* type_name) {
+  static std::mutex s_mtx;
+  static std::unordered_set<const void*> s_warned;
+  std::lock_guard<std::mutex> lock(s_mtx);
+  if (s_warned.insert(owner).second)
+    printf(
+        "dflow BYPASS not honorable: module<%s> is _bypassed but has no connected input of "
+        "type<%s> to pass through — leaving its own output live (bypass ignored).\n",
+        owner->_name.c_str(),
+        type_name);
+}
+outplugdata_ptr_t resolveConnectedOutput(inplugdata_ptr_t inp) {
+  if (not inp)
+    return nullptr;
+  auto out = inp->_connectedOutput;
+  if (not out)
+    return nullptr;
+  // a pass-through must preserve type — the hop target is matched against the ORIGINAL
+  // resolved output's data type (homogeneous chains match trivially; heterogeneous ones
+  // skip non-matching side inputs like a bypassed op's scalar params).
+  const std::type_info& want_type = out->GetDataTypeId();
+  std::unordered_set<const OutPlugData*> visited;
+  static constexpr int kHopCap = 256;
+  for (int hop = 0; hop < kHopCap; hop++) {
+    auto owner = std::dynamic_pointer_cast<DgModuleData>(out->_parent_module);
+    if (not owner or not owner->_bypassed)
+      return out; // producer is materialized (or not a dg module) — done
+    if (not visited.insert(out.get()).second)
+      return out; // bypass cycle — stop where we are (self-defend)
+    outplugdata_ptr_t passthru;
+    for (auto candidate : owner->_inputs) {
+      if (not candidate or not candidate->_connectedOutput)
+        continue;
+      const auto& ct = candidate->GetDataTypeId();
+      if ((ct == want_type) or (0 == ::strcmp(ct.name(), want_type.name()))) {
+        passthru = candidate->_connectedOutput;
+        break;
+      }
+    }
+    if (not passthru) {
+      _warnBypassNotHonorable(owner.get(), want_type.name());
+      return out; // not honorable — leave its own output live
+    }
+    out = passthru;
+  }
+  printf(
+      "dflow BYPASS: hop cap (%d) exceeded resolving input<%s> — returning last output "
+      "(check for a bypass cycle).\n",
+      kHopCap,
+      inp->_name.c_str());
+  return out;
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -750,6 +817,7 @@ void fquatpassthrudata::describeX(class_t* clazz){
 
 template<> void floatxfinplugdata_t::setValue(const float& val) {
   *_value = val;
+  _writeEpoch = bumpPlugWriteClock(); // this specialization bypasses the template setValue — stamp here too
 }
 template<> const float& floatxfinplugdata_t::value() const {
   return *_value;

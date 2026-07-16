@@ -113,6 +113,10 @@ struct CommonStuff : public ork::Object {
   }
 
   void requestAndRefSkyboxTexture(asset::loadrequest_ptr_t load_req);
+  // MT2 (§2.6): re-filter the IBL from a raw env map and live-swap it into the
+  // currently-bound _radiance_maps (in-scene HDRI/dynamic-sky refresh). Routes
+  // through the shared RadianceMapCache::refilter → WINDOW-context scheduler.
+  void refilterSkybox(const AssetPath& raw_source_path);
   static radiancemaps_ptr_t requestRadianceMaps(const AssetPath& texture_path);
   static radiancemaps_ptr_t requestRadianceMapsAsync(const AssetPath& texture_path);
   // Blocking variant: returns only after the radiance maps are fully
@@ -165,6 +169,11 @@ struct CommonStuff : public ork::Object {
   // the chain downstream sees the lit composite without the subsurface
   // delta. Useful as a live A/B comparison and as a key-toggle hook.
   bool _enable_SSSS = true;
+  // M-key terrain material-override mode (0=declared 1=normals 2=slope 3=white). Runtime-only
+  // (never reflected), like _enable_SSSS. Set by the SG system's SetTerrainMaterialMode notify;
+  // read per-frame by the terrain drawable's render lambda (reached via the RCFD "PBR_COMMON"
+  // userProperty) to pick a forced debug technique. 0 = no override = the declared path.
+  int _terrainMaterialMode = 0;
   uint64_t _brdftype = 0;
   float _dppZbias = 1.0e-3f;
   bool _enable_skybox = true;
@@ -196,6 +205,14 @@ struct RadianceMapCache {
   radiancemaps_ptr_t get(const AssetPath& path);
   /// Clear all cached entries (e.g., after re-baking probes).
   void clear();
+  /// MT2 (JUL05_GPUMICROTASK §2.6): re-filter `raw_source_path` (a raw
+  /// HDR/EXR/PNG env map) and LIVE-swap the result into `target` via a
+  /// RadiancePrefilterMicrotask enqueued on the WINDOW context's scheduler —
+  /// budget-enforced where frames matter (T11). The initial scene-load path
+  /// keeps the burst (createFilteringTaskGraph); this is the in-scene refresh
+  /// (HDRI / dynamic-sky refresh without a hitch, FUSION §3). No-op targets or
+  /// a missing render context fail loudly.
+  void refilter(const AssetPath& raw_source_path, radiancemaps_ptr_t target);
 private:
   std::mutex _mutex;
   std::map<std::string, radiancemaps_ptr_t> _cache;

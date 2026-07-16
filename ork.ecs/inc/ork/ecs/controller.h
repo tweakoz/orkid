@@ -130,6 +130,9 @@ struct Controller {
 	void uninstallUpdateCallbackOnEzApp(lev2::orkezapp_ptr_t ezapp);
 	void uninstallGpuUpdateCallbackOnEzApp(lev2::orkezapp_ptr_t ezapp);
 	void gpuUpdate(lev2::Context* ctx);
+	// Combined update()+gpuUpdate() pump for single-threaded (headless/test) hosts —
+	// see Simulation::updateWithGpu. NOT for two-thread hosts (they keep the split).
+	void updateWithGpu(lev2::Context* ctx);
 
 	scenedata_constptr_t scenedata() const { return _scenedata; }
 

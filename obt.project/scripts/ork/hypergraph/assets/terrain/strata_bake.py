@@ -17,6 +17,7 @@ from ork.hypergraph.dflow import terrain as T
 from ork.hypergraph.ptex3d import P
 
 _TAU = 6.28318530718
+AMPLITUDE_M = 1000.0   # authored vertical relief in meters (natural units; was HEIGHT_M)
 
 
 def stripes(ctx, *, period_m=256.0):
@@ -42,21 +43,20 @@ def compressed(ctx, *, freq=0.01):
 def terrace_strata(ctx, *, band_period_m=80.0):
     """Phase-2 (hfdisplacement): snap the CURRENT height to strata-band elevations, so
     geometric BENCHES coincide with the sin(phase) strata bands a material shades. Reads
-    input-0 (the height) via ctx.P_object.y = in0 * height_m (PHYSICAL)."""
-    y  = ctx.P_object.y                                  # physical elevation (= input-0 height)
+    input-0 (the height) via ctx.P_object.y = in0 (TRUE METERS)."""
+    y  = ctx.P_object.y                                  # physical elevation in meters (= input-0 height)
     ph = y / band_period_m
     snapped_m = (P.floor(ph) + P.smoothstep(0.35, 0.65, P.fract(ph))) * band_period_m
-    return snapped_m / ctx.height_m                      # back to normalized [0,1]
+    return snapped_m                                     # already in meters (heights are meters)
 
 
 class StrataBake(HeightField):
     # small physical scale for the test bake
     EXTENT_M = 4096.0
-    HEIGHT_M = 1000.0
 
     def __init__(self):
         super().__init__()
-        self.capture(T.Const(0.5), "height")   # flat placeholder height
+        self.capture(T.Const(0.5 * AMPLITUDE_M), "height")   # flat placeholder height (meters)
         self.hfbake(stripes, "stripes")        # pure-ALU expression -> channel
         self.hfbake(mottle,  "mottle")         # noise (lib_pnoise) expression -> channel
         # NormalizeModule check: bake a narrow ~[0.5,0.8] field, AND its normalized
@@ -65,5 +65,5 @@ class StrataBake(HeightField):
         comp = T.expr_field(self._eval_expr(compressed))               # same field as a node
         self.capture(T.normalize(comp, 0.0, 1.0), "normalized")        # rescaled to [0,1]
         # Phase-2: a varying base height, TERRACED via hfdisplacement (reads height via In0).
-        base = T.Fbm(frequency=3.0, octaves=5) * 0.5 + 0.5             # base height [0,1]
+        base = (T.Fbm(frequency=3.0, octaves=5) * 0.5 + 0.5) * AMPLITUDE_M   # base height (meters)
         self.capture(self.hfdisplacement(terrace_strata, base), "terraced")

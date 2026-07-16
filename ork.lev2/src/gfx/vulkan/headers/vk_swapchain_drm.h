@@ -27,6 +27,9 @@ struct VkSwapChainDRM : public VkFramebufferOutput {
     void endFrame(vkcontext_rawptr_t ctxVK) override final;
     void submit(vkcontext_rawptr_t ctxVK) override final;
 
+    // Direct-to-display scanout is gated by DRM vblank → the present paces the loop.
+    bool providesFramePacing() const override final { return true; }
+
     void _buildup();
     void _teardown();
     void _acquireImage(vkcontext_rawptr_t ctxVK);
@@ -35,6 +38,7 @@ struct VkSwapChainDRM : public VkFramebufferOutput {
 
     void _waitFrame(vkcontext_rawptr_t ctxVK);
     void _createExportableImages();
+    void _createScanoutImages();
     void _exportImagesToDRM();
 
     vkcontext_rawptr_t        _contextVK  = nullptr;
@@ -49,6 +53,15 @@ struct VkSwapChainDRM : public VkFramebufferOutput {
 
     VkFormat _imageFormat = VK_FORMAT_B8G8R8A8_UNORM;
     uint64_t _drmModifier = 0;
+
+    // When the render images use a non-LINEAR modifier (e.g. NVIDIA block-linear),
+    // scanout goes through LINEAR copy-target images (render -> copy -> flip) so
+    // the display engine's decode of the buffer is unambiguous.
+    bool                _useLinearScanout = false;
+    VkImage             _scanoutImages[MAX_FRAMES_IN_FLIGHT]   = {VK_NULL_HANDLE};
+    VkDeviceMemory      _scanoutMemories[MAX_FRAMES_IN_FLIGHT] = {VK_NULL_HANDLE};
+    VkSubresourceLayout _scanoutLayouts[MAX_FRAMES_IN_FLIGHT]  = {};
+    VkImageLayout       _scanoutVkLayouts[MAX_FRAMES_IN_FLIGHT] = {VK_IMAGE_LAYOUT_UNDEFINED};
     
     // First frame uses SetCrtc, rest use PageFlip
     bool _firstFrame = true;      

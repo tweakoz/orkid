@@ -77,6 +77,12 @@ struct SceneData;
 using scenedata_ptr_t = std::shared_ptr<SceneData>;
 varmap::varmap_ptr_t materializeAndWireScene(scenedata_ptr_t scenedata, lev2::Context* ctx);
 
+// [M] the ordered debug-material asset names declared on the scene's (first) terrain chunk
+// drawable (its reflected debug_material_assets). The player derives its material-cycle labels +
+// length from this DATA — no hardcoded mode table. Empty if the scene has no terrain / no debug
+// materials.
+std::vector<std::string> terrainDebugMaterialAssets(scenedata_ptr_t scenedata);
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct AssetSystem final : public System {

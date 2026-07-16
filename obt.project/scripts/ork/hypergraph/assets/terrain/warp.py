@@ -28,8 +28,9 @@ xf = mtx4.composed(
 
 
 class Warp(HeightField):
-    EXTENT_M       = _EXTENT_M
-    HEIGHT_M       = 1000.0
+    EXTENT_M   = _EXTENT_M
+    # authored vertical relief in meters (natural units; was HEIGHT_M)
+    RELIEF_M   = 1000.0
     MATERIAL_CLASS = Fbm
     MATERIAL_PARAMS = {
       "albedo":    vec3(0.25),
@@ -56,6 +57,7 @@ class Warp(HeightField):
             wx    = p.x + (dx / r) * disp                     # warped world XZ (m)
             wz    = p.z + (dz / r) * disp
             coord = P.vec3(wx, 0.0, wz) * (frequency / _EXTENT_M)    # -> noise units (frequency cells/extent)
-            return fbm_stack(lambda q: P.voronoi(q).f1, coord, octaves)  # worley F1, ring-warped, fBm-stacked
+            # worley F1, ring-warped, fBm-stacked — scaled to TRUE METERS
+            return fbm_stack(lambda q: P.voronoi(q).f1, coord, octaves) * Warp.RELIEF_M
 
         self.hfbake(ring_worley, "height")

@@ -16,6 +16,7 @@
 #include <ork/file/chunkfile.inl>
 #include <ork/asset/catalog/catalog.h>
 #include <ork/kernel/datacache.h>
+#include <ork/kernel/async_tracker.h>
 #include <ork/asset/AssetManager.h>
 #include <ork/asset/Asset.inl>
 #include <ork/rtti/RTTIX.inl>
@@ -60,6 +61,30 @@ asset::asset_ptr_t RadianceMapsLoader::_doLoadFromDatablock(
 
 ///////////////////////////////////////////////////////////////////////////////
 
+// ORKID_XIR_DEBUG traces the XIR load/upload/handoff pipeline (the prime suspect in
+// silent linux load deaths). Value semantics: any value = trace to stdout; an ABSOLUTE
+// PATH = write the trace to that file instead. Every line is flushed, so a hang or
+// crash leaves the trail on disk.
+static FILE* _xirdbgStream() {
+  static FILE* s = []() -> FILE* {
+    const char* v = getenv("ORKID_XIR_DEBUG");
+    if (nullptr == v)
+      return nullptr;
+    if (v[0] == '/')
+      if (FILE* f = fopen(v, "w"))
+        return f;
+    return stdout;
+  }();
+  return s;
+}
+#define XIRDBG(...)                                                                                                    \
+  do {                                                                                                                 \
+    if (FILE* xf_ = _xirdbgStream()) {                                                                                 \
+      fprintf(xf_, __VA_ARGS__);                                                                                       \
+      fflush(xf_);                                                                                                     \
+    }                                                                                                                  \
+  } while (0)
+
 asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
     asset::loadrequest_ptr_t loadreq,
     datablock_ptr_t xir_data) {
@@ -94,10 +119,19 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
   // or the waiter hangs forever.
   loadreq->incrementPartialLoadCount();
 
+  // Join-narrowing v1 (JUL05 Appendix C step 1): envmap/radiance is the FIRST
+  // STREAMABLE asset class — de-facto streamed today (lazy, post-link) but
+  // silently in-limbo because it never told anyone. Register the WHOLE
+  // decode+upload+publish chain as async work so the settle gate
+  // (asyncWorkPending) waits for the skybox instead of exiting on the black
+  // settle-race frame (#27). Paired 1:1 with the partial-load counter above:
+  // begin here, asyncWorkEnd at EVERY decrement site (both error returns + the
+  // terminal render-thread swap) so the tracker covers the deferred GPU publish.
+  asyncWorkBegin("radiancemaps");
+
   auto op = [=](){
-    if(0)printf("[VKMT-DBG] op start path<%s> gloadercontext<%p> requesting_ctx<%p>\n",
+    XIRDBG("[VKMT-DBG] op start path<%s> gloadercontext<%p> requesting_ctx<%p>\n",
            asset->_name.c_str(), (void*)gloadercontext.get(), (void*)requesting_ctx);
-    //fflush(stdout);
 
       // Use XIRReader to get raw datablocks
     auto xir_data_result = xir::XIRReader::readXirDatablocks(xir_data);
@@ -107,6 +141,7 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
       loadreq->_assetStatus = "NoData"_crcu;
       if(loadreq->_on_load_failed) loadreq->_on_load_failed();
       loadreq->decrementPartialLoadCount();
+      asyncWorkEnd("radiancemaps"); // streamable chain terminated (load failed)
       return;
     }
 
@@ -115,12 +150,13 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
       loadreq->_assetStatus = "InvalidFormat"_crcu;
       if(loadreq->_on_load_failed) loadreq->_on_load_failed();
       loadreq->decrementPartialLoadCount();
+      asyncWorkEnd("radiancemaps"); // streamable chain terminated (load failed)
       return;
     }
 
     bool has_diffuse = xir_data_result._diffuse_data && xir_data_result._diffuse_data->length() > 0;
 
-    if(0)printf("XIR v2 array format: diffuse size: %zu, %d roughness levels\n",
+    XIRDBG("XIR v2 array format: diffuse size: %zu, %d roughness levels\n",
            has_diffuse ? xir_data_result._diffuse_data->length() : 0,
            xir_data_result._num_roughness_levels);
 
@@ -325,6 +361,7 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
       if (!target_ctx) {
         target_ctx = GfxEnv::mainRenderContext();
       }
+      XIRDBG("[VKMT-DBG] handoffOp target_ctx<%p> num_semas<%zu>\n", (void*)target_ctx, our_semas->size());
       auto swap_op = [
           irrmaps,
           loadreq,
@@ -346,6 +383,7 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
         // vkFreeMemory and we get a black frame proportional to the
         // texture's mip count / total memory.
         constexpr int kDelayFrames = 3; // > MAX_FRAMES_IN_FLIGHT
+        XIRDBG("[VKMT-DBG] swap_op FIRED on ctx<%p>\n", (void*)render_ctx_drain);
         if (render_ctx_drain) {
           auto old_diffuse = irrmaps->_filtenvDiffuseMap;
           auto old_specular = irrmaps->_filtenvSpecularMapArray;
@@ -375,6 +413,7 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
           loadreq->_on_load_complete();
         }
         loadreq->decrementPartialLoadCount();
+        asyncWorkEnd("radiancemaps"); // streamable chain terminated (final swap published)
       };
       if (!target_ctx) {
         // Headless / no main window — run inline so the counter still
@@ -399,16 +438,22 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
       // subsequent iteration the poll retries until all uploads are
       // GPU-complete. Then swap_op fires on the render thread — minimal
       // cost, new textures fully resident, no render-frame stall.
-      auto poll_op = std::make_shared<::ork::void_lambda_t>();
-      *poll_op = [target_ctx, swap_op, our_semas, loader_ctx, poll_op]() {
-        bool all_signaled = true;
-        for (auto& s : *our_semas) {
-          if (!s->isSignalled()) {
-            all_signaled = false;
-            break;
-          }
-        }
+      auto poll_op    = std::make_shared<::ork::void_lambda_t>();
+      auto poll_count = std::make_shared<int>(0);
+      *poll_op = [target_ctx, swap_op, our_semas, loader_ctx, poll_op, poll_count]() {
+        int signaled = 0;
+        for (auto& s : *our_semas)
+          if (s->isSignalled())
+            signaled++;
+        bool all_signaled = (signaled == int(our_semas->size()));
+        // hang signature: repeating STILL-WAITING = upload CBs never GPU-complete
+        // (submission/sema bug); NO further lines at all = the loader thread stopped
+        // pumping (poll re-enqueue starved). ~1s cadence at the loader's 500µs tick.
+        if ((++(*poll_count) % 2000) == 0)
+          XIRDBG("[VKMT-DBG] poll_op STILL WAITING polls<%d> semas<%d/%zu signaled>\n",
+                 *poll_count, signaled, our_semas->size());
         if (all_signaled) {
+          XIRDBG("[VKMT-DBG] poll_op all semas signaled, enqueueing swap_op on ctx<%p>\n", (void*)target_ctx);
           target_ctx->enqueueDeferredOp(swap_op);
           // poll_op self-ref drops naturally — no further re-enqueue.
         } else {
@@ -428,14 +473,12 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
 
     // Phase fully populated with all 4 ops — publish atomically. No race
     // window for the loader thread to pop an empty phase.
-    if(0)printf("[VKMT-DBG] op submitting LoadingPhase with 4 ops to gloadercontext<%p>\n",
+    XIRDBG("[VKMT-DBG] op submitting LoadingPhase with 4 ops to gloadercontext<%p>\n",
            (void*)gloadercontext.get());
-    //fflush(stdout);
     gloadercontext->submitLoadingPhase(loading_phase);
-    if(0)printf("[VKMT-DBG] op end path<%s>\n", asset->_name.c_str());
-    //fflush(stdout);
+    XIRDBG("[VKMT-DBG] op end path<%s>\n", asset->_name.c_str());
 
-    if(0)printf("XIR asset<%p> irrmaps<%p> dtex<%p> stexarray<%p> roughness_levels<%d>\n",
+    XIRDBG("XIR asset<%p> irrmaps<%p> dtex<%p> stexarray<%p> roughness_levels<%d>\n",
            (void*) asset.get(), (void*) irrmaps.get(),
            diffuse_tex ? diffuse_tex.get() : nullptr,
            specular_texarray.get(), num_roughness_levels);

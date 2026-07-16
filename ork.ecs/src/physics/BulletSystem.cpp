@@ -132,6 +132,21 @@ btDynamicsWorld* BulletSystem::BulletWorld() { //
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void BulletSystem::_registerTerrainYSpan(float minY, float maxY) {
+  if (not _hasTerrainFloor) {
+    _hasTerrainFloor = true;
+    _terrainMinY     = minY;
+    _terrainMaxY     = maxY;
+  } else { // union across every terrain collider present
+    if (minY < _terrainMinY)
+      _terrainMinY = minY;
+    if (maxY > _terrainMaxY)
+      _terrainMaxY = maxY;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void BulletSystem::_onLinkComponent(BulletObjectComponent* component) {
   auto entity       = component->GetEntity();
   auto compdata     = &component->mBOCD;
@@ -661,6 +676,12 @@ void BulletSystem::_onEndRender() {
 void BulletSystem::_onUpdate(Simulation* inst) {
   OrkProfilerSampleScope(CHANNEL_UPDATE, "BulletSystem::_onUpdate");
   if (mDynamicsWorld) {
+    // drain deferred terrain hot-reloads BEFORE stepSimulation reads the heightfield: a rebake
+    // rewrote the artifacts in place and flagged the collider (possibly from the GPU thread); the
+    // actual _heightData mutation happens here, on the update thread, where nothing is stepping.
+    for (auto& item : _terrainReloadPolls)
+      item.second();
+
     float dt = inst->deltaTime();
     float gt = inst->gameTime();
     _fdtaccum += dt;

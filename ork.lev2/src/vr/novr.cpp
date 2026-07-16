@@ -108,5 +108,11 @@ void NoVrDevice::gpuUpdate(RenderContextFrameData& RCFD) {
 void NoVrDevice::__composite(Context* targ, Texture* twoeyetex) const {
 }
 ////////////////////////////////////////////////////////////////////////////////
+// NoVR does not own HMD presentation — the desktop-mirror blit in the output node is
+// the presentation. Genuine no-op (byte-identical desktop behavior).
+void NoVrDevice::__compositeStereo(
+    Context* targ, Texture* texL, Texture* texR, Texture* depthTexL, Texture* depthTexR) const {
+}
+////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::orkidvr::novr
 ////////////////////////////////////////////////////////////////////////////////

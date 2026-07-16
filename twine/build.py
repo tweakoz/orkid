@@ -91,15 +91,45 @@ def _macos_minos(staging):
             return f"{m.group(1)}_{m.group(2)}"
     return None
 
+def _linux_glibc_tag(arch):
+    """manylinux platform tag (PEP 600) for the build host's glibc.
+
+    The payload binaries are built against the host glibc and REQUIRE it at
+    runtime, so the honest floor is the build host's glibc (Ubuntu 24.04 => 2.39
+    => manylinux_2_39_x86_64). pip installs the wheel only on glibc >= that
+    floor. Override with ORKID_GLIBC_TARGET (e.g. "2_28") ONLY if the binaries
+    were actually built against that older glibc (e.g. in a manylinux container).
+
+    auditwheel is deliberately NOT used: the payload ships as one opaque .tar
+    (no loadable .so in the wheel — the engine lives in orkid/pyvenv and pip
+    never dlopens it), so there is nothing for auditwheel to inspect; the tag is
+    a pure install-time glibc gate."""
+    override = os.environ.get("ORKID_GLIBC_TARGET")
+    if override:
+        return f"py3-none-manylinux_{override}_{arch}"
+    try:
+        ver = os.confstr("CS_GNU_LIBC_VERSION").split()[1]   # "glibc 2.39" -> "2.39"
+        maj, minr = ver.split(".")[:2]
+    except Exception:
+        maj, minr = "2", "39"
+    return f"py3-none-manylinux_{maj}_{minr}_{arch}"
+
 def platform_tag(staging):
-    """Build the macOS platform tag. pip only matches `_0`-minor macOS tags
-    across majors (a 26.5 machine accepts macosx_26_0 / macosx_14_0 / macosx_11_0
-    but NOT macosx_14_5), so we always emit macosx_{MAJOR}_0_{arch}.
+    """Build the platform tag for the binary payload wheels.
+
+    Linux: manylinux_{glibc}_{arch} (see _linux_glibc_tag). macOS: pip only
+    matches `_0`-minor macOS tags across majors (a 26.5 machine accepts
+    macosx_26_0 / macosx_14_0 / macosx_11_0 but NOT macosx_14_5), so we always
+    emit macosx_{MAJOR}_0_{arch}.
 
     Default MAJOR = the build host's macOS major (the minimum we target — 26 /
     Tahoe for now). Override with MACOSX_DEPLOYMENT_TARGET to support older OSes
     (only valid if the binaries were actually built that low — minos shown below)."""
     arch = platform.machine()  # arm64 / x86_64
+    if sys.platform.startswith("linux"):
+        tag = _linux_glibc_tag(arch)
+        print(f"  (Linux glibc floor -> {tag}; set ORKID_GLIBC_TARGET to override)")
+        return tag
     dep = os.environ.get("MACOSX_DEPLOYMENT_TARGET")
     if dep:
         major = dep.split(".")[0]
@@ -116,7 +146,9 @@ def platform_tag(staging):
 
 def make_bundle(target):
     """Run deploy phases 1-6 (relocatable, sentinelized tree; no app/dmg)."""
-    deploy = REPO / "obt.project" / "bin" / "ork.deploy.macos.relocatable.py"
+    script = ("ork.deploy.linux.relocatable.py" if sys.platform.startswith("linux")
+              else "ork.deploy.macos.relocatable.py")
+    deploy = REPO / "obt.project" / "bin" / script
     for ph in ("1", "2", "3", "4", "5", "5.5", "6"):
         cmd = ["ork.python", str(deploy), "--phase", ph,
                "--target", str(target), "--project", str(REPO)]

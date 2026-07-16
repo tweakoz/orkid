@@ -63,6 +63,18 @@ void pyinit_asset_system(py::module& module_ecs) {
             }
             return out;
           });
+
+  // D.5 — the pure-C++ WIRE STEP for an in-process SceneData (the analogue of the JSON-load
+  // Python wire_scene_data, but it ALSO patches C++-only drawables like the terrain chunk
+  // drawable's manifest+material BY NAME). A live Python host (ork.terrain.edit's TerrainRuntime)
+  // MUST call this BEFORE Controller::bindScene — same call-site contract the C++ player uses —
+  // or a TerrainChunkDrawableData never resolves (renders blank). Needs a live GPU ctx (it bakes
+  // the heightfield + gpuInits materials). Mutates `scenedata` in place.
+  module_ecs.def(
+      "materializeAndWireScene",
+      [](scenedata_ptr_t scenedata, ork::python::unmanaged_ptr<::ork::lev2::Context> ctx) {
+        materializeAndWireScene(scenedata, ctx.get());
+      });
 }
 
 } // namespace ork::ecs

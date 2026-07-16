@@ -87,8 +87,8 @@ struct DisplaceByFieldInst : public MeshComputeInst {
       fenv->_ctx            = menv->_ctx;
       fenv->_w              = _d->_field_dim;
       fenv->_h              = _d->_field_dim;
-      fenv->_extent_m       = float(_d->_field_dim); // 1 texel == 1 m (the terrain selftest convention)
-      fenv->_height_scale_m = 1.0f;                  // neutral; the displace mapping scale is the `extent` plug
+      fenv->_extent_m       = float(_d->_field_dim); // 1 texel == 1 m (the terrain selftest convention;
+                                                     //  heights are TRUE METERS — the displace mapping scale is the `extent` plug)
       ginst->_impl.setShared<terrain::BakeEnv>(fenv);
     } else if (fenv->_w != _d->_field_dim) {
       printf(

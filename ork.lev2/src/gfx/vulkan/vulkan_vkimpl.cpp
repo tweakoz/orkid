@@ -11,6 +11,8 @@
 #include <ork/lev2/lev2_asset.h>
 #include <ork/asset/Asset.inl>
 #include <ork/lev2/init.h>
+#include <ork/lev2/gfx/external_gpu_requirements.h>
+#include <ork/lev2/vr/vr.h>
 
 #if defined(ENABLE_VULKAN)
 #if defined(__APPLE__)
@@ -42,6 +44,15 @@ vkinstance_ptr_t _GVI = nullptr;
 static bool _enable_validate = false;
 static bool _enable_renderdoc = false;
 static bool _enable_debug = (_enable_validate or _enable_renderdoc);
+
+// X1 external-GPU-requirements seam self-test (env-gated, off by default). When
+//  ORKID_EXTGPU_SELFTEST=1 the backend registers a synthetic requirement set that
+//  exercises the extension-merge and required-physical-device paths, emitting
+//  ORKID_EXTGPU_SELFTEST: verdict lines to stdout for a headless test to grep.
+static bool _extGpuSelfTestEnabled() {
+  const char* v = std::getenv("ORKID_EXTGPU_SELFTEST");
+  return v and (std::string(v) == "1");
+}
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 using layer_props_t = std::vector<VkLayerProperties>;
@@ -237,6 +248,19 @@ VulkanInstance::VulkanInstance() {
   _appdata.engineVersion      = 1;
   _appdata.apiVersion         = VK_API_VERSION_1_3;
 
+  // X1: honor an externally-required Vulkan API-version window (e.g. XR's
+  //  xrGetVulkanGraphicsRequirements min/max). Neutral when both bounds are 0.
+  if (auto reqs = externalGpuRequirements()) {
+    if (reqs->_minApiVersion and _appdata.apiVersion < reqs->_minApiVersion) {
+      logchan_vkimpl->log("ext-gpu: raising apiVersion to required min <%u>", reqs->_minApiVersion);
+      _appdata.apiVersion = reqs->_minApiVersion;
+    }
+    if (reqs->_maxApiVersion and _appdata.apiVersion > reqs->_maxApiVersion) {
+      logchan_vkimpl->log("ext-gpu: lowering apiVersion to required max <%u>", reqs->_maxApiVersion);
+      _appdata.apiVersion = reqs->_maxApiVersion;
+    }
+  }
+
   initializeVkStruct(_instancedata,VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO);
   _instancedata.pApplicationInfo        = &_appdata;
 
@@ -277,6 +301,56 @@ VulkanInstance::VulkanInstance() {
   }
   // DRM mode: no surface extensions needed (direct display)
 
+  ////////////////////////////////////////
+  // X1: external GPU requirements — instance extensions
+  ////////////////////////////////////////
+
+  // Self-test hook (env-gated, off by default): synthesize a requirement set that
+  //  exercises the merge — one available extension NOT in the base list (proves
+  //  APPEND) plus one already in the base list (proves DEDUP). Registered into the
+  //  backend-internal slot so the merge below consumes it exactly like a real
+  //  producer's would.
+  std::string _extgpu_selftest_append; // the ext we asked to append (for verification)
+  if (_extGpuSelfTestEnabled()) {
+    uint32_t st_count = 0;
+    vkEnumerateInstanceExtensionProperties(nullptr, &st_count, nullptr);
+    std::vector<VkExtensionProperties> st_avail(st_count);
+    vkEnumerateInstanceExtensionProperties(nullptr, &st_count, st_avail.data());
+    auto* st_reqs = _externalGpuRequirementsMutable();
+    for (auto& e : st_avail) {
+      bool in_base = false;
+      for (auto b : _instance_extensions)
+        if (0 == strcmp(b, e.extensionName)) { in_base = true; break; }
+      if (not in_base) {
+        _extgpu_selftest_append = e.extensionName;
+        st_reqs->_instanceExtensions.push_back(_extgpu_selftest_append);
+        break;
+      }
+    }
+    if (not _instance_extensions.empty())
+      st_reqs->_instanceExtensions.push_back(_instance_extensions.front()); // dedup probe
+    printf("ORKID_EXTGPU_SELFTEST: request append instance ext <%s>\n", _extgpu_selftest_append.c_str());
+    printf("ORKID_EXTGPU_SELFTEST: request dedup instance ext <%s>\n",
+           _instance_extensions.empty() ? "" : _instance_extensions.front());
+    fflush(stdout);
+  }
+
+  // Merge externally-required instance extensions into the base list, deduping by
+  //  name so the MoltenVK portability / GLFW surface set is never disturbed.
+  if (auto reqs = externalGpuRequirements()) {
+    for (const auto& ext : reqs->_instanceExtensions) {
+      bool already = false;
+      for (auto e : _instance_extensions)
+        if (0 == strcmp(e, ext.c_str())) { already = true; break; }
+      if (already) {
+        logchan_vkimpl->log("ext-gpu: instance ext <%s> already present (dedup)", ext.c_str());
+      } else {
+        _instance_extensions.push_back(ext.c_str());
+        logchan_vkimpl->log("ext-gpu: merging external instance ext <%s>", ext.c_str());
+      }
+    }
+  }
+
   // Enumerate available instance extensions and validate they are vailable
   uint32_t available_extension_count = 0;
   vkEnumerateInstanceExtensionProperties(nullptr, &available_extension_count, nullptr);
@@ -305,6 +379,19 @@ VulkanInstance::VulkanInstance() {
   _instancedata.enabledExtensionCount   = _instance_extensions.size();
   _instancedata.ppEnabledExtensionNames = _instance_extensions.data();
 
+  if (_extGpuSelfTestEnabled()) {
+    int append_hits = 0, dedup_hits = 0;
+    for (auto e : _instance_extensions) {
+      if (not _extgpu_selftest_append.empty() and _extgpu_selftest_append == e) append_hits++;
+      if (not _instance_extensions.empty() and 0 == strcmp(e, _instance_extensions.front())) dedup_hits++;
+    }
+    printf("ORKID_EXTGPU_SELFTEST: instance ext append <%s> present=%d\n",
+           _extgpu_selftest_append.c_str(), append_hits >= 1 ? 1 : 0);
+    printf("ORKID_EXTGPU_SELFTEST: instance ext dedup <%s> count=%d\n",
+           _instance_extensions.empty() ? "" : _instance_extensions.front(), dedup_hits);
+    fflush(stdout);
+  }
+
 #if defined(__APPLE__)
   // Disable MoltenVK argument buffers - they require additional type metadata
   // that SPIRV-Cross cannot always determine for storage buffers in graphics pipelines
@@ -313,6 +400,10 @@ VulkanInstance::VulkanInstance() {
 #endif
 
   OrkVkAssert(vkCreateInstance(&_instancedata, nullptr, &_instance));
+
+  // X1: the instance exists — external requirements are consumed; forbid any
+  //  further external registration (backend-internal late resolution still allowed).
+  _lockExternalGpuRequirements();
 
   // Fetch immediately via instance so we can start putting names on vk objects right away.
   _fetchInstanceProcAddr(_vkSetDebugUtilsObjectName, "vkSetDebugUtilsObjectNameEXT");
@@ -481,6 +572,22 @@ VulkanInstance::VulkanInstance() {
     }
   } // for(auto& phy : phydevs){
 
+  // X1: physical devices now exist (their handles are only knowable after
+  //  instance creation). Under self-test, require the device the default picker
+  //  would choose (first discrete, else first) so the required-device path is
+  //  exercised without changing which GPU renders. Populates the backend-internal
+  //  slot directly (the locked external setter would reject a post-instance write).
+  if (_extGpuSelfTestEnabled() and not _device_infos.empty()) {
+    vkdeviceinfo_ptr_t def = nullptr;
+    for (auto d : _device_infos)
+      if (d->_is_discrete) { def = d; break; }
+    if (not def)
+      def = _device_infos.front();
+    _externalGpuRequirementsMutable()->_requiredPhysicalDevice = uint64_t(def->_phydev);
+    printf("ORKID_EXTGPU_SELFTEST: require physical device <%s>\n", def->_devprops.deviceName);
+    fflush(stdout);
+  }
+
   for (int i = 0; i < 1; i++) {
     auto loadctx = std::make_shared<VkLoadContext>();
     // loadctx->_global_plato  = GlOsxPlatformObject::_global_plato;
@@ -524,12 +631,60 @@ context_ptr_t createLoaderContext() {
 
   asset::registerLoader<FxShaderAsset>(loader);
 
+  ////////////////////////////////////////
+  // X1: pre-graphics-init seam. An active external graphics client (e.g. a VR/XR
+  //  driver) publishes its Vulkan requirements BEFORE the instance is created. The
+  //  default (NoVR) path yields an empty set, so nothing is registered — neutral.
+  ////////////////////////////////////////
+
+  auto vrdev = orkidvr::device();
+  if (vrdev and vrdev->_active) {
+    ExternalGpuRequirements reqs;
+    vrdev->preGraphicsInit(reqs);
+    bool any = (not reqs._instanceExtensions.empty())   //
+               or (not reqs._deviceExtensions.empty())  //
+               or reqs._requiredPhysicalDevice          //
+               or reqs._minApiVersion                   //
+               or reqs._maxApiVersion;
+    if (any)
+      setExternalGpuRequirements(reqs);
+  }
+
   _GVI       = std::make_shared<VulkanInstance>();
+
+  ////////////////////////////////////////
+  // X2: post-instance / pre-device seam. Now that the VkInstance exists, let the
+  //  producer resolve the physical device it REQUIRES (XR: xrGetVulkanGraphicsDeviceKHR
+  //  needs the instance). It writes the required physical device into the backend-
+  //  internal requirements slot, which the device-creation chokepoint honors below.
+  ////////////////////////////////////////
+
+  if (vrdev and vrdev->_active and externalGpuRequirements()) {
+    vrdev->resolvePhysicalDevice(uint64_t(_GVI->_instance));
+  }
+
   auto clazz = dynamic_cast<object::ObjectClass*>(VkContext::GetClassStatic());
   GfxEnv::setContextClass(clazz);
   auto target = std::make_shared<VkContext>();
   target->initializeLoaderContext();
   GfxEnv::initializeWithContext(target);
+
+  ////////////////////////////////////////
+  // X1: post-graphics-init seam. Hand the MAIN context's device+queue to the
+  //  producer that registered requirements (XR binds this exact device+queue).
+  //  Only fires when a producer registered — the NoVR path is untouched.
+  ////////////////////////////////////////
+
+  if (vrdev and vrdev->_active and externalGpuRequirements()) {
+    GraphicsBindingInfo binding;
+    binding._vkInstance       = uint64_t(_GVI->_instance);
+    binding._vkPhysicalDevice = uint64_t(target->_vkphysicaldevice);
+    binding._vkDevice         = uint64_t(target->_vkdevice);
+    binding._queueFamilyIndex = target->_gfxqueue ? target->_gfxqueue->_qfid : 0;
+    binding._queueIndex       = 0;
+    vrdev->postGraphicsInit(binding);
+  }
+
   return target;
 }
 

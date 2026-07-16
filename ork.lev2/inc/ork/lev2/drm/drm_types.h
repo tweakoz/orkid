@@ -68,6 +68,7 @@ struct Monitor {
     std::string brand;           // Monitor brand/model from EDID
     bool connected;              // Is monitor connected?
     mode_vect_t modes;           // Available modes
+    std::string card_path;       // Owning DRM card node (e.g. "/dev/dri/card3")
 
     Monitor(char letter, uint32_t conn_id);
 
@@ -103,10 +104,22 @@ struct DRMContext {
     DRMContext(char deviceLetter, int modeIndex);
     ~DRMContext();
 
+    // Put the display back: restore the pre-app CRTC if it had a real framebuffer,
+    // else DISABLE the CRTC (blank). Idempotent. Called from CtxDRM::_runloopEnd
+    // explicitly — the dtor also calls it, but the known teardown segfault means the
+    // dtor often never runs, which used to leave the monitor scanning a freed FB
+    // (garbage stripes) after every app exit/kill.
+    void restoreCrtc();
+
     void waitForVblank();
 
     // Static helpers
     static monitor_vect_t enumerateMonitors(int drm_fd);
+    // Enumerate connected monitors across ALL /dev/dri/card* nodes, assigning
+    // global device letters ('a', 'b', ...) in card order. This is the correct
+    // entry point on multi-GPU systems where the first openable card may be an
+    // onboard VGA DAC rather than the GPU driving the real display.
+    static monitor_vect_t enumerateAllMonitors();
     static void printMonitors(const monitor_vect_t& monitors);
     static void listMonitorsAndExit();
     static void pageFlipHandler(int fd, unsigned int sequence,
@@ -115,6 +128,13 @@ struct DRMContext {
     static void emergencyCleanup(DRMContext* drm);
 
 private:
+    // Enumerate connected connectors on a single already-open card fd, appending
+    // to 'out'. 'card_path' stamps each monitor's owning card; 'next_letter' is
+    // advanced so device letters stay globally unique across cards.
+    static void _enumerateCard(int drm_fd,
+                               const std::string& card_path,
+                               char& next_letter,
+                               monitor_vect_t& out);
     static std::string _parseEDID(const uint8_t* edid_data, size_t size);
     static bool _isValidEDIDChar(char c);
 };

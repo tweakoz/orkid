@@ -27,6 +27,8 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
+#include <cctype>
+#include <atomic>
 
 #include <ork/kernel/timer.h>
 #include <ork/lev2/ezapp.h>
@@ -41,6 +43,7 @@
 #include <ork/lev2/gfx/gfxvtxbuf.inl>
 #include <ork/lev2/gfx/renderer/rendercontext.h>
 #include <ork/lev2/gfx/renderphasestats.h> // Phase 2: engine render-phase timings
+#include <ork/lev2/vr/vr_hud_overlay.h>    // VR: publish the panel texture for the DMVR node
 #include <ork/ecs/system_stats.h>          // Phase 3: per-ECS-system timings
 #include <array>
 
@@ -52,8 +55,17 @@ using namespace ork::lev2;
 struct PerfHud {
   enum Mode { OFF = 0, TEXT = 1, GRAPH = 2, NUM_MODES = 3 };
 
-  int            _mode = OFF;
-  orkezapp_ptr_t _ezapp;
+  // atomic: written by the '~' key (main thread) AND the gamepad L2 toggle (update
+  //  thread), read by the draw (render thread). Same benign cross-thread pattern the
+  //  '~' toggle already had; the L2 add just makes it explicit.
+  std::atomic<int>  _mode{OFF};
+  int               _on_mode = GRAPH; // mode the pad toggle restores to (last shown)
+  std::atomic<bool> _vrmode{false};   // set by the host when DualMonoVr is active
+  orkezapp_ptr_t    _ezapp;
+
+  // VR: offscreen RT the HUD content renders into; its texture is published to
+  //  VrHudOverlay for the DMVR node to draw as a head-locked panel in both eyes.
+  rtgroup_ptr_t _hudRTG;
 
   // windowed FPS / UPS (from the ezapp atomic counters)
   Timer  _rate_timer;
@@ -71,18 +83,83 @@ struct PerfHud {
   std::deque<float> _hist;          // frame-ms ring (~2 s)
   static constexpr size_t kHistMax = 256;
 
+  // ORKID_PLAYER_HUD_STDOUT=<secs>: periodically print the stats text to stdout
+  // (headless/DRM/scripted runs where the on-screen HUD can't be read). Works with
+  // the on-screen mode OFF, so the cull readbacks stay disabled and don't perturb
+  // perf measurements.
+  double _stdout_period = 0.0;
+  Timer  _stdout_timer;
+
   // lazily-created graph draw resources
   std::shared_ptr<FreestyleMaterial>                  _mtl;
   std::shared_ptr<DynamicVertexBuffer<SVtxV16T16C16>> _vbuf;
+
+  static int _parseMode(const char* v) {
+    if (not v)
+      return -1;
+    std::string s(v);
+    for (auto& c : s)
+      c = char(std::tolower((unsigned char)c));
+    if (s == "off" or s == "0")
+      return OFF;
+    if (s == "text" or s == "1")
+      return TEXT;
+    if (s == "graph" or s == "2")
+      return GRAPH;
+    int n = atoi(v);
+    return ((n % NUM_MODES) + NUM_MODES) % NUM_MODES;
+  }
 
   void init(orkezapp_ptr_t ez) {
     _ezapp = ez;
     _rate_timer.Start();
     _frame_timer.Start();
-    if (const char* v = getenv("ORKID_PLAYER_HUD"))
-      _mode = atoi(v) % NUM_MODES;
+    // ORKID_PERFHUD forces the startup mode (off|text|graph or 0|1|2). Lets a
+    //  keyboardless VR/headless rig get the [perfhud] cull-counter stdout (TEXT mode)
+    //  with no input device; the L2 pad toggle then flips it live in the headset.
+    if (const char* v = getenv("ORKID_PERFHUD")) {
+      int m = _parseMode(v);
+      if (m >= 0) {
+        _mode = m;
+        if (m != OFF)
+          _on_mode = m;
+      }
+    }
+    // ORKID_VR_HUD_DIST: head-relative distance (meters) of the in-headset HUD panel.
+    if (const char* v = getenv("ORKID_VR_HUD_DIST")) {
+      float d = float(atof(v));
+      if (d > 0.05f)
+        VrHudOverlay::instance()._distance_m = d;
+    }
+    // ORKID_VR_HUD_YOFF: fraction of the frame height the panel sits BELOW center
+    //  (default 0.15 — owner call; 0 = centered, negative = raise).
+    if (const char* v = getenv("ORKID_VR_HUD_YOFF")) {
+      VrHudOverlay::instance()._yoffset_frac = float(atof(v));
+    }
+    if (const char* v = getenv("ORKID_PLAYER_HUD_STDOUT")) {
+      _stdout_period = atof(v);
+      if (_stdout_period <= 0.0)
+        _stdout_period = 2.0;
+      _stdout_timer.Start();
+    }
   }
-  void cycleMode() { _mode = (_mode + 1) % NUM_MODES; }
+  // '~' key (desktop): cycle OFF -> TEXT -> TEXT+GRAPH.
+  void cycleMode() {
+    int m = (_mode.load() + 1) % NUM_MODES;
+    _mode = m;
+    if (m != OFF)
+      _on_mode = m;
+  }
+  // gamepad L2 (VR): on/off toggle — restores the last shown mode, else hides.
+  void toggleShown() {
+    int m = _mode.load();
+    if (m == OFF)
+      _mode = _on_mode;
+    else {
+      _on_mode = m;
+      _mode    = OFF;
+    }
+  }
 
   // top of onDraw, before controller->render
   void frameBegin() {
@@ -115,6 +192,18 @@ struct PerfHud {
       _frame_ms_max      = 0.0f;
       _rate_timer.Start();
     }
+    if (_stdout_period > 0.0 and _stdout_timer.SecsSinceStart() >= _stdout_period) {
+      _stdout_timer.Start();
+      printf("[perfhud]\n%s\n", _statsText().c_str());
+      fflush(stdout);
+    }
+    // VR: don't flat-draw onto the mirror surface. Render the content to an offscreen
+    //  RT and publish it; the DualMonoVr node draws it as a head-locked 3m panel into
+    //  EACH eye's buffer (which the headset AND the desktop mirror then inherit).
+    if (_vrmode.load()) {
+      _renderPanelRT(ctx);
+      return;
+    }
     if (_mode == OFF)
       return;
     _draw(ctx);
@@ -126,6 +215,20 @@ struct PerfHud {
     char hdr[96];
     snprintf(hdr, sizeof(hdr), "FPS %6.1f\nUPS %6.1f", _fps, _ups);
     std::string out(hdr);
+
+    // VR camera diagnostics (terrain-invisibility hunt): the world-root translation and the
+    //  composed center-eye world position the VR node used this frame. root=(0,0,0) is the
+    //  vrroot-lookup-miss smoking gun. Non-VR/before-any-VR-frame these read zeros — labeled
+    //  honestly; the VR node is the only writer.
+    {
+      const auto& ov = ork::lev2::VrHudOverlay::instance();
+      char        cb[128];
+      snprintf(cb, sizeof(cb),
+               "\nroot %8.1f %8.1f %8.1f\neye  %8.1f %8.1f %8.1f",
+               ov._cam_root.x, ov._cam_root.y, ov._cam_root.z,
+               ov._cam_eye.x, ov._cam_eye.y, ov._cam_eye.z);
+      out += cb;
+    }
 
     // Phase 3 — per-ECS-system breakdown (u=update thread, g=gpuUpdate, r=render; EMA ms).
     // Sits right after UPS (it's the update-thread context).
@@ -190,22 +293,26 @@ struct PerfHud {
     // GPU-cull result funnels (terrain + instanced hypermesh). Only present while a cull ran this
     // frame; readback is enabled above (frameBegin) only in TEXT mode. total | frustum pass/fail |
     // of the frustum-passers, occlusion pass(drawn)/fail(hidden).
+    // Split TERR/HYPM into two SHORT lines each — the lens blurs long lines at the panel
+    //  edges. total | frustum pass/fail, then occlusion fail(hidden)/pass(drawn).
     auto cull = CullStats::instance().snapshot();
     if (cull.terrain_valid) {
-      char b[176];
+      char b[192];
       snprintf(b, sizeof(b),
-               "\nTERR: total<%u> | frustum pass<%u> fail<%u> | +occlusion pass<%u> fail<%u>",
+               "\nTERR n<%u> frus p<%u> f<%u>"
+               "\nTERR occl f<%u> vis<%u>",
                cull.t_total, cull.t_frustum, cull.t_total - cull.t_frustum,
-               cull.t_visible, cull.t_frustum - cull.t_visible);
+               cull.t_frustum - cull.t_visible, cull.t_visible);
       out += b;
     }
     if (cull.hyper_valid) {
-      char b[208];
+      char b[224];
       snprintf(b, sizeof(b),
-               "\nHYPM: variants<%d> total<%llu> | frustum pass<%llu> fail<%llu> | +occlusion pass<%llu> fail<%llu>",
+               "\nHYPM v<%d> n<%llu> frus p<%llu> f<%llu>"
+               "\nHYPM occl f<%llu> vis<%llu>",
                cull.h_variants, (unsigned long long)cull.h_total,
                (unsigned long long)cull.h_frustum, (unsigned long long)(cull.h_total - cull.h_frustum),
-               (unsigned long long)cull.h_visible, (unsigned long long)cull.h_occluded);
+               (unsigned long long)cull.h_occluded, (unsigned long long)cull.h_visible);
       out += b;
     }
     return out;
@@ -258,6 +365,88 @@ struct PerfHud {
     ctx->popRenderContextFrameData();
     fbi->popScissor();
     fbi->popViewport();
+  }
+
+  ///////////////////////////////////////////////////////////////
+
+  void _ensureHudRTG(Context* ctx, int w, int h) {
+    if (not _hudRTG) {
+      _hudRTG          = std::make_shared<RtGroup>(ctx, w, h, MsaaSamples::MSAA_1X);
+      _hudRTG->_name   = "perfhud.panel";
+      auto buf         = _hudRTG->createRenderTarget(EBufferFormat::RGBA8);
+      buf->_debugName  = "PerfHudPanel";
+      buf->_clearColor = fvec4(0, 0, 0, 0); // transparent — only content is visible
+    } else if (_hudRTG->width() != w or _hudRTG->height() != h) {
+      _hudRTG->Resize(w, h);
+    }
+  }
+
+  // VR path: render the HUD content into an offscreen RT sized to the content and
+  //  publish its texture (+ aspect) to VrHudOverlay. The DMVR output node reads it
+  //  next frame and draws it as a head-locked panel in both eyes. Uses a FIXED scale
+  //  (not the window SSAA scale) since the panel is magnified in-headset, not viewed
+  //  1:1 on-screen.
+  void _renderPanelRT(Context* ctx) {
+    auto& overlay = VrHudOverlay::instance();
+    int   mode    = _mode.load();
+    if (mode == OFF) {
+      overlay._enabled.store(false);
+      return;
+    }
+    std::string text     = _statsText();
+    int         numLines = 1 + int(std::count(text.begin(), text.end(), '\n'));
+    // longest line in chars (the debug fonts are fixed-width, so stringWidth is exact)
+    int maxchars = 0, cur = 0;
+    for (char ch : text) {
+      if (ch == '\n') {
+        maxchars = std::max(maxchars, cur);
+        cur      = 0;
+      } else
+        cur++;
+    }
+    maxchars = std::max(maxchars, cur);
+
+    const float uiscale = 2.0f; // fixed crisp panel scale
+    auto        fontman = FontMan::instance();
+    fontman->setCurrentFont(uiscale >= 2.75f ? "i48" : (uiscale >= 1.5f ? "i32" : "i16"));
+    float lineH  = float(FontMan::currentFont()->description().miCharHeight);
+    float margin = 12.0f * uiscale;
+    float textW  = float(FontMan::stringWidth(maxchars));
+    float graphH = (mode == GRAPH) ? (78.0f * uiscale + 8.0f * uiscale) : 0.0f;
+    float graphW = (mode == GRAPH) ? 240.0f * uiscale : 0.0f;
+    int   TW     = int(std::max(textW, graphW) + 2.0f * margin);
+    int   TH     = int(float(numLines) * lineH + graphH + 2.0f * margin);
+    TW           = std::max(TW, 16);
+    TH           = std::max(TH, 16);
+
+    _ensureHudRTG(ctx, TW, TH);
+    auto fbi = ctx->FBI();
+    fbi->PushRtGroup(_hudRTG.get());
+    ViewportRect rect(0, 0, TW, TH);
+    fbi->pushViewport(rect);
+    fbi->pushScissor(rect);
+    ctx->pushRenderContextFrameData(std::make_shared<RenderContextFrameData>(ctx));
+
+    // The RT holds only the PREMULTIPLIED FOREGROUND (text + graph) over the transparent
+    //  clear — NO dark slate here. FontMan's glyph blend writes alpha = coverage (VK ALPHA
+    //  macro = alpha factors (ONE,ZERO)), so a slate drawn under it would be PUNCHED to
+    //  alpha-0 holes at every glyph quad — the "black box" defect. Instead the slate is a
+    //  separate ALPHA quad in the DM eye-pass, and this premultiplied RT composites over it
+    //  with PREMA (fringeless, no double-darken). Text over the transparent clear is already
+    //  premultiplied (rgb = color*coverage, a = coverage).
+    float textTop = margin + graphH; // graph sits above the text block
+    if (mode == GRAPH)
+      _drawGraph(ctx, float(TW), float(TH), margin, margin, graphW, 78.0f * uiscale);
+    _drawText(ctx, float(TW), float(TH), text, margin, textTop);
+
+    ctx->popRenderContextFrameData();
+    fbi->popScissor();
+    fbi->popViewport();
+    fbi->PopRtGroup();
+
+    overlay._texture = _hudRTG->texture(0);
+    overlay._aspect  = float(TW) / float(TH);
+    overlay._enabled.store(true);
   }
 
   void _drawText(Context* ctx, float TW, float TH, const std::string& s, float x, float y) {

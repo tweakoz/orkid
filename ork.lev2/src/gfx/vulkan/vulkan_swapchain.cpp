@@ -226,6 +226,7 @@ void VkSwapChain::_buildup() {
     default: break;
   }
   logchan_swapchain->log("_buildup: selected present mode: %s", mode_name);
+  _presentMode = SCINFO.presentMode; // drives providesFramePacing() (FIFO=blocking/vsync)
   SCINFO.clipped = VK_TRUE;
 
   ///////////////////////////////////////////////////

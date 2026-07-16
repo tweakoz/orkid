@@ -13,44 +13,43 @@ namespace ork::lev2::terrain {
 ///////////////////////////////////////////////////////////////////////////////
 // EroxModule — PHYSICAL hydraulic erosion (Mei et al. 2007 virtual-pipes), in
 // METERS / SECONDS so the bake is RESOLUTION-INDEPENDENT. Unlike the texel droplet:
-//   - cell_size_m = extent_m/dim and height_scale_m bridge grid<->world (the proven
-//     Slope rise/run template): real slope = dHnorm*height_scale_m/cell_size_m.
+//   - cell_size_m = extent_m/dim bridges grid<->world; heights are NATURAL UNITS
+//     (meters), so real slope = dH_m/cell_size_m (no vertical scale).
 //   - the timestep dt is CFL-derived (dt = CFL*cell/flow_speed_max), so iterations =
 //     ceil(sim_time_s/dt) scale with dim to hold the SAME physical time + diffusion.
 //   - every RATE (rain/evap/erode/deposit) is multiplied by dt, so more-iterations-at-
 //     higher-dim does not change the result -> RI. Physical params hashed dim-FREE.
-// Internal field units: terr NORMALIZED (*height_scale_m = meters); water + sed in
-// METERS; velocity in m/s; flux in m^3/s. 4 passes/iter, each its own submit (the
+// Internal field units: terr, water, sed all in METERS; velocity in m/s; flux in
+// m^3/s. 4 passes/iter, each its own submit (the
 // one-descriptor-set-per-pipeline rule). Materials-ready: terr is the total column,
 // sed is suspended load, and the erosion strength is an isolated per-cell-READY scalar.
 ///////////////////////////////////////////////////////////////////////////////
 
 // The physical scalars live in a PARAMS SSBO (si_p, float P[16]) read at runtime — NOT
-// baked into the text. So the shader text varies ONLY with dim (array sizes); the disk
-// shader cache (DataBlockCache, keyed by text hash) hits across all param values AND across
-// runs, and changing an erosion knob no longer recompiles. P layout (filled by _fillParams):
-//   0 DT  1 CELL  2 HS  3 KFLUX  4 CELLAREA  5 RAIN  6 EVAP  7 KC  8 KSDT  9 KDDT
-//  10 VMAX  11 KDIFF  12 SEDDIFF
-static std::string _erox_text(int dim, const char* name, const char* sifaces, const char* siflist,
+// baked into the text. The grid dim is ALSO runtime now (P[13]) and the storage arrays are
+// runtime-sized, so the shader text is dim-INDEPENDENT; the disk shader cache (DataBlockCache,
+// keyed by text hash) hits across all param values AND dims AND runs, and changing an erosion
+// knob or resolution no longer recompiles. P layout (filled by _fillParams):
+//   0 DT  1 CELL  2 (reserved)  3 KFLUX  4 CELLAREA  5 RAIN  6 EVAP  7 KC  8 KSDT  9 KDDT
+//  10 VMAX  11 KDIFF  12 SEDDIFF  13 DIM
+static std::string _erox_text(const char* name, const char* sifaces, const char* siflist,
                               const char* body) {
-  std::string t = std::string("\nfxconfig fxcfg_default {}\n") + sifaces +
+  // dim is RUNTIME (params SSBO P[13]); the arrays are runtime-sized and the text no longer
+  // carries dim, so one compile serves every resolution.
+  return std::string("\nfxconfig fxcfg_default {}\n") + sifaces +
     "storage_interface si_p (descriptor_set 0) { buffer layout(std430) pb { float P[16]; }; }\n"
     "compute_interface iface { storage { " + siflist + " si_p } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }\n"
     "compute_shader " + name + " : iface {\n"
-    "  if (gl_GlobalInvocationID.x >= %DIMU% || gl_GlobalInvocationID.y >= %DIMU%) { return; }\n"
+    "  uint u_dim = uint(P[13]);\n"
+    "  if (gl_GlobalInvocationID.x >= u_dim || gl_GlobalInvocationID.y >= u_dim) { return; }\n"
     "  int  xi = int(gl_GlobalInvocationID.x);\n"
     "  int  yi = int(gl_GlobalInvocationID.y);\n"
-    "  int  W  = int(%DIMU%);\n"
-    "  uint i  = uint(yi) * %DIMU% + uint(xi);\n"
-    "  float DT=P[0]; float CELL=P[1]; float HS=P[2]; float KFLUX=P[3]; float CELLAREA=P[4];\n"
+    "  int  W  = int(u_dim);\n"
+    "  uint i  = uint(yi) * u_dim + uint(xi);\n"
+    "  float DT=P[0]; float CELL=P[1]; float KFLUX=P[3]; float CELLAREA=P[4];\n"
     "  float RAIN=P[5]; float EVAP=P[6]; float KC=P[7]; float KSDT=P[8]; float KDDT=P[9];\n"
     "  float VMAX=P[10]; float KDIFF=P[11]; float SEDDIFF=P[12];\n"
     + body + "\n}\n";
-  _shadersub(t, "%DIMSQ4%", FormatString("%d", dim * dim * 4)); // before %DIMSQ% (prefix)
-  _shadersub(t, "%DIMSQ2%", FormatString("%d", dim * dim * 2));
-  _shadersub(t, "%DIMSQ%", FormatString("%d", dim * dim));
-  _shadersub(t, "%DIMU%", FormatString("%du", dim));
-  return t;
 }
 
 struct EroxModuleInst : public TerrainComputeInst {
@@ -66,58 +65,57 @@ struct EroxModuleInst : public TerrainComputeInst {
     _eros    = _floatPlug(this, _d, "erosion_rate_per_s");
     _depo    = _floatPlug(this, _d, "deposition_rate_per_s");
     _creep   = _floatPlug(this, _d, "creep_m2ps");
-    _exag    = _floatPlug(this, _d, "exaggerated_height_m");
   }
-  void onActivate(dflow::GraphInst* inst) final {
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<BakeEnv>();
     auto fxi = env->_ctx->FXI();
     int dim  = env->_w;
     _allocOut(env.get(), _output->_value); // terr A (= output)
     size_t nf = size_t(dim) * size_t(dim);
-    _terrB = fxi->createStorageBuffer(nf * sizeof(float));
-    _water = fxi->createStorageBuffer(nf * sizeof(float));
-    _sedA  = fxi->createStorageBuffer(nf * sizeof(float));
-    _sedB  = fxi->createStorageBuffer(nf * sizeof(float));
-    _flux  = fxi->createStorageBuffer(nf * 4 * sizeof(float));
-    _vel   = fxi->createStorageBuffer(nf * 2 * sizeof(float));
-    _params= fxi->createStorageBuffer(16 * sizeof(float)); // physical scalars, filled per-compute
+    _terrB = env->createStorageBuffer(nf * sizeof(float));
+    _water = env->createStorageBuffer(nf * sizeof(float));
+    _sedA  = env->createStorageBuffer(nf * sizeof(float));
+    _sedB  = env->createStorageBuffer(nf * sizeof(float));
+    _flux  = env->createStorageBuffer(nf * 4 * sizeof(float));
+    _vel   = env->createStorageBuffer(nf * 2 * sizeof(float));
+    _params= env->createStorageBuffer(16 * sizeof(float)); // physical scalars, filled per-compute
 
-    // shaders are now param-INDEPENDENT (only dim varies) -> compiled once / disk-cache
-    // hits across param tweaks; the physical scalars are uploaded to _params at compute().
+    // shaders are now param- AND dim-INDEPENDENT -> compiled once / disk-cache hits across
+    // param tweaks and resolutions; the physical scalars + dim are uploaded to _params.
     auto ET = [&](const char* nm, const char* ifc, const char* names, const char* body) {
-      return fxi->computeShader(fxi->shaderFromShaderText(nm, _erox_text(dim, nm, ifc, names, body)), nm);
+      return fxi->computeShader(fxi->shaderFromShaderText(nm, _erox_text(nm, ifc, names, body)), nm);
     };
     _fillParams(env.get()); // fill the params SSBO here (pre-dispatch-phase: a host map mid-phase is not visible)
     // --- INIT: terr=In, water/sed/flux=0. binds 0 terr(w) 1 in(r) 2 water(w) 3 sed(w) 4 flux(w)
     {
       const char* ifc =
-        "storage_interface si_t (descriptor_set 0) { buffer layout(std430) tb { float terr[%DIMSQ%]; }; }\n"
-        "storage_interface si_i (descriptor_set 0) { buffer layout(std430) ib { float idata[%DIMSQ%]; }; }\n"
-        "storage_interface si_w (descriptor_set 0) { buffer layout(std430) wb { float water[%DIMSQ%]; }; }\n"
-        "storage_interface si_s (descriptor_set 0) { buffer layout(std430) sb { float sed[%DIMSQ%]; }; }\n"
-        "storage_interface si_f (descriptor_set 0) { buffer layout(std430) fb { float flux[%DIMSQ4%]; }; }\n";
+        "storage_interface si_t (descriptor_set 0) { buffer layout(std430) tb { float terr[]; }; }\n"
+        "storage_interface si_i (descriptor_set 0) { buffer layout(std430) ib { float idata[]; }; }\n"
+        "storage_interface si_w (descriptor_set 0) { buffer layout(std430) wb { float water[]; }; }\n"
+        "storage_interface si_s (descriptor_set 0) { buffer layout(std430) sb { float sed[]; }; }\n"
+        "storage_interface si_f (descriptor_set 0) { buffer layout(std430) fb { float flux[]; }; }\n";
       const char* body =
         "  terr[i] = idata[i];\n  water[i] = 0.0;\n  sed[i] = 0.0;\n"
         "  flux[4u*i+0u]=0.0; flux[4u*i+1u]=0.0; flux[4u*i+2u]=0.0; flux[4u*i+3u]=0.0;";
       _csInit = ET("cs_erox_init", ifc, "si_t si_i si_w si_s si_f", body);
     }
-    // --- FLUX: outflow accel from PHYSICAL head (terr*HS + water_m), clamped to available
+    // --- FLUX: outflow accel from PHYSICAL head (terr_m + water_m), clamped to available
     //     water. binds 0 flux(rw) 1 terr(r) 2 water(r)
     {
       const char* ifc =
-        "storage_interface si_f (descriptor_set 0) { buffer layout(std430) fb { float flux[%DIMSQ4%]; }; }\n"
-        "storage_interface si_t (descriptor_set 0) { buffer layout(std430) tb { float terr[%DIMSQ%]; }; }\n"
-        "storage_interface si_w (descriptor_set 0) { buffer layout(std430) wb { float water[%DIMSQ%]; }; }\n";
+        "storage_interface si_f (descriptor_set 0) { buffer layout(std430) fb { float flux[]; }; }\n"
+        "storage_interface si_t (descriptor_set 0) { buffer layout(std430) tb { float terr[]; }; }\n"
+        "storage_interface si_w (descriptor_set 0) { buffer layout(std430) wb { float water[]; }; }\n";
       const char* body =
-        "  float Hc = terr[i]*HS + water[i];\n"                                  // head in meters
-        // OPEN boundary: off-map is DRY ground at the local bed (terr*HS, NO water), so the
+        "  float Hc = terr[i] + water[i];\n"                                     // head in meters (terr is meters)
+        // OPEN boundary: off-map is DRY ground at the local bed (terr, NO water), so the
         // edge head difference equals water[i] -> standing water DRAINS off the map. The old
         // ':Hc' (zero gradient) trapped ALL water in the domain -> it filled to a uniform
         // evaporation-balanced sheet (~rain/evap) and could only sheet-flow, never channelize.
-        "  float HL = (xi>0)   ? (terr[i-1u]*HS+water[i-1u]) : (terr[i]*HS);\n"
-        "  float HR = (xi<W-1) ? (terr[i+1u]*HS+water[i+1u]) : (terr[i]*HS);\n"
-        "  float HD = (yi>0)   ? (terr[i-uint(W)]*HS+water[i-uint(W)]) : (terr[i]*HS);\n"
-        "  float HU = (yi<W-1) ? (terr[i+uint(W)]*HS+water[i+uint(W)]) : (terr[i]*HS);\n"
+        "  float HL = (xi>0)   ? (terr[i-1u]+water[i-1u]) : terr[i];\n"
+        "  float HR = (xi<W-1) ? (terr[i+1u]+water[i+1u]) : terr[i];\n"
+        "  float HD = (yi>0)   ? (terr[i-uint(W)]+water[i-uint(W)]) : terr[i];\n"
+        "  float HU = (yi<W-1) ? (terr[i+uint(W)]+water[i+uint(W)]) : terr[i];\n"
         "  float fL = max(0.0, flux[4u*i+0u] + KFLUX*(Hc-HL));\n"
         "  float fR = max(0.0, flux[4u*i+1u] + KFLUX*(Hc-HR));\n"
         "  float fD = max(0.0, flux[4u*i+2u] + KFLUX*(Hc-HD));\n"
@@ -133,12 +131,12 @@ struct EroxModuleInst : public TerrainComputeInst {
     //     binds 0 terrOut(w) 1 terrIn(r) 2 water(rw) 3 flux(r) 4 sed(rw) 5 vel(w)
     {
       const char* ifc =
-        "storage_interface si_o (descriptor_set 0) { buffer layout(std430) ob { float terr_o[%DIMSQ%]; }; }\n"
-        "storage_interface si_t (descriptor_set 0) { buffer layout(std430) tb { float terr_i[%DIMSQ%]; }; }\n"
-        "storage_interface si_w (descriptor_set 0) { buffer layout(std430) wb { float water[%DIMSQ%]; }; }\n"
-        "storage_interface si_f (descriptor_set 0) { buffer layout(std430) fb { float flux[%DIMSQ4%]; }; }\n"
-        "storage_interface si_s (descriptor_set 0) { buffer layout(std430) sb { float sed[%DIMSQ%]; }; }\n"
-        "storage_interface si_v (descriptor_set 0) { buffer layout(std430) vb { float vel[%DIMSQ2%]; }; }\n";
+        "storage_interface si_o (descriptor_set 0) { buffer layout(std430) ob { float terr_o[]; }; }\n"
+        "storage_interface si_t (descriptor_set 0) { buffer layout(std430) tb { float terr_i[]; }; }\n"
+        "storage_interface si_w (descriptor_set 0) { buffer layout(std430) wb { float water[]; }; }\n"
+        "storage_interface si_f (descriptor_set 0) { buffer layout(std430) fb { float flux[]; }; }\n"
+        "storage_interface si_s (descriptor_set 0) { buffer layout(std430) sb { float sed[]; }; }\n"
+        "storage_interface si_v (descriptor_set 0) { buffer layout(std430) vb { float vel[]; }; }\n";
       const char* body =
         "  float b = terr_i[i];\n  float d = water[i] + RAIN;\n"
         "  float inL = (xi>0)   ? flux[4u*(i-1u)+1u] : 0.0;\n"        // left's R
@@ -157,15 +155,15 @@ struct EroxModuleInst : public TerrainComputeInst {
         "  if (vmag > VMAX) { float sc = VMAX/vmag; u *= sc; v *= sc; vmag = VMAX; }\n" // cap to the CFL flow_speed_max
         "  float bL=(xi>0)?terr_i[i-1u]:b, bR=(xi<W-1)?terr_i[i+1u]:b;\n"
         "  float bD=(yi>0)?terr_i[i-uint(W)]:b, bU=(yi<W-1)?terr_i[i+uint(W)]:b;\n"
-        "  float gx=(bR-bL)*HS/(2.0*CELL), gy=(bU-bD)*HS/(2.0*CELL);\n"          // real slope rise_m/run_m
+        "  float gx=(bR-bL)/(2.0*CELL), gy=(bU-bD)/(2.0*CELL);\n"                // real slope rise_m/run_m (terr is meters)
         "  float slope = sqrt(gx*gx+gy*gy);\n"
         "  float sina = slope/sqrt(slope*slope+1.0);\n"
         "  sina = max(sina, 1e-3);\n"
         "  float C = KC*sina*vmag;\n"                                            // capacity (m)
         "  float s = sed[i];\n  float bnew=b, snew=s;\n"
         "  float Kerod = KSDT;\n"                                                // MATERIALS HOOK (M-C: per-cell erodibility*dt)
-        "  if (C > s) { float amt = Kerod*(C-s);        bnew = b - amt/HS; snew = s + amt; }\n" // erode
-        "  else       { float amt = min(KDDT*(s-C), s); bnew = b + amt/HS; snew = s - amt; }\n" // deposit (<= available)
+        "  if (C > s) { float amt = Kerod*(C-s);        bnew = b - amt; snew = s + amt; }\n" // erode (terr is meters)
+        "  else       { float amt = min(KDDT*(s-C), s); bnew = b + amt; snew = s - amt; }\n" // deposit (<= available)
         "  bnew += KDIFF*(bL + bR + bD + bU - 4.0*b);\n"  // creep/diffusion: kills the Nyquist checkerboard, hillslope creep
         "  terr_o[i] = bnew;\n  water[i] = dnew*(1.0 - EVAP);\n  sed[i] = max(snew, 0.0);\n"
         "  vel[2u*i+0u]=u; vel[2u*i+1u]=v;";
@@ -175,9 +173,9 @@ struct EroxModuleInst : public TerrainComputeInst {
     //     no ADV hack). binds 0 sedOut(w) 1 sedIn(r) 2 vel(r)
     {
       const char* ifc =
-        "storage_interface si_o (descriptor_set 0) { buffer layout(std430) ob { float sed_o[%DIMSQ%]; }; }\n"
-        "storage_interface si_i (descriptor_set 0) { buffer layout(std430) ib { float sed_i[%DIMSQ%]; }; }\n"
-        "storage_interface si_v (descriptor_set 0) { buffer layout(std430) vb { float vel[%DIMSQ2%]; }; }\n";
+        "storage_interface si_o (descriptor_set 0) { buffer layout(std430) ob { float sed_o[]; }; }\n"
+        "storage_interface si_i (descriptor_set 0) { buffer layout(std430) ib { float sed_i[]; }; }\n"
+        "storage_interface si_v (descriptor_set 0) { buffer layout(std430) vb { float vel[]; }; }\n";
       const char* body =
         "  float u=vel[2u*i+0u], v=vel[2u*i+1u];\n"
         "  float sx = clamp(float(xi) - u*DT/CELL, 0.0, float(W-1));\n"           // backtrace u*dt meters -> texels
@@ -192,7 +190,7 @@ struct EroxModuleInst : public TerrainComputeInst {
     }
   }
   // derive the physical per-step scalars from the meters model + plug values and upload them
-  // to the params SSBO. Reads the PLUGS at compute() time (not onActivate), so a sweep can
+  // to the params SSBO. Reads the PLUGS at compute() time (not bakeAcquire), so a sweep can
   // vary params and re-run compute() without recompiling. Also sets _iterations.
   void _fillParams(BakeEnv* env) {
     int dim = env->_w;
@@ -204,9 +202,7 @@ struct EroxModuleInst : public TerrainComputeInst {
     float P[16] = {0};
     P[0]  = dt;
     P[1]  = cell;
-    // erosion's OWN (exaggerated) vertical scale; env physical height is for measurements.
-    // 0 -> no exaggeration (physical). Scoped to this op, not a bake-wide scale.
-    P[2]  = (_exag->value() > 0.0f) ? _exag->value() : env->_height_scale_m;
+    P[2]  = 0.0f;                                             // reserved (was HS; heights are meters -> no vertical scale)
     P[3]  = dt * cell * g;                                    // KFLUX = dt*A*g/L, A=cell^2 L=cell
     P[4]  = cell * cell;                                      // CELLAREA
     P[5]  = _rain->value() * dt;                              // rain meters/step
@@ -217,6 +213,7 @@ struct EroxModuleInst : public TerrainComputeInst {
     P[10] = vmax;
     P[11] = std::min(_creep->value() * dt / (cell * cell), 0.2f);        // KDIFF hillslope creep
     P[12] = std::min(2.0f * _creep->value() * dt / (cell * cell), 0.1f); // SEDDIFF sediment mixing
+    P[13] = float(dim);                                                  // grid dim (runtime, was baked into text)
     auto fxi = env->_ctx->FXI();
     auto m   = fxi->mapStorageBuffer(_params, 0, sizeof(P), BufferMapAccess::WRITE_ONLY);
     std::memcpy(m->_mappedaddr, P, sizeof(P));
@@ -267,11 +264,14 @@ struct EroxModuleInst : public TerrainComputeInst {
     }
     _output->_value->_ssbo = terr[tc]; // eroded terrain
   }
+  // a full CFL-stepped virtual-pipes sim (hundreds of dispatches per node) — recompute
+  // dwarfs a blob load, same class of cost as ThermalErode/Flow3D.
+  bool cookCacheDefault() const final { return true; }
   uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
     auto h = DataBlock::createHasher();
-    h->accumulateString("terrain.erox.v8"); // v8: OPEN boundaries (water drains off-map -> channelizes)
+    h->accumulateString("terrain.erox.v9"); // v9: heights in meters (dropped HS scale + per-op exag plug); v8: OPEN boundaries
     // hash the PHYSICAL params (dim-free identity); the cook CONTEXT hash carries
-    // (dim, extent_m, height_scale_m), so two resolutions share node id, differ in context.
+    // (dim, extent_m), so two resolutions share node id, differ in context.
     h->accumulateItem<float>(_simTime->value());
     h->accumulateItem<float>(_rain->value());
     h->accumulateItem<float>(_evap->value());
@@ -280,7 +280,6 @@ struct EroxModuleInst : public TerrainComputeInst {
     h->accumulateItem<float>(_eros->value());
     h->accumulateItem<float>(_depo->value());
     h->accumulateItem<float>(_creep->value());
-    h->accumulateItem<float>(_exag->value());
     _mixTail(h, ctx, ih);
     h->finish();
     return h->result();
@@ -289,7 +288,7 @@ struct EroxModuleInst : public TerrainComputeInst {
   const EroxModuleData* _d;
   hfimg_outpluginst_ptr_t _output;
   hfimg_inpluginst_ptr_t _input;
-  dflow::float_inp_pluginst_ptr_t _simTime, _rain, _evap, _vmax, _cap, _eros, _depo, _creep, _exag;
+  dflow::float_inp_pluginst_ptr_t _simTime, _rain, _evap, _vmax, _cap, _eros, _depo, _creep;
   FxShaderStorageBuffer *_terrB = nullptr, *_water = nullptr, *_sedA = nullptr, *_sedB = nullptr, *_flux = nullptr, *_vel = nullptr;
   FxShaderStorageBuffer *_params = nullptr; // 16 physical scalars, uploaded per-compute (no recompile on tweak)
   const FxComputeShader *_csInit = nullptr, *_csFlux = nullptr, *_csWater = nullptr, *_csXport = nullptr;
@@ -308,9 +307,6 @@ static void _reshapeEroxIOs(dataflow::moduledata_ptr_t data) {
   dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "deposition_rate_per_s")->setValue(1.0f);
   // hillslope creep / numerical diffusion (m^2/s); also the anti-checkerboard stabilizer.
   dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "creep_m2ps")->setValue(4.0f);
-  // erosion vertical exaggeration (meters that normalized 1.0 is during EROSION only);
-  // 0 -> use the env physical height. Scoped to this op, NOT a bake-wide scale.
-  dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "exaggerated_height_m")->setValue(0.0f);
   dflow::ModuleData::createOutputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "Out");
 }
 EroxModuleData::EroxModuleData() {}

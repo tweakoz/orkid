@@ -122,11 +122,9 @@ std::vector<double> _gradient(const std::vector<double>& a, int W, int H, int ax
 std::shared_ptr<meshutil::Geometry> scatterPlace(
     const ScatterSinkData& sink,
     const std::map<std::string, std::string>& channel_paths,
-    float extent_m_f,
-    float height_m_f) {
+    float extent_m_f) {
 
   const double extent_m = double(extent_m_f);
-  const double height_m = double(height_m_f);
   const uint64_t seed   = uint64_t(uint32_t(sink._seed)); // non-negative, matches py (seed & mask)
 
   // --- channels ---------------------------------------------------------------
@@ -233,9 +231,9 @@ std::shared_ptr<meshutil::Geometry> scatterPlace(
   const bool align_normal = (sink._align == "normal");
   std::vector<double> gx, gz;
   if (align_normal) {
-    std::vector<double> hm(size_t(W) * H);
+    std::vector<double> hm(size_t(W) * H); // heights are TRUE METERS in the baked field
     for (size_t i = 0; i < hm.size(); i++)
-      hm[i] = double(height._v[i]) * height_m;
+      hm[i] = double(height._v[i]);
     gz = _gradient(hm, W, H, 0); // d/drow (z)
     gx = _gradient(hm, W, H, 1); // d/dcol (x)
   }
@@ -284,7 +282,7 @@ std::shared_ptr<meshutil::Geometry> scatterPlace(
   for (int n = 0; n < N; n++) {
     const auto& pt = kept[n];
     const double px = pt.wx, pz = pt.wz;
-    const double py = double(_sampleNearest(height, pt.u, pt.v)) * height_m;
+    const double py = double(_sampleNearest(height, pt.u, pt.v)); // TRUE METERS (baked field)
 
     // normal (double math, the numpy float64 path)
     double nx = 0.0, ny = 1.0, nz = 0.0;

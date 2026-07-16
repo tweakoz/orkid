@@ -28,13 +28,15 @@ class WalkerMixin:
              fovy_deg=65.0,
              cam_near=0.1, 
              cam_far=1000.0, 
-             brake=10.0, 
+             brake=10.0,
              turn_decay=6.0,
-             drive_friction=0.0, 
+             drive_friction=0.0,
              rest_friction=2.0,
-             friction=0.6, 
-             restitution=0.0, 
-             gravity=None, 
+             kill_z_drop=0.0,   # OPT-IN (<=0 = respawn DISABLED; owner call)
+             spawn_above=5.0,   # ground-snap: spawn feet this many m above the terrain (<=0 = exact spawn)
+             friction=0.6,
+             restitution=0.0,
+             gravity=None,
              force_name="walkforce"):
     """The walkable character: an upright-locked capsule (angularFactor (0,1,0) — the
     FPS-example recipe) + a declared DirectionalForce + a CharacterControllerComponent
@@ -50,7 +52,16 @@ class WalkerMixin:
     the character sits still on hills (rest_friction 2.0 holds ~63° slopes —
     needs static colliders carrying friction ~1.0; bullet combines contact
     friction multiplicatively). The bullet-component friction= kwarg only sets
-    the initial value before the controller takes over."""
+    the initial value before the controller takes over.
+    kill_z_drop — SELF-DEFENSE: if the body ever falls more than this many metres
+    below its spawn Y it is teleported home with zeroed velocity (the fell-out-of-
+    the-world guard; a spawn proven underground recovers ABOVE the terrain instead).
+    0 disables the guard.
+    spawn_above — SPAWN GROUND-SNAP (default 5m): when the scene has a terrain
+    floor, the authored spawn Y is ADVISORY — the controller raycasts down at
+    spawn XZ and places the feet this many metres above the actual static ground
+    (kills underground spawns AND sky spawns that tunnel through the heightfield
+    at terminal velocity). <=0 = exact authored spawn."""
     import os as _os
     from orkengine import ecs as _ecs
     # gravity precedence: an EXPLICIT gravity= on any helper is authoritative
@@ -95,6 +106,21 @@ class WalkerMixin:
         cam_near=float(cam_near), cam_far=float(cam_far), brake=float(brake),
         turn_decay=float(turn_decay),
         drive_friction=float(drive_friction), rest_friction=float(rest_friction),
+        kill_z_drop=float(kill_z_drop),
+        spawn_above_ground=float(spawn_above),
         force_name=str(force_name))
+    # ONE TRUTH for clip planes: the XR eye projections read the DEVICE near/far, seeded
+    #  from the VrNear/VrFar scene params — NOT from this walker camera. Without this
+    #  propagation VR silently rendered near=0.1 against cam_far=100km (the exact config
+    #  the cam_near comment above forbids: far-field Z-fighting). setdefault into the
+    #  scenegraph's ALREADY-DECLARED params dict (same object the decl carries), so a
+    #  scene author's explicit VrNear/VrFar always wins.
+    sg = getattr(self, "_sg_handle", None)
+    if sg is not None and not sg.external:
+      for call, args, _kw in sg._decl.sub_calls:
+        if call == "declareParams" and args and isinstance(args[0], dict):
+          args[0].setdefault("VrNear", float(cam_near))
+          args[0].setdefault("VrFar",  float(cam_far))
+          break
     return self.entity(name, transform=Transform(translation=spawn),
                        components=[phys, ctl])

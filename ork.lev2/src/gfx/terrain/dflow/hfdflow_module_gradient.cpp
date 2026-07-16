@@ -14,22 +14,26 @@ namespace ork::lev2::terrain {
 // GradientModule — Out = dot(uv, (dir_x,dir_y))*scale + bias. 1 SSBO.
 ///////////////////////////////////////////////////////////////////////////////
 
-static std::string _grad_text(int dim, float dx, float dy, float scale, float bias) {
+// DIM is RUNTIME data (params SSBO p_dimf, binding 1) — dim changes never rebuild the
+// shader; the output array is runtime-sized. dir/scale/bias stay baked.
+// * (1.0/p_dimf), not / p_dimf: the old LITERAL dim divide was compiler-folded to a
+// reciprocal multiply — replicate it so runtime-dim output stays bit-identical to the
+// baked-dim caches.
+static std::string _grad_text(float dx, float dy, float scale, float bias) {
   std::string t = R"S(
 fxconfig fxcfg_default {}
-storage_interface sif_out (descriptor_set 0) { buffer layout(std430) ob { float odata[%DIMSQ%]; }; }
-compute_interface iface { storage { sif_out } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }
+storage_interface sif_out (descriptor_set 0) { buffer layout(std430) ob { float odata[]; }; }
+storage_interface sif_pm  (descriptor_set 0) { buffer layout(std430) pm_in { float p_dimf; }; }
+compute_interface iface { storage { sif_out sif_pm } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }
 compute_shader cs_grad : iface {
-  if (gl_GlobalInvocationID.x >= %DIMU% || gl_GlobalInvocationID.y >= %DIMU%) { return; }
+  uint u_dim = uint(p_dimf); // RUNTIME grid dim (params SSBO) — no rebuild on dim change
+  if (gl_GlobalInvocationID.x >= u_dim || gl_GlobalInvocationID.y >= u_dim) { return; }
   uint xi = gl_GlobalInvocationID.x;
   uint yi = gl_GlobalInvocationID.y;
-  vec2 uv = vec2(float(xi), float(yi)) / float(%DIM%);
-  odata[yi * %DIMU% + xi] = (uv.x * float(%DX%) + uv.y * float(%DY%)) * float(%SCALE%) + float(%BIAS%);
+  vec2 uv = vec2(float(xi), float(yi)) * (1.0 / p_dimf);
+  odata[yi * u_dim + xi] = (uv.x * float(%DX%) + uv.y * float(%DY%)) * float(%SCALE%) + float(%BIAS%);
 }
 )S";
-  _shadersub(t, "%DIMSQ%", FormatString("%d", dim * dim));
-  _shadersub(t, "%DIMU%", FormatString("%du", dim));
-  _shadersub(t, "%DIM%", FormatString("%d", dim));
   _shadersub(t, "%DX%", FormatString("%f", dx));
   _shadersub(t, "%DY%", FormatString("%f", dy));
   _shadersub(t, "%SCALE%", FormatString("%f", scale));
@@ -45,19 +49,26 @@ struct GradientModuleInst : public TerrainComputeInst {
     _sc = _floatPlug(this, _d, "scale");
     _bi = _floatPlug(this, _d, "bias");
   }
-  void onActivate(dflow::GraphInst* inst) final {
+  void bakeAcquire(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<BakeEnv>();
+    auto fxi = env->_ctx->FXI();
     _allocOut(env.get(), _output->_value);
     auto dir = _dir->value();
-    auto sh = env->_ctx->FXI()->shaderFromShaderText(
-        "terrain_grad", _grad_text(env->_w, dir.x, dir.y, _sc->value(), _bi->value()));
-    _cs = env->_ctx->FXI()->computeShader(sh, "cs_grad");
+    auto sh = fxi->shaderFromShaderText(
+        "terrain_grad", _grad_text(dir.x, dir.y, _sc->value(), _bi->value()));
+    _cs = fxi->computeShader(sh, "cs_grad");
+    _pm        = env->createStorageBuffer(sizeof(float)); // p_dimf = RUNTIME grid dim
+    float dimf = float(env->_w);
+    auto mp    = fxi->mapStorageBuffer(_pm, 0, sizeof(dimf), BufferMapAccess::WRITE_ONLY);
+    std::memcpy(mp->_mappedaddr, &dimf, sizeof(dimf));
+    fxi->unmapStorageBuffer(mp.get());
   }
   void compute(dflow::GraphInst* inst, ui::updatedata_ptr_t) final {
     auto env = inst->_impl.getShared<BakeEnv>();
     auto ci  = env->_ctx->CI();
     int g    = (env->_w + 7) / 8;
     ci->bindStorageBuffer(_cs, 0, _output->_value->_ssbo);
+    ci->bindStorageBuffer(_cs, 1, _pm); // p_dimf (RUNTIME grid dim)
     ci->dispatchCompute(_cs, g, g, 1);
     ci->storageBarrier();
   }
@@ -78,6 +89,7 @@ struct GradientModuleInst : public TerrainComputeInst {
   hfimg_outpluginst_ptr_t _output;
   dflow::fvec2_inp_pluginst_ptr_t _dir;
   dflow::float_inp_pluginst_ptr_t _sc, _bi;
+  FxShaderStorageBuffer* _pm = nullptr;
   const FxComputeShader* _cs = nullptr;
 };
 

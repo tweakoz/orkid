@@ -83,10 +83,17 @@ void Simulation::_buildStateMachine() {
       _runGpuPhaseOnRenderThread([this](lev2::Context* ctx) {
         SystemLut gpu_systems;
         _systems.atomicOp([&](const SystemLut& syslut) { gpu_systems = syslut; });
+        // LOADX WS1: fresh spawn/join set for this load wave. Systems' _onGpuInit
+        // SPAWN independent loads (workers/io/loader phases/asset requests); the
+        // join below PUMPS ctx until they resolve, so all _onGpuLink hooks see
+        // completed loads. Systems that spawn nothing are unaffected (join is a
+        // no-op on an empty set) — the rendezvous ORDER is unchanged.
+        _loadJoinSet = std::make_shared<lev2::LoadJoinSet>("simulation_gpuinit");
         for (auto sys : gpu_systems) {
           sys.second->_onGpuInit(this, ctx);
         }
         if (_controller) for (auto& cb : _controller->_onGpuPostInit) cb(this, ctx);
+        _loadJoinSet->join(ctx); // pump: deferred ops + loading phases (LOADX §1.1)
         for (auto sys : gpu_systems) {
           sys.second->_onGpuLink(this, ctx);
         }
@@ -338,7 +345,10 @@ void Simulation::_buildStateMachine() {
   ren_init_state->_onenter = [this](fsm::fsminstance_ptr_t inst) {};
   //
   ren_init_state->_onupdate = [=](fsm::fsminstance_ptr_t inst) {
-    if (_gpuUpdateSMInst->currentState() == _gpuReadyState) {
+    // gpuExit() nulls _gpuUpdateSMInst BEFORE its final render-FSM pumps — an
+    // offscreen/early exit can still have this FSM sitting in INIT (null-deref
+    // crash, exit-245 residual 2026-07-02). No gpu FSM => nothing to wait for.
+    if (_gpuUpdateSMInst and _gpuUpdateSMInst->currentState() == _gpuReadyState) {
       if (auto sframe = inst->vars()->typedValueForKey<lev2::standardcompositorframe_ptr_t>("sframe")) {
         sframe.value()->attachDrawQueueContext(_dbufctxSIM);
       }

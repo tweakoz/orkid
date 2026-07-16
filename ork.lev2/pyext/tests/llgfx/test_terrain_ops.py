@@ -36,6 +36,12 @@ def main():
     print("running terrain round-trip gate (dim=256) ...", flush=True)
     fails += lev2.terrain_roundtrip_test(ctx, 256)
 
+    # SubGraphModule gate: a LoopModule (nested body = thermal erode) round-trips
+    # subgraph+count+promotions, its clone bakes identically, the N->N+k per-iteration
+    # cache oracle holds, and composite bypass splices it out.
+    print("running terrain subgraph/loop gate (dim=256) ...", flush=True)
+    fails += lev2.terrain_subgraph_test(ctx, 256)
+
     ezapp.mainThreadEnd()
 
     passed = (fails == 0)

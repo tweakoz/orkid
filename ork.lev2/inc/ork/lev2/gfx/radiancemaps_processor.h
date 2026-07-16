@@ -11,6 +11,7 @@
 #include <ork/file/path.h>
 #include <ork/kernel/taskgraph.h>
 #include <ork/lev2/lev2_types.h>
+#include <ork/lev2/gfx/gpumicrotask.h>
 #include <ork/math/box.h>
 #include <atomic>
 #include <mutex>
@@ -112,6 +113,29 @@ struct EnvMapProcessor {
       texture_ptr_t rawenvmap,
       bool is_equirectangular,
       bool is_hdr_source);
+
+  // MT2 (JUL05_GPUMICROTASK §2.6): the sliced, scheduler-driven equivalent of
+  // createFilteringTaskGraph. Filters `rawenvmap` ONE roughness/mip level per
+  // slice under the per-frame budget (T7 option "a": each level render+capture
+  // is a self-contained GPU submit via Context::executeInlineGpuJob, so its
+  // cost is measured + throttled). Shares the exact same per-level render +
+  // packaging code as the burst path — output is byte-identical (determinism
+  // law, §5). If `target` is non-null the result is published into it on the
+  // final slice (in-scene refilter, the fence-gated live swap). `on_complete`
+  // fires last with the packaged XIR datablock. Enqueue on a Context's
+  // _microtaskScheduler; runs on that context's owner thread.
+  static gpumicrotask_ptr_t createRadiancePrefilterMicrotask(
+      texture_ptr_t rawenvmap,
+      bool is_equirectangular,
+      bool is_hdr_source,
+      pbr::radiancemaps_ptr_t target,
+      std::function<void(datablock_ptr_t)> on_complete);
+
+  // Byte-identity harness (§3 MT2 gate b): bake `input_path` to XIR via the
+  // microtask path instead of the burst taskgraph. Enqueues on gloadercontext's
+  // scheduler (UNBOUNDED — drains like the burst). Result delivered via future.
+  static xirprocessfuture_ptr_t processToXIRDataBlockAsyncViaMicrotask(
+      const file::Path& input_path);
   
   // Individual tile rendering methods
   static void renderSpecularTile(

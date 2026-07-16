@@ -15,9 +15,11 @@ class TerrainMixin:
 
   def terrain(self, name, *, render_dimension=512, bake_dimension=None, chunk=128, dsl_file=None,
               dsl_class=None, dsl_kwargs=None, walkable=False, visible_y_bias=0.0,
-              capture=False, mode="proc", bake_res=2048):
+              capture=False, mode="proc", bake_res=2048,
+              spawn=None):
     """Self-describing chunked-terrain entity. Loads the terrain DSL class and reads its
-    OWN physical scale + look — EXTENT_M / HEIGHT_M / MATERIAL_CLASS / MATERIAL_PARAMS, and
+    OWN physical scale + look — EXTENT_M / MATERIAL_CLASS / MATERIAL_PARAMS (heights are
+    TRUE METERS on the graph — no vertical scale constant), and
     the material's SAMPLER_CHANNELS — exactly the attrs ork.terrain.viewer2.py reads. Wires
     the full ECS contract from them: the HeightField bake (with channel→sampler bindings
     derived from SAMPLER_CHANNELS), the Ptex3d material (the terrain's OWN MATERIAL_CLASS,
@@ -58,7 +60,6 @@ class TerrainMixin:
 
     cls        = load_dsl_class(resolve_dsl_file(dsl_file), dsl_class)
     extent_m   = float(getattr(cls, "EXTENT_M", 4096.0))
-    height_m   = float(getattr(cls, "HEIGHT_M", 1024.0))
     # bake_dimension (>= render_dimension): the terrain is COMPUTED + the material BAKED at this hi-res;
     # the render mesh (and physics) use `render_dimension`, downsampled from it. Defaults to render_dimension.
     bake_dim   = int(bake_dimension) if bake_dimension else int(render_dimension)
@@ -99,14 +100,14 @@ class TerrainMixin:
         mat_name,
         dsl_class     = mat_cls,
         vertex_source = TerrainChunkVertexSource(
-            dim=render_dimension, extent_m=extent_m, height_m=height_m, chunk=chunk, y_bias=visible_y_bias,
+            dim=render_dimension, extent_m=extent_m, chunk=chunk, y_bias=visible_y_bias,
             bake_dim=bake_dim, relax=relax),
         mode          = mode,
         capture       = capture,     # mode='proc' + capture=True => impostor-style debug env-dump only
         **mat_params)
     hf = self.asset.HeightField(
         name, dsl_file=dsl_file, dsl_class=(dsl_class or None), dimension=bake_dim,
-        extent_m=extent_m, height_scale_m=height_m, material=mat_name,
+        extent_m=extent_m, material=mat_name,
         channel_samplers=channel_samplers, **(dsl_kwargs or {}))
     cap_targets = list(getattr(p, "capture_targets", []) or [])
     if mode == "stored" and not cap_targets:
@@ -140,9 +141,9 @@ class TerrainMixin:
       # WITHOUT changing _terr_src -> the cap_dir would collide and the player would bind the STALE atlas.
       # Bump this token whenever the relax module's output changes (mirror of the C++ cook salt). Only
       # added when relaxed, so non-relaxed terrains keep their existing cache keys.
-      _relax_tok = "relaxuv.v4-coarse" if relax else "norelax"
+      _relax_tok = "relaxuv.v5-cap512" if relax else "norelax"
       _terr_key  = "\x00".join([_terr_src, repr(sorted((dsl_kwargs or {}).items())),
-                                str(bake_dim), str(extent_m), str(height_m),
+                                str(bake_dim), str(extent_m), "meters",
                                 str(visible_y_bias), str(chunk), _relax_tok])
       _terr_hash = _hashlib.sha1(_terr_key.encode("utf-8")).hexdigest()[:12]
       cap_dir = _Path.expandPathString(
@@ -171,9 +172,10 @@ class TerrainMixin:
         })])
 
     if walkable:
-      # TERRAIN-PHYSICS mode: static heightfield collider + a first-person walker. Spawn at the
-      # terrain TOP (surface height at the origin is unknown — dropping from height_m is the only
-      # generic-safe placement) with a generous near/far so distant relief renders without Z-fighting.
+      # TERRAIN-PHYSICS mode: static heightfield collider + a first-person walker. Spawn well
+      # above the terrain (surface height at the origin is unknown at compose time — dropping
+      # in is the only generic-safe placement) with a generous near/far so distant relief
+      # renders without Z-fighting.
       # No projectile_pool, so the walk script's `/`-shoot self-disables (no ball_spawner).
       self.terrain_collider(hf, 
                             friction=1.0, 
@@ -182,8 +184,12 @@ class TerrainMixin:
       # MOUNTAIN-CLIMBING defaults: move_force 8000 N over an 80 kg body at g=19.8 climbs
       # slopes up to atan(8000/(80*19.8)) ≈ 78°. rest_friction holds you still on the slope
       # at rest; the static collider carries friction 1.0 so the character's own values read.
+      # spawn: callers SHOULD pass one measured against their baked terrain (the
+      # noise basis owns the relief; heights are true meters with no scale constant
+      # to derive a drop height from). Default drops from a quarter extent — generous
+      # for any sanely-proportioned terrain, and the walker settles on contact.
       walker_kw = dict(
-          spawn        = vec3(0.0, height_m*0.5, 0.0),
+          spawn        = spawn if spawn is not None else vec3(0.0, extent_m*0.25, 0.0),
           cam_near     = 2.0,        # NOT 0.1 — far depth precision is dominated by near; 0.1 on a big
                                      # cam_far Z-fights the distant terrain into oblivion (see VrNear=1.0)
           cam_far      = 100000.0,   # generous flat far (clears any terrain) — sizing it to extent_m was
@@ -211,13 +217,13 @@ class TerrainMixin:
                        render_dimension=0):
     """Static heightfield collider for a baked HeightField asset. `hf_asset` is the
     asset wrapper (or its name string); physics scale comes from the asset's manifest
-    at load. Bullet centers the heightfield AABB, and the baked height channel is
-    auto-exposed to [0,1] EXACTLY — so the entity sits at y = 0.5 * height_scale_m
-    (taken from the wrapper; pass a wrapper, not a bare string, unless you place the
-    entity yourself). Ensures BulletSystem (default gravity -9.8 if absent).
-    `render_dimension` (0 = full EXR res): when the HeightField bakes at a higher
-    bake_dimension than the rendered mesh, pass the render grid here so the collider
-    high-quality-downsamples to it (Image::resampledOf) and physics matches the visible mesh."""
+    at load. Heights are TRUE METERS: the C++ shape wraps Bullet's centered heightfield
+    in a compound whose child offset restores absolute meters, so the entity sits at
+    y = 0 and world y == the baked height. Ensures BulletSystem (default gravity -9.8
+    if absent). `render_dimension` (0 = full EXR res): when the HeightField bakes at a
+    higher bake_dimension than the rendered mesh, pass the render grid here so the
+    collider high-quality-downsamples to it (Image::resampledOf) and physics matches
+    the visible mesh."""
     from orkengine import ecs as _ecs
     explicit = gravity is not None
     if gravity is None:
@@ -227,7 +233,6 @@ class TerrainMixin:
       self._systems["BulletSystem"].kwargs["linGravity"] = gravity
     gd     = getattr(hf_asset, "gendata", None)
     aname  = getattr(gd, "asset_name", None) or str(hf_asset)
-    h_m    = float(getattr(gd, "height_scale_m", 0.0)) if gd is not None else 0.0
     shape  = _ecs.BulletShapeTerrainData()
     shape.hf_asset = aname
     shape.render_dimension = int(render_dimension)
@@ -236,7 +241,7 @@ class TerrainMixin:
         shape=shape, mass=0.0, friction=float(friction), restitution=float(restitution))
     return self.entity(
         name,
-        transform=Transform(translation=vec3(0.0, 0.5 * h_m, 0.0)),
+        transform=Transform(translation=vec3(0.0, 0.0, 0.0)),
         components=[cdecl])
 
   def scatter_collider(self, hf_asset, *, sink, name=None,
