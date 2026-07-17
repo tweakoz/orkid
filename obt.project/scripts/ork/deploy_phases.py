@@ -217,6 +217,16 @@ RUNTIME_DIR_WHITELISTS = {
 # copied wholesale by the lib/ copy but not needed by the shipped runtime.
 LIB_DROP = ["m3api.framework"]
 
+# Bundle-relative globs deleted right after the runtime copy (BOTH platforms) —
+# payload that can NEVER work in the shipped bundle, so the verifier must not
+# see it: numba's optional OpenMP threading layer links @rpath/libomp.dylib,
+# which pip-numba does not ship and the build host no longer has (no-homebrew);
+# numba silently falls back to its workqueue layer, so the stub is dead weight
+# that fails phase-3 verification.
+BUNDLE_PRUNE_GLOBS = [
+    "pyvenv/lib/python3*/site-packages/numba/np/ufunc/omppool.*",
+]
+
 # CPython stdlib entries (relative to lib/python3*/) to drop from BOTH venvs.
 # All are build-time / GUI / test cruft never used by the shipped runtime:
 #   config-*  -> static libpython.a + Makefile (extension-build only; include/
@@ -424,7 +434,7 @@ def _copy_tree_whitelist(proj_root, proj_target, tree_rel, entries):
         print(deco.val(f"    WARNING: whitelist glob matched nothing: {tree_rel}/{entry}"))
     else:
       cand = str(src_root / entry)
-      if os.path.exists(cand):
+      if os.path.lexists(cand):        # lexists: a symlink entry counts even if its target dangles
         matches = [cand]
       else:
         print(deco.val(f"    WARNING: whitelist entry not found: {tree_rel}/{entry}"))
@@ -434,7 +444,15 @@ def _copy_tree_whitelist(proj_root, proj_target, tree_rel, entries):
       rel = os.path.relpath(m, str(src_root))
       dst = dst_root / rel
       dst.parent.mkdir(parents=True, exist_ok=True)
-      if os.path.isdir(m):
+      if os.path.islink(m):
+        # Preserve symlinks VERBATIM (e.g. bin/os-python -> host python).
+        # copy2 would materialize the TARGET into the bundle — a host-coupled
+        # binary the verifier then rightly fails (@rpath/Python unresolvable).
+        if os.path.lexists(str(dst)):
+          os.remove(str(dst))
+        os.symlink(os.readlink(m), str(dst))
+        n_files += 1
+      elif os.path.isdir(m):
         run(["cp", "-a", m, str(dst)], do_log=False)
         n_files += sum(len(fs) for _r, _d, fs in os.walk(m))
       else:
@@ -589,6 +607,16 @@ def phase1_copy(staging_dir, target_dir, force=False):
   # from staging — the copy above is a whitelist (RUNTIME_DIRS = bin/lib/pyvenv/
   # share). They are build-host scratch and regenerate at runtime; dblockcache
   # is recreated empty here only because the engine expects the dir to exist.
+
+  # ---- Step 2a: Prune bundle-impossible payload (see BUNDLE_PRUNE_GLOBS) ----
+  import glob as _glob
+  for _g in BUNDLE_PRUNE_GLOBS:
+    for _m in _glob.glob(str(target_dir / _g)):
+      try:
+        os.remove(_m)
+        print(deco.val(f"    Pruned {os.path.relpath(_m, str(target_dir))}"))
+      except OSError:
+        pass
 
   # ---- Step 2b: Strip static archives (.a) from lib/ ----
   print(deco.val(f"\n  Step 2b: Stripping static libraries (.a) from lib/..."))
