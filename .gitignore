@@ -10,7 +10,7 @@ makefile
 .build
 .stage
 .staging
-dist
+dist**
 .DS_Store
 data
 hotkeys.ork
