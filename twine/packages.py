@@ -17,7 +17,7 @@ orkid/pyvenv and pip never has to match it (the hython model). Pure data
 + the umbrella are `py3-none-any`.
 """
 
-VERSION = "0.1.15"   # single source of truth — build.py stamps it into every wheel
+VERSION = "0.1.16"   # single source of truth — build.py stamps it into every wheel
                     # filename, METADATA, and the umbrella's Requires-Dist pins.
                     # (> the published 0.0.1 stub / 0.1.0–0.1.13)
 BUNDLE = "orkid"      # install dir under site-packages (== reconstituted .staging)
@@ -79,7 +79,7 @@ UMBRELLA = dict(
     # obt framework (pure-python) — provides obt.env.launch.py that the launchers
     # run against orkid as --stagedir. This is the "base venv provided by
     # the pip-install venv" model; no obt_venv is shipped in the wheels.
-    extra_requires=["ork.build==0.0.315"],
+    extra_requires=["ork.build==0.0.316"],
     entry_points={"console_scripts": [
         # ONLY these land in the user's venv/bin. The bundle's own bin/ (incl. its
         # private `ork.python` wrapper) stays private — surfaced on PATH only
