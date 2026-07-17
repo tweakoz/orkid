@@ -25,7 +25,7 @@ Software Development Information
 ========
 Installation via PyPi
 
-```pip3 install orkid``` # install it
+```pip3 install orkid``` # install it (macos seqoia on apple silicon or linux-x86_64)
 
 ```ork.shell --command ork.data.fetch.py``` # run a command in it (without polluting base shell)
 
