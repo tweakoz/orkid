@@ -188,6 +188,29 @@ RUNTIME_DIRS = ["bin", "lib", "pyvenv", "share"]
 # cmake, doc, man, …) — keep only what the runtime actually needs.
 RUNTIME_DIR_WHITELISTS = {
     "share": ["ffmpeg", "fonts", "luajit-2.1"],
+    # bin/: OWNER-CURATED runtime surface. Staging bin/ is a toolbox full of
+    # dep-build leakage (LLVM dev tools, cmake, ispc, ...) — the shipped
+    # product gets an ALLOWLIST, not a pruned copy. The engine execs none of
+    # these (shader JIT is in-process shaderc; movie encode links libav
+    # directly), so entries here are product decisions: extend this DATA list
+    # to ship more. Owner-blessed content-tool set (2026-07-16): media/image/
+    # mesh/shader CLIs that make the shell a usable content environment.
+    "bin": [
+        "ork.python",          # private-interpreter wrapper (all launchers use it)
+        "ork.ecs.player.exe",  # THE playback deliverable (one playback path)
+        "os-python",           # macOS launch-env symlink (absent on Linux)
+        "oiiotool", "iconvert", "idiff", "iinfo",   # OpenImageIO tools
+        "vdb_print",           # OpenVDB inspection
+        "ffmpeg", "ffprobe", "ffplay",              # ffmpeg CLIs
+        "glsl*", "spirv*",     # shader toolchain CLIs
+        "exr*",                # OpenEXR tools
+        "assimp",              # mesh import CLI
+        "lua*",                # lua/luajit
+        "openssl",
+        "play", "sox",         # SoX audio
+        "tiff*",
+        "*lz4*", "*zstd*", "xxh*sum",               # compression/hash CLIs
+    ] + (["pkg-config"] if IS_LINUX else []),
 }
 
 # Specific lib/ entries (frameworks / SDK blobs) to drop from the deployment —
@@ -305,13 +328,8 @@ _SLIM_LIB_GLOBS = ["libQt5*.so*"]
 # the LLVM *library* (lib/libLLVM.so) is KEPT, because OpenVDB AX JIT-compiles
 # against it at runtime (libopenvdb_ax NEEDs libLLVM.so.18). Nothing at runtime
 # shells out to cmake/ispc/llvm tools.
-_SLIM_BIN_GLOBS = ["ork.test.*", "ork.example.*",
-                   "iv", "profiler_gui",                   # Qt5 GUI dev tools (VDB viewer / profiler)
-                   "cmake", "ccmake", "cpack", "ctest",    # CMake build tools
-                   "ispc",                                 # SPMD compiler (build-time)
-                   "llvm-*", "obj2yaml", "yaml2obj",       # LLVM CLI dev tools (lib kept)
-                   "vdb_print", "FileCheck", "lli-child-target"]  # VDB/LLVM test tools
-                   # (oiiotool intentionally KEPT — OpenImageIO texture/image tool)
+# (bin/ pruning removed — superseded by the RUNTIME_DIR_WHITELISTS["bin"]
+#  allowlist: nothing outside it is ever copied, so there is nothing to prune.)
 
 def _slim_linux_runtime(target_dir):
   """Prune dev/example-only payload from a Linux runtime deploy. Returns
@@ -354,10 +372,6 @@ def _slim_linux_runtime(target_dir):
   # native libs pulled in transitively but unused at runtime
   for g in _SLIM_LIB_GLOBS:
     for m in _glob.glob(str(target_dir / "lib" / g)):
-      _rm(m)
-  # test/example executables
-  for g in _SLIM_BIN_GLOBS:
-    for m in _glob.glob(str(target_dir / "bin" / g)):
       _rm(m)
   # jupyter labextension static bundles under share/, and Windows .pdb debug
   # files (dead weight on Linux) anywhere in the venv.

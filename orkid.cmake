@@ -252,7 +252,18 @@ ENDIF()
 ##############################
 
 IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
-    add_compile_options(-march=native)
+    # ORKID_MARCH: x86 microarchitecture floor. Dev builds default to the build
+    # host (native). DISTRIBUTION builds (PyPI wheels / relocatable deploys)
+    # MUST set a portable floor (x86-64-v3): -march=native bakes build-host-only
+    # instructions into shipped binaries — e.g. Zen4 AVX512VBMI vpermi2b from an
+    # auto-vectorized loop SIGILLs even on AVX-512 Xeons that lack VBMI.
+    # twine/build.py refuses to carve wheels from zmm-bearing engine libs.
+    IF(DEFINED ENV{ORKID_MARCH})
+        add_compile_options(-march=$ENV{ORKID_MARCH})
+        message(STATUS "ORKID_MARCH=$ENV{ORKID_MARCH}")
+    ELSE()
+        add_compile_options(-march=native)
+    ENDIF()
 ELSEIF( "${ARCHITECTURE}" STREQUAL "AARCH64" )
 ENDIF()
 

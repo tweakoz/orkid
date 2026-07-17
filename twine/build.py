@@ -142,6 +142,43 @@ def platform_tag(staging):
     return f"py3-none-macosx_{major}_0_{arch}"
 
 
+# ---------------------------------------------------------------- ISA gate
+
+def check_isa_portability(staging):
+    """Linux release gate: refuse to carve wheels whose ENGINE code contains
+    AVX-512 (zmm) instructions. -march=native on the build host bakes host-only
+    ISA into shipped binaries — auto-vectorized loops then SIGILL on other CPUs
+    (found the hard way: Zen4 VBMI vpermi2b from createColorTextureV3 crashing a
+    Cascade Lake Xeon). Build the engine staging with ORKID_MARCH=x86-64-v3.
+
+    Only libork_* are scanned: they share compile flags with every other
+    orkid-built binary (pyext, exes), and zmm there always means a native
+    baseline. Third-party deps are NOT scanned — several (ffmpeg, blosc) carry
+    RUNTIME-DISPATCHED AVX-512 kernels, which are safe and would false-positive.
+    Override (ships build-host-only wheels!) with ORKID_ALLOW_NATIVE_WHEELS=1."""
+    if not sys.platform.startswith("linux"):
+        return
+    if os.environ.get("ORKID_ALLOW_NATIVE_WHEELS") == "1":
+        print("  WARNING: ISA portability gate SKIPPED (ORKID_ALLOW_NATIVE_WHEELS=1)")
+        return
+    for name in ("libork_core.so", "libork_lev2.so"):
+        lib = os.path.join(staging, "lib", name)
+        if not os.path.exists(lib):
+            continue
+        print(f"  ISA gate: scanning {name} for AVX-512 (zmm) ...")
+        dump = subprocess.Popen(["objdump", "-d", lib], stdout=subprocess.PIPE)
+        hit = subprocess.run(["grep", "-m1", "-c", "%zmm"], stdin=dump.stdout,
+                             capture_output=True, text=True).stdout.strip()
+        dump.stdout.close()
+        dump.wait()          # SIGPIPE from grep -m1 early-exit is expected
+        if hit != "0":
+            sys.exit(f"ERROR: {lib} contains AVX-512 (zmm) instructions — built with "
+                     "-march=native? Rebuild the engine with ORKID_MARCH=x86-64-v3, "
+                     "or set ORKID_ALLOW_NATIVE_WHEELS=1 to knowingly ship "
+                     "build-host-only wheels.")
+    print("  ISA gate: clean (no zmm in engine libs)")
+
+
 # ---------------------------------------------------------------- bundle / carve
 
 def make_bundle(target):
@@ -269,6 +306,7 @@ def main():
         print(f"Building relocatable bundle in {tmp} (deploy phases 1-6, --project {REPO}) ...")
         staging = make_bundle(tmp)
 
+    check_isa_portability(str(staging))
     plat = platform_tag(str(staging))
     print(f"\nPlatform tag for binary wheels: {plat}")
     print(f"Carving {staging}\n")

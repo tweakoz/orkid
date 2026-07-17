@@ -3,7 +3,7 @@
 
 Assumes you are in an activated venv (Python >=3.9 — ork.build requires it).
 orkid-* wheels come from the local dist/ (never pushed to PyPI); the pinned
-dependency ork.build==0.0.308 (+ its deps) comes from PyPI.
+ork.build dependency (see packages.py UMBRELLA) + its deps come from PyPI.
 
     twine/build.py      # build the wheels first
     twine/test.py       # <- run this from inside your test venv

@@ -17,9 +17,9 @@ orkid/pyvenv and pip never has to match it (the hython model). Pure data
 + the umbrella are `py3-none-any`.
 """
 
-VERSION = "0.1.13"   # single source of truth — build.py stamps it into every wheel
+VERSION = "0.1.14"   # single source of truth — build.py stamps it into every wheel
                     # filename, METADATA, and the umbrella's Requires-Dist pins.
-                    # (> the published 0.0.1 stub / 0.1.0–0.1.8)
+                    # (> the published 0.0.1 stub / 0.1.0–0.1.13)
 BUNDLE = "orkid"      # install dir under site-packages (== reconstituted .staging)
 
 
@@ -54,16 +54,19 @@ PAYLOAD_PACKAGES = [
     dict(name="orkid-bin",
          summary="Orkid Media Engine — runtime: executables + private CPython + python deps.",
          purelib=False,
-         match=lambda r: r.startswith("bin/")
+         # builds/ (e.g. the MoltenVK ICD tree), obt_config/, and the root deploy
+         # markers are PLATFORM-SPECIFIC (generated per-deploy or binary), so they
+         # ride in this platform-tagged wheel — orkid-data must stay honestly
+         # py3-none-any (ONE shared file per version serves every platform).
+         match=lambda r: r.startswith(("bin/", "builds/", "obt_config/"))
+                         or r in (".relocatable_files", ".deploy_path", ".is_deploy",
+                                  "obt-launch-env", "OrkidLogo.icns")
                          or (r.startswith("pyvenv/") and not _is_orkengine(r))),
 
     dict(name="orkid-data",
-         summary="Orkid Media Engine — runtime data (ork.data, share, ICD, markers).",
+         summary="Orkid Media Engine — runtime data (ork.data, share, projects).",
          purelib=True,
-         match=lambda r: (r.startswith("share/") or r.startswith("projects/")
-                          or r.startswith("builds/") or r.startswith("obt_config/")
-                          or r in (".relocatable_files", ".deploy_path", ".is_deploy",
-                                   "obt-launch-env", "OrkidLogo.icns"))),
+         match=lambda r: r.startswith(("share/", "projects/"))),
 ]
 
 # Umbrella project: ships only the bootstrap/launcher shim + entry points, and
@@ -76,7 +79,7 @@ UMBRELLA = dict(
     # obt framework (pure-python) — provides obt.env.launch.py that the launchers
     # run against orkid as --stagedir. This is the "base venv provided by
     # the pip-install venv" model; no obt_venv is shipped in the wheels.
-    extra_requires=["ork.build==0.0.308"],
+    extra_requires=["ork.build==0.0.314"],
     entry_points={"console_scripts": [
         # ONLY these land in the user's venv/bin. The bundle's own bin/ (incl. its
         # private `ork.python` wrapper) stays private — surfaced on PATH only

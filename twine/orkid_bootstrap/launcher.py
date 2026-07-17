@@ -226,6 +226,10 @@ def _obt_launch_exe():
 
 
 def _launch(extra_args):
+    # obt.env.launch.py (_obt_config) requires VIRTUAL_ENV, but console scripts
+    # are routinely run without activating the venv (./venv/bin/ork.shell, pipx,
+    # uv tool). We ARE the venv — synthesize it.
+    os.environ.setdefault("VIRTUAL_ENV", sys.prefix)
     _extract_payloads()                 # untar bundle on first run / after a version upgrade
     bundle = _bundle_root()
     _restore_symlinks(bundle)           # legacy .symlinks.d installs only; no-op for tar bundles

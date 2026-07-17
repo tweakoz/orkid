@@ -5,7 +5,13 @@ a delay between each (eases PyPI's new-project-creation throttle).
 Delay is conditional: 30s after a real upload (the rate-limited action), 5s after
 a skip (already published). Build first with twine/build.py. Does NOT build and
 does NOT git clean.
+
+Multi-platform releases: one version accumulates files from several build hosts
+(macosx_* + manylinux_* wheels under the same project names). Collect every
+host's wheels into dist/ and run this once — the skip check is per-FILE, so a
+version that already has the macOS wheel still uploads the Linux one.
 """
+import json
 import pathlib
 import subprocess
 import sys
@@ -18,18 +24,21 @@ DELAY = 15        # seconds after an actual upload
 SKIP_DELAY = 5    # seconds after a skip (already on PyPI)
 
 
-def _on_pypi(name, version):
-    """True if <name>==<version> is already published on PyPI.
+def _on_pypi(name, version, filename):
+    """True if this exact FILE is already in <name>==<version> on PyPI.
 
-    Uses curl (system certs) rather than python urllib — the shell's interpreter
-    here often lacks SSL certs, which would make urllib fail for EVERY wheel and
-    misclassify live ones as uploads (→ wrong 30s delay)."""
+    Per-FILE, not name+version: a release accumulates wheels from several build
+    hosts (macosx_* + manylinux_* under the same project name), so the other
+    platform's wheel being live must NOT skip this one. Uses curl (system certs)
+    rather than python urllib — the shell's interpreter here often lacks SSL
+    certs, which would make urllib fail for EVERY wheel and misclassify live
+    ones as uploads (→ wrong 30s delay)."""
     url = f"https://pypi.org/pypi/{name}/{version}/json"
     try:
-        code = subprocess.run(
-            ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", url],
-            capture_output=True, text=True, timeout=20).stdout.strip()
-        return code == "200"
+        body = subprocess.run(["curl", "-s", url],
+                              capture_output=True, text=True, timeout=20).stdout
+        release = json.loads(body)          # 404 body is JSON too (no "urls")
+        return any(f.get("filename") == filename for f in release.get("urls", []))
     except Exception:
         return False
 
@@ -53,7 +62,7 @@ def main():
     for w in wheels:
         parts = w.name.split("-")                 # {name}-{version}-{tags...}.whl
         name, version = parts[0].replace("_", "-"), parts[1]
-        status.append((w, _on_pypi(name, version)))
+        status.append((w, _on_pypi(name, version, w.name)))
 
     n_up = sum(1 for _, live in status if not live)
     if n_up == 0:
