@@ -252,18 +252,24 @@ ENDIF()
 ##############################
 
 IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
-    # ORKID_MARCH: x86 microarchitecture floor. Dev builds default to the build
-    # host (native). DISTRIBUTION builds (PyPI wheels / relocatable deploys)
-    # MUST set a portable floor (x86-64-v3): -march=native bakes build-host-only
-    # instructions into shipped binaries — e.g. Zen4 AVX512VBMI vpermi2b from an
-    # auto-vectorized loop SIGILLs even on AVX-512 Xeons that lack VBMI.
-    # twine/build.py refuses to carve wheels from zmm-bearing engine libs.
+    # ORKID_MARCH: x86 microarchitecture floor.
+    #   Linux default = x86-64-v3 (PORTABLE): Linux is where PyPI wheels ship
+    #     from, and -march=native bakes build-host-only instructions into the
+    #     binaries — e.g. Zen4 AVX512VBMI vpermi2b from an auto-vectorized loop
+    #     SIGILLs even on AVX-512 Xeons that lack VBMI. twine/build.py refuses
+    #     to carve wheels from zmm-bearing engine libs as the backstop.
+    #   Elsewhere (x86 macOS) default = native.
+    #   Override either way with ORKID_MARCH (e.g. ORKID_MARCH=native for
+    #   max-perf local bake work on a dev box).
     IF(DEFINED ENV{ORKID_MARCH})
-        add_compile_options(-march=$ENV{ORKID_MARCH})
-        message(STATUS "ORKID_MARCH=$ENV{ORKID_MARCH}")
+        SET(_ork_march $ENV{ORKID_MARCH})
+    ELSEIF(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        SET(_ork_march "x86-64-v3")
     ELSE()
-        add_compile_options(-march=native)
+        SET(_ork_march "native")
     ENDIF()
+    add_compile_options(-march=${_ork_march})
+    message(STATUS "orkid -march=${_ork_march} (override with ORKID_MARCH)")
 ELSEIF( "${ARCHITECTURE}" STREQUAL "AARCH64" )
 ENDIF()
 
