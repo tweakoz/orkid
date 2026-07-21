@@ -63,7 +63,18 @@ struct Layout {
   ~Layout();
 
   layout_ptr_t childLayout(Widget* w);
+  layout_ptr_t childLayout(widget_ptr_t w);  // binds a weak ref for liveness detection
   void removeChild(layout_ptr_t l);
+
+  // Bind the laid-out widget from a shared_ptr so a stale layout can DETECT a
+  // dead widget (weak) instead of dangling on a raw pointer.
+  void bindWidget(widget_ptr_t w);
+  bool widgetAlive() const;
+
+  // Re-point this layout's four edge guides in place (first-class re-anchor —
+  // split()/unsplit() reuse this instead of rebuilding the layout node).
+  void reanchor(guide_ptr_t top, guide_ptr_t left, guide_ptr_t bottom, guide_ptr_t right);
+  void reanchor(Guide* top, Guide* left, Guide* bottom, Guide* right);
 
   void setMargin(int margin);
 
@@ -110,7 +121,9 @@ struct Layout {
   int _margin = 0;
   int _name   = -1;
 
-  Widget* _widget = nullptr;
+  Widget* _widget = nullptr;         // raw (hot-path geometry reads)
+  widget_weakptr_t _widget_weak;     // weak liveness ref (bound when a shared_ptr is available)
+  bool _widget_bound = false;        // true once _widget_weak has been bound to a real widget
 
   Layout* _parent = nullptr;
   layout_ptr_t _fill   = nullptr;
@@ -183,6 +196,7 @@ struct Guide {
   Guide* _relative  = nullptr;
   Edge _edge        = Edge::Top;
   int _margin       = 0;
+  int _hit_margin   = -1; // drag-hit band override; -1 => track _margin. DockSpace opts into a wider grab band than its thin visual margin.
   int _sign         = 1; // sign of offset: -1 or 1
   float _proportion = 0.0f;
   int _fixed         = 0;

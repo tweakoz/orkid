@@ -119,13 +119,20 @@ def _run_graphdata(results):
     bogus = True
   _check(results, "gd_add_node_validates", bogus)
 
-  # delete_node is genuinely unavailable in this python-only slice -> LOUD, not silent
+  # delete_node removes the module AND every edge touching it (GraphData::removeModule).
+  # grav0 currently has the noz0.pool -> grav0.pool edge (edges==2); deleting it prunes that
+  # edge back to the original single pool0 -> noz0 edge.
+  doc.delete_node("grav0")
+  _check(results, "gd_delete_removes_node",
+         "grav0" not in {k for (_p, k, _o) in doc.tree_paths()})
+  _check(results, "gd_delete_prunes_edges", len(doc.edges()) == 1)
+  # deleting an unknown node self-defends LOUDLY (catchable), not a silent no-op
   du = False
   try:
-    doc.delete_node("grav0")
-  except NotImplementedError:
+    doc.delete_node("grav0")               # already gone
+  except GraphDocumentError:
     du = True
-  _check(results, "gd_delete_loud_unavailable", du)
+  _check(results, "gd_delete_unknown_loud", du)
 
   # elaborate() is the IDENTITY (the graph IS the document)
   _check(results, "gd_elaborate_identity", doc.elaborate() is gd)

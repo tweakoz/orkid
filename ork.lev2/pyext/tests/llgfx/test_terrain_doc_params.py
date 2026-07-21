@@ -26,7 +26,7 @@ from ork.hypergraph.dflow.terrain import HeightField
 from ork.hypergraph.dflow import terrain as T
 from ork.hypergraph.dflow.terrain.doc import (
     DocNode, TerrainDocParamError, tree_paths, find_by_path, add_op_node, to_json,
-    from_json, param_expr_string)
+    from_json, param_expr_string, _eval_param_node)
 from ork.hypergraph.dflow.terrain.pywriter import to_python, class_name_from_stem
 from ork.hypergraph.dflow.terrain.resolve import load_dsl_class
 from ork.editor.terrain_runtime import TerrainRuntime
@@ -54,7 +54,7 @@ class RawRangeParam(HeightField):
         super().__init__()
         h = (T.Fbm(frequency=6.0, octaves=4) * 0.5 + 0.5) * amp_m
         for _ in range(passes):                     # range(passes) forces __index__ -> structural
-            h = T.lpf(h, cutoff_m=8.0)
+            h = T.lpf(h, cutoff=8.0, units='meters')
         self.capture(h, "height", cache=True)
         self.capture(h, "normal", cache=True)
 
@@ -169,9 +169,9 @@ def run(ez, ctx):
                 if isinstance(o, DocNode) and o.clazz_name == "TerraceModule")
     expr = terr.param_exprs[("inputs", "step_m")]
     src_ok = param_expr_string(expr) == "(sim_time * 0.5)"
-    v0 = float(expr._eval())
+    v0 = float(_eval_param_node(expr, rtc.document.params))
     rtc.set_dsl_kwarg("sim_time", 100.0)
-    v1 = float(terr.param_exprs[("inputs", "step_m")]._eval())
+    v1 = float(_eval_param_node(terr.param_exprs[("inputs", "step_m")], rtc.document.params))
     c = src_ok and v0 == 125.0 and v1 == 50.0 and effective(terr, "inputs", "step_m") == 50.0
     print(f"[c] expr='{param_expr_string(expr)}' v0={v0} v1={v1} -> {c}", flush=True)
     results["c_arithmetic_capture"] = c
@@ -213,7 +213,7 @@ def run(ez, ctx):
     # the reloaded doc's captured expr re-evaluates against the restored table
     fbm_r = first_op(doc_r)
     expr_r = fbm_r.param_exprs.get(("inputs", "amplitude"))
-    expr_eq = expr_r is not None and float(expr_r._eval()) == 3100.0
+    expr_eq = expr_r is not None and float(_eval_param_node(expr_r, doc_r.params)) == 3100.0
     e = json_eq and params_eq and expr_eq
     print(f"[e] json-eq={json_eq} params-eq={params_eq} expr-reeval={expr_eq} -> {e}", flush=True)
     results["e_docjson_roundtrip"] = e

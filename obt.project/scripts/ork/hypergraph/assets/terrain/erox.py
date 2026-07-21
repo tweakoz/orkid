@@ -55,7 +55,7 @@ class Erox(HeightField):
             L.h = T.erox(L.h, **EROX)
             #L.h = T.erode_thermal(L.h, talus_deg=35.0, rate=0.10, iterations=120)
         h = L.h
-        h = T.lpf(h, cutoff_m=10)   # settle single-texel noise; keep landform detail
+        h = T.lpf(h, cutoff=10, units='meters')   # settle single-texel noise; keep landform detail
         # cache=True: ONE cache=False capture disables the disk cook cache for the WHOLE
         # bake — every editor rebuild would re-run the full erosion sim. Cached, an edit
         # recomputes only the affected subgraph (a tail-node bypass = capture re-copy only).

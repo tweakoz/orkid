@@ -20,13 +20,13 @@ ImposterPassData::ImposterPassData() {
 
 struct ImposterDrawableImpl {
 
-  ImposterDrawableImpl(const ImposterDrawableData* grid, callback_drawable_wkptr_t drw);
+  ImposterDrawableImpl(std::shared_ptr<const ImposterDrawableData> grid, callback_drawable_wkptr_t drw);
   ~ImposterDrawableImpl();
   void gpuInit(lev2::Context* ctx);
   void _render(const RenderContextInstData& RCID);
   static void renderImp(RenderContextInstData& RCID);
 
-  const ImposterDrawableData* _impdata = nullptr;
+  std::shared_ptr<const ImposterDrawableData> _impdata;
   fxpipelinecache_constptr_t _fxcache;
 
   bool _initted = false;
@@ -47,7 +47,7 @@ struct ImposterDrawableImpl {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ImposterDrawableImpl::ImposterDrawableImpl(const ImposterDrawableData* grid, callback_drawable_wkptr_t drw)
+ImposterDrawableImpl::ImposterDrawableImpl(std::shared_ptr<const ImposterDrawableData> grid, callback_drawable_wkptr_t drw)
     : _impdata(grid) {
 
   _primitive = std::make_shared<meshutil::rigidprim_V12N12B12T8C4_t>();
@@ -472,7 +472,7 @@ void ImposterDrawableData::describeX(class_t* c) {
 
 drawable_ptr_t ImposterDrawableData::createDrawable() const {
   auto drw      = std::make_shared<CallbackDrawable>(nullptr);
-  auto impl     = drw->_implA.makeShared<ImposterDrawableImpl>(this, drw);
+  auto impl     = drw->_implA.makeShared<ImposterDrawableImpl>(dataShared<ImposterDrawableData>(), drw);
   drw->_sortkey = 1000;
   drw->SetRenderCallback(ImposterDrawableImpl::renderImp);
   return drw;

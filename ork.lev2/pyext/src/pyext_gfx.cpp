@@ -61,6 +61,17 @@ void pyinit_gfx(py::module& module_lev2) {
             auto ctxbase = c.get()->GetCtxBase();
             return ctxbase ? ctxbase->getClipboardText() : "";
           })
+          // Map a WINDOW-LOCAL coordinate to a GLOBAL (screen) coordinate — the minimal
+          // read-only OS-window-geometry surface the editor needs to place a secondary
+          // window relative to the main window + its viewport (glfwGetWindowPos under the
+          // hood). (0,0) yields the main window's client-area screen origin.
+          .def("mapCoordToGlobal", [](ctx_t& c, int x, int y) -> py::tuple {
+            auto ctxbase = c.get()->GetCtxBase();
+            if (not ctxbase)
+              return py::make_tuple(x, y);
+            fvec2 g = ctxbase->MapCoordToGlobal(fvec2(float(x), float(y)));
+            return py::make_tuple(int(g.x), int(g.y));
+          })
           .def("makeCurrent", [](ctx_t& c) { c.get()->makeCurrentContext(); })
           .def("beginFrame", [](ctx_t& c) { return c.get()->beginFrame(); })
           .def("endFrame", [](ctx_t& c) { return c.get()->endFrame(); })

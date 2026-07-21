@@ -18,8 +18,13 @@
 #include <ork/reflect/properties/ITypedArray.h>
 #include <ork/reflect/properties/IObjectArray.h>
 #include <ork/reflect/properties/IObjectMap.h>
+#include <ork/reflect/properties/DirectEnum.h>
+#include <ork/reflect/enum_serializer.inl>
+#include <ork/math/TransformNode.h>
+#include <ork/python/gil_safe_pyobj.h>
 #include <cxxabi.h>
 #include <stack>
+#include <algorithm>
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 using namespace dataflow;
@@ -598,6 +603,17 @@ void pyinit_dataflow(py::module& module_core) {
             char name_ch = 'A' + p->_transforms.size();
             std::string name(1, name_ch);
             p->_transforms.AddSorted(name, item);
+          })
+          // TRANSFORM-CHAIN INTROSPECTION — the propsheet transformer editor enumerates the
+          // chain to build per-item editable rows (set/append are the authoring path; these
+          // are the read-back). items() yields (name, item) with each item downcast to its
+          // concrete floatxf type so the editor reads its reflected fields directly.
+          .def("__len__", [](floatxfdata_ptr_t p) -> size_t { return p->_transforms.size(); })
+          .def("items", [type_codec](floatxfdata_ptr_t p) -> py::list {
+            py::list rval;
+            for (auto& item : p->_transforms)
+              rval.append(py::make_tuple(item.first, type_codec->encode(item.second)));
+            return rval;
           });
   type_codec->registerStdCodec<floatxfdata_ptr_t>(floatxfdata_type);
   /////////////////////////////////////////////////////////////////////////////
@@ -846,8 +862,43 @@ void pyinit_dataflow(py::module& module_core) {
                 return typed_instance;
               })
           ///////////////////////////////
+          // CREATE + add a module BY REFLECTED CLASS NAME (the reflected-name -> module-class
+          // lookup the editor add-menu drives). Uses the rtti shared factory -- the SAME
+          // registry moduleClasses() walks -- so ANY registered DgModuleData subclass adds
+          // without needing a per-class pybind wrapper. Loud (python error) on an unknown or
+          // abstract class rather than a silent nullptr.
+          .def(
+              "createByClassName",
+              [](graphdata_ptr_t g, std::string named, std::string classname) -> dgmoduledata_ptr_t {
+                auto* clazz = rtti::Class::FindClass(classname);
+                if (not clazz or not clazz->hasSharedFactory())
+                  throw std::runtime_error(FormatString(
+                      "GraphData.createByClassName: class <%s> is not a registered dflow module "
+                      "class (no shared factory)",
+                      classname.c_str()));
+                auto castable = clazz->sharedFactory()(); // createShared -> reshapeIOs
+                auto typed    = std::dynamic_pointer_cast<DgModuleData>(castable);
+                if (not typed)
+                  throw std::runtime_error(FormatString(
+                      "GraphData.createByClassName: class <%s> is not a DgModuleData", classname.c_str()));
+                GraphData::addModule(g, named, typed);
+                return typed;
+              })
+          ///////////////////////////////
+          // REMOVE a module (the structural inverse of create): severs every edge touching it
+          // (both directions), then drops it from the module map + editor layout + output marker.
+          .def("removeModule", [](graphdata_ptr_t g, dgmoduledata_ptr_t m) { GraphData::removeModule(g, m); })
+          ///////////////////////////////
           .def(
               "connect", [](graphdata_ptr_t g, inplugdata_ptr_t input, outplugdata_ptr_t output) { g->safeConnect(input, output); })
+          ///////////////////////////////
+          // STRICT connectability verdict (the engine's own type + fan-out check) -- the editor
+          // pre-connect gate. The human-readable reason is composed on the Python side.
+          .def(
+              "plugsCompatible",
+              [](graphdata_ptr_t g, inplugdata_ptr_t input, outplugdata_ptr_t output) -> bool {
+                return g->plugsCompatible(input, output);
+              })
           ///////////////////////////////
           .def("disconnect", [](graphdata_ptr_t g, inplugdata_ptr_t input) { g->disconnect(input); })
           .def("disconnect", [](graphdata_ptr_t g, outplugdata_ptr_t output) { g->disconnect(output); })
@@ -951,6 +1002,50 @@ void pyinit_dataflow(py::module& module_core) {
           // pools release live particles; future modules clear their own
           // per-instance state). Used by ECS slot recycling.
           .def("reset", [](graphinst_ptr_t g) { g->reset(); })
+          // Bind a Python entity-transform resolver: resolver(entity_name:str) -> mtx4|vec3|None.
+          // EntityRef / TransformPoint / TransformDir modules look up published entity transforms
+          // through GraphInst::_resolveEntityXf at compute() time (mtx4 = full world transform;
+          // vec3 = translation-only; None = unresolved -> the module's identity default). Editor-
+          // only seam: the ECS host (ParticlesComponent) wires its own resolver in C++; a STANDALONE
+          // host (the dflow editor's testbench) wires one here. None / an unbound resolver leaves
+          // _resolveEntityXf null, so a graphinst without a bench behaves byte-identically to before.
+          // gil_safe_pyobj holds the callable so its final release acquires the GIL (safe teardown);
+          // the resolver runs on whatever thread drives compute() and acquires the GIL to call in.
+          .def(
+              "setEntityResolver",
+              [type_codec](graphinst_ptr_t g, py::object resolver) {
+                if (resolver.is_none()) {
+                  g->_resolveEntityXf = nullptr;
+                  return;
+                }
+                auto safe             = ork::python::gil_safe_pyobj(resolver);
+                g->_resolveEntityXf = //
+                    [safe, type_codec](const std::string& name) -> decompxf_ptr_t {
+                  py::gil_scoped_acquire acquire;
+                  auto fn = safe.valueAs<py::object>();
+                  try {
+                    py::object r = (*fn)(name);
+                    if (r.is_none())
+                      return nullptr; // unresolved name -> module identity default
+                    auto decoded = type_codec->decode(r);
+                    auto xf      = std::make_shared<DecompTransform>();
+                    if (auto as_mtx = decoded.tryAs<fmtx4>()) {
+                      xf->_usedirectmatrix = true;
+                      xf->_directmatrix    = as_mtx.value();
+                    } else if (auto as_vec = decoded.tryAs<fvec3>()) {
+                      xf->_translation = as_vec.value();
+                    } else {
+                      return nullptr; // wrong return type -> identity (never a crash)
+                    }
+                    return xf;
+                  } catch (py::error_already_set& e) {
+                    e.restore();
+                    PyErr_Print(); // fail loud (printed), never abort the compute thread
+                    return nullptr;
+                  }
+                };
+              },
+              py::arg("resolver"))
           .def_property(
               "impl",
               [](graphinst_ptr_t g) -> py::object { //
@@ -977,33 +1072,38 @@ void pyinit_dataflow(py::module& module_core) {
   // hand-maintained table; schema always tracks the code).
   /////////////////////////////////////////////////////////////////////////////
 
-  // an ObjectProperty's scalar annotations as a python dict (non-scalar annotations —
-  // e.g. the reshapeIOs functor — are skipped).
-  auto anno_to_py = [](reflect::ObjectProperty* prop) -> py::dict {
+  // one svar64 annotation value -> a python scalar, or None for a non-scalar
+  // annotation (e.g. the reshapeIOs functor — not surfaced).
+  auto anno_scalar_to_py = [](const svar64_t& val) -> py::object {
+    if (auto s = val.tryAs<ConstString>())
+      return py::str(std::string(s.value().c_str()));
+    if (auto ss = val.tryAs<std::string>())
+      return py::str(ss.value());
+    if (auto b = val.tryAs<bool>())
+      return py::bool_(b.value());
+    if (auto i = val.tryAs<int>())
+      return py::int_(i.value());
+    if (auto f = val.tryAs<float>())
+      return py::float_(f.value());
+    if (auto d = val.tryAs<double>())
+      return py::float_(d.value());
+    return py::none(); // non-scalar annotation — not surfaced.
+  };
+
+  // an ObjectProperty's scalar annotations as a python dict (non-scalar skipped).
+  auto anno_to_py = [anno_scalar_to_py](reflect::ObjectProperty* prop) -> py::dict {
     py::dict rval;
     for (auto& item : prop->_annotations) {
-      const auto& key = item.first;
-      auto val        = item.second;
-      std::string keystr = key.c_str();
-      if (auto s = val.tryAs<ConstString>())
-        rval[py::str(keystr)] = std::string(s.value().c_str());
-      else if (auto ss = val.tryAs<std::string>())
-        rval[py::str(keystr)] = ss.value();
-      else if (auto b = val.tryAs<bool>())
-        rval[py::str(keystr)] = b.value();
-      else if (auto i = val.tryAs<int>())
-        rval[py::str(keystr)] = i.value();
-      else if (auto f = val.tryAs<float>())
-        rval[py::str(keystr)] = f.value();
-      else if (auto d = val.tryAs<double>())
-        rval[py::str(keystr)] = d.value();
-      // else: non-scalar annotation — not surfaced.
+      auto v = anno_scalar_to_py(item.second);
+      if (not v.is_none())
+        rval[py::str(std::string(item.first.c_str()))] = v;
     }
     return rval;
   };
 
   // coarse reflected-property type label for editor widget selection.
   auto prop_type_name = [](reflect::ObjectProperty* prop) -> std::string {
+    if (dynamic_cast<reflect::DirectEnumBase*>(prop))       return "enum"; // reflected enum -> choice dropdown
     if (dynamic_cast<reflect::ITyped<int>*>(prop))          return "int";
     if (dynamic_cast<reflect::ITyped<float>*>(prop))        return "float";
     if (dynamic_cast<reflect::ITyped<std::string>*>(prop))  return "string";
@@ -1015,7 +1115,7 @@ void pyinit_dataflow(py::module& module_core) {
     return "other";
   };
 
-  dfgmodule.def("moduleClasses", [anno_to_py, prop_type_name]() -> py::list {
+  dfgmodule.def("moduleClasses", [anno_scalar_to_py, anno_to_py, prop_type_name]() -> py::list {
     py::list rval;
     auto* base = rtti::Class::FindClass("dflow::DgModuleData");
     if (not base)
@@ -1031,9 +1131,26 @@ void pyinit_dataflow(py::module& module_core) {
         d["name"]        = name;
         auto pos         = name.find("::"); // family tag = reflected-name namespace prefix (drift-proof)
         d["family"]      = (pos != std::string::npos) ? name.substr(0, pos) : std::string();
+        auto* objclazz   = dynamic_cast<object::ObjectClass*>(clazz);
+        // CLASS-level scalar annotations (E1-close): the reflection-carried add
+        // palette (dsl.verb / editor.palette / editor.palette.sort/source/recipe) +
+        // any future class metadata. OWN class only — palette membership/curation
+        // must never inherit down a class tree.
+        py::dict cannos;
+        if (objclazz) {
+          auto emit_annos = [&](const reflect::Description::class_annotations_lut_t& lut) {
+            for (const auto& item : lut) {
+              auto v = anno_scalar_to_py(item.second);
+              if (not v.is_none())
+                cannos[py::str(std::string(item.first.c_str()))] = v;
+            }
+          };
+          emit_annos(objclazz->Description().classTypedAnnotations());
+          emit_annos(objclazz->Description().classAnnotations());
+        }
+        d["annotations"] = cannos;
         py::list props;
         std::set<std::string> seen; // own props win over inherited on name collision
-        auto* objclazz                   = dynamic_cast<object::ObjectClass*>(clazz);
         const reflect::Description* desc = objclazz ? &objclazz->Description() : nullptr;
         while (desc) {
           for (auto pitem : desc->properties()) {
@@ -1046,6 +1163,17 @@ void pyinit_dataflow(py::module& module_core) {
             pd["name"]        = pn;
             pd["type"]        = prop_type_name(prop);
             pd["annotations"] = anno_to_py(prop);
+            // reflected enum -> expose its choice list (VALUE-ORDERED so index == code),
+            // the single source the editor propsheet dropdown + pywriter consume (E1).
+            if (auto* en = dynamic_cast<reflect::DirectEnumBase*>(prop)) {
+              auto enums = en->enumerateEnumerations(nullptr); // impl ignores the object
+              std::sort(enums.begin(), enums.end(),
+                        [](const auto& a, const auto& b) { return a->_value < b->_value; });
+              py::list choices;
+              for (auto& e : enums)
+                choices.append(e->_name);
+              pd["choices"] = choices;
+            }
             props.append(pd);
           }
           desc = desc->parent();
@@ -1068,6 +1196,10 @@ void pyinit_dataflow(py::module& module_core) {
   // enumeration never crashes and never retries a faulting class.
   struct PlugEntry {
     std::string _name, _type, _rate;
+    bool _has_range    = false;
+    float _range_min   = 0.0f;
+    float _range_max   = 0.0f;
+    bool _display_only = false;
   };
   struct ModuleSchema {
     std::vector<PlugEntry> _inputs, _outputs;
@@ -1094,9 +1226,11 @@ void pyinit_dataflow(py::module& module_core) {
             sch._failed = true;
           } else {
             for (auto inp : mod->_inputs)
-              sch._inputs.push_back({inp->_name, dflow_demangle(inp->GetDataTypeId()), rate_name(inp->_plugrate)});
+              sch._inputs.push_back({inp->_name, dflow_demangle(inp->GetDataTypeId()), rate_name(inp->_plugrate),
+                                     inp->_hasRange, inp->_rangeMin, inp->_rangeMax, inp->_displayOnly});
             for (auto outp : mod->_outputs)
-              sch._outputs.push_back({outp->_name, dflow_demangle(outp->GetDataTypeId()), rate_name(outp->_plugrate)});
+              sch._outputs.push_back({outp->_name, dflow_demangle(outp->GetDataTypeId()), rate_name(outp->_plugrate),
+                                      outp->_hasRange, outp->_rangeMin, outp->_rangeMax, outp->_displayOnly});
             sch._built = true;
           }
         } catch (const std::exception& e) {
@@ -1119,6 +1253,14 @@ void pyinit_dataflow(py::module& module_core) {
         d["name"] = e._name;
         d["type"] = e._type;
         d["rate"] = e._rate;
+        // E1 editor metadata: a clamped-slider range + a display-only (bake-inert) marker.
+        // Emitted only when set so the schema stays terse for un-annotated plugs.
+        if (e._has_range) {
+          d["min"] = e._range_min;
+          d["max"] = e._range_max;
+        }
+        if (e._display_only)
+          d["display_only"] = true;
         l.append(d);
       }
       return l;

@@ -239,7 +239,6 @@ HandlerResult Panel::DoOnUiEvent(event_constptr_t Ev) {
       _prevpy        = _geometry._y;
       _prevpw        = _geometry._w;
       _prevph        = _geometry._h;
-      ret.mHoldFocus = true;
       if (filtev.mBut0) {
         if (_moveEnabled) {
           mPanelUiState = 1;
@@ -269,8 +268,6 @@ HandlerResult Panel::DoOnUiEvent(event_constptr_t Ev) {
       }
       break;
     case ui::EventCode::RELEASE: // idle
-      ret.mHoldFocus = false;
-
       if (mPanelUiState) // moving or sizing w
         snap();
 
@@ -278,7 +275,6 @@ HandlerResult Panel::DoOnUiEvent(event_constptr_t Ev) {
 
       break;
     case ui::EventCode::DRAG:
-      ret.mHoldFocus = true;
       break;
     default:
       break;

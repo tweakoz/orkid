@@ -103,7 +103,9 @@ static void _reshapeTerraceIOs(dataflow::moduledata_ptr_t data) {
   dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "step_m")->setValue(100.0f);
   dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "sharpness")->setValue(1.0f);
   // crossfade terraced vs original: 0 = passthrough, 1 = fully terraced (default).
-  dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "blend")->setValue(1.0f);
+  auto blend = dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "blend");
+  blend->setValue(1.0f);
+  blend->annotateRange(0.0f, 1.0f);
   dflow::ModuleData::createOutputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "Out");
 }
 TerraceModuleData::TerraceModuleData() {}
@@ -117,6 +119,10 @@ void TerraceModuleData::describeX(class_t* clazz) {
   clazz->setSharedFactory([]() -> rtti::castable_ptr_t { return TerraceModuleData::createShared(); });
   clazz->annotateTyped<dataflow::moduleIOreshape_fn_t>("reshapeIOs",
       [](dataflow::moduledata_ptr_t m) { _reshapeTerraceIOs(m); });
+  // E1-close add-palette (reflection-carried; see hfdflow_module_thermal.cpp for the vocabulary).
+  clazz->annotateTyped<ConstString>("dsl.verb", "terrace");
+  clazz->annotateTyped<bool>("editor.palette", true);
+  clazz->annotateTyped<int>("editor.palette.sort", 6);
 }
 
 } // namespace ork::lev2::terrain

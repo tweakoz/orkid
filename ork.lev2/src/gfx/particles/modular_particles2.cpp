@@ -70,7 +70,14 @@ void ParticleModuleInst::_onLink(dflow::GraphInst* inst){
     _pool                              = _input_buffer->value()._pool;
     _output_buffer->value_ptr()->_pool = _pool;
   } else {
-    OrkAssert(false);
+    // S8.5 (owner law: changing graph topology must NOT crash — sim may stop/restart). An UNWIRED
+    // module (its 'pool' input not connected — e.g. a node just added in the editor before it is
+    // hooked up) marks the WHOLE topology INVALID instead of asserting. GraphInst::updateTopology
+    // then skips stage()/activate() and ParticlesDrawableData::createDrawable returns null
+    // (surfaced as None to python). Re-configuring after the module is wired links clean + runs.
+    printf("[particles] ParticleModuleInst::_onLink: a module has an UNCONNECTED 'pool' input — "
+           "topology marked INVALID (sim stopped until the module is wired).\n");
+    inst->_topologyValid = false;
   }
 
 }

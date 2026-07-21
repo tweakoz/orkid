@@ -37,10 +37,20 @@ class SelExpr:
   PEG parser recurses ~per nesting level (with backtracking), so a single deeply-nested expression
   (e.g. a 10-wide `|`-chain -> `max(max(max(...)))`) makes shader compilation blow up. Flattening keeps the
   parser shallow for ANY predicate. glsl(domain) still returns the nested form (debug/repr only)."""
-  def __init__(self, gt, emit, children=()):
+  def __init__(self, gt, emit, children=(), meta=None):
     self._gt       = gt
     self._emit     = emit             # leaf: fn(domain)->str ; internal: fn(child_refs)->str
     self._children = tuple(children)
+    # E2.5 ExprIR CAPTURE tag — the CANONICAL symbolic op/leaf spelling (Q1: tag at construction,
+    # never reverse-map the GLSL `_emit`). exprir_selexpr.capture() walks _meta + _children to
+    # build a hypermesh.selexpr ExprIR tree; the GLSL path (_emit/emit_block) is untouched so a
+    # tagged node emits BYTE-IDENTICAL shader text. Forms (a small tuple):
+    #   ("op",   name)                 an internal op over _children (Call name)
+    #   ("atom", name)                 an atom leaf (ParamRef kind="atom")
+    #   ("const", value)               a baked scalar constant (Const)
+    #   ("vconst", (x, y, z))          a baked vec3 constant (Call "vec3" of 3 Consts)
+    #   None                           UNTAGGED -> capture() fails loud (no silent hole)
+    self._meta     = meta
 
   def _glty(self): return "vec3" if self._gt == "vec3" else "float"
 
@@ -65,52 +75,53 @@ class SelExpr:
       return self._emit([c.glsl(domain) for c in self._children])
     return self._emit(domain)
 
-  # ---- boolean composition (0/1 weights) ----
-  def __and__(self, o):  return _node("float", lambda r: "min(%s, %s)" % (r[0], r[1]), (self, _coerce(o)))
-  def __or__(self, o):   return _node("float", lambda r: "max(%s, %s)" % (r[0], r[1]), (self, _coerce(o)))
-  def __xor__(self, o):  return _node("float", lambda r: "abs(%s - %s)" % (r[0], r[1]), (self, _coerce(o)))  # 0/1 xor
-  def __invert__(self):  return _node("float", lambda r: "(1.0 - (%s))" % r[0], (self,))
-  def __sub__(self, o):  return _bin(self._gt, self, o, "-")    # set-subtract for weights, vec/float math
-  def __rsub__(self, o): return _bin(self._gt, _coerce(o), self, "-")
-  def __add__(self, o):  return _bin(self._gt, self, o, "+")
+  # ---- boolean composition (0/1 weights) ----  (IR tags mirror the GLSL op computed, Q1)
+  def __and__(self, o):  return _node("float", lambda r: "min(%s, %s)" % (r[0], r[1]), (self, _coerce(o)), meta=("op", "min"))
+  def __or__(self, o):   return _node("float", lambda r: "max(%s, %s)" % (r[0], r[1]), (self, _coerce(o)), meta=("op", "max"))
+  def __xor__(self, o):  return _node("float", lambda r: "abs(%s - %s)" % (r[0], r[1]), (self, _coerce(o)), meta=("op", "xor01"))  # 0/1 xor
+  def __invert__(self):  return _node("float", lambda r: "(1.0 - (%s))" % r[0], (self,), meta=("op", "not01"))
+  def __sub__(self, o):  return _bin(self._gt, self, o, "-", "sub")    # set-subtract for weights, vec/float math
+  def __rsub__(self, o): return _bin(self._gt, _coerce(o), self, "-", "sub")
+  def __add__(self, o):  return _bin(self._gt, self, o, "+", "add")
   __radd__ = __add__                                           # a + b == b + a (const on the left)
   def __mul__(self, o):                                        # vec3 if EITHER side is vec3 (scalar*vec broadcast)
     oc = _coerce(o)
-    return _node("vec3" if "vec3" in (self._gt, oc._gt) else "float", lambda r: "(%s * %s)" % (r[0], r[1]), (self, oc))
+    return _node("vec3" if "vec3" in (self._gt, oc._gt) else "float", lambda r: "(%s * %s)" % (r[0], r[1]), (self, oc), meta=("op", "mul"))
   __rmul__ = __mul__
-  def __truediv__(self, o):  return _bin(self._gt, self, o, "/")
-  def __rtruediv__(self, o): return _bin(self._gt, _coerce(o), self, "/")
-  def __neg__(self):         return _node(self._gt, lambda r: "(-(%s))" % r[0], (self,))
-  def __pow__(self, o):      return _node(self._gt, lambda r: "pow(%s, %s)" % (r[0], r[1]), (self, _coerce(o)))  # x ** y
-  def __mod__(self, o):      return _node(self._gt, lambda r: "mod(%s, %s)" % (r[0], r[1]), (self, _coerce(o)))  # x % y (GLSL mod; e.g. S.seg % 2 = parity)
-  # ---- comparisons -> 0/1 float ---- (step(edge, x) == (x >= edge))
-  def __gt__(self, o): return _node("float", lambda r: "step(%s, %s)" % (r[0], r[1]), (_coerce(o), self))  # self > o
-  def __lt__(self, o): return _node("float", lambda r: "step(%s, %s)" % (r[0], r[1]), (self, _coerce(o)))  # self < o
+  def __truediv__(self, o):  return _bin(self._gt, self, o, "/", "div")
+  def __rtruediv__(self, o): return _bin(self._gt, _coerce(o), self, "/", "div")
+  def __neg__(self):         return _node(self._gt, lambda r: "(-(%s))" % r[0], (self,), meta=("op", "neg"))
+  def __pow__(self, o):      return _node(self._gt, lambda r: "pow(%s, %s)" % (r[0], r[1]), (self, _coerce(o)), meta=("op", "pow"))  # x ** y
+  def __mod__(self, o):      return _node(self._gt, lambda r: "mod(%s, %s)" % (r[0], r[1]), (self, _coerce(o)), meta=("op", "mod"))  # x % y (GLSL mod; e.g. S.seg % 2 = parity)
+  # ---- comparisons -> 0/1 float ---- (step(edge, x) == (x >= edge)); IR captures the literal step op.
+  def __gt__(self, o): return _node("float", lambda r: "step(%s, %s)" % (r[0], r[1]), (_coerce(o), self), meta=("op", "step"))  # self > o
+  def __lt__(self, o): return _node("float", lambda r: "step(%s, %s)" % (r[0], r[1]), (self, _coerce(o)), meta=("op", "step"))  # self < o
   def __ge__(self, o): return self.__gt__(o)
   def __le__(self, o): return self.__lt__(o)
   # ---- vec ops ----
-  def dot(self, o):    return _node("float", lambda r: "dot(%s, %s)" % (r[0], r[1]), (self, _coerce(o)))
-  def length(self):    return _node("float", lambda r: "length(%s)" % r[0], (self,))
+  def dot(self, o):    return _node("float", lambda r: "dot(%s, %s)" % (r[0], r[1]), (self, _coerce(o)), meta=("op", "dot"))
+  def length(self):    return _node("float", lambda r: "length(%s)" % r[0], (self,), meta=("op", "length_of"))
   @property
-  def x(self): return _node("float", lambda r: "(%s).x" % r[0], (self,))
+  def x(self): return _node("float", lambda r: "(%s).x" % r[0], (self,), meta=("op", "swz_x"))
   @property
-  def y(self): return _node("float", lambda r: "(%s).y" % r[0], (self,))
+  def y(self): return _node("float", lambda r: "(%s).y" % r[0], (self,), meta=("op", "swz_y"))
   @property
-  def z(self): return _node("float", lambda r: "(%s).z" % r[0], (self,))
+  def z(self): return _node("float", lambda r: "(%s).z" % r[0], (self,), meta=("op", "swz_z"))
 
 
-def _f(emit):  return SelExpr("float", emit)          # LEAF float (emit: domain->str)
-def _v(emit):  return SelExpr("vec3", emit)           # LEAF vec3  (emit: domain->str)
-def _node(gt, emit, children): return SelExpr(gt, emit, children)   # INTERNAL op (emit: child_refs->str)
+def _f(emit, meta=None):  return SelExpr("float", emit, meta=meta)          # LEAF float (emit: domain->str)
+def _v(emit, meta=None):  return SelExpr("vec3", emit, meta=meta)           # LEAF vec3  (emit: domain->str)
+def _node(gt, emit, children, meta=None): return SelExpr(gt, emit, children, meta=meta)   # INTERNAL op
 
 def _coerce(x):
   if isinstance(x, SelExpr): return x
   if hasattr(x, "x") and hasattr(x, "y") and hasattr(x, "z"):     # a vec3 -> baked constant leaf
-    return _v(lambda d, X=x: "vec3(%r, %r, %r)" % (float(X.x), float(X.y), float(X.z)))
-  return _f(lambda d, X=x: "%r" % float(X))                       # a scalar -> baked constant leaf
+    return _v(lambda d, X=x: "vec3(%r, %r, %r)" % (float(X.x), float(X.y), float(X.z)),
+              meta=("vconst", (float(x.x), float(x.y), float(x.z))))
+  return _f(lambda d, X=x: "%r" % float(X), meta=("const", float(x)))       # a scalar -> baked constant leaf
 
-def _bin(gt, a, b, op):
-  return _node(gt, lambda r: "(%s %s %s)" % (r[0], op, r[1]), (_coerce(a), _coerce(b)))
+def _bin(gt, a, b, op, tag):
+  return _node(gt, lambda r: "(%s %s %s)" % (r[0], op, r[1]), (_coerce(a), _coerce(b)), meta=("op", tag))
 
 
 # the Hypermesh asset currently being traced (set by Hypermesh.__init__). S.time attaches a single shared
@@ -129,7 +140,7 @@ class _AtomNS:
         raise TypeError("selection atom S.%s is not valid for domain '%s' (valid: %s)"
                         % (name, d, ", ".join(sorted(valid))))
       return locals_[d]
-    return SelExpr(gt, emit)
+    return SelExpr(gt, emit, meta=("atom", name))
   P      = property(lambda s: s._atom("P"))
   N      = property(lambda s: s._atom("N"))
   uv     = property(lambda s: s._atom("uv"))       # per-face UV centroid (vec3, .xy=uv) — extrude field exprs
@@ -155,12 +166,12 @@ class _AtomNS:
       a._time_param = tp
     return tp
   def tag(self, bit):                                            # read this element's existing tag bit
-    return _f(lambda d: "float((_tags >> %du) & 1u)" % (int(bit) & 31))
+    return _f(lambda d: "float((_tags >> %du) & 1u)" % (int(bit) & 31), meta=("tagbit", int(bit) & 31))
   @property
   def gid(self):
     """This face's persistent gid (the LOCKED top 12 tag bits [20:32) — material/semantic class,
     0..4095; 0 until assign_gid sets it). Read-only here; the ONLY write verb is assign_gid."""
-    return _f(lambda d: "float((_tags >> 20u) & 0xFFFu)")
+    return _f(lambda d: "float((_tags >> 20u) & 0xFFFu)", meta=("atom", "gid"))
   def ftag(self, bit):                                           # LINE only: 1 if EITHER adjacent FACE has group `bit`
     # lets an edge predicate target the boundary of a FACE group (e.g. the inset/extrude partitions the exhaust
     # carries) — `~(S.ftag(2) | S.ftag(3))` = "edges not touching the exhaust faces". Reads the OR of the edge's
@@ -170,7 +181,7 @@ class _AtomNS:
       if d != LINE:
         raise TypeError("selection atom S.ftag(bit) is LINE-only (it reads ADJACENT FACE group tags)")
       return "float((_ftags >> %du) & 1u)" % (int(bit) & 31)
-    return _f(emit)
+    return _f(emit, meta=("ftagbit", int(bit) & 31))
   # ---- math (ergonomic S.* aliases of the free sl_* functions; e.g. S.pow(S.t, 2.0), S.sin(...)). NOTE:
   #      S.length is the LINE edge-length ATOM, so `length` is intentionally NOT a math method here. ----
   def sin(self, x):                return sl_sin(x)
@@ -190,25 +201,25 @@ class _AtomNS:
 S = _AtomNS()
 
 # ---- helpers (band-limited / clamps) — INTERNAL nodes (operands become child temps; stay parser-shallow) ----
-def sl_smoothstep(e0, e1, x): return _node("float", lambda r: "smoothstep(%s, %s, %s)" % (r[0], r[1], r[2]), (_coerce(e0), _coerce(e1), _coerce(x)))
-def sl_step(e, x):            return _node("float", lambda r: "step(%s, %s)" % (r[0], r[1]), (_coerce(e), _coerce(x)))
-def sl_clamp(x, a, b):        return _node("float", lambda r: "clamp(%s, %s, %s)" % (r[0], r[1], r[2]), (_coerce(x), _coerce(a), _coerce(b)))
-def sl_min(a, b):             return _node("float", lambda r: "min(%s, %s)" % (r[0], r[1]), (_coerce(a), _coerce(b)))
-def sl_max(a, b):             return _node("float", lambda r: "max(%s, %s)" % (r[0], r[1]), (_coerce(a), _coerce(b)))
-def sl_sin(x):  x = _coerce(x); return _node(x._gt, lambda r: "sin(%s)" % r[0], (x,))   # component-wise for vec3
-def sl_cos(x):  x = _coerce(x); return _node(x._gt, lambda r: "cos(%s)" % r[0], (x,))
-def sl_fract(x):x = _coerce(x); return _node(x._gt, lambda r: "fract(%s)" % r[0], (x,))
-def sl_sqrt(x): x = _coerce(x); return _node(x._gt, lambda r: "sqrt(%s)" % r[0], (x,))
-def sl_abs(x):  x = _coerce(x); return _node(x._gt, lambda r: "abs(%s)" % r[0], (x,))
+def sl_smoothstep(e0, e1, x): return _node("float", lambda r: "smoothstep(%s, %s, %s)" % (r[0], r[1], r[2]), (_coerce(e0), _coerce(e1), _coerce(x)), meta=("op", "smoothstep"))
+def sl_step(e, x):            return _node("float", lambda r: "step(%s, %s)" % (r[0], r[1]), (_coerce(e), _coerce(x)), meta=("op", "step"))
+def sl_clamp(x, a, b):        return _node("float", lambda r: "clamp(%s, %s, %s)" % (r[0], r[1], r[2]), (_coerce(x), _coerce(a), _coerce(b)), meta=("op", "clamp"))
+def sl_min(a, b):             return _node("float", lambda r: "min(%s, %s)" % (r[0], r[1]), (_coerce(a), _coerce(b)), meta=("op", "min"))
+def sl_max(a, b):             return _node("float", lambda r: "max(%s, %s)" % (r[0], r[1]), (_coerce(a), _coerce(b)), meta=("op", "max"))
+def sl_sin(x):  x = _coerce(x); return _node(x._gt, lambda r: "sin(%s)" % r[0], (x,), meta=("op", "sin"))   # component-wise for vec3
+def sl_cos(x):  x = _coerce(x); return _node(x._gt, lambda r: "cos(%s)" % r[0], (x,), meta=("op", "cos"))
+def sl_fract(x):x = _coerce(x); return _node(x._gt, lambda r: "fract(%s)" % r[0], (x,), meta=("op", "fract"))
+def sl_sqrt(x): x = _coerce(x); return _node(x._gt, lambda r: "sqrt(%s)" % r[0], (x,), meta=("op", "sqrt"))
+def sl_abs(x):  x = _coerce(x); return _node(x._gt, lambda r: "abs(%s)" % r[0], (x,), meta=("op", "abs"))
 def sl_pow(x, y):                                                        # x**y (GLSL pow; x>=0 for fractional y)
-  x = _coerce(x); return _node(x._gt, lambda r: "pow(%s, %s)" % (r[0], r[1]), (x, _coerce(y)))
+  x = _coerce(x); return _node(x._gt, lambda r: "pow(%s, %s)" % (r[0], r[1]), (x, _coerce(y)), meta=("op", "pow"))
 def sl_mix(a, b, t):                                                     # lerp a->b by t (component-wise for vec3)
-  a = _coerce(a); return _node(a._gt, lambda r: "mix(%s, %s, %s)" % (r[0], r[1], r[2]), (a, _coerce(b), _coerce(t)))
+  a = _coerce(a); return _node(a._gt, lambda r: "mix(%s, %s, %s)" % (r[0], r[1], r[2]), (a, _coerce(b), _coerce(t)), meta=("op", "mix"))
 def sl_select(cond, a, b):                                              # cond!=0 ? a : b  (GLSL ternary; the `?:` form)
   a = _coerce(a)
-  return _node(a._gt, lambda r: "((%s) != 0.0 ? (%s) : (%s))" % (r[0], r[1], r[2]), (_coerce(cond), a, _coerce(b)))
+  return _node(a._gt, lambda r: "((%s) != 0.0 ? (%s) : (%s))" % (r[0], r[1], r[2]), (_coerce(cond), a, _coerce(b)), meta=("op", "select01"))
 def vexpr(x, y, z):           # build a vec3 expression from scalar (SelExpr|float) components — e.g. vexpr(0,-droop,0)
-  return _node("vec3", lambda r: "vec3(%s, %s, %s)" % (r[0], r[1], r[2]), (_coerce(x), _coerce(y), _coerce(z)))
+  return _node("vec3", lambda r: "vec3(%s, %s, %s)" % (r[0], r[1], r[2]), (_coerce(x), _coerce(y), _coerce(z)), meta=("op", "vec3"))
 
 ###############################################################################
 # Runtime params — a GENERIC named uniform a DSL expression can reference and the asset rebinds LIVE.
@@ -222,7 +233,7 @@ class _ParamLeaf(SelExpr):
   extrude during collection (and frozen into that extrude's emitted GLSL). `.set(...)` rebinds it live."""
   def __init__(self, name, default):
     is_vec = hasattr(default, "x") and hasattr(default, "y") and hasattr(default, "z")
-    super().__init__("vec3" if is_vec else "float", self._emit_param)
+    super().__init__("vec3" if is_vec else "float", self._emit_param, meta=("plug", name))
     self._pname = name; self._is_vec = is_vec; self._default = default
     self._slot = 0; self._bindings = []                   # (module, slot) for every extrude that used it
   def _emit_param(self, domain):
@@ -264,7 +275,8 @@ def collect_params(*exprs):
 def sel_normal_dir(n, t=0.5, soft=1e-3):
   """elements whose normal points toward `n` past threshold t (soft = falloff). POINT/POLY only."""
   L = math.sqrt(n.x * n.x + n.y * n.y + n.z * n.z) or 1.0
-  nn = _v(lambda d: "vec3(%r, %r, %r)" % (n.x / L, n.y / L, n.z / L))
+  nn = _v(lambda d: "vec3(%r, %r, %r)" % (n.x / L, n.y / L, n.z / L),
+          meta=("vconst", (n.x / L, n.y / L, n.z / L)))
   return sl_smoothstep(t - max(soft, 1e-4), t + max(soft, 1e-4), S.N.dot(nn))
 
 def sel_id_range(lo, hi):

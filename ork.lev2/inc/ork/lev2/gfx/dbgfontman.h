@@ -192,6 +192,14 @@ struct FontMan { //: public NoRttiSingleton<FontMan> {
 
   static font_ptr_t fontForId(const std::string& name);
 
+  // Given a base font and an SSAA multiplier (>=1), return the same-family
+  // atlas whose native cell height is nearest base->charHeight*multiplier
+  // (never smaller than the base). Lets an SSAA surface source glyph texels
+  // from a higher-resolution atlas while laying out at the base metrics, so
+  // text is not bilinearly magnified into the supersampled buffer. Returns
+  // the base font when multiplier<=1 or no larger sibling atlas exists.
+  static font_ptr_t supersampledFont(font_ptr_t base, int multiplier);
+
   static font_ptr_t currentFont();
   static void setCurrentFont(const std::string& name);
   static void PushFont(font_ptr_t pFont);

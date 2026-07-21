@@ -85,6 +85,25 @@ using directional_force_module_ptr_t = std::shared_ptr<DirectionalForceModuleDat
 
 /////////////////////////////////////////
 
+// ExprForceModule (E2.5 S8) — per-particle acceleration authored as a canonical ExprIR TREE
+// (context "particles.force"). Three scalar force exprs (x/y/z) are stored as the reflected
+// JSON the DSL emits (exprir.encode_json); the instance parses them once and evaluates the
+// tree per particle on the CPU, so a sim advance is deterministic. A `Strength` float plug
+// scales the whole force (A8-parametric). Symbols: unit_age/age/random/pos.*/vel.*/speed.
+struct ExprForceModuleData : public ParticleModuleData {
+  DeclareConcreteX(ExprForceModuleData, ParticleModuleData);
+public:
+  ExprForceModuleData();
+  static std::shared_ptr<ExprForceModuleData> createShared();
+  static rtti::castable_ptr_t sharedFactory();
+  dflow::dgmoduleinst_ptr_t createInstance(dataflow::GraphInst* ginst) const final;
+  std::string _force_x, _force_y, _force_z; // canonical particles.force ExprIR JSON per axis
+};
+
+using expr_force_module_ptr_t = std::shared_ptr<ExprForceModuleData>;
+
+/////////////////////////////////////////
+
 struct TurbulenceModuleData : public ParticleModuleData {
   DeclareConcreteX(TurbulenceModuleData, ParticleModuleData);
 public:

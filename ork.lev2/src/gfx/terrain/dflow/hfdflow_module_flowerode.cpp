@@ -216,6 +216,13 @@ void FlowErodeModuleData::describeX(class_t* clazz) {
   clazz->setSharedFactory([]() -> rtti::castable_ptr_t { return FlowErodeModuleData::createShared(); });
   clazz->annotateTyped<dataflow::moduleIOreshape_fn_t>("reshapeIOs",
       [](dataflow::moduledata_ptr_t m) { _reshapeFlowErodeIOs(m); });
+  // E1-close add-palette (reflection-carried; see hfdflow_module_thermal.cpp for the
+  // vocabulary). recipe = "flow_erode": the python insertion recipe auto-inserts the
+  // canonical flow3d companion and wires its discharge.
+  clazz->annotateTyped<ConstString>("dsl.verb", "flow_erode");
+  clazz->annotateTyped<bool>("editor.palette", true);
+  clazz->annotateTyped<int>("editor.palette.sort", 3);
+  clazz->annotateTyped<ConstString>("editor.palette.recipe", "flow_erode");
   clazz->directProperty("niter", &FlowErodeModuleData::_niter);
   clazz->directProperty("dt", &FlowErodeModuleData::_dt);
   clazz->directProperty("k_erode", &FlowErodeModuleData::_k_erode);
@@ -225,7 +232,13 @@ void FlowErodeModuleData::describeX(class_t* clazz) {
   clazz->directProperty("dep_m", &FlowErodeModuleData::_dep_m);
   clazz->directProperty("flat_k", &FlowErodeModuleData::_flat_k);
   clazz->directProperty("clamp_frac", &FlowErodeModuleData::_clamp_frac);
-  clazz->directProperty("blend", &FlowErodeModuleData::_blend);
+  // _blend is a reflected module PROPERTY (not a plug) — its slider range rides the
+  // PROPERTY annotation seam (editor.range.min/max), flowing through moduleClasses()
+  // property metadata into the propsheet exactly as plug ranges flow via plugSpec
+  // (the params-lane carve-out; this establishes the module-prop range pattern).
+  clazz->directProperty("blend", &FlowErodeModuleData::_blend)
+      ->annotate<float>("editor.range.min", 0.0f)
+      ->annotate<float>("editor.range.max", 1.0f);
   clazz->directProperty("disch_log", &FlowErodeModuleData::_disch_log);
 }
 

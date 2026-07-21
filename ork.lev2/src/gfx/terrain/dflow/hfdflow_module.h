@@ -103,6 +103,21 @@ struct TerrainComputeInst : public dflow::DgModuleInst, public dflowgfx::IPrePha
     return (ov >= 0) ? (ov != 0) : cookCacheDefault();
   }
 
+  // S4 VIEWABLE-vs-INTERNAL tagging (the cachepoint pattern's progressive-display
+  // sibling): a VIEWABLE node's completed "Out" plane is a checkpoint-publish
+  // candidate during an on_checkpoint cook (heights sweeping through the chain).
+  // Class default TRUE — most terrain ops transform the height plane itself; the
+  // mask/analysis generators (Slope, Curvature) override false (publishing a [0,1]
+  // mask as the display heights would flash garbage). Per-node reflected override:
+  // DgModuleData::_viewable (-1 class default / 0 internal / 1 viewable). The
+  // publish site ALSO requires a mono plane at the bake dims, so RGBA outputs
+  // (RelaxUv, Flow3D "Out") self-exclude regardless of tagging.
+  virtual bool viewableDefault() const { return true; }
+  bool isViewable() const {
+    int ov = _dgmodule_data->_viewable;
+    return (ov >= 0) ? (ov != 0) : viewableDefault();
+  }
+
   // fp32<->fp16 bit converters (same semantics as image_fmt_convert / pack_frame5).
   static uint16_t _f32tof16(float f) {
     uint32_t bits;

@@ -385,7 +385,19 @@ struct OpenXrImpl {
   PFN_xrGetVulkanDeviceExtensionsKHR pfnDevExts     = nullptr;
   PFN_xrGetVulkanGraphicsDeviceKHR pfnGfxDevice     = nullptr;
 
+  // XR_EXT_hand_tracking (OPTIONAL). All gated behind _handTrackingEnabled (extension
+  //  requested at instance creation) AND _handTrackingSystem (system reports support).
+  //  Absent → the whole feature stays cleanly unavailable (engine mirror unsupported).
+  bool _handTrackingEnabled = false;                       // extension enabled at xrCreateInstance
+  bool _handTrackingSystem  = false;                       // supportsHandTracking + procs resolved
+  XrHandTrackerEXT _handTracker[2] = {XR_NULL_HANDLE, XR_NULL_HANDLE}; // 0=left 1=right
+  XrHandJointLocationEXT _handJointBuf[2][XR_HAND_JOINT_COUNT_EXT] = {}; // reusable locate buffer
+  PFN_xrCreateHandTrackerEXT pfnCreateHandTracker   = nullptr;
+  PFN_xrDestroyHandTrackerEXT pfnDestroyHandTracker = nullptr;
+  PFN_xrLocateHandJointsEXT pfnLocateHandJoints     = nullptr;
+
   bool resolveKhrEntryPoints();
+  bool resolveHandTrackingEntryPoints();
   XrPath strToPath(const char* s) const;
   bool suggestBindings(const char* profile, const std::vector<XrActionSuggestedBinding>& binds) const;
 };
@@ -406,6 +418,20 @@ bool OpenXrImpl::resolveKhrEntryPoints() {
   ok = ok and get("xrGetVulkanDeviceExtensionsKHR", (PFN_xrVoidFunction*)&pfnDevExts);
   ok = ok and get("xrGetVulkanGraphicsDeviceKHR", (PFN_xrVoidFunction*)&pfnGfxDevice);
   return ok and pfnGfxReqs and pfnInstExts and pfnDevExts and pfnGfxDevice;
+}
+
+bool OpenXrImpl::resolveHandTrackingEntryPoints() {
+  // XR_EXT_hand_tracking entry points are NOT loader-exported; resolve them via
+  //  xrGetInstanceProcAddr (same discipline as the KHR vulkan-enable procs). A runtime
+  //  that advertises the extension but null-procs a function → treat as unsupported.
+  auto get = [&](const char* name, PFN_xrVoidFunction* fn) -> bool {
+    return XR_SUCCEEDED(xrGetInstanceProcAddr(_instance, name, fn));
+  };
+  bool ok = true;
+  ok = ok and get("xrCreateHandTrackerEXT", (PFN_xrVoidFunction*)&pfnCreateHandTracker);
+  ok = ok and get("xrDestroyHandTrackerEXT", (PFN_xrVoidFunction*)&pfnDestroyHandTracker);
+  ok = ok and get("xrLocateHandJointsEXT", (PFN_xrVoidFunction*)&pfnLocateHandJoints);
+  return ok and pfnCreateHandTracker and pfnDestroyHandTracker and pfnLocateHandJoints;
 }
 
 bool OpenXrImpl::suggestBindings(const char* profile, const std::vector<XrActionSuggestedBinding>& binds) const {
@@ -436,6 +462,13 @@ OpenXrDevice::~OpenXrDevice() {
   auto I = _impl;
   if (!I)
     return;
+  // XR_EXT_hand_tracking: the trackers are session children — destroy them BEFORE the
+  //  session (below), on this (the owning) thread, so no locate races a torn-down session.
+  for (int h = 0; h < 2; h++)
+    if (I->_handTracker[h] and I->pfnDestroyHandTracker) {
+      I->pfnDestroyHandTracker(I->_handTracker[h]);
+      I->_handTracker[h] = XR_NULL_HANDLE;
+    }
   for (int h = 0; h < 2; h++)
     if (I->_gripSpace[h])
       xrDestroySpace(I->_gripSpace[h]);
@@ -483,11 +516,14 @@ void OpenXrDevice::preGraphicsInit(ExternalGpuRequirements& reqs) {
     xrEnumerateInstanceExtensionProperties(nullptr, extCount, &extCount, exts.data());
   bool hasVk    = false;
   bool hasDepth = false;
+  bool hasHands = false;
   for (auto& e : exts) {
     if (0 == std::strcmp(e.extensionName, XR_KHR_VULKAN_ENABLE_EXTENSION_NAME))
       hasVk = true;
     if (0 == std::strcmp(e.extensionName, XR_KHR_COMPOSITION_LAYER_DEPTH_EXTENSION_NAME))
       hasDepth = true;
+    if (0 == std::strcmp(e.extensionName, XR_EXT_HAND_TRACKING_EXTENSION_NAME))
+      hasHands = true;
   }
   if (not hasVk) {
     bail("runtime lacks XR_KHR_vulkan_enable", XR_ERROR_EXTENSION_NOT_PRESENT);
@@ -501,6 +537,10 @@ void OpenXrDevice::preGraphicsInit(ExternalGpuRequirements& reqs) {
   enabledExts.push_back(XR_KHR_VULKAN_ENABLE_EXTENSION_NAME);
   if (hasDepth)
     enabledExts.push_back(XR_KHR_COMPOSITION_LAYER_DEPTH_EXTENSION_NAME);
+  // OPTIONAL articulated hand tracking — request it only if advertised; its absence never
+  //  affects instance creation (the feature just stays unavailable, reported once below).
+  if (hasHands)
+    enabledExts.push_back(XR_EXT_HAND_TRACKING_EXTENSION_NAME);
   XrInstanceCreateInfo ici{XR_TYPE_INSTANCE_CREATE_INFO};
   std::strncpy(ici.applicationInfo.applicationName, "orkid", XR_MAX_APPLICATION_NAME_SIZE - 1);
   std::strncpy(ici.applicationInfo.engineName, "orkid", XR_MAX_ENGINE_NAME_SIZE - 1);
@@ -514,7 +554,8 @@ void OpenXrDevice::preGraphicsInit(ExternalGpuRequirements& reqs) {
     bail("xrCreateInstance", r);
     return;
   }
-  I->_depthExtEnabled = hasDepth;
+  I->_depthExtEnabled     = hasDepth;
+  I->_handTrackingEnabled = hasHands;
 
   if (not I->resolveKhrEntryPoints()) {
     bail("resolve KHR vulkan-enable entry points", XR_ERROR_FUNCTION_UNSUPPORTED);
@@ -528,6 +569,20 @@ void OpenXrDevice::preGraphicsInit(ExternalGpuRequirements& reqs) {
   if (XR_FAILED(r)) {
     bail("xrGetSystem (no HMD)", r);
     return;
+  }
+
+  // 3b) OPTIONAL hand-tracking system probe. Only meaningful when the extension was
+  //  enabled; chain XrSystemHandTrackingPropertiesEXT onto xrGetSystemProperties and honor
+  //  supportsHandTracking. Also resolve the (loader-unexported) EXT entry points here. Any
+  //  miss → the feature is unavailable (no error); the actual trackers are created after the
+  //  session in _createHandTrackers, which emits the single availability line.
+  if (I->_handTrackingEnabled) {
+    XrSystemHandTrackingPropertiesEXT htp{XR_TYPE_SYSTEM_HAND_TRACKING_PROPERTIES_EXT};
+    XrSystemProperties sysprops{XR_TYPE_SYSTEM_PROPERTIES};
+    sysprops.next = &htp;
+    bool sys_ok   = XR_SUCCEEDED(xrGetSystemProperties(I->_instance, I->_systemId, &sysprops)) and
+                  (htp.supportsHandTracking == XR_TRUE);
+    I->_handTrackingSystem = sys_ok and I->resolveHandTrackingEntryPoints();
   }
 
   // 4) xrGetVulkanGraphicsRequirementsKHR — MUST be called before graphics-device
@@ -681,6 +736,7 @@ void OpenXrDevice::postGraphicsInit(const GraphicsBindingInfo& binding) {
   _createSwapchain();
   _createDepthSwapchain();
   _createActions();
+  _createHandTrackers();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -894,6 +950,126 @@ void OpenXrDevice::_createActions() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// _createHandTrackers — OPTIONAL articulated hand tracking (XR_EXT_hand_tracking,
+// default 26-joint set). Creates one XrHandTrackerEXT per hand ONLY when the extension
+// was enabled AND the system reports support AND the procs resolved (all decided in
+// preGraphicsInit). Emits EXACTLY ONE availability line covering every degrade reason,
+// so the feature is never silently on/off. Never fails the session.
+////////////////////////////////////////////////////////////////////////////////
+
+void OpenXrDevice::_createHandTrackers() {
+  auto I = _impl;
+
+  const char* why = nullptr;
+  if (not I->_handTrackingEnabled)
+    why = "runtime does not advertise XR_EXT_hand_tracking";
+  else if (not I->_handTrackingSystem)
+    why = "system reports no hand-tracking support (or EXT procs unresolved)";
+  else if (not I->pfnCreateHandTracker)
+    why = "xrCreateHandTrackerEXT unresolved";
+
+  bool created = false;
+  if (not why) {
+    const XrHandEXT sides[2] = {XR_HAND_LEFT_EXT, XR_HAND_RIGHT_EXT};
+    created                  = true;
+    for (int h = 0; h < 2; h++) {
+      XrHandTrackerCreateInfoEXT ci{XR_TYPE_HAND_TRACKER_CREATE_INFO_EXT};
+      ci.hand         = sides[h];
+      ci.handJointSet = XR_HAND_JOINT_SET_DEFAULT_EXT; // the 26-joint default set
+      if (XR_FAILED(I->pfnCreateHandTracker(I->_session, &ci, &I->_handTracker[h]))) {
+        I->_handTracker[h] = XR_NULL_HANDLE;
+        created            = false;
+      }
+    }
+    if (not created) {
+      why = "xrCreateHandTrackerEXT failed";
+      // roll back any partial creation so teardown/locate never touch a half state.
+      for (int h = 0; h < 2; h++)
+        if (I->_handTracker[h]) {
+          if (I->pfnDestroyHandTracker)
+            I->pfnDestroyHandTracker(I->_handTracker[h]);
+          I->_handTracker[h] = XR_NULL_HANDLE;
+        }
+    }
+  }
+
+  if (created) {
+    _handTrackingSupported = true;
+    std::lock_guard<std::mutex> lock(_hand_mutex);
+    for (int h = 0; h < 2; h++)
+      if (_handTracking[h])
+        _handTracking[h]->_supported = true;
+  } else {
+    // ensure the mirror stays honestly unsupported (defensive; it defaults so).
+    I->_handTrackingSystem = false;
+  }
+
+  // The ONE availability line.
+  printf("[OPENXR] hand tracking %s%s%s.\n",
+         created ? "AVAILABLE (XR_EXT_hand_tracking, 26-joint default set, both hands)" : "unavailable — ",
+         created ? "" : why,
+         created ? "" : " (degraded cleanly; head/eye tracking unaffected)");
+  fflush(stdout);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// _locateHands — per-frame joint locate against the app's base reference space at the
+// frame's predicted display time (the SAME space+time as the head/view locate). Honors
+// isActive AND per-joint position/orientation validity; an inactive hand publishes NO
+// valid joints (never stale data). Poses go through the SHARED xrPoseToFmtx4 convention
+// path (the same conjugation the head/controller poses use). Writes the engine mirror
+// under _hand_mutex. Silent no-op when hand tracking is unavailable.
+////////////////////////////////////////////////////////////////////////////////
+
+void OpenXrDevice::_locateHands() {
+  auto I = _impl;
+  if (not I->_handTrackingSystem or not I->pfnLocateHandJoints)
+    return;
+
+  for (int h = 0; h < 2; h++) {
+    auto st = _handTracking[h];
+    if (I->_handTracker[h] == XR_NULL_HANDLE or not st)
+      continue;
+
+    XrHandJointsLocateInfoEXT li{XR_TYPE_HAND_JOINTS_LOCATE_INFO_EXT};
+    li.baseSpace = I->_refSpace;                          // the app base space (as head)
+    li.time      = I->_frameState.predictedDisplayTime;   // the frame predicted display time
+
+    XrHandJointLocationsEXT locs{XR_TYPE_HAND_JOINT_LOCATIONS_EXT};
+    locs.jointCount     = XR_HAND_JOINT_COUNT_EXT;
+    locs.jointLocations = I->_handJointBuf[h];
+    XrResult r          = I->pfnLocateHandJoints(I->_handTracker[h], &li, &locs);
+
+    bool active = XR_SUCCEEDED(r) and (locs.isActive == XR_TRUE);
+
+    std::lock_guard<std::mutex> lock(_hand_mutex);
+    st->_active = active;
+    if (not active) {
+      // honest: no valid data for an inactive hand — clear all per-joint validity.
+      for (auto& j : st->_joints) {
+        j._positionValid    = false;
+        j._orientationValid = false;
+      }
+      continue;
+    }
+    for (int j = 0; j < XR_HAND_JOINT_COUNT_EXT; j++) {
+      const XrHandJointLocationEXT& src = I->_handJointBuf[h][j];
+      HandJointPose& dst                = st->_joints[j];
+      bool posv = (src.locationFlags & XR_SPACE_LOCATION_POSITION_VALID_BIT) != 0;
+      bool oriv = (src.locationFlags & XR_SPACE_LOCATION_ORIENTATION_VALID_BIT) != 0;
+      dst._positionValid    = posv;
+      dst._orientationValid = oriv;
+      dst._radius           = src.radius;
+      if (posv or oriv) {
+        XrPosef pose = src.pose;
+        sanitizeVrPose(pose);            // finite-quat guard (reused head/eye self-defense)
+        dst._matrix = xrPoseToFmtx4(pose); // SAME convention path as head/controller poses
+      }
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Session FSM event pump.
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -1063,6 +1239,7 @@ void OpenXrDevice::gpuUpdate(RenderContextFrameData& RCFD) {
   I->_frameBegun = true;
 
   _syncActions();
+  _locateHands(); // articulated hand joints (optional; no-op when unavailable)
 
   // xrLocateViews -> per-eye pose + fov.
   I->_views.assign(2, {XR_TYPE_VIEW});
@@ -1789,6 +1966,29 @@ bool runSelfTests() {
     bool rej_zero = not validDepthNearFar(0.1f, 0.0f);
     bool rej_eq   = not validDepthNearFar(5.0f, 5.0f);
     verdict("depth_nearfar_selfdefense", good and rej_inf and rej_zero and rej_eq);
+  }
+
+  // hand-tracking engine surface (no runtime): the OPTIONAL XR_EXT_hand_tracking mirror
+  //  must degrade cleanly. On mac there is no runtime, so both hands must snapshot as a
+  //  non-null, unsupported, inactive 26-joint state — the runtime-free proxy that the
+  //  engine surface + degrade wiring are intact. Out-of-range side must also default-safe.
+  {
+    auto dev = openxr_device();
+    auto L   = dev->handTrackingSnapshot(0);
+    auto R   = dev->handTrackingSnapshot(1);
+    auto bad = dev->handTrackingSnapshot(7);
+    bool shape_ok = L and R and bad and                              //
+                    (L->_joints.size() == size_t(kHandJointCount)) and //
+                    (kHandJointCount == 26);
+    bool degraded = L and R and                                       //
+                    (not L->_supported) and (not L->_active) and      //
+                    (not R->_supported) and (not R->_active) and      //
+                    (not dev->_handTrackingSupported);
+    bool joints_clear = true;
+    if (L)
+      for (const auto& j : L->_joints)
+        joints_clear = joints_clear and (not j._positionValid) and (not j._orientationValid);
+    verdict("handtracking_unavailable_degrades_clean", shape_ok and degraded and joints_clear);
   }
 
   printf("ORKID_OPENXR_SELFTEST: %s\n", ok ? "ALL PASS" : "SOME FAILED");

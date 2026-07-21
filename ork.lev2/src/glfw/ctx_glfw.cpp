@@ -1493,7 +1493,9 @@ struct PopupImpl {
 ///////////////////////////////////////////////////////////////////////////////
 
 PopupWindow::PopupWindow(Context* pctx, int x, int y, int w, int h, bool transparent)
-    : Window(x, y, w, h, "Popup")
+    // is_main=false: a transient popup must NOT usurp GfxEnv::mainRenderContext()
+    // — same dangling-mainwindow clobber the secondary window fixes (BUG-C invariant).
+    : Window(x, y, w, h, "Popup", nullptr, /*is_main*/ false)
     , _useTransparency(transparent) {
   _uicontext = std::make_shared<ui::Context>();
   auto impl  = _impl.makeShared<PopupImpl>(this, pctx, x, y, w, h);

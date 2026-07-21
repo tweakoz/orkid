@@ -111,7 +111,7 @@ namespace ork::lev2 {
 // UISurfaceRenderImpl implementation
 ///////////////////////////////////////////////////////////////////////////////
 
-UISurfaceRenderImpl::UISurfaceRenderImpl(const UISurfacePrimitiveData* data, ui::layoutsurface_ptr_t surface)
+UISurfaceRenderImpl::UISurfaceRenderImpl(std::shared_ptr<const UISurfacePrimitiveData> data, ui::layoutsurface_ptr_t surface)
     : _data(data)
     , _layoutSurface(surface) {
   // Use the LayoutSurface's owned context (it creates its own in constructor)
@@ -524,7 +524,7 @@ drawable_ptr_t UISurfacePrimitiveData::createDrawable() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 drawable_ptr_t UISurfacePrimitiveData::createDrawable(ui::layoutsurface_ptr_t surface) const {
-  auto impl = std::make_shared<UISurfaceRenderImpl>(this, surface);
+  auto impl = std::make_shared<UISurfaceRenderImpl>(dataShared<UISurfacePrimitiveData>(), surface);
   auto rval = std::make_shared<CallbackDrawable>(nullptr);
 
   rval->SetRenderCallback(UISurfaceRenderImpl::renderCallback);

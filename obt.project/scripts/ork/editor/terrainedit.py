@@ -1,14 +1,18 @@
 ################################################################################
-# TerrainEditor — ork.terrain.edit.py v1 (JUL09 S1).
+# TerrainEditor — ork.terrain.edit.py (JUL09 S1; E3 C1 node-editor canvas).
 #
-# A minimal desktop terrain-graph editor: viewport + toolbar + document outliner +
-# property sheet + rebake loop. Every edit mutates the structured DOCUMENT (owner
-# law L2), then re-elaborates + rebakes via TerrainRuntime; the property sheet and
-# outliner bind the DOCUMENT, never the derived GraphData.
+# A desktop terrain-graph editor: viewport + toolbar + generic GPU node-editor canvas
+# + property sheet + rebake loop. Every edit mutates the structured DOCUMENT (owner
+# law L2), then re-elaborates + rebakes via TerrainRuntime; the property sheet and the
+# node-editor canvas bind the DOCUMENT, never the derived GraphData.
 #
-# Forks the SceneEditorBase / ecsedit dock idioms (viewport DockablePanel fill +
-# left split VerticalPack[Toolbar, Outliner] + bottom-split PropertySheet) but is
-# NOT ECS-coupled — no ecs modules are imported.
+# Layout rides the ui.DockSpace substrate: a viewport panel (fill), a left column
+# split LEFT @0.35 hosting VerticalPack[Toolbar, NodeEditor], and a property sheet
+# split BOTTOM @0.55 of the left column. NOT ECS-coupled — no ecs modules are
+# imported. The node-editor canvas REPLACES the earlier document Outliner (E3 C1);
+# the generic lev2.ui.Outliner + graphdoc_models stay for other editors. Dock layout
+# persists per (app-name, entry-path) via ork.ui.app_state; Shift+L resets it live,
+# --reset-layout ignores the saved session.
 #
 # Rebake happens on the GPU thread (_onGpuUpdate) at the PREVIEW dim during editing
 # and full-res on demand; property edits schedule a rebake on value settle (idle
@@ -31,24 +35,39 @@ from orkengine.lev2 import PostFxNodeACES, PostFxNodeHSVG, PbrCommon
 from ork.app.application import ComponentizedApplication
 from ork.ui import icon_library
 from ork.ui.filesystem_browser import FilesystemBrowser
+from ork.ui.node_editor import NodeEditor, COL_BG
+from ork.ui.dock_layout import save_layout, load_layout, to_json
+from ork.ui.dock_editor_glue import EditorDockGlue
+from ork.ui.app_state import dock_layout_path, text_input_has_focus
 
 from ork.editor.terrain_runtime import TerrainRuntime, terrain_debug_material_labels
 from ork.editor.undo_stack import UndoStack
+from ork.editor.terrain_node_model import TerrainNodeGraphModel
 from ork.editor.terrain_doc_model import (
-    TerrainDocOutlinerModel, TerrainNodePropertyModel,
-    TerrainParamsPropertyModel, TERRAIN_PARAMS_KEY)
+    TerrainNodePropertyModel, TerrainParamsPropertyModel)
 
 tokens = CrcStringProxy()
 
 _REBAKE_IDLE_S = 0.25   # settle window: rebake this long after the last edit tick
 _SWAP_HOLD_MAX_S = 3.0  # hold-last-frame cap: swap to the fresh scenegraph anyway after this
 
+# default dock layout: viewport (fill) | left column [toolbar + node-editor] split
+# LEFT @0.35; property sheet split BOTTOM @0.55 of the left column. Panel titles are
+# BOTH the titlebar labels AND the stable persistence ids (name-keyed layout JSON).
+_DOCK_VIEWPORT_TITLE = "Viewport"
+_DOCK_LEFT_TITLE     = "Terrain"
+_DOCK_PROPS_TITLE    = "propsheet"
+_DOCK_LEFT_PROP      = 0.35
+_DOCK_PROPS_PROP     = 0.55
+_DOCK_SPLIT_MARGIN   = 2
+
 
 class TerrainEditor(ComponentizedApplication):
 
   def __init__(self, source, *, dsl_class=None, extent_m=None,
                preview_dim=1024, full_dim=4096, chunk=128, dsl_kwargs=None,
-               offscreen=False, selftest=False, keytest=False):
+               offscreen=False, selftest=False, keytest=False,
+               reset_layout=False, layouttest=False, layout_probe=False):
     super().__init__()
     self.runtime = TerrainRuntime(preview_dim=preview_dim, full_dim=full_dim, chunk=chunk)
     self.runtime.load(source, dsl_class=dsl_class, extent_m=extent_m,
@@ -58,6 +77,7 @@ class TerrainEditor(ComponentizedApplication):
     self._last_edit_time = 0.0
     self._sgv_swap_pending = False     # hold-last-frame: fresh sg built, rebind deferred
     self._sgv_swap_started = 0.0
+    self._sliced_precook = False       # MT3: a sliced re-bake pre-cook is in progress
     # undo/redo (S2): snapshot checkpoints of (doc-JSON, kwargs, display key). Every
     # document/session mutation records one; drag ticks coalesce by edit key.
     self._undo = UndoStack(limit=100)
@@ -65,6 +85,21 @@ class TerrainEditor(ComponentizedApplication):
     self._rebuilding = False          # guards the update-thread sim tick during a rebuild
     self._selected_obj = None
     self._home_dir = os.path.expanduser("~")
+
+    # dock substrate (S6 adoption): the DockSpace + its panels are built in
+    # _onUiInit. _default_layout captures the canonical default arrangement so a
+    # live reset (Shift+L) / --reset-layout can restore it regardless of what a
+    # persisted session loaded at startup.
+    self.dock = None
+    self._default_layout = None
+    self._dock_glue = None                     # W5 cross-window DockManager wiring
+    self._gpu_ready = False                    # set in _onGpuInit; gates factory GPU wiring
+    self._reset_layout = bool(reset_layout)    # --reset-layout: ignore saved session
+    self._reset_layout_pending = False         # Shift+L: apply on the next GPU tick
+    # session persistence is DISABLED for the ephemeral automated gate modes (selftest /
+    # keytest): a save-on-exit/restore-on-start round trip would leave stray session state
+    # coupling determinism-sensitive runs. Interactive runs + the explicit layout gates keep it.
+    self._persist_layout = not (bool(selftest) or bool(keytest))
 
     # post-fx + envmap (E/G/T/H keys) — same preset lists/defaults as ork.ecsplay /
     # scene.viewer. Nodes are built ONCE in _onGpuInit and held here so their state
@@ -122,19 +157,42 @@ class TerrainEditor(ComponentizedApplication):
     self._keytest_rad1 = None
     self._caps_by_label = {}
 
-    if self._selftest or self._keytest:
+    # scripted offscreen DOCK-LAYOUT gate: exercise the real editor's DockSpace
+    # (default signature, save/scramble/load round-trip, live Shift+L reset,
+    # injected tab-drag) and print machine verdicts.
+    self._layouttest = bool(layouttest)
+    self._layouttest_frame = 0
+    self._layouttest_stage = "settle"
+    self._layouttest_settle_at = 0
+    self._layouttest_results = {}
+    # layout_probe: settle, print the AS-CONSTRUCTED dock signature (proves session
+    # restore / --reset-layout), then exit WITHOUT persisting (read-only probe).
+    self._layout_probe = bool(layout_probe)
+    self._layout_probe_frame = 0
+
+    if self._selftest or self._keytest or self._layouttest:
       import tempfile as _tf
       self._selftest_dir = _tf.mkdtemp(prefix="tered_edit_selftest_")
 
-    self.outliner_model = TerrainDocOutlinerModel(self.runtime.document)
     self.prop_model = TerrainNodePropertyModel(None, on_changed=self._onPropertyEdited)
     self.params_model = TerrainParamsPropertyModel(self.runtime, on_changed=self._onParamsEdited)
+    # node-editor canvas (E3 C1) — built in _onUiInit (needs the loaded document); the
+    # adapter binds the DOCUMENT through the generic editor. _ne_title is the root crumb.
+    self._ne_title = self._deriveTitle(source)
+    self.node_model = None
+    self.node_editor = None
+    self._ne_glue = None
+    self._last_ne_rebuild = 0     # perf instrument (ORKID_NE_PERF): idle rebuild delta
 
     # ECS module init injected BEFORE GPU finalization (ecsedit's mechanism) — the
     # runtime hosts an in-code ECS scene, so the SceneData system-class registry must
     # be populated before build_scene_data()/_start_simulation() run in _onGpuInit.
+    # enable_global_events: Shift+L (reset dock layout) is an editor-app-level
+    # chord — the global handler observes it regardless of which panel is hovered.
     self.createEzApp(name="terrainedit", pre_init_fns=self._getPreInitFns(),
-                     offscreen=(offscreen or self._selftest or self._keytest))
+                     enable_global_events=True,
+                     offscreen=(offscreen or self._selftest or self._keytest
+                                or self._layouttest or self._layout_probe))
 
   def _getPreInitFns(self):
     """Extension point (mirrors ecsedit): pre-init fns for createEzApp — registers ECS
@@ -150,40 +208,116 @@ class TerrainEditor(ComponentizedApplication):
     lg.margin = 4
     lg.clearColorStd = vec4(0.13, 0.13, 0.15, 1)
 
-    viewport_item = lg.makeChild(fill=True, margin=2, uiclass=lev2.ui.DockablePanel,
-                                 args=["viewport_dock"])
-    self.viewport_dock = viewport_item.widget
-    self.viewport_dock.titlebar_color = vec4(0.15, 0.2, 0.25, 1)
-    self.sgv = self.viewport_dock.createChild(
-        uiclass=lev2.ui.SceneGraphViewport, args=["Viewport", vec4(0.1, 0.1, 0.12, 1)])
+    # DockSpace substrate (S6 adoption). A full-bleed (margin 0) transparent
+    # container; per-panel insets come from the split margin — byte-parity with the
+    # prior DockablePanel + lg.split idiom (viewport fill; left @0.35; propsheet @0.55).
+    self.dock = lg.makeChild(fill=True, margin=0,
+                             uiclass=lev2.ui.DockSpace, args=["terrain_dock"]).widget
+    self.dock.clear = False
 
-    left_item = lg.split(layout=viewport_item.layout, proportion=0.35,
-                         placement=tokens.LEFT, margin=2,
-                         uiclass=lev2.ui.DockablePanel, args=["left_dock"])
-    self.left_dock = left_item.widget
+    self.viewport_dock = self.dock.addPanel(
+        uiclass=lev2.ui.SceneGraphViewport,
+        args=["Viewport", vec4(0.1, 0.1, 0.12, 1)], title=_DOCK_VIEWPORT_TITLE)
+    self.viewport_dock.titlebar_color = vec4(0.15, 0.2, 0.25, 1)
+    self.sgv = self.viewport_dock.child
+
+    self.left_dock = self.dock.split(
+        target=self.viewport_dock, placement=tokens.LEFT, proportion=_DOCK_LEFT_PROP,
+        margin=_DOCK_SPLIT_MARGIN, uiclass=lev2.ui.VerticalPack, args=[_DOCK_LEFT_TITLE],
+        title=_DOCK_LEFT_TITLE)
     self.left_dock.titlebar_color = vec4(0.2, 0.15, 0.2, 1)
 
-    self.left_panel = self.left_dock.createChild(uiclass=lev2.ui.VerticalPack, args=["Terrain"])
+    self.left_panel = self.left_dock.child
     self.left_panel.margin = 2
     self.left_panel.item_height = 34
 
     self._setupToolbar()
 
-    self.outliner = self.left_panel.makeChild(uiclass=lev2.ui.Outliner, args=["outliner"])
-    self.left_panel.fill_widget = self.outliner
-    self.outliner.bgcolor = vec4(0.12, 0.12, 0.14, 1)
-    self.outliner.item_height = 22
+    # node-editor canvas (E3 C1) — a PrimCanvas hosting the generic NodeEditor bound to
+    # the terrain DOCUMENT adapter, as the left dock's fill widget (was the Outliner).
+    self.ne_canvas = self.left_panel.makeChild(uiclass=lev2.ui.PrimCanvas, args=["ne_canvas"])
+    self.ne_canvas.bg_color = COL_BG
+    self.ne_canvas.draw_background = True
+    self.left_panel.fill_widget = self.ne_canvas
+    self.node_model = TerrainNodeGraphModel(self, self.runtime)
+    self._ne_glue = self.node_model._glue
+    self.node_editor = NodeEditor(self.ne_canvas, self.node_model,
+                                  title=self._ne_title, orientation="vertical")
+    # SSAA (ss=3, set by the NodeEditor ctor) verified on this platform 2026-07-18:
+    # the multisurface gate renders primitives crisply through the resolve (owner Mac,
+    # canvas non-black, geometry correct). Residuals live in the SSAA slice, not here:
+    # bright bg_colors resolve dark, and a SceneGraphViewport at ss>0 still resolves
+    # black (filed) - neither affects this dark-bg primitives-only canvas.
+    self._ne_glue.node_editor = self.node_editor
+    self.node_editor.on_selection_changed = self._onNodeEditorSelect
+    self._wireNodeEditorKeys()
 
-    propsheet_item = lg.split(layout=left_item.layout, proportion=0.55,
-                              placement=tokens.BOTTOM, margin=2,
-                              uiclass=lev2.ui.DockablePanel, args=["propsheet_dock"])
-    self.propsheet_dock = propsheet_item.widget
-    self.propsheet_dock.titlebar_color = vec4(0.2, 0.2, 0.15, 1)
-    self.propsheet = self.propsheet_dock.createChild(
-        uiclass=lev2.ui.PropertySheet, args=["propsheet"])
-    self.propsheet.bgcolor = vec4(0.12, 0.12, 0.12, 1)
-    self.propsheet.label_width = 150
-    self.propsheet.row_height = 26
+    # W5: cross-window DockManager glue. The viewport + node-editor left column are
+    # PINNED (no factory) — both host one-shot Context-bound GPU seams (SceneGraphViewport
+    # forkDB/scenegraph; NodeEditor+PrimCanvas glyph textures built in gpuInit) that cannot
+    # be rebuilt in a foreign window's context. The property sheet has NO GPU seam, so it is
+    # the transferable factory panel: the boot below CALLS its factory (one construction path).
+    self._dock_glue = EditorDockGlue(self, self.dock, "terrainedit")
+    self._dock_glue.register(_DOCK_PROPS_TITLE, _DOCK_PROPS_TITLE, self._buildPropsheetPanel,
+                             save_state=self._savePropsheetState,
+                             restore_state=self._restorePropsheetState, closeable=False)
+
+    # build the property sheet via its factory (addPanel -> the root leaf), then reproduce
+    # the canonical split geometry (propsheet BOTTOM @0.55 of the left column). moveChild's
+    # split uses the DockSpace default gap (== _DOCK_SPLIT_MARGIN) and setSplitProportion
+    # matches dock_layout's restore path, so the serialized default is byte-identical to the
+    # prior inline dock.split(...) construction.
+    self.propsheet_dock = self._buildPropsheetPanel(self.dock, self.ezapp)
+    self.dock.moveChild(panel=self.propsheet_dock, to=self.left_dock, zone=tokens.BOTTOM)
+    self.dock.setSplitProportion(self.left_dock, self.propsheet_dock, _DOCK_PROPS_PROP)
+
+    # capture the canonical default arrangement, then restore a persisted session
+    # over it (silent fall-back to default on any mismatch — a loud log, never a crash).
+    self._default_layout = save_layout(self.dock)
+    self._maybeRestoreSession()
+    self.dock.updateLayout()
+
+  ##############################################################################
+  # property-sheet factory (the transferable panel) + carry-state
+  ##############################################################################
+
+  def _buildPropsheetPanel(self, dock, window):
+    """The property-sheet panel's SINGLE construction path (boot + every cross-window
+    recreate). Builds + styles a fresh PropertySheet DockPanel in 'dock'; the manager
+    stamps its stable id. Post-GPU-init (a transfer/return rebuild) the live bindings are
+    re-wired so the fresh sheet is immediately functional; at boot _onGpuInit does that."""
+    panel = dock.addPanel(uiclass=lev2.ui.PropertySheet, args=[_DOCK_PROPS_TITLE],
+                          title=_DOCK_PROPS_TITLE, closeable=False)
+    panel.titlebar_color = vec4(0.2, 0.2, 0.15, 1)
+    ps = panel.child
+    ps.bgcolor = vec4(0.12, 0.12, 0.12, 1)
+    ps.label_width = 150
+    ps.row_height = 26
+    self.propsheet = ps
+    self.propsheet_dock = panel
+    if self._gpu_ready:
+      self._wirePropsheet()
+    return panel
+
+  @staticmethod
+  def _savePropsheetState(panel):
+    # carry the currently-bound model so a transferred/returned sheet shows the SAME
+    # content in its new window (the model object is process-global, not context-bound).
+    return {"model": getattr(panel.child, "model", None)}
+
+  @staticmethod
+  def _restorePropsheetState(panel, state):
+    model = state.get("model") if state else None
+    if model is not None:
+      panel.child.model = model
+      panel.child.rebuild()
+
+  def _wirePropsheet(self):
+    """Bind the live property-sheet models + change handler. Called at boot from
+    _onGpuInit, and again by the factory when a transfer/return rebuilds the sheet."""
+    self.propsheet.model = self.prop_model
+    self.propsheet.onPropertyChanged(self._onPropsheetChanged)
+    self._refreshParamsBinding()      # bind the Terrain Parameters model to the runtime
 
   def _setupToolbar(self):
     self.toolbar = self.left_panel.makeChild(uiclass=lev2.ui.HorizontalPack, args=["toolbar"])
@@ -199,14 +333,12 @@ class TerrainEditor(ComponentizedApplication):
           f'{text}</text></svg>', 32, 32)
 
     self._res_btn = None
-    self._caps_btn = None
     specs = [
       ("New", vec4(0.22, 0.22, 0.15, 1), lambda b: self._doNewTerrain()),
       ("Open", vec4(0.15, 0.25, 0.15, 1), lambda b: self._openTerrainPopup()),
       ("Save", vec4(0.15, 0.15, 0.25, 1), lambda b: self._saveDocPopup()),
       ("Bake", vec4(0.22, 0.18, 0.12, 1), lambda b: self._requestRebake()),
       ("Prev", vec4(0.18, 0.18, 0.22, 1), lambda b: self._toggleResolution()),
-      ("Caps", vec4(0.16, 0.26, 0.20, 1), lambda b: self._toggleCaptures()),
     ]
     for name, color, handler in specs:
       btn = self.toolbar.makeChild(uiclass=lev2.ui.ImageButton, args=[f"btn_{name.lower()}"])
@@ -217,18 +349,135 @@ class TerrainEditor(ComponentizedApplication):
       if name == "Prev":
         self._res_btn = btn
         self._make_icon = make_icon
-      if name == "Caps":
-        self._caps_btn = btn
 
-  def _toggleCaptures(self):
-    """Outliner header toggle: show/hide capture rows (the ecsedit filter-toggle
-    idiom). Captures are the bake's output contract — not deletable — so hiding
-    them declutters the processing chain; the button color reflects state."""
-    vis = self.outliner_model.set_show_captures(not self.outliner_model.show_captures)
-    if self._caps_btn is not None:
-      self._caps_btn.bgcolor = (vec4(0.16, 0.26, 0.20, 1) if vis
-                                else vec4(0.10, 0.11, 0.12, 1))
-    print(f"[terrainedit] outliner captures {'shown' if vis else 'hidden'}", flush=True)
+  @staticmethod
+  def _deriveTitle(source):
+    """Short root-crumb label for the node-editor path bar (the asset stem)."""
+    try:
+      stem = os.path.splitext(os.path.basename(str(source)))[0]
+      return stem or "terrain"
+    except Exception:
+      return "terrain"
+
+  def _wireNodeEditorKeys(self):
+    """Route KEYBOARD events over the node-editor canvas to its key handlers. The UI
+    context routes keys to the widget UNDER THE CURSOR (and bubbles up that widget's OWN
+    parent chain only), so this is inherently hover-gated: viewport camera chords
+    (X/C/V/Z) and the canvas mouse-emulation keys (z/x/c) never leak across — they live
+    in disjoint widget subtrees. Cmd/Ctrl+Z(/Y) drives undo/redo while over the canvas."""
+    canvas = self.ne_canvas
+    ne = self.node_editor
+    # Capture the NodeEditor's bound pointer/wheel handler DIRECTLY (it set
+    # canvas.onUiEvent = self._onUiEvent in its ctor). canvas.onUiEvent now round-trips
+    # (the C++ getter caches the handler), but reading ne._onUiEvent keeps this
+    # independent of the canvas re-wrapping the callable.
+    inner = ne._onUiEvent
+
+    def _wrapped(ev):
+      code = ev.code
+      if code == tokens.KEY_DOWN.hashed:
+        if ev.super or ev.ctrl:
+          kc = ev.keycode
+          if kc == ord("Z") and ev.shift:
+            self._doRedo()
+          elif kc == ord("Z"):
+            self._doUndo()
+          elif kc == ord("Y"):
+            self._doRedo()
+          return lev2.ui.HandlerResult()
+        ne.handleKeyDown(ev)
+        return lev2.ui.HandlerResult()
+      if code == tokens.KEY_UP.hashed:
+        ne.handleKeyUp(ev)
+        return lev2.ui.HandlerResult()
+      return inner(ev)
+
+    canvas.onUiEvent = _wrapped
+
+  ##############################################################################
+  # dock layout persistence + live reset (Shift+L / --reset-layout)
+  ##############################################################################
+
+  def _sessionLayoutPath(self):
+    """Per-user, per-app dock-layout slot keyed by (app name, entry-script path)."""
+    return dock_layout_path("terrainedit")
+
+  def _maybeRestoreSession(self):
+    """Restore a persisted arrangement over the default construction. --reset-layout
+    forces the default; a missing / mismatched session silently keeps the default."""
+    if self._reset_layout:
+      print("[terrainedit] --reset-layout: default dock arrangement", flush=True)
+      return
+    if not self._persist_layout:
+      return
+    path = self._sessionLayoutPath()
+    if not os.path.exists(path):
+      return
+    try:
+      with open(path) as f:
+        raw = f.read()
+      load_layout(self.dock, raw)
+      if self._dock_glue is not None:
+        self._dock_glue.queue_windows_from_state(raw)   # W6: recreate secondaries on the first GPU pump
+      print(f"[terrainedit] restored dock layout <- {path}", flush=True)
+    except Exception as e:
+      # load_layout validates panel-ids up front and raises BEFORE mutating on a
+      # mismatch, so the default construction is intact; re-assert it defensively.
+      print(f"[terrainedit] dock layout restore skipped ({e}); using default", flush=True)
+      try:
+        load_layout(self.dock, self._default_layout)
+      except Exception as e2:
+        print(f"[terrainedit] default-layout reassert failed: {e2}", flush=True)
+
+  def _saveSession(self):
+    if self.dock is None:
+      return
+    try:
+      path = self._sessionLayoutPath()
+      doc = save_layout(self.dock)
+      if self._dock_glue is not None:
+        self._dock_glue.add_windows_to_state(doc)   # W6: persist any open secondary dock windows
+      with open(path, "w") as f:
+        f.write(to_json(doc))
+      print(f"[terrainedit] saved dock layout -> {path}", flush=True)
+    except Exception as e:
+      print(f"[terrainedit] dock layout save failed: {e}", flush=True)
+
+  def _resetDockLayout(self):
+    """Restore the DEFAULT dock arrangement live. Runs OUTSIDE event dispatch (a GPU
+    frame tick) so load_layout's moveChild + proportion ops all apply immediately +
+    in order; a root updateLayout re-cascade follows so the reset renders this frame."""
+    if self.dock is None or self._default_layout is None:
+      return
+    try:
+      load_layout(self.dock, self._default_layout)
+      self.dock.updateLayout()
+      print("[terrainedit] dock layout reset to default", flush=True)
+    except Exception as e:
+      print(f"[terrainedit] dock layout reset failed: {e}", flush=True)
+
+  def _onGlobalUiEvent(self, uievent):
+    """Editor-app-level chords (observer-only; per-panel dispatch still runs).
+    Shift+L resets the dock layout — SUPPRESSED while a text-input widget owns key
+    focus (so Shift+L types 'L' in a focused CodeView/LineEdit instead)."""
+    if uievent.code != tokens.KEY_DOWN.hashed:
+      return
+    if uievent.keycode == ord("L") and uievent.shift and not (uievent.super or uievent.ctrl):
+      if text_input_has_focus(getattr(self, "uicontext", None)):
+        return
+      # W5: route through the glue so the reset returns any torn-out secondaries first.
+      if self._dock_glue is not None:
+        self._dock_glue.request_reset()
+      else:
+        self._reset_layout_pending = True
+
+  def onAppExit(self):
+    # clean exit: persist the CURRENT arrangement (a Shift+L reset is a real edit —
+    # exit after reset saves the DEFAULT, not a transient). Skipped for the read-only
+    # probe and the ephemeral automated gate modes (no stray/coupling session state).
+    if self._persist_layout and not self._layout_probe:
+      self._saveSession()
+    super().onAppExit()
 
   ##############################################################################
   # GPU init
@@ -265,18 +514,12 @@ class TerrainEditor(ComponentizedApplication):
     self.sgv.forkDB()
     self.runtime.bind_viewport(self.sgv)
 
-    # outliner + propsheet wiring
-    self.outliner.model = self.outliner_model
-    self.outliner.onSelect(self._onOutlinerSelect)
-    self.outliner.onBadgeClick(self._onOutlinerBadge)
-    self.outliner.onKeyDown(self._onOutlinerKey)   # Delete/Backspace -> delete node (undoable)
-    self.outliner.onAdd(self._onOutlinerAdd)       # (inline add-mode commit path, kept wired)
-    self.outliner.onShiftEnter(self._onOutlinerAddMenu)  # Shift+Enter -> add-module MENU (ecsedit idiom)
-    self.outliner_model.display_key_provider = lambda: self.runtime.display_key
-    self.propsheet.model = self.prop_model
-    self.propsheet.onPropertyChanged(self._onPropsheetChanged)
-    self._refreshParamsBinding()      # top-level "Terrain Parameters" row (DSL sessions)
-    self.outliner.expandAll()
+    # node-editor + propsheet wiring. Icons/glyph textures MUST be prebuilt in the GPU-
+    # init phase (creating textures during the render callback aborts on Vulkan).
+    self.node_editor.uicontext = self.uicontext
+    self.node_editor.gpuInit(ctx)
+    self._gpu_ready = True             # from here, the propsheet factory re-wires on rebuild
+    self._wirePropsheet()             # bind models + change handler on the boot-built sheet
 
     if self._selftest:
       self._selftest_ctrl0 = self.runtime.controller   # baseline sim (pre-rebuild)
@@ -285,18 +528,21 @@ class TerrainEditor(ComponentizedApplication):
   # selection + edit loop
   ##############################################################################
 
-  def _onOutlinerSelect(self, key):
-    if key == TERRAIN_PARAMS_KEY:
-      # top-level "Terrain Parameters" (the DSL ctor kwargs) — bind the params model.
+  def _onNodeEditorSelect(self, model, nid):
+    """Canvas selection -> property sheet (mirrors the old outliner onSelect). EMPTY
+    selection (a background click, nid=None) binds the Terrain Parameters model — this
+    replaces the synthetic 'Terrain Parameters' outliner row. A boundary pill (no
+    document object) shows an empty sheet."""
+    if nid is None:
       self._selected_obj = None
       self.params_model.refresh()
       self.propsheet.model = self.params_model
       self.propsheet.rebuild()
       return
-    obj = self.outliner_model.object_for_key(key)
+    obj = model.object_for_nid(nid)
     self._selected_obj = obj
     self.propsheet.model = self.prop_model
-    self.prop_model.set_object(obj)
+    self.prop_model.set_object(obj)          # obj may be None (a pill) -> empty sheet
     self.propsheet.rebuild()
 
   def _onPropsheetChanged(self, key, value):
@@ -328,8 +574,8 @@ class TerrainEditor(ComponentizedApplication):
     self._selected_obj = None
     self.prop_model.set_object(None)
     self.params_model.refresh()
-    self.outliner_model.set_document(self.runtime.document)
-    self.outliner.expandAll()
+    self._resetNodeEditorToRoot()          # the structure may differ from the current level
+    self._ne_glue.fire_changed()           # invalidate the level caches + rebuild the canvas
     self._requestRebake()
 
   def _doUndo(self):
@@ -340,147 +586,31 @@ class TerrainEditor(ComponentizedApplication):
     label = self._undo.redo()
     print(f"[terrainedit] redo: {label if label else '(nothing to redo)'}", flush=True)
 
-  def _onOutlinerKey(self, selected_key, keycode):
-    if keycode in (259, 261) and selected_key:   # Backspace / Delete
-      self._deleteSelected(selected_key)
-
-  def _onOutlinerAdd(self, new_key):
-    # model.createItem already mutated the document and the C++ add flow selected
-    # the new row (propsheet rebound via onSelect). Record the undo step + rebake.
-    print(f"[terrainedit] added {new_key}", flush=True)
-    self._recordEdit(f"add {new_key}")
-    self._requestRebake()
-
-  def _onOutlinerAddMenu(self, key):
-    """Shift+Enter on a row -> the add-module CONTEXT MENU (the ecsedit
-    DropdownMenu idiom). A node row inserts after it; a loop row appends into
-    its body — same createItem mutation as the inline add mode."""
-    factories = self.outliner_model.getFactories(key)
-    if not factories:
-      print(f"[terrainedit] add: {key!r} accepts no modules "
-            f"(select a node or loop row)", flush=True)
+  def _resetNodeEditorToRoot(self):
+    """Pop the node editor back to the root level (used after a document swap —
+    undo / open / new — whose structure may not contain the current level's container)."""
+    if self.node_editor is None:
       return
-    paths = [f"/{f['id']}" for f in factories]
-    rx, ry = self.outliner.localToRoot(0, 0)
-    lev2.ui.DropdownMenu.show(
-        context=self.uicontext,
-        paths=paths,
-        x=rx, y=ry,
-        on_selected=lambda val, k=key: self._onAddMenuSelected(k, val))
-
-  def _onAddMenuSelected(self, key, value):
-    op = value.lstrip("/")
-    new_key = self.outliner_model.createItem(key, op, op)
-    if not new_key:
-      return                              # refusal already printed loudly
-    self.outliner.selected_key = new_key  # fires onSelect -> propsheet rebinds
-    print(f"[terrainedit] added {new_key}", flush=True)
-    self._recordEdit(f"add {new_key}")
-    self._requestRebake()
-
-  def _visibleModelKeys(self):
-    """Flattened outliner document rows in display order (synthetic top extras
-    excluded — they resolve to no document object)."""
-    out = []
-    def _walk(pk):
-      for k in self.outliner_model.getChildren(pk):
-        if self.outliner_model.object_for_key(k) is not None:
-          out.append(k)
-          _walk(k)
-    _walk("")
-    return out
-
-  def _deleteSelected(self, key):
-    from ork.hypergraph.dflow.terrain.doc import DocNode, TerrainDocParamError, delete_node
-    obj = self.outliner_model.object_for_key(key)
-    if not isinstance(obj, DocNode):
-      print(f"[terrainedit] delete: {key!r} is not a deletable node (v1: nodes only)",
-            flush=True)
-      return
-    order_before = self._visibleModelKeys()
-    try:
-      delete_node(self.runtime.document, obj)
-    except TerrainDocParamError as ex:
-      print(f"[terrainedit] {ex}", flush=True)
-      return
-    print(f"[terrainedit] deleted {key}", flush=True)
-    self._recordEdit(f"delete {key}")
-    self._selected_obj = None
-    self.prop_model.set_object(None)
-    self.outliner_model.set_document(self.runtime.document)
-    self.outliner.expandAll()
-    # chain-delete UX: select the row that took the deleted row's place (next in
-    # display order; the previous one at the end) so Delete can repeat through a
-    # run of nodes. setSelectedKey fires onSelect -> the propsheet rebinds.
-    try:
-      idx = order_before.index(key)
-    except ValueError:
-      idx = -1
-    if idx >= 0:
-      order_after = set(self._visibleModelKeys())
-      candidates = order_before[idx + 1:] + order_before[:idx][::-1]
-      nxt = next((k for k in candidates if k in order_after), None)
-      if nxt is not None:
-        self.outliner.selected_key = nxt
-    self._requestRebake()
-
-  def _onOutlinerBadge(self, key, badge_id):
-    # badge toggles ride the SAME settle->rebake pipeline as property edits.
-    # bypass mutates the DOCUMENT (persisted); display is runtime SESSION state.
-    from ork.hypergraph.dflow.terrain.doc import DocNode, TerrainDocParamError
-    obj = self.outliner_model.object_for_key(key)
-    if obj is None:
-      return
-    if badge_id == "bypass":
-      # bypass routes by the object's set_bypassed method — DocNode AND the structural
-      # constructs (DocLoop / DocGroupCall) expose it; a refusal (generator group /
-      # switch / source node / capture) is LOUD and non-mutating.
-      if not hasattr(obj, "set_bypassed"):
-        return
-      try:
-        obj.set_bypassed(not obj.bypassed)
-      except TerrainDocParamError as ex:
-        print(f"[terrain] {ex}", flush=True)
-        return
-      self._recordEdit(f"bypass {key}")      # UNDOABLE (owner): each toggle = one step
-    elif badge_id == "display":
-      if not isinstance(obj, DocNode):        # display (select-as-output) is NODE-only
-        return
-      try:
-        self.runtime.set_display_key(None if self.runtime.display_key == key else key)
-      except ValueError as ex:
-        print(f"[terrain] {ex}", flush=True)
-        return
-      self._recordEdit(f"display {key}")     # UNDOABLE (owner): display rides checkpoints
-    else:
-      return
-    self.outliner_model.notifyModelReset()   # re-cache badges (exclusive display moved)
-    self._last_edit_time = time.time()
-    self._rebake_pending = True
+    while len(self.node_editor.nav_stack) > 1:
+      self.node_editor.up_level()
 
   def _onPropertyEdited(self, key):
-    # model-side hook (fires alongside onPropertyChanged) — refresh the outliner
-    # labels when a STRUCTURAL value (loop count / switch selector) changed.
+    # model-side hook (fires alongside onPropertyChanged) — refresh the canvas when a
+    # STRUCTURAL value (loop count / switch selector) changed (the label + reachability).
     from ork.hypergraph.dflow.terrain.doc import DocLoop, DocSwitch
     if isinstance(self._selected_obj, (DocLoop, DocSwitch)):
-      self.outliner_model.set_document(self.runtime.document)
-      self.outliner.expandAll()
+      self._ne_glue.fire_changed()
 
   def _onParamsEdited(self, key):
-    # a Terrain-Parameter edit RE-TRACED the document (a NEW document object) — refresh
-    # the outliner so its cached doc objects are the live ones (the structural-edit path).
-    # notifyModelReset does NOT fire onSelect, so the propsheet stays on the params model
-    # (selection resets gracefully — the params sheet keeps showing). The rebake is
-    # scheduled by _onPropsheetChanged (one pipeline).
-    self.outliner_model.set_document(self.runtime.document)
-    self.outliner.expandAll()
+    # a Terrain-Parameter edit may RE-TRACE the document (a NEW document object) — refresh
+    # the canvas so its level caches resolve the live objects. The propsheet stays on the
+    # params model (selection unchanged); the rebake is scheduled by _onPropsheetChanged.
+    self._ne_glue.fire_changed()
 
   def _refreshParamsBinding(self):
-    """Bind the Terrain Parameters model to the current runtime. The top-level
-    outliner entry is ALWAYS present now — every session has at least the session
-    rows (dim); DSL sessions add the ctor kwargs."""
+    """Bind the Terrain Parameters model to the current runtime. Every session has at
+    least the session rows (dim / extent); DSL sessions add the ctor kwargs."""
     self.params_model.set_runtime(self.runtime)
-    self.outliner_model.set_top_extras([(TERRAIN_PARAMS_KEY, "Terrain Parameters")])
 
   def _requestRebake(self):
     self._rebake_pending = True
@@ -510,23 +640,35 @@ class TerrainEditor(ComponentizedApplication):
     #     (which reads _scenegraph across its acquire/release) — same (GPU/render) thread, no race.
     # The update thread's sim tick is paused via _rebuilding while the swap runs.
     self.runtime.gpuUpdate(ctx)
+    # live dock-layout reset (Shift+L) — applied here (render-sequential, outside event
+    # dispatch) so the moveChild + proportion re-cascade never races DoRePaintSurface.
+    # W5: the two-phase reset FIRST returns every secondary window's panels to main
+    # (return-on-close), THEN restores the main default once they have all returned.
+    if self._dock_glue is not None:
+      self._dock_glue.pump_reset(self._resetDockLayout)
+    # scripted DOCK-LAYOUT gate — all dock mutations run here (render-sequential),
+    # matching the scenegraph-swap discipline (no race vs DoRePaintSurface).
+    if self._layouttest:
+      self._layouttestTick()
+    # MT3 (JUL13 §2.6/§E5): a re-bake (scene already live) becomes a SLICED pre-cook that
+    # advances as budgeted slices across frames — the GPU thread stays live, the OLD
+    # scenegraph keeps presenting (hold-last-frame), and the two-phase swap runs UNCHANGED
+    # once the cook lands (its materialize then hits capture-currency / warm cache, no
+    # hitch). begin_sliced_rebuild declines (-> burst) for initial loads / dim changes.
     if self._rebake_pending and (time.time() - self._last_edit_time) >= _REBAKE_IDLE_S:
       self._rebake_pending = False
-      self.runtime.schedule_rebuild()
-      self._rebuilding = True
-      try:
-        if self.runtime.prepare_rebuild(ctx, dim=self._current_dim()):   # GPU: materialize
-          self.runtime.apply_pending_rebuild()                           # GPU: fresh sg + sim bake
-          self._applyMaterialMode()   # the fresh sim starts at 'declared' — re-apply the held mode
-          # HOLD-LAST-FRAME (owner, jul10): do NOT rebind yet — the OLD scenegraph keeps
-          # presenting its last frame until the fresh sim has staged its terrain, so an
-          # edit rebake never shows black/empty frames (the A/B-compare contract).
-          self._sgv_swap_pending = True
-          self._sgv_swap_started = time.time()
-      except Exception as e:  # ops-self-defend: a bad edit must not kill the editor
-        print(f"[terrainedit] rebuild failed: {e}", flush=True)
-      finally:
-        self._rebuilding = False
+      if self.runtime.begin_sliced_rebuild(ctx, dim=self._current_dim()):
+        self._sliced_precook = True
+      else:
+        self._doRebuildSwap(ctx)                                        # burst (pre-MT3 path)
+    # while the pre-cook runs, the scheduler slices it at each render beginFrame and the old
+    # scenegraph keeps presenting; swap the moment it completes.
+    if self._sliced_precook and self.runtime.sliced_rebuild_ready():
+      self._sliced_precook = False
+      print(f"[terrainedit] MT3 sliced re-bake done: "
+            f"{self.runtime.frames_during_last_rebake()} GPU frames presented during cook "
+            f"(blocking presents ~0)", flush=True)
+      self._doRebuildSwap(ctx)
     if self._sgv_swap_pending:
       timed_out = (time.time() - self._sgv_swap_started) > _SWAP_HOLD_MAX_S
       if self.runtime.display_ready() or timed_out:
@@ -535,6 +677,29 @@ class TerrainEditor(ComponentizedApplication):
                 f"{_SWAP_HOLD_MAX_S:.0f}s — swapping anyway", flush=True)
         self.sgv.scenegraph = self.runtime.scenegraph                  # rebind (render-sequential)
         self._sgv_swap_pending = False
+
+  def _doRebuildSwap(self, ctx):
+    """The two-phase swap (Phase A materialize on the GPU thread, Phase B fresh sg + sim).
+    After an MT3 pre-cook its bake hits capture-currency / warm cache, so it does not hitch;
+    the burst fallback (initial load / dim change) pays the full cook here as before. Shared
+    by the MT3-completion path and the burst fallback."""
+    self.runtime.schedule_rebuild()
+    self._rebuilding = True
+    try:
+      if self.runtime.prepare_rebuild(ctx, dim=self._current_dim()):   # GPU: materialize
+        self.runtime.apply_pending_rebuild()                           # GPU: fresh sg + sim bake
+        self._applyMaterialMode()   # the fresh sim starts at 'declared' — re-apply the held mode
+        # HOLD-LAST-FRAME (owner, jul10): do NOT rebind yet — the OLD scenegraph keeps
+        # presenting its last frame until the fresh sim has staged its terrain, so an
+        # edit rebake never shows black/empty frames (the A/B-compare contract).
+        self._sgv_swap_pending = True
+        self._sgv_swap_started = time.time()
+    except Exception as e:  # ops-self-defend: a bad edit must not kill the editor
+      print(f"[terrainedit] rebuild failed: {e}", flush=True)
+      if self.node_editor is not None:    # surface the failure on the canvas (Fix 3b)
+        self.node_editor.show_status(f"rebuild failed: {e}")
+    finally:
+      self._rebuilding = False
 
   def _onUpdate(self, updinfo):
     # Sim tick on the update thread — skipped while a GPU-thread rebuild swaps the simulation
@@ -546,6 +711,35 @@ class TerrainEditor(ComponentizedApplication):
       self._selftestTick()
     if self._keytest:
       self._keytestTick()
+    if self._layout_probe:
+      self._layoutProbeTick()
+    self._nePerfTick(updinfo)
+
+  def _layoutProbeTick(self):
+    # read-only settle probe: report the as-constructed dock layout (proves session
+    # restore / --reset-layout without mutating or persisting anything).
+    self._layout_probe_frame += 1
+    if self._layout_probe_frame == 60:
+      names = sorted(p.name for p in self.dock.allPanels())
+      print(f"PROBE_SIG={self.dock.layoutSignature()}", flush=True)
+      print(f"PROBE_NAMES={names}", flush=True)
+      print(f"PROBE_JSON={to_json(save_layout(self.dock))}", flush=True)
+      print(f"PROBE_VALID={self.dock.validateTree()}", flush=True)
+      self.ezapp.signalExit()
+
+  def _nePerfTick(self, updinfo):
+    # gate-8 instrument (opt-in ORKID_NE_PERF=1): print the node-editor's Python-side
+    # rebuild-count delta per second. When the editor is open and untouched the delta
+    # must be 0 (the canvas only rebuilds on view/structure/selection change).
+    if self.node_editor is None or not os.environ.get("ORKID_NE_PERF"):
+      return
+    self._ne_perf_t = getattr(self, "_ne_perf_t", 0.0) + updinfo.deltatime
+    if self._ne_perf_t >= 1.0:
+      self._ne_perf_t -= 1.0
+      rc = self.node_editor.rebuild_count
+      print(f"[terrainedit ne-perf] rebuild_count={rc} delta/sec={rc - self._last_ne_rebuild}",
+            flush=True)
+      self._last_ne_rebuild = rc
 
   def onGpuPostFrame(self, ctx):
     # ComponentizedApplication.onGpuPostFrame only broadcasts to components — override to
@@ -553,7 +747,11 @@ class TerrainEditor(ComponentizedApplication):
     # readback is ASYNC: issue it, then DRAIN it across subsequent frames (the C++ player's
     # os_snapdrain pattern) — an in-frame cap.wait() deadlocks.
     super().onGpuPostFrame(ctx)
-    if not (self._selftest or self._keytest):
+    # W5: realize any pending cross-window tear-outs (createSecondaryWindow is main/GPU-
+    # thread work; this hook is the DockManager-prescribed pump point).
+    if self._dock_glue is not None:
+      self._dock_glue.pump()
+    if not (self._selftest or self._keytest or self._layouttest):
       return
     if self._cap_pending and not self._cap_inflight:
       self._capIssue(ctx)
@@ -777,6 +975,135 @@ class TerrainEditor(ComponentizedApplication):
           f"envmap_persists={r['envmap_persists_rebuild']} tone_persists2={r['tone_persists_rebuild2']} "
           f"-> {'PASS' if r['ok'] else 'FAIL'}", flush=True)
 
+  ##############################################################################
+  # scripted offscreen DOCK-LAYOUT gate (real editor: signature round-trip, live
+  # Shift+L reset, injected titlebar drag) — runs on the GPU thread (render-seq).
+  ##############################################################################
+
+  def _layouttestTick(self):
+    import ork.uitest as U
+    self._layouttest_frame += 1
+    f = self._layouttest_frame
+    st = self._layouttest_stage
+    r = self._layouttest_results
+    dock = self.dock
+
+    def _sig():
+      return dock.layoutSignature()
+
+    if st == "settle" and f >= 40:
+      r["sig0"]    = _sig()
+      j1           = to_json(save_layout(dock))
+      j2           = to_json(save_layout(dock))
+      r["json0"]   = j1
+      r["deterministic"] = (j1 == j2)
+      r["names0"]  = sorted(p.name for p in dock.allPanels())
+      r["n0"]      = dock.num_panels
+      r["valid0"]  = dock.validateTree()
+      print(f"[terrainedit layouttest] default sig={r['sig0']} names={r['names0']} "
+            f"n={r['n0']} deterministic={r['deterministic']}", flush=True)
+      self._layouttest_stage = "scramble"
+
+    elif st == "scramble":
+      # a real reshape: dock the property sheet to the RIGHT of the viewport
+      dock.moveChild(panel=self.propsheet_dock, to=self.viewport_dock, zone=tokens.RIGHT)
+      r["sig_scrambled"] = _sig()
+      r["scrambled_json"] = to_json(save_layout(dock))
+      r["scramble_changed"] = (r["sig_scrambled"] != r["sig0"])
+      # emit the default + a scrambled arrangement for the disk-session restore probe
+      print(f"DEFAULT_JSON={r['json0']}", flush=True)
+      print(f"SCRAMBLED_JSON={r['scrambled_json']}", flush=True)
+      print(f"SCRAMBLED_SIG={r['sig_scrambled']}", flush=True)
+      self._layouttest_stage = "load"
+
+    elif st == "load":
+      load_layout(dock, r["json0"])
+      dock.updateLayout()
+      r["sig_loaded"]   = _sig()
+      r["json_loaded"]  = to_json(save_layout(dock))
+      r["roundtrip_sig_ok"]  = (r["sig_loaded"] == r["sig0"])
+      r["roundtrip_json_ok"] = (r["json_loaded"] == r["json0"])
+      r["valid_loaded"] = dock.validateTree()
+      print(f"[terrainedit layouttest] load round-trip: sig_ok={r['roundtrip_sig_ok']} "
+            f"json_ok={r['roundtrip_json_ok']}", flush=True)
+      self._layouttest_stage = "shiftl_scramble"
+
+    elif st == "shiftl_scramble":
+      dock.moveChild(panel=self.propsheet_dock, to=self.viewport_dock, zone=tokens.BOTTOM)
+      r["sig_preshiftl"] = _sig()
+      # inject the real editor-app-level chord; the global handler sets the pending
+      # flag, and the NEXT _onGpuUpdate applies the reset (render-sequential).
+      U.key_chord(self.ezapp, ord("L"), mods={"shift": True})
+      self._layouttest_settle_at = f + 12
+      self._layouttest_stage = "shiftl_wait"
+
+    elif st == "shiftl_wait":
+      if f >= self._layouttest_settle_at:
+        r["sig_postshiftl"] = _sig()
+        r["shiftl_reset_ok"] = (r["sig_postshiftl"] == r["sig0"]
+                                and r["sig_preshiftl"] != r["sig0"])
+        print(f"[terrainedit layouttest] Shift+L reset: ok={r['shiftl_reset_ok']}", flush=True)
+        self._layouttest_stage = "tabdrag"
+
+    elif st == "tabdrag":
+      # injected drag on a REAL editor panel: grab the left panel's titlebar and drop
+      # it on the viewport's RIGHT zone (the DockPanel drag-source -> moveChild path).
+      # DockPanel .x/.y are tab-LOCAL; localToRoot maps them to window space for the drag.
+      lp = self.left_dock
+      x0, y0 = lp.localToRoot(24, lp.titlebar_height // 2)
+      vp = self.viewport_dock
+      x1, y1 = vp.localToRoot(vp.width - 12, vp.height // 2)
+      r["sig_pre_drag"] = _sig()
+      top = self.ezapp.topWidget
+      U.drag(self.ezapp, x0, y0, x1, y1, top.width, top.height, steps=10)
+      self._layouttest_settle_at = f + 6
+      self._layouttest_stage = "tabdrag_wait"
+
+    elif st == "tabdrag_wait":
+      if f >= self._layouttest_settle_at:
+        r["sig_post_drag"] = _sig()
+        r["drag_moved"] = (r["sig_post_drag"] != r["sig_pre_drag"])
+        r["valid_post_drag"] = dock.validateTree()
+        print(f"[terrainedit layouttest] injected titlebar drag: moved={r['drag_moved']} "
+              f"valid={r['valid_post_drag']}", flush=True)
+        # settle back to default for a clean liveness capture
+        self._resetDockLayout()
+        self._cap_request("layouttest_default")
+        self._layouttest_stage = "wait_cap"
+
+    elif st == "wait_cap":
+      if not self._cap_pending:
+        self._layouttestFinish()
+        self._layouttest_stage = "done"
+        self.ezapp.signalExit()
+
+    if f > 2000 and self._layouttest_stage != "done":
+      print("[terrainedit layouttest] TIMEOUT; FAIL", flush=True)
+      r["timeout"] = True
+      self.ezapp.signalExit()
+
+  def _layouttestFinish(self):
+    r = self._layouttest_results
+    cap = self._caps_by_label.get("layouttest_default")
+    r["liveness_lit"] = bool(cap and cap["lit"])
+    r["names_ok"] = (r.get("names0") == sorted([_DOCK_VIEWPORT_TITLE, _DOCK_LEFT_TITLE,
+                                                _DOCK_PROPS_TITLE]))
+    r["ok"] = bool(r.get("deterministic") and r.get("valid0")
+                   and r.get("names_ok") and r.get("n0") == 3
+                   and r.get("scramble_changed")
+                   and r.get("roundtrip_sig_ok") and r.get("roundtrip_json_ok")
+                   and r.get("valid_loaded")
+                   and r.get("shiftl_reset_ok")
+                   and r.get("drag_moved") and r.get("valid_post_drag")
+                   and r.get("liveness_lit"))
+    print(f"[terrainedit layouttest] deterministic={r.get('deterministic')} "
+          f"names_ok={r.get('names_ok')} n0={r.get('n0')} "
+          f"scramble_changed={r.get('scramble_changed')} "
+          f"roundtrip=({r.get('roundtrip_sig_ok')},{r.get('roundtrip_json_ok')}) "
+          f"shiftl_reset_ok={r.get('shiftl_reset_ok')} "
+          f"drag_moved={r.get('drag_moved')} liveness_lit={r.get('liveness_lit')} "
+          f"-> {'PASS' if r['ok'] else 'FAIL'}", flush=True)
+
   def _onUiEvent(self, uievent):
     return None
 
@@ -907,7 +1234,7 @@ class TerrainEditor(ComponentizedApplication):
 
   def _doNewTerrain(self):
     """New terrain = the minimal viable document (fbm -> height/normal captures);
-    grow it with the outliner add flow."""
+    grow it with the canvas add flow (Tab after a selected node)."""
     self.runtime.load("new")
     print("[terrainedit] new terrain (minimal viable)", flush=True)
     self._afterDocumentLoad()
@@ -920,9 +1247,9 @@ class TerrainEditor(ComponentizedApplication):
     self.propsheet.model = self.prop_model
     self.prop_model.set_object(None)
     self.propsheet.rebuild()
-    self.outliner_model.set_document(self.runtime.document)
-    self._refreshParamsBinding()      # show/hide "Terrain Parameters" for the new source
-    self.outliner.expandAll()
+    self._refreshParamsBinding()      # rebind Terrain Parameters for the new source
+    self._resetNodeEditorToRoot()
+    self._ne_glue.fire_changed()      # rebuild the canvas from the freshly-loaded document
     self._requestRebake()
 
   def _doSaveDoc(self, path):

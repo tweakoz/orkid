@@ -91,6 +91,12 @@ public:
   // node's output, 1 = always cache it. Consumed by cook-cache drivers
   // (terrain bake); inert elsewhere.
   int _cachepoint = -1;
+  // S4 progressive-display VIEWABLE override (per-node marker, reflected as
+  // "viewable"): -1 = module-class default decides, 0 = internal (never publish
+  // this node's output as a live checkpoint), 1 = viewable (always publish).
+  // Consumed by progressive-display cook drivers (terrain bake checkpoints);
+  // inert elsewhere. The cachepoint pattern's set-level sibling.
+  int _viewable = -1;
   // BYPASS (structural editor state, reflected as "bypassed"): a bypassed module is a
   // transparent PASS-THROUGH — every DATA-DEPENDENCY read of a downstream input resolves
   // this module's output to its own first matching-type connected input instead

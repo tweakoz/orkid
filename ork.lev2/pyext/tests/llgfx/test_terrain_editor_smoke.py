@@ -47,7 +47,8 @@ FIXTURE = textwrap.dedent("""
             h = T.Fbm(frequency=5.0, octaves=5) * 0.5 + 0.5
             with T.loop(count, h=h) as L:
                 L.h = T.terrace(L.h, step_m=6.0, sharpness=2.0 + L.i * 0.5)
-            smooth = T.lpf(L.h, cutoff_texels=6.0)
+            smooth = T.lpf(L.h, cutoff=6.0)
+            smooth = T.curvature(smooth, mode="concave", radius_m=96.0)  # CurvatureMode enum
             ridged = T.terrace(L.h, step_m=8.0, sharpness=6.0)
             self.capture(T.switch(which, smooth=smooth, ridged=ridged), "height")
 """)
@@ -171,6 +172,35 @@ def main():
            and set(sel_choices) == {"smooth", "ridged"} and sw.selected == other)
   print(f"[gB.switch] choices={sel_choices} {before_sel}->{sw.selected} -> {sw_ok}", flush=True)
   results["switch_enum_select"] = sw_ok
+
+  # ---- (1a2) REFLECTION-DERIVED enum dropdown (E1 slice 2) -------------------
+  # a module selector prop (CurvatureModule.mode) renders as a CHOICE dropdown whose
+  # labels come from the C++ EnumSerializer (no _ENUM_PARAMS table). get/set trade the
+  # LABEL string; the document keeps recording the int code.
+  def _find_node(clazz):
+    hit = []
+    def walk(children):
+      for ch in children:
+        if isinstance(ch, DocNode) and ch.clazz_name == clazz:
+          hit.append(ch)
+        sub = getattr(ch, "children", None)
+        if sub is not None:
+          walk(sub)
+    walk(om._document._root)
+    return hit[0] if hit else None
+  cvn = _find_node("CurvatureModule")
+  cpm = TerrainNodePropertyModel(cvn)
+  mode_choices = cpm.getChoices("mode")
+  mode_before  = cpm.getValue("mode")
+  cpm.setValue("mode", "magnitude")
+  enum_ok = (cvn is not None
+             and cpm.getPropertyType("mode") == _ui.PropertyType.Enum
+             and list(mode_choices) == ["convex", "concave", "magnitude"]
+             and mode_before == "concave"
+             and cpm.getValue("mode") == "magnitude")
+  print(f"[gB.reflenum] CurvatureModule.mode choices={mode_choices} "
+        f"{mode_before}->{cpm.getValue('mode')} -> {enum_ok}", flush=True)
+  results["reflection_enum_dropdown"] = enum_ok
 
   # ---- (1b) Terrain Parameters model (DSL ctor kwargs) ----------------------
   # warp's frequency/octaves/ring_amp_m/ring_period_m/center are ctor kwargs (the

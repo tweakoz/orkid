@@ -278,9 +278,18 @@ std::string HeightFieldGenData::materialize(Context* ctx, const std::string& ext
   js << "    \"height_anchor\": \"meters\"\n";
   js << "  },\n";
   js << "  \"format\": \"" << ext << "\",\n";
+  // manifest must describe what the display bake actually writes — same predicate as
+  // _terrainBakeSetup: a select-as-output (display) bake disconnects every non-{height,normal}
+  // capture, so advertising them here would make TerrainChunkDrawable demand fields (e.g. a
+  // relaxed_uv sif) the display bake never wrote. Empty output_node -> full manifest, unchanged.
+  std::vector<std::string> manifest_channels;
+  const bool display_only = not _graph_data->_output_node.empty();
+  for (const auto& ch : channels)
+    if (not display_only or ch == "height" or ch == "normal")
+      manifest_channels.push_back(ch);
   js << "  \"channels\": {\n";
-  for (size_t i = 0; i < channels.size(); i++) {
-    const auto& ch = channels[i];
+  for (size_t i = 0; i < manifest_channels.size(); i++) {
+    const auto& ch = manifest_channels[i];
     float mn = 0.0f, mx = 0.0f, me = 0.0f;
     auto it_st = stats_by_ch.find(ch);
     if (it_st != stats_by_ch.end()) {
@@ -294,7 +303,7 @@ std::string HeightFieldGenData::materialize(Context* ctx, const std::string& ext
     js << "      \"min\": " << double(mn) << ",\n";
     js << "      \"max\": " << double(mx) << ",\n";
     js << "      \"mean\": " << double(me) << "\n";
-    js << "    }" << (i + 1 < channels.size() ? "," : "") << "\n";
+    js << "    }" << (i + 1 < manifest_channels.size() ? "," : "") << "\n";
   }
   js << "  },\n";
   js << "  \"provenance\": {\n";

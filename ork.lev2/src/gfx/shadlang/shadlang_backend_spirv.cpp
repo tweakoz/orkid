@@ -170,7 +170,7 @@ SpirvCompiler::SpirvCompiler(transunit_ptr_t transu, bool vulkan)
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void SpirvCompiler::_beginShader(shader_ptr_t shader) {
 
-    printf("_beginShader<%s> try check interface'\n", shader->_name.c_str());
+    if(0)printf("_beginShader<%s> try check interface'\n", shader->_name.c_str());
 
   _shader          = shader;
   _shader_group    = std::make_shared<MiscGroupNode>();
@@ -227,7 +227,7 @@ void SpirvCompiler::_beginShader(shader_ptr_t shader) {
   };
   ////////////////////////////////////////////////
   tracker._onInheritStorageInterface = [=](std::string INHID, astnode_ptr_t interface_node) { //
-    printf("sh<%s> Processing inheritance of storage interface '%s'\n", shader->_name.c_str(), INHID.c_str());
+    if(0)printf("sh<%s> Processing inheritance of storage interface '%s'\n", shader->_name.c_str(), INHID.c_str());
     
     auto it_storage = _spirvstorageinterfaces.find(INHID);
     if (it_storage != _spirvstorageinterfaces.end()) {
@@ -240,7 +240,7 @@ void SpirvCompiler::_beginShader(shader_ptr_t shader) {
   ////////////////////////////////////////////////
   tracker._onInheritInterface = [=](std::string INHID, astnode_ptr_t interface_node) { //
 
-    printf("sh<%s> Processing inheritance of interface '%s'\n", shader->_name.c_str(), INHID.c_str());
+    if(0)printf("sh<%s> Processing inheritance of interface '%s'\n", shader->_name.c_str(), INHID.c_str());
 
     // Only inherit the appropriate interface type for each shader
     bool is_vertex_interface   = (std::dynamic_pointer_cast<VertexInterface>(interface_node) != nullptr);
@@ -1036,14 +1036,14 @@ void SpirvCompiler::_inheritStorageInterface(
     spirvstorageif_ptr_t spirv_sif) {
   
 
-  printf("Inheriting storage interface '%s'\n", storage_name.c_str());
+  if(0)printf("Inheriting storage interface '%s'\n", storage_name.c_str());
   OrkAssert((spirv_sif->_descriptor_set_id >= 0) and (spirv_sif->_descriptor_set_id <= 4));
   
   // Get binding ID from merged resources
   int binding_id = _findBindingIdFromMergedResources(storage_name, storage_name);
   if (binding_id == -1) {
     // Fallback to auto-increment if not found
-    printf("WARNING: Storage interface '%s' not found in merged resources, using fallback binding\n", storage_name.c_str());
+    if(0)printf("WARNING: Storage interface '%s' not found in merged resources, using fallback binding\n", storage_name.c_str());
     binding_id = _binding_id++;
   }
   // record the real binding so it survives reflection -> DBwrite -> DBread and the
@@ -1227,7 +1227,7 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
   //
   // Handle inherited interfaces - specifically vertex outputs becoming fragment inputs
   //
-  printf("_inheritIO interface '%s'\n", interface_node->typedValueForKey<std::string>("object_name").value().c_str());
+  if(0)printf("_inheritIO interface '%s'\n", interface_node->typedValueForKey<std::string>("object_name").value().c_str());
   auto ifname    = interface_node->typedValueForKey<std::string>("object_name").value();
   auto decorator = FormatString("// begin interface<%s>", ifname.c_str());
   _appendText(_interface_group, decorator.c_str());
@@ -1311,7 +1311,7 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
   // Process storage groups
   auto storage_groups = AstNode::collectNodesOfType<InterfaceStorageRefs>(interface_node);
   for (auto storage_group : storage_groups) {
-    dumpAstNode(storage_group);
+    //dumpAstNode(storage_group);
     auto storage_refs = AstNode::collectNodesOfType<SemaIdentifier>(storage_group);
     for (auto storage : storage_refs) {
       auto id_name = storage->typedValueForKey<std::string>("identifier_name").value();
@@ -1346,7 +1346,7 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
         int binding_id = _findBindingIdFromMergedResources(storage_name, storage_name);
         if (binding_id == -1) {
           // Fallback to original behavior if not found in merged resources
-          printf("WARNING: Storage interface '%s' not found in merged resources, using fallback binding\n", storage_name.c_str());
+          if(0)printf("WARNING: Storage interface '%s' not found in merged resources, using fallback binding\n", storage_name.c_str());
           binding_id = _binding_id;
           _binding_id++;
         }
@@ -1529,10 +1529,19 @@ shader_bin_t SpirvCompiler::compileGlslToSpirv(
     printf("// shader<%s>:\n%s\n", shader_name.c_str(), as_glsl.c_str());
   }
   if (not compile_ok) {
-    std::cerr << result.GetErrorMessage();
-      fflush(stdout);
-      fflush(stderr);
-    OrkAssert(false);
+    auto diagnostic = result.GetErrorMessage();
+    std::cerr << diagnostic;
+    fflush(stdout);
+    fflush(stderr);
+    // fail loud, but catchable + worker-thread-safe (this used to OrkAssert(false),
+    //  which died as an uninformative SIGSEGV on a JIT worker thread and discarded
+    //  the shaderc diagnostic the author actually needs).
+    ShaderCompileError err;
+    err._shader_name = shader_name;
+    err._diagnostic  = diagnostic;
+    err._message     = FormatString(
+        "shader compile failed for <%s>:\n%s", shader_name.c_str(), diagnostic.c_str());
+    throw err;
   }
 
   ///////////////////////////////////////////////////////
@@ -1619,7 +1628,7 @@ int SpirvCompiler::_findBindingIdFromMergedResources(const std::string& resource
                   // First occurrence - record it
                   found_binding_id = binding_node->_binding_id;
                   found_in_technique = tech_name;
-                  printf("  _findBindingIdFromMergedResources: FOUND resource<%s> source<%s> -> binding_id<%d> (from technique<%s> which uses shader<%s>)\n",
+                  if(0)printf("  _findBindingIdFromMergedResources: FOUND resource<%s> source<%s> -> binding_id<%d> (from technique<%s> which uses shader<%s>)\n",
                          resource_name.c_str(), source_name.c_str(), binding_node->_binding_id, tech_name.c_str(), shader_name.c_str());
                 } else if (found_binding_id != binding_node->_binding_id) {
                   // CONFLICT DETECTED! Same resource has different binding IDs in different techniques
@@ -1653,7 +1662,7 @@ int SpirvCompiler::_findBindingIdFromMergedResources(const std::string& resource
   }
 
   // If not found in merged resources, return -1 to indicate fallback to original behavior
-  printf("  _findBindingIdFromMergedResources: NOT FOUND resource<%s> source<%s> for shader<%s>\n",
+  if(0)printf("  _findBindingIdFromMergedResources: NOT FOUND resource<%s> source<%s> for shader<%s>\n",
          resource_name.c_str(), source_name.c_str(), shader_name.c_str());
   return -1;
 }

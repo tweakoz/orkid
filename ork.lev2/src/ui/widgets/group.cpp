@@ -412,7 +412,7 @@ void LayoutGroup::DoDraw(drawevent_constptr_t drwev) {
 }
 //////////////////////////////////////
 anchor::layout_ptr_t LayoutGroup::layoutAndAddChild(widget_ptr_t w) {
-  auto layout = _layout->childLayout(w.get());
+  auto layout = _layout->childLayout(w);
   addChild(w);
   return layout;
 }
@@ -420,6 +420,241 @@ anchor::layout_ptr_t LayoutGroup::layoutAndAddChild(widget_ptr_t w) {
 void LayoutGroup::removeChild(anchor::layout_ptr_t ch) {
   _layout->removeChild(ch);
   Group::removeChild(ch->_widget);
+}
+//////////////////////////////////////
+void LayoutGroup::_removeChildLayout(Widget* w) {
+  if (not _layout)
+    return;
+  anchor::layout_ptr_t found;
+  for (auto& cl : _layout->_childlayouts) {
+    if (cl->_widget == w) {
+      found = cl;
+      break;
+    }
+  }
+  if (found)
+    _layout->removeChild(found);  // erases from _childlayouts + prunes orphan guides
+}
+//////////////////////////////////////
+void LayoutGroup::removeChild(widget_ptr_t w, bool relayout) {
+  _removeChildLayout(w.get());
+  Group::removeChild(w, relayout);
+}
+//////////////////////////////////////
+void LayoutGroup::removeChild(Widget* w, bool relayout) {
+  _removeChildLayout(w);
+  Group::removeChild(w, relayout);
+}
+//////////////////////////////////////
+void LayoutGroup::_onChildrenChanged() {
+  // Keep each direct child layout's weak widget ref in sync with the current
+  // shared child, so validateTree() can detect a dead widget via the weak ref.
+  if (not _layout)
+    return;
+  for (auto& cl : _layout->_childlayouts) {
+    if (cl->_widget == nullptr)
+      continue;
+    for (auto& ch : _children) {
+      if (ch.get() == cl->_widget) {
+        cl->bindWidget(ch);
+        break;
+      }
+    }
+  }
+}
+//////////////////////////////////////
+void LayoutGroup::unsplit(anchor::layout_ptr_t survivor) {
+  OrkAssertI(survivor != nullptr, "unsplit: null survivor layout");
+  auto container_layout_raw = survivor->_parent;
+  OrkAssertI(container_layout_raw != nullptr, "unsplit: survivor has no parent (container) layout");
+  auto parent_layout = container_layout_raw->_parent;
+  OrkAssertI(parent_layout != nullptr, "unsplit: container has no parent layout (cannot unsplit root)");
+
+  auto container_group = dynamic_cast<LayoutGroup*>(container_layout_raw->_widget);
+  OrkAssertI(container_group != nullptr, "unsplit: container widget is not a LayoutGroup");
+  auto parent_group = dynamic_cast<LayoutGroup*>(parent_layout->_widget);
+  OrkAssertI(parent_group != nullptr, "unsplit: parent widget is not a LayoutGroup");
+
+  // Resolve the shared_ptr handle for the container layout under its parent.
+  anchor::layout_ptr_t container_layout;
+  for (auto& l : parent_layout->_childlayouts)
+    if (l.get() == container_layout_raw) {
+      container_layout = l;
+      break;
+    }
+  OrkAssertI(container_layout != nullptr, "unsplit: container layout not found under its parent");
+
+  // Self-defend: drop every non-survivor child so the container reduces to the
+  // single survivor before we collapse the T-junction.
+  std::vector<anchor::layout_ptr_t> to_remove;
+  for (auto& l : container_layout->_childlayouts)
+    if (l != survivor)
+      to_remove.push_back(l);
+  for (auto& l : to_remove)
+    container_group->removeChild(l);  // removes widget + layout node + prunes
+  OrkAssertI(
+      container_layout->_childlayouts.size() == 1,
+      "unsplit: container did not reduce to a single survivor");
+
+  Widget* survivor_widget_raw = survivor->_widget;
+  widget_ptr_t survivor_widget = container_group->findChildPtr(survivor_widget_raw);
+  OrkAssertI(survivor_widget != nullptr, "unsplit: survivor widget not found in container");
+
+  // capture the guides the container was anchored to (the target's original guides)
+  anchor::Guide* g_top    = container_layout->_top    ? container_layout->_top->_relative    : nullptr;
+  anchor::Guide* g_left   = container_layout->_left   ? container_layout->_left->_relative   : nullptr;
+  anchor::Guide* g_bottom = container_layout->_bottom ? container_layout->_bottom->_relative : nullptr;
+  anchor::Guide* g_right  = container_layout->_right  ? container_layout->_right->_relative  : nullptr;
+
+  // re-anchor the survivor to those guides, in place (disassociates the old
+  // container-edge / split-guide relatives automatically)
+  survivor->reanchor(g_top, g_left, g_bottom, g_right);
+  // The survivor keeps ITS OWN margin. The split container's layout margin is
+  // always 0 (the guides carry the gap, group.cpp split()), so adopting it would
+  // collapse the survivor's inset to 0 and desync it from every freshly-built
+  // leaf — invisible while all margins were 0, a visible divider gap once they
+  // are not (re-applied here so the re-anchored edge guides pick it up).
+  survivor->setMargin(survivor->_margin);
+
+  // widget hierarchy: detach survivor from container, promote into parent group
+  container_group->Group::removeChild(survivor_widget, false);
+  survivor_widget->setParent(parent_group);
+
+  // splice survivor's layout into parent_layout in place of the container
+  survivor->_parent = parent_layout;
+  for (auto& l : parent_layout->_childlayouts) {
+    if (l == container_layout) {
+      l = survivor;
+      break;
+    }
+  }
+  container_layout->_childlayouts.clear();
+
+  // replace the container widget with the survivor in the parent group's children
+  bool replaced = false;
+  for (auto& ch : parent_group->_children) {
+    if (ch.get() == container_layout->_widget) {
+      ch = survivor_widget;
+      replaced = true;
+      break;
+    }
+  }
+  OrkAssertI(replaced, "unsplit: container widget not found in parent group children");
+
+  // free the container's split guide(s) from the guide index sets
+  for (auto& g : container_layout->_customguides) {
+    parent_group->_hguides.erase(g);
+    parent_group->_vguides.erase(g);
+    _hguides.erase(g);
+    _vguides.erase(g);
+  }
+
+  // prune associations to the now-dropped container edges + split guide
+  _layout->prune();
+  _layout->updateAll();
+}
+//////////////////////////////////////
+static std::string _unsplit_guideSig(const anchor::Guide* g) {
+  char buf[64];
+  const char* o = g->isVertical() ? "V" : "H";
+  if (g->_type == anchor::GuideType::PROPORTIONAL)
+    snprintf(buf, sizeof(buf), "%s:P:%.3f", o, g->_proportion);
+  else if (g->_type == anchor::GuideType::FIXED)
+    snprintf(buf, sizeof(buf), "%s:F:%d", o, g->_fixed);
+  else if (g->_type == anchor::GuideType::OFFSET)
+    snprintf(buf, sizeof(buf), "%s:O:%d", o, g->_offset);
+  else
+    snprintf(buf, sizeof(buf), "%s:N", o);
+  return buf;
+}
+//////////////////////////////////////
+static std::string _unsplit_layoutSig(const anchor::Layout* L) {
+  std::vector<std::string> gs;
+  for (auto& g : L->_customguides)
+    gs.push_back(_unsplit_guideSig(g.get()));
+  std::sort(gs.begin(), gs.end());
+  std::vector<std::string> cs;
+  for (auto& c : L->_childlayouts)
+    cs.push_back(_unsplit_layoutSig(c.get()));
+  std::sort(cs.begin(), cs.end());
+  std::string s = "L{cg=[";
+  for (auto& x : gs)
+    s += x + ",";
+  s += "],ch=[";
+  for (auto& x : cs)
+    s += x + ";";
+  s += "]}";
+  return s;
+}
+//////////////////////////////////////
+std::string LayoutGroup::layoutSignature() const {
+  return _unsplit_layoutSig(_layout.get());
+}
+//////////////////////////////////////
+bool LayoutGroup::validateTree() const {
+  bool ok = true;
+  std::function<void(const anchor::Layout*)> visit;
+  visit = [&](const anchor::Layout* L) {
+    // A LayoutGroup's own root layout has widget == the group itself (raw-bound);
+    // its lifetime is structural, so skip the child-membership checks for it.
+    bool is_self = false;
+    if (auto g = dynamic_cast<LayoutGroup*>(L->_widget))
+      if (g->_layout.get() == L)
+        is_self = true;
+
+    if (not is_self) {
+      if (not L->widgetAlive()) {
+        printf("validateTree FAIL: layout<%d> has a dead/null widget\n", L->_name);
+        ok = false;
+      } else if (L->_parent) {
+        auto owner = dynamic_cast<Group*>(L->_parent->_widget);
+        if (owner) {
+          bool found = false;
+          for (auto& ch : owner->_children)
+            if (ch.get() == L->_widget) {
+              found = true;
+              break;
+            }
+          if (not found) {
+            printf(
+                "validateTree FAIL: layout<%d> widget<%p> is not a current child of owning group<%s>\n",
+                L->_name,
+                (void*)L->_widget,
+                owner->_name.c_str());
+            ok = false;
+          }
+        }
+      }
+    }
+
+    // anchored edge guide must appear in its relative's associates
+    auto check_guide = [&](const anchor::guide_ptr_t& g) {
+      if (g && g->_relative) {
+        auto& assoc = g->_relative->_associates;
+        if (assoc.find(g.get()) == assoc.end()) {
+          printf(
+              "validateTree FAIL: guide<%d> anchored to guide<%d> but not in its associates\n",
+              g->_name,
+              g->_relative->_name);
+          ok = false;
+        }
+      }
+    };
+    check_guide(L->_top);
+    check_guide(L->_left);
+    check_guide(L->_bottom);
+    check_guide(L->_right);
+
+    for (auto& l : L->_childlayouts) {
+      if (l->_widget == nullptr) {
+        printf("validateTree FAIL: orphan child layout<%d> (null widget)\n", l->_name);
+        ok = false;
+      }
+      visit(l.get());
+    }
+  };
+  visit(_layout.get());
+  return ok;
 }
 //////////////////////////////////////
 void LayoutGroup::replaceChild(anchor::layout_ptr_t ch, layoutitem_ptr_t rep) {
@@ -432,8 +667,10 @@ void LayoutGroup::replaceChild(anchor::layout_ptr_t ch, layoutitem_ptr_t rep) {
   auto actual_parent = dynamic_cast<Group*>(old_widget->parent());
 
   if (actual_parent) {
-    // Remove old widget from its actual parent (row-0 in hierarchical layouts)
-    actual_parent->removeChild(old_widget);
+    // Remove old widget from its actual parent (row-0 in hierarchical layouts).
+    // Qualify Group:: explicitly — we must NOT prune the layout node here, since
+    // ch is deliberately retained and re-pointed at the replacement below.
+    actual_parent->Group::removeChild(old_widget);
     actual_parent->addChild(rep->_widget);
   } else {
     // Fallback: no parent found, operate on this group
@@ -443,14 +680,15 @@ void LayoutGroup::replaceChild(anchor::layout_ptr_t ch, layoutitem_ptr_t rep) {
 
   // Update layout-widget connection
   // ch retains all its anchoring, just points to new widget
-  ch->_widget = rep->_widget.get();
+  ch->bindWidget(rep->_widget);
   rep->_layout = ch;  // rep now uses ch's layout (discarding rep's original layout)
 }
 //////////////////////////////////////
 layoutitem_ptr_t LayoutGroup::split(anchor::layout_ptr_t target_layout,
                                     float proportion,
                                     anchor::ELayoutSplitPlacement placement,
-                                    int margin) {
+                                    int margin,
+                                    int hit_margin) {
 
   // Determine if this is a horizontal or vertical split based on placement
   bool is_horizontal_split = (placement == anchor::ELayoutSplitPlacement::TOP ||
@@ -553,7 +791,7 @@ layoutitem_ptr_t LayoutGroup::split(anchor::layout_ptr_t target_layout,
   container_layout->_childlayouts.push_back(target_layout);
 
   // Create a new layout for the new widget (widget will be assigned by binding layer)
-  auto new_layout = container_layout->childLayout(nullptr);  // widget is nullptr for now
+  auto new_layout = container_layout->childLayout((Widget*)nullptr);  // widget is nullptr for now
 
   // Create the split guide on the container's layout (horizontal or vertical depending on placement)
   // This guide will span across the container creating a T-junction
@@ -569,6 +807,7 @@ layoutitem_ptr_t LayoutGroup::split(anchor::layout_ptr_t target_layout,
   }
   split_guide->_locked = false;  // Explicitly unlock for dragging
   split_guide->_margin = margin;
+  split_guide->_hit_margin = hit_margin;  // -1 => grab band tracks _margin (unchanged for non-dock callers)
 
   // Set margins
   target_layout->setMargin(margin);
@@ -885,14 +1124,12 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
     }
     case ui::EventCode::BEGIN_DRAG: {
       was_handled       = true;
-      result.mHoldFocus = true;
       lastx = ev->miX;
       lasty = ev->miY;
       break;
     }
     case ui::EventCode::END_DRAG: {
       was_handled       = true;
-      result.mHoldFocus = false;
       _guide_being_dragged  = nullptr;
       //_guide_being_dragged = std::pair<anchor::guide_ptr_t, anchor::guide_ptr_t>(nullptr,nullptr);
       break;
@@ -904,7 +1141,6 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
       break;
     }
     case ui::EventCode::DRAG: {
-      result.mHoldFocus = true;
       was_handled       = true;
       auto g1 = _guide_being_dragged;
       int dx           = ev->miX - lastx;

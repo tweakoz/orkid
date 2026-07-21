@@ -5,15 +5,27 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 #include "hfdflow_module.h"
+#include <ork/reflect/enum_serializer.inl>
 
 ImplementReflectionX(ork::lev2::terrain::LpfModuleData, "terrain::LpfModuleData");
+ImplementEnumSerializer(ork::lev2::terrain::CutoffUnits);
 
 namespace ork::lev2::terrain {
 
+// EnumSerializer registration (E1) — registered LOWERCASE to match the DSL `units=`
+// spelling: reflected json / pywriter / propsheet labels all read this single-source
+// string. Values match the codes ops.py maps its DSL units to (TEXELS=0, METERS=1).
+BeginEnumRegistration(CutoffUnits);
+  enumtype->addEnum("texels", CutoffUnits::TEXELS);
+  enumtype->addEnum("meters", CutoffUnits::METERS);
+EndEnumRegistration();
+
 ///////////////////////////////////////////////////////////////////////////////
-// LpfModule — separable GAUSSIAN low-pass filter. `cutoff_texels` (or `cutoff_m`,
-// resolution-independent) is the spatial cutoff scale: features finer than that
-// wavelength are attenuated (Gaussian sigma = cutoff/6; soft rolloff, no ringing).
+// LpfModule — separable GAUSSIAN low-pass filter. ONE `cutoff` float plug is the
+// spatial cutoff scale: features finer than that wavelength are attenuated (Gaussian
+// sigma = cutoff-in-texels/6; soft rolloff, no ringing). `_cutoff_units` (reflected enum)
+// selects the interpretation: TEXELS (resolution-dependent) or METERS (resolution-
+// INDEPENDENT — converted to texels per-bake via dim/extent, like slope/curvature).
 // Two passes (horizontal then vertical), edge-clamped. `blend` (0..1, default 1.0)
 // crossfades the filtered result against the ORIGINAL input (0 = passthrough,
 // 1 = fully filtered), applied ONCE in the vertical pass.
@@ -22,7 +34,7 @@ namespace ork::lev2::terrain {
 // compute, NOT baked into the shader text (mirrors erox/pha). Only the loop RADIUS must
 // bake (GLSL loop bounds are compile-time), so it's BUCKETED to the next power of two:
 // every cutoff that maps to the same radius bucket shares one compiled shader. A loop
-// that sweeps cutoff (e.g. cutoff_m = base - i*step) therefore compiles ONE shader for
+// that sweeps cutoff (e.g. cutoff = base - i*step) therefore compiles ONE shader for
 // the whole sweep instead of one per value.
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -76,17 +88,17 @@ struct LpfModuleInst : public TerrainComputeInst {
   void onLink(dflow::GraphInst*) final {
     _output  = typedOutputNamed<HfImagePlugTraits>("Out");
     _input   = typedInputNamed<HfImagePlugTraits>("In");
-    _cutoff  = _floatPlug(this, _d, "cutoff_texels");
-    _cutoffM = _floatPlug(this, _d, "cutoff_m");
+    _cutoff  = _floatPlug(this, _d, "cutoff");
     _blend   = _floatPlug(this, _d, "blend");
   }
   static int _nextPow2(int v) { int p = 1; while (p < v) p <<= 1; return p; }
-  // cutoff_m (meters) takes precedence when > 0 -> RESOLUTION-INDEPENDENT (converted to texels
-  // per-bake from dim/extent). Else cutoff_texels. The wavelength -> gaussian sigma (texels).
+  // `cutoff` interpreted per `_cutoff_units`: METERS -> RESOLUTION-INDEPENDENT (converted to
+  // texels per-bake from dim/extent); TEXELS -> used directly. The wavelength -> gaussian sigma.
   float _sigmaTexels(BakeEnv* env) const {
-    float cutoff_texels = (_cutoffM->value() > 0.0f) ? (_cutoffM->value() * env->texelsPerMeter())
-                                                     : _cutoff->value();
-    return std::max(cutoff_texels / 6.0f, 0.25f);
+    float cutoff_tx = (_d->_cutoff_units == CutoffUnits::METERS)
+                          ? (_cutoff->value() * env->texelsPerMeter())
+                          : _cutoff->value();
+    return std::max(cutoff_tx / 6.0f, 0.25f);
   }
   // sigma + blend -> params SSBO. Filled in bakeAcquire (pre-dispatch-phase: a host map mid-phase
   // is not visible). sigma clamped so 3*sigma stays inside the baked loop bound.
@@ -139,10 +151,10 @@ struct LpfModuleInst : public TerrainComputeInst {
   }
   uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
     auto h = DataBlock::createHasher();
-    h->accumulateString("terrain.lpf.v3"); // runtime sigma+blend (params SSBO), bucketed radius
+    h->accumulateString("terrain.lpf.v4"); // single cutoff + units enum (superseded the two-plug form)
     h->accumulateItem<float>(_cutoff->value());
-    h->accumulateItem<float>(_cutoffM->value()); // meters (resolution-independent identity)
-    h->accumulateItem<float>(_blend->value());   // crossfade vs original
+    h->accumulateItem<int>(int(_d->_cutoff_units)); // texels vs meters -> different sigma per bake
+    h->accumulateItem<float>(_blend->value());      // crossfade vs original
     _mixTail(h, ctx, ih);
     h->finish();
     return h->result();
@@ -151,7 +163,7 @@ struct LpfModuleInst : public TerrainComputeInst {
   const LpfModuleData* _d;
   hfimg_outpluginst_ptr_t _output;
   hfimg_inpluginst_ptr_t _input;
-  dflow::float_inp_pluginst_ptr_t _cutoff, _cutoffM, _blend;
+  dflow::float_inp_pluginst_ptr_t _cutoff, _blend;
   FxShaderStorageBuffer* _tmp = nullptr;
   FxShaderStorageBuffer* _params = nullptr;
   int _rmax = 4;
@@ -160,13 +172,16 @@ struct LpfModuleInst : public TerrainComputeInst {
 
 static void _reshapeLpfIOs(dataflow::moduledata_ptr_t data) {
   dflow::ModuleData::createInputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "In");
-  // cutoff scale in TEXELS (features finer than ~this wavelength are attenuated).
-  dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "cutoff_texels")->setValue(8.0f);
-  // cutoff scale in METERS — when > 0 it OVERRIDES cutoff_texels and is resolution-INDEPENDENT
-  // (converted to texels per-bake from dim/extent). Default 0 = use cutoff_texels.
-  dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "cutoff_m")->setValue(0.0f);
+  // ONE cutoff-wavelength plug; `_cutoff_units` (reflected enum) says texels vs meters.
+  // Default 8 = the pre-restructure 8-texel default behavior. Range covers the meters
+  // domain (a single 0..16384 slider serves both units; a texels cutoff rarely exceeds ~1024).
+  auto cutoff = dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "cutoff");
+  cutoff->setValue(8.0f);
+  cutoff->annotateRange(0.0f, 16384.0f);
   // crossfade filtered vs original: 0 = passthrough, 1 = fully filtered (default).
-  dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "blend")->setValue(1.0f);
+  auto blend = dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "blend");
+  blend->setValue(1.0f);
+  blend->annotateRange(0.0f, 1.0f);
   dflow::ModuleData::createOutputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "Out");
 }
 LpfModuleData::LpfModuleData() {}
@@ -180,6 +195,14 @@ void LpfModuleData::describeX(class_t* clazz) {
   clazz->setSharedFactory([]() -> rtti::castable_ptr_t { return LpfModuleData::createShared(); });
   clazz->annotateTyped<dataflow::moduleIOreshape_fn_t>("reshapeIOs",
       [](dataflow::moduledata_ptr_t m) { _reshapeLpfIOs(m); });
+  // E1-close add-palette (reflection-carried; see hfdflow_module_thermal.cpp for the vocabulary).
+  clazz->annotateTyped<ConstString>("dsl.verb", "lpf");
+  clazz->annotateTyped<bool>("editor.palette", true);
+  clazz->annotateTyped<int>("editor.palette.sort", 7);
+  // _cutoff_units selects how `cutoff` is interpreted (texels/meters) — a real reflected
+  // enum: serializes by NAME, exposes its choice list to the editor propsheet dropdown (E1).
+  InvokeEnumRegistration(CutoffUnits);
+  clazz->directEnumProperty("cutoff_units", &LpfModuleData::_cutoff_units);
 }
 
 } // namespace ork::lev2::terrain

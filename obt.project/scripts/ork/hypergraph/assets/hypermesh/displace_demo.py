@@ -29,7 +29,7 @@ class DisplaceDemo(Hypermesh):
     h = T.fbm(frequency=5.0, offset_vel=(0.35, 0.12))
     h = T.terrace(h, step_m=1.0/32.0, sharpness=2.5) * 0.8 \
         + T.fbm(frequency=18.0, offset_vel=(-0.06, 0.025)) * 0.05
-    h = T.lpf(h, cutoff_m=10)
+    h = T.lpf(h, cutoff=10, units='meters')
     n = self.displace(n, field=h, amount=HEIGHT, extent=EXTENT, mode="y", field_dim=1024)
     n = self.smooth_normals(n)                                    # displace moves P only; refresh shading
     self.output(n)

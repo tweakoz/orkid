@@ -57,6 +57,17 @@ catches, a threshold that mislabels, a missing artifact type):
   changes + regression evidence in place. Binary pass/fail gating stays with `gate-runner.md`,
   which calls the same instruments.
 
+## Producing artifacts to analyze
+
+When you must RENDER/CAPTURE an artifact yourself (rather than analyze one handed to you),
+use the `ork.testing` harness (`obt.project/scripts/ork/testing/`) — `capture_app()` is the
+preferred offscreen capture lifecycle: it creates output dirs, pre-flights assets (loud
+missing-path failures instead of segfaults), applies the DRM env guard before engine init,
+defaults ssaa=0 (ssaa=2 is a known-crash opt-in), and orders capture→settle→readback before
+teardown. Its verdict protocol separates your capture's success from teardown crashes so a
+flaky exit never masquerades as a failed render. Hand-rolled boot/teardown in new analysis
+scripts is legacy practice — prefer the harness.
+
 ## Boundaries
 
 Bounded runs only (timeouts; kill by PID); offscreen/windowed rules follow the fleet norms

@@ -91,6 +91,132 @@ class ParamTable:
 
 
 ###############################################################################
+# Reflection-derived ENUM metadata (E1) — the single source of a module property's
+# choice list is the C++ EnumSerializer, surfaced by core.dataflow.moduleClasses().
+# The editor propsheet (choice dropdowns) and the terrain pywriter both read THIS —
+# no hand-maintained per-family label tables anywhere.
+###############################################################################
+
+_ENUM_CHOICES_CACHE = None
+
+
+def _short_class_name(reflected_name):
+    """Reflected module name ("terrain::CombineModuleData") -> the DSL/pybind short
+    name ("CombineModule"). Idempotent for an already-short name."""
+    seg = reflected_name.split("::")[-1]
+    return seg[:-4] if seg.endswith("Data") else seg
+
+
+def enum_choices(clazz_name, prop_name):
+    """VALUE-ORDERED choice labels for an enum-typed reflected module property
+    (keyed by the short class name — e.g. ("CombineModule","op")), or None if the
+    property is not a reflected enum. Built ONCE from core.dataflow.moduleClasses()
+    (the rtti class tree) and cached; an empty result (engine not yet initialized)
+    is NOT cached, so the first post-init query wins."""
+    global _ENUM_CHOICES_CACHE
+    if _ENUM_CHOICES_CACHE is None:
+        from orkengine.core import dataflow as _dflow  # lazy: keep document.py import-cheap
+        built = {}
+        for c in _dflow.moduleClasses():
+            cn = _short_class_name(c.get("name", ""))
+            for p in c.get("properties", ()):
+                if p.get("type") == "enum" and p.get("choices"):
+                    built[(cn, p["name"])] = tuple(p["choices"])
+        if not built:
+            return None                     # engine not initialized yet — retry next call
+        _ENUM_CHOICES_CACHE = built
+    return _ENUM_CHOICES_CACHE.get((_short_class_name(clazz_name), prop_name))
+
+
+###############################################################################
+# Reflection-derived PLUG metadata (E1 seam extension) — a plug's editor range
+# (min/max clamped slider) + display-only (bake-inert) marker. Single source: the
+# C++ reshapeIOs annotations, surfaced by dflow.plugSpec(). The editor propsheet
+# reads THIS — no hand-maintained per-family range/flag tables anywhere.
+###############################################################################
+
+_PLUG_META_CACHE = None       # (short_class, plug_name) -> dict(min?, max?, display_only?)
+_SHORT_TO_REFLECTED = None    # short_class -> reflected name (for plugSpec lookup)
+
+
+def plug_meta(clazz_name, plug_name):
+    """Editor metadata for one input/output plug (keyed by the short class name — e.g.
+    ("LpfModule","cutoff")): {"min":.., "max":..} for a ranged plug and/or
+    {"display_only": True} for a bake-inert one, or None if the plug carries no metadata.
+    Built lazily from dflow.plugSpec() and cached; an engine-not-ready result is NOT
+    cached so the first post-init query wins."""
+    global _PLUG_META_CACHE, _SHORT_TO_REFLECTED
+    if _PLUG_META_CACHE is None:
+        from orkengine.core import dataflow as _dflow  # lazy: keep document.py import-cheap
+        s2r = {}
+        for c in _dflow.moduleClasses():
+            nm = c.get("name", "")
+            if nm:
+                s2r[_short_class_name(nm)] = nm
+        if not s2r:
+            return None                     # engine not initialized yet — retry next call
+        _SHORT_TO_REFLECTED = s2r
+        _PLUG_META_CACHE = {}
+    short = _short_class_name(clazz_name)
+    reflected = _SHORT_TO_REFLECTED.get(short)
+    if reflected is None:
+        return None
+    if short not in _PLUG_META_CACHE:
+        built = {}
+        from orkengine.core import dataflow as _dflow
+        spec = _dflow.plugSpec(reflected)
+        if spec is not None:
+            for p in list(spec.get("inputs", ())) + list(spec.get("outputs", ())):
+                meta = {}
+                if "min" in p and "max" in p:
+                    meta["min"] = p["min"]
+                    meta["max"] = p["max"]
+                if p.get("display_only"):
+                    meta["display_only"] = True
+                if meta:
+                    built[p["name"]] = meta
+        _PLUG_META_CACHE[short] = built
+    return _PLUG_META_CACHE[short].get(plug_name)
+
+
+###############################################################################
+# Reflection-derived MODULE-PROPERTY metadata (E1-close) — a reflected module
+# PROPERTY's editor range, from its describeX annotations (editor.range.min/max,
+# e.g. FlowErodeModule.blend) surfaced by dflow.moduleClasses(). The module-prop
+# SIBLING of plug_meta above — the editor propsheet reads THIS for 'module'
+# scalars, so property ranges need no hand tables either.
+###############################################################################
+
+_PROP_META_CACHE = None       # (short_class, prop_name) -> dict(min, max)
+
+
+def prop_meta(clazz_name, prop_name):
+    """Editor metadata for one reflected MODULE property (keyed by the short class
+    name — e.g. ("FlowErodeModule","blend")): {"min":.., "max":..} from the
+    property's editor.range.min/max annotations, or None if the property carries no
+    metadata. Built ONCE from dflow.moduleClasses() and cached; an engine-not-ready
+    result is NOT cached so the first post-init query wins."""
+    global _PROP_META_CACHE
+    if _PROP_META_CACHE is None:
+        from orkengine.core import dataflow as _dflow  # lazy: keep document.py import-cheap
+        classes = _dflow.moduleClasses()
+        if not classes:
+            return None                 # engine not initialized yet — retry next call
+        built = {}
+        for c in classes:
+            cn = _short_class_name(c.get("name", ""))
+            for p in c.get("properties", ()):
+                anns = p.get("annotations", {})
+                if "editor.range.min" in anns and "editor.range.max" in anns:
+                    built[(cn, p["name"])] = {
+                        "min": float(anns["editor.range.min"]),
+                        "max": float(anns["editor.range.max"]),
+                    }
+        _PROP_META_CACHE = built
+    return _PROP_META_CACHE.get((_short_class_name(clazz_name), prop_name))
+
+
+###############################################################################
 
 class GraphDocument:
     """Base editor document. The surface below is what a single editor core binds
@@ -152,6 +278,32 @@ class GraphDocument:
         'module' (a reflected scalar). Family-specific."""
         self._unsupported("set_param")
 
+    def node_class_name(self, node):
+        """The reflected/DSL class name of a family node handle (e.g. "CombineModule"),
+        or None if the family has no such concept. Feeds reflection-derived enum-choice
+        lookup for the property sheet (E1). Default None."""
+        return None
+
+    def plug_is_connected(self, node, name):
+        """Whether the input plug `name` on `node` is fed by an edge. A connected plug's
+        value is driven upstream, so the editor GHOSTS its value row (owner: a connected
+        plug's value is not user-editable). Default False (a family with live plugs — the
+        GraphData-direct families — overrides via reflection)."""
+        return False
+
+    def plug_transformer(self, node, name):
+        """The reflected input-transformer object (floatxf.floatxfdata) on a FloatXf-typed
+        input plug `name`, or None when the plug is not transform-typed / carries no
+        transformer. The transformer stays editable even when the plug is connected (owner:
+        edit the input transformers when present). Default None."""
+        return None
+
+    def expr_fields(self, node):
+        """[(reflected_property, context_name)] for a node's editable ExprIR expression
+        fields (E2.5 S7), edited AS SOURCE through the propsheet detail editor. Default []
+        (a family with expression-tree fields — particles ExprForce — overrides)."""
+        return []
+
     # ---- editor presentation surface (what the outliner renders per object) --
     # STATE, not UI — the model decides colors/glyphs; the document answers "what is
     # true about this object". Defaults are the safe no-badge / no-name generic answer
@@ -194,11 +346,19 @@ class GraphDocument:
         self._unsupported("delete_node")
 
     def connect(self, *args, **kwargs):
-        """Editor mutation (L2, STRUCTURAL): create a typed edge."""
+        """Editor mutation (L2, STRUCTURAL): create a typed edge, OWNING the native
+        edge-store write for its family (the canvas routes wires here rather than poking
+        the store). Overwrite semantics: wiring a source onto an already-fed consumer
+        replaces the old source (this is what makes splice-on-wire work). Family-specific."""
         self._unsupported("connect")
 
     def disconnect(self, *args, **kwargs):
-        """Editor mutation (L2, STRUCTURAL): remove an edge."""
+        """Editor mutation (L2, STRUCTURAL): remove an edge. Disconnect SEMANTICS are
+        family-DECIDED: a family whose consumer plugs must always resolve to a source (an
+        always-fed family such as terrain) formalizes this as a LOUD refusal — orphaning an
+        input is illegal, so the answer is 're-wire to a different source, or delete the
+        node', never a silent no-op (ops self-defend). A family that permits dangling inputs
+        removes the edge here. Either way it is loud and named, never silent. Family-specific."""
         self._unsupported("disconnect")
 
     # ---- node positions (family decides the backing store) -------------------

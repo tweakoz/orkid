@@ -267,14 +267,17 @@ class RuleSpec:
 ###############################################################################
 # op builders (the @op surface, §17.4). Each returns an OpSpec; params accept a number OR an Expr.
 ###############################################################################
-def segment(len=None, rad=None, gid=None):
+def segment(len=None, rad=None, gid=None, gen=None):
   """one turtle joint -> an XfNode edge. len/rad flow through the PARAM env (A8, live-pokeable);
-  gid stamps the face material band (A1 tags[20:32))."""
+  gid stamps the face material band (A1 tags[20:32)); gen stamps the node's generation attr
+  (_attrs[1] — the evaluator already reads a "gen" param; organ placers like leaves() gate on it)."""
   p = []
   if len is not None:
     p.append(("len", _ce(len)))
   if rad is not None:
     p.append(("rad", _ce(rad)))
+  if gen is not None:
+    p.append(("gen", _ce(gen)))
   return OpSpec(SEGMENT, params=p, gid=gid)
 
 

@@ -39,7 +39,7 @@ public:
 
 struct ManipGizmoDrawableImpl {
 
-  ManipGizmoDrawableImpl(const ManipGizmoDrawableData* data);
+  ManipGizmoDrawableImpl(std::shared_ptr<const ManipGizmoDrawableData> data);
   ~ManipGizmoDrawableImpl();
   void gpuInit(lev2::Context* ctx);
   void _render(const RenderContextInstData& RCID);
@@ -63,7 +63,7 @@ struct ManipGizmoDrawableImpl {
                         const fvec3& axis1, const fvec3& axis2,
                         const fvec4& color, float sign1, float sign2, float size);
 
-  const ManipGizmoDrawableData* _data = nullptr;
+  std::shared_ptr<const ManipGizmoDrawableData> _data;
   freestyle_mtl_ptr_t _material;
   const FxShaderTechnique* _technique = nullptr;
   const FxShaderParam* _param_mvp = nullptr;

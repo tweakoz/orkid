@@ -246,7 +246,16 @@ void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
         if (camname.empty())
           camname = "spawncam";
         if (auto cam = DB->cameraData(camname)) {
-          float aspect = (TARGH > 0.0f) ? (TARGW / TARGH) : 1.0f;
+          // #62: the cull frustum MUST match the projection actually rasterized. The draw camera
+          // (CompositingImpl::assemble -> defcammtx) derives its aspect from the compositor's
+          // render dimensions (_compcontext->miWidth/miHeight), NOT the fbi viewport — those two
+          // sources can diverge (SSAA/decoupled render size, a 1-frame resize renderop lag), and
+          // any divergence makes the cull frustum disagree with the drawn frustum (edge over-cull
+          // on resize). Derive the cull aspect from the SAME compositor dimensions the draw uses,
+          // so cull-frustum == draw-frustum by construction on every path.
+          const auto& cctx = _compositorImpl->compositingContext();
+          float cw = float(cctx.miWidth), ch = float(cctx.miHeight);
+          float aspect = (ch > 0.0f) ? (cw / ch) : 1.0f;
           auto cammtx  = cam->computeMatrices(aspect);
           preRender(context, cammtx);
         }

@@ -26,7 +26,7 @@ using uisurfaceprimitivedata_ptr_t = std::shared_ptr<UISurfacePrimitiveData>;
 
 struct UISurfaceRenderImpl {
 
-  UISurfaceRenderImpl(const UISurfacePrimitiveData* data, ui::layoutsurface_ptr_t surface);
+  UISurfaceRenderImpl(std::shared_ptr<const UISurfacePrimitiveData> data, ui::layoutsurface_ptr_t surface);
   ~UISurfaceRenderImpl();
 
   //////////////////////////////////////////////////////////////
@@ -88,7 +88,7 @@ struct UISurfaceRenderImpl {
   // Data
   //////////////////////////////////////////////////////////////
 
-  const UISurfacePrimitiveData* _data = nullptr;
+  std::shared_ptr<const UISurfacePrimitiveData> _data;
   ui::layoutsurface_ptr_t _layoutSurface;  // The UI surface to render (set at creation)
   decompxf_ptr_t _worldTransform;          // World transform (set from node for hit testing)
   bool _initted = false;

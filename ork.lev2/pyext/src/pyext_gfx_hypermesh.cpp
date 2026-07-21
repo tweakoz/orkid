@@ -173,12 +173,11 @@ void pyinit_gfx_hypermesh(py::module& module_lev2) {
 
   py::class_<hm::LSystemModuleData, dflow::DgModuleData, hm::lsystemmoduledata_ptr_t>(hmmod, "LSystemModule")
       .def_static("createShared", []() -> hm::lsystemmoduledata_ptr_t { return hm::LSystemModuleData::createShared(); })
-      // GR1.a: the reflected grammar (nullable). Setting it does NOT change runtime behavior in this
-      // slice — the legacy archetype path stays the default; the GR1.b evaluator will consume it.
+      // the reflected grammar — REQUIRED at activation since GR1.d (species are DATA; the four
+      // stock growth models are the Python preset emitters in lsystem/presets.py).
       .def_property("grammar",
                     [](hm::lsystemmoduledata_ptr_t d) -> hm::lruleset_ptr_t { return d->_grammar; },
                     [](hm::lsystemmoduledata_ptr_t d, hm::lruleset_ptr_t g) { d->_grammar = std::move(g); })
-      .def_readwrite("archetype", &hm::LSystemModuleData::_archetype)
       .def_readwrite("depth", &hm::LSystemModuleData::_depth)
       .def_readwrite("budget", &hm::LSystemModuleData::_budget)
       .def_readwrite("children", &hm::LSystemModuleData::_children)
@@ -243,6 +242,66 @@ void pyinit_gfx_hypermesh(py::module& module_lev2) {
   hmmod.def("_moduleIdentityHash", [](hm::lsystemmoduledata_ptr_t mod) -> uint64_t {
     return hm::hypermeshModuleIdentityHash(mod.get());
   });
+  /////////////////////////////////////////////////////////////////////////////
+  // R-FAMILY (roads / streets / layout) — Q3: R. DSL over hypermesh-family C++.
+  /////////////////////////////////////////////////////////////////////////////
+  py::class_<hm::RouteSpineModuleData, dflow::DgModuleData, hm::routespinemoduledata_ptr_t>(hmmod, "RouteSpineModule")
+      .def_static("createShared", []() -> hm::routespinemoduledata_ptr_t { return hm::RouteSpineModuleData::createShared(); })
+      .def("set_pois", [](hm::routespinemoduledata_ptr_t d, std::vector<float> v) { d->_pois = v; }) // flat world x,z pairs
+      .def_readwrite("extent_m", &hm::RouteSpineModuleData::_extent_m)
+      .def_readwrite("layout_cell_m", &hm::RouteSpineModuleData::_layout_cell_m)
+      .def_readwrite("field_dim", &hm::RouteSpineModuleData::_field_dim)
+      .def_readwrite("width_m", &hm::RouteSpineModuleData::_width_m)
+      .def_readwrite("max_grade", &hm::RouteSpineModuleData::_max_grade)
+      .def_readwrite("w_slope", &hm::RouteSpineModuleData::_w_slope)
+      .def_readwrite("w_curv", &hm::RouteSpineModuleData::_w_curv)
+      .def_readwrite("w_water", &hm::RouteSpineModuleData::_w_water)
+      .def_readwrite("disch_thresh", &hm::RouteSpineModuleData::_disch_thresh)
+      .def_readwrite("grade_weight", &hm::RouteSpineModuleData::_grade_weight)
+      .def_readwrite("base_cost", &hm::RouteSpineModuleData::_base_cost)
+      .def_readwrite("seed", &hm::RouteSpineModuleData::_seed)
+      .def_readwrite("min_radius_m", &hm::RouteSpineModuleData::_min_radius_m)
+      .def_readwrite("station_m", &hm::RouteSpineModuleData::_station_m)
+      .def_readwrite("vcurve_len_m", &hm::RouteSpineModuleData::_vcurve_len_m)
+      .def_readwrite("clearance_m", &hm::RouteSpineModuleData::_clearance_m);
+  py::class_<hm::RoadbedMaskModuleData, dflow::DgModuleData, hm::roadbedmaskmoduledata_ptr_t>(hmmod, "RoadbedMaskModule")
+      .def_static("createShared", []() -> hm::roadbedmaskmoduledata_ptr_t { return hm::RoadbedMaskModuleData::createShared(); })
+      .def_readwrite("width_m", &hm::RoadbedMaskModuleData::_width_m)
+      .def_readwrite("shoulder_m", &hm::RoadbedMaskModuleData::_shoulder_m)
+      .def_readwrite("v_meters_per_tile", &hm::RoadbedMaskModuleData::_v_meters_per_tile)
+      .def_readwrite("extent_m", &hm::RoadbedMaskModuleData::_extent_m)
+      .def_readwrite("out_dim", &hm::RoadbedMaskModuleData::_out_dim);
+  py::class_<hm::KeepoutMaskModuleData, dflow::DgModuleData, hm::keepoutmaskmoduledata_ptr_t>(hmmod, "KeepoutMaskModule")
+      .def_static("createShared", []() -> hm::keepoutmaskmoduledata_ptr_t { return hm::KeepoutMaskModuleData::createShared(); })
+      .def_readwrite("keepout_radius_m", &hm::KeepoutMaskModuleData::_keepout_radius_m)
+      .def_readwrite("extent_m", &hm::KeepoutMaskModuleData::_extent_m);
+  py::class_<hm::ParcelizeModuleData, dflow::DgModuleData, hm::parcelizemoduledata_ptr_t>(hmmod, "ParcelizeModule")
+      .def_static("createShared", []() -> hm::parcelizemoduledata_ptr_t { return hm::ParcelizeModuleData::createShared(); })
+      .def_readwrite("frontage_m", &hm::ParcelizeModuleData::_frontage_m)
+      .def_readwrite("depth_m", &hm::ParcelizeModuleData::_depth_m)
+      .def_readwrite("spacing_m", &hm::ParcelizeModuleData::_spacing_m)
+      .def_readwrite("jitter", &hm::ParcelizeModuleData::_jitter)
+      .def_readwrite("extent_m", &hm::ParcelizeModuleData::_extent_m)
+      .def_readwrite("seed", &hm::ParcelizeModuleData::_seed);
+  py::class_<hm::BuildingSeedsModuleData, dflow::DgModuleData, hm::buildingseedsmoduledata_ptr_t>(hmmod, "BuildingSeedsModule")
+      .def_static("createShared", []() -> hm::buildingseedsmoduledata_ptr_t { return hm::BuildingSeedsModuleData::createShared(); })
+      .def("set_type_weights", [](hm::buildingseedsmoduledata_ptr_t d, std::vector<float> v) { d->_type_weights = v; })
+      .def_readwrite("emit_adapter", &hm::BuildingSeedsModuleData::_emit_adapter)
+      .def_readwrite("seed", &hm::BuildingSeedsModuleData::_seed);
+  py::class_<hm::RoadMeshModuleData, dflow::DgModuleData, hm::roadmeshmoduledata_ptr_t>(hmmod, "RoadMeshModule")
+      .def_static("createShared", []() -> hm::roadmeshmoduledata_ptr_t { return hm::RoadMeshModuleData::createShared(); })
+      .def_readwrite("v_meters_per_tile", &hm::RoadMeshModuleData::_v_meters_per_tile)
+      .def_readwrite("junction_setback_scale", &hm::RoadMeshModuleData::_junction_setback_scale)
+      .def_readwrite("junction_min_edge_frac", &hm::RoadMeshModuleData::_junction_min_edge_frac)
+      .def_readwrite("road_gid", &hm::RoadMeshModuleData::_road_gid)
+      .def_readwrite("junction_gid", &hm::RoadMeshModuleData::_junction_gid)
+      .def_readwrite("extent_m", &hm::RoadMeshModuleData::_extent_m)
+      .def_readwrite("shoulder_m", &hm::RoadMeshModuleData::_shoulder_m)
+      .def_readwrite("shoulder_gid", &hm::RoadMeshModuleData::_shoulder_gid)
+      .def_readwrite("clearance_m", &hm::RoadMeshModuleData::_clearance_m)
+      .def_readwrite("max_bank_rad", &hm::RoadMeshModuleData::_max_bank_rad)
+      .def_readwrite("bank_runoff_m", &hm::RoadMeshModuleData::_bank_runoff_m)
+      .def_readwrite("bank_ref_radius_m", &hm::RoadMeshModuleData::_bank_ref_radius_m);
   py::class_<hm::LSweepModuleData, dflow::DgModuleData, hm::lsweepmoduledata_ptr_t>(hmmod, "LSweepModule")
       .def_static("createShared", []() -> hm::lsweepmoduledata_ptr_t { return hm::LSweepModuleData::createShared(); })
       .def_readwrite("sides", &hm::LSweepModuleData::_sides)
@@ -294,6 +353,9 @@ void pyinit_gfx_hypermesh(py::module& module_lev2) {
       .def_property(
           "predicate", [](hm::selectdata_ptr_t s) { return s->_predicate; },
           [](hm::selectdata_ptr_t s, std::string p) { s->_predicate = p; })
+      .def_property(   // E2.5 (Q6): the canonical hypermesh.selexpr ExprIR tree JSON (sibling of predicate)
+          "predicate_tree", [](hm::selectdata_ptr_t s) { return s->_predicate_tree; },
+          [](hm::selectdata_ptr_t s, std::string p) { s->_predicate_tree = p; })
       .def_readwrite("sel_and", &hm::SelectData::_sel_and)
       .def_readwrite("sel_or", &hm::SelectData::_sel_or)
       .def_readwrite("sel_xor", &hm::SelectData::_sel_xor)
@@ -313,6 +375,13 @@ void pyinit_gfx_hypermesh(py::module& module_lev2) {
                                        [](hm::extrudefacesdata_ptr_t e, std::string p) { e->_inset_pred = p; })
       .def_property("dir_predicate",   [](hm::extrudefacesdata_ptr_t e) { return e->_dir_pred; },
                                        [](hm::extrudefacesdata_ptr_t e, std::string p) { e->_dir_pred = p; })
+      // E2.5 (Q6): the canonical hypermesh.selexpr ExprIR tree JSON per field (sibling of the preds above)
+      .def_property("dist_tree",  [](hm::extrudefacesdata_ptr_t e) { return e->_dist_tree; },
+                                  [](hm::extrudefacesdata_ptr_t e, std::string p) { e->_dist_tree = p; })
+      .def_property("inset_tree", [](hm::extrudefacesdata_ptr_t e) { return e->_inset_tree; },
+                                  [](hm::extrudefacesdata_ptr_t e, std::string p) { e->_inset_tree = p; })
+      .def_property("dir_tree",   [](hm::extrudefacesdata_ptr_t e) { return e->_dir_tree; },
+                                  [](hm::extrudefacesdata_ptr_t e, std::string p) { e->_dir_tree = p; })
       // MULTI-SEGMENT: `segments` (int, STRUCTURAL -> rebuild) subdivides the lift into N rings; twist (ABSOLUTE
       // radians about the extrusion axis) + scale (ABSOLUTE in-plane profile scale) are per-t (S.t/S.seg) preds.
       .def_readwrite("segments", &hm::ExtrudeFacesData::_segments)
@@ -320,6 +389,10 @@ void pyinit_gfx_hypermesh(py::module& module_lev2) {
                                        [](hm::extrudefacesdata_ptr_t e, std::string p) { e->_twist_pred = p; })
       .def_property("scale_predicate", [](hm::extrudefacesdata_ptr_t e) { return e->_scale_pred; },
                                        [](hm::extrudefacesdata_ptr_t e, std::string p) { e->_scale_pred = p; })
+      .def_property("twist_tree", [](hm::extrudefacesdata_ptr_t e) { return e->_twist_tree; },
+                                  [](hm::extrudefacesdata_ptr_t e, std::string p) { e->_twist_tree = p; })
+      .def_property("scale_tree", [](hm::extrudefacesdata_ptr_t e) { return e->_scale_tree; },
+                                  [](hm::extrudefacesdata_ptr_t e, std::string p) { e->_scale_tree = p; })
       // generic runtime params for the expressions (DSL `param()` -> EXPRP[]). set_expr_params seeds the
       // whole vec4 array (sizes the buffer); set_expr_param4 rebinds one slot live (from the asset).
       // B.4: expression params are REAL vec4 input plugs ("exprp{slot}") — these setters write the PLUG
@@ -571,6 +644,32 @@ void pyinit_gfx_hypermesh(py::module& module_lev2) {
       py::arg("ctx"),
       py::arg("vtx_budget") = (1 << 20));
 
+  // ---- R-family Tier-B gate seam: read the baked R-graph products (spine / fields /
+  //      seed count) back to CPU for the determinism / keepout-zero / flatten-match oracles. ----
+  hmmod.def(
+      "_roadsReadout",
+      [](hm::livehypermesh_ptr_t live, ctx_t ctx) -> py::dict {
+        auto R = hm::roadsBakeReadout(live, ctx.get());
+        py::dict d;
+        d["spine_count"]     = R.spine_count;
+        d["spine_positions"] = R.spine_positions;
+        py::list parents; for (auto p : R.spine_parents) parents.append(p);
+        d["spine_parents"]   = parents;
+        d["spine_road_elev"] = R.spine_road_elev;
+        d["spine_bytes"]     = py::bytes(R.spine_bytes);
+        d["field_dim"]       = R.field_dim;
+        d["height_field"]    = R.height_field;
+        d["slope_field"]     = R.slope_field;
+        d["curv_field"]      = R.curv_field;
+        d["disch_field"]     = R.disch_field;
+        d["roadbed"]         = R.roadbed;
+        d["road_elev_field"] = R.road_elev_field;
+        d["keepout"]         = R.keepout;
+        d["seed_count"]      = R.seed_count;
+        return d;
+      },
+      py::arg("live"), py::arg("ctx"));
+
   // ---- DEBUG: read a live GpuMesh back to CPU and write a Wavefront OBJ (positions / uvs / normals +
   //      n-gon faces; binormals as `# b` comment lines). For inspecting actual geometry + recomputed
   //      normals instead of guessing. Map is READ_ONLY; call between frames (e.g. a viewer keypress). ----
@@ -661,10 +760,19 @@ void pyinit_gfx_hypermesh(py::module& module_lev2) {
       [_ssbo](computedrawabledata_ptr_t cdd, hm::livehypermesh_ptr_t live, ctx_t ctx, bool animated,
               bool face_viz, bool tag_viz, bool wireframe, int instance_count,
               std::vector<float> instance_matrices, std::vector<int> bound_gids,
-              bool cull, fvec4 cull_bound)
+              bool cull, fvec4 cull_bound, bool use_graph_instances)
           -> std::tuple<fxshaderstoragebuffer_ptr_t, fxshaderstoragebuffer_ptr_t, fxshaderstoragebuffer_ptr_t> {
+        // EXPLICIT INSTANCE SCOPING (make_drawable instance_from): a graph-carried InstanceSet
+        // (ScatterSource) is discovered graph-wide during materialize (live->_instances). When the
+        // caller has NOT opted THIS drawable into it, hide it for the duration of the build so the
+        // mesh renders un-instanced — a road ribbon that shares its graph with an unrelated
+        // building-seed set must not tile by the lot transforms (never a graph-wide any-set sniff).
+        auto _saved_inst = live->_instances;
+        if (not use_graph_instances)
+          live->_instances = nullptr;
         auto handles = hm::setupMeshRender(cdd.get(), live, ctx.get(), animated, face_viz, tag_viz, wireframe,
                                            instance_count, instance_matrices, bound_gids, cull, cull_bound);
+        live->_instances = _saved_inst;
         // (faceid for the face/tag-viz FS, matrices for storage_inst_mtx, attrs for
         //  storage_inst_attr — the E.2 typed per-instance data) — any may be null.
         return {_ssbo(handles._faceid), _ssbo(handles._instMtx), _ssbo(handles._instAttr)};
@@ -680,7 +788,8 @@ void pyinit_gfx_hypermesh(py::module& module_lev2) {
       py::arg("instance_matrices") = std::vector<float>(),
       py::arg("bound_gids") = std::vector<int>(),    // E.3: gids that get their own per-gid bucket draw
       py::arg("cull") = false,                       // E.4: per-view GPU frustum cull (instanced only)
-      py::arg("cull_bound") = fvec4(0, 0, 0, 0));    // object-space sphere; w<=0 = auto (mesh-readback bound)
+      py::arg("cull_bound") = fvec4(0, 0, 0, 0),     // object-space sphere; w<=0 = auto (mesh-readback bound)
+      py::arg("use_graph_instances") = true);        // false -> ignore the graph's ScatterSource InstanceSet
 
   // E.3 — build the per-gid BUCKET draws (the make_drawable port of hm_drawable.cpp's bucket loop):
   // one extra indexed-indirect draw per (gid -> material), args offset = gid*20, with that material's

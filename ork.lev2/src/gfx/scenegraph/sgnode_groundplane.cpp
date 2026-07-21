@@ -12,7 +12,7 @@ namespace ork::lev2 {
 
 struct GroundPlaneRenderImpl {
 
-  GroundPlaneRenderImpl(const GroundPlaneDrawableData* gpd) : _grounddata(gpd) {
+  GroundPlaneRenderImpl(std::shared_ptr<const GroundPlaneDrawableData> gpd) : _grounddata(gpd) {
 
   }
   ~GroundPlaneRenderImpl(){
@@ -134,7 +134,7 @@ struct GroundPlaneRenderImpl {
     auto renderable = dynamic_cast<const CallbackRenderable*>(RCID._irenderable);
     renderable->GetDrawableDataA().getShared<GroundPlaneRenderImpl>()->_render(RCID);
   }
-  const GroundPlaneDrawableData* _grounddata;
+  std::shared_ptr<const GroundPlaneDrawableData> _grounddata;
   pbrmaterial_ptr_t _pbrmaterial;
   fxpipeline_ptr_t _pipeline_color;
 
@@ -156,7 +156,7 @@ drawable_ptr_t GroundPlaneDrawableData::createDrawable() const {
 
   auto rval = std::make_shared<CallbackDrawable>(nullptr);
   rval->SetRenderCallback(GroundPlaneRenderImpl::renderGroundPlane);
-  auto impl = rval->_implA.makeShared<GroundPlaneRenderImpl>(this);
+  auto impl = rval->_implA.makeShared<GroundPlaneRenderImpl>(dataShared<GroundPlaneDrawableData>());
   rval->_sortkey = 10;
   return rval;
 }

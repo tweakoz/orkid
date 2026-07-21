@@ -55,13 +55,34 @@ public:
       return svar128_t();
     }
     auto type_codec = python::pb11_typecodec_t::instance();
-    return type_codec->decode(py_result);
+    // NEVER-CRASH boundary: a model value the scalar codec cannot decode (e.g. a uint32
+    // bit-mask > INT32_MAX) must NEVER let an exception escape the row-population path into
+    // mainThreadLoop (it would kill the editor). Ghost the row (empty svar -> the editor's
+    // value.tryAs<>() degrades) + name the offending property + python type LOUDLY.
+    try {
+      return type_codec->decode(py_result);
+    } catch (const std::exception& e) {
+      std::string tn = "?";
+      try { tn = py::str(py_result.get_type().attr("__name__")).cast<std::string>(); } catch (...) {}
+      printf("[propsheet] row '%s': value of python type '%s' is not codec-decodable (%s) — "
+             "ghosting row (never-crash)\n", key.c_str(), tn.c_str(), e.what());
+      fflush(stdout);
+      return svar128_t();
+    }
   }
 
   void setValue(const std::string& key, svar128_t value) override {
     py::gil_scoped_acquire acquire;
     auto type_codec = python::pb11_typecodec_t::instance();
-    py::object py_value = type_codec->encode(value);
+    py::object py_value;
+    try {
+      py_value = type_codec->encode(value);
+    } catch (const std::exception& e) {
+      printf("[propsheet] row '%s': value is not codec-encodable (%s) — dropping write "
+             "(never-crash)\n", key.c_str(), e.what());
+      fflush(stdout);
+      return;
+    }
     py::cast(this).attr("setValue")(key, py_value);
   }
 

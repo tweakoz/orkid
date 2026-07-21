@@ -79,6 +79,12 @@ void VkFrameBufferInterface::_ensureDepth(rtgroup_ptr_t rtg, int w, int h, const
     if (rtg->_depthBuffer) {
       rtg->_depthBuffer->_width  = w;
       rtg->_depthBuffer->_height = h;
+      // this path recreates the depth image via _vkCreateImageForBuffer (not _initTextureFromRtBuffer),
+      // so the depth Texture metadata must be updated here too — it is the HZB's sole extent source.
+      if (auto dtex = rtg->_depthBuffer->_texture) {
+        dtex->_width  = w;
+        dtex->_height = h;
+      }
     }
     if (rtg_impl->_depth_buffer_impl) {
       logchan_rtgroup->log("_ensureDepth: recreating depth buffer %dx%d", w, h);

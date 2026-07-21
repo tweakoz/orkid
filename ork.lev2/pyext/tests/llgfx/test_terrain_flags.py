@@ -15,12 +15,19 @@
 #   f9  doc-JSON round-trips the LOOP bypass flag (bake-identical); the bypassed loop
 #       still appears in tree_paths; the outliner badge is present+enabled on a loop
 #       row and its active state tracks the flag.
+#   f10 DISPLAY of a whole LOOP shows the loop's height carry output (Fix 1) — single-carry
+#       AND multi-carry (h+aux) loops; == capturing that carry directly, != the full chain.
+#   f11 bypassing the SOLE body op elaborates SUCCESSFULLY (no raise) and bakes ==
+#       bypassing the whole loop == the carry at INITIAL (Fix 2 identity pass-through).
+#   f12 flag CAPABILITY (model): captures report NO display + NO bypass flag and HOLLOW
+#       fill; a source reports NO bypass; a mid node + a loop report BOTH flags (addenda).
 ###############################################################################
 import os; os.environ["PYTHONUNBUFFERED"] = "1"
-import sys, time, hashlib
-from orkengine import core   # core before lev2
-from orkengine import lev2
+import sys, time
+from orkengine import core   # core before lev2 (and before hashlib: the staging libssl
+from orkengine import lev2   # must load before any stdlib libcrypto consumer)
 from orkengine import ecs
+import hashlib
 
 from ork.hypergraph.dflow.terrain import HeightField
 from ork.hypergraph.dflow import terrain as T
@@ -52,7 +59,7 @@ class Chain(HeightField):
         super().__init__()
         h = T.Fbm(frequency=freq, octaves=5) * 0.5 + 0.5
         h2 = T.terrace(h, step_m=1.0/6.0, sharpness=3.0)
-        h3 = T.lpf(h2 if with_terrace else h, cutoff_texels=4.0)
+        h3 = T.lpf(h2 if with_terrace else h, cutoff=4.0)
         self.capture(h3, "height")
 
 
@@ -96,7 +103,7 @@ class LoopDisplay(HeightField):
         h = T.Fbm(frequency=freq, octaves=4) * 0.5 + 0.5
         with T.loop(3, h=h) as L:
             L.h = T.erode_thermal(L.h, talus_deg=32.0, rate=0.15, iterations=4)
-        out = T.lpf(L.h, cutoff_texels=4.0) if tail else L.h
+        out = T.lpf(L.h, cutoff=4.0) if tail else L.h
         self.capture(out, "height")
 
 
@@ -119,6 +126,22 @@ class LoopChainReduced(HeightField):
         super().__init__()
         h = T.Fbm(frequency=freq, octaves=4) * 0.5 + 0.5
         self.capture(h, "height")
+
+
+class LoopMultiCarry(HeightField):
+    """loop(3) carrying h (feeds the height capture) + aux (a side field, NOT read after
+    the loop). Displaying the WHOLE LOOP must pick the carry that reaches the height capture
+    (h) — the multi-carry display pick (Fix 1). tail=True adds an lpf after the loop, so
+    display-of-loop (== the loop's h output) is CLEARLY != the full chain."""
+    def __init__(self, tail=True, freq=_SALT):
+        super().__init__()
+        h0 = T.Fbm(frequency=freq, octaves=4) * 0.5 + 0.5
+        a0 = T.Fbm(frequency=freq * 1.3, octaves=3) * 0.5 + 0.5
+        with T.loop(3, h=h0, aux=a0) as L:
+            L.aux = T.terrace(L.aux, step_m=1.0 / 7.0, sharpness=2.0)
+            L.h = T.erode_thermal(L.h, talus_deg=32.0, rate=0.15, iterations=4)
+        out = T.lpf(L.h, cutoff=4.0) if tail else L.h
+        self.capture(out, "height")
 
 
 # (flow3d DOES expose an 'Out' plug — its dir field — so it is displayable; the
@@ -292,6 +315,102 @@ def run(ez, ctx):
     print(f"[f9] json keeps loop-bypass {json_ok}  bypassed-in-tree {tree_ok}  "
           f"badge active {badge_ok}  badge off {badge_off_ok} -> {f9}", flush=True)
     results["f9_loop_json_badge"] = f9
+
+    # ---- f10: DISPLAY of a whole LOOP == the loop's height carry output (Fix 1) ----
+    # single-carry: display the loop -> its 'Out' == capturing the carry directly (tail=False),
+    # and != the full chain (with the lpf tail).
+    lds = LoopDisplay(); lds.generatedflow()
+    lout = LoopDisplay(tail=False); lout.generatedflow()
+    loop_sc = find_by_path(lds.document(), "loop_0")
+    assert isinstance(loop_sc, DocLoop), "loop_0 (single-carry) is not a DocLoop"
+    sha_scdisp = bake_doc(lds.document(), "f10_scdisp", ctx, display_node=loop_sc)["height"]
+    sha_scout  = bake_doc(lout.document(), "f10_scout", ctx)["height"]
+    sha_scfull = bake_doc(lds.document(), "f10_scfull", ctx)["height"]
+    f10a = (sha_scdisp == sha_scout) and (sha_scdisp != sha_scfull)
+    # multi-carry (h feeds the height capture, aux does not): displaying the loop must pick
+    # the h carry (the one reaching the height capture) -> == capturing L.h directly.
+    lmc = LoopMultiCarry(); lmc.generatedflow()
+    lmo = LoopMultiCarry(tail=False); lmo.generatedflow()
+    loop_mc = find_by_path(lmc.document(), "loop_0")
+    assert isinstance(loop_mc, DocLoop) and len(loop_mc.carries) == 2, "loop_0 not a 2-carry loop"
+    sha_mcdisp = bake_doc(lmc.document(), "f10_mcdisp", ctx, display_node=loop_mc)["height"]
+    sha_mcout  = bake_doc(lmo.document(), "f10_mcout", ctx)["height"]
+    sha_mcfull = bake_doc(lmc.document(), "f10_mcfull", ctx)["height"]
+    f10b = (sha_mcdisp == sha_mcout) and (sha_mcdisp != sha_mcfull)
+    f10 = f10a and f10b
+    print(f"[f10] single-carry loop-display==carry {sha_scdisp == sha_scout} !=full "
+          f"{sha_scdisp != sha_scfull}  multi-carry disp==h-carry {sha_mcdisp == sha_mcout} "
+          f"!=full {sha_mcdisp != sha_mcfull} -> {f10}", flush=True)
+    results["f10_loop_display"] = f10
+
+    # ---- f11: bypass the SOLE body op -> elaborate SUCCEEDS + == bypass-whole-loop (Fix 2) ---
+    lc11 = LoopChain(); lc11.generatedflow()
+    lcr11 = LoopChainReduced(); lcr11.generatedflow()
+    d11 = lc11.document()
+    body_op = next(obj for (_pk, key, obj) in tree_paths(d11)
+                   if isinstance(obj, DocNode) and key.startswith("loop_0/"))
+    body_op.set_bypassed(True)
+    elaborated_ok = True
+    try:
+        sha_bypbody = bake_doc(d11, "f11_bypbody", ctx)["height"]  # must NOT raise
+    except Exception as e:
+        elaborated_ok = False
+        sha_bypbody = None
+        print(f"[f11] bypass-sole-body-op RAISED: {e}", flush=True)
+    sha_reduced = bake_doc(lcr11.document(), "f11_reduced", ctx)["height"]
+    lc11b = LoopChain(); lc11b.generatedflow()
+    loop11 = find_by_path(lc11b.document(), "loop_0")
+    loop11.set_bypassed(True)
+    sha_byploop = bake_doc(lc11b.document(), "f11_byploop", ctx)["height"]
+    f11 = bool(elaborated_ok and sha_bypbody == sha_reduced and sha_bypbody == sha_byploop)
+    print(f"[f11] elaborated {elaborated_ok}  bypbody==carry-initial "
+          f"{sha_bypbody == sha_reduced}  bypbody==bypass-whole-loop {sha_bypbody == sha_byploop} "
+          f"-> {f11}", flush=True)
+    results["f11_bypass_sole_body_op"] = f11
+
+    # ---- f12: flag CAPABILITY + hollow fill (model-driven; addenda) ----------
+    from ork.editor.terrain_node_model import TerrainNodeGraphModel, _Glue
+    from ork.editor.terrain_runtime import TerrainRuntime
+
+    class _RT:  # minimal runtime shim: the model reads only .document + _is_displayable
+        def __init__(self, doc):
+            self.document = doc
+            self.display_key = None
+        _is_displayable = staticmethod(TerrainRuntime._is_displayable)
+
+    def _mk_model(doc):
+        rt = _RT(doc)
+        return TerrainNodeGraphModel(None, rt, glue=_Glue(None, rt))
+
+    def _nid_where(m, pred):
+        for nid in m.nodes():
+            o = m.object_for_nid(nid)
+            if o is not None and pred(o):
+                return nid
+        return None
+
+    cvis = Chain(); cvis.generatedflow()
+    mv = _mk_model(cvis.document())
+    cap_nid  = _nid_where(mv, lambda o: getattr(o, "clazz_name", None) == "CaptureModule")
+    terr_nid = _nid_where(mv, lambda o: "terrace" in (getattr(o, "clazz_name", "") or "").lower())
+    fbm_nid  = _nid_where(mv, lambda o: "fbm" in (getattr(o, "clazz_name", "") or "").lower())
+    vis_cap = (mv.has_display_flag(cap_nid) is False
+               and mv.has_bypass_flag(cap_nid) is False
+               and mv.fill_style(cap_nid) == "hollow")
+    vis_mid = (mv.has_display_flag(terr_nid) is True
+               and mv.has_bypass_flag(terr_nid) is True
+               and mv.fill_style(terr_nid) == "solid")
+    vis_src = (mv.has_display_flag(fbm_nid) is True      # a source IS displayable
+               and mv.has_bypass_flag(fbm_nid) is False)  # but NOT bypassable (no input)
+    lvis = LoopChain(); lvis.generatedflow()
+    ml = _mk_model(lvis.document())
+    loop_nid = _nid_where(ml, lambda o: isinstance(o, DocLoop))
+    vis_loop = (ml.has_display_flag(loop_nid) is True     # Fix 1: loops are displayable
+                and ml.has_bypass_flag(loop_nid) is True)
+    f12 = bool(vis_cap and vis_mid and vis_src and vis_loop)
+    print(f"[f12] cap(no-flags+hollow) {vis_cap}  mid(both+solid) {vis_mid}  "
+          f"src(no-bypass) {vis_src}  loop(both) {vis_loop} -> {f12}", flush=True)
+    results["f12_flag_capability"] = f12
 
     return results
 

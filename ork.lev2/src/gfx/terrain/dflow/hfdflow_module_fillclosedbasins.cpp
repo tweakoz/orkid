@@ -238,6 +238,13 @@ void FillClosedBasinsModuleData::describeX(class_t* clazz) {
   clazz->setSharedFactory([]() -> rtti::castable_ptr_t { return FillClosedBasinsModuleData::createShared(); });
   clazz->annotateTyped<dataflow::moduleIOreshape_fn_t>("reshapeIOs",
       [](dataflow::moduledata_ptr_t m) { _reshapeFCBIOs(m); });
+  // E1-close add-palette (reflection-carried; see hfdflow_module_thermal.cpp for the
+  // vocabulary). recipe = "fill_closed_basins": the python insertion recipe chains the
+  // downstream graph through the struct result's .filled output.
+  clazz->annotateTyped<ConstString>("dsl.verb", "fill_closed_basins");
+  clazz->annotateTyped<bool>("editor.palette", true);
+  clazz->annotateTyped<int>("editor.palette.sort", 5);
+  clazz->annotateTyped<ConstString>("editor.palette.recipe", "fill_closed_basins");
 }
 
 } // namespace ork::lev2::terrain

@@ -632,13 +632,43 @@ void PropertyRow::DoDraw(drawevent_constptr_t drwev) {
       theme->drawIcon(btn_x, btn_y, btn_size, btn_size, drwev, _popout_icon);
     }
 
+    // Draw the PLUG SOCKET glyph (input-plug rows only) at the label-column start: a hollow
+    // ring when editable/unconnected, a filled disc when connected/ghosted. This SDF prim
+    // (theme engine, no texture) is the visual plugs-vs-properties distinction; a module
+    // property row carries no glyph. The label slides right past the glyph.
+    int glyph_advance = 0;
+    if (_is_plug_row && _uicontext && _uicontext->_theme_engine) {
+      auto theme = _uicontext->_theme_engine;
+      const int g_size = 9;
+      int g_x = ix1 + indent + (_has_children ? _indent_width : 4);
+      int g_y = iy1 + (_geometry._h - g_size) / 2;
+      const fvec4 socket = fvec4(0.35f, 0.62f, 0.85f, 1.0f);
+      Style glyph_style;
+      glyph_style._corner_radius = 0;
+      glyph_style._border_width  = 0;
+      glyph_style._blend_mode    = lev2::BlendingMacro::ALPHA;
+      if (_plug_connected) {
+        // FILLED disc = connected (value driven upstream / ghosted).
+        glyph_style._bg_color     = socket;
+        glyph_style._border_color = fvec4(socket.x, socket.y, socket.z, 0.0f);
+        theme->drawCircle(g_x, g_y, g_size, g_size, drwev, &glyph_style, float(g_size) / 2.0f);
+      } else {
+        // HOLLOW ring = unconnected / editable.
+        glyph_style._bg_color     = fvec4(socket.x, socket.y, socket.z, 0.0f);
+        glyph_style._border_color = socket;
+        glyph_style._border_width = 1;
+        theme->drawRing(g_x, g_y, g_size, g_size, drwev, &glyph_style, float(g_size) * 0.30f);
+      }
+      glyph_advance = g_size + 4;
+    }
+
     // Draw label
     auto font = lev2::FontMan::fontForId("i14");
     if (font && !_label.empty()) {
       lev2::FontMan::PushFont(font);
       tgt->PushModColor(_label_color);
       lev2::FontMan::beginTextBlock(tgt, _label.length());
-      int label_x = ix1 + indent + (_has_children ? _indent_width : 4);
+      int label_x = ix1 + indent + (_has_children ? _indent_width : 4) + glyph_advance;
       int text_y = iy1 + (_geometry._h - font->description().miAdvanceHeight) / 2;
       lev2::FontMan::DrawText(tgt, label_x, text_y, _label.c_str());
       lev2::FontMan::endTextBlock(tgt);
@@ -1721,6 +1751,63 @@ std::function<void(svar128_t)> PropertySheet::_makeRefreshCallback(widget_ptr_t 
   return nullptr;
 }
 
+bool PropertySheet::_applyRowReadOnly(const std::string& key, const property_row_ptr_t& row) {
+  if (!_model) return false;
+  auto annotations = _model->getAnnotations(key);
+  if (!annotations) return false;
+  auto ro = annotations->typedValueForKey<bool>("read_only");
+  if (not (ro and ro.value())) return false;
+  // Ghost the row: dim the label + row background (theme-consistent) so a connected /
+  // otherwise-read-only value reads as non-editable. The caller skips editor creation, so
+  // the row carries no editor widget — a click on it does nothing (refusal at the widget
+  // layer, not a silent revert).
+  row->_label_color  = row->_label_color * 0.45f;
+  row->_label_color.w = 1.0f;
+  row->_bg_color     = row->_bg_color * 0.7f;
+  row->_bg_color.w    = 1.0f;
+  row->_alt_bg_color = row->_alt_bg_color * 0.7f;
+  row->_alt_bg_color.w = 1.0f;
+  return true;
+}
+
+void PropertySheet::_applyRowPlugGlyph(const std::string& key, const property_row_ptr_t& row) {
+  if (!_model) return;
+  auto annotations = _model->getAnnotations(key);
+  if (!annotations) return;
+  auto is_plug = annotations->typedValueForKey<bool>("row_plug");
+  if (not (is_plug and is_plug.value())) return;
+  // Mark the row so PropertyRow::DoDraw renders the socket glyph in the label column.
+  row->_is_plug_row = true;
+  auto connected     = annotations->typedValueForKey<bool>("plug_connected");
+  row->_plug_connected = bool(connected and connected.value());
+}
+
+bool PropertySheet::_isDividerHit(int local_x, int local_y) const {
+  int rows_area_height = _geometry._h;
+  if (_detail_editor) {
+    int detail_height = std::max(_detail_min_height, int(_geometry._h * _detail_height_ratio));
+    rows_area_height  = _geometry._h - detail_height;
+  }
+  if (local_y < 0 || local_y >= rows_area_height)
+    return false;
+  return std::abs(local_x - _label_width) <= _divider_hit_tolerance;
+}
+
+void PropertySheet::_setLabelWidthClamped(int local_x) {
+  int max_w = _geometry._w - _divider_min_editor_width;
+  if (max_w < _divider_min_label_width)
+    max_w = _divider_min_label_width;
+  int w = std::clamp(local_x, _divider_min_label_width, max_w);
+  if (w == _label_width)
+    return;
+  _label_width = w;
+  // Rows read _label_width at layout; re-apply to existing rows + relayout so the split
+  // moves live under the drag (no rebuild — rebuild would churn widgets mid-drag).
+  for (auto& [k, row] : _rows)
+    row->_label_width = _label_width;
+  DoLayout();
+}
+
 void PropertySheet::_addRowsRecursive(const std::string& parent_key, int depth, int& y_offset, int& row_index) {
   if (!_model) return;
 
@@ -1947,9 +2034,14 @@ void PropertySheet::_addRowsRecursive(const std::string& parent_key, int depth, 
       }
     }
 
+    // GHOST read-only rows (e.g. a connected input plug): dim + skip editor creation.
+    bool row_read_only = _applyRowReadOnly(key, row);
+    // PLUG socket glyph (input-plug rows): hollow ring / filled disc in the label column.
+    _applyRowPlugGlyph(key, row);
+
     // Create editor widget for non-group, non-compound properties
     // Vec3 and Quat get inline compound editors (they look like leaf rows, not expandable groups)
-    if (!has_custom_widget) {
+    if (!has_custom_widget && !row_read_only) {
       if (type == PropertyType::Vec3 || type == PropertyType::Vec4 || type == PropertyType::Quat) {
         svar128_t value = _model->getValue(key);
         auto editor = _createEditorWidget(key, type, value);
@@ -2095,8 +2187,13 @@ void PropertySheet::_addSingleChildRecursive(const std::string& child_key, int d
     }
   }
 
+  // GHOST read-only rows (e.g. a connected input plug): dim + skip editor creation.
+  bool row_read_only = _applyRowReadOnly(child_key, row);
+  // PLUG socket glyph (input-plug rows): hollow ring / filled disc in the label column.
+  _applyRowPlugGlyph(child_key, row);
+
   // Create editor widget for non-group, non-compound properties
-  if (type == PropertyType::Vec3 || type == PropertyType::Vec4 || type == PropertyType::Quat) {
+  if (!row_read_only && (type == PropertyType::Vec3 || type == PropertyType::Vec4 || type == PropertyType::Quat)) {
     svar128_t value = _model->getValue(child_key);
     auto editor = _createEditorWidget(child_key, type, value);
     if (editor) {
@@ -2104,7 +2201,7 @@ void PropertySheet::_addSingleChildRecursive(const std::string& child_key, int d
       row->setHasChildren(false);
       row->_refreshEditor = _makeRefreshCallback(editor, type);
     }
-  } else if (!has_children && type != PropertyType::Group) {
+  } else if (!row_read_only && !has_children && type != PropertyType::Group) {
     svar128_t value = _model->getValue(child_key);
     auto editor = _createEditorWidget(child_key, type, value);
     if (editor) {
@@ -2329,6 +2426,13 @@ Widget* PropertySheet::doRouteUiEvent(event_constptr_t ev) {
     }
   }
 
+  // Draggable label|editor divider claims a PUSH in its thin hit band (ahead of the row /
+  // editor routing below), so the ensuing drag retargets the column split (_evpushtarget ->
+  // this) instead of a row editor.
+  if (ev->_eventcode == EventCode::PUSH && _isDividerHit(localX, localY)) {
+    return this;
+  }
+
   // Calculate rows area height
   int rows_area_height = _geometry._h;
   if (_detail_editor) {
@@ -2372,6 +2476,40 @@ HandlerResult PropertySheet::DoOnUiEvent(event_constptr_t ev) {
       _scroller.applyMouseWheel(ev->miMWY, _uicontext->_uitimer.SecsSinceStart());
       DoLayout();  // Re-layout children with new scroll offset
       result.setHandled(this);
+      break;
+    }
+
+    // Label|editor divider drag: begin on a PUSH in the hit band, move the split live on
+    // DRAG (clamped), end on RELEASE/END_DRAG. _divider_dragging is (re)armed every PUSH the
+    // sheet receives so a click elsewhere clears a stale drag flag.
+    case EventCode::PUSH: {
+      int lx = 0, ly = 0;
+      RootToLocal(ev->miX, ev->miY, lx, ly);
+      _divider_dragging = _isDividerHit(lx, ly);
+      if (_divider_dragging)
+        result.setHandled(this);
+      break;
+    }
+    case EventCode::BEGIN_DRAG: {
+      if (_divider_dragging)
+        result.setHandled(this);
+      break;
+    }
+    case EventCode::DRAG: {
+      if (_divider_dragging) {
+        int lx = 0, ly = 0;
+        RootToLocal(ev->miX, ev->miY, lx, ly);
+        _setLabelWidthClamped(lx);
+        result.setHandled(this);
+      }
+      break;
+    }
+    case EventCode::END_DRAG:
+    case EventCode::RELEASE: {
+      if (_divider_dragging) {
+        _divider_dragging = false;
+        result.setHandled(this);
+      }
       break;
     }
 
@@ -2420,6 +2558,25 @@ void PropertySheet::DoDraw(drawevent_constptr_t drwev) {
   }
 
   fbi->popScissor();
+
+  // Draw the label|editor column divider guide — a thin vertical line at the split,
+  // highlighted while a drag is in flight (the guide-drag idiom the owner asked for).
+  {
+    auto mtxi   = tgt->MTXI();
+    auto primi  = tgt->PRI();
+    auto defmtl = lev2::defaultUIMaterial();
+    int gx = ix1 + _label_width;
+    fvec4 guide_color = _divider_dragging ? fvec4(0.45f, 0.58f, 0.85f, 1.0f)
+                                          : fvec4(0.32f, 0.32f, 0.36f, 1.0f);
+    mtxi->PushUIMatrix();
+    {
+      tgt->PushModColor(guide_color);
+      defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+      primi->RenderQuadAtZ(defmtl.get(), gx, gx + 2, iy1, iy1 + rows_area_height, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+      tgt->PopModColor();
+    }
+    mtxi->PopUIMatrix();
+  }
 
   // Draw scroll indicator over rows area
   _scroller.drawIndicator(drwev, _uicontext, ix1, iy1, _geometry._w, rows_area_height);

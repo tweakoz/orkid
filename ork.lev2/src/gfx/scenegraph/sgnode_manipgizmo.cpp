@@ -136,7 +136,7 @@ technique tek_gizmo {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ManipGizmoDrawableImpl::ManipGizmoDrawableImpl(const ManipGizmoDrawableData* data)
+ManipGizmoDrawableImpl::ManipGizmoDrawableImpl(std::shared_ptr<const ManipGizmoDrawableData> data)
     : _data(data) {
 }
 
@@ -957,7 +957,7 @@ void ManipGizmoDrawableData::describeX(class_t* c) {
 drawable_ptr_t ManipGizmoDrawableData::createDrawable() const {
   auto drw = std::make_shared<CallbackDrawable>(nullptr);
   drw->_name = "ManipGizmoDrawable";
-  auto impl = drw->_implA.makeShared<ManipGizmoDrawableImpl>(this);
+  auto impl = drw->_implA.makeShared<ManipGizmoDrawableImpl>(dataShared<ManipGizmoDrawableData>());
   drw->_sortkey = 1<<30;  // Render late (on top of scene)
   drw->SetRenderCallback(ManipGizmoDrawableImpl::renderGizmo);
   return drw;

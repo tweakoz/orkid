@@ -630,8 +630,20 @@ match_attempt_ptr_t Parser::_tryMatch(MatchAttemptContextItem& mci) {
   auto it_hash  = _packrat_cache.find(hash);
   if (it_hash != _packrat_cache.end()) {
     auto cached_match_attempt = it_hash->second;
-    if (cached_match_attempt->_view->_end == inp_view->_end) {
-      _cache_hits = 0;
+    //////////////////////////////////////////////////////////////////////
+    // packrat memo: the cache key already encodes (start_token, matcher).
+    //  the query scope-end (inp_view->_end) is invariant across a single
+    //  top-level parse (no combinator narrows it), so the prior
+    //  _view->_end==inp_view->_end guard was near-always false and hits never
+    //  fired. a key match is authoritative; guard only against crc64 aliasing
+    //  via matcher identity and (for non-empty results) the start position
+    //  (empty/optional results carry a cleared, start==-1 view).
+    //////////////////////////////////////////////////////////////////////
+    bool same_matcher = (cached_match_attempt->_matcher == matcher);
+    bool pos_ok       = cached_match_attempt->_view->empty() //
+                  or (cached_match_attempt->_view->_start == inp_view->_start);
+    if (same_matcher and pos_ok) {
+      _cache_hits++;
       return cached_match_attempt;
     }
   }
@@ -647,6 +659,14 @@ match_attempt_ptr_t Parser::_tryMatch(MatchAttemptContextItem& mci) {
   inp_view->validate();
   auto match_attempt = matcher->_attempt_match_fn(matcher, inp_view);
   //////////////////////////////////
+  // farthest-failure tracking (for structured error reporting): record the
+  //  position + expected terminal + enclosing named-rule breadcrumb while the
+  //  failing matcher's context is still on the stack.
+  //////////////////////////////////
+  if (match_attempt == nullptr) {
+    _recordFailure(matcher, inp_view);
+  }
+  //////////////////////////////////
   _matchattemptctx._stack.pop_back();
   //////////////////////////////////
   // packrat cache
@@ -656,6 +676,73 @@ match_attempt_ptr_t Parser::_tryMatch(MatchAttemptContextItem& mci) {
   }
   //////////////////////////////////
   return match_attempt;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+bool Parser::_isAnonymousRuleName(const std::string& n) {
+  static const char* prefixes[] = {"sequence-", "oneof-", "group-", "optional-", "anon_"};
+  for (auto p : prefixes) {
+    if (n.rfind(p, 0) == 0) {
+      return true;
+    }
+  }
+  if (n.find(")OrMore-") != std::string::npos) {
+    return true; // nOrMore auto-name
+  }
+  if (n.find(".sub") != std::string::npos) {
+    return true; // nOrMore/optional inner-wrapper name
+  }
+  if (n.find(".proxy") != std::string::npos) {
+    return true; // forward-reference proxy
+  }
+  return false;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+void Parser::_recordFailure(matcher_ptr_t matcher, scannerlightview_constptr_t view) {
+  if (view->_start == size_t(-1)) {
+    return; // empty/invalid view, no position to attribute
+  }
+  size_t pos      = view->_start;
+  bool is_farther = (_farthest_fail_pos == size_t(-1)) or (pos > _farthest_fail_pos);
+  if (is_farther) {
+    _farthest_fail_pos = pos;
+    _farthest_fail_expected.clear();
+    _farthest_fail_breadcrumb.clear();
+    // capture the enclosing NAMED, non-terminal rule chain (skip anonymous
+    //  combinators like sequence-42 and skip terminal matchers), collapsing
+    //  consecutive duplicates from recursive rules.
+    std::string prev;
+    for (auto& item : _matchattemptctx._stack) {
+      auto m           = item._matcher;
+      bool is_terminal = (m->_info.rfind("WORD", 0) == 0) or (m->_info.rfind("TOKCLASS", 0) == 0);
+      if (is_terminal or _isAnonymousRuleName(m->_name)) {
+        continue;
+      }
+      if (m->_name == prev) {
+        continue;
+      }
+      _farthest_fail_breadcrumb.push_back(m->_name);
+      prev = m->_name;
+    }
+    // keep only the nearest (deepest) few named rules for a readable breadcrumb
+    const size_t max_breadcrumb = 8;
+    if (_farthest_fail_breadcrumb.size() > max_breadcrumb) {
+      _farthest_fail_breadcrumb.erase( //
+          _farthest_fail_breadcrumb.begin(),
+          _farthest_fail_breadcrumb.end() - max_breadcrumb);
+    }
+  }
+  if (pos == _farthest_fail_pos) {
+    // only terminals contribute to the "expected" set (what token would have
+    //  let the parse proceed here).
+    bool is_terminal = (matcher->_info.rfind("WORD", 0) == 0) or (matcher->_info.rfind("TOKCLASS", 0) == 0);
+    if (is_terminal) {
+      _farthest_fail_expected.insert(matcher->_name);
+    }
+  }
 }
 
 //////////////////////////////////////////////////////////////
@@ -669,6 +756,14 @@ match_ptr_t Parser::match(
   _cache_hits       = 0;
   _track_depth      = 0;
   _high_track_depth = 0;
+  // packrat memo is only valid within a single top-level parse (keys are
+  //  token indices into THIS parse's scanner stream); clear per parse so a
+  //  reused Parser instance can never serve stale cross-parse entries.
+  _packrat_cache.clear();
+  // reset farthest-failure diagnostics per parse
+  _farthest_fail_pos = size_t(-1);
+  _farthest_fail_expected.clear();
+  _farthest_fail_breadcrumb.clear();
 
   if (topmatcher == nullptr) {
     logerrchannel()->log("Parser<%p> no top match function", this);
@@ -686,76 +781,95 @@ match_ptr_t Parser::match(
 
   if ((not start_match) or (not end_match)) {
 
-    scannerlightview_constptr_t errview;
-
-    if (_trackcontig) {
-      errview = _trackcontig->_view;
+    //////////////////////////////////////////////////////////////////
+    // choose the failure position: prefer the farthest point where no
+    //  matcher could proceed; fall back to the farthest contiguous success.
+    //////////////////////////////////////////////////////////////////
+    size_t err_tokidx = size_t(-1);
+    if (_farthest_fail_pos != size_t(-1)) {
+      err_tokidx = _farthest_fail_pos;
+    } else if (_trackcontig) {
+      err_tokidx = _trackcontig->_view->_start;
+    } else {
+      err_tokidx = topview->_start;
     }
-    OrkAssert(errview);
-    //topview->dump("topview");
 
-    logerrchannel()->log("FULL MATCH FAILED");
-    logerrchannel()->log("topview<%zu:%zu>", topview->_start, topview->_end);
-    if(errview){
-      logerrchannel()->log("errview<%zu:%zu>", errview->_start, errview->_end);
-    }
-
-
-    auto errtok = topview->token(errview->_start);
-
+    auto errtok          = topview->token(err_tokidx);
     size_t errtok_lineno = 0;
     size_t errtok_colno  = 0;
+    std::string near_token;
     if (errtok) {
       errtok_lineno = errtok->iline;
       errtok_colno  = errtok->icol;
-      logerrchannel()->log("errtok<%s> errtok_linenum<%zu> errtok_columnnum<%zu>", errtok->text.c_str(), errtok_lineno, errtok_colno);
-    } else {
-      logerrchannel()->log("NO END");
-      fflush(stdout);
-      exit(-1);
+      near_token    = errtok->text;
     }
 
-      root_match_attempt->dump1(0);
-    logerrchannel()->log("////////////////////// CURRENT POS (succeeded) ////////////////////// ");
+    //////////////////////////////////////////////////////////////////
+    // expected-terminal set + enclosing named-rule breadcrumb
+    //////////////////////////////////////////////////////////////////
+    std::vector<std::string> expected(_farthest_fail_expected.begin(), _farthest_fail_expected.end());
+    std::string expected_str;
+    for (size_t i = 0; i < expected.size(); i++) {
+      if (i)
+        expected_str += ", ";
+      expected_str += expected[i];
+    }
+    std::string breadcrumb_str;
+    for (size_t i = 0; i < _farthest_fail_breadcrumb.size(); i++) {
+      if (i)
+        breadcrumb_str += " > ";
+      breadcrumb_str += _farthest_fail_breadcrumb[i];
+    }
 
-    size_t st_line = std::max((errtok_lineno - 3), size_t(0));
-    size_t en_line = st_line + 3 + 3 + 1;
+    std::string summary = FormatString(
+        "parse error in <%s> at line %zu col %zu near token '%s'", //
+        _name.c_str(),
+        errtok_lineno,
+        errtok_colno,
+        near_token.c_str());
+    if (not expected_str.empty()) {
+      summary += FormatString("; expected one of { %s }", expected_str.c_str());
+    }
+    if (not breadcrumb_str.empty()) {
+      summary += FormatString("; while parsing: %s", breadcrumb_str.c_str());
+    }
 
-    for (size_t cu_line = st_line; cu_line < en_line; cu_line++) {
-      auto dbg_line = _scanner->_lines[cu_line];
-      std::string str;
-      if (cu_line == errtok_lineno) {
-        str = deco::format(255, 255, 64, "line<%zu>: ", cu_line);
-        str += deco::format(255, 255, 192, "%s", dbg_line.c_str());
-      } else {
-        str = deco::format(255, 64, 255, "line<%zu>: ", cu_line);
-        str += deco::format(255, 192, 255, "%s", dbg_line.c_str());
+    //////////////////////////////////////////////////////////////////
+    // colorized source excerpt (kept as the human-facing message body)
+    //////////////////////////////////////////////////////////////////
+    std::string body;
+    std::string excerpt;
+    body += deco::format(255, 64, 64, "FULL MATCH FAILED: %s\n", summary.c_str());
+    if (errtok and _scanner) {
+      size_t st_line = (errtok_lineno > 3) ? (errtok_lineno - 3) : 0;
+      size_t en_line = std::min(st_line + 7, _scanner->_lines.size());
+      for (size_t cu_line = st_line; cu_line < en_line; cu_line++) {
+        auto dbg_line = _scanner->_lines[cu_line];
+        if (cu_line == errtok_lineno) {
+          body += deco::format(255, 255, 64, "line<%zu>: ", cu_line);
+          body += deco::format(255, 255, 192, "%s\n", dbg_line.c_str());
+        } else {
+          body += deco::format(255, 64, 255, "line<%zu>: ", cu_line);
+          body += deco::format(255, 192, 255, "%s\n", dbg_line.c_str());
+        }
+        excerpt += FormatString("%s line<%zu>: %s\n", (cu_line == errtok_lineno) ? ">>" : "  ", cu_line, dbg_line.c_str());
       }
-      printf("%s\n", str.c_str());
     }
 
-    logerrchannel()->log("////////////////////// CURRENT POS (succeeded) ////////////////////// ");
+    ParseError err;
+    err._message     = body + "\n" + summary;
+    err._summary     = summary;
+    err._parser_name = _name;
+    err._line        = errtok_lineno;
+    err._column      = errtok_colno;
+    err._near_token  = near_token;
+    err._expected    = expected;
+    err._breadcrumb  = _farthest_fail_breadcrumb;
+    err._excerpt     = excerpt;
 
-    size_t st_tok = std::max((errview->_start - 9), size_t(0));
-    size_t en_tok = st_tok + 9 + 9 + 1;
-
-    for (size_t cu_tok = st_tok; cu_tok < en_tok; cu_tok++) {
-      auto dbg_tok = _scanner->token(cu_tok);
-      std::string str;
-      if (cu_tok == errview->_start) {
-        str = deco::format(255, 255, 64, "tok<%zu>: ", cu_tok);
-        str += deco::format(255, 255, 192, "%s", dbg_tok->text.c_str());
-      } else {
-        str = deco::format(255, 64, 255, "tok<%zu>: ", cu_tok);
-        str += deco::format(255, 192, 255, "%s", dbg_tok->text.c_str());
-      }
-      printf("%s\n", str.c_str());
-    }
-
-    logerrchannel()->log("///////////////////////////////////////////////////////////////////// ");
-
-
-    OrkAssert(false);
+    // fail loud, but catchable (this used to OrkAssert(false) / exit(-1))
+    logerrchannel()->log("%s", summary.c_str());
+    throw err;
   }
 
   if (root_match_attempt) {
@@ -768,6 +882,9 @@ match_ptr_t Parser::match(
     _visitLinkMatch(root_match);
 
     log_info("CACHE_HITS<%zu> CACHE_MISSES<%zu>\n", _cache_hits, _cache_misses);
+    if (std::getenv("ORKID_PARSER_CACHE_STATS")) {
+      printf("[parser.packrat] name<%s> CACHE_HITS<%zu> CACHE_MISSES<%zu>\n", _name.c_str(), _cache_hits, _cache_misses);
+    }
 
     return root_match;
   }

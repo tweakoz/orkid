@@ -7,6 +7,7 @@
 
 #include "pyext.h"
 #include <ork/lev2/gfx/terrain/dflow/hfdflow.h>
+#include <ork/lev2/gfx/terrain/terrain_chunk_drawable.h> // #88 v2 — in-place display plane rebind
 #include <ork/lev2/gfx/terrain/dflow/hfdflow_scatter.h> // E.2 — the C++ scatter placer
 #include <ork/lev2/gfx/hypermesh/hmdflow.h>
 #include <ork/lev2/gfx/asset_gen.h>                     // ScatterSinkData (the reflected placement contract)
@@ -38,16 +39,23 @@ void pyinit_gfx_terrain(py::module& module_lev2) {
   // NoiseModule — basis-selectable noise generator (perlin/simplex/worley/voronoi).
   py::class_<trn::NoiseModuleData, dflow::DgModuleData, trn::noisemoduledata_ptr_t>(trn_module, "NoiseModule")
       .def_static("createShared", []() -> trn::noisemoduledata_ptr_t { return trn::NoiseModuleData::createShared(); })
-      .def_readwrite("basis", &trn::NoiseModuleData::_basis)       // 0 perlin/1 simplex/2 worley/3 voronoi
+      // _basis is a reflected enum in C++; the DSL layer (ops.py) still trades int
+      // CODES, so expose it int-backed (0 perlin/1 simplex/2 worley/3 voronoi).
+      .def_property("basis",
+          [](const trn::NoiseModuleData& m) -> int { return int(m._basis); },
+          [](trn::NoiseModuleData& m, int v) { m._basis = trn::NoiseBasis(v); })
       .def_readwrite("octaves", &trn::NoiseModuleData::_octaves);  // baked loop bound (1 = primitive)
 
   // ExprModule — generic expression generator (the unified procedural substrate);
   // `shadertext` is the full compute text emitted by the ptex3d codegen; `expr_source`
-  // is the authored expression string (editor T.expr) the DSL recompiles shadertext from.
+  // is the authored expression string (editor T.expr) the DSL recompiles shadertext from;
+  // `expr_tree` is the canonical ExprIR JSON (E2.5) the writer re-renders DSL from and the
+  // cook hash keys off (the storage-form identity).
   py::class_<trn::ExprModuleData, dflow::DgModuleData, trn::exprmoduledata_ptr_t>(trn_module, "ExprModule")
       .def_static("createShared", []() -> trn::exprmoduledata_ptr_t { return trn::ExprModuleData::createShared(); })
       .def_readwrite("shadertext", &trn::ExprModuleData::_shadertext)
-      .def_readwrite("expr_source", &trn::ExprModuleData::_expr_source);
+      .def_readwrite("expr_source", &trn::ExprModuleData::_expr_source)
+      .def_readwrite("expr_tree", &trn::ExprModuleData::_expr_tree);
 
   // NormalizeModule — explicit [min,max]->[out_lo,out_hi] rescale (float plugs).
   py::class_<trn::NormalizeModuleData, dflow::DgModuleData, trn::normalizemoduledata_ptr_t>(trn_module, "NormalizeModule")
@@ -64,7 +72,11 @@ void pyinit_gfx_terrain(py::module& module_lev2) {
 
   py::class_<trn::CombineModuleData, dflow::DgModuleData, trn::combinemoduledata_ptr_t>(trn_module, "CombineModule")
       .def_static("createShared", []() -> trn::combinemoduledata_ptr_t { return trn::CombineModuleData::createShared(); })
-      .def_readwrite("op", &trn::CombineModuleData::_op); // baked: 0=add 1=sub 2=mul 3=min 4=max 5=mix
+      // _op is a reflected enum in C++; expose it int-backed for the DSL (ops.py trades
+      // int CODES): 0=add 1=sub 2=mul 3=min 4=max 5=mix.
+      .def_property("op",
+          [](const trn::CombineModuleData& m) -> int { return int(m._op); },
+          [](trn::CombineModuleData& m, int v) { m._op = trn::CombineOp(v); });
 
   py::class_<trn::TerraceModuleData, dflow::DgModuleData, trn::terracemoduledata_ptr_t>(trn_module, "TerraceModule")
       .def_static("createShared", []() -> trn::terracemoduledata_ptr_t { return trn::TerraceModuleData::createShared(); });
@@ -75,7 +87,11 @@ void pyinit_gfx_terrain(py::module& module_lev2) {
 
   py::class_<trn::CurvatureModuleData, dflow::DgModuleData, trn::curvaturemoduledata_ptr_t>(trn_module, "CurvatureModule")
       .def_static("createShared", []() -> trn::curvaturemoduledata_ptr_t { return trn::CurvatureModuleData::createShared(); })
-      .def_readwrite("mode", &trn::CurvatureModuleData::_mode)          // baked: 0=convex 1=concave 2=magnitude
+      // _mode is a reflected enum in C++; expose it int-backed for the DSL (ops.py trades
+      // int CODES): 0=convex 1=concave 2=magnitude.
+      .def_property("mode",
+          [](const trn::CurvatureModuleData& m) -> int { return int(m._mode); },
+          [](trn::CurvatureModuleData& m, int v) { m._mode = trn::CurvatureMode(v); })
       .def_readwrite("radius_m", &trn::CurvatureModuleData::_radius_m); // baked: pre-blur / scale (meters)
 
   py::class_<trn::RelaxUvModuleData, dflow::DgModuleData, trn::relaxuvmoduledata_ptr_t>(trn_module, "RelaxUvModule")
@@ -101,9 +117,13 @@ void pyinit_gfx_terrain(py::module& module_lev2) {
       .def_static("createShared", []() -> trn::phamoduledata_ptr_t { return trn::PhaModuleData::createShared(); })
       .def_readwrite("octaves", &trn::PhaModuleData::_octaves);
 
-  // LpfModule — separable gaussian low-pass (cutoff in texels). Smoothing / relaxation.
+  // LpfModule — separable gaussian low-pass. ONE `cutoff` plug (wavelength); `cutoff_units`
+  // reflected enum (int-backed for the DSL: 0=texels 1=meters) selects the interpretation.
   py::class_<trn::LpfModuleData, dflow::DgModuleData, trn::lpfmoduledata_ptr_t>(trn_module, "LpfModule")
-      .def_static("createShared", []() -> trn::lpfmoduledata_ptr_t { return trn::LpfModuleData::createShared(); });
+      .def_static("createShared", []() -> trn::lpfmoduledata_ptr_t { return trn::LpfModuleData::createShared(); })
+      .def_property("cutoff_units",
+          [](const trn::LpfModuleData& m) -> int { return int(m._cutoff_units); },
+          [](trn::LpfModuleData& m, int v) { m._cutoff_units = trn::CutoffUnits(v); });
 
   // BasinFillModule — depression/pit fill (priority-flood, CPU). Fills basins to spill level.
   py::class_<trn::BasinFillModuleData, dflow::DgModuleData, trn::basinfillmoduledata_ptr_t>(trn_module, "BasinFillModule")
@@ -153,6 +173,13 @@ void pyinit_gfx_terrain(py::module& module_lev2) {
           "channel",
           [](trn::capturemoduledata_ptr_t m) -> std::string { return m->_channel; },
           [](trn::capturemoduledata_ptr_t m, std::string c) { m->_channel = c; })
+      // S4 progressive display: "on_complete" (default) / "on_checkpoint" — the
+      // editor's sliced re-bake sets on_checkpoint per session so the cook publishes
+      // the completed viewable-node height plane at every checkpoint (hfdflow.h).
+      .def_property(
+          "visual_update_mode",
+          [](trn::capturemoduledata_ptr_t m) -> std::string { return m->_visual_update_mode; },
+          [](trn::capturemoduledata_ptr_t m, std::string v) { m->_visual_update_mode = v; })
       // per-bake cook-cache opt-out — self.capture(..., cache=False) sets this; any
       // capture with cache=False disables the disk cook cache for the whole bake.
       .def_property(
@@ -316,6 +343,64 @@ void pyinit_gfx_terrain(py::module& module_lev2) {
       },
       py::arg("graph"), py::arg("ctx"), py::arg("dim"),
       py::arg("extent_m") = 4096.0f);
+
+  /////////////////////////////////////////////////////////////////////////////
+  // MT3 — SLICED (anti-hitch) re-bake handle. begin_sliced_bake enqueues a
+  // SOFT_DEADLINE microtask on ctx's scheduler that drives the SAME cook one topo
+  // node per slice; the caller pre-sets each capture .path (as bake_heightfield's
+  // callers do) and polls .done across frames, or pumpToCompletion() headless.
+  /////////////////////////////////////////////////////////////////////////////
+  py::class_<trn::SlicedBakeHandle, trn::slicedbake_handle_ptr_t>(trn_module, "SlicedBakeHandle")
+      .def_property_readonly("done", [](trn::slicedbake_handle_ptr_t h) -> bool { return h->done(); })
+      .def_property_readonly("progress", [](trn::slicedbake_handle_ptr_t h) -> float { return h->progress(); })
+      .def_property_readonly("frames_driven", [](trn::slicedbake_handle_ptr_t h) -> uint64_t { return h->framesDriven(); })
+      .def("pumpToCompletion", [](trn::slicedbake_handle_ptr_t h, ctx_t ctx) { h->pumpToCompletion(ctx.get()); },
+           py::arg("ctx"));
+
+  trn_module.def(
+      "begin_sliced_bake",
+      [](dflow::graphdata_ptr_t g, ctx_t ctx, int dim, float extent_m) -> trn::slicedbake_handle_ptr_t {
+        return trn::enqueueSlicedBake(g, ctx.get(), dim, extent_m, nullptr, /*enqueue*/ true);
+      },
+      py::arg("graph"), py::arg("ctx"), py::arg("dim"), py::arg("extent_m") = 4096.0f);
+  // headless variant: NOT enqueued on the scheduler — the caller drives it via
+  // handle.pumpToCompletion(ctx) (one node / frame). Used by the T9 byte-identity oracle.
+  trn_module.def(
+      "build_sliced_bake",
+      [](dflow::graphdata_ptr_t g, ctx_t ctx, int dim, float extent_m) -> trn::slicedbake_handle_ptr_t {
+        return trn::enqueueSlicedBake(g, ctx.get(), dim, extent_m, nullptr, /*enqueue*/ false);
+      },
+      py::arg("graph"), py::arg("ctx"), py::arg("dim"), py::arg("extent_m") = 4096.0f);
+
+  /////////////////////////////////////////////////////////////////////////////
+  // S4 — LiveFieldBuffer registry access (the named progressive-display artifact).
+  // Consumers/gates observe the generation counter + live/final lifecycle; the
+  // begin_bake/mark_final producer methods are the SAME engine API the cook driver
+  // calls (exposed so the physics hold-last-final gate can drive the lifecycle
+  // deterministically). Keys are canonicalized product paths.
+  /////////////////////////////////////////////////////////////////////////////
+  py::class_<LiveFieldBuffer, live_field_buffer_ptr_t>(trn_module, "LiveFieldBuffer")
+      .def_property_readonly("generation", [](live_field_buffer_ptr_t b) -> uint64_t { return b->generation(); })
+      .def_property_readonly("is_live", [](live_field_buffer_ptr_t b) -> bool { return b->isLive(); })
+      .def_property_readonly("is_final", [](live_field_buffer_ptr_t b) -> bool { return b->isFinal(); })
+      .def("beginBake", [](live_field_buffer_ptr_t b) { b->beginBake(); })
+      .def("markFinal", [](live_field_buffer_ptr_t b) { b->markFinal(); });
+  trn_module.def("live_field_acquire", [](std::string path) -> live_field_buffer_ptr_t {
+    return liveFieldAcquire(liveFieldCanonicalKey(path));
+  });
+  trn_module.def("live_field_find", [](std::string path) -> live_field_buffer_ptr_t {
+    return liveFieldFind(liveFieldCanonicalKey(path)); // None when absent
+  });
+  // #88 v2 — in-place display REVISIT: push a baked height product into the buffer the HELD
+  // drawable consumes (its materialize-time key), so an interior->interior revisit morphs the
+  // presenting terrain in place (no scene swap). Returns the plane dim (>0) on success, 0 when
+  // it declined (buffer unarmed / product unreadable / S4 off) — the caller then full-swaps.
+  trn_module.def(
+      "publish_height_plane_from_exr",
+      [](std::string held_field_key, std::string height_exr_path) -> int {
+        return trn::publishHeightPlaneFromExr(held_field_key, height_exr_path);
+      },
+      py::arg("held_field_key"), py::arg("height_exr_path"));
 
   /////////////////////////////////////////////////////////////////////////////
   // E.2 — the C++ scatter placer. Runs one ScatterSinkData against baked channel

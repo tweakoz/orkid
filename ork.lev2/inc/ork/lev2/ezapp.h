@@ -232,6 +232,19 @@ struct OrkEzApp : public OrkEzAppBase {
   void removeGlobalEventHandler(int token);
   void _fireGlobalEvent(ui::event_constptr_t ev);
 
+  // Synthetic UI-event injection (record/playback). Reproduces CtxGLFW::_fire_ui_event
+  // minus GLFW: stamps _uicontext / vp-dim off the primary ui context's top widget,
+  // fires the global-event taps, then routes through Context::handleEvent — so injected
+  // events are indistinguishable from real ones to every consumer and work in --offscreen
+  // (where the GLFW pump is dead). Pointer events carry position; key/wheel events inherit
+  // the last injected pointer position (mirrors the engine's single shared mutable Event)
+  // so position-based routing reaches the last-hovered widget. Must be driven from
+  // onUpdate in lockstep/synchronous mode (render never overlaps onUpdate there); fails
+  // loudly if the ui context / top widget is not yet built.
+  void injectUiEvent(ui::event_ptr_t ev);
+  int _injectLastX = 0;
+  int _injectLastY = 0;
+
   bool isExiting() const;
 
   inline appinitdata_ptr_t appInitData() const {
@@ -303,6 +316,16 @@ public:
   ezsecondarywin_ptr_t createSecondaryWindow(const EzSecondaryWinConfig& config);
   void closeSecondaryWindow(ezsecondarywin_ptr_t win);
   void closeAllSecondaryWindows();
+
+  // Main window's current screen rect (glfwGetWindowPos + glfwGetWindowSize) in
+  // SCREEN POINTS, for the DockCoordinator cross-window hit-test. Fills x/y/w/h
+  // and returns true; returns false (w/h 0) when unavailable (no window yet, or a
+  // platform that cannot report window position, e.g. Wayland).
+  bool mainWindowScreenRect(int& x, int& y, int& w, int& h);
+
+  // BUG-B point-ownership native leg: the MAIN window's native OS window number
+  // (Cocoa windowNumber on macOS). Returns 0 when unavailable (non-mac / no window).
+  int64_t mainWindowNativeNumber();
 
   // Internal
   void _renderSecondaryWindows();

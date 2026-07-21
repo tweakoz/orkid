@@ -24,9 +24,10 @@ from .animal_skin    import Cheetah, Leopard, Zebra, Reptile
 from .ground         import Dirt, Grass, Gravel, Sand
 from .geological     import Rock, Snow, Mud          # generic geological surfaces (pre-dflow)
 from .solid          import Solid                     # plain solid-color PBR material (live; instancing)
+from .asphalt        import Asphalt, ROAD_PRESETS, ROAD_LANE_COUNTS, road_preset  # R-family road surface
 from . import terrain                                 # terrain/ subpackage self-registers its materials
 __all__ = ["CrackedMud", "CobbleStone", "LilyPads", "BeachBall", "BasketBall",
            "SoccerBall", "HoneyComb", "CarbonFiber", "SpaceshipHull", "Brick",
            "Marble", "Foil", "Wood", "Teak", "Oak", "Pine", "Plywood",
            "Cheetah", "Leopard", "Zebra", "Reptile", "Dirt", "Grass", "Gravel", "Sand", "Rock", "Snow", "Mud",
-           "Solid", "terrain"]
+           "Solid", "Asphalt", "ROAD_PRESETS", "ROAD_LANE_COUNTS", "road_preset", "terrain"]

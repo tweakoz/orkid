@@ -75,4 +75,16 @@ public:
 
 using terrain_chunk_drawable_data_ptr_t = std::shared_ptr<TerrainChunkDrawableData>;
 
+// #88 v2 — in-place display REVISIT fast path. Load a baked height product (channel-0
+// FLOAT, meters — the SAME read materialize does at :594) and publish it as one whole,
+// frame-coherent plane to the LiveFieldBuffer the HELD terrain drawable already consumes
+// (its materialize-time height key). The drawable's s4LiveAccept morphs the presenting
+// SSBO in place next GPU frame, so an interior->interior display revisit skips the full
+// scene swap (scenegraph + sim + camera stay live). `held_field_key` is the buffer key
+// (the held drawable's product height path); `height_exr_path` is the target product's
+// on-disk height EXR. Returns the plane dim (>0) on success; 0 (LOUD) when the buffer is
+// unarmed, the product is unreadable, or S4 is disabled — the caller then takes the
+// full-swap path (never a wrong-plane bind).
+int publishHeightPlaneFromExr(const std::string& held_field_key, const std::string& height_exr_path);
+
 } // namespace ork::lev2::terrain

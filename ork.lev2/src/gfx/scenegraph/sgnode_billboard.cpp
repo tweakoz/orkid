@@ -15,7 +15,7 @@ namespace ork::lev2 {
 
 struct BillboardRenderImpl {
 
-  BillboardRenderImpl(const BillboardDrawableData* bbd) : _bbdata(bbd) {
+  BillboardRenderImpl(std::shared_ptr<const BillboardDrawableData> bbd) : _bbdata(bbd) {
     // Load image eagerly (CPU-side, no GPU context needed)
     if (_bbdata->_image) {
       _sourceImage = _bbdata->_image;
@@ -250,7 +250,7 @@ struct BillboardRenderImpl {
     auto renderable = dynamic_cast<const CallbackRenderable*>(RCID._irenderable);
     renderable->GetDrawableDataA().getShared<BillboardRenderImpl>()->_render(RCID);
   }
-  const BillboardDrawableData* _bbdata;
+  std::shared_ptr<const BillboardDrawableData> _bbdata;
   image_ptr_t _sourceImage;
   FreestyleMaterial _material;
   fxpipeline_ptr_t _fwdPipeline;
@@ -279,7 +279,7 @@ void BillboardDrawableData::describeX(class_t* c) {
 
 drawable_ptr_t BillboardDrawableData::createDrawable() const {
 
-  auto impl = std::make_shared<BillboardRenderImpl>(this);
+  auto impl = std::make_shared<BillboardRenderImpl>(dataShared<BillboardDrawableData>());
 
   auto rval = std::make_shared<CallbackDrawable>(nullptr);
   rval->SetRenderCallback(BillboardRenderImpl::renderBB);

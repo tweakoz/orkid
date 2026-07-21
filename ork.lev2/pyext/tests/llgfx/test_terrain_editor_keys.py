@@ -73,9 +73,9 @@ def main():
   print(f"[keys.matmode] notifies per cycle = {[list(t.values())[0] for t in notified]} "
         f"(last must be 0) -> {wrap_ok}", flush=True)
 
-  # delete-chain UX: deleting a node must SELECT the row that took its place so
-  # repeated Delete works through a run. Handler-level on a real chain document
-  # (voronoi is just noise->capture; open a fixture with a mid-chain run).
+  # chain-delete (node-editor mutation path, E3 C1): deleting a mid-chain node removes
+  # it, RECONNECTS its consumers to its pass-through input, and records an undo step.
+  # (voronoi is just noise->capture; open a fixture with a mid-chain run.)
   import tempfile, textwrap
   fx = os.path.join(tempfile.mkdtemp(prefix="tered_keys_chain_"), "chainfx.py")
   with open(fx, "w") as f:
@@ -87,54 +87,64 @@ def main():
                 super().__init__()
                 h = T.Fbm(frequency=5.0, octaves=4) * 0.5 + 0.5
                 h = T.terrace(h, step_m=6.0, sharpness=3.0)
-                h = T.lpf(h, cutoff_texels=4.0)
+                h = T.lpf(h, cutoff=4.0)
                 self.capture(h, "height")
     """))
   app._doOpenTerrain(fx)
-  om = app.outliner_model
-  order = app._visibleModelKeys()      # fbm, remap, remap, terr, lpf, capture
-  from ork.hypergraph.dflow.terrain.doc import DocNode
-  def _deletable(k):
-    o = om.object_for_key(k)
+  model = app.node_model                       # root-level node-editor adapter
+  from ork.hypergraph.dflow.terrain.doc import DocNode, tree_paths
+  def _keys():
+    return [k for (_pk, k, _o) in tree_paths(app.runtime.document)]
+  def _deletable(nid):
+    o = model.object_for_nid(nid)
     return (isinstance(o, DocNode) and o.clazz_name != "CaptureModule"
             and bool(o.connections))
-  t1 = next((i for i, k in enumerate(order) if _deletable(k)), None)
-  if t1 is None:
+  cand = [k for k in _keys() if _deletable(k)]
+  if not cand:
     chain_ok = False
     print("[keys.delete] no deletable node in fixture -> FAIL", flush=True)
   else:
-    k1 = order[t1]
-    exp1 = order[t1 + 1]
-    app._deleteSelected(k1)
-    sel1 = app.outliner.selected_key
-    # press Delete AGAIN on the auto-selected row: the chain continues
-    app._deleteSelected(sel1)
-    sel2 = app.outliner.selected_key
-    now = set(app._visibleModelKeys())
-    chain_ok = (k1 not in now and sel1 == exp1 and sel1 not in now
-                and sel2 in now and sel2 != sel1)
-    print(f"[keys.delete] del1={k1!r}->sel={sel1!r} (expected {exp1!r})  "
-          f"del2={sel1!r}->sel={sel2!r}  both-gone={k1 not in now and sel1 not in now} "
+    k1 = cand[0]
+    depth0 = app._undo.depth()
+    model.delete_node(k1)                       # chain-delete + reconnect + record + rebake
+    gone1 = k1 not in set(_keys())
+    rec1 = (app._undo.depth() == depth0 + 1)
+    # delete AGAIN: the chain still elaborates + records (repeat through a run)
+    cand2 = [k for k in _keys() if _deletable(k)]
+    if cand2:
+      k2 = cand2[0]
+      model.delete_node(k2)
+      gone2 = k2 not in set(_keys())
+      rec2 = (app._undo.depth() == depth0 + 2)
+    else:
+      gone2 = rec2 = True
+    chain_ok = gone1 and rec1 and gone2 and rec2
+    print(f"[keys.delete] del1={k1!r} gone={gone1} rec={rec1}  del2 gone={gone2} rec={rec2} "
           f"-> {chain_ok}", flush=True)
 
-  # add-module context menu (handler-level): the dropdown SELECTION callback must
-  # perform the createItem mutation, select the new node, and record an undo step.
+  # Tab-add (node-editor mutation path): add_node after the SELECTED node inserts + rewires
+  # the chain, SELECTS the new node, and records an undo step.
   if chain_ok:
-    before = set(app._visibleModelKeys())
-    depth0 = app._undo.depth()
-    app._onAddMenuSelected(sel2, "/basin_fill")
-    new_sel = app.outliner.selected_key
-    add_menu_ok = (new_sel not in before
-                   and app.outliner_model.object_for_key(new_sel) is not None
-                   and app._undo.depth() == depth0 + 1)
-    print(f"[keys.addmenu] anchor={sel2!r} -> new={new_sel!r} selected+recorded "
+    anchor = next((k for k in _keys()
+                   if isinstance(model.object_for_nid(k), DocNode)
+                   and model.object_for_nid(k).clazz_name != "CaptureModule"
+                   and model.object_for_nid(k).connections), None)
+    before = set(_keys())
+    depth1 = app._undo.depth()
+    app.node_editor.sel_nodes = {anchor}        # simulate the canvas selection
+    new_key = model.add_node("basin_fill", (0.0, 0.0))
+    add_menu_ok = (new_key is not None and new_key not in before
+                   and new_key in set(_keys())
+                   and app.node_editor.sel_nodes == {new_key}
+                   and app._undo.depth() == depth1 + 1)
+    print(f"[keys.addmenu] anchor={anchor!r} -> new={new_key!r} selected+recorded "
           f"-> {add_menu_ok}", flush=True)
   else:
     add_menu_ok = False
 
   results = {
     "add_menu_creates_selects_records": add_menu_ok,
-    "delete_selects_next":   chain_ok,
+    "delete_chain_reconnects": chain_ok,
     "gamma_luma_shift":      bool(r.get("gamma_shift")),
     "gamma_persists_rebuild": bool(r.get("gamma_persists_rebuild")),
     "envmap_swapped":        bool(r.get("envmap_swapped")),

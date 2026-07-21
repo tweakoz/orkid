@@ -47,6 +47,9 @@ void exitModule(ork::appinitdata_ptr_t init_data);
 namespace ork::lev2 {
 extern bool g_allow_HIDPI;
 extern context_ptr_t gloadercontext;
+#if defined(__APPLE__)
+int64_t nativeCocoaWindowNumber(GLFWwindow* window); // ctx_glfw_osx.mm
+#endif
 
 static logchannel_ptr_t logchan_ezapp = logger()->configureChannel("EZAPP", fvec3(0.7, 0.7, 0.9), true);
 
@@ -218,6 +221,41 @@ void OrkEzApp::_fireGlobalEvent(ui::event_constptr_t ev) {
       logchan_ezapp->log("global event handler threw unknown exception");
     }
   }
+}
+///////////////////////////////////////////////////////////////////////////////
+static bool _isPointerInjectCode(ui::EventCode c) {
+  switch (c) {
+    case ui::EventCode::PUSH:
+    case ui::EventCode::RELEASE:
+    case ui::EventCode::MOVE:
+    case ui::EventCode::DRAG:
+      return true;
+    default:
+      return false;
+  }
+}
+void OrkEzApp::injectUiEvent(ui::event_ptr_t ev) {
+  auto uictx = _uicontext;
+  if (not uictx)
+    OrkAssert(false); // injectUiEvent: no ui context — inject after onGpuInit
+  auto root = uictx->_top;
+  if (not root)
+    OrkAssert(false); // injectUiEvent: ui context has no top widget — inject after onGpuInit
+  // Mirror the engine's single shared mutable Event (ctx_glfw trap #1): pointer events
+  // carry their own position; key/wheel events inherit the last injected pointer position
+  // so position-based routing (Context::routeUiEvent is a hit-test on miX/miY) reaches the
+  // last-hovered widget — exactly as a real KEY reuses the shared event's cursor position.
+  if (_isPointerInjectCode(ev->_eventcode)) {
+    _injectLastX = ev->miX;
+    _injectLastY = ev->miY;
+  } else {
+    ev->miX = _injectLastX;
+    ev->miY = _injectLastY;
+  }
+  ev->_uicontext = uictx.get();
+  ev->setvpDim(root.get());
+  _fireGlobalEvent(ev);
+  ui::Event::sendToContext(ev);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::signalExit() {
@@ -1246,6 +1284,18 @@ void OrkEzApp::_mainThreadLoopBegin() {
   ///////////////////////////////
 
   ctx->_onGpuExit = [this](lev2::Context* context) {
+    // Wind down the background loader thread FIRST, while every GPU context /
+    // Vulkan device / driver library is still fully live. It pumps
+    // gloadercontext->beginFrame/endFrame (a real queueSubmit) at 500us; if it
+    // is left running past this funnel it races the device teardown that follows
+    // (subsystem shutdown(), glfwDestroyWindow, static destruction) and submits
+    // into a torn-down driver -> VkThreadedQueue::queueSubmit dereferences a null
+    // driver entrypoint -> SIGSEGV on the "loader" thread AFTER all output (the
+    // NVIDIA bare-EzApp exit crash). ~OrkEzApp / ~LoaderThread also stopLoaderThread(),
+    // but those run too late (Python finalization) — after shutdown() already freed
+    // the device. This is the orderly point the headless (ecs.headless_exit) path
+    // uses; do the same here. Idempotent.
+    stopLoaderThread();
     joinUpdate(context);
     if (_moviecapcontext) {
       _moviecapcontext->terminate();
@@ -1560,6 +1610,35 @@ void OrkEzApp::closeSecondaryWindow(ezsecondarywin_ptr_t win) {
   }
 }
 
+bool OrkEzApp::mainWindowScreenRect(int& x, int& y, int& w, int& h) {
+  x = 0; y = 0; w = 0; h = 0;
+  if (not _mainWindow)
+    return false;
+  auto ctxbase = dynamic_cast<CtxGLFW*>(_mainWindow->_ctqt);
+  if (not ctxbase || not ctxbase->_glfwWindow)
+    return false;
+  // Wayland cannot report a global window position — degrade (contract in
+  // dock_coordinator.h).
+  if (glfwGetPlatform() == GLFW_PLATFORM_WAYLAND)
+    return false;
+  glfwGetWindowPos(ctxbase->_glfwWindow, &x, &y);
+  glfwGetWindowSize(ctxbase->_glfwWindow, &w, &h);
+  return w > 0 && h > 0;
+}
+
+int64_t OrkEzApp::mainWindowNativeNumber() {
+#if defined(__APPLE__)
+  if (not _mainWindow)
+    return 0;
+  auto ctxbase = dynamic_cast<CtxGLFW*>(_mainWindow->_ctqt);
+  if (not ctxbase || not ctxbase->_glfwWindow)
+    return 0;
+  return nativeCocoaWindowNumber(ctxbase->_glfwWindow);
+#else
+  return 0; // BUG-B native leg is mac-only this slice; non-mac degrades to rect-only.
+#endif
+}
+
 void OrkEzApp::closeAllSecondaryWindows() {
   for (auto& win : _secondaryWindows) {
     win->requestClose();
@@ -1567,8 +1646,15 @@ void OrkEzApp::closeAllSecondaryWindows() {
 }
 
 void OrkEzApp::_renderSecondaryWindows() {
+  // needsRender() is a dirty-flag + wall-clock staleness gate tuned for on-screen
+  // windows kept warm by OS expose/refresh events. Under --offscreen or lockstep
+  // there are NO such events, so the gate would starve secondary rendering non-
+  // deterministically (a frame renders or not depending on wall-clock timing).
+  // Force a render every pump in those modes so offscreen/lockstep captures are
+  // reproducible (double-run byte-equal).
+  const bool force_render = _initdata->_offscreen or (not _initdata->_freerunning);
   for (auto& win : _secondaryWindows) {
-    if (!win->shouldClose() && win->needsRender()) {
+    if (!win->shouldClose() && (force_render or win->needsRender())) {
       win->_render();
     }
   }

@@ -92,7 +92,6 @@ Normalize = ops.normalize         # explicit [min,max]->[out_lo,out_hi] rescale 
 normalize = ops.normalize
 ExprField = ops.expr_field        # bake a ptex3d SurfNode to a field (unified substrate; backs hfbake)
 expr_field = ops.expr_field
-expr_field_raw = ops.expr_field_raw   # COMPILED-blob escape hatch (the .py writer emits this)
 Expr = ops.expr                   # editor-authorable expression node from a ptex3d SOURCE STRING
 expr = ops.expr
 Bypass = ops.bypass               # mark a node bypassed (structural pass-through); returns node
@@ -116,7 +115,7 @@ __all__ = [
     "RelaxUv", "relax_uv",
     "FillClosedBasins", "fill_closed_basins",
     "Normalize", "normalize",
-    "ExprField", "expr_field", "expr_field_raw",
+    "ExprField", "expr_field",
     "Expr", "expr", "Bypass", "bypass",
     "ParamPack", "lerp",
     "loop", "group", "switch",

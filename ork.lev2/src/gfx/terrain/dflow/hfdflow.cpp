@@ -13,6 +13,7 @@
 #include <ork/pch.h>
 #include <ork/reflect/properties/registerX.inl>
 #include <ork/lev2/gfx/terrain/dflow/hfdflow.h>
+#include <ork/lev2/gfx/dflow_gpuupdate.h> // family-neutral gpuUpdate seam (bake stamps its params)
 #include <ork/lev2/gfx/image.h>
 #include <ork/dataflow/module.inl>
 #include <ork/dataflow/plug_data.inl>
@@ -26,11 +27,14 @@
 #include <ork/kernel/datacache.h> // DataBlockCache — per-node cook cache
 #include <ork/kernel/opq.h>       // concurrent queue — parallel capture encodes (WS7)
 #include <ork/kernel/semaphore.h>
+#include <ork/lev2/gfx/gpumicrotask.h> // MT3 — SOFT_DEADLINE re-bake slicing
 #include <unordered_set>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <cinttypes>
+#include <atomic>
+#include <functional>
 #include "hfdflow_module.h"
 
 ImplementReflectionX(ork::lev2::terrain::TerrainModuleData, "terrain::TerrainModuleData");
@@ -202,6 +206,8 @@ void CaptureModuleData::describeX(class_t* clazz) {
   clazz->directProperty("channel", &CaptureModuleData::_channel);
   // per-bake cook-cache opt-out (round-trips with the graph).
   clazz->directProperty("cache", &CaptureModuleData::_cache);
+  // S4 progressive display: on_complete (default) / on_checkpoint (see hfdflow.h).
+  clazz->directProperty("visual_update_mode", &CaptureModuleData::_visual_update_mode);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -355,6 +361,37 @@ struct CookedGraphResult {
   std::vector<fieldstats_ptr_t> _current_stats;
 };
 
+///////////////////////////////////////////////////////////////////////////////
+// MT3 — the `_cursor`-over-topo-list resume state (JUL13_DFLOW §2.6/§E5, line 255).
+// runCookedGraph plans ONCE (into this state), then advances the SAME per-node
+// loop `max_nodes` at a time; each partial call saves `_cursor` and returns via
+// `out_more=true`. A null CookSliceState (the burst/blocking bakeHeightfield path)
+// uses a function-local one at unlimited budget and runs to completion in one call
+// — byte-identical to HEAD (the plan + loop statements are unchanged, only their
+// storage moved to references into this struct and the loop bound became `_cursor`).
+// T10: while a cook is paused between slices this state (and env's pooled SSBOs)
+// stays live across frames — 100s of MB of VRAM for a big frontier is ACCEPTABLE.
+///////////////////////////////////////////////////////////////////////////////
+
+struct CookSliceState {
+  bool   _planned = false;
+  size_t _cursor  = 0; // next node index in the topo order
+  size_t _N       = 0;
+  bool   do_disk_cache = true;
+  // demand-plan vectors (filled once by the planning block below)
+  std::vector<bool>        hit, needed, sink, capcurrent;
+  std::vector<const char*> missreason;
+  std::vector<std::vector<dflow::outpluginst_ptr_t>> release_at;
+  // S4: nodes whose completed "Out" plane is checkpoint-published to env->_live_out
+  // (viewable + mono + an ancestor of the on_checkpoint height sink). Empty unless armed.
+  std::vector<bool>        livepub;
+  // running counters (persist across slices)
+  int    cook_loaded = 0, cook_computes = 0, cook_skipped = 0;
+  size_t ncap_readback = 0;
+  CookedGraphResult _result; // accumulates _current_stats; finalized counts written at end
+  // (the T9 cacheStore gate lives on BakeEnv::_allow_store — it must reach nested cooks too)
+};
+
 // SubGraphModule support (STEP 2): a composite inst runs its NESTED GraphInst through
 // this same driver.
 //   * context_salt/salted — a LoopModuleInst folds a per-iteration salt into the nested
@@ -369,12 +406,30 @@ static CookedGraphResult runCookedGraph(
     dflow::graphinst_ptr_t ginst, const bakeenv_ptr_t& env, ui::updatedata_ptr_t updata,
     uint64_t context_salt = 0, bool salted = false,
     const std::vector<dflow::dgmoduleinst_ptr_t>& forced_roots = {},
-    bool allow_disk_cache = true) {
+    bool allow_disk_cache = true,
+    // MT3 slicing (default nullptr/-1 == the burst path, one call to completion):
+    CookSliceState* slice_state = nullptr, // persistent plan + `_cursor`; nullptr -> function-local
+    int64_t max_nodes = -1,                // nodes to advance THIS call; <0 == unbounded (burst)
+    bool* out_more = nullptr) {            // set true when nodes remain (yield); false at completion
   // shared BakeEnv gives the bake grid/world units the cook-context hash + probe key on
   // (W==H==dim); graph is ginst's own graphdata (the do_disk_cache scan reads its
   // CaptureModules). The SubGraphModuleInst passes the parent env + its nested inst.
-  CookedGraphResult _cgresult;
-  auto& current_stats  = _cgresult._current_stats; // sidecar-recovered stats (currency pass)
+  CookSliceState  _local_slice;
+  CookSliceState& S    = slice_state ? *slice_state : _local_slice;
+  // Alias every persistent plan datum + counter to the slice state — the burst path's
+  // function-local S makes this byte-identical to HEAD; a sliced call resumes from S.
+  auto& current_stats  = S._result._current_stats; // sidecar-recovered stats (currency pass)
+  auto& do_disk_cache  = S.do_disk_cache;
+  auto& hit            = S.hit;
+  auto& needed         = S.needed;
+  auto& sink           = S.sink;
+  auto& capcurrent     = S.capcurrent;
+  auto& missreason     = S.missreason;
+  auto& release_at     = S.release_at;
+  int&  cook_loaded    = S.cook_loaded;
+  int&  cook_computes  = S.cook_computes;
+  int&  cook_skipped   = S.cook_skipped;
+  size_t& ncap_readback = S.ncap_readback;
   Context* ctx         = env->_ctx;
   auto ci              = ctx->CI();
   const int dim        = env->_w;
@@ -395,7 +450,18 @@ static CookedGraphResult runCookedGraph(
     // salt that (host non-cacheable => no computeNodeHashes => salt base 0) is NOT
     // sensitive to the external input, risking a stale cross-input hit. Keeping nested
     // disk-caching iff the host is cacheable makes the salt-valid <=> disk-cache invariant hold.
-    bool do_disk_cache = allow_disk_cache;
+    auto&        order = ginst->_ordered_module_insts; // (loop-invariant; the loop reads it too)
+    const size_t N     = order.size();
+    S._N               = N;
+    // debug flags read by BOTH the plan block and the loop — function scope so a sliced
+    // re-entry (plan skipped) still sees them (see ORKID_COOK_DEBUG / BAKE_DEFERRED_FLUSH).
+    static const bool s_cookdbg        = (getenv("ORKID_COOK_DEBUG") != nullptr);
+    static const bool s_deferred_flush = (getenv("ORKID_BAKE_DEFERRED_FLUSH") != nullptr);
+    // MT3 — PLAN ONCE. A sliced cook re-enters runCookedGraph every slice; this whole
+    // demand-plan block runs on the FIRST call only, its results persisting in S. The
+    // burst path (S == the function-local) runs it exactly as HEAD did.
+    if (not S._planned) {
+    do_disk_cache = allow_disk_cache;
     for (size_t i = 0; do_disk_cache and i < graph->numModules(); i++) {
       if (auto cap = std::dynamic_pointer_cast<CaptureModuleData>(graph->module(i))) {
         if (not cap->_cache) {
@@ -435,8 +501,6 @@ static CookedGraphResult runCookedGraph(
     //    reads them after the loop; freeAllocs reclaims them at bake end).
     // Per-op submit+WAIT makes mid-loop reuse GPU-safe (see BakeEnv notes).
     ////////////////////////////////////////////////////////////////////////
-    auto& order    = ginst->_ordered_module_insts;
-    const size_t N = order.size();
 
     // forced demand roots (composite nested runs): a set for O(1) membership.
     std::unordered_set<const void*> forced_root_set;
@@ -450,9 +514,8 @@ static CookedGraphResult runCookedGraph(
     // ORKID_COOK_DEBUG=1: record WHY a node isn't a hit (printed if it dispatches:
     // no-cache-entry = hash not on disk; probe-reject = entry fails validation;
     // not-cacheable-type = not a TerrainComputeInst).
-    static const bool s_cookdbg = (getenv("ORKID_COOK_DEBUG") != nullptr);
-    std::vector<bool> hit(N, false), needed(N, false), sink(N, false);
-    std::vector<const char*> missreason(N, nullptr); // cookdbg: why not a cache hit
+    hit.assign(N, false); needed.assign(N, false); sink.assign(N, false);
+    missreason.assign(N, nullptr); // cookdbg: why not a cache hit
     for (size_t i = 0; i < N; i++) {
       auto inst = order[i];
       sink[i]   = (inst->numOutputs() == 0); // Capture — always runs, reads at flush
@@ -493,7 +556,7 @@ static CookedGraphResult runCookedGraph(
     // re-encodes zero files. The sidecar also returns the channel FieldStats (the
     // caller's manifest contract). Any missing/mismatched file → the sink runs and the
     // flush rewrites images + sidecars.
-    std::vector<bool> capcurrent(N, false);
+    capcurrent.assign(N, false);
     for (size_t i = 0; i < N; i++) {
       if (not sink[i] or not do_disk_cache)
         continue;
@@ -560,6 +623,75 @@ static CookedGraphResult runCookedGraph(
         }
     }
 
+    // --- S4 progressive display (JUL13 §E5/S4): a Capture sink requesting
+    // visual_update_mode == "on_checkpoint" for the HEIGHT channel arms the named
+    // LiveOutput artifact (BakeEnv-owned, OUTSIDE the register pool) and marks every
+    // publishable node: VIEWABLE (class default + reflected per-node override) AND an
+    // ANCESTOR of the sink (a mask/side-branch plane must never flash as the display
+    // heights). This block lives on the per-node cook branch ONLY — the structural
+    // fork's checkpoint-capable side; the one-phase non-cacheable driver degrades
+    // loudly at its call site (bakeHeightfield). ORKID_S4_DISABLE=1 kills it here.
+    S.livepub.assign(N, false);
+    if (not s4ProgressiveDisabled()) {
+      for (size_t i = 0; i < N; i++) {
+        if (not sink[i])
+          continue;
+        auto cap = std::dynamic_pointer_cast<CaptureModuleInst>(order[i]);
+        if (not cap or cap->_cmd->_visual_update_mode != "on_checkpoint")
+          continue;
+        auto channels   = _splitCaptureChannels(cap->_cmd->_channel, "height");
+        bool has_height = false;
+        for (auto& ch : channels)
+          has_height |= (ch == "height");
+        if (not has_height)
+          continue; // v1: the live artifact IS the height plane
+        // ancestor closure of this sink (reverse-topo over the producer map)
+        std::vector<bool> anc(N, false);
+        for (auto inp : cap->_inputs)
+          if (inp->_connectedOutput) {
+            auto it = producer_of.find(inp->_connectedOutput.get());
+            if (it != producer_of.end())
+              anc[it->second] = true;
+          }
+        for (size_t ri = N; ri > 0; ri--) {
+          size_t j = ri - 1;
+          if (not anc[j])
+            continue;
+          for (auto inp : order[j]->_inputs)
+            if (inp->_connectedOutput) {
+              auto it = producer_of.find(inp->_connectedOutput.get());
+              if (it != producer_of.end())
+                anc[it->second] = true;
+            }
+        }
+        size_t npub = 0;
+        for (size_t j = 0; j < N; j++)
+          if (anc[j])
+            if (auto tci = std::dynamic_pointer_cast<TerrainComputeInst>(order[j]))
+              if (tci->isViewable()) {
+                S.livepub[j] = true;
+                npub++;
+              }
+        env->_live_key = liveFieldCanonicalKey(_capturePathForChannel(cap->_cmd->_path, "height"));
+        env->_live_out = liveFieldAcquire(env->_live_key);
+        env->_live_out->beginBake();
+        printf("[s4-live] ARMED key<%s> sink<%s> publishable<%zu/%zu nodes>\n",
+               env->_live_key.c_str(), cap->_abstract_module_data->_name.c_str(), npub, N);
+        break; // v1: ONE live artifact per bake (the height plane)
+      }
+    } else {
+      for (size_t i = 0; i < N; i++) {
+        if (not sink[i])
+          continue;
+        auto cap = std::dynamic_pointer_cast<CaptureModuleInst>(order[i]);
+        if (cap and cap->_cmd->_visual_update_mode == "on_checkpoint") {
+          printf("[s4-live] DISABLED (ORKID_S4_DISABLE) — sink<%s> degrades to on_complete\n",
+                 cap->_abstract_module_data->_name.c_str());
+          break;
+        }
+      }
+    }
+
     // --- release schedule: for each producer OUTPUT PLUG, the last dispatching
     // reader's index. INCREMENTAL FLUSH (default): a sink counts as a normal last
     // reader — its field is read back to host the moment it runs (below), so the
@@ -569,7 +701,6 @@ static CookedGraphResult runCookedGraph(
     // eflow's frontier past the DEVICE budget (2026-07-03 profile).
     // Buffers resolve from the plug AT RELEASE TIME (erox aliases its output to a
     // ping-pong buffer during compute, so the pointer is only final after it runs).
-    static const bool s_deferred_flush = (getenv("ORKID_BAKE_DEFERRED_FLUSH") != nullptr);
     std::unordered_map<const void*, size_t> last_reader; // outpluginst -> index
     std::unordered_set<const void*> pinned;
     // forced roots (composite promoted outputs): pin every output plug so it survives
@@ -590,7 +721,7 @@ static CookedGraphResult runCookedGraph(
           last_reader[key] = j; // ascending j -> ends at the LAST reader
       }
     }
-    std::vector<std::vector<dflow::outpluginst_ptr_t>> release_at(N);
+    release_at.assign(N, {});
     for (size_t j = 0; j < N; j++)
       for (int o = 0; o < order[j]->numOutputs(); o++) {
         auto op  = order[j]->output(o);
@@ -612,9 +743,10 @@ static CookedGraphResult runCookedGraph(
           // free-set dedup keeps plug aliasing (erox pingpong) safe.
           release_at[j].push_back(op);
       }
+    S._planned = true;
+    } // end MT3 plan-once (do_disk_cache/hit/needed/sink/capcurrent/release_at now in S)
 
-    // --- the loop
-    int cook_loaded = 0, cook_computes = 0, cook_skipped = 0;
+    // --- the loop (MT3: resumes at S._cursor; counters live in S; see aliases above)
     // ORKID_BAKE_PROFILE=1: wall-time attribution of the serial cook loop, per
     // computed node: acquire / params / dispatch(record+submit+WAIT) /
     // store(staged readback+serialize) / disk(fwrite) / other(loop residual).
@@ -625,7 +757,6 @@ static CookedGraphResult runCookedGraph(
     double bp_acq = 0, bp_par = 0, bp_dsp = 0, bp_sto = 0, bp_dsk = 0;
     double bp_wait = 0; // pure vkWaitForFences inside dispatch ~= real GPU execution
     double bp_max_dsp = 0, bp_max_sto = 0;
-    size_t ncap_readback = 0; // incremental flush: captures already read back to host
     // per-module-CLASS rollup — the cost model for the strategic cache-point set
     // (cache a class iff its recompute cost beats its blob load cost).
     struct BpClass { double dsp = 0, wait = 0, sto = 0; size_t bytes = 0; int n = 0; };
@@ -633,12 +764,24 @@ static CookedGraphResult runCookedGraph(
     size_t bp_bytes = 0;
     std::string bp_max_dsp_n, bp_max_sto_n;
     const double bp_loop0 = bp_now();
-    for (size_t i = 0; i < N; i++) {
+    int64_t nodes_this_call = 0;
+    for (size_t i = S._cursor; i < N; i++) {
+      // MT3 yield point: node-boundary granularity (T12 — a slice never splits a node's
+      // dispatch triplet, so slice boundaries can't change results). max_nodes<0 is the
+      // burst path (never yields). max_nodes==0 plans-only (yields before any node runs).
+      if (max_nodes >= 0 and nodes_this_call >= max_nodes) {
+        if (out_more)
+          *out_more = true;
+        return S._result; // partial — counters not yet finalized; caller ignores until !more
+      }
+      S._cursor = i; // committed only past the yield gate (a yielded node re-runs cleanly)
       auto inst = order[i];
       if (not needed[i]) {
         cook_skipped++;
+        S._cursor = i + 1;
         continue; // no acquire, no disk read, no upload
       }
+      nodes_this_call++;
       double bp_t0 = s_bakeprof ? bp_now() : 0.0;
       // node scope brackets a TerrainComputeInst's pooled scratch. A COMPOSITE node
       // (SubGraph/Loop inst) instead runs a NESTED runCookedGraph whose per-node
@@ -692,7 +835,11 @@ static CookedGraphResult runCookedGraph(
           auto& bc = bp_class[inst->_abstract_module_data->GetClass()->Name().c_str()];
           bc.dsp += d; bc.wait += w; bc.n++;
         }
-        bool store_this = do_disk_cache;
+        // T9 (MANDATORY): a SLICED cook may NOT populate the content-addressed dflowcache
+        // until sliced-vs-blocking byte-identity is proven (cache-poison risk). env->_allow_store
+        // is true on the burst path AND propagates to nested composite cooks (shared env);
+        // the microtask holds it false per the oracle-gated policy.
+        bool store_this = do_disk_cache and env->_allow_store;
         if (store_this and not sink[i])
           if (auto tci = std::dynamic_pointer_cast<TerrainComputeInst>(inst))
             store_this = tci->cookIsCachePoint(); // strategic cache points: store only at cuts
@@ -715,6 +862,29 @@ static CookedGraphResult runCookedGraph(
                  inst->_abstract_module_data->_name.c_str(), size_t(inst->_cookHash),
                  missreason[i] ? missreason[i] : "?");
         cook_computes++;
+      }
+      // S4 CHECKPOINT PUBLISH (spec anchor: after this node's endDispatchPhase, before
+      // endNodeScope): the node's "Out" plane is VALID here — a cache hit just uploaded
+      // it, or the dispatch above submitted + WAITed — and nothing has been released
+      // yet. Read the whole plane straight into the LiveOutput's back plane and flip:
+      // frame-coherent (a consumer never sees a partial plane), and GPU-safe by
+      // construction (this is the SAME post-sync readback point the incremental capture
+      // flush uses — no mid-phase readback, no GPU read-while-write, so the MoltenVK-
+      // class double-buffer hazard never exists on this path).
+      if (env->_live_out and i < S.livepub.size() and S.livepub[i]) {
+        if (auto tci = std::dynamic_pointer_cast<TerrainComputeInst>(inst)) {
+          auto img = tci->_outImg();
+          int  nch = (img and img->_channels >= 1) ? img->_channels : 1;
+          if (img and img->_ssbo and nch == 1 and img->_w == env->_w and img->_h == env->_h) {
+            float* dst = env->_live_out->beginPublish(img->_w, img->_h);
+            ctx->FXI()->readStorageBuffer(
+                img->_ssbo, 0, size_t(img->_w) * size_t(img->_h) * sizeof(float), dst);
+            uint64_t gen = env->_live_out->endPublish(img->_w, img->_h);
+            printf("[s4-live] publish key<%s> gen<%" PRIu64 "> node<%s> coverage<%zu/%zu>\n",
+                   env->_live_key.c_str(), gen,
+                   inst->_abstract_module_data->_name.c_str(), i + 1, N);
+          }
+        }
       }
       // INCREMENTAL FLUSH readback: this sink's request was just recorded and per-op
       // sync makes the source field valid — copy it to host NOW so the source plane
@@ -755,7 +925,11 @@ static CookedGraphResult runCookedGraph(
         if (auto hop = std::dynamic_pointer_cast<hfimg_outpluginst_t>(op))
           if (hop->_value)
             env->releaseToPool(hop->_value->_ssbo);
+      S._cursor = i + 1; // MT3: this node fully committed (submit+WAIT done) — resume past it
     }
+    // reached here == the topo loop completed (S._cursor == N) — finalize + report.
+    if (out_more)
+      *out_more = false;
     if (s_bakeprof and cook_computes > 0) {
       double bp_loop = bp_now() - bp_loop0;
       double bp_oth  = bp_loop - (bp_acq + bp_par + bp_dsp + bp_sto + bp_dsk);
@@ -791,26 +965,45 @@ static CookedGraphResult runCookedGraph(
           "[cook] cache DISABLED (capture cache=False): %d computed, %d demand-skipped, 0 disk I/O | arena peak %.1f MB (%.1f MB device), %d pool reuses\n",
           cook_computes, cook_skipped, double(env->_peak_arena_bytes) / (1024.0 * 1024.0),
           double(env->_device_bytes) / (1024.0 * 1024.0), env->_pool_reuses);
-  _cgresult._cook_loaded   = cook_loaded;
-  _cgresult._cook_skipped  = cook_skipped;
-  _cgresult._cook_computes = cook_computes;
-  return _cgresult;
+  S._result._cook_loaded   = cook_loaded;
+  S._result._cook_skipped  = cook_skipped;
+  S._result._cook_computes = cook_computes;
+  return S._result;
 }
 
 // stock the terrain CookGraphDriver on a GraphInst _impl (beside its BakeEnv) — the
 // generic composite runtime resolves it from there. Defined below TerrainCookDriver.
 static void _stockTerrainCookDriver(dflow::graphinst_ptr_t ginst, const bakeenv_ptr_t& env);
 
-std::vector<fieldstats_ptr_t> bakeHeightfield(
+///////////////////////////////////////////////////////////////////////////////
+// MT3 — bakeHeightfield factored into { setup, cook, flush } so BOTH the burst
+// driver (bakeHeightfield) and the SLICED driver (TerrainCookMicrotask) share ONE
+// setup + ONE flush (byte-identity by construction; only the cook's DRIVING differs
+// — one call vs `_cursor`-paced slices). The E4 skeleton extraction stays PARKED;
+// this is the minimal factoring that driving-layer slicing needs.
+///////////////////////////////////////////////////////////////////////////////
+
+struct TerrainBakeSetup {
+  dflow::graphdata_ptr_t _graph;
+  dflow::graphinst_ptr_t _ginst;
+  bakeenv_ptr_t          _env;
+  ui::updatedata_ptr_t   _updata;
+  std::vector<std::pair<dflow::inplugdata_ptr_t, dflow::outplugdata_ptr_t>> _marker_restore;
+  int   _dim      = 0;
+  float _extent_m = 0.0f;
+};
+
+// SETUP — select-as-output re-point + topo sort + instantiate + BakeEnv + stock the
+// cook driver + a frozen (t=0) updata. Runs OUTSIDE any open frame (matches HEAD's
+// updateTopology-before-beginFrame ordering); no dispatch here (T12: inputs frozen
+// at bake start — the cook only reads this snapshot).
+static TerrainBakeSetup _terrainBakeSetup(
     dflow::graphdata_ptr_t graph, Context* ctx, int dim, float extent_m) {
-  // SELECT-AS-OUTPUT (C++-backed marker; the doc layer's display rewiring made
-  // first-class): when the graph names an _output_node, every height/normal capture
-  // re-points its "In" to that node's "Out" and every other capture is disconnected
-  // (dropped, its sink skips gracefully at compute). The mutation is BAKE-SCOPED:
-  // the authored capture edges are saved and RESTORED before return — the editor
-  // rebakes the SAME GraphData across param edits (only structural edits
-  // re-elaborate), so a destructive re-point would leak into the next bake.
-  std::vector<std::pair<dflow::inplugdata_ptr_t, dflow::outplugdata_ptr_t>> marker_restore;
+  TerrainBakeSetup S;
+  S._graph    = graph;
+  S._dim      = dim;
+  S._extent_m = extent_m;
+  auto& marker_restore = S._marker_restore;
   if (not graph->_output_node.empty()) {
     auto marked = graph->module(graph->_output_node);
     dflow::outplugdata_ptr_t marked_out = marked ? marked->outputNamed("Out") : nullptr;
@@ -887,10 +1080,31 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
 
   ginst->updateTopology(topo);
 
-  // run the compute (modules dispatch; capture modules record requests)
+  // frozen updata (T12: t=0 — the cook reads no wall-clock / RCFD_TIME inputs mid-bake).
   auto updata      = std::make_shared<ui::UpdateData>();
   updata->_abstime = 0.0f;
   updata->_dt      = 0.0f;
+
+  S._ginst  = ginst;
+  S._env    = env;
+  S._updata = updata;
+  return S;
+}
+
+// FLUSH — readback + encode every capture (WS7 concurrent tails), free the arena,
+// restore the select-as-output edges, stamp the gpuUpdate seam. Identical for burst
+// + sliced (the sliced final slice calls it once). Defined after bakeHeightfield.
+static std::vector<fieldstats_ptr_t> _terrainBakeFlush(
+    TerrainBakeSetup& S, Context* ctx, std::vector<fieldstats_ptr_t>& current_stats);
+
+std::vector<fieldstats_ptr_t> bakeHeightfield(
+    dflow::graphdata_ptr_t graph, Context* ctx, int dim, float extent_m) {
+  // BURST driver (initial loads / headless oracle): setup -> cook-to-completion -> flush,
+  // all inside ONE frame. The editor RE-BAKE path uses the sliced driver instead (MT3).
+  auto S     = _terrainBakeSetup(graph, ctx, dim, extent_m);
+  auto ginst = S._ginst;
+  auto env   = S._env;
+  auto updata = S._updata;
 
   ctx->beginFrame();
   auto ci = ctx->CI();
@@ -908,6 +1122,19 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
     // terrainCacheTest's invariant: warm bake recomputes nothing but the sink.
     s_lastCookHits = _cooked._cook_loaded + _cooked._cook_skipped;
   } else {
+    // S4 STRUCTURAL FORK (loud degrade): checkpoints exist ONLY on the cacheable
+    // per-node branch above — this path records the WHOLE graph in ONE dispatch phase,
+    // so an on_checkpoint request cannot publish mid-bake. Degrade to on_complete,
+    // LOUDLY (never silently drop a requested behavior).
+    for (size_t i = 0; i < graph->numModules(); i++)
+      if (auto cap = std::dynamic_pointer_cast<CaptureModuleData>(graph->module(i)))
+        if (cap->_visual_update_mode == "on_checkpoint") {
+          printf("[s4-live] DEGRADE sink<%s>: visual_update_mode=on_checkpoint requires the "
+                 "cacheable per-node cook; this graph is NON-CACHEABLE — degrading to "
+                 "on_complete (no progressive display this bake)\n",
+                 cap->_name.c_str());
+          break;
+        }
     for (auto inst : ginst->_ordered_module_insts) // family-neutral pre-phase (see above)
       if (auto pp = std::dynamic_pointer_cast<dflowgfx::IPrePhaseParams>(inst))
         pp->writeParams(ctx);
@@ -916,6 +1143,16 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
     ci->endDispatchPhase();
   }
   ctx->endFrame();
+  return _terrainBakeFlush(S, ctx, current_stats);
+}
+
+static std::vector<fieldstats_ptr_t> _terrainBakeFlush(
+    TerrainBakeSetup& S, Context* ctx, std::vector<fieldstats_ptr_t>& current_stats) {
+  auto  env            = S._env;
+  auto  graph          = S._graph;
+  const int   dim      = S._dim;
+  const float extent_m = S._extent_m;
+  auto& marker_restore = S._marker_restore;
 
   // flush captures: readback each source SSBO and encode by file extension. BOTH
   // paths are SINGLE-CHANNEL and NORMALIZED to the field's [min,max] (auto-exposed
@@ -936,6 +1173,36 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
   std::vector<std::vector<fieldstats_ptr_t>> req_stats(nreq);
   ork::semaphore flush_sema("terra_capflush");
   int njobs = 0;
+
+  // S4: bake FINAL — publish the height sink's captured plane to the live artifact (if
+  // one was armed) so live consumers converge EXACTLY to the on-disk product, then mark
+  // FINAL so held-back consumers (physics hold-last-final) rebind exactly once, NOW.
+  // markFinal runs even when nothing published this bake (capture-current / all-skipped)
+  // — the artifact must never be left "live" past its bake. Runs BEFORE the flush loop
+  // below consumes the _hostcopy planes.
+  if (env->_live_out) {
+    for (auto& req : env->_captures) {
+      auto img = req._img;
+      if (not(img and req._hostcopy))
+        continue;
+      if (img->_channels > 1)
+        continue; // the live artifact is the mono height plane
+      bool is_live_src = false;
+      for (auto& ch : _splitCaptureChannels(req._channels, "height"))
+        if (ch == "height" and
+            liveFieldCanonicalKey(_capturePathForChannel(req._path, "height")) == env->_live_key)
+          is_live_src = true;
+      if (not is_live_src)
+        continue;
+      env->_live_out->publish(img->_w, img->_h, req._hostcopy->data());
+      printf("[s4-live] publish key<%s> gen<%" PRIu64 "> node<flush> coverage<final>\n",
+             env->_live_key.c_str(), env->_live_out->generation());
+      break;
+    }
+    env->_live_out->markFinal();
+    printf("[s4-live] FINAL key<%s> gen<%" PRIu64 ">\n",
+           env->_live_key.c_str(), env->_live_out->generation());
+  }
 
   // split a comma-joined channel list ("height,normal") into trimmed tokens.
   auto split_channels = [](const std::string& cs, const char* fallback) {
@@ -1175,7 +1442,198 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
     if (item.second)
       graph->safeConnect(item.first, item.second);
   }
+  // gpuUpdate seam: remember which family baked this graph + its params, so a later
+  // family-neutral gpuUpdate() re-dispatches this same bake (WARM cache -> byte-identical
+  // capture files).
+  auto stamp      = std::make_shared<GpuUpdateStamp>();
+  stamp->_family  = GraphFamily::TERRAIN;
+  stamp->_dim     = dim;
+  stamp->_extent_m = extent_m;
+  graph->_impl.setShared<GpuUpdateStamp>(stamp);
   return stats;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// MT3 — TerrainCookMicrotask: the SLICED re-bake client (JUL13_DFLOW §2.6/§E5).
+//
+// ONE node's dispatch triplet per slice (slice grain = the topo node; sub-dispatch
+// slicing is deliberately unsupported, gpumicrotask.h:174-178). SOFT_DEADLINE.
+// Setup runs at CONSTRUCTION (bake-start input freeze, T12); the cook advances
+// across scheduler slices; a final slice flushes + tears down + fires on_complete.
+// T7: every slice fully submits+WAITs its node (endDispatchPhase) — a slice never
+// leaves a dispatch phase open across frames. T10: the BakeEnv + its pooled SSBOs
+// stay resident across the paused slices (100s of MB for a big frontier — accepted).
+///////////////////////////////////////////////////////////////////////////////
+
+// T9 (MANDATORY, cache-poison risk): a SLICED cook may NOT populate the content-
+// addressed dflowcache until sliced-vs-blocking byte-identity is PROVEN. That gate is
+// now GREEN — test_terrain_mt3_oracle.py shows the slicer produces byte-identical
+// products to the burst path on every graph where byte-identity is even achievable
+// (the deterministic corpus: fbm/terrace/lpf/remap + a composite T.loop + basin_fill's
+// CPU-readback). The erosion ops (flow3d/flow_erode) are submit-order-sensitive GPU
+// atomics — NOT byte-reproducible even burst-vs-burst — so a sliced-stored flow blob is
+// a VALID cook sample, no more "poison" than the first-write-wins blob blocking already
+// stores (and it gives editor<->export consistency). cacheStore is therefore ENABLED.
+// ORKID_MT3_NOSTORE=1 reverts to no-store (diagnostic); MT4 folds this into the default.
+static bool _mt3SlicedAllowStore() {
+  static bool v = (std::getenv("ORKID_MT3_NOSTORE") == nullptr);
+  return v;
+}
+
+namespace {
+
+struct TerrainCookMicrotask final : public GpuMicrotask, public SlicedBakeHandle {
+  enum Phase { PLAN, COOK, FLUSH, DONE };
+
+  TerrainCookMicrotask(
+      dflow::graphdata_ptr_t graph, Context* ctx, int dim, float extent_m,
+      std::function<void()> on_complete)
+      : _ctx(ctx)
+      , _on_complete(std::move(on_complete)) {
+    // freeze the bake inputs NOW (topo sort + instantiate + BakeEnv), before any slice.
+    _setup                   = _terrainBakeSetup(graph, ctx, dim, extent_m);
+    _setup._env->_allow_store = _mt3SlicedAllowStore(); // T9 gate (reaches nested cooks via env)
+    _name               = "TerrainCook";
+    _class              = MicrotaskClass::SOFT_DEADLINE;
+    _deadlineFrame      = -1; // always-due
+    s_lastSubgraphComputes = 0;
+    s_lastSubgraphLoads    = 0;
+  }
+
+  int64_t sliceEstimateUs() const override {
+    // T1: honest per-node estimate = the upcoming node CLASS's measured-cost EMA
+    // (terrain per-node cost spans 3+ orders of magnitude; a single EMA is useless).
+    // The scheduler's own auto-halving + the >4x-loud-log ride on top of this.
+    if (_phase != COOK)
+      return 4000;
+    auto& order = _setup._ginst->_ordered_module_insts;
+    if (_slice._cursor >= order.size())
+      return 4000;
+    std::string cn = order[_slice._cursor]->_abstract_module_data->GetClass()->Name().c_str();
+    auto it = _classEmaUs.find(cn);
+    return int64_t(it != _classEmaUs.end() ? it->second : 6000.0f);
+  }
+
+  float progress() const override { // satisfies BOTH GpuMicrotask + SlicedBakeHandle
+    if (_phase == DONE)
+      return 1.0f;
+    if (nullptr == _setup._ginst)
+      return 0.0f;
+    size_t N = _setup._ginst->_ordered_module_insts.size();
+    return (N > 0) ? float(_slice._cursor) / float(N) : 0.0f;
+  }
+
+  bool runSlice(MicrotaskContext& mctx) override {
+    _framesDriven++; // gate-6: total slices driven (one node's dispatch triplet each)
+    Context* ctx = mctx._gfxctx;
+    if (_phase == PLAN) {
+      bool more = false; // plan-only (max_nodes==0): the demand plan + hashes, no node runs
+      runCookedGraph(_setup._ginst, _setup._env, _setup._updata, 0, false, {}, true, &_slice, 0, &more);
+      _phase = COOK;
+      return true;
+    }
+    if (_phase == COOK) {
+      auto& order = _setup._ginst->_ordered_module_insts;
+      std::string cn;
+      if (_slice._cursor < order.size())
+        cn = order[_slice._cursor]->_abstract_module_data->GetClass()->Name().c_str();
+      Timer t;
+      t.Start();
+      bool more = false; // advance exactly ONE topo node (its full dispatch triplet)
+      auto r = runCookedGraph(_setup._ginst, _setup._env, _setup._updata, 0, false, {}, true, &_slice, 1, &more);
+      float us = float(t.SecsSinceStart() * 1.0e6);
+      if (not cn.empty()) {
+        float& ema = _classEmaUs[cn];
+        ema = (ema <= 0.0f) ? us : (0.7f * ema + 0.3f * us);
+      }
+      if (not more) {
+        _cookResult = r;
+        _phase      = FLUSH;
+      }
+      return true;
+    }
+    if (_phase == FLUSH) {
+      // final slice: readback+encode (WS7 concurrent tails, joined here), free arena,
+      // restore markers, stamp. Bounded CPU hitch — the heavy per-channel EXR encode
+      // fans to the concurrent queue; the join is the residual (a later slice could
+      // pipeline it, but the dominant cook cost is already spread across the slices).
+      std::vector<fieldstats_ptr_t> cs = _cookResult._current_stats;
+      _stats = _terrainBakeFlush(_setup, ctx, cs);
+      _phase = DONE;
+      _done.store(true);
+      if (_on_complete)
+        _on_complete();
+      return false; // complete — scheduler drops us; the caller's handle ref keeps us alive
+    }
+    return false;
+  }
+
+  // ---- SlicedBakeHandle ----
+  bool     done() const override { return _done.load(); }
+  uint64_t framesDriven() const override { return _framesDriven; }
+
+  void pumpToCompletion(Context* ctx) override {
+    // Headless gate driver: ONE node per frame (max slice-boundary stress — the
+    // strongest byte-identity exercise). A live editor drives runSlice via the
+    // context scheduler instead (budget-paced, many nodes/frame under the frame law).
+    // ORKID_MT3_PUMP_ONEFRAME=1 (diagnostic): drive every slice inside ONE frame — the
+    // A/B lever isolating cross-frame GPU-state effects from the slicing logic itself.
+    static const bool one_frame = (std::getenv("ORKID_MT3_PUMP_ONEFRAME") != nullptr);
+    uint64_t frame = 0;
+    if (one_frame) {
+      ctx->beginFrame(false);
+      while (not _done.load()) {
+        MicrotaskContext mctx{ctx, 1'000'000, frame++};
+        runSlice(mctx);
+      }
+      ctx->endFrame();
+      return;
+    }
+    while (not _done.load()) {
+      ctx->beginFrame(false);
+      MicrotaskContext mctx{ctx, 1'000'000, frame++};
+      runSlice(mctx);
+      ctx->endFrame();
+    }
+  }
+
+  Context*                             _ctx = nullptr;
+  TerrainBakeSetup                     _setup;
+  CookSliceState                       _slice;
+  CookedGraphResult                    _cookResult;
+  std::vector<fieldstats_ptr_t>        _stats;
+  std::function<void()>                _on_complete;
+  std::atomic<bool>                    _done{false};
+  uint64_t                             _framesDriven = 0;
+  Phase                                _phase = PLAN;
+  mutable std::map<std::string, float> _classEmaUs;
+};
+
+} // anonymous namespace
+
+slicedbake_handle_ptr_t enqueueSlicedBake(
+    dflow::graphdata_ptr_t graph, Context* ctx, int dim, float extent_m,
+    std::function<void()> on_complete, bool enqueue) {
+  if (enqueue and std::getenv("ORKID_MT3_DISABLE")) {
+    // MT4-removal fallback: run the burst bake inline + hand back an already-done handle
+    // (the caller then proceeds exactly as the pre-MT3 blocking path).
+    bakeHeightfield(graph, ctx, dim, extent_m);
+    struct DoneHandle final : public SlicedBakeHandle {
+      bool     done() const override { return true; }
+      float    progress() const override { return 1.0f; }
+      uint64_t framesDriven() const override { return 1; } // burst == one call
+      void     pumpToCompletion(Context*) override {}
+    };
+    return std::make_shared<DoneHandle>();
+  }
+  auto task = std::make_shared<TerrainCookMicrotask>(graph, ctx, dim, extent_m, std::move(on_complete));
+  if (enqueue)
+    // editor path: the context scheduler drives it (budget-paced) at each beginFrame.
+    ctx->_microtaskScheduler.enqueue(std::static_pointer_cast<GpuMicrotask>(task));
+  // else (headless oracle): NOT registered with the scheduler — pumpToCompletion drives
+  // runSlice directly one node/frame, so no double-drive and real slice boundaries fire
+  // even on an UNBOUNDED offscreen context (which would otherwise drain it in one frame).
+  return std::static_pointer_cast<SlicedBakeHandle>(task);
 }
 
 void bakeHeightfieldTest(Context* ctx, const ork::file::Path& outpath, int dim) {
@@ -1270,7 +1728,7 @@ int terrainOpsSelfTest(Context* ctx, int dim) {
     auto ca = mkConst(a);
     auto cb = mkConst(b);
     auto cm = CombineModuleData::createShared();
-    cm->_op = op;
+    cm->_op = CombineOp(op);
     cm->typedInputNamed<dflow::FloatPlugTraits>("t")->setValue(t);
     dflow::GraphData::addModule(g, "a", ca);
     dflow::GraphData::addModule(g, "b", cb);
@@ -1375,7 +1833,7 @@ int terrainOpsSelfTest(Context* ctx, int dim) {
     auto g  = std::make_shared<dflow::GraphData>();
     auto c  = mkConst(0.5f);
     auto cv = CurvatureModuleData::createShared();
-    cv->_mode     = int(CurvatureMode::MAGNITUDE);
+    cv->_mode     = CurvatureMode::MAGNITUDE;
     cv->_radius_m = 4.0f; // -> 4 texels at extent==dim
     dflow::GraphData::addModule(g, "c", c);
     dflow::GraphData::addModule(g, "cv", cv);
@@ -1388,9 +1846,9 @@ int terrainOpsSelfTest(Context* ctx, int dim) {
     auto gr = GradientModuleData::createShared(); // value = uv.x
     gr->typedInputNamed<dflow::Vec2fPlugTraits>("dir")->setValue(fvec2(1.0f, 0.0f));
     auto sq = CombineModuleData::createShared(); // uv.x * uv.x = uv.x^2
-    sq->_op = int(CombineOp::MUL);
+    sq->_op = CombineOp::MUL;
     auto cv = CurvatureModuleData::createShared();
-    cv->_mode     = mode;
+    cv->_mode     = CurvatureMode(mode);
     cv->_radius_m = 4.0f; // -> 4 texels at extent==dim
     cv->typedInputNamed<dflow::FloatPlugTraits>("scale")->setValue(scale);
     dflow::GraphData::addModule(g, "grad", gr);
@@ -1443,14 +1901,14 @@ int terrainRoundTripTest(Context* ctx, int dim) {
     auto cst  = ConstModuleData::createShared();
     cst->typedInputNamed<dflow::FloatPlugTraits>("level")->setValue(0.5f);
     auto comb = CombineModuleData::createShared();
-    comb->_op = int(CombineOp::MUL); // non-default baked scalar (default is ADD)
+    comb->_op = CombineOp::MUL; // non-default baked scalar (default is ADD)
     // Gradient with a NON-default vec2 "dir" — exercises the vec2 plug VALUE
     // surviving the JSON round-trip (the inplugdata<Vec2fPlugTraits> reflection).
     auto grad = GradientModuleData::createShared();
     grad->typedInputNamed<dflow::Vec2fPlugTraits>("dir")->setValue(fvec2(0.6f, 0.8f)); // default is (1,0)
     grad->typedInputNamed<dflow::FloatPlugTraits>("scale")->setValue(0.5f);
     auto comb2 = CombineModuleData::createShared();
-    comb2->_op = int(CombineOp::MUL);
+    comb2->_op = CombineOp::MUL;
     auto cap  = CaptureModuleData::createShared();
     cap->_path = ork::file::Path(cappath);
     dflow::GraphData::addModule(g, "fbm", fbm);
@@ -1491,8 +1949,8 @@ int terrainRoundTripTest(Context* ctx, int dim) {
     printf("[roundtrip] _octaves LOST (got %d, want 7)\n", fbm1 ? fbm1->_octaves : -1);
     fails++;
   }
-  if (not comb1 or comb1->_op != int(CombineOp::MUL)) {
-    printf("[roundtrip] _op LOST (got %d, want %d=MUL)\n", comb1 ? comb1->_op : -1, int(CombineOp::MUL));
+  if (not comb1 or comb1->_op != CombineOp::MUL) {
+    printf("[roundtrip] _op LOST (got %d, want %d=MUL)\n", comb1 ? int(comb1->_op) : -1, int(CombineOp::MUL));
     fails++;
   }
   // the vec2 "dir" plug VALUE must survive JSON (inplugdata<Vec2fPlugTraits> reflection)

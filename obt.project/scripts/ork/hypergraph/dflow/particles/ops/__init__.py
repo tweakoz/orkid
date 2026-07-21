@@ -23,6 +23,7 @@ from .line_emitter import line_emitter
 # forces / attractors
 from .gravity import gravity
 from .directional_force import directional_force
+from .expr_force import expr_force
 from .turbulence import turbulence
 from .curl_noise import curl_noise
 from .vortex import vortex
@@ -50,7 +51,8 @@ __all__ = [
     # emitters
     "elliptical_emitter", "ring_emitter", "nozzle_emitter", "line_emitter",
     # forces / attractors
-    "gravity", "turbulence", "curl_noise", "vortex", "drag", "poly_drag",
+    "gravity", "directional_force", "expr_force",
+    "turbulence", "curl_noise", "vortex", "drag", "poly_drag",
     "elliptical_attractor", "sph_attractor", "point_attractor",
     # colliders
     "plane_collider", "sphere_collider", "vdb_collider",

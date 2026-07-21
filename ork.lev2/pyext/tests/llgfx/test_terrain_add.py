@@ -53,7 +53,7 @@ class Base(HeightField):
     def __init__(self, freq=_SALT):
         super().__init__()
         h = T.Fbm(frequency=freq, octaves=5) * 0.5 + 0.5
-        self.capture(T.lpf(h, cutoff_texels=4.0), "height")
+        self.capture(T.lpf(h, cutoff=4.0), "height")
 
 
 class WithTerrace(HeightField):
@@ -61,7 +61,7 @@ class WithTerrace(HeightField):
     def __init__(self, freq=_SALT):
         super().__init__()
         h = T.Fbm(frequency=freq, octaves=5) * 0.5 + 0.5
-        self.capture(T.lpf(T.terrace(h), cutoff_texels=4.0), "height")
+        self.capture(T.lpf(T.terrace(h), cutoff=4.0), "height")
 
 
 class WithLoop(HeightField):
@@ -71,7 +71,7 @@ class WithLoop(HeightField):
         h = T.Fbm(frequency=freq, octaves=5) * 0.5 + 0.5
         with T.loop(4, h=h) as L:
             L.h = T.erode_thermal(L.h)
-        self.capture(T.lpf(L.h, cutoff_texels=4.0), "height")
+        self.capture(T.lpf(L.h, cutoff=4.0), "height")
 
 
 class WithFlowErode(HeightField):
@@ -81,7 +81,7 @@ class WithFlowErode(HeightField):
         h = T.Fbm(frequency=freq, octaves=5) * 0.5 + 0.5
         f = T.flow3d(h)
         h = T.flow_erode(h, f.discharge)
-        self.capture(T.lpf(h, cutoff_texels=4.0), "height")
+        self.capture(T.lpf(h, cutoff=4.0), "height")
 
 
 class WithFcb(HeightField):
@@ -90,7 +90,7 @@ class WithFcb(HeightField):
         super().__init__()
         h = T.Fbm(frequency=freq, octaves=5) * 0.5 + 0.5
         h = T.fill_closed_basins(h).filled
-        self.capture(T.lpf(h, cutoff_texels=4.0), "height")
+        self.capture(T.lpf(h, cutoff=4.0), "height")
 
 
 def doc_of(inst):
@@ -254,6 +254,58 @@ def run(ez, ctx):
         a11 = a11 and good
     print(f"[a11] blend param recorded on all three ops {a11}", flush=True)
     results["a11_blend_param"] = a11
+
+    # ---- a12: MENU PARITY (E1-close) — the reflection-carried palette (class
+    # annotations dsl.verb / editor.palette / editor.palette.sort, read via
+    # core.dataflow.moduleClasses) reproduces EXACTLY the curated add menu the hand
+    # tuple encoded. LEGACY_ADD_MENU below is the pre-change hand-curated add-ops
+    # tuple, captured VERBATIM before it was deleted (the plan's parity gate).
+    LEGACY_ADD_MENU = ("erode_thermal", "erox", "pha", "flow_erode", "basin_fill",
+                       "fill_closed_basins", "terrace", "lpf", "normalize", "slope",
+                       "expr", "fbm", "voronoi")
+    from ork.hypergraph.dflow.terrain.doc import editor_add_ops
+    menu = tuple(editor_add_ops())
+    order_ok = menu == LEGACY_ADD_MENU
+    sorted_ok = sorted(menu) == sorted(LEGACY_ADD_MENU)
+    # both consumers offer the SAME palette: outliner factories (node row adds +
+    # "loop") and an unknown-verb add refuses loudly.
+    d12 = doc_of(Base())
+    om12 = TerrainDocOutlinerModel(d12)
+    fac12 = [f["id"] for f in om12.getFactories("remap_1")]
+    fac_ok = fac12 == list(LEGACY_ADD_MENU) + ["loop"]
+    try:
+        add_op_node(d12, "no_such_op", find_by_path(d12, "remap_1"))
+        refuse_ok = False
+    except TerrainDocParamError:
+        refuse_ok = True
+    a12 = order_ok and sorted_ok and fac_ok and refuse_ok
+    print(f"[a12] menu==legacy-tuple {order_ok}  sorted== {sorted_ok}  factories== {fac_ok}  "
+          f"unknown-op-refused {refuse_ok} -> {a12}", flush=True)
+    results["a12_menu_parity"] = a12
+
+    # ---- a13: ranges reach the TERRAIN propsheet rows (E1-close item 3) --------
+    # FlowErode.blend is a reflected module PROPERTY — its editor.range.min/max
+    # annotations must flow moduleClasses -> prop_meta -> the terrain node
+    # propsheet row (the module-prop range mechanism), exactly as PLUG ranges
+    # (lpf cutoff, via plugSpec -> plug_meta) flow into their rows. Asserted
+    # through the C++ PropertySheetModel trampoline (the a7b idiom).
+    from ork.editor.terrain_doc_model import TerrainNodePropertyModel
+    d13 = doc_of(Base())
+    fe13 = add_op_node(d13, "flow_erode", find_by_path(d13, "remap_1"))
+    pm_fe = TerrainNodePropertyModel(fe13)
+    ann_b = lev2.ui.PropertySheetModel.getAnnotations(pm_fe, "blend")
+    blend_ok = (ann_b is not None
+                and float(ann_b.min) == 0.0 and float(ann_b.max) == 1.0)
+    lpf13 = next(o for (_pk, _k, o) in tree_paths(d13)
+                 if isinstance(o, DocNode) and o.clazz_name == "LpfModule")
+    pm_lpf = TerrainNodePropertyModel(lpf13)
+    ann_c = lev2.ui.PropertySheetModel.getAnnotations(pm_lpf, "cutoff")
+    cutoff_ok = (ann_c is not None
+                 and float(ann_c.min) == 0.0 and float(ann_c.max) == 16384.0)
+    a13 = blend_ok and cutoff_ok
+    print(f"[a13] flow_erode.blend module-prop range 0..1 {blend_ok}  "
+          f"lpf.cutoff plug range 0..16384 {cutoff_ok} -> {a13}", flush=True)
+    results["a13_propsheet_ranges"] = a13
 
     return results
 

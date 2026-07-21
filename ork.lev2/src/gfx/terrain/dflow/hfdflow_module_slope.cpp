@@ -70,6 +70,8 @@ compute_shader cs_slope : iface {
 
 struct SlopeModuleInst : public TerrainComputeInst {
   SlopeModuleInst(const SlopeModuleData* d, dflow::GraphInst* g) : TerrainComputeInst(d, g), _d(d) {}
+  // S4: a slope MASK is analysis, not surface — never publish it as live display heights.
+  bool viewableDefault() const override { return false; }
   void onLink(dflow::GraphInst*) final {
     _output = typedOutputNamed<HfImagePlugTraits>("Out");
     _input  = typedInputNamed<HfImagePlugTraits>("In");
@@ -136,6 +138,10 @@ void SlopeModuleData::describeX(class_t* clazz) {
   clazz->setSharedFactory([]() -> rtti::castable_ptr_t { return SlopeModuleData::createShared(); });
   clazz->annotateTyped<dataflow::moduleIOreshape_fn_t>("reshapeIOs",
       [](dataflow::moduledata_ptr_t m) { _reshapeSlopeIOs(m); });
+  // E1-close add-palette (reflection-carried; see hfdflow_module_thermal.cpp for the vocabulary).
+  clazz->annotateTyped<ConstString>("dsl.verb", "slope");
+  clazz->annotateTyped<bool>("editor.palette", true);
+  clazz->annotateTyped<int>("editor.palette.sort", 9);
   clazz->directProperty("radius_m", &SlopeModuleData::_radius_m); // baked pre-blur / scale (meters)
 }
 

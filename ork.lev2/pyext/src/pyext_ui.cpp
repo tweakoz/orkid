@@ -16,7 +16,6 @@
 #include <ork/lev2/ui/tabs.h>
 #include <ork/lev2/ui/pack.h>
 #include <ork/lev2/ui/alignmentgroup.h>
-#include <ork/lev2/ui/split.h>
 #include <ork/lev2/ui/lineedit.h>
 #include <ork/lev2/ui/f32edit.h>
 #include <ork/lev2/ui/intedit.h>
@@ -38,6 +37,7 @@
 #include <ork/lev2/ui/popups.inl>
 #include <ork/lev2/ui/prim_canvas.h>
 #include <ork/lev2/ui/dockable_panel.h>
+#include <ork/lev2/ui/dock_panel.h>
 #include <ork/lev2/ui/border_frame.h>
 #include <ork/lev2/ui/scroll_container.h>
 #include <ork/lev2/ui/collapsable.h>
@@ -63,6 +63,16 @@ void pyinit_ui_outliner(py::module& module_ui);
 void pyinit_ui_property_sheet(py::module& module_ui);
 void pyinit_ui_filesystem(py::module& module_ui);
 void pyinit_ui_toolbar(py::module& module_ui);
+
+// Codes the Context synthesizes from raw events on replay — the Event factories
+// refuse them so a session only ever carries raw input.
+static inline bool _ui_event_code_is_derived(ui::EventCode c) {
+  return c == ui::EventCode::DOUBLECLICK   //
+      || c == ui::EventCode::BEGIN_DRAG    //
+      || c == ui::EventCode::END_DRAG      //
+      || c == ui::EventCode::MOUSE_ENTER   //
+      || c == ui::EventCode::MOUSE_LEAVE;
+}
 
 void pyinit_ui(py::module& module_lev2) {
   auto uimodule   = module_lev2.def_submodule("ui", "ui operations");
@@ -135,6 +145,14 @@ void pyinit_ui(py::module& module_lev2) {
           .def("hasMouseFocus", [](ui::context_ptr_t uictx, uiwidget_ptr_t w) -> bool { return uictx->hasMouseFocus(w.get()); })
           .def("dumpWidgets", [](ui::context_ptr_t uictx, std::string label) { uictx->dumpWidgets(label); })
           .def("isKeyDown", [](ui::context_ptr_t uictx, int keycode) -> bool { return uictx->isKeyDown(keycode); })
+          .def_property(
+              "virtual_time_enabled",
+              [](ui::context_ptr_t uictx) -> bool { return uictx->_use_virtual_time; },
+              [](ui::context_ptr_t uictx, bool val) { uictx->_use_virtual_time = val; })
+          .def_property(
+              "virtual_time",
+              [](ui::context_ptr_t uictx) -> double { return uictx->_virtual_time; },
+              [](ui::context_ptr_t uictx, double val) { uictx->_virtual_time = val; })
           .def_property(
               "debug_event_routing",
               [](ui::context_ptr_t uictx) -> bool { return uictx->_debug_event_routing; },
@@ -311,7 +329,107 @@ void pyinit_ui(py::module& module_lev2) {
               })
           .def_property_readonly("rayF", [](ui::event_ptr_t ev) -> fvec4 { //
             return ev->mvRayF;
-          });
+          })
+          .def_property_readonly(
+              "code_name",                            //
+              [](ui::event_ptr_t ev) -> std::string { //
+                return ui::EventCodeToName(ev->_eventcode);
+              })
+          //////////////////////////////////////////////////////////////////////
+          // synthetic-event FACTORIES (record/playback). Each stamps the FULL
+          // field set for its event class per the engine pump table (mirror
+          // fillEventKeyboard / fillEventCursor / scroll-fill). Never expose raw
+          // settable fields — factories are the only construction path. Derived
+          // codes (DOUBLECLICK / BEGIN_DRAG / END_DRAG / MOUSE_ENTER / MOUSE_LEAVE)
+          // are REFUSED: the Context synthesizes those from raw events on replay.
+          //////////////////////////////////////////////////////////////////////
+          .def_static(
+              "make_key",
+              [](uint64_t code, int keycode, bool shift, bool ctrl, bool alt, bool super_) -> ui::event_ptr_t {
+                auto ec = ui::EventCode(code);
+                if (_ui_event_code_is_derived(ec))
+                  throw py::value_error(
+                      "ui.Event.make_key refuses derived code '" + ui::EventCodeToName(ec) +
+                      "' — the Context derives it from raw events on replay");
+                auto ev          = std::make_shared<ui::Event>();
+                ev->_eventcode   = ec;
+                ev->miKeyCode    = keycode;
+                ev->mbSHIFT      = shift;
+                ev->mbCTRL       = ctrl;
+                ev->mbALT        = alt;
+                ev->mbSUPER      = super_;
+                return ev;
+              },
+              py::arg("code"),
+              py::arg("keycode"),
+              py::arg("shift")  = false,
+              py::arg("ctrl")   = false,
+              py::arg("alt")    = false,
+              py::arg("super_") = false)
+          .def_static(
+              "make_pointer",
+              [](uint64_t code, int x, int y, int screen_w, int screen_h,
+                 py::object last_x, py::object last_y,
+                 bool left, bool middle, bool right,
+                 bool shift, bool ctrl, bool alt, bool super_) -> ui::event_ptr_t {
+                auto ec = ui::EventCode(code);
+                if (_ui_event_code_is_derived(ec))
+                  throw py::value_error(
+                      "ui.Event.make_pointer refuses derived code '" + ui::EventCodeToName(ec) +
+                      "' — the Context derives it from raw events on replay");
+                int lx = last_x.is_none() ? x : py::cast<int>(last_x);
+                int ly = last_y.is_none() ? y : py::cast<int>(last_y);
+                auto ev              = std::make_shared<ui::Event>();
+                ev->_eventcode       = ec;
+                ev->miX              = x;
+                ev->miY              = y;
+                ev->miLastX          = lx;
+                ev->miLastY          = ly;
+                ev->miScreenWidth    = screen_w;
+                ev->miScreenHeight   = screen_h;
+                float sw             = float(screen_w > 0 ? screen_w : 1);
+                float sh             = float(screen_h > 0 ? screen_h : 1);
+                ev->mfUnitX          = float(x) / sw;
+                ev->mfUnitY          = float(y) / sh;
+                ev->mfLastUnitX      = float(lx) / sw;
+                ev->mfLastUnitY      = float(ly) / sh;
+                ev->mbLeftButton     = left;
+                ev->mbMiddleButton   = middle;
+                ev->mbRightButton    = right;
+                ev->mbSHIFT          = shift;
+                ev->mbCTRL           = ctrl;
+                ev->mbALT            = alt;
+                ev->mbSUPER          = super_;
+                ev->mpBlindEventData = nullptr;
+                return ev;
+              },
+              py::arg("code"),
+              py::arg("x"),
+              py::arg("y"),
+              py::arg("screen_w"),
+              py::arg("screen_h"),
+              py::arg("last_x") = py::none(),
+              py::arg("last_y") = py::none(),
+              py::arg("left")   = false,
+              py::arg("middle") = false,
+              py::arg("right")  = false,
+              py::arg("shift")  = false,
+              py::arg("ctrl")   = false,
+              py::arg("alt")    = false,
+              py::arg("super_") = false)
+          .def_static(
+              "make_wheel",
+              [](double dx, double dy) -> ui::event_ptr_t {
+                // scroll-fill: primary window ×10 int-scales scroll deltas (popups do
+                // not — normalize to the primary convention).
+                auto ev        = std::make_shared<ui::Event>();
+                ev->_eventcode = ui::EventCode::MOUSEWHEEL;
+                ev->miMWX      = int(dx * 10.0);
+                ev->miMWY      = int(dy * 10.0);
+                return ev;
+              },
+              py::arg("dx"),
+              py::arg("dy"));
   type_codec->registerStdCodec<ui::event_ptr_t>(uievent_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto drwev_type = py::class_<ui::DrawEvent, uidrawevent_ptr_t>(uimodule, "DrawEvent")          //
@@ -543,6 +661,21 @@ void pyinit_ui(py::module& module_lev2) {
   auto group_type = //
       py::class_<ui::Group, ui::Widget, uigroup_ptr_t>(uimodule, "Group")
           .def("updateLayout", [](uigroup_ptr_t grp) { grp->DoLayout(); })
+          .def(
+              "addChild",
+              [](uigroup_ptr_t grp, ui::widget_ptr_t w) { //
+                grp->addChild(w);  // auto-reparents w out of its current parent
+              })
+          .def(
+              "removeChild",
+              [](uigroup_ptr_t grp, ui::widget_ptr_t w) { //
+                grp->removeChild(w);
+              })
+          .def(
+              "numChildren",
+              [](uigroup_ptr_t grp) -> int { //
+                return int(grp->numChildren());
+              })
           .def_property(
               "margin",
               [](uigroup_ptr_t grid) -> int { //
@@ -1377,120 +1510,6 @@ void pyinit_ui(py::module& module_lev2) {
               [](ui::alignmentgroup_ptr_t group) -> bool { return group->_draw_background; },
               [](ui::alignmentgroup_ptr_t group, bool val) { group->_draw_background = val; });
   type_codec->registerStdCodec<ui::alignmentgroup_ptr_t>(alignmentgroup_type);
-  /////////////////////////////////////////////////////////////////////////////////
-  // HorizontalSplit
-  auto hsplit_type = //
-      py::class_<ui::HorizontalSplit, ui::Group, ui::hsplit_ptr_t>(uimodule, "HorizontalSplit")
-          .def_static(
-              "wfactory",
-              [type_codec](py::list py_args) -> ui::hsplit_ptr_t { //
-                auto decoded_args = type_codec->decodeList(py_args);
-                auto name         = decoded_args[0].get<std::string>();
-                auto split        = std::make_shared<ui::HorizontalSplit>(name);
-                return split;
-              })
-          .def_static(
-              "uifactory",
-              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
-                auto decoded_args = type_codec->decodeList(py_args);
-                auto name         = decoded_args[0].get<std::string>();
-                auto layoutitem   = lg->makeChild<ui::HorizontalSplit>(name);
-                return layoutitem.as_shared();
-              })
-          .def(
-              "makeChild",
-              [](ui::hsplit_ptr_t hsplit, py::kwargs kwargs) -> ui::widget_ptr_t { //
-                ui::widget_ptr_t rval;
-                if (kwargs) {
-                  py::list args;
-                  py::object wfactory;
-                  int args_parsed = 0;
-                  for (auto item : kwargs) {
-                    auto key = py::cast<std::string>(item.first);
-                    if (key == "uiclass") {
-                      auto uiclass_obj  = py::cast<py::object>(item.second);
-                      bool has_wfactory = py::hasattr(uiclass_obj, "wfactory");
-                      OrkAssert(has_wfactory);
-                      wfactory = uiclass_obj.attr("wfactory");
-                      args_parsed++;
-                    } else if (key == "args") {
-                      args = py::cast<py::list>(item.second);
-                      args_parsed++;
-                    }
-                  }
-                  OrkAssert(args_parsed == 2);
-                  rval = py::cast<ui::widget_ptr_t>(wfactory(args));
-                  hsplit->addChild(rval);
-                }
-                return rval;
-              })
-          .def_property(
-              "split_ratio",
-              [](ui::hsplit_ptr_t split) -> float { //
-                return split->_split_ratio;
-              },
-              [](ui::hsplit_ptr_t split, float ratio) { //
-                split->_split_ratio = ratio;
-                // split->ReLayout();
-              });
-  type_codec->registerStdCodec<ui::hsplit_ptr_t>(hsplit_type);
-  /////////////////////////////////////////////////////////////////////////////////
-  // VerticalSplit
-  auto vsplit_type = //
-      py::class_<ui::VerticalSplit, ui::Group, ui::vsplit_ptr_t>(uimodule, "VerticalSplit")
-          .def_static(
-              "wfactory",
-              [type_codec](py::list py_args) -> ui::vsplit_ptr_t { //
-                auto decoded_args = type_codec->decodeList(py_args);
-                auto name         = decoded_args[0].get<std::string>();
-                auto split        = std::make_shared<ui::VerticalSplit>(name);
-                return split;
-              })
-          .def_static(
-              "uifactory",
-              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
-                auto decoded_args = type_codec->decodeList(py_args);
-                auto name         = decoded_args[0].get<std::string>();
-                auto layoutitem   = lg->makeChild<ui::VerticalSplit>(name);
-                return layoutitem.as_shared();
-              })
-          .def(
-              "makeChild",
-              [](ui::vsplit_ptr_t vsplit, py::kwargs kwargs) -> ui::widget_ptr_t { //
-                ui::widget_ptr_t rval;
-                if (kwargs) {
-                  py::list args;
-                  py::object wfactory;
-                  int args_parsed = 0;
-                  for (auto item : kwargs) {
-                    auto key = py::cast<std::string>(item.first);
-                    if (key == "uiclass") {
-                      auto uiclass_obj  = py::cast<py::object>(item.second);
-                      bool has_wfactory = py::hasattr(uiclass_obj, "wfactory");
-                      OrkAssert(has_wfactory);
-                      wfactory = uiclass_obj.attr("wfactory");
-                      args_parsed++;
-                    } else if (key == "args") {
-                      args = py::cast<py::list>(item.second);
-                      args_parsed++;
-                    }
-                  }
-                  OrkAssert(args_parsed == 2);
-                  rval = py::cast<ui::widget_ptr_t>(wfactory(args));
-                  vsplit->addChild(rval);
-                }
-                return rval;
-              })
-          .def_property(
-              "split_ratio",
-              [](ui::vsplit_ptr_t split) -> float { //
-                return split->_split_ratio;
-              },
-              [](ui::vsplit_ptr_t split, float ratio) { //
-                split->_split_ratio = ratio;
-                // split->ReLayout();
-              });
-  type_codec->registerStdCodec<ui::vsplit_ptr_t>(vsplit_type);
   /////////////////////////////////////////////////////////////////////////////////
   // LineEdit
   auto lineedit_type = //
@@ -2807,7 +2826,7 @@ void pyinit_ui(py::module& module_lev2) {
                 // Create layout item manually since LoggerGroup isn't created via makeChild
                 auto layoutitem     = std::make_shared<ui::LayoutItem<ui::LoggerGroup>>();
                 layoutitem->_widget = logger_group;
-                layoutitem->_layout = lg->_layout->childLayout(logger_group.get());
+                layoutitem->_layout = lg->_layout->childLayout(logger_group);
                 return layoutitem;
               })
           .def("addChannel", &ui::LoggerGroup::addChannel)
@@ -3159,19 +3178,37 @@ void pyinit_ui(py::module& module_lev2) {
               [](ui::prim_canvas_ptr_t canvas, int h) { canvas->_desired_height = h; })
           .def_property(
               "onUiEvent",
-              [](ui::prim_canvas_ptr_t canvas) -> py::object { return py::none(); },
-              [](ui::prim_canvas_ptr_t canvas, py::object callback) {
-                if (not callback.is_none()) {
-                  auto pycb = std::make_shared<py::object>(callback);
-                  canvas->_onUiEvent = [pycb](ui::event_constptr_t ev) -> ui::HandlerResult {
-                    py::gil_scoped_acquire acquire_gil;
-                    py::object result = (*pycb)(ev);
-                    if (py::isinstance<ui::HandlerResult>(result)) {
-                      return result.cast<ui::HandlerResult>();
-                    }
-                    return ui::HandlerResult();
-                  };
+              [](ui::prim_canvas_ptr_t canvas) -> py::object {
+                if (auto stored = canvas->_uservars->typedValueForKey<python::gil_safe_pyobj>("_py_onUiEvent")) {
+                  auto& safe = stored.value();
+                  if (safe) {
+                    return *safe.valueAs<py::object>();
+                  }
                 }
+                return py::none();
+              },
+              [](ui::prim_canvas_ptr_t canvas, py::object callback) {
+                if (callback.is_none()) {
+                  canvas->_onUiEvent = nullptr;
+                  canvas->_uservars->clearKey("_py_onUiEvent");
+                  return;
+                }
+                auto safe = python::gil_safe_pyobj(callback);
+                // Cache the handler so the getter can round-trip it back to Python
+                // (get-then-call must yield the same callable). gil_safe_pyobj holds
+                // it via a shared_ptr with a GIL-acquiring deleter, so teardown from
+                // any thread is safe (calling a hardcoded None here corrupts 3.14t
+                // free-threaded qsbr state).
+                canvas->_uservars->makeValueForKey<python::gil_safe_pyobj>("_py_onUiEvent", safe);
+                canvas->_onUiEvent = [safe](ui::event_constptr_t ev) -> ui::HandlerResult {
+                  py::gil_scoped_acquire acquire_gil;
+                  auto fn = safe.valueAs<py::object>();
+                  py::object result = (*fn)(ev);
+                  if (py::isinstance<ui::HandlerResult>(result)) {
+                    return result.cast<ui::HandlerResult>();
+                  }
+                  return ui::HandlerResult();
+                };
               })
           .def_property(
               "onPreRender",
@@ -3261,6 +3298,75 @@ void pyinit_ui(py::module& module_lev2) {
           .def_readwrite("title_override", &ui::DockablePanel::_title_override)
           .def_readwrite("title_center", &ui::DockablePanel::_title_center);
   type_codec->registerStdCodec<ui::dockablepanel_ptr_t>(dockablepanel_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // DockPanel - titlebar container; the unit a DockSpace moves (successor to DockablePanel)
+  auto dockpanel_type = //
+      py::class_<ui::DockPanel, ui::Group, ui::dockpanel_ptr_t>(uimodule, "DockPanel")
+          .def_static(
+              "wfactory",
+              [type_codec](py::list py_args) -> ui::dockpanel_ptr_t {
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name = decoded_args[0].get<std::string>();
+                return std::make_shared<ui::DockPanel>(name);
+              })
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t {
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name = decoded_args[0].get<std::string>();
+                auto layoutitem = lg->makeChild<ui::DockPanel>(name);
+                return layoutitem.as_shared();
+              })
+          .def_property(
+              "child",
+              [](ui::dockpanel_ptr_t panel) -> ui::widget_ptr_t { return panel->child(); },
+              [](ui::dockpanel_ptr_t panel, ui::widget_ptr_t child) { panel->setChild(child); })
+          .def_property(
+              "titlebar_height",
+              [](ui::dockpanel_ptr_t panel) -> int { return panel->_titlebar_height; },
+              [](ui::dockpanel_ptr_t panel, int h) { panel->_titlebar_height = h; })
+          .def_property(
+              "titlebar_color",
+              [](ui::dockpanel_ptr_t panel) -> fvec4 { return panel->_titlebar_color; },
+              [](ui::dockpanel_ptr_t panel, fvec4 c) { panel->_titlebar_color = c; })
+          .def_property(
+              "title_color",
+              [](ui::dockpanel_ptr_t panel) -> fvec4 { return panel->_title_color; },
+              [](ui::dockpanel_ptr_t panel, fvec4 c) { panel->_title_color = c; })
+          .def_property(
+              "border_color",
+              [](ui::dockpanel_ptr_t panel) -> fvec4 { return panel->_border_color; },
+              [](ui::dockpanel_ptr_t panel, fvec4 c) { panel->_border_color = c; })
+          .def(
+              "createChild",
+              [](ui::dockpanel_ptr_t panel, py::kwargs kwargs) -> ui::widget_ptr_t {
+                ui::widget_ptr_t rval;
+                if (kwargs) {
+                  py::list args;
+                  py::object wfactory;
+                  int args_parsed = 0;
+                  for (auto item : kwargs) {
+                    auto key = py::cast<std::string>(item.first);
+                    if (key == "uiclass") {
+                      auto uiclass_obj = py::cast<py::object>(item.second);
+                      bool has_wfactory = py::hasattr(uiclass_obj, "wfactory");
+                      OrkAssert(has_wfactory);
+                      wfactory = uiclass_obj.attr("wfactory");
+                      args_parsed++;
+                    } else if (key == "args") {
+                      args = py::cast<py::list>(item.second);
+                      args_parsed++;
+                    }
+                  }
+                  OrkAssert(args_parsed == 2);
+                  rval = py::cast<ui::widget_ptr_t>(wfactory(args));
+                  panel->setChild(rval);
+                }
+                return rval;
+              })
+          .def_readwrite("title_override", &ui::DockPanel::_title_override)
+          .def_readwrite("title_center", &ui::DockPanel::_title_center);
+  type_codec->registerStdCodec<ui::dockpanel_ptr_t>(dockpanel_type);
   /////////////////////////////////////////////////////////////////////////////////
   // BorderFrame - container that draws a solid border around a single child
   auto borderframe_type = //

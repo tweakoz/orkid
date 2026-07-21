@@ -37,7 +37,9 @@ void pyinit_gfx_image(py::module& module_lev2) {
       })
       .def_static("createFromFile", [](py::object inpath) -> image_ptr_t {
         auto as_str = py::cast<py::str>(inpath);
-        auto datablock = ::ork::File::loadDatablock(as_str.cast<std::string>());
+        auto path_str = as_str.cast<std::string>();
+        auto datablock = ::ork::File::loadDatablock(path_str);
+        datablock->_name = path_str; // carry path into initFromDataBlock's self-defend error
         auto img = std::make_shared<Image>();
         img->initFromDataBlock(datablock);
         return img;

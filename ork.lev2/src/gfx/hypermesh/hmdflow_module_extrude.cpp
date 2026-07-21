@@ -1030,6 +1030,10 @@ struct ExtrudeFacesInst : public MeshComputeInst {
                      _parent->_ssbo, _part->_ssbo, _new_nf);
     ci->storageBarrier();
   }
+  // E2.5 (Q6): the field exprs now also carry reflected ExprIR TREEs (`_dist_tree` etc.); adding
+  // them changes this module's content-identity hash -> a SANCTIONED one-time whole-corpus cook
+  // rebake (Q5). Named salt = intentional + greppable (the emitted kernel is byte-unchanged).
+  const char* _cookSalt() const final { return "extrude.v2.exprir"; }
   const ExtrudeFacesData* _d;
   mesh_outpluginst_ptr_t _output;
   mesh_inpluginst_ptr_t _input;
@@ -1097,6 +1101,13 @@ void ExtrudeFacesData::describeX(class_t* clazz) {
   clazz->directProperty("dir_predicate", &ExtrudeFacesData::_dir_pred);
   clazz->directProperty("twist_predicate", &ExtrudeFacesData::_twist_pred);
   clazz->directProperty("scale_predicate", &ExtrudeFacesData::_scale_pred);
+  // E2.5 (Q6): the CANONICAL hypermesh.selexpr ExprIR TREE of each field expr (sibling of the GLSL
+  // preds above; the GLSL stays the eval form, the tree is the storage-form identity).
+  clazz->directProperty("dist_tree", &ExtrudeFacesData::_dist_tree);
+  clazz->directProperty("inset_tree", &ExtrudeFacesData::_inset_tree);
+  clazz->directProperty("dir_tree", &ExtrudeFacesData::_dir_tree);
+  clazz->directProperty("twist_tree", &ExtrudeFacesData::_twist_tree);
+  clazz->directProperty("scale_tree", &ExtrudeFacesData::_scale_tree);
   clazz->directProperty("time_slot", &ExtrudeFacesData::_time_slot);   // the S.time EXPRP slot (-1 = none)
   clazz->directVectorProperty("part_masks", &ExtrudeFacesData::_part_masks);
 }

@@ -20,7 +20,9 @@
 #include <ork/util/logger.h>
 
 #include <ork/orkprotos.h>
+#include <ork/kernel/string/string.h>
 #include <cstring>
+#include <stdexcept>
 
 using namespace rapidjson;
 
@@ -338,7 +340,15 @@ object_ptr_t JsonDeserializer::_parseObjectNode(serdes::node_ptr_t dsernode) {
   auto uuid     = gen(uuidstr);
   auto clazz    = rtti::Class::FindClass(classstr);
   auto objclazz = dynamic_cast<object::ObjectClass*>(clazz);
-  OrkAssert(objclazz);
+  // ROBUSTNESS (fail-loud, not a null-deref SIGSEGV): an unknown/removed reflected class in the
+  // stream must refuse LOUDLY with a catchable, named error instead of asserting (compiled out in
+  // optimized builds) and dereferencing a null class below.
+  if (objclazz == nullptr) {
+    throw std::runtime_error(FormatString(
+        "JsonDeserializer: unknown/unregistered reflected class <%s> in the stream — refusing to "
+        "load (the asset is stale vs current reflection, or the class was removed).",
+        classstr));
+  }
   logchan_ds->log("_parseObjectNode objclazz<%p>", objclazz );
   const auto& description = objclazz->Description();
 
@@ -406,6 +416,29 @@ object_ptr_t JsonDeserializer::_parseObjectNode(serdes::node_ptr_t dsernode) {
 
   if(instance_out==nullptr){
     instance_out        = objclazz->createShared();
+  }
+
+  //////////////////////////////////////////////
+  // ROBUSTNESS (fail-loud, not SIGSEGV): if we STILL have no instance (abstract class with no
+  // shared factory AND no pre-instantiated slot), or the pre-instantiated slot's runtime class is
+  // not the serialized class (positional-array SCHEMA DRIFT — a stale asset whose module plug
+  // layout no longer matches reshapeIOs), a wrong/NULL object would flow into the property setters
+  // below and crash. Refuse LOUDLY with a catchable, named error instead.
+  //////////////////////////////////////////////
+
+  if (instance_out == nullptr) {
+    throw std::runtime_error(FormatString(
+        "JsonDeserializer: cannot instantiate class <%s> (abstract / no shared factory, and no "
+        "pre-instantiated slot) — refusing to deserialize into a null instance.",
+        classstr));
+  }
+  if (not instance_out->GetClass()->IsSubclassOf(clazz)) {
+    throw std::runtime_error(FormatString(
+        "JsonDeserializer: SCHEMA DRIFT at class <%s> — the pre-instantiated slot holds a <%s>, "
+        "which is not that class; the asset is stale vs current reflection (module plug layout "
+        "changed). Refusing to load; regenerate the asset from its source.",
+        classstr,
+        instance_out->GetClass()->Name().c_str()));
   }
 
   //////////////////////////////////////////////

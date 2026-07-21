@@ -362,6 +362,17 @@ void pyinit_gfx_particles(py::module& module_lev2) {
           });
   type_codec->registerStdCodec<ptc::directional_force_module_ptr_t>(dirforcemoduledata_type);
   /////////////////////////////////////////////////////////////////////////////
+  auto exprforcemoduledata_type = // E2.5 S8: ExprIR-driven per-particle force (particles.force ctx)
+      py::class_<ptc::ExprForceModuleData, ptc::ModuleData, ptc::expr_force_module_ptr_t>(ptc_module, "ExprForce")
+      .def_static("createShared", [] -> ptc::expr_force_module_ptr_t { return ptc::ExprForceModuleData::createShared(); })
+      .def_property("force_x", [](ptc::expr_force_module_ptr_t e) { return e->_force_x; },
+                               [](ptc::expr_force_module_ptr_t e, std::string s) { e->_force_x = s; })
+      .def_property("force_y", [](ptc::expr_force_module_ptr_t e) { return e->_force_y; },
+                               [](ptc::expr_force_module_ptr_t e, std::string s) { e->_force_y = s; })
+      .def_property("force_z", [](ptc::expr_force_module_ptr_t e) { return e->_force_z; },
+                               [](ptc::expr_force_module_ptr_t e, std::string s) { e->_force_z = s; });
+  type_codec->registerStdCodec<ptc::expr_force_module_ptr_t>(exprforcemoduledata_type);
+  /////////////////////////////////////////////////////////////////////////////
   auto sphamoduledata_type = //
       py::class_<ptc::SphAttractorModuleData, ptc::ModuleData, ptc::sphattractormodule_ptr_t>(ptc_module, "SphAttractor")
       .def_static("createShared", [] -> ptc::sphattractormodule_ptr_t { return ptc::SphAttractorModuleData::createShared(); });

@@ -34,6 +34,7 @@ from ork.hypergraph.colors import hsv
 from ork.hypergraph.dflow.particles import ParticleSystem, FreestyleFragment, materialize_fragment
 from ork.hypergraph.dflow import particles as P
 from ork.hypergraph.dflow import Expr as E
+from ork.hypergraph.dflow.testbench import T   # authoring-time stimulus (editor-only, passive)
 from ork.hypergraph.ptex3d import P as F   # GLSL expression ops (fragment DSL)
 
 tokens = CrcStringProxy()
@@ -208,6 +209,30 @@ class FireTrail(ParticleSystem):
     # PREMA's absorptive term is order-dependent — sort back-to-front
     self.sprites.module.depth_sort = True
     self.render(self.sprites)
+
+
+################################################################################
+# TESTBENCH — verilog-style AUTHORING-TIME stimulus (editor-only, PASSIVE).
+#
+# fireball is a projectile TRAIL: its design intent only reads UNDER MOTION. A static
+# emitter stacks smoke over flame (the physically-correct PREMA depth_sort can't undo a
+# physically-static stack). This bench binds the emitter to a bench ENTITY ("@bench") that
+# ORBITS on the transport tick, so the emit origin sweeps and the fire leaves its smoke
+# behind it — the trail separates, exactly as in a scene that moves the projectile.
+#
+# It is resolved ONLY by the editor (ork.dflow.edit.py, getattr TESTBENCH); importing this
+# asset in a player/viewer/compose path NEVER reads it and it NEVER enters a cook hash. The
+# orbit radius/period are tuned to human scale (emit height ~1, radius ~2.2, ~3.5s/rev) so the
+# moving emitter visibly separates smoke from flame in the editor's default frame.
+################################################################################
+TESTBENCH = T.Testbench(
+    instantiate=dict(emitter_entity="@bench"),
+    entities={
+        "@bench": T.orbit(radius=3.2, period_s=20.5, axis=(0, 1, 0), height=0.0),
+    },
+    camera=T.frame(distance=9.0, elevation_deg=14.0, target=(0, 1, 0)),
+    enabled=True,
+)
 
 
 __all__ = ["FireTrail"]

@@ -66,7 +66,8 @@ def install_hypermeshes(scatterset_path, hm_by_type, layer, ctx, *, name="scatte
     live = asset.materialize_live(ctx)            # ONE graph eval -> one GpuMesh + this type's InstanceSet
     if int(getattr(live, "instance_count", 0)) == 0:
       continue                                    # this type placed nothing — no node
-    cdd, _ = make_drawable(live, ctx, animated=bool(asset.is_animated), material_cls=mtl_cls, albedo=albedo)
+    cdd, _ = make_drawable(live, ctx, animated=bool(asset.is_animated), material_cls=mtl_cls, albedo=albedo,
+                           instance_from=live)   # scatter/forest pairing: opt into the graph's InstanceSet
     node = layer.createDrawableNodeFromData("%s_hm_%d" % (name, ti), cdd)
     nodes.append(node)
     lives.append(live)                            # KEEP ALIVE: the GpuMesh owns the SSBOs

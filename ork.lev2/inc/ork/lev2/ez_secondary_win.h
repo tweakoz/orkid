@@ -39,7 +39,10 @@ struct EzSecondaryWinConfig {
   bool _resizable = true;
 
   // Popup-specific options
-  bool _floating = false;       // Always on top (for popups)
+  // _floating maps to GLFW_FLOATING: SYSTEM-WIDE always-on-top (floats above ALL windows,
+  // not just this app's main window — GLFW has no parent-relative always-on-top). This is
+  // the accepted idiom for tool palettes on GLFW's supported platforms.
+  bool _floating = false;       // Always on top (for popups / tool palettes)
   bool _transparent = false;    // Transparent framebuffer (for styled popups)
   bool _focusOnShow = false;    // Auto-focus when shown
 
@@ -85,6 +88,7 @@ struct EzSecondaryWin {
   using resize_cb_t = std::function<void(int w, int h)>;
   using uievent_cb_t = std::function<ui::HandlerResult(ui::event_constptr_t)>;
   using gpuinit_cb_t = std::function<void(Context* ctx)>;
+  using gpupostframe_cb_t = std::function<void(Context* ctx)>;
   using closed_cb_t = void_lambda_t;
 
   //////////////////////////////////////////////
@@ -95,6 +99,11 @@ struct EzSecondaryWin {
   resize_cb_t _onResize;
   uievent_cb_t _onUiEvent;
   gpuinit_cb_t _onGpuInit;
+  // Fires inside the window's render, AFTER the UI draw and BEFORE endFrame — so the
+  // context's primary command buffer is still recording. This is the ONLY point where
+  // FBI::captureAsFormat can record its readback copy for THIS window (mirrors the
+  // main window's onGpuPostFrame). Only invoked on the default UI-draw path.
+  gpupostframe_cb_t _onGpuPostFrame;
   closed_cb_t _onClosed;  // Called when window is closed
 
   //////////////////////////////////////////////
@@ -107,6 +116,28 @@ struct EzSecondaryWin {
   int width() const;
   int height() const;
 
+  // Always-on-top (GLFW_FLOATING). Readable + settable POST-create via glfwSetWindowAttrib
+  // (the attrib path works on all GLFW-supported platforms). NOTE: system-wide always-on-top,
+  // not parent-relative — the window floats above every other window, the tool-palette idiom.
+  bool floating() const;
+  void setFloating(bool onoff);
+
+  // Current screen rect (glfwGetWindowPos + glfwGetWindowSize) in SCREEN POINTS,
+  // for the DockCoordinator cross-window hit-test. Fills x/y/w/h and returns true
+  // on success; returns false (w/h left 0) when the window is closed or the
+  // platform cannot report window position (e.g. Wayland) — the coordinator then
+  // degrades this window out of cross-window targeting.
+  bool screenRect(int& x, int& y, int& w, int& h);
+
+  // BUG-B point-ownership native leg: this window's native OS window number
+  // (Cocoa windowNumber on macOS), for true-z-order + occlusion resolution.
+  // Returns 0 when unavailable (window closed, or non-mac — no native leg).
+  int64_t nativeWindowNumber();
+
+  // Raise + focus this window (bring a live tool window back to the front, e.g. when the same
+  // field is re-opened). Idempotent; no-op if the window is already gone.
+  void focusWindow();
+
   //////////////////////////////////////////////
   // Access to contexts
   //////////////////////////////////////////////
@@ -114,6 +145,21 @@ struct EzSecondaryWin {
   ui::Context* uiContext();
   ui::context_ptr_t uiContextPtr();
   lev2::Context* gfxContext();
+
+  //////////////////////////////////////////////
+  // Synthetic UI-event injection (record/playback), targeting THIS window's
+  // ui::Context. Signature-identical to OrkEzApp::injectUiEvent: stamps this
+  // window's context + vp-dim, fires the app global-event taps, then routes
+  // through the SAME path a real secondary-window event uses (SecondaryWinImpl::
+  // _fireEvent -> Context::sendToContext) — so PUSH->BEGIN_DRAG/DRAG/END_DRAG
+  // synthesis and _evdragtarget capture behave identically to a real drag, and
+  // it works under --offscreen (no GLFW pump). Pointer events carry position;
+  // key/wheel inherit the last injected pointer position. Must be driven from
+  // onUpdate in lockstep (the serial main-thread pump applies it before this
+  // frame's secondary render); fails loudly if the widget tree is not yet built.
+  //////////////////////////////////////////////
+
+  void injectUiEvent(ui::event_ptr_t ev);
 
   //////////////////////////////////////////////
   // Construction (via factory in OrkEzApp)
@@ -151,8 +197,11 @@ private:
   ui::context_ptr_t _uicontext;
   bool _shouldClose = false;
   bool _gpuInitialized = false;
+  bool _onClosedFired = false;         // onClosed must fire exactly once (idempotence guard)
   bool _dirty = true;                  // starts dirty (needs initial render)
   ork::Timer _lastRenderTimer;         // time since last render
+  int _injectLastX = 0;                // last injected pointer x (key/wheel inherit it)
+  int _injectLastY = 0;                // last injected pointer y
 };
 
 ///////////////////////////////////////////////////////////////////////////////

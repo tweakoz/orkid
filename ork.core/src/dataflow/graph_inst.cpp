@@ -107,7 +107,15 @@ void GraphInst::updateTopology(topology_ptr_t topo){
       }
     }
   }
+  _topologyValid = true;   // S8.5: link() clears this if a module can't resolve a required link
   link();
+  if (not _topologyValid) {
+    // owner law: a partial / invalid topology must NOT crash. A module reported an unresolvable
+    // link (e.g. an unwired editor node); do NOT stage()/activate() a half-built graph — leave it
+    // inert. The host build (createDrawable) detects _topologyValid and returns null; a later
+    // re-configure (once the module is wired) links clean and the sim runs (recover-on-restart).
+    return;
+  }
   stage();
   activate();
 }

@@ -5,10 +5,20 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 #include "hfdflow_module.h"
+#include <ork/reflect/enum_serializer.inl>
 
 ImplementReflectionX(ork::lev2::terrain::CurvatureModuleData, "terrain::CurvatureModuleData");
+ImplementEnumSerializer(ork::lev2::terrain::CurvatureMode);
 
 namespace ork::lev2::terrain {
+
+// EnumSerializer registration (E1) — lowercase to match the T.curvature(mode="...")
+// DSL spelling; values match ops._CURV_MODE.
+BeginEnumRegistration(CurvatureMode);
+  enumtype->addEnum("convex", CurvatureMode::CONVEX);
+  enumtype->addEnum("concave", CurvatureMode::CONCAVE);
+  enumtype->addEnum("magnitude", CurvatureMode::MAGNITUDE);
+EndEnumRegistration();
 
 ///////////////////////////////////////////////////////////////////////////////
 // CurvatureModule — Out = mode(Laplacian(In)) * scale, clamped to [0,1]. 2 SSBOs. In is in
@@ -77,6 +87,8 @@ compute_shader cs_curvature : iface {
 
 struct CurvatureModuleInst : public TerrainComputeInst {
   CurvatureModuleInst(const CurvatureModuleData* d, dflow::GraphInst* g) : TerrainComputeInst(d, g), _d(d) {}
+  // S4: a curvature MASK is analysis, not surface — never publish it as live display heights.
+  bool viewableDefault() const override { return false; }
   void onLink(dflow::GraphInst*) final {
     _output = typedOutputNamed<HfImagePlugTraits>("Out");
     _input  = typedInputNamed<HfImagePlugTraits>("In");
@@ -88,7 +100,7 @@ struct CurvatureModuleInst : public TerrainComputeInst {
     _allocOut(env.get(), _output->_value);
     int rtex = env->radiusTexels(_d->_radius_m); // meters -> texels (resolution-independent)
     auto sh  = fxi->shaderFromShaderText(
-        "terrain_curvature", _curvature_text(_scale->value(), _d->_mode, rtex));
+        "terrain_curvature", _curvature_text(_scale->value(), int(_d->_mode), rtex));
     _cs      = fxi->computeShader(sh, "cs_curvature");
     _pm        = env->createStorageBuffer(sizeof(float)); // p_dimf = RUNTIME grid dim
     float dimf = float(env->_w);
@@ -111,7 +123,7 @@ struct CurvatureModuleInst : public TerrainComputeInst {
   uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
     auto h = DataBlock::createHasher();
     h->accumulateString("terrain.curvature.v4"); // v4: heights in meters (Laplacian now in meter units); v3: meter radius
-    h->accumulateItem<int>(_d->_mode);
+    h->accumulateItem<int>(int(_d->_mode)); // hash the CODE (shader identity unchanged by the enum migration)
     h->accumulateItem<float>(_d->_radius_m); // meters (the resolution-independent identity)
     h->accumulateItem<float>(_scale->value());
     _mixTail(h, ctx, ih);
@@ -143,9 +155,11 @@ void CurvatureModuleData::describeX(class_t* clazz) {
   clazz->setSharedFactory([]() -> rtti::castable_ptr_t { return CurvatureModuleData::createShared(); });
   clazz->annotateTyped<dataflow::moduleIOreshape_fn_t>("reshapeIOs",
       [](dataflow::moduledata_ptr_t m) { _reshapeCurvatureIOs(m); });
-  // _mode selects the baked GLSL output (convex/concave/magnitude); _radius is the
-  // baked pre-blur/scale. Reflect both so a reloaded graph keeps its curvature flavor.
-  clazz->directProperty("mode", &CurvatureModuleData::_mode);
+  // _mode selects the baked GLSL output (convex/concave/magnitude) — a real reflected
+  // enum (serializes by NAME, exposes its choice list to the propsheet, E1); _radius is
+  // the baked pre-blur/scale.
+  InvokeEnumRegistration(CurvatureMode);
+  clazz->directEnumProperty("mode", &CurvatureModuleData::_mode);
   clazz->directProperty("radius_m", &CurvatureModuleData::_radius_m);
 }
 

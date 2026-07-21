@@ -14,6 +14,9 @@
 #include <ork/lev2/lev2_asset.h>
 #include <ork/lev2/gfx/targetinterfaces.h>
 #include <ork/lev2/gfx/gfxvtxbuf.inl>
+#include <cctype>
+#include <cmath>
+#include <cstdlib>
 
 namespace ork::lev2 {
 
@@ -113,6 +116,49 @@ font_ptr_t FontMan::fontForId(const std::string& name) {
     }
   });
   return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+font_ptr_t FontMan::supersampledFont(font_ptr_t base, int multiplier) {
+  if ((not base) or (multiplier <= 1) or (not base->_fontdesc))
+    return base;
+  int base_h = base->_fontdesc->miCharHeight;
+  if (base_h <= 0)
+    return base;
+  // family = leading non-digit prefix of the font name ("i16" -> "i").
+  const auto& bname = base->msFontName;
+  size_t plen       = 0;
+  while (plen < bname.size() and not isdigit((unsigned char)bname[plen]))
+    plen++;
+  int target       = base_h * multiplier;
+  font_ptr_t best  = base;
+  int best_err     = std::abs(base_h - target);
+  auto fontman     = instance();
+  for (auto& f : fontman->_fontvect) {
+    if ((not f) or (not f->_fontdesc))
+      continue;
+    const auto& n = f->msFontName;
+    if (n.size() <= plen or n.compare(0, plen, bname, 0, plen) != 0)
+      continue;
+    bool all_digits = true;
+    for (size_t i = plen; i < n.size(); i++)
+      if (not isdigit((unsigned char)n[i])) {
+        all_digits = false;
+        break;
+      }
+    if (not all_digits)
+      continue;
+    int h = f->_fontdesc->miCharHeight;
+    if (h < base_h) // never source from a smaller atlas
+      continue;
+    int err = std::abs(h - target);
+    if (err < best_err) {
+      best_err = err;
+      best     = f;
+    }
+  }
+  return best;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

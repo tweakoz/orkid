@@ -12,6 +12,7 @@
 #include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/ui/viewport_scenegraph.h>
 #include <ork/lev2/ui/layoutgroup.inl>
+#include <ork/lev2/ui/dock_space.h>
 #include <ork/lev2/ui/layoutsurface.h>
 #include <ork/lev2/ui/anchor.h>
 #include <ork/lev2/ui/box.h>
@@ -143,7 +144,7 @@ void pyinit_ui_layout(py::module& uimodule) {
           .def(
               "childLayout",
               [](uilayout_ptr_t layout, uiwidget_ptr_t w) -> uilayout_ptr_t { //
-                return layout->childLayout(w.get());
+                return layout->childLayout(w);
               })
           //////////////////////////////////
           .def(
@@ -383,6 +384,21 @@ void pyinit_ui_layout(py::module& uimodule) {
                 lgrp->replaceChild(ch, rep);
               })
           .def(
+              "unsplit",
+              [](uilayoutgroup_ptr_t lgrp, uilayout_ptr_t container_layout) { //
+                lgrp->unsplit(container_layout);
+              })
+          .def(
+              "validateTree",
+              [](uilayoutgroup_ptr_t lgrp) -> bool { //
+                return lgrp->validateTree();
+              })
+          .def(
+              "layoutSignature",
+              [](uilayoutgroup_ptr_t lgrp) -> std::string { //
+                return lgrp->layoutSignature();
+              })
+          .def(
               "findGuideBetween",
               [](uilayoutgroup_ptr_t lgrp, uilayout_ptr_t layout_a, uilayout_ptr_t layout_b) -> uiguide_ptr_t { //
                 return lgrp->findGuideBetween(layout_a, layout_b);
@@ -441,8 +457,8 @@ void pyinit_ui_layout(py::module& uimodule) {
                 // Create the widget via wfactory (returns raw widget without layout)
                 auto new_widget = py::cast<ui::widget_ptr_t>(wfactory(args));
 
-                // Assign widget to the layout
-                new_layout->_widget = new_widget.get();
+                // Assign widget to the layout (bind weak ref for liveness detection)
+                new_layout->bindWidget(new_widget);
                 container->addChild(new_widget, false); // this will retain the widget
 
                 // Now that widget is assigned and added, update the layouts
@@ -711,6 +727,233 @@ void pyinit_ui_layout(py::module& uimodule) {
                 lgrp->_profiler_overlay_enabled = enabled;
               });
   type_codec->registerStdCodec<uilayoutgroup_ptr_t>(layoutgroup_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // DockSpace : LayoutGroup — owns a dock tree of DockPanels; reuses split() verbatim.
+  auto dockspace_type = //
+      py::class_<ui::DockSpace, ui::LayoutGroup, ui::dockspace_ptr_t>(uimodule, "DockSpace")
+          .def_static(
+              "wfactory",
+              [type_codec](py::list py_args) -> ui::dockspace_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                return std::make_shared<ui::DockSpace>(name);
+              })
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto layoutitem   = lg->makeChild<ui::DockSpace>(name);
+                return layoutitem.as_shared();
+              })
+          .def(
+              "addPanel",
+              [](ui::dockspace_ptr_t dock, py::kwargs kwargs) -> ui::dockpanel_ptr_t { //
+                py::object wfactory;
+                py::list args;
+                std::string title;
+                bool closeable = false;
+                int parsed = 0;
+                for (auto item : kwargs) {
+                  auto key = py::cast<std::string>(item.first);
+                  if (key == "uiclass") {
+                    auto uiclass_obj  = py::cast<py::object>(item.second);
+                    OrkAssert(py::hasattr(uiclass_obj, "wfactory"));
+                    wfactory = uiclass_obj.attr("wfactory");
+                    parsed++;
+                  } else if (key == "args") {
+                    args = py::cast<py::list>(item.second);
+                    parsed++;
+                  } else if (key == "title") {
+                    title = py::cast<std::string>(item.second);
+                  } else if (key == "closeable") {
+                    closeable = py::cast<bool>(item.second);
+                  }
+                }
+                OrkAssert(parsed == 2);  // uiclass + args required
+                auto content = py::cast<ui::widget_ptr_t>(wfactory(args));
+                return dock->addPanel(content, title, closeable);
+              })
+          .def(
+              "split",
+              [](ui::dockspace_ptr_t dock, py::kwargs kwargs) -> ui::dockpanel_ptr_t { //
+                ui::dockpanel_ptr_t target;
+                uint64_t placement_token = 0;
+                float proportion = 0.5f;
+                int margin       = -1;
+                py::object wfactory;
+                py::list args;
+                std::string title;
+                bool closeable = false;
+                int parsed = 0;
+                for (auto item : kwargs) {
+                  auto key = py::cast<std::string>(item.first);
+                  if (key == "target") {
+                    target = py::cast<ui::dockpanel_ptr_t>(item.second);
+                    parsed++;
+                  } else if (key == "placement") {
+                    auto crcstr = py::cast<crcstring_ptr_t>(item.second);
+                    placement_token = crcstr->hashed();
+                    parsed++;
+                  } else if (key == "proportion") {
+                    proportion = py::cast<float>(item.second);
+                    parsed++;
+                  } else if (key == "uiclass") {
+                    auto uiclass_obj  = py::cast<py::object>(item.second);
+                    OrkAssert(py::hasattr(uiclass_obj, "wfactory"));
+                    wfactory = uiclass_obj.attr("wfactory");
+                    parsed++;
+                  } else if (key == "args") {
+                    args = py::cast<py::list>(item.second);
+                    parsed++;
+                  } else if (key == "title") {
+                    title = py::cast<std::string>(item.second);
+                  } else if (key == "closeable") {
+                    closeable = py::cast<bool>(item.second);
+                  } else if (key == "margin") {
+                    margin = py::cast<int>(item.second);
+                  }
+                }
+                OrkAssert(parsed == 5);  // target + placement + proportion + uiclass + args
+                auto placement = static_cast<ui::anchor::ELayoutSplitPlacement>(placement_token);
+                auto content   = py::cast<ui::widget_ptr_t>(wfactory(args));
+                return dock->splitPanel(target, placement, proportion, content, title, closeable, margin);
+              })
+          .def(
+              "moveChild",
+              [](ui::dockspace_ptr_t dock, py::kwargs kwargs) { //
+                ui::dockpanel_ptr_t panel, target;
+                uint64_t zone_token = 0;
+                int parsed = 0;
+                for (auto item : kwargs) {
+                  auto key = py::cast<std::string>(item.first);
+                  if (key == "panel") {
+                    panel = py::cast<ui::dockpanel_ptr_t>(item.second);
+                    parsed++;
+                  } else if (key == "to") {
+                    target = py::cast<ui::dockpanel_ptr_t>(item.second);
+                    parsed++;
+                  } else if (key == "zone") {
+                    auto crcstr = py::cast<crcstring_ptr_t>(item.second);
+                    zone_token = crcstr->hashed();
+                    parsed++;
+                  }
+                }
+                OrkAssert(parsed == 3);  // panel + to + zone
+                dock->moveChild(panel, target, static_cast<ui::EDockZone>(zone_token));
+              })
+          .def(
+              "removePanel",
+              [](ui::dockspace_ptr_t dock, ui::dockpanel_ptr_t panel) { //
+                dock->removePanel(panel);
+              })
+          .def(
+              "zoneHitTest",
+              [](ui::dockspace_ptr_t dock, int x, int y) -> py::object { //
+                auto hit = dock->zoneHitTest(x, y);
+                if (not hit._valid)
+                  return py::none();
+                const char* z = "CENTER";
+                switch (hit._zone) {
+                  case ui::EDockZone::LEFT:   z = "LEFT";   break;
+                  case ui::EDockZone::RIGHT:  z = "RIGHT";  break;
+                  case ui::EDockZone::TOP:    z = "TOP";    break;
+                  case ui::EDockZone::BOTTOM: z = "BOTTOM"; break;
+                  default: break;
+                }
+                return py::make_tuple(hit._target, std::string(z));
+              })
+          .def(
+              "beginPanelDrag",
+              [](ui::dockspace_ptr_t dock, ui::dockpanel_ptr_t panel) { //
+                dock->beginPanelDrag(panel);
+              })
+          .def(
+              "updatePanelDrag",
+              [](ui::dockspace_ptr_t dock, int x, int y) { //
+                dock->updatePanelDrag(x, y);
+              })
+          .def(
+              "endPanelDrag",
+              [](ui::dockspace_ptr_t dock, int x, int y) { //
+                dock->endPanelDrag(x, y);
+              })
+          .def_property_readonly(
+              "drag_active",
+              [](ui::dockspace_ptr_t dock) -> bool { //
+                return dock->dragActive();
+              })
+          .def(
+              "serializeLayout",
+              [](ui::dockspace_ptr_t dock) -> py::object { //
+                using L_t = ork::ui::anchor::Layout;
+                std::function<py::object(L_t*)> ser = [&](L_t* L) -> py::object {
+                  auto w = L->_widget;
+                  if (auto tabs = dynamic_cast<ui::TabWidget*>(w)) {
+                    // leaf
+                    py::list ids;
+                    for (auto& ch : tabs->_children)
+                      ids.append(ch->GetName());
+                    int ai = tabs->getActiveTab();
+                    std::string active;
+                    if (ai >= 0 && ai < int(tabs->_children.size()))
+                      active = tabs->_children[ai]->GetName();
+                    py::dict d;
+                    d["leaf"]   = ids;
+                    d["active"] = active;
+                    return std::move(d);
+                  }
+                  // interior split container (2 child layouts + 1 split guide)
+                  OrkAssert(L->_childlayouts.size() == 2);
+                  ork::ui::anchor::Guide* sg = nullptr;
+                  for (auto& g : L->_customguides) { sg = g.get(); break; }
+                  bool vertical = sg ? sg->isVertical() : true;
+                  float prop    = sg ? sg->getProportion() : 0.5f;
+                  auto& c0 = L->_childlayouts[0];
+                  auto& c1 = L->_childlayouts[1];
+                  auto ctr = [vertical](const ork::ui::anchor::layout_ptr_t& c) -> int {
+                    auto g = c->_widget->geometry();
+                    return vertical ? (g._x + g._w / 2) : (g._y + g._h / 2);
+                  };
+                  L_t* a = (ctr(c0) <= ctr(c1)) ? c0.get() : c1.get();
+                  L_t* b = (a == c0.get()) ? c1.get() : c0.get();
+                  py::dict d;
+                  d["split"]      = std::string(vertical ? "V" : "H");
+                  d["proportion"] = prop;
+                  d["a"]          = ser(a);
+                  d["b"]          = ser(b);
+                  return std::move(d);
+                };
+                if (dock->_layout->_childlayouts.empty())
+                  return py::none();
+                return ser(dock->_layout->_childlayouts[0].get());
+              })
+          .def(
+              "setSplitProportion",
+              [](ui::dockspace_ptr_t dock, ui::dockpanel_ptr_t pa, ui::dockpanel_ptr_t pb, float prop) { //
+                dock->setSplitProportion(pa, pb, prop);
+              })
+          .def(
+              "activatePanel",
+              [](ui::dockspace_ptr_t dock, ui::dockpanel_ptr_t panel) { //
+                dock->activatePanel(panel);
+              })
+          .def(
+              "reorderPanel",
+              [](ui::dockspace_ptr_t dock, ui::dockpanel_ptr_t panel, int index) { //
+                dock->reorderPanel(panel, index);
+              })
+          .def(
+              "allPanels",
+              [](ui::dockspace_ptr_t dock) -> std::vector<ui::dockpanel_ptr_t> { //
+                return dock->allPanels();
+              })
+          .def_property_readonly(
+              "num_panels",
+              [](ui::dockspace_ptr_t dock) -> int { //
+                return dock->numPanels();
+              });
+  type_codec->registerStdCodec<ui::dockspace_ptr_t>(dockspace_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto layoutsurface_type = //
       py::class_<ui::LayoutSurface, ui::Surface, ui::layoutsurface_ptr_t>(uimodule, "LayoutSurface")

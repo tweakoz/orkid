@@ -201,6 +201,7 @@ def _build_app(asset_cls, *, asset_path, path_mode, asset_modname, val_argv, lab
                                       wireframe=self._wireframe, wire_color=self._wire_color,
                                       wire_bias=self._wire_bias,
                                       instances=getattr(self._asset, "instances", None),  # asset opts into instancing
+                                      instance_from=self._live,                           # single-asset viewer: use the graph's InstanceSet
                                       cull=getattr(self._asset, "cull", False),           # E.4: asset opts into GPU frustum cull
                                       cull_bound=getattr(self._asset, "cull_bound", None)) # None -> auto (mesh-readback bound)
       # NB: a clock-driven displace (Wind reads Time) needs NO per-frame code here — the engine feeds

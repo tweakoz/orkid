@@ -357,7 +357,7 @@ class PackWidgets(ComponentizedApplication):
     # create a horizontal split widget in the lower-left grid cell
     ############################################
 
-    sp2 = lg_group.makeChild( uiclass=lev2.ui.HorizontalSplit, args=["spl1"])
+    sp2 = lg_group.makeChild( uiclass=lev2.ui.HorizontalPack, args=["spl1"])
     self.lg_group.replaceChild( self.griditems[2].layout, sp2 )
     sp2w = sp2.widget
     self.x2 = sp2w.makeChild( uiclass=AnalogClock, args=["clock"] )

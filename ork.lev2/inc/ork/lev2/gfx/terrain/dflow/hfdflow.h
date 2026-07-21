@@ -28,10 +28,12 @@
 #include <vector>
 #include <memory>
 #include <utility>
+#include <functional>
 #include <unordered_map>
 #include <unordered_set>
 
 #include <ork/lev2/gfx/dflow/interchange.h>
+#include <ork/lev2/gfx/live_field_buffer.h> // S4 — the LiveOutput double-buffer + registry
 
 namespace ork::lev2::terrain {
 
@@ -100,6 +102,10 @@ struct BakeEnv {
   // REQUIRES a capability asserts it loudly (ops self-defend) instead of mis-running.
   bool _per_op_sync       = false; // CPU mid-graph readback modules (basin_fill, fill_closed_basins) require this
   bool _flushes_captures  = false; // CaptureModule sinks require this
+  // MT3/T9 (cache-poison risk): a SLICED cook holds this false so runCookedGraph (top-level
+  // AND every nested composite cook that SHARES this env) skips cacheStore until the
+  // byte-identity oracle is proven. The burst driver leaves it true. See _mt3SlicedAllowStore.
+  bool _allow_store       = true;
   // B.4 CLOCK FEED (same contract as hypermesh MeshEnv): a LIVE host advances these each
   // frame (the hypermesh live render hook mirrors its clock here when a field subgraph
   // rides a mesh graph); module writeParams reads them (e.g. fbm/noise offset_vel pan).
@@ -113,6 +119,15 @@ struct BakeEnv {
   // AUTHORED via remap nodes). Only the horizontal texel size gives fields physicality.
   float _extent_m         = 4096.0f;  // horizontal world size (meters across the field)
   std::vector<CaptureRequest> _captures; // collected during compute, flushed after submit
+
+  // S4 LiveOutput — owned HERE, at BakeEnv level, OUTSIDE the register pool (JUL13 §S4:
+  // pool reuse must never touch the live artifact; DgModuleData::_prunable pinning was
+  // rejected for exactly that reason). Armed by the cook plan when a capture requests
+  // visual_update_mode == "on_checkpoint" (height channel); null otherwise. The buffer
+  // itself is a registry-shared, host-side double buffer (see live_field_buffer.h) so
+  // it survives the bake and consumers hold last-final across bakes.
+  live_field_buffer_ptr_t _live_out;
+  std::string _live_key;      // canonical height-product path == the artifact name
 
   float texelsPerMeter() const { return (_extent_m > 0.0f) ? (float(_w) / _extent_m) : 1.0f; }
   // meters -> texel radius, clamped to [1, dim/4] (sub-texel features can't be
@@ -222,6 +237,10 @@ using fbmmoduledata_ptr_t = std::shared_ptr<FbmModuleData>;
 // fBm-stacks the chosen basis the same way FbmModule does (compose, don't fork a module).
 ///////////////////////////////////////////////////////////////////////////////
 
+// noise-basis PRIMITIVE selector — a real reflected enum (serializes by NAME; the
+// EnumSerializer is the single source of the widget/pywriter/json labels, E1).
+enum class NoiseBasis { PERLIN = 0, SIMPLEX, WORLEYF1, VORONOI };
+
 struct NoiseModuleData : public TerrainModuleData {
   DeclareConcreteX(NoiseModuleData, TerrainModuleData);
   NoiseModuleData();
@@ -229,7 +248,7 @@ struct NoiseModuleData : public TerrainModuleData {
   dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
 
   // baked scalars (not plugs): noise basis primitive + fBm octave count.
-  int _basis   = 0;   // 0 perlin / 1 simplex / 2 worley-F1 / 3 voronoi
+  NoiseBasis _basis = NoiseBasis::PERLIN; // reflected enum (perlin/simplex/worleyf1/voronoi)
   int _octaves = 1;   // 1 = pure primitive; >1 = fBm-stacked
   // lattice-hash seed — RUNTIME data (params SSBO p_r0), never rebuilds the shader.
   // NOTE: the simplex basis (permute-based) ignores it.
@@ -258,6 +277,11 @@ struct ExprModuleData : public TerrainModuleData {
   // from (empty = a legacy authored-function node / expr_field — no re-authoring). Reflected
   // so a propsheet edit round-trips; the terrain DSL recompiles _shadertext from it on rebake.
   std::string _expr_source;
+  // CANONICAL ExprIR tree (E2.5): the family-neutral JSON form of the authored ptex3d SurfNode
+  // (ork.hypergraph.ptex3d.exprir_surface.capture_json). Present on EVERY expr node — the .py
+  // writer re-renders real DSL from it (no compiled-blob escape hatch) and the cook hash keys
+  // off its bytes (the storage-form IDENTITY, decoupled from the compiled shadertext).
+  std::string _expr_tree;
 };
 using exprmoduledata_ptr_t = std::shared_ptr<ExprModuleData>;
 
@@ -328,7 +352,7 @@ struct CombineModuleData : public TerrainModuleData {
   static std::shared_ptr<CombineModuleData> createShared();
   dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
 
-  int _op = int(CombineOp::ADD); // baked (selects the GLSL expression)
+  CombineOp _op = CombineOp::ADD; // baked (selects the GLSL expression); reflected enum
 };
 using combinemoduledata_ptr_t = std::shared_ptr<CombineModuleData>;
 
@@ -384,7 +408,7 @@ struct CurvatureModuleData : public TerrainModuleData {
   static std::shared_ptr<CurvatureModuleData> createShared();
   dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
 
-  int _mode       = int(CurvatureMode::MAGNITUDE); // baked (selects the GLSL output)
+  CurvatureMode _mode = CurvatureMode::MAGNITUDE; // baked (selects the GLSL output); reflected enum
   float _radius_m = 96.0f;                          // baked: pre-blur / curvature scale (METERS)
 };
 using curvaturemoduledata_ptr_t = std::shared_ptr<CurvatureModuleData>;
@@ -498,16 +522,24 @@ struct PhaModuleData : public TerrainModuleData {
 using phamoduledata_ptr_t = std::shared_ptr<PhaModuleData>;
 
 ///////////////////////////////////////////////////////////////////////////////
-// LpfModule — separable GAUSSIAN low-pass filter; `cutoff_texels` float plug is the
-// cutoff scale in TEXELS (sigma = cutoff/6, radius = 3*sigma). Soft rolloff (no
-// ringing). A smoothing / hillslope-relaxation primitive (e.g. between erosion passes).
+// LpfModule — separable GAUSSIAN low-pass filter. ONE `cutoff` float plug is the
+// cutoff wavelength; `_cutoff_units` (reflected enum: texels|meters) selects how it
+// is interpreted — TEXELS is resolution-DEPENDENT, METERS is resolution-INDEPENDENT
+// (converted to texels per-bake from dim/extent). sigma = cutoff-in-texels/6, radius =
+// 3*sigma. Soft rolloff (no ringing). A smoothing / hillslope-relaxation primitive
+// (e.g. between erosion passes). Default: cutoff=8 texels (preserves the pre-restructure
+// default behavior). cutoff + units are HASHED so a units flip re-bakes.
 ///////////////////////////////////////////////////////////////////////////////
+
+enum class CutoffUnits { TEXELS = 0, METERS };
 
 struct LpfModuleData : public TerrainModuleData {
   DeclareConcreteX(LpfModuleData, TerrainModuleData);
   LpfModuleData();
   static std::shared_ptr<LpfModuleData> createShared();
   dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
+
+  CutoffUnits _cutoff_units = CutoffUnits::TEXELS; // reflected enum: how `cutoff` is read
 };
 using lpfmoduledata_ptr_t = std::shared_ptr<LpfModuleData>;
 
@@ -620,6 +652,16 @@ struct CaptureModuleData : public TerrainModuleData {
   // disk find/store for the entire bake while still running the per-op synced
   // compute. REFLECTED so it round-trips with the embedded graph.
   bool _cache = true;
+  // S4 progressive display (JUL13 §E5/S4): how this sink's consumers see the bake.
+  //   "on_complete"   (default) — today's behavior: products appear only at flush.
+  //   "on_checkpoint" — the cacheable per-node cook ALSO publishes the completed
+  //                     viewable-node plane to a named LiveFieldBuffer artifact at
+  //                     each checkpoint (whole-plane, frame-coherent), so a live
+  //                     renderer can morph while the bake runs. STRUCTURAL FORK:
+  //                     checkpoints exist ONLY on the cacheable per-node branch —
+  //                     a non-cacheable graph degrades to on_complete LOUDLY.
+  // REFLECTED so it round-trips; the editor's sliced re-bake sets it per session.
+  std::string _visual_update_mode = "on_complete";
 };
 using capturemoduledata_ptr_t = std::shared_ptr<CaptureModuleData>;
 
@@ -657,6 +699,39 @@ std::vector<fieldstats_ptr_t> bakeHeightfield(
     int dim,
     float extent_m = 4096.0f);  // horizontal world size (meters) -> resolution independence
                                 // (heights are TRUE METERS on the plugs — no vertical scale)
+
+///////////////////////////////////////////////////////////////////////////////
+// MT3 — SLICED (anti-hitch) re-bake (JUL13_DFLOW §2.6 / §E5). Drives the SAME
+// per-node cook loop as bakeHeightfield but ONE node's dispatch triplet per
+// GpuMicrotask slice (SOFT_DEADLINE), so a live WINDOW context stays responsive
+// across a multi-frame re-bake. Initial loads still call bakeHeightfield BURST.
+//
+// The sliced cook writes byte-identical capture products + capture-currency
+// sidecars (the T9 oracle proves this) — so the editor's SUBSEQUENT blocking
+// materialize hits capture-currency and swaps hitch-free (the cook cache
+// dflowcache is NOT required for the fast swap; it is T9-gated separately).
+//
+// The CALLER pre-sets each CaptureModuleData::_path (same contract as bake) so the
+// products land where the consuming materialize expects them. on_complete fires on
+// the context-owner thread when the last slice (flush) finishes.
+///////////////////////////////////////////////////////////////////////////////
+
+struct SlicedBakeHandle {
+  virtual ~SlicedBakeHandle()                 = default;
+  virtual bool     done() const                  = 0; // true once products + sidecars are written
+  virtual float    progress() const              = 0; // [0..1] cook progress (HUD)
+  virtual uint64_t framesDriven() const          = 0; // runSlice invocations so far (gate-6 spread)
+  virtual void     pumpToCompletion(Context* ctx) = 0; // headless gate driver (one node / frame)
+};
+using slicedbake_handle_ptr_t = std::shared_ptr<SlicedBakeHandle>;
+
+slicedbake_handle_ptr_t enqueueSlicedBake(
+    dflow::graphdata_ptr_t graph,
+    Context* ctx,
+    int dim,
+    float extent_m                    = 4096.0f,
+    std::function<void()> on_complete = nullptr,
+    bool enqueue                      = true); // false -> headless handle driven via pumpToCompletion
 
 // first-slice convenience: build a 2-node fbm -> capture graph and bake it to
 // `outpath` (PNG/EXR by extension), the minimal end-to-end exerciser.

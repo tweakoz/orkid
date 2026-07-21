@@ -852,7 +852,12 @@ struct Window : public DisplayBuffer {
 public:
   //////////////////////////////////////////////
 
-  Window(int iX, int iY, int iW, int iH, const std::string& name = "NoName", void* pdata = 0);
+  // is_main: register this window as GfxEnv's main window (mpMainWindow, the
+  //  source of mainRenderContext()). ONLY the true, longest-lived main window may
+  //  claim it — a secondary/popup window that usurps it leaves mainRenderContext()
+  //  dangling when it is destroyed, so a later deferred GPU destructor
+  //  (Texture::~Texture -> enqueueDeferredOp) locks a freed context's mutex.
+  Window(int iX, int iY, int iW, int iH, const std::string& name = "NoName", void* pdata = 0, bool is_main = true);
   virtual ~Window();
 
   //////////////////////////////////////////////
@@ -1100,7 +1105,7 @@ struct OrkDisplayClientSharedData {
     u8 server = 0;
     u8 client = 1; // start client offset from server by 1
   };
-  std::atomic<Indices> indices{};
+  std::atomic<Indices> indices{Indices{}};
 
   ork::fmtx4 frame_vp_mtxs[MAX_FRAMES_IN_FLIGHT]{};
   ork::fmtx4 frame_iv_mtxs[MAX_FRAMES_IN_FLIGHT]{};

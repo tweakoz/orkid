@@ -201,7 +201,9 @@ static void _reshapeBasinFillIOs(dataflow::moduledata_ptr_t data) {
   // per-step drainage gradient (normalized height units); 0 = pure flat fill.
   dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "epsilon")->setValue(0.0f);
   // crossfade filled vs original: 0 = passthrough, 1 = fully filled (default).
-  dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "blend")->setValue(1.0f);
+  auto blend = dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "blend");
+  blend->setValue(1.0f);
+  blend->annotateRange(0.0f, 1.0f);
   dflow::ModuleData::createOutputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "Out");
 }
 BasinFillModuleData::BasinFillModuleData() {}
@@ -215,6 +217,10 @@ void BasinFillModuleData::describeX(class_t* clazz) {
   clazz->setSharedFactory([]() -> rtti::castable_ptr_t { return BasinFillModuleData::createShared(); });
   clazz->annotateTyped<dataflow::moduleIOreshape_fn_t>("reshapeIOs",
       [](dataflow::moduledata_ptr_t m) { _reshapeBasinFillIOs(m); });
+  // E1-close add-palette (reflection-carried; see hfdflow_module_thermal.cpp for the vocabulary).
+  clazz->annotateTyped<ConstString>("dsl.verb", "basin_fill");
+  clazz->annotateTyped<bool>("editor.palette", true);
+  clazz->annotateTyped<int>("editor.palette.sort", 4);
 }
 
 } // namespace ork::lev2::terrain

@@ -51,7 +51,7 @@ class Chain(HeightField):
         super().__init__()
         h = T.Fbm(frequency=freq, octaves=5) * 0.5 + 0.5
         h2 = T.terrace(h, step_m=1.0/6.0, sharpness=3.0)
-        h3 = T.lpf(h2 if with_terrace else h, cutoff_texels=4.0)
+        h3 = T.lpf(h2 if with_terrace else h, cutoff=4.0)
         self.capture(h3, "height")
 
 

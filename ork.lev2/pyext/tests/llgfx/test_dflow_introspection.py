@@ -52,6 +52,32 @@ def main():
     print("INTROSPECT moduleClasses PASS (%d classes; terrain+hypermesh+particle present)" % len(classes), flush=True)
 
     ###########################################################################
+    # (a2) reflected ENUM props expose a VALUE-ORDERED choice list (E1 slice 2) —
+    # the single source the editor propsheet dropdown + pywriter consume. Migrated
+    # selectors: CombineModule.op, CurvatureModule.mode, NoiseModule.basis.
+    ###########################################################################
+    by_name = {c["name"]: c for c in classes}
+    def _prop(clazz, prop):
+      return next(p for p in by_name[clazz]["properties"] if p["name"] == prop)
+    ENUM_EXPECT = {
+      ("terrain::CombineModuleData",   "op"):           ["add", "sub", "mul", "min", "max", "mix"],
+      ("terrain::CurvatureModuleData", "mode"):         ["convex", "concave", "magnitude"],
+      ("terrain::NoiseModuleData",     "basis"):        ["perlin", "simplex", "worleyf1", "voronoi"],
+      ("terrain::LpfModuleData",       "cutoff_units"): ["texels", "meters"],
+    }
+    for (clazz, prop), want in ENUM_EXPECT.items():
+      pd = _prop(clazz, prop)
+      assert pd["type"] == "enum", "%s.%s not reflected as enum (got %r)" % (clazz, prop, pd["type"])
+      assert list(pd.get("choices", [])) == want, \
+          "%s.%s choices wrong: got %r want %r" % (clazz, prop, pd.get("choices"), want)
+    # a genuinely-NUMERIC int (a count) must STAY int, never mis-promoted to enum
+    assert _prop("terrain::NoiseModuleData", "octaves")["type"] == "int", \
+        "octaves (a numeric count) was wrongly reflected as an enum"
+    assert "choices" not in _prop("terrain::FbmModuleData", "seed"), \
+        "seed (numeric) leaked a choices list"
+    print("INTROSPECT enum-choices PASS (op/mode/basis expose value-ordered choices; counts stay int)", flush=True)
+
+    ###########################################################################
     # (b) class-level plug schema WITHOUT instantiating a module (palette need)
     ###########################################################################
     fbm_spec = dflow.plugSpec("terrain::FbmModuleData")
@@ -69,6 +95,31 @@ def main():
     noz_ins = {p["name"] for p in noz_spec["inputs"]}
     assert {"LifeSpan", "EmissionRate"} <= noz_ins, "Nozzle input plug names wrong: %r" % noz_ins
     print("INTROSPECT plugSpec PASS (Fbm + NozzleEmitter schemas w/ types+rates)", flush=True)
+
+    ###########################################################################
+    # (b2) PLUG METADATA (E1 seam extension): clamped-slider min/max ranges +
+    # display-only (bake-inert) markers surfaced by plugSpec — the schema the
+    # editor propsheet reads to build sliders + dim inert rows. No hand tables.
+    ###########################################################################
+    lpf_spec = dflow.plugSpec("terrain::LpfModuleData")
+    assert lpf_spec is not None, "plugSpec(terrain::LpfModuleData) returned None"
+    lpf_in = {p["name"]: p for p in lpf_spec["inputs"]}
+    assert "cutoff" in lpf_in and "blend" in lpf_in, \
+        "Lpf single-cutoff plug schema wrong: %r" % list(lpf_in)
+    assert "cutoff_texels" not in lpf_in and "cutoff_m" not in lpf_in, \
+        "old two-plug cutoff form still present: %r" % list(lpf_in)
+    cutoff_p = lpf_in["cutoff"]
+    assert cutoff_p.get("min") == 0.0 and cutoff_p.get("max") == 16384.0, \
+        "Lpf cutoff range missing/wrong: %r" % cutoff_p
+    assert lpf_in["blend"].get("min") == 0.0 and lpf_in["blend"].get("max") == 1.0, \
+        "Lpf blend range missing/wrong: %r" % lpf_in["blend"]
+    for cls in ("terrain::FbmModuleData", "terrain::NoiseModuleData"):
+      spec = dflow.plugSpec(cls)
+      ovel = next((p for p in spec["inputs"] if p["name"] == "offset_vel"), None)
+      assert ovel is not None, "%s missing offset_vel plug" % cls
+      assert ovel.get("display_only") is True, \
+          "%s offset_vel not marked display_only: %r" % (cls, ovel)
+    print("INTROSPECT plug-metadata PASS (lpf cutoff/blend ranges; offset_vel display-only)", flush=True)
 
     ###########################################################################
     # build a small round-trippable graph from concrete core modules

@@ -67,7 +67,7 @@ technique tek_cursor {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CursorDrawableImpl::CursorDrawableImpl(const CursorDrawableData* data)
+CursorDrawableImpl::CursorDrawableImpl(std::shared_ptr<const CursorDrawableData> data)
     : _data(data) {
 }
 
@@ -225,7 +225,7 @@ void CursorDrawableData::describeX(class_t* c) {
 
 drawable_ptr_t CursorDrawableData::createDrawable() const {
   auto drw = std::make_shared<CallbackDrawable>(nullptr);
-  auto impl = drw->_implA.makeShared<CursorDrawableImpl>(this);
+  auto impl = drw->_implA.makeShared<CursorDrawableImpl>(dataShared<CursorDrawableData>());
   drw->_sortkey = 1000;  // render late (on top)
   drw->SetRenderCallback(CursorDrawableImpl::renderCursor);
   return drw;

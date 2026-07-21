@@ -71,7 +71,7 @@ class SurfNode:
   def __truediv__(self, o):  return _binop("/", self, o)
   def __rtruediv__(self, o): return _binop("/", o, self)
   def __neg__(self):
-    return Op("(-{0})", [self], self._type)
+    return Op("(-{0})", [self], self._type, name="neg")
 
   # ── swizzle ──
   def __getattr__(self, name):
@@ -122,16 +122,30 @@ class Param(SurfNode):
 
 class Op(SurfNode):
   """A GLSL builtin/library call or operator. `tmpl` is a format string over
-  the arg expressions; `libsrc`/`inherits`/`imports` carry codegen deps."""
-  __slots__ = ("_tmpl", "_args", "_libsrc", "_inherits", "_imports")
+  the arg expressions; `libsrc`/`inherits`/`imports` carry codegen deps.
 
-  def __init__(self, tmpl, args, gtype, libsrc=None, inherits=(), imports=()):
+  `name` (E2.5 Q1) is the CANONICAL DSL op tag — the symbolic spelling of the
+  authoring call (`sin`, `mix`, the `add`/`sub`/`mul`/`div` operators, `vec3`,
+  `voronoi`, ...) — stamped AT CONSTRUCTION so a SurfNode DAG lowers to ExprIR
+  (ptex3d/exprir_surface.py) without ever reverse-engineering `_tmpl` (template
+  reuse would silently break round-trip). `meta` carries STRUCTURAL non-arg
+  params baked into `_tmpl` (e.g. an fBm octave count — a loop bound, A8
+  structural) so the capture recovers them. Both are PURE METADATA: emission and
+  `_make_key` (CSE) read only `_tmpl`/`_type`/`_args`, so tagging is byte-inert.
+  `name=None` = an untaggable op (the raw-GLSL `P.func` escape hatch) — capture
+  fails loud on it rather than emitting an opaque template."""
+  __slots__ = ("_tmpl", "_args", "_libsrc", "_inherits", "_imports", "_name", "_meta")
+
+  def __init__(self, tmpl, args, gtype, libsrc=None, inherits=(), imports=(),
+               name=None, meta=None):
     super().__init__(gtype)
     self._tmpl = tmpl
     self._args = args
     self._libsrc = libsrc
     self._inherits = tuple(inherits)
     self._imports = tuple(imports)
+    self._name = name
+    self._meta = meta or {}
 
   def _make_key(self):
     return ("o", self._tmpl, self._type, tuple(a.key() for a in self._args))
@@ -222,9 +236,13 @@ def _binop_type(ta, tb):
   raise TypeError("incompatible operand types %s and %s" % (ta, tb))
 
 
+# operator symbol -> canonical DSL op tag (matches the terrain arith vocabulary).
+_BINOP_TAG = {"+": "add", "-": "sub", "*": "mul", "/": "div"}
+
+
 def _binop(sym, a, b):
   a = _wrap(a); b = _wrap(b)
-  return Op("({0} %s {1})" % sym, [a, b], _binop_type(a._type, b._type))
+  return Op("({0} %s {1})" % sym, [a, b], _binop_type(a._type, b._type), name=_BINOP_TAG[sym])
 
 
 ###############################################################################
@@ -453,20 +471,20 @@ class _Ops:
   def _vec(self, n, a):
     a = [_wrap(x) for x in a]
     if len(a) == 1 and a[0]._type == "float":       # scalar broadcast
-      return Op(_VEC[n] + "({0})", a, _VEC[n])
+      return Op(_VEC[n] + "({0})", a, _VEC[n], name=_VEC[n])
     tmpl = _VEC[n] + "(" + ", ".join("{%d}" % i for i in range(len(a))) + ")"
-    return Op(tmpl, a, _VEC[n])
+    return Op(tmpl, a, _VEC[n], name=_VEC[n])
 
-  # component-wise (type follows the arg)
+  # component-wise (type follows the arg). The GLSL fn name IS the DSL op tag.
   def _cw1(self, fn, x):
-    x = _wrap(x); return Op("%s({0})" % fn, [x], x._type)
+    x = _wrap(x); return Op("%s({0})" % fn, [x], x._type, name=fn)
   def sin(self, x):   return self._cw1("sin", x)
   def cos(self, x):   return self._cw1("cos", x)
   def atan(self, x):  return self._cw1("atan", x)
   def abs(self, x):   return self._cw1("abs", x)
 
   def atan2(self, y, x):   # GLSL atan(y, x) == atan2; -> angle in [-pi, pi]
-    return Op("atan({0}, {1})", [_wrap(y), _wrap(x)], "float")
+    return Op("atan({0}, {1})", [_wrap(y), _wrap(x)], "float", name="atan2")
   def floor(self, x): return self._cw1("floor", x)
   def fract(self, x): return self._cw1("fract", x)
   def sqrt(self, x):  return self._cw1("sqrt", x)
@@ -474,40 +492,41 @@ class _Ops:
   def dFdx(self, x):   return self._cw1("dFdx", x)     # screen-space d/dx (per-pixel, screen-x)
   def dFdy(self, x):   return self._cw1("dFdy", x)     # screen-space d/dy (per-pixel, screen-y)
   def normalize(self, x): return self._cw1("normalize", x)
-  def saturate(self, x):  x = _wrap(x); return Op("clamp({0}, 0.0, 1.0)", [x], x._type)
+  def saturate(self, x):  x = _wrap(x); return Op("clamp({0}, 0.0, 1.0)", [x], x._type, name="saturate")
 
   def mix(self, a, b, t):
     a = _wrap(a); b = _wrap(b); t = _wrap(t)
-    return Op("mix({0}, {1}, {2})", [a, b, t], _binop_type(a._type, b._type))
+    return Op("mix({0}, {1}, {2})", [a, b, t], _binop_type(a._type, b._type), name="mix")
   def clamp(self, x, lo, hi):
-    x = _wrap(x); return Op("clamp({0}, {1}, {2})", [x, _wrap(lo), _wrap(hi)], x._type)
+    x = _wrap(x); return Op("clamp({0}, {1}, {2})", [x, _wrap(lo), _wrap(hi)], x._type, name="clamp")
   def step(self, edge, x):
-    x = _wrap(x); return Op("step({0}, {1})", [_wrap(edge), x], x._type)
+    x = _wrap(x); return Op("step({0}, {1})", [_wrap(edge), x], x._type, name="step")
   def smoothstep(self, e0, e1, x):
-    x = _wrap(x); return Op("smoothstep({0}, {1}, {2})", [_wrap(e0), _wrap(e1), x], x._type)
+    x = _wrap(x); return Op("smoothstep({0}, {1}, {2})", [_wrap(e0), _wrap(e1), x], x._type, name="smoothstep")
   def pow(self, a, b):
-    a = _wrap(a); return Op("pow({0}, {1})", [a, _wrap(b)], a._type)
+    a = _wrap(a); return Op("pow({0}, {1})", [a, _wrap(b)], a._type, name="pow")
   def mod(self, a, b):
-    a = _wrap(a); return Op("mod({0}, {1})", [a, _wrap(b)], a._type)
+    a = _wrap(a); return Op("mod({0}, {1})", [a, _wrap(b)], a._type, name="mod")
   def min(self, a, b):
-    a = _wrap(a); b = _wrap(b); return Op("min({0}, {1})", [a, b], _binop_type(a._type, b._type))
+    a = _wrap(a); b = _wrap(b); return Op("min({0}, {1})", [a, b], _binop_type(a._type, b._type), name="min")
   def max(self, a, b):
-    a = _wrap(a); b = _wrap(b); return Op("max({0}, {1})", [a, b], _binop_type(a._type, b._type))
+    a = _wrap(a); b = _wrap(b); return Op("max({0}, {1})", [a, b], _binop_type(a._type, b._type), name="max")
 
-  def dot(self, a, b):    return Op("dot({0}, {1})", [_wrap(a), _wrap(b)], "float")
-  def length(self, x):    return Op("length({0})", [_wrap(x)], "float")
-  def cross(self, a, b):  return Op("cross({0}, {1})", [_wrap(a), _wrap(b)], "vec3")
+  def dot(self, a, b):    return Op("dot({0}, {1})", [_wrap(a), _wrap(b)], "float", name="dot")
+  def length(self, x):    return Op("length({0})", [_wrap(x)], "float", name="length")
+  def cross(self, a, b):  return Op("cross({0}, {1})", [_wrap(a), _wrap(b)], "vec3", name="cross")
 
-  # noise / cellular
+  # noise / cellular. `octaves` (an fBm loop bound) bakes into `_tmpl` — a STRUCTURAL
+  # int (A8), recovered from `meta` so the ExprIR capture round-trips it.
   def noise(self, p):
-    return Op("noise({0})", [_wrap(p)], "float", inherits=("lib_mmnoise",))
+    return Op("noise({0})", [_wrap(p)], "float", inherits=("lib_mmnoise",), name="noise")
   def fbm(self, p, octaves=4):
     return Op("_ptex_fbm({0}, %d)" % int(octaves), [_wrap(p)], "float",
-              libsrc=_FBM_SRC, inherits=("lib_mmnoise",))
+              libsrc=_FBM_SRC, inherits=("lib_mmnoise",), name="fbm", meta={"octaves": int(octaves)})
   def fbm_aa(self, p, octaves=4, aa=1.0):   # footprint-band-limited fbm: fades sub-pixel octaves
     # `aa` scales the footprint (the AA-aggressiveness knob): >1 fades sooner, <1 sharper.
     return Op("_ptex_fbm_aa({0}, %d, {1})" % int(octaves), [_wrap(p), _wrap(aa)], "float",
-              libsrc=_FBM_AA_SRC, inherits=("lib_mmnoise",))
+              libsrc=_FBM_AA_SRC, inherits=("lib_mmnoise",), name="fbm_aa", meta={"octaves": int(octaves)})
   def voronoi(self, p):
     # Returns a bundle over a ptex_voro_t struct. Fields (unused ones are DCE'd
     # by the compiler — e.g. a .f1-only dome doesn't pay for the .fwedge pass):
@@ -516,7 +535,8 @@ class _Ops:
     #   .fwedge = surface-width-corrected border (constant apparent width, dot-free)
     #   .cell / .cell2 = per-cell hashes
     # (passes the object-space surface normal `onrm` for the width correction.)
-    node = Op("_ptex_voronoi({0}, onrm)", [_wrap(p)], "ptex_voro_t", libsrc=_VORONOI_SRC)
+    node = Op("_ptex_voronoi({0}, onrm)", [_wrap(p)], "ptex_voro_t", libsrc=_VORONOI_SRC,
+              name="voronoi")
     return Bundle(node, {"f1": "f1", "edge": "edge", "fwedge": "fwedge",
                          "cell": "cellA", "cell2": "cellB"})
 
@@ -526,7 +546,7 @@ class _Ops:
       .edge = distance to the nearest cell border (0 at border) — seams / tile gap
               of any width: `P.smoothstep(0, tile_width, hex.edge)`
       .id   = per-cell hash in [0,1] — colour / roughness / variation per cell"""
-    node = Op("_ptex_hexgrid({0})", [_wrap(uv)], "vec4", libsrc=_HEXGRID_SRC)
+    node = Op("_ptex_hexgrid({0})", [_wrap(uv)], "vec4", libsrc=_HEXGRID_SRC, name="hexgrid")
     return Bundle(node, {"edge": "x", "id": "y"})
 
   def spherecells(self, p, n):
@@ -539,7 +559,8 @@ class _Ops:
       .f1   = chord distance to the cell centre
     A sphere can't be all-hexagons (Euler -> 12 pentagons), but this is uniform +
     seamless. For 2D / UV-mapped surfaces use `hexgrid` instead."""
-    node = Op("_ptex_spherecells({0}, {1})", [_wrap(p), _wrap(n)], "vec4", libsrc=_SF_SRC)
+    node = Op("_ptex_spherecells({0}, {1})", [_wrap(p), _wrap(n)], "vec4", libsrc=_SF_SRC,
+              name="spherecells")
     return Bundle(node, {"id": "x", "edge": "y", "f1": "z"})
 
   def func(self, tmpl, args, *, rtype="float", libsrc=None, inherits=(), imports=()):

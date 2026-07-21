@@ -206,6 +206,11 @@ struct MergeMeshModuleInst : public MeshComputeInst {
     return ok;
   }
 
+  // #33 live-poke eviction: the disk-restored _built=true above must NOT survive an eviction, or
+  // onTopologyReady's own guard (line 56) skips the rebuild forever and the merge is frozen at its
+  // cook-load content — re-arm both the eval-1 trunk passthrough (compute()) and the real rebuild.
+  void onCookEvicted() override { _built = false; }
+
   const char* _cookSalt() const final;
 
   const MergeMeshData*   _d;

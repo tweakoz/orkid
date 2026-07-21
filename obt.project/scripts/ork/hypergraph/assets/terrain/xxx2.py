@@ -181,16 +181,16 @@ class XXX2(HeightField):
           xxx_out = (erox_out*0.9) + (pha_out*0.1)
           terr     = self.hfdisplacement(terrace_strata, xxx_out)
           terr_out = T.Mix(xxx_out, terr, 0.1)
-          L.ero_out = T.lpf(terr_out, cutoff_m=4)
+          L.ero_out = T.lpf(terr_out, cutoff=4, units='meters')
         ero_out = L.ero_out
         ####################################
         with T.loop(iters*2, ero_out=ero_out) as L:
           bfill = T.basin_fill(L.ero_out)
           L.ero_out = (L.ero_out*0.95)+(bfill*0.05)
         ero_out = L.ero_out
-        lpf_out = T.lpf(ero_out, cutoff_m=4)
+        lpf_out = T.lpf(ero_out, cutoff=4, units='meters')
         ero_out = (ero_out*0.15)+(lpf_out*0.85)
-        lpf_out = T.lpf(ero_out, cutoff_m=2)
+        lpf_out = T.lpf(ero_out, cutoff=2, units='meters')
         ero_out = (ero_out*0.15)+(lpf_out*0.85)
         ####################################
         # STRATA TERRACING (the unified-substrate addition): snap to band elevations,

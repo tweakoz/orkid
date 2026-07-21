@@ -45,13 +45,13 @@ public:
 
 struct CurvePathDrawableImpl {
 
-  CurvePathDrawableImpl(const CurvePathDrawableData* data);
+  CurvePathDrawableImpl(std::shared_ptr<const CurvePathDrawableData> data);
   ~CurvePathDrawableImpl();
   void gpuInit(lev2::Context* ctx);
   void _render(const RenderContextInstData& RCID);
   static void renderCurvePath(RenderContextInstData& RCID);
 
-  const CurvePathDrawableData* _data = nullptr;
+  std::shared_ptr<const CurvePathDrawableData> _data;
   freestyle_mtl_ptr_t _lineMaterial;
   const FxShaderTechnique* _lineTechnique = nullptr;
   fxparam_constptr_t _paramMVP = nullptr;

@@ -114,12 +114,17 @@ struct ExprModuleInst : public TerrainComputeInst {
 
   uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
     auto h = DataBlock::createHasher();
-    // v3: NATURAL UNITS — heights are meters end-to-end, so the codegen no longer folds
-    // in the baked height (ctx.P_object.y = in0 directly) and this file drops that
-    // substitution. The bump re-keys the cook cache so warm loads can't serve v2 vs v3.
-    // v2: runtime-dim shell (sif_dim SSBO).
-    h->accumulateString("terrain.expr.v3");
-    h->accumulateString(_d->_shadertext); // the authored body IS the identity (params baked in)
+    // v4 (E2.5): the CANONICAL ExprIR TREE is the storage-form IDENTITY — the hash keys off
+    // its bytes, NOT the compiled _shadertext (two shadertexts that lower from the same tree
+    // are the same expression; the tree is stable across codegen churn). Storage-form change
+    // (the reflected _expr_tree field) + this hash-key change land in ONE salt bump per owner
+    // adjudication Q5 — a SANCTIONED WHOLE-CORPUS cook-cache invalidation (every terrain
+    // expr asset re-bakes once; the emitted GLSL is byte-identical, only the cache key moves).
+    // v3: NATURAL UNITS (heights are meters end-to-end). v2: runtime-dim shell (sif_dim SSBO).
+    h->accumulateString("terrain.expr.v4");
+    // every E2.5 expr node carries a tree; the shadertext fallback keeps a transitional /
+    // tree-less node deterministic + distinct (never a silent collision to the empty string).
+    h->accumulateString(_d->_expr_tree.empty() ? _d->_shadertext : _d->_expr_tree);
     _mixTail(h, ctx, ih);
     h->finish();
     return h->result();
@@ -157,11 +162,21 @@ void ExprModuleData::describeX(class_t* clazz) {
   clazz->setSharedFactory([]() -> rtti::castable_ptr_t { return ExprModuleData::createShared(); });
   clazz->annotateTyped<dataflow::moduleIOreshape_fn_t>(
       "reshapeIOs", [](dataflow::moduledata_ptr_t mdata) { _reshapeExprIOs(mdata); });
+  // E1-close add-palette (reflection-carried; see hfdflow_module_thermal.cpp for the
+  // vocabulary). recipe = "expr": the python insertion recipe supplies the identity
+  // default source ("ctx.input(0)") so the added node compiles before the user edits it.
+  clazz->annotateTyped<ConstString>("dsl.verb", "expr");
+  clazz->annotateTyped<bool>("editor.palette", true);
+  clazz->annotateTyped<int>("editor.palette.sort", 10);
+  clazz->annotateTyped<ConstString>("editor.palette.recipe", "expr");
   // the authored shader text is the portable, python-decoupled artifact -> reflect it.
   clazz->directProperty("shadertext", &ExprModuleData::_shadertext);
   // the AUTHORED expression source (editor T.expr) — reflected so a propsheet edit
   // round-trips and the DSL can recompile shadertext from it on rebake.
   clazz->directProperty("expr_source", &ExprModuleData::_expr_source);
+  // the CANONICAL ExprIR tree (E2.5) — reflected so the .py writer re-renders DSL from it
+  // and the cook hash keys off its bytes (the storage-form identity, salt terrain.expr.v4).
+  clazz->directProperty("expr_tree", &ExprModuleData::_expr_tree);
 }
 
 } // namespace ork::lev2::terrain

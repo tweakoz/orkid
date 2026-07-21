@@ -51,6 +51,8 @@ def main():
   parser.add_argument("--param", "-p", action="append", dest="params", default=[],
                       metavar="KEY=VALUE", help="DSL constructor kwarg (repeatable)")
   parser.add_argument("--list", "-l", action="store_true", help="list terrain DSL files and exit")
+  parser.add_argument("--reset-layout", dest="reset_layout", action="store_true",
+                      help="ignore any saved dock layout; open with the default arrangement")
   args = parser.parse_args()
 
   if args.list or args.terrain is None:
@@ -66,7 +68,7 @@ def main():
   app = TerrainEditor(args.terrain, dsl_class=args.class_name,
                       extent_m=args.extent,
                       preview_dim=args.dim, full_dim=args.full_dim, chunk=args.chunk,
-                      dsl_kwargs=dsl_kwargs)
+                      dsl_kwargs=dsl_kwargs, reset_layout=args.reset_layout)
   app.ezapp.mainThreadLoop()
   app.ezapp.shutdown()
 

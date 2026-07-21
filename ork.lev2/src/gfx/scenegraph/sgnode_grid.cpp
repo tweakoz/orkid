@@ -13,7 +13,7 @@ ImplementReflectionX(ork::lev2::GridDrawableData, "GridDrawableData");
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-GridDrawableImpl::GridDrawableImpl(const GridDrawableData* grid)
+GridDrawableImpl::GridDrawableImpl(std::shared_ptr<const GridDrawableData> grid)
     : _griddata(grid) {
 }
 GridDrawableImpl::~GridDrawableImpl() {
@@ -195,7 +195,7 @@ void GridDrawableData::describeX(class_t* c) {
 
 drawable_ptr_t GridDrawableData::createDrawable() const {
   auto drw = std::make_shared<CallbackDrawable>(nullptr);
-  auto impl = drw->_implA.makeShared<GridDrawableImpl>(this);
+  auto impl = drw->_implA.makeShared<GridDrawableImpl>(dataShared<GridDrawableData>());
   drw->_sortkey = 10;
   drw->SetRenderCallback(GridDrawableImpl::renderGrid);
   return drw;

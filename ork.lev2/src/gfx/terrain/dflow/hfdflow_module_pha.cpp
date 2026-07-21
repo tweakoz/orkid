@@ -231,11 +231,16 @@ struct PhaModuleInst : public TerrainComputeInst {
 static void _reshapePhaIOs(dataflow::moduledata_ptr_t data) {
   dflow::ModuleData::createInputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "In");
   dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "strength")->setValue(0.22f);
-  dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "gully_weight")->setValue(0.5f);
+  // gully_weight + normalization are magnitudes documented [0,1] -> clamped-slider range (E1).
+  auto gully_weight = dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "gully_weight");
+  gully_weight->setValue(0.5f);
+  gully_weight->annotateRange(0.0f, 1.0f);
   dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "detail")->setValue(1.5f);
   dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "scale")->setValue(0.15f);
   dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "cell_scale")->setValue(0.7f);
-  dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "normalization")->setValue(0.5f);
+  auto normalization = dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "normalization");
+  normalization->setValue(0.5f);
+  normalization->annotateRange(0.0f, 1.0f);
   dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "lacunarity")->setValue(2.0f);
   dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "gain")->setValue(0.5f);
   // mid-height reference: height that maps to fadeTarget 0 (valley=-1 .. peak=+1 over
@@ -255,6 +260,10 @@ void PhaModuleData::describeX(class_t* clazz) {
   clazz->setSharedFactory([]() -> rtti::castable_ptr_t { return PhaModuleData::createShared(); });
   clazz->annotateTyped<dataflow::moduleIOreshape_fn_t>("reshapeIOs",
       [](dataflow::moduledata_ptr_t m) { _reshapePhaIOs(m); });
+  // E1-close add-palette (reflection-carried; see hfdflow_module_thermal.cpp for the vocabulary).
+  clazz->annotateTyped<ConstString>("dsl.verb", "pha");
+  clazz->annotateTyped<bool>("editor.palette", true);
+  clazz->annotateTyped<int>("editor.palette.sort", 2);
   clazz->directProperty("octaves", &PhaModuleData::_octaves); // baked loop bound
 }
 

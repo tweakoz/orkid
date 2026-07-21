@@ -105,12 +105,10 @@ void LRuleSet::describeX(object::ObjectClass* clazz) {
 //                       per A1). FORK pushes N independently-rewritten child frames; SLOT emits an XfSlot.
 // The caller applies the shared _buildFrames post-pass + GPU upload, so this stays PURE CPU.
 //
-// NOTE (parity window, T11): the four frame-math primitives below (_len3/_rot/_perp/_tropismBend) are
-// COPIES of the v2 Turtle helpers in hmdflow_module_lsystem.cpp. During GR1.b..GR1.d BOTH the grammar
-// and legacy-archetype paths are live and cache-disjoint (T12); GR1.d deletes the archetype procedures
-// and RELOCATES the shared math next to this evaluator (T11) — collapsing this duplication then, not now
-// (relocation is explicitly out of GR1.b scope per §9). _buildFrames is NOT copied: _buildSkeleton runs
-// it verbatim on the derived nodes for both paths.
+// NOTE (post-GR1.d): the legacy archetype procedures are DELETED; this evaluator is the only
+// turtle. _len3/_rot/_perp still exist as static copies in hmdflow_module_lsystem.cpp because
+// the shared _buildFrames post-pass (which _buildSkeleton runs on the derived nodes) needs them
+// there; _tropismBend lives only here. Both sets are TU-local statics — no ODR concern.
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace {
@@ -163,7 +161,6 @@ static inline uint32_t _ghash(uint32_t a, uint32_t b, uint32_t c) {
 // PARAM fallback env (A8): a PARAM expr whose name is not a symbol-instance param resolves to the
 // module's reflected scalar of that name (live-pokeable). Unknown name -> 0 (like the ENV stub).
 static float moduleParam(const LSystemModuleData* P, const std::string& n) {
-  if (n == "archetype")    return float(P->_archetype);
   if (n == "depth")        return float(P->_depth);
   if (n == "budget")       return float(P->_budget);
   if (n == "children")     return float(P->_children);

@@ -114,7 +114,7 @@ class ErodeFlow(HeightField):
                               clamp_frac=1.0,
                               blend = 1.0)   # master per-step amount = fraction of local relief
           zz = T.erode_thermal(zz, iterations=8, blend=1.0)  # smooth the jaggedness from discrete steps (NOT the flow-erode clamp )
-          L.z = T.lpf(zz, cutoff_m=filt,blend = 1.0)
+          L.z = T.lpf(zz, cutoff=filt, units='meters',blend = 1.0)
         z = L.z
         #############################
         # first filter pass (remove hifreq detail, progressively)
@@ -122,10 +122,10 @@ class ErodeFlow(HeightField):
         zn = T.normalize(z)                      # [0,1] so the band edges are range-robust
         hi = T.band(zn, 0.45, 1.0, soft=0.05)   # high-elevation mask, open top (~ sels[6])
         bl = T.mix(0.85,0.45,hi)
-        z = T.lpf(z, cutoff_m=256, blend=bl)     # FIELD blend -> MaskBlend: smooth only the high band
-        z = T.lpf(z, cutoff_m=128, blend=bl)
-        z = T.lpf(z, cutoff_m=64,  blend=bl)
-        z = T.lpf(z, cutoff_m=32,  blend=bl)
+        z = T.lpf(z, cutoff=256, units='meters', blend=bl)     # FIELD blend -> MaskBlend: smooth only the high band
+        z = T.lpf(z, cutoff=128, units='meters', blend=bl)
+        z = T.lpf(z, cutoff=64, units='meters',  blend=bl)
+        z = T.lpf(z, cutoff=32, units='meters',  blend=bl)
         #############################
         # second erosion pass (add a bit of hifreq detail back in)
         #############################
@@ -143,7 +143,7 @@ class ErodeFlow(HeightField):
                               dep_m=0.5,        # deposition AREA exponent  (~0.5 — was 20.5 !)
                               clamp_frac=1.0,
                               blend = 1.0)   # master per-step amount = fraction of local relief
-          L.z = T.lpf(zz, cutoff_m=filt,blend = 1.0)
+          L.z = T.lpf(zz, cutoff=filt, units='meters',blend = 1.0)
         z = L.z
         #############################
         # METERS CALIBRATION (natural-units): the raw fbm->terrace->erode chain only

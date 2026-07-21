@@ -206,6 +206,10 @@ struct Image {
   // linear_colorspace=true tags the output as linear data (e.g. heightmaps/masks)
   // instead of the format default (PNG/JPEG otherwise default to sRGB). Opt-in so
   // ordinary color PNGs keep their sRGB tag.
+  // Header metadata policy (owner, 2026-07-18): EVERY written PNG/EXR carries the
+  // epoch DateTime sentinel, never the encode wall-clock — otherwise two identical
+  // bakes straddling a 1-second boundary differ by one header byte and byte-identity
+  // gates (T9 oracle, cross-machine determinism) flake on a metadata byte.
   void writeToFile(const ork::file::Path& outpath, bool linear_colorspace = false) const;
   bool readFromFile(const ork::file::Path& inpath);
 

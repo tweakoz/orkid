@@ -846,6 +846,16 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
         return particles_drawable_graphinst(drw);
       },
       py::arg("drawable"));
+  /////////////////////////////////////////////////////////////////////////////////
+  // Free function — total live particle count summed across every pool module in a
+  // particle graphinst (read-only introspection). Lets a headless gate assert the
+  // renderer actually crossed the former sorted-path cap before rendering.
+  module_lev2.def(
+      "particle_alive_count",
+      [](dflow::graphinst_ptr_t ginst) -> int {
+        return particle::aliveCountOnParticleGraph(ginst);
+      },
+      py::arg("graphinst"));
 }
 /////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

@@ -158,6 +158,15 @@ void ThermalErodeModuleData::describeX(class_t* clazz) {
   clazz->setSharedFactory([]() -> rtti::castable_ptr_t { return ThermalErodeModuleData::createShared(); });
   clazz->annotateTyped<dataflow::moduleIOreshape_fn_t>("reshapeIOs",
       [](dataflow::moduledata_ptr_t m) { _reshapeThermalIOs(m); });
+  // E1-close add-palette (reflection-carried; the hand-curated add-ops tuple is DELETED):
+  //   dsl.verb             — the curated DSL wrapper this class inserts as
+  //   editor.palette       — appears in the editor add menu (curation marker)
+  //   editor.palette.sort  — curated menu position (preserves the old tuple's order)
+  // (companion keys on other classes: editor.palette.source = generator/no-input;
+  //  editor.palette.recipe = key into the python insertion recipes.)
+  clazz->annotateTyped<ConstString>("dsl.verb", "erode_thermal");
+  clazz->annotateTyped<bool>("editor.palette", true);
+  clazz->annotateTyped<int>("editor.palette.sort", 0);
   clazz->directProperty("iterations", &ThermalErodeModuleData::_iterations); // baked step count
 }
 

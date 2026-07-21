@@ -36,6 +36,8 @@ class Conifer(LsAnim):
   """B — central-leader conifer: narrow branch angles, strong apical dominance, small dense leaves.
   **overrides take precedence over the fixed params so fork(depth=N) re-runs a coarser LOD."""
   def __init__(self, seed=21, **overrides):
+    # archetype= selects the CONIFER PRESET GRAMMAR EMITTER (GR1.d: species are data —
+    # lsystem/presets.py); same surface, no C++ enum behind it anymore.
     defaults = dict(archetype=Archetype.CONIFER,
                     depth=4,
                     children=1,

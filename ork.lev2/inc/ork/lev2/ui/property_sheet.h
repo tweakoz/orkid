@@ -38,6 +38,13 @@ struct PropertyRow : public Group {
   bool _has_children = false;
   widget_ptr_t _editor_widget;
 
+  // Plug-row socket glyph (drawn in the label column): the visual plugs-vs-properties
+  // distinction. _is_plug_row => draw a glyph before the label; _plug_connected selects a
+  // filled disc (connected/ghosted) vs a hollow ring (editable/unconnected). Module-property
+  // rows leave _is_plug_row false — that ABSENCE is the distinction.
+  bool _is_plug_row = false;
+  bool _plug_connected = false;
+
   // Appearance
   fvec4 _label_color = fvec4(0.9f, 0.9f, 0.9f, 1.0f);
   fvec4 _bg_color = fvec4(0.15f, 0.15f, 0.15f, 1.0f);
@@ -284,6 +291,17 @@ private:
   widget_ptr_t _createEditorWidget(const std::string& key, PropertyType type, svar128_t value);
   std::function<void(svar128_t)> _makeRefreshCallback(widget_ptr_t editor, PropertyType type);
   void _clampScrollOffset();
+  // Consult the model's per-row read_only annotation (e.g. a connected input plug): dim the
+  // row's label/background (ghost style) and return true so the caller skips editor creation.
+  // Shared by both dispatch sites (_addRowsRecursive / _addSingleChildRecursive).
+  bool _applyRowReadOnly(const std::string& key, const property_row_ptr_t& row);
+  // Consult the model's per-row socket-glyph annotation (row_plug + plug_connected, stamped on
+  // input-plug rows): mark the row so its DoDraw renders the glyph. Shared by both dispatch
+  // sites (_addRowsRecursive / _addSingleChildRecursive).
+  void _applyRowPlugGlyph(const std::string& key, const property_row_ptr_t& row);
+  // Draggable label|editor column divider: hit-test the guide + clamp a new split fraction.
+  bool _isDividerHit(int local_x, int local_y) const;
+  void _setLabelWidthClamped(int local_x);
 
   property_sheet_model_ptr_t _model;
   std::unordered_set<std::string> _expanded_keys;
@@ -292,6 +310,14 @@ private:
   bool _needs_rebuild = true;
   int _total_rows = 0;  // For scroll calculation
   ScrollController _scroller;
+
+  // Draggable label|editor column divider. _label_width is the split (session-persistent
+  // per sheet instance — it survives rebuilds as a member). _divider_dragging tracks an
+  // in-flight guide drag so DRAG events retarget the split.
+  bool _divider_dragging = false;
+  static constexpr int _divider_hit_tolerance = 4;   // px band around the guide
+  static constexpr int _divider_min_label_width = 40;
+  static constexpr int _divider_min_editor_width = 60;
 
   // Editor factory registry (keyed by property type CRC)
   std::unordered_map<uint32_t, EditorFactoryPair> _editor_factories;

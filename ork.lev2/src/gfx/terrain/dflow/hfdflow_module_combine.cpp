@@ -5,10 +5,25 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 #include "hfdflow_module.h"
+#include <ork/reflect/enum_serializer.inl>
 
 ImplementReflectionX(ork::lev2::terrain::CombineModuleData, "terrain::CombineModuleData");
+ImplementEnumSerializer(ork::lev2::terrain::CombineOp);
 
 namespace ork::lev2::terrain {
+
+// EnumSerializer registration (E1) — the names ARE the DSL vocabulary, so they are
+// registered lowercase to match the T.<verb> spelling: reflected json / pywriter /
+// propsheet labels all read the same single-source string. Values match the codes
+// ops.py maps its DSL verbs to (OP_ADD=0 ...).
+BeginEnumRegistration(CombineOp);
+  enumtype->addEnum("add", CombineOp::ADD);
+  enumtype->addEnum("sub", CombineOp::SUB);
+  enumtype->addEnum("mul", CombineOp::MUL);
+  enumtype->addEnum("min", CombineOp::MIN);
+  enumtype->addEnum("max", CombineOp::MAX);
+  enumtype->addEnum("mix", CombineOp::MIX);
+EndEnumRegistration();
 
 ///////////////////////////////////////////////////////////////////////////////
 // CombineModule — Out = op(A, B). 4 SSBOs (out=0, a=1, b=2, params=3). Both the MIX
@@ -60,7 +75,7 @@ struct CombineModuleInst : public TerrainComputeInst {
     auto env = inst->_impl.getShared<BakeEnv>();
     auto fxi = env->_ctx->FXI();
     _allocOut(env.get(), _output->_value);
-    auto sh = fxi->shaderFromShaderText("terrain_combine", _combine_text(_d->_op));
+    auto sh = fxi->shaderFromShaderText("terrain_combine", _combine_text(int(_d->_op)));
     _cs     = fxi->computeShader(sh, "cs_combine");
     // t (MIX blend) AND dim are RUNTIME (params SSBO). Fill here, in bakeAcquire
     // (pre-dispatch-phase: a host map mid-phase is not visible). P[0]=t, P[1]=dim.
@@ -87,7 +102,7 @@ struct CombineModuleInst : public TerrainComputeInst {
   uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
     auto h = DataBlock::createHasher();
     h->accumulateString("terrain.combine.v2"); // MIX t now runtime (params SSBO); value still hashed
-    h->accumulateItem<int>(_d->_op);
+    h->accumulateItem<int>(int(_d->_op)); // hash the CODE (shader identity unchanged by the enum migration)
     h->accumulateItem<float>(_t->value());
     _mixTail(h, ctx, ih);
     h->finish();
@@ -105,7 +120,10 @@ struct CombineModuleInst : public TerrainComputeInst {
 static void _reshapeCombineIOs(dataflow::moduledata_ptr_t data) {
   dflow::ModuleData::createInputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "A");
   dflow::ModuleData::createInputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "B");
-  dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "t")->setValue(0.5f);
+  // MIX blend factor — a lerp weight, clearly bounded [0,1] (clamped-slider range, E1).
+  auto t = dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "t");
+  t->setValue(0.5f);
+  t->annotateRange(0.0f, 1.0f);
   dflow::ModuleData::createOutputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "Out");
 }
 CombineModuleData::CombineModuleData() {}
@@ -119,9 +137,10 @@ void CombineModuleData::describeX(class_t* clazz) {
   clazz->setSharedFactory([]() -> rtti::castable_ptr_t { return CombineModuleData::createShared(); });
   clazz->annotateTyped<dataflow::moduleIOreshape_fn_t>("reshapeIOs",
       [](dataflow::moduledata_ptr_t m) { _reshapeCombineIOs(m); });
-  // _op selects the baked GLSL expression (add/sub/mul/min/max/mix) — reflect it
-  // so the op survives serialize/deserialize (else a reloaded graph reverts to ADD).
-  clazz->directProperty("op", &CombineModuleData::_op);
+  // _op selects the baked GLSL expression (add/sub/mul/min/max/mix) — a real reflected
+  // enum: serializes by NAME, exposes its choice list to the editor propsheet (E1).
+  InvokeEnumRegistration(CombineOp);
+  clazz->directEnumProperty("op", &CombineModuleData::_op);
 }
 
 } // namespace ork::lev2::terrain

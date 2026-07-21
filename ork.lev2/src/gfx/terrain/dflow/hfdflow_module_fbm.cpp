@@ -239,7 +239,11 @@ static void _reshapeFbmIOs(dataflow::moduledata_ptr_t data) {
   dflow::ModuleData::createInputPlug<dflow::Vec2fPlugTraits>(data, dflow::EPR_UNIFORM, "offset")->setValue(fvec2(0.0f, 0.0f));
   // E.1b: domain pan VELOCITY (lattice-cells / second) — effective offset = offset + offset_vel * abstime,
   // fed by the family env clock (B.4). Zero = static. Serializes as a plug value (declarative animation).
-  dflow::ModuleData::createInputPlug<dflow::Vec2fPlugTraits>(data, dflow::EPR_UNIFORM, "offset_vel")->setValue(fvec2(0.0f, 0.0f));
+  // DISPLAY-ONLY / bake-inert: a bake is the t=0 snapshot (offset_vel deliberately un-hashed) — the editor
+  // marks the row honestly distinct (drives the LIVE pan only, never the baked field).
+  auto offset_vel = dflow::ModuleData::createInputPlug<dflow::Vec2fPlugTraits>(data, dflow::EPR_UNIFORM, "offset_vel");
+  offset_vel->setValue(fvec2(0.0f, 0.0f));
+  offset_vel->markDisplayOnly();
   // fused domain warp: per-texel (wx,wy) displacement fields + scalar amount. Both image
   // inputs unconnected -> plain fbm (no warp storage interfaces emitted).
   dflow::ModuleData::createInputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "warp_x");
@@ -262,6 +266,12 @@ void FbmModuleData::describeX(class_t* clazz) {
   clazz->setSharedFactory([]() -> rtti::castable_ptr_t { return FbmModuleData::createShared(); });
   clazz->annotateTyped<dataflow::moduleIOreshape_fn_t>(
       "reshapeIOs", [](dataflow::moduledata_ptr_t mdata) { _reshapeFbmIOs(mdata); });
+  // E1-close add-palette (reflection-carried; see hfdflow_module_thermal.cpp for the
+  // vocabulary). source = a GENERATOR: inserted with no input, starting a new branch.
+  clazz->annotateTyped<ConstString>("dsl.verb", "fbm");
+  clazz->annotateTyped<bool>("editor.palette", true);
+  clazz->annotateTyped<int>("editor.palette.sort", 11);
+  clazz->annotateTyped<bool>("editor.palette.source", true);
   // _octaves is a BAKED loop bound (not a plug) — reflect it so the serialized
   // graph self-describes (the JSON is the portable, python-decoupled artifact).
   clazz->directProperty("octaves", &FbmModuleData::_octaves);

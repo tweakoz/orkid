@@ -47,6 +47,16 @@ not own the milestone, the commit, or the gates (those run via `gate-runner.md`)
   new hypermesh DgModules need their GetClassStatic touch.
 - **pyext conventions**: camelCase methods, snake_case properties; new test scripts get a
   shebang + `chmod ugo+x`; `import orkengine.core` before lev2.
+- **NEW offscreen/capture tests use the `ork.testing` harness**
+  (`obt.project/scripts/ork/testing/`): `headless_app()`/`capture_app()` context managers
+  encode the proven lifecycle (init order, update-thread stop before shutdown join,
+  settle-then-exit, dir-creation, asset preflight, DRM env guard, ssaa=0 default), the
+  `verdict()`-before-teardown protocol, and the sample-before-kill watchdog — each guard's
+  docstring cites the bug it defuses. Hand-rolling boot/teardown in a new test needs a
+  stated reason (e.g. the test IS about the lifecycle). Migrating existing tests is
+  opportunistic, not required. Known limits: `settle()` runs a degraded drain until
+  `asyncWorkPending` is pybound; real-scene captures go through `capture_app(setup=,
+  update=)`.
 - **Style**: match the surrounding file's idiom, naming, and comment density. Comments state
   constraints the code can't show — never narrate what changed or why your change is correct.
 - **Git**: NEVER push. Do NOT commit unless the task prompt explicitly says to — the
@@ -72,6 +82,14 @@ and hand it off; that is a valid result.
 - Do targeted smoke only (a unit-style test you added, a bounded scene run the prompt
   authorizes). The gate battery (canaries, histograms, byte-identity oracles, fleet runs)
   belongs to gate-runner — don't burn your context on it.
+
+## Gates are committed tests (law, added after a coverage loss)
+
+A verification you author counts as a GATE only if it is a COMMITTED test file in the repo
+(flat-layout law, shebang, +x, machine verdict line). Scratch harnesses are fine for
+iteration, but their results die with your workspace — a lane once reported "9/9 PASS"
+checks that were never committed, leaving merged functionality with zero permanent
+coverage. If a check matters enough to quote in your report, it matters enough to commit.
 
 ## Report format (your final message — terse, no file dumps)
 

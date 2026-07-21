@@ -77,7 +77,7 @@ FIXTURE_SWITCH = textwrap.dedent("""
             h = T.Fbm(frequency=freq, octaves=6) * 0.5 + 0.5
             with T.loop(count, h=h) as L:
                 L.h = T.erode_thermal(L.h, talus_deg=32.0, rate=0.15, iterations=6)
-            smooth = T.lpf(L.h, cutoff_texels=6.0)
+            smooth = T.lpf(L.h, cutoff=6.0)
             ridged = T.terrace(L.h, steps=8.0, sharpness=6.0)
             self.capture(T.switch(which, smooth=smooth, ridged=ridged), "height", cache=True)
 """)

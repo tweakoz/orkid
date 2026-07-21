@@ -184,6 +184,13 @@ compute_shader cs_tri : iface {
         area2 += q0.x * q1.y - q1.x * q0.y;
       }
       float orient = (area2 >= 0.0) ? 1.0 : -1.0;
+      // on-edge tolerance (units of area x2, so scale-relative): a vertex lying ON a
+      // candidate ear's edge projects to s==0 analytically, but the Newell-plane basis
+      // (normalize/cross/dot) rounds that to a tiny +/- value. Bias the containment test
+      // toward INSIDE by this margin so an on/near-edge vertex reliably BLOCKS the ear —
+      // clipping such a "buried on the diagonal" reflex vertex leaves a reversed remainder
+      // triangle. Blocking is the safe direction (the two-ears theorem guarantees another).
+      float onedge = 1.0e-5 * abs(area2);
       uint remaining = n;
       // clip ears until a triangle remains (bounded; each iteration removes one
       // vertex). NOTE: `pass` is a shadlang KEYWORD (technique pass blocks) —
@@ -205,7 +212,7 @@ compute_shader cs_tri : iface {
             float s0 = ((B2.x - A2.x) * (Q.y - A2.y) - (B2.y - A2.y) * (Q.x - A2.x)) * orient;
             float s1 = ((C2.x - B2.x) * (Q.y - B2.y) - (C2.y - B2.y) * (Q.x - B2.x)) * orient;
             float s2 = ((A2.x - C2.x) * (Q.y - C2.y) - (A2.y - C2.y) * (Q.x - C2.x)) * orient;
-            if (s0 >= 0.0 && s1 >= 0.0 && s2 >= 0.0) { clear = false; }
+            if (s0 >= -onedge && s1 >= -onedge && s2 >= -onedge) { clear = false; }
           }
           if (clear) { ear = i; break; }
         }
@@ -1768,6 +1775,26 @@ int hypermeshTriangulationSelfTest(Context* ctx) {
   // 4) comb octagon — two notches, multiple reflex vertices
   fails += run_case("comb-oct",
       P2({{0, 0}, {4, 0}, {4, 2}, {3, 2}, {3, 1}, {2, 1}, {2, 2}, {0, 2}})) ? 0 : 1;
+  // 5) mirrored L-hex — the notch on the opposite side (reflex at (1,1), other winding
+  //    arm layout). Concave-correctness guard across a distinct reflex configuration.
+  fails += run_case("L-hex-mirror", P2({{0, 0}, {2, 0}, {2, 2}, {1, 2}, {1, 1}, {0, 1}})) ? 0 : 1;
+  // 6) rotated L-hex — same shape carried OFF the integer grid, so the ear-plane
+  //    projection is irrational: exercises the winding fix under generic coords.
+  {
+    auto base = P2({{0, 0}, {2, 0}, {2, 1}, {1, 1}, {1, 2}, {0, 2}});
+    float th = 0.541f, cs = std::cos(th), sn = std::sin(th);
+    std::vector<fvec2> rot;
+    for (auto& p : base) rot.push_back(fvec2(p.x * cs - p.y * sn, p.x * sn + p.y * cs));
+    fails += run_case("L-hex-rot", rot) ? 0 : 1;
+  }
+  // 7) U-shape — TWO reflex corners (a notch cut into the top of a square).
+  fails += run_case("U-shape",
+      P2({{0, 0}, {3, 0}, {3, 3}, {2, 3}, {2, 1}, {1, 1}, {1, 3}, {0, 3}})) ? 0 : 1;
+  // 8/9) reflex-EXACTLY-on-the-ear-diagonal variants that the pre-fix corner-0 ear
+  //      buries (the #52 signature). Non-unit arms + off-origin prove the on-edge
+  //      tolerance is scale-relative and translation-invariant, not just tuned to L-hex.
+  fails += run_case("L-nonsquare", P2({{0, 0}, {4, 0}, {4, 1}, {2, 1}, {2, 2}, {0, 2}})) ? 0 : 1;
+  fails += run_case("L-offset",    P2({{5, 5}, {7, 5}, {7, 6}, {6, 6}, {6, 7}, {5, 7}})) ? 0 : 1;
   return fails;
 }
 

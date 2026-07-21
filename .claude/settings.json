@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(obt.net.py list)",
+      "Bash(obt.net.py list *)",
+      "Bash(obt.net.py log *)",
+      "Bash(obt.dep.status.py *)",
+      "Bash(obt.dep.info.py *)",
+      "Bash(obt.dep.list.py)",
+      "Bash(obt.versions.py)",
+      "Bash(git worktree list)",
+      "Bash(git fetch *)",
+      "Bash(otool -L *)"
+    ]
+  }
+}

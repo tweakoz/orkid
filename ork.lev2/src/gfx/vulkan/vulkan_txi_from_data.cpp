@@ -294,6 +294,12 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   else { // synchronous path
   /////////////////////////////////////////////////////////
     // ASSERT: Synchronous transfers must be outside frame boundaries
+    if (_contextVK->_renderPassActive) {
+      logchan_txidata->log(
+          "initTextureFromData: texture upload during active render pass is illegal on this "
+          "backend - create/upload textures at gpuInit time or outside the render callback "
+          "(prebuild pattern: ork/ui/node_editor.py icons)");
+    }
     OrkAssert(!_contextVK->_renderPassActive);
     //OrkAssert(_contextVK->primary_cb() == nullptr);
 

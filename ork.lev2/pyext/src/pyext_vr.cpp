@@ -24,6 +24,53 @@ void pyinit_vr(py::module& module_lev2) {
       return orkidvr::device();
   });
   /////////////////////////////////////////////////////////////////////////////////
+  // Articulated hand tracking (generic OpenXR XR_EXT_hand_tracking mirror). OPTIONAL:
+  //  a device populates these only when the runtime + system support the extension;
+  //  otherwise every hand snapshots as unsupported/inactive. Joint matrices are in the
+  //  device's XR reference space, same convention as the head/controller poses.
+  /////////////////////////////////////////////////////////////////////////////////
+  auto handjoint_type = //
+      py::class_<orkidvr::HandJointPose, orkidvr::handjointpose_ptr_t>(vrmodule, "HandJointPose")
+       .def_property_readonly("matrix", [](orkidvr::handjointpose_ptr_t j) -> fmtx4 { //
+          return j->_matrix; // joint->reference (world), engine convention
+        })
+       .def_property_readonly("radius", [](orkidvr::handjointpose_ptr_t j) -> float { //
+          return j->_radius;
+        })
+       .def_property_readonly("position_valid", [](orkidvr::handjointpose_ptr_t j) -> bool { //
+          return j->_positionValid;
+        })
+       .def_property_readonly("orientation_valid", [](orkidvr::handjointpose_ptr_t j) -> bool { //
+          return j->_orientationValid;
+        })
+       .def_property_readonly("valid", [](orkidvr::handjointpose_ptr_t j) -> bool { //
+          return j->_positionValid and j->_orientationValid;
+        });
+  type_codec->registerStdCodec<orkidvr::handjointpose_ptr_t>(handjoint_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto handstate_type = //
+      py::class_<orkidvr::HandTrackingState, orkidvr::handtrackingstate_ptr_t>(vrmodule, "HandTrackingState")
+       .def_property_readonly("supported", [](orkidvr::handtrackingstate_ptr_t s) -> bool { //
+          return s->_supported;
+        })
+       .def_property_readonly("active", [](orkidvr::handtrackingstate_ptr_t s) -> bool { //
+          return s->_active;
+        })
+       .def_property_readonly("joint_count", [](orkidvr::handtrackingstate_ptr_t s) -> int { //
+          return int(s->_joints.size());
+        })
+       .def("joint", [](orkidvr::handtrackingstate_ptr_t s, int idx) -> orkidvr::handjointpose_ptr_t { //
+          OrkAssertI(idx >= 0 and idx < orkidvr::kHandJointCount, "hand joint index out of range [0,26)");
+          return std::make_shared<orkidvr::HandJointPose>(s->_joints[idx]);
+        })
+       .def_property_readonly("joints", [](orkidvr::handtrackingstate_ptr_t s) -> py::list { //
+          py::list result;
+          for (const auto& j : s->_joints)
+            result.append(std::make_shared<orkidvr::HandJointPose>(j));
+          return result;
+        });
+  type_codec->registerStdCodec<orkidvr::handtrackingstate_ptr_t>(handstate_type);
+  /////////////////////////////////////////////////////////////////////////////////
   auto vrdevice_type = //
       py::class_<orkidvr::Device, orkidvr::device_ptr_t>(module_lev2, "Device")
        .def("setPoseMatrix",[=](orkidvr::device_ptr_t dev, std::string name, const fmtx4& mtx) { //
@@ -160,6 +207,22 @@ void pyinit_vr(py::module& module_lev2) {
     return dev->_presentation;
   }, [](orkidvr::device_ptr_t dev, orkidvr::standardvrpresentation_ptr_t pres) { //
     dev->_presentation = pres;
+  });
+  /////////////////////////////////////////////////////////////////////////////////
+  // articulated hand tracking accessors (generic XR_EXT_hand_tracking mirror). Each
+  //  returns a stable value SNAPSHOT taken under the device lock, so python holds
+  //  consistent per-frame data. Unavailable/inactive on any non-supporting path.
+  vrdevice_type.def_property_readonly("hand_tracking_supported", [](orkidvr::device_ptr_t dev) -> bool { //
+    return dev->_handTrackingSupported;
+  });
+  vrdevice_type.def("handState", [](orkidvr::device_ptr_t dev, int side) -> orkidvr::handtrackingstate_ptr_t { //
+    return dev->handTrackingSnapshot(side); // 0=left 1=right
+  });
+  vrdevice_type.def_property_readonly("left_hand", [](orkidvr::device_ptr_t dev) -> orkidvr::handtrackingstate_ptr_t { //
+    return dev->handTrackingSnapshot(0);
+  });
+  vrdevice_type.def_property_readonly("right_hand", [](orkidvr::device_ptr_t dev) -> orkidvr::handtrackingstate_ptr_t { //
+    return dev->handTrackingSnapshot(1);
   });
   /////////////////////////////////////////////////////////////////////////////////
   type_codec->registerStdCodec<orkidvr::device_ptr_t>(vrdevice_type);

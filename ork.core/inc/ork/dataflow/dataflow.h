@@ -280,6 +280,41 @@ struct Topology {
   uint64_t _hash = 0;
 };
 
+///////////////////////////////////////////////////////////////////////////////
+// B.2 (HYPERECS): per-FAMILY runtime storage, keyed by TYPE. Replaces the single svar64_t
+// slot where MeshEnv (hypermesh), BakeEnv (terrain) and particle::Context COLLIDED — last-set-
+// wins made a mixed-family instance impossible. Same getShared/setShared/makeShared call surface
+// as the svar slot; each stored TYPE gets its own slot, so families coexist. Type-erased
+// (shared_ptr<void>) — a family can stock a family-private type here with NO core knowledge of it.
+// Lives at namespace scope so BOTH GraphData (durable, Python-held across bake calls) and GraphInst
+// (per-bake) carry one.
+///////////////////////////////////////////////////////////////////////////////
+
+struct TypeKeyedVars {
+  template <typename T> std::shared_ptr<T> getShared() const {
+    auto it = _vars_by_type.find(std::type_index(typeid(T)));
+    return (it == _vars_by_type.end()) ? nullptr : std::static_pointer_cast<T>(it->second);
+  }
+  template <typename T> void setShared(std::shared_ptr<T> v) {
+    _vars_by_type[std::type_index(typeid(T))] = v;
+  }
+  template <typename T, typename... A> std::shared_ptr<T> makeShared(A&&... args) {
+    auto v = std::make_shared<T>(std::forward<A>(args)...);
+    _vars_by_type[std::type_index(typeid(T))] = v;
+    return v;
+  }
+  // by-VALUE shims matching the old svar call surface (pyext stores a py::object impl handle).
+  template <typename T> std::optional<T> tryAs() const {
+    auto p = getShared<T>();
+    return p ? std::optional<T>(*p) : std::nullopt;
+  }
+  template <typename T> void set(const T& v) {
+    setShared(std::make_shared<T>(v));
+  }
+  std::unordered_map<std::type_index, std::shared_ptr<void>> _vars_by_type;
+};
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct GraphData : public ork::Object {
 
@@ -296,6 +331,7 @@ public:
   ~GraphData();
 
   virtual bool canConnect(inplugdata_constptr_t pin, outplugdata_constptr_t pout) const;
+  bool plugsCompatible(inplugdata_constptr_t pin, outplugdata_constptr_t pout) const;
   bool isComplete() const;
   bool isTopologyDirty() const;
   dgmoduledata_ptr_t module(const std::string& named) const;
@@ -337,6 +373,12 @@ public:
   // miss. Here it rides the graph, round-trips with the JSON, and never enters node hashing.
   // Absent in old saves -> empty map (pure editor data, no bake semantics).
   std::map<std::string, fvec2> _editor_layout;
+
+  // DURABLE (non-serialized) per-family runtime storage — the same type-keyed slot GraphInst
+  // carries, but on the GRAPH, which Python holds across separate bake calls. A family stocks
+  // a family-private handle here at bake time that a later family-neutral call resolves (e.g. a
+  // bake stamps its params here so an already-baked graph can be re-dispatched by a generic entry).
+  TypeKeyedVars _impl;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -401,6 +443,11 @@ struct GraphInst {
   std::unordered_map<std::string,dgmoduleinst_ptr_t> _module_inst_map;
 
   bool _inProgress;
+  // S8.5 (owner law: changing graph topology must NOT crash — sim may stop/restart). A module's
+  // onLink sets this false when it cannot resolve a required link (e.g. an unwired 'pool' input on
+  // a freshly-added editor node). updateTopology then skips stage()/activate() and the host build
+  // (ParticlesDrawableData::createDrawable) returns null instead of asserting. Reset per configure.
+  bool _topologyValid = true;
   std::vector<dgmoduledata_ptr_t> _ordered_module_datas;
   std::vector<dgmoduleinst_ptr_t> _ordered_module_insts;
   std::set<int> _outputRegisters;
@@ -422,34 +469,11 @@ struct GraphInst {
   // Simulation::publishEntityXf for the publisher side.
   std::function<decompxf_ptr_t(const std::string&)> _resolveEntityXf;
 
-  // B.2 (HYPERECS): per-FAMILY environment storage, keyed by TYPE. Replaces the single svar64_t
-  // slot where MeshEnv (hypermesh), BakeEnv (terrain) and particle::Context COLLIDED — last-set-wins
-  // made a mixed-family GraphInst impossible. Same getShared/setShared/makeShared call surface as the
-  // svar slot (every existing call site unchanged); each env TYPE now has its own slot, so families
-  // coexist on one graph — the substrate cross-family edges (field-input, instance-source) require.
-  struct TypeKeyedVars {
-    template <typename T> std::shared_ptr<T> getShared() const {
-      auto it = _vars_by_type.find(std::type_index(typeid(T)));
-      return (it == _vars_by_type.end()) ? nullptr : std::static_pointer_cast<T>(it->second);
-    }
-    template <typename T> void setShared(std::shared_ptr<T> v) {
-      _vars_by_type[std::type_index(typeid(T))] = v;
-    }
-    template <typename T, typename... A> std::shared_ptr<T> makeShared(A&&... args) {
-      auto v = std::make_shared<T>(std::forward<A>(args)...);
-      _vars_by_type[std::type_index(typeid(T))] = v;
-      return v;
-    }
-    // by-VALUE shims matching the old svar call surface (pyext stores a py::object impl handle).
-    template <typename T> std::optional<T> tryAs() const {
-      auto p = getShared<T>();
-      return p ? std::optional<T>(*p) : std::nullopt;
-    }
-    template <typename T> void set(const T& v) {
-      setShared(std::make_shared<T>(v));
-    }
-    std::unordered_map<std::type_index, std::shared_ptr<void>> _vars_by_type;
-  };
+  // B.2 (HYPERECS): per-FAMILY environment storage, keyed by TYPE (the shared TypeKeyedVars, hoisted
+  // to namespace scope above GraphData). Replaces the single svar64_t slot where MeshEnv (hypermesh),
+  // BakeEnv (terrain) and particle::Context COLLIDED — last-set-wins made a mixed-family GraphInst
+  // impossible. Each env TYPE gets its own slot, so families coexist on one graph — the substrate
+  // cross-family edges (field-input, instance-source) require it.
   TypeKeyedVars _impl;
 };
 

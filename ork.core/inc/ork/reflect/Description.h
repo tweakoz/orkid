@@ -60,6 +60,18 @@ public:
   void annotateClass(const ConstString& key, const anno_t& val);
   const anno_t& classAnnotation(const ConstString& key) const;
 
+  // class-level annotation ENUMERATION (E1): pyext moduleClasses() surfaces the
+  // scalar class annotations (dsl.verb / editor.palette.*) so editor palettes and
+  // the json schema dump need no hand tables. Both stores are svar64_t-valued
+  // (anno_t == svar64_t); OWN class only — callers decide whether to walk parents.
+  using class_annotations_lut_t = orklut<ConstString, svar64_t>;
+  const class_annotations_lut_t& classTypedAnnotations() const {
+    return mClassTypedAnnotations;
+  }
+  const class_annotations_lut_t& classAnnotations() const {
+    return mClassAnnotations;
+  }
+
   PropertyMapType& properties();
   const PropertyMapType& properties() const;
 

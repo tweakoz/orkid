@@ -40,6 +40,7 @@ void pyinit_gfx_particles(py::module& module_lev2);
 void pyinit_gfx_image(py::module& module_lev2);
 void pyinit_gfx_terrain(py::module& module_lev2);
 void pyinit_gfx_hypermesh(py::module& module_lev2);
+void pyinit_gfx_dflow(py::module& module_lev2);
 void pyinit_gfx_image_renderer(py::module& module_lev2);
 void pyinit_gfx_font(py::module& module_lev2);
 void pyinit_radiance_maps_processor(py::module& module_lev2);
@@ -247,6 +248,7 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   pyinit_gfx_image(module_lev2);
   pyinit_gfx_terrain(module_lev2);
   pyinit_gfx_hypermesh(module_lev2);
+  pyinit_gfx_dflow(module_lev2);
   pyinit_gfx_image_renderer(module_lev2);
   pyinit_gfx_font(module_lev2);
   pyinit_radiance_maps_processor(module_lev2);

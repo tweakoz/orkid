@@ -146,7 +146,12 @@ void ParticlePoolData::describeX(class_t* clazz) {
   });
   // D.2 (particles model B): pool sizing is authored state that changes what the graph computes —
   // it must survive the embedded-graph round-trip (was pyext-only).
-  clazz->directProperty("pool_size", &ParticlePoolData::_poolSize);
+  // editor.range.min/max (scalar annotations surfaced by moduleClasses()->prop_meta) drive the
+  // propsheet slider; ceiling = the renderers' own icnt<=262144 SSBO cap (the honest max a pool
+  // can draw, now that the sorted streak/sprite paths are pool-capacity-safe).
+  clazz->directProperty("pool_size", &ParticlePoolData::_poolSize)
+      ->annotate<ConstString>("editor.range.min", "16")
+      ->annotate<ConstString>("editor.range.max", "262144");
   clazz->directProperty("unit_age", &ParticlePoolData::_unitAge);
 }
 

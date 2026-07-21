@@ -115,12 +115,12 @@ class XXX(HeightField):
                               clamp_frac=8.0,
                               blend = 1.0)   # master per-step amount = fraction of local relief
           eo = T.pha(eo,T.lerp(P1_PHA,P2_PHA,LERP),blend=0.1)
-          L.ero_out = T.lpf(eo, cutoff_m=2, blend=0.35)
+          L.ero_out = T.lpf(eo, cutoff=2, units='meters', blend=0.35)
         ero_out = L.ero_out
         ####################################
         ero_out = T.basin_fill(ero_out, blend=0.5) 
-        ero_out = T.lpf(ero_out, cutoff_m=16, blend=0.35)  
-        ero_out = T.lpf(ero_out, cutoff_m=8, blend=0.35)  
+        ero_out = T.lpf(ero_out, cutoff=16, units='meters', blend=0.35)  
+        ero_out = T.lpf(ero_out, cutoff=8, units='meters', blend=0.35)  
         ####################################
         self.capture(ero_out,"height",cache=True)
         self.capture(ero_out,"normal",cache=True)

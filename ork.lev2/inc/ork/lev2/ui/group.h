@@ -25,8 +25,10 @@ struct Group : public Widget {
   int margin() const;
   /////////////////////////////
   void addChild(widget_ptr_t w, bool relayout = true);
-  void removeChild(widget_ptr_t w, bool relayout = true);
-  void removeChild(Widget* w, bool relayout = true);
+  // virtual so a LayoutGroup can also drop the removed child's anchor::Layout
+  // node (closes the name-hiding / auto-reparent stranding bug in addChild).
+  virtual void removeChild(widget_ptr_t w, bool relayout = true);
+  virtual void removeChild(Widget* w, bool relayout = true);
   widget_ptr_t findChildPtr(const Widget* w) const;
   void visitHeirarchy(visit_fn_t vfn);
   /////////////////////////////

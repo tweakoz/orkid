@@ -18,6 +18,7 @@
 #include <ork/lev2/aud/audiodevice.h>
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/ez_secondary_win.h>
+#include <ork/lev2/ui/dock_coordinator.h>
 #include <pybind11/embed.h>  // if using embedded interpreter
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -26,6 +27,9 @@ namespace ork {
 }
 namespace ork::lev2 {
   void initModule(appinitdata_ptr_t init_data);
+#if defined(__APPLE__)
+  int64_t nativeTopmostWindowNumberAtScreenPoint(int gx, int gy); // ctx_glfw_osx.mm (BUG-B native leg)
+#endif
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -997,6 +1001,12 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             app->removeGlobalEventHandler(token);
           })
       .def(
+          "injectUiEvent",
+          [](orkezapp_ptr_t app, ui::event_ptr_t ev) { //
+            app->injectUiEvent(ev);
+          },
+          py::arg("ev"))
+      .def(
           "mainThreadLoop",
           [=](orkezapp_ptr_t app,py::kwargs kwargs) -> int { //
 
@@ -1197,8 +1207,29 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
       .def_property_readonly("gfx_context", [](ezsecondarywin_ptr_t win) -> ctx_t {
         return ctx_t(win->gfxContext());
       })
+      // always-on-top; readable + settable post-create (GLFW_FLOATING window attribute).
+      // system-wide always-on-top (not parent-relative) — the tool-palette idiom.
+      .def_property("floating",
+          [](ezsecondarywin_ptr_t win) -> bool { return win->floating(); },
+          [](ezsecondarywin_ptr_t win, bool onoff) { win->setFloating(onoff); })
       .def("requestClose", &EzSecondaryWin::requestClose)
+      .def("focusWindow", &EzSecondaryWin::focusWindow)
       .def("markDirty", &EzSecondaryWin::markDirty)
+      // Current screen rect (x,y,w,h) in screen points for window-arrangement persistence.
+      // Returns None when the platform cannot report window position (offscreen / Wayland
+      // / closed) — the caller then persists no geometry and recreation uses default placement.
+      .def("screenRect", [](ezsecondarywin_ptr_t win) -> py::object {
+        int x, y, w, h;
+        if (win->screenRect(x, y, w, h))
+          return py::make_tuple(x, y, w, h);
+        return py::none();
+      })
+      // Synthetic UI-event injection targeting THIS window (mirrors app.injectUiEvent).
+      .def("injectUiEvent",
+          [](ezsecondarywin_ptr_t win, ui::event_ptr_t ev) { //
+            win->injectUiEvent(ev);
+          },
+          py::arg("ev"))
       .def_readwrite("maxStalenessSeconds", &EzSecondaryWin::_maxStalenessSeconds)
       .def_property("onDraw",
           [](ezsecondarywin_ptr_t win) -> py::object { return py::none(); },
@@ -1206,11 +1237,17 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             if (callback.is_none()) {
               win->_onDraw = nullptr;
             } else {
-              auto pyfn = py::cast<py::function>(callback);
-              win->_onDraw = [pyfn](ui::drawevent_constptr_t drwev) {
+              // gil_safe_pyobj: the callback std::function may be destroyed by the
+              // run-loop's _cleanupClosedSecondaryWindows() with the GIL released
+              // (window closed mid-loop) — its custom deleter reacquires the GIL
+              // before Py_DECREF, so destruction never decrefs a python object
+              // GIL-free (a hard crash on the free-threaded build).
+              auto safe = ork::python::gil_safe_pyobj(callback);
+              win->_onDraw = [safe](ui::drawevent_constptr_t drwev) {
                 py::gil_scoped_acquire acquire;
+                auto pyfn = safe.valueAs<py::object>();
                 try {
-                  pyfn(drwev);
+                  (*pyfn)(drwev);
                 } catch (py::error_already_set& e) {
                   ezapp_python_traceback(e);
                   e.restore();
@@ -1225,11 +1262,12 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             if (callback.is_none()) {
               win->_onResize = nullptr;
             } else {
-              auto pyfn = py::cast<py::function>(callback);
-              win->_onResize = [pyfn](int w, int h) {
+              auto safe = ork::python::gil_safe_pyobj(callback);
+              win->_onResize = [safe](int w, int h) {
                 py::gil_scoped_acquire acquire;
+                auto pyfn = safe.valueAs<py::object>();
                 try {
-                  pyfn(w, h);
+                  (*pyfn)(w, h);
                 } catch (py::error_already_set& e) {
                   ezapp_python_traceback(e);
                   e.restore();
@@ -1244,11 +1282,12 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             if (callback.is_none()) {
               win->_onUiEvent = nullptr;
             } else {
-              auto pyfn = py::cast<py::function>(callback);
-              win->_onUiEvent = [pyfn](ui::event_constptr_t ev) -> ui::HandlerResult {
+              auto safe = ork::python::gil_safe_pyobj(callback);
+              win->_onUiEvent = [safe](ui::event_constptr_t ev) -> ui::HandlerResult {
                 py::gil_scoped_acquire acquire;
+                auto pyfn = safe.valueAs<py::object>();
                 try {
-                  return pyfn(ev).cast<ui::HandlerResult>();
+                  return (*pyfn)(ev).cast<ui::HandlerResult>();
                 } catch (py::error_already_set& e) {
                   ezapp_python_traceback(e);
                   e.restore();
@@ -1264,11 +1303,32 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             if (callback.is_none()) {
               win->_onGpuInit = nullptr;
             } else {
-              auto pyfn = py::cast<py::function>(callback);
-              win->_onGpuInit = [pyfn](Context* ctx) {
+              auto safe = ork::python::gil_safe_pyobj(callback);
+              win->_onGpuInit = [safe](Context* ctx) {
                 py::gil_scoped_acquire acquire;
+                auto pyfn = safe.valueAs<py::object>();
                 try {
-                  pyfn(ctx_t(ctx));
+                  (*pyfn)(ctx_t(ctx));
+                } catch (py::error_already_set& e) {
+                  ezapp_python_traceback(e);
+                  e.restore();
+                  PyErr_Print();
+                }
+              };
+            }
+          })
+      .def_property("onGpuPostFrame",
+          [](ezsecondarywin_ptr_t win) -> py::object { return py::none(); },
+          [](ezsecondarywin_ptr_t win, py::object callback) {
+            if (callback.is_none()) {
+              win->_onGpuPostFrame = nullptr;
+            } else {
+              auto safe = ork::python::gil_safe_pyobj(callback);
+              win->_onGpuPostFrame = [safe](Context* ctx) {
+                py::gil_scoped_acquire acquire;
+                auto pyfn = safe.valueAs<py::object>();
+                try {
+                  (*pyfn)(ctx_t(ctx));
                 } catch (py::error_already_set& e) {
                   ezapp_python_traceback(e);
                   e.restore();
@@ -1283,11 +1343,12 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             if (callback.is_none()) {
               win->_onClosed = nullptr;
             } else {
-              auto pyfn = py::cast<py::function>(callback);
-              win->_onClosed = [pyfn]() {
+              auto safe = ork::python::gil_safe_pyobj(callback);
+              win->_onClosed = [safe]() {
                 py::gil_scoped_acquire acquire;
+                auto pyfn = safe.valueAs<py::object>();
                 try {
-                  pyfn();
+                  (*pyfn)();
                 } catch (py::error_already_set& e) {
                   ezapp_python_traceback(e);
                   e.restore();
@@ -1298,6 +1359,159 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
           });
   type_codec->registerStdCodec<ezsecondarywin_ptr_t>(ezsecwin_type);
   /////////////////////////////////////////////////////////////////////////////////
+  // DockCoordinator (W4) — cross-window drag registry + commit callbacks. Bound in
+  // the lev2.ui submodule (alongside DockSpace) but here, where the window types +
+  // gil_safe machinery live: registerDock builds a glfw-backed screen-rect provider
+  // from the window object so the ui:: coordinator stays glfw-free.
+  /////////////////////////////////////////////////////////////////////////////////
+  auto uimodule = module_lev2.def_submodule("ui", "ui operations");
+  py::class_<ui::DockCoordinator, ui::dockcoordinator_ptr_t>(uimodule, "DockCoordinator")
+      .def_static("instance", []() -> ui::dockcoordinator_ptr_t { return ui::DockCoordinator::instance(); })
+      .def("registerDock",
+          [](ui::dockcoordinator_ptr_t coord, const std::string& window_key, ui::dockspace_ptr_t dock, py::object window) {
+            ui::dock_rect_provider_t provider;
+            ui::dock_win_number_provider_t win_num; // BUG-B native z-order/occlusion leg (mac)
+            if (py::isinstance<EzSecondaryWin>(window)) {
+              auto win = py::cast<ezsecondarywin_ptr_t>(window);
+              provider = [win]() -> ui::Rect {
+                int x, y, w, h;
+                if (win->screenRect(x, y, w, h))
+                  return ui::Rect(x, y, w, h);
+                return ui::Rect(0, 0, 0, 0);
+              };
+#if defined(__APPLE__)
+              win_num = [win]() -> int64_t { return win->nativeWindowNumber(); };
+#endif
+            } else {
+              auto app = py::cast<orkezapp_ptr_t>(window);
+              provider = [app]() -> ui::Rect {
+                int x, y, w, h;
+                if (app->mainWindowScreenRect(x, y, w, h))
+                  return ui::Rect(x, y, w, h);
+                return ui::Rect(0, 0, 0, 0);
+              };
+#if defined(__APPLE__)
+              win_num = [app]() -> int64_t { return app->mainWindowNativeNumber(); };
+#endif
+            }
+#if defined(__APPLE__)
+            // Wire the native topmost-window-number resolver (idempotent). The
+            // coordinator SKIPS the native leg in synthetic rect-override (offscreen
+            // gate) mode, so this never runs there — only for real, visible windows.
+            coord->setTopmostWindowNumberResolver(
+                [](int sx, int sy) -> int64_t { return nativeTopmostWindowNumberAtScreenPoint(sx, sy); });
+#endif
+            coord->registerDock(window_key, dock.get(), provider, win_num);
+          },
+          py::arg("window_key"), py::arg("dock"), py::arg("window"))
+      .def("unregisterDock",
+          [](ui::dockcoordinator_ptr_t coord, const std::string& window_key) { coord->unregisterDock(window_key); },
+          py::arg("window_key"))
+      .def("setWindowRectOverride",
+          [](ui::dockcoordinator_ptr_t coord, const std::string& window_key, int x, int y, int w, int h) {
+            coord->setWindowRectOverride(window_key, x, y, w, h);
+          },
+          py::arg("window_key"), py::arg("x"), py::arg("y"), py::arg("w"), py::arg("h"))
+      .def("clearWindowRectOverride",
+          [](ui::dockcoordinator_ptr_t coord, const std::string& window_key) { coord->clearWindowRectOverride(window_key); },
+          py::arg("window_key"))
+      .def("setTransferCallback",
+          [](ui::dockcoordinator_ptr_t coord, py::object cb) {
+            if (cb.is_none()) {
+              coord->setTransferCallback(nullptr);
+              return;
+            }
+            // gil_safe_pyobj: this std::function may be destroyed off-GIL at process
+            // teardown (the coordinator is a process-global singleton) — the W2+W3
+            // free-threaded SIGSEGV trap. The custom deleter reacquires the GIL.
+            auto safe = ork::python::gil_safe_pyobj(cb);
+            coord->setTransferCallback(
+                [safe](std::string pid, std::string src, std::string dst, std::string tgt, std::string zone) {
+                  py::gil_scoped_acquire acquire;
+                  auto pyfn = safe.valueAs<py::object>();
+                  try {
+                    (*pyfn)(pid, src, dst, tgt, zone);
+                  } catch (py::error_already_set& e) {
+                    ezapp_python_traceback(e);
+                    e.restore();
+                    PyErr_Print();
+                  }
+                });
+          },
+          py::arg("cb"))
+      .def("setTearOutCallback",
+          [](ui::dockcoordinator_ptr_t coord, py::object cb) {
+            if (cb.is_none()) {
+              coord->setTearOutCallback(nullptr);
+              return;
+            }
+            auto safe = ork::python::gil_safe_pyobj(cb);
+            coord->setTearOutCallback([safe](std::string pid, std::string src, int sx, int sy) {
+              py::gil_scoped_acquire acquire;
+              auto pyfn = safe.valueAs<py::object>();
+              try {
+                (*pyfn)(pid, src, sx, sy);
+              } catch (py::error_already_set& e) {
+                ezapp_python_traceback(e);
+                e.restore();
+                PyErr_Print();
+              }
+            });
+          },
+          py::arg("cb"))
+      .def("setTransferablePredicate",
+          [](ui::dockcoordinator_ptr_t coord, py::object cb) {
+            if (cb.is_none()) {
+              coord->setTransferablePredicate(nullptr);
+              return;
+            }
+            // Same gil_safe_pyobj discipline as the commit callbacks (process-global
+            // singleton, may be destroyed off-GIL at teardown). Called synchronously
+            // each resolveDrag during a titlebar/tab drag; returning false PINS the
+            // panel (LOCAL-only). On a predicate error, fail SAFE to transferable —
+            // the DockManager's graceful-decline handles a truly missing factory.
+            auto safe = ork::python::gil_safe_pyobj(cb);
+            coord->setTransferablePredicate([safe](std::string pid) -> bool {
+              py::gil_scoped_acquire acquire;
+              auto pyfn = safe.valueAs<py::object>();
+              try {
+                return py::cast<bool>((*pyfn)(pid));
+              } catch (py::error_already_set& e) {
+                ezapp_python_traceback(e);
+                e.restore();
+                PyErr_Print();
+                return true;
+              }
+            });
+          },
+          py::arg("cb"))
+      .def("setPointOwnershipOverride",
+          [](ui::dockcoordinator_ptr_t coord, py::object cb) {
+            if (cb.is_none()) {
+              coord->setPointOwnershipOverride(nullptr);
+              return;
+            }
+            // BUG-B test seam (gates simulate another app's window occluding ours).
+            // Same gil_safe_pyobj discipline as the other coordinator callbacks
+            // (process-global singleton, may be destroyed off-GIL at teardown).
+            // Called synchronously each resolveDrag; returns the window_key owning
+            // the topmost OS window at the screen point, or "" (not ours). On a
+            // predicate error fail SAFE to "" — never raise through the boundary.
+            auto safe = ork::python::gil_safe_pyobj(cb);
+            coord->setPointOwnershipOverride([safe](int sx, int sy) -> std::string {
+              py::gil_scoped_acquire acquire;
+              auto pyfn = safe.valueAs<py::object>();
+              try {
+                return py::cast<std::string>((*pyfn)(sx, sy));
+              } catch (py::error_already_set& e) {
+                ezapp_python_traceback(e);
+                e.restore();
+                PyErr_Print();
+                return std::string();
+              }
+            });
+          },
+          py::arg("cb"));
 } // namespace ork::lev2
 
 } // namespace ork::lev2

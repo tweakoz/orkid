@@ -4,6 +4,8 @@
 #include <map>
 #include <unordered_map>
 #include <memory>
+#include <string>
+#include <exception>
 #include <ork/util/crc.h>
 #include <ork/kernel/varmap.inl>
 #include <ork/lev2/config.h>
@@ -15,6 +17,19 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::shadlang {
+
+// structured, catchable shader-compile failure (glslang/shaderc rejected the
+//  generated GLSL). carries the shader name + the full shaderc diagnostic so a
+//  worker-thread compile failure surfaces loudly to the submitting thread and
+//  across the python boundary instead of crashing the process.
+struct ShaderCompileError final : public std::exception {
+  const char* what() const noexcept override {
+    return _message.c_str();
+  }
+  std::string _message;     // shader_name + full diagnostic (human facing)
+  std::string _shader_name;
+  std::string _diagnostic;  // raw shaderc GetErrorMessage()
+};
 
 enum class TokenClass : uint64_t {
   CrcEnum(SINGLE_LINE_COMMENT),

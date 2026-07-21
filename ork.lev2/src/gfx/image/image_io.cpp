@@ -21,6 +21,7 @@ namespace ork::lev2 {
 
 image_ptr_t Image::createFromFile(const std::string& inpath) {
   auto datablock = ork::File::loadDatablock(inpath);
+  datablock->_name = inpath; // carry path into initFromDataBlock's self-defend error
   auto img = std::make_shared<Image>();
   img->initFromDataBlock(datablock);
   return img;
@@ -28,6 +29,7 @@ image_ptr_t Image::createFromFile(const std::string& inpath) {
 
 bool Image::readFromFile(const ork::file::Path& inpath) {
   auto datablock = ork::File::loadDatablock(inpath);
+  datablock->_name = inpath.c_str(); // carry path into initFromDataBlock's self-defend error
   bool ok = initFromDataBlock(datablock);
   _debugName = inpath.c_str();
   if (not ok) {
@@ -39,6 +41,18 @@ bool Image::readFromFile(const ork::file::Path& inpath) {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool Image::initFromDataBlock(datablock_ptr_t datablock) {
+  // self-defend (ops fail-loud): a 0-byte / truncated datablock would walk cursor math
+  // straight into getItem<>'s OrkAssert, whose -O2 force-segfault (often with an unflushed
+  // banner) yields a backtrace far from the real cause (a 0-byte PNG once masqueraded as a
+  // PBR env-map crash). Refuse with a named, catchable error carrying path/size BEFORE any
+  // cursor read.
+  size_t dblen = datablock ? datablock->length() : 0;
+  if (dblen < 4) {
+    throw std::runtime_error(FormatString(
+        "Image::initFromDataBlock: refusing empty/truncated image datablock path<%s> size<%zu> (need >= 4 magic bytes)",
+        datablock ? datablock->_name.c_str() : "<null>",
+        dblen));
+  }
   DataBlockInputStream checkstream(datablock);
   uint32_t magic     = checkstream.getItem<uint32_t>();
   bool ok            = false;
@@ -70,7 +84,16 @@ bool Image::initFromDataBlock(datablock_ptr_t datablock) {
       // HDR/RGBE magic bytes
       ok = initFromInMemoryFile("hdr", datablock->data(), datablock->length());
     } else {
-      OrkAssert(false);
+      // self-defend (ops fail-loud): unrecognized magic -> named, catchable error
+      // (not an OrkAssert force-segfault) carrying path/size/magic.
+      throw std::runtime_error(FormatString(
+          "Image::initFromDataBlock: unrecognized image format path<%s> size<%zu> magic<%02x %02x %02x %02x>",
+          datablock->_name.c_str(),
+          datablock->length(),
+          magic[0],
+          magic[1],
+          magic[2],
+          magic[3]));
     }
     // ok = _loadImageTexture(ptex, datablock);
   }

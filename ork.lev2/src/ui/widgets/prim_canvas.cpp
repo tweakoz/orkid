@@ -10,6 +10,8 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/gfx/renderer/rendercontext.h>
+#include <cmath>
+#include <algorithm>
 
 namespace ork::ui {
 
@@ -393,13 +395,32 @@ void TextPrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_
   int uiw = canvas->width();
   int uih = canvas->height();
 
-  lev2::FontMan::PushFont(_font);
+  // SSAA crispness: the surface renders into an RTG that is (supersample+1)x
+  // the widget size, so the base i16 atlas would be bilinearly magnified that
+  // many times before the resolve minifies it back — double-filtered, blurry.
+  // Instead source the glyph texels from the same-family atlas nearest to
+  // (base cell height * multiplier), and pre-scale the UI matrix + item
+  // positions by R = renderfont/base so the layout (advance, cell size, and
+  // baseline) lands pixel-identical to the base font on screen — only the
+  // texel source resolution improves. R==1 (no larger sibling / no SSAA)
+  // reduces exactly to the legacy path.
+  int multiplier          = std::max(1, canvas->_supersample + 1);
+  auto render_font        = lev2::FontMan::supersampledFont(_font, multiplier);
+  const auto& base_desc   = _font->description();
+  const auto& render_desc = render_font->description();
+  double R                = 1.0;
+  if ((render_font != _font) and (base_desc.miCharHeight > 0))
+    R = double(render_desc.miCharHeight) / double(base_desc.miCharHeight);
+
+  lev2::FontMan::PushFont(render_font);
   ctx->PushModColor(_color);
-  mtxi->PushUIMatrix(uiw, uih);
+  mtxi->PushUIMatrix(int(llround(uiw * R)), int(llround(uih * R)));
   {
     for (const auto& item : _items) {
-      int text_x = int(item.position.x);
-      int text_y = int(item.position.y);
+      // preserve the base glyph top: (text_y + render_yshift)/R == py + base_yshift
+      int text_x = int(llround(item.position.x * R));
+      int text_y = int(llround(R * (double(item.position.y) + double(base_desc.miYShift)) //
+                               - double(render_desc.miYShift)));
 
       lev2::FontMan::beginTextBlock(ctx, item.text.length());
       lev2::FontMan::DrawText(ctx, text_x, text_y, item.text.c_str());
@@ -743,10 +764,9 @@ void PrimCanvas::_doSvgExport() {
       if (auto qp = dynamic_cast<QuadPrimitive*>(prim.get())) {
         for (auto& qd : qp->_quads) {
           float x = qd->pos_size.x;
-          float y_up = qd->pos_size.y;  // Y-up canvas coords
+          float y = qd->pos_size.y;  // canvas and SVG are both top-left/Y-down: passes through
           float qw = qd->pos_size.z;
           float qh = qd->pos_size.w;
-          float y = h - y_up - qh;  // convert to Y-down SVG coords
           float r = qd->extra.y;    // corner radius
           float rot = qd->extra.x;  // rotation in radians
           auto& c = qd->color;
@@ -754,7 +774,7 @@ void PrimCanvas::_doSvgExport() {
           if (rot != 0.0f) {
             float cx = x + qw * 0.5f;
             float cy = y + qh * 0.5f;
-            float deg = rot * -180.0f / M_PI;  // negate for SVG Y-down
+            float deg = rot * 180.0f / M_PI;  // canvas and SVG share Y-down rotation sense
             fprintf(fp, "    <rect x=\"%.1f\" y=\"%.1f\" width=\"%.1f\" height=\"%.1f\" rx=\"%.1f\" ry=\"%.1f\" "
                     "fill=\"rgb(%d,%d,%d)\" fill-opacity=\"%.2f\" transform=\"rotate(%.1f,%.1f,%.1f)\"/>\n",
                     x, y, qw, qh, r, r,
@@ -775,12 +795,12 @@ void PrimCanvas::_doSvgExport() {
           auto& v1 = tp->_vertices[i+1];
           auto& v2 = tp->_vertices[i+2];
           auto& c = v0->color;
-          // Convert Y-up to Y-down
+          // Canvas verts are already top-left/Y-down; pass through unchanged.
           fprintf(fp, "    <polygon points=\"%.1f,%.1f %.1f,%.1f %.1f,%.1f\" "
                   "fill=\"rgb(%d,%d,%d)\" fill-opacity=\"%.2f\" stroke=\"none\"/>\n",
-                  v0->position.x, h - v0->position.y,
-                  v1->position.x, h - v1->position.y,
-                  v2->position.x, h - v2->position.y,
+                  v0->position.x, v0->position.y,
+                  v1->position.x, v1->position.y,
+                  v2->position.x, v2->position.y,
                   int(c.x*255), int(c.y*255), int(c.z*255), c.w);
         }
       }

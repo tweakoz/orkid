@@ -151,16 +151,17 @@ def _body():
   assert len(ls2.grammar.rules) == 2, "grammar rules lost through module round-trip"
   print(f"LSystemModule+grammar JSON bytes={len(jsg)}", flush=True)
 
-  # ---- gate (e): a LEGACY module with NO grammar round-trips exactly as before (null-safe) ----
+  # ---- gate (e): a module with NO grammar still SERIALIZES null-safely (activation asserts
+  #      loud post-GR1.d, but serdes of a null grammar must not crash or fabricate one) ----
   gl = dataflow.GraphData.createShared()
-  lsl = hm.LSystemModule.createShared()   # archetype path only; _grammar stays null
-  lsl.archetype = 1
+  lsl = hm.LSystemModule.createShared()   # _grammar stays null (serdes-only; never activated)
   lsl.depth = 7
-  gl.addModule(lsl, "lsystem_legacy")
+  lsl.children = 3
+  gl.addModule(lsl, "lsystem_nogrammar")
   jsl, gl2 = _roundtrip(gl, "LSystemModule-nogrammar")
-  lsl2 = gl2.findModule("lsystem_legacy")
+  lsl2 = gl2.findModule("lsystem_nogrammar")
   assert lsl2 is not None and lsl2.grammar is None, "null grammar did not survive as null"
-  assert lsl2.archetype == 1 and lsl2.depth == 7, "legacy scalar params drifted"
+  assert lsl2.children == 3 and lsl2.depth == 7, "scalar params drifted"
   print(f"LSystemModule-nogrammar JSON bytes={len(jsl)}", flush=True)
 
   print("LRULESET_ROUNDTRIP_RESULT=PASS", flush=True)

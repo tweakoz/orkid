@@ -191,6 +191,9 @@ void DgModuleData::describeX(class_t* clazz) {
   // per-node cook-cache override (see header) — round-trips with the graph so an
   // authored cache point survives serialization; absent in old graphs -> -1.
   clazz->directProperty("cachepoint", &DgModuleData::_cachepoint);
+  // S4 per-node viewable override (see header) — round-trips with the graph so an
+  // authored viewable/internal marker survives serialization; absent in old graphs -> -1.
+  clazz->directProperty("viewable", &DgModuleData::_viewable);
   // bypass flag (see header) — round-trips with the graph so a bypassed pass-through
   // survives serialization instead of being flattened at elaborate time; absent in
   // old graphs -> false.

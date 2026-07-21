@@ -18,6 +18,7 @@
 #include <ork/kernel/timer.h>
 #include <ork/lev2/lev2_types.h>
 #include <ork/orktypes.h>
+#include <array>
 
 #if defined(ENABLE_LIBSURVIVE)
 #include <libsurvive/survive_api.h>
@@ -81,6 +82,73 @@ struct ControllerState {
 };
 
 using controllerstate_ptr_t = std::shared_ptr<ControllerState>;
+
+////////////////////////////////////////////////////////////////////////////////
+// Articulated hand tracking (generic OpenXR XR_EXT_hand_tracking, default 26-joint
+//  set). OPTIONAL: a device populates these only when the runtime advertises the
+//  extension AND the system reports hand-tracking support; every other path leaves
+//  them unsupported/inactive. The joint ordering matches the extension's default
+//  set (index == joint ordinal), so kHandJointCount markers map 1:1 to the runtime
+//  joint array. Nothing here carries an SDK type — this is the engine-facing mirror.
+////////////////////////////////////////////////////////////////////////////////
+
+static constexpr int kHandJointCount = 26; // default hand-joint set
+
+// Ordinal names for the default 26-joint set (index into HandTrackingState::_joints).
+//  Engine-generic; the values follow the standard default-set ordering so a caller can
+//  index by semantic name without touching any SDK header.
+enum class HandJoint : int {
+  Palm = 0,
+  Wrist,
+  ThumbMetacarpal,
+  ThumbProximal,
+  ThumbDistal,
+  ThumbTip,
+  IndexMetacarpal,
+  IndexProximal,
+  IndexIntermediate,
+  IndexDistal,
+  IndexTip,
+  MiddleMetacarpal,
+  MiddleProximal,
+  MiddleIntermediate,
+  MiddleDistal,
+  MiddleTip,
+  RingMetacarpal,
+  RingProximal,
+  RingIntermediate,
+  RingDistal,
+  RingTip,
+  LittleMetacarpal,
+  LittleProximal,
+  LittleIntermediate,
+  LittleDistal,
+  LittleTip,
+};
+
+// One articulated joint. _matrix is the joint->reference(world) transform in the SAME
+//  coordinate convention as the head/controller poses (built through the shared
+//  xrPoseToFmtx4 conjugation path, in the device's XR reference space). Validity is
+//  honored honestly and per-flag: a consumer must gate on _positionValid /
+//  _orientationValid before trusting the corresponding part of _matrix.
+struct HandJointPose {
+  fmtx4 _matrix;                  // joint->reference (world), engine convention
+  float _radius            = 0.0f; // joint capsule radius (meters)
+  bool _positionValid      = false;
+  bool _orientationValid   = false;
+};
+
+// Per-hand articulated state. _supported reflects whether this build + runtime + system
+//  can produce hand data at all; _active reflects whether THIS hand is currently tracked
+//  (an inactive hand carries no valid joints — never stale data).
+struct HandTrackingState {
+  bool _supported = false;
+  bool _active    = false;
+  std::array<HandJointPose, kHandJointCount> _joints;
+};
+
+using handjointpose_ptr_t     = std::shared_ptr<HandJointPose>;
+using handtrackingstate_ptr_t = std::shared_ptr<HandTrackingState>;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -259,6 +327,16 @@ struct Device {
 
   void overrideSize(int w, int h);
   void resetCalibration();
+
+  // Articulated hand tracking (generic OpenXR XR_EXT_hand_tracking). _handTracking[0]=left,
+  //  [1]=right; always non-null (constructed unsupported/inactive) so a consumer can read
+  //  them on any device without a null check. A device that supports the extension rewrites
+  //  them each frame under _hand_mutex; every other path leaves them unsupported/inactive.
+  //  handTrackingSnapshot returns a stable value copy under the lock (side 0=left, 1=right).
+  handtrackingstate_ptr_t handTrackingSnapshot(int side) const;
+  handtrackingstate_ptr_t _handTracking[2];
+  bool _handTrackingSupported = false; // extension present + system supports it + trackers live
+  mutable std::mutex _hand_mutex;      // guards _handTracking read (render/update) vs write (frame)
 
   // forward prediction: the host sets the tracked head pose + kinematics; the
   //  device extrapolates to scan-out (+ _predictionBias) in C++ at gpuUpdate and

@@ -68,7 +68,7 @@ technique tek_curvepath {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CurvePathDrawableImpl::CurvePathDrawableImpl(const CurvePathDrawableData* data)
+CurvePathDrawableImpl::CurvePathDrawableImpl(std::shared_ptr<const CurvePathDrawableData> data)
     : _data(data) {
 }
 
@@ -182,7 +182,7 @@ CurvePathDrawableData::~CurvePathDrawableData() {
 
 drawable_ptr_t CurvePathDrawableData::createDrawable() const {
   auto drw = std::make_shared<CallbackDrawable>(nullptr);
-  auto impl = drw->_implA.makeShared<CurvePathDrawableImpl>(this);
+  auto impl = drw->_implA.makeShared<CurvePathDrawableImpl>(dataShared<CurvePathDrawableData>());
   drw->_sortkey = 50;
   drw->SetRenderCallback(CurvePathDrawableImpl::renderCurvePath);
   return drw;

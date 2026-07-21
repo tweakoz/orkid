@@ -9,6 +9,7 @@
 
 from orkengine.core import vec2 as _vec2
 from orkengine.lev2 import terrain as _terrain
+from ...units import unit_of as _unit_of   # E0 typed literals (meters()/texels())
 from .._parampack import _apply_packs
 from ._node import (
     TerrainNode,
@@ -180,20 +181,9 @@ def expr_field(surfnode, inputs=(), name=None):
     text = build_field_shader(lines, final, libsrcs, inherits, n_inputs=len(inputs))
     m = g.create(name or anon_name("expr", g), _terrain.ExprModule)
     m.shadertext = text
-    for k, src in enumerate(inputs):   # In0..In{n-1}, contiguous (matches the bind order)
-        g.connect(getattr(m.inputs, "In%d" % k), src.output_plug)
-    return TerrainNode(m, m.outputs.Out)
-
-
-def expr_field_raw(inputs, shadertext, name=None):
-    """REGENERATED-CODE escape hatch (the .py writer emits this for authored expression
-    nodes): build an ExprModule from its COMPILED shader text verbatim. Author NEW
-    expressions with hfbake / expr_field / the editor's T.expr node — this form exists so
-    a document containing an expression node still saves to a RUNNABLE .py. Edit the
-    original authored function, never the embedded text."""
-    g = graph_or_raise("ExprFieldRaw")
-    m = g.create(name or anon_name("expr", g), _terrain.ExprModule)
-    m.shadertext = str(shadertext)
+    # E2.5: capture the SurfNode as canonical ExprIR — the writer re-emits real DSL from it
+    # (replacing the compiled-blob escape hatch) and the cook hash keys off its bytes.
+    _set_expr_tree(m, surfnode)
     for k, src in enumerate(inputs):   # In0..In{n-1}, contiguous (matches the bind order)
         g.connect(getattr(m.inputs, "In%d" % k), src.output_plug)
     return TerrainNode(m, m.outputs.Out)
@@ -205,7 +195,8 @@ def _compile_expr_source(source, n_inputs):
     recompile) so both take the identical eval+codegen path. The eval namespace is the
     fresh-ctx idiom of HeightField._eval_expr: {"ctx": SurfaceCtx(), "P": P}. Raises a
     clear TerrainDocParamError naming the problem (bad syntax / non-scalar expression /
-    ctx.input(k) beyond the connected inputs) — ops self-defend, never a silent bad shader."""
+    ctx.input(k) beyond the connected inputs) — ops self-defend, never a silent bad shader.
+    Returns (shadertext, surfnode) — the SurfNode is captured to canonical ExprIR (E2.5)."""
     from ork.hypergraph.dflow.terrain.doc import TerrainDocParamError
     from ork.hypergraph.ptex3d import P
     from ork.hypergraph.ptex3d.dsl import SurfaceCtx, emit_compute_field
@@ -226,7 +217,18 @@ def _compile_expr_source(source, n_inputs):
         raise TerrainDocParamError(
             f"T.expr: expression references ctx.input({max(in_idx)}) but only {n_inputs} "
             f"input(s) were connected (T.expr inputs=...).")
-    return build_field_shader(lines, final, libsrcs, inherits, n_inputs=n_inputs)
+    return build_field_shader(lines, final, libsrcs, inherits, n_inputs=n_inputs), surfnode
+
+
+def _set_expr_tree(m, surfnode):
+    """Capture a bake SurfNode to canonical ExprIR JSON on the ExprModule's reflected
+    `expr_tree` field (E2.5 S4/S5 — the writer re-emits DSL from it, the cook hash keys off
+    its bytes). Guarded on the reflected property so a pre-rebuild binary degrades cleanly
+    (loud on capture failure — never a silent empty tree)."""
+    if not hasattr(m, "expr_tree"):
+        return
+    from ork.hypergraph.ptex3d.exprir_surface import capture_json
+    m.expr_tree = capture_json(surfnode)
 
 
 def expr(source, inputs=(), name=None):
@@ -240,13 +242,15 @@ def expr(source, inputs=(), name=None):
     shadertext is the bake artifact). Errors raise a clear TerrainDocParamError."""
     g = graph_or_raise("Expr")
     inputs = list(inputs)
-    text = _compile_expr_source(source, len(inputs))
+    text, surfnode = _compile_expr_source(source, len(inputs))
     m = g.create(name or anon_name("expr", g), _terrain.ExprModule)
     m.shadertext = text
     # B1 (ExprModule.expr_source): reflected source that drives re-author + rebake recompile.
-    # Feature-guarded so a pre-rebuild binary degrades to the compiled-blob path (expr_field_raw).
+    # Feature-guarded so a pre-rebuild binary degrades to the shadertext-only path.
     if hasattr(m, "expr_source"):
         m.expr_source = source
+    # E2.5: also capture the eval'd SurfNode to canonical ExprIR (the cook-hash identity).
+    _set_expr_tree(m, surfnode)
     for k, src in enumerate(inputs):   # In0..In{n-1}, contiguous (matches the bind order)
         if not isinstance(src, TerrainNode):
             raise TypeError(f"T.expr input {k} must be a terrain node; got {type(src).__name__}")
@@ -398,8 +402,8 @@ def band(node, lo, hi, soft=0.02, name=None):
     lo <= value <= hi, rolling off over `soft` on each edge, ~0 outside. The direct terrain
     equivalent of `sels[k]` (mask the high ground, a mid elevation belt, etc.):
 
-        hi_ground = T.band(z, 0.555, 1.0, soft=0.03)   # == shader sels[TOP] (open top)
-        z = T.lpf(z, cutoff_m=256, blend=hi_ground)    # smooth ONLY the high band
+        hi_ground = T.band(z, 0.555, 1.0, soft=0.03)          # == shader sels[TOP] (open top)
+        z = T.lpf(z, cutoff=256, units='meters', blend=hi_ground)  # smooth ONLY the high band
 
     hi >= 1.0 (or lo <= 0.0) drops the corresponding edge — an open-topped/bottomed band,
     exactly how `aa_bands`' first/last slices behave. Pair with a filter's `blend=<field>`
@@ -482,14 +486,19 @@ def erox(node, *packs, blend=1.0, name=None, **overrides):
     return _blend_out(node, TerrainNode(m, m.outputs.Out), blend)
 
 
-def lpf(node, cutoff_texels=8.0, cutoff_m=None, blend=1.0, name=None):
-    """Separable GAUSSIAN low-pass filter. The cutoff is the wavelength below which features
-    are attenuated (gaussian sigma = cutoff/6, soft rolloff -> no ringing). Specify it in
-    TEXELS (`cutoff_texels`, resolution-DEPENDENT) OR in METERS (`cutoff_m`, which OVERRIDES
-    cutoff_texels and is RESOLUTION-INDEPENDENT — converted to texels per-bake from dim/extent
-    in C++, exactly like slope/curvature's radius_m, so dim never enters the trace-time graph).
-    A smoothing / hillslope-relaxation primitive — e.g. between erosion passes:
-    `T.lpf(eroded, cutoff_m=64) + base*uplift`.
+# Lpf cutoff units -> CutoffUnits enum code (MUST match enum CutoffUnits in hfdflow.h).
+_CUTOFF_UNITS = {"texels": 0, "meters": 1}
+
+
+def lpf(node, cutoff=8.0, units=None, blend=1.0, name=None):
+    """Separable GAUSSIAN low-pass filter. `cutoff` is the wavelength below which features
+    are attenuated (gaussian sigma = cutoff-in-texels/6, soft rolloff -> no ringing). `units`
+    selects how `cutoff` is read: 'texels' (default, resolution-DEPENDENT) or 'meters'
+    (RESOLUTION-INDEPENDENT — converted to texels per-bake from dim/extent in C++, exactly
+    like slope/curvature's radius_m, so dim never enters the trace-time graph). You may also
+    pass an E0 typed literal that carries its own unit — `cutoff=meters(64)` or
+    `cutoff=texels(4)` — instead of a separate `units=`. A smoothing / hillslope-relaxation
+    primitive — e.g. between erosion passes: `T.lpf(eroded, cutoff=64, units='meters') + base*uplift`.
 
     `blend` crossfades the filtered result against the ORIGINAL input — 0 = passthrough,
     1 = fully filtered, 0.5 = half-smoothed. It may be a SCALAR (0..1) or a per-texel FIELD
@@ -501,10 +510,25 @@ def lpf(node, cutoff_texels=8.0, cutoff_m=None, blend=1.0, name=None):
     g = graph_or_raise("Lpf")
     if not isinstance(node, TerrainNode):
         raise TypeError(f"lpf expects a terrain node; got {type(node).__name__}")
+    # E0 typed literal: cutoff=meters(64)/texels(4) carries its unit -> the units enum. A
+    # units= that disagrees is a LOUD conflict (pass one, not both).
+    tag = _unit_of(cutoff)
+    if tag is not None:
+        if tag not in _CUTOFF_UNITS:
+            raise TypeError(f"lpf: cutoff unit {tag!r} is not valid for a low-pass cutoff — "
+                            f"use meters(...) or texels(...)")
+        if units is not None and units != tag:
+            raise TypeError(f"lpf: cutoff={tag}(...) disagrees with units={units!r}; pass ONE "
+                            f"(drop units= when the cutoff is a typed literal)")
+        units = tag
+    if units is None:
+        units = "texels"
+    if units not in _CUTOFF_UNITS:
+        raise TypeError(f"lpf: units={units!r} invalid — use 'texels' or 'meters'")
     m = g.create(name or anon_name("lpf", g), _terrain.LpfModule)
     g.connect(m.inputs.In, node.output_plug)
-    m.inputs.cutoff_texels = float(cutoff_texels)
-    m.inputs.cutoff_m = float(cutoff_m) if cutoff_m is not None else 0.0
+    m.inputs.cutoff = float(cutoff)        # preserves L.i identity (same float() claim path)
+    m.cutoff_units = _CUTOFF_UNITS[units]  # reflected enum on the module
     # FIELD blend: filter full-strength, crossfade by the mask field (_blend_out -> MaskBlend).
     # SCALAR blend: stays the cheap internal runtime param (no extra node, runtime-bindable).
     m.inputs.blend = 1.0 if isinstance(blend, TerrainNode) else float(blend)

@@ -10,6 +10,7 @@
 #include "../shadlang/shadlang_backend_spirv.h"
 #include <ork/file/chunkfile.inl>
 #include <ork/kernel/opq.h>       // WS3 parallel shader JIT
+#include <exception>             // std::exception_ptr for worker-thread compile error marshaling
 #include <ork/kernel/semaphore.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -402,6 +403,7 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
     std::string _type_string;
     shadlang::spirv::SpirvCompiler::EmittedShader _emitted;
     shadlang::spirv::shader_bin_t _binary;
+    std::exception_ptr _error; // carries a worker-thread compile failure back to the submitter
   };
   std::vector<PendingShaderCompile> pending_compiles;
 
@@ -482,13 +484,24 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
     for (auto& pc : pending_compiles) {
       auto pcp = &pc;
       opq::concurrentQueue()->enqueue([pcp, &compile_sema]() {
-        pcp->_binary = shadlang::spirv::SpirvCompiler::compileGlslToSpirv(
-            pcp->_emitted._name, pcp->_emitted._glsl, pcp->_emitted._kind);
+        // a compile failure (ShaderCompileError) must NOT crash the worker or
+        //  leave the submitter blocked; capture it and always notify.
+        try {
+          pcp->_binary = shadlang::spirv::SpirvCompiler::compileGlslToSpirv(
+              pcp->_emitted._name, pcp->_emitted._glsl, pcp->_emitted._kind);
+        } catch (...) {
+          pcp->_error = std::current_exception();
+        }
         compile_sema.notify();
       }, "vkfx_jit");
     }
     for (size_t j = 0; j < pending_compiles.size(); j++)
       compile_sema.wait();
+    // re-raise the first worker-thread compile error on THIS (submitting) thread
+    //  so it crosses to python as a catchable exception, never crashing a worker.
+    for (auto& pc : pending_compiles)
+      if (pc._error)
+        std::rethrow_exception(pc._error);
   } else {
     for (auto& pc : pending_compiles)
       pc._binary = shadlang::spirv::SpirvCompiler::compileGlslToSpirv(

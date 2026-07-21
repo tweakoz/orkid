@@ -233,7 +233,7 @@ tri.addVertex(vd)
 
 **Callbacks:** `canvas.onUiEvent = fn`, `canvas.onPreRender = fn`
 
-**Coordinate note:** QuadData y-position is from top of canvas. For `setPosition(x, y)` on QuadData, the quad's top-left renders at canvas pixel (x, canvas.height - y - h).
+**Coordinate note:** the whole canvas is top-left-origin / Y-down since `9359c9e20` (2026-04-16, y-flip removal). `QuadData.setPosition(x, y)` places the quad's TOP-LEFT at canvas pixel (x, y) directly — no flip, no `canvas.height - y` compensation. TriList/TriStrip `VertexData`, `TextPrimitive` item positions, per-layer `_transform` translations, and mouse coords from `rootToLocal` all share this same Y-down pixel space. Any `h - y` flip in canvas code is a pre-2026-04-16 leftover and is a bug (migration precedent: `catalog_tool_ui.py` in `1ec7a6f4d`).
 
 **Event handling with button regions (ork.catalog.tool.py pattern):**
 ```python

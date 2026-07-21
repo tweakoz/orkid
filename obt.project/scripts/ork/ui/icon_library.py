@@ -12,6 +12,47 @@ from orkengine import lev2
 
 _svg_cache = {}
 
+# A PNG always opens with this 8-byte signature. rsvg-convert either writes a
+# complete PNG or (when absent/failing — legitimate on a headless node without
+# librsvg) leaves the pre-created temp file 0 bytes. An empty/truncated file fed
+# to Image.createFromFile reads a short datablock and trips a FATAL engine assert
+# (force-segfault). So every raster result is signature-checked before it is
+# loaded or persisted, and a missing rasterizer degrades to a placeholder icon.
+_PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+
+################################################################################
+
+def _is_valid_png_bytes(data):
+  return len(data) >= len(_PNG_SIGNATURE) and bytes(data[:len(_PNG_SIGNATURE)]) == _PNG_SIGNATURE
+
+def _is_valid_png_file(path):
+  try:
+    with open(path, 'rb') as f:
+      return _is_valid_png_bytes(f.read(len(_PNG_SIGNATURE)))
+  except OSError:
+    return False
+
+def _placeholder_icon(width, height):
+  """Transparent stand-in used when rsvg-convert cannot produce a glyph (e.g. a
+  headless node without librsvg). The toolbar button still lays out and responds
+  — it just shows no icon — a graceful degrade instead of a fatal empty-image load."""
+  return lev2.Image.createRGBA8FromColor(int(width), int(height), core.vec4(0, 0, 0, 0))
+
+def _render_svg_to_png(svg_path, width, height, png_path):
+  """Rasterize an SVG file to png_path via rsvg-convert. Returns True iff a valid
+  PNG landed. rsvg-convert being absent or failing is a legitimate, non-fatal
+  outcome (the caller falls back to a placeholder icon)."""
+  cmd = ['rsvg-convert', '-w', str(width), '-h', str(height), '-f', 'png', '-o', png_path, svg_path]
+  try:
+    command.run(cmd, do_log=False)
+  except Exception as e:
+    print(f"[icon_library] rsvg-convert unavailable ({e}); using placeholder icon", flush=True)
+    return False
+  if not _is_valid_png_file(png_path):
+    print("[icon_library] rsvg-convert produced no/invalid PNG; using placeholder icon", flush=True)
+    return False
+  return True
+
 ################################################################################
 
 def _dblock_key(svg_string, width, height):
@@ -100,15 +141,21 @@ def from_svg_string(svg_string, width, height):
   # Level 2: persistent DataBlockCache (across sessions)
   cached_dblock = core.DataBlockCache.findDataBlock(dblock_key)
   if cached_dblock is not None:
-    with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
-      tmp.write(bytes(cached_dblock.bytes))
-      tmp_path = tmp.name
-    try:
-      result = lev2.Image.createFromFile(tmp_path)
-    finally:
-      os.unlink(tmp_path)
-    _svg_cache[dblock_key] = result
-    return result
+    png_bytes = bytes(cached_dblock.bytes)
+    if _is_valid_png_bytes(png_bytes):
+      with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
+        tmp.write(png_bytes)
+        tmp_path = tmp.name
+      try:
+        result = lev2.Image.createFromFile(tmp_path)
+      finally:
+        os.unlink(tmp_path)
+      _svg_cache[dblock_key] = result
+      return result
+    # A prior run whose rsvg-convert was absent/failing can persist an EMPTY entry
+    # here; loading it would trip the fatal short-datablock assert. Evict the
+    # poisoned entry and fall through to regenerate (self-heals the cache).
+    core.DataBlockCache.removeDataBlock(dblock_key)
 
   # Level 3: generate via rsvg-convert (single invocation)
   with tempfile.NamedTemporaryFile(suffix='.svg', delete=False) as svg_file:
@@ -118,16 +165,13 @@ def from_svg_string(svg_string, width, height):
     png_path = png_file.name
 
   try:
-    cmd = [
-      'rsvg-convert',
-      '-w', str(width),
-      '-h', str(height),
-      '-f', 'png',
-      '-o', png_path,
-      svg_path
-    ]
-    command.run(cmd, do_log=False)
-    # Cache the PNG bytes for next run
+    if not _render_svg_to_png(svg_path, width, height, png_path):
+      # No rasterizer — degrade to a placeholder rather than crash or poison the
+      # persistent cache with empty bytes.
+      result = _placeholder_icon(width, height)
+      _svg_cache[dblock_key] = result
+      return result
+    # Cache the valid PNG bytes for next run
     try:
       png_dblock = core.DataBlock.createFromFile(core.Path(png_path))
       core.DataBlockCache.setDataBlock(dblock_key, png_dblock)
@@ -159,15 +203,8 @@ def from_svg_file(svg_path, width, height):
     png_path = png_file.name
 
   try:
-    cmd = [
-      'rsvg-convert',
-      '-w', str(width),
-      '-h', str(height),
-      '-f', 'png',
-      '-o', png_path,
-      svg_path
-    ]
-    command.run(cmd, do_log=False)
+    if not _render_svg_to_png(svg_path, width, height, png_path):
+      return _placeholder_icon(width, height)
     return lev2.Image.createFromFile(png_path)
   finally:
     if os.path.exists(png_path):

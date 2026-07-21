@@ -16,6 +16,7 @@
 #include <ork/lev2/gfx/pri.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/image.h> // E.2-walk: the collider loads + high-quality-resamples its heightmap as a lev2::Image
+#include <ork/lev2/gfx/live_field_buffer.h> // S4: physics REQUIRES final — hold last-final while a live re-bake runs
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/pickbuffer.h>
@@ -76,6 +77,7 @@ struct BulletTerrainImpl {
   bool     _stampValid    = false;
   uint64_t _stampExrMtime = 0, _stampExrSize = 0;
   uint64_t _stampManMtime = 0, _stampManSize = 0;
+  bool     _holdLogged    = false; // S4 hold-last-final: log the hold ONCE per re-bake
 
   BulletTerrainImpl(const BulletShapeTerrainData& data);
   ~BulletTerrainImpl();
@@ -268,6 +270,26 @@ void BulletTerrainImpl::_reloadIfChanged() {
 }
 
 void BulletTerrainImpl::consumePendingReload() {
+  if (not _reload_pending.load())
+    return;
+  // S4 HOLD-LAST-FINAL (JUL13 §S4 consumer law): physics REQUIRES final. While the
+  // height product has an ACTIVE (armed, not-yet-final) live re-bake publisher, the
+  // collider must NOT re-read the plane — it keeps colliding against the LAST FINAL
+  // heights and re-polls next update tick. The reload consumes exactly once, at final
+  // (the "RELOADED heightmap" log line is the gate-6 observable). An absent registry
+  // entry (no S4 producer ever armed this path) behaves as "not live" — today's path.
+  if (not lev2::s4ProgressiveDisabled()) {
+    auto live = lev2::liveFieldFind(lev2::liveFieldCanonicalKey(_resPath.c_str()));
+    if (live and live->isLive()) {
+      if (not _holdLogged) {
+        printf("BulletShapeTerrain: re-bake IN PROGRESS for <%s> — HOLDING last-final "
+               "heights (S4); reload deferred to bake-final\n", _resPath.c_str());
+        _holdLogged = true;
+      }
+      return; // keep _reload_pending set — consume on a later tick, at final
+    }
+  }
+  _holdLogged = false;
   if (_reload_pending.exchange(false))
     _reloadIfChanged();
 }

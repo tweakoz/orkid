@@ -257,6 +257,46 @@ SVG_SCALE = _svg_wrap(f'''
 ''')
 
 ################################################################################
+# Particle Category Icons
+# Node-editor category glyphs for particle graphs (forces / pool / renderers),
+# drawn with the group-node icon treatment: a single-color, fill/stroke-only
+# motif that the canvas tints monochrome by multiply. Single ICON_COLOR (no
+# accent) so a canvas white-override (svg_markup(..., "#ffffff")) whitens the
+# whole glyph and it tints cleanly like the group/loop/subnet icons.
+################################################################################
+
+# a bold directional force vector (shaft + solid arrowhead)
+SVG_PARTICLE_FORCE = _svg_wrap(f'''
+  <path d="M3 12h11.5" fill="none" stroke="{ICON_COLOR}" stroke-width="2.6" stroke-linecap="round"/>
+  <path d="M13 6.5L20 12l-7 5.5z" fill="{ICON_COLOR}"/>
+''')
+
+# a pool of particles (a tight cluster of dots)
+SVG_PARTICLE_POOL = _svg_wrap(f'''
+  <circle cx="12" cy="6.5" r="2.1" fill="{ICON_COLOR}"/>
+  <circle cx="6.8" cy="11" r="2.1" fill="{ICON_COLOR}"/>
+  <circle cx="17.2" cy="11" r="2.1" fill="{ICON_COLOR}"/>
+  <circle cx="9" cy="16.5" r="2.1" fill="{ICON_COLOR}"/>
+  <circle cx="15" cy="16.5" r="2.1" fill="{ICON_COLOR}"/>
+''')
+
+# a rendered image (framed screen with a sun + horizon motif)
+SVG_PARTICLE_RENDER = _svg_wrap(f'''
+  <rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="{ICON_COLOR}" stroke-width="2"/>
+  <circle cx="8.5" cy="10" r="1.9" fill="{ICON_COLOR}"/>
+  <path d="M4.5 17.5L10 11.5l3.2 3.4L16 12l3.5 4z" fill="{ICON_COLOR}"/>
+''')
+
+# an emitter (a nozzle/cone spraying a fan of particles upward)
+SVG_PARTICLE_EMITTER = _svg_wrap(f'''
+  <path d="M8 22L16 22L13 13L11 13Z" fill="{ICON_COLOR}"/>
+  <circle cx="12" cy="9.5" r="1.5" fill="{ICON_COLOR}"/>
+  <circle cx="8" cy="6" r="1.3" fill="{ICON_COLOR}"/>
+  <circle cx="16" cy="6" r="1.3" fill="{ICON_COLOR}"/>
+  <circle cx="12" cy="4" r="1.2" fill="{ICON_COLOR}"/>
+''')
+
+################################################################################
 # Icon Factory Functions
 ################################################################################
 
@@ -296,6 +336,20 @@ def get_provider(name, width=24, height=24):
   if svg is None:
     raise ValueError(f"Unknown icon: {name}")
   return icon_library.provider_from_svg_string(svg, width, height)
+
+def svg_markup(name, icon_color=None):
+  """Raw SVG markup for a registered icon, for consumers that rasterize the SVG
+  themselves and prebuild their own textures (e.g. the node-editor canvas, whose
+  icon() model hook returns an SVG string). icon_color (hex) replaces the default
+  ICON_COLOR/ICON_COLOR_DIM so a canvas that tints by multiply gets a pure-white
+  glyph — matching the group/loop icon treatment.
+  """
+  svg = _ICONS.get(name)
+  if svg is None:
+    raise ValueError(f"Unknown icon: {name}")
+  if icon_color:
+    svg = svg.replace(ICON_COLOR, icon_color).replace(ICON_COLOR_DIM, icon_color)
+  return svg
 
 def list_icons():
   """Return list of available icon names."""
@@ -350,6 +404,12 @@ _ICONS = {
   'translate': SVG_TRANSLATE,
   'rotate': SVG_ROTATE,
   'scale': SVG_SCALE,
+
+  # Particle categories (node-editor category glyphs)
+  'particle_force': SVG_PARTICLE_FORCE,
+  'particle_pool': SVG_PARTICLE_POOL,
+  'particle_render': SVG_PARTICLE_RENDER,
+  'particle_emitter': SVG_PARTICLE_EMITTER,
 
   # UI
   'plus': SVG_PLUS,

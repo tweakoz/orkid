@@ -450,6 +450,11 @@ struct SelectData : public MeshModuleData {
   dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
   int _predicate_abi = kPredicateABIVersion;   // see kPredicateABIVersion (checked at instance creation)
   std::string _predicate;        // GLSL assigning `float _sel` (from the SelExpr trace; constants baked)
+  // E2.5 (Q6): the CANONICAL hypermesh.selexpr ExprIR TREE of the SAME predicate (exprir_selexpr
+  // .capture_json). The GLSL above stays the EVAL form the op shader compiles; this tree is the
+  // STORAGE-form IDENTITY (author-intent round-trip; cook hash keys off it). Empty on a legacy /
+  // programmatically-built predicate (e.g. the C++ smoke fixtures) -> the GLSL remains the identity.
+  std::string _predicate_tree;
   // the two-triple bit transform (MaskOp): matched faces get the sel-triple, unmatched the unsel-triple,
   //   tags = ((tags & AND) | OR) ^ XOR ; identity defaults (AND=~0, OR=0, XOR=0).
   uint32_t _sel_and   = 0xFFFFFFFFu, _sel_or   = 0u, _sel_xor   = 0u;
@@ -487,6 +492,10 @@ struct ExtrudeFacesData : public MeshModuleData {
   // default. Evaluated per input face each frame on GPU (cs_field) -> animate for free, no readback.
   int _predicate_abi = kPredicateABIVersion;   // see kPredicateABIVersion (checked at instance creation)
   std::string _dist_pred, _inset_pred, _dir_pred;
+  // E2.5 (Q6): the CANONICAL hypermesh.selexpr ExprIR TREE (exprir_selexpr.capture_json) of each
+  // field expression — the STORAGE-form IDENTITY paired with the GLSL preds above (which stay the
+  // EVAL form). Empty when the matching pred is unset. See SelectData::_predicate_tree.
+  std::string _dist_tree, _inset_tree, _dir_tree;
   // MULTI-SEGMENT extrude (face mode): subdivide the lift into `_segments` rings (default 1 = single,
   // BYTE-IDENTICAL to the legacy path). With segments>1 each ring r=1.._segments evaluates the fields at
   // t=r/segments (S.t) / index r (S.seg) and stacks: `distance` accumulates per ring (the centroid PATH bends
@@ -496,6 +505,7 @@ struct ExtrudeFacesData : public MeshModuleData {
   // (baked into topology) -> a change rebuilds. Empty preds -> twist 0 / scale 1.
   int _segments = 1;
   std::string _twist_pred, _scale_pred;
+  std::string _twist_tree, _scale_tree;   // E2.5 (Q6) ExprIR tree of the twist/scale field exprs
   // keep_base (face mode): also emit each lifted face's original footprint as a FLOOR (outward-facing), so
   // extruding on a surface SHELL doesn't leave a see-through hole under the stud. default off. TOPOLOGY.
   bool _keep_base = false;
@@ -779,29 +789,21 @@ struct ScatterSourceData : public MeshModuleData {
 };
 using scattersourcedata_ptr_t = std::shared_ptr<ScatterSourceData>;
 
-// growth model. Keep in sync with the Python `Archetype` IntEnum in the hypermesh DSL.
-enum class LArchetype : int {
-  Sympodial = 0, // repeated forking — trees, shrubs, cholla
-  Conifer   = 1, // monopodial leader + whorls of drooping laterals
-  Saguaro   = 2, // columnar trunk + arms that curl up (children=0 → barrel)
-  Ocotillo  = 3, // many basal whips splaying out
-};
-
 ///////////////////////////////////////////////////////////////////////////////
-// LSystemModule (L-system family, M1) — PRODUCES the XfNodeGraph spine (ork::hyper).
-// v1 runs a hardcoded bracketed parametric L-system (recursive turtle) at onActivate
-// and fills one XfNode per branch joint. The reflected LRuleSet grammar replaces the
-// hardcoded rule later; this proves the module + XfNodeGraph plug + skinner contract.
+// LSystemModule (L-system family, M1/GR1) — PRODUCES the XfNodeGraph spine (ork::hyper).
+// Runs the reflected LRuleSet grammar (rewrite + turtle-interpret, hmdflow_lruleset.cpp)
+// at onActivate and fills one XfNode per branch joint. The grammar is MANDATORY (GR1.d):
+// species are DATA — authored by the Python combinator DSL; the four stock growth models
+// live as preset emitters in ork/hypergraph/dflow/lsystem/presets.py.
 ///////////////////////////////////////////////////////////////////////////////
 struct LSystemModuleData : public MeshModuleData {
   DeclareConcreteX(LSystemModuleData, MeshModuleData);
   LSystemModuleData();
   static std::shared_ptr<LSystemModuleData> createShared();
   dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
-  // GR1.a: the reflected grammar (nullable). Unused by any runtime path in this slice — the
-  // GR1.b evaluator derives it; the legacy archetype path (below) stays the default while null.
+  // the reflected grammar (GR1.a schema; REQUIRED at activation since GR1.d — a null
+  // grammar fails loud in _buildSkeleton: fail-loud + regenerate, no legacy fallback).
   lruleset_ptr_t _grammar;
-  int   _archetype    = 0;      // growth model: 0 sympodial 1 conifer 2 saguaro 3 ocotillo
   int   _depth        = 7;      // recursion depth / trunk length (per archetype)
   int   _budget       = 4000;   // hard node cap (bake-cost bound)
   int   _children     = 2;      // branches per fork (or stems/whorl count per archetype)
@@ -878,6 +880,156 @@ struct LeafScatterModuleData : public MeshModuleData {
   int   _seed     = 1;
 };
 using leafscattermoduledata_ptr_t = std::shared_ptr<LeafScatterModuleData>;
+
+///////////////////////////////////////////////////////////////////////////////
+// R-FAMILY (roads / streets / layout, v1) — Q3: the R. DSL namespace over modules
+// living C++-side in the hypermesh family (the LSystem precedent). All terrain-
+// coupled (spec §0): the layout is DERIVED from terrain field channels and fed
+// BACK as flatten/keepout fields, in ONE Merkle graph (Q5 in-graph). The routing
+// CORE (RouteSpine) is mirrored operation-for-operation by the pure-python
+// reference obt.project/scripts/ork/hypergraph/dflow/roads/route_ref.py (the
+// scatter.py<->hfdflow_scatter.cpp precedent; the analytic oracles pin them).
+///////////////////////////////////////////////////////////////////////////////
+
+// RouteSpineModule — least-cost routing on a DECLARED cost grid (layout_cell_m;
+// dim-independent) of f(slope,curvature,discharge). Produces the XfNodeGraph
+// spine FOREST (single-parent v1; cycles refused loudly). Consumes terrain HfImage
+// field channels (Height/Slope/Curvature/Discharge) in the SAME graph.
+struct RouteSpineModuleData : public MeshModuleData {
+  DeclareConcreteX(RouteSpineModuleData, MeshModuleData);
+  RouteSpineModuleData();
+  static std::shared_ptr<RouteSpineModuleData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
+  std::vector<float> _pois;            // flat world (x,z) POI pairs (DATA; >=2 required)
+  float _extent_m      = 1024.0f;      // world size across the field (natural units)
+  float _layout_cell_m = 8.0f;         // DECLARED cost-grid cell size (dim-independent, Q8)
+  int   _field_dim     = 512;          // terrain-field bake resolution stocked for the field subgraph
+  float _width_m       = 6.0f;         // road width (rides XfNode _attrs.x)
+  float _max_grade     = 0.12f;        // grade cap (over-grade edges forbidden -> slope oracle)
+  float _w_slope       = 6.0f;         // steepness penalty weight
+  float _w_curv        = 3.0f;         // ridge (convex-up) penalty weight
+  float _w_water       = 1.0e4f;       // discharge>=thresh => ~forbidden (v1 routes AROUND water)
+  float _disch_thresh  = 0.55f;        // normalized discharge => water
+  float _grade_weight  = 4.0f;         // edge grade penalty multiplier
+  float _base_cost     = 1.0f;
+  int   _seed          = 1;
+  float _min_radius_m  = 24.0f;        // curvature floor: the smoothed spine never turns tighter
+  float _station_m     = 8.0f;         // resampled spine station spacing (m) after smoothing
+  float _vcurve_len_m  = 120.0f;       // VERTICAL curve K-length: metres of arc to absorb a UNIT grade
+                                       //   change (per-station grade-change ceiling = station/vcurve_len)
+  float _clearance_m   = 0.3f;         // no-burial floor: min metres the deck rides above terrain
+};
+using routespinemoduledata_ptr_t = std::shared_ptr<RouteSpineModuleData>;
+
+// RoadbedMaskModule — rasterize the spine polyline into terrain-currency HfImage
+// fields at the BakeEnv (terrain) dim: Roadbed [0,1] coverage, RoadElev (grade-
+// limited flatten target), and the road UV field (UvU across width [0,1], UvV
+// world-metric arc-length / v_meters_per_tile). The GEOMETRY is declared in meters
+// so the road is dim-independent; the output dim = bake dim so terrain MaskBlend
+// (A=height,B=RoadElev,M=Roadbed) flattens with ZERO new terrain C++. Junction v1:
+// nearest-segment parameterization (documented seam at forks — RoadMesh junction
+// geometry is the next slice).
+struct RoadbedMaskModuleData : public MeshModuleData {
+  DeclareConcreteX(RoadbedMaskModuleData, MeshModuleData);
+  RoadbedMaskModuleData();
+  static std::shared_ptr<RoadbedMaskModuleData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
+  float _width_m           = 6.0f;   // road surface width
+  float _shoulder_m        = 2.0f;   // coverage falloff band beyond the half-width
+  float _v_meters_per_tile = 8.0f;   // road UV V: meters of arc-length per texture tile
+  float _extent_m          = 1024.0f;
+  int   _out_dim           = 512;    // output field resolution (defaults to field bake dim)
+};
+using roadbedmaskmoduledata_ptr_t = std::shared_ptr<RoadbedMaskModuleData>;
+
+// KeepoutMaskModule — Keepout = dilate(Roadbed>0) [UNION parcels]. Inverted into
+// scatter-sink weights (no trees on roads) — spec §0 BACKWARD coupling.
+struct KeepoutMaskModuleData : public MeshModuleData {
+  DeclareConcreteX(KeepoutMaskModuleData, MeshModuleData);
+  KeepoutMaskModuleData();
+  static std::shared_ptr<KeepoutMaskModuleData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
+  float _keepout_radius_m = 6.0f;    // dilation radius (world meters)
+  float _extent_m         = 1024.0f;
+};
+using keepoutmaskmoduledata_ptr_t = std::shared_ptr<KeepoutMaskModuleData>;
+
+// ParcelizeModule — frontage parcels along the spine (v1): walk each lane edge in
+// frontage steps (counter-hash-jittered spacing), offset laterally on both sides.
+// Produces an InstanceSet (OBB attrs: matrices = frame*scale(frontage,depth), attrs
+// = (frontage,depth,side,_)) — the scatter-sink-compatible instance edge.
+struct ParcelizeModuleData : public MeshModuleData {
+  DeclareConcreteX(ParcelizeModuleData, MeshModuleData);
+  ParcelizeModuleData();
+  static std::shared_ptr<ParcelizeModuleData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
+  float _frontage_m  = 12.0f;
+  float _depth_m     = 16.0f;
+  float _spacing_m   = 2.0f;
+  float _jitter      = 0.4f;
+  float _extent_m    = 1024.0f;
+  int   _seed        = 1;
+};
+using parcelizemoduledata_ptr_t = std::shared_ptr<ParcelizeModuleData>;
+
+// BuildingSeedsModule — one seed per parcel (v1: frontage parcels ARE the building
+// sites). Default EMIT ADAPTER = scatter-sink-compatible InstanceSet (owner Q2:
+// "same as tree scatter") so gates run, PLUS an extensible freeform-SoA per-item
+// schema (owner: "augment the per item data extensibly - freeform-SOA"):
+//   InstanceSet.matrices  per-item placement (pos + facing-toward-spine + scale)
+//   InstanceSet.attrs     x=type_id  y=variant_seed01  z=height_seed  w=style_seed
+//   [SoA extension slots]  frontage_m, depth_m, orient_rad (built internally; the
+//                          richer adapter — a new plug type — is the OWNER-decision
+//                          seam, kept a small adapter swap: _emit_adapter selects).
+// Consumers read the channels they know and IGNORE unknown ones; adding a channel
+// is data-side only. A1: GidAssign stays the only MESH gid writer — type_id here is
+// an INSTANCE attribute, not a mesh gid.
+struct BuildingSeedsModuleData : public MeshModuleData {
+  DeclareConcreteX(BuildingSeedsModuleData, MeshModuleData);
+  BuildingSeedsModuleData();
+  static std::shared_ptr<BuildingSeedsModuleData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
+  std::vector<float> _type_weights;  // building-archetype weights (DATA; empty => single type)
+  int   _emit_adapter = 0;           // 0 = scatter-sink InstanceSet (default); 1.. = richer (Q2 seam)
+  int   _seed         = 1;
+};
+using buildingseedsmoduledata_ptr_t = std::shared_ptr<BuildingSeedsModuleData>;
+
+// RoadMeshModule (R-family v2) — the SKINNER: XfNodeGraph spine FOREST -> a swept
+// road-ribbon GpuMesh + JUNCTION patches + the gid material split (the LSweep
+// skinner precedent, ribbon flavor). Each spine EDGE sweeps to ONE quad (sits on
+// road_elev = XfNode _attrs.z; width from _attrs.x; U = normalized lateral [0,1],
+// V = world-metric arc-length/v_meters_per_tile). Each FORK node (>= 2 children —
+// the only junction kind in the single-parent forest) fills the gap between its
+// setback-shortened approach mouths with ONE n-gon PATCH (the render's E.5 ear-clip
+// triangulates it): its 2*degree boundary verts are COINCIDENT with the segment
+// mouth rings, so meshvet's position-weld collapses the seam to a manifold interior
+// edge (crack-free) while the patch keeps its OWN verts for a local planar UV chart.
+// gid split: road segments -> _road_gid, junction patches -> _junction_gid (A1 [20:32)
+// band; the parametric asphalt material binds by gid downstream). MIRRORS the pure-
+// python reference obt.project/scripts/ork/hypergraph/dflow/roads/roadmesh_ref.py
+// operation-for-operation (the parity gate pins them). Self-defends: zero-length
+// edge / zero width / near-tangent fork REFUSE loudly; the apron setback AUTO-GROWS
+// so a fork's stubs don't overlap; >4-way meets AUTO-SATISFY (a general n-gon).
+struct RoadMeshModuleData : public MeshModuleData {
+  DeclareConcreteX(RoadMeshModuleData, MeshModuleData);
+  RoadMeshModuleData();
+  static std::shared_ptr<RoadMeshModuleData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
+  float _v_meters_per_tile      = 8.0f;   // road UV V: meters of arc-length per texture tile
+  float _junction_setback_scale = 1.5f;   // apron depth = scale * road half-width (auto-grows)
+  float _junction_min_edge_frac = 0.45f;  // setback clamp: <= this fraction of the shortest edge
+  int   _road_gid               = 1;      // gid on swept ribbon segment faces (A1 band)
+  int   _junction_gid           = 2;      // gid on junction patch faces
+  float _extent_m               = 1024.0f;// world span across the Height field (grounding sample)
+  float _shoulder_m             = 3.0f;   // v2.5: lateral width of the terrain-grounding skirt (m)
+  int   _shoulder_gid           = 3;      // gid on the skirt (gravel/dirt material region)
+  float _clearance_m            = 0.3f;   // v2.6: no-burial floor for the junction apron (m)
+  float _max_bank_rad           = 0.10472f;// v2.6: superelevation cap (radians; ~6 deg, subtle)
+  float _bank_runoff_m          = 30.0f;  // v2.6: arc length to ramp bank 0<->full (roll runoff)
+  float _bank_ref_radius_m      = 24.0f;  // v2.6: turn radius at which FULL bank is reached
+};
+using roadmeshmoduledata_ptr_t = std::shared_ptr<RoadMeshModuleData>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // MergeMeshData — concatenate two input GpuMeshes (A, B) into one, tagging each source's faces with
@@ -1047,6 +1199,31 @@ struct HmPerf {
 };
 
 livehypermesh_ptr_t materializeLive(dflow::graphdata_ptr_t graph, Context* ctx, int vtx_budget = 1 << 20);
+
+///////////////////////////////////////////////////////////////////////////////
+// RoadsBakeReadout (R-family Tier-B gate seam) — read back the baked R-graph
+// products from a materialized `live` for the coupling oracles (determinism /
+// keepout-zero / flatten-match). Navigates by module-DATA class name + output
+// plug type; empty vectors where a module is absent. Impl in
+// hmdflow_module_routespine.cpp (sees the interchange plug types).
+///////////////////////////////////////////////////////////////////////////////
+struct RoadsBakeReadout {
+  int                   spine_count = 0;
+  std::vector<float>    spine_positions;   // xyz per node (3*count)
+  std::vector<uint32_t> spine_parents;     // per node
+  std::vector<float>    spine_road_elev;   // _attrs.z per node
+  std::string           spine_bytes;       // raw _nodes bytes (determinism memcmp key)
+  int                   field_dim = 0;
+  std::vector<float>    height_field;      // the field wired to RouteSpine.Height (flatten ref)
+  std::vector<float>    slope_field;       // RouteSpine.Slope input (reference parity)
+  std::vector<float>    curv_field;        // RouteSpine.Curvature input
+  std::vector<float>    disch_field;       // RouteSpine.Discharge input
+  std::vector<float>    roadbed;           // RoadbedMask.Roadbed coverage
+  std::vector<float>    road_elev_field;   // RoadbedMask.RoadElev flatten target
+  std::vector<float>    keepout;           // KeepoutMask.Keepout
+  int                   seed_count = 0;    // BuildingSeeds InstanceSet count
+};
+RoadsBakeReadout roadsBakeReadout(livehypermesh_ptr_t live, Context* ctx);
 
 ///////////////////////////////////////////////////////////////////////////////
 // RENDER — install the render-time triangulator + per-frame in-frame hook on a ComputeDrawableData.

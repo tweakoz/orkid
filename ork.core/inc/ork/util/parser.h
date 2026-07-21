@@ -3,6 +3,10 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <functional>
+#include <exception>
+#include <set>
+#include <string>
+#include <vector>
 #include <ork/orktypes.h>
 #include <ork/orkstd.h>
 #include <ork/kernel/varmap.inl>
@@ -13,6 +17,24 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
+
+// structured, catchable parse failure. carries a machine-usable summary
+//  (line/col, expected terminal set, named-rule breadcrumb, source excerpt)
+//  plus the full colorized human dump as what()/_message.
+struct ParseError final : public std::exception {
+  const char* what() const noexcept override {
+    return _message.c_str();
+  }
+  std::string _message;                 // full formatted (colorized) dump
+  std::string _summary;                 // one-line uncolored summary
+  std::string _parser_name;             // parser/source name
+  size_t _line   = 0;                   // 1-based-ish line of failure token
+  size_t _column = 0;                   // column of failure token
+  std::string _near_token;              // text at the failure position
+  std::vector<std::string> _expected;   // expected terminal names at farthest failure
+  std::vector<std::string> _breadcrumb; // enclosing NAMED rule chain (outer->inner)
+  std::string _excerpt;                 // uncolored source excerpt around failure
+};
 
 struct MatchAttempt;
 struct Match;
@@ -336,6 +358,10 @@ struct Parser {
 
   match_attempt_ptr_t _tryMatch(MatchAttemptContextItem& mci);
 
+  // farthest-failure diagnostics (Phase 2 error reporting)
+  void _recordFailure(matcher_ptr_t matcher, scannerlightview_constptr_t view);
+  static bool _isAnonymousRuleName(const std::string& name);
+
   void _log_valist(scannerlightview_constptr_t view, const char* pMsgFormat, va_list args) const;
   void _log_valist_begin(scannerlightview_constptr_t view, const char* pMsgFormat, va_list args) const;
   void _log_valist_continue(const char* pMsgFormat, va_list args) const;
@@ -377,6 +403,9 @@ struct Parser {
 
   match_ptr_t _last_match;
   matchattempt_trackitem_ptr_t _trackcontig;
+  size_t _farthest_fail_pos = size_t(-1);
+  std::set<std::string> _farthest_fail_expected;
+  std::vector<std::string> _farthest_fail_breadcrumb;
   size_t _track_depth;
   size_t _high_track_depth;
   match_attempt_ptr_t _attempt_prev;

@@ -57,7 +57,18 @@ struct TabWidget : public Group {
   void setTabCloseable(widget_ptr_t tab, bool closeable);
   bool isTabCloseable(widget_ptr_t tab) const;
   std::function<void(widget_ptr_t)> _onTabClose;
+  void _closeTabDeferred(widget_ptr_t tab);
   static constexpr int _close_button_size = 14;
+
+  // Move 'tab' to position 'index' in tab order (no-op under _sort_tabs).
+  void reorderTab(widget_ptr_t tab, int index);
+  int tabIndexOf(widget_ptr_t tab) const;
+
+  // Tab-header drag hooks (wired by a host such as DockSpace). Fire when a
+  // header drag leaves the bar (detach), continues out of the bar, and commits.
+  std::function<void(widget_ptr_t /*tab*/, int /*rx*/, int /*ry*/)> _onTabDetach;
+  std::function<void(int /*rx*/, int /*ry*/)> _onTabDragMove;
+  std::function<void(int /*rx*/, int /*ry*/)> _onTabDragCommit;
 
   // Widget-level colors
   fvec4 _tabBarBackground;
@@ -85,7 +96,12 @@ private:
   // Pointer-based tracking (stable across sorts)
   widget_ptr_t _active_tab;
   widget_ptr_t _hovered_tab;
-  widget_ptr_t _pendingClose;  // deferred close to avoid destroying during event routing
+
+  // tab-header drag state
+  widget_ptr_t _drag_tab;        // header being dragged
+  bool _tab_drag_active = false;
+  bool _tab_dragged_out = false; // drag has left the bar -> host drag session
+  int  _push_tab_index  = -1;    // tab under the PUSH
 
   // Cached layout data
   std::vector<int> _tab_widths;     // Width of each tab (in current sorted order)

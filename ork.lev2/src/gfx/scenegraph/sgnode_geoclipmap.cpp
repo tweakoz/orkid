@@ -17,7 +17,7 @@ namespace ork::lev2 {
 
 struct ClipMapRenderImpl {
 
-  ClipMapRenderImpl(const ClipMapDrawableData* gpd)
+  ClipMapRenderImpl(std::shared_ptr<const ClipMapDrawableData> gpd)
       : _data(gpd) {
   }
   ~ClipMapRenderImpl() {
@@ -145,7 +145,7 @@ struct ClipMapRenderImpl {
     auto renderable = dynamic_cast<const CallbackRenderable*>(RCID._irenderable);
     renderable->GetDrawableDataA().getShared<ClipMapRenderImpl>()->_render(RCID);
   }
-  const ClipMapDrawableData* _data;
+  std::shared_ptr<const ClipMapDrawableData> _data;
   pbrmaterial_ptr_t _pbrmaterial;
 
   texture_ptr_t _colortexture;
@@ -168,7 +168,7 @@ drawable_ptr_t ClipMapDrawableData::createDrawable() const {
 
   auto rval = std::make_shared<CallbackDrawable>(nullptr);
   rval->SetRenderCallback(ClipMapRenderImpl::renderClipMap);
-  auto impl      = rval->_implA.makeShared<ClipMapRenderImpl>(this);
+  auto impl      = rval->_implA.makeShared<ClipMapRenderImpl>(dataShared<ClipMapDrawableData>());
   rval->_sortkey = 10;
   return rval;
 }

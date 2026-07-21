@@ -71,10 +71,13 @@ void DisplayBuffer::Resize(int ix, int iy, int iw, int ih) {
 
 /////////////////////////////////////////////////////////////////////////
 
-Window::Window(int iX, int iY, int iW, int iH, const std::string& name, void* pdata)
+Window::Window(int iX, int iY, int iW, int iH, const std::string& name, void* pdata, bool is_main)
     : DisplayBuffer(0, iX, iY, iW, iH, EBufferFormat::RGBA8, name)
     , mpCTXBASE(0) {
-  gGfxEnv.SetMainWindow(this);
+  // Only the true main window claims mpMainWindow. A secondary window must NOT —
+  // else destroying it dangles mainRenderContext() (see the ctor-decl note).
+  if (is_main)
+    gGfxEnv.SetMainWindow(this);
 }
 
 Window::~Window() {

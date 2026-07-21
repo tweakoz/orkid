@@ -619,7 +619,8 @@ def _segment_intersect(ax, ay, bx, by, cx, cy, dx, dy):
 def _make_bezier_arrow_verts(points, color, thickness, ch):
     """Tessellated thick bezier curve with arrowhead.
     points: list of (x,y) in screen coords (Y-down).
-    Returns TriList vertices in PrimCanvas coords (Y-up)."""
+    Returns TriList vertices in PrimCanvas coords (also Y-down).
+    ch unused (retained for call-site compat)."""
     if len(points) < 2:
         return []
 
@@ -634,8 +635,7 @@ def _make_bezier_arrow_verts(points, color, thickness, ch):
     arrow_len = 14
     arrow_w = thickness * 3.5
 
-    # Work in PrimCanvas coords (flip Y)
-    pts = [(x, ch - y) for x, y in points]
+    pts = points
 
     # Find direction of the last segment for arrowhead
     last_dx = pts[-1][0] - pts[-2][0]
@@ -663,28 +663,30 @@ def _make_bezier_arrow_verts(points, color, thickness, ch):
             continue
         nx, ny = -dy / seg_len * thickness, dx / seg_len * thickness
 
-        # Two triangles per segment
+        # Two triangles per segment. Wound front-facing (negative signed area
+        # in canvas Y-down space) to match the quad shader's baked corners —
+        # the canvas is winding-sensitive despite CullTest=OFF.
         v(ax + nx, ay + ny)
-        v(ax - nx, ay - ny)
         v(bx + nx, by + ny)
+        v(ax - nx, ay - ny)
 
         v(bx + nx, by + ny)
-        v(ax - nx, ay - ny)
         v(bx - nx, by - ny)
+        v(ax - nx, ay - ny)
 
-    # Arrowhead triangle
+    # Arrowhead triangle (front-facing winding)
     apx, apy = -luy * arrow_w, lux * arrow_w
     v(arrow_base[0] + apx, arrow_base[1] + apy)
-    v(arrow_base[0] - apx, arrow_base[1] - apy)
     v(tip[0], tip[1])
+    v(arrow_base[0] - apx, arrow_base[1] - apy)
 
     return verts
 
 
 def _make_thin_line(x0, y0, x1, y1, color, thickness, ch):
-    """Simple thick line segment without arrowhead. Screen coords Y-down."""
-    y0_q, y1_q = ch - y0, ch - y1
-    dx, dy = x1 - x0, y1_q - y0_q
+    """Simple thick line segment without arrowhead. Screen coords Y-down.
+    ch unused (retained for call-site compat)."""
+    dx, dy = x1 - x0, y1 - y0
     length = math.sqrt(dx*dx + dy*dy)
     if length < 1:
         return []
@@ -696,14 +698,15 @@ def _make_thin_line(x0, y0, x1, y1, color, thickness, ch):
         vd.setPosition(x, y)
         vd.setColor(color)
         verts.append(vd)
-    v(x0+px, y0_q+py); v(x0-px, y0_q-py); v(x1+px, y1_q+py)
-    v(x1+px, y1_q+py); v(x0-px, y0_q-py); v(x1-px, y1_q-py)
+    # front-facing winding (see _make_bezier_arrow_verts)
+    v(x0+px, y0+py); v(x1+px, y1+py); v(x0-px, y0-py)
+    v(x1+px, y1+py); v(x1-px, y1-py); v(x0-px, y0-py)
     return verts
 
 
 def _add_circle_verts(prim, cx, cy, radius, color, segments=10):
     """Add a filled circle as a triangle fan to an existing TriListPrimitive.
-    Coordinates in PrimCanvas space (Y-up)."""
+    Coordinates in PrimCanvas space (Y-down)."""
     def v(x, y):
         vd = lev2.ui.VertexData()
         vd.setPosition(x, y)
@@ -714,9 +717,10 @@ def _add_circle_verts(prim, cx, cy, radius, color, segments=10):
     for i in range(segments):
         a0 = i * step
         a1 = (i + 1) * step
+        # front-facing winding (see _make_bezier_arrow_verts)
         v(cx, cy)
-        v(cx + math.cos(a0) * radius, cy + math.sin(a0) * radius)
         v(cx + math.cos(a1) * radius, cy + math.sin(a1) * radius)
+        v(cx + math.cos(a0) * radius, cy + math.sin(a0) * radius)
 
 
 ###############################################################################
@@ -876,14 +880,15 @@ class FsmVisualizer(ComponentizedApplication):
 
     def _draw_rotated_icon(self, layer, texture, cx, cy, size, angle, ch, pip_tex):
         """Draw a rotated textured quad icon centered at screen coords (Y-down).
-        angle: radians, 0=right, pi/2=down in screen space."""
+        angle: radians, 0=right, pi/2=down in screen space. ch unused
+        (retained for call-site compat — canvas is Y-down throughout)."""
         qp = lev2.ui.QuadPrimitive(pipeline=pip_tex, texture=texture)
         qd = lev2.ui.QuadData()
-        qd.setPosition(cx - size/2, ch - cy - size/2)
+        qd.setPosition(cx - size/2, cy - size/2)
         qd.setSize(size, size)
         qd.setColor(vec4(1, 1, 1, 1))
         qd.setUV(0, 1, 1, 0)
-        qd.setRotation(-angle)  # negate for Y-up canvas
+        qd.setRotation(angle)  # angle already in canvas Y-down convention
         qp.addQuad(qd)
         layer.addPrimitive(qp)
 
@@ -1053,7 +1058,7 @@ class FsmVisualizer(ComponentizedApplication):
         def quad(layer, x, y, w, h, color, radius=0):
             qp = lev2.ui.QuadPrimitive(pipeline=pip)
             qd = lev2.ui.QuadData()
-            qd.setPosition(x, ch - y - h)
+            qd.setPosition(x, y)
             qd.setSize(w, h)
             qd.setColor(color)
             if radius > 0:
@@ -1343,7 +1348,7 @@ class FsmVisualizer(ComponentizedApplication):
             row_y = ly + (18 + i * 18) * sy
             _add_circle_verts(legend_dot_prim,
                               lx + legend_dot_r,
-                              ch - row_y - 5,
+                              row_y + 5,
                               legend_dot_r, col, 12)
             line = f"{ev:12s} {src.name} -> {dst.name}"
             text(ct.lyr_text, line, lx + legend_dot_r * 3 + 4, row_y, col)

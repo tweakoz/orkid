@@ -261,19 +261,22 @@ HandlerResult TabWidget::DoOnUiEvent(event_constptr_t ev) {
 
   switch (ev->_eventcode) {
     case EventCode::PUSH: {
+      _push_tab_index = -1;
       if (localY < _tabBarHeight) {
         int tabIndex = _getTabIndexAt(localX, localY);
         if (tabIndex >= 0) {
+          _push_tab_index = tabIndex;   // record for a possible header drag
           auto& child = _children[tabIndex];
           // Check if click is on close button
           if (_closeable_tabs.count(child)) {
             int tab_x2 = _tab_positions[tabIndex] + _tab_widths[tabIndex] - 2;
             int close_x1 = tab_x2 - _close_button_size - 2;
             if (localX >= close_x1 && localX < tab_x2) {
-              // Close button clicked — defer removal to avoid destroying
-              // widgets (which may hold Python refs) during event processing
+              // Close button clicked — defer removal to the context's structural
+              // mutation queue so the widget (which may hold Python refs) is not
+              // destroyed mid-dispatch.
               auto tab_to_close = child;
-              _pendingClose = tab_to_close;
+              _closeTabDeferred(tab_to_close);
               result.setHandled(this);
               break;
             }
@@ -307,27 +310,105 @@ HandlerResult TabWidget::DoOnUiEvent(event_constptr_t ev) {
       break;
     }
 
+    case EventCode::BEGIN_DRAG: {
+      // a header PUSH promoted to a drag -> start a tab-header drag
+      if (_push_tab_index >= 0 && _push_tab_index < int(_children.size())) {
+        _drag_tab        = _children[_push_tab_index];
+        _tab_drag_active = true;
+        _tab_dragged_out = false;
+        result.setHandled(this);
+      }
+      break;
+    }
+
+    case EventCode::DRAG: {
+      if (_tab_drag_active && _drag_tab) {
+        bool in_bar = (localY >= 0 && localY < _tabBarHeight &&
+                       localX >= 0 && localX < _geometry._w);
+        if (in_bar && not _tab_dragged_out) {
+          // in-bar reorder — a structural mutation; ride the deferred queue when
+          // event-driven so it never runs mid-dispatch.
+          int target = _getTabIndexAt(localX, localY);
+          if (target >= 0) {
+            auto tab = _drag_tab;
+            if (_uicontext)
+              _uicontext->enqueueDeferredMutation([this, tab, target]() { reorderTab(tab, target); });
+            else
+              reorderTab(tab, target);
+          }
+        } else {
+          // left the bar -> hand off to the host drag session (drag-out)
+          if (not _tab_dragged_out) {
+            _tab_dragged_out = true;
+            if (_onTabDetach)
+              _onTabDetach(_drag_tab, ev->miX, ev->miY);
+          } else if (_onTabDragMove) {
+            _onTabDragMove(ev->miX, ev->miY);
+          }
+        }
+        result.setHandled(this);
+      }
+      break;
+    }
+
+    case EventCode::END_DRAG: {
+      if (_tab_drag_active) {
+        if (_tab_dragged_out && _onTabDragCommit)
+          _onTabDragCommit(ev->miX, ev->miY);
+        _tab_drag_active = false;
+        _tab_dragged_out = false;
+        _drag_tab        = nullptr;
+        _push_tab_index  = -1;
+        result.setHandled(this);
+      }
+      break;
+    }
+
     default:
       break;
   }
 
   return result;
 }
+/////////////////////////////////////////////////////////////////////////
+int TabWidget::tabIndexOf(widget_ptr_t tab) const {
+  auto it = std::find(_children.begin(), _children.end(), tab);
+  return (it == _children.end()) ? -1 : int(std::distance(_children.begin(), it));
+}
+/////////////////////////////////////////////////////////////////////////
+void TabWidget::reorderTab(widget_ptr_t tab, int index) {
+  auto it = std::find(_children.begin(), _children.end(), tab);
+  if (it == _children.end())
+    return;
+  int n = int(_children.size());
+  if (index < 0) index = 0;
+  if (index >= n) index = n - 1;
+  int cur = int(std::distance(_children.begin(), it));
+  if (cur == index)
+    return;
+  _children.erase(it);
+  _children.insert(_children.begin() + index, tab);
+  _needs_layout_recalc = true;
+  DoLayout();
+}
 
 /////////////////////////////////////////////////////////////////////////
-void TabWidget::DoDraw(drawevent_constptr_t drwev) {
-  // Process deferred tab close (safe point — not inside event routing)
-  if (_pendingClose) {
-    auto tab_to_close = _pendingClose;
-    _pendingClose = nullptr;
+void TabWidget::_closeTabDeferred(widget_ptr_t tab_to_close) {
+  auto do_close = [this, tab_to_close]() {
     _closeable_tabs.erase(tab_to_close);
     _per_tab_style_tags.erase(tab_to_close);
     if (_active_tab == tab_to_close)
       _active_tab = nullptr;
     removeChild(tab_to_close);
     if (_onTabClose) _onTabClose(tab_to_close);
-  }
-
+  };
+  if (_uicontext)
+    _uicontext->enqueueDeferredMutation(do_close);
+  else
+    do_close();  // no active dispatch — safe to close immediately
+}
+/////////////////////////////////////////////////////////////////////////
+void TabWidget::DoDraw(drawevent_constptr_t drwev) {
   // Update pulsation phase for active tab animation
   _pulsation_phase += 0.01f;
 

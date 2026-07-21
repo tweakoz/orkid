@@ -32,6 +32,18 @@ from ork.hypergraph.dflow.terrain.doc import (
     from_json as _doc_from_json, to_json as _doc_to_json, TerrainDocParamError)
 from ork.hypergraph.dflow.terrain.base import HeightField as _HeightFieldBase
 from ork.hypergraph.dflow import terrain as _T
+
+# --- #88 display-path trace (ORKID_DISPLAY_TRACE=1). Every link of the display-switch
+# chain (canvas click -> model.set_output -> set_display_key -> edit -> host route ->
+# pre-cook -> swap -> rebind) prints ONE line, so a live session names the link that
+# breaks — offscreen replicas of the owner's sequence pass while the live session fails,
+# and only the session itself can say where the chain stops.
+_DISPLAY_TRACE = bool(os.environ.get("ORKID_DISPLAY_TRACE"))
+
+
+def display_trace(msg):
+  if _DISPLAY_TRACE:
+    print(f"[disptrace] {msg}", flush=True)
 from ork.hypergraph import units as _units
 
 
@@ -170,6 +182,48 @@ class TerrainRuntime:
     self._pending_scene_data = None
     self._pending_ready = False
 
+    # COMPOSE (multi-document viewport): additional terrain runtimes whose payloads are
+    # folded into THIS runtime's scene build (this runtime is the PRIMARY / sim owner).
+    # Empty for a single-source session -> exactly one payload -> a byte-identical scene.
+    # Each contributor is re-elaborated on every (re)build, so its display/bypass edits
+    # reflect in the composed scene (the primary owns the ONE simulation).
+    self._contributors = []
+
+    # COMPOSE (family-neutral): external scene decorators — callables fn(scenegraph, layer)
+    # re-applied after EVERY scenegraph (re)build, so a NON-terrain contributor (a hypermesh
+    # mesh drawable) folded into this primary's scene survives the per-edit scene rebuild the
+    # same way the postfx nodes do. Empty for a pure-terrain session (a no-op).
+    self._external_decorators = []
+
+    # MT3 (JUL13 §2.6/§E5) — SLICED re-bake. The live scene's baked dim/extent (set on
+    # each completed bake): a re-bake at the SAME dim/extent is a PARAM-TWEAK (products
+    # already on disk) and slices; a dim/extent change bursts (would stale-delete). The
+    # handle polls the SOFT_DEADLINE microtask that pre-cooks the display products +
+    # capture-currency sidecars off the GPU thread, so the subsequent blocking swap-bake
+    # hits currency/warm-cache and does not hitch.
+    self._live_bake_dim = None
+    self._live_bake_extent = None
+    # display node of the currently-STAGED surface (set at each swap). S4 progressive
+    # live-accept morphs the HELD drawable's height plane in place; that is only coherent
+    # when the re-bake refines the SAME surface (a param tweak). Across a DISPLAY CHANGE the
+    # new node's plane is a different surface entirely (range/normals/frame all shift), so
+    # morphing the held drawable through it presents a broken/stale frame until the swap —
+    # arm S4 only when the display is unchanged.
+    self._live_bake_display_key = None
+    self._live_bake_product = None
+    # #88 v2 — in-place display REVISIT fast path. `_held_field_path` is the height product
+    # path the HELD drawable's S4 LiveFieldBuffer is keyed on (set ONLY at a full swap, when
+    # the drawable re-materializes; NEVER moved by an in-place rebind — every in-place publish
+    # targets this one buffer). `_current_products` maps each product asset name baked THIS
+    # session to the document content hash it was baked at, so a REVISIT to a product whose
+    # hash still matches the live document is current on disk (the files ARE the LRU) and can
+    # skip the full scene swap. The hash IS the invalidation — a document edit drifts it, so a
+    # stale product never matches and falls back to the full swap loudly.
+    self._held_field_path = None
+    self._current_products = {}
+    self._sliced_handle = None
+    self._frames_during_rebake = 0   # gate-6 instrument: GPU frames presented per re-bake
+
   ##############################################################################
   # load — build the document (never touches a GraphData; L2)
   ##############################################################################
@@ -195,7 +249,7 @@ class TerrainRuntime:
       else:
         dsl_path = resolve_dsl_file(source)
         cls = load_dsl_class(dsl_path, dsl_class or None)
-      # E0: introspect the editable ctor kwargs, then trace with _ParamExpr SYMBOLS for the
+      # E0: introspect the editable ctor kwargs, then trace with _ParamCapture SYMBOLS for the
       # numeric ones so their uses are captured as document parameters (edit = re-elaborate,
       # not re-trace; topology edits preserved). Non-editor callers (viewer/scenes) never take
       # this path — they instantiate cls(**plain) with concrete values and empty params.
@@ -309,13 +363,13 @@ class TerrainRuntime:
             f"{self._dsl_kwarg_notes}", flush=True)
 
   def _trace_param_document(self, effective_kwargs):
-    """E0 editor trace: instantiate self._dsl_class with _ParamExpr SYMBOLS for each NUMERIC
+    """E0 editor trace: instantiate self._dsl_class with _ParamCapture SYMBOLS for each NUMERIC
     editable ctor kwarg, derive the document, attach the params table, and flag every param
     NOT captured as a plug/prop expr STRUCTURAL (a folded / range()-forced / shader-closure /
     unused use — editing it requires the guarded re-trace, never a silent no-op). Numeric
     captured params edit re-trace-free (document mutation + re-elaborate)."""
     from ork.hypergraph.dflow.terrain.doc import (
-        _ParamTable, _ParamExpr, _collect_captured_param_names)
+        _ParamTable, _ParamCapture, _collect_captured_param_names)
     table = _ParamTable()
     for name in self._dsl_editable:
       table.declare(name, effective_kwargs[name], tag=self._dsl_tags.get(name))
@@ -323,7 +377,7 @@ class TerrainRuntime:
     for name, val in effective_kwargs.items():
       if (name in self._dsl_editable and isinstance(val, (int, float))
               and not isinstance(val, bool)):
-        param_kwargs[name] = _ParamExpr.param(table, name)   # numeric -> symbolic capture
+        param_kwargs[name] = _ParamCapture.param(table, name)   # numeric -> symbolic capture
       else:
         param_kwargs[name] = val                             # non-numeric / non-editable -> plain
     inst = self._dsl_class(**param_kwargs)
@@ -435,7 +489,15 @@ class TerrainRuntime:
     if self.document is None:
       return
     fresh = self._trace_param_document(dict(self._dsl_kwargs))
-    if to_json(fresh) == to_json(self.document):
+    # Node canvas POSITIONS (E2/E3 editor data) are pure layout — a fresh re-trace can
+    # never reproduce them and they do not affect the bake, so they are NOT a document
+    # edit for pristine purposes. Strip them before the equality check (the node editor
+    # populates positions on first open, which would otherwise refuse every retrace).
+    fresh_json = to_json(fresh)
+    cur_json = to_json(self.document)
+    fresh_json.pop("positions", None)
+    cur_json.pop("positions", None)
+    if fresh_json == cur_json:
       return
     edits = self._summarize_doc_edits(fresh, self.document)
     raise TerrainDocParamError(
@@ -527,50 +589,191 @@ class TerrainRuntime:
 
   def set_display_key(self, key):
     """Select the node at tree_paths() `key` as the display output (None clears).
-    Exclusive — one node at a time. Validates NOW against the current document
-    (DocNode only, captures refused); the key re-resolves at every rebuild."""
-    from ork.hypergraph.dflow.terrain.doc import DocNode, find_by_path
+    Exclusive — one node at a time. Validates NOW against the current document; the
+    key re-resolves at every rebuild. A processing DocNode (captures refused) OR a
+    DocLoop (displays the loop's height-typed carry output — elaborate promotes it to
+    the module's "Out") is displayable."""
+    from ork.hypergraph.dflow.terrain.doc import DocNode, DocLoop, find_by_path
     if key is None:
+      display_trace(f"set_display_key None (was {self._display_key!r})")
       self._display_key = None
       return None
     obj = find_by_path(self.document, key) if self.document is not None else None
-    if not isinstance(obj, DocNode) or obj.clazz_name == "CaptureModule":
+    if not self._is_displayable(obj):
+      display_trace(f"set_display_key {key!r} REFUSED (not displayable)")
       raise ValueError(
           f"set_display_key: {key!r} does not name a displayable document node")
+    display_trace(f"set_display_key {key!r} (was {self._display_key!r})")
     self._display_key = str(key)
     return obj
 
+  @staticmethod
+  def _is_displayable(obj):
+    """A processing DocNode (not a capture) or any DocLoop (displays its carry output)."""
+    from ork.hypergraph.dflow.terrain.doc import DocNode, DocLoop
+    if isinstance(obj, DocLoop):
+      return True
+    return isinstance(obj, DocNode) and obj.clazz_name != "CaptureModule"
+
   def _resolve_display_node(self):
-    """The DocNode for the current display key, or None. A stale key (structural
+    """The DocNode / DocLoop for the current display key, or None. A stale key (structural
     change removed the node) CLEARS the override loudly and falls back to the
-    document's real captures."""
+    document's real captures. Displaying the EFFECTIVE TERMINAL is definitionally the
+    default view — it maps to None so the bake reuses the canonical products (usually a
+    capture-currency hit: instant) and keeps the FULL stored materials, instead of
+    re-deriving an identical field under a display key (#88 v1: a terminal revisit was
+    a minutes-scale cold recompute of the same image the default bake already wrote)."""
     if self._display_key is None:
       return None
-    from ork.hypergraph.dflow.terrain.doc import DocNode, find_by_path
+    if self._display_key == self.effective_display_terminal():
+      return None
+    from ork.hypergraph.dflow.terrain.doc import find_by_path
     obj = find_by_path(self.document, self._display_key)
-    if not isinstance(obj, DocNode) or obj.clazz_name == "CaptureModule":
+    if not self._is_displayable(obj):
       print(f"[terrain] display node {self._display_key!r} no longer resolves — "
             f"clearing select-as-output.", flush=True)
       self._display_key = None
       return None
     return obj
 
-  def build_scene_data(self, *, dim=None, simple_material=False):
-    """Derive a fresh dflow.GraphData from the DOCUMENT (L2) and lower a minimal
-    one-terrain-entity ECS scene around it into an ecs.SceneData. The embedded graph
-    rides HeightFieldGenData; the C++ terrain path bakes + renders it at load. `dim`
-    is the render + bake grid; simple_material forces a plain Solid look (visibility
-    is material-independent — used by the headless snapshot gate)."""
-    from ork.hypergraph.ecs.scene import Scene
-    from ork.hypergraph.dflow.terrain.gpu_chunk import TerrainChunkVertexSource
-    from ork.hypergraph.assets.materials.terrain.solid import Solid
-    from orkengine.lev2 import HeightFieldGenData, TerrainChunkDrawableData
+  def product_asset_name(self):
+    """The terrain product ASSET NAME for the CURRENT display state — the single lever the
+    C++ bake derives every product path from (<assetcache>/terrain/<asset>/<channel>.exr +
+    manifest + sidecars). Default view (no display key, or the key IS the effective
+    terminal): the canonical 'terra'. An interior display node: 'terra.display.<node>' —
+    its OWN directory, so display bakes never clobber the canonical products or each
+    other, and a display REVISIT is a capture-currency hit on its own files instead of a
+    rebake (#88 v1)."""
+    k = self._display_key
+    if k is None or k == self.effective_display_terminal():
+      return "terra"
+    import re as _re
+    return "terra.display." + _re.sub(r"[^A-Za-z0-9_.-]", "_", str(k))
 
-    dbg_materials = terrain_debug_materials()  # [M] the data-driven debug-material cycle (single source)
+  @staticmethod
+  def _is_interior_product(name):
+    """An INTERIOR display product ('terra.display.<node>') — its bake used the simple Solid
+    display material (mid-chain fields have no stored-material channels). The canonical
+    'terra' (default / effective-terminal) keeps the FULL material, so it is NOT interior.
+    The #88 v2 in-place plane rebind is coherent ONLY between two interior products (shared
+    Solid material graph AND shared mono relax=False SSBO layout)."""
+    return bool(name) and name.startswith("terra.display.")
 
+  def _product_height_path(self, product_name):
+    """<assetcache>/terrain/<product>/height.exr — where the C++ bake writes the height
+    product and the drawable materialize / S4 buffer key resolve from (one derivation)."""
+    d = str(_Path.expandPathString(f"<assetcache>/terrain/{product_name}"))
+    return os.path.join(d, "height.exr")
+
+  def _doc_content_hash(self):
+    """Stable content hash of the current DOCUMENT — the #88 v2 currency oracle. The display
+    key is SESSION state (absent from to_json) and canvas positions are pure layout, so BOTH
+    are excluded: a display switch or a node drag never invalidates a product, but any real
+    document edit drifts the hash and a product baked at the old hash correctly reads stale.
+    elaborate() builds a fresh GraphData and never writes back onto the document, so the hash
+    is stable across the display switches between a bake and its revisit."""
     if self.document is None:
-      raise RuntimeError("TerrainRuntime.build_scene_data(): no document loaded")
-    dim = int(dim) if dim is not None else self.dim
+      return None
+    import hashlib
+    import json as _json
+    from ork.hypergraph.dflow.terrain.doc import to_json
+    js = to_json(self.document)
+    js.pop("positions", None)
+    return hashlib.sha1(_json.dumps(js, sort_keys=True).encode("utf-8")).hexdigest()
+
+  def effective_display_terminal(self):
+    """tree_paths() key of the node whose output the DEFAULT (no session override) bake +
+    viewport actually shows — the display badge's IMPLICIT home so the canvas is never
+    flagless on open. Deterministic (resolves the #17 implicit-terminal ambiguity for the
+    editor): the doc-level select_output if the document persists one, else the producer of
+    the FIRST 'height' display capture (the node the display=None height plane reads; document
+    order breaks any multi-height tie). Returns None if no displayable terminal resolves.
+
+    Memoized per document object (queried once per canvas node per redraw); a doc replacement
+    (edit / retrace / undo) swaps the object and re-resolves."""
+    doc = self.document
+    if doc is None:
+      return None
+    cached = getattr(self, "_eff_terminal_cache", None)
+    if cached is not None and cached[0] is doc:
+      return cached[1]
+    key = self._compute_effective_display_terminal(doc)
+    self._eff_terminal_cache = (doc, key)
+    return key
+
+  def _compute_effective_display_terminal(self, doc):
+    from ork.hypergraph.dflow.terrain.doc import tree_paths, DocLoop, DocNode, _Placeholder
+    display_channels = set(getattr(doc, "_DISPLAY_CHANNELS", ("height", "normal")))
+
+    def _producer(ref):
+      # the node feeding a capture: a DocNode / DocLoop directly, or a loop carry's
+      # out_placeholder -> the owning DocLoop (displaying it shows that carry, Fix 1).
+      node = getattr(ref, "node", None)
+      if isinstance(node, (DocNode, DocLoop)):
+        return node
+      if isinstance(node, _Placeholder):
+        for (_pk, _k, o) in tree_paths(doc):
+          if isinstance(o, DocLoop):
+            for c in o.carries.values():
+              if getattr(c, "out_placeholder", None) is node:
+                return o
+      return None
+
+    tgt = getattr(doc, "_select_output", None)
+    if tgt is None:
+      # producer of the primary 'height' display capture, else any display channel's —
+      # document order is the deterministic tie-break for the #17 ambiguity. A capture's
+      # own node is a sink (never displayable); the terminal is the node feeding it.
+      cap_node = None
+      for cap in doc._captures:
+        if "height" in cap.channels:
+          cap_node = cap.node
+          break
+      if cap_node is None:
+        for cap in doc._captures:
+          if set(cap.channels) & display_channels:
+            cap_node = cap.node
+            break
+      if cap_node is not None:
+        conns = getattr(cap_node, "connections", None)
+        if conns:
+          tgt = _producer(conns[0][1])
+    if tgt is None or not self._is_displayable(tgt):
+      return None
+    for (_pk, k, o) in tree_paths(doc):
+      if o is tgt:
+        return k
+    return None
+
+  ##############################################################################
+  # COMPOSE — fold N terrain documents into ONE scene/simulation (multi-doc host)
+  ##############################################################################
+
+  def add_contributor(self, runtime):
+    """Register another terrain runtime whose payload is folded into THIS runtime's
+    scene (this runtime being the PRIMARY / sim owner). Idempotent per runtime. The
+    contributor is re-elaborated on every (re)build, so its display/bypass edits reflect
+    in the composed scene — but it never owns a simulation of its own (one world)."""
+    if runtime is not self and runtime not in self._contributors:
+      self._contributors.append(runtime)
+
+  def add_external_decorator(self, fn):
+    """Register a family-neutral scene decorator fn(scenegraph, layer) re-applied after every
+    scenegraph (re)build (and immediately if a scene already exists). A NON-terrain contributor
+    (a hypermesh mesh drawable) uses this to fold its drawable into THIS primary's forward layer
+    and keep it across per-edit rebuilds (the postfx-node re-splice precedent)."""
+    self._external_decorators.append(fn)
+    if self.scenegraph is not None and self.layer is not None:
+      fn(self.scenegraph, self.layer)
+
+  def _elaborate_payload(self, dim, *, simple_material=False, index=0):
+    """This runtime's terrain contribution to a (possibly composed) scene build: the
+    elaborated GraphData + material + geometry params, at grid `dim`. `index` positions
+    the payload — 0 == the PRIMARY (asset/entity names + placement identical to a
+    single-source scene); index>0 == a composed contributor (suffixed names)."""
+    from ork.hypergraph.assets.materials.terrain.solid import Solid
+    if self.document is None:
+      raise RuntimeError("TerrainRuntime._elaborate_payload(): no document loaded")
     display_node = self._resolve_display_node()
     # sole GraphData constructor (L2). With a display node, only the height/normal
     # captures survive (rewired to it) — nothing downstream of it computes — and the
@@ -590,15 +793,49 @@ class TerrainRuntime:
         if "relaxed_uv" in [c.strip() for c in (cap.channel or "").split(",")]:
           relax = True
           break
-
     mat_cls = Solid if simple_material else (self.material_class or Solid)
     if simple_material or self.material_class is None:
       mat_params = {"albedo": vec3(0.45, 0.42, 0.35), "roughness": 0.9}
     else:
       mat_params = dict(self.material_params)
+    return {
+        "graph": graph, "relax": relax, "mat_cls": mat_cls, "mat_params": mat_params,
+        "extent_m": self.extent_m, "chunk": self.chunk, "index": index,
+        "suffix": "" if index == 0 else f"_{index}", "label": self.source_label,
+        # product asset name (#88 v1): display bakes get their OWN product dir; the
+        # canonical 'terra' dir is written by the DEFAULT bake alone.
+        "asset_name": self.product_asset_name() + ("" if index == 0 else f"_{index}"),
+    }
 
-    extent_m, chunk = self.extent_m, self.chunk
+  def build_scene_data(self, *, dim=None, simple_material=False):
+    """Derive a fresh dflow.GraphData from the DOCUMENT (L2) and lower a minimal
+    one-terrain-entity ECS scene around it into an ecs.SceneData. The embedded graph
+    rides HeightFieldGenData; the C++ terrain path bakes + renders it at load. `dim`
+    is the render + bake grid; simple_material forces a plain Solid look (visibility
+    is material-independent — used by the headless snapshot gate).
+
+    COMPOSE: with contributors registered (add_contributor) N terrain payloads are lowered
+    into the SAME scene — one entity + asset set per payload. Placement is OVERLAP at the
+    world origin (the terrain drawable renders at a fixed extent-centered origin; it honors
+    no per-node world matrix, so offset placement is a follow-up); with distinct terrains
+    the depth test resolves per pixel, so BOTH surfaces contribute. A single-source runtime
+    has no contributors -> exactly one payload -> a byte-identical scene."""
+    from ork.hypergraph.ecs.scene import Scene
+    from ork.hypergraph.dflow.terrain.gpu_chunk import TerrainChunkVertexSource
+    from orkengine.lev2 import HeightFieldGenData, TerrainChunkDrawableData
+
+    dbg_materials = terrain_debug_materials()  # [M] the data-driven debug-material cycle (single source)
+
+    if self.document is None:
+      raise RuntimeError("TerrainRuntime.build_scene_data(): no document loaded")
+    dim = int(dim) if dim is not None else self.dim
+    payloads = [self._elaborate_payload(dim, simple_material=simple_material, index=0)]
+    for i, contrib in enumerate(self._contributors, start=1):
+      payloads.append(contrib._elaborate_payload(dim, simple_material=False, index=i))
+
     skybox = self.skybox_path
+    MAX_DIM = TerrainRuntime.MAX_DIM
+    dimlog = os.environ.get("ORKID_TERRAIN_DIMLOG")
 
     class _TerrainDocScene(Scene):
       def __init__(self):
@@ -609,36 +846,47 @@ class TerrainRuntime:
             AmbientLight=vec3(0.10),
             ssaa=2,
             msaa=2)  # scene param -> _mergedParams -> fwd node MSAA RtGroup (3=8x)
-        # embed the DOCUMENT's elaborated graph directly (no DSL re-trace) — the
-        # HeightFieldGenData is what serializes + defers its bake to the C++ load.
-        gd = HeightFieldGenData(dimension=dim, extent_m=extent_m, graph=graph)
-        gd.asset_name = "terra"
-        self._asset_gens.append(("terra", gd))
-        # bake_dim = MAX_DIM: the vertex-source SHADER TEXT bakes the per-chunk array
-        # caps + byte offsets from bake_dim — capping at the slider ceiling makes the
-        # text CONSTANT across every editor dim, so a dim change recompiles NO
-        # rendering materials (they all share this one vertex source). Cost: a fixed
-        # ~200KB header region; heights stay dense at the ACTUAL dim (runtime-sized).
-        vs = TerrainChunkVertexSource(dim=dim, bake_dim=TerrainRuntime.MAX_DIM,
-                                      extent_m=extent_m, chunk=chunk, relax=relax)
-        if os.environ.get("ORKID_TERRAIN_DIMLOG"):
-          print(f"[terrain-dim] SCENE dim={dim} vs(bake_dim={vs.bake_dim} maxnc={vs.maxnc} "
-                f"HEIGHTS_OFF={vs.HEIGHTS_OFF} TOTAL={vs.TOTAL}) extent={extent_m} "
-                f"chunk={chunk}", flush=True)
-        self.asset.Ptex3d("terra_mat", dsl_class=mat_cls, vertex_source=vs, **mat_params)
-        # [M] material-override debug looks — each its OWN FWD_SSBO_CUSTOM material, sharing the
-        # SAME vertex_source (identical SSBO layout) so the C++ terrain drawable can swap to any of
-        # them at runtime (SceneGraphSystem SetTerrainMaterialMode). The ORDERED name list is DATA:
-        # it rides the drawable's reflected debug_material_assets, and the C++ [M] cycle resolves +
-        # cycles WHATEVER it names — so this loop is the only place a new debug look is registered.
-        for _name, _cls in dbg_materials:
-          self.asset.Ptex3d(_name, dsl_class=_cls, vertex_source=vs)
-        self.entity("terrain0", components=[SG.component(nodes={
-            "terra": {"drawable": TerrainChunkDrawableData(
-                hf_asset="terra", material_asset="terra_mat", chunk=chunk,
-                layout_dim_cap=TerrainRuntime.MAX_DIM,   # MUST equal the vs bake_dim above
-                debug_material_assets=[n for n, _c in dbg_materials])},
-        })])
+        for pl in payloads:
+          suffix = pl["suffix"]                       # "" for the primary -> names unchanged
+          asset_name = pl["asset_name"]               # display-keyed product dir (#88 v1)
+          mat_name = "terra_mat" + suffix
+          entity_name = "terrain" + str(pl["index"])
+          extent_m, chunk = pl["extent_m"], pl["chunk"]
+          # embed the DOCUMENT's elaborated graph directly (no DSL re-trace) — the
+          # HeightFieldGenData is what serializes + defers its bake to the C++ load.
+          gd = HeightFieldGenData(dimension=dim, extent_m=extent_m, graph=pl["graph"])
+          gd.asset_name = asset_name
+          self._asset_gens.append((asset_name, gd))
+          # bake_dim = MAX_DIM: the vertex-source SHADER TEXT bakes the per-chunk array
+          # caps + byte offsets from bake_dim — capping at the slider ceiling makes the
+          # text CONSTANT across every editor dim, so a dim change recompiles NO
+          # rendering materials (they all share this one vertex source). Cost: a fixed
+          # ~200KB header region; heights stay dense at the ACTUAL dim (runtime-sized).
+          vs = TerrainChunkVertexSource(dim=dim, bake_dim=MAX_DIM,
+                                        extent_m=extent_m, chunk=chunk, relax=pl["relax"])
+          if dimlog:
+            tag = "" if pl["index"] == 0 else f"[{pl['index']}]"
+            print(f"[terrain-dim] SCENE{tag} dim={dim} vs(bake_dim={vs.bake_dim} "
+                  f"maxnc={vs.maxnc} HEIGHTS_OFF={vs.HEIGHTS_OFF} TOTAL={vs.TOTAL}) "
+                  f"extent={extent_m} chunk={chunk}", flush=True)
+          self.asset.Ptex3d(mat_name, dsl_class=pl["mat_cls"], vertex_source=vs, **pl["mat_params"])
+          # [M] material-override debug looks — each its OWN FWD_SSBO_CUSTOM material, sharing the
+          # SAME vertex_source (identical SSBO layout) so the C++ terrain drawable can swap to any of
+          # them at runtime (SceneGraphSystem SetTerrainMaterialMode). The ORDERED name list is DATA:
+          # it rides the drawable's reflected debug_material_assets, and the C++ [M] cycle resolves +
+          # cycles WHATEVER it names — so this loop is the only place a new debug look is registered.
+          # The [M] cycle drives the PRIMARY drawable only (one cycle target); contributors carry none.
+          dbg_names = []
+          if pl["index"] == 0:
+            for _name, _cls in dbg_materials:
+              self.asset.Ptex3d(_name, dsl_class=_cls, vertex_source=vs)
+            dbg_names = [n for n, _c in dbg_materials]
+          self.entity(entity_name, components=[SG.component(nodes={
+              asset_name: {"drawable": TerrainChunkDrawableData(
+                  hf_asset=asset_name, material_asset=mat_name, chunk=chunk,
+                  layout_dim_cap=MAX_DIM,   # MUST equal the vs bake_dim above
+                  debug_material_assets=dbg_names)},
+          })])
 
     scene = _TerrainDocScene()
     sd = ecs.SceneData()
@@ -716,6 +964,20 @@ class TerrainRuntime:
     self._pending_ready = False
     self._rebuild_scenegraph()
     self._start_simulation()
+    # the display bake just ran (in _start_simulation) — record its scale so the next
+    # edit at this SAME dim/extent qualifies for the MT3 sliced pre-cook (products exist).
+    self._live_bake_dim = self.dim
+    self._live_bake_extent = self.extent_m
+    self._live_bake_display_key = self._display_key
+    self._live_bake_product = self.product_asset_name()
+    # #88 v2: the fresh drawable materialized against THIS product's height.exr — record it as
+    # the S4 buffer key every in-place rebind publishes to (only a full swap moves it), and
+    # mark the product current at the live document's content hash (the revisit currency key).
+    self._held_field_path = self._display_heights_path()
+    self._current_products[self._live_bake_product] = self._doc_content_hash()
+    display_trace(f"swap APPLIED display={self._display_key!r} "
+                  f"product={self._live_bake_product!r} dim={self.dim} "
+                  f"(fresh scenegraph + sim live)")
 
   def _rebuild_scenegraph(self):
     """Fresh scenegraph + ForwardPBR layers for a (re)built simulation. Retains the old
@@ -738,6 +1000,12 @@ class TerrainRuntime:
     # re-apply the live-selected envmap to the fresh pbr_common (E-key cycle survives rebuild).
     if self.radiance_maps is not None:
       self.scenegraph.pbr_common.RadianceMaps = self.radiance_maps
+    # COMPOSE: re-fold every external (non-terrain) contributor's drawable into the fresh scene.
+    for fn in self._external_decorators:
+      try:
+        fn(self.scenegraph, self.layer)
+      except Exception as ex:
+        print(f"[terrain-runtime] external decorator failed: {ex}", flush=True)
     return self.scenegraph
 
   def set_radiance_maps(self, skybox):
@@ -779,6 +1047,157 @@ class TerrainRuntime:
     apply_pending_rebuild() — the cook cache absorbs the re-derivation cost."""
     self._needs_rebuild = True
 
+  ##############################################################################
+  # MT3 — sliced (anti-hitch) re-bake pre-cook
+  ##############################################################################
+
+  def try_inplace_display_rebind(self, ctx):
+    """#88 v2 FAST PATH: an interior->interior display REVISIT whose target product is already
+    current on disk skips the FULL scene swap — the held terrain drawable's height plane is
+    morphed IN PLACE (C++ s4LiveAccept) from the on-disk product, so the live scenegraph,
+    simulation and camera all stay put. `_display_key` is already the target (set_output ran
+    before this route). Returns True iff the in-place rebind was applied; every False path is
+    LOUD (display_trace) and means the caller MUST take the full-swap path — never a
+    wrong-plane bind (ops self-defend)."""
+    if os.environ.get("ORKID_DISPV2_DISABLE"):
+      display_trace("inplace DECLINE (dispv2 disabled) -> full swap")
+      return False
+    if self.scenegraph is None or self._held_field_path is None:
+      display_trace("inplace DECLINE (no held drawable yet) -> full swap")
+      return False
+    tgt_product = self.product_asset_name()
+    cur_product = self._live_bake_product
+    # must be a real display SWITCH — a same-product re-fire is a param tweak the normal
+    # (S4 same-surface) path already handles in place.
+    if tgt_product == cur_product:
+      display_trace(f"inplace DECLINE (not a switch: product={tgt_product!r}) -> normal path")
+      return False
+    # COHERENCE BOUNDARY (hard): both source AND target must be interior (shared Solid material
+    # + mono relax=False SSBO layout). A default/terminal <-> interior switch crosses the
+    # material graph and needs the full swap (fresh material + possibly relaxed SSBO).
+    if not (self._is_interior_product(cur_product) and self._is_interior_product(tgt_product)):
+      display_trace(f"inplace DECLINE (material boundary {cur_product!r}->{tgt_product!r}) "
+                    f"-> full swap")
+      return False
+    # a re-grid (dim/extent change) needs a fresh SSBO layout — never an in-place plane push.
+    if self._live_bake_dim != self.dim or self._live_bake_extent != self.extent_m:
+      display_trace(f"inplace DECLINE (dim {self._live_bake_dim}->{self.dim} / extent "
+                    f"{self._live_bake_extent}->{self.extent_m}) -> full swap")
+      return False
+    # CURRENCY: the target product must have been baked THIS session against the CURRENT
+    # document (content hash) — a document edit since would have drifted the hash, so the
+    # on-disk product is stale and we must rebake (full swap).
+    if self._current_products.get(tgt_product) != self._doc_content_hash():
+      display_trace(f"inplace DECLINE (target {tgt_product!r} not current: not session-baked "
+                    f"or document edited) -> full swap")
+      return False
+    # and the product file must still be on disk (the files ARE the LRU — an eviction falls
+    # back cleanly to the full swap, which re-cooks / capture-currency-hits).
+    tgt_height = self._product_height_path(tgt_product)
+    if not os.path.exists(tgt_height):
+      display_trace(f"inplace DECLINE (product file gone {tgt_height!r}) -> full swap")
+      return False
+    # push the on-disk target plane into the buffer the HELD drawable consumes (its
+    # materialize-time key = _held_field_path; the buffer KEY never moves on an in-place
+    # rebind). The C++ loads channel-0 FLOAT meters exactly as materialize does, so the
+    # pushed plane is byte-identical to a fresh full-swap of the same product.
+    plane_dim = lev2.terrain.publish_height_plane_from_exr(self._held_field_path, tgt_height)
+    if plane_dim <= 0:
+      display_trace("inplace DECLINE (publish declined: buffer unarmed / unreadable) -> full swap")
+      return False
+    # the held drawable now presents the target surface -> it IS the displayed product now.
+    # _held_field_path stays put (the drawable's buffer key is unchanged until a full swap).
+    self._live_bake_display_key = self._display_key
+    self._live_bake_product = tgt_product
+    # camera: re-evaluate the orbit target Y on the NEW surface at the current XZ — IDENTICAL
+    # to the full-swap path's _refresh_surface_camera(keep_xz=True), so a revisit frames the
+    # same way the earlier visit did (byte-identity holds when the camera was not panned).
+    self._refresh_surface_camera(keep_xz=True)
+    display_trace(f"plane REBIND (in-place) display={self._display_key!r} product={tgt_product!r} "
+                  f"plane_dim={plane_dim} key={self._held_field_path!r} "
+                  f"(held scenegraph + sim + camera kept)")
+    return True
+
+  def begin_sliced_rebuild(self, ctx, *, dim=None):
+    """MT3: enqueue a SOFT_DEADLINE microtask that pre-cooks the display products +
+    capture-currency sidecars for asset 'terra' as budgeted slices across frames (GPU
+    thread stays live). The subsequent prepare_rebuild/apply_pending_rebuild swap then
+    hits capture-currency / warm cook-cache and does NOT hitch.
+
+    Returns True if a sliced pre-cook was enqueued (poll sliced_rebuild_ready()); False
+    means the caller should BURST (the pre-MT3 blocking prepare+apply): MT3 disabled, no
+    document, or a dim/extent change (a cold full cook would exceed hold-last-frame — the
+    'param-tweak-only interactive v1' boundary, JUL13 §E5)."""
+    if os.environ.get("ORKID_MT3_DISABLE"):
+      display_trace("begin_sliced DECLINE (mt3 disabled) -> burst")
+      return False
+    if self.document is None:
+      display_trace("begin_sliced DECLINE (no document) -> burst")
+      return False
+    dim = int(dim) if dim is not None else self.dim
+    self.dim = dim
+    # slice ONLY when the live scene is already baked at THIS dim/extent (products exist;
+    # the swap-bake will currency-skip rather than stale-delete + cold-recompute).
+    if (self._live_bake_dim != dim
+            or self._live_bake_extent != self.extent_m):
+      display_trace(f"begin_sliced DECLINE (dim {self._live_bake_dim}->{dim} or extent "
+                    f"{self._live_bake_extent}->{self.extent_m}) -> burst")
+      return False
+    # elaborate exactly as build_scene_data does (display override honored), then point
+    # the captures at the display product paths materialize expects (<assetcache>/terrain/
+    # terra/<channel>.exr) so the pre-cook's flush writes the products the swap consumes.
+    display_node = self._resolve_display_node()
+    graph, _cap = self.document.elaborate(display_node=display_node)
+    outdir = str(_Path.expandPathString(f"<assetcache>/terrain/{self.product_asset_name()}"))
+    os.makedirs(outdir, exist_ok=True)
+    # S4 live-accept morphs the HELD drawable's height plane IN PLACE — coherent only when
+    # the re-bake refines the SAME surface. A display change stages a different surface, so
+    # arm S4 only for a same-display re-bake; a display switch falls back to hold-last-frame
+    # + swap (the fresh drawable loads the on-disk product and reframes the camera).
+    # same PRODUCT = same surface (product_asset_name folds the terminal==default
+    # equivalence in, so a badge-home click after a default bake still counts as same).
+    # ALSO require the drawable's S4 buffer key (_held_field_path) to name the product being
+    # baked: after a #88 v2 in-place rebind the displayed product moved but the held buffer
+    # key did not, so S4 must NOT arm on a buffer nobody consumes (it would publish into the
+    # void). In the no-in-place case these two conditions are identical.
+    s4_same_surface = (self.product_asset_name() == self._live_bake_product
+                       and self._display_heights_path() == self._held_field_path)
+    for cap in lev2.terrain.capture_modules(graph):
+      chans = [c.strip() for c in (cap.channel or "height").split(",") if c.strip()] or ["height"]
+      cap.path = (os.path.join(outdir, chans[0] + ".exr") if len(chans) == 1
+                  else os.path.join(outdir, "{channel}.exr"))
+      # S4 progressive display (JUL13 §E5/S4): the sliced pre-cook publishes the height
+      # plane at each viewable-node checkpoint; the OLD (held-last-frame) scene's terrain
+      # drawable live-accepts it, so the terrain MORPHS during the re-bake instead of
+      # popping at the end. Session-scoped (set on the freshly elaborated graph only);
+      # ORKID_S4_DISABLE=1 reverts to on_complete (the C++ sites guard too).
+      if "height" in chans and s4_same_surface and not os.environ.get("ORKID_S4_DISABLE"):
+        cap.visual_update_mode = "on_checkpoint"
+    display_trace(f"begin_sliced ENQUEUE display={self._display_key!r} "
+                  f"live_bake={self._live_bake_display_key!r} s4_same={s4_same_surface} "
+                  f"dim={dim}")
+    self._sliced_handle = lev2.terrain.begin_sliced_bake(graph, ctx, dim, self.extent_m)
+    self._frames_during_rebake = 0
+    return True
+
+  def sliced_rebuild_ready(self):
+    """True once the sliced pre-cook has written its products (or no pre-cook is active).
+    The caller counts its GPU frames while this is False (gate-6 responsiveness metric)."""
+    h = self._sliced_handle
+    if h is None:
+      return True
+    self._frames_during_rebake += 1
+    if h.done:
+      display_trace(f"sliced pre-cook DONE ({self._frames_during_rebake} frames)")
+      self._sliced_handle = None
+      return True
+    return False
+
+  def frames_during_last_rebake(self):
+    """GPU-thread frames presented while the last sliced pre-cook was in progress —
+    ~0 for the blocking path, many for the sliced path (JUL13 §E5 gate-6 evidence)."""
+    return self._frames_during_rebake
+
   def prepare_rebuild(self, ctx, *, dim=None):
     """PHASE A (GPU thread): if a rebuild was requested (schedule_rebuild), re-elaborate +
     build_scene_data into the handoff slot — ALL GPU material materialization is here.
@@ -815,9 +1234,9 @@ class TerrainRuntime:
 
   def _display_heights_path(self):
     # the C++ display bake writes <assetcache>/terrain/<asset>/height.exr; the in-code scene
-    # (build_scene_data) names the terrain "terra". One name keeps both in sync.
-    d = str(_Path.expandPathString("<assetcache>/terrain/terra"))
-    return os.path.join(d, "height.exr")
+    # (build_scene_data) derives the asset from product_asset_name(), which keys display
+    # bakes to their own dir (#88 v1). One helper keeps camera sampler and bake in sync.
+    return self._product_height_path(self.product_asset_name())
 
   def _load_display_heights(self):
     """Load the C++ display bake's height image into a CPU array (format-normalized to the
@@ -927,7 +1346,7 @@ class TerrainRuntime:
     """Set the world XZ extent (meters across the field) — the DIM's physical scalar:
     texel_m == extent_m / dim. Session state on the Terrain Parameters sheet; heights
     are TRUE METERS so this rescales ONLY the horizontal domain (meter-parameterized
-    ops — lpf cutoff_m, slope radius_m, erosion cell size — re-derive their texel
+    ops — lpf cutoff (meters), slope radius_m, erosion cell size — re-derive their texel
     footprints from it). Rebake to apply; extent is in the cook context hash."""
     e = float(e)
     if not (e > 0.0):

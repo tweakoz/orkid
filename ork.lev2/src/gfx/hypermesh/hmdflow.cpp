@@ -10,6 +10,7 @@
 //
 ////////////////////////////////////////////////////////////////
 #include "hmdflow_module.h"
+#include <ork/lev2/gfx/dflow_gpuupdate.h> // family-neutral gpuUpdate seam (bake stamps its params)
 #include <atomic>
 #include <chrono>
 #include <algorithm>
@@ -578,6 +579,12 @@ gpumesh_ptr_t bakeMesh(dflow::graphdata_ptr_t graph, Context* ctx, int vtx_budge
     if (outp and outp->_value and not outp->_value->_channels.empty())
       result = outp->_value; // last producing module = terminal
   }
+  // gpuUpdate seam: remember which family baked this graph + the params, so a later
+  // family-neutral gpuUpdate() re-dispatches this same bake (WARM-cache -> byte-identical).
+  auto stamp        = std::make_shared<GpuUpdateStamp>();
+  stamp->_family    = GraphFamily::HYPERMESH;
+  stamp->_vtx_budget = vtx_budget;
+  graph->_impl.setShared<GpuUpdateStamp>(stamp);
   return result;
 }
 
@@ -626,8 +633,13 @@ static std::set<dflow::DgModuleInst*> _evictPokedCookNodes(LiveHypermesh* live) 
     if (hit)
       evicted.insert(inst.get());
   }
-  for (auto e : evicted)
+  for (auto e : evicted) {
     live->_cookLoaded.erase(e);
+    // give the evicted inst a chance to reset any cookLoad-derived sticky state (e.g. MergeMesh's
+    // _built) BEFORE the caller's topology cascade re-runs onTopologyReady() over this set.
+    if (auto mci = dynamic_cast<MeshComputeInst*>(e))
+      mci->onCookEvicted();
+  }
   live->_cookLoadEpoch = now; // pokes consumed; the next recompute only sees writes after this
   return evicted;
 }
@@ -765,6 +777,12 @@ livehypermesh_ptr_t materializeLive(dflow::graphdata_ptr_t graph, Context* ctx, 
     if (iout and iout->_value)
       live->_instances = iout->_value;
   }
+  // gpuUpdate seam (see bakeMesh): a gpuUpdate() of a live-baked graph re-dispatches the one-shot
+  // bakeMesh (same family + vtx_budget) — the durable stamp rides the GraphData either way.
+  auto stamp        = std::make_shared<GpuUpdateStamp>();
+  stamp->_family    = GraphFamily::HYPERMESH;
+  stamp->_vtx_budget = vtx_budget;
+  graph->_impl.setShared<GpuUpdateStamp>(stamp);
   return live;
 }
 

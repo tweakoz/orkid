@@ -26,6 +26,7 @@
 #   T.switch(sel, name_a=.., name_b=..) eager: all branches trace; select one.
 ###############################################################################
 
+import re as _re
 import threading
 
 from orkengine.core import dataflow as _dflow
@@ -34,6 +35,7 @@ from orkengine.lev2 import terrain as _terrain
 from .._trace import current_graph, enter_trace, leave_trace, DslNode
 from ._node import TerrainNode
 from ... import units as _units
+from ... import exprir as _exprir
 from ..document import GraphDocument, GraphDocumentError, ParamTable as _BaseParamTable
 
 
@@ -95,45 +97,66 @@ def assert_no_pending_iter(where):
             f"plug ({where}). " + _LI_HELP)
 
 
-def _wrap_iter(o):
-    return o if isinstance(o, _IterExpr) else _IterExpr("const", float(o), None)
+# --- terrain expression CONTEXTS (E2.5) --------------------------------------
+# Terrain declares two named ExprIR contexts — the shared IR's per-family vocabulary unit
+# (adjudication: expression vocabularies key off named CONTEXTS, a family declares several):
+#   terrain.params — document-parameter (ctor-kwarg) arithmetic: an open doc-param leaf +
+#                    const + add/sub/mul/div/neg. The E0 _ParamExpr replacement.
+#   terrain.iter   — L.i per-iteration arithmetic: the loop-INDEX leaf (spelled `i`, its
+#                    ParamRef.name carrying the loop OBJECT) + const + the same arithmetic.
+#                    Disjoint from params (an iter tree never carries a doc-param leaf — mixing
+#                    L.i with a doc-param folds the param to a const at trace, as it always has).
+# The vocabularies match the old bespoke _IterExpr/_ParamExpr trees bit-for-bit, so
+# param_expr_string / iter_expr_string stay character-identical and the wire encoders below
+# (_enc_param_expr / _enc_iter) stay byte-identical.
+
+_ARITH_FUNCS = [
+    _exprir.infix("add", "+"), _exprir.infix("sub", "-"),
+    _exprir.infix("mul", "*"), _exprir.infix("div", "/"),
+    _exprir.unary("neg", "-"),
+]
+
+PARAMS_CTX = _exprir.register_context(_exprir.ExprContext(
+    "terrain.params", functions=_ARITH_FUNCS,
+    leaves=[_exprir.LeafSpec(_exprir.PARAM_DOC)],
+    doc="terrain document-parameter (ctor-kwarg) arithmetic"))
+
+ITER_CTX = _exprir.register_context(_exprir.ExprContext(
+    "terrain.iter", functions=_ARITH_FUNCS,
+    leaves=[_exprir.LeafSpec("index", spelling="i")],
+    doc="terrain L.i per-iteration loop-index arithmetic"))
 
 
-class _IterExpr:
-    __slots__ = ("_op", "_a", "_b")
+def _eval_iter_node(node, env):
+    """Evaluate an ExprIR iter tree. The index leaf carries the LOOP OBJECT in ParamRef.name;
+    `env` maps id(loop) -> the current iteration (default 0, the trace-time i=0 constant)."""
+    if isinstance(node, _exprir.ParamRef):
+        return float(env.get(id(node.name), 0))
+    if isinstance(node, _exprir.Const):
+        return float(node.value)
+    if node.name == "neg":
+        return -_eval_iter_node(node.args[0], env)
+    return _PARAM_OPS[node.name](_eval_iter_node(node.args[0], env),
+                                 _eval_iter_node(node.args[1], env))
 
-    def __init__(self, op, a, b):
-        self._op = op
-        self._a = a
-        self._b = b
+
+class _IterCapture:
+    """Trace-time capture handle for `L.i` arithmetic. NOT a float (like the old _IterExpr):
+    operator overloads build a shared-ExprIR tree (`self._node`); __float__ mints an i=0 claim
+    token the recorder identity-matches. The STORED / serialized form is the bare IR node —
+    this handle is transient (it exists only during the trace)."""
+    __slots__ = ("_node",)
+
+    def __init__(self, node):
+        self._node = node
 
     @staticmethod
     def index(loop):
-        return _IterExpr("index", loop, None)
-
-    def _eval(self, env):
-        op = self._op
-        if op == "index":
-            return float(env.get(id(self._a), 0))
-        if op == "const":
-            return float(self._a)
-        a = self._a._eval(env)
-        if op == "neg":
-            return -a
-        b = self._b._eval(env)
-        if op == "add":
-            return a + b
-        if op == "sub":
-            return a - b
-        if op == "mul":
-            return a * b
-        if op == "div":
-            return a / b
-        raise RuntimeError(f"bad iter-expr op {op!r}")
+        return _IterCapture(_exprir.ParamRef("index", loop))
 
     def __float__(self):
-        r = self._eval({})            # i=0 constant; the exact object is the claim token
-        _set_pending_iter(self, r)
+        r = _eval_iter_node(self._node, {})   # i=0 constant; the exact object is the claim token
+        _set_pending_iter(self._node, r)
         return r
 
     # ParamPack coerces its values via _canon(), which probes to_vec4/to_vec3 (and never
@@ -145,54 +168,51 @@ class _IterExpr:
     to_vec3 = to_vec4
 
     def __add__(self, o):
-        return _IterExpr("add", self, _wrap_iter(o))
+        return _IterCapture(_exprir.Call("add", self._node, _wrap_iter(o)._node))
 
     def __radd__(self, o):
-        return _IterExpr("add", _wrap_iter(o), self)
+        return _IterCapture(_exprir.Call("add", _wrap_iter(o)._node, self._node))
 
     def __sub__(self, o):
-        return _IterExpr("sub", self, _wrap_iter(o))
+        return _IterCapture(_exprir.Call("sub", self._node, _wrap_iter(o)._node))
 
     def __rsub__(self, o):
-        return _IterExpr("sub", _wrap_iter(o), self)
+        return _IterCapture(_exprir.Call("sub", _wrap_iter(o)._node, self._node))
 
     def __mul__(self, o):
-        return _IterExpr("mul", self, _wrap_iter(o))
+        return _IterCapture(_exprir.Call("mul", self._node, _wrap_iter(o)._node))
 
     def __rmul__(self, o):
-        return _IterExpr("mul", _wrap_iter(o), self)
+        return _IterCapture(_exprir.Call("mul", _wrap_iter(o)._node, self._node))
 
     def __truediv__(self, o):
-        return _IterExpr("div", self, _wrap_iter(o))
+        return _IterCapture(_exprir.Call("div", self._node, _wrap_iter(o)._node))
 
     def __rtruediv__(self, o):
-        return _IterExpr("div", _wrap_iter(o), self)
+        return _IterCapture(_exprir.Call("div", _wrap_iter(o)._node, self._node))
 
     def __neg__(self):
-        return _IterExpr("neg", self, None)
+        return _IterCapture(_exprir.Call("neg", self._node))
+
+
+def _wrap_iter(o):
+    return o if isinstance(o, _IterCapture) else _IterCapture(_exprir.Const(float(o)))
 
 
 def iter_expr_string(expr):
-    """Human-readable source-ish string for an L.i iteration expression (editor
-    read-only display, e.g. '(2.0 + (i * 0.5))'). `i` is the loop index."""
-    op = expr._op
-    if op == "index":
-        return "i"
-    if op == "const":
-        c = float(expr._a)
-        return str(int(c)) if c.is_integer() else repr(c)
-    if op == "neg":
-        return "-" + iter_expr_string(expr._a)
-    sym = {"add": "+", "sub": "-", "mul": "*", "div": "/"}[op]
-    return "(%s %s %s)" % (iter_expr_string(expr._a), sym, iter_expr_string(expr._b))
+    """Human-readable source-ish string for an L.i iteration expression (editor read-only
+    display, e.g. '(2 + (i * 0.5))'). `i` is the loop index. Delegates to the shared canonical
+    pretty-printer — character-identical to the pre-E2.5 bespoke renderer."""
+    return _exprir.pretty_print(expr, ITER_CTX)
 
 
 # --- document parameters (E0): symbolic scalars over a doc-level params table ----
-# A _ParamExpr generalizes _IterExpr to DOCUMENT PARAMETERS (DSL ctor kwargs promoted to
-# first-class document data). It is a FLOAT SUBCLASS so it folds cleanly to its CURRENT
-# value in any numeric context (ptex3d _wrap/_fmt_float, ParamPack _canon, plain arithmetic
-# with a non-param operand) while operator overloads build a small expr TREE. elaborate
-# RE-EVALUATES that tree against the params table on a param edit — no re-trace, so topology
+# _ParamCapture is the L.i capture protocol generalized to DOCUMENT PARAMETERS (DSL ctor kwargs
+# promoted to first-class document data). It is a FLOAT SUBCLASS so it folds cleanly to its
+# CURRENT value in any numeric context (ptex3d _wrap/_fmt_float, ParamPack _canon, plain
+# arithmetic with a non-param operand) while operator overloads build a shared-ExprIR TREE.
+# elaborate RE-EVALUATES that tree against the params table on a param edit — no re-trace, so
+# topology
 # edits survive by construction (the P0 fix). float(expr) mints a PER-USE claim token (one
 # kwarg legitimately feeds many plugs) the recorder binds when the value lands on a plug or
 # reflected prop — L.i's identity protocol, generalized to an id-keyed MAP so a coercion at
@@ -249,7 +269,7 @@ class _ParamTable(_BaseParamTable):
     neutral machinery now lives in the base ParamTable (JUL13_DFLOW E2 hoist, re-exported
     here for compat); the terrain subclass only pins the error type so an unknown-param
     set() still raises TerrainDocParamError exactly as before. Values stay PLAIN numeric
-    (the tag is metadata, not carried on the value) so the _ParamExpr leaves read a plain
+    (the tag is metadata, not carried on the value) so the ExprIR doc-param leaves read a plain
     number and the elaborated graph is tag-free — unchanged values bake byte-identically.
     Non-empty ONLY on the editor trace path; plain instantiation (viewer / scenes) leaves it
     empty and the document behaves as before E0."""
@@ -257,132 +277,138 @@ class _ParamTable(_BaseParamTable):
     _error_cls = TerrainDocParamError
 
 
-class _ParamExpr(float):
-    __slots__ = ("_op", "_a", "_b", "_table")
+def _eval_param_node(node, table):
+    """Evaluate an ExprIR document-parameter tree against the CURRENT params table. A doc-param
+    leaf reads the live table value (this is what makes a param edit re-elaborate re-trace-free);
+    a const reads its literal."""
+    if isinstance(node, _exprir.ParamRef):
+        return float(table.get(node.name))
+    if isinstance(node, _exprir.Const):
+        return float(node.value)
+    if node.name == "neg":
+        return -_eval_param_node(node.args[0], table)
+    return _PARAM_OPS[node.name](_eval_param_node(node.args[0], table),
+                                 _eval_param_node(node.args[1], table))
 
-    def __new__(cls, value, op, a, b, table):
+
+def _param_names_of(node, out=None):
+    """Every document parameter referenced by a doc-param ExprIR tree (dependency extraction)."""
+    if out is None:
+        out = set()
+    if isinstance(node, _exprir.ParamRef):
+        out.add(node.name)
+    elif isinstance(node, _exprir.Call):
+        for a in node.args:
+            _param_names_of(a, out)
+    return out
+
+
+def _mark_structural(node, table):
+    """Flag every doc param referenced by `node` structural (forced concretization: int()/
+    __index__/__bool__ on a captured expr — a loop count, range(), int/bool prop)."""
+    if table is not None:
+        for name in _param_names_of(node):
+            table.mark_structural(name)
+
+
+class _ParamCapture(float):
+    """Trace-time capture handle for E0 document-parameter arithmetic (the old _ParamExpr).
+    A FLOAT SUBCLASS so it folds cleanly to its CURRENT value in any numeric context (ptex3d
+    _wrap/_fmt_float, ParamPack _canon, plain arithmetic with a non-param operand) while the
+    operator overloads build a shared-ExprIR tree (`self._node`). The STORED / serialized form
+    is the bare IR node — this handle is transient. elaborate RE-EVALUATES the node against the
+    params table on a param edit — no re-trace (the P0 fix). float() mints a per-use claim token
+    the recorder binds when the value lands on a plug/prop; int()/__index__/__bool__ are FORCED
+    concretization (flag the referenced param(s) structural)."""
+
+    __slots__ = ("_node", "_table")
+
+    def __new__(cls, value, node, table):
         self = float.__new__(cls, value)
-        self._op = op            # "param" | "const" | add/sub/mul/div/neg
-        self._a = a              # param name (str) | const value | sub-expr
-        self._b = b              # sub-expr | None
+        self._node = node
         self._table = table
         return self
 
     @staticmethod
     def param(table, name):
-        return _ParamExpr(float(table.get(name)), "param", name, None, table)
+        return _ParamCapture(float(table.get(name)), _exprir.ParamRef(_exprir.PARAM_DOC, name), table)
 
     @staticmethod
     def const(value, table):
-        return _ParamExpr(float(value), "const", float(value), None, table)
+        return _ParamCapture(float(value), _exprir.Const(float(value)), table)
 
-    @staticmethod
-    def make(op, a, b, table):
-        val = _PARAM_OPS[op](a._eval(), None if b is None else b._eval())
-        return _ParamExpr(val, op, a, b, table)
-
-    def _eval(self):
-        op = self._op
-        if op == "param":
-            return float(self._table.get(self._a))
-        if op == "const":
-            return float(self._a)
-        a = self._a._eval()
-        if op == "neg":
-            return -a
-        return _PARAM_OPS[op](a, self._b._eval())
-
-    def _param_names(self, out=None):
-        if out is None:
-            out = set()
-        if self._op == "param":
-            out.add(self._a)
-        elif self._op != "const":
-            self._a._param_names(out)
-            if self._b is not None:
-                self._b._param_names(out)
-        return out
-
-    def _mark_structural(self):
-        if self._table is not None:
-            for name in self._param_names():
-                self._table.mark_structural(name)
+    def _make(self, op, a_node, b_node):
+        node = _exprir.Call(op, a_node) if b_node is None else _exprir.Call(op, a_node, b_node)
+        return _ParamCapture(_eval_param_node(node, self._table), node, self._table)
 
     # ---- claim + forced-concretization protocol -----------------------------
     def __float__(self):
-        r = self._eval()               # a PLAIN float at the CURRENT value (the claim token)
-        _register_param_float(r, self)
+        r = _eval_param_node(self._node, self._table)   # PLAIN float at CURRENT value (claim token)
+        _register_param_float(r, self._node)
         return r
 
     def __int__(self):
-        self._mark_structural()
-        return int(self._eval())
+        _mark_structural(self._node, self._table)
+        return int(_eval_param_node(self._node, self._table))
 
     def __index__(self):
-        self._mark_structural()
-        return int(self._eval())
+        _mark_structural(self._node, self._table)
+        return int(_eval_param_node(self._node, self._table))
 
     def __bool__(self):
-        self._mark_structural()
-        return bool(self._eval())
+        _mark_structural(self._node, self._table)
+        return bool(_eval_param_node(self._node, self._table))
 
     # ---- symbolic arithmetic (tree on a numeric operand; defer to the other type else) ---
     def _wrap(self, o):
-        if isinstance(o, _ParamExpr):
+        if isinstance(o, _ParamCapture):
             return o
         if isinstance(o, (int, float)) and not isinstance(o, bool):
-            return _ParamExpr.const(o, self._table)
+            return _ParamCapture.const(o, self._table)
         return None                    # non-numeric (e.g. a ptex3d SurfNode) -> NotImplemented
 
     def __add__(self, o):
         w = self._wrap(o)
-        return _ParamExpr.make("add", self, w, self._table) if w is not None else NotImplemented
+        return self._make("add", self._node, w._node) if w is not None else NotImplemented
 
     def __radd__(self, o):
         w = self._wrap(o)
-        return _ParamExpr.make("add", w, self, self._table) if w is not None else NotImplemented
+        return self._make("add", w._node, self._node) if w is not None else NotImplemented
 
     def __sub__(self, o):
         w = self._wrap(o)
-        return _ParamExpr.make("sub", self, w, self._table) if w is not None else NotImplemented
+        return self._make("sub", self._node, w._node) if w is not None else NotImplemented
 
     def __rsub__(self, o):
         w = self._wrap(o)
-        return _ParamExpr.make("sub", w, self, self._table) if w is not None else NotImplemented
+        return self._make("sub", w._node, self._node) if w is not None else NotImplemented
 
     def __mul__(self, o):
         w = self._wrap(o)
-        return _ParamExpr.make("mul", self, w, self._table) if w is not None else NotImplemented
+        return self._make("mul", self._node, w._node) if w is not None else NotImplemented
 
     def __rmul__(self, o):
         w = self._wrap(o)
-        return _ParamExpr.make("mul", w, self, self._table) if w is not None else NotImplemented
+        return self._make("mul", w._node, self._node) if w is not None else NotImplemented
 
     def __truediv__(self, o):
         w = self._wrap(o)
-        return _ParamExpr.make("div", self, w, self._table) if w is not None else NotImplemented
+        return self._make("div", self._node, w._node) if w is not None else NotImplemented
 
     def __rtruediv__(self, o):
         w = self._wrap(o)
-        return _ParamExpr.make("div", w, self, self._table) if w is not None else NotImplemented
+        return self._make("div", w._node, self._node) if w is not None else NotImplemented
 
     def __neg__(self):
-        return _ParamExpr.make("neg", self, None, self._table)
+        return self._make("neg", self._node, None)
 
 
 def param_expr_string(expr):
     """Human-readable source for a document-parameter expression (editor display + the .py
-    writer). A param leaf renders as the ctor-kwarg name; arithmetic renders as source."""
-    op = expr._op
-    if op == "param":
-        return str(expr._a)
-    if op == "const":
-        c = float(expr._a)
-        return str(int(c)) if c.is_integer() else repr(c)
-    if op == "neg":
-        return "-" + param_expr_string(expr._a)
-    sym = {"add": "+", "sub": "-", "mul": "*", "div": "/"}[op]
-    return "(%s %s %s)" % (param_expr_string(expr._a), sym, param_expr_string(expr._b))
+    writer). A param leaf renders as the ctor-kwarg name; arithmetic renders as source.
+    Delegates to the shared canonical pretty-printer — character-identical to the pre-E2.5
+    bespoke renderer."""
+    return _exprir.pretty_print(expr, PARAMS_CTX)
 
 
 def _collect_captured_param_names(doc):
@@ -395,7 +421,7 @@ def _collect_captured_param_names(doc):
         for ch in children:
             if isinstance(ch, DocNode):
                 for expr in ch.param_exprs.values():
-                    expr._param_names(names)
+                    _param_names_of(expr, names)
             if isinstance(ch, (DocLoop, DocGroupCall)):
                 _walk(ch.children)
     _walk(doc._root)
@@ -528,8 +554,8 @@ class DocNode:
         # deserialize (elaborate re-creates fresh modules and replays params).
         self._real = module_clazz.createShared() if (_make_real and module_clazz is not None) else None
         self.param_actions = []          # ordered [(kind, name, value)]
-        self.iter_params = {}            # (kind, name) -> _IterExpr  (L.i, wins at unroll)
-        self.param_exprs = {}            # (kind, name) -> _ParamExpr (E0 doc-param; re-eval'd
+        self.iter_params = {}            # (kind, name) -> ExprIR node (L.i; terrain.iter ctx)
+        self.param_exprs = {}            # (kind, name) -> ExprIR node (E0 doc-param; re-eval'd
                                          # at elaborate so a param edit needs no re-trace)
         self.connections = []            # [(in_plug_name, _DocOutPlug)]
         self.bypassed = False            # editor flag (persisted): elaborate aliases
@@ -540,13 +566,13 @@ class DocNode:
         self.proxy = _DocModuleProxy(self)
 
     def _record_param(self, kind, name, value):
-        # E0: a symbolic document parameter landed here — either the value IS a _ParamExpr (a
+        # E0: a symbolic document parameter landed here — either the value IS a _ParamCapture (a
         # bare param / arithmetic tree flowed straight to the plug/prop) or a float() coercion
-        # of one did (bound by identity). Record the EXPR (elaborate re-evaluates it) + the
+        # of one did (bound by identity). Record the IR NODE (elaborate re-evaluates it) + the
         # current concrete value (scratch-module forward + pywriter literal fallback).
-        if isinstance(value, _ParamExpr):
-            ev = float(value._eval())
-            self.param_exprs[(kind, name)] = value
+        if isinstance(value, _ParamCapture):
+            ev = float(_eval_param_node(value._node, value._table))
+            self.param_exprs[(kind, name)] = value._node
             self.param_actions.append((kind, name, ev))
             self._forward(kind, name, ev)
             return
@@ -604,8 +630,17 @@ class DocNode:
         """Read-only view of this node's iteration (L.i) params:
         [(kind, name, expr_string, i0_value)]. NOT editable in v1 (edit the DSL
         source to change an iteration expression)."""
-        return [(kind, name, iter_expr_string(expr), float(expr._eval({})))
+        return [(kind, name, iter_expr_string(expr), float(_eval_iter_node(expr, {})))
                 for (kind, name), expr in self.iter_params.items()]
+
+    def param_expr_view(self):
+        """Read-only view of this node's DOCUMENT-PARAMETER-driven (E0 ExprIR) params:
+        [(kind, name, expr_string, current_value)]. These are excluded from editable_params()
+        (they are edited via the referenced Terrain Parameter, not the node plug), but they are
+        still REAL, bound params — surfacing them read-only keeps the propsheet honest instead of
+        silently dropping a plug that carries an expression (topology-honesty; ops self-defend)."""
+        return [(kind, name, param_expr_string(expr), float(_eval_param_node(expr, self.doc.params)))
+                for (kind, name), expr in self.param_exprs.items()]
 
     def set_param(self, kind, name, value):
         """Editor mutation (L2): update a recorded param action's value in place.
@@ -860,6 +895,58 @@ class TerrainDoc(GraphDocument):
     def set_param(self, node, kind, name, value):
         return node.set_param(kind, name, value)
 
+    def node_class_name(self, node):
+        # the DSL/pybind module class ("CombineModule", ...) — feeds the propsheet's
+        # reflection-derived enum-choice lookup (E1). Only DocNodes carry a class.
+        return getattr(node, "clazz_name", None)
+
+    # ---- editor EXPRESSION-SOURCE fields (E2.5 S7 — terrain T.expr) -----------
+    # ExprModule carries a reflected `expr_source`: a PYTHON ptex3d expression STRING that
+    # elaborate() recompiles into shadertext on every rebake (doc.py:1138). It is edited AS
+    # SOURCE through the propsheet detail editor (a CodeView), NOT as a one-line scalar row —
+    # so the node property model surfaces it via editor.custom == "expr" and EXCLUDES it from
+    # the plain module rows. Family-neutral base returns [] for every other node.
+
+    def expr_fields(self, node):
+        """[(reflected_property, context_name)] for a DocNode's editable expression-source
+        fields, or []. Only an ExprModule with a recorded expr_source qualifies; the context
+        name labels the terrain source form (a ptex3d expression STRING, not an ExprIR tree)."""
+        if not (isinstance(node, DocNode) and node.clazz_name == "ExprModule"):
+            return []
+        if self._expr_source_of(node) is None:
+            return []
+        return [("expr_source", "terrain.ptex3d")]
+
+    def expr_field_source(self, node, field):
+        """The current author SOURCE of a terrain expression field — the recorded ptex3d
+        expression string (last-write-wins). '' when unset."""
+        if field != "expr_source":
+            raise TerrainDocParamError(f"no terrain expr field {field!r} (have expr_source)")
+        return self._expr_source_of(node) or ""
+
+    def set_expr_field(self, node, field, source):
+        """Editor mutation (L2): VALIDATE the ptex3d source by compiling it the SAME way
+        elaborate does (doc.py rebake path), THEN write it through the doc edit path so the
+        next rebake recompiles the shadertext + re-keys the cook cache. Raises loudly
+        (TerrainDocParamError) on a bad-syntax / non-scalar / over-referenced expression —
+        the document is UNCHANGED (the write never happens)."""
+        if field != "expr_source":
+            raise TerrainDocParamError(f"no terrain expr field {field!r} (have expr_source)")
+        from . import ops as _ops
+        _ops._compile_expr_source(source, len(node.connections))   # loud on invalid, pre-write
+        node.set_param("module", "expr_source", source)            # doc edit path -> recompile
+        return source
+
+    @staticmethod
+    def _expr_source_of(node):
+        """The last recorded expr_source value on `node`, or None (never set — a pre-B1 binary
+        or a non-source ExprModule)."""
+        val = None
+        for (k, n, v) in node.param_actions:
+            if k == "module" and n == "expr_source":
+                val = v
+        return val
+
     def set_bypassed(self, obj, flag):
         return obj.set_bypassed(flag)
 
@@ -887,6 +974,25 @@ class TerrainDoc(GraphDocument):
 
     def delete_node(self, node):
         return delete_node(self, node)
+
+    def connect(self, dst_key, in_plug, src_key, out_plug):
+        """Editor mutation (L2, STRUCTURAL): wire a producer out-plug to a consumer
+        in-plug, OVERWRITING whatever fed the consumer. OWNS the native-edge-store write
+        (DocNode.connections / loop-carry initial_ref / group arg / switch branch — the
+        same ref slots _iter_ref_slots covers), so the C1 canvas routes every node/
+        construct wire through here rather than poking the store itself. Endpoints are
+        tree_paths() keys. Loud, catchable refusals (ops self-defend) on an unknown key,
+        an unknown plug, or a construct with no resolvable output. Splice-on-wire works
+        because a re-wire onto an already-fed input replaces the source."""
+        return connect_edge(self, dst_key, in_plug, src_key, out_plug)
+
+    def disconnect(self, *args, **kwargs):
+        """DECIDED (JUL13_DFLOW E2): a terrain input is ALWAYS fed — elaboration requires
+        every consumer plug to resolve to a source — so an edge cannot be orphaned, only
+        re-sourced. A bare disconnect is therefore REFUSED LOUDLY (never a silent no-op):
+        re-wire the input to a different source (connect overwrites) or delete the node."""
+        raise TerrainDocParamError(
+            "terrain inputs are always fed; connect a different source or delete the node")
 
     def to_json(self):
         return to_json(self)
@@ -951,8 +1057,13 @@ class TerrainDoc(GraphDocument):
         sub = {}             # id(_Placeholder) -> real out-plug
         cap_map = {}         # channel -> real CaptureModule
         index_env = {}       # id(DocLoop) -> current iteration
-        self._expand(self._root, g, node_real, node_name, sub, cap_map, "", index_env)
+        # the DISPLAY target (session display_node OR the persisted select_output) is
+        # threaded into the expansion so a DocLoop target can promote its height-typed carry
+        # to the module's "Out" boundary (the C++ bake re-points height/normal captures to
+        # that node's 'Out' — a multi-carry loop otherwise has no "Out").
         target = display_node if display_node is not None else self._select_output
+        self._expand(self._root, g, node_real, node_name, sub, cap_map, "", index_env,
+                     display_target=target)
         if target is not None:
             name = node_name.get(id(target))
             if name is None:
@@ -970,7 +1081,8 @@ class TerrainDoc(GraphDocument):
                     "mode needs at least one of them.")
         return g, cap_map
 
-    def _expand(self, children, g, node_real, node_name, sub, cap_map, prefix, index_env, loop_emit=None):
+    def _expand(self, children, g, node_real, node_name, sub, cap_map, prefix, index_env,
+                loop_emit=None, display_target=None):
         for child in children:
             if isinstance(child, DocNode):
                 self._expand_node(child, g, node_real, node_name, sub, cap_map, prefix, index_env, loop_emit)
@@ -982,7 +1094,8 @@ class TerrainDoc(GraphDocument):
                     raise RuntimeError(
                         f"nested T.loop {child.path!r} inside a T.loop body is not supported by "
                         f"the LoopModule emitter yet — flatten it or file a follow-up.")
-                self._expand_loop(child, g, node_real, node_name, sub, cap_map, prefix, index_env)
+                self._expand_loop(child, g, node_real, node_name, sub, cap_map, prefix, index_env,
+                                  display_target=display_target)
             elif isinstance(child, DocGroupCall):
                 if loop_emit is not None:
                     raise RuntimeError(
@@ -1003,7 +1116,7 @@ class TerrainDoc(GraphDocument):
                         sub[id(child.output_ref.node)] = _resolve(arg_ref, node_real, sub)
                 else:
                     self._expand(child.children, g, node_real, node_name, sub, cap_map,
-                                 prefix + child.path + "/", index_env)
+                                 prefix + child.path + "/", index_env, display_target=display_target)
             elif isinstance(child, DocSwitch):
                 if loop_emit is not None:
                     raise RuntimeError(
@@ -1043,12 +1156,12 @@ class TerrainDoc(GraphDocument):
         # concrete value bit-for-bit (byte-identical GraphData); coerced to the recorded type.
         for (kind, name), expr in child.param_exprs.items():
             _set_param(real, kind, name, _coerce_like(_last_action_value(child, kind, name),
-                                                      expr._eval()))
+                                                      _eval_param_node(expr, self.params)))
         if loop_emit is None:
             # top-level (or a non-loop nested scope): bake the L.i value for the current
             # iteration index directly into the plug (there is no per-iteration feed here).
             for (kind, name), expr in child.iter_params.items():
-                _set_param(real, kind, name, float(expr._eval(index_env)))
+                _set_param(real, kind, name, float(_eval_iter_node(expr, index_env)))
         else:
             # INSIDE a T.loop body: an L.i param becomes a per-iteration FEED on the LoopModule
             # (a value TABLE evaluated from the SAME _IterExpr the unroll would eval — bit-exact).
@@ -1073,7 +1186,11 @@ class TerrainDoc(GraphDocument):
             src = real.expr_source
             if src:
                 from . import ops as _ops
-                real.shadertext = _ops._compile_expr_source(src, len(child.connections))
+                text, surfnode = _ops._compile_expr_source(src, len(child.connections))
+                real.shadertext = text
+                # keep the canonical ExprIR tree (cook-hash identity) in step with an
+                # edited source, so a propsheet source edit re-keys the cook cache.
+                _ops._set_expr_tree(real, surfnode)
         if child.clazz_name == "CaptureModule":
             if loop_emit is not None:
                 raise RuntimeError(
@@ -1083,7 +1200,45 @@ class TerrainDoc(GraphDocument):
             for c in chans:
                 cap_map[c] = real
 
-    def _expand_loop(self, loop, g, node_real, node_name, sub, cap_map, prefix, index_env):
+    def _all_doc_nodes(self):
+        """Flat list of every DocNode in the document (recursing loop / group bodies).
+        Used by the display-carry heuristic's forward reachability walk."""
+        out = []
+
+        def rec(children):
+            for ch in children:
+                if isinstance(ch, DocNode):
+                    out.append(ch)
+                elif isinstance(ch, (DocLoop, DocGroupCall)):
+                    rec(ch.children)
+        rec(self._root)
+        return out
+
+    def _carry_reaches_display(self, carry):
+        """True iff the loop carry's post-loop output (out_placeholder) forward-reaches a
+        height/normal CAPTURE through the document's connection graph — the "feeds the
+        downstream chain toward the height capture" signal for the multi-carry display pick."""
+        display_nodes = {id(c.node) for c in self._captures
+                         if set(c.channels) & set(self._DISPLAY_CHANNELS)}
+        nodes = self._all_doc_nodes()
+        frontier = {id(carry.out_placeholder)}
+        consumed = set()
+        progressed = True
+        while progressed:
+            progressed = False
+            for n in nodes:
+                if id(n) in consumed:
+                    continue
+                if any(id(ref.node) in frontier for (_in, ref) in n.connections):
+                    consumed.add(id(n))
+                    frontier.add(id(n))
+                    progressed = True
+                    if id(n) in display_nodes:
+                        return True
+        return False
+
+    def _expand_loop(self, loop, g, node_real, node_name, sub, cap_map, prefix, index_env,
+                     display_target=None):
         # A T.loop elaborates to a REAL LoopModule composite (the Houdini subnet model) —
         # NOT a flat unroll. The body is expanded ONCE into the module's nested subgraph;
         # carry reads/writes become boundary promotions + carries, loop-invariant externals
@@ -1097,16 +1252,49 @@ class TerrainDoc(GraphDocument):
         # count no-op iterations leave every carry at its INITIAL. Alias each carry's
         # post-loop output to its initial (byte-identical to the old unroll's empty-body
         # path) and emit NO module — an identity loop must not perturb the bake.
-        if all(c.body_out_ref is None for c in loop.carries.values()):
+        #
+        # FULLY-BYPASSED BODY (f2): a carry whose sole body producer(s) are ALL bypassed
+        # hops (via _resolve_body_bypass) back to the carry's OWN read placeholder — the
+        # iteration leaves it unchanged, so the loop is the identity it already supports for
+        # the empty body. When EVERY carry passes through this way (e.g. the editor bypassed
+        # the only body op), route it through the same INITIAL-alias path so bypassing the
+        # only body op == bypassing the whole loop (never RAISE). A carry that resolves to an
+        # EXTERNAL node (not its own placeholder, not a body node) is still genuinely
+        # malformed and falls through to the loud raise in the carry-resolution loop below.
+        def _passthrough(c):
+            if c.body_out_ref is None:
+                return True                          # never written == identity (empty body)
+            return _resolve_body_bypass(c.body_out_ref).node is c.placeholder
+        if all(_passthrough(c) for c in loop.carries.values()):
             for name, c in loop.carries.items():
                 sub[id(c.out_placeholder)] = _resolve(c.initial_ref, node_real, sub)
+            # DISPLAY of an IDENTITY loop (empty / fully-bypassed body): its "output" IS the
+            # carry initial — point the display marker at the (first) carry's initial producer
+            # so displaying such a loop shows the pass-through value (best-effort: only when the
+            # initial resolves to a real elaborated top-level module).
+            if loop is display_target:
+                init_node = next(iter(loop.carries.values())).initial_ref.node
+                nm = node_name.get(id(init_node))
+                if nm is not None:
+                    node_name[id(loop)] = nm
             return
+        # DISPLAY of this loop (Fix 1): its "output" is the height-typed carry. A single-carry
+        # loop already exposes its carry as "Out"; a MULTI-carry loop (erox carries h + aux)
+        # picks deterministically — the carry whose output feeds the downstream chain toward a
+        # height/normal capture if unambiguous, else the first carry (all terrain carries are
+        # hf-image-typed) — and promotes THAT carry's boundary output as "Out" so the C++
+        # re-point (outputNamed("Out")) reaches it.
+        display_carry = None
+        if loop is display_target and len(loop.carries) > 1:
+            reaching = [name for name, c in loop.carries.items()
+                        if self._carry_reaches_display(c)]
+            display_carry = reaching[0] if len(reaching) == 1 else next(iter(loop.carries))
         loop_module = _terrain.LoopModule.createShared()
         loop_module.count = loop.count
         if loop.bypassed:
             loop_module.bypassed = True
         body_graph = loop_module.subgraph
-        emit       = _LoopEmit(loop, loop_module, node_real, sub)
+        emit       = _LoopEmit(loop, loop_module, node_real, sub, display_carry=display_carry)
         # expand the body ONCE into the nested subgraph (loop_emit intercepts carry / external
         # reads into promotions and L.i params into feed tables).
         b_node_real, b_node_name, b_sub = {}, {}, {}
@@ -1226,7 +1414,7 @@ class _LoopEmit:
     a NON-carry promoted input wired to that external source in the host. An L.i param -> a
     per-iteration feed TABLE evaluated from the SAME _IterExpr the unroll would eval (bit-exact)."""
 
-    def __init__(self, loop, loop_module, outer_node_real, outer_sub):
+    def __init__(self, loop, loop_module, outer_node_real, outer_sub, display_carry=None):
         self.loop            = loop
         self.module          = loop_module
         self.outer_node_real = outer_node_real
@@ -1236,13 +1424,20 @@ class _LoopEmit:
         # marker can point at (display of the carry-writing body node == last iteration).
         # Multi-carry loops disambiguate with "{name}#in"/"{name}#out". (# keeps boundary
         # names clear of real terrain plug names; names never affect the baked pixels.)
+        # DISPLAY (Fix 1): when a MULTI-carry loop is the display target, `display_carry`
+        # names the chosen height-typed carry — its OUTPUT boundary is renamed "Out" so the
+        # C++ bake's outputNamed("Out") reaches it (its INPUT boundary stays "{name}#in";
+        # the rename is UNIQUE — other carries keep "{name}#out"). display_carry is None for
+        # every non-display elaboration, so the normal bake is byte-identical.
         single = (len(loop.carries) == 1)
         self.carry_in_boundary  = {name: ("In"  if single else f"{name}#in")  for name in loop.carries}
         self.carry_out_boundary = {name: ("Out" if single else f"{name}#out") for name in loop.carries}
+        if display_carry is not None:
+            self.carry_out_boundary[display_carry] = "Out"
         self._placeholder_carry = {id(c.placeholder): name for name, c in loop.carries.items()}
         self.promoted_inputs  = []   # [(outer, inner_module, inner_plug)]
         self.promoted_outputs = []   # [(outer, inner_module, inner_plug)]
-        self.iter_feeds       = []   # [(inner_module, inner_plug, _IterExpr)]
+        self.iter_feeds       = []   # [(inner_module, inner_plug, ExprIR node)]
         self._ext_boundary    = {}   # (id(src_node), plug_name) -> boundary name (dedupe)
         self.ext_sources      = []   # [(boundary, external_real_out_plug)]
 
@@ -1286,7 +1481,7 @@ class _LoopEmit:
         # the value TABLE is evaluated EXACTLY as the unroll's _set_param did (doc.py _eval) —
         # regenerated on every elaborate, so a count edit covers the table length automatically.
         for (im, ip, expr) in self.iter_feeds:
-            values = [float(expr._eval({**index_env, id(self.loop): k})) for k in range(self.loop.count)]
+            values = [float(_eval_iter_node(expr, {**index_env, id(self.loop): k})) for k in range(self.loop.count)]
             m.addIterFeedTable(im, ip, values)
         m.reshape()   # build the boundary HfImage plugs from the promotion tables
 
@@ -1312,7 +1507,7 @@ def reeval_captured_params(doc):
             if isinstance(ch, DocNode):
                 for (kind, name), expr in ch.param_exprs.items():
                     tmpl = _last_action_value(ch, kind, name)
-                    ev = expr._eval()
+                    ev = _eval_param_node(expr, doc.params)
                     ev = _coerce_like(tmpl, ev) if tmpl is not None else float(ev)
                     for i, (k, n, _v) in enumerate(ch.param_actions):
                         if k == kind and n == name:
@@ -1333,6 +1528,129 @@ def _effective_param(docnode, name):
 
 def _channel_list(spec):
     return [c for c in str(spec).split(",") if c]
+
+
+# --- editor topology introspection (E3 honesty) ------------------------------
+# The node editor renders the DOCUMENT (L1), so it needs the DECLARED plug surface of a
+# node's module class, not merely what a live trace happened to wire. Two helpers below
+# feed the canvas so it shows the TRUE topology regardless of how a document was built
+# (fresh trace, editor mutation, or a doc-JSON reload).
+
+_declared_outputs_cache = {}
+
+
+def declared_output_plugs(node):
+    """ALL declared output plug names of a DocNode's module class — regardless of whether
+    each currently has a consumer — so the editor lists (and can wire from) every real
+    output, not only the connected ones (a node's unconnected outputs were invisible +
+    unwireable before). Reflection via dflow.plugSpec (survives a doc-JSON reload, where the
+    trace-recorded _out_names are gone); cached per class. Falls back to the trace-recorded
+    output names, then the single 'Out' (a non-capture always produces Out; a CaptureModule
+    declares none — it is a sink)."""
+    cn = node.clazz_name
+    cached = _declared_outputs_cache.get(cn)
+    if cached is not None:
+        return list(cached)
+    outs = None
+    try:
+        spec = _dflow.plugSpec("terrain::%sData" % cn)
+        if spec is not None:
+            outs = [p["name"] for p in spec["outputs"]]
+    except Exception:
+        outs = None
+    if outs is not None:
+        _declared_outputs_cache[cn] = list(outs)
+        return list(outs)
+    # reflection unavailable (unknown class / pre-init) — best-effort from the trace.
+    if node._out_names:
+        return sorted(node._out_names)
+    return [] if cn == "CaptureModule" else ["Out"]
+
+
+def loop_external_refs(doc, loop):
+    """Ordered [(port_name, ref)] — the loop-invariant EXTERNAL producers a loop body reads:
+    a node created OUTSIDE the loop that is neither a carry nor a body node. elaborate promotes
+    each to a NON-carry loop input (_LoopEmit ext_sources); the editor must too, or the loop
+    renders as a graph component DISCONNECTED from its external feeders (owner-visible: opening a
+    loop asset shows two islands). port_name is derived from the producer's STABLE tree-path so
+    the parent loop input port and any consumer of this helper agree across a doc-JSON reload.
+    Deduped by (producer, plug); the parent scope order is preserved."""
+    keys = {id(o): k for (_pk, k, o) in tree_paths(doc)}
+    carry_ph = {id(c.placeholder) for c in loop.carries.values()}
+    body_ids = set()
+
+    def _collect(children):
+        for ch in children:
+            if isinstance(ch, DocNode):
+                body_ids.add(id(ch))
+            elif isinstance(ch, (DocLoop, DocGroupCall)):
+                _collect(ch.children)
+    _collect(loop.children)
+
+    out, seen = [], set()
+
+    def _refs_of(ch):
+        if isinstance(ch, DocNode):
+            return [r for (_i, r) in ch.connections]
+        if isinstance(ch, DocLoop):
+            r = []
+            for c in ch.carries.values():
+                r += [c.initial_ref, c.body_out_ref]
+            return r
+        if isinstance(ch, DocGroupCall):
+            r = [v for v in ch.args.values() if isinstance(v, _DocOutPlug)]
+            if ch.output_ref is not None:
+                r.append(ch.output_ref)
+            return r
+        if isinstance(ch, DocSwitch):
+            return list(ch.branches.values())
+        return []
+
+    def _scan(children):
+        for ch in children:
+            for ref in _refs_of(ch):
+                if ref is None:
+                    continue
+                rk = id(ref.node)
+                if rk in body_ids or rk in carry_ph:
+                    continue
+                key = (rk, ref.plug_name)
+                if key in seen:
+                    continue
+                seen.add(key)
+                base = keys.get(rk) or getattr(ref.node, "local_name", "ext")
+                out.append(("ext:%s#%s" % (base, ref.plug_name), ref))
+            if isinstance(ch, (DocLoop, DocGroupCall)):
+                _scan(ch.children)
+    _scan(loop.children)
+    return out
+
+
+_SCATTER_CHAN_RE = _re.compile(r"^_scatter_(.+)_w(\d+)$")
+
+
+def scatter_weight_captures(doc):
+    """Group the document's AUTO-CAPTURED scatter-weight channels by scatter SINK name.
+
+    base.scatter() records each placement type's weight field as a hidden
+    `_scatter_<name>_w<idx>` CaptureModule (the CPU placer reads them post-bake). A scatter
+    is a real BAKE SINK (a mask-driven placement set), but nothing groups those captures, so
+    the sink itself was invisible in the canvas. Returns {name -> ordered [(idx, capture_node,
+    weight_producer_ref)]} so the editor can synthesize ONE visible sink node per scatter with
+    an input edge from each weight's producer."""
+    sinks = {}
+    for (_pk, _k, obj) in tree_paths(doc):
+        if not (isinstance(obj, DocNode) and obj.clazz_name == "CaptureModule"):
+            continue
+        m = _SCATTER_CHAN_RE.match(str(_effective_param(obj, "channel") or ""))
+        if m is None:
+            continue
+        name, idx = m.group(1), int(m.group(2))
+        producer = obj.connections[0][1] if obj.connections else None
+        sinks.setdefault(name, []).append((idx, obj, producer))
+    for name in sinks:
+        sinks[name].sort(key=lambda t: t[0])
+    return sinks
 
 
 # --- TerrainNode wrapping a placeholder (loop carry read) --------------------
@@ -1368,7 +1686,7 @@ class LoopHandle:
     def __getattr__(self, name):
         loop = object.__getattribute__(self, "_loop")
         if name == "i":
-            return _IterExpr.index(loop)
+            return _IterCapture.index(loop)
         carries = loop.carries
         if name in carries:
             if object.__getattribute__(self, "_exited"):
@@ -1621,50 +1939,52 @@ def _dec_param_table_value(enc):
     return _dec_value(enc), None
 
 
+# The terrain doc-JSON wire forms below walk / build the shared ExprIR nodes but keep the
+# EXISTING bytes exactly (the {"param":..}/{"const":..}/{"op":..,"a":..,"b":..} shape) — the IR
+# is the in-memory representation only; the persisted format stays frozen until the coordinated
+# salt-bump slice (E2.5 S4/Q5). Do NOT change these bytes here.
+
 def _enc_param_expr(e):
-    op = e._op
-    if op == "param":
-        return {"param": e._a}
-    if op == "const":
-        return {"const": float(e._a)}
-    if op == "neg":
-        return {"op": "neg", "a": _enc_param_expr(e._a)}
-    return {"op": op, "a": _enc_param_expr(e._a), "b": _enc_param_expr(e._b)}
+    if isinstance(e, _exprir.ParamRef):     # doc-param leaf (kind PARAM_DOC)
+        return {"param": e.name}
+    if isinstance(e, _exprir.Const):
+        return {"const": float(e.value)}
+    if e.name == "neg":
+        return {"op": "neg", "a": _enc_param_expr(e.args[0])}
+    return {"op": e.name, "a": _enc_param_expr(e.args[0]), "b": _enc_param_expr(e.args[1])}
 
 
 def _dec_param_expr(d, table):
     if "param" in d:
-        return _ParamExpr.param(table, d["param"])
+        return _exprir.ParamRef(_exprir.PARAM_DOC, d["param"])
     if "const" in d:
-        return _ParamExpr.const(float(d["const"]), table)
+        return _exprir.Const(float(d["const"]))
     op = d["op"]
     if op == "neg":
-        return _ParamExpr.make("neg", _dec_param_expr(d["a"], table), None, table)
-    return _ParamExpr.make(op, _dec_param_expr(d["a"], table),
-                           _dec_param_expr(d["b"], table), table)
+        return _exprir.Call("neg", _dec_param_expr(d["a"], table))
+    return _exprir.Call(op, _dec_param_expr(d["a"], table), _dec_param_expr(d["b"], table))
 
 
 def _enc_iter(expr, loop_ids):
-    op = expr._op
-    if op == "index":
-        return {"index": loop_ids[id(expr._a)]}
-    if op == "const":
-        return {"const": float(expr._a)}
-    if op == "neg":
-        return {"op": "neg", "a": _enc_iter(expr._a, loop_ids)}
-    return {"op": op, "a": _enc_iter(expr._a, loop_ids),
-            "b": _enc_iter(expr._b, loop_ids)}
+    if isinstance(expr, _exprir.ParamRef):  # index leaf; name = loop object
+        return {"index": loop_ids[id(expr.name)]}
+    if isinstance(expr, _exprir.Const):
+        return {"const": float(expr.value)}
+    if expr.name == "neg":
+        return {"op": "neg", "a": _enc_iter(expr.args[0], loop_ids)}
+    return {"op": expr.name, "a": _enc_iter(expr.args[0], loop_ids),
+            "b": _enc_iter(expr.args[1], loop_ids)}
 
 
 def _dec_iter(d, loops_by_id):
     if "index" in d:
-        return _IterExpr("index", loops_by_id[d["index"]], None)
+        return _exprir.ParamRef("index", loops_by_id[d["index"]])
     if "const" in d:
-        return _IterExpr("const", float(d["const"]), None)
+        return _exprir.Const(float(d["const"]))
     op = d["op"]
     if op == "neg":
-        return _IterExpr("neg", _dec_iter(d["a"], loops_by_id), None)
-    return _IterExpr(op, _dec_iter(d["a"], loops_by_id), _dec_iter(d["b"], loops_by_id))
+        return _exprir.Call("neg", _dec_iter(d["a"], loops_by_id))
+    return _exprir.Call(op, _dec_iter(d["a"], loops_by_id), _dec_iter(d["b"], loops_by_id))
 
 
 class _IdAlloc:
@@ -1749,6 +2069,86 @@ def _iter_ref_slots(doc):
     yield from _walk(doc._root)
 
 
+def _resolve_out_ref(obj, out_plug):
+    """The _DocOutPlug a wire from `obj`'s `out_plug` output carries — the SOURCE side
+    of connect. Mirrors the producer map the canvas builds per level: a DocNode drives
+    its named out-plug; a construct drives its synthetic output placeholder (loop carry /
+    switch out) or its returned ref (group). Loud on an unwireable source."""
+    if isinstance(obj, DocNode):
+        return _DocOutPlug(obj, out_plug)
+    if isinstance(obj, DocLoop):
+        c = obj.carries.get(out_plug)
+        if c is None:
+            raise TerrainDocParamError(
+                f"connect: loop {obj.path!r} has no carry output {out_plug!r}; "
+                f"have {list(obj.carries)}")
+        return _DocOutPlug(c.out_placeholder, "Out")
+    if isinstance(obj, DocSwitch):
+        return _DocOutPlug(obj.out_placeholder, "Out")
+    if isinstance(obj, DocGroupCall):
+        if obj.output_ref is None:
+            raise TerrainDocParamError(
+                f"connect: group {obj.path!r} has no output to wire from")
+        return _DocOutPlug(obj.output_ref.node, obj.output_ref.plug_name)
+    raise TerrainDocParamError(
+        f"connect: a {type(obj).__name__} cannot be a wire source")
+
+
+def _write_in_slot(obj, in_plug, ref):
+    """Write `ref` into `obj`'s `in_plug` native edge slot — the DESTINATION side of
+    connect, OVERWRITING whatever fed it (terrain inputs are always fed). Covers exactly
+    the ref slots _iter_ref_slots enumerates: DocNode.connections, loop-carry initial_ref,
+    group arg, switch branch. Loud on an unknown plug / unwireable destination."""
+    if isinstance(obj, DocNode):
+        for i, (n, _r) in enumerate(obj.connections):
+            if n == in_plug:
+                obj.connections[i] = (in_plug, ref)
+                return
+        # terrain inputs are ALWAYS fed — every real input plug already carries a
+        # connection, so a name not among them is not a wireable input; refuse LOUDLY
+        # (you re-source an existing input, you never add one via connect).
+        raise TerrainDocParamError(
+            f"connect: node {obj.local_name!r} [{obj.clazz_name}] has no input plug "
+            f"{in_plug!r}; inputs are {[n for (n, _r) in obj.connections]}")
+    if isinstance(obj, DocLoop):
+        c = obj.carries.get(in_plug)
+        if c is None:
+            raise TerrainDocParamError(
+                f"connect: loop {obj.path!r} has no carry input {in_plug!r}; "
+                f"have {list(obj.carries)}")
+        c.initial_ref = ref
+        return
+    if isinstance(obj, DocGroupCall):
+        if in_plug not in obj.args or not isinstance(obj.args[in_plug], _DocOutPlug):
+            raise TerrainDocParamError(
+                f"connect: group {obj.path!r} has no terrain-typed arg {in_plug!r}")
+        obj.args[in_plug] = ref
+        return
+    if isinstance(obj, DocSwitch):
+        if in_plug not in obj.branches:
+            raise TerrainDocParamError(
+                f"connect: switch has no branch {in_plug!r}; have {list(obj.branches)}")
+        obj.branches[in_plug] = ref
+        return
+    raise TerrainDocParamError(
+        f"connect: a {type(obj).__name__} cannot be a wire destination")
+
+
+def connect_edge(doc, dst_key, in_plug, src_key, out_plug):
+    """Editor mutation (L2, STRUCTURAL): wire src_key.out_plug -> dst_key.in_plug in the
+    native edge store, OVERWRITING the consumer's current source. Both keys are
+    tree_paths() keys. The single owner of the terrain document's edge write (the C1
+    canvas routes here); loud, catchable refusals (ops self-defend) throughout."""
+    dst = find_by_path(doc, dst_key)
+    if dst is None:
+        raise TerrainDocParamError(f"connect: no document object at dst key {dst_key!r}")
+    src = find_by_path(doc, src_key)
+    if src is None:
+        raise TerrainDocParamError(f"connect: no document object at src key {src_key!r}")
+    _write_in_slot(dst, in_plug, _resolve_out_ref(src, out_plug))
+    return (src_key, out_plug, dst_key, in_plug)
+
+
 def delete_node(doc, node):
     """Editor mutation (L2, STRUCTURAL): remove a DocNode from the document,
     reconnecting its consumers to its pass-through (first) input — the delete twin
@@ -1804,15 +2204,93 @@ def delete_node(doc, node):
 
 # --- editor ADD mutations (S3-pulled-forward: new nodes / loops) --------------
 
-# the curated add menu: DSL ops whose defaults make a working node from a single
-# height input (or none, for sources). The wrappers themselves are replayed, so
-# every default lands as an editable recorded param. flow_erode is a COMPOSITE
-# (inserts its flow3d companion — the canonical pairing); fill_closed_basins
-# chains through its .filled output.
-EDITOR_ADD_OPS = ("erode_thermal", "erox", "pha", "flow_erode", "basin_fill",
-                  "fill_closed_basins", "terrace", "lpf", "normalize", "slope",
-                  "expr", "fbm", "voronoi")
-_SOURCE_OPS = ("fbm", "voronoi")
+# The curated add menu is REFLECTION-CARRIED (E1-close; the hand-curated add-ops
+# tuple is DELETED): every terrain module class annotated `editor.palette` in its
+# C++ describeX contributes its `dsl.verb` — DSL ops whose defaults make a working
+# node from a single height input (or none, for a `editor.palette.source`
+# generator). The wrappers themselves are replayed, so every default lands as an
+# editable recorded param. `editor.palette.sort` preserves the curated menu order;
+# `editor.palette.recipe` keys the python insertion recipes (_apply_recipe below):
+# flow_erode is a COMPOSITE (inserts its flow3d companion — the canonical pairing);
+# fill_closed_basins chains through its .filled output; expr needs an identity
+# default source.
+_PALETTE_CACHE = None
+
+
+def _palette():
+    """verb -> {clazz, sort, source, recipe} for every palette-annotated terrain
+    module class, built from core.dataflow.moduleClasses() (the rtti class tree —
+    no hand tables). Cached once; an engine-not-ready (empty) result is NOT cached
+    so the first post-init query wins. Curation conflicts fail LOUD."""
+    global _PALETTE_CACHE
+    if _PALETTE_CACHE is None:
+        from orkengine.core import dataflow as _dflow  # lazy: keep doc.py import-cheap
+        built = {}
+        for c in _dflow.moduleClasses():
+            if c.get("family") != "terrain":
+                continue
+            anns = c.get("annotations", {})
+            if not anns.get("editor.palette"):
+                continue
+            verb = anns.get("dsl.verb")
+            if not verb:
+                raise TerrainDocParamError(
+                    f"palette class {c['name']!r} is annotated editor.palette but "
+                    f"carries no dsl.verb — annotate the curated verb in its describeX")
+            if verb in built:
+                raise TerrainDocParamError(
+                    f"palette verb {verb!r} is annotated on BOTH "
+                    f"{built[verb]['clazz']!r} and {c['name']!r} — curate ONE class "
+                    f"per verb")
+            built[verb] = {
+                "clazz": c["name"],
+                "sort": int(anns.get("editor.palette.sort", 1 << 30)),
+                "source": bool(anns.get("editor.palette.source", False)),
+                "recipe": anns.get("editor.palette.recipe"),
+            }
+        if not built:
+            return {}          # engine not initialized yet — retry next call
+        _PALETTE_CACHE = built
+    return _PALETTE_CACHE
+
+
+def editor_add_ops():
+    """The add-menu verb tuple in curated order (editor.palette.sort, then name) —
+    the public palette surface the outliner / canvas add menus consume."""
+    pal = _palette()
+    return tuple(sorted(pal, key=lambda v: (pal[v]["sort"], v)))
+
+
+def _palette_entry_or_raise(op_name):
+    """The palette entry for a verb, or a LOUD refusal (unknown verb / engine not
+    initialized — either way the add cannot proceed)."""
+    pal = _palette()
+    ent = pal.get(op_name)
+    if ent is None:
+        have = sorted(pal) if pal else "(none — engine not initialized)"
+        raise TerrainDocParamError(
+            f"add: unknown op {op_name!r}; have {have}")
+    return ent
+
+
+def _apply_recipe(op_name, op, recipe, tn_in):
+    """Insertion RECIPES — python code KEYED by the class's editor.palette.recipe
+    annotation (no name-matched hand tuple). A recipe makes the op's defaults land
+    as a WORKING node from one height input; an unknown key fails LOUD (a class
+    annotated with a recipe this code cannot perform must never half-insert)."""
+    from . import ops as _ops
+    if recipe is None:
+        return op(tn_in)
+    if recipe == "expr":
+        return op("ctx.input(0)", inputs=[tn_in])  # identity default; user edits the source
+    if recipe == "flow_erode":
+        f = _ops.flow3d(tn_in)          # composite: the canonical flow pairing
+        return op(tn_in, f.discharge)
+    if recipe == "fill_closed_basins":
+        return op(tn_in).filled         # struct result: chain through .filled
+    raise TerrainDocParamError(
+        f"add: {op_name!r} is annotated with unknown insertion recipe {recipe!r} — "
+        f"teach doc._apply_recipe or fix the class annotation")
 
 
 def _scope_of(doc, child):
@@ -1892,12 +2370,10 @@ def add_op_node(doc, op_name, after, name=None):
     from . import ops as _ops
     if not isinstance(after, DocNode):
         raise TerrainDocParamError("add: select a document NODE to insert after")
-    if op_name not in EDITOR_ADD_OPS:
-        raise TerrainDocParamError(
-            f"add: unknown op {op_name!r}; have {sorted(EDITOR_ADD_OPS)}")
+    ent = _palette_entry_or_raise(op_name)
     children, owners = _scope_of(doc, after)
     idx = children.index(after)
-    is_source = (op_name in _SOURCE_OPS)
+    is_source = ent["source"]
     slots = [] if is_source else _out_ref_slots(doc, after)
     op = getattr(_ops, op_name)
 
@@ -1905,15 +2381,7 @@ def add_op_node(doc, op_name, after, name=None):
         if is_source:
             return op()
         tn_in = _tnode_for_ref(_DocOutPlug(after, "Out"))
-        if op_name == "expr":
-            return _ops.expr("ctx.input(0)", inputs=[tn_in])   # identity default; user edits the source
-        if op_name == "flow_erode":
-            f = _ops.flow3d(tn_in)          # composite: the canonical flow pairing
-            return op(tn_in, f.discharge)
-        r = op(tn_in)
-        if op_name == "fill_closed_basins":
-            return r.filled                 # struct result: chain through .filled
-        return r
+        return _apply_recipe(op_name, op, ent["recipe"], tn_in)
 
     n_before = len(children)
     tn = _mini_trace(doc, owners, _make)
@@ -1965,30 +2433,20 @@ def add_into_loop(doc, loop, op_name, name=None):
     from . import ops as _ops
     if not isinstance(loop, DocLoop):
         raise TerrainDocParamError("add-into-loop: select a LOOP row")
-    if op_name not in EDITOR_ADD_OPS:
-        raise TerrainDocParamError(
-            f"add: unknown op {op_name!r}; have {sorted(EDITOR_ADD_OPS)}")
+    ent = _palette_entry_or_raise(op_name)
     if not loop.carries:
         raise TerrainDocParamError(f"loop {loop.path!r} has no carries")
     carry = next(iter(loop.carries.values()))
     tail = carry.body_out_ref or _DocOutPlug(carry.placeholder, "Out")
     _children, owners = _scope_of(doc, loop)
     op = getattr(_ops, op_name)
-    is_source = (op_name in _SOURCE_OPS)
+    is_source = ent["source"]
 
     def _make():
         if is_source:
             return op()          # source inside a body: a per-iteration field
         tn_in = _tnode_for_ref(tail)
-        if op_name == "expr":
-            return _ops.expr("ctx.input(0)", inputs=[tn_in])   # identity default; user edits the source
-        if op_name == "flow_erode":
-            f = _ops.flow3d(tn_in)          # composite: the canonical flow pairing
-            return op(tn_in, f.discharge)
-        r = op(tn_in)
-        if op_name == "fill_closed_basins":
-            return r.filled                 # struct result: chain through .filled
-        return r
+        return _apply_recipe(op_name, op, ent["recipe"], tn_in)
 
     n_before = len(loop.children)
     tn = _mini_trace(doc, owners + [loop], _make)

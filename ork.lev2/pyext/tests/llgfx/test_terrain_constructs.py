@@ -103,7 +103,7 @@ class SwitchHF(HeightField):
     def __init__(self, which="smooth"):
         super().__init__()
         base = T.Fbm(frequency=4.0, octaves=6) * 0.5 + 0.5
-        smooth = T.lpf(base, cutoff_texels=6.0)
+        smooth = T.lpf(base, cutoff=6.0)
         ridged = T.terrace(base, step_m=1.0/8.0, sharpness=6.0)
         self.capture(T.switch(which, smooth=smooth, ridged=ridged), "height")
 

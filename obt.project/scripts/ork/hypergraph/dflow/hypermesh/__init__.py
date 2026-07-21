@@ -28,7 +28,10 @@ P, N, B, UV, COLOR = 0, 1, 2, 3, 4
 
 
 class Archetype(IntEnum):
-  """L-system growth model — keep in sync with the C++ LArchetype enum (hmdflow.h)."""
+  """L-system growth model — SELECTS a preset grammar emitter (GR1.d): the four stock
+  growth models are combinator-DSL grammars in ork.hypergraph.dflow.lsystem.presets
+  (keep in sync with presets.SYMPODIAL/CONIFER/SAGUARO/OCOTILLO), derived by the C++
+  LRuleSet evaluator. There is no C++ archetype enum anymore — species are data."""
   SYMPODIAL = 0   # repeated forking — trees, shrubs, cholla
   CONIFER   = 1   # monopodial leader + whorls of drooping laterals
   SAGUARO   = 2   # columnar trunk + arms that curl up (children=0 -> barrel)
@@ -41,15 +44,10 @@ class LeafStyle(IntEnum):
   CROSS  = 1   # two perpendicular quads per leaf (fuller, holds up at grazing angles)
 
 
-# per-archetype known-good chaos-channel defaults (effective chaos = jitter * jit_X). Every
-# generator is routed through these params; a channel a given form doesn't use is a harmless
-# no-op. A jit_* kwarg left None picks the value for that archetype here.
-_ARCH_JIT = {
-  Archetype.SYMPODIAL: dict(jit_azimuth=0.5, jit_pitch=0.35, jit_length=0.5, jit_spacing=0.3, jit_drop=0.25, jit_wave=0.25),
-  Archetype.CONIFER:   dict(jit_azimuth=0.8, jit_pitch=0.35, jit_length=0.5, jit_spacing=0.3, jit_drop=0.25, jit_wave=0.25),
-  Archetype.SAGUARO:   dict(jit_azimuth=0.6, jit_pitch=0.35, jit_length=0.5, jit_spacing=0.3, jit_drop=0.25, jit_wave=0.05),
-  Archetype.OCOTILLO:  dict(jit_azimuth=1.2, jit_pitch=0.5,  jit_length=0.5, jit_spacing=0.3, jit_drop=0.25, jit_wave=0.3),
-}
+# per-archetype known-good chaos-channel defaults (effective chaos = jitter * jit_X) — the
+# data lives WITH the preset emitters (lsystem/presets.py PRESET_JIT, int-keyed; IntEnum keys
+# hash-equal). A jit_* kwarg left None picks the value for that archetype here.
+from ork.hypergraph.dflow.lsystem.presets import PRESET_JIT as _ARCH_JIT  # noqa: E402
 
 # the selection DSL (SelExpr atoms/builders + MaskOp factories) — re-export so assets can write
 #   from ork.hypergraph.dflow.hypermesh import S, sel_normal_dir, group, replace, add, POLY
@@ -58,6 +56,9 @@ from ork.hypergraph.dflow.hypermesh.selexpr import (  # noqa: F401
   sl_smoothstep, sl_step, sl_clamp, sl_min, sl_max, sl_sin, sl_cos, sl_fract, sl_select, vexpr, param, collect_params,
   sel_normal_dir, sel_id_range, sel_area_gt, sel_dihedral_gt, sel_length_gt, sel_dist_point, sel_height_band,
   MaskOp, group, groups, add, remove, toggle, isolate, replace, _bind_build_asset)
+# E2.5 (Q6): capture the SelExpr as a canonical ExprIR TREE (JSON) alongside its GLSL, stored in the
+# reflected SelectData/ExtrudeFacesData `*_tree` fields (author-intent round-trip + cook identity).
+from ork.hypergraph.dflow.hypermesh import exprir_selexpr as _xse
 
 _DOMAIN_ID = {POLY: 0, POINT: 1, LINE: 2}   # C++ Select shell: POLY (faces), POINT (verts), LINE (edges via MeshEdges)
 
@@ -230,20 +231,33 @@ class Hypermesh:
               jitter=0.0, apical=0.0, cap_segments=3, cap_round=1.0,
               jit_azimuth=None, jit_pitch=None, jit_length=None, jit_spacing=None,
               jit_drop=None, jit_wave=None, grammar=None):
-    # L-system FAMILY (M1): an LSystemModule grows a parametric/stochastic XfNodeGraph
-    # branch skeleton, an LSweepModule skins it to a swept-tube GpuMesh. Returns the
-    # (mesh) sweep node.
-    #   grammar=  : GR-1 REFLECTED path — a reflected LRuleSet (from the ork.hypergraph.dflow.lsystem
-    #               DSL: an LRuleSet, an Lsystem subclass/instance, or a builder). The C++ evaluator
-    #               (derive() in _buildSkeleton) rewrites+turtle-interprets it into the XfNodeGraph.
-    #               The 21 scalar params below stay live as the grammar's PARAM environment (A8).
-    #   archetype=: LEGACY hardcoded-procedure path (0 sympodial 1 conifer 2 saguaro 3 ocotillo) —
-    #               the default while grammar is None (deleted at GR1.d). `archetype`: 0..3.
+    # L-system FAMILY (M1/GR1): an LSystemModule derives its reflected LRuleSet grammar into
+    # an XfNodeGraph branch skeleton, an LSweepModule skins it to a swept-tube GpuMesh.
+    # Returns the (mesh) sweep node.
+    #   grammar=  : a reflected LRuleSet (from the ork.hypergraph.dflow.lsystem DSL: an
+    #               LRuleSet, an Lsystem subclass/instance, or a builder). The C++ evaluator
+    #               (derive() in _buildSkeleton) rewrites+turtle-interprets it into the
+    #               XfNodeGraph. The 21 scalar params below stay live as the grammar's PARAM
+    #               environment (A8).
+    #   archetype=: selects a PRESET GRAMMAR EMITTER (GR1.d) when grammar is None — the four
+    #               stock growth models (0 sympodial 1 conifer 2 saguaro 3 ocotillo) authored
+    #               as combinator grammars in ork.hypergraph.dflow.lsystem.presets. Same DSL
+    #               surface as the deleted C++ enum; ints (depth/children/internodes) shape
+    #               the emitted grammar, floats stay live via the PARAM env (with the
+    #               per-preset module-scalar remaps presets.py documents).
     ls = _lev2.hypermesh.LSystemModule.createShared()
-    if grammar is not None:
-      from ork.hypergraph.dflow.lsystem import resolve_grammar
-      ls.grammar = resolve_grammar(grammar)   # reflected LRuleSet -> LSystemModuleData._grammar
-    ls.archetype    = int(archetype)
+    _preset_overrides = {}
+    if grammar is None:
+      from ork.hypergraph.dflow.lsystem.presets import build_preset
+      grammar, _preset_overrides = build_preset(int(archetype),
+                                                depth=depth,
+                                                children=children,
+                                                internodes=internodes,
+                                                seed=seed,
+                                                budget=budget,
+                                                tropism=tropism)
+    from ork.hypergraph.dflow.lsystem import resolve_grammar
+    ls.grammar = resolve_grammar(grammar)     # reflected LRuleSet -> LSystemModuleData._grammar
     ls.depth        = int(depth)
     ls.budget       = int(budget)
     ls.children     = int(children)
@@ -268,6 +282,9 @@ class Hypermesh:
     ls.jit_spacing  = float(_pick(jit_spacing, "jit_spacing"))
     ls.jit_drop     = float(_pick(jit_drop,    "jit_drop"))
     ls.jit_wave     = float(_pick(jit_wave,    "jit_wave"))
+    # per-preset module-scalar remaps (conifer/saguaro tropism — see presets.py header)
+    for _k, _v in _preset_overrides.items():
+      setattr(ls, _k, float(_v))
     self._skeleton = self._add(ls, "lsystem")                 # produces XfNodeGraph (the skeleton hub —
                                                               # organs (leaves/needles/thorns) branch off it)
     sw = _lev2.hypermesh.LSweepModule.createShared()
@@ -566,6 +583,7 @@ class Hypermesh:
     # deeply-nested expr) so shadlang's PEG parser stays shallow for arbitrarily-complex predicates.
     _stmts, _res = expr.emit_block(domain)
     m.predicate = "\n".join(_stmts) + ("\n  _sel = %s;" % _res)
+    m.predicate_tree = _xse.capture_json(expr)   # E2.5 (Q6): the ExprIR tree of the SAME predicate
     m.domain    = _DOMAIN_ID[domain]
     m.sel_and,   m.sel_or,   m.sel_xor   = op.sel_and,   op.sel_or,   op.sel_xor
     m.unsel_and, m.unsel_or, m.unsel_xor = op.unsel_and, op.unsel_or, op.unsel_xor
@@ -650,16 +668,23 @@ class Hypermesh:
       if p._pname == "__time":                   # S.time -> the module feeds this slot from the C++ clock
         m.time_slot = slot_i                     # (declarative time: zero per-frame Python; serializes)
     # distance: a SelExpr -> per-face field (the scalar plug becomes a 1.0 global multiplier); else the scalar plug.
+    # each field: the GLSL pred is the EVAL form; the ExprIR tree (Q6) is the storage-form identity,
+    # captured from the SAME value (a SelExpr or a baked constant) -> set both in lockstep.
     if isinstance(distance, SelExpr):
       m.dist_predicate = _field_predicate(distance, "_dist", prefix="_sd")
+      m.dist_tree = _xse.capture_json(distance)
     if _inset_active:
       m.inset_predicate = _field_predicate(inset, "_inset", prefix="_si")
+      m.inset_tree = _xse.capture_json(inset)
     if direction is not None:
       m.dir_predicate = _field_predicate(direction, "_dir", prefix="_sr")
+      m.dir_tree = _xse.capture_json(direction)
     if _twist_active:
       m.twist_predicate = _field_predicate(twist, "_twist", prefix="_st")
+      m.twist_tree = _xse.capture_json(twist)
     if _scale_active:
       m.scale_predicate = _field_predicate(scale, "_scale", prefix="_sc")
+      m.scale_tree = _xse.capture_json(scale)
     if prms:
       flat = []
       for p in prms:
@@ -1098,6 +1123,12 @@ class GpuMeshRenderSource:
 # block name (in the generated material) -> GpuMesh vertex-channel id, in render-bind order.
 _RENDER_CHANNELS = [("sif_ptex_vtx", P), ("sif_N", N), ("sif_B", B), ("sif_uv", UV), ("sif_clr", COLOR)]
 
+# make_drawable(instance_from=...) default sentinel: UNSPECIFIED -> the drawable is NOT instanced by a
+# graph-carried InstanceSet (explicit-scoping law — never a graph-wide any-set sniff). Callers that want
+# the graph's set pass instance_from=live (or the ScatterSource); instance_from=None is the same as the
+# default (explicit "un-instanced"), kept for readability at the road/mesh call sites.
+_INSTANCE_AUTO = object()
+
 
 class GpuMeshWireSource:
   """Vertex side for the LINE overlay/primitive: pull VS reads P + N and applies `bias` as a CLIP-SPACE
@@ -1128,14 +1159,22 @@ class GpuMeshWireSource:
 
 def make_drawable(live, ctx, *, animated=False, material_cls=None, roughness=0.55, albedo=None,
                   metallic=None, wireframe=False, wire_color=None, wire_bias=0.0006, instances=None,
-                  vtx_displace=None, gid_materials=None, cull=False, cull_bound=None):
+                  vtx_displace=None, gid_materials=None, cull=False, cull_bound=None,
+                  instance_from=_INSTANCE_AUTO):
   """ComputeDrawableData that renders a LIVE hypermesh through a ptex3d material (auto-selected
   FWD_SSBO_CUSTOM pipeline). Binds each vertex-channel SSBO to its block, then installs the on-GPU
   render-time triangulator + per-frame in-frame hook via setupMeshRender (which also sets the
   DrawIndexedIndirect index/args). `animated` re-evaluates the graph each frame. `albedo`/`roughness`/
   `metallic` override the material's surface knobs when given (ignored by group/face-viz materials whose
   FS post sets the surface). If `material_cls` declares WANTS_FACE_ID (e.g. TopoView), the per-triangle
-  face-id buffer is wired + bound to the FS. Returns (cdd, material). Keep `live` alive."""
+  face-id buffer is wired + bound to the FS. Returns (cdd, material). Keep `live` alive.
+
+  `instance_from` EXPLICITLY SCOPES the graph-carried InstanceSet (an instance_source/ScatterSource
+  output that materialize discovers graph-wide, live.instance_count): the caller OPTS THIS drawable in
+  by passing the set / the live graph (`instance_from=live` — the forest/scatter pairing); the default
+  and `instance_from=None` render un-instanced even when the graph carries an unrelated set (a road
+  ribbon sharing one graph with building-seed lots must NOT tile by the lot transforms). Never a
+  graph-wide any-InstanceSet sniff."""
   from orkengine.lev2 import ComputeDrawableData
   from ork.hypergraph.ecs.scene.assets import Ptex3d as Ptex3dAsset
   if material_cls is None:
@@ -1159,11 +1198,15 @@ def make_drawable(live, ctx, *, animated=False, material_cls=None, roughness=0.5
     if _arr.size == 0 or _arr.size % 16 != 0:
       raise ValueError("make_drawable(instances=): need N*16 column-major mat4 floats, got %d" % _arr.size)
     inst_floats, inst_count = _arr.tolist(), _arr.size // 16
-  # E.2: a graph-carried InstanceSet (instance_source -> ScatterSource) instances AUTOMATICALLY —
-  # the typed edge needs no instances= argument (setupMeshRender binds the set's own SSBOs).
-  graph_instanced = int(getattr(live, "instance_count", 0)) > 0
+  # E.2: a graph-carried InstanceSet (instance_source -> ScatterSource). It is discovered graph-wide
+  # during materialize (live.instance_count), but is applied to THIS drawable ONLY when the caller
+  # opts in via instance_from (truthy) — never a graph-wide sniff (a road ribbon must not tile by an
+  # unrelated building-seed set). None / the default -> render un-instanced regardless of the set.
+  has_graph_set = int(getattr(live, "instance_count", 0)) > 0
+  opted_in = (instance_from is not _INSTANCE_AUTO) and (instance_from is not None)
+  graph_instanced = has_graph_set and opted_in
   if graph_instanced and instances is not None:
-    raise ValueError("make_drawable: the graph carries an InstanceSet (instance_source) AND instances= "
+    raise ValueError("make_drawable: instance_from opts into the graph InstanceSet AND instances= "
                      "floats were passed — one instance source per drawable")
   instanced = graph_instanced or inst_count > 1
   mesh = live.mesh
@@ -1206,10 +1249,28 @@ def make_drawable(live, ctx, *, animated=False, material_cls=None, roughness=0.5
   _cb = _vec4(0, 0, 0, 0) if cull_bound is None else (
         cull_bound if isinstance(cull_bound, _vec4) else _vec4(*cull_bound))
   # on-GPU fan-triangulate -> DrawIndexedIndirect + the per-frame in-frame recompute/refresh hook.
-  triface, instmtx, instattr = _lev2.hypermesh.setupMeshRender(
-      cdd, live, ctx, animated, face_viz, tag_viz, wireframe,
-      instance_count=inst_count, instance_matrices=inst_floats, bound_gids=sorted(gid_mtls.keys()),
-      cull=bool(cull), cull_bound=_cb)
+  # use_graph_instances is only NEEDED to SUPPRESS a graph-carried set the caller did not opt
+  # into (the road-beside-seeds case); the default C++ behavior already matches the other cases
+  # (no set, or opted in). Pass it only when suppressing, and tolerate a pre-fix binary that
+  # lacks the kwarg (retry once, loud) so the adapter runs before the pyext is rebuilt.
+  _smr_kw = {}
+  if has_graph_set and not opted_in:
+    _smr_kw["use_graph_instances"] = False
+  try:
+    triface, instmtx, instattr = _lev2.hypermesh.setupMeshRender(
+        cdd, live, ctx, animated, face_viz, tag_viz, wireframe,
+        instance_count=inst_count, instance_matrices=inst_floats, bound_gids=sorted(gid_mtls.keys()),
+        cull=bool(cull), cull_bound=_cb, **_smr_kw)
+  except TypeError:
+    if not _smr_kw:
+      raise
+    print("[hypermesh] make_drawable: setupMeshRender lacks use_graph_instances (pyext not rebuilt) "
+          "— this drawable will be instanced by the graph's InstanceSet (scope fix inert until rebuild)",
+          flush=True)
+    triface, instmtx, instattr = _lev2.hypermesh.setupMeshRender(
+        cdd, live, ctx, animated, face_viz, tag_viz, wireframe,
+        instance_count=inst_count, instance_matrices=inst_floats, bound_gids=sorted(gid_mtls.keys()),
+        cull=bool(cull), cull_bound=_cb)
   if face_viz:                                          # per-triangle face-id buffer -> FS (graphics-storage 5)
     cdd.addGraphicsStorage(fs.storage("sif_triface"), triface)
   if tag_viz:                                           # the __tags FACE channel -> FS (graphics-storage 6)

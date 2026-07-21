@@ -50,10 +50,21 @@ HandlerResult Context::_dispatchToTarget(Widget* target, event_constptr_t ev) {
 }
 /////////////////////////////////////////////////////////////////////////
 HandlerResult Context::handleEvent(event_constptr_t ev) {
+  _dispatching = true;
+  HandlerResult rval = _handleEventImpl(ev);
+  _dispatching = false;
+  // Apply structural mutations enqueued during dispatch now that no widget's
+  // OnUiEvent is on the stack (and _dispatching is false, so they run for real
+  // instead of re-deferring) — never destroy widgets mid-dispatch.
+  _processDeferredMutations();
+  return rval;
+}
+/////////////////////////////////////////////////////////////////////////
+HandlerResult Context::_handleEventImpl(event_constptr_t ev) {
   EASY_BLOCK("uictx::handleEvent", profiler::colors::Red);
   OrkAssert(_top);
   HandlerResult rval;
-  double curtime = _uitimer.SecsSinceStart();
+  double curtime = _use_virtual_time ? _virtual_time : _uitimer.SecsSinceStart();
 
   /////////////////////////////////
   // PHASE 1: Application Preview Handler
@@ -76,6 +87,9 @@ HandlerResult Context::handleEvent(event_constptr_t ev) {
     int mx = ev->miX;
     int my = ev->miY;
     bool event_in_overlay = false;
+    // A modal top overlay swallows every event that lands outside it (and is
+    // not dismissed by an outside click).
+    bool modal = _overlay_stack.back()._modal;
 
     // Check overlays from top to bottom for hit (mouse/click events only —
     // KEY events are handled separately below to avoid double-dispatch)
@@ -130,7 +144,7 @@ HandlerResult Context::handleEvent(event_constptr_t ev) {
 
     // MOVE events: route to overlays first, then fall through to widget tree
     if (ev->_eventcode == EventCode::MOVE) {
-      if (event_in_overlay) {
+      if (event_in_overlay || modal) {
         _prevevent = *ev;
         _prevtime = curtime;
         return rval;
@@ -146,8 +160,9 @@ HandlerResult Context::handleEvent(event_constptr_t ev) {
         _prevtime = curtime;
         return rval;
       }
-      // Click outside all overlays: check dismiss policy
-      if (!_overlay_stack.empty() && _overlay_stack.back()._dismiss_on_click_outside) {
+      // Click outside all overlays: check dismiss policy (a modal overlay is
+      // never dismissed by an outside click — it swallows it instead)
+      if (!modal && !_overlay_stack.empty() && _overlay_stack.back()._dismiss_on_click_outside) {
         dismissAllOverlays();
       }
       rval.setHandled(nullptr);
@@ -159,6 +174,14 @@ HandlerResult Context::handleEvent(event_constptr_t ev) {
 
     // MOUSEWHEEL inside overlay
     if (ev->_eventcode == EventCode::MOUSEWHEEL && event_in_overlay) {
+      _prevevent = *ev;
+      _prevtime = curtime;
+      return rval;
+    }
+
+    // Modal: swallow any remaining event that landed outside the overlay so it
+    // never reaches the widget tree below.
+    if (modal && !event_in_overlay) {
       _prevevent = *ev;
       _prevtime = curtime;
       return rval;
@@ -330,6 +353,9 @@ bool Context::hasMouseFocus(const Widget* w) const {
 void Context::draw(drawevent_constptr_t drwev) {
   // Process deferred operations from previous frame
   processNextFrameOps();
+  // Apply any structural mutations enqueued outside the event pump (belt-and-
+  // suspenders — event-triggered ones already drained at end of handleEvent).
+  _processDeferredMutations();
 
   // Lazy init theme engine on first draw
   if (_theme_engine && _theme_engine->_impl.isSet() == false) {
@@ -384,7 +410,8 @@ void Context::dumpWidgets(std::string label) const{
 /////////////////////////////////////////////////////////////////////////
 void Context::pushOverlay(widget_ptr_t widget, int x, int y, int w, int h,
                           bool dismiss_on_click_outside,
-                          std::function<void()> on_dismissed) {
+                          std::function<void()> on_dismissed,
+                          bool modal) {
   // Flip upward if the overlay would overflow below the window
   if (_top && (y + h) > _top->height()) {
     y = y - h;
@@ -393,10 +420,38 @@ void Context::pushOverlay(widget_ptr_t widget, int x, int y, int w, int h,
   OverlayEntry entry;
   entry._widget = widget;
   entry._dismiss_on_click_outside = dismiss_on_click_outside;
+  entry._modal = modal;
   entry._onDismissed = on_dismissed;
   widget->SetRect(x, y, w, h);
   widget->_uicontext = this;
   _overlay_stack.push_back(entry);
+}
+/////////////////////////////////////////////////////////////////////////
+void Context::repositionOverlay(const widget_ptr_t& widget, int x, int y, int w, int h) {
+  for (auto& entry : _overlay_stack) {
+    if (entry._widget == widget) {
+      int nw = (w < 0) ? widget->width() : w;
+      int nh = (h < 0) ? widget->height() : h;
+      widget->SetRect(x, y, nw, nh);
+      return;
+    }
+  }
+}
+/////////////////////////////////////////////////////////////////////////
+void Context::removeOverlay(const widget_ptr_t& widget) {
+  for (auto it = _overlay_stack.begin(); it != _overlay_stack.end(); ++it) {
+    if (it->_widget == widget) {
+      auto entry = *it;
+      _overlay_stack.erase(it);
+      if (entry._widget) {
+        clearWidgetPointers(entry._widget.get());
+        entry._widget->onPreDestroy();
+      }
+      if (entry._onDismissed)
+        entry._onDismissed();
+      return;
+    }
+  }
 }
 /////////////////////////////////////////////////////////////////////////
 void Context::popOverlay() {
@@ -431,6 +486,22 @@ void Context::processNextFrameOps() {
   _nextFrameOps.clear();
   for (auto& op : ops) {
     op();
+  }
+}
+/////////////////////////////////////////////////////////////////////////
+void Context::enqueueDeferredMutation(std::function<void()> op) {
+  _deferredMutations.push_back(std::move(op));
+}
+/////////////////////////////////////////////////////////////////////////
+void Context::_processDeferredMutations() {
+  // Drain to empty — a mutation may enqueue further mutations. All run outside
+  // of event dispatch (no widget OnUiEvent on the stack).
+  while (not _deferredMutations.empty()) {
+    auto ops = std::move(_deferredMutations);
+    _deferredMutations.clear();
+    for (auto& op : ops) {
+      op();
+    }
   }
 }
 /////////////////////////////////////////////////////////////////////////

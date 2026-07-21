@@ -159,7 +159,14 @@ void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     if (acqbuf && acqbuf->_DB) {
       auto cam = acqbuf->_DB->cameraData(_cameraname);
       if (cam) {
-        float aspect = (height() > 0) ? (float(width()) / float(height())) : 1.0f;
+        // #62: derive the cull aspect from the compositor's render dimensions (just Resized to
+        // width()/height() OR the decoupled render size above) — the SAME source the draw camera
+        // uses (CompositingImpl::assemble). Using width()/height() here diverged from the DECOUPLED
+        // render size (SSAA / fixed-res render), narrowing the cull frustum below the drawn frustum
+        // and over-culling at the screen edges. Reading _compcontext keeps cull == draw by construction.
+        int cw = cimpl->_compcontext->miWidth;
+        int ch = cimpl->_compcontext->miHeight;
+        float aspect = (ch > 0) ? (float(cw) / float(ch)) : 1.0f;
         auto cammtx  = cam->computeMatrices(aspect);
         _scenegraph->preRender(drwev->GetTarget(), cammtx);
       }

@@ -148,6 +148,38 @@ void activateWindow(GLFWwindow *window) {
     [nsWindow makeKeyWindow];
     [nsWindow makeMainWindow];
 }
+///////////////////////////////////////////////////////////////////////////////
+// BUG-B point-ownership native leg.
+//
+// COORDINATE CONVERSION (house mixed-DPI / coordinate trap): GLFW screen points
+// — what glfwGetWindowPos and a DockCoordinator rect provider return, and the
+// space the coordinator computes the screen cursor in — are TOP-LEFT origin,
+// y-DOWN. Cocoa GLOBAL screen coordinates are BOTTOM-LEFT origin, y-UP. Convert
+// about the PRIMARY screen height:  cocoa_y = primaryScreenHeight - glfw_y.
+// (A multi-monitor stack above the primary is an approximation; the shipped case
+// is a single primary display.)
+///////////////////////////////////////////////////////////////////////////////
+int64_t nativeTopmostWindowNumberAtScreenPoint(int gx, int gy) {
+  @autoreleasepool {
+    NSArray<NSScreen*>* screens = [NSScreen screens];
+    if (screens.count == 0)
+      return 0;
+    CGFloat primaryH = NSMaxY([[screens objectAtIndex:0] frame]); // primary top in Cocoa coords
+    NSPoint p        = NSMakePoint((CGFloat)gx, primaryH - (CGFloat)gy);
+    NSInteger num    = [NSWindow windowNumberAtPoint:p belowWindowWithWindowNumber:0];
+    return (int64_t)num;
+  }
+}
+int64_t nativeCocoaWindowNumber(GLFWwindow* window) {
+  if (not window)
+    return 0;
+  @autoreleasepool {
+    NSWindow* nswin = glfwGetCocoaWindow(window);
+    if (not nswin)
+      return 0;
+    return (int64_t)[nswin windowNumber];
+  }
+}
 void setAlwaysOnTop(GLFWwindow *window) {
     id glfwWindow = glfwGetCocoaWindow(window);
     //id nsWindow = ((id(*)(id, SEL))objc_msgSend)(glfwWindow, sel_registerName("window"));

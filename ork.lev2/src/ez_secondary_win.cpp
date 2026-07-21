@@ -23,6 +23,9 @@ void fillEventKeyboard(ui::event_ptr_t uiev, int key, int scancode, int action, 
 void fillEventCursor(ui::event_ptr_t uiev, GLFWwindow* window, GLFWmonitor* monitor,
                      double xoffset, double yoffset, double w, double h);
 void enableFocusFollowsMouse(GLFWwindow* window);
+#if defined(__APPLE__)
+int64_t nativeCocoaWindowNumber(GLFWwindow* window); // ctx_glfw_osx.mm
+#endif
 
 static logchannel_ptr_t logchan_secwin = logger()->configureChannel("SECWIN", fvec3(0.4, 0.8, 0.4), false);
 
@@ -100,11 +103,28 @@ SecondaryWinImpl::SecondaryWinImpl(EzSecondaryWin* owner, const EzSecondaryWinCo
   auto global = CtxGLFW::globalOffscreenContext();
   OrkAssert(global != nullptr && "No global offscreen context available");
 
+  // Deterministic offscreen visibility: drive GLFW_VISIBLE from the app's offscreen
+  // state instead of riding the sticky hint left by the main-window create (which is
+  // incidental). An offscreen app MUST NEVER pop a visible OS window (headless gates,
+  // DRM nodes) — mirrors the main window (ctx_glfw.cpp).
+  bool app_offscreen = false;
+  appinitdata_ptr_t app_initdata;
+  if (auto app = dynamic_cast<OrkEzApp*>(OrkEzAppBase::get())) {
+    app_initdata  = app->appInitData();
+    app_offscreen = app_initdata->_offscreen;
+  }
+
   // Configure window hints
+  glfwWindowHint(GLFW_VISIBLE, app_offscreen ? GLFW_FALSE : GLFW_TRUE);
   glfwWindowHint(GLFW_DECORATED, config._decorated ? GLFW_TRUE : GLFW_FALSE);
   glfwWindowHint(GLFW_RESIZABLE, config._resizable ? GLFW_TRUE : GLFW_FALSE);
+  // GLFW_FLOATING is SYSTEM-WIDE always-on-top (floats above ALL windows, not parent-relative;
+  // GLFW has no parent-relative variant) — the accepted tool-palette idiom. Also settable
+  // post-create via glfwSetWindowAttrib (see EzSecondaryWin::setFloating).
   glfwWindowHint(GLFW_FLOATING, config._floating ? GLFW_TRUE : GLFW_FALSE);
-  glfwWindowHint(GLFW_FOCUS_ON_SHOW, config._focusOnShow ? GLFW_TRUE : GLFW_FALSE);
+  glfwWindowHint(GLFW_FOCUS_ON_SHOW, (config._focusOnShow and not app_offscreen) ? GLFW_TRUE : GLFW_FALSE);
+  if (app_offscreen)
+    glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
 
   // Transparent framebuffer (for popup styling)
   if (config._transparent) {
@@ -128,14 +148,25 @@ SecondaryWinImpl::SecondaryWinImpl(EzSecondaryWin* owner, const EzSecondaryWinCo
 
   glfwSetWindowPos(_glfwWindow, config._x, config._y);
 
-  // Create orkid Window wrapper
-  _orkWindow = new Window(config._x, config._y, config._width, config._height, config._title);
+  // Create orkid Window wrapper. is_main=false: a secondary window must never
+  // usurp GfxEnv::mainRenderContext() — otherwise destroying it (phase-2 close)
+  // leaves mpMainWindow dangling, and a later deferred GPU destructor
+  // (Texture::~Texture, fired from Python GC) locks the freed context's
+  // _deferredOps recursive_mutex -> EINVAL -> throw-in-destructor -> terminate.
+  _orkWindow = new Window(config._x, config._y, config._width, config._height, config._title, nullptr, /*is_main*/ false);
 
   // Create CtxGLFW for this window
   _ctxglfw = new CtxGLFW(_orkWindow);
   _ctxglfw->_glfwWindow = _glfwWindow;
   _ctxglfw->_width = config._width;
   _ctxglfw->_height = config._height;
+  // Route the secondary through the SAME context branch as the main window: when the
+  // app is offscreen, Window::initContext (gfxbuf.cpp) keys off CtxGLFW::_appinitdata->
+  // _offscreen to build an image-based offscreen context (VkOffscreen, NO swapchain)
+  // instead of a windowed VkSwapchainKHR. Without this the secondary tried to create a
+  // swapchain against a HIDDEN window, which MoltenVK aborts on (no CAMetalLayer
+  // drawable). For a non-offscreen app this is the windowed path exactly as before.
+  _ctxglfw->_appinitdata = app_initdata;
   _orkWindow->mpCTXBASE = _ctxglfw;
 
   // Set user pointer for event routing (point to this impl)
@@ -153,11 +184,14 @@ SecondaryWinImpl::SecondaryWinImpl(EzSecondaryWin* owner, const EzSecondaryWinCo
   glfwSetCursorEnterCallback(_glfwWindow, _secwin_callback_enterleave);
   logchan_secwin->log("CursorEnterCallback set to %p", (void*)_secwin_callback_enterleave);
 
-  // Show window first - on macOS, framebuffer size is 0 until window is shown
-  glfwShowWindow(_glfwWindow);
+  // Show window first - on macOS, framebuffer size is 0 until window is shown.
+  // Skip when offscreen: the main window proves a hidden window inits its Vulkan
+  // surface/swapchain fine (config dims drive resizeMainSurface below, not GLFW),
+  // and an offscreen app must not flash a visible window.
+  if (not app_offscreen)
+    glfwShowWindow(_glfwWindow);
 
-  // Poll events to ensure window system processes the show request
-  // This is needed on macOS to properly initialize the Metal layer
+  // Poll events to ensure window system processes the create/show request.
   glfwPollEvents();
 
 #ifdef __APPLE__
@@ -220,8 +254,11 @@ SecondaryWinImpl::~SecondaryWinImpl() {
     _glfwWindow = nullptr;
   }
 
-  // Fire closed callback if set
-  if (_owner && _owner->_onClosed) {
+  // Fire closed callback if set — exactly once across BOTH fire sites (here and the
+  // two-phase _closeWindow). A window that went through _closeWindow already fired it;
+  // one that is destructed directly (app teardown clears _secondaryWindows) fires here.
+  if (_owner && _owner->_onClosed && not _owner->_onClosedFired) {
+    _owner->_onClosedFired = true;
     _owner->_onClosed();
   }
 }
@@ -240,8 +277,9 @@ void SecondaryWinImpl::_closeWindow() {
     glfwHideWindow(_glfwWindow);
     _hidden_pending_destroy = true;
 
-    // Call callback only once (when window is actually closed)
-    if (_owner->_onClosed) {
+    // Fire onClosed exactly once (guard shared with ~SecondaryWinImpl).
+    if (_owner->_onClosed && not _owner->_onClosedFired) {
+      _owner->_onClosedFired = true;
       _owner->_onClosed();
     }
   } else if (_glfwWindow && _hidden_pending_destroy) {
@@ -414,6 +452,13 @@ void SecondaryWinImpl::_render() {
 
       fbi->popScissor();
       fbi->popViewport();
+
+      // Post-frame hook: primary command buffer is still recording here, so this
+      // is where FBI::captureAsFormat can enqueue a readback of THIS window's rtg
+      // (processed at endFrame's _processPendingCaptures). Mirrors the main window.
+      if (_owner->_onGpuPostFrame) {
+        _owner->_onGpuPostFrame(_gfxContext);
+      }
     } else {
       logchan_secwin->log("  WARNING: _main_rtg is null, skipping draw");
     }
@@ -750,6 +795,77 @@ int EzSecondaryWin::height() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+bool EzSecondaryWin::floating() const {
+  if (auto impl = _impl.tryAsShared<SecondaryWinImpl>()) {
+    auto glfwwin = impl.value()->_glfwWindow;
+    if (glfwwin) {
+      return glfwGetWindowAttrib(glfwwin, GLFW_FLOATING) == GLFW_TRUE;
+    }
+    return impl.value()->_config._floating; // no live window: report the requested state
+  }
+  return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void EzSecondaryWin::setFloating(bool onoff) {
+  if (auto impl = _impl.tryAsShared<SecondaryWinImpl>()) {
+    impl.value()->_config._floating = onoff;
+    auto glfwwin = impl.value()->_glfwWindow;
+    if (glfwwin) {
+      // GLFW_FLOATING is SYSTEM-WIDE always-on-top (not parent-relative); glfwSetWindowAttrib
+      // toggles it live on all GLFW-supported platforms.
+      glfwSetWindowAttrib(glfwwin, GLFW_FLOATING, onoff ? GLFW_TRUE : GLFW_FALSE);
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+bool EzSecondaryWin::screenRect(int& x, int& y, int& w, int& h) {
+  x = 0; y = 0; w = 0; h = 0;
+  auto impl = _impl.tryAsShared<SecondaryWinImpl>();
+  if (not impl)
+    return false;
+  auto glfwwin = impl.value()->_glfwWindow;
+  if (not glfwwin)
+    return false;
+  // Wayland cannot report a global window position — degrade (contract in
+  // dock_coordinator.h). glfwGetWindowPos there would just leave x/y at 0.
+  if (glfwGetPlatform() == GLFW_PLATFORM_WAYLAND)
+    return false;
+  glfwGetWindowPos(glfwwin, &x, &y);
+  glfwGetWindowSize(glfwwin, &w, &h);
+  return w > 0 && h > 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+int64_t EzSecondaryWin::nativeWindowNumber() {
+#if defined(__APPLE__)
+  auto impl = _impl.tryAsShared<SecondaryWinImpl>();
+  if (not impl)
+    return 0;
+  return nativeCocoaWindowNumber(impl.value()->_glfwWindow);
+#else
+  return 0; // BUG-B native leg is mac-only this slice; non-mac degrades to rect-only.
+#endif
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void EzSecondaryWin::focusWindow() {
+  if (auto impl = _impl.tryAsShared<SecondaryWinImpl>()) {
+    auto glfwwin = impl.value()->_glfwWindow;
+    if (glfwwin) {
+      glfwShowWindow(glfwwin);   // undo any minimize
+      glfwFocusWindow(glfwwin);  // raise + focus (on macOS glfwFocusWindow always raises)
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 ui::Context* EzSecondaryWin::uiContext() {
   return _uicontext.get();
 }
@@ -794,6 +910,45 @@ void EzSecondaryWin::_handleResize(int w, int h) {
   if (auto impl = _impl.tryAsShared<SecondaryWinImpl>()) {
     impl.value()->_onResize(w, h);
   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+static bool _isPointerInjectCode(ui::EventCode c) {
+  switch (c) {
+    case ui::EventCode::PUSH:
+    case ui::EventCode::RELEASE:
+    case ui::EventCode::MOVE:
+    case ui::EventCode::DRAG:
+      return true;
+    default:
+      return false;
+  }
+}
+
+void EzSecondaryWin::injectUiEvent(ui::event_ptr_t ev) {
+  auto impl = _impl.tryAsShared<SecondaryWinImpl>();
+  if (not impl)
+    OrkAssert(false); // injectUiEvent: window already closed
+  if (not _uicontext)
+    OrkAssert(false); // injectUiEvent: no ui context — inject after onGpuInit
+  auto root = _uicontext->_top;
+  if (not root)
+    OrkAssert(false); // injectUiEvent: ui context has no top widget — inject after onGpuInit
+  // Mirror the engine's single shared mutable Event: pointer events carry their own
+  // position; key/wheel events inherit the last injected pointer position so
+  // position-based routing (a hit-test on miX/miY) reaches the last-hovered widget.
+  if (_isPointerInjectCode(ev->_eventcode)) {
+    _injectLastX = ev->miX;
+    _injectLastY = ev->miY;
+  } else {
+    ev->miX = _injectLastX;
+    ev->miY = _injectLastY;
+  }
+  // _fireEvent stamps this window's _uicontext + vp-dim, fires the app global-event
+  // taps, then routes through Context::sendToContext (drag synthesis lives there) —
+  // the same path a real secondary-window event takes.
+  impl.value()->_fireEvent(ev);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

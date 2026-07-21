@@ -1358,7 +1358,7 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
   //////////////////////////////////////////////////////////////////////////////
   // PHASE 1: Collect ALL unique resources from ALL passes into global_resources
   //////////////////////////////////////////////////////////////////////////////
-  printf("=== PHASE 1: Collecting global resources from ALL passes ===\n");
+  if(0)printf("=== PHASE 1: Collecting global resources from ALL passes ===\n");
   for (auto pass : passes) {
     auto pass_name = pass->typedValueForKey<std::string>("object_name").value();
     auto technique = pass->findAncestorOfType<Technique>();
@@ -1478,13 +1478,13 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
   //////////////////////////////////////////////////////////////////////////////
   // PHASE 2: Assign global binding IDs (sorted by key for determinism)
   //////////////////////////////////////////////////////////////////////////////
-  printf("=== PHASE 2: Assigning global binding IDs ===\n");
+  if(0)printf("=== PHASE 2: Assigning global binding IDs ===\n");
   for (auto& [dset_id, resources] : global_resources) {
     int binding_id = 0;
     // std::map is already sorted by key, so iteration is deterministic
     for (auto& [key, info] : resources) {
       info.binding_id = binding_id++;
-      printf("  GLOBAL: dset<%d> key<%s> name<%s> type<%s> -> binding<%d>\n",
+      if(0)printf("  GLOBAL: dset<%d> key<%s> name<%s> type<%s> -> binding<%d>\n",
              dset_id, key.c_str(), info.name.c_str(), info.datatype.c_str(), info.binding_id);
     }
   }
@@ -1492,14 +1492,14 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
   //////////////////////////////////////////////////////////////////////////////
   // PHASE 3: Create per-pass merged resources using global IDs
   //////////////////////////////////////////////////////////////////////////////
-  printf("=== PHASE 3: Creating per-pass merged resources with global IDs ===\n");
+  if(0)printf("=== PHASE 3: Creating per-pass merged resources with global IDs ===\n");
   for (auto pass : passes) {
     auto pass_name = pass->typedValueForKey<std::string>("object_name").value();
 
     auto technique = pass->findAncestorOfType<Technique>();
     OrkAssert(technique);
     auto tech_name = technique->typedValueForKey<std::string>("object_name").value();
-    printf("  Processing merged resources for technique<%s> pass: %s\n", tech_name.c_str(), pass_name.c_str());
+    if(0)printf("  Processing merged resources for technique<%s> pass: %s\n", tech_name.c_str(), pass_name.c_str());
 
     auto pass_shaders = collectShadersForPass(pass);
 
@@ -1597,7 +1597,7 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
 
           merged_descriptor_sets[descriptor_set_id][resource_key] = binding;
           processed_uniform_block_resources.insert(resource_key);
-          printf("        Added uniform block: %s binding %d (dset %d)\n", ublk_name.c_str(), binding.binding_id, descriptor_set_id);
+          if(0)printf("        Added uniform block: %s binding %d (dset %d)\n", ublk_name.c_str(), binding.binding_id, descriptor_set_id);
         } else {
           printf("      WARNING: Uniform block not found in symbol table: %s\n", ublk_name.c_str());
         }
@@ -1631,7 +1631,7 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
 
           merged_descriptor_sets[descriptor_set_id][resource_key] = binding;
           processed_storage_block_resources.insert(resource_key);
-          printf("        Added storage block: %s binding %d (dset %d)\n", storage_name.c_str(), binding.binding_id, descriptor_set_id);
+          if(0)printf("        Added storage block: %s binding %d (dset %d)\n", storage_name.c_str(), binding.binding_id, descriptor_set_id);
         } else {
           printf("      WARNING: Storage interface not found in symbol table: %s\n", storage_name.c_str());
         }
@@ -1679,7 +1679,7 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
           auto binding_node   = std::make_shared<ResourceBindingNode>();
           binding_node->_name = FormatString("b%d : %s\n%s", binding_counter++, binding.datatype.c_str(), binding.name.c_str());
 
-          printf("  MERGED: tech_name<%s> binding_name<%s>, type<%s> id<%d>\n",
+          if(0)printf("  MERGED: tech_name<%s> binding_name<%s>, type<%s> id<%d>\n",
                   tech_name.c_str(),
                   binding.name.c_str(),
                   binding.datatype.c_str(),

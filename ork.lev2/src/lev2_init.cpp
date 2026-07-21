@@ -144,6 +144,18 @@ struct LoaderThread {
     if (!_started.compare_exchange_strong(expected, true)) {
       return;
     }
+    // Universal bare-exit safety net (#32, NVIDIA loader-race). Register an atexit
+    // that winds the loader down. It is registered HERE — AFTER createLoaderContext()
+    // dlopen'd the Vulkan driver .so — so glibc's LIFO atexit ordering runs it BEFORE
+    // the driver library is torn down at process exit. Paths with an orderly GPU-exit
+    // funnel (OrkEzApp::_onGpuExit, ecs.headless_exit) stop the loader earlier and
+    // leave this a no-op (stopLoaderThread is idempotent). Without it, a bare C++
+    // exit (test::harness, a leaked EzApp) leaves this thread pumping
+    // gloadercontext->endFrame -> VkThreadedQueue::queueSubmit into an already-unloaded
+    // driver -> a null-entrypoint SIGSEGV on the "loader" thread AFTER all output. The
+    // static ~LoaderThread below still stops it too, but that dtor runs too late — the
+    // runtime-dlopen'd driver unwinds before it (registered earlier => runs later).
+    std::atexit(stopLoaderThread);
     _thread = std::thread([this]() {
       ork::SetCurrentThreadName("loader");
 #if defined(__APPLE__)
@@ -197,6 +209,22 @@ struct LoaderThread {
   void stop() {
     _stop.store(true, std::memory_order_release);
     if (_thread.joinable()) _thread.join();
+  }
+  // atexit / static-destruction safety net. The orderly teardown (OrkEzApp
+  // dtor, ecs pyext) calls stopLoaderThread() before the context dies. But a
+  // bare interpreter exit (sys.exit -> Py_Exit -> __run_exit_handlers) can
+  // finalize Python while the OrkEzApp object is still leaked through a
+  // reference cycle, so that dtor never runs and this thread is left running
+  // and joinable. The default std::thread dtor would then std::terminate
+  // ("terminate called without an active exception") -> SIGABRT/Abort trap. It
+  // could also still be pumping gloadercontext->beginFrame/endFrame into a
+  // context whose backend is being torn down -> VkOffscreen::submit(ctxVK=0x0)
+  // SIGSEGV. Stop+join here so the thread is always wound down first. This
+  // static is defined AFTER gloadercontext in this TU, so it is destroyed
+  // BEFORE it — the join completes while the loader context is still live.
+  // Idempotent with stopLoaderThread()'s stop().
+  ~LoaderThread() {
+    stop();
   }
 };
 static LoaderThread g_loader_thread;
@@ -448,6 +476,12 @@ struct ClassToucher {
     hypermesh::LeafScatterModuleData::GetClassStatic(); // organ: phyllotactic leaf-card scatter on the skeleton (touch -> reflect props -> cook-hash param sensitivity)
     hypermesh::MergeMeshData::GetClassStatic();         // concat two meshes + per-source gid (bake leaves into trunk)
     hypermesh::GpuComputeModuleData::GetClassStatic(); // generic per-vertex GPU compute (shader-text deformer, no new C++)
+    hypermesh::RouteSpineModuleData::GetClassStatic();    // R-family v1: least-cost spine forest (XfNodeGraph) from terrain fields
+    hypermesh::RoadbedMaskModuleData::GetClassStatic();   // R-family v1: roadbed_mask + road_elev_m + road UV field (HfImage)
+    hypermesh::KeepoutMaskModuleData::GetClassStatic();   // R-family v1: keepout mask (dilated roadbed) -> scatter sinks inverted
+    hypermesh::ParcelizeModuleData::GetClassStatic();     // R-family v1: frontage parcels along the spine (InstanceSet)
+    hypermesh::BuildingSeedsModuleData::GetClassStatic(); // R-family v1: building seeds (scatter-sink InstanceSet + freeform SoA)
+    hypermesh::RoadMeshModuleData::GetClassStatic();      // R-family v2: swept road-ribbon + junction patches + gid split (XfNodeGraph -> GpuMesh)
     // GR1.a — the LRuleSet grammar-as-data schema. SIX independent touches (T1): each serializes
     // as a sub-object inside LSystemModuleData._grammar; an untouched class strips to "class": ""
     // in the JSON + FindClass-null-deserializes SILENTLY. All six, always.
@@ -486,6 +520,7 @@ struct ClassToucher {
 
     particle::GravityModuleData::GetClassStatic();
     particle::DirectionalForceModuleData::GetClassStatic();
+    particle::ExprForceModuleData::GetClassStatic();   // E2.5 S8: ExprIR-driven force
     particle::SphAttractorModuleData::GetClassStatic();
     particle::EllipticalAttractorModuleData::GetClassStatic();
     particle::PointAttractorModuleData::GetClassStatic();

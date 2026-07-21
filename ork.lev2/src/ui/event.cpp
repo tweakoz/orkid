@@ -16,6 +16,39 @@ void Event::setvpDim(Widget* w) {
     _vpdim *= 0.5;
   }
 }
+///////////////////////////////////////////////////////////
+std::string EventCodeToName(EventCode code) {
+  switch (code) {
+    case EventCode::UNKNOWN:         return "UNKNOWN";
+    case EventCode::SHOW:            return "SHOW";
+    case EventCode::HIDE:            return "HIDE";
+    case EventCode::PUSH:            return "PUSH";
+    case EventCode::DOUBLECLICK:     return "DOUBLECLICK";
+    case EventCode::RELEASE:         return "RELEASE";
+    case EventCode::BEGIN_DRAG:      return "BEGIN_DRAG";
+    case EventCode::DRAG:            return "DRAG";
+    case EventCode::END_DRAG:        return "END_DRAG";
+    case EventCode::MOVE:            return "MOVE";
+    case EventCode::KEY_DOWN:        return "KEY_DOWN";
+    case EventCode::KEY_REPEAT:      return "KEY_REPEAT";
+    case EventCode::KEY_UP:          return "KEY_UP";
+    case EventCode::RESIZED:         return "RESIZED";
+    case EventCode::DRAW:            return "DRAW";
+    case EventCode::MOUSEWHEEL:      return "MOUSEWHEEL";
+    case EventCode::MULTITOUCH:      return "MULTITOUCH";
+    case EventCode::TABLET_BRUSH:    return "TABLET_BRUSH";
+    case EventCode::GOT_KEYFOCUS:    return "GOT_KEYFOCUS";
+    case EventCode::LOST_KEYFOCUS:   return "LOST_KEYFOCUS";
+    case EventCode::MOUSE_ENTER:     return "MOUSE_ENTER";
+    case EventCode::MOUSE_LEAVE:     return "MOUSE_LEAVE";
+    case EventCode::ACTION:          return "ACTION";
+    case EventCode::PASTE_TEXT:      return "PASTE_TEXT";
+    case EventCode::MIDI_CONTROLLER: return "MIDI_CONTROLLER";
+    case EventCode::MIDI_KEY_DOWN:   return "MIDI_KEY_DOWN";
+    case EventCode::MIDI_KEY_UP:     return "MIDI_KEY_UP";
+  }
+  return "";
+}
 
 ///////////////////////////////////////////////////////////
 void EventCooked::Reset() {

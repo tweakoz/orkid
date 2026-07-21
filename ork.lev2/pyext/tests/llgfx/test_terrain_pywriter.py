@@ -9,8 +9,8 @@
 #   p2  corpus round-trip: 'erox' (simple chain + loop) and 'erodeflow' (two loops
 #       with L.i params, multi-output flow3d / fill_closed_basins, relax_uv) emit,
 #       reload, bake -> per-channel sha identical.
-#   p3  the expr-error path: 'xxx2' (authored hfdisplacement ExprModule) must raise
-#       the LOUD writer error NAMING the offending node.
+#   p3  authored ExprModule ('xxx2' hfdisplacement): the writer re-renders REAL DSL from
+#       the captured ExprIR tree (T.expr(...), never a compiled-blob hatch) + bakes identical.
 #   p7  a bypassed whole T.loop emits `bypassed=True` and round-trips bake-identical.
 #   p8  switch + generator-group bypass are refused with the typed error.
 ###############################################################################
@@ -42,7 +42,7 @@ class SwitchGenGroupDoc(HeightField):
         super().__init__()
         base = T.Fbm(frequency=4.0, octaves=5) * 0.5 + 0.5
         g = _gen_group(gain=0.3)                       # generator group (no terrain input)
-        smooth = T.lpf(base, cutoff_texels=6.0)
+        smooth = T.lpf(base, cutoff=6.0)
         ridged = T.terrace(base, step_m=1.0/8.0, sharpness=6.0)
         sw = T.switch("smooth", smooth=smooth, ridged=ridged)
         self.capture(sw + g, "height")                 # consume BOTH so elaborate is valid
@@ -148,9 +148,10 @@ def run(ez, ctx):
                      ["height", "filled", "flow_metrics"], "p2b-erodeflow")
     results["p2b_erodeflow_roundtrip"] = p2b
 
-    # ---- p3: authored ExprModule (xxx2 hfdisplacement) round-trips via the COMPILED
-    # blob escape hatch (T.expr_field_raw) — the emitted .py must contain the raw call
-    # AND bake byte-identical (the blob IS the document's compiled text, verbatim).
+    # ---- p3: authored ExprModule (xxx2 hfdisplacement) round-trips via REAL DSL re-rendered
+    # from the captured ExprIR tree (E2.5 — the compiled-blob escape hatch is GONE): the
+    # emitted .py must contain a T.expr(...) call for the expr node (NO raw shadertext) AND
+    # bake byte-identical (the tree re-renders the identical SurfNode -> identical shadertext).
     xpath = resolve_dsl_file("xxx2")
     xcls = load_dsl_class(xpath)
     xinst = xcls(); xinst.generatedflow()
@@ -158,13 +159,13 @@ def run(ez, ctx):
     expr_names = [ch.local_name for (_pk, _k, ch) in _all_nodes(xdoc)
                   if isinstance(ch, DocNode) and ch.clazz_name == "ExprModule"]
     src = to_python(xdoc, class_name="Xxx2Round", extent_m=float(xcls.EXTENT_M))
-    has_blob = "expr_field_raw" in src
+    emits_expr = "T.expr(" in src
     p3rt = _roundtrip(xdoc, float(xcls.EXTENT_M), 128, "p3_xxx2", ctx,
-                      ["height"], "p3-xxx2-blob")
-    p3 = has_blob and p3rt and len(expr_names) > 0
-    print(f"[p3] expr_nodes={expr_names} blob_emitted={has_blob} roundtrip={p3rt} -> {p3}",
+                      ["height"], "p3-xxx2-tree")
+    p3 = emits_expr and p3rt and len(expr_names) > 0
+    print(f"[p3] expr_nodes={expr_names} T.expr_emitted={emits_expr} roundtrip={p3rt} -> {p3}",
           flush=True)
-    results["p3_expr_blob_roundtrip"] = p3
+    results["p3_expr_tree_roundtrip"] = p3
 
     # ---- p4: editor-authored T.expr node round-trips (needs B1 ExprModule.expr_source) ---
     # add_op_node 'expr' inserts an identity T.expr("ctx.input(0)") after fbm; the writer emits
@@ -175,7 +176,7 @@ def run(ez, ctx):
         fbm4 = find_by_path(doc4, "fbm_0")
         add_op_node(doc4, "expr", fbm4)
         src4 = to_python(doc4, class_name=class_name_from_stem("p4_expr"), extent_m=rt4.extent_m)
-        has_expr = ("T.expr(" in src4) and ("expr_field_raw" not in src4)
+        has_expr = "T.expr(" in src4
         p4rt = _roundtrip(doc4, rt4.extent_m, 256, "p4_expr", ctx, ["height", "normal"], "p4")
         p4 = has_expr and p4rt
         print(f"[p4] T.expr emitted={has_expr} roundtrip={p4rt} -> {p4}", flush=True)

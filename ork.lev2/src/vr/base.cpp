@@ -52,6 +52,11 @@ Device::Device() {
   handgroup->setChannel("right.button2").as<bool>(false);
   handgroup->setChannel("right.trigger").as<bool>(false);
   handgroup->setChannel("right.thumb").as<bool>(false);
+
+  // articulated hand tracking mirrors — always present, unsupported/inactive until a
+  //  device that implements XR_EXT_hand_tracking populates them.
+  _handTracking[0] = std::make_shared<HandTrackingState>();
+  _handTracking[1] = std::make_shared<HandTrackingState>();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -85,6 +90,15 @@ controllerstate_ptr_t Device::controller(int id) {
   }
   return rval;
 }
+
+handtrackingstate_ptr_t Device::handTrackingSnapshot(int side) const {
+  std::lock_guard<std::mutex> lock(_hand_mutex);
+  if (side < 0 or side > 1 or not _handTracking[side])
+    return std::make_shared<HandTrackingState>(); // unsupported/inactive default
+  return std::make_shared<HandTrackingState>(*_handTracking[side]); // stable value copy
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 void Device::resetCalibration(){
   _calibstate = 0;

@@ -30,6 +30,9 @@ void Surface::_initSsaa(lev2::Context* ctx) {
   _ssaa_tek[5] = _ssaa_blit_mtl.technique("downsample_6x6");
   _ssaa_par_mvp      = _ssaa_blit_mtl.param("MatMVP");
   _ssaa_par_colormap  = _ssaa_blit_mtl.param("ColorMap");
+  _ssaa_par_flipy    = _ssaa_blit_mtl.param("FlipY");
+  _ssaa_par_flipx    = _ssaa_blit_mtl.param("FlipX");
+  _ssaa_par_vpdim    = _ssaa_blit_mtl.param("ViewportDim");
 
   _ssaa_resolve_rtg = std::make_shared<lev2::RtGroup>(ctx, 8, 8, lev2::MsaaSamples::MSAA_1X);
   _ssaa_resolve_rtg->createRenderTarget(lev2::EBufferFormat::RGBA8);
@@ -57,6 +60,17 @@ void Surface::_ssaaResolve(lev2::Context* ctx, int dst_w, int dst_h) {
     mtl.begin(_ssaa_tek[tek_idx], rcfd);
     mtl.bindParamTexture(_ssaa_par_colormap, ssaa_tex);
     mtl.bindParamMatrix(_ssaa_par_mvp, fmtx4::Identity());
+    // orkshader://blit's fragment uniform block (ublock_frg: FlipY/FlipX/ViewportDim)
+    // is keyed by the shared FxUniformBlock, so its shadow buffer is common to EVERY
+    // FreestyleMaterial that loads that shader — including the compositor output node,
+    // which binds FlipY=1 for its own SSAA resolve. Those values persist across draws,
+    // so a Surface SSAA resolve that leaves them unbound inherits a stale flip against
+    // the wrong dimensions → out-of-bounds texelFetch → a black composite whenever a
+    // compositor SSAA pass ran earlier this frame (the multi-Surface host case). Bind
+    // them explicitly so this resolve is self-contained (straight downsample, no flip).
+    mtl.bindParamInt(_ssaa_par_flipy, 0);
+    mtl.bindParamInt(_ssaa_par_flipx, 0);
+    mtl.bindParamVec2(_ssaa_par_vpdim, fvec2(float(dst_w), float(dst_h)));
 
     lev2::ViewportRect resolve_vp(0, 0, dst_w, dst_h);
     fbi->pushViewport(resolve_vp);

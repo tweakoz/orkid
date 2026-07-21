@@ -455,6 +455,15 @@ struct MeshComputeInst : public dflow::DgModuleInst, public dflowgfx::IPrePhaseP
   // true if the graph must be re-evaluated afterward (the module produced nothing useful on eval 1).
   virtual bool onTopologyReady(Context* ctx) { return false; }
 
+  // called by the driver's live-poke eviction (#33: _evictPokedCookNodes in hmdflow.cpp) for every
+  // node it just dropped from _cookLoaded, BEFORE re-running the onTopologyReady cascade over the
+  // evicted set. Ops that stash cookLoad-derived "already built" state (MergeMesh's _built, forced
+  // true on a disk-restored load so its own re-eval passthrough skips) override this to clear it —
+  // otherwise onTopologyReady's own _built guard skips the rebuild the eviction was meant to trigger.
+  // Default no-op (ops whose only sticky state is topology-diffed against the live input, e.g.
+  // subdivide/inset/extrude's _built_nf, self-heal on the next writeParams()/onTopologyReady() without help).
+  virtual void onCookEvicted() {}
+
   // ---- cook cache (E.6/2.19 — the terrain pattern brought to meshes; engaged only when the
   // GraphData is _cacheable, which the DSL sets for STATIC graphs). Node identity is CONTENT-ONLY
   // (hypermeshModuleIdentityHash: reflected state with uuid envelopes stripped) + a per-class

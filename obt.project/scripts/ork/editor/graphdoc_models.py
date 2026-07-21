@@ -11,16 +11,23 @@
 # Terrain derives its three models from the three below (TerrainDocOutlinerModel /
 # TerrainNodePropertyModel / TerrainParamsPropertyModel) and keeps ONLY its
 # family-specific bits as OVERRIDES — construct display-name annotations
-# (loops/groups/switch), its int-coded ENUM label table, and its add-menu factory
-# list. Everything else (the outliner index, badge rendering, the whole
-# PropertySheetModel interface, typed-literal unit display) lives here.
+# (loops/groups/switch) and its add-menu factory list. Everything else (the outliner
+# index, badge rendering, the whole PropertySheetModel interface, the reflection-
+# derived ENUM dropdowns, typed-literal unit display) lives here.
 #
 # This module imports NOTHING family-specific (no terrain / particles / hypermesh):
 # it edits any family purely through the GraphDocument surface + lev2.ui.
 ################################################################################
 
-from orkengine.core import vec2 as _vec2, vec4 as _vec4
+from orkengine.core import vec2 as _vec2, vec3 as _vec3, vec4 as _vec4, VarMap as _VarMap
 from orkengine import lev2
+
+# the family-NEUTRAL base document module (NOT a family): supplies the reflection-
+# derived enum-choice lookup so the property sheet's ENUM dropdowns need zero
+# per-family label tables (E1).
+from ork.hypergraph.dflow.document import enum_choices as _enum_choices
+from ork.hypergraph.dflow.document import plug_meta as _plug_meta
+from ork.hypergraph.dflow.document import prop_meta as _prop_meta
 
 _ui = lev2.ui
 
@@ -28,6 +35,18 @@ _ui = lev2.ui
 ################################################################################
 # Shared property descriptor + type mapping (used by every property sheet below)
 ################################################################################
+
+# the property-sheet Int editor round-trips through a C++ int32 codec. A reflected value
+# outside that range (e.g. a uint32 bit-mask == 0xFFFFFFFF) cannot decode and would crash the
+# C++ getValue boundary — the row-population path treats such a value as un-editable (read-only
+# string) instead. int32 range == [-2^31, 2^31-1].
+_INT32_MIN = -2147483648
+_INT32_MAX = 2147483647
+
+
+def _out_of_editor_range(v):
+  return isinstance(v, int) and not isinstance(v, bool) and not (_INT32_MIN <= v <= _INT32_MAX)
+
 
 def _ptype_for(v):
   if isinstance(v, bool):
@@ -294,9 +313,10 @@ class _PropSheetBase(_ui.PropertySheetModel):
 class GraphDocumentPropertyModel(_PropSheetBase):
   """Property sheet over ONE selected node handle of a GraphDocument. Rows come from
   document.editable_params(node); reads/writes route through document.get_param /
-  set_param (owner law L2 — the derived GraphData is never touched). ENUM label tables
-  and structural-construct rows (loops / switches) are family OVERRIDES; the generic
-  build handles the flat editable-param surface every family exposes."""
+  set_param (owner law L2 — the derived GraphData is never touched). ENUM dropdowns are
+  reflection-derived here (no per-family tables); structural-construct rows (loops /
+  switches) are family OVERRIDES; the generic build handles the flat editable-param
+  surface every family exposes."""
 
   def __init__(self, document=None, node=None, on_changed=None):
     super().__init__(on_changed=on_changed)
@@ -323,6 +343,30 @@ class GraphDocumentPropertyModel(_PropSheetBase):
     """Populate self._props for `node`. Generic default: the flat editable-param surface.
     Families with structural constructs OVERRIDE to dispatch on their node types."""
     self._build_params(node)
+    self._append_expr_field_rows(node)
+
+  def _append_expr_field_rows(self, node):
+    """Emit one detail-editor row per ExprIR expression field (E2.5 S7) — e.g. ExprForce's
+    force_x/force_y/force_z. The row carries editor.custom == 'expr' (the propsheet shows an
+    Edit button routing to the host's CodeView detail editor) + expr.context (the vocabulary
+    the host validates against). get returns the author SOURCE (the stored tree pretty-
+    printed); set parses+validates author SOURCE and writes the canonical tree back through
+    the document (loud on an invalid/dishonest edit — the document is untouched)."""
+    if self._document is None:
+      return
+    try:
+      fields = self._document.expr_fields(node)
+    except Exception:
+      return
+    for (field, context_name) in fields:
+      ann = _VarMap()
+      ann.__setattr__("editor.custom", "expr")
+      ann.__setattr__("expr.context", context_name)
+      self._props.append(_Prop(
+          field, f"{field} [{context_name}]", _ui.PropertyType.String,
+          get=lambda o=node, f=field: self._document.expr_field_source(o, f),
+          set_=lambda v, o=node, f=field: self._document.set_expr_field(o, f, v),
+          annotations=ann))
 
   def _build_params(self, node):
     used = set()
@@ -334,40 +378,264 @@ class GraphDocumentPropertyModel(_PropSheetBase):
         key = name if name not in used else f"{name}#{kind}"
         used.add(name)
         self._props.append(_Prop(
-            key, f"{name} [{kind}]", _ui.PropertyType.Enum,
+            key, name, _ui.PropertyType.Enum,
             get=lambda k=kind, n=name, o=node, L=labels: self._enum_label(o, k, n, L),
             set_=lambda v, k=kind, n=name, o=node, L=labels: self._document.set_param(
                 o, k, n, L.index(v) if v in L else int(v)),
             choices=lambda L=labels: list(L)))
         continue
+      # VEC3 input plug -> three per-component SLIDER rows (owner: a slider each for
+      # x/y/z, "when not plugged in"). When the plug is connected all three ghost as a
+      # unit (read_only) via the same machinery; each edit recomposes the vec3 and writes
+      # through the document edit path. Generic for any vec3 plug — no family special-casing.
+      if kind == "inputs" and isinstance(value, (list, tuple)) and len(value) == 3 \
+         and all(isinstance(c, (int, float)) for c in value):
+        self._append_vec3_component_rows(node, kind, name)
+        continue
       ptype = _ptype_for(value)
-      if ptype is None or ptype == _ui.PropertyType.Vec2:
-        # no scalar editor for this type -> read-only string so nothing is silently
-        # dropped (ops-self-defend).
+      if ptype is None or ptype == _ui.PropertyType.Vec2 or _out_of_editor_range(value):
+        # no clean scalar editor for this value -> read-only string so nothing is silently
+        # dropped (ops-self-defend). Covers: an unsupported type; a vec2; AND a value the
+        # property-sheet scalar codec cannot round-trip (a uint32 bit-mask like SelectData.
+        # unsel_and == 0xFFFFFFFF overflows the Int editor's int32 codec and would crash the
+        # C++ getValue boundary). Surfacing it read-only keeps the value HONEST + un-editable
+        # rather than exploding the row-population path (loud log names the offender).
+        if _out_of_editor_range(value):
+          print("[propsheet] %s.%s value %r out of the int32 editor range — read-only row"
+                % (kind, name, value), flush=True)
+        vann, vlabel = self._plug_annotations(node, kind, name)
         self._props.append(_Prop(
-            f"{name}", f"{name} [{kind}]", _ui.PropertyType.String,
-            get=lambda v=value: str(v), set_=None, editable=False))
+            f"{name}", vlabel, _ui.PropertyType.String,
+            get=lambda v=value: str(v), set_=None, editable=False,
+            annotations=vann))
         continue
       key = name if name not in used else f"{name}#{kind}"
       used.add(name)
+      # E1 plug metadata (reflection-derived): a clamped-slider range + a display-only
+      # (bake-inert) marker, from dflow.plugSpec() — no per-family tables. A missing/
+      # engine-not-ready lookup leaves the row exactly as before (plain unbounded editor).
+      ann, label = self._plug_annotations(node, kind, name)
       self._props.append(_Prop(
-          key, f"{name} [{kind}]", ptype,
+          key, label, ptype,
           get=lambda k=kind, n=name, o=node: self._document.get_param(o, k, n),
-          set_=lambda v, k=kind, n=name, o=node: self._document.set_param(o, k, n, v)))
+          set_=lambda v, k=kind, n=name, o=node: self._document.set_param(o, k, n, v),
+          annotations=ann))
+      # A FloatXf-typed plug carries an input-transformer: emit an always-editable row per
+      # transformer item field DIRECTLY BELOW the (possibly ghosted) value row (owner
+      # requirement 2). These stay editable when the value is connected/ghosted.
+      self._append_transformer_rows(node, kind, name)
 
-  # ---- ENUM hooks (families provide their label tables) ---------------------
+  # default visible slider range for a vec3 component when the plug declares none — a
+  # symmetric span that gives usable slider travel for typical small force/offset vectors.
+  _VEC3_DEFAULT_RANGE = (-10.0, 10.0)
+
+  def _append_vec3_component_rows(self, node, kind, name):
+    """Emit three Float slider rows (name.x / name.y / name.z) for a vec3 input plug. Each
+    reads/writes ONE component (recomposing the vec3 through set_param — the honest edit
+    path, rebake follows); each honors the plug's declared range if present, else the
+    visible default. A connected plug ghosts all three (read_only) as a unit."""
+    connected = self._is_plug_connected(node, kind, name)
+    rmin, rmax = self._VEC3_DEFAULT_RANGE
+    cn = self._node_class_name(node)
+    if cn is not None:
+      meta = _plug_meta(cn, name)
+      if meta and "min" in meta and "max" in meta:
+        rmin, rmax = float(meta["min"]), float(meta["max"])
+    for i, ax in enumerate(("x", "y", "z")):
+      ann = _VarMap()
+      ann.min = rmin
+      ann.max = rmax
+      # each vec3 component IS a plug row -> the socket glyph (filled when the vec3 plug is
+      # connected — all three ghost as a unit). No '[inputs]' text decorator.
+      ann.row_plug = True
+      ann.plug_connected = bool(connected)
+      if connected:
+        ann.read_only = True
+      label = f"{name}.{ax}"
+      self._props.append(_Prop(
+          f"{name}#v3#{ax}", label, _ui.PropertyType.Float,
+          get=lambda k=kind, n=name, ix=i, o=node: float(self._document.get_param(o, k, n)[ix]),
+          set_=lambda v, k=kind, n=name, ix=i, o=node: self._vec3_set_component(o, k, n, ix, v),
+          annotations=ann))
+
+  def _vec3_set_component(self, node, kind, name, ix, v):
+    cur = list(self._document.get_param(node, kind, name))
+    cur[ix] = float(v)
+    self._document.set_param(node, kind, name, _vec3(cur[0], cur[1], cur[2]))
+
+  def _append_transformer_rows(self, node, kind, name):
+    """Emit one always-editable row per transformer item field for a FloatXf-typed input
+    plug. The base sheet model is flat, so rows are keyed '<plug>#xf#<item>#<field>' and
+    labelled '<plug> -> <itemtype>.<field>' — the Transform group reads as a titled
+    sub-block. Rows edit the LIVE reflected item -> round-trips to the serialized GraphData
+    and re-parameterizes the bake. No-op when the plug carries no transformer."""
+    if kind != "inputs" or self._document is None:
+      return
+    try:
+      xf = self._document.plug_transformer(node, name)
+    except Exception:
+      xf = None
+    if xf is None:
+      return
+    try:
+      items = list(xf.items())     # [(item_name, item)] — the floatxfdata len/items binding
+    except Exception:
+      return
+    for (iname, item) in items:
+      itype = type(item).__name__
+      for (attr, aval) in self._xf_item_fields(item):
+        ptype = _ptype_for(aval)
+        if ptype is None:
+          continue
+        self._props.append(_Prop(
+            f"{name}#xf#{iname}#{attr}", f"{name} -> {itype}.{attr}", ptype,
+            get=lambda it=item, a=attr: getattr(it, a),
+            set_=lambda v, it=item, a=attr: setattr(it, a, v)))
+
+  @staticmethod
+  def _xf_item_fields(item):
+    """[(attr, value)] of a transformer item's editable scalar/bool fields — the pybound
+    do_* enable toggles and numeric params. Introspected (no per-type vocabulary table);
+    non-scalar handles (a curve's multicurve) are skipped (its detail editor is deferred)."""
+    out = []
+    for attr in dir(item):
+      if attr.startswith("_"):
+        continue
+      try:
+        val = getattr(item, attr)
+      except Exception:
+        continue
+      if isinstance(val, (bool, float)):
+        out.append((attr, val))
+    return out
+
+  def _plug_annotations(self, node, kind, name):
+    """(annotations_varmap_or_None, label) for a scalar row: a min/max slider range,
+    a '(bake-inert)' label suffix, and — for input plugs — the socket-glyph annotation
+    (row_plug + plug_connected) the C++ sheet draws in the label column. 'inputs' rows
+    source plugSpec metadata (plug_meta, E1); 'module' rows source the reflected PROPERTY's
+    describeX annotations (prop_meta, E1-close: editor.range.min/max — e.g. FlowErode.blend).
+    Lookups before the engine is up return the plain (None, bare-name label).
+
+    LABELS carry NO '[inputs]'/'[module]' kind decorator any more — a PLUG row is marked by
+    its socket glyph (hollow ring = editable/unconnected, filled disc = connected/ghosted),
+    a MODULE-property row by the ABSENCE of one (that absence IS the distinction)."""
+    label = name
+    ann = None
+    cn = self._node_class_name(node)
+    if cn is not None:
+      if kind == "inputs":
+        meta = _plug_meta(cn, name)
+      elif kind == "module":
+        meta = _prop_meta(cn, name)
+      else:
+        meta = None
+      if meta:
+        if "min" in meta and "max" in meta:
+          ann = _VarMap()
+          ann.min = float(meta["min"])
+          ann.max = float(meta["max"])
+        if meta.get("display_only"):
+          label = f"{name} (bake-inert)"   # honest: shown + editable, no bake effect
+    # PLUG ROW: stamp the socket glyph (drawn by property_sheet.cpp in the label column) +
+    # its connected state. A connected plug's value is driven upstream, so ALSO stamp
+    # read_only (the C++ sheet dims the row + refuses the editor, owner requirement 1) — the
+    # FILLED socket disc reads the connection; no text suffix needed. The plug's Transform
+    # sub-rows stay editable — emitted separately, unstamped. Module rows get NO glyph.
+    if kind == "inputs":
+      if ann is None:
+        ann = _VarMap()
+      ann.row_plug = True
+      connected = self._is_plug_connected(node, kind, name)
+      ann.plug_connected = bool(connected)
+      if connected:
+        ann.read_only = True
+    return ann, label
+
+  def _is_plug_connected(self, node, kind, name):
+    """Whether an 'inputs' plug is fed by an edge (via the document surface). A doc-less
+    node model (terrain binds a bare node, no document) or a family without live plugs
+    reports not-connected — the value row stays editable, unchanged."""
+    if kind != "inputs" or self._document is None:
+      return False
+    try:
+      return bool(self._document.plug_is_connected(node, name))
+    except Exception:
+      return False
+
+  # ---- ENUM hooks (reflection-derived; families need no label tables) -------
+
+  def _node_class_name(self, node):
+    """The node's DSL/reflected class name — asks the document surface first, then
+    falls back to the node handle's own attribute (terrain's node-property model binds
+    a bare object, no document)."""
+    if self._document is not None:
+      cn = self._document.node_class_name(node)
+      if cn is not None:
+        return cn
+    return getattr(node, "clazz_name", None)
 
   def _enum_labels(self, node, kind, name, value):
-    """Ordered label tuple for an int-coded selector param, or None (no ENUM widget).
-    Generic default: None (labels derive from reflection once E1 wires it). Families
-    override with their (class,param)->labels table."""
-    return None
+    """VALUE-ORDERED label tuple for a reflected-enum module property, or None (not an
+    enum -> a normal scalar widget). Derived from the C++ EnumSerializer via reflection
+    (E1) — the single source, no per-family label tables. Only 'module' scalars carry
+    enums (plug 'inputs' never do)."""
+    if kind != "module":
+      return None
+    cn = self._node_class_name(node)
+    if cn is None:
+      return None
+    return _enum_choices(cn, name)
 
   def _enum_label(self, node, kind, name, labels):
     """Current int code -> its label (out-of-range shows the raw code, read-truth)."""
     v = self._document.get_param(node, kind, name)
     i = int(v) if v is not None else 0
     return labels[i] if 0 <= i < len(labels) else str(i)
+
+
+################################################################################
+# Testbench property model (the DISTINCT bench section)
+################################################################################
+
+class BenchPropertyModel(_PropSheetBase):
+  """Property sheet over an asset's TESTBENCH — a DISTINCT bench section, visually separated
+  from the DUT's node properties (no new widget class; the same PropertySheetModel idiom as
+  every other graph-document sheet). Editing semantics follow the outside-in law:
+
+    * `enabled` (standard on every bench) rides the HOST's honest re-instantiation (rebake) —
+      toggling it changes the EDITING instantiation (emitter_entity "@bench" <-> static), so the
+      rebuild counter bumps, exactly like any structural edit.
+    * motion params (radius / period / height / ...) are LIVE — they re-parameterize the pure
+      frame->transform motion program the editor evaluates per transport tick; NO rebake, NO
+      graph touch. The next tick moves the emitter.
+
+  The shell must NOT auto-rebake on THIS model's changes (the model owns its own rebake policy);
+  DflowEditor._onPropsheetChanged skips the generic rebake when the bound model is a BenchPropertyModel."""
+
+  def __init__(self, testbench, host, on_changed=None):
+    super().__init__(on_changed=on_changed)
+    self._bench = testbench
+    self._host = host
+    self._build()
+
+  def _build(self):
+    self._props = []
+    tb = self._bench
+    if tb is not None:
+      self._props.append(_Prop(
+          "enabled", "enabled [bench]", _ui.PropertyType.Bool,
+          get=lambda: bool(self._host.bench_enabled),
+          set_=lambda v: self._host.setBenchEnabled(bool(v))))    # -> rebake (rebuild counter++)
+      prog = tb.primary_program()
+      if prog is not None:
+        for (pname, _pv) in prog.params():
+          self._props.append(_Prop(
+              f"motion.{pname}", f"{pname} [motion]", _ui.PropertyType.Float,
+              get=lambda p=prog, n=pname: float(dict(p.params()).get(n, 0.0)),
+              set_=lambda v, p=prog, n=pname: p.set_param(n, float(v))))  # LIVE: no rebake
+    self._by_key = {p.key: p for p in self._props}
+    self.notifyStructureChanged()
 
 
 ################################################################################

@@ -27,6 +27,7 @@
 #include <ork/lev2/gfx/renderer/rendercontext.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_common.h> // [M] read _terrainMaterialMode off pbr_common
 #include <ork/lev2/gfx/image.h>             // CaptureBuffer::_image->writeToFile (PNG dump)
+#include <ork/lev2/gfx/live_field_buffer.h> // S4 — renderer live-accept of progressive re-bake planes
 #include <ork/util/crc.h>
 #include <ork/util/logger.h>
 #include <ork/kernel/async_tracker.h>     // register the stored-mode texbake as pending async work
@@ -81,7 +82,109 @@ struct TcBootstrap {
   std::vector<float> _heights;        // the bake's DENSE height array (BAKE-res, stride 1 — both modes)
   std::vector<uint32_t> _frame;       // relax: the bake's stride-5 PACKED frame [uv.x/y fp32-bits, half2(nrm.xz), half2(bn.xy), half2(bn.z,0)] (BAKE-res); empty = mono
   std::shared_ptr<RtGroup> _bake_rtg; // stored mode: the baked atlas, bound onto the material (kept alive)
+  // S4 live-accept (renderer consumes LIVE artifacts during a sliced re-bake) — armed
+  // at materialize with the height product path's named LiveFieldBuffer; per-frame the
+  // drawable consumes any NEWER generation into the presenting SSBO (heights + bounds).
+  live_field_buffer_ptr_t _live;
+  uint64_t _live_gen    = 0;          // last consumed generation (init = current at arm time)
+  bool     _live_warned = false;
+  std::vector<float> _live_scratch;   // consume copy-out target (reused)
+  size_t _heights_off = 0, _chunky_off = 0, _yb_off = 0; // stashed layout (mirror materialize)
+  int _render_dim = 0, _render_cps = 0;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+// S4 live-accept — progressive display of an in-flight sliced re-bake (JUL13 §E5/S4).
+// The cook publishes whole, frame-coherent height planes to the named LiveFieldBuffer at
+// each viewable-node checkpoint; this consumes the NEWEST one into the ALREADY-PRESENTING
+// terrain SSBO (dense heights + per-chunk Y bounds + global ybounds, so cull stays honest
+// for the morphing surface). GPU-write-hazard note: a new generation only exists on a
+// frame where the cook advanced a node, and every node's dispatch triplet ends in
+// submit+WAIT on the shared queue — all previously submitted GPU work (including the
+// prior frame's render reading this SSBO) has completed before this map/write runs. The
+// plane itself is always COMPLETE (the double buffer flips under its lock), so the mesh
+// never shows a half-updated field. Physics/scatter do NOT take this path — they REQUIRE
+// final and hold-last-final (BulletTerrainImpl::consumePendingReload / scatter-at-bake).
+///////////////////////////////////////////////////////////////////////////////
+static void s4LiveAccept(Context* ctx, TcBootstrap* state) {
+  if (not state->_live or not state->_ssbo)
+    return;
+  if (state->_live->generation() == state->_live_gen) // lock-free peek: nothing new
+    return;
+  int lw = 0, lh = 0;
+  state->_live_gen = state->_live->consume(
+      state->_live_gen, [&](int w, int h, const float* data, uint64_t) {
+        state->_live_scratch.assign(data, data + size_t(w) * size_t(h));
+        lw = w;
+        lh = h;
+      });
+  if (lw <= 0 or lw != lh)
+    return;
+  const int rdim           = state->_render_dim;
+  std::vector<float>* hp   = &state->_live_scratch;
+  std::vector<float> resampled;
+  if (lw != rdim) {
+    if (lw < rdim) { // live plane coarser than the render grid — decline, loudly once
+      if (not state->_live_warned) {
+        logchan_tcd->log(
+            "TerrainChunkDrawable: S4 live plane %dx%d < render_dim %d — ignoring live updates",
+            lw, lh, rdim);
+        state->_live_warned = true;
+      }
+      return;
+    }
+    // downsample with the SAME filtered convention materialize + the collider use
+    Image simg;
+    simg.initWithFormat(lw, lh, EBufferFormat::R32F);
+    std::memcpy((void*)simg._data->data(), hp->data(), hp->size() * sizeof(float));
+    Image dimg;
+    dimg.resampledOf(simg, rdim, rdim, Image::ResampleFilter::TRIANGLE);
+    resampled.resize(size_t(rdim) * rdim);
+    std::memcpy(resampled.data(), dimg._data->data(), resampled.size() * sizeof(float));
+    hp = &resampled;
+  }
+  auto fxi = ctx->FXI();
+  { // the dense heights @_heights_off (terr_pos reads heights[cz*u_dim+cx])
+    auto m = fxi->mapStorageBuffer(state->_ssbo, state->_heights_off, hp->size() * 4, BufferMapAccess::WRITE_ONLY);
+    std::memcpy(m->_mappedaddr, hp->data(), hp->size() * 4);
+    fxi->unmapStorageBuffer(m.get());
+  }
+  { // per-chunk world-Y bounds + global u_ybounds (HZB/frustum cull correctness)
+    const int   chunk = state->_chunk;
+    const int   cps   = state->_render_cps;
+    const auto& hh    = *hp;
+    std::vector<float> chunkY(size_t(cps) * cps * 2);
+    float gmn = 1e30f, gmx = -1e30f;
+    for (int ccz = 0; ccz < cps; ccz++)
+      for (int ccx = 0; ccx < cps; ccx++) {
+        float hmn = 1e30f, hmx = -1e30f;
+        int x1 = std::min(rdim, (ccx + 1) * chunk + 1);
+        int z1 = std::min(rdim, (ccz + 1) * chunk + 1);
+        for (int z = ccz * chunk; z < z1; z++)
+          for (int x = ccx * chunk; x < x1; x++) {
+            float h = hh[size_t(z) * rdim + x];
+            hmn     = std::min(hmn, h);
+            hmx     = std::max(hmx, h);
+          }
+        int ci             = ccz * cps + ccx;
+        chunkY[ci * 2 + 0] = hmn;
+        chunkY[ci * 2 + 1] = hmx;
+        gmn = std::min(gmn, hmn);
+        gmx = std::max(gmx, hmx);
+      }
+    auto m = fxi->mapStorageBuffer(state->_ssbo, state->_chunky_off, chunkY.size() * 4, BufferMapAccess::WRITE_ONLY);
+    std::memcpy(m->_mappedaddr, chunkY.data(), chunkY.size() * 4);
+    fxi->unmapStorageBuffer(m.get());
+    float yb[2] = {gmn, gmx};
+    auto ym     = fxi->mapStorageBuffer(state->_ssbo, state->_yb_off, sizeof(yb), BufferMapAccess::WRITE_ONLY);
+    std::memcpy(ym->_mappedaddr, yb, sizeof(yb));
+    fxi->unmapStorageBuffer(ym.get());
+    state->_ymin = gmn;
+    state->_ymax = gmx;
+  }
+  logchan_tcd->log("TerrainChunkDrawable: S4 live-accept gen<%llu> plane<%dx%d> -> render_dim<%d>",
+                   (unsigned long long)state->_live_gen, lw, lh, rdim);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // PHASE-0 SPIKE — bake the terrain proctex (FWD_SSBO_CUSTOM_CAPTURE) over the planar UV domain into a
@@ -421,6 +524,50 @@ static bool terrainTexBake(Context* ctx, const TerrainChunkDrawableData* self, T
 }
 } // namespace
 
+///////////////////////////////////////////////////////////////////////////////
+// #88 v2 — in-place display REVISIT: load a baked height product and publish it as one
+// whole plane to the buffer the HELD drawable consumes (see terrain_chunk_drawable.h).
+// The load MUST match materialize's read (:587-595) exactly — channel-0 as FLOAT, meters —
+// so the pushed plane is byte-identical to what a fresh full-swap materialize would upload.
+///////////////////////////////////////////////////////////////////////////////
+int publishHeightPlaneFromExr(const std::string& held_field_key, const std::string& height_exr_path) {
+  if (s4ProgressiveDisabled()) {
+    logchan_tcd->log("TerrainChunkDrawable: in-place rebind DECLINED (S4 disabled)");
+    return 0;
+  }
+  // find-only: the held drawable armed this artifact at materialize (liveFieldAcquire).
+  // ABSENT => no held drawable listens here => the caller must full-swap (self-defend).
+  auto buf = liveFieldFind(liveFieldCanonicalKey(held_field_key));
+  if (not buf) {
+    logchan_tcd->log("TerrainChunkDrawable: in-place rebind DECLINED (no live buffer <%s>)",
+                     held_field_key.c_str());
+    return 0;
+  }
+  auto in = OIIO::ImageInput::open(height_exr_path);
+  if (not in) {
+    logchan_tcd->log("TerrainChunkDrawable: in-place rebind DECLINED (product MISSING <%s>)",
+                     height_exr_path.c_str());
+    return 0;
+  }
+  const auto& spec = in->spec();
+  const int w = spec.width, h = spec.height;
+  if (w <= 0 or w != h) {
+    in->close();
+    logchan_tcd->log("TerrainChunkDrawable: in-place rebind DECLINED (non-square plane %dx%d)", w, h);
+    return 0;
+  }
+  std::vector<float> px(size_t(w) * size_t(h) * spec.nchannels);
+  in->read_image(0, 0, 0, spec.nchannels, OIIO::TypeDesc::FLOAT, px.data());
+  in->close();
+  std::vector<float> plane(size_t(w) * size_t(h));
+  for (size_t i = 0; i < plane.size(); i++)
+    plane[i] = px[i * spec.nchannels]; // channel 0 = height METERS (== materialize's read)
+  buf->publish(w, h, plane.data());    // flip + bump generation -> s4LiveAccept consumes next frame
+  logchan_tcd->log("TerrainChunkDrawable: in-place plane REBIND published <%dx%d> key<%s> from <%s>",
+                   w, h, held_field_key.c_str(), height_exr_path.c_str());
+  return w;
+}
+
 drawable_ptr_t TerrainChunkDrawableData::createDrawable() const {
   auto drw   = std::make_shared<ComputeDrawable>();
   drw->_drawable_type = "terrain"_crcu; // enumerable via Scene::drawableNodesWithType
@@ -430,8 +577,13 @@ drawable_ptr_t TerrainChunkDrawableData::createDrawable() const {
   // lazy bootstrap (the D.3 pattern): the GPU side builds on the first onGpuUpdate,
   // after the wire step has resolved the manifest + material by name.
   drw->_liveRecompute = [self, state](Context* ctx, ComputeDrawable* drawable) {
-    if (state->_built)
-      return; // terrain is static: nothing per-frame (the cull passes run per-VP in onPreRender)
+    if (state->_built) {
+      // S4: the renderer MAY accept live artifacts — during a sliced re-bake the
+      // held-last-frame terrain progressively morphs as checkpoints publish. No-op
+      // unless the named artifact's generation advanced (lock-free peek).
+      s4LiveAccept(ctx, state.get());
+      return; // terrain is static otherwise (the cull passes run per-VP in onPreRender)
+    }
     if (self->_resolved_manifest.empty() or not self->_resolved_material) {
       if (not state->_warned) {
         logchan_tcd->log(
@@ -784,6 +936,19 @@ drawable_ptr_t TerrainChunkDrawableData::createDrawable() const {
       state->_heights = heights_hi;
       if (relax)
         state->_frame = pack_frame5(ruv_hi, bnm_hi, bake_dim);
+    }
+    // S4: arm the live-accept — the height product FILE PATH is the artifact name (the
+    // same join key the bake's capture path and the Bullet collider's _resPath share).
+    // _live_gen starts at the CURRENT generation so only publishes NEWER than this
+    // materialize (i.e. the next re-bake's checkpoints) are consumed.
+    state->_heights_off = HEIGHTS_OFF;
+    state->_chunky_off  = CHUNKY_OFF;
+    state->_yb_off      = YB_OFF;
+    state->_render_dim  = render_dim;
+    state->_render_cps  = render_cps;
+    if (not s4ProgressiveDisabled()) {
+      state->_live     = liveFieldAcquire(liveFieldCanonicalKey(hfile));
+      state->_live_gen = state->_live->generation();
     }
     state->_cdd   = cdd;
     state->_built = true;

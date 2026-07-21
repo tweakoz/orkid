@@ -29,7 +29,6 @@ struct HandlerResult {
   }
 
   Widget* mHandler;
-  bool mHoldFocus;
   bool _widget_finished = false;
 };
 
@@ -151,6 +150,13 @@ struct Event final // RawEvent
 
   std::string description() const;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
+// crc(EventCode) -> canonical name string, derived directly from the ui::EventCode
+// enum. "" for any code not in the enum (never throws). Keeps session JSON legible
+// C++-side without depending on the python-side EVENT_CODE_NAMES fallback map.
+std::string EventCodeToName(EventCode code);
 
 ///////////////////////////////////////////////////////////////////////////////
 

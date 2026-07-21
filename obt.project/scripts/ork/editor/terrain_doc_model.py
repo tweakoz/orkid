@@ -9,9 +9,10 @@
 #    group / switch), the capture-visibility test, and the add-menu factories. The
 #    tree index + bypass/output badges come from the generic model (badge STATE is
 #    read from TerrainDoc.node_bypass_badge / node_output_badge).
-#  - TerrainNodePropertyModel: adds the int-coded ENUM label table and the
-#    DocLoop.count / DocSwitch.selected / L.i-read-only rows; the flat-node scalar
-#    rows + the whole PropertySheetModel interface are generic.
+#  - TerrainNodePropertyModel: adds the DocLoop.count / DocSwitch.selected /
+#    L.i-read-only rows; the flat-node scalar rows, the ENUM dropdowns (labels
+#    derive from C++ reflection, E1), and the whole PropertySheetModel interface
+#    are generic.
 #  - TerrainParamsPropertyModel: routes the generic params-table rows through the
 #    TerrainRuntime's DSL ctor kwargs and adds the session dim/extent/texel rows.
 #
@@ -24,7 +25,7 @@ from orkengine import lev2
 
 from ork.hypergraph.dflow.terrain.doc import (
     DocNode, DocLoop, DocGroupCall, DocSwitch, tree_paths,
-    TerrainDocParamError, EDITOR_ADD_OPS, add_op_node, add_loop, add_into_loop)
+    TerrainDocParamError, editor_add_ops, add_op_node, add_loop, add_into_loop)
 from ork.editor.graphdoc_models import (
     GraphDocumentOutlinerModel, GraphDocumentPropertyModel,
     GraphDocumentParamsPropertyModel, _Prop, _ptype_for)
@@ -81,9 +82,9 @@ class TerrainDocOutlinerModel(GraphDocumentOutlinerModel):
     the synthetic top rows offer nothing."""
     obj = self._objs.get(parent_key)
     if isinstance(obj, DocNode) and obj.clazz_name != "CaptureModule":
-      names = list(EDITOR_ADD_OPS) + ["loop"]
+      names = list(editor_add_ops()) + ["loop"]
     elif isinstance(obj, DocLoop):
-      names = list(EDITOR_ADD_OPS)
+      names = list(editor_add_ops())
     else:
       return []
     return [{"id": n, "display_name": n,
@@ -116,20 +117,12 @@ class TerrainDocOutlinerModel(GraphDocumentOutlinerModel):
 # Property model (one selected document object)
 ################################################################################
 
-# int-coded selector params -> ENUM widget labels (index == the recorded code; label
-# orders mirror ops.py: OP_* combine order, _CURV_MODE, _NOISE_BASIS).
-_ENUM_PARAMS = {
-    ("CombineModule",   "op"):    ("add", "sub", "mul", "min", "max", "mix"),
-    ("CurvatureModule", "mode"):  ("convex", "concave", "magnitude"),
-    ("NoiseModule",     "basis"): ("perlin", "simplex", "worleyf1", "voronoi"),
-}
-
-
 class TerrainNodePropertyModel(GraphDocumentPropertyModel):
   """Property sheet over ONE selected document object. Derives the PropertySheetModel
   interface + flat-node scalar rows from the generic model; overrides the descriptor
-  build to dispatch on the terrain object types (DocNode with ENUM + L.i rows, DocLoop
-  count, DocSwitch selected). All writes route through the document mutation API (L2)."""
+  build to dispatch on the terrain object types (DocNode with reflection-derived ENUM
+  dropdowns + L.i rows, DocLoop count, DocSwitch selected). All writes route through the
+  document mutation API (L2)."""
 
   def __init__(self, obj=None, on_changed=None):
     super().__init__(document=None, node=None, on_changed=on_changed)
@@ -157,15 +150,21 @@ class TerrainNodePropertyModel(GraphDocumentPropertyModel):
 
   def _build_node(self, node):
     used = set()
+    # S7 expression-source fields (ExprModule.expr_source) are surfaced as CodeView detail
+    # rows below, NOT as plain module lineedits — exclude them from the flat param sweep.
+    expr_fields = node.doc.expr_fields(node) if getattr(node, "doc", None) is not None else []
+    expr_names = {f for (f, _c) in expr_fields}
     for (kind, name, value) in node.editable_params():
-      labels = _ENUM_PARAMS.get((node.clazz_name, name))
+      if kind == "module" and name in expr_names:
+        continue
+      labels = self._enum_labels(node, kind, name, value)   # reflection-derived (E1)
       if labels is not None and isinstance(value, int) and not isinstance(value, bool):
         # int-coded selector -> ENUM widget (the ecsedit idiom: get/set trade in the
         # LABEL string, choices() lists them; the doc keeps recording the int code).
         key = name if name not in used else f"{name}#{kind}"
         used.add(name)
         self._props.append(_Prop(
-            key, f"{name} [{kind}]", _ui.PropertyType.Enum,
+            key, name, _ui.PropertyType.Enum,
             get=lambda k=kind, n=name, o=node, L=labels: self._enum_label(o, k, n, L),
             set_=lambda v, k=kind, n=name, o=node, L=labels: o.set_param(
                 k, n, L.index(v) if v in L else int(v)),
@@ -174,22 +173,60 @@ class TerrainNodePropertyModel(GraphDocumentPropertyModel):
       ptype = _ptype_for(value)
       if ptype is None or ptype == _ui.PropertyType.Vec2:
         # v1 propsheet has no Vec2 editor — show read-only so nothing is silently
-        # dropped (ops-self-defend).
+        # dropped (ops-self-defend). Still carry the display-only (bake-inert)
+        # label so e.g. a vec2 offset_vel row reads honestly distinct (E1).
+        _ann, vlabel = self._plug_annotations(node, kind, name)
         self._props.append(_Prop(
-            f"{name}", f"{name} [{kind}]", _ui.PropertyType.String,
+            f"{name}", vlabel, _ui.PropertyType.String,
             get=lambda v=value: str(v), set_=None, editable=False))
         continue
       key = name if name not in used else f"{name}#{kind}"
       used.add(name)
+      # reflection-derived row metadata (generic seam, E1/E1-close): plug rows get
+      # plugSpec ranges + bake-inert labels; 'module' rows get the property's
+      # editor.range.min/max annotations (e.g. FlowErode.blend) — no hand tables.
+      ann, label = self._plug_annotations(node, kind, name)
       self._props.append(_Prop(
-          key, f"{name} [{kind}]", ptype,
+          key, label, ptype,
           get=lambda k=kind, n=name, o=node: self._read_param(o, k, n),
-          set_=lambda v, k=kind, n=name, o=node: o.set_param(k, n, v)))
+          set_=lambda v, k=kind, n=name, o=node: o.set_param(k, n, v),
+          annotations=ann))
     for (kind, name, expr_str, i0) in node.iter_param_view():
       self._props.append(_Prop(
           f"{name}#iter", f"{name} (L.i, read-only)", _ui.PropertyType.String,
           get=lambda s=expr_str, x=i0: f"{s}   [i0={x:g}]",
           set_=None, editable=False))
+    # E0 DOCUMENT-PARAMETER-driven plugs: read-only here (edit the referenced Terrain
+    # Parameter, not the node plug). editable_params() excludes them, so without this row
+    # a plug carrying an expression would be silently dropped from the sheet — show it
+    # instead (topology honesty; the value tracks the parameter).
+    for (kind, name, expr_str, val) in node.param_expr_view():
+      # doc-param-driven: GHOST it (read_only) so the C++ sheet dims the row + refuses the
+      # editor. set_param refusal is BY DESIGN (edit the referenced Terrain Parameter, not
+      # the node plug) — the ghost surfaces that honestly, matching the connected-plug split.
+      dp_ann = VarMap()
+      dp_ann.read_only = True
+      self._props.append(_Prop(
+          f"{name}#expr", f"{name} (= {expr_str}, doc-param driven)", _ui.PropertyType.String,
+          get=lambda s=expr_str, x=val: f"{s}   [= {x:g}]",
+          set_=None, editable=False, annotations=dp_ann))
+    self._append_terrain_expr_rows(node, expr_fields)
+
+  def _append_terrain_expr_rows(self, node, expr_fields):
+    """Emit one detail-editor row (editor.custom == 'expr') per terrain expression-source field
+    (S7 — ExprModule.expr_source). get returns the author SOURCE; set VALIDATES (compile) +
+    writes through the doc edit path (loud on an invalid edit — the document is untouched; the
+    host's CodeView surfaces the reason). The row carries expr.context naming the terrain source
+    form. The transformer/expr sub-rows keep their [context] label form (deliverable-1 restraint)."""
+    for (field, context_name) in expr_fields:
+      ann = VarMap()
+      ann.__setattr__("editor.custom", "expr")
+      ann.__setattr__("expr.context", context_name)
+      self._props.append(_Prop(
+          field, f"{field} [{context_name}]", _ui.PropertyType.String,
+          get=lambda o=node, f=field: o.doc.expr_field_source(o, f),
+          set_=lambda v, o=node, f=field: o.doc.set_expr_field(o, f, v),
+          annotations=ann))
 
   @staticmethod
   def _read_param(node, kind, name):

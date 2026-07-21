@@ -459,6 +459,60 @@ def fbm_stack(noise_fn, p, octaves):
   return acc * (1.0 / nrm)
 
 
+# ── metric-space 2D fBm (planar-chart noise idiom) ──────────────────────────
+def fbm2d(uv, octaves=4, aa=1.0):
+  """Value-fBm over a 2D coordinate `uv` (vec2) — the metric-space noise idiom for
+  UV-charted surfaces (road aggregate, panel grime, decals). P.fbm / P.fbm_aa are
+  vec3-ONLY (3D value noise); this lifts the 2D chart into the z=0 plane, so a planar
+  material samples a coherent noise slice WITHOUT hand-padding (and can't accidentally
+  hand P.fbm_aa a vec2 -> a GLSL 'no matching overload' compile failure). `aa` is the
+  footprint-AA bias (P.fbm_aa); pass aa=None for the plain, non-band-limited P.fbm.
+  `octaves` BAKES (fbm loop bound). -> float ~[0,1]."""
+  p3 = P.vec3(uv, 0.0)
+  return P.fbm(p3, octaves) if aa is None else P.fbm_aa(p3, octaves, aa)
+
+
+# ── 1D repeating-boundary lattice + periodic dashing ────────────────────────
+class _StripeLattice:
+  __slots__ = ("boundary", "center", "interior", "cell")
+
+  def __init__(self, boundary, center, interior, cell):
+    self.boundary = boundary   # x-distance to the nearest cell DIVIDER (integer of x*count)
+    self.center   = center     # x-distance to the nearest cell CENTER (half-integer)
+    self.interior = interior   # 1 when that nearest divider is interior; 0 at the two outer edges
+    self.cell     = cell       # cell index the point falls in (0 .. count-1)
+
+
+def stripe_lattice(x, count):
+  """Partition a normalized coordinate `x` in [0,1] into `count` equal cells and report,
+  in x units, the distance to the nearest cell DIVIDER and cell CENTER, plus an
+  interior-divider flag that is 0 at the two outer edges (x=0, x=1). `count` is a RUNTIME
+  scalar (a param) — the whole thing is closed-form (no Python loop, nothing baked), so the
+  same generated shader serves any count. The generic 1D repeating-boundary primitive:
+  road lane dividers, fence pickets, tick marks, ladder rungs. -> _StripeLattice."""
+  f        = x * count
+  cell     = P.floor(f)
+  # distance (in f units) to the nearest integer boundary / half-integer center, /count -> x units
+  dbound   = P.abs(P.fract(f + 0.5) - 0.5) / count
+  dcent    = P.abs(P.fract(f) - 0.5) / count
+  idx      = P.floor(f + 0.5)                       # nearest boundary index (0 .. count)
+  interior = P.step(0.5, idx) * (1.0 - P.step(count - 0.5, idx))   # 1 iff 1 <= idx <= count-1
+  return _StripeLattice(dbound, dcent, interior, cell)
+
+
+def dash_mask(v, period, duty=0.5):
+  """Periodic dashed on/off mask along a 1D metric coordinate `v` (e.g. arc-length meters):
+  1 on the painted dash, 0 in the gap, antialiased over one footprint so the dash edges don't
+  crawl. `period` is the full on+off length (v units), `duty` the painted fraction in [0,1].
+  The AA metric is fwidth(v) — smooth (v is continuous), so it has no wrap discontinuity."""
+  s    = P.fract(v / period) * period               # 0 .. period within one cycle
+  aa   = P.fwidth(v) + 1e-4
+  edge = duty * period
+  on   = P.smoothstep(-aa, aa, s) - P.smoothstep(edge - aa, edge + aa, s)
+  return P.saturate(on)
+
+
 __all__ = ["triplanar", "carbon_weave", "panel_split", "greeble", "box_partition",
            "brick_lattice", "domain_warp", "vein_field", "crumple", "wood_grain",
-           "stripes", "spots", "rosette", "streaks", "cell_lod", "domain_xf", "fbm_stack"]
+           "stripes", "spots", "rosette", "streaks", "cell_lod", "domain_xf", "fbm_stack",
+           "fbm2d", "stripe_lattice", "dash_mask"]

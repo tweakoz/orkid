@@ -62,6 +62,14 @@ private:
   //  the runtime offering D16_UNORM — otherwise a no-op (color-only reprojection).
   void _createDepthSwapchain();
   void _createActions();
+  // Optional articulated hand tracking (XR_EXT_hand_tracking, default 26-joint set).
+  //  _createHandTrackers: after session start, create one XrHandTrackerEXT per hand IFF
+  //  the extension was enabled AND the system supports it; emits ONE availability line and
+  //  otherwise leaves the feature cleanly unavailable. _locateHands: per-frame, locate the
+  //  26 joints against the base reference space at the frame's predicted display time and
+  //  publish honest per-joint validity + the hand active flag into the engine hand mirror.
+  void _createHandTrackers();
+  void _locateHands();
   void _pollEvents();
   void _syncActions();
   // Shared frame-submit orchestration for __composite / __compositeStereo: acquire +

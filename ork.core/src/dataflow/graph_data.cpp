@@ -223,7 +223,27 @@ void GraphData::addModule(graphdata_ptr_t gd, const std::string& named, dgmodule
 }
 ///////////////////////////////////////////////////////////////////////////////
 void GraphData::removeModule(graphdata_ptr_t gd, dgmoduledata_ptr_t pchild) {
-  OrkAssert(false); // not implemented yet
+  if (not pchild)
+    return;
+  // sever every edge touching this module (BOTH directions) so no downstream/upstream plug
+  // is left pointing at a dropped module. disconnect() maintains the reciprocal fan-out lists.
+  int nin = pchild->numInputs();
+  for (int i = 0; i < nin; i++)
+    gd->disconnect(pchild->input(i));   // clear this input's producer link + drop from its fan-out
+  int nout = pchild->numOutputs();
+  for (int i = 0; i < nout; i++)
+    gd->disconnect(pchild->output(i));  // clear every downstream consumer's producer link
+  // drop from the module map (keyed by the reflected name it was added under).
+  auto it = gd->_modules.find(pchild->_name);
+  if (it != gd->_modules.end())
+    gd->_modules.RemoveItem(it);
+  // editor state keyed by module name must not outlive the node.
+  gd->_editor_layout.erase(pchild->_name);
+  if (gd->_output_node == pchild->_name)
+    gd->_output_node.clear();
+  pchild->_graphdata  = nullptr;
+  gd->_topologyDirty  = true;
+  gd->OnGraphChanged();
 }
 ///////////////////////////////////////////////////////////////////////////////
 dgmoduledata_ptr_t GraphData::module(const std::string& named) const {
@@ -239,13 +259,11 @@ dgmoduledata_ptr_t GraphData::module(size_t indexed) const {
   return typedModuleData<DgModuleData>(_modules.GetItemAtIndex(indexed).second);
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool GraphData::canConnect(inplugdata_constptr_t pin, outplugdata_constptr_t pout) const {
-  // TYPED CONNECTION CHECK (B.1). Both plug sides now record typeid(traits::elemental_data_type)
-  // (see plug_data.inl -- the historical asymmetry made this check impossible, hence the old
-  // `return true //TODO`). Equality compares type_info with a name-string fallback (dylib-safe).
-  //
-  // ROLLOUT: WARN by default -- mismatches are LOGGED but allowed, so existing graphs keep loading
-  // while the family suites soak; set ORK_DFLOW_ENFORCE_TYPED_CONNECT=1 to enforce (reject).
+bool GraphData::plugsCompatible(inplugdata_constptr_t pin, outplugdata_constptr_t pout) const {
+  // STRICT connectability predicate: matching flow data-type + producer fan-out headroom.
+  // Both plug sides record typeid(traits::elemental_data_type) (see plug_data.inl); equality
+  // compares type_info with a name-string fallback (dylib-safe). This is the verdict an editor
+  // pre-connect gate consults -- canConnect() layers the WARN-vs-enforce rollout on TOP of it.
   if (pin == nullptr or pout == nullptr)
     return false;
   const auto& ti = pin->GetDataTypeId();
@@ -254,8 +272,23 @@ bool GraphData::canConnect(inplugdata_constptr_t pin, outplugdata_constptr_t pou
   // fan-out contract: max_fanout==0 means UNBOUNDED (a capability, not a limit); else enforce it.
   size_t maxfan = pout->maxFanOut();
   bool fan_ok   = (maxfan == 0) or (pout->_connections.size() < maxfan);
-  if (type_ok and fan_ok)
+  return type_ok and fan_ok;
+}
+///////////////////////////////////////////////////////////////////////////////
+bool GraphData::canConnect(inplugdata_constptr_t pin, outplugdata_constptr_t pout) const {
+  // TYPED CONNECTION CHECK (B.1) -- strict verdict in plugsCompatible().
+  //
+  // ROLLOUT: WARN by default -- mismatches are LOGGED but allowed, so existing graphs keep loading
+  // while the family suites soak; set ORK_DFLOW_ENFORCE_TYPED_CONNECT=1 to enforce (reject).
+  if (pin == nullptr or pout == nullptr)
+    return false;
+  if (plugsCompatible(pin, pout))
     return true;
+  // mismatch -- recompute the fan-out flag for an accurate WARN suffix.
+  size_t maxfan = pout->maxFanOut();
+  bool fan_ok   = (maxfan == 0) or (pout->_connections.size() < maxfan);
+  const auto& ti = pin->GetDataTypeId();
+  const auto& to = pout->GetDataTypeId();
   static const bool enforce = (::getenv("ORK_DFLOW_ENFORCE_TYPED_CONNECT") != nullptr);
   auto inmod  = pin->_parent_module;
   auto outmod = pout->_parent_module;

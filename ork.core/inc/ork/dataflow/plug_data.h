@@ -181,11 +181,31 @@ public:
 
   template <typename T> std::shared_ptr<T> typedModuleData();
 
+  // EDITOR METADATA (E1 seam extension) — class-level, set at reshapeIOs time and
+  // surfaced by dflow.plugSpec() to the property sheet. `_hasRange` gates a clamped
+  // slider over [_rangeMin,_rangeMax]; `_displayOnly` marks a plug shown editable but
+  // with NO effect on the bake (a t=0 snapshot / un-hashed knob, e.g. fbm offset_vel)
+  // so the editor can render the row honestly distinct. Neither affects evaluation.
+  PlugData* annotateRange(float mn, float mx) {
+    _hasRange  = true;
+    _rangeMin  = mn;
+    _rangeMax  = mx;
+    return this;
+  }
+  PlugData* markDisplayOnly() {
+    _displayOnly = true;
+    return this;
+  }
+
   moduledata_ptr_t _parent_module;
   EPlugDir _plugdir;
   EPlugRate _plugrate;
   const std::type_info& _typeID;
   std::string _name;
+  bool _hasRange    = false;
+  float _rangeMin   = 0.0f;
+  float _rangeMax   = 0.0f;
+  bool _displayOnly = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

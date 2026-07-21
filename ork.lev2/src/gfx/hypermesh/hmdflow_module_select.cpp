@@ -291,6 +291,11 @@ struct SelectInst : public MeshComputeInst {
     ci->dispatchCompute(_cs, (in->_num_faces + 63) / 64, 1, 1);
     ci->storageBarrier();
   }
+  // E2.5 (Q6): the SelExpr now also carries a reflected ExprIR TREE (`_predicate_tree`); adding it
+  // changes this module's content-identity hash -> a SANCTIONED one-time whole-corpus cook rebake
+  // (Q5). Name the salt so the invalidation is intentional + greppable (the emitted GLSL / kernel
+  // is unchanged; only the cache key moves).
+  const char* _cookSalt() const final { return "select.v2.exprir"; }
   const SelectData* _d;
   mesh_outpluginst_ptr_t _output;
   mesh_inpluginst_ptr_t _input;
@@ -328,6 +333,7 @@ void SelectData::describeX(class_t* clazz) {
   // NOTHING and every downstream op silently ran on an empty set.
   clazz->directProperty("predicate_abi", &SelectData::_predicate_abi);
   clazz->directProperty("predicate", &SelectData::_predicate);
+  clazz->directProperty("predicate_tree", &SelectData::_predicate_tree);   // E2.5 ExprIR (Q6)
   clazz->directProperty("domain", &SelectData::_domain);
   clazz->directProperty("sel_and", &SelectData::_sel_and);
   clazz->directProperty("sel_or", &SelectData::_sel_or);

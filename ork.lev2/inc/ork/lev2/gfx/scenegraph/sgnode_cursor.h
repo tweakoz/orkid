@@ -34,13 +34,13 @@ public:
 
 struct CursorDrawableImpl {
 
-  CursorDrawableImpl(const CursorDrawableData* data);
+  CursorDrawableImpl(std::shared_ptr<const CursorDrawableData> data);
   ~CursorDrawableImpl();
   void gpuInit(lev2::Context* ctx);
   void _render(const RenderContextInstData& RCID);
   static void renderCursor(RenderContextInstData& RCID);
 
-  const CursorDrawableData* _data = nullptr;
+  std::shared_ptr<const CursorDrawableData> _data;
   freestyle_mtl_ptr_t _material;
   const FxShaderTechnique* _technique = nullptr;
   const FxShaderParam* _paramMVP = nullptr;

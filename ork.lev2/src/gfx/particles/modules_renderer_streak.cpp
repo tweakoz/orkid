@@ -16,6 +16,7 @@
 #include <ork/dataflow/plug_inst.inl>
 #include <ork/lev2/gfx/gfxvtxbuf.inl>
 #include <ork/util/triple_buffer.h>
+#include <algorithm>
 
 using namespace ork::dataflow;
 
@@ -49,6 +50,11 @@ struct StreakRendererInst : public ParticleModuleInst {
   // MaterialBase, but sharing across renderer instances caused a race
   // when multiple particle entities used the same material.
   FxShaderStorageBuffer* _cu_vertex_io_buffer = nullptr;
+  // Per-instance depth-sort scratch for the sort=true path (see _render). Grown to the
+  // live particle count each frame — replaces a shared fixed-capacity LUT that capped the
+  // sorted path at 32768 and asserted on overflow (an editor-reachable sort toggle on a
+  // larger pool must never abort).
+  std::vector<std::pair<float, const particle::BasicParticle*>> _depth_sort_scratch;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -172,24 +178,22 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   ///////////////////////////////////////////////////////////////
 
   if (do_sort) {
-    using sorter_t                 = ork::fixedlut<float, const particle::BasicParticle*, 32768>;
-    using sorter_ptr_t             = std::shared_ptr<sorter_t>;
-    static sorter_ptr_t the_sorter = std::make_shared<sorter_t>(EKEYPOLICY_MULTILUT);
-    the_sorter->clear();
-    OrkAssert(icnt < 32768);
+    // Sort into a per-instance scratch sized to the LIVE particle count — the sorted path
+    // now spans the full pool capacity the unsorted path already draws (icnt<=262144), so a
+    // sort toggle on a >32768 pool renders instead of asserting. stable_sort ascending-by-depth
+    // reproduces the prior fixedlut::AddSorted (UpperBound insertion) ordering exactly.
+    auto& sorted = _depth_sort_scratch;
+    sorted.clear();
+    sorted.reserve(icnt);
     for (size_t i = 0; i < icnt; i++) {
       auto ptcl  = pbase + i;
       fvec4 proj = ptcl->mPosition.transform(MVP);
       proj.perspectiveDivideInPlace();
-      float fv = proj.z;
-      the_sorter->AddSorted(fv, ptcl);
+      sorted.emplace_back(proj.z, ptcl);
     }
+    std::stable_sort(sorted.begin(), sorted.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
     // override fetcher
-    size_t ilast = (icnt - 1);
-    get_particle = [=](size_t index) -> const particle::BasicParticle* {
-      // return the_sorter->GetItemAtIndex(ilast-index).second;
-      return the_sorter->GetItemAtIndex(index).second;
-    };
+    get_particle = [&sorted](size_t index) -> const particle::BasicParticle* { return sorted[index].second; };
   }
   //////////////////////////////////////////////////////////////////////////////
   float fwidth  = _input_width->value();

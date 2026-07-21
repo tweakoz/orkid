@@ -14,7 +14,7 @@ struct ProjectedGridRenderImpl {
 
   using vb_t = StaticVertexBuffer<VtxV12T8>;
 
-  ProjectedGridRenderImpl(const ProjectedGridDrawableData* gpd)
+  ProjectedGridRenderImpl(std::shared_ptr<const ProjectedGridDrawableData> gpd)
       : _grounddata(gpd) {
   }
   ~ProjectedGridRenderImpl() {
@@ -159,7 +159,7 @@ struct ProjectedGridRenderImpl {
     renderable->GetDrawableDataA().getShared<ProjectedGridRenderImpl>()->_render(RCID);
   }
 
-  const ProjectedGridDrawableData* _grounddata;
+  std::shared_ptr<const ProjectedGridDrawableData> _grounddata;
   pbrmaterial_ptr_t _pbrmaterial;
   fxpipeline_ptr_t _pipeline_color;
   fxpipelinecache_constptr_t _fxcache;
@@ -182,7 +182,7 @@ void ProjectedGridDrawableData::describeX(class_t* c) {
 drawable_ptr_t ProjectedGridDrawableData::createDrawable() const {
   auto rval = std::make_shared<CallbackDrawable>(nullptr);
   rval->SetRenderCallback(ProjectedGridRenderImpl::renderProjectedGrid);
-  auto impl       = rval->_implA.makeShared<ProjectedGridRenderImpl>(this);
+  auto impl       = rval->_implA.makeShared<ProjectedGridRenderImpl>(dataShared<ProjectedGridDrawableData>());
   rval->_sortkey  = 10;
   return rval;
 }

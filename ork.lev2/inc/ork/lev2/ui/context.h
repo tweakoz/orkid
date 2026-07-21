@@ -33,6 +33,7 @@ struct Context {
   void tick(updatedata_ptr_t upd);
   //////////////////////////////////////
   HandlerResult handleEvent(event_constptr_t ev);
+  HandlerResult _handleEventImpl(event_constptr_t ev);
   HandlerResult _dispatchToTarget(Widget* target, event_constptr_t ev);
   // void updateMouseFocus(const HandlerResult& r, event_constptr_t Ev);
   bool hasMouseFocus(const Widget* w) const;
@@ -81,12 +82,19 @@ struct Context {
   Event _prevevent;
   event_ptr_t _tempevent;
   Timer _uitimer;
+  // Click-clock virtualization for deterministic replay: when _use_virtual_time is
+  // set, handleEvent reads _virtual_time instead of the wall-clock _uitimer, so
+  // frame-paced injected PUSHes reproduce DOUBLECLICK from the session's frame
+  // deltas. Default OFF => real wall clock, behavior unchanged when unused.
+  bool _use_virtual_time = false;
+  double _virtual_time = 0.0;
   double _prevtime = 0.0;
   double _prev_click_time = 0.0;
   double _prev_dbl_click_time = 0.0;
   std::unordered_map<int,bool> _downkeys;
   bool _debug_event_routing = false;
   bool _enable_event_bubbling = true;
+  bool _dispatching = false;  // true while inside handleEvent dispatch (see deferred mutations)
 
   // Application-level event handlers
   // Preview: called BEFORE widget handling (for global shortcuts)
@@ -99,14 +107,29 @@ struct Context {
   //////////////////////////////////////
   void pushOverlay(widget_ptr_t widget, int x, int y, int w, int h,
                    bool dismiss_on_click_outside = true,
-                   std::function<void()> on_dismissed = nullptr);
+                   std::function<void()> on_dismissed = nullptr,
+                   bool modal = false);
   void popOverlay();
   void dismissAllOverlays();
   bool hasOverlays() const;
+  // Move an already-pushed overlay in place (no pop/push) — cheap per-frame
+  // reposition for cursor-tracking hints. w/h < 0 preserve the current size.
+  void repositionOverlay(const widget_ptr_t& widget, int x, int y, int w = -1, int h = -1);
+  // Remove a specific overlay by widget (regardless of stack position).
+  void removeOverlay(const widget_ptr_t& widget);
   void enqueueOnNextFrame(std::function<void()> op);
   void processNextFrameOps();
+  //////////////////////////////////////
+  // Deferred structural-mutation queue.
+  //  Structural mutations (dock drops, unsplit, tab-close) enqueue here and are
+  //  applied AFTER event dispatch completes, so widgets are never destroyed
+  //  mid-dispatch.
+  void enqueueDeferredMutation(std::function<void()> op);
+  void _processDeferredMutations();
+  //////////////////////////////////////
   std::vector<OverlayEntry> _overlay_stack;
   std::vector<std::function<void()>> _nextFrameOps;
+  std::vector<std::function<void()>> _deferredMutations;
 };
 
 } // namespace ork::ui

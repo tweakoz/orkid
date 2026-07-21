@@ -36,6 +36,14 @@ bool Image::_initFromDataBlockPNG(datablock_ptr_t datablock) {
 bool Image::initFromInMemoryFile( std::string fmtguess, //
                                   const void* srcdata,  //
                                   size_t srclen ) {     //
+  // self-defend (ops fail-loud): an empty/too-small buffer makes OIIO's ImageInput::open
+  // fail and return null; the old in->spec() deref would then crash silently. Refuse loudly.
+  if (srcdata == nullptr or srclen == 0) {
+    throw std::runtime_error(FormatString(
+        "Image::initFromInMemoryFile: empty image buffer fmtguess<%s> srclen<%zu>",
+        fmtguess.c_str(),
+        srclen));
+  }
   ImageSpec config;                                          // ImageSpec describing input configuration options
   Filesystem::IOMemReader memreader((void*)srcdata, srclen); // I/O proxy object
   void* ptr = &memreader;
@@ -45,7 +53,14 @@ bool Image::initFromInMemoryFile( std::string fmtguess, //
 
   printf("Image::initFromInMemoryFile: fmtguess<%s> srclen<%zu>\n", fmtguess.c_str(), srclen);
 
-  auto in               = ImageInput::open(name, &config);
+  auto in = ImageInput::open(name, &config);
+  if (not in) {
+    throw std::runtime_error(FormatString(
+        "Image::initFromInMemoryFile: OIIO could not open in-memory image fmtguess<%s> srclen<%zu> oiio_error<%s>",
+        fmtguess.c_str(),
+        srclen,
+        OIIO::geterror().c_str()));
+  }
   const ImageSpec& spec = in->spec();
   _width                = spec.width;
   _height               = spec.height;
@@ -288,6 +303,11 @@ void Image::writeToFile(const ork::file::Path& outpath, bool linear_colorspace) 
     spec.attribute("oiio:ColorSpace", "Linear");
     spec.attribute("oiio:Gamma", 1.0f);
   }
+
+  // OIIO's output plugins stamp the ENCODE wall-clock into "DateTime" when the spec
+  // lacks it (EXR capDate, PNG tIME). The epoch sentinel preempts that unconditionally
+  // (owner policy 2026-07-18): engine-written images are byte-reproducible.
+  spec.attribute("DateTime", "1970:01:01 00:00:00");
 
   out->open(cstrpath, spec);
   out->write_image(spec.format, _data->data());

@@ -171,17 +171,30 @@ void RtGroup::Resize(int iw, int ih) {
     if(0)printf("RtGroup<%p> Resize prev<%d %d> new<%d %d>\n", this, miW, miH, iw, ih);
     miW         = iw;
     miH         = ih;
-    if(iw==1728 and ih==1004){
-      OrkAssert(false);
-    }
     mbSizeDirty = true;
+    // single source of truth for the group's extent: the RtBuffer dims AND their backing Texture
+    // metadata (both write-once in the RtBuffer ctor) follow the new size, for color AND depth.
+    // if the Texture keeps reporting the first-paint size, downstream consumers that read it as an
+    // extent source (e.g. the HZB depth pyramid) lock at that size forever.
     for (int i = 0; i < kmaxmrts; i++) {
       if (mMrt[i]) {
-
         mMrt[i]->_width  = iw;
         mMrt[i]->_height = ih;
+        if (mMrt[i]->_texture) {
+          mMrt[i]->_texture->_width  = iw;
+          mMrt[i]->_texture->_height = ih;
+        }
         mMrt[i]->SetSizeDirty(true);
       }
+    }
+    if (_depthBuffer) {
+      _depthBuffer->_width  = iw;
+      _depthBuffer->_height = ih;
+      if (_depthBuffer->_texture) {
+        _depthBuffer->_texture->_width  = iw;
+        _depthBuffer->_texture->_height = ih;
+      }
+      _depthBuffer->SetSizeDirty(true);
     }
   }
 }

@@ -224,6 +224,12 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   // Set mip count on texture object
   ptex->_num_mips = num_mips;
 
+  // the RtBuffer dims are authoritative on every (re)create; write them back into the Texture
+  // metadata so RTG-owned textures report the current extent (the depth texture is the HZB's
+  // sole extent source — a stale value there desyncs the whole occlusion pyramid post-resize).
+  ptex->_width  = iwidth;
+  ptex->_height = iheight;
+
   // RTG texture is now ready for sampling
   vk_tex->_img_sampling = vk_tex->_imgobj[0];
 

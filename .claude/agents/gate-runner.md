@@ -49,6 +49,19 @@ prompt gives you.
   hand-deriving SSIM/FFT/walk/topology (self-test: `vet_corpus/run_vet_regression.py`).
 - **Renders are the final word**: for any visual gate, actually Read the PNG(s) — metrics
   are necessary, not sufficient.
+- **`ork.testing` harness** (`obt.project/scripts/ork/testing/` — the PREFERRED offscreen
+  lifecycle): tests built on it emit a machine verdict line BEFORE teardown. Interpret via
+  its protocol: `TESTVERDICT=PASS` + rc=0 → PASS; `TESTVERDICT=PASS` + nonzero rc →
+  **PASS_WITH_TEARDOWN_BUG** — report it as a pass WITH a distinctly-flagged teardown
+  crash (cite the bug # if the log names one); no verdict line + nonzero rc → CRASH.
+  `ork.testing.read_verdict()` implements the classification. Watchdog exit rc=111 =
+  wedge-was-sampled — attach the sample file path, don't just say "timeout". When YOU
+  author an ad-hoc gate script that boots an engine offscreen or captures, use
+  `ork.testing.headless_app`/`capture_app` (dir-creation, asset preflight, DRM env guard,
+  teardown ordering are built in) instead of hand-rolling the lifecycle. Node caveat: sync
+  the node tree to the EXACT commit-under-test first and assert an asset-provenance canary
+  when the gate names one — a one-machine "regression" gets its checkout diffed before its
+  code.
 
 ## Machine-lane discipline (owner law — overrides everything below)
 

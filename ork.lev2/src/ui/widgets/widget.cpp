@@ -15,8 +15,7 @@ ImplementReflectionX(ork::ui::Widget, "ui::Widget");
 namespace ork::ui {
 /////////////////////////////////////////////////////////////////////////
 HandlerResult::HandlerResult(Widget* ph)
-    : mHandler(ph)
-    , mHoldFocus(false) {
+    : mHandler(ph) {
 }
 /////////////////////////////////////////////////////////////////////////
 void Widget::describeX(class_t* clazz) {

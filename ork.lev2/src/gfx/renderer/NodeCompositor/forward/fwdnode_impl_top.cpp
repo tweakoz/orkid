@@ -322,6 +322,17 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
   // passes + the sampling-layout transition. The per-view cull reads the resulting HZB SSBO off the Scene
   // next preRender. (MSAA: also depends on the depth resolve into the single-sample _imgobj working.)
   if (auto* hzbscene = _node->_pbrcommon ? _node->_pbrcommon->_scene : nullptr) {
+    // permanent extent backstop against the HZB-vs-resize bug class: a pyramid built at a prior
+    // extent whose base dims no longer match the rtg's current extent must NOT be consumed — its
+    // stale mip0 clamp maps this frame's NDC onto the wrong footprint (false culls / banding). On
+    // mismatch disable occlusion for the frame; build() below re-validates at the new extent once
+    // the depth is seeded. Cheap: two integer compares, using the proven-correct width()/height().
+    if (hzbscene->_hzb) {
+      int expect_baseW = std::max(1, _rtg_primary->width() / 2);
+      int expect_baseH = std::max(1, _rtg_primary->height() / 2);
+      if (hzbscene->_hzb->_baseW != expect_baseW or hzbscene->_hzb->_baseH != expect_baseH)
+        hzbscene->_hzb->_valid = false;
+    }
     // only sample LAST frame's depth if this rtg's depth passes have actually
     // completed at least once since (re)build/resize — otherwise the depth image
     // is UNDEFINED (or the texture has no backend impl yet) and dispatching

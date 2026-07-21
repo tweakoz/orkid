@@ -23,6 +23,8 @@ import re
 
 from orkengine.core import vec2 as _vec2
 from ... import units as _units
+from ... import exprir as _exprir
+from ..document import enum_choices as _enum_choices
 from .doc import (
     DocNode, DocLoop, DocGroupCall, DocSwitch, _Placeholder,
     TerrainDocParamError, _collect_captured_param_names, _iter_ref_slots)
@@ -42,10 +44,15 @@ _MULTI_OUT = {
     "RelaxUvModule":         {"Out": "uv", "Binormal": "binormal"},
 }
 
-# NoiseModule.basis code -> the named noise wrapper (ops._NOISE_BASIS inverse).
-_NOISE_FN = {0: "perlin", 1: "simplex", 2: "worleyf1", 3: "voronoi"}
-# CurvatureModule._mode code -> the wrapper's string (ops._CURV_MODE inverse).
-_CURV_MODE_NAME = {0: "convex", 1: "concave", 2: "magnitude"}
+# int enum CODE -> its reflected enum NAME (== the DSL verb/spelling), or None. Single
+# source: the C++ EnumSerializer surfaced by reflection (E1) — no hand-maintained inverse
+# tables. NoiseModule.basis -> perlin/simplex/worleyf1/voronoi; CurvatureModule.mode ->
+# convex/concave/magnitude.
+def _enum_name(clazz, prop, code):
+    choices = _enum_choices(clazz, prop)
+    if choices is None or not (0 <= code < len(choices)):
+        return None
+    return choices[code]
 
 # generic emitters: module class -> (wrapper fn under T, ordered positional input plugs).
 # every recorded param is emitted as a name=value kwarg (the wrapper kwarg name == the
@@ -58,7 +65,6 @@ _GENERIC = {
     "NormalizeModule":        ("normalize",          ("In",)),
     "TerraceModule":          ("terrace",            ("In",)),
     "SlopeModule":            ("slope",              ("In",)),
-    "LpfModule":              ("lpf",                ("In",)),
     "BasinFillModule":        ("basin_fill",         ("In",)),
     "ThermalErodeModule":     ("erode_thermal",      ("In",)),
     "EroxModule":             ("erox",               ("In",)),
@@ -174,37 +180,36 @@ class _Writer:
             f"{type(v).__name__!r} ({v!r})")
 
     def _iter_expr_py(self, expr):
-        """The L.i iteration expression as source (mirrors doc.iter_expr_string but
-        emits the OWNING loop's handle, e.g. '(2 + (L.i / 32))')."""
-        op = expr._op
-        if op == "index":
-            handle = self._handle_of.get(id(expr._a))
+        """The L.i iteration expression (a shared ExprIR node) as source: emits the OWNING
+        loop's handle for the index leaf, e.g. '(2 + (L.i / 32))'. Distinct from the shared
+        pretty-printer (which spells the index leaf 'i') — the .py re-import needs `<handle>.i`."""
+        if isinstance(expr, _exprir.ParamRef):        # index leaf; name = loop object
+            handle = self._handle_of.get(id(expr.name))
             if handle is None:
                 raise TerrainDocParamError(
                     "cannot regenerate .py: an L.i expression references a loop that is "
                     "not in scope (nested-loop index leak)")
             return f"{handle}.i"
-        if op == "const":
-            c = float(expr._a)
+        if isinstance(expr, _exprir.Const):
+            c = float(expr.value)
             return str(int(c)) if c.is_integer() else repr(c)
-        if op == "neg":
-            return "-" + self._iter_expr_py(expr._a)
-        sym = {"add": "+", "sub": "-", "mul": "*", "div": "/"}[op]
-        return "(%s %s %s)" % (self._iter_expr_py(expr._a), sym, self._iter_expr_py(expr._b))
+        if expr.name == "neg":
+            return "-" + self._iter_expr_py(expr.args[0])
+        sym = {"add": "+", "sub": "-", "mul": "*", "div": "/"}[expr.name]
+        return "(%s %s %s)" % (self._iter_expr_py(expr.args[0]), sym, self._iter_expr_py(expr.args[1]))
 
     def _param_expr_py(self, expr):
-        """A captured document-parameter expression as source (E0): a param leaf emits the
-        ctor-kwarg local variable; arithmetic emits inline source (the ExprIR text form)."""
-        op = expr._op
-        if op == "param":
-            return str(expr._a)
-        if op == "const":
-            c = float(expr._a)
+        """A captured document-parameter expression (a shared ExprIR node) as source (E0): a
+        param leaf emits the ctor-kwarg local variable; arithmetic emits inline source."""
+        if isinstance(expr, _exprir.ParamRef):        # doc-param leaf; name = kwarg name
+            return str(expr.name)
+        if isinstance(expr, _exprir.Const):
+            c = float(expr.value)
             return str(int(c)) if c.is_integer() else repr(c)
-        if op == "neg":
-            return "-" + self._param_expr_py(expr._a)
-        sym = {"add": "+", "sub": "-", "mul": "*", "div": "/"}[op]
-        return "(%s %s %s)" % (self._param_expr_py(expr._a), sym, self._param_expr_py(expr._b))
+        if expr.name == "neg":
+            return "-" + self._param_expr_py(expr.args[0])
+        sym = {"add": "+", "sub": "-", "mul": "*", "div": "/"}[expr.name]
+        return "(%s %s %s)" % (self._param_expr_py(expr.args[0]), sym, self._param_expr_py(expr.args[1]))
 
     def _kwarg_src(self, node, kind, name, value):
         """Source for one op kwarg: a captured document-parameter expr (E0) renders as the
@@ -417,12 +422,12 @@ class _Writer:
             f"cannot regenerate .py: CombineModule {node.local_name!r} has unknown op {op!r}")
 
     def _emit_expr_blob(self, node, level):
-        """Expression node (ExprModule). An editor-authored T.expr carries its SOURCE STRING
-        (expr_source) — emit `T.expr(<source>, inputs=[...])`, re-authorable + editable. A
-        legacy authored node (hfbake / hfdisplacement / expr_field / T.pow) has no source (the
-        Python function was never document state), so emit the COMPILED shadertext verbatim
-        through the raw escape hatch (runnable + byte-faithful; edit the original authored
-        source to change it)."""
+        """Expression node (ExprModule) — always emitted as REAL DSL through `T.expr`. An
+        editor-authored T.expr carries its SOURCE STRING (expr_source); a node authored via a
+        Python function (hfbake / hfmask / hfdisplacement / expr_field) has no source, so its
+        DSL is RE-RENDERED from the canonical ExprIR tree captured at trace (E2.5 S5 —
+        replacing the compiled-blob escape hatch). Both paths reload + rebake byte-identical
+        (the tree round-trip reconstructs the identical SurfNode)."""
         conn = {ip: op for (ip, op) in node.connections}
         _, seen = self._effective_params(node)
         source = seen.get(("module", "expr_source"))
@@ -433,18 +438,17 @@ class _Writer:
             k += 1
         var = self._fresh_var(node.local_name)
         self._var_of[id(node)] = var
-        if source:
-            self._line(level, f"{var} = T.expr({source!r}, inputs=[{', '.join(ins)}])")
-        else:
-            text = seen.get(("module", "shadertext"))
-            if not text:
+        if not source:
+            tree = seen.get(("module", "expr_tree"))
+            if not tree:
                 raise TerrainDocParamError(
-                    f"cannot regenerate .py: expression node {node.local_name!r} has no "
-                    f"expr_source or shader text recorded (corrupt document?)")
-            self._line(level, f"# {var}: COMPILED expression blob (authored fn not in the document)")
-            self._line(level, f"{var} = T.expr_field_raw(")
-            self._line(level, f"    inputs=[{', '.join(ins)}],")
-            self._line(level, f"    shadertext={text!r})")
+                    f"cannot regenerate .py: expression node {node.local_name!r} has neither an "
+                    f"expr_source nor a captured ExprIR tree (corrupt document, or traced against a "
+                    f"pre-E2.5 binary lacking the expr_tree reflected field?)")
+            from ork.hypergraph.ptex3d.exprir_surface import render as _render_expr
+            source = _render_expr(tree)
+            self._line(level, f"# {var}: DSL re-rendered from its captured ExprIR tree")
+        self._line(level, f"{var} = T.expr({source!r}, inputs=[{', '.join(ins)}])")
         if node.bypassed:
             self._line(level, f"T.bypass({var})")
 
@@ -485,6 +489,8 @@ class _Writer:
             return self._render_gradient(node)
         if clazz == "CurvatureModule":
             return self._render_curvature(node, conn)
+        if clazz == "LpfModule":
+            return self._render_lpf(node, conn)
         spec = _GENERIC.get(clazz)
         if spec is None:
             raise TerrainDocParamError(
@@ -534,7 +540,7 @@ class _Writer:
         for (kind, name) in order:
             if name == "basis":
                 basis = int(seen[(kind, name)])
-        fn = _NOISE_FN.get(basis)
+        fn = _enum_name("NoiseModule", "basis", basis) if basis is not None else None
         if fn is None:
             raise TerrainDocParamError(
                 f"cannot regenerate .py: NoiseModule {node.local_name!r} has unknown "
@@ -563,7 +569,7 @@ class _Writer:
         for (kind, name) in order:
             v = seen[(kind, name)]
             if name == "mode":
-                mode = _CURV_MODE_NAME.get(int(v))
+                mode = _enum_name("CurvatureModule", "mode", int(v))
                 if mode is None:
                     raise TerrainDocParamError(
                         f"cannot regenerate .py: curvature {node.local_name!r} has unknown "
@@ -572,6 +578,29 @@ class _Writer:
             else:
                 args.append(f"{name}={self._kwarg_src(node, kind, name, v)}")
         return "T.curvature(%s)" % ", ".join(args)
+
+    def _render_lpf(self, node, conn):
+        """LpfModule -> T.lpf(In, cutoff=..., blend=..., units='texels'|'meters'). The
+        `cutoff_units` reflected enum (int code) renders as the DSL `units=` NAME (single
+        source: the C++ EnumSerializer via reflection, E1 — no inverse table); cutoff/blend
+        (plug values or L.i/param expressions) render through the generic kwarg path."""
+        if "In" not in conn:
+            raise TerrainDocParamError(
+                f"cannot regenerate .py: node {node.local_name!r} [LpfModule] missing input 'In'")
+        _order, seen = self._effective_params(node)
+        units_name = None
+        if ("module", "cutoff_units") in seen:
+            code = int(seen[("module", "cutoff_units")])
+            units_name = _enum_name("LpfModule", "cutoff_units", code)
+            if units_name is None:
+                raise TerrainDocParamError(
+                    f"cannot regenerate .py: lpf {node.local_name!r} has unknown "
+                    f"cutoff_units {code!r}")
+        args = [self._render_ref(conn["In"])]
+        args += self._value_kwargs(node, skip=("cutoff_units",))
+        if units_name is not None:
+            args.append("units=%s" % repr(units_name))
+        return "T.lpf(%s)" % ", ".join(args)
 
     # ---- containers ----------------------------------------------------------
 

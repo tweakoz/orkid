@@ -418,12 +418,23 @@ struct DrawableCache {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct DrawableData : public ork::Object { // todo subclass reflection Object
+struct DrawableData : public ork::Object, public std::enable_shared_from_this<DrawableData> { // todo subclass reflection Object
 
   DeclareAbstractX(DrawableData, ork::Object);
 
   DrawableData();
   virtual drawable_ptr_t createDrawable() const = 0;
+
+  // Typed shared-ownership handle to this data object. Drawable impls built by
+  // createDrawable() read authorable fields at first-render gpuInit and per
+  // frame, so they must keep the DrawableData alive past createDrawable()'s
+  // return — a python temporary passed to createDrawableNodeFromData() would
+  // otherwise be GC'd out from under the impl's pointer (owner-gdb'd dangle).
+  // Every createDrawable() caller holds a drawabledata_ptr_t (python bindings,
+  // DrawableCache, ECS component wiring), so shared_from_this() is always valid.
+  template <typename T> std::shared_ptr<const T> dataShared() const {
+    return std::static_pointer_cast<const T>(shared_from_this());
+  }
 
   inline drawable_ptr_t createSGDrawable(scenegraph::scene_ptr_t SG) const {
     auto drw = createDrawable();

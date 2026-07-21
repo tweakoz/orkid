@@ -15,7 +15,7 @@ namespace ork::lev2 {
 
 struct ParticlesDrawableInst {
 
-  ParticlesDrawableInst(const ParticlesDrawableData* pdd)
+  ParticlesDrawableInst(std::shared_ptr<const ParticlesDrawableData> pdd)
       : _data(pdd) {
     _updata           = std::make_shared<ui::UpdateData>();
     _updata->_abstime = 0.0f;
@@ -145,7 +145,7 @@ struct ParticlesDrawableInst {
     renderable->GetDrawableDataA().getShared<ParticlesDrawableInst>()->_render(RCID);
   }
   ///////////////////////////////////////////////////////////////
-  const ParticlesDrawableData* _data;
+  std::shared_ptr<const ParticlesDrawableData> _data;
   PBRMaterial* _pbrmaterial;
   dataflow::graphinst_ptr_t _graphinst;
 
@@ -209,9 +209,19 @@ drawable_ptr_t ParticlesDrawableData::createDrawable() const {
   auto ptcl_context = graphinst->_impl.makeShared<particle::Context>();
   graphinst->updateTopology(topo);
 
+  // S8.5 (owner law): a partial / invalid topology (e.g. an unwired module just added in the
+  // editor) must NOT crash. updateTopology left the graph unstaged and flagged it; return null
+  // here rather than build a drawable over a half-linked graph. The pyext createDrawable path
+  // surfaces this as a loud None. Once the module is wired, the next createDrawable links clean.
+  if (not graphinst->_topologyValid) {
+    printf("[particles] ParticlesDrawableData::createDrawable: INVALID topology (an unwired "
+           "module) — returning null (no drawable built until the graph is fully wired).\n");
+    return nullptr;
+  }
+
   ////////////////////////////////////////////////////
 
-  auto impl        = std::make_shared<ParticlesDrawableInst>(this);
+  auto impl        = std::make_shared<ParticlesDrawableInst>(dataShared<ParticlesDrawableData>());
   impl->_graphinst = graphinst;
 
   auto rval                   = std::make_shared<CallbackDrawable>(nullptr);

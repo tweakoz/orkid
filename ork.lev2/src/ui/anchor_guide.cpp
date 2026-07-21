@@ -543,8 +543,10 @@ static guide_ptr_t _findClosestDraggableGuide(const Layout* rootLayout, const fv
 
     // The guide's margin extends on both sides of the guide line
     // So if margin is 3, the draggable area is 3 pixels on each side = 6 pixels total
-    // The distance check should be against the full margin size since distance is from the center line
-    float threshold = float(guide->_margin);
+    // The distance check should be against the full margin size since distance is from the center line.
+    // The grab band may be widened past the thin visual margin via _hit_margin
+    // (DockSpace opts in); -1 preserves the exact _margin semantics for every other consumer.
+    float threshold = float(guide->_hit_margin >= 0 ? guide->_hit_margin : guide->_margin);
     if(0)printf("check guide<%d> layout<%d> widget<%s> depth<%d> edge<%s> distance<%g> threshold<%g> line[%g,%g - %g,%g] mouse[%g,%g]\n",
            guide->_name, guide->_layout->_name, widget->_name.c_str(), depth,
            edge2str(guide->_edge).c_str(), distance, threshold,
@@ -834,6 +836,17 @@ void Guide::setProportion(float new_proportion) {
     max_proportion -= min_spacing;
   }
 
+  // Impossible constraint: no room between neighbors — refuse loudly rather than
+  // clamp into a crossing (corrupt) state.
+  if (min_proportion > max_proportion) {
+    printf(
+        "Guide::setProportion REFUSED guide<%d>: no room (min<%.3f> > max<%.3f>) — over-constrained or layout too small\n",
+        _name,
+        min_proportion,
+        max_proportion);
+    return;
+  }
+
   // Clamp to valid range
   new_proportion = std::max(min_proportion, std::min(max_proportion, new_proportion));
 
@@ -886,6 +899,17 @@ void Guide::setFixed(int new_fixed) {
   // Add minimum spacing of 32 pixels between guides
   min_pos += 32;
   max_pos -= 32;
+
+  // Impossible constraint: no room between neighbors — refuse loudly rather than
+  // clamp into a crossing (corrupt) state.
+  if (min_pos > max_pos) {
+    printf(
+        "Guide::setFixed REFUSED guide<%d>: no room (min<%d> > max<%d>) — over-constrained or layout too small\n",
+        _name,
+        min_pos,
+        max_pos);
+    return;
+  }
 
   // Clamp to valid range
   new_fixed = std::max(min_pos, std::min(max_pos, new_fixed));

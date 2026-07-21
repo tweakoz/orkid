@@ -55,6 +55,52 @@ layout_ptr_t Layout::childLayout(Widget* w) {
   return l;
 }
 /////////////////////////////////////////////////////////////////////////
+layout_ptr_t Layout::childLayout(widget_ptr_t w) {
+  auto l = childLayout(w.get());
+  l->_widget_weak = w;
+  l->_widget_bound = true;
+  return l;
+}
+/////////////////////////////////////////////////////////////////////////
+void Layout::bindWidget(widget_ptr_t w) {
+  _widget       = w.get();
+  _widget_weak  = w;
+  _widget_bound = (w != nullptr);
+}
+/////////////////////////////////////////////////////////////////////////
+bool Layout::widgetAlive() const {
+  if (_widget == nullptr)
+    return false;
+  // If a shared_ptr was bound, a destroyed widget is detectable via the weak ref.
+  if (_widget_bound)
+    return not _widget_weak.expired();
+  // Raw-only binding (e.g. a LayoutGroup's own root layout, whose widget is the
+  // owning group): lifetime is managed structurally, cannot be dead here.
+  return true;
+}
+/////////////////////////////////////////////////////////////////////////
+void Layout::reanchor(guide_ptr_t top, guide_ptr_t left, guide_ptr_t bottom, guide_ptr_t right) {
+  if (top)
+    this->top()->anchorTo(top);
+  if (left)
+    this->left()->anchorTo(left);
+  if (bottom)
+    this->bottom()->anchorTo(bottom);
+  if (right)
+    this->right()->anchorTo(right);
+}
+/////////////////////////////////////////////////////////////////////////
+void Layout::reanchor(Guide* top, Guide* left, Guide* bottom, Guide* right) {
+  if (top)
+    this->top()->anchorTo(top);
+  if (left)
+    this->left()->anchorTo(left);
+  if (bottom)
+    this->bottom()->anchorTo(bottom);
+  if (right)
+    this->right()->anchorTo(right);
+}
+/////////////////////////////////////////////////////////////////////////
 void Layout::removeChild(layout_ptr_t l){
   auto it = std::find(_childlayouts.begin(), _childlayouts.end(), l);
   if(it!=_childlayouts.end()){

@@ -38,13 +38,13 @@ public:
 
 struct GridDrawableImpl {
 
-  GridDrawableImpl(const GridDrawableData* grid);
+  GridDrawableImpl(std::shared_ptr<const GridDrawableData> grid);
   ~GridDrawableImpl();
   void gpuInit(lev2::Context* ctx);
   void _render(const RenderContextInstData& RCID);
   static void renderGrid(RenderContextInstData& RCID);
 
-  const GridDrawableData* _griddata = nullptr;
+  std::shared_ptr<const GridDrawableData> _griddata;
   pbrmaterial_ptr_t _pbrmaterial = nullptr;
 
   image_ptr_t _color_image;

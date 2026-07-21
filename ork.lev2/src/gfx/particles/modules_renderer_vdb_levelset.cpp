@@ -436,18 +436,33 @@ VdbLevelSetRendererData::VdbLevelSetRendererData() {
 
 static void _reshapeVdbLevelSetIOs(dataflow::moduledata_ptr_t mdata) {
   auto typed = std::dynamic_pointer_cast<VdbLevelSetRendererData>(mdata);
-  // Sensible kernel defaults — density 1 per particle, half-meter falloff
-  // radius, iso threshold at 0.5 (so two overlapping kernels = visible
-  // surface, single kernel produces a small blob).
-  ModuleData::createInputPlug<FloatXfPlugTraits>(mdata, EPR_UNIFORM, "Radius")->_range   = {0.01f, 10.0f};
-  ModuleData::createInputPlug<FloatXfPlugTraits>(mdata, EPR_UNIFORM, "Strength")->_range = {0.0f, 100.0f};
-  ModuleData::createInputPlug<FloatXfPlugTraits>(mdata, EPR_UNIFORM, "IsoLevel")->_range = {0.0f, 10.0f};
-  // Size — per-particle radius multiplier. Declared UNIFORM (matches the
-  // sprite/streak Size/Width/Length pattern) but compute() per-particle
-  // when connectedIsVarying() is true. Listed in
+  // Each plug carries BOTH the eval-clamp _range AND the E1 editor-slider annotateRange
+  // (the propsheet reads annotateRange via plugSpec; _range alone left the slider on the
+  // absurd default). Ranges are justified per the level-set kernel semantics:
+  //   Radius   — per-particle splat-sphere falloff radius (world units): 0.01 (a sub-voxel
+  //              dot) .. 10 (a broad merged blob). Default ~0.5.
+  //   Strength — per-particle kernel density accumulated into the field: 0 (no contribution)
+  //              .. 100 (dense; a few overlapping particles already exceed a high iso).
+  //   IsoLevel — the density threshold the surface is extracted at: 0 .. 10; ~0.5 is the
+  //              two-overlapping-kernels-visible default, higher needs proportionally
+  //              denser Strength.
+  //   Size     — per-particle radius multiplier around a unit default: 0 .. 10.
+  auto radius = ModuleData::createInputPlug<FloatXfPlugTraits>(mdata, EPR_UNIFORM, "Radius");
+  radius->_range = {0.01f, 10.0f};
+  radius->annotateRange(0.01f, 10.0f);
+  auto strength = ModuleData::createInputPlug<FloatXfPlugTraits>(mdata, EPR_UNIFORM, "Strength");
+  strength->_range = {0.0f, 100.0f};
+  strength->annotateRange(0.0f, 100.0f);
+  auto iso = ModuleData::createInputPlug<FloatXfPlugTraits>(mdata, EPR_UNIFORM, "IsoLevel");
+  iso->_range = {0.0f, 10.0f};
+  iso->annotateRange(0.0f, 10.0f);
+  // Size is declared UNIFORM (matches the sprite/streak Size/Width/Length pattern) but
+  // compute() reads it per-particle when connectedIsVarying() is true. Listed in
   // _VARYING_FRIENDLY_PLUGS in the DSL bindings so per-particle exprs
   // (Expr.curve(Expr.ptc.unit_age, ...)) are accepted on it.
-  ModuleData::createInputPlug<FloatXfPlugTraits>(mdata, EPR_UNIFORM, "Size")->_range     = {0.0f, 10.0f};
+  auto size = ModuleData::createInputPlug<FloatXfPlugTraits>(mdata, EPR_UNIFORM, "Size");
+  size->_range = {0.0f, 10.0f};
+  size->annotateRange(0.0f, 10.0f);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -481,7 +496,15 @@ void VdbLevelSetRendererData::describeX(class_t* clazz) {
     return VdbLevelSetRendererData::createShared();
   });
   clazz->directProperty("sort", &VdbLevelSetRendererData::_sort);
-  clazz->directProperty("voxel_size", &VdbLevelSetRendererData::_voxelSize);
+  // voxel_size = the VDB grid voxel edge in WORLD units. Floor 0.01: below this each
+  // particle's splat sphere rasterizes into a cubically-growing voxel count (OOM risk);
+  // ceiling 1.0: coarser than ~particle spacing and the level set stops forming a
+  // connected surface. Default 0.1 sits mid-slider. (editor.range.min/max scalars are
+  // what moduleClasses()->prop_meta surfaces to the propsheet; a bare directProperty
+  // otherwise falls back to the absurd default slider.)
+  clazz->directProperty("voxel_size", &VdbLevelSetRendererData::_voxelSize)
+      ->annotate<ConstString>("editor.range.min", "0.01")
+      ->annotate<ConstString>("editor.range.max", "1.0");
   // the SERIALIZABLE material recipe (model B) — the live _material is runtime-only
   // and silently dropped on round-trip (invisible blobs); this gen re-materializes
   // it at first render. (kernel enum reflection deferred; WYVILL default matches.)

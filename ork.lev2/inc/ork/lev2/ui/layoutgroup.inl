@@ -66,7 +66,7 @@ struct LayoutGroup : public Group {
   LayoutItem<T> makeChild(A&&... args) {
     LayoutItem<T> rval;
     rval._widget = std::make_shared<T>(std::forward<A>(args)...);
-    rval._layout = _layout->childLayout(rval._widget.get()); // HERE (name==2)
+    rval._layout = _layout->childLayout(rval._widget); // HERE (name==2)
     addChild(rval._widget);
     return rval;
   }
@@ -76,7 +76,7 @@ struct LayoutGroup : public Group {
     layoutitem_ptr_t rval;
     rval          = std::make_shared<LayoutItem<T>>();
     rval->_widget = std::make_shared<T>(std::forward<A>(args)...);
-    rval->_layout = _layout->childLayout(rval->_widget.get());
+    rval->_layout = _layout->childLayout(rval->_widget);
     addChild(rval->_widget);
     return rval;
   }
@@ -321,11 +321,27 @@ struct LayoutGroup : public Group {
   layoutitem_ptr_t split(anchor::layout_ptr_t target_layout,
                          float proportion,
                          anchor::ELayoutSplitPlacement placement,
-                         int margin);
+                         int margin,
+                         int hit_margin = -1);  // -1 => split guide's grab band tracks its visual margin
   //////////////////////////////////////
   anchor::layout_ptr_t layoutAndAddChild(widget_ptr_t w);
   void removeChild(anchor::layout_ptr_t ch);
+  // Widget-removal is virtual so auto-reparent through a Group* prunes the
+  // stale anchor::Layout node instead of stranding it (see group.cpp addChild).
+  void removeChild(widget_ptr_t w, bool relayout = true) override;
+  void removeChild(Widget* w, bool relayout = true) override;
   void replaceChild(anchor::layout_ptr_t ch, layoutitem_ptr_t rep);
+
+  // Inverse of split(): collapse a container that has dropped to a single child,
+  // freeing its split guide and re-anchoring the survivor to the parent's guides.
+  void unsplit(anchor::layout_ptr_t container_layout);
+
+  // Integrity oracle: every layout's widget is alive AND a current child of its
+  // owning group, every anchored edge guide is associated, no orphan layouts.
+  bool validateTree() const;
+  // Canonical, pointer-free structural signature of the layout/guide graph.
+  std::string layoutSignature() const;
+
   const std::set<uiguide_ptr_t>& horizontalGuides() const;
   const std::set<uiguide_ptr_t>& verticalGuides() const;
 
@@ -359,6 +375,8 @@ private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;
   void _doOnResized() override;
   void DoLayout() override;
+  void _onChildrenChanged() override;  // re-sync child-layout weak widget refs
+  void _removeChildLayout(Widget* w);  // drop w's child layout node + prune orphan guides
   void _positionOverlay();  // Position overlay with 10% margin
   std::set<uiguide_ptr_t> _hguides;
   std::set<uiguide_ptr_t> _vguides;

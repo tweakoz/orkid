@@ -13,10 +13,21 @@
 // shader inherits (the shadlang way to share free functions in a compute kernel).
 ////////////////////////////////////////////////////////////////
 #include "hfdflow_module.h"
+#include <ork/reflect/enum_serializer.inl>
 
 ImplementReflectionX(ork::lev2::terrain::NoiseModuleData, "terrain::NoiseModuleData");
+ImplementEnumSerializer(ork::lev2::terrain::NoiseBasis);
 
 namespace ork::lev2::terrain {
+
+// EnumSerializer registration (E1) — lowercase to match the T.perlin/simplex/worleyf1/
+// voronoi DSL verbs; values match ops._NOISE_BASIS.
+BeginEnumRegistration(NoiseBasis);
+  enumtype->addEnum("perlin", NoiseBasis::PERLIN);
+  enumtype->addEnum("simplex", NoiseBasis::SIMPLEX);
+  enumtype->addEnum("worleyf1", NoiseBasis::WORLEYF1);
+  enumtype->addEnum("voronoi", NoiseBasis::VORONOI);
+EndEnumRegistration();
 
 // basis enum -> the libblock call substituted into the octave loop.
 static const char* _noise_basis_call(int basis) {
@@ -234,7 +245,7 @@ struct NoiseModuleInst : public TerrainComputeInst {
     // warp active only when BOTH displacement fields are connected (resolved pre-activate).
     // only STRUCTURE bakes into the text; scalars ride the params SSBO (seeded at t=0 here).
     _warped   = (_srcImg(_inWarpX) != nullptr) and (_srcImg(_inWarpY) != nullptr);
-    auto text = _noise_compute_text(_nmd->_octaves, _nmd->_basis, _warped);
+    auto text = _noise_compute_text(_nmd->_octaves, int(_nmd->_basis), _warped);
     auto shdr = fxi->shaderFromShaderText("terrain_noise", text);
     _cs       = fxi->computeShader(shdr, "cs_noise");
     _pm       = env->createStorageBuffer(8 * sizeof(float));
@@ -266,7 +277,7 @@ struct NoiseModuleInst : public TerrainComputeInst {
   uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
     auto h = DataBlock::createHasher();
     h->accumulateString("terrain.noise.v4"); // v4: deterministic integer lattice hash (was vendor-sin)
-    h->accumulateItem<int>(_nmd->_basis);
+    h->accumulateItem<int>(int(_nmd->_basis)); // hash the CODE (shader identity unchanged by the enum migration)
     h->accumulateItem<int>(_nmd->_octaves);
     h->accumulateItem<int>(_nmd->_seed);
     h->accumulateItem<float>(*(_nmd->typedInputNamed<dflow::FloatPlugTraits>("frequency")->_value));
@@ -299,7 +310,11 @@ static void _reshapeNoiseIOs(dataflow::moduledata_ptr_t data) {
   // constant domain offset (lattice-cell units) — pan / reseed the field.
   dflow::ModuleData::createInputPlug<dflow::Vec2fPlugTraits>(data, dflow::EPR_UNIFORM, "offset")->setValue(fvec2(0.0f, 0.0f));
   // E.1b: domain pan VELOCITY (cells/sec) — effective offset = offset + offset_vel * abstime (env clock).
-  dflow::ModuleData::createInputPlug<dflow::Vec2fPlugTraits>(data, dflow::EPR_UNIFORM, "offset_vel")->setValue(fvec2(0.0f, 0.0f));
+  // DISPLAY-ONLY / bake-inert: a bake is the t=0 snapshot (offset_vel deliberately un-hashed), so the
+  // editor marks the row honestly distinct — it drives the LIVE pan, never the baked field.
+  auto offset_vel = dflow::ModuleData::createInputPlug<dflow::Vec2fPlugTraits>(data, dflow::EPR_UNIFORM, "offset_vel");
+  offset_vel->setValue(fvec2(0.0f, 0.0f));
+  offset_vel->markDisplayOnly();
   // fused domain warp: per-texel (wx,wy) displacement fields + scalar amount. Both image
   // inputs unconnected -> plain noise (no warp storage interfaces emitted).
   dflow::ModuleData::createInputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "warp_x");
@@ -322,9 +337,18 @@ void NoiseModuleData::describeX(class_t* clazz) {
   clazz->setSharedFactory([]() -> rtti::castable_ptr_t { return NoiseModuleData::createShared(); });
   clazz->annotateTyped<dataflow::moduleIOreshape_fn_t>(
       "reshapeIOs", [](dataflow::moduledata_ptr_t mdata) { _reshapeNoiseIOs(mdata); });
-  // _basis (noise primitive) + _octaves are BAKED scalars (not plugs) -> reflect them so
-  // the serialized graph self-describes (the JSON is the portable, python-decoupled artifact).
-  clazz->directProperty("basis", &NoiseModuleData::_basis);
+  // E1-close add-palette (reflection-carried; see hfdflow_module_thermal.cpp for the
+  // vocabulary). MULTI-VERB class (perlin/simplex/worleyf1/voronoi share this module,
+  // basis baked) — dsl.verb carries the ONE curated menu verb (voronoi, today's menu);
+  // source = a GENERATOR: inserted with no input, starting a new branch.
+  clazz->annotateTyped<ConstString>("dsl.verb", "voronoi");
+  clazz->annotateTyped<bool>("editor.palette", true);
+  clazz->annotateTyped<int>("editor.palette.sort", 12);
+  clazz->annotateTyped<bool>("editor.palette.source", true);
+  // _basis (noise primitive) is a real reflected enum (serializes by NAME, exposes its
+  // choice list to the propsheet, E1); _octaves is a BAKED loop-bound scalar.
+  InvokeEnumRegistration(NoiseBasis);
+  clazz->directEnumProperty("basis", &NoiseModuleData::_basis);
   clazz->directProperty("octaves", &NoiseModuleData::_octaves);
   clazz->directProperty("seed", &NoiseModuleData::_seed);
 }

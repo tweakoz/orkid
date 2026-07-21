@@ -96,7 +96,7 @@ def descend_basins(node, *, strength=DESCEND_STRENGTH, playa=PLAYA,
       depth_smooth_m: bigger = flatter, broader playa.
     Invoke in a loop with a modest `strength` so basins descend gradually."""
     filled = T.basin_fill(node)                                   # FLAT per basin (at spill)
-    depth  = T.lpf(filled - node, cutoff_m=depth_smooth_m)         # basin CHARACTERISTIC depth (smooth)
+    depth  = T.lpf(filled - node, cutoff=depth_smooth_m, units='meters')         # basin CHARACTERISTIC depth (smooth)
     floor  = filled - playa * depth                                # flat fill, LOWERED -> flat low playa
     slope  = T.slope(node, radius_m=slope_radius_m)                # 0 flats .. 1 mountain flanks
     mask   = (1.0 - slope)
@@ -232,15 +232,15 @@ class XXX3(HeightField):
           xxx_out = (erox_out*0.9) + (pha_out*0.1)
           terr     = self.hfdisplacement(terrace_strata, xxx_out)
           terr_out = T.Mix(xxx_out, terr, 0.1)
-          L.ero_out = T.lpf(terr_out, cutoff_m=4)
+          L.ero_out = T.lpf(terr_out, cutoff=4, units='meters')
         ero_out = L.ero_out
         ####################################
         with T.loop(DESCEND_ITERS, ero_out=ero_out) as L:
           L.ero_out = descend_basins(L.ero_out, strength=DESCEND_STRENGTH)
         ero_out = L.ero_out
-        lpf_out = T.lpf(ero_out, cutoff_m=4)
+        lpf_out = T.lpf(ero_out, cutoff=4, units='meters')
         ero_out = (ero_out*0.15)+(lpf_out*0.85)
-        lpf_out = T.lpf(ero_out, cutoff_m=2)
+        lpf_out = T.lpf(ero_out, cutoff=2, units='meters')
         ero_out = (ero_out*0.15)+(lpf_out*0.85)                # B.2: per-basin spill elevation (debug)
         flow    = T.flow3d(ero_out)     # MFD drainage area, log-compressed
 

@@ -51,6 +51,7 @@ NozzleEmitter       = ops.nozzle_emitter
 LineEmitter         = ops.line_emitter
 Gravity             = ops.gravity
 DirectionalForce    = ops.directional_force
+ExprForce           = ops.expr_force
 Turbulence          = ops.turbulence
 CurlNoise           = ops.curl_noise
 Vortex              = ops.vortex
@@ -88,7 +89,7 @@ __all__ = [
     "ParticleSystem",
     "PoolData",
     "EllipticalEmitter", "RingEmitter", "NozzleEmitter", "LineEmitter",
-    "Gravity", "DirectionalForce", "Turbulence", "CurlNoise", "Vortex", "Drag", "PolyDrag",
+    "Gravity", "DirectionalForce", "ExprForce", "Turbulence", "CurlNoise", "Vortex", "Drag", "PolyDrag",
     "EllipticalAttractor", "SphAttractor", "PointAttractor",
     "PlaneCollider", "SphereCollider", "VdbCollider",
     "StreakRenderer", "SpriteRenderer", "LightRenderer", "VdbLevelSetRenderer",

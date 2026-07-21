@@ -74,6 +74,9 @@ protected:
   const lev2::FxShaderTechnique* _ssaa_tek[6] = {};
   lev2::fxparam_constptr_t _ssaa_par_mvp;
   lev2::fxparam_constptr_t _ssaa_par_colormap;
+  lev2::fxparam_constptr_t _ssaa_par_flipy;
+  lev2::fxparam_constptr_t _ssaa_par_flipx;
+  lev2::fxparam_constptr_t _ssaa_par_vpdim;
   bool _ssaa_initialized = false;
   void _initSsaa(lev2::Context* ctx);
   void _ssaaResolve(lev2::Context* ctx, int dst_w, int dst_h);

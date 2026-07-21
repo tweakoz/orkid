@@ -64,8 +64,16 @@ SHAST::translationunit_ptr_t parseFromString(
   slpcache->_impl_stack.push_back(parser);
   parser->_name = name;
   OrkAssert(shader_text.length());
-  auto rval = parser->parseString(name, shader_text);
-  parser->processTranslationUnit(rval);
+  SHAST::translationunit_ptr_t rval;
+  try {
+    rval = parser->parseString(name, shader_text);
+    parser->processTranslationUnit(rval);
+  } catch (...) {
+    // a ParseError (or any failure) must leave the shared cache stack intact
+    //  so the interpreter/host survives and can report loudly.
+    slpcache->_impl_stack.pop_back();
+    throw;
+  }
   slpcache->_impl_stack.pop_back();
   return rval;
 }
@@ -75,7 +83,7 @@ SHAST::translationunit_ptr_t parseFromString(
 SHAST::translationunit_ptr_t parseFromFile(
     slpcache_ptr_t slpcache,  //
     file::Path shader_path) { //
-  if(1)printf("parseFromFile<%s>\n", shader_path.c_str());
+  if(0)printf("parseFromFile<%s>\n", shader_path.c_str());
   auto it_imp = slpcache->_import_cache.find(shader_path.c_str());
   // CACHED ?
   if (it_imp != slpcache->_import_cache.end()) {
@@ -93,10 +101,16 @@ SHAST::translationunit_ptr_t parseFromFile(
   auto parser = std::make_shared<impl::ShadLangParser>(slpcache);
   slpcache->_impl_stack.push_back(parser);
   OrkAssert(shader_data->_data.length());
-  parser->_shader_path                         = shader_path;
-  auto rval                                    = parser->parseString(shader_path.c_str(), shader_data->_data);
-  slpcache->_import_cache[shader_path.c_str()] = rval;
-  parser->processTranslationUnit(rval);
+  parser->_shader_path = shader_path;
+  SHAST::translationunit_ptr_t rval;
+  try {
+    rval                                         = parser->parseString(shader_path.c_str(), shader_data->_data);
+    slpcache->_import_cache[shader_path.c_str()] = rval;
+    parser->processTranslationUnit(rval);
+  } catch (...) {
+    slpcache->_impl_stack.pop_back();
+    throw;
+  }
   slpcache->_impl_stack.pop_back();
   return rval;
 }
