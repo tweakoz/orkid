@@ -50,10 +50,25 @@ manifest = {
             "platform_lev2/textures/gridcell_blue.png",
             "platform_lev2/textures/transponder24.png",
             "platform_lev2/textures/exp2.dds",  # lev2://textures/exp2
+            # cloud-deck textures (~17MB). RUNTIME-REQUIRED, same class as the BSC5
+            # catalog below: ork/hypergraph/ecs/scene/_cloud_deck.py builds CLOUD_TEX
+            # from these four at IMPORT time, so any scene with a cloud deck
+            # (scn_forest) needs them present in the deploy.
+            "platform_lev2/textures/clouds_cirrus_1024.png",
+            "platform_lev2/textures/clouds_altocumulus_1024.png",
+            "platform_lev2/textures/clouds_cumulus_1024.png",
+            "platform_lev2/textures/clouds_cumulus_2048.png",
             # src: only particle textures + lua/export scripts (drops ~358MB of
             # effect_textures/materials/actors/terrain/environ/audio).
             "src/particle_textures",
             "src/scripts",
+            # BSC5 star catalog (580KB incl. its two doc files). RUNTIME-REQUIRED,
+            # not dev-only: ork/hypergraph/assets/mesh/_bsc5.py resolves it relative
+            # to the tree root and raises FileNotFoundError when absent, so ANY scene
+            # reaching .stars() — scn_forest via sky()->celestial_sky()->stars() —
+            # dies at construction in a deploy that omits it. Shipped wholesale so
+            # the error message's "see PROVENANCE.md there" stays true.
+            "src/catalogs/bsc5",
             # effect_textures: only the utility textures referenced in code
             # (white/normal/noise/particle/knob/uvmap/etc.) — NOT the full 126MB
             # dir. Source list from: ork.find.py "src://effect_textures".
