@@ -103,6 +103,31 @@ VkDescriptorSet VkComputePipelineState::acquireDescriptorSet(uint64_t generation
   return set;
 }
 
+VkDescriptorSet VkComputePipelineState::acquireInlineDescriptorSet() {
+  // grow the ring lazily up to kInlineRingDepth, then cycle. A set is reused only after
+  // kInlineRingDepth-1 other inline dispatches — many frames later at realistic rates — so the
+  // primary CB that referenced it has long completed (no update-in-flight hazard). No generation
+  // reset: the ring is NEVER emptied, so the cursor cycles independently of the compute-phase
+  // generation used by acquireDescriptorSet.
+  if (_inlineCursor >= _inlineSetRing.size() and _inlineSetRing.size() < kInlineRingDepth) {
+    if (_poolFreeSlots == 0)
+      _growSetPool();
+    VkDescriptorSetAllocateInfo allocInfo{};
+    allocInfo.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool     = _setPools.back();
+    allocInfo.descriptorSetCount = 1;
+    allocInfo.pSetLayouts        = &_descriptorSetLayout;
+    VkDescriptorSet set          = VK_NULL_HANDLE;
+    VkResult result              = vkAllocateDescriptorSets(_contextVK->_vkdevice, &allocInfo, &set);
+    OrkAssert(result == VK_SUCCESS);
+    _poolFreeSlots--;
+    _inlineSetRing.push_back(set);
+  }
+  VkDescriptorSet set = _inlineSetRing[_inlineCursor];
+  _inlineCursor       = (_inlineCursor + 1) % kInlineRingDepth;
+  return set;
+}
+
 void VkComputePipelineState::writeDescriptorSet(VkDescriptorSet set) {
   // populate `set` from the currently-recorded bindings. Always writes (each dispatch
   // gets a fresh/recycled set), so there is no dirty-skip. Buffer/image infos are
@@ -632,6 +657,83 @@ void VkComputeInterface::dispatchComputeIndirect(const FxComputeShader* shader, 
   _dispatchCount++;
 
   logchan_vkcomp->log("dispatchComputeIndirect: dispatched from GPU args (offset %zu)", args_offset);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Inline (frame-CB) compute dispatch: records bind + dispatch + barrier onto the FRAME's primary
+// command buffer, so the compaction rides the single frame submit instead of a dedicated
+// compute submit+fence-wait. The trailing barrier is what makes correctness come from the
+// barrier — NOT from a fence draining the compute first (the readback-hang lesson's inverse: no
+// readback here, purely a GPU->GPU producer/consumer edge in one CB). Bindings must be recorded
+// (bindStorageBuffer / bindStorageBufferOnBlock) before this call, same protocol as dispatchCompute.
+///////////////////////////////////////////////////////////////////////////////
+void VkComputeInterface::dispatchComputeInline(
+    const FxComputeShader* shader,
+    uint32_t numgroups_x,
+    uint32_t numgroups_y,
+    uint32_t numgroups_z) {
+
+  if (!shader) {
+    logchan_vkcomp->log("dispatchComputeInline: null shader");
+    return;
+  }
+  auto vk_compute_pipeline = shader->_impl.tryAs<vkcompute_pipeline_ptr_t>();
+  if (!vk_compute_pipeline) {
+    logchan_vkcomp->log("dispatchComputeInline: shader has no compute pipeline");
+    OrkAssert(false && "Compute shader has no VkComputePipelineState");
+    return;
+  }
+  auto pipeline = vk_compute_pipeline.value();
+  if (!pipeline || pipeline->_pipeline == VK_NULL_HANDLE) {
+    logchan_vkcomp->log("dispatchComputeInline: invalid pipeline");
+    OrkAssert(false && "Invalid compute pipeline");
+    return;
+  }
+
+  // Precondition (fail loud): must be mid-frame (primary CB recording). A dispatch phase may be OPEN
+  // (the scene batches per-view culls into one) — that phase owns _computeCmdBuf, a DIFFERENT CB; we
+  // deliberately record onto the primary frame CB here, so an open phase is not a conflict.
+  OrkAssert(_contextVK->_pricb_recording && "dispatchComputeInline: no open frame primary command buffer");
+
+  // Compute dispatches are illegal INSIDE a dynamic-rendering pass. When a pass is live (e.g. the
+  // hand-rolled test path records the compaction between beginFrame and its rtGroupPush, with the
+  // main pass already open), suspend it, record compute, then resume — the proven suspend/resume
+  // idiom (VkFBI::downsample2x2, capture). Production's onPreRender runs at the compute-legal point
+  // BEFORE any pass, so was_active is false there and this is a no-op wrap.
+  const bool was_active = _contextVK->_renderPassActive;
+  if (was_active)
+    _contextVK->suspendRenderPass();
+
+  auto CB = _contextVK->primary_cb()->_vkcmdbuf;
+
+  vkCmdBindPipeline(CB, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->_pipeline);
+  if (pipeline->_hasDescriptors) {
+    VkDescriptorSet dset = pipeline->acquireInlineDescriptorSet();
+    pipeline->writeDescriptorSet(dset);
+    vkCmdBindDescriptorSets(
+        CB, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->_pipelineLayout, 0, 1, &dset, 0, nullptr);
+  }
+  vkCmdDispatch(CB, numgroups_x, numgroups_y, numgroups_z);
+
+  // compute writes -> INDIRECT-command read (the DrawMeshTasksIndirect args) + mesh/vertex-stage
+  // SSBO reads (the compacted v_list the mesh stage walks). ALL_GRAPHICS covers the mesh stage's
+  // reads without naming the mesh-shader extension stage bit (core enum, always valid), and it
+  // subsumes DRAW_INDIRECT which is named explicitly for intent. Recorded while the pass is
+  // suspended (outside a render pass) so it is a global dependency for the later indirect draw.
+  VkMemoryBarrier barrier{};
+  barrier.sType         = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+  barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+  barrier.dstAccessMask = VK_ACCESS_INDIRECT_COMMAND_READ_BIT | VK_ACCESS_SHADER_READ_BIT;
+  vkCmdPipelineBarrier(
+      CB,
+      VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+      VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT | VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+      0, 1, &barrier, 0, nullptr, 0, nullptr);
+
+  if (was_active)
+    _contextVK->resumeRenderPass();
+
+  logchan_vkcomp->log("dispatchComputeInline: recorded %u x %u x %u onto frame CB", numgroups_x, numgroups_y, numgroups_z);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -15,6 +15,27 @@ namespace ork::lev2::vulkan {
 static logchannel_ptr_t logchan_vkcap = logger()->configureChannel("VKCAPTURE", fvec3(0.8, 0.2, 0.5), true);
 
 ////////////////////////////////////////////////////////////////
+// Readback conversions run here, NEVER on the concurrentQueue.
+//
+// Image::convertFromImageToFormat is itself a fork-join over the concurrentQueue:
+// it fans row bands onto that pool and spin-waits for the counter. Such a join is
+// only safe OFF the pool it feeds — a join running ON a pool worker waits for
+// chunks that can never be scheduled once every worker is another blocked join,
+// and one refilter cycle's readbacks are enough to fill a small pool. Observed as
+// a hard livelock at the 4-worker pool floor: every worker parked in
+// convertFromImageToFormat, the loader's mip-chain downsample starved behind them,
+// the main thread finally stuck joining that loader at exit.
+//
+// Serial by design: each conversion is already internally parallel across the whole
+// concurrentQueue, so a second converter thread would only contend for the same
+// workers. Its own queue rather than the ioQueue so that asset IO and readback
+// conversion cannot delay each other.
+static opq::opq_ptr_t _conversionQueue() {
+  static opq::opq_ptr_t q = std::make_shared<opq::OperationsQueue>(1, "vkCaptureConvert", opq::EPerformaceProfile::BALANCED);
+  return q;
+}
+
+////////////////////////////////////////////////////////////////
 
 VkCaptureAsyncImpl::VkCaptureAsyncImpl(vkcontext_rawptr_t ctx)
     : _contextVK(ctx) {
@@ -167,8 +188,8 @@ void VkContext::_processPendingCaptures() {
       staging_buffer->copyToHost((void*)temp_img->_data->data(), bufsize);
       async_impl->_dataRetrieved = true;
 
-      // Do conversion async on opq
-      opq::concurrentQueue()->enqueue([capture_async]() {
+      // Do conversion async, off the pool it fans into (see _conversionQueue)
+      _conversionQueue()->enqueue([capture_async]() {
         auto async_impl  = capture_async->_impl.getShared<VkCaptureAsyncImpl>();
         auto capbuf      = async_impl->capture_buffer;
         auto capbuf_impl = capbuf->_impl.getShared<VkCaptureBufferImpl>();
@@ -410,6 +431,21 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(
   // Suspend render pass if active - we need to do barriers and copies
   _contextVK->suspendRenderPass();
 
+  // A capture must be layout-neutral. A scenegraph-viewport RTG is a sampled
+  // texture (the UI surface composites it every frame) and is only re-rendered
+  // when its surface is dirty; if the capture strands it in COLOR_ATTACHMENT the
+  // next UI bind on a non-dirty frame samples a non-shader-readable image and
+  // trips the layout assert. Remember what it was before the host-read so the
+  // trailing restore returns it there instead of unconditionally to a render
+  // target. (SHADER_READ_ONLY stays SHADER_READ_ONLY; anything else — a mid-render
+  // or offscreen main-output capture that will be drawn into next — restores to
+  // the render-target layout, preserving prior behaviour.)
+  const VkImageLayout _precapture_layout = rtbi->_currentLayout;
+  const VkImageLayout _restore_layout =
+      (_precapture_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+          ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+          : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
   rtbi->_transitionToHostRead(cb);
 
   // printf("captureAsFormat w<%d> h<%d>\n", w, h);
@@ -430,7 +466,9 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(
   region.bufferOffset      = 0;
   region.bufferRowLength   = 0; // 0 means tightly packed
   region.bufferImageHeight = 0; // 0 means tightly packed
-  region.imageSubresource  = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+  // baseArrayLayer selects ONE layer of a layered (multiview) attachment; layerCount stays 1
+  //  because the destination is a single 2D host image.
+  region.imageSubresource  = {VK_IMAGE_ASPECT_COLOR_BIT, 0, uint32_t(capbuf->_captureLayer), 1};
   region.imageOffset       = {int32_t(x), int32_t(y), 0}; // Specify where to copy from in the source image
   region.imageExtent       = {uint32_t(w), uint32_t(h), 1};
 
@@ -464,7 +502,7 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(
       vkCmdCopyImageToBuffer(cb->_vkcmdbuf, vkimg, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, staging_buffer->_vkbuffer, 1, &region);
 
       // Transition back to render target for continued rendering
-      rtbi->_transitionToRenderTarget(cb);
+      rtbi->_transitionFromHostReadTo(cb, _restore_layout);
 
       // Store staging buffer with metadata about conversion requirements
       auto capbuf_impl             = capbuf->_impl.makeShared<VkCaptureBufferImpl>();
@@ -516,7 +554,7 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(
       vkCmdCopyImageToBuffer(cb->_vkcmdbuf, vkimg, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, staging_buffer->_vkbuffer, 1, &region);
 
       // Transition back to render target
-      rtbi->_transitionToRenderTarget(cb);
+      rtbi->_transitionFromHostReadTo(cb, _restore_layout);
 
       // Store staging buffer with metadata (use same struct for consistency)
       auto capbuf_impl             = capbuf->_impl.makeShared<VkCaptureBufferImpl>();
@@ -560,7 +598,7 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(
       vkCmdCopyImageToBuffer(cb->_vkcmdbuf, vkimg, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, staging_buffer->_vkbuffer, 1, &region);
 
       // Transition back to render target
-      rtbi->_transitionToRenderTarget(cb);
+      rtbi->_transitionFromHostReadTo(cb, _restore_layout);
 
       // Store staging buffer with metadata (use same struct for consistency)
       auto capbuf_impl             = capbuf->_impl.makeShared<VkCaptureBufferImpl>();
@@ -614,7 +652,7 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(
       vkCmdCopyImageToBuffer(cb->_vkcmdbuf, vkimg, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, staging_buffer->_vkbuffer, 1, &region);
 
       // Transition back to render target
-      rtbi->_transitionToRenderTarget(cb);
+      rtbi->_transitionFromHostReadTo(cb, _restore_layout);
 
       // Store staging buffer with metadata (use same struct for consistency)
       auto capbuf_impl             = capbuf->_impl.makeShared<VkCaptureBufferImpl>();
@@ -655,7 +693,7 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(
       vkCmdCopyImageToBuffer(cb->_vkcmdbuf, vkimg, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, staging_buffer->_vkbuffer, 1, &region);
 
       // Transition back to render target
-      rtbi->_transitionToRenderTarget(cb);
+      rtbi->_transitionFromHostReadTo(cb, _restore_layout);
 
       // Store staging buffer with metadata (use same struct for consistency)
       auto capbuf_impl             = capbuf->_impl.makeShared<VkCaptureBufferImpl>();

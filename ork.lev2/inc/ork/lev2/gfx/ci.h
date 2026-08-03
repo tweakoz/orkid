@@ -32,6 +32,19 @@ struct ComputeInterface {
   // `args_offset` must be 4-byte aligned.
   virtual void dispatchComputeIndirect(const FxComputeShader* shader, FxShaderStorageBuffer* args, size_t args_offset = 0) {}
 
+  // Record a compute dispatch DIRECTLY onto the FRAME's primary command buffer (NOT the dedicated
+  // compute CB), immediately followed by a memory barrier making its writes visible to a later
+  // INDIRECT draw command + mesh/vertex-stage SSBO reads recorded into the same frame CB. The
+  // dispatched work thus rides the ONE frame submit — no separate vkQueueSubmit / fence-wait, which
+  // on MoltenVK is the whole per-frame cost of a GPU compaction feeding an indirect draw. Bindings
+  // are recorded the usual way (bindStorageBuffer / bindStorageBufferOnBlock) BEFORE this call,
+  // exactly as for dispatchCompute. Preconditions (fail loud): mid-frame (primary CB recording) and
+  // OUTSIDE any render pass — i.e. the compute-legal preRender point, before the draw's render pass.
+  virtual void dispatchComputeInline(const FxComputeShader* shader,
+                                     uint32_t numgroups_x,
+                                     uint32_t numgroups_y,
+                                     uint32_t numgroups_z) {}
+
   virtual void bindStorageBuffer(const FxComputeShader* shader, uint32_t binding_index, FxShaderStorageBuffer* buffer) {}
 
   // Auto-resolving bind: look up `block`'s reflected SPIR-V binding within `shader` (by name)

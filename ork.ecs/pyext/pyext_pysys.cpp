@@ -36,6 +36,14 @@ void pyinit_pysys(py::module& module_ecs) {
           },
           [](pycompdata_ptr_t pycdata, std::string path) { //
             pycdata->SetPath(file::Path(path.c_str()));
+          })
+      .def_property(
+          "scriptData",
+          [](pycompdata_ptr_t pycdata) -> std::string { //
+            return pycdata->_scriptData;
+          },
+          [](pycompdata_ptr_t pycdata, std::string data) { //
+            pycdata->_scriptData = data;
           });
   type_codec->registerStdCodec<pycompdata_ptr_t>(pyc_type);
   /////////////////////////////////////////////////////////////////////////////////

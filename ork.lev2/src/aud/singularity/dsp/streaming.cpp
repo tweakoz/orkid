@@ -49,7 +49,7 @@ STREAMING_OSCILLATOR_DATA::STREAMING_OSCILLATOR_DATA(std::string name)
 }
 
 dspblk_ptr_t STREAMING_OSCILLATOR_DATA::createInstance() const {
-  auto instance = std::make_shared<StreamingOscillatorBlock>(this);
+  auto instance = createDspInstance<StreamingOscillatorBlock>(this);
   return instance;
 }
 

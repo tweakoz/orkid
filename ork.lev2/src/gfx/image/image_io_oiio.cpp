@@ -48,6 +48,15 @@ bool Image::initFromInMemoryFile( std::string fmtguess, //
   Filesystem::IOMemReader memreader((void*)srcdata, srclen); // I/O proxy object
   void* ptr = &memreader;
   config.attribute("oiio:ioproxy", TypeDesc::PTR, &ptr);
+  // orkid image data is STRAIGHT (unassociated) alpha end-to-end: writeToFile dumps the raw
+  // RGBA channels and the GPU samplers do their own alpha math. PNG stores unassociated alpha,
+  // but OIIO's reader defaults to ASSOCIATING it (RGB *= alpha) into its internal convention on
+  // load — so a section-bake albedo captured with alpha=0 (only RGB is authored) came back with
+  // RGB premultiplied to ZERO, blacking out the whole texture (the WARM section-array cache load
+  // graying). Request unassociated alpha so RGB is returned exactly as stored (a no-op for the
+  // opaque alpha=255 majority). LDR-only: EXR/HDR carry associated alpha by convention.
+  if (fmtguess == "png")
+    config.attribute("oiio:UnassociatedAlpha", 1);
 
   auto name = std::string("inmem.") + fmtguess;
 
@@ -224,11 +233,23 @@ bool Image::initFromInMemoryFile( std::string fmtguess, //
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Image::writeToFile(const ork::file::Path& outpath, bool linear_colorspace) const {
+bool Image::writeToFile(const ork::file::Path& outpath, bool linear_colorspace) const {
   auto cstrpath = outpath.c_str();
   auto out      = ImageOutput::create(cstrpath);
-  if (!out)
-    return;
+  // self-defend (ops fail-loud): OIIO returns null when it cannot map the path's
+  // extension to an output plugin (an extension-less / unrecognized path). The old
+  // silent `return` wrote NOTHING yet the void signature reported success — a capture
+  // "written" to a bad path produced no file and callers reported a spurious result.
+  // Refuse loudly (path + OIIO reason) and hand the caller a `false` it can act on;
+  // never a silent no-op. (Mirrors the initFromInMemoryFile OIIO-null guard above.)
+  if (!out) {
+    auto oiio_err = OIIO::geterror();
+    if (oiio_err.empty())
+      oiio_err = "unrecognized output extension (no OIIO plugin for this path)";
+    fprintf(stderr, "ork.lev2 Image::writeToFile FAILED path<%s> reason<%s>\n", cstrpath, oiio_err.c_str());
+    logchan_image->log("Image::writeToFile FAILED path<%s> reason<%s>", cstrpath, oiio_err.c_str());
+    return false;
+  }
   ImageSpec spec(_width, _height, _numcomponents, TypeDesc::UINT8);
   switch (_format) {
     case EBufferFormat::R8:
@@ -309,9 +330,21 @@ void Image::writeToFile(const ork::file::Path& outpath, bool linear_colorspace) 
   // (owner policy 2026-07-18): engine-written images are byte-reproducible.
   spec.attribute("DateTime", "1970:01:01 00:00:00");
 
-  out->open(cstrpath, spec);
-  out->write_image(spec.format, _data->data());
+  // open + write also fail-loud: OIIO signals these via a false return + per-object
+  // geterror(). Ignoring them is the same silent-success lie as the create case.
+  if (not out->open(cstrpath, spec)) {
+    fprintf(stderr, "ork.lev2 Image::writeToFile FAILED (open) path<%s> reason<%s>\n", cstrpath, out->geterror().c_str());
+    logchan_image->log("Image::writeToFile FAILED (open) path<%s> reason<%s>", cstrpath, out->geterror().c_str());
+    return false;
+  }
+  if (not out->write_image(spec.format, _data->data())) {
+    fprintf(stderr, "ork.lev2 Image::writeToFile FAILED (write) path<%s> reason<%s>\n", cstrpath, out->geterror().c_str());
+    logchan_image->log("Image::writeToFile FAILED (write) path<%s> reason<%s>", cstrpath, out->geterror().c_str());
+    out->close();
+    return false;
+  }
   out->close();
+  return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

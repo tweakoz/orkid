@@ -284,7 +284,7 @@ class HeightField:
         # POINT into the ScatterSet, so the collider shape rides the DATA
         # (BulletShapeScatter reads items, hardcodes nothing). cone follows the
         # hypermesh cone convention: BASE at the item origin, apex up local +Y.
-        _KINDS = {"sphere": 0, "capsule": 1, "box": 2, "cone": 3}
+        _KINDS = {"sphere": 0, "capsule": 1, "box": 2, "cone": 3, "ring": 4}
         coll_out = {}
         for tname, cspec in (colliders or {}).items():
             if str(tname) not in declared:

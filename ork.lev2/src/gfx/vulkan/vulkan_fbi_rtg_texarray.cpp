@@ -52,7 +52,8 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_buildRtgImplFromTextureArraySlice(rtg
   vkrtgrpimpl_ptr_t RTGIMPL = std::make_shared<VkRtGroupImpl>(_contextVK,rtgroup);
   RTGIMPL->_width = iw;
   RTGIMPL->_height = ih;
-  RTGIMPL->_pipeline_bits = 0;
+  // _pipeline_bits stays -1: assigned lazily by layoutBits() from the
+  // attachment layout once the buffer impls exist (pipeline-leak fix).
   
   /////////////////////////////////////////////
   // Determine if depth or color

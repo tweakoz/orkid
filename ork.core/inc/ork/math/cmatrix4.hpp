@@ -908,11 +908,13 @@ void Matrix44<T>::compose(const Vector3<T>& pos, const Quaternion<T>& qrot, cons
   T yz = qrot.y * zs;
   T zz = qrot.z * zs;
 
-  setColumn(0, scalex * (one - (yy + zz)), scalex * (xy - wz), scalex * (xz + wy), 0);
+  // rotation == toMatrix(qrot) (the active rotation); scale pre-multiplies (row i by scale_i)
+  // so this == compose2 == multiply_ltor(toMatrix(qrot), scale, translation).
+  setColumn(0, scalex * (one - (yy + zz)), scaley * (xy + wz), scalez * (xz - wy), 0);
 
-  setColumn(1, scaley * (xy + wz), scaley * (one - (xx + zz)), scaley * (yz - wx), 0);
+  setColumn(1, scalex * (xy - wz), scaley * (one - (xx + zz)), scalez * (yz + wx), 0);
 
-  setColumn(2, scalez * (xz - wy), scalez * (yz + wx), scalez * (one - (xx + yy)), 0);
+  setColumn(2, scalex * (xz + wy), scaley * (yz - wx), scalez * (one - (xx + yy)), 0);
 
   setColumn(3, pos.x, pos.y, pos.z, 1);
 }
@@ -946,11 +948,12 @@ void Matrix44<T>::compose(const Vector3<T>& pos, const Quaternion<T>& qrot ) {
   T yz = qrot.y * zs;
   T zz = qrot.z * zs;
 
-  setColumn(0, (one - (yy + zz)), (xy - wz), (xz + wy), 0);
+  // rotation == toMatrix(qrot) (the active rotation), matching fromQuaternion/compose2
+  setColumn(0, (one - (yy + zz)), (xy + wz), (xz - wy), 0);
 
-  setColumn(1, (xy + wz), (one - (xx + zz)), (yz - wx), 0);
+  setColumn(1, (xy - wz), (one - (xx + zz)), (yz + wx), 0);
 
-  setColumn(2, (xz - wy), (yz + wx), (one - (xx + yy)), 0);
+  setColumn(2, (xz + wy), (yz - wx), (one - (xx + yy)), 0);
 
   setColumn(3, pos.x, pos.y, pos.z, 1);
 }

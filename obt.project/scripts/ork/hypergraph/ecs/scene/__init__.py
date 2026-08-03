@@ -31,6 +31,7 @@ from orkengine.core import vec3, vec4
 from orkengine.core import Transform as _CoreTransform
 
 from ork.hypergraph.ecs.scene.assets import _ASSET_REGISTRY, _materialize as _materialize_asset
+from ork.renderoverrides import depth_prepass_override
 
 # Trigger registration of every concrete-named asset wrapper that physically
 # lives in ork.hypergraph.assets/<category>/<name>.py (post-refactor location
@@ -120,6 +121,16 @@ class _SystemDecl:
       setattr(sysdata, k, v)
     for method, args, kwargs in self.sub_calls:
       getattr(sysdata, method)(*args, **kwargs)
+    # ORKID_DPP — the ENGINE-LEVEL depth-prepass override, applied here and not
+    # at scenegraph() because this is the last word: declareParams is dict
+    # assignment and sub_calls run in order, so any mixin that amended the params
+    # (sky, cloud deck, a scene appending its own declareParams) has already run.
+    # Unset writes nothing, so an unset environment is byte-identical to the
+    # authored scene. See ork.renderoverrides for why the knob exists.
+    if self.typename == "SceneGraphSystem":
+      dpp = depth_prepass_override()
+      if dpp is not None:
+        sysdata.declareParams({"DepthPrepass": dpp})
     self._lowered = sysdata
     return sysdata
 
@@ -507,9 +518,18 @@ class SceneGraphHandle:
 from ork.hypergraph.ecs.scene._terrain import TerrainMixin
 from ork.hypergraph.ecs.scene._walker import WalkerMixin
 from ork.hypergraph.ecs.scene._projectiles import ProjectilesMixin
+from ork.hypergraph.ecs.scene._sun import SunMixin
+from ork.hypergraph.ecs.scene._moon import MoonMixin
+from ork.hypergraph.ecs.scene._stars import StarsMixin
+from ork.hypergraph.ecs.scene._celestial_sky import CelestialSkyMixin
+from ork.hypergraph.ecs.scene._sky_dome import SkyDomeMixin
+from ork.hypergraph.ecs.scene._cloud_deck import CloudDeckMixin
+from ork.hypergraph.ecs.scene._sky import SkyMixin
 
 
-class Scene(TerrainMixin, WalkerMixin, ProjectilesMixin):
+class Scene(TerrainMixin, WalkerMixin, ProjectilesMixin, SunMixin, MoonMixin,
+            StarsMixin, CelestialSkyMixin, SkyDomeMixin, CloudDeckMixin,
+            SkyMixin):
   """Tier 3 declarative ECS scene composite. Subclass and declare your scene
   in __init__; call build(sd) to lower into a reflected ecs.SceneData.
 

@@ -14,6 +14,7 @@
 #include <ork/lev2/gfx/gfxvtxbuf.inl>
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_common.h>
+#include <ork/lev2/gfx/renderer/hzb.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -301,6 +302,24 @@ void pyinit_scenegraph(py::module& module_lev2) {
   //.def("renderOnContext", [](scene_ptr_t SG, ctx_t context) { SG->renderOnContext(context.get()); });
   //.def("renderOnContext", [](scene_ptr_t SG, ctx_t context) { SG->renderOnContext(context.get()); });
   /////////////////////////////////////////////////////////////////////////////////
+  // HZB — read-only provenance surface for cull oracles. sourceDepthFrame is the frame
+  //  whose depth passes last wrote the image the current pyramid was built from; the
+  //  1-phase scheme requires it to be STRICTLY EARLIER than the consuming frame
+  //  (ctx.frameIndex), so equality is the exact same-frame state the builder's caller
+  //  guards against. Reporting only — nothing culls on it.
+  auto hzb_type = //
+      py::class_<HZBBuilder, hzbbuilder_ptr_t>(sgmodule, "HZB")
+          .def_property_readonly("sourceDepthFrame", [](hzbbuilder_ptr_t h) -> int { return h->_sourceDepthFrame; })
+          .def_property_readonly("valid", [](hzbbuilder_ptr_t h) -> bool { return h->_valid; })
+          .def_property_readonly("baseWidth", [](hzbbuilder_ptr_t h) -> int { return h->_baseW; })
+          .def_property_readonly("baseHeight", [](hzbbuilder_ptr_t h) -> int { return h->_baseH; })
+          .def("__repr__", [](hzbbuilder_ptr_t h) -> std::string {
+            fxstring<128> fxs;
+            fxs.format("HZB(%p:valid<%d> base<%dx%d> srcdepthframe<%d>)", h.get(), int(h->_valid), h->_baseW, h->_baseH, h->_sourceDepthFrame);
+            return fxs.c_str();
+          });
+  type_codec->registerStdCodec<hzbbuilder_ptr_t>(hzb_type);
+  /////////////////////////////////////////////////////////////////////////////////
   auto scenegraph_type = //
       py::class_<Scene, scene_ptr_t>(sgmodule, "Scene")
           .def(py::init<>())
@@ -324,6 +343,15 @@ void pyinit_scenegraph(py::module& module_lev2) {
               "compositoroutputnode",                         //
               [](scene_ptr_t SG) -> compositoroutnode_ptr_t { //
                 return SG->_outputNode;
+              })
+          .def_property_readonly(
+              // the occlusion pyramid this scene's culls consume — null until the forward
+              //  node has built one. Exposed for cull oracles: HZBBuilder::_sourceDepthFrame
+              //  read against ctx.frameIndex is the direct observable for the 1-phase
+              //  invariant (the pyramid must come from a STRICTLY EARLIER frame's depth).
+              "hzb",                                 //
+              [](scene_ptr_t SG) -> hzbbuilder_ptr_t { //
+                return SG->_hzb;
               })
           .def_property_readonly(
               "compositorpostnodecount",     //

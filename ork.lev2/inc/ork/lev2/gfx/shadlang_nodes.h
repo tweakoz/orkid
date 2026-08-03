@@ -330,6 +330,11 @@ DECLARE_STD_AST_CLASS_WPTR(SemaInheritInterface,SemaInheritFragmentInterface, se
 DECLARE_STD_AST_CLASS_WPTR(SemaInheritInterface,SemaInheritGeometryInterface, semainhgif_ptr_t);
 DECLARE_STD_AST_CLASS_WPTR(SemaInheritInterface,SemaInheritComputeInterface, semainhcif_ptr_t);
 DECLARE_STD_AST_CLASS_WPTR(SemaInheritInterface,SemaInheritStorageInterface, semainhsif_ptr_t);
+DECLARE_STD_AST_CLASS_WPTR(SemaInheritInterface,SemaInheritTaskInterface, semainhtskif_ptr_t);
+// the amplification payload is SHARED STORAGE, not stage I/O — it inherits like a
+//  uniform block (one declaration, emitted verbatim into every stage that claims it),
+//  which is why it hangs off SemaInherit rather than SemaInheritInterface.
+DECLARE_STD_AST_CLASS_WPTR(SemaInherit,SemaInheritTaskPayload, semainhtskpld_ptr_t);
 //
 DECLARE_STD_AST_CLASS(Expression,ExpressionList);
 //
@@ -382,11 +387,15 @@ DECLARE_STD_AST_CLASS(Shader,VertexShader);
 DECLARE_STD_AST_CLASS(Shader,FragmentShader);
 DECLARE_STD_AST_CLASS(Shader,GeometryShader);
 DECLARE_STD_AST_CLASS(Shader,ComputeShader);
+DECLARE_STD_AST_CLASS(Shader,MeshShader);
+DECLARE_STD_AST_CLASS(Shader,TaskShader);
 //
 DECLARE_STD_AST_CLASS(AstNode,VertexShaderRef);
 DECLARE_STD_AST_CLASS(AstNode,FragmentShaderRef);
 DECLARE_STD_AST_CLASS(AstNode,GeometryShaderRef);
 DECLARE_STD_AST_CLASS(AstNode,ComputeShaderRef);
+DECLARE_STD_AST_CLASS(AstNode,MeshShaderRef);
+DECLARE_STD_AST_CLASS(AstNode,TaskShaderRef);
 DECLARE_STD_AST_CLASS(AstNode,StateBlockRef);
 //
 DECLARE_STD_AST_CLASS(PipelineInterface,VertexInterface);
@@ -394,6 +403,8 @@ DECLARE_STD_AST_CLASS(PipelineInterface,GeometryInterface);
 DECLARE_STD_AST_CLASS(PipelineInterface,FragmentInterface);
 DECLARE_STD_AST_CLASS(PipelineInterface,ComputeInterface);
 DECLARE_STD_AST_CLASS(PipelineInterface,StorageInterface);
+DECLARE_STD_AST_CLASS(PipelineInterface,TaskInterface);
+DECLARE_STD_AST_CLASS(Translatable,TaskPayload);
 
 ///////////////////////////////////////////////////////////
 
@@ -461,6 +472,7 @@ struct InheritanceTracker{
   using on_uset_fn_t = std::function<void(std::string, astnode_ptr_t)>;
   using on_ublk_fn_t = std::function<void(std::string, astnode_ptr_t)>;
   using on_storage_fn_t = std::function<void(std::string, astnode_ptr_t)>;
+  using on_payload_fn_t = std::function<void(std::string, astnode_ptr_t)>;
   using on_ext_fn_t = std::function<void(std::string,astnode_ptr_t)>;
 
   on_lib_fn_t _onInheritLibrary = nullptr;
@@ -470,6 +482,7 @@ struct InheritanceTracker{
   on_uset_fn_t _onInheritUniformSet = nullptr;
   on_ublk_fn_t _onInheritUniformBlk = nullptr; 
   on_storage_fn_t _onInheritStorageInterface = nullptr;
+  on_payload_fn_t _onInheritTaskPayload = nullptr;
   on_ext_fn_t _onInheritExtension = nullptr;
 
   transunit_ptr_t _translation_unit;
@@ -481,6 +494,7 @@ struct InheritanceTracker{
   std::set<std::string> _set_inherited_uniblks;
   std::set<std::string> _set_inherited_storage;
   std::set<std::string> _set_inherited_interfaces;
+  std::set<std::string> _set_inherited_payloads;
   std::set<std::string> _set_inherited_extensions;
 
   std::vector<libblock_ptr_t> _inherited_libs;
@@ -490,6 +504,7 @@ struct InheritanceTracker{
   std::vector<astnode_ptr_t> _inherited_ublks;
   std::vector<astnode_ptr_t> _inherited_storage;
   std::vector<astnode_ptr_t> _inherited_ifaces;
+  std::vector<astnode_ptr_t> _inherited_payloads;
   std::vector<std::string> _inherited_exts;
   size_t _stack_depth = 0;
 };

@@ -5,6 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
+#include <algorithm>
 #include <sstream>
 #include <ork/kernel/opq.h>
 #include <ork/lev2/ui/event.h>
@@ -456,8 +457,8 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
       // the DB camera LUT for the world (root) view, onto which the XR head pose composes
       // at render time. "spawncam" is the only name that resolves; "vrcam" never did.
       vrdev->_camera_name = "spawncam";
-      // Host-supplied DEVICE calibration (scene params; engine defaults otherwise). _poseConjugate
-      // defaults true (the conj_inv handedness); IPD<0 swaps L/R (the cross-eye fix).
+      // Host-supplied DEVICE calibration (scene params; engine defaults otherwise).
+      // IPD<0 swaps L/R (the cross-eye fix).
       constexpr float D2R = 0.01745329252f, R2D = 57.29577951f;
       // Sane baselines mirroring the stereo_grid reference (the bare Device struct default
       // _fov=90 is *radians*, an invalid frustum). A scene forced into VR by the host (no
@@ -479,9 +480,9 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
       //  where the positional (tessellation) path misbehaves. Sanctioned per-scene mechanism; the
       //  global emergency override env ORKID_XR_NO_DEPTH=1 wins over this param.
       if (auto v = _mergedParams->tryKeyAsNumber("VrDepthPublish")) vrdev->_publishDepth = (v.value() != 0.0);
-      logchan_sgsys->log("ECS-VR: device IPD=%g fovDeg=%g near=%g far=%g pred=%g poseConj=%d publishDepth=%d",
+      logchan_sgsys->log("ECS-VR: device IPD=%g fovDeg=%g near=%g far=%g pred=%g publishDepth=%d",
                          vrdev->_IPD, vrdev->_fov * R2D, vrdev->_near, vrdev->_far,
-                         vrdev->_predictionBias, int(vrdev->_poseConjugate), int(vrdev->_publishDepth));
+                         vrdev->_predictionBias, int(vrdev->_publishDepth));
       // Host-supplied per-eye distortion present (vr.h: "the distortion shader and the calibration
       // values are supplied by the host"). The engine only BUILDS device->_presentation from
       // declarative scene params — NO shader/optics baked here. Absent VrDistortShader => null
@@ -671,8 +672,12 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
   // _onStage on the same render-thread context, so declared drawable
   // nodes land on the scenegraph before the first frame draws.
 
-  // GPU uploads deferred to loading phase (safe for first-run shader compilation)
-  auto ph = ctx->newLoadingPhase();
+  // GPU uploads deferred to loading phase (safe for first-run shader compilation).
+  // Build the phase FULLY (all ops enqueued), then submit atomically. newLoadingPhase()
+  // would publish an empty phase the drainer could pop+complete before enqueueOperation
+  // runs — orphaning this cookie/shadow-array upload and mis-releasing its texture_upload
+  // marker early. submitLoadingPhase closes that race class at this site.
+  auto ph     = std::make_shared<lev2::LoadingPhase>();
   bool shared = _isSharedScene;
   ph->enqueueOperation([=](Context* ctx) {
     if (!shared) {
@@ -704,6 +709,7 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
       _scene->_lightManager->gpuInit(ctx);
     }
   });
+  ctx->submitLoadingPhase(ph);
 
   /////////////////////////////////////////
 }
@@ -803,6 +809,17 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
 
           auto ent = component->GetEntity();
           nitem->_sgnode->_userdata->makeValueForKey<uint64_t>("entref") = ent->_entref;
+
+          // register for the per-frame varmap override sweep (_updateLightBridge)
+          LightBridgeItem bridge;
+          bridge._component = component;
+          bridge._entity    = ent;
+          bridge._light     = l;
+          bridge._lightdata = as_light;
+          bridge._sgnode    = nitem->_sgnode;
+          _lightbridges.atomicOp([&bridge](lightbridge_vect_t& unlocked) { //
+            unlocked.push_back(bridge);
+          });
 
           // For spotlights, derive view/projection from entity transform (+Z forward)
           auto as_spotl = std::dynamic_pointer_cast<lev2::SpotLight>(l);
@@ -980,6 +997,16 @@ void SceneGraphSystem::_onUnstageComponent(SceneGraphComponent* component) {
     _numComponents = unlocked.size();                                                        //
   });
   ///////////////////////////////
+  // drop this component's varmap->light bridge entries (they hold a raw
+  // Entity* that dies with the entity)
+  ///////////////////////////////
+  _lightbridges.atomicOp([component](lightbridge_vect_t& unlocked) {
+    auto it = std::remove_if(unlocked.begin(), unlocked.end(), [component](const LightBridgeItem& item) -> bool {
+      return item._component == component;
+    });
+    unlocked.erase(it, unlocked.end());
+  });
+  ///////////////////////////////
   // remove from scenegraph
   ///////////////////////////////
   auto remove_operation = [=]() {
@@ -1152,6 +1179,7 @@ bool SceneGraphSystem::_onStage(Simulation* psi) {
 ///////////////////////////////////////////////////////////////////////////////
 void SceneGraphSystem::_onUnstage(Simulation* psi) {
   _components.atomicOp([this](SceneGraphSystem::component_set_t& unlocked) { unlocked.clear(); });
+  _lightbridges.atomicOp([](lightbridge_vect_t& unlocked) { unlocked.clear(); });
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool SceneGraphSystem::_onActivate(Simulation* psi) // final
@@ -1162,9 +1190,52 @@ bool SceneGraphSystem::_onActivate(Simulation* psi) // final
 void SceneGraphSystem::_onDeactivate(Simulation* inst) // final
 {
 }
+////////////////////////////////////////////////////////////////////////////////
+// Per-frame entity-varmap -> light overrides.
+//
+// Runs on the UPDATE thread, the same thread sim scripts write ent.vars from,
+// so the VarMap itself is never read across threads. What lands on the light is
+// POD the render thread already samples unsynchronized every frame — the same
+// contract as the entity orientation -> Light::_xformgenerator path.
+//
+// An ABSENT key leaves the declaration value alone; a scene that publishes
+// nothing pays four map lookups per light per tick and mutates nothing.
+////////////////////////////////////////////////////////////////////////////////
+void SceneGraphSystem::_updateLightBridge() {
+  static const varmap::key_t k_intensity("light_intensity");
+  static const varmap::key_t k_color("light_color");
+  static const varmap::key_t k_castsshadows("light_casts_shadows");
+  static const varmap::key_t k_enable("light_enable");
+
+  _lightbridges.atomicOp([](lightbridge_vect_t& unlocked) {
+    for (auto& item : unlocked) {
+      const auto& vars = item._entity->_varmap;
+      if (nullptr == vars)
+        continue;
+
+      ////////////////////////////////////////
+
+      if (auto as_f = vars->typedValueForKey<float>(k_intensity))
+        item._lightdata->_intensity = as_f.value();
+      if (auto as_v3 = vars->typedValueForKey<fvec3>(k_color))
+        item._lightdata->mColor = as_v3.value();
+
+      ////////////////////////////////////////
+
+      // the renderer consults the LIGHT's cached flag, not the data's — that
+      // one is snapshotted once at staging (see _onStageComponent).
+      if (auto as_f = vars->typedValueForKey<float>(k_castsshadows))
+        item._light->_castsShadows = (as_f.value() > 0.5f);
+      if (auto as_f = vars->typedValueForKey<float>(k_enable))
+        item._sgnode->_enabled = (as_f.value() > 0.5f);
+    }
+  });
+}
+///////////////////////////////////////////////////////////////////////////////
 void SceneGraphSystem::_onUpdate(Simulation* psi) // final
 {
   OrkProfilerSampleScope(CHANNEL_UPDATE, "SceneGraphSystem::_onUpdate");
+  _updateLightBridge();
   if (_scene && _autoupdate) {
     // drive the renderer clock from the authoritative ECS sim time (stops on pause). The scene
     // render publishes this as RCFD["time"], which fx_pipeline's RCFD_TIME named-param provider binds

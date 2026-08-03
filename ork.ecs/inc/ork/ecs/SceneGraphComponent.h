@@ -298,7 +298,8 @@ struct SceneGraphSystem final : public System {
 
   void _instantiateDeclaredNodes();
   void enqueueOnGpuInit(void_lambda_t l);
-  
+  void _updateLightBridge();
+
   ///////////////////////////////
   void _rt_process();
   ///////////////////////////////
@@ -318,6 +319,20 @@ struct SceneGraphSystem final : public System {
   using component_set_t = std::unordered_set<SceneGraphComponent*>;
   LockedResource<component_set_t> _components;
   int _numComponents = 0;
+  ///////////////////////////////
+  // per-frame entity-varmap -> light bridge. One entry per staged light node,
+  // pushed on the render thread when the light is injected and consumed on the
+  // update thread by _updateLightBridge (hence the lock).
+  struct LightBridgeItem {
+    SceneGraphComponent* _component = nullptr;
+    Entity* _entity                 = nullptr;
+    lev2::light_ptr_t _light;
+    lev2::lightdata_ptr_t _lightdata;
+    lev2::scenegraph::node_ptr_t _sgnode;
+  };
+  using lightbridge_vect_t = std::vector<LightBridgeItem>;
+  LockedResource<lightbridge_vect_t> _lightbridges;
+  ///////////////////////////////
   const SceneGraphSystemData& _SGSD;
   MpMcBoundedQueue<void_lambda_t,65536> _renderops;
   bool _autodraw = true;   // when false, skip renderOnContext / renderWithStandardCompositorFrame

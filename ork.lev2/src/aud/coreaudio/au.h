@@ -122,6 +122,12 @@ struct AuContext {
   bool output_started                    = false;
   std::atomic<bool> _keep_going          = true;
   std::atomic<bool> _output_ready        = false;
+  // starvation accounting for the [PA_DIAG] window line (see CoreAudioDevice
+  // startup): the HAL is started before the producer thread exists, so the
+  // first callbacks CANNOT be fed - those are pre-roll, not drop-outs. Only
+  // starvation after the queue has delivered once scores as an underflow.
+  std::atomic<bool> _stream_primed          = false;
+  std::atomic<uint64_t> _preroll_starves    = 0;
   StereoFragment* _curMixOutGroup = nullptr;
   AudioBufferList* _inputBuffer   = nullptr;
 

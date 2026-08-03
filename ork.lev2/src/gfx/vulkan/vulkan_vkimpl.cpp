@@ -155,16 +155,99 @@ vkdeviceinfo_ptr_t VulkanInstance::findPresentableDevice() {
   return nullptr;
 }
 
+// ORKID_VULKAN_VALIDATE=2 : CONTINUE mode - report validation errors and keep
+//  running, so one pass surfaces every defect instead of dying at the first.
+//  Any other truthy value keeps the default trap-on-first-error behavior.
+static bool _validationContinueMode() {
+  static const bool mode = []() -> bool {
+    const char* v = std::getenv("ORKID_VULKAN_VALIDATE");
+    return v and (std::string(v) == "2");
+  }();
+  return mode;
+}
+
+// ORKID_VULKAN_TRAP_SKIP : comma-separated VUID substrings that VALIDATE=1 must
+//  NOT die on — they take the continue-mode path instead. Without this, one
+//  known-and-triaged defect that fires early permanently masks every later one,
+//  so the trap can only ever convict whatever happens to be first. Unset/empty
+//  leaves trap-on-first-error exactly as it was.
+static bool _trapSkipped(const char* message) {
+  static const std::vector<std::string> needles = []() {
+    std::vector<std::string> rval;
+    const char* v = std::getenv("ORKID_VULKAN_TRAP_SKIP");
+    for (size_t pos = 0; v and pos <= strlen(v);) {
+      const char* comma = strchr(v + pos, ',');
+      size_t end        = comma ? size_t(comma - v) : strlen(v);
+      if (end > pos)
+        rval.push_back(std::string(v + pos, end - pos));
+      pos = end + 1;
+    }
+    return rval;
+  }();
+  if (needles.empty() or not message)
+    return false;
+  std::string msg(message);
+  for (const auto& needle : needles)
+    if (msg.find(needle) != std::string::npos)
+      return true;
+  return false;
+}
+
+static std::atomic<int> _validationErrorCount(0);
+
+// process-global, not per-context: the debug messenger belongs to the instance.
+int vkValidationErrorCount() {
+  return _validationErrorCount.load();
+}
+bool vkValidationArmed() {
+  return _GVI ? _GVI->_debugEnabled : false;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+
 VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
     VkDebugUtilsMessageTypeFlagsEXT messageType,
     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
     void* pUserData) {
-    
+
     if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
-      logchan_vkierr->log("VULKAN ERROR: %s", pCallbackData->pMessage);
-      fflush(stdout); 
-      __builtin_trap();
+      if (not _validationContinueMode() and not _trapSkipped(pCallbackData->pMessage)) {
+        logchan_vkierr->log("VULKAN ERROR: %s", pCallbackData->pMessage);
+        fflush(stdout);
+        // die through the engine assert path rather than __builtin_trap: a bare
+        //  SIGILL leaves no record of WHICH engine call the layer was validating,
+        //  and the trap fires on the offending thread inside the layer callback,
+        //  so the C++ backtrace still spans the vk* call and its engine caller.
+        // assembled by concatenation, not FormatString: validation messages run
+        //  well past FormatString's 512-byte buffer and the spec quote at the tail
+        //  is the part that says what to DO about the VUID.
+        std::string reason = "Assert At: [File " __FILE__ "] [Reason: VULKAN VALIDATION ERROR <";
+        reason += pCallbackData->pMessageIdName ? pCallbackData->pMessageIdName : "<unnamed>";
+        reason += ">] [Info: ";
+        reason += pCallbackData->pMessage ? pCallbackData->pMessage : "";
+        reason += "]";
+        OrkAssertFunction(reason.c_str());
+      }
+      // one defect on a per-frame path floods the console and buries the rest
+      //  of the run, so print each distinct VUID only a few times.
+      int total         = _validationErrorCount.fetch_add(1) + 1;
+      std::string msgid = pCallbackData->pMessageIdName ? pCallbackData->pMessageIdName : "<unnamed>";
+      int seen          = 0;
+      {
+        static std::mutex id_mutex;
+        static std::map<std::string, int> id_counts;
+        std::lock_guard<std::mutex> lock(id_mutex);
+        seen = ++id_counts[msgid];
+      }
+      if (seen <= 3) {
+        logchan_vkierr->log("VULKAN ERROR (continue, #%d): %s", total, pCallbackData->pMessage);
+      }
+      else if (seen == 4) {
+        logchan_vkierr->log("VULKAN ERROR: suppressing further <%s> reports", msgid.c_str());
+      }
+      fflush(stdout);
+      return VK_FALSE;
     }
     else if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
       logchan_vkierr->log("VULKAN WARNING: %s", pCallbackData->pMessage);
@@ -180,6 +263,30 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 
 VulkanInstance::VulkanInstance() {
   logchan_vkimpl->log("Constructing Vulkan Instance");
+
+#if defined(__APPLE__)
+  // Metal argument buffers are REQUIRED on macOS: without AB, Metal caps
+  // samplers at 16 per fragment stage, and generated forward fragments
+  // (terrain FWD_SSBO_CUSTOM + impostor atlas + IBL + light cookies + sun
+  // cascade shadows) exceed that: MSL compile error ("'sampler' attribute
+  // parameter is out of bounds"), surfacing as pipeline create
+  // VK_ERROR_INITIALIZATION_FAILED. The former default-off here (SPIRV-Cross
+  // SSBO type-metadata concern) no longer reproduces with the staging
+  // MoltenVK. MoltenVK snapshots its config BEFORE any engine code runs
+  // (observed: even this constructor is too late), so the AUTHORITATIVE
+  // setting is shell env — exported by obt.project/scripts/init_env.py.
+  // This setenv only covers spawned children; warn loudly if the shell
+  // didn't provide it, instead of limping toward a cryptic -3 later.
+  if (nullptr == getenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS")) {
+    printf(
+        "[VKIMPL] WARNING: MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS missing from shell env — "
+        "MoltenVK already snapshotted config with argument buffers OFF; fragments using >16 "
+        "samplers will fail pipeline creation (VkResult -3). Re-enter the OBT shell "
+        "(obt.project/scripts/init_env.py exports it).\n");
+  }
+  setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", "1", 0); // 0 = don't overwrite if set
+  logchan_vkimpl->log("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS: %s", getenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS"));
+#endif
 
   char cwd[PATH_MAX];
   getcwd(cwd, sizeof(cwd));
@@ -207,6 +314,11 @@ VulkanInstance::VulkanInstance() {
   if (genviron.get("ORKID_VULKAN_VALIDATE", ORKID_VULKAN_VALIDATE) && !ORKID_VULKAN_VALIDATE.empty()) {
     if (ORKID_VULKAN_VALIDATE == "1") {
       logchan_vkimpl->log("VulkanInstance::VulkanInstance() ENABLE VALIDATION");
+      _enable_validate = true;
+      _enable_debug = true;
+    }
+    if (ORKID_VULKAN_VALIDATE == "2") {
+      logchan_vkimpl->log("VulkanInstance::VulkanInstance() ENABLE VALIDATION (CONTINUE MODE)");
       _enable_validate = true;
       _enable_debug = true;
     }
@@ -391,13 +503,6 @@ VulkanInstance::VulkanInstance() {
            _instance_extensions.empty() ? "" : _instance_extensions.front(), dedup_hits);
     fflush(stdout);
   }
-
-#if defined(__APPLE__)
-  // Disable MoltenVK argument buffers - they require additional type metadata
-  // that SPIRV-Cross cannot always determine for storage buffers in graphics pipelines
-  setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", "0", 0); // 0 = don't overwrite if set
-  logchan_vkimpl->log("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS: %s", getenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS"));
-#endif
 
   OrkVkAssert(vkCreateInstance(&_instancedata, nullptr, &_instance));
 

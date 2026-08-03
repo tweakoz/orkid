@@ -12,6 +12,9 @@ Context::Context() {
   // Initialize default theme engine
   auto default_styledb = createDefaultStyleDatabase();
   _theme_engine = std::make_shared<ThemeEngine>(default_styledb);
+
+  // Build the drag-capture HFSM (F2).
+  _buildDragFsm();
 }
 /////////////////////////////////////////////////////////////////////////
 bool Context::isKeyDown(int code) const {
@@ -47,6 +50,90 @@ HandlerResult Context::_dispatchToTarget(Widget* target, event_constptr_t ev) {
   }
 
   return rval;
+}
+/////////////////////////////////////////////////////////////////////////
+// -----------------------------------------------------------------------------
+// Drag-capture HFSM (F2). idle <-> dragging. The onEnter/onExit of the
+// 'dragging' state ARE the begin/end side effects, so:
+//   - BEGIN_DRAG is emitted exactly once, on the idle->dragging transition;
+//   - END_DRAG is emitted exactly once, on EVERY dragging->idle transition
+//     (genuine release OR any canceling event) — the F1 invariant, structural.
+// Preserve-class events define no transition out of 'dragging' (capture survives
+// a window-exit synthesized focus loss — the cross-window tear-out keystone).
+// -----------------------------------------------------------------------------
+void Context::_buildDragFsm() {
+  _dragFsmData = std::make_shared<fsm::FsmData>();
+  auto idle    = _dragFsmData->newState<fsm::LambdaState>(nullptr, "idle");
+  auto drag    = _dragFsmData->newState<fsm::LambdaState>(nullptr, "dragging");
+  _dragStateIdle     = idle;
+  _dragStateDragging = drag;
+
+  // Enter 'dragging': promote the armed push target to the drag capture and
+  // synthesize BEGIN_DRAG (identical to the pre-fsm DRAG-start block).
+  drag->_onenter = [this](fsm::fsminstance_ptr_t) {
+    _evdragtarget = _evpushtarget;
+    if (_evdragtarget && _dragFsmEvent) {
+      *_tempevent            = *_dragFsmEvent;
+      _tempevent->_eventcode = EventCode::BEGIN_DRAG;
+      _evdragtarget->OnUiEvent(_tempevent);
+    }
+  };
+  // Exit 'dragging': THE structural F1 invariant. Clear capture FIRST (so the
+  // handler sees no live capture — matches the pre-fsm _cancelDragCapture order),
+  // then synthesize END_DRAG carrying the canceled flag.
+  drag->_onexit = [this](fsm::fsminstance_ptr_t) {
+    auto old_target = _evdragtarget;
+    _evdragtarget   = nullptr;
+    if (old_target && _dragFsmEvent) {
+      *_tempevent               = *_dragFsmEvent;
+      _tempevent->_eventcode    = EventCode::END_DRAG;
+      _tempevent->_dragCanceled = _dragFsmCanceled;
+      old_target->OnUiEvent(_tempevent);
+      _tempevent->_dragCanceled = false; // never leave the shared temp event poisoned
+    }
+  };
+
+  // idle --begin--> dragging, ONLY if a push target is armed (a DRAG with no
+  // armed target stays idle and routes to _top, exactly as before).
+  fsm::PredicatedTransition begin_pt(
+      _dragStateDragging,
+      [this](fsm::fsminstance_ptr_t) { return _evpushtarget != nullptr; });
+  _dragFsmData->addTransition(_dragStateIdle, "begin", begin_pt);
+  // dragging --release--> idle (genuine end) ; dragging --cancel--> idle (abort).
+  // Both fire onExit(dragging); _dragFsmCanceled distinguishes them.
+  _dragFsmData->addTransition(_dragStateDragging, "release", _dragStateIdle);
+  _dragFsmData->addTransition(_dragStateDragging, "cancel",  _dragStateIdle);
+
+  _dragFsm = fsm::FsmInstance::create(_dragFsmData);
+  _dragFsm->setInitialState(_dragStateIdle);
+
+  if (getenv("ORKID_DRAG_FSM_DOT")) {
+    fsm::DotConfig cfg;
+    cfg.graph_name = "DragCaptureFsm";
+    printf("%s\n", _dragFsmData->generateDot(cfg).c_str());
+  }
+}
+/////////////////////////////////////////////////////////////////////////
+void Context::_dragFsmDrive(event_constptr_t ev, const char* evname, bool canceled) {
+  _dragFsmEvent    = ev;
+  _dragFsmCanceled = canceled;
+  _dragFsm->sendEvent(std::string(evname));
+  fsm::FsmInstance::update(_dragFsm);
+}
+/////////////////////////////////////////////////////////////////////////
+void Context::_dragFsmBegin(event_constptr_t ev) {
+  _dragFsmDrive(ev, "begin", /*canceled*/ false);
+}
+/////////////////////////////////////////////////////////////////////////
+void Context::_dragFsmEnd(event_constptr_t ev, bool canceled) {
+  _dragFsmDrive(ev, canceled ? "cancel" : "release", canceled);
+}
+/////////////////////////////////////////////////////////////////////////
+void Context::_cancelDragCapture(event_constptr_t ev) {
+  // A cancel is any non-release exit from the drag-capture state. Delegates to
+  // the HFSM: if 'dragging', the cancel transition runs onExit (CANCELED
+  // END_DRAG + clear); if 'idle', it is a structural no-op.
+  _dragFsmDrive(ev, "cancel", /*canceled*/ true);
 }
 /////////////////////////////////////////////////////////////////////////
 HandlerResult Context::handleEvent(event_constptr_t ev) {
@@ -108,6 +195,12 @@ HandlerResult Context::_handleEventImpl(event_constptr_t ev) {
           int ly = my - w->y();
           bool inside = (lx >= 0 && lx < w->width() && ly >= 0 && ly < w->height());
           if (inside) {
+            // Input-transparency: an overlay that routes this event to nullptr (or
+            // is flagged _ignoreEvents) is draw-only — it must NOT intercept for
+            // hit/consume purposes (e.g. DockDragHint). Popups/menus route to a real
+            // widget (Group returns 'this' when inside), so they keep consuming.
+            if (w->_ignoreEvents || w->doRouteUiEvent(ev) == nullptr)
+              continue;
             event_in_overlay = true;
             // Route to this overlay widget
             rval = w->OnUiEvent(ev);
@@ -193,35 +286,44 @@ HandlerResult Context::_handleEventImpl(event_constptr_t ev) {
   // drag operations always target
   //  the widget they started on..
   /////////////////////////////////
+  // F2: the drag-capture cancel is now STRUCTURAL and lives in ONE place. Any
+  // event reaching the widget tree that is neither a drag continuation
+  // (DRAG/RELEASE — their own cases drive the fsm begin/end) nor a capture-
+  // preserving interstitial (window enter/leave, and the focus loss it
+  // synthesizes) cancels a live capture. No individual case below can forget to.
+  switch (ev->_eventcode) {
+    case EventCode::DRAG:
+    case EventCode::RELEASE:
+    case EventCode::GOT_KEYFOCUS:
+    case EventCode::LOST_KEYFOCUS:
+    case EventCode::MOUSE_ENTER:
+    case EventCode::MOUSE_LEAVE:
+      break; // drag-continuation or capture-preserving: no cancel
+    default:
+      _cancelDragCapture(ev);
+      break;
+  }
   switch (ev->_eventcode) {
     case EventCode::KEY_DOWN: {
       _downkeys[ev->miKeyCode] = true;
-      _evdragtarget = nullptr;
       auto dest     = _top->routeUiEvent(ev);
       rval = _dispatchToTarget(dest, ev);
       break;
     }
     case EventCode::KEY_UP: {
       _downkeys[ev->miKeyCode] = false;
-      _evdragtarget = nullptr;
       auto dest     = _top->routeUiEvent(ev);
       rval = _dispatchToTarget(dest, ev);
       break;
     }
     /////////////////////////////////
     case EventCode::DRAG: {
-      if (_prevevent._eventcode != EventCode::DRAG) { // start drag
-        // Use push target instead of routing again (mouse may have moved)
-        _evdragtarget = _evpushtarget;
-        //////////////////////////
-        // synthesize BEGIN_DRAG event
-        //////////////////////////
-        *_tempevent            = *ev;
-        _tempevent->_eventcode = EventCode::BEGIN_DRAG;
-        if(_evdragtarget)
-          _evdragtarget->OnUiEvent(_tempevent);
-        //////////////////////////
-      }
+      // A drag "starts" only when no capture is live: the HFSM idle--begin-->
+      // dragging transition promotes the armed push target and synthesizes
+      // BEGIN_DRAG. It is a no-op if a capture is already live (so an
+      // interstitial synthesized focus change on window-exit never re-fires
+      // BEGIN_DRAG) or if nothing is armed (routes to _top, as before).
+      _dragFsmBegin(ev);
       rval = _evdragtarget //
                  ? _dispatchToTarget(_evdragtarget, ev)
                  : _top->handleUiEvent(ev);
@@ -230,7 +332,7 @@ HandlerResult Context::_handleEventImpl(event_constptr_t ev) {
     /////////////////////////////////
     case EventCode::MOVE: {
       EASY_BLOCK("uictx::evc::MOVE", profiler::colors::Red);
-      _evdragtarget = nullptr;
+      // (capture cancel handled structurally in the pre-switch above)
       auto target   = _top->routeUiEvent(ev);
       if (target != _mousefocuswidget) {
         if (_mousefocuswidget) {
@@ -269,15 +371,11 @@ HandlerResult Context::_handleEventImpl(event_constptr_t ev) {
       // and a release on drag always go to the same..
       //////////
       if (_evdragtarget) {
-        //////////////////////////
-        // synthesize END_DRAG event
-        //////////////////////////
-        *_tempevent            = *ev;
-        _tempevent->_eventcode = EventCode::END_DRAG;
-        _evdragtarget->OnUiEvent(_tempevent);
-        //////////////////////////
-        rval          = _dispatchToTarget(_evdragtarget, ev);
-        _evdragtarget = nullptr;
+        // The HFSM release transition (onExit -> END_DRAG, capture cleared) ends
+        // the capture; the RELEASE itself is then forwarded to the former target.
+        Widget* target = _evdragtarget;
+        _dragFsmEnd(ev, /*canceled*/ false);
+        rval           = _dispatchToTarget(target, ev);
       } else
         rval = _top->handleUiEvent(ev);
       _evpushtarget = nullptr;  // Clear push target on release
@@ -285,14 +383,15 @@ HandlerResult Context::_handleEventImpl(event_constptr_t ev) {
     }
     /////////////////////////////////
     case EventCode::GOT_KEYFOCUS: {
-      _evdragtarget     = nullptr;
+      // Preserve any live drag capture: window-enter/leave synthesizes GOT/LOST_
+      // KEYFOCUS mid-drag (the app never truly lost OS focus), and a cross-window
+      // tear-out is BY DEFINITION such a boundary crossing — capture must survive it.
       rval              = _top->handleUiEvent(ev);
       _hasKeyboardFocus = true;
       break;
     }
     /////////////////////////////////
     case EventCode::LOST_KEYFOCUS: {
-      _evdragtarget     = nullptr;
       rval              = _top->handleUiEvent(ev);
       _hasKeyboardFocus = false;
       break;
@@ -303,7 +402,9 @@ HandlerResult Context::_handleEventImpl(event_constptr_t ev) {
       double clickdelta = curtime - _prev_click_time;
       double dblclickdelta = curtime - _prev_dbl_click_time;
 
-      _evdragtarget = nullptr;
+      // A fresh PUSH ends any prior drag: the pre-switch above already canceled a
+      // stale live capture (a drag that died without a clean end), so this PUSH
+      // un-wedges the session before it is processed normally.
       auto dest     = _top->routeUiEvent(ev);
       _evpushtarget = dest;  // Store push target for drag promotion
       if (dest){
@@ -322,8 +423,18 @@ HandlerResult Context::_handleEventImpl(event_constptr_t ev) {
       break;
     }
     /////////////////////////////////
+    case EventCode::MOUSE_ENTER:
+    case EventCode::MOUSE_LEAVE: {
+      // Preserve a live drag capture across window enter/leave — the cursor leaving
+      // the source window IS the tear-out gesture, not a drag cancel. When no drag
+      // is live this matches the previous default routing.
+      auto dest = _top->routeUiEvent(ev);
+      rval = _dispatchToTarget(dest, ev);
+      break;
+    }
+    /////////////////////////////////
     default: {
-      _evdragtarget = nullptr;
+      // (capture cancel handled structurally in the pre-switch above)
       auto dest     = _top->routeUiEvent(ev);
       rval = _dispatchToTarget(dest, ev);
       break;
@@ -375,7 +486,12 @@ void Context::draw(drawevent_constptr_t drwev) {
 /////////////////////////////////////////////////////////////////////////
 void Context::clearWidgetPointers(Widget* w) {
   if (_evpushtarget == w) _evpushtarget = nullptr;
-  if (_evdragtarget == w) _evdragtarget = nullptr;
+  if (_evdragtarget == w) {
+    // the capture target was destroyed out from under a live drag: resync the
+    // HFSM to idle directly (no END_DRAG — the widget is gone).
+    _evdragtarget = nullptr;
+    if (_dragFsm) _dragFsm->setInitialState(_dragStateIdle);
+  }
   if (_mousefocuswidget == w) _mousefocuswidget = nullptr;
   if (auto sp = _keyboard_focus_widget.lock(); sp && sp.get() == w) _keyboard_focus_widget.reset();
 }

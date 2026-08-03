@@ -1,6 +1,7 @@
 import sys, math
 from ork import path as ork_path
 from ork.app.application import ApplicationComponent
+from ork.renderoverrides import depth_prepass_override
 from orkengine.core import vec3, vec4, quat, VarMap, lev2_pyexdir
 from orkengine import lev2 
 sys.path.append(str(ork_path.py_lev2utils)) # add parent dir to path
@@ -216,6 +217,10 @@ class StandardSceneGraphComponent(ApplicationComponent):
     if self.using_pbr:
       self.pbr_common = SG.pbr_common
       self.pbr_common.useDepthPrepass = True
+      # ORKID_DPP, when set, has the last word (see ork.renderoverrides).
+      _dpp = depth_prepass_override()
+      if _dpp is not None:
+        self.pbr_common.useDepthPrepass = _dpp
       self.pbr_common.useFloatColorBuffer = self.use_float_color_buffer
 
     self.rendernode = SG.compositorrendernode
@@ -310,6 +315,39 @@ class StandardSceneGraphComponent(ApplicationComponent):
  
   def _onGpuUpdate(self,ctx):
     pass 
+
+  ##################################################
+  # GPU exit — drop the GPU-backed references in a defined order (leaves
+  # first) so the scene tears down while the context is still alive, instead
+  # of at python-GC time. Runs on the main thread after the update thread has
+  # joined. Nothing here may assume an attribute exists: an app can exit
+  # before _onGpuInit / _onGpuLink ever ran.
+  ##################################################
+
+  def _onGpuExit(self,ctx):
+    SGVPW = getattr(self,"SGVPW",None)
+    if SGVPW is not None:
+      SGVPW.scenegraph = None # the widget outlives us — release its scene ref
+    self.grid_node = None
+    self.grid_data = None
+    for lazy in ("_ball_model","_ball_white_tex","_ball_normal_tex"):
+      if hasattr(self,lazy):
+        delattr(self,lazy)
+    self.post_nodes = None
+    self.fwd_layers = None
+    self.layer1 = None
+    self.layer_std = None
+    self.layer_fwd = None
+    self.layer_dpp = None
+    self.SGVP = None
+    self.SGVPW = None
+    self.scenegraph = None
+    self.pbr_common = None
+    self.pbrcommon = None
+    self.rendernode = None
+    self.outputnode = None
+    self.camera = None
+    self.uicam = None
 
   ##################################################
 

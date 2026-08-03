@@ -1,0 +1,70 @@
+///////////////////////////////////////////////////////////////
+// SPVR EYE EXTRACT — one layer of a multiview 2D-ARRAY color target into an
+//  ordinary 2D target, at 1:1.
+//
+// This is the seam that keeps everything downstream of the stereo scene pass
+//  PER EYE: postfx, the downsample/dither blit, the head-locked HUD panel, the
+//  OpenXR handoff and the desktop mirror all keep reading a plain per-eye
+//  RtGroup and never learn that the scene was rendered layered.
+//
+// texelFetch at gl_FragCoord, never a filtered sample: this copy must not be a
+//  resample. The per-eye downsample that follows is the same one DualMonoVr
+//  runs, so any filtering here would show up as a parity delta against it.
+//  Dither belongs to that downsample (it owns the 8-bit store), not here.
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default {
+  glsl_version = "330";
+}
+///////////////////////////////////////////////////////////////
+uniform_block ublk_spvr_extract (descriptor_set 0) {
+  mat4 MatMVP;
+  int SliceIndex;
+}
+///////////////////////////////////////////////////////////////
+sampler_set sset_spvr_extract (descriptor_set 0) {
+  sampler2DArray LayeredMap;
+}
+///////////////////////////////////////////////////////////////
+vertex_interface vif_spvr_extract : ublk_spvr_extract {
+  inputs {
+    vec4 position : POSITION;
+    vec2 uv0 : TEXCOORD0;
+  }
+  outputs {
+    vec2 frg_uv0;
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_interface fif_spvr_extract
+  : vif_spvr_extract
+  : ublk_spvr_extract
+  : sset_spvr_extract {
+  outputs {
+    layout(location = 0) vec4 out_clr;
+  }
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_spvr_extract : vif_spvr_extract {
+  gl_Position = MatMVP * position;
+  frg_uv0     = uv0;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_spvr_extract : fif_spvr_extract {
+  ivec2 pix = ivec2(gl_FragCoord.xy);
+  out_clr   = texelFetch(LayeredMap, ivec3(pix, SliceIndex), 0);
+}
+///////////////////////////////////////////////////////////////
+state_block sb_spvr_extract : default {
+  BlendMode = OFF;
+  DepthTest = OFF;
+  CullTest  = OFF;
+}
+///////////////////////////////////////////////////////////////
+technique spvr_extract {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_spvr_extract;
+    fragment_shader = ps_spvr_extract;
+    state_block     = sb_spvr_extract;
+  }
+}

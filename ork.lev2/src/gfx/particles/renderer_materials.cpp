@@ -11,6 +11,7 @@
 #include <ork/lev2/gfx/particle/modular_forces.h>
 #include <ork/lev2/gfx/particle/modular_renderers.h>
 #include <ork/lev2/gfx/material_freestyle.h>
+#include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/dataflow/module.inl>
 #include <ork/dataflow/plug_data.inl>
@@ -78,6 +79,69 @@ MaterialBase::MaterialBase() {
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// SINGLE-PASS STEREO wiring, shared by every stock particle material (A2 family iii).
+//
+// Particles bind MatMVP by semantic — one MONO matrix — so a stereo pass that did nothing
+// here would draw the SAME image into both eye layers: zero parallax, which Vulkan
+// validation cannot see and a whole-frame image diff barely can. Two halves are needed:
+//
+//   1) the technique. Each stock technique has a "<name>_ST" peer whose vertex stage
+//      reads the per-VIEW view-projection out of ublk_stereo. A MISSING peer is announced
+//      by name, once — falling back to the mono technique silently IS the regression.
+//   2) the producer. ublk_stereo is per-FRAME and shared; PBRMaterial::writeStereoBlock is
+//      its ONE writer, and the block is bound here so a particle draw reads the byte-identical
+//      view state a PBR draw does. Guarded on the pass being stereo, so mono is untouched.
+//
+// The stereo stage also needs the DRAW's model matrix (ublk_stereo carries no model), hence
+// the MatM semantic bind — harmless in mono, where the stage never reads it.
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MaterialBase::_wireStereoTechniques() {
+  auto _resolve = [this](fxtechnique_constptr_t mono, const char* mononame) -> fxtechnique_constptr_t {
+    if (nullptr == mono)
+      return nullptr;
+    std::string stereoname = std::string(mononame) + "_ST";
+    auto tek               = _material->technique(stereoname);
+    if (nullptr == tek) {
+      printf("[SPVR] WARN particle material<%s> has no technique<%s> — stereo passes fall back to the "
+             "MONO stage, which renders identical images into both eye layers (zero parallax).\n",
+             _material->mMaterialName.c_str(),
+             stereoname.c_str());
+      fflush(stdout);
+      return mono;
+    }
+    return tek;
+  };
+  _tek_sprites_stereoCI = _resolve(_tek_sprites, _tek_sprites ? _tek_sprites->_techniqueName.c_str() : "");
+  _tek_streaks_stereoCI = _resolve(_tek_streaks, _tek_streaks ? _tek_streaks->_techniqueName.c_str() : "");
+
+  if (nullptr == _pipeline)
+    return;
+
+  if (auto par_m = _material->param("MatM"))
+    _pipeline->bindParam(par_m, "RCFD_M"_crcsh);
+
+  auto stereo_block = _material->uniformBlock("ublk_stereo");
+  _pipeline->addStateLambda([stereo_block](const RenderContextInstData& RCID) {
+    auto rcfd = RCID.rcfd();
+    if (not rcfd->hasCPD())
+      return;
+    const auto& CPD = rcfd->topCPD();
+    if (not CPD.isSinglePassStereo())
+      return;
+    auto stereocams = CPD._stereo_cam_matrices;
+    if (nullptr == stereocams or nullptr == stereo_block)
+      return;
+    auto context = rcfd->GetTarget();
+    auto FXI     = context->FXI();
+    PBRMaterial::writeStereoBlock(FXI, context, stereocams);
+    FXI->bindUniformBuffer(stereo_block, PBRMaterial::stereoDataBuffer(context));
+  });
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 fxpipeline_ptr_t MaterialBase::pipeline(const RenderContextInstData& RCID, bool streaks) {
   auto RCFD = RCID.rcfd();
   // AUX-CHANNEL subpass (E2B item D): the forward node's aux pass marks the
@@ -126,7 +190,7 @@ std::shared_ptr<FlatMaterial> FlatMaterial::createShared() {
 void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
   auto context                                       = RCID.context();
   _material                                          = std::make_shared<FreestyleMaterial>();
-  _material->_varmap["tflatparticle_streaks_stereo"] = std::string("dump_and_exit");
+  _material->_varmap["tflatparticle_streaks_ST"] = std::string("dump_and_exit");
   _material->gpuInit(context, "orkshader://particle");
   _material->_rasterstate->setBlendingMacro(BlendingMacro::ADDITIVE);
   _material->_rasterstate->setCullTest(ECullTest::OFF);
@@ -149,9 +213,7 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
 
   _tek_sprites          = _material->technique("tflatparticle_sprites");
   _tek_streaks          = _material->technique("tflatparticle_streaks");
-  // SSBO-based rendering uses same techniques for stereo (camera vectors differ, not shaders)
-  _tek_sprites_stereoCI = _tek_sprites;
-  _tek_streaks_stereoCI = _tek_streaks;
+  _wireStereoTechniques();
 
   auto FXI = context->FXI();
 
@@ -294,9 +356,7 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   //////////////////////////////////////////
   _tek_sprites          = _material->technique("tgradparticle_sprites");
   _tek_streaks          = _material->technique("tgradparticle_streaks");
-  // SSBO-based rendering uses same techniques for stereo (camera vectors differ, not shaders)
-  _tek_sprites_stereoCI = _tek_sprites;
-  _tek_streaks_stereoCI = _tek_streaks;
+  _wireStereoTechniques();
 
   auto FXI = context->FXI();
 
@@ -427,8 +487,7 @@ void GradientAtlasMaterial::gpuInit(const RenderContextInstData& RCID) {
   // New techniques for atlas variants — defined in particle_comshader.i2.
   _tek_sprites          = _material->technique("tgradatlasparticle_sprites");
   _tek_streaks          = _material->technique("tgradatlasparticle_streaks");
-  _tek_sprites_stereoCI = _tek_sprites;
-  _tek_streaks_stereoCI = _tek_streaks;
+  _wireStereoTechniques();
 
   auto FXI         = context->FXI();
   _cu_storage_block = _material->storageBlock("storage_particles");
@@ -495,9 +554,7 @@ void TextureMaterial::gpuInit(const RenderContextInstData& RCID) {
   _pipeline->bindParam(fxparameterInvDim, "CPD_Rtg_InvDim"_crcsh);
   _tek_sprites          = _material->technique("ttexparticle_sprites");
   _tek_streaks          = _material->technique("ttexparticle_streaks");
-  // SSBO-based rendering uses same techniques for stereo (camera vectors differ, not shaders)
-  _tek_sprites_stereoCI = _tek_sprites;
-  _tek_streaks_stereoCI = _tek_streaks;
+  _wireStereoTechniques();
 
   auto FXI = context->FXI();
 
@@ -572,9 +629,7 @@ void TexGridMaterial::gpuInit(const RenderContextInstData& RCID) {
 
   _tek_sprites          = _material->technique("ttexgridparticle_sprites");
   _tek_streaks          = _material->technique("ttexparticle_streaks");
-  // SSBO-based rendering uses same techniques for stereo (camera vectors differ, not shaders)
-  _tek_sprites_stereoCI = _tek_sprites;
-  _tek_streaks_stereoCI = _tek_streaks;
+  _wireStereoTechniques();
 
   FxPipeline::varval_generator_t gen_tex = [=]() -> FxPipeline::varval_t {
     // resolve the REFLECTED texture asset when no live texture was injected
@@ -706,9 +761,7 @@ void FreestyleParticleMaterial::gpuInit(const RenderContextInstData& RCID) {
 
   _tek_sprites          = _material->technique("tfreestyleparticle_sprites");
   _tek_streaks          = _material->technique("tfreestyleparticle_streaks");
-  // SSBO-based rendering uses same techniques for stereo (camera vectors differ, not shaders)
-  _tek_sprites_stereoCI = _tek_sprites;
-  _tek_streaks_stereoCI = _tek_streaks;
+  _wireStereoTechniques();
 
   // OPTIONAL aux-channel technique pair (E2B item D) — present when the
   // shader (stock override or fragment-DSL generated with ctx.is_heat)

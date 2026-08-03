@@ -25,6 +25,10 @@
 #include <ork/kernel/varmap.inl>
 #include <ork/application/application.h>
 #include <ork/kernel/concurrent_queue.h>
+#include <atomic>
+#include <exception>
+#include <string>
+#include <utility>
 
 namespace ork::lev2 {
 
@@ -77,9 +81,55 @@ using audiodeviceinfo_list_t = std::vector<audiodeviceinfo_ptr_t>;
 audiodeviceinfo_list_t enumerateAudioDevices();
 audiodeviceinfo_ptr_t findAudioDeviceByShortId(const std::string& short_id);
 
+// One re-enumeration retry (covers transient busy) for an unresolved short id;
+// on continued failure emits a direction-specific diagnostic — including the
+// "held by another process" case where the device is present but the requested
+// direction reports 0 channels while the other direction is live. Returns the
+// resolved device on the retry hit, else nullptr (diagnostic already logged).
+audiodeviceinfo_ptr_t retryAndDiagnoseShortId(const std::string& short_id, bool want_output);
+
+///////////////////////////////////////////////////////////////////////////////
+// Realtime elevation for the host-api callback thread. The callback thread is
+// created by the host api, so its handle only exists from inside the callback:
+// call this ONCE, from the first callback invocation, naming the priority band
+// the thread should occupy (the singularity job-pool workers sit at 40, so the
+// joining callback thread belongs above them).
+//
+// Platform behavior is documented at the definition (audiodevice.cpp). Both
+// platforms emit exactly one line stating the ACHIEVED policy — a denied
+// elevation is loud, never silent.
+///////////////////////////////////////////////////////////////////////////////
+
+void elevateAudioThread(const char* thread_name, int priority);
+
+///////////////////////////////////////////////////////////////////////////////
+// Device-side realtime telemetry. Published lock-free by the audio callback,
+// read by diagnostics from any thread (python --diag surfaces, gates).
+///////////////////////////////////////////////////////////////////////////////
+
+struct AudioDiagCounters {
+  std::atomic<uint64_t> _underflows{0};        // host-reported output underflows (xruns)
+  std::atomic<uint64_t> _callbacks{0};         // callback invocations
+  std::atomic<uint32_t> _frames_per_buffer{0}; // as delivered by the host api
+  std::atomic<float> _sample_rate{0.0f};
+};
+
+AudioDiagCounters& audioDiagCounters();
+
+// Thrown by a device startup path that cannot satisfy its preconditions (an
+// unresolvable device id, no matching device). Caught in OrkEzApp::_audioInit,
+// which degrades to the NULL audio device — the app keeps running without audio
+// rather than asserting.
+struct AudioDeviceException final : public std::exception {
+  AudioDeviceException(std::string msg) : _msg(std::move(msg)) {}
+  const char* what() const noexcept override { return _msg.c_str(); }
+  std::string _msg;
+};
+
 struct AudioDevice {
 
   static audiodevice_ptr_t createInstance(appinitdata_wkptr_t appinitd);
+  static audiodevice_ptr_t createNullInstance(appinitdata_wkptr_t appinitd);
   static audiodevice_ptr_t getInstance();
 
   AudioDevice(appinitdata_wkptr_t appinitd);

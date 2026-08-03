@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 660" font-family="Arial, Helvetica, sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#666"/>
+    </marker>
+    <filter id="shadow">
+      <feDropShadow dx="2" dy="2" stdDeviation="2" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  <rect x="0" y="0" width="1000" height="660" fill="#1a1a2e"/>
+  <text x="30" y="34" font-size="18" font-weight="bold" fill="white">Per-node cook cache — opt-in via GraphData::_cacheable</text>
+
+  <!-- legend -->
+  <rect x="710" y="16" width="14" height="14" rx="3" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="732" y="27" font-size="12" fill="#ddd">Data / node hashes</text>
+  <rect x="710" y="36" width="14" height="14" rx="3" fill="#065f46" stroke="#34d399"/>
+  <text x="732" y="47" font-size="12" fill="#ddd">execution</text>
+  <rect x="710" y="56" width="14" height="14" rx="3" fill="#5a4a3a" stroke="#f59e0b"/>
+  <text x="732" y="67" font-size="12" fill="#ddd">cached artifact (DataBlock)</text>
+
+  <!-- left: hashing -->
+  <rect x="30" y="80" width="440" height="320" rx="10" fill="#252540" stroke="#4a5568" stroke-width="2" filter="url(#shadow)"/>
+  <text x="46" y="104" font-size="13" font-weight="bold" fill="white">1 — GraphInst::computeNodeHashes()</text>
+
+  <rect x="60" y="124" width="150" height="44" rx="6" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="135" y="142" font-size="12" font-family="monospace" fill="white" text-anchor="middle">node A</text>
+  <text x="135" y="158" font-size="10.5" font-family="monospace" fill="#93c5fd" text-anchor="middle">_cookHash = H_A</text>
+  <rect x="60" y="189" width="150" height="44" rx="6" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="135" y="207" font-size="12" font-family="monospace" fill="white" text-anchor="middle">node B</text>
+  <text x="135" y="223" font-size="10.5" font-family="monospace" fill="#93c5fd" text-anchor="middle">_cookHash = H_B</text>
+  <rect x="280" y="154" width="160" height="48" rx="6" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="360" y="174" font-size="12" font-family="monospace" fill="white" text-anchor="middle">node C</text>
+  <text x="360" y="190" font-size="10.5" font-family="monospace" fill="#93c5fd" text-anchor="middle">_cookHash = H_C</text>
+  <line x1="212" y1="146" x2="276" y2="170" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="212" y1="211" x2="276" y2="188" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="238" y="182" font-size="11" fill="#9ca3af">input</text>
+  <text x="236" y="196" font-size="11" fill="#9ca3af">hashes</text>
+
+  <text x="46" y="262" font-size="11.5" font-family="monospace" fill="#93c5fd">H_C = H( class version salt,</text>
+  <text x="106" y="280" font-size="11.5" font-family="monospace" fill="#93c5fd">own scalar params,</text>
+  <text x="106" y="298" font-size="11.5" font-family="monospace" fill="#93c5fd">_cookContextHash,</text>
+  <text x="106" y="316" font-size="11.5" font-family="monospace" fill="#93c5fd">upstream H_A, H_B )</text>
+  <text x="46" y="346" font-size="11.5" font-style="italic" fill="#9ca3af">cheap and deterministic — output buffers are never hashed</text>
+  <text x="46" y="366" font-size="11.5" fill="#9ca3af">cookComputeHash() is per class; default 0 = no cache identity</text>
+
+  <!-- right: cachedCompute -->
+  <text x="520" y="104" font-size="13" font-weight="bold" fill="white">2 — cachedCompute(): per node, in order</text>
+
+  <rect x="520" y="118" width="450" height="36" rx="8" fill="#5a4a3a" stroke="#f59e0b" stroke-width="2" filter="url(#shadow)"/>
+  <text x="745" y="140" font-size="11" font-family="monospace" fill="#fed7aa" text-anchor="middle">db = findDataBlock("dflowcache", node._cookHash)</text>
+
+  <line x1="745" y1="154" x2="745" y2="172" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <polygon points="745,174 880,218 745,262 610,218" fill="#5a4a3a" stroke="#f59e0b" stroke-width="2"/>
+  <text x="745" y="223" font-size="12" font-family="monospace" fill="white" text-anchor="middle">db &amp;&amp; cookLoad(db) ?</text>
+
+  <polyline points="610,218 620,218 620,296" fill="none" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="592" y="210" font-size="11" fill="#9ca3af">yes</text>
+  <rect x="520" y="300" width="200" height="64" rx="8" fill="#065f46" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="620" y="322" font-size="13" font-weight="bold" fill="white" text-anchor="middle">cache hit</text>
+  <text x="620" y="340" font-size="11.5" fill="#a7f3d0" text-anchor="middle">output restored,</text>
+  <text x="620" y="356" font-size="11.5" fill="#a7f3d0" text-anchor="middle">compute() skipped</text>
+
+  <line x1="880" y1="218" x2="880" y2="296" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="888" y="244" font-size="11" fill="#9ca3af">no</text>
+  <rect x="770" y="300" width="200" height="44" rx="8" fill="#065f46" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="870" y="326" font-size="12" font-weight="bold" font-family="monospace" fill="white" text-anchor="middle">compute(inst, updata)</text>
+  <line x1="870" y1="344" x2="870" y2="364" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+  <rect x="770" y="368" width="200" height="48" rx="8" fill="#5a4a3a" stroke="#f59e0b" stroke-width="2" filter="url(#shadow)"/>
+  <text x="870" y="388" font-size="11" font-family="monospace" fill="#fed7aa" text-anchor="middle">cookStore() →</text>
+  <text x="870" y="404" font-size="11" font-family="monospace" fill="#fed7aa" text-anchor="middle">setDataBlock("dflowcache")</text>
+
+  <text x="520" y="452" font-size="11.5" fill="#9ca3af">→ next node (downstream nodes read the restored or computed outputs)</text>
+
+  <!-- notes -->
+  <rect x="30" y="480" width="940" height="150" rx="10" fill="#252540" stroke="#4a5568" stroke-width="2" filter="url(#shadow)"/>
+  <text x="46" y="504" font-size="13" font-weight="bold" fill="white">opting in</text>
+  <text x="46" y="526" font-size="12" fill="#ddd">• per module class: override cookComputeHash / cookStore / cookLoad (defaults → always recompute)</text>
+  <text x="46" y="546" font-size="12" fill="#ddd">• per node: _cachepoint marker (-1 class default · 0 never · 1 always) — consumed by cook drivers</text>
+  <text x="46" y="566" font-size="12" fill="#ddd">• synchronous graphs only; GPU drivers (terrain bake) reuse computeNodeHashes() and drive cache I/O per op</text>
+  <text x="46" y="586" font-size="12" fill="#ddd">• realtime families (particles) leave _cacheable = false — every frame differs</text>
+  <text x="46" y="606" font-size="12" fill="#ddd">• datablocks live in their own evictable namespace, separate from the shared datablock cache</text>
+</svg>

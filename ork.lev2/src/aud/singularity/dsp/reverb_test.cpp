@@ -27,7 +27,7 @@ TestReverbData::TestReverbData(std::string name){
 
 }
 dspblk_ptr_t TestReverbData::createInstance() const {
-  return std::make_shared<TestReverb>(this);
+  return createDspInstance<TestReverb>(this);
 }
 TestReverb::TestReverb(const TestReverbData* trd)
   : DspBlock(trd) {

@@ -105,6 +105,10 @@ bool NodeCompositingTechnique::assemble(CompositorDrawData& drawdata) {
     //  (see OutputCompositingNode::onGpuUpdate). The assembler may render N eyes/views,
     //  but the frame-pacing hook fires exactly once here.
     _outputNode->onGpuUpdate(drawdata);
+    // once-per-frame render prologue: view-independent render work (lights,
+    //  shadows, probes) runs here so the assembler's per-eye fan-out doesn't
+    //  repeat it (see RenderCompositingNode::renderPrologue).
+    _renderNode->renderPrologue(drawdata);
     _assemblerFn(drawdata);
   }
   drawdata.context()->debugPopGroup();
@@ -201,6 +205,9 @@ void LambdaPostCompositingNode::DoRender(CompositorDrawData& drawdata) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void OutputCompositingNode::describeX(class_t* c) {
+  // On the BASE, so every output a frame can land on carries its own hardware
+  // constant and the two can differ for one rendered frame (see the header).
+  c->floatProperty("displayCompensation", float_range{0.0f, 16.0f}, &OutputCompositingNode::_displayCompensation);
 }
 OutputCompositingNode::OutputCompositingNode() {
 }

@@ -64,7 +64,7 @@ PMXData::PMXData(std::string name)
 }
 ///////////////////////////////////////////////////////////////////////////////
 dspblk_ptr_t PMXData::createInstance() const {
-  return std::make_shared<PMX>(this);
+  return createDspInstance<PMX>(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void PMXData::addPmInput(int dspchannel) {
@@ -154,7 +154,7 @@ PMXMixData::PMXMixData(std::string name)
 }
 ///////////////////////////////////////////////////////////////////////////////
 dspblk_ptr_t PMXMixData::createInstance() const {
-  return std::make_shared<PMXMix>(this);
+  return createDspInstance<PMXMix>(this);
 }
 void PMXMixData::addInputChannel(int chan) {
   _pmixInpChannels.push_back(chan);

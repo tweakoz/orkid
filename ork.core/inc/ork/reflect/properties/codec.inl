@@ -115,6 +115,14 @@ inline void decode_value(var_t val_inp, object_ptr_t& val_out) {
 ////////////////////////////////////////////////////////////////////////////////
 template <>
 inline void decode_value(var_t val_inp, svar128_t& val_out) {
+  if (auto as_obj = val_inp.tryAs<object_ptr_t>()) {
+    // nested reflected object (NODEENC routed it through the varmap object codec
+    // table). An unregistered class here means the codec that WROTE it is gone —
+    // refuse loudly rather than hand the consumer an empty var.
+    if (not varObjectDecode(as_obj.value(), val_out))
+      varObjectDecodeFailure(as_obj.value());
+    return;
+  }
   if (auto as_str = val_inp.tryAs<std::string>()) {
     const auto& s = as_str.value();
     auto colon = s.find(':');

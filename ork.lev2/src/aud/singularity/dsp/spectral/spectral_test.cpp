@@ -33,7 +33,7 @@ SpectralTestData::SpectralTestData(std::string name, float fb)
 ///////////////////////////////////////////////////////////////////////////////
 
 dspblk_ptr_t SpectralTestData::createInstance() const { // override
-  return std::make_shared<SpectralTest>(this);
+  return createDspInstance<SpectralTest>(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

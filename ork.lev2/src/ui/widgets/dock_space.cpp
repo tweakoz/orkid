@@ -392,7 +392,7 @@ void DockSpace::_configureLeafTabs(tabwidget_ptr_t tabs) {
     }
   };
   tabs->_onTabDragMove   = [this](int rx, int ry) { updatePanelDrag(rx, ry); };
-  tabs->_onTabDragCommit = [this](int rx, int ry) { endPanelDrag(rx, ry); };
+  tabs->_onTabDragCommit = [this](int rx, int ry, bool canceled) { endPanelDrag(rx, ry, canceled); };
 }
 /////////////////////////////////////////////////////////////////////////
 std::vector<dockpanel_ptr_t> DockSpace::allPanels() const {
@@ -462,6 +462,13 @@ Rect DockSpace::zoneRect(const DockZoneHit& hit) const {
 void DockSpace::beginPanelDrag(dockpanel_ptr_t panel) {
   if (not panel || not _uicontext)
     return;
+  // Re-entry guard: a still-active drag here is a stale/orphaned session (a prior
+  // drag that died without a clean end). Tear it down FIRST so we never stack a
+  // second hint overlay over an orphaned one.
+  if (_drag_active)
+    endPanelDrag(0, 0, /*canceled*/ true);
+  // Reset the DOCKTRACE dedup so this session logs its first classification.
+  DockCoordinator::instance()->resetTraceDedup();
   _drag_active = true;
   _drag_panel  = panel;
   _has_pending = false;
@@ -552,16 +559,46 @@ void DockSpace::updatePanelDrag(int rx, int ry) {
       _drag_commit      = DragCommit::TEAROUT;
       break;
   }
+
+  // Drag cursor feedback (F2a-lite): the resolved commit names the drop affordance.
+  DragCursor cur;
+  switch (_drag_commit) {
+    case DragCommit::LOCAL:
+    case DragCommit::FOREIGN:  cur = DragCursor::RESIZE_ALL;  break; // a valid dock zone
+    case DragCommit::TEAROUT:  cur = DragCursor::HAND;        break; // empty desktop
+    case DragCommit::CANCEL:
+    default:                   cur = DragCursor::NOT_ALLOWED; break; // no valid drop
+  }
+  coord->setDragCursor(cur);
 }
 /////////////////////////////////////////////////////////////////////////
-void DockSpace::endPanelDrag(int rx, int ry) {
+void DockSpace::endPanelDrag(int rx, int ry, bool canceled) {
   if (not _drag_active)
     return;
+
+  auto coord    = DockCoordinator::instance();
+  auto self_ctx = _uicontext;
+
+  // Canceled: the drag died mid-flight. FULL teardown, NO commit — un-wedges the
+  // session (pop the hint overlay, clear any foreign hint, reset state, restore the
+  // cursor) so the very next drag arms cleanly.
+  if (canceled) {
+    if (self_ctx && _drag_hint)
+      self_ctx->removeOverlay(_drag_hint);
+    _clearForeignHint();
+    coord->setDragCursor(DragCursor::ARROW);
+    _drag_active    = false;
+    _drag_hint      = nullptr;
+    _has_pending    = false;
+    _drag_panel     = nullptr;
+    _pending_target = nullptr;
+    _drag_commit    = DragCommit::LOCAL;
+    return;
+  }
+
   updatePanelDrag(rx, ry);  // final resolve at the release point
 
   auto panel   = _drag_panel;
-  auto coord   = DockCoordinator::instance();
-  auto self_ctx = _uicontext;
 
   switch (_drag_commit) {
     case DragCommit::LOCAL:
@@ -609,12 +646,14 @@ void DockSpace::endPanelDrag(int rx, int ry) {
   if (self_ctx && _drag_hint)
     self_ctx->removeOverlay(_drag_hint);
   _clearForeignHint();
+  coord->setDragCursor(DragCursor::ARROW);
 
-  _drag_active = false;
-  _drag_hint   = nullptr;
-  _has_pending = false;
-  _drag_panel  = nullptr;
-  _drag_commit = DragCommit::LOCAL;
+  _drag_active    = false;
+  _drag_hint      = nullptr;
+  _has_pending    = false;
+  _drag_panel     = nullptr;
+  _pending_target = nullptr;
+  _drag_commit    = DragCommit::LOCAL;
 }
 /////////////////////////////////////////////////////////////////////////
 void DockSpace::showForeignDropHint(const DockZoneHit& hit) {

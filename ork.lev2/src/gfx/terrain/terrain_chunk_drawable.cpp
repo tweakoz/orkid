@@ -15,6 +15,7 @@
 #include <ork/reflect/properties/registerX.inl>
 #include <ork/lev2/gfx/terrain/terrain_chunk_drawable.h>
 #include <ork/lev2/gfx/renderer/compute_drawable.h>
+#include <ork/lev2/gfx/renderer/cull_debug.h> // ORKID_DISABLE_FRUSTUM_CULL (honored by the sun-shadow cull)
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/rtgroup.h>           // terrain texture-bake (ORKID_TERRAIN_TEXBAKE_DUMP)
@@ -255,6 +256,9 @@ static bool terrainTexBake(Context* ctx, const TerrainChunkDrawableData* self, T
   if (self->_capture_mode == "proc" and not getenv("ORKID_TERRAIN_TEXBAKE_DUMP")) {
     if (not st->_stale_atlas) {
       st->_baked = true;
+      // first-class HIT line: warm binds were silent, so a cache regression only showed up as a
+      // multi-second stall. Gates grep this against the cold "cached"/atlas lines.
+      logchan_tcd->log("TERRAIN-TEXBAKE: WARM bind %s", self->_capture_dir.c_str());
       return true;
     }
     force_recapture = true;
@@ -568,6 +572,69 @@ int publishHeightPlaneFromExr(const std::string& held_field_key, const std::stri
   return w;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// effective meshlet dimension (contract in the header) — the SAME knob gpu_chunk.py's
+// _meshlet_dim() reads, so the payload the codegen bakes and the dispatch grid that consumes
+// it are sized from one answer.
+///////////////////////////////////////////////////////////////////////////////
+
+int terrainMeshletDim() {
+  static const int s_meshlet = []() -> int {
+    const char* e = getenv("ORKID_TERRAIN_MESHLET");
+    int n         = e ? atoi(e) : kTerrainDefaultMeshletDim;
+    OrkAssert(n >= 1 and n <= 11); // 2n^2 <= 256 max_primitives (taskless tier)
+    return n;
+  }();
+  return s_meshlet;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// mesh-mode MSAA step-down policy (contract in the header). Compile-time platform test:
+// MoltenVK is the only Vulkan implementation on darwin, so __APPLE__ IS "Metal", the same
+// way the portability-subset / metal-objects device setup keys off it (vulkan_ctx.cpp).
+// PAYLOAD-CONDITIONED: dormant at or below the shipped meshlet (the cliff floor), so the
+// default build runs mesh under MSAA on mac and only a fattened payload steps down.
+///////////////////////////////////////////////////////////////////////////////
+
+bool terrainMeshMsaaStepDown(int forward_samples) {
+#if defined(__APPLE__)
+  if (forward_samples <= 1)
+    return false;
+  const int meshlet = terrainMeshletDim();
+  if (meshlet <= kTerrainDefaultMeshletDim)
+    return false; // at or below the cliff: mesh WINS under MSAA, nothing to step down from
+  const int verts = (meshlet + 1) * (meshlet + 1);
+  const int prims = 2 * meshlet * meshlet;
+  static const bool s_force = (getenv("ORKID_TERRAIN_MESH_FORCE") != nullptr);
+  if (s_force) {
+    logchan_tcd->log("TERRAIN-MESHSHADER: FORCE-OVERRIDE mesh kept with meshlet %d (%d verts / %d "
+                     "prims per workgroup, above the cliff at %d) under Metal + MSAA %dx forward "
+                     "target (ORKID_TERRAIN_MESH_FORCE) — measurement path, SLOWER than pull-VS",
+                     meshlet,
+                     verts,
+                     prims,
+                     kTerrainDefaultMeshletDim,
+                     forward_samples);
+    return false;
+  }
+  logchan_tcd->log("TERRAIN-MESHSHADER: STEP-DOWN pull-VS (meshlet %d = %d verts / %d prims per "
+                   "workgroup, above the cliff at %d; Metal tile memory shared with an MSAA %dx "
+                   "forward target — meshlet <=%d keeps mesh)",
+                   meshlet,
+                   verts,
+                   prims,
+                   kTerrainDefaultMeshletDim,
+                   forward_samples,
+                   kTerrainDefaultMeshletDim);
+  return true;
+#else
+  (void)forward_samples;
+  return false;
+#endif
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 drawable_ptr_t TerrainChunkDrawableData::createDrawable() const {
   auto drw   = std::make_shared<ComputeDrawable>();
   drw->_drawable_type = "terrain"_crcu; // enumerable via Scene::drawableNodesWithType
@@ -773,18 +840,28 @@ drawable_ptr_t TerrainChunkDrawableData::createDrawable() const {
     // write in drawable_compute, tiny) stay direct-mapped forward writes. Not DEVICE — that
     // would turn each per-frame CamBlk map into a synchronous staged submit+wait.
     auto ssbo = fxi->createStorageBuffer(TOTAL, StorageBufferUsage::DEFAULT, BufferResidency::BAR);
+    // SUN-SHADOW SET: a SECOND buffer of the same layout, culled against the union sun camera and
+    // bound in sun-cascade depth passes in place of the eye buffer. v_list and the heights the VS
+    // decodes through it live in ONE std430 block (sif_ptex_vtx), so a shadow survivor list cannot
+    // be a small sidecar — it costs the block. The static regions below are uploaded to BOTH; only
+    // the CamBlk / args / VIS / v_list header differs at runtime, per cull.
+    auto shadowSSBO = fxi->createStorageBuffer(TOTAL, StorageBufferUsage::DEFAULT, BufferResidency::BAR);
+    // the build-time uploads are the SAME bytes in both buffers (the eye set and the shadow set
+    // decode the same field) — one helper so the two can never drift.
+    auto upload_both = [&](size_t off, const void* src, size_t bytes) {
+      for (auto* dst : {ssbo, shadowSSBO}) {
+        auto m = fxi->mapStorageBuffer(dst, off, bytes, BufferMapAccess::WRITE_ONLY);
+        std::memcpy(m->_mappedaddr, src, bytes);
+        fxi->unmapStorageBuffer(m.get());
+      }
+    };
     { // u_dim (runtime grid dim) -> VIS header slot 2 @VIS_OFF+8. Uploaded ONCE; the per-frame reset
       // compute never touches it (survives reset). The VS/cull read it instead of a baked literal.
       uint32_t udim = uint32_t(render_dim);   // RENDER grid dim (mesh is downsampled to this)
-      auto m = fxi->mapStorageBuffer(ssbo, VIS_OFF + 8, 4, BufferMapAccess::WRITE_ONLY);
-      std::memcpy(m->_mappedaddr, &udim, 4);
-      fxi->unmapStorageBuffer(m.get());
+      upload_both(VIS_OFF + 8, &udim, 4);
     }
-    { // the DENSE heights @HEIGHTS_OFF — terr_pos reads heights[cz*u_dim+cx] in both modes
-      auto m = fxi->mapStorageBuffer(ssbo, HEIGHTS_OFF, heights.size() * 4, BufferMapAccess::WRITE_ONLY);
-      std::memcpy(m->_mappedaddr, heights.data(), heights.size() * 4);
-      fxi->unmapStorageBuffer(m.get());
-    }
+    // the DENSE heights @HEIGHTS_OFF — terr_pos reads heights[cz*u_dim+cx] in both modes
+    upload_both(HEIGHTS_OFF, heights.data(), heights.size() * 4);
     FxShaderStorageBuffer* frameSSBO = nullptr;
     if (relax) { // stride-5 packed frame @render_dim (WS4 fp16) — bound to sif_terra_frame below
       // DEVICE: written ONCE here (the map below becomes a one-time staged upload), then
@@ -823,13 +900,9 @@ drawable_ptr_t TerrainChunkDrawableData::createDrawable() const {
           gmx = std::max(gmx, hmx);
         }
       }
-      auto m = fxi->mapStorageBuffer(ssbo, CHUNKY_OFF, chunkY.size() * 4, BufferMapAccess::WRITE_ONLY);
-      std::memcpy(m->_mappedaddr, chunkY.data(), chunkY.size() * 4);
-      fxi->unmapStorageBuffer(m.get());
+      upload_both(CHUNKY_OFF, chunkY.data(), chunkY.size() * 4);
       float yb[2] = {gmn, gmx};
-      auto ym = fxi->mapStorageBuffer(ssbo, YB_OFF, sizeof(yb), BufferMapAccess::WRITE_ONLY);
-      std::memcpy(ym->_mappedaddr, yb, sizeof(yb));
-      fxi->unmapStorageBuffer(ym.get());
+      upload_both(YB_OFF, yb, sizeof(yb));
     }
     //////////////////////////////////////////////////////////////////
     // 5. the ComputeDrawable consumer contract (viewer2 parity)
@@ -857,34 +930,219 @@ drawable_ptr_t TerrainChunkDrawableData::createDrawable() const {
       cdd->addGraphicsStorage(frame_sif, frameSSBO);
     }
     cdd->setCameraParams(ssbo, CAM_OFF);
-    int cull_groups = (render_nchunk + 63) / 64;   // dispatch over the RENDER chunk grid
-    struct PassDef { const char* _name; int _gx; };
-    // reset -> cull -> sort (near-to-far for early-Z; one group, thread 0 sorts) -> finalize.
-    PassDef passes[4] = {{"cs_terrain_reset", 1}, {"cs_terrain_cull", cull_groups},
-                         {"cs_terrain_sort", 1}, {"cs_terrain_finalize", 1}};
-    for (const auto& p : passes) {
-      auto cs = fsmtl->computeShader(p._name);
-      if (not cs) {
-        logchan_tcd->log(
-            "TerrainChunkDrawable: material<%s> lacks compute<%s> — was it authored with "
-            "TerrainChunkVertexSource?",
-            self->_material_asset_name.c_str(),
-            p._name);
-        state->_built = true;
-        return;
-      }
-      // relax: the compute interface inherits sif_terra_frame (dense-binding requirement — see
-      // gpu_chunk.py cif_terrain), so its pipeline layout includes it; bind the buffer per pass.
-      if (frame_sif)
-        cdd->addComputePass(cs, {{sif, ssbo}, {frame_sif, frameSSBO}}, p._gx, 1, 1);
+    //////////////////////////////////////////////////////////////////
+    // 5b. MESH-SHADER A/B path (ORKID_TERRAIN_MESHSHADER, an INT mode; 0/absent = baseline).
+    //     MODE 1 (direct): no cull/sort/finalize compute and no indirect args — a FIXED
+    //     mesh-workgroup grid over (meshlets x chunks x chunks), each workgroup frustum-testing and
+    //     emitting its own meshlet (gpu_chunk.py mesh_body). A culled meshlet still costs a
+    //     workgroup, so an all-culled view pays the whole grid.
+    //     MODE 2 (indirect): ONE compaction dispatch (cs_terrain_meshcull) writes the compacted
+    //     visible-chunk list + the mesh draw command, and the dispatch walks THAT — an all-culled
+    //     view dispatches nothing. Per-meshlet self-cull is retained inside the surviving chunks.
+    //     Either mode needs BOTH the device extension AND a material authored with the matching
+    //     variant (the SAME env gates the codegen); anything missing says so loudly and steps DOWN
+    //     one mode, so the worst case is the baseline pull-VS path, byte-untouched.
+    //     ORDERING: both modes run cs_terrain_meshcull, and its thread 0 sorts the compacted list
+    //     near-to-far before publishing the args — the mesh grid's y axis walks v_list in slot
+    //     order, so the chunk draw order matches the pull path's and early-Z holds either way.
+    //     Only the retired FIXED-GRID mesh variant (no list, grid order == dense chunk index) pays
+    //     the overdraw that ordering exists to avoid.
+    //////////////////////////////////////////////////////////////////
+    static const int s_meshmode = []() -> int {
+      const char* e = getenv("ORKID_TERRAIN_MESHSHADER");
+      return e ? atoi(e) : 0;
+    }();
+    // A8 parametric — the mode-1 direct-sized over-dispatch knobs (env-tweakable, never baked into
+    // the shader): margin factor over the lag-1 visible count, and a floor capacity so a tiny visible
+    // set still leaves headroom for a turn. Same read-once idiom as s_meshmode above.
+    static const float s_meshSizeMargin = []() -> float {
+      const char* e = getenv("ORKID_TERRAIN_MESHSIZE_MARGIN");
+      return e ? float(atof(e)) : 1.5f;
+    }();
+    static const int s_meshSizeFloor = []() -> int {
+      const char* e = getenv("ORKID_TERRAIN_MESHSIZE_FLOOR");
+      return e ? atoi(e) : 64;
+    }();
+    // log-only: which cull granularity the material was (presumably) materialized with — the codegen
+    // is gated by the SAME env at tojson (gpu_chunk.py _meshcull_granularity), so this mirrors it for
+    // the telemetry line. Default meshlet.
+    static const bool s_meshCullChunk = []() -> bool {
+      const char* e = getenv("ORKID_TERRAIN_MESHCULL");
+      return e ? (std::string(e) == "chunk") : false;
+    }();
+    fxtechnique_constptr_t mesh_tek = nullptr;
+    const FxComputeShader* meshcull_cs = nullptr;
+    // MSAA POLICY (checked BEFORE the caps/technique cascade — it is a platform decision, not a
+    // capability, and its one line must not be shadowed by a stale-material step-down): the forward
+    // target's sample count comes from the same resolver ForwardPbrNodeImpl sizes its primary RtgSet
+    // with, because path selection runs here in onGpuUpdate — outside any render pass, before that
+    // RTG is ever bound.
+    const bool msaa_stepdown = (s_meshmode >= 1) and terrainMeshMsaaStepDown(msaaForwardSampleCount(ctx));
+    if (s_meshmode >= 1 and not msaa_stepdown) {
+      auto try_tek = fsmtl->technique("FWD_SSBO_CUSTOM_MESH");
+      auto try_dpp = fsmtl->technique("FWD_SSBO_CUSTOM_MESH_DEPTHPREPASS");
+      if (not ctx->supportsMeshShader())
+        logchan_tcd->log("TERRAIN-MESHSHADER: requested, but this device has no VK_EXT_mesh_shader "
+                         "— using the pull-VS path");
+      else if (not try_tek)
+        logchan_tcd->log("TERRAIN-MESHSHADER: requested, but material<%s> has no "
+                         "FWD_SSBO_CUSTOM_MESH technique (the SAME env gates the ptex3d codegen — a "
+                         "material materialized in a toggle-off process carries no mesh stage) — "
+                         "using the pull-VS path",
+                         self->_material_asset_name.c_str());
+      else if (not try_dpp)
+        // the depth prepass selects per-permutation, not by this technique pointer: a color-only
+        // mesh material would draw its depth pass through the PULL-VS pipeline with a mesh draw call.
+        logchan_tcd->log("TERRAIN-MESHSHADER: material<%s> has FWD_SSBO_CUSTOM_MESH but no "
+                         "FWD_SSBO_CUSTOM_MESH_DEPTHPREPASS twin (stale material — re-materialize) "
+                         "— using the pull-VS path",
+                         self->_material_asset_name.c_str());
       else
-        cdd->addComputePass(cs, {{sif, ssbo}}, p._gx, 1, 1);
+        mesh_tek = try_tek;
+      // BOTH mode 1 (improved, direct-sized) and mode 2 (indirect) consume the SAME compacted v_list,
+      // so BOTH require cs_terrain_meshcull. The old FIXED-GRID mode 1 (dense decode, no compaction) is
+      // REMOVED — a material lacking the compaction pass was materialized stale (or with the toggle
+      // off) and steps down loudly to the pull-VS path, not to a slower fixed grid.
+      if (mesh_tek) {
+        auto try_cull = fsmtl->computeShader("cs_terrain_meshcull");
+        if (not try_cull) {
+          logchan_tcd->log("TERRAIN-MESHSHADER: material<%s> has FWD_SSBO_CUSTOM_MESH but no "
+                           "cs_terrain_meshcull compaction (stale material — re-materialize with "
+                           "ORKID_TERRAIN_MESHSHADER set) — using the pull-VS path",
+                           self->_material_asset_name.c_str());
+          mesh_tek = nullptr;
+        } else
+          meshcull_cs = try_cull;
+      }
+      // MODE 2 needs the INDIRECT draw entry on top of the compaction; absent -> fall back to the
+      // mode-1 DIRECT-SIZED grid (identical material, only the C++ dispatch differs). use_indirect
+      // below captures the final decision.
+      if (mesh_tek and s_meshmode >= 2 and not ctx->supportsMeshShaderIndirect())
+        logchan_tcd->log("TERRAIN-MESHSHADER: mode 2 requested, but this device has no "
+                         "vkCmdDrawMeshTasksIndirectEXT — using the mode-1 direct-sized grid");
     }
-    cdd->setIndirect(ssbo, ARGS_OFF, nullptr, PrimitiveType::TRIANGLES, 4);
+    // final draw-path decision (mesh_tek => meshcull_cs guaranteed): indirect only when mode 2 AND the
+    // device has the indirect draw entry; otherwise the direct-sized path.
+    const bool use_indirect =
+        mesh_tek and meshcull_cs and (s_meshmode >= 2) and ctx->supportsMeshShaderIndirect();
+    // the SUN-SHADOW cull's pass list — the SAME compute, bound to the shadow buffer, filled
+    // alongside the eye list below so the two can only ever disagree about which buffer they write.
+    std::vector<ComputeDrawablePass> shadow_passes;
+    auto add_shadow_pass = [&](const FxComputeShader* cs, uint32_t gx) {
+      ComputeDrawablePass p;
+      p._shader = cs;
+      p._bindings.push_back({sif, shadowSSBO});
+      if (frame_sif)
+        p._bindings.push_back({frame_sif, frameSSBO}); // read-only frame data, shared with the eye set
+      p._groups_x = gx;
+      shadow_passes.push_back(p);
+    };
+    if (not mesh_tek) {
+      int cull_groups = (render_nchunk + 63) / 64;   // dispatch over the RENDER chunk grid
+      struct PassDef { const char* _name; int _gx; };
+      // reset -> cull -> sort (near-to-far for early-Z; one group, thread 0 sorts) -> finalize.
+      PassDef passes[4] = {{"cs_terrain_reset", 1}, {"cs_terrain_cull", cull_groups},
+                           {"cs_terrain_sort", 1}, {"cs_terrain_finalize", 1}};
+      for (const auto& p : passes) {
+        auto cs = fsmtl->computeShader(p._name);
+        if (not cs) {
+          logchan_tcd->log(
+              "TerrainChunkDrawable: material<%s> lacks compute<%s> — was it authored with "
+              "TerrainChunkVertexSource?",
+              self->_material_asset_name.c_str(),
+              p._name);
+          state->_built = true;
+          return;
+        }
+        // relax: the compute interface inherits sif_terra_frame (dense-binding requirement — see
+        // gpu_chunk.py cif_terrain), so its pipeline layout includes it; bind the buffer per pass.
+        if (frame_sif)
+          cdd->addComputePass(cs, {{sif, ssbo}, {frame_sif, frameSSBO}}, p._gx, 1, 1);
+        else
+          cdd->addComputePass(cs, {{sif, ssbo}}, p._gx, 1, 1);
+        add_shadow_pass(cs, uint32_t(p._gx));
+      }
+      cdd->setIndirect(ssbo, ARGS_OFF, nullptr, PrimitiveType::TRIANGLES, 4);
+    } else if (meshcull_cs) {
+      // MESH (mode 1 direct-sized OR mode 2 indirect): the single compaction dispatch, in place of the
+      // pull path's four. It fills v_list and writes the mesh draw command into the SAME args slot (the
+      // two commands never coexist — this drawable has exactly one draw path; mode 1 reads only v_list +
+      // v_count, ignoring the args command). relax: same dense-binding requirement as above. Recorded
+      // INLINE onto the frame CB (setInlineCompute, NOT addComputePass) so it rides the ONE frame submit
+      // — no per-frame compute submit+fence-wait, the whole cost on MoltenVK. The mesh draw sees its
+      // v_list + count through the inline barrier, not a fence.
+      if (frame_sif)
+        cdd->setInlineCompute(meshcull_cs, {{sif, ssbo}, {frame_sif, frameSSBO}}, 1, 1, 1);
+      else
+        cdd->setInlineCompute(meshcull_cs, {{sif, ssbo}}, 1, 1, 1);
+      // the shadow compaction is a PLAIN dispatch inside Scene::shadowCull's phase (the inline
+      // recording exists to spare the eye path a submit+fence; the shadow cull already has one).
+      add_shadow_pass(meshcull_cs, 1);
+    }
+    //////////////////////////////////////////////////////////////////
+    // 5c. SUN-SHADOW CULL (W7-S3). Terrain consumed the EYE survivor set in sun-cascade depth
+    //     passes, so a caster the camera could not see stopped casting — a mountain rotated out
+    //     of frustum took its shadow off still-visible ground with it. Mirrors the hypermesh
+    //     wiring (hmdflow_render.cpp MeshInstCull::perViewShadow): the SAME cull compute, run
+    //     once per composited frame from Scene::shadowCull against the prologue's UNION sun
+    //     camera, compacting a SEPARATE survivor list into the shadow buffer that the cascade
+    //     depth draws bind in place of the eye buffer. The eye buffer is never touched here, so
+    //     the color pass is byte-identical.
+    //     LIGHT-VIEW NEUTRALITY: occlusion OFF (misc.yzw = 0 -> the cull skips the HZB test; the
+    //     eye-depth pyramid means nothing in light space) and no CullFrustumScale narrowing (the
+    //     union box is already the conservative superset of every cascade slice).
+    //////////////////////////////////////////////////////////////////
+    if (not shadow_passes.empty()) {
+      auto hzb_blk = fsmtl->storageBlock("sif_hzb");
+      cdd->_perViewComputeShadow =
+          [shadow_passes, shadowSSBO, hzb_blk, CAM_OFF](Context* c, const CameraMatrices& cammtx) {
+            auto FXI = c->FXI();
+            auto CI  = c->CI();
+            struct CamBlk {
+              float vp[16];
+              float ivp[16];
+              float eye[4];
+              float misc[4];
+            } blk;
+            std::memcpy(blk.vp, cammtx.GetVPMatrix().asArray(), 64);
+            std::memcpy(blk.ivp, cammtx.GetIVPMatrix().asArray(), 64);
+            const float* iv = cammtx.GetIVMatrix().asArray(); // inverse-view translation = eye (col-major)
+            blk.eye[0] = iv[12];
+            blk.eye[1] = iv[13];
+            blk.eye[2] = iv[14];
+            blk.eye[3] = 1.0f;
+            // exact union frustum; the ORKID_DISABLE_FRUSTUM_CULL sentinel still applies.
+            blk.misc[0] = cullFrustumDisabled() ? -1.0f : 1.0f;
+            blk.misc[1] = blk.misc[2] = blk.misc[3] = 0.0f; // HZB unavailable -> occlusion skipped
+            {
+              auto m = FXI->mapStorageBuffer(shadowSSBO, CAM_OFF, sizeof(blk), BufferMapAccess::WRITE_ONLY);
+              std::memcpy(m->_mappedaddr, &blk, sizeof(blk));
+              m->unmap();
+            }
+            CI->beginDispatchPhase(); // reentrant — nests inside Scene::shadowCull's phase
+            for (size_t i = 0; i < shadow_passes.size(); i++) {
+              const auto& p = shadow_passes[i];
+              for (const auto& b : p._bindings)
+                CI->bindStorageBufferOnBlock(p._shader, b.second, b.first);
+              if (hzb_blk) // the block must carry a valid buffer every pass; misc.y==0 => never read
+                CI->bindStorageBufferOnBlock(p._shader, shadowSSBO, hzb_blk);
+              CI->dispatchCompute(p._shader, p._groups_x, p._groups_y, p._groups_z);
+              if ((i + 1) < shadow_passes.size())
+                CI->storageBarrier();
+            }
+            CI->endDispatchPhase();
+          };
+      cdd->_argsSSBOShadow = shadowSSBO;
+      // the ONE override that turns a cascade depth draw onto the shadow set: sif_ptex_vtx carries
+      // v_list AND the heights the VS decodes, so re-pointing the block re-points the survivor list.
+      cdd->_shadowStorageOverrides.push_back({sif, shadowSSBO});
+    }
     //////////////////////////////////////////////////////////////////
     // graft onto the live drawable (the D.3 copy block)
     //////////////////////////////////////////////////////////////////
     drawable->_passes          = cdd->_passes;
+    drawable->_spvrFamily      = "terrain"; // names this producer in the [SPVR:CDSEL] bind-time line
+    drawable->_inlineComputePass = cdd->_inlineComputePass; // MODE 2: inline frame-CB compaction
     drawable->_camParamsSSBO   = cdd->_camParamsSSBO;
     drawable->_camParamsOffset = cdd->_camParamsOffset;
     drawable->_material        = cdd->_material;
@@ -894,10 +1152,109 @@ drawable_ptr_t TerrainChunkDrawableData::createDrawable() const {
     drawable->_indexSSBO       = cdd->_indexSSBO;
     drawable->_primtype        = cdd->_primtype;
     drawable->_indexSize       = cdd->_indexSize;
+    drawable->_perViewComputeShadow   = cdd->_perViewComputeShadow;   // W7-S3: the sun-shadow cull
+    drawable->_argsSSBOShadow         = cdd->_argsSSBOShadow;
+    drawable->_shadowStorageOverrides = cdd->_shadowStorageOverrides;
+    if (mesh_tek) {
+      // the meshlet split MUST mirror gpu_chunk.py (meshlet n -> mps = ceil(chunk/n) per side); the
+      // compacted grid is (meshlets per chunk, capacity, 1) — the y walks the compacted v_list. Both
+      // draw paths (indirect + direct-sized) get their VIS funnel from the inline compaction (it resets
+      // + writes v_total/v_frustum/v_count, byte-identical to the pull cull), read back at 1-frame lag
+      // by the standard onPreRender readback — no HUD-only stats passes.
+      // terrainMeshletDim(): the shipped default + the SAME diagnostic knob gpu_chunk.py
+      // _meshlet_dim() reads. The payload size the codegen bakes decides how many meshlets a chunk
+      // has, so a dispatch grid sized from a stale default would draw a different surface than the
+      // shader emits.
+      const int meshlet        = terrainMeshletDim();
+      const int mps            = (chunk + meshlet - 1) / meshlet;
+      drawable->_meshTechnique = mesh_tek;
+      drawable->_meshGroups[0] = uint32_t(mps * mps);
+      drawable->_meshGroups[1] = uint32_t(render_nchunk); // full-grid default (first frame / indirect-ignored)
+      drawable->_meshGroups[2] = 1;
+      // SUN-SHADOW grid (W7-S3): the shadow compaction wrote its own command + list into the shadow
+      // buffer, so the indirect path just re-points at it. The direct-sized path has no lag-1 count
+      // for the sun view (the sizing readback is the eye buffer's) and takes the FULL grid — the
+      // mesh stage's capacity guard makes the over-dispatched slots cheap, and a cascade pass that
+      // under-dispatched would silently drop casters.
+      drawable->_meshGroupsShadow[0] = uint32_t(mps * mps);
+      drawable->_meshGroupsShadow[1] = uint32_t(render_nchunk);
+      drawable->_meshGroupsShadow[2] = 1;
+      if (use_indirect) {
+        // MODE 2 INDIRECT: _meshGroups goes unread — the compaction writes {x=mps^2, y=visible, z=1}
+        // into the args slot and DrawMeshTasksIndirectEML takes its grid from there (0 when all-culled).
+        drawable->_meshArgsSSBO       = ssbo;
+        drawable->_meshArgsOffset     = ARGS_OFF;
+        drawable->_meshArgsSSBOShadow = shadowSSBO;
+        logchan_tcd->log(
+            "TERRAIN-MESHSHADER: ON (mode 2, INDIRECT) — %d meshlets/chunk over a compacted chunk "
+            "list (<=%d chunks), 1 compaction dispatch, 0 workgroups when all-culled",
+            mps * mps,
+            render_nchunk);
+      } else {
+        // MODE 1 DIRECT-SIZED: DrawMeshTasksEML over a CPU lag-1-sized grid (no indirect draw, no
+        // per-frame fence). onPreRender rewrites _meshGroups[1] each frame from the visible count +
+        // margin; the mesh stage's capacity guard makes over-dispatch cheap+correct. NEVER indirect.
+        drawable->_meshArgsSSBO    = nullptr;
+        drawable->_meshDirectSized = true;
+        drawable->_meshSizeMargin  = s_meshSizeMargin;
+        drawable->_meshSizeFloor   = uint32_t(s_meshSizeFloor < 1 ? 1 : s_meshSizeFloor);
+        drawable->_meshSizeMps2    = uint32_t(mps * mps);
+        drawable->_meshSizeTotal   = uint32_t(render_nchunk);
+        drawable->_meshCullChunk   = s_meshCullChunk;
+        logchan_tcd->log(
+            "TERRAIN-MESHSHADER: ON (mode 1, DIRECT-SIZED) — %d meshlets/chunk over a compacted list "
+            "sized per-frame from the lag-1 visible count (margin=%.2f floor=%d, cap<=%d chunks), 1 "
+            "inline compaction; cull granularity=%s%s",
+            mps * mps,
+            s_meshSizeMargin,
+            s_meshSizeFloor,
+            render_nchunk,
+            s_meshCullChunk ? "chunk" : "meshlet",
+            s_meshCullChunk ? "" : " (default)");
+      }
+    }
     // HZB 1-phase occlusion: the cull shader's read-only sif_hzb block. ComputeDrawable::onPreRender
     // binds the per-frame HZB pyramid here (from the RCFD) and packs base w/h/mips into CamBlk.misc.yzw.
     // null (block absent/optimized out) => occlusion stays disabled, frustum-only — graceful.
     drawable->_hzbBlock = fsmtl->storageBlock("sif_hzb");
+    //////////////////////////////////////////////////////////////////
+    // SINGLE-PASS-STEREO PEER CENSUS for THIS terrain material, printed once at
+    // materialize. The generated fxv2 template emits an _ST peer per SSBO variant,
+    // but a peer only reaches a frame if some C++ arm SELECTS it — the two facts are
+    // independent and only the pair is diagnostic. "shader<1> selects<0>" on any row
+    // is a peer that exists and can never be chosen: the color pass then runs per-view
+    // while its depth-prepass twin runs mono, and the eye whose clip transform the mono
+    // matrix does not match loses its fragments to the depth test.
+    // Grep token: SPVR:TERRA
+    //////////////////////////////////////////////////////////////////
+    {
+      auto fxi        = ctx->FXI();
+      auto* shader    = mtl->_shader;
+      auto has_in_sh  = [fxi, shader](const char* nm) -> int {
+        return (shader and fxi->technique(shader, nm)) ? 1 : 0;
+      };
+      printf(
+          "[SPVR:TERRA] terrain material<%s> mode<%s> render_dim<%d> path<%s> "
+          "color_st{shader<%d> selects<%d>} mesh_st{shader<%d> selects<%d>} "
+          "dpp{shader<%d> selects<%d>} dpp_st{shader<%d> selects<%d>} "
+          "mesh_dpp_st{shader<%d> selects<%d>} stereoblk<%s>\n",
+          self->_material_asset_name.c_str(),
+          self->_capture_mode.c_str(),
+          render_dim,
+          mesh_tek ? "mesh_shader" : "pull_vs",
+          has_in_sh("FWD_SSBO_CUSTOM_ST"),
+          int(mtl->_tek_FWD_SSBO_CUSTOM_ST != nullptr),
+          has_in_sh("FWD_SSBO_CUSTOM_MESH_ST"),
+          int(mtl->_tek_FWD_SSBO_CUSTOM_MESH_ST != nullptr),
+          has_in_sh("FWD_SSBO_CUSTOM_DEPTHPREPASS"),
+          int(mtl->_tek_FWD_SSBO_CUSTOM_DEPTHPREPASS != nullptr),
+          has_in_sh("FWD_SSBO_CUSTOM_DEPTHPREPASS_ST"),
+          int(mtl->_tek_FWD_SSBO_CUSTOM_DEPTHPREPASS_ST != nullptr),
+          has_in_sh("FWD_SSBO_CUSTOM_MESH_DEPTHPREPASS_ST"),
+          int(mtl->_tek_FWD_SSBO_CUSTOM_MESH_DEPTHPREPASS_ST != nullptr),
+          mtl->_parStereoBlock ? "declared" : "ABSENT");
+      fflush(stdout);
+    }
     // stash for the texture-bake one-shot (terrainTexBake) — the SSBO + scale + a heights copy (the
     // bake builds its OWN all-chunks SSBO, since the per-frame cull overwrites the shared v_list).
     state->_ssbo     = ssbo;
@@ -954,7 +1311,7 @@ drawable_ptr_t TerrainChunkDrawableData::createDrawable() const {
     state->_built = true;
     logchan_tcd->log(
         "TerrainChunkDrawable: materialized (bake_dim<%d> render_dim<%d> render_chunks<%dx%d> "
-        "ssbo<%.1fMB> mtl<%s>)",
+        "ssbo<%.1fMB x2 eye+sunshadow> mtl<%s>)",
         bake_dim,
         render_dim,
         render_cps,

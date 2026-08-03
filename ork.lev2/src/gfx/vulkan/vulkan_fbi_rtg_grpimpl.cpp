@@ -37,17 +37,22 @@ VkRtGroupImpl::~VkRtGroupImpl() {
   auto attachments = __attachments;
   
   if (!color_buffers.empty() || depth_buffer || cmdbuf || attachments) {
-    // Enqueue cleanup onto this RT group's owning context — drained on that
-    // context's beginFrame (Phase 6.3 Variant B: per-context deferred queue).
-    _contextVK->enqueueDeferredOp(
-      [=](Context* ctx) {
+    // FRAME-DELAYED destroy, same hazard as ~VklRtBufferImpl: a resize drops
+    // this group while its secondary command buffer may still be recorded into
+    // an in-flight primary (vkFreeCommandBuffers is a use-after-submit at the
+    // next beginFrame), and releasing the buffer impls here is what fires their
+    // own delayed teardown. Cleanup still runs on the context-owning thread —
+    // the delayed queue is drained from beginFrame too, just N frames later.
+    constexpr int kDelayFrames = 3; // > MAX_FRAMES_IN_FLIGHT
+    _contextVK->enqueueDelayedDestroy(
+      [=]() {
         // Release shared_ptrs - their destructors will handle cleanup
-        // This ensures cleanup happens on the main thread with valid Vulkan context
         auto temp_colors = color_buffers;
         auto temp_depth = depth_buffer;
         auto temp_cmd = cmdbuf;
         auto temp_attach = attachments;
-      });
+      },
+      kDelayFrames);
   }
   
   _cmdbufRTG = nullptr; // Clear the command buffer to avoid dangling pointers
@@ -185,6 +190,43 @@ void VkRtGroupImpl::_invalidateAttachments() {
   _renderinfo_set.clear();
   _rinfo_retain = nullptr;
   _rinfo_resume_retain = nullptr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// pipeline-hash contribution keyed by the ATTACHMENT LAYOUT (ordered color
+// formats + depth format + msaa) — a VkPipeline built with dynamic rendering
+// is only valid against passes of MATCHING attachment layout. Historically
+// every impl reported 0, so pipelines leaked ACROSS layouts: a pipeline built
+// for the (color+depth) main depth-prepass RTG also ran against the Z32F-only
+// shadow slices, where its fragment stage's discard was silently dropped
+// (surfaced by the A3 masked depth prepass — alpha-tested casters shadowed
+// solid). Same-layout RTGs still share pipelines (correct and cheap).
+///////////////////////////////////////////////////////////////////////////////
+
+int VkRtGroupImpl::layoutBits() {
+  if (_pipeline_bits >= 0)
+    return _pipeline_bits;
+  uint64_t sig = 0xf0e1d2c3;
+  for (auto& cbi : _color_buffer_impls)
+    sig = sig * 31 + uint64_t(cbi->_vkfmt) + 1;
+  sig = sig * 31 + (_depth_buffer_impl ? uint64_t(_depth_buffer_impl->_vkfmt) + 1 : 0);
+  sig = sig * 31 + uint64_t(msaaEnumToInt(_rtgroup->_msaa_samples));
+  // VIEW MASK is part of the attachment layout for pipeline purposes: a VkPipeline built
+  // with VkPipelineRenderingCreateInfo.viewMask=0 is INVALID inside a pass whose
+  // VkRenderingInfo.viewMask is non-zero (VUID-vkCmdDraw-viewMask), and the same key also
+  // separates the base-module pipelines from the multiview-module ones, which are chosen
+  // from this exact field. Mono is unaffected: every legacy RTG reports 0 here, so the
+  // existing partition is preserved (times 31, plus a constant) and no new layout appears.
+  sig = sig * 31 + uint64_t(_rtgroup->viewMask());
+  static std::unordered_map<uint64_t, int> _layout_registry;
+  static std::mutex _layout_mutex;
+  std::lock_guard<std::mutex> lock(_layout_mutex);
+  auto it = _layout_registry.find(sig);
+  if (it == _layout_registry.end())
+    it = _layout_registry.emplace(sig, int(_layout_registry.size())).first;
+  _pipeline_bits = it->second;
+  OrkAssert(_pipeline_bits < 16); // 4-bit budget in the pipeline hash
+  return _pipeline_bits;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

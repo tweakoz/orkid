@@ -50,6 +50,9 @@
 
 #include <ork/ecs/GlobalSynthSystem.h>
 
+#include <ork/ecs/SoundFieldProbe.h>
+#include "SoundFieldProbe_impl.h"
+
 #include "InterpComponent_impl.h"
 #include "ProbeComponent_impl.h"
 #include "../scripting/Lua/LuaImpl.h"
@@ -195,6 +198,7 @@ struct EcsAppInit {
     RegisterClassX(BulletShapeCapsuleData);
     RegisterClassX(BulletShapeTerrainData);
     RegisterClassX(BulletShapeScatterData); // E.2-walk: per-item proxy compound
+    RegisterClassX(BulletShapeSpineData);   // roads: walkable ribbon from the street_spine artifact
     RegisterClassX(BulletObjectComponentData);
     RegisterClassX(BulletObjectForceControllerData);
     RegisterClassX(DirectionalForceData);
@@ -235,6 +239,11 @@ struct EcsAppInit {
     RegisterClassX(GlobalSynthSystemData);
     RegisterClassX(GlobalSynthSystem);
 
+    RegisterClassX(SoundFieldProbeData);
+    RegisterClassX(SoundFieldProbeComponent);
+    RegisterClassX(SoundFieldSystemData);
+    RegisterClassX(SoundFieldSystem);
+
     RegisterClassX(ProbeComponentData);
     RegisterClassX(ProbeComponent);
     RegisterClassX(ProbeSystemData);
@@ -253,6 +262,7 @@ struct EcsAppInit {
     RegisterFamily<HypermeshComponentData>(ork::AddPooledLiteral("")); // no update
     RegisterFamily<StochWavSoundEmitterData>(ork::AddPooledLiteral("control"));
     RegisterFamily<SimpleSoundEmitterData>(ork::AddPooledLiteral("control"));
+    RegisterFamily<SoundFieldProbeData>(ork::AddPooledLiteral("control"));
     RegisterFamily<ProbeComponentData>(ork::AddPooledLiteral("")); // no update
   }
 };

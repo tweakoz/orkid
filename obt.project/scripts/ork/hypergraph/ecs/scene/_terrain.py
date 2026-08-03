@@ -10,6 +10,57 @@
 from orkengine.core import vec3
 from ork.hypergraph.ecs.scene._helpers import Transform
 
+# bake-key scheme salt — bump to orphan every stored-atlas cache dir (mirrors the
+# hm.section / vkfxshader cook salts).
+TEXBAKE_KEY_SCHEME = "tbake.v1"
+
+
+def texbake_material_source(mat_cls, fallback_src=None):
+  """The material's DECLARED SOURCE text, for content-keying its bake.
+
+  A terrain DSL's MATERIAL_CLASS is usually declared INSIDE the DSL file, which load_dsl_class
+  execs under the synthetic module name `terrain_dsl_module` with no __file__ — inspect then
+  raises "is a built-in class" for it. Keying off the class NAME in that case would silently make
+  the cache blind to every material edit (stale atlas, no rebake), so an unreadable class demands
+  the caller's `fallback_src` (the DSL file text — where the class actually lives) or it raises."""
+  import inspect, sys
+  try:
+    return inspect.getsource(mat_cls)
+  except Exception:
+    pass
+  mod  = sys.modules.get(getattr(mat_cls, "__module__", ""), None)
+  path = getattr(mod, "__file__", None)
+  if path:
+    try:
+      with open(path, "r") as f:
+        return f.read()
+    except Exception:
+      pass
+  if fallback_src is not None:
+    return fallback_src
+  raise RuntimeError("texbake cache key: no source for material class <%s.%s> and no fallback — "
+                     "the bake key would go blind to material edits"
+                     % (getattr(mat_cls, "__module__", "?"), mat_cls.__name__))
+
+
+def texbake_material_digest(mat_cls, mat_params, cap_targets, fallback_src=None):
+  """MATERIAL half of the stored-atlas cache dir: hashed from the material's DECLARED SOURCE,
+  never from the compiled .fxv2's filename digest.
+
+  That compiled digest hashes the WHOLE generated file, so a RENDER-ONLY technique variant (the
+  mesh-shader block ORKID_TERRAIN_MESHSHADER appends) renames the cache dir even though the bake
+  executes one byte-identical technique (FWD_SSBO_CUSTOM_CAPTURE, forced by the drawable) and the
+  baked pixels cannot differ. Key off what the pixels DO depend on — material source + params +
+  capture targets + codegen version — mirroring the terrain half (hashed from DSL SOURCE) and the
+  hm.section precedent that deliberately keeps ORKID_SECTION_MIPS out of its cook key."""
+  import hashlib
+  from ork.hypergraph.ptex3d import CODEGEN_VERSION
+  key = "\x00".join([TEXBAKE_KEY_SCHEME, CODEGEN_VERSION,
+                     texbake_material_source(mat_cls, fallback_src),
+                     repr(sorted((mat_params or {}).items())), repr(list(cap_targets))])
+  return "material_" + hashlib.sha1(key.encode("utf-8")).hexdigest()[:16]
+
+
 class TerrainMixin:
   """Scene terrain authoring (terrain + colliders)"""
 
@@ -118,24 +169,26 @@ class TerrainMixin:
     cap_mode = "proc"
     cap_dir  = ""
     if mode == "stored":
-      # DISK CACHE — deterministic dir derivable from the baked objects: the proctex's content-addressed
-      # shader digest (= surface_stored + every self.capture(...) + ctx.params + which channels it samples +
-      # CODEGEN_VERSION) AND a terrain-content hash. The baked atlas samples ctx.P/N (the HEIGHTS) and the
+      # DISK CACHE — deterministic dir derivable from the baked objects: a MATERIAL-SOURCE digest
+      # (texbake_material_digest — declared source + params + capture targets + CODEGEN_VERSION, NOT the
+      # compiled .fxv2 name) AND a terrain-content hash. The baked atlas samples ctx.P/N (the HEIGHTS) and the
       # terrain channels (FlowMetrics/FlowDischarge/...) — all deterministic outputs of the terrain DSL + its
       # scale — so editing the heightmap MUST re-bake (resample at the new heights). The dflow graph won't
       # deep-serialize (class-touch gap) and exposes no Python module-walk, so the terrain identity is hashed
       # from its DSL SOURCE + ctor kwargs + the bake geometry (dim/extent/height/y_bias/chunk). WARM (all PNGs
       # present) -> bind via sampler_textures, NO bake. COLD -> the drawable bakes, writes the cache, binds
-      # same-session (correct first run). Edit the Material -> new proctex digest; edit the terrain (ErodeFlow
+      # same-session (correct first run). Edit the Material -> new material digest; edit the terrain (ErodeFlow
       # / iters=) -> new terrain hash; either -> new dir -> one-run cold re-bake.
       import os as _os, hashlib as _hashlib
       from orkengine.core import Path as _Path
-      _digest = _os.path.splitext(_os.path.basename(p.gendata.shaderpath))[0]   # "material_<digest>"
       try:
         with open(resolve_dsl_file(dsl_file), "r") as _f:
           _terr_src = _f.read()
       except Exception:
         _terr_src = str(dsl_file)
+      # A DSL-embedded MATERIAL_CLASS has no importable source (load_dsl_class execs the file as
+      # `terrain_dsl_module`), so the DSL text — which IS where that class is written — is the fallback.
+      _digest = texbake_material_digest(mat_cls, mat_params, cap_targets, fallback_src=_terr_src)
       # RELAX-CONSUME VERSION: the relaxed UV/atlas is produced by the C++ relax MODULE (not the DSL
       # source), so a module-algorithm change (folded native-res -> coarse-grid) changes the baked atlas
       # WITHOUT changing _terr_src -> the cap_dir would collide and the player would bind the STALE atlas.
@@ -154,8 +207,10 @@ class TerrainMixin:
         _st.update(_atlas)
         p.gendata.sampler_textures = _st     # WARM: bound at materialize (no runtime bake)
         cap_mode = "proc"
+        print("TERRAIN-TEXBAKE: WARM bind %s" % cap_dir, flush=True)
       else:
         cap_mode = "stored"                  # COLD: bake -> write cache -> bind (C++ one-shot)
+        print("TERRAIN-TEXBAKE: COLD %s" % cap_dir, flush=True)
 
     ent = self.entity(
         name + "0",
@@ -190,14 +245,19 @@ class TerrainMixin:
       # for any sanely-proportioned terrain, and the walker settles on contact.
       walker_kw = dict(
           spawn        = spawn if spawn is not None else vec3(0.0, extent_m*0.25, 0.0),
-          cam_near     = 2.0,        # NOT 0.1 — far depth precision is dominated by near; 0.1 on a big
-                                     # cam_far Z-fights the distant terrain into oblivion (see VrNear=1.0)
+          cam_near     = 0.5,        # owner-set 2026-07-22 for the TRUE 1.7m eye (2.0 clipped walls/ground
+                                     # within reach; walker propagates this into VrNear too). NOT 0.1 —
+                                     # far depth precision is dominated by near; 0.1 on a big cam_far
+                                     # Z-fights the distant terrain into oblivion. WATCHPOINT: 0.5 is 4x
+                                     # the old near ratio — if far shimmer appears (vale rims), this is why
           cam_far      = 100000.0,   # generous flat far (clears any terrain) — sizing it to extent_m was
                                      # too tight: the far edge sat at the far plane and clipped
           move_force   = 8000.0,
-          max_speed    = 30.0,
-          jump_impulse = 2260.0,
-          eye_height   = 4.85,
+          max_speed    = 10.0,
+          jump_impulse = 660.0,
+          eye_height   = 1.7,    # TRUE human eye height above the ground (the old 4.85-above-
+                                 # capsule-center vista default made every terrain read as a
+                                 # miniature; scenes wanting an elevated view pass eye_height=)
           cam_distance = 0.0,    # first person
           gravity      = vec3(0.0, -9.8, 0.0)
           )
@@ -207,14 +267,16 @@ class TerrainMixin:
 
     return ent
 
-  def terrain_collider(self, 
-                       hf_asset, 
-                       *, 
+  def terrain_collider(self,
+                       hf_asset,
+                       *,
                        name="terrain_collider",
-                       friction=0.9, 
-                       restitution=0.05, 
-                       gravity=None, 
-                       render_dimension=0):
+                       friction=0.9,
+                       restitution=0.05,
+                       gravity=None,
+                       render_dimension=0,
+                       surface_weights="",
+                       friction_rows=None):
     """Static heightfield collider for a baked HeightField asset. `hf_asset` is the
     asset wrapper (or its name string); physics scale comes from the asset's manifest
     at load. Heights are TRUE METERS: the C++ shape wraps Bullet's centered heightfield
@@ -223,7 +285,15 @@ class TerrainMixin:
     if absent). `render_dimension` (0 = full EXR res): when the HeightField bakes at a
     higher bake_dimension than the rendered mesh, pass the render grid here so the
     collider high-quality-downsamples to it (Image::resampledOf) and physics matches
-    the visible mesh."""
+    the visible mesh.
+
+    W·M SURFACE RESPONSE (physics leg): `surface_weights` names the RGBA class-weight
+    capture the terrain MATERIAL also consumes (baked to
+    <assetcache>/terrain/<asset>/<capture>.exr — the SAME W). "" (default) = feature off
+    (byte-identical to the pre-W collider). `friction_rows` = M[:,friction], the per-class
+    friction DELTAS (list of up to 4 floats, RGBA-class order) added at each contact via
+    base + W·M[:,friction]; the natural residual (1-Σw) carries delta 0. Talus (a low or
+    negative row) slides; a plaza/roadbed class (a positive row) grips."""
     from orkengine import ecs as _ecs
     explicit = gravity is not None
     if gravity is None:
@@ -236,6 +306,9 @@ class TerrainMixin:
     shape  = _ecs.BulletShapeTerrainData()
     shape.hf_asset = aname
     shape.render_dimension = int(render_dimension)
+    if surface_weights:
+      shape.surface_weights = str(surface_weights)
+      shape.friction_rows   = [float(r) for r in (friction_rows or [])]
     cdecl  = self.declare_component(
         "BulletObjectComponent",
         shape=shape, mass=0.0, friction=float(friction), restitution=float(restitution))
@@ -262,5 +335,28 @@ class TerrainMixin:
         "BulletObjectComponent",
         shape=shape, mass=0.0, friction=float(friction), restitution=float(restitution))
     return self.entity(name or ("%s_%s_collider" % (aname, sink)),
+                       transform=Transform(translation=vec3(0.0, 0.0, 0.0)),
+                       components=[cdecl])
+
+  def spine_collider(self, spine_asset, *, shoulder_m=3.0, lift_m=0.0, ground_asset="",
+                     name=None, friction=0.9, restitution=0.05):
+    """The road WALKABLE RIBBON collider (physics-proxy law, owner 2026-07-22): a
+    simplified proxy swept from the street_spine BAKED ARTIFACT (route_spine must set
+    export_name=<spine_asset>) — per segment a flat deck band + two shoulder crossfall
+    bands; NEVER the render mesh (embellishments are render-only). lift_m MUST equal
+    the render deck lift (single-source it from one scene constant). The entity sits
+    at the ORIGIN (spine coords are absolute world). Fail-loud if the artifact is
+    missing (declaration order = dependency order, the scatter convention)."""
+    from orkengine import ecs as _ecs
+    self._ensure_system("BulletSystem", linGravity=vec3(0.0, -9.8, 0.0))
+    shape = _ecs.BulletShapeSpineData()
+    shape.spine_asset  = str(spine_asset)
+    shape.shoulder_m   = float(shoulder_m)
+    shape.lift_m       = float(lift_m)
+    shape.ground_asset = str(ground_asset)  # pin outer chords to this HeightField's baked EXR
+    cdecl = self.declare_component(
+        "BulletObjectComponent",
+        shape=shape, mass=0.0, friction=float(friction), restitution=float(restitution))
+    return self.entity(name or ("%s_spine_collider" % spine_asset),
                        transform=Transform(translation=vec3(0.0, 0.0, 0.0)),
                        components=[cdecl])

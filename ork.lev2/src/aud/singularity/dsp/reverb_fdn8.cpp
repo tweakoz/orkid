@@ -24,7 +24,7 @@ void Fdn8ReverbData::describeX(class_t* clazz) {}
 ///////////////////////////////////////////////////////////////////////////////
 
 dspblk_ptr_t Fdn8ReverbData::createInstance() const { // override
-  return std::make_shared<Fdn8Reverb>(this);
+  return createDspInstance<Fdn8Reverb>(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 668" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <filter id="shadow">
+      <feDropShadow dx="2" dy="2" stdDeviation="2" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  <rect x="0" y="0" width="1000" height="668" fill="#1a1a2e"/>
+  <text x="500" y="28" font-family="Arial" font-size="18" font-weight="bold" fill="white" text-anchor="middle">GpuMesh — the v2 indexed attribute mesh (hmdflow.h)</text>
+
+  <!-- outer container -->
+  <rect x="16" y="44" width="968" height="352" rx="10" fill="#20203a" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="30" y="66" font-size="12" font-style="italic" fill="#93c5fd">struct GpuMesh — counts: _num_verts · _num_corners · _num_faces  (channel capacity rounds to pow2)</text>
+
+  <!-- ============== VERTEX domain ============== -->
+  <rect x="32" y="80" width="288" height="296" rx="8" fill="#252540" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="176" y="102" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">VERTEX domain — sized _num_verts</text>
+  <rect x="46" y="114" width="260" height="24" rx="4" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="54" y="130" font-size="11" fill="#93c5fd">_channels[POSITION]  vec4[nv]</text>
+  <rect x="46" y="144" width="260" height="24" rx="4" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="54" y="160" font-size="11" fill="#93c5fd">_channels[NORMAL]  vec4[nv]</text>
+  <rect x="46" y="174" width="260" height="24" rx="4" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="54" y="190" font-size="11" fill="#93c5fd">_channels[BINORMAL]  vec4[nv]</text>
+  <rect x="46" y="204" width="260" height="24" rx="4" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="54" y="220" font-size="11" fill="#93c5fd">_channels[UV0]  vec4[nv]  (.xy uv, .z layer)</text>
+  <rect x="46" y="234" width="260" height="24" rx="4" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="54" y="250" font-size="11" fill="#93c5fd">_channels[COLOR]  vec4[nv]</text>
+  <rect x="46" y="264" width="260" height="24" rx="4" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="54" y="280" font-size="11" fill="#93c5fd">_vattrs["__tags"]  uint[nv]  (POINT selections)</text>
+  <text x="54" y="312" font-size="11" fill="#6b7280">BONEIDX / BONEWT enum slots reserved</text>
+  <text x="54" y="326" font-size="11" fill="#6b7280">(skinning path not built)</text>
+  <text x="54" y="350" font-size="11" fill="#aaa">pooled gpuchannel_ptr_t handles — the</text>
+  <text x="54" y="364" font-size="11" fill="#aaa">shared_ptr refcount IS the COW refcount</text>
+
+  <!-- ============== TOPOLOGY ============== -->
+  <rect x="340" y="80" width="320" height="296" rx="8" fill="#252540" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="500" y="102" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">TOPOLOGY — CSR, mixed faces</text>
+  <rect x="354" y="114" width="292" height="24" rx="4" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="362" y="130" font-size="11" fill="#93c5fd">_vidx : uint[_num_corners]  (corner → vertex)</text>
+  <rect x="354" y="144" width="292" height="24" rx="4" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="362" y="160" font-size="11" fill="#93c5fd">_face_offsets : uint[_num_faces + 1]  (CSR)</text>
+
+  <text x="362" y="192" font-size="11" fill="#aaa">example — 3 faces, 12 corners:</text>
+  <!-- offsets row -->
+  <rect x="362" y="200" width="40" height="22" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="382" y="215" font-family="monospace" font-size="11" fill="#93c5fd" text-anchor="middle">0</text>
+  <rect x="402" y="200" width="40" height="22" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="422" y="215" font-family="monospace" font-size="11" fill="#93c5fd" text-anchor="middle">3</text>
+  <rect x="442" y="200" width="40" height="22" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="462" y="215" font-family="monospace" font-size="11" fill="#93c5fd" text-anchor="middle">7</text>
+  <rect x="482" y="200" width="40" height="22" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="502" y="215" font-family="monospace" font-size="11" fill="#93c5fd" text-anchor="middle">12</text>
+  <text x="532" y="215" font-size="11" fill="#aaa">_face_offsets</text>
+  <!-- corners strip: 3 + 4 + 5 -->
+  <g stroke="#3b82f6">
+    <rect x="362" y="238" width="24" height="20" fill="#16304d"/>
+    <rect x="386" y="238" width="24" height="20" fill="#16304d"/>
+    <rect x="410" y="238" width="24" height="20" fill="#16304d"/>
+    <rect x="434" y="238" width="24" height="20" fill="#1f4066"/>
+    <rect x="458" y="238" width="24" height="20" fill="#1f4066"/>
+    <rect x="482" y="238" width="24" height="20" fill="#1f4066"/>
+    <rect x="506" y="238" width="24" height="20" fill="#1f4066"/>
+    <rect x="530" y="238" width="24" height="20" fill="#2a527f"/>
+    <rect x="554" y="238" width="24" height="20" fill="#2a527f"/>
+    <rect x="578" y="238" width="24" height="20" fill="#2a527f"/>
+    <rect x="602" y="238" width="24" height="20" fill="#2a527f"/>
+    <rect x="626" y="238" width="24" height="20" fill="#2a527f"/>
+  </g>
+  <text x="398" y="274" font-size="11" fill="#aaa" text-anchor="middle">tri f0</text>
+  <text x="482" y="274" font-size="11" fill="#aaa" text-anchor="middle">quad f1</text>
+  <text x="590" y="274" font-size="11" fill="#aaa" text-anchor="middle">5-gon f2</text>
+  <text x="362" y="304" font-size="11" fill="#aaa">the render fan / ear-clips each face per frame</text>
+  <text x="362" y="318" font-size="11" fill="#aaa">(cs_tri) — the triangulation is never stored</text>
+  <text x="362" y="344" font-size="11" fill="#aaa">_gpuResidentCount: live face count read from</text>
+  <text x="362" y="358" font-size="11" fill="#aaa">the header SSBO on the GPU (no readback)</text>
+
+  <!-- ============== FACE + EDGE domain ============== -->
+  <rect x="680" y="80" width="290" height="296" rx="8" fill="#252540" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="825" y="102" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">FACE domain — sized _num_faces</text>
+  <rect x="694" y="114" width="262" height="24" rx="4" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="702" y="130" font-size="11" fill="#93c5fd">_faces["__tags"]  uint[nf]  (groups + gid)</text>
+  <rect x="694" y="144" width="262" height="24" rx="4" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="702" y="160" font-size="11" fill="#93c5fd">_faces["material_id"]  (and other named attrs)</text>
+
+  <text x="825" y="196" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">EDGE domain — lazy (MeshEdges)</text>
+  <rect x="694" y="208" width="262" height="24" rx="4" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="702" y="224" font-size="11" fill="#93c5fd">_edge_table  uint4 {va, vb, f0, f1}</text>
+  <rect x="694" y="238" width="262" height="24" rx="4" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="702" y="254" font-size="11" fill="#93c5fd">_edge_count — live count stays GPU-side</text>
+  <rect x="694" y="268" width="262" height="24" rx="4" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="702" y="284" font-size="11" fill="#93c5fd">_edges["__tags"]  (LINE selections)</text>
+  <text x="702" y="316" font-size="11" fill="#aaa">+ cached vertex→face adjacency CSR</text>
+  <text x="702" y="330" font-size="11" fill="#aaa">(_adj_off / _adj_face, keyed on the</text>
+  <text x="702" y="344" font-size="11" fill="#aaa">topology buffers it was built from)</text>
+  <text x="702" y="366" font-size="11" fill="#6b7280">built on demand; NOT cook-cached</text>
+
+  <!-- ============== __tags layout ============== -->
+  <text x="20" y="432" font-family="monospace" font-size="13" font-weight="bold" fill="white">__tags — the 32-bit per-face tag word</text>
+  <!-- free region: bits 0..19 -->
+  <rect x="20" y="444" width="356" height="36" fill="#252540" stroke="#6b7280"/>
+  <!-- 5-bit bank ticks at bits 5,10,15 -->
+  <line x1="109" y1="444" x2="109" y2="480" stroke="#4a5568" stroke-dasharray="3 3"/>
+  <line x1="198" y1="444" x2="198" y2="480" stroke="#4a5568" stroke-dasharray="3 3"/>
+  <line x1="287" y1="444" x2="287" y2="480" stroke="#4a5568" stroke-dasharray="3 3"/>
+  <text x="198" y="467" font-size="11" fill="#ddd" text-anchor="middle">bits 0–19 — free selection groups (5-bit banks via bitop)</text>
+  <!-- gid band: bits 20..31 -->
+  <rect x="376" y="444" width="214" height="36" fill="#4c1d95" stroke="#a78bfa"/>
+  <text x="483" y="467" font-size="11" fill="#c4b5fd" text-anchor="middle">bits 20–31 — gid (0..4095)</text>
+  <text x="20" y="496" font-family="monospace" font-size="10" fill="#aaa">bit 0</text>
+  <text x="376" y="496" font-family="monospace" font-size="10" fill="#aaa" text-anchor="middle">20</text>
+  <text x="590" y="496" font-family="monospace" font-size="10" fill="#aaa" text-anchor="end">31</text>
+  <text x="20" y="518" font-size="11" fill="#aaa">the gid band is LOCKED: GidAssign is the only writer; Select / FaceTagger / BitOp are</text>
+  <text x="20" y="532" font-size="11" fill="#aaa">hard-masked to bits 0–19 (cs_retag: TO[f] = (base &amp; 0xFFF00000u) | (nt &amp; 0x000FFFFFu))</text>
+  <text x="20" y="554" font-size="11" fill="#aaa">the render triangulator buckets tri indices by gid — up to 4096 gid slots, each its own</text>
+  <text x="20" y="568" font-size="11" fill="#aaa">VkDrawIndexedIndirectCommand; unbound gids fold to slot 0 (the default material)</text>
+
+  <!-- ============== MeshPool ============== -->
+  <rect x="628" y="416" width="356" height="196" rx="8" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="806" y="438" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">MeshPool — the COW channel pool</text>
+  <text x="642" y="460" font-size="11" fill="#a7f3d0">• free-lists keyed (stride, pow2 capacity) — a 55k-vert</text>
+  <text x="642" y="474" font-size="11" fill="#a7f3d0">   and a 60k-vert mesh share the same 64k size class</text>
+  <text x="642" y="492" font-size="11" fill="#a7f3d0">• acquireChannel() → handle whose deleter release()s</text>
+  <text x="642" y="506" font-size="11" fill="#a7f3d0">   the SSBO back to the pool on last reference</text>
+  <text x="642" y="524" font-size="11" fill="#a7f3d0">• a writer re-acquires only the channels it WRITES;</text>
+  <text x="642" y="538" font-size="11" fill="#a7f3d0">   pass-through channels alias the upstream handle</text>
+  <text x="642" y="556" font-size="11" fill="#a7f3d0">• re-assigning a channel drops the old buffer back to</text>
+  <text x="642" y="570" font-size="11" fill="#a7f3d0">   its pow2 free-list — per-frame re-pooling is realloc-free</text>
+  <text x="642" y="588" font-size="11" fill="#a7f3d0">• _header SSBO: 64 B (counts + bbox in the first 48 B)</text>
+
+  <!-- dirty clocks note -->
+  <text x="20" y="600" font-size="11" fill="#aaa">dirty clocks: _version bumps on ANY re-emit; _topoVersion additionally when connectivity</text>
+  <text x="20" y="614" font-size="11" fill="#aaa">changes. Consumers recompute on _version, rebuild topology on _topoVersion.</text>
+
+  <!-- legend -->
+  <rect x="20" y="636" width="14" height="14" rx="3" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="40" y="647" font-size="12" fill="#ddd">GPU buffer (SSBO)</text>
+  <rect x="180" y="636" width="14" height="14" rx="3" fill="#4c1d95" stroke="#a78bfa"/>
+  <text x="200" y="647" font-size="12" fill="#ddd">render-owned semantics (gid)</text>
+  <rect x="400" y="636" width="14" height="14" rx="3" fill="#1a3a3a" stroke="#34d399"/>
+  <text x="420" y="647" font-size="12" fill="#ddd">allocator</text>
+</svg>

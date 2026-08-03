@@ -37,6 +37,33 @@ def axis_angle(axis, angle):
   return quat.createFromAxisAngle(axis, float(angle))
 
 
+def elevation_azimuth_quat(elevation, azimuth):
+  """Sky-angle DSL constructor — (elevation, azimuth) degrees → quat.
+
+  Returns an orientation whose +Z axis points along the light's TRAVEL
+  direction (a DirectionalLight's direction() reads entity world +Z), so
+  dropping it into transform={"orientation": ...} aims a sun.
+
+  elevation: degrees above the horizon (0 = grazing, 90 = straight down).
+             positive elevation travels DOWNWARD into the scene.
+  azimuth  : degrees about world +Y (compass sweep; 0 = travelling toward +Z).
+
+  Built as azimuth(+Y) ∘ elevation(+X) applied to +Z:
+      elevation about +X tips +Z down to (0, -sin el, cos el);
+      azimuth about +Y then sweeps that around the vertical.
+
+  An entity-orientation quat reaches Light::direction()
+  (worldMatrix().zNormal()) as the ACTIVE rotation R(q)·z, so the plain
+  composition q_az * q_el yields the declared travel direction directly."""
+  import math
+  from orkengine.core import vec3, quat
+  el = math.radians(float(elevation))
+  az = math.radians(float(azimuth))
+  q_el = quat.createFromAxisAngle(vec3(1.0, 0.0, 0.0), el)
+  q_az = quat.createFromAxisAngle(vec3(0.0, 1.0, 0.0), az)
+  return q_az * q_el
+
+
 def _coerce_transform(t):
   """Accept Transform, dict, or None → Transform or None.
 

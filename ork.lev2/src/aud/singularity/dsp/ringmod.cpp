@@ -26,7 +26,7 @@ RingModData::RingModData(std::string name)
   param->useAmplitudeEvaluator();
 }
 dspblk_ptr_t RingModData::createInstance() const { // override
-  return std::make_shared<RingMod>(this);
+  return createDspInstance<RingMod>(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
 RingModSumAData::RingModSumAData(std::string name)
@@ -36,7 +36,7 @@ RingModSumAData::RingModSumAData(std::string name)
   param->useAmplitudeEvaluator();
 }
 dspblk_ptr_t RingModSumAData::createInstance() const { // override
-  return std::make_shared<RingModSumA>(this);
+  return createDspInstance<RingModSumA>(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
 RingMod::RingMod(const DspBlockData* dbd)

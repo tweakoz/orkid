@@ -104,7 +104,7 @@ void FontMan::_endTextBlock(Context* context) {
       }
       auto font_material = the_font->_fs_material;
       auto RSTATE       = font_material->_rasterstate;
-      the_font->_pipe_stereo->wrappedDrawCall(*RCID, [&]() { //
+      the_font->_pipe_text->wrappedDrawCall(*RCID, [&]() { //
         RSTATE->setCullTest(ECullTest::OFF);
         RSTATE->setDepthTest(EDepthTest::OFF);
         RSTATE->setBlendingMacro(top_state->_blending);

@@ -58,6 +58,7 @@ public:
   float _gainOffsetDB        = 0.0f;
   float _pitchOffsetCents    = 0.0f;
   float _initialFadeGainLinear = 1.0f;
+  int _priority              = 0; // voice-steal priority: higher survives longer
 };
 using simplesoundemitterdata_ptr_t = std::shared_ptr<SimpleSoundEmitterData>;
 

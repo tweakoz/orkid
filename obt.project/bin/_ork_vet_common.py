@@ -86,6 +86,36 @@ def load_gray(path):
     return a / peak
 
 
+def load_rgb(path):
+    """Load PNG/EXR as HxWx3 float64 ~0..1 (16-bit and EXR aware; grayscale expands).
+
+    Renders need the chroma channels (load_gray discards them -> the instrument
+    was blind to a color cast). EXR HDR is peak-normalized like load_gray; the
+    render chroma/speckle thresholds are calibrated on LDR captures.
+    """
+    ext = os.path.splitext(str(path))[1].lower()
+    if ext == '.exr':
+        try:
+            import imageio.v3 as iio
+            a = np.asarray(iio.imread(path)).astype(np.float64)
+        except ModuleNotFoundError:
+            a = _load_exr(path)  # gray fallback -> expanded below
+        if a.ndim == 2:
+            a = np.stack([a] * 3, axis=-1)
+        a = a[..., :3]
+        peak = float(a.max())
+        return a / peak if peak > 1.0 else a
+    from PIL import Image
+    a = np.asarray(Image.open(path).convert('RGB')).astype(np.float64)
+    peak = 65535.0 if a.max() > 255 else 255.0
+    return a / peak
+
+
+def luma(rgb):
+    """Rec.601 luminance of an RGB float image."""
+    return rgb @ np.array([0.299, 0.587, 0.114])
+
+
 # ------------------------------------------------------------ image metrics --
 def fft_highband_ratio(a):
     """Fraction of AC spectral energy above 0.25 Nyquist -- the speckle detector.
@@ -153,3 +183,105 @@ def degenerate_frame(a, min_range, min_stddev):
     rng = float(a.max() - a.min())
     std = float(a.std())
     return rng, std, (rng <= min_range or std <= min_stddev)
+
+
+# ---------------------------------------------------------- render metrics ---
+# These separate legitimate render content (sun glints, baked material detail,
+# warm golden-hour grading) from genuine defects (hot pixels / firefly fields,
+# render/compute speckle, off-locus color casts). Grayscale-blind checks
+# (spike.max_isolated, spectral.highband_ratio) false-FAIL renders because a
+# single bright content pixel maxes the spike, broadband material detail reads
+# as speckle, and the chroma axis is discarded entirely. Each metric below
+# keys on a DISCRIMINATING feature, not a re-tuned threshold.
+
+def _nbmax8(x):
+    """Per-pixel max of the 8 neighbours (wrap-padded; interior is masked off)."""
+    return np.maximum.reduce([np.roll(np.roll(x, dy, 0), dx, 1)
+                              for dy in (-1, 0, 1) for dx in (-1, 0, 1)
+                              if not (dy == 0 and dx == 0)])
+
+
+def _median_win(x, k):
+    """(2k+1)² median via stacked rolls (numpy-only; no scipy dependency)."""
+    return np.median(np.stack([np.roll(np.roll(x, dy, 0), dx, 1)
+                               for dy in range(-k, k + 1)
+                               for dx in range(-k, k + 1)], 0), 0)
+
+
+def firefly_frac(L, delta_nb=0.10, delta_med=0.18):
+    """Density of isolated bright IMPULSES (hot pixels / render fireflies).
+
+    A pixel counts iff it (1) is a strict local maximum, (2) exceeds the MAX of
+    its 8 neighbours by delta_nb -- an impulse, NOT a smooth anti-aliased glint
+    or a bright edge (where the peak≈its brightest neighbour), AND (3) exceeds
+    its own 5x5 median by delta_med -- isolated against its wider context, not a
+    peak sitting ON bright sunlit geometry. Sun glints & foliage edges score ~0;
+    corruption fields (RADV sparkle, salt-and-pepper) score high. This is a
+    DENSITY, not the single worst texel -- one glint must never FAIL a frame.
+    Returns (frac, count, max_impulse_excess).
+    """
+    exc = L - _nbmax8(L)                 # >0 only at strict local maxima
+    lm = exc > 0
+    out5 = L - _median_win(L, 2)         # excess over wider context
+    V = np.zeros(L.shape, bool)
+    V[3:-3, 3:-3] = True
+    m = (exc > delta_nb) & (out5 > delta_med) & lm & V
+    ffmax = float(np.where(V, np.maximum(exc, 0.0), 0.0).max())
+    return float(m.mean()), int(m.sum()), ffmax
+
+
+def speckle_residual(L):
+    """Edge-preserving speckle metrics via 3x3 median residual.
+
+    Returns (energy, anticorr):
+      energy   = std of |L - median3x3| over the interior. Material EDGES survive
+                 the median (small residual); pixel-scale noise does not (large).
+                 Separates gross speckle from smooth shading, but NOT from dense
+                 material micro-detail on its own -> pair with anticorr.
+      anticorr = mean lag-1 spatial autocorrelation of the residual. Additive
+                 white / pixel-scale noise high-passes to NEGATIVE adjacent
+                 correlation; spatially-coherent texture stays POSITIVE. This
+                 distinguishes flat render grain from genuine material detail
+                 even when the two carry similar residual energy.
+    """
+    r = L - _median_win(L, 1)
+    ri = r[2:-2, 2:-2]
+    energy = float(np.abs(ri).std())
+    rc = ri - ri.mean()
+    v = float((rc * rc).mean())
+    if v <= 0:
+        return energy, 0.0
+    a = ((rc[:, :-1] * rc[:, 1:]).mean() + (rc[:-1, :] * rc[1:, :]).mean()) / (2 * v)
+    return energy, float(a)
+
+
+def _mean3(x):
+    return sum(np.roll(np.roll(x, dy, 0), dx, 1)
+               for dy in (-1, 0, 1) for dx in (-1, 0, 1)) / 9.0
+
+
+def magenta_cast(rgb, strong=0.15, tile=32):
+    """Coherent off-locus MAGENTA cast detector (the RADV neutral-surface bug).
+
+    magenta_index = (R+B)/2 - G, measured on a 3x3-smoothed image so a COHERENT
+    cast survives while random per-pixel chroma noise averages toward neutral.
+    Magenta requires HIGH blue + LOW green; warm/pink golden-hour grading raises
+    R and drops B, so magenta_index stays low -> the check is immune to a global
+    warm tint (a physical illuminant lives on the blue<->orange locus, never the
+    green<->magenta axis). area_frac is the coherent-strong-magenta fraction --
+    a cast paints a real AREA; content rarely does. Green casts are deliberately
+    NOT gated (foliage makes green ambiguous). Returns
+    (area_frac, mean_tint, (worst_tile_y, worst_tile_x), worst_tile_val).
+    """
+    R = _mean3(rgb[..., 0]); G = _mean3(rgb[..., 1]); B = _mean3(rgb[..., 2])
+    mi = (R + B) * 0.5 - G
+    area = float((mi > strong).mean())
+    tint = float(mi.mean())
+    H, W = mi.shape
+    best = -1e9; wy = wx = 0
+    for y in range(0, max(1, H - tile), tile):
+        for x in range(0, max(1, W - tile), tile):
+            v = float(mi[y:y + tile, x:x + tile].mean())
+            if v > best:
+                best = v; wy, wx = y, x
+    return area, tint, (wy, wx), best

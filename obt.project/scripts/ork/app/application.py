@@ -754,7 +754,7 @@ class ApplicationComponent(object):
   ##############################################
 
   def onAppExit(self):
-    self._onAppExit
+    self._onAppExit()
 
   def _onAppExit(self):
     pass

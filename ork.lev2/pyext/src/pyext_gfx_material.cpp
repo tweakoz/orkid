@@ -8,6 +8,8 @@
 #include "pyext.h"
 #include <ork/kernel/string/deco.inl>
 #include <ork/lev2/gfx/fx_pipeline.h>
+#include <ork/lev2/gfx/material_pbr.inl>
+#include <ork/lev2/gfx/camera/cameradata.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -57,6 +59,9 @@ void pyinit_gfx_material(py::module& module_lev2) {
                 }
                 else if( py::isinstance<Texture>(inp_value) ){
                   mtl->bindParam(param.get(),py::cast<texture_ptr_t>(inp_value));
+                }
+                else if( py::isinstance<TextureArray>(inp_value) ){
+                  mtl->bindParam(param.get(),py::cast<texturearray_ptr_t>(inp_value));
                 }
                 else if( py::isinstance<fxshaderstoragebuffer_ptr_t>(inp_value) ){
                   mtl->bindParam(param.get(),py::cast<fxshaderstoragebuffer_ptr_t>(inp_value));
@@ -181,6 +186,17 @@ void pyinit_gfx_material(py::module& module_lev2) {
                 permu->_stereo = stereo;
               }
           )
+          // the LOD-impostor arm's selector input. Bound so a gate can ask the real
+          //  pipeline cache which technique an impostor draw WOULD take, without needing a
+          //  baked atlas and an LOD-tier scene to reach the arm through pixels.
+          .def_property("is_impostor",
+              [](fxpipelinepermutation_ptr_t permu) -> bool { //
+                return permu->_is_impostor;
+              },
+              [](fxpipelinepermutation_ptr_t permu, bool v) { //
+                permu->_is_impostor = v;
+              }
+          )
           .def_property("instanced",
               [](fxpipelinepermutation_ptr_t permu) -> bool { //
                 return permu->_instanced;
@@ -232,6 +248,14 @@ void pyinit_gfx_material(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto pipeline_type =                                                     //
       py::class_<FxPipeline, fxpipeline_ptr_t>(module_lev2, "FxPipeline") //
+          // WHICH technique this pipeline actually resolved to. A per-view (_ST)
+          // technique and its mono twin produce pictures a still cannot tell
+          // apart, so the selection needs an assertable surface and not just a
+          // log line. Empty string when unset.
+          .def_property_readonly("technique_name",
+            [](fxpipeline_ptr_t pipeline) -> std::string { //
+              return pipeline->_technique ? pipeline->_technique->_techniqueName : std::string();
+            })
           .def_property("name",
             [](fxpipeline_ptr_t pipeline) -> std::string { //
               return pipeline->_debugName; //
@@ -515,6 +539,35 @@ void pyinit_gfx_material(py::module& module_lev2) {
           .def(
               "begin",
               [](freestyle_mtl_ptr_t m, pyfxtechnique_ptr_t tek, rcfd_ptr_t rcfd) { m->begin(tek.get(), rcfd); })
+          // SINGLE-PASS STEREO dispatch: the technique is chosen from the ACTIVE CPD, not by
+          // the caller, so a below-the-compositor draw takes the same fork (and the same
+          // GATE 0 negative-control hook) the scenegraph paths take.
+          .def(
+              "begin",
+              [](freestyle_mtl_ptr_t m, pyfxtechnique_ptr_t tekMono, pyfxtechnique_ptr_t tekStereo, rcfd_ptr_t rcfd) {
+                m->begin(tekMono.get(), tekStereo.get(), rcfd);
+              })
+          // ...and the per-view state that fork's stereo arm reads. Writes ublk_stereo through
+          // the ONE production writer and binds this material's block to the shared buffer, so
+          // a python stereo draw publishes byte-identical view state to a PBR one. Must be
+          // called INSIDE a begin/end block: the bind needs the pass to be current.
+          .def(
+              "publishStereoBlock",
+              [](freestyle_mtl_ptr_t m,             //
+                 rcfd_ptr_t rcfd,                   //
+                 cameramatrices_ptr_t left,         //
+                 cameramatrices_ptr_t right) {      //
+                auto context = rcfd->GetTarget();
+                auto fxi     = context->FXI();
+                StereoCameraMatrices stereocams;
+                stereocams._left  = left;
+                stereocams._right = right;
+                stereocams._mono  = left;
+                PBRMaterial::writeStereoBlock(fxi, context, &stereocams);
+                auto block = m->uniformBlock("ublk_stereo");
+                OrkAssert(block != nullptr); // a material without the block cannot render stereo
+                fxi->bindUniformBuffer(block, PBRMaterial::stereoDataBuffer(context));
+              })
           .def("end", [](freestyle_mtl_ptr_t m, rcfd_ptr_t rcfd) { m->end(rcfd); })
           .def("dump", [](freestyle_mtl_ptr_t m) { m->dump(); })
           .def("__repr__", [](const freestyle_mtl_ptr_t m) -> std::string {

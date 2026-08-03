@@ -180,6 +180,15 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
   vktex->_vkdescriptor_info[0]->sampler = vktex->_vksampler->_vksampler;
   vktex->_descset_sampling = vktex->_vkdescriptor_info[0];
 
+  // Seed the imageview hash, exactly as _enqueueInitTextureArray2DOnCB does.
+  // samplersHash() mixes this in to key the descriptor-set cache; leaving it
+  // default-constructed made it CONSTANT (0xffff..) for every texture built
+  // here — MapSpecularEnv/Prev, CNMREA, LightMapArray — so the term
+  // contributed no discrimination at all for array textures.
+  vktex->_imgview_hash.init();
+  vktex->_imgview_hash.accumulateItem(vktex->_imgobj[0]->_serial_number);
+  vktex->_imgview_hash.finish();
+
   ///////////////////////////
   // Set texture properties
   ///////////////////////////
@@ -250,12 +259,16 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
   // Keep VkImage alive while CB is in use
   cmdbuf_impl->_referenced_images.push_back(vktex->_imgobj[0]);
 
-  // Completion callback: cleanup transfer and staging buffer when GPU completes
+  // Completion callback: cleanup transfer and staging buffer when GPU completes.
+  // Hoisted out of `tid` so the closure does not drag the slice images along.
+  auto on_upload_complete = tid._on_gpu_upload_complete;
   tlsema->_onComplete = [=]() {
     vktex->_inflight_transfers.erase(transfer);
     poolForSize->returnItem(staging_buffer);
     // Texture array is now ready for sampling
     vktex->_img_sampling = vktex->_imgobj[0];
+    if (on_upload_complete)
+      on_upload_complete();
   };
 
   ///////////////////////////
@@ -504,27 +517,55 @@ void VkTextureInterface::initTextureArray2DAsync(TextureArray* texture_array) { 
 void VkTextureInterface::initTextureArray2D(TextureArray* texture_array) { // final
 
   /////////////////////////////////////////////////////
-  // Initialize texture array on primary command buffer
+  // The primary CB is in the RECORDING state only between _doPreBeginFrame and
+  // endFrame. This entry point is ALSO reached out of frame: loading-phase ops
+  // (the scenegraph cookie/shadow arrays) drain from LoadJoinSet::join, where
+  // primary_cb() still points at the previous frame's already-submitted CB —
+  // recording the clear+transitions there is a validation error
+  // (VUID-vkCmdPipelineBarrier-commandBuffer-recording) and the commands are
+  // silently dropped. Out of frame, record on a one-shot secondary executed at
+  // the next _doPreBeginFrame, exactly as initTextureArray2DAsync does.
   /////////////////////////////////////////////////////
 
-  // Suspend render pass if active - barriers cannot be inside dynamic rendering
-  bool was_active = _contextVK->_renderPassActive;
-  if (was_active) {
-    _contextVK->suspendRenderPass();
+  if (_contextVK->_pricb_recording) {
+
+    /////////////////////////////////////////////////////
+    // Initialize texture array on primary command buffer
+    /////////////////////////////////////////////////////
+
+    // Suspend render pass if active - barriers cannot be inside dynamic rendering
+    bool was_active = _contextVK->_renderPassActive;
+    if (was_active) {
+      _contextVK->suspendRenderPass();
+    }
+
+    auto primary_cb = _contextVK->primary_cb();
+    auto vk_cmdbuf = primary_cb->_vkcmdbuf;
+
+    if(0)printf("initTextureArray2D: array='%s' vk_cmdbuf=%p primary_cb=%p\n",
+           texture_array->_tex->_debugName.c_str(), (void*)vk_cmdbuf,
+           (void*)primary_cb.get());
+
+    _enqueueInitTextureArray2DOnCB(texture_array,vk_cmdbuf);
+
+    // Resume render pass if it was active
+    if (was_active) {
+      _contextVK->resumeRenderPass();
+    }
   }
+  else {
 
-  auto primary_cb = _contextVK->primary_cb();
-  auto vk_cmdbuf = primary_cb->_vkcmdbuf;
+    /////////////////////////////////////////////////////
+    // Out of frame: deferred one-shot secondary command buffer
+    /////////////////////////////////////////////////////
 
-  if(0)printf("initTextureArray2D: array='%s' vk_cmdbuf=%p primary_cb=%p\n",
-         texture_array->_tex->_debugName.c_str(), (void*)vk_cmdbuf,
-         (void*)primary_cb.get());
-
-  _enqueueInitTextureArray2DOnCB(texture_array,vk_cmdbuf);
-
-  // Resume render pass if it was active
-  if (was_active) {
-    _contextVK->resumeRenderPass();
+    auto cmdbuf      = _contextVK->beginRecordCommandBuffer("initTextureArray2D_transition");
+    auto cmdbuf_impl = cmdbuf->_impl.getShared<VkSecondaryCommandBufferImpl>();
+    _enqueueInitTextureArray2DOnCB(texture_array,cmdbuf_impl->_vkcmdbuf);
+    _contextVK->endRecordCommandBuffer(cmdbuf);
+    auto vktex_arr = texture_array->_tex->_impl.getShared<VulkanTextureObject>();
+    cmdbuf_impl->_referenced_images.push_back(vktex_arr->_imgobj[0]);
+    _contextVK->enqueueDeferredOneShotCommand(cmdbuf);
   }
 
   /////////////////////////////////

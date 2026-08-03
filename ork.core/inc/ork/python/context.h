@@ -80,9 +80,15 @@ struct Context2 {
   // AND the render thread (PythonSystem::_onGpuUpdate): without this, the render-thread
   // PyEval_RestoreThread(_subPrimaryThreadState) attaches a tstate the update thread
   // still owns → CPython "_PyThreadState_Attach: non-NULL old thread state" abort. The
-  // sub-interp has its OWN GIL (OWN_GIL), so the two threads could never execute Python
-  // concurrently anyway — this only ORDERS the attach/detach the GIL already serializes
-  // (no parallelism lost). recursive_: tolerate a same-thread nested bind.
+  // sub-interp has its OWN GIL (OWN_GIL), so under the GIL-OFF invariant this machinery
+  // was built for the two threads could never execute Python concurrently anyway — this
+  // only ORDERS the attach/detach the GIL already serializes (no parallelism lost).
+  // NOT TRUE under PYTHON_GIL=1: there the sub GIL is a real lock, and CPython's
+  // first-import-of-a-C-extension rule cross-attaches the sub-interp thread to the MAIN
+  // GIL (import_run_extension -> switch_to_main_interpreter) — AB-BA against a thread
+  // holding this mutex and waiting on the sub GIL. The launcher forces PYTHON_GIL=0
+  // (don't-clobber) for exactly that reason; see test_gil_ecs_regression.py.
+  // recursive_: tolerate a same-thread nested bind (PythonSystem _onActivateComponent).
   std::recursive_mutex _subInterpMutex;
 };
 

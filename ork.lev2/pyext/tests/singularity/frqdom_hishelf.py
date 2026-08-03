@@ -30,7 +30,7 @@ class TestApp(frqdom.WaveformsApp):
     for i in range(0,256):
       frq = 220 + (i*32)
       sir = S.SpectralImpulseResponse()
-      sir.highShelf(frq, -192)
+      sir.highShelf(48000, frq, -192)
       irdataset.set(i, sir)
     ############################
     dspstg = newlyr.stage("DSP")

@@ -17,6 +17,7 @@
 #include <ork/lev2/gfx/ctxbase.h>
 #include <ork/kernel/taskgraph.h>
 #include <ork/kernel/opq.h>
+#include <ork/kernel/async_tracker.h>
 #include <ork/util/logger.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -59,18 +60,45 @@ void Context::resizeMainSurface(int iw, int ih) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-loadingphase_ptr_t Context::newLoadingPhase() {
-  auto phase = std::make_shared<LoadingPhase>();
-  _loadingPhases.atomicOp([phase](loadingphase_list_t& unlocked) { unlocked.push_back(phase); });
-  return phase;
-}
-
 void Context::submitLoadingPhase(loadingphase_ptr_t phase) {
   // Atomic publish of a producer-built phase. Pair with `std::make_shared
   // <LoadingPhase>()` + enqueueOperation(...) locally, then submit. This
-  // closes the race that newLoadingPhase() opens (empty-phase visible
-  // before ops are enqueued) for fire-and-forget producers.
+  // closes the publish-before-populate race (an empty phase made visible to
+  // a drainer before its ops are enqueued) for fire-and-forget producers.
+  //
+  // Producer-side async-work registration: hold ONE "texture_upload" marker from
+  // here until the phase's ops fully run (_completeAsyncTracking, called by both
+  // drain paths) or the phase is dropped undrained (~LoadingPhase). asyncWorkBegin
+  // BEFORE publish so a drainer can never pop+complete the phase before the marker
+  // exists. The permanent LoadingPhaseMicrotask is deliberately NOT tracked (it
+  // never completes) — per-PHASE tracking here is what covers texture uploads.
+  //
+  // This is producer site #1 (LoadingPhase path: txi_dds, radiancemaps, cookie/shadow
+  // arrays). Site #2 is the opq-routed upload in txi_xtx.cpp::_loadXTXTexture (PNG/EXR/
+  // HDR/XTX), which holds the SAME "texture_upload" tag but Ends it DETERMINISTICALLY at
+  // the end of its once-run opq lambda body — a captured RAII token cannot be used there
+  // because opq's static_variant Op storage copy-assigns without destroying the prior held
+  // value (svariant.h operator= skips _destroy()), so the token would never destruct. One
+  // tag, one contract, both covered by asyncWorkPending().
+  asyncWorkBegin("texture_upload");
+  phase->_asyncTracked = true;
   _loadingPhases.atomicOp([phase](loadingphase_list_t& unlocked) { unlocked.push_back(phase); });
+}
+
+LoadingPhase::~LoadingPhase() {
+  // Backstop (mirrors the microtask scheduler's T13 teardown): a phase dropped
+  // without draining — context teardown clears _loadingPhases — must not strand
+  // its texture_upload marker and wedge a settle/exit poll at pending>0.
+  _completeAsyncTracking();
+}
+
+void LoadingPhase::_completeAsyncTracking() {
+  // Release the producer-side marker exactly once. Idempotent: the op-completion
+  // site calls this, then the destructor's call is a no-op.
+  if (_asyncTracked) {
+    _asyncTracked = false;
+    asyncWorkEnd("texture_upload");
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -79,6 +107,12 @@ void Context::submitLoadingPhase(loadingphase_ptr_t phase) {
 
 void Context::enqueueDelayedDestroy(::ork::void_lambda_t fn, int delay_frames) {
   if (!fn) return;
+  // Same rule as enqueueDeferredOp: past shutdown there are no more frames to
+  // drain this queue, and dtors firing during static destruction would push
+  // into a queue that is itself mid-destruction. Dropping `fn` here releases
+  // its captures immediately — the backend destroy funnels no-op past device
+  // teardown, so that is exactly what the (never-run) drain would have done.
+  if (_shutdown_done) return;
   PendingDestroy entry{
     std::move(fn),
     uint64_t(miTargetFrame) + uint64_t(delay_frames < 0 ? 0 : delay_frames)};
@@ -239,6 +273,7 @@ void Context::_loadingPhaseOperations() {
         counter++;
       }
       ops.clear();
+      phase->_completeAsyncTracking(); // phase fully ran -> release its texture_upload marker
 
       float t1 = _ctxtimer.SecsSinceStart();
       float elapsed = t1 - t0;
@@ -282,6 +317,19 @@ bool Context::_runOneLoadingPhase() {
   for (auto op : ops)
     op(this);
   ops.clear();
+
+  // DEBUG negative-proof knob (env read ONCE, zero-cost when unset): sleep per
+  // completed phase to widen the pending window of the texture_upload marker, so a
+  // soak can PROVE the offscreen capture gate WAITS (the capture must block, or
+  // fail rc=42 on the wall-clock ceiling — never accept an early mid-upload frame).
+  static const int kDbgUploadDelayMs = []() {
+    const char* v = std::getenv("ORKID_DEBUG_DELAY_TEXTURE_UPLOAD_MS");
+    return v ? std::atoi(v) : 0;
+  }();
+  if (kDbgUploadDelayMs > 0)
+    std::this_thread::sleep_for(std::chrono::milliseconds(kDbgUploadDelayMs));
+
+  phase->_completeAsyncTracking(); // phase fully ran -> release its texture_upload marker
   return true;
 }
 
@@ -306,6 +354,11 @@ void Context::_doSubmitPrimaryCommandBuffer(){
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context::beginFrame(bool visual) {
+  // Context frames are driven by several threads (main/render, the lev2 loader thread,
+  // dataflow bakes) but only the app main loop frameBegins CHANNEL_MAIN, and channels are
+  // keyed per (name,thread) - so every other thread reaches the samples below with no
+  // channel of its own. Register it here; the frame owner still owns frameBegin/frameEnd.
+  OrkProfilerChannelRegister(CHANNEL_MAIN, CpuProfilerChannel);
   OrkProfilerSampleBegin(CHANNEL_MAIN, SERIES_FRAME_ALL);
   OrkProfilerSampleScope(CHANNEL_MAIN, "begin_frame");
 
@@ -578,12 +631,20 @@ void ContextExecutor::executePhase(taskphase_ptr_t phase) {
   // Ensure we're not on main thread to prevent deadlock
   ork::opq::assertNotOnQueue(opq::mainSerialQueue());
 
-  if (phase->_tasks.empty()) {
-    return;
-  }
-
-  // Create a loading phase for GPU operations
-  auto loading_phase = _context->newLoadingPhase();
+  // Build the LoadingPhase LOCALLY, enqueue every op, THEN publish atomically
+  // via submitLoadingPhase — never publish-then-populate. A publish-before-
+  // populate (the old newLoadingPhase() path) makes the phase visible to a
+  // concurrent drainer (_runOneLoadingPhase / _loadingPhaseOperations) while it
+  // is still EMPTY: the drainer can pop+snapshot+complete+drop it in the gap
+  // before enqueueOperation lands, orphaning every op enqueued after — join()
+  // then waits on _load_operations forever. submitLoadingPhase also holds the
+  // "texture_upload" asyncWork marker from publish through drain, bringing this
+  // task-graph GPU work under the SAME tag as the txi_dds / radiancemaps
+  // producers so readiness probes (asyncWorkPending) see a consistent
+  // begin->end. An empty phase (_tasks empty) still transits the tracker the
+  // same way — submitted, then released by the drainer — rather than being
+  // silently skipped, so a probe never observes it as absent while in flight.
+  auto loading_phase = std::make_shared<LoadingPhase>();
   auto graph = phase->_graph;
 
   // Enqueue all tasks to the loading phase
@@ -595,6 +656,8 @@ void ContextExecutor::executePhase(taskphase_ptr_t phase) {
       logchan_tg->log("TaskGraph tasks pending: %zu", num_tasks);
     });
   }
+
+  _context->submitLoadingPhase(loading_phase);
 
   // Wait for all GPU operations in this phase to complete
   loading_phase->join();

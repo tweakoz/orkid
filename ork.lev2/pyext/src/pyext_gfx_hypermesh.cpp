@@ -11,8 +11,10 @@
 ////////////////////////////////////////////////////////////////
 
 #include "pyext.h"
+#include <ork/grammar/rewrite.h> // family-neutral grammar pass 1 (the vocabulary + derive test seams)
 #include <ork/lev2/gfx/hypermesh/hmdflow.h>
 #include <ork/lev2/gfx/hypermesh/hm_drawable.h> // D.3: the reflected hypermesh drawable description
+#include <ork/lev2/gfx/hypermesh/meshlet.h>     // CPU meshlet partitioner (mesh-shader bridge, build side)
 #include <ork/lev2/gfx/sdf/sdfdflow.h>          // E.7: the sdfgrid family
 #include <ork/dataflow/module.inl>              // typedOutputNamed<SdfGridPlugTraits> instantiation (read_brick)
 #include <ork/dataflow/plug_inst.inl>
@@ -24,6 +26,27 @@ namespace ork::lev2 {
 
 namespace dflow = dataflow;
 namespace hm    = hypermesh;
+
+// resolved-op -> dict, for the family-neutral `_grammarDerive` seam below.
+static py::dict _ropToDict(const ork::grammar::ROp& r) {
+  py::dict d;
+  d["kind"]  = int(r.kind);
+  d["vocab"] = int(r.vocab);
+  d["gid"]   = r.gid;
+  py::dict params;
+  for (auto& kv : r.params)
+    params[py::str(kv.first)] = kv.second;
+  d["params"] = params;
+  py::list branches;
+  for (auto& br : r.branches) {
+    py::list ops;
+    for (auto& sub : br)
+      ops.append(_ropToDict(sub));
+    branches.append(ops);
+  }
+  d["branches"] = branches;
+  return d;
+}
 
 void pyinit_gfx_hypermesh(py::module& module_lev2) {
   auto type_codec = python::pb11_typecodec_t::instance();
@@ -40,23 +63,25 @@ void pyinit_gfx_hypermesh(py::module& module_lev2) {
       .def("set_mask", [](hm::boxdata_ptr_t d, std::vector<uint32_t> m) { d->_mask = m; });
   // ---- GR1.a: the LRuleSet grammar-as-data schema (6 reflected types). Hand-written bindings
   //      (createShared + kwargs-init + whole-vector .def_property object-array setters) because the
-  //      generic reflection proxy is READ-ONLY for object arrays (T3). kind/op ints mirror lruleset.h.
+  //      generic reflection proxy is READ-ONLY for object arrays (T3). kind/op stay INT-valued at the
+  //      python boundary (the DSL's named codes mirror lruleset.h); C++ side they are reflected enums,
+  //      so an int outside the registered set aborts loudly the first time the grammar serializes.
   auto lexpr_type = //
       py::class_<hm::LExpr, ork::Object, hm::lexpr_ptr_t>(hmmod, "LExpr")
           .def_static("createShared", []() -> hm::lexpr_ptr_t { return std::make_shared<hm::LExpr>(); })
           .def(py::init([](py::kwargs kw) {
             auto d = std::make_shared<hm::LExpr>();
-            if (kw.contains("kind"))     d->_kind  = kw["kind"].cast<int>();
+            if (kw.contains("kind"))     d->_kind  = hm::LExprKind(kw["kind"].cast<int>());
             if (kw.contains("constant")) d->_const = kw["constant"].cast<float>();
             if (kw.contains("ref"))      d->_ref   = kw["ref"].cast<std::string>();
-            if (kw.contains("op"))       d->_op    = kw["op"].cast<int>();
+            if (kw.contains("op"))       d->_op    = hm::LExprOp(kw["op"].cast<int>());
             if (kw.contains("args"))     d->_args  = kw["args"].cast<std::vector<hm::lexpr_ptr_t>>();
             return d;
           }))
-          .def_property("kind",     [](hm::lexpr_ptr_t d) { return d->_kind; },  [](hm::lexpr_ptr_t d, int v) { d->_kind = v; })
+          .def_property("kind",     [](hm::lexpr_ptr_t d) { return int(d->_kind); },  [](hm::lexpr_ptr_t d, int v) { d->_kind = hm::LExprKind(v); })
           .def_property("constant", [](hm::lexpr_ptr_t d) { return d->_const; }, [](hm::lexpr_ptr_t d, float v) { d->_const = v; })
           .def_property("ref",      [](hm::lexpr_ptr_t d) { return d->_ref; },   [](hm::lexpr_ptr_t d, std::string v) { d->_ref = std::move(v); })
-          .def_property("op",       [](hm::lexpr_ptr_t d) { return d->_op; },    [](hm::lexpr_ptr_t d, int v) { d->_op = v; })
+          .def_property("op",       [](hm::lexpr_ptr_t d) { return int(d->_op); },    [](hm::lexpr_ptr_t d, int v) { d->_op = hm::LExprOp(v); })
           .def_property("args", // whole-vector object-array setter (T3)
                         [](hm::lexpr_ptr_t d) -> std::vector<hm::lexpr_ptr_t> { return d->_args; },
                         [](hm::lexpr_ptr_t d, std::vector<hm::lexpr_ptr_t> v) { d->_args = std::move(v); });
@@ -97,7 +122,7 @@ void pyinit_gfx_hypermesh(py::module& module_lev2) {
           .def_static("createShared", []() -> hm::lturtleop_ptr_t { return std::make_shared<hm::LTurtleOp>(); })
           .def(py::init([](py::kwargs kw) {
             auto d = std::make_shared<hm::LTurtleOp>();
-            if (kw.contains("kind"))     d->_kind     = kw["kind"].cast<int>();
+            if (kw.contains("kind"))     d->_kind     = hm::LOpCode(kw["kind"].cast<int>());
             if (kw.contains("params"))   d->_params   = kw["params"].cast<std::vector<hm::lparam_binding_ptr_t>>();
             if (kw.contains("gid"))      d->_gid      = kw["gid"].cast<uint32_t>();
             if (kw.contains("symbol"))   d->_symbol   = kw["symbol"].cast<std::string>();
@@ -106,7 +131,7 @@ void pyinit_gfx_hypermesh(py::module& module_lev2) {
             if (kw.contains("guard"))    d->_guard    = kw["guard"].cast<hm::lexpr_ptr_t>();
             return d;
           }))
-          .def_property("kind",   [](hm::lturtleop_ptr_t d) { return d->_kind; },   [](hm::lturtleop_ptr_t d, int v) { d->_kind = v; })
+          .def_property("kind",   [](hm::lturtleop_ptr_t d) { return int(d->_kind); },   [](hm::lturtleop_ptr_t d, int v) { d->_kind = hm::LOpCode(v); })
           .def_property("gid",    [](hm::lturtleop_ptr_t d) { return d->_gid; },    [](hm::lturtleop_ptr_t d, uint32_t v) { d->_gid = v; })
           .def_property("symbol", [](hm::lturtleop_ptr_t d) { return d->_symbol; }, [](hm::lturtleop_ptr_t d, std::string v) { d->_symbol = std::move(v); })
           .def_property("params",
@@ -153,12 +178,12 @@ void pyinit_gfx_hypermesh(py::module& module_lev2) {
             if (kw.contains("axiom"))          d->_axiom         = kw["axiom"].cast<std::vector<hm::lturtleop_ptr_t>>();
             if (kw.contains("rules"))          d->_rules         = kw["rules"].cast<std::vector<hm::lruledef_ptr_t>>();
             if (kw.contains("depth"))          d->_depth         = kw["depth"].cast<uint32_t>();
-            if (kw.contains("segment_budget")) d->_segmentBudget = kw["segment_budget"].cast<uint32_t>();
+            if (kw.contains("segment_budget")) d->_countedBudget = kw["segment_budget"].cast<uint32_t>();
             if (kw.contains("seed"))           d->_seed          = kw["seed"].cast<uint32_t>();
             return d;
           }))
           .def_property("depth",          [](hm::lruleset_ptr_t d) { return d->_depth; },         [](hm::lruleset_ptr_t d, uint32_t v) { d->_depth = v; })
-          .def_property("segment_budget", [](hm::lruleset_ptr_t d) { return d->_segmentBudget; }, [](hm::lruleset_ptr_t d, uint32_t v) { d->_segmentBudget = v; })
+          .def_property("segment_budget", [](hm::lruleset_ptr_t d) { return d->_countedBudget; }, [](hm::lruleset_ptr_t d, uint32_t v) { d->_countedBudget = v; })
           .def_property("seed",           [](hm::lruleset_ptr_t d) { return d->_seed; },          [](hm::lruleset_ptr_t d, uint32_t v) { d->_seed = v; })
           .def_property("symbols",
                         [](hm::lruleset_ptr_t d) -> std::vector<hm::lsymboldef_ptr_t> { return d->_symbols; },
@@ -242,6 +267,41 @@ void pyinit_gfx_hypermesh(py::module& module_lev2) {
   hmmod.def("_moduleIdentityHash", [](hm::lsystemmoduledata_ptr_t mod) -> uint64_t {
     return hm::hypermeshModuleIdentityHash(mod.get());
   });
+  // ---- the FAMILY-NEUTRAL grammar seams (ork::grammar, ork.core). Bound here only because the six
+  //      schema classes are bound here; neither function touches a mesh type. `_grammarRegisterVocabulary`
+  //      is how a family (or a test standing in for one) hands core its op alphabet;
+  //      `_grammarDerive` runs pass 1 ALONE and returns the resolved op stream, so a vocabulary with
+  //      no interpreter yet can still be derived and counted.
+  hmmod.def(
+      "_grammarRegisterVocabulary",
+      [](const std::string& name, const std::vector<std::tuple<std::string, int, bool>>& ops) -> uint32_t {
+        std::vector<ork::grammar::LOpDesc> descs;
+        for (auto& o : ops)
+          descs.push_back({int32_t(std::get<1>(o)), std::get<0>(o), std::get<2>(o)});
+        return ork::grammar::LVocabularyRegistry::instance().registerVocabulary(name, descs);
+      },
+      py::arg("name"), py::arg("ops"));
+  hmmod.def(
+      "_grammarDerive",
+      [](hm::lruleset_ptr_t grammar, std::map<std::string, float> host_params) -> py::dict {
+        OrkAssert(grammar);
+        ork::grammar::preflightAxiomBudget(grammar.get());
+        ork::grammar::LRewriter ev(grammar.get(), [host_params](const std::string& n) -> float {
+          auto it = host_params.find(n);
+          return (it != host_params.end()) ? it->second : 0.0f;
+        });
+        ork::grammar::rop_vect stream;
+        ev.expand(grammar->_axiom, ork::grammar::Env{}, int(grammar->_depth), stream);
+        py::list ops;
+        for (auto& r : stream)
+          ops.append(_ropToDict(r));
+        py::dict d;
+        d["ops"]        = ops;
+        d["counted"]    = ev._countedCount;
+        d["budget_hit"] = ev._budgetHit;
+        return d;
+      },
+      py::arg("grammar"), py::arg("params") = std::map<std::string, float>());
   /////////////////////////////////////////////////////////////////////////////
   // R-FAMILY (roads / streets / layout) — Q3: R. DSL over hypermesh-family C++.
   /////////////////////////////////////////////////////////////////////////////
@@ -252,6 +312,7 @@ void pyinit_gfx_hypermesh(py::module& module_lev2) {
       .def_readwrite("layout_cell_m", &hm::RouteSpineModuleData::_layout_cell_m)
       .def_readwrite("field_dim", &hm::RouteSpineModuleData::_field_dim)
       .def_readwrite("width_m", &hm::RouteSpineModuleData::_width_m)
+      .def_readwrite("export_name", &hm::RouteSpineModuleData::_export_name)
       .def_readwrite("max_grade", &hm::RouteSpineModuleData::_max_grade)
       .def_readwrite("w_slope", &hm::RouteSpineModuleData::_w_slope)
       .def_readwrite("w_curv", &hm::RouteSpineModuleData::_w_curv)
@@ -310,6 +371,7 @@ void pyinit_gfx_hypermesh(py::module& module_lev2) {
   py::class_<hm::LeafScatterModuleData, dflow::DgModuleData, hm::leafscattermoduledata_ptr_t>(hmmod, "LeafScatterModule")
       .def_static("createShared", []() -> hm::leafscattermoduledata_ptr_t { return hm::LeafScatterModuleData::createShared(); })
       .def_readwrite("style", &hm::LeafScatterModuleData::_style)
+      .def_readwrite("source", &hm::LeafScatterModuleData::_source)
       .def_readwrite("per_node", &hm::LeafScatterModuleData::_per_node)
       .def_readwrite("min_gen", &hm::LeafScatterModuleData::_min_gen)
       .def_readwrite("size", &hm::LeafScatterModuleData::_size)
@@ -497,6 +559,12 @@ void pyinit_gfx_hypermesh(py::module& module_lev2) {
       .def_static("createShared", []() -> hm::gidassigndata_ptr_t { return hm::GidAssignData::createShared(); })
       .def_readwrite("gid", &hm::GidAssignData::_gid)
       .def_readwrite("slot", &hm::GidAssignData::_slot);
+  // O3 — per-section xatlas unwrap: each gid section gets its OWN 0-1 UV domain + a dense
+  // LAYER index in UV0.z (the baked texture-array path). Runs AFTER the gid partition.
+  py::class_<hm::SectionUnwrapData, dflow::DgModuleData, hm::sectionunwrapdata_ptr_t>(hmmod, "SectionUnwrap")
+      .def_static("createShared", []() -> hm::sectionunwrapdata_ptr_t { return hm::SectionUnwrapData::createShared(); })
+      .def_readwrite("padding", &hm::SectionUnwrapData::_padding)       // xatlas chart padding (texels)
+      .def_readwrite("max_layers", &hm::SectionUnwrapData::_max_layers); // safety cap; exceeding FAILS LOUD
   // E.6/2.12 — drives a material UBO param BY NAME from the graph (drawable drains
   // the pokeable "value" float plug per-frame; live in every cached pipeline)
   py::class_<hm::MaterialParamSinkData, dflow::DgModuleData, hm::materialparamsinkdata_ptr_t>(hmmod, "MaterialParamSink")
@@ -560,8 +628,95 @@ void pyinit_gfx_hypermesh(py::module& module_lev2) {
           .def_property_readonly("mesh", [](hm::livehypermesh_ptr_t l) -> hm::gpumesh_ptr_t { return l->_mesh; })
           .def_property_readonly( // E.2: the graph's InstanceSet count (0 = not an instanced graph)
               "instance_count",
-              [](hm::livehypermesh_ptr_t l) -> int { return l->_instances ? l->_instances->_count : 0; });
+              [](hm::livehypermesh_ptr_t l) -> int { return l->_instances ? l->_instances->_count : 0; })
+          .def_property_readonly( // the PUBLISHED meshlet pair (partition + the topology it was built
+              "meshlet_partition", // from); None until a build requested by the render hook completes
+              [](hm::livehypermesh_ptr_t l) -> hm::meshletpartition_ptr_t {
+                return l->_meshlets ? l->_meshlets->partition() : hm::meshletpartition_ptr_t();
+              });
   type_codec->registerStdCodec<hm::livehypermesh_ptr_t>(live_type);
+
+  // ---- MESHLETS: the CPU partition of a triangle snapshot into <=256-vert / <=256-prim buckets.
+  //      Build side only — no upload, no draw. A partition ALWAYS carries the topology it was built
+  //      from (.topology), which is the only way to obtain one: a mismatched pair is unrepresentable.
+  // the LIVE bucket caps (platform-derived — see meshlet.h): the codegen must declare exactly
+  // these as the mesh stage's output limits, so the gate compares against these, never a literal.
+  hmmod.attr("meshlet_max_verts") = int(hm::kMeshletMaxVerts);
+  hmmod.attr("meshlet_max_prims") = int(hm::kMeshletMaxPrims);
+  py::class_<hm::MeshletStats>(hmmod, "MeshletStats")
+      .def_property_readonly("meshlet_count", [](const hm::MeshletStats& s) { return s._meshletCount; })
+      .def_property_readonly("tri_count", [](const hm::MeshletStats& s) { return s._triCount; })
+      .def_property_readonly("vertex_ref_count", [](const hm::MeshletStats& s) { return s._vertexRefCount; })
+      .def_property_readonly("avg_vertex_fill", [](const hm::MeshletStats& s) { return s._avgVertexFill; })
+      .def_property_readonly("avg_prim_fill", [](const hm::MeshletStats& s) { return s._avgPrimFill; })
+      .def_property_readonly("vertex_reuse", [](const hm::MeshletStats& s) { return s._vertexReuse; })
+      .def("report", [](const hm::MeshletStats& s, std::string label) { return s.report(label); },
+           py::arg("label") = std::string("mesh"));
+
+  py::class_<hm::MeshletTopology, hm::meshlettopology_ptr_t>(hmmod, "MeshletTopology")
+      .def_property_readonly("num_tris", [](hm::meshlettopology_ptr_t t) -> int { return int(t->numTris()); })
+      .def_property_readonly("num_verts", [](hm::meshlettopology_ptr_t t) -> int { return t->numVerts(); })
+      .def_property_readonly("snapshot_id", [](hm::meshlettopology_ptr_t t) -> uint64_t { return t->snapshotId(); })
+      .def_property_readonly("tri_indices", [](hm::meshlettopology_ptr_t t) { return t->_triIndices; })
+      .def("isAppendOf", [](hm::meshlettopology_ptr_t t, hm::meshlettopology_ptr_t prior) {
+        return t->isAppendOf(*prior);
+      });
+
+  py::class_<hm::MeshletPartition, hm::meshletpartition_ptr_t>(hmmod, "MeshletPartition")
+      .def_property_readonly("topology", [](hm::meshletpartition_ptr_t p) { return p->topology(); })
+      .def_property_readonly("meshlet_count", [](hm::meshletpartition_ptr_t p) -> int { return int(p->_desc.size()); })
+      .def_property_readonly( // buckets carried verbatim from the prior partition (append fast path)
+          "immutable_count", [](hm::meshletpartition_ptr_t p) -> int { return int(p->_immutableCount); })
+      .def_property_readonly( // per bucket: (vertex_offset, vertex_count, prim_offset, prim_count)
+          "descriptors",
+          [](hm::meshletpartition_ptr_t p) {
+            std::vector<std::tuple<uint32_t, uint32_t, uint32_t, uint32_t>> out;
+            for (auto& d : p->_desc)
+              out.push_back(std::make_tuple(d._vertexOffset, d._vertexCount, d._primOffset, d._primCount));
+            return out;
+          })
+      .def_property_readonly("vertex_list", [](hm::meshletpartition_ptr_t p) { return p->_vertexList; })
+      .def_property_readonly( // one uint per triangle: 3 packed 8-bit LOCAL indices
+          "prim_indices", [](hm::meshletpartition_ptr_t p) { return p->_primIndices; })
+      .def_property_readonly("stats", [](hm::meshletpartition_ptr_t p) { return p->stats(); });
+
+  py::class_<hm::MeshletBuilder, hm::meshletbuilder_ptr_t>(hmmod, "MeshletBuilder")
+      .def("step", [](hm::meshletbuilder_ptr_t b, int budget) { return b->step(uint32_t(budget)); },
+           py::arg("budget_tris"))
+      .def_property_readonly("done", [](hm::meshletbuilder_ptr_t b) { return b->done(); })
+      .def_property_readonly("progress", [](hm::meshletbuilder_ptr_t b) { return b->progress(); })
+      .def_property_readonly("append_path", [](hm::meshletbuilder_ptr_t b) { return b->isAppendPath(); })
+      .def_property_readonly("start_tri", [](hm::meshletbuilder_ptr_t b) -> int { return int(b->startTri()); })
+      .def_property_readonly("partition", [](hm::meshletbuilder_ptr_t b) { return b->partition(); });
+
+  // CPU snapshot of a live/baked GpuMesh: READ_ONLY map of vidx + face_offsets, fan-triangulated in
+  // face order (deterministic — the GPU triangulator's output order is atomic-cursor dependent).
+  hmmod.def(
+      "meshletTopologyFromMesh",
+      [](hm::gpumesh_ptr_t mesh, ctx_t ctx) { return hm::MeshletTopology::fromMesh(mesh, ctx.get()); },
+      py::arg("mesh"),
+      py::arg("ctx"));
+  hmmod.def(
+      "meshletTopologyFromIndices",
+      [](std::vector<uint32_t> indices, int num_verts) {
+        return hm::MeshletTopology::fromIndices(std::move(indices), num_verts);
+      },
+      py::arg("indices"),
+      py::arg("num_verts"));
+  hmmod.def(
+      "meshletBuilder",
+      [](hm::meshlettopology_ptr_t topo, hm::meshletpartition_ptr_t prior) {
+        return hm::MeshletBuilder::create(topo, prior);
+      },
+      py::arg("topology"),
+      py::arg("prior") = hm::meshletpartition_ptr_t());
+  hmmod.def(
+      "meshletBuild", // create + drive to completion
+      [](hm::meshlettopology_ptr_t topo, hm::meshletpartition_ptr_t prior) {
+        return hm::MeshletBuilder::buildComplete(topo, prior);
+      },
+      py::arg("topology"),
+      py::arg("prior") = hm::meshletpartition_ptr_t());
   // last 5s-window perf block (the HYPERMESH channel content) — for HUD display (StringDrawable)
   hmmod.def("perfStats", []() -> std::string { return hm::HmPerf::instance().statsText(); });
   // E.6/2.19 — (hits, stores) of the most recent cacheable materialize/bake (cook-cache gates)
@@ -594,6 +749,13 @@ void pyinit_gfx_hypermesh(py::module& module_lev2) {
       .def_static("createShared", []() -> sdf::sdftomeshdata_ptr_t { return sdf::SdfToMeshData::createShared(); })
       .def_readwrite("weld", &sdf::SdfToMeshData::_weld)
       .def_readwrite("blocky", &sdf::SdfToMeshData::_blocky); // CUBERILLE: pure voxel-block surface (forces weld off)
+  // M2 — SHAPE-AWARE clean remesh (openvdb adaptive volumeToMesh + optional xatlas UV unwrap)
+  py::class_<sdf::SdfToMeshCleanData, dflow::DgModuleData, sdf::sdftomeshcleandata_ptr_t>(sdfmod, "SdfToMeshClean")
+      .def_static("createShared", []() -> sdf::sdftomeshcleandata_ptr_t { return sdf::SdfToMeshCleanData::createShared(); })
+      .def_readwrite("adaptivity", &sdf::SdfToMeshCleanData::_adaptivity) // 0=max detail .. 1=flattest
+      .def_readwrite("isovalue", &sdf::SdfToMeshCleanData::_isovalue)
+      .def_readwrite("unwrap", &sdf::SdfToMeshCleanData::_unwrap)          // xatlas UV unwrap (triangulates)
+      .def_readwrite("weld_tol", &sdf::SdfToMeshCleanData::_weld_tol);
   // M4a — JFA eikonal redistance (SDF brick -> true |grad|=1 SDF brick)
   py::class_<sdf::RedistanceData, dflow::DgModuleData, sdf::redistancedata_ptr_t>(sdfmod, "Redistance")
       .def_static("createShared", []() -> sdf::redistancedata_ptr_t { return sdf::RedistanceData::createShared(); })
@@ -827,6 +989,37 @@ void pyinit_gfx_hypermesh(py::module& module_lev2) {
       py::arg("cdd"), py::arg("live"), py::arg("gid_materials"), py::arg("instanced") = false,
       py::arg("instmtx") = fxshaderstoragebuffer_ptr_t(), py::arg("instattr") = fxshaderstoragebuffer_ptr_t());
 
+  // O3 stage 2 — the per-section texture-array GPU material bake driver. sectionLayerGids reads the
+  // SectionUnwrap layer->gid table (A8; derived from the mesh, cook-load safe); prepareSectionBake registers
+  // the in-frame bake one-shot (mirror of the impostor bake) and returns a pollable job whose per-layer host
+  // CaptureBuffers the section_bake cache assembles into ONE sampler2DArray layer per section.
+  hmmod.def(
+      "sectionLayerGids",
+      [](hm::livehypermesh_ptr_t live, ctx_t ctx) -> std::vector<int> {
+        return hm::sectionUnwrapLayerGids(live, ctx.get());
+      },
+      py::arg("live"), py::arg("ctx"));
+  auto secbake_type = //
+      py::class_<hm::SectionBakeJob, hm::sectionbakejob_ptr_t>(hmmod, "SectionBakeJob")
+          .def_property_readonly("is_ready", [](hm::sectionbakejob_ptr_t j) -> bool { return j->isReady(); })
+          .def_property_readonly("num_layers", [](hm::sectionbakejob_ptr_t j) -> int { return j->numLayers(); })
+          .def_property_readonly("num_targets", [](hm::sectionbakejob_ptr_t j) -> int { return j->numTargets(); })
+          .def(
+              "layerCapture",
+              [](hm::sectionbakejob_ptr_t j, int layer, int target) -> capturebuffer_ptr_t {
+                return j->layerCapture(layer, target);
+              },
+              py::arg("layer"), py::arg("target") = 0);
+  type_codec->registerStdCodec<hm::sectionbakejob_ptr_t>(secbake_type);
+  hmmod.def(
+      "prepareSectionBake",
+      [](computedrawabledata_ptr_t cdd, hm::livehypermesh_ptr_t live, pbrmaterial_ptr_t material,
+         std::vector<int> layer_gids, ctx_t ctx, int bake_res, int num_targets) -> hm::sectionbakejob_ptr_t {
+        return hm::prepareSectionBake(ctx.get(), cdd.get(), live, material, layer_gids, bake_res, num_targets);
+      },
+      py::arg("cdd"), py::arg("live"), py::arg("material"), py::arg("layer_gids"), py::arg("ctx"),
+      py::arg("bake_res") = 256, py::arg("num_targets") = 1);
+
   // ---- D.3: HypermeshDrawableData — the reflected (round-trippable) hypermesh render
   //      description; the C++ port of make_drawable. createDrawable() materializes LAZILY
   //      on the first onGpuUpdate; the material resolves by name (resolved_material here =
@@ -907,6 +1100,15 @@ void pyinit_gfx_hypermesh(py::module& module_lev2) {
                 d->_gid_material_assets[std::to_string(gid)] = mtl;
               }
             }
+            // O3 stage 3 — STORED-MODE per-section texture-array bake (opt-in). section_bake flips
+            // gid_materials into the per-gid BAKE MAP; material_asset is the stored sampler; section_targets
+            // are the capture-target (== array-sampler) names in MRT order.
+            if (kwargs.contains("section_bake"))
+              d->_section_bake = kwargs["section_bake"].cast<bool>();
+            if (kwargs.contains("section_bake_res"))
+              d->_section_bake_res = kwargs["section_bake_res"].cast<int>();
+            if (kwargs.contains("section_targets"))
+              d->_section_targets = kwargs["section_targets"].cast<std::vector<std::string>>();
             return d;
           }))
           .def_property(

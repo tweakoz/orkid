@@ -9,6 +9,7 @@
 #include <ork/kernel/timer.h>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/environment.h>
+#include <ork/kernel/profiler.h>
 #include <ork/dataflow/all.h>
 #include <ork/lev2/init.h>
 #include <ork/lev2/gfx/asset_gen.h>
@@ -59,7 +60,9 @@
 #include <ork/lev2/gfx/terrain/terrain_chunk_drawable.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/sky_atmosphere.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/unlit_node.h>
+#include <ork/reflect/properties/codec.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/aud/singularity/synthdata.h>
 #include <ork/lev2/aud/singularity/layer.h>
@@ -382,6 +385,11 @@ struct ClassToucher {
     AmbientLightData::GetClassStatic();
     SpotLightData::GetClassStatic();
 
+    pbr::SkyAtmosphereData::GetClassStatic();
+    // a scene hands the medium over as a varmap value (SceneGraphSystemData's
+    // "SkyAtmosphere" userparam) - without this the .ecs writes it as "null:".
+    reflect::serdes::registerVarObjectCodec<pbr::skyatmospheredata_ptr_t>();
+
     scenegraph::DrawableDataKvPair::GetClassStatic();
     DrawableData::GetClassStatic();
     ModelDrawableData::GetClassStatic();
@@ -426,6 +434,7 @@ struct ClassToucher {
     terrain::CurvatureModuleData::GetClassStatic();
     terrain::RelaxUvModuleData::GetClassStatic();
     terrain::MaskBlendModuleData::GetClassStatic();
+    terrain::ScatterPlaceModuleData::GetClassStatic(); // in-graph scatter placement + building pads (.ogeo export)
     terrain::ThermalErodeModuleData::GetClassStatic();
     terrain::EroxModuleData::GetClassStatic();
     terrain::PhaModuleData::GetClassStatic();
@@ -469,6 +478,7 @@ struct ClassToucher {
     hypermesh::CompactData::GetClassStatic();
     hypermesh::BitOpData::GetClassStatic();
     hypermesh::GidAssignData::GetClassStatic();
+    hypermesh::SectionUnwrapData::GetClassStatic();     // O3: per-section xatlas unwrap -> texture-array layers
     hypermesh::MaterialParamSinkData::GetClassStatic(); // E.6/2.12: material UBO param by name
     hypermesh::ScatterSourceData::GetClassStatic(); // E.2: the typed instance edge source
     hypermesh::LSystemModuleData::GetClassStatic(); // M1: L-system producer of the XfNodeGraph spine
@@ -482,15 +492,11 @@ struct ClassToucher {
     hypermesh::ParcelizeModuleData::GetClassStatic();     // R-family v1: frontage parcels along the spine (InstanceSet)
     hypermesh::BuildingSeedsModuleData::GetClassStatic(); // R-family v1: building seeds (scatter-sink InstanceSet + freeform SoA)
     hypermesh::RoadMeshModuleData::GetClassStatic();      // R-family v2: swept road-ribbon + junction patches + gid split (XfNodeGraph -> GpuMesh)
-    // GR1.a — the LRuleSet grammar-as-data schema. SIX independent touches (T1): each serializes
-    // as a sub-object inside LSystemModuleData._grammar; an untouched class strips to "class": ""
-    // in the JSON + FindClass-null-deserializes SILENTLY. All six, always.
-    hypermesh::LExpr::GetClassStatic();
-    hypermesh::LSymbolDef::GetClassStatic();
-    hypermesh::LTurtleOp::GetClassStatic();
-    hypermesh::LParamBinding::GetClassStatic();
-    hypermesh::LRuleDef::GetClassStatic();
-    hypermesh::LRuleSet::GetClassStatic();
+    // GR1.a — the LRuleSet grammar-as-data schema (LSystemModuleData._grammar) is touched by
+    // ork::CoreAppInit, which lev2::initModule runs first: the schema is family-neutral ork.core.
+    // The mesh family's OP VOCABULARY is not reflection — it is the alphabet ork.core resolves
+    // grammar op codes through, and it must exist before any mesh grammar is loaded or derived.
+    hypermesh::registerMeshVocabulary();
     hypermesh::mesh_outplugdata_t::GetClassStatic();
     hypermesh::mesh_inplugdata_t::GetClassStatic();
     dflowgfx::instset_outplugdata_t::GetClassStatic(); // E.2: InstanceSet interchange plugs
@@ -505,6 +511,7 @@ struct ClassToucher {
     sdf::MeshToSdfData::GetClassStatic(); // M1: GPU voxelize
     sdf::CsgData::GetClassStatic();       // M2: boolean composite
     sdf::SdfToMeshData::GetClassStatic();   // M2: marching tetrahedra
+    sdf::SdfToMeshCleanData::GetClassStatic(); // M2: shape-aware clean remesh (openvdb + xatlas UV)
     sdf::RedistanceData::GetClassStatic();  // M4a: JFA eikonal redistance
     // D.3/D.4 HYPERECS host data — these serialize inside scenes, so they MUST be touched
     // (a stripped registration = `"class": ""` in the JSON + FindClass assert at load).
@@ -589,6 +596,7 @@ struct ClassToucher {
     RegisterClassX(OutputCompositingNode);
     RegisterClassX(VrOutputNode);
     RegisterClassX(DualMonoVrOutputNode);
+    RegisterClassX(SinglePassStereoVrOutputNode);
     RegisterClassX(ScreenOutputCompositingNode);
 
     RegisterClassX(RenderCompositingNode);
@@ -734,6 +742,7 @@ struct ClassToucher {
     RegisterClassX(audio::singularity::Fdn4ReverbXData);
     RegisterClassX(audio::singularity::Fdn4ReverbData);
 
+    RegisterClassX(audio::singularity::SoundFieldSendData);
     RegisterClassX(audio::singularity::SpatializerData);
     RegisterClassX(audio::singularity::PannerSpatializerData);
 
@@ -863,6 +872,10 @@ static mutex ginit_mutex("lev2init");
 
 void initModule(appinitdata_ptr_t init_data) {
   ::ork::initModule(init_data);
+  // Main-thread CHANNEL_MAIN sample sites that run before the first Context::beginFrame
+  // (CtxGLFW::SlotRepaint's viewport.draw, fired from window creation) would otherwise hit
+  // acquireSeries with no channel. This is the main thread for every app entry path.
+  OrkProfilerChannelRegister(CHANNEL_MAIN, CpuProfilerChannel);
   ginit_mutex.Lock();
   if(g_lev2_initializer){
     ginit_mutex.UnLock();

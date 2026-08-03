@@ -151,7 +151,7 @@ RecursivePitchShifterData::RecursivePitchShifterData(std::string name, float fb)
 ///////////////////////////////////////////////////////////////////////////////
 
 dspblk_ptr_t RecursivePitchShifterData::createInstance() const { // override
-  return std::make_shared<RecursivePitchShifter>(this);
+  return createDspInstance<RecursivePitchShifter>(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

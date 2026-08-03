@@ -829,8 +829,8 @@ struct LSystemModuleData : public MeshModuleData {
 };
 using lsystemmoduledata_ptr_t = std::shared_ptr<LSystemModuleData>;
 
-// GR1.b — the grammar EVALUATOR (defined in hmdflow_lruleset.cpp, the schema TU). Derives `grammar`
-// (pass 1 rewrite + pass 2 turtle-interpret) into the XfNodeGraph node/slot buffers, reading `env`'s
+// GR1.b — the grammar EVALUATOR (hmdflow_lruleset.cpp; pass 1 is ork::grammar in ork.core). Derives
+// `grammar` (pass 1 rewrite + pass 2 turtle-interpret) into the XfNodeGraph node/slot buffers, reading `env`'s
 // reflected scalars as the LExpr PARAM environment (A8: numbers flow through params, never folded into
 // the grammar). PURE CPU / bake-time (boundary 5): the caller (LSystemModuleInst::_buildSkeleton) runs
 // _buildFrames + the GPU upload afterward, so the determinism/budget gates can drive this headless.
@@ -863,6 +863,12 @@ using lsweepmoduledata_ptr_t = std::shared_ptr<LSweepModuleData>;
 // from it), each a quad (`_style` 0) or a 2-quad cross (1). Separate leaf mesh (merged/instanced
 // downstream). CPU build, like LSweep. UV0.xy = card uv (the MATERIAL owns texture vs procedural);
 // COLOR.x = flutter weight (0 petiole .. 1 tip), COLOR.y = a per-leaf hash (hue/phase variation).
+//
+// `_source` picks WHERE the placements come from: NODES (0, the phyllotaxis default) walks the
+// skeleton nodes, SLOTS (1, instance_at_slots) walks the XfNodeGraph's `_slots` side-table — the
+// grammar's own SLOT ops (areoles, blooms, windows, gear mounts) — and places at each slot's WORLD
+// frame (owning node xform * slot local). SLOTS is the grammar-authored placement: `_min_gen` does
+// not apply (the grammar already chose the attachment points), `_per_node` reads as cards per slot.
 ///////////////////////////////////////////////////////////////////////////////
 struct LeafScatterModuleData : public MeshModuleData {
   DeclareConcreteX(LeafScatterModuleData, MeshModuleData);
@@ -870,6 +876,7 @@ struct LeafScatterModuleData : public MeshModuleData {
   static std::shared_ptr<LeafScatterModuleData> createShared();
   dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
   int   _style    = 0;      // 0 = single quad, 1 = 2-quad cross
+  int   _source   = 0;      // 0 = NODES (phyllotaxis on eligible nodes), 1 = SLOTS (XfSlot attachment points)
   int   _per_node = 3;      // leaf cards placed per eligible node
   float _min_gen  = 4.0f;   // only nodes with _attrs[1] (generation) >= this bear leaves
   float _size     = 0.35f;  // leaf blade length
@@ -918,6 +925,11 @@ struct RouteSpineModuleData : public MeshModuleData {
   float _vcurve_len_m  = 120.0f;       // VERTICAL curve K-length: metres of arc to absorb a UNIT grade
                                        //   change (per-station grade-change ceiling = station/vcurve_len)
   float _clearance_m   = 0.3f;         // no-burial floor: min metres the deck rides above terrain
+  // PHYSICS-PROXY LAW (owner 2026-07-22): non-empty => the built spine exports as a NAMED
+  // BAKED ARTIFACT <assetcache>/roads/<export_name>/street_spine.ogeo (deck line P=(x,
+  // road_elev, z) + width + parent channels). Colliders/nav/audio consume it BY NAME
+  // (artifacts-not-graphs) — never the render mesh, never the live graph.
+  std::string _export_name;
 };
 using routespinemoduledata_ptr_t = std::shared_ptr<RouteSpineModuleData>;
 
@@ -1086,6 +1098,32 @@ struct GidAssignData : public MeshModuleData {
 using gidassigndata_ptr_t = std::shared_ptr<GidAssignData>;
 
 ///////////////////////////////////////////////////////////////////////////////
+// SectionUnwrap (O3) — PER-SECTION UV unwrap for the baked ptex3d texture-ARRAY
+// path. Mesh -> mesh CPU op that runs AFTER the gid partition (select+assign_gid):
+// it reads the gid band of __tags, groups faces by gid (each distinct gid = one
+// SECTION), and runs xatlas SEPARATELY per section so EVERY section gets its OWN
+// full 0-1 UV domain (more texel budget than one shared atlas). The section's
+// LAYER INDEX (dense 0..K-1 in sorted-gid order) is written into UV0.z for every
+// one of that section's vertices (uniform per island -> interpolation-safe), so
+// the forward material samples a sampler2DArray at layer = frg_uv0.z. Seam-
+// duplicated verts (xatlas) copy their source vert's N/B/color; the per-face gid
+// is preserved (output __tags face channel = gid<<20), and output faces are
+// EMITTED GROUPED BY SECTION (contiguous ranges) so the bake driver can render one
+// section at a time into its layer. No user-inlined constants (A8): pack padding
+// + the layer-count safety cap are reflected props.
+///////////////////////////////////////////////////////////////////////////////
+
+struct SectionUnwrapData : public MeshModuleData {
+  DeclareConcreteX(SectionUnwrapData, MeshModuleData);
+  SectionUnwrapData();
+  static std::shared_ptr<SectionUnwrapData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
+  int _padding    = 2;   // xatlas pack padding (texels between charts) — deterministic
+  int _max_layers = 64;  // hard cap on distinct sections; exceeding it FAILS LOUD (no silent clamp)
+};
+using sectionunwrapdata_ptr_t = std::shared_ptr<SectionUnwrapData>;
+
+///////////////////////////////////////////////////////////////////////////////
 // MaterialParamSink (E.6/2.12) — drives a bound material's UBO param BY NAME
 // (a generated ptex3d ctx.param) from the graph. Mesh passthrough (chain
 // position is ergonomic only); the float "value" plug is a pokeable DATA plug.
@@ -1134,6 +1172,9 @@ int hypermeshLastCookStores();
 // and renders _mesh's now-updated channels. Pool stays warm (zero realloc per frame).
 ///////////////////////////////////////////////////////////////////////////////
 
+struct MeshletHost; // meshlet.h — the CPU meshlet partitioner's per-mesh driver
+using meshlethost_ptr_t = std::shared_ptr<MeshletHost>;
+
 struct LiveHypermesh {
   dflow::graphdata_ptr_t _graph;
   dflow::dgcontext_ptr_t _dgctx;
@@ -1160,6 +1201,11 @@ struct LiveHypermesh {
   bool _paused          = false;
   double _clock_last    = -1.0; // last wall sample (-1 = not started)
   double _clock_abstime = 0.0;  // accumulated UNPAUSED seconds == the graph's time
+  // MESHLETS — the CPU meshlet partition of this mesh, rebuilt off the same topology key the render
+  // triangulator uses. Created lazily by the live render hook, and ONLY under ORKID_HYPERMESH_MESHLETS
+  // (until the mesh-shader draw path consumes it the snapshot readback buys nothing). Null = no
+  // partition has ever been requested for this mesh.
+  meshlethost_ptr_t _meshlets;
   void recompute(Context* ctx);
 };
 using livehypermesh_ptr_t = std::shared_ptr<LiveHypermesh>;
@@ -1253,6 +1299,12 @@ struct MeshRenderBuffers {
   FxShaderStorageBuffer* _faceid   = nullptr;
   FxShaderStorageBuffer* _instMtx  = nullptr;  // the cull's interleaved OUT_M (tier 0 at offset 0)
   FxShaderStorageBuffer* _instAttr = nullptr;
+  // cascade-cull fix: the SUN-SHADOW cull's compacted OUT_M/OUT_A (single tier, all sun-visible). The
+  // caller re-binds these on storage_inst_mtx/attr for sun-cascade depth passes (its own material's
+  // block handles), so the shadow passes draw the union-sun survivor set instead of the eye set. null
+  // when the cull is disabled.
+  FxShaderStorageBuffer* _instMtxShadow  = nullptr;
+  FxShaderStorageBuffer* _instAttrShadow = nullptr;
   // Phase 3b LOD tiers: one entry per EXTRA tier (1..N-1). hm_drawable adds a draw per (tier × gid)
   // binding _instMtx/_instAttr at _instByteOffset via the graphics sub-range bind (the VS reads the
   // tier's OUT_M slice from gl_InstanceIndex==0). _args = the tier's own indirect command array
@@ -1303,6 +1355,73 @@ MeshRenderBuffers setupMeshRender(
     int impostorTile = 512,  // per-view atlas tile pixels (atlas = grid*tile square); from imposter(tile=)
     int impostorSsaa = 2,    // bake supersample factor (render tile*ssaa per view); from imposter(ssaa=)
     int impostorMsaa = 4);   // bake multisample count; from imposter(msaa=)
+
+///////////////////////////////////////////////////////////////////////////////
+// O3 stage 2 — the per-section texture-array GPU material bake driver.
+//
+// Renders each mesh SECTION (SectionUnwrap gid bucket) into its OWN 2D MRT (one RGBA8 per capture
+// target) using the material's FWD_SSBO_CUSTOM_CAPTURE technique, routed through the SECTION cap-VS
+// (gl_Position = mvp * vec4(uv0.xy,0,1) over an ortho covering the 0-1 UV domain — the MoltenVK-safe
+// path, NEVER the direct-from-SSBO planar gl_Position). Each target is host round-tripped
+// (captureAsFormat -> CaptureBuffer) so the section_bake cache assembles them into ONE sampler2DArray
+// layer per section. Mirrors prepareImpostorBake's in-frame one-shot orchestration.
+///////////////////////////////////////////////////////////////////////////////
+
+// layer -> gid table for a SectionUnwrap'd live mesh (dense layer index -> the section's __tags gid).
+// DERIVED FROM THE OUTPUT MESH (per-face gid band [20:32) + the section's per-vertex UV0.z layer), so it
+// is correct whether the SectionUnwrap inst ran fresh OR was restored from the mesh cook cache — never the
+// undocumented ascending-gid==layer-order coincidence. Empty when the graph has no tagged/unwrapped mesh.
+std::vector<int> sectionUnwrapLayerGids(livehypermesh_ptr_t live, Context* ctx);
+
+// Opaque bake handle (pimpl: the render internals — tri / capture pipeline / MRTs — live in
+// hmdflow_render.cpp). Python holds this and polls it; the pimpl keeps the RtGroups + CaptureBuffers alive.
+struct SectionBakeJobImpl;
+struct SectionBakeJob {
+  std::shared_ptr<SectionBakeJobImpl> _impl;
+  bool isReady() const;                                     // one-shot fired AND every capture readback complete
+  int  numLayers() const;
+  int  numTargets() const;
+  capturebuffer_ptr_t layerCapture(int layer, int target) const; // host RGBA8 of section `layer`, MRT `target`
+};
+using sectionbakejob_ptr_t = std::shared_ptr<SectionBakeJob>;
+
+// Prepare the per-section bake. Registers a one-shot on `cdd` (fires in-frame, mirrors the impostor bake):
+// triangulates its OWN tri (bucketed by the section gids), then per LAYER pushes the 0-1 ortho + draws that
+// layer's gid bucket into a fresh 2D MRT and captureAsFormat's each target. FAILS LOUD if the material has
+// no FWD_SSBO_CUSTOM_CAPTURE technique (author it with capture=True). Poll job->isReady(), then read each
+// layer/target via job->layerCapture(). Must be called BEFORE the drawable node is created.
+sectionbakejob_ptr_t prepareSectionBake(
+    Context* ctx, ComputeDrawableData* cdd, livehypermesh_ptr_t live, pbrmaterial_ptr_t material,
+    const std::vector<int>& layerGids, int bakeRes, int numTargets);
+
+// O3 stage 3 — per-LAYER (per-gid BAKE MAP) bake: each section-layer is rendered with THAT gid's material's
+// capture technique (adobe content into adobe layers, timber into timber); unbound gids fall back to
+// `defaultMaterial` (the stored sampler). All bound materials MUST share the capture-target schema (same
+// names, same MRT order). FAILS LOUD if the default material has no FWD_SSBO_CUSTOM_CAPTURE technique.
+sectionbakejob_ptr_t prepareSectionBakeMapped(
+    Context* ctx, ComputeDrawableData* cdd, livehypermesh_ptr_t live,
+    pbrmaterial_ptr_t defaultMaterial, const std::map<int, pbrmaterial_ptr_t>& gidMaterials,
+    const std::vector<int>& layerGids, int bakeRes, int numTargets);
+
+// O3 stage 3 — the C++ player-path section-array CACHE + array assembly (the port of section_bake.py's
+// content-addressed cache; one TextureArray per capture target). See the .cpp header note for the layout
+// and the stated interop deviations (hash function; per-target dir).
+std::string sectionArrayCacheDir(const std::string& contentKey, int bakeRes, int numLayers);
+std::string sectionBakeContentKey(dflow::graphdata_ptr_t graph, const std::string& mainMtl,
+                                  const std::map<int, std::string>& gidMtls,
+                                  const std::vector<int>& layerGids, int bakeRes);
+bool sectionArrayCacheWarm(const std::string& baseKey, const std::vector<std::string>& targets,
+                           int bakeRes, int numLayers);
+texturearray_ptr_t placeholderSectionArray(Context* ctx, int numLayers, int bakeRes);
+// `genMips` (default ON) rides HypermeshDrawableData::_section_mips: build a CPU-generated trilinear mip
+// chain per array layer (env ORKID_SECTION_MIPS overrides). Cache format is unchanged (mip-0 PNGs);
+// mips regenerate from mip-0 on both assemble (cold) and load (warm).
+std::vector<texturearray_ptr_t> assembleSectionArraysFromJob(
+    Context* ctx, sectionbakejob_ptr_t job, const std::string& baseKey,
+    const std::vector<std::string>& targets, int bakeRes, bool genMips = true);
+std::vector<texturearray_ptr_t> loadSectionArraysFromCache(
+    Context* ctx, const std::string& baseKey, const std::vector<std::string>& targets,
+    int bakeRes, int numLayers, bool genMips = true);
 
 // foundation gate: bake ripple (+ ripple->subdivide chain + box) graphs, read the indexed
 // topology back and assert vert/corner/face counts + bbox + a sample normal. Returns FAILED count.

@@ -32,12 +32,30 @@ struct EnumType {
     _int2strmap[uint64_t(enum_value)] = name;
     _str2intmap[name]            = uint64_t(enum_value);
   }
+  // both lookups fail LOUD on a miss (the scalar counterpart of ITypedArray's guard):
+  // a value set from an unregistered token used to deref map::end() and serialize garbage.
   inline std::string findNameFromValue(uint64_t ivalue) { //
     auto it = _int2strmap.find(ivalue);
+    if (it == _int2strmap.end()) {
+      printf(
+          "EnumType::findNameFromValue: enum<%s> value<0x%llx> is NOT a registered "
+          "enumerator — was it set from an unregistered token?\n",
+          _name.c_str(),
+          (unsigned long long)ivalue);
+      OrkAssert(false);
+    }
     return it->second;
   }
   inline uint64_t findValueFromName(std::string svalue) { //
     auto it = _str2intmap.find(svalue);
+    if (it == _str2intmap.end()) {
+      printf(
+          "EnumType::findValueFromName: enum<%s> name<%s> is NOT a registered "
+          "enumerator — stale/foreign data, or a registration table missing a value?\n",
+          _name.c_str(),
+          svalue.c_str());
+      OrkAssert(false);
+    }
     return it->second;
   }
 

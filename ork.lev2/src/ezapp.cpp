@@ -412,7 +412,7 @@ void OrkEzApp::_initForAdHoc() {
 
     // Create platform-specific context
 #if defined(__linux__)
-    if (_initdata->_use_drm) {
+    if (_initdata->_use_drm and not _initdata->_offscreen) {
       logchan_ezapp->log("Creating DRM context (mode: %s)", _initdata->_drm_mode.c_str());
       _mainWindow->_ctqt = new CtxDRM(_mainWindow->_appwin.get());
     } else
@@ -734,7 +734,7 @@ void OrkEzApp::_initGraphicsContext() {
 
   // Create platform-specific context
 #if defined(__linux__)
-  if (_initdata->_use_drm) {
+  if (_initdata->_use_drm and not _initdata->_offscreen) {
     logchan_ezapp->log("Creating DRM context (mode: %s)", _initdata->_drm_mode.c_str());
     _mainWindow->_ctqt = new CtxDRM(_mainWindow->_appwin.get());
   } else
@@ -947,11 +947,26 @@ void OrkEzApp::_audioInit() {
     _initdata->_miscvars["synth"].set<audio::singularity::synth_ptr_t>(_synth);
     if (_synth) {
       _synth->mainThreadHandler();
+      // workers must exist before the device's first callback can fan out
+      _synth->startupAudioJobPool();
     }
   }
   // Callbacks are always deferred to _fireDeferredAudioCallbacks() which is called
   // at the start of mainThreadLoop(), after Python has registered its callbacks.
-  _audiodevice->startup();
+  //
+  // A device that cannot satisfy its preconditions (unresolvable id, no matching
+  // hardware, a side held busy by another process) throws AudioDeviceException
+  // rather than asserting — we degrade to the NULL audio device so the app keeps
+  // running silently instead of crashing.
+  try {
+    _audiodevice->startup();
+  } catch (const AudioDeviceException& e) {
+    logerrchannel()->log("audio device startup failed: %s", e.what());
+    logerrchannel()->log("degrading to NULL audio device - application will run without audio");
+    _audiodevice = AudioDevice::createNullInstance(_initdata);
+    _initdata->_miscvars["audiodevice"].set<audiodevice_ptr_t>(_audiodevice);
+    _audiodevice->startup();
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::_fireDeferredAudioCallbacks() {
@@ -971,6 +986,11 @@ void OrkEzApp::_audioExit() {
     auto auddev = it_a->second.get<audiodevice_ptr_t>();
     if (_audiodevice) {
       _audiodevice->shutdown();
+      // device stopped -> no callbacks in flight -> safe to retire workers.
+      // (kickAndJoin degrades to inline if anything computes after this.)
+      if (_synth) {
+        _synth->shutdownAudioJobPool();
+      }
       if (_onAudioExit) {
         _onAudioExit(auddev);
       }
@@ -1194,12 +1214,28 @@ void OrkEzApp::_mainThreadLoopBegin() {
   if (not _mainWindow) {
     while (this->_onRunLoopIteration) {
       opq::TrackCurrent opqtest(_mainq);
-      _mainq->Process();
+      // drain hot — but bounded, so a self-reposting op can never starve the
+      // synth handler / python iteration callback below
+      bool did_work = false;
+      for (int i = 0; (i < 256) and _mainq->Process(); i++) {
+        did_work = true;
+      }
       // Process synth main thread tasks (sequencer, HUD events, etc.)
       if (_synth) {
-        _synth->mainThreadHandler();
+        did_work |= _synth->mainThreadHandler();
       }
       this->_onRunLoopIteration();
+      // Idle pacing: block on the main queue's counting semaphore — every
+      // enqueue notifies it, as do the synth's audio->main event posts
+      // (sequencer/HUD), so posted work wakes the pump instantly and sees no
+      // added latency. The timeout is only a cadence floor for the poll-style
+      // work above (audio-thread handlers, kmod smoothing, python on_iter);
+      // progress never depends on a notify arriving. Replaces an unpaced
+      // busy-spin that pegged a core in GIL churn (headless sequencer.py,
+      // 2026-07-22).
+      if ((not did_work) and this->_onRunLoopIteration) {
+        _mainq->mSemaphore.wait_for(1000);
+      }
     }
     return;
   }

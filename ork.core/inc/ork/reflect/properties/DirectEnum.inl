@@ -33,8 +33,7 @@ template <typename T> void DirectEnum<T>::deserialize(serdes::node_ptr_t deserno
   OrkAssert(enumtype!=nullptr);
   auto instance   = desernode->_deser_instance;
   const auto& str_val = desernode->_value.get<std::string>();
-  auto it = enumtype->_str2intmap.find(str_val);
-  uint64_t int_val = it->second;
+  uint64_t int_val = enumtype->findValueFromName(str_val); // loud on an unregistered name
   auto as_T = static_cast<T>(int_val);
   set(as_T, instance);
 }
@@ -46,10 +45,9 @@ template <typename T> void DirectEnum<T>::serialize(serdes::node_ptr_t ser_node)
   T e_val;
   get(e_val, instance);
   uint64_t int_val = static_cast<uint64_t>(e_val);
-  auto it_s = enumtype->_int2strmap.find(int_val);
   serdes::enumvalue_ptr_t rewrite = std::make_shared<serdes::EnumValue>();
-  rewrite->_name = it_s->second;
-  rewrite->_value = it_s->first;
+  rewrite->_name = enumtype->findNameFromValue(int_val); // loud on an unregistered value
+  rewrite->_value = int_val;
   auto serializer = ser_node->_serializer;
   ser_node->_value.template set<serdes::enumvalue_ptr_t>(rewrite);
   serializer->serializeLeaf(ser_node);
@@ -74,8 +72,7 @@ void DirectEnum<T>::setFromString( object_ptr_t obj, const std::string& str ) co
   auto registrar = ::ork::reflect::serdes::EnumRegistrar::instance();
   auto enumtype  = registrar->findEnumClass<T>();
   OrkAssert(enumtype!=nullptr);
-  auto item = enumtype->_str2intmap.find(str);
-  uint64_t int_val = item->second;
+  uint64_t int_val = enumtype->findValueFromName(str);
   auto as_T = static_cast<T>(int_val);
   set( as_T, obj);
 }
@@ -87,8 +84,7 @@ std::string DirectEnum<T>::toString( object_constptr_t obj ) const {
   T e_val;
   get(e_val, obj);
   uint64_t int_val = static_cast<uint64_t>(e_val);
-  auto it_s = enumtype->_int2strmap.find(int_val);
-  return it_s->second;
+  return enumtype->findNameFromValue(int_val);
 }
 
 } // namespace ork::reflect

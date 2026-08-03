@@ -19,8 +19,8 @@ class WalkerMixin:
              radius=0.5, 
              height=1.8, 
              mass=80.0,
-             move_force=2400.0, 
-             max_speed=6.0, 
+             move_force=3400.0, 
+             max_speed=8.0, 
              jump_impulse=0.0, 
              turn_rate=2.5,
              eye_height=None, 
@@ -38,8 +38,8 @@ class WalkerMixin:
              restitution=0.0,
              gravity=None,
              force_name="walkforce"):
-    """The walkable character: an upright-locked capsule (angularFactor (0,1,0) — the
-    FPS-example recipe) + a declared DirectionalForce + a CharacterControllerComponent
+    """The walkable character: a rotation-locked capsule (angularFactor (0,0,0) — slides,
+    never rolls; heading is controller state) + a declared DirectionalForce + a CharacterControllerComponent
     that consumes host-forwarded InputKey controller messages and publishes the camera.
     Dimensions (radius/height), drive (move_force/max_speed/jump), and camera
     (eye_height/cam_distance; 0 = first person) are all reflected — the whole behavior
@@ -91,7 +91,9 @@ class WalkerMixin:
         "BulletObjectComponent",
         shape=capsule, mass=float(mass), friction=float(friction),
         restitution=float(restitution),        # 0: a character does not bounce
-        angularFactor=vec3(0.0, 1.0, 0.0),     # upright lock
+        angularFactor=vec3(0.0, 0.0, 0.0),     # TOTAL rotation lock: the character SLIDES,
+                                               # never rolls or spins from contacts — heading
+                                               # is controller state, not body rotation
         angularDamping=0.5, linearDamping=0.02,  # near-zero: the controller brakes on
                                                  # release; holding a key fights NOTHING
         notifyCollisions=True)                   # contacts -> PythonSystem "Collision"
@@ -101,7 +103,9 @@ class WalkerMixin:
         "CharacterControllerComponent",
         move_force=float(move_force), max_speed=float(max_speed),
         jump_impulse=float(jump_impulse), turn_rate=float(turn_rate),
-        eye_height=float(height if eye_height is None else eye_height),
+        eye_height=float(1.7 if eye_height is None else eye_height),  # TRUE meters above the
+                                               # feet/ground (human eye ~1.7); was `height`
+                                               # above the capsule CENTER (the giant-view bug)
         cam_distance=float(cam_distance), fovy_deg=float(fovy_deg),
         cam_near=float(cam_near), cam_far=float(cam_far), brake=float(brake),
         turn_decay=float(turn_decay),

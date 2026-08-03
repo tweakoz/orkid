@@ -13,6 +13,7 @@
 #endif
 #include "vulkan_captureasync.h"
 #include "vulkan_ubo_dynamic.h"
+#include "vulkan_wedge.h"
 #include <ork/lev2/gfx/image.h>
 #include <ork/lev2/gfx/external_gpu_requirements.h>
 #include <ork/lev2/gfx/renderphasestats.h> // MT0: peekMs("present-idle")
@@ -175,6 +176,85 @@ int VkContext::msaaMaxSamples() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Can this device fragment-raster into a slice of a 3D texture? Rendering into
+// a volume means creating the image 2D-ARRAY-COMPATIBLE (so a per-slice
+// VK_IMAGE_VIEW_TYPE_2D attachment view is legal) with COLOR_ATTACHMENT usage
+// alongside SAMPLED. vkGetPhysicalDeviceImageFormatProperties answers that
+// exact combination; VK_ERROR_FORMAT_NOT_SUPPORTED means the froxel volume
+// would have to fall back to a 2D texture array.
+///////////////////////////////////////////////////////////////////////////////
+bool VkContext::supportsVolumeRenderTarget(EBufferFormat fmt) {
+  if (not _vkdeviceinfo)
+    return false;
+  VkImageFormatProperties props;
+  initializeVkStruct(props);
+  VkResult ok = vkGetPhysicalDeviceImageFormatProperties(
+      _vkdeviceinfo->_phydev,                                                //
+      VkFormatConverter::convertBufferFormat(fmt),                           //
+      VK_IMAGE_TYPE_3D,                                                      //
+      VK_IMAGE_TILING_OPTIMAL,                                               //
+      VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,      //
+      VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT,                               //
+      &props);
+  return (ok == VK_SUCCESS);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Taskless VK_EXT_mesh_shader availability. Set during device creation only when
+// the extension was ENABLED and its meshShader feature was chained (a device that
+// merely advertises the ext string is not enough to legally emit a mesh draw).
+///////////////////////////////////////////////////////////////////////////////
+
+bool VkContext::supportsMeshShader() const {
+  return _vkdeviceinfo ? _vkdeviceinfo->_supportsMeshShader : false;
+}
+
+// The amplification stage's own feature bit, as CHAINED (not merely advertised).
+bool VkContext::supportsTaskShader() const {
+  return _vkdeviceinfo ? _vkdeviceinfo->_supportsTaskShader : false;
+}
+uint32_t VkContext::maxTaskPayloadSize() const {
+  return _vkdeviceinfo ? _vkdeviceinfo->_maxTaskPayloadSize : 0;
+}
+int VkContext::taskShaderDrawCount() const {
+  return int(_task_shader_draws.load());
+}
+void VkContext::_countMeshDraw() {
+  auto pass = _fxi ? _fxi->_currentVKPASS : nullptr;
+  if (pass and pass->_tskshader)
+    _task_shader_draws.fetch_add(1);
+}
+
+// The PFN itself IS the capability: it is loaded only on the mesh-enabled device and every
+// device-sharing context copies it, so a null here means this context cannot issue the draw.
+bool VkContext::supportsMeshShaderIndirect() const {
+  return _vkCmdDrawMeshTasksIndirectEXT != nullptr;
+}
+
+// Multiview capability, as CHAINED at device creation (not merely advertised): the mesh arm is
+// the one a stereo single-pass mesh draw must gate on, and it is already device-gated on core
+// multiview, so it can never report true where a multiview pass is itself illegal.
+bool VkContext::supportsMultiview() const {
+  return _vkdeviceinfo ? _vkdeviceinfo->_supportsMultiview : false;
+}
+int VkContext::maxMultiviewViewCount() const {
+  return _vkdeviceinfo ? int(_vkdeviceinfo->_maxMultiviewViewCount) : 0;
+}
+bool VkContext::supportsMultiviewMeshShader() const {
+  return _vkdeviceinfo ? _vkdeviceinfo->_supportsMultiviewMeshShader : false;
+}
+uint32_t VkContext::maxMeshMultiviewViewCount() const {
+  return _vkdeviceinfo ? _vkdeviceinfo->_maxMeshMultiviewViewCount : 0;
+}
+
+int VkContext::validationErrorCount() const {
+  return vkValidationErrorCount();
+}
+bool VkContext::validationArmed() const {
+  return vkValidationArmed();
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Vulkan Context Internal Init
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -320,6 +400,13 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
   // dynamic cull mode (so mtl.doubleSided takes effect without rebuilding pipelines)
   _device_extensions.push_back(VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME);
 
+  // mesh shaders (taskless: mesh+fragment). Optional — most drivers/ICDs lack it,
+  //  so request only when the physical device advertises it.
+  if (vk_devinfo->_extension_set.count(VK_EXT_MESH_SHADER_EXTENSION_NAME) > 0) {
+    _device_extensions.push_back(VK_EXT_MESH_SHADER_EXTENSION_NAME);
+    logchan_vkctx->log("Added VK_EXT_mesh_shader");
+  }
+
   // X1 device-ext selftest leg (headless-observable): request one AVAILABLE device
   //  extension not already in the base set, injected into the backend-internal reqs
   //  slot EXACTLY like a real producer's would be, so the device-ext merge + the
@@ -413,6 +500,45 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
   extDynStateFeatures.pNext = (void*) nullptr;
 
   ////////////////////////////////////////////////////////////////////////////
+  // multiview is CORE VK1.1 (no extension to enable) — the feature bit plus the
+  //  per-pass viewMask is the whole enable story on a dynamic-rendering-only
+  //  device (there is no VkRenderPass here to carry multiview creation info).
+  //  Probe first: chaining a feature the device reports false fails device
+  //  creation outright. The peer geometry/tessellation multiview bits stay FALSE
+  //  (neither stage exists in this engine).
+  ////////////////////////////////////////////////////////////////////////////
+  VkPhysicalDeviceMultiviewFeatures multiviewFeat{};
+  initializeVkStruct(multiviewFeat, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES);
+  {
+    VkPhysicalDeviceFeatures2 probe{};
+    initializeVkStruct(probe, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2);
+    probe.pNext = &multiviewFeat;
+    vkGetPhysicalDeviceFeatures2(_vkphysicaldevice, &probe);
+  }
+  if (multiviewFeat.multiview) {
+    multiviewFeat.multiviewGeometryShader     = VK_FALSE;
+    multiviewFeat.multiviewTessellationShader = VK_FALSE;
+    VkPhysicalDeviceMultiviewProperties multiviewProps{};
+    initializeVkStruct(multiviewProps, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES);
+    VkPhysicalDeviceProperties2 mvPropsProbe{};
+    initializeVkStruct(mvPropsProbe, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2);
+    mvPropsProbe.pNext = &multiviewProps;
+    vkGetPhysicalDeviceProperties2(_vkphysicaldevice, &mvPropsProbe);
+    vk_devinfo->_supportsMultiview     = true;
+    vk_devinfo->_maxMultiviewViewCount = multiviewProps.maxMultiviewViewCount;
+    extDynStateFeatures.pNext          = (void*) &multiviewFeat;
+    multiviewFeat.pNext                = (void*) nullptr;
+    logchan_vkctx->log(
+        "chaining VkPhysicalDeviceMultiviewFeatures{multiview=TRUE} maxMultiviewViewCount<%u> maxMultiviewInstanceIndex<%u>",
+        multiviewProps.maxMultiviewViewCount,
+        multiviewProps.maxMultiviewInstanceIndex);
+  } else {
+    printf("[VKDEV] WARNING: multiview UNSUPPORTED on <%s> — stereo single-pass is unavailable.\n",
+           _vkdeviceinfo->_devprops.deviceName);
+    fflush(stdout);
+  }
+
+  ////////////////////////////////////////////////////////////////////////////
   // Generic known-ext -> feature-struct chain. Some extensions (e.g. an OpenXR
   //  runtime's VK_EXT_host_image_copy client-import path) require BOTH the ext
   //  enabled AND its feature bit set to legally use the commands the consumer
@@ -493,9 +619,71 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
     }
   }
 #endif
+#ifdef VK_EXT_mesh_shader
+  VkPhysicalDeviceMeshShaderFeaturesEXT meshShaderFeat{};
+  initializeVkStruct(meshShaderFeat, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT);
+  if (extEnabled(VK_EXT_MESH_SHADER_EXTENSION_NAME)) {
+    VkPhysicalDeviceFeatures2 probe{};
+    initializeVkStruct(probe, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2);
+    probe.pNext = &meshShaderFeat;
+    vkGetPhysicalDeviceFeatures2(_vkphysicaldevice, &probe);
+    if (meshShaderFeat.meshShader) {
+      // taskShader: keep the PROBED value. Chaining a feature the device reports false
+      //  fails device creation outright, so this can never be forced on; but forcing it
+      //  OFF on a device that does grant it makes the amplification stage unreachable for
+      //  reasons the engine invented. Probe decides, in both directions.
+      bool task_shader = (meshShaderFeat.taskShader == VK_TRUE);
+      meshShaderFeat.taskShader                       = task_shader ? VK_TRUE : VK_FALSE;
+      // multiviewMeshShader: keep the PROBED value (the mesh stage must be legal inside a
+      //  multiview pass or stereo single-pass silently excludes every mesh-shader draw), but
+      //  only where the device also grants core multiview — the spec forbids the pair
+      //  multiviewMeshShader=TRUE / multiview=FALSE.
+      bool mesh_multiview = (meshShaderFeat.multiviewMeshShader == VK_TRUE) and vk_devinfo->_supportsMultiview;
+      meshShaderFeat.multiviewMeshShader              = mesh_multiview ? VK_TRUE : VK_FALSE;
+      meshShaderFeat.primitiveFragmentShadingRateMeshShader = VK_FALSE;
+      meshShaderFeat.meshShaderQueries                = VK_FALSE;
+      appendExtFeature(&meshShaderFeat);
+      vk_devinfo->_supportsMeshShader = true;
+      // maxMeshWorkGroupInvocations is retained because exceeding it is NOT diagnosed by the
+      //  NVIDIA driver — an over-sized mesh local_size segfaults its SPIR-V compiler inside
+      //  vkCreateGraphicsPipelines. _createPipelineMesh checks the stage against this.
+      VkPhysicalDeviceMeshShaderPropertiesEXT meshShaderProps{};
+      initializeVkStruct(meshShaderProps, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_PROPERTIES_EXT);
+      VkPhysicalDeviceProperties2 propsProbe{};
+      initializeVkStruct(propsProbe, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2);
+      propsProbe.pNext = &meshShaderProps;
+      vkGetPhysicalDeviceProperties2(_vkphysicaldevice, &propsProbe);
+      vk_devinfo->_maxMeshWkgInvocations = meshShaderProps.maxMeshWorkGroupInvocations;
+      vk_devinfo->_supportsTaskShader    = task_shader;
+      vk_devinfo->_maxTaskWkgInvocations = task_shader ? meshShaderProps.maxTaskWorkGroupInvocations : 0;
+      vk_devinfo->_maxTaskPayloadSize    = task_shader ? meshShaderProps.maxTaskPayloadSize : 0;
+      vk_devinfo->_supportsMultiviewMeshShader = mesh_multiview;
+      vk_devinfo->_maxMeshMultiviewViewCount   = mesh_multiview ? meshShaderProps.maxMeshMultiviewViewCount : 0;
+      logchan_vkctx->log(
+          "chaining VkPhysicalDeviceMeshShaderFeaturesEXT{meshShader=TRUE,taskShader=%s,multiviewMeshShader=%s} "
+          "maxMeshWorkGroupInvocations<%u> maxTaskWorkGroupInvocations<%u> maxTaskPayloadSize<%u> "
+          "maxMeshMultiviewViewCount<%u>",
+          task_shader ? "TRUE" : "FALSE",
+          mesh_multiview ? "TRUE" : "FALSE",
+          meshShaderProps.maxMeshWorkGroupInvocations,
+          meshShaderProps.maxTaskWorkGroupInvocations,
+          meshShaderProps.maxTaskPayloadSize,
+          meshShaderProps.maxMeshMultiviewViewCount);
+    } else {
+      printf("[VKDEV] WARNING: VK_EXT_mesh_shader ENABLED but meshShader feature UNSUPPORTED on <%s>.\n",
+             _vkdeviceinfo->_devprops.deviceName);
+      fflush(stdout);
+    }
+  }
+#endif
 
-  // splice the ext-driven feature chain onto the tail of the base feature chain.
-  extDynStateFeatures.pNext = (void*) ext_feat_head;
+  // splice the ext-driven feature chain onto the tail of the base feature chain
+  //  (multiview, when chained, IS that tail).
+  if (vk_devinfo->_supportsMultiview) {
+    multiviewFeat.pNext = (void*) ext_feat_head;
+  } else {
+    extDynStateFeatures.pNext = (void*) ext_feat_head;
+  }
 
   VkResult result = vkCreateDevice(_vkphysicaldevice, &DCI, nullptr, &_vkdevice);
   if (result != VK_SUCCESS) {
@@ -529,9 +717,23 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
   _fetchDeviceProcAddr(_vkCmdBeginRenderingKHR, "vkCmdBeginRenderingKHR");
   _fetchDeviceProcAddr(_vkCmdEndRenderingKHR, "vkCmdEndRenderingKHR");
   _fetchDeviceProcAddr(_vkCmdSetCullModeEXT, "vkCmdSetCullModeEXT");
+  _fetchDeviceProcAddr(_vkCmdSetDepthWriteEnableEXT, "vkCmdSetDepthWriteEnableEXT");
   OrkAssertI(_vkCmdBeginRenderingKHR != nullptr, "_vkCmdBeginRenderingKHR function pointer is null!");
   OrkAssertI(_vkCmdEndRenderingKHR != nullptr, "_vkCmdEndRenderingKHR function pointer is null!");
   OrkAssertI(_vkCmdSetCullModeEXT != nullptr, "_vkCmdSetCullModeEXT function pointer is null!");
+  OrkAssertI(_vkCmdSetDepthWriteEnableEXT != nullptr, "_vkCmdSetDepthWriteEnableEXT function pointer is null!");
+
+  // mesh-shader draw entries — only loadable when the extension was actually enabled.
+  // The INDIRECT entry is optional: a driver may implement the direct draw only, and the
+  // caller (Context::supportsMeshShaderIndirect) gates on the pointer rather than the ext.
+  if (vk_devinfo->_supportsMeshShader) {
+    _fetchDeviceProcAddr(_vkCmdDrawMeshTasksEXT, "vkCmdDrawMeshTasksEXT");
+    _fetchDeviceProcAddr(_vkCmdDrawMeshTasksIndirectEXT, "vkCmdDrawMeshTasksIndirectEXT");
+    logchan_vkctx->log(
+        "mesh-shader draw entries: direct<%p> indirect<%p>",
+        (void*)_vkCmdDrawMeshTasksEXT,
+        (void*)_vkCmdDrawMeshTasksIndirectEXT);
+  }
 
   ////////////////////////////
   // Init Queues
@@ -577,7 +779,18 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
 
 VkResult VkThreadedQueue::queueSubmit(const VkSubmitInfo* pSubmits, VkFence fence) {
   std::lock_guard<std::recursive_mutex> lock(_submit_mutex);
+  // the ONE choke point: every submit in the engine (graphics, compute, offscreen,
+  //  swapchain, external composite) routes through here, so this monotonic count is the
+  //  whole truth. Per-frame deltas are taken at the frame boundary (_doBeginFrame).
+  vkGlobalSubmitCounter().fetch_add(1, std::memory_order_relaxed);
   return vkQueueSubmit(_vkqueue, 1, pSubmits, fence);
+}
+
+// device-global, not per-context: submits are issued against the queue, and several of them
+//  (compute, capture, external composite) belong to no single Context.
+std::atomic<uint64_t>& vkGlobalSubmitCounter() {
+  static std::atomic<uint64_t> counter{0};
+  return counter;
 }
 
 VkResult VkThreadedQueue::queuePresent(const VkPresentInfoKHR* pPresentInfo) {
@@ -643,6 +856,9 @@ void VkContext::_initVulkanForWindow(VkSurfaceKHR surface) {
     _vkCmdBeginRenderingKHR = context0->_vkCmdBeginRenderingKHR;
     _vkCmdEndRenderingKHR = context0->_vkCmdEndRenderingKHR;
     _vkCmdSetCullModeEXT = context0->_vkCmdSetCullModeEXT;
+    _vkCmdSetDepthWriteEnableEXT = context0->_vkCmdSetDepthWriteEnableEXT;
+    _vkCmdDrawMeshTasksEXT = context0->_vkCmdDrawMeshTasksEXT;
+    _vkCmdDrawMeshTasksIndirectEXT = context0->_vkCmdDrawMeshTasksIndirectEXT;
 
     _device_extensions = context0->_device_extensions;
     _num_queue_types = context0->_num_queue_types;
@@ -680,6 +896,9 @@ void VkContext::_initVulkanForOffscreen(DisplayBuffer* pBuf) {
     _vkCmdBeginRenderingKHR = context0->_vkCmdBeginRenderingKHR;
     _vkCmdEndRenderingKHR = context0->_vkCmdEndRenderingKHR;
     _vkCmdSetCullModeEXT = context0->_vkCmdSetCullModeEXT;
+    _vkCmdSetDepthWriteEnableEXT = context0->_vkCmdSetDepthWriteEnableEXT;
+    _vkCmdDrawMeshTasksEXT = context0->_vkCmdDrawMeshTasksEXT;
+    _vkCmdDrawMeshTasksIndirectEXT = context0->_vkCmdDrawMeshTasksIndirectEXT;
     _device_extensions = context0->_device_extensions;
     _num_queue_types = context0->_num_queue_types;
     _DQCIs = context0->_DQCIs;
@@ -1070,6 +1289,11 @@ void VkContext::_savePipelineCache() {
 }
 
 void VkContext::_doShutdown() {
+  // The MT0 slice timer owns a VkQueryPool and is the only context member whose
+  // destructor calls into the driver. Destroy it HERE — inside the explicit
+  // shutdown funnel, device and loader both live — so it can never fire from
+  // whatever thread/phase happens to drop the last Context ref.
+  _mtSliceTimer.reset();
   _savePipelineCache(); // WS3: persist + destroy (owner only; device still valid here)
   if (_vkpresentationsurface != VK_NULL_HANDLE && _GVI) {
     printf("VkContext::_doShutdown: destroying VkSurface %p\n", (void*)_vkpresentationsurface);
@@ -1283,7 +1507,7 @@ void VkContext::_doBeginPrimaryCommandBuffer() {
     VkFence fence;
     vkCreateFence(_vkdevice, &fenceInfo, nullptr, &fence);
     _gfxqueue->queueSubmit(&SI, fence);
-    vkWaitForFences(_vkdevice, 1, &fence, VK_TRUE, UINT64_MAX);
+    waitFenceBounded(_vkdevice, fence, "double-begin-flush", wedgeFrame(this));
     vkDestroyFence(_vkdevice, fence, nullptr);
 
     _pri_cmdbuf_pool.deallocate(_defaultCommandBuffer);
@@ -1474,7 +1698,7 @@ void VkContext::_doExecuteInlineGpuJob(const void_lambda_t& record) {
   VkFence fence = VK_NULL_HANDLE;
   vkCreateFence(_vkdevice, &fenceInfo, nullptr, &fence);
   _gfxqueue->queueSubmit(&SI, fence);
-  vkWaitForFences(_vkdevice, 1, &fence, VK_TRUE, UINT64_MAX);
+  waitFenceBounded(_vkdevice, fence, "inline-microtask-submit", wedgeFrame(this));
   vkDestroyFence(_vkdevice, fence, nullptr);
 
   // GPU has finished (fence waited) → the capture's staging copy is host-visible;
@@ -1585,7 +1809,7 @@ void VkContext::endAndSubmitSyncTransferCB() {
   _gfxqueue->queueSubmit(&submitInfo, fence);
 
   // Wait for this specific submit to complete
-  vkWaitForFences(_vkdevice, 1, &fence, VK_TRUE, UINT64_MAX);
+  waitFenceBounded(_vkdevice, fence, "sync-transfer", wedgeFrame(this));
   vkDestroyFence(_vkdevice, fence, nullptr);
 
   // Command buffer is now in INVALID state (ONE_TIME_SUBMIT)
@@ -1640,6 +1864,15 @@ void VkContext::_doPreBeginFrame() {
 
 void VkContext::_doBeginFrame() {
   //logchan_vkctx->log("VkContext<%p> _doBeginFrame w<%d> h<%d>", (void*)this, miW, miH);
+
+  // publish the previous frame's submit count, once, at the true frame boundary: a mid-frame
+  //  reset would silently mix two frames' submits into a plausible-looking number.
+  {
+    uint64_t now           = vkGlobalSubmitCounter().load(std::memory_order_relaxed);
+    _submitCountLastFrame  = uint32_t(now - _submitCounterMark);
+    _submitCounterMark     = now;
+  }
+
   auto main_rtg = _fbi->_ensureMainRtg();
   if (main_rtg) {
     miW = main_rtg->miW;
@@ -1711,7 +1944,7 @@ void VkContext::_onGpuPostInit() {
 
   // Submit and wait
   _gfxqueue->queueSubmit(&SI, fence);
-  vkWaitForFences(_vkdevice, 1, &fence, VK_TRUE, UINT64_MAX);
+  waitFenceBounded(_vkdevice, fence, "post-init-submit", wedgeFrame(this));
   vkDestroyFence(_vkdevice, fence, nullptr);
 
   // Clear the command buffer pointers
@@ -1877,6 +2110,9 @@ void VkContext::initializeDRMContext(Window* pWin, CTXBASE* pctxbase) {
     _vkCmdBeginRenderingKHR    = share_ctx->_vkCmdBeginRenderingKHR;
     _vkCmdEndRenderingKHR      = share_ctx->_vkCmdEndRenderingKHR;
     _vkCmdSetCullModeEXT       = share_ctx->_vkCmdSetCullModeEXT;
+    _vkCmdSetDepthWriteEnableEXT = share_ctx->_vkCmdSetDepthWriteEnableEXT;
+    _vkCmdDrawMeshTasksEXT     = share_ctx->_vkCmdDrawMeshTasksEXT;
+    _vkCmdDrawMeshTasksIndirectEXT = share_ctx->_vkCmdDrawMeshTasksIndirectEXT;
     _device_extensions         = share_ctx->_device_extensions;
     _num_queue_types           = share_ctx->_num_queue_types;
     _DQCIs                     = share_ctx->_DQCIs;
@@ -2623,6 +2859,13 @@ VkGpuSliceTimer::VkGpuSliceTimer(VkDevice device, float timestamp_period_ns)
 }
 
 VkGpuSliceTimer::~VkGpuSliceTimer() {
+  // Defense in depth for the atexit path: _doShutdown() destroys this while the
+  // device is live, so the pool is normally released there. Should a stray ref
+  // outlive the GPU-shutdown funnel, the driver may already be unloaded — no-op
+  // instead of calling a null entrypoint (same convention as the other vulkan
+  // resource destructors).
+  if (GfxEnv::gpuShutdownComplete())
+    return;
   if (_query_pool != VK_NULL_HANDLE)
     vkDestroyQueryPool(_device, _query_pool, ORK_VK_ALLOC);
 }

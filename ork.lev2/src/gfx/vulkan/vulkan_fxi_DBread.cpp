@@ -305,6 +305,8 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
   size_t num_frg_shaders    = header_input_stream->ReadItem<size_t>();
   size_t num_frg_interfaces = header_input_stream->ReadItem<size_t>();
   size_t num_cu_shaders     = header_input_stream->ReadItem<size_t>();
+  size_t num_msh_shaders    = header_input_stream->ReadItem<size_t>();
+  size_t num_tsk_shaders    = header_input_stream->ReadItem<size_t>();
   size_t num_smpsets        = header_input_stream->ReadItem<size_t>();
   size_t num_unisets        = header_input_stream->ReadItem<size_t>();
   size_t num_uniblks        = header_input_stream->ReadItem<size_t>();
@@ -790,6 +792,31 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
   }
 
   //////////////////
+
+  for (size_t i = 0; i < num_msh_shaders; i++) {
+    auto msh_shader    = read_shader_from_stream();
+    msh_shader->_STAGE = "mesh"_crcu;
+    auto& STMIF        = msh_shader->_shaderstageinfo;
+    initializeVkStruct(STMIF, VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
+    STMIF.stage  = VK_SHADER_STAGE_MESH_BIT_EXT;
+    STMIF.module = msh_shader->_vk_shadermodule;
+    STMIF.pName  = "main";
+  }
+
+  //////////////////
+
+  // the amplification (task/object) stage — written last by DBwrite, read last here.
+  for (size_t i = 0; i < num_tsk_shaders; i++) {
+    auto tsk_shader    = read_shader_from_stream();
+    tsk_shader->_STAGE = "task"_crcu;
+    auto& STTIF        = tsk_shader->_shaderstageinfo;
+    initializeVkStruct(STTIF, VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
+    STTIF.stage  = VK_SHADER_STAGE_TASK_BIT_EXT;
+    STTIF.module = tsk_shader->_vk_shadermodule;
+    STTIF.pName  = "main";
+  }
+
+  //////////////////
   // techniques (always VTG for now)
   //////////////////
 
@@ -816,7 +843,10 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       auto str_pass = tecniq_input_stream->ReadIndexedString(chunkreader);
       OrkAssert(str_pass == "pass");
       auto str_stages = tecniq_input_stream->ReadIndexedString(chunkreader);
-      OrkAssert(str_stages == "VF" or str_stages == "VGF");
+      OrkAssertIFMT(
+          str_stages == "VF" or str_stages == "VGF" or str_stages == "MF" or str_stages == "TMF",
+          "unknown pass stage shape <%s>",
+          str_stages.c_str());
 
       auto vk_program      = std::make_shared<VkFxShaderPass>(vulkan_shaderfile.get());
       vk_program->_tek_name = str_tek_name;
@@ -834,6 +864,26 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
           OrkAssert(false);
         }
         vk_program->_vtxshader = vtx_obj;
+      }
+
+      if (str_stages.find("T") != std::string::npos) {
+        auto str_tsk_name = tecniq_input_stream->ReadIndexedString(chunkreader);
+        auto tsk_obj      = vulkan_shaderfile->_vk_shaderstages[str_tsk_name];
+        if (tsk_obj == nullptr) {
+          printf("tsk_obj<%s> not found\n", str_tsk_name.c_str());
+          OrkAssert(false);
+        }
+        vk_program->_tskshader = tsk_obj;
+      }
+
+      if (str_stages.find("M") != std::string::npos) {
+        auto str_msh_name = tecniq_input_stream->ReadIndexedString(chunkreader);
+        auto msh_obj      = vulkan_shaderfile->_vk_shaderstages[str_msh_name];
+        if (msh_obj == nullptr) {
+          printf("msh_obj<%s> not found\n", str_msh_name.c_str());
+          OrkAssert(false);
+        }
+        vk_program->_mshshader = msh_obj;
       }
 
       if (str_stages.find("G") != std::string::npos) {
@@ -878,6 +928,20 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         }
       }
 
+      // Collect UBOs from mesh shader (if present)
+      if (vk_program->_mshshader && vk_program->_mshshader->_uniblk_refs) {
+        for (const auto& [name, ubo] : vk_program->_mshshader->_uniblk_refs->_uniblks) {
+          vk_program->_vk_uniformblks[name] = ubo;
+        }
+      }
+
+      // Collect UBOs from task shader (if present)
+      if (vk_program->_tskshader && vk_program->_tskshader->_uniblk_refs) {
+        for (const auto& [name, ubo] : vk_program->_tskshader->_uniblk_refs->_uniblks) {
+          vk_program->_vk_uniformblks[name] = ubo;
+        }
+      }
+
       // Collect UBOs from fragment shader
       if (vk_program->_frgshader && vk_program->_frgshader->_uniblk_refs) {
         for (const auto& [name, ubo] : vk_program->_frgshader->_uniblk_refs->_uniblks) {
@@ -911,6 +975,20 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         for (const auto& [name, ssbo] : vk_program->_frgshader->_ssbo_refs->_ssbo_blocks) {
           vk_program->_vk_ssbo_blocks[name] = ssbo;
           // printf("SSBO_POPULATE: Program collected SSBO<%s> from fragment shader\n", name.c_str());
+        }
+      }
+
+      // Collect SSBOs from mesh shader (if present)
+      if (vk_program->_mshshader && vk_program->_mshshader->_ssbo_refs) {
+        for (const auto& [name, ssbo] : vk_program->_mshshader->_ssbo_refs->_ssbo_blocks) {
+          vk_program->_vk_ssbo_blocks[name] = ssbo;
+        }
+      }
+
+      // Collect SSBOs from task shader (if present)
+      if (vk_program->_tskshader && vk_program->_tskshader->_ssbo_refs) {
+        for (const auto& [name, ssbo] : vk_program->_tskshader->_ssbo_refs->_ssbo_blocks) {
+          vk_program->_vk_ssbo_blocks[name] = ssbo;
         }
       }
 
@@ -974,6 +1052,12 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         } else if (shobj == vk_program->_geoshader) {
           shader_stage = VK_SHADER_STAGE_GEOMETRY_BIT;
           range_index  = 0; // All stages share the same push constant range for now
+        } else if (shobj == vk_program->_mshshader) {
+          shader_stage = VK_SHADER_STAGE_MESH_BIT_EXT;
+          range_index  = 0;
+        } else if (shobj == vk_program->_tskshader) {
+          shader_stage = VK_SHADER_STAGE_TASK_BIT_EXT;
+          range_index  = 0;
         }
         // TODO: Add tessellation shader support with appropriate range indices
 
@@ -1068,6 +1152,14 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       if (vk_program->_geoshader) {
         uniset_to_pushconstants(vk_program->_geoshader, pc_layout);
       }
+      // the task stage lays out FIRST among the amplification pair: it is the stage the
+      //  draw enters through, and both stages share one range.
+      if (vk_program->_tskshader) {
+        uniset_to_pushconstants(vk_program->_tskshader, pc_layout);
+      }
+      if (vk_program->_mshshader) {
+        uniset_to_pushconstants(vk_program->_mshshader, pc_layout);
+      }
       if (vk_program->_frgshader) {
         uniset_to_pushconstants(vk_program->_frgshader, pc_layout);
       }
@@ -1106,6 +1198,10 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         pc_range.offset     = 0;
         pc_range.size       = pc_size;
         pc_range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+        if (vk_program->_mshshader)
+          pc_range.stageFlags |= VK_SHADER_STAGE_MESH_BIT_EXT;
+        if (vk_program->_tskshader)
+          pc_range.stageFlags |= VK_SHADER_STAGE_TASK_BIT_EXT;
         if (0)
           printf("Push constant range: SHARED [0-%zu]\n", pc_size);
 

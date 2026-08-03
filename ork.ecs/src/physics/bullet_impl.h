@@ -112,6 +112,16 @@ virtual void  drawSphere (btScalar radius, const btTransform &transform, const b
   lineqptr_t _checkedoutreadlq = nullptr;
   bool _enabled = false;
 
+  // emission bounds (self-defend): heightfield colliders debug-draw EVERY triangle —
+  // a 1024^2 terrain emits ~12M lines/frame, far past the shared dynamic VB (1M verts).
+  // Lines are radius-filtered around the camera eye (the collider-vs-visual gauge is
+  // local by nature) then hard-capped; both bounds warn loudly when they clip.
+  fvec3 _refPoint;
+  bool _hasRefPoint  = false;
+  float _refRadius   = 100.0f; // meters; ORKID_PHYSDBG_RADIUS_M overrides
+  size_t _linesDropped = 0;    // per sim frame, cap overflow only
+  static constexpr size_t kMaxLines = 200000; // 400k verts per eye pass; 800k/frame dual-mono VR (< the 1M shared ring)
+
   static constexpr int kmaxbuffers =20;
     //mDBRecs[i]; //._bulletSystem = system
   std::vector<BulletDebugDrawDBData> mDBRecs;
@@ -167,6 +177,11 @@ struct BulletShapeBaseInst {
   AABox mBoundingBox;
   lev2::callback_drawable_ptr_t _drawable;
   svar16_t _impl;
+  // W·M SURFACE RESPONSE (terrain physics leg): the terrain shape raises this when per-contact
+  // friction modulation is active — the system then flags the rigid body CF_CUSTOM_MATERIAL_CALLBACK
+  // so bullet routes its contacts through the global contact-added hook (installed shape-side).
+  // Generic bool so the base does not depend on the terrain impl.
+  bool _wantsCustomMaterialCallback = false;
 };
 
 // a shape factory may expand into MANY broadphase entries instead of one compound
@@ -301,6 +316,7 @@ public:
   std::string _dbgdrawlayername;
   lev2::DrawQueueTransferData _dbgdrawXF;
   PhysicsDebugger* _debugger = nullptr;
+  bool _debugToggle = false; // runtime TOGGLE_DEBUG_DRAW state, XORed with the reflected Debug prop
   int mMaxSubSteps;
   System* _pysys = nullptr; // the scene's PythonSystem, resolved once in _onLink (may be null)
   int mNumSubStepsTaken;

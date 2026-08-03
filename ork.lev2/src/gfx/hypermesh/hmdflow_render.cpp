@@ -17,8 +17,12 @@
 //
 ////////////////////////////////////////////////////////////////
 #include "hmdflow_module.h"
+#include <ork/lev2/gfx/hypermesh/meshlet.h> // CPU meshlet partition (rebuilt on the re-pool hook)
+#include <ork/util/logger.h>                // HYPERMESH-MESHSHADER channel (loud path refusals)
 #include <chrono>
+#include <set>        // O3 stage 3: dedup unique capture pipes across layers
 #include <filesystem> // impostor atlas dump dir (ORKID_IMPOSTOR_DUMP)
+#include <ork/file/path.h> // O3 stage 3: <assetcache> section-array cache dir
 #include <ork/lev2/gfx/renderer/compute_drawable.h>
 #include <ork/lev2/gfx/renderphasestats.h> // perf HUD: hypermesh-gen compute timing
 #include <ork/lev2/gfx/renderer/cull_debug.h> // ORKID_DISABLE_FRUSTUM_CULL / _OCCLUSION_CULL debug levers
@@ -26,6 +30,7 @@
 #include <ork/lev2/gfx/terrain/dflow/hfdflow.h> // terrain::BakeEnv — the clock mirror for field subgraphs (E.1b)
 // impostor bake (A2): offscreen MRT capture of the base mesh from hemi-octahedral angles.
 #include <ork/lev2/gfx/rtgroup.h>
+#include <ork/lev2/gfx/rasterstate.h> // section-atlas bake forces CullTest=OFF (winding-agnostic rasterize)
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/material_pbr.inl>
@@ -45,6 +50,265 @@ namespace ork::lev2::hypermesh {
 // binding renders with the default material instead of vanishing (ops self-defend). No __tags
 // channel -> everything lands in slot 0 = the classic single-draw shape.
 static constexpr int kGidSlots = 4096;
+
+///////////////////////////////////////////////////////////////////////////////
+// POINT-OF-USE ARBITER for the hypermesh BAKE draws (impostor hemi-oct atlas, section
+// atlas). Both are forced-technique captures rasterized through a pushed ortho with an
+// identity model, so they are MONO BY CONSTRUCTION even when the frame that triggers
+// them is a stereo one — but until this line existed, a census could not distinguish
+// "mono because the bake is a bake" from "mono because a stereo peer was missed". The
+// live pass's own stereo bit is printed beside the technique so the two are separable.
+//
+// Once per pipeline. Grep token: SPVR:BAKESEL
+///////////////////////////////////////////////////////////////////////////////
+
+static void _announceBakeDraw(
+    const RenderContextInstData& RCID, //
+    fxpipeline_ptr_t pipe,             //
+    const char* bake,                  //
+    int gid) {
+  if ((nullptr == pipe) or (nullptr == pipe->_technique))
+    return;
+  static std::set<const void*> s_announced;
+  if (not s_announced.insert((const void*)pipe.get()).second)
+    return;
+  auto RCFD   = RCID.rcfd();
+  bool cpd_st = RCFD->hasCPD() ? RCFD->topCPD().isSinglePassStereo() : false;
+  printf(
+      "[SPVR:BAKESEL] bake DRAW kind<%s> gid<%d> technique<%s> permu_stereo<0> pass_stereo<%d> "
+      "(ortho capture — mono by construction)\n",
+      bake,
+      gid,
+      pipe->_technique->_techniqueName.c_str(),
+      int(cpd_st));
+  fflush(stdout);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// MESH-SHADER DRAW (ORKID_HYPERMESH_MESHSHADER=1) — the resolved, per-drawable decision. Resolved
+// ONCE in setupMeshRender (capabilities + the material's mesh technique pair + the meshlet storage
+// blocks) and consumed by the live hook, which flips the drawable onto the mesh path only while a
+// published partition actually matches the live topology.
+///////////////////////////////////////////////////////////////////////////////
+
+static logchannel_ptr_t logchan_hmml = logger()->configureChannel("HYPERMESH-MESHSHADER", fvec3(0.4, 1, 1), false);
+
+struct MeshletDrawState {
+  fxtechnique_constptr_t _tek        = nullptr;
+  const FxShaderStorageBlock* _blkDesc = nullptr;
+  const FxShaderStorageBlock* _blkVtx  = nullptr;
+  const FxShaderStorageBlock* _blkPrim = nullptr;
+  // CLUSTER REJECT (per-meshlet FRUSTUM only — the stored normal cone is not tested; see the mesh
+  // stage's reject block in gpu_meshlet.py). Null when the material carries no bounds contract —
+  // which today's codegen omits for a mesh stage that DISPLACES vertices (a bound computed from the
+  // stored positions cannot bound a shader-side displacement), though a material generated before
+  // the contract existed presents identically here and only the shader source tells them apart.
+  // Null means "reject disabled", NOT "broken": the mesh path still draws, every cluster.
+  const FxShaderStorageBlock* _blkBounds = nullptr;
+  int _slot       = -1; // index of the first of the meshlet storages in _graphicsStorage
+  bool _ready     = false; // everything resolved: the hook may switch the draw
+  int _lastReason = -1;    // last per-frame drive decision (0 = driving); logs on TRANSITIONS only
+  const void* _boundsPart = nullptr; // partition the cluster bounds were last derived from
+  // reject-counter readback state (ORKID_HYPERMESH_MESHCULL_STATS). The counters are monotonic and
+  // never reset, so what is reported is the DELTA across one frame; _statHave suppresses the first
+  // report, which has no predecessor to difference against.
+  const FxShaderStorageBlock* _blkCull = nullptr;
+  uint32_t _statPrevTested = 0, _statPrevRejected = 0;
+  bool _statHave = false;
+};
+using meshletdrawstate_ptr_t = std::shared_ptr<MeshletDrawState>;
+
+// Resolve the mesh draw path for THIS drawable. Every refusal is loud and names its cause — a
+// silent step-down to the pull-VS path is indistinguishable from the mesh path working.
+static meshletdrawstate_ptr_t _resolveMeshletDraw(
+    ComputeDrawableData* cdd, Context* ctx, bool instanced, bool wireframe, bool gid_buckets) {
+  auto st = std::make_shared<MeshletDrawState>();
+  if (meshShaderMode() < 1)
+    return st;
+  auto pbr   = std::dynamic_pointer_cast<PBRMaterial>(cdd->_material);
+  auto fsmtl = pbr ? pbr->_as_freestyle : nullptr;
+  if (instanced) {
+    logchan_hmml->log("requested, but this drawable is INSTANCED (the mesh stage places no "
+                      "per-instance matrix) — using the pull-VS path");
+    return st;
+  }
+  if (gid_buckets) {
+    // the partition covers the WHOLE mesh; per-gid bucket draws re-draw slices of that same mesh
+    // with their own materials, so running both would double-draw every bucketed triangle.
+    logchan_hmml->log("requested, but this drawable has per-gid bucket draws (the partition covers "
+                      "the whole mesh) — using the pull-VS path");
+    return st;
+  }
+  if (not ctx->supportsMeshShader()) {
+    logchan_hmml->log("requested, but this device has no VK_EXT_mesh_shader — using the pull-VS path");
+    return st;
+  }
+  if (not fsmtl) {
+    logchan_hmml->log("requested, but the drawable's material is not freestyle-backed — using the "
+                      "pull-VS path");
+    return st;
+  }
+  auto tek = fsmtl->technique("FWD_SSBO_CUSTOM_MESH");
+  auto dpp = fsmtl->technique("FWD_SSBO_CUSTOM_MESH_DEPTHPREPASS");
+  if (not tek or not dpp) {
+    // The shader path is the discriminator, and it is the reason this line prints it: the generated
+    // .fxv2 is content-addressed (its digest covers the whole generated source, mesh block
+    // included), so a path whose file DOES carry the technique means the compiled artifact behind
+    // it is inconsistent with its own source — not that the wrong material was picked.
+    logchan_hmml->log("requested, but the material carries no FWD_SSBO_CUSTOM_MESH%s technique — "
+                      "using the pull-VS path. shader<%s> (grep that file for the technique: present "
+                      "=> stale compiled artifact, absent => the material was generated with the "
+                      "toggle off)",
+                      tek ? "_DEPTHPREPASS" : "",
+                      pbr->_shaderpath.c_str());
+    return st;
+  }
+  st->_blkDesc = fsmtl->storageBlock("sif_ml_desc");
+  st->_blkVtx  = fsmtl->storageBlock("sif_ml_vtx");
+  st->_blkPrim = fsmtl->storageBlock("sif_ml_prim");
+  if (not st->_blkDesc or not st->_blkVtx or not st->_blkPrim) {
+    logchan_hmml->log("requested, but the material has a mesh stage without the meshlet storage "
+                      "blocks (sif_ml_desc/vtx/prim) — stale material, re-materialize — using the "
+                      "pull-VS path");
+    return st;
+  }
+  if (wireframe) // the LINE overlay is a pull-VS indexed draw off the triangulator's line buffer
+    logchan_hmml->log("wireframe overlay stays on the pull-VS line draw (the mesh path drives the "
+                      "fill only)");
+  st->_blkCull   = fsmtl->storageBlock("sif_ml_cull");
+  st->_blkBounds = fsmtl->storageBlock("sif_ml_bounds");
+  if (not st->_blkBounds)
+    // OBSERVED: the block is absent. NOT observed: why. The codegen omits it for a displacing mesh
+    // stage, but a material generated before the bounds contract existed is indistinguishable from
+    // here — so the line reports what it saw, names the expected cause as expected, and hands over
+    // the one grep that separates them (same discriminator idiom as the technique refusal above).
+    logchan_hmml->log("cluster reject OFF: this material declares no sif_ml_bounds block, so every "
+                      "published cluster draws. Expected cause is a mesh stage that DISPLACES "
+                      "vertices (a bound derived from the stored positions cannot bound what such a "
+                      "stage emits) — but this side sees only the missing block. shader<%s> (grep "
+                      "that file: a displace body present => expected, absent => the material "
+                      "predates the bounds contract, re-materialize)",
+                      pbr->_shaderpath.c_str());
+  st->_tek   = tek;
+  st->_ready = true;
+  logchan_hmml->log("enabled: direct-sized DrawMeshTasks, one workgroup per published meshlet, "
+                    "cluster reject %s. shader<%s>",
+                    st->_blkBounds ? "ON (frustum only; the normal cone is computed and stored but "
+                                     "NOT tested — no backface rejection is running)"
+                                   : "OFF",
+                    pbr->_shaderpath.c_str());
+  return st;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// PER-CLUSTER BOUNDS — the data the mesh stage's cluster reject runs on. One thread per meshlet
+// reduces its own bucket (<=64 verts, <=128 prims at the darwin caps) to an OBJECT-SPACE bounding
+// sphere + a normal cone; the mesh stage transforms them per view.
+//
+// Object space, not world space, ON PURPOSE: the bounds are then camera-independent, so ONE
+// evaluation serves the color pass, the depth prepass and every sun cascade. Recomputed next to the
+// triangulate (same dispatch phase) whenever the graph re-evaluated or a new partition landed, which
+// is exactly when positions can have moved.
+//
+// The cone cutoff is the SINE of the cone half-angle (meshopt's convention), with 2.0 reserved as
+// "cone unusable" (normals span more than a hemisphere) — a value the reject test can never satisfy,
+// so a degenerate cluster is simply never backface-rejected. Over-culling is a correctness bug;
+// under-culling is only a missed saving, so every ambiguity resolves toward drawing.
+///////////////////////////////////////////////////////////////////////////////
+
+static std::string _meshlet_bounds_text() {
+  return R"S(
+fxconfig fxcfg_default {}
+storage_interface sif_mld (descriptor_set 0) { buffer layout(std430) mldb {
+  uint ml_count; uint mlpad0; uint mlpad1; uint mlpad2; uint MLDesc[]; }; }
+storage_interface sif_mlv (descriptor_set 0) { buffer layout(std430) mlvb { uint MLVerts[]; }; }
+storage_interface sif_mlp (descriptor_set 0) { buffer layout(std430) mlpb { uint MLPrims[]; }; }
+storage_interface sif_pos (descriptor_set 0) { buffer layout(std430) posb { vec4 Pd[]; }; }
+storage_interface sif_bnd (descriptor_set 0) { buffer layout(std430) bndb { vec4 MLBounds[]; }; }
+compute_interface iface { storage { sif_mld sif_mlv sif_mlp sif_pos sif_bnd }
+                          inputs { layout(local_size_x = 64); } }
+////////////////////////////////////////
+compute_shader cs_meshlet_bounds : iface {
+  uint ml = gl_GlobalInvocationID.x;
+  if (ml >= ml_count) { return; }
+  uint d0    = ml * 4u;
+  uint v_off = MLDesc[d0 + 0u];
+  uint v_cnt = MLDesc[d0 + 1u];
+  uint p_off = MLDesc[d0 + 2u];
+  uint p_cnt = MLDesc[d0 + 3u];
+  if (v_cnt == 0u) {          // empty bucket: radius 0 + unusable cone -> frustum rejects it, cone never does
+    MLBounds[ml * 2u + 0u] = vec4(0.0, 0.0, 0.0, 0.0);
+    MLBounds[ml * 2u + 1u] = vec4(0.0, 1.0, 0.0, 2.0);
+    return;
+  }
+  // sphere: centroid, then the true max radius about it (a centroid sphere is never smaller than the
+  // cluster, which is the direction that keeps the reject conservative).
+  vec3 ctr = vec3(0.0);
+  for (uint i = 0u; i < v_cnt; i++) { ctr += Pd[MLVerts[v_off + i]].xyz; }
+  ctr /= float(v_cnt);
+  float rad = 0.0;
+  for (uint i = 0u; i < v_cnt; i++) { rad = max(rad, length(Pd[MLVerts[v_off + i]].xyz - ctr)); }
+  // normal cone: average the triangle normals for the axis, then take the WORST alignment as the
+  // half-angle. Degenerate triangles contribute nothing (zero-length normal).
+  vec3 nsum = vec3(0.0);
+  for (uint t = 0u; t < p_cnt; t++) {
+    uint packed = MLPrims[p_off + t];
+    vec3 a = Pd[MLVerts[v_off + (packed        & 255u)]].xyz;
+    vec3 b = Pd[MLVerts[v_off + ((packed >> 8u) & 255u)]].xyz;
+    vec3 c = Pd[MLVerts[v_off + ((packed >> 16u) & 255u)]].xyz;
+    vec3 n = cross(b - a, c - a);
+    float l = length(n);
+    if (l > 1.0e-12) { nsum += n / l; }
+  }
+  float axlen = length(nsum);
+  vec4 cone = vec4(0.0, 1.0, 0.0, 2.0);   // sentinel: unusable cone
+  if (axlen > 1.0e-6) {
+    vec3 ax = nsum / axlen;
+    float mindot = 1.0;
+    for (uint t = 0u; t < p_cnt; t++) {
+      uint packed = MLPrims[p_off + t];
+      vec3 a = Pd[MLVerts[v_off + (packed        & 255u)]].xyz;
+      vec3 b = Pd[MLVerts[v_off + ((packed >> 8u) & 255u)]].xyz;
+      vec3 c = Pd[MLVerts[v_off + ((packed >> 16u) & 255u)]].xyz;
+      vec3 n = cross(b - a, c - a);
+      float l = length(n);
+      if (l > 1.0e-12) { mindot = min(mindot, dot(ax, n / l)); }
+    }
+    // mindot <= 0 => the normals span at least a hemisphere => no direction can see the whole
+    // cluster's back, so the cone stays unusable rather than pretending to a bound it does not have.
+    if (mindot > 0.0) { cone = vec4(ax, sqrt(max(0.0, 1.0 - mindot * mindot))); }
+  }
+  MLBounds[ml * 2u + 0u] = vec4(ctr, rad);
+  MLBounds[ml * 2u + 1u] = cone;
+}
+)S";
+}
+
+// Driver for the bounds pass. Owns only the shader; the buffers belong to MeshletHost (desc/vtx/prim/
+// bounds) and to the mesh (positions), so there is nothing here to keep in sync with a rebuild.
+struct MeshletBounds {
+  const FxComputeShader* _cs = nullptr;
+  void build(Context* ctx) {
+    auto fxi = ctx->FXI();
+    auto sh  = fxi->shaderFromShaderText("hypermesh_meshlet_bounds", _meshlet_bounds_text());
+    _cs      = fxi->computeShader(sh, "cs_meshlet_bounds");
+  }
+  // IN-dispatch-phase. `nml` sizes the dispatch; the shader re-checks ml_count from the buffer, so an
+  // over-dispatch against a partition that shrank writes nothing.
+  void dispatch(Context* ctx, MeshletHost* host, gpumesh_ptr_t mesh, uint32_t nml) {
+    auto pch = mesh->channel(MeshChannel::POSITION);
+    if (not _cs or not pch or 0 == nml)
+      return;
+    auto ci = ctx->CI();
+    ci->bindStorageBuffer(_cs, 0, host->_descSSBO);
+    ci->bindStorageBuffer(_cs, 1, host->_vtxSSBO);
+    ci->bindStorageBuffer(_cs, 2, host->_primSSBO);
+    ci->bindStorageBuffer(_cs, 3, pch->_ssbo);
+    ci->bindStorageBuffer(_cs, 4, host->_boundsSSBO);
+    ci->dispatchCompute(_cs, (nml + 63) / 64, 1, 1);
+    ci->storageBarrier(); // bounds write -> mesh-stage read
+  }
+};
 
 static std::string _triangulate_text() {
   return R"S(
@@ -484,6 +748,15 @@ struct MeshInstCull {
   FxShaderStorageBuffer* _hzbDummy     = nullptr; // bound at slot 7 when no HZB (mode 0 never reads it)
   FxShaderStorageBuffer* _boundsSSBO   = nullptr; // slot 8: K object-space AABBs (2 vec4 each, min/max)
   FxShaderStorageBuffer* _lodSSBO      = nullptr; // slot 9: clod { num_tiers, lod_dist, VIS[4] }
+  // cascade-cull fix — the SUN-SHADOW buffer set. perViewShadow runs the SAME reset/cull/fanout with a
+  // union sun camera (occlusion OFF, single tier) into these, so the sun-cascade depth passes draw the
+  // union-sun survivors. The EYE set above is never touched by the shadow cull -> color byte-identity.
+  FxShaderStorageBuffer* _paramsShadow    = nullptr;
+  FxShaderStorageBuffer* _culledMtxShadow = nullptr; // single-tier OUT_M (all sun-visible)
+  FxShaderStorageBuffer* _culledAttrShadow= nullptr;
+  FxShaderStorageBuffer* _lodShadow       = nullptr; // clod (num_tiers forced 1)
+  FxShaderStorageBuffer* _argsShadow      = nullptr; // per-gid indexCounts copied from _args + shadow instanceCounts
+  FxShaderStorageBuffer* _tierIdxShadow   = nullptr; // cif_tier fanout index (fixed 0)
   int _numBounds = 0;                             // K (0 => occlusion never culls — safe)
   float _boxScale = 1.0f;                         // per-variant occludee tightness (<1 = cull harder)
   float _cullDistance = 0.0f;                     // per-variant radial distance cull (0 = off)
@@ -516,6 +789,19 @@ struct MeshInstCull {
     _hzbDummy   = fxi->createStorageBuffer(16);
     _boundsSSBO = fxi->createStorageBuffer(32); // dummy (1 box) until setBounds; _numBounds stays 0
     _lodSSBO    = fxi->createStorageBuffer(48); // clod: uint(4)+pad(12)+vec4(16)+uint[4](16)
+    // cascade-cull fix — the sun-shadow set (single tier: count slots, no LOD interleave).
+    _paramsShadow     = fxi->createStorageBuffer(160);
+    _culledMtxShadow  = fxi->createStorageBuffer(size_t(count) * 64);
+    _culledAttrShadow = fxi->createStorageBuffer(size_t(count) * 16);
+    _lodShadow        = fxi->createStorageBuffer(48);
+    _argsShadow       = fxi->createStorageBuffer(size_t(kGidSlots) * 5 * 4);
+    _tierIdxShadow    = fxi->createStorageBuffer(16);
+    { // cif_tier fanout index is fixed at tier 0 for the (single-tier) shadow fanout
+      uint32_t z = 0u;
+      auto tm = fxi->mapStorageBuffer(_tierIdxShadow, 0, 4, BufferMapAccess::WRITE_ONLY);
+      std::memcpy(tm->_mappedaddr, &z, 4);
+      fxi->unmapStorageBuffer(tm.get());
+    }
   }
   // OCCLUDEE decomposition: a flat list of K object-space AABBs (each pushed as {min.xyz,0},{max.xyz,0}).
   // K=1 = whole-mesh AABB; K=n = vertical slabs / clusters. The cull occludes iff ALL K are occluded.
@@ -682,6 +968,98 @@ struct MeshInstCull {
              _numTiers, _lodDist[0], _lodDist[1], _lodDist[2],
              lc.vis[0], lc.vis[1], lc.vis[2], lc.vis[3], s, pr.visible,
              (s == pr.visible) ? "OK" : "*** MISMATCH ***");
+    }
+  }
+
+  ////////////////////////////////////////////////////////////////////////////
+  // cascade-cull fix — the SUN-SHADOW cull. Same reset/cull/fanout as perView but: a UNION sun camera
+  // (from the prologue, superset of every cascade slice), occlusion OFF (a light cull must be frustum-
+  // only — the eye HZB is meaningless in light space), NO distance cull (a far caster still shadows),
+  // NO CullFrustumScale narrowing (the union frustum is already conservative), and a SINGLE tier (every
+  // sun-visible instance casts the full mesh). Targets the shadow buffer set; the eye set is untouched.
+  // Runs once per composited frame from Scene::shadowCull, inside its (reentrant) dispatch phase.
+  ////////////////////////////////////////////////////////////////////////////
+  void perViewShadow(Context* ctx, const CameraMatrices& cammtx) {
+    if (not _args) // no triangulated args to source per-gid indexCounts from -> nothing to cast
+      return;
+    auto fxi = ctx->FXI();
+    auto ci  = ctx->CI();
+    // host params prefix (layout MUST match cif_par's std430; stat counters at the tail stay GPU-owned).
+    struct P { float vp[16]; float bound[4]; float eye_cd[4]; uint32_t count; float tighten;
+               uint32_t hzb_w; uint32_t hzb_h; uint32_t hzb_mips; uint32_t hzb_mode;
+               uint32_t num_bounds; float box_scale;
+               uint32_t visible; uint32_t occluded; uint32_t frustum; } p;
+    const size_t P_PREFIX = 128;
+    std::memcpy(p.vp, cammtx.GetVPMatrix().asArray(), 64);
+    p.bound[0] = _bound.x; p.bound[1] = _bound.y; p.bound[2] = _bound.z; p.bound[3] = _bound.w;
+    const float* iv = cammtx.GetIVMatrix().asArray();
+    p.eye_cd[0] = iv[12]; p.eye_cd[1] = iv[13]; p.eye_cd[2] = iv[14];
+    p.eye_cd[3] = 0.0f; // no distance cull for shadows
+    p.count = uint32_t(_count);
+    p.tighten = cullFrustumDisabled() ? -1.0f : 1.0f; // exact union frustum (already conservative)
+    p.hzb_w = 0u; p.hzb_h = 0u; p.hzb_mips = 0u; p.hzb_mode = 0u; // occlusion OFF (frustum-only)
+    p.num_bounds = uint32_t(_numBounds);
+    p.box_scale  = _boxScale;
+    { auto m = fxi->mapStorageBuffer(_paramsShadow, 0, P_PREFIX, BufferMapAccess::WRITE_ONLY);
+      std::memcpy(m->_mappedaddr, &p, P_PREFIX);
+      fxi->unmapStorageBuffer(m.get()); }
+    // single-tier LOD config (VIS[] zeroed on-GPU by cs_cull_reset)
+    struct L { uint32_t num_tiers; uint32_t fanout_tier; uint32_t pad[2]; float lod_dist[4]; uint32_t vis[4]; } lc;
+    lc.num_tiers = 1u; lc.fanout_tier = 0u; lc.pad[0] = lc.pad[1] = 0u;
+    for (int t = 0; t < 4; t++) { lc.lod_dist[t] = 0.0f; lc.vis[t] = 0u; }
+    { auto lm = fxi->mapStorageBuffer(_lodShadow, 0, sizeof(lc), BufferMapAccess::WRITE_ONLY);
+      std::memcpy(lm->_mappedaddr, &lc, sizeof(lc));
+      fxi->unmapStorageBuffer(lm.get()); }
+    auto bind = [&](const FxComputeShader* cs) {
+      ci->bindStorageBuffer(cs, 0, _paramsShadow);
+      ci->bindStorageBuffer(cs, 1, _srcMtx);
+      ci->bindStorageBuffer(cs, 2, _culledMtxShadow);
+      ci->bindStorageBuffer(cs, 3, _srcAttr);
+      ci->bindStorageBuffer(cs, 4, _culledAttrShadow);
+      ci->bindStorageBuffer(cs, 5, _argsShadow);
+      ci->bindStorageBuffer(cs, 6, _boundGidMask);
+      ci->bindStorageBuffer(cs, 7, _hzbDummy);
+      ci->bindStorageBuffer(cs, 8, _boundsSSBO);
+      ci->bindStorageBuffer(cs, 9, _lodShadow);
+      ci->bindStorageBuffer(cs, 10, _tierIdxShadow);
+    };
+    ci->beginDispatchPhase();
+    // copy the tier-0 per-gid commands (indexCounts written by the triangulator) into the shadow args;
+    // the fanout below overwrites ONLY instanceCount/firstInstance, so shadow args = per-gid indexCounts
+    // + shadow instanceCounts. _args is the SAME buffer the eye path reads (culler->_args = tri->_args).
+    ci->copyBufferRegion(_args, 0, _argsShadow, 0, size_t(kGidSlots) * 5 * 4);
+    bind(_cs_reset);
+    ci->dispatchCompute(_cs_reset, 1, 1, 1);
+    ci->storageBarrier();
+    bind(_cs_cull);
+    ci->dispatchCompute(_cs_cull, (uint32_t(_count) + 63) / 64, 1, 1);
+    ci->storageBarrier(); // cull VIS + the args copy both visible to the fanout
+    bind(_cs_fanout);
+    ci->dispatchCompute(_cs_fanout, 4096 / 64, 1, 1);
+    ci->endDispatchPhase();
+    // shadow-flicker instrumentation (ORKID_SHADOWCULL_TRACE=1; OFF = not one instruction of cost).
+    // The eye path aggregates into the perf HUD's CullStats; the sun-shadow cull had no counters at
+    // all, so a per-frame survivor series needs this readback. This end is NESTED inside
+    // Scene::shadowCull's phase, so the submit is deferred -> the tail counters read here are the
+    // PREVIOUS frame's completed cull (a constant one-frame lag; oscillation analysis is unaffected).
+    static const bool s_shadowtrace = (getenv("ORKID_SHADOWCULL_TRACE") != nullptr);
+    if (s_shadowtrace) {
+      // MUST match cif_par std430: stat counters (visible/occluded/frustum) at the TAIL (GPU-owned).
+      struct RB { float vp[16]; float bound[4]; float eye_cd[4]; uint32_t count; float tighten;
+                  uint32_t hzb_w; uint32_t hzb_h; uint32_t hzb_mips; uint32_t hzb_mode;
+                  uint32_t num_bounds; float box_scale;
+                  uint32_t visible; uint32_t occluded; uint32_t frustum; } rb;
+      auto m = fxi->mapStorageBuffer(_paramsShadow, 0, sizeof(rb), BufferMapAccess::READ_ONLY);
+      std::memcpy(&rb, m->_mappedaddr, sizeof(rb));
+      fxi->unmapStorageBuffer(m.get());
+      printf(
+          "[shadowcull] frame<%d> mesh<%p> count<%u> frustum<%u> visible<%u>\n",
+          ctx->GetTargetFrame(),
+          (const void*)this,
+          rb.count,
+          rb.frustum,
+          rb.visible);
+      fflush(stdout);
     }
   }
 };
@@ -1173,7 +1551,19 @@ bool ImpostorBakeJob::renderInFrame(Context* ctx) {
   auto gbi  = ctx->GBI();
   auto mtxi = ctx->MTXI();
   auto txi  = ctx->TXI();
+  auto fxi  = ctx->FXI();
   auto rcfd = std::make_shared<RenderContextFrameData>(ctx);
+  // OWNER LAW (2026-07-24): cull is ENTIRELY disabled during baking — every bake draw, not
+  // just the atlas-space one. Here the impostor sources include single-sided leaf/card
+  // geometry, and cull mode is a sticky DYNAMIC pipeline state the indirect path never
+  // re-applies: leaked PASS_FRONT silently drops back-wound cards from half the view tiles.
+  // Depth testing still resolves closed-mesh occlusion correctly with cull off.
+  static const RasterState s_bakeCullOff = [] {
+    RasterState r;
+    r.setCullTest(ECullTest::OFF);
+    r._priority = 1 << 20; // outrank any technique state block
+    return r;
+  }();
   fbi->PushRtGroup(_rtg.get());
   for (int j = 0; j < _gridN; j++) {
     for (int i = 0; i < _gridN; i++) {
@@ -1201,7 +1591,9 @@ bool ImpostorBakeJob::renderInFrame(Context* ctx) {
       for (auto& gp : _gidPipes) {
         if (not gp.second) continue;
         int gid = gp.first;
+        _announceBakeDraw(RCID, gp.second, "impostor_atlas", gid);
         gp.second->wrappedDrawCall(RCID, [&]() {
+          fxi->applyRasterState(s_bakeCullOff); // bake law: cull OFF (see above)
           gbi->DrawIndexedIndirectEML(_tri->_triIndex, PrimitiveType::TRIANGLES, _bakeArgs, size_t(gid) * 20, 4);
         });
       }
@@ -1246,6 +1638,661 @@ bool ImpostorBakeJob::renderInFrame(Context* ctx) {
   printf("bakeImpostor: %dx%d hemi-oct atlas (tile %d, %d verts) center<%.2f %.2f %.2f> r<%.2f>\n",
          _gridN, _gridN, _tileRes, _nverts, _center.x, _center.y, _center.z, _radius);
   return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// O3 stage 2 — the per-section texture-array bake job. Renders each SECTION (its SectionUnwrap gid
+// bucket) into its OWN 2D MRT via the material's FWD_SSBO_CUSTOM_CAPTURE technique (routed through the
+// section cap-VS: gl_Position = mvp*vec4(uv0.xy,0,1) over an ortho covering the 0-1 UV domain — the
+// MoltenVK-safe path), then host round-trips each target (captureAsFormat -> CaptureBuffer). The Python
+// section_bake cache assembles those into ONE sampler2DArray layer per section. Mirrors ImpostorBakeJob.
+///////////////////////////////////////////////////////////////////////////////
+struct SectionBakeJobImpl {
+  livehypermesh_ptr_t            _live;
+  std::shared_ptr<MeshRenderTri> _tri;        // our OWN gid-bucketed tri (non-instanced; instanceCount=1)
+  // O3 stage 3 — PER-LAYER forced-capture pipeline: each layer's section is baked with ITS gid material's
+  // capture technique (the per-gid bake map). The single-material entry (prepareSectionBake) fills every
+  // slot with one pipe; the mapped entry (prepareSectionBakeMapped) selects per gid. _layerCfs is the
+  // parallel freestyle view used to RE-BIND the (possibly re-pooled) vertex channels each bake frame.
+  std::vector<fxpipeline_ptr_t>    _layerPipes;
+  std::vector<freestyle_mtl_ptr_t> _layerCfs;
+  std::vector<int>               _layerGids;  // layer -> section gid (drives the per-layer gid-bucket draw)
+  int                            _bakeRes    = 256;
+  int                            _numTargets = 1;
+  bool                           _fired      = false; // the in-frame render has run (captures issued)
+  std::vector<rtgroup_ptr_t>          _rtgs;     // kept alive until the host readbacks drain
+  std::vector<capturebuffer_ptr_t>    _captures; // [layer*numTargets + target] -> host RGBA8
+  std::vector<captureasync_ptr_t>     _futures;  // readback completion
+  bool isReady() const {
+    if (not _fired) return false;
+    for (auto& f : _futures)
+      if (f and not f->isReady()) return false;
+    return true;
+  }
+  bool renderInFrame(Context* ctx);
+};
+
+// build the forced-capture pipeline for ONE material (freestyle cache; the PBR cache asserts on the
+// capture frame-type). Binds the mesh's vertex channels + the matrices vs_ptex_ssbo_cap uses (no CPD ->
+// MTXI/RCID fallback = the pushed ortho V/P + identity M) + the material's stamped params (ctx.param
+// uniforms) so the baked procedural matches the live proc exactly. Shared by both bake entry points.
+static fxpipeline_ptr_t buildSectionCapturePipe(gpumesh_ptr_t mesh, pbrmaterial_ptr_t material) {
+  auto ctek = material ? material->_tek_FWD_SSBO_CUSTOM_CAPTURE : nullptr;
+  auto cfs  = material ? material->_as_freestyle : nullptr;
+  if (not ctek or not cfs or not mesh)
+    return nullptr;
+  static const char* kChan[5] = {"sif_ptex_vtx", "sif_N", "sif_B", "sif_uv", "sif_clr"};
+  FxPipelinePermutation permu;
+  permu._is_vertex_ssbo   = true;
+  permu._forced_technique = ctek;
+  auto pipe = cfs->pipelineCache()->findPipeline(permu);
+  if (pipe) {
+    for (int c = 0; c < 5; c++)
+      if (auto blk = cfs->storageBlock(kChan[c]))
+        if (auto ch = mesh->channel(MeshChannel(c)))
+          pipe->bindStorage(blk, ch->_ssbo);
+    if (auto p = cfs->param("mvp"))  pipe->bindParam(p, "RCFD_Camera_MVP_Mono"_crcsh);
+    if (auto p = cfs->param("m"))    pipe->bindParam(p, "RCFD_M"_crcsh);
+    if (auto p = cfs->param("mrot")) pipe->bindParam(p, "RCFD_Model_Rot"_crcsh);
+    for (auto item : material->_bound_params)
+      pipe->bindParam(item.first, item.second);
+  }
+  return pipe;
+}
+
+// public pimpl wrapper methods (see hmdflow.h).
+bool SectionBakeJob::isReady() const { return _impl ? _impl->isReady() : true; }
+int  SectionBakeJob::numLayers() const { return _impl ? int(_impl->_layerGids.size()) : 0; }
+int  SectionBakeJob::numTargets() const { return _impl ? _impl->_numTargets : 0; }
+capturebuffer_ptr_t SectionBakeJob::layerCapture(int layer, int target) const {
+  if (not _impl) return nullptr;
+  int idx = layer * _impl->_numTargets + target;
+  if (idx < 0 or idx >= int(_impl->_captures.size())) return nullptr;
+  return _impl->_captures[idx];
+}
+
+sectionbakejob_ptr_t prepareSectionBake(
+    Context* ctx, ComputeDrawableData* cdd, livehypermesh_ptr_t live, pbrmaterial_ptr_t material,
+    const std::vector<int>& layerGids, int bakeRes, int numTargets) {
+  auto mesh = live ? live->_mesh : nullptr;
+  if (not mesh) return nullptr;
+  auto ctek = material ? material->_tek_FWD_SSBO_CUSTOM_CAPTURE : nullptr;
+  auto cfs  = material ? material->_as_freestyle : nullptr;
+  // OPS SELF-DEFEND / FAIL LOUD (A owner law): a section-array material MUST carry the capture technique
+  // (author it with capture=True + self.capture(...) + surface_stored()). No silent placeholder fallback.
+  OrkAssertI(ctek and cfs,
+             "prepareSectionBake: material has no FWD_SSBO_CUSTOM_CAPTURE technique — author the "
+             "SectionArray material with capture=True + self.capture(...) + surface_stored()");
+  auto job         = std::make_shared<SectionBakeJob>();
+  auto impl        = std::make_shared<SectionBakeJobImpl>();
+  job->_impl       = impl;
+  impl->_live      = live;
+  impl->_layerGids = layerGids;
+  impl->_bakeRes    = std::max(8, bakeRes);
+  impl->_numTargets = std::max(1, numTargets);
+  impl->_captures.resize(size_t(std::max<size_t>(1, layerGids.size())) * size_t(impl->_numTargets));
+
+  // our OWN triangulator, gid-bucketed by the section gids so each layer draws exactly its section's faces.
+  auto tri          = std::make_shared<MeshRenderTri>();
+  tri->_boundGids   = layerGids;                 // every section gid gets its own indirect bucket
+  tri->build(ctx);
+  tri->ensureIndex(mesh ? mesh->_num_corners : 1);
+  impl->_tri = tri;
+
+  // single material for every layer (the classic stage-2 shape).
+  auto pipe = buildSectionCapturePipe(mesh, material);
+  impl->_layerPipes.assign(layerGids.size(), pipe);
+  impl->_layerCfs.assign(layerGids.size(), cfs);
+
+  // register the in-frame one-shot (chained; mirrors the impostor bake). It fires once the mesh tri is
+  // clean+synced, renders every layer, and issues the async captures.
+  auto prev           = cdd->_oneShotRender;
+  cdd->_oneShotRender = [prev, impl](Context* c) -> bool {
+    bool a = prev ? prev(c) : true;
+    bool b = impl->renderInFrame(c);
+    return a and b;
+  };
+  printf("prepareSectionBake: %zu layers @ %dpx, %d target(s) — gids[", layerGids.size(), impl->_bakeRes, impl->_numTargets);
+  for (int g : layerGids) printf(" %d", g);
+  printf(" ]\n");
+  return job;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// O3 stage 3 — per-LAYER material bake (the per-gid BAKE MAP). Each section-layer's gid bucket is baked
+// with THAT gid's material's capture technique (adobe content into adobe layers, timber into timber);
+// unbound gids fall back to `defaultMaterial`. All bound materials MUST share the capture-target schema
+// (same names, same MRT order) so the assembled arrays are coherent — the stored sampler material defines
+// it. Mirrors prepareSectionBake's one-shot orchestration.
+///////////////////////////////////////////////////////////////////////////////
+sectionbakejob_ptr_t prepareSectionBakeMapped(
+    Context* ctx, ComputeDrawableData* cdd, livehypermesh_ptr_t live,
+    pbrmaterial_ptr_t defaultMaterial, const std::map<int, pbrmaterial_ptr_t>& gidMaterials,
+    const std::vector<int>& layerGids, int bakeRes, int numTargets) {
+  auto mesh = live ? live->_mesh : nullptr;
+  if (not mesh) return nullptr;
+  // OPS SELF-DEFEND / FAIL LOUD: a stored-mode section bake needs a capture-enabled material for every
+  // layer (the default, or the gid's bake material). No silent proc fallback (owner law).
+  OrkAssertI(defaultMaterial and defaultMaterial->_tek_FWD_SSBO_CUSTOM_CAPTURE,
+             "prepareSectionBakeMapped: default (sampler) material has no FWD_SSBO_CUSTOM_CAPTURE technique "
+             "— author it with capture=True + self.capture(...) + surface_stored()");
+  auto job         = std::make_shared<SectionBakeJob>();
+  auto impl        = std::make_shared<SectionBakeJobImpl>();
+  job->_impl       = impl;
+  impl->_live      = live;
+  impl->_layerGids = layerGids;
+  impl->_bakeRes    = std::max(8, bakeRes);
+  impl->_numTargets = std::max(1, numTargets);
+  impl->_captures.resize(size_t(std::max<size_t>(1, layerGids.size())) * size_t(impl->_numTargets));
+
+  auto tri        = std::make_shared<MeshRenderTri>();
+  tri->_boundGids = layerGids;
+  tri->build(ctx);
+  tri->ensureIndex(mesh->_num_corners);
+  impl->_tri = tri;
+
+  // one capture pipe per UNIQUE bake material (dedup by material pointer); each layer selects by its gid.
+  std::map<pbrmaterial_ptr_t, fxpipeline_ptr_t> pipeCache;
+  auto pipeFor = [&](pbrmaterial_ptr_t m) -> fxpipeline_ptr_t {
+    auto it = pipeCache.find(m);
+    if (it != pipeCache.end())
+      return it->second;
+    auto p = buildSectionCapturePipe(mesh, m);
+    pipeCache[m] = p;
+    return p;
+  };
+  impl->_layerPipes.resize(layerGids.size());
+  impl->_layerCfs.resize(layerGids.size());
+  for (size_t L = 0; L < layerGids.size(); L++) {
+    int gid  = layerGids[L];
+    auto git = gidMaterials.find(gid);
+    auto m   = (git != gidMaterials.end() and git->second) ? git->second : defaultMaterial;
+    // a gid whose bake material lacks the capture technique falls back to the default (never silent black).
+    if (not m or not m->_tek_FWD_SSBO_CUSTOM_CAPTURE)
+      m = defaultMaterial;
+    impl->_layerPipes[L] = pipeFor(m);
+    impl->_layerCfs[L]   = m->_as_freestyle;
+  }
+
+  auto prev           = cdd->_oneShotRender;
+  cdd->_oneShotRender = [prev, impl](Context* c) -> bool {
+    bool a = prev ? prev(c) : true;
+    bool b = impl->renderInFrame(c);
+    return a and b;
+  };
+  printf("prepareSectionBakeMapped: %zu layers @ %dpx, %d target(s) — layer->gid[", layerGids.size(), impl->_bakeRes, impl->_numTargets);
+  for (int g : layerGids) printf(" %d", g);
+  printf(" ] baked_materials=%zu\n", pipeCache.size());
+  return job;
+}
+
+bool SectionBakeJobImpl::renderInFrame(Context* ctx) {
+  if (_fired) return true;
+  auto mesh = _live ? _live->_mesh : nullptr;
+  if (not mesh or _layerGids.empty() or _layerPipes.empty() or not _tri) return true; // nothing to bake — don't retry
+  // triangulate our OWN tri once (gid-bucketed). A dispatch phase is legal here — onPreRender runs the
+  // one-shot AFTER _perViewCompute (its own dispatch phase) and BEFORE any graphics pass. submit+wait via
+  // endDispatchPhase, so _triIndex/_args are valid for the draws below.
+  if (_tri->topoDirty(mesh)) {
+    _tri->ensureIndex(mesh->_num_corners);
+    _tri->writeParams(mesh->_num_faces, mesh->face("__tags") != nullptr);
+    auto ci = ctx->CI();
+    ci->beginDispatchPhase();
+    _tri->dispatch(mesh);
+    ci->endDispatchPhase();
+    _tri->ackTopo(mesh);
+  }
+  _fired = true;
+  // RE-BIND each UNIQUE capture pipe's vertex channels to the mesh's CURRENT (possibly re-pooled) SSBOs.
+  {
+    static const char* kChanRB[5] = {"sif_ptex_vtx", "sif_N", "sif_B", "sif_uv", "sif_clr"};
+    std::set<FxPipeline*> rebound;
+    for (size_t L = 0; L < _layerPipes.size(); L++) {
+      auto pipe = _layerPipes[L];
+      auto cfs  = (L < _layerCfs.size()) ? _layerCfs[L] : nullptr;
+      if (not pipe or not cfs or not rebound.insert(pipe.get()).second)
+        continue;
+      for (int c = 0; c < 5; c++)
+        if (auto blk = cfs->storageBlock(kChanRB[c]))
+          if (auto ch = mesh->channel(MeshChannel(c)))
+            pipe->bindStorage(blk, ch->_ssbo);
+    }
+  }
+  auto fbi  = ctx->FBI();
+  auto gbi  = ctx->GBI();
+  auto mtxi = ctx->MTXI();
+  auto fxi  = ctx->FXI();
+  auto rcfd = std::make_shared<RenderContextFrameData>(ctx);
+  // Each section rasterizes over its OWN 0-1 UV atlas; xatlas assigns chart winding
+  // ARBITRARILY, so a whole section (or many faces of one) can be back-wound in the
+  // atlas — backface culling there drops them to black (a uniformly back-wound section
+  // vanishes entirely; a mixed one loses ~half its texels). Cull mode is a DYNAMIC
+  // pipeline state, and the SSBO indirect draw path (DrawIndexedIndirectEML) never
+  // re-applies it, so the sticky cull from prior forward draws (PASS_FRONT) leaks in.
+  // Force it OFF for every bake draw — the atlas bake paints every texel a face covers.
+  static const RasterState s_bakeCullOff = [] {
+    RasterState r;
+    r.setCullTest(ECullTest::OFF);
+    r._priority = 1 << 20; // outrank any technique state block so applyRasterState uses THIS
+    return r;
+  }();
+  // ortho over the 0-1 UV domain: mvp*vec4(uv0.x,uv0.y,0,1) -> full-NDC (the section cap-VS rasterizes the
+  // section's faces filling the atlas). bottom=0,top=1 writes uv.y ASCENDING down the atlas rows so the stored
+  // sampler's NATURAL read (surface_stored at ctx.uv) hits each face's OWN chart. The old top>bottom form
+  // stored the atlas v-FLIPPED vs that read: charts sat correct, but faces whose chart landed near the black
+  // gutter after the flip sampled the gutter and rendered BLACK (pueblo base flare / parapet caps / recesses —
+  // ~18% of gid0 faces). Both capture targets rasterize through this ONE ortho, so albedo + params stay in lockstep.
+  fmtx4 P, V, M;
+  P.ortho(0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 1.0f);
+  V = fmtx4::Identity();
+  M = fmtx4::Identity();
+  static int s_id = 0;
+  for (int L = 0; L < int(_layerGids.size()); L++) {
+    int  gid  = _layerGids[L];
+    auto pipe = (L < int(_layerPipes.size())) ? _layerPipes[L] : nullptr; // this layer's gid-material capture pipe
+    if (not pipe)
+      continue;
+    auto rtg = std::make_shared<RtGroup>(ctx, _bakeRes, _bakeRes, MsaaSamples::MSAA_1X);
+    rtg->_name = "sectionBake" + std::to_string(s_id++);
+    std::vector<rtbuffer_ptr_t> bufs;
+    for (int t = 0; t < _numTargets; t++) {
+      auto rb         = rtg->createRenderTarget(EBufferFormat::RGBA8); // one MRT per capture target
+      rb->_clearColor = fvec4(0, 0, 0, 0);
+      bufs.push_back(rb);
+    }
+    rtg->createDepthBuffer(EBufferFormat::Z32F, true);
+    rtg->_autoclear = true;
+    fbi->PushRtGroup(rtg.get());
+    mtxi->PushPMatrix(P);
+    mtxi->PushVMatrix(V);
+    mtxi->PushMMatrix(M);
+    ViewportRect vp(0, 0, _bakeRes, _bakeRes);
+    fbi->pushViewport(vp);
+    fbi->pushScissor(vp);
+    RenderContextInstData RCID(rcfd);
+    RCID._isSSBOSourced = true;
+    _announceBakeDraw(RCID, pipe, "section_atlas", gid);
+    pipe->wrappedDrawCall(RCID, [&]() {
+      // beginBlock has bound the capture pass; override the sticky dynamic cull mode to OFF
+      // right before the indirect draw (the draw path itself never sets it).
+      fxi->applyRasterState(s_bakeCullOff);
+      gbi->DrawIndexedIndirectEML(_tri->_triIndex, PrimitiveType::TRIANGLES, _tri->_args, size_t(gid) * 20, 4);
+    });
+    fbi->popScissor();
+    fbi->popViewport();
+    mtxi->PopPMatrix();
+    mtxi->PopVMatrix();
+    mtxi->PopMMatrix();
+    fbi->PopRtGroup();
+    // host round-trip each target (captureAsFormat -> CaptureBuffer); the section_bake cache assembles
+    // one array LAYER per section from these (uploadTextureRegion -> finalizeUpload).
+    for (int t = 0; t < _numTargets; t++) {
+      auto capbuf = std::make_shared<CaptureBuffer>();
+      auto fut    = fbi->captureAsFormat(bufs[t].get(), capbuf, EBufferFormat::RGBA8);
+      _captures[size_t(L) * _numTargets + t] = capbuf;
+      _futures.push_back(fut);
+    }
+    _rtgs.push_back(rtg); // keep the target alive until its capture drains
+  }
+  printf("SectionBakeJob: rendered %zu layers @ %dpx (%d targets) -> %zu captures issued\n",
+         _layerGids.size(), _bakeRes, _numTargets, _futures.size());
+  return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// O3 stage 3 — the C++ player-path section-array CACHE + array assembly (the port of section_bake.py).
+//
+// Cache layout / interop: MIRRORS section_bake.py's dir template + per-layer PNG scheme so a Python or C++
+// caller computing the SAME content key hits the SAME files. Deviations from the Python side (stated):
+//   (1) the dir hash uses the ork DataBlock hasher (12 hex of a uint64), not python's sha1[:12] — the two
+//       sides never share a key string in practice (Python callers pass an explicit key; the C++ driver
+//       derives one from graph+materials), so the hash FUNCTION is unobservable across them;
+//   (2) MULTI-TARGET: the capture-target NAME is folded into the content key -> one dir PER target, each
+//       holding layer<NN>.png (byte-identical filename scheme to Python's single-target case).
+///////////////////////////////////////////////////////////////////////////////
+
+// dir for ONE target's per-section array: <assetcache>/ptex3d_capture/section/<hash>__r<res>__L<layers>/
+std::string sectionArrayCacheDir(const std::string& contentKey, int bakeRes, int numLayers) {
+  auto h = DataBlock::createHasher();
+  h->accumulateString(contentKey);
+  h->accumulateItem<int>(bakeRes);
+  h->accumulateItem<int>(numLayers);
+  h->finish();
+  char hex[32];
+  snprintf(hex, sizeof(hex), "%012llx", (unsigned long long)(h->result() & 0xFFFFFFFFFFFFull));
+  return file::Path::expandPathString(FormatString(
+      "<assetcache>/ptex3d_capture/section/%s__r%d__L%d", hex, bakeRes, numLayers));
+}
+
+static std::string _sectionLayerPng(const std::string& dir, int layer) {
+  return FormatString("%s/layer%02d.png", dir.c_str(), layer);
+}
+
+// content key from the graph (mesh identity via per-module content hashes) + material names + section
+// layout + res. The caller folds the per-TARGET name on top (see sectionArrayCacheWarm/assemble/load).
+std::string sectionBakeContentKey(dflow::graphdata_ptr_t graph, const std::string& mainMtl,
+                                  const std::map<int, std::string>& gidMtls,
+                                  const std::vector<int>& layerGids, int bakeRes) {
+  auto h = DataBlock::createHasher();
+  h->accumulateString("hm.section.v5");         // format epoch (v5: coverage-weighted mip downsample; v4: gutter dilation; v3: bake-atlas v-orientation fix)
+  if (graph)
+    for (size_t im = 0; im < graph->numModules(); im++)
+      if (auto mod = graph->module(im))
+        h->accumulateItem<uint64_t>(hypermeshModuleIdentityHash(mod.get()));
+  h->accumulateString(mainMtl);                 // stored sampler material identity (asset name)
+  for (const auto& [gid, name] : gidMtls) {     // the bake map (gid -> material asset name), std::map = sorted
+    h->accumulateItem<int>(gid);
+    h->accumulateString(name);
+  }
+  for (int g : layerGids)                        // the section layout (layer -> gid)
+    h->accumulateItem<int>(g);
+  h->accumulateItem<int>(bakeRes);
+  h->finish();
+  char hex[32];
+  snprintf(hex, sizeof(hex), "%016llx", (unsigned long long)h->result());
+  return std::string(hex);
+}
+
+// true iff every target's every-layer PNG is already on disk (a WARM run needs no GPU bake).
+bool sectionArrayCacheWarm(const std::string& baseKey, const std::vector<std::string>& targets,
+                           int bakeRes, int numLayers) {
+  if (numLayers < 1 or targets.empty())
+    return false;
+  for (const auto& tgt : targets) {
+    std::string dir = sectionArrayCacheDir(baseKey + "::" + tgt, bakeRes, numLayers);
+    for (int L = 0; L < numLayers; L++) {
+      std::error_code ec;
+      if (not std::filesystem::exists(_sectionLayerPng(dir, L), ec))
+        return false;
+    }
+  }
+  return true;
+}
+
+// Section-array MIP control (A8). `genMips` is the reflected per-drawable knob (default ON, threaded from
+// HypermeshDrawableData::_section_mips); the ORKID_SECTION_MIPS env var is a gate/debug OVERRIDE (0=force
+// off, 1=force on) that the minification A/B flips to render the identical .ecs both ways — unset defers to
+// the knob. Kept out of the content key on purpose: mips regenerate from mip-0 at build (see _buildSectionArray),
+// so the on-disk cache (mip-0 PNGs) is backward-readable and one cache serves both modes. The cached mip-0 PNG
+// is POST gutter-dilation (written by assembleSectionArraysFromJob after _dilateCoverageRGBA8), so a WARM load
+// is byte-identical to the COLD result and only the (cheap, per-level re-dilated) mip chain regenerates.
+static bool _sectionMipsEnabled(bool knob) {
+  if (const char* e = getenv("ORKID_SECTION_MIPS"))
+    return atoi(e) != 0;
+  return knob;
+}
+
+// full mip-chain level count for a square bakeRes (down to 1x1); 256 -> 9 levels (0..8).
+static int _sectionMipCount(int bakeRes) {
+  int n = 1;
+  for (int d = bakeRes; d > 1; d >>= 1)
+    n++;
+  return n;
+}
+
+// GUTTER DILATION (atlas chart-border bleed fix). The per-section xatlas charts are painted islands on a
+// (0,0,0,0)-cleared black gutter with no padding. Because the unwrap is PER SECTION, every face boundary is a
+// chart boundary, so bilinear sampling at any mesh edge mixes gutter black into the edge texels -> thin black
+// lines along the mesh edges (and mips compound it: each triangle downsample averages more gutter into the
+// border, so the lines WIDEN with distance). Fix = flood covered-texel RGB outward into the uncovered gutter.
+// COVERAGE is the alpha channel: the capture shader writes alpha=1.0 where a fragment lands (emit_captures
+// coverage-alpha), the clear leaves gutter alpha=0.0. Each pass copies the mean RGB of covered 8-neighbors
+// into an uncovered texel and marks it covered (alpha=255) so the front advances one ring per pass. Reads the
+// per-pass SNAPSHOT so exactly one ring grows per iteration (no in-pass runaway). Forward samples .xyz only,
+// so writing alpha here is invisible to the render; alpha's sole job is to be this coverage mask (also at each
+// mip, where the resampled alpha re-encodes coverage for the per-level re-dilation).
+//
+// N (kSectionDilateTexels): bilinear needs >=1 valid texel beyond a chart edge; trilinear/anisotropic
+// footprints and xatlas' half-texel chart insets want a few more. 4 covers the mip-0 sampling footprint. The
+// deeper mip chain no longer re-dilates from mip-0; it COVERAGE-WEIGHTS the downsample (see _buildSectionArray)
+// so gutter black is excluded at every level regardless of chart size. 4 is small enough not to bridge a
+// typical xatlas gutter into a neighbor chart.
+static const int kSectionDilateTexels = 4;
+
+static void _dilateCoverageRGBA8(uint8_t* px, int w, int h, int iters) {
+  if (not px or w <= 0 or h <= 0 or iters <= 0)
+    return;
+  const size_t n = size_t(w) * size_t(h);
+  std::vector<uint8_t> snap(n * 4);
+  for (int it = 0; it < iters; it++) {
+    std::memcpy(snap.data(), px, n * 4); // snapshot: this pass only reads coverage from the PRIOR ring
+    bool grew = false;
+    for (int y = 0; y < h; y++) {
+      for (int x = 0; x < w; x++) {
+        uint8_t* d = px + (size_t(y) * w + x) * 4;
+        if (d[3] != 0)
+          continue; // already covered/valid
+        int r = 0, g = 0, b = 0, cnt = 0;
+        for (int dy = -1; dy <= 1; dy++) {
+          for (int dx = -1; dx <= 1; dx++) {
+            if (dx == 0 and dy == 0)
+              continue;
+            int nx = x + dx, ny = y + dy;
+            if (nx < 0 or ny < 0 or nx >= w or ny >= h)
+              continue;
+            const uint8_t* s = snap.data() + (size_t(ny) * w + nx) * 4;
+            if (s[3] != 0) { r += s[0]; g += s[1]; b += s[2]; cnt++; }
+          }
+        }
+        if (cnt > 0) {
+          d[0] = uint8_t(r / cnt);
+          d[1] = uint8_t(g / cnt);
+          d[2] = uint8_t(b / cnt);
+          d[3] = 255; // now a valid (dilated) texel — advances the front next pass
+          grew  = true;
+        }
+      }
+    }
+    if (not grew)
+      break; // fully flooded (no uncovered texel had a covered neighbor)
+  }
+}
+
+// build a fresh RGBA8 TextureArray, upload every layer's bytes (numLayers x res x res x 4), finalize ONCE
+// (the correct non-streaming sequence — reserve -> upload every layer[/mip] -> finalize). `layerBytes[L]` is
+// the RGBA8 mip-0 pixel buffer for layer L; every entry must be res*res*4 bytes. When mips are enabled the
+// chunked upload path carries a full CPU-generated chain per layer (reserve num_mips, uploadTextureRegion per
+// mip level, finalize transitions ALL levels); finalizeUpload then installs the trilinear sampler (num_mips>3),
+// so minified section surfaces stop aliasing.
+static texturearray_ptr_t _buildSectionArray(
+    Context* ctx, int bakeRes, const std::vector<std::vector<uint8_t>>& layerBytes, bool genMips,
+    const std::string& targetName = "") {
+  // A downsampled tangent/world-space NORMAL map is no longer unit-length (box/triangle filtering
+  // AVERAGES the encoded vectors), so its mips read as shortened normals -> flattened lighting under
+  // minification. For the "SectionNormal" target ONLY, renormalize each mip texel after resample.
+  // Keyed by NAME (not a per-target flag) so it lands even though SectionNormal's DSL lane is unmerged.
+  const bool renormMips = (targetName == "SectionNormal");
+  const int  numLayers = int(layerBytes.size());
+  const bool mips      = _sectionMipsEnabled(genMips);
+  const int  numMips   = mips ? _sectionMipCount(bakeRes) : 1;
+  auto txi = ctx->TXI();
+  auto arr = std::make_shared<TextureArray>();
+  arr->_requires_mips = mips;
+  arr->resize(size_t(bakeRes), size_t(bakeRes), size_t(std::max(1, numLayers)), EBufferFormat::RGBA8);
+  txi->reserveTextureArray(arr.get(), bakeRes, bakeRes, std::max(1, numLayers), numMips, EBufferFormat::RGBA8);
+  const size_t bytes0 = size_t(bakeRes) * size_t(bakeRes) * 4;
+  for (int L = 0; L < numLayers; L++) {
+    OrkAssert(layerBytes[L].size() == bytes0);
+    // mip 0 — the captured/cached full-res section surface (byte-identical to the no-mip path).
+    TextureRegionUpload up0;
+    up0._mip_level   = 0;
+    up0._array_layer = L;
+    up0._extent_w    = bakeRes;
+    up0._extent_h    = bakeRes;
+    up0._extent_d    = 1;
+    up0._data        = layerBytes[L].data();
+    up0._data_size   = bytes0;
+    txi->uploadTextureRegion(arr->_tex.get(), up0);
+    if (mips) {
+      // COVERAGE-WEIGHTED mip chain (successive halving). Each mip texel is the coverage-weighted mean of
+      // its 4 children: rgb = Σ(child_rgb·child_cov)/Σ(child_cov), where cov is the alpha coverage mask
+      // (255 covered, 0 gutter). This EXCLUDES gutter-black from the average, so deep mips no longer darken
+      // as charts shrink below a fixed dilation radius (the old resample+dilate failure -> distance
+      // outlines). mip-0 is already gutter-dilated (kept as-is) and seeds the chain. A 2x2 block that is
+      // entirely gutter (Σcov==0) gets a saturation fill (repeat-dilate until no uncovered texel remains —
+      // cheap at these small levels) and is marked covered so it contributes real color upward. Order per
+      // level: coverage-weighted downsample -> zero-cov fill -> SectionNormal renorm. uploadTextureRegion
+      // copies host bytes into its staging buffer synchronously before returning.
+      Image cur; // the previous (parent) level; starts as mip-0
+      cur.init(size_t(bakeRes), size_t(bakeRes), 4, 1);
+      std::memcpy(cur.pixel8(0, 0), layerBytes[L].data(), bytes0);
+      for (int m = 1; m < numMips; m++) {
+        const int pw = std::max(1, bakeRes >> (m - 1));
+        const int ph = std::max(1, bakeRes >> (m - 1));
+        const int mw = std::max(1, bakeRes >> m);
+        const int mh = std::max(1, bakeRes >> m);
+        Image mimg;
+        mimg.init(size_t(mw), size_t(mh), 4, 1);
+        for (int y = 0; y < mh; y++) {
+          for (int x = 0; x < mw; x++) {
+            uint32_t accR = 0, accG = 0, accB = 0, accCov = 0;
+            for (int dy = 0; dy < 2; dy++) {
+              for (int dx = 0; dx < 2; dx++) {
+                const int sx = std::min(2 * x + dx, pw - 1);
+                const int sy = std::min(2 * y + dy, ph - 1);
+                const uint8_t* s = cur.pixel8(sx, sy);
+                const uint32_t cov = s[3];
+                accR += uint32_t(s[0]) * cov;
+                accG += uint32_t(s[1]) * cov;
+                accB += uint32_t(s[2]) * cov;
+                accCov += cov;
+              }
+            }
+            uint8_t* d = mimg.pixel8(x, y);
+            if (accCov > 0) {
+              d[0] = uint8_t(accR / accCov);
+              d[1] = uint8_t(accG / accCov);
+              d[2] = uint8_t(accB / accCov);
+              d[3] = 255; // covered
+            } else {
+              d[0] = d[1] = d[2] = 0;
+              d[3] = 0; // fully-gutter block -> filled below
+            }
+          }
+        }
+        // zero-cov fill: flood covered RGB into any texel a fully-gutter 2x2 left uncovered. mw+mh passes
+        // guarantee a full flood at these small levels (the loop self-terminates when no texel grows).
+        _dilateCoverageRGBA8(mimg.pixel8(0, 0), mw, mh, mw + mh);
+        if (renormMips) {
+          for (int y = 0; y < mh; y++) {
+            for (int x = 0; x < mw; x++) {
+              uint8_t* p = mimg.pixel8(x, y);
+              float nx = p[0] * (2.0f / 255.0f) - 1.0f;
+              float ny = p[1] * (2.0f / 255.0f) - 1.0f;
+              float nz = p[2] * (2.0f / 255.0f) - 1.0f;
+              float len = std::sqrt(nx * nx + ny * ny + nz * nz);
+              if (len > 1e-6f) { nx /= len; ny /= len; nz /= len; }
+              auto enc = [](float v) -> uint8_t {
+                float e = (v * 0.5f + 0.5f) * 255.0f + 0.5f;
+                return uint8_t(e < 0.0f ? 0.0f : (e > 255.0f ? 255.0f : e));
+              };
+              p[0] = enc(nx); p[1] = enc(ny); p[2] = enc(nz); // alpha (AO/coverage) untouched
+            }
+          }
+        }
+        TextureRegionUpload up;
+        up._mip_level   = m;
+        up._array_layer = L;
+        up._extent_w    = mw;
+        up._extent_h    = mh;
+        up._extent_d    = 1;
+        up._data        = mimg.pixel8(0, 0);
+        up._data_size   = size_t(mw) * size_t(mh) * 4;
+        txi->uploadTextureRegion(arr->_tex.get(), up);
+        std::swap(cur, mimg); // successive halving: this level becomes the parent of the next
+      }
+    }
+  }
+  txi->finalizeUpload(arr->_tex.get());
+  return arr;
+}
+
+// a VALID sampleable placeholder array (neutral gray every layer) — bound to the stored sampler during the
+// few-frame cold bake so its sampler2DArray reads safely BEFORE the real content lands. Writes NO cache.
+texturearray_ptr_t placeholderSectionArray(Context* ctx, int numLayers, int bakeRes) {
+  const size_t bytes = size_t(bakeRes) * size_t(bakeRes) * 4;
+  std::vector<uint8_t> gray(bytes);
+  for (size_t i = 0; i < bytes; i += 4) { gray[i] = gray[i + 1] = gray[i + 2] = 48; gray[i + 3] = 255; }
+  std::vector<std::vector<uint8_t>> layers(std::max(1, numLayers), gray);
+  // Placeholder is a transient single-mip gray fill (bound only during the few-frame cold bake, then
+  // replaced by the real mipped array): no minification concern, so never build a chain for it.
+  return _buildSectionArray(ctx, bakeRes, layers, /*genMips*/ false);
+}
+
+// pull an Image's RGBA8 bytes (already destination format after captureAsFormat/readFromFile-convert).
+static std::vector<uint8_t> _imageRGBA8Bytes(const Image& img, int bakeRes) {
+  const size_t bytes = size_t(bakeRes) * size_t(bakeRes) * 4;
+  std::vector<uint8_t> out(bytes, 0);
+  if (img._data and img._data->length() >= bytes and img._numcomponents == 4 and
+      int(img._width) == bakeRes and int(img._height) == bakeRes) {
+    std::memcpy(out.data(), img._data->data(), bytes);
+    return out;
+  }
+  // conform / resize path (warm-load of a differently-sized or RGB PNG): convert to RGBA8 then copy.
+  Image rgba;
+  img.convertToRGBA(rgba, true);
+  if (rgba._data and rgba._data->length() >= bytes and int(rgba._width) == bakeRes and int(rgba._height) == bakeRes)
+    std::memcpy(out.data(), rgba._data->data(), bytes);
+  return out;
+}
+
+// COLD: assemble one TextureArray per target from a completed job's host captures, WRITE the cache PNGs.
+// Returns the arrays in `targets` order. FAILS LOUD on a missing capture (ops self-defend).
+std::vector<texturearray_ptr_t> assembleSectionArraysFromJob(
+    Context* ctx, sectionbakejob_ptr_t job, const std::string& baseKey,
+    const std::vector<std::string>& targets, int bakeRes, bool genMips) {
+  std::vector<texturearray_ptr_t> arrays;
+  if (not job)
+    return arrays;
+  const int numLayers  = job->numLayers();
+  const int numTargets = std::max(1, int(targets.size()));
+  for (int t = 0; t < numTargets; t++) {
+    std::string dir = sectionArrayCacheDir(baseKey + "::" + targets[t], bakeRes, numLayers);
+    std::error_code ec;
+    std::filesystem::create_directories(dir, ec);
+    const size_t bytes0 = size_t(bakeRes) * size_t(bakeRes) * 4;
+    std::vector<std::vector<uint8_t>> layerBytes(numLayers);
+    for (int L = 0; L < numLayers; L++) {
+      auto cb = job->layerCapture(L, t);
+      OrkAssertI(cb and cb->_image,
+                 "assembleSectionArraysFromJob: SectionBakeJob missing a capture (layer/target)");
+      layerBytes[L] = _imageRGBA8Bytes(*cb->_image, bakeRes);
+      // GUTTER DILATION on mip-0 (kills the chart-border black-edge bleed). The cache stores the
+      // POST-dilation mip-0 PNG, so a WARM load is byte-identical + needs no re-dilate at mip-0 (mips
+      // still regenerate + re-dilate per level in _buildSectionArray). See _dilateCoverageRGBA8.
+      _dilateCoverageRGBA8(layerBytes[L].data(), bakeRes, bakeRes, kSectionDilateTexels);
+      Image dimg;
+      dimg.initWithFormat(size_t(bakeRes), size_t(bakeRes), EBufferFormat::RGBA8);
+      std::memcpy(dimg.pixel8(0, 0), layerBytes[L].data(), bytes0);
+      dimg.writeToFile(file::Path(_sectionLayerPng(dir, L).c_str())); // cold: write the POST-dilation cache PNG
+    }
+    arrays.push_back(_buildSectionArray(ctx, bakeRes, layerBytes, genMips, targets[t]));
+    printf("section_bake(C++): COLD target<%s> %d layers @ %dpx mips=%d -> %s\n",
+           targets[t].c_str(), numLayers, bakeRes, int(_sectionMipsEnabled(genMips)), dir.c_str());
+  }
+  return arrays;
+}
+
+// WARM: load one TextureArray per target from the cache PNGs (no bake). Returns arrays in `targets` order.
+std::vector<texturearray_ptr_t> loadSectionArraysFromCache(
+    Context* ctx, const std::string& baseKey, const std::vector<std::string>& targets,
+    int bakeRes, int numLayers, bool genMips) {
+  std::vector<texturearray_ptr_t> arrays;
+  const int numTargets = std::max(1, int(targets.size()));
+  for (int t = 0; t < numTargets; t++) {
+    std::string dir = sectionArrayCacheDir(baseKey + "::" + targets[t], bakeRes, numLayers);
+    std::vector<std::vector<uint8_t>> layerBytes(numLayers);
+    for (int L = 0; L < numLayers; L++) {
+      Image img;
+      bool ok = img.readFromFile(file::Path(_sectionLayerPng(dir, L).c_str()));
+      OrkAssertI(ok, "loadSectionArraysFromCache: cache PNG read failed (warm run on incomplete cache?)");
+      layerBytes[L] = _imageRGBA8Bytes(img, bakeRes);
+    }
+    arrays.push_back(_buildSectionArray(ctx, bakeRes, layerBytes, genMips, targets[t]));
+    printf("section_bake(C++): WARM target<%s> %d layers @ %dpx mips=%d <- %s\n",
+           targets[t].c_str(), numLayers, bakeRes, int(_sectionMipsEnabled(genMips)), dir.c_str());
+  }
+  return arrays;
 }
 
 // faceViz=true -> the per-triangle source-face-id buffer (_triFace) is exposed + kept refreshed for the
@@ -1328,6 +2375,8 @@ MeshRenderBuffers setupMeshRender(
   // bound gid slot's indirect command. Requires a positive bound radius.
   FxShaderStorageBuffer* gfx_instMtx  = tri->_instMtx;
   FxShaderStorageBuffer* gfx_instAttr = inst_attr;
+  FxShaderStorageBuffer* gfx_instMtxShadow  = nullptr; // cascade-cull fix (set in the cull branch)
+  FxShaderStorageBuffer* gfx_instAttrShadow = nullptr;
   std::vector<MeshRenderBuffers::TierDraw> lodTiers; // Phase 3b: extra LOD tiers (hm_drawable -> buckets)
   if (cull and tri->_instCount > 1 and tri->_instMtx) {
     // E.4 cull bound: AUTO (w<=0) computes the object-space sphere once from a position readback of
@@ -1476,8 +2525,15 @@ MeshRenderBuffers setupMeshRender(
         }
       }
       cdd->_perViewCompute  = [culler](Context* c, const CameraMatrices& m) { culler->perView(c, m); };
+      // cascade-cull fix — the sun-shadow cull hook + shadow args. The caller (hm_drawable / python
+      // make_drawable) re-binds handles._instMtxShadow/_instAttrShadow on its material's inst blocks
+      // to form cdd->_shadowStorageOverrides (main) + per-gid-bucket overrides.
+      cdd->_perViewComputeShadow = [culler](Context* c, const CameraMatrices& m) { culler->perViewShadow(c, m); };
+      cdd->_argsSSBOShadow       = culler->_argsShadow;
       gfx_instMtx  = culler->_culledMtx;
       gfx_instAttr = culler->_culledAttr;
+      gfx_instMtxShadow  = culler->_culledMtxShadow;
+      gfx_instAttrShadow = culler->_culledAttrShadow;
     }
   }
   cdd->setIndirect(tri->_args, 0, tri->_triIndex, PrimitiveType::TRIANGLES, 4);
@@ -1486,7 +2542,18 @@ MeshRenderBuffers setupMeshRender(
 
   // the per-frame, IN-FRAME hook (ComputeDrawable::onPreRender runs this; _passes stays empty). One
   // dispatch phase: (animated) graph re-eval -> triangulate -> refresh the drawable's live bindings.
-  cdd->_liveRecompute = [tri, live, animated, faceViz, tagViz, wireframe, lodTris, lodTierLives](
+  // MESH-SHADER draw path (ORKID_HYPERMESH_MESHSHADER): resolve capability + material ONCE here;
+  // the hook below owns the per-frame decision. Inert (and silent) when the toggle is off.
+  auto mlstate = _resolveMeshletDraw(
+      cdd, ctx, cdd->_instanced or (tri->_instCount > 1), wireframe, not boundGids.empty());
+  // the cluster-bounds pass is built only when a material actually carries the bounds contract
+  // (no contract -> no reject -> nothing to compute).
+  std::shared_ptr<MeshletBounds> mlbounds;
+  if (mlstate->_ready and mlstate->_blkBounds) {
+    mlbounds = std::make_shared<MeshletBounds>();
+    mlbounds->build(ctx);
+  }
+  cdd->_liveRecompute = [tri, live, animated, faceViz, tagViz, wireframe, lodTris, lodTierLives, mlstate, mlbounds](
                             Context* ctx, ComputeDrawable* drw) {
     auto mesh = live->_mesh;
     if (not mesh) return;
@@ -1584,6 +2651,137 @@ MeshRenderBuffers setupMeshRender(
     // the paused/static steady states dispatch NOTHING.
     static const bool s_force_dirty = (getenv("ORK_HM_FORCE_DIRTY") != nullptr); // bisect knob
     bool topo_dirty = (not triangulated) and (s_force_dirty or tri->topoDirty(mesh));
+    // ---- MESHLETS: the CPU partition rides the SAME topology key as the triangulation, and the
+    //      rebuild is triggered from the same place a re-pool is noticed. This block sits BEFORE the
+    //      clean-frame early-out ON PURPOSE: the build completes ASYNCHRONOUSLY (microtask slices),
+    //      so for a STATIC mesh every frame in which the partition could possibly land is a clean
+    //      frame — returning first meant the drive decision was made exactly once, on the frame the
+    //      partition did not exist yet, and the mesh path never engaged. Cost on a clean frame is a
+    //      handful of compares and is paid only when the meshlet path is armed.
+    if (meshletsEnabled()) {
+      if (not live->_meshlets)
+        live->_meshlets = MeshletHost::create(ctx);
+      auto host = live->_meshlets;
+      if (host->topoDirty(mesh)) {
+        host->requestRebuild(mesh);
+        logchan_hmml->log("partition rebuild requested (faces=%d corners=%d verts=%d)",
+                          mesh->_num_faces, mesh->_num_corners, mesh->_num_verts);
+      }
+      // ---- MESH-SHADER DRAW: switch the drawable onto DrawMeshTasks for exactly as long as a
+      //      published partition describes the LIVE topology. Currency is topoVersion + vertex
+      //      count — NOT buffer identity (a re-pool that leaves connectivity alone must not retire
+      //      a good partition); buffer identity belongs to the rebuild trigger above. While a
+      //      rebuild is in flight the draw falls back to pull-VS rather than rasterize stale
+      //      buckets. Each distinct reason is logged ONCE (transitions only) — enough to diagnose a
+      //      run, not enough to spam it.
+      if (mlstate->_ready) {
+        auto part    = host->partition();
+        int reason   = 0; // 0 = driving
+        bool matched = false;
+        if (not part)
+          reason = 1; // no partition published yet (build still slicing)
+        else if (part->topology()->topoVersion() != mesh->_topoVersion or
+                 part->topology()->numVerts() != mesh->_num_verts)
+          reason = 2; // topology moved under the published partition
+        else
+          matched = true;
+        if (matched and not host->uploadPartition(part)) {
+          matched = false;
+          reason  = 3; // upload refused
+        }
+        if (matched) {
+          if (mlstate->_slot < 0) { // append ONCE, after every caller-owned storage (the refresh
+            mlstate->_slot = int(drw->_graphicsStorage.size()); // loop below owns slots 0..6)
+            drw->_graphicsStorage.push_back({mlstate->_blkDesc, host->_descSSBO});
+            drw->_graphicsStorage.push_back({mlstate->_blkVtx, host->_vtxSSBO});
+            drw->_graphicsStorage.push_back({mlstate->_blkPrim, host->_primSSBO});
+            if (mlstate->_blkBounds)
+              drw->_graphicsStorage.push_back({mlstate->_blkBounds, host->_boundsSSBO});
+            if (mlstate->_blkCull and host->_cullStatSSBO)
+              drw->_graphicsStorage.push_back({mlstate->_blkCull, host->_cullStatSSBO});
+          } else { // growth re-creates a buffer -> re-point (bindStorage runs off these each frame)
+            drw->_graphicsStorage[mlstate->_slot + 0].second = host->_descSSBO;
+            drw->_graphicsStorage[mlstate->_slot + 1].second = host->_vtxSSBO;
+            drw->_graphicsStorage[mlstate->_slot + 2].second = host->_primSSBO;
+            if (mlstate->_blkBounds)
+              drw->_graphicsStorage[mlstate->_slot + 3].second = host->_boundsSSBO;
+            if (mlstate->_blkCull and host->_cullStatSSBO)
+              drw->_graphicsStorage[mlstate->_slot + 4].second = host->_cullStatSSBO;
+          }
+          // CLUSTER BOUNDS refresh. Re-derived when the partition changed identity (new buckets) or
+          // the graph just ran (positions may have moved under an unchanged partition — the case a
+          // build-time bound would silently get wrong). Static, unpaused meshes pay this once.
+          if (mlstate->_blkBounds and
+              (mlstate->_boundsPart != (const void*)part.get() or run_graph)) {
+            ci->beginDispatchPhase();
+            mlbounds->dispatch(ctx, host.get(), mesh, part->stats()._meshletCount);
+            ci->endDispatchPhase();
+            mlstate->_boundsPart = (const void*)part.get();
+          }
+          // REJECT COUNTERS — read at the FRAME BOUNDARY (never mid-graph: a device-local readback
+          // inside the dispatch graph aborts the command buffer). The values are last frame's, which
+          // is all a counter needs to be; reporting the delta turns the reject from an assertion into
+          // a measurement. Every mesh pass that ran contributes, so the raw figure is cluster TESTS
+          // across color + depth prepass + any cascade, not distinct clusters — which is why the
+          // report below decomposes it into passes x tests-per-pass rather than printing it next to
+          // the published count for a reader to compare the two by eye.
+          if (mlstate->_blkCull and host->_cullStatSSBO) {
+            uint32_t cur[2] = {0, 0};
+            auto fxiS = ctx->FXI();
+            auto ms   = fxiS->mapStorageBuffer(host->_cullStatSSBO, 0, sizeof(cur), BufferMapAccess::READ_ONLY);
+            std::memcpy(cur, ms->_mappedaddr, sizeof(cur));
+            fxiS->unmapStorageBuffer(ms.get());
+            if (mlstate->_statHave) {
+              uint32_t dt = cur[0] - mlstate->_statPrevTested;   // unsigned: wrap-correct from any base
+              uint32_t dr = cur[1] - mlstate->_statPrevRejected;
+              uint32_t np = part->stats()._meshletCount;
+              if (dt and np) {
+                // TESTS and PUBLISHED CLUSTERS are different quantities and the line must never let
+                // them be read as one. Each pass dispatches one workgroup per published cluster and
+                // each workgroup increments once, so the tests divide EXACTLY by the published count
+                // and the quotient IS the number of mesh passes that ran. The two failure modes read
+                // differently and neither is silent: a partial pass or a pass against a different
+                // partition leaves a REMAINDER (flagged inline), while a per-LANE atomic keeps the
+                // division exact and instead inflates the pass count by the workgroup size — which
+                // is why the pass count is printed rather than divided away.
+                uint32_t passes = dt / np;
+                uint32_t rem    = dt % np;
+                logchan_hmml->log("cluster reject: %u clusters published; %u cluster-tests this "
+                                  "frame = %u mesh pass(es) x %u tests/pass%s; %u tests rejected "
+                                  "(%.1f%% of tests)",
+                                  np, dt, passes, np,
+                                  rem ? " [!! not an exact multiple: a pass ran partially, or "
+                                        "tested a different partition]"
+                                      : "",
+                                  dr, 100.0 * double(dr) / double(dt));
+              }
+            }
+            mlstate->_statPrevTested   = cur[0];
+            mlstate->_statPrevRejected = cur[1];
+            mlstate->_statHave         = true;
+          }
+          drw->_meshTechnique = mlstate->_tek;
+          drw->_meshGroups[0] = part->stats()._meshletCount; // direct-sized: NEVER the indirect draw
+          drw->_meshGroups[1] = 1;
+          drw->_meshGroups[2] = 1;
+          if (mlstate->_lastReason != 0)
+            logchan_hmml->log("driving %u meshlets (%u tris) via DrawMeshTasks",
+                              part->stats()._meshletCount, part->stats()._triCount);
+        } else {
+          drw->_meshTechnique = nullptr; // partition not (yet) current: the pull-VS draw stands
+          if (mlstate->_lastReason != reason) {
+            static const char* kWhy[4] = {"", "no partition published yet",
+                                          "topology moved under the partition", "upload refused"};
+            logchan_hmml->log("pull-VS this frame: %s (mesh topoV=%llu verts=%d, partition %s)",
+                              kWhy[reason],
+                              (unsigned long long)mesh->_topoVersion,
+                              mesh->_num_verts,
+                              part ? "present" : "absent");
+          }
+        }
+        mlstate->_lastReason = reason;
+      }
+    }
     if (not topo_dirty and not run_graph)
       return;                                      // fully clean: zero GPU work, bindings stand
     if (topo_dirty) {
@@ -1638,6 +2836,8 @@ MeshRenderBuffers setupMeshRender(
   out._faceid   = faceViz ? tri->_triFace : nullptr;
   out._instMtx  = gfx_instMtx;   // E.4: the CULLED buffers when the cull is active
   out._instAttr = gfx_instAttr;
+  out._instMtxShadow  = gfx_instMtxShadow;  // cascade-cull fix: shadow OUT_M/OUT_A (null if no cull)
+  out._instAttrShadow = gfx_instAttrShadow;
   out._lodTiers = std::move(lodTiers); // Phase 3b: extra LOD tier draws (hm_drawable builds buckets)
   // LOD step #3 — the IMPOSTOR far tier is wired above in the cull tier loop (impostorTiers): bake hook +
   // billboard bucket bound to the band's OUT_M slice. (The ORKID_IMPOSTOR_BAKE env probe is retired.)

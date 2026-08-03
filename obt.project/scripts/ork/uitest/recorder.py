@@ -38,9 +38,14 @@ class Recorder:
         self._global_token = None
         self._contexts = []
         # canonical key of the record the global tap most recently made; the
-        # preview tap suppresses the duplicate main-window event that matches it.
+        # preview tap suppresses the duplicate main-window event that matches it
+        # (and, when the tap carries a window key, annotates that record's "win").
         self._last_global_key = None
+        self._last_global_rec = None
         self._handler_result_factory = None
+        # sticky secondary-window key allocation + live-session flush cadence
+        self._sec_counter = 0
+        self._records_since_flush = 0
 
     # -- public API ----------------------------------------------------------
 
@@ -65,8 +70,27 @@ class Recorder:
             primary = None
         if primary is not None:
             self.attach_context(primary)
+        self._rescan_secondaries()
+        return self
+
+    def attach_context(self, ctx, key=None):
+        """Install the preview tap on a ui Context (for late-created windows).
+
+        `key` names the window in the session records (None == primary). The
+        key rides the tap closure, so it stays sticky for the context's life."""
+        if any(c is ctx for c in self._contexts):
+            return
+        ctx.app_preview_handler = lambda ev, _k=key: self._on_preview_event(ev, _k)
+        self._contexts.append(ctx)
+
+    def _rescan_secondaries(self):
+        """Tap any secondary window that appeared since the last look (tear-outs
+        create windows mid-session). Runs on the main thread (from attach() and
+        the global tap) — Context wiring is main-thread state."""
+        if self._app is None:
+            return
         try:
-            secondaries = list(app.secondaryWindows)
+            secondaries = list(self._app.secondaryWindows)
         except Exception:
             secondaries = []
         for win in secondaries:
@@ -74,14 +98,9 @@ class Recorder:
                 ctx = win.ui_context
             except Exception:
                 ctx = None
-            if ctx is not None:
-                self.attach_context(ctx)
-        return self
-
-    def attach_context(self, ctx):
-        """Install the preview tap on a ui Context (for late-created windows)."""
-        ctx.app_preview_handler = self._on_preview_event
-        self._contexts.append(ctx)
+            if ctx is not None and not any(c is ctx for c in self._contexts):
+                self._sec_counter += 1
+                self.attach_context(ctx, key="sec%d" % self._sec_counter)
 
     def flush(self):
         """Write the session to disk (if a path was given)."""
@@ -111,17 +130,41 @@ class Recorder:
         # main + secondary window events; always recorded (the primary tap).
         rec = self._session.add_event(self._frame_index, ev)
         self._last_global_key = _dumps(rec)
+        self._last_global_rec = rec
+        self._rescan_secondaries()
+        self._maybe_flush(rec)
         # global handler return value is ignored by the engine — observation only.
 
-    def _on_preview_event(self, ev):
-        # popup/overlay events, plus a second look at main-window events. Build
-        # the same canonical record and drop it iff it matches what the global
-        # tap just recorded (the main-window duplicate); otherwise it is a
-        # popup-only event and gets recorded.
-        rec = record_from_event(self._frame_index, ev)
-        if _dumps(rec) != self._last_global_key:
+    def _on_preview_event(self, ev, key=None):
+        # popup/overlay events, plus a second look at main/secondary-window
+        # events. Build the same canonical record and drop it iff it matches what
+        # the global tap just recorded (the per-window duplicate) — annotating
+        # that record's window identity from the tap's key; otherwise it is a
+        # popup-only event and gets recorded (tagged with the host window's key).
+        rec = record_from_event(self._frame_index, ev, key)
+        untagged = dict(rec)
+        untagged.pop("win", None)
+        if _dumps(untagged) == self._last_global_key:
+            if key is not None and self._last_global_rec is not None:
+                self._last_global_rec["win"] = str(key)
+            self._last_global_key = None  # annotate/dedupe once per event
+        else:
             self._session.add_record(rec)
         return self._make_handler_result()
+
+    def _maybe_flush(self, rec):
+        # crash-resilient live capture: hit disk at every gesture end (RELEASE)
+        # and every 512 records, so a teardown crash still leaves the session.
+        # Whole-file rewrite each time — late "win" annotations self-correct.
+        if self._path is None:
+            return
+        self._records_since_flush += 1
+        if rec.get("code_name") == "RELEASE" or self._records_since_flush >= 512:
+            try:
+                self.flush()
+                self._records_since_flush = 0
+            except Exception:
+                pass
 
     # -- helpers -------------------------------------------------------------
 

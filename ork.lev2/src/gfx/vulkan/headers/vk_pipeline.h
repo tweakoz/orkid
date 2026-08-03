@@ -78,6 +78,36 @@ struct VkFxShaderUniformBlockState {
 };
 
 /////////////////////////////////////////////////////////////////////////////////
+// Uniform blocks are UNIFORM_BUFFER_DYNAMIC by default: their contents are
+// per-draw, so each draw suballocates from the global ring and hands the offset
+// to vkCmdBindDescriptorSets. That costs one dynamic descriptor per block, and
+// the offending layouts here reach 16 against a device limit of 15
+// (VUID-VkPipelineLayoutCreateInfo-descriptorType-03030 / -pSetLayouts-03038).
+//
+// A block whose contents are PER-FRAME CONSTANT does not need the ring at all —
+// it can live in its own buffer and bind as a plain UNIFORM_BUFFER, off the
+// dynamic budget. ublk_sun is that block: the forward prologue
+// (_update_sun_cascades) writes it once per frame into PBRMaterial::sunDataBuffer,
+// and the per-draw path was only copying that same buffer back out and through
+// the ring again.
+//
+// Membership is by block NAME because that is the only identity shared across
+// every program that declares the block. Adding a name here is a claim that the
+// block is written exactly once per frame into a dedicated buffer that some
+// material binds via bindUniformBuffer — see the N=1 note at the descriptor
+// write in vulkan_fxi_pipelines_bind.cpp before adding one.
+/////////////////////////////////////////////////////////////////////////////////
+
+inline bool isNonDynamicUniformBlock(const std::string& block_name) {
+  // ublk_stereo joins ublk_sun for the same reason: both are per-FRAME view state written
+  //  once and read by every draw. The multiview injection puts ublk_stereo in scope for
+  //  every view-transforming shader, so routing it through the dynamic ring would have cost
+  //  one ring suballocation and one dynamic-offset slot per draw across the whole engine —
+  //  for a value that does not change between draws.
+  return (block_name == "ublk_sun") or (block_name == "ublk_stereo");
+}
+
+/////////////////////////////////////////////////////////////////////////////////
 
 struct VkFxShaderUniformBlkItem {
   std::string _datatype;
@@ -255,6 +285,10 @@ struct VkFxShaderPassState {
   // force a fresh descriptor set. Per-context (not on the shared
   // VkFxShaderUniformSampler) so multiple VkContexts don't stomp.
   std::unordered_map<fxparam_constptr_t, vktexobj_ptr_t> _textures_by_orkparam;
+  // VulkanTextureObject::_serial_number snapshot per slot, taken at bind time.
+  // The pointer compare above is ABA-blind across publish-and-free cycles;
+  // this is what actually detects "different texture at the same address".
+  std::unordered_map<fxparam_constptr_t, size_t> _texture_serials;
   std::unordered_map<fxparam_constptr_t, vkbuffer_ptr_t> _uniformbuffers_by_orkparam;
   uint64_t _samplers_hash = 0; // 0 means dirty/needs recompute
 
@@ -285,6 +319,8 @@ struct VkFxShaderPass {
   std::string _tek_name;
 
   vkfxsstage_ptr_t _vtxshader;
+  vkfxsstage_ptr_t _mshshader; // mesh stage; mutually exclusive with _vtxshader
+  vkfxsstage_ptr_t _tskshader; // task (amplification) stage; only ever set alongside _mshshader
   vkfxsstage_ptr_t _geoshader;
   vkfxsstage_ptr_t _tctshader;
   vkfxsstage_ptr_t _tevshader;
@@ -439,6 +475,18 @@ struct VkComputePipelineState {
   // cursor so prior-phase sets (whose command buffer has completed) are recycled.
   VkDescriptorSet acquireDescriptorSet(uint64_t generation);
   void writeDescriptorSet(VkDescriptorSet set); // populate `set` from current bindings
+
+  // Inline (frame-CB) dispatch descriptor sets: a SEPARATE small ring cycled per inline dispatch,
+  // NOT recycled on the dispatch-phase generation (that recycle assumes the compute CB was
+  // submitted+waited — the inline path skips that fence, so its sets must outlive the frame CB
+  // they were recorded into, which stays in flight up to `frames-in-flight` frames). Depth
+  // kInlineRingDepth > frames-in-flight × inline-dispatches-per-frame guarantees a slot is never
+  // rewritten while a primary CB that referenced it is still executing. Distinct from the
+  // per-dispatch ring so the ordinary dispatchCompute path is byte-untouched.
+  VkDescriptorSet acquireInlineDescriptorSet();
+  static constexpr size_t kInlineRingDepth = 8;
+  std::vector<VkDescriptorSet> _inlineSetRing;
+  size_t _inlineCursor = 0;
 
   vkcontext_rawptr_t _contextVK = nullptr;
   vkfxsstage_ptr_t _computeShader;              // VulkanFxShaderStage with SPIR-V

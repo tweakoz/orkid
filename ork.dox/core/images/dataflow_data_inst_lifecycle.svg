@@ -1,0 +1,147 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1020" font-family="Arial, Helvetica, sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#666"/>
+    </marker>
+    <marker id="arrC" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#22d3ee"/>
+    </marker>
+    <filter id="shadow">
+      <feDropShadow dx="2" dy="2" stdDeviation="2" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  <rect x="0" y="0" width="1000" height="1020" fill="#1a1a2e"/>
+  <text x="30" y="34" font-size="18" font-weight="bold" fill="white">Data / instance split and the GraphInst lifecycle</text>
+
+  <!-- legend -->
+  <rect x="700" y="16" width="14" height="14" rx="3" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="722" y="27" font-size="12" fill="#ddd">Data — durable, reflected, serialized</text>
+  <rect x="700" y="36" width="14" height="14" rx="3" fill="#4c1d95" stroke="#a78bfa"/>
+  <text x="722" y="47" font-size="12" fill="#ddd">Inst — runtime state</text>
+  <rect x="700" y="56" width="14" height="14" rx="3" fill="#065f46" stroke="#34d399"/>
+  <text x="722" y="67" font-size="12" fill="#ddd">execution / lifecycle</text>
+
+  <!-- Row A -->
+  <rect x="30" y="84" width="330" height="104" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="30" y="84" width="330" height="30" rx="8" fill="#2563eb"/>
+  <text x="44" y="106" font-size="14" font-weight="bold" font-family="monospace" fill="white">GraphData</text>
+  <text x="44" y="126" font-size="11" font-family="monospace" fill="#93c5fd">_modules — named DgModuleData</text>
+  <text x="44" y="142" font-size="11" font-family="monospace" fill="#93c5fd">connections — graph-level link list</text>
+  <text x="44" y="158" font-size="11" font-family="monospace" fill="#93c5fd">_cacheable · _output_node · _editor_layout</text>
+  <text x="44" y="174" font-size="11" font-family="monospace" fill="#93c5fd">_impl : TypeKeyedVars (durable)</text>
+
+  <rect x="640" y="84" width="330" height="104" rx="8" fill="#4c1d95" stroke="#a78bfa" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="640" y="84" width="330" height="30" rx="8" fill="#7c3aed"/>
+  <text x="654" y="106" font-size="14" font-weight="bold" font-family="monospace" fill="white">GraphInst</text>
+  <text x="654" y="126" font-size="11" font-family="monospace" fill="#c4b5fd">_ordered_module_datas / _insts</text>
+  <text x="654" y="142" font-size="11" font-family="monospace" fill="#c4b5fd">_module_inst_map</text>
+  <text x="654" y="158" font-size="11" font-family="monospace" fill="#c4b5fd">_topologyValid — soft-fail flag</text>
+  <text x="654" y="174" font-size="11" font-family="monospace" fill="#c4b5fd">_impl : TypeKeyedVars (per run)</text>
+
+  <line x1="364" y1="140" x2="634" y2="140" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrC)"/>
+  <text x="499" y="130" font-size="11" font-family="monospace" fill="#22d3ee" text-anchor="middle">GraphData::createGraphInst()</text>
+
+  <!-- Row B -->
+  <rect x="30" y="214" width="330" height="86" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="30" y="214" width="330" height="30" rx="8" fill="#2563eb"/>
+  <text x="44" y="236" font-size="14" font-weight="bold" font-family="monospace" fill="white">DgModuleData</text>
+  <text x="44" y="256" font-size="11" font-family="monospace" fill="#93c5fd">plugs built by reshapeIOs</text>
+  <text x="44" y="272" font-size="11" font-family="monospace" fill="#93c5fd">_bypassed · _cachepoint · _viewable</text>
+
+  <rect x="640" y="214" width="330" height="86" rx="8" fill="#4c1d95" stroke="#a78bfa" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="640" y="214" width="330" height="30" rx="8" fill="#7c3aed"/>
+  <text x="654" y="236" font-size="14" font-weight="bold" font-family="monospace" fill="white">DgModuleInst</text>
+  <text x="654" y="256" font-size="11" font-family="monospace" fill="#a7f3d0">onLink / onStage / onActivate / onReset</text>
+  <text x="654" y="272" font-size="11" font-family="monospace" fill="#a7f3d0">compute() · cookComputeHash/Store/Load</text>
+
+  <line x1="364" y1="258" x2="634" y2="258" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrC)"/>
+  <text x="499" y="248" font-size="11" font-family="monospace" fill="#22d3ee" text-anchor="middle">createInstance(ginst)</text>
+
+  <!-- Row C -->
+  <rect x="30" y="326" width="330" height="86" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="30" y="326" width="330" height="30" rx="8" fill="#2563eb"/>
+  <text x="44" y="348" font-size="12.5" font-weight="bold" font-family="monospace" fill="white">PlugData — InPlugData / OutPlugData</text>
+  <text x="44" y="368" font-size="11" font-family="monospace" fill="#93c5fd">In: one source · Out: fan-out (max_fanout)</text>
+  <text x="44" y="384" font-size="11" font-family="monospace" fill="#93c5fd">typed via plug traits · reflected "value"</text>
+
+  <rect x="640" y="326" width="330" height="86" rx="8" fill="#4c1d95" stroke="#a78bfa" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="640" y="326" width="330" height="30" rx="8" fill="#7c3aed"/>
+  <text x="654" y="348" font-size="12.5" font-weight="bold" font-family="monospace" fill="white">PlugInst — inpluginst / outpluginst</text>
+  <text x="654" y="368" font-size="11" font-family="monospace" fill="#c4b5fd">_connectedOutput → producer inst</text>
+  <text x="654" y="384" font-size="11" font-family="monospace" fill="#c4b5fd">wired by updateTopology (bypass-spliced)</text>
+
+  <line x1="364" y1="370" x2="634" y2="370" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrC)"/>
+  <text x="499" y="360" font-size="11" font-family="monospace" fill="#22d3ee" text-anchor="middle">createInstance(minst)</text>
+
+  <!-- ownership lines -->
+  <line x1="195" y1="190" x2="195" y2="211" stroke="#666" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+  <text x="204" y="205" font-size="11" fill="#9ca3af">owns</text>
+  <line x1="195" y1="302" x2="195" y2="323" stroke="#666" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+  <text x="204" y="317" font-size="11" fill="#9ca3af">declares plugs</text>
+  <line x1="805" y1="190" x2="805" y2="211" stroke="#666" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+  <text x="814" y="205" font-size="11" fill="#9ca3af">owns</text>
+  <line x1="805" y1="302" x2="805" y2="323" stroke="#666" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+  <text x="814" y="317" font-size="11" fill="#9ca3af">owns</text>
+
+  <!-- lifecycle -->
+  <line x1="30" y1="442" x2="970" y2="442" stroke="#4a5568"/>
+  <text x="30" y="470" font-size="15" font-weight="bold" fill="white">Lifecycle</text>
+
+  <rect x="330" y="486" width="340" height="54" rx="8" fill="#065f46" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="500" y="508" font-size="13" font-weight="bold" font-family="monospace" fill="white" text-anchor="middle">DgSorter::generateTopology()</text>
+  <text x="500" y="526" font-size="11.5" fill="#a7f3d0" text-anchor="middle">cycle → null + offender list logged</text>
+
+  <line x1="500" y1="540" x2="500" y2="554" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <rect x="330" y="556" width="340" height="34" rx="8" fill="#1f2937" stroke="#6b7280"/>
+  <text x="500" y="578" font-size="11.5" font-family="monospace" fill="#d1d5db" text-anchor="middle">Topology — _flattened (sorted), _hash</text>
+
+  <line x1="500" y1="590" x2="500" y2="604" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <rect x="310" y="606" width="380" height="112" rx="8" fill="#065f46" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="326" y="628" font-size="13" font-weight="bold" font-family="monospace" fill="white">GraphInst::updateTopology(topo)</text>
+  <text x="326" y="648" font-size="11.5" fill="#a7f3d0">• create module insts + plug insts</text>
+  <text x="326" y="664" font-size="11.5" fill="#a7f3d0">• wire inst inputs via resolveConnectedOutput()</text>
+  <text x="340" y="680" font-size="11.5" fill="#6ee7b7">(bypassed producers spliced out)</text>
+  <text x="326" y="696" font-size="11.5" fill="#a7f3d0">• link() → every module's onLink()</text>
+
+  <line x1="500" y1="718" x2="500" y2="734" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <polygon points="500,736 610,768 500,800 390,768" fill="#4c1d95" stroke="#a78bfa" stroke-width="2"/>
+  <text x="500" y="773" font-size="12" font-family="monospace" fill="white" text-anchor="middle">_topologyValid ?</text>
+
+  <line x1="610" y1="768" x2="656" y2="768" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="620" y="760" font-size="11" fill="#9ca3af">false</text>
+  <rect x="660" y="736" width="310" height="64" rx="8" fill="#252540" stroke="#6b7280" stroke-dasharray="5,4"/>
+  <text x="674" y="760" font-size="12.5" fill="#ddd">graph left inert — no stage()/activate()</text>
+  <text x="674" y="778" font-size="12" fill="#9ca3af">re-configure once wired to recover</text>
+
+  <line x1="500" y1="800" x2="500" y2="816" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="508" y="813" font-size="11" fill="#9ca3af">true</text>
+
+  <rect x="330" y="818" width="340" height="48" rx="8" fill="#065f46" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="500" y="838" font-size="13" font-weight="bold" font-family="monospace" fill="white" text-anchor="middle">stage() → activate()</text>
+  <text x="500" y="856" font-size="11.5" fill="#a7f3d0" text-anchor="middle">onStage / onActivate per module</text>
+
+  <line x1="500" y1="866" x2="500" y2="884" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="512" y="880" font-size="12" font-style="italic" fill="#9ca3af">then, per frame:</text>
+
+  <polygon points="500,886 630,920 500,954 370,920" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2"/>
+  <text x="500" y="925" font-size="12" font-family="monospace" fill="white" text-anchor="middle">GraphData::_cacheable ?</text>
+
+  <line x1="370" y1="920" x2="324" y2="920" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="332" y="912" font-size="11" fill="#9ca3af">false</text>
+  <rect x="40" y="886" width="280" height="68" rx="8" fill="#065f46" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="180" y="908" font-size="13" font-weight="bold" font-family="monospace" fill="white" text-anchor="middle">compute(updata)</text>
+  <text x="180" y="926" font-size="11.5" fill="#a7f3d0" text-anchor="middle">sequential loop over</text>
+  <text x="180" y="942" font-size="11.5" fill="#a7f3d0" text-anchor="middle">_ordered_module_insts</text>
+
+  <line x1="630" y1="920" x2="676" y2="920" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="640" y="912" font-size="11" fill="#9ca3af">true</text>
+  <rect x="680" y="886" width="290" height="68" rx="8" fill="#065f46" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="825" y="908" font-size="13" font-weight="bold" font-family="monospace" fill="white" text-anchor="middle">cachedCompute(updata)</text>
+  <text x="825" y="926" font-size="11.5" fill="#a7f3d0" text-anchor="middle">per-node Merkle hash, then</text>
+  <text x="825" y="942" font-size="11.5" fill="#a7f3d0" text-anchor="middle">cookLoad or compute + cookStore</text>
+
+  <text x="500" y="996" font-size="12" fill="#9ca3af" text-anchor="middle">reset() → every module's onReset() — the next compute() behaves like the first (instance recycling)</text>
+</svg>

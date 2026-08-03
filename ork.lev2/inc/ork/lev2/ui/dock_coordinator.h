@@ -62,6 +62,21 @@ using dock_topmost_number_fn_t   = std::function<int64_t(int, int)>;
 using dock_win_number_provider_t = std::function<int64_t()>;
 
 ////////////////////////////////////////////////////////////////////
+// Drag cursor feedback (F2a-lite). The ui:: layer names the intent; the glfw side
+//  installs a seam that maps it to a cached glfwCreateStandardCursor on the drag
+//  window (main-thread only — all drag code is main-thread). Values are the seam's
+//  contract (glfw resolves the actual shapes); unset seam => no-op (offscreen gates,
+//  non-glfw hosts). ARROW is the drag-idle restore.
+////////////////////////////////////////////////////////////////////
+enum class DragCursor : int {
+  ARROW       = 0,
+  RESIZE_ALL  = 1, // hovering a valid dock zone (local or foreign)
+  HAND        = 2, // over empty desktop -> tear-out
+  NOT_ALLOWED = 3, // no valid drop here (nozone / pinned-out / off any zone)
+};
+using dock_cursor_fn_t = std::function<void(int)>;
+
+////////////////////////////////////////////////////////////////////
 // Result of resolving a cross-window drag position against the window
 //  registry. Computed each updatePanelDrag; consumed by endPanelDrag.
 ////////////////////////////////////////////////////////////////////
@@ -145,6 +160,16 @@ struct DockCoordinator {
   void setTransferCallback(dock_transfer_cb_t cb) { _transfer_cb = std::move(cb); }
   void setTearOutCallback(dock_tearout_cb_t cb) { _tearout_cb = std::move(cb); }
   void setTransferablePredicate(dock_transferable_pred_t p) { _transferable_pred = std::move(p); }
+
+  // Drag cursor seam (F2a-lite). Installed once from the glfw side; DockSpace drives
+  //  it from the drag lifecycle. No-op when unset (offscreen gates).
+  void setDragCursorFn(dock_cursor_fn_t fn) { _cursor_fn = std::move(fn); }
+  void setDragCursor(DragCursor kind) { if (_cursor_fn) _cursor_fn(int(kind)); }
+
+  // Per-drag-session reset of the _traceResolve dedup so EVERY drag logs its first
+  //  classification (else a later drag with an identical classification prints
+  //  nothing — the DOCKTRACE tooling gap). Called at beginPanelDrag.
+  void resetTraceDedup() { _traced_once = false; _last_trace_detail.clear(); }
   // BUG-B point-ownership. Override WINS over the native leg (test seam; a gate
   //  simulates another app's window occluding ours). fn(screen_x, screen_y) ->
   //  window_key or "" (not ours). Unset => native leg / rect-only.
@@ -200,6 +225,7 @@ struct DockCoordinator {
   dock_transferable_pred_t _transferable_pred; // W5 pinning; unset => all transferable
   dock_point_owner_fn_t _point_owner_override; // BUG-B test seam; wins over native
   dock_topmost_number_fn_t _topmost_number_fn; // BUG-B native leg (mac); unset => none
+  dock_cursor_fn_t _cursor_fn;                 // F2a-lite drag cursor seam (glfw-installed)
   bool _degrade_logged = false;
   int _trace_enabled = -1;               // -1 = unread, 0/1 cached from ORKID_DOCK_TRACE
   bool _traced_once = false;

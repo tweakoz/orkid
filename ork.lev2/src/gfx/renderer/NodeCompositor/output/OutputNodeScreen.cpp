@@ -56,6 +56,7 @@ struct SCRIMPL {
       _fxpMVP               = _blit2screenmtl.param("MatMVP");
       _fxpColorMap          = _blit2screenmtl.param("ColorMap");
       _fxpVpDim             = _blit2screenmtl.param("ViewportDim");
+      _fxpDitherAmt         = _blit2screenmtl.param("DitherAmt");
       _needsinit            = false;
       _msaadownsamplebuffer = std::make_shared<RtGroup>(ctx, 8, 8, MsaaSamples::MSAA_1X);
       auto dsbuf            = _msaadownsamplebuffer->createRenderTarget(_node->_format);
@@ -127,6 +128,7 @@ struct SCRIMPL {
   const FxShaderParam* _fxpMVP;
   const FxShaderParam* _fxpColorMap;
   const FxShaderParam* _fxpVpDim;
+  const FxShaderParam* _fxpDitherAmt;
   bool _needsinit = true;
   int _width      = 0;
   int _height     = 0;
@@ -135,9 +137,7 @@ struct SCRIMPL {
 ///////////////////////////////////////////////////////////////////////////////
 ScreenOutputCompositingNode::ScreenOutputCompositingNode()
     : _supersample(0) {
-  // P3.D DEBUG: bumped RGBA8 → RGBA16F to remove 8-bit final-output
-  // quantization as the banding suspect. Revert when diagnosis done.
-  _format = EBufferFormat::RGBA16F;
+  _format = EBufferFormat::RGBA8;
   _impl   = std::make_shared<SCRIMPL>(this);
 }
 ScreenOutputCompositingNode::~ScreenOutputCompositingNode() {
@@ -221,6 +221,9 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
           mtl.bindParamTexture(impl->_fxpColorMap, tex);
           mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
           mtl.bindParamVec2(impl->_fxpVpDim, fvec2(float(context->mainSurfaceWidth()), float(context->mainSurfaceHeight())));
+          // this blit is the LAST write before the 8-bit store (main_rtg is
+          // BGRA8 — window swapchain or offscreen), so it owns the dither.
+          mtl.bindParamFloat(impl->_fxpDitherAmt, 1.0f);
           ViewportRect extents(0, 0, context->mainSurfaceWidth(), context->mainSurfaceHeight());
           fbi->pushViewport(extents);
           fbi->pushScissor(extents);
@@ -260,6 +263,7 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
           tex = impl->_msaadownsamplebuffer->buffer(0)->texture();
           mtl.bindParamTexture(impl->_fxpColorMap, tex);
           mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
+          mtl.bindParamFloat(impl->_fxpDitherAmt, 1.0f);
           ViewportRect extents(0, 0, context->mainSurfaceWidth(), context->mainSurfaceHeight());
           fbi->pushViewport(extents);
           fbi->pushScissor(extents);

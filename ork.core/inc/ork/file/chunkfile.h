@@ -90,6 +90,18 @@ struct Writer {
   void WriteToFile(const file::Path& outpath);
   void writeToDataBlock(datablock_ptr_t& out_datablock);
 
+  /////////////////////////////////////////////
+  // Incremental form of writeToDataBlock: the header (magic, string block,
+  // file type, chunk table) first, then ONE stream payload per call in the
+  // order writeToDataBlock emits them — which is what writeToDataBlock now IS,
+  // so the bytes are identical either way. A caller under a per-frame budget
+  // uses this to keep a multi-megabyte container out of a single slice.
+  /////////////////////////////////////////////
+  size_t numStreams() const;
+  size_t dataBlockSize();
+  void writeHeaderToDataBlock(datablock_ptr_t& out_datablock);
+  void appendStreamToDataBlock(datablock_ptr_t& out_datablock, size_t stream_index);
+
   ////////////////////////////////////////////////////////////////////////////////////
 
   StringBlock _stringblock;

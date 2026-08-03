@@ -79,6 +79,9 @@ void AppInitData::setArgs(int argc, char** argv, char** envp) {
     genviron.get("ORKID_AUDIO_STREAM_SYNC", sync_enable_str);
     _audio_stream_sync = (sync_enable_str == "1") || (sync_enable_str == "true");
   }
+  if (genviron.has("ORKID_AUDIO_WAV_OUT")) {
+    genviron.get("ORKID_AUDIO_WAV_OUT", _audio_wav_out);
+  }
   if (genviron.has("ORKID_DISABLE_ALWAYS_ON_TOP")) {
     _canalwaysontop = false;
   }
@@ -141,6 +144,12 @@ void AppInitData::executePostInitOps() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void AppInitData::finalizeInitialization() {
+  // DRM is on-screen presentation only — an offscreen run has no seat to modeset,
+  //  and this must settle before ensureLoaderContext() so the loader and render
+  //  contexts pick the same GPU.
+  if (_offscreen) {
+    _use_drm = false;
+  }
   executePreInitOps();
   executePostInitOps();
   _preinitoperations.clear();
@@ -205,10 +214,9 @@ AppInitData::opts_var_map_ptr_t AppInitData::parse() {
     }
   }
   if (_commandline_vars->count("drm")) {
-    this->_use_drm    = true;
+    this->_use_drm    = not this->_offscreen;
     this->_drm_mode   = vars["drm"].as<std::string>();
     this->_fullscreen = false;
-    this->_offscreen  = false;
   }
 #endif
   if (_commandline_vars->count("enable_audio")) {
@@ -882,15 +890,51 @@ void Application::_shutdownSubsystemsInWaves() {
   std::vector<std::vector<subsystem_reg_ptr_t>> shutdown_waves;
   _buildShutdownWaves(shutdown_waves);
 
+  // Drive one subsystem's SHUTDOWN event through to TERMINATED
+  auto pump_shutdown = [](subsystem_reg_ptr_t reg) {
+    // Send SHUTDOWN event to subsystem FSM
+    reg->subsystem->_instance->sendEvent("SHUTDOWN");
+
+    // Process until TERMINATED
+    while (true) {
+      fsm::FsmInstance::update(reg->subsystem->_instance);
+
+      auto state = reg->subsystem->currentState();
+      if (state == reg->subsystem->_state_terminated) {
+        break;
+      }
+
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+  };
+
   // Process waves in order (each wave shuts down in parallel)
+  //  thread affinity is honored exactly as in initSubsystemsInOrder() and
+  //  Subsystem::shutdownChildren(): _requires_thread=="main" subsystems run
+  //  inline on the calling thread (shutdown() is driven from mainThreadLoop,
+  //  so that IS the main thread). Their SHUTTING_DOWN handlers cascade into
+  //  shutdownChildren(), so a "main" root running on a worker would tear down
+  //  GPU/GLFW state with no context bound to that thread.
   int wave_index = 0;
   for (auto& wave : shutdown_waves) {
-    logchan_APP->log("Shutting down %zu subsystems (wave %d)", wave.size(), wave_index);
+    std::vector<subsystem_reg_ptr_t> wave_main;     // requires main thread
+    std::vector<subsystem_reg_ptr_t> wave_parallel; // can run in parallel
+
+    for (auto& reg : wave) {
+      if (reg->subsystem->_requires_thread == "main") {
+        wave_main.push_back(reg);
+      } else {
+        wave_parallel.push_back(reg);
+      }
+    }
+
+    logchan_APP->log("Shutting down %zu subsystems (wave %d: %zu main-thread, %zu parallel)",
+                     wave.size(), wave_index, wave_main.size(), wave_parallel.size());
 
     std::vector<std::shared_ptr<Future>> futures;
     std::vector<std::thread> threads;
 
-    for (auto& reg : wave) {
+    for (auto& reg : wave_parallel) {
       reg->is_shutting_down = true;
 
       auto fut = std::make_shared<Future>();
@@ -899,25 +943,18 @@ void Application::_shutdownSubsystemsInWaves() {
 
       if(0)logchan_APP->log("  launching shutdown thread for subsystem<%s>", reg->subsystem->_name.c_str());
 
-      threads.emplace_back([reg, fut]() {
-        // Send SHUTDOWN event to subsystem FSM
-        reg->subsystem->_instance->sendEvent("SHUTDOWN");
-
-        // Process until TERMINATED
-        while (true) {
-          fsm::FsmInstance::update(reg->subsystem->_instance);
-
-          auto state = reg->subsystem->currentState();
-          if (state == reg->subsystem->_state_terminated) {
-            break;
-          }
-
-          std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        }
+      threads.emplace_back([reg, fut, pump_shutdown]() {
+        pump_shutdown(reg);
 
         // Signal completion
         fut->signal<bool>(true);
       });
+    }
+
+    // Shutdown main-thread subsystems on the calling thread
+    for (auto& reg : wave_main) {
+      reg->is_shutting_down = true;
+      pump_shutdown(reg);
     }
 
     // Wait for wave to complete

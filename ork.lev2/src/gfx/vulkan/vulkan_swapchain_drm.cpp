@@ -597,7 +597,7 @@ void VkSwapChainDRM::_acquireImage(vkcontext_rawptr_t ctxVK) {
 
     // Wait on this frames fence for good measure and reset.
     // The frame should always be finished by this point so the wait should be a no-op.
-    _frame_fences[_sub_index]->wait();
+    _frame_fences[_sub_index]->wait("drm-acquireImage");
     _frame_fences[_sub_index]->reset();
 }
 
@@ -633,7 +633,7 @@ void VkSwapChainDRM::_enqueueFrame(vkcontext_rawptr_t ctxVK) {
 void VkSwapChainDRM::_waitPresentFrame(vkcontext_rawptr_t ctxVK) {
     // CRITICAL: Wait for GPU to finish rendering THIS image before we flip it
     // The fence was signaled by enqueueFrame() when GPU completes
-    _frame_fences[_sub_index]->wait();
+    _frame_fences[_sub_index]->wait("drm-waitPresentFrame");
 
     // Display via DRM (first frame uses SetCrtc, subsequent use PageFlip)
     if (_firstFrame) {

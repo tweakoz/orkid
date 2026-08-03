@@ -9,6 +9,7 @@
 #include "ork/orkstd.h"
 #include "vulkan_ubo_dynamic.h"
 #include "vulkan_ub_layout.inl"
+#include "vulkan_desclife.h"
 #include <cstddef>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/util/hexdump.inl>
@@ -107,6 +108,26 @@ void VkFxInterface::_bindPipeline(VkCommandBuffer cmdbuf, vkpipelinestate_rawptr
 
   // Dynamic cull mode is set in VkFxInterface::applyRasterState, which
   // runs after per-draw state lambdas have mutated the material rasterstate.
+
+  ////////////////////////////////////////
+  // set dynamic depth-write (always)
+  //
+  // The material's writemaskZ is only half the answer: an RTG whose depth
+  // attachment was flipped to DEPTH_READ_ONLY_OPTIMAL (FBI::transitionDepth-
+  // ForSampling, so the color pass can SAMPLE the prepass depth) forbids depth
+  // writes for the whole pass — VUID-vkCmdDraw-None-06886. Every opaque
+  // material bakes writemaskZ=true, so the mask has to be ANDed with the pass
+  // here rather than branched per-material. Outside a read-only pass this
+  // reproduces exactly what the pipeline baked (same effective rasterstate
+  // resolution _fetchPipeline* used). Must be issued unconditionally: the
+  // pipeline declares DEPTH_WRITE_ENABLE dynamic in every pass.
+  ////////////////////////////////////////
+
+  auto rtg_impl        = fbi->_active_rtgroup->_impl.getShared<VkRtGroupImpl>();
+  auto eff_rasterstate = _effectiveRasterState();
+  bool depth_writemask = eff_rasterstate ? eff_rasterstate->_writemaskZ : false;
+  VkBool32 depth_write = (depth_writemask and not rtg_impl->_depthReadOnlyMode) ? VK_TRUE : VK_FALSE;
+  _contextVK->_vkCmdSetDepthWriteEnableEXT(cmdbuf, depth_write);
 
   ////////////////////////////////////////
   // upload ubo data and push constants
@@ -422,6 +443,47 @@ vkdescriptorsetstate_ptr_t VulkanDescriptorSetCacheState::fetchDescriptorSetForP
   vkdescriptorsetstate_ptr_t descset_ptr = nullptr;
   if (it != _vkDescriptorSetByHash.end()) {
     descset_ptr = it->second;
+    ////////////////////////////////////////////////////////////
+    // DESCLIFE FETCH — the discriminator. Reports what the PASS STATE holds
+    // for the env-specular samplers right now, against the set the cache is
+    // about to hand back. Pass state holding the dead view => the defect is
+    // upstream of the cache (stale texture served to the binder). Pass state
+    // holding a LIVE view while the cached set was written with a dead one
+    // => the defect is the cache entry itself.
+    // Change-gated: this is the per-draw path, and only transitions matter —
+    // the last line logged for a (set,param) IS its current value.
+    ////////////////////////////////////////////////////////////
+    if (desclifeEnabled()) {
+      for (const auto& [param, descb] : vk_program->_merged_resource_bindings) {
+        const auto& pname = param->_name;
+        if (pname.find("MapSpecularEnv") == std::string::npos)
+          continue;
+        VulkanTextureObject* vktex = nullptr;
+        auto tex_it                = shader_state->_textures_by_orkparam.find(param);
+        if (tex_it != shader_state->_textures_by_orkparam.end())
+          vktex = tex_it->second.get();
+        auto sample_img       = vktex ? vktex->samplingImage() : nullptr;
+        VkImageView held_view = sample_img ? sample_img->_vkimageview : VK_NULL_HANDLE;
+        size_t held_sn        = sample_img ? sample_img->_serial_number : 0;
+        static std::map<std::pair<void*, std::string>, std::pair<void*, size_t>> last_seen;
+        auto key = std::make_pair((void*)descset_ptr->_vkdescset, pname);
+        auto now = std::make_pair((void*)held_view, held_sn);
+        auto le  = last_seen.find(key);
+        if (le == last_seen.end() or le->second != now) {
+          last_seen[key] = now;
+          printf(
+              "[DESCLIFE] FETCH-HIT set<%p> key<0x%016llx> prog<%p> b<%u> param<%s> heldview<%p> heldsn<%zu> frame<%zu>\n",
+              (void*)descset_ptr->_vkdescset,
+              (unsigned long long)descset_bits,
+              (void*)vk_program,
+              descb._binding_id,
+              pname.c_str(),
+              (void*)held_view,
+              held_sn,
+              desclifeFrame(_ctxVK));
+        }
+      }
+    }
   } else {
     descset_ptr = _createNewDescriptorSetForProgram(vk_program);
     _vkDescriptorSetByHash[descset_bits] = descset_ptr;
@@ -519,6 +581,22 @@ vkdescriptorsetstate_ptr_t VulkanDescriptorSetCacheState::fetchDescriptorSetForP
               DWRITE.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
               DWRITE.pImageInfo      = &patched;
 
+              // DESCLIFE WRITE — the moment this set CAPTURES a view. Cache
+              // miss only, so one line per sampler per distinct key.
+              if (desclifeEnabled()) {
+                printf(
+                    "[DESCLIFE] WRITE set<%p> key<0x%016llx> prog<%p> b<%u> param<%s> view<%p> imgsn<%zu> tex<%p> frame<%zu>\n",
+                    (void*)descset_ptr->_vkdescset,
+                    (unsigned long long)descset_bits,
+                    (void*)vk_program,
+                    binding->binding_id,
+                    binding->name.c_str(),
+                    (void*)patched.imageView,
+                    sample_img ? sample_img->_serial_number : 0,
+                    (void*)vk_tex,
+                    desclifeFrame(_ctxVK));
+              }
+
               descriptor_writes.push_back(DWRITE);
               break;
             } // case VkMergedResourceBinding::Type::Sampler: {
@@ -532,15 +610,54 @@ vkdescriptorsetstate_ptr_t VulkanDescriptorSetCacheState::fetchDescriptorSetForP
               }
 
               if (ubo_block && ubo_block->_buffer_size > 0) {
-                // Use global dynamic UBO buffer
-                extern VkDynamicUBOSystem* g_dynamic_ubo_system;
-                OrkAssert(g_dynamic_ubo_system != nullptr);
-                auto global_buffer = g_dynamic_ubo_system->get_buffer();
-                OrkAssert(global_buffer != nullptr);
+
+                const bool nondynamic = isNonDynamicUniformBlock(binding->name);
+
+                VkBuffer vk_ubo_buffer = VK_NULL_HANDLE;
+
+                if (nondynamic) {
+                  ///////////////////////////////////////////////////////////////
+                  // N = 1. THIS IS A SINGLE-BUFFER BIND WITH NO FRAME SLOTS.
+                  //
+                  // It is only legal because the frame model fully synchronizes
+                  // CPU and GPU once per frame on BOTH output paths (the present
+                  // path waits its frame fence, the offscreen path waits inside
+                  // submit), so the frame that writes this buffer cannot be in
+                  // flight while the next frame overwrites it.
+                  //
+                  // IF THAT EVER CHANGES — if frames become genuinely overlapped
+                  // — this block needs N=2 (per-frame-slot buffers) AND a frame-
+                  // slot bit folded into the descriptor-set cache key, or draws
+                  // will read the wrong frame's sun. Precedent for the key work:
+                  // the SSBO buffer/offset hash-combine in
+                  // fetchDescriptorSetForProgram just below.
+                  ///////////////////////////////////////////////////////////////
+                  auto it_buf = _ctxVK->_fxi->_nondynamic_ubo_buffers.find(binding->name);
+                  if (it_buf != _ctxVK->_fxi->_nondynamic_ubo_buffers.end() and it_buf->second) {
+                    vk_ubo_buffer = it_buf->second->_vkbuffer;
+                  } else {
+                    // DECLARED BUT NEVER BOUND. Real case: the cloud-deck material
+                    // (cloudlayermtl, drawn from the sun-cookie prologue) inherits
+                    // lib_fwd and so declares ublk_sun, but no lambda binds the sun
+                    // buffer for it. Under the dynamic path such a program read its
+                    // own all-zero shadow buffer every draw — has_sun==0, the shader's
+                    // no-op branch. Handing it the LIVE sun buffer instead would
+                    // change what it renders, so it keeps reading zeros: one shared
+                    // zero-filled buffer, allocated on demand per block size.
+                    vk_ubo_buffer = _ctxVK->_fxi->_zeroUniformBuffer(ubo_block->_buffer_size)->_vkbuffer;
+                  }
+                } else {
+                  // Use global dynamic UBO buffer
+                  extern VkDynamicUBOSystem* g_dynamic_ubo_system;
+                  OrkAssert(g_dynamic_ubo_system != nullptr);
+                  auto global_buffer = g_dynamic_ubo_system->get_buffer();
+                  OrkAssert(global_buffer != nullptr);
+                  vk_ubo_buffer = global_buffer->_vkbuffer;
+                }
 
                 VkDescriptorBufferInfo buffer_info = {};
-                buffer_info.buffer                 = global_buffer->_vkbuffer;
-                buffer_info.offset                 = 0; // Dynamic offset will be provided at bind time
+                buffer_info.buffer                 = vk_ubo_buffer;
+                buffer_info.offset                 = 0; // dynamic blocks get their offset at bind time
                 buffer_info.range                  = ubo_block->_buffer_size;
                 buffer_infos.push_back(buffer_info);
 
@@ -549,7 +666,8 @@ vkdescriptorsetstate_ptr_t VulkanDescriptorSetCacheState::fetchDescriptorSetForP
                 DWRITE.dstSet          = descset_ptr->_vkdescset;
                 DWRITE.dstBinding      = binding->binding_id;
                 DWRITE.descriptorCount = 1;
-                DWRITE.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+                DWRITE.descriptorType  = nondynamic ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER //
+                                                    : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
                 DWRITE.pBufferInfo     = &buffer_infos.back();
 
                 descriptor_writes.push_back(DWRITE);

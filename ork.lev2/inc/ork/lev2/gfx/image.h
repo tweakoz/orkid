@@ -24,6 +24,11 @@ namespace ork {
   }
 }
 
+namespace ork::opq {
+struct OperationsQueue;
+using opq_ptr_t = std::shared_ptr<OperationsQueue>;
+} // namespace ork::opq
+
 namespace ork::lev2 {
 
 struct Image;
@@ -130,6 +135,23 @@ struct Image {
   void resizedOf(const Image& inp, int w, int h);
   void downsample(Image& imgout) const;
 
+  // Row-banded form of downsample: sizes/allocates imgout once, then filters
+  // one half-open band of imgout's rows per call. The kernel reads only `this`
+  // and each band writes rows nothing else writes, so any partition of
+  // [0,imgout._height) produces the bytes downsample() produces — which is the
+  // whole point: a multi-megapixel downsample is scalar per-pixel work and a
+  // caller under a per-frame budget has to be able to cut it.
+  //
+  // The band is filtered in row chunks fanned onto `queue` and joined here.
+  // A null queue means the shared concurrentQueue — correct for a caller that
+  // is not itself competing with that pool. A caller that joins from a thread
+  // whose latency is measured (the microtask scheduler's per-slice wall) must
+  // pass a queue OF ITS OWN: on the shared pool the join measures however long
+  // the chunk sat behind unrelated pool-fanning work (readback conversions, a
+  // cold shader compile), not the filtering.
+  void downsampleInit(Image& imgout) const;
+  void downsampleRows(Image& imgout, size_t y_begin, size_t y_end, opq::opq_ptr_t queue = nullptr) const;
+
   // High-quality separable filtered resample to (w,h). UNLIKE resizedOf (fixed 2x2 bilinear — aliases on
   // large downsamples, and asserts on R32F), this scales the filter support with the reduction ratio
   // (true anti-aliasing), handles ARBITRARY ratios, is texel-center aligned, and runs in float internally
@@ -210,7 +232,10 @@ struct Image {
   // epoch DateTime sentinel, never the encode wall-clock — otherwise two identical
   // bakes straddling a 1-second boundary differ by one header byte and byte-identity
   // gates (T9 oracle, cross-machine determinism) flake on a metadata byte.
-  void writeToFile(const ork::file::Path& outpath, bool linear_colorspace = false) const;
+  // writes the image via OIIO. Returns false (loud error, path + reason) on an
+  // unrecognized/extension-less path or an OIIO open/write failure — never a silent
+  // no-op that reports spurious success. true on a clean write.
+  bool writeToFile(const ork::file::Path& outpath, bool linear_colorspace = false) const;
   bool readFromFile(const ork::file::Path& inpath);
 
   //////////////////////////
@@ -236,6 +261,47 @@ struct Image {
   varmap::VarMap _varmap;
   mutable compressedmipchain_ptr_t _cmipchain;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+// Sliced construction of Image::uncompressedMipChain().
+//
+// The chain is one indivisible multi-millisecond CPU pass (measured ~0.19us per
+// downsampled output pixel for RGBA16F — the 4x4 kernel is scalar, in double,
+// with a half<->float conversion per channel), which is more than a VR frame
+// for anything past a couple of megapixels. MipChainBuilder walks the SAME
+// levels in the SAME order, stopping every `budget_px` output pixels;
+// uncompressedMipChain() is this builder run to completion, so the levels are
+// byte-identical however the caller cuts it.
+//
+// mipChainAdvance is the cursor arithmetic BOTH the builder and a scheduler
+// building a step plan use, so a plan sized by mipChainStepCount matches the
+// number of step() calls exactly.
+///////////////////////////////////////////////////////////////////////////////
+
+bool mipChainAdvance(size_t w, size_t h, size_t budget_px, size_t& mip, size_t& row);
+size_t mipChainStepCount(size_t w, size_t h, size_t budget_px);
+
+struct MipChainBuilder {
+
+  MipChainBuilder(const Image& src);
+
+  // advance by ~budget_px downsampled output pixels; false once _chain is complete
+  bool step(size_t budget_px);
+
+  compressedmipchain_ptr_t _chain;
+  // the queue each step's downsample fans onto (see Image::downsampleRows);
+  // null = the shared concurrentQueue
+  opq::opq_ptr_t _downsample_queue;
+  Image _imga, _imgb; // current level / its source for the next downsample
+  size_t _src_w = 0;
+  size_t _src_h = 0;
+  size_t _mip   = 0;
+  size_t _row   = 0;
+};
+
+using mipchainbuilder_ptr_t = std::shared_ptr<MipChainBuilder>;
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct ImageProvider {
   using img_prov_fn_t = std::function<image_ptr_t()>;

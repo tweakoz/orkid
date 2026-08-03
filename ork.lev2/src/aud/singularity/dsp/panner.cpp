@@ -12,6 +12,7 @@
 #include <ork/lev2/aud/singularity/alg_amp.h>
 #include <ork/lev2/aud/singularity/alg_pan.inl>
 #include <ork/lev2/aud/singularity/modulation.h>
+#include <ork/lev2/aud/singularity/spike_diag.h>
 #include <ork/math/audiomath.h>
 
 ImplementReflectionX(ork::audio::singularity::PANNER_DATA, "DspAmpPanner");
@@ -31,7 +32,7 @@ PANNER_DATA::PANNER_DATA(std::string name)
   addParam("POS")->useDefaultEvaluator(); // position: eval: "POS"
 }
 dspblk_ptr_t PANNER_DATA::createInstance() const {
-  return std::make_shared<PANNER>(this);
+  return createDspInstance<PANNER>(this);
 }
 
 PANNER::PANNER(const DspBlockData* dbd)
@@ -95,7 +96,7 @@ PANNER2D_DATA::PANNER2D_DATA(std::string name)
   P->_fine     = 0;
 }
 dspblk_ptr_t PANNER2D_DATA::createInstance() const {
-  return std::make_shared<PANNER2D>(this);
+  return createDspInstance<PANNER2D>(this);
 }
 
 PANNER2D::PANNER2D(const DspBlockData* dbd)
@@ -133,6 +134,7 @@ PANNER2D::~PANNER2D() {
 }
 void PANNER2D::compute(DspBuffer& dspbuf) // final
 {
+  SpikeScope spikescope(SPK_PANNER2D, "PANNER2D");
   int inumframes = _layer->_dspwritecount;
   float* bufL    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
   float* bufR    = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
@@ -224,7 +226,9 @@ void PANNER2D::compute(DspBuffer& dspbuf) // final
 
     // One-pole smoothing: ~2ms time constant at 48kHz gives C-inf continuity
     constexpr float kSmoothAlpha = 0.01f; // 1 - exp(-1/(0.002*48000))
+    spikescope.mark();                    // head of the block, before the loop
     for (int i = 0; i < inumframes; i++) {
+      spikescope.mark(); // one checkpoint per sample (diag builds only)
 
       _prevAngle    += (new_angle - _prevAngle) * kSmoothAlpha;
       _prevDistance  += (new_distance - _prevDistance) * kSmoothAlpha;
@@ -351,7 +355,7 @@ PANNER2DU_DATA::PANNER2DU_DATA(std::string name)
   P->_fine     = 0;
 }
 dspblk_ptr_t PANNER2DU_DATA::createInstance() const {
-  return std::make_shared<PANNER2DU>(this);
+  return createDspInstance<PANNER2DU>(this);
 }
 
 PANNER2DU::PANNER2DU(const DspBlockData* dbd)

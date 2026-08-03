@@ -254,7 +254,7 @@ struct GfxMaterial3DSolid;
 struct FreestyleMaterial;
 class GfxMaterialUI;
 class GfxMaterialUITextured;
-class PBRMaterial;
+struct PBRMaterial;
 using material_ptr_t           = std::shared_ptr<GfxMaterial>;
 using material_constptr_t      = std::shared_ptr<const GfxMaterial>;
 using pbrmaterial_ptr_t = std::shared_ptr<PBRMaterial>;
@@ -595,8 +595,16 @@ class TextureAnimationInst;
 namespace pbr {
   struct CommonStuff;
   struct RadianceMaps;
+  struct SkyAtmosphereData;
+  struct SkyFrameState;
+  struct SkyIblState;
+  struct HillaireSky;
   using commonstuff_ptr_t = std::shared_ptr<CommonStuff>;
   using radiancemaps_ptr_t = std::shared_ptr<RadianceMaps>;
+  using skyatmospheredata_ptr_t = std::shared_ptr<SkyAtmosphereData>;
+  using skyframestate_ptr_t = std::shared_ptr<SkyFrameState>;
+  using skyiblstate_ptr_t = std::shared_ptr<SkyIblState>;
+  using hillairesky_ptr_t = std::shared_ptr<HillaireSky>;
   using RadianceMaps_wkptr_t = std::weak_ptr<RadianceMaps>;
   namespace deferrednode{
     struct DeferredContext;

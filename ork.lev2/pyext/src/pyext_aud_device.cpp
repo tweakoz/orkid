@@ -7,6 +7,7 @@
 
 #include "pyext.h"
 #include <ork/lev2/aud/audiodevice.h>
+#include <ork/lev2/aud/singularity/keyon_prof.h>
 #include <ork/lev2/aud/stream/audiodevice_stream.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -70,6 +71,30 @@ namespace ork::lev2 {
     lev2_module.def("findAudioDeviceByShortId", [](const std::string& short_id) -> audiodeviceinfo_ptr_t {
       return findAudioDeviceByShortId(short_id);
     }, py::arg("short_id"));
+    /////////////////////////////////////////////////////////////////////////////////
+    // realtime device telemetry — the xrun counter the audio callback publishes.
+    // always live (not gated on ORKID_PA_DIAG); zero on devices that never run a
+    // host callback (STREAM/NULL).
+    /////////////////////////////////////////////////////////////////////////////////
+    lev2_module.def("audioDiagCounters", []() -> py::dict {
+      const auto& ctrs = audioDiagCounters();
+      py::dict rval;
+      rval["underflows"]        = ctrs._underflows.load(std::memory_order_relaxed);
+      rval["callbacks"]         = ctrs._callbacks.load(std::memory_order_relaxed);
+      rval["frames_per_buffer"] = ctrs._frames_per_buffer.load(std::memory_order_relaxed);
+      rval["sample_rate"]       = ctrs._sample_rate.load(std::memory_order_relaxed);
+      return rval;
+    });
+    /////////////////////////////////////////////////////////////////////////////////
+    // note-on phase attribution (ORKID_KEYON_PROF). prints the table and CLEARS the
+    // accumulators. the realtime path emits it from the device's diag window, which a
+    // consumer-pumped STREAM run never reaches — so the table is only readable off a
+    // hardware device without this hook. no-op unless the env gate was set at load.
+    /////////////////////////////////////////////////////////////////////////////////
+    lev2_module.def("audioKeyOnProfReport", []() {
+      ::ork::audio::singularity::keyonProfReport();
+      fflush(stdout);
+    });
     /////////////////////////////////////////////////////////////////////////////////
     auto auddev_t = py::class_<AudioDevice, audiodevice_ptr_t>(lev2_module, "AudioDevice"); //
     type_codec->registerStdCodec<audiodevice_ptr_t>(auddev_t);

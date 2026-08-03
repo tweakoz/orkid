@@ -40,6 +40,8 @@ void ShadLangParser::preDeclareAstNodes() {
   declare("FragmentShaderRef");
   declare("GeometryShaderRef");
   declare("ComputeShaderRef");
+  declare("MeshShaderRef");
+  declare("TaskShaderRef");
   declare("StateBlockRef");
 }
 
@@ -53,6 +55,8 @@ void ShadLangParser::declareAstNodes() {
   DECLARE_OBJNAME_AST_NODE("geo_name");
   DECLARE_OBJNAME_AST_NODE("frg_name");
   DECLARE_OBJNAME_AST_NODE("com_name");
+  DECLARE_OBJNAME_AST_NODE("msh_name");
+  DECLARE_OBJNAME_AST_NODE("tsk_name");
   DECLARE_OBJNAME_AST_NODE("smpset_name");
   DECLARE_OBJNAME_AST_NODE("uniset_name");
   DECLARE_OBJNAME_AST_NODE("uniblk_name");
@@ -61,6 +65,8 @@ void ShadLangParser::declareAstNodes() {
   DECLARE_OBJNAME_AST_NODE("fif_name");
   DECLARE_OBJNAME_AST_NODE("cif_name");
   DECLARE_OBJNAME_AST_NODE("sif_name");
+  DECLARE_OBJNAME_AST_NODE("tskif_name");
+  DECLARE_OBJNAME_AST_NODE("tskpld_name");
   DECLARE_OBJNAME_AST_NODE("sif_item_name");
   DECLARE_OBJNAME_AST_NODE("lib_name");
   DECLARE_OBJNAME_AST_NODE("typeblock_name");
@@ -174,6 +180,8 @@ void ShadLangParser::declareAstNodes() {
   DECLARE_STD_AST_NODE(GeometryInterface);
   DECLARE_STD_AST_NODE(ComputeInterface);
   DECLARE_STD_AST_NODE(StorageInterface);
+  DECLARE_STD_AST_NODE(TaskInterface);
+  DECLARE_STD_AST_NODE(TaskPayload);
   DECLARE_STD_AST_NODE(StorageInterfaceItem);
   DECLARE_STD_AST_NODE(StorageInterfaceItemName);
   DECLARE_STD_AST_NODE(StateBlock);
@@ -187,6 +195,8 @@ void ShadLangParser::declareAstNodes() {
   DECLARE_STD_AST_NODE(GeometryShader);
   DECLARE_STD_AST_NODE(FragmentShader);
   DECLARE_STD_AST_NODE(ComputeShader);
+  DECLARE_STD_AST_NODE(MeshShader);
+  DECLARE_STD_AST_NODE(TaskShader);
   DECLARE_STD_AST_NODE(FunctionDef1);
   DECLARE_STD_AST_NODE(FunctionDef2);
   DECLARE_STD_AST_NODE(StructDecl);

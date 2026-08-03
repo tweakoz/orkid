@@ -63,6 +63,11 @@ struct Event final // RawEvent
 
   Context* _uicontext  = nullptr;
   EventCode _eventcode = EventCode::UNKNOWN;
+  // Set ONLY by Context drag-capture cancel synthesis: an END_DRAG carrying this
+  // was NOT a user release — the drag died mid-flight (a synthesized focus loss on
+  // window-exit, a key press, a fresh PUSH). Consumers tear down WITHOUT committing.
+  // Factories / session replay never set it (defaults false).
+  bool _dragCanceled   = false;
   int miX              = 0;
   int miY              = 0;
   int miRawX           = 0;

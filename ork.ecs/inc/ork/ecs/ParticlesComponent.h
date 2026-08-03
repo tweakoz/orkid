@@ -32,7 +32,7 @@ using particles_drawable_data_ptr_t = std::shared_ptr<ParticlesDrawableData>;
 
 // Forward-declare dataflow graphinst — same DSO-isolation reason.
 namespace ork::dataflow {
-class GraphInst;
+struct GraphInst;
 using graphinst_ptr_t = std::shared_ptr<GraphInst>;
 }
 

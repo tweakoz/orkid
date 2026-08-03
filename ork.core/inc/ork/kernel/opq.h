@@ -278,6 +278,7 @@ struct OperationsQueue : public std::enable_shared_from_this<OperationsQueue> {
 
   concurrency_group_ptr_t _defaultConcurrencyGroup;
   ork::atomic<int> mGroupCounter;
+  std::atomic<uint32_t> _groupSearchCursor{0}; // round-robin start for the multi-group search
   LockedResource<threadset_t> _threads;
   OpqSynchro mSynchro;
 

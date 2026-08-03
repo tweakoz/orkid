@@ -8,11 +8,11 @@ in WHEN each roughness/mip slice is submitted (budget-driven, frame-to-frame),
 so byte-identical output proves the sliced GPU path is DETERMINISTIC — slice
 boundaries do not change results (JUL05 §5 / T12 determinism law).
 
-The microtask and the burst createFilteringTaskGraph call the *same* shared
-per-level render + package helpers (initEnvFilterState / renderSpecularLevel /
-renderDiffuseLevel / packageFilterResult), differing only in submit sequencing;
-so micro==burst by construction and this determinism check is the empirical
-half of the "byte-equal or bit-exact-explained" gate.
+Then bakes the SAME source via the burst createFilteringTaskGraph and compares
+that too (GATE-B): both paths share the per-level render/package helpers, but
+since COMFORT-2 they no longer share the submit structure (the sliced path
+batches a level's tiles and captures in its own submit), so micro==burst is a
+measurement rather than a construction argument.
 """
 import os; os.environ["PYTHONUNBUFFERED"] = "1"
 import sys; sys.stdout.reconfigure(line_buffering=True)
@@ -59,23 +59,45 @@ def main():
         print(f"[bake {i}] ok={ok} bytes={sz}", flush=True)
         oks.append(ok and sz > 0)
 
+    burst_out = "/tmp/mt2_burst.xir"
+    if os.path.exists(burst_out):
+        os.remove(burst_out)
+    print(f"[bake burst] taskgraph -> {burst_out}", flush=True)
+    burst_ok = lev2.EnvMapProcessor.processToXIR(SRC, burst_out)
+    burst_sz = os.path.getsize(burst_out) if os.path.exists(burst_out) else 0
+    print(f"[bake burst] ok={burst_ok} bytes={burst_sz}", flush=True)
+    oks.append(burst_ok and burst_sz > 0)
+
     ezapp.mainThreadEnd()
 
-    verdict = 1
+    failures = []
     if all(oks):
-        ha, hb = sha256(outs[0]), sha256(outs[1])
-        print(f"[bake 0] sha256 {ha}", flush=True)
-        print(f"[bake 1] sha256 {hb}", flush=True)
+        ha, hb, hburst = sha256(outs[0]), sha256(outs[1]), sha256(burst_out)
+        print(f"[bake 0]     sha256 {ha}", flush=True)
+        print(f"[bake 1]     sha256 {hb}", flush=True)
+        print(f"[bake burst] sha256 {hburst}", flush=True)
         if ha == hb:
             print("GATE-A PASS: sliced radiance bakes byte-identical across independent slice schedules (deterministic)", flush=True)
-            verdict = 0
         else:
+            failures.append("GATE-A")
             print("GATE-A FAIL: sliced bakes differ -> slice boundaries changed output (determinism violation)", flush=True)
+        # GATE-B (COMFORT-2): the two paths are no longer the same code path with
+        # different sequencing — the sliced one renders a level's tiles in
+        # batched submits (LOAD-op resume), captures in a submit of its OWN, and
+        # packages per level, while the burst taskgraph still does one submit per
+        # level with the capture inline. "Byte-identical by construction" is
+        # therefore no longer an argument; this is the measurement.
+        if ha == hburst:
+            print("GATE-B PASS: sliced bake byte-identical to the burst taskgraph bake (submit structure is pixel-neutral)", flush=True)
+        else:
+            failures.append("GATE-B")
+            print("GATE-B FAIL: sliced bake differs from the burst bake -> the slice structure moved pixels", flush=True)
     else:
+        failures.append("GATE-A")
         print("GATE-A FAIL: a bake produced no output", flush=True)
 
     ecs.headless_exit()
-    return verdict
+    return 0 if not failures else 1
 
 if __name__ == "__main__":
     sys.exit(main())

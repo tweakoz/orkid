@@ -21,6 +21,7 @@ clean must stay PASS, mutant must stay FAIL.
 """
 import os
 import subprocess
+import sys
 import tempfile
 
 import numpy as np
@@ -52,6 +53,75 @@ def fbm(size, seed, octaves=5):
     return acc
 
 
+# ------------------------------------------------------------------- audio ---
+def _wav32(path, x, sr=48000):
+    """float32 WAV writer (no clamping: overs must stay visible to the meter)."""
+    import struct
+    x = np.asarray(x, dtype=np.float32)
+    if x.ndim == 1:
+        x = x[:, None]
+    nfr, nch = x.shape
+    body = x.reshape(-1).tobytes()
+    hdr = (b'RIFF' + struct.pack('<I', 36 + len(body)) + b'WAVEfmt ' +
+           struct.pack('<IHHIIHH', 16, 3, nch, sr, sr * nch * 4, nch * 4, 32) +
+           b'data' + struct.pack('<I', len(body)))
+    with open(path, 'wb') as f:
+        f.write(hdr + body)
+
+
+def make_audio():
+    """CLEAN twin = a bandlimited, panning, HARD-TRANSIENT stereo program.
+
+    The transients matter: they are what a naive click detector false-positives
+    on, so the clean twin proves the click check's onset discrimination at the
+    same time as the mutants prove its sensitivity.
+    """
+    d = _dir('audio')
+    sr = 48000
+    n = sr * 4
+    t = np.arange(n) / sr
+    env = np.ones(n)
+    for on in (0.5, 1.5, 2.5, 3.5):  # instantaneous-attack musical onsets
+        i = int(on * sr)
+        env[i:] = np.exp(-np.arange(n - i) / (0.15 * sr))
+    sig = 0.6 * env * (np.sin(2 * np.pi * 220 * t) + 0.5 * np.sin(2 * np.pi * 440 * t) +
+                       0.25 * np.sin(2 * np.pi * 3000 * t)) / 1.75
+    pan = 0.5 + 0.5 * np.sin(2 * np.pi * 0.25 * t)
+    clean = np.stack([sig * np.cos(pan * np.pi / 2), sig * np.sin(pan * np.pi / 2)], axis=1)
+    clean /= (np.max(np.abs(clean)) / 0.7)
+    _wav32(os.path.join(d, 'clean.wav'), clean, sr)
+
+    # clipped: +6.8dB into a hard rail -> flat tops, FS samples, inter-sample overs
+    _wav32(os.path.join(d, 'clip.wav'), np.clip(clean * 2.2, -1.0, 1.0), sr)
+
+    # click: ONE sample displaced at 2.0s (-6 dBFS) on L; must not be excused
+    # as a transient (the clean twin's real onsets must be)
+    m = clean.copy()
+    m[int(2.0 * sr), 0] += 0.5
+    _wav32(os.path.join(d, 'click.wav'), m, sr)
+
+    # dropout: 30 ms of digital silence bracketed by signal
+    m = clean.copy()
+    i = int(1.2 * sr)
+    m[i:i + int(0.03 * sr), :] = 0.0
+    _wav32(os.path.join(d, 'dropout.wav'), m, sr)
+
+    # dc: +0.02 FS offset on L only
+    m = clean.copy() * 0.9
+    m[:, 0] += 0.02
+    _wav32(os.path.join(d, 'dc.wav'), m, sr)
+
+    # deadch: R collapsed to -80 dB for the whole file
+    m = clean.copy()
+    m[:, 1] *= 1e-4
+    _wav32(os.path.join(d, 'deadch.wav'), m, sr)
+
+    # intersample: sample peaks all < 1.0, reconstructed peak > 1.0 (the defect
+    # a sample-peak meter cannot see)
+    s = 0.999 * np.sin(2 * np.pi * (sr / 4.0 * 0.999) * t + np.pi / 4)
+    _wav32(os.path.join(d, 'intersample.wav'), np.stack([s, s], axis=1), sr)
+
+
 # ------------------------------------------------------------------- image ---
 def make_image():
     d = _dir('image')
@@ -76,6 +146,57 @@ def make_image():
 
     # black frame: the settle-race snapshot that a byte-identity gate would pass
     Image.fromarray(np.zeros((size, size, 3), np.uint8), 'RGB').save(os.path.join(d, 'black.png'))
+
+    make_render(d, size)
+
+
+def make_render(d, size):
+    """Render-mode discriminating-check twins (GAP-1 speckle/glint, GAP-2 chroma).
+
+    render_clean is a DETAILED WARM golden-hour-like frame with real sun glints
+    and broadband material detail -- exactly the content that false-FAILed the
+    grayscale spike/highband checks. It must PASS every render check. Each mutant
+    injects ONE defect class so its target check is proven in isolation while the
+    clean twin passes it.
+    """
+    yy, xx = np.mgrid[0:size, 0:size] / (size - 1.0)
+    det = np.clip(fbm(size, SEED, octaves=6) * 0.35 + 0.35 + 0.20 * xx, 0, 1)
+    R = np.clip(det * 1.05 + 0.06, 0, 1)   # warm golden grade: R > G > B
+    G = np.clip(det * 0.85 + 0.02, 0, 1)
+    B = np.clip(det * 0.55, 0, 1)
+    for (cy, cx) in [(70, 180), (150, 90)]:   # smooth multi-pixel sun glints (NOT hot pixels)
+        gy, gx = np.mgrid[0:size, 0:size]
+        bump = np.exp(-(((gy - cy) ** 2 + (gx - cx) ** 2) / 8.0))
+        R = np.clip(R + 0.50 * bump, 0, 1)
+        G = np.clip(G + 0.45 * bump, 0, 1)
+        B = np.clip(B + 0.35 * bump, 0, 1)
+    clean = np.stack([R, G, B], axis=2)
+    Image.fromarray((clean * 255).astype(np.uint8), 'RGB').save(os.path.join(d, 'render_clean.png'))
+
+    rng = np.random.default_rng(SEED + 11)
+    # firefly field: isolated bright impulses (hot pixels) -> spike.firefly_frac
+    ff = clean.copy()
+    ys, xs = rng.integers(3, size - 3, 320), rng.integers(3, size - 3, 320)
+    ff[ys, xs] = np.clip(ff[ys, xs] + 0.50, 0, 1)
+    Image.fromarray((ff * 255).astype(np.uint8), 'RGB').save(os.path.join(d, 'render_firefly.png'))
+
+    # subtle flat grain: energy UNDER the residual ceiling, caught ONLY by the
+    # anticorrelation of the median residual -> speckle.grain_anticorr
+    sp = np.clip(clean + rng.normal(0, 0.03, clean.shape), 0, 1)
+    Image.fromarray((sp * 255).astype(np.uint8), 'RGB').save(os.path.join(d, 'render_speckle.png'))
+
+    # gross grain: high residual energy -> speckle.residual_energy
+    gp = np.clip(clean + rng.normal(0, 0.13, clean.shape), 0, 1)
+    Image.fromarray((gp * 255).astype(np.uint8), 'RGB').save(os.path.join(d, 'render_grossspeckle.png'))
+
+    # coherent magenta cast on the lower ('ground') half -> chroma.magenta_area
+    mg = clean.copy()
+    half = mg[size // 2:]
+    half[..., 0] = np.clip(half[..., 0] + 0.06, 0, 1)
+    half[..., 2] = np.clip(half[..., 2] + 0.34, 0, 1)
+    half[..., 1] = np.clip(half[..., 1] - 0.04, 0, 1)
+    mg[size // 2:] = half
+    Image.fromarray((mg * 255).astype(np.uint8), 'RGB').save(os.path.join(d, 'render_magenta.png'))
 
 
 # ------------------------------------------------------------------- hmap ----
@@ -186,10 +307,17 @@ def make_movie():
 
 
 def main():
-    make_image()
-    make_hmap()
-    make_mesh()
-    make_movie()
+    # optional selector: `make_corpus.py audio` regenerates ONE type, so adding
+    # a new instrument does not churn the other types' committed binaries.
+    makers = {'audio': make_audio, 'image': make_image, 'hmap': make_hmap,
+              'mesh': make_mesh, 'movie': make_movie}
+    want = [a for a in sys.argv[1:] if not a.startswith('-')] or list(makers)
+    for name in want:
+        if name not in makers:
+            sys.stderr.write('unknown corpus type %r (have: %s)\n'
+                             % (name, ', '.join(makers)))
+            sys.exit(3)
+        makers[name]()
     total = 0
     for root, _, files in os.walk(HERE):
         for f in files:

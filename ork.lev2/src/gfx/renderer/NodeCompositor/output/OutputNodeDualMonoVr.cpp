@@ -54,6 +54,7 @@ struct DMVRIMPL {
       _fxtechnique_downsample[3] = _blit2screenmtl.technique("downsample_4x4");
       _fxpMVP                    = _blit2screenmtl.param("MatMVP");
       _fxpColorMap               = _blit2screenmtl.param("ColorMap");
+      _fxpDitherAmt              = _blit2screenmtl.param("DitherAmt");
       _ssaadownsamplebufferL     = std::make_shared<RtGroup>(context, 8, 8, MsaaSamples::MSAA_1X);
       _ssaadownsamplebufferR     = std::make_shared<RtGroup>(context, 8, 8, MsaaSamples::MSAA_1X);
       _ssaadownsamplebufferL->_name = "dmvr.downsampleL";
@@ -345,6 +346,11 @@ struct DMVRIMPL {
     mtl.begin(tek, framedata);
     mtl.bindParamTexture(_fxpColorMap, tex);
     mtl.bindParamMatrix(_fxpMVP, fmtx4::Identity());
+    // THE eye-side 8-bit encode: downRTG is RGBA8 (DualMonoVrOutputNode::_format)
+    // and is the texture handed to the XR runtime, so this blit owns the dither.
+    // The desktop-mirror blits below read these buffers AFTER quantization and
+    // deliberately leave DitherAmt at 0.
+    mtl.bindParamFloat(_fxpDitherAmt, 1.0f);
     ViewportRect extents(0, 0, _per_eye_width, _per_eye_height);
     fbi->pushViewport(extents);
     fbi->pushScissor(extents);
@@ -407,6 +413,7 @@ struct DMVRIMPL {
   const FxShaderTechnique* _fxtechnique_downsample[4];
   const FxShaderParam* _fxpMVP;
   const FxShaderParam* _fxpColorMap;
+  const FxShaderParam* _fxpDitherAmt;
   // head-locked debug HUD panel (VrHudOverlay -> slate + premult text, per eye)
   FreestyleMaterial _hudpanelmtl;
   const FxShaderTechnique* _hudpanel_tek_slate = nullptr;
@@ -553,6 +560,15 @@ void DualMonoVrOutputNode::closeExternalViewer() {
     _externalViewer->requestClose();
     _externalViewer.reset();
   }
+}
+///////////////////////////////////////////////////////////////////////////////
+// Read accessor for the per-eye final downsampled RtGroup (the same buffers the
+//  desktop mirror blit and the XR runtime handoff read in composite()). Enables
+//  headless per-eye capture from the pybound onEndAssemble hook without any render-
+//  path change. Null before gpuInit / first assemble.
+lev2::rtgroup_ptr_t DualMonoVrOutputNode::downsampledEyeRtGroup(bool left_eye) {
+  auto impl = _impl.get<DMVRIMPL_ptr_t>();
+  return left_eye ? impl->_ssaadownsamplebufferL : impl->_ssaadownsamplebufferR;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void DualMonoVrOutputNode::gpuInit(lev2::Context* pTARG, int iW, int iH) {
@@ -706,6 +722,7 @@ void DualMonoVrOutputNode::composite(CompositorDrawData& drawdata) {
   /////////////////////////////////////////////////////////////////////////////
   auto fbi         = context->FBI();
   auto gbi         = context->GBI();
+  auto dwi         = context->DWI();
 
   if (auto try_final = drawdata._properties["final_out"_crcu].tryAs<RtBuffer*>()) {
     auto buffer = try_final.value();
@@ -786,19 +803,22 @@ void DualMonoVrOutputNode::composite(CompositorDrawData& drawdata) {
           // Downsampled Left Eye -> Output
           ////////////
 
+          // PRESENTATION ORIGIN: the eye buffers are stored TOP-DOWN (the XR runtime's
+          //  convention — _downsample writes them through DWI, and the runtime handoff
+          //  consumes them unflipped), while this blit targets the presented surface, whose
+          //  origin is the context's. DWI::quad2D is the one path that applies the
+          //  logical->native V correction (Render2dQuadEML's correction fires only for
+          //  logical-Y-down/native-Y-up, i.e. never under Vulkan), so the mirror must go
+          //  through it or it presents inverted on every Y-down backend. _flipY stays
+          //  LOGICAL: true = no extra flip, the platform decides the rest.
+          const fvec4 uvrect = _flipY ? fvec4(0, 0, 1, 1) : fvec4(0, 1, 1, -1);
+
           auto tex = impl->_ssaadownsamplebufferL->texture(0).get();
           mtl.bindParamTexture(impl->_fxpColorMap, tex);
-          if (_flipY) {
-            this_buf->Render2dQuadEML(
-                fvec4(-1, -1, 1, 2), // xywh
-                fvec4(0, 0, 1, 1),   // uvrectA(u,v,w,h)
-                fvec4(0, 0, 1, 1));  // uvrectB(u,v,w,h)
-          } else {
-            this_buf->Render2dQuadEML(
-                fvec4(-1, -1, 1, 2), // xywh
-                fvec4(0, 1, 1, -1),  // uvrectA(u,v,w,h)
-                fvec4(0, 1, 1, -1)); // uvrectB(u,v,w,h)
-          }
+          dwi->quad2D(
+              fvec4(-1, -1, 1, 2), // xywh
+              uvrect,              // uvrectA(u,v,w,h)
+              uvrect);             // uvrectB(u,v,w,h)
 
           ////////////
           // Downsampled Right Eye -> Output
@@ -806,17 +826,10 @@ void DualMonoVrOutputNode::composite(CompositorDrawData& drawdata) {
 
           tex = impl->_ssaadownsamplebufferR->texture(0).get();
           mtl.bindParamTexture(impl->_fxpColorMap, tex);
-          if (_flipY) {
-            this_buf->Render2dQuadEML(
-                fvec4(0, -1, 1, 2), // xywh
-                fvec4(0, 0, 1, 1),  // uvrectA(u,v,w,h)
-                fvec4(0, 0, 1, 1)); // uvrectB(u,v,w,h)
-          } else {
-            this_buf->Render2dQuadEML(
-                fvec4(0, -1, 1, 2),  // xywh
-                fvec4(0, 1, 1, -1),  // uvrectA(u,v,w,h)
-                fvec4(0, 1, 1, -1)); // uvrectB(u,v,w,h)
-          }
+          dwi->quad2D(
+              fvec4(0, -1, 1, 2), // xywh
+              uvrect,             // uvrectA(u,v,w,h)
+              uvrect);            // uvrectB(u,v,w,h)
 
           ////////////
           // done

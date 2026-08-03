@@ -109,3 +109,117 @@ technique tfreestyleparticle_streaks {
   }
 }
 
+
+///////////////////////////////////////////////////////////////
+// SINGLE-PASS STEREO peers. Same fragment stage, same state block; the only
+// difference is the vertex stage's clip transform, which reads the per-VIEW
+// view-projection out of ublk_stereo. MaterialBase resolves these by name
+// (<mono>_ST) and complains BY NAME if one is missing — a material that
+// silently fell back to its mono technique would render identical images into
+// both eye layers, which is invisible to validation.
+//
+// THESE BODIES ARE THE SURVIVORS of the _ST naming convergence: any second
+// declaration of the same names is SUPERSEDED and deleted, never shadowed. A
+// duplicate technique name in shadlang is a log line + first-definition-wins,
+// which is operationally silent — the pair kept must be the one MaterialBase is
+// wired to and the one the parity measurement was taken on, i.e. this one.
+///////////////////////////////////////////////////////////////
+
+technique tflatparticle_sprites_ST {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_sprite_ssbo_ST;
+    fragment_shader = ps_flat;
+    state_block     = sb_default;
+  }
+}
+
+technique tgradparticle_sprites_ST {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_sprite_ssbo_ST;
+    fragment_shader = ps_grad;
+    state_block     = sb_default;
+  }
+}
+
+technique tgradatlasparticle_sprites_ST {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_sprite_ssbo_ST;
+    fragment_shader = ps_grad_atlas;
+    state_block     = sb_default;
+  }
+}
+
+technique ttexparticle_sprites_ST {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_sprite_ssbo_ST;
+    fragment_shader = ps_modtexclr;
+    state_block     = sb_default;
+  }
+}
+
+technique ttexgridparticle_sprites_ST {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_sprite_ssbo_ST;
+    fragment_shader = ps_modtexclr_grid;
+    state_block     = sb_default;
+  }
+}
+
+technique tfreestyleparticle_sprites_ST {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_sprite_ssbo_ST;
+    fragment_shader = ps_freestyle_ptc;
+    state_block     = sb_default;
+  }
+}
+
+technique tflatparticle_streaks_ST {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_streak_ssbo_ST;
+    fragment_shader = ps_flat;
+    state_block     = sb_default;
+  }
+}
+
+technique tgradparticle_streaks_ST {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_streak_ssbo_ST;
+    fragment_shader = ps_grad;
+    state_block     = sb_default;
+  }
+}
+
+technique tgradatlasparticle_streaks_ST {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_streak_ssbo_ST;
+    fragment_shader = ps_grad_atlas;
+    state_block     = sb_default;
+  }
+}
+
+technique ttexparticle_streaks_ST {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_streak_ssbo_ST;
+    fragment_shader = ps_modtexclr;
+    state_block     = sb_default;
+  }
+}
+
+technique tfreestyleparticle_streaks_ST {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_streak_ssbo_ST;
+    fragment_shader = ps_freestyle_ptc;
+    state_block     = sb_default;
+  }
+}

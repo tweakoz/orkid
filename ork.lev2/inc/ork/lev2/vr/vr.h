@@ -388,7 +388,6 @@ struct Device {
   fvec3 _trackedAngAcc;             // SDK angular accel (2nd-order term); 0 => 1st-order
   uint64_t _trackedCaptureTick = 0; // Timer::getSystemTick (ns) when setTrackedPose was called
   float _predictionBias   = 0.0f;   // additional lead (s) on top of the scan-out prediction
-  bool  _poseConjugate    = true;   // conjugate orient before composing the world matrix
 
   VrProjFrustumPar _frustumLeft;
   VrProjFrustumPar _frustumCenter;
@@ -480,6 +479,16 @@ std::shared_ptr<NoVrDevice> novr_device();
 void setDevice(device_ptr_t device);
 
 device_ptr_t device();
+
+// Compose the CENTER head VIEW matrix from a rig/walker VIEW matrix (world->root)
+//  and the tracked HMD pose, exactly as Device::_updatePosesCommon builds the
+//  center-eye view the VR output nodes render: cmv = usermtx*base*hmd. Consumers
+//  that need the head (not an eye) — the audio listener — go through here so the
+//  composition has ONE definition.
+//  Returns rig_view_matrix UNCHANGED when no device is publishing a head pose
+//  (no device / inactive / no "hmd" entry): the non-VR path is bit-for-bit the
+//  caller's own matrix, never an identity compose.
+fmtx4 composeHeadViewMatrix(const fmtx4& rig_view_matrix);
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////

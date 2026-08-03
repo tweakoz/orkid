@@ -92,7 +92,7 @@ VkContext : public Context
 3. **Rendering** — record commands into primary/secondary CBs
 4. **`_doEndFrame()`** — end profiler, submit primary CB, deallocate to pool
 
-`MAX_FRAMES_IN_FLIGHT = 2` — triple-buffering with frame fences.
+`MAX_FRAMES_IN_FLIGHT = 2` — double-buffered frames in flight with frame fences.
 
 ## Command Buffers
 

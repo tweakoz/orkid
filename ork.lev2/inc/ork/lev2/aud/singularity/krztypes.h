@@ -15,6 +15,8 @@
 #include <queue>
 #include <functional>
 #include <memory>
+#include <new>
+#include <type_traits>
 #include <stdint.h>
 #include <assert.h>
 #include <unistd.h>
@@ -35,6 +37,12 @@ static constexpr int kmaxdspstagesperlayer = 16; // horizontal dimension of laye
 static constexpr int kmaxctrlperblock      = 32;
 static constexpr int kmaxparmperblock      = 32;
 static constexpr int kmaxlayerspersynth    = 512;
+///////////////////////////////////////////////////////////////////////////////
+// soundfield (ambisonic probe field) caps. mirrored HERE and nowhere else -
+//  the stream slot array, the feeder's per-slot state and the python bindings
+//  all size themselves from these.
+static constexpr int kmaxActiveProbes      = 8; // probes streaming concurrently
+static constexpr int kfoanumchannels       = 4; // FOA: ACN 0=W 1=Y 2=Z 3=X
 ///////////////////////////////////////////////////////////////////////////////
 static constexpr double pi      = 3.141592654;
 static constexpr double pi2     = 3.141592654 * 2.0;
@@ -113,6 +121,8 @@ struct SAMPLER_DATA;
 struct STREAMING_OSCILLATOR_DATA;
 struct programInst;
 struct NOISEGATE_DATA;
+struct SoundField;
+struct FoaDecoder;
 ///////////////////////////////////////////////////////////////////////////////
 // sequencer
 ///////////////////////////////////////////////////////////////////////////////
@@ -193,6 +203,8 @@ using dspparammod_ptr_t      = std::shared_ptr<BlockModulationData>;
 using dspparammod_constptr_t = std::shared_ptr<const BlockModulationData>;
 using natenvwrapperdata_ptr_t = std::shared_ptr<NatEnvWrapperData>;
 using delaycontext_ptr_t = std::shared_ptr<DelayContext>;
+using soundfield_ptr_t = std::shared_ptr<SoundField>;
+using foadecoder_ptr_t = std::shared_ptr<FoaDecoder>;
 using sample_ptr_t = std::shared_ptr<SampleData>;
 using sample_constptr_t = std::shared_ptr<const SampleData>;
 using multisample_ptr_t = std::shared_ptr<MultiSampleData>;
@@ -216,7 +228,105 @@ using clipplayback_ptr_t = std::shared_ptr<ClipPlayback>;
 using trackplayback_ptr_t = std::shared_ptr<TrackPlayback>;
 using layer_vect_t = std::vector<layer_ptr_t>;
 ///////////////////////////////////////////////////////////////////////////////
-typedef std::function<float()> controller_t;
+///////////////////////////////////////////////////////////////////////////////
+// controller_t - a float() callable with INLINE storage.
+//  the audio thread builds one of these per modulated dsp param at every
+//  note-on (Layer::getSRC1/getSRC2 -> DspParam::_C1/_C2). std::function heap
+//  allocates for any capture wider than its own inline buffer (16 bytes on
+//  libstdc++), which is every capture that carries more than one pointer - so
+//  a note-on paid one malloc per modulation source on the audio thread.
+//  the capacity here is a COMPILE TIME contract: a callable that does not fit
+//  fails the static_assert at its construction site instead of silently
+//  reintroducing the allocation.
+//  a default constructed controller_t reads 0.0f (the value every "no source"
+//  path in the modulation graph already substituted), so it is never a null
+//  call.
+///////////////////////////////////////////////////////////////////////////////
+struct controller_t {
+
+  static constexpr size_t kcapacity = 32;
+
+  controller_t() {
+  }
+  template <                                                              //
+      typename F,                                                         //
+      typename = std::enable_if_t<                                        //
+          not std::is_same<std::decay_t<F>, controller_t>::value>>        //
+  controller_t(F&& fn) {
+    _bind(std::forward<F>(fn));
+  }
+  controller_t(const controller_t& oth) {
+    _clonefrom(oth);
+  }
+  controller_t& operator=(const controller_t& oth) {
+    if (this != &oth) {
+      _release();
+      _clonefrom(oth);
+    }
+    return *this;
+  }
+  template <                                                              //
+      typename F,                                                         //
+      typename = std::enable_if_t<                                        //
+          not std::is_same<std::decay_t<F>, controller_t>::value>>        //
+  controller_t& operator=(F&& fn) {
+    _release();
+    _bind(std::forward<F>(fn));
+    return *this;
+  }
+  ~controller_t() {
+    _release();
+  }
+
+  inline float operator()() const {
+    return _invoke ? _invoke(_storage) : 0.0f;
+  }
+  explicit operator bool() const {
+    return _invoke != nullptr;
+  }
+
+private:
+  enum class manage_op { COPY, DESTROY };
+  using invoke_t = float (*)(const void*);
+  using manage_t = void (*)(manage_op, void*, const void*);
+
+  template <typename F> void _bind(F&& fn) {
+    using callable_t = std::decay_t<F>;
+    static_assert(sizeof(callable_t) <= kcapacity, "controller_t capture exceeds inline storage");
+    static_assert(alignof(callable_t) <= alignof(std::max_align_t), "controller_t capture overaligned");
+    new (_storage) callable_t(std::forward<F>(fn));
+    _invoke = [](const void* store) -> float { //
+      return (*static_cast<const callable_t*>(store))();
+    };
+    _manage = [](manage_op op, void* dst, const void* src) {
+      switch (op) {
+        case manage_op::COPY:
+          new (dst) callable_t(*static_cast<const callable_t*>(src));
+          break;
+        case manage_op::DESTROY:
+          static_cast<callable_t*>(dst)->~callable_t();
+          break;
+      }
+    };
+  }
+  void _clonefrom(const controller_t& oth) {
+    if (oth._manage)
+      oth._manage(manage_op::COPY, _storage, oth._storage);
+    _invoke = oth._invoke;
+    _manage = oth._manage;
+  }
+  void _release() {
+    if (_manage)
+      _manage(manage_op::DESTROY, _storage, nullptr);
+    _invoke = nullptr;
+    _manage = nullptr;
+  }
+
+  alignas(std::max_align_t) char _storage[kcapacity];
+  invoke_t _invoke = nullptr;
+  manage_t _manage = nullptr;
+};
+///////////////////////////////////////////////////////////////////////////////
 typedef std::function<float(float)> mapper_t;
 typedef std::function<float(DspParam& cec)> evalit_t;
 ///////////////////////////////////////////////////////////////////////////////
@@ -251,7 +361,7 @@ using hudeventsink_list = std::vector<hudeventsink_ptr_t>;
 struct HudEventRouter {
   void registerSinkForHudEvent(uint32_t eventID, hudeventsink_ptr_t sink);
   void routeEvent(hudevent_ptr_t hev);
-  void processEvents();
+  int processEvents(); // returns # of events processed
   std::map<uint32_t, hudeventsink_list> _routing_map;
   ork::MpMcBoundedQueue<hudevent_ptr_t,1024> _hudevents;
 };

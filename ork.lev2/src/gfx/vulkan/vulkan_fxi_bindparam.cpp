@@ -97,8 +97,19 @@ bool VkFxInterface::_tryBindMergedResource(const FxShaderParam* hpar,
     case VkMergedResourceBinding::Type::Sampler: {
       auto as_vktex = resource_data.getShared<VulkanTextureObject>();
       auto& slot = _current_shader_pass_state->_textures_by_orkparam[hpar];
-      if (slot != as_vktex) {
-        slot = as_vktex;
+      // ABA: comparing the shared_ptr alone compares ADDRESSES. Each IBL
+      // refilter publishes a BRAND NEW VulkanTextureObject and frees the old
+      // one; when the allocator returns the same address this compare says
+      // "unchanged", _samplers_hash stays memoized, the descriptor-set cache
+      // key never moves, and the cached set keeps serving the destroyed
+      // imageView (VUID-vkCmd*-None-08114). Observed live: one address held
+      // image serials 369 then 411, and that texture's set was the one that
+      // trapped. The serial is monotonic, so it cannot collide.
+      auto& slot_sn = _current_shader_pass_state->_texture_serials[hpar];
+      size_t incoming_sn = as_vktex ? as_vktex->_serial_number : 0;
+      if (slot != as_vktex or slot_sn != incoming_sn) {
+        slot    = as_vktex;
+        slot_sn = incoming_sn;
         _current_shader_pass_state->_samplers_hash = 0;
       }
       break;
@@ -589,9 +600,20 @@ void VkFxInterface::bindUniformBuffer(const FxUniformBlock* block, FxUniformBuff
     return;
   }
 
+  auto src_buffer = vk_buffer.value();
+
+  // Per-frame-constant block: the descriptor points straight at this buffer
+  // (see isNonDynamicUniformBlock), so there is nothing to copy — the round
+  // trip through the shadow buffer and the dynamic ring was pure redundancy.
+  // One buffer serves every program that declares the block; recording it here
+  // is how the descriptor-write path finds it.
+  if (isNonDynamicUniformBlock(block->_name)) {
+    _nondynamic_ubo_buffers[block->_name] = src_buffer;
+    return;
+  }
+
   // Copy the external buffer's data into the UBO's shadow buffer
   // This allows the dynamic UBO system to upload it at draw time
-  auto src_buffer = vk_buffer.value();
   auto* block_state = uniformStateForBlock(vk_block.get());
   if (!block_state) {
     _logMissingBindState(block->_name);

@@ -352,7 +352,7 @@ struct Sequencer {
   void process();
   void clearPlaybacks();
   void enqueueMainThreadEventCallback(int note, int vel, float dur, const std::string& track);
-  void drainMainThreadEventCallbacks();
+  int drainMainThreadEventCallbacks(); // returns # of events drained
   seqmap_t _sequences;
   std::vector<sequenceplayback_ptr_t> _sequence_playbacks;
   synth* _the_synth = nullptr;

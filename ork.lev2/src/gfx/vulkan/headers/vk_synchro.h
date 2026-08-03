@@ -33,7 +33,9 @@ struct VulkanCompletionSemaphore final : public VulkanSemaphoreBase {
 struct VulkanFenceObject {
   VulkanFenceObject(vkcontext_rawptr_t ctxVK);
   ~VulkanFenceObject();
-  void wait();
+  // site names the caller in the wedge abort (see vulkan_wedge.h); every
+  // frame-pacing wait in the backend funnels through here.
+  void wait(const char* site = "fence");
   void reset();
   void onCrossed(void_lambda_t op);
   std::vector<void_lambda_t> _onReached;

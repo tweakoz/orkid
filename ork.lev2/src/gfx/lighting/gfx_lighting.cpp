@@ -7,6 +7,7 @@
 
 #include <ork/pch.h>
 
+#include <algorithm>
 #include <ork/kernel/Array.hpp>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/fixedlut.hpp>
@@ -53,6 +54,14 @@ void LightData::describeX(class_t* c) {
       ->annotate<float>("editor.range.min", 0)
       ->annotate<float>("editor.range.max", 10000);
 
+  c->directProperty("Priority", &LightData::_priority)
+      ->annotate<float>("editor.range.min", -1000)
+      ->annotate<float>("editor.range.max", 1000);
+
+  c->directProperty("SkyBody", &LightData::_skyBody)
+      ->annotate<int>("editor.range.min", 0)
+      ->annotate<int>("editor.range.max", 2);
+
   c->directProperty("ShadowCaster", &LightData::mbShadowCaster);
   c->directProperty("Decal", &LightData::_decal);
 
@@ -90,7 +99,6 @@ lev2::texture_ptr_t LightData::cookie() const {
 
 Light::Light(const LightData* ld)
     : _data(ld)
-    , mPriority(0.0f)
     , _dynamic(false) {
   /*if(ld){
     _cookieTexture = ld->cookie();
@@ -102,7 +110,6 @@ Light::Light(const LightData* ld)
 Light::Light(xform_generator_t mtx, const LightData* ld)
     : _data(ld)
     , _xformgenerator(mtx)
-    , mPriority(0.0f)
     , _dynamic(false) {
   /*if(ld){
     _cookieTexture = ld->cookie();
@@ -213,7 +220,8 @@ DynamicSpotLight::DynamicSpotLight()
 ///////////////////////////////////////////////////////////////////////////////
 
 DirectionalLight::DirectionalLight(xform_generator_t mtx, const DirectionalLightData* dld)
-    : Light(mtx, dld) {
+    : Light(mtx, dld)
+    , _dldata(dld) {
   _drawable_type = "directional"_crcu;
 }
 
@@ -228,6 +236,43 @@ DirectionalLight::DirectionalLight(const DirectionalLightData* dld)
 ///////////////////////////////////////////////////////////////////////////////
 
 void DirectionalLightData::describeX(class_t* c) {
+  // SKYLIGHT lane A — cascade tunables (A8: artist knobs are reflected).
+  c->directProperty("ShadowCascadeCount", &DirectionalLightData::_shadowCascadeCount)
+      ->annotate<int>("editor.range.min", 2)
+      ->annotate<int>("editor.range.max", LightManager::kSunCascadeStorage);
+  c->floatProperty("ShadowMaxDistance", float_range{10, 2000}, &DirectionalLightData::_shadowMaxDistance)
+      ->annotate<ConstString>("editor.range.log", "true");
+  c->floatProperty("PcfDither", float_range{0, 4}, &DirectionalLightData::_pcfDither);
+  c->floatProperty("ShadowSnapshotInterval", float_range{0, 600}, &DirectionalLightData::_shadowSnapshotInterval);
+  // world-anchored band geometry
+  c->floatProperty("ShadowBandRadius", float_range{0.5, 500}, &DirectionalLightData::_shadowBandRadius)
+      ->annotate<ConstString>("editor.range.log", "true");
+  c->floatProperty("ShadowBandRatio", float_range{1.25, 8}, &DirectionalLightData::_shadowBandRatio);
+  // per-band resolution stepping + per-snapshot jitter (1 / 0 = the shipped
+  // uniform-dim, unjittered fit)
+  c->floatProperty("ShadowBandResRatio", float_range{1, 8}, &DirectionalLightData::_shadowBandResRatio);
+  c->floatProperty("ShadowJitterTexels", float_range{0, 1}, &DirectionalLightData::_shadowJitterTexels);
+  // snapshot amortization + flip crossfade (0/0 = the shipped single-buffered,
+  // single-frame, hard-swap path)
+  c->intProperty(
+      "ShadowSnapshotBandsPerFrame",
+      int_range{0, LightManager::kSunCascadeStorage},
+      &DirectionalLightData::_shadowSnapshotBandsPerFrame);
+  c->intProperty("ShadowCrossfadeFrames", int_range{0, 120}, &DirectionalLightData::_shadowCrossfadeFrames);
+  c->floatProperty("ShadowCrossfadeSecs", float_range{0, 10}, &DirectionalLightData::_shadowCrossfadeSecs);
+  // cloud shadows (the sun cookie) — strength 0 disarms the whole path
+  c->floatProperty("CloudShadowStrength", float_range{0, 1}, &DirectionalLightData::_cloudShadowStrength);
+  c->floatProperty("CloudShadowExtent", float_range{100, 50000}, &DirectionalLightData::_cloudShadowExtent)
+      ->annotate<ConstString>("editor.range.log", "true");
+  c->floatProperty("CloudShadowSoftness", float_range{0, 8}, &DirectionalLightData::_cloudShadowSoftness);
+  c->floatProperty("CloudShadowDepth", float_range{1000, 200000}, &DirectionalLightData::_cloudShadowDepth)
+      ->annotate<ConstString>("editor.range.log", "true");
+  c->intProperty("CloudShadowMapSize", int_range{64, 4096}, &DirectionalLightData::_cloudShadowMapSize);
+  // Beer-Lambert optical depth of the beam at full cookie alpha (default 7.5 =
+  // a thin fair-weather cumulus; see the member comment for the derivation) and
+  // the disc's own, sharper sample bias.
+  c->floatProperty("CloudExtinction", float_range{0, 64}, &DirectionalLightData::_cloudExtinction);
+  c->floatProperty("CloudDiscSoftness", float_range{0, 8}, &DirectionalLightData::_cloudDiscSoftness);
 }
 
 drawable_ptr_t DirectionalLightData::createDrawable() const {
@@ -238,6 +283,27 @@ drawable_ptr_t DirectionalLightData::createDrawable() const {
 
 bool DirectionalLight::IsInFrustum(const Frustum& frustum) {
   return true; // directional lights are unbounded, hence always true
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void DirectionalLight::lookAt(const fvec3& eye, const fvec3& tgt, const fvec3& up) {
+  fvec3 zdir = (tgt - eye).normalized();
+  fvec3 xdir = up.crossWith(zdir);
+  if (xdir.magnitude() < 1e-4f) // up parallel to direction — pick an arbitrary side axis
+    xdir = fvec3(1, 0, 0).crossWith(zdir);
+  xdir.normalizeInPlace();
+  fvec3 ydir = zdir.crossWith(xdir).normalized();
+  // glm column convention: basis in columns so worldMatrix().zNormal()
+  // (== Light::direction()) returns the sunlight travel direction.
+  _explicit_world.setColumn(0, fvec4(xdir, 0));
+  _explicit_world.setColumn(1, fvec4(ydir, 0));
+  _explicit_world.setColumn(2, fvec4(zdir, 0));
+  _explicit_world.setColumn(3, fvec4(eye, 1));
+  if (not _xformgenerator_is_explicit) {
+    _xformgenerator_is_explicit = true;
+    _xformgenerator = [this]() -> fmtx4 { return _explicit_world; };
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -496,14 +562,19 @@ CameraData SpotLight::shadowCamDat() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void LightContainer::AddLight(Light* plight) {
-  float priority = plight->mPriority;
+  float priority = plight->priority();
   _prioritizedLights[priority].insert(plight);
 }
 
 void LightContainer::RemoveLight(Light* plight) {
-  auto it = _prioritizedLights.find(plight->mPriority);
-  if (it != _prioritizedLights.end()) {
-    it->second.erase(plight);
+  auto it = _prioritizedLights.find(plight->priority());
+  if (it != _prioritizedLights.end() and it->second.erase(plight))
+    return;
+  // priority() reads live LightData — a rank edited between Add and Remove
+  // moves the bucket. Never leave a dangling Light* in the container.
+  for (auto& bucket : _prioritizedLights) {
+    if (bucket.second.erase(plight))
+      return;
   }
 }
 
@@ -518,12 +589,12 @@ void LightContainer::Clear() {
 
 void GlobalLightContainer::AddLight(Light* plight) {
   if (mPrioritizedLights.size() < map_type::kimax) {
-    mPrioritizedLights.AddSorted(plight->mPriority, plight);
+    mPrioritizedLights.AddSorted(plight->priority(), plight);
   }
 }
 
 void GlobalLightContainer::RemoveLight(Light* plight) {
-  map_type::iterator it = mPrioritizedLights.find(plight->mPriority);
+  map_type::iterator it = mPrioritizedLights.find(plight->priority());
   if (it != mPrioritizedLights.end()) {
     mPrioritizedLights.erase(it);
   }
@@ -688,8 +759,16 @@ void LightManager::enumerateInPass(const CompositingPassData& CPD, enumeratedlig
   out_lights->_tex2spotlightmap.clear();
   out_lights->_tex2spotdecalmap.clear();
   out_lights->_tex2shadowedspotlightmap.clear();
+  out_lights->_directionallights.clear();
 
   for (auto l : out_lights->_alllights) {
+    // SKYLIGHT lane A — directional bucket (previously dropped silently).
+    // Checked FIRST so a shadow-casting directional never falls into the
+    // spot-oriented isShadowCaster() branch below.
+    if (auto as_dir = dynamic_cast<lev2::DirectionalLight*>(l)) {
+      out_lights->_directionallights.push_back(as_dir);
+      continue;
+    }
     if (l->isShadowCaster()) {
       if (auto as_spot = dynamic_cast<lev2::SpotLight*>(l)) {
         auto cookie = as_spot->_cookieColor;
@@ -715,6 +794,23 @@ void LightManager::enumerateInPass(const CompositingPassData& CPD, enumeratedlig
       }
     }
   }
+
+  ////////////////////////////////////////////////////////////
+  // directional selection law
+  //  _directionallights[0] is the HIGHEST-priority directional, and every
+  //  downstream single-directional pick (sky/atmosphere source, sun cascade
+  //  slot) resolves through that index. Without this the order was an
+  //  unordered_map iteration accident. Stable so equal ranks keep
+  //  enumeration order.
+  ////////////////////////////////////////////////////////////
+
+  std::stable_sort(
+      out_lights->_directionallights.begin(), //
+      out_lights->_directionallights.end(),
+      [](const DirectionalLight* a, const DirectionalLight* b) -> bool { //
+        return a->priority() > b->priority();
+      });
+
   ////////////////////////////////////////////////////////////
   // mcollector.SetManager(this);
   // mcollector.Clear();
@@ -757,9 +853,76 @@ void LightManager::gpuInit(Context* ctx) {
           (void*)this, (void*)_cookies_spot_color_default.get(), (void*)_cookies_spot_depth_default.get());
     ctx->TXI()->updateTextureArray(_cookies_spot_color_default.get());
     ctx->TXI()->updateTextureArray(_cookies_spot_depth_default.get());
+    ctx->TXI()->updateTextureArray(_sun_shadow_cascades_default.get());
     _needs_gpu_init = false;
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// SKYLIGHT lane A — (re)build the dedicated sun-cascade depth array + one
+// depth-only RTG per slice. Called from the forward prologue when a
+// shadow-casting sun is present. Depth-only behavior comes from the array's
+// Z32F format (see _buildRtgImplFromTextureArraySlice) — RtGroup::_depthOnly
+// is dead code and deliberately not used here.
+///////////////////////////////////////////////////////////////////////////////
+
+void LightManager::ensureSunCascades(Context* ctx, int dim, int sets) {
+  sets           = std::max(sets, 1);
+  int num_slices = kSunCascadeStorage * sets;
+  if (_sun_cascade_dim == dim and _sun_cascade_sets == sets and int(_sun_cascade_rtgs.size()) == num_slices)
+    return;
+  _sun_cascade_dim  = dim;
+  _sun_cascade_sets = sets;
+  auto ary        = std::make_shared<TextureArray>();
+  ary->_debugName = "lmgr.sun_cascades";
+  ary->_tex->_debugName = "sun_shadow_cascades";
+  ary->resize(dim, dim, num_slices, EBufferFormat::Z32F);
+  ary->_tex->mTexSampleMode._texAddrModeS = TextureAddressMode::CLAMP;
+  ary->_tex->mTexSampleMode._texAddrModeT = TextureAddressMode::CLAMP;
+  ary->_tex->mTexSampleMode._texAddrModeR = TextureAddressMode::CLAMP;
+  _sun_cascade_slices.clear();
+  _sun_cascade_rtgs.clear();
+  for (int i = 0; i < num_slices; i++) {
+    auto sliceref = ary->slice(i);
+    _sun_cascade_slices.push_back(sliceref);
+    _sun_cascade_rtgs.push_back(sliceref->createRenderTarget(ctx));
+  }
+  _sun_shadow_cascades = ary;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// SUN COOKIE fill target. RGBA8 + AUTOCOMPUTE mips. ALPHA carries the cloud
+// OCCLUSION and clears to 0 (untouched = unoccluded); the decks' own
+// premultiplied blend accumulates it as the order-independent union of the
+// shells, so no depth buffer is needed. RGB clears to WHITE and holds the decks'
+// radiance — nothing samples it, it just makes ORKID_SUN_COOKIE_DUMP legible.
+// TRILINEAR + CLAMP because the softness knob is a LOD bias: a min filter stuck
+// on mip 0 would sample a chain nothing reads.
+///////////////////////////////////////////////////////////////////////////////
+
+void LightManager::ensureSunCookie(Context* ctx, int dim) {
+  if (_sun_cookie_dim == dim and _sun_cookie_rtg)
+    return;
+  _sun_cookie_dim = dim;
+  auto rtg        = std::make_shared<RtGroup>(ctx, dim, dim, MsaaSamples::MSAA_1X);
+  rtg->_name      = "lmgr.sun_cookie";
+  auto buf        = rtg->createRenderTarget(EBufferFormat::RGBA8);
+  buf->_mipgen    = RtBuffer::EMG_AUTOCOMPUTE;
+  buf->_clearColor = fvec4(1, 1, 1, 0);
+  rtg->_autoclear = true;
+  if (auto tex = rtg->texture(0)) {
+    tex->_debugName    = "sun_cookie";
+    auto& sm           = tex->TexSamplingMode();
+    sm._texFiltModeMin = ETextureMinifyFilterMode::LINEAR_MIPMAP_LINEAR;
+    sm._texFiltModeMag = ETextureMagnifyFilterMode::LINEAR;
+    sm._texAddrModeS   = TextureAddressMode::CLAMP;
+    sm._texAddrModeT   = TextureAddressMode::CLAMP;
+    sm._maxMipLevel    = 16;
+  }
+  _sun_cookie_rtg = rtg;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 texturearraysliceref_ptr_t LightManager::allocateDepthSlice() {
   if (_cookies_spot_depth && _nextDepthSliceAlloc < (int)_cookies_spot_depth->_maxslices) {
@@ -861,6 +1024,39 @@ LightManager::LightManager(lightmanagerdata_constptr_t lmd)
 
   _cookies_spot_color = _cookies_spot_color_default;
   _cookies_spot_depth = _cookies_spot_depth_default;
+
+  // SKYLIGHT lane A — tiny default sun-cascade array keeps the
+  // sun_shadow_map sampler descriptor valid in sunless scenes (the shader
+  // branches on has_sun before sampling). Replaced by ensureSunCascades
+  // at the sun's real resolution when a shadow-casting sun appears.
+  _sun_shadow_cascades_default             = std::make_shared<TextureArray>();
+  _sun_shadow_cascades_default->_debugName = "lmgr.sun_cascades_default";
+  _sun_shadow_cascades_default->_tex->_debugName = "sun_shadow_cascades_default";
+  _sun_shadow_cascades_default->resize(8, 8, kSunCascadeStorage, EBufferFormat::Z32F);
+  _sun_shadow_cascades_default->_tex->mTexSampleMode._texAddrModeS = TextureAddressMode::CLAMP;
+  _sun_shadow_cascades_default->_tex->mTexSampleMode._texAddrModeT = TextureAddressMode::CLAMP;
+  _sun_shadow_cascades_default->_tex->mTexSampleMode._texAddrModeR = TextureAddressMode::CLAMP;
+  _sun_shadow_cascades = _sun_shadow_cascades_default;
+
+  // SUN COOKIE default — 1x1, ALPHA 0 (occlusion 0, i.e. transmittance 1; the
+  // cookie carries occlusion in A and consumers read 1 - a). Two jobs: it keeps
+  // the sun_cookie sampler descriptor valid in every scene (the shader's enable
+  // branch means it is normally never sampled), and it makes the disarmed state
+  // NEUTRAL BY CONSTRUCTION rather than by branch discipline alone.
+  // The texel is authored into a static block rather than written through
+  // Texture::_data (declared const void*): the default must read as FULL
+  // TRANSMITTANCE if anything ever samples it, so neutrality is a property of
+  // the bytes, not of the arm-branch alone.
+  static const uint8_t s_cookie_white[4] = {0xff, 0xff, 0xff, 0x00};
+  _sun_cookie_default             = std::make_shared<Texture>();
+  _sun_cookie_default->_debugName = "sun_cookie_default";
+  _sun_cookie_default->_width     = 1;
+  _sun_cookie_default->_height    = 1;
+  _sun_cookie_default->_data      = s_cookie_white;
+  _sun_cookie_default->mTexSampleMode._texAddrModeS = TextureAddressMode::CLAMP;
+  _sun_cookie_default->mTexSampleMode._texAddrModeT = TextureAddressMode::CLAMP;
+  _sun_cookie = _sun_cookie_default;
+  _sun_cookie_matrix = fmtx4();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

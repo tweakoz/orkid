@@ -65,8 +65,10 @@ See `HYPERECS.md` for what each of these provides at the authoring surface.
    procedural A2C leaf material, VS wind (`VertexDisplace`/`Wind`/`LeafFlutter`, per-instance wind
    groups, `RCFD_TIME` provider clock), per-gid asset materials, E.4 cull on the viewer path, the
    4096-tree @120fps instanced forest, and `scn_forest` (2 species × 8 seeds, terrain-scatter
-   instancing, impostor LOD).** Still open: reflected-`LRuleSet` grammar generalization + GPU L-system
-   rewrite; XfSlot/`instance_at_slots` (XfSlot exists but NO producer populates it); `radial_repeat`;
+   instancing, impostor LOD).** Still open (updated 2026-08-01: reflected-`LRuleSet`
+   grammar generalization LANDED — see A7; XfSlot/`instance_at_slots` LANDED — grammar SLOT ops emit
+   since GR-1, LeafScatter `source=SLOTS` consumes them, c4dbd0031 2026-07-27): GPU L-system
+   rewrite; `radial_repeat`;
    `LegChain`/creature vocab; city/building grammar (merge prerequisite now met — buildable via the
    imperative DSL today); `auto_skin` + a GPU-skinning render path (recon 2026-07-04: nothing
    transfers — `FWD_SSBO_CUSTOM*` has no bone channels; only `skintools.i2` math is inheritable;
@@ -161,9 +163,15 @@ forests-vs-racer sequencing call) lives in `.claude/skills/hypersyn/UNIFIED_SUBS
 - **G1 — the L-system family (M1): LANDED** (`hmdflow_module_lsystem.cpp` producer + `leafscatter.cpp` organ
   placer; Python `lsystem()`/`lsweep()` verbs; `scn_lsystem.py`). v1 = a hardcoded bracketed parametric
   grammar run CPU-side at activate; reflected-`LRuleSet` + GPU rewrite is the next step.
-- **Forward (UNBUILT):** reflected-`LRuleSet` grammar generalization + GPU L-system; `radial_repeat`;
-  `LegChain`/creature vocab; city/building grammar (its mesh-merge prerequisite LANDED 2026-06-26 —
-  `MergeMesh`, binary concat + per-source gid); `auto_skin` +
+- **LANDED (2026-07-09 → 2026-07-27) — the reflected-`LRuleSet` grammar generalization** (tree labels
+  **GR-1/GR-2/GR-B**; full record in `HYPERECS.md` §6 cross-ref): **GR-1** reflected grammar core —
+  `LRuleSet` schema + Python DSL 2026-07-09, stock species presets 2026-07-19 (legacy C++ archetype path
+  deleted; "species = data"), family-neutral `ork::grammar` core extraction (`ork.core/inc/ork/grammar/`)
+  2026-07-27; **GR-2** slot consumption 2026-07-27 (c4dbd0031 — LeafScatter `source=SLOTS` /
+  `instance_at_slots`, off-by-default gated); **GR-B** grammar-building library (parameterized building
+  generators composed from stock hypermesh verbs) + `scn_hamlet` exemplar 2026-07-19 (41b0bbc53).
+- **Forward (UNBUILT):** GPU L-system rewrite; `radial_repeat`; `LegChain`/creature vocab; city-scale
+  street/lot grammar beyond the GR-B building library; `auto_skin` +
   `bake_skeleton` + a NEW GPU-skinning render path; straight-skeleton; space-colonization / phyllotaxis /
   tensor-field generators. `GidAssign` (A1, E.3) and `MirrorModule` are mesh-locked (`MeshComputeInst` over
   GpuMesh SoA) — promoting them to operate on any tagged `XfNodeGraph` is post-foundation work.

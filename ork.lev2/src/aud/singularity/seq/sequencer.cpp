@@ -17,6 +17,7 @@
 #include <ork/lev2/aud/singularity/dspblocks.h>
 #include <ork/lev2/aud/singularity/fxgen.h>
 #include <ork/util/logger.h>
+#include <ork/kernel/opq.h>
 
 ////////////////////////////////////////////////////////////////
 namespace ork::audio::singularity {
@@ -58,17 +59,24 @@ void Sequencer::enqueueMainThreadEventCallback(int note, int vel, float dur, con
   ev._duration = dur;
   ev._track_name = track;
   _pendingMainThreadEventCallbacks.try_push(ev);
+  // wake the (possibly idle-waiting) main-thread pump so posted events are
+  // drained immediately rather than on its idle-backstop timeout. RT variant:
+  // this runs on the audio thread — must never take a lock.
+  opq::mainSerialQueue()->mSemaphore.notify_rt();
 }
 
 ////////////////////////////////////////////////////////////////
 
-void Sequencer::drainMainThreadEventCallbacks() {
+int Sequencer::drainMainThreadEventCallbacks() {
+  int count = 0;
   SequencerEventData ev;
   while (_pendingMainThreadEventCallbacks.try_pop(ev)) {
     if (_on_event) {
       _on_event(ev._note, ev._velocity, ev._duration, ev._track_name);
     }
+    count++;
   }
+  return count;
 }
 
 ////////////////////////////////////////////////////////////////

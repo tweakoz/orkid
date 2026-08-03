@@ -25,6 +25,7 @@
 #include <map>
 #include <string>
 #include <memory>
+#include <vector>
 
 namespace ork::meshutil {
 struct Geometry;
@@ -35,6 +36,20 @@ struct ScatterSinkData;
 }
 
 namespace ork::lev2::terrain {
+
+///////////////////////////////////////////////////////////////////////////////
+// ScatterField — a NON-OWNING (H,W) float view (channel 0). Both placement
+// callers feed the shared CORE through this: the post-bake path wraps the fields
+// it read from disk; the in-graph ScatterPlaceModule wraps its host mirrors of the
+// wired plug fields (RouteSpine's namedField-style CPU read). W/H addressed
+// buf[y*_w+x]; the same truncating-nearest sampling convention as scatter.py.
+///////////////////////////////////////////////////////////////////////////////
+
+struct ScatterField {
+  const float* _v = nullptr;
+  int _w = 0, _h = 0;
+  float at(int x, int y) const { return _v[size_t(y) * _w + x]; }
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 // the shared RNG spec (THE contract — change it nowhere without changing it everywhere):
@@ -69,6 +84,29 @@ enum ScatterStream : uint64_t {
 std::shared_ptr<meshutil::Geometry> scatterPlace(
     const ScatterSinkData& sink,
     const std::map<std::string, std::string>& channel_paths,
+    float extent_m);
+
+///////////////////////////////////////////////////////////////////////////////
+// scatterPlaceCore — the SHARED placement library both callers run (the byte-
+// identity contract: scatterPlace() reads channel images then calls THIS with
+// yaw_field == nullptr, so the post-bake path stays bit-for-bit unchanged). The
+// in-graph ScatterPlaceModule calls it with host mirrors of its wired plug fields.
+//   `height`      — the elevation field the placer samples (TRUE METERS); its .y
+//                   ends up as the ScatterSet P.y (== the pad grade for in-graph).
+//   `weights`     — K per-type weight fields; K = weights.size() (type_id = index).
+//   `yaw_field`   — OPTIONAL base-yaw field: when non-null each point's yaw is the
+//                   hash of the sampled field value (a worley cell-id -> a heading),
+//                   sampled with the truncating-nearest convention; when null the
+//                   existing random yaw in [yaw_lo, yaw_hi] runs (byte-identical).
+// Returns the ScatterSet point Geometry (P / xform / type_id / variant_seed /
+// proxy_kind / proxy_dims). Null on an empty height field.
+///////////////////////////////////////////////////////////////////////////////
+
+std::shared_ptr<meshutil::Geometry> scatterPlaceCore(
+    const ScatterSinkData& sink,
+    const ScatterField& height,
+    const std::vector<ScatterField>& weights,
+    const ScatterField* yaw_field,
     float extent_m);
 
 } // namespace ork::lev2::terrain

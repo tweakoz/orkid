@@ -54,7 +54,7 @@ class TestApp(frqdom.WaveformsApp):
     violinR,violinI = create_violin_formant_response(cplxlen, 48000)
     irdataset.resize(1)
     sir = S.SpectralImpulseResponse()
-    sir.violinFormant(64.0)
+    sir.violinFormant(48000, 64.0)
     irdataset.set(0, sir)
     ############################
     dspstg = newlyr.stage("DSP")

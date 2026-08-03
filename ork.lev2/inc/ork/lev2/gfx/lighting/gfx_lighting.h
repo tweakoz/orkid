@@ -34,6 +34,8 @@ struct PointLight;
 struct SpotLight;
 struct LightManagerData;
 struct LightManager;
+struct ProbeSHProjector;
+using probeshprojector_ptr_t = std::shared_ptr<ProbeSHProjector>;
 
 using enumeratedlights_ptr_t = std::shared_ptr<EnumeratedLights>;
 using enumeratedlights_constptr_t = std::shared_ptr<const EnumeratedLights>;
@@ -103,6 +105,15 @@ public:
 
   fvec3 mColor;
   float _intensity = 1.0f;
+  // Selection rank among lights of the same kind. LightManager::enumerateInPass
+  // sorts the enumerated directional list DESCENDING by this, so index 0 is the
+  // authoritative sun/sky/cascade pick. Ties keep enumeration order.
+  float _priority = 0.0f;
+  // Which CELESTIAL BODY this light is, for the procedural sky's visible discs:
+  // 0 none, 1 sun, 2 moon. Declared, never inferred — the priority rank is a
+  // shadow/cascade selection order and _castsShadows flips with the night
+  // policy, so neither one identifies a body.
+  int _skyBody = 0;
 
   bool mbShadowCaster;
   int _shadowsamples;
@@ -132,6 +143,16 @@ struct Light : public Drawable {
 
   float intensity() const {
     return _data->_intensity;
+  }
+  // Aliased read of the reflected LightData rank (same live-data contract as
+  // intensity()). Null-tolerant because Dynamic*Light constructs its base with
+  // a null LightData before installing its inline data.
+  float priority() const {
+    return _data ? _data->_priority : 0.0f;
+  }
+  // same null-tolerant live read as priority(); 0 (no body) for an inline-data light
+  int skyBody() const {
+    return _data ? _data->_skyBody : 0;
   }
   const fvec3& color() const {
     return _data->GetColor();
@@ -169,7 +190,6 @@ struct Light : public Drawable {
   const LightData* _data;
   xform_generator_t _xformgenerator;
 
-  float mPriority;
   int miInFrustumID;
   bool _dynamic = false;
   bool _castsShadows = false;
@@ -239,6 +259,19 @@ struct LightProbe {
   int supersample() const { return _pSupersample ? *_pSupersample : _supersample; }
   int temporalFrames() const { return _pTemporalFrames ? *_pTemporalFrames : _temporalFrames; }
   const std::string& renderLayer() const { return _pRenderLayer ? *_pRenderLayer : _renderLayer; }
+
+  // SKYLIGHT lane C — SH_Radiance probes only. _shSlot is the probe's index into
+  // the projector's SH SSBO, claimed at RTG-allocation time and stable for the
+  // probe's life; _shProjector is the (shared, node-owned) projector that last
+  // wrote it — the only handle by which a captured probe's coefficients can be
+  // read back. _shPendingProject carries a finished capture across to the NEXT
+  // frame: a compute dispatch phase is submitted and waited BEFORE the frame's own
+  // graphics command buffer is, so projecting the cube in the frame that rendered
+  // it samples an image whose contents have not happened yet (measured: all-black).
+  // Same 1-frame rule HZBBuilder lives by. All three stay inert for REFLECTION probes.
+  int _shSlot            = -1;
+  bool _shPendingProject = false;
+  probeshprojector_ptr_t _shProjector;
 
   // TAA runtime state
   int _accumFrameCount = 0;
@@ -316,10 +349,119 @@ struct DirectionalLightData : public LightData {
 
 public:
   DirectionalLightData() {
+    _shadowMapSize = 2048; // sun cascades default 2048² (SKYLIGHT L5)
   }
 
   drawable_ptr_t createDrawable() const final;
 
+  // SKYLIGHT lane A — cascade shadow tunables (all reflected; A8 law).
+  // Storage reserves 4 cascades and the runtime count may use all of them.
+  int _shadowCascadeCount  = 4;      // 2..kSunCascadeStorage
+  float _shadowMaxDistance = 250.0f; // CASTER CEILING (meters ABOVE a band) — NOT the coverage
+                                     //  radius: world-anchored bands set coverage (see below).
+                                     //  The fit spends it as ceiling/sin(elevation) of toward-light
+                                     //  extrusion, so the ceiling a scene buys is the same at every
+                                     //  sun angle; spending it as raw along-light distance dropped
+                                     //  every caster a low sun was actually casting from.
+  float _pcfDither         = 1.0f;   // PCF kernel radius in shadow texels (also dither magnitude)
+  // WORLD-ANCHORED BANDS. Cascades are nested world-space spheres centered on
+  // the VIEWER POSITION, radii geometric from the base: radius[i] =
+  // _shadowBandRadius * _shadowBandRatio^i (10/40/160/640m by default). Fitting
+  // is view-INDEPENDENT by construction — no frustum, no camera forward — so a
+  // pure rotation can never invalidate a fit, and each band's world texel size
+  // (2*radius/mapdim) is a constant that a refit cannot change.
+  float _shadowBandRadius = 10.0f; // band-0 coverage radius (meters)
+  float _shadowBandRatio  = 4.0f;  // radius multiplier per band outward
+  // PER-BAND RESOLUTION (S2b). The array stays ONE allocation at the NEAR
+  // band's dim (_shadowMapSize); an outer band is rendered into a VIEWPORT
+  // sub-rect of its slice, dim[i] = _shadowMapSize / ratio^i floored at 256,
+  // and the shader scales that band's uv (and its world texel size) to match.
+  // 1 = OFF = every band at the full dim = exactly what the engine ships. The
+  // near band is never stepped down, so the sharpest cascade is untouched and
+  // the saving is entirely in the bands whose texels are already meters wide.
+  float _shadowBandResRatio = 1.0f;
+  // PER-SNAPSHOT LIGHT-SPACE JITTER (S2b) — sub-texel offset of each band's
+  // SNAPPED ortho origin, amplitude in TEXELS, cycling a low-discrepancy 2D
+  // sequence once per snapshot. Two snapshots blended by the flip crossfade
+  // are then two different sub-texel samplings of the same penumbra, i.e.
+  // temporal supersampling of the shadow edge. Requires
+  // _shadowCrossfadeFrames > 0 and is FORCED to 0 without it: a hard swap
+  // would turn the offset into visible per-snapshot crawl (the same failure
+  // that got per-fragment kernel rotation removed from the shader). Never
+  // touches texel SIZE — the constant-texel invariant is what makes the offset
+  // a resample instead of a rescale — and the refresh gate never sees it (it
+  // reads viewer position and light direction only).
+  float _shadowJitterTexels = 0.0f;
+  // Seconds between cascade SNAPSHOTS: the fit + cull + depth passes are held
+  // between ticks and the maps are re-sampled as they stand. 0 = disabled =
+  // every frame. This is THE cadence — not a ceiling, not a floor: no amount of
+  // sun travel or viewer walking shortens it, because a scene that declares one
+  // minute is declaring that a minute-old shadow is acceptable. The sun's own
+  // live state (direction, color, cookie) is never held. Only a STRUCTURAL
+  // change — caster flip (sun->moon) or a rig edit that moves the maps
+  // themselves — refits early; see ForwardPbrNodeImpl::_update_sun_cascades.
+  float _shadowSnapshotInterval = 0.0f;
+  // SNAPSHOT AMORTIZATION + FLIP (S2a). Both 0 = the shipped path exactly: one
+  // set of maps, every band rendered in the frame the snapshot is taken, and a
+  // hard swap the moment it lands. Either one above 0 double-buffers the
+  // cascade array (2x depth-array memory) so the LIVE maps stay sampled while
+  // the next snapshot is drawn into the other set.
+  //  BandsPerFrame — how many cascade bands ONE frame may render. 0 = unset =
+  //   all of them, the shipped single-frame snapshot. A snapshot is always
+  //   rendered against ONE frozen premise set and published as a whole: half a
+  //   refit (band 0 new, band 3 old) is a geometrically inconsistent world.
+  //  CrossfadeFrames — frames over which the shader blends the OLD snapshot's
+  //   shadow factor into the new one on a flip (depth values cannot be lerped;
+  //   the FACTORS can). 0 = hard swap, and the ARM: no frames, no fade.
+  //  CrossfadeSecs — the window's wall-clock LENGTH once armed. A frame count
+  //   is not a duration (12 frames = 24 ms in an unthrottled offscreen loop,
+  //   200 ms at 60 Hz), so the fraction of time spent blending used to be a
+  //   function of the frame rate. With this above 0 the blend ramps on the
+  //   clock and the frame count only keeps it armed; 0 = ride the frames, the
+  //   pre-clock behavior exactly. Sibling of
+  //   SkyAtmosphereData::_iblCrossfadeMaxSecs, which bounds the IBL feed's
+  //   window the same way.
+  int _shadowSnapshotBandsPerFrame = 0;
+  int _shadowCrossfadeFrames       = 0;
+  float _shadowCrossfadeSecs       = 0.2f;
+  // CLOUD SHADOWS — the sun COOKIE, filled by the forward prologue by drawing
+  // the scene's cloud-deck layer from a sun-aligned ortho camera (one shared
+  // occlusion source: the decks' own transmittance, never a second model).
+  //  Strength 0 (the default) DISARMS the whole path — no fill pass, no cookie
+  // published, and the shader's enable branch keeps such a scene byte-identical
+  // to one that never heard of decks.
+  //  SOFTNESS is a mip-LOD bias, not a kernel: cloud shadows are big soft
+  // patches and must read FUZZIER than any ground-object shadow in the same
+  // frame (owner law), which is what a wider filter footprint buys.
+  //  EXTINCTION is the beam's, shared by BOTH consumers (ground direct term and
+  // sun/moon disc): one beam, one Beer-Lambert law. See _cloudExtinction.
+  float _cloudShadowStrength = 0.0f;    // 0..1 — how much deck occlusion reaches the ground
+  float _cloudShadowExtent   = 4000.0f; // ortho HALF-extent about the viewer (meters)
+  float _cloudShadowSoftness = 2.0f;    // cookie mip-LOD bias (GROUND penumbra)
+  float _cloudShadowDepth    = 30000.0f;// toward-light extrusion (must clear the deck altitude)
+  int _cloudShadowMapSize    = 512;     // cookie resolution (mipped)
+  // BEER-LAMBERT extinction of the direct beam: transmittance = exp(-tau * a),
+  // with a the cookie's accumulated occlusion and tau THIS number. The cookie's
+  // alpha is a coverage-like union of shell occlusions, so a = 1 is read as "one
+  // full reference cloud stands in the beam" and tau is that reference cloud's
+  // OPTICAL DEPTH.
+  //  The default is the optical depth of a thin fair-weather cumulus from the
+  // standard cloud relation tau = 3*LWP / (2*rho_w*r_e): LWP 50 g/m^2,
+  // r_e 10 um, rho_w 1000 kg/m^3 -> tau = 0.15/0.02 = 7.5. A direct beam
+  // through such a deck keeps exp(-7.5) = 0.05% of its light — a solid cumulus
+  // puts the sun OUT, which is what a sky looks like. Halved coverage (a=0.5)
+  // still keeps only 2.4%, while genuine veil (a=0.1) passes 47% and grades.
+  //  0 = transparent (no extinction at any alpha); the STRENGTH knob, not this
+  // one, is what disarms the path.
+  float _cloudExtinction = 7.5f;
+  // The DISC's own sample LOD. Same units as _cloudShadowSoftness (a mip bias),
+  // deliberately a separate number with a much lower default: the ground term
+  // needs a penumbra wide enough to read as a cloud shadow, while the disc
+  // lookup is a single texel answering "is the beam blocked" — a transit edge
+  // in life is crisp (the sun's 0.53deg disc against a cloud edge), so the only
+  // filtering it wants is enough to stop single-texel aliasing as the deck
+  // advects.
+  float _cloudDiscSoftness = 0.5f;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -343,8 +485,18 @@ public:
     return ELIGHTTYPE_DIRECTIONAL;
   }
 
+  // Point the light along (tgt-eye): builds a world matrix whose zNormal()
+  // (== direction()) is the travel direction of the sunlight. Follows the
+  // SpotLight explicit-xform pattern: the generator lambda is installed ONCE
+  // and reads _explicit_world thereafter (per-frame std::function replacement
+  // races render-thread worldMatrix() calls → UAF).
+  void lookAt(const fvec3& eye, const fvec3& tgt, const fvec3& up);
+
   DirectionalLight(const DirectionalLightData* pld);
   DirectionalLight(xform_generator_t mtx, const DirectionalLightData* dld = 0);
+
+  fmtx4 _explicit_world;
+  bool _xformgenerator_is_explicit = false;
 };
 
 using directionallight_ptr_t = std::shared_ptr<DirectionalLight>;
@@ -653,8 +805,11 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 struct EnumeratedLights {
-    
+
   std::vector<Light*> _alllights;
+  // SKYLIGHT lane A — directional bucket. The forward node's sun-cascade
+  // pass picks THE sun (first active shadow-caster) from this list.
+  std::vector<DirectionalLight*> _directionallights;
   pointlightlist_t _untexturedpointlights;
   tex2pointlightmap_t _tex2pointlightmap;
   spotlightlist_t _untexturedspotlights;
@@ -702,11 +857,62 @@ public:
   texturearraysliceref_ptr_t allocateDepthSlice();
   texturearraysliceref_ptr_t allocateColorSlice(const std::string& cookiePath);
 
+  // SKYLIGHT lane A — dedicated sun-cascade depth array (Z32F). NOT the 256²
+  // spot cookie array. Rebuilds (array + per-slice RTGs) when the requested
+  // dim OR set count changes; the default 8×8 array keeps the sampler
+  // descriptor valid in sunless scenes (shader never samples it — has_sun
+  // gates).
+  //
+  // SETS (S2a) — the double buffer is a SLICE RANGE of this one array, not a
+  // second texture: sets=2 allocates 2*kSunCascadeStorage slices and the
+  // shader picks a set by adding a base to its band index, so the crossfade
+  // costs no extra sampler and no extra descriptor. sets=1 is byte-identical
+  // to the single-buffered allocation this shipped with.
+  static constexpr int kSunCascadeStorage = 4; // per-set storage reserved (L5); runtime count 2..4
+  void ensureSunCascades(Context* ctx, int dim, int sets = 1);
+
+  // SUN COOKIE fill target — one small MIPPED RGBA8 RTG the prologue draws the
+  // cloud decks into (see ForwardPbrNodeImpl::_update_sun_cookie). Rebuilt only
+  // on a dimension change; _sun_cookie points at its color texture once armed.
+  void ensureSunCookie(Context* ctx, int dim);
+
   lightmanagerdata_constptr_t _data;
   texturearray_ptr_t _cookies_spot_color;
   texturearray_ptr_t _cookies_spot_depth;
   texturearray_ptr_t _cookies_spot_color_default;
   texturearray_ptr_t _cookies_spot_depth_default;
+  texturearray_ptr_t _sun_shadow_cascades;
+  texturearray_ptr_t _sun_shadow_cascades_default;
+  // SUN COOKIE (cloud shadows) — a TRANSMITTANCE map projected from the sun's
+  // plane onto the world. Unlike the spot cookies this is a single plain 2D
+  // texture, because there is one sun and its cookie covers everything the
+  // camera can reach rather than a per-light cone. The default is a 1x1 WHITE
+  // texel (transmittance 1) so the sampler descriptor is always valid and an
+  // un-armed cookie cannot darken anything even if a shader samples it.
+  texture_ptr_t _sun_cookie;
+  texture_ptr_t _sun_cookie_default;
+  // World->cookie-uv projection and its dials, published by whoever owns the
+  // deck (see _sunCookieMatrix in the forward prologue). _sun_cookie_strength
+  // 0 disarms the whole path.
+  fmtx4 _sun_cookie_matrix;
+  float _sun_cookie_strength = 0.0f;
+  float _sun_cookie_lod      = 0.0f; // GROUND sample bias
+  // Beer-Lambert tau for the direct beam (both consumers) and the DISC's own,
+  // sharper sample bias. Published together with the cookie so the ground and
+  // the sky can never run different extinction laws for the same beam.
+  float _sun_cookie_extinction = 0.0f;
+  float _sun_cookie_disc_lod   = 0.0f;
+  // the direction the cookie's light TRAVELS (== the cascade holder's
+  // direction the frame it was filled). The disc occlusion consumer compares
+  // it against the sky's sun/moon so it can only dim the body the cookie was
+  // actually baked toward.
+  fvec3 _sun_cookie_dir = fvec3(0, -1, 0);
+  rtgroup_ptr_t _sun_cookie_rtg;
+  int _sun_cookie_dim = 0;
+  std::vector<texturearraysliceref_ptr_t> _sun_cascade_slices; // keep alive: RTG->_slice is a raw ptr
+  std::vector<rtgroup_ptr_t> _sun_cascade_rtgs;                // indexed set*kSunCascadeStorage + band
+  int _sun_cascade_dim  = 0;
+  int _sun_cascade_sets = 0;
   bool _needs_gpu_init = true;
   int _nextDepthSliceAlloc = 0;
   int _nextColorSliceAlloc = 0;

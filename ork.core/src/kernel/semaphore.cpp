@@ -27,6 +27,12 @@ void semaphore::notify() {
   mCondition.notify_one();
 }
 
+void semaphore::notify_rt() {
+  mCount.fetch_add(1);
+  mCondition.notify_one(); // unheld signal: legal, may race a waiter entering
+                           // wait — wait_for's deadline re-check covers it
+}
+
 void semaphore::wait() {
   // printf( "semaphore<%p>::wait() mCount<%d>\n", this, mCount.load() );
   ork::mutex::unique_lock lock(mMutex);

@@ -16,12 +16,21 @@
 #               just a titlebar). Structural: propsheet leaves main, lands in sec.
 #    --mode b : same transfer, then close the secondary -> return-on-close carries the
 #               property sheet back to the MAIN dock (structural + main re-renders).
+#    --mode t : API TRANSFER of the FACTORY "Terrain" node-editor column main->secondary
+#               (the GPU-seam panel — a fresh PrimCanvas+NodeEditor is rebuilt in the
+#               destination window's context). Factory-recreate oracle: Terrain leaves
+#               main + lands in sec (structural); the fresh node editor is bound to the
+#               SAME document (node count preserved); the carried selection survives; and
+#               the destination framebuffer is LIT by the rebuilt canvas (empty before,
+#               content-bearing after) — the graph RENDERS in the new window.
 #    --mode c : PINNED — drive an injected cross-window titlebar drag of the VIEWPORT
-#               panel (rect overrides map the cursor out of main and INTO a registered
-#               secondary, i.e. a would-be FOREIGN target). The pinning predicate must
-#               keep it LOCAL: NO transfer occurs, the viewport stays in main, and the
-#               secondary shows NO foreign drop hint. The driver also greps the child's
-#               ORKID_DOCK_TRACE for the [pinned:Viewport] classification.
+#               panel (the sole remaining pinned panel: a one-shot Context-bound
+#               SceneGraphViewport GPU seam, no factory). Rect overrides map the cursor
+#               out of main and INTO a registered secondary (a would-be FOREIGN target).
+#               The pinning predicate must keep it LOCAL: NO transfer occurs, the viewport
+#               stays in main, and the secondary shows NO foreign drop hint. The driver
+#               also greps the child's ORKID_DOCK_TRACE for the [pinned:Viewport]
+#               classification.
 ################################################################################
 
 import os
@@ -132,6 +141,11 @@ class Gate(TerrainEditor):
         self._after    = {}
         self._closed_count = 0
         self._verdict_emitted = False
+        self._terr_nodes0 = 0     # source Terrain node count (doc-binding oracle)
+        self._terr_sel    = None  # carried node selection
+        self._tearout_win  = None # torn-out window (mode o)
+        self._tearout_dock = None
+        self._tearout_cap  = None
         self.rc = 0
 
     @property
@@ -200,12 +214,15 @@ class Gate(TerrainEditor):
             return
         self.rc = verdict(ok, detail)
         self._verdict_emitted = True
-        # disarm teardown re-entry: the manager wired win.onClosed on the secondary.
-        if self._sec_win is not None:
-            try:
-                self._sec_win.onClosed = None
-            except Exception:
-                pass
+        # disarm teardown re-entry: the manager wired win.onClosed on the secondary /
+        # torn-out window (return-on-close would re-run the factory during teardown).
+        for w in (self._sec_win, self._tearout_win):
+            if w is not None:
+                try:
+                    w.onClosed = None
+                    w.onGpuPostFrame = None
+                except Exception:
+                    pass
         self.ezapp.signalExit()
 
     ############################################################
@@ -217,6 +234,12 @@ class Gate(TerrainEditor):
             return
         if self.gate_mode in ("a", "b"):
             self._tick_transfer(ctx)
+        elif self.gate_mode == "t":
+            self._tick_terrain_transfer(ctx)
+        elif self.gate_mode == "u":
+            self._tick_terrain_return(ctx)
+        elif self.gate_mode == "o":
+            self._tick_terrain_tearout(ctx)
         else:
             self._tick_pinned(ctx)
         if self._gframe > 1500:
@@ -306,6 +329,213 @@ class Gate(TerrainEditor):
               f"main lit={ma} | left_for_sec={left_for_sec} back_in_main={back_in_main} "
               f"main_lit={main_lit} closed_once={closed_once}", flush=True)
         self._emit(ok, f"left_for_sec={left_for_sec} back_in_main={back_in_main} closed_once={closed_once}")
+
+    ############################################################
+    # t : the Terrain node-editor column (the GPU-seam factory panel) transfers into a
+    #     secondary — factory-recreate oracle: fresh node editor bound to the same doc,
+    #     selection carried, and the graph RENDERS in the destination (empty->content).
+    ############################################################
+
+    def _tick_terrain_transfer(self, ctx):
+        ph = self._gphase
+        if ph == 0:
+            if self._gframe >= SETTLE:
+                self._make_secondary()
+                # record the SOURCE node signature + seed a selection to carry across the transfer
+                ne = self.node_editor
+                nids = list(ne.model.nodes())
+                self._terr_nodes0 = len(nids)
+                self._terr_sel = nids[0] if nids else None
+                if self._terr_sel is not None:
+                    ne.sel_nodes = {self._terr_sel}
+                    ne.mark_selection_changed()
+                self._gphase = 1
+                self._gt0 = self._gframe
+        elif ph == 1:
+            if self._gframe >= self._gt0 + POST:
+                self._sec_cap.arm()          # capture the EMPTY secondary
+                self._gphase = 2
+        elif ph == 2:
+            if self._sec_cap.ready:
+                self._before["sec"] = self._sec_cap.result
+                self._before["main_names"] = self._names(self.dock)
+                self._before["sec_names"]  = self._names(self._sec_dock)
+                # THE transfer (factory-recreate the terrain node-editor column into the secondary)
+                self.mgr.transfer("Terrain", "main", "sec1")
+                self._gphase = 3
+                self._gt0 = self._gframe
+        elif ph == 3:
+            if self._gframe >= self._gt0 + POST:
+                self._sec_cap.arm()          # capture the ARRIVED (rebuilt) canvas
+                self._gphase = 4
+        elif ph == 4:
+            if self._sec_cap.ready:
+                self._after["sec"] = self._sec_cap.result
+                self._after["main_names"] = self._names(self.dock)
+                self._after["sec_names"]  = self._names(self._sec_dock)
+                self._assert_terrain_transfer()
+
+    def _assert_terrain_transfer(self):
+        eb = _lit_count(self._before["sec"])
+        ea = _lit_count(self._after["sec"])
+        _save_png(self._before["sec"], os.path.join(TMP, f"{self.gate_tag}_sec_before.png"))
+        _save_png(self._after["sec"],  os.path.join(TMP, f"{self.gate_tag}_sec_after.png"))
+        was_in_main = "Terrain" in self._before["main_names"]
+        left_main   = "Terrain" not in self._after["main_names"]
+        landed_sec  = "Terrain" in self._after["sec_names"]
+        sec_empty0  = eb <= SEC_EMPTY_MAX
+        sec_content = ea >= SEC_CONTENT_MIN
+        # factory-recreate oracle: the fresh node editor exists in the destination and is bound
+        # to the SAME document (node count preserved), with the selection carried across.
+        ne = self.node_editor
+        nodes_now = len(list(ne.model.nodes())) if ne is not None else -1
+        nodes_ok  = (ne is not None and self._terr_nodes0 > 0 and nodes_now == self._terr_nodes0)
+        sel_ok    = (self._terr_sel is None) or (ne is not None and self._terr_sel in ne.sel_nodes)
+        ok = (was_in_main and left_main and landed_sec and sec_empty0 and sec_content
+              and nodes_ok and sel_ok)
+        print(f"[t] main {self._before['main_names']}->{self._after['main_names']} | "
+              f"sec {self._before['sec_names']}->{self._after['sec_names']} | "
+              f"sec lit before={eb} after={ea} | was_in_main={was_in_main} left_main={left_main} "
+              f"landed_sec={landed_sec} sec_empty0={sec_empty0} sec_content={sec_content} | "
+              f"nodes {self._terr_nodes0}->{nodes_now} nodes_ok={nodes_ok} sel_ok={sel_ok}", flush=True)
+        self._emit(ok, f"left_main={left_main} landed_sec={landed_sec} content={sec_content} "
+                       f"nodes_ok={nodes_ok} sel_ok={sel_ok}")
+
+    ############################################################
+    # u : Terrain transfer THEN return-on-close — the GPU-seam node editor rebuilds back in
+    #     MAIN (its glyph textures re-init against the main context) and re-renders LIT.
+    ############################################################
+
+    def _tick_terrain_return(self, ctx):
+        ph = self._gphase
+        if ph == 0:
+            if self._gframe >= SETTLE:
+                self._make_secondary()
+                self._terr_nodes0 = len(list(self.node_editor.model.nodes()))
+                self._gphase = 1
+                self._gt0 = self._gframe
+        elif ph == 1:
+            if self._gframe >= self._gt0 + POST:
+                self.mgr.transfer("Terrain", "main", "sec1")     # Terrain -> secondary
+                self._after["main_names"] = self._names(self.dock)   # proves it LEFT main
+                self._gphase = 2
+                self._gt0 = self._gframe
+        elif ph == 2:
+            if self._gframe >= self._gt0 + POST:
+                self._sec_win.requestClose()   # -> onClosed -> return-on-close carries it back
+                self._gphase = 3
+                self._gt0 = self._gframe
+        elif ph == 3:
+            if self._closed_count == 1 and self._gframe >= self._gt0 + CLOSE_WAIT:
+                self._main_cap.arm()
+                self._gphase = 4
+        elif ph == 4:
+            if self._main_cap.ready:
+                self._after["main"] = self._main_cap.result
+                self._assert_terrain_return()
+
+    def _assert_terrain_return(self):
+        ma = _lit_count(self._after["main"])
+        _save_png(self._after["main"], os.path.join(TMP, f"{self.gate_tag}_main_return.png"))
+        left_for_sec = "Terrain" not in self._after["main_names"]   # ph1: gone from main into sec
+        now_names    = self._names(self.dock)                       # post-return
+        back_in_main = "Terrain" in now_names
+        main_lit     = ma >= MAIN_RETURN_MIN
+        closed_once  = self._closed_count == 1
+        ne = self.node_editor
+        nodes_now = len(list(ne.model.nodes())) if ne is not None else -1
+        nodes_ok  = (ne is not None and self._terr_nodes0 > 0 and nodes_now == self._terr_nodes0)
+        ok = left_for_sec and back_in_main and main_lit and closed_once and nodes_ok
+        print(f"[u] main (post-transfer){self._after['main_names']} -> (post-return){now_names} | "
+              f"main lit={ma} | left_for_sec={left_for_sec} back_in_main={back_in_main} "
+              f"main_lit={main_lit} closed_once={closed_once} nodes {self._terr_nodes0}->{nodes_now} "
+              f"nodes_ok={nodes_ok}", flush=True)
+        self._emit(ok, f"back_in_main={back_in_main} main_lit={main_lit} closed_once={closed_once} "
+                       f"nodes_ok={nodes_ok}")
+
+    ############################################################
+    # o : TEAR-OUT — an injected titlebar drag of the Terrain column OUT of main (past the
+    #     window edge -> no registered window there -> TEAROUT) spawns a fresh window (glue
+    #     pump), factory-recreates the node editor into it, and the graph RENDERS there.
+    ############################################################
+
+    def _tick_terrain_tearout(self, ctx):
+        ph = self._gphase
+        coord = lev2.ui.DockCoordinator.instance()
+        if ph == 0:
+            if self._gframe >= SETTLE:
+                # main's rect must be known so a drop PAST its right edge resolves TEAROUT
+                # (outside all windows) rather than degrading to a single-window local move.
+                coord.setWindowRectOverride("main", 0, 0, W, H)
+                self._terr_nodes0 = len(list(self.node_editor.model.nodes()))
+                self._before["main_names"] = self._names(self.dock)
+                self._gphase = 1
+                self._gt0 = self._gframe
+        elif ph == 1:
+            if self._gframe >= self._gt0 + POST:
+                self._drag_terrain_out()
+                self._gphase = 2
+                self._gt0 = self._gframe
+        elif ph == 2:
+            # the tear-out is deferred: coordinator -> _pending_tearouts -> glue.pump (onGpuPost
+            # Frame) builds the window + transfers Terrain in. Poll for the new registered window.
+            keys = [k for k, r in self.mgr._windows.items() if not r.is_main]
+            if keys:
+                reg = self.mgr._windows[keys[0]]
+                self._tearout_win  = reg.window
+                self._tearout_dock = reg.dock
+                self._tearout_cap  = Capturer()
+                reg.window.onGpuPostFrame = lambda c: self._tearout_cap.tick(c)
+                self._gphase = 3
+                self._gt0 = self._gframe
+            elif self._gframe >= self._gt0 + 300:
+                self._emit(False, "tear-out window never created")
+        elif ph == 3:
+            self._mark_tearout()
+            if self._gframe >= self._gt0 + POST:
+                self._tearout_cap.arm()
+                self._gphase = 4
+        elif ph == 4:
+            self._mark_tearout()
+            if self._tearout_cap.ready:
+                self._assert_terrain_tearout()
+
+    def _mark_tearout(self):
+        try:
+            self._tearout_win.markDirty()   # keep the torn-out window re-rendering for its capturer
+        except Exception:
+            pass
+
+    def _drag_terrain_out(self):
+        import ork.uitest as U
+        top = self.ezapp.topWidget
+        lp  = self.left_dock                 # the "Terrain" DockPanel
+        x0, y0 = lp.localToRoot(24, lp.titlebar_height // 2)
+        interm = (W - 8, y0)
+        target = (W + 240, 180)              # main-local coords past the right edge -> outside all
+        U.push(self.ezapp, x0, y0, top.width, top.height)
+        U.move(self.ezapp, interm[0], interm[1], top.width, top.height, button="left")
+        U.move(self.ezapp, target[0], target[1], top.width, top.height, button="left")
+        U.move(self.ezapp, target[0], target[1], top.width, top.height, button="left")
+        U.release(self.ezapp, target[0], target[1], top.width, top.height)
+
+    def _assert_terrain_tearout(self):
+        lit = _lit_count(self._tearout_cap.result)
+        _save_png(self._tearout_cap.result, os.path.join(TMP, f"{self.gate_tag}_tearout.png"))
+        main_names = self._names(self.dock)
+        tear_names = self._names(self._tearout_dock)
+        left_main    = "Terrain" not in main_names
+        in_tearout   = "Terrain" in tear_names
+        tear_content = lit >= SEC_CONTENT_MIN
+        ne = self.node_editor
+        nodes_now = len(list(ne.model.nodes())) if ne is not None else -1
+        nodes_ok  = (ne is not None and self._terr_nodes0 > 0 and nodes_now == self._terr_nodes0)
+        ok = left_main and in_tearout and tear_content and nodes_ok
+        print(f"[o] main {self._before['main_names']}->{main_names} | tearout {tear_names} | "
+              f"tearout lit={lit} left_main={left_main} in_tearout={in_tearout} content={tear_content} "
+              f"| nodes {self._terr_nodes0}->{nodes_now} nodes_ok={nodes_ok}", flush=True)
+        self._emit(ok, f"left_main={left_main} in_tearout={in_tearout} content={tear_content} "
+                       f"nodes_ok={nodes_ok}")
 
     ############################################################
     # c : PINNED viewport drag out of main -> stays LOCAL (no transfer / no hint)
@@ -404,6 +634,22 @@ def driver():
     if not _pass(rcb, outb):
         problems.append(f"(b) return verdict={read_verdict(outb, rcb)}")
 
+    # (t) API transfer of the FACTORY Terrain node-editor column -> secondary; the rebuilt
+    #     canvas RENDERS there (content pixel oracle) with the doc binding + selection carried
+    rct, outt = _spawn("t", "t")
+    if not _pass(rct, outt):
+        problems.append(f"(t) terrain transfer verdict={read_verdict(outt, rct)}")
+
+    # (u) Terrain return-on-close -> the node editor rebuilds back in main + re-renders
+    rcu, outu = _spawn("u", "u")
+    if not _pass(rcu, outu):
+        problems.append(f"(u) terrain return verdict={read_verdict(outu, rcu)}")
+
+    # (o) Terrain TEAR-OUT via injected drag -> spawns a window, the graph renders there
+    rco, outo = _spawn("o", "o")
+    if not _pass(rco, outo):
+        problems.append(f"(o) terrain tear-out verdict={read_verdict(outo, rco)}")
+
     # (c) PINNED viewport drag stays LOCAL (structural in-child + trace grep here)
     rcc, outc = _spawn("c", "c", extra_env={"ORKID_DOCK_TRACE": "1"})
     if not _pass(rcc, outc):
@@ -426,7 +672,7 @@ def driver():
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--mode", choices=["a", "b", "c"], default=None)
+    ap.add_argument("--mode", choices=["a", "b", "t", "u", "o", "c"], default=None)
     ap.add_argument("--tag", default="x")
     args = ap.parse_args()
     if args.mode:

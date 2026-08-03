@@ -41,7 +41,7 @@ TimeDomainConvolveData::TimeDomainConvolveData(std::string name)
 ///////////////////////////////////////////////////////////////////////////////
 
 dspblk_ptr_t TimeDomainConvolveData::createInstance() const { // override
-  return std::make_shared<TimeDomainConvolve>(this);
+  return createDspInstance<TimeDomainConvolve>(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

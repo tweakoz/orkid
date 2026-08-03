@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include "headers/vulkan_ctx.h"
+#include "vulkan_desclife.h"
 #include <ork/util/crc64.h>
 #include <ork/kernel/memcpy.inl>
 #include <map>
@@ -445,6 +446,16 @@ VulkanImageObject::~VulkanImageObject() {
   _imgobjcount.fetch_sub(1);
   try {
     if (!GfxEnv::gpuShutdownComplete() && _ctx) {
+      // DESCLIFE DESTROY — the moment a captured view dies. Logged before the
+      // funnel call so the line exists even if teardown itself faults.
+      if (desclifeEnabled() and _delete_imageview and (_vkimageview != VK_NULL_HANDLE)) {
+        printf(
+            "[DESCLIFE] DESTROY view<%p> imgsn<%zu> img<%p> frame<%zu>\n",
+            (void*)_vkimageview,
+            _serial_number,
+            (void*)_vkimage,
+            desclifeFrame(_ctx));
+      }
       // pass only the handles this object owns; the funnel no-ops past shutdown.
       _ctx->destroyImageObject(
           _delete_imageview   ? _vkimageview : VK_NULL_HANDLE,

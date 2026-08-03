@@ -10,6 +10,7 @@
 #include <ork/kernel/opq.h>
 #include <ork/kernel/prop.h>
 #include <ork/kernel/prop.hpp>
+#include <ork/lev2/init.h>
 #include <ork/lev2/gfx/gfxctxdummy.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/image.h>
@@ -144,6 +145,13 @@ MsaaSamples msaaSamplesFromInt(int count) {
   return MsaaSamples::MSAA_1X;
 }
 
+int msaaForwardSampleCount(Context* ctx) {
+  int level    = _ginitdata ? _ginitdata->_msaa_samples : 0;
+  int reqcount = msaaEnumToInt(msaaLevelToSamples(level));
+  int devmax   = ctx ? ctx->msaaMaxSamples() : 1;
+  return (reqcount < devmax) ? reqcount : devmax;
+}
+
 std::string EBufferFormatToName(EBufferFormat fmt) {
   std::string rval;
   switch (fmt) {
@@ -244,7 +252,17 @@ std::string EBufferFormatToName(EBufferFormat fmt) {
       rval = "SRGB_BGRA8";
       break;
     default:
-      printf("invalid buffer format<%0zx>\n", size_t(fmt));
+      // FLUSH before the assert. stdout is block-buffered whenever it is not a tty, and
+      // the assert path can die (during unwind) before the buffer is ever drained — which
+      // turned an unknown format into a bare SIGSEGV with NO message at all, indistinguish-
+      // able from a driver crash. The name of the offending value is the whole point of
+      // this branch; it has to actually reach the terminal.
+      // The value is usually a CrcString hash: a caller asked for a format token that is
+      // not one of the names above (e.g. "Z32" instead of "Z32F") and the crc was cast
+      // straight to the enum.
+      printf("invalid buffer format<%0zx> (unknown EBufferFormat; a mistyped format token "
+             "hashes straight into this enum)\n", size_t(fmt));
+      fflush(stdout);
       OrkAssert(false);
       break;
   }
@@ -490,8 +508,21 @@ bool GfxEnv::initialized() {
 
 void GfxEnv::initializeWithContext(context_ptr_t target) {
 
-  auto op = [target]() {
-    if (not GetRef()._initialized) {
+  // WEAK capture, deliberately. mainSerialQueue runs zero worker threads: it is
+  // only drained by whoever pumps the main thread, so in a headless process
+  // (ecs.headless_init) this Op is NEVER executed and survives — with everything
+  // it captured — until the queue's own static destruction at atexit. A strong
+  // ref here therefore made this lambda the LAST owner of the loader Context,
+  // running ~VkContext (and its driver-calling members) after the Vulkan loader
+  // .so had already unwound -> null entrypoint -> SIGSEGV at interpreter exit.
+  // Owning the context is gloadercontext's job; it releases inside
+  // stopLoaderThread() while the driver is still live. A late-running op that
+  // finds the context gone has nothing left to initialize, so it no-ops.
+  std::weak_ptr<Context> weak_target = target;
+
+  auto op = [weak_target]() {
+    auto target = weak_target.lock();
+    if (target and not GetRef()._initialized) {
       target->makeCurrentContext();
       ThreadGfxContext ctx_tracker(target.get());
       GfxEnv::GetRef()._initialized = true;

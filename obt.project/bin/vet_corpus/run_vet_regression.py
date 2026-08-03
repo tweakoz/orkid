@@ -24,10 +24,18 @@ import subprocess
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BIN = os.path.dirname(HERE)
+MAKE = os.path.join(HERE, 'make_corpus.py')
 IMAGE = os.path.join(BIN, 'ork.vet.image.py')
 HMAP = os.path.join(BIN, 'ork.vet.hmap.py')
 MESH = os.path.join(BIN, 'ork.vet.mesh.py')
 MOVIE = os.path.join(BIN, 'ork.vet.movie.py')
+AUDIO = os.path.join(BIN, 'ork.vet.audio.py')
+
+# corpus types whose artifacts are NEVER tracked in git: regenerated here before
+# their cases run, so a fresh checkout needs no manual make_corpus.py step. The
+# tracked types (mesh/movie) are deliberately absent -- their committed binaries
+# must stay byte-stable, so this suite never regenerates them.
+GENERATED = ('audio',)
 
 
 def c(*parts):
@@ -44,6 +52,14 @@ CASES = [
                              '--golden', c('image', 'clean.png')], 'FAIL'),
     ('image.black',        [IMAGE, c('image', 'black.png'), '--kind', 'render'], 'FAIL'),
 
+    # render discriminating checks: a DETAILED WARM render (glints + material
+    # detail + golden-hour tint) must PASS; each defect twin must FAIL its check.
+    ('render.clean',       [IMAGE, c('image', 'render_clean.png'), '--kind', 'render'], 'PASS'),
+    ('render.firefly',     [IMAGE, c('image', 'render_firefly.png'), '--kind', 'render'], 'FAIL'),
+    ('render.speckle',     [IMAGE, c('image', 'render_speckle.png'), '--kind', 'render'], 'FAIL'),
+    ('render.grossspeckle', [IMAGE, c('image', 'render_grossspeckle.png'), '--kind', 'render'], 'FAIL'),
+    ('render.magenta',     [IMAGE, c('image', 'render_magenta.png'), '--kind', 'render'], 'FAIL'),
+
     ('hmap.clean',         [HMAP, c('hmap', 'clean.png')], 'PASS'),
     ('hmap.clean.golden',  [HMAP, c('hmap', 'clean.png'), '--golden', c('hmap', 'clean.png')], 'PASS'),
     ('hmap.mutant',        [HMAP, c('hmap', 'mutant.png')], 'FAIL'),
@@ -57,6 +73,17 @@ CASES = [
                             '--compare', c('movie', 'clean_noise.mkv')], 'PASS'),
     ('movie.ab_structural', [MOVIE, c('movie', 'clean.mkv'),
                              '--compare', c('movie', 'structural.mkv')], 'FAIL'),
+
+    # audio: the clean twin carries HARD MUSICAL ONSETS on purpose -- it proves
+    # the click check's transient discrimination while the mutants prove its
+    # sensitivity. deadch tolerance is tightened to 2s for a 4s corpus file.
+    ('audio.clean',        [AUDIO, c('audio', 'clean.wav'), '--max-dead-ch-secs', '2'], 'PASS'),
+    ('audio.clip',         [AUDIO, c('audio', 'clip.wav'), '--max-dead-ch-secs', '2'], 'FAIL'),
+    ('audio.click',        [AUDIO, c('audio', 'click.wav'), '--max-dead-ch-secs', '2'], 'FAIL'),
+    ('audio.dropout',      [AUDIO, c('audio', 'dropout.wav'), '--max-dead-ch-secs', '2'], 'FAIL'),
+    ('audio.dc',           [AUDIO, c('audio', 'dc.wav'), '--max-dead-ch-secs', '2'], 'FAIL'),
+    ('audio.deadch',       [AUDIO, c('audio', 'deadch.wav'), '--max-dead-ch-secs', '2'], 'FAIL'),
+    ('audio.intersample',  [AUDIO, c('audio', 'intersample.wav'), '--max-dead-ch-secs', '2'], 'FAIL'),
 ]
 
 
@@ -74,16 +101,37 @@ def run_case(argv):
 
 
 def main():
-    missing = [t for t in (IMAGE, HMAP, MESH, MOVIE) if not os.path.exists(t)]
+    # optional label-prefix filter: `run_vet_regression.py audio` runs one
+    # instrument's cases (delta gate) without needing the other corpora present.
+    want = [a for a in sys.argv[1:] if not a.startswith('-')]
+    cases = [c_ for c_ in CASES
+             if not want or any(c_[0].startswith(w) for w in want)]
+    if not cases:
+        sys.stderr.write("no cases match %r\n" % (want,))
+        sys.exit(3)
+
+    missing = [t for t in {c_[1][0] for c_ in cases} if not os.path.exists(t)]
     if missing:
         sys.stderr.write("missing instrument(s): " + ", ".join(missing) + "\n")
         sys.exit(3)
-    if not os.path.isdir(c('image')):
-        sys.stderr.write(f"corpus not found under {HERE}; run make_corpus.py first\n")
+    regen = sorted({c_[0].split('.')[0] for c_ in cases} & set(GENERATED))
+    if regen:
+        r = subprocess.run([MAKE] + regen, capture_output=True, text=True)
+        if r.returncode != 0:
+            last = (r.stderr.strip() or r.stdout.strip()).splitlines()
+            sys.stderr.write("corpus generation failed (%s): %s\n"
+                             % (" ".join(regen), last[-1] if last else 'rc %d' % r.returncode))
+            sys.exit(3)
+
+    absent = sorted({os.path.dirname(a) for c_ in cases for a in c_[1][1:]
+                     if a.endswith(('.png', '.obj', '.mkv', '.wav')) and not os.path.exists(a)})
+    if absent:
+        sys.stderr.write("corpus missing under %s; run make_corpus.py %s first\n"
+                         % (HERE, " ".join(os.path.basename(p) for p in absent)))
         sys.exit(3)
 
     n_fail = 0
-    for label, argv, expect in CASES:
+    for label, argv, expect in cases:
         observed, r = run_case(argv)
         ok = observed == expect
         if not ok:
@@ -95,7 +143,7 @@ def main():
                 print(f"#   {label}: {ln}")
             if r.stderr.strip():
                 print(f"#   {label}: stderr {r.stderr.strip().splitlines()[-1]}")
-    print(f"# verdict: {'FAIL' if n_fail else 'PASS'} ({len(CASES)} checks, {n_fail} failed)")
+    print(f"# verdict: {'FAIL' if n_fail else 'PASS'} ({len(cases)} checks, {n_fail} failed)")
     sys.exit(1 if n_fail else 0)
 
 

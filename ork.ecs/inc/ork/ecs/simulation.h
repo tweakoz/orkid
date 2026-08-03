@@ -92,6 +92,13 @@ struct Simulation {
   // the calling thread (which must hold ctx). Any GPU rendezvous the update queues runs
   // INLINE instead of blocking for a gpuUpdate() that a single thread can never deliver.
   void updateWithGpu(lev2::Context* ctx);
+  // Render-thread service step: drain the GPU-phase rendezvous queue with the GPU-thread
+  // marker set, so a phase queued by the update thread (blocked in
+  // _runGpuPhaseOnRenderThread) is executed and its future signalled. Called by the
+  // render thread while it waits to acquire _simulation for a transport op — otherwise
+  // that acquire deadlocks against the update thread which holds _simulation and is
+  // blocked waiting for THIS thread to drain. MUST be invoked only on the render thread.
+  void drainPendingGpuPhases(lev2::Context* ctx);
   void gpuExit(lev2::Context* ctx);
 
   ///////////////////////////////////////////////////

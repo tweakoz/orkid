@@ -26,6 +26,7 @@
 #include <ork/lev2/aud/singularity/audiotest.h>
 #include <mach/mach_time.h>
 #include <chrono>
+#include <ctime>
 #include <cstdlib>
 #include <cstdio>
 #include <errno.h>
@@ -40,6 +41,22 @@ namespace ork::lev2::ca {
 using namespace ork::audio::singularity;
 
 static logchannel_ptr_t logchan_coreaudio = logger()->configureChannel("CoreAudio", fvec3(1, 0.6, .8), true);
+
+///////////////////////////////////////////////////////////////////////////////
+// Thread CPU time, paired with wall time in the first-window diagnostics — the
+// darwin twin of the helper in audiodevice_pa.cpp: wall >> cpu means the audio
+// thread was DESCHEDULED (a scheduling problem), wall ~= cpu means the compute
+// itself overran the deadline (a workload problem).
+// darwin serves CLOCK_THREAD_CPUTIME_ID out of thread_info(THREAD_BASIC_INFO)
+// user_time+system_time, so it is the same quantity linux reports but quantized
+// to 1us. That is fine for a fence in the hundreds-of-us range and coarse for
+// anything finer — do not read single-microsecond differences off it.
+///////////////////////////////////////////////////////////////////////////////
+static inline uint64_t _threadCpuNanos() {
+  timespec ts{};
+  clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
+  return uint64_t(ts.tv_sec) * 1000000000ull + uint64_t(ts.tv_nsec);
+}
 
 void EnumerateMidiDevices() {
   int n                = MIDIGetNumberOfExternalDevices();
@@ -460,13 +477,51 @@ void CoreAudioDevice::startup() {
 
     if (_output_impl) {
       if (!_aucontext->waitForOutputReady(2000)) {
-        logchan_coreaudio->log("ERROR: Output callback not ready, aborting startup");
+        logerrchannel()->log(
+            "CoreAudio: OUTPUT NEVER STARTED — device '%s' opened and AudioOutputUnitStart succeeded, but the HAL "
+            "did not call _outputProc within 2000ms; startup aborts here and this app runs with NO audio. The unit "
+            "is fine and the host stack is not: coreaudiod is wedged (it logs 'HALS_PlugIn: the object is not "
+            "valid', and afplay fails -66681 for EVERY device including virtual ones) - restart it with "
+            "'sudo killall coreaudiod'",
+            _output_info ? _output_info->_name.c_str() : "<unknown>");
         return;
       }
     }
 
+    // the synth learns its buffer geometry from the frame count it is handed,
+    // and GROWING it walks all 512 pooled layers x 32 stage slots plus every
+    // bus - ~18ms of allocation. left to the CoreAudioThread's first iteration
+    // that lands with the HAL already pulling, so the output queue starves for
+    // the whole of it. prime it here, on the caller's thread, with the count
+    // that thread will use; a later resize stays on-demand.
+    if (_the_synth) {
+      _the_synth->resize(inumfr);
+    }
+
+    // [PA_DIAG] first-window telemetry (ORKID_PA_DIAG), the darwin twin of the
+    // block in audiodevice_pa.cpp. SAME GRAMMAR ON PURPOSE: the committed
+    // ratchet ork.lev2/pyext/tests/singularity/test_audio_first_window.py
+    // parses both platforms with one set of regexes. What the numbers mean
+    // here differs, because the synth does not run in the HAL IOProc on darwin
+    // - it runs on this producer thread feeding _outputQueue - so a window
+    // reports what THIS thread spent per buffer, against the same budget the
+    // HAL drains at. faults_* are always 0 (darwin has no per-thread rusage);
+    // underflows_total counts output-queue starvation, and the pre-roll
+    // starves (the HAL runs before this thread exists) are reported separately
+    // so they can never be read as drop-outs of a running stream.
+    const bool diag_enabled = (getenv("ORKID_PA_DIAG") != nullptr);
+    {
+      auto& diagctrs = audioDiagCounters();
+      diagctrs._frames_per_buffer.store(uint32_t(inumfr), std::memory_order_relaxed);
+      diagctrs._sample_rate.store(float(desired_sample_rate), std::memory_order_relaxed);
+    }
+
     _au_thread->start([=](anyp data) { //
         logchan_coreaudio->log("CoreAudioThread starting...");
+      uint64_t diag_frames_window      = 0;
+      uint64_t diag_max_ns_window      = 0;
+      uint64_t diag_cpu_at_max_ns      = 0;
+      uint64_t diag_underflows_reported = 0;
       while (_aucontext->_keep_going) {
         //printf("CoreAudioThread running\n");
 
@@ -536,6 +591,12 @@ void CoreAudioDevice::startup() {
         /////////////////////////
 
         if (_output_impl and _the_synth) {
+
+          if (diag_enabled and (diag_frames_window == 0)) {
+            printf("[PA_DIAG] framesPerBuffer<%lu> budget<%gus> SR<%g> backend<coreaudio>\n",
+                   (unsigned long)inumfr, available_time_us, desired_sample_rate);
+          }
+          uint64_t diag_cpu0 = diag_enabled ? _threadCpuNanos() : 0;
 
           uint64_t start_time = mach_absolute_time();
 
@@ -628,6 +689,36 @@ void CoreAudioDevice::startup() {
             logchan_coreaudio->perfItem("SYN.CPU(%)", _the_synth->_cpuload*100.0);
           }
           counter++;
+
+          if (diag_enabled) {
+            uint64_t diag_cpu_ns = _threadCpuNanos() - diag_cpu0;
+            uint64_t diag_ns     = uint64_t(elapsed_nanos);
+            if (diag_ns > diag_max_ns_window) {
+              diag_max_ns_window = diag_ns;
+              diag_cpu_at_max_ns = diag_cpu_ns;
+            }
+            diag_frames_window += inumfr;
+            if (diag_frames_window >= uint64_t(desired_sample_rate * 5.0)) {
+              auto& diagctrs = audioDiagCounters();
+              uint64_t uf    = diagctrs._underflows.load(std::memory_order_relaxed);
+              uint64_t pre   = _aucontext->_preroll_starves.load(std::memory_order_relaxed);
+              printf("[PA_DIAG] window_max_compute<%gus> cpu_at_max<%gus> faults_at_max<%lu> faults_window<%lu> "
+                     "budget<%gus> underflows_total<%lu> preroll_starves<%lu> backend<coreaudio>%s\n",
+                     double(diag_max_ns_window) * 1e-3,
+                     double(diag_cpu_at_max_ns) * 1e-3,
+                     0ul,
+                     0ul,
+                     available_time_us,
+                     (unsigned long)uf,
+                     (unsigned long)pre,
+                     (uf != diag_underflows_reported) ? " <<< NEW UNDERFLOWS" : "");
+              fflush(stdout);
+              diag_underflows_reported = uf;
+              diag_frames_window       = 0;
+              diag_max_ns_window       = 0;
+              diag_cpu_at_max_ns       = 0;
+            }
+          }
         }
 
         /////////////////////////

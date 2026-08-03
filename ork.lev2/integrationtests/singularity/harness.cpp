@@ -56,7 +56,9 @@ std::string midiportname    = "";
 ///////////////////////////////////////////////////////////////////////////////
 singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
 
-  init_data->_enable_audio = true;
+  init_data->_enable_audio        = true;
+  init_data->_enable_audio_synth  = true;
+  init_data->_enable_audio_output = true; // synth requires an output device
 
   lev2::initModule(init_data);
 

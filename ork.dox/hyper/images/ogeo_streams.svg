@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 560" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="oarr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#666"/>
+    </marker>
+    <filter id="shadow">
+      <feDropShadow dx="2" dy="2" stdDeviation="2" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  <rect x="0" y="0" width="1000" height="560" fill="#1a1a2e"/>
+  <text x="500" y="30" font-family="Arial" font-size="18" font-weight="bold" fill="white" text-anchor="middle">.ogeo HEADER &#8596; DATA pairing — announcement order IS the byte order</text>
+  <text x="500" y="48" font-size="11.5" fill="#aaa" text-anchor="middle">HEADER carries every count/name/type; DATA is nothing but the raw arrays, in exactly the order HEADER announces them</text>
+
+  <!-- HEADER column -->
+  <text x="70" y="86" font-size="12.5" font-weight="bold" fill="#ddd">"HEADER" stream (scalars &amp; descriptors)</text>
+  <g>
+    <rect x="60" y="96" width="380" height="46" fill="#1a3a3a" stroke="#34d399" stroke-width="1.5"/>
+    <text x="72" y="114" font-family="monospace" font-size="11" fill="#a7f3d0">u32 version = 1</text>
+    <text x="72" y="130" font-family="monospace" font-size="11" fill="#a7f3d0">u32 num_points   u32 num_polys   (advisory)</text>
+
+    <rect x="60" y="150" width="380" height="66" fill="#1a3a3a" stroke="#34d399" stroke-width="1.5"/>
+    <text x="72" y="168" font-family="monospace" font-size="11" font-weight="bold" fill="#34d399">POINT set &#8212; u32 channel_count = 2</text>
+    <rect x="72" y="176" width="356" height="16" fill="#142e26" stroke="#34d399" stroke-width="0.8"/>
+    <text x="80" y="188" font-family="monospace" font-size="10" fill="#a7f3d0">u64 name "P"   u8 type VEC3   u32 count 3</text>
+    <rect x="72" y="194" width="356" height="16" fill="#142e26" stroke="#34d399" stroke-width="0.8"/>
+    <text x="80" y="206" font-family="monospace" font-size="10" fill="#a7f3d0">u64 name "uv"   u8 type VEC2   u32 count 3</text>
+
+    <rect x="60" y="224" width="380" height="26" fill="#1a3a3a" stroke="#34d399" stroke-width="1.5"/>
+    <text x="72" y="241" font-family="monospace" font-size="11" fill="#a7f3d0">VERTEX = 0    PRIM = 0    DETAIL = 0</text>
+
+    <rect x="60" y="258" width="380" height="76" fill="#1a3a3a" stroke="#34d399" stroke-width="1.5"/>
+    <text x="72" y="276" font-family="monospace" font-size="11" font-weight="bold" fill="#34d399">topology</text>
+    <text x="72" y="292" font-family="monospace" font-size="10.5" fill="#a7f3d0">u32 poly_count = 1</text>
+    <text x="72" y="307" font-family="monospace" font-size="10.5" fill="#a7f3d0">u32 corner_count[i] &#215; poly_count   (= 3)</text>
+    <rect x="72" y="314" width="356" height="16" fill="#142e26" stroke="#34d399" stroke-width="0.8"/>
+    <text x="80" y="326" font-family="monospace" font-size="10" fill="#a7f3d0">u32 index_count = 3</text>
+  </g>
+
+  <!-- DATA column -->
+  <text x="580" y="86" font-size="12.5" font-weight="bold" fill="#ddd">"DATA" stream (raw little-endian runs)</text>
+  <g>
+    <rect x="570" y="150" width="380" height="34" fill="#7c2d12" stroke="#fb923c" stroke-width="1.5"/>
+    <text x="582" y="164" font-family="monospace" font-size="11" font-weight="bold" fill="white">run 1:  P &#8212; 3 &#215; 12 B = 36 bytes</text>
+    <text x="582" y="178" font-family="monospace" font-size="10" fill="#fed7aa">(0,0,0) (1,0,0) (0,0,1) as packed f32 triples</text>
+
+    <rect x="570" y="192" width="380" height="34" fill="#7c2d12" stroke="#fb923c" stroke-width="1.5"/>
+    <text x="582" y="206" font-family="monospace" font-size="11" font-weight="bold" fill="white">run 2:  uv &#8212; 3 &#215; 8 B = 24 bytes</text>
+    <text x="582" y="220" font-family="monospace" font-size="10" fill="#fed7aa">(0,0) (1,0) (0,1) as packed f32 pairs</text>
+
+    <rect x="570" y="300" width="380" height="34" fill="#7c2d12" stroke="#fb923c" stroke-width="1.5"/>
+    <text x="582" y="314" font-family="monospace" font-size="11" font-weight="bold" fill="white">run 3:  indices &#8212; 3 &#215; 4 B = 12 bytes</text>
+    <text x="582" y="328" font-family="monospace" font-size="10" fill="#fed7aa">i32 corner&#8594;point indices, polygon by polygon: 0, 1, 2</text>
+  </g>
+
+  <!-- pairing arrows -->
+  <g stroke="#666" stroke-width="1.2" fill="none">
+    <path d="M 428 184 C 500 184, 500 167, 568 167" marker-end="url(#oarr)"/>
+    <path d="M 428 202 C 500 202, 500 209, 568 209" marker-end="url(#oarr)"/>
+    <path d="M 428 322 C 500 322, 500 317, 568 317" marker-end="url(#oarr)"/>
+  </g>
+  <text x="498" y="152" font-size="10.5" fill="#aaa" text-anchor="middle">each descriptor stakes out</text>
+  <text x="498" y="165" font-size="10.5" fill="#aaa" text-anchor="middle">count &#183; elementsize bytes</text>
+
+  <!-- order law -->
+  <rect x="60" y="366" width="890" height="76" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="505" y="388" font-size="12" font-weight="bold" fill="white" text-anchor="middle">DATA ORDER LAW</text>
+  <text x="505" y="406" font-size="11.5" fill="#93c5fd" text-anchor="middle">for each owner set in POINT &#8594; VERTEX &#8594; PRIM &#8594; DETAIL order, for each channel in ascending bytewise name order:</text>
+  <text x="505" y="421" font-size="11.5" fill="#93c5fd" text-anchor="middle">the channel's packed element array (count = 0 &#8658; zero bytes) &#8212; THEN the topology index array (absent when index_count = 0)</text>
+  <text x="505" y="436" font-size="10.5" fill="#aaa" text-anchor="middle">DATA chunk length must equal &#931;(count &#183; elementsize) + 4 &#183; index_count</text>
+
+  <!-- artifact shapes -->
+  <text x="70" y="474" font-size="12.5" font-weight="bold" fill="#ddd">the two shipped artifact shapes</text>
+  <g font-size="11" fill="#ddd">
+    <text x="70" y="493">mesh sidecar (MeshGenData):  POINT P / N / binormal / uv / Cd  +  triangle topology</text>
+    <text x="70" y="509">point cloud (ScatterSet, road spine):  POINT channels only  +  topology block written as  poly_count = 0, index_count = 0</text>
+    <text x="70" y="525">ScatterSet channel order on disk (bytewise names):  P, proxy_dims, proxy_kind, type_id, variant_seed, xform</text>
+  </g>
+  <text x="70" y="548" font-size="10.5" fill="#aaa">writer/reader: Geometry::writeChunkfile / readChunkfile (ork.lev2/src/gfx/meshutil/geometry.cpp) &#8212; field tables in OGEO.md</text>
+</svg>

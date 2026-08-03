@@ -102,6 +102,40 @@ void pyinit_gfx_terrain(py::module& module_lev2) {
   py::class_<trn::MaskBlendModuleData, dflow::DgModuleData, trn::maskblendmoduledata_ptr_t>(trn_module, "MaskBlendModule")
       .def_static("createShared", []() -> trn::maskblendmoduledata_ptr_t { return trn::MaskBlendModuleData::createShared(); });
 
+  // ScatterPlaceModule — IN-GRAPH scatter placement + building pads. Placement surface
+  // mirrors ScatterSinkData (camelCase methods / snake_case props); export_name is
+  // MANDATORY (consumers read the .ogeo by name); apron_m is the pad feather width;
+  // type_footprints (name->"hx:hz") drives the pad size; YawField (optional) supplies
+  // base-yaw-from-field. type_names/type_colliders/type_assets/type_materials round-trip.
+  py::class_<trn::ScatterPlaceModuleData, dflow::DgModuleData, trn::scatterplacemoduledata_ptr_t>(trn_module, "ScatterPlaceModule")
+      .def_static("createShared", []() -> trn::scatterplacemoduledata_ptr_t { return trn::ScatterPlaceModuleData::createShared(); })
+      .def_readwrite("density", &trn::ScatterPlaceModuleData::_density)
+      .def_readwrite("count", &trn::ScatterPlaceModuleData::_count)
+      .def_readwrite("seed", &trn::ScatterPlaceModuleData::_seed)
+      .def_readwrite("align", &trn::ScatterPlaceModuleData::_align)
+      .def_readwrite("yaw_lo", &trn::ScatterPlaceModuleData::_yaw_lo)
+      .def_readwrite("yaw_hi", &trn::ScatterPlaceModuleData::_yaw_hi)
+      .def_readwrite("scale_lo", &trn::ScatterPlaceModuleData::_scale_lo)
+      .def_readwrite("scale_hi", &trn::ScatterPlaceModuleData::_scale_hi)
+      .def_readwrite("cutoff", &trn::ScatterPlaceModuleData::_cutoff)
+      .def_readwrite("jitter", &trn::ScatterPlaceModuleData::_jitter)
+      .def_readwrite("max_points", &trn::ScatterPlaceModuleData::_max_points)
+      .def_readwrite("lift", &trn::ScatterPlaceModuleData::_lift)
+      .def_readwrite("apron_m", &trn::ScatterPlaceModuleData::_apron_m)
+      .def_readwrite("lattice_m", &trn::ScatterPlaceModuleData::_lattice_m)
+      .def_readwrite("lane_every", &trn::ScatterPlaceModuleData::_lane_every)
+      .def_readwrite("lane_m", &trn::ScatterPlaceModuleData::_lane_m)
+      .def_readwrite("yaw_mode", &trn::ScatterPlaceModuleData::_yaw_mode)
+      .def_readwrite("cluster_pads", &trn::ScatterPlaceModuleData::_cluster_pads)
+      .def_readwrite("cluster_step_m", &trn::ScatterPlaceModuleData::_cluster_step_m)
+      .def_readwrite("max_seam_m", &trn::ScatterPlaceModuleData::_max_seam_m)
+      .def_readwrite("export_name", &trn::ScatterPlaceModuleData::_export_name)
+      .def_readwrite("type_names", &trn::ScatterPlaceModuleData::_type_names)
+      .def_readwrite("type_footprints", &trn::ScatterPlaceModuleData::_type_footprints)
+      .def_readwrite("type_colliders", &trn::ScatterPlaceModuleData::_type_colliders)
+      .def_readwrite("type_assets", &trn::ScatterPlaceModuleData::_type_assets)
+      .def_readwrite("type_materials", &trn::ScatterPlaceModuleData::_type_materials);
+
   py::class_<trn::ThermalErodeModuleData, dflow::DgModuleData, trn::thermalerodemoduledata_ptr_t>(trn_module, "ThermalErodeModule")
       .def_static("createShared", []() -> trn::thermalerodemoduledata_ptr_t { return trn::ThermalErodeModuleData::createShared(); })
       .def_readwrite("iterations", &trn::ThermalErodeModuleData::_iterations); // baked step count
@@ -451,6 +485,15 @@ void pyinit_gfx_terrain(py::module& module_lev2) {
   module_lev2.def("terrain_subgraph_test", [](ctx_t ctx, int dim) -> int {
     return terrain::terrainSubgraphTest(ctx.get(), dim);
   });
+  // mesh-mode MSAA step-down policy, called with a forward-target sample count. THE decision the
+  // terrain drawable takes at path selection (same function, same loud line) — the gate calls it
+  // per sample count instead of materializing a scene per count.
+  trn_module.def("mesh_msaa_stepdown", [](int forward_samples) -> bool {
+    return trn::terrainMeshMsaaStepDown(forward_samples);
+  });
+  // the EFFECTIVE meshlet dimension the drawable sizes its dispatch grid from (shipped default or
+  // ORKID_TERRAIN_MESHLET). Gates ask the engine instead of re-deriving the default themselves.
+  trn_module.def("meshlet_dim", []() -> int { return trn::terrainMeshletDim(); });
   // hypermesh GPU-mesh dataflow foundation gate (bake a PrimitiveModule, readback-assert).
   module_lev2.def("hypermesh_foundation_selftest", [](ctx_t ctx) -> int {
     return hypermesh::hypermeshFoundationSelfTest(ctx.get());

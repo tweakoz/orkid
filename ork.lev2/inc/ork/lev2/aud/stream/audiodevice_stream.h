@@ -13,6 +13,9 @@
 #include <mutex>
 #include <atomic>
 #include <vector>
+#include <string>
+
+struct sf_private_tag; // libsndfile opaque handle (SNDFILE) — avoid leaking <sndfile.h>
 
 namespace ork::lev2 {
 
@@ -98,6 +101,20 @@ private:
 
   // Temporary buffer for compute
   std::vector<float> _temp_input_buffer;
+
+  // Serializes all synth access (_generateSamples vs shutdown teardown). The
+  // SYNC-mode pump runs advanceTime on a worker thread, so shutdown must not
+  // tear the synth down out from under an in-flight compute().
+  std::mutex _synth_mutex;
+
+  //===========================================
+  // WAV TEE (SYNC_NONREALTIME only)
+  //===========================================
+  std::string _wav_out_path;
+  sf_private_tag* _wav_file = nullptr;  // opened lazily on first tee'd generate
+  std::vector<float> _wav_interleave;   // L/R interleave scratch (serialized by _synth_mutex)
+  void _teeToWav(int num_samples);
+  void _closeWav();
 
   //===========================================
   // INTERNAL

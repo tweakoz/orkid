@@ -1073,6 +1073,14 @@ class Ptex3d:
     # on the GenData; the materializer loads + binds. For baked terrain channels the
     # deterministic path is "<assetcache>/terrain/<hf_asset>/<channel>.exr". NOT a DSL param.
     sampler_textures = kwargs.pop("sampler_textures", None)
+    # O3 stage 3 — honor a stored/capture material's CLASS-declared mode (mirrors make_drawable), so a
+    # scene declares `self.asset.Ptex3d("x", dsl_class=SomeStored)` without repeating mode=/capture=.
+    # Explicit kwargs still win.
+    _ptex_mode = getattr(dsl_class, "PTEX_MODE", None)
+    if _ptex_mode is not None and "mode" not in kwargs:
+      kwargs["mode"] = _ptex_mode
+    if bool(getattr(dsl_class, "PTEX_CAPTURE", False)) and "capture" not in kwargs:
+      kwargs["capture"] = True
     # normalize short lobe aliases (transmission -> transmission_factor, ...) before
     # the split; the dict (nested) form is left for _flatten_nested.
     for short, canon in LOBE_ALIASES.items():
@@ -1443,14 +1451,26 @@ class Hypermesh:
       return None
     return self.gendata.materialize(ctx)     # -> LiveHypermesh (pure C++)
 
-  def drawable_data(self, *, material=None, materials=None, animated=None, lods=None, **viz):
+  def drawable_data(self, *, material=None, materials=None, animated=None, lods=None,
+                    section_bake=False, bake_res=256, section_targets=None, section_mips=True, **viz):
     """Round-trippable HypermeshDrawableData for an ECS HypermeshComponent.
     `material` is a Ptex3d/PbrMaterial wrapper (referenced BY asset name) or a bare
     name string. `materials` (E.3) = {gid: wrapper-or-name} — faces whose __tags gid
     (set via m.assign_gid) matches draw with that material in their own indirect-draw
     bucket; unbound gids render with the default `material`. viz kwargs: face_viz /
     tag_viz / wireframe / instance_matrices / cull (E.4: per-view GPU frustum cull
-    for instanced graphs; bound auto-computed) / cull_bound (vec4 override)."""
+    for instanced graphs; bound auto-computed) / cull_bound (vec4 override).
+
+    O3 STORED-MODE BAKE (opt-in, additive — the E.3 bucket path is untouched):
+    `section_bake=True` flips `materials={gid: mat}` into its SECOND role — the per-gid
+    BAKE MAP: each SectionUnwrap layer is baked with THAT gid's material's capture
+    technique, and `material=` is the stored SAMPLER (surface_stored sampling one
+    sampler2DArray per capture target at the section's layer) drawn ONCE. `bake_res` =
+    per-layer bake resolution. `section_targets` = the capture-target/array-sampler
+    names in MRT order (defaults to the sampler wrapper's `.capture_targets`). `section_mips`
+    (default True) builds trilinear mip chains for the baked arrays so minified section
+    surfaces stop aliasing (mips regenerate from mip-0; cache format unchanged). The mesh's
+    LAST op must be `section_unwrap` on a gid-partitioned mesh."""
     def _name_of(m):
       return m if isinstance(m, str) else \
              getattr(getattr(m, "gendata", None), "asset_name", "") if m is not None else ""
@@ -1458,6 +1478,20 @@ class Hypermesh:
     kwargs = {}
     if materials:
       kwargs["gid_materials"] = {int(g): _name_of(m) for g, m in materials.items()}
+    if section_bake:
+      # STORED MODE — reuse materials={} as the bake map (owner-adjudicated dual role); material= is the
+      # stored sampler. section_targets defaults to the sampler wrapper's declared capture_targets (the
+      # array-sampler names in MRT order) so no scene-API surface is added beyond the mode switch.
+      tgts = section_targets
+      if tgts is None:
+        tgts = list(getattr(material, "capture_targets", []) or [])
+      if not tgts:
+        raise ValueError("drawable_data(section_bake=True): no section_targets and material has no "
+                         ".capture_targets — the stored sampler must declare self.capture(...) targets")
+      kwargs["section_bake"]     = True
+      kwargs["section_bake_res"] = int(bake_res)
+      kwargs["section_mips"]     = bool(section_mips)  # A8: trilinear mip chains for the baked arrays (default ON)
+      kwargs["section_targets"]  = [str(t) for t in tgts]
     # Phase 3c — DISTANCE LOD: lods={dist: hypermesh} (or {dist: (hypermesh, material)} to draw that tier
     # with its OWN material — the far-LOD case). tier 0 (this asset, the base) draws near; each dist>0
     # entry is a coarser mesh drawn beyond that many meters. Parallel arrays, ascending distance.

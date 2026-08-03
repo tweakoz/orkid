@@ -143,7 +143,10 @@ struct DockSpace : public LayoutGroup {
   // every path.
   void beginPanelDrag(dockpanel_ptr_t panel);
   void updatePanelDrag(int rx, int ry);
-  void endPanelDrag(int rx, int ry);
+  // canceled: the drag died mid-flight (a CANCELED END_DRAG from the Context, a
+  //  re-entrant begin) -> FULL teardown with NO commit (hint pop, foreign-hint
+  //  clear, state reset, cursor restore). Default false = a genuine release.
+  void endPanelDrag(int rx, int ry, bool canceled = false);
   bool dragActive() const { return _drag_active; }
   // Panel currently being dragged (valid while dragActive) — the DockCoordinator
   // consults it for the W5 transferable/pinning classification.
@@ -217,7 +220,16 @@ private:
   // declared split margin so runtime and declared dividers look identical.
   int _split_margin = 2;
 
-  // drag session state
+  // Drag SESSION state — downstream CONSUMER bookkeeping, not a lifecycle
+  // authority. The drag lifecycle (when a drag begins/ends/cancels, and the
+  // guarantee that every capture clear emits END_DRAG) is owned by the
+  // ui::Context drag-capture HFSM (context.h, F2); this widget only REACTS to
+  // the BEGIN_DRAG / END_DRAG(canceled) events that machine emits, tracking
+  // which panel/hint/commit-route the current session is about. Deliberately
+  // plain flags, NOT a second fsm (owner adjudication 2026-07-23: converting
+  // event-consumer bookkeeping would formalize nothing the machine doesn't
+  // already guarantee) — keep it that way unless this code grows lifecycle
+  // decisions of its own, which belong in the Context machine instead.
   bool _drag_active = false;
   dockpanel_ptr_t _drag_panel;
   dockdraghint_ptr_t _drag_hint;

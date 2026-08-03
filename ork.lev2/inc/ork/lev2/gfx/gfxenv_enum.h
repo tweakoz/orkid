@@ -32,6 +32,14 @@ MsaaSamples intToMsaaEnum( int ival );
 MsaaSamples msaaLevelToSamples( int level );
 MsaaSamples msaaSamplesFromInt( int count );
 
+struct Context;
+// The hw sample count the FORWARD pass's primary target is built at: the app --msaa LEVEL
+// resolved to a count and clamped to the device ceiling. SINGLE SOURCE OF TRUTH — ForwardPbr
+// NodeImpl::_buildPrimaryRtgs sizes its RtgSet from this, and callers that must know whether the
+// forward target is multisampled BEFORE that RTG exists (drawable path selection runs in
+// onGpuUpdate, outside any render pass) ask the same question here.
+int msaaForwardSampleCount( Context* ctx );
+
 ///////////////////////////////////////////////////////////////////////////////
 
 enum class TargetType {

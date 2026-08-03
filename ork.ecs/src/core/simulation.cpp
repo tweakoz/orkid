@@ -160,6 +160,16 @@ void Simulation::updateWithGpu(lev2::Context* ctx){
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
+void Simulation::drainPendingGpuPhases(lev2::Context* ctx){
+  // Same GPU-thread marking gpuUpdate() uses around its drain: while this runs the
+  // calling (render) thread IS the GPU thread, so any _runGpuPhaseOnRenderThread a
+  // drained phase re-entrantly issues runs inline with ctx instead of queuing a
+  // future that only a drain could satisfy — which nothing would, since we ARE the
+  // drain. The scope saves+restores the prior markers on every exit path.
+  GpuThreadScope scope(_onGpuThread, _currentRenderCtx, ctx);
+  _drainGpuPhases(ctx);
+}
+///////////////////////////////////////////////////////////////////////////////
 void Simulation::_runGpuPhaseOnRenderThread(gpu_phase_fn_t phase_fn){
   // Re-entrant from the render thread: run inline with the live context.
   if (_onGpuThread.load(std::memory_order_acquire)) {
@@ -549,10 +559,11 @@ const lev2::LayerData* Simulation::GetLayerData(const std::string& name) const {
 ///////////////////////////////////////////////////////////////////////////
 
 float Simulation::desiredFrameRate() const {
-  float frame_rate           = 0.0f;
-  bool externally_fixed_rate = (frame_rate != 0.0f);
-  // todo:  hook into new NodeCompositorFile node
-  return frame_rate;
+  // 0 = wall-clock derived dt. Nonzero pins every tick to 1/rate of game time,
+  // which is what makes a sim run reproducible (identical dt sequence -> identical
+  // stochastic streams downstream); set via AppInitData (python: createEzApp
+  // fixed_sim_rate=<hz>).
+  return ::ork::appinitdata()->_fixed_sim_rate;
 }
 
 void Simulation::_enqueueDeferredInvokation(deferred_script_invokation_ptr_t i){

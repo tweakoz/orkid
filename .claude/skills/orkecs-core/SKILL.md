@@ -27,7 +27,7 @@ When answering questions about the ECS system in orkid, consult the files below.
 | Lua Scripts | `inc/ork/ecs/lua/LuaComponent.h` |
 | Types/Tokens | `inc/ork/ecs/types.h` |
 | DataTable | `inc/ork/ecs/datatable.h` |
-| EcsRuntime Helper | `obt.project/scripts/ork/ecs/__init__.py` |
+| EcsRuntime Helper | `obt.project/scripts/ork/hypergraph/ecs/runtime.py` (import: `from ork.hypergraph.ecs import EcsRuntime`) |
 
 **Applications:**
 | Program | Location | Purpose |

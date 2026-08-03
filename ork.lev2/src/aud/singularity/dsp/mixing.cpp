@@ -29,7 +29,7 @@ Sum2Data::Sum2Data(std::string name)
   _blocktype = "SUM2";
 }
 dspblk_ptr_t Sum2Data::createInstance() const { // override
-  return std::make_shared<SUM2>(this);
+  return createDspInstance<SUM2>(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
 SUM2::SUM2(const DspBlockData* dbd)
@@ -66,7 +66,7 @@ MonoInStereoOutData::MonoInStereoOutData(std::string name)
   pan_param->useDefaultEvaluator();
 }
 dspblk_ptr_t MonoInStereoOutData::createInstance() const { // override
-  return std::make_shared<MonoInStereoOut>(this);
+  return createDspInstance<MonoInStereoOut>(this);
 }
 
 MonoInStereoOut::MonoInStereoOut(const DspBlockData* dbd)
@@ -108,7 +108,7 @@ StereoEnhancerData::StereoEnhancerData(std::string name)
   width_param->useDefaultEvaluator();
 }
 dspblk_ptr_t StereoEnhancerData::createInstance() const { // override
-  return std::make_shared<StereoEnhancer>(this);
+  return createDspInstance<StereoEnhancer>(this);
 }
 
 StereoEnhancer::StereoEnhancer(const DspBlockData* dbd)

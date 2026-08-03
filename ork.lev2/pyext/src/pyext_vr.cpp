@@ -87,11 +87,6 @@ void pyinit_vr(py::module& module_lev2) {
       }, [](orkidvr::device_ptr_t dev, float b) { //
         dev->_predictionBias = b;
       })
-      .def_property("pose_conjugate", [](orkidvr::device_ptr_t dev) -> bool { //
-        return dev->_poseConjugate;
-      }, [](orkidvr::device_ptr_t dev, bool c) { //
-        dev->_poseConjugate = c;
-      })
       .def_property("FOVR", [](orkidvr::device_ptr_t dev) -> float { //
         return dev->_fov;
       }, [](orkidvr::device_ptr_t dev, float fov_rad) { //
@@ -142,6 +137,21 @@ void pyinit_vr(py::module& module_lev2) {
         return dev->_height;
       }, [](orkidvr::device_ptr_t dev, int h) { //
         dev->_height = h;
+      })
+      // Per-eye display-panel roll (a rotated-panel HMD). This is the ONLY per-eye
+      //  projection ASYMMETRY a headless rig can hand the shader: an IPD offset alone
+      //  leaves both eyes with identical orientation and projection, and a sky at
+      //  infinity is then correctly IDENTICAL in both — so a gate that wants to see a
+      //  per-view sky diverge has nothing to measure without these.
+      .def_property("stereo_tile_rotation_degrees_l", [](orkidvr::device_ptr_t dev) -> float { //
+        return dev->_stereoTileRotationDegreesL;
+      }, [](orkidvr::device_ptr_t dev, float deg) { //
+        dev->_stereoTileRotationDegreesL = deg;
+      })
+      .def_property("stereo_tile_rotation_degrees_r", [](orkidvr::device_ptr_t dev) -> float { //
+        return dev->_stereoTileRotationDegreesR;
+      }, [](orkidvr::device_ptr_t dev, float deg) { //
+        dev->_stereoTileRotationDegreesR = deg;
       });
   /////////////////////////////////////////////////////////////////////////////////
   // StandardVrPresentation : host-configured per-eye HMD presentation profile.

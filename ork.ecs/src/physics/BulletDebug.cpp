@@ -32,6 +32,11 @@ PhysicsDebugger::PhysicsDebugger() {
   DefaultColors mycolors;
   mycolors.m_activeObject = btVector3(.5, 1, .5);
   setDefaultColors(mycolors);
+  if (const char* r = getenv("ORKID_PHYSDBG_RADIUS_M")) {
+    float rv = atof(r);
+    if (rv > 0.0f)
+      _refRadius = rv;
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -69,6 +74,14 @@ void PhysicsDebugger::beginSimFrame(BulletSystem* system) {
       assert(_currentwritelq != nullptr);
       _currentwritelq->clear();
     }
+    // radius-filter reference = the scene camera eye (the walker publishes it every
+    // tick). Falls back to unfiltered when the scene has no camera yet.
+    _hasRefPoint = false;
+    _linesDropped = 0;
+    if (system->_sgsystem and system->_sgsystem->_camera) {
+      _refPoint    = system->_sgsystem->_camera->GetEye();
+      _hasRefPoint = true;
+    }
   }
 }
 
@@ -78,6 +91,13 @@ void PhysicsDebugger::endSimFrame(BulletSystem* system) {
 
   if (_enabled and _currentwritelq) {
     system->BulletWorld()->debugDrawWorld();
+    if (_linesDropped > 0) {
+      // the cap clipped this frame — say so (throttled), naming the remedy
+      static int s_capwarns = 0;
+      if ((s_capwarns++ % 300) == 0)
+        printf("[bulletdebug] WARN line cap hit: %zu lines dropped this frame (radius %.0fm; shrink ORKID_PHYSDBG_RADIUS_M to see less, further)\n",
+               _linesDropped, _refRadius);
+    }
     auto prevread = _curreadlq.exchange(_currentwritelq);
     if (prevread) {              // replacing old readbuffer
       _lineqpool.push(prevread); // so return old readbuffer to pool
@@ -197,11 +217,23 @@ void PhysicsDebugger::render(const RenderContextInstData& _RCID, lineqptr_t line
   if (inumlines == 0)
     return;
 
-  context->debugPushGroup("PhysicsDebugger");
-
   auto RCFD = _RCID.rcfd();
   const auto& CPD = RCFD->topCPD();
   auto pcamdata = CPD.cameraMatrices();
+  if (nullptr == pcamdata) {
+    // a pass with no mono camera (e.g. a true single-pass-stereo CPD carries only
+    // stereo matrices) — refuse loudly rather than deref null. The dual-mono VR
+    // path (FWDPBRVRDM) publishes per-eye MONO matrices, so it never lands here.
+    static int s_nocam_warns = 0;
+    if (s_nocam_warns < 4) {
+      s_nocam_warns++;
+      printf("[bulletdebug] WARN pass has no mono camera matrices (single-pass stereo?) — debug lines skipped\n");
+    }
+    return;
+  }
+
+  context->debugPushGroup("PhysicsDebugger");
+
   auto V = pcamdata->_vmatrix;
   auto P = pcamdata->_pmatrix;
 
@@ -241,8 +273,20 @@ void PhysicsDebugger::render(const RenderContextInstData& _RCID, lineqptr_t line
 
 void PhysicsDebugger::addLine(const fvec3& from, const fvec3& to, const fvec3& color) {
   ork::opq::assertOnQueue2(opq::updateSerialQueue());
-  if (_currentwritelq != nullptr)
-    _currentwritelq->push_back(PhysicsDebuggerLine(from, to, color));
+  if (_currentwritelq == nullptr)
+    return;
+  if (_hasRefPoint) {
+    // keep only lines with an endpoint inside the gauge radius — heightfield colliders
+    // emit their ENTIRE triangle soup; the local neighborhood is the useful part.
+    float r2 = _refRadius * _refRadius;
+    if ((from - _refPoint).magnitudeSquared() > r2 and (to - _refPoint).magnitudeSquared() > r2)
+      return;
+  }
+  if (_currentwritelq->size() >= kMaxLines) {
+    _linesDropped++;
+    return;
+  }
+  _currentwritelq->push_back(PhysicsDebuggerLine(from, to, color));
 }
 
 ///////////////////////////////////////////////////////////////////////////////

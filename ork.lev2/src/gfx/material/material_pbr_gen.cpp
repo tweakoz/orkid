@@ -82,6 +82,62 @@ FxUniformBuffer* PBRMaterial::boneDataBuffer(Context* targ) {
 }
 
 /////////////////////////////////////////////////////////////////////////
+// SKYLIGHT lane A — ublk_sun backing buffer (std140 size 736, padded).
+// Zeroed at creation so has_sun==0 before the first prologue write —
+// sunless frames (and pre-prologue draws) take the no-op shader branch, and
+// the zeroed sun_shadow_fade means no snapshot crossfade is ever sampled
+// before the first flip publishes one.
+/////////////////////////////////////////////////////////////////////////
+
+static FxUniformBuffer* _getSunDataBuffer(Context* context) {
+  FxUniformBuffer* _buffer;
+  uint64_t LOCK = lev2::GfxEnv::createLock();
+  { //
+    context->makeCurrentContext();
+    _buffer     = context->FXI()->createUniformBuffer(PBRMaterial::kSunDataBufferBytes);
+    auto mapped = context->FXI()->mapUniformBuffer(_buffer);
+    memset(mapped->_mappedaddr, 0, mapped->_length);
+    mapped->unmap();
+  }
+  lev2::GfxEnv::releaseLock(LOCK);
+  return _buffer;
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+FxUniformBuffer* PBRMaterial::sunDataBuffer(Context* targ) {
+  static FxUniformBuffer* _buffer = _getSunDataBuffer(targ);
+  return _buffer;
+}
+
+/////////////////////////////////////////////////////////////////////////
+// SINGLE-PASS STEREO — ublk_stereo backing buffer. Zeroed at creation: a mono
+// frame never writes it, and a draw that reads an all-zero view matrix would
+// collapse to nothing rather than render garbage from stale memory.
+/////////////////////////////////////////////////////////////////////////
+
+static FxUniformBuffer* _getStereoDataBuffer(Context* context) {
+  FxUniformBuffer* _buffer;
+  uint64_t LOCK = lev2::GfxEnv::createLock();
+  { //
+    context->makeCurrentContext();
+    _buffer     = context->FXI()->createUniformBuffer(PBRMaterial::kStereoDataBufferBytes);
+    auto mapped = context->FXI()->mapUniformBuffer(_buffer);
+    memset(mapped->_mappedaddr, 0, mapped->_length);
+    mapped->unmap();
+  }
+  lev2::GfxEnv::releaseLock(LOCK);
+  return _buffer;
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+FxUniformBuffer* PBRMaterial::stereoDataBuffer(Context* targ) {
+  static FxUniformBuffer* _buffer = _getStereoDataBuffer(targ);
+  return _buffer;
+}
+
+/////////////////////////////////////////////////////////////////////////
 
 static texture_ptr_t _getbrdfintmap(Context* targ, std::string typname, uint64_t type) {
   texture_ptr_t _map;

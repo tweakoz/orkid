@@ -109,6 +109,14 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    // orkid's sub-interpreter machinery (ork::python::Context2) is GIL-OFF by design.
+    // Under PYTHON_GIL=1 the sub-interpreter's GIL becomes a real lock and CPython's
+    // first-import-of-a-C-extension rule cross-attaches to the MAIN interpreter's GIL
+    // (import_run_extension -> switch_to_main_interpreter), which deadlocks against a
+    // render thread holding _subInterpMutex — see test_gil_ecs_regression.py. The 0
+    // (don't-clobber) form so an explicitly-set PYTHON_GIL from the caller survives.
+    setenv("PYTHON_GIL", "0", 0);
+
     // Build DYLD_LIBRARY_PATH
     std::string dyld_path = std::string(obt_stage) + "/lib:/opt/homebrew/lib";
 

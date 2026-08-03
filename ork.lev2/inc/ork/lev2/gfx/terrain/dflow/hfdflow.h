@@ -445,6 +445,89 @@ struct MaskBlendModuleData : public TerrainModuleData {
 using maskblendmoduledata_ptr_t = std::shared_ptr<MaskBlendModuleData>;
 
 ///////////////////////////////////////////////////////////////////////////////
+// ScatterPlaceModule — IN-GRAPH scatter placement + building PADS (cut-and-fill).
+// A deterministic CPU module that OWNS placement against its PRE-flatten input
+// fields (so placement can never drift from its own pads — the fixpoint trap that
+// rules out post-bake rasterization). It:
+//   - reads K wired per-type weight fields (W0..W{K-1}, contiguous, type_id = index)
+//     + Height (+ optional YawField) back to host mirrors (the basin_fill CPU
+//     readback pattern — requires the per-op-synced HeightField bake driver),
+//   - runs the SHARED scatterPlaceCore (parity-pinned with scatter.py; yaw_field
+//     wires the base-yaw-from-field option),
+//   - rasterizes each placed footprint (per-type half-extents + apron_m feather,
+//     smoothstep falloff) into PadMask (coverage) + PadElev (= the point's sampled
+//     ground elevation — the pad IS the grade) at bake dim,
+//   - exports the ScatterSet .ogeo itself (RouteSpine's artifact-export pattern —
+//     _export_path is set machine-specifically by HeightFieldGenData::materialize,
+//     like CaptureModuleData::_path). Positions/xforms carry the PAD elevation.
+// Downstream: stock MaskBlend does height' = mix(Height, PadElev, PadMask) — ZERO
+// new blend C++ — so captures see the flattened terrain. Outputs: PadMask, PadElev,
+// Out (Height passthrough, so scatter_place composes). NOT cook-cached (its .ogeo
+// side-effect requires the compute to run; a warm bake keeps the prior .ogeo).
+///////////////////////////////////////////////////////////////////////////////
+
+struct ScatterPlaceModuleData : public TerrainModuleData {
+  DeclareConcreteX(ScatterPlaceModuleData, TerrainModuleData);
+  ScatterPlaceModuleData();
+  static std::shared_ptr<ScatterPlaceModuleData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
+
+  // placement surface (mirrors ScatterSinkData — exactly one of density/count set).
+  float _density    = 0.0f;
+  int   _count      = 0;
+  int   _seed       = 0;
+  std::string _align = "up"; // "up" (world +Y — buildings sit flat on the pad) or "normal".
+  float _yaw_lo     = 0.0f;
+  float _yaw_hi     = 6.283185307179586f;
+  float _scale_lo   = 1.0f;
+  float _scale_hi   = 1.0f;
+  float _cutoff     = 0.0f;
+  float _jitter     = 1.0f;
+  int   _max_points = 6000000;
+  float _lift       = 0.0f;
+  // pad feather width (meters) around each footprint (smoothstep falloff to 0).
+  float _apron_m    = 8.0f;
+
+  // scatter_place v2 (all default OFF -> byte-identical to v1) ------------------
+  // AGGREGATION LATTICE: snap candidates to a village-yaw grid of this pitch (m)
+  // before the mask kill; _lane_every>0 widens every Nth grid line by _lane_m.
+  float _lattice_m  = 0.0f;
+  int   _lane_every = 0;
+  float _lane_m     = 0.0f;
+  // yaw source when a YawField is wired: "hash" (byte-identical) | "direct" (field
+  // value AS radians — field-composed contour/facade alignment).
+  std::string _yaw_mode = "hash";
+  // CLUSTER PADS: union intersecting footprints into connected components, one grade
+  // plane per component (area-weighted mean), rewriting member P.y; reject late
+  // candidates whose grade would step >_max_seam_m against an admitted overlapping
+  // component. _cluster_step_m>0 permits one terrace step when a component's natural
+  // spread exceeds it (default 0 = single plane). OFF -> the v1 max-coverage raster.
+  bool  _cluster_pads   = false;
+  float _cluster_step_m = 0.0f;
+  float _max_seam_m     = 1.0f;
+
+  // artifact export — MANDATORY (consumers read the .ogeo by name). _export_name is
+  // reflected (portable); _export_path is the machine-specific absolute output path
+  // stamped by HeightFieldGenData::materialize before the bake (NOT reflected).
+  std::string     _export_name;
+  ork::file::Path _export_path;
+
+  // per-type tables (type_id = index; K = the number of WIRED weight inputs at bake).
+  //   _type_names       : type_id -> name (keys the maps below)
+  //   _type_footprints  : name -> "hx:hz" pad half-extents (meters)
+  //   _type_colliders   : name -> "kind:d0:d1:d2" per-item physics proxy (baked per
+  //                       point): -1 none, 0 sphere, 1 capsule, 2 box, 3 cone,
+  //                       4 ring(r_mid,half_height,thickness) — a walk-INTO annulus
+  //   _type_assets/_materials : optional scene-resolution bindings (round-trip only)
+  std::vector<std::string> _type_names;
+  std::map<std::string, std::string> _type_footprints;
+  std::map<std::string, std::string> _type_colliders;
+  std::map<std::string, std::string> _type_assets;
+  std::map<std::string, std::string> _type_materials;
+};
+using scatterplacemoduledata_ptr_t = std::shared_ptr<ScatterPlaceModuleData>;
+
+///////////////////////////////////////////////////////////////////////////////
 // ThermalErodeModule — 1-in iterative THERMAL erosion (talus / angle-of-repose).
 // Each of `_iterations` steps moves material from a cell to lower neighbors wherever
 // the inter-cell height STEP exceeds the talus threshold (tan(talus_deg)*cell_size),

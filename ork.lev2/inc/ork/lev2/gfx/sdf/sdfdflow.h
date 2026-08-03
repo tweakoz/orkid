@@ -145,6 +145,41 @@ struct SdfToMeshData : public hypermesh::MeshModuleData {
 using sdftomeshdata_ptr_t = std::shared_ptr<SdfToMeshData>;
 
 ///////////////////////////////////////////////////////////////////////////////
+// SdfToMeshClean (M2 clean-remesh) — a dense SDF brick -> a CLEAN, LOW-POLY,
+// QUAD-DOMINANT INDEXED GpuMesh, optionally UV-unwrapped. Where SdfToMesh (marching
+// tets) emits a uniform-density soup (~voxel^2 faces — 1M+ for a dim=192 building),
+// this routes the brick through openvdb::tools::volumeToMesh — a curvature-ADAPTIVE
+// dual-contour mesher — to get shape-aware topology (flat regions -> few big faces,
+// detail concentrated at curvature) at a target ~20k faces, then (optionally) xatlas
+// UV-unwraps for texture baking. It is a MESH PRODUCER (SdfGrid "In" -> Mesh "Out"),
+// so a MeshComputeInst: the heavy openvdb+xatlas work runs ONE-SHOT in the CPU
+// topology phase (onTopologyReady — like LSystem _buildSkeleton / MergeMesh's CPU
+// concat), never per frame. OpenVDB is CPU/bake-time ONLY (the ratified contract).
+//
+// NOTE (gid): gids do NOT survive the remesh (the topology is rebuilt from scratch,
+// exactly as SdfToMesh) — recipes re-gid by position/normal band AFTER (their pattern).
+// Reflected params (enter the cook-cache identity hash automatically):
+//   adaptivity (0..1): volumeToMesh edge-collapse aggressiveness (0 = max detail,
+//                      1 = flattest / fewest faces). isovalue: the level (default 0).
+//   unwrap (bool): xatlas UV-unwrap (writes UV0.xy; output is TRIANGULATED + reindexed
+//                  along seams). unwrap=False keeps quads-as-quads with UV0 = 0.
+//   weld_tol (float): optional pre-unwrap position weld (0 = none; volumeToMesh output
+//                     is already shared-vertex).
+///////////////////////////////////////////////////////////////////////////////
+
+struct SdfToMeshCleanData : public hypermesh::MeshModuleData {
+  DeclareConcreteX(SdfToMeshCleanData, hypermesh::MeshModuleData);
+  SdfToMeshCleanData();
+  static std::shared_ptr<SdfToMeshCleanData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dflow::GraphInst* ginst) const final;
+  float _adaptivity = 0.5f;  // volumeToMesh adaptivity [0..1]: 0 = max detail, 1 = flattest
+  float _isovalue   = 0.0f;  // iso level (the SDF zero-set)
+  bool  _unwrap     = true;  // xatlas UV unwrap (triangulates + reindexes along seams)
+  float _weld_tol   = 0.0f;  // optional pre-unwrap position weld radius (0 = none)
+};
+using sdftomeshcleandata_ptr_t = std::shared_ptr<SdfToMeshCleanData>;
+
+///////////////////////////////////////////////////////////////////////////////
 // gates
 ///////////////////////////////////////////////////////////////////////////////
 

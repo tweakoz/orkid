@@ -52,6 +52,18 @@ def setup():
   obt.env.set("ORKID_WORKSPACE_DIR",orkid_dir)
   obt.env.set("ORKID_IS_MAIN_PROJECT","1")
   obt.env.append("ORKID_ASSET_MANIFEST_DIRS",orkid_dir/"ork.data"/"asset_manifests")
+
+  ##############################################
+  # macOS/MoltenVK: Metal argument buffers ON. Without AB, Metal caps samplers
+  # at 16 per fragment stage and generated forward fragments (terrain
+  # FWD_SSBO_CUSTOM + impostors + IBL + cookies + sun cascades) exceed it ->
+  # MSL compile error -> pipeline create VK_ERROR_INITIALIZATION_FAILED.
+  # MUST be shell env: MoltenVK snapshots config at dylib load, before any
+  # engine code runs (in-process setenv is too late).
+  ##############################################
+
+  if obt.host.IsOsx:
+    obt.env.set("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS","1")
   
 
   ##############################################

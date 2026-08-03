@@ -35,7 +35,7 @@ When answering questions about PBR materials, shading, or IBL in orkid, consult 
 ```
 ork::Object
 └── GfxMaterial (abstract, gfxmaterial.h:113)
-    ├── PBRMaterial (material_pbr.inl:36)
+    ├── PBRMaterial (material_pbr.inl:46)
     └── FreestyleMaterial (material_freestyle.h:20)
 ```
 
@@ -45,7 +45,7 @@ ork::Object
 - `_varmap` — dynamic parameter storage (VarMap)
 - `_variant` — CRC32 variant identifier for technique override
 - `_state_lambdas` — per-frame parameter binding callbacks
-- `_bound_params` — fxparam → value bindings
+- `_bound_params` — fxparam → value bindings; every `bindParam()` bumps `_bound_params_stamp`, and cached FxPipelines lazily re-overlay when their seen-stamp lags (`FxPipeline::_syncMaterialParams`) — a rebind AFTER pipelines exist is live on the next draw
 
 ### PBRMaterial
 Full physically-based rendering material with metallic-roughness workflow.
@@ -80,28 +80,53 @@ All textures are packed into `_texArrayCNMREA` (TextureArray) via `assignImages(
 
 ## IBL / Environment Maps
 
-### RadianceMaps (pbr_common.h:51–64)
+### RadianceMaps (pbr_common.h:55–104)
 ```cpp
 struct RadianceMaps {
   texturearray_ptr_t _filtenvSpecularMapArray;  // Roughness-stratified specular
-  texture_ptr_t _filtenvDiffuseMap;             // Diffuse irradiance
   texture_ptr_t _brdfIntegrationMapGGX;         // GGX BRDF LUT
   texture_ptr_t _brdfIntegrationMapVelvet;      // Velvet BRDF LUT
   texture_ptr_t _brdfIntegrationMapGGXRIM;      // GGX+rim BRDF LUT
   texture_ptr_t _brdfIntegrationMapBlinn;       // Blinn BRDF LUT
   texture_ptr_t _brdfIntegrationMapPhong;       // Phong BRDF LUT
   std::vector<float> _specularRoughnessValues;
-  int _numRoughnessLevels;
+  int _numRoughnessLevels = 0;
+  asset::loadrequest_ptr_t _loadRequest;        // outstanding XIR load, if any
+  bool isPublished() const;   // specular chain present AND _shValid
+  fvec4 _shCoeffs[9] = {};    // THE diffuse ambient: nine L2 SH coefficients,
+                              // projected from specular roughness level 0 at load/publish
+  bool _shValid = false;      // false = nothing projectable published yet (NOT a black sky)
+  float _measuredLuminance = -1.0f; // sphere-mean Rec.709 luminance (L0 * Y00), undecoded
+                                    // units; negative = not measured yet (NOT darkness)
 };
 ```
 
-### CommonStuff (pbr_common.h:68–159)
+A RadianceMaps handed out by the XIR loader is EMPTY until its publish lands — nothing may assume a publish landed just because the object exists (`isPublished()` is what the warm-start drain waits on).
+
+**The prefiltered-diffuse-equirect path is DELETED repo-wide** (see the pbr_common.h:67–81 comments): there is ONE ambient pipeline now — the L2 SH projection. A baked scene's sky is projected at LOAD and reconstructed per fragment exactly as the procedural sky's probe is; byte-identity for baked ambient is retired by owner ruling (a baked render SHIFTS to the accurate cosine-convolved diffuse). The specular chain, skybox, and sun are untouched.
+
+The SH projection has one implementation for all three publish sites (.xir load, prefilter publish, procedural gradient): `RadianceSH` + `projectRadianceSH` / `assignRadianceSH` / `publishRadianceMapsSH` (pbr_common.h:129–138). Only the prefilter publish writes `_measuredLuminance`.
+
+### CommonStuff (pbr_common.h:328–546)
 Per-scene IBL state including:
 - `_radiance_maps`, `_environmentIntensity` (default 1.0)
 - `_environmentMipBias`, `_environmentMipScale`
 - `_diffuseLevel`, `_specularLevel`, `_ambientLevel`, `_skyboxLevel`
 - `_roughnessPower`
 - SSAO parameters: `_ssaoRadius`, `_ssaoBias`, `_ssaoWeight`, `_ssaoPower`, `_ssaoNumSamples`, `_ssaoNumSteps`
+- `_atmosphere` / `_sky_source` (BAKED vs PROCEDURAL) / `_sky_ibl` (SkyIblState — the procedural IBL feed's cycle/crossfade state)
+
+### Dual-Bind Crossfade + SH Ambient (CommonStuff accessors, pbr_common.h:343–391)
+
+The procedural sky feed refilters the IBL in cycles; a publish swaps every filtered map at once, so the shaders blend across a fade window via a DUAL BIND. All reads route through CommonStuff:
+
+- `activeRadianceMaps()` — which RadianceMaps the frame's IBL actually comes from: the procedural set once (and only once) it has published, the baked set otherwise. Every read of a maps FIELD that pairs with the bound env textures must go through here.
+- `envSpecularTexture()` / `envSpecularTexturePrev()` — the incoming and OUTGOING specular arrays during a refilter crossfade. With no fade running, Prev ALIASES the active one — the prev slot is never null or stale, and baked scenes keep binding exactly what they bound before the crossfade existed. (Shader side: `MapSpecularEnv` / `MapSpecularEnvPrev` in `sset_std_pbr`.)
+- `envCrossfadeWeight()` — the blend weight (1.0 = new set only / no fade).
+- `envCaptureScaleInv()` — the decode half of the procedural capture pre-scale (1/_iblCaptureScale while the bound maps are procedural, exactly 1.0 otherwise); gated on the SAME predicate `activeRadianceMaps()` branches on.
+- `envSHCoeffs(fvec4 out[9])` — THE diffuse ambient source: nine L2 coefficients in decoded radiance, from the procedural sky's probe (already crossfaded on the CPU — there is no diffuse dual-bind) or the active map set's own `_shCoeffs`. Returns false when no sky of either kind has published — callers must fail loudly rather than shade against zero.
+- `availableLightLuminance()` — the active maps' measured mean in decoded units; negative = nothing published yet (consumers seed from `skySunElevationSin()` instead of reading darkness).
+- `drainPendingRadianceMapLoad(ctx)` — baked-IBL cold start: the FIRST frame that would be lit by an outstanding baked set drains the load in-frame (state-checked via `_loadRequest` pending count + `isPublished()`, never timed). Called from the forward prologue; a one-pointer-test no-op from the second frame on.
 
 ### BRDF Integration Maps
 - Generated via compute shader in `material_pbr_gen.cpp`
@@ -155,6 +180,8 @@ Techniques encode their rendering configuration:
 
 Example: `_tek_FWD_CT_NM_RI_IN_MO` = Forward, TexColor, NormalMapped, Rigid, Instanced, Mono
 
+Beyond the base grid, `material_pbr.inl` declares special families (each null unless the shader declares it): `FWD_SKYBOX_MO/ST` + `FWD_SKYBOX_PROC` (procedural sky, mono only), `FWD_DEPTHPREPASS_*` (+ `MASKED` alpha-tested variants), the `FWD_SSBO_CUSTOM` family (SSBO-sourced vertices; `_INSTANCED`, `_CAPTURE`, `_IMPOSTOR`, `_MESH`, and depth-prepass twins), `FWD_SUNCOOKIE` (cloud-shadow fill), `FWD_CT_NM_IM_NI_MO` (`IM` = matrices-only instancing), and `_ALPHA`-suffixed blend variants.
+
 ## Shader Parameter Bindings
 
 ### Matrices
@@ -165,7 +192,7 @@ Stereo: `_paramVL/VR`, `_paramVPL/VPR`, `_paramMVPL/MVPR`
 `_parMetallicFactor`, `_parRoughnessFactor`, `_parRoughnessPower`, `_parAlphaCutoff`, `_parModColor`, `_parPickID`
 
 ### Environment
-`_parMapSpecularEnv` (TextureArray), `_parMapDiffuseEnv`, `_parMapBrdfIntegration`
+`_parMapSpecularEnv` (TextureArray), `_parMapSpecularEnvPrev` + `_parEnvBlendWeight` (outgoing IBL set + blend weight during a refilter crossfade — alias the pair above whenever no fade is running), `_parEnvCaptureScaleInv` (procedural-capture pre-scale, already inverted; 1.0 for baked maps), `_parEnvSH` + `_parEnvSHValid` (the sky SH probe's nine L2 coefficients + the gate that says they are real), `_parMapBrdfIntegration`
 `_parEnvironmentMipBias`, `_parEnvironmentMipScale`, `_parSpecularMipBias`
 
 ### Lighting
@@ -185,8 +212,8 @@ c->annotate("xgm.reader", reader);  // material_ptr_t _xgmReader(XgmMaterialRead
 c->annotate("xgm.writer", writer);  // void _xgmWriter(XgmMaterialWriterContext&)
 ```
 
-**Reader** (`material_pbr_io.cpp:9`): parses texture channel names, creates Image objects from embedded data, reads scalar params.
-**Writer** (`material_pbr_io.cpp:114`): serializes texture names/paths, scalar params, lightmap metadata.
+**Reader** (`PBRMaterial::_xgmReader`, material_pbr_io.cpp:43): parses texture channel names, creates Image objects from embedded data, reads scalar params.
+**Writer** (`PBRMaterial::_xgmWriter`, material_pbr_io.cpp:157): serializes texture names/paths, scalar params, lightmap metadata.
 
 ## Material Pipeline Flow
 
@@ -224,13 +251,12 @@ pipeline.technique = tek
 pipeline.bindParam(par, 0.5)
 pipeline.wrappedDrawCall(rcid, lambda: draw())
 
-# FxPipelinePermutation
-permu = lev2.FxPipelinePermutation(
-    rendermodel="forward",
-    stereo=False,
-    instanced=True,
-    skinned=False
-)
+# FxPipelinePermutation — only the rendermodel kwarg is consumed by the ctor;
+# the flag fields are properties
+permu = lev2.FxPipelinePermutation(rendermodel="FORWARD_PBR")
+permu.stereo = False
+permu.instanced = True
+permu.skinned = False
 
 # Material access via model
 model_drawable = lev2.ModelDrawableData("data://model.glb")
@@ -240,9 +266,9 @@ model_drawable = lev2.ModelDrawableData("data://model.glb")
 ## How to Answer
 
 1. For texture channels/params: check `material_pbr.inl` member declarations
-2. For IBL/environment: check `pbr_common.h` for RadianceMaps and CommonStuff
+2. For IBL/environment: check `pbr_common.h` for RadianceMaps, CommonStuff, SkyIblState, and RadianceMapCache
 3. For technique selection: check `material_pbr_pipeline.cpp` and the naming convention
 4. For serialization: check `material_pbr_io.cpp` for XGM reader/writer
 5. For lightmaps: check `material_pbr_lightmaps.cpp`
 6. For Python: check `pyext_gfx_material.cpp`
-7. For shader params: check the param declarations in `material_pbr.inl` lines 124–202
+7. For shader params: check the `_par*`/`_param*` declarations in `material_pbr.inl` (roughly lines 143–315)

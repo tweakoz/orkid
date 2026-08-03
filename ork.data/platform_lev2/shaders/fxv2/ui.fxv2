@@ -8,8 +8,6 @@ fxconfig fxcfg_default { glsl_version = "150"; }
 
 uniform_set push_constants { //
   mat4 mvp;
-  mat4 mvp_l;
-  mat4 mvp_r;
   vec4 ModColor;
 }
 sampler_set samplers (descriptor_set 0) {
@@ -122,14 +120,6 @@ fragment_shader ps_uitext : iface_fmt {
   //out_clr = s; //vec4(texa,texa,texa,1);
   out_clr = vec4(ModColor.xyz, texa);
   //out_clr = vec4(ModColor.xyz, texa);
-}
-///////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////
-fragment_shader ps_uitext_stereo : iface_fmt {
-  vec4 s = texture(ColorMap, frg_uv);
-  float texa = s.r; //ow(s.a*s.r,0.75);
-  //out_clr = vec4(ModColor.xyz, texa);
-  //if(texa < 0.005) discard;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_uitextured : iface_fmt {

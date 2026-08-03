@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 520" font-family="Arial, Helvetica, sans-serif">
+  <defs>
+    <marker id="arrB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#3b82f6"/>
+    </marker>
+    <marker id="arrP" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#a78bfa"/>
+    </marker>
+    <filter id="shadow">
+      <feDropShadow dx="2" dy="2" stdDeviation="2" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  <rect x="0" y="0" width="1000" height="520" fill="#1a1a2e"/>
+  <text x="30" y="34" font-size="18" font-weight="bold" fill="white">Plugs, connections, and the bypass splice</text>
+
+  <!-- legend -->
+  <rect x="700" y="16" width="14" height="14" rx="3" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="722" y="27" font-size="12" fill="#ddd">Data — serialized connections</text>
+  <rect x="700" y="36" width="14" height="14" rx="3" fill="#4c1d95" stroke="#a78bfa"/>
+  <text x="722" y="47" font-size="12" fill="#ddd">inst wiring — runtime</text>
+  <rect x="700" y="56" width="14" height="14" rx="3" fill="#5a4a3a" stroke="#f59e0b"/>
+  <text x="722" y="67" font-size="12" fill="#ddd">serialized artifact</text>
+
+  <!-- modules -->
+  <rect x="40" y="84" width="240" height="120" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="40" y="84" width="240" height="30" rx="8" fill="#2563eb"/>
+  <text x="54" y="106" font-size="13" font-weight="bold" font-family="monospace" fill="white">moduleA : DgModuleData</text>
+  <text x="54" y="128" font-size="11" fill="#93c5fd">producer</text>
+  <rect x="214" y="156" width="58" height="24" rx="6" fill="#2d4a6f" stroke="#60a5fa"/>
+  <text x="243" y="172" font-size="11" font-family="monospace" fill="white" text-anchor="middle">Out</text>
+
+  <rect x="390" y="84" width="240" height="120" rx="8" fill="#1e3a5f" fill-opacity="0.45" stroke="#3b82f6" stroke-dasharray="6,4"/>
+  <rect x="390" y="84" width="240" height="30" rx="8" fill="#2563eb" fill-opacity="0.45"/>
+  <text x="404" y="106" font-size="13" font-weight="bold" font-family="monospace" fill="white">moduleB : DgModuleData</text>
+  <text x="404" y="130" font-size="13" font-weight="bold" font-style="italic" fill="#9ca3af">_bypassed = true</text>
+  <rect x="398" y="156" width="52" height="24" rx="6" fill="#2d4a6f" stroke="#60a5fa"/>
+  <text x="424" y="172" font-size="11" font-family="monospace" fill="white" text-anchor="middle">In</text>
+  <rect x="564" y="156" width="58" height="24" rx="6" fill="#2d4a6f" stroke="#60a5fa"/>
+  <text x="593" y="172" font-size="11" font-family="monospace" fill="white" text-anchor="middle">Out</text>
+
+  <rect x="740" y="84" width="230" height="120" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="740" y="84" width="230" height="30" rx="8" fill="#2563eb"/>
+  <text x="754" y="106" font-size="13" font-weight="bold" font-family="monospace" fill="white">moduleC : DgModuleData</text>
+  <text x="754" y="128" font-size="11" fill="#93c5fd">consumer</text>
+  <rect x="748" y="156" width="52" height="24" rx="6" fill="#2d4a6f" stroke="#60a5fa"/>
+  <text x="774" y="172" font-size="11" font-family="monospace" fill="white" text-anchor="middle">In</text>
+
+  <!-- data connections -->
+  <line x1="274" y1="168" x2="394" y2="168" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrB)"/>
+  <line x1="624" y1="168" x2="744" y2="168" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrB)"/>
+  <text x="334" y="156" font-size="11" fill="#60a5fa" text-anchor="middle">connection</text>
+  <text x="684" y="156" font-size="11" fill="#60a5fa" text-anchor="middle">connection</text>
+
+  <!-- inst-level splice -->
+  <path d="M 774,188 C 660,300 340,300 250,192" fill="none" stroke="#a78bfa" stroke-width="2" stroke-dasharray="7,5" marker-end="url(#arrP)"/>
+  <text x="500" y="288" font-size="11.5" font-family="monospace" fill="#c4b5fd" text-anchor="middle">C.In(inst)._connectedOutput → A.Out(inst) — resolveConnectedOutput() splices out bypassed B</text>
+  <text x="500" y="306" font-size="11.5" fill="#9ca3af" text-anchor="middle">set during GraphInst::updateTopology(); the cook-hash chain and depth sort use the same resolver</text>
+
+  <!-- serialized link list -->
+  <rect x="40" y="340" width="430" height="140" rx="8" fill="#5a4a3a" stroke="#f59e0b" stroke-width="2" filter="url(#shadow)"/>
+  <text x="54" y="364" font-size="13" font-weight="bold" fill="white">serialized link list (ConnectionsProperty)</text>
+  <text x="54" y="386" font-size="11" font-family="monospace" fill="#fed7aa">numlinks = 2</text>
+  <text x="54" y="404" font-size="11" font-family="monospace" fill="#fed7aa">in: moduleB.In ← out: moduleA.Out</text>
+  <text x="54" y="422" font-size="11" font-family="monospace" fill="#fed7aa">in: moduleC.In ← out: moduleB.Out</text>
+  <text x="54" y="448" font-size="11.5" fill="#fbbf24">names that no longer resolve fail loudly on load</text>
+
+  <!-- plug traits -->
+  <rect x="520" y="340" width="450" height="140" rx="8" fill="#252540" stroke="#4a5568" stroke-width="2" filter="url(#shadow)"/>
+  <text x="534" y="364" font-size="13" font-weight="bold" fill="white">typed plug traits</text>
+  <text x="534" y="386" font-size="11" font-family="monospace" fill="#ddd">scalar: Float · Vec2f · Vec3f · Vec4f · Int · Quatf</text>
+  <text x="534" y="404" font-size="11" font-family="monospace" fill="#ddd">transform: FloatXf · Vec3Xf · Vec4Xf · QuatXf</text>
+  <text x="534" y="422" font-size="11" font-family="monospace" fill="#ddd">custom: e.g. ParticleBufferPlugTraits (max_fanout = 1)</text>
+  <text x="534" y="440" font-size="11" font-family="monospace" fill="#ddd">In: one source · Out: fan-out · scalars reflect "value"</text>
+</svg>

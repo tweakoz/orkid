@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 648" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#666"/>
+    </marker>
+    <filter id="shadow">
+      <feDropShadow dx="2" dy="2" stdDeviation="2" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  <rect x="0" y="0" width="1000" height="648" fill="#1a1a2e"/>
+
+  <!-- lane backgrounds -->
+  <rect x="0" y="38" width="1000" height="144" fill="#252540"/>
+  <rect x="0" y="182" width="1000" height="144" fill="#20203a"/>
+  <rect x="0" y="326" width="1000" height="274" fill="#252540"/>
+
+  <text x="500" y="26" font-family="Arial" font-size="18" font-weight="bold" fill="white" text-anchor="middle">hypermesh — end-to-end pipeline</text>
+
+  <!-- lane separators -->
+  <line x1="16" y1="182" x2="984" y2="182" stroke="#4a5568" stroke-dasharray="6 4"/>
+  <line x1="16" y1="326" x2="984" y2="326" stroke="#4a5568" stroke-dasharray="6 4"/>
+
+  <!-- ================= AUTHOR TIME ================= -->
+  <text x="20" y="52" font-family="Arial" font-size="12" font-weight="bold" fill="#aaa">AUTHOR TIME — Python DSL, runs ONCE</text>
+
+  <rect x="20" y="66" width="215" height="76" rx="8" fill="#1e3a5f" stroke="#22d3ee" stroke-width="2" filter="url(#shadow)"/>
+  <text x="127" y="86" font-family="monospace" font-size="13" font-weight="bold" fill="white" text-anchor="middle">Hypermesh subclass</text>
+  <text x="127" y="103" font-family="monospace" font-size="11" fill="#93c5fd" text-anchor="middle">__init__ traces ops eagerly:</text>
+  <text x="127" y="118" font-family="monospace" font-size="11" fill="#93c5fd" text-anchor="middle">lsystem() select() merge() …</text>
+  <text x="127" y="133" font-family="monospace" font-size="10" fill="#6b7280" text-anchor="middle">(e.g. assets/hypermesh/ls_anim.py)</text>
+
+  <line x1="235" y1="104" x2="271" y2="104" stroke="#666" marker-end="url(#arr)"/>
+
+  <rect x="273" y="66" width="205" height="76" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="375" y="88" font-family="monospace" font-size="13" font-weight="bold" fill="white" text-anchor="middle">dflow::GraphData</text>
+  <text x="375" y="106" font-family="monospace" font-size="11" fill="#93c5fd" text-anchor="middle">C++ DgModuleData nodes</text>
+  <text x="375" y="121" font-family="monospace" font-size="11" fill="#93c5fd" text-anchor="middle">+ mesh / interchange plugs</text>
+
+  <line x1="478" y1="104" x2="514" y2="104" stroke="#666" marker-end="url(#arr)"/>
+
+  <rect x="516" y="66" width="230" height="76" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="631" y="88" font-family="monospace" font-size="13" font-weight="bold" fill="white" text-anchor="middle">HypermeshGenData</text>
+  <text x="631" y="106" font-family="monospace" font-size="11" fill="#93c5fd" text-anchor="middle">graph embedded inline (model B)</text>
+  <text x="631" y="121" font-family="monospace" font-size="11" fill="#93c5fd" text-anchor="middle">_dsl_file = provenance only</text>
+
+  <line x1="746" y1="104" x2="782" y2="104" stroke="#666" marker-end="url(#arr)"/>
+
+  <rect x="784" y="66" width="196" height="76" rx="8" fill="#5a4a3a" stroke="#f59e0b" stroke-width="2" filter="url(#shadow)"/>
+  <text x="882" y="88" font-family="monospace" font-size="13" font-weight="bold" fill="white" text-anchor="middle">scene JSON (.ecs)</text>
+  <text x="882" y="106" font-family="monospace" font-size="11" fill="#fed7aa" text-anchor="middle">reflected serialize;</text>
+  <text x="882" y="121" font-family="monospace" font-size="11" fill="#fed7aa" text-anchor="middle">reload needs NO Python</text>
+
+  <!-- elbow: scene json -> materialize -->
+  <polyline points="882,142 882,168 145,168 145,208" fill="none" stroke="#666" marker-end="url(#arr)"/>
+  <text x="500" y="163" font-family="Arial" font-size="11" fill="#aaa" text-anchor="middle">deserialize at load</text>
+
+  <!-- ================= LOAD TIME ================= -->
+  <text x="20" y="200" font-family="Arial" font-size="12" font-weight="bold" fill="#aaa">LOAD TIME — pure C++, no Python</text>
+
+  <rect x="20" y="210" width="250" height="76" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="145" y="230" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">HypermeshGenData::materialize()</text>
+  <text x="145" y="248" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">asset_gen.cpp — or the drawable&#8217;s</text>
+  <text x="145" y="263" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">lazy first-frame bootstrap</text>
+
+  <line x1="270" y1="248" x2="306" y2="248" stroke="#666" marker-end="url(#arr)"/>
+
+  <rect x="308" y="210" width="270" height="76" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="443" y="230" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">materializeLive()  (hmdflow.cpp)</text>
+  <text x="443" y="248" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">DgSorter topo-sort → GraphInst</text>
+  <text x="443" y="263" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">+ MeshEnv / MeshPool (pow2 SSBOs)</text>
+
+  <line x1="578" y1="248" x2="614" y2="248" stroke="#666" marker-end="url(#arr)"/>
+
+  <rect x="616" y="210" width="180" height="76" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="706" y="230" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">cook-cache load</text>
+  <text x="706" y="248" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">_cookLoadPass():</text>
+  <text x="706" y="263" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">restore cached nodes</text>
+
+  <line x1="796" y1="248" x2="832" y2="248" stroke="#666" marker-end="url(#arr)"/>
+
+  <rect x="834" y="210" width="146" height="76" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="907" y="230" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">LiveHypermesh</text>
+  <text x="907" y="248" font-family="monospace" font-size="10" fill="#93c5fd" text-anchor="middle">persistent GraphInst</text>
+  <text x="907" y="263" font-family="monospace" font-size="10" fill="#93c5fd" text-anchor="middle">+ terminal GpuMesh</text>
+
+  <!-- elbow: LiveHypermesh -> render loop -->
+  <polyline points="907,286 907,308 140,308 140,352" fill="none" stroke="#666" marker-end="url(#arr)"/>
+  <text x="500" y="303" font-family="Arial" font-size="11" fill="#aaa" text-anchor="middle">every frame</text>
+
+  <!-- ================= RENDER TIME ================= -->
+  <text x="20" y="344" font-family="Arial" font-size="12" font-weight="bold" fill="#aaa">RENDER TIME — render thread + GPU</text>
+
+  <rect x="14" y="352" width="972" height="240" rx="10" fill="none" stroke="#a78bfa" stroke-dasharray="7 5"/>
+  <text x="500" y="372" font-family="Arial" font-size="12" font-style="italic" fill="#c4b5fd" text-anchor="middle">ComputeDrawable::onGpuUpdate — in-frame, once per frame, ahead of every viewport</text>
+
+  <rect x="28" y="384" width="238" height="64" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="147" y="404" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">writeParams(ctx) per module</text>
+  <text x="147" y="421" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">host snapshots runtime plugs</text>
+  <text x="147" y="436" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">into SSBOs (PRE phase)</text>
+
+  <line x1="266" y1="416" x2="298" y2="416" stroke="#666" marker-end="url(#arr)"/>
+
+  <rect x="300" y="384" width="268" height="64" rx="8" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="434" y="404" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">dispatch phase — compute()</text>
+  <text x="434" y="421" font-family="monospace" font-size="10.5" fill="#a7f3d0" text-anchor="middle">topo order; cook-loaded skipped;</text>
+  <text x="434" y="436" font-family="monospace" font-size="10.5" fill="#a7f3d0" text-anchor="middle">one submit + fence wait at the end</text>
+
+  <line x1="568" y1="416" x2="600" y2="416" stroke="#666" marker-end="url(#arr)"/>
+
+  <rect x="602" y="384" width="168" height="64" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="686" y="404" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">GpuMesh</text>
+  <text x="686" y="421" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">SoA channel SSBOs</text>
+  <text x="686" y="436" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">+ CSR topology</text>
+
+  <polyline points="686,448 686,468 178,468 178,492" fill="none" stroke="#666" marker-end="url(#arr)"/>
+  <text x="430" y="463" font-family="Arial" font-size="11" fill="#aaa" text-anchor="middle">faces (mixed tri / quad / ngon)</text>
+
+  <rect x="28" y="494" width="300" height="64" rx="8" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="178" y="514" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">cs_count → cs_scan → cs_tri</text>
+  <text x="178" y="531" font-family="monospace" font-size="10.5" fill="#a7f3d0" text-anchor="middle">on-GPU fan / ear-clip triangulation</text>
+  <text x="178" y="546" font-family="monospace" font-size="10" fill="#6b7280" text-anchor="middle">(hmdflow_render.cpp)</text>
+
+  <line x1="328" y1="526" x2="362" y2="526" stroke="#666" marker-end="url(#arr)"/>
+
+  <rect x="364" y="494" width="292" height="64" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="510" y="514" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">tri index buffer + ARG[4096]</text>
+  <text x="510" y="531" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">one VkDrawIndexedIndirectCommand</text>
+  <text x="510" y="546" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">per gid slot (contiguous index ranges)</text>
+
+  <line x1="656" y1="526" x2="690" y2="526" stroke="#666" marker-end="url(#arr)"/>
+
+  <rect x="692" y="494" width="286" height="64" rx="8" fill="#4c1d95" stroke="#a78bfa" stroke-width="2" filter="url(#shadow)"/>
+  <text x="835" y="514" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">indirect draws</text>
+  <text x="835" y="531" font-family="monospace" font-size="10.5" fill="#c4b5fd" text-anchor="middle">main draw + one BucketDraw per bound</text>
+  <text x="835" y="546" font-family="monospace" font-size="10.5" fill="#c4b5fd" text-anchor="middle">gid, each with its own material</text>
+
+  <!-- legend -->
+  <rect x="20" y="612" width="14" height="14" rx="3" fill="#1e3a5f" stroke="#22d3ee"/>
+  <text x="40" y="623" font-family="Arial" font-size="12" fill="#ddd">Python authoring</text>
+  <rect x="180" y="612" width="14" height="14" rx="3" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="200" y="623" font-family="Arial" font-size="12" fill="#ddd">C++ / reflected data</text>
+  <rect x="360" y="612" width="14" height="14" rx="3" fill="#1a3a3a" stroke="#34d399"/>
+  <text x="380" y="623" font-family="Arial" font-size="12" fill="#ddd">GPU compute</text>
+  <rect x="500" y="612" width="14" height="14" rx="3" fill="#4c1d95" stroke="#a78bfa"/>
+  <text x="520" y="623" font-family="Arial" font-size="12" fill="#ddd">render / draw</text>
+  <rect x="640" y="612" width="14" height="14" rx="3" fill="#5a4a3a" stroke="#f59e0b"/>
+  <text x="660" y="623" font-family="Arial" font-size="12" fill="#ddd">serialized artifact</text>
+</svg>

@@ -1,0 +1,177 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 810" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#666"/>
+    </marker>
+    <filter id="shadow">
+      <feDropShadow dx="2" dy="2" stdDeviation="2" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  <rect x="0" y="0" width="1000" height="810" fill="#1a1a2e"/>
+  <text x="500" y="28" font-family="Arial" font-size="18" font-weight="bold" fill="white" text-anchor="middle">Example recipe DAG — condensed from swestvale.py (mesa valley + graded village pads)</text>
+  <text x="500" y="46" font-size="11" fill="#aaa" text-anchor="middle">edges carry heightfield planes (GpuComputeImage2D, R32F, values in meters) unless labeled; the real recipe has more branches</text>
+
+  <!-- ============ top chain ============ -->
+  <rect x="30" y="66" width="120" height="52" rx="6" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="90" y="87" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">Fbm</text>
+  <text x="90" y="103" font-size="10.5" fill="#a7f3d0" text-anchor="middle">freq 3 · oct 5</text>
+
+  <rect x="190" y="66" width="160" height="52" rx="6" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="270" y="84" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">Remap</text>
+  <text x="270" y="99" font-size="10.5" fill="#a7f3d0" text-anchor="middle">×0.5 +0.5, × relief 300 m</text>
+  <text x="270" y="112" font-size="10" fill="#6b7280" text-anchor="middle">(authored exaggeration)</text>
+
+  <rect x="390" y="66" width="140" height="52" rx="6" fill="#4c1d95" stroke="#a78bfa" stroke-width="2" filter="url(#shadow)"/>
+  <text x="460" y="87" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">BasinFill</text>
+  <text x="460" y="103" font-size="10.5" fill="#c4b5fd" text-anchor="middle">CPU · priority-flood</text>
+
+  <rect x="570" y="66" width="130" height="52" rx="6" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="635" y="87" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">Terrace</text>
+  <text x="635" y="103" font-size="10.5" fill="#a7f3d0" text-anchor="middle">step 37.5 m · blend .45</text>
+
+  <line x1="150" y1="92" x2="186" y2="92" stroke="#666" stroke-width="1.4" marker-end="url(#arr3)"/>
+  <line x1="350" y1="92" x2="386" y2="92" stroke="#666" stroke-width="1.4" marker-end="url(#arr3)"/>
+  <line x1="530" y1="92" x2="566" y2="92" stroke="#666" stroke-width="1.4" marker-end="url(#arr3)"/>
+
+  <!-- ============ loop container ============ -->
+  <rect x="30" y="160" width="700" height="130" rx="8" fill="#20203a" stroke="#6b7280" stroke-width="1.4" stroke-dasharray="6 4"/>
+  <text x="46" y="180" font-size="11.5" font-weight="bold" fill="#aaa">T.loop(12, z=…) — STRUCTURAL: one document node, unrolled at elaborate()</text>
+
+  <rect x="60" y="196" width="150" height="64" rx="6" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="135" y="216" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">Flow3D</text>
+  <text x="135" y="232" font-size="10.5" fill="#a7f3d0" text-anchor="middle">continuous MFD flow:</text>
+  <text x="135" y="246" font-size="10.5" fill="#a7f3d0" text-anchor="middle">dir/slope + discharge</text>
+
+  <rect x="250" y="196" width="170" height="64" rx="6" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="335" y="216" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">FlowErode</text>
+  <text x="335" y="232" font-size="10.5" fill="#a7f3d0" text-anchor="middle">stream-power erosion</text>
+  <text x="335" y="246" font-size="10.5" fill="#a7f3d0" text-anchor="middle">+ deposition</text>
+
+  <rect x="460" y="196" width="140" height="64" rx="6" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="530" y="216" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">ThermalErode</text>
+  <text x="530" y="232" font-size="10.5" fill="#a7f3d0" text-anchor="middle">talus slump,</text>
+  <text x="530" y="246" font-size="10.5" fill="#a7f3d0" text-anchor="middle">6 iterations</text>
+
+  <rect x="630" y="196" width="80" height="64" rx="6" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="670" y="222" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">Lpf</text>
+  <text x="670" y="240" font-size="10.5" fill="#a7f3d0" text-anchor="middle">'meters'</text>
+
+  <line x1="210" y1="228" x2="246" y2="228" stroke="#666" stroke-width="1.4" marker-end="url(#arr3)"/>
+  <text x="228" y="222" font-size="9.5" fill="#aaa" text-anchor="middle">discharge</text>
+  <line x1="420" y1="228" x2="456" y2="228" stroke="#666" stroke-width="1.4" marker-end="url(#arr3)"/>
+  <line x1="600" y1="228" x2="626" y2="228" stroke="#666" stroke-width="1.4" marker-end="url(#arr3)"/>
+
+  <!-- carry-back -->
+  <polyline points="670,260 670,276 48,276 48,228 56,228" fill="none" stroke="#6b7280" stroke-width="1.2" marker-end="url(#arr3)"/>
+  <text x="360" y="272" font-size="9.5" fill="#6b7280" text-anchor="middle">carry z (next iteration)</text>
+
+  <!-- terrace -> loop entry, loop exit -> z -->
+  <polyline points="635,118 635,140 135,140 135,192" fill="none" stroke="#666" stroke-width="1.4" marker-end="url(#arr3)"/>
+  <text x="385" y="136" font-size="10" fill="#aaa" text-anchor="middle">z₀</text>
+  <polyline points="710,228 790,228" fill="none" stroke="#666" stroke-width="1.4"/>
+  <circle cx="790" cy="228" r="5" fill="#ddd"/>
+  <text x="790" y="214" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">z (meters)</text>
+
+  <!-- z trunk down + branches -->
+  <line x1="790" y1="233" x2="790" y2="300" stroke="#666" stroke-width="1.4"/>
+  <line x1="790" y1="300" x2="185" y2="300" stroke="#666" stroke-width="1.4"/>
+  <circle cx="285" cy="300" r="3" fill="#aaa"/>
+  <line x1="185" y1="300" x2="185" y2="326" stroke="#666" stroke-width="1.4" marker-end="url(#arr3)"/>
+  <line x1="790" y1="300" x2="790" y2="336" stroke="#666" stroke-width="1.4" marker-end="url(#arr3)"/>
+  <text x="804" y="322" font-size="9.5" fill="#aaa">Height</text>
+
+  <!-- ============ mask branch ============ -->
+  <rect x="110" y="330" width="150" height="52" rx="6" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="185" y="350" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">Slope</text>
+  <text x="185" y="366" font-size="10.5" fill="#a7f3d0" text-anchor="middle">radius_m = 8 m</text>
+
+  <rect x="310" y="330" width="170" height="52" rx="6" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="395" y="350" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">Smoothstep (JIT)</text>
+  <text x="395" y="366" font-size="10.5" fill="#a7f3d0" text-anchor="middle">gentle = 1 − s(0.30, 0.55)</text>
+
+  <rect x="110" y="420" width="150" height="52" rx="6" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="185" y="440" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">WorleyF1</text>
+  <text x="185" y="456" font-size="10.5" fill="#a7f3d0" text-anchor="middle">freq 4 — village cells</text>
+
+  <rect x="310" y="420" width="170" height="52" rx="6" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="395" y="440" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">Band (JIT)</text>
+  <text x="395" y="456" font-size="10.5" fill="#a7f3d0" text-anchor="middle">plaza ring 0 … 0.30</text>
+
+  <rect x="540" y="374" width="150" height="56" rx="6" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="615" y="394" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">Combine · MUL</text>
+  <text x="615" y="412" font-size="10.5" fill="#a7f3d0" text-anchor="middle">site weight w</text>
+
+  <line x1="260" y1="356" x2="306" y2="356" stroke="#666" stroke-width="1.4" marker-end="url(#arr3)"/>
+  <line x1="260" y1="446" x2="306" y2="446" stroke="#666" stroke-width="1.4" marker-end="url(#arr3)"/>
+  <polyline points="480,356 510,356 510,392 536,392" fill="none" stroke="#666" stroke-width="1.4" marker-end="url(#arr3)"/>
+  <polyline points="480,446 510,446 510,412 536,412" fill="none" stroke="#666" stroke-width="1.4" marker-end="url(#arr3)"/>
+
+  <!-- ============ scatter_place ============ -->
+  <rect x="700" y="340" width="240" height="112" rx="6" fill="#4c1d95" stroke="#a78bfa" stroke-width="2" filter="url(#shadow)"/>
+  <text x="820" y="360" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">ScatterPlace</text>
+  <text x="820" y="377" font-size="10.5" fill="#c4b5fd" text-anchor="middle">CPU · deterministic placement +</text>
+  <text x="820" y="391" font-size="10.5" fill="#c4b5fd" text-anchor="middle">cut-and-fill grading pads</text>
+  <text x="820" y="408" font-size="10.5" fill="#c4b5fd" text-anchor="middle">in: Height, W0…Wk (weights)</text>
+  <text x="820" y="422" font-size="10.5" fill="#c4b5fd" text-anchor="middle">out: Out (passthrough),</text>
+  <text x="820" y="436" font-size="10.5" fill="#c4b5fd" text-anchor="middle">PadMask, PadElev</text>
+  <polyline points="690,402 696,402" fill="none" stroke="#666" stroke-width="1.4" marker-end="url(#arr3)"/>
+  <text x="686" y="396" font-size="9.5" fill="#aaa" text-anchor="end">W0</text>
+
+  <!-- .ogeo artifact + consumer -->
+  <rect x="720" y="492" width="200" height="54" rx="6" fill="#5a4a3a" stroke="#f59e0b" stroke-width="2" filter="url(#shadow)"/>
+  <text x="820" y="512" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">villages .ogeo</text>
+  <text x="820" y="530" font-size="10.5" fill="#fed7aa" text-anchor="middle">ScatterSet: TRS ×N + type_id</text>
+  <line x1="820" y1="452" x2="820" y2="488" stroke="#666" stroke-width="1.4" marker-end="url(#arr3)"/>
+  <text x="832" y="472" font-family="monospace" font-size="9.5" fill="#aaa">_export_path</text>
+
+  <rect x="700" y="580" width="240" height="64" rx="6" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="820" y="600" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">instance_source consumers</text>
+  <text x="820" y="616" font-size="10.5" fill="#a7f3d0" text-anchor="middle">(asset, "buildings", type_id) →</text>
+  <text x="820" y="630" font-size="10.5" fill="#a7f3d0" text-anchor="middle">instanced drawables / colliders</text>
+  <line x1="820" y1="546" x2="820" y2="576" stroke="#666" stroke-width="1.4" marker-end="url(#arr3)"/>
+
+  <!-- ============ maskblend + captures ============ -->
+  <rect x="360" y="510" width="250" height="72" rx="6" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="485" y="532" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">MaskBlend</text>
+  <text x="485" y="550" font-family="monospace" font-size="10.5" fill="#a7f3d0" text-anchor="middle">z′ = mix(z, PadElev, PadMask)</text>
+  <text x="485" y="566" font-size="10.5" fill="#a7f3d0" text-anchor="middle">grades terrain onto each pad</text>
+
+  <!-- z -> maskblend (A) -->
+  <polyline points="285,300 285,495 430,495 430,506" fill="none" stroke="#666" stroke-width="1.4" marker-end="url(#arr3)"/>
+  <text x="297" y="480" font-size="9.5" fill="#aaa">A = z</text>
+  <!-- scatterplace pads -> maskblend -->
+  <polyline points="700,436 660,436 660,540 614,540" fill="none" stroke="#666" stroke-width="1.4" marker-end="url(#arr3)"/>
+  <text x="668" y="470" font-size="9.5" fill="#aaa">PadElev,</text>
+  <text x="668" y="482" font-size="9.5" fill="#aaa">PadMask</text>
+
+  <!-- maskblend -> captures -->
+  <polyline points="440,582 440,608 250,608 250,662 226,662" fill="none" stroke="#666" stroke-width="1.4" marker-end="url(#arr3)"/>
+  <line x1="530" y1="582" x2="530" y2="606" stroke="#666" stroke-width="1.4" marker-end="url(#arr3)"/>
+
+  <rect x="30" y="636" width="196" height="60" rx="6" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="128" y="656" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">Capture (sink)</text>
+  <text x="128" y="672" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">"height","normal"</text>
+  <text x="128" y="686" font-size="10.5" fill="#93c5fd" text-anchor="middle">EXR = true meters</text>
+
+  <rect x="460" y="610" width="140" height="52" rx="6" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="530" y="630" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">Flow3D</text>
+  <text x="530" y="646" font-size="10.5" fill="#a7f3d0" text-anchor="middle">post-pad flow</text>
+
+  <rect x="460" y="690" width="196" height="52" rx="6" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="558" y="710" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">Capture (sink)</text>
+  <text x="558" y="726" font-size="10.5" fill="#93c5fd" text-anchor="middle">"flow_discharge" (mask input)</text>
+  <line x1="530" y1="662" x2="530" y2="686" stroke="#666" stroke-width="1.4" marker-end="url(#arr3)"/>
+  <text x="544" y="678" font-size="9.5" fill="#aaa">discharge</text>
+
+  <!-- ============ legend ============ -->
+  <rect x="30" y="770" width="14" height="14" rx="3" fill="#1a3a3a" stroke="#34d399"/>
+  <text x="50" y="781" font-size="11" fill="#ddd">GPU compute module</text>
+  <rect x="185" y="770" width="14" height="14" rx="3" fill="#4c1d95" stroke="#a78bfa"/>
+  <text x="205" y="781" font-size="11" fill="#ddd">CPU module</text>
+  <rect x="300" y="770" width="14" height="14" rx="3" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="320" y="781" font-size="11" fill="#ddd">sink</text>
+  <rect x="370" y="770" width="14" height="14" rx="3" fill="#5a4a3a" stroke="#f59e0b"/>
+  <text x="390" y="781" font-size="11" fill="#ddd">artifact</text>
+  <rect x="450" y="770" width="14" height="14" rx="3" fill="#20203a" stroke="#6b7280" stroke-dasharray="4 3"/>
+  <text x="470" y="781" font-size="11" fill="#ddd">loop / group container ("JIT" = composed from Remap/Combine, no dedicated module)</text>
+</svg>

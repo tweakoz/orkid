@@ -52,6 +52,7 @@ struct RtBuffer final {
   uint64_t _usage = 0;
   std::string _debugName;
   texturearraysliceref_ptr_t _ta_slice;
+  int _numLayers = 1; // array layers of the backing image; copied from the owning RtGroup at construction
   fvec4 _clearColor = fvec4::Black();
   float _clearDepth = 1.0f;
   bool _autoclear = true;
@@ -83,6 +84,13 @@ struct RtGroup final {
   int height() const;
   ViewportRect viewportRect() const;
   /////////////////////////////////////////
+  // multiview view mask for the pass this group is rendered with: 0 (single view)
+  //  unless the group is BOTH layered and flagged multiview. viewMask and the
+  //  rendering-info layerCount are differently scoped — a non-zero viewMask is
+  //  what makes the pass multiview; layerCount governs the non-multiview layered
+  //  case and must NOT be set to match it.
+  uint32_t viewMask() const;
+  /////////////////////////////////////////
   static const int kmaxmrts = 8;
 
   Context* _parentTarget;
@@ -93,6 +101,11 @@ struct RtGroup final {
   int miH;
   bool _cubeMap = false;
   int _cubeRenderFace = 0;
+  // layered rendering: _numLayers>1 gives every buffer a 2D-ARRAY image with one
+  //  layer per view. _multiview additionally renders ALL layers in a SINGLE pass
+  //  (gl_ViewIndex selects the per-view state) instead of one pass per layer.
+  int _numLayers  = 1;
+  bool _multiview = false;
   MsaaSamples _msaa_samples;
   bool mbSizeDirty;
   svarshp_t _impl;
@@ -130,6 +143,10 @@ struct RtgSet {
   std::vector<BufRec> _bufrecs;
   bool _do_rendertarget;
   bool _autoclear = true;
+  // layered/multiview groups (SPVR): stamped onto every fetched RtGroup BEFORE its
+  //  buffers exist, because RtBuffer copies the layer count at construction.
+  int _numLayers  = 1;
+  bool _multiview = false;
   std::string _name;
   uint64_t _usage = "color"_crcu;
   int _width = 8;

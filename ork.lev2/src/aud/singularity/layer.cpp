@@ -15,6 +15,8 @@
 #include <ork/lev2/aud/singularity/sampler.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
 #include <ork/lev2/aud/singularity/hud.h>
+#include <ork/lev2/aud/singularity/keyon_prof.h>
+#include <ork/lev2/aud/singularity/soundfield.h>
 #include <ork/reflect/properties/registerX.inl>
 #include <ork/lev2/aud/singularity/alg_pan.inl>
 
@@ -27,6 +29,8 @@ namespace ork::audio::singularity {
 void LayerData::describeX(class_t* clazz) {
   // clazz->directObjectMapProperty("Controllers", &LayerData::_controllermap);
   clazz->directObjectProperty("Algorithm", &LayerData::_algdata);
+  clazz->directProperty("SendBus", &LayerData::_sendbus);
+  clazz->directProperty("SendLevel", &LayerData::_sendLevel);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -66,6 +70,9 @@ lyrdata_ptr_t LayerData::clone() const {
   rval->_layerLinGain = _layerLinGain;
   rval->_algdata      = _algdata->clone();
   rval->_outbus       = _outbus;
+  rval->_sendbus      = _sendbus;
+  rval->_sendLevel    = _sendLevel;
+  rval->_soundfieldSend = _soundfieldSend; // structural indices: clone-safe
   rval->_name         = _name;
   rval->_kmpBlock     = _kmpBlock->clone();
   rval->_pchBlock     = _pchBlock->clone();
@@ -119,6 +126,7 @@ Layer::Layer()
     , _keepalive(0) {
   // printf( "Layer Init<%p>\n", this );
   _dspbuffer = std::make_shared<DspBuffer>();
+  _ctrlBlock = std::make_shared<ControlBlockInst>();
 
   for (int i = 0; i < kmaxdspblocksperstage; i++) {
     _oschsynctracks[i]  = std::make_shared<OscillatorSyncTrack>();
@@ -130,12 +138,48 @@ Layer::~Layer() {
   std::lock_guard<std::mutex> lock(_mutex);
   _pchBlock  = nullptr;
   _outbus    = nullptr;
-  _ctrlBlock = nullptr;
   _alg       = nullptr;
+  releaseControllers();
+  _ctrlBlock = nullptr;
   _dspbuffer = nullptr;
   _layerdata = nullptr;
-  _controlMap.clear();
-  _controld2iMap.clear();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// releaseControllers - the ONE place a note's controller instances die.
+//  ORDER IS LOAD BEARING: the dsp grid's DspParam::_C1/_C2 hold raw instance
+//  pointers, so the alg goes first (synth::_reclaimVoice already returned it
+//  when the voice was freed; this covers the direct-reset path too) and the
+//  lookup slots are dropped in the same breath as the instances themselves.
+///////////////////////////////////////////////////////////////////////////////
+
+void Layer::releaseControllers() {
+  _alg = nullptr;
+  for (int i = 0; i < _numControlSlots; i++) {
+    _controlSlots[i]._data = nullptr;
+    _controlSlots[i]._inst = nullptr;
+  }
+  _numControlSlots = 0;
+  if (_ctrlBlock)
+    _ctrlBlock->clear();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Layer::bindController(const ControllerData* cdat, ControllerInst* cinst) {
+  for (int i = 0; i < _numControlSlots; i++) {
+    if (_controlSlots[i]._data == cdat) {
+      _controlSlots[i]._inst = cinst;
+      return;
+    }
+  }
+  OrkAssertIFMT(
+      _numControlSlots < kmaxctrlperblock, //
+      "singularity layer controller slots exhausted (%d)",
+      kmaxctrlperblock);
+  _controlSlots[_numControlSlots]._data = cdat;
+  _controlSlots[_numControlSlots]._inst = cinst;
+  _numControlSlots++;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -145,10 +189,7 @@ void Layer::reset() {
   _curnote   = 0;
   _keepalive = 0;
 
-  // todo pool controllers
-  _ctrlBlock = nullptr;
-
-  _controlMap.clear();
+  releaseControllers();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -161,6 +202,7 @@ void Layer::reTriggerMono(int note, int velocity){
 ///////////////////////////////////////////////////////////////////////////////
 
 void Layer::keyOn(int note, int velocity, lyrdata_ptr_t ld, outbus_ptr_t obus) {
+  KeyOnProfScope prof(KOP_LAYERKEYON);
   this->reset();
   this->_HKF._miscText   = "";
   this->_HKF._note       = note;
@@ -174,6 +216,15 @@ void Layer::keyOn(int note, int velocity, lyrdata_ptr_t ld, outbus_ptr_t obus) {
   this->_curnote       = note;
   this->_layerdata     = ld;
   this->_outbus        = obus;
+  // cleared here, resolved by synth::_keyOnLayer (which owns the bus map):
+  //  a recycled/stolen voice must never inherit the previous voice's send.
+  this->_sendbus       = nullptr;
+  this->_sendLevel     = 0.0f;
+  this->_sfield        = nullptr;
+  this->_sfAngleParam  = nullptr;
+  this->_sfLevelLin    = 0.0f;
+  this->_sfSpread      = 0.0f;
+  this->_sfPrimed      = false;
   this->_layerLinGain  = ld->_layerLinGain;
   this->_gainModifier = decibel_to_linear_amp_ratio(obus->_prog_gain);
 
@@ -188,7 +239,7 @@ void Layer::keyOn(int note, int velocity, lyrdata_ptr_t ld, outbus_ptr_t obus) {
   /////////////////////////////////////////////
 
   if (ld->_ctrlBlock) {
-    this->_ctrlBlock = std::make_shared<ControlBlockInst>();
+    KeyOnProfScope profcb(KOP_CTRLBLOCK);
     this->_ctrlBlock->keyOn(this->_koi, ld->_ctrlBlock);
   }
 
@@ -196,7 +247,10 @@ void Layer::keyOn(int note, int velocity, lyrdata_ptr_t ld, outbus_ptr_t obus) {
   auto algname = ld->_algdata->_name;
   // printf( "LAYER KEYON<%d> alg<%s>\n", note, algname.c_str() );
 
-  this->_alg = this->_layerdata->_algdata->createAlgInst();
+  {
+    KeyOnProfScope profac(KOP_ALGCREATE);
+    this->_alg = this->_layerdata->_algdata->createAlgInst();
+  }
   // assert(_alg);
   if (this->_alg) {
     this->_alg->keyOn(this->_koi);
@@ -253,7 +307,9 @@ void Layer::compute(int base, int count) {
     if (_alg)
       _alg->doComputePass();
     ///////////////////////
-    _sampleindex += frames_per_controlpass;
+    // the pass width, not the constant: layer time must track the frames this
+    //  pass actually produced (a chunk tail pass can be narrower).
+    _sampleindex += count;
     _layerTime = float(_sampleindex) * getInverseSampleRate();
   }
   ////////////////////////////////////////
@@ -316,21 +372,26 @@ float Layer::currentPan() const{
   return fpan;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Layer::mixToBus(int base, int count) {
+void Layer::currentMixGains(float& gain, float& panl, float& panr) const {
   float prggain = decibel_to_linear_amp_ratio(_layerdata->_programdata->_gainDB);
   prggain *= decibel_to_linear_amp_ratio(_programinst->_gain);
   prggain *= _programinst->_fadeGainLinear;
+  float fpan     = currentPan();
+  float headroom = decibel_to_linear_amp_ratio(_layerdata->_headroom);
+  panl = panBlend(fpan).lmix;
+  panr = panBlend(fpan).rmix;
+  gain = prggain * _layerLinGain * _gainModifier * headroom;
+}
+///////////////////////////////////////////////////////////////////////////////
+void Layer::mixToBus(int base, int count) {
   float* lyroutl  = _dspbuffer->channel(0) + base;
   float* lyroutr  = _dspbuffer->channel(1) + base;
   auto& out_buf   = _outbus->_buffer;
   float* bus_outl = out_buf._leftBuffer + base;
   float* bus_outr = out_buf._rightBuffer + base;
   //////////////////////////////////
-  float fpan = currentPan();
-  float panL = panBlend(fpan).lmix;
-  float panR = panBlend(fpan).rmix;
-  float headroom = decibel_to_linear_amp_ratio(_layerdata->_headroom);
-  float LG = prggain * _layerLinGain * _gainModifier * headroom;
+  float LG, panL, panR;
+  currentMixGains(LG, panL, panR);
   //////////////////////////////////
   for (int i = 0; i < count; i++) {
     bus_outl[i] += (lyroutl[i]*LG*panL);
@@ -345,6 +406,100 @@ void Layer::mixToBus(int base, int count) {
       _testtoneph++;
     }
   }
+}
+///////////////////////////////////////////////////////////////////////////////
+// mixToSendBus - per-voice send. the dry signal already went to _outbus in
+//  mixToBus; this sums a _sendLevel-weighted (post-fader: same gain and pan as
+//  the dry) copy into the voice's send bus.
+//  CALLED SERIALLY on the audio thread AFTER the per-bus mix jobs have joined:
+//  a send crosses bus boundaries, so running it inside _jobMixBusLayers would
+//  let two bus workers write one send-bus buffer concurrently.
+///////////////////////////////////////////////////////////////////////////////
+void Layer::mixToSendBus(int base, int count) {
+  if (nullptr == _sendbus)
+    return;
+  float* lyroutl   = _dspbuffer->channel(0) + base;
+  float* lyroutr   = _dspbuffer->channel(1) + base;
+  auto& send_buf   = _sendbus->_buffer;
+  float* send_outl = send_buf._leftBuffer + base;
+  float* send_outr = send_buf._rightBuffer + base;
+  //////////////////////////////////
+  float LG, panL, panR;
+  currentMixGains(LG, panL, panR);
+  LG *= _sendLevel;
+  //////////////////////////////////
+  for (int i = 0; i < count; i++) {
+    send_outl[i] += (lyroutl[i]*LG*panL);
+    send_outr[i] += (lyroutr[i]*LG*panR);
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+// encodeToSoundField - SF2 live encode. an ADDITIONAL send, independent of
+//  _sendbus: the dry copy already went to _outbus, and this sums a
+//  first-order-ambisonic encode of the same voice into the one B-format mix
+//  point, where it is rotated (see SoundField::computeIntoBus), decoded and
+//  written to the "soundfield" bus.
+//  CALLED SERIALLY on the audio thread from the same per-voice send pass as
+//  mixToSendBus, and therefore ahead of the field's own compute in this
+//  control pass. arithmetic only - the field pointer, the level, the spread
+//  and the angle param were all resolved at keyOn.
+//
+//  AZIMUTH: the panner's ANGLE is a = -atan2(x,z) in engine listener space
+//  (X=right, Y=up, Z=back), which makes the source's horizontal unit direction
+//  v = (-sin a, 0, cos a). the fixed engine->ambisonic permutation is
+//  ambi(v) = (-v.z, -v.x, v.y) (soundfield.h), so the ambisonic components of
+//  that direction are cos(az) = -cos a and sin(az) = sin a, i.e. az = pi - a.
+//  (sanity: a source dead ahead is engine -Z, so a = pi and az = 0; a source
+//  to the right gives a = -pi/2 and az = -pi/2, which is -Y, and ambisonic +Y
+//  is the LEFT.)
+///////////////////////////////////////////////////////////////////////////////
+void Layer::encodeToSoundField(int base, int count) {
+  if (nullptr == _sfield)
+    return;
+  // the cached pointer is NOT owning - an owning one would let ~SoundField (it
+  //  JOINS the feeder thread) run on the audio thread when the last voice
+  //  releases. so a voice that outlives a tearDown re-checks publication, the
+  //  same one atomic load synth::compute already does per pass, and goes dry.
+  if (_sfield != SoundField::rtInstance()) {
+    _sfield = nullptr;
+    return;
+  }
+  const float a = _sfAngleParam ? _sfAngleParam->eval() : 0.0f;
+  const float cos_az = -cosf(a);
+  const float sin_az = sinf(a);
+  // elevation has no source in the live path today; the term stays so a 3D
+  //  spatializer only has to supply el.
+  constexpr float el = 0.0f;
+  const float cos_el = cosf(el);
+  const float sin_el = sinf(el);
+  //////////////////////////////////
+  // post-fader like every other send: the send tracks its voice's gain. the
+  //  PAN half of currentMixGains is deliberately unused - direction is the
+  //  encode's job (see SoundField::accumulateLive).
+  float LG, panL, panR;
+  currentMixGains(LG, panL, panR);
+  const float amp = LG * _sfLevelLin;
+  // SPREAD as directivity interpolation: W whole, directional x (1-spread).
+  const float dir = amp * (1.0f - _sfSpread);
+  //////////////////////////////////
+  float gains[kfoanumchannels];
+  gains[int(FoaChannel::W)] = amp * float(1.0 / sqrt2);
+  gains[int(FoaChannel::Y)] = dir * sin_az * cos_el;
+  gains[int(FoaChannel::Z)] = dir * sin_el;
+  gains[int(FoaChannel::X)] = dir * cos_az * cos_el;
+  //////////////////////////////////
+  // the first pass of a note has no previous gains to ramp from - starting at
+  //  zero would fade every note in over one control pass.
+  if (not _sfPrimed) {
+    for (int ch = 0; ch < kfoanumchannels; ch++)
+      _sfGains[ch] = gains[ch];
+    _sfPrimed = true;
+  }
+  const float* lyroutl = _dspbuffer->channel(0) + base;
+  const float* lyroutr = _dspbuffer->channel(1) + base;
+  _sfield->accumulateLive(lyroutl, lyroutr, count, _sfGains, gains);
+  for (int ch = 0; ch < kfoanumchannels; ch++)
+    _sfGains[ch] = gains[ch];
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Layer::replaceBus(int base, int count) {
@@ -395,21 +550,40 @@ bool Layer::isHudLayer() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+ControllerInst* Layer::getControllerInst(controllerdata_constptr_t cdat) const {
+  const ControllerData* key = cdat.get();
+  for (int i = 0; i < _numControlSlots; i++) {
+    if (_controlSlots[i]._data == key)
+      return _controlSlots[i]._inst;
+  }
+  return nullptr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+ControllerInst* Layer::getControllerInst(const std::string& srcn) const {
+  for (int i = 0; i < _numControlSlots; i++) {
+    if (_controlSlots[i]._data->_name == srcn)
+      return _controlSlots[i]._inst;
+  }
+  return nullptr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 controller_t Layer::getController(controllerdata_constptr_t cdat) const {
-  auto it = _controld2iMap.find(cdat);
-  if (it != _controld2iMap.end()) {
-    auto cinst = it->second;
+  auto cinst = getControllerInst(cdat);
+  if (cinst) {
     return [cinst]() { return cinst->_value.x; };
   }
-  return [this]() { return 0.0f; };
+  return []() { return 0.0f; };
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 controller_t Layer::getController(const std::string& srcn) const {
-  auto it = _controlMap.find(srcn);
-  if (it != _controlMap.end()) {
-    auto cinst = it->second;
+  auto cinst = getControllerInst(srcn);
+  if (cinst) {
     // printf("getcon<%s> -> %p\n", srcn.c_str(), cinst);
     return [cinst]() { return cinst->_value.x; };
   } else {
@@ -427,42 +601,41 @@ controller_t Layer::getController(const std::string& srcn) const {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// getSRC1/getSRC2 - the per-note modulation binding. these capture the raw
+//  ControllerInst (null == the "no source" 0.0f substitution the map lookup
+//  used to make) and the modulation DATA, never a nested controller_t: the
+//  depths and scales stay live reads off the data so a parameter edit is heard
+//  without a re-key, exactly as when this was a closure over the shared_ptr.
+//  the data outlives the binding - DspParam::_data holds the DspParamData that
+//  owns these mods, and _C1/_C2 are only ever written beside _data.
+///////////////////////////////////////////////////////////////////////////////
 
 controller_t Layer::getSRC1(dspparammod_constptr_t mods) {
-  auto src1 = this->getController(mods->_src1);
-  // printf("src1<%p>\n", (void*) mods->_src1.get());
-  // if(mods->_src1){
-  // printf("src1<%p:%s>\n", (void*) mods->_src1.get(), mods->_src1->_name.c_str());
-  //}
+  const BlockModulationData* MODS = mods.get();
+  ControllerInst* src1            = this->getControllerInst(mods->_src1);
 
-  auto it = [=]() -> float {
-    float src1scale = mods->_src1Scale;
-    float out       = src1() * src1scale + mods->_src1Bias ;
+  return [src1, MODS]() -> float {
+    float src1val   = src1 ? src1->_value.x : 0.0f;
+    float src1scale = MODS->_src1Scale;
+    float out       = src1val * src1scale + MODS->_src1Bias;
     // printf( "src1out<%f>\n", out );
     return out;
   };
-
-  return it;
 }
 
 controller_t Layer::getSRC2(dspparammod_constptr_t mods) {
-  auto src2     = this->getController(mods->_src2);
-  auto depthcon = this->getController(mods->_src2DepthCtrl);
-  // printf("src2<%p>\n", (void*) mods->_src2.get());
-  // if(mods->_src2){
-  // printf("src2<%p:%s>\n", (void*) mods->_src2.get(), mods->_src2->_name.c_str());
-  //}
+  const BlockModulationData* MODS = mods.get();
+  ControllerInst* src2            = this->getControllerInst(mods->_src2);
+  ControllerInst* depthcon        = this->getControllerInst(mods->_src2DepthCtrl);
 
-  auto it = [=]() -> float {
-    float mindepth = mods->_src2MinDepth;
-    float maxdepth = mods->_src2MaxDepth;
-    float dc       = clip_float(depthcon(), 0, 1);
+  return [src2, depthcon, MODS]() -> float {
+    float mindepth = MODS->_src2MinDepth;
+    float maxdepth = MODS->_src2MaxDepth;
+    float dc       = clip_float(depthcon ? depthcon->_value.x : 0.0f, 0, 1);
     float depth    = lerp(mindepth, maxdepth, dc);
-    float out      = src2() * depth;
+    float out      = (src2 ? src2->_value.x : 0.0f) * depth;
     return out;
   };
-
-  return it;
 }
 
 } // namespace ork::audio::singularity

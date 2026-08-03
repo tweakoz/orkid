@@ -387,20 +387,17 @@ void TextureArray::_conform(EBufferFormat fmt) {
     }
     index++;
   }
-  std::atomic<int> sync_chfmt = 0;
+  // Converted HERE on the calling (non-pool) thread rather than from pool ops:
+  // convertFromImageToFormat is itself a fork-join over the concurrentQueue, and a
+  // fork-join running ON a pool worker can wait forever for row chunks that have no
+  // free worker left to run in. Inline costs nothing in parallelism — each conversion
+  // already fans across the whole pool internally, and this thread was doing nothing
+  // but spin-waiting for them anyway.
   for (size_t index : images_to_chfmt) {
-    sync_chfmt++;
     auto prvimg         = final_images[index];
     auto newimg         = std::make_shared<Image>();
     final_images[index] = newimg;
-    auto OP             = [=, &sync_chfmt]() {
-      newimg->convertFromImageToFormat(*prvimg, fmt);
-      sync_chfmt--;
-    };
-    opq::concurrentQueue()->enqueue(OP);
-  }
-  while (sync_chfmt > 0) {
-    usleep(1000);
+    newimg->convertFromImageToFormat(*prvimg, fmt);
   }
   images_to_chfmt.clear();
   /////////////////////

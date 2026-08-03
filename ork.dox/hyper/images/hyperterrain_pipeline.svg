@@ -1,0 +1,161 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 800" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#666"/>
+    </marker>
+    <filter id="shadow">
+      <feDropShadow dx="2" dy="2" stdDeviation="2" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  <rect x="0" y="0" width="1000" height="800" fill="#1a1a2e"/>
+  <text x="500" y="30" font-family="Arial" font-size="18" font-weight="bold" fill="white" text-anchor="middle">HyperTerrain — end-to-end bake pipeline</text>
+
+  <!-- ======================= LANE 1 : AUTHOR TIME ======================= -->
+  <rect x="20" y="48" width="960" height="170" rx="10" fill="#252540" stroke="#4a5568"/>
+  <text x="34" y="70" font-size="12" font-weight="bold" fill="#aaa">AUTHOR TIME — Python DSL (engine-free until elaborate)</text>
+
+  <!-- A1 -->
+  <rect x="30" y="90" width="215" height="70" rx="8" fill="#1e3a5f" stroke="#22d3ee" stroke-width="2" filter="url(#shadow)"/>
+  <text x="137" y="110" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">HeightField subclass</text>
+  <text x="137" y="128" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">__init__ runs the DSL trace</text>
+  <text x="137" y="145" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">T.* ops + operator algebra</text>
+
+  <!-- A2 -->
+  <rect x="282" y="90" width="210" height="70" rx="8" fill="#1e3a5f" stroke="#22d3ee" stroke-width="2" filter="url(#shadow)"/>
+  <text x="387" y="110" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">TerrainDoc</text>
+  <text x="387" y="128" font-size="11" fill="#93c5fd" text-anchor="middle">structured document: nodes,</text>
+  <text x="387" y="145" font-size="11" fill="#93c5fd" text-anchor="middle">params, loops, captures</text>
+
+  <!-- A3 -->
+  <rect x="529" y="90" width="210" height="70" rx="8" fill="#1e3a5f" stroke="#22d3ee" stroke-width="2" filter="url(#shadow)"/>
+  <text x="634" y="110" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">document.elaborate()</text>
+  <text x="634" y="128" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">derives dflow::GraphData</text>
+  <text x="634" y="145" font-size="11" fill="#93c5fd" text-anchor="middle">NEEDS the initialized engine</text>
+
+  <!-- A4 -->
+  <rect x="776" y="90" width="195" height="70" rx="8" fill="#1e3a5f" stroke="#22d3ee" stroke-width="2" filter="url(#shadow)"/>
+  <text x="873" y="110" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">HeightFieldGenData</text>
+  <text x="873" y="128" font-size="11" fill="#93c5fd" text-anchor="middle">embedded graph (model B)</text>
+  <text x="873" y="145" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">+ _dimension, _extent_m</text>
+
+  <line x1="245" y1="125" x2="278" y2="125" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="262" y="86" font-family="monospace" font-size="10" fill="#aaa" text-anchor="middle">close_trace()</text>
+  <line x1="492" y1="125" x2="525" y2="125" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="509" y="86" font-family="monospace" font-size="10" fill="#aaa" text-anchor="middle">generatedflow()</text>
+  <line x1="739" y1="125" x2="772" y2="125" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="756" y="86" font-family="monospace" font-size="10" fill="#aaa" text-anchor="middle">embed ONCE</text>
+  <text x="968" y="178" font-size="10.5" fill="#aaa" text-anchor="end">rides the scene JSON — reload needs NO Python</text>
+
+  <!-- A4 -> B1 elbow -->
+  <polyline points="873,160 873,200 140,200 140,248" fill="none" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="500" y="195" font-size="10.5" fill="#aaa" text-anchor="middle">materializeAll / scene load / editor re-bake</text>
+
+  <!-- ======================= LANE 2 : BAKE TIME ======================= -->
+  <rect x="20" y="226" width="960" height="340" rx="10" fill="#20203a" stroke="#4a5568"/>
+  <text x="34" y="246" font-size="12" font-weight="bold" fill="#aaa">BAKE TIME — C++ driver + GPU compute</text>
+
+  <!-- B1 materialize -->
+  <rect x="30" y="252" width="220" height="70" rx="8" fill="#4c1d95" stroke="#a78bfa" stroke-width="2" filter="url(#shadow)"/>
+  <text x="140" y="272" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">HeightFieldGenData::</text>
+  <text x="140" y="288" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">materialize(ctx)</text>
+  <text x="140" y="306" font-size="10.5" fill="#c4b5fd" text-anchor="middle">stamps capture paths under</text>
+  <text x="140" y="319" font-family="monospace" font-size="10" fill="#c4b5fd" text-anchor="middle">&lt;assetcache&gt;/terrain/&lt;name&gt;/</text>
+
+  <!-- B2 container: bakeHeightfield -->
+  <rect x="286" y="240" width="684" height="192" rx="8" fill="#2a2445" stroke="#a78bfa" stroke-width="1.5"/>
+  <text x="628" y="262" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">bakeHeightfield(graph, ctx, dim, extent_m) — per-node cook loop</text>
+  <line x1="250" y1="287" x2="282" y2="287" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- plan -->
+  <rect x="306" y="278" width="150" height="58" rx="6" fill="#4c1d95" stroke="#a78bfa" stroke-width="1.5"/>
+  <text x="381" y="296" font-size="12" font-weight="bold" fill="white" text-anchor="middle">demand plan</text>
+  <text x="381" y="311" font-size="10.5" fill="#c4b5fd" text-anchor="middle">capture-currency +</text>
+  <text x="381" y="324" font-size="10.5" fill="#c4b5fd" text-anchor="middle">cache probes (prefix)</text>
+
+  <!-- hit -->
+  <rect x="486" y="278" width="140" height="58" rx="6" fill="#5a4a3a" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="556" y="296" font-size="12" font-weight="bold" fill="white" text-anchor="middle">cache HIT</text>
+  <text x="556" y="311" font-size="10.5" fill="#fed7aa" text-anchor="middle">cookLoad — upload</text>
+  <text x="556" y="324" font-size="10.5" fill="#fed7aa" text-anchor="middle">plane, skip compute</text>
+  <line x1="456" y1="300" x2="482" y2="300" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="469" y="294" font-size="10" fill="#aaa" text-anchor="middle">hit</text>
+
+  <!-- miss path -->
+  <line x1="381" y1="336" x2="381" y2="366" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="372" y="354" font-size="10" fill="#aaa" text-anchor="end">miss</text>
+
+  <rect x="306" y="370" width="170" height="52" rx="6" fill="#4c1d95" stroke="#a78bfa" stroke-width="1.5"/>
+  <text x="391" y="388" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">writeParams(ctx)</text>
+  <text x="391" y="404" font-size="10.5" fill="#c4b5fd" text-anchor="middle">plugs → params SSBO,</text>
+  <text x="391" y="416" font-size="10.5" fill="#c4b5fd" text-anchor="middle">PRE dispatch</text>
+
+  <rect x="506" y="364" width="230" height="64" rx="6" fill="#1a3a3a" stroke="#34d399" stroke-width="1.5"/>
+  <text x="621" y="382" font-size="12" font-weight="bold" fill="white" text-anchor="middle">dispatch phase (GPU)</text>
+  <text x="621" y="398" font-family="monospace" font-size="10" fill="#a7f3d0" text-anchor="middle">beginDispatchPhase → compute() →</text>
+  <text x="621" y="412" font-family="monospace" font-size="10" fill="#a7f3d0" text-anchor="middle">endDispatchPhase = submit + WAIT</text>
+  <line x1="476" y1="396" x2="502" y2="396" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <rect x="766" y="370" width="184" height="52" rx="6" fill="#5a4a3a" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="858" y="388" font-size="12" font-weight="bold" fill="white" text-anchor="middle">cookStore</text>
+  <text x="858" y="404" font-size="10.5" fill="#fed7aa" text-anchor="middle">strategic cache points only</text>
+  <text x="858" y="416" font-size="10.5" fill="#fed7aa" text-anchor="middle">→ dflowcache</text>
+  <line x1="736" y1="396" x2="762" y2="396" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <text x="806" y="330" font-size="10.5" fill="#aaa" text-anchor="middle">one submission per node —</text>
+  <text x="806" y="343" font-size="10.5" fill="#aaa" text-anchor="middle">outputs GPU-complete before</text>
+  <text x="806" y="356" font-size="10.5" fill="#aaa" text-anchor="middle">the next node runs</text>
+
+  <!-- B3 capture flush -->
+  <rect x="286" y="452" width="410" height="100" rx="8" fill="#4c1d95" stroke="#a78bfa" stroke-width="2" filter="url(#shadow)"/>
+  <text x="491" y="472" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">Capture flush (concurrent encode jobs)</text>
+  <text x="491" y="490" font-size="11" fill="#c4b5fd" text-anchor="middle">pass 1 — FieldStats: min / max / mean per channel</text>
+  <text x="491" y="506" font-size="11" fill="#c4b5fd" text-anchor="middle">pass 2 — encode: EXR = ABSOLUTE meters (R32F);</text>
+  <text x="491" y="522" font-size="11" fill="#c4b5fd" text-anchor="middle">PNG16 = normalized [min,max] → [0,65535] preview</text>
+  <text x="491" y="538" font-size="11" fill="#c4b5fd" text-anchor="middle">+ capture-currency .cookhash sidecars</text>
+  <line x1="491" y1="432" x2="491" y2="448" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- B4 artifacts -->
+  <rect x="736" y="452" width="234" height="100" rx="8" fill="#5a4a3a" stroke="#f59e0b" stroke-width="2" filter="url(#shadow)"/>
+  <text x="853" y="472" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">on-disk artifacts</text>
+  <text x="853" y="490" font-family="monospace" font-size="10.5" fill="#fed7aa" text-anchor="middle">&lt;name&gt;.terrain.json manifest</text>
+  <text x="853" y="506" font-family="monospace" font-size="10.5" fill="#fed7aa" text-anchor="middle">height.exr · normal.exr · masks</text>
+  <text x="853" y="522" font-family="monospace" font-size="10.5" fill="#fed7aa" text-anchor="middle">ScatterSet .ogeo</text>
+  <text x="853" y="538" font-size="10.5" fill="#fed7aa" text-anchor="middle">(scatter_place / scatter sinks)</text>
+  <line x1="696" y1="502" x2="732" y2="502" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- ======================= LANE 3 : RUNTIME ======================= -->
+  <rect x="20" y="574" width="960" height="150" rx="10" fill="#252540" stroke="#4a5568"/>
+  <text x="34" y="594" font-size="12" font-weight="bold" fill="#aaa">RUNTIME — per-frame consumers of the baked asset</text>
+
+  <polyline points="853,552 853,562 210,562 210,602" fill="none" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+  <polyline points="853,552 853,562 500,562 500,602" fill="none" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="853" y1="552" x2="853" y2="602" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <rect x="60" y="606" width="290" height="86" rx="8" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="205" y="626" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">TerrainChunkDrawableData</text>
+  <text x="205" y="644" font-size="11" fill="#a7f3d0" text-anchor="middle">pull-VS baseline; mesh-shader modes</text>
+  <text x="205" y="660" font-family="monospace" font-size="10.5" fill="#a7f3d0" text-anchor="middle">ORKID_TERRAIN_MESHSHADER=1|2</text>
+  <text x="205" y="676" font-size="11" fill="#a7f3d0" text-anchor="middle">heights sampled in TRUE meters</text>
+
+  <rect x="370" y="606" width="270" height="86" rx="8" fill="#4c1d95" stroke="#a78bfa" stroke-width="2" filter="url(#shadow)"/>
+  <text x="505" y="626" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">BulletShapeTerrainData</text>
+  <text x="505" y="644" font-size="11" fill="#c4b5fd" text-anchor="middle">terrain_collider — physics built from</text>
+  <text x="505" y="660" font-size="11" fill="#c4b5fd" text-anchor="middle">the BAKED asset (physics-proxy law);</text>
+  <text x="505" y="676" font-size="11" fill="#c4b5fd" text-anchor="middle">world y == baked height (meters)</text>
+
+  <rect x="660" y="606" width="310" height="86" rx="8" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="815" y="626" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">instance consumers</text>
+  <text x="815" y="644" font-family="monospace" font-size="10.5" fill="#a7f3d0" text-anchor="middle">instance_source=(asset, sink, type_id)</text>
+  <text x="815" y="660" font-size="11" fill="#a7f3d0" text-anchor="middle">scatter .ogeo → instanced drawables</text>
+  <text x="815" y="676" font-size="11" fill="#a7f3d0" text-anchor="middle">(hypermesh forests, pueblo villages)</text>
+
+  <!-- ======================= LEGEND ======================= -->
+  <rect x="30" y="746" width="14" height="14" rx="3" fill="#1e3a5f" stroke="#22d3ee"/>
+  <text x="50" y="757" font-size="11" fill="#ddd">Python authoring</text>
+  <rect x="180" y="746" width="14" height="14" rx="3" fill="#4c1d95" stroke="#a78bfa"/>
+  <text x="200" y="757" font-size="11" fill="#ddd">C++ driver / CPU stage</text>
+  <rect x="370" y="746" width="14" height="14" rx="3" fill="#1a3a3a" stroke="#34d399"/>
+  <text x="390" y="757" font-size="11" fill="#ddd">GPU work</text>
+  <rect x="490" y="746" width="14" height="14" rx="3" fill="#5a4a3a" stroke="#f59e0b"/>
+  <text x="510" y="757" font-size="11" fill="#ddd">artifact / disk cache</text>
+</svg>

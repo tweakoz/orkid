@@ -11,6 +11,7 @@
 #include <ork/rtti/downcast.h>
 #include <ork/object/Object.h>
 #include <ork/lev2/aud/audiodevice.h>
+#include <ork/lev2/aud/spatializer.h>
 #include <ork/lev2/aud/singularity/cz1.h>
 #include <ork/lev2/aud/singularity/krzdata.h>
 #include <ork/lev2/aud/singularity/tx81z.h>
@@ -598,6 +599,16 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                               return rval;
                             })
                         .def(
+                            "configureSoundFieldSend",
+                            // the SAME control-thread helper both ECS sound emitters call: a
+                            //  host-built voice program routes into the SoundField exactly as
+                            //  an emitter-built one does.
+                            [](lyrdata_ptr_t ldata, spatializerdata_ptr_t spatializer, dspblkdata_ptr_t pannerBlock) {
+                              configureSoundFieldSend(ldata, spatializer, pannerBlock);
+                            },
+                            py::arg("spatializer"),
+                            py::arg("pannerBlock"))
+                        .def(
                             "clone",
                             [](lyrdata_ptr_t ldata) -> lyrdata_ptr_t { //
                               return ldata->clone();
@@ -630,6 +641,22 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                             },
                             [](lyrdata_ptr_t ldata, std::string busname) { //
                               ldata->_outbus = busname;
+                            })
+                        .def_property(
+                            "sendBus",                               //
+                            [](lyrdata_ptr_t ldata) -> std::string { //
+                              return ldata->_sendbus;
+                            },
+                            [](lyrdata_ptr_t ldata, std::string busname) { //
+                              ldata->_sendbus = busname;
+                            })
+                        .def_property(
+                            "sendLevel",                       // linear amplitude
+                            [](lyrdata_ptr_t ldata) -> float { //
+                              return ldata->_sendLevel;
+                            },
+                            [](lyrdata_ptr_t ldata, float level) { //
+                              ldata->_sendLevel = level;
                             })
                         .def_property(
                             "keymap",
@@ -871,7 +898,22 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
           .def_property(
               "root_key",
               [](sample_ptr_t sample) -> int { return sample->_rootKey; },
-              [](sample_ptr_t sample, int val) { sample->_rootKey = val; });
+              [](sample_ptr_t sample, int val) { sample->_rootKey = val; })
+          // the loaded int16 block, exactly as the sampler will play it (copy).
+          // this is what makes loader behavior (bias removal, peak normalization)
+          // observable from a test without booting a synth.
+          .def_property_readonly(
+              "sample_block",
+              [](sample_ptr_t sample) -> py::array_t<int16_t> { //
+                auto as_wav = sample->_user.tryAs<WaveformData>();
+                if (not as_wav)
+                  throw std::runtime_error("SampleData.sample_block: sample has no loaded waveform");
+                const auto& src = as_wav.value()._sampledata;
+                auto out        = py::array_t<int16_t>(src.size());
+                auto buf        = out.request();
+                memcpy(buf.ptr, src.data(), src.size() * sizeof(int16_t));
+                return out;
+              });
 
   type_codec->registerStdCodec<sample_ptr_t>(sampdata_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -1311,7 +1353,11 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                          .def_property(
                              "outputbus", //
                              [](keyonmod_ptr_t kmod) -> outbus_ptr_t { return kmod->_outbus_override; },
-                             [](keyonmod_ptr_t kmod, outbus_ptr_t val) { kmod->_outbus_override = val; });
+                             [](keyonmod_ptr_t kmod, outbus_ptr_t val) { kmod->_outbus_override = val; })
+                         .def_property(
+                             "priority", //
+                             [](keyonmod_ptr_t kmod) -> int { return kmod->_priority; },
+                             [](keyonmod_ptr_t kmod, int val) { kmod->_priority = val; });
   type_codec->registerStdCodec<keyonmod_ptr_t>(konmod_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto spectralIR_type =

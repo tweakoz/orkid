@@ -65,6 +65,28 @@ vertex_shader vs_concrete
   frg_camz    = vec3(0, 0, 0);
 }
 ///////////////////////////////////////////////////////////////
+// SINGLE-PASS STEREO twin — one line differs: the clip transform reads the per-VIEW
+// view-projection out of ublk_stereo, indexed by the multiview view selector.
+///////////////////////////////////////////////////////////////
+vertex_shader vs_concrete_stereo
+  : vif_concrete
+  : lib_pbr_vtx
+  : ublk_std_matrices
+  : ublk_stereo {
+  gl_Position = (spvr_vp[ofx_viewIndex] * m) * position;
+  frg_uv0     = uv0;
+  frg_wpos    = m * position;
+  frg_clr     = vtxcolor;
+
+  vec3 wn = normalize(mat3(m) * normal);
+  vec3 wb = normalize(mat3(m) * binormal);
+  vec3 wt = cross(wn, wb);
+  frg_tbn = mat3(wt, wb, wn);
+
+  frg_camdist = 0.0;
+  frg_camz    = vec3(0, 0, 0);
+}
+///////////////////////////////////////////////////////////////
 // Noise library for procedural concrete
 ///////////////////////////////////////////////////////////////
 libblock lib_concrete_noise {
@@ -209,6 +231,14 @@ vertex_shader vs_concrete_dpp
   gl_Position = hpos;
   frg_camz = hpos.z / hpos.w;
 }
+vertex_shader vs_concrete_dpp_stereo
+  : vif_concrete_dpp
+  : ublk_std_matrices
+  : ublk_stereo {
+  vec4 hpos = (spvr_vp[ofx_viewIndex] * m) * position;
+  gl_Position = hpos;
+  frg_camz = hpos.z / hpos.w;
+}
 fragment_shader ps_concrete_dpp : fif_concrete_dpp {
   out_z = frg_camz;
 }
@@ -226,4 +256,16 @@ technique FWD_CV_NM_RI_NI_MO {
 technique FWD_DEPTHPREPASS_RI_NI_MO {
   fxconfig = fxcfg_default;
   vf_pass = { vs_concrete_dpp, ps_concrete_dpp, sb_concrete }
+}
+
+///////////////////////////////////////////////////////////////
+// SINGLE-PASS STEREO peers — same fragment stage and state block as the _MO twins.
+///////////////////////////////////////////////////////////////
+technique FWD_CT_NM_RI_NI_ST {
+  fxconfig = fxcfg_default;
+  vf_pass = { vs_concrete_stereo, ps_concrete_forward, sb_concrete }
+}
+technique FWD_DEPTHPREPASS_RI_NI_ST {
+  fxconfig = fxcfg_default;
+  vf_pass = { vs_concrete_dpp_stereo, ps_concrete_dpp, sb_concrete }
 }

@@ -69,6 +69,35 @@ if _args["xcode"]!=False:
 if _args["obttrace"]==True:
   _glob.enableBuildTracing()
 
+############################################################################
+# BUILD MUTEX (owner-adjudicated 2026-07-22): serialize concurrent builds that
+# share ONE staging install. Concurrent make on a shared tree + interleaved
+# `make install`s = stale-.o FALSE-GREENS and cross-contaminated gates (the
+# two-engine-lane incident). flock on <stage>/.ork_build_mutex — the kernel
+# releases it on process death, so there are no stale locks to clean. Separate
+# stagings (private-prefix worktrees) do not contend. A second build WAITS with
+# a loud notice rather than failing: serialization IS the desired semantics.
+############################################################################
+import fcntl, time as _time
+_mutex_path = str(stage_dir/".ork_build_mutex")
+_mutex_f = open(_mutex_path, "a+")
+try:
+  fcntl.flock(_mutex_f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+except OSError:
+  try:
+    _mutex_f.seek(0)
+    _holder = _mutex_f.read().strip() or "unknown"
+  except Exception:
+    _holder = "unknown"
+  print("[ork.build] build mutex BUSY (%s) at %s — waiting..." % (_holder, _mutex_path), flush=True)
+  _t0 = _time.time()
+  fcntl.flock(_mutex_f, fcntl.LOCK_EX)  # block until the holder exits/finishes
+  print("[ork.build] build mutex acquired after %.0fs" % (_time.time()-_t0), flush=True)
+_mutex_f.seek(0)
+_mutex_f.truncate()
+_mutex_f.write("pid %d since %s\n" % (os.getpid(), _time.strftime("%H:%M:%S")))
+_mutex_f.flush()
+
 with buildtrace.NestedBuildTrace({ "op": "obt.build.py"}) as nested:
 
   build_dest.mkdir(parents=True,exist_ok=True)

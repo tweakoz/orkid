@@ -3,7 +3,7 @@ import sys, random
 from orkengine.core import *
 from orkengine.lev2 import *
 from orkengine.lev2 import singularity as S
-from _sampler import createLayer, createSampleLayer
+from ork.singularity.sampler import createLayer, createSampleLayer
 ################################################################################
 sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
 from _boilerplate import *
@@ -37,7 +37,7 @@ class WaveformsApp(SingulTestApp):
     ############################
 
     if True:      
-      newlyr, SOSCIL = createLayer(newprog)
+      newlyr, SOSCIL, dspstg, ampstg = createLayer(newprog)
 
       #########################################
       # waveform data

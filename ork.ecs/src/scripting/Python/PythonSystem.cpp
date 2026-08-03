@@ -268,6 +268,51 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
 
 PythonSystem::~PythonSystem() {
 
+  // ORDERING LAW: every obind handle this system owns must be dropped HERE, with the
+  // sim SUB-interpreter's thread state attached. Member destruction runs inside
+  // ~Simulation's systems walk (main thread, no thread state attached): a raw
+  // obind::object decref there reaches _Py_brc_queue_object, which dereferences the
+  // current — dead — thread state and faults AFTER an otherwise clean run
+  // (free-threaded python). _pythonContext is a member destroyed after this body, so
+  // the sub-interpreter is still alive at this point.
+  if (_pythonContext) {
+    _pythonContext->bindSubInterpreter();
+    _extraScripts.clear(); // ~PythonSysScript decrefs run here, tstate attached
+    _systemScript.reset();
+    _pymethodOnSystemUpdate.reset();
+    _pymethodOnSystemGpuUpdate.reset();
+    _pymethodOnSystemInit.reset();
+    _pymethodOnSystemLink.reset();
+    _pymethodOnSystemActivate.reset();
+    _pymethodOnSystemStage.reset();
+    _pymethodOnSystemNotify.reset();
+    _pymethodOnComponentActivate.reset();
+    _pymethodOnComponentDeactivate.reset();
+    _pythonContext->unbindSubInterpreter();
+  }
+
+  bool survivor = (not _extraScripts.empty())               //
+                  or bool(_systemScript)                    //
+                  or bool(_pymethodOnSystemUpdate)          //
+                  or bool(_pymethodOnSystemGpuUpdate)       //
+                  or bool(_pymethodOnSystemInit)            //
+                  or bool(_pymethodOnSystemLink)            //
+                  or bool(_pymethodOnSystemActivate)        //
+                  or bool(_pymethodOnSystemStage)           //
+                  or bool(_pymethodOnSystemNotify)          //
+                  or bool(_pymethodOnComponentActivate)     //
+                  or bool(_pymethodOnComponentDeactivate);
+
+  if (survivor) {
+    printf(
+        "PythonSystem::~PythonSystem() a python handle SURVIVED the sub-interpreter release "
+        "(pythonContext<%p> extraScripts<%zu>) - it would decref with no thread state attached "
+        "during ~Simulation. Release it above.\n",
+        (void*)_pythonContext.get(),
+        _extraScripts.size());
+    OrkAssert(false);
+  }
+
   printf("PythonSystem::~PythonSystem()\n");
 }
 
@@ -368,13 +413,22 @@ void PythonSystem::_onActivateComponent(PythonComponent* component) {
 }
 void PythonSystem::_onDeactivateComponent(PythonComponent* component) {
 
-  if (_pymethodOnComponentDeactivate or not _extraScripts.empty()) {
+  if (_pymethodOnComponentDeactivate or not _extraScripts.empty() or component->_scriptLoaded) {
     _pythonContext->bindSubInterpreter();
     auto wrapped = pycomponent_ptr_t(component);
     if (_pymethodOnComponentDeactivate)
       __pcallargs(_pymethodOnComponentDeactivate, wrapped);
     for (auto& es : _extraScripts)
       if (es._onCompDeactivate) __pcallargs(es._onCompDeactivate, wrapped);
+    // Same ORDERING LAW as ~PythonSystem: the component's own handles must be dropped
+    // while the sub-interpreter thread state is attached. ~Entity (Simulation::_uninitialize)
+    // deletes components with nothing attached, so a raw decref there faults in
+    // _Py_brc_queue_object. Deactivate is the last point the sub-interp is reachable per
+    // component; _scriptLoaded goes back to false so a re-activate re-execs the script.
+    component->_pyOnUpdate.reset();
+    component->_pyOnActivate.reset();
+    component->_scriptNamespace.reset();
+    component->_scriptLoaded = false;
     _pythonContext->unbindSubInterpreter();
   }
 
@@ -574,7 +628,9 @@ void PythonSystem::_onGpuUpdate(Simulation* psi, lev2::Context* ctx) {
   // onSystemGpuUpdate hook — render-rate work (e.g. VR head pose). onSystemUpdate is
   // UPDATE-THREAD ONLY and is NEVER invoked here. ctx is intentionally NOT forwarded
   // to the script yet (script takes only the sim).
-  OrkProfilerSampleScope(CHANNEL_UPDATE, "PythonSystem::_onGpuUpdate");
+  // CHANNEL_MAIN, not CHANNEL_UPDATE: this runs on the render thread, and profiler channels
+  // are keyed per (name,thread) - CHANNEL_UPDATE exists only on the update thread.
+  OrkProfilerSampleScope(CHANNEL_MAIN, "PythonSystem::_onGpuUpdate");
   // ONLY the dedicated render-tick hook runs here. onSystemUpdate is UPDATE-THREAD
   // ONLY (it runs in _onUpdate) — NEVER call it from the gpu/render thread.
   if (_pymethodOnSystemGpuUpdate or not _extraScripts.empty()) {

@@ -37,7 +37,11 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   // Check if this is a depth buffer or cubemap
   bool is_depth = (rtbuffer->_usage == "depth"_crcu);
   bool is_cube  = (ptex->_texType == ETEXTYPE_CUBE);
-  int num_layers = is_cube ? 6 : 1;
+  // layered (multiview / stereo) RTG: a plain 2D-ARRAY image of N layers — NOT cube-compatible.
+  //  depth follows color here; a 1-layer depth against an N-layer color is an instant
+  //  attachment-layer-count validation error in the multiview pass.
+  bool is_layered = (not is_cube) and (rtbuffer->_numLayers > 1);
+  int num_layers = is_cube ? 6 : (is_layered ? rtbuffer->_numLayers : 1);
 
   if (0) {
     logchan_txirtg->log(
@@ -71,6 +75,8 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   std::string debug_name = rtbuffer->_debugName.empty() ? "rtbuffer_texture" : rtbuffer->_debugName;
   if (is_cube) {
     debug_name += "_cube";
+  } else if (is_layered) {
+    debug_name += FormatString("_layered%d", num_layers);
   }
   // RTG textures use slot [0] only (no double-buffering needed)
   vk_tex->_imgobj[0] = std::make_shared<VulkanImageObject>(_contextVK, img_info, debug_name);
@@ -95,6 +101,20 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
     IVCI->subresourceRange.levelCount = num_mips;
     IVCI->subresourceRange.baseArrayLayer = 0;
     IVCI->subresourceRange.layerCount = 6;
+  } else if (is_layered) {
+    // ONE array view spanning every layer: multiview renders all views through this single
+    //  attachment view. (Per-layer VIEW_TYPE_2D views are a separate concern — that is the
+    //  "arrayslice" path, used to extract a single layer afterwards.)
+    IVCI = std::make_shared<VkImageViewCreateInfo>();
+    initializeVkStruct(*IVCI, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
+    IVCI->image = vk_tex->_imgobj[0]->_vkimage;
+    IVCI->viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+    IVCI->format = VkFormatConverter::convertBufferFormat(format);
+    IVCI->subresourceRange.aspectMask = aspect_mask;
+    IVCI->subresourceRange.baseMipLevel = 0;
+    IVCI->subresourceRange.levelCount = num_mips;
+    IVCI->subresourceRange.baseArrayLayer = 0;
+    IVCI->subresourceRange.layerCount = num_layers;
   } else {
     IVCI = createImageViewInfo2D(
         vk_tex->_imgobj[0]->_vkimage,
@@ -174,7 +194,7 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
       VK_ACCESS_TRANSFER_WRITE_BIT);
   clear_barrier->subresourceRange.aspectMask = aspect_mask;
   clear_barrier->subresourceRange.levelCount = num_mips;
-  clear_barrier->subresourceRange.layerCount = num_layers;  // Handle all layers for cubemaps
+  clear_barrier->subresourceRange.layerCount = num_layers;  // all layers (cubemap faces / layered-RTG views)
 
   vkCmdPipelineBarrier(
       vk_cmdbuf,
@@ -182,7 +202,7 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
       VK_PIPELINE_STAGE_TRANSFER_BIT,
       0, 0, nullptr, 0, nullptr, 1, clear_barrier.get());
 
-  // Clear the image (all layers)
+  // Clear the image (all layers: cube faces / layered-RTG views)
   if (is_depth) {
     VkClearDepthStencilValue clear_value = {1.0f, 0};
     VkImageSubresourceRange range = {VK_IMAGE_ASPECT_DEPTH_BIT, 0, (uint32_t)num_mips, 0, (uint32_t)num_layers};
@@ -204,7 +224,7 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
       access_flags);
   attach_barrier->subresourceRange.aspectMask = aspect_mask;
   attach_barrier->subresourceRange.levelCount = num_mips;
-  attach_barrier->subresourceRange.layerCount = num_layers;  // Handle all layers for cubemaps
+  attach_barrier->subresourceRange.layerCount = num_layers;  // all layers (cubemap faces / layered-RTG views)
 
   vkCmdPipelineBarrier(
       vk_cmdbuf,

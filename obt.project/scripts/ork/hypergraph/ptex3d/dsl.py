@@ -178,6 +178,25 @@ class TexSample(SurfNode):
   def _make_key(self): return ("tex", self._sname, self._uv.key())
 
 
+class TexArraySample(SurfNode):
+  """A render-time TEXTURE-ARRAY sample — `texture(<sname>, vec3(<uv>, <layer>))`, a vec4. `sname`
+  becomes a real `sampler2DArray` uniform in the generated FXV2 (a bindable — attach a TextureArray at
+  runtime via `material.bindParam(sname, texarray)`), the natural carrier for the O3 baked per-section
+  texture-array path: each mesh section unwraps into its own array LAYER (SectionUnwrap writes the layer
+  index into UV0.z), and this samples that layer. In a compute BAKE (no runtime sampler) it degrades to
+  a constant `_default`. Swizzle (.r/.x) for a 1-channel map."""
+  __slots__ = ("_sname", "_uv", "_layer", "_default")
+
+  def __init__(self, sname, uv, layer, default=0.0):
+    super().__init__("vec4")
+    self._sname   = sname
+    self._uv      = uv
+    self._layer   = layer
+    self._default = default
+
+  def _make_key(self): return ("texarray", self._sname, self._uv.key(), self._layer.key())
+
+
 class Bundle:
   """Multi-output op result (e.g. voronoi) exposing named scalar fields that
   swizzle a shared underlying vecN node — so the node emits once (CSE)."""
@@ -593,6 +612,28 @@ class SurfaceCtx:
   N_object = property(lambda self: CtxRef("onrm", "vec3"))   # OBJECT-space normal (triplanar weights)
   NO       = property(lambda self: CtxRef("onrm", "vec3"))   # OBJECT normal (explicit alias of N_object)
   NV       = property(lambda self: CtxRef("vnrm", "vec3"))   # VIEW-space normal — opt-in: referencing it emits the per-vertex transform
+  tbn      = property(lambda self: CtxRef("tbn",  "mat3"))   # world tangent/bitangent/normal basis (frg_tbn cols) — always
+  #   threaded into ptex_surface/ptex_capture/ptex_alpha (NOT opt-in): tbn*v lifts a tangent-frame vec to WORLD,
+  #   transpose(tbn)*n projects a WORLD normal into the surface tangent frame (the tangent-space normal-map store).
+  B_payload = property(
+      lambda self: CtxRef("obinr", "vec3"),
+      doc="""The RAW, UNNORMALIZED object-space BINORMAL attribute — a per-vertex
+      float3 PAYLOAD slot, not a tangent.
+
+      The stock VS normalizes the binormal into frg_obin (the analytic-bump
+      tangent), which destroys the magnitude of any mesh that carries data there
+      — e.g. the star catalog bakes LINEAR RADIANCE into it, four decades of
+      luminance the byte-quantized vertex color cannot hold. Referencing this
+      atom is OPT-IN: it drops that normalize and threads the attribute through
+      to the surface. Materials that use the binormal as a TANGENT are unaffected
+      (every bump reader re-normalizes), and materials that never name it
+      generate byte-identical text.
+
+      SURFACE-ONLY: ptex_height / ptex_capture / ptex_alpha do not receive it
+      (naming it in those bodies is a loud python-side error). The value is
+      interpolated across the primitive like any varying — a payload constant
+      per PRIMITIVE (all its verts equal) survives exactly; a payload that
+      differs per vertex arrives blended.""")
   uv       = property(lambda self: CtxRef("uv",   "vec2"))   # free-range uv
   Cd       = property(lambda self: CtxRef("cd",   "vec4"))   # 4D per-vertex selector
   eye      = property(lambda self: CtxRef("eye",  "vec3"))   # camera world position
@@ -600,6 +641,52 @@ class SurfaceCtx:
   #   target-polymorphic: fragment ~ length(fwidth(p)); bake = texel size extent_m/dim. The portable
   #   substitute for screen derivatives so AA logic (fbm_aa/aa_ramp) can run in a compute bake.
   extent_m  = property(lambda self: CtxRef("extent_m", "float"))   # BAKE: XZ world span (meters)
+
+  sun_dir = property(
+      lambda self: CtxRef("sun_dir.xyz", "vec3"),
+      doc="""The scene's directional SUN, live per frame — the xyz of the ublk_sun
+      global (stdtools.i2), written by the forward prologue
+      (fwdnode_impl_sub.cpp _update_sun_cascades).
+
+      SIGN: this is the sunlight TRAVEL direction (sun -> scene), NOT a to-sun
+      vector: a sun overhead at noon reads (0,-1,0). Negate for the classic
+      to-sun/L vector:  to_sun = -ctx.sun_dir  (its .y is then sin(elevation)).
+
+      OPT-IN: referencing it makes the surface libblock inherit ublk_sun. The
+      block is bound by the FORWARD lighting pipeline only — the impostor
+      capture / masked depth prepass leave it unbound (has_sun reads 0), so
+      ALWAYS gate on ctx.has_sun and fall back. No bake form (compute-field
+      expressions reject it).""")
+  has_sun = property(
+      lambda self: CtxRef("sun_dir.w", "float"),
+      doc="""1.0 when the scene declared a directional sun and this pass bound
+      ublk_sun, 0.0 otherwise (sunless scene, or a pass that does not bind the
+      block). The gate for every ctx.sun_dir use.""")
+  sun_color = property(
+      lambda self: CtxRef("sun_color.xyz", "vec3"),
+      doc="""The live sun's COLOR (rgb) — the same ublk_sun block as ctx.sun_dir,
+      so the same opt-in / has_sun-gating rules apply.""")
+  sun_intensity = property(
+      lambda self: CtxRef("sun_color.w", "float"),
+      doc="""The live sun's INTENSITY — the light's declared intensity times the
+      per-frame day/night policy scale (scene/_night_policy.py), so it CROSSFADES
+      smoothly through the sun->moon handoff while ctx.sun_dir SNAPS to whichever
+      body holds the cascade. Any radiometry keyed on sun elevation must weight by
+      this, or the direction snap shows up as a one-frame brightness step. Not
+      normalized: divide by the light's declared intensity (Scene.sun default 4.0)
+      for a 0..1 weight. Same opt-in / has_sun gating as ctx.sun_dir.""")
+
+  sky_luminance = property(
+      lambda self: CtxRef("sky_ambient.x", "float"),
+      doc="""The MEASURED mean luminance of the sky the frame is lit by — the
+      published environment's floor-level average, decoded to radiance
+      (RadianceMaps::_measuredLuminance). Same ublk_sun block and same opt-in /
+      has_sun rules as ctx.sun_dir, but unlike the sun atoms it is NOT keyed to
+      whichever body holds the cascade: it is what the sky actually is, so it
+      falls monotonically from noon to the night floor through the sun->moon
+      handoff with no discontinuity to paper over. Zero when nothing has
+      published yet. Use it for contrast against the sky (a star is visible when
+      it out-shines the background), never as an 'is it night' flag.""")
 
   def input(self, k):
     """BAKE-only: value of image input In{k} at this texel (hfdisplacement/multi-input
@@ -632,6 +719,22 @@ class SurfaceCtx:
     if isinstance(name, CaptureRef):
       return getattr(TexSample(name.target, u, default), name.slot)
     return TexSample(name, u, default)
+
+  # O3 baked texture-array path — SectionUnwrap writes each section's dense LAYER index into UV0.z; the VS
+  # forwards it (opt-in varying frg_uv0z) into ptex_surface as the `ptexlayer` param (like ctx.NV -> vnrm),
+  # so referencing ctx.layer emits the per-vertex forward. Rigid (non-SSBO) meshes are single-section -> 0.
+  layer = property(lambda self: CtxRef("ptexlayer", "float"))
+
+  def texArray(self, name, uv=None, layer=None, default=0.0):
+    """Sample a bound TEXTURE ARRAY `name` (a real sampler2DArray uniform) at `uv` (default ctx.uv) and
+    `layer` (default ctx.layer = the section's layer index carried in UV0.z by SectionUnwrap). Returns a
+    vec4 — swizzle .r/.x for a single-channel map. Attach a TextureArray at runtime via
+    material.bindParam(name, texarray). `default` is the constant used in a compute bake (which has no
+    sampler). This is the O3 baked per-section-array surface path: one material samples the shared array
+    with a per-fragment layer index — no per-gid draw buckets."""
+    u = self.uv   if uv    is None else _wrap(uv)
+    l = self.layer if layer is None else _wrap(layer)
+    return TexArraySample(name, u, l, default)
 
 
 ###############################################################################
@@ -830,20 +933,31 @@ class Ptex3d:
   def surface(self, *, albedo=None, metallic=None, roughness=None,
               normal=None, emissive=None, ao=None, opacity=None,
               blend="off", depth_test="leq", depth_write=True, cull="front",
-              alpha_to_coverage=False, **lobes):
+              alpha_to_coverage=False, alpha_cutout=None, **lobes):
     """LIT PBR surface. The TEXTURED channels (albedo/metallic/roughness/normal/emissive/ao + the
     optional per-pixel `opacity`) take SurfNode expressions. Extra kwargs are glTF PBR LOBES
     (transmission/ior/clearcoat/sheen/subsurface/...) — material-level CONSTANT uniforms.
     Rasterstate (default = opaque, byte-identical to before): `blend` off/alpha/additive,
     `depth_test` leq/less/always/off, `depth_write`, `cull` front/back/off. Set blend!="off" +
     `opacity=` for TRANSPARENT lit PBR (e.g. RELIGHTABLE gaussians: per-splat BRDF + gaussian
-    alpha). For an UNLIT emissive surface (standard 3DGS / skybox / FX), use self.unlit(...)."""
+    alpha). For an UNLIT emissive surface (standard 3DGS / skybox / FX), use self.unlit(...).
+
+    alpha_cutout (A3): declare the surface a CUTOUT at this opacity threshold (float or
+    ctx.param) — the codegen then emits a MASKED depth prepass that evaluates ONLY the
+    opacity subgraph and discards below the cutoff, so holes stop z-occluding and stop
+    casting solid-card shadows (sun cascades / spot shadows / main-view prepass). Keep it
+    equal to the color pass's own discard threshold. Requires an `opacity` channel."""
     chans = {}
     for name, val in (("albedo", albedo), ("metallic", metallic), ("roughness", roughness),
                       ("normal", normal), ("emissive", emissive), ("ao", ao), ("opacity", opacity)):
       if val is not None:
         chans[name] = _wrap(val)
     self._channels = chans
+    if alpha_cutout is not None:
+      if opacity is None:
+        raise TypeError("surface(): alpha_cutout requires an opacity channel (the masked "
+                        "depth prepass evaluates the opacity subgraph)")
+      self._alpha_cutout = _wrap(alpha_cutout)
     self._surface_mode = "lit"
     # A2C (order-independent foliage): fragment alpha -> MSAA coverage; needs an MSAA RTG + per-pixel opacity.
     self._raster = dict(blend=blend, depth_test=depth_test, depth_write=depth_write, cull=cull,
@@ -987,6 +1101,7 @@ class _Emitter:
     self.imports = set()
     self.params = {}       # insertion-ordered: pname -> (gtype, default)
     self.samplers = []     # insertion-ordered-unique sampler2D names (ctx.tex) -> emitted as a sampler_set
+    self.array_samplers = [] # insertion-ordered-unique sampler2DArray names (ctx.texArray) -> same sampler_set
     self.atoms = set()     # CtxRef glsl names referenced (for the bake portability gate)
     # atom-name remap (e.g. {"opos": "coord"}) — lets the height field be emitted
     # as a function of a marched/offset coordinate rather than the fixed varying.
@@ -1026,6 +1141,25 @@ class _Emitter:
           self.samplers.append(node._sname)
         uvexpr = self.expr(node._uv)
         self.lines.append("vec4 %s = texture(%s, %s);" % (var, node._sname, uvexpr))
+      self.cache[k] = var
+      return var
+    if isinstance(node, TexArraySample):
+      k = node.key()
+      hit = self.cache.get(k)
+      if hit is not None:
+        return hit
+      var = "t%d" % self.n
+      self.n += 1
+      if self.bake_params:
+        # a compute bake has no runtime sampler -> constant fallback
+        self.lines.append("vec4 %s = vec4(%s);" % (var, _bake_literal(node._default, "float")))
+      else:
+        if node._sname not in self.array_samplers:
+          self.array_samplers.append(node._sname)
+        uvexpr    = self.expr(node._uv)
+        layerexpr = self.expr(node._layer)
+        # sampler2DArray: 3rd coord is the (float) layer index (nearest layer at sample time).
+        self.lines.append("vec4 %s = texture(%s, vec3(%s, %s));" % (var, node._sname, uvexpr, layerexpr))
       self.cache[k] = var
       return var
     if isinstance(node, Op):
@@ -1077,7 +1211,7 @@ def emit_surface(channels):
     assigns.append("o.%s = %s;" % (field, e))
   body = "\n".join(em.lines + assigns)
   libsrcs, inherits, imports, params = _emitter_deps(em)
-  return body, libsrcs, sorted(inherits), sorted(imports), params, list(em.samplers)
+  return body, libsrcs, sorted(inherits), sorted(imports), params, list(em.samplers), list(em.array_samplers)
 
 
 def emit_captures(captures):
@@ -1097,12 +1231,23 @@ def emit_captures(captures):
     bytarget[target].append((slot, node._type, glsl))
   assigns = []
   for target in targets:
-    comps = ["0.0", "0.0", "0.0", "0.0"]
+    comps  = ["0.0", "0.0", "0.0", "0.0"]
+    filled = set()
     for (slot, gtype, glsl) in bytarget[target]:
       w = _WIDTH[gtype]
       for k, ch in enumerate(slot):
         idx = "xyzw".index(ch)
         comps[idx] = glsl if w == 1 else "%s.%s" % (glsl, "xyzw"[k])
+        filled.add(idx)
+    # COVERAGE ALPHA: a capture target that leaves the w (alpha) component UNFILLED carries fragment
+    # COVERAGE there — a covered fragment writes 1.0, and the bake's (0,0,0,0) MRT clear leaves the
+    # uncovered atlas gutter at 0.0. This is free for the forward read (surface_stored samples .xyz),
+    # and the C++ section-array assembler reads this alpha as the mask that DILATES chart RGB outward
+    # into the gutter — killing the bilinear/mip black-edge bleed at per-section chart borders. Targets
+    # that pack real data into w (e.g. terrain base=roughness, nrmao=ao, wm) fill index 3 and are
+    # therefore byte-identical.
+    if 3 not in filled:
+      comps[3] = "1.0"
     assigns.append("c.%s = vec4(%s);" % (target, ", ".join(comps)))
   body = "\n".join(em.lines + assigns)
   libsrcs, inherits, imports, params = _emitter_deps(em)
@@ -1136,10 +1281,16 @@ def emit_compute_field(node):
   where input_indices are the ctx.input(k) referenced (caller validates vs connected count)."""
   em = _Emitter(bake_params=True)
   final = _coerce(em.expr(node), node._type, "float")
-  # portable-core gate: view-dependent atoms have no bake form. Reject with a clear
-  # message at trace time (Phase 3 will add call-site provenance to the diagnostic).
+  # portable-core gate: view/frame-dependent atoms have no bake form. Reject with a
+  # clear message at trace time (Phase 3 will add call-site provenance to the diagnostic).
   _forbidden = {"vnrm": "ctx.NV (view-space normal)", "eye": "ctx.eye (camera position)",
-                "cd": "ctx.Cd (per-vertex color)"}
+                "cd": "ctx.Cd (per-vertex color)",
+                "obinr": "ctx.B_payload (raw per-vertex binormal payload)",
+                "sun_dir.xyz": "ctx.sun_dir (live scene sun)",
+                "sun_dir.w": "ctx.has_sun (live scene sun)",
+                "sun_color.xyz": "ctx.sun_color (live scene sun)",
+                "sun_color.w": "ctx.sun_intensity (live scene sun)",
+                "sky_ambient.x": "ctx.sky_luminance (live sky measurement)"}
   bad = [msg for atom, msg in _forbidden.items() if atom in em.atoms]
   if bad:
     raise TypeError(
@@ -1195,7 +1346,7 @@ def _build_ptex3d(dsl_class, name_hint=None, vertex_source=None, mode="proc", **
   if mode == "stored" and caps:
     if not stored_chans:
       raise RuntimeError("%s: mode='stored' declares captures but no surface_stored()" % dsl_class.__name__)
-    body, libsrcs, inherits, imports, pspecs, samplers = emit_surface(stored_chans)
+    body, libsrcs, inherits, imports, pspecs, samplers, array_samplers = emit_surface(stored_chans)
     cap_body, c_libs, c_inh, c_imp, c_params, c_samps, targets = emit_captures(caps)
     libsrcs  = _union_ordered(libsrcs, c_libs)          # union helpers (capture exprs need their own)
     inherits = sorted(set(inherits) | set(c_inh))
@@ -1212,8 +1363,47 @@ def _build_ptex3d(dsl_class, name_hint=None, vertex_source=None, mode="proc", **
     # mode='proc' (live) OR impostor (whole-surface fixed-MRT capture): render surface().
     if not getattr(inst, "_channels", None):
       raise RuntimeError("%s built no surface() channels" % dsl_class.__name__)
-    body, libsrcs, inherits, imports, pspecs, samplers = emit_surface(inst._channels)
+    body, libsrcs, inherits, imports, pspecs, samplers, array_samplers = emit_surface(inst._channels)
     wants_capture = _wants_impostor or _wants_capture
+
+  # A3 masked depth prepass — slice ONLY the opacity subgraph out of the surface
+  # (the per-channel SurfNode trees make this exact: a fresh emitter visits just
+  # the opacity expr's nodes). Its helpers/params/samplers are already declared
+  # by the full surface emit (opacity is one of its channels); lib_ptex_alpha
+  # inherits lib_ptex_surface so everything is in scope.
+  masked_kwargs = {}
+  _cutout = getattr(inst, "_alpha_cutout", None)
+  if _cutout is not None:
+    _op_chans = stored_chans if (mode == "stored" and caps) else inst._channels
+    _op = _op_chans.get("opacity")
+    if _op is None:
+      raise RuntimeError("%s: alpha_cutout declared but the compiled surface has no "
+                         "opacity channel" % dsl_class.__name__)
+    aem = _Emitter()
+    a_final = _coerce(aem.expr(_op), _op._type, "float")
+    if "eye" in aem.atoms:
+      raise TypeError(
+          "%s: alpha_cutout with an eye-dependent opacity is unsupported — the "
+          "masked depth pass runs without camera state (shadow cascades have no "
+          "meaningful eye). Drop ctx.eye from the opacity expression or remove "
+          "alpha_cutout." % dsl_class.__name__)
+    if any(a.startswith(("sun_dir", "sun_color")) for a in aem.atoms):
+      raise TypeError(
+          "%s: alpha_cutout with a sun-dependent opacity is unsupported — the "
+          "masked depth pass never binds ublk_sun (has_sun reads 0 there), so the "
+          "depth mask would disagree with the color pass. Drop ctx.sun_dir/"
+          "ctx.has_sun/ctx.sun_color/ctx.sun_intensity from the opacity expression "
+          "or remove alpha_cutout." % dsl_class.__name__)
+    pspecs = _merge_param_specs(pspecs, _emitter_deps(aem)[3])
+    cem = _Emitter()
+    c_expr = _coerce(cem.expr(_cutout), _cutout._type, "float")
+    if cem.lines:
+      raise ValueError("surface(alpha_cutout=) must be a param or constant, not a "
+                       "compound expression")
+    pspecs = _merge_param_specs(pspecs, _emitter_deps(cem)[3])
+    masked_kwargs = dict(masked_dpp_body="\n".join(aem.lines),
+                         masked_dpp_expr=a_final,
+                         masked_dpp_cutout=c_expr)
 
   height_kwargs = {}
   height   = getattr(inst, "_height", None)
@@ -1287,9 +1477,11 @@ def _build_ptex3d(dsl_class, name_hint=None, vertex_source=None, mode="proc", **
   _raster = getattr(inst, "_raster", {})
   path = materialize_surface_fxv2(body, libblock=libblock, lib_inherits=inherits,
                                   extra_imports=imports, params=pspecs, samplers=samplers,
+                                  array_samplers=array_samplers,
                                   name_hint=name_hint or dsl_class.__name__.lower(),
                                   surface_mode=_mode, wants_capture=wants_capture, **_raster,
-                                  **height_kwargs, **vskw, **matkw, **capture_kwargs)
+                                  **height_kwargs, **vskw, **matkw, **capture_kwargs,
+                                  **masked_kwargs)
   lobes = dict(getattr(inst, "_lobes", None) or {})   # class-declared PBR lobes
   return path, pspecs, lobes, capture_kwargs.get("capture_targets", ())
 

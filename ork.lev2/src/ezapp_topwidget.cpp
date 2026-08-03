@@ -10,11 +10,47 @@
 #include <ork/kernel/environment.h>
 #include <ork/util/logger.h>
 #include <ork/profiling.inl>
+#include <cstdio>
+#include <cstdlib>
 
 using namespace std::string_literals;
 
 namespace ork::lev2 {
 static logchannel_ptr_t logchan_ezapp = logger()->getChannel("EZAPP2");
+///////////////////////////////////////////////////////////////////////////////
+namespace {
+// ORKID_FRAME_WALLTIME_LOG=<path> : one "<frame_index> <period_ms>" line per DISPLAYED
+// frame, for offline percentile work. Unset = never opened, nothing written. The file is
+// flushed every _kflush frames because a bench run ends by SIGTERM (or a device-lost
+// crash), neither of which runs the destructor.
+struct FrameWallTimeLog {
+  static constexpr int _kflush = 64;
+  ~FrameWallTimeLog() {
+    if (_file)
+      fclose(_file);
+  }
+  void write(float period_ms) {
+    if (not _opened) {
+      _opened    = true;
+      auto path  = std::getenv("ORKID_FRAME_WALLTIME_LOG");
+      if (path) {
+        _file = fopen(path, "w");
+        if (nullptr == _file)
+          fprintf(stderr, "ORKID_FRAME_WALLTIME_LOG<%s> could not be opened for writing\n", path);
+      }
+    }
+    if (nullptr == _file)
+      return;
+    fprintf(_file, "%d %.4f\n", _index++, period_ms);
+    if (0 == (_index % _kflush))
+      fflush(_file);
+  }
+  FILE* _file  = nullptr;
+  bool _opened = false;
+  int _index   = 0;
+};
+FrameWallTimeLog _frame_walltime_log;
+} // namespace
 ///////////////////////////////////////////////////////////////////////////////
 EzTopWidget::EzTopWidget(EzMainWin* mainwin)
     : ui::Group("ezviewport", 1, 1, 1, 1)
@@ -145,6 +181,17 @@ void EzTopWidget::DoDraw(ui::drawevent_constptr_t drwev) {
   }
   ///////////////////////////
   if (_mainwin->_onDraw) {
+    // TRUE frame time — sampled HERE, at the top of the displayed-frame path, so the
+    //  delta spans the whole cycle (record + endFrame's present wait + swap + gpuUpdate
+    //  + event pump) rather than just the onDraw callback's record work. First frame has
+    //  no predecessor, so it publishes nothing.
+    if (_frame_period_valid) {
+      float period_ms = float(_frame_period_timer.SecsSinceStart() * MS_PER_SEC);
+      ezapp->_frame_period_ms.store(period_ms);
+      _frame_walltime_log.write(period_ms);
+    }
+    _frame_period_timer.Start();
+    _frame_period_valid = true;
     EASY_BLOCK("EzTopWidget drawcontent", profiler::colors::Red);
     auto ctx = drwev->GetTarget();
     ctx->beginFrame();

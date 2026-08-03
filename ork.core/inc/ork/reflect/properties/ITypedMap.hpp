@@ -60,6 +60,13 @@ struct NODEENC<varmap::var_t> {
       // a named fx-pipeline provider token (e.g. RCFD_TIME). Store its hash — the provider registry
       // is hash-keyed, so the name isn't needed to resolve it on load (decode_value reconstructs it).
       encoded = "crcstr:" + std::to_string(value.get<crcstring_ptr_t>()->hashed());
+    } else if (auto as_obj = serdes::varObjectEncode(value)) {
+      // a reflected object handed over by the scene (eg pbr::SkyAtmosphereData).
+      // Handing the instance to the serializer is what makes standard reflection
+      // write every property — serializeContainerElement promotes the leaf to a
+      // nested object node, so nothing per-property is written here.
+      elemnode->_value.set<object_ptr_t>(as_obj);
+      return;
     } else {
       encoded = "null:";
     }

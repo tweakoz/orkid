@@ -27,8 +27,10 @@ class LeafProc(Ptex3d):
     midrib = 1.0 - self.aa_ramp(half, 0.0, 0.05)
     base   = albedo * P.mix(0.82, 1.18, ctx.Cd.y)  # per-leaf brightness variation
     col    = P.mix(base, base * 0.55, midrib)       # vein darker
+    # alpha_cutout matches the color-pass discard below (0.5) — emits the A3 masked
+    # depth prepass so leaf holes neither z-occlude nor cast solid-card shadows.
     self.surface(albedo=col, opacity=alpha, roughness=roughness, metallic=metallic,
-                 alpha_to_coverage=True, cull="off")
+                 alpha_to_coverage=True, cull="off", alpha_cutout=0.5)
     # ALPHA MASK: a hard discard cuts the rectangle to the leaf shape EVEN WITHOUT MSAA (A2C only
     # softens the surviving edge when MSAA is on). TWO-SIDED: flip the surface normal on back faces so
     # back-lit leaves shade correctly (cull="off" otherwise reuses the front normal). Injected after

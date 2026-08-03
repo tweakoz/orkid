@@ -4,6 +4,7 @@
 fxconfig fxcfg_default {
   glsl_version = "330";
   import "orkshader://stdtools.i2";
+  import "orkshader://dithertools.i2";
 }
 ///////////////////////////////////////////////////////////////
 uniform_set ublock_vtx {
@@ -22,6 +23,14 @@ uniform_block ublock_frg (descriptor_set 0) {
   int FlipX;
   float downsampleamp;
   float BlendWeight;
+  // OUTPUT DITHER enable, per CALL SITE (0 = off). These blits are the last
+  // shader before the 8-bit stores that band: main_rtg (BGRA8) for the desktop
+  // /offscreen screen output, and the per-eye SSAA buffers (RGBA8) the OpenXR
+  // runtime receives. The SAME techniques also blit into FLOAT targets
+  // (OutputNodeRtGroup, RGBA32F) where there is nothing to dither and where
+  // byte-identity is a standing gate contract - hence a uniform, not a baked
+  // constant. Unbound leaves it 0 (the FlipX/FlipY precedent in this block).
+  float DitherAmt;
 }
 ///////////////////////////////////////////////////////////////
 sampler_set samplers(descriptor_set 0) {
@@ -43,7 +52,7 @@ vertex_shader vs_blit : vif_PC : ublock_vtx {
   frg_clr     = vtxcolor;
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_blit : iface_fmt : samplers {
+fragment_shader ps_blit : iface_fmt : lib_dither : samplers {
   vec2 uv = gl_FragCoord.xy;
   if( FlipY == 1 ) {
     uv.y = ViewportDim.y - uv.y;
@@ -53,19 +62,19 @@ fragment_shader ps_blit : iface_fmt : samplers {
   }
   vec2 uvb = uv.xy - vec2(0.5, 0.5);
   vec3 texc = texelFetch(ColorMap, ivec2(uvb),0).xyz;
-  out_clr   = vec4(texc, 1);
+  out_clr   = vec4(texc + outputDitherTPDF(gl_FragCoord.xy, 133.0) * DitherAmt, 1);
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_blituv : vif_PT : ublock_vtx {
   gl_Position = MatMVP * position;
   frg_uv0     = uv0;
 }
-fragment_shader ps_blituv : fif_T : samplers {
+fragment_shader ps_blituv : fif_T : ublock_frg : lib_dither : samplers {
   vec4 texc = texture(ColorMap, frg_uv0);
-  out_clr   = vec4(texc.xyz, 1);
+  out_clr   = vec4(texc.xyz + outputDitherTPDF(gl_FragCoord.xy, 133.0) * DitherAmt, 1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_downsample2x2 : iface_fmt : samplers {
+fragment_shader ps_downsample2x2 : iface_fmt : lib_dither : samplers {
   const float kscale = 1.0 / 4.0;
   vec2 uv = gl_FragCoord.xy;
   if( FlipY == 1 ) {
@@ -83,9 +92,9 @@ fragment_shader ps_downsample2x2 : iface_fmt : samplers {
       outc += texc;
     }
   }
-  out_clr = vec4(outc * kscale, 1);
+  out_clr = vec4(outc * kscale + outputDitherTPDF(gl_FragCoord.xy, 133.0) * DitherAmt, 1);
 }
-fragment_shader ps_downsample3x3 : iface_fmt : samplers {
+fragment_shader ps_downsample3x3 : iface_fmt : lib_dither : samplers {
   const float kscale = 1.0 / 9.0;
   vec2 uv = gl_FragCoord.xy;
   if( FlipY == 1 ) {
@@ -103,9 +112,9 @@ fragment_shader ps_downsample3x3 : iface_fmt : samplers {
       outc += texc;
     }
   }
-  out_clr = vec4(outc * kscale, 1);
+  out_clr = vec4(outc * kscale + outputDitherTPDF(gl_FragCoord.xy, 133.0) * DitherAmt, 1);
 }
-fragment_shader ps_downsample4x4 : iface_fmt : samplers {
+fragment_shader ps_downsample4x4 : iface_fmt : lib_dither : samplers {
   const float kscale = 1.0 / 16.0;
   vec2 uv = gl_FragCoord.xy;
   if( FlipY == 1 ) {
@@ -123,9 +132,9 @@ fragment_shader ps_downsample4x4 : iface_fmt : samplers {
       outc += texc;
     }
   }
-  out_clr = vec4(outc * kscale, 1);
+  out_clr = vec4(outc * kscale + outputDitherTPDF(gl_FragCoord.xy, 133.0) * DitherAmt, 1);
 }
-fragment_shader ps_downsample5x5 : iface_fmt : samplers {
+fragment_shader ps_downsample5x5 : iface_fmt : lib_dither : samplers {
   const float kscale = 1.0 / 25.0;
   vec2 uv = gl_FragCoord.xy;
   if( FlipY == 1 ) {
@@ -148,9 +157,9 @@ fragment_shader ps_downsample5x5 : iface_fmt : samplers {
       outc += texc;
     }
   }
-  out_clr = vec4(outc / tot_w, 1);
+  out_clr = vec4(outc / tot_w + outputDitherTPDF(gl_FragCoord.xy, 133.0) * DitherAmt, 1);
 }
-fragment_shader ps_downsample6x6 : iface_fmt : samplers {
+fragment_shader ps_downsample6x6 : iface_fmt : lib_dither : samplers {
   const float kscale = 1.0 / 36.0;
   vec2 uv = gl_FragCoord.xy;
   if( FlipY == 1 ) {
@@ -168,9 +177,9 @@ fragment_shader ps_downsample6x6 : iface_fmt : samplers {
       outc += texc;
     }
   }
-  out_clr = vec4(outc * kscale, 1);
+  out_clr = vec4(outc * kscale + outputDitherTPDF(gl_FragCoord.xy, 133.0) * DitherAmt, 1);
 }
-fragment_shader ps_downsample7x7 : iface_fmt : samplers {
+fragment_shader ps_downsample7x7 : iface_fmt : lib_dither : samplers {
   vec2 uv = gl_FragCoord.xy;
   if( FlipY == 1 ) {
     uv.y = ViewportDim.y - uv.y;
@@ -192,7 +201,7 @@ fragment_shader ps_downsample7x7 : iface_fmt : samplers {
       outc += texc;
     }
   }
-  out_clr = vec4(outc / tot_w, 1);
+  out_clr = vec4(outc / tot_w + outputDitherTPDF(gl_FragCoord.xy, 133.0) * DitherAmt, 1);
 }
 ///////////////////////////////////////////////////////////////
 state_block sb_blit : default {

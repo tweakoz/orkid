@@ -50,6 +50,14 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
                 return clone;
               },
               [](compositingpassdata_ptr_t cpd, cameramatrices_ptr_t m) { cpd->setSharedCameraMatrices(m); })
+          // SINGLE-PASS STEREO: the one flag every stereo technique/pipeline fork reads off the
+          // active CPD. Set it on a CPD pushed below the compositor and a draw takes the _ST arm.
+          .def(
+              "setSinglePassStereo",
+              [](compositingpassdata_ptr_t cpd, bool ena) { cpd->setSinglePassStereo(ena); })
+          .def_property_readonly(
+              "is_single_pass_stereo",
+              [](compositingpassdata_ptr_t cpd) -> bool { return cpd->isSinglePassStereo(); })
           .def("__repr__", [](compositingpassdata_ptr_t d) -> std::string {
             fxstring<64> fxs;
             fxs.format("CompositingPassData(%p)", d.get());
@@ -274,6 +282,27 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
               "exposure",
               [](postnode_aces_ptr_t dcnode) -> float { return dcnode->_exposure; },
               [](postnode_aces_ptr_t dcnode, float exposure) { dcnode->_exposure = exposure; })
+#define _ACES_ADAPT_PROP(pyname, member)                                                       \
+  .def_property(                                                                               \
+      pyname,                                                                                  \
+      [](postnode_aces_ptr_t n) -> float { return n->member; },                                \
+      [](postnode_aces_ptr_t n, float v) { n->member = v; })
+          _ACES_ADAPT_PROP("adapt_day_luminance", _adaptDayLuminance)      //
+          _ACES_ADAPT_PROP("adapt_twilight_luminance", _adaptTwilightLuminance) //
+          _ACES_ADAPT_PROP("adapt_floor_luminance", _adaptFloorLuminance)  //
+          _ACES_ADAPT_PROP("adapt_day", _adaptDay)                         //
+          _ACES_ADAPT_PROP("adapt_twilight", _adaptTwilight)               //
+          _ACES_ADAPT_PROP("adapt_floor", _adaptFloor)
+#undef _ACES_ADAPT_PROP
+          // the adaptation curve itself, so a gate can sweep it without a frame.
+          // seed_sun_elevation_sin is only consulted when luminance < 0.
+          .def(
+              "sceneAdaptation",
+              [](postnode_aces_ptr_t n, float luminance, float seed_sun_elevation_sin) -> float {
+                return n->sceneAdaptation(luminance, seed_sun_elevation_sin);
+              },
+              py::arg("luminance"),
+              py::arg("seed_sun_elevation_sin") = 1.0f)
           .def("__repr__", [](postnode_aces_ptr_t d) -> std::string {
             fxstring<64> fxs;
             fxs.format("PostFxNodeACES(%p)", d.get());
@@ -755,12 +784,39 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
           .def("closeExternalViewer", [](dualmonovroutnode_ptr_t self) { //
             self->closeExternalViewer();
           })
+          .def(
+              "downsampledEyeRtGroup",
+              [](dualmonovroutnode_ptr_t self, bool left) -> rtgroup_ptr_t { //
+                return self->downsampledEyeRtGroup(left);
+              },
+              py::arg("left"))
           .def("__repr__", [](dualmonovroutnode_ptr_t n) -> std::string {
             fxstring<64> fxs;
             fxs.format("DualMonoVrOutputNode(%p)", n.get());
             return fxs.c_str();
           });
   type_codec->registerStdCodec<dualmonovroutnode_ptr_t>(dmvroutnode_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  // SPVR. downsampledEyeRtGroup carries the SAME contract it does on the dual-mono
+  //  node — same name, same per-eye buffer shape — so a two-slot parity harness can
+  //  read both nodes through one call site.
+  using spvroutnode_ptr_t = std::shared_ptr<SinglePassStereoVrOutputNode>;
+  auto spvroutnode_type   = //
+      py::class_<SinglePassStereoVrOutputNode, OutputCompositingNode, spvroutnode_ptr_t>(
+          module_lev2, "SinglePassStereoVrOutputNode")
+          .def(
+              "downsampledEyeRtGroup",
+              [](spvroutnode_ptr_t self, bool left) -> rtgroup_ptr_t { //
+                return self->downsampledEyeRtGroup(left);
+              },
+              py::arg("left"))
+          .def("__repr__", [](spvroutnode_ptr_t n) -> std::string {
+            fxstring<64> fxs;
+            fxs.format("SinglePassStereoVrOutputNode(%p)", n.get());
+            return fxs.c_str();
+          });
+  type_codec->registerStdCodec<spvroutnode_ptr_t>(spvroutnode_type);
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   auto rtgoutnode_type = //

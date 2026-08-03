@@ -493,6 +493,12 @@ OSStatus AuContext::_outputProc(
     return noErr;
   }
 
+  // xrun telemetry is ALWAYS counted (relaxed atomic adds) so any run can be
+  // scored — this is the genuine HAL callback, the one the ratchet requires to
+  // have run before it reads a window (test_audio_first_window.py).
+  auto& diagctrs = audioDiagCounters();
+  diagctrs._callbacks.fetch_add(1, std::memory_order_relaxed);
+
   OSStatus err          = noErr;
   _this->output_started = true;
   Float64 rate          = 0.0;
@@ -682,6 +688,7 @@ OSStatus AuContext::_outputProc(
   };
 
   //////////////////////////////////////////////
+  const bool was_primed = _this->_stream_primed.load(std::memory_order_relaxed);
   bool processed_any = false;
   while (inumframes_remaining > 0) {
     if (_this->_curMixOutGroup) {
@@ -702,6 +709,20 @@ OSStatus AuContext::_outputProc(
       }
     }
   }
+  if (processed_any) {
+    _this->_stream_primed.store(true, std::memory_order_relaxed);
+  }
+  // frames left unfilled = silence went to the device. before the queue has
+  // ever delivered, that is start-up pre-roll; after, it is a real drop-out
+  // and scores as an underflow (the darwin equivalent of paOutputUnderflow).
+  if (inumframes_remaining > 0) {
+    if (was_primed) {
+      diagctrs._underflows.fetch_add(1, std::memory_order_relaxed);
+    } else {
+      _this->_preroll_starves.fetch_add(1, std::memory_order_relaxed);
+    }
+  }
+
   if (!processed_any && !_this->_inputDev) {
     static int empty_count = 0;
     if (++empty_count % 100 == 0) { // Log every 100th empty callback

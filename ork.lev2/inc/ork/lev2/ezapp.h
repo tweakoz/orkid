@@ -138,6 +138,10 @@ struct EzTopWidget : public ui::Group {
   EzMainWin* _mainwin;
   ui::layoutgroup_ptr_t _topLayoutGroup;
   std::atomic<int> _initstate;
+  // wall-clock frame-to-frame period, sampled at the top of the displayed-frame
+  // path in DoDraw (see OrkEzAppBase::_frame_period_ms).
+  Timer _frame_period_timer;
+  bool _frame_period_valid = false;
 };
 ////////////////////////////////////////////////////////////////////////////////
 struct StdDraw {
@@ -157,6 +161,12 @@ public:
   static OrkEzAppBase* _staticapp;
   std::atomic<int> _update_count;
   std::atomic<int> _render_count;
+  // TRUE frame time (ms): the wall-clock period between successive displayed
+  // frames, measured across the WHOLE render cycle (command record + endFrame's
+  // submit/present fence wait + swap + gpuUpdate + event pump). Written by
+  // EzTopWidget::DoDraw, read by any HUD/instrument. A bracket around an onDraw
+  // callback alone measures only the record portion and is NOT frame time.
+  std::atomic<float> _frame_period_ms{0.0f};
 };
 ////////////////////////////////////////////////////////////////////////////////
 struct OrkEzApp : public OrkEzAppBase {

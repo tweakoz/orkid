@@ -28,6 +28,7 @@
 #pragma once
 
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -42,13 +43,25 @@ struct Context;
 // GpuFrameTiming — EMA model of the §2.2 shadow budget computation.
 //
 //   target_ms   = env ORKID_MT_TARGET_MS (default 16.667, i.e. 60Hz)
-//   frame_ms    = EMA(cpu frame wall) — tracked for telemetry, not yet consumed
-//                 by the budget formula (kept per the §2.1 model shape; MT1+
-//                 may fold it in)
+//   frame_ms    = EMA(cpu frame wall) — telemetry only. It is NOT subtracted
+//                 from headroom: the app's CPU work overlaps the GPU work
+//                 gpu_ms already accounts for, so charging both double-counts
+//                 the same frame. The microtask-specific slice cost below is
+//                 the part gpu_ms genuinely cannot see.
 //   gpu_ms      = EMA(sane GPU-frame timestamps), or -1 if never available/sane
 //   idle_ms     = EMA(present-idle fence wait)
-//   headroom_ms = gpu_ms sane this frame ? (target_ms - gpu_ms) : idle_ms
+//   mt_cpu_ms   = EMA(the scheduler's per-frame slice wall, noteSchedulerTelemetry)
+//   headroom_ms = (gpu_ms sane this frame ? (target_ms - gpu_ms) : idle_ms) - mt_cpu_ms
 //   budget_us   = clamp((headroom_ms - safety_ms) * 1000, 0, max_budget_us)
+//
+// COMFORT-1: mt_cpu_ms is why the formula is honest about inline GPU jobs. A
+// slice that runs Context::executeInlineGpuJob submits its OWN command buffer
+// and blocks on its OWN fence BEFORE the frame's primary CB is submitted, so
+// none of that time lands inside the frame timestamp bracket — a frame that
+// just spent 17ms fence-waiting on a refilter slice would otherwise be judged
+// to have a full frame of headroom and be handed another such slice. The EMA
+// decays over the frames where no slice runs, which is what paces a heavy
+// sliced job instead of hitching on it.
 //
 // One instance per Context. MT0 wires it into VkContext only — there is no
 // live GL backend in this tree today; the null-GpuSliceTimer path below IS
@@ -78,7 +91,8 @@ struct GpuFrameTiming {
   bool    lastSourceIsTimestamps() const { return _lastSourceIsTs; }
   float   cpuFrameMsEma() const { return _cpuFrameMsEma; }
   float   presentIdleMsEma() const { return _presentIdleMsEma; }
-  float   gpuFrameMsEma() const { return _gpuFrameMsEma; } // -1 if never sane
+  float   gpuFrameMsEma() const { return _gpuFrameMsEma; }        // -1 if never sane
+  float   microtaskCpuMsEma() const { return _microtaskCpuMsEma; } // -1 until the first frame
 
 private:
   void _ensureEnvLoaded();
@@ -90,9 +104,10 @@ private:
   int64_t _maxBudgetUs   = 25000;   // ORKID_MT_MAX_US
   bool    _traceEnabled = false;    // ORKID_MT_TRACE (rate-limited to 1 line/sec)
 
-  float _cpuFrameMsEma    = -1.0f;
-  float _presentIdleMsEma = -1.0f;
-  float _gpuFrameMsEma    = -1.0f; // -1 until the first sane timestamp sample
+  float _cpuFrameMsEma     = -1.0f;
+  float _presentIdleMsEma  = -1.0f;
+  float _gpuFrameMsEma     = -1.0f; // -1 until the first sane timestamp sample
+  float _microtaskCpuMsEma = -1.0f; // -1 until the first frame (COMFORT-1)
 
   int64_t _lastBudgetUs   = 0;
   bool    _lastSourceIsTs = false;
@@ -183,11 +198,56 @@ struct GpuMicrotask {
   virtual bool    runSlice(MicrotaskContext& mctx)   = 0; // true = more slices remain
   virtual float   progress() const { return -1.0f; }      // optional, for HUD
 
+  // COMFORT-2: the key the NEXT slice is measured under. A task whose steps are
+  // several cost populations (the radiance prefilter's GPU filter steps vs its
+  // CPU package steps) overrides this so each population learns its own scale;
+  // the scheduler re-seeds _estimateScaleQ16 from the registry whenever the key
+  // it returns changes. Default = one population, the task's _costKey.
+  virtual const std::string& sliceCostKey() const { return _costKey; }
+
   std::string    _name;                            // HUD + async-tracker tag
+  // COMFORT-1: MicrotaskCostRegistry key — what this task's slice cost is
+  // LEARNED AS, across task instances. Empty = no persistence (the task's own
+  // estimate is all the scheduler ever has). Keys must discriminate anything
+  // that dominates cost (source extent, sample counts), or a cheap client
+  // inherits an expensive one's learned scale.
+  std::string    _costKey;
   MicrotaskClass _class        = MicrotaskClass::OPPORTUNISTIC;
   int64_t        _deadlineFrame = -1;              // SOFT_DEADLINE: frame it wants completion by; -1 = always-due
 
+  // How many slices of THIS task one frame may run; 0 = no per-task limit (the
+  // budget is the only throttle). The budget alone is not enough: an UNBOUNDED
+  // context (offscreen/loader — §2.2) has no per-frame deadline, so the drain
+  // loop happily runs a whole job's slices back to back in one beginFrame. That
+  // is correct for the loader and wrong for a RECURRING job on a context that
+  // is presenting frames — the sky IBL refilter's 56 slices measured 89-134ms
+  // in a single offscreen frame against a 1.9ms median. A task that spans frames
+  // by design says so here.
+  int            _maxSlicesPerFrame = 0;
+
+  // COLD START: this task's slices are exempt from the per-frame budget gate —
+  // the scheduler runs them back to back until the task completes or hands the
+  // frame back, hitching the frame ON PURPOSE. Only legal for a job whose
+  // result is required before the frames it would otherwise be paced across
+  // (the FIRST sky IBL bake: until it publishes, the scene is lit by
+  // placeholder radiance, and pacing that over 50+ frames is the artifact).
+  // Set with _maxSlicesPerFrame = 0 (no quota) — a quota would cap the drain.
+  // NOT a BudgetMode: the mode is the whole context's and is sticky, this is
+  // one task's, and it dies with the task instance, which is what makes the
+  // return to normal pacing exact (the next instance is built without it).
+  bool           _unboundedDrain = false;
+
+  // Set BY A SLICE to hand the rest of this frame back: the task leaves the
+  // frame's active set and resumes at the same step on the next drain. For a
+  // slice that made NO progress because it waits on completion this thread
+  // cannot advance (a capture readback's conversion worker). The scheduler
+  // clears it. Before _unboundedDrain, _maxSlicesPerFrame paced such polling to
+  // one per frame as a side effect; with the quota off that side effect is gone
+  // and the poll would become a render-thread spin against another thread.
+  bool           _yieldFrame = false;
+
   // scheduler-owned (do not touch from task code) ///////////////////////////
+  std::string _activeCostKey;         // key _estimateScaleQ16 is currently seeded for (COMFORT-2)
   int64_t  _estimateScaleQ16 = 65536; // auto-halving multiplier (T1 feedback loop); never recovers (§2.3)
   int64_t  _lastMeasuredUs   = -1;
   uint64_t _slicesRun        = 0;
@@ -196,8 +256,67 @@ struct GpuMicrotask {
   bool     _asyncTracked     = false; // asyncWorkBegin fired for this task (so complete/cancel asyncWorkEnd once)
   bool     _loggedLie        = false; // T1: the "lies about slice cost" loud log is once-per-task
   uint64_t _framesWaited     = 0;     // MAINTENANCE starvation-floor accounting
+  uint64_t _framesDeferred   = 0;     // COMFORT-1: consecutive frames the est>budget gate skipped this task
+  uint64_t _sliceFrameIndex  = 0;     // frame _slicesThisFrame is counted for (_maxSlicesPerFrame)
+  int      _slicesThisFrame  = 0;
 };
 using gpumicrotask_ptr_t = std::shared_ptr<GpuMicrotask>;
+
+///////////////////////////////////////////////////////////////////////////////
+// MicrotaskCostRegistry (COMFORT-1) — process-wide learned slice cost, keyed by
+// GpuMicrotask::_costKey and therefore SURVIVING task instances.
+//
+// Why it must exist: a client like the sky IBL refilter builds a FRESH task per
+// cycle. Everything the scheduler learned about the last cycle (the T1
+// auto-halving scale) died with that instance, so the first — and heaviest —
+// slices of every cycle sailed through the est>budget gate with a 1x scale on a
+// small fixed seed, and hitched the frame they landed in.
+//
+// What is persisted is the SCALE, as an EMA, not a raw last-measured cost: a
+// one-time pipeline-warmup slice must not pin the estimate above every possible
+// budget forever (the failure mode the fixed-seed estimate was written to avoid
+// — see RadiancePrefilterMicrotask::sliceEstimateUs). The EMA rises fast and
+// decays over a handful of slices, so a warmup outlier pays for itself once;
+// the scheduler's deferral escape (kDeferralEscapeFrames) is the hard guarantee
+// that even a permanently over-budget estimate DEFERS rather than drops.
+//
+// Also the per-slice CPU-wall measurement surface (the numbers a comfort/hitch
+// investigation needs), readable from python via lev2.microtaskCostStats().
+///////////////////////////////////////////////////////////////////////////////
+
+struct MicrotaskCostRegistry {
+
+  struct Entry {
+    double   _estScaleQ16Ema   = 65536.0; // learned estimate multiplier (Q16, EMA)
+    int64_t  _lastSeedScaleQ16 = 65536;   // scale the most recent instance was seeded with
+    uint64_t _instancesSeeded  = 0;       // task instances that took a seed from this key
+    int64_t  _lastSliceUs      = -1;
+    int64_t  _worstSliceUs     = 0;
+    // The worst slice a SINGLE outlier does not explain — a job whose final
+    // step is structurally heavier than its body (radiance prefilter: filter
+    // slices vs the one packaging+publish slice) reads as one number too few
+    // otherwise, and "the hitch is one known step" and "every step hitches" are
+    // very different defects.
+    int64_t  _secondWorstSliceUs = 0;
+    int64_t  _totalSliceUs     = 0;
+    uint64_t _sliceCount       = 0;
+    uint64_t _deferrals        = 0; // est>budget skips (deferred to a later frame)
+    uint64_t _escapes          = 0; // slices run under the anti-starvation escape
+  };
+  using entry_map_t = std::map<std::string, Entry>;
+
+  // Read at enqueue: the scale a new instance starts from (>= 65536 == 1x).
+  static int64_t seedScaleQ16(const std::string& key);
+  // Written on measure, from the scheduler's drain loop.
+  static void noteSlice(const std::string& key, int64_t raw_estimate_us, int64_t measured_us);
+  static void noteDeferral(const std::string& key, bool escaped);
+  static entry_map_t snapshot();
+  // Clears the MEASUREMENTS (worst/total/count/deferrals/escapes) and keeps
+  // both the learned scale and the seeding history — a measurement harness
+  // wants per-cycle numbers without throwing away what the scheduler knows (and
+  // "what it knew going into this cycle" is itself an observable).
+  static void resetMeasurements();
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 // GpuMicrotaskScheduler — ONE per Context, owned by Context.
@@ -258,6 +377,7 @@ private:
   bool    _envLoaded   = false;
   int64_t _maxBudgetUs = 25000; // ORKID_MT_MAX_US (matches GpuFrameTiming cap)
   bool    _traceEnabled = false;
+  bool    _forceRealtimeOffscreen = false; // ORKID_MT_FORCE_REALTIME (gate hook, see _ensureEnvLoaded)
 
   Telemetry _telemetry;
 };

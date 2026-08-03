@@ -516,6 +516,14 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
           slp->importTranslatable<StorageInterface>(name, as_sif, slp->_slp_cache->_storage_interfaces);
         }
         ////////////////////////////////////////////////////////////////////////////////////////
+        else if (auto as_tskif = std::dynamic_pointer_cast<TaskInterface>(translatable)) {
+          slp->importTranslatable<TaskInterface>(name, as_tskif, slp->_slp_cache->_task_interfaces);
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////
+        else if (auto as_tskpld = std::dynamic_pointer_cast<TaskPayload>(translatable)) {
+          slp->importTranslatable<TaskPayload>(name, as_tskpld, slp->_slp_cache->_task_payloads);
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////
         else if (auto as_vsh = std::dynamic_pointer_cast<VertexShader>(translatable)) {
@@ -532,6 +540,14 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
         ////////////////////////////////////////////////////////////////////////////////////////
         else if (auto as_csh = std::dynamic_pointer_cast<ComputeShader>(translatable)) {
           slp->importTranslatable<ComputeShader>(name, as_csh, slp->_slp_cache->_compute_shaders);
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////
+        else if (auto as_msh = std::dynamic_pointer_cast<MeshShader>(translatable)) {
+          slp->importTranslatable<MeshShader>(name, as_msh, slp->_slp_cache->_mesh_shaders);
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////
+        else if (auto as_tsk = std::dynamic_pointer_cast<TaskShader>(translatable)) {
+          slp->importTranslatable<TaskShader>(name, as_tsk, slp->_slp_cache->_task_shaders);
         }
         ////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////
@@ -929,6 +945,8 @@ int _semaLinkToInheritances(
         bool check_frg_iface   = false;
         bool check_com_iface   = false;
         bool check_sto_iface   = false;
+        bool check_tsk_iface   = false;
+        bool check_tsk_payload = false;
         bool check_stateblocks = false;
         /////////////////////////////////
         // LibraryBlocks
@@ -996,6 +1014,36 @@ int _semaLinkToInheritances(
           check_sto_iface  = true;
         }
         /////////////////////////////////
+        // MeshShaders
+        //  the mesh stage REPLACES the vertex stage, so it inherits the
+        //  vertex interface (which carries its workgroup/output layout).
+        /////////////////////////////////
+        else if constexpr (std::is_same<node_t, MeshShader>::value) {
+          check_lib_blocks = true;
+          check_typ_blocks = true;
+          check_smp_sets   = true;
+          check_uni_sets   = true;
+          check_uni_blks   = true;
+          check_vtx_iface  = true;
+          check_sto_iface  = true;
+          check_tsk_payload = true; // reads the amplification payload the task stage wrote
+        }
+        /////////////////////////////////
+        // TaskShaders
+        //  the amplification front of a task+mesh pass: workgroup layout comes from
+        //  its own interface, and it WRITES the payload the mesh stage then reads.
+        /////////////////////////////////
+        else if constexpr (std::is_same<node_t, TaskShader>::value) {
+          check_lib_blocks = true;
+          check_typ_blocks = true;
+          check_smp_sets   = true;
+          check_uni_sets   = true;
+          check_uni_blks   = true;
+          check_tsk_iface  = true;
+          check_tsk_payload = true;
+          check_sto_iface  = true;
+        }
+        /////////////////////////////////
         // PipelineInterfaces
         /////////////////////////////////
         else if constexpr (std::is_base_of<PipelineInterface, node_t>::value) {
@@ -1006,6 +1054,7 @@ int _semaLinkToInheritances(
           check_geo_iface = true;
           check_frg_iface = true;
           check_com_iface = true;
+          check_tsk_iface = true;
           check_sto_iface  = true;
         }
         /////////////////////////////////
@@ -1075,6 +1124,18 @@ int _semaLinkToInheritances(
         } else if (check_sto_iface and check_inheritance(inh_name, "sif", slp->_slp_cache->_storage_interfaces)) {
           auto semanode   = std::make_shared<SemaInheritStorageInterface>();
           semanode->_name = FormatString("SemaInheritStorageInterface: %s", inh_name.c_str());
+          semanode->setValueForKey<std::string>("inherit_id", inh_name);
+          slp->replaceInParent(inh_item, semanode);
+          count++;
+        } else if (check_tsk_iface and check_inheritance(inh_name, "tskif", slp->_slp_cache->_task_interfaces)) {
+          auto semanode   = std::make_shared<SemaInheritTaskInterface>();
+          semanode->_name = FormatString("SemaInheritTaskInterface: %s", inh_name.c_str());
+          semanode->setValueForKey<std::string>("inherit_id", inh_name);
+          slp->replaceInParent(inh_item, semanode);
+          count++;
+        } else if (check_tsk_payload and check_inheritance(inh_name, "tskpld", slp->_slp_cache->_task_payloads)) {
+          auto semanode   = std::make_shared<SemaInheritTaskPayload>();
+          semanode->_name = FormatString("SemaInheritTaskPayload: %s", inh_name.c_str());
           semanode->setValueForKey<std::string>("inherit_id", inh_name);
           slp->replaceInParent(inh_item, semanode);
           count++;
@@ -1216,6 +1277,7 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
         auto node_fragment_interfaces = AstNode::collectNodesOfType<SemaInheritFragmentInterface>(node);
         auto node_geometry_interfaces = AstNode::collectNodesOfType<SemaInheritGeometryInterface>(node);
         auto node_compute_interfaces  = AstNode::collectNodesOfType<SemaInheritComputeInterface>(node);
+        auto node_task_interfaces     = AstNode::collectNodesOfType<SemaInheritTaskInterface>(node);
 
         // Recursively process inherited interfaces
         for (auto iface_inherit : node_vertex_interfaces) {
@@ -1246,6 +1308,13 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
             collectInheritedResources(slp_inner, iface_obj->second, sampler_sets, uniform_blocks, storage_interfaces);
           }
         }
+        for (auto iface_inherit : node_task_interfaces) {
+          auto iface_name = iface_inherit->typedValueForKey<std::string>("inherit_id").value();
+          auto iface_obj  = slp_inner->_slp_cache->_task_interfaces.find(iface_name);
+          if (iface_obj != slp_inner->_slp_cache->_task_interfaces.end()) {
+            collectInheritedResources(slp_inner, iface_obj->second, sampler_sets, uniform_blocks, storage_interfaces);
+          }
+        }
         for (auto iface_inherit : node_storage_interfaces) {
           auto iface_name = iface_inherit->typedValueForKey<std::string>("inherit_id").value();
           auto iface_obj  = slp_inner->_slp_cache->_storage_interfaces.find(iface_name);
@@ -1273,6 +1342,8 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
     auto frg_refs = AstNode::collectNodesOfType<FragmentShaderRef>(pass);
     auto geo_refs = AstNode::collectNodesOfType<GeometryShaderRef>(pass);
     auto com_refs = AstNode::collectNodesOfType<ComputeShaderRef>(pass);
+    auto msh_refs = AstNode::collectNodesOfType<MeshShaderRef>(pass);
+    auto tsk_refs = AstNode::collectNodesOfType<TaskShaderRef>(pass);
 
     for (auto vtx_ref : vtx_refs) {
       auto shader_name = vtx_ref->typedValueForKey<std::string>("ref_id").value();
@@ -1302,6 +1373,20 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
         pass_shaders.push_back(shader->second);
       }
     }
+    for (auto msh_ref : msh_refs) {
+      auto shader_name = msh_ref->typedValueForKey<std::string>("ref_id").value();
+      auto shader      = slp->_slp_cache->_mesh_shaders.find(shader_name);
+      if (shader != slp->_slp_cache->_mesh_shaders.end()) {
+        pass_shaders.push_back(shader->second);
+      }
+    }
+    for (auto tsk_ref : tsk_refs) {
+      auto shader_name = tsk_ref->typedValueForKey<std::string>("ref_id").value();
+      auto shader      = slp->_slp_cache->_task_shaders.find(shader_name);
+      if (shader != slp->_slp_cache->_task_shaders.end()) {
+        pass_shaders.push_back(shader->second);
+      }
+    }
 
     return pass_shaders;
   };
@@ -1315,6 +1400,7 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
     auto inherited_geometry_interfaces = AstNode::collectNodesOfType<SemaInheritGeometryInterface>(shader);
     auto inherited_compute_interfaces  = AstNode::collectNodesOfType<SemaInheritComputeInterface>(shader);
     auto inherited_storage_interfaces  = AstNode::collectNodesOfType<SemaInheritStorageInterface>(shader);
+    auto inherited_task_interfaces     = AstNode::collectNodesOfType<SemaInheritTaskInterface>(shader);
 
     for (auto iface : inherited_interfaces) {
       auto iface_name = iface->typedValueForKey<std::string>("inherit_id").value();
@@ -1348,6 +1434,13 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
       auto iface_name = iface->typedValueForKey<std::string>("inherit_id").value();
       auto iface_obj  = slp->_slp_cache->_storage_interfaces.find(iface_name);
       if (iface_obj != slp->_slp_cache->_storage_interfaces.end()) {
+        all_inherited_interfaces.push_back(iface_obj->second);
+      }
+    }
+    for (auto iface : inherited_task_interfaces) {
+      auto iface_name = iface->typedValueForKey<std::string>("inherit_id").value();
+      auto iface_obj  = slp->_slp_cache->_task_interfaces.find(iface_name);
+      if (iface_obj != slp->_slp_cache->_task_interfaces.end()) {
         all_inherited_interfaces.push_back(iface_obj->second);
       }
     }
@@ -1860,11 +1953,15 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     _semaCollectNamedOfType<FragmentInterface>(this, top, _slp_cache->_fragment_interfaces);
     _semaCollectNamedOfType<ComputeInterface>(this, top, _slp_cache->_compute_interfaces);
     _semaCollectNamedOfType<StorageInterface>(this, top, _slp_cache->_storage_interfaces);
+    _semaCollectNamedOfType<TaskInterface>(this, top, _slp_cache->_task_interfaces);
+    _semaCollectNamedOfType<TaskPayload>(this, top, _slp_cache->_task_payloads);
 
     _semaCollectNamedOfType<VertexShader>(this, top, _slp_cache->_vertex_shaders);
     _semaCollectNamedOfType<FragmentShader>(this, top, _slp_cache->_fragment_shaders);
     _semaCollectNamedOfType<GeometryShader>(this, top, _slp_cache->_geometry_shaders);
     _semaCollectNamedOfType<ComputeShader>(this, top, _slp_cache->_compute_shaders);
+    _semaCollectNamedOfType<MeshShader>(this, top, _slp_cache->_mesh_shaders);
+    _semaCollectNamedOfType<TaskShader>(this, top, _slp_cache->_task_shaders);
 
     _semaCollectNamedOfType<SamplerSet>(this, top, _slp_cache->_sampler_sets);
     _semaCollectNamedOfType<UniformSet>(this, top, _slp_cache->_uniform_sets);
@@ -1929,12 +2026,15 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     count += _semaLinkToInheritances<GeometryInterface>(this, top);
     count += _semaLinkToInheritances<FragmentInterface>(this, top);
     count += _semaLinkToInheritances<ComputeInterface>(this, top);
+    count += _semaLinkToInheritances<TaskInterface>(this, top);
     //count += _semaLinkToInheritances<StorageInterface>(this, top);
 
     count += _semaLinkToInheritances<VertexShader>(this, top);
     count += _semaLinkToInheritances<FragmentShader>(this, top);
     count += _semaLinkToInheritances<GeometryShader>(this, top);
     count += _semaLinkToInheritances<ComputeShader>(this, top);
+    count += _semaLinkToInheritances<MeshShader>(this, top);
+    count += _semaLinkToInheritances<TaskShader>(this, top);
 
     count += _semaLinkToInheritances<StateBlock>(this, top);
     keep_going = (count > 0);

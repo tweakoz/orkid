@@ -100,7 +100,7 @@ ToFrequencyDomainData::ToFrequencyDomainData(std::string name, float fb)
 ///////////////////////////////////////////////////////////////////////////////
 
 dspblk_ptr_t ToFrequencyDomainData::createInstance() const { // override
-  return std::make_shared<ToFrequencyDomain>(this);
+  return createDspInstance<ToFrequencyDomain>(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

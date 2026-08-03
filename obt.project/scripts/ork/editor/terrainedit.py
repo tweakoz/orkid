@@ -67,8 +67,13 @@ class TerrainEditor(ComponentizedApplication):
   def __init__(self, source, *, dsl_class=None, extent_m=None,
                preview_dim=1024, full_dim=4096, chunk=128, dsl_kwargs=None,
                offscreen=False, selftest=False, keytest=False,
-               reset_layout=False, layouttest=False, layout_probe=False):
+               reset_layout=False, layouttest=False, layout_probe=False,
+               uirecord=None):
     super().__init__()
+    # --uirecord diagnostic tap (ork.uitest session capture): path captured
+    # before createEzApp so _onUiInit can attach once contexts exist.
+    self._uirecord_path = uirecord
+    self._uirecorder = None
     self.runtime = TerrainRuntime(preview_dim=preview_dim, full_dim=full_dim, chunk=chunk)
     self.runtime.load(source, dsl_class=dsl_class, extent_m=extent_m,
                       **(dsl_kwargs or {}))
@@ -182,6 +187,10 @@ class TerrainEditor(ComponentizedApplication):
     self.node_model = None
     self.node_editor = None
     self._ne_glue = None
+    # (node_editor, host_window) queued by a POST-BOOT factory recreate (transfer / tear-out /
+    # return); drained on the GPU/render thread so the fresh instance's glyph textures init
+    # against the DESTINATION window's own context (a cross-context texture seam otherwise).
+    self._ne_pending_gpuinit = []
     self._last_ne_rebuild = 0     # perf instrument (ORKID_NE_PERF): idle rebuild delta
 
     # ECS module init injected BEFORE GPU finalization (ecsedit's mechanism) — the
@@ -221,46 +230,27 @@ class TerrainEditor(ComponentizedApplication):
     self.viewport_dock.titlebar_color = vec4(0.15, 0.2, 0.25, 1)
     self.sgv = self.viewport_dock.child
 
-    self.left_dock = self.dock.split(
-        target=self.viewport_dock, placement=tokens.LEFT, proportion=_DOCK_LEFT_PROP,
-        margin=_DOCK_SPLIT_MARGIN, uiclass=lev2.ui.VerticalPack, args=[_DOCK_LEFT_TITLE],
-        title=_DOCK_LEFT_TITLE)
-    self.left_dock.titlebar_color = vec4(0.2, 0.15, 0.2, 1)
-
-    self.left_panel = self.left_dock.child
-    self.left_panel.margin = 2
-    self.left_panel.item_height = 34
-
-    self._setupToolbar()
-
-    # node-editor canvas (E3 C1) — a PrimCanvas hosting the generic NodeEditor bound to
-    # the terrain DOCUMENT adapter, as the left dock's fill widget (was the Outliner).
-    self.ne_canvas = self.left_panel.makeChild(uiclass=lev2.ui.PrimCanvas, args=["ne_canvas"])
-    self.ne_canvas.bg_color = COL_BG
-    self.ne_canvas.draw_background = True
-    self.left_panel.fill_widget = self.ne_canvas
-    self.node_model = TerrainNodeGraphModel(self, self.runtime)
-    self._ne_glue = self.node_model._glue
-    self.node_editor = NodeEditor(self.ne_canvas, self.node_model,
-                                  title=self._ne_title, orientation="vertical")
-    # SSAA (ss=3, set by the NodeEditor ctor) verified on this platform 2026-07-18:
-    # the multisurface gate renders primitives crisply through the resolve (owner Mac,
-    # canvas non-black, geometry correct). Residuals live in the SSAA slice, not here:
-    # bright bg_colors resolve dark, and a SceneGraphViewport at ss>0 still resolves
-    # black (filed) - neither affects this dark-bg primitives-only canvas.
-    self._ne_glue.node_editor = self.node_editor
-    self.node_editor.on_selection_changed = self._onNodeEditorSelect
-    self._wireNodeEditorKeys()
-
-    # W5: cross-window DockManager glue. The viewport + node-editor left column are
-    # PINNED (no factory) — both host one-shot Context-bound GPU seams (SceneGraphViewport
-    # forkDB/scenegraph; NodeEditor+PrimCanvas glyph textures built in gpuInit) that cannot
-    # be rebuilt in a foreign window's context. The property sheet has NO GPU seam, so it is
-    # the transferable factory panel: the boot below CALLS its factory (one construction path).
+    # W5: cross-window DockManager glue. The viewport is PINNED (no factory) — a
+    # SceneGraphViewport holds a one-shot Context-bound GPU seam (forkDB/scenegraph) that cannot
+    # be rebuilt in a foreign window's context. The Terrain node-editor column AND the property
+    # sheet ARE transferable: each registers a factory that rebuilds a FRESH instance in the
+    # destination dock (re-initing the node-editor's glyph GPU seam against that window's context
+    # on the GPU thread). The boot below CALLS each factory (one content-construction path), then
+    # reproduces the canonical split geometry.
     self._dock_glue = EditorDockGlue(self, self.dock, "terrainedit")
+    self._dock_glue.register(_DOCK_LEFT_TITLE, _DOCK_LEFT_TITLE, self._buildTerrainPanel,
+                             save_state=self._saveTerrainState,
+                             restore_state=self._restoreTerrainState, closeable=False)
     self._dock_glue.register(_DOCK_PROPS_TITLE, _DOCK_PROPS_TITLE, self._buildPropsheetPanel,
                              save_state=self._savePropsheetState,
                              restore_state=self._restorePropsheetState, closeable=False)
+
+    # Terrain node-editor column: factory-build (toolbar + node-editor canvas), then the
+    # canonical LEFT @0.35 split of the viewport. moveChild + setSplitProportion reproduce the
+    # prior inline dock.split(...) tree (the propsheet's proven pattern).
+    self.left_dock = self._buildTerrainPanel(self.dock, self.ezapp)
+    self.dock.moveChild(panel=self.left_dock, to=self.viewport_dock, zone=tokens.LEFT)
+    self.dock.setSplitProportion(self.viewport_dock, self.left_dock, _DOCK_LEFT_PROP)
 
     # build the property sheet via its factory (addPanel -> the root leaf), then reproduce
     # the canonical split geometry (propsheet BOTTOM @0.55 of the left column). moveChild's
@@ -276,6 +266,99 @@ class TerrainEditor(ComponentizedApplication):
     self._default_layout = save_layout(self.dock)
     self._maybeRestoreSession()
     self.dock.updateLayout()
+
+    # --uirecord: attach the session tap last, on the main thread, with the UI
+    # tree live (tear-out secondaries self-attach via the recorder's rescan).
+    if self._uirecord_path:
+      import ork.uitest as U
+      self._uirecorder = U.record(self.ezapp, self._uirecord_path)
+      print(f"[terrainedit] uirecord -> {self._uirecord_path}", flush=True)
+
+  ##############################################################################
+  # terrain node-editor factory (the transferable panel) + carry-state
+  ##############################################################################
+
+  def _buildTerrainPanel(self, dock, window):
+    """The Terrain node-editor column's SINGLE content-construction path (boot + every
+    cross-window recreate). Builds a fresh VerticalPack[toolbar, node-editor canvas] DockPanel
+    in 'dock', binds a FRESH TerrainNodeGraphModel + NodeEditor to the (process-global) runtime
+    document, and re-stamps the app-singleton seams onto the fresh instance (ne_canvas /
+    node_model / _ne_glue / node_editor / selection + key wiring). A fresh model loses no state:
+    node positions live in the DOCUMENT, the display key in the runtime.
+
+    GPU seam: the PrimCanvas SSBO/material + the NodeEditor glyph textures are one-shot
+    Context-bound, so a POST-BOOT recreate defers the node-editor's glyph gpuInit to the GPU
+    thread against 'window's OWN context (via _ne_pending_gpuinit); at boot (_gpu_ready False)
+    _onGpuInit runs it explicitly against the main context (the first-boot instance)."""
+    panel = dock.addPanel(uiclass=lev2.ui.VerticalPack, args=[_DOCK_LEFT_TITLE],
+                          title=_DOCK_LEFT_TITLE, closeable=False)
+    panel.titlebar_color = vec4(0.2, 0.15, 0.2, 1)
+    self.left_dock = panel
+    self.left_panel = panel.child
+    self.left_panel.margin = 2
+    self.left_panel.item_height = 34
+
+    self._setupToolbar()
+
+    # node-editor canvas (E3 C1) — a PrimCanvas hosting the generic NodeEditor bound to the
+    # terrain DOCUMENT adapter, as the left dock's fill widget (was the Outliner).
+    self.ne_canvas = self.left_panel.makeChild(uiclass=lev2.ui.PrimCanvas, args=["ne_canvas"])
+    self.ne_canvas.bg_color = COL_BG
+    self.ne_canvas.draw_background = True
+    self.left_panel.fill_widget = self.ne_canvas
+    # FRESH per-instance model (a fresh _Glue: no stale rebuild callbacks bound from a prior
+    # canvas). All node state resolves LIVE from the runtime document.
+    self.node_model = TerrainNodeGraphModel(self, self.runtime)
+    self._ne_glue = self.node_model._glue
+    self.node_editor = NodeEditor(self.ne_canvas, self.node_model,
+                                  title=self._ne_title, orientation="vertical")
+    # SSAA (ss=3, set by the NodeEditor ctor) verified on this platform 2026-07-18:
+    # the multisurface gate renders primitives crisply through the resolve (owner Mac,
+    # canvas non-black, geometry correct). Residuals live in the SSAA slice, not here:
+    # bright bg_colors resolve dark, and a SceneGraphViewport at ss>0 still resolves
+    # black (filed) - neither affects this dark-bg primitives-only canvas.
+    self._ne_glue.node_editor = self.node_editor
+    self.node_editor.on_selection_changed = self._onNodeEditorSelect
+    self._wireNodeEditorKeys()
+    if self._gpu_ready:
+      self._ne_pending_gpuinit.append((self.node_editor, window))
+    return panel
+
+  def _saveTerrainState(self, panel):
+    # carry where the user was: nesting-level path (container keys), selection, pan/zoom. Node
+    # ids are DOCUMENT tree-path keys, stable across the fresh model instance.
+    ne = self.node_editor
+    if ne is None:
+      return None
+    return {
+        "nav_keys":  [m._container_key for (m, _l) in ne.nav_stack[1:]],
+        "sel_nodes": set(ne.sel_nodes),
+        "sel_edges": set(tuple(e) for e in ne.sel_edges),
+        "view":      (ne.view.s, ne.view.ox, ne.view.oy),
+    }
+
+  def _restoreTerrainState(self, panel, state):
+    # re-apply the carried nav path + selection + view onto the FRESH node editor (the factory
+    # already rebound self.node_editor). A container that no longer exists stops the descent.
+    ne = self.node_editor
+    if ne is None or not state:
+      return
+    for key in state.get("nav_keys", []):
+      if key in set(ne.model.nodes()) and ne.model.is_group(key):
+        ne._enter_group(key)
+      else:
+        break
+    ne.sel_nodes = set(state.get("sel_nodes") or set())
+    ne.sel_edges = set(tuple(e) for e in (state.get("sel_edges") or set()))
+    v = state.get("view")
+    if v is not None:
+      ne.view.s, ne.view.ox, ne.view.oy = v
+      ne._did_initial_frame = True   # keep the carried pan/zoom (skip the initial auto-frame)
+    ne.mark_view_changed()
+    ne.mark_structure_changed()
+    ne.mark_selection_changed()
+    ne.mark_overlay()
+    ne._emit_selection()
 
   ##############################################################################
   # property-sheet factory (the transferable panel) + carry-state
@@ -515,10 +598,13 @@ class TerrainEditor(ComponentizedApplication):
     self.runtime.bind_viewport(self.sgv)
 
     # node-editor + propsheet wiring. Icons/glyph textures MUST be prebuilt in the GPU-
-    # init phase (creating textures during the render callback aborts on Vulkan).
+    # init phase (creating textures during the render callback aborts on Vulkan). This is the
+    # FIRST-BOOT node-editor instance (built by the factory in _onUiInit with _gpu_ready False,
+    # so it did NOT self-queue) — init it here against the MAIN context. A post-boot factory
+    # recreate queues its glyph gpuInit for the destination context (_drainNodeEditorGpuInit).
     self.node_editor.uicontext = self.uicontext
     self.node_editor.gpuInit(ctx)
-    self._gpu_ready = True             # from here, the propsheet factory re-wires on rebuild
+    self._gpu_ready = True             # from here, the factories defer/re-wire on rebuild
     self._wirePropsheet()             # bind models + change handler on the boot-built sheet
 
     if self._selftest:
@@ -640,6 +726,11 @@ class TerrainEditor(ComponentizedApplication):
     #     (which reads _scenegraph across its acquire/release) — same (GPU/render) thread, no race.
     # The update thread's sim tick is paused via _rebuilding while the swap runs.
     self.runtime.gpuUpdate(ctx)
+    # W5: build glyph textures for any node editor a post-boot factory recreate produced.
+    # This runs BEFORE the frame's render pass (so texture UPLOAD is legal — updateTexture
+    # asserts !_renderPassActive), on the GPU thread, so a MAIN-destination rebuild (return-
+    # on-close) inits against the main ctx here rather than mid-render in onGpuPostFrame.
+    self._drainNodeEditorGpuInit(ctx)
     # live dock-layout reset (Shift+L) — applied here (render-sequential, outside event
     # dispatch) so the moveChild + proportion re-cascade never races DoRePaintSurface.
     # W5: the two-phase reset FIRST returns every secondary window's panels to main
@@ -701,9 +792,26 @@ class TerrainEditor(ComponentizedApplication):
     finally:
       self._rebuilding = False
 
+  def stopUiRecord(self):
+    """Flush + detach the --uirecord session tap (idempotent, exit-safe)."""
+    rec = self._uirecorder
+    self._uirecorder = None
+    if rec is None:
+      return
+    try:
+      sess = rec.stop()
+      print(f"[terrainedit] uirecord wrote {sess.event_count} events -> "
+            f"{self._uirecord_path}", flush=True)
+    except Exception as e:
+      # diagnostic tooling must never take the editor down at exit; the periodic
+      # flush already banked everything up to the last gesture.
+      print(f"[terrainedit] uirecord stop failed: {e}", flush=True)
+
   def _onUpdate(self, updinfo):
     # Sim tick on the update thread — skipped while a GPU-thread rebuild swaps the simulation
     # (the destroy/create must not race a live updateSimulation tick).
+    if self._uirecorder is not None:
+      self._uirecorder.on_update(updinfo)
     if not self._rebuilding:
       self.runtime.update()
     self.sgv.setDirty()
@@ -759,6 +867,36 @@ class TerrainEditor(ComponentizedApplication):
       ready = (self._cap_async is None) or bool(self._cap_async.is_ready)
       if ready:
         self._capFinish()
+
+  def _drainNodeEditorGpuInit(self, main_ctx):
+    """Build the glyph/icon textures for any node editor a POST-BOOT factory recreate produced.
+    Called from _onGpuUpdate — on the GPU/render thread but BEFORE the frame's render pass, so
+    the texture upload is legal (updateTexture asserts !_renderPassActive) even for a MAIN-
+    destination rebuild. Each instance inits against the DESTINATION window's OWN context — a
+    texture built on the wrong window's context is a cross-context seam (dock_manager.py). The
+    device is shared across windows, but each node-editor instance owns its textures. A window
+    whose context is not yet live (a just-torn-out window) re-queues for the next frame."""
+    if not self._ne_pending_gpuinit:
+      return
+    pending = self._ne_pending_gpuinit
+    self._ne_pending_gpuinit = []
+    for (ne, window) in pending:
+      try:
+        wctx, uic = self._windowGpu(window, main_ctx)
+        if wctx is None:
+          self._ne_pending_gpuinit.append((ne, window))   # context not live yet; retry next frame
+          continue
+        ne.uicontext = uic
+        ne.gpuInit(wctx)
+      except Exception as e:
+        print(f"[terrainedit] node-editor GPU init deferred/failed: {e}", flush=True)
+
+  def _windowGpu(self, window, main_ctx):
+    """(gfx_context, ui_context) for the window a factory built into — the main app (ezapp,
+    the live render ctx) or an EzSecondaryWin (its own gfx/ui context)."""
+    if window is self.ezapp:
+      return main_ctx, self.uicontext
+    return getattr(window, "gfx_context", None), getattr(window, "ui_context", None)
 
   def _cap_request(self, name):
     self._cap_path = os.path.join(self._selftest_dir, name + ".png")
@@ -1055,6 +1193,11 @@ class TerrainEditor(ComponentizedApplication):
       x1, y1 = vp.localToRoot(vp.width - 12, vp.height // 2)
       r["sig_pre_drag"] = _sig()
       top = self.ezapp.topWidget
+      # The left column ("Terrain") is now a TRANSFERABLE panel, so the coordinator would
+      # classify an in-window titlebar drop as a TEAR-OUT when the main window has no known
+      # screen rect (offscreen) — override main's rect so this in-window drop resolves LOCAL
+      # (a moveChild), which is what this phase means to exercise.
+      lev2.ui.DockCoordinator.instance().setWindowRectOverride("main", 0, 0, top.width, top.height)
       U.drag(self.ezapp, x0, y0, x1, y1, top.width, top.height, steps=10)
       self._layouttest_settle_at = f + 6
       self._layouttest_stage = "tabdrag_wait"
@@ -1105,7 +1248,10 @@ class TerrainEditor(ComponentizedApplication):
           f"-> {'PASS' if r['ok'] else 'FAIL'}", flush=True)
 
   def _onUiEvent(self, uievent):
-    return None
+    # Return an (unhandled) HandlerResult, never bare None: None fails the pyext
+    # HandlerResult cast and used to swallow every root-routed event. Matches the
+    # base app idiom (ork/app/application.py::_onUiEvent).
+    return lev2.ui.HandlerResult()
 
   ##############################################################################
   # viewport keys — post-fx (E/G/T/H) + envmap + material-mode (M); everything else

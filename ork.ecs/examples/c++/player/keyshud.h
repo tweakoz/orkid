@@ -36,7 +36,8 @@ struct KeysHud {
   std::string _text;
 
   // Deterministic legend rebuilt on every devkey change (called off the render thread).
-  void setState(const std::string& envmap, float gamma, float exposure, float saturation, const std::string& matmode) {
+  void setState(const std::string& envmap, float gamma, float exposure, float saturation, const std::string& matmode,
+                const std::string& physdbg) {
     char buf[512];
     snprintf(
         buf,
@@ -46,12 +47,21 @@ struct KeysHud {
         "[T] exposure: %.2f\n"
         "[H] sat: %.2f\n"
         "[M] mat: %s\n"
-        "[R] reset",
+        "[B] phys: %s\n"
+        "[R] reset\n"
+        // SCENE-OWNED keys, listed because this legend is what a human at the
+        // keyboard reads (the registry in main.cpp's header is what the next
+        // binding is checked against). No values: the host does not own this
+        // state — the scene's sky_time_system.py does, and it prints its own
+        // telemetry. Static text, so the legend stays deterministic.
+        "[ ] scrub sky   \\ pause sky\n"
+        "= - sky speed   0 sky reset",
         envmap.c_str(),
         gamma,
         exposure,
         saturation,
-        matmode.c_str());
+        matmode.c_str(),
+        physdbg.c_str());
     std::lock_guard<std::mutex> lock(_mutex);
     _text = buf;
   }

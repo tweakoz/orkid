@@ -41,7 +41,7 @@ std::string get_backtrace(bool with_color) {
 #if defined(LINUX)
 		Dl_info info;
 		auto callstack_line = btstrings[i];
-		// /home/michael/.staging-jun10/lib/libork_core.so(_Z17OrkAssertFunctionPKcz+0xf4) [0x7c2ebdc7e3d4]
+		// <stage>/lib/libork_core.so(_Z17OrkAssertFunctionPKcz+0xf4) [0x7c2ebdc7e3d4]
 		// parse address between []
 		auto start = strchr(callstack_line, '[');
 		auto end = strchr(start, ']');

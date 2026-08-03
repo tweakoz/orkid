@@ -39,6 +39,20 @@
 //   Cmd+Down Arrow         stop the simulation
 //   Space                  pause / resume (host-side: the update tick holds)
 //
+// THE KEY REGISTRY. This file is where the fleet's key bindings are written down —
+// the host CONSUMES only what is listed here and forwards every other key transition
+// to the scene's PythonSystem, so a scene script's binding collides with a host key
+// silently unless it is checked against this list. Taken, in order of precedence:
+//   host        ` ~ (perf HUD)   P (walk pause)   Space (pause when not walking)
+//               Cmd+Right / Cmd+Down / Cmd+R
+//   EzUiCam     Z X C V (rotate / pan / dolly / zoom)
+//   --devkeys   E G T H M B R  (see below)
+//   PYTHON-SIDE (host forwards; owned by the scene's scripts, listed here so the
+//   next binding does not land on top of them):
+//     walk_input_system.py  W A S D · cursor keys · Space · / · Shift · CapsLock
+//     sky_time_system.py    ] [ scrub time · \ pause sky clock · = - sky speed
+//                           ' ; step a day · 0 reset to the authored hour
+//
 // --devkeys (OPT-IN; default OFF): viewer-grade dev keys (the C++ lowering of
 //   ork.ecsplay.py's controls). Injects an ACES+HSVG postfx chain (the "viewer look" —
 //   the ACES curve changes the image even before any key), then:
@@ -46,6 +60,12 @@
 //     M  terrain material (declared + scene debug looks)    R  reset post-fx
 //   plus an always-on upper-left key legend (deterministic; absent flagless).
 //   Flagless is byte-identical to the scene-authored look.
+//
+// AUDIO (OPT-IN; default OFF = no device opened, scenes play silent):
+//   --audio                  open the real audio device (sound emitters + global synth)
+//   "audio": true            same, declared by the scene: a TOP-LEVEL key beside "root"
+//                            in the .ecs manifest (peeked pre-create; see below)
+//   (--movie's STREAM device is a capture sink and wins over --audio when both are given.)
 //
 // startup: always the HFSM subsystem-driven init (the first C++ host to use it).
 //
@@ -63,10 +83,12 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeACES.h> // --devkeys viewer-look postfx (tonemap)
 #include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeHSVG.h> // --devkeys viewer-look postfx (gamma/saturation)
 #include <ork/ecs/physics/CharacterController.h> // E.2-walk: input forwarding + camera yield
+#include <ork/ecs/physics/bullet.h> // --physics-debug: BulletSystemData detection + debug-wireframe notify target
 #include <ork/ecs/pysys/PythonComponent.h>          // E.2-walk: scene-declared input-script routing
 #include <ork/python/context.h>                     // embedded interpreter (OPT-IN: scene declares PythonSystem)
 #include <ork/reflect/serialize/JsonDeserializer.h>
 #include <ork/reflect/serialize/JsonSerializer.h>
+#include <rapidjson/document.h> // pre-create manifest peek (--audio's scene-declared twin)
 #include <atomic>
 #include <mutex>
 
@@ -113,6 +135,7 @@ int main(int argc, char** argv, char** envp) {
   float cam_height      = 8.0f;
   float auto_roundtrip  = 0.0f; // gate 1.7 scripted: fire the live round-trip at T+N sec
   float auto_walk       = 0.0f; // E.2-walk scripted: hold W for N seconds through the message channel
+  float auto_yaw        = 0.0f; // scripted: hold cursor-RIGHT for N seconds (rotation-only discriminator)
   bool  want_fullscreen = false;
   bool  want_hidpi      = false; // default LoDPI (fillrate); opt into Retina backing scale
   int   want_width      = 0;    // 0 = use AppInitData default; windowed initial width
@@ -129,15 +152,34 @@ int main(int argc, char** argv, char** envp) {
   int   movie_frames     = 0;     // 0 -> default 300
   std::string snapshot_path;      // --snapshot PATH (implies offscreen): settled frame -> PNG
   int   snapshot_frame   = 0;     // --snapshot-frame N: capture N frames AFTER first-lit (0=at first-lit)
+  float settle_timeout   = 0.0f;  // --settle-timeout SEC: absolute wall-clock hang backstop for the
+                                  // offscreen settle/snapshot drain (0 -> auto default). While the async
+                                  // registry is non-empty the drain keeps PUMPING (a bake makes real
+                                  // progress each frame); this ceiling is the ONLY thing that ends a
+                                  // still-pending drain — and it ends it as a LOUD FAIL, never a black frame.
   // --devkeys: OPT-IN interactive viewer-grade dev keys (mirror ork.ecsplay.py). DEFAULT OFF
   // so a flagless run is byte-identical to the scene-authored look. When ON the player injects
   // an ACES+HSVG postfx chain (the "viewer look" — ACES changes the image even before any key).
   bool  devkeys          = false;
   std::string devkeys_script;     // TEST HOOK: comma list LABEL:FRAME firing dev keys through the same handler
+  // --pysysnotify: TEST HOOK for the SCENE SCRIPTS' own message vocabulary (sky-clock controls,
+  // walk actions, ...). Scripted controller messages to the PythonSystem on the same channel the
+  // keyboard uses — so an offscreen gate or a scripted movie drives exactly what a key drives.
+  // The player stays scene-agnostic: it forwards names and float fields, it interprets nothing.
+  std::string pysys_notify_script;
+  // --physics-debug: Bullet debug wireframe ON from startup (TOGGLE_DEBUG_DRAW to the
+  // BulletSystem). Flag-driven so it works where no keyboard surface exists (VR windowless,
+  // offscreen gates); [B] under --devkeys toggles the same state live.
+  bool  physics_debug    = false;
   // --vr: play the scene on the HMD through the active XR runtime (the FWDPBRVRDM render model).
-  // Opt-in; only takes effect when an XR device is actually up (the stereo_grid condition). No
-  // runtime -> NoVR fallback: the scene plays on the desktop exactly as without --vr.
+  // Opt-in. With no runtime the SAME render model runs against a NoVr device — stereo on the
+  // desktop (the mirror blit is the presentation), never a silent demotion to desktop mono.
   bool  want_vr          = false;
+  // --audio: bring up the real audio device (scene-declared sound emitters / synth), the
+  // C++ equivalent of ork.ecsplay.py's enable_audio/_output/_synth. Independent of --movie,
+  // whose STREAM device is a capture sink, not playback. Default OFF: a flagless run of a
+  // sound-declaring scene stays silent and opens no device.
+  bool  want_audio       = false;
 
   po::options_description desc(
       "ork.ecs.player.exe — pure-C++ ECS scene player\n"
@@ -149,6 +191,7 @@ int main(int argc, char** argv, char** envp) {
       ("camheight", po::value<float>(&cam_height)->default_value(8.0f), "orbit camera height")
       ("roundtrip", po::value<float>(&auto_roundtrip)->default_value(0.0f), "scripted live serdes round-trip at T+N seconds")
       ("autowalk", po::value<float>(&auto_walk)->default_value(0.0f), "walk scenes: scripted hold-W for N seconds")
+      ("autoyaw", po::value<float>(&auto_yaw)->default_value(0.0f), "walk scenes: scripted hold-cursor-RIGHT for N seconds (yaw sweep from a FIXED position; the rotation-only counterpart of --autowalk)")
       ("fullscreen,f", po::bool_switch(&want_fullscreen), "fullscreen window")
       ("width,W", po::value<int>(&want_width)->default_value(0), "initial window width (windowed mode; 0=default)")
       ("height,H", po::value<int>(&want_height)->default_value(0), "initial window height (windowed mode; 0=default)")
@@ -162,9 +205,13 @@ int main(int argc, char** argv, char** envp) {
       ("movieframes,l", po::value<int>(&movie_frames)->default_value(0), "movie length in frames (0=300)")
       ("snapshot,S", po::value<std::string>(&snapshot_path), "write the settled offscreen frame to PATH (png; implies --offscreen; agent/CI eyeball)")
       ("snapshot-frame,F", po::value<int>(&snapshot_frame)->default_value(0), "capture --snapshot N frames AFTER the composite first goes lit (deterministic; 0=at first-lit)")
-      ("devkeys", po::bool_switch(&devkeys), "enable interactive viewer-grade dev keys [E cycle envmap, G gamma, T ACES exposure, H saturation, M terrain material (declared + scene-declared debug looks), R reset] + an always-on on-screen key legend. INJECTS an ACES+HSVG postfx chain, so the look changes (the 'viewer look') even before any keypress. Default OFF = scene-authored look, byte-identical to today.")
-      ("devkeys-script", po::value<std::string>(&devkeys_script)->default_value(""), "TEST HOOK (implies --devkeys): comma list LABEL:FRAME (e.g. \"E:120,G:180,CMDR:60\") firing dev keys through the SAME handler at update-tick FRAME; LABEL is E/G/T/H/M/R or CMDR (the live round-trip)")
-      ("vr", po::bool_switch(&want_vr), "VR: present the scene on the HMD through the active XR runtime (selects the FWDPBRVRDM render model). Requires ORKID_VR_DRIVER=openxr + a live runtime; with no runtime this falls back to normal desktop playback (a one-line notice, no crash).");
+      ("settle-timeout", po::value<float>(&settle_timeout)->default_value(0.0f), "offscreen settle/snapshot wall-clock HANG ceiling in seconds (0=auto 180). While async work is still pending the drain keeps pumping until this ceiling; on expiry (or a settled-black scene) it FAILS loud (SNAPSHOT_RESULT=FAIL) and exits NONZERO — never a black+rc=0 snapshot")
+      ("devkeys", po::bool_switch(&devkeys), "enable interactive viewer-grade dev keys [E cycle envmap, G gamma, T ACES exposure, H saturation, M terrain material (declared + scene-declared debug looks), B physics debug wireframe, R reset] + an always-on on-screen key legend. INJECTS an ACES+HSVG postfx chain, so the look changes (the 'viewer look') even before any keypress. Default OFF = scene-authored look, byte-identical to today.")
+      ("devkeys-script", po::value<std::string>(&devkeys_script)->default_value(""), "TEST HOOK (implies --devkeys): comma list LABEL:FRAME (e.g. \"E:120,G:180,CMDR:60\") firing dev keys through the SAME handler at update-tick FRAME; LABEL is E/G/T/H/M/B/R or CMDR (the live round-trip)")
+      ("pysysnotify", po::value<std::string>(&pysys_notify_script)->default_value(""), "TEST HOOK: scripted controller messages to the scene's PythonSystem, on the SAME channel a keyboard/host uses. Semicolon list TIME:EVENT:field=value,... with TIME in seconds of sim abstime (e.g. \"2:SkyTimeSet:hour=18.5;5:InputKey:key=93,down=1;8:InputKey:key=93,down=0\" — a scripted hour, then the ']' key held for 3s). Values are floats; the scene's python script owns the vocabulary. No-op (with a notice) on a scene that declares no PythonSystem.")
+      ("physics-debug", po::bool_switch(&physics_debug), "Bullet physics debug wireframe ON from startup (collision shapes + contacts over the visual scene). Works without --devkeys and with no keyboard surface (VR/offscreen); [B] under --devkeys toggles the same state live. Scenes with no BulletSystem log a notice and play normally.")
+      ("vr", po::bool_switch(&want_vr), "VR: present the scene on the HMD through the active XR runtime (selects the FWDPBRVRDM render model). Requires ORKID_VR_DRIVER=openxr + a live runtime; with no runtime the same render model runs on a NoVr device — side-by-side stereo on the desktop, mode named in a one-line notice.")
+      ("audio", po::bool_switch(&want_audio), "AUDIO: open the real audio device so scene-declared sound emitters / the global synth are audible (the C++ lowering of ork.ecsplay.py's enable_audio). Default OFF = no device opened, scene plays silent. A scene enables itself by declaring a top-level \"audio\": true beside \"root\" in its .ecs manifest.");
 
   po::positional_options_description pos;
   pos.add("scene", 1);
@@ -261,6 +308,44 @@ int main(int argc, char** argv, char** envp) {
   if (const char* v = getenv("ORKEXP_DISPLAYLINK")) init_data->_displaylink = (atoi(v) != 0);
 
   //////////////////////////////////////////////////////////
+  // AUDIO enable (--audio, or the scene manifest). The audio subsystem is built from
+  // _enable_audio inside OrkEzApp::create, but the scenedata only deserializes in
+  // onGpuInit — far too late to gate subsystem construction. So a manifest-declared
+  // enable is a PEEK of the scene text (same constraint that forces the
+  // PythonSystemData peek further down). Author the key at the TOP LEVEL, beside
+  // "root": JsonDeserializer reads _document["root"] only, so siblings are inert on
+  // load — but they are also NOT re-emitted by a serialize round-trip (Cmd+R, ecsedit),
+  // which is what a reflected SceneData property would eventually buy. The peek PARSES
+  // rather than greps: a substring scan would flip on any nested component property
+  // that happens to be named "audio", so the key is verified at the actual top level.
+  // The three flags are ork.ecsplay.py's set verbatim, and carry the pyext invariant
+  // (pyext.cpp:137-138): synth implies output implies audio. An unresolvable or busy
+  // device degrades to the NULL device (loud error, app keeps running), so enabling
+  // here can never take down a headless/CI boot.
+  //////////////////////////////////////////////////////////
+
+  auto manifest_declares_audio = [&]() -> bool {
+    rapidjson::Document doc;
+    doc.Parse(scene_json.c_str());
+    // unparseable here == no declaration; the real deserialize below reports it loudly.
+    if (doc.HasParseError() or not doc.IsObject())
+      return false;
+    auto it = doc.FindMember("audio");
+    return it != doc.MemberEnd() and it->value.IsBool() and it->value.GetBool();
+  };
+
+  bool scene_wants_audio = manifest_declares_audio();
+  if (want_audio or scene_wants_audio) {
+    init_data->_enable_audio        = true;
+    init_data->_enable_audio_output = true;
+    init_data->_enable_audio_synth  = true;
+    deco::printf(
+        fvec3::Yellow(),
+        "ork.ecs.player: AUDIO enabled (%s)\n",
+        want_audio ? "--audio" : "scene manifest \"audio\":true");
+  }
+
+  //////////////////////////////////////////////////////////
   // OFFSCREEN: hidden window (GLFW_VISIBLE=false, no swapchain), still a full
   // _mainWindow + render thread, so mainThreadLoop renders frames headless. The
   // onDraw frame-budget below drives capture + signalExit. --movie implies offscreen.
@@ -284,6 +369,8 @@ int main(int argc, char** argv, char** envp) {
       // (StrAudioDevice). Provide one — silent if the scene has no synth — so A/V
       // capture works and the encoder never derefs a null device. ASYNC_REALTIME
       // (no _audio_stream_sync) keeps it compatible with the player's freerun loop.
+      // Capture WINS over the --audio playback device: with both, the scene's audio
+      // lands in the movie file instead of the speakers.
       init_data->_enable_audio  = true;
       init_data->_audio_ioclass = "STREAM";
     }
@@ -296,9 +383,15 @@ int main(int argc, char** argv, char** envp) {
     // BEFORE the deferred terrain texbake fires (the bug this replaces).
     if (offscreen_frames <= 0)
       offscreen_frames = movie_path.empty() ? 1200 : (600 + movie_frames);
+    // settle_timeout is the TRUE hang backstop (wall-clock), decoupled from the frame
+    // cap: a slow-but-healthy bake (e.g. an HDRI radiancemap prefilter that needs a few
+    // thousand frames) drains past offscreen_frames and lights; only a genuine hang runs
+    // out this clock. 180s is generous for every current scene on every gate node.
+    if (settle_timeout <= 0.0f)
+      settle_timeout = 180.0f;
     if (not offscreen_forever)
-      deco::printf(fvec3::Yellow(), "ork.ecs.player: OFFSCREEN mode (cap<%d frames>%s)\n",
-                   offscreen_frames, movie_path.empty() ? "" : (" movie<" + movie_path + ">").c_str());
+      deco::printf(fvec3::Yellow(), "ork.ecs.player: OFFSCREEN mode (cap<%d frames> settle-timeout<%gs>%s)\n",
+                   offscreen_frames, settle_timeout, movie_path.empty() ? "" : (" movie<" + movie_path + ">").c_str());
   }
 
   // CLASS REGISTRATION ORDER: ecs::initModule must run BEFORE OrkEzApp::create — the
@@ -351,6 +444,8 @@ int main(int argc, char** argv, char** envp) {
   std::vector<controller_ptr_t> dead_controllers; // stopped controllers are parked, not reused
                                                   // (the Python runtime does the same)
   sys_ref_t sgsystem; // opaque handle for systemNotify
+  sys_ref_t bulletsystem; // physics-debug toggle target (resolved only when the scene declares one)
+  bool bullet_mode = false; // scene declares a BulletSystemData
   float abstime = 0.0f;
   Timer fps_timer;
   fps_timer.Start();
@@ -363,10 +458,15 @@ int main(int argc, char** argv, char** envp) {
   int  os_settle    = 0;   // frames since the scene settled
   int  os_movie     = 0;   // movie frames recorded
   int  os_drain     = 0;   // post-record drain frames (pump GPU so captures finish)
-  int  os_phase     = 0;   // 0=WAIT 1=SETTLE 2=MOVIE 3=DONE 4=SNAPSHOT-drain
+  int  os_phase     = 0;   // 0=WAIT 1=SETTLE 2=MOVIE 3=DONE 4=SNAPSHOT-drain 5=MOVIE-predrain
   bool os_saw_async = false; // observed registered async work (a bake) — wait for it to drain
   int  os_snapdrain = 0;   // frames pumped while the snapshot's async readback lands
   auto os_snap_done = std::make_shared<std::atomic<bool>>(false); // set once a LIT frame is written
+  auto os_snap_fail = std::make_shared<std::atomic<bool>>(false); // set on a FAILED snapshot (hung/black) -> NONZERO exit
+  auto os_movie_fail = std::make_shared<std::atomic<bool>>(false); // set on a FAILED movie pre-roll (unsettled/timeout) -> NONZERO exit
+  int  os_snap_quiescent = 0;   // consecutive drain frames with the async registry EMPTY (settled-black backstop)
+  Timer os_walltimer;           // wall-clock since the first offscreen frame (settle-timeout hang backstop)
+  bool  os_walltimer_started = false;
   // SNAPSHOT capture state (phase 4). The single blind capture-at-settle this
   // replaces landed in the composite's post-settle warmup window (the offscreen
   // settle gate keys on loader-idle, which fires ~10-30 frames BEFORE the
@@ -384,7 +484,34 @@ int main(int argc, char** argv, char** envp) {
   capturebuffer_ptr_t snap_capbuf;        // its readback buffer
   capturebuffer_ptr_t snap_last_capbuf;   // last landed frame (lit if we got one; else black fallback)
   int  snap_issue_drain = 0;                    // os_snapdrain when snap_future was issued (stale-future guard)
-  int  snap_first_lit   = -1;                   // os_snapdrain at which the composite FIRST went lit (-1=not yet)
+  int  snap_first_lit   = -1;                   // os_snapdrain at which the composite FIRST went settled-lit (-1=not yet)
+  bool snap_probe_color = false;                // last landed probe had real color (quiescent-backstop input)
+
+  // Shared drain tuning — snapshot capture (phase 4) AND movie pre-roll (phase 5).
+  constexpr int kSnapWarmup  = 5;   // frames rendered before the first capture grab
+  constexpr int kSnapQuiesce = 600; // sky-ready + still black this many frames => settled-black FAIL
+  constexpr int kFutureStale = 30;  // a capture future un-ready this long => drop it + re-issue
+
+  // Settled-lit color probe — shared by the snapshot capture drain (phase 4) and the
+  // movie pre-roll drain (phase 5), so both gate on identical criteria. "Lit" = >=0.1%
+  // of pixels carry a non-zero RGB channel; alpha is skipped (main_rtg clears to opaque
+  // black (0,0,0,255), so counting alpha would read a black frame as lit). tot/lit/rgbmax
+  // are returned for the diagnostic line.
+  auto probeCaptureColor = [](image_ptr_t img, size_t& tot_px, size_t& lit_px, uint8_t& rgbmax) -> bool {
+    tot_px = 0; lit_px = 0; rgbmax = 0;
+    if (img and img->_data) {
+      const uint8_t* p = img->_data->data();
+      size_t         n = img->_data->length();
+      tot_px = n / 4;
+      for (size_t i = 0; i + 3 < n; i += 4) {
+        uint8_t r = p[i], g = p[i + 1], b = p[i + 2];
+        uint8_t m = std::max(r, std::max(g, b));
+        if (m > rgbmax) rgbmax = m;
+        if (r or g or b) lit_px++;
+      }
+    }
+    return (tot_px > 0) and (lit_px * 1000 >= tot_px); // >=0.1% pixels colored
+  };
 
   // controller swaps (Cmd+Right restart) happen on the update thread while the render
   // thread reads `controller` in gpuUpdate/draw — one small mutex covers all of it.
@@ -456,17 +583,20 @@ int main(int argc, char** argv, char** envp) {
   // python viewer accepts, no camera writes so no VR gating needed). Envmap [E] routes
   // through the SG system's SetEnvmap notify (host owns the cycle list). Everything here
   // is inert unless `devkeys` — a flagless run never creates a node or touches the scene.
-  // KEY MAP (bare, no super): E=envmap  G=gamma  T=ACES exposure  H=saturation  M=terrain mat  R=reset.
+  // KEY MAP (bare, no super): E=envmap  G=gamma  T=ACES exposure  H=saturation  M=terrain mat  B=physics wireframe  R=reset.
   // Saturation is 'H': python's 'S' is a walk-move key, and 'C' is an EzUiCam dolly modifier
   // (X/C/V = pan/dolly/zoom) — the devkeys block owns ONLY E/G/T/H/M/R and falls through for the rest.
+  // The scene-script keys (walk W/A/S/D..., sky-clock ] [ \ = - ' ; 0) are deliberately NOT here:
+  // they are forwarded to the PythonSystem below. See the key registry in this file's header.
   //////////////////////////////////////////////////////////
-  const std::vector<float> satset = {0.0f, 0.1f, 0.2f, 0.5f, 0.75f, 0.8f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f};
-  const std::vector<float> gamset = {0.8f, 1.0f, 1.2f, 1.4f, 1.6f, 1.8f, 2.0f, 2.4f};
-  const std::vector<float> expset = {0.0f, 0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f, 3.0f, 5.0f};
+  const std::vector<float> satset = {0.0f, 0.2f, 0.5f, 0.6, 0.75f, 0.8f, 1.0f, 1.25f, 1.5f};
+  const std::vector<float> gamset = {0.8f, 1.0f, 1.2f, 1.4f, 1.6f, 1.8f, 2.2f};
+  const std::vector<float> expset = {0.0f, 0.5f, 0.75f, 0.9f, 1.0f, 1.25f, 1.5f};
   auto idx_of = [](const std::vector<float>& v, float x) {
     return int(std::find(v.begin(), v.end(), x) - v.begin());
   };
-  const int sat_def = idx_of(satset, 1.0f), gam_def = idx_of(gamset, 1.0f), exp_def = idx_of(expset, 1.0f);
+  // defaults: saturation 0.8 / exposure 0.75 (owner-tuned 07-23); gamma 1.0
+  const int sat_def = idx_of(satset, 0.6f), gam_def = idx_of(gamset, 1.0f), exp_def = idx_of(expset, 0.9f);
   int sat_idx = sat_def, gam_idx = gam_def, exp_idx = exp_def;
   std::vector<std::string> envmap_paths; // "<assetcache>/envmaps2/<name>.xir"
   std::vector<std::string> envmap_names;
@@ -497,7 +627,7 @@ int main(int argc, char** argv, char** envp) {
       }
     }
     deco::printf(fvec3::Yellow(),
-                 "ork.ecs.player: --devkeys ON (viewer look: ACES+HSVG) envmaps<%zu> keys[E/G/T/H/M/R]\n",
+                 "ork.ecs.player: --devkeys ON (viewer look: ACES+HSVG) envmaps<%zu> keys[E/G/T/H/M/B/R]\n",
                  envmap_paths.size());
   }
 
@@ -512,6 +642,16 @@ int main(int argc, char** argv, char** envp) {
     return (m >= 0 and m < int(matmode_labels.size())) ? matmode_labels[m].c_str() : "declared";
   };
 
+  // [B] physics-debug HUD state: player-side TOGGLE PARITY (the truth lives system-side as
+  // Debug ^ _debugToggle; scenes today never declare Debug=true, so parity == effective state).
+  // Starts true when --physics-debug fires the startup toggle; flips on every [B].
+  bool phys_dbg_on = false;
+  auto physdbg_label = [&]() -> std::string {
+    if (not bullet_mode)
+      return "n/a";
+    return phys_dbg_on ? "ON" : "OFF";
+  };
+
   // Rebuild the always-on --devkeys legend from the CURRENT cycle state. DETERMINISTIC —
   // key names + values only (no fps/clock/frame counters) so the snapshot byte-identity
   // gates hold. Called at the end of every fire_devkey and once at startup.
@@ -519,12 +659,13 @@ int main(int argc, char** argv, char** envp) {
     std::string env = (envmap_index >= 0 and envmap_index < int(envmap_names.size()))
                           ? envmap_names[envmap_index]
                           : "(scene default)";
-    keyshud.setState(env, gamset[gam_idx], expset[exp_idx], satset[sat_idx], matmode_label(mat_mode));
+    keyshud.setState(env, gamset[gam_idx], expset[exp_idx], satset[sat_idx], matmode_label(mat_mode), physdbg_label());
     // Deterministic, timing-independent observable of the on-screen legend's CURRENT content
     // (the HUD gate keys on this to distinguish a stale legend from an updated one).
     deco::printf(fvec3::Cyan(),
-                 "ork.ecs.player: keyshud [E]%s [G]%.2f [T]%.2f [H]%.2f [M]%s\n",
-                 env.c_str(), gamset[gam_idx], expset[exp_idx], satset[sat_idx], matmode_label(mat_mode));
+                 "ork.ecs.player: keyshud [E]%s [G]%.2f [T]%.2f [H]%.2f [M]%s [B]%s\n",
+                 env.c_str(), gamset[gam_idx], expset[exp_idx], satset[sat_idx], matmode_label(mat_mode),
+                 physdbg_label().c_str());
   };
 
   // The dev-key action, factored so the real key handler (onUiEvent) and the scripted
@@ -592,6 +733,28 @@ int main(int argc, char** argv, char** envp) {
         }
         break;
       }
+      case 'B': {
+        // physics debug wireframe toggle — same TOGGLE_DEBUG_DRAW path as --physics-debug.
+        // State lives system-side (_debugToggle XOR reflected Debug); the system prints ON/OFF.
+        controller_ptr_t c;
+        sys_ref_t bsys;
+        bool have_bullet;
+        {
+          std::lock_guard<std::mutex> lock(ctl_mutex);
+          c           = controller;
+          bsys        = bulletsystem;
+          have_bullet = bullet_mode;
+        }
+        if (c and have_bullet) {
+          c->systemNotify(bsys, "TOGGLE_DEBUG_DRAW"_tok, std::make_shared<DataTable>());
+          phys_dbg_on = not phys_dbg_on;
+          deco::printf(fvec3::Green(), "ork.ecs.player: [B] physics debug wireframe -> %s\n",
+                       phys_dbg_on ? "ON" : "OFF");
+        } else {
+          deco::printf(fvec3::Yellow(), "ork.ecs.player: [B] scene declares no BulletSystem\n");
+        }
+        break;
+      }
       case 'R':
         sat_idx = sat_def;
         gam_idx = gam_def;
@@ -645,6 +808,47 @@ int main(int argc, char** argv, char** envp) {
   if (devkeys)
     update_keys_hud(); // seed the legend with the default cycle state (before any keypress)
 
+  // --pysysnotify: parse "TIME:EVENT:field=value,...;..." into scripted PythonSystem
+  // messages fired on the update thread once abstime reaches TIME. The player owns NO
+  // vocabulary here — event name and float fields go through verbatim, which is what
+  // makes one hook serve every scene script (a key is InputKey:key=..,down=..).
+  struct PySysNotifyEvent {
+    std::string event;
+    std::vector<std::pair<std::string, float>> fields;
+    float time  = 0.0f;
+    bool  fired = false;
+  };
+  std::vector<PySysNotifyEvent> pysys_notify_events;
+  if (not pysys_notify_script.empty()) {
+    std::stringstream ss(pysys_notify_script);
+    std::string item;
+    while (std::getline(ss, item, ';')) {
+      if (item.empty())
+        continue;
+      auto c1 = item.find(':');
+      if (c1 == std::string::npos) {
+        deco::printf(fvec3::Red(), "ork.ecs.player: --pysysnotify entry <%s> has no TIME:EVENT\n", item.c_str());
+        continue;
+      }
+      auto c2 = item.find(':', c1 + 1);
+      PySysNotifyEvent ev;
+      ev.time  = float(atof(item.substr(0, c1).c_str()));
+      ev.event = (c2 == std::string::npos) ? item.substr(c1 + 1) : item.substr(c1 + 1, c2 - c1 - 1);
+      if (c2 != std::string::npos) {
+        std::stringstream fs(item.substr(c2 + 1));
+        std::string field;
+        while (std::getline(fs, field, ',')) {
+          auto eq = field.find('=');
+          if (eq == std::string::npos)
+            continue;
+          ev.fields.emplace_back(field.substr(0, eq), float(atof(field.substr(eq + 1).c_str())));
+        }
+      }
+      pysys_notify_events.push_back(ev);
+    }
+    deco::printf(fvec3::Yellow(), "ork.ecs.player: --pysysnotify parsed %zu message(s)\n", pysys_notify_events.size());
+  }
+
   //////////////////////////////////////////////////////////
   // gpuInit — the whole Goal-C chain happens HERE, in C++:
   //   deserialize -> materialize+wire -> bind -> createSimulation
@@ -691,13 +895,21 @@ int main(int argc, char** argv, char** envp) {
       deco::printf(fvec3::Yellow(), "ork.ecs.player: ssaa<%d>\n", want_ssaa);
     }
     ////////////////////////////////////////////
-    // --vr: select the VR render model (FWDPBRVRDM) — but ONLY when an XR runtime is
-    // actually up. The XR device was selected pre-Vulkan from ORKID_VR_DRIVER and, by
-    // now (post graphics-init), is _active iff its session came up. This is the same
-    // gate stereo_grid.py uses. Forcing the preset here (a user scene param, like ssaa
-    // above) routes BOTH the compositor (presetForwardPBRVRDM) and the SceneGraphSystem
-    // VR-device wiring, which keeps the active XR device and drives stereo. No runtime ->
-    // leave the scene's declared (desktop) preset untouched: byte-identical to no --vr.
+    // --vr: select the VR render model (FWDPBRVRDM). The XR device was selected pre-Vulkan
+    // from ORKID_VR_DRIVER and, by now (post graphics-init), is _active iff its session came
+    // up. Forcing the preset here (a user scene param, like ssaa above) routes BOTH the
+    // compositor (presetForwardPBRVRDM) and the SceneGraphSystem VR-device wiring.
+    //
+    // The runtime check picks the DEVICE, not the render model: with a live runtime the
+    // active XR device drives the HMD; with none, SceneGraphSystem registers a NoVr device
+    // and the output node's desktop-mirror blit IS the presentation (side-by-side stereo).
+    // --vr therefore always means stereo — a request for VR is never answered with mono.
+    //
+    // PRECEDENCE with ORKID_FORCE_DMVR (below): none needed here — both arms set the SAME
+    // preset param, so the two levers cannot disagree at this level. Where they DO meet is
+    // inside the preset resolver (scenegraph.cpp): ORKID_FORCE_DMVR is capability- AND
+    // autoselect-immune by its own charter (it means "this node", not "the best node"), so
+    // it beats ORKID_SPVR=1 and FWDPBRVRDM stays literal DualMonoVr.
     ////////////////////////////////////////////
     if (want_vr) {
       auto vrdev      = ::ork::lev2::orkidvr::device();
@@ -713,8 +925,18 @@ int main(int argc, char** argv, char** envp) {
         deco::printf(fvec3::Green(),
                      "ork.ecs.player: --vr ACTIVE — XR runtime up, render model FWDPBRVRDM\n");
       } else {
+        // NO RUNTIME -> NoVR STEREO. Same render model, same preset param; SceneGraphSystem
+        //  sees no device that ownsHmdPresentation and registers a NoVrDevice, whose
+        //  __compositeStereo is a no-op — the output node's desktop mirror presents both eyes.
+        //  Routing through the preset param (rather than an output node reached by hand) is
+        //  what keeps the ORKID_SPVR autoselect in the loop: the resolver decides dual-mono
+        //  vs single-pass from this string.
+        for (const auto& it : scenedata->getSystemDatas())
+          if (auto sgd = std::dynamic_pointer_cast<SceneGraphSystemData>(it.second))
+            sgd->setUserSceneParam("preset", std::string("FWDPBRVRDM"));
+        perfhud._vrmode = true;
         deco::printf(fvec3::Yellow(),
-                     "ork.ecs.player: --vr requested but NO active XR runtime — NoVR fallback, desktop playback\n");
+                     "ork.ecs.player: --vr: no XR runtime, using NoVR stereo (DMVR) — render model FWDPBRVRDM on a NoVr device\n");
       }
     }
     // ORKID_FORCE_DMVR (eye-pass verification): force the DualMonoVr preset on desktop so
@@ -773,11 +995,30 @@ int main(int argc, char** argv, char** envp) {
         walk_mode = true;
       if (std::dynamic_pointer_cast<PythonSystemData>(it.second))
         pysys_mode = true;
+      if (std::dynamic_pointer_cast<BulletSystemData>(it.second))
+        bullet_mode = true;
     }
     if (walk_mode)
       charsystem = controller->findSystem<CharacterControllerSystem>();
     if (pysys_mode)
       pysystem = controller->findSystem<PythonSystem>();
+    if (bullet_mode)
+      bulletsystem = controller->findSystemWithClassName("BulletSystem");
+    if (devkeys)
+      update_keys_hud(); // re-seed: [B] phys n/a -> OFF now that bullet_mode is known
+    if (physics_debug) {
+      if (bullet_mode) {
+        // flag-driven startup enable: same TOGGLE_DEBUG_DRAW path as the [B] devkey, fired
+        // once before the first tick drains — wireframe is up by first-lit (snapshot-gateable).
+        controller->systemNotify(bulletsystem, "TOGGLE_DEBUG_DRAW"_tok, std::make_shared<DataTable>());
+        phys_dbg_on = true;
+        if (devkeys)
+          update_keys_hud(); // legend shows [B] phys: ON from frame 0
+        deco::printf(fvec3::Green(), "ork.ecs.player: --physics-debug ON (Bullet debug wireframe)\n");
+      } else {
+        deco::printf(fvec3::Yellow(), "ork.ecs.player: --physics-debug requested but the scene declares no BulletSystem\n");
+      }
+    }
     deco::printf(fvec3::Green(), "ork.ecs.player: simulation STARTED%s\n",
                  walk_mode ? " [WALK MODE: W/S move, A/D strafe, arrows turn/pitch, SPACE jump, P pause]" : "");
   });
@@ -788,6 +1029,7 @@ int main(int argc, char** argv, char** envp) {
 
   bool auto_rt_fired = false;
   bool aw_down = false, aw_up = false; // --autowalk state
+  bool ay_down = false, ay_up = false; // --autoyaw state
   // S1 gamepad state-forwarding (update thread). Lazily created only when the scene has a
   // PythonSystem to consume it; the PYTHON input script owns the pad->locomotion mapping.
   gamepaddevice_ptr_t gamepad;
@@ -820,7 +1062,10 @@ int main(int argc, char** argv, char** envp) {
     }
     // E.2-walk scripted input (the gate's lever): W down at t=1, up at t=1+N —
     // through the SAME controller-message channel real keys use.
-    if (walk_mode and auto_walk > 0.0f) {
+    // --autoyaw is the ROTATION-ONLY counterpart (cursor-RIGHT = KEY_RIGHT 262, which
+    // walk_input_system.py holds into a continuous TurnInput rate): same fixed position,
+    // camera sweeping in yaw — the discriminator for motion-class-dependent defects.
+    if (walk_mode and (auto_walk > 0.0f or auto_yaw > 0.0f)) {
       auto send_key = [&](int key, int down) {
         controller_ptr_t c;
         {
@@ -834,15 +1079,30 @@ int main(int argc, char** argv, char** envp) {
           c->systemNotify(pysystem, "InputKey"_tok, keytab);
         }
       };
-      if (not aw_down and abstime >= 1.0) {
-        aw_down = true;
-        send_key('W', 1);
-        deco::printf(fvec3::Yellow(), "ork.ecs.player: AUTOWALK begin\n");
+      if (auto_walk > 0.0f) {
+        if (not aw_down and abstime >= 1.0) {
+          aw_down = true;
+          send_key('W', 1);
+          deco::printf(fvec3::Yellow(), "ork.ecs.player: AUTOWALK begin\n");
+        }
+        if (aw_down and not aw_up and abstime >= 1.0 + auto_walk) {
+          aw_up = true;
+          send_key('W', 0);
+          deco::printf(fvec3::Yellow(), "ork.ecs.player: AUTOWALK end\n");
+        }
       }
-      if (aw_down and not aw_up and abstime >= 1.0 + auto_walk) {
-        aw_up = true;
-        send_key('W', 0);
-        deco::printf(fvec3::Yellow(), "ork.ecs.player: AUTOWALK end\n");
+      if (auto_yaw > 0.0f) {
+        constexpr int KEY_RIGHT = 262; // GLFW code the walk input script maps to TurnInput
+        if (not ay_down and abstime >= 1.0) {
+          ay_down = true;
+          send_key(KEY_RIGHT, 1);
+          deco::printf(fvec3::Yellow(), "ork.ecs.player: AUTOYAW begin\n");
+        }
+        if (ay_down and not ay_up and abstime >= 1.0 + auto_yaw) {
+          ay_up = true;
+          send_key(KEY_RIGHT, 0);
+          deco::printf(fvec3::Yellow(), "ork.ecs.player: AUTOYAW end\n");
+        }
       }
     }
     // S1 gamepad -> the scene's PythonSystem (the host does NOT map the pad; the python input
@@ -942,6 +1202,41 @@ int main(int argc, char** argv, char** envp) {
       }
       } // if (pysys_mode) — pad->python forwarding
     }
+    // --pysysnotify (test hook): scripted messages to the scene's PythonSystem once
+    // abstime reaches each entry's time. SECONDS, not ticks: a gate and a movie script
+    // are written in the time a human would describe (hold ']' for three seconds), and
+    // the update rate is not a constant across machines or offscreen modes.
+    if (not pysys_notify_events.empty()) {
+      controller_ptr_t c;
+      sys_ref_t pys;
+      {
+        std::lock_guard<std::mutex> lock(ctl_mutex);
+        c   = controller;
+        pys = pysystem;
+      }
+      for (auto& ev : pysys_notify_events) {
+        if (ev.fired or abstime < ev.time)
+          continue;
+        ev.fired = true;
+        if (not pysys_mode or not c) {
+          deco::printf(fvec3::Yellow(), "ork.ecs.player: [pysysnotify] %s dropped — scene declares no PythonSystem\n",
+                       ev.event.c_str());
+          continue;
+        }
+        auto tab = std::make_shared<DataTable>();
+        for (const auto& f : ev.fields) {
+          // ints where the value is whole: the key/down fields the input path reads are
+          // EXACT-typed svars, and a float there would miss the script's int expectation.
+          if (f.second == float(int(f.second)))
+            (*tab)[CrcString(f.first.c_str())] = int(f.second);
+          else
+            (*tab)[CrcString(f.first.c_str())] = f.second;
+        }
+        c->systemNotify(pys, CrcString(ev.event.c_str()), tab);
+        deco::printf(fvec3::Yellow(), "ork.ecs.player: [pysysnotify] t=%.3f %s (%zu field(s))\n",
+                     abstime, ev.event.c_str(), ev.fields.size());
+      }
+    }
     // --devkeys-script (test hook): fire scripted dev keys through the SAME handler once
     // the update tick reaches each event's frame. CMDR sets roundtrip_requested — the very
     // atomic the real Cmd+R handler sets — proving post-round-trip keys still act.
@@ -1007,11 +1302,15 @@ int main(int argc, char** argv, char** envp) {
           charsystem = fresh->findSystem<CharacterControllerSystem>(); // E.2-walk: re-resolve on restart
         if (pysys_mode)
           pysystem = fresh->findSystem<PythonSystem>();
+        sys_ref_t fresh_bullet;
+        if (bullet_mode)
+          fresh_bullet = fresh->findSystemWithClassName("BulletSystem"); // [B]/--physics-debug: re-resolve on restart
         {
           std::lock_guard<std::mutex> lock(ctl_mutex);
           dead_controllers.push_back(controller);
           controller = fresh;
           sgsystem   = fresh_sgsys;
+          bulletsystem = fresh_bullet;
         }
         c          = fresh;
         sgsys_local = fresh_sgsys;
@@ -1061,7 +1360,7 @@ int main(int argc, char** argv, char** envp) {
         perfhud.cycleMode();
         return ui::HandlerResult();
       }
-      // --devkeys: bare E/G/T/H/M/R drive the viewer-look controls. Consumed here (before
+      // --devkeys: bare E/G/T/H/M/B/R drive the viewer-look controls. Consumed here (before
       // the walk/PythonSystem forward below) ONLY when --devkeys AND only for keys we OWN;
       // every other key (incl. the EzUiCam X/C/V pan/dolly/zoom chords) falls through
       // untouched to the uicam handler below. Flagless these all fall through, so behavior
@@ -1069,7 +1368,7 @@ int main(int argc, char** argv, char** envp) {
       // E/G/T/H/M/R collide with a walk movement key or a camera modifier.
       if (devkeys and not ev->mbSUPER) {
         int kc = ev->miKeyCode;
-        if (kc == 'E' or kc == 'G' or kc == 'T' or kc == 'H' or kc == 'M' or kc == 'R') {
+        if (kc == 'E' or kc == 'G' or kc == 'T' or kc == 'H' or kc == 'M' or kc == 'B' or kc == 'R') {
           fire_devkey(kc);
           return ui::HandlerResult();
         }
@@ -1410,10 +1709,16 @@ int main(int argc, char** argv, char** envp) {
     ////////////////////////////////////////////
     if (offscreen and not offscreen_forever) {
       os_frame++;
+      if (not os_walltimer_started) { os_walltimer.Start(); os_walltimer_started = true; }
       auto cq           = opq::concurrentQueue();
       bool loader_idle  = cq and (cq->_numPendingOperations.load() == 0)
                              and (cq->_numInFlight.load() == 0);
-      int  async_pend   = ork::asyncWorkPending();
+      // ONE-SHOT census: a recurring producer (the procedural sky's IBL refilter,
+      // which re-arms for as long as the sun moves) declares itself steady and is
+      // not work that can "drain" — waiting on it would hold every celestial
+      // scene here until the frame cap. Everything that genuinely finishes still
+      // gates, and asyncWorkSummary() below marks the steady tags STEADY.
+      int  async_pend   = ork::asyncWorkPendingOneShot("");
       if (async_pend > 0)
         os_saw_async = true;
       os_idle = loader_idle ? (os_idle + 1) : 0;
@@ -1442,16 +1747,16 @@ int main(int argc, char** argv, char** envp) {
           os_settle++;
           if (os_settle >= 20 or cap) {
             if (not movie_path.empty()) {
-              auto settings             = std::make_shared<MovieCaptureSettings>();
-              settings->_filename       = movie_path;
-              settings->_fps            = int(movie_fps);
-              settings->_preset_name    = "high";
-              settings->_max_queue_size = 300;
-              ezapp->enableMovieRecording(settings);
-              deco::printf(fvec3::Yellow(), "ork.ecs.player: OFFSCREEN MOVIE -> %s (%d frames @ %d fps)\n",
+              // MOVIE now mirrors the snapshot contract: do NOT start recording at this
+              // settle boundary. Enter the pre-roll appearance drain (phase 5); recording
+              // begins only once the appearance async has drained AND a captured frame is
+              // settled-lit — else FAIL loud (MOVIE_RESULT=FAIL, rc=42), never record an
+              // unsettled scene (the old cap-force-advance bug).
+              deco::printf(fvec3::Yellow(),
+                           "ork.ecs.player: OFFSCREEN MOVIE -> %s (pre-roll appearance drain, then %d frames @ %d fps)\n",
                            movie_path.c_str(), movie_frames, int(movie_fps));
-              os_phase = 2;
-              os_movie = 0;
+              os_phase     = 5;
+              os_snapdrain = 0;
             } else if (not snapshot_path.empty()) {
               // SNAPSHOT: enter the capture/verify drain (phase 4). The actual
               // capture is issued THERE, per-frame, so it lands on a warm
@@ -1486,21 +1791,47 @@ int main(int argc, char** argv, char** envp) {
             if (os_drain >= 30 or cap) {     // pumped enough for the encoder to drain the queue
               ezapp->finishMovieRecording(); // queue now empty -> terminate returns promptly
               deco::printf(fvec3::Green(), "ork.ecs.player: movie recording finished (%d frames)\n", os_movie);
+              if (os_movie == 0) {
+                // 0 frames recorded is a FALSE positive, not a success — the frame-cap
+                // consumed the whole budget before any frame was captured (e.g. the WAIT
+                // phase burned it on a scene whose bake never completes). Fail loud rc=42.
+                deco::printf(fvec3::Red(),
+                             "ork.ecs.player: MOVIE_RESULT=FAIL reason=zero_frames pending<%s> — recording captured 0 frames\n",
+                             ork::asyncWorkSummary().c_str());
+                os_movie_fail->store(true);
+              } else {
+                printf("ork.ecs.player: MOVIE_RESULT=OK frames<%d>\n", os_movie);
+              }
+              fflush(stdout);
               ezapp->signalExit();
               os_phase = 3;
             }
           }
           break;
-        case 4: // SNAPSHOT — re-issue a capture each frame, poll it, accept the first LIT frame.
+        case 4: // SNAPSHOT — wait for the APPEARANCE async to drain, then capture the first LIT frame.
           os_snapdrain++;
           {
-            static const int kSnapWarmup   = 5;   // let a couple of frames render before the first grab
-            static const int kSnapCap      = 600; // give up (write last frame) after this many drain frames
-            static const int kFutureStale  = 30;  // a future un-ready this long => drop it + re-issue (queue was parked)
             auto ctx = drwev->GetTarget();
             auto fbi = ctx->FBI();
             auto rtb = fbi->_main_rtg->buffer(0);
-            // (1) Harvest an in-flight capture once its readback lands.
+            // APPEARANCE GATE. The composite's SKY / IBL reflections are painted from the
+            // radiancemap; while that (or any other appearance async — asset streaming) is
+            // still in flight the frame renders with a BLACK sky over lit terrain. That is
+            // exactly the trap the old drain fell into: the lit-probe counts any >=0.1%
+            // colored pixels, so the lit TERRAIN alone satisfied it and the snapshot was
+            // captured with a dead-black sky, then the process exited rc=0. So we do NOT
+            // accept a capture until the appearance async has drained. terrain_texbake is
+            // EXCLUDED — it is a background disk-cache bake that stalls offscreen forever
+            // (never completes headless) and does not gate the visible frame; waiting on it
+            // would hang a perfectly healthy scene (scn_forest). The wall-clock ceiling is
+            // the true hang backstop if the appearance async never finishes.
+            // STEADY-declared producers are likewise not waited on: the sky-IBL refilter
+            // is a recurring feed, not a job with an end, so a chaining celestial scene
+            // would otherwise pin this census above zero for the whole run.
+            int  appearance_pending = ork::asyncWorkPendingOneShot("terrain_texbake");
+            bool sky_ready          = (appearance_pending == 0);
+            // (1) Harvest an in-flight capture once its readback lands (captures are only
+            //     issued past sky-ready, so this runs only then).
             if (snap_future) {
               if (snap_future->isReady()) {
                 auto img = snap_capbuf ? snap_capbuf->_image : nullptr;
@@ -1510,34 +1841,36 @@ int main(int argc, char** argv, char** envp) {
                 // require a real pixel population (a stray pixel isn't a render).
                 size_t lit_px = 0, tot_px = 0;
                 uint8_t rgbmax = 0;
-                if (img and img->_data) {
-                  const uint8_t* p = img->_data->data();
-                  size_t         n = img->_data->length();
-                  tot_px = n / 4;
-                  for (size_t i = 0; i + 3 < n; i += 4) {
-                    uint8_t r = p[i], g = p[i + 1], b = p[i + 2];
-                    uint8_t m = std::max(r, std::max(g, b));
-                    if (m > rgbmax) rgbmax = m;
-                    if (r or g or b) lit_px++;
-                  }
-                }
-                bool has_color = (tot_px > 0) and (lit_px * 1000 >= tot_px); // >=0.1% pixels colored
-                // Record when the composite FIRST goes lit; then --snapshot-frame
-                // N accepts N drain-frames LATER (relative to first-lit, so the
-                // caller need not know the variable settle/warmup). N=0 => accept
-                // at first-lit (the default/auto behavior).
-                if (has_color and snap_first_lit < 0)
+                bool has_color = probeCaptureColor(img, tot_px, lit_px, rgbmax);
+                snap_probe_color = has_color;                               // feeds the quiescent backstop
+                // "Settled-lit" requires BOTH the appearance async drained (sky present)
+                // AND real color. Record when the composite FIRST goes settled-lit; then
+                // --snapshot-frame N accepts N drain-frames LATER (relative to that, so the
+                // caller need not know the variable settle/warmup). N=0 => at first-lit.
+                bool settled_lit = has_color and sky_ready;
+                if (settled_lit and snap_first_lit < 0)
                   snap_first_lit = os_snapdrain;
-                bool lit = has_color and (snap_first_lit >= 0)
+                bool lit = settled_lit and (snap_first_lit >= 0)
                            and (os_snapdrain >= snap_first_lit + snapshot_frame);
-                const char* probe_tag = (not has_color) ? "black" : (lit ? "LIT" : "wait");
-                printf("ork.ecs.player: SNAPSHOT probe drain<%d> px<%zu> lit_px<%zu> rgbmax<%d> => %s\n",
-                       os_snapdrain, tot_px, lit_px, int(rgbmax), probe_tag);
+                const char* probe_tag = (not has_color) ? "black" : (not sky_ready ? "sky-wait" : (lit ? "LIT" : "wait"));
+                printf("ork.ecs.player: SNAPSHOT probe drain<%d> px<%zu> lit_px<%zu> rgbmax<%d> sky<%s> => %s\n",
+                       os_snapdrain, tot_px, lit_px, int(rgbmax), sky_ready ? "ready" : "pending", probe_tag);
                 snap_last_capbuf = snap_capbuf; // remember the newest landed frame (fallback)
                 if (lit) {
-                  img->writeToFile(file::Path(snapshot_path.c_str()));
-                  printf("ork.ecs.player: SNAPSHOT wrote %s (lit, drain %d)\n", snapshot_path.c_str(), os_snapdrain);
-                  os_snap_done->store(true);
+                  bool wrote = img->writeToFile(file::Path(snapshot_path.c_str()));
+                  if (wrote) {
+                    printf("ork.ecs.player: SNAPSHOT wrote %s (lit, drain %d)\n", snapshot_path.c_str(), os_snapdrain);
+                    os_snap_done->store(true);
+                  } else {
+                    // writeToFile fails loud on its own; escalate to a FAIL exit so a bad
+                    // --snapshot path can never look like a healthy rc=0 capture.
+                    deco::printf(fvec3::Red(),
+                                 "ork.ecs.player: SNAPSHOT_RESULT=FAIL reason=write_failed path<%s>\n",
+                                 snapshot_path.c_str());
+                    os_snap_fail->store(true);
+                    ezapp->signalExit();
+                    os_phase = 3;
+                  }
                 }
                 snap_future = nullptr;
                 snap_capbuf = nullptr;
@@ -1548,35 +1881,153 @@ int main(int argc, char** argv, char** envp) {
                 snap_capbuf = nullptr;
               }
             }
-            // (2) No capture in flight and not done yet — issue a fresh one
-            //     (every drain frame past warmup: needed to detect first-lit and
-            //     then to keep sampling until first-lit + snapshot_frame).
-            if (not os_snap_done->load() and not snap_future and os_snapdrain >= kSnapWarmup) {
+            // (2) PAST sky-ready only: no capture in flight and not done yet -> issue one.
+            //     Before sky-ready we just PUMP: the loader keeps the prefilter progressing
+            //     on its own (a plain --frames run drains it with zero captures), so issuing
+            //     captures here would only contend for the GPU and slow the bake. A periodic
+            //     line keeps the wait visible (grep-stable, shows the pending async names).
+            if (os_phase == 4 and not os_snap_done->load() and not snap_future
+                and sky_ready and os_snapdrain >= kSnapWarmup) {
               snap_capbuf      = std::make_shared<CaptureBuffer>();
               snap_future      = fbi->captureAsFormat(rtb.get(), snap_capbuf, EBufferFormat::RGBA8);
               snap_issue_drain = os_snapdrain;
             }
-            // (3) Exit when we have a lit frame or ran out of the drain's OWN budget.
-            //     NOT on `cap` (the settle safety-cap): a CAP-settled-but-rendering
-            //     scene (scn_forest's terrain_texbake stalls offscreen, so it never
-            //     genuinely settles) must still get its full kSnapCap drain to capture
-            //     a lit frame — else the already-true cap aborts on drain frame 1.
-            if (os_snap_done->load() or os_snapdrain >= kSnapCap) {
-              if (not os_snap_done->load()) {
-                // Never observed a lit frame — write the last thing we captured (so
-                // there is always an output) and flag it loudly.
-                deco::printf(fvec3::Red(),
-                             "ork.ecs.player: SNAPSHOT never went lit (%d drain frames) — writing last captured frame\n",
-                             os_snapdrain);
-                if (snap_last_capbuf and snap_last_capbuf->_image)
-                  snap_last_capbuf->_image->writeToFile(file::Path(snapshot_path.c_str()));
-              }
+            if (os_phase == 4 and not sky_ready and (os_snapdrain % 120 == 1))
+              deco::printf(fvec3::Yellow(),
+                           "ork.ecs.player: SNAPSHOT draining appearance async pending<%s> drain<%d> wall<%.1fs/%gs>\n",
+                           ork::asyncWorkSummary().c_str(), os_snapdrain, os_walltimer.SecsSinceStart(), settle_timeout);
+            // (3) DECIDE. SUCCESS is a settled-LIT frame (written above). Otherwise KEEP
+            //     PUMPING while the appearance async is still in flight (real per-frame
+            //     progress) — a bake that lights only after a few THOUSAND frames must NOT
+            //     be force-captured black (the exact old bug: rc=0 dead-black snapshot).
+            //     Two independent HANG backstops turn a genuinely stuck drain into a LOUD,
+            //     NONZERO FAIL — a dead-black rc=0 snapshot is impossible:
+            //       - wall-clock ceiling (settle_timeout): the absolute hang guard; the
+            //         ONLY thing that ends a drain while appearance async is STILL pending
+            //         (a real hang — the bake never finished within the budget);
+            //       - post-sky-ready quiescence (kSnapQuiesce): once the sky IS ready and
+            //         the composite STILL will not light for that many consecutive frames,
+            //         the scene is settled-BLACK (broken, not slow) — fail bounded rather
+            //         than wait out the whole wall ceiling.
+            if (sky_ready and not snap_probe_color)
+              os_snap_quiescent++;
+            else
+              os_snap_quiescent = 0;
+            double os_wall       = os_walltimer.SecsSinceStart();
+            bool   wall_expired  = os_wall >= settle_timeout;
+            bool   settled_black = (os_snap_quiescent >= kSnapQuiesce);
+            if (os_phase == 4 and os_snap_done->load()) {
+              printf("ork.ecs.player: SNAPSHOT_RESULT=PASS drain<%d> wall<%.1fs>\n", os_snapdrain, os_wall);
               deco::printf(fvec3::Green(), "ork.ecs.player: OFFSCREEN snapshot done (frame %d) — exiting\n", os_frame);
+              ezapp->signalExit();
+              os_phase = 3;
+            } else if (os_phase == 4 and (wall_expired or settled_black)) {
+              // LOUD, grep-stable failure (reason + pending async names + drain + wall).
+              // Still write the last captured frame so there is an artifact to eyeball, but
+              // flag FAIL and exit NONZERO below (see mainThreadLoop return).
+              const char* reason = wall_expired ? (sky_ready ? "settled_black_timeout" : "async_timeout")
+                                                : "settled_black";
+              deco::printf(fvec3::Red(),
+                           "ork.ecs.player: SNAPSHOT_RESULT=FAIL reason=%s pending<%s> drain<%d> wall<%.1fs/%gs> — snapshot never went settled-lit\n",
+                           reason, ork::asyncWorkSummary().c_str(), os_snapdrain, os_wall, settle_timeout);
+              if (snap_last_capbuf and snap_last_capbuf->_image)
+                snap_last_capbuf->_image->writeToFile(file::Path(snapshot_path.c_str()));
+              os_snap_fail->store(true);
               ezapp->signalExit();
               os_phase = 3;
             }
           }
           break;
+        case 5: { // MOVIE pre-roll — parity with the snapshot appearance drain (phase 4).
+                  // Gate recording on the SAME contract: appearance async drained AND a
+                  // captured frame settled-lit, else FAIL loud. Never records an unsettled
+                  // scene; the frame-cap can no longer force-advance into recording garbage.
+          os_snapdrain++;
+          auto ctx = drwev->GetTarget();
+          auto fbi = ctx->FBI();
+          auto rtb = fbi->_main_rtg->buffer(0);
+          int  appearance_pending = ork::asyncWorkPendingOneShot("terrain_texbake"); // steady feeds excluded (phase 4)
+          bool sky_ready          = (appearance_pending == 0);
+          // (1) harvest an in-flight capture, probe it (shared probe = identical criteria)
+          if (snap_future) {
+            if (snap_future->isReady()) {
+              auto img = snap_capbuf ? snap_capbuf->_image : nullptr;
+              size_t lit_px = 0, tot_px = 0;
+              uint8_t rgbmax   = 0;
+              bool has_color   = probeCaptureColor(img, tot_px, lit_px, rgbmax);
+              snap_probe_color = has_color;
+              bool settled_lit = has_color and sky_ready;
+              if (settled_lit and snap_first_lit < 0)
+                snap_first_lit = os_snapdrain;
+              const char* probe_tag = (not has_color) ? "black" : (not sky_ready ? "sky-wait" : "LIT");
+              printf("ork.ecs.player: MOVIE preroll probe drain<%d> px<%zu> lit_px<%zu> rgbmax<%d> sky<%s> => %s\n",
+                     os_snapdrain, tot_px, lit_px, int(rgbmax), sky_ready ? "ready" : "pending", probe_tag);
+              snap_future = nullptr;
+              snap_capbuf = nullptr;
+            } else if (os_snapdrain - snap_issue_drain > kFutureStale) {
+              snap_future = nullptr;
+              snap_capbuf = nullptr;
+            }
+          }
+          // (2) PAST sky-ready only: issue a capture if none in flight (before sky-ready we
+          //     just PUMP so the prefilter progresses — same as the snapshot drain).
+          if (not snap_future and sky_ready and os_snapdrain >= kSnapWarmup) {
+            snap_capbuf      = std::make_shared<CaptureBuffer>();
+            snap_future      = fbi->captureAsFormat(rtb.get(), snap_capbuf, EBufferFormat::RGBA8);
+            snap_issue_drain = os_snapdrain;
+          }
+          if (not sky_ready and (os_snapdrain % 120 == 1))
+            deco::printf(fvec3::Yellow(),
+                         "ork.ecs.player: MOVIE draining appearance async pending<%s> drain<%d> wall<%.1fs/%gs>\n",
+                         ork::asyncWorkSummary().c_str(), os_snapdrain, os_walltimer.SecsSinceStart(), settle_timeout);
+          // (3) HANG backstops — identical to the snapshot drain.
+          if (sky_ready and not snap_probe_color)
+            os_snap_quiescent++;
+          else
+            os_snap_quiescent = 0;
+          double os_wall       = os_walltimer.SecsSinceStart();
+          bool   wall_expired  = os_wall >= settle_timeout;
+          bool   settled_black = (os_snap_quiescent >= kSnapQuiesce);
+          bool   settled_lit   = (snap_first_lit >= 0);
+          // (4) DECIDE. settled-lit => START recording (phase 2). Else FAIL on a hang
+          //     backstop OR a frame-cap that expired with appearance STILL pending (the
+          //     cap-force-advance is now a loud FAIL, not silent garbage recording).
+          if (settled_lit) {
+            // Re-anchor the frame cap so recording gets its FULL budget FROM the settled
+            // point. The pre-roll may legitimately run well past offscreen_frames (a
+            // radiancemap prefilter takes >1000 frames headless on a healthy scene); the
+            // cap is a hang-guard, not an appearance gate. Without this re-anchor, recording
+            // would start with cap already tripped and capture 0 frames (zero_frames FAIL).
+            offscreen_frames = os_frame + movie_frames + 90;
+            auto settings             = std::make_shared<MovieCaptureSettings>();
+            settings->_filename       = movie_path;
+            settings->_fps            = int(movie_fps);
+            settings->_preset_name    = "high";
+            settings->_max_queue_size = 300;
+            ezapp->enableMovieRecording(settings);
+            deco::printf(fvec3::Green(),
+                         "ork.ecs.player: MOVIE settled-lit (drain %d) — recording %d frames @ %d fps\n",
+                         os_snapdrain, movie_frames, int(movie_fps));
+            os_phase = 2;
+            os_movie = 0;
+          } else if (wall_expired or settled_black) {
+            // Gate on the WALL CLOCK only (identical to the snapshot drain) — the frame cap
+            // fires during NORMAL appearance loading (radiancemap prefilter >> offscreen_frames
+            // on a healthy scene), so it must NOT abort the pre-roll or it FAILs healthy
+            // scenes. settle_timeout is the true hang backstop; settled_black catches a
+            // sky-ready-but-black scene bounded. Reasons kept distinct + documented.
+            const char* reason = wall_expired ? (sky_ready ? "settled_black_timeout" : "async_timeout")
+                                              : "settled_black";
+            deco::printf(fvec3::Red(),
+                         "ork.ecs.player: MOVIE_RESULT=FAIL reason=%s pending<%s> drain<%d> wall<%.1fs/%gs> — never went settled-lit; not recording\n",
+                         reason, ork::asyncWorkSummary().c_str(), os_snapdrain, os_wall, settle_timeout);
+            fflush(stdout);
+            os_movie_fail->store(true);
+            ezapp->signalExit();
+            os_phase = 3;
+          }
+          break;
+        }
         default: break;
       }
     }
@@ -1614,5 +2065,16 @@ int main(int argc, char** argv, char** envp) {
   ezapp->setRefreshPolicy({EREFRESH_FASTEST, -1});
   int rval = ezapp->mainThreadLoop();
   opq::concurrentQueue()->drain();
+  // A failed --snapshot or --movie (hung on pending appearance async past the ceiling, or
+  // settled-black, or cap expired with appearance still pending) exits NONZERO so a gate /
+  // caller can never mistake an unsettled/dead-black capture for a healthy one. Shared rc=42.
+  if (os_movie_fail and os_movie_fail->load()) {
+    deco::printf(fvec3::Red(), "ork.ecs.player: exiting NONZERO — MOVIE_RESULT=FAIL\n");
+    return 42;
+  }
+  if (os_snap_fail and os_snap_fail->load()) {
+    deco::printf(fvec3::Red(), "ork.ecs.player: exiting NONZERO — SNAPSHOT_RESULT=FAIL\n");
+    return 42;
+  }
   return rval;
 }

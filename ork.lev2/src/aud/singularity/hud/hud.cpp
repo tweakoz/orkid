@@ -420,11 +420,14 @@ void HudEventRouter::routeEvent(hudevent_ptr_t hev){
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void HudEventRouter::processEvents(){
+int HudEventRouter::processEvents(){
+  int count = 0;
   hudevent_ptr_t hev;
   while(_hudevents.try_pop(hev)){
     routeEvent(hev);
+    count++;
   }
+  return count;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

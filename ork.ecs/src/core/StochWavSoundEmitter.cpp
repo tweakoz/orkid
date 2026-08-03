@@ -80,6 +80,7 @@ void StochWavSoundEmitterData::describeX(ComponentDataClass* clazz) {
   clazz->floatProperty("PitchOffsetCents", float_range{-2400, 2400}, &StochWavSoundEmitterData::_pitchOffsetCents);
   clazz->floatProperty("GainOffsetDB", float_range{-96, 24}, &StochWavSoundEmitterData::_gainOffsetDB);
   clazz->floatProperty("RateScale", float_range{0, 100}, &StochWavSoundEmitterData::_rateScale);
+  clazz->intProperty("Priority", int_range{-128, 127}, &StochWavSoundEmitterData::_priority);
 }
 
 StochWavSoundEmitterData::StochWavSoundEmitterData() {
@@ -143,6 +144,13 @@ bool StochWavSoundEmitterComponent::_onActivate(Simulation* psi) {
   _burstRemaining  = 0;
   _currentSoundIndex = -1;
   _elapsedTime     = 0.0f;
+
+  // Re-seed HERE, not at construction: a component reused across simulation
+  // runs (or a respawn) must restart its stream, or run 2 of a scene inherits
+  // run 1's position in it. Entity name + salt -> distinct entities are
+  // decorrelated, the same scene is bit-identical every run.
+  uint64_t seed = stochwav_fnv1a64(GetEntityName(), stochwav_fnv1a64(kStochWavSeedSalt));
+  _rng.seed(uint32_t(seed ^ (seed >> 32)));
 
   // Randomize initial burst time to desynchronize emitters
   std::uniform_real_distribution<float> initDist(0.0f, 2.0f);
@@ -297,10 +305,12 @@ StochWavSoundEmitterSystem::_buildVoiceProgram(const PreloadedSound& preloaded, 
   auto ampblock = ampStage->appendTypedBlock<AMP_MONOIO>("amp");
 
   // PANNER2D stage (per-voice spatialization via controllers)
+  dspblkdata_ptr_t sfPannerBlock;
   if (hasPanner) {
     auto panStage = layer->appendStage("PAN");
     panStage->setNumIos(2, 2);
     auto pannerBlock = panStage->appendTypedBlock<PANNER2D>("PANNER");
+    sfPannerBlock    = pannerBlock;
 
     // Copy spatializer config onto the PANNER2D_DATA block
     auto pannerData = std::static_pointer_cast<PANNER2D_DATA>(pannerBlock);
@@ -339,6 +349,11 @@ StochWavSoundEmitterSystem::_buildVoiceProgram(const PreloadedSound& preloaded, 
     distParam->_mods->_src1Scale = 1.0f;
     distParam->_coarse           = 0.0f;   // controller provides the full value
   }
+
+  // SF2 live encode: an authored soundfieldSend routes this voice into the one
+  //  B-format mix point. loud (not silent) when the group has no panner, since
+  //  the encode has no direction without it.
+  configureSoundFieldSend(layer, _SCD._spatializer, sfPannerBlock);
 
   // Use pre-loaded keymap (shared SampleData)
   layer->_keymap = preloaded._keymap;
@@ -450,12 +465,12 @@ void StochWavSoundEmitterSystem::_onUpdate(Simulation* inst) {
   _systemElapsedTime += dt;
 
   //-----------------------------------------------------------------------
-  // Update listener matrix from camera (SceneGraphSystem)
+  // Update listener matrix from the camera (SceneGraphSystem). The camera is
+  // the RIG; when a VR device publishes a head pose the setter composes it on,
+  // so the listener rides the head, not the walker.
   //-----------------------------------------------------------------------
   if (_sgSystem && _sgSystem->_camera) {
-    auto viewMtx = _sgSystem->_camera->computeViewMatrix();
-    syn->_inv_listener_matrix = viewMtx;           // world → camera
-    syn->_listener_matrix     = viewMtx.inverse();  // camera → world
+    syn->setListenerFromRigView(_sgSystem->_camera->computeViewMatrix());
   }
 
   // Pre-compute inverse listener matrix for panner updates
@@ -556,39 +571,31 @@ void StochWavSoundEmitterSystem::_onUpdate(Simulation* inst) {
           if (elapsed >= v._sampleDuration) {
             syn->liveKeyOff(v._progInst, 60, 0);
             v._keyOffSent = true;
-            // Nullify controller pointers — layers will be cleared by keyOff
-            v._panAngleCtrl = nullptr;
-            v._panDistCtrl  = nullptr;
           }
         }
       }
 
-      // Resolve per-voice panner controller instances (deferred — layers created by audio thread)
-      // and update panner positions each frame.
-      // Skip after keyOff — _layers.clear() destroys our controller targets.
+      // Publish the panner positions (deferred — layers are created by the audio
+      // thread). The controller instances are RE-RESOLVED here every frame: they
+      // belong to the note currently on that layer and are released when the
+      // layer is re-keyed, and a reclaimed layer is erased from _layers, so
+      // going through the programInst each time is what keeps this off a
+      // released instance. Skip after keyOff — _layers.clear() ends the note.
       if (grd._hasSpatializer) {
         for (auto& v : voices) {
-          if (v._keyOffSent)
-            continue;  // layers cleared, controller pointers invalid
-
-          // Resolve controller instances once layers are available
-          if (!v._panControllersResolved && v._progInst && !v._progInst->_layers.empty()) {
-            auto& layer = v._progInst->_layers[0];
-            if (layer) {
-              auto itA = layer->_controlMap.find("PAN_ANGLE");
-              auto itD = layer->_controlMap.find("PAN_DIST");
-              if (itA != layer->_controlMap.end()) v._panAngleCtrl = itA->second;
-              if (itD != layer->_controlMap.end()) v._panDistCtrl  = itD->second;
-            }
-            v._panControllersResolved = true;
-          }
-          // Update panner from emitter/listener positions
-          if (v._panAngleCtrl) {
+          if (v._keyOffSent or (nullptr == v._progInst) or v._progInst->_layers.empty())
+            continue;
+          auto& layer = v._progInst->_layers[0];
+          if (nullptr == layer)
+            continue;
+          auto panAngleCtrl = layer->getControllerInst("PAN_ANGLE");
+          auto panDistCtrl  = layer->getControllerInst("PAN_DIST");
+          if (panAngleCtrl and panDistCtrl) {
             fvec4 relPos4 = fvec4(pos, 1.0f).transform(invListenerMtx);
             float dist  = std::max(1.0f, fvec3(relPos4.x, relPos4.y, relPos4.z).magnitude());
             float angle = -atan2f(relPos4.x, relPos4.z);
-            v._panAngleCtrl->setFloatValue(angle);
-            v._panDistCtrl->setFloatValue(dist);
+            panAngleCtrl->setFloatValue(angle);
+            panDistCtrl->setFloatValue(dist);
           }
         }
       }
@@ -698,6 +705,7 @@ void StochWavSoundEmitterSystem::_onUpdate(Simulation* inst) {
             // Route to group bus
             auto kmod = std::make_shared<KeyOnModifiers>();
             kmod->_outbus_override = grd._bus;
+            kmod->_priority        = c->_CD._priority;
 
             // Trigger
             int velocity = std::clamp(int(audiomath::decibel_to_linear_amp_ratio(gainDB) * 127.0f), 1, 127);

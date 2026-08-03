@@ -36,7 +36,7 @@ StereoDynamicEchoData::StereoDynamicEchoData(std::string name)
 ///////////////////////////////////////////////////////////////////////////////
 
 dspblk_ptr_t StereoDynamicEchoData::createInstance() const { // override
-  return std::make_shared<StereoDynamicEcho>(this);
+  return createDspInstance<StereoDynamicEcho>(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

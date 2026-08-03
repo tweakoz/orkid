@@ -124,6 +124,12 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
               [](synth_ptr_t synth) -> fmtx4 { return synth->_listener_matrix; },
               [](synth_ptr_t synth, fmtx4 pos) { synth->_listener_matrix = pos; //
                                                  synth->_inv_listener_matrix = pos.inverse(); })
+          .def_property_readonly(
+              "inv_listener_matrix", //
+              [](synth_ptr_t synth) -> fmtx4 { return synth->_inv_listener_matrix; })
+          .def(
+              "setListenerFromRigView", // rig/walker VIEW matrix in, head pose composed on
+              [](synth_ptr_t synth, fmtx4 rigview) { synth->setListenerFromRigView(rigview); })
           /////////////////////////////////////////////////////////////////////////////////
           // DAW channel strip support
           /////////////////////////////////////////////////////////////////////////////////
@@ -150,7 +156,36 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
               [](synth_ptr_t synth) -> bankdata_ptr_t { return synth->_globalbank; })
           .def_property_readonly(
               "numSoloed", //
-              [](synth_ptr_t synth) -> int { return synth->_num_soloed.load(); });
+              [](synth_ptr_t synth) -> int { return synth->_num_soloed.load(); })
+          /////////////////////////////////////////////////////////////////////////////////
+          // voice stealing (A0b). the knobs are read by the audio thread on every
+          //  allocLayer, so the setters go through addEvent like masterGain does.
+          /////////////////////////////////////////////////////////////////////////////////
+          .def_property(
+              "stealPolicy", //
+              [](synth_ptr_t synth) -> int { return int(synth->_stealPolicy); },
+              [](synth_ptr_t synth, int policy) {
+                synth->addEvent(0.0f, [synth, policy]() { synth->_stealPolicy = VoiceStealPolicy(policy); });
+              })
+          .def_property(
+              "voiceHeadroom", //
+              [](synth_ptr_t synth) -> int { return synth->_voiceHeadroom; },
+              [](synth_ptr_t synth, int headroom) {
+                synth->addEvent(0.0f, [synth, headroom]() { synth->_voiceHeadroom = headroom; });
+              })
+          .def_property_readonly(
+              "stealCount", //
+              [](synth_ptr_t synth) -> int { return synth->_stealCounter.load(); })
+          .def_property_readonly(
+              "numActiveVoices", //
+              [](synth_ptr_t synth) -> int { return synth->_numactivevoices.load(); })
+          // RT-alloc observable: storage the dsp/controller instance recycler had
+          //  to take from the allocator. it climbs while the pools grow to a
+          //  patch's concurrency peak and must go FLAT after that - a rising
+          //  count in steady state IS a malloc on the audio thread.
+          .def_property_readonly(
+              "dspPoolMisses", //
+              [](synth_ptr_t synth) -> int { return int(dspInstancePoolMisses()); });
   type_codec->registerStdCodec<synth_ptr_t>(synth_type_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto prgi_type = py::class_<prginst_rawptr_t>(singmodule, "ProgramInst")
@@ -247,32 +282,34 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
                              return &bus->_insertGroups[index];
                            },
                            py::return_value_policy::reference)
+                       // install path (all of these): the group is BUILT here, on
+                       //  the calling thread — InsertGroup::prepare keys on every
+                       //  branch layer — and only the handoff runs as an event on
+                       //  the audio thread. mirrors the bus-DSP prepare/commit split.
                        .def(
                            "addSerialInsert", //
                            [](outbus_ptr_t bus, lyrdata_ptr_t layer) {
                              auto syn = synth::instance();
-                             syn->addEvent(0, [bus, layer]() {
-                               InsertGroup group;
-                               group._layerdatas.push_back(layer);
-                               group._mixGain = 1.0f;
-                               bus->_insertGroups.push_back(group);
+                             InsertGroup group;
+                             group._layerdatas.push_back(layer);
+                             group._mixGain = 1.0f;
+                             group.prepare(syn.get());
+                             syn->addEvent(0, [bus, group]() mutable { //
+                               bus->_insertGroups.push_back(std::move(group));
                              });
                            })
                        .def(
                            "addParallelInsert", //
                            [](outbus_ptr_t bus, py::list layers, float gain) {
                              auto syn = synth::instance();
-                             std::vector<lyrdata_ptr_t> layer_vec;
+                             InsertGroup group;
                              for (auto item : layers) {
-                               layer_vec.push_back(item.cast<lyrdata_ptr_t>());
+                               group._layerdatas.push_back(item.cast<lyrdata_ptr_t>());
                              }
-                             syn->addEvent(0, [bus, layer_vec, gain]() {
-                               InsertGroup group;
-                               for (auto& ld : layer_vec) {
-                                 group._layerdatas.push_back(ld);
-                               }
-                               group._mixGain = gain;
-                               bus->_insertGroups.push_back(group);
+                             group._mixGain = gain;
+                             group.prepare(syn.get());
+                             syn->addEvent(0, [bus, group]() mutable { //
+                               bus->_insertGroups.push_back(std::move(group));
                              });
                            },
                            py::arg("layers"),
@@ -283,6 +320,7 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
                              auto syn = synth::instance();
                              syn->addEvent(0, [bus, index]() {
                                if (index >= 0 && index < bus->_insertGroups.size()) {
+                                 bus->_insertGroups[index].disposeLayers();
                                  bus->_insertGroups.erase(bus->_insertGroups.begin() + index);
                                }
                              });
@@ -291,7 +329,12 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
                            "clearInserts", //
                            [](outbus_ptr_t bus) {
                              auto syn = synth::instance();
-                             syn->addEvent(0, [bus]() { bus->_insertGroups.clear(); });
+                             syn->addEvent(0, [bus]() {
+                               for (auto& group : bus->_insertGroups) {
+                                 group.disposeLayers();
+                               }
+                               bus->_insertGroups.clear();
+                             });
                            });
   type_codec->registerStdCodec<outbus_ptr_t>(obus_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -317,11 +360,19 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
                 }
                 return grp._layerdatas[index];
               })
+          // branch-list edits: the new branch is BUILT here (off-RT) but the
+          //  list edit itself happens in the event, so the caller never reads a
+          //  live group — back-to-back edits can neither race the audio thread
+          //  nor silently overwrite one another.
           .def(
               "addLayer", //
               [](InsertGroup& grp, lyrdata_ptr_t layer) {
-                auto syn = synth::instance();
-                syn->addEvent(0, [&grp, layer]() { grp._layerdatas.push_back(layer); });
+                auto syn      = synth::instance();
+                auto prebuilt = InsertGroup::prepareBranch(layer, syn.get());
+                syn->addEvent(0, [&grp, layer, prebuilt]() {
+                  grp._layerdatas.push_back(layer);
+                  grp._layers.push_back(prebuilt);
+                });
               })
           .def(
               "removeLayer", //
@@ -329,7 +380,9 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
                 auto syn = synth::instance();
                 syn->addEvent(0, [&grp, index]() {
                   if (index >= 0 && index < grp._layerdatas.size()) {
+                    InsertGroup::disposeBranch(grp._layers[index]);
                     grp._layerdatas.erase(grp._layerdatas.begin() + index);
+                    grp._layers.erase(grp._layers.begin() + index);
                   }
                 });
               });
@@ -337,6 +390,27 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
   // Spatializer bindings
   /////////////////////////////////////////////////////////////////////////////////
   {
+    auto sfsenddata_type = //
+        py::class_<SoundFieldSendData, ork::Object, soundfieldsenddata_ptr_t>(
+            singmodule, "SoundFieldSendData")
+            .def(py::init<>())
+            .def(
+                "__repr__",
+                [](soundfieldsenddata_ptr_t sd) -> std::string {
+                  fxstring<256> fxs;
+                  fxs.format("audio::SoundFieldSendData(level: %g dB spread: %g)", sd->_level, sd->_spread);
+                  return fxs.c_str();
+                })
+            .def_property(
+                "level", // dB
+                [](soundfieldsenddata_ptr_t sd) -> float { return sd->_level; },
+                [](soundfieldsenddata_ptr_t sd, float val) { sd->_level = val; })
+            .def_property(
+                "spread", // 0=point source, 1=directionless
+                [](soundfieldsenddata_ptr_t sd) -> float { return sd->_spread; },
+                [](soundfieldsenddata_ptr_t sd, float val) { sd->_spread = val; });
+    type_codec->registerStdCodec<soundfieldsenddata_ptr_t>(sfsenddata_type);
+
     auto spatdata_type = //
         py::class_<SpatializerData, ork::Object, spatializerdata_ptr_t>(
             singmodule, "SpatializerData")
@@ -346,7 +420,11 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
                   fxstring<256> fxs;
                   fxs.format("audio::SpatializerData(%p)", sd.get());
                   return fxs.c_str();
-                });
+                })
+            .def_property(
+                "soundfieldSend", // null == no live encode into the SoundField
+                [](spatializerdata_ptr_t sd) -> soundfieldsenddata_ptr_t { return sd->_soundfieldSend; },
+                [](spatializerdata_ptr_t sd, soundfieldsenddata_ptr_t send) { sd->_soundfieldSend = send; });
     type_codec->registerStdCodec<spatializerdata_ptr_t>(spatdata_type);
 
     auto pannerspatdata_type = //

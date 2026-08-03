@@ -367,11 +367,13 @@ struct static_variant_base {
   }
   //////////////////////////////////////////////////////////////
   void convertFromOtherSize(const static_variant_base& oth) {
+    if (this == &oth)
+      return;
     size_t oth_size = oth.size();
     OrkAssert(capacity() >= oth_size);
     auto descriptor_factory = oth.descriptorFactory();
+    _destroy();
     if( descriptor_factory == nullptr) {
-      _destroy();
       return;
     }
     auto descriptor = descriptor_factory();
@@ -435,6 +437,9 @@ public:
   }
   //////////////////////////////////////////////////////////////
   static_variant& operator=(const static_variant& oth) {
+    if (this == &oth)
+      return *this;
+    _destroy();
     auto descriptor_factory = oth._descriptorFactory.load();
     if (descriptor_factory) {
       auto descriptor = descriptor_factory();

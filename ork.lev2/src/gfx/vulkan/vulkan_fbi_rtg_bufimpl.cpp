@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include "headers/vulkan_ctx.h"
+#include "vulkan_desclife.h"
 #include <ork/util/logger.h>
 #include <ork/lev2/gfx/gfxenv.h>
 
@@ -66,31 +67,44 @@ VklRtBufferImpl::~VklRtBufferImpl() {
   // Capture cube face views for cleanup
   std::array<VkImageView, 6> faceViews = _cubeFaceViews;
   bool hasFaceViews = _hasCubeFaceViews;
-  VkDevice device = _contextVK ? _contextVK->_vkdevice : VK_NULL_HANDLE;
+  vkcontext_rawptr_t ctxVK = _contextVK;
 
   _imgobj = nullptr; // Clear the image object to avoid dangling pointers
-  _msaa_imgobj = nullptr; // ditto for the MSAA render image (released on the deferred queue below)
+  _msaa_imgobj = nullptr; // ditto for the MSAA render image (released on the delayed queue below)
   _teximpl.clear(); // Clear the texture implementation variant
   _hasCubeFaceViews = false;
   for (auto& v : _cubeFaceViews) v = VK_NULL_HANDLE;
 
   if (imgobj or impl or hasFaceViews or msaa_imgobj) {
-    // Enqueue cleanup onto this buffer's owning context — drained on that
-    // context's beginFrame (Phase 6.3 Variant B: per-context deferred queue).
-    _contextVK->enqueueDeferredOp(
-      [=](Context* ctx) mutable {
-        // Destroy cube face views
-        if (hasFaceViews && device != VK_NULL_HANDLE) {
+    // FRAME-DELAYED destroy, not the undelayed deferred queue: an RTG resize
+    // reassigns rtgroup->_impl with no fence, so these images can still be
+    // referenced by submitted-but-unfinished command buffers. The deferred
+    // queue drains at the very NEXT beginFrame — inside the in-flight window —
+    // making its vkDestroyImage / vkFreeMemory a use-after-submit (device-lost
+    // under GPU load, e.g. per-eye VR resize during an IBL refilter). The
+    // delay holds the shared_ptrs past MAX_FRAMES_IN_FLIGHT instead.
+    constexpr int kDelayFrames = 3; // > MAX_FRAMES_IN_FLIGHT
+    ctxVK->enqueueDelayedDestroy(
+      [=]() mutable {
+        // funnel, not raw vkDestroyImageView: no-ops past device teardown
+        if (hasFaceViews) {
           for (auto& view : faceViews) {
-            if (view != VK_NULL_HANDLE) {
-              vkDestroyImageView(device, view, nullptr);
+            // DESCLIFE DESTROY — cube FACE views are raw handles with no owning
+            // VulkanImageObject, so they carry no serial (imgsn<-1> marks that).
+            if (desclifeEnabled() and (view != VK_NULL_HANDLE)) {
+              printf(
+                  "[DESCLIFE] DESTROY view<%p> imgsn<-1> img<faceview> frame<%zu>\n",
+                  (void*)view,
+                  desclifeFrame(ctxVK));
             }
+            ctxVK->destroyImageObject(view, VK_NULL_HANDLE, VK_NULL_HANDLE);
           }
         }
         imgobj = nullptr;
         impl = nullptr;
-        msaa_imgobj = nullptr;   // release the MSAA render image on the safe deferred queue too
-      });
+        msaa_imgobj = nullptr;   // release the MSAA render image on the safe delayed queue too
+      },
+      kDelayFrames);
   }
 }
 
@@ -141,13 +155,20 @@ void _vkCreateImageForBuffer(
 
     auto old_imgobj = bufferimpl->_imgobj;
 
+    // layered (multiview) RTG: EVERY image the group owns carries the same layer count —
+    //  a textureless or multisample buffer left at 1 layer beside an N-layer sibling is an
+    //  attachment mismatch the pass only discovers at render time.
+    auto owning_rtg = bufferimpl->_rtg_impl ? bufferimpl->_rtg_impl->_rtgroup : nullptr;
+    int num_layers  = (owning_rtg and (owning_rtg->_numLayers > 1)) ? owning_rtg->_numLayers : 1;
+
     auto VKICI = makeVKICI(           //
       w,  // width
       h, // height
       1,                              // depth
       options._format,                // format
       1);                             // miplevels
-  
+    VKICI->arrayLayers = num_layers;
+
   
   // Defensive check: convert usage=0 to "color"_crcu
   uint64_t effective_usage = options._usage;
@@ -204,6 +225,10 @@ void _vkCreateImageForBuffer(
       vkimage,            //
       bufferimpl->_vkfmt, //
       VkFormatConverter::_instance.aspectForUsage(effective_usage));
+  if (num_layers > 1) {
+    IVCI->viewType                    = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+    IVCI->subresourceRange.layerCount = num_layers;
+  }
   VkResult OK = vkCreateImageView(ctxVK->_vkdevice, IVCI.get(), nullptr, &imgobj->_vkimageview);
   OrkAssert(OK == VK_SUCCESS);
   bufferimpl->_currentLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Reset layout to undefined after creation
@@ -219,6 +244,7 @@ void _vkCreateImageForBuffer(
                    ? msaaEnumToInt(bufferimpl->_rtg_impl->_rtgroup->_msaa_samples) : 1;
   if (msaa_samples > 1) {
     auto MVKICI     = makeVKICI(w, h, 1, options._format, 1);
+    MVKICI->arrayLayers = num_layers;
     MVKICI->samples = (VkSampleCountFlagBits)msaa_samples;
     MVKICI->usage   = (effective_usage == "depth"_crcu)
                     ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
@@ -227,6 +253,10 @@ void _vkCreateImageForBuffer(
     auto MIVCI = createImageViewInfo2D(
         msaa_imgobj->_vkimage, bufferimpl->_vkfmt,
         VkFormatConverter::_instance.aspectForUsage(effective_usage));
+    if (num_layers > 1) {
+      MIVCI->viewType                    = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+      MIVCI->subresourceRange.layerCount = num_layers;
+    }
     VkResult MOK = vkCreateImageView(ctxVK->_vkdevice, MIVCI.get(), nullptr, &msaa_imgobj->_vkimageview);
     OrkAssert(MOK == VK_SUCCESS);
     msaa_imgobj->_currentLayout    = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -451,6 +481,22 @@ void VklRtBufferImpl::_transitionToHostRead(vkpricmdbufimpl_ptr_t cb)     { //
       OrkAssert(false);
       break;
   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VklRtBufferImpl::_transitionFromHostReadTo(vkpricmdbufimpl_ptr_t cb, VkImageLayout target) {
+  bool to_texture = (target == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+  VkTransitionParams p;
+  p.layout    = target;
+  // the host-read source was consumed by vkCmdCopyImageToBuffer: a TRANSFER read
+  p.srcAccess = VK_ACCESS_TRANSFER_READ_BIT;
+  p.srcStage  = VK_PIPELINE_STAGE_TRANSFER_BIT;
+  p.dstAccess = to_texture ? VK_ACCESS_SHADER_READ_BIT : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+  p.dstStage  = to_texture
+              ? VkPipelineStageFlags(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT)
+              : VkPipelineStageFlags(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+  _transitionImage(cb, p);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

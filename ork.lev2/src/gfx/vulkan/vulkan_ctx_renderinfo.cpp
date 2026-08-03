@@ -50,7 +50,11 @@ VulkanRenderInfo::VulkanRenderInfo(VkRtGroupImpl* rtgi) {
     rai.clearValue.color = {{cc.x,cc.y,cc.z,cc.w}};
     _rainfos_color.push_back(rai);
   }
-  _renderinfo.viewMask                 = 0;
+  // viewMask and layerCount are DIFFERENTLY SCOPED, not two spellings of the same number:
+  //  a non-zero viewMask makes the pass multiview (one bit per view, driver broadcasts the
+  //  draws across layers); layerCount is the NON-multiview layered-rendering field and is
+  //  ignored whenever viewMask != 0. Setting them to match is the classic multiview bug.
+  _renderinfo.viewMask                 = rtgi->_rtgroup ? rtgi->_rtgroup->viewMask() : 0;
   _renderinfo.layerCount               = 1;
   _renderinfo.flags                    = VkRenderingFlags();
   _renderinfo.renderArea.offset.x      = 0;
@@ -86,7 +90,12 @@ VulkanRenderInfo::VulkanRenderInfo(VkRtGroupImpl* rtgi) {
       _rainfo_depth.imageLayout = dbuf_impl->_currentLayout;
       _rainfo_depth.resolveMode = VK_RESOLVE_MODE_NONE;
     }
-    _rainfo_depth.loadOp                        = rtgi->_autoclear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
+    // A read-only-depth pass may not clear: the clear IS a depth write, and it
+    // would discard the very depth the pass exists to read (the prepass result
+    // that fills this attachment, plus the DEPTH_MAP the pass samples). Only
+    // colour keeps honouring _autoclear there.
+    bool depth_clear                            = rtgi->_autoclear and not rtgi->_depthReadOnlyMode;
+    _rainfo_depth.loadOp                        = depth_clear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
     _rainfo_depth.storeOp                       = VK_ATTACHMENT_STORE_OP_STORE;
     _rainfo_depth.clearValue.depthStencil.depth = 1.0f;
     _rainfo_depth.clearValue.depthStencil.stencil = 0;
@@ -102,18 +111,29 @@ VulkanRenderInfo::~VulkanRenderInfo() {
 VulkanPipelineRenderInfo::VulkanPipelineRenderInfo(rtgroup_rawptr_t rtg)
     : _rtg(rtg) {
 
+  // Attachment formats come from the IMPL (the buffers the render pass ACTUALLY
+  // attaches — see VulkanRenderInfo), NOT the ork-level RtGroup: texture-array
+  // slice RTGs (shadow cascades / spot cookies) carry no ork-level buffers, so
+  // reading rtg->_depthBuffer here produced depthAttachmentFormat=UNDEFINED
+  // for pipelines rendering into a real Z32F pass — a dynamic-rendering
+  // mismatch (UB) under which the driver's depth path bypassed the fragment
+  // shader entirely (masked depth-prepass discard was silently dropped, A3).
+  auto rtg_impl = rtg->_impl.getShared<VkRtGroupImpl>();
+  OrkAssert(rtg_impl != nullptr);
+
   initializeVkStruct(_createInfo, VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO);
-  for (int i = 0; i < rtg->numImageBuffers(); i++) {
-    auto buf     = rtg->buffer(i);
-    auto fmt = VkFormatConverter::convertBufferFormat(buf->format());
-    _colorFormats.push_back(fmt);
+  for (auto& cbi : rtg_impl->_color_buffer_impls) {
+    _colorFormats.push_back(cbi->_vkfmt);
   }
 
   _createInfo.colorAttachmentCount    = _colorFormats.size();
   _createInfo.pColorAttachmentFormats = _colorFormats.empty() ? nullptr : _colorFormats.data();
+  // must agree with VulkanRenderInfo's viewMask for every pass this pipeline is used in —
+  //  a mismatch is invalid at draw time, not at pipeline creation.
+  _createInfo.viewMask                = rtg->viewMask();
 
-  if (rtg->_depthBuffer) {
-    _depthFormat                      = VkFormatConverter::convertBufferFormat(rtg->_depthBuffer->format());
+  if (rtg_impl->_depth_buffer_impl) {
+    _depthFormat                      = rtg_impl->_depth_buffer_impl->_vkfmt;
     _createInfo.depthAttachmentFormat = _depthFormat;
 
     // Check if format has stencil

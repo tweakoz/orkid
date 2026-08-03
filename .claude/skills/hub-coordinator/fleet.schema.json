@@ -1,0 +1,244 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "orkid-fleet-restore.schema.json",
+  "title": "Fleet seat restore manifest",
+  "description": "Machine-actionable fleet restore spec. INSTANCES carry hostnames and live in the owner's taskset (never this repo). Comment keys (_*) are permitted anywhere.",
+  "type": "object",
+  "required": [
+    "version",
+    "hub",
+    "seats"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "hub": {
+      "type": "object",
+      "required": [
+        "seat",
+        "controller_ext_addr"
+      ],
+      "properties": {
+        "seat": {
+          "type": "string"
+        },
+        "controller_ext_addr": {
+          "type": "string",
+          "pattern": "^tcp://[^:]+:[0-9]+$",
+          "description": "the fleet-reachable controller address (what seats/mailboxes dial and the startup sentence carries); hub-local form is DERIVED as tcp://localhost:<same port>"
+        },
+        "coordination_dir": {
+          "type": "string",
+          "default": "~/coordination"
+        },
+        "env": {
+          "type": "object",
+          "properties": {
+            "venv": {
+              "type": "string",
+              "description": "absolute venv path; hub-box workers inherit it when their own venv is absent"
+            }
+          }
+        },
+        "workers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/worker"
+          }
+        },
+        "hw": {
+          "$ref": "#/$defs/hw"
+        }
+      }
+    },
+    "seats": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/seat"
+      }
+    }
+  },
+  "$defs": {
+    "worker": {
+      "type": "object",
+      "description": "A worker ALWAYS registers with its OWNING seat's controller \u2014 ownership is placement. `host`: 'localhost' = the hub machine, else an ssh alias. STAGING DISJOINTNESS LAW (owner jul29): a worker NEVER shares a staging with a coordinator session on the same box. Render/windowed/DRM needs are declared by specific tests/gates, never fleet data (owner jul29) \u2014 offscreen always works.",
+      "required": [
+        "name",
+        "host",
+        "staging"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "host": {
+          "type": "string",
+          "description": "machine the worker runs on: 'localhost' (hub box) or an ssh alias"
+        },
+        "staging": {
+          "type": "string"
+        },
+        "venv": {
+          "type": "string",
+          "description": "absolute venv path used in the worker launch line; seat workers inherit the owning seat's env.venv when absent"
+        },
+        "screen_session": {
+          "type": "string"
+        },
+        "extra_env": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "start": {
+          "type": "boolean",
+          "default": true
+        },
+        "repo": {
+          "type": "string",
+          "description": "project checkout for the worker's obt env (--project); absent = the box's default association"
+        },
+        "hw": {
+          "$ref": "#/$defs/hw"
+        }
+      }
+    },
+    "seat": {
+      "type": "object",
+      "required": [
+        "name",
+        "enabled",
+        "host",
+        "env",
+        "repo",
+        "claude",
+        "workers"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "host": {
+          "type": "string",
+          "description": "'localhost' = the hub machine (no ssh; SAME-BOX seats additionally require the obt config-isolation override + a non-default controller port), else the seat's ssh alias. Timeouts/boot-retry are tool defaults."
+        },
+        "env": {
+          "type": "object",
+          "required": [
+            "staging",
+            "venv"
+          ],
+          "properties": {
+            "staging": {
+              "type": "string",
+              "description": "the SEAT SESSION's staging \u2014 disjoint from every worker staging on the box (law, jul29)"
+            },
+            "venv": {
+              "type": "string"
+            },
+            "obt_launch": {
+              "type": "string",
+              "default": "obt.env.launch.py --stagedir ${staging} --command"
+            },
+            "env_scrub": {
+              "type": "boolean",
+              "default": true
+            },
+            "extra_env": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "repo": {
+          "type": "object",
+          "required": [
+            "path"
+          ],
+          "properties": {
+            "path": {
+              "type": "string"
+            }
+          }
+        },
+        "claude": {
+          "type": "object",
+          "required": [
+            "screen_session",
+            "startup_prompt"
+          ],
+          "properties": {
+            "config_dir": {
+              "type": "string",
+              "description": "sets CLAUDE_CONFIG_DIR for the seat's claude session. ABSENT = variable explicitly UNSET (env -u) -> the box's default profile ~/.claude and its existing login (the hub-account inherit). Present = that profile dir (separate account; logs in once per box)."
+            },
+            "screen_session": {
+              "type": "string"
+            },
+            "cwd": {
+              "type": "string"
+            },
+            "startup_prompt": {
+              "type": "string"
+            },
+            "start": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        },
+        "workers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/worker"
+          }
+        },
+        "hw": {
+          "$ref": "#/$defs/hw"
+        }
+      },
+      "description": "Mailbox is DERIVED, never declared: coord-<name>, restrict msg,sync, joins hub advertise_addr, started by the seat session's own bringup. Restore ALWAYS verifies (roster presence + round-trip) \u2014 verification is not configurable."
+    },
+    "hw": {
+      "type": "object",
+      "description": "Hardware capability FACTS - never scheduling directives (owner jul29: capabilities do not always translate to job assignments; gate/job placement stays brief/ruling territory). Lives box-level on hub/seats; a WORKER carries its own hw only when its host differs from its owner's box or its access differs from the box (e.g. env lacking the display session).",
+      "properties": {
+        "gpu": {
+          "type": "string"
+        },
+        "display": {
+          "type": "object",
+          "properties": {
+            "surface": {
+              "enum": [
+                "drm",
+                "wayland",
+                "x11",
+                "macos"
+              ]
+            },
+            "monitor": {
+              "type": "boolean",
+              "description": "permanent physical output attached"
+            },
+            "vr": {
+              "type": "boolean"
+            }
+          }
+        },
+        "audio": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

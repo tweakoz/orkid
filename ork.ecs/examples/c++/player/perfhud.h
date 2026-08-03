@@ -2,10 +2,19 @@
 ////////////////////////////////////////////////////////////////
 // PlayerPerfHud — on-screen performance HUD for ork.ecs.player.exe.
 //
-// Phase 1: FPS (render thread), UPS (update thread), and render-thread frame
-// work time (ms, avg + worst), plus a 2-second history graph of frame-ms.
+// Phase 1: FPS (render thread), UPS (update thread), frame time (ms, avg + worst)
+// plus a 2-second history graph of it, and the render-callback record bracket.
 // Later phases add the per-ECS-system and per-render-phase breakdowns (engine
 // instrumentation feeding stats sinks this HUD reads).
+//
+// TWO DISTINCT TIME ROWS, never interchangeable:
+//   "frame"      — OrkEzAppBase::_frame_period_ms, the wall-clock period between
+//                  displayed frames (whole cycle incl. present wait + swap + pump).
+//                  The only number that may be read as frame time / 1000-over-it FPS.
+//   "cpu-record" — the bracket around this player's onDraw callback (scene command
+//                  record + HUD draw). A SUBSET of the frame, typically a small
+//                  fraction of it; reporting it as "frame" hid 11-49ms of present
+//                  wait, which is why it carries its own name now.
 //
 // Three modes cycled by the '~' key: OFF -> TEXT -> TEXT+GRAPH. Anchored LOWER-LEFT,
 // bottom-aligned by the real font line height (so the block grows upward as lines are
@@ -74,14 +83,17 @@ struct PerfHud {
   double _fps = 0.0;
   double _ups = 0.0;
 
-  // render-thread frame-work time
-  Timer  _frame_timer;
-  bool   _frame_started     = false;
+  // TRUE frame time — sampled by the engine at the displayed-frame seam, read here.
   float  _frame_ms          = 0.0f;
   float  _frame_ms_max      = 0.0f; // accumulating worst in the current window
   float  _frame_ms_max_disp = 0.0f;
   std::deque<float> _hist;          // frame-ms ring (~2 s)
   static constexpr size_t kHistMax = 256;
+
+  // render-callback record bracket (onDraw only — NOT frame time, see header)
+  Timer  _cpu_record_timer;
+  bool   _cpu_record_started = false;
+  float  _cpu_record_ms      = 0.0f;
 
   // ORKID_PLAYER_HUD_STDOUT=<secs>: periodically print the stats text to stdout
   // (headless/DRM/scripted runs where the on-screen HUD can't be read). Works with
@@ -113,7 +125,7 @@ struct PerfHud {
   void init(orkezapp_ptr_t ez) {
     _ezapp = ez;
     _rate_timer.Start();
-    _frame_timer.Start();
+    _cpu_record_timer.Start();
     // ORKID_PERFHUD forces the startup mode (off|text|graph or 0|1|2). Lets a
     //  keyboardless VR/headless rig get the [perfhud] cull-counter stdout (TEXT mode)
     //  with no input device; the L2 pad toggle then flips it live in the headset.
@@ -163,8 +175,8 @@ struct PerfHud {
 
   // top of onDraw, before controller->render
   void frameBegin() {
-    _frame_timer.Start();
-    _frame_started = true;
+    _cpu_record_timer.Start();
+    _cpu_record_started = true;
     // Let the GPU-cull sites read back their result counts THIS frame only while the HUD is showing
     // text (off/graph => zero readback cost, preserving the no-readback cull path).
     CullStats::instance().setEnabled(_mode == TEXT);
@@ -172,14 +184,17 @@ struct PerfHud {
 
   // end of onDraw (after controller->render + movie pump); collects + draws
   void frameEndAndDraw(Context* ctx) {
-    if (_frame_started) {
-      _frame_ms      = float(_frame_timer.SecsSinceStart() * 1000.0);
-      _frame_started = false;
-      _frame_ms_max  = std::max(_frame_ms_max, _frame_ms);
-      _hist.push_back(_frame_ms);
-      while (_hist.size() > kHistMax)
-        _hist.pop_front();
+    if (_cpu_record_started) {
+      _cpu_record_ms      = float(_cpu_record_timer.SecsSinceStart() * 1000.0);
+      _cpu_record_started = false;
     }
+    // Frame time is the engine's wall-clock period, published one frame in arrears —
+    //  THIS frame's period can only close after endFrame/present, downstream of here.
+    _frame_ms     = _ezapp->_frame_period_ms.load();
+    _frame_ms_max = std::max(_frame_ms_max, _frame_ms);
+    _hist.push_back(_frame_ms);
+    while (_hist.size() > kHistMax)
+      _hist.pop_front();
     double el = _rate_timer.SecsSinceStart();
     if (el >= 0.25) {
       int rc = _ezapp->_render_count.load();
@@ -264,15 +279,21 @@ struct PerfHud {
       }
     }
 
-    // render-thread frame work time
-    char fb[96];
-    snprintf(fb, sizeof(fb), "\nframe %5.2f ms (max %5.2f)", _frame_ms, _frame_ms_max_disp);
+    // wall-clock frame time, then the onDraw record bracket it must never be confused with
+    char fb[128];
+    snprintf(fb, sizeof(fb),
+             "\nframe %5.2f ms (max %5.2f)"
+             "\ncpu-record %5.2f ms",
+             _frame_ms, _frame_ms_max_disp, _cpu_record_ms);
     out += fb;
 
     // Phase 2 — engine render-phase breakdown (only rows that actually ran this frame).
     auto snap = RenderPhaseStats::instance().snapshot();
     if (not snap.empty()) {
-      static const char* kOrder[] = {"gpuUpdate",    "preRender", "assemble",     "composite",   "hypermesh-gen",
+      // execution order: the shadow-maps..env-probes block is the forward node's frame
+      // prologue, which runs INSIDE assemble (its rows are a breakdown of that row).
+      static const char* kOrder[] = {"gpuUpdate",    "preRender",    "assemble",     "shadow-maps", "sun-cascades",
+                                      "sky-lut",      "sky-ibl",      "env-probes",   "composite",   "hypermesh-gen",
                                       "hm-cull",      "terrain-cull", "compute-cull", "present-idle"};
       auto row = [&](const std::string& nm, double ms) {
         char b[96];

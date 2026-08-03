@@ -61,19 +61,6 @@ geometry_interface gface_billGEO
 }
 
 ///////////////////////////////////////////////////////////////
-geometry_interface gface_bill_stereoGEO // 
-  : gface_baseGEO   //
-  : vface_bill { // import vtxshader outputs
-  
-  // TODO recursive walk up inheritance tree for attribute out->in inheritance
-  outputs {
-    vec4 frg_clr;
-    vec2 frg_uv0;
-    vec2 frg_uv1;
-    layout(secondary_view_offset = 1) int gl_Layer;
-  }
-}
-///////////////////////////////////////////////////////////////
 
 libblock lib_billboardGEO {
   struct Input {

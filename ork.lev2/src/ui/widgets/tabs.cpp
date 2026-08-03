@@ -353,8 +353,11 @@ HandlerResult TabWidget::DoOnUiEvent(event_constptr_t ev) {
 
     case EventCode::END_DRAG: {
       if (_tab_drag_active) {
+        // Forward BOTH release and cancel to the host session (which began on
+        // detach) so a canceled drag-out still tears down the host's drag state;
+        // the host skips the commit when canceled. Tab state clears either way.
         if (_tab_dragged_out && _onTabDragCommit)
-          _onTabDragCommit(ev->miX, ev->miY);
+          _onTabDragCommit(ev->miX, ev->miY, ev->_dragCanceled);
         _tab_drag_active = false;
         _tab_dragged_out = false;
         _drag_tab        = nullptr;

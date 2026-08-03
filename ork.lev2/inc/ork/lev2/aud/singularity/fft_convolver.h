@@ -100,7 +100,103 @@ private:
   FFTConvolver(const FFTConvolver&);
   FFTConvolver& operator=(const FFTConvolver&);
 };
-  
+
+/**
+* @class TwoStageFFTConvolver
+* @brief FFT convolver using two different block sizes
+*
+* The 2-stage convolver consists internally of two convolvers:
+*
+* - A head convolver, which processes the only the begin of the impulse response.
+*
+* - A tail convolver, which processes the rest and major amount of the impulse response.
+*
+* Using a short block size for the head convolver and a long block size for
+* the tail convolver results in much less CPU usage, while keeping the
+* calculation time of each processing call short.
+*
+* Furthermore, this convolver class provides virtual methods which provide the
+* possibility to move the tail convolution into the background (e.g. by using
+* multithreading, see startBackgroundProcessing()/waitForBackgroundProcessing()).
+*
+* As well as the basic FFTConvolver class, the 2-stage convolver is suitable
+* for real-time processing which means that no "unpredictable" operations like
+* allocations, locking, API calls, etc. are performed during processing (all
+* necessary allocations and preparations take place during initialization).
+*/
+class TwoStageFFTConvolver
+{
+public:
+  TwoStageFFTConvolver();
+  virtual ~TwoStageFFTConvolver();
+
+  /**
+  * @brief Initialization of the convolver
+  * @param headBlockSize The head block size
+  * @param tailBlockSize the tail block size
+  * @param ir The impulse response
+  * @param irLen Length of the impulse response in samples
+  * @return true: Success - false: Failed
+  */
+  bool init(size_t headBlockSize, size_t tailBlockSize, const Sample* ir, size_t irLen);
+
+  /**
+  * @brief Convolves the the given input samples and immediately outputs the result
+  * @param input The input samples
+  * @param output The convolution result
+  * @param len Number of input/output samples
+  */
+  void process(const Sample* input, Sample* output, size_t len);
+
+  /**
+  * @brief Resets the convolver and discards the set impulse response
+  */
+  void reset();
+
+protected:
+  /**
+  * @brief Method to start the background processing of the tail convolution
+  *
+  * The default implementation just performs the tail convolution synchronously,
+  * on the calling thread. Overwrite this method (together with
+  * waitForBackgroundProcessing()) to move the tail convolution to a background
+  * thread.
+  */
+  virtual void startBackgroundProcessing();
+
+  /**
+  * @brief Method to wait for the background processing of the tail convolution
+  *
+  * The default implementation does nothing (as the default
+  * startBackgroundProcessing() performs the tail convolution synchronously).
+  */
+  virtual void waitForBackgroundProcessing();
+
+  /**
+  * @brief Performs the tail convolution (to be called by startBackgroundProcessing())
+  */
+  void doBackgroundProcessing();
+
+private:
+  size_t _headBlockSize;
+  size_t _tailBlockSize;
+  FFTConvolver _headConvolver;
+  FFTConvolver _tailConvolver0;
+  SampleBuffer _tailOutput0;
+  SampleBuffer _tailPrecalculated0;
+  FFTConvolver _tailConvolver;
+  SampleBuffer _tailOutput;
+  SampleBuffer _tailPrecalculated;
+  SampleBuffer _tailInput;
+  SampleBuffer _backgroundProcessingInput;
+  size_t _tailInputFill;
+  size_t _precalculatedPos;
+
+  // Prevent uncontrolled usage
+  TwoStageFFTConvolver(const TwoStageFFTConvolver&);
+  TwoStageFFTConvolver& operator=(const TwoStageFFTConvolver&);
+};
+
 } // End of namespace fftconvolver
 } // End of namespace ork::audio::singularity
 

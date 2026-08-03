@@ -20,6 +20,17 @@ static ::ork::hyper::xfnodegraph_inst_ptr_t _srcXfng(dgfx::xfng_inpluginst_ptr_t
   return out ? out->_value : nullptr;
 }
 
+// column-major 4x4 multiply (out = A * B) — the XfNode frame composed with an XfSlot's local xform.
+static inline void _mul44(const float* A, const float* B, float* out) {
+  for (int c = 0; c < 4; c++)
+    for (int r = 0; r < 4; r++) {
+      float s = 0.0f;
+      for (int k = 0; k < 4; k++)
+        s += A[k * 4 + r] * B[c * 4 + k];
+      out[c * 4 + r] = s;
+    }
+}
+
 // stateless hash -> uint32, deterministic per (seed, node, leaf) — for reproducible per-leaf jitter.
 static inline uint32_t _lhash(int a, int b, int c) {
   uint32_t x = uint32_t(a) * 2654435761u + uint32_t(b) * 2246822519u + uint32_t(c) * 3266489917u + 374761393u;
@@ -31,6 +42,8 @@ static inline uint32_t _lhash(int a, int b, int c) {
 // LeafScatterModuleInst — reads the XfNodeGraph skeleton (same input LSweep skins) and emits a
 // broadleaf-card GpuMesh: at every node with generation (_attrs[1]) >= _min_gen, _per_node leaf cards
 // placed by PHYLLOTAXIS (golden-angle roll around the node heading, drooped _pitch from it). CPU build.
+// _source==1 (SLOTS / instance_at_slots) instead walks the graph's _slots side-table and places at each
+// slot's WORLD frame; everything downstream of the placement list (the card build) is shared.
 ///////////////////////////////////////////////////////////////////////////////
 struct LeafScatterModuleInst : public MeshComputeInst {
   LeafScatterModuleInst(const LeafScatterModuleData* d, dflow::GraphInst* g) : MeshComputeInst(d, g), _d(d) {}
@@ -55,13 +68,34 @@ struct LeafScatterModuleInst : public MeshComputeInst {
     const int   PER   = std::max(1, _d->_per_node);
     const int   QPL   = (_d->_style == 1) ? 2 : 1; // quads per leaf (cross = 2)
 
-    // eligible nodes: generation (_attrs[1]) >= _min_gen — the outer twigs bear the canopy.
-    std::vector<int> elig;
-    for (int i = 0; i < N; i++)
-      if (nodes[i]._attrs[1] >= _d->_min_gen)
-        elig.push_back(i);
+    // PLACEMENTS — one frame per leaf cluster, in emission order. `key` seeds the per-placement
+    // golden-angle stagger and the jitter hash (node index / slot index), so both sources stay
+    // deterministic per (seed, placement, leaf).
+    struct Placement { fvec3 R, H, U, P; int key; };
+    std::vector<Placement> places;
+    auto pushFrame = [&](const float* m, int key) {
+      places.push_back({fvec3(m[0], m[1], m[2]), fvec3(m[4], m[5], m[6]),
+                        fvec3(m[8], m[9], m[10]), fvec3(m[12], m[13], m[14]), key});
+    };
+    if (_d->_source == 1) {
+      // SLOTS: the grammar's attachment points. World frame = owning node xform * slot local.
+      const auto& slots = xng->_slots;
+      for (int s = 0; s < int(slots.size()); s++) {
+        OrkAssertIFMT(slots[s]._node < uint32_t(N),
+          "[leafscatter] XfSlot %d references node %u of %d — the slot table outran its graph.",
+          s, slots[s]._node, N);
+        float w[16];
+        _mul44(nodes[slots[s]._node]._xform, slots[s]._local, w);
+        pushFrame(w, s);
+      }
+    } else {
+      // NODES: generation (_attrs[1]) >= _min_gen — the outer twigs bear the canopy.
+      for (int i = 0; i < N; i++)
+        if (nodes[i]._attrs[1] >= _d->_min_gen)
+          pushFrame(nodes[i]._xform, i);
+    }
 
-    const int nleaves  = int(elig.size()) * PER;
+    const int nleaves  = int(places.size()) * PER;
     const int nverts   = nleaves * 4 * QPL;
     const int nfaces   = nleaves * QPL;
     const int ncorners = nfaces * 4;
@@ -99,11 +133,12 @@ struct LeafScatterModuleInst : public MeshComputeInst {
       bbmax.x = std::max(bbmax.x, p.x); bbmax.y = std::max(bbmax.y, p.y); bbmax.z = std::max(bbmax.z, p.z);
     };
 
-    for (int e = 0; e < int(elig.size()); e++) {
-      const int   ni = elig[e];
-      const float* m = nodes[ni]._xform; // column-major: X=right Y=heading Z=up T=pos
-      fvec3 R(m[0], m[1], m[2]), H(m[4], m[5], m[6]), U(m[8], m[9], m[10]), Pn(m[12], m[13], m[14]);
-      const float nodeBase = float(ni) * 2.399963f; // per-node golden-angle stagger (so nodes don't align)
+    for (int e = 0; e < int(places.size()); e++) {
+      const int   ni = places[e].key;
+      // frame columns: X=right Y=heading Z=up T=pos
+      const fvec3& R = places[e].R; const fvec3& H = places[e].H; const fvec3& U = places[e].U;
+      const fvec3& Pn = places[e].P;
+      const float nodeBase = float(ni) * 2.399963f; // per-placement golden-angle stagger (so they don't align)
 
       for (int j = 0; j < PER; j++) {
         uint32_t h  = _lhash(_d->_seed, ni, j);
@@ -179,8 +214,13 @@ struct LeafScatterModuleInst : public MeshComputeInst {
 
     mesh->markTopoChanged();
     if (not _announced) {
-      printf("LeafScatter<%s>: %d leaves (%d verts, %d faces) on %d/%d nodes (gen>=%.1f)\n",
-             _dgmodule_data->_name.c_str(), nleaves, nverts, nfaces, int(elig.size()), N, _d->_min_gen);
+      if (_d->_source == 1)
+        printf("LeafScatter<%s>: %d leaves (%d verts, %d faces) on %d/%d slots\n",
+               _dgmodule_data->_name.c_str(), nleaves, nverts, nfaces,
+               int(places.size()), int(xng->_slots.size()));
+      else
+        printf("LeafScatter<%s>: %d leaves (%d verts, %d faces) on %d/%d nodes (gen>=%.1f)\n",
+               _dgmodule_data->_name.c_str(), nleaves, nverts, nfaces, int(places.size()), N, _d->_min_gen);
       _announced = true;
     }
   }
@@ -218,6 +258,7 @@ void LeafScatterModuleData::describeX(class_t* clazz) {
   clazz->annotateTyped<dataflow::moduleIOreshape_fn_t>(
       "reshapeIOs", [](dataflow::moduledata_ptr_t m) { _reshapeLeafIOs(m); });
   clazz->directProperty("style", &LeafScatterModuleData::_style);
+  clazz->directProperty("source", &LeafScatterModuleData::_source);
   clazz->directProperty("per_node", &LeafScatterModuleData::_per_node);
   clazz->directProperty("min_gen", &LeafScatterModuleData::_min_gen);
   clazz->directProperty("size", &LeafScatterModuleData::_size);

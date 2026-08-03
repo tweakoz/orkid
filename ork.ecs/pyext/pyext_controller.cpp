@@ -54,13 +54,37 @@ void pyinit_controller(py::module& module_ecs) {
             }
             ctrl->createSimulation(varmap);
           })
-      .def("stageSimulation", [](controller_ptr_t ctrl) { ctrl->stageSimulation(); })
-      .def("startSimulation", [](controller_ptr_t ctrl) { ctrl->startSimulation(); })
-      .def("stopSimulation", [](controller_ptr_t ctrl) { ctrl->stopSimulation(); })
+      .def("stageSimulation", [](controller_ptr_t ctrl) {
+        py::gil_scoped_release release;
+        ctrl->stageSimulation();
+      })
+      .def("startSimulation", [](controller_ptr_t ctrl) {
+        py::gil_scoped_release release;
+        ctrl->startSimulation();
+      })
+      .def("stopSimulation", [](controller_ptr_t ctrl) {
+        // GIL must be RELEASED across every transport op: they block on sim/system
+        // locks the update thread holds while it needs the GIL (PythonSystem tick)
+        // — holding it here deadlocked a live slider-drag rebuild (2026-07-21).
+        py::gil_scoped_release release;
+        ctrl->stopSimulation();
+      })
+      // CLOCK ops, not teardown: the sim mode goes ACTIVE<->PAUSE, events keep
+      // servicing and the renderer keeps drawing. Same GIL rule as above — the
+      // transport lock is held by the update thread while it needs the GIL.
+      .def("pauseSimulation", [](controller_ptr_t ctrl) {
+        py::gil_scoped_release release;
+        ctrl->pauseSimulation();
+      })
+      .def("resumeSimulation", [](controller_ptr_t ctrl) {
+        py::gil_scoped_release release;
+        ctrl->resumeSimulation();
+      })
       .def_property_readonly("simulation", [](controller_ptr_t ctrl) -> simulation_ptr_t {
         return ctrl->simulation();
       })
       .def("terminateSimulation", [](controller_ptr_t ctrl) { //
+        py::gil_scoped_release release; //
         ctrl->endSimulation();
        })
       .def("updateSimulation", [](controller_ptr_t ctrl) { //

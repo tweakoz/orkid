@@ -151,12 +151,20 @@ struct AppInitData{
   std::string _audio_input_devname = "default";
   std::string _audio_output_devname = "default";
   std::string _audio_ioclass = "default";
+  std::string _audio_wav_out = "";  // non-empty: tee SYNC-mode audio to this WAV path
+
   std::string _fullscreen_monitor = "none";
   std::string _drm_mode = "a0";  // DRM device + mode (e.g., "b0", "c2")
   size_t _audio_input_numchannels = 1;
   size_t _audio_output_numchannels = 2;
   bool _audio_stream_sync = false;
   bool _freerunning = true;
+  // ECS simulation clock: 0 = derive dt from the wall clock (the default), else
+  // every sim tick consumes exactly 1/_fixed_sim_rate seconds of game time
+  // regardless of how long the tick actually took — the reproducibility seam
+  // for offline renders and measurement harnesses. Distinct from _target_ups,
+  // which paces how OFTEN ticks are issued, not how much time each one is worth.
+  float _fixed_sim_rate = 0.0f;
   float _target_ups = 480.0f;   // Updates per second (simulation tick rate)
   float _target_fps = 120.0f;   // Frames per second (render rate)
   bool _displaylink = false;       // Use CVDisplayLink/Metal swapchain for VR scanout prediction (fullscreen only)

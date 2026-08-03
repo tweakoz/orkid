@@ -117,6 +117,14 @@ def main(argv):
                            "pre-bench graph (the static production instantiation)")
   parser.add_argument("--reset-layout", dest="reset_layout", action="store_true",
                       help="ignore any saved dock layout; open with the default arrangement")
+  parser.add_argument("--uirecord", dest="uirecord", metavar="PATH", default=None,
+                      help="record all UI input to PATH (ork.uitest session JSONL; "
+                           "flushed at every gesture end, crash-safe)")
+  parser.add_argument("--uiplay", dest="uiplay", metavar="PATH", default=None,
+                      help="replay a recorded UI session from PATH into this editor "
+                           "(frame-locked; secondary-window-tagged events skipped)")
+  parser.add_argument("--uiplay-exit", dest="uiplay_exit", action="store_true",
+                      help="exit shortly after --uiplay replay completes (headless runs)")
   args = parser.parse_args(argv)
 
   if args.list or not args.source:
@@ -126,11 +134,16 @@ def main(argv):
   try:
     app = DflowEditor(args.source, offscreen=args.offscreen, selftest=args.selftest,
                       flagtest=args.flagtest, envmap=args.envmap, material=args.material,
-                      benches=not args.no_bench, reset_layout=args.reset_layout)
+                      benches=not args.no_bench, reset_layout=args.reset_layout,
+                      uirecord=args.uirecord,
+                      uiplay=args.uiplay, uiplay_exit=args.uiplay_exit)
   except (FileNotFoundError, ValueError) as ex:     # bogus envmap / material -> loud shell refusal
     print(f"ork.dflow.edit: {ex}", file=sys.stderr)
     return 2
-  app.ezapp.mainThreadLoop()
+  try:
+    app.ezapp.mainThreadLoop()
+  finally:
+    app.stopUiRecord()
   app.ezapp.shutdown()          # clean GPU + ECS teardown (headless lifecycle)
   return 0
 

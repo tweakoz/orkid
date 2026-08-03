@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 720" font-family="Arial, Helvetica, sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#666"/>
+    </marker>
+    <marker id="arrB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#3b82f6"/>
+    </marker>
+    <marker id="arrG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#34d399"/>
+    </marker>
+    <filter id="shadow">
+      <feDropShadow dx="2" dy="2" stdDeviation="2" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  <rect x="0" y="0" width="1000" height="720" fill="#1a1a2e"/>
+  <text x="30" y="34" font-size="18" font-weight="bold" fill="white">Composite modules — SubGraph / Loop + CookGraphDriver</text>
+
+  <!-- legend -->
+  <rect x="710" y="16" width="14" height="14" rx="3" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="732" y="27" font-size="12" fill="#ddd">Data — serialized</text>
+  <rect x="710" y="36" width="14" height="14" rx="3" fill="#4c1d95" stroke="#a78bfa"/>
+  <text x="732" y="47" font-size="12" fill="#ddd">generic runtime (inst)</text>
+  <rect x="710" y="56" width="14" height="14" rx="3" fill="#065f46" stroke="#34d399"/>
+  <text x="732" y="67" font-size="12" fill="#ddd">family cook driver</text>
+
+  <!-- host graph -->
+  <rect x="30" y="76" width="940" height="390" rx="10" fill="#252540" stroke="#4a5568" stroke-dasharray="7,5"/>
+  <text x="46" y="98" font-size="13" font-weight="bold" fill="#9ca3af">host GraphData</text>
+
+  <rect x="55" y="220" width="160" height="64" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="135" y="246" font-size="13" font-weight="bold" font-family="monospace" fill="white" text-anchor="middle">upstream</text>
+  <text x="135" y="264" font-size="12" fill="#93c5fd" text-anchor="middle">module</text>
+
+  <!-- composite -->
+  <rect x="280" y="110" width="620" height="330" rx="10" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="280" y="110" width="620" height="30" rx="10" fill="#2563eb"/>
+  <text x="296" y="134" font-size="13" font-weight="bold" font-family="monospace" fill="white">LoopModuleData  (SubGraphModuleData → DgModuleData)</text>
+  <text x="296" y="154" font-size="11" font-family="monospace" fill="#93c5fd">_count · _carries[] · _iter_feeds[] · promoted inputs/outputs</text>
+
+  <!-- carry (routed through the clear band between attributes and the nested graph) -->
+  <path d="M 838,258 C 838,182 400,178 346,256" fill="none" stroke="#3b82f6" stroke-width="1.8" stroke-dasharray="7,5" marker-end="url(#arrB)"/>
+  <text x="592" y="176" font-size="12" fill="#60a5fa" text-anchor="middle">LoopCarry — iteration i's output feeds iteration i+1's input</text>
+
+  <!-- promoted plugs -->
+  <rect x="288" y="262" width="110" height="24" rx="6" fill="#2d4a6f" stroke="#60a5fa"/>
+  <text x="343" y="278" font-size="11" font-family="monospace" fill="white" text-anchor="middle">promoted In</text>
+  <rect x="782" y="262" width="112" height="24" rx="6" fill="#2d4a6f" stroke="#60a5fa"/>
+  <text x="838" y="278" font-size="11" font-family="monospace" fill="white" text-anchor="middle">promoted Out</text>
+
+  <!-- nested graph -->
+  <rect x="430" y="200" width="330" height="140" rx="8" fill="#142238" stroke="#60a5fa" stroke-dasharray="5,4"/>
+  <text x="444" y="222" font-size="12" font-weight="bold" font-family="monospace" fill="white">_subgraph : GraphData</text>
+  <text x="444" y="238" font-size="10.5" fill="#9ca3af">(nested, serializes in-place)</text>
+  <rect x="450" y="250" width="130" height="52" rx="6" fill="#2d4a6f" stroke="#60a5fa"/>
+  <text x="515" y="280" font-size="12" font-family="monospace" fill="white" text-anchor="middle">inner "gen"</text>
+  <rect x="610" y="250" width="130" height="52" rx="6" fill="#2d4a6f" stroke="#60a5fa"/>
+  <text x="675" y="280" font-size="12" font-family="monospace" fill="white" text-anchor="middle">inner "erode"</text>
+  <line x1="582" y1="276" x2="606" y2="276" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrB)"/>
+
+  <!-- promotion arrows -->
+  <line x1="400" y1="274" x2="446" y2="275" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="742" y1="276" x2="778" y2="275" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="560" y="392" font-size="11.5" fill="#9ca3af">SubGraphPromotion: boundary plug → (inner module, inner plug)</text>
+
+  <!-- external wiring -->
+  <line x1="217" y1="256" x2="284" y2="272" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrB)"/>
+
+  <!-- iter feed -->
+  <rect x="296" y="366" width="240" height="52" rx="6" fill="#2d4a6f" stroke="#60a5fa"/>
+  <text x="308" y="386" font-size="12" font-weight="bold" font-family="monospace" fill="white">LoopIterFeed</text>
+  <text x="308" y="404" font-size="11" font-family="monospace" fill="#93c5fd">writes i·scale + bias, or table[i]</text>
+  <line x1="430" y1="364" x2="496" y2="308" stroke="#666" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+
+  <!-- runtime band -->
+  <line x1="470" y1="466" x2="290" y2="496" stroke="#666" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+  <text x="404" y="488" font-size="11.5" fill="#9ca3af">createInstance()</text>
+
+  <rect x="30" y="500" width="430" height="118" rx="8" fill="#4c1d95" stroke="#a78bfa" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="30" y="500" width="430" height="30" rx="8" fill="#7c3aed"/>
+  <text x="44" y="522" font-size="13" font-weight="bold" font-family="monospace" fill="white">SubGraphModuleInst / LoopModuleInst</text>
+  <text x="44" y="542" font-size="11" font-family="monospace" fill="#c4b5fd">generic: promoted-input forwarding · loop control</text>
+  <text x="44" y="558" font-size="11" font-family="monospace" fill="#c4b5fd">per-iteration cook-context salt (excludes _count)</text>
+  <text x="44" y="574" font-size="11" font-family="monospace" fill="#c4b5fd">forced-root demand · cache accounting</text>
+  <text x="44" y="590" font-size="11" font-family="monospace" fill="#c4b5fd">resolves the driver from GraphInst::_impl</text>
+
+  <rect x="540" y="500" width="430" height="118" rx="8" fill="#065f46" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="540" y="500" width="430" height="30" rx="8" fill="#059669"/>
+  <text x="554" y="522" font-size="13" font-weight="bold" font-family="monospace" fill="white">CookGraphDriver (family-supplied)</text>
+  <text x="554" y="542" font-size="11" font-family="monospace" fill="#a7f3d0">makeNestedInst(subgraph)</text>
+  <text x="554" y="558" font-size="11" font-family="monospace" fill="#a7f3d0">runNested(nested, salt, forced_roots, allow_disk_cache)</text>
+  <text x="554" y="574" font-size="11" font-family="monospace" fill="#a7f3d0">initCarries · publishSubgraph/LoopOutputs</text>
+  <text x="554" y="590" font-size="11" font-family="monospace" fill="#a7f3d0">closeHostPhase / reopenHostPhase</text>
+
+  <line x1="464" y1="559" x2="536" y2="559" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrG)"/>
+
+  <text x="30" y="658" font-size="12" fill="#9ca3af">The family stocks a driver on the host GraphInst::_impl (TypeKeyedVars) instead of subclassing the composite insts;</text>
+  <text x="30" y="676" font-size="12" fill="#9ca3af">reference implementation: terrain's cook driver. The composite's compute() fails loudly if no driver is stocked.</text>
+</svg>

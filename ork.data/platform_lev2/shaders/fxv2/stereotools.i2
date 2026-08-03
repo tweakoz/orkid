@@ -1,0 +1,23 @@
+///////////////////////////////////////////////////////////////
+// stereotools.i2 — the SINGLE-PASS STEREO view block, and nothing else.
+//
+// It lives alone because three unrelated shader families need it and none of
+// them can afford each other's declarations: pbrtools.i2, terrain.fxv2 and
+// particle_ssbo.i2 each import THIS file directly. The C++ writer hand-mirrors
+// the std140 layout below (material_pbr_pipeline.cpp, k_stereo_off_*), so the
+// layout gets exactly ONE declaration to mirror.
+///////////////////////////////////////////////////////////////
+// The per-VIEW half of the view state, one entry per view. NOTHING here is
+// per-draw: a single-buffer per-frame UBO (the ublk_sun bind pattern), written
+// once per frame by the material's basic-state lambda. The _ST stages index it
+// with ofx_viewIndex (gl_ViewIndex on vulkan); mvp is rebuilt per view as
+// spvr_vp[view] * m rather than stored, so this block stays per-frame. Growing
+// ublk_std_matrices instead was not an option (that block IS per-draw).
+// Storage is 2 (the only shipped view count); a wider mask needs this widened
+// with it, and the C++ writer asserts on that.
+///////////////////////////////////////////////////////////////
+uniform_block ublk_stereo (descriptor_set 0) {
+  mat4 spvr_vp[2];
+  mat4 spvr_inv_vp[2];
+  vec4 spvr_eyepos[2];   // vec4 not vec3: std140 array stride is 16B either way, so say so
+}

@@ -59,6 +59,12 @@ public:
 
   fxtechnique_constptr_t _tek_streaks_stereoCI = nullptr;
   fxtechnique_constptr_t _tek_sprites_stereoCI = nullptr;
+
+  // SINGLE-PASS STEREO: resolve the "<mono>_ST" technique peers and install the
+  //  ublk_stereo producer on _pipeline. Call from gpuInit AFTER _tek_sprites/_tek_streaks
+  //  and _pipeline are set. Without it a stereo pass draws the mono matrix into BOTH eye
+  //  layers — zero parallax, invisible to validation.
+  void _wireStereoTechniques();
   
   vtx_set_sprite_t _vertexSetterSprite;
   vtx_set_streak_t _vertexSetterStreak;

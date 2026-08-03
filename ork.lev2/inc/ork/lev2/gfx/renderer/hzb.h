@@ -39,6 +39,12 @@ struct HZBBuilder {
   int _baseH = 0;                    // mip0 height (= depthH/2)
   int _mips  = 0;                    // number of mip levels (mip0 .. coarsest 1x1)
   bool _valid = false;               // true once a pyramid has been built this run
+  // PROVENANCE: the frame whose depth passes last wrote the image this pyramid was built
+  //  from (-1 before the first build). The 1-phase scheme requires it to be STRICTLY
+  //  EARLIER than the frame consuming the pyramid; equality means same-frame depth reached
+  //  the build, which is the exact hazard the ForwardNode's seed guard exists to forbid.
+  //  Written by the builder's caller, read by cull oracles — never a guard input.
+  int _sourceDepthFrame = -1;
 
   // mip-offset table (in floats) into _ssbo; _offsets[i] = start of mip i, size _mips+1 (last = total)
   std::vector<uint32_t> _offsets;

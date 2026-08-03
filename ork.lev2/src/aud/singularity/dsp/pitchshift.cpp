@@ -33,7 +33,7 @@ PitchShifterData::PitchShifterData(std::string name)
 ///////////////////////////////////////////////////////////////////////////////
 
 dspblk_ptr_t PitchShifterData::createInstance() const { // override
-  return std::make_shared<PitchShifter>(this);
+  return createDspInstance<PitchShifter>(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -43,3 +43,4 @@ docs/ork.core/*
 miniorkbuild.ini
 compile_commands.json
 .claude/settings.local.json
+obt.project/bin/vet_corpus/audio/*.wav

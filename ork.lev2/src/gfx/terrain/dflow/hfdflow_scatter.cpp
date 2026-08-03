@@ -24,6 +24,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstring>
+#include <map>
+#include <utility>
 #include <vector>
 
 namespace ork::lev2::terrain {
@@ -59,6 +62,7 @@ struct Field {
   std::vector<float> _v;
   int _w = 0, _h = 0;
   float at(int x, int y) const { return _v[size_t(y) * _w + x]; }
+  ScatterField view() const { return ScatterField{_v.data(), _w, _h}; }
 };
 
 bool _readField(const std::string& path, Field& out) {
@@ -81,12 +85,21 @@ bool _readField(const std::string& path, Field& out) {
 
 // nearest-texel sample at uv in [0,1] — numpy: clip((u*w).astype(int64), 0, w-1)
 // (astype truncates toward zero; u is non-negative here, so trunc == floor).
-inline float _sampleNearest(const Field& f, double u, double v) {
+inline float _sampleNearest(const ScatterField& f, double u, double v) {
   int xi = int(u * f._w);
   int yi = int(v * f._h);
   xi = std::min(std::max(xi, 0), f._w - 1);
   yi = std::min(std::max(yi, 0), f._h - 1);
   return f.at(xi, yi);
+}
+
+// base yaw derived from a field sample: the raw float bits hashed to a heading in
+// [0, 2π) via the SAME stateless RNG chain (scatterU01). A cell-constant field
+// (worley/voronoi) yields one heading per cell; a constant field, one heading total.
+inline double _headingFromField(float v) {
+  uint32_t bits;
+  std::memcpy(&bits, &v, sizeof(bits));
+  return scatterU01(uint64_t(bits), 0, SS_YAW) * 6.283185307179586;
 }
 
 // np.gradient port over a double field (spacing 1): central differences in the
@@ -119,15 +132,14 @@ std::vector<double> _gradient(const std::vector<double>& a, int W, int H, int ax
 
 ///////////////////////////////////////////////////////////////////////////////
 
+// POST-BAKE reader: read the height + per-type weight channel images off disk, then
+// run the SHARED core (yaw_field == nullptr -> the original random-yaw placement,
+// bit-for-bit). This is the ONLY behavioral path for non-in-graph sinks.
 std::shared_ptr<meshutil::Geometry> scatterPlace(
     const ScatterSinkData& sink,
     const std::map<std::string, std::string>& channel_paths,
     float extent_m_f) {
 
-  const double extent_m = double(extent_m_f);
-  const uint64_t seed   = uint64_t(uint32_t(sink._seed)); // non-negative, matches py (seed & mask)
-
-  // --- channels ---------------------------------------------------------------
   auto it_h = channel_paths.find("height");
   if (it_h == channel_paths.end()) {
     printf("scatterPlace<%s>: no 'height' channel path supplied\n", sink._name.c_str());
@@ -136,11 +148,11 @@ std::shared_ptr<meshutil::Geometry> scatterPlace(
   Field height;
   if (not _readField(it_h->second, height))
     return nullptr;
-  const int W = height._w, H = height._h;
 
   const int K = int(sink._type_channels.size());
   OrkAssert(K >= 1);
   std::vector<Field> weights(K);
+  std::vector<ScatterField> weight_views(K);
   for (int t = 0; t < K; t++) {
     auto it = channel_paths.find(sink._type_channels[t]);
     if (it == channel_paths.end()) {
@@ -150,7 +162,28 @@ std::shared_ptr<meshutil::Geometry> scatterPlace(
     }
     if (not _readField(it->second, weights[t]))
       return nullptr;
+    weight_views[t] = weights[t].view();
   }
+  return scatterPlaceCore(sink, height.view(), weight_views, nullptr, extent_m_f);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+std::shared_ptr<meshutil::Geometry> scatterPlaceCore(
+    const ScatterSinkData& sink,
+    const ScatterField& height,
+    const std::vector<ScatterField>& weights,
+    const ScatterField* yaw_field,
+    float extent_m_f) {
+
+  const double extent_m = double(extent_m_f);
+  const uint64_t seed   = uint64_t(uint32_t(sink._seed)); // non-negative, matches py (seed & mask)
+
+  const int W = height._w, H = height._h;
+  OrkAssert(W > 0 and H > 0);
+
+  const int K = int(weights.size());
+  OrkAssert(K >= 1);
 
   const bool count_mode = (sink._count > 0);
   const double density  = double(sink._density);
@@ -169,9 +202,25 @@ std::shared_ptr<meshutil::Geometry> scatterPlace(
     int type_id;
     double wx, wz, u, v;
     double prio;    // subsample priority (keep smallest)
+    double weight;  // total per-point weight (lattice same-cell dedup: keep strongest)
   };
   std::vector<Kept> kept;
   kept.reserve(size_t(ncx) * ncx / 4 + 16);
+
+  // scatter_place v2 — AGGREGATION LATTICE. When on, a candidate's jittered position is
+  // snapped to a village-yaw-aligned grid of pitch `lattice_m` (in the heading-rotated
+  // frame of world origin — the simplest deterministic anchor), then same-lattice-cell
+  // candidates are deduped keeping the strongest total weight (ties -> earliest cell k).
+  // Lanes: every `lane_every`-th grid line adds a `lane_m` gap (block rows separated by
+  // lanes). Heading = the yaw-field heading at the candidate (respecting yaw_mode) when a
+  // field is wired, else the global yaw base `_yaw_lo`. OFF (lattice_m<=0) -> the v1 path.
+  const double lattice_m   = double(sink._lattice_m);
+  const bool   lattice_on  = (lattice_m > 0.0);
+  const int    lane_every  = sink._lane_every;
+  const double lane_m      = double(sink._lane_m);
+  const bool   yaw_direct  = (sink._yaw_mode == std::string("direct"));
+  const double yaw_base    = double(sink._yaw_lo);
+  std::map<std::pair<int64_t, int64_t>, size_t> lat_map; // lattice cell -> index in `kept`
 
   const double cutoff = std::max(double(sink._cutoff), 1e-9);
   const int64_t ncells = int64_t(ncx) * int64_t(ncx);
@@ -179,8 +228,31 @@ std::shared_ptr<meshutil::Geometry> scatterPlace(
   for (int64_t k = 0; k < ncells; k++) {
     const double i = double(k % ncx); // meshgrid 'xy' raveled: ci varies fastest
     const double j = double(k / ncx);
-    const double wx = (i + 0.5 + (scatterU01(seed, k, SS_JITTER_X) - 0.5) * jitter) * cell_m - extent_m * 0.5;
-    const double wz = (j + 0.5 + (scatterU01(seed, k, SS_JITTER_Z) - 0.5) * jitter) * cell_m - extent_m * 0.5;
+    double wx = (i + 0.5 + (scatterU01(seed, k, SS_JITTER_X) - 0.5) * jitter) * cell_m - extent_m * 0.5;
+    double wz = (j + 0.5 + (scatterU01(seed, k, SS_JITTER_Z) - 0.5) * jitter) * cell_m - extent_m * 0.5;
+    int64_t lat_u = 0, lat_v = 0;
+    if (lattice_on) {
+      // heading of the local village grid (rotate world -> lattice frame by -theta)
+      const double u0 = wx / extent_m + 0.5, v0 = wz / extent_m + 0.5;
+      double theta = yaw_base;
+      if (yaw_field) {
+        const float fv = _sampleNearest(*yaw_field, u0, v0);
+        theta = yaw_direct ? double(fv) : _headingFromField(fv);
+      }
+      const double ct = std::cos(theta), st = std::sin(theta);
+      const double lu = wx * ct + wz * st;     // world -> lattice axes
+      const double lv = -wx * st + wz * ct;
+      lat_u = int64_t(std::llround(lu / lattice_m));
+      lat_v = int64_t(std::llround(lv / lattice_m));
+      double su = double(lat_u) * lattice_m;
+      double sv = double(lat_v) * lattice_m;
+      if (lane_every > 0 && lane_m != 0.0) {   // widen every Nth grid line's gap
+        su += std::floor(double(lat_u) / double(lane_every)) * lane_m;
+        sv += std::floor(double(lat_v) / double(lane_every)) * lane_m;
+      }
+      wx = su * ct - sv * st;                  // lattice -> world
+      wz = su * st + sv * ct;
+    }
     const double u  = wx / extent_m + 0.5;
     const double v  = wz / extent_m + 0.5;
     float Wsum = 0.0f; // float32 accumulation, declaration order (== the numpy reference)
@@ -207,7 +279,19 @@ std::shared_ptr<meshutil::Geometry> scatterPlace(
           ge++;
       type_id = std::min(std::max(ge, 0), K - 1);
     }
-    kept.push_back(Kept{k, type_id, wx, wz, u, v, scatterU01(seed, k, SS_PRIO)});
+    const Kept cand{k, type_id, wx, wz, u, v, scatterU01(seed, k, SS_PRIO), double(Wsum)};
+    if (lattice_on) { // same-lattice-cell dedup: keep the strongest weight (ties -> earliest k)
+      const auto key = std::make_pair(lat_u, lat_v);
+      auto it        = lat_map.find(key);
+      if (it == lat_map.end()) {
+        lat_map[key] = kept.size();
+        kept.push_back(cand);
+      } else if (cand.weight > kept[it->second].weight) {
+        kept[it->second] = cand;
+      }
+    } else {
+      kept.push_back(cand);
+    }
   }
 
   // --- cap (or count-mode subsample): keep the `target` SMALLEST priorities,
@@ -250,8 +334,12 @@ std::shared_ptr<meshutil::Geometry> scatterPlace(
   auto chT  = geo->_point.createChannel<int>("type_id");
   auto chS  = geo->_point.createChannel<int>("variant_seed");
   // PER-ITEM physics proxy (the collider shape rides the DATA): kind -1 = none,
-  // 0 = sphere(d0) 1 = capsule(d0 radius, d1 height) 2 = box(d0,d1,d2 half-extents).
-  // Parsed from the sink's per-type "kind:d0:d1:d2" declarations; consumers
+  // 0 = sphere(d0) 1 = capsule(d0 radius, d1 height) 2 = box(d0,d1,d2 half-extents)
+  // 3 = cone(d0 radius, d1 height) 4 = ring(d0 r_mid, d1 half_height, d2 thickness —
+  // a walk-INTO annulus, 12 fixed segments; the collider consumer builds the shape).
+  // Parsed here (the SINGLE parse site — the in-graph ScatterPlaceModule copies
+  // _type_colliders then runs THIS core, so sink and module agree by construction)
+  // from the sink's per-type "kind:d0:d1:d2" declarations; consumers
   // (BulletShapeScatter) read ONLY these channels — nothing hardcoded downstream.
   auto chPK = geo->_point.createChannel<int>("proxy_kind");
   auto chPD = geo->_point.createChannel<fvec3>("proxy_dims");
@@ -295,7 +383,17 @@ std::shared_ptr<meshutil::Geometry> scatterPlace(
       nx *= il; ny *= il; nz *= il;
     }
 
-    const double yaw = yaw_lo + (yaw_hi - yaw_lo) * scatterU01(seed, pt.k, SS_YAW);
+    // yaw: from a wired yaw field — "hash" (the field value hashed to a heading,
+    // byte-identical default) or "direct" (the field value taken AS radians, for
+    // field-composed contour/facade alignment) — else the existing per-point random
+    // draw in [yaw_lo, yaw_hi] (byte-identical path).
+    double yaw;
+    if (yaw_field) {
+      const float fv = _sampleNearest(*yaw_field, pt.u, pt.v);
+      yaw            = yaw_direct ? double(fv) : _headingFromField(fv);
+    } else {
+      yaw = yaw_lo + (yaw_hi - yaw_lo) * scatterU01(seed, pt.k, SS_YAW);
+    }
     const double sc  = sc_lo + (sc_hi - sc_lo) * scatterU01(seed, pt.k, SS_SCALE);
 
     // RIGHT-HANDED yaw-rotated basis about the up axis (the scatter.py construction)

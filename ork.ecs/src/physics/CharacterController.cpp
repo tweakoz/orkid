@@ -557,12 +557,19 @@ void CharacterControllerSystem::_onUpdate(Simulation* psi) {
       const fvec3 pos = xf->_translation;
       const fvec3 up(0, 1, 0);
       const float cp = cosf(c->_pitch), sp = sinf(c->_pitch);
+      // eye_height measures from the FEET (capsule bottom = ground contact), so the kwarg
+      // means what it says: eye height above the ground. pos is the capsule CENTER — the
+      // old code added eye_height to it, silently gaining half the capsule (~1.4m) and
+      // making every walker view the world from giant height (the toy-scale finding).
+      btVector3 smin, smax;
+      body->getCollisionShape()->getAabb(btTransform::getIdentity(), smin, smax);
+      const fvec3 feet = pos - up * (0.5f * (smax.getY() - smin.getY()));
       fvec3 eye, tgt;
       if (c->_CCD._camDistance > 0.01f) { // follow: pitch orbits the camera about the character
-        eye = pos - fwd * (c->_CCD._camDistance * cp) + up * (c->_CCD._eyeHeight + c->_CCD._camDistance * sp);
-        tgt = pos + up * c->_CCD._eyeHeight;
+        eye = feet - fwd * (c->_CCD._camDistance * cp) + up * (c->_CCD._eyeHeight + c->_CCD._camDistance * sp);
+        tgt = feet + up * c->_CCD._eyeHeight;
       } else { // first person: pitch tilts the view
-        eye = pos + up * c->_CCD._eyeHeight;
+        eye = feet + up * c->_CCD._eyeHeight;
         tgt = eye + fwd * cp + up * sp;
       }
       _lastEye  = eye; // stashed for Shoot (the script asks for the current ray)

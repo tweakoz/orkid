@@ -115,6 +115,16 @@ PBRMaterial::PBRMaterial()
 ///////////////////////////////////////////////////////////////////////////////
 
 PBRMaterial::~PBRMaterial() {
+  // Pointer-keyed cache eviction — see FxPipelineCacheImpl::removeCache. Skipping
+  // this leaves a cache reachable by the next material that lands on this
+  // address, whose pipelines then rebind THIS material's freed resources.
+  auto dead_cache = _evictPbrPipelineCache(this);
+  if (dead_cache and _initialTarget) {
+    // Its pipelines may hold the last ref to GPU-owning binds; drop them on the
+    // owning context's thread, past the frames still in flight.
+    constexpr int kDelayFrames = 3; // > MAX_FRAMES_IN_FLIGHT
+    _initialTarget->enqueueDelayedDestroy([dead_cache]() {}, kDelayFrames);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -165,6 +175,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   _tek_FWD_SKYBOX_MO = fxi->technique(_shader, "FWD_SKYBOX_MO"s + _shader_suffix);
   _tek_FWD_SKYBOX_ST = fxi->technique(_shader, "FWD_SKYBOX_ST"s + _shader_suffix);
+  _tek_FWD_SKYBOX_PROC = fxi->technique(_shader, "FWD_SKYBOX_PROC"s + _shader_suffix);
+  _tek_FWD_SKYBOX_PROC_ST = fxi->technique(_shader, "FWD_SKYBOX_PROC_ST"s + _shader_suffix);
 
   _tek_FWD_CT_NM_RI_NI_MO = fxi->technique(_shader, "FWD_CT_NM_RI_NI_MO"s + _shader_suffix);
   _tek_FWD_CV_NM_RI_NI_MO = fxi->technique(_shader, "FWD_CV_NM_RI_NI_MO"s + _shader_suffix);
@@ -174,6 +186,10 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _tek_FWD_CV_NM_RI_IN_MO_ALPHA = fxi->technique(_shader, "FWD_CV_NM_RI_IN_MO_ALPHA"s + _shader_suffix);
   _tek_FWD_CT_NM_RI_NI_ST = fxi->technique(_shader, "FWD_CT_NM_RI_NI_ST"s + _shader_suffix);
   _tek_FWD_CT_NM_RI_IN_ST = fxi->technique(_shader, "FWD_CT_NM_RI_IN_ST"s + _shader_suffix);
+  _tek_FWD_CV_NM_RI_NI_ST = fxi->technique(_shader, "FWD_CV_NM_RI_NI_ST"s + _shader_suffix);
+  _tek_FWD_CV_NM_RI_IN_ST = fxi->technique(_shader, "FWD_CV_NM_RI_IN_ST"s + _shader_suffix);
+  _tek_FWD_CV_NM_RI_NI_ST_ALPHA = fxi->technique(_shader, "FWD_CV_NM_RI_NI_ST_ALPHA"s + _shader_suffix);
+  _tek_FWD_CV_NM_RI_IN_ST_ALPHA = fxi->technique(_shader, "FWD_CV_NM_RI_IN_ST_ALPHA"s + _shader_suffix);
 
   _tek_FWD_CT_NM_SK_NI_MO = fxi->technique(_shader, "FWD_CT_NM_SK_NI_MO"s + _shader_suffix);
   _tek_FWD_CT_NM_SK_IN_MO = fxi->technique(_shader, "FWD_CT_NM_SK_IN_MO"s + _shader_suffix);
@@ -182,9 +198,14 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   // SSBO-sourced vertex variant (ptex3d FWD_SSBO_CUSTOM); no suffix — null for materials without it.
   _tek_FWD_SSBO_CUSTOM            = fxi->technique(_shader, "FWD_SSBO_CUSTOM");
+  _tek_FWD_SSBO_CUSTOM_ST         = fxi->technique(_shader, "FWD_SSBO_CUSTOM_ST");         // null until the template emits it
+  // cloud-shadow fill variant (ptex3d FWD_SUNCOOKIE, unlit surfaces only); null elsewhere.
+  _tek_FWD_SUNCOOKIE              = fxi->technique(_shader, "FWD_SUNCOOKIE");
   _tek_FWD_SSBO_CUSTOM_INSTANCED = fxi->technique(_shader, "FWD_SSBO_CUSTOM_INSTANCED");  // null unless ssbo_instanced
+  _tek_FWD_SSBO_CUSTOM_INSTANCED_ST = fxi->technique(_shader, "FWD_SSBO_CUSTOM_INSTANCED_ST");
   _tek_FWD_SSBO_CUSTOM_CAPTURE   = fxi->technique(_shader, "FWD_SSBO_CUSTOM_CAPTURE");     // impostor bake (MRT); null unless ssbo
   _tek_FWD_SSBO_CUSTOM_IMPOSTOR  = fxi->technique(_shader, "FWD_SSBO_CUSTOM_IMPOSTOR");    // impostor billboard; null unless impostor=True
+  _tek_FWD_SSBO_CUSTOM_IMPOSTOR_ST = fxi->technique(_shader, "FWD_SSBO_CUSTOM_IMPOSTOR_ST"); // its single-pass-stereo peer
   _parImpAlbedo     = fxi->parameter(_shader, "ImpAlbedo");
   _parImpNormal     = fxi->parameter(_shader, "ImpNormal");
   _parImpMetalRough = fxi->parameter(_shader, "ImpMetalRough");
@@ -192,12 +213,29 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _parImpGrid       = fxi->parameter(_shader, "ImpGrid");
   _tek_FWD_SSBO_CUSTOM_DEPTHPREPASS = fxi->technique(_shader, "FWD_SSBO_CUSTOM_DEPTHPREPASS");
   _tek_FWD_SSBO_CUSTOM_INSTANCED_DEPTHPREPASS = fxi->technique(_shader, "FWD_SSBO_CUSTOM_INSTANCED_DEPTHPREPASS"); // E.4
+  // ...and their per-view peers (the generated template has emitted these since the ST lowering; null
+  //  on a template that predates it, which then falls through to the mono arm as before)
+  _tek_FWD_SSBO_CUSTOM_DEPTHPREPASS_ST = fxi->technique(_shader, "FWD_SSBO_CUSTOM_DEPTHPREPASS_ST");
+  _tek_FWD_SSBO_CUSTOM_INSTANCED_DEPTHPREPASS_ST = fxi->technique(_shader, "FWD_SSBO_CUSTOM_INSTANCED_DEPTHPREPASS_ST");
+  // taskless mesh-shader twins; null unless the vertex source opted into the mesh variant
+  _tek_FWD_SSBO_CUSTOM_MESH              = fxi->technique(_shader, "FWD_SSBO_CUSTOM_MESH");
+  _tek_FWD_SSBO_CUSTOM_MESH_ST           = fxi->technique(_shader, "FWD_SSBO_CUSTOM_MESH_ST");
+  _tek_FWD_SSBO_CUSTOM_MESH_DEPTHPREPASS = fxi->technique(_shader, "FWD_SSBO_CUSTOM_MESH_DEPTHPREPASS");
+  _tek_FWD_SSBO_CUSTOM_MESH_DEPTHPREPASS_ST = fxi->technique(_shader, "FWD_SSBO_CUSTOM_MESH_DEPTHPREPASS_ST");
   _tek_FWD_CT_NM_IM_NI_MO        = fxi->technique(_shader, "FWD_CT_NM_IM_NI_MO");  // matrices-only instanced
+  _tek_FWD_CT_NM_IM_NI_ST        = fxi->technique(_shader, "FWD_CT_NM_IM_NI_ST");  // ...and its per-view peer
 
   _tek_FWD_DEPTHPREPASS_RI_IN_MO = fxi->technique(_shader, "FWD_DEPTHPREPASS_RI_IN_MO"s + _shader_suffix);
   _tek_FWD_DEPTHPREPASS_RI_NI_MO = fxi->technique(_shader, "FWD_DEPTHPREPASS_RI_NI_MO"s + _shader_suffix);
   _tek_FWD_DEPTHPREPASS_SK_IN_MO = fxi->technique(_shader, "FWD_DEPTHPREPASS_SK_IN_MO"s + _shader_suffix);
   _tek_FWD_DEPTHPREPASS_SK_NI_MO = fxi->technique(_shader, "FWD_DEPTHPREPASS_SK_NI_MO"s + _shader_suffix);
+
+  _tek_FWD_DEPTHPREPASS_MASKED_RI_NI_MO = fxi->technique(_shader, "FWD_DEPTHPREPASS_MASKED_RI_NI_MO"s + _shader_suffix);
+  _tek_FWD_DEPTHPREPASS_MASKED_SK_NI_MO = fxi->technique(_shader, "FWD_DEPTHPREPASS_MASKED_SK_NI_MO"s + _shader_suffix);
+  _tek_FWD_DEPTHPREPASS_MASKED_RI_IN_MO = fxi->technique(_shader, "FWD_DEPTHPREPASS_MASKED_RI_IN_MO"s + _shader_suffix);
+  _tek_FWD_DEPTHPREPASS_MASKED_RI_NI_ST = fxi->technique(_shader, "FWD_DEPTHPREPASS_MASKED_RI_NI_ST"s + _shader_suffix);
+  _tek_FWD_DEPTHPREPASS_MASKED_SK_NI_ST = fxi->technique(_shader, "FWD_DEPTHPREPASS_MASKED_SK_NI_ST"s + _shader_suffix);
+  _tek_FWD_DEPTHPREPASS_MASKED_RI_IN_ST = fxi->technique(_shader, "FWD_DEPTHPREPASS_MASKED_RI_IN_ST"s + _shader_suffix);
 
   _tek_FWD_DEPTHPREPASS_RI_IN_ST = fxi->technique(_shader, "FWD_DEPTHPREPASS_RI_IN_ST"s + _shader_suffix);
   _tek_FWD_DEPTHPREPASS_RI_NI_ST = fxi->technique(_shader, "FWD_DEPTHPREPASS_RI_NI_ST"s + _shader_suffix);
@@ -242,16 +280,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _paramIP                = fxi->parameter(_shader, "inv_p");
   _paramVP                = fxi->parameter(_shader, "vp");
   _paramIV                = fxi->parameter(_shader, "inv_v");
-  _paramVL                = fxi->parameter(_shader, "v_l");
-  _paramVR                = fxi->parameter(_shader, "v_r");
-  _paramVPL               = fxi->parameter(_shader, "vp_l");
-  _paramVPR               = fxi->parameter(_shader, "vp_r");
-  _paramIVPL              = fxi->parameter(_shader, "inv_vp_l");
-  _paramIVPR              = fxi->parameter(_shader, "inv_vp_r");
   _paramIVP               = fxi->parameter(_shader, "inv_vp");
   _paramMVP               = fxi->parameter(_shader, "mvp");
-  _paramMVPL              = fxi->parameter(_shader, "mvp_l");
-  _paramMVPR              = fxi->parameter(_shader, "mvp_r");
   _paramMV                = fxi->parameter(_shader, "mv");
   _paramMROT              = fxi->parameter(_shader, "mrot");
   _paramMVIT              = fxi->parameter(_shader, "mvit");
@@ -259,6 +289,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _paramMapCNMREA         = fxi->parameter(_shader, "CNMREA");
   
   _paramDppZBias          = fxi->parameter(_shader, "DppZBias");
+  _paramDppAlphaCutoff    = fxi->parameter(_shader, "DppAlphaCutoff");
+  _paramDppCNMREA         = fxi->parameter(_shader, "DppCNMREA");
   _parMapLightMapArray    = fxi->parameter(_shader, "LightMapArray");
   _paramLightMapColors    = fxi->parameter(_shader, "LightMapColors");
   
@@ -277,8 +309,6 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   // fwd
 
   _paramEyePostion    = fxi->parameter(_shader, "EyePostion");
-  _paramEyePostionL   = fxi->parameter(_shader, "EyePostionL");
-  _paramEyePostionR   = fxi->parameter(_shader, "EyePostionR");
   _paramAmbientLevel  = fxi->parameter(_shader, "AmbientLevel");
   _paramDiffuseLevel  = fxi->parameter(_shader, "DiffuseLevel");
   _paramSpecularLevel = fxi->parameter(_shader, "SpecularLevel");
@@ -304,7 +334,11 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   _parMapSpecularEnv      = fxi->parameter(_shader, "MapSpecularEnv");
   _parMapSpecularRufLevels = fxi->parameter(_shader, "RoughnessLevels");
-  _parMapDiffuseEnv       = fxi->parameter(_shader, "MapDiffuseEnv");
+  _parMapSpecularEnvPrev  = fxi->parameter(_shader, "MapSpecularEnvPrev");
+  _parEnvBlendWeight      = fxi->parameter(_shader, "EnvBlendWeight");
+  _parEnvCaptureScaleInv  = fxi->parameter(_shader, "EnvCaptureScaleInv");
+  _parEnvSH               = fxi->parameter(_shader, "EnvSH");
+  _parEnvSHValid          = fxi->parameter(_shader, "EnvSHValid");
   _parMapBrdfIntegration  = fxi->parameter(_shader, "MapBrdfIntegration");
   _parEnvironmentMipBias  = fxi->parameter(_shader, "EnvironmentMipBias");
   _parEnvironmentMipScale = fxi->parameter(_shader, "EnvironmentMipScale");
@@ -313,6 +347,35 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   _parUnTexPointLightsCount = fxi->parameter(_shader, "point_light_count");
   _parForwardLightBlock  = fxi->storageBlock(_shader, "storage_fwd_lighting");
+
+  // SKYLIGHT lane A — sun cascade block + sampler (nullptr for shaders
+  // without the forward lighting libblocks; binds tolerate nullptr).
+  // SINGLE-PASS STEREO — the per-view matrix block the multiview shader variant reads
+  // through gl_ViewIndex. Present on every shader the compiler injected it into; null
+  // elsewhere, and the bind tolerates null.
+  _parStereoBlock  = fxi->uniformBlock(_shader, "ublk_stereo");
+
+  _parSunBlock     = fxi->uniformBlock(_shader, "ublk_sun");
+  _parSunShadowMap = fxi->parameter(_shader, "sun_shadow_map");
+  _parSunCookie    = fxi->parameter(_shader, "sun_cookie");
+
+  // SKYLIGHT lane B — the ublk_sky_atmo members + LUT samplers the procedural
+  // skybox reads (nullptr for shaders without lib_sky).
+  _parSkyRadii            = fxi->parameter(_shader, "SkyRadii");
+  _parSkySunDirection     = fxi->parameter(_shader, "SkySunDirection");
+  _parSkySunIlluminance   = fxi->parameter(_shader, "SkySunIlluminance");
+  _parSkyGroundAlbedo     = fxi->parameter(_shader, "SkyGroundAlbedo");
+  _parSkySunDisc          = fxi->parameter(_shader, "SkySunDisc");
+  _parSkyMoonDirection    = fxi->parameter(_shader, "SkyMoonDirection");
+  _parSkyMoonDisc         = fxi->parameter(_shader, "SkyMoonDisc");
+  _parSkyMoonAlbedo       = fxi->parameter(_shader, "SkyMoonAlbedo");
+  _parSkyNightEmission    = fxi->parameter(_shader, "SkyNightEmission");
+  _parSkyMoonIlluminance  = fxi->parameter(_shader, "SkyMoonIlluminance");
+  _parSkyViewLut          = fxi->parameter(_shader, "SkyViewLUT");
+  _parSkyTransmittanceLut = fxi->parameter(_shader, "SkyTransmittanceLUT");
+  _parSkyCookieParams     = fxi->parameter(_shader, "SkyCookieParams");
+  _parSkyCookieBody       = fxi->parameter(_shader, "SkyCookieBody");
+  _parSkyCloudCookie      = fxi->parameter(_shader, "SkyCloudCookie");
 
   _parTexSpotLightsCount = fxi->parameter(_shader, "spot_light_count");
 

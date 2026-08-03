@@ -44,7 +44,7 @@ AMP_ADAPTIVE_DATA::AMP_ADAPTIVE_DATA(std::string name)
 }
 
 dspblk_ptr_t AMP_ADAPTIVE_DATA::createInstance() const { // override
-  return std::make_shared<AMP_ADAPTIVE>(this);
+  return createDspInstance<AMP_ADAPTIVE>(this);
 }
 
 AMP_ADAPTIVE::AMP_ADAPTIVE(const DspBlockData* dbd)
@@ -135,7 +135,7 @@ AMP_MONOIO_DATA::AMP_MONOIO_DATA(std::string name)
 }
 
 dspblk_ptr_t AMP_MONOIO_DATA::createInstance() const { // override
-  return std::make_shared<AMP_MONOIO>(this);
+  return createDspInstance<AMP_MONOIO>(this);
 }
 
 AMP_MONOIO::AMP_MONOIO(const DspBlockData* dbd)
@@ -181,7 +181,7 @@ PLUSAMP_DATA::PLUSAMP_DATA(std::string name)
   addParam("gain")->useDefaultEvaluator(); // position: eval: "POS"
 }
 dspblk_ptr_t PLUSAMP_DATA::createInstance() const {
-  return std::make_shared<PLUSAMP>(this);
+  return createDspInstance<PLUSAMP>(this);
 }
 
 void PLUSAMP::initBlock(dspblkdata_ptr_t blockdata) {
@@ -242,7 +242,7 @@ XAMP_DATA::XAMP_DATA(std::string name)
   addParam("gain")->useDefaultEvaluator(); // position: eval: "POS"
 }
 dspblk_ptr_t XAMP_DATA::createInstance() const {
-  return std::make_shared<XAMP>(this);
+  return createDspInstance<XAMP>(this);
 }
 
 void XAMP::initBlock(dspblkdata_ptr_t blockdata) {
@@ -297,7 +297,7 @@ GAIN_DATA::GAIN_DATA(std::string name)
   addParam("gain")->useDefaultEvaluator(); // position: eval: "POS"
 }
 dspblk_ptr_t GAIN_DATA::createInstance() const {
-  return std::make_shared<GAIN>(this);
+  return createDspInstance<GAIN>(this);
 }
 
 GAIN::GAIN(const DspBlockData* dbd)
@@ -331,7 +331,7 @@ STEREO_GAIN_DATA::STEREO_GAIN_DATA(std::string name)
   addParam("gain")->useAmplitudeEvaluator();
 }
 dspblk_ptr_t STEREO_GAIN_DATA::createInstance() const {
-  return std::make_shared<STEREO_GAIN>(this);
+  return createDspInstance<STEREO_GAIN>(this);
 }
 
 STEREO_GAIN::STEREO_GAIN(const DspBlockData* dbd)
@@ -368,7 +368,7 @@ XFADE_DATA::XFADE_DATA(std::string name)
   addParam("gain")->useDefaultEvaluator(); // position: eval: "POS"
 }
 dspblk_ptr_t XFADE_DATA::createInstance() const {
-  return std::make_shared<XFADE>(this);
+  return createDspInstance<XFADE>(this);
 }
 
 XFADE::XFADE(const DspBlockData* dbd)
@@ -421,7 +421,7 @@ XGAIN_DATA::XGAIN_DATA(std::string name)
   addParam("gain")->useDefaultEvaluator(); // position: eval: "POS"
 }
 dspblk_ptr_t XGAIN_DATA::createInstance() const {
-  return std::make_shared<XGAIN>(this);
+  return createDspInstance<XGAIN>(this);
 }
 
 XGAIN::XGAIN(const DspBlockData* dbd)
@@ -466,7 +466,7 @@ AMPU_AMPL_DATA::AMPU_AMPL_DATA(std::string name)
   addParam("gainL")->useDefaultEvaluator(); // position: eval: "POS"
 }
 dspblk_ptr_t AMPU_AMPL_DATA::createInstance() const {
-  return std::make_shared<AMPU_AMPL>(this);
+  return createDspInstance<AMPU_AMPL>(this);
 }
 
 AMPU_AMPL::AMPU_AMPL(const DspBlockData* dbd)
@@ -536,7 +536,7 @@ BAL_AMP_DATA::BAL_AMP_DATA(std::string name)
   addParam("AMP")->useAmplitudeEvaluator(); // position: eval: "POS"
 }
 dspblk_ptr_t BAL_AMP_DATA::createInstance() const {
-  return std::make_shared<BAL_AMP>(this);
+  return createDspInstance<BAL_AMP>(this);
 }
 
 BAL_AMP::BAL_AMP(const DspBlockData* dbd)
@@ -576,7 +576,7 @@ AMP_MOD_OSC_DATA::AMP_MOD_OSC_DATA(std::string name)
   addParam("DEP")->useDefaultEvaluator(); // ampmod depth
 }
 dspblk_ptr_t AMP_MOD_OSC_DATA::createInstance() const {
-  return std::make_shared<AMP_MOD_OSC>(this);
+  return createDspInstance<AMP_MOD_OSC>(this);
 }
 
 AMP_MOD_OSC::AMP_MOD_OSC(const DspBlockData* dbd)
@@ -615,7 +615,7 @@ BANGAMP_DATA::BANGAMP_DATA(std::string name)
   addParam("gain")->useDefaultEvaluator(); // position: eval: "POS"
 }
 dspblk_ptr_t BANGAMP_DATA::createInstance() const {
-  return std::make_shared<BANGAMP>(this);
+  return createDspInstance<BANGAMP>(this);
 }
 
 BANGAMP::BANGAMP(const DspBlockData* dbd)
@@ -666,7 +666,7 @@ NOISEGATE_DATA::NOISEGATE_DATA(std::string name)
 }
 
 dspblk_ptr_t NOISEGATE_DATA::createInstance() const {
-  return std::make_shared<NOISEGATE>(this);
+  return createDspInstance<NOISEGATE>(this);
 }
 
 NOISEGATE::NOISEGATE(const DspBlockData* dbd)

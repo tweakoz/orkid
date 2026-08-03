@@ -204,6 +204,8 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   appinit->_audio_stream_sync = py::cast<bool>(item.second);; // cant have synth without an audio dev output !
                 } else if (key == "freerun") {
                   appinit->_freerunning = py::cast<bool>(item.second);
+                } else if (key == "fixed_sim_rate") {
+                  appinit->_fixed_sim_rate = py::cast<float>(item.second);
                 } else if (key == "target_ups") {
                   appinit->_target_ups = py::cast<float>(item.second);
                 } else if (key == "target_fps") {
@@ -224,6 +226,10 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   if( py::isinstance<py::str>( item.second ) ) {
                     std::string mpath = py::cast<std::string>(item.second);
                     appinit->_movie_output_path = file::Path(mpath);
+                  }
+                } else if( key == "wav_output_path" ) {
+                  if( py::isinstance<py::str>( item.second ) ) {
+                    appinit->_audio_wav_out = py::cast<std::string>(item.second);
                   }
                 } else if (key == "enable_freerun_ups") {
                   appinit->_log_freerun_ups = py::cast<bool>(item.second);
@@ -756,7 +762,14 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 EASY_BLOCK("pyezapp::evh2", profiler::colors::Red);
                 auto pyfn = rval->_vars->typedValueForKey<py::function>("uievfn");
                 try {
-                  auto res = pyfn.value()(ev).cast<ui::HandlerResult>();
+                  // A bare `None` return is UNHANDLED — not an error. Check before the
+                  // cast (a None->HandlerResult cast throws cast_error, which used to
+                  // print "onUiEvent exception (probably HandlerResult)" and swallow the
+                  // event, skipping the _topLayoutGroup dispatch fallback below).
+                  auto pyres = pyfn.value()(ev);
+                  ui::HandlerResult res;
+                  if (not pyres.is_none())
+                    res = pyres.cast<ui::HandlerResult>();
                   if(res.mHandler==nullptr){
                     res = rval->_topLayoutGroup->OnUiEvent(ev);
                   }
@@ -1287,11 +1300,20 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 py::gil_scoped_acquire acquire;
                 auto pyfn = safe.valueAs<py::object>();
                 try {
-                  return (*pyfn)(ev).cast<ui::HandlerResult>();
+                  // None => unhandled (parity with the main-window wrapper). Guard
+                  // the cast so a None / bad return can never throw out of this raw
+                  // GLFW C callback (which would std::terminate the process).
+                  auto pyres = (*pyfn)(ev);
+                  if (pyres.is_none())
+                    return ui::HandlerResult();
+                  return pyres.cast<ui::HandlerResult>();
                 } catch (py::error_already_set& e) {
                   ezapp_python_traceback(e);
                   e.restore();
                   PyErr_Print();
+                  return ui::HandlerResult();
+                } catch (std::exception& e) {
+                  printf("EzSecondaryWin onUiEvent exception: %s\n", e.what());
                   return ui::HandlerResult();
                 }
               };

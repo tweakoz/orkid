@@ -29,6 +29,8 @@ struct TextureArrayInitSubItem {
 };
 struct TextureArrayInitData {
   std::vector<TextureArrayInitSubItem> _slices;
+  // see TexLoadReq::_on_gpu_upload_complete (same contract, array path)
+  ::ork::void_lambda_t _on_gpu_upload_complete;
 };
 struct TextureInitData {
 
@@ -56,6 +58,16 @@ struct TexLoadReq {
   DataBlockInputStream _inpstream;
   compressedmipchain_ptr_t _cmipchain;
   asset::loadrequest_ptr_t _assetloadreq;
+  // Fires once the GPU has actually finished this texture's upload, i.e. at the
+  // same moment the backend makes the image sampleable — NOT when the create
+  // call returns. The async path (the default when no _assetloadreq pins
+  // _gpu_load_async=false) records a one-shot transfer CB and only signals at a
+  // later frame boundary, so a caller that publishes the texture on return is
+  // announcing something the GPU cannot sample yet. Callers whose completion is
+  // observable (a generation counter, an async-work marker) hang it here.
+  // Invoked on the RENDER thread (the one-shot completion semaphores are polled
+  // in beginFrame); on the sync path it runs inline before the create returns.
+  ::ork::void_lambda_t _on_gpu_upload_complete;
 };
 
 using texloadreq_ptr_t = std::shared_ptr<TexLoadReq>;

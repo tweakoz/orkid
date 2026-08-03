@@ -58,6 +58,10 @@ void BulletObjectComponentData::describeX(ComponentDataClass* clazz) {
   clazz->floatProperty("Mass", float_range{0, 1000}, &BulletObjectComponentData::_mass);
   clazz->floatProperty("LinearDamping", float_range{0, 1}, &BulletObjectComponentData::_linearDamping);
   clazz->floatProperty("AngularDamping", float_range{0, 1}, &BulletObjectComponentData::_angularDamping);
+  // upright-lock (and any per-axis rotation lock). Was pyext-visible but UNREFLECTED —
+  // it silently dropped out of the .ecs, so player-run walkers free-rotated and rolled
+  // onto their sides (found via the physics-debug wireframe, 2026-07-22).
+  clazz->directProperty("AngularFactor", &BulletObjectComponentData::_angularFactor);
   clazz->directProperty("NotifyCollisions", &BulletObjectComponentData::_notifyCollisions);
 
   clazz->directProperty("AllowSleeping", &BulletObjectComponentData::_allowSleeping);

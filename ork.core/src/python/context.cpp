@@ -540,7 +540,15 @@ void Context2::bindSubInterpreter() {
   // Held until unbindSubInterpreter — serializes the whole sub-interp critical
   // section across the update + render threads (see _subInterpMutex). Acquire the
   // C++ mutex BEFORE touching any Python thread-state (consistent lock order: mutex
-  // then GIL — no deadlock, the sub-GIL is only ever taken after this lock).
+  // then GIL).
+  // THAT ORDER IS DEADLOCK-FREE ONLY UNDER GIL-OFF (PYTHON_GIL=0), which is the
+  // invariant this machinery was built for. Under PYTHON_GIL=1 the sub-interpreter's
+  // GIL is a REAL lock, and a script running in it that first-imports a C extension
+  // is forced by CPython (import_run_extension -> switch_to_main_interpreter) to take
+  // the MAIN interpreter's GIL — while this thread holds _subInterpMutex and waits on
+  // the sub GIL. AB-BA, and the far side of it is inside CPython, so no lock reorder
+  // here can fix it. The launcher (ork_python_wrapper) therefore forces PYTHON_GIL=0
+  // in the don't-clobber form; test_gil_ecs_regression.py holds the mechanism down.
   _subInterpMutex.lock();
   PyThreadState* current = _PyThreadState_UncheckedGet();
   if (current) {

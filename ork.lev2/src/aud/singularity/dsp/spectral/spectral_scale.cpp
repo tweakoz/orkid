@@ -32,7 +32,7 @@ SpectralScaleData::SpectralScaleData(std::string name, float fb)
 ///////////////////////////////////////////////////////////////////////////////
 
 dspblk_ptr_t SpectralScaleData::createInstance() const { // override
-  return std::make_shared<SpectralScale>(this);
+  return createDspInstance<SpectralScale>(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

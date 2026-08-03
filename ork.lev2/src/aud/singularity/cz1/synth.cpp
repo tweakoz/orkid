@@ -358,7 +358,7 @@ CZXDATA::CZXDATA(std::string name, czxdata_constptr_t czdata, int dcochannel)
 }
 ///////////////////////////////////////////////////////////////////////////////
 dspblk_ptr_t CZXDATA::createInstance() const { // override
-  auto instance = std::make_shared<CZX>(this);
+  auto instance = createDspInstance<CZX>(this);
   return instance;
 }
 

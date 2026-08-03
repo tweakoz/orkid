@@ -363,8 +363,24 @@ void Image::resampledOf(const Image& inp, int w, int h, ResampleFilter filter) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Image::downsample(Image& imgout) const {
+  downsampleInit(imgout);
+  downsampleRows(imgout, 0, imgout._height);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Image::downsampleInit(Image& imgout) const {
+  // init() always allocates imgout a FRESH datablock, so imgout never aliases
+  // this image even when the caller assigned one from the other (Image copy is
+  // a shared_ptr copy of _data) — which is what lets the rows be banded.
   imgout.init(_width >> 1, _height >> 1, _numcomponents, _bytesPerChannel);
-  imgout._format = _format;
+  imgout._format    = _format;
+  imgout._debugName = _debugName + "_ds";
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Image::downsampleRows(Image& imgout, size_t y_begin, size_t y_end, opq::opq_ptr_t queue) const {
 
   // 4x4 Gaussian-like kernel weights for high-quality 2x downsampling
   // Layout:  1  2  2  1
@@ -380,17 +396,20 @@ void Image::downsample(Image& imgout) const {
   };
 
   // Parallelize downsampling by chunking output rows
-  size_t num_chunks = (imgout._height + IMG_DOWNSAMPLE_CHUNK_SIZE - 1) / IMG_DOWNSAMPLE_CHUNK_SIZE;
+  auto fanqueue     = queue ? queue : opq::concurrentQueue();
+  y_end             = std::min(y_end, imgout._height);
+  size_t band_rows  = (y_end > y_begin) ? (y_end - y_begin) : 0;
+  size_t num_chunks = (band_rows + IMG_DOWNSAMPLE_CHUNK_SIZE - 1) / IMG_DOWNSAMPLE_CHUNK_SIZE;
   std::atomic<int> chunkcounter = num_chunks;
 
   using enum EBufferFormat;
 
   for (size_t chunk = 0; chunk < num_chunks; chunk++) {
-    auto op = [chunk, this, &imgout, &chunkcounter, &kernel]() {
-      size_t y_start = chunk * IMG_DOWNSAMPLE_CHUNK_SIZE;
-      size_t y_end = std::min(y_start + IMG_DOWNSAMPLE_CHUNK_SIZE, imgout._height);
+    auto op = [chunk, this, &imgout, &chunkcounter, &kernel, y_begin, y_end]() {
+      size_t y_start = y_begin + chunk * IMG_DOWNSAMPLE_CHUNK_SIZE;
+      size_t y_stop  = std::min(y_start + IMG_DOWNSAMPLE_CHUNK_SIZE, y_end);
 
-      for (size_t y = y_start; y < y_end; y++) {
+      for (size_t y = y_start; y < y_stop; y++) {
         // Map output pixel to input 4x4 region
         // Center of output pixel y corresponds to input pixels [y*2, y*2+1]
         // We sample from [y*2-1 ... y*2+2] for the 4x4 kernel
@@ -559,14 +578,13 @@ void Image::downsample(Image& imgout) const {
       }
       chunkcounter.fetch_sub(1);
     };
-    opq::concurrentQueue()->enqueue(op);
+    fanqueue->enqueue(op);
   }
 
   while(chunkcounter.load() > 0) {
     std::this_thread::yield();
   }
 
-  imgout._debugName = _debugName + "_ds";
   // auto pathr        = FormatString("%s.png", imgout._debugName.c_str());
   // auto path         = file::Path::temp_dir() / pathr;
   // writeToFile(path);

@@ -7,6 +7,9 @@
 
 #include <sndfile.h>
 #include <string>
+#include <vector>
+#include <cmath>
+#include <algorithm>
 #include <assert.h>
 #include <unistd.h>
 #include <math.h>
@@ -113,7 +116,7 @@ SAMPLER_DATA::SAMPLER_DATA(std::string name)
 }
 
 dspblk_ptr_t SAMPLER_DATA::createInstance() const { // override
-  return std::make_shared<SAMPLER>(this);
+  return createDspInstance<SAMPLER>(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -141,9 +144,10 @@ void SAMPLER::doKeyOn(const KeyOnInfo& koi) { // final
       break;
     }
   }
-  if (nat) {
-    _spOsc->_natenvwrapperinst = nat;
-  }
+  // ALWAYS republish, null included: the instances belong to the note being
+  //  keyed on, so holding the previous note's pointer when this program has no
+  //  natenv would read a released instance.
+  _spOsc->_natenvwrapperinst = nat;
   _spOsc->keyOn(koi);
 }
 
@@ -209,6 +213,34 @@ void SAMPLER::compute(DspBuffer& dspbuf) // final
 SampleData::SampleData(){}
 
 ///////////////////////////////////////////////////////////////////////////////
+// bias removal and peak normalization, in that order, for every SampleData
+// loader. The bias MUST be the true mean: the peak midpoint (_max+_min)*0.5
+// only coincides with the mean for symmetric content, so on natural content it
+// INJECTS a DC offset of (mean-midpoint)/halfrange into the int16 block (up to
+// -0.125 full scale on repo assets), which the sampler then plays verbatim and
+// the amp/panner gains scale into an audible one-sided LF pedestal.
+// The scale is 1/max|x-mean| (not 1/halfrange) so the result peaks at exactly
+// +-1 and the int16 conversion downstream cannot wrap.
+// Shared by both loaders on purpose - two copies drifted apart once already.
+///////////////////////////////////////////////////////////////////////////////
+
+static void debias_and_normalize(std::vector<float>& fbuf) {
+  if (fbuf.empty())
+    return;
+  double accum = 0.0;
+  for (float F : fbuf)
+    accum += double(F);
+  float bias = float(accum / double(fbuf.size()));
+  float peak = 0.0f;
+  for (float F : fbuf)
+    peak = std::max(peak, std::abs(F - bias));
+  // all-constant buffer (peak==0) normalizes to silence rather than dividing by 0
+  float scale = (peak > 0.0f) ? (1.0f / peak) : 0.0f;
+  for (float& F : fbuf)
+    F = (F - bias) * scale;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 void SampleData::loadFromAudioFile(const std::string& fname, bool normalize) {
     //printf("loading sample<%s>\n", fname.c_str());
@@ -252,18 +284,7 @@ void SampleData::loadFromAudioFile(const std::string& fname, bool normalize) {
     // No need to manually convert formats, libsndfile handles conversion
 
     if(normalize){
-      // Normalization and bias correction
-      float _min = *std::min_element(fbuf.begin(), fbuf.end());
-      float _max = *std::max_element(fbuf.begin(), fbuf.end());
-      //printf("_min<%g> _max<%g>\n", _min, _max);
-
-      float frange = _max - _min;
-      float fbias = (_max + _min) * 0.5f;
-      for (auto& F : fbuf) {
-          F -= fbias;
-          F /= (frange * 0.5f);
-      }
-      //printf("frange<%f> fbias<%f>\n", frange, fbias);  
+      debias_and_normalize(fbuf);
     }
 
     // Assuming WaveformData and _user are defined and initialized elsewhere
@@ -306,16 +327,7 @@ void SampleData::loadFromFloatWaveformBuffer(
     std::copy(buffer, buffer + num_samples, fbuf.begin());
 
     if (normalize) {
-        // Normalization and bias correction (same as loadFromAudioFile)
-        float _min = *std::min_element(fbuf.begin(), fbuf.end());
-        float _max = *std::max_element(fbuf.begin(), fbuf.end());
-
-        float frange = _max - _min;
-        float fbias = (_max + _min) * 0.5f;
-        for (auto& F : fbuf) {
-            F -= fbias;
-            F /= (frange * 0.5f);
-        }
+        debias_and_normalize(fbuf);
     }
 
     // Convert to int16_t and store (same as loadFromAudioFile)

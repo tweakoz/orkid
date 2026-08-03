@@ -27,7 +27,8 @@ libblock lib_pbr_transmission
   : ublk_pbr_state
   : ublk_std_pbr
   : ublk_std_lighting
-  : lib_envmapping {
+  : lib_envmapping
+  : lib_env_decode {
   // KHR_materials_transmission — IBL variant. Sample env_specular in
   // the Snell-refracted direction (refraction at the front surface);
   // blend via (1 - F) so high-Fresnel grazing angles favor reflection,
@@ -60,8 +61,10 @@ libblock lib_pbr_transmission
     if (has_reflection_probe != 0) {
       env_refr = env_cube_spec_wbias(-refr, reflectionPROBE, t_mip) * SkyboxLevel;
     } else {
-      env_refr = env_equirectangular_spec_wbias(-refr, MapSpecularEnv,
-                                                t_mip, 0.0) * SkyboxLevel;
+      env_refr = env_decodeCapture(
+                   mix(env_equirectangular_spec_wbias(-refr, MapSpecularEnvPrev, t_mip, 0.0),
+                       env_equirectangular_spec_wbias(-refr, MapSpecularEnv, t_mip, 0.0),
+                       EnvBlendWeight)) * SkyboxLevel;
     }
     // Schlick Fresnel with the modulated F0 (post-modulatory). The
     // transmitted portion gets (1-F); reflected portion stays in the
@@ -127,7 +130,8 @@ libblock lib_pbr_diffuse_transmission
   : ublk_pbr_diffuse_transmission
   : ublk_std_pbr
   : ublk_std_lighting
-  : lib_envmapping {
+  : lib_envmapping
+  : lib_env_decode {
   // KHR_materials_diffuse_transmission — light passes through a thin
   // material and exits the back side as Lambert-distributed scatter.
   // Used for paper, leaves, lampshades, candle wax. Metals don't
@@ -148,8 +152,10 @@ libblock lib_pbr_diffuse_transmission
       env_back = env_cube_spec_wbias(back_dir, reflectionPROBE,
                                      RoughnessLevels - 1.0) * SkyboxLevel;
     } else {
-      env_back = env_equirectangular_spec_wbias(back_dir, MapSpecularEnv,
-                                                RoughnessLevels - 1.0, 0.0)
+      env_back = env_decodeCapture(
+                   mix(env_equirectangular_spec_wbias(back_dir, MapSpecularEnvPrev, RoughnessLevels - 1.0, 0.0),
+                       env_equirectangular_spec_wbias(back_dir, MapSpecularEnv, RoughnessLevels - 1.0, 0.0),
+                       EnvBlendWeight))
                * SkyboxLevel;
     }
     // Per glTF spec — diffuse_transmission_color IS the transmitted tint
@@ -180,7 +186,8 @@ libblock lib_pbr_clearcoat
   : ublk_pbr_clearcoat
   : ublk_std_pbr
   : ublk_std_lighting
-  : lib_envmapping {
+  : lib_envmapping
+  : lib_env_decode {
   // KHR_materials_clearcoat — additive 2nd specular lobe with dielectric
   // F0=0.04 (IOR 1.5 lacquer) and its own roughness, layered on top of
   // the base BRDF. Energy chain: base BRDF gets multiplied by
@@ -208,7 +215,10 @@ libblock lib_pbr_clearcoat
       env_cc = textureLod(reflectionPROBE, cube_coord, cc_mip).xyz;
     } else {
       vec3 refl_equi = normalize(vec3(refl.x, -refl.y, refl.z));
-      env_cc = env_equirectangular_spec_wbias(refl_equi, MapSpecularEnv, 0.0, 0.0);
+      env_cc = env_decodeCapture(
+                 mix(env_equirectangular_spec_wbias(refl_equi, MapSpecularEnvPrev, 0.0, 0.0),
+                     env_equirectangular_spec_wbias(refl_equi, MapSpecularEnv, 0.0, 0.0),
+                     EnvBlendWeight));
     }
     vec3 cc_contribution  = surf.clearcoat_factor * F_cc * env_cc * SkyboxLevel;
     // P3.B — clearcoat is a 2nd specular lobe; specular bucket.
@@ -224,10 +234,12 @@ libblock lib_pbr_sheen
   : ublk_pbr_sheen
   : ublk_std_pbr
   : ublk_std_lighting
-  : lib_envmapping {
+  : lib_envmapping
+  : lib_env_decode
+  : lib_env_sh {
   // KHR_materials_sheen — Charlie's NDF + Ashikhmin V function for
   // velvet/fabric appearance. Additive grazing-angle contribution.
-  // Reads SkyboxLevel + MapDiffuseEnv from ublk_std_pbr / sset_std_pbr.
+  // Reads SkyboxLevel + EnvSH from ublk_std_pbr.
   PbrLobeState eval_sheen(PbrLobeState st, SurfaceFragment surf, vec3 eyepos) {
     if (surf.has_sheen == 0) return st;
     vec3 sheen_intensity = surf.sheen_color.rgb * surf.sheen_factor;
@@ -237,15 +249,17 @@ libblock lib_pbr_sheen
     float NdotV    = clamp(dot(st._N, st._V), 0.0, 1.0);
     float exponent = mix(5.0, 2.0, clamp(surf.sheen_roughness, 0.0, 1.0));
     float grazing  = pow(1.0 - NdotV, exponent);
-    // Diffuse-like env sample at +N. Probe path samples at the
-    // blurriest mip to approximate the pre-integrated MapDiffuseEnv;
-    // the cube doesn't have a separate diffuse-irradiance map.
+    // Diffuse-like env sample at +N, from the SAME source the main diffuse
+    // ambient uses (fwdtools lib_fwd_impl): the sky's L2 coefficients,
+    // cosine-convolved about N. A reflection probe still overrides it with its
+    // own cube at the blurriest mip — that cube is the fragment's whole
+    // environment and it carries no separate irradiance map.
     vec3 env_diffuse;
     if (has_reflection_probe != 0) {
       env_diffuse = env_cube_spec_wbias(st._N, reflectionPROBE,
                                         RoughnessLevels - 1.0) * SkyboxLevel;
     } else {
-      env_diffuse = env_equirectangular2(st._N, MapDiffuseEnv) * SkyboxLevel;
+      env_diffuse = env_shIrradiance(st._N) * (SkyboxLevel * EnvSHValid);
     }
     vec3 contribution = sheen_intensity * env_diffuse * grazing;
     // P3.B — sheen is a grazing-angle specular lobe (Charlie BRDF);

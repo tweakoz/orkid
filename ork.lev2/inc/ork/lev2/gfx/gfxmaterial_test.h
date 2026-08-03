@@ -150,9 +150,7 @@ protected:
   bool mAllowCompileFailure;
 
   const FxShaderTechnique* hTekUser           = nullptr;
-  const FxShaderTechnique* hTekUserStereo     = nullptr;
   const FxShaderTechnique* hTekTexColor       = nullptr;
-  const FxShaderTechnique* hTekTexColorStereo = nullptr;
   const FxShaderTechnique* hTekTexModColor    = nullptr;
   const FxShaderTechnique* hTekTexTexModColor = nullptr;
   const FxShaderTechnique* hTekTexVertexColor = nullptr;
@@ -168,8 +166,6 @@ protected:
   const FxShaderParam* hMatP            = nullptr;
   const FxShaderParam* hMatMV           = nullptr;
   const FxShaderParam* hMatMVP          = nullptr;
-  const FxShaderParam* hMatMVPL         = nullptr;
-  const FxShaderParam* hMatMVPR         = nullptr;
   const FxShaderParam* hMatMVPC         = nullptr;
   const FxShaderParam* hMatAux          = nullptr;
   const FxShaderParam* hMatAux2         = nullptr;

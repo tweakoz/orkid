@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 704" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#666"/>
+    </marker>
+    <filter id="shadow">
+      <feDropShadow dx="2" dy="2" stdDeviation="2" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  <rect x="0" y="0" width="1000" height="704" fill="#1a1a2e"/>
+  <text x="20" y="28" font-family="Arial" font-size="18" font-weight="bold" fill="white">the L-system / plant pipeline (ls_anim → forest)</text>
+
+  <!-- legend (top right) -->
+  <rect x="640" y="14" width="12" height="12" rx="3" fill="#1e3a5f" stroke="#22d3ee"/>
+  <text x="657" y="24" font-size="11" fill="#ddd">Python</text>
+  <rect x="712" y="14" width="12" height="12" rx="3" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="729" y="24" font-size="11" fill="#ddd">C++ module / data</text>
+  <rect x="838" y="14" width="12" height="12" rx="3" fill="#1a3a3a" stroke="#34d399"/>
+  <text x="855" y="24" font-size="11" fill="#ddd">GPU op</text>
+  <rect x="912" y="14" width="12" height="12" rx="3" fill="#4c1d95" stroke="#a78bfa"/>
+  <text x="929" y="24" font-size="11" fill="#ddd">render</text>
+
+  <!-- row 1: grammar -->
+  <rect x="120" y="50" width="300" height="76" rx="8" fill="#1e3a5f" stroke="#22d3ee" stroke-width="2" filter="url(#shadow)"/>
+  <text x="270" y="70" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">grammar — L.Lsystem combinator tree</text>
+  <text x="270" y="88" font-family="monospace" font-size="11" fill="#93c5fd" text-anchor="middle">@L.rule · segment / fork / choose / when</text>
+  <text x="270" y="104" font-size="11" fill="#6b7280" text-anchor="middle">presets: SYMPODIAL · CONIFER ·</text>
+  <text x="270" y="118" font-size="11" fill="#6b7280" text-anchor="middle">SAGUARO · OCOTILLO</text>
+
+  <line x1="420" y1="88" x2="476" y2="88" stroke="#666" marker-end="url(#arr3)"/>
+
+  <rect x="478" y="50" width="240" height="76" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="598" y="76" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">reflected LRuleSet</text>
+  <text x="598" y="94" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">lruleset.h — serializable DATA;</text>
+  <text x="598" y="110" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">species need no C++</text>
+
+  <text x="760" y="80" font-size="11" fill="#aaa">21 scalar module params stay live</text>
+  <text x="760" y="94" font-size="11" fill="#aaa">as the grammar&#8217;s PARAM env</text>
+  <text x="760" y="108" font-size="11" fill="#aaa">(depth, seg_len, tropism, jitter…)</text>
+
+  <!-- row 2: LSystemModule -->
+  <polyline points="598,126 598,150 490,150 490,166" fill="none" stroke="#666" marker-end="url(#arr3)"/>
+  <text x="620" y="150" font-size="11" fill="#aaa">_grammar (reflected prop)</text>
+
+  <rect x="370" y="168" width="240" height="64" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="490" y="188" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">LSystemModule</text>
+  <text x="490" y="206" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">derive(): rewrite + turtle-interpret</text>
+  <text x="490" y="221" font-size="11" fill="#6b7280" text-anchor="middle">CPU, once at onActivate</text>
+
+  <line x1="490" y1="232" x2="490" y2="252" stroke="#666" marker-end="url(#arr3)"/>
+
+  <!-- row 3: XfNodeGraph -->
+  <rect x="370" y="254" width="240" height="64" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="490" y="274" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">XfNodeGraph spine</text>
+  <text x="490" y="292" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">XfNode {xform, parent, attrs, tags}</text>
+  <text x="490" y="307" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">+ XfSlot attachment points</text>
+
+  <!-- fan to skinner + organs -->
+  <line x1="418" y1="318" x2="242" y2="356" stroke="#666" marker-end="url(#arr3)"/>
+  <line x1="562" y1="318" x2="742" y2="356" stroke="#666" marker-end="url(#arr3)"/>
+
+  <rect x="110" y="358" width="240" height="68" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="230" y="378" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">LSweepModule — the skinner</text>
+  <text x="230" y="396" font-size="11" fill="#93c5fd" text-anchor="middle">n-gon ring per node, quads per</text>
+  <text x="230" y="411" font-size="11" fill="#93c5fd" text-anchor="middle">edge → swept-tube GpuMesh</text>
+
+  <rect x="640" y="358" width="250" height="68" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="765" y="378" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">LeafScatterModule — organs</text>
+  <text x="765" y="396" font-size="11" fill="#93c5fd" text-anchor="middle">leaf cards: NODES phyllotaxis, or</text>
+  <text x="765" y="411" font-size="11" fill="#93c5fd" text-anchor="middle">the grammar&#8217;s own SLOTS</text>
+
+  <!-- row 5: trunk chain + merge -->
+  <line x1="230" y1="426" x2="132" y2="466" stroke="#666" marker-end="url(#arr3)"/>
+  <text x="150" y="446" font-size="11" fill="#aaa">trunk mesh</text>
+  <line x1="765" y1="426" x2="680" y2="466" stroke="#666" marker-end="url(#arr3)"/>
+  <text x="742" y="450" font-size="11" fill="#aaa">leaf mesh (B)</text>
+
+  <rect x="20" y="468" width="216" height="64" rx="8" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="128" y="490" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">select(S.P.y &gt; foliage_y)</text>
+  <text x="128" y="508" font-family="monospace" font-size="11" fill="#a7f3d0" text-anchor="middle">op = replace(group(0))</text>
+
+  <line x1="236" y1="500" x2="264" y2="500" stroke="#666" marker-end="url(#arr3)"/>
+
+  <rect x="266" y="468" width="216" height="64" rx="8" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="374" y="490" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">assign_gid(gid=1, slot=0)</text>
+  <text x="374" y="508" font-family="monospace" font-size="11" fill="#a7f3d0" text-anchor="middle">upper branches → gid 1</text>
+
+  <line x1="482" y1="500" x2="510" y2="500" stroke="#666" marker-end="url(#arr3)"/>
+
+  <rect x="512" y="468" width="200" height="64" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="612" y="488" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">MergeMesh</text>
+  <text x="612" y="506" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">gid_a=None (keep 0/1 split),</text>
+  <text x="612" y="521" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">leaves → gid_b=2</text>
+
+  <line x1="712" y1="500" x2="748" y2="500" stroke="#666" marker-end="url(#arr3)"/>
+
+  <rect x="750" y="468" width="230" height="64" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="865" y="488" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">ONE GpuMesh</text>
+  <text x="865" y="506" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">gids {0 bark · 1 branch · 2 leaf}</text>
+  <text x="865" y="521" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">one instance, one frustum cull</text>
+
+  <line x1="865" y1="532" x2="865" y2="556" stroke="#666" marker-end="url(#arr3)"/>
+  <polyline points="865,544 250,544 250,556" fill="none" stroke="#666" marker-end="url(#arr3)"/>
+
+  <!-- row 6: materials + forest -->
+  <rect x="20" y="558" width="460" height="132" rx="8" fill="#4c1d95" stroke="#a78bfa" stroke-width="2" filter="url(#shadow)"/>
+  <text x="250" y="580" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">materials per gid (HmMaterial, ls_anim.py)</text>
+  <text x="36" y="602" font-family="monospace" font-size="11" fill="#c4b5fd">gid 0  Bark      + Wind</text>
+  <text x="36" y="620" font-family="monospace" font-size="11" fill="#c4b5fd">gid 1  Solid     + Wind</text>
+  <text x="36" y="638" font-family="monospace" font-size="11" fill="#c4b5fd">gid 2  LeafProc + Wind + LeafFlutter</text>
+  <text x="36" y="660" font-size="11" fill="#ddd">wind/flutter = VS codegen (VertexDisplace); Time = the</text>
+  <text x="36" y="674" font-size="11" fill="#ddd">RCFD_TIME provider token — zero per-frame host code</text>
+
+  <rect x="510" y="558" width="474" height="132" rx="8" fill="#4c1d95" stroke="#a78bfa" stroke-width="2" filter="url(#shadow)"/>
+  <text x="747" y="580" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">forest consumption (ecs/scene/content/forest.py)</text>
+  <text x="524" y="602" font-size="11" fill="#c4b5fd">terrain is declared FIRST — it bakes the "trees" scatter sink to</text>
+  <text x="524" y="616" font-size="11" fill="#c4b5fd">&lt;assetcache&gt;/terrain/&lt;asset&gt;/trees.ogeo (an InstanceSet source)</text>
+  <text x="524" y="636" font-family="monospace" font-size="10.5" fill="#c4b5fd">drawable_data( instance_source=(TERRAIN, "trees", tid),</text>
+  <text x="524" y="650" font-family="monospace" font-size="10.5" fill="#c4b5fd">    lods={0: tree, 1250: tree.imposter()}, cull=True, … )</text>
+  <text x="524" y="670" font-size="11" fill="#ddd">per-view GPU cull partitions instances into mesh tiers + the</text>
+  <text x="524" y="684" font-size="11" fill="#ddd">hemi-octahedral impostor band — 16 variants, one draw each</text>
+</svg>

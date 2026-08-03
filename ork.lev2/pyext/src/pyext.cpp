@@ -203,7 +203,9 @@ static file::Path lev2exdir() {
 
 namespace ork {
 
-PYBIND11_MODULE(_lev2, module_lev2) {
+// mod_gil_not_used: see the note over PYBIND11_MODULE(_core) — an undeclared
+// extension makes CPython 3.14t silently re-enable the GIL at import time.
+PYBIND11_MODULE(_lev2, module_lev2, py::mod_gil_not_used()) {
   // module_lev2.attr("__name__") = "lev2";
 
   //////////////////////////////////////////////////////////////////////////////

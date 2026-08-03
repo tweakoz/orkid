@@ -90,28 +90,25 @@ void EzUiCam::describeX(object::ObjectClass* clazz) {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct UiCamPrivate {
+  // ONE pipeline for mono and stereo alike: manip.fxv2 defines no "std_stereo", so the
+  //  stereo arm resolved to a null technique and would detonate at the first VR draw.
   UiCamPrivate() {
     _material = std::make_shared<FreestyleMaterial>();
     FxPipelinePermutation perm;
-    _materialinst_mono   = std::make_shared<FxPipeline>(perm); // _material
-    perm._stereo = true;
-    _materialinst_stereo = std::make_shared<FxPipeline>(perm); // _material
-
+    _materialinst_mono = std::make_shared<FxPipeline>(perm); // _material
   }
   void gpuUpdate(Context* ctx) {
     if (_doGpuInit) {
       auto shaderpath = file::Path("orkshader://manip");
       _material->gpuInit(ctx, shaderpath);
       //_materialinst->setInstanceMvpParams("mvp", "mvpL", "mvpR");
-      _materialinst_mono->_technique   = _material->technique("std_mono");
-      _materialinst_stereo->_technique = _material->technique("std_stereo");
-      _doGpuInit                       = false;
+      _materialinst_mono->_technique = _material->technique("std_mono");
+      _doGpuInit                     = false;
     }
   }
   bool _doGpuInit = true;
   freestyle_mtl_ptr_t _material;
   fxpipeline_ptr_t _materialinst_mono;
-  fxpipeline_ptr_t _materialinst_stereo;
 };
 using uicamprivate_t = std::shared_ptr<UiCamPrivate>;
 
@@ -212,9 +209,7 @@ void EzUiCam::draw(Context* context) const {
   worldmtx.scale(fvec4(Scale, Scale, Scale));
   ///////////////////////////////////////////////////////////////
   context->debugPushGroup("EzUiCam::draw");
-  auto mtlinst = RCFD->isStereo() //
-                     ? priv->_materialinst_stereo
-                     : priv->_materialinst_mono;
+  auto mtlinst = priv->_materialinst_mono;
   mtlinst->wrappedDrawCall(RCID, [context]() {
     auto prims = context->PRI();
     auto& tricircle = prims->mVtxBuf_TriCircle;

@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 660" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#666"/>
+    </marker>
+    <filter id="shadow">
+      <feDropShadow dx="2" dy="2" stdDeviation="2" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  <rect x="0" y="0" width="1000" height="660" fill="#1a1a2e"/>
+  <text x="500" y="28" font-family="Arial" font-size="18" font-weight="bold" fill="white" text-anchor="middle">execution: threading, phases and the cook cache</text>
+
+  <!-- ============ update thread ============ -->
+  <rect x="16" y="48" width="256" height="252" rx="10" fill="#252540" stroke="#f59e0b" stroke-dasharray="7 5" stroke-width="1.5"/>
+  <text x="144" y="70" font-size="12" font-weight="bold" fill="#fed7aa" text-anchor="middle">update thread (ECS / Python)</text>
+
+  <rect x="30" y="86" width="228" height="56" rx="8" fill="#4c1d95" stroke="#a78bfa" stroke-width="2" filter="url(#shadow)"/>
+  <text x="144" y="108" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">HypermeshComponent /</text>
+  <text x="144" y="126" font-family="monospace" font-size="11" fill="#c4b5fd" text-anchor="middle">asset onUpdate (optional)</text>
+
+  <line x1="144" y1="142" x2="144" y2="164" stroke="#666" marker-end="url(#arr2)"/>
+
+  <rect x="30" y="166" width="228" height="56" rx="8" fill="#4c1d95" stroke="#a78bfa" stroke-width="2" filter="url(#shadow)"/>
+  <text x="144" y="188" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">plug pokes</text>
+  <text x="144" y="206" font-family="monospace" font-size="11" fill="#c4b5fd" text-anchor="middle">module.inputs.X = value</text>
+
+  <text x="144" y="248" font-size="11" fill="#aaa" text-anchor="middle">the graph is NEVER pumped from</text>
+  <text x="144" y="262" font-size="11" fill="#aaa" text-anchor="middle">the update thread — no compute()</text>
+  <text x="144" y="276" font-size="11" fill="#aaa" text-anchor="middle">call exists on this side</text>
+
+  <!-- ============ materialize-time cascade ============ -->
+  <rect x="16" y="318" width="256" height="128" rx="8" fill="#252540" stroke="#4a5568" filter="url(#shadow)"/>
+  <text x="144" y="340" font-size="12" font-weight="bold" fill="white" text-anchor="middle">materialize-time (once)</text>
+  <text x="28" y="360" font-size="11" fill="#aaa">topology-setup cascade: eval the graph,</text>
+  <text x="28" y="374" font-size="11" fill="#aaa">run each module&#8217;s onTopologyReady()</text>
+  <text x="28" y="388" font-size="11" fill="#aaa">(CPU readback builds), re-eval after each,</text>
+  <text x="28" y="402" font-size="11" fill="#aaa">loop to a fixpoint — capped at</text>
+  <text x="28" y="416" font-size="11" fill="#aaa">kTopoCascadeMax = 16 (hmdflow.cpp).</text>
+  <text x="28" y="434" font-size="11" fill="#6b7280">real chains settle in 2–3 passes</text>
+
+  <!-- ============ render thread ============ -->
+  <rect x="300" y="48" width="684" height="398" rx="10" fill="#252540" stroke="#a78bfa" stroke-dasharray="7 5" stroke-width="1.5"/>
+  <text x="642" y="70" font-size="12" font-weight="bold" fill="#c4b5fd" text-anchor="middle">render thread — ComputeDrawable::onGpuUpdate (in-frame; never opens its own frame)</text>
+
+  <!-- cross-thread arrow -->
+  <line x1="258" y1="194" x2="316" y2="194" stroke="#666" stroke-dasharray="5 4" marker-end="url(#arr2)"/>
+  <text x="287" y="184" font-size="10" fill="#aaa" text-anchor="middle">plug-write</text>
+  <text x="287" y="214" font-size="10" fill="#aaa" text-anchor="middle">epoch clock</text>
+
+  <rect x="318" y="84" width="420" height="44" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="528" y="102" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">_liveRecompute → LiveHypermesh::recompute(ctx)</text>
+  <text x="528" y="119" font-size="11" fill="#93c5fd" text-anchor="middle">advance the graph clock (dt=0 while paused)</text>
+
+  <line x1="528" y1="128" x2="528" y2="146" stroke="#666" marker-end="url(#arr2)"/>
+
+  <rect x="318" y="148" width="420" height="48" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="528" y="167" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">evict poked cook-loaded nodes (+ downstream)</text>
+  <text x="528" y="185" font-size="11" fill="#93c5fd" text-anchor="middle">then re-run the topology cascade over the evicted set</text>
+
+  <line x1="528" y1="196" x2="528" y2="214" stroke="#666" marker-end="url(#arr2)"/>
+
+  <rect x="318" y="216" width="420" height="48" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="528" y="235" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">writeParams(ctx) on every module inst</text>
+  <text x="528" y="253" font-size="11" fill="#93c5fd" text-anchor="middle">host SSBO maps happen ONLY here — a map mid-phase is invisible</text>
+
+  <line x1="528" y1="264" x2="528" y2="282" stroke="#666" marker-end="url(#arr2)"/>
+
+  <rect x="318" y="284" width="420" height="64" rx="8" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="528" y="303" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">beginDispatchPhase → compute() in topo order</text>
+  <text x="528" y="321" font-size="11" fill="#a7f3d0" text-anchor="middle">cook-loaded nodes are skipped (their output is final)</text>
+  <text x="528" y="337" font-size="11" fill="#a7f3d0" text-anchor="middle">→ endDispatchPhase = ONE submit + fence wait</text>
+
+  <line x1="528" y1="348" x2="528" y2="366" stroke="#666" marker-end="url(#arr2)"/>
+
+  <rect x="318" y="368" width="420" height="48" rx="8" fill="#4c1d95" stroke="#a78bfa" stroke-width="2" filter="url(#shadow)"/>
+  <text x="528" y="387" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">triangulate + refresh drawable bindings</text>
+  <text x="528" y="405" font-size="11" fill="#c4b5fd" text-anchor="middle">re-point index/args + channel SSBOs at the mesh&#8217;s CURRENT pooled buffers</text>
+
+  <!-- side notes -->
+  <rect x="756" y="84" width="216" height="150" rx="8" fill="#2a2a4a" stroke="#4a5568" filter="url(#shadow)"/>
+  <text x="864" y="104" font-size="12" font-weight="bold" fill="white" text-anchor="middle">descriptor-set rule</text>
+  <text x="768" y="124" font-size="11" fill="#aaa">every shader of a stage shares</text>
+  <text x="768" y="138" font-size="11" fill="#aaa">ONE compute_interface listing</text>
+  <text x="768" y="152" font-size="11" fill="#aaa">ALL its storage blocks, so each</text>
+  <text x="768" y="166" font-size="11" fill="#aaa">block resolves to a single global</text>
+  <text x="768" y="180" font-size="11" fill="#aaa">binding id and every kernel</text>
+  <text x="768" y="194" font-size="11" fill="#aaa">binds all slots consistently</text>
+  <text x="768" y="212" font-size="11" fill="#6b7280">(hmdflow_render.cpp, and the</text>
+  <text x="768" y="226" font-size="11" fill="#6b7280">shared-normals shell)</text>
+
+  <rect x="756" y="284" width="216" height="132" rx="8" fill="#2a2a4a" stroke="#4a5568" filter="url(#shadow)"/>
+  <text x="864" y="304" font-size="12" font-weight="bold" fill="white" text-anchor="middle">submit overlap (parked)</text>
+  <text x="768" y="324" font-size="11" fill="#aaa">ORK_HM_NB_SUBMIT enables a</text>
+  <text x="768" y="338" font-size="11" fill="#aaa">depth-1 overlapped dispatch</text>
+  <text x="768" y="352" font-size="11" fill="#aaa">submit (vulkan_compute.cpp);</text>
+  <text x="768" y="366" font-size="11" fill="#aaa">measured perf-neutral, so the</text>
+  <text x="768" y="380" font-size="11" fill="#aaa">blocking submit stays the</text>
+  <text x="768" y="394" font-size="11" fill="#aaa">default</text>
+
+  <!-- ============ cook cache ============ -->
+  <rect x="16" y="464" width="968" height="178" rx="10" fill="#322b1e" stroke="#f59e0b" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="30" y="488" font-size="12.5" font-weight="bold" fill="white">per-node disk cook cache — DataBlockCache "dflowcache"  (static graphs only: graphdata.cacheable = not is_animated)</text>
+
+  <rect x="30" y="502" width="940" height="46" rx="6" fill="#211c14" stroke="#f59e0b"/>
+  <text x="42" y="522" font-size="12" fill="#fed7aa" font-family="Menlo, Consolas, monospace">cookComputeHash = H( "hm.cook.v1" · class name · _cookSalt (per-class kernel version)</text>
+  <text x="42" y="540" font-size="12" fill="#fed7aa" font-family="Menlo, Consolas, monospace">                     · identityHash(reflected JSON, uuids stripped) · upstream node hashes )</text>
+
+  <text x="30" y="570" font-size="11" fill="#ddd">• cookLoad (_cookLoadPass): restore each cached node&#8217;s channels + topology BEFORE the first eval (host uploads are pre-dispatch legal);</text>
+  <text x="30" y="584" font-size="11" fill="#ddd">   loaded nodes are then skipped by every eval and by the topology cascade — downstream consumes them without recompute</text>
+  <text x="30" y="602" font-size="11" fill="#ddd">• cookStore (_cookStorePass): runs only AFTER the final cascade sync (outputs aren&#8217;t final until the cascade settles);</text>
+  <text x="30" y="616" font-size="11" fill="#ddd">   a channel whose pooled capacity can&#8217;t cover the live count REFUSES caching loudly instead of serializing garbage</text>
+  <text x="30" y="634" font-size="11" fill="#aaa">• uuids are stripped because scene.py → tojson re-authors graphs with fresh uuids every run — identity must be content-only</text>
+</svg>

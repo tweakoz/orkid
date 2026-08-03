@@ -88,6 +88,8 @@ Controller::~Controller() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Controller::gpuInit(lev2::Context* ctx) {
+  _gpuThreadId.store(std::this_thread::get_id(), std::memory_order_release);
+  _lastGpuContext.store(ctx, std::memory_order_release);
   _simulation.atomicOp([this, ctx](simulation_ptr_t& unlocked) {
     if (unlocked) {
       _simulation.atomicOp([ctx](simulation_ptr_t& unlocked) {
@@ -122,9 +124,40 @@ void Controller::updateExit() {
 ///////////////////////////////////////////////////////////////////////////
 
 void Controller::gpuUpdate(lev2::Context* ctx) {
+  _gpuThreadId.store(std::this_thread::get_id(), std::memory_order_release);
+  _lastGpuContext.store(ctx, std::memory_order_release);
   auto sim = _simulation._unprotected_ref();
   if (sim) {
     sim->gpuUpdate(ctx);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////
+
+void Controller::_transportAtomicOp(const std::function<void(simulation_ptr_t&)>& op) {
+  // A transport op mutates simulation state under the _simulation recursive mutex.
+  // When the caller is the render/GPU thread it must keep servicing the GPU-phase
+  // rendezvous queue while it waits for the lock: an update tick mid-rendezvous
+  // (Simulation::_runGpuPhaseOnRenderThread) HOLDS _simulation and is blocked on a
+  // future only THIS thread can satisfy by draining. A plain blocking acquire here
+  // would close the cycle (live-observed deadlock, 2026-07-21 slider-drag rebuild).
+  // A caller on any other thread is not the render-thread drain servicer, so it
+  // blocks plainly — draining off the render thread would run GPU work on the wrong
+  // thread.
+  bool on_render_thread = (std::this_thread::get_id() == _gpuThreadId.load(std::memory_order_acquire));
+  lev2::Context* ctx    = _lastGpuContext.load(std::memory_order_acquire);
+  if (on_render_thread and ctx) {
+    while (not _simulation.tryAtomicOp(op)) {
+      // _unprotected_ref is safe here: the update thread that holds the lock is
+      // blocked in a rendezvous and does NOT reassign _simulation (mirrors the
+      // unprotected read gpuUpdate() already does on this thread).
+      auto sim = _simulation._unprotected_ref();
+      if (sim)
+        sim->drainPendingGpuPhases(ctx);
+      std::this_thread::yield();
+    }
+  } else {
+    _simulation.atomicOp(op);
   }
 }
 
@@ -658,14 +691,14 @@ void Controller::startSimulation() {
 // continues seamlessly (the ACTIVE onEnter skips re-activation from pause).
 
 void Controller::pauseSimulation() {
-  _simulation.atomicOp([](simulation_ptr_t& unlocked) {
+  _transportAtomicOp([](simulation_ptr_t& unlocked) {
     if (unlocked->_currentSimulationMode == ESimulationMode::ACTIVE)
       unlocked->SetSimulationMode(ESimulationMode::PAUSE);
   });
 }
 
 void Controller::resumeSimulation() {
-  _simulation.atomicOp([](simulation_ptr_t& unlocked) {
+  _transportAtomicOp([](simulation_ptr_t& unlocked) {
     if (unlocked->_currentSimulationMode == ESimulationMode::PAUSE)
       unlocked->SetSimulationMode(ESimulationMode::ACTIVE);
   });
@@ -677,7 +710,7 @@ void Controller::stopSimulation() {
   logchan_controller->log("STOPPING SIMULATION");
   _delopq.atomicOp([=](delayed_opq_t& unlocked) { unlocked.clear(); });
   _eventQueue.atomicOp([&](Controller::evq_t& unlocked) { unlocked.clear(); });
-  _simulation.atomicOp([](simulation_ptr_t& unlocked) {
+  _transportAtomicOp([](simulation_ptr_t& unlocked) {
     if (unlocked->_currentSimulationMode == ESimulationMode::ACTIVE) {
       unlocked->_deactivate();
     }

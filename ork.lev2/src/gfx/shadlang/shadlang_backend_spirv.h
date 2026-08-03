@@ -84,9 +84,23 @@ struct SpirvStorageInterfaceItem {
   size_t _stride = 0;  // Bytes between array elements (0 if not array)
 };
 
+// Access qualifier DECLARED by the storage interface itself, as a layout item on its buffer:
+//   storage_interface sif_x (descriptor_set 0) { buffer layout(std430, readwrite) blk { ... }; }
+// Unspecified is the legacy shape (the overwhelming majority of declarations) and keeps the
+// historical stage-derived default: read-write in a compute shader, readonly everywhere else.
+// Anything a NON-compute stage must write has to say so at its declaration - a graphics stage
+// cannot be handed write access implicitly.
+enum class SpirvStorageAccess {
+  Unspecified = 0,
+  ReadOnly,
+  WriteOnly,
+  ReadWrite,
+};
+
 struct SpirvStorageInterface {
   std::string _name;
   std::string _buffer_name;  // The name of the buffer block
+  SpirvStorageAccess _access = SpirvStorageAccess::Unspecified;
   size_t _descriptor_set_id = -1;
   int _binding_id = -1;       // the real SPIR-V binding (emitted into layout(binding=N))
   size_t _buffer_size = 0;
@@ -143,6 +157,10 @@ private:
   void _inheritUniformBlk(std::string uniblkname, spirvuniblk_ptr_t uniblk_node);
   void _inheritStorageInterface(std::string storage_name, spirvstorageif_ptr_t storage_interface);
   void _inheritIO(astnode_ptr_t interface_node);
+  // the task->mesh amplification payload. Emitted CHARACTER-IDENTICALLY into the task stage
+  //  (which writes it) and the mesh stage (which reads it) — GLSL spells taskPayloadSharedEXT
+  //  the same in both, so there is no direction to rewrite. Fails loud past the 16KB envelope.
+  void _inheritTaskPayload(std::string payload_name, astnode_ptr_t payload_node);
   void _inheritExtension(semainhext_ptr_t ext_node);
   void _emitMergedPushConstants();
 
@@ -175,6 +193,10 @@ private:
   size_t _binding_id = 0;
   bool _vulkan = true;
   bool _assert_on_done = false;
+  // set by the rename pass when this translation unit references the multiview view
+  //  selector; drives the GL_EXT_multiview emission (and, downstream, the SPIR-V floor
+  //  that builtin needs). Per-unit, not per-shader — the rename pass walks the unit.
+  bool _uses_view_index = false;
   // ADD: Merged resources for this pass
   std::map<int, std::map<std::string, MergedShaderResources::ResourceBinding>> _merged_resources;
   bool _has_merged_resources = false;

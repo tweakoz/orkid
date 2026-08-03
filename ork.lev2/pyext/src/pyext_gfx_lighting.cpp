@@ -12,6 +12,7 @@
 #include <ork/lev2/gfx/scenegraph/sgnode_grid.h>
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_common.h>
+#include <ork/lev2/gfx/renderer/probe_sh.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -75,6 +76,22 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
             lightdata->_intensity = v;
           })
       .def_property(
+          "priority",                              //
+          [](lightdata_ptr_t lightdata) -> float { //
+            return lightdata->_priority;
+          },
+          [](lightdata_ptr_t lightdata, float v) { //
+            lightdata->_priority = v;
+          })
+      .def_property(
+          "sky_body",                            // 0 none, 1 sun, 2 moon
+          [](lightdata_ptr_t lightdata) -> int { //
+            return lightdata->_skyBody;
+          },
+          [](lightdata_ptr_t lightdata, int v) { //
+            lightdata->_skyBody = v;
+          })
+      .def_property(
           "shadowCaster",                          //
           [](lightdata_ptr_t lightdata) -> bool {  //
             return lightdata->mbShadowCaster;
@@ -123,6 +140,161 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
              scenegraph::layer_ptr_t layer) -> scenegraph::lightnode_ptr_t { //
             auto xfgen = [] -> fmtx4 { return fmtx4(); };
             auto light = std::make_shared<PointLight>(xfgen, lightdata.get());
+            return layer->createLightNode(named, light);
+          });
+  py::class_<DirectionalLightData, LightData, directionallightdata_ptr_t>(module_lev2, "DirectionalLightData")
+      .def(py::init<>())
+      .def_property(
+          "shadowCascadeCount",                        //
+          [](directionallightdata_ptr_t lightdata) -> int { //
+            return lightdata->_shadowCascadeCount;
+          },
+          [](directionallightdata_ptr_t lightdata, int v) { //
+            lightdata->_shadowCascadeCount = v;
+          })
+      .def_property(
+          "shadowMaxDistance",                         //
+          [](directionallightdata_ptr_t lightdata) -> float { //
+            return lightdata->_shadowMaxDistance;
+          },
+          [](directionallightdata_ptr_t lightdata, float v) { //
+            lightdata->_shadowMaxDistance = v;
+          })
+      .def_property(
+          "pcfDither",                                 //
+          [](directionallightdata_ptr_t lightdata) -> float { //
+            return lightdata->_pcfDither;
+          },
+          [](directionallightdata_ptr_t lightdata, float v) { //
+            lightdata->_pcfDither = v;
+          })
+      .def_property(
+          "shadowSnapshotInterval",                          //
+          [](directionallightdata_ptr_t lightdata) -> float { //
+            return lightdata->_shadowSnapshotInterval;
+          },
+          [](directionallightdata_ptr_t lightdata, float v) { //
+            lightdata->_shadowSnapshotInterval = v;
+          })
+      .def_property(
+          "shadowBandRadius",                                 //
+          [](directionallightdata_ptr_t lightdata) -> float { //
+            return lightdata->_shadowBandRadius;
+          },
+          [](directionallightdata_ptr_t lightdata, float v) { //
+            lightdata->_shadowBandRadius = v;
+          })
+      .def_property(
+          "shadowBandRatio",                                  //
+          [](directionallightdata_ptr_t lightdata) -> float { //
+            return lightdata->_shadowBandRatio;
+          },
+          [](directionallightdata_ptr_t lightdata, float v) { //
+            lightdata->_shadowBandRatio = v;
+          })
+      .def_property(
+          "shadowBandResRatio",                               //
+          [](directionallightdata_ptr_t lightdata) -> float { //
+            return lightdata->_shadowBandResRatio;
+          },
+          [](directionallightdata_ptr_t lightdata, float v) { //
+            lightdata->_shadowBandResRatio = v;
+          })
+      .def_property(
+          "shadowJitterTexels",                               //
+          [](directionallightdata_ptr_t lightdata) -> float { //
+            return lightdata->_shadowJitterTexels;
+          },
+          [](directionallightdata_ptr_t lightdata, float v) { //
+            lightdata->_shadowJitterTexels = v;
+          })
+      .def_property(
+          "shadowSnapshotBandsPerFrame",                    //
+          [](directionallightdata_ptr_t lightdata) -> int { //
+            return lightdata->_shadowSnapshotBandsPerFrame;
+          },
+          [](directionallightdata_ptr_t lightdata, int v) { //
+            lightdata->_shadowSnapshotBandsPerFrame = v;
+          })
+      .def_property(
+          "shadowCrossfadeFrames",                          //
+          [](directionallightdata_ptr_t lightdata) -> int { //
+            return lightdata->_shadowCrossfadeFrames;
+          },
+          [](directionallightdata_ptr_t lightdata, int v) { //
+            lightdata->_shadowCrossfadeFrames = v;
+          })
+      .def_property(
+          "shadowCrossfadeSecs",                              //
+          [](directionallightdata_ptr_t lightdata) -> float { //
+            return lightdata->_shadowCrossfadeSecs;
+          },
+          [](directionallightdata_ptr_t lightdata, float v) { //
+            lightdata->_shadowCrossfadeSecs = v;
+          })
+      .def_property(
+          "cloudShadowStrength",                              //
+          [](directionallightdata_ptr_t lightdata) -> float { //
+            return lightdata->_cloudShadowStrength;
+          },
+          [](directionallightdata_ptr_t lightdata, float v) { //
+            lightdata->_cloudShadowStrength = v;
+          })
+      .def_property(
+          "cloudShadowExtent",                                //
+          [](directionallightdata_ptr_t lightdata) -> float { //
+            return lightdata->_cloudShadowExtent;
+          },
+          [](directionallightdata_ptr_t lightdata, float v) { //
+            lightdata->_cloudShadowExtent = v;
+          })
+      .def_property(
+          "cloudShadowSoftness",                              //
+          [](directionallightdata_ptr_t lightdata) -> float { //
+            return lightdata->_cloudShadowSoftness;
+          },
+          [](directionallightdata_ptr_t lightdata, float v) { //
+            lightdata->_cloudShadowSoftness = v;
+          })
+      .def_property(
+          "cloudShadowDepth",                                 //
+          [](directionallightdata_ptr_t lightdata) -> float { //
+            return lightdata->_cloudShadowDepth;
+          },
+          [](directionallightdata_ptr_t lightdata, float v) { //
+            lightdata->_cloudShadowDepth = v;
+          })
+      .def_property(
+          "cloudShadowMapSize",                             //
+          [](directionallightdata_ptr_t lightdata) -> int { //
+            return lightdata->_cloudShadowMapSize;
+          },
+          [](directionallightdata_ptr_t lightdata, int v) { //
+            lightdata->_cloudShadowMapSize = v;
+          })
+      .def_property(
+          "cloudExtinction",                                  //
+          [](directionallightdata_ptr_t lightdata) -> float { //
+            return lightdata->_cloudExtinction;
+          },
+          [](directionallightdata_ptr_t lightdata, float v) { //
+            lightdata->_cloudExtinction = v;
+          })
+      .def_property(
+          "cloudDiscSoftness",                                //
+          [](directionallightdata_ptr_t lightdata) -> float { //
+            return lightdata->_cloudDiscSoftness;
+          },
+          [](directionallightdata_ptr_t lightdata, float v) { //
+            lightdata->_cloudDiscSoftness = v;
+          })
+      .def(
+          "createNode",                           //
+          [](directionallightdata_ptr_t lightdata, //
+             std::string named,
+             scenegraph::layer_ptr_t layer) -> scenegraph::lightnode_ptr_t { //
+            auto xfgen = [] -> fmtx4 { return fmtx4(); };
+            auto light = std::make_shared<DirectionalLight>(xfgen, lightdata.get());
             return layer->createLightNode(named, light);
           });
   py::class_<SpotLightData, LightData, spotlightdata_ptr_t>(module_lev2, "SpotLightData")
@@ -198,7 +370,8 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<PointLight, Light, pointlight_ptr_t>(module_lev2, "PointLight");
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<DirectionalLight, Light, directionallight_ptr_t>(module_lev2, "DirectionalLight");
+  py::class_<DirectionalLight, Light, directionallight_ptr_t>(module_lev2, "DirectionalLight")
+      .def("lookAt", &DirectionalLight::lookAt);
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<SpotLight, Light, spotlight_ptr_t>(module_lev2, "SpotLight")
       .def("lookAt", &SpotLight::lookAt)
@@ -240,7 +413,13 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
             return light->_inlineData;
           });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<DynamicDirectionalLight, DirectionalLight, dynamicdirectionallight_ptr_t>(module_lev2, "DynamicDirectionalLight");
+  py::class_<DynamicDirectionalLight, DirectionalLight, dynamicdirectionallight_ptr_t>(module_lev2, "DynamicDirectionalLight")
+      .def(py::init<>())
+      .def_property_readonly(
+          "data",                                                                //
+          [](dynamicdirectionallight_ptr_t light) -> directionallightdata_ptr_t { //
+            return light->_inlineData;
+          });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<DynamicSpotLight, SpotLight, dynamicspotlight_ptr_t>(module_lev2, "DynamicSpotLight")
       .def(py::init<>())
@@ -297,12 +476,45 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
                          [](lightprobe_ptr_t probe, crcstring_ptr_t m) {
                            probe->_activationMode = ProbeActivationMode(m->hashed());
                          })
+                     .def_property_readonly("shSlot", [](lightprobe_ptr_t probe) -> int { return probe->_shSlot; })
+                     .def("shCoefficients", [](lightprobe_ptr_t probe, ctx_t ctx) -> py::list {
+                       // staged GPU readback of the probe's L2 coefficients (9 x vec3,
+                       // radiance integrals). Empty list until the probe has been
+                       // captured+projected at least once.
+                       py::list rval;
+                       if (probe->_shProjector and probe->_shSlot >= 0) {
+                         fvec3 coeffs[kProbeSHCoeffs];
+                         if (probe->_shProjector->readback(ctx.get(), probe->_shSlot, coeffs)) {
+                           for (int i = 0; i < kProbeSHCoeffs; i++)
+                             rval.append(coeffs[i]);
+                         }
+                       }
+                       return rval;
+                     })
                      .def("exportEquirectangular", [](lightprobe_ptr_t probe, ctx_t ctx, fquat& qrot, py::object path) {
                        auto path_as_str = py::str(path);
                        auto path_as_std = path_as_str.cast<std::string>();
                        probe->exportEquirectangular(ctx.get(), qrot, path_as_std);
                      });
   type_codec->registerStdCodec<lightprobe_ptr_t>(probe_t);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto shproj_t = py::class_<ProbeSHProjector, probeshprojector_ptr_t>(module_lev2, "ProbeSHProjector")
+                      .def(py::init<>())
+                      .def(
+                          "project",
+                          [](probeshprojector_ptr_t proj, ctx_t ctx, texture_ptr_t cubetex, int face_dim, int slot) {
+                            proj->project(ctx.get(), cubetex, face_dim, slot);
+                          })
+                      .def("coefficients", [](probeshprojector_ptr_t proj, ctx_t ctx, int slot) -> py::list {
+                        py::list rval;
+                        fvec3 coeffs[kProbeSHCoeffs];
+                        if (proj->readback(ctx.get(), slot, coeffs)) {
+                          for (int i = 0; i < kProbeSHCoeffs; i++)
+                            rval.append(coeffs[i]);
+                        }
+                        return rval;
+                      });
+  type_codec->registerStdCodec<probeshprojector_ptr_t>(shproj_t);
   /////////////////////////////////////////////////////////////////////////////////
   module_lev2.def("computeAmbientOcclusion", [](int numsamples, meshutil::mesh_ptr_t model, ctx_t ctx) {
     computeAmbientOcclusion(numsamples, model, ctx.get());

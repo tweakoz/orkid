@@ -39,6 +39,11 @@ public:
 
   std::map<std::string, synthbuscfg_ptr_t> _busConfigs;
   float _masterGainDB = 0.0f;
+  // voice-steal knobs, applied to the synth singleton on activate.
+  //  policy: see ork::audio::singularity::VoiceStealPolicy
+  //  (0=off 1=oldest 2=quietest 3=priority)
+  int _voiceStealPolicy = int(ork::audio::singularity::VoiceStealPolicy::PRIORITY);
+  int _voiceHeadroom    = 0;
 
 private:
   ork::ecs::System* createSystem(ork::ecs::Simulation* pinst) const final;

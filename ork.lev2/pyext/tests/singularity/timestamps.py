@@ -16,7 +16,7 @@ timebase = singularity.TimeBase()
 timebase.numerator = 4
 timebase.denominator = 4
 timebase.tempo = 120
-timebase.ppb = 100
+timebase.ppq = 100
 
 ################################################################################
 

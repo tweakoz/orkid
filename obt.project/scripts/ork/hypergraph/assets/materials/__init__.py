@@ -25,9 +25,12 @@ from .ground         import Dirt, Grass, Gravel, Sand
 from .geological     import Rock, Snow, Mud          # generic geological surfaces (pre-dflow)
 from .solid          import Solid                     # plain solid-color PBR material (live; instancing)
 from .asphalt        import Asphalt, ROAD_PRESETS, ROAD_LANE_COUNTS, road_preset  # R-family road surface
+from .glass          import Glass                     # A2C window glazing (opacity + alpha_to_coverage)
+from .star_dome      import StarDome                  # procedural night star field (Scene.stars)
+from .star_splat     import StarSplat                 # catalog gaussian-splat star field (Scene.stars)
 from . import terrain                                 # terrain/ subpackage self-registers its materials
 __all__ = ["CrackedMud", "CobbleStone", "LilyPads", "BeachBall", "BasketBall",
            "SoccerBall", "HoneyComb", "CarbonFiber", "SpaceshipHull", "Brick",
            "Marble", "Foil", "Wood", "Teak", "Oak", "Pine", "Plywood",
            "Cheetah", "Leopard", "Zebra", "Reptile", "Dirt", "Grass", "Gravel", "Sand", "Rock", "Snow", "Mud",
-           "Solid", "Asphalt", "ROAD_PRESETS", "ROAD_LANE_COUNTS", "road_preset", "terrain"]
+           "Solid", "Asphalt", "ROAD_PRESETS", "ROAD_LANE_COUNTS", "road_preset", "Glass", "StarDome", "StarSplat", "terrain"]

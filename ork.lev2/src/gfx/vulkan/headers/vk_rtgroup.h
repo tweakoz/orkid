@@ -33,6 +33,13 @@ struct VklRtBufferImpl {
   void _transitionToRenderTarget(vkpricmdbufimpl_ptr_t cb);
   void _transitionToTexture(vkpricmdbufimpl_ptr_t cb);
   void _transitionToHostRead(vkpricmdbufimpl_ptr_t cb);
+  // Restore an image out of TRANSFER_SRC (host-read/capture) into the layout it
+  // held BEFORE the capture, with correct TRANSFER-stage source barrier
+  // semantics. A capture must be layout-neutral: a consumer sampling this RTG
+  // without an intervening re-render (e.g. a UI surface compositing a
+  // scenegraph-viewport RTG that is not dirty this frame) still needs it
+  // shader-readable.
+  void _transitionFromHostReadTo(vkpricmdbufimpl_ptr_t cb, VkImageLayout target);
   void _transitionToPresent(vkpricmdbufimpl_ptr_t cb);
 
   void setLayout(VkImageLayout layout);
@@ -77,6 +84,7 @@ struct VkRtGroupImpl {
   void _updateMainSurface(VkFrameBufferInterface* fbi);
   void _invalidateAttachments();
   void _setupCubeFaceRendering(int face_index);
+  int layoutBits(); // pipeline-hash contribution keyed by attachment layout (see impl)
 
   static void assignToRtGroup(vkrtgrpimpl_ptr_t rtgimpl, rtgroup_rawptr_t rtgroup);
 
@@ -98,6 +106,13 @@ struct VkRtGroupImpl {
   // depth attachment imageLayout picks up the same value. The flag resets
   // at the end of the matching _popRtGroup.
   bool _depthReadOnlyMode = false;
+  // PAIRING CONTRACT, enforced in _pushRtGroup: whoever sets the flag owns
+  // clearing it inside the SAME context frame — via the matching _popRtGroup
+  // for a push/pop consumer, or an explicit transitionDepthForWriting for a
+  // compute-side one (the HZB build samples this depth with no push/pop at
+  // all). This records the setting frame so an unpaired setter fails loudly
+  // instead of silently disabling depth writes for a whole later pass.
+  int _depthReadOnlySetFrame = -1;
   vkmsaastate_ptr_t _msaaState;
 
   vkrenderinfo_ptr_t _rinfo_retain;

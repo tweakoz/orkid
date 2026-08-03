@@ -74,7 +74,15 @@ void pyinit_globalsynth(py::module& module_ecs) {
           .def_property(
               "masterGainDB",
               [](globalsynthsysdata_ptr_t sd) -> float { return sd->_masterGainDB; },
-              [](globalsynthsysdata_ptr_t sd, float val) { sd->_masterGainDB = val; });
+              [](globalsynthsysdata_ptr_t sd, float val) { sd->_masterGainDB = val; })
+          .def_property(
+              "voiceStealPolicy", // 0=off 1=oldest 2=quietest 3=priority
+              [](globalsynthsysdata_ptr_t sd) -> int { return sd->_voiceStealPolicy; },
+              [](globalsynthsysdata_ptr_t sd, int val) { sd->_voiceStealPolicy = val; })
+          .def_property(
+              "voiceHeadroom",
+              [](globalsynthsysdata_ptr_t sd) -> int { return sd->_voiceHeadroom; },
+              [](globalsynthsysdata_ptr_t sd, int val) { sd->_voiceHeadroom = val; });
   type_codec->registerStdCodec<globalsynthsysdata_ptr_t>(sysdata_type);
 }
 } // namespace ork::ecs

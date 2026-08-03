@@ -58,6 +58,15 @@ struct ControllerData : public ork::Object {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ControllerInst {
+
+  // instances are created and destroyed on the AUDIO THREAD at every note-on:
+  //  storage comes from the same size-classed recycler the dsp instances use
+  //  (dspInstanceAlloc, dspblocks.h), so a note-on in steady state performs no
+  //  allocator call at all. the sized delete is what the virtual destructor
+  //  dispatches to, and it carries the derived class's size back to the pool.
+  static void* operator new(size_t nbytes);
+  static void operator delete(void* ptr, size_t nbytes);
+
   ControllerInst(layer_ptr_t layer);
   virtual ~ControllerInst() {
   }
@@ -76,10 +85,15 @@ struct ControllerInst {
   KeyOnModifiers::data_ptr_t _keymoddata;
 };
 
+// ControlBlockInst - the OWNER of a note's controller instances. one lives for
+//  the lifetime of a Layer (Layer::_ctrlBlock) and is cleared, not replaced, at
+//  every keyOn: clear() is the paired destroy for the instantiate() in keyOn.
 struct ControlBlockInst {
+  ~ControlBlockInst();
   void compute();
   void keyOn(const KeyOnInfo& KOI, controlblockdata_constptr_t CBD);
   void keyOff();
+  void clear();
 
   ControllerInst* _cinst[kmaxctrlperblock] = {0, 0, 0, 0};
 };

@@ -41,10 +41,10 @@ A *family* is a vertical slice of HyperSyn — a base class, a plug-type set, a 
 |---|---|---|---|
 | `particles` | `ParticleBuffer` | `graphinst_ptr_t` (runtime exec) | planned |
 | `ptex2d` | `Image2DBuffer`, scalar/vec | `texture_ptr_t` (FXV2 → RT pool) | planned |
-| `ptex3d` | `Vec3`, `Float`, `SurfaceCtx` | `pbrmaterial_ptr_t` { rigid, instanced, skinned } | planned |
-| `hypermesh` | `MeshBuffer`, `SdfGrid` (DENSE; NANOVDB reserved), `XfNodeGraph` (LANDED — the L-system spine), `Skeleton`-adapter (planned) | multi-sink: `mesh` → `xgmmodel_ptr_t`, `collider` → `shapedata_ptr_t`, `sdf` → `sdfgrid_ptr_t`, `skeleton` → `xgmskeleton_ptr_t` | partial (mesh/SDF/L-system ops shipped) |
+| `ptex3d` | `SurfNode` expression tree, `SurfaceCtx` | baked forward-PBR `.fxv2` (+ `PBRMaterial` via the asset layer, `materialize_ptex3d`) | **shipped** — TOP-LEVEL `ork.hypergraph.ptex3d` (8 files; NOT `dflow.ptex3d`) |
+| `hypermesh` | `MeshBuffer`, `SdfGrid` (DENSE; NANOVDB reserved), `XfNodeGraph` (LANDED — the L-system spine), `Skeleton`-adapter (planned) | today: single-sink `self.output()` → GpuMesh (bake `.ogeo` / live `ComputeDrawable`); named multi-sink (`collider`/`sdf`/`skeleton`) = target design | **shipped** — see `ork.dox/hyper/HYPERMESH.md` |
 | `sdf` | `SdfGrid` { DENSE shipped, NANOVDB reserved/unbuilt } | dense brick (GPU-writable) + mesh via marching tetrahedra (`SdfToMesh`); future NanoVDB blob | **shipped (E.7 track)** — see note below table |
-| `terrain` | `HeightExpr`, `BiomeMask`, `ScatterSet`, `Spline` | multi-sink: `terrain` → `GeoClipMapDrawable` + baked `Heightfield` (CPU + bullet) + child instanced drawables + path drawables | planned |
+| `terrain` | `TerrainNode` field expressions, `ScatterSet`, masks-as-fields | multi-sink bake: channel images (EXR/PNG16) + `.terrain.json` manifest (scale contract) + `.ogeo` scatter point sets; rendered by `TerrainChunkDrawableData`, consumed by physics/ECS | **shipped** — see `ork.dox/hyper/HYPERTERRAIN.md` |
 | `hyperprim` | `PrimSlot`, `Float`, `Vec3`, `MeshRef` | multi-sink: `mesh` → `xgmmodel_ptr_t`, `collider` → `shapedata_ptr_t`, plus named-slot dict (cake/lamppost/bench parametric props) | forward |
 | `hyperarch` | `Footprint`, `Storey`, `Facade`, `Opening`, `Roof` | multi-sink: `mesh` → `xgmmodel_ptr_t` bundle, `collider` → `shapedata_ptr_t`, `nav_mesh` → `navmesh_ptr_t`, plus opening-slot dict | forward |
 | `hypercity` | `StreetGraph`, `Parcel`, `BlockMask`, `BuildingDist` | multi-sink: streamed urban tile, instanced-drawable cloud, path-network drawable, `nav_graph` → AI/teleport graph | forward |
@@ -52,7 +52,7 @@ A *family* is a vertical slice of HyperSyn — a base class, a plug-type set, a 
 | `hyperlight` | `LightDescriptor`, `IBL`, `FogProfile`, `SkyModel` | `light_ptr_t[]` + `EnvironmentProbe` + `FogParameters` | forward |
 | `hypershot` | `CameraDescriptor`, `Lens`, `DollyPath`, `FocusCurve` | `camera_ptr_t` (per-shot camera authoring; shot *sequencing* belongs to the future `sequence` family) | forward |
 | `behavior` | `State`, `Transition`, `Predicate`, `SceneQuery`, `EventStream` | `behavior_ptr_t` (stateful FSM runtime wrapping `FsmInstance`; drives pose graphs, particle systems, etc.) | forward |
-| `singularity` | audio signal, MIDI event | `program_ptr_t` (synth program) | future |
+| `singularity` | `SoundNode` signal expressions, params, mod routes | `MaterializedSound` (Singularity `ProgramData`/bank + patch manifest) via `materialize_sound_patch` | **shipped-v1 (hypersound)** — `obt.project/scripts/ork/hypergraph/sound/{dsl,emitter,caps}.py` (`SoundPatch`/`S.*`); tests `ork.lev2/pyext/tests/singularity/test_hypersound_{basic,arith}.py`; scene `ork.data/scenes/scn_spatial_audio_showcase.py` |
 | `sequence` | event stream, automation lane | `sequence_ptr_t` (timeline) | future |
 
 > **`sdf` family (shipped, E.7 track).** SDF is a first-class shipped dataflow family with its own 6
@@ -82,6 +82,8 @@ Each family lives at:
 
 The Python root `ork.hypergraph.dflow.<family>` is a historical handle dating from when every family was a dataflow graph; not every family is strictly dataflow today (see "Family kinds" below). The path stays for consistency. (Pre-namespace-refactor the path was `ork.dflow.<family>`; the import-path rewrite preserves the `dflow` segment to keep the convention intact even for non-dataflow families.)
 
+**Shipped exceptions — TOP-LEVEL packages.** Two shipped families are pure expression/trace DSLs, not dflow graphs, and live at the TOP level of the namespace: `ork.hypergraph.ptex3d` (surface DSL + fxv2 codegen; canonical import `from ork.hypergraph.ptex3d import Ptex3d, P`) and `ork.hypergraph.sound` (hypersound; `from ork.hypergraph.sound import S, SoundPatch, materialize_sound_patch`). There is no `dflow.ptex3d` — never write that import.
+
 ### Multi-sink materializer outputs
 
 A graph derives **multiple distinct typed artifacts** from a shared procedural source, not a single bundled output. Visible meshes, physics colliders, navigation meshes, audio occlusion meshes, and LOD chains are **distinct artifacts** with different topology, resolution, and structural invariants — even when derived from the same upstream SDF expression or parametric construction. Pretending they're one thing is wrong.
@@ -103,27 +105,39 @@ The procedural source is shared (the SDF expression, parametric construction, FX
 Where collision geometry and visible geometry genuinely share derivation (a wall is the same shape coarsened for physics), the shared upstream subgraph is automatically deduplicated by topology. Where they don't share (an animal's visible mesh is skinned PBR, its collider is per-bone capsules), the sinks pull from completely separate sub-constructions in the same graph:
 
 ```python
+from ork.hypergraph.dflow.hypermesh import Hypermesh
+from ork.hypergraph.dflow import hypermesh as H     # module alias (H.make_drawable, rigging sketches)
+
 class CourtyardWalls(Hypermesh):
     def __init__(self):
-        from ork.hypergraph.dflow import hypermesh as H
-        # shared procedural source — one SDF expression
-        wall_sdf = H.sdf_subtract(H.sdf_box(extents=(10.6, 4.0, 10.6)),
-                                  H.sdf_box(extents=(10.0, 5.0, 10.0)))
-        # distinct typed artifacts, each derived from the source at different resolutions
-        self.mesh(H.sdf_to_mesh(wall_sdf, voxel_size=0.03))             # visible (high-res)
-        self.collider(H.sdf_to_mesh(wall_sdf, voxel_size=0.20),         # collider (coarse mesh)
+        super().__init__()
+        # shared procedural source — one SDF CSG expression, framed per consumer resolution
+        # (real API: self.sdf(dim=, extent=) binds a brick; brick dim IS the mesh resolution)
+        hi = self.sdf(dim=512, extent=12.0)          # fine brick → visible mesh
+        lo = self.sdf(dim=96,  extent=12.0)          # coarse brick → collider
+        walls_hi = hi.box(size=(5.3, 2.0, 5.3)) - hi.box(size=(5.0, 2.5, 5.0))
+        walls_lo = lo.box(size=(5.3, 2.0, 5.3)) - lo.box(size=(5.0, 2.5, 5.0))
+        # distinct typed artifacts, each derived from the source at its own resolution
+        self.mesh(walls_hi.to_mesh(weld=True))       # visible (marching tetrahedra, welded)
+        self.collider(walls_lo.to_mesh(blocky=True), # collider (cuberille voxel blocks, cheap)
                       kind="mesh", static=True)
-        self.nav_blocker(H.sdf_to_footprint(wall_sdf, height=0))        # 2D nav blocker
 
 class Cheetah(Hypermesh):
     def __init__(self, params):
-        # visible mesh derived one way (skinned organic)
+        # visible mesh derived one way (skinned organic) — rigging surface: target design, unbuilt
         skel, mesh, weights = build_quadruped(params)
         self.skinned(mesh, skel, weights)
         # collider derived completely differently (per-bone capsules, no shared source)
         self.collider(H.per_bone_capsules(skel, radii=params.bone_radii),
                       kind="compound", static=False)
 ```
+
+> **Status note.** The SDF construction above is the real shipped API (`dflow/sdf/__init__.py`,
+> consumed via `self.sdf(...)` / `self.sdf_to_mesh(node, weld=, blocky=)` in
+> `dflow/hypermesh/__init__.py:509`). The NAMED-SINK surface (`self.mesh` / `self.collider` / …)
+> is the target multi-sink design — today's shipped hypermesh terminal is single-sink
+> `self.output(mesh)` (see `UNIFIED_SUBSTRATE.md` §11.3), and the rigging surface (`skinned`,
+> `per_bone_capsules`) is feasibility-gated and unbuilt.
 
 Common sink names across families (each family declares which it supports):
 - `mesh` — `xgmmodel_ptr_t` rigid or skinned visible geometry
@@ -166,10 +180,10 @@ A stateful family's `generatedflow()` still returns a `dflow::graphdata_ptr_t` f
 
 ### DSL operations
 
-Each DSL op is a single Python file declaring a class with an imperative `.build(graph, **inputs)` method. The op is registered in a per-family central registry so introspection tools (and the editor) can enumerate available ops without filesystem scanning.
+**(STATUS: M1.B design — not the shipped shape.)** The shipped families register ops differently today: particles uses `chain_op`-based vocab, ptex3d uses `SurfNode` methods in `ptex3d/dsl.py`, and both ptex3d and hypersound fall back to the minimal shipped `ork.hypergraph.registry` for extensions (see "Op registry introspection API" below). In the M1.B design, each DSL op is a single Python file declaring a class with an imperative `.build(graph, **inputs)` method, registered in a per-family central registry so introspection tools (and the editor) can enumerate available ops without filesystem scanning.
 
 ```python
-# obt.project/scripts/ork/hypergraph/dflow/ptex3d/ops/mix.py
+# M1.B design sketch — obt.project/scripts/ork/hypergraph/dflow/<family>/ops/mix.py
 from ork.hypergraph.dflow.dsl import op, DslNode
 from ork.ptex3d.types import Float, Vec3, Vec4
 
@@ -196,7 +210,7 @@ class Mix:
 **Multi-output ops.** An op with more than one output (e.g. Worley noise returning `value`, `gradient`, and `cell_id` simultaneously, or surface ops returning a tangent frame) declares each output in `outputs` and `build()` returns a `dict[str, DslNode]` keyed by output name. Callers receive a `DslNodeBundle` exposing each output as an attribute:
 
 ```python
-# obt.project/scripts/ork/hypergraph/dflow/ptex3d/ops/worley.py
+# M1.B design sketch — obt.project/scripts/ork/hypergraph/dflow/<family>/ops/worley.py
 @op(family="ptex3d", name="worley")
 class Worley:
     """Worley (cellular) noise: returns nearest-cell distance, gradient, and cell id."""
@@ -232,7 +246,7 @@ hash_   = P.fract(n.cell_id * 0.123)
 
 Single-output ops continue to return a bare `DslNode` from `build()` (the existing `mix` example above); both forms are first-class. `OpInfo.outputs` always reports the full dict (size 1 for the sugar case).
 
-The user-facing call surface uses aliased imports: `from ork.hypergraph.dflow import ptex3d as P` exposes `P.mix`, `P.randnormal`, `P.surfctx`, etc. Each is `lambda *args, **kw: registry["ptex3d"]["mix"].build(_current_graph(), *args, **kw)` (or equivalent). Star-imports are explicitly avoided so module origin stays visible at every call site (debuggability and tooling introspection).
+The user-facing call surface uses aliased imports — the shipped form is `from ork.hypergraph.ptex3d import P` (top-level package); dflow families follow `from ork.hypergraph.dflow import <family> as X`. In the M1.B design each callable is `lambda *args, **kw: registry["<family>"]["mix"].build(_current_graph(), *args, **kw)` (or equivalent). Star-imports are explicitly avoided so module origin stays visible at every call site (debuggability and tooling introspection).
 
 ### Source provenance
 
@@ -244,6 +258,8 @@ Two source positions are recorded automatically and flow through to diagnostics,
 Both feed `Diagnostic.source` (see "Validation") so error markers point at the exact line that produced the issue, not just at the offending module/plug name. The materializer additionally emits `// <user_file>:<line>` comments above each generated GLSL statement (codegen families), so a debugger reading the compiled shader can trace any line back to the authoring source.
 
 ### Op registry introspection API
+
+**(STATUS: PLANNED, M1.B — not yet built.)** Do not confuse this design with the REAL, shipped `ork.hypergraph.registry` (`register_op` / `@op(family, name)` / `get_op` / `has_op` / `list_ops` / `list_families`) — a minimal name→callable table that ptex3d (`ptex3d/dsl.py`) and hypersound (`sound/dsl.py`) already consult as their external-extension hook; the `OpInfo`/`PlugSpec` introspection surface below is the aspirational `dflow.dsl.registry` layer that would sit on top of it.
 
 External tools — editor autocompletion, documentation generators, JSON-schema exporters, type-checkers, code-completion bridges — must enumerate the DSL surface without importing every op module. The op registry exposes:
 
@@ -293,9 +309,9 @@ class Ptex3d(HyperSynFamily):
         self._graph = Ptex3dGraphData.createShared()
         self._output_bindings = {}
 
-    def surface(self, albedo=None, normal=None, metalness=None, roughness=None, **kw):
+    def surface(self, albedo=None, normal=None, metallic=None, roughness=None, **kw):
         self._output_bindings.update({k: v for k, v in
-            dict(albedo=albedo, normal=normal, metalness=metalness, roughness=roughness, **kw).items()
+            dict(albedo=albedo, normal=normal, metallic=metallic, roughness=roughness, **kw).items()
             if v is not None})
 
     def generatedflow(self) -> "dflow.graphdata_ptr_t":
@@ -452,31 +468,32 @@ This equivalence is the round-trip test for the DSL machinery.
 - `self.render(node)` records the output renderer; the particles materializer wraps `self.graphdata` in a `ParticlesDrawableData` and returns `{"graphinst": graphinst_ptr_t, "drawable": drawable_ptr_t}` — the caller attaches `drawable` to a scenegraph layer and advances `graphinst.compute(updata)` per frame
 - The chain is enforced linear by `ParticleBufferPlugTraits::max_fanout = 1` (M0 will catch violations at `safeConnect` time)
 
-### ptex3d — PBR surface shader
+### ptex3d — PBR surface shader (shipped)
+
+Real, working form (the pattern every material under `obt.project/scripts/ork/hypergraph/assets/materials/` follows — e.g. `wood.py`, `timber.py`):
 
 ```python
-from orkengine.lev2 import Ptex3d
-from ork.hypergraph.dflow import ptex3d as P
+from ork.hypergraph.ptex3d import Ptex3d, P, rgb   # TOP-LEVEL package — NOT dflow.ptex3d
 
 class SpottedSkin(Ptex3d):
-    def __init__(self, ptx3dctx):
-        spots = P.some_noise(ptx3dctx.xyz, scale=8.0, octaves=3)
+    def __init__(self, ctx, *, scale=8.0):
+        p     = ctx.P_object * ctx.param("scale", scale)   # runtime-bindable param
+        spots = P.fbm(p, 3)                                # 3-octave value-noise fbm
         lerp  = P.smoothstep(0.4, 0.6, spots)
-        a = P.mix(P.black, P.yellow, lerp)
-        n = P.mix(ptx3dctx.nxyz, P.randnormal(ptx3dctx.xyz), 0.1)
+        a = P.mix(rgb(0.05, 0.04, 0.02), rgb(0.85, 0.66, 0.10), lerp)
         r = P.mix(0.5, 0.7, lerp)
-        self.surface(albedo=a, normal=n, metalness=0, roughness=r)
+        self.surface(albedo=a, roughness=r, metallic=0.0)
 ```
 
 Materializing this:
 ```python
-from ork.hypergraph.dflow.ptex3d import materialize
-artifacts = materialize(LeopardSkin().generatedflow(), ctx)
-if artifacts is None:
-    print("shader failed to compile; see diagnostics")
-else:
-    drawable_node.material = artifacts["surface"]   # PBRMaterial { rigid, instanced, skinned }
+from ork.hypergraph.ptex3d import materialize_ptex3d
+fxv2_path = materialize_ptex3d(SpottedSkin, scale=6.0)   # bakes the .fxv2 into <staging>/dslshadercache/
+# scene/asset-layer consumption (binds params + builds the PBRMaterial):
+#   mat = self.asset.Ptex3d("skin", dsl_class=SpottedSkin)
 ```
+
+(`materialize_ptex3d_full` additionally returns the bindable-param specs + declared PBR lobes; reusable sub-expressions live as plain Python functions in `ork.hypergraph.ptex3d.functions`.)
 
 ### ptex2d — procedural texture
 
@@ -494,79 +511,58 @@ class StripedPanel(Ptex2d):
 
 `materialize(graph, ctx)` allocates an RTGroup from the ptex2d pool, runs the FXV2 fragment shader into it, returns `{"texture": texture_ptr_t}`.
 
-### terrain — heightmap + surfacing + placement
+### terrain — heightmap + surfacing + placement (shipped)
 
-Reference renderer: `ork.lev2/pyext/tests/renderer/geoclip/geoclipmesh_basic.py` (and siblings). The terrain materializer produces three artifacts in one go: a `GeoClipMapDrawable` with a codegened PBR ground shader; a baked **Heightfield** (2D float buffer) consumed by CPU code (camera follow, scatter placement, path snapping) and fed directly to bullet physics as a `btHeightfieldTerrainShape`; and child drawable nodes for scattered instances + paths. The DSL itself emits only FXV2 — the heightfield is baked by sampling the same FXV2 expression at materialize time, so there's no CPU/GPU expression duplication.
+Full current-state documentation: **`ork.dox/hyper/HYPERTERRAIN.md`**. Reference recipes: `obt.project/scripts/ork/hypergraph/assets/terrain/` (`hf1.py`, `swestvale.py`, `hamletvale.py`, `scatterdemo.py`, `erox.py`, …). The renderer is `TerrainChunkDrawableData` (`ork.lev2/src/gfx/terrain/terrain_chunk_drawable.cpp`) — NOT `GeoClipMapDrawable`, which exists only in the standalone `pyext/tests/renderer/geoclip/` tests and is unrelated to the terrain family.
+
+Terrain is **baked, not simulated at runtime**: the DSL traces a compute-dataflow DAG of field ops (one compute dispatch per node over a `dim × dim` R32F field); the bake products are ordinary images + a JSON manifest + `.ogeo` point sets, and everything downstream consumes those artifacts, never the graph. Heights are TRUE METERS (natural units — `HeightField.EXTENT_M` is the only scale attr; there is no vertical scale constant). A real, working recipe (verbatim from `assets/terrain/hf1.py`):
 
 ```python
-from orkengine.lev2 import Terrain
+from ork.hypergraph.dflow.terrain import HeightField
 from ork.hypergraph.dflow import terrain as T
-from ork.hypergraph.dflow import ptex3d as P3      # reused for ground surfacing
-from ork.hypergraph.dflow import hypermesh as HM   # reused for tree models
 
-class AlpineValley(Terrain):
-    def __init__(self):
-        # heightmap expression — emits FXV2; materializer also bakes to heightfield
-        mountains = T.noise(scale=0.005, octaves=4) * 80
-        rolling   = T.noise(scale=0.015, octaves=3) * 30
-        fine      = T.noise(scale=0.3,   octaves=2) * 1.5
-        h = mountains + rolling + fine
-        self.heightfield(h, feature_scale=1.5, bake_resolution=2048)
-
-        # slope/altitude masks — evaluated against the same expression
-        slope    = T.gradient_magnitude(h)
-        alt      = T.altitude(h)
-        rocky    = T.smoothstep(0.5, 1.0, slope)
-        snow     = T.smoothstep(60, 80, alt)
-        grass    = T.invert(rocky) * T.invert(snow)
-
-        # ground surfacing (ptex3d sub-DSL embedded in the terrain graph)
-        self.surface(P3.blend([
-            (rock_material,  rocky),
-            (snow_material,  snow),
-            (grass_material, grass),
-        ]))
-
-        # procedural placement (hypermesh tree models scattered on grass+gentle slope)
-        # scatter() queries the baked heightfield + mask at materialize time
-        self.scatter(
-            mesh=HM.pine_tree(seed=0),
-            density=200,
-            mask=grass * T.smoothstep(0.3, 0.1, slope),
-            jitter=0.5,
-        )
-
-        # path along a 2D spline; snap_to_terrain reads the baked heightfield
-        path_spline = T.spline2d([(0, 0), (50, 20), (120, -10), (200, 80)])
-        self.path(path_spline, width=4.0, material=road_material, snap_to_terrain=True)
+class HF1(HeightField):
+    def __init__(self, octaves=6, steps=6):
+        super().__init__()
+        AMPLITUDE_M = 4000.0   # authored vertical relief in meters (natural units)
+        h = (T.Fbm(frequency=3.0, octaves=octaves) * 0.5 + 0.5) * AMPLITUDE_M
+        self.capture(T.Terrace(h, step_m=AMPLITUDE_M / steps, sharpness=4.0), "height")
 ```
 
-**Materializer output** — `terrain.materialize(graph, ctx)` returns a multi-sink dict:
-- `"terrain"` → `GeoClipMapDrawable` (renderer-side) — codegened PBR shader stitching the heightmap expression + surfacing into the geoclipmesh shader
-- `"heightfield"` → `Heightfield` (CPU-side baked grid at `bake_resolution`) — consumed by camera-follow, scatter, path, and bullet (also: `"collider"` → derived `shapedata_ptr_t` wrapping a `btHeightfieldTerrainShape`)
-- `"instances"` → for each `scatter(...)` an instanced-drawable node with positions baked at materialize time (or per-tile streamed for huge worlds)
-- `"paths"` → for each `path(...)` a ribbon mesh drawable snapped to the baked heightfield
+**Bake output** (multi-sink, per `HYPERTERRAIN.md`):
+- channel images (EXR/PNG16) per `capture(node, channel)` — height, masks, feature fields (slope/curvature/flow)
+- `.terrain.json` manifest — the authoritative scale contract (`extent_m`, `dim`, per-channel stats; `dflow/terrain/manifest.py`)
+- `.ogeo` point sets for each scatter/placement sink
+- rendered by `TerrainChunkDrawableData`; physics + CPU consumers read the baked heightfield through the manifest
 
-**Composition with other families is inherent.** Terrain authoring almost always pulls in `Ptex3d.blend([...])` for surfacing, `Hypermesh.<model>` for scattered instances, and (eventually) `Sequence` for time-of-day biome morphing. Terrain is the first family that **proves the hypergraph design is load-bearing, not optional** — per-family `GraphData` subclassing fights inherent cross-family composition here. See "Hypergraphs (future)" section.
+**Composition with other families is inherent.** Ground surfacing reuses ptex3d materials (see `assets/terrain/xxx3.py`, `swestvale.py` — full `Ptex3d` classes with terrain `vertex_source`), scattered instances reuse hypermesh/lsystem plants (`xxx3_trees.py`, `scatterdemo.py`), and roads ride the `dflow/roads/` layer. Terrain is the first family that **proved the hypergraph design is load-bearing, not optional** — per-family `GraphData` subclassing fights inherent cross-family composition here. See "Hypergraphs (future)" section.
 
-### hypermesh — SDF + mesh ops
+### hypermesh — SDF + mesh ops (shipped)
+
+Real, working form (the pattern of `obt.project/scripts/ork/hypergraph/assets/hypermesh/sdf_boolean.py`, `sdf_conform.py`, `sdf_clean.py`; full doc `ork.dox/hyper/HYPERMESH.md`):
 
 ```python
-from orkengine.lev2 import Hypermesh
-from ork.hypergraph.dflow import hypermesh as H
+from ork.hypergraph.dflow.hypermesh import Hypermesh
 
 class HollowSphere(Hypermesh):
     def __init__(self):
-        outer = H.sdf_sphere(radius=1.0)
-        inner = H.sdf_sphere(radius=0.8)
-        shell = H.sdf_subtract(outer, inner)
-        # visible mesh — high-res
-        self.mesh(H.sdf_to_mesh(shell, voxel_size=0.02))
-        # collider — coarser; physics doesn't need surface detail
-        self.collider(H.sdf_to_mesh(shell, voxel_size=0.08), kind="mesh", static=True)
+        super().__init__()
+        s     = self.sdf(dim=256, extent=2.5)      # dense-brick framing; brick dim IS mesh resolution
+        shell = s.sphere(1.0) - s.sphere(0.8)      # CSG operators: | union, & intersect, - subtract
+        self.output(shell.to_mesh(weld=True))      # marching tetrahedra → indexed GpuMesh
 ```
 
-`materialize(graph, ctx) -> dict[str, Artifact]` runs the openvdb pipeline (level-set CSG → volumeToMesh) once per declared sink (cached per-sink). Returns `{"mesh": xgmmodel_ptr_t, "collider": shapedata_ptr_t}`. Other sinks `HollowSphere` could declare: `self.sdf(shell)` → `sdfgrid_ptr_t` (deformation field for particles/ptex3d), `self.skeleton(sk)` → `xgmskeleton_ptr_t`, `self.skinned(mesh, skeleton, weights)` → skinned `xgmmodel_ptr_t` ready for hyperanim. See "Multi-sink materializer outputs" in Core concepts.
+The free expression algebra composes the same shapes without a bound brick (`dflow/sdf/__init__.py`):
+
+```python
+from ork.hypergraph.dflow import sdf
+expr = sdf.box((1.0, 0.5, 2.0)) - sdf.sphere(0.9, center=(0.5, 0.0, 0.0))
+expr = sdf.smooth_union(expr, sdf.capsule(a=(0,-0.5,0), b=(0,0.5,0), radius=0.4), k=0.25)
+node = self.sdf_eval(expr, dim=128, extent=4.0)   # bake the expression as a brick
+mesh = self.sdf_to_mesh(node, weld=True)          # or blocky=True for cuberille voxel blocks
+```
+
+The whole chain (`sdf_eval` → `csg` → `sdf_to_mesh`, `dflow/hypermesh/__init__.py:509`) is GPU-resident and animatable per frame — `sdf_boolean.py` pokes `sphere.inputs.offset` each frame and the bite re-carves live. `sdf_to_mesh_clean` is the one-shot CPU terminal (openvdb curvature-adaptive volumeToMesh + xatlas UV unwrap) for clean low-poly output. Today's terminal is single-sink `self.output(mesh)`; the named multi-sink surface (`self.collider(...)`, `self.sdf(...)`, `self.skeleton(...)`) is target design — see "Multi-sink materializer outputs" in Core concepts and `UNIFIED_SUBSTRATE.md` §11.3.
 
 ### Procedural rigging + skinning (hypermesh extension)
 
@@ -602,10 +598,12 @@ class QuadrupedRig(Hypermesh):
                  for n, i in [("FL",0),("FR",0),("BL",-1),("BR",-1)]]
         sk = H.skeleton([root, *spine, *head] + [b for chain in legs for b in chain])
 
-        # build mesh via SDF-of-primitives (placeholder; real quadruped is harder)
-        body_sdf = H.sdf_capsule(p0=(0,0,0), p1=(body_len,0,0), r=0.18)
-        head_sdf = H.sdf_sphere(c=(body_len+0.1, 0.1, 0), r=0.15)
-        mesh = H.sdf_to_mesh(H.sdf_union(body_sdf, head_sdf), voxel_size=0.01)
+        # build mesh via SDF-of-primitives (placeholder; real quadruped is harder) —
+        # this part is the REAL shipped SDF API (see the hypermesh example above)
+        s    = self.sdf(dim=256, extent=3.0)
+        body = s.capsule(a=(0, 0, 0), b=(body_len, 0, 0), radius=0.18)
+        head = s.sphere(0.15, center=(body_len + 0.1, 0.1, 0))
+        mesh = (body | head).to_mesh(weld=True)
 
         # auto-skin: heat-diffusion weights from each vertex to nearest bones
         weights = H.auto_skin(mesh, sk, method="proximity", max_influences=4)
@@ -767,7 +765,7 @@ Representative ops: `extrude(footprint, storeys=[storey_def_a, storey_def_b])`, 
 
 Urban-scale: street graph → parcel subdivision → per-parcel `hyperarch` invocations. Composes `hyperarch` the way `terrain` composes `hypermesh`. Authors the "surrounding city" context.
 
-Plug types: `StreetGraph` (typed road segments with widths + sidewalk widths + lighting density), `Parcel` (closed polygon owned by one footprint), `BlockMask` (rules for which parcels get which `hyperarch` archetype + which `StyleContext`), `BuildingDist` (statistical distribution over archetypes). Multi-sink materializer (per spatial tile): `tile` → streamed `GeoClipMapDrawable`-style tile, `instances` → instanced-drawable cloud (every building is an instance, materials shared by archetype), `paths` → path-network drawable (street ribbons + sidewalk strips), `nav_graph` → AI pathing + VR teleport graph, `collider` → coarse city-block collider for chunked physics.
+Plug types: `StreetGraph` (typed road segments with widths + sidewalk widths + lighting density), `Parcel` (closed polygon owned by one footprint), `BlockMask` (rules for which parcels get which `hyperarch` archetype + which `StyleContext`), `BuildingDist` (statistical distribution over archetypes). Multi-sink materializer (per spatial tile): `tile` → streamed `TerrainChunkDrawableData`-style tile, `instances` → instanced-drawable cloud (every building is an instance, materials shared by archetype), `paths` → path-network drawable (street ribbons + sidewalk strips), `nav_graph` → AI pathing + VR teleport graph, `collider` → coarse city-block collider for chunked physics.
 
 Representative ops: `grid_street(rows, cols, spacing)`, `radial_street(center, ring_count, ring_spacing)`, `subdivide_block(block, target_parcel_size)`, `populate_parcels(parcels, archetypes, distribution)`. Tile-partition pattern (per PDG): each tile materializes independently and caches separately for streaming.
 
@@ -950,20 +948,26 @@ ork.core/src/dataflow/                            dataflow runtime impl
 ork.core/pyext/pyext_dataflow.cpp                 dataflow python bindings
 
 ork.lev2/inc/ork/lev2/gfx/particle/               particles runtime
-ork.lev2/inc/ork/lev2/gfx/geoclipmap/             geoclipmesh runtime (used by terrain)
-ork.lev2/inc/ork/lev2/gfx/ptex2d/                 ptex2d runtime
-ork.lev2/inc/ork/lev2/gfx/ptex3d/                 ptex3d runtime
-ork.lev2/inc/ork/lev2/gfx/hypermesh/              hypermesh runtime
-ork.lev2/inc/ork/lev2/gfx/terrain/                terrain runtime (codegen + heightfield bake)
+ork.lev2/inc/ork/lev2/gfx/hypermesh/              hypermesh runtime (see ork.dox/hyper/HYPERMESH.md)
+ork.lev2/inc/ork/lev2/gfx/terrain/                terrain runtime (dflow/hfdflow.h bake driver +
+                                                  terrain_chunk_drawable; see ork.dox/hyper/HYPERTERRAIN.md)
+ork.lev2/src/gfx/sdf/                             sdf family C++ modules (SdfEval/Csg/SdfToMesh/…)
+(ptex3d has NO C++ family runtime — it is Python fxv2 codegen; ptex2d is planned M3)
 
-obt.project/scripts/ork/hypergraph/dflow/                    HyperSyn Python root
-obt.project/scripts/ork/hypergraph/dflow/dsl/                trace-mode expression machinery (family-agnostic)
-obt.project/scripts/ork/hypergraph/dflow/validate/           subprocess validation harness (zmq worker pool)
+obt.project/scripts/ork/hypergraph/                          HyperSyn Python root (namespace layout: PLAN.md)
+obt.project/scripts/ork/hypergraph/ptex3d/                   SHIPPED ptex3d surface DSL (TOP-LEVEL, 8 files)
+obt.project/scripts/ork/hypergraph/sound/                    SHIPPED hypersound DSL v1 (dsl/emitter/caps)
+obt.project/scripts/ork/hypergraph/registry.py               SHIPPED minimal op registry (register_op/op/get_op)
+obt.project/scripts/ork/hypergraph/dflow/dsl/                trace-mode introspection machinery (PLANNED M1.B)
+obt.project/scripts/ork/hypergraph/dflow/validate/           subprocess validation harness (PLANNED M2)
 obt.project/scripts/ork/hypergraph/dflow/particles/          particles DSL vocab + base class
-obt.project/scripts/ork/hypergraph/dflow/ptex2d/             ptex2d DSL vocab + base class + materializer
-obt.project/scripts/ork/hypergraph/dflow/ptex3d/             ptex3d DSL vocab + base class + materializer
+obt.project/scripts/ork/hypergraph/dflow/ptex2d/             ptex2d DSL (PLANNED M3)
 obt.project/scripts/ork/hypergraph/dflow/hypermesh/          hypermesh DSL vocab + base class + materializer
-obt.project/scripts/ork/hypergraph/dflow/terrain/            terrain DSL vocab + base class + materializer
+obt.project/scripts/ork/hypergraph/dflow/sdf/                sdf expression algebra + fluent brick builder
+obt.project/scripts/ork/hypergraph/dflow/lsystem/            L-system grammar DSL + presets
+obt.project/scripts/ork/hypergraph/dflow/roads/              roads layer (route/mask/roadmesh)
+obt.project/scripts/ork/hypergraph/dflow/terrain/            terrain DSL vocab + base class + manifest + bake
+obt.project/scripts/ork/hypergraph/assets/                   real recipes (hypermesh/ materials/ terrain/ …)
 
 ork.lev2/pyext/tests/hypersyn/                    HyperSyn example/test root (visual, runnable)
 ork.lev2/pyext/tests/hypersyn/particles/          particle DSL examples (one .py per scene)
@@ -1013,7 +1017,7 @@ Examples serve double duty as integration test fixtures: the validate+materializ
 
 When a user asks about authoring procedural content with HyperSyn:
 
-1. Identify the **family** they want (particles / ptex2d / ptex3d / hypermesh / sdf / terrain / future). `sdf` is a shipped standalone family (see the sdf note in Core concepts); `terrain`, `hypermesh` ship mesh/SDF/heightfield ops. The structural-spine families (`lsystem` + flora/city/creature siblings) are planned and gated on `XfNodeGraph` — see `UNIFIED_SUBSTRATE.md` §11–§16.
+1. Identify the **family** they want (particles / ptex2d / ptex3d / hypermesh / sdf / terrain / future). `sdf` is a shipped standalone family (see the sdf note in Core concepts); `terrain` and `hypermesh` are shipped — the authoritative current-state docs are `ork.dox/hyper/HYPERTERRAIN.md` and `ork.dox/hyper/HYPERMESH.md` (plus `OGEO.md`/`HYPERECS.md` and `ork.dox/core/dataflow.md` for the substrate). `lsystem` shipped as the first structural-spine family; its flora/city/creature siblings are gated on the spine — see `UNIFIED_SUBSTRATE.md` §11–§16.
 2. Show the **subclass + `__init__` + `self.<sink>(...)`** pattern (the trace).
 3. Show **`generatedflow()` → `validate()` → `materialize()`** for the full pipeline.
 4. For codegen families (ptex2d, ptex3d), explain the **FXV2 fragment** mechanism and show how an op declares its fragment template.

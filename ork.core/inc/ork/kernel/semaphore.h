@@ -31,6 +31,12 @@ private:
 struct semaphore {
   semaphore(const char* name);
   void notify();
+  // RT-safe notify: atomic count bump + condvar signal WITHOUT taking mMutex,
+  // so it can never block the caller (use from audio/realtime threads). The
+  // unheld signal can lose the race with a waiter just entering its wait; that
+  // is only usable against wait_for, whose deadline re-check observes the
+  // count — worst case the wake arrives at the timeout instead of instantly.
+  void notify_rt();
   void wait();
   // timed wait: true = signaled (count consumed), false = timed out (count untouched).
   // Lets a worker block on real work (instant wake on notify) with a bounded backstop

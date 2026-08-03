@@ -33,6 +33,7 @@ void pyinit_stochwav(py::module& module_ecs);
 void pyinit_simplesound(py::module& module_ecs);
 void pyinit_globalsynth(py::module& module_ecs);
 void pyinit_probe(py::module& module_ecs);
+void pyinit_soundfield(py::module& module_ecs);
 void pyinit_asset_system(py::module& module_ecs);
 
 } // namespace ork::ecs
@@ -104,6 +105,12 @@ void pyecs_headless_exit() {
   // it explicitly before draining the op queues.
   ork::lev2::stopLoaderThread();
   ork::opq::exit();
+  // Latch GPU-shutdown, exactly as OrkEzApp::_onGpuExit does for the windowed
+  // funnel: the loader context is torn down and released above, so every GPU
+  // resource destructor that still fires (python object graph teardown, atexit)
+  // must no-op rather than call into a driver that is on its way out. Set LAST —
+  // the real vkDestroy* work above has to run with the latch still clear.
+  lev2::GfxEnv::setGpuShutdownComplete(true);
 }
 
 ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance, py::kwargs kwargs) {
@@ -283,7 +290,9 @@ ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance, py::kwargs kwargs
   return rval;
 }
 
-PYBIND11_MODULE(_ecs, module_ecs) {
+// mod_gil_not_used: see the note over PYBIND11_MODULE(_core) — an undeclared
+// extension makes CPython 3.14t silently re-enable the GIL at import time.
+PYBIND11_MODULE(_ecs, module_ecs, py::mod_gil_not_used()) {
   // module_ecs.attr("__name__") = "ecs";
   //////////////////////////////////////////////////////////////////////////////
   // Force orkengine.core and orkengine.lev2 (in that order) to load before
@@ -313,6 +322,7 @@ PYBIND11_MODULE(_ecs, module_ecs) {
   pyinit_simplesound(module_ecs);
   pyinit_globalsynth(module_ecs);
   pyinit_probe(module_ecs);
+  pyinit_soundfield(module_ecs);
   pyinit_asset_system(module_ecs);
   //////////////////////////////////////////////////////////////////////////////
   module_ecs.def("createApp", &ecsappcreate);

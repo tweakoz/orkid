@@ -90,7 +90,7 @@ All thin wrappers; **the expression is the portable unit**.
 
 **Bridge (load-bearing correctness):**
 - Compute prologue, manifest convention verbatim: `uv = (vec2(xi,yi)+0.5)/dim` (**texel-CENTER** — current generators use corner, `fbm.cpp:35`), `xz_m = (uv-0.5)*extent_m + origin`, feed `vec3(xz_m.x, h_cur_m, xz_m.y)` as the rebound `opos`/`wpos`.
-- **Displacement = NORMALIZED additive delta** `h_norm += expr_m/height_m`, never absolute meters — OR a `pre_exposed` flag on `CaptureRequest` so `hfdflow.cpp:241` skips its `[min,max]→[0,1]` renorm (the silent corruptor). Resolve the `HEIGHT_M (4000)` vs `BakeEnv._height_scale_m (9830.25)` default disagreement.
+- **Displacement = NORMALIZED additive delta** `h_norm += expr_m/height_m`, never absolute meters — OR a `pre_exposed` flag on `CaptureRequest` so `hfdflow.cpp:241` skips its `[min,max]→[0,1]` renorm (the silent corruptor). ~~Resolve the `HEIGHT_M (4000)` vs `BakeEnv._height_scale_m (9830.25)` default disagreement.~~ **RESOLVED — by deletion (natural-units law):** height VALUES are true meters on the plugs; there is NO vertical scale constant anywhere (no `height_scale_m`, no per-op exaggeration — exaggeration is AUTHORED via remap nodes), and only the horizontal `_extent_m` gives fields physicality (`hfdflow.h:117-119`; DSL side: `HeightField.EXTENT_M` only).
 - Feed the expression the **physical** `height_m`, never erosion `exaggerated_height_m`.
 - One frequency convention: drive the expr path off the per-meter `xz_m` basis so material `scale` and bake `frequency` mean the same thing.
 
@@ -120,64 +120,23 @@ There are **two complementary coupling directions**, and the **projection proble
 
 ## 7. Single-source authoring + LLM legibility
 
-- **Unified op library as an additive `@op` layer** over existing `P`/`T` callables (the registry SKILL.md describes **does not exist in code yet** — zero `@op` hits). Don't rewrite `_Ops`. Each portable op carries one canonical math def + per-target emitters; `P.fbm`/`T.Fbm` resolve to the same `OpInfo` → same noise to both targets.
+- **Unified op library as an additive `@op` layer** over existing `P`/`T` callables (a minimal shared `ork.hypergraph.registry` — `register_op`/`@op`/`get_op`/`list_ops` — has since SHIPPED as the ptex3d/hypersound extension hook; the `OpInfo`-grade introspection registry with `targets` annotations described in SKILL.md remains unbuilt). Don't rewrite `_Ops`. Each portable op carries one canonical math def + per-target emitters; `P.fbm`/`T.Fbm` resolve to the same `OpInfo` → same noise to both targets.
 - **Per-op `targets` annotation** + `registry.portable_core()` (enumerable, in LLM context + autocomplete). Almost everything is `{fragment,compute}`; only view-dependent **atoms** (`NV`/`eye`/`Cd`) are `{fragment}`. `fbm`/`fbm_aa` are `{fragment,compute}` (they route through `ctx.footprint`, §3).
 - **A `BakeCtx` typed wall** exposing the portable atoms (`P_object`, `uv`, `footprint`, world `P`/`N`) but **not** the view-dependent ones (`NV`/`eye`/`Cd`) so a bake author *cannot reach* them — far more reliable than docs. Note `fbm_aa`/`footprint` are deliberately *present* in `BakeCtx` (they port); the wall only hides what genuinely can't bake.
 
-## 8. Risks (ranked)
+## 8.–10. Risks / phased plan / key files — LANDED (compressed 2026-08-01)
 
-1. **Noise import-into-compute unproven** (gating) — no terrain compute module imports a libblock; `lib_mmnoise` carries a `sampler3D`. → split sampler-free `lib_pnoise`, smoke-test first (§4, Phase 0).
-2. **Capture auto-exposure** (`hfdflow.cpp:241`) silently rescales meters displacement → normalized delta + `pre_exposed` flag (§5).
-3. **Screen derivatives** — *downgraded* (§3 decision): AA is target-polymorphic via `ctx.footprint`, so `fbm`/`fbm_aa`/`aa_ramp` **port** (compute band-limits to texel size). Residual rejects are only view-dependent atoms (`NV`/`eye`/`Cd`) + a bare `fwidth()` of a non-footprint *derived* value (needs a grid finite-difference — deferred). Much smaller than first thought; no two-function split.
-4. **Coordinate/frequency/texel-center** mismatch → one physical basis in the prologue (§5).
-5. **Cook determinism** — `ExprModule.cookComputeHash` must `accumulateString(_body)` over the exact generated text; assert byte-identical emission across processes (free-threaded-Python set/dict order; `_emitter_deps` sorts, CSE is key()-memoized — assert it).
-6. **Serialization** — `_body` round-trips as a reflected `std::string` (precedent `CaptureModuleData::_channel`); idempotent under double `reshapeIOs`.
-7. **Cellular structs** — co-emit `ptex_voro_t` typedef into compute or restrict to vecN; reject `.fwedge`.
-
-## 9. Phased plan
-
-- **Phase 0 — noise + libblock-into-compute de-risk. ✅ DONE (gate GREEN).** Created sampler-free `lib_pnoise` (`pnoise.i2`); `ork.lev2/pyext/tests/llgfx/test_compute_pnoise.py` confirms `noise(vec3)` compiles + runs in a COMPUTE shader (lifecycle mirrors `test_terrain_bake.py`: `ecs.headless_appinit(use_subsystems=[…])` + `bindGfxToCurrentThread` — the `lev2appinit`/`loadingContext` path segfaults). The substrate is unblocked. **Noise packaging for Phase 1:** default to INLINE the libblock (proven, works regardless); switch to the shared `import "orkshader://pnoise.i2"` only if that variant compiled in the test run.
-- **Phase 1 — `hfbake`/`hfmask` (compute-only, unified noise + `ctx.footprint`). ✅ DONE — VERIFIED (built; `test_terrain_hfbake.py` bakes `stripes`+`mottle` and they render).** The unified-substrate spine works: a ptex3d SurfNode → `emit_compute_field` → compute shell → `ExprModule` → channel, with `lib_pnoise` `noise()` running in compute. C++ `hfdflow_module_expr.cpp` (generic `ExprModule`: reflected `_shadertext` w/ `%DIMU%/%EXTENT_M%/%HEIGHT_M%` holes, hashed in `cookComputeHash`) + `hfdflow.h` decl + `lev2_init` register + `pyext_gfx_terrain` bind. Python: `emit_compute_field`/`_bake_literal` + `ctx.footprint` atom (`dsl.py`), `compute_template.py` (shell + texel-center prologue, maps `lib_mmnoise→lib_pnoise`), `ops.expr_field`, `base.hfbake/hfmask`, and the **portable-core gate** (rejects `ctx.NV`/`eye`/`Cd` at trace time with a legible error — verified). Codegen validated pre-build (stripes=pure-ALU, mottle=`lib_pnoise` noise). Acceptance: `pyext/tests/llgfx/test_terrain_hfbake.py` bakes `assets/terrain/strata_bake.py` (stripes + mottle channels). **Deferred sub-item:** the `fbm`/`fbm_aa` collapse to a single footprint-aware `fbm` (the `ctx.footprint` atom + compute-shell `footprint` are in place, but `P.fbm` still emits the `lib_mmnoise`/`_ptex_fbm` form — plain `fbm`/`noise` bake fine; folding `fbm_aa` to read `ctx.footprint` is a small follow-up once a bake expr needs it).
-- **+ NormalizeModule (added).** `hfdflow_module_normalize.cpp` — explicit `[min,max]→[out_lo,out_hi]` rescale (GPU atomic min/max reduce + rescale; float plugs `out_lo`/`out_hi`); `T.normalize(node, out_lo, out_hi)`. The controllable counterpart to the flush's unconditional auto-exposure (FATAL #2): put the renorm where you want it; pairs with the future `pre_exposed` capture flag in Phase 2.
-- **Phase 1.5 — feature bake.** Add a **flow accumulation + flow-direction** module (shared with segmentation); export `slope`/`curvature`/`flow`/`terrace_id` via `hfbake`. Material samples them to drive projection (triplanar blend by slope, flow-aligned anisotropy). Proves Direction B + the projection architecture (§6).
-- **Phase 2 — `hfdisplacement` (geometric terraces, headline). ✅ IMPLEMENTED (pending `ork.build.py` + run).** `ExprModule` is now **multi-input** (`In0..In7`, sorter-tolerant when unconnected; bound contiguously slot 1.. ). New ctx atoms: `ctx.input(k)`, `ctx.height_m`, `ctx.extent_m`. **Convention: input 0 = the current height → the shell sets `ctx.P_object.y = in0·height_m` (physical)**, so the *same* `strata(ctx)` that shades a material also displaces — baked benches coincide with shaded bands (the unification). `base.hfdisplacement(expr, into, *extra, mask=)` wires `into`→In0 (+ extra→In1.. ), optional `into.masked_by(result, mask)`. Demo: `strata_bake.py` terraces an fbm base (`terrace_strata` snaps `ctx.P_object.y` to band elevations); `test_terrain_hfbake.py` checks the `terraced` channel. Pair with `T.normalize` / the future `pre_exposed` capture flag to keep the flush from auto-exposing the displaced height. Codegen validated pre-build (1-input shell: `sif_in0`, `opos.y=in0·height_m`).
-- **Phase 3 — seamless authoring + LLM legibility.** `@op` registry + `OpInfo.targets`, `registry.portable_core()`, `BakeCtx` typed wall (hides only view-dependent atoms), `sys._getframe` provenance + `OP_NOT_BAKE_SAFE` diagnostics. (`ctx.footprint` already landed in Phase 1.) Pure Python, no behavioral change.
-- **Phase 4 (optional) — ptex2d unification** (same emitter, different IO wrapper). Defer CPU indefinitely (headless compute).
-
-## 9a. Phase 0 — detailed spec (the gate)
-
-**Gate (GREEN):** a *compute* shader computes `noise(vec3)` from a shared, sampler-free noise libblock, and the value matches the *fragment's* `lib_mmnoise.noise(vec3)` for the same input. GREEN unblocks the entire substrate (ExprModule → hfbake → hfdisplacement → strata-terrace).
-
-**Risk: LOW** — the precedents nearly answer it: `pha` already inlines a libblock in a compute interface and runs (`pha.cpp:35` `libblock lib_pha{…}`, `:117` `cs_pha : iface : lib_pha`); `typ_mmnoise` is a bare `struct`, **no sampler uniform** (`misctools.i2:1-7`); `octavenoise`'s `sampler3D` is a function param `P.fbm` never calls; `noise(vec3)` is `floor/fract/dot/mix/sin` — the same primitives terrain's own fbm already compiles. The *only* genuine unknown is whether `import "orkshader://pnoise.i2"` resolves into a **compute** interface — a nicety with a proven inline fallback.
-
-**Step 1 — create `lib_pnoise` (sampler-free).** New `ork.data/platform_lev2/shaders/fxv2/pnoise.i2`:
-```
-libblock lib_pnoise {
-  float hash(float n){ ... }   // verbatim misctools.i2:30
-  float hash(vec2 p){ ... }    // :33
-  float noise(float x){ ... }  // :37
-  float noise(vec2 x){ ... }   // :44
-  float noise(vec3 x){ ... }   // :66   <- the one P.fbm calls
-}
-```
-Bodies copied **verbatim** from `lib_mmnoise` → ptex3d output stays byte-identical. No typeblock, no `octavenoise`, no sampler. (`lib_mmnoise` can later `import "orkshader://pnoise.i2"` and keep only `octavenoise`.)
-
-**Step 2 — smoke test (the gate).** Reuse the proven compute path; two variants:
-- **2a (guaranteed, inline):** a throwaway/temporary compute that *inlines* `lib_pnoise` text and `: iface : lib_pnoise`, writes `noise(vec3(xz_m, 0))` to a 1-channel SSBO; bake a trivial DSL; confirm it **compiles + dispatches + gives sane `[0,1]` values**. Mirrors `pha` exactly → must pass. Cheapest harness: a pyext test under `ork.lev2/pyext/tests/llgfx/`, or temporarily point the existing `fbm` module's shader at `lib_pnoise.noise(vec3)` and bake.
-- **2b (the nicety, import):** same but `import "orkshader://pnoise.i2"` + `: iface : lib_pnoise` instead of inlining. Compiles → shared-`.i2` import into compute works.
-
-**Step 3 — byte-identity.** Same `vec3` input → fragment `lib_mmnoise.noise` == compute `lib_pnoise.noise` (trivially true if verbatim). Confirm by repointing ptex3d `P.noise`/`P.fbm` to `lib_pnoise` (`dsl.py inherits` + add the import to `fxv2_template.py:43`) and checking an existing material (hmview/marble) renders pixel-identical.
-
-**Outcomes → Phase 1 packaging:**
-- 2b passes → share via `pnoise.i2` **import** in both fragment and the ExprModule (cleanest).
-- 2b fails, 2a passes → **inline** the libblock: `compute_template.py` emits the *same* `lib_pnoise` text the fragment uses (one Python string constant) — still one source, byte-identical.
-- both fail (very unlikely given `pha`) → a true dialect problem; investigate, but `noise(vec3)` uses only primitives terrain fbm already compiles.
-
-**Files:** new `pnoise.i2`; one smoke test (pyext test *or* throwaway module edit); optional ptex3d repoint (`dsl.py`, `fxv2_template.py`). **Needs `ork.build.py`** + a run. **Effort ~½ day, mostly confirmation.**
-
-## 10. Key files
-
-Lowering core `ptex3d/dsl.py:635-723`; fragment shell `ptex3d/fxv2_template.py:316-468`; generic-body precedent `hfdflow_module_erox.cpp:34-54`; noise `misctools.i2:66` (canonical) vs `hfdflow_module_fbm.cpp:41` (legacy); libblock-in-compute precedent `hfdflow_module_pha.cpp:117`; import resolver `vulkan_fxi_load.cpp:95-202`; auto-exposure `hfdflow.cpp:241-269`; sinks `terrain/base.py:74`; scale contract `terrain/manifest.py` + `hfdflow.h:104`; triplanar `ptex3d/functions.py:27`; slope/curvature `terrain/ops.py:86,107`; canonical material `assets/materials/hmview.py:106,134,156`.
+The expression-IR half of this doc SHIPPED and its risk/phase/key-file ledgers are retired (git
+history preserves the per-phase logs). Phase 0 (sampler-free `lib_pnoise` proven in compute), Phase 1
+(`hfbake`/`hfmask`, the generic `ExprModule`, `ctx.footprint`, the portable-core trace gate), the
+`NormalizeModule`, the feature-bake modules (`hfdflow_module_{slope,curvature,gradient,flow3d,flowerode}.cpp`)
+and Phase 2 (`hfdisplacement`, multi-input `ExprModule`) are all in the tree. The authoritative
+current-state documentation is **`ork.dox/hyper/HYPERTERRAIN.md`** (bake pipeline, natural units,
+manifest scale contract) with `ork.dox/core/dataflow.md` for the substrate — point there, not here.
+Still open from this plan: **Phase 3** (the `@op` `targets` annotations / `registry.portable_core()` /
+`BakeCtx` typed-wall introspection layer — a minimal `ork.hypergraph.registry` shipped, the
+introspection grade did not), **Phase 4** (ptex2d unification), and the `fbm`/`fbm_aa` collapse onto
+`ctx.footprint` (the atom landed; `P.fbm` still emits the `_ptex_fbm` form).
 
 ## 11. The structural spine — one transform-graph currency, shared ops, divergence boundaries
 

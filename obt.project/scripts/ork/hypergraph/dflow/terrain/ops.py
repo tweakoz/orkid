@@ -746,6 +746,157 @@ def pha(node, *packs, octaves=5, blend=1.0, name=None, **overrides):
     return _blend_out(node, TerrainNode(m, m.outputs.Out), blend)
 
 
+# --- in-graph scatter placement + building pads ------------------------------
+
+from collections import namedtuple as _nt
+# ScatterPlaceResult — the ScatterPlaceModule's three outputs. `pad_mask`/`pad_elev`
+# feed a stock MaskBlend (height' = mix(height, pad_elev, pad_mask)); `height` is the
+# input passthrough (so scatter_place composes). The .ogeo placement artifact is
+# exported by the module at bake (deterministic <assetcache>/terrain/<asset>/<export_name>.ogeo).
+ScatterPlaceResult = _nt("ScatterPlaceResult", ["pad_mask", "pad_elev", "height"])
+
+_TAU_OPS = 6.283185307179586
+_COLL_KINDS = {"sphere": 0, "capsule": 1, "box": 2, "cone": 3, "ring": 4}
+
+
+def scatter_place(height, *, types=None, mask=None, export_name=None, density=None, count=None,
+                  seed=0, align="up", yaw=(0.0, _TAU_OPS), scale=(1.0, 1.0), cutoff=0.0,
+                  jitter=1.0, max_points=6000000, lift=0.0, apron_m=8.0, footprints=None,
+                  yaw_from_field=None, colliders=None, assets=None, materials=None,
+                  lattice_m=0.0, lane_every=0, lane_m=0.0, yaw_mode="hash",
+                  cluster_pads=False, cluster_step_m=0.0, max_seam_m=1.0, name=None):
+    """IN-GRAPH scatter placement + cut-and-fill building PADS (terrain family). One
+    deterministic CPU module places against the PRE-flatten `height` (+ the per-type weight
+    fields) and emits PadMask/PadElev; a stock MaskBlend then flattens the terrace under each
+    footprint BEFORE the captures, so placement can never drift from its own pads (the fixpoint
+    trap post-bake rasterization falls into). Returns ScatterPlaceResult(pad_mask, pad_elev, height):
+
+        h = T.fbm(...) * 200.0
+        place = T.scatter_place(h, export_name="buildings", density=0.001,
+                                types={"house": flat_mask}, apron_m=10.0,
+                                footprints={"house": (6.0, 8.0)},
+                                colliders={"house": ("box", 6.0, 4.0, 8.0)})
+        h = T.mix(h, place.pad_elev, place.pad_mask)   # flatten under the pads
+        self.capture(h, "height")
+
+    The module ALSO exports the ScatterSet .ogeo itself (positions/xforms carry the PAD
+    elevation) — consumers (BulletShapeScatter / instance resolution) read it by export_name.
+
+      height        : the pre-flatten terrain node the placer samples (TRUE METERS).
+      types / mask  : {name: weight TerrainNode} (mutually exclusive weighted pick), or a
+                      single mask (1 type). type_id = declaration index (== the W0.. wire order).
+      export_name   : MANDATORY — the .ogeo artifact name consumers read (<export_name>.ogeo).
+      density/count : placement amount (exactly one) — points/m^2, or total points.
+      apron_m       : pad feather width (meters) around each footprint (smoothstep falloff).
+      footprints    : {name: (hx, hz)} pad half-extents (meters). A missing type gets a tiny pad.
+      align         : "up" (default; buildings sit flat on their pad) or "normal".
+      yaw           : (lo,hi) random yaw. IGNORED when yaw_from_field is wired.
+      yaw_from_field: optional TerrainNode — base yaw = hash(per-point field sample) -> a heading
+                      (e.g. a worley cell-id field: one heading per cell). Truncating-nearest sample.
+      colliders     : {name: ("sphere",r)|("capsule",r,h)|("box",x,y,z)|("cone",r,h)} per-item proxy.
+      scale/cutoff/jitter/seed/max_points/lift : as T scatter() (placement RNG is res-independent).
+
+    v2 aggregation controls (all default OFF -> byte-identical to v1):
+      lattice_m     : >0 snaps candidates to a village-yaw-aligned grid of this pitch (m)
+                      BEFORE the mask kill; same-cell candidates dedup to the strongest
+                      weight -> abutment chains + block rows (real pueblo party walls).
+      lane_every    : int N -> every Nth grid line widens its gap by lane_m (lanes between rows).
+      lane_m        : lane gap width (m) added at each Nth grid line.
+      yaw_mode      : "hash" (default) hashes the yaw_from_field value -> heading; "direct"
+                      treats the field value AS radians (field-composed contour/facade align).
+      cluster_pads  : True unions intersecting footprints into components with ONE grade plane
+                      each (member P.y rewritten), rejecting late candidates that would seam
+                      > max_seam_m against an admitted overlapping component (kills cross-level
+                      party-wall interpenetration). Replaces the v1 per-texel max-coverage rule.
+      cluster_step_m: >0 permits ONE terrace step when a component's natural spread exceeds it
+                      (default 0 = single plane per component).
+      max_seam_m    : max grade step (m) an admitted overlapping component tolerates (default 1.0).
+    """
+    g = graph_or_raise("ScatterPlace")
+    if not isinstance(height, TerrainNode):
+        raise TypeError(f"scatter_place expects a terrain node for height; got {type(height).__name__}")
+    if not export_name:
+        raise ValueError("scatter_place: export_name= is MANDATORY (consumers read the .ogeo by name)")
+    if (density is None) == (count is None):
+        raise ValueError("scatter_place: pass exactly one of density= (points/m^2) or count= (total points)")
+    if (types is None) == (mask is None):
+        raise ValueError("scatter_place: pass exactly one of types={name: weight} or mask=<TerrainNode>")
+    if mask is not None:
+        types = {"_": mask}
+    type_list = list(types.items())
+    if len(type_list) > 16:
+        raise ValueError(f"scatter_place: at most 16 types (got {len(type_list)})")
+    for tname, w in type_list:
+        if not isinstance(w, TerrainNode):
+            raise TypeError(f"scatter_place type {tname!r} weight must be a TerrainNode; got {type(w).__name__}")
+    declared = {str(t) for (t, _w) in type_list}
+
+    m = g.create(name or anon_name("scatterplace", g), _terrain.ScatterPlaceModule)
+    g.connect(m.inputs.Height, height.output_plug)
+    for k, (_tname, w) in enumerate(type_list):           # W0..W{K-1}, contiguous (type_id = index)
+        g.connect(getattr(m.inputs, "W%d" % k), w.output_plug)
+    if yaw_from_field is not None:
+        if not isinstance(yaw_from_field, TerrainNode):
+            raise TypeError(f"scatter_place yaw_from_field must be a TerrainNode; got {type(yaw_from_field).__name__}")
+        g.connect(m.inputs.YawField, yaw_from_field.output_plug)
+
+    m.seed = int(seed)
+    m.align = str(align)
+    m.yaw_lo = float(yaw[0]); m.yaw_hi = float(yaw[1])
+    m.scale_lo = float(scale[0]); m.scale_hi = float(scale[1])
+    m.cutoff = float(cutoff); m.jitter = float(jitter)
+    m.max_points = int(max_points); m.lift = float(lift)
+    m.apron_m = float(apron_m)
+    m.lattice_m = float(lattice_m); m.lane_every = int(lane_every); m.lane_m = float(lane_m)
+    m.yaw_mode = str(yaw_mode)
+    m.cluster_pads = bool(cluster_pads)
+    m.cluster_step_m = float(cluster_step_m); m.max_seam_m = float(max_seam_m)
+    m.export_name = str(export_name)
+    if density is not None:
+        m.density = float(density)
+    else:
+        m.count = int(count)
+    m.type_names = [str(t) for (t, _w) in type_list]
+
+    def _foot(d):
+        out = {}
+        for tname, fp in (d or {}).items():
+            if str(tname) not in declared:
+                raise ValueError(f"scatter_place footprints references unknown type {tname!r}")
+            hx, hz = (float(fp[0]), float(fp[1])) if len(fp) >= 2 else (float(fp[0]), float(fp[0]))
+            out[str(tname)] = "%g:%g" % (hx, hz)
+        return out
+    m.type_footprints = _foot(footprints)
+
+    coll_out = {}
+    for tname, cspec in (colliders or {}).items():
+        if str(tname) not in declared:
+            raise ValueError(f"scatter_place colliders references unknown type {tname!r}")
+        kind = _COLL_KINDS.get(str(cspec[0]).lower())
+        if kind is None:
+            raise ValueError("scatter_place collider kind must be sphere/capsule/box/cone")
+        dims = [float(x) for x in cspec[1:]] + [0.0, 0.0, 0.0]
+        coll_out[str(tname)] = "%d:%g:%g:%g" % (kind, dims[0], dims[1], dims[2])
+    m.type_colliders = coll_out
+
+    def _names(d, what):
+        out = {}
+        for tname, a in (d or {}).items():
+            if str(tname) not in declared:
+                raise ValueError(f"scatter_place {what} references unknown type {tname!r}")
+            nm = a if isinstance(a, str) else getattr(getattr(a, "gendata", None), "asset_name", "")
+            if not nm:
+                raise ValueError(f"scatter_place {what}[{tname!r}] needs an asset wrapper or name string")
+            out[str(tname)] = nm
+        return out
+    m.type_assets = _names(assets, "assets")
+    m.type_materials = _names(materials, "materials")
+
+    return ScatterPlaceResult(pad_mask=TerrainNode(m, m.outputs.PadMask),
+                              pad_elev=TerrainNode(m, m.outputs.PadElev),
+                              height=TerrainNode(m, m.outputs.Out))
+
+
 # --- binary (join) -----------------------------------------------------------
 
 def mix(a, b, t=0.5, name=None):

@@ -201,7 +201,7 @@ HandlerResult DockPanel::DoOnUiEvent(event_constptr_t ev) {
       break;
     case EventCode::END_DRAG:
       if (_drag_owner) {
-        _drag_owner->endPanelDrag(ev->miX, ev->miY);
+        _drag_owner->endPanelDrag(ev->miX, ev->miY, ev->_dragCanceled);
         _drag_owner = nullptr;
       }
       _push_on_titlebar = false;

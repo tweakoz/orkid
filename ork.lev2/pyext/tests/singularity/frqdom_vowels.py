@@ -22,15 +22,15 @@ def generateVowelDataset():
   irdataset = S.SpectralImpulseDataSet()
   strength = 64.0
   sirA = S.SpectralImpulseResponse()
-  sirA.vowelFormant('A',strength)
+  sirA.vowelFormant(48000,'A',strength)
   sirE = S.SpectralImpulseResponse()
-  sirE.vowelFormant('E',strength)
+  sirE.vowelFormant(48000,'E',strength)
   sirI = S.SpectralImpulseResponse()
-  sirI.vowelFormant('I',strength)
+  sirI.vowelFormant(48000,'I',strength)
   sirO = S.SpectralImpulseResponse()
-  sirO.vowelFormant('O',strength)
+  sirO.vowelFormant(48000,'O',strength)
   sirU = S.SpectralImpulseResponse()
-  sirU.vowelFormant('U',strength)
+  sirU.vowelFormant(48000,'U',strength)
   
   COUNT = 8
   S0 = COUNT//4

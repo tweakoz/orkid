@@ -34,8 +34,50 @@ struct XIRWriter {
       const std::vector<float>& roughness_values);
 };
 
+////////////////////////////////////////////////////////////////////////////////
+// XIRArrayWriter — the array-format container built ACROSS CALLS.
+//
+// A refilter cycle's container is one megabyte per roughness level plus the
+// diffuse chain; assembling it in one go is a double copy of the lot (payload
+// into the stream, streams into the datablock) and far more than a frame.
+// Levels are added as they are serialized and the container is emitted one
+// stream per emitNext(). writeXirDatablocksWithArray IS this run to
+// completion, so the bytes do not depend on how the caller paces it.
+//
+// Levels MUST be added in ascending index order: the stream order is the
+// container's chunk order.
+////////////////////////////////////////////////////////////////////////////////
+
+struct XIRArrayWriter {
+
+  XIRArrayWriter(
+      datablock_ptr_t diffuse_data,
+      const std::vector<float>& roughness_values,
+      size_t num_specular_levels);
+
+  void addSpecularLevel(size_t index, datablock_ptr_t specular_datablock);
+
+  // header, then one stream payload per call; false once the container is done
+  bool emitNext(datablock_ptr_t& out_datablock);
+  bool complete() const;
+
+  // how many emitNext() calls a container of `num_specular_levels` takes — a
+  // step plan needs this before the first level exists
+  static size_t emitStepCount(size_t num_specular_levels);
+
+  chunkfile::Writer _writer;
+  size_t _num_specular_levels = 0;
+  size_t _num_added           = 0;
+  size_t _emit_cursor         = 0;
+  bool _has_diffuse           = false;
+};
+
+using xirarraywriter_ptr_t = std::shared_ptr<XIRArrayWriter>;
+
+////////////////////////////////////////////////////////////////////////////////
+
 struct XIRReader {
-  
+
   // Read Radiance maps from XIR format - returns raw datablocks for deferred loading
   struct XIRData {
     datablock_ptr_t _diffuse_data;
@@ -49,5 +91,33 @@ struct XIRReader {
   
   static XIRData readXirDatablocks(datablock_ptr_t xir_data);
 };
+
+////////////////////////////////////////////////////////////////////////////////
+// XIRArrayReader — the array-format container decoded ACROSS CALLS.
+//
+// The mirror of XIRArrayWriter, and for the same reason: the container header,
+// roughness values and diffuse block are read on construction, each roughness
+// level's ~megabyte extraction is its own call. readXirDatablocks IS this run
+// to completion (v2 containers), so a sliced consumer sees the same bytes as
+// the load path.
+//
+// _data._valid means "the container parsed"; it does NOT mean every level has
+// been read — readSpecularLevel is what fills those in.
+////////////////////////////////////////////////////////////////////////////////
+
+struct XIRArrayReader {
+
+  XIRArrayReader(datablock_ptr_t xir_data);
+  ~XIRArrayReader();
+
+  // extracts level `level` and appends it to _data._specular_datablocks
+  void readSpecularLevel(int level);
+
+  XIRReader::XIRData _data;
+  chunkfile::DefaultLoadAllocator _allocator;
+  std::shared_ptr<chunkfile::Reader> _reader;
+};
+
+using xirarrayreader_ptr_t = std::shared_ptr<XIRArrayReader>;
 
 } // namespace ork::lev2::xir

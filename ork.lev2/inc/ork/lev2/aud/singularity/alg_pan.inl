@@ -18,13 +18,11 @@ struct panLR {
 
 inline panLR panBlend(float inp) { // inp = -1 .. +1 (0==center)
   panLR rval;
-  // todo constant power...
-  rval.lmix = (inp > 0) //
-                  ? lerp(0.5, 0, inp)
-                  : lerp(0.5, 1, -inp);
-  rval.rmix = (inp > 0) //
-                  ? lerp(0.5, 1, inp)
-                  : lerp(0.5, 0, -inp);
+  // constant power (quarter-sine): lmix^2+rmix^2 == 1 at all positions.
+  // same law as PANNER/PANNER2D/PANNER2DU::compute - keep in sync.
+  float pos = 0.5f + inp * 0.5f;
+  rval.lmix = cosf(pos * PI * 0.5f);
+  rval.rmix = sinf(pos * PI * 0.5f);
   return rval;
 }
 

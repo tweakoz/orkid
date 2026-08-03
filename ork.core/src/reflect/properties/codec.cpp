@@ -139,4 +139,62 @@ void encode_key(std::string& keystr_out, object::ObjectClass* const & key_inp) {
   logchan_rcodec->log("encode class<%p> key<%s>", (void*) key_inp, keystr_out.c_str());
 }
 ////////////////////////////////////////////////////////////////////////////////
+// varmap object codec table (see codec.h)
+////////////////////////////////////////////////////////////////////////////////
+namespace {
+using varobj_encoder_map_t = std::unordered_map<TypeId::hashtype_t, varobj_encoder_t>;
+using varobj_decoder_map_t = std::map<const rtti::Class*, varobj_decoder_t>;
+
+varobj_encoder_map_t& _varobj_encoders() {
+  static varobj_encoder_map_t the_map;
+  return the_map;
+}
+varobj_decoder_map_t& _varobj_decoders() {
+  static varobj_decoder_map_t the_map;
+  return the_map;
+}
+} // namespace
+////////////////////////////////////////////////////////////////////////////////
+void registerVarObjectCodec(
+    const TypeId& vartype,        //
+    const rtti::Class* clazz,     //
+    varobj_encoder_t encoder,     //
+    varobj_decoder_t decoder) {
+  _varobj_encoders()[vartype._hashed] = encoder;
+  _varobj_decoders()[clazz]           = decoder;
+  logchan_rcodec->log("registerVarObjectCodec class<%p> vartype<%s>", (const void*)clazz, vartype._typename.c_str());
+}
+////////////////////////////////////////////////////////////////////////////////
+object_ptr_t varObjectEncode(const varmap::var_t& val_inp) {
+  auto typeid_of_val = val_inp.getOrkTypeId();
+  auto it            = _varobj_encoders().find(typeid_of_val._hashed);
+  if (it == _varobj_encoders().end())
+    return nullptr;
+  return it->second(val_inp);
+}
+////////////////////////////////////////////////////////////////////////////////
+bool varObjectDecode(object_ptr_t obj_inp, varmap::var_t& val_out) {
+  if (nullptr == obj_inp)
+    return false;
+  // walk to the nearest registered ancestor — a scene may hand over a subclass
+  // of the type whose codec was registered.
+  const rtti::Class* clazz = obj_inp->GetClass();
+  while (clazz) {
+    auto it = _varobj_decoders().find(clazz);
+    if (it != _varobj_decoders().end()) {
+      it->second(obj_inp, val_out);
+      return true;
+    }
+    clazz = clazz->Parent();
+  }
+  return false;
+}
+////////////////////////////////////////////////////////////////////////////////
+void varObjectDecodeFailure(object_ptr_t obj_inp) {
+  throw std::runtime_error(FormatString(
+      "varmap object decode: no codec registered for class <%s> — the codec that WROTE this "
+      "value is missing (register it with reflect::serdes::registerVarObjectCodec<ptr_t>()).",
+      obj_inp ? obj_inp->GetClass()->Name().c_str() : "nil"));
+}
+////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::reflect::serdes

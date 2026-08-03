@@ -17,6 +17,30 @@ device_ptr_t device() {
   return _gdevice;
 }
 ////////////////////////////////////////////////////////////////////////////////
+// The center head view, composed the way _updatePosesCommon composes it for the
+//  eye cameras (cmv = usermtx*base*hmd), with the caller's rig view standing in
+//  for usermtx. A device that has never published an "hmd" pose (NoVR desktop,
+//  no VR at all) yields the rig view itself — no identity compose, so a non-VR
+//  consumer keeps the exact matrix it handed in.
+////////////////////////////////////////////////////////////////////////////////
+fmtx4 composeHeadViewMatrix(const fmtx4& rig_view_matrix) {
+  auto dev = _gdevice;
+  if (not dev or not dev->_active)
+    return rig_view_matrix;
+  fmtx4 hmd;
+  {
+    // _posemap is written by the device's pose update (render/sensor side) and
+    //  read here from whichever thread owns the consumer (the ECS update thread
+    //  for the audio listener) — same lock the pose update takes.
+    std::lock_guard<std::mutex> lock(dev->_posemap_mutex);
+    auto it = dev->_posemap.find("hmd");
+    if (it == dev->_posemap.end())
+      return rig_view_matrix;
+    hmd = it->second;
+  }
+  return fmtx4::multiply_ltor(rig_view_matrix, fmtx4::multiply_ltor(dev->_baseMatrix, hmd));
+}
+////////////////////////////////////////////////////////////////////////////////
 ork::LockedResource<VrTrackingNotificationReceiver_set> gnotifset;
 ////////////////////////////////////////////////////////////////////////////////
 void addVrTrackingNotificationReceiver(VrTrackingNotificationReceiver_ptr_t recvr) {
@@ -165,12 +189,11 @@ void Device::_predictHmdPose() {
   }
 
   ////////////////////////////////////////
-  // build the view matrix (optional conjugate, then inverse)
+  // build the view matrix (pose world matrix, then inverse)
   ////////////////////////////////////////
 
-  fquat quse = _poseConjugate ? q.conjugate() : q;
   fmtx4 world;
-  world.compose(pos, quse, 1.0f);
+  world.compose(pos, q, 1.0f);
   std::lock_guard<std::mutex> lock(_posemap_mutex);
   _posemap["hmd"] = world.inverse();
 }

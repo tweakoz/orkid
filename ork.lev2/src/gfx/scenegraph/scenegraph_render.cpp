@@ -284,6 +284,7 @@ void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
     CDD->_properties["simrunning"_crcu].set<bool>(true);
     CDD->_properties["DB"_crcu].set<const DrawQueue*>(DB);
     CDD->_cimpl = _compositorImpl;
+    _invokeFramePrologueHooks(context); // once-per-frame system hooks, before assemble
     {
       RenderPhaseScope _s("assemble");
       _compositorImpl->assemble(*CDD);
@@ -482,6 +483,7 @@ void Scene::_renderWithAcquiredDrawQueueForRendering(acqdrawbuffer_constptr_t ac
     CDD->_properties["simrunning"_crcu].set<bool>(true);
     CDD->_properties["DB"_crcu].set<const DrawQueue*>(DB);
     CDD->_cimpl = _compositorImpl;
+    _invokeFramePrologueHooks(context); // once-per-frame system hooks, before assemble
     _compositorImpl->assemble(*CDD);
     _compositorImpl->composite(*CDD);
     CDD->_RCFD = nullptr;
@@ -520,6 +522,7 @@ void Scene::renderWithStandardCompositorFrame(standardcompositorframe_ptr_t sfra
   sframe->compositor = _compositorImpl;
   sframe->renderer   = _currentRenderer();
   sframe->passdata   = _topCPD;
+  _invokeFramePrologueHooks(context); // once-per-frame system hooks, before assemble
   sframe->render();
 }
 

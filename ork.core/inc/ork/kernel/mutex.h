@@ -106,8 +106,6 @@ private:
 namespace ork {
 
 template <typename T> class LockedResource {
-  using mutable_atomicop_t = std::function<void(T&)>;
-  using const_atomicop_t = std::function<void(const T&)>;
 
   mutable ork::recursive_mutex _mutex;
   std::shared_ptr<T> _resource;
@@ -148,14 +146,30 @@ public:
   int GetLockCount() const {
     return _mutex.GetLockCount();
   }
-  void atomicOp(const mutable_atomicop_t& op) {
+  // atomicOp/tryAtomicOp are TEMPLATES, not std::function sinks: the call site's
+  // callable is invoked in place, so a capture over the std::function small-object
+  // buffer (16 bytes) no longer heap-allocates on every call — a cost paid by every
+  // atomicOp in the engine, including per-wake ones on the opq worker path.
+  // Selection is unchanged: a non-const resource takes the write lock below, a
+  // const one takes the read lock and still sees a const T&.
+  template <typename callable_t> void atomicOp(callable_t&& op) {
     LockForWrite();
     op(*_resource);
     UnLock();
   }
-  void atomicOp(const const_atomicop_t& op) const {
-    LockForRead();
+  // Non-blocking variant: acquire the lock only if immediately available. Returns
+  // true (op ran) or false (lock held elsewhere, op not run). Lets a caller that
+  // must keep servicing another queue while it waits avoid a hard block.
+  template <typename callable_t> bool tryAtomicOp(callable_t&& op) {
+    if (not _mutex.TryLock())
+      return false;
     op(*_resource);
+    UnLock();
+    return true;
+  }
+  template <typename callable_t> void atomicOp(callable_t&& op) const {
+    const T& resource = LockForRead();
+    op(resource);
     UnLock();
   }
   void atomicWrite(const T& rhs) {

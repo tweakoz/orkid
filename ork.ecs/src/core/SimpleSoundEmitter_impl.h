@@ -35,8 +35,14 @@ struct ActiveSimpleVoice {
 
   // One-shot duration tracking — triggers keyOff when sample finishes
   float _sampleDuration          = 0.0f;  // seconds (0 = looping/unknown)
-  float _startTime               = 0.0f;
+  float _startTime               = 0.0f;  // system elapsed time at keyOn
   bool _keyOffSent               = false;
+
+  // an empty programInst layer list means "keyOn not serviced yet" BEFORE the
+  //  audio thread has built the layers and "voice is over" after — latch the
+  //  live observation so the two cannot be confused (they were, and one-shots
+  //  were then never retired).
+  bool _layersSeen               = false;
 
   // Per-voice fade gain ramp (linear, 1.0 = full volume)
   float _fadeGainLinear          = 1.0f;
@@ -138,6 +144,9 @@ private:
   const SimpleSoundEmitterSystemData& _SCD;
   std::unordered_set<SimpleSoundEmitterComponent*> _components;
   std::unordered_map<std::string, PreloadedSimpleSound> _preloadedSounds;
+
+  // system clock the per-voice one-shot keyOff timer is measured against
+  float _systemElapsedTime = 0.0f;
 
   // Camera access for listener matrix
   SceneGraphSystem* _sgSystem = nullptr;

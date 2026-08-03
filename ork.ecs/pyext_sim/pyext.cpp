@@ -73,6 +73,13 @@ int _ecssim_exec_module(PyObject *m) {
 static PyModuleDef_Slot _ecssim_slots[] = {
     {Py_mod_exec, (void*)_ecssim_exec_module},
     {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
+    // FREE-THREADING DECLARATION (the hand-rolled analog of pybind11's
+    // py::mod_gil_not_used(), which _core/_lev2/_ecs pass to PYBIND11_MODULE).
+    // Without it CPython 3.14t silently RE-ENABLES the GIL on the first import
+    // of this extension — and this module is imported BY the ECS sub-interpreter,
+    // so the re-enable re-arms the sub-interpreter deadlock even when PYTHON_GIL
+    // is absent from the environment. See test_gil_ecs_regression.py.
+    {Py_mod_gil, Py_MOD_GIL_NOT_USED},
     {0, nullptr}
 };
 static struct PyModuleDef orkengine_ecssim_module = {

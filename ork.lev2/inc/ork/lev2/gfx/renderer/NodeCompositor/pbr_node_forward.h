@@ -23,6 +23,9 @@ public:
 
   void doGpuInit(lev2::Context* pTARG, int w, int h) final;
   void DoRender(CompositorDrawData& drawdata) final;
+  // once-per-composited-frame: light enumeration + SSBO packing, shadow-map
+  // updates, env-probe captures (view-independent — shared by all eyes)
+  void renderPrologue(CompositorDrawData& drawdata) final;
 
   lev2::rtbuffer_ptr_t GetOutput() const final;
   lev2::rtgroup_ptr_t GetOutputGroup() const final;
@@ -36,6 +39,13 @@ public:
 
   svar256_t _impl;
   pbr::commonstuff_ptr_t _pbrcommon;
+
+  // SINGLE-PASS STEREO (SPVR): the primary render targets become 2-layer multiview
+  //  groups and the whole pass chain runs ONCE for both eyes. Declared by the preset
+  //  that pairs this node with SinglePassStereoVrOutputNode, BEFORE gpuInit — the
+  //  layer count is baked into every RtBuffer at construction, so it is not a
+  //  per-frame switch.
+  bool _singlePassStereo = false;
 
 };
 

@@ -130,6 +130,14 @@ class SdfNode:
     handles disconnected/high-genus topology). `weld` is forced off for blocky (hard per-face normals)."""
     return self._hm.sdf_to_mesh(self, weld=weld, blocky=blocky)
 
+  def to_mesh_clean(self, adaptivity=0.5, unwrap=True, isovalue=0.0, weld_tol=0.0):
+    """SHAPE-AWARE clean remesh (the low-poly / good-UV terminal): openvdb curvature-adaptive
+    volumeToMesh -> ~20k clean quad-dominant faces (vs marching-tets' uniform ~voxel^2 soup),
+    then (unwrap=True) xatlas UV-unwrap for texture baking. `adaptivity` 0..1 (0=detail,1=flat).
+    One-shot CPU bake (not for animated SDF). gids do NOT survive — re-gid by band after."""
+    return self._hm.sdf_to_mesh_clean(self, adaptivity=adaptivity, unwrap=unwrap,
+                                      isovalue=isovalue, weld_tol=weld_tol)
+
 
 class SdfContext:
   """Bound SDF builder (see hm.sdf). Holds the brick framing shared by every shape."""

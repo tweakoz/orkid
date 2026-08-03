@@ -47,6 +47,24 @@ public:
   virtual void composite(CompositorDrawData& drawdata) {
   }
 
+  /////////////////////////////////////////////////////////////////////////////
+  // DISPLAY COMPENSATION — the HARDWARE half of exposure. It is a property of
+  // the panel and its optics (a headset's pancake stack and a desk monitor want
+  // different constants off the SAME rendered frame), it is constant for that
+  // hardware, and it has nothing to do with what is in the scene. That is why it
+  // lives here, per OUTPUT, and not in the shared tone-map stage: the
+  // content-driven half is PostFxNodeACES's scene adaptation, and dialling one
+  // to fix the other is a hidden bug, not a workaround.
+  //
+  // IDENTITY, AND INERT, ON THE DESKTOP TODAY — deliberately. The desktop
+  // output has no transfer stage at all (the frame goes to an 8-bit store with
+  // no OETF applied), so there is nowhere honest to apply a compensation, and
+  // tuning this constant until a monitor looks right would bake a display
+  // transfer into a tone-mapping term. This field is the seat that transfer
+  // stage plugs into when it lands; until then it is written down and read by
+  // nothing. Do not tune it.
+  float _displayCompensation = 1.0f;
+
   bool _flipY = true;
 
   compdrawdata_fn_t _onBeginAssemble = nullptr;
@@ -69,6 +87,17 @@ public:
   ~RenderCompositingNode();
   void gpuInit(lev2::Context* pTARG, int w, int h);
   void Render(CompositorDrawData& drawdata);
+  // Frame PROLOGUE: view-independent per-frame render work (light enumeration,
+  //  shadow-map updates, env-probe captures, ...). Invoked per assemble from
+  //  NodeCompositingTechnique::assemble, BEFORE the assembler's view fan-out;
+  //  implementations dedup their work to once per CONTEXT frame via
+  //  Context::GetTargetFrame() — multiple assembles per frame are legitimate
+  //  (shared-scene multi-viewport repaints), as are N Render() calls per
+  //  assemble (once per eye under DualMonoVr): frame-scoped work still runs
+  //  once. _frameIndex below increments per Render() i.e. per EYE — never
+  //  use it for frame identity. Default no-op.
+  virtual void renderPrologue(CompositorDrawData& drawdata) {
+  }
   virtual lev2::rtbuffer_ptr_t GetOutput() const {
     return nullptr;
   }

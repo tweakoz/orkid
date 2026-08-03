@@ -188,6 +188,11 @@ class RoadScene(Scene):
     ##########################
 
     self.terrain_collider(terra, friction=1.0, restitution=1.0)
+    # WALKABLE ROAD (physics-proxy law): the ribbon proxy swept from the street_spine
+    # artifact (route_spine export="roadshills") — deck + shoulders, NOT the render mesh.
+    # lift_m single-sources LIFT_M: the same number drives the RoadLift VS displace above,
+    # so the collider deck sits exactly under the rendered deck.
+    self.spine_collider("roadshills", shoulder_m=3.0, lift_m=LIFT_M, ground_asset="terra", friction=0.95)
     self.walker(
         spawn         = vec3(SPAWN_X, SPAWN_Y, SPAWN_Z),
         radius        = 0.35,

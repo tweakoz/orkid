@@ -330,6 +330,18 @@ struct Drawable {
   // override for VIEW-DEPENDENT GPU work such as a frustum-cull compute feeding an indirect draw.
   virtual void onPreRender(lev2::Context* ctx, const CameraMatrices& cammtx) const {}
 
+  // Per-FRAME sun-shadow cull hook (cascade-cull fix). Invoked ONCE per composited frame from the
+  // forward prologue (Scene::shadowCull), with a UNION sun camera enclosing every cascade slice, so a
+  // GPU-culled drawable can compact a SEPARATE "shadow" survivor set (off-view casters kept) that the
+  // sun cascade depth passes consume instead of the eye-culled set. Default no-op; only GPU-culled
+  // instanced drawables (ComputeDrawable / InstancedRigidPrimitiveDrawable) override. The eye path is
+  // untouched — the color pass still reads the eye set, so its output is byte-identical.
+  virtual void onShadowPreRender(lev2::Context* ctx, const CameraMatrices& cammtx) const {}
+  // true iff this drawable runs a GPU cull whose survivors feed an indirect draw — i.e. it needs the
+  // per-frame shadow cull above. Scene::shadowCull skips the whole (submit+wait) dispatch phase when
+  // NO drawable wants it, so sunless / non-culled scenes stay bit-for-bit unchanged.
+  virtual bool wantsShadowCull() const { return false; }
+
   void SetUserDataA(var_t data) {
     _implA = data;
   }

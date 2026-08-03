@@ -199,8 +199,11 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
   auto RCFD       = RCID.rcfd();
   auto CIMPL      = RCFD->topCompositor();
   const auto& CPD = CIMPL->topCPD();
-  auto is_stereo  = CPD.isSinglePassStereo();
-  OrkAssert(not is_stereo);
+  // SINGLE-PASS STEREO: this drawable is a live sub-render (an offscreen billboard
+  //  capture) plus a blit of the result into the scene. Both halves are driven by ONE
+  //  camera — the CPD's mono/center camera under stereo — so the impostor keeps the
+  //  view-0 basis it has always had. Per-eye impostor views are a pixel-changing change
+  //  and are out of scope here.
   auto monocams           = CPD.cameraMatrices();
   fvec2 VIEWPORT_PLV      = fvec2(CPD._width, CPD._height);
   auto VP                 = RCFD->userPropertyAs<fmtx4>("VPMATRIX"_crcu);
@@ -271,6 +274,13 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
   RCFD->setUserProperty("RCFD_Camera_VP_Mono"_crcu,SUBVP);
   RCFD->setUserProperty("RCFD_Camera_IVP_Mono"_crcu,SUBVP.inverse());
 
+  // A7 — the sub-renders below target this drawable's OWN single-layer RtGroups from a
+  //  single sub-camera. The stereo flag on the active CPD must not leak into them: it
+  //  selects per-view pipelines and a multiview pass shape neither RtGroup can satisfy.
+  //  Same save/force-false/restore the particle gradient bake uses.
+  auto& MUTABLE_CPD = (CompositingPassData&)CPD;
+  const bool prev_stereo = MUTABLE_CPD.isSinglePassStereo();
+  MUTABLE_CPD.setSinglePassStereo(false);
 
   if (RTG) {
 
@@ -358,6 +368,10 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
       ip++;
     } // if(RTG){
   } // for( auto p : _impdata->_user_passes ){
+
+  // sub-renders done — the blit below IS a scene draw and goes back under whatever pass
+  //  shape the compositor pushed.
+  MUTABLE_CPD.setSinglePassStereo(prev_stereo);
 
   ////////////////////////////////////////////
   // blit pass

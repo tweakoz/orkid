@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include "headers/vulkan_ctx.h"
+#include "vulkan_wedge.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
@@ -200,9 +201,9 @@ void VulkanFenceObject::reset() {
 
 ///////////////////////////////////////////////////
 
-void VulkanFenceObject::wait() {
+void VulkanFenceObject::wait(const char* site) {
   logchan_vksynch->log("FENCE: wait: waiting for fence %p", (void*)_vkfence);
-  vkWaitForFences(_ctxVK->_vkdevice, 1, &_vkfence, true, UINT64_MAX);
+  waitFenceBounded(_ctxVK->_vkdevice, _vkfence, site, wedgeFrame(_ctxVK));
   logchan_vksynch->log("FENCE: wait: fence %p wait complete", (void*)_vkfence);
   for (auto item : _onReached) {
     item();

@@ -44,6 +44,7 @@ SUITES = [
     ("connect",        "test_terrain_connect"),
     ("topology_honesty", "test_terrain_topology_honesty"),
     ("scatter_parity", "test_terrain_scatter_parity"),
+    ("scatter_place",  "test_terrain_scatter_place"),
     ("instedge",       "test_hypermesh_instedge"),
 ]
 

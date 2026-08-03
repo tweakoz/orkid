@@ -62,6 +62,8 @@ void GlobalSynthSystemData::describeX(SystemDataClass* clazz) {
   clazz->directObjectMapProperty("BusConfigs", &GlobalSynthSystemData::_busConfigs)
       ->annotate<ConstString>("editor.factorylistbase", "SynthBusConfig");
   clazz->floatProperty("MasterGainDB", float_range{-96, 24}, &GlobalSynthSystemData::_masterGainDB);
+  clazz->intProperty("VoiceStealPolicy", int_range{0, 3}, &GlobalSynthSystemData::_voiceStealPolicy);
+  clazz->intProperty("VoiceHeadroom", int_range{0, kmaxlayerspersynth / 2}, &GlobalSynthSystemData::_voiceHeadroom);
 }
 
 GlobalSynthSystemData::GlobalSynthSystemData() {
@@ -115,6 +117,15 @@ bool GlobalSynthSystem::_onActivate(Simulation* psi) {
     syn->_masterGain = masterLin;
   });
 
+  // the knobs are read by the audio thread on every allocLayer, so they land
+  //  through the event queue at a control-pass boundary like the master gain.
+  auto policy   = VoiceStealPolicy(_SCD._voiceStealPolicy);
+  int headroom  = _SCD._voiceHeadroom;
+  syn->addEvent(0, [syn, policy, headroom]() {
+    syn->_stealPolicy   = policy;
+    syn->_voiceHeadroom = headroom;
+  });
+
   return true;
 }
 
@@ -134,7 +145,11 @@ void GlobalSynthSystem::_onDeactivate(Simulation* inst) {
       syn->setEffect(bus, "none");
     }
   }
-  syn->addEvent(0, [syn]() { syn->_masterGain = 1.0f; });
+  syn->addEvent(0, [syn]() {
+    syn->_masterGain    = 1.0f;
+    syn->_stealPolicy   = VoiceStealPolicy::PRIORITY;
+    syn->_voiceHeadroom = 0;
+  });
 }
 
 ///////////////////////////////////////////////////////////////////////////////

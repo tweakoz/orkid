@@ -38,12 +38,16 @@ def _screen_dim_of(ev):
         return [int(round(sd[0])), int(round(sd[1]))]
 
 
-def record_from_event(frame, ev):
+def record_from_event(frame, ev, win=None):
     """Build one normalized, JSON-ready record dict from a duck-typed event.
 
     Reads every field eagerly (the primary window mutates one shared Event in
     place — see spec trap #1 — so the snapshot must be taken at tap time). Only
     ints, strings and int-lists land in the dict, so serialization is stable.
+
+    `win` (optional str) tags the source window: ABSENT means the primary
+    window; secondary windows carry the recorder-assigned sticky key ("sec1",
+    "sec2", ...). Additive/advisory — playback ignores it.
     """
     code = int(ev.code)
     name = eventcodes.code_name_for(code)
@@ -52,6 +56,8 @@ def record_from_event(frame, ev):
         "code": code,
         "code_name": name,
     }
+    if win:
+        rec["win"] = str(win)
     cls = eventcodes.class_for_name(name)
     if cls == eventcodes.CLASS_KEY:
         rec["keycode"] = int(ev.keycode)
@@ -131,9 +137,9 @@ class Session:
 
     # -- construction --------------------------------------------------------
 
-    def add_event(self, frame, ev):
+    def add_event(self, frame, ev, win=None):
         """Snapshot a duck-typed event at `frame` and append it as a record."""
-        rec = record_from_event(frame, ev)
+        rec = record_from_event(frame, ev, win)
         # adopt the record-time screen_dim from the first event that reports one,
         # unless a header screen_dim was set explicitly.
         if self._screen_dim == [0, 0]:

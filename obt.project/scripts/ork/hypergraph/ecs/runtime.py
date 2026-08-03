@@ -133,6 +133,14 @@ class EcsRuntime:
     """Ensure scene_data has a SceneGraphSystemData with defaults.
 
     params: optional dict of overrides for declareParams.
+
+    Defaults are SET-IF-ABSENT: declareParams is assignment into the user
+    params, so applying the dict unconditionally would silently replace every
+    value the scene authored (that is the defect this method used to have).
+    Mirrors the C++ default_if_absent in AssetSystem::materializeAndWireScene —
+    author values always win, only absent keys are filled. An explicit `params`
+    from the caller IS a deliberate runtime override and still wins, but a
+    collision with an authored value says so out loud.
     """
     sgsys_data = None
     for s in self.scene_data.systemDatas:
@@ -155,9 +163,31 @@ class EcsRuntime:
       "use_float_color_buffer": True,
       "clearcolor": vec3(0.08, 0.08, 0.1),
     }
-    if params:
-      defaults.update(params)
-    sgsys_data.declareParams(defaults)
+    overrides = dict(params) if params else {}
+    to_declare = {}
+    for key, val in defaults.items():
+      if key in overrides:
+        continue
+      if not sgsys_data.hasParam(key):
+        to_declare[key] = val
+    authored_view = None
+    for key, val in overrides.items():
+      if sgsys_data.hasParam(key):
+        # The authored value is only read back to NAME it in the warning;
+        # userParams win the generateSceneGraphParams merge, so for a key
+        # known present that lookup returns exactly what the scene authored.
+        if authored_view is None:
+          authored_view = self.scene_data.generateSceneGraphParams()
+        try:
+          was = authored_view[key]
+        except Exception:
+          was = "<unreadable>"
+        print("ensure_scenegraph_system: RUNTIME OVERRIDE of scene-authored "
+              "param '%s': authored %s -> runtime %s" % (key, was, val),
+              flush=True)
+      to_declare[key] = val
+    if to_declare:
+      sgsys_data.declareParams(to_declare)
 
   def create_scenegraph(self, enable_pick=False, sg_params=None):
     """Create a fresh scenegraph + layer. Returns (sg, layer).

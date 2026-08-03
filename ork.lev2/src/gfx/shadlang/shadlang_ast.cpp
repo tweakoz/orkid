@@ -225,6 +225,37 @@ void InheritanceTracker::_processNode(astnode_ptr_t node) {
     }
   }
   //////////////////////////////////////////////////////////////////////
+  else if (auto as_tskif = std::dynamic_pointer_cast<SemaInheritTaskInterface>(node)) {
+    auto INHID = as_tskif->typedValueForKey<std::string>("inherit_id").value();
+    auto it    = _set_inherited_interfaces.find(INHID);
+    if(0)printf("_processNode inheritance TSKIF<%s>\n", INHID.c_str());
+    if (it == _set_inherited_interfaces.end()) {
+      _set_inherited_interfaces.insert(INHID);
+      auto IFACE = _translation_unit->find<TaskInterface>(INHID);
+      OrkAssert(IFACE);
+      _inherited_ifaces.push_back(IFACE);
+      if (_onInheritInterface)
+        _onInheritInterface(INHID, IFACE);
+    } else {
+      // task interface already inherited
+    }
+  }
+  //////////////////////////////////////////////////////////////////////
+  else if (auto as_tskpld = std::dynamic_pointer_cast<SemaInheritTaskPayload>(node)) {
+    auto INHID = as_tskpld->typedValueForKey<std::string>("inherit_id").value();
+    auto it    = _set_inherited_payloads.find(INHID);
+    if (it == _set_inherited_payloads.end()) {
+      _set_inherited_payloads.insert(INHID);
+      auto PLD = _translation_unit->find<TaskPayload>(INHID);
+      OrkAssert(PLD);
+      _inherited_payloads.push_back(PLD);
+      if (_onInheritTaskPayload)
+        _onInheritTaskPayload(INHID, PLD);
+    } else {
+      // payload already inherited
+    }
+  }
+  //////////////////////////////////////////////////////////////////////
   else if (auto as_sset = std::dynamic_pointer_cast<SemaInheritSamplerSet>(node)) {
     auto INHID    = as_sset->typedValueForKey<std::string>("inherit_id").value();
     auto ast_uset = _translation_unit->find<SHAST::SamplerSet>(INHID);
@@ -355,6 +386,18 @@ void InheritanceTracker::fetchInheritances(astnode_ptr_t parent_node) {
       OrkAssert(IFACE);
       fetchInheritances(IFACE);
       _processNode(as_cif);
+    }
+    //////////////////////////////////////////////////////////////////////
+    else if (auto as_tskif = std::dynamic_pointer_cast<SemaInheritTaskInterface>(c)) {
+      auto INHID = as_tskif->typedValueForKey<std::string>("inherit_id").value();
+      auto IFACE = _translation_unit->find<TaskInterface>(INHID);
+      OrkAssert(IFACE);
+      fetchInheritances(IFACE);
+      _processNode(as_tskif);
+    }
+    //////////////////////////////////////////////////////////////////////
+    else if (auto as_tskpld = std::dynamic_pointer_cast<SemaInheritTaskPayload>(c)) {
+      _processNode(as_tskpld); // non-recursive: a payload is a flat data block
     }
     //////////////////////////////////////////////////////////////////////
     else if (auto as_sset = std::dynamic_pointer_cast<SemaInheritSamplerSet>(c)) {

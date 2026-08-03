@@ -431,6 +431,20 @@ ComputeShader <|[
     CompoundStatement : "com_statements"
 ]|>
 
+MeshShader <|[
+    KW_MSHSHADER
+    [ IDENTIFIER ] : "msh_name"
+    zom{ InheritListItem } : "msh_dependencies"
+    CompoundStatement : "msh_statements"
+]|>
+
+TaskShader <|[
+    KW_TSKSHADER
+    [ IDENTIFIER ] : "tsk_name"
+    zom{ InheritListItem } : "tsk_dependencies"
+    CompoundStatement : "tsk_statements"
+]|>
+
 UniformSet <|[
   KW_UNISET
   [ IDENTIFIER ] : "uniset_name"
@@ -574,6 +588,26 @@ ComputeInterface <|[
   R_CURLY
 ]|>
 
+TaskInterface <|[
+  KW_TSKIFACE
+  [ IDENTIFIER ] : "tskif_name"
+  zom{ InheritListItem } : "tskif_dependencies"
+  L_CURLY
+  zom{ InterfaceItem }
+  R_CURLY
+]|>
+
+// the task->mesh amplification payload. Declared ONCE and inherited by BOTH the task
+// stage (which writes it) and the mesh stage (which reads it) — GLSL spells the
+// declaration identically in both, so there is no per-stage direction to model.
+TaskPayload <|[
+  KW_TSKPAYLOAD
+  [ IDENTIFIER ] : "tskpld_name"
+  L_CURLY
+  DataDeclarations : "tskpld_decls"
+  R_CURLY
+]|>
+
 StorageInterfaceItemName <|[
     [ IDENTIFIER ] : "sif_item_name"
 ]|>
@@ -614,7 +648,7 @@ StateBlock <|[
   R_CURLY
 ]|>
 
-pass_binding_key <| sel{  KW_VTXSHADER KW_GEOSHADER KW_FRGSHADER KW_STATEBLOCK } |>
+pass_binding_key <| sel{  KW_VTXSHADER KW_GEOSHADER KW_MSHSHADER KW_TSKSHADER KW_FRGSHADER KW_STATEBLOCK } |>
 
 pass_binding <|[
   pass_binding_key EQUALS IDENTIFIER SEMICOLON
@@ -692,6 +726,8 @@ Translatable <|
     GeometryShader 
     FragmentShader 
     ComputeShader 
+    MeshShader 
+    TaskShader 
     SamplerSet 
     UniformSet 
     UniformBlk 
@@ -699,6 +735,8 @@ Translatable <|
     GeometryInterface
     FragmentInterface 
     ComputeInterface
+    TaskInterface
+    TaskPayload
     StorageInterface
     StateBlock
     Technique

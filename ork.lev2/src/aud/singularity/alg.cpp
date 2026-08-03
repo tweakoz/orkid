@@ -11,6 +11,8 @@
 #include <ork/lev2/aud/singularity/konoff.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
 #include <ork/lev2/aud/singularity/hud.h>
+#include <ork/lev2/aud/singularity/keyon_prof.h>
+#include <ork/lev2/aud/singularity/spike_diag.h>
 #include <ork/reflect/properties/registerX.inl>
 #include <ork/reflect/properties/DirectTypedMap.hpp>
 
@@ -52,18 +54,63 @@ bool AlgData::postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shar
 
 ///////////////////////////////////////////////////////////////////////////////
 
+// createAlgInst / returnAlgInst - Alg instance cache.
+//  returnAlgInst runs on the AUDIO THREAD (voice deactivation, bus-fx commit):
+//  it may neither allocate nor block behind an allocation. every allocation
+//  therefore lives on the create path and OUTSIDE the cache mutex - both the
+//  new Alg and the cache buffer that guarantees that instance's eventual
+//  return has a slot to land in (capacity >= instances handed out).
+
+static constexpr size_t kalgcacheminentries = 8;
+
 alg_ptr_t AlgData::createAlgInst() const {
   alg_ptr_t rval = nullptr;
-  if(_voicecache.empty()){
+  size_t needed  = 0;
+  size_t curcap  = 0;
+  {
+    std::lock_guard<std::mutex> lock(_voicecache_mutex);
+    if (not _voicecache.empty()) {
+      rval = _voicecache.back();
+      _voicecache.pop_back();
+      return rval;
+    }
+    needed = ++_numalginstances;
+    curcap = _voicecache.capacity();
+  }
+
+  ////////////////////////////////////////
+
+  {
+    KeyOnProfScope profcold(KOP_ALGCOLD);
     rval = std::make_shared<Alg>(*this);
   }
-  else{
-    rval = _voicecache.back();
-    _voicecache.pop_back();
+  if (curcap >= needed)
+    return rval;
+
+  ////////////////////////////////////////
+  // grow the cache for the new instance: build the replacement buffer here
+  //  (unlocked) and swap it in, so the mutex is never held across a malloc.
+  ////////////////////////////////////////
+
+  size_t newcap = needed * 2;
+  if (newcap < kalgcacheminentries)
+    newcap = kalgcacheminentries;
+  std::vector<alg_ptr_t> grown;
+  grown.reserve(newcap);
+  {
+    std::lock_guard<std::mutex> lock(_voicecache_mutex);
+    if (_voicecache.capacity() < newcap and _voicecache.size() <= newcap) {
+      grown.insert(grown.end(), std::make_move_iterator(_voicecache.begin()), std::make_move_iterator(_voicecache.end()));
+      _voicecache.swap(grown);
+    }
   }
-  return rval;
+  return rval; // the retired buffer (now in grown) frees here, off the lock
 }
 void AlgData::returnAlgInst(alg_ptr_t alg) const{
+  std::lock_guard<std::mutex> lock(_voicecache_mutex);
+  OrkAssertI(
+      _voicecache.size() < _voicecache.capacity(), //
+      "alg voice cache would reallocate on the audio thread - createAlgInst capacity invariant broken");
   _voicecache.push_back(alg);
 }
 
@@ -133,29 +180,50 @@ void Alg::keyOn(KeyOnInfo& koi) {
   // instantiate dspblock grid
   ///////////////////////////////////////////////////
 
-  auto& out_stages = _stageblock._stages;
-  int numstages = 0;
-  for (int istage = 0; istage < kmaxdspstagesperlayer; istage++) {
-    auto stagedata = _algdata._stages[istage];
-    if (stagedata) {
-      auto stage      = std::make_shared<DspStage>();
-      out_stages[istage] = stage;
-      numstages++;
-      int numblocks = stagedata->_blockdatas.size();
-      stage->_blocks.resize(numblocks);
-      for (int iblock = 0; iblock < numblocks; iblock++) {
-        auto blockdata = stagedata->_blockdatas[iblock];
-        if (blockdata) {
-          auto block             = blockdata->createInstance();
-          stage->_blocks[iblock] = block;
-          block->_verticalIndex  = iblock;
-          block->_ioconfig         = stagedata->_ioconfig;
+  {
+    KeyOnProfScope profgrid(KOP_ALGGRID);
+    auto& out_stages = _stageblock._stages;
+    int numstages = 0;
+    for (int istage = 0; istage < kmaxdspstagesperlayer; istage++) {
+      auto stagedata = _algdata._stages[istage];
+      if (stagedata) {
+        // an Alg instance is bound to one AlgData for its whole life, so the
+        //  stage shells are built once (cold, alongside the Alg itself) and
+        //  refilled here - a note-on allocates no stage.
+        auto stage = out_stages[istage];
+        if (nullptr == stage) {
+          stage              = std::make_shared<DspStage>();
+          out_stages[istage] = stage;
         }
-      }
-    } else
-      out_stages[istage] = nullptr;
+        {
+          KeyOnProfScope profclear(KOP_STAGECLEAR);
+          stage->clear(); // releases the previous note's blocks
+        }
+        numstages++;
+        int numblocks = stagedata->_blockdatas.size();
+        OrkAssertIFMT(
+            numblocks <= kmaxdspblocksperstage, //
+            "singularity dsp stage <%s> has %d blocks (max %d)",
+            stagedata->_name.c_str(),
+            numblocks,
+            kmaxdspblocksperstage);
+        stage->_numblocks = numblocks;
+        for (int iblock = 0; iblock < numblocks; iblock++) {
+          auto blockdata = stagedata->_blockdatas[iblock];
+          if (blockdata) {
+            KeyOnProfScope profcreate(KOP_BLKCREATE);
+            SpikeScope spikecreate(SPK_BLKCREATE, blockdata->_blocktype.c_str());
+            auto block             = blockdata->createInstance();
+            stage->_blocks[iblock] = block;
+            block->_verticalIndex  = iblock;
+            block->_ioconfig         = stagedata->_ioconfig;
+          }
+        }
+      } else
+        out_stages[istage] = nullptr;
+    }
+    // printf("ALG<%p> numstages<%d>\n", this, numstages);
   }
-  // printf("ALG<%p> numstages<%d>\n", this, numstages);
   ///////////////////////////////////////////////////
 
   // if (i == 0) // pitch block ?
@@ -165,32 +233,11 @@ void Alg::keyOn(KeyOnInfo& koi) {
   //} else
   //_block[i] = nullptr;
 
+  KeyOnProfScope profkeyon(KOP_ALGKEYON);
   doKeyOn(koi);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-void Alg::forEachStage(stagefn_t fn) {
-  auto& out_stages = _stageblock._stages;
-  for (int istage = 0; istage < kmaxdspstagesperlayer; istage++) {
-    auto stage = out_stages[istage];
-    if (stage) {
-      fn(stage);
-    }
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void DspStage::forEachBlock(blockfn_t fn) {
-  int numblocks = _blocks.size();
-  for (int iblock = 0; iblock < numblocks; iblock++) {
-    auto b = _blocks[iblock];
-    if (b) {
-      fn(b);
-    }
-  }
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 void Alg::beginCompute() {
@@ -210,7 +257,10 @@ void Alg::doComputePass() {
     bool ena = syn->_stageEnable[istage];
     if (ena)
       stage->forEachBlock([&](dspblk_ptr_t block) {
-        block->compute(dspbuf);
+        {
+          KeyOnProfScope profblk(KOP_BLKCOMPUTE, block->_dbd->_blocktype.c_str());
+          block->compute(dspbuf);
+        }
         //////////////////////////////////////
         // SignalScope
         //////////////////////////////////////

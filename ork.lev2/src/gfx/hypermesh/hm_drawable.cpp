@@ -22,6 +22,7 @@
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/dataflow/module.inl> // typedInputNamed (E.6/2.12 sink plug read)
+#include <ork/kernel/async_tracker.h> // O3 stage 3: stored-mode section bake as pending async work
 #include <ork/util/logger.h>
 #include <limits>
 
@@ -43,6 +44,11 @@ void HypermeshDrawableData::describeX(object::ObjectClass* clazz) {
   clazz->directProperty("impostor_msaa", &HypermeshDrawableData::_impostor_msaa);       // bake multisample count
   clazz->directMapProperty("lod_materials", &HypermeshDrawableData::_lod_material_assets); // LOD idx str -> mtl name
   clazz->directProperty("material_asset", &HypermeshDrawableData::_material_asset_name);
+  // O3 stage 3 — stored-mode per-section texture-array bake (opt-in). Round-trips tojson->player.
+  clazz->directProperty("section_bake", &HypermeshDrawableData::_section_bake);
+  clazz->directProperty("section_bake_res", &HypermeshDrawableData::_section_bake_res);
+  clazz->directProperty("section_mips", &HypermeshDrawableData::_section_mips); // A8: trilinear mip chains (default ON)
+  clazz->directVectorProperty("section_targets", &HypermeshDrawableData::_section_targets);
   clazz->directProperty("animated", &HypermeshDrawableData::_animated);
   clazz->directProperty("face_viz", &HypermeshDrawableData::_face_viz);
   clazz->directProperty("tag_viz", &HypermeshDrawableData::_tag_viz);
@@ -93,7 +99,37 @@ struct HmBootstrap {
     float _last = std::numeric_limits<float>::quiet_NaN(); // NaN != anything -> first frame always applies
   };
   std::vector<SinkBinding> _sinks;
+  // O3 stage 3 — the stored-mode section-array COLD-bake poll (mirrors the Python cold_wait state): the
+  // in-flight bake job + the content key/targets it will assemble+cache+rebind onto the sampler material.
+  sectionbakejob_ptr_t     _sectionJob;
+  std::string              _sectionKey;
+  std::vector<std::string> _sectionTargets;
+  int                      _sectionRes    = 256;
+  int                      _sectionLayers = 0;
+  bool                     _sectionRebound = false;
+  bool                     _sectionAsyncPending = false; // asyncWorkBegin fired -> exactly one asyncWorkEnd
+  void endSectionAsync() {
+    if (_sectionAsyncPending) {
+      _sectionAsyncPending = false;
+      asyncWorkEnd("hypermesh_section_bake");
+    }
+  }
 };
+
+// O3 stage 3 — bind one assembled TextureArray per capture target onto the stored SAMPLER material's
+// sampler2DArray uniform (same name as the capture target). The 2.12 rebind stamp propagates the value
+// into every cached pipeline at its next beginBlock — so a cold placeholder->real swap is live.
+static void bindSectionArrays(pbrmaterial_ptr_t mtl, const std::vector<std::string>& targets,
+                              const std::vector<texturearray_ptr_t>& arrays) {
+  if (not mtl)
+    return;
+  auto fs = mtl->_as_freestyle;
+  if (not fs)
+    return;
+  for (size_t t = 0; t < targets.size() and t < arrays.size(); t++)
+    if (auto par = fs->param(targets[t]))
+      mtl->bindParam(par, arrays[t]);
+}
 } // namespace
 
 drawable_ptr_t HypermeshDrawableData::createDrawable() const {
@@ -102,6 +138,15 @@ drawable_ptr_t HypermeshDrawableData::createDrawable() const {
   // self_alias: non-owning alias so the closure can reach the (host-mutated) runtime fields;
   // the DrawableData outlives its drawables by the scene contract.
   auto self = this;
+
+  // O3 stage 3 — register the stored-mode section bake as pending ASYNC WORK FROM STAGE TIME (mirrors the
+  // terrain texbake), so an offscreen player waiter (--offscreen / --snapshot) knows the bake is pending
+  // BEFORE the first onGpuUpdate even runs (the marker can't wait on the render-thread build to fire it).
+  // Ended exactly once: WARM-bind, COLD rebind, or an inert (no-section) build — see endSectionAsync().
+  if (self->_section_bake) {
+    asyncWorkBegin("hypermesh_section_bake");
+    state->_sectionAsyncPending = true;
+  }
 
   drw->_liveRecompute = [self, state](Context* ctx, ComputeDrawable* drawable) {
     if (not state->_built) {
@@ -162,6 +207,7 @@ drawable_ptr_t HypermeshDrawableData::createDrawable() const {
       }
       if (not self->_graphdata) {
         logchan_hmdrw->log("HypermeshDrawable: NULL graphdata — drawable is inert");
+        state->endSectionAsync(); // never baking -> release the offscreen waiter
         state->_built = true; // nothing will ever change; stop re-checking
         return;
       }
@@ -202,9 +248,14 @@ drawable_ptr_t HypermeshDrawableData::createDrawable() const {
         if (block and chan)
           cdd->addGraphicsStorage(block, chan->_ssbo);
       }
+      // O3 stage 3 — STORED-MODE bake: _gid_material_assets is the per-gid BAKE MAP, not draw buckets.
+      // The mesh draws ONCE with the sampler material (_resolved_material); the per-section content is
+      // baked into a texture array the sampler samples at ctx.layer. So NO gid buckets in stored mode.
+      const bool stored = self->_section_bake;
       std::vector<int> bound_gids;
-      for (const auto& [gid, gm] : self->_resolved_gid_materials)
-        bound_gids.push_back(gid);
+      if (not stored)
+        for (const auto& [gid, gm] : self->_resolved_gid_materials)
+          bound_gids.push_back(gid);
       // E.4 — the cull bound is AUTO (object-space sphere from a one-time mesh position readback)
       // inside setupMeshRender when _cull_bound.w<=0; an explicit _cull_bound overrides it (e.g. an
       // animated mesh that outgrows its static bounds). Same path as the python make_drawable.
@@ -227,7 +278,8 @@ drawable_ptr_t HypermeshDrawableData::createDrawable() const {
       // args offset = gid slot * 20 bytes, OWN material + OWN storage-block list
       // (block handles are per-shader; first 5 entries = the vertex channels,
       // the live refresh updates them by index — same contract as the main draw).
-      for (const auto& [gid, gm] : self->_resolved_gid_materials) {
+      // STORED MODE skips this entirely (the gid materials are the bake map, not buckets).
+      for (const auto& [gid, gm] : (stored ? std::map<int, pbrmaterial_ptr_t>{} : self->_resolved_gid_materials)) {
         auto gfs = gm->_as_freestyle;
         OrkAssert(gfs);
         ComputeDrawable::BucketDraw bucket;
@@ -245,6 +297,14 @@ drawable_ptr_t HypermeshDrawableData::createDrawable() const {
           if (handles._instAttr)
             if (auto blk = gfs->storageBlock("storage_inst_attr"))
               bucket._graphicsStorage.push_back({blk, handles._instAttr});
+          // cascade-cull fix: gid-bucket shadow instance override (this bucket material's block handles).
+          if (handles._instMtxShadow) {
+            if (auto blk = gfs->storageBlock("storage_inst_mtx"))
+              bucket._shadowStorageOverrides.push_back({blk, handles._instMtxShadow});
+            if (handles._instAttrShadow)
+              if (auto blk = gfs->storageBlock("storage_inst_attr"))
+                bucket._shadowStorageOverrides.push_back({blk, handles._instAttrShadow});
+          }
         }
         cdd->_bucketDraws.push_back(bucket);
       }
@@ -306,6 +366,15 @@ drawable_ptr_t HypermeshDrawableData::createDrawable() const {
         cdd->addGraphicsStorage(fsmtl->storageBlock("storage_inst_mtx"), handles._instMtx);
         if (handles._instAttr)              // E.2: typed per-instance data -> the VS attrs block
           cdd->addGraphicsStorage(fsmtl->storageBlock("storage_inst_attr"), handles._instAttr);
+        // cascade-cull fix: the sun-cascade depth passes re-bind these instance blocks at the SHADOW
+        // OUT_M/OUT_A (this material's block handles) so they draw the union-sun survivor set.
+        if (handles._instMtxShadow) {
+          if (auto blk = fsmtl->storageBlock("storage_inst_mtx"))
+            cdd->_shadowStorageOverrides.push_back({blk, handles._instMtxShadow});
+          if (handles._instAttrShadow)
+            if (auto blk = fsmtl->storageBlock("storage_inst_attr"))
+              cdd->_shadowStorageOverrides.push_back({blk, handles._instAttrShadow});
+        }
       }
       if (self->_wireframe and self->_resolved_overlay_material) {
         // the overlay (LINES) pull-VS reads P at overlay slot 0, N at slot 1 (refresh contract)
@@ -323,6 +392,57 @@ drawable_ptr_t HypermeshDrawableData::createDrawable() const {
             cdd->addOverlayGraphicsStorage(ofs->storageBlock("storage_inst_mtx"), handles._instMtx);
             if (handles._instAttr)
               cdd->addOverlayGraphicsStorage(ofs->storageBlock("storage_inst_attr"), handles._instAttr);
+          }
+        }
+      }
+      //////////////////////////////////////////////////////////////////
+      // O3 stage 3 — STORED-MODE section-array bake driver (mirrors terrainTexBake's shape). The mesh
+      // draws ONCE with the sampler material (mtl); the per-section surfaces are baked (per-gid bake map)
+      // into one texture array per capture target, sampled at ctx.layer. COLD = in-frame GPU bake +
+      // content-addressed cache write + placeholder->rebind; WARM = load cache. Registered BEFORE the graft
+      // so the bake one-shot (installed on cdd->_oneShotRender by prepareSectionBakeMapped) is copied below.
+      //////////////////////////////////////////////////////////////////
+      if (stored) {
+        auto layerGids = sectionUnwrapLayerGids(live, ctx);
+        if (layerGids.empty()) {
+          logchan_hmdrw->log(
+              "HypermeshDrawable: section_bake set but no SectionUnwrap layer->gid table — bake skipped "
+              "(the last graph op must be section_unwrap on a gid-partitioned mesh)");
+          state->endSectionAsync();
+        } else {
+          int numLayers = int(layerGids.size());
+          int bakeRes   = std::max(8, self->_section_bake_res);
+          std::vector<std::string> targets =
+              self->_section_targets.empty() ? std::vector<std::string>{"SectionAlbedo"} : self->_section_targets;
+          std::map<int, std::string> gidNames;
+          for (const auto& [gs, nm] : self->_gid_material_assets)
+            gidNames[atoi(gs.c_str())] = nm;
+          std::string key = sectionBakeContentKey(
+              self->_graphdata, self->_material_asset_name, gidNames, layerGids, bakeRes);
+          bool warm = sectionArrayCacheWarm(key, targets, bakeRes, numLayers);
+          if (warm) {
+            bindSectionArrays(mtl, targets,
+                              loadSectionArraysFromCache(ctx, key, targets, bakeRes, numLayers, self->_section_mips));
+            logchan_hmdrw->log(
+                "HypermeshDrawable: section bake WARM (%d layers, %zu targets) — cache loaded",
+                numLayers, targets.size());
+            state->endSectionAsync();
+          } else {
+            // COLD: a valid gray placeholder per target (the sampler2DArray must be shader-readable during
+            // the few-frame async bake), then kick the per-gid bake + register the completion poll (tail).
+            std::vector<texturearray_ptr_t> ph;
+            for (size_t t = 0; t < targets.size(); t++)
+              ph.push_back(placeholderSectionArray(ctx, numLayers, bakeRes));
+            bindSectionArrays(mtl, targets, ph);
+            state->_sectionJob = prepareSectionBakeMapped(
+                ctx, cdd.get(), live, mtl, self->_resolved_gid_materials, layerGids, bakeRes, int(targets.size()));
+            state->_sectionKey     = key;
+            state->_sectionTargets = targets;
+            state->_sectionRes     = bakeRes;
+            state->_sectionLayers  = numLayers;
+            logchan_hmdrw->log(
+                "HypermeshDrawable: section bake COLD (%d layers, %zu targets @ %dpx) — GPU bake kicked",
+                numLayers, targets.size(), bakeRes);
           }
         }
       }
@@ -353,6 +473,9 @@ drawable_ptr_t HypermeshDrawableData::createDrawable() const {
       drawable->_overlayIndexSize       = cdd->_overlayIndexSize;
       drawable->_bucketDraws            = cdd->_bucketDraws;
       drawable->_perViewCompute         = cdd->_perViewCompute; // E.4: the per-view cull hook
+      drawable->_perViewComputeShadow   = cdd->_perViewComputeShadow;   // cascade-cull fix
+      drawable->_argsSSBOShadow         = cdd->_argsSSBOShadow;         // cascade-cull fix
+      drawable->_shadowStorageOverrides = cdd->_shadowStorageOverrides; // cascade-cull fix
       drawable->_oneShotRender          = cdd->_oneShotRender;  // A2: the one-shot impostor-bake hook
       //////////////////////////////////////////////////////////////////
       // E.6/2.12 — collect MaterialParamSinks: resolve each sink's param
@@ -416,6 +539,23 @@ drawable_ptr_t HypermeshDrawableData::createDrawable() const {
     // (asset_gen.cpp) and supplied every frame BY THE ENGINE through fx_pipeline's named-param providers
     // (same path as MatMVP/modcolor). Works identically on the main material and every gid bucket, in
     // the viewer, a scene, and the zero-Python player — no displace-specific code in this drawable.
+    //
+    // O3 stage 3 — COLD section-bake completion poll (mirrors the Python cold_wait -> rebind). Once the
+    // in-frame GPU bake's async captures drain, assemble one texture array per target, WRITE the content-
+    // addressed cache, and REBIND the real arrays onto the sampler material (the placeholder drops out via
+    // the 2.12 rebind stamp). Fires exactly once; then asyncWorkEnd clears the offscreen waiter's marker.
+    if (state->_sectionJob and not state->_sectionRebound and state->_sectionJob->isReady()) {
+      auto arrays = assembleSectionArraysFromJob(
+          ctx, state->_sectionJob, state->_sectionKey, state->_sectionTargets, state->_sectionRes,
+          self->_section_mips);
+      bindSectionArrays(self->_resolved_material, state->_sectionTargets, arrays);
+      state->_sectionRebound = true;
+      state->_sectionJob     = nullptr;
+      state->endSectionAsync();
+      logchan_hmdrw->log(
+          "HypermeshDrawable: section bake COMPLETE (%d layers, %zu targets) — arrays rebound + cached",
+          state->_sectionLayers, arrays.size());
+    }
   };
 
   auto draw_raw = drw.get();

@@ -1,0 +1,44 @@
+import "orkshader://mathtools.i2";
+
+///////////////////////////////////////////////////////////////
+// OUTPUT DITHER
+//
+// The render chain runs in float end to end; the quantizers are the FINAL
+// 8-bit stores, and they round with no error diffusion. A smooth
+// display-space gradient therefore lands as 1-LSB contours - measured on the
+// procedural sky's upper gradient: every step exactly 1 LSB, per channel, with
+// most sky pixels sitting inside a completely flat 7x7 neighborhood. A
+// triangular-PDF offset of +-1 output LSB, added immediately before the store,
+// decorrelates that rounding (the classic TPDF dither: uniform-uniform
+// difference, zero mean, noise floor independent of the signal).
+//
+// WHERE IT BELONGS: in the LAST shader that writes the value which is then
+// truncated to 8 bits. In this engine that is
+//   - blit.fxv2 ps_blit / ps_blituv / ps_downsample*  -> main_rtg (BGRA8,
+//     fbi.cpp _ensureMainRtg) for the desktop/offscreen screen output, and ->
+//     the DualMonoVr/Vr per-eye SSAA buffers (RGBA8, NodeCompositorVr.h), which
+//     are what the OpenXR runtime receives. Gated per call site by DitherAmt so
+//     the blits whose destination is float (OutputNodeRtGroup) stay byte-exact.
+//   - framefx.fxv2 ps_aces / ps_hsvg, which are the last shaders before an
+//     offscreen RGBA8 capture readback of a postfx chain's float output.
+//
+// The offset is a pure function of gl_FragCoord.xy. NOTHING time- or
+// frame-varying may enter it: the blessed canaries and the in-run A/B gates
+// require an identical scene to render byte-identically, run to run.
+//
+// hash2 (lib_math) is the lowbias32 bit-pattern hash, NOT fract(sin(...)) --
+// see mathtools.i2: sin() at these argument magnitudes is vendor-approximated
+// and produced structurally different values on NVIDIA vs Apple, which would
+// make a blessed capture unreproducible across machines.
+//
+// The salt keeps stacked encodes independent: a chain can legitimately run
+// aces -> hsvg -> screen blit, and three copies of the SAME offset would sum
+// coherently to +-3 LSB instead of averaging out.
+///////////////////////////////////////////////////////////////
+libblock lib_dither : lib_math {
+  vec3 outputDitherTPDF(vec2 fragcoord, float salt) {
+    float a = hash2(fragcoord + vec2(salt, salt));
+    float b = hash2(fragcoord + vec2(salt + 17.0, salt + 31.0));
+    return vec3(a - b) * (1.0 / 255.0);
+  }
+}

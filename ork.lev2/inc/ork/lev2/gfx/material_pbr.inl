@@ -33,7 +33,18 @@ struct PbrMatrixBlockApplicator : public MaterialInstApplicator {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class PBRMaterial final : public GfxMaterial {
+struct PBRMaterial;
+struct StereoCameraMatrices;
+
+// Defined beside the cache it evicts (material_pbr_pipeline.cpp), called from
+// ~PBRMaterial in the other TU. See FxPipelineCacheImpl::removeCache for why a
+// pointer-keyed cache MUST be evicted when its key dies. Returns the evicted
+// cache so the caller controls when its pipelines release GPU-owning binds.
+fxpipelinecache_ptr_t _evictPbrPipelineCache(const PBRMaterial* mtl);
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct PBRMaterial final : public GfxMaterial {
 
   DeclareConcreteX(PBRMaterial, GfxMaterial);
 
@@ -73,6 +84,31 @@ public:
 
   static FxShaderStorageBuffer* lightingDataBuffer(Context* targ);
   static FxUniformBuffer* boneDataBuffer(Context* targ);
+  // SKYLIGHT lane A — the ublk_sun real-UBO (single shared buffer, written
+  // once per frame by the forward prologue, bound per-draw). Zero-initialized
+  // at creation so has_sun reads 0 before the first prologue write.
+  static FxUniformBuffer* sunDataBuffer(Context* targ);
+  // SINGLE-PASS STEREO — the ublk_stereo real-UBO. Same shape as the sun block: one
+  // shared buffer, written when the per-view matrices change, bound per-draw. Zero
+  // at creation, and a program that declares the block without anyone binding it
+  // reads a shared zero buffer instead (see the nondynamic path in the vk binder),
+  // so the mono path costs one descriptor and nothing else.
+  static FxUniformBuffer* stereoDataBuffer(Context* targ);
+  // ...and the ONE writer that fills it. Public because the std140 offsets are
+  // hand-mirrored beside the writer in material_pbr_pipeline.cpp: any second caller
+  // (a below-the-compositor stereo draw that has no PBR state lambda) must go through
+  // THIS function rather than restate those offsets, or the two copies drift apart
+  // silently the first time the block grows.
+  static void writeStereoBlock(FxInterface* fxi, Context* context, const StereoCameraMatrices* stereocams);
+  // ...and how many bytes that buffer IS. Named here because the ublk_sun host
+  // layout lives in the forward prologue (fwdnode_impl_sub.cpp) while the
+  // allocation lives in material_pbr_gen.cpp: a block that outgrows the
+  // allocation used to map SHORT and clip its tail fields silently, so the
+  // layout table static_asserts against this.
+  static constexpr size_t kSunDataBufferBytes = 1024;
+  // ublk_stereo std140: spvr_vp[2] 0x00,0x40 | spvr_inv_vp[2] 0x80,0xc0 | spvr_eyepos[2]
+  // 0x100,0x110 = 0x120 bytes. Allocation is rounded up; the writer static_asserts it fits.
+  static constexpr size_t kStereoDataBufferBytes = 512;
 
   static texture_ptr_t brdfIntegrationMap(Context* targ,std::string type);
 
@@ -129,20 +165,14 @@ public:
   fxparam_constptr_t _paramVP            = nullptr;
   fxparam_constptr_t _paramIV            = nullptr;  // inv_v
   fxparam_constptr_t _paramIVP           = nullptr;
-  fxparam_constptr_t _paramVL            = nullptr;
-  fxparam_constptr_t _paramVR            = nullptr;
-  fxparam_constptr_t _paramVPL           = nullptr;
-  fxparam_constptr_t _paramVPR           = nullptr;
-  fxparam_constptr_t _paramIVPL          = nullptr;
-  fxparam_constptr_t _paramIVPR          = nullptr;
   fxparam_constptr_t _paramMVP           = nullptr;
-  fxparam_constptr_t _paramMVPL          = nullptr;
-  fxparam_constptr_t _paramMVPR          = nullptr;
   fxparam_constptr_t _paramMV            = nullptr;
   fxparam_constptr_t _paramMROT          = nullptr;
   fxparam_constptr_t _paramMVIT          = nullptr;  // model-view inverse-transpose (mat4)
   fxparam_constptr_t _paramMVITROT       = nullptr;  // its 3x3 normal matrix (object->view)
   fxparam_constptr_t _paramDppZBias      = nullptr;
+  fxparam_constptr_t _paramDppAlphaCutoff = nullptr; // masked DPP's dedicated cutoff (ublk_dpp_masked)
+  fxparam_constptr_t _paramDppCNMREA      = nullptr; // masked DPP's dedicated albedo-array sampler (sset_dpp_masked)
   fxparam_constptr_t _paramMapDepth      = nullptr;
   fxparam_constptr_t _paramMapLinearDepth      = nullptr;
 
@@ -165,8 +195,6 @@ public:
   // fwd
 
   fxparam_constptr_t _paramEyePostion      = nullptr;
-  fxparam_constptr_t _paramEyePostionL     = nullptr;
-  fxparam_constptr_t _paramEyePostionR     = nullptr;
   fxparam_constptr_t _paramAmbientLevel    = nullptr;
   fxparam_constptr_t _paramDiffuseLevel    = nullptr;
   fxparam_constptr_t _paramSpecularLevel   = nullptr;
@@ -186,7 +214,15 @@ public:
 
   fxparam_constptr_t _parMapSpecularEnv      = nullptr;
   fxparam_constptr_t _parMapSpecularRufLevels= nullptr;
-  fxparam_constptr_t _parMapDiffuseEnv       = nullptr;
+  // outgoing IBL set + its blend weight (procedural refilter crossfade); these
+  // alias the pair above whenever no fade is running.
+  fxparam_constptr_t _parMapSpecularEnvPrev  = nullptr;
+  fxparam_constptr_t _parEnvBlendWeight      = nullptr;
+  // procedural-capture pre-scale, already inverted; 1.0 for baked maps
+  fxparam_constptr_t _parEnvCaptureScaleInv  = nullptr;
+  // the sky SH probe's nine L2 coefficients + the gate that says they are real
+  fxparam_constptr_t _parEnvSH               = nullptr;
+  fxparam_constptr_t _parEnvSHValid          = nullptr;
   fxparam_constptr_t _parMapBrdfIntegration  = nullptr;
   fxparam_constptr_t _parEnvironmentMipBias  = nullptr;
   fxparam_constptr_t _parEnvironmentMipScale = nullptr;
@@ -251,6 +287,35 @@ public:
 
   fxparam_constptr_t _parUnTexPointLightsCount  = nullptr;
   fxparam_constptr_t _parTexSpotLightsCount   = nullptr;
+
+  // SINGLE-PASS STEREO — the per-view matrix UBO block (null for shaders that
+  // never inherit a view matrix; the bind tolerates null).
+  fxparamblock_constptr_t _parStereoBlock  = nullptr;
+  // SKYLIGHT lane A — sun cascade UBO block + cascade depth-array sampler.
+  fxparamblock_constptr_t _parSunBlock     = nullptr;
+  fxparam_constptr_t _parSunShadowMap      = nullptr;
+  // sun COOKIE (cloud shadows) — the transmittance map sampled by _sun_cookie_factor.
+  fxparam_constptr_t _parSunCookie         = nullptr;
+
+  // SKYLIGHT lane B — the ublk_sky_atmo members FWD_SKYBOX_PROC actually reads,
+  // plus the two LUT samplers. Null on any shader without lib_sky.
+  fxparam_constptr_t _parSkyRadii             = nullptr;
+  fxparam_constptr_t _parSkySunDirection      = nullptr;
+  fxparam_constptr_t _parSkySunIlluminance    = nullptr;
+  fxparam_constptr_t _parSkyGroundAlbedo      = nullptr;
+  fxparam_constptr_t _parSkySunDisc           = nullptr;
+  fxparam_constptr_t _parSkyMoonDirection     = nullptr;
+  fxparam_constptr_t _parSkyMoonDisc          = nullptr;
+  fxparam_constptr_t _parSkyMoonAlbedo        = nullptr;
+  fxparam_constptr_t _parSkyNightEmission     = nullptr;
+  fxparam_constptr_t _parSkyMoonIlluminance   = nullptr;
+  fxparam_constptr_t _parSkyViewLut           = nullptr;
+  fxparam_constptr_t _parSkyTransmittanceLut  = nullptr;
+  // cloud occlusion of the discs (ublk_sky_cookie / sset_sky_cookie — the
+  // procedural skybox technique only)
+  fxparam_constptr_t _parSkyCookieParams      = nullptr;
+  fxparam_constptr_t _parSkyCookieBody        = nullptr;
+  fxparam_constptr_t _parSkyCloudCookie       = nullptr;
 
   fxparamstorageblock_constptr_t _parForwardLightBlock   = nullptr;
 
@@ -342,6 +407,11 @@ public:
 
   fxtechnique_constptr_t _tek_FWD_SKYBOX_MO = nullptr;
   fxtechnique_constptr_t _tek_FWD_SKYBOX_ST = nullptr;
+  // SKYLIGHT lane B — procedural sky. DMVR gets per-eye rays free from the mono
+  // IVP provider; single-pass stereo cannot (one draw, both views, asymmetric
+  // per-eye frusta) and takes the _ST peer, which unprojects through ublk_stereo.
+  fxtechnique_constptr_t _tek_FWD_SKYBOX_PROC = nullptr;
+  fxtechnique_constptr_t _tek_FWD_SKYBOX_PROC_ST = nullptr;
   fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_IN_MO = nullptr;
   fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_IN_ST = nullptr;
 
@@ -354,6 +424,14 @@ public:
   fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_SK_NI_ST = nullptr;
   fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_RI_IN_ST = nullptr;
   fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_SK_IN_ST = nullptr;
+
+  // masked (alpha-tested) depth prepass — selected when _alphaCutoff is active
+  fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_MASKED_RI_NI_MO = nullptr;
+  fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_MASKED_SK_NI_MO = nullptr;
+  fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_MASKED_RI_IN_MO = nullptr;
+  fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_MASKED_RI_NI_ST = nullptr;
+  fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_MASKED_SK_NI_ST = nullptr;
+  fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_MASKED_RI_IN_ST = nullptr;
 
   // modcolor
 
@@ -377,6 +455,14 @@ public:
   fxtechnique_constptr_t _tek_FWD_CV_NM_RI_NI_MO_ALPHA = nullptr;
   fxtechnique_constptr_t _tek_FWD_CT_NM_RI_IN_ST = nullptr;
   fxtechnique_constptr_t _tek_FWD_CT_NM_RI_NI_ST = nullptr;
+  // VERTEX-COLOR single-pass-stereo peers. Null until pbr.fxv2 grows them; the
+  // forward selector ASSERTS on a stereo vertex-color draw with no peer here
+  // rather than misrouting it into a CT_* technique (different vertex format) or
+  // dropping to mono (identical images in both eye layers).
+  fxtechnique_constptr_t _tek_FWD_CV_NM_RI_NI_ST = nullptr;
+  fxtechnique_constptr_t _tek_FWD_CV_NM_RI_IN_ST = nullptr;
+  fxtechnique_constptr_t _tek_FWD_CV_NM_RI_NI_ST_ALPHA = nullptr;
+  fxtechnique_constptr_t _tek_FWD_CV_NM_RI_IN_ST_ALPHA = nullptr;
   
   fxtechnique_constptr_t _tek_FWD_CT_NM_SK_IN_MO = nullptr;
   fxtechnique_constptr_t _tek_FWD_CT_NM_SK_NI_MO = nullptr;
@@ -386,13 +472,27 @@ public:
   // SSBO-sourced vertex variant (compute-generated geometry; ptex3d FWD_SSBO_CUSTOM). Null unless
   // the (generated) shader declares it. Selected via permu._is_vertex_ssbo. See project_fwd_ssbo_custom.
   fxtechnique_constptr_t _tek_FWD_SSBO_CUSTOM = nullptr;
+  // SINGLE-PASS STEREO peers of the SSBO-sourced vertex family. The techniques are
+  // EMITTED BY THE GENERATED-MATERIAL TEMPLATE, not hand-authored here, so on a tree
+  // whose template has not grown them yet these stay null and the selection arms fall
+  // through to their mono twins.
+  fxtechnique_constptr_t _tek_FWD_SSBO_CUSTOM_ST = nullptr;
+  // CLOUD-SHADOW (sun cookie) fill variant: alpha-only, no lighting sampler sets. Selected via
+  // permu._is_sun_cookie; null unless the (generated, UNLIT) shader declares it, in which case the
+  // cookie pass keeps using the full forward technique. See _createFxPipelineFWD.
+  fxtechnique_constptr_t _tek_FWD_SUNCOOKIE = nullptr;
   fxtechnique_constptr_t _tek_FWD_SSBO_CUSTOM_INSTANCED = nullptr;   // SSBO geometry x per-instance matrix (gl_InstanceIndex)
+  fxtechnique_constptr_t _tek_FWD_SSBO_CUSTOM_INSTANCED_ST = nullptr;
   fxtechnique_constptr_t _tek_FWD_SSBO_CUSTOM_CAPTURE = nullptr;     // impostor bake: SSBO pull -> raw PBR to MRT (no lighting)
   // LOD impostor billboard: SSBO instance-matrix pull -> camera-facing quad -> surface() samples the baked
   // atlas -> the SAME forward PBR lighting (_forward_lightingZ). Selected via permu._is_impostor. The atlas
   // textures + grid/radius are set on the material after the bake (bindImpostorAtlas) and bound by the
   // forward pipeline's impostor branch. Null unless the (generated, impostor=True) shader declares it.
   fxtechnique_constptr_t _tek_FWD_SSBO_CUSTOM_IMPOSTOR = nullptr;
+  // SINGLE-PASS STEREO peer of the billboard: same quad, same basis, same atlas tile, per-view
+  // clip transform only. The template has emitted it all along; without this member and the
+  // selection arm that reads it, every impostor-LOD instance drew MONO into BOTH eye layers.
+  fxtechnique_constptr_t _tek_FWD_SSBO_CUSTOM_IMPOSTOR_ST = nullptr;
   fxparam_constptr_t _parImpAlbedo     = nullptr;
   fxparam_constptr_t _parImpNormal     = nullptr;
   fxparam_constptr_t _parImpMetalRough = nullptr;
@@ -411,11 +511,25 @@ public:
   }
   fxtechnique_constptr_t _tek_FWD_SSBO_CUSTOM_DEPTHPREPASS = nullptr;
   fxtechnique_constptr_t _tek_FWD_SSBO_CUSTOM_INSTANCED_DEPTHPREPASS = nullptr; // E.4
+  // SINGLE-PASS STEREO peers of the two above. The depth prepass must be transformed by the SAME
+  // clip matrix as the color pass that follows it: a per-view color pass over a MONO prepass writes
+  // one eye's depth for both eyes, and the eye whose disparity runs the wrong way loses its whole
+  // surface to the LEQUALS test (black terrain in ONE eye, sky-through where nothing was pre-written).
+  fxtechnique_constptr_t _tek_FWD_SSBO_CUSTOM_DEPTHPREPASS_ST = nullptr;
+  fxtechnique_constptr_t _tek_FWD_SSBO_CUSTOM_INSTANCED_DEPTHPREPASS_ST = nullptr;
+  // taskless VK_EXT_mesh_shader twin of the SSBO-pull pair: the mesh stage generates the geometry
+  // (meshlet workgroups, self-culling) instead of a compute cull + indirect pull VS. Null unless
+  // the generated shader declares them (vertex source opted in). Selected via permu._is_mesh_shader.
+  fxtechnique_constptr_t _tek_FWD_SSBO_CUSTOM_MESH = nullptr;
+  fxtechnique_constptr_t _tek_FWD_SSBO_CUSTOM_MESH_ST = nullptr;
+  fxtechnique_constptr_t _tek_FWD_SSBO_CUSTOM_MESH_DEPTHPREPASS = nullptr;
+  fxtechnique_constptr_t _tek_FWD_SSBO_CUSTOM_MESH_DEPTHPREPASS_ST = nullptr;
 
   // matrices-only instancing: when set, the instanced pipeline uses FWD_CT_NM_IM_NI_MO and
   // _parInstanceBlock resolves to the dynamic storage_inst_mtx block. Set before gpuInit.
   bool _instanceMatricesOnly = false;
   fxtechnique_constptr_t _tek_FWD_CT_NM_IM_NI_MO = nullptr;
+  fxtechnique_constptr_t _tek_FWD_CT_NM_IM_NI_ST = nullptr;
 
   // vtxcolor
 

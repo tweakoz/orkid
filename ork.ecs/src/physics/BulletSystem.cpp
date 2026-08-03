@@ -246,6 +246,13 @@ void BulletSystem::_onActivateComponent(BulletObjectComponent* component) {
         rigid_body =
             this->AddLocalRigidBody(shape_create_data.mEntity, mass, btTrans, pshape, CDATA._groupAssign, CDATA._groupCollidesWith);
 
+        // W·M SURFACE RESPONSE: the terrain shape raises this when per-contact friction
+        // modulation is armed — flag the body so bullet routes its contacts through the
+        // global contact-added hook (installed shape-side). Independent of the Collision-notify
+        // manifold scan below (that path only READS contacts; this composes, no clobber).
+        if (shapeinst and shapeinst->_wantsCustomMaterialCallback)
+          rigid_body->setCollisionFlags(rigid_body->getCollisionFlags() | btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK);
+
         if (CDATA._collisionCallback != nullptr or CDATA._notifyCollisions) {
           auto collision_tester = std::make_shared<OrkContactResultCallback>(rigid_body);
           auto py_cb            = CDATA._collisionCallback;
@@ -305,9 +312,11 @@ void BulletSystem::_onActivateComponent(BulletObjectComponent* component) {
         }
         component->_rigidbody = rigid_body;
 
-        if (component->mBOCD._angularFactor.magnitude() > 0.1f) {
-          rigid_body->setAngularFactor(orkv3tobtv3(component->mBOCD._angularFactor));
-        }
+        // unconditional: (0,0,0) is a MEANINGFUL value (total rotation lock — the walker
+        // slides, never rolls). The old magnitude>0.1 gate read the zero vector as "unset"
+        // and silently skipped the lock; the data default is now (1,1,1) = bullet's own
+        // free-rotation default, so applying it verbatim is behavior-neutral for non-lockers.
+        rigid_body->setAngularFactor(orkv3tobtv3(component->mBOCD._angularFactor));
 
         // launch velocity — the ONE per-spawn velocity channel: the entity
         // varmap's "initialVelocity", written by BOTH the FSM's scheduled
@@ -695,7 +704,7 @@ void BulletSystem::_onUpdate(Simulation* inst) {
 
     // printf("frate<%g> fdts<%g> fps<%g> mMaxSubSteps<%d>\n", frate, fdts, fps, mMaxSubSteps );
 
-    bool is_debug = _systemData.IsDebug();
+    bool is_debug = _systemData.IsDebug() ^ _debugToggle;
 
     _debugger->SetDebug(is_debug);
 
@@ -877,6 +886,16 @@ void BulletSystem::_onUpdate(Simulation* inst) {
 void BulletSystem::_onNotify(token_t evID, evdata_t data) {
 
   switch (evID.hashed()) {
+    case "TOGGLE_DEBUG_DRAW"_crcu: {
+      // live physics-debug-wireframe toggle (player --physics-debug / devkey [B]).
+      // XORed against the reflected Debug prop so the toggle also turns OFF a
+      // scene-enabled debug. Runs at controller event-drain on the update thread —
+      // the same thread _onUpdate reads the flag from.
+      _debugToggle = not _debugToggle;
+      bool effective = _systemData.IsDebug() ^ _debugToggle;
+      printf("[bulletdebug] debug wireframe -> %s\n", effective ? "ON" : "OFF");
+      break;
+    }
     case "IMPULSE_ON_COMPONENT_DATA"_crcu: {
       const auto& table = *data.getShared<DataTable>();
       auto compdata     = table["component"_tok].get<bulletobjectcomponentdata_ptr_t>();

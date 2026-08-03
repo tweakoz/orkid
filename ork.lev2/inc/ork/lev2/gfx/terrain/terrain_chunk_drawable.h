@@ -87,4 +87,33 @@ using terrain_chunk_drawable_data_ptr_t = std::shared_ptr<TerrainChunkDrawableDa
 // full-swap path (never a wrong-plane bind).
 int publishHeightPlaneFromExr(const std::string& held_field_key, const std::string& height_exr_path);
 
+// SHIPPED MESHLET DIMENSION n: one mesh workgroup emits an n x n quad patch — (n+1)^2 corners,
+// 2n^2 triangles. BOUND TO gpu_chunk.py's DEFAULT_MESHLET_DIM (that value sizes the generated
+// payload, this one sizes the dispatch grid that consumes it); a split default dispatches a grid
+// the shader does not agree with. Move them together or not at all. 8 (not the taskless tier's
+// max of 11) because Metal tile memory is shared between the multisampled attachment set and the
+// mesh stage's output payload, and mesh cost falls off a cliff between 9 and 8 — see the
+// step-down policy below and gpu_chunk.py for the measurement.
+constexpr int kTerrainDefaultMeshletDim = 8;
+
+// EFFECTIVE meshlet dimension: ORKID_TERRAIN_MESHLET when set (1..11, the diagnostic knob
+// gpu_chunk.py._meshlet_dim reads), else kTerrainDefaultMeshletDim. Read once per process.
+int terrainMeshletDim();
+
+// MESH-MODE MSAA STEP-DOWN POLICY (measured 2026-07-26; Metal/MoltenVK only).
+// Metal tile memory is shared between the multisampled attachment set and the mesh stage's
+// per-workgroup output payload, so the mesh path's MSAA cost is a function of the PAYLOAD, and it
+// falls off a cliff between meshlet 9 and 8: at the 11-corner-per-side payload mesh LOSES to the
+// SSBO-pull VS at 2x/4x (1.18-1.69x slower from 2560x1280 up), at the shipped meshlet 8 it WINS
+// even at 4x (130.5 vs 120.3 fps in the real forward pass). So the step-down is conditioned on the
+// payload ACTUALLY in use, not on the platform alone: it fires only on darwin, only into a
+// multisampled forward target, and only above kTerrainDefaultMeshletDim — which means it is
+// DORMANT at the shipped default and arms only when a fatter payload is selected. Off darwin it
+// never fires (the discrete-GPU platforms are payload-flat). `forward_samples` is the forward
+// target's hw sample count (msaaForwardSampleCount). ORKID_TERRAIN_MESH_FORCE=1 bypasses the
+// step-down when it would fire, so the perf harness can still measure a fat payload under MSAA on
+// mac. Returns true => the caller MUST take the pull-VS path; LOGS its own decision (one loud
+// named line for both the step-down and the force, naming the payload and the attachment context).
+bool terrainMeshMsaaStepDown(int forward_samples);
+
 } // namespace ork::lev2::terrain

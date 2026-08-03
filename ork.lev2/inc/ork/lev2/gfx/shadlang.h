@@ -117,10 +117,14 @@ struct ShadLangParserCache{
   SHAST::astnode_map_t _geometry_interfaces;
   SHAST::astnode_map_t _compute_interfaces;
   SHAST::astnode_map_t _storage_interfaces;
+  SHAST::astnode_map_t _task_interfaces;
+  SHAST::astnode_map_t _task_payloads;
   SHAST::astnode_map_t _vertex_shaders;
   SHAST::astnode_map_t _fragment_shaders;
   SHAST::astnode_map_t _geometry_shaders;
   SHAST::astnode_map_t _compute_shaders;
+  SHAST::astnode_map_t _mesh_shaders;
+  SHAST::astnode_map_t _task_shaders;
   SHAST::astnode_map_t _translatables;
   std::vector<svar32_t> _impl_stack;
   file::Path _toplevel_path; // Top-level shader path for import resolution

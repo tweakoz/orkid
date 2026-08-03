@@ -19,7 +19,8 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(const VkRtgCreateOp
   vkrtgrpimpl_ptr_t RTGIMPL = std::make_shared<VkRtGroupImpl>(_contextVK,options._rtgroup);
   RTGIMPL->_width           = options._width;
   RTGIMPL->_height          = options._height;
-  RTGIMPL->_pipeline_bits   = 0;
+  // _pipeline_bits stays -1: assigned lazily by layoutBits() from the
+  // attachment layout once the buffer impls exist (pipeline-leak fix).
   int inumtargets           = options._colorOptions.size();
   //////////////////////////////////////////////////
   // color buffers
@@ -265,6 +266,21 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
       rtgroup->_profiler_series->sampleBegin();
 #endif
 
+    // Unpaired-setter guard: a read-only-depth flag that outlived the frame
+    // that set it is always a bug — every draw in the pass we are about to
+    // begin would silently lose its depth write (S3 turned that leak from a
+    // dormant flag into painter-order rendering). Loud in every build, fatal
+    // where asserts are compiled in.
+    if (RTGIMPL->_depthReadOnlyMode and RTGIMPL->_depthReadOnlySetFrame != _contextVK->GetTargetFrame()) {
+      logchan_rtgroup->log(
+          "FATAL: rtg<%s> begins a render pass with a STALE read-only-depth flag (set on frame %d, now frame %d) — "
+          "the setter never paired its transitionDepthForSampling with a transitionDepthForWriting",
+          rtgroup->_name.c_str(),
+          RTGIMPL->_depthReadOnlySetFrame,
+          _contextVK->GetTargetFrame());
+      OrkAssert(false);
+    }
+
     // STEP 4: Now begin the new render pass
     RTGIMPL->_transitionToRenderTarget(_contextVK->primary_cb());
     auto rinfo = RTGIMPL->renderinfo();
@@ -352,7 +368,8 @@ void VkFrameBufferInterface::_popRtGroup() {
         // One-shot: the read-only-depth mode lasts for a single push/pop
         // cycle. Reset it here so the next push on this RTG goes back to
         // the default read/write depth attachment transition.
-        RTGIMPL->_depthReadOnlyMode = false;
+        RTGIMPL->_depthReadOnlyMode     = false;
+        RTGIMPL->_depthReadOnlySetFrame = -1;
         break;
       }
       case "arrayslice"_crcu: {
@@ -427,7 +444,8 @@ void VkFrameBufferInterface::transitionDepthForSampling(rtgroup_ptr_t rtg) {
   // happens inside the next _pushRtGroup() → _transitionToRenderTarget()
   // call on this rtg, which already handles ending the active pass first.
   // So it's safe to call while another RTG's render pass is active.
-  impl->_depthReadOnlyMode = true;
+  impl->_depthReadOnlyMode     = true;
+  impl->_depthReadOnlySetFrame = _contextVK->GetTargetFrame();
 
   // Invalidate cached renderinfo so the next renderinfo() call rebuilds
   // with _rainfo_depth.imageLayout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL
@@ -459,7 +477,8 @@ void VkFrameBufferInterface::transitionDepthForWriting(rtgroup_ptr_t rtg) {
 
   if (not impl->_depthReadOnlyMode) return; // already write-mode; nothing to do
 
-  impl->_depthReadOnlyMode = false;
+  impl->_depthReadOnlyMode     = false;
+  impl->_depthReadOnlySetFrame = -1;
 
   // Drop cached renderinfo so the next renderinfo() rebuilds with the depth
   // attachment in write mode and resolveMode = SAMPLE_ZERO.

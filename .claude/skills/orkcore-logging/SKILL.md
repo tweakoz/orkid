@@ -14,7 +14,7 @@ When answering questions about logging in orkid, consult these files.
 |-----------|----------|
 | Logger Header | `ork.core/inc/ork/util/logger.h` |
 | Logger Impl | `ork.core/src/util/logger.cpp` |
-| Stdout Backend | `ork.core/src/util/logger_stdout.cpp` |
+| Stdout Backend | `ork.core/src/util/logger_std.cpp` |
 | File Backend | `ork.core/src/util/logger_file.cpp` |
 | HTML Backend | `ork.core/src/util/logger_html.cpp` |
 | HTTP Backend | `ork.core/src/util/logger_http.cpp` |

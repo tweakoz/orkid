@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 580" font-family="Arial, Helvetica, sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#666"/>
+    </marker>
+    <filter id="shadow">
+      <feDropShadow dx="2" dy="2" stdDeviation="2" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  <rect x="0" y="0" width="1000" height="580" fill="#1a1a2e"/>
+  <text x="30" y="34" font-size="18" font-weight="bold" fill="white">TypeKeyedVars — per-family runtime storage (_impl)</text>
+
+  <!-- legend -->
+  <rect x="740" y="16" width="14" height="14" rx="3" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="762" y="27" font-size="12" fill="#ddd">Data — durable</text>
+  <rect x="740" y="36" width="14" height="14" rx="3" fill="#4c1d95" stroke="#a78bfa"/>
+  <text x="762" y="47" font-size="12" fill="#ddd">Inst — per run</text>
+
+  <!-- hosts -->
+  <rect x="110" y="70" width="340" height="68" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="110" y="70" width="340" height="30" rx="8" fill="#2563eb"/>
+  <text x="124" y="94" font-size="13" font-weight="bold" font-family="monospace" fill="white">GraphData::_impl</text>
+  <text x="124" y="112" font-size="11" fill="#93c5fd">durable, not serialized,</text>
+  <text x="124" y="128" font-size="11" fill="#93c5fd">holds state across separate bake calls</text>
+
+  <rect x="560" y="70" width="340" height="68" rx="8" fill="#4c1d95" stroke="#a78bfa" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="560" y="70" width="340" height="30" rx="8" fill="#7c3aed"/>
+  <text x="574" y="94" font-size="13" font-weight="bold" font-family="monospace" fill="white">GraphInst::_impl</text>
+  <text x="574" y="112" font-size="11" fill="#c4b5fd">per-run environment</text>
+  <text x="574" y="128" font-size="11" fill="#c4b5fd">(one per created graph instance)</text>
+
+  <line x1="280" y1="140" x2="398" y2="176" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="730" y1="140" x2="604" y2="176" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- center -->
+  <rect x="310" y="180" width="380" height="224" rx="10" fill="#1f2937" stroke="#6b7280" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="310" y="180" width="380" height="30" rx="10" fill="#374151"/>
+  <text x="326" y="204" font-size="14" font-weight="bold" font-family="monospace" fill="white">TypeKeyedVars</text>
+  <text x="326" y="222" font-size="10" font-family="monospace" fill="#9ca3af">_vars_by_type : std::type_index → shared_ptr&lt;void&gt;</text>
+
+  <rect x="330" y="234" width="340" height="26" rx="5" fill="#374151" stroke="#6b7280"/>
+  <text x="342" y="251" font-size="11" font-family="monospace" fill="#d1d5db">MeshEnv → hypermesh environment</text>
+  <rect x="330" y="266" width="340" height="26" rx="5" fill="#374151" stroke="#6b7280"/>
+  <text x="342" y="283" font-size="11" font-family="monospace" fill="#d1d5db">BakeEnv → terrain cook environment</text>
+  <rect x="330" y="298" width="340" height="26" rx="5" fill="#374151" stroke="#6b7280"/>
+  <text x="342" y="315" font-size="11" font-family="monospace" fill="#d1d5db">particle::Context → particle simulation</text>
+  <rect x="330" y="330" width="340" height="26" rx="5" fill="#374151" stroke="#6b7280"/>
+  <text x="342" y="347" font-size="11" font-family="monospace" fill="#d1d5db">CookGraphDriver → composite cook seam</text>
+
+  <text x="500" y="376" font-size="10.5" font-family="monospace" fill="#a7f3d0" text-anchor="middle">getShared&lt;T&gt;() · setShared&lt;T&gt;() · makeShared&lt;T&gt;()</text>
+  <text x="500" y="392" font-size="10.5" font-family="monospace" fill="#a7f3d0" text-anchor="middle">tryAs&lt;T&gt;() / set&lt;T&gt;() — by-value shims</text>
+
+  <!-- families -->
+  <rect x="70" y="452" width="240" height="48" rx="8" fill="#065f46" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="190" y="472" font-size="13" font-weight="bold" fill="white" text-anchor="middle">hypermesh family</text>
+  <text x="190" y="488" font-size="10.5" fill="#a7f3d0" text-anchor="middle">stocks MeshEnv</text>
+  <rect x="380" y="452" width="240" height="48" rx="8" fill="#065f46" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="500" y="472" font-size="13" font-weight="bold" fill="white" text-anchor="middle">terrain family</text>
+  <text x="500" y="488" font-size="10.5" fill="#a7f3d0" text-anchor="middle">stocks BakeEnv + cook driver</text>
+  <rect x="690" y="452" width="240" height="48" rx="8" fill="#065f46" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="810" y="472" font-size="13" font-weight="bold" fill="white" text-anchor="middle">particles family</text>
+  <text x="810" y="488" font-size="10.5" fill="#a7f3d0" text-anchor="middle">stocks particle::Context</text>
+
+  <line x1="190" y1="448" x2="368" y2="408" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="500" y1="448" x2="500" y2="408" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="810" y1="448" x2="632" y2="408" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <text x="500" y="540" font-size="12" fill="#ddd" text-anchor="middle">each stored TYPE gets its own slot — families coexist on one graph</text>
+  <text x="500" y="558" font-size="12" fill="#9ca3af" text-anchor="middle">(replaced the single-variant slot where MeshEnv / BakeEnv / particle::Context collided, last-set-wins)</text>
+</svg>

@@ -99,6 +99,8 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
     tlsema->_onComplete = [=]() {
       // Texture is now ready for sampling (async - after GPU upload completes)
       vktex->_img_sampling = vktex->_imgobj[0];
+      if (req->_on_gpu_upload_complete)
+        req->_on_gpu_upload_complete();
     };
 
   } else {
@@ -381,6 +383,12 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
   }
 
   ptex->_residenceState.fetch_or(1);
+
+  // Sync path only: the blocking submit above IS the upload's completion, so
+  // there is no semaphore callback to carry the notification (the async path
+  // fires it from tlsema->_onComplete).
+  if ((not async) and req->_on_gpu_upload_complete)
+    req->_on_gpu_upload_complete();
 }
 ///////////////////////////////////////////////////////////////////////////////
 } //namespace ork::lev2::vulkan {

@@ -7,9 +7,15 @@
 // channels (declared at the scatter() sink, baked by the placer) — nothing
 // hardcoded here. Items with kind -1 contribute no body. Per-item uniform scale
 // rides a btUniformScalingShape wrapper around the shared base (a shared shape
-// cannot carry per-body scaling). The earlier single-btCompoundShape form is
-// retired: its scene-spanning AABB pairs with everything, and compound midphase
-// costs showed up proportional to child count.
+// cannot carry per-body scaling). The earlier scene-spanning single-btCompoundShape
+// form is retired: its AABB pairs with everything, and compound midphase costs showed
+// up proportional to child count.
+//
+// The RING proxy is the ONE exception to the shared-convex-base rule: it is a
+// per-item 12-box btCompoundShape (a walk-INTO annulus — the kiva collar). That is a
+// PER-ITEM compound with a tight local AABB, not the retired scene-spanning one, so
+// broadphase still culls; a compound cannot ride btUniformScalingShape (non-convex),
+// so its scale bakes into the child geometry (see scatter_ring_shape.inl).
 //
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -20,6 +26,7 @@
 #include <ork/ecs/entity.inl>
 #include <ork/ecs/scene.inl>
 #include "bullet_impl.h"
+#include "scatter_ring_shape.inl"
 #include <BulletCollision/CollisionShapes/btUniformScalingShape.h>
 #include <BulletCollision/CollisionShapes/btEmptyShape.h>
 #include <filesystem>
@@ -29,6 +36,13 @@
 ImplementReflectionX(ork::ecs::BulletShapeScatterData, "BulletShapeScatterData");
 
 namespace ork::ecs {
+
+// proxy_kind vocabulary (baked per point by the placer): -1 none, 0 sphere(d0),
+// 1 capsule(d0,d1), 2 box(d0,d1,d2), 3 cone(d0,d1). RING is kind 4 — kind 3 is a
+// live cone path (btConeShape + the DSL "cone" collider vocab), so ring takes the
+// next free slot rather than silently repurposing it. dims = (r_mid, half_height,
+// thickness); see scatter_ring_shape.inl.
+static constexpr int kProxyKindRing = 4;
 
 void BulletShapeScatterData::describeX(object::ObjectClass* clazz) {
   clazz->directProperty("scatter_asset", &BulletShapeScatterData::_scatter_asset);
@@ -86,6 +100,29 @@ BulletShapeScatterData::BulletShapeScatterData() {
       const float s = fvec3(c0.x, c0.y, c0.z).magnitude();
       const float inv_s = (s > 1e-6f) ? (1.0f / s) : 1.0f;
       const fvec3 d = chD->_data[i];
+
+      if (kind == kProxyKindRing) {
+        // RING (walk-INTO annulus): a per-item 12-box btCompoundShape. Non-convex,
+        // so it does NOT share a base / ride btUniformScalingShape — scale bakes in.
+        // The RIGID body transform (normalized basis + translation) carries the
+        // item's yaw and world position; the compound's children sit in local space.
+        auto compound = buildScatterRingCompound(d, s, batch->_ownedShapes);
+        btTransform xf;
+        xf.setBasis(btMatrix3x3(
+            c0.x * inv_s, c1.x * inv_s, c2.x * inv_s,
+            c0.y * inv_s, c1.y * inv_s, c2.y * inv_s,
+            c0.z * inv_s, c1.z * inv_s, c2.z * inv_s));
+        xf.setOrigin(btVector3(c3.x, c3.y, c3.z));
+        auto body = data.mWorld->AddLocalRigidBody(
+            data.mEntity, 0.0f /*static*/, xf, compound, CDATA._groupAssign, CDATA._groupCollidesWith);
+        body->forceActivationState(ISLAND_SLEEPING);
+        body->setRestitution(CDATA._restitution);
+        body->setFriction(CDATA._friction);
+        batch->_bodies.push_back(body);
+        built++;
+        continue;
+      }
+
       std::array<float, 4> key = {float(kind), d.x, d.y, d.z};
       btConvexShape*& base = base_shapes[key];
       if (not base) {

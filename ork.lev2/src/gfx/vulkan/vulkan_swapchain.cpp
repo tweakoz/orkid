@@ -656,7 +656,7 @@ void VkSwapChain::_waitFrame() {
   if(0)logchan_swapchain->log("waitPresentFrame: frame %zu, sub_index %zu", _current_frame, sub_index);
   auto& fence = _frame_fences[sub_index];
   uint64_t _idle_t0 = ork::Timer::getSystemTick(); // perf HUD: vblank/present idle
-  fence->wait();
+  fence->wait("swapchain-waitFrame");
   ork::lev2::RenderPhaseStats::instance().add(
       "present-idle", double(ork::Timer::getSystemTick() - _idle_t0) * 1.0e-6); // perf HUD
 }

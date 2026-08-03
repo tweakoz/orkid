@@ -190,6 +190,10 @@ class DuGeometryBufferInterface final : public GeometryBufferInterface {
       size_t args_offset = 0,
       int index_size = 4) override;
 
+  void DrawMeshTasksEML(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) override;
+
+  void DrawMeshTasksIndirectEML(const FxShaderStorageBuffer* indirect_args, size_t args_offset = 0) override;
+
   //////////////////////////////////////////////
 
 public:

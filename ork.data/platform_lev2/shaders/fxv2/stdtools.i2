@@ -13,15 +13,6 @@ uniform_block ublk_std_matrices (descriptor_set 0) {
   mat4 inv_p;
   mat4 inv_vp;
   //
-  mat4 v_l;
-  mat4 v_r;
-  mat4 vp_l;
-  mat4 vp_r;
-  mat4 inv_vp_l;
-  mat4 inv_vp_r;
-  mat4 mvp_l;
-  mat4 mvp_r;
-  //
   // model-view INVERSE-TRANSPOSE (normal matrix, object->view). Bound per-draw in
   // material_pbr_pipeline.cpp::createBasicStateLambda(). mvit_rot is its 3x3 — the
   // one used for normals (view-space normal = normalize(mvit_rot * object_normal));
@@ -82,29 +73,105 @@ uniform_block ublk_std_depth(descriptor_set 0) {
 uniform_block ublk_std_pbr(descriptor_set 0) {
   //////////////////////////////
   vec3 AmbientLevel;          // 0x00
-  vec3 EyePostion;            // 0x10
-  vec3 EyePostionL;           // 0x20
-  vec3 EyePostionR;           // 0x30
-  vec4 ModColor;              // 0x40 — POST-multiplicative output tint
-  vec4 ModAlbedo;             // 0x50 — per-material albedo multiplier
+  vec3 EyePostion;            // 0x10  (mono; the multiview variant redirects it per view)
+  vec4 ModColor;              // 0x20 — POST-multiplicative output tint
+  vec4 ModAlbedo;             // 0x30 — per-material albedo multiplier
   //////////////////////////////
-  float MetallicFactor;       // 0x60
-  float RoughnessFactor;      // 0x64
-  float RoughnessPower;       // 0x68
-  float SkyboxLevel;          // 0x6c
-  float SpecularLevel;        // 0x70
-  float DiffuseLevel;         // 0x74
-  float EnvironmentMipBias;   // 0x78
-  float EnvironmentMipScale;  // 0x7c
-  float RoughnessLevels;      // 0x80
-  float SpecularMipBias;      // 0x84
-  float DepthFogDistance;     // 0x88
-  float DepthFogPower;        // 0x8c
+  float MetallicFactor;       // 0x40
+  float RoughnessFactor;      // 0x44
+  float RoughnessPower;       // 0x48
+  float SkyboxLevel;          // 0x4c
+  float SpecularLevel;        // 0x50
+  float DiffuseLevel;         // 0x54
+  float EnvironmentMipBias;   // 0x58
+  float EnvironmentMipScale;  // 0x5c
+  float RoughnessLevels;      // 0x60
+  float SpecularMipBias;      // 0x64
+  float DepthFogDistance;     // 0x68
+  float DepthFogPower;        // 0x6c
   //////////////////////////////
-  vec4 AuxA;                  // 0x90
-  vec4 AuxB;                  // 0xa0
+  vec4 AuxA;                  // 0x70
+  vec4 AuxB;                  // 0x80
   //////////////////////////////
-  float AlphaCutoff;          // 0xb0
+  float AlphaCutoff;          // 0x90
+  // procedural-refilter crossfade: 0 = the outgoing (Prev) IBL only, 1 = the
+  // newly published one. Pinned at 1 outside a fade window, where the binder
+  // also aliases the Prev samplers onto the current maps.
+  float EnvBlendWeight;       // 0x94
+  // procedural-capture PRE-SCALE, already inverted (see lib_env_decode).
+  float EnvCaptureScaleInv;   // 0x98
+  // AMBIENT gate: 1 = EnvSH below carries this frame's sky, 0 = the binder had
+  // no projection to give (and said so out loud on the C++ side). There is no
+  // other ambient source to fall back to, so a 0 here IS the absence of
+  // ambient light, never a quiet switch to a second path.
+  float EnvSHValid;           // 0x9c
+  // The sky's nine L2 coefficients, RADIANCE integrals, already decoded and
+  // already crossfaded on the CPU (see lib_env_sh). Procedural probe or
+  // authored map — one pipeline, one seam (CommonStuff::envSHCoeffs).
+  vec4 EnvSH[9];              // 0xa0 .. 0x130
+}
+
+///////////////////////////////////////////////////////////////
+// CAPTURE PRE-SCALE decode (procedural sky IBL).
+//
+// A moonless night sky is ~1e-5 of a day sky, and both the equirect snapshot
+// and the prefiltered radiance maps are RGBA16F — whose minimum NORMAL is
+// 6.1e-5. Night energy therefore flushed to EXACTLY zero somewhere between the
+// capture and the shaded fragment, which is what made shadowed surfaces black
+// at night. So the snapshot is written at a known GAIN
+// (SkyAtmosphereData::_iblCaptureScale, folded into the snapshot's exposure
+// bind in HillaireSky::renderEquirectSnapshot) and divided back out here.
+//
+// ONE encode seam, ONE decode seam, by construction: the encode is a single
+// C++ bind and every read of MapSpecularEnv (and its Prev twin) comes back
+// through this one function, so the factor can neither
+// double-apply nor be forgotten at a site. The binder pins EnvCaptureScaleInv
+// at 1.0 whenever the bound maps are NOT the procedural set — baked scenes and
+// the procedural warm-up window are bit-unchanged.
+//
+// NOT for the reflection-probe cubes: those are captured through a different
+// path that never sees the gain.
+///////////////////////////////////////////////////////////////
+libblock lib_env_decode : ublk_std_pbr {
+  vec3 env_decodeCapture(vec3 radiance) {
+    return radiance * EnvCaptureScaleInv;
+  }
+}
+
+///////////////////////////////////////////////////////////////
+// SKY SH PROBE — diffuse irradiance from nine L2 coefficients.
+//
+// EnvSH holds RADIANCE integrals L_i = integral L(d) Y_i(d) dw over the sky
+// snapshot (ProbeSHProjector, same basis and same order as probe_sh.h). The
+// COSINE CONVOLUTION is the per-band factor Ahat_l / pi applied here:
+//   Ahat_0 = pi, Ahat_1 = 2pi/3, Ahat_2 = pi/4
+// and the whole thing is divided by pi because what the shading code wants is
+// an average incident RADIANCE (E/pi), which is what the prefiltered diffuse
+// map delivered and what gets multiplied by base color with no 1/pi of its own.
+// So the band weights collapse to 1, 2/3, 1/4.
+//
+// This is the ONLY convolution in the diffuse path now: the GGX-importance
+// lobe the prefiltered equirect map was built with (an approximation of a
+// clamped cosine, read at a coarse mip) does not exist any more — not on the
+// procedural path, not on the authored one, and not in the bake.
+//
+// The clamp is not cosmetic. A truncated L2 series of a high-contrast sky rings
+// negative away from the bright lobe, and a negative irradiance would subtract
+// light from whatever else lit the fragment.
+///////////////////////////////////////////////////////////////
+libblock lib_env_sh : ublk_std_pbr {
+  vec3 env_shIrradiance(vec3 n) {
+    vec3 acc = EnvSH[0].xyz * 0.2820948;
+    acc += (EnvSH[1].xyz * (0.4886025 * n.y)
+          + EnvSH[2].xyz * (0.4886025 * n.z)
+          + EnvSH[3].xyz * (0.4886025 * n.x)) * 0.6666667;
+    acc += (EnvSH[4].xyz * (1.0925484 * n.x * n.y)
+          + EnvSH[5].xyz * (1.0925484 * n.y * n.z)
+          + EnvSH[6].xyz * (0.3153916 * (3.0 * n.z * n.z - 1.0))
+          + EnvSH[7].xyz * (1.0925484 * n.x * n.z)
+          + EnvSH[8].xyz * (0.5462742 * (n.x * n.x - n.y * n.y))) * 0.25;
+    return max(acc, vec3(0.0));
+  }
 }
 
 ///////////////////////////////////////////////////////////////
@@ -202,8 +269,13 @@ sampler_set sset_std_pbr(descriptor_set 0) {
   samplerCube reflectionPROBE;
   samplerCube RadiancePROBE;
   sampler2D MapBrdfIntegration; 
-  sampler2D MapDiffuseEnv;      
   sampler2DArray MapSpecularEnv; // 1 slice per roughness level
+  // The OUTGOING specular set while a procedural refilter crossfades
+  // (EnvBlendWeight ramps from 0 to 1 across the window). Outside a fade the
+  // binder aliases this to the one above, so sampling it is never a special
+  // case. There is no diffuse twin: the ambient is nine coefficients whose
+  // crossfade is resolved on the CPU (EnvSH below).
+  sampler2DArray MapSpecularEnvPrev;
 }
 ///////////////////////////////////////////////////////////////
 uniform_block ublk_std_lighting (descriptor_set 0) {
@@ -215,6 +287,79 @@ uniform_block ublk_std_lighting (descriptor_set 0) {
   int has_reflection_probe;
 }
 
+///////////////////////////////////////////////////////////////
+// SKYLIGHT lane A — dynamic directional sun + cascade shadow state.
+// REAL single-buffer UBO (ub_vtx_boneblock bind pattern): written once per
+// frame by the forward prologue (_update_sun_cascades, std140 offsets
+// hand-mirrored there), bound per-draw in the forward lighting lambda.
+// has_sun (sun_dir.w) gates ALL sun work — sunless scenes take a no-op
+// branch before any sampling (byte-identity contract).
+uniform_block ublk_sun (descriptor_set 0) {
+  mat4 sun_shadow_matrix[4];  // per-cascade proj*view (storage 4; runtime 2..4)
+  vec4 sun_split_distances;   // per-band SELECT radius (world meters from the anchor below)
+  vec4 sun_dir;               // xyz = sunlight travel direction, w = has_sun
+  vec4 sun_color;             // rgb = color, w = intensity
+  vec4 sun_shadow_params;     // x = bias(ndc), y = pcf radius(texels), z = cascade count, w = texel size(uv)
+  vec4 sun_cascade_basis;     // xyz = BAND ANCHOR (viewer position the world bands were fit around,
+                              // mono prologue cam). NOTHING here may carry an orientation — the bands
+                              // are view-independent and a turn must stay free.
+  vec4 sun_cascade_texel;     // per-band 1/dim. PER-BAND RESOLUTION (S2b): the array is one allocation
+                              // at the near band's dim (= sun_shadow_params.w) and an outer band is
+                              // rendered into the top-left dim² corner of its slice, so that band's uv
+                              // scale is sun_shadow_params.w/sun_cascade_texel[i] and its WORLD texel
+                              // size derives from sun_cascade_texel[i]. All four equal
+                              // sun_shadow_params.w = every band full dim = the shipped path, scale 1.
+                              // (This vec4 sits where sun_cascade_basis[1] was reserved — same offsets.)
+  // DIRECTIONAL COOKIE (cloud shadows). Cookies were spot-only; the sun needs one
+  // because a cloud deck occludes the whole world, not a cone, and it sits far
+  // outside any cascade. The cookie is a TRANSMITTANCE map in the light's own
+  // plane: matrix takes a WORLD position to cookie uv, params.x arms it (0 =
+  // absent -> the branch never samples and the frame is byte-identical), params.y
+  // scales its strength, params.z is the sample lod (softness lives here).
+  mat4 sun_cookie_matrix;
+  vec4 sun_cookie_params;     // x = enable, y = strength, z = GROUND lod, w = extinction tau (Beer-Lambert)
+  // SNAPSHOT FLIP CROSSFADE (S2a). A cascade snapshot is double-buffered as two
+  // SLICE RANGES of the one depth array; on a flip the shader computes the
+  // shadow FACTOR from both the outgoing and incoming snapshot and lerps them
+  // (depth values themselves cannot be blended). The previous snapshot needs
+  // its own fit to be sampled at all — its matrices, its select radii and the
+  // anchor they were fit around. APPENDED, so every offset above is unchanged.
+  //
+  // sun_shadow_fade.x == 0 (the shipped default, and every frame outside a
+  // fade window) makes the prev half unreachable: one branch, no sampling.
+  //
+  // MEMBER ORDER IS LOAD-BEARING: the mat4 ARRAY goes LAST. The offset the
+  // engine's block reflection assigns to whatever FOLLOWS a mat4[] is rounded
+  // up to 64 (the element size), which plain std140 does not do — a member
+  // placed after this array lands at an offset the host writes and the shader
+  // reads differently, and the symptom is silently-wrong data with no error
+  // (measured: the prev-snapshot split radii read as zero -> every band test
+  // failed -> the whole crossfade sampled as unshadowed). With the array last
+  // there is nothing after it and both rules agree on every member.
+  vec4 sun_split_distances_prev;
+  vec4 sun_cascade_basis_prev; // xyz = the PREVIOUS snapshot's band anchor
+  vec4 sun_shadow_fade;        // x = prev weight (0=current only), y = current slice base,
+                               // z = prev slice base, w = unused
+  // SKY BACKGROUND LUMINANCE — the measured mean of the published environment
+  // (RadianceMaps::_measuredLuminance, decoded). A SKY quantity, and it rides
+  // this block because this is the per-frame skylight state every forward draw
+  // already binds. It is deliberately NOT a function of whatever body owns the
+  // sun slot above: after the night caster handoff that slot carries the MOON,
+  // and anything that reads "is it night" off it is keyed to the wrong body.
+  // Written on EVERY path of the prologue write, sunless ones included.
+  vec4 sky_ambient;           // x = background luminance, yzw = unused
+  mat4 sun_shadow_matrix_prev[4];
+
+}
+///////////////////////////////////////////////////////////////
+sampler_set sset_sun (descriptor_set 0) {
+  sampler2DArray sun_shadow_map; // Z32F cascade depth array (dedicated, not the spot cookie array;
+                                 // 2 sets of kSunCascadeStorage slices when a flip crossfade or an
+                                 // amortized snapshot is armed — see sun_shadow_fade)
+  sampler2D sun_cookie;          // A = cloud OCCLUSION toward the sun (0 = unoccluded;
+                                 // transmittance is 1-a). RGB is the decks' own radiance,
+                                 // carried only so the map is legible in a dump.
+}
 ///////////////////////////////////////////////////////////////
 storage_interface storage_fwd_lighting (descriptor_set 0) {
   buffer layout(std430) lights {

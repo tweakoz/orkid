@@ -284,9 +284,22 @@ struct Scene {
   // gpuUpdateAll, the ECS SceneGraphSystem, AND the direct _renderIMPL paths — first caller wins,
   // a second same-frame call is a no-op (e.g. two viewports sharing one scene).
   void gpuUpdate(Context* ctx);
+  // FRAME-PROLOGUE hooks (C++-only): registered callables run exactly once per
+  // composited frame (target-frame deduped, render thread), immediately before
+  // the compositor assembles — the frame-scoped attach point for system-level
+  // GPU work (sky time-of-day push, probe scheduling policy). Every render
+  // entry calls the invoker defensively; first caller per frame wins.
+  using frame_prologue_hook_t = std::function<void(Context* ctx)>;
+  void onFramePrologue(frame_prologue_hook_t hook);
+  void _invokeFramePrologueHooks(Context* ctx);
   // per-VIEWPORT pre-render fan-out: invoked from SceneGraphViewport::DoRePaintSurface with that
   // viewport's CameraMatrices; walks enabled drawable nodes and calls Drawable::onPreRender.
   void preRender(Context* ctx, const CameraMatrices& cammtx);
+  // per-FRAME sun-shadow cull fan-out (cascade-cull fix): invoked ONCE from the forward prologue with a
+  // UNION sun camera enclosing all cascade slices. Walks enabled drawable nodes and calls
+  // Drawable::onShadowPreRender on each that wantsShadowCull(), batched into one dispatch phase. When
+  // NO drawable wants it the phase is never opened (sunless/non-culled scenes stay byte-identical).
+  void shadowCull(Context* ctx, const CameraMatrices& cammtx);
   void gpuExit(Context* ctx);
 
   void pickWithRay(fray3_constptr_t ray, SgPickBuffer::callback_t callback);
@@ -333,6 +346,8 @@ struct Scene {
   hzbbuilder_ptr_t _hzb; // 1-phase occlusion HZB: built frame-end by the ForwardNode from THIS frame's
                          // depth, stamped into the RCFD in preRender for NEXT frame's per-view cull.
   int _lastGpuUpdateFrame = -1; // gpuUpdate's per-frame idempotence stamp (ctx->GetTargetFrame())
+  std::vector<frame_prologue_hook_t> _framePrologueHooks;
+  int _lastFramePrologueFrame = -1; // frame-prologue idempotence stamp (ctx->GetTargetFrame())
   uint32_t _pickFormat = 0;
   bool _doResizeFromMainSurface = false;
   using layer_map_t = std::map<std::string, layer_ptr_t>;

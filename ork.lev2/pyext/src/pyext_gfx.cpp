@@ -7,9 +7,12 @@
 
 #include "pyext.h"
 #include <pybind11/numpy.h>
+#include <ork/lev2/init.h>
 #include <ork/lev2/input/inputdevice.h>
 #include <ork/lev2/gfx/terrain/terrain_drawable.h>
 #include <ork/lev2/gfx/gfxvtxbuf.inl>
+#include <ork/lev2/gfx/gpumicrotask.h>
+#include <ork/lev2/gfx/renderphasestats.h>
 #include <ork/lev2/gfx/image.h>
 #include <ork/math/cvector4.h>
 #include <ork/python/gil_safe_pyobj.h>
@@ -79,6 +82,13 @@ void pyinit_gfx(py::module& module_lev2) {
           // non-blocking query is exposed — a blocking wait from this
           // context's own thread would deadlock the drain.
           .def("hasDeferredOps", [](ctx_t& c) -> bool { return c.get()->hasDeferredOps(); })
+          // DEVICE capability probe (SKYLIGHT §4.B.1 froxel risk retirement).
+          .def(
+              "supportsVolumeRenderTarget",
+              [](ctx_t& c, std::string format) -> bool {
+                auto crc_fmt = CrcString(format.c_str());
+                return c.get()->supportsVolumeRenderTarget(EBufferFormat(crc_fmt._hashed));
+              })
           .def("debugPushGroup", [](ctx_t& c, cstrref_t str) { return c.get()->debugPushGroup(str); })
           .def("debugPopGroup", [](ctx_t& c) { return c.get()->debugPopGroup(); })
           .def("debugMarker", [](ctx_t& c, cstrref_t str) { return c.get()->debugMarker(str); })
@@ -119,6 +129,71 @@ void pyinit_gfx(py::module& module_lev2) {
           .def_property_readonly("topRCFD", [](ctx_t& c) -> rcfd_ptr_t { return c.get()->topRenderContextFrameData(); }) //
           //////////////////////
           .def_property_readonly("frameIndex", [](ctx_t& c) -> int { return c.get()->GetTargetFrame(); })
+          // GPU queue submits issued during the last completed frame (all queues)
+          .def_property_readonly("submitCount", [](ctx_t& c) -> int { return int(c.get()->submitCount()); })
+          //////////////////////
+          // GPU-CULL RESULT COUNTS (terrain + hypermesh), the cull oracle's ask.
+          //
+          // Both cull sites read their result buffers back ONLY while this is
+          // enabled, so it is off by default and a caller must arm it: an
+          // all-zero snapshot from an UNARMED run means "nobody counted", not
+          // "nothing was culled". Hence cullStatsEnabled is readable — a gate
+          // has to be able to prove it armed the counter before believing a
+          // zero. The per-family *_valid flags say whether that family
+          // contributed at all this frame (a scene with no terrain never sets
+          // terrain_valid), which is what separates "no such geometry" from
+          // "everything culled".
+          //////////////////////
+          .def_property(
+              "cullStatsEnabled",
+              [](ctx_t& c) -> bool { return CullStats::instance().enabled(); },
+              [](ctx_t& c, bool e) { CullStats::instance().setEnabled(e); })
+          .def_property_readonly(
+              "cullStats",
+              [](ctx_t& c) -> py::dict {
+                auto cc = CullStats::instance().snapshot();
+                py::dict rval;
+                rval["enabled"]       = CullStats::instance().enabled();
+                rval["terrain_valid"] = cc.terrain_valid;
+                rval["t_total"]       = cc.t_total;
+                rval["t_frustum"]     = cc.t_frustum;
+                rval["t_visible"]     = cc.t_visible;
+                rval["hyper_valid"]   = cc.hyper_valid;
+                rval["h_variants"]    = cc.h_variants;
+                rval["h_total"]       = cc.h_total;
+                rval["h_frustum"]     = cc.h_frustum;
+                rval["h_visible"]     = cc.h_visible;
+                rval["h_occluded"]    = cc.h_occluded;
+                return rval;
+              })
+          // device capability: VK_EXT_mesh_shader (false on every device that lacks it)
+          .def_property_readonly("supports_mesh_shader", [](ctx_t& c) -> bool { return c.get()->supportsMeshShader(); })
+          // + the taskShader (amplification) feature; strictly stronger than supports_mesh_shader
+          .def_property_readonly("supports_task_shader", [](ctx_t& c) -> bool { return c.get()->supportsTaskShader(); })
+          .def_property_readonly("max_task_payload_size", [](ctx_t& c) -> int { return int(c.get()->maxTaskPayloadSize()); })
+          // draws issued with a task stage actually bound — zero after real frames means the pass
+          // ran taskless, whatever the picture looks like
+          .def_property_readonly("task_shader_draws", [](ctx_t& c) -> int { return c.get()->taskShaderDrawCount(); })
+          // device capability: core VK1.1 multiview (false on every device that lacks it)
+          .def_property_readonly("supports_multiview", [](ctx_t& c) -> bool { return c.get()->supportsMultiview(); })
+          .def_property_readonly("max_multiview_views", [](ctx_t& c) -> int { return c.get()->maxMultiviewViewCount(); })
+          // + GPU-driven workgroup counts (vkCmdDrawMeshTasksIndirectEXT); implies supports_mesh_shader
+          .def_property_readonly(
+              "supports_mesh_shader_indirect", [](ctx_t& c) -> bool { return c.get()->supportsMeshShaderIndirect(); })
+          // device capability: core multiview, and the mesh stage's legality inside a multiview pass
+          .def_property_readonly("supports_multiview", [](ctx_t& c) -> bool { return c.get()->supportsMultiview(); })
+          .def_property_readonly(
+              "supports_multiview_mesh_shader", [](ctx_t& c) -> bool { return c.get()->supportsMultiviewMeshShader(); })
+          .def_property_readonly(
+              "max_mesh_multiview_views", [](ctx_t& c) -> int { return int(c.get()->maxMeshMultiviewViewCount()); })
+          // validation-layer state: error count so far, and whether the layer is loaded at all
+          // (a zero count from an unarmed run proves nothing — check armed first)
+          .def_property_readonly("validation_errors", [](ctx_t& c) -> int { return c.get()->validationErrorCount(); })
+          .def_property_readonly("validation_armed", [](ctx_t& c) -> bool { return c.get()->validationArmed(); })
+          // hw MSAA ceiling (framebufferColor+DepthSampleCounts); query it before asking RtGroup for a count
+          .def_property_readonly("msaa_max_samples", [](ctx_t& c) -> int { return c.get()->msaaMaxSamples(); })
+          // sample count the FORWARD pass's primary target is built at (app --msaa level, device-clamped)
+          .def_property_readonly("msaa_forward_samples", [](ctx_t& c) -> int { return msaaForwardSampleCount(c.get()); })
           // .def_property("currentMaterial", [](ctx_t& c)&Context::currentMaterial, &Context::BindMaterial)
           .def("__repr__", [](const ctx_t& c) -> std::string {
             fxstring<64> fxs;
@@ -332,7 +407,35 @@ void pyinit_gfx(py::module& module_lev2) {
       .def("unlock", [](gbi_t gbi, vw_vtxa_t& vw) { vw.UnLock(gbi.get()); })
       .def("drawTriangles", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES); })
       .def("drawTriangleStrip", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLESTRIP); })
-      .def("drawLines", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, PrimitiveType::LINES); });
+      .def("drawLines", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, PrimitiveType::LINES); })
+      .def(
+          "drawMeshTasks", // taskless mesh-shader draw; args are mesh workgroup counts
+          [](gbi_t gbi, uint32_t x, uint32_t y, uint32_t z) { gbi.get()->DrawMeshTasksEML(x, y, z); },
+          py::arg("x") = 1,
+          py::arg("y") = 1,
+          py::arg("z") = 1)
+      .def(
+          // mesh-shader draw whose workgroup counts come from a compute-written
+          // VkDrawMeshTasksIndirectCommandEXT{x,y,z} at args_offset (all-culled -> zero workgroups).
+          "drawMeshTasksIndirect",
+          [](gbi_t gbi, fxshaderstoragebuffer_ptr_t args, size_t args_offset) {
+            gbi.get()->DrawMeshTasksIndirectEML(args.get(), args_offset);
+          },
+          py::arg("args"),
+          py::arg("args_offset") = 0)
+      .def(
+          // SSBO vertex-pull, NON-indexed indirect draw: the vertex count comes from a
+          // compute-written VkDrawIndirectCommand at args_offset; vertices are pulled from the
+          // storage block bound to the VS (pipeline.bindStorage). The raw-GBI counterpart of
+          // drawMeshTasks — the two are the A/B pair for SSBO-sourced geometry.
+          "drawIndirect",
+          [](gbi_t gbi, fxshaderstoragebuffer_ptr_t args, crcstring_ptr_t primtype, size_t args_offset) {
+            auto pt = primtype ? PrimitiveType(primtype->hashed()) : PrimitiveType::TRIANGLES;
+            gbi.get()->DrawIndirectEML(pt, args.get(), args_offset);
+          },
+          py::arg("args"),
+          py::arg("primtype")    = crcstring_ptr_t(nullptr),
+          py::arg("args_offset") = 0);
   //.def("copyTensorIntoStorageBuffer", [](gbi_t gbi, torchtensor_ptr_t tensor, fxshaderstoragebuffer_ptr_t buffer) {
   // ci.get()->copyTensorIntoStorageBuffer(buffer.get(), tensor); });
   /////////////////////////////////////////////////////////////////////////////////
@@ -384,6 +487,11 @@ void pyinit_gfx(py::module& module_lev2) {
         // C.3: group counts from a GPU-written VkDispatchIndirectCommand (x,y,z) at args_offset
         ci.get()->dispatchComputeIndirect(csh.get(), args.get(), args_offset);
       }, py::arg("shader"), py::arg("args"), py::arg("args_offset") = 0)
+      .def("dispatchInline", [](ci_t& ci, pyfxcomputeshader_ptr_t csh, uint32_t numx, uint32_t numy, uint32_t numz) {
+        // record the dispatch + producer->consumer barrier onto the FRAME primary CB (no separate
+        // submit/fence); call mid-frame, OUTSIDE any render pass, AFTER bindStorageBuffer.
+        ci.get()->dispatchComputeInline(csh.get(), numx, numy, numz);
+      })
       .def("bindStorageBuffer", [](ci_t& ci, pyfxcomputeshader_ptr_t csh, uint32_t binding_index, fxshaderstoragebuffer_ptr_t buffer) {
         ci.get()->bindStorageBuffer(csh.get(), binding_index, buffer.get());
       })
@@ -678,12 +786,52 @@ void pyinit_gfx(py::module& module_lev2) {
   type_codec->registerStdCodec<rtbuffer_ptr_t>(rtb_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto rtg_t = py::class_<RtGroup, rtgroup_ptr_t>(module_lev2, "RtGroup")
-                   .def(py::init([](ctx_t& ctx, int w, int h) -> rtgroup_ptr_t {
-                     uint64_t usage           = "user"_crcu;
-                     MsaaSamples msaa_samples = MsaaSamples::MSAA_1X;
+                   // msaa is a literal hw sample COUNT (1/2/4/8/16), not a --msaa level. Invalid counts and
+                   // counts above the device ceiling THROW rather than silently rounding down — a caller
+                   // measuring per-sample cost must never be handed a quieter target than it asked for.
+                   .def(py::init([](ctx_t& ctx, int w, int h, int msaa) -> rtgroup_ptr_t {
+                     uint64_t usage = "user"_crcu;
+                     switch (msaa) {
+                       case 1:
+                       case 2:
+                       case 4:
+                       case 8:
+                       case 16:
+                         break;
+                       default:
+                         throw std::invalid_argument(
+                             FormatString("RtGroup: msaa=%d is not a hw sample count (1,2,4,8,16)", msaa));
+                     }
+                     int devmax = ctx.get()->msaaMaxSamples();
+                     if (msaa > devmax) {
+                       throw std::invalid_argument(
+                           FormatString("RtGroup: msaa=%d exceeds device max %d", msaa, devmax));
+                     }
+                     MsaaSamples msaa_samples = msaaSamplesFromInt(msaa);
                      auto rtg                 = std::make_shared<RtGroup>(ctx.get(), w, h, msaa_samples, usage);
                      return rtg;
-                   }))
+                   }),
+                        py::arg("ctx"),
+                        py::arg("w"),
+                        py::arg("h"),
+                        py::arg("msaa") = 1)
+                   .def_property_readonly(
+                       "msaa_samples", [](rtgroup_ptr_t rtg) -> int { return msaaEnumToInt(rtg->_msaa_samples); })
+                   // SINGLE-PASS STEREO. Both must be set BEFORE the first createBuffer: the layer
+                   // count is copied into each RtBuffer at construction, and a group whose buffers
+                   // disagree about layer count is an attachment mismatch the pass only discovers at
+                   // render time.
+                   .def_property(
+                       "numLayers",
+                       [](rtgroup_ptr_t rtg) -> int { return rtg->_numLayers; },
+                       [](rtgroup_ptr_t rtg, int n) { rtg->_numLayers = n; })
+                   .def_property(
+                       "multiview",
+                       [](rtgroup_ptr_t rtg) -> bool { return rtg->_multiview; },
+                       [](rtgroup_ptr_t rtg, bool b) { rtg->_multiview = b; })
+                   // the mask the pass is actually rendered with: 0 unless the group is BOTH layered
+                   // and multiview. This is the value both vulkan rendering structs read.
+                   .def_property_readonly("viewMask", [](rtgroup_ptr_t rtg) -> int { return int(rtg->viewMask()); })
                    .def("resize", [](rtgroup_ptr_t rtg, int w, int h) { rtg.get()->Resize(w, h); })
                    .def_property_readonly("width", [](rtgroup_ptr_t rtg) -> int { return int(rtg->width()); })
                    .def_property_readonly("height", [](rtgroup_ptr_t rtg) -> int { return int(rtg->height()); })
@@ -720,7 +868,30 @@ void pyinit_gfx(py::module& module_lev2) {
                    .def_property(
                        "autoclear",
                        [](rtgroup_ptr_t rtg) -> bool { return rtg->_autoclear; },
-                       [](rtgroup_ptr_t rtg, bool autoclear) { rtg->_autoclear = autoclear; });
+                       [](rtgroup_ptr_t rtg, bool autoclear) { rtg->_autoclear = autoclear; })
+                   // cubeMap must be set BEFORE createBuffer (it selects ETEXTYPE_CUBE and
+                   // the 6-layer image); cubeRenderFace selects which face the next
+                   // rtGroupPush targets.
+                   .def_property(
+                       "cubeMap",
+                       [](rtgroup_ptr_t rtg) -> bool { return rtg->_cubeMap; },
+                       [](rtgroup_ptr_t rtg, bool cube) { rtg->_cubeMap = cube; })
+                   .def_property(
+                       "cubeRenderFace",
+                       [](rtgroup_ptr_t rtg) -> int { return rtg->_cubeRenderFace; },
+                       [](rtgroup_ptr_t rtg, int face) { rtg->_cubeRenderFace = face; })
+                   // layered / multiview: BOTH must be set BEFORE createBuffer (they select the
+                   // N-layer 2D_ARRAY image and the pass's viewMask); view_mask is what the pass
+                   // is actually rendered with, and is 0 unless the group is layered AND multiview.
+                   .def_property(
+                       "numLayers",
+                       [](rtgroup_ptr_t rtg) -> int { return rtg->_numLayers; },
+                       [](rtgroup_ptr_t rtg, int n) { rtg->_numLayers = n; })
+                   .def_property(
+                       "multiview",
+                       [](rtgroup_ptr_t rtg) -> bool { return rtg->_multiview; },
+                       [](rtgroup_ptr_t rtg, bool mv) { rtg->_multiview = mv; })
+                   .def_property_readonly("view_mask", [](rtgroup_ptr_t rtg) -> int { return int(rtg->viewMask()); });
   //.def("texture", [](rtgroup_ptr_t rtg, int irtb) -> texture_ptr_t { return rtg->buffer(irtb)->texture(); });
   type_codec->registerStdCodec<rtgroup_ptr_t>(rtg_t);
   /////////////////////////////////////////////////////////////////////////////////
@@ -771,6 +942,12 @@ void pyinit_gfx(py::module& module_lev2) {
       .def_property_readonly("width", [](CaptureBuffer& capbuf) -> int { return int(capbuf.width()); })
       .def_property_readonly("height", [](CaptureBuffer& capbuf) -> int { return int(capbuf.height()); })
       .def_property_readonly("format", [](CaptureBuffer& capbuf) -> int { return int(capbuf.format()); })
+      // which array layer of a LAYERED (multiview) buffer to read back; 0 for every
+      // single-layer buffer, so leaving it alone is the pre-layered behavior.
+      .def_property(
+          "capture_layer",
+          [](CaptureBuffer& capbuf) -> int { return capbuf._captureLayer; },
+          [](CaptureBuffer& capbuf, int layer) { capbuf._captureLayer = layer; })
       .def("__len__", [](const CaptureBuffer& capbuf) -> int { return int(capbuf.length()); })
       .def("__repr__", [](const CaptureBuffer& capbuf) -> std::string {
         fxstring<256> fxs;
@@ -1092,6 +1269,53 @@ void pyinit_gfx(py::module& module_lev2) {
         return fxs.c_str();
       });
   type_codec->registerStdCodec<texturearraysliceref_ptr_t>(texarrayslice_t);
+  /////////////////////////////////////////////////////////////////////////////////
+  // COMFORT-1: the microtask scheduler's learned per-slice cost, keyed by
+  // GpuMicrotask::_costKey. Process-wide (the registry is), so it reads the same
+  // whichever context ran the slices. This is the surface a hitch/comfort
+  // investigation measures against — worst_ms is the number that has to fit
+  // inside a frame.
+  /////////////////////////////////////////////////////////////////////////////////
+  module_lev2.def("microtaskCostStats", []() -> py::dict {
+    py::dict rval;
+    for (const auto& item : MicrotaskCostRegistry::snapshot()) {
+      const auto& e = item.second;
+      py::dict d;
+      d["slices"]           = e._sliceCount;
+      d["last_ms"]          = double(e._lastSliceUs) * 0.001;
+      d["worst_ms"]         = double(e._worstSliceUs) * 0.001;
+      d["second_worst_ms"]  = double(e._secondWorstSliceUs) * 0.001;
+      d["total_ms"]         = double(e._totalSliceUs) * 0.001;
+      d["deferrals"]        = e._deferrals;
+      d["escapes"]          = e._escapes;
+      d["instances_seeded"] = e._instancesSeeded;
+      d["scale"]            = e._estScaleQ16Ema / 65536.0;
+      d["seed_scale"]       = double(e._lastSeedScaleQ16) / 65536.0;
+      rval[py::str(item.first)] = d;
+    }
+    return rval;
+  });
+  module_lev2.def("resetMicrotaskCostStats", []() { //
+    MicrotaskCostRegistry::resetMeasurements();
+  });
+  /////////////////////////////////////////////////////////////////////////////////
+  // LIVE forward-MSAA level (0=off,1=2x,2=4x,3=8x). This is the app-level knob the
+  // forward compositor sizes its primary target from, and it is legitimately settable
+  // AFTER init — the scene `msaa=` param lands here at runtime (SceneGraphSystem) and
+  // ForwardPbrNodeImpl rebuilds its RtgSet when the level it built at no longer matches.
+  // Same handle, exposed: headless kwargs cannot reach _ginitdata (headless_appinit
+  // pre-seeds it with a default AppInitData before lev2appinit's kwargs are read).
+  /////////////////////////////////////////////////////////////////////////////////
+  module_lev2.def("forwardMsaaLevel", []() -> int { //
+    return _ginitdata ? _ginitdata->_msaa_samples : 0;
+  });
+  module_lev2.def("setForwardMsaaLevel", [](int level) { //
+    if (not _ginitdata)
+      throw std::runtime_error("setForwardMsaaLevel: lev2 is not initialized (no app init data)");
+    if (level < 0)
+      throw std::runtime_error(FormatString("setForwardMsaaLevel: level %d is negative", level));
+    _ginitdata->_msaa_samples = level;
+  });
   /////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
 } // namespace ork::lev2

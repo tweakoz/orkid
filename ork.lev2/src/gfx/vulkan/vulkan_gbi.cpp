@@ -1049,6 +1049,51 @@ void VkGeometryBufferInterface::DrawIndexedIndirectEML(
   vkCmdDrawIndexedIndirect(CB, _ssbo_vkbuffer(indirect_args), args_offset, 1, sizeof(VkDrawIndexedIndirectCommand));
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// EXT mesh-shader draw. The pipeline shape ([TASK+]MESH+FRAGMENT, no vertex input,
+// no input assembly) is chosen HERE by which fxi fetch this call makes. When the bound
+// pass carries a task stage the counts are TASK workgroups and the mesh grid is whatever
+// those workgroups emit; otherwise they are mesh workgroups directly.
+////////////////////////////////////////////////////////////////////////////////
+void VkGeometryBufferInterface::DrawMeshTasksEML(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) {
+
+  auto fxi = _contextVK->_fxi;
+  OrkAssertI(
+      _contextVK->_vkCmdDrawMeshTasksEXT != nullptr, //
+      "DrawMeshTasksEML on a device without VK_EXT_mesh_shader enabled");
+
+  auto pipeline = fxi->_fetchPipelineMesh(); // mesh stage supplies its own topology
+  auto& CB      = _contextVK->primary_cb()->_vkcmdbuf;
+  fxi->_bindPipeline(CB, pipeline);
+
+  _contextVK->_countMeshDraw();
+  _contextVK->_vkCmdDrawMeshTasksEXT(CB, groupCountX, groupCountY, groupCountZ);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Taskless EXT mesh-shader draw, INDIRECT: the workgroup counts come from a
+// VkDrawMeshTasksIndirectCommandEXT{x,y,z} the GPU wrote (a compaction pass), so an
+// all-culled view dispatches ZERO workgroups instead of the fixed grid's full complement.
+////////////////////////////////////////////////////////////////////////////////
+void VkGeometryBufferInterface::DrawMeshTasksIndirectEML(
+    const FxShaderStorageBuffer* indirect_args, //
+    size_t args_offset) {
+
+  auto fxi = _contextVK->_fxi;
+  OrkAssertI(
+      _contextVK->_vkCmdDrawMeshTasksIndirectEXT != nullptr, //
+      "DrawMeshTasksIndirectEML on a device without vkCmdDrawMeshTasksIndirectEXT");
+
+  auto pipeline = fxi->_fetchPipelineMesh(); // mesh stage supplies its own topology
+  auto& CB      = _contextVK->primary_cb()->_vkcmdbuf;
+  fxi->_bindPipeline(CB, pipeline);
+
+  _contextVK->_countMeshDraw();
+  // one command; stride is irrelevant at drawCount==1 but must still be a legal value
+  _contextVK->_vkCmdDrawMeshTasksIndirectEXT(
+      CB, _ssbo_vkbuffer(indirect_args), args_offset, 1, sizeof(VkDrawMeshTasksIndirectCommandEXT));
+}
+
 //////////////////////////////////////////////
 // nvidia mesh shaders
 //////////////////////////////////////////////

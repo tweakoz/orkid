@@ -1,0 +1,145 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 820" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#666"/>
+    </marker>
+    <marker id="arrw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#f59e0b"/>
+    </marker>
+    <filter id="shadow">
+      <feDropShadow dx="2" dy="2" stdDeviation="2" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  <rect x="0" y="0" width="1000" height="820" fill="#1a1a2e"/>
+  <text x="500" y="30" font-family="Arial" font-size="18" font-weight="bold" fill="white" text-anchor="middle">HyperTerrain — the mesh-shader path</text>
+
+  <!-- ======================= LANE 1 : MODE LADDER ======================= -->
+  <rect x="20" y="48" width="960" height="150" rx="10" fill="#252540" stroke="#4a5568"/>
+  <text x="34" y="70" font-size="12" font-weight="bold" fill="#aaa">THE MODE LADDER — ORKID_TERRAIN_MESHSHADER, ONE env read by BOTH the codegen and the dispatch</text>
+
+  <!-- mode 0 -->
+  <rect x="34" y="84" width="290" height="76" rx="8" fill="#4c1d95" stroke="#a78bfa" stroke-width="2" filter="url(#shadow)"/>
+  <text x="179" y="104" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">0 / absent — pull-VS baseline</text>
+  <text x="179" y="122" font-size="11" fill="#c4b5fd" text-anchor="middle">4 compute passes per view:</text>
+  <text x="179" y="137" font-family="monospace" font-size="10" fill="#c4b5fd" text-anchor="middle">reset / cull / sort / finalize</text>
+  <text x="179" y="152" font-size="11" fill="#c4b5fd" text-anchor="middle">chunk²·6 verts, ~6× corner decode</text>
+
+  <!-- mode 1 -->
+  <rect x="356" y="84" width="290" height="76" rx="8" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="501" y="104" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">1 — direct-sized mesh</text>
+  <text x="501" y="122" font-size="11" fill="#a7f3d0" text-anchor="middle">compacted v_list, grid-y sized on CPU</text>
+  <text x="501" y="137" font-size="11" fill="#a7f3d0" text-anchor="middle">from the LAG-1 visible count;</text>
+  <text x="501" y="152" font-size="11" fill="#a7f3d0" text-anchor="middle">never issues the indirect draw entry</text>
+
+  <!-- mode 2 -->
+  <rect x="678" y="84" width="290" height="76" rx="8" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="823" y="104" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">2 — indirect mesh</text>
+  <text x="823" y="122" font-size="11" fill="#a7f3d0" text-anchor="middle">compaction also writes the draw command;</text>
+  <text x="823" y="137" font-size="11" fill="#a7f3d0" text-anchor="middle">all-culled view dispatches NOTHING</text>
+  <text x="823" y="152" font-size="11" fill="#a7f3d0" text-anchor="middle">(needs the indirect draw entry)</text>
+
+  <!-- step-down arrows -->
+  <line x1="678" y1="172" x2="650" y2="172" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="664" y="186" font-size="10" fill="#aaa" text-anchor="middle">no indirect entry</text>
+  <line x1="356" y1="172" x2="328" y2="172" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="342" y="186" font-size="10" fill="#aaa" text-anchor="middle">no ext / stale material — LOUD</text>
+
+  <!-- ======================= LANE 2 : PER-FRAME FLOW ======================= -->
+  <rect x="20" y="206" width="960" height="378" rx="10" fill="#20203a" stroke="#4a5568"/>
+  <text x="34" y="226" font-size="12" font-weight="bold" fill="#aaa">PER-FRAME FLOW (modes 1/2) — recorded per view in onPreRender, INLINE on the ONE frame submit</text>
+
+  <!-- F1 heights SSBO -->
+  <rect x="34" y="240" width="230" height="72" rx="8" fill="#1e3a5f" stroke="#22d3ee" stroke-width="2" filter="url(#shadow)"/>
+  <text x="149" y="260" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">heights SSBO</text>
+  <text x="149" y="278" font-size="11" fill="#93c5fd" text-anchor="middle">baked heightfield, TRUE meters</text>
+  <text x="149" y="293" font-family="monospace" font-size="10" fill="#93c5fd" text-anchor="middle">+ CamBlk + u_ybounds (std430)</text>
+
+  <!-- F2 meshcull -->
+  <rect x="300" y="240" width="310" height="72" rx="8" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="455" y="260" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">cs_terrain_meshcull</text>
+  <text x="455" y="278" font-size="11" fill="#a7f3d0" text-anchor="middle">ONE inline compaction (setInlineCompute):</text>
+  <text x="455" y="293" font-size="11" fill="#a7f3d0" text-anchor="middle">frustum + HZB chunk cull, near→far sort,</text>
+  <text x="455" y="308" font-size="11" fill="#a7f3d0" text-anchor="middle">dispatch + barrier — NO fence</text>
+  <line x1="264" y1="276" x2="296" y2="276" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- F3 v_list -->
+  <rect x="680" y="240" width="288" height="72" rx="8" fill="#1e3a5f" stroke="#22d3ee" stroke-width="2" filter="url(#shadow)"/>
+  <text x="824" y="260" font-family="monospace" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">v_list + VIS count</text>
+  <text x="824" y="278" font-size="11" fill="#93c5fd" text-anchor="middle">compacted visible-chunk list, sorted;</text>
+  <text x="824" y="293" font-size="11" fill="#93c5fd" text-anchor="middle">mode 2: + GPU-written mesh draw args</text>
+  <line x1="610" y1="276" x2="676" y2="276" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- F4 lag-1 sizing -->
+  <rect x="34" y="352" width="330" height="86" rx="8" fill="#4c1d95" stroke="#a78bfa" stroke-width="2" filter="url(#shadow)"/>
+  <text x="199" y="372" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">lag-1 sizing (mode 1, CPU)</text>
+  <text x="199" y="390" font-size="11" fill="#c4b5fd" text-anchor="middle">map LAST frame's count (host-visible, never</text>
+  <text x="199" y="405" font-size="11" fill="#c4b5fd" text-anchor="middle">device-local) → grid-y = count × 1.5 margin,</text>
+  <text x="199" y="420" font-size="11" fill="#c4b5fd" text-anchor="middle">floor 64, clamp; under-dispatch → full grid,</text>
+  <text x="199" y="433" font-size="11" fill="#c4b5fd" text-anchor="middle">over-dispatch → in-stage guard (cheap)</text>
+
+  <!-- loopback arrow F3 -> F4 -->
+  <polyline points="824,312 824,332 199,332 199,348" fill="none" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="512" y="327" font-size="10" fill="#aaa" text-anchor="middle">read NEXT frame — one frame stale by design</text>
+
+  <!-- F5 dispatch grid -->
+  <rect x="404" y="352" width="250" height="86" rx="8" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="529" y="372" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">mesh dispatch grid</text>
+  <text x="529" y="390" font-family="monospace" font-size="10.5" fill="#a7f3d0" text-anchor="middle">(meshlets/chunk, capacity, 1)</text>
+  <text x="529" y="406" font-size="11" fill="#a7f3d0" text-anchor="middle">mode 1: direct draw, CPU-sized y</text>
+  <text x="529" y="421" font-size="11" fill="#a7f3d0" text-anchor="middle">mode 2: grid read from GPU args</text>
+  <line x1="364" y1="395" x2="400" y2="395" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+  <polyline points="900,312 900,395 658,395" fill="none" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="905" y="360" font-size="10" fill="#aaa" text-anchor="start">mode 2:</text>
+  <text x="905" y="373" font-size="10" fill="#aaa" text-anchor="start">indirect args</text>
+
+  <!-- F6 mesh workgroup -->
+  <rect x="34" y="470" width="620" height="100" rx="8" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="344" y="490" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">mesh workgroup = ONE meshlet (in-stage work)</text>
+  <text x="344" y="508" font-size="11" fill="#a7f3d0" text-anchor="middle">capacity guard → v_list decode → partial-meshlet clamp → frustum AABB self-test</text>
+  <text x="344" y="524" font-family="monospace" font-size="10.5" fill="#a7f3d0" text-anchor="middle">reject = SetMeshOutputsEXT(0,0) — the culled meshlet's WHOLE cost</text>
+  <text x="344" y="540" font-size="11" fill="#a7f3d0" text-anchor="middle">emit: 81 unique corners + 128 local-index triangles (meshlet 8),</text>
+  <text x="344" y="556" font-size="11" fill="#a7f3d0" text-anchor="middle">heights[] tapped ONCE per corner (pull VS pays ~6×)</text>
+  <polyline points="529,438 529,454 344,454 344,466" fill="none" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- F7 raster -->
+  <rect x="694" y="470" width="274" height="100" rx="8" fill="#252540" stroke="#4a5568" stroke-width="2" filter="url(#shadow)"/>
+  <text x="831" y="494" font-size="12.5" font-weight="bold" fill="white" text-anchor="middle">raster</text>
+  <text x="831" y="514" font-size="11" fill="#ddd" text-anchor="middle">same diagonal, same winding</text>
+  <text x="831" y="530" font-size="11" fill="#ddd" text-anchor="middle">as the pull VS ⇒ pixel parity</text>
+  <text x="831" y="546" font-size="11" fill="#ddd" text-anchor="middle">(3-way A/B gated)</text>
+  <line x1="654" y1="520" x2="690" y2="520" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- ======================= LANE 3 : PAYLOAD CLIFF ======================= -->
+  <rect x="20" y="592" width="960" height="158" rx="10" fill="#252540" stroke="#f59e0b"/>
+  <text x="34" y="612" font-size="12" font-weight="bold" fill="#f59e0b">THE PAYLOAD CLIFF — the invariant that shapes what the mesh path may ever add</text>
+
+  <rect x="34" y="622" width="430" height="112" rx="8" fill="#5a4a3a" stroke="#f59e0b" stroke-width="2" filter="url(#shadow)"/>
+  <text x="249" y="642" font-size="12" font-weight="bold" fill="white" text-anchor="middle">native taskless route ONLY when</text>
+  <text x="249" y="660" font-family="monospace" font-size="10.5" fill="#fed7aa" text-anchor="middle">≤128 verts · ≤128 prims · output &lt; 16 KB</text>
+  <text x="249" y="676" font-family="monospace" font-size="10.5" fill="#fed7aa" text-anchor="middle">no shared vars · no barriers · no spilled varyings</text>
+  <text x="249" y="696" font-size="11" fill="#fed7aa" text-anchor="middle">terrain declares 81·176 + 128·16 = 16304 B</text>
+  <text x="249" y="712" font-size="11.5" font-weight="bold" fill="white" text-anchor="middle">= EIGHTY BYTES under the ceiling</text>
+  <text x="249" y="728" font-size="10.5" fill="#fed7aa" text-anchor="middle">(codegen gate asserts it every run)</text>
+
+  <line x1="464" y1="690" x2="536" y2="690" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#arrw)"/>
+  <text x="501" y="682" font-size="10" fill="#f59e0b" text-anchor="middle">miss ANY</text>
+
+  <rect x="540" y="622" width="428" height="112" rx="8" fill="#5a4a3a" stroke="#f59e0b" stroke-width="2" filter="url(#shadow)"/>
+  <text x="754" y="642" font-size="12" font-weight="bold" fill="white" text-anchor="middle">silent fall-off → emulated route</text>
+  <text x="754" y="660" font-size="11" fill="#fed7aa" text-anchor="middle">schedule sized from a fixed 2²² workgroup ceiling:</text>
+  <text x="754" y="676" font-size="11" fill="#fed7aa" text-anchor="middle">on the order of a THOUSAND render-pass restarts per draw</text>
+  <text x="754" y="696" font-size="11" fill="#fed7aa" text-anchor="middle">build stays green, no validation error, frame collapses —</text>
+  <text x="754" y="712" font-size="11" fill="#fed7aa" text-anchor="middle">one added varying / one shared array is enough;</text>
+  <text x="754" y="728" font-size="11" fill="#fed7aa" text-anchor="middle">the codegen gate fails LOUDLY at generation time instead</text>
+
+  <!-- ======================= LEGEND ======================= -->
+  <rect x="30" y="772" width="14" height="14" rx="3" fill="#1e3a5f" stroke="#22d3ee"/>
+  <text x="50" y="783" font-size="11" fill="#ddd">SSBO data</text>
+  <rect x="150" y="772" width="14" height="14" rx="3" fill="#4c1d95" stroke="#a78bfa"/>
+  <text x="170" y="783" font-size="11" fill="#ddd">CPU / runtime decision</text>
+  <rect x="330" y="772" width="14" height="14" rx="3" fill="#1a3a3a" stroke="#34d399"/>
+  <text x="350" y="783" font-size="11" fill="#ddd">GPU work</text>
+  <rect x="440" y="772" width="14" height="14" rx="3" fill="#5a4a3a" stroke="#f59e0b"/>
+  <text x="460" y="783" font-size="11" fill="#ddd">constraint / invariant</text>
+  <text x="968" y="783" font-size="10.5" fill="#aaa" text-anchor="end">mode 0 runs its own 4-pass cull + indirect pull-VS draw; modes 1/2 shown here</text>
+</svg>

@@ -42,6 +42,17 @@
 //        OrkProfilerSampleScope(CHANNEL_MAIN, "MySystem::update");
 //        // scope ends automatically when the enclosing block exits
 //
+//   5. Register a channel on the calling thread WITHOUT opening a frame:
+//
+//        OrkProfilerChannelRegister(CHANNEL_MAIN, CpuProfilerChannel);
+//
+//      Channels are keyed per (name,thread), so the frame owner's frameBegin only
+//      registers the owner's thread. Code that samples a builtin channel but does
+//      not own its frame (Context::beginFrame runs on the main, loader and
+//      dataflow threads) must register first, else acquireSeries asserts. A channel
+//      that is registered but never framed does not record (see _recording) — that
+//      thread's samples are skipped, not queued, since frameEnd is what commits.
+//
 // USAGE - PROGRAMMATIC API (for dynamic channel names or tooling)
 //
 //        auto* ch = Profiler::acquireChannel<CpuProfilerChannel>("MyChannel");
@@ -61,6 +72,15 @@
 // GLOBAL CONTROLS
 //   Profiler::enabled(bool)     - enable / disable all sampling globally
 //   Profiler::maxSamples(u16)   - cap the number of retained samples per series
+//
+// HEADLESS READOUT
+//   ORKID_PROFILER_DUMP=<path>  - append every committed frame's per-series timings to a
+//                                 text file (see profiler.cpp). The GUI ProfilerView is
+//                                 the only other consumer and it needs a window; this is
+//                                 what an offscreen bench reads. Requires a build with
+//                                 ORK_PROFILER_ENABLE (ork.build.py --profiler) - a stock
+//                                 binary says so loudly on stderr instead of writing
+//                                 nothing. Analyzer: obt.project/bin/ork.bench.phasetimes.py
 //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -95,6 +115,10 @@ namespace ork {
 #define OrkProfilerFrameBegin(_channel_name, _type, ...) _OrkStaticAcquireChannel(_channel_name, _type, OrkUnique(_series), frameBegin, __VA_ARGS__)
 #define OrkProfilerFrameEnd(_channel_name)               _OrkStaticGetChannel(_channel_name, OrkUnique(_series), frameEnd)
 
+// Registers the channel for the calling thread without opening a frame - for sample sites
+// reached from threads other than the one that owns the channel's frameBegin/frameEnd.
+#define OrkProfilerChannelRegister(_channel_name, _type)  _OrkStaticRegisterChannel(_channel_name, _type, OrkUnique(_series))
+
 // Every begin must be paired with an end.
 #define OrkProfilerSampleBegin(_channel_name, _series_name)  _OrkStaticSeries(_channel_name, _series_name, SampleProfilerSeries, OrkUnique(_series), sampleBegin)
 #define OrkProfilerSampleEnd(_channel_name, _series_name)    _OrkStaticSeries(_channel_name, _series_name, SampleProfilerSeries, OrkUnique(_series), sampleEnd)
@@ -109,6 +133,7 @@ namespace ork {
 
 #define OrkProfilerFrameBegin(_channel_name, _type, ...)
 #define OrkProfilerFrameEnd(_channel_name)
+#define OrkProfilerChannelRegister(_channel_name, _type)
 #define OrkProfilerSampleBegin(_channel_name, _series_name)
 #define OrkProfilerSampleEnd(_channel_name, _series_name)
 #define OrkProfilerSampleScope(_channel_name, _series_name)
@@ -122,6 +147,10 @@ namespace ork {
     static thread_local _type* _var = nullptr; \
     if (_var == nullptr) [[unlikely]] _var = Profiler::acquireChannel<_type>(_channel_name, CRCU(_channel_name)); \
     _var->_call(__VA_ARGS__)
+
+#define _OrkStaticRegisterChannel(_channel_name, _type, _var) \
+    static thread_local _type* _var = nullptr; \
+    if (_var == nullptr) [[unlikely]] _var = Profiler::acquireChannel<_type>(_channel_name, CRCU(_channel_name))
 
 #define _OrkStaticGetChannel(_channel_name, _var, _call) \
     static thread_local ProfilerChannel* _var = nullptr; \
@@ -237,7 +266,11 @@ struct ProfilerChannel {
   // CpuProfilerChannel uses MS_PER_NS; VkProfilerChannel uses timestamp_period * 1e-6.
   double _tick_to_ms = 1.0;
 
-  bool _recording = true;
+  // Off until the first frameBegin (which every channel type sets from Profiler::enabled()):
+  // frameEnd is what commits samples, so a channel nobody frames - a builtin registered on a
+  // thread that only passes through the sample sites - would burn timer calls for data that
+  // can never be published.
+  bool _recording = false;
 
   ProfilerChannel(std::string&& name) : _name(name) {}
 

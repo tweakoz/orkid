@@ -69,7 +69,7 @@ public:
   // as the effective values.
   float _driveFriction = 0.0f;
   float _restFriction  = 2.0f;
-  float _eyeHeight   = 1.6f;   // camera eye above the capsule origin (m)
+  float _eyeHeight   = 1.6f;   // camera eye above the FEET / ground contact (m) — true eye height
   float _camDistance = 8.0f;   // follow distance behind the character (0 = first person)
   float _fovyDeg     = 45.0f;
   float _camNear     = 0.1f;

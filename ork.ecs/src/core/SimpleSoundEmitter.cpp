@@ -61,6 +61,7 @@ void SimpleSoundEmitterData::describeX(ComponentDataClass* clazz) {
   clazz->directProperty("Enabled", &SimpleSoundEmitterData::_enabled);
   clazz->floatProperty("GainOffsetDB", float_range{-96, 24}, &SimpleSoundEmitterData::_gainOffsetDB);
   clazz->floatProperty("PitchOffsetCents", float_range{-2400, 2400}, &SimpleSoundEmitterData::_pitchOffsetCents);
+  clazz->intProperty("Priority", int_range{-128, 127}, &SimpleSoundEmitterData::_priority);
 }
 
 SimpleSoundEmitterData::SimpleSoundEmitterData() {
@@ -116,7 +117,6 @@ bool SimpleSoundEmitterComponent::_onActivate(Simulation* psi) {
 }
 
 void SimpleSoundEmitterComponent::_onDeactivate(Simulation* psi) {
-  printf("SimpleSoundComponent::_onDeactivate: %p, %zu voices, playing=%d\n", this, _activeVoices.size(), _playing);
   _system->_stopVoices(this);
   _system->_onDeactivateComponent(this);
 }
@@ -213,13 +213,10 @@ void SimpleSoundEmitterSystem::_onNotify(token_t evID, evdata_t data) {
 }
 
 void SimpleSoundEmitterSystem::_onDeactivate(Simulation* inst) {
-  printf("SimpleSound::_onDeactivate: %zu components\n", _components.size());
   auto syn = synth::instance();
   for (auto* comp : _components) {
-    printf("  comp %p: %zu voices, playing=%d\n", comp, comp->_activeVoices.size(), comp->_playing);
     for (auto& voice : comp->_activeVoices) {
       if (voice._progInst) {
-        printf("    keyOff progInst %p\n", voice._progInst);
         syn->liveKeyOff(voice._progInst, 60, 0);
       }
     }
@@ -288,6 +285,11 @@ SimpleSoundEmitterSystem::_buildVoiceProgram(const PreloadedSimpleSound& preload
     }
   }
 
+  // SF2 live encode: an authored soundfieldSend routes this voice into the one
+  //  B-format mix point. loud (not silent) when the sound is not spatialized,
+  //  since the encode has no direction without the panner.
+  configureSoundFieldSend(layer, _SCD._spatializer, result._pannerBlock);
+
   // Use pre-loaded keymap
   layer->_keymap = preloaded._keymap;
 
@@ -320,11 +322,14 @@ void SimpleSoundEmitterSystem::_ensureSoundLoaded(const std::string& soundName) 
   if (_preloadedSounds.count(soundName))
     return;
 
+  // every failure below is fatal-loud rather than a skipped registration: a sound
+  //  that silently fails to preload plays as silence, which is indistinguishable
+  //  from a working emitter with nothing to say.
   auto sit = _SCD._sounds.find(soundName);
-  if (sit == _SCD._sounds.end()) {
-    printf("SimpleSoundEmitter: sound '%s' not found in SystemData\n", soundName.c_str());
-    return;
-  }
+  OrkAssertIFMT(
+      sit != _SCD._sounds.end(), //
+      "SimpleSoundEmitter: sound <%s> not found in SystemData",
+      soundName.c_str());
 
   auto& sndData = sit->second;
   PreloadedSimpleSound ps;
@@ -333,17 +338,23 @@ void SimpleSoundEmitterSystem::_ensureSoundLoaded(const std::string& soundName) 
   // Look up bus
   auto syn = synth::instance();
   ps._bus = syn->outputBus(sndData->_outputBusName);
-  if (!ps._bus) {
-    printf("SimpleSoundEmitter: bus '%s' not found for sound '%s'\n",
-           sndData->_outputBusName.c_str(), soundName.c_str());
-    return;
-  }
+  OrkAssertIFMT(
+      ps._bus != nullptr, //
+      "SimpleSoundEmitter: bus <%s> not found for sound <%s>",
+      sndData->_outputBusName.c_str(),
+      soundName.c_str());
 
   // Load WAV
+  auto wavpath = file::Path::expandPathString(sndData->_wavFilePath.toStdString());
   auto sd = std::make_shared<SampleData>();
   sd->_rootKey = 60;
   sd->_originalPitch = 261.63f * 0.5;
-  sd->loadFromAudioFile(file::Path::expandPathString(sndData->_wavFilePath.toStdString()));
+  sd->loadFromAudioFile(wavpath);
+  OrkAssertIFMT(
+      sd->_blk_end > 0 and sd->_sampleBlock != nullptr, //
+      "SimpleSoundEmitter: wav <%s> for sound <%s> did not load",
+      wavpath.c_str(),
+      soundName.c_str());
 
   // Set loop mode
   if (sndData->_looping) {
@@ -381,8 +392,10 @@ void SimpleSoundEmitterSystem::_triggerVoice(
     float dt) {
 
   auto pit = _preloadedSounds.find(comp->_CD._soundName);
-  if (pit == _preloadedSounds.end())
-    return;
+  OrkAssertIFMT(
+      pit != _preloadedSounds.end(), //
+      "SimpleSoundEmitter: sound <%s> was never preloaded (component activated without it?)",
+      comp->_CD._soundName.c_str());
 
   auto& preloaded = pit->second;
   auto& sndData   = preloaded._config;
@@ -404,6 +417,7 @@ void SimpleSoundEmitterSystem::_triggerVoice(
   // Route to bus
   auto kmod = std::make_shared<KeyOnModifiers>();
   kmod->_outbus_override = preloaded._bus;
+  kmod->_priority        = comp->_CD._priority;
 
   // Combined gain
   float gainDB = sndData->_gainDB + comp->_CD._gainOffsetDB;
@@ -417,7 +431,7 @@ void SimpleSoundEmitterSystem::_triggerVoice(
     av._progInst         = progInst;
     av._program          = voiceResult._program;
     av._pannerBlock      = voiceResult._pannerBlock;
-    av._startTime        = 0.0f;
+    av._startTime        = _systemElapsedTime;
     av._fadeGainLinear   = comp->_CD._initialFadeGainLinear;
     av._fadeTargetLinear = av._fadeGainLinear;
     progInst->_fadeGainLinear = av._fadeGainLinear;
@@ -459,6 +473,7 @@ void SimpleSoundEmitterSystem::_stopVoices(SimpleSoundEmitterComponent* comp) {
   for (auto& voice : comp->_activeVoices) {
     if (voice._progInst) {
       syn->liveKeyOff(voice._progInst, 60, 0);
+      voice._keyOffSent = true; // the one-shot timer must not key it off again
     }
   }
   // Don't clear voices immediately — let them release naturally.
@@ -516,17 +531,18 @@ void SimpleSoundEmitterSystem::_setPannerParams(
 ///////////////////////////////////////////////////////////////////////////////
 
 void SimpleSoundEmitterSystem::_onUpdate(Simulation* inst) {
-  return;
   float dt  = inst->deltaTime();
   auto syn  = synth::instance();
 
+  _systemElapsedTime += dt;
+
   //-----------------------------------------------------------------------
-  // Update listener matrix from camera
+  // Update listener matrix from the camera (the RIG). With a VR device
+  // publishing a head pose the setter composes the head onto it, so the
+  // listener sits between the eyes rather than on the walker.
   //-----------------------------------------------------------------------
   if (_sgSystem && _sgSystem->_camera) {
-    auto viewMtx = _sgSystem->_camera->computeViewMatrix();
-    syn->_inv_listener_matrix = viewMtx;
-    syn->_listener_matrix     = viewMtx.inverse();
+    syn->setListenerFromRigView(_sgSystem->_camera->computeViewMatrix());
   }
 
   fmtx4 invListenerMtx = syn->_inv_listener_matrix;
@@ -540,17 +556,36 @@ void SimpleSoundEmitterSystem::_onUpdate(Simulation* inst) {
     if (comp->_CD._soundName.empty())
       continue;
 
-    // Clean up finished voices
     auto& voices = comp->_activeVoices;
+
+    // One-shot lifecycle: the amp envelope SUSTAINS (segment 1) and only
+    // releases on keyOff, so a sample that has played out still holds its voice
+    // until we key it off at the sample's duration. Looping sounds carry
+    // _sampleDuration 0 and are only stopped explicitly.
+    for (auto& v : voices) {
+      if (!v._keyOffSent && v._progInst && v._sampleDuration > 0.0f) {
+        if ((_systemElapsedTime - v._startTime) >= v._sampleDuration) {
+          syn->liveKeyOff(v._progInst, 60, 0);
+          v._keyOffSent = true;
+        }
+      }
+      if (v._progInst && !v._progInst->_layers.empty())
+        v._layersSeen = true;
+    }
+
+    // Clean up finished voices
     voices.erase(
         std::remove_if(
             voices.begin(), voices.end(),
             [](const ActiveSimpleVoice& v) {
               if (!v._progInst)
                 return true;
-              // layers may be empty if audio thread hasn't processed keyOn yet
-              if (v._progInst->_layers.empty())
+              // layers are empty until the audio thread services the keyOn;
+              // once they HAVE been seen, empty means released (or stolen).
+              if (!v._layersSeen)
                 return false;
+              if (v._progInst->_layers.empty())
+                return true;
               for (auto& l : v._progInst->_layers) {
                 if (l && !l->isDone())
                   return false;

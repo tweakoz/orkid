@@ -19,6 +19,7 @@
 #include <ork/kernel/timer.h>
 #include <ork/kernel/opq.h>
 #include <ork/util/logger.h>
+#include <ork/grammar/lruleset.h>
 
 namespace dflow = ork::dataflow;
 
@@ -40,6 +41,17 @@ struct CoreAppInit {
     asset::Asset::GetClassStatic();
     TransformNode::GetClassStatic();
     DecompTransform::GetClassStatic();
+
+    // GR1.a — the LRuleSet grammar-as-data schema. SIX independent touches (T1): each serializes
+    // as a sub-object inside the consuming module's grammar property; an untouched class strips to
+    // "class": "" in the JSON + FindClass-null-deserializes SILENTLY. All six, always. They live
+    // here (not in a family's init) because the schema is family-neutral — every consumer gets them.
+    grammar::LExpr::GetClassStatic();
+    grammar::LSymbolDef::GetClassStatic();
+    grammar::LTurtleOp::GetClassStatic();
+    grammar::LParamBinding::GetClassStatic();
+    grammar::LRuleDef::GetClassStatic();
+    grammar::LRuleSet::GetClassStatic();
 
     dflow::GraphData::GetClassStatic();
 

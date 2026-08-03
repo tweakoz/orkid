@@ -18,10 +18,10 @@ The implementation status of each component is the source of truth; when in doub
 | `particles` DSL vocab (test bed) | **partially implemented (M1.A)** | `obt.project/scripts/ork/hypergraph/dflow/particles/` — `ParticleSystem` family base + 22 `chain_op`-based ops covering emitters/forces/attractors/renderers/colliders. **Pending M1.B**: `@op` decorator, registry, `OpInfo`/`PlugSpec`/`ExampleInfo`, source provenance, multi-output op support, examples-per-family directory + indexing |
 | `dflow.validate` subprocess harness | **planned (M2)** — genuinely unbuilt; NOT the same-named hypermesh meshvet (`_ork.hypermesh.validate.py`) which is an unrelated per-asset trimesh check | `obt.project/scripts/ork/hypergraph/dflow/validate/`, zmq worker pool |
 | `ptex2d` family + FXV2 codegen | **planned (M3)** | `ork.lev2/{inc,src}/ork/lev2/gfx/ptex2d/`, `obt.project/scripts/ork/hypergraph/dflow/ptex2d/` |
-| `ptex3d` family + PBRMaterial codegen | **planned (M3)** | `ork.lev2/{inc,src}/ork/lev2/gfx/ptex3d/`, `obt.project/scripts/ork/hypergraph/dflow/ptex3d/` |
-| `hypermesh` family + mesh/SDF ops | **partially implemented** (GPU-native mesh ops, gid, cull, cook-cache, displace-by-field, instancing all LANDED — see HYPERECS_PLAN Stage E) | `ork.lev2/{inc,src}/ork/lev2/gfx/hypermesh/`, `obt.project/scripts/ork/hypergraph/dflow/hypermesh/` |
+| `ptex3d` family (surface DSL + fxv2 codegen) | **shipped** — expression DSL → forward-PBR `.fxv2` (GEOV2); no C++ family runtime (pure Python codegen); TOP-LEVEL package, NOT `dflow.ptex3d` | `obt.project/scripts/ork/hypergraph/ptex3d/` (8 files; `materialize_ptex3d`); recipes in `assets/materials/` |
+| `hypermesh` family + mesh/SDF ops | **shipped** (core in daily use; honest gaps in `ork.dox/hyper/HYPERMESH.md` §10) | `ork.lev2/{inc,src}/ork/lev2/gfx/hypermesh/`, `obt.project/scripts/ork/hypergraph/dflow/hypermesh/`; doc `ork.dox/hyper/HYPERMESH.md` |
 | `sdf` family + SDF brick / CSG / marching-tetrahedra | **shipped (E.7 track: M0–M2 LANDED; M3 NanoVDB reserved/unbuilt)** | `ork.lev2/src/gfx/sdf/`, `obt.project/scripts/ork/hypergraph/dflow/sdf/` |
-| `terrain` family + heightfield bake | **planned (M3)** | `ork.lev2/{inc,src}/ork/lev2/gfx/terrain/`, `obt.project/scripts/ork/hypergraph/dflow/terrain/` |
+| `terrain` family + heightfield bake | **shipped** (expression-first DSL, compute bake, manifest scale contract, `TerrainChunkDrawableData` renderer) | `ork.lev2/{inc,src}/ork/lev2/gfx/terrain/`, `obt.project/scripts/ork/hypergraph/dflow/terrain/`; recipes `assets/terrain/`; doc `ork.dox/hyper/HYPERTERRAIN.md` |
 | Hypermesh procedural rigging + skinning | **planned (feasibility-gated; bigger than M3.5 implies)** — gated on the `XfNodeGraph` interchange plug, writable `XgmSkeleton` bindings + a `XfNodeGraph→XgmSkeleton` flattener, AND a NEW GPU-skinning render path (no skinned hypermesh VS exists). Sized L+, not a thin extension. | `ork.lev2/.../hypermesh/`; see `UNIFIED_SUBSTRATE.md` §15–§16 |
 | **Structural spine** (`XfNodeGraph` interchange plug + sweep + rewrite/grammar engine) | **foundation LANDED (2026-06-25)** — the `XfNodeGraph` interchange currency (G0a), the `LSweep` skinner (G0b), and the L-system slice (G1) are in code; the grammar generalization + creature/city milestones are forward | `ork.lev2/.../gfx/dflow/interchange.h` (`XfNode*`), `hmdflow_module_lsystem/lsweep.cpp`; spec in `UNIFIED_SUBSTRATE.md` §11–§16 |
 | New generator families (`lsystem` + space-colonization / phyllotaxis / tensor-field / straight-skeleton) | **`lsystem` LANDED (M1); the rest forward** — each = a rule vocabulary + interpret kernel + sink topology assertion over `XfNodeGraph` | `lsystem` shipped (`hmdflow_module_lsystem.cpp`, `scn_lsystem.py`); rest gated on the spine; spec in `UNIFIED_SUBSTRATE.md` §12–§14 |
@@ -34,7 +34,8 @@ The implementation status of each component is the source of truth; when in doub
 | `hypershot` family (per-shot camera authoring) | **forward** | cameras + dolly + focus pull; per-shot only — sequencing belongs to future `sequence` family |
 | `behavior` family (stateful FSM authoring) | **forward** | first non-dataflow HyperSyn family; wraps `[[orkcore-fsm]]`; drives pose graphs / particles / materials via hypergraph composition |
 | `StyleContext` sub-system | **forward** | cross-family palette/era/fog context; deterministic hash feeds materializer cache |
-| `singularity` / `sequence` DSL families | **future (M5)** | TBD |
+| `singularity` DSL family (hypersound) | **shipped v1** — sound DSL (`SoundPatch`/`S.*`/`materialize_sound_patch`), caps validation, ECS emitters | `obt.project/scripts/ork/hypergraph/sound/{dsl,emitter,caps}.py`; tests `ork.lev2/pyext/tests/singularity/test_hypersound_{basic,arith}.py`; scene `ork.data/scenes/scn_spatial_audio_showcase.py` |
+| `sequence` DSL family | **future (M5)** | TBD |
 | Node-graph editor canvas | **future (M6)** | builds on `lev2.ui.PrimCanvas`; uses `DgModuleData::mgvpos` |
 | ECS components (`HyperSynGraphComponent` per family) | **future** | depends on M3+ + cache layer |
 
@@ -47,23 +48,28 @@ Editor UI uses the current `lev2.ui.PropertySheet` + `ReflectionPropertySheetMod
 The HyperSyn Python authoring stack lives under one top-level package: `ork.hypergraph` (`obt.project/scripts/ork/hypergraph/`). Pre-existing `ork.ecs.*` / `ork.dflow.*` import paths were migrated under this namespace.
 
 ```
-hypergraph/
+hypergraph/                    # (regenerated from the tree 2026-08-01)
 ├── colors.py                  # universal: hsv(), colors palette, _Hsv
+├── exprir.py                  # canonical ExprIR tree (author-intent round-trip)
+├── registry.py                # SHIPPED minimal op registry: register_op / @op / get_op / list_ops
+├── units.py                   # natural-units helpers
 ├── asset_core/                # constructors, converters, loaders (infrastructure)
-│   ├── material/              #   PbrMaterial, FreestyleMaterial
-│   ├── sdf/                   #   ImplicitSdf, MeshToSdf, MeshSdf, VdbFileSdf
-│   ├── drawable/              #   VdbGridToDrawable
-│   ├── particle/              #   ParticleSystem
-│   └── probe/                 #   HdriToXir
-├── assets/                    # concrete named asset wrappers (parametric primitives)
-│   ├── sdf/                   #   SphereSdf, ThickSaddleSdf
-│   └── mesh/                  #   HollowFunnelMesh
-├── scenegraph/                # reserved — non-ECS scenegraph (future)
+│   ├── material/  sdf/  drawable/  particle/  probe/
+├── assets/                    # concrete named asset wrappers + real recipes
+│   ├── hypermesh/  materials/  mesh/  sdf/  terrain/
 ├── ecs/                       # ECS-coupled Scene DSL + runtime
 │   ├── runtime.py             #   EcsRuntime
-│   └── scene/                 #   Scene, Transform, SceneGraphHandle, axis_angle
-└── dflow/                     # dataflow DSL (M1+ work lands inside)
+│   ├── audio_manifest.py      #   hypersound scene wiring
+│   └── scene/                 #   Scene, Transform, SceneGraphHandle, axis_angle, assets
+├── ptex3d/                    # SHIPPED surface DSL (TOP-LEVEL; fxv2 codegen — NOT under dflow/)
+├── sound/                     # SHIPPED hypersound DSL v1 (dsl / emitter / caps)
+└── dflow/                     # dataflow DSLs + trace machinery (_trace/_expr/_bindings/_lower/
+    ├── hypermesh/  lsystem/   #   _parampack, document/graphdata_document/hypermesh_document,
+    ├── particles/  roads/     #   testbench)
+    └── sdf/  terrain/
 ```
+
+The authoritative per-family current-state docs are `ork.dox/hyper/{HYPERMESH,HYPERTERRAIN,OGEO,HYPERECS}.md` and `ork.dox/core/dataflow.md` — consult those rather than this sketch when they disagree.
 
 **Asset taxonomy rule.** `asset_core/<category>/` houses *infrastructure* — generic constructors / converters / loaders (`ImplicitSdf` takes arbitrary GLSL; `MeshToSdf` is a converter; `HdriToXir` loads). `assets/<category>/<name>.py` houses *concrete named things* — recognizable primitives or user-authored content (`SphereSdf`, `ThickSaddleSdf`, future `pillar.py`, `bridge.py`, etc.). Both directories share the same per-output-type subdir taxonomy so the parallel is obvious: "anything SDF-related" lives in two predictable places.
 
@@ -137,7 +143,7 @@ PbrMaterial("jade",
 | **M1.A** | Trace core + particles DSL vocab — proves the trace→graphdata round-trip against the existing particles runtime | M0 |
 | **M1.B** | Op registry + introspection (`@op` decorator, `OpInfo`/`PlugSpec`/`ExampleInfo`, source provenance, multi-output ops, examples-per-family) — exposes the DSL surface to editor/LLM tooling | M1.A |
 | **M2** | `dflow.validate` subprocess harness — zmq REQ/REP worker pool, persistent across editor session and into live-mutable runtimes | M1 |
-| **M3** | HyperSyn DSL-vocab + materializer layer per family. NOTE: the *runtimes* for particles / ptex3d / hypermesh / terrain / sdf already LANDED (see the Status table + HYPERECS_PLAN Stages A–E); M3’s real remaining scope is `ptex2d` (the only genuinely unbuilt family) plus the trace-then-materialize DSL wrappers over the shipped runtimes | M0, M1, M2 |
+| **M3** | HyperSyn DSL-vocab + materializer layer per family. NOTE: for particles / ptex3d / hypermesh / terrain / sdf (and hypersound) the DSL vocab **and** materializers already SHIPPED (see the Status table — ptex3d’s full surface DSL + fxv2 codegen included); M3’s real remaining scope is `ptex2d` (the only genuinely unbuilt family) plus the M1.B registry/introspection wrappers where missing | M0, M1, M2 |
 | **M3.5** | Hypermesh rigging + skinning extension — procedural skeleton/weight ops yielding `xgmmodel_ptr_t` with skinning bound; prerequisite for hyperanim | M3 |
 | **M4** | Hypergraph coordinator + timeline — cross-family graph composition + phased materialization scheduling | M3 |
 | **M5** | Singularity + sequence DSL families — audio-reactive cross-family use cases | M3, M4 (and needs cycle-permitting subgraphs for audio feedback) |
@@ -185,46 +191,21 @@ unchanged either way).
 
 **Net M0 outcome:** one real bug fixed (cycle detection). The hardening list was reorganized into "consumer-driven" rather than "speculative." When each downstream consumer (M2 validator, M3 families, M4 hypergraph) lands, its prerequisites get added then with concrete requirements — no premature design.
 
-## Team review findings — corrections folded and items deferred
+## Still-open items (compressed 2026-08-01; the review retrospectives live in git history)
 
-A team of agents reviewed the spec (see ~/projects/orkid/.claude/projects/-Users-michael-projects-orkid/memory/project_dataflow_three_families.md for higher-level context). Key corrections and deferred items:
+The team-review and tooling-leverage findings that used to be narrated here are now either folded into SKILL.md (subprocess worker-pool validator design, multi-sink contract, introspection/`Diagnostic`/examples/`dry_run` surfaces, three runtime modes) or SHIPPED and documented in the authoritative current-state docs — the unified substrate in `UNIFIED_SUBSTRATE.md` + `ork.dox/hyper/HYPERTERRAIN.md`, and the terrain scale contract as `TerrainManifest` (`dflow/terrain/manifest.py`; NATURAL UNITS: heights are true meters, `HeightField.EXTENT_M` is the only scale attr — the vertical scale constant and the per-op erosion exaggeration plug were deleted, and erosion exaggeration is now authored via remap nodes around `erode_thermal`/`erox`/`pha`). What remains genuinely open:
 
-### Folded into SKILL.md
-- **Subprocess strategy**: not spawn-per-call — long-lived zmq REQ/REP worker pool, pre-warmed at editor start. Single largest UX risk if mis-implemented.
-- **ptex3d FXV2 codegen path confirmed viable** via embedded `FreestyleMaterial` (Agent 2's initial "this won't work" was overstated — `material_pbr.cpp:147` delegates to freestyle which supports `gpuInitFromShaderText`). Spec's FXV2 stitching approach stands; small wrapper may be needed to expose `gpuInitFromShaderText` directly on PBRMaterial.
-- **Per-entity vs shared graphinst is a use-site decision**, not a spec mandate. Materializer caching by graph-hash makes sharing automatic when graphs/overrides match.
-- **`max_fanout = 0 = unlimited` is the existing convention** (not ambiguous as one agent claimed); just add the contract comment and the `cap > 0` check.
-- **Terrain bakes heightfield as materializer side-output** (CPU-accessible + bullet-physics-feedable); no per-op DSL dual-emission required.
-- **Unified procedural substrate** (one expression → fragment GLSL + compute bake) — feasibility + phased design in `UNIFIED_SUBSTRATE.md`. Verdict: feasible; `_Emitter.subst` is the compute hook, `erox`'s `_erox_text` is the generic `ExprModule` precedent, `CaptureModule` is the sink. New sinks `self.hfbake/hfmask/hfdisplacement`. **Noise DECIDED**: one canonical basis = ptex3d 3D `lib_mmnoise::noise(vec3)` across raster+compute (the `sampler3D` is the unrelated `octavenoise`; split pure-ALU `noise()` into a sampler-free `lib_pnoise`, prove import-into-compute — this is Phase 0, gating). **Direction rule**: bake exports FEATURE fields (slope/flow/curvature/ids — heightfield properties, no projection smear); synthesize APPEARANCE procedurally in the fragment in 3D (never bake colored appearance to top-down uv); use slope+flow to drive fragment projection (world-Y strata is already projection-free; `functions.py:27 triplanar` blended by slope; flow-aligned anisotropy on verticals). `hfdisplacement` → real terraces → bake measures slope/flow on them → material shades with proper projection (virtuous loop). **AA is target-polymorphic via `ctx.footprint`** (fragment→`fwidth`, compute→texel size `extent_m/dim`), so `fbm`/`fbm_aa` collapse to ONE footprint-aware `fbm` and **port to the bake** (compute band-limits to the texel grid); the portable core is "everything except view-dependent atoms" — only `NV`/`eye`/`Cd` reject. A `BakeCtx` typed wall hides just those for LLM-safety.
-- **Terrain heightfield artifact carries a SCALE CONTRACT** — the bake writes `<asset>.terrain.json` next to the channel images (`ork.hypergraph.dflow.terrain.manifest.TerrainManifest`): physical `extent_m`/`height_m` (+ origin/up, `height_anchor: stored_unit`), per-channel `min/max/mean` fit ranges + `semantic`, and provenance. The terrain DSL OWNS the physical scale via `HeightField.EXTENT_M`/`HEIGHT_M` class attrs (the asset/viewer read them; CLI may override). **The EROSION vertical exaggeration is NOT a world scale** — it is per-op (`erode_thermal`/`erox`/`wtf` `exaggerated_height_m` plug, default 0 → env physical), so the `BakeEnv` stays physical and MEASUREMENTS (normal/slope/curvature/segmentation) are computed at the real scale. Every consumer (viewer, CPU mask sampler, physics, segmentation) reads the manifest instead of hardcoding constants — the segmentation work sits on `TerrainManifest` for all scale/normalization + `world_to_uv`/`height_meters`/`graph_value` helpers.
-- **Three runtime modes** (authoring / runtime-static / runtime-live-mutable), not two — validator subprocess persists into live-mutable runtimes for experiences that allow content modification while playing.
-
-### Folded from the tooling-leverage review (introspection + diagnostics surface)
-- **Op registry introspection API** — `ork.hypergraph.dflow.dsl.registry.list_families/list_ops/list_examples/get_op` + `OpInfo`/`PlugSpec`/`ExampleInfo` dataclasses + `op.to_json_schema()` classmethod.
-- **Structured `Diagnostic` dataclass** — replaces raw tuples in `ValidationResult.errors/warnings`; stable `code` field, optional `hint` + `source`.
-- **Examples per family** at `ork.lev2/pyext/tests/hypersyn/<family>/` — runnable visual apps, indexed by `registry.list_examples(family)`, double as CI integration tests; min counts per family.
-- **Source provenance** — `@op` records `(file, line)` of decorated class; `DslNode` records `(file, line)` of call site via `sys._getframe`; both feed `Diagnostic.source` and materializer GLSL `// <file>:<line>` comments.
-- **Multi-output ops** — `outputs` dict + `build()` may return `dict[str, DslNode]`; callers receive `DslNodeBundle` with attribute access (`n.value`, `n.gradient`).
-- **`dsl.dry_run(graph)` in-process variant** — same `ValidationResult` shape as `validate()`, no subprocess, no crash isolation; for CI lint + batch authoring + headless callers.
-
-### Deferred to M1 (DSL design)
-- **Trace-time control flow trap**: Python `if`/`for`/`while` over a `DslNode` silently misbehaves. Need `dsl.where(cond, a, b)` op and `DslNode.__bool__` raises `TraceTimeBranchError`. JAX-style fix.
-- **Sub-DSL function reuse**: `@dsl.fragment` decorator for shareable sub-expressions. Critical for non-trivial shaders (200+ line PBR with anisotropy/clearcoat/multilayer).
-- **`dsl.tap(node, name=...)` op** for intermediate-value inspection (debug-mode side-channel writes to RT for codegen families, or log for execution families). Source-line provenance and GLSL comments are now in SKILL.md (folded above); `dsl.tap` is the runtime-side debuggability complement.
-
-### Deferred to M3 (per-family codegen)
-- **Sampler/texture plug-type prelude**: `fxv2_prelude` channel on op declarations for `sampler_set` / uniform block contributions. Without this, texture-sampling ops can't be expressed.
-- **Conditional GLSL fragments**: either multi-template ops keyed by static flags OR `cond_fragment(expr, then, else)` op lowering to GLSL ternary. Pick at M3.
-- **PBRMaterial libblock substitution decision**: SKILL.md currently says "stitch fragments → free-form FXV2 → gpuInitFromShaderText". An alternative is to substitute into a fixed PBR template's `ps_user_surface(out vec3 albedo, ...)` libblock and reuse existing 23-technique PBR infrastructure. Decide at M3 implementation time; spec accommodates either.
-
-### Deferred to M5 (audio/sequence)
-- **Cycle-permitting subgraphs**: audio feedback (delays, reverbs) requires either `DgModuleData::allowsCycles()` virtual returning true on Singularity subgraphs, OR Faust-style explicit `delay()` break-cycle node. Pick when M5 starts. Until then, M0's cycle detector applies uniformly.
-
-### Borrowed from PDG (concepts only; no IP)
-- **Per-node cook status** (`unscheduled / waiting / scheduled / cooking / cooked / error`) — `ValidationResult` extended to per-module. Editor UX win at M6.
-- **Wedge** (parameter sweep producing N variants per work item) — `@wedge(seed=range(16))` decorator at M4+.
-- **Tile partition** (group work items by spatial attribute, materialize per tile, cache per tile) — terrain at world scale.
-- Not adopting: file-system-as-IPC, USD coupling, network scheduler protocols (HQueue/Tractor/Deadline).
+- **Trace-time control flow trap** (M1): Python `if`/`for`/`while` over a `DslNode` silently misbehaves — need `dsl.where(cond, a, b)` + `DslNode.__bool__` raising `TraceTimeBranchError` in the family-neutral DSL core (the lsystem DSL solved this locally with serializable `choose`/`fork`/`when` combinators).
+- **`dsl.tap(node, name=...)`** (M1): intermediate-value inspection side-channel for debugging.
+- **`@dsl.fragment` sub-expression reuse** (M1): partially answered in practice by plain-Python function libraries (`ptex3d/functions.py`); a formal decorator remains unbuilt.
+- **M3 codegen deferrals**: `fxv2_prelude` sampler/uniform contributions on op declarations; conditional GLSL fragments (multi-template or ternary-lowering `cond_fragment`).
+- **Cycle-permitting subgraphs** (M5): audio feedback needs `allowsCycles()` or an explicit `delay()` break-cycle node; until then M0's cycle detector applies uniformly.
+- **Neural ops** (bake-phase only): `neural_mesh` / `neural_albedo` / `neural_displace` / `neural_ibl` / `neural_clip` / `style_pass` — INSTALL/SCENE_LOAD phase ONLY; heavy inference is a bake step producing ordinary cached artifacts, nothing neural in the frame loop.
+- **HRTF/binaural spatializer tier**: the per-voice world-space spatialization path + panner tier SHIPPED (`ork.lev2/inc/ork/lev2/aud/spatializer.h`, the hypersound ECS emitters); the HRTF tier and an `AcousticVolume` plug type (room acoustics as a graph input) are still open commitments.
+- **`UserPose` plug type** (head/hands/gaze as a typed graph input) for consumer-extensible behavior predicates — the `hypersense` family proposal was folded into `behavior` extensibility; this plug is the surviving open commitment.
+- **Per-family style-lint + deterministic seed-derivation policy**: StyleContext itself is designed, unbuilt (forward — see the Status table); the companion lint/seed proposals revisit with the editor/orchestration work.
+- **Asset-library bridge** (`assetdb.query(kind, tag, rig)`): explicitly out of scope for HyperSyn (SKILL.md "Out of scope"); belongs to an orkcore-catalog integration plan or an application-side composition layer. Tracked here so it isn't lost.
+- **Process-graph concepts** (adopted concepts-only, no implementation yet): per-node cook status surface (editor UX, M6), `@wedge` parameter sweeps (M4+). Tile-partition caching shipped in terrain/cook-cache form.
 
 ## Performance budget tracking
 
@@ -242,29 +223,4 @@ Agent 2's runtime estimates (cite the agent's full report for derivations):
 - Engine-only framing rule: LLM/sandbox/application tooling stays in a separate private layer, not in orkid
 - Memory: `~/.claude/projects/-Users-michael-projects-orkid/memory/feedback_ged_outdated.md` — UI direction
 
-## Deferred spec additions (distilled from the retired VR-strategy reviews, 2026-05-23)
-
-The standalone VR-strategy review docs were retired after their
-family proposals landed in SKILL.md (hyperprim/hyperarch/hypercity/hyperanim/hyperlight/hypershot/behavior,
-StyleContext, the rigging extension, multi-sink colliders, the introspection/Diagnostic/examples/dry_run
-surfaces). The items below were NOT yet folded into the contract — they are deferred commitments, not abandoned:
-
-- **Neural ops (Tier-1 of the "compelling VR" bar):** six bake-phase ops — `neural_mesh` (text/image → mesh),
-  `neural_albedo` (texture synthesis on UVs), `neural_displace` (detail displacement), `neural_ibl` (env-map
-  synthesis), `neural_clip` (motion-clip generation), `style_pass` (image-space restyle of a baked artifact).
-  CONSTRAINT (load-bearing rationale): neural ops run at INSTALL/SCENE_LOAD phase ONLY — heavy model inference is
-  a bake step that materializes ordinary cached artifacts (mesh/texture/clip); nothing neural in the frame loop.
-  The procedural graph stays the runtime; neural is an authoring-time content source feeding it.
-- **Binaural/spatial audio commitment for `singularity`:** before M5 audio work starts, commit the spatial design —
-  per-voice world-space output, an HRTF spatializer stage (Steam Audio / Resonance class), `BinauralSpatializerData`,
-  and an `AcousticVolume` plug type (room acoustics as a graph input). Today SKILL.md only says "future".
-- **`hypersense` (named family proposal) → folded into `behavior` extensibility:** the VR-embodiment predicates/
-  actions (`grasped_by`, `gazed_at(dwell)`, `touched_by(body_part)`, `proximity_to`, `HapticPulse`) live as
-  consumer-extensible behavior predicates/actions per SKILL.md — the standalone-family framing was dropped, but a
-  first-class **`UserPose` plug type** (head/hands/gaze as a typed graph input) is still an open commitment.
-- **Per-family style-lint + deterministic seed-derivation policy:** StyleContext landed; the companion proposals —
-  style validators (lint a graph against the active StyleContext) and a per-asset seed-derivation rule (stable
-  procedural variation across rebuilds) — did not. Revisit with the editor/orchestration work.
-- **Asset-library bridge** (`assetdb.query(kind, tag, rig)` → MeshRef+Skeleton): explicitly out-of-scope for
-  HyperSyn (SKILL.md "Artist asset import"); the need is real for scene-scale authoring — it belongs to an
-  orkcore-catalog integration plan or an application-side composition layer. Tracked here so it isn't lost.
+(The retired VR-strategy review distillate that used to sit here was compressed into "Still-open items" above on 2026-08-01 — its still-live commitments are the neural-ops, HRTF/binaural, `UserPose`, style-lint/seed-policy, and asset-library-bridge bullets. Git history preserves the full narrative.)

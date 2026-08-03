@@ -50,7 +50,7 @@ StereoDelayData::StereoDelayData(std::string name)
 }
 
 dspblk_ptr_t StereoDelayData::createInstance() const { // override
-  return std::make_shared<StereoDelay>(this);
+  return createDspInstance<StereoDelay>(this);
 }
 
 ///////////////////////////////////////////////////////////

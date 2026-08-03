@@ -26,6 +26,7 @@
 #include <fstream>
 #include <cmath>
 #include <iomanip>
+#include <set>
 
 ImplementReflectionX(ork::lev2::AssetGenData,             "AssetGenData");
 ImplementReflectionX(ork::lev2::ScatterSinkData,          "ScatterSinkData");
@@ -207,6 +208,24 @@ std::string HeightFieldGenData::materialize(Context* ctx, const std::string& ext
     for (const auto& c : ch_list)
       channels.push_back(c);
   }
+  // IN-GRAPH scatter placement (ScatterPlaceModule): stamp each module's machine-specific
+  // .ogeo output path (deterministic <outdir>/<export_name>.ogeo — the SAME namespace the
+  // post-bake sinks + BulletShapeScatter consume) so the module writes it at bake, and
+  // collect the claimed names so the post-bake loop below never double-places one.
+  std::set<std::string> ingraph_exports;
+  for (size_t i = 0; i < _graph_data->numModules(); i++) {
+    auto sp = std::dynamic_pointer_cast<terrain::ScatterPlaceModuleData>(_graph_data->module(i));
+    if (not sp)
+      continue;
+    if (sp->_export_name.empty()) {
+      printf("terrain<%s>: ScatterPlaceModule<%s> has NO export_name — the .ogeo artifact is "
+             "MANDATORY (consumers read placement by name). Set export_name in T.scatter_place().\n",
+             name.c_str(), sp->_name.c_str());
+      OrkAssert(false);
+    }
+    sp->_export_path = file::Path((outdir + "/" + sp->_export_name + ".ogeo").c_str());
+    ingraph_exports.insert(sp->_export_name);
+  }
   // STALE-PARAMS GUARD — the final products + the bake's capture-currency skip are NAME-keyed
   // (<assetcache>/terrain/<name>/<channel>.<ext>), NOT dim-keyed: a prior bake's artifacts at a
   // DIFFERENT dim/extent/height get served for the CURRENT request (cook line "0 cache-loaded, N
@@ -325,6 +344,15 @@ std::string HeightFieldGenData::materialize(Context* ctx, const std::string& ext
   for (const auto& sink : _scatters) {
     if (not sink)
       continue;
+    // one NAME, one placement form: an in-graph ScatterPlaceModule already owns this
+    // name's .ogeo (placement + pads). Placing it AGAIN post-bake (from an unflattened
+    // channel) would fight its pads — refuse loudly + skip (the in-graph form wins).
+    if (ingraph_exports.count(sink->_name)) {
+      printf("terrain<%s>: scatter sink<%s> collides with an in-graph ScatterPlaceModule of the "
+             "SAME name — declare ONE placement form per name. Skipping the post-bake sink.\n",
+             name.c_str(), sink->_name.c_str());
+      continue;
+    }
     std::map<std::string, std::string> chans;
     chans["height"] = outdir + "/height." + ext;
     for (const auto& ch : sink->_type_channels)
@@ -387,6 +415,10 @@ void ScatterSinkData::describeX(object::ObjectClass* clazz) {
   clazz->directProperty("jitter", &ScatterSinkData::_jitter);
   clazz->directProperty("max_points", &ScatterSinkData::_max_points);
   clazz->directProperty("lift", &ScatterSinkData::_lift);
+  clazz->directProperty("lattice_m", &ScatterSinkData::_lattice_m);
+  clazz->directProperty("lane_every", &ScatterSinkData::_lane_every);
+  clazz->directProperty("lane_m", &ScatterSinkData::_lane_m);
+  clazz->directProperty("yaw_mode", &ScatterSinkData::_yaw_mode);
   clazz->directVectorProperty("type_names", &ScatterSinkData::_type_names);
   clazz->directVectorProperty("type_channels", &ScatterSinkData::_type_channels);
   clazz->directMapProperty("type_assets", &ScatterSinkData::_type_assets);

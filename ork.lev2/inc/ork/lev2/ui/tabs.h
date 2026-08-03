@@ -68,7 +68,9 @@ struct TabWidget : public Group {
   // header drag leaves the bar (detach), continues out of the bar, and commits.
   std::function<void(widget_ptr_t /*tab*/, int /*rx*/, int /*ry*/)> _onTabDetach;
   std::function<void(int /*rx*/, int /*ry*/)> _onTabDragMove;
-  std::function<void(int /*rx*/, int /*ry*/)> _onTabDragCommit;
+  // canceled: the drag died mid-flight (a CANCELED END_DRAG) -> the host tears the
+  //  session down WITHOUT committing.
+  std::function<void(int /*rx*/, int /*ry*/, bool /*canceled*/)> _onTabDragCommit;
 
   // Widget-level colors
   fvec4 _tabBarBackground;

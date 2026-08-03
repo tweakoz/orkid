@@ -96,6 +96,10 @@ struct CaptureBuffer {
   int _captureY = 0;
   int _captureW = 0;
   int _captureH = 0;
+  // array layer to read back, for a LAYERED (multiview) RtBuffer. 0 on every
+  // single-layer buffer, which is every buffer the non-stereo paths create — so
+  // the default reproduces the pre-layered behavior exactly.
+  int _captureLayer = 0;
   svarshp_t _impl;
   ////////////////////////////
 };

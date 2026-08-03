@@ -44,7 +44,7 @@ SpectralConvolveData::SpectralConvolveData(std::string name, float fb)
 ///////////////////////////////////////////////////////////////////////////////
 
 dspblk_ptr_t SpectralConvolveData::createInstance() const { // override
-  return std::make_shared<SpectralConvolve>(this);
+  return createDspInstance<SpectralConvolve>(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

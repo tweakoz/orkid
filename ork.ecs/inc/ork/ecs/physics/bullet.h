@@ -9,6 +9,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#include <vector>
 #include <ork/object/Object.h>
 #include <ork/rtti/RTTIX.inl>
 #include <ork/math/PIDController.inl>
@@ -89,7 +90,11 @@ public:
   // E.2-walk: forward this body's contacts to the scene's PythonSystem as "Collision"
   // notifies ({nameA,nameB,point,normal}) — the input/system SCRIPT intercepts them.
   bool _notifyCollisions = false;
-  fvec3 _angularFactor;
+  // per-axis angular multiplier (bullet setAngularFactor). DEFAULT (1,1,1) = free rotation
+  // (bullet's own default); (0,0,0) = TOTAL rotation lock (characters: slide, never roll —
+  // heading is controller state, not body rotation). Applied unconditionally: the zero
+  // vector is a meaningful value, never "unset".
+  fvec3 _angularFactor = fvec3(1.0f, 1.0f, 1.0f);
   bool _syncShapeScale = false;
   std::string _instanceNodeName;
   lev2::scenegraph::node_instance_data_ptr_t _INSTANCEDATA;
@@ -267,6 +272,29 @@ public:
 };
 using bulletshapescatterdata_ptr_t = std::shared_ptr<BulletShapeScatterData>;
 
+// BulletShapeSpineData (PHYSICS-PROXY LAW, owner 2026-07-22) — the road WALKABLE RIBBON:
+// a simplified proxy swept from the street_spine baked artifact (per segment: flat deck
+// band + two shoulder crossfall bands; junction coverage = incident-band overlap v1).
+// Derives from the GENERATING data (spine nodes: P=(x,road_elev,z) + width + parent) —
+// NEVER the render mesh: embellishments are render-only. Consumes the artifact BY NAME
+// (artifacts-not-graphs); fail-loud if the road graph has not built (declaration order
+// = dependency order, the scatter convention).
+struct BulletShapeSpineData : public BulletShapeBaseData {
+  DeclareConcreteX(BulletShapeSpineData, BulletShapeBaseData);
+
+public:
+  BulletShapeSpineData();
+  std::string _spine_asset; // roads export name -> <assetcache>/roads/<name>/street_spine.ogeo
+  std::string _ogeo_path;   // direct path override (tools; takes precedence)
+  float _shoulder_m = 3.0f; // walkable shoulder band each side (match RoadMesh shoulder_m)
+  float _lift_m     = 0.0f; // deck lift above road_elev — MUST equal the render lift (scene single-sources)
+  // ground pinning: HeightField asset name whose baked EXR grounds the OUTER shoulder
+  // chords (road_elev == terrain only ON the spine; laterally it diverges — unpinned
+  // chords float as lips over low ground / unreachable ribbons over fills).
+  std::string _ground_asset;
+};
+using bulletshapespinedata_ptr_t = std::shared_ptr<BulletShapeSpineData>;
+
 struct BulletShapeTerrainData : public BulletShapeBaseData {
   DeclareConcreteX(BulletShapeTerrainData, BulletShapeBaseData);
 
@@ -297,6 +325,18 @@ public:
   // high-quality-resampled (ringing-free, Image::resampledOf) DOWN to this grid, so physics collides with
   // exactly the downsampled surface the render mesh draws (terrain render_dimension). Set by terrain().
   int _render_dimension = 0;
+  // W·M SURFACE RESPONSE — physics leg (owner-adjudicated 2026-07-22). Non-empty names the
+  // RGBA class-weight capture the material ALSO consumes (<assetcache>/terrain/<hf_asset>/
+  // <channel>.exr — the SAME baked W). "" (default) = feature OFF, byte-identical to the
+  // pre-W path. When set, the collider loads W alongside the height EXR (same resample-to-
+  // collider-grid TRIANGLE convention) and modulates per-contact terrain friction by
+  // base + W·M[:,friction] at the contact point (contact-added hook, CPU-sampled — the same
+  // captured W the material consumes, so feel matches look).
+  std::string _surface_weights_channel;
+  // M[:,friction] — per-class friction DELTAS (row order = capture RGBA channel order),
+  // dotted with the 4 class weights at each contact. The natural residual (w_nat = 1 - Σw,
+  // never captured) carries delta 0 by construction, so natural terrain reads base friction.
+  std::vector<float> _friction_rows;
   lev2::TerrainDrawableData _visualData;
 
 private:

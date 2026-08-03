@@ -7,7 +7,7 @@
     "asset1": {
       "type": "asset_pak",
       "priority": 0,
-      "local_loc": "/Users/michael/.staging-nov07/assetcache/catalogtest/single_files",
+      "local_loc": "<stage>/assetcache/catalogtest/single_files",
       "platforms": [
         "mac",
         "linux"
@@ -35,7 +35,7 @@
     "asset2": {
       "type": "asset_pak",
       "priority": 0,
-      "local_loc": "/Users/michael/.staging-nov07/assetcache/catalogtest/single_files",
+      "local_loc": "<stage>/assetcache/catalogtest/single_files",
       "platforms": [
         "mac",
         "linux"
@@ -63,7 +63,7 @@
     "asset3": {
       "type": "asset_pak",
       "priority": 0,
-      "local_loc": "/Users/michael/.staging-nov07/assetcache/catalogtest/single_files",
+      "local_loc": "<stage>/assetcache/catalogtest/single_files",
       "platforms": [
         "mac",
         "linux"

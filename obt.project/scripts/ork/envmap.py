@@ -152,47 +152,37 @@ def _accumulate_tile(accum_data, capbuf_img, tx, ty, tile_w, tile_h, fw):
             accum_data[idx+2] += b
             accum_data[idx+3] += w
 
-def _finalize_accum(accum_data, fw, fh, cap_fmt_str):
-    """Normalize accumulated weighted sums and produce final Image."""
+def _finalize_accum(accum_data, fw, fh):
+    """Normalize accumulated weighted sums and produce final Image.
+
+    Always RGBA16F: the filtered radiance is HDR whatever the source encoding
+    was, and an 8-bit pack here is a hard 1.0 ceiling baked into the .xir.
+    """
     import struct as st
     import array
     img = lev2.Image()
-    if cap_fmt_str == "RGBA16F":
-        img.initWithFormat(fw, fh, tokens.RGBA16F)
-        mv = img.data.mutable_bytes
-        for idx in range(fw * fh):
-            ai = idx * 4
-            r, g, b, w = accum_data[ai], accum_data[ai+1], accum_data[ai+2], accum_data[ai+3]
-            if w > 0:
-                r /= w; g /= w; b /= w
-            def f2h(f):
-                raw = st.pack('<f', f)
-                bits = st.unpack('<I', raw)[0]
-                sign = (bits >> 16) & 0x8000
-                exp32 = ((bits >> 23) & 0xFF) - 127 + 15
-                mant = bits & 0x007FFFFF
-                if exp32 <= 0: return sign
-                if exp32 >= 31: return sign | 0x7C00
-                return sign | (exp32 << 10) | (mant >> 13)
-            off = idx * 8
-            st.pack_into('<HHHH', mv, off, f2h(r), f2h(g), f2h(b), f2h(1.0))
-    else:
-        img.initWithFormat(fw, fh, tokens.RGBA8)
-        mv = img.data.mutable_bytes
-        for idx in range(fw * fh):
-            ai = idx * 4
-            r, g, b, w = accum_data[ai], accum_data[ai+1], accum_data[ai+2], accum_data[ai+3]
-            if w > 0:
-                r /= w; g /= w; b /= w
-            off = idx * 4
-            st.pack_into('BBBB', mv, off,
-                         min(255, int(r * 255)),
-                         min(255, int(g * 255)),
-                         min(255, int(b * 255)), 255)
+    img.initWithFormat(fw, fh, tokens.RGBA16F)
+    mv = img.data.mutable_bytes
+    for idx in range(fw * fh):
+        ai = idx * 4
+        r, g, b, w = accum_data[ai], accum_data[ai+1], accum_data[ai+2], accum_data[ai+3]
+        if w > 0:
+            r /= w; g /= w; b /= w
+        def f2h(f):
+            raw = st.pack('<f', f)
+            bits = st.unpack('<I', raw)[0]
+            sign = (bits >> 16) & 0x8000
+            exp32 = ((bits >> 23) & 0xFF) - 127 + 15
+            mant = bits & 0x007FFFFF
+            if exp32 <= 0: return sign
+            if exp32 >= 31: return sign | 0x7C00
+            return sign | (exp32 << 10) | (mant >> 13)
+        off = idx * 8
+        st.pack_into('<HHHH', mv, off, f2h(r), f2h(g), f2h(b), f2h(1.0))
     return img
 
 def _filter_pass(ctx, ezapp, mtl, technique_name, src_tex,
-                 roughness, fw, fh, numsamples, cap_fmt_str,
+                 roughness, fw, fh, numsamples,
                  progress_prefix=""):
     """Render tiles one at a time with accumulation passes to avoid GPU watchdog."""
     fbi = ctx.FBI
@@ -261,7 +251,7 @@ def _filter_pass(ctx, ezapp, mtl, technique_name, src_tex,
     if progress_prefix:
         print("", flush=True)
 
-    return _finalize_accum(accum_data, fw, fh, cap_fmt_str)
+    return _finalize_accum(accum_data, fw, fh)
 
 ###############################################################################
 
@@ -270,11 +260,9 @@ def process_envmap(source_path, output_path, ctx, ezapp,
                    num_roughness_levels=NUM_ROUGHNESS_LEVELS,
                    roughness_values=None,
                    roughness_bias=0.0,
-                   skip_diffuse=False,
                    scale=1.0,
                    clamp=16.0,
-                   specular_samples=None,
-                   diffuse_samples=None):
+                   specular_samples=None):
     """
     Synchronously filter an environment map and write XIR.
 
@@ -293,12 +281,14 @@ def process_envmap(source_path, output_path, ctx, ezapp,
     total_start = time.time()
 
     spec_samples = specular_samples if specular_samples is not None else SPECULAR_SAMPLES
-    diff_samples = diffuse_samples if diffuse_samples is not None else DIFFUSE_SAMPLES
 
     ext = os.path.splitext(source_path)[1].lower()
+    # The extension picks the LAYOUT convention (equirect vs standard) and
+    # whether the source carries values worth clamping. It does NOT pick the
+    # capture range: every level is filtered and stored fp16 regardless, so a
+    # non-.exr/.hdr source can no longer bake a 1.0 ceiling into the .xir.
     is_hdr = ext in (".exr", ".hdr")
     is_equirectangular = is_hdr
-    cap_fmt_str = "RGBA16F" if is_hdr else "RGBA8"
 
     # Load source image as texture
     txi = ctx.TXI
@@ -334,11 +324,8 @@ def process_envmap(source_path, output_path, ctx, ezapp,
     filter_shader = "orkshader://pbr_filterenv.fxv2"
     spec_mtl = lev2.FreestyleMaterial()
     spec_mtl.gpuInit(ctx, filter_shader)
-    diff_mtl = lev2.FreestyleMaterial()
-    diff_mtl.gpuInit(ctx, filter_shader)
 
     spec_tek = "tek_filterSpecularMapEquirectangular" if is_equirectangular else "tek_filterSpecularMapStandard"
-    diff_tek = "tek_filterDiffuseMapEquirectangular" if is_equirectangular else "tek_filterDiffuseMapStandard"
 
     # ── Specular filtering ──────────────────────────────────────────────
     specular_images = []
@@ -357,7 +344,7 @@ def process_envmap(source_path, output_path, ctx, ezapp,
         step_start = time.time()
         cap_img = _filter_pass(
             ctx, ezapp, spec_mtl, spec_tek, tex,
-            roughness, tex_w, tex_h, spec_samples, cap_fmt_str,
+            roughness, tex_w, tex_h, spec_samples,
             progress_prefix=f"spec[{i+1}/{num_levels}]")
 
         specular_images.append(cap_img)
@@ -367,60 +354,24 @@ def process_envmap(source_path, output_path, ctx, ezapp,
             print(f"    {cap_img.width}x{cap_img.height} ({step_elapsed:.1f}s, total {total_elapsed:.0f}s)")
 
         if debug_dir:
-            debug_ext = ".exr" if is_hdr else ".png"
-            cap_img.writeToFile(os.path.join(debug_dir, f"specular_{i}_r{roughness:.3f}{debug_ext}"))
+            # .exr for every source: the capture is fp16 now, and a .png dump
+            # would clip the dump at the ceiling this slice removed.
+            cap_img.writeToFile(os.path.join(debug_dir, f"specular_{i}_r{roughness:.3f}.exr"))
 
         # Breathe between passes
         time.sleep(SLEEP_BETWEEN_FRAMES)
         ezapp.mainThreadIter()
 
-    # ── Diffuse filtering (mip chain) ──────────────────────────────────
+    # DIFFUSE: nothing to filter (owner ruling 10, W4-S9). The ambient is nine
+    # L2 coefficients projected from specular level 0 when the map is LOADED,
+    # so a prefiltered irradiance equirect has no consumer left. The container
+    # keeps its diffuse stream — empty — so every .xir ever written still
+    # reads back through the same reader.
     diffuse_images = []
-    if not skip_diffuse:
-        dw, dh = tex_w, tex_h
-        mip = 0
-
-        # Count total diffuse mips for progress
-        tw, th = tex_w, tex_h
-        total_diff_mips = 0
-        while tw >= 4 and th >= 4:
-            total_diff_mips += 1
-            tw >>= 1
-            th >>= 1
-
-        while dw >= 4 and dh >= 4:
-            if verbose:
-                print(f"  Diffuse mip [{mip+1}/{total_diff_mips}] {dw}x{dh}")
-
-            step_start = time.time()
-            cap_img = _filter_pass(
-                ctx, ezapp, diff_mtl, diff_tek, tex,
-                1.0, dw, dh, diff_samples, cap_fmt_str,
-                progress_prefix=f"diff[{mip+1}/{total_diff_mips}]")
-
-            diffuse_images.append(cap_img)
-            step_elapsed = time.time() - step_start
-            if verbose:
-                total_elapsed = time.time() - total_start
-                print(f"    done ({step_elapsed:.1f}s, total {total_elapsed:.0f}s)")
-
-            if debug_dir:
-                debug_ext = ".exr" if is_hdr else ".png"
-                cap_img.writeToFile(os.path.join(debug_dir, f"diffuse_mip_{mip}{debug_ext}"))
-
-            # Breathe between passes
-            time.sleep(SLEEP_BETWEEN_FRAMES)
-            ezapp.mainThreadIter()
-
-            dw >>= 1
-            dh >>= 1
-            mip += 1
-    elif verbose:
-        print("  Skipping diffuse filtering")
 
     # ── Write XIR ───────────────────────────────────────────────────────
     if verbose:
-        print(f"  Writing XIR: {len(specular_images)} specular, {len(diffuse_images)} diffuse mips")
+        print(f"  Writing XIR: {len(specular_images)} specular levels")
 
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
     ok = lev2.EnvMapProcessor.writeXIR(

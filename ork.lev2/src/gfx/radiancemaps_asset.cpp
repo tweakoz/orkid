@@ -93,6 +93,11 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
   auto asset = std::make_shared<RadianceMapsAsset>();
   auto irrmaps = std::make_shared<pbr::RadianceMaps>();
   asset->_radiance_maps = irrmaps;
+  // The maps object carries its OWN request, so any later holder of it can ask
+  // whether the decode+upload+publish chain has finished without re-deriving the
+  // path or re-entering the asset manager. Set before the concurrent decode is
+  // enqueued: a consumer can be handed these maps on the very next line.
+  irrmaps->_loadRequest = loadreq;
   asset->_name = loadreq->_asset_path.toStdString();
   std::string base_name = loadreq->_asset_path.getName();
 
@@ -154,25 +159,13 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
       return;
     }
 
-    bool has_diffuse = xir_data_result._diffuse_data && xir_data_result._diffuse_data->length() > 0;
+    XIRDBG("XIR v2 array format: %d roughness levels\n", xir_data_result._num_roughness_levels);
 
-    XIRDBG("XIR v2 array format: diffuse size: %zu, %d roughness levels\n",
-           has_diffuse ? xir_data_result._diffuse_data->length() : 0,
-           xir_data_result._num_roughness_levels);
+    // The container's DIFFUSE STREAM IS NOT READ (W4-S9). Every .xir on disk
+    // still carries the prefiltered irradiance chain it was baked with, and
+    // nothing samples it any more: the ambient is projected from specular
+    // level 0 below.
 
-    ////////////////////////////////////
-    // Parse diffuse data (if present)
-    ////////////////////////////////////
-
-    std::shared_ptr<CompressedImageMipChain> diffuse_cmipchain;
-    std::shared_ptr<Texture> diffuse_tex;
-    if (has_diffuse) {
-      diffuse_cmipchain = std::make_shared<CompressedImageMipChain>();
-      diffuse_cmipchain->readXTX(xir_data_result._diffuse_data);
-      diffuse_tex = std::make_shared<Texture>();
-      diffuse_tex->_debugName = base_name + ".ibldiff";
-    }
-    
     ////////////////////////////////////
     // Parse specular roughness array
     ////////////////////////////////////
@@ -189,6 +182,22 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
       cmipchain->_levels[0].convertToImage(*image);
       specular_images.push_back(image);
     }
+
+    ////////////////////////////////////
+    // THE AMBIENT (W4-S9) — the authored sky's nine L2 coefficients, projected
+    // HERE, on the decode thread, from roughness level 0 (the prefilter's
+    // identity level, i.e. the authored equirect itself). This is the whole
+    // diffuse ambient of a baked scene; it is published with the textures in
+    // the swap-op below so a frame can never see maps without their sky.
+    ////////////////////////////////////
+
+    pbr::RadianceSH radiance_sh;
+    if (not specular_images.empty())
+      radiance_sh = pbr::projectRadianceSH(*specular_images[0]);
+    OrkAssertIFMT(
+        radiance_sh._valid,
+        "radiance maps <%s> carry no projectable roughness-0 level - the scene would have NO diffuse ambient",
+        base_name.c_str());
     
     ////////////////////////////////////
     // Create texture array for specular
@@ -265,27 +274,6 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
     loading_phase->enqueueOperation(snapshotBeforeOp);
 
     //////////////////////////////////////////////////////////////
-    // Diffuse upload op — populates sandbox texture only.
-    //////////////////////////////////////////////////////////////
-
-    if (has_diffuse) {
-      auto diffuseUploadOp = [=](Context* ctx) {
-        auto diffuse_loadreq = std::make_shared<TexLoadReq>();
-        diffuse_loadreq->ptex = diffuse_tex;
-        diffuse_loadreq->_cmipchain = diffuse_cmipchain;
-        diffuse_loadreq->_texname = base_name + ".irrdiff";
-        ctx->TXI()->_createFromLoadReq(diffuse_loadreq);
-        // Equirectangular: U wraps (longitude seam), V clamps (no pole bleed
-        // across the wraparound when bilinear filtering at V=0 / V=1).
-        diffuse_tex->TexSamplingMode()._texAddrModeS = TextureAddressMode::WRAP;
-        diffuse_tex->TexSamplingMode()._texAddrModeT = TextureAddressMode::CLAMP;
-        diffuse_tex->TexSamplingMode()._texAddrModeR = TextureAddressMode::CLAMP;
-        ctx->TXI()->ApplySamplingMode(diffuse_tex.get());
-      };
-      loading_phase->enqueueOperation(diffuseUploadOp);
-    }
-
-    //////////////////////////////////////////////////////////////
     // Specular texture-array upload op — populates sandbox only.
     //////////////////////////////////////////////////////////////
 
@@ -334,7 +322,7 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
 
     // Explicit captures for handoffOp / swap_op — DELIBERATELY NOT [=].
     // The outer `op` scope holds large CPU-side decoded image data
-    // (diffuse_cmipchain, specular_images, xir_data_result). A `[=]`
+    // (specular_images, xir_data_result). A `[=]`
     // capture here would drag all of that through into the swap_op
     // lambda, which runs on the render thread; when swap_op finishes,
     // the captures destruct on the render thread and free those large
@@ -347,8 +335,7 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
         loadreq,
         num_roughness_levels,
         roughness_values,
-        has_diffuse,
-        diffuse_tex,
+        radiance_sh,
         specular_texarray,
         brdf_holder,
         our_semas
@@ -367,8 +354,7 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
           loadreq,
           num_roughness_levels,
           roughness_values,
-          has_diffuse,
-          diffuse_tex,
+          radiance_sh,
           specular_texarray,
           brdf_holder
         ](Context* render_ctx_drain) {
@@ -385,14 +371,13 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
         constexpr int kDelayFrames = 3; // > MAX_FRAMES_IN_FLIGHT
         XIRDBG("[VKMT-DBG] swap_op FIRED on ctx<%p>\n", (void*)render_ctx_drain);
         if (render_ctx_drain) {
-          auto old_diffuse = irrmaps->_filtenvDiffuseMap;
           auto old_specular = irrmaps->_filtenvSpecularMapArray;
           // BRDF maps are global singletons (cached in PBRMaterial), so
           // dropping these refs just decrements; never destructs. Skip
           // the delayed-destroy for those — saves queue churn.
-          if (old_diffuse || old_specular) {
+          if (old_specular) {
             render_ctx_drain->enqueueDelayedDestroy(
-              [old_diffuse, old_specular]() {
+              [old_specular]() {
                 // captures destruct here on render thread after delay
               },
               kDelayFrames);
@@ -400,9 +385,7 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
         }
         irrmaps->_numRoughnessLevels      = num_roughness_levels;
         irrmaps->_specularRoughnessValues = roughness_values;
-        if (has_diffuse) {
-          irrmaps->_filtenvDiffuseMap = diffuse_tex;
-        }
+        pbr::assignRadianceSH(irrmaps, radiance_sh);
         irrmaps->_filtenvSpecularMapArray   = specular_texarray;
         irrmaps->_brdfIntegrationMapGGX     = brdf_holder->_ggx;
         irrmaps->_brdfIntegrationMapVelvet  = brdf_holder->_velvet;
@@ -475,13 +458,28 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
     // window for the loader thread to pop an empty phase.
     XIRDBG("[VKMT-DBG] op submitting LoadingPhase with 4 ops to gloadercontext<%p>\n",
            (void*)gloadercontext.get());
-    gloadercontext->submitLoadingPhase(loading_phase);
+    // This decode runs on the concurrent queue and routinely outlives the
+    // frame that requested it: stopLoaderThread() can release gloadercontext
+    // while we are still decoding (app teardown), leaving nothing to upload
+    // to. Terminate the chain the same way the decode error paths do — the
+    // partial-load counter and the async-work tracker MUST be released here
+    // or a sync waiter (requestRadianceMapsSync / settle) blocks forever.
+    auto loader_ctx = gloadercontext;
+    if (nullptr == loader_ctx) {
+      printf("ERROR: radiancemaps<%s>: loader context released mid-load (app teardown) - GPU upload skipped\n",
+             asset->_name.c_str());
+      loadreq->_assetStatus = "NoLoaderContext"_crcu;
+      if(loadreq->_on_load_failed) loadreq->_on_load_failed();
+      loadreq->decrementPartialLoadCount();
+      asyncWorkEnd("radiancemaps"); // streamable chain terminated (no upload target)
+      return;
+    }
+    loader_ctx->submitLoadingPhase(loading_phase);
     XIRDBG("[VKMT-DBG] op end path<%s>\n", asset->_name.c_str());
 
-    XIRDBG("XIR asset<%p> irrmaps<%p> dtex<%p> stexarray<%p> roughness_levels<%d>\n",
+    XIRDBG("XIR asset<%p> irrmaps<%p> stexarray<%p> roughness_levels<%d> sh_lum<%g>\n",
            (void*) asset.get(), (void*) irrmaps.get(),
-           diffuse_tex ? diffuse_tex.get() : nullptr,
-           specular_texarray.get(), num_roughness_levels);
+           specular_texarray.get(), num_roughness_levels, double(radiance_sh._luminance));
   };
   opq::concurrentQueue()->enqueue(op);
   //op();

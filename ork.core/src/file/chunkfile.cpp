@@ -490,7 +490,29 @@ size_t Writer::stringIndex(const char* pstr) {
 
 ////////////////////////////////////////////////////////////////////////////////////
 
-void Writer::writeToDataBlock(datablock_ptr_t& out_datablock) {
+size_t Writer::numStreams() const {
+  return mOutputStreams.size();
+}
+
+////////////////////////////////////////////////////////////////////////////////////
+
+size_t Writer::dataBlockSize() {
+  size_t rval = sizeof(Char4)                                 // magic
+                + sizeof(int) + _stringblock.size()           // string block
+                + sizeof(int)                                 // file type
+                + sizeof(int);                                // chunk count
+  rval += mOutputStreams.size() * (sizeof(int) + sizeof(size_t) * 2); // chunk table
+  for (const auto& item : mOutputStreams)
+    rval += item.second->GetSize();
+  return rval;
+}
+
+////////////////////////////////////////////////////////////////////////////////////
+
+void Writer::writeHeaderToDataBlock(datablock_ptr_t& out_datablock) {
+  // the payloads that follow are the bulk — reserving here is what keeps the
+  // per-stream appends from paying for a reallocation of the whole container.
+  out_datablock->reserve(dataBlockSize());
   ////////////////////////
   Char4 chunk_magic("chkf");
   out_datablock->addItem<Char4>(chunk_magic);
@@ -519,15 +541,27 @@ void Writer::writeToDataBlock(datablock_ptr_t& out_datablock) {
     ////////////////////////
     offset += chunklen;
   }
-  ////////////////////////
-  for (orkmap<int, OutputStream*>::const_iterator it = mOutputStreams.begin(); it != mOutputStreams.end(); it++) {
-    int ichunkid         = it->first;
-    OutputStream* stream = it->second;
-    size_t ichunklen        = stream->GetSize();
-    if (ichunklen && stream->GetData()) {
-      out_datablock->addData(stream->GetData(), ichunklen);
-    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////
+
+void Writer::appendStreamToDataBlock(datablock_ptr_t& out_datablock, size_t stream_index) {
+  OrkAssert(stream_index < mOutputStreams.size());
+  auto it = mOutputStreams.begin();
+  std::advance(it, stream_index);
+  OutputStream* stream = it->second;
+  size_t ichunklen     = stream->GetSize();
+  if (ichunklen && stream->GetData()) {
+    out_datablock->addData(stream->GetData(), ichunklen);
   }
+}
+
+////////////////////////////////////////////////////////////////////////////////////
+
+void Writer::writeToDataBlock(datablock_ptr_t& out_datablock) {
+  writeHeaderToDataBlock(out_datablock);
+  for (size_t i = 0; i < mOutputStreams.size(); i++)
+    appendStreamToDataBlock(out_datablock, i);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////

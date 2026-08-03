@@ -297,8 +297,8 @@ void FontMan::_gpuExit(Context* pTARG) {
       continue;
     // release only the GPU-owning handles; the CPU-side descriptor (_fontdesc)
     // stays intact so a later gpuInit can reload (re-init safety).
-    font->_pipe_stereo      = nullptr;
-    font->_tek_stereo_text  = nullptr;
+    font->_pipe_text        = nullptr;
+    font->_tek_text         = nullptr;
     font->_fs_material      = nullptr;
     font->_materialDeferred = nullptr;
     font->_texture          = nullptr;

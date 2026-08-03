@@ -96,6 +96,8 @@ Expr = ops.expr                   # editor-authorable expression node from a pte
 expr = ops.expr
 Bypass = ops.bypass               # mark a node bypassed (structural pass-through); returns node
 bypass = ops.bypass
+ScatterPlace = ops.scatter_place  # IN-GRAPH scatter placement + cut-and-fill building pads (.ogeo export)
+scatter_place = ops.scatter_place
 
 __all__ = [
     "HeightField",
@@ -117,6 +119,7 @@ __all__ = [
     "Normalize", "normalize",
     "ExprField", "expr_field",
     "Expr", "expr", "Bypass", "bypass",
+    "ScatterPlace", "scatter_place",
     "ParamPack", "lerp",
     "loop", "group", "switch",
 ]

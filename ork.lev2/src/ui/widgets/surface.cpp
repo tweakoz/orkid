@@ -204,6 +204,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   }
 
   if (mNeedsSurfaceRepaint || IsDirty()) {
+    _repaintCount.fetch_add(1); // the repaint contract's clock (see surface.h)
     _rtgroup->_autoclear = true;
     _rtgroup->buffer(0)->_clearColor = _clearColor;
     _rtgroup->buffer(0)->_clearDepth = mfClearDepth;

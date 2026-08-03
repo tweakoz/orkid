@@ -223,12 +223,21 @@ template <typename vtx_t> struct RigidPrimitive : public RigidPrimitiveBase {
       auto context = RCID.context();
       auto RCFD = RCID.rcfd();
       lev2::FxPipelinePermutation permu;
-      permu._stereo = false;
+      // single-pass stereo: hand-built permutation, so the stereo bit must be read off the
+      // active CPD the way FxPipelineCache::findPipeline(RCID) does. Pinned false, every
+      // drawable on this path takes the _MO technique inside a stereo pass and both eye
+      // layers receive the SAME image — zero parallax, no validation error, no crash.
+      permu._stereo = (RCFD and RCFD->hasCPD()) ? RCFD->topCPD().isSinglePassStereo() : false;
       permu._instanced = false;
       permu._skinned = false;
       permu._is_picking = false;
       permu._has_vtxcolors = true;
       permu._is_alpha = is_alpha;
+      // cloud-shadow fill: this permutation is hand-built, so it must pick the flag up off the
+      // active CPD the way FxPipelineCache::findPipeline(RCID) does (same shape as the cascade
+      // shadow-pass read in the instanced primitive below) — the cloud decks draw through THIS
+      // path, and without it they take the full forward technique into the cookie pass.
+      permu._is_sun_cookie = RCFD ? RCFD->topCPD()._sunCookiePass : false;
       permu._rendering_model = RCFD->_renderingmodel._modelID;
       auto fxcache = material->pipelineCache();
       auto pipeline = fxcache->findPipeline(permu);
@@ -820,6 +829,11 @@ struct InstancedRigidPrimitiveDrawable final : public lev2::InstancedDrawable {
       _survivorsSSBO  = FXI->createStorageBuffer(inst_bytes);
       _argsSSBO       = FXI->createStorageBuffer(32);
       _cullParamsSSBO = FXI->createStorageBuffer(96);
+      // cascade-cull fix: a SECOND survivor set for the sun-shadow passes (union-sun-culled). The eye
+      // set above is untouched by the shadow cull, so the color pass stays byte-identical.
+      _survivorsSSBOShadow  = FXI->createStorageBuffer(inst_bytes);
+      _argsSSBOShadow       = FXI->createStorageBuffer(32);
+      _cullParamsSSBOShadow = FXI->createStorageBuffer(96);
       auto shader = _matrices_only
           ? FXI->shaderFromShaderText("instance_cull_mtxonly", _cull_shader_text_mtxonly())
           : FXI->shaderFromShaderText("instance_cull", _cull_shader_text());
@@ -873,7 +887,10 @@ struct InstancedRigidPrimitiveDrawable final : public lev2::InstancedDrawable {
         _idbuf_pool.end_pull(instances_copy);
       }
       lev2::FxPipelinePermutation permu;
-      permu._stereo = false;
+      // same hand-built-permutation read as the non-instanced twin above: pinned false, an
+      // instanced draw inside a stereo pass takes its _MO technique and writes the SAME
+      // image into both eye layers.
+      permu._stereo = (RCFD and RCFD->hasCPD()) ? RCFD->topCPD().isSinglePassStereo() : false;
       permu._instanced = true;
       permu._skinned = false;
       permu._is_picking = false;
@@ -883,13 +900,21 @@ struct InstancedRigidPrimitiveDrawable final : public lev2::InstancedDrawable {
       permu._rendering_model = RCFD->_renderingmodel._modelID;
       auto pipeline = _fxcache->findPipeline(permu);
       OrkAssert(pipeline);
+      // cascade-cull fix: a sun-cascade depth pass reads the SHADOW survivor set (union-sun-culled);
+      // every other pass (color, spot depth, probe) reads the eye set. Keyed off the active CPD flag
+      // set by _update_sun_cascades. Non-shadow path is byte-identical to before.
+      bool shadow_pass = false;
+      if (_cullEnabled and RCFD)
+        shadow_pass = RCFD->topCPD()._sunCascadeShadowPass;
+      auto survivors = shadow_pass ? _survivorsSSBOShadow : _survivorsSSBO;
+      auto drawargs  = shadow_pass ? _argsSSBOShadow      : _argsSSBO;
       pipeline->wrappedDrawCall(RCID, [&]() {
         if (pipeline->_parInstanceBlock) {
           // cull path binds the COMPACTED survivors (the VS reads the same layout by gl_InstanceIndex)
-          FXI->bindStorageBuffer(pipeline->_parInstanceBlock, _cullEnabled ? _survivorsSSBO : _instanceSSBO);
+          FXI->bindStorageBuffer(pipeline->_parInstanceBlock, _cullEnabled ? survivors : _instanceSSBO);
         }
         if (_cullEnabled)
-          _primitive->renderInstancedIndirectEML(context, _argsSSBO); // instanceCount from the cull
+          _primitive->renderInstancedIndirectEML(context, drawargs); // instanceCount from the cull
         else
           _primitive->renderInstancedEML(context, _count);
       });
@@ -941,7 +966,30 @@ struct InstancedRigidPrimitiveDrawable final : public lev2::InstancedDrawable {
   }
 
   void onPreRender(lev2::Context* ctx, const lev2::CameraMatrices& cammtx) const override {
-    if (not _cullEnabled or not _cullShader or not _cullParamsSSBO)
+    // EYE cull -> the eye survivor/args set (consumed by the color + spot depth passes).
+    _cullInto(ctx, cammtx, _survivorsSSBO, _argsSSBO, _cullParamsSSBO);
+  }
+
+  // cascade-cull fix: sun-shadow cull -> the SHADOW set, consumed by the cascade depth passes. Runs
+  // once per frame from Scene::shadowCull with the prologue's UNION sun camera (superset of every
+  // cascade slice), so off-view casters that the eye cull dropped are kept for the shadow passes.
+  void onShadowPreRender(lev2::Context* ctx, const lev2::CameraMatrices& cammtx) const override {
+    _cullInto(ctx, cammtx, _survivorsSSBOShadow, _argsSSBOShadow, _cullParamsSSBOShadow);
+  }
+
+  bool wantsShadowCull() const override { return _cullEnabled; }
+
+  // shared cull dispatch: compacts candidate instances (from _instanceSSBO) that pass cammtx's frustum
+  // into `survivors`, writing the indirect instanceCount into `args`. Identical work for eye vs shadow;
+  // only the target buffer set + camera differ. begin/endDispatchPhase are reentrant, so this nests
+  // harmlessly inside Scene::shadowCull's outer phase (one submit for all drawables).
+  void _cullInto(
+      lev2::Context* ctx,
+      const lev2::CameraMatrices& cammtx,
+      lev2::FxShaderStorageBuffer* survivors,
+      lev2::FxShaderStorageBuffer* args,
+      lev2::FxShaderStorageBuffer* cullParams) const {
+    if (not _cullEnabled or not _cullShader or not cullParams)
       return;
     auto FXI = ctx->FXI();
     auto CI  = ctx->CI();
@@ -953,7 +1001,7 @@ struct InstancedRigidPrimitiveDrawable final : public lev2::InstancedDrawable {
     // u_p0 (@84): ORKID_DISABLE_FRUSTUM_CULL flag. 1 -> cs_cull skips the 6 plane tests (every instance
     // compacted as visible). Cached bool, no cost when unset; the shader defaults to full frustum when 0.
     uint32_t disable_frustum = lev2::cullFrustumDisabled() ? 1u : 0u;
-    auto pm = FXI->mapStorageBuffer(_cullParamsSSBO, 0, 96, lev2::BufferMapAccess::WRITE_ONLY);
+    auto pm = FXI->mapStorageBuffer(cullParams, 0, 96, lev2::BufferMapAccess::WRITE_ONLY);
     char* pb = (char*)pm->_mappedaddr;
     memcpy(pb + 0,  vp.asArray(), 64);
     memcpy(pb + 64, bound, 16);
@@ -961,9 +1009,9 @@ struct InstancedRigidPrimitiveDrawable final : public lev2::InstancedDrawable {
     memcpy(pb + 84, &disable_frustum, 4);
     pm->unmap();
     // args = VkDrawIndexedIndirectCommand: seed indexCount, reset instanceCount to 0 (atomicAdd).
-    uint32_t args[5] = {uint32_t(_primitive->indexCountFirstPrimGroup()), 0u, 0u, 0u, 0u};
-    auto am = FXI->mapStorageBuffer(_argsSSBO, 0, 32, lev2::BufferMapAccess::WRITE_ONLY);
-    memcpy(am->_mappedaddr, args, sizeof(args));
+    uint32_t seed[5] = {uint32_t(_primitive->indexCountFirstPrimGroup()), 0u, 0u, 0u, 0u};
+    auto am = FXI->mapStorageBuffer(args, 0, 32, lev2::BufferMapAccess::WRITE_ONLY);
+    memcpy(am->_mappedaddr, seed, sizeof(seed));
     am->unmap();
     // dispatch the cull on its own phase (endDispatchPhase submits + waits -> done before render).
     int groups = (int(_count) + 63) / 64;
@@ -971,9 +1019,9 @@ struct InstancedRigidPrimitiveDrawable final : public lev2::InstancedDrawable {
       return;
     CI->beginDispatchPhase();
     CI->bindStorageBuffer(_cullShader, 0, _instanceSSBO);
-    CI->bindStorageBuffer(_cullShader, 1, _survivorsSSBO);
-    CI->bindStorageBuffer(_cullShader, 2, _cullParamsSSBO);
-    CI->bindStorageBuffer(_cullShader, 3, _argsSSBO);
+    CI->bindStorageBuffer(_cullShader, 1, survivors);
+    CI->bindStorageBuffer(_cullShader, 2, cullParams);
+    CI->bindStorageBuffer(_cullShader, 3, args);
     CI->dispatchCompute(_cullShader, groups, 1, 1);
     CI->endDispatchPhase();
   }
@@ -1100,6 +1148,11 @@ compute_shader cs_cull : iface_cull {
   mutable lev2::FxShaderStorageBuffer* _survivorsSSBO  = nullptr;
   mutable lev2::FxShaderStorageBuffer* _argsSSBO       = nullptr;
   mutable lev2::FxShaderStorageBuffer* _cullParamsSSBO = nullptr;
+  // cascade-cull fix: the sun-shadow survivor set (union-sun frustum), consumed by the cascade depth
+  // passes; the eye set above is consumed by color + spot passes.
+  mutable lev2::FxShaderStorageBuffer* _survivorsSSBOShadow  = nullptr;
+  mutable lev2::FxShaderStorageBuffer* _argsSSBOShadow       = nullptr;
+  mutable lev2::FxShaderStorageBuffer* _cullParamsSSBOShadow = nullptr;
   mutable const lev2::FxComputeShader* _cullShader     = nullptr;
 };
 

@@ -66,6 +66,24 @@ vertex_shader vs_grid_forward_lit //
   frg_clr     = vec4(1, 1, 1, 1);
 }
 ///////////////////////////////////////////////////////////////
+// SINGLE-PASS STEREO twin. Identical to the stage above except for ONE line: the clip
+// transform reads the per-VIEW view-projection out of ublk_stereo, indexed by the
+// multiview view selector, and forms the product with this draw's own model matrix
+// (the block carries no model). Index-select, never a branch.
+///////////////////////////////////////////////////////////////
+vertex_shader vs_grid_forward_lit_stereo //
+  : vif_FWDLIT                           //
+  : lib_pbr_vtx                          //
+  : ublk_std_matrices                    //
+  : ublk_stereo {                        //
+  gl_Position = (spvr_vp[ofx_viewIndex] * m) * position;
+  frg_uv0     = uv0;
+  frg_wpos    = m * position;
+  frg_camdist = 0.0;
+  frg_camz    = vec3(0, 0, 0);
+  frg_clr     = vec4(1, 1, 1, 1);
+}
+///////////////////////////////////////////////////////////////
 vertex_interface vif_DEPTHPP {
   inputs {
     vec4 position : POSITION;
@@ -92,6 +110,15 @@ vertex_shader vs_grid_forward_depth_prepass //
 fragment_shader ps_grid_forward_depth_prepass //
  : fif_DEPTHPP {                              //
   out_z   = frg_camz;
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_grid_forward_depth_prepass_stereo //
+  : vif_DEPTHPP                                    //
+  : ublk_std_matrices                              //
+  : ublk_stereo {                                  //
+  vec4 HPOS = (spvr_vp[ofx_viewIndex] * m) * position;
+  gl_Position = HPOS;
+  frg_camz    = HPOS.z/HPOS.w;
 }
 ///////////////////////////////////////////////////////////////
 libblock lib_frg_grid {
@@ -439,4 +466,50 @@ technique FWD_DEPTHPREPASS_RI_NI_MO_V4 {
 technique FWD_DEPTHPREPASS_RI_NI_MO_V5 {
   fxconfig = fxcfg_default;
   vf_pass  = { vs_grid_forward_depth_prepass, ps_grid_forward_depth_prepass, sb_grid_dpp }
+}
+
+///////////////////////////////////////////////////////////////
+// SINGLE-PASS STEREO peers, one per shader-suffix variant (PBRMaterial resolves
+// "<name>" + _shader_suffix). Same fragment stage and state block as the _MO twin —
+// only the vertex stage's clip transform differs.
+///////////////////////////////////////////////////////////////
+technique FWD_CT_NM_RI_NI_ST {
+  fxconfig = fxcfg_default;
+  vf_pass = { vs_grid_forward_lit_stereo, ps_grid_forward_lit_mono_V4, sb_forward }
+}
+technique FWD_CT_NM_RI_NI_ST_V2 {
+  fxconfig = fxcfg_default;
+  vf_pass = { vs_grid_forward_lit_stereo, ps_grid_forward_lit_mono_V4, sb_forward }
+}
+technique FWD_CT_NM_RI_NI_ST_V3 {
+  fxconfig = fxcfg_default;
+  vf_pass = { vs_grid_forward_lit_stereo, ps_grid_forward_lit_mono_V3, sb_forward_blend }
+}
+technique FWD_CT_NM_RI_NI_ST_V4 {
+  fxconfig = fxcfg_default;
+  vf_pass = { vs_grid_forward_lit_stereo, ps_grid_forward_lit_mono_V4, sb_forward }
+}
+technique FWD_CT_NM_RI_NI_ST_V5 {
+  fxconfig = fxcfg_default;
+  vf_pass = { vs_grid_forward_lit_stereo, ps_grid_forward_lit_mono_V4, sb_forward }
+}
+technique FWD_DEPTHPREPASS_RI_NI_ST {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_grid_forward_depth_prepass_stereo, ps_grid_forward_depth_prepass, sb_grid_dpp }
+}
+technique FWD_DEPTHPREPASS_RI_NI_ST_V2 {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_grid_forward_depth_prepass_stereo, ps_grid_forward_depth_prepass, sb_grid_dpp }
+}
+technique FWD_DEPTHPREPASS_RI_NI_ST_V3 {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_grid_forward_depth_prepass_stereo, ps_grid_forward_depth_prepass, sb_grid_dpp }
+}
+technique FWD_DEPTHPREPASS_RI_NI_ST_V4 {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_grid_forward_depth_prepass_stereo, ps_grid_forward_depth_prepass, sb_grid_dpp }
+}
+technique FWD_DEPTHPREPASS_RI_NI_ST_V5 {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_grid_forward_depth_prepass_stereo, ps_grid_forward_depth_prepass, sb_grid_dpp }
 }

@@ -109,6 +109,7 @@ KW_GEOSHADER        <| "geometry_shader" |>
 KW_FRGSHADER        <| "fragment_shader" |>
 KW_COMSHADER        <| "compute_shader" |>
 KW_MSHSHADER        <| "mesh_shader" |>
+KW_TSKSHADER        <| "task_shader" |>
 
 KW_UNISET           <| "uniform_set" |>
 KW_SMPSET           <| "sampler_set" |>
@@ -119,6 +120,8 @@ KW_FRGIFACE         <| "fragment_interface" |>
 KW_COMIFACE         <| "compute_interface" |>
 KW_STOIFACE         <| "storage_interface" |>
 KW_MSHIFACE         <| "mesh_interface" |>
+KW_TSKIFACE         <| "task_interface" |>
+KW_TSKPAYLOAD       <| "task_payload" |>
 KW_INPUTS           <| "inputs" |>
 KW_OUTPUTS          <| "outputs" |>
 KW_STORAGE          <| "storage" |>

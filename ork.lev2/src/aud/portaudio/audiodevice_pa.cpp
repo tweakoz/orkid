@@ -14,6 +14,7 @@
 #include <ork/kernel/orklut.hpp>
 #include <ork/kernel/Array.h>
 #include <ork/kernel/Array.hpp>
+#include <ork/kernel/string/string.h>
 #include <ork/application/application.h>
 #include <portaudio.h>
 #include <assert.h>
@@ -23,13 +24,20 @@
 #include <ork/lev2/aud/singularity/synthdata.h>
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/aud/singularity/krzobjects.h>
+#include <ork/lev2/aud/singularity/keyon_prof.h>
+#include <ork/lev2/aud/singularity/spike_diag.h>
 #include <ork/util/logger.h>
 #include <set>
 #include <algorithm>
 #include <mutex>
+#include <atomic>
+#include <chrono>
+#include <ctime>
+#include <cstdlib>
 #if defined(__linux__)
 #include <alsa/asoundlib.h>
 #include <dlfcn.h>
+#include <sys/resource.h>
 #endif
 
 #if defined(ENABLE_PORTAUDIO)
@@ -94,6 +102,31 @@ struct PaImpl {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+// Thread CPU time, paired with wall time in the diagnostics: wall >> cpu means
+// the audio thread was DESCHEDULED (a scheduling problem), wall ~= cpu means
+// the compute itself overran the deadline (a workload problem). Without this
+// pairing a wall-clock-only overrun cannot tell the two apart.
+static inline uint64_t _threadCpuNanos() {
+  timespec ts{};
+  clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
+  return uint64_t(ts.tv_sec) * 1000000000ull + uint64_t(ts.tv_nsec);
+}
+
+// Minor page faults charged to THIS thread. the third possibility the wall/cpu
+// pairing above cannot separate on its own: kernel memory work (fault-in of
+// fresh anonymous pages, THP collapse) is billed as the thread's SYSTEM cpu
+// time, so it reads as "compute" in both clocks. zero on platforms with no
+// per-thread rusage.
+static inline uint64_t _threadMinorFaults() {
+#if defined(__linux__)
+  rusage ru{};
+  getrusage(RUSAGE_THREAD, &ru);
+  return uint64_t(ru.ru_minflt);
+#else
+  return 0;
+#endif
+}
+
 static int patestCallback(
     const void* inputBuffer,
     void* outputBuffer,
@@ -107,6 +140,60 @@ static int patestCallback(
   auto paimpl = padev->_impl.getShared<PaImpl>();
   auto the_synth = padev->_the_synth;
   auto aid = padev->_appinitdata.lock();
+
+  auto& diagctrs = audioDiagCounters();
+
+  ///////////////////////////////////////////////////////////////////////////
+  // First invocation on this (host-api owned) thread: claim the realtime
+  // scheduling band and publish the stream geometry. The band sits above the
+  // singularity job-pool workers (40) which this thread joins on.
+  ///////////////////////////////////////////////////////////////////////////
+  static const bool _rt_claimed = [&]() -> bool {
+    elevateAudioThread("orkid.audio.portaudio", 70);
+    diagctrs._frames_per_buffer.store(uint32_t(framesPerBuffer), std::memory_order_relaxed);
+    diagctrs._sample_rate.store(float(getSampleRate()), std::memory_order_relaxed);
+    return true;
+  }();
+  (void) _rt_claimed;
+
+  ///////////////////////////////////////////////////////////////////////////
+  // xrun telemetry is ALWAYS counted (a relaxed atomic add) so any run can be
+  // scored; ORKID_PA_DIAG=1 additionally prints compute-headroom windows from
+  // the audio thread (diagnostic mode only — the printf perturbs timing).
+  ///////////////////////////////////////////////////////////////////////////
+  diagctrs._callbacks.fetch_add(1, std::memory_order_relaxed);
+  if (statusFlags & paOutputUnderflow)
+    diagctrs._underflows.fetch_add(1, std::memory_order_relaxed);
+
+  static const bool diag_enabled = (getenv("ORKID_PA_DIAG") != nullptr);
+  static uint64_t diag_frames_window = 0;
+  static uint64_t diag_max_ns_window = 0;
+  static uint64_t diag_cpu_at_max_ns = 0;
+  static uint64_t diag_underflows_reported = 0;
+  static uint64_t diag_faults_at_max = 0;
+  static uint64_t diag_faults_window = 0;
+  if (diag_enabled and (diag_frames_window == 0)) {
+    printf("[PA_DIAG] framesPerBuffer<%lu> budget<%gus> SR<%g>\n",
+           framesPerBuffer, 1e6 * double(framesPerBuffer) / getSampleRate(), getSampleRate());
+  }
+  auto diag_t0 = diag_enabled ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
+  auto diag_cpu0 = diag_enabled ? _threadCpuNanos() : 0;
+  auto diag_flt0 = diag_enabled ? _threadMinorFaults() : 0;
+
+  // per-callback hardware-counter trace: the frequency/occupancy history any
+  // spike inside this callback is read against (see spike_diag.h).
+  using namespace ork::audio::singularity;
+  const bool spike_enabled = spikeDiagEnabled();
+  uint64_t spike_t0        = 0;
+  RtPmu spike_pmu0;
+  if (spike_enabled) {
+    spikeDiagReadPmu(spike_pmu0);
+    spike_t0 = spikeDiagNanos();
+  }
+  // the region-marked twin of the diag window above: same span, but whichever
+  //  interior region ate the callback is named by the mark timeline. raise
+  //  ORKID_SPIKE_US above the nominal callback cost or every callback reports.
+  SpikeCallbackScope cbscope("pacallback");
 
   if(inputBuffer and padev->_input_handler){
     static auto chunk = std::make_shared<AudioInputChunk>(padev->_num_input_channels);
@@ -164,8 +251,56 @@ static int patestCallback(
 
 
 
+    spikeDiagMark(); // mark 0: input conversion done
     the_synth->compute(framesPerBuffer, inputBufferFloat);
+    spikeDiagMark(); // mark N-1: compute returned
     the_synth->_cpuload = Pa_GetStreamCpuLoad(pa_stream);
+
+    if (diag_enabled) {
+      auto diag_ns = uint64_t(std::chrono::duration_cast<std::chrono::nanoseconds>(
+          std::chrono::steady_clock::now() - diag_t0).count());
+      auto diag_cpu_ns = _threadCpuNanos() - diag_cpu0;
+      auto diag_flt    = _threadMinorFaults() - diag_flt0;
+      diag_faults_window += diag_flt;
+      if (diag_ns > diag_max_ns_window) {
+        diag_max_ns_window = diag_ns;
+        diag_cpu_at_max_ns = diag_cpu_ns;
+        diag_faults_at_max = diag_flt;
+      }
+      diag_frames_window += framesPerBuffer;
+      if (diag_frames_window >= uint64_t(getSampleRate() * 5.0)) {
+        uint64_t uf = diagctrs._underflows.load(std::memory_order_relaxed);
+        printf("[PA_DIAG] window_max_compute<%gus> cpu_at_max<%gus> faults_at_max<%lu> faults_window<%lu> budget<%gus> underflows_total<%lu>%s\n",
+               double(diag_max_ns_window) * 1e-3,
+               double(diag_cpu_at_max_ns) * 1e-3,
+               diag_faults_at_max,
+               diag_faults_window,
+               1e6 * double(framesPerBuffer) / getSampleRate(),
+               uf,
+               (uf != diag_underflows_reported) ? " <<< NEW UNDERFLOWS" : "");
+        keyonProfReport();
+        diag_underflows_reported = uf;
+        diag_frames_window = 0;
+        diag_max_ns_window = 0;
+        diag_cpu_at_max_ns = 0;
+        diag_faults_at_max = 0;
+        diag_faults_window = 0;
+      }
+    }
+
+    if (spike_enabled) {
+      uint64_t spike_t1 = spikeDiagNanos();
+      RtPmu spike_pmu1;
+      spikeDiagReadPmu(spike_pmu1);
+      RtPmu d;
+      d._insn = spike_pmu1._insn - spike_pmu0._insn;
+      d._cyc  = spike_pmu1._cyc - spike_pmu0._cyc;
+      d._ref   = spike_pmu1._ref - spike_pmu0._ref;
+      d._kinsn = spike_pmu1._kinsn - spike_pmu0._kinsn;
+      uint64_t spike_cpu = diag_enabled ? (_threadCpuNanos() - diag_cpu0) : 0;
+      uint64_t spike_flt = diag_enabled ? (_threadMinorFaults() - diag_flt0) : 0;
+      spikeDiagCallback(spike_t0, spike_t1 - spike_t0, spike_cpu, spike_flt, d, orkaud_getcpu());
+    }
 
     if (false) { // test tone ?
       static int64_t _testtoneph = 0;
@@ -215,8 +350,18 @@ static int patestCallback(
     return true;
   };
 
-  if (isShortId(padev->_inp_dev_name)) {
+  auto aid         = padev->_appinitdata.lock();
+  bool want_input  = aid->_enable_audio_input;
+  bool want_output = aid->_enable_audio_output;
+
+  // Resolve short ids for the ENABLED directions only. An unresolvable id for an
+  // active direction is a loud, clean failure (AudioDeviceException) which the
+  // caller degrades to the NULL device — never a bogus stream, never an assert.
+  if (want_input and isShortId(padev->_inp_dev_name)) {
     auto dev = findAudioDeviceByShortId(padev->_inp_dev_name);
+    if (not dev) {
+      dev = retryAndDiagnoseShortId(padev->_inp_dev_name, /*want_output*/ false);
+    }
     if (dev) {
       logchan_portaudio->log("resolved input short id '%s' to '%s' @ %gHz",
                              padev->_inp_dev_name.c_str(), dev->_name.c_str(), dev->_sample_rate);
@@ -224,10 +369,15 @@ static int patestCallback(
     } else {
       logerrchannel()->log("unknown input short id '%s' - run ork.devicelist.audio.py to see available IDs",
                            padev->_inp_dev_name.c_str());
+      throw AudioDeviceException(
+          FormatString("unresolvable input audio device short id '%s'", padev->_inp_dev_name.c_str()));
     }
   }
-  if (isShortId(padev->_out_dev_name)) {
+  if (want_output and isShortId(padev->_out_dev_name)) {
     auto dev = findAudioDeviceByShortId(padev->_out_dev_name);
+    if (not dev) {
+      dev = retryAndDiagnoseShortId(padev->_out_dev_name, /*want_output*/ true);
+    }
     if (dev) {
       logchan_portaudio->log("resolved output short id '%s' to '%s' @ %gHz",
                              padev->_out_dev_name.c_str(), dev->_name.c_str(), dev->_sample_rate);
@@ -235,6 +385,8 @@ static int patestCallback(
     } else {
       logerrchannel()->log("unknown output short id '%s' - run ork.devicelist.audio.py to see available IDs",
                            padev->_out_dev_name.c_str());
+      throw AudioDeviceException(
+          FormatString("unresolvable output audio device short id '%s'", padev->_out_dev_name.c_str()));
     }
   }
 
@@ -252,7 +404,6 @@ static int patestCallback(
   OrkAssert(err == paNoError);
   int num_inputs = 0;
   int num_outputs = 0;
-  auto aid = padev->_appinitdata.lock();
   if( aid->_enable_audio_input ) {
     num_inputs = padev->_num_input_channels;
   }
@@ -309,7 +460,9 @@ static int patestCallback(
   if(num_inputs>0){
     if(not got_input){
       logerrchannel()->log("could not open input device<%s>", padev->_inp_dev_name.c_str());
-      OrkAssert(false);
+      Pa_Terminate();
+      throw AudioDeviceException(
+          FormatString("no usable input audio device matched '%s'", padev->_inp_dev_name.c_str()));
     }
     inp_params.device = paimpl->_input_override;
     inp_params.channelCount = paimpl->_actual_input_channels;  // use actual device channels
@@ -322,8 +475,10 @@ static int patestCallback(
 
   if(num_outputs>0){
     if(not got_output){
-      logerrchannel()->log("could not open output device<%s>", padev->_inp_dev_name.c_str());
-      OrkAssert(false);
+      logerrchannel()->log("could not open output device<%s>", padev->_out_dev_name.c_str());
+      Pa_Terminate();
+      throw AudioDeviceException(
+          FormatString("no usable output audio device matched '%s'", padev->_out_dev_name.c_str()));
     }
     out_params.device = paimpl->_output_override;
     out_params.channelCount = num_outputs;
@@ -375,6 +530,16 @@ static int patestCallback(
     OrkAssert(false);
   }
 
+  // the synth learns its buffer geometry from the frame count it is handed,
+  // and GROWING it walks all 512 pooled layers x 32 stage slots plus every
+  // bus - ~18ms of allocation. left to the callback that is the first thing
+  // the audio thread ever does, inside a 5.3ms budget. prime it here, off the
+  // audio thread, with the same count Pa_OpenStream was asked for; a device
+  // that hands back a larger buffer still grows on demand in the callback.
+  if(padev->_the_synth){
+    padev->_the_synth->resize(DESIRED_NUMFRAMES);
+  }
+
   err = Pa_StartStream(pa_stream);
   OrkAssert(err == paNoError);
 
@@ -415,7 +580,11 @@ void AudioDevicePa::startup(){
   if(_appinitdata.lock()->_enable_audio_synth){
     _the_synth = synth::instance();
   }
-  _the_synth->waitUntilReady();
+  // A null synth is a legitimate config here — the PA callback feeds silence
+  // (or input-only) when _the_synth is null, so guard rather than deref.
+  if(_the_synth){
+    _the_synth->waitUntilReady();
+  }
   _startupAudio(this);
 
 }

@@ -32,7 +32,7 @@ class XXX3Scene(Scene):
         DiffuseIntensity  = 3.0,
         SpecularIntensity = 1.0,
         AmbientLight      = vec3(0.00),
-        CullFrustumScale   = 0.75,   # TEMP A/B TEST: narrow cull frustum (cull-more) — revert after
+        CullFrustumScale   = 1.0,   # TEMP A/B TEST: narrow cull frustum (cull-more) — revert after
         msaa = 3)
 
     self.terrain(

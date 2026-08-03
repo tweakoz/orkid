@@ -40,6 +40,23 @@ public:
     return _pickbuffer;
   }
 
+  // REPAINT CONTRACT (the wait primitive for anything reading _rtgroup).
+  //
+  // A surface repaints ONLY on a frame where it is dirty (DoDraw), so the
+  // render loop can run an unbounded number of frames without this RTG
+  // changing — an offscreen/headless loop runs thousands of frames per second
+  // against an update thread that dirties it at its own rate. That makes a
+  // FRAME COUNT useless as a "my state change is now in the pixels" wait: a
+  // 12-frame settle can contain zero repaints.
+  //
+  // The DEPTH is ONE: the first repaint after a state change renders that
+  // state (the render path reads scene/PBR state live at bind time — e.g.
+  // CommonStuff::activeRadianceMaps() in material_pbr_pipeline.cpp), there is
+  // no extra frame of pipelining to absorb. So the correct wait for "the RTG
+  // now shows the change I just made" is: sample _repaintCount when you make
+  // the change, then wait until it has ADVANCED. Monotonic, never reset.
+  std::atomic<uint64_t> _repaintCount{0};
+
   bool _flipY = false;
   bool mbClear;
   fcolor4 _clearColor;

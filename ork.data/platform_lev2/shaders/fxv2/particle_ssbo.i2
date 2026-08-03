@@ -27,6 +27,18 @@ storage_interface storage_particles (descriptor_set 0) {
 }
 
 ///////////////////////////////////////////////////////////////
+// SINGLE-PASS STEREO per-view state. Declared here rather than imported because
+// this file's shaders do not pull stdtools.i2; the LAYOUT must stay identical to
+// the ublk_stereo declared there — it is the same buffer, written by the one
+// production writer (PBRMaterial::writeStereoBlock).
+///////////////////////////////////////////////////////////////
+uniform_block ublk_stereo (descriptor_set 0) {
+  mat4 spvr_vp[2];
+  mat4 spvr_inv_vp[2];
+  vec4 spvr_eyepos[2];
+}
+
+///////////////////////////////////////////////////////////////
 // Vertex interface for SSBO-based sprite rendering
 ///////////////////////////////////////////////////////////////
 vertex_interface vface_sprite_ssbo
@@ -36,6 +48,17 @@ vertex_interface vface_sprite_ssbo
     vec4 frg_clr;
     vec2 frg_uv0;
     vec4 frg_uv1;  // x=age, y=random, z=aux.x, w=aux.y
+  }
+}
+
+vertex_interface vface_sprite_ssbo_ST
+  : ublk_vtx
+  : ublk_stereo
+  : storage_particles {
+  outputs {
+    vec4 frg_clr;
+    vec2 frg_uv0;
+    vec4 frg_uv1;
   }
 }
 
@@ -52,10 +75,37 @@ vertex_interface vface_streak_ssbo
   }
 }
 
+vertex_interface vface_streak_ssbo_ST
+  : ublk_vtx
+  : ublk_stereo
+  : storage_particles {
+  outputs {
+    vec4 frg_clr;
+    vec2 frg_uv0;
+    vec4 frg_uv1;
+  }
+}
+
 ///////////////////////////////////////////////////////////////
-// Sprite vertex shader - billboards using SSBO data
+// The particle vertex GEOMETRY, factored out of the vertex stages so the mono and
+// single-pass-stereo stages differ in exactly ONE line — the clip transform. Keeping
+// the billboard/streak construction in one place is what makes that claim checkable:
+// a stereo variant that drifted from its mono twin would be a per-eye geometry
+// difference, which is the one thing an eye-for-eye parity gate cannot distinguish
+// from a genuine bug.
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_sprite_ssbo : vface_sprite_ssbo {
+libblock lib_ptc_ssbo_vtx {
+
+  struct PtcVtx {
+    vec3 wpos;
+    vec4 clr;
+    vec2 uv0;
+    vec4 uv1;
+  };
+
+  PtcVtx computeSpriteVtx() {
+    PtcVtx rval;
+
   // 6 vertices per particle (2 triangles)
   int particleIdx = gl_VertexIndex / 6;
   int cornerIdx = gl_VertexIndex % 6;
@@ -100,17 +150,16 @@ vertex_shader vs_sprite_ssbo : vface_sprite_ssbo {
 
   // Compute billboard position using camera vectors
   vec3 worldPos = pos + offset.x * camRight * size + offset.y * camUp * size;
+    rval.wpos = worldPos;
+    rval.clr  = gradientLUT[clamp(int(age * 256.0), 0, 255)]; // gradient ramp (white if none)
+    rval.uv0  = uvs[cornerIdx];
+    rval.uv1  = vec4(age, random, aux_xy);
+    return rval;
+  }
 
-  gl_Position = MatMVP * vec4(worldPos, 1.0);
-  frg_clr = gradientLUT[clamp(int(age * 256.0), 0, 255)]; // gradient ramp -> fragment (white if none)
-  frg_uv0 = uvs[cornerIdx];
-  frg_uv1 = vec4(age, random, aux_xy);
-}
+  PtcVtx computeStreakVtx() {
+    PtcVtx rval;
 
-///////////////////////////////////////////////////////////////
-// Streak vertex shader - velocity-aligned quads using SSBO data
-///////////////////////////////////////////////////////////////
-vertex_shader vs_streak_ssbo : vface_streak_ssbo {
   // 6 vertices per particle (2 triangles)
   int particleIdx = gl_VertexIndex / 6;
   int cornerIdx = gl_VertexIndex % 6;
@@ -168,9 +217,55 @@ vertex_shader vs_streak_ssbo : vface_streak_ssbo {
 
   int idx = indices[cornerIdx];
   vec3 worldPos = corners[idx];
+    rval.wpos = worldPos;
+    rval.clr  = gradientLUT[clamp(int(age * 256.0), 0, 255)];
+    rval.uv0  = uvs[idx];
+    rval.uv1  = vec4(age, random, aux_xy);
+    return rval;
+  }
+}
 
-  gl_Position = MatMVP * vec4(worldPos, 1.0);
-  frg_clr = gradientLUT[clamp(int(age * 256.0), 0, 255)]; // gradient ramp -> fragment (white if none)
-  frg_uv0 = uvs[idx];
-  frg_uv1 = vec4(age, random, aux_xy);
+///////////////////////////////////////////////////////////////
+// Sprite vertex shader - billboards using SSBO data
+///////////////////////////////////////////////////////////////
+vertex_shader vs_sprite_ssbo : vface_sprite_ssbo : lib_ptc_ssbo_vtx {
+  PtcVtx pv  = computeSpriteVtx();
+  gl_Position = MatMVP * vec4(pv.wpos, 1.0);
+  frg_clr = pv.clr;
+  frg_uv0 = pv.uv0;
+  frg_uv1 = pv.uv1;
+}
+
+///////////////////////////////////////////////////////////////
+// ...and its SINGLE-PASS STEREO twin. MatMVP is per-DRAW (VP*M) and ublk_stereo is
+// per-FRAME view state with no model in it, so the product is formed here from the
+// per-view vp and the draw's own model matrix. Index-select on the multiview view
+// selector, never a branch.
+///////////////////////////////////////////////////////////////
+vertex_shader vs_sprite_ssbo_ST : vface_sprite_ssbo_ST : lib_ptc_ssbo_vtx {
+  PtcVtx pv  = computeSpriteVtx();
+  gl_Position = (spvr_vp[ofx_viewIndex] * MatM) * vec4(pv.wpos, 1.0);
+  frg_clr = pv.clr;
+  frg_uv0 = pv.uv0;
+  frg_uv1 = pv.uv1;
+}
+
+///////////////////////////////////////////////////////////////
+// Streak vertex shader - velocity-aligned quads using SSBO data
+///////////////////////////////////////////////////////////////
+vertex_shader vs_streak_ssbo : vface_streak_ssbo : lib_ptc_ssbo_vtx {
+  PtcVtx pv  = computeStreakVtx();
+  gl_Position = MatMVP * vec4(pv.wpos, 1.0);
+  frg_clr = pv.clr;
+  frg_uv0 = pv.uv0;
+  frg_uv1 = pv.uv1;
+}
+
+///////////////////////////////////////////////////////////////
+vertex_shader vs_streak_ssbo_ST : vface_streak_ssbo_ST : lib_ptc_ssbo_vtx {
+  PtcVtx pv  = computeStreakVtx();
+  gl_Position = (spvr_vp[ofx_viewIndex] * MatM) * vec4(pv.wpos, 1.0);
+  frg_clr = pv.clr;
+  frg_uv0 = pv.uv0;
+  frg_uv1 = pv.uv1;
 }

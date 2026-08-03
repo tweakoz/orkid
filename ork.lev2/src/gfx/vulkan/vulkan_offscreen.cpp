@@ -1,5 +1,6 @@
 #include "headers/vulkan_ctx.h"
 #include "vulkan_captureasync.h"
+#include "vulkan_wedge.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
@@ -38,8 +39,16 @@ void VkOffscreen::submit(vkcontext_rawptr_t ctxVK) {
 
   auto& fence = _frame_fences[_sub_index];
   fence->reset();
-  ctxVK->_gfxqueue->queueSubmit(&SI, fence->_vkfence);
-  fence->wait();
+  // Fault injection (default-off): skip the submit so the fence can never be
+  // signalled, and let the bounded wait below prove it fires. See vulkan_wedge.h.
+  uint64_t induce = induceWedgeFrame();
+  if (induce and _current_frame == induce) {
+    fprintf(stderr, "[VKWEDGE] INDUCING wedge at offscreen frame<%llu> (queueSubmit skipped)\n", (unsigned long long)_current_frame);
+    fflush(stderr);
+  } else {
+    ctxVK->_gfxqueue->queueSubmit(&SI, fence->_vkfence);
+  }
+  fence->wait("offscreen-submit");
   _incrementFrame();
 }
 

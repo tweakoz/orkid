@@ -11,6 +11,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 std::atomic<size_t> VulkanTextureObject::_vkto_count = 0;
+std::atomic<size_t> VulkanTextureObject::_vktoSN    = 0;
 ///////////////////////////////////////////////////////////////////////////////
 static logchannel_ptr_t logchan_txi = logger()->configureChannel("VKTXI", fvec3(0.8, 0.2, 0.5), true);
 
@@ -468,6 +469,7 @@ VulkanTextureObject::VulkanTextureObject(vktxi_rawptr_t txi) {
   initializeVkStruct(_vkdescriptor_info);
 
   int count = _vkto_count.fetch_add(1);
+  _serial_number = _vktoSN.fetch_add(1);
   if (0) {
     logchan_txi->log("VulkanTextureObject count<%d>", count);
   }

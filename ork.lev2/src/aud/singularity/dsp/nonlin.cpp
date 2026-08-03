@@ -31,7 +31,7 @@ SHAPER_DATA::SHAPER_DATA(std::string name)
   addParam("amount","x")->useDefaultEvaluator(); 
 }
 dspblk_ptr_t SHAPER_DATA::createInstance() const {
-  return std::make_shared<SHAPER>(this);
+  return createDspInstance<SHAPER>(this);
 }
 
 SHAPER::SHAPER(const DspBlockData* dbd)
@@ -67,7 +67,7 @@ SHAPE2_DATA::SHAPE2_DATA(std::string name)
   addParam("amount","x")->useDefaultEvaluator(); 
 }
 dspblk_ptr_t SHAPE2_DATA::createInstance() const {
-  return std::make_shared<SHAPE2>(this);
+  return createDspInstance<SHAPE2>(this);
 }
 
 SHAPE2::SHAPE2(const DspBlockData* dbd)
@@ -102,7 +102,7 @@ TWOPARAM_SHAPER_DATA::TWOPARAM_SHAPER_DATA(std::string name)
   addParam("odd")->useDefaultEvaluator(); 
 }
 dspblk_ptr_t TWOPARAM_SHAPER_DATA::createInstance() const {
-  return std::make_shared<TWOPARAM_SHAPER>(this);
+  return createDspInstance<TWOPARAM_SHAPER>(this);
 }
 
 TWOPARAM_SHAPER::TWOPARAM_SHAPER(const DspBlockData* dbd)
@@ -169,7 +169,7 @@ WrapData::WrapData(std::string name)
   addParam("adjust", "dB")->useAmplitudeEvaluator();
 }
 dspblk_ptr_t WrapData::createInstance() const {
-  return std::make_shared<Wrap>(this);
+  return createDspInstance<Wrap>(this);
 }
 Wrap::Wrap(const DspBlockData* dbd)
     : DspBlock(dbd) {
@@ -201,7 +201,7 @@ DistortionData::DistortionData(std::string name)
   addParam("drive","dB")->useDefaultEvaluator();
 }
 dspblk_ptr_t DistortionData::createInstance() const {
-  return std::make_shared<Distortion>(this);
+  return createDspInstance<Distortion>(this);
 }
 Distortion::Distortion(const DspBlockData* dbd)
     : DspBlock(dbd) {

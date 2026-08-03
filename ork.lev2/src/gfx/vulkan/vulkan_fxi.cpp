@@ -173,19 +173,23 @@ int VkFxInterface::_pipelineBitsForShader(vkfxshaderpass_rawptr_t shprog){
     ////////////////////////////
 
     // Create a combined VIF with inputs from all interfaces in inheritance chain
+    // A mesh pass has NO vertex stage (and no vertex input state at all), so it
+    // contributes no VIF inputs — it falls through to the empty-inputs sentinel.
     auto VIF = std::make_shared<VulkanVertexInterface>();
     std::string combined_name;
-    for (auto& iface_name : vtx_shader->_vk_interfaces) {
-      auto it_vif = shprog->_shader_file->_vk_vtxinterfaces.find(iface_name);
-      if (it_vif != shprog->_shader_file->_vk_vtxinterfaces.end()) {
-        auto src_vif = it_vif->second;
-        // Add all inputs from this interface
-        for (auto& input : src_vif->_inputs) {
-          VIF->_inputs.push_back(input);
+    if (vtx_shader) {
+      for (auto& iface_name : vtx_shader->_vk_interfaces) {
+        auto it_vif = shprog->_shader_file->_vk_vtxinterfaces.find(iface_name);
+        if (it_vif != shprog->_shader_file->_vk_vtxinterfaces.end()) {
+          auto src_vif = it_vif->second;
+          // Add all inputs from this interface
+          for (auto& input : src_vif->_inputs) {
+            VIF->_inputs.push_back(input);
+          }
+          // Build combined name
+          if (!combined_name.empty()) combined_name += "+";
+          combined_name += iface_name;
         }
-        // Build combined name
-        if (!combined_name.empty()) combined_name += "+";
-        combined_name += iface_name;
       }
     }
     VIF->_name = combined_name;

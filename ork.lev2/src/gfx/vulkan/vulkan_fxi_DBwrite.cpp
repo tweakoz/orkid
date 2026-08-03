@@ -190,6 +190,8 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
   auto frg_interfaces = AstNode::collectNodesOfType<FragmentInterface>(transunit);
   auto frg_shaders    = AstNode::collectNodesOfType<FragmentShader>(transunit);
   auto cu_shaders     = AstNode::collectNodesOfType<ComputeShader>(transunit);
+  auto msh_shaders    = AstNode::collectNodesOfType<MeshShader>(transunit);
+  auto tsk_shaders    = AstNode::collectNodesOfType<TaskShader>(transunit);
   auto techniques     = AstNode::collectNodesOfType<Technique>(transunit);
   auto smpsets        = AstNode::collectNodesOfType<SamplerSet>(transunit);
   auto unisets        = AstNode::collectNodesOfType<UniformSet>(transunit);
@@ -203,6 +205,8 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
   size_t num_frg_shaders = frg_shaders.size();
   size_t num_frg_ifaces  = frg_interfaces.size();
   size_t num_cu_shaders  = cu_shaders.size();
+  size_t num_msh_shaders = msh_shaders.size();
+  size_t num_tsk_shaders = tsk_shaders.size();
   size_t num_techniques  = techniques.size();
   size_t num_smpsets     = smpsets.size();
   size_t num_unisets     = unisets.size();
@@ -219,6 +223,8 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
     printf("num_frg_shaders<%zu>\n", num_frg_shaders);
     printf("num_frg_interfaces<%zu>\n", num_frg_ifaces);
     printf("num_cu_shaders<%zu>\n", num_cu_shaders);
+    printf("num_msh_shaders<%zu>\n", num_msh_shaders);
+    printf("num_tsk_shaders<%zu>\n", num_tsk_shaders);
     printf("num_techniques<%zu>\n", num_techniques);
     printf("num_smpsets<%zu>\n", num_smpsets);
     printf("num_unisets<%zu>\n", num_unisets);
@@ -246,6 +252,8 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
   header_stream->AddItem<uint64_t>(num_frg_shaders);
   header_stream->AddItem<uint64_t>(num_frg_ifaces);
   header_stream->AddItem<uint64_t>(num_cu_shaders);
+  header_stream->AddItem<uint64_t>(num_msh_shaders);
+  header_stream->AddItem<uint64_t>(num_tsk_shaders);
   header_stream->AddItem<uint64_t>(num_smpsets);
   header_stream->AddItem<uint64_t>(num_unisets);
   header_stream->AddItem<uint64_t>(num_uniblks);
@@ -474,6 +482,10 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
     pending_compiles.push_back({fshader, "fragment", SPC->emitShader(fshader), {}});
   for (auto cshader : cu_shaders)
     pending_compiles.push_back({cshader, "compute", SPC->emitShader(cshader), {}});
+  for (auto mshader : msh_shaders)
+    pending_compiles.push_back({mshader, "mesh", SPC->emitShader(mshader), {}});
+  for (auto tshader : tsk_shaders)
+    pending_compiles.push_back({tshader, "task", SPC->emitShader(tshader), {}});
 
   //////////////////
   // pass 2: COMPILE on workers (shaderc is per-call-local); join before writing
@@ -533,33 +545,55 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
     tecniq_stream->AddItem<size_t>(passes.size());
     for (auto p : passes) {
       auto vtx_shader_ref = p->findFirstChildOfType<VertexShaderRef>();
+      auto msh_shader_ref = p->findFirstChildOfType<MeshShaderRef>();
+      auto tsk_shader_ref = p->findFirstChildOfType<TaskShaderRef>();
       auto frg_shader_ref = p->findFirstChildOfType<FragmentShaderRef>();
       auto stateblock_ref = p->findFirstChildOfType<StateBlockRef>();
-      OrkAssert(vtx_shader_ref);
+      // a pass is fronted by EITHER the vertex stage (V[G]F) or the mesh stage (MF)
+      OrkAssertI(
+          bool(vtx_shader_ref) != bool(msh_shader_ref), //
+          "pass must bind exactly one of vertex_shader / mesh_shader");
       OrkAssert(frg_shader_ref);
       OrkAssert(stateblock_ref);
-      auto vtx_sema_id  = vtx_shader_ref->findFirstChildOfType<SemaIdentifier>();
+      auto front_shader_ref = msh_shader_ref ? msh_shader_ref : vtx_shader_ref;
+      auto front_sema_id = front_shader_ref->findFirstChildOfType<SemaIdentifier>();
       auto frg_sema_id  = frg_shader_ref->findFirstChildOfType<SemaIdentifier>();
       auto sblk_sema_id = stateblock_ref->findFirstChildOfType<SemaIdentifier>();
-      OrkAssert(vtx_sema_id);
+      OrkAssert(front_sema_id);
       OrkAssert(frg_sema_id);
       OrkAssert(sblk_sema_id);
-      auto vtx_name  = vtx_sema_id->typedValueForKey<std::string>("identifier_name").value();
+      auto front_name = front_sema_id->typedValueForKey<std::string>("identifier_name").value();
       auto frg_name  = frg_sema_id->typedValueForKey<std::string>("identifier_name").value();
       auto sblk_name = sblk_sema_id->typedValueForKey<std::string>("identifier_name").value();
       tecniq_stream->AddIndexedString("pass", chunkwriter);
       std::string stages;
-      stages += "V";
       ////////////////////////////////////////////////////////////////
       auto geo_shader_ref = p->findFirstChildOfType<GeometryShaderRef>();
-      if (geo_shader_ref) {
-        stages += "G";
+      if (msh_shader_ref) {
+        OrkAssertI(not geo_shader_ref, "a mesh pass has no geometry stage");
+        // the amplification pair: a task stage is only ever legal IN FRONT of a mesh stage
+        if (tsk_shader_ref)
+          stages += "T";
+        stages += "M";
+      } else {
+        OrkAssertI(not tsk_shader_ref, "a task_shader needs a mesh_shader in the same pass");
+        stages += "V";
+        if (geo_shader_ref) {
+          stages += "G";
+        }
       }
       stages += "F";
       ////////////////////////////////////////////////////////////////
       tecniq_stream->AddIndexedString(stages, chunkwriter);
       ////////////////////////////////////////////////////////////////
-      tecniq_stream->AddIndexedString(vtx_name, chunkwriter);
+      if (tsk_shader_ref) {
+        auto tsk_sema_id = tsk_shader_ref->findFirstChildOfType<SemaIdentifier>();
+        OrkAssert(tsk_sema_id);
+        auto tsk_name = tsk_sema_id->typedValueForKey<std::string>("identifier_name").value();
+        tecniq_stream->AddIndexedString(tsk_name, chunkwriter);
+      }
+      ////////////////////////////////////////////////////////////////
+      tecniq_stream->AddIndexedString(front_name, chunkwriter);
       ////////////////////////////////////////////////////////////////
       if (geo_shader_ref) {
         auto geo_sema_id = geo_shader_ref->findFirstChildOfType<SemaIdentifier>();

@@ -30,7 +30,7 @@ Fdn4ReverbData::Fdn4ReverbData(std::string name)
 ///////////////////////////////////////////////////////////////////////////////
 
 dspblk_ptr_t Fdn4ReverbData::createInstance() const { // override
-  return std::make_shared<Fdn4Reverb>(this);
+  return createDspInstance<Fdn4Reverb>(this);
 }
 
 void Fdn4ReverbData::update(){

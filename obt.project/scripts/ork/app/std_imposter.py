@@ -87,8 +87,15 @@ def createImposter( context = None,
         imp_pass.pipeline.bindParam(imp_mtl.param("reflectionPROBE"), tokens.RCFD_PBR_BLACK_CUBEMAP )
         imp_pass.pipeline.bindParam(imp_mtl.param("MapBrdfIntegration"), tokens.RCFD_PBR_BRDF_INTEGRATION_GGX )
         imp_pass.pipeline.bindParam(imp_mtl.param("SSAOMap"), tokens.RCFD_PBR_WHITE_2DMAP )
-        imp_pass.pipeline.bindParam(imp_mtl.param("MapDiffuseEnv"), tokens.RCFD_PBR_DIFFUSE_ENV )
+        # THE AMBIENT is nine L2 coefficients now (W4-S9), not a map: the bake
+        # has to bind them or an impostor is lit by whatever the block held.
+        imp_pass.pipeline.bindParam(imp_mtl.param("EnvSH"), tokens.RCFD_PBR_ENV_SH )
+        imp_pass.pipeline.bindParam(imp_mtl.param("EnvSHValid"), tokens.RCFD_PBR_ENV_SH_VALID )
         imp_pass.pipeline.bindParam(imp_mtl.param("MapSpecularEnv"), tokens.RCFD_PBR_SPECULAR_ENV )
+        # outgoing specular set + blend weight (procedural refilter crossfade);
+        # aliases the bind above whenever no fade is running.
+        imp_pass.pipeline.bindParam(imp_mtl.param("MapSpecularEnvPrev"), tokens.RCFD_PBR_SPECULAR_ENV_PREV )
+        imp_pass.pipeline.bindParam(imp_mtl.param("EnvBlendWeight"), tokens.RCFD_PBR_ENV_BLEND_WEIGHT )
         imp_pass.pipeline.bindParam(imp_mtl.param("EyePostion"), tokens.RCFD_EYE_POSITION )
         imp_pass.pipeline.bindParam(imp_mtl.param("AmbientLevel"), vec3(0) )
         imp_pass.pipeline.bindParam(imp_mtl.param("SkyboxLevel"), 1.0 )

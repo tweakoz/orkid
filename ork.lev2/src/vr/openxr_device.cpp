@@ -51,19 +51,17 @@ namespace ork::lev2::orkidvr::openxr_ {
 static logchannel_ptr_t logchan_xr = logger()->configureChannel("OPENXR", fvec3(0.2, 0.9, 0.9), false);
 
 ////////////////////////////////////////////////////////////////////////////////
-// Pose math (unit-tested). XR is right-handed, +Y up, -Z forward. orkid stores
-// matrices row-major, so quat->matrix round-trips through a CONJUGATE (see the
-// ork-math-in-ecssim finding, and _predictHmdPose's _poseConjugate default). To
-// build a matrix that actually rotates a point BY the pose quaternion q, compose
-// with q.conjugate(). The result is the tracked object's local->reference (world)
-// transform; a view matrix is its inverse.
+// Pose math (unit-tested). XR is right-handed, +Y up, -Z forward. compose(p,q,1)
+// builds a matrix that actively rotates a point BY the pose quaternion q (the
+// tracked object's local->reference (world) transform); a view matrix is its
+// inverse.
 ////////////////////////////////////////////////////////////////////////////////
 
 fmtx4 xrPoseToFmtx4(const XrPosef& pose) {
   fquat q(pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w);
   fvec3 p(pose.position.x, pose.position.y, pose.position.z);
   fmtx4 m;
-  m.compose(p, q.conjugate(), 1.0f);
+  m.compose(p, q, 1.0f);
   return m;
 }
 
@@ -454,7 +452,6 @@ OpenXrDevice::OpenXrDevice() {
   _camera_name    = "vrcam";
   // XR poses are already predicted by the runtime — never run the host-side
   // extrapolator, and OpenXrDevice OWNS _posemap while active.
-  _poseConjugate    = false; // xrPoseToFmtx4 already applies the conjugate.
   _trackedPoseValid = false;
 }
 

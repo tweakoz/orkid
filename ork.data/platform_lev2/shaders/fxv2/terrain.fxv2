@@ -13,6 +13,10 @@ uniform_set ublock_vtx {
   mat4 MatMVPL;
   mat4 MatMVPC;
   mat4 MatMVPR;
+  // the heightfield's visual-offset model matrix. The mono stages fold it into the
+  // MatMVP* products CPU-side; the stereo stage cannot, because ublk_stereo carries
+  // per-VIEW view-projections and no model at all.
+  mat4 MatVizOffset;
   vec3 CamPos;
   float Time;
   sampler2D HFAMap; // technically a heightmap
@@ -162,24 +166,42 @@ vertex_shader vs_terrain : iface_vdefault : lib_terrain_vtx {
   gl_Position = MatMVPC * vec4(tero.wpos, 1);
 }
 ///////////////////////////////////////////////////////////////
-// stereo1pass
+// SINGLE-PASS STEREO. Layout must stay identical to the ublk_stereo in stdtools.i2 —
+// it is the same buffer, written by the one production writer.
 ///////////////////////////////////////////////////////////////
-vertex_interface iface_vstereo : iface_vdefault {
+uniform_block ublk_stereo (descriptor_set 0) {
+  mat4 spvr_vp[2];
+  mat4 spvr_inv_vp[2];
+  vec4 spvr_eyepos[2];
+}
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vstereo : ublock_vtx : ublk_stereo {
+  inputs {
+    vec4 position : POSITION;
+    vec4 vtxcolor : COLOR0;
+    vec2 uv0 : TEXCOORD0;
+  }
   outputs {
-    layout(secondary_view_offset = 1) int gl_Layer;
+    vec3 frg_nrm;
+    vec2 frg_uvxp;
+    vec2 frg_uvyp;
+    vec2 frg_uvzp;
+    vec3 frg_wpos;
+    float frg_camdist;
   }
 }
-vertex_shader vs_terrain_stereo : extension(GL_NV_stereo_view_rendering)
-    : extension(GL_NV_viewport_array2) : iface_vdefault : lib_terrain_vtx {
+///////////////////////////////////////////////////////////////
+// The mono stage's twin, differing in exactly ONE line: the clip transform reads the
+// per-VIEW view-projection out of ublk_stereo, indexed by the multiview view selector,
+// and applies the model matrix here because the block carries none. The terrain field
+// evaluation (including the camera-relative grid snap) stays MONO on purpose — the snap
+// is a geometry quantization, and making it per-view would give the two eyes different
+// meshes, which is a pixel-changing change, not a stereo fix.
+///////////////////////////////////////////////////////////////
+vertex_shader vs_terrain_stereo : iface_vstereo : lib_terrain_vtx {
   TerOut tero = computeTerrain(CamPos);
   applyTerrain(tero, CamPos);
-  ///////////////////////////
-  gl_Position = MatMVPL * vec4(tero.wpos, 1);
-  gl_SecondaryPositionNV = MatMVPR * vec4(tero.wpos, 1);
-  gl_Layer = 0;
-  gl_ViewportMask[0] = 1;
-  gl_SecondaryViewportMaskNV[0] = 2;
-  ///////////////////////////
+  gl_Position = (spvr_vp[ofx_viewIndex] * MatVizOffset) * vec4(tero.wpos, 1);
 }
 ///////////////////////////////////////////////////////////////
 libblock lib_terrain_frg {
@@ -302,26 +324,10 @@ technique terrain {
     state_block = sb_default;
   }
 }
-technique terrain_stereo {
-  fxconfig = fxcfg_default;
-  pass p0 {
-    vertex_shader = vs_terrain_stereo;
-    fragment_shader = ps_terrain;
-    state_block = sb_default;
-  }
-}
 technique terrain_gbuf1 {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader = vs_terrain;
-    fragment_shader = ps_terrain_gbuf1;
-    state_block = sb_default;
-  }
-}
-technique terrain_gbuf1_stereo {
-  fxconfig = fxcfg_default;
-  pass p0 {
-    vertex_shader = vs_terrain_stereo;
     fragment_shader = ps_terrain_gbuf1;
     state_block = sb_default;
   }
@@ -331,6 +337,34 @@ technique pick {
   pass p0 {
     vertex_shader = vs_pick;
     fragment_shader = ps_pick;
+    state_block = sb_default;
+  }
+}
+
+///////////////////////////////////////////////////////////////
+// SINGLE-PASS STEREO peers — same fragment stage, same state block.
+//
+// THESE BODIES ARE THE SURVIVORS. A second pair of terrain_ST /
+// terrain_gbuf1_ST declarations was authored on the hand-peer lane; they are
+// SUPERSEDED and deleted rather than shadowed, because a duplicate technique
+// name in shadlang is only a log line + first-definition-wins — operationally
+// silent, and nothing greps that channel. The pair below is the one the C++ is
+// wired to (terrain_drawable's _tekBasicStereo / _tekDefGbuf1Stereo), the one
+// the parity measurement was taken on, and the one carrying MatVizOffset.
+///////////////////////////////////////////////////////////////
+technique terrain_ST {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader = vs_terrain_stereo;
+    fragment_shader = ps_terrain;
+    state_block = sb_default;
+  }
+}
+technique terrain_gbuf1_ST {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader = vs_terrain_stereo;
+    fragment_shader = ps_terrain_gbuf1;
     state_block = sb_default;
   }
 }

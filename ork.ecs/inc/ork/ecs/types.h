@@ -56,7 +56,6 @@ struct System;
 struct SystemFragment;
 
 struct CompositingSystem;
-struct AudioSystem;
 
 struct DagNodeData;
 struct SceneObject;

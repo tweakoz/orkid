@@ -131,6 +131,21 @@ public:
       size_t args_offset = 0,
       int index_size = 4) = 0;
 
+  //////////////////////////////////////////////
+  // Taskless mesh-shader draw (VK_EXT_mesh_shader). No vertex/index buffers and no
+  // PrimitiveType: the mesh stage emits its own vertices+primitives and declares its
+  // own output topology. (x,y,z) are mesh workgroup counts. A task (amplification)
+  // stage is NOT part of this path — the engine never emits one.
+  //////////////////////////////////////////////
+  virtual void DrawMeshTasksEML(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) = 0;
+
+  // Same draw with the workgroup counts read from a compute-written
+  // VkDrawMeshTasksIndirectCommandEXT{x,y,z} at args_offset (createStorageBuffer grants INDIRECT
+  // usage). A GPU-computed count of 0 in any dimension dispatches NOTHING — which is the whole
+  // point: a fixed grid still pays one workgroup per culled meshlet. The COUNT variant
+  // (multi-command) is deliberately not exposed; MoltenVK does not implement it.
+  virtual void DrawMeshTasksIndirectEML(const FxShaderStorageBuffer* indirect_args, size_t args_offset = 0) = 0;
+
   virtual void* LockIB(IndexBufferBase& VBuf, int ibase = 0, int icount = 0) = 0;
   virtual void UnLockIB(IndexBufferBase& VBuf)                               = 0;
 

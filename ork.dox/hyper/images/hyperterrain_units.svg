@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 660" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#666"/>
+    </marker>
+    <filter id="shadow">
+      <feDropShadow dx="2" dy="2" stdDeviation="2" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  <rect x="0" y="0" width="1000" height="660" fill="#1a1a2e"/>
+  <text x="500" y="30" font-family="Arial" font-size="18" font-weight="bold" fill="white" text-anchor="middle">HyperTerrain units model — meters are the law, dim is only a sampling rate</text>
+
+  <!-- law callout -->
+  <rect x="30" y="46" width="940" height="62" rx="8" fill="#7c2d12" stroke="#fb923c" stroke-width="2" filter="url(#shadow)"/>
+  <text x="500" y="68" font-size="13" font-weight="bold" fill="white" text-anchor="middle">NATURAL UNITS LAW (BakeEnv, hfdflow.h): height VALUES are TRUE METERS on the plugs.</text>
+  <text x="500" y="86" font-size="11.5" fill="#fed7aa" text-anchor="middle">No vertical scale constant exists anywhere — no height_scale_m, no per-op exaggeration.</text>
+  <text x="500" y="101" font-size="11.5" fill="#fed7aa" text-anchor="middle">Exaggeration is AUTHORED: a visible Remap in the graph (e.g. h * 4000.0).</text>
+
+  <!-- ======================= LEFT : one world, three rates ======================= -->
+  <text x="60" y="140" font-size="12.5" font-weight="bold" fill="#ddd">one world, three sampling rates</text>
+  <rect x="40" y="152" width="340" height="40" rx="6" fill="#1e3a5f" stroke="#22d3ee" stroke-width="1.5"/>
+  <text x="210" y="169" font-size="11.5" fill="#93c5fd" text-anchor="middle">extent_m = 2048 m across the field;</text>
+  <text x="210" y="184" font-size="11.5" fill="#93c5fd" text-anchor="middle">relief authored in meters</text>
+
+  <!-- grid 1 : dim 512 (4 divisions) -->
+  <g stroke="#34d399" stroke-width="1">
+    <rect x="52" y="216" width="88" height="88" fill="#1a3a3a"/>
+    <line x1="74" y1="216" x2="74" y2="304"/><line x1="96" y1="216" x2="96" y2="304"/><line x1="118" y1="216" x2="118" y2="304"/>
+    <line x1="52" y1="238" x2="140" y2="238"/><line x1="52" y1="260" x2="140" y2="260"/><line x1="52" y1="282" x2="140" y2="282"/>
+  </g>
+  <text x="96" y="322" font-size="11.5" font-weight="bold" fill="white" text-anchor="middle">dim 512</text>
+  <text x="96" y="336" font-size="10.5" fill="#aaa" text-anchor="middle">texel = 4.0 m</text>
+
+  <!-- grid 2 : dim 1024 (8 divisions) -->
+  <g stroke="#34d399" stroke-width="0.8">
+    <rect x="166" y="216" width="88" height="88" fill="#1a3a3a"/>
+    <line x1="177" y1="216" x2="177" y2="304"/><line x1="188" y1="216" x2="188" y2="304"/><line x1="199" y1="216" x2="199" y2="304"/>
+    <line x1="210" y1="216" x2="210" y2="304"/><line x1="221" y1="216" x2="221" y2="304"/><line x1="232" y1="216" x2="232" y2="304"/>
+    <line x1="243" y1="216" x2="243" y2="304"/>
+    <line x1="166" y1="227" x2="254" y2="227"/><line x1="166" y1="238" x2="254" y2="238"/><line x1="166" y1="249" x2="254" y2="249"/>
+    <line x1="166" y1="260" x2="254" y2="260"/><line x1="166" y1="271" x2="254" y2="271"/><line x1="166" y1="282" x2="254" y2="282"/>
+    <line x1="166" y1="293" x2="254" y2="293"/>
+  </g>
+  <text x="210" y="322" font-size="11.5" font-weight="bold" fill="white" text-anchor="middle">dim 1024</text>
+  <text x="210" y="336" font-size="10.5" fill="#aaa" text-anchor="middle">texel = 2.0 m</text>
+
+  <!-- grid 3 : dim 2048 (16 divisions) -->
+  <g stroke="#34d399" stroke-width="0.5">
+    <rect x="280" y="216" width="88" height="88" fill="#1a3a3a"/>
+    <line x1="285.5" y1="216" x2="285.5" y2="304"/><line x1="291" y1="216" x2="291" y2="304"/><line x1="296.5" y1="216" x2="296.5" y2="304"/>
+    <line x1="302" y1="216" x2="302" y2="304"/><line x1="307.5" y1="216" x2="307.5" y2="304"/><line x1="313" y1="216" x2="313" y2="304"/>
+    <line x1="318.5" y1="216" x2="318.5" y2="304"/><line x1="324" y1="216" x2="324" y2="304"/><line x1="329.5" y1="216" x2="329.5" y2="304"/>
+    <line x1="335" y1="216" x2="335" y2="304"/><line x1="340.5" y1="216" x2="340.5" y2="304"/><line x1="346" y1="216" x2="346" y2="304"/>
+    <line x1="351.5" y1="216" x2="351.5" y2="304"/><line x1="357" y1="216" x2="357" y2="304"/><line x1="362.5" y1="216" x2="362.5" y2="304"/>
+    <line x1="280" y1="221.5" x2="368" y2="221.5"/><line x1="280" y1="227" x2="368" y2="227"/><line x1="280" y1="232.5" x2="368" y2="232.5"/>
+    <line x1="280" y1="238" x2="368" y2="238"/><line x1="280" y1="243.5" x2="368" y2="243.5"/><line x1="280" y1="249" x2="368" y2="249"/>
+    <line x1="280" y1="254.5" x2="368" y2="254.5"/><line x1="280" y1="260" x2="368" y2="260"/><line x1="280" y1="265.5" x2="368" y2="265.5"/>
+    <line x1="280" y1="271" x2="368" y2="271"/><line x1="280" y1="276.5" x2="368" y2="276.5"/><line x1="280" y1="282" x2="368" y2="282"/>
+    <line x1="280" y1="287.5" x2="368" y2="287.5"/><line x1="280" y1="293" x2="368" y2="293"/><line x1="280" y1="298.5" x2="368" y2="298.5"/>
+  </g>
+  <text x="324" y="322" font-size="11.5" font-weight="bold" fill="white" text-anchor="middle">dim 2048</text>
+  <text x="324" y="336" font-size="10.5" fill="#aaa" text-anchor="middle">texel = 1.0 m</text>
+
+  <polyline points="96,344 96,376 190,376 190,392" fill="none" stroke="#666" stroke-width="1.3" marker-end="url(#arr2)"/>
+  <line x1="210" y1="344" x2="210" y2="392" stroke="#666" stroke-width="1.3" marker-end="url(#arr2)"/>
+  <polyline points="324,344 324,376 230,376 230,392" fill="none" stroke="#666" stroke-width="1.3" marker-end="url(#arr2)"/>
+
+  <rect x="100" y="396" width="220" height="58" rx="8" fill="#1e3a5f" stroke="#22d3ee" stroke-width="2" filter="url(#shadow)"/>
+  <text x="210" y="416" font-size="12" font-weight="bold" fill="white" text-anchor="middle">SAME world result</text>
+  <text x="210" y="432" font-size="10.5" fill="#93c5fd" text-anchor="middle">landforms converge; resolution</text>
+  <text x="210" y="446" font-size="10.5" fill="#93c5fd" text-anchor="middle">independence is a TESTED property</text>
+
+  <!-- ======================= MIDDLE : the conversion ======================= -->
+  <text x="435" y="140" font-size="12.5" font-weight="bold" fill="#ddd">meters → texels: the only bridge (per bake)</text>
+
+  <rect x="425" y="152" width="260" height="66" rx="8" fill="#4c1d95" stroke="#a78bfa" stroke-width="2" filter="url(#shadow)"/>
+  <text x="555" y="172" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">BakeEnv (hfdflow.h)</text>
+  <text x="555" y="190" font-family="monospace" font-size="10.5" fill="#c4b5fd" text-anchor="middle">texelsPerMeter() = dim / extent_m</text>
+  <text x="555" y="206" font-family="monospace" font-size="10.5" fill="#c4b5fd" text-anchor="middle">radiusTexels(r_m), clamped [1, dim/4]</text>
+
+  <line x1="555" y1="218" x2="555" y2="238" stroke="#666" stroke-width="1.3" marker-end="url(#arr2)"/>
+
+  <rect x="425" y="242" width="260" height="136" rx="8" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="555" y="262" font-size="12" font-weight="bold" fill="white" text-anchor="middle">who converts at bake</text>
+  <text x="440" y="282" font-size="11" fill="#a7f3d0">· Slope / Curvature — radius_m</text>
+  <text x="440" y="298" font-size="11" fill="#a7f3d0">· Lpf — cutoff, units='meters'</text>
+  <text x="440" y="314" font-size="11" fill="#a7f3d0">· ThermalErode — physical talus_deg</text>
+  <text x="440" y="330" font-size="11" fill="#a7f3d0">· Erox — every knob in m and s;</text>
+  <text x="452" y="346" font-size="11" fill="#a7f3d0">dt = 0.5·cell_m / v_max (CFL bound),</text>
+  <text x="452" y="362" font-size="11" fill="#a7f3d0">iterations = ceil(sim_time_s / dt)</text>
+
+  <rect x="425" y="396" width="260" height="58" rx="8" fill="#1e3a5f" stroke="#22d3ee" stroke-width="2" filter="url(#shadow)"/>
+  <text x="555" y="416" font-size="12" font-weight="bold" fill="white" text-anchor="middle">the graph never sees dim</text>
+  <text x="555" y="432" font-size="10.5" fill="#93c5fd" text-anchor="middle">trace-time params stay physical; dim</text>
+  <text x="555" y="446" font-size="10.5" fill="#93c5fd" text-anchor="middle">enters only at bakeHeightfield(…, dim)</text>
+
+  <!-- ======================= RIGHT : hash split ======================= -->
+  <text x="730" y="140" font-size="12.5" font-weight="bold" fill="#ddd">cook-hash split (per-node cache)</text>
+
+  <rect x="720" y="152" width="250" height="90" rx="8" fill="#5a4a3a" stroke="#f59e0b" stroke-width="2" filter="url(#shadow)"/>
+  <text x="845" y="172" font-size="12" font-weight="bold" fill="white" text-anchor="middle">CONTEXT hash — per bake</text>
+  <text x="845" y="192" font-family="monospace" font-size="10.5" fill="#fed7aa" text-anchor="middle">dim  ⊕  extent_m</text>
+  <text x="845" y="208" font-family="monospace" font-size="10.5" fill="#fed7aa" text-anchor="middle">⊕ "terrain.naturalunits.v1" epoch</text>
+  <text x="845" y="224" font-family="monospace" font-size="10.5" fill="#fed7aa" text-anchor="middle">⊕ per-iteration loop salt</text>
+
+  <rect x="720" y="262" width="250" height="90" rx="8" fill="#5a4a3a" stroke="#f59e0b" stroke-width="2" filter="url(#shadow)"/>
+  <text x="845" y="282" font-size="12" font-weight="bold" fill="white" text-anchor="middle">NODE Merkle hash — per module</text>
+  <text x="845" y="302" font-family="monospace" font-size="10.5" fill="#fed7aa" text-anchor="middle">op version salt ⊕ params</text>
+  <text x="845" y="318" font-size="11" fill="#fed7aa" text-anchor="middle">(meters — hashed dim-FREE)</text>
+  <text x="845" y="334" font-family="monospace" font-size="10.5" fill="#fed7aa" text-anchor="middle">⊕ context ⊕ upstream node hashes</text>
+
+  <text x="845" y="384" font-size="11" fill="#aaa" text-anchor="middle">two resolutions of one graph share</text>
+  <text x="845" y="399" font-size="11" fill="#aaa" text-anchor="middle">node identity — they differ only in</text>
+  <text x="845" y="414" font-size="11" fill="#aaa" text-anchor="middle">context (hfdflow.cpp cook context)</text>
+
+  <!-- ======================= BOTTOM : authored exaggeration ======================= -->
+  <rect x="30" y="490" width="940" height="120" rx="8" fill="#252540" stroke="#4a5568" filter="url(#shadow)"/>
+  <text x="50" y="514" font-size="12" font-weight="bold" fill="#93c5fd">authored exaggeration — the vertical scale IS the graph (erox.py)</text>
+  <text x="50" y="540" font-size="12" font-family="Menlo, Consolas, monospace" fill="#a7f3d0">AMPLITUDE_M = 4000.0   # authored vertical relief in meters (natural units)</text>
+  <text x="50" y="560" font-size="12" font-family="Menlo, Consolas, monospace" fill="#a7f3d0">h = (T.Fbm(frequency=9.2, octaves=7) * 0.5 + 0.5) * AMPLITUDE_M</text>
+  <text x="50" y="588" font-size="11" fill="#aaa">the * operator lowers to a Remap node — the scale is visible, serialized, editable topology, not a hidden constant.</text>
+  <text x="50" y="603" font-size="11" fill="#aaa">EXR captures store these meters verbatim; only the PNG16 preview normalizes (range recoverable via manifest stats).</text>
+</svg>

@@ -12,6 +12,7 @@ from .play import (
     Player, play,
     click, drag, wheel, key_chord, type_text,
     push, release, move, key_down, key_up,
+    lost_keyfocus, got_keyfocus,
 )
 from . import eventcodes
 
@@ -34,5 +35,7 @@ __all__ = [
     "move",
     "key_down",
     "key_up",
+    "lost_keyfocus",
+    "got_keyfocus",
     "eventcodes",
 ]

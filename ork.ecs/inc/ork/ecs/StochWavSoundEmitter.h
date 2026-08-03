@@ -74,6 +74,7 @@ public:
   float _gainOffsetDB      = 0.0f;
   float _rateScale         = 1.0f;
   bool _enabled            = true;
+  int _priority            = 0; // voice-steal priority: higher survives longer
 };
 using stochwavemitterdata_ptr_t = std::shared_ptr<StochWavSoundEmitterData>;
 

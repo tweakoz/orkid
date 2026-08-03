@@ -28,6 +28,13 @@ static std::atomic<int> MAX_THREADS{0};
 static std::atomic<int> MIN_THREADS{0};
 static std::once_flag gThreadLimitsOnce;
 ////////////////////////////////////////////////////////////////////////
+// worker idle-wake cadence (see OpqThread::run)
+static constexpr uint64_t kBackstopMinUsec = 2000;  // floor: don't busy-churn low-latency pools
+static constexpr uint64_t kBackstopMaxUsec = 20000; // cap: unnotified state changes seen within 20ms
+static constexpr double kBackstopRampSecs  = 0.25;  // idle this long -> stretch to the cap
+// pool unwind rate (see _coordinatorThreadStartup)
+static constexpr int kMaxRetiredPerTick = 16;
+////////////////////////////////////////////////////////////////////////
 static std::shared_ptr<Thread> gthread_coordinator;
 static std::atomic<bool> gthread_coordinator_should_exit{false};
 ////////////////////////////////////////////////////////////////////////
@@ -73,21 +80,34 @@ static void _coordinatorThreadStartup() {
       }
       ///////////////////////////////////////////////////////////
       // thread deletion (if idle)
+      //  Retire in BATCHES, halving the excess each tick: a one-per-tick unwind
+      //  left a burst-grown pool resident for minutes after the burst that grew
+      //  it. Every victim is flagged OK2KILL BEFORE any join, so the whole batch
+      //  retires within one worker backstop rather than one backstop per thread.
       ///////////////////////////////////////////////////////////
       else if (np == 0 and (nt > MIN_THREADS.load())) {
-        logchan_opq->log( "concurrentQueue too many idle threads, removing one" );
-        OpqThread* thread = nullptr;
-        cq->_threads.atomicOp([=, &thread](OperationsQueue::threadset_t& thset) {
-          if (thset.size() > size_t(MIN_THREADS.load())) {
-            thread = *thset.begin();
+        int min_threads = MIN_THREADS.load();
+        int num_retire  = (nt - min_threads) / 2;
+        if (num_retire < 1)
+          num_retire = 1;
+        if (num_retire > kMaxRetiredPerTick)
+          num_retire = kMaxRetiredPerTick;
+        std::vector<OpqThread*> retired;
+        cq->_threads.atomicOp([=, &retired](OperationsQueue::threadset_t& thset) {
+          while ((int(retired.size()) < num_retire) and (thset.size() > size_t(min_threads))) {
+            auto thread = *thset.begin();
             thset.erase(thread);
+            retired.push_back(thread);
           }
         });
-        if (thread) {
+        for (auto thread : retired)
           thread->_state.store(EPOQSTATE_OK2KILL);
+        for (auto thread : retired) {
           thread->join();
           delete thread;
         }
+        if (retired.size())
+          logchan_opq->log("concurrentQueue idle, retired <%zu> threads", retired.size());
       }
       ///////////////////////////////////////////////////////////
       num_completed = nc;
@@ -333,6 +353,13 @@ void OpqThread::run() // virtual
 
   bool worked_last = false;
 
+  // Backstop for the semaphore wait below, computed once (the profile is fixed).
+  uint64_t active_backstop_usec = uint64_t(quantaForProfile(q->_perf_profile)) * 8;
+  if (active_backstop_usec < kBackstopMinUsec)
+    active_backstop_usec = kBackstopMinUsec;
+  if (active_backstop_usec > kBackstopMaxUsec)
+    active_backstop_usec = kBackstopMaxUsec;
+
   while (EPOQSTATE_OK2KILL != _state.load()) {
 
     // Block on the queue's counting semaphore (every ConcurrencyGroup::enqueue and
@@ -342,11 +369,20 @@ void OpqThread::run() // virtual
     // burned ~56% of load-phase CPU samples as idle-pool churn (LOADX 2026-07-02) and
     // added up to a full sleep quantum of latency to every op. A worker that just
     // processed skips the wait and drains hot.
+    //
+    // The backstop is a MISSED-WAKE SAFETY NET, not a work-discovery mechanism: every
+    // enqueue notifies under the semaphore's mutex, so a blocked worker wakes the
+    // instant work exists no matter how long the timeout is. (notify_rt, the unlocked
+    // variant that CAN lose that race, is only ever used on the zero-thread
+    // mainSerialQueue, which no OpqThread waits on.) A worker that has processed
+    // nothing for kBackstopRampSecs therefore stretches to the cap instead of waking
+    // hundreds of times a second forever; _timer restarts on every processed op, so
+    // returning to work implicitly restores the tight cadence. The cap also bounds how
+    // long a state change (OK2KILL from the coordinator's shrink) goes unobserved.
     if (not worked_last) {
-      int quanta             = quantaForProfile(q->_perf_profile);
-      uint64_t backstop_usec = uint64_t(quanta) * 8;
-      if (backstop_usec < 2000)  backstop_usec = 2000;  // floor: don't busy-churn low-latency pools
-      if (backstop_usec > 20000) backstop_usec = 20000; // cap: state changes seen within 20ms worst-case
+      uint64_t backstop_usec = active_backstop_usec;
+      if (_timer.SecsSinceStart() > kBackstopRampSecs)
+        backstop_usec = kBackstopMaxUsec;
       q->mSemaphore.wait_for(backstop_usec);
     }
     (void)slindex;
@@ -429,9 +465,18 @@ void OperationsQueue::_internalEndLock() {
 bool OperationsQueue::Process() {
 
   bool item_processed = false;
-  
+
   // Don't process new operations if terminated
   if (_terminated) {
+    return false;
+  }
+
+  // Idle fast path. _numPendingOperations is incremented BEFORE an op reaches a
+  // group queue and decremented only AFTER it has run, so zero here means no group
+  // can be holding runnable work: an idle worker's wake costs one atomic load, no
+  // group lock and no probe. The opposite skew (nonzero while every queue is empty,
+  // ops in flight or mid-enqueue) is harmless — the pop below just finds nothing.
+  if (0 == _numPendingOperations.load()) {
     return false;
   }
 
@@ -441,15 +486,23 @@ bool OperationsQueue::Process() {
 
   concurrency_group_ptr_t pexecgrp = nullptr;
 
-  _linearconcurrencygroups.atomicOp([&pexecgrp](concgroupvect_t& cgv) {
-    size_t numgroups   = cgv.size();
-    size_t numattempts = 0;
-    while ((pexecgrp == nullptr) and (numattempts < numgroups)) {
-
-      size_t index = rand() % numgroups;
-      numattempts++;
-
-      auto grp = cgv[index];
+  _linearconcurrencygroups.atomicOp([this, &pexecgrp](concgroupvect_t& cgv) {
+    size_t numgroups = cgv.size();
+    if (0 == numgroups)
+      return;
+    if (1 == numgroups) {
+      // the only shape production ever builds: nothing to search past the default
+      // group, so skip the probe entirely and let the pop decide.
+      pexecgrp = cgv[0];
+      return;
+    }
+    // Deterministic round-robin: a shared rotating start visits EVERY group exactly
+    // once, so work is never missed and no group starves. (The old rand() index could
+    // re-probe one group repeatedly and come back empty-handed while another held
+    // work, and serialized workers on the global rand state.)
+    size_t start = size_t(_groupSearchCursor.fetch_add(1));
+    for (size_t i = 0; (i < numgroups) and (nullptr == pexecgrp); i++) {
+      auto grp = cgv[(start + i) % numgroups];
       grp->_ops.atomicOp([grp, &pexecgrp](ConcurrencyGroup::internal_oper_queue_t& q) {
         if (q.size()) {
           pexecgrp = grp;
@@ -805,18 +858,61 @@ opq_ptr_t mainSerialQueue() {
   return gmainthrq;
 }
 ///////////////////////////////////////////////////////////////////////
+// env override for a thread limit, following ORKID_MAX_CONCURRENT_IOQ_OPS.
+// An out-of-range value is rejected loudly rather than silently clamped.
+static int _threadLimitFromEnv(const char* varname, int defval) {
+  const char* env_val = std::getenv(varname);
+  if (nullptr == env_val) {
+    return defval;
+  }
+  int val = std::atoi(env_val);
+  if (val < 1 or val > 1024) {
+    printf("[OPQ] ignoring %s=<%s> - out of range [1..1024]\n", varname, env_val);
+    return defval;
+  }
+  printf("[OPQ] Using %s=%d for concurrentQueue\n", varname, val);
+  return val;
+}
+///////////////////////////////////////////////////////////////////////
 opq_ptr_t concurrentQueue() {
   /////////////////////////////////////////////////////////
-  // Thread-safe one-time initialization of thread limits
+  // Thread-safe one-time initialization of thread limits.
+  //
+  // This is a BURSTY FAN-OUT pool (asset loads, shader/pipeline compiles, mesh
+  // and bake work), idle for most of a session. MIN is both what the machine pays
+  // for at rest and what a burst gets instantly, because the coordinator's growth
+  // path cannot be the burst response: it only fires when a whole tick passes with
+  // zero completions (a true stall) and then adds ONE thread per ~1s. MAX only
+  // bounds that stall path, where blocked ops are the only thing extra threads can
+  // help; the old ncores*2 ceiling was unreachable in practice and would only have
+  // added context-switch pressure to cpu-bound work.
+  //
+  //   MIN = clamp(ncores/4, 4, 24)   96-core box: 48 -> 24 resident workers
+  //   MAX = clamp(ncores, 12, 96)
+  /////////////////////////////////////////////////////////
   std::call_once(gThreadLimitsOnce, []() {
     int numcores = OldSchool::GetNumCores();
-    int minT = (numcores / 2);
-    int maxT = (numcores * 2);
+    int minT = (numcores / 4);
+    int maxT = numcores;
     if (minT < 4) {
       minT = 4;
     }
+    if (minT > 24) {
+      minT = 24;
+    }
     if (maxT < 12) {
       maxT = 12;
+    }
+    if (maxT > 96) {
+      maxT = 96;
+    }
+    minT = _threadLimitFromEnv("ORKID_CONCURRENTQ_MIN_THREADS", minT);
+    maxT = _threadLimitFromEnv("ORKID_CONCURRENTQ_MAX_THREADS", maxT);
+    if (maxT < minT) {
+      // an override pair that inverts would leave the coordinator retiring threads
+      // it is simultaneously told to grow - pin the ceiling to the floor instead.
+      printf("[OPQ] concurrentQueue max<%d> below min<%d> - raising max to min\n", maxT, minT);
+      maxT = minT;
     }
     MIN_THREADS.store(minT);
     MAX_THREADS.store(maxT);

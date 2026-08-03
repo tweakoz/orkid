@@ -16,6 +16,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/kernel/msgrouter.inl>
 #include <ork/lev2/gfx/gfxenv.h>
+#include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/pickbuffer.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/gfx/material_freestyle.h>
@@ -119,9 +120,12 @@ struct TerrainRenderImpl {
   FreestyleMaterial* _terrainMaterial         = nullptr;
   const FxShaderTechnique* _tekBasic          = nullptr;
   const FxShaderTechnique* _tekDefGbuf1       = nullptr;
-  const FxShaderTechnique* _tekStereo         = nullptr;
-  const FxShaderTechnique* _tekDefGbuf1Stereo = nullptr;
   const FxShaderTechnique* _tekPick           = nullptr;
+  // SINGLE-PASS STEREO peers: same fragment stage, per-view clip transform out of ublk_stereo
+  const FxShaderTechnique* _tekBasicStereo    = nullptr;
+  const FxShaderTechnique* _tekDefGbuf1Stereo = nullptr;
+  const FxUniformBlock* _parStereoBlock       = nullptr;
+  const FxShaderParam* _parVizOffset          = nullptr;
 
   const FxShaderParam* _parMatVPL       = nullptr;
   const FxShaderParam* _parMatVPC       = nullptr;
@@ -910,11 +914,14 @@ void TerrainRenderImpl::gpuUpdate(Context* context) {
     _terrainMaterial = new FreestyleMaterial;
     _terrainMaterial->gpuInit(context, "orkshader://terrain");
     _tekBasic          = _terrainMaterial->technique("terrain");
-    _tekStereo         = _terrainMaterial->technique("terrain_stereo");
     _tekPick           = _terrainMaterial->technique("pick");
     _tekDefGbuf1       = _terrainMaterial->technique("terrain_gbuf1");
-    _tekDefGbuf1Stereo = _terrainMaterial->technique("terrain_gbuf1_stereo");
+    _tekBasicStereo    = _terrainMaterial->technique("terrain_ST");
+    _tekDefGbuf1Stereo = _terrainMaterial->technique("terrain_gbuf1_ST");
+    OrkAssert(_tekBasicStereo and _tekDefGbuf1Stereo); // no silent mono fallback: that IS the regression
 
+    _parStereoBlock = _terrainMaterial->uniformBlock("ublk_stereo");
+    _parVizOffset   = _terrainMaterial->param("MatVizOffset");
     _parMatVPL   = _terrainMaterial->param("MatMVPL");
     _parMatVPC   = _terrainMaterial->param("MatMVPC");
     _parMatVPR   = _terrainMaterial->param("MatMVPR");
@@ -1040,12 +1047,27 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
 
   // auto range = _aabbmax - _aabbmin;
 
-  auto tek_viz  = stereo1pass ? _tekDefGbuf1Stereo : _tekDefGbuf1;
+  // A2 site: under single-pass stereo the per-eye state moves into ublk_stereo (indexed by
+  //  the multiview view selector in the vertex stage) — the MVPL/MVPC/MVPR binds below are
+  //  the MONO path's and are left in place because the stereo stage simply does not read
+  //  them. A stereo pass drawn with the mono stage would put the SAME image in both eye
+  //  layers, so the technique choice here is the whole parallax.
+  const bool use_stereo = (stereo1pass and not bpick);
+  auto tek_viz  = use_stereo ? _tekDefGbuf1Stereo : _tekDefGbuf1;
   auto tek_pick = _tekPick;
 
   _terrainMaterial->_rasterstate->setCullTest(ECullTest::OFF);
 
   _terrainMaterial->begin(bpick ? tek_pick : tek_viz, RCFD);
+  if (use_stereo) {
+    // ONE writer for the shared per-view block (PBRMaterial::writeStereoBlock), so terrain
+    //  reads byte-identical view state to every other producer in the pass.
+    auto stcams = CPD._stereo_cam_matrices;
+    PBRMaterial::writeStereoBlock(fxi, targ, stcams);
+    if (_parStereoBlock)
+      fxi->bindUniformBuffer(_parStereoBlock, PBRMaterial::stereoDataBuffer(targ));
+    _terrainMaterial->bindParamMatrix(_parVizOffset, viz_offset);
+  }
   _terrainMaterial->bindParamMatrix(_parMatVPL, MVPL);
   _terrainMaterial->bindParamMatrix(_parMatVPC, MVPC);
   _terrainMaterial->bindParamMatrix(_parMatVPR, MVPR);

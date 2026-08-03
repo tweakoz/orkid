@@ -86,7 +86,7 @@ ToTimeDomainData::ToTimeDomainData(std::string name, float fb)
 ///////////////////////////////////////////////////////////////////////////////
 
 dspblk_ptr_t ToTimeDomainData::createInstance() const { // override
-  return std::make_shared<ToTimeDomain>(this);
+  return createDspInstance<ToTimeDomain>(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

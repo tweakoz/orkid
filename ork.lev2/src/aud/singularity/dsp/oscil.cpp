@@ -69,7 +69,7 @@ dspblkdata_ptr_t PITCH_DATA::clone() const{
 }
 
 dspblk_ptr_t PITCH_DATA::createInstance() const { // override
-  return std::make_shared<PITCH>(this);
+  return createDspInstance<PITCH>(this);
 }
 
 PITCH::PITCH(const DspBlockData* dbd)
@@ -124,7 +124,7 @@ SINE_DATA::SINE_DATA(std::string name)
 }
 
 dspblk_ptr_t SINE_DATA::createInstance() const { // override
-  return std::make_shared<SINE>(this);
+  return createDspInstance<SINE>(this);
 }
 
 SINE::SINE(const DspBlockData* dbd)
@@ -169,7 +169,7 @@ SAW_DATA::SAW_DATA(std::string name)
 }
 
 dspblk_ptr_t SAW_DATA::createInstance() const { // override
-  return std::make_shared<SAW>(this);
+  return createDspInstance<SAW>(this);
 }
 
 SAW::SAW(const DspBlockData* dbd)
@@ -213,7 +213,7 @@ SQUARE_DATA::SQUARE_DATA(std::string name)
 }
 
 dspblk_ptr_t SQUARE_DATA::createInstance() const { // override
-  return std::make_shared<SQUARE>(this);
+  return createDspInstance<SQUARE>(this);
 }
 
 SQUARE::SQUARE(const DspBlockData* dbd)
@@ -257,7 +257,7 @@ SINEPLUS_DATA::SINEPLUS_DATA(std::string name)
 }
 
 dspblk_ptr_t SINEPLUS_DATA::createInstance() const { // override
-  return std::make_shared<SINEPLUS>(this);
+  return createDspInstance<SINEPLUS>(this);
 }
 
 SINEPLUS::SINEPLUS(const DspBlockData* dbd)
@@ -303,7 +303,7 @@ SAWPLUS_DATA::SAWPLUS_DATA(std::string name)
 }
 
 dspblk_ptr_t SAWPLUS_DATA::createInstance() const { // override
-  return std::make_shared<SAWPLUS>(this);
+  return createDspInstance<SAWPLUS>(this);
 }
 
 SAWPLUS::SAWPLUS(const DspBlockData* dbd)
@@ -354,7 +354,7 @@ SWPLUSSHP_DATA::SWPLUSSHP_DATA(std::string name)
 }
 
 dspblk_ptr_t SWPLUSSHP_DATA::createInstance() const { // override
-  return std::make_shared<SWPLUSSHP>(this);
+  return createDspInstance<SWPLUSSHP>(this);
 }
 
 SWPLUSSHP::SWPLUSSHP(const DspBlockData* dbd)
@@ -405,7 +405,7 @@ SHAPEMODOSC_DATA::SHAPEMODOSC_DATA(std::string name)
 }
 
 dspblk_ptr_t SHAPEMODOSC_DATA::createInstance() const { // override
-  return std::make_shared<SHAPEMODOSC>(this);
+  return createDspInstance<SHAPEMODOSC>(this);
 }
 
 SHAPEMODOSC::SHAPEMODOSC(const DspBlockData* dbd)
@@ -482,7 +482,7 @@ PLUSSHAPEMODOSC_DATA::PLUSSHAPEMODOSC_DATA(std::string name)
 }
 
 dspblk_ptr_t PLUSSHAPEMODOSC_DATA::createInstance() const { // override
-  return std::make_shared<PLUSSHAPEMODOSC>(this);
+  return createDspInstance<PLUSSHAPEMODOSC>(this);
 }
 
 PLUSSHAPEMODOSC::PLUSSHAPEMODOSC(const DspBlockData* dbd)
@@ -571,7 +571,7 @@ SYNCM_DATA::SYNCM_DATA(std::string name)
 }
 
 dspblk_ptr_t SYNCM_DATA::createInstance() const { // override
-  return std::make_shared<SYNCM>(this);
+  return createDspInstance<SYNCM>(this);
 }
 
 SYNCM::SYNCM(const DspBlockData* dbd)
@@ -617,7 +617,7 @@ SYNCS_DATA::SYNCS_DATA(std::string name)
 }
 
 dspblk_ptr_t SYNCS_DATA::createInstance() const { // override
-  return std::make_shared<SYNCS>(this);
+  return createDspInstance<SYNCS>(this);
 }
 
 SYNCS::SYNCS(const DspBlockData* dbd)
@@ -673,7 +673,7 @@ PWM_DATA::PWM_DATA(std::string name)
 }
 
 dspblk_ptr_t PWM_DATA::createInstance() const { // override
-  return std::make_shared<PWM>(this);
+  return createDspInstance<PWM>(this);
 }
 
 PWM::PWM(const DspBlockData* dbd)
@@ -712,7 +712,7 @@ NOISE_DATA::NOISE_DATA(std::string name)
 }
 
 dspblk_ptr_t NOISE_DATA::createInstance() const { // override
-  return std::make_shared<NOISE>(this);
+  return createDspInstance<NOISE>(this);
 }
 
 NOISE::NOISE(const DspBlockData* dbd)

@@ -8,6 +8,8 @@
 #include <ork/kernel/string/ConstString.h>
 #include <ork/reflect/properties/DirectTypedVector.hpp> // directVectorProperty on std::vector<float>
 #include <ork/lev2/gfx/terrain/dflow/hfdflow.h> // the terrain BakeEnv THIS module stocks for its field subgraph
+#include <ork/lev2/gfx/meshutil/geometry.h>     // street_spine .ogeo artifact export (physics-proxy law)
+#include <filesystem>
 #include <cmath>
 #include <queue>
 #include <vector>
@@ -643,6 +645,35 @@ struct RouteSpineModuleInst : public MeshComputeInst {
 
     // --- upload SoA SSBOs (the LSystem _buildSkeleton pattern) ---
     _uploadGraph(ctx, xng);
+
+    // PHYSICS-PROXY LAW artifact export (owner 2026-07-22): write the spine's GENERATING
+    // data as a named baked artifact — the road collider (and future nav/audio) consume it
+    // BY NAME, never the render mesh (embellishments are render-only). Deck line
+    // P=(x, road_elev, z); width per node; parent for segment topology. Runs CPU-side at
+    // build time (materializeAll GPU-thread), BEFORE any entity activates — the scatter
+    // .ogeo "declaration order = dependency order" convention exactly.
+    if (not _d->_export_name.empty()) {
+      auto geo   = std::make_shared<meshutil::Geometry>();
+      auto chP   = geo->_point.createChannel<fvec3>("P");
+      auto chW   = geo->_point.createChannel<float>("width");
+      auto chPar = geo->_point.createChannel<int>("parent");
+      const size_t N = sm.size();
+      chP->_data.resize(N);
+      chW->_data.resize(N);
+      chPar->_data.resize(N);
+      for (size_t ni = 0; ni < N; ni++) {
+        auto& s          = sm[ni];
+        chP->_data[ni]   = fvec3(float(s.wx), float(s.road_elev), float(s.wz));
+        chW->_data[ni]   = _d->_width_m;
+        chPar->_data[ni] = int(s.parent);
+      }
+      std::string outdir = file::Path::expandPathString("<assetcache>/roads/" + _d->_export_name);
+      std::filesystem::create_directories(outdir);
+      std::string opath = outdir + "/street_spine.ogeo";
+      geo->writeChunkfile(file::Path(opath.c_str()));
+      printf("routespine: exported street_spine artifact -> %s (%d nodes)\n", opath.c_str(), int(N));
+    }
+
     _built = true;
     return true; // one re-eval so masks / parcelize consume the built spine
   }
@@ -810,6 +841,7 @@ void RouteSpineModuleData::describeX(class_t* clazz) {
   clazz->directProperty("disch_thresh", &RouteSpineModuleData::_disch_thresh);
   clazz->directProperty("grade_weight", &RouteSpineModuleData::_grade_weight);
   clazz->directProperty("base_cost", &RouteSpineModuleData::_base_cost);
+  clazz->directProperty("export_name", &RouteSpineModuleData::_export_name);
   clazz->directProperty("seed", &RouteSpineModuleData::_seed);
   clazz->directProperty("min_radius_m", &RouteSpineModuleData::_min_radius_m);
   clazz->directProperty("station_m", &RouteSpineModuleData::_station_m);

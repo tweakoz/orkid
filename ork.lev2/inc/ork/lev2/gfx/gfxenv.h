@@ -110,8 +110,17 @@ struct LoadingPhase {
 
   void enqueueOperation(gfxcontext_lambda_t l);
   void join();
+  ~LoadingPhase();
+  // Producer-side async-work bookkeeping. submitLoadingPhase() takes ONE
+  // asyncWorkBegin("texture_upload") marker and sets _asyncTracked; the marker is
+  // released exactly once — at this phase's op-completion inside the drain, or (a
+  // backstop) when the phase is destroyed undrained (teardown). This is what lets
+  // the offscreen capture gate wait out an in-flight texture GPU-upload via
+  // asyncWorkPending() instead of grabbing a mid-pop-in frame.
+  void _completeAsyncTracking();
 
   LockedResource<gfxcontext_lambda_list_t> _load_operations;
+  bool _asyncTracked = false;
 };
 
 /// ////////////////////////////////////////////////////////////////////////////
@@ -228,6 +237,72 @@ public:
   // Base = 1 (no MSAA); the Vulkan backend overrides from VkPhysicalDeviceLimits.
   virtual int msaaMaxSamples() {
     return 1;
+  }
+  // DEVICE capability probe: can the hardware fragment-raster into a 2D slice
+  // of a 3D (volume) texture with `fmt`? This is the precondition for the
+  // aerial-perspective froxel volume (SKYLIGHT §4.B.1 risk retirement) and is
+  // deliberately a capability QUERY — the engine has no volume render-target
+  // path yet, so a `true` here means "the froxel slice is buildable", not
+  // "RtGroup can already target a volume".
+  virtual bool supportsVolumeRenderTarget(EBufferFormat fmt) {
+    return false;
+  }
+  // True when the device enabled VK_EXT_mesh_shader (taskless: mesh+fragment only).
+  // Base = false; the Vulkan backend overrides from the enabled device feature.
+  virtual bool supportsMeshShader() const {
+    return false;
+  }
+  // True when the device ALSO enabled the taskShader (amplification / "object shader") feature,
+  // i.e. a pass may front its mesh stage with a task stage. Strictly stronger than
+  // supportsMeshShader — MoltenVK shipped mesh-without-task for a long while.
+  virtual bool supportsTaskShader() const {
+    return false;
+  }
+  // maxTaskPayloadSize in BYTES — the ceiling on a taskPayloadSharedEXT block. 0 when unsupported.
+  virtual uint32_t maxTaskPayloadSize() const {
+    return 0;
+  }
+  // How many draws this context has issued with a TASK stage bound to the pipeline. The honest
+  // answer to "did the amplification stage actually run", as opposed to "did a frame appear":
+  // a pass that silently fell back to taskless leaves this at zero while still drawing.
+  virtual int taskShaderDrawCount() const {
+    return 0;
+  }
+  // True when the mesh-shader draw can take its workgroup counts from a GPU buffer
+  // (vkCmdDrawMeshTasksIndirectEXT). Strictly stronger than supportsMeshShader — a device may
+  // enable the extension while the driver only implements the direct entry. The COUNT variant is
+  // not part of this capability (the engine never issues it).
+  virtual bool supportsMeshShaderIndirect() const {
+    return false;
+  }
+  // True when the device chained the core VK1.1 multiview feature (single-pass stereo's
+  // hardware precondition). Base = false; the Vulkan backend overrides from the probe.
+  virtual bool supportsMultiview() const {
+    return false;
+  }
+  // maxMultiviewViewCount — 0 when multiview is unsupported/unqueried. The engine only ever
+  // asks for 2, but a device reporting fewer than it needs must be visible, not assumed.
+  virtual int maxMultiviewViewCount() const {
+    return 0;
+  }
+  // True when the MESH stage is legal inside a multiview pass (multiviewMeshShader). Strictly
+  // stronger than supportsMultiview AND supportsMeshShader: a device may grant both and still
+  // exclude mesh draws from multiview passes.
+  virtual bool supportsMultiviewMeshShader() const {
+    return false;
+  }
+  // maxMeshMultiviewViewCount — views a single multiview mesh pass may carry; 0 when unsupported.
+  virtual uint32_t maxMeshMultiviewViewCount() const {
+    return 0;
+  }
+  // ERROR-severity validation messages the debug layer has reported this process, and whether
+  // the layer is actually LOADED. A test asserting "zero validation errors" is worthless without
+  // the second one: an unarmed run also reports zero. Both are 0/false on backends with no layer.
+  virtual int validationErrorCount() const {
+    return 0;
+  }
+  virtual bool validationArmed() const {
+    return false;
   }
   pri_rawptr_t PRI() {
     return _primitives_interface.get();
@@ -377,6 +452,13 @@ public:
   int GetTargetFrame() const {
     return miTargetFrame;
   }
+  // GPU queue submits counted over the LAST completed frame (every submit: graphics,
+  //  compute, offscreen, external-composite). A frame-time comparison between two render
+  //  strategies is only fair if their submit counts are visible rather than assumed.
+  //  0 on backends that do not count them.
+  uint32_t submitCount() const {
+    return _submitCountLastFrame;
+  }
   CTXBASE* GetCtxBase() const {
     return mCtxBase;
   }
@@ -474,14 +556,13 @@ public:
 
   //////////////////////////////////////////////////////////
 
-  loadingphase_ptr_t newLoadingPhase();
-  // Submit a fully-populated phase atomically. Prefer this over
-  // newLoadingPhase() when fire-and-forgetting (no join()): the producer
-  // can be racing the drainer here. newLoadingPhase() registers an empty
-  // phase immediately, so if the drainer pops+snapshots it before the
-  // producer enqueues any ops, all subsequently-enqueued ops are
-  // orphaned. submitLoadingPhase takes a phase the caller already
-  // populated locally, then publishes it as one atomic step.
+  // Submit a fully-populated phase atomically. Always build the phase with
+  // `std::make_shared<LoadingPhase>()` + enqueueOperation(...) locally, then
+  // submit — never publish-then-populate. Publishing an empty phase first
+  // races the drainer: if it pops+snapshots the phase before any ops are
+  // enqueued, every subsequently-enqueued op is orphaned. submitLoadingPhase
+  // takes the already-populated phase and publishes it as one atomic step,
+  // holding a "texture_upload" asyncWork marker from publish through drain.
   void submitLoadingPhase(loadingphase_ptr_t phase);
 
   contextexecutor_ptr_t createContextExecutor();
@@ -620,6 +701,7 @@ public:
   int miW, miH;
   int miModColorStackIndex;
   int miTargetFrame;
+  uint32_t _submitCountLastFrame = 0; // published once per frame by the backend; read via submitCount()
   int miDrawLock;
   bool mbPostInitializeContext;
   bool _is_visual_frame = false;

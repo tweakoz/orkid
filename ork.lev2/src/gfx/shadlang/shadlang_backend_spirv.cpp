@@ -111,6 +111,9 @@ SpirvCompilerGlobals::SpirvCompilerGlobals() {
   if (_vulkan) {
     _id_renames["ofx_instanceID"] = "gl_InstanceIndex";
     _id_renames["gl_VertexID"]    = "gl_VertexIndex";
+    // multiview view selector. Legal in EVERY stage (vertex AND fragment): the fragment
+    //  stage reads it as a builtin input, so a per-view fragment branch needs no varying.
+    _id_renames["ofx_viewIndex"]  = "gl_ViewIndex";
 
   } else {
     _id_renames["ofx_depth"]      = "gl_FragDepth";
@@ -195,6 +198,8 @@ void SpirvCompiler::_beginShader(shader_ptr_t shader) {
   bool is_fragment_shader = (std::dynamic_pointer_cast<FragmentShader>(shader) != nullptr);
   bool is_geometry_shader = (std::dynamic_pointer_cast<GeometryShader>(shader) != nullptr);
   bool is_compute_shader  = (std::dynamic_pointer_cast<ComputeShader>(shader) != nullptr);
+  bool is_mesh_shader     = (std::dynamic_pointer_cast<MeshShader>(shader) != nullptr);
+  bool is_task_shader     = (std::dynamic_pointer_cast<TaskShader>(shader) != nullptr);
 
   ////////////////////////////////////////////////
   tracker._onInheritLibrary = [&](std::string INHID, libblock_ptr_t lib_block) { //
@@ -255,11 +260,23 @@ void SpirvCompiler::_beginShader(shader_ptr_t shader) {
     }
 
     // Skip fragment interfaces when processing vertex shaders
-    if (is_vertex_shader && is_fragment_interface) {
+    //  (the mesh stage stands in for the vertex stage, so it skips them too)
+    if ((is_vertex_shader || is_mesh_shader) && is_fragment_interface) {
+      return;
+    }
+
+    // the task stage carries ONLY its own interface: it has no vertex I/O and emits no
+    //  primitives, so a vertex interface reaching it (the mesh stage's, shared through a
+    //  payload's co-inheritance) would collide its local_size with the mesh stage's.
+    if (is_task_shader && (is_vertex_interface || is_fragment_interface || is_geometry_interface)) {
       return;
     }
 
     _inheritIO(interface_node);
+  };
+  ////////////////////////////////////////////////
+  tracker._onInheritTaskPayload = [=](std::string INHID, astnode_ptr_t payload_node) { //
+    _inheritTaskPayload(INHID, payload_node);
   };
   ////////////////////////////////////////////////
   tracker._onInheritExtension = [=](std::string INHID, astnode_ptr_t ast_node) { //
@@ -289,6 +306,10 @@ SpirvCompiler::EmittedShader SpirvCompiler::emitShader(shader_ptr_t sh) {
     kind = shaderc_glsl_fragment_shader;
   } else if (auto as_csh = std::dynamic_pointer_cast<ComputeShader>(sh)) {
     kind = shaderc_glsl_compute_shader;
+  } else if (auto as_msh = std::dynamic_pointer_cast<MeshShader>(sh)) {
+    kind = shaderc_glsl_mesh_shader;
+  } else if (auto as_tsk = std::dynamic_pointer_cast<TaskShader>(sh)) {
+    kind = shaderc_glsl_task_shader;
   } else {
     OrkAssert(false);
     kind = shaderc_glsl_vertex_shader; // unreachable
@@ -338,6 +359,8 @@ void SpirvCompiler::_processGlobalRenames() {
     if (it_ren != RENAMES.end()) {
       auto newid = it_ren->second;
       it->setValueForKey<std::string>("identifier_name", newid);
+      if (newid == "gl_ViewIndex")
+        _uses_view_index = true;
     }
   }
   auto prim_identifiers = SHAST::AstNode::collectNodesOfType<SHAST::PrimaryIdentifier>(_transu);
@@ -347,6 +370,8 @@ void SpirvCompiler::_processGlobalRenames() {
     if (it_ren != RENAMES.end()) {
       auto newid = it_ren->second;
       it->setValueForKey<std::string>("identifier_name", newid);
+      if (newid == "gl_ViewIndex")
+        _uses_view_index = true;
     }
   }
 }
@@ -680,6 +705,61 @@ void SpirvCompiler::_convertUniformBlocks() {
   }
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
+// The DECLARED access qualifier of a storage interface, read off the layout list of its buffer:
+//   buffer layout(std430, readwrite) blk { ... };
+// The layout list already parses arbitrary identifiers, so this needs no grammar change; a
+// non-access identifier there (std430, and anything else a declaration carries) is left alone.
+/////////////////////////////////////////////////////////////////////////////////////////////////
+static SpirvStorageAccess _declaredStorageAccess(astnode_ptr_t sitem_node) {
+  SpirvStorageAccess rval = SpirvStorageAccess::Unspecified;
+  if (nullptr == sitem_node)
+    return rval;
+  auto layout_node = sitem_node->findFirstChildOfType<InterfaceLayout>();
+  if (nullptr == layout_node)
+    return rval;
+  auto layout_items = AstNode::collectNodesOfType<InterfaceLayoutItem>(layout_node);
+  for (auto item : layout_items) {
+    if (item->_children.size() != 1) // an item with a value (name=N) is never an access qualifier
+      continue;
+    auto key = childAsSemaIdString(item, 0);
+    SpirvStorageAccess declared = SpirvStorageAccess::Unspecified;
+    if (key == "readonly")
+      declared = SpirvStorageAccess::ReadOnly;
+    else if (key == "writeonly")
+      declared = SpirvStorageAccess::WriteOnly;
+    else if (key == "readwrite")
+      declared = SpirvStorageAccess::ReadWrite;
+    if (declared == SpirvStorageAccess::Unspecified)
+      continue;
+    if ((rval != SpirvStorageAccess::Unspecified) and (rval != declared)) {
+      printf("StorageInterface declares CONFLICTING access qualifiers\n");
+      OrkAssert(false);
+    }
+    rval = declared;
+  }
+  return rval;
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////
+// The GLSL memory qualifier to emit for a storage buffer. A declaration that states its access
+// is authoritative for every stage. An UNDECLARED (legacy) one falls back to the historical
+// stage-derived default - compute writes, graphics reads - which is why a graphics stage that
+// needs to write must declare it: silently promoting every graphics-stage SSBO to writable would
+// drop the readonly guarantee that the existing declarations rely on.
+/////////////////////////////////////////////////////////////////////////////////////////////////
+static const char* _storageAccessQualifier(SpirvStorageAccess access, bool is_compute_shader) {
+  switch (access) {
+    case SpirvStorageAccess::ReadOnly:
+      return "readonly";
+    case SpirvStorageAccess::WriteOnly:
+      return "writeonly";
+    case SpirvStorageAccess::ReadWrite:
+      return "";
+    case SpirvStorageAccess::Unspecified:
+    default:
+      return is_compute_shader ? "" : "readonly";
+  }
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////
 void SpirvCompiler::_convertStorageInterfaces() {
   auto ast_storage_ifs = SHAST::AstNode::collectNodesOfType<SHAST::StorageInterface>(_transu);
 
@@ -707,6 +787,7 @@ void SpirvCompiler::_convertStorageInterfaces() {
     // Get the storage interface item (buffer block)
     auto sitem_node = ast_storage_if->findFirstChildOfType<StorageInterfaceItem>();
     if (sitem_node) {
+      spirv_sif->_access = _declaredStorageAccess(sitem_node);
       // Get buffer name
       auto sitemn_node = sitem_node->findFirstChildOfType<StorageInterfaceItemName>();
       if (sitemn_node) {
@@ -1053,16 +1134,16 @@ void SpirvCompiler::_inheritStorageInterface(
   // Emit the GLSL storage buffer declaration
   auto header = FormatString("// Storage interface: %s", storage_name.c_str());
   _appendText(_uniforms_group, header.c_str());
-  // Compute shaders need read/write access to SSBOs for output
-  // VF pipelines typically use SSBOs as read-only data sources
+  // Access follows the DECLARATION when it states one; otherwise the legacy stage default
+  // (compute writes its SSBO outputs, a graphics stage reads).
   bool is_compute_shader = (std::dynamic_pointer_cast<ComputeShader>(_shader) != nullptr);
-  bool is_readonly = !is_compute_shader;
-  
+  const char* access_qualifier = _storageAccessQualifier(spirv_sif->_access, is_compute_shader);
+
   auto layout_line = FormatString(
       "layout(set=%zu, binding=%d, std430) %s buffer %s {",
       spirv_sif->_descriptor_set_id,
       binding_id,
-      is_readonly ? "readonly" : "",
+      access_qualifier,
       spirv_sif->_buffer_name.c_str());
   _appendText(_uniforms_group, layout_line.c_str());
   
@@ -1083,6 +1164,62 @@ void SpirvCompiler::_inheritStorageInterface(
   
   auto closing = FormatString("}; // end storage interface %s", storage_name.c_str());
   _appendText(_uniforms_group, closing.c_str());
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+// task->mesh amplification payload. GLSL declares it identically in both stages
+//  (`taskPayloadSharedEXT <struct> <name>;`, writable in task / read-only in mesh), so this
+//  emits ONE text for both — the sharing is the declaration, not a per-stage rewrite.
+/////////////////////////////////////////////////////////////////////////////////////////////////
+void SpirvCompiler::_inheritTaskPayload(
+    std::string payload_name,       //
+    astnode_ptr_t payload_node) {   //
+
+  auto decls = SHAST::AstNode::collectNodesOfType<SHAST::DataDeclarationBase>(payload_node);
+
+  LayoutStandard430 layout;
+  std::vector<std::string> member_lines;
+
+  for (auto d : decls) {
+    auto tid = d->childAs<SHAST::TypedIdentifier>(0);
+    OrkAssert(tid);
+    auto dt = tid->typedValueForKey<std::string>("data_type").value();
+    auto id = tid->typedValueForKey<std::string>("identifier_name").value();
+    if (dt.find("sampler") != std::string::npos) {
+      printf("sampler<%s:%s> in task_payload<%s> not allowed!\n", dt.c_str(), id.c_str(), payload_name.c_str());
+      OrkAssert(false);
+    }
+    if (auto as_array = std::dynamic_pointer_cast<ArrayDeclaration>(d)) {
+      auto len_node = as_array->childAs<SHAST::SemaIntegerLiteral>(1);
+      OrkAssertI(len_node, "a task_payload array must state its length (no runtime-sized arrays in shared storage)");
+      auto ary_len_str = len_node->typedValueForKey<std::string>("literal_value").value();
+      size_t ary_len   = size_t(atoi(ary_len_str.c_str()));
+      member_lines.push_back(FormatString("  %s %s[%zu];", dt.c_str(), id.c_str(), ary_len));
+      layout.incrementDatatype(dt, ary_len);
+    } else {
+      member_lines.push_back(FormatString("  %s %s;", dt.c_str(), id.c_str()));
+      layout.incrementDatatype(dt, 0);
+    }
+  }
+
+  // PORTABLE ENVELOPE: maxTaskPayloadSize is 16384 on every device in the fleet (mac and
+  //  NVIDIA report the same literal). Over-running it is a pipeline-creation failure far
+  //  from the authoring mistake, so name it here with both numbers.
+  constexpr size_t MAX_TASK_PAYLOAD_SIZE = 16384;
+  OrkAssertIFMT(
+      layout.cursor() <= MAX_TASK_PAYLOAD_SIZE,
+      "task_payload<%s> lays out to %zu bytes, over the portable maxTaskPayloadSize<%zu>",
+      payload_name.c_str(),
+      layout.cursor(),
+      MAX_TASK_PAYLOAD_SIZE);
+
+  auto struct_type = payload_name + "_payload_t";
+  _appendText(_types_group, "// begin task_payload<%s> (%zu bytes)", payload_name.c_str(), layout.cursor());
+  _appendText(_types_group, "struct %s {", struct_type.c_str());
+  for (const auto& line : member_lines)
+    _appendText(_types_group, "%s", line.c_str());
+  _appendText(_types_group, "};");
+  _appendText(_types_group, "taskPayloadSharedEXT %s %s;", struct_type.c_str(), payload_name.c_str());
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1209,10 +1346,21 @@ std::string SpirvCompiler::_ifIoItem(
     }
 
     bool is_geom_shader = (std::dynamic_pointer_cast<GeometryShader>(_shader) != nullptr);
+    bool is_mesh_shader = (std::dynamic_pointer_cast<MeshShader>(_shader) != nullptr);
 
     if (is_geom_shader) { // geometry shaders need [] on their inputs (broadcast from vertex)
 
       if (direction == "in") {
+        item_str += "[]";
+      }
+    }
+
+    // mesh shaders emit a whole meshlet at once: every per-vertex output is an ARRAY
+    //  (implicitly sized to max_vertices), indexed by the emitted vertex. The fragment
+    //  side still inherits them as scalars — it is the fragment shader that reads them.
+    if (is_mesh_shader) {
+
+      if (direction == "out") {
         item_str += "[]";
       }
     }
@@ -1237,6 +1385,7 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
   bool is_vertex_interface   = (std::dynamic_pointer_cast<VertexInterface>(interface_node) != nullptr);
   bool is_geometry_interface = (std::dynamic_pointer_cast<GeometryInterface>(interface_node) != nullptr);
   bool is_compute_interface  = (std::dynamic_pointer_cast<ComputeInterface>(interface_node) != nullptr);
+  bool is_task_interface     = (std::dynamic_pointer_cast<TaskInterface>(interface_node) != nullptr);
   // bool is_storage_interface  = (std::dynamic_pointer_cast<StorageInterface>(interface_node) != nullptr);
 
   // For fragment interfaces, first convert inherited vertex outputs to inputs
@@ -1351,16 +1500,16 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
           _binding_id++;
         }
         /////////////////
-        // Compute shaders need read/write access to SSBOs for output
-        // VF pipelines typically use SSBOs as read-only data sources
+        // Access follows the DECLARATION when it states one; otherwise the legacy stage default
+        // (compute writes its SSBO outputs, a graphics stage reads).
         bool is_compute_shader = (std::dynamic_pointer_cast<ComputeShader>(_shader) != nullptr);
-        bool is_readonly = !is_compute_shader;
+        const char* access_qualifier = _storageAccessQualifier(_declaredStorageAccess(sitem_node), is_compute_shader);
         /////////////////
         auto layout_line = FormatString(
             "layout(set=%d, binding=%d) %s buffer %s {", //
             dset_id,                                   //
             binding_id,                                //
-            is_readonly ? "readonly" : "",             //
+            access_qualifier,                          //
             sitem_name.c_str());
         _appendText(_interface_group, layout_line.c_str());
         /////////////////
@@ -1478,6 +1627,11 @@ std::string SpirvCompiler::_emitShaderGLSL(shaderc_shader_kind shader_type) {
   // auto fn_inv  = FormatString("void main() { %s(); }", _shader_name.c_str());
 
   _shader_group->appendTypedChild<InsertLine>("#version 450");
+  // gl_ViewIndex is gated behind GL_EXT_multiview in EVERY stage that reads it — glslang
+  //  rejects the builtin outright without this line. Emitted only for units that actually
+  //  reference it, so no other shader's GLSL (or SPIR-V) moves.
+  if (_uses_view_index)
+    _appendText(_extension_group, "#extension GL_EXT_multiview : enable");
   _shader_group->appendChild(_extension_group);
   _shader_group->appendChild(_types_group);
   _shader_group->appendChild(_uniforms_group);
@@ -1503,6 +1657,22 @@ shader_bin_t SpirvCompiler::compileGlslToSpirv(
 
   shaderc::Compiler compiler;
   shaderc::CompileOptions options;
+
+  // SPV_EXT_mesh_shader is a SPIR-V 1.4 extension — the shaderc default target
+  //  (Vulkan 1.0 / SPIR-V 1.0) rejects GL_EXT_mesh_shader outright. Raised ONLY for
+  //  the amplification pair so every other stage's emitted SPIR-V is byte-unchanged.
+  if (shader_type == shaderc_glsl_mesh_shader or shader_type == shaderc_glsl_task_shader) {
+    options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_2);
+    options.SetTargetSpirv(shaderc_spirv_version_1_4);
+  }
+  // Multiview's SPIR-V MultiView capability (gl_ViewIndex) is Vulkan 1.1 / SPIR-V 1.3;
+  //  the shaderc default target rejects it. Same narrow, feature-scoped bump as the mesh
+  //  stage above — keyed off the emitted extension line, so no other shader is touched.
+  else if (as_glsl.find("GL_EXT_multiview") != std::string::npos) {
+    options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_1);
+    options.SetTargetSpirv(shaderc_spirv_version_1_3);
+  }
+
   shaderc::SpvCompilationResult result = compiler.CompileGlslToSpv( //
       as_glsl.c_str(),                                              // glsl source (string)
       as_glsl.length(),                                             // glsl source length
@@ -1581,6 +1751,8 @@ int SpirvCompiler::_findBindingIdFromMergedResources(const std::string& resource
     auto frg_refs = AstNode::collectNodesOfType<FragmentShaderRef>(pass);
     auto geo_refs = AstNode::collectNodesOfType<GeometryShaderRef>(pass);
     auto com_refs = AstNode::collectNodesOfType<ComputeShaderRef>(pass);
+    auto msh_refs = AstNode::collectNodesOfType<MeshShaderRef>(pass);
+    auto tsk_refs = AstNode::collectNodesOfType<TaskShaderRef>(pass);
 
     for (auto ref : vtx_refs) {
       if (ref->typedValueForKey<std::string>("ref_id").value() == shader_name) return true;
@@ -1592,6 +1764,12 @@ int SpirvCompiler::_findBindingIdFromMergedResources(const std::string& resource
       if (ref->typedValueForKey<std::string>("ref_id").value() == shader_name) return true;
     }
     for (auto ref : com_refs) {
+      if (ref->typedValueForKey<std::string>("ref_id").value() == shader_name) return true;
+    }
+    for (auto ref : msh_refs) {
+      if (ref->typedValueForKey<std::string>("ref_id").value() == shader_name) return true;
+    }
+    for (auto ref : tsk_refs) {
       if (ref->typedValueForKey<std::string>("ref_id").value() == shader_name) return true;
     }
     return false;

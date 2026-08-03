@@ -57,10 +57,6 @@ void pyinit_radiance_maps_processor(py::module& module_lev2) {
       .def_property_readonly("specular_images", 
         [](xirprocessfuture_ptr_t self) -> image_list_t {
           return self->_specular_images;
-        })
-      .def_property_readonly("diffuse_images",
-        [](xirprocessfuture_ptr_t self) -> image_list_t {
-          return self->_diffuse_images;
         });
   
   py::class_<EnvMapProcessor>(module_lev2, "EnvMapProcessor")

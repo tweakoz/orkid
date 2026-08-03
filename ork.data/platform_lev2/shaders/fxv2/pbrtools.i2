@@ -4,16 +4,55 @@ import "deftools.i2";
 import "fwdtools.i2";
 import "skintools.i2";
 import "stdtools.i2";
+// ublk_stereo, inherited by the _ST stages below.
+import "stereotools.i2";
 import "mathtools.i2";
 import "ssaotools.i2";
 import "envtools.i2";
 import "pbr_lobes.i2";
+// SKYLIGHT lane B — lib_sky feeds ps_forward_skybox_proc below. Imported HERE
+// (not just in pbr.fxv2's fxconfig): inheritance resolves in declaration order,
+// so the lib must exist before the shader that inherits it is parsed.
+import "skytools.i2";
 ///////////////////////////////////////////////////////////////
 // Uniform Blocks and Sets
 ///////////////////////////////////////////////////////////////
 uniform_block ub_frg_fwd (descriptor_set 0) {
   float DppZBias;
   vec4 ShadowParams;
+}
+///////////////////////////////////////////////////////////////
+// CLOUD OCCLUSION of the celestial DISCS (the sun cookie's second consumer).
+//  Deliberately NOT ublk_sun / sset_sun: this technique inherits neither, and
+//  widening a block the whole PBR shader shares to feed one pass would make
+//  every other pass bind a cookie it never reads.
+//
+//  The lookup is ONE TEXEL — the cookie value at the CAMERA. For a body at
+//  infinity the cloud between the eye and the disc is exactly the cloud the
+//  cookie projects onto the eye's own ground point, so the uv is resolved on
+//  the CPU (the eye position is known there) and the shader spends a single
+//  filtered fetch instead of carrying a projection matrix it would apply to one
+//  point per pixel. The LOD is the DISC's own (much sharper than the ground
+//  penumbra's): what the two consumers must share is the EXTINCTION LAW, which
+//  they do, and not the spatial filter, which is a different physical quantity
+//  — ground penumbra width comes from the sun's angular size at the cloud's
+//  altitude, disc transit crispness from the disc's angular size alone.
+///////////////////////////////////////////////////////////////
+uniform_block ublk_sky_cookie (descriptor_set 0) {
+  vec4 SkyCookieParams; // xy: the eye's cookie uv, z: the DISC's mip LOD bias (its own,
+                        //  sharper than the ground's), w: strength (0 = disarmed)
+  vec4 SkyCookieBody;   // x: 1 when the cookie was baked toward the SUN, y: toward the MOON.
+                        //  Only one body can hold the cookie at a time (it is the cascade
+                        //  holder's projection), so the other disc is left alone rather than
+                        //  dimmed by a shadow cast in some other direction.
+                        // z: the BEAM's Beer-Lambert optical depth tau — the same number the
+                        //  ground term reads out of sun_cookie_params.w. It rides this vec4's
+                        //  free lane rather than growing the block, which is the packing idiom
+                        //  every documented lane here already follows.
+}
+///////////////////////////////////////////////////////////////
+sampler_set sset_sky_cookie (descriptor_set 0) {
+  sampler2D SkyCloudCookie; // A = cloud OCCLUSION toward the cookie's body (0 = unoccluded)
 }
 ///////////////////////////////////////////////////////////////
 uniform_set us_frg : us_std_pbr {
@@ -298,11 +337,64 @@ vertex_interface vif_DPP_skinned : ub_std_vtx : iface_skintools {
   }
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface fif_DPP 
+// MASKED (alpha-tested) depth-prepass interfaces: carry uv so the depth
+// fragment can sample the albedo alpha and discard through cutout holes —
+// otherwise leaf-card foliage occludes/shadows as its full solid quad.
+vertex_interface vif_DPP_UV {
+  inputs {
+    vec4 position : POSITION;
+    vec2 uv0 : TEXCOORD0;
+  }
+  outputs {
+    float frg_depth;
+    vec2 frg_uv0;
+  }
+}
+vertex_interface vif_DPP_UV_skinned : ub_std_vtx : iface_skintools {
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal : NORMAL;
+    vec2 uv0 : TEXCOORD0;
+  }
+  outputs {
+    float frg_depth;
+    vec2 frg_uv0;
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_interface fif_DPP
   : vif_DPP
   : ub_frg_fwd {
   outputs {
     layout(location = 0) float gl_FragDepth;
+  }
+}
+// FULLY-DEDICATED resources: the masked depth fragment must NOT reference the
+// shared ublk_std_pbr / sset_std_pbr — pulling those shared blocks into the
+// DEPTH_PREPASS pass (where most members/samplers go unbound) corrupts the
+// frame's PBR state for subsequent color draws (observed: whole scene loses
+// IBL/skybox levels once the masked pipeline warms; deterministic).
+uniform_block ublk_dpp_masked (descriptor_set 0) {
+  float DppAlphaCutoff;
+}
+sampler_set sset_dpp_masked (descriptor_set 0) {
+  sampler2DArray DppCNMREA; // the material's CNMREA array, bound by the masked DPP lambda
+}
+fragment_interface fif_DPP_MASKED
+  : vif_DPP_UV
+  : ub_frg_fwd
+  : ublk_dpp_masked
+  : sset_dpp_masked {
+  outputs {
+    // out_z mirrors the plain DPP's color-attachment write (main-view DPP RTG).
+    // gl_FragDepth is deliberately DECLARED WITHOUT a location: an explicit
+    // location demotes it to a plain color output (fif_DPP does this), leaving
+    // depth fixed-function — and in the zero-color-attachment shadow passes the
+    // driver then elides the whole fragment shader INCLUDING the discard
+    // (observed: alpha-tested casters shadowed solid). The bare declaration
+    // emits the true builtin -> depth-replacing FS -> discard always honored.
+    layout(location = 0) float out_z;
+    float gl_FragDepth;
   }
 }
 
@@ -340,9 +432,50 @@ vertex_shader vs_forward_depthprepass_instanced_mono //
   gl_Position  = hpos;
   frg_depth =  (hpos.z/hpos.w);
 }
-fragment_shader ps_forward_depthprepass_mono // 
+fragment_shader ps_forward_depthprepass_mono //
   : fif_DPP { //
   //gl_FragDepth = frg_depth;
+  gl_FragDepth = gl_FragCoord.z + DppZBias;
+}
+///////////////////////////////////////////////////////////////
+// MASKED depth prepass — each masked VS replicates its color-pass sibling's
+// frg_uv0 convention (they differ per variant) so the depth alpha sample hits
+// the same texel the color pass will shade; the fragment mirrors the color
+// pass cutoff test (pipeline selects these only when AlphaCutoff is active).
+vertex_shader vs_forward_depthprepass_masked_mono //
+  : vif_DPP_UV                                    //
+  : ublk_std_matrices {                           //
+  vec4 hpos    = mvp * position;
+  gl_Position  = hpos;
+  frg_depth    = (hpos.z/hpos.w);
+  frg_uv0      = vec2(1,1) + (uv0 * vec2(1, -1)); // = vs_forward_test
+}
+vertex_shader vs_forward_depthprepass_masked_skinned_mono //
+  : vif_DPP_UV_skinned //
+  : lib_skin_tools //
+  : ublk_std_matrices { //
+  vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
+  vec4 hpos    = mvp * skn_pos;
+  gl_Position  = hpos;
+  frg_depth    = (hpos.z/hpos.w);
+  frg_uv0      = uv0 * vec2(1, -1); // = vs_forward_skinned_mono
+}
+vertex_shader vs_forward_depthprepass_masked_instanced_mono //
+  : vif_DPP_UV                                             //
+  : storage_instancing                                     //
+  : ublk_std_matrices {                                    //
+  mat4 instancemtx = _instance_matrices[gl_InstanceIndex];
+  vec4 hpos    = mvp * (instancemtx * position);
+  gl_Position  = hpos;
+  frg_depth    = (hpos.z/hpos.w);
+  frg_uv0      = uv0 * vec2(1, -1); // = lib_pbr_vtx_instanced vs_instanced
+}
+fragment_shader ps_forward_depthprepass_masked_mono //
+  : fif_DPP_MASKED { //
+  float alpha = texture(DppCNMREA, vec3(abs(frg_uv0), 0)).a;
+  if (alpha < DppAlphaCutoff)
+    discard;
+  out_z        = gl_FragCoord.z + DppZBias;
   gl_FragDepth = gl_FragCoord.z + DppZBias;
 }
 ///////////////////////////////////////////////////////////////
@@ -523,6 +656,41 @@ vertex_shader vs_forward_instanced_vc
   gl_Position = mvp * instanced_pos;
 }
 ///////////////////////////////////////////////////////////////
+// SINGLE-PASS STEREO fragment stage — the _ST family's fragment half. Byte-identical
+// to ps_forward_test except that the lighting is evaluated from THIS VIEW's eye
+// position (out of ublk_stereo) instead of the mono one.
+///////////////////////////////////////////////////////////////
+fragment_interface fif_FWDTEST_ST
+  : vif_forward_outputs
+  : ub_frg_fwd
+  : ublk_stereo
+  : storage_fwd_lighting
+  : ss_frg_fwd {
+  outputs {
+    layout(location = 0) vec4 out_color;
+    layout(location = 1) vec4 out_diffuse;
+  }
+}
+fragment_shader ps_forward_test_stereo //
+    : fif_FWDTEST_ST                   //
+    : lib_math                         //
+    : lib_brdf                         //
+    : lib_def                          //
+    : lib_fwd
+    : std_forward_all {
+  // the per-view eye position, inline rather than as a lib_fwd helper: lib_fwd is
+  // emitted into every forward shader, and a helper touching ublk_stereo would not
+  // compile in the mono ones (which do not declare the block).
+  vec2 uvinvy   = abs(frg_uv0.xy);
+  float alpha   = texture(CNMREA, vec3(uvinvy, 0)).a;
+  if (AlphaCutoff > 0.0 && alpha < AlphaCutoff)
+    discard;
+  ShadingResult lit = _forward_lighting(frg_clr.xyz*ModColor.xyz, spvr_eyepos[ofx_viewIndex].xyz);
+  out_color   = vec4(lit.specular + lit.diffuse, 1.0);
+  float sss_mask = (has_subsurface != 0) ? subsurface_factor : 0.0;
+  out_diffuse = vec4(lit.diffuse, sss_mask);
+}
+///////////////////////////////////////////////////////////////
 // MATRICES-ONLY instanced VS: matrices from the dynamic storage_inst_mtx block, no per-instance
 // colors. Pairs with the shared forward fragment (ps_forward_test).
 vertex_shader vs_forward_instanced_mtxonly
@@ -533,6 +701,161 @@ vertex_shader vs_forward_instanced_mtxonly
   vec4 instanced_pos = instancemtx * position;
   vs_instanced_mtxonly(position, normal, binormal);
   gl_Position = mvp * instanced_pos;
+}
+///////////////////////////////////////////////////////////////
+// SINGLE-PASS STEREO (_ST) vertex stages.
+//
+// Identical to their _MO twins except for ONE line: the clip-space transform reads the
+// per-VIEW view-projection out of ublk_stereo, indexed by ofx_viewIndex (the multiview
+// view selector — gl_ViewIndex on vulkan). Index-select, never a branch: a per-view
+// branch is a rasterization hazard on tile hardware.
+//
+// mvp is per-DRAW and ublk_stereo is per-FRAME, so the product is formed here from the
+// per-view vp and the draw's own model matrix rather than stored per view.
+//
+// Everything else about these stages — interfaces, libraries, outputs — is the mono
+// shader's, so the fragment stage and the whole lighting chain are shared verbatim.
+///////////////////////////////////////////////////////////////
+vertex_shader vs_forward_test_stereo
+  : vif_FWDTEST
+  : lib_pbr_vtx
+  : ublk_std_matrices
+  : ublk_stereo {
+  vs_common(position, normal, binormal);
+  gl_Position = (spvr_vp[ofx_viewIndex] * m) * position;
+  frg_uv0         = vec2(1,1)+ (uv0 * vec2(1, -1));
+  frg_clr         = vec4(1,1,1,1);
+  frg_modcolor    = vec4(1,1,1,1);
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_forward_instanced_stereo
+  : vif_FWDTEST
+  : storage_instancing
+  : lib_pbr_vtx_instanced
+  : ublk_stereo {
+  mat4 instancemtx = _instance_matrices[gl_InstanceIndex];
+  vec4 instanced_pos = instancemtx * position;
+  vs_instanced(position, normal, binormal);
+  gl_Position = (spvr_vp[ofx_viewIndex] * m) * instanced_pos;
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_forward_skinned_stereo
+  : vif_FWDTEST_SKINNED
+  : lib_skin_tools
+  : lib_pbr_vtx
+  : ublk_std_matrices
+  : ublk_stereo {
+  vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
+  vec3 skn_nrm = SkinNormal(normal);
+  vec3 skn_bit = SkinNormal(binormal);
+  vs_common(skn_pos, skn_nrm, skn_bit);
+  gl_Position = (spvr_vp[ofx_viewIndex] * m) * skn_pos;
+  frg_uv0 = uv0 * vec2(1, -1);
+  frg_clr = vec4(1,1,1,1);
+  frg_modcolor = vec4(1,1,1,1);
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_forward_depthprepass_stereo
+  : vif_DPP
+  : ublk_std_matrices
+  : ublk_stereo {
+  vec4 hpos    = (spvr_vp[ofx_viewIndex] * m) * position;
+  gl_Position  = hpos;
+  frg_depth =  (hpos.z/hpos.w);
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_forward_test_vtxcol_stereo
+  : vif_FWDTESTVC
+  : lib_pbr_vtx
+  : ublk_std_matrices
+  : ublk_stereo {
+  vs_common(position, normal, binormal);
+  gl_Position = (spvr_vp[ofx_viewIndex] * m) * position;
+  frg_uv0         = vec2(1,1);
+  frg_clr         = vtxcolor;
+  frg_modcolor    = vec4(1,1,1,1);
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_forward_instanced_vc_stereo
+  : vif_FWDTESTVC
+  : storage_instancing
+  : lib_pbr_vtx_instanced_vc
+  : ublk_stereo {
+  mat4 instancemtx = _instance_matrices[gl_InstanceIndex];
+  vec4 instanced_pos = instancemtx * position;
+  vs_instanced_vc(position, normal, binormal, vtxcolor);
+  gl_Position = (spvr_vp[ofx_viewIndex] * m) * instanced_pos;
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_forward_instanced_mtxonly_stereo
+  : vif_FWDTEST
+  : storage_inst_mtx
+  : lib_pbr_vtx_instanced_mtxonly
+  : ublk_stereo {
+  mat4 instancemtx = _instance_matrices[gl_InstanceIndex];
+  vec4 instanced_pos = instancemtx * position;
+  vs_instanced_mtxonly(position, normal, binormal);
+  gl_Position = (spvr_vp[ofx_viewIndex] * m) * instanced_pos;
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_forward_depthprepass_skinned_stereo
+  : vif_DPP_skinned
+  : lib_skin_tools
+  : ublk_std_matrices
+  : ublk_stereo {
+  vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
+  vec4 hpos    = (spvr_vp[ofx_viewIndex] * m) * skn_pos;
+  gl_Position  = hpos;
+  frg_depth = (hpos.z) / (hpos.w);
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_forward_depthprepass_instanced_stereo
+  : vif_DPP
+  : storage_instancing
+  : ublk_std_matrices
+  : ublk_stereo {
+  mat4 instancemtx = _instance_matrices[gl_InstanceIndex];
+  vec4 hpos    = (spvr_vp[ofx_viewIndex] * m) * (instancemtx * position);
+  gl_Position  = hpos;
+  frg_depth =  (hpos.z/hpos.w);
+}
+///////////////////////////////////////////////////////////////
+// MASKED depth-prepass _ST peers. Each keeps its _MO twin's frg_uv0 convention
+// verbatim — the whole point of the masked variants is that the depth alpha
+// sample hits the texel the color pass will shade, and that contract is
+// per-variant, not per-view.
+vertex_shader vs_forward_depthprepass_masked_stereo
+  : vif_DPP_UV
+  : ublk_std_matrices
+  : ublk_stereo {
+  vec4 hpos    = (spvr_vp[ofx_viewIndex] * m) * position;
+  gl_Position  = hpos;
+  frg_depth    = (hpos.z/hpos.w);
+  frg_uv0      = vec2(1,1) + (uv0 * vec2(1, -1)); // = vs_forward_test_stereo
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_forward_depthprepass_masked_skinned_stereo
+  : vif_DPP_UV_skinned
+  : lib_skin_tools
+  : ublk_std_matrices
+  : ublk_stereo {
+  vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
+  vec4 hpos    = (spvr_vp[ofx_viewIndex] * m) * skn_pos;
+  gl_Position  = hpos;
+  frg_depth    = (hpos.z/hpos.w);
+  frg_uv0      = uv0 * vec2(1, -1); // = vs_forward_skinned_stereo
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_forward_depthprepass_masked_instanced_stereo
+  : vif_DPP_UV
+  : storage_instancing
+  : ublk_std_matrices
+  : ublk_stereo {
+  mat4 instancemtx = _instance_matrices[gl_InstanceIndex];
+  vec4 hpos    = (spvr_vp[ofx_viewIndex] * m) * (instancemtx * position);
+  gl_Position  = hpos;
+  frg_depth    = (hpos.z/hpos.w);
+  frg_uv0      = uv0 * vec2(1, -1); // = lib_pbr_vtx_instanced vs_instanced
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_forward_test_vtxcolor : vif_PNBC : lib_pbr_vtx : ublk_std_matrices {
@@ -591,6 +914,7 @@ libblock std_forward_all
 fragment_shader ps_forward_skybox_mono //
     : fif_PC                    //
     : lib_envmapping
+    : lib_env_decode            // procedural-capture pre-scale (see stdtools)
     : std_forward_all
      { //
 
@@ -618,9 +942,246 @@ fragment_shader ps_forward_skybox_mono //
 
   // Sample environment
   vec2 uv = env_equirectangularN2UVa(VN_transformed);
-  vec3 rgb  = textureLod(MapSpecularEnv, vec3(uv.x, 1.0-uv.y,0.0),0).xyz * SkyboxLevel;
+  vec3 rgb  = env_decodeCapture(textureLod(MapSpecularEnv, vec3(uv.x, 1.0-uv.y,0.0),0).xyz) * SkyboxLevel;
 
   out_clr     = vec4(rgb, 1);
+  out_diffuse = vec4(0, 0, 0, 0);   // P3.D — non-PBR pass; no diffuse contribution, no SSSS mask
+
+  ///////////////////////
+}
+///////////////////////////////////////////////////////////////
+// Forward SkyBox — SINGLE-PASS STEREO peer of ps_forward_skybox_mono.
+//
+// The skybox is the one _ST peer whose per-view difference is in the FRAGMENT
+// stage: the vertex stage emits a fullscreen NDC quad identical for both views
+// (so FWD_SKYBOX_ST reuses vs_forward_skybox_mono unchanged), and the view ray
+// is derived by unprojecting through inv_vp. Per view that unprojection must
+// use that view's inverse — hence spvr_inv_vp[ofx_viewIndex] here where the
+// mono twin reads inv_vp. Everything else is its twin verbatim; the body is
+// duplicated rather than factored because factoring would rewrite the mono
+// stage's emitted GLSL, and the mono path is byte-identity-bound.
+///////////////////////////////////////////////////////////////
+fragment_shader ps_forward_skybox_stereo //
+    : fif_PC                    //
+    : lib_envmapping
+    : lib_env_decode            // procedural-capture pre-scale (see stdtools)
+    : std_forward_all
+    : ublk_stereo
+     { //
+
+  ///////////////////////
+  // compute view normal vector
+  ///////////////////////
+
+  vec2 uvn = frg_clr.xy;
+
+  mat4 view_inv_vp = spvr_inv_vp[ofx_viewIndex];
+
+  vec4 xyzw = vec4(uvn, 0, 1);
+  xyzw      = view_inv_vp * xyzw;
+  xyzw.xyz *= (1.0 / xyzw.w);
+  vec3 posA = xyzw.xyz;
+  xyzw      = vec4(uvn, 1, 1);
+  xyzw      = view_inv_vp * xyzw;
+  xyzw.xyz *= (1.0 / xyzw.w);
+  vec3 posB = xyzw.xyz;
+  vec3 VN   = normalize(posA - posB);
+
+  ///////////////////////
+  // environment map
+  ///////////////////////
+
+  vec3 VN_transformed = vec3(VN.x, VN.y, -VN.z);
+
+  // Sample environment
+  vec2 uv = env_equirectangularN2UVa(VN_transformed);
+  vec3 rgb  = env_decodeCapture(textureLod(MapSpecularEnv, vec3(uv.x, 1.0-uv.y,0.0),0).xyz) * SkyboxLevel;
+
+  out_clr     = vec4(rgb, 1);
+  out_diffuse = vec4(0, 0, 0, 0);   // P3.D — non-PBR pass; no diffuse contribution, no SSSS mask
+
+  ///////////////////////
+}
+///////////////////////////////////////////////////////////////
+// Forward SkyBox — PROCEDURAL (SKYLIGHT lane B, FWD_SKYBOX_PROC).
+//  Same fullscreen quad and same ray derivation as the baked technique above;
+//  the envmap sample is replaced by the Hillaire sky-view LUT plus an analytic
+//  sun disc. It deliberately does NOT sample MapSpecularEnv (spec T10) — in
+//  procedural mode the visible sky is decoupled from IBL freshness — so the
+//  interfaces the baked path needs for that (std_forward_all / sset_std_pbr)
+//  are NOT inherited here.
+//  inv_vp arrives from the translation-stripped MONO provider, which makes this
+//  per-eye correct under DMVR with no stereo-specific code (L1/L4).
+///////////////////////////////////////////////////////////////
+fragment_shader ps_forward_skybox_proc //
+    : fif_PC                    //
+    : ublk_std_matrices         //
+    : ublk_sky_cookie           //
+    : sset_sky_cookie           //
+    : lib_sky
+     { //
+
+  ///////////////////////
+  // compute view normal vector
+  ///////////////////////
+
+  vec2 uvn = frg_clr.xy;
+
+  vec4 xyzw = vec4(uvn, 0, 1);
+  xyzw      = inv_vp * xyzw;
+  xyzw.xyz *= (1.0 / xyzw.w);
+  vec3 posA = xyzw.xyz;
+  xyzw      = vec4(uvn, 1, 1);
+  xyzw      = inv_vp * xyzw;
+  xyzw.xyz *= (1.0 / xyzw.w);
+  vec3 posB = xyzw.xyz;
+  // NOTE the sign: this is the OUTWARD view ray (near -> far). The baked
+  // technique above derives the opposite vector and folds the sign back into
+  // its equirect lookup (the -VN.z + 1-uv.y there); the atmosphere math takes
+  // a true world-space view direction, so it is derived correctly here rather
+  // than compensated for downstream.
+  vec3 VN   = normalize(posB - posA);
+
+  ///////////////////////
+  // atmosphere
+  //  SkyRadii.z is the CENTER-EYE altitude this frame's sky-view LUT was baked
+  //  at and SkySunDirection is that same bake's sun, so the disc and the sky can
+  //  never disagree about where the sun is.
+  ///////////////////////
+
+  vec3 up      = vec3(0, 1, 0);
+  vec3 sun_dir = normalize(SkySunDirection.xyz);
+  float view_r = SkyRadii.x + max(SkyRadii.z, 0.0);
+
+  vec3 rgb = skySampleSkyView(VN, sun_dir, up, view_r);
+
+  ///////////////////////
+  // CLOUD LAYER SEAM — the discs are attenuated by the SAME cloud
+  // transmittance that shades the ground (the sun cookie, sampled at the eye).
+  // It has to happen HERE, on the disc's RADIANCE: the decks composite over
+  // this pass later, and premultiplied compositing can never extinguish a disc
+  // whose intensity is orders of magnitude past full scale — the deck's own
+  // alpha caps what it can subtract, so a cloud in front of the sun stayed a
+  // bright hole. Attenuating pre-tonemap is what makes the sun go out.
+  ///////////////////////
+
+  // EXTINCTION IS BEER-LAMBERT, and it is the BEAM's, not the disc's: the same
+  // exp(-tau*a) the ground direct term applies (fwdtools _sun_cookie_factor)
+  // with the same tau, because a disc that keeps its light while the dirt below
+  // it goes dark would be two transmittances for one beam. What IS the disc's
+  // own is the sample LOD (SkyCookieParams.z) — a transit edge is crisp.
+  float cloud_trans = 1.0;
+  if (SkyCookieParams.w > 0.0) {
+    float a = textureLod(SkyCloudCookie, SkyCookieParams.xy, SkyCookieParams.z).w;
+    // strength in the EXPONENT, exactly as _sun_cookie_factor does it (a mix
+    // weight would floor the disc at 1-strength of its blinding radiance).
+    cloud_trans = exp(-SkyCookieBody.z * clamp(SkyCookieParams.w, 0.0, 1.0) * a);
+  }
+
+  rgb += skyEvalSunDisc(VN, sun_dir, up, view_r) * mix(1.0, cloud_trans, SkyCookieBody.x);
+  // the moon AFTER the sun: they are additive, and the moon's own gate
+  // (SkyMoonDirection.w) is what a scene with no declared moon costs.
+  rgb += skyEvalMoonDisc(VN, SkyMoonDirection.xyz, sun_dir, up, view_r)
+       * mix(1.0, cloud_trans, SkyCookieBody.y);
+
+  out_clr     = vec4(rgb * SkySunDisc.w, 1);
+  out_diffuse = vec4(0, 0, 0, 0);   // P3.D — non-PBR pass; no diffuse contribution, no SSSS mask
+
+  ///////////////////////
+}
+///////////////////////////////////////////////////////////////
+// Forward SkyBox PROCEDURAL — SINGLE-PASS STEREO peer of ps_forward_skybox_proc.
+//
+// The mono twin's inv_vp comes from the MONO per-draw provider, which is sound
+// under DMVR (one draw per eye, one matrix per draw) and collapses under SPVR:
+// one draw carries BOTH views and VR frusta are per-eye ASYMMETRIC, so no single
+// matrix can produce both eyes' rays. The per-view inverse lives in ublk_stereo
+// (written once per frame by the production writer), so the ONLY difference from
+// the twin is which matrix the unprojection uses — everything downstream, ray
+// sign included, is the twin verbatim.
+//
+// The body is duplicated rather than factored: factoring would rewrite the mono
+// stage's emitted GLSL, and the mono path is byte-identity-bound.
+//
+// The vertex stage is shared unchanged (vs_forward_skybox_mono): the fullscreen
+// NDC quad is the same for both views, which makes the skybox the one _ST peer
+// whose per-view difference is entirely in the FRAGMENT stage.
+///////////////////////////////////////////////////////////////
+fragment_shader ps_forward_skybox_proc_stereo //
+    : fif_PC                    //
+    : ublk_std_matrices         //
+    : ublk_sky_cookie           //
+    : sset_sky_cookie           //
+    : lib_sky
+    : ublk_stereo
+     { //
+
+  ///////////////////////
+  // compute view normal vector
+  ///////////////////////
+
+  vec2 uvn = frg_clr.xy;
+
+  mat4 view_inv_vp = spvr_inv_vp[ofx_viewIndex];
+
+  vec4 xyzw = vec4(uvn, 0, 1);
+  xyzw      = view_inv_vp * xyzw;
+  xyzw.xyz *= (1.0 / xyzw.w);
+  vec3 posA = xyzw.xyz;
+  xyzw      = vec4(uvn, 1, 1);
+  xyzw      = view_inv_vp * xyzw;
+  xyzw.xyz *= (1.0 / xyzw.w);
+  vec3 posB = xyzw.xyz;
+  // NOTE the sign: this is the OUTWARD view ray (near -> far). The baked
+  // technique above derives the opposite vector and folds the sign back into
+  // its equirect lookup (the -VN.z + 1-uv.y there); the atmosphere math takes
+  // a true world-space view direction, so it is derived correctly here rather
+  // than compensated for downstream.
+  vec3 VN   = normalize(posB - posA);
+
+  ///////////////////////
+  // atmosphere
+  //  SkyRadii.z is the CENTER-EYE altitude this frame's sky-view LUT was baked
+  //  at and SkySunDirection is that same bake's sun, so the disc and the sky can
+  //  never disagree about where the sun is.
+  ///////////////////////
+
+  vec3 up      = vec3(0, 1, 0);
+  vec3 sun_dir = normalize(SkySunDirection.xyz);
+  float view_r = SkyRadii.x + max(SkyRadii.z, 0.0);
+
+  vec3 rgb = skySampleSkyView(VN, sun_dir, up, view_r);
+
+  ///////////////////////
+  // CLOUD LAYER SEAM — the discs are attenuated by the SAME cloud
+  // transmittance that shades the ground (the sun cookie, sampled at the eye).
+  // It has to happen HERE, on the disc's RADIANCE: the decks composite over
+  // this pass later, and premultiplied compositing can never extinguish a disc
+  // whose intensity is orders of magnitude past full scale — the deck's own
+  // alpha caps what it can subtract, so a cloud in front of the sun stayed a
+  // bright hole. Attenuating pre-tonemap is what makes the sun go out.
+  ///////////////////////
+
+  // EXTINCTION IS BEER-LAMBERT, and it is the BEAM's, not the disc's: the same
+  // exp(-tau*a) the ground direct term applies (fwdtools _sun_cookie_factor)
+  // with the same tau, because a disc that keeps its light while the dirt below
+  // it goes dark would be two transmittances for one beam. What IS the disc's
+  // own is the sample LOD (SkyCookieParams.z) — a transit edge is crisp.
+  float cloud_trans = 1.0;
+  if (SkyCookieParams.w > 0.0) {
+    float a = textureLod(SkyCloudCookie, SkyCookieParams.xy, SkyCookieParams.z).w;
+    // strength in the EXPONENT, exactly as _sun_cookie_factor does it (a mix
+    // weight would floor the disc at 1-strength of its blinding radiance).
+    cloud_trans = exp(-SkyCookieBody.z * clamp(SkyCookieParams.w, 0.0, 1.0) * a);
+  }
+
+  rgb += skyEvalSunDisc(VN, sun_dir, up, view_r) * mix(1.0, cloud_trans, SkyCookieBody.x);
+  // the moon AFTER the sun: they are additive, and the moon's own gate
+  // (SkyMoonDirection.w) is what a scene with no declared moon costs.
+  rgb += skyEvalMoonDisc(VN, SkyMoonDirection.xyz, sun_dir, up, view_r)
+       * mix(1.0, cloud_trans, SkyCookieBody.y);
+
+  out_clr     = vec4(rgb * SkySunDisc.w, 1);
   out_diffuse = vec4(0, 0, 0, 0);   // P3.D — non-PBR pass; no diffuse contribution, no SSSS mask
 
   ///////////////////////

@@ -26,6 +26,23 @@ FxUniformBuffer* VkFxInterface::createUniformBuffer(size_t length) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+vkbuffer_ptr_t VkFxInterface::_zeroUniformBuffer(size_t length) {
+  auto it = _zero_ubo_buffers.find(length);
+  if (it != _zero_ubo_buffers.end())
+    return it->second;
+  auto buf = std::make_shared<VulkanBuffer>(
+      _contextVK, //
+      length,     //
+      VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+      FormatString("zero-ubo-%zu", length));
+  std::vector<uint8_t> zeros(length, 0);
+  buf->copyFromHost(zeros.data(), length);
+  _zero_ubo_buffers[length] = buf;
+  return buf;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 fxuniformbuffermapping_ptr_t VkFxInterface::mapUniformBuffer(FxUniformBuffer* b, //
                                                              size_t base, //
                                                              size_t length) { //

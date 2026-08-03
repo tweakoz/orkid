@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 850" font-family="Arial, Helvetica, sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#666"/>
+    </marker>
+    <filter id="shadow">
+      <feDropShadow dx="2" dy="2" stdDeviation="2" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  <rect x="0" y="0" width="1000" height="850" fill="#1a1a2e"/>
+  <text x="30" y="32" font-size="18" font-weight="bold" fill="white">Particle module class hierarchy</text>
+  <text x="30" y="54" font-size="12" fill="#9ca3af">all classes are serialized Data (blue); exposed in Python as orkengine.lev2.particles</text>
+
+  <!-- root chain -->
+  <rect x="385" y="68" width="230" height="34" rx="6" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="500" y="90" font-size="12.5" font-weight="bold" font-family="monospace" fill="white" text-anchor="middle">dflow::DgModuleData</text>
+  <line x1="500" y1="102" x2="500" y2="116" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+  <rect x="385" y="118" width="230" height="34" rx="6" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="500" y="140" font-size="12.5" font-weight="bold" font-family="monospace" fill="white" text-anchor="middle">particle::ModuleData</text>
+  <line x1="500" y1="152" x2="500" y2="166" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+  <rect x="370" y="168" width="260" height="34" rx="6" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="500" y="190" font-size="12.5" font-weight="bold" font-family="monospace" fill="white" text-anchor="middle">particle::ParticleModuleData</text>
+  <line x1="500" y1="202" x2="500" y2="220" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="500" y="238" font-size="12" font-style="italic" fill="#9ca3af" text-anchor="middle">subclasses, by role</text>
+
+  <!-- G1 core -->
+  <rect x="30" y="252" width="300" height="164" rx="10" fill="#252540" stroke="#4a5568" stroke-width="2" filter="url(#shadow)"/>
+  <text x="44" y="274" font-size="13" font-weight="bold" fill="white">core state &amp; parameters</text>
+  <rect x="44" y="286" width="272" height="24" rx="5" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="54" y="302" font-size="12" font-family="monospace" fill="white">GlobalModuleData</text>
+  <rect x="44" y="316" width="272" height="24" rx="5" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="54" y="332" font-size="12" font-family="monospace" fill="white">ParticlePoolData</text>
+  <rect x="44" y="346" width="272" height="24" rx="5" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="54" y="362" font-size="12" font-family="monospace" fill="white">ParametersModuleData</text>
+  <rect x="44" y="376" width="272" height="24" rx="5" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="54" y="392" font-size="12" font-family="monospace" fill="white">EntityRefModuleData</text>
+
+  <!-- G2 emitters -->
+  <rect x="350" y="252" width="300" height="164" rx="10" fill="#252540" stroke="#4a5568" stroke-width="2" filter="url(#shadow)"/>
+  <text x="364" y="274" font-size="13" font-weight="bold" fill="white">emitters</text>
+  <rect x="364" y="286" width="272" height="24" rx="5" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="374" y="302" font-size="12" font-family="monospace" fill="white">RingEmitterData</text>
+  <rect x="364" y="316" width="272" height="24" rx="5" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="374" y="332" font-size="12" font-family="monospace" fill="white">NozzleEmitterData</text>
+  <rect x="364" y="346" width="272" height="24" rx="5" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="374" y="362" font-size="12" font-family="monospace" fill="white">LineEmitterData</text>
+  <rect x="364" y="376" width="272" height="24" rx="5" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="374" y="392" font-size="12" font-family="monospace" fill="white">EllipticalEmitterData</text>
+
+  <!-- G3 transforms -->
+  <rect x="670" y="252" width="300" height="164" rx="10" fill="#252540" stroke="#4a5568" stroke-width="2" filter="url(#shadow)"/>
+  <text x="684" y="274" font-size="13" font-weight="bold" fill="white">transforms &amp; math</text>
+  <rect x="684" y="286" width="272" height="24" rx="5" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="694" y="302" font-size="12" font-family="monospace" fill="white">TransformPointModuleData</text>
+  <rect x="684" y="316" width="272" height="24" rx="5" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="694" y="332" font-size="12" font-family="monospace" fill="white">TransformDirModuleData</text>
+  <rect x="684" y="346" width="272" height="24" rx="5" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="694" y="362" font-size="12" font-family="monospace" fill="white">Vec3AddModuleData</text>
+  <rect x="684" y="376" width="272" height="24" rx="5" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="694" y="392" font-size="12" font-family="monospace" fill="white">Vec3CombineModuleData</text>
+
+  <!-- G4 forces -->
+  <rect x="30" y="446" width="300" height="374" rx="10" fill="#252540" stroke="#4a5568" stroke-width="2" filter="url(#shadow)"/>
+  <text x="44" y="468" font-size="13" font-weight="bold" fill="white">forces</text>
+  <rect x="44" y="480" width="272" height="24" rx="5" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="54" y="496" font-size="12" font-family="monospace" fill="white">GravityModuleData</text>
+  <rect x="44" y="510" width="272" height="24" rx="5" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="54" y="526" font-size="12" font-family="monospace" fill="white">DirectionalForceModuleData</text>
+  <rect x="44" y="540" width="272" height="24" rx="5" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="54" y="556" font-size="12" font-family="monospace" fill="white">ExprForceModuleData</text>
+  <rect x="44" y="570" width="272" height="24" rx="5" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="54" y="586" font-size="12" font-family="monospace" fill="white">TurbulenceModuleData</text>
+  <rect x="44" y="600" width="272" height="24" rx="5" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="54" y="616" font-size="12" font-family="monospace" fill="white">CurlNoiseForceModuleData</text>
+  <rect x="44" y="630" width="272" height="24" rx="5" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="54" y="646" font-size="12" font-family="monospace" fill="white">VortexModuleData</text>
+  <rect x="44" y="660" width="272" height="24" rx="5" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="54" y="676" font-size="12" font-family="monospace" fill="white">DragModuleData</text>
+  <rect x="44" y="690" width="272" height="24" rx="5" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="54" y="706" font-size="12" font-family="monospace" fill="white">PolyDragModuleData</text>
+  <rect x="44" y="720" width="272" height="24" rx="5" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="54" y="736" font-size="12" font-family="monospace" fill="white">SphAttractorModuleData</text>
+  <rect x="44" y="750" width="272" height="24" rx="5" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="54" y="766" font-size="12" font-family="monospace" fill="white">EllipticalAttractorModuleData</text>
+  <rect x="44" y="780" width="272" height="24" rx="5" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="54" y="796" font-size="12" font-family="monospace" fill="white">PointAttractorModuleData</text>
+
+  <!-- G5 colliders -->
+  <rect x="350" y="446" width="300" height="132" rx="10" fill="#252540" stroke="#4a5568" stroke-width="2" filter="url(#shadow)"/>
+  <text x="364" y="468" font-size="13" font-weight="bold" fill="white">colliders</text>
+  <rect x="364" y="480" width="272" height="24" rx="5" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="374" y="496" font-size="12" font-family="monospace" fill="white">PlaneColliderModuleData</text>
+  <rect x="364" y="510" width="272" height="24" rx="5" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="374" y="526" font-size="12" font-family="monospace" fill="white">SphereColliderModuleData</text>
+  <rect x="364" y="540" width="272" height="24" rx="5" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="374" y="556" font-size="12" font-family="monospace" fill="white">VdbColliderModuleData (SDF grid)</text>
+
+  <!-- note under colliders -->
+  <rect x="350" y="600" width="300" height="88" rx="10" fill="#252540" stroke="#6b7280" stroke-dasharray="5,4"/>
+  <text x="364" y="624" font-size="12" fill="#9ca3af">particle buffers flow module → module</text>
+  <text x="364" y="642" font-size="12" fill="#9ca3af">via ParticleBufferPlugTraits</text>
+  <text x="364" y="660" font-size="12" fill="#9ca3af">(max_fanout = 1 — see the</text>
+  <text x="364" y="678" font-size="12" fill="#9ca3af">pipeline diagram)</text>
+
+  <!-- G6 renderers -->
+  <rect x="670" y="446" width="300" height="192" rx="10" fill="#252540" stroke="#4a5568" stroke-width="2" filter="url(#shadow)"/>
+  <text x="684" y="468" font-size="13" font-weight="bold" fill="white">renderers</text>
+  <rect x="684" y="480" width="272" height="24" rx="5" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="694" y="496" font-size="12" font-family="monospace" fill="white">RendererModuleData (base)</text>
+  <line x1="694" y1="504" x2="694" y2="622" stroke="#4a5568"/>
+  <rect x="704" y="510" width="252" height="24" rx="5" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="714" y="526" font-size="12" font-family="monospace" fill="white">SpriteRendererData</text>
+  <rect x="704" y="540" width="252" height="24" rx="5" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="714" y="556" font-size="12" font-family="monospace" fill="white">StreakRendererData</text>
+  <rect x="704" y="570" width="252" height="24" rx="5" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="714" y="586" font-size="12" font-family="monospace" fill="white">LightRendererData</text>
+  <rect x="704" y="600" width="252" height="24" rx="5" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="714" y="616" font-size="12" font-family="monospace" fill="white">VdbLevelSetRendererData</text>
+</svg>

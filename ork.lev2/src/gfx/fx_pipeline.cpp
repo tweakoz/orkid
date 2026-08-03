@@ -29,6 +29,8 @@ uint64_t FxPipelinePermutation::genIndex() const {
   index += (uint64_t(_is_vertex_ssbo) << 7);
   index += (uint64_t(_instanced_matrices_only) << 8);
   index += (uint64_t(_is_impostor) << 9);
+  index += (uint64_t(_is_mesh_shader) << 10);
+  index += (uint64_t(_is_sun_cookie) << 11);
   index += (uint64_t(_rendering_model) << 16);
 
   auto tekovr = uint64_t((const void*)_forced_technique);
@@ -325,20 +327,49 @@ FxPipelineNamedParamProviders::FxPipelineNamedParamProviders() {
   /////////////////////////////////////////////////////////////////
   _providers["RCFD_PBR_BRDF_INTEGRATION_GGX"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
     auto pbrcommon          = ppc._rcfd->_pbrcommon;
-    auto brdf_integration = pbrcommon->_radiance_maps->_brdfIntegrationMapGGX.get();
+    // SKYLIGHT B3: from the ACTIVE maps, so it pairs with the env textures the
+    // sibling providers bind (same object as _radiance_maps in baked scenes).
+    auto brdf_integration = pbrcommon->activeRadianceMaps()->_brdfIntegrationMapGGX.get();
     ppc._fxi->bindParamTexture(param, brdf_integration);
   };
   /////////////////////////////////////////////////////////////////
-  _providers["RCFD_PBR_DIFFUSE_ENV"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
-    auto pbrcommon          = ppc._rcfd->_pbrcommon;
-    auto the_tex = pbrcommon->envDiffuseTexture().get();
-    ppc._fxi->bindParamTexture(param, the_tex);
+  // THE DIFFUSE AMBIENT (W4-S9) — nine L2 coefficients, not a map. Every
+  // consumer of the shared PBR sampler set reads the ambient through these,
+  // the sky probe's or the bound map set's alike (CommonStuff::envSHCoeffs).
+  _providers["RCFD_PBR_ENV_SH"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto pbrcommon = ppc._rcfd->_pbrcommon;
+    fvec4 sh[9]    = {};
+    pbrcommon->envSHCoeffs(sh);
+    ppc._fxi->bindParamVect4Array(param, sh, 9);
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_PBR_ENV_SH_VALID"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto pbrcommon = ppc._rcfd->_pbrcommon;
+    fvec4 sh[9]    = {};
+    ppc._fxi->bindParamFloat(param, pbrcommon->envSHCoeffs(sh) ? 1.0f : 0.0f);
   };
   /////////////////////////////////////////////////////////////////
   _providers["RCFD_PBR_SPECULAR_ENV"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
     auto pbrcommon          = ppc._rcfd->_pbrcommon;
     auto the_tex = pbrcommon->envSpecularTexture().get();
     ppc._fxi->bindParamTextureArray(param, the_tex);
+  };
+  /////////////////////////////////////////////////////////////////
+  // The outgoing IBL set + its blend weight while a procedural refilter
+  // crossfades. Aliases the specular bind above (weight 1) whenever no fade is
+  // running, so a consumer that binds both is unchanged outside a fade window.
+  // The ambient does not appear here: its crossfade is resolved on the CPU,
+  // inside envSHCoeffs, so one set of coefficients covers the pair.
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_PBR_SPECULAR_ENV_PREV"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto pbrcommon          = ppc._rcfd->_pbrcommon;
+    auto the_tex = pbrcommon->envSpecularTexturePrev().get();
+    ppc._fxi->bindParamTextureArray(param, the_tex);
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_PBR_ENV_BLEND_WEIGHT"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto pbrcommon          = ppc._rcfd->_pbrcommon;
+    ppc._fxi->bindParamFloat(param, pbrcommon->envCrossfadeWeight());
   };
   /////////////////////////////////////////////////////////////////
   _providers["RCFD_PBR_BLACK_2DMAP"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
@@ -741,6 +772,8 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
       OrkAssert(false);
     }
   } else {
+    auto name = param->_name;
+    printf("bad type<%s> for param<%s>\n", val.typeName(), name.c_str() );
     OrkAssert(false);
   }
 }
@@ -755,33 +788,73 @@ void FxPipeline::endBlock(const RenderContextInstData& RCID) {
   context->FXI()->EndBlock();
 }
 ///////////////////////////////////////////////////////////////////////////////
+// GATE 0 NEGATIVE CONTROL 2 — "force the mono technique inside the stereo pass".
+//
+// A RUNTIME TECHNIQUE-SELECTION override, cache-honest by construction: it clears the
+// _stereo permutation bit, so the cache hands back a genuinely different (mono) pipeline
+// rather than a mislabelled one. The pass keeps its viewMask armed, so both views still
+// render — they just render the same mono clip transform, and the two layers come back
+// identical. That identical pair IS the control's required outcome: it proves the gate can
+// see loss-of-parallax, rather than merely asserting that it would.
+//
+// ONE cached read, called from EVERY stereo-selection entry point, so no two sites can
+// disagree about whether the control is armed — a control that is honored on one path and
+// silently bypassed on the path the gate actually draws through is a false pass, which is
+// the single failure mode this whole control exists to rule out.
+//
+// Default OFF; announces itself once when armed (a control nobody can prove was armed is
+// not a control). Never referenced by production code paths.
+///////////////////////////////////////////////////////////////////////////////
+
+bool gate0ForceMonoTechnique() {
+  static const bool _armed = []() -> bool {
+    auto env = std::getenv("ORKID_GATE0_FORCE_MONO_TEK");
+    bool on  = env and (std::string(env) == "1");
+    if (on)
+      printf("GATE0: ORKID_GATE0_FORCE_MONO_TEK=1 — _MO techniques FORCED inside stereo passes\n");
+    return on;
+  }();
+  return _armed;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 fxpipeline_ptr_t FxPipelineCache::findPipeline(const RenderContextInstData& RCID) const {
   auto RCFD    = RCID.rcfd();
   auto context = RCFD->_target;
   auto fxi     = context->FXI();
   bool stereo  = RCFD->hasCPD() ? RCFD->topCPD().isSinglePassStereo() : false;
   bool picking = RCFD->hasCPD() ? RCFD->topCPD().isPicking() : false;
+  bool cookie  = RCFD->hasCPD() ? RCFD->topCPD()._sunCookiePass : false;
+  // GATE 0 NC2 SITE 1 of 2 — invariant: EVERY stereo-selection entry the gate exercises
+  //  honors this hook, and the gate bypasses none of them (see gate0ForceMonoTechnique).
+  if (gate0ForceMonoTechnique())
+    stereo = false;
   /////////////////
   FxPipelinePermutation permu;
   permu._stereo = stereo;
-#if defined(__APPLE__)
-  permu._stereo  = stereo;
-  permu._vr_mono = stereo;
-#endif
 
   permu._skinned          = RCID._isSkinned;
   permu._instanced        = RCID._isInstanced;
   permu._is_vertex_ssbo   = RCID._isSSBOSourced;
   permu._is_impostor      = RCID._isImpostor;
+  permu._is_mesh_shader   = RCID._isMeshSourced;
   permu._forced_technique = RCID._forced_technique;
   permu._is_picking       = picking;
+  permu._is_sun_cookie    = cookie;
   permu._rendering_model  = RCFD->_renderingmodel._modelID;
   // permu.dump();
   /////////////////
   return findPipeline(permu);
 }
 ///////////////////////////////////////////////////////////////////////////////
-fxpipeline_ptr_t FxPipelineCache::findPipeline(const FxPipelinePermutation& permu) const {
+fxpipeline_ptr_t FxPipelineCache::findPipeline(const FxPipelinePermutation& permu_in) const {
+  // GATE 0 NC2 SITE 2 of 2 — same invariant as site 1. This overload is the entry a
+  //  BELOW-THE-COMPOSITOR caller uses (it hands its own permutation rather than deriving
+  //  one from frame data), so the hook has to bite here too or a gate drawing through it
+  //  would report a control it never actually armed.
+  FxPipelinePermutation permu = permu_in;
+  if (gate0ForceMonoTechnique())
+    permu._stereo = false;
   fxpipeline_ptr_t pipeline;
   uint64_t index = permu.genIndex();
   auto it        = _lut.find(index);

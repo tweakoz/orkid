@@ -35,6 +35,28 @@ struct Context {
   HandlerResult handleEvent(event_constptr_t ev);
   HandlerResult _handleEventImpl(event_constptr_t ev);
   HandlerResult _dispatchToTarget(Widget* target, event_constptr_t ev);
+  // Synthesize a CANCELED END_DRAG to the live drag-capture target (if any) and
+  // clear the capture. Every capture-clearing path that is NOT a genuine release
+  // routes through here so the captured widget always learns the drag ended.
+  // (F2) Thin driver over the drag-capture HFSM: sends the 'cancel' event.
+  void _cancelDragCapture(event_constptr_t ev);
+  // Drag-capture lifecycle as an explicit HFSM (ork::fsm). Two states: idle /
+  // dragging. The F1 invariant — every exit from 'dragging' emits an END_DRAG to
+  // the captured widget (canceled unless it was a genuine RELEASE) — is a
+  // STRUCTURAL property of the machine (onExit of the 'dragging' state), not a
+  // discipline the individual event cases must each remember. Preserve-class
+  // events (window enter/leave synthesized focus loss) define NO transition out
+  // of 'dragging', so drag capture survives them structurally (the F1 keystone).
+  //
+  // ROLE: this machine is THE authority on the drag lifecycle. Widgets that
+  // track an in-progress drag (e.g. DockSpace's session state, dock_space.h)
+  // are downstream CONSUMERS of the BEGIN_DRAG / END_DRAG(canceled) events it
+  // emits — they never decide when a drag begins or ends, and they are
+  // deliberately NOT state machines themselves (owner adjudication 2026-07-23).
+  void _buildDragFsm();
+  void _dragFsmBegin(event_constptr_t ev);              // arm push target -> capture (emit BEGIN_DRAG)
+  void _dragFsmEnd(event_constptr_t ev, bool canceled); // leave capture (emit END_DRAG [canceled])
+  void _dragFsmDrive(event_constptr_t ev, const char* evname, bool canceled);
   // void updateMouseFocus(const HandlerResult& r, event_constptr_t Ev);
   bool hasMouseFocus(const Widget* w) const;
   //////////////////////////////////////
@@ -81,6 +103,14 @@ struct Context {
   std::unordered_map<Widget*,tick_lambda_t> _tickSubscribers;
   Event _prevevent;
   event_ptr_t _tempevent;
+  // drag-capture HFSM (see _buildDragFsm). _dragFsmEvent/_dragFsmCanceled carry
+  // the driving ui event + cancel-flag into the state onEnter/onExit callbacks.
+  fsm::fsmdata_ptr_t     _dragFsmData;
+  fsm::fsminstance_ptr_t _dragFsm;
+  fsm::state_ptr_t       _dragStateIdle;
+  fsm::state_ptr_t       _dragStateDragging;
+  event_constptr_t       _dragFsmEvent;
+  bool                   _dragFsmCanceled = false;
   Timer _uitimer;
   // Click-clock virtualization for deterministic replay: when _use_virtual_time is
   // set, handleEvent reads _virtual_time instead of the wall-clock _uitimer, so

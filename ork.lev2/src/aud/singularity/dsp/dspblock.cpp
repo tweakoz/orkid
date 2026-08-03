@@ -18,11 +18,53 @@
 #include <ork/lev2/aud/singularity/cz1.h>
 #include <ork/lev2/aud/singularity/sampler.h>
 #include <ork/lev2/aud/singularity/hud.h>
+#include <ork/lev2/aud/singularity/keyon_prof.h>
 #include <ork/reflect/properties/registerX.inl>
 
 ImplementReflectionX(ork::audio::singularity::DspBlockData, "SynDspBlock");
 
 namespace ork::audio::singularity {
+
+//////////////////////////////////////////////////////////////////////////////
+// dsp instance storage recycler (see dspblocks.h). one lock-free free list per
+//  size class; a class hands back blocks of the FULL class size, so any request
+//  that maps to the class can be served by any of its entries.
+//////////////////////////////////////////////////////////////////////////////
+
+static constexpr size_t kinstclassshift = 8;                    // 256 byte granularity
+static constexpr size_t kinstnumclasses = 64;                   // ... up to 16KB
+static constexpr size_t kinstclasscap   = 1024;                 // entries per class
+static constexpr size_t kinstmaxbytes   = kinstnumclasses << kinstclassshift;
+
+using instfreelist_t = MpMcBoundedQueue<void*, kinstclasscap>;
+static instfreelist_t _instfreelists[kinstnumclasses];
+static std::atomic<size_t> _instpoolmisses(0);
+
+void* dspInstanceAlloc(size_t nbytes) {
+  if (0 == nbytes or nbytes > kinstmaxbytes) {
+    _instpoolmisses.fetch_add(1, std::memory_order_relaxed);
+    return ::operator new(nbytes, std::align_val_t(kdspinstancealign));
+  }
+  size_t klass = (nbytes - 1) >> kinstclassshift;
+  void* recycled = nullptr;
+  if (_instfreelists[klass].try_pop(recycled))
+    return recycled;
+  _instpoolmisses.fetch_add(1, std::memory_order_relaxed);
+  return ::operator new((klass + 1) << kinstclassshift, std::align_val_t(kdspinstancealign));
+}
+
+void dspInstanceFree(void* ptr, size_t nbytes) {
+  if (nbytes > 0 and nbytes <= kinstmaxbytes) {
+    size_t klass = (nbytes - 1) >> kinstclassshift;
+    if (_instfreelists[klass].try_push(ptr))
+      return;
+  }
+  ::operator delete(ptr, std::align_val_t(kdspinstancealign));
+}
+
+size_t dspInstancePoolMisses() {
+  return _instpoolmisses.load(std::memory_order_relaxed);
+}
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -110,11 +152,14 @@ DspParam DspBlock::initDspParam(dspparam_constptr_t dpd) {
 
 void DspBlock::keyOn(const KeyOnInfo& koi) {
   _layer = koi._layer;
-  // HERE
-  for (int i = 0; i < _numParams; i++) {
-    _param[i] = initDspParam(_dbd->_paramd[i]);
-    _param[i].keyOn(koi._key, koi._vel);
+  {
+    KeyOnProfScope profparam(KOP_BLKPARAM);
+    for (int i = 0; i < _numParams; i++) {
+      _param[i] = initDspParam(_dbd->_paramd[i]);
+      _param[i].keyOn(koi._key, koi._vel);
+    }
   }
+  KeyOnProfScope profdko(KOP_BLKDOKEYON);
   doKeyOn(koi);
 }
 
@@ -155,7 +200,7 @@ NOPDATA::NOPDATA() {
   _blocktype = "NOP";
 }
 dspblk_ptr_t NOPDATA::createInstance() const { // override
-  return std::make_shared<NOP>(this);
+  return createDspInstance<NOP>(this);
 }
 
 NOP::NOP(const DspBlockData* dbd)

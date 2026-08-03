@@ -21,6 +21,7 @@ from orkengine.lev2 import (PostFxNodeHSVG, PostFxNodeACES, PbrCommon,
                             StringDrawableData, ui)
 from ork.app.application import ComponentizedApplication
 from ork.hypergraph.ecs import EcsRuntime
+from ork.hypergraph.ecs.audio_manifest import scene_disables_audio
 
 tokens = CrcStringProxy()
 
@@ -35,7 +36,22 @@ parser.add_argument("-e", "--envmap", default="",
                     help="initial envmap (shortname in <assetcache>/envmaps2/, "
                          "or absolute / <bracketed> path; empty = scene default)")
 parser.add_argument("--ssaa", type=int, default=1, help="SSAA multiplier (0=off)")
+parser.add_argument("--no-audio", action="store_true",
+                    help="Disable audio (sound emitters / global synth stay silent, "
+                         "no device opened). Default is audio ON, same as always; a "
+                         "scene can opt itself out via a top-level \"audio\": false "
+                         "beside \"root\" in its .ecs manifest (mirrors ork.ecs.player.exe's "
+                         "manifest peek, inverted for ecsplay's default-on behavior).")
 args = parser.parse_args()
+
+# Resolved once, before createEzApp — the manifest peek must run pre-GPU-init
+# (same timing constraint as the C++ player's peek). --no-audio always wins;
+# absent that, a scene-declared "audio": false opts out; otherwise audio stays
+# ON by default (back-compat).
+AUDIO_ENABLED = not (args.no_audio or scene_disables_audio(args.scene))
+if not AUDIO_ENABLED:
+  reason = "--no-audio" if args.no_audio else "scene manifest \"audio\":false"
+  print(f"ork.ecsplay: AUDIO disabled ({reason})")
 
 ################################################################################
 
@@ -75,9 +91,9 @@ class EcsPlayer(ComponentizedApplication):
     self.createEzApp(
       name="OrkidEcsPlayer",
       fullscreen=args.fullscreen,
-      enable_audio=True,
-      enable_audio_output=True,
-      enable_audio_synth=True,
+      enable_audio=AUDIO_ENABLED,
+      enable_audio_output=AUDIO_ENABLED,
+      enable_audio_synth=AUDIO_ENABLED,
       pre_init_fns=[ecs.ecsInitCallback])
 
   ##############################################################################

@@ -8,6 +8,18 @@ user-invocable: false
 
 When answering questions about the dataflow system in orkid, consult these files.
 
+Full current architecture: `ork.dox/core/dataflow.md` (accuracy-passed 2026-08-01, incl. diagrams).
+
+## What's new (2026-06/07)
+
+- Composite modules `SubGraphModuleData` / `LoopModuleData` — nested GraphData with promoted boundary plugs, loop carries, index feeds (`ork.core/inc/ork/dataflow/subgraph_module.h`)
+- `CookGraphDriver` — family-neutral hook interface the composite runtime delegates nested cook/bake execution to (`ork.core/inc/ork/dataflow/cook_driver.h`)
+- Per-node Merkle cook cache — opt-in via `GraphData::_cacheable`; modules opt in per class via `DgModuleInst::cookComputeHash` / `cookStore` / `cookLoad`; `GraphInst::computeNodeHashes()` + `cachedCompute()`
+- `TypeKeyedVars _impl` on GraphData AND GraphInst — per-family runtime storage keyed by type, so families (hypermesh/terrain/particles) coexist on one graph
+- Bypass (`DgModuleData::_bypassed`) + select-as-output (`GraphData::_output_node`) — first-class serialized graph state; bypassed modules splice out via `resolveConnectedOutput()`
+- Python introspection `dflow.plugSpec()` / `dflow.moduleClasses()` — plug schemas and node registry straight from reflection (`ork.core/pyext/pyext_dataflow.cpp`)
+- Generic family-neutral modules Min/Max/Lerp/Pow/Vec4Combine (`ork.core/inc/ork/dataflow/basic_modules.h`)
+
 ## Key Files
 
 | Component | Location |
@@ -15,6 +27,9 @@ When answering questions about the dataflow system in orkid, consult these files
 | Main Types | `ork.core/inc/ork/dataflow/dataflow.h` |
 | Module Definitions | `ork.core/inc/ork/dataflow/module.h` |
 | Module Templates | `ork.core/inc/ork/dataflow/module.inl` |
+| Composite Modules (SubGraph/Loop) | `ork.core/inc/ork/dataflow/subgraph_module.h` |
+| Cook Driver Seam | `ork.core/inc/ork/dataflow/cook_driver.h` |
+| Generic Modules (Min/Max/Lerp/Pow/Vec4Combine) | `ork.core/inc/ork/dataflow/basic_modules.h` |
 | Plug Data | `ork.core/inc/ork/dataflow/plug_data.h` |
 | Plug Templates | `ork.core/inc/ork/dataflow/plug_data.inl` |
 | Plug Instances | `ork.core/inc/ork/dataflow/plug_inst.h` |
@@ -34,16 +49,20 @@ When answering questions about the dataflow system in orkid, consult these files
 ## Architecture Overview
 
 ### Graph Structure (DAG)
-- **GraphData** — static topology: modules, plugs, connections (serializable)
-- **GraphInst** — runtime: module instances, execution state, register allocations
+- **GraphData** — static topology: modules, plugs, connections (serializable); plus graph-level state `_cacheable`, `_output_node`, `_editor_layout`, and a `TypeKeyedVars _impl` slot
+- **GraphInst** — runtime: module instances, execution state, register allocations; also carries a `TypeKeyedVars _impl` (per-family environments, cook drivers)
 - **Topology** — topologically sorted execution order
 - **DgSorter** — computes sort with register allocation
 - **dgcontext** — register pool management per data type
 
+Graphs need not be flat: composite SubGraph/Loop modules nest a full GraphData inside a module (see subgraph_module.h).
+
 ### Module System
 ```
-DgModuleData (base, serializable)
+DgModuleData (base, serializable; carries _bypassed + cachepoint/viewable markers)
 ├── LambdaModuleData (runtime-defined compute)
+├── SubGraphModuleData (composite: nested GraphData, promoted boundary plugs)
+│   └── LoopModuleData (iteration count, carries, index feeds)
 ├── ParticleModuleData (particle system nodes)
 └── [Custom subclasses]
 
@@ -88,9 +107,11 @@ Input plugs with `Xf` traits can apply a chain of transforms:
 4. graphdata.connect(input, output)   — wire connections
 5. DgSorter.generateTopology()        — sort + register alloc
 6. graphdata.createGraphInst()        — instantiate
-7. graphinst.bindTopology(topo)       — bind execution order
+7. graphinst.bindTopology(topo)       — bind execution order (forwards to updateTopology: link/stage/activate)
 8. graphinst.compute(updatedata)      — execute in order
 ```
+
+When `GraphData::_cacheable` is set, `cachedCompute()` runs instead: per-node Merkle hashes, cache hit = `cookLoad()` and skip compute (see the dox for the full contract). Realtime families (particles) leave it false.
 
 ### Python Usage
 ```python
@@ -151,3 +172,4 @@ Renderer types: `SpriteRendererData`, `StreakRendererData`, `LightRendererData`
 3. For execution order: read `dataflow_sorter.cpp` for topological sort algorithm
 4. For particles: read `modular_particles2.h` and specific emitter/force/renderer headers
 5. For Python API: check `pyext_dataflow.cpp` and `tests/dataflow.py`
+6. For composites, cook cache, bypass, or introspection: read `subgraph_module.h`, `cook_driver.h`, `module.h` (cook hooks), and `ork.dox/core/dataflow.md`

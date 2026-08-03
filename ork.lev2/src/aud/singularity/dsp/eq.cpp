@@ -31,7 +31,7 @@ PARABASS_DATA::PARABASS_DATA(std::string name)
 }
 
 dspblk_ptr_t PARABASS_DATA::createInstance() const { // override
-  return std::make_shared<PARABASS>(this);
+  return createDspInstance<PARABASS>(this);
 }
 
 PARABASS::PARABASS(const DspBlockData* dbd)
@@ -93,7 +93,7 @@ STEEP_RESONANT_BASS_DATA::STEEP_RESONANT_BASS_DATA(std::string name)
 }
 
 dspblk_ptr_t STEEP_RESONANT_BASS_DATA::createInstance() const { // override
-  return std::make_shared<STEEP_RESONANT_BASS>(this);
+  return createDspInstance<STEEP_RESONANT_BASS>(this);
 }
 
 STEEP_RESONANT_BASS::STEEP_RESONANT_BASS(const DspBlockData* dbd)
@@ -150,7 +150,7 @@ PARATREBLE_DATA::PARATREBLE_DATA(std::string name)
 }
 
 dspblk_ptr_t PARATREBLE_DATA::createInstance() const { // override
-  return std::make_shared<PARATREBLE>(this);
+  return createDspInstance<PARATREBLE>(this);
 }
 
 PARATREBLE::PARATREBLE(const DspBlockData* dbd)
@@ -204,7 +204,7 @@ PARAMID_DATA::PARAMID_DATA(std::string name)
 }
 
 dspblk_ptr_t PARAMID_DATA::createInstance() const { // override
-  return std::make_shared<PARAMID>(this);
+  return createDspInstance<PARAMID>(this);
 }
 
 PARAMID::PARAMID(const DspBlockData* dbd)
@@ -256,7 +256,7 @@ ParametricEqData::ParametricEqData(std::string name)
   gain_param->useDefaultEvaluator();
 }
 dspblk_ptr_t ParametricEqData::createInstance() const {
-  return std::make_shared<ParametricEq>(this);
+  return createDspInstance<ParametricEq>(this);
 }
 
 ParametricEq::ParametricEq(const ParametricEqData* dbd)

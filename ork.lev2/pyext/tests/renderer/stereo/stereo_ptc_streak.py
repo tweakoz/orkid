@@ -52,7 +52,6 @@ class StereoApp1(object):
     }     
     createSceneGraph(app=self,rendermodel="FWDPBRVRDM",params_dict=params_dict)    
     onode = self.outputnode # created by createSceneGraph
-    onode.flipY = False
 
     self.grid_data = createGridData()
     self.grid_node = self.layer1.createDrawableNodeFromData("grid",self.grid_data)

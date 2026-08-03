@@ -162,6 +162,17 @@ struct CompositingPassData {
   uint32_t _passID = 0;
   float _time      = 0.0f;
   bool _ispicking  = false;
+  // cascade-cull fix: set true on the CLONED CPD each sun-cascade depth pass pushes. A GPU-culled
+  // drawable's indirect render reads this off the active (top) CPD to select its SHADOW survivor set
+  // (union-sun-culled) instead of the eye set. False on every other pass (color, spot depth, probe)
+  // -> those keep reading the eye set unchanged. Copied by clone() (member-wise cpd = *this).
+  bool _sunCascadeShadowPass = false;
+  // cloud-shadow (sun cookie) fill: set true on the CLONED CPD _update_sun_cookie pushes. The pass
+  // consumes ALPHA only, so a material that can produce its alpha without scene lighting selects an
+  // alpha-only technique off this (FxPipelinePermutation::_is_sun_cookie) instead of the full forward
+  // one, whose 17 declared samplers exceed Metal's per-stage cap. Materials without that technique
+  // fall through to the forward pipeline, so the pass is unchanged for them.
+  bool _sunCookiePass = false;
   std::vector<std::string> _layernames;
   std::unordered_set<std::string> _layernameset;
   int _width  = 0;
@@ -246,6 +257,9 @@ public:
   RenderPresetContext presetPBRVR(render_preset_data_ptr_t pdata = nullptr);
   RenderPresetContext presetForwardPBRVR(render_preset_data_ptr_t pdata = nullptr);
   RenderPresetContext presetForwardPBRVRDM(render_preset_data_ptr_t pdata = nullptr);
+  // SPVR — the single-pass-stereo peer of presetForwardPBRVRDM. Same forward render
+  //  node, same content, layered targets and one scene pass instead of two.
+  RenderPresetContext presetForwardPBRSPVR(render_preset_data_ptr_t pdata = nullptr);
 
   compositingscene_constptr_t findScene(const std::string& named) const;
 

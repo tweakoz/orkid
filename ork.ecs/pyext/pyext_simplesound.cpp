@@ -102,7 +102,11 @@ void pyinit_simplesound(py::module& module_ecs) {
           .def_property(
               "initialFadeGain",
               [](simplesoundemitterdata_ptr_t cd) -> float { return cd->_initialFadeGainLinear; },
-              [](simplesoundemitterdata_ptr_t cd, float val) { cd->_initialFadeGainLinear = val; });
+              [](simplesoundemitterdata_ptr_t cd, float val) { cd->_initialFadeGainLinear = val; })
+          .def_property(
+              "priority", // voice-steal priority: higher survives longer
+              [](simplesoundemitterdata_ptr_t cd) -> int { return cd->_priority; },
+              [](simplesoundemitterdata_ptr_t cd, int val) { cd->_priority = val; });
   type_codec->registerStdCodec<simplesoundemitterdata_ptr_t>(emitterdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   // SimpleSoundEmitterSystemData

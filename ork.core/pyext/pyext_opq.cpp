@@ -8,6 +8,7 @@
 #include "pyext.h"
 #include <ork/kernel/opq.h>
 #include <ork/kernel/timer.h>
+#include <ork/kernel/async_tracker.h>
 
 namespace ork {
 
@@ -96,6 +97,21 @@ void pyinit_opq(py::module& module_core) {
   module_core.def("opq_updateSerialQueue", &opq::updateSerialQueue, py::return_value_policy::reference);
   module_core.def("opq_mainSerialQueue", &opq::mainSerialQueue, py::return_value_policy::reference);
   module_core.def("opq_concurrentQueue", &opq::concurrentQueue, py::return_value_policy::reference);
+
+  /////////////////////////////////////////////////////////////////////////////////
+  // async-tracker: the process-wide pending-async registry the offscreen player /
+  // capture harness settle on (radiancemaps/IBL, texture_upload, GPU bakes ...).
+  // The fixed-frame settle heuristic races the async IBL upload on fast GPUs (RADV) —
+  // a black capture — so an in-process capture gate must poll asyncWorkPending()==0
+  // before reading back, exactly as the offscreen player does.
+  /////////////////////////////////////////////////////////////////////////////////
+  module_core.def("asyncWorkPending", &ork::asyncWorkPending);
+  module_core.def("asyncWorkPendingExcluding", &ork::asyncWorkPendingExcluding, py::arg("exclude_tag"));
+  // one-shot census: skips tags declared RECURRING (a chaining sky-IBL refilter
+  // never drains, so a settle poll on the raw total would spin forever).
+  module_core.def("asyncWorkPendingOneShot", &ork::asyncWorkPendingOneShot, py::arg("exclude_tag") = "");
+  module_core.def("asyncWorkIsSteady", &ork::asyncWorkIsSteady, py::arg("tag"));
+  module_core.def("asyncWorkSummary", &ork::asyncWorkSummary);
 
   /////////////////////////////////////////////////////////////////////////////////
   // Convenience functions for creating workloads

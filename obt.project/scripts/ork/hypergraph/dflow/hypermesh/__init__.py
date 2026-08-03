@@ -44,6 +44,12 @@ class LeafStyle(IntEnum):
   CROSS  = 1   # two perpendicular quads per leaf (fuller, holds up at grazing angles)
 
 
+class LeafSource(IntEnum):
+  """WHERE the organ placements come from — keep in sync with C++ LeafScatterModuleData::_source."""
+  NODES = 0   # phyllotaxis on skeleton nodes passing the min_gen gate (the default)
+  SLOTS = 1   # the grammar's own SLOT ops (XfNodeGraph._slots) — instance_at_slots
+
+
 # per-archetype known-good chaos-channel defaults (effective chaos = jitter * jit_X) — the
 # data lives WITH the preset emitters (lsystem/presets.py PRESET_JIT, int-keyed; IntEnum keys
 # hash-equal). A jit_* kwarg left None picks the value for that archetype here.
@@ -294,17 +300,20 @@ class Hypermesh:
     self.graphdata.connect(sw.inputs.In, ls.outputs.Out)      # XfNodeGraph edge
     return self._add(sw, "lsweep")                            # produces the GpuMesh
 
-  def leaves(self, skeleton=None, *, style=LeafStyle.SINGLE, per_node=3, min_gen=4.0, size=0.35,
-             aspect=0.6, roll=137.5, pitch=50.0, jitter=0.25, seed=1):
+  def leaves(self, skeleton=None, *, style=LeafStyle.SINGLE, source=LeafSource.NODES, per_node=3,
+             min_gen=4.0, size=0.35, aspect=0.6, roll=137.5, pitch=50.0, jitter=0.25, seed=1):
     # BROADLEAF ORGAN placer — reads the L-system SKELETON (XfNodeGraph; defaults to the last lsystem()'s)
     # and emits a leaf-card GpuMesh: per high-generation node, `per_node` cards by phyllotaxis (golden-angle
     # `roll` around the node heading, drooped `pitch`). `style` LeafStyle.SINGLE (quad) | CROSS (2 quads). The
     # card UV0 lets the MATERIAL texture or proceduralize the leaf; COLOR.x = flutter weight (0..1 tip).
+    # `source` LeafSource.SLOTS instead places at the grammar's own SLOT attachment points (areoles,
+    # blooms) — their world frames, `min_gen` inapplicable, `per_node` cards per slot.
     skel = skeleton if skeleton is not None else getattr(self, "_skeleton", None)
     if skel is None:
       raise ValueError("leaves(): no skeleton — call lsystem() first, or pass skeleton=<lsystem node>")
     m = _lev2.hypermesh.LeafScatterModule.createShared()
     m.style    = int(style)                                   # LeafStyle.SINGLE / CROSS (IntEnum -> 0/1)
+    m.source   = int(source)                                  # LeafSource.NODES / SLOTS (IntEnum -> 0/1)
     m.per_node = int(per_node)
     m.min_gen  = float(min_gen)
     m.size     = float(size)
@@ -425,6 +434,23 @@ class Hypermesh:
     self.graphdata.connect(m.inputs.In, src.outputs.Out)
     return m
 
+  def section_unwrap(self, src, padding=2, max_layers=64):
+    """O3 — PER-SECTION UV unwrap for the baked ptex3d texture-ARRAY path. Runs AFTER the gid
+    partition (select+assign_gid): each distinct gid becomes one SECTION unwrapped by xatlas into
+    its OWN full 0-1 UV domain (more texel budget than one shared atlas), and the section's dense
+    LAYER index (0..K-1 in sorted-gid order) is written into UV0.z of every one of its verts. The
+    forward material then samples a sampler2DArray at layer=frg_uv0.z (ctx.texArray). Faces are
+    emitted grouped by section (contiguous ranges) so the bake driver renders one section per layer;
+    the per-face gid is preserved. `padding` = xatlas chart padding; `max_layers` = fail-loud cap on
+    distinct sections. Insert as: sdf_to_mesh_clean(unwrap=False) -> select+assign_gid... ->
+    section_unwrap(...)."""
+    m = _lev2.hypermesh.SectionUnwrap.createShared()
+    m.padding    = int(padding)
+    m.max_layers = int(max_layers)
+    self._add(m, "section_unwrap")
+    self.graphdata.connect(m.inputs.In, src.outputs.Out)
+    return m
+
   def sdf(self, dim=64, extent=4.0, center=(0.0, 0.0, 0.0)):
     """Open a fluent SDF builder bound to this hypermesh, sharing the brick framing:
         s = self.sdf(dim=128, extent=4.0)
@@ -491,6 +517,26 @@ class Hypermesh:
     m.blocky = bool(blocky)
     m.weld   = bool(weld) and not bool(blocky)
     self._add(m, "sdf_to_mesh")
+    self.graphdata.connect(m.inputs.In, src.outputs.Out)
+    return m
+
+  def sdf_to_mesh_clean(self, src, adaptivity=0.5, unwrap=True, isovalue=0.0, weld_tol=0.0):
+    """E.7/M2 — SHAPE-AWARE clean remesh: an SDF brick -> a CLEAN, LOW-POLY, QUAD-DOMINANT
+    INDEXED GpuMesh, optionally UV-unwrapped. Where sdf_to_mesh (marching tets) emits a
+    uniform-density soup (~voxel^2 faces — 1M+ for a dim=192 building), this routes the brick
+    through openvdb's curvature-ADAPTIVE volumeToMesh (flat regions -> few big faces, detail
+    at curvature) for ~20k clean faces, then (unwrap=True) xatlas UV-unwraps for texture baking.
+    `adaptivity` 0..1 (0 = max detail, 1 = flattest). `unwrap=True` writes UV0.xy and TRIANGULATES
+    (xatlas reindexes along seams); `unwrap=False` keeps quads-as-quads with UV0 = 0. `weld_tol`
+    optional pre-unwrap position weld (0 = none). ALL work is ONE-SHOT CPU at cook (openvdb is
+    CPU/bake-time only) — NOT for per-frame animated SDF input. gids do NOT survive the remesh
+    (re-gid by position/normal band AFTER, the sdf_to_mesh pattern)."""
+    m = _lev2.sdf.SdfToMeshClean.createShared()
+    m.adaptivity = float(adaptivity)
+    m.unwrap     = bool(unwrap)
+    m.isovalue   = float(isovalue)
+    m.weld_tol   = float(weld_tol)
+    self._add(m, "sdf_to_mesh_clean")
     self.graphdata.connect(m.inputs.In, src.outputs.Out)
     return m
 
@@ -1087,27 +1133,55 @@ class GpuMeshRenderSource:
         out.append(spec)
     return out
 
+  def _decode(self, index_expr):
+    """The per-vertex decode, parameterized by the INDEX EXPRESSION. The pull VS reads
+    gl_VertexID (the indexed draw renames it to gl_VertexIndex, i.e. the index buffer's vertex);
+    the mesh stage reads the meshlet's vertex-list entry. ONE decode, two callers — so a channel
+    added here reaches both paths or neither."""
+    return (
+      "uint i = %s;\n" % index_expr +
+      "vec4 position = Pd[i];\n"
+      "vec3 normal   = Nd[i].xyz;\n"
+      "vec3 binormal = Bd[i].xyz;\n"
+      "vec2 uv0      = UVd[i].xy;\n"
+      "float uv0z    = UVd[i].z;\n"   # O3: SectionUnwrap's per-section LAYER index -> forwarded to frg_uv0z (ctx.layer)
+      "vec4 vtxcolor = Cd[i];")
+
   def as_material_kwargs(self):
+    from .gpu_meshlet import MeshletMeshSource, meshmode
     extra = (
       "storage_interface sif_N   (descriptor_set 0) { buffer layout(std430) hm_nb { vec4 Nd[];  }; }\n"
       "storage_interface sif_B   (descriptor_set 0) { buffer layout(std430) hm_bb { vec4 Bd[];  }; }\n"
       "storage_interface sif_uv  (descriptor_set 0) { buffer layout(std430) hm_ub { vec4 UVd[]; }; }\n"
       "storage_interface sif_clr (descriptor_set 0) { buffer layout(std430) hm_cb { vec4 Cd[];  }; }\n")
     inherits = ["sif_N", "sif_B", "sif_uv", "sif_clr"]
-    body = (
-      "uint i = uint(gl_VertexID);\n"   # indexed draw: gl_VertexID renames to gl_VertexIndex (vert index)
-      "vec4 position = Pd[i];\n"
-      "vec3 normal   = Nd[i].xyz;\n"
-      "vec3 binormal = Bd[i].xyz;\n"
-      "vec2 uv0      = UVd[i].xy;\n"
-      "vec4 vtxcolor = Cd[i];")
+    body = self._decode("uint(gl_VertexID)")
     lib = ""
+    displace = ""
     if self._vtx_displace:  # opt-in: the displace uniforms live in ublk_ptex_params (a REAL bindable param
                         # block — pipeline block-state + bindParam by name; see displace_params()). The VS
                         # inherits that block, plus the pure lib funcs + the appended position calls.
       inherits.append("ublk_ptex_params")
       lib = "\n".join(d.glsl_func() for d in self._vtx_displace)
-      body += "\n" + "\n".join(d.glsl_call() for d in self._vtx_displace)
+      displace = "\n".join(d.glsl_call() for d in self._vtx_displace)
+      body += "\n" + displace
+    wants_inst = any(getattr(d, "wants_inst_data", False) for d in self._vtx_displace)
+    mesh_source = None
+    if meshmode() >= 1:
+      if self._instanced:
+        # the mesh path draws ONE partition of ONE mesh (no per-instance matrix in the mesh stage),
+        # so an instanced material never carries a mesh technique — and the drawable's capability
+        # check then refuses LOUDLY instead of quietly rendering something else.
+        print("[hypermesh] ORKID_HYPERMESH_MESHSHADER is on but this material is INSTANCED — "
+              "no mesh technique emitted (pull-VS path stands)", flush=True)
+      else:
+        # the mesh stage decodes the SAME vertex, indexed through the meshlet's vertex list.
+        mesh_source = MeshletMeshSource(vertex_decode=self._decode("MLVerts[v_off + vi]"),
+                                        displace_calls=displace,
+                                        wants_inst_data=wants_inst)
+        # the source decides its own block set: the per-cluster bounds contract is present only when
+        # the stage emits stored positions (a displacing stage cannot be bounded ahead of time).
+        extra += mesh_source.blocks()
     return dict(
       ssbo_layout="vec4 Pd[];",   # P lives in sif_ptex_vtx (runtime array; indexed draw -> gl_VertexIndex)
       ssbo_extra_blocks=extra,
@@ -1117,7 +1191,11 @@ class GpuMeshRenderSource:
       ssbo_instanced=self._instanced,
       # any displace that reads per-instance data (Wind: per-tree phase/amp/freq) -> the codegen
       # exposes `inst_data` to the VS body (the per-instance attr when instanced, vec4(0) otherwise).
-      ssbo_wants_inst_data=any(getattr(d, "wants_inst_data", False) for d in self._vtx_displace),
+      ssbo_wants_inst_data=wants_inst,
+      # MESH PATH (ORKID_HYPERMESH_MESHSHADER): hand the template the meshlet mesh source so it
+      # emits FWD_SSBO_CUSTOM_MESH (+ its depth-prepass twin) around the SAME varying contract.
+      # None -> no mesh technique and text byte-identical to the pull-VS-only generator.
+      mesh_source=mesh_source,
       ssbo_compute="")
 
 # block name (in the generated material) -> GpuMesh vertex-channel id, in render-bind order.
@@ -1188,6 +1266,14 @@ def make_drawable(live, ctx, *, animated=False, material_cls=None, roughness=0.5
     kw["albedo"] = albedo
   if metallic is not None:
     kw["metallic"] = metallic
+  # O3 stage 2 — a capture material (e.g. SectionArray) declares PTEX_MODE="stored"/PTEX_CAPTURE=True so its
+  # forward is surface_stored() (samples the baked array) AND it emits the FWD_SSBO_CUSTOM_CAPTURE technique
+  # the section bake driver renders through. Absent -> proc (unchanged for every non-capture material).
+  _ptex_mode = getattr(material_cls, "PTEX_MODE", None)
+  if _ptex_mode is not None:
+    kw["mode"] = _ptex_mode
+  if bool(getattr(material_cls, "PTEX_CAPTURE", False)):
+    kw["capture"] = True
   # INSTANCES: a flat / (N,16) / (N,4,4) sequence of COLUMN-MAJOR mat4 floats -> N copies in ONE draw call,
   # each placed by its per-instance matrix (FWD_SSBO_CUSTOM_INSTANCED). The matrix bottom row (m[0..2].w)
   # carries 3 free per-instance data floats -> frg_clr. The geometry is shared (one graph eval, N draws).

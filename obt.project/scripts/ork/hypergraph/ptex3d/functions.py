@@ -512,7 +512,97 @@ def dash_mask(v, period, duty=0.5):
   return P.saturate(on)
 
 
+# ── participating media (Beer-Lambert) ─────────────────────────────────────
+def beer_transmittance(core, sigma):
+  """Beer-Lambert TRANSMITTANCE exp(-core*sigma) through a participating medium:
+  the surviving fraction in [0,1] of radiance that entered it. Absorbed fraction
+  (opacity / occlusion) is 1 - this.
+
+  `core` is the medium's OPTICAL-DEPTH PROXY at the fragment — for the cloud
+  decks, the G channel of the deck texture (CHANNELS.md), 0 at a wispy fringe
+  rising toward 1 in a thick core; it carries no unit, so `sigma` (the extinction
+  coefficient, a per-site runtime plug) sets how fast depth accumulates. Passing
+  sigma per call is deliberate: alpha, body shading and the silver lining each
+  read the SAME depth proxy through their own extinction.
+
+  THE ONE TERM (master ruling, jul28 — one cloud transmittance, five consumers:
+  captured IBL, the sun disc, the moon, stars via occlusion, direct light and
+  ground shadows): every occlusion/capture consumer must obtain cloud
+  transmittance HERE rather than re-deriving exp(-...) inline, so a change to the
+  extinction model reaches all of them at once."""
+  return P.func("exp(-{0})", [core * sigma], rtype="float")
+
+
+def fractional_occlusion(presence, depth_proxy, sigma):
+  """How much a PARTIALLY PRESENT medium hides what is behind it, in [0,1]:
+
+      occlusion = presence * (1 - beer_transmittance(depth_proxy, sigma))
+
+  COVERAGE IS NOT DEPTH — the distinction this function exists to enforce.
+  `presence` is the fraction of the fragment the medium actually occupies (the
+  edge feather, the distance fade, the rim clamp: everything that says "there is
+  less medium HERE"); `depth_proxy` is how thick the medium is WHERE it is. Only
+  depth belongs inside the exponential. Folding presence into the optical depth
+  instead makes occlusion saturate exponentially while the medium's own radiance
+  fades linearly, and the two curves diverge hardest in the middle of a fade —
+  which renders as a fade that stops glowing but keeps blocking, i.e. a BLACK
+  fringe (regression, jul28: 'cloud fadeouts are black, not transparent').
+
+  Composing linearly instead makes occlusion and radiance fade at the same rate,
+  so a fading edge goes TRANSPARENT and the ratio between what a fragment adds
+  and what it hides stays constant across the whole fade. The limits are exact
+  and are the contract: presence 0 -> 0 (invisible medium hides nothing, whatever
+  its depth), presence 1 + thick depth -> 1 (thick medium stays opaque)."""
+  return presence * (1.0 - beer_transmittance(depth_proxy, sigma))
+
+
+# ── tangent-space normal-map bake (section capture) ─────────────────────────
+def luminance(c):
+  """Perceptual luminance (Rec.601) of a vec3 color -> float. The relief height a
+  normal-map bake reads when the surface has no explicit displacement field: albedo
+  tone tracks the baked grain, so its gradient is the micro-surface slope."""
+  return P.dot(c, P.vec3(0.299, 0.587, 0.114))
+
+
+def section_normal(ctx, n_world, *, renormalize=True):
+  """Encode a WORLD-space shading normal into a TANGENT-SPACE normal-map value (n*0.5+0.5,
+  RGBA-packable). The spec contract: project the world normal into the surface's tangent
+  frame (transpose(tbn) * n) — the orientation-independent store the forward re-expands via
+  its own tbn at sample time. A flat/undisturbed surface (n == the geometric normal tbn[2])
+  bakes to (0,0,1) -> (0.5, 0.5, 1.0). ctx.tbn is the world tangent/bitangent/normal basis,
+  always threaded into ptex_capture. This authors mip-0; the section-bake C++ mip chain is
+  responsible for renormalizing the "SectionNormal" mips."""
+  n = P.normalize(n_world) if renormalize else n_world
+  nt = P.func("(transpose({0}) * {1})", [ctx.tbn, n], rtype="vec3")   # world -> section tangent frame
+  return P.normalize(nt) * 0.5 + 0.5
+
+
+def world_bump_normal(ctx, height, *, strength=1.0):
+  """Build a WORLD-space shading normal by perturbing the geometric normal with a scalar
+  `height` relief. In the section CAPTURE each section rasterizes into its own 0-1 UV atlas,
+  so screen derivatives (dFdx/dFdy) ARE the tangent-plane slope of the relief; that tangent
+  perturbation `(-s*du, -s*dv, 1)` is lifted to world via ctx.tbn (tbn * v = v.x*T + v.y*B + v.z*N).
+  The result is the material's world shading normal — the same currency the impostor/world-normal
+  bake and forward lighting use. `strength` scales the relief (higher = deeper normal, but keep
+  the tangent Z dominant so the packed map stays blue-dominant)."""
+  du = P.dFdx(height)
+  dv = P.dFdy(height)
+  ts = P.normalize(P.vec3(-strength * du, -strength * dv, 1.0))       # tangent-frame micro-normal
+  return P.func("({0} * {1})", [ctx.tbn, ts], rtype="vec3")           # tbn * ts -> world
+
+
+def section_normal_from_albedo(ctx, albedo, *, strength=6.0):
+  """Convenience for stored materials with no explicit displacement: bake the tangent-space
+  normal-map layer from the material's albedo relief (luminance gradient). Composes
+  world_bump_normal (albedo luminance -> world shading normal) with section_normal (world ->
+  tangent store). A CONSTANT albedo -> flat (0.5, 0.5, 1.0) (the neutral fallback). `strength`
+  amplifies the per-texel luminance slope so the packed normal reads while staying blue-dominant."""
+  return section_normal(ctx, world_bump_normal(ctx, luminance(albedo), strength=strength))
+
+
 __all__ = ["triplanar", "carbon_weave", "panel_split", "greeble", "box_partition",
            "brick_lattice", "domain_warp", "vein_field", "crumple", "wood_grain",
            "stripes", "spots", "rosette", "streaks", "cell_lod", "domain_xf", "fbm_stack",
-           "fbm2d", "stripe_lattice", "dash_mask"]
+           "fbm2d", "stripe_lattice", "dash_mask", "beer_transmittance",
+           "fractional_occlusion",
+           "luminance", "section_normal", "world_bump_normal", "section_normal_from_albedo"]

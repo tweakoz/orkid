@@ -26,18 +26,118 @@
 #include <ork/ecs/entity.inl>
 #include <ork/ecs/scene.inl>
 #include "bullet_impl.h"
+#include <BulletCollision/CollisionDispatch/btManifoldResult.h>       // W·M: gContactAddedCallback
+#include <BulletCollision/CollisionDispatch/btCollisionObjectWrapper.h> // W·M: contact wrapper -> terrain transform
 #include <rapidjson/document.h> // E.2-walk: hf_asset manifest parse
 #include <fstream>
 #include <sstream>
 #include <atomic>
 #include <filesystem>
 #include <algorithm>
+#include <unordered_set>
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::ecs::BulletShapeTerrainData, "BulletShapeTerrainData");
 ///////////////////////////////////////////////////////////////////////////////
 using namespace ork::lev2;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ecs {
+///////////////////////////////////////////////////////////////////////////////
+
+// W·M SURFACE RESPONSE — physics leg (owner-adjudicated 2026-07-22).
+// Immutable-after-load, per-collider surface-class weight field + the friction response row.
+// Lives inside BulletTerrainImpl (stable address); the raw pointer is stashed on the
+// heightfield shape's user pointer so the global contact-added hook can find it. Rebuilt in
+// place on a deferred rebake-reload (update thread, before the step — never during a step),
+// so the pointer stays valid across reloads.
+struct TerrainFrictionSampler {
+  bool _active   = false;
+  int _dim       = 0;      // collider-grid dim (== _gridDim; W is resampled to match heights)
+  float _extent  = 1000.0f;// world extent in meters (square heightfield)
+  float _rows[4] = {0, 0, 0, 0}; // M[:,friction] deltas, one per RGBA class channel
+  std::vector<fvec4> _weights;   // per-texel class weights, row-major [row*_dim + col]
+
+  // per-contact friction DELTA at terrain-local (lx,lz) meters. Truncating nearest-texel
+  // sampling (scatter-parity convention: u = x/E + 0.5) so physics samples the SAME texel the
+  // material/scatter do. Residual (1-Σw) implicitly carries delta 0 (it is never a captured row).
+  float deltaAt(float lx, float lz) const {
+    if ((not _active) or _dim <= 0 or _weights.empty())
+      return 0.0f;
+    float u = lx / _extent + 0.5f;
+    float v = lz / _extent + 0.5f;
+    int col = int(u * float(_dim)); // trunc toward zero == floor for u>=0 (matches hfdflow_scatter)
+    int row = int(v * float(_dim));
+    col     = std::clamp(col, 0, _dim - 1);
+    row     = std::clamp(row, 0, _dim - 1);
+    const fvec4& W = _weights[size_t(row) * size_t(_dim) + size_t(col)];
+    return W.x * _rows[0] + W.y * _rows[1] + W.z * _rows[2] + W.w * _rows[3];
+  }
+};
+
+// Registry of live terrain friction samplers. A heightfield-vs-body contact does NOT report
+// the terrain as a TERRAIN_SHAPE_PROXYTYPE at the manifold: bullet processes each contacted
+// cell as an internal TRIANGLE child shape, so the leaf wrapper shape is a triangle carrying
+// no user pointer. We therefore identify the terrain via the collision OBJECT's ROOT shape
+// (the compound we build), whose user pointer we set to the sampler and register here. Membership
+// disambiguates our pointer from any other shape user pointer. All lifecycle (register at shape
+// build, erase at collider destroy) and reads (the hook, during step) run on the update thread —
+// no lock needed.
+static std::unordered_set<const void*>& _activeTerrainSamplers() {
+  static std::unordered_set<const void*> s;
+  return s;
+}
+
+// The global contact-added hook (bullet's gContactAddedCallback slot). Fires INSIDE
+// stepSimulation for any manifold point whose body carries CF_CUSTOM_MATERIAL_CALLBACK —
+// only terrain bodies with an active sampler get that flag, so this is terrain-only. Stateless:
+// the per-terrain data rides on the terrain compound shape's user pointer (registered above), so
+// multiple simulations (and multiple terrains) share one hook safely. Modifies the base combined
+// friction in place by the W·M[:,friction] residual delta at the contact point.
+static bool orkTerrainContactAddedCallback(
+    btManifoldPoint& cp,
+    const btCollisionObjectWrapper* w0,
+    int /*partId0*/,
+    int /*index0*/,
+    const btCollisionObjectWrapper* w1,
+    int /*partId1*/,
+    int /*index1*/) {
+
+  auto& reg = _activeTerrainSamplers();
+  if (reg.empty())
+    return false;
+  // identify the terrain side via its rigid body's ROOT (compound) shape user pointer.
+  const btCollisionObject* tobj      = nullptr;
+  const TerrainFrictionSampler* samp = nullptr;
+  auto probe = [&](const btCollisionObjectWrapper* w) {
+    if (not w)
+      return;
+    auto obj = w->getCollisionObject();
+    if (not obj)
+      return;
+    auto root      = obj->getCollisionShape(); // the body's root shape (compound for terrain)
+    const void* up = root ? root->getUserPointer() : nullptr;
+    if (up and reg.count(up)) {
+      samp = reinterpret_cast<const TerrainFrictionSampler*>(up);
+      tobj = obj;
+    }
+  };
+  probe(w0);
+  if (not samp)
+    probe(w1);
+  if (not samp or not samp->_active)
+    return false; // not our terrain (or feature off): leave the base combined friction untouched
+
+  // contact point -> terrain-local x,z via the terrain BODY transform (entity frame). The
+  // compound child offset is y-only, so x,z are unaffected — inverse*worldpos yields centered
+  // local meters in [-E/2, E/2], the frame u = x/E + 0.5 expects (scatter-parity).
+  const btVector3& wpos = cp.getPositionWorldOnB();
+  btVector3 lpos        = tobj->getWorldTransform().inverse() * wpos;
+  float delta           = samp->deltaAt(float(lpos.x()), float(lpos.z()));
+
+  float f              = cp.m_combinedFriction + delta;
+  cp.m_combinedFriction = (f < 0.0f) ? 0.0f : f; // clamp: friction is non-negative
+  return true;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct BulletTerrainImpl {
@@ -79,6 +179,10 @@ struct BulletTerrainImpl {
   uint64_t _stampManMtime = 0, _stampManSize = 0;
   bool     _holdLogged    = false; // S4 hold-last-final: log the hold ONCE per re-bake
 
+  // W·M SURFACE RESPONSE — the class-weight field + friction response (stable address; the
+  // heightfield shape's user pointer references it; rebuilt in place on reload).
+  TerrainFrictionSampler _fricSampler;
+
   BulletTerrainImpl(const BulletShapeTerrainData& data);
   ~BulletTerrainImpl();
 
@@ -87,6 +191,7 @@ struct BulletTerrainImpl {
   bool _statStamp(uint64_t& em, uint64_t& es, uint64_t& mm, uint64_t& ms) const;
   bool _needsReload() const;
   bool _loadHeightData();       // first load vs in-place reload keyed off _loadok
+  void _loadSurfaceWeights();   // W·M: (re)load the RGBA class-weight EXR -> _fricSampler._weights
   void _reloadIfChanged();
   void consumePendingReload(); // update-thread consume of a deferred rebake reload
 };
@@ -260,7 +365,100 @@ bool BulletTerrainImpl::_loadHeightData() {
   _stampValid = true;
   printf("BulletShapeTerrain: %s heightmap<%s> dim<%d> nc<%d> min<%g> max<%g>\n",
          first ? "loaded" : "RELOADED", _resPath.c_str(), _gridDim, nc, _minH, _maxH);
+  // W·M: (re)load the class-weight field onto the FRESH height grid (same grid, so texels align).
+  // On reload this rebuilds _fricSampler._weights in place — the sampler's address (and thus the
+  // heightfield shape's user pointer) is stable. Runs on the same thread as heights (ctor / the
+  // deferred reload poll), never during a step.
+  _loadSurfaceWeights();
   return true;
+}
+
+// W·M SURFACE RESPONSE — load the RGBA class-weight capture the material also consumes and
+// resample it to the collider grid. Fail-soft-but-LOUD: any problem (feature off, non-asset
+// form, missing/corrupt EXR, odd bit depth) leaves _fricSampler._active=false with a named
+// message — friction falls back to the plain base value, never garbage.
+void BulletTerrainImpl::_loadSurfaceWeights() {
+  _fricSampler._active = false;
+  _fricSampler._weights.clear();
+  const std::string& chan = _hfd._surface_weights_channel;
+  if (chan.empty())
+    return; // feature OFF (byte-identical to the pre-W path)
+
+  // response row M[:,friction] (per-RGBA-class friction delta); pad/truncate to the 4 class slots.
+  for (int i = 0; i < 4; i++)
+    _fricSampler._rows[i] = (i < int(_hfd._friction_rows.size())) ? _hfd._friction_rows[i] : 0.0f;
+  _fricSampler._extent = _resSize;
+
+  if (_hfd._hf_asset.empty()) {
+    printf("BulletShapeTerrain: surface_weights<%s> requires the asset-wired (hf_asset) form; "
+           "friction modulation DISABLED\n",
+           chan.c_str());
+    return;
+  }
+  std::string base  = file::Path::expandPathString("<assetcache>/terrain/" + _hfd._hf_asset);
+  std::string wpath = base + "/" + chan + ".exr";
+  {
+    std::error_code ec;
+    if (not std::filesystem::exists(wpath, ec) or ec) {
+      printf("BulletShapeTerrain: surface_weights<%s> EXR MISSING <%s> — the material's class-weight "
+             "capture must materialize BEFORE the collider (declaration order = dependency order); "
+             "friction modulation DISABLED\n",
+             chan.c_str(), wpath.c_str());
+      return;
+    }
+  }
+  auto img = lev2::Image::createFromFile(wpath.c_str());
+  if (not(img and img->_width > 0 and img->_width == img->_height)) {
+    printf("BulletShapeTerrain: surface_weights<%s> EXR <%s> missing/corrupt (load failed); "
+           "friction modulation DISABLED\n",
+           chan.c_str(), wpath.c_str());
+    return;
+  }
+  // resample to the collider grid with the SAME ringing-free TRIANGLE the heights use, so the
+  // weight texel aligns with the height texel a body actually rests on.
+  int dim = _gridDim;
+  if (dim > 0 and int(img->_width) != dim) {
+    auto ds = std::make_shared<lev2::Image>();
+    ds->resampledOf(*img, dim, dim, lev2::Image::ResampleFilter::TRIANGLE);
+    img = ds;
+  } else {
+    dim = int(img->_width);
+  }
+  const bool f32 = (img->_bytesPerChannel == 4);
+  const bool u8  = (img->_bytesPerChannel == 1);
+  if (not(f32 or u8)) {
+    printf("BulletShapeTerrain: surface_weights<%s> EXR <%s> unexpected bytesPerChannel<%d> "
+           "(need f32 EXR or 8-bit); friction modulation DISABLED\n",
+           chan.c_str(), wpath.c_str(), int(img->_bytesPerChannel));
+    return;
+  }
+  const int nc = int(img->_numcomponents);
+  _fricSampler._weights.assign(size_t(dim) * size_t(dim), fvec4(0, 0, 0, 0));
+  const float u8scale = 1.0f / 255.0f;
+  for (int y = 0; y < dim; y++)
+    for (int x = 0; x < dim; x++) {
+      fvec4 w(0, 0, 0, 0);
+      if (f32) {
+        const float* p = img->pixel32f(x, y);
+        w.x            = p[0];
+        w.y            = (nc > 1) ? p[1] : 0.0f;
+        w.z            = (nc > 2) ? p[2] : 0.0f;
+        w.w            = (nc > 3) ? p[3] : 0.0f;
+      } else {
+        const uint8_t* p = img->pixel8(x, y);
+        w.x              = float(p[0]) * u8scale;
+        w.y              = (nc > 1) ? float(p[1]) * u8scale : 0.0f;
+        w.z              = (nc > 2) ? float(p[2]) * u8scale : 0.0f;
+        w.w              = (nc > 3) ? float(p[3]) * u8scale : 0.0f;
+      }
+      _fricSampler._weights[size_t(y) * size_t(dim) + size_t(x)] = w;
+    }
+  img.reset();
+  _fricSampler._dim    = dim;
+  _fricSampler._active = true;
+  printf("BulletShapeTerrain: surface_weights<%s> loaded <%s> dim<%d> nc<%d> rows[%g %g %g %g]\n",
+         chan.c_str(), wpath.c_str(), dim, nc,
+         _fricSampler._rows[0], _fricSampler._rows[1], _fricSampler._rows[2], _fricSampler._rows[3]);
 }
 
 void BulletTerrainImpl::_reloadIfChanged() {
@@ -301,6 +499,8 @@ BulletTerrainImpl::~BulletTerrainImpl() {
   // activate/deactivate), same thread as the _onUpdate poll — no lock needed.
   if (_world)
     _world->_terrainReloadPolls.erase(this);
+  // W·M: drop this collider's sampler from the contact-hook registry (safe if never inserted).
+  _activeTerrainSamplers().erase(&_fricSampler);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -358,6 +558,18 @@ btCollisionShape* BulletTerrainImpl::init_bullet_shape(const ShapeCreateData& da
   //_terrainShape->setUseDiamondSubdivision(true);
   _terrainShape->setUseZigzagSubdivision(true);
 
+  // W·M SURFACE RESPONSE: when the class-weight field loaded, install the global contact-added
+  // hook (idempotent — a plain function-pointer store). The sampler is bound to the terrain
+  // COMPOUND shape's user pointer below (the manifold reports the body's root shape, not the
+  // heightfield). The per-body CF_CUSTOM_MATERIAL_CALLBACK flag is raised system-side in
+  // _onActivateComponent (it needs the rigid body).
+  if (_fricSampler._active) {
+    _fricSampler._extent = _resSize; // square heightfield extent (meters)
+    gContactAddedCallback = orkTerrainContactAddedCallback;
+    printf("BulletShapeTerrain: per-contact friction modulation ARMED (surface_weights<%s>)\n",
+           _hfd._surface_weights_channel.c_str());
+  }
+
   float fworldsizeX = _resSize;
   float fworldsizeZ = _resSize; // square heightfield
 
@@ -376,6 +588,14 @@ btCollisionShape* BulletTerrainImpl::init_bullet_shape(const ShapeCreateData& da
   xf.setIdentity();
   xf.setOrigin(btVector3(0.0f, (_aabbMinH + _aabbMaxH) * 0.5f, 0.0f));
   compound->addChildShape(xf, _terrainShape);
+
+  // W·M: bind the sampler to the ROOT (compound) shape the manifold reports, and register it
+  // so the contact-added hook can find + validate it (heightfield cell contacts surface as
+  // triangle children with no user pointer, so the terrain must be identified body-side).
+  if (_fricSampler._active) {
+    compound->setUserPointer(&_fricSampler);
+    _activeTerrainSamplers().insert(&_fricSampler);
+  }
 
   printf("_terrainShape<%p> aabb[%g..%g]m\n", _terrainShape, _aabbMinH, _aabbMaxH);
 
@@ -401,6 +621,10 @@ void BulletShapeTerrainData::describeX(object::ObjectClass* clazz) {
   // scale (extent_m; heights are TRUE METERS) at shape creation; overrides the direct props above.
   clazz->directProperty("hf_asset", &BulletShapeTerrainData::_hf_asset);
   clazz->directProperty("render_dimension", &BulletShapeTerrainData::_render_dimension);
+  // W·M SURFACE RESPONSE — physics leg. surface_weights_channel names the RGBA class-weight
+  // capture (empty = feature off); friction_rows is M[:,friction] (per-class friction deltas).
+  clazz->directProperty("surface_weights_channel", &BulletShapeTerrainData::_surface_weights_channel);
+  clazz->directVectorProperty("friction_rows", &BulletShapeTerrainData::_friction_rows);
   //clazz->directProperty("VisualData", &BulletShapeTerrainData::_visualDataAccessor);
   ////////
 }
@@ -416,6 +640,8 @@ BulletShapeTerrainData::BulletShapeTerrainData()
     rval->_impl.set<terrain_impl_ptr_t>(impl);
 
     rval->_collisionShape = impl->init_bullet_shape(data);
+    // W·M: raise the flag so the system tags the terrain rigid body CF_CUSTOM_MATERIAL_CALLBACK.
+    rval->_wantsCustomMaterialCallback = impl->_fricSampler._active;
 
     ////////////////////////////////////////////////////////////////////
     // create drawable

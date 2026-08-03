@@ -202,7 +202,12 @@ static void _disableLogging() {
 void pyinit_reflection(py::module& module_core);
 void pyinit_json_config(py::module& module_core);
 
-PYBIND11_MODULE(_core, module_core) {
+// mod_gil_not_used: without this declaration CPython 3.14t silently RE-ENABLES
+// the GIL on the first import of this extension ("has not declared that it can
+// run safely without the GIL"), which re-arms the ECS sub-interpreter deadlock
+// even when PYTHON_GIL is absent — see test_gil_ecs_regression.py. orkid's
+// bindings are free-threading-native by design.
+PYBIND11_MODULE(_core, module_core, py::mod_gil_not_used()) {
 
   //logger()->defaultChannel()->log("initialize ork.core python bindings");
   module_core.doc() = "Orkid Core Library (math,kernel,reflection,ect..)";

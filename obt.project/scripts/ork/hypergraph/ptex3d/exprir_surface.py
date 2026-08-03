@@ -103,6 +103,11 @@ _CTX_RENDER = {
     "opos": "ctx.P_object", "wpos": "ctx.P", "wnrm": "ctx.N", "onrm": "ctx.N_object",
     "vnrm": "ctx.NV", "uv": "ctx.uv", "cd": "ctx.Cd", "eye": "ctx.eye",
     "footprint": "ctx.footprint", "extent_m": "ctx.extent_m",
+    # the ublk_sun atoms carry their swizzle in the atom name (the block member is a
+    # vec4), so they render back to the vec3/float ctx accessors, not to a swizzle.
+    "sun_dir.xyz": "ctx.sun_dir", "sun_dir.w": "ctx.has_sun",
+    "sun_color.xyz": "ctx.sun_color", "sun_color.w": "ctx.sun_intensity",
+    "sky_ambient.x": "ctx.sky_luminance",
 }
 
 _SWIZZLE_NAME = "swizzle"

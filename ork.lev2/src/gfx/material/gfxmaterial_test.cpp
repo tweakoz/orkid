@@ -102,14 +102,12 @@ void GfxMaterial3DSolid::gpuInit(ork::lev2::Context* pTarg) {
   }
   if (mUserTekName.length()) {
     hTekUser       = fxi->technique(_shader, mUserTekName);
-    hTekUserStereo = fxi->technique(_shader, mUserTekName + "_stereo");
   }
   if (meColorMode != EMODE_USER) {
     hTekVertexColor    = fxi->technique(_shader, "vtxcolor");
     hTekVertexModColor = fxi->technique(_shader, "vtxmodcolor");
     hTekModColor       = fxi->technique(_shader, "mmodcolor");
     hTekTexColor       = fxi->technique(_shader, "texcolor");
-    hTekTexColorStereo = fxi->technique(_shader, "texcolorstereo");
     hTekTexModColor    = fxi->technique(_shader, "texmodcolor");
     hTekTexTexModColor = fxi->technique(_shader, "textexmodcolor");
     hTekTexVertexColor = fxi->technique(_shader, "texvtxcolor");
@@ -124,8 +122,6 @@ void GfxMaterial3DSolid::gpuInit(ork::lev2::Context* pTarg) {
   hMatAux2 = fxi->parameter(_shader, "MatAux2");
   hMatRot  = fxi->parameter(_shader, "MatRotW");
 
-  hMatMVPL       = fxi->parameter(_shader, "MatMVPL");
-  hMatMVPR       = fxi->parameter(_shader, "MatMVPR");
   hMatMVPC       = fxi->parameter(_shader, "MatMVPC");
   hMatMVP        = fxi->parameter(_shader, "MatMVP");
   hMatMV         = fxi->parameter(_shader, "MatMV");
@@ -169,7 +165,6 @@ int GfxMaterial3DSolid::BeginBlock(Context* pTarg, const RenderContextInstData& 
   auto RCFD = pTarg->topRenderContextFrameData();
   const auto& CPD                    = RCFD->topCPD();
   bool is_picking                    = CPD.isPicking();
-  bool is_stereo                     = CPD.isSinglePassStereo();
   auto MTXI = pTarg->MTXI();
   auto FXI  = pTarg->FXI();
 
@@ -190,7 +185,7 @@ int GfxMaterial3DSolid::BeginBlock(Context* pTarg, const RenderContextInstData& 
         return pTarg->FXI()->BeginBlock(hTekModColor, RCID);
         break;
       case EMODE_TEX_COLOR:
-        return pTarg->FXI()->BeginBlock(is_stereo ? hTekTexColorStereo : hTekTexColor, RCID);
+        return pTarg->FXI()->BeginBlock(hTekTexColor, RCID);
         break;
       case EMODE_TEXMOD_COLOR:
         return pTarg->FXI()->BeginBlock(hTekTexModColor, RCID);
@@ -208,7 +203,7 @@ int GfxMaterial3DSolid::BeginBlock(Context* pTarg, const RenderContextInstData& 
         return pTarg->FXI()->BeginBlock(hTekObjNormal, RCID);
         break;
       case EMODE_USER:
-        return pTarg->FXI()->BeginBlock(is_stereo ? hTekUserStereo : hTekUser, RCID);
+        return pTarg->FXI()->BeginBlock(hTekUser, RCID);
         break;
     }
   if (gbskip)
@@ -224,14 +219,13 @@ int GfxMaterial3DSolid::BeginBlock(Context* pTarg, const RenderContextInstData& 
   FXI->bindParamMatrix(hMatMV, MTXI->RefMVMatrix());
   FXI->bindParamMatrix(hMatP, MTXI->RefPMatrix());
 
+  // MONO ONLY, deliberately. None of the shaders this material loads declares a
+  // per-eye transform (MatMVPL/MatMVPR resolve nowhere), so the single-pass-stereo
+  // fork that used to sit here could feed nothing -- what it DID do was skip the
+  // MatMVP bind entirely under a stereo pass, leaving the vertex stage on whatever
+  // matrix the previous draw left behind. Both eye layers get the mono transform.
   const auto& world = MTXI->RefMMatrix();
-  if (is_stereo and CPD._stereo_cam_matrices) {
-    auto stereomtx = CPD._stereo_cam_matrices;
-    auto MVPL      = stereomtx->MVPL(world);
-    auto MVPR      = stereomtx->MVPR(world);
-    FXI->bindParamMatrix(hMatMVPL, MVPL);
-    FXI->bindParamMatrix(hMatMVPR, MVPR);
-  } else if (CPD._mono_cam_matrices) {
+  if (CPD._mono_cam_matrices) {
     auto mcams = CPD._mono_cam_matrices;
     auto MVP   = fmtx4::multiply_ltor(world,mcams->_vmatrix,mcams->_pmatrix);
     FXI->bindParamMatrix(hMatMVP, MVP);

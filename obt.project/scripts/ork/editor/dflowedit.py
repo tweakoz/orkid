@@ -525,8 +525,29 @@ class DflowEditor(ComponentizedApplication):
 
   def __init__(self, sources, *, offscreen=False, selftest=False, flagtest=False,
                envmap=None, material=None, bypass_ab=None, benches=True, bench_ab=None,
-               reset_layout=False, layout_probe=False, layouttest=False):
+               reset_layout=False, layout_probe=False, layouttest=False, uirecord=None,
+               uiplay=None, uiplay_exit=False):
     super().__init__()
+    # --uirecord diagnostic tap (ork.uitest session capture; terrainedit's pattern):
+    # path captured before createEzApp so _onUiInit can attach once contexts exist.
+    self._uirecord_path = uirecord
+    self._uirecorder = None
+    # --uiplay: frame-locked replay of a recorded session into THIS live editor.
+    # Driven from _onGpuUpdate (the render thread — the editors' proven injection
+    # spot; event dispatch is main-thread-serialized there). uiplay_exit=True
+    # signals app exit shortly after the replay completes (headless replay runs).
+    self._uiplay_path = uiplay
+    self._uiplay = None
+    self._uiplay_exit = bool(uiplay_exit)
+    self._uiplay_tick = 0
+    self._uiplay_settle = 30        # gpu ticks of warm-up before the clock baselines
+    self._uiplay_done_tick = None
+    # Replay clock = the UPDATE-thread counter (the recorder's stamp clock). Render
+    # ticks run SLOWER than UPS in a live windowed session — counting them stretched
+    # playback (owner-observed). _onUpdate publishes the counter (update thread);
+    # the render-thread drive reads it (latest-value int publish, recorder pattern).
+    self._uiplay_update_counter = 0
+    self._uiplay_base = None
     # TESTBENCH stimulus (editor-only): benches=True (default) resolves + applies a particles
     # asset's module-level TESTBENCH in the EDITING instantiation; benches=False reproduces the
     # exact pre-bench graph (production parity — the byte-parity + bypass-determinism gates set it).
@@ -572,7 +593,12 @@ class DflowEditor(ComponentizedApplication):
     self._title = _stem(self._sources[0])
     self._bindings = []             # per-source _Binding (populated in _onGpuInit)
     self._node_editors = []         # per-binding NodeEditor (parallel to _bindings)
-    self._canvases = []             # per-binding PrimCanvas (created in _onUiInit)
+    # (node_editor, host_window) pairs queued by a POST-BOOT Graph-column factory recreate
+    # (transfer / tear-out / return); drained on the GPU/render thread so each fresh editor's
+    # glyph textures init against the DESTINATION window's own context (a cross-context seam
+    # otherwise). One entry per binding per recreate.
+    self._ne_pending_gpuinit = []
+    self._canvases = []             # per-binding PrimCanvas (created by the Graph factory)
     self._tab_labels = []           # per-binding tab label (created in _onUiInit)
     self._focused_index = 0
     self._focused_binding = None
@@ -672,46 +698,30 @@ class DflowEditor(ComponentizedApplication):
     # binding's viewport_setup seam — this shell v1 does not bake/host any family).
     self.sgv = self.viewport_dock.child
 
-    self.left_dock = self.dock.split(
-        target=self.viewport_dock, placement=tokens.LEFT, proportion=_DOCK_LEFT_PROP,
-        margin=_DOCK_SPLIT_MARGIN, uiclass=lev2.ui.VerticalPack, args=[_DOCK_LEFT_TITLE],
-        title=_DOCK_LEFT_TITLE)
-    self.left_dock.titlebar_color = vec4(0.2, 0.15, 0.2, 1)
-
-    self.left_panel = self.left_dock.child
-    self.left_panel.margin = 2
-    self.left_panel.item_height = 34
-
-    self._setupToolbar()
-
-    # per-binding canvas tabs: one NodeEditor canvas per source, in a TabsWidget. Each
-    # canvas is bound to its family node model in _onGpuInit (the model + plug schema need
-    # the fully-registered reflected classes, which only exist after subsystem init; glyph
-    # textures likewise MUST be built in the GPU-init phase). sort_tabs=False keeps the tab
-    # index == source/binding index (stable programmatic + poll-driven focus); a lone source
-    # runs in page mode (no tab bar) so single-source layout is unchanged.
-    self._tab_labels = self._buildTabLabels()
-    self.tabs = self.left_panel.makeChild(uiclass=lev2.ui.TabsWidget, args=["canvas_tabs"])
-    self.tabs.sort_tabs = False
-    self.tabs.draw_tabs = len(self._sources) > 1
-    self.tabs.content_background = COL_BG
-    self._canvases = []
-    for label in self._tab_labels:
-      canvas = self.tabs.makeChild(uiclass=lev2.ui.PrimCanvas, args=[label])
-      canvas.bg_color = COL_BG
-      canvas.draw_background = True
-      self._canvases.append(canvas)
-    self.tabs.setActiveTab(0)
-    self.left_panel.fill_widget = self.tabs
-
     # W5: cross-window DockManager glue (shared with terrainedit via EditorDockGlue). The
-    # viewport + node-editor canvas tabs are PINNED (no factory) — one-shot Context-bound GPU
-    # seams that cannot be rebuilt in a foreign window's context. The property sheet has NO
-    # GPU seam, so it is the transferable factory panel; the boot below CALLS its factory.
+    # viewport is PINNED (no factory) — a SceneGraphViewport holds a one-shot Context-bound GPU
+    # seam (forkDB/scenegraph) that cannot be rebuilt in a foreign window's context. The Graph
+    # node-editor column (toolbar + canvas TabsWidget hosting one NodeEditor per binding) AND the
+    # property sheet ARE transferable: each registers a factory that rebuilds a FRESH instance in
+    # the destination dock (re-initing the node-editors' glyph GPU seam against that window's
+    # context on the GPU thread). The boot below CALLS each factory (one content-construction
+    # path), then reproduces the canonical split geometry.
     self._dock_glue = EditorDockGlue(self, self.dock, "dflowedit")
+    self._dock_glue.register(_DOCK_LEFT_TITLE, _DOCK_LEFT_TITLE, self._buildGraphPanel,
+                             save_state=self._saveGraphState,
+                             restore_state=self._restoreGraphState, closeable=False)
     self._dock_glue.register(_DOCK_PROPS_TITLE, _DOCK_PROPS_TITLE, self._buildPropsheetPanel,
                              save_state=self._savePropsheetState,
                              restore_state=self._restorePropsheetState, closeable=False)
+
+    # Graph node-editor column: factory-build (toolbar + canvas TabsWidget), then the canonical
+    # LEFT @0.4 split of the viewport. moveChild + setSplitProportion reproduce the prior inline
+    # dock.split(...) tree (the propsheet's proven pattern). At BOOT the factory builds only the
+    # SHELL (empty canvases) — the per-binding NodeEditors bind in _onGpuInit (bindings + glyph
+    # textures need the fully-registered reflected classes + the GPU-init phase).
+    self.left_dock = self._buildGraphPanel(self.dock, self.ezapp)
+    self.dock.moveChild(panel=self.left_dock, to=self.viewport_dock, zone=tokens.LEFT)
+    self.dock.setSplitProportion(self.viewport_dock, self.left_dock, _DOCK_LEFT_PROP)
 
     # build the property sheet via its factory, then reproduce the canonical split geometry
     # (propsheet BOTTOM @0.55 of the left column). moveChild's split uses the DockSpace
@@ -726,6 +736,161 @@ class DflowEditor(ComponentizedApplication):
     self._default_layout = save_layout(self.dock)
     self._maybeRestoreSession()
     self.dock.updateLayout()
+
+    # --uirecord: attach the session tap last, on the main thread, with the UI
+    # tree live (tear-out secondaries self-attach via the recorder's rescan).
+    if self._uirecord_path:
+      import ork.uitest as U
+      self._uirecorder = U.record(self.ezapp, self._uirecord_path)
+      print(f"[dflowedit] uirecord -> {self._uirecord_path}", flush=True)
+
+    # --uiplay: load + rebase the session now (fail-loud at boot on a bad file);
+    # injection starts after _uiplay_settle gpu ticks (see _onGpuUpdate).
+    if self._uiplay_path:
+      import ork.uitest as U
+      self._uiplay = U.play(self.ezapp, self._uiplay_path, rebase=True)
+      print(f"[dflowedit] uiplay <- {self._uiplay_path} "
+            f"({self._uiplay.session.event_count} events, "
+            f"{self._uiplay.skipped_tagged} secondary-tagged skipped, "
+            f"span {self._uiplay.max_frame + 1} frames)", flush=True)
+
+  def stopUiRecord(self):
+    """Flush + detach the --uirecord session tap (idempotent, exit-safe)."""
+    rec = self._uirecorder
+    self._uirecorder = None
+    if rec is None:
+      return
+    try:
+      sess = rec.stop()
+      print(f"[dflowedit] uirecord wrote {sess.event_count} events -> "
+            f"{self._uirecord_path}", flush=True)
+    except Exception as e:
+      # diagnostic tooling must never take the editor down at exit; the periodic
+      # flush already banked everything up to the last gesture.
+      print(f"[dflowedit] uirecord stop failed: {e}", flush=True)
+
+  ##############################################################################
+  # Graph node-editor column factory (the transferable panel) + carry-state
+  ##############################################################################
+
+  def _buildGraphPanel(self, dock, window):
+    """The Graph node-editor column's SINGLE content-construction path (boot + every cross-window
+    recreate). Builds a fresh VerticalPack[toolbar, canvas TabsWidget] DockPanel in 'dock' with one
+    empty PrimCanvas per source, and re-stamps the app-singleton shell seams (left_dock /
+    left_panel / toolbar / tabs / _canvases). When bindings already exist (a POST-BOOT recreate) it
+    also POPULATEs one FRESH NodeEditor per binding over those canvases and queues their glyph
+    gpuInit for the destination window's context; at BOOT the bindings do not exist yet, so
+    _onGpuInit populates inline against the main context. The per-binding node_models are PRESERVED
+    (document-bound state on the bindings) — only the NodeEditors are fresh (node positions live in
+    the document, so a fresh editor loses no state)."""
+    panel = dock.addPanel(uiclass=lev2.ui.VerticalPack, args=[_DOCK_LEFT_TITLE],
+                          title=_DOCK_LEFT_TITLE, closeable=False)
+    panel.titlebar_color = vec4(0.2, 0.15, 0.2, 1)
+    self.left_dock = panel
+    self.left_panel = panel.child
+    self.left_panel.margin = 2
+    self.left_panel.item_height = 34
+
+    self._setupToolbar()
+
+    # per-binding canvas tabs: one PrimCanvas per source in a TabsWidget. sort_tabs=False keeps
+    # the tab index == source/binding index (stable programmatic + poll-driven focus); a lone
+    # source runs in page mode (no tab bar) so single-source layout is unchanged.
+    self._tab_labels = self._buildTabLabels()
+    self.tabs = self.left_panel.makeChild(uiclass=lev2.ui.TabsWidget, args=["canvas_tabs"])
+    self.tabs.sort_tabs = False
+    self.tabs.draw_tabs = len(self._sources) > 1
+    self.tabs.content_background = COL_BG
+    self._canvases = []
+    for label in self._tab_labels:
+      canvas = self.tabs.makeChild(uiclass=lev2.ui.PrimCanvas, args=[label])
+      canvas.bg_color = COL_BG
+      canvas.draw_background = True
+      self._canvases.append(canvas)
+    self.tabs.setActiveTab(0)
+    self.left_panel.fill_widget = self.tabs
+
+    # POST-BOOT recreate: bindings are live -> bind fresh per-binding NodeEditors now + queue
+    # their glyph gpuInit for 'window's own context. At BOOT (bindings empty) this is skipped;
+    # _onGpuInit binds them inline against the main context.
+    if self._bindings:
+      self._populateGraphEditors(window)
+    return panel
+
+  def _populateGraphEditors(self, window, ctx=None):
+    """Bind one FRESH NodeEditor per EXISTING binding over the shell's canvases and re-stamp the
+    app-singleton seams (_node_editors, each binding's node_editor back-ref, key wiring, and — post
+    GPU-init — the focused NodeEditor + propsheet). GPU seam: at BOOT (ctx given, _gpu_ready False)
+    each editor's glyph textures init INLINE against the main context; a POST-BOOT recreate (ctx
+    None) queues each fresh editor's gpuInit for the destination window's context (drained
+    pre-render in _onGpuUpdate)."""
+    self._node_editors = []
+    for i, b in enumerate(self._bindings):
+      canvas = self._canvases[i]
+      ne = NodeEditor(canvas, b.node_model, title=b.title, orientation="vertical")
+      b.node_model.node_editor = ne                 # back-ref (status strip + post-add select)
+      ne.on_selection_changed = self._makeSelectHandler(b)
+      if ctx is not None:
+        ne.uicontext = self.uicontext
+        ne.gpuInit(ctx)                             # BOOT: glyph/icon textures against main ctx
+      else:
+        self._ne_pending_gpuinit.append((ne, window))   # POST-BOOT: init against dest ctx
+      self._wireNodeEditorKeys(canvas, ne)
+      self._node_editors.append(ne)
+    # POST-BOOT: re-stamp the focused NodeEditor + propsheet onto the fresh editors (carry-state
+    # then refines nav/selection/view + the focused tab). At BOOT _onGpuInit does the focus.
+    if self._gpu_ready:
+      self._focusBinding(self._focused_index, force=True)
+
+  def _saveGraphState(self, panel):
+    # carry the focused tab + PER-TAB {nav path, selection, view pan/zoom} off the SOURCE editors
+    # (the app-singleton _node_editors, still the source's until the factory re-stamps them). Node
+    # ids are DOCUMENT tree-path keys, stable across a fresh model-less rebind.
+    editors = self._node_editors
+    if not editors:
+      return None
+    tabs = []
+    for ne in editors:
+      tabs.append({
+          "nav_keys":  [getattr(m, "_container_key", None) for (m, _l) in ne.nav_stack[1:]],
+          "sel_nodes": set(ne.sel_nodes),
+          "sel_edges": set(tuple(e) for e in ne.sel_edges),
+          "view":      (ne.view.s, ne.view.ox, ne.view.oy),
+      })
+    return {"focused_index": self._focused_index, "tabs": tabs}
+
+  def _restoreGraphState(self, panel, state):
+    # re-apply the carried per-tab nav path + selection + view onto the FRESH per-tab editors (the
+    # factory already rebound _node_editors), then the carried focused tab. A container that no
+    # longer exists stops THAT tab's descent (per-tab, terrainedit's pattern).
+    if not state:
+      return
+    editors = self._node_editors
+    tabs = state.get("tabs") or []
+    for i, ne in enumerate(editors):
+      if ne is None or i >= len(tabs):
+        continue
+      ts = tabs[i]
+      for key in ts.get("nav_keys", []):
+        if key is not None and key in set(ne.model.nodes()) and ne.model.is_group(key):
+          ne._enter_group(key)
+        else:
+          break
+      ne.sel_nodes = set(ts.get("sel_nodes") or set())
+      ne.sel_edges = set(tuple(e) for e in (ts.get("sel_edges") or set()))
+      v = ts.get("view")
+      if v is not None:
+        ne.view.s, ne.view.ox, ne.view.oy = v
+        ne._did_initial_frame = True   # keep the carried pan/zoom (skip the initial auto-frame)
+      ne.mark_view_changed()
+      ne.mark_structure_changed()
+      ne.mark_selection_changed()
+      ne.mark_overlay()
+      ne._emit_selection()
+    fi = state.get("focused_index", 0)
+    if self.tabs is not None and 0 <= fi < len(editors):
+      self.tabs.setActiveTab(fi)
+      self._focusBinding(fi, force=True)
 
   ##############################################################################
   # property-sheet factory (the transferable panel) + carry-state
@@ -981,6 +1146,11 @@ class DflowEditor(ComponentizedApplication):
       x1, y1 = vp.localToRoot(vp.width - 12, vp.height // 2)
       r["sig_pre_drag"] = dock.layoutSignature()
       top = self.ezapp.topWidget
+      # The left column ("Graph") is now a TRANSFERABLE panel, so the coordinator would classify
+      # an in-window titlebar drop as a TEAR-OUT when the main window has no known screen rect
+      # (offscreen) — override main's rect so this in-window drop resolves LOCAL (a moveChild),
+      # which is what this phase means to exercise.
+      lev2.ui.DockCoordinator.instance().setWindowRectOverride("main", 0, 0, top.width, top.height)
       U.drag(self.ezapp, x0, y0, x1, y1, top.width, top.height, steps=10)
       self._layouttest_settle_at = f + 6
       self._layouttest_stage = "tabdrag_wait"
@@ -1072,20 +1242,15 @@ class DflowEditor(ComponentizedApplication):
             import traceback
             traceback.print_exc()
 
-    # one generic node editor per binding, each over its own canvas tab.
-    self._node_editors = []
-    for i, b in enumerate(self._bindings):
-      canvas = self._canvases[i]
-      ne = NodeEditor(canvas, b.node_model, title=b.title, orientation="vertical")
-      b.node_model.node_editor = ne                 # back-ref (status strip + post-add select)
-      ne.uicontext = self.uicontext
-      ne.on_selection_changed = self._makeSelectHandler(b)
-      ne.gpuInit(ctx)                               # glyph/icon textures (GPU-init phase)
-      self._wireNodeEditorKeys(canvas, ne)
-      self._node_editors.append(ne)
+    # one generic node editor per binding, each over its own canvas tab. This is the FIRST-BOOT
+    # population (the Graph factory built only the SHELL in _onUiInit with _gpu_ready False, so it
+    # did NOT populate) — bind the editors here and init their glyph textures against the MAIN
+    # context. A POST-BOOT factory recreate (transfer / tear-out / return) populates from
+    # _buildGraphPanel and queues the fresh editors' gpuInit for the destination context.
+    self._populateGraphEditors(self.ezapp, ctx=ctx)
 
     # property sheet follows the focused binding (one change-handler; rebound per focus).
-    self._gpu_ready = True             # from here, the propsheet factory re-wires on rebuild
+    self._gpu_ready = True             # from here, the factories defer/re-wire on rebuild
     self._wirePropsheet()             # (re)register change + custom-editor handlers
     self._focusBinding(0, force=True)
 
@@ -1411,6 +1576,40 @@ class DflowEditor(ComponentizedApplication):
     # and rebind the propsheet to the newly focused binding.
     if self._viewport_host is not None:
       self._viewport_host.gpuUpdate(ctx)
+    # W5: build glyph textures for any node editor a POST-BOOT Graph-column factory recreate
+    # produced (transfer / tear-out / return). Runs on the GPU thread but BEFORE this frame's
+    # render pass (updateTexture asserts !_renderPassActive — draining in onGpuPostFrame aborts on
+    # a MAIN-destination return), each editor against its DESTINATION window's own context.
+    self._drainNodeEditorGpuInit(ctx)
+    # --uiplay: frame-locked replay drive. Render thread == the serialized event-
+    # dispatch thread, so injection here can never race live input. On completion:
+    # un-virtualize the context clock (the Player virtualizes it for deterministic
+    # double-click derivation) and, with uiplay_exit, signal exit a short settle
+    # later so deferred structural mutations land before teardown.
+    if self._uiplay is not None:
+      self._uiplay_tick += 1
+      # baseline the replay clock once: after the warm-up AND once the update
+      # thread has published a counter (>0) — replay time then advances at the
+      # RECORDED clock's rate; the Player's catch-up fires any frames a coarse
+      # render-tick sample skipped over.
+      if (self._uiplay_base is None and self._uiplay_tick >= self._uiplay_settle
+          and self._uiplay_update_counter > 0):
+        self._uiplay_base = self._uiplay_update_counter
+      if self._uiplay_base is not None and not self._uiplay.done:
+        t = self._uiplay_update_counter - self._uiplay_base
+        import types
+        self._uiplay.on_update(types.SimpleNamespace(counter=t))
+        if self._uiplay.done:
+          self._uiplay_done_tick = self._uiplay_tick
+          uic = self.ezapp.uicontext
+          if uic is not None:
+            uic.virtual_time_enabled = False
+          print(f"[dflowedit] uiplay done: injected "
+                f"{self._uiplay.injected_count} events", flush=True)
+      elif (self._uiplay_exit and self._uiplay_done_tick is not None
+            and self._uiplay_tick >= self._uiplay_done_tick + 20):
+        self._uiplay_done_tick = None
+        self.ezapp.signalExit()
     # live dock-layout reset (Shift+L) — applied here (render-sequential, outside event
     # dispatch) so the moveChild + proportion re-cascade never races DoRePaintSurface.
     # W5: the two-phase reset FIRST returns every secondary window's panels to main
@@ -1434,6 +1633,10 @@ class DflowEditor(ComponentizedApplication):
 
   def _onUpdate(self, updinfo):
     # update thread: transport-gated ECS tick (host owns the play/pause/stop gate).
+    if self._uirecorder is not None:
+      self._uirecorder.on_update(updinfo)
+    if self._uiplay is not None:
+      self._uiplay_update_counter = int(updinfo.counter)
     if self._viewport_host is not None:
       self._viewport_host.update()
     if self.sgv is not None:
@@ -1448,6 +1651,36 @@ class DflowEditor(ComponentizedApplication):
       self._benchAbTick()
     if self._layout_probe:
       self._layoutProbeTick()
+
+  def _drainNodeEditorGpuInit(self, main_ctx):
+    """Build the glyph/icon textures for any node editor a POST-BOOT Graph-column factory recreate
+    produced. Called from _onGpuUpdate — on the GPU/render thread but BEFORE the frame's render
+    pass, so the texture upload is legal (updateTexture asserts !_renderPassActive) even for a MAIN-
+    destination rebuild (return-on-close). Each editor inits against the DESTINATION window's OWN
+    context — a texture built on the wrong window's context is a cross-context seam. The device is
+    shared across windows, but each node-editor instance owns its textures. A window whose context
+    is not yet live (a just-torn-out window) re-queues for the next frame."""
+    if not self._ne_pending_gpuinit:
+      return
+    pending = self._ne_pending_gpuinit
+    self._ne_pending_gpuinit = []
+    for (ne, window) in pending:
+      try:
+        wctx, uic = self._windowGpu(window, main_ctx)
+        if wctx is None:
+          self._ne_pending_gpuinit.append((ne, window))   # context not live yet; retry next frame
+          continue
+        ne.uicontext = uic
+        ne.gpuInit(wctx)
+      except Exception as e:
+        print(f"[dflowedit] node-editor GPU init deferred/failed: {e}", flush=True)
+
+  def _windowGpu(self, window, main_ctx):
+    """(gfx_context, ui_context) for the window a factory built into — the main app (ezapp, the
+    live render ctx) or an EzSecondaryWin (its own gfx/ui context)."""
+    if window is self.ezapp:
+      return main_ctx, self.uicontext
+    return getattr(window, "gfx_context", None), getattr(window, "ui_context", None)
 
   ##############################################################################
   # offscreen framebuffer capture (async readback drained across frames)

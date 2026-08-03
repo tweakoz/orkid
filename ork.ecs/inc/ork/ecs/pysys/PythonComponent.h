@@ -41,6 +41,16 @@ public:
   void DoRegisterWithScene(ork::ecs::SceneComposer& sc) const final;
 
   file::Path mScriptPath;
+
+  // AUTHOR->SCRIPT PAYLOAD, reflected: an opaque string the scene declares
+  // alongside the script path and the behavior script reads as
+  // comp.script_data. It is reflected precisely so it rides the .ecs; a script
+  // whose only declared surface was a PATH forced every other authored value
+  // out-of-band into the process environment, which does NOT survive the
+  // two-process author->player recipe (ork.scene.tojson.py then
+  // ork.ecs.player.exe) and left the player reading an empty table.
+  std::string _scriptData;
+
   lev2::scenegraph::node_instance_data_ptr_t _INSTANCEDATA;
 };
 
@@ -169,6 +179,11 @@ public:
 
     } catch (const std::exception& e) {
       printf("Error executing Python script: %s\n", e.what());
+      // FLUSH BEFORE THE ASSERT. Redirected stdout is fully buffered, and the
+      // assert aborts without unwinding, so the traceback that says WHY the
+      // script died never reached any log file — every captured crash read as a
+      // bare SIGTRAP. A diagnostic that only survives on a tty is not loud.
+      fflush(stdout);
       OrkAssert(false);
     }
   }

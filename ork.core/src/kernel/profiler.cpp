@@ -1,6 +1,9 @@
 #include <ork/pch.h>
 #include <ork/kernel/profiler.h>
 #include <ork/util/logger.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cctype>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -9,6 +12,118 @@ logchannel_ptr_t logchan_prof = logger()->configureChannel("PROF", fvec3(0.1, 0.
 
 // #define PROF_LOG(...) do { printf(__VA_ARGS__); fflush(stdout); } while(0)
 #define PROF_LOG(...) ((void)0)
+
+////////////////////////////////////////////////////////////////////////////////
+
+#ifdef ORK_PROFILER_ENABLE
+namespace {
+// ORKID_PROFILER_DUMP=<path> : the headless readout. The GUI ProfilerView is the only
+// other consumer of these series and it needs a window, so an offscreen bench had no way
+// to see per-phase cost at all. Unset = never opened, nothing written, no clock read.
+//
+// One whitespace-separated line per (frame,series) that actually ran:
+//    <t_s> <channel> <frame> <series> <total_ms> <isolated_ms> <count>
+// written from ProfilerChannel::frameEnd BEFORE addSample zeroes the accumulators, so the
+// numbers are exactly what the frame committed. ATTRIBUTION: VkProfilerChannel::frameEnd
+// resolves its timestamp queries with VK_QUERY_RESULT_WAIT_BIT in that same call - the
+// ticks belong to the frame being closed, never to a later one - so <frame> (the channel's
+// own frameEnd counter) is the frame the sample measured.
+//
+// Series with count==0 are SKIPPED rather than written as zeros: a phase that did not run
+// this frame has no duration, and zero rows would drag its percentiles toward zero.
+//
+// frameEnd runs on whatever thread owns each channel (GPU/Main/Update are distinct
+// channels on distinct threads), so the file is mutex-guarded. Flushed every _kflush
+// lines because a bench run ends by SIGTERM, which runs no destructor.
+struct ProfilerDump {
+  static constexpr int _kflush = 256;
+
+  static ProfilerDump& instance() {
+    static ProfilerDump _dump;
+    return _dump;
+  }
+
+  ~ProfilerDump() {
+    if (_file)
+      fclose(_file);
+  }
+
+  // names reach the file as single tokens - a thread name with a space in it would
+  // silently shift every column to its right.
+  static std::string _tokenize(const std::string& inp) {
+    std::string out = inp;
+    for (auto& ch : out)
+      if (std::isspace((unsigned char)ch))
+        ch = '_';
+    return out;
+  }
+
+  void writeFrame(ProfilerChannel* channel) {
+    std::lock_guard<std::mutex> lock(_mtx);
+    if (not _opened) {
+      _opened   = true;
+      auto path = std::getenv("ORKID_PROFILER_DUMP");
+      if (path) {
+        _file = fopen(path, "w");
+        if (nullptr == _file)
+          fprintf(stderr, "ORKID_PROFILER_DUMP<%s> could not be opened for writing\n", path);
+        else {
+          fprintf(_file, "# ORKID_PROFILER_DUMP v1: t_s channel frame series total_ms isolated_ms count\n");
+          _timer.Start();
+        }
+      }
+    }
+    if (nullptr == _file)
+      return;
+
+    double t_s        = _timer.SecsSinceStart();
+    auto channel_name = _tokenize(channel->_name);
+    double scale      = channel->_tick_to_ms;
+
+    for (auto series : channel->_series_iter) {
+      if (series->_style != ProfilerSeries::Style::Sample)
+        continue;
+      auto s = static_cast<SampleProfilerSeries*>(series);
+      if (0 == s->_call_count)
+        continue;
+      fprintf(
+          _file,
+          "%.4f %s %llu %s %.4f %.4f %d\n",
+          t_s,
+          channel_name.c_str(),
+          (unsigned long long)channel->_current_tick,
+          _tokenize(series->_name).c_str(),
+          double(s->_total_ticks) * scale,
+          double(s->_isolated_ticks) * scale,
+          s->_call_count);
+      if (0 == (++_lines % _kflush))
+        fflush(_file);
+    }
+  }
+
+  std::mutex _mtx;
+  Timer _timer;
+  FILE* _file  = nullptr;
+  bool _opened = false;
+  u64 _lines   = 0;
+};
+} // namespace
+#else
+namespace {
+// The dump lives entirely behind the compile gate, so a request for it on a stock binary
+// would otherwise produce an empty file and a silent, wrong "no phases cost anything".
+struct ProfilerDumpUnavailable {
+  ProfilerDumpUnavailable() {
+    if (std::getenv("ORKID_PROFILER_DUMP"))
+      fprintf(
+          stderr,
+          "ORKID_PROFILER_DUMP is set, but this binary was built WITHOUT ORK_PROFILER_ENABLE - "
+          "no phase timings will be written. Rebuild with 'ork.build.py --profiler'.\n");
+  }
+};
+ProfilerDumpUnavailable _profiler_dump_unavailable;
+} // namespace
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -71,6 +186,10 @@ void ProfilerChannel::frameBegin() {
 }
 
 void ProfilerChannel::frameEnd() {
+#ifdef ORK_PROFILER_ENABLE
+  // must precede addSample - that zeroes the accumulators this reads.
+  ProfilerDump::instance().writeFrame(this);
+#endif
   // We add a sample for all of them even if they didn't accumulate a sample so that the sample vectors lineup.
   // Some samples may have 0 total_accum_time and call_level -1!
     for (auto series : _series_iter) {

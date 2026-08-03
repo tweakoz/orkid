@@ -70,10 +70,12 @@ def settle(timeout=5.0, strict=False, stable_polls=6, poll_s=0.02):
   What we drain with the seams that ARE bound to Python:
     * the concurrent (loader) queue: a bounded drain(timeout) + a poll for
       num_pending_operations == 0 held stable across `stable_polls`.
-    * asyncWorkPending(): the async-tracker registry the offscreen player settles on.
-      NOTE it is not yet bound to Python (C++ only) — detected at runtime so this
-      slots in automatically the moment a binding lands. Until then loader-idle is
-      the proxy. (Reported as a seam gap.)
+    * the async-tracker registry the offscreen player settles on, via
+      asyncWorkPendingOneShot() — the ONE-SHOT census. The raw total includes
+      RECURRING feeds (a procedural sky's IBL refilter re-arms as the sun moves),
+      which never drain, so settling on it would burn the whole timeout on a
+      perfectly healthy celestial scene. Both are probed at runtime so an engine
+      without the bindings falls back to loader-idle.
 
   strict=True raises if work is still pending when `timeout` elapses; the default
   is best-effort (return whether it drained)."""
@@ -83,7 +85,8 @@ def settle(timeout=5.0, strict=False, stable_polls=6, poll_s=0.02):
   except Exception:
     pass   # drain is a bounded helper; a backend that lacks it falls to the poll
 
-  async_pending = getattr(core, "asyncWorkPending", None)   # forward-compat probe
+  async_pending = getattr(core, "asyncWorkPendingOneShot", None) \
+                  or getattr(core, "asyncWorkPending", None)   # forward-compat probe
   deadline = time.time() + float(timeout)
   stable = 0
   while time.time() < deadline:

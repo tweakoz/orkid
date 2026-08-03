@@ -149,6 +149,19 @@ public:
   int   _max_points = 6000000;
   float _lift       = 0.0f;      // meters along the up axis, baked into the translation
 
+  // scatter_place v2 — AGGREGATION LATTICE (0 = off, byte-identical): snap candidate
+  // positions to a village-yaw-aligned grid of this pitch (meters) BEFORE the mask
+  // kill, deduping same-cell candidates to the strongest weight. Grid basis = the
+  // per-point village heading (yaw field when wired, else _yaw_lo), anchored at the
+  // heading-rotated frame of world origin. _lane_every>0 widens every Nth grid line's
+  // gap by _lane_m (lanes between block rows).
+  float _lattice_m  = 0.0f;
+  int   _lane_every = 0;
+  float _lane_m     = 0.0f;
+  // yaw source when a yaw field is wired: "hash" (hash the field value -> heading,
+  // byte-identical default) | "direct" (treat the field value AS radians).
+  std::string _yaw_mode = "hash";
+
   // ordered (type_id = index): the type names + the captured weight-channel each reads.
   std::vector<std::string> _type_names;
   std::vector<std::string> _type_channels;

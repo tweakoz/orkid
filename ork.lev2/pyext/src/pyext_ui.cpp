@@ -752,6 +752,16 @@ void pyinit_ui(py::module& module_lev2) {
               [](uisurface_ptr_t surface) -> rtgroup_ptr_t { //
                 return surface->_rtgroup;
               })
+          //////////////////////////////////
+          // The repaint contract's clock (ui/surface.h): sample it when you
+          // change scene state, then wait for it to ADVANCE before capturing
+          // this surface's rtgroup. Counting frames instead is a bug — a
+          // free-running loop can render many frames with no repaint at all.
+          .def_property_readonly(
+              "repaint_count",
+              [](uisurface_ptr_t surface) -> uint64_t { //
+                return surface->_repaintCount.load();
+              })
           .def_property(
               "clearColor",
               [](uisurface_ptr_t surface) -> fvec3 { //

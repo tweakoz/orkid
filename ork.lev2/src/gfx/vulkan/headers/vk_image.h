@@ -100,7 +100,14 @@ struct VulkanTextureObject {
   std::atomic<uint64_t> _dataVersion{0};
   size_t _deletion_frame = 0;           // Frame number when marked for deletion (for deferred cleanup)
 
+  // Monotonic identity, same role as VulkanImageObject::_serial_number above:
+  // defeats ADDRESS reuse. Binders must never decide "same texture" by
+  // comparing VulkanTextureObject pointers — the publish path frees one and
+  // allocates the next, and the allocator does hand back the same address.
+  size_t _serial_number = 0;
+
   static std::atomic<size_t> _vkto_count;
+  static std::atomic<size_t> _vktoSN;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VkTexLoadReq {

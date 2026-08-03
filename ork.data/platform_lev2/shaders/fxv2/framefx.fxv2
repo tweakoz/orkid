@@ -4,6 +4,7 @@
 fxconfig fxcfg_default {
   import "orkshader://stdtools.i2";
   import "orkshader://ssaotools.i2";
+  import "orkshader://dithertools.i2";
 }
 ///////////////////////////////////////////////////////////////
 // Interfaces
@@ -312,6 +313,7 @@ fragment_shader ps_hdr_join //
 fragment_shader ps_hsvg //
   : fif_FFX             //
   : color_tools         //
+  : lib_dither          //
   : ub_frg_FFX          //
   : samplers_all {      //
   vec4 inprgb = texture(MrtMap0, frg_uv);
@@ -324,7 +326,10 @@ fragment_shader ps_hsvg //
   float r = pow(rgb.r, inv_gamma);
   float g = pow(rgb.g, inv_gamma);
   float b = pow(rgb.b, inv_gamma);
-  out_clr   = vec4(r,g,b, 1.0);
+  // grading is a display-encode too, and it is the LAST node of the usual
+  // aces->hsvg chain. Salted apart from ps_aces so a chain carrying both adds
+  // two INDEPENDENT dithers rather than the same offset twice.
+  out_clr   = vec4(vec3(r,g,b) + outputDitherTPDF(gl_FragCoord.xy, 71.0), 1.0);
 }
 ///////////////////////////////////////////////////////////////
 sampler_set sset_frg_ssao_impl(descriptor_set 0) {
@@ -656,15 +661,16 @@ libblock lib_aces {
 fragment_shader ps_aces //
   : fif_FFX              //
   : lib_aces             //
+  : lib_dither           //
   : ub_frg_FFX           //
   : samplers_all {       //
   vec3 hdr = texture(MrtMap0, frg_uv).xyz;
+  vec3 display = hdr;
   if (Exposure > 0.0) {
     vec3 exposed = hdr * Exposure;
-    out_clr = vec4(aces_filmic(exposed), 1.0);
-  } else {
-    out_clr = vec4(hdr, 1.0);
+    display = aces_filmic(exposed);
   }
+  out_clr = vec4(display + outputDitherTPDF(gl_FragCoord.xy, 0.0), 1.0);
 }
 ///////////////////////////////////////////////////////////////
 technique framefx_aces {

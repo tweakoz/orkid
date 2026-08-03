@@ -31,7 +31,17 @@ void pyinit_stochwav(py::module& module_ecs) {
           .def_property(
               "wavFilePath",
               [](stochwavsnd_ptr_t s) -> file::Path { return s->_wavFilePath; },
-              [](stochwavsnd_ptr_t s, file::Path val) { s->_wavFilePath = val; })
+              // str or Path, same as SimpleSoundData.wavfile_path — scene authors
+              // write these as bare "data://..." literals.
+              [](stochwavsnd_ptr_t s, py::object val) {
+                if (py::isinstance<file::Path>(val)) {
+                  s->_wavFilePath = val.cast<file::Path>();
+                } else if (py::isinstance<py::str>(val)) {
+                  s->_wavFilePath = file::Path(val.cast<std::string>().c_str());
+                } else {
+                  throw std::runtime_error("StochWavSound.wavFilePath: expected str or Path");
+                }
+              })
           .def_property(
               "burstRate",
               [](stochwavsnd_ptr_t s) -> float { return s->_burstRate; },
@@ -157,7 +167,11 @@ void pyinit_stochwav(py::module& module_ecs) {
           .def_property(
               "enabled",
               [](stochwavemitterdata_ptr_t cd) -> bool { return cd->_enabled; },
-              [](stochwavemitterdata_ptr_t cd, bool val) { cd->_enabled = val; });
+              [](stochwavemitterdata_ptr_t cd, bool val) { cd->_enabled = val; })
+          .def_property(
+              "priority", // voice-steal priority: higher survives longer
+              [](stochwavemitterdata_ptr_t cd) -> int { return cd->_priority; },
+              [](stochwavemitterdata_ptr_t cd, int val) { cd->_priority = val; });
   type_codec->registerStdCodec<stochwavemitterdata_ptr_t>(emitterdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   // StochWavSoundEmitterSystemData

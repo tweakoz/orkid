@@ -130,7 +130,6 @@ protected:
   fxshaderasset_ptr_t _shaderasset;
 
   const FxShaderTechnique* hTek   = nullptr;
-  const FxShaderTechnique* hTekStereo   = nullptr;
   const FxShaderParam* hVPW       = nullptr;
   const FxShaderParam* hBias      = nullptr;
   const FxShaderParam* hScale     = nullptr;

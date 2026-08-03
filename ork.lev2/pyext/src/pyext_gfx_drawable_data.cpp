@@ -84,6 +84,18 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
               py::arg("gy") = 1,
               py::arg("gz") = 1)
           .def(
+              // DIRECT mesh-shader draw over a fixed workgroup grid (no args buffer). With a task
+              // stage in the technique's pass these counts are TASK workgroups; each one decides
+              // its own mesh grid, so the drawn geometry is data-dependent by construction.
+              "setMeshDraw",
+              [](computedrawabledata_ptr_t d, pyfxtechnique_ptr_t technique, uint32_t gx, uint32_t gy, uint32_t gz) {
+                d->setMeshDraw(technique.get(), gx, gy, gz);
+              },
+              py::arg("technique"),
+              py::arg("gx"),
+              py::arg("gy") = 1,
+              py::arg("gz") = 1)
+          .def(
               "setCameraParams",
               [](computedrawabledata_ptr_t d, fxshaderstoragebuffer_ptr_t ssbo, size_t offset) {
                 d->setCameraParams(ssbo.get(), offset);

@@ -1,0 +1,680 @@
+///////////////////////////////////////////////////////////////////////////////
+// Hillaire-2020 atmosphere (SKYLIGHT lane B).
+//  "A Scalable and Production Ready Sky and Atmosphere Rendering Technique",
+//  Sebastien Hillaire, EGSR 2020. LUT chain: transmittance -> multi-scatter ->
+//  sky-view. All fragment-raster; no compute, no imageStore.
+//
+// UNITS: everything inside this lib is KILOMETERS and per-kilometer
+// scattering/extinction coefficients (planet radii are ~6360). Callers convert
+// world units at the boundary and hand the view altitude in via SkyRadii.z.
+//
+// FRAME: every routine is frame-agnostic — geometry enters only through
+// length(p) and dot(up,dir), so each bake pass picks whatever local basis is
+// convenient for its own parameterization.
+//
+// A8: every artist-tweakable value arrives through ublk_sky_atmo. The only
+// baked constants are raymarch step counts (structural, not parametric).
+///////////////////////////////////////////////////////////////////////////////
+uniform_block ublk_sky_atmo (descriptor_set 0) {
+  vec4 SkyRayleighScatter; // rgb: scattering (1/km), a: density scale height (km)
+  vec4 SkyMieScatter;      // x: scattering, y: extinction, z: scale height (km), w: phase g
+  vec4 SkyOzoneAbsorb;     // rgb: absorption (1/km), a: unused
+  vec4 SkyOzoneTent;       // x: tent center altitude (km), y: tent half width (km)
+  vec4 SkyRadii;           // x: ground radius, y: top radius, z: view altitude ASL (all km)
+  vec4 SkyGroundAlbedo;    // rgb: lambertian ground albedo
+  vec4 SkySunIlluminance;  // rgb: sun illuminance at the top of the atmosphere
+  vec4 SkySunDirection;    // xyz: UNIT VECTOR POINTING TOWARD THE SUN (world, Y-up)
+  vec4 SkyLutDims;         // xy: dims of the LUT being rasterized, zw: 1/dims
+  // visible-sky presentation (FWD_SKYBOX_PROC only; the LUT bakes ignore it)
+  vec4 SkySunDisc;         // x: disc angular RADIUS (radians), y: disc intensity
+                           // (x illuminance x transmittance), z: limb softness as a
+                           // fraction of the radius, w: procedural-sky output scale
+  vec4 SkyMoonDirection;   // xyz: UNIT VECTOR POINTING TOWARD THE MOON, w: 1 when
+                           // the scene declared a moon (0 disables the disc entirely)
+  vec4 SkyMoonDisc;        // x: disc angular RADIUS (radians), y: disc intensity
+                           // (ABSOLUTE, x transmittance), z: limb softness, w: phase
+                           // terminator softness (both fractions of the radius)
+  vec4 SkyMoonAlbedo;      // rgb: lunar albedo/color, a: unused
+  vec4 SkyNightEmission;   // x: airglow zenith radiance, y: starlight radiance,
+                           // z: moon-Rayleigh strength, w: airglow layer
+                           // altitude (km above the ground sphere)
+  vec4 SkyMoonIlluminance; // rgb: the declared moon's illuminance at the top of
+                           // the atmosphere, in SkySunIlluminance units (its
+                           // light color x phase-scaled intensity), a: unused
+}
+///////////////////////////////////////////////////////////////////////////////
+sampler_set sset_sky_luts (descriptor_set 0) {
+  sampler2D SkyTransmittanceLUT;
+  sampler2D SkyMultiScatterLUT;
+  sampler2D SkyViewLUT;
+}
+///////////////////////////////////////////////////////////////////////////////
+typeblock typ_sky {
+  struct SkyMedium {
+    vec3 _scatterRayleigh;
+    float _scatterMie;
+    vec3 _extinction;
+  };
+  // Two-angle LUT coordinate. Meaning of _cosine depends on the LUT:
+  // transmittance -> cos(view zenith); multi-scatter -> cos(sun zenith).
+  struct SkyLutCoord {
+    float _radius;
+    float _cosine;
+  };
+  struct SkyViewAngles {
+    float _viewZenithCos;
+    float _lightViewCos;
+  };
+  // One raymarch result. _msTransfer / _msLuminance are only meaningful for
+  // the multi-scatter bake (isotropic-phase accumulators, Hillaire eq. 5-10).
+  struct SkyScatterResult {
+    vec3 _luminance;
+    vec3 _msTransfer;
+    vec3 _msLuminance;
+  };
+}
+///////////////////////////////////////////////////////////////////////////////
+libblock lib_sky
+  : lib_math
+  : typ_sky
+  : ublk_sky_atmo
+  : sset_sky_luts { //
+
+  ///////////////////////////////////////////////////////////
+  // medium sample at altitude h (km above the ground sphere)
+  ///////////////////////////////////////////////////////////
+
+  SkyMedium skySampleMedium(float h) {
+    SkyMedium med;
+    float d_ray = exp(-max(h, 0.0) / SkyRayleighScatter.a);
+    float d_mie = exp(-max(h, 0.0) / SkyMieScatter.z);
+    // ozone is a tent (linear ramp up to the center altitude, back down after)
+    float d_ozo = clamp(1.0 - abs(h - SkyOzoneTent.x) / SkyOzoneTent.y, 0.0, 1.0);
+    med._scatterRayleigh = SkyRayleighScatter.rgb * d_ray;
+    med._scatterMie      = SkyMieScatter.x * d_mie;
+    // rayleigh does not absorb, so its extinction IS its scattering
+    med._extinction = med._scatterRayleigh                //
+                      + vec3(SkyMieScatter.y * d_mie)     //
+                      + SkyOzoneAbsorb.rgb * d_ozo;       //
+    return med;
+  }
+
+  ///////////////////////////////////////////////////////////
+  // nearest positive intersection with the sphere of radius R
+  // centered on the origin. -1 when the ray misses / points away.
+  ///////////////////////////////////////////////////////////
+
+  float skyRaySphere(vec3 ro, vec3 rd, float R) {
+    float b = dot(ro, rd);
+    float c = dot(ro, ro) - R * R;
+    if (c > 0.0 && b > 0.0)
+      return -1.0;
+    float disc = b * b - c;
+    if (disc < 0.0)
+      return -1.0;
+    float sd = sqrt(disc);
+    float t0 = -b - sd;
+    float t1 = -b + sd;
+    if (t1 < 0.0)
+      return -1.0;
+    return (t0 < 0.0) ? t1 : t0;
+  }
+
+  ///////////////////////////////////////////////////////////
+  // phase functions
+  ///////////////////////////////////////////////////////////
+
+  float skyRayleighPhase(float ct) {
+    return (3.0 / (16.0 * PI)) * (1.0 + ct * ct);
+  }
+
+  float skyMiePhase(float ct, float g) {
+    float g2 = g * g;
+    float k  = (3.0 / (8.0 * PI)) * (1.0 - g2) / (2.0 + g2);
+    float d  = 1.0 + g2 - 2.0 * g * ct;
+    return k * (1.0 + ct * ct) / max(d * sqrt(d), 1e-6);
+  }
+
+  ///////////////////////////////////////////////////////////
+  // transmittance LUT parameterization (Bruneton's, as used by Hillaire):
+  //  u maps the distance-to-top-of-atmosphere between its zenith minimum and
+  //  its horizon maximum, so u=0 is straight up and u=1 is horizon-grazing.
+  //  v maps altitude through rho = sqrt(r^2 - Rg^2).
+  ///////////////////////////////////////////////////////////
+
+  vec2 skyTransmittanceLutUV(float r, float mu) {
+    float Rg   = SkyRadii.x;
+    float Rt   = SkyRadii.y;
+    float H    = sqrt(max(Rt * Rt - Rg * Rg, 0.0));
+    float rho  = sqrt(max(r * r - Rg * Rg, 0.0));
+    float disc = r * r * (mu * mu - 1.0) + Rt * Rt;
+    float d    = max(-r * mu + sqrt(max(disc, 0.0)), 0.0);
+    float dmin = Rt - r;
+    float dmax = rho + H;
+    float span = max(dmax - dmin, 1e-6);
+    return vec2(clamp((d - dmin) / span, 0.0, 1.0), clamp(rho / max(H, 1e-6), 0.0, 1.0));
+  }
+
+  SkyLutCoord skyTransmittanceLutParams(vec2 uv) {
+    SkyLutCoord c;
+    float Rg   = SkyRadii.x;
+    float Rt   = SkyRadii.y;
+    float H    = sqrt(max(Rt * Rt - Rg * Rg, 0.0));
+    float rho  = H * uv.y;
+    float r    = sqrt(rho * rho + Rg * Rg);
+    float dmin = Rt - r;
+    float dmax = rho + H;
+    float d    = dmin + uv.x * (dmax - dmin);
+    c._radius  = r;
+    c._cosine  = (d <= 0.0) ? 1.0 : clamp((H * H - rho * rho - d * d) / (2.0 * r * d), -1.0, 1.0);
+    return c;
+  }
+
+  // integrate optical depth from (r,mu) to the top of the atmosphere
+  vec3 skyComputeTransmittance(float r, float mu) {
+    vec3 ro   = vec3(0.0, 0.0, r);
+    vec3 rd   = vec3(sqrt(max(1.0 - mu * mu, 0.0)), 0.0, mu);
+    float tmax = skyRaySphere(ro, rd, SkyRadii.y);
+    if (tmax <= 0.0)
+      return vec3(1.0);
+    float dt = tmax / 40.0;
+    vec3 od  = vec3(0.0);
+    for (int i = 0; i < 40; i++) {
+      vec3 p    = ro + rd * ((float(i) + 0.5) * dt);
+      SkyMedium m = skySampleMedium(length(p) - SkyRadii.x);
+      od += m._extinction * dt;
+    }
+    return exp(-od);
+  }
+
+  vec3 skySampleTransmittance(float r, float mu) {
+    return texture(SkyTransmittanceLUT, skyTransmittanceLutUV(r, mu)).rgb;
+  }
+
+  ///////////////////////////////////////////////////////////
+  // multi-scatter LUT parameterization: u = cos(sun zenith) remapped to
+  // [0,1], v = altitude fraction between ground and top of atmosphere.
+  ///////////////////////////////////////////////////////////
+
+  vec2 skyMultiScatterLutUV(float r, float sun_ct) {
+    float span = max(SkyRadii.y - SkyRadii.x, 1e-6);
+    return vec2(clamp(sun_ct * 0.5 + 0.5, 0.0, 1.0), clamp((r - SkyRadii.x) / span, 0.0, 1.0));
+  }
+
+  SkyLutCoord skyMultiScatterLutParams(vec2 uv) {
+    SkyLutCoord c;
+    c._cosine = clamp(uv.x * 2.0 - 1.0, -1.0, 1.0);
+    c._radius = mix(SkyRadii.x, SkyRadii.y, clamp(uv.y, 0.0, 1.0));
+    return c;
+  }
+
+  vec3 skySampleMultiScatter(float r, float sun_ct) {
+    return texture(SkyMultiScatterLUT, skyMultiScatterLutUV(r, sun_ct)).rgb;
+  }
+
+  ///////////////////////////////////////////////////////////
+  // sky-view LUT parameterization: u is the azimuth to the sun (squared, so
+  // texels bunch toward the sun), v splits at the horizon with a squared ramp
+  // on each side (texels bunch toward the horizon, where the gradient is).
+  ///////////////////////////////////////////////////////////
+
+  SkyViewAngles skySkyViewLutParams(vec2 uv, float view_r) {
+    SkyViewAngles a;
+    float Rg      = SkyRadii.x;
+    float cosbeta = sqrt(max(view_r * view_r - Rg * Rg, 0.0)) / max(view_r, 1e-6);
+    float beta    = acos(clamp(cosbeta, -1.0, 1.0));
+    float zhorizon = PI - beta;
+    if (uv.y < 0.5) {
+      float coord = 1.0 - 2.0 * uv.y;
+      coord       = 1.0 - coord * coord;
+      a._viewZenithCos = cos(zhorizon * coord);
+    } else {
+      float coord = uv.y * 2.0 - 1.0;
+      a._viewZenithCos = cos(zhorizon + beta * coord * coord);
+    }
+    float cu       = uv.x * uv.x;
+    a._lightViewCos = -(cu * 2.0 - 1.0);
+    return a;
+  }
+
+  vec2 skySkyViewLutUV(vec3 view_dir, vec3 sun_dir, vec3 up, float view_r) {
+    float Rg       = SkyRadii.x;
+    float cosbeta  = sqrt(max(view_r * view_r - Rg * Rg, 0.0)) / max(view_r, 1e-6);
+    float beta     = acos(clamp(cosbeta, -1.0, 1.0));
+    float zhorizon = PI - beta;
+    float vzc      = clamp(dot(view_dir, up), -1.0, 1.0);
+    float vza      = acos(vzc);
+    float v;
+    if (vza < zhorizon) {
+      float coord = (zhorizon > 0.0) ? (vza / zhorizon) : 0.0;
+      v           = 0.5 * (1.0 - sqrt(max(1.0 - coord, 0.0)));
+    } else {
+      float coord = (beta > 0.0) ? ((vza - zhorizon) / beta) : 0.0;
+      v           = 0.5 * (1.0 + sqrt(clamp(coord, 0.0, 1.0)));
+    }
+    // horizontal (azimuthal) component of both vectors
+    vec3 vh = normalize(view_dir - up * vzc);
+    vec3 sh = normalize(sun_dir - up * clamp(dot(sun_dir, up), -1.0, 1.0));
+    float lvc = clamp(dot(vh, sh), -1.0, 1.0);
+    float u   = sqrt(clamp(0.5 - lvc * 0.5, 0.0, 1.0));
+    return vec2(u, v);
+  }
+
+  ///////////////////////////////////////////////////////////
+  // NIGHT EMISSION — the light the sky still carries once the sun is gone.
+  //
+  //  The sky-view LUT is a SUN-ONLY integral, so with the sun below the horizon
+  //  it converges to zero and every shadowed surface the IBL lights goes black.
+  //  These are the three sources that actually keep a real moonless night above
+  //  zero, in the order they contribute (zodiacal light and the Milky Way are
+  //  deliberately NOT here — they are structured, not a floor):
+  //
+  //    AIRGLOW    the dominant term. Chemiluminescence of the OH / O2 layer,
+  //               which is a THIN SHELL at a real altitude, so its horizon
+  //               brightening is the van Rhijn slant-path factor and falls out
+  //               of the geometry rather than out of a curve. Extincted by the
+  //               air below it, which is what stops the van Rhijn divergence
+  //               from painting a bright rim at the horizon.
+  //    STARLIGHT  integrated background from outside the atmosphere, isotropic,
+  //               likewise extincted along the view ray.
+  //    MOONLIGHT  Rayleigh single-scatter of the declared moon light. Same
+  //               physics as the sun's, from a source six orders fainter, so it
+  //               is worth a closed form rather than a second LUT chain: the
+  //               segment integral of scattering against its own extinction is
+  //               exactly (1 - exp(-tau)) for a medium whose scattering IS its
+  //               extinction, which Rayleigh's is.
+  //
+  //  ALWAYS ON, no toggle: all three are additive and physically sized, so by
+  //  day the LUT's own mid-sky radiance is orders above them and drowns them.
+  ///////////////////////////////////////////////////////////
+
+  vec3 skyNightEmission(vec3 view_dir, vec3 up, float view_r) {
+    float Rg = SkyRadii.x;
+    float mu = clamp(dot(view_dir, up), -1.0, 1.0);
+    vec3 T   = skySampleTransmittance(view_r, mu);
+
+    // van Rhijn: the slant path through a shell of radius Ra seen from view_r.
+    float Ra   = Rg + max(SkyNightEmission.w, 0.0);
+    float sin2 = max(1.0 - mu * mu, 0.0) * (view_r * view_r) / max(Ra * Ra, 1.0e-6);
+    float slant = 1.0 / sqrt(max(1.0 - sin2, 1.0e-4));
+
+    vec3 emit = vec3(max(SkyNightEmission.x, 0.0) * slant + max(SkyNightEmission.y, 0.0));
+    emit *= T;
+
+    if (SkyMoonDirection.w >= 0.5) {
+      vec3 moon_dir = normalize(SkyMoonDirection.xyz);
+      float mu_moon = clamp(dot(moon_dir, up), -1.0, 1.0);
+      // A moon sets over its own angular DIAMETER — the same continuous
+      // terminator the raymarch's planet-shadow term uses, and for the same
+      // reason: a binary horizon test switches the WHOLE night sky in one
+      // frame as the moon crosses it.
+      float sin_dip = -sqrt(max(1.0 - (Rg * Rg) / max(view_r * view_r, 1.0e-6), 0.0));
+      float moon_up = smoothstep(0.0, 2.0 * max(SkyMoonDisc.x, 1.0e-4), mu_moon - sin_dip);
+      if (moon_up > 0.0) {
+        // Column optical depth of the Rayleigh layer along the VIEW ray:
+        // beta_R * H_R is its zenith value and 1/mu is the plane-parallel
+        // airmass. Floored at 1/38, where the curved-earth airmass tops out —
+        // the plane-parallel form diverges at the horizon and this is the only
+        // place that shows.
+        vec3 tau = SkyRayleighScatter.rgb * SkyRayleighScatter.a / max(mu, 0.026);
+        emit += SkyMoonIlluminance.rgb                                                     //
+                * (max(SkyNightEmission.z, 0.0) * skyRayleighPhase(dot(view_dir, moon_dir)) //
+                   * moon_up)                                                              //
+                * (vec3(1.0) - exp(-tau))                                                  //
+                * skySampleTransmittance(view_r, mu_moon);
+      }
+    }
+    return emit;
+  }
+
+  ///////////////////////////////////////////////////////////
+  // VISIBLE SKY (FWD_SKYBOX_PROC, aerial perspective, IBL snapshot)
+  //  The LUT was rasterized in its own canonical basis (sky.fxv2: up=+Z, sun
+  //  in the +X half of the XZ plane); skySkyViewLutUV rebuilds that basis from
+  //  world vectors, so a caller just hands over world-space directions plus the
+  //  world up at the view position.
+  //
+  //  BELOW THE HORIZON the LUT rows hold the ground-OCCLUDED raymarch, which at
+  //  eye level is a few meters of air — i.e. black. A black lower hemisphere is
+  //  a hard seam wherever terrain does not reach the horizon line, and in the
+  //  IBL snapshot it is a hole that poisons ambient and reflections from below.
+  //  So the elevation lookup is CLAMPED to the horizon row and the atmosphere is
+  //  CONTINUED downward from it: the same air, seen through a longer and longer
+  //  slant column as the view depresses, settling on the lambertian ground the
+  //  floor stands in for. Both ends of that blend are the sky's own radiance, so
+  //  the sun/moon/time-of-day state that colors the skyline colors what is under
+  //  it too — there is no separate below-horizon appearance to keep in sync.
+  //  This is a plausible FLOOR, not a ground simulation — no LUT bake is
+  //  affected, and the sun disc is clipped by the planet independently of it
+  //  (skyEvalSunDisc).
+  ///////////////////////////////////////////////////////////
+
+  vec3 skySampleSkyView(vec3 view_dir, vec3 sun_dir, vec3 up, float view_r) {
+    vec2 uv  = skySkyViewLutUV(view_dir, sun_dir, up, view_r);
+    float Rg = SkyRadii.x;
+    float mu = clamp(dot(view_dir, up), -1.0, 1.0);
+    // mu AT THE GEOMETRIC HORIZON (negative — the horizon is depressed by the
+    // view altitude, and this is exactly the mu the LUT splits its v axis on).
+    // mu_h - mu is then the sine of the depression BELOW it, and dividing by its
+    // own nadir value normalizes the lower hemisphere to [0,1] with the horizon
+    // landing at exactly 0, which is what makes the skyline seamless.
+    float mu_h = -sqrt(max(1.0 - (Rg * Rg) / max(view_r * view_r, 1.0e-6), 0.0));
+    float sdip = clamp((mu_h - mu) / max(1.0 + mu_h, 1.0e-6), 0.0, 1.0);
+    // DEPRESSION GRADE. The atmosphere does not stop at the skyline; what changes
+    // across it is the AIR COLUMN — grazing (all haze, no ground) at the horizon,
+    // shortening as the view drops until the ground shows through. The
+    // transmittance LUT already IS that column as a function of the sine of an
+    // elevation, so the grade is a re-read of its own v=0 row at the depression
+    // angle, normalized between its horizon and zenith ends. Measured from the
+    // GROUND sphere on purpose: measured from the EYE the column would end at the
+    // ground a few km out and the whole lower hemisphere would collapse into a
+    // hard line one degree below the skyline — the seam this exists to remove.
+    // Per channel, because the channels do not extinguish alike: red gives out
+    // first over the long column, so the fill keeps the blue haze that aerial
+    // perspective actually shows over distant ground. No time-of-day term
+    // anywhere in it — it is pure air geometry, and the color it grades between
+    // carries the sun and the moon.
+    vec3 fade    = vec3(0.0);
+    float u_flat = uv.x;
+    if (sdip > 0.0) {
+      vec3 t_hor = skySampleTransmittance(Rg, 0.0);
+      vec3 t_zen = skySampleTransmittance(Rg, 1.0);
+      vec3 t_dip = skySampleTransmittance(Rg, sdip);
+      vec3 ratio = clamp((t_dip - t_hor) / max(t_zen - t_hor, vec3(1.0e-4)), 0.0, 1.0);
+      // EASED AT BOTH ENDS. The ratio is the physics; this monotone cubic only
+      // flattens its two endpoint slopes, and it is doing continuity work rather
+      // than styling at each of them. At the horizon the raw ratio leaves with a
+      // steep slope (the airmass curve is at its steepest there) while the sky
+      // ABOVE the horizon is still brightening downward — the derivative would
+      // reverse in one texel and the skyline would read as a drawn LINE even
+      // though the value is continuous. At the nadir it stops the fill from
+      // arriving at the ground value with slope to spare, which is the same
+      // curvature break — a band edge — one hemisphere further down.
+      fade = ratio * ratio * (3.0 - 2.0 * ratio);
+      // The azimuth has to converge with it. Every azimuth meets at the nadir, so
+      // carrying the horizon's sun-ward azimuthal swing all the way down pinches a
+      // bright spike into the point straight below the viewer; u=sqrt(0.5) is the
+      // parameterization's own sun-neutral column (lightViewCos 0), so the floor
+      // settles into one even tone instead. Driven by the mid band, which stands
+      // in for a grade whose three channels differ only in rate.
+      u_flat = mix(uv.x, sqrt(0.5), fade.g);
+    }
+    // clamp to the CENTER of the last above-horizon texel row, not to the v=0.5
+    // row boundary: bilinear at the boundary blends in the first ground-occluded
+    // (black) row and halves the horizon radiance, which is a seam of its own.
+    float horizon_v = 0.5 - 0.5 / float(textureSize(SkyViewLUT, 0).y);
+    vec3 rgb        = texture(SkyViewLUT, vec2(u_flat, min(uv.y, horizon_v))).rgb;
+    // NIGHT EMISSION lands HERE — inside the ONE path the visible skybox
+    // (FWD_SKYBOX_PROC) and the IBL snapshot (sky_equirect_snapshot) both
+    // sample through — so the ambient a shadowed surface receives can never
+    // disagree with the sky a camera sees. It is deliberately NOT in the LUT
+    // bake: the bake is the sun-only integral, and adding a floor there would
+    // feed back through the multi-scatter chain.
+    rgb += skyNightEmission(view_dir, up, view_r);
+    if (sdip <= 0.0)
+      return rgb;
+    // GROUND VALUE: lambertian albedo times the sky radiance that dominates the
+    // irradiance falling on it. The 45 degree row is that radiance — cos*sin, the
+    // hemispherical weighting, peaks exactly there — so this lands within a
+    // factor of the true bounce instead of the ~5x too bright a fraction of the
+    // HORIZON radiance would give (the horizon band is the brightest sky there
+    // is, and an IBL fed from it ends up lit from below).
+    const float mid_sky_v = 0.5 - 0.5 * sqrt(0.5);   // 45 degrees elevation
+    // the emission has to reach the floor too, or the lower hemisphere — which
+    // carries most of the cosine weight an IBL integrates for a side-facing
+    // normal — stays the black it is being rescued from. Evaluated in the
+    // view's own azimuth at that same 45 degrees; straight down the azimuth
+    // degenerates and it settles on the zenith, which is the flattest answer.
+    vec3 horiz     = view_dir - up * mu;
+    float horiz_len = length(horiz);
+    vec3 mid_dir   = normalize(up + ((horiz_len > 1.0e-6) ? (horiz / horiz_len) : vec3(0.0)));
+    vec3 ground    = SkyGroundAlbedo.rgb                                        //
+                     * (texture(SkyViewLUT, vec2(u_flat, mid_sky_v)).rgb        //
+                        + skyNightEmission(mid_dir, up, view_r));               //
+    return mix(rgb, ground, fade);
+  }
+
+  ///////////////////////////////////////////////////////////
+  // IBL SNAPSHOT direction from equirect texel (sky.fxv2 sky_equirect_snapshot).
+  //  This MUST be the mapping the radiance prefilter reads the snapshot back
+  //  with — env_equirectangularUV2Na / env_equirectangularN2UVa (envtools.i2):
+  //  v=0 is the +Y pole, v=1 the -Y pole, and u sweeps azimuth from the -X
+  //  meridian through +X at u=0.5. Any other convention rotates or flips the
+  //  whole IBL against the sky it was snapped from.
+  ///////////////////////////////////////////////////////////
+
+  vec3 skyEquirectUV2Dir(vec2 uv) {
+    float phi   = uv.x * PI2 - PI;
+    float theta = uv.y * PI;
+    float st    = sin(theta);
+    return vec3(st * cos(phi), cos(theta), st * sin(phi));
+  }
+
+  ///////////////////////////////////////////////////////////
+  // analytic sun disc. The sky-view LUT cannot carry it (192x108 over the whole
+  // sphere is two orders of magnitude coarser than the ~0.53 degree disc), so it
+  // is evaluated per pixel, attenuated by the transmittance along the VIEW ray so
+  // it reddens and extinguishes toward the horizon exactly as the sky does, and
+  // clipped per-ray by the planet — which is what gives a half-set sun its
+  // straight terminator.
+  ///////////////////////////////////////////////////////////
+
+  vec3 skyEvalSunDisc(vec3 view_dir, vec3 sun_dir, vec3 up, float view_r) {
+    float radius  = max(SkySunDisc.x, 0.0);
+    float cos_in  = cos(radius);
+    float cos_out = cos(radius * (1.0 + max(SkySunDisc.z, 0.0)));
+    float ct      = dot(view_dir, sun_dir);
+    float mask    = (cos_in > cos_out) ? smoothstep(cos_out, cos_in, ct) : step(cos_in, ct);
+    if (mask <= 0.0)
+      return vec3(0.0);
+    float mu = clamp(dot(view_dir, up), -1.0, 1.0);
+    // frame-agnostic planet test (see the FRAME note at the top of this lib)
+    vec3 ro  = vec3(0.0, 0.0, view_r);
+    vec3 rd  = vec3(sqrt(max(1.0 - mu * mu, 0.0)), 0.0, mu);
+    if (skyRaySphere(ro, rd, SkyRadii.x) > 0.0)
+      return vec3(0.0);
+    return SkySunIlluminance.rgb * skySampleTransmittance(view_r, mu) * (SkySunDisc.y * mask);
+  }
+
+  ///////////////////////////////////////////////////////////
+  // analytic moon disc with its SYNODIC PHASE. Same angular mask, the same
+  // view-ray transmittance and the same per-ray planet clip as the sun disc (so
+  // moonset gets the identical straight terminator for free); what it adds is a
+  // per-pixel lit-limb test, driven by nothing but the two directions.
+  //
+  //   k = dot(moon_dir, sun_dir)   -1 = full, 0 = quarter, +1 = new
+  //   f = fractional disc radius of the sample, t = its in-disc direction
+  //   u = f * dot(t, limb_axis)    along the bright limb; s across it
+  //
+  // the sphere's surface normal at that sample is N = f*t - sqrt(1-f^2)*moon_dir,
+  // and dot(N,sun_dir) > 0 reduces exactly to u > k*sqrt(1-s^2) — the classical
+  // phase ELLIPSE. That form is used rather than the normal dot because its zero
+  // set is measured in DISC RADII, so ONE softness constant gives a terminator of
+  // constant width at every phase.
+  //
+  // NOT modeled (v1): earthshine, the opposition brightness surge, libration,
+  // and any daylight suppression — the sky's own radiance washes the disc out.
+  ///////////////////////////////////////////////////////////
+
+  vec3 skyEvalMoonDisc(vec3 view_dir, vec3 moon_dir_raw, vec3 sun_dir, vec3 up, float view_r) {
+    if (SkyMoonDirection.w < 0.5)
+      return vec3(0.0);
+    vec3 moon_dir = normalize(moon_dir_raw);
+    float radius  = max(SkyMoonDisc.x, 0.0);
+    float cos_in  = cos(radius);
+    float cos_out = cos(radius * (1.0 + max(SkyMoonDisc.z, 0.0)));
+    float ct      = dot(view_dir, moon_dir);
+    float mask    = (cos_in > cos_out) ? smoothstep(cos_out, cos_in, ct) : step(cos_in, ct);
+    if (mask <= 0.0)
+      return vec3(0.0);
+    float mu = clamp(dot(view_dir, up), -1.0, 1.0);
+    vec3 ro  = vec3(0.0, 0.0, view_r);
+    vec3 rd  = vec3(sqrt(max(1.0 - mu * mu, 0.0)), 0.0, mu);
+    if (skyRaySphere(ro, rd, SkyRadii.x) > 0.0)
+      return vec3(0.0);
+    // disc-local frame
+    vec3 off      = view_dir - moon_dir * ct;
+    float off_len = length(off);
+    vec3 tang     = (off_len > 1.0e-9) ? (off / off_len) : vec3(0.0);
+    float f       = clamp(off_len / max(sin(radius), 1.0e-6), 0.0, 1.0);
+    // bright-limb axis: the sun projected into the disc plane. It DEGENERATES at
+    // full and new moon, where the axis is undefined and irrelevant — u drops to
+    // zero there and the sign of k alone decides (all lit / all dark).
+    float k        = clamp(dot(moon_dir, sun_dir), -1.0, 1.0);
+    vec3 limb      = sun_dir - moon_dir * k;
+    float limb_len = length(limb);
+    vec3 limb_axis = (limb_len > 1.0e-4) ? (limb / limb_len) : vec3(0.0);
+    float u        = f * dot(tang, limb_axis);
+    float s2       = max(f * f - u * u, 0.0);
+    float term     = u - k * sqrt(max(1.0 - s2, 0.0));
+    float soft     = max(SkyMoonDisc.w, 1.0e-4);
+    float lit      = smoothstep(-soft, soft, term);
+    return SkyMoonAlbedo.rgb * skySampleTransmittance(view_r, mu) * (SkyMoonDisc.y * mask * lit);
+  }
+
+  ///////////////////////////////////////////////////////////
+  // the single raymarch every LUT is built from.
+  //  use_ms_lut : fold the multi-scatter LUT back in (sky-view pass)
+  //  with_ground: add the lambertian ground bounce (multi-scatter bake)
+  ///////////////////////////////////////////////////////////
+
+  SkyScatterResult skyIntegrateScattered(
+      vec3 ro,       //
+      vec3 rd,       //
+      vec3 sun_dir,  //
+      int nsteps,    //
+      bool use_ms_lut,
+      bool with_ground) { //
+
+    SkyScatterResult res;
+    res._luminance   = vec3(0.0);
+    res._msTransfer  = vec3(0.0);
+    res._msLuminance = vec3(0.0);
+
+    float Rg    = SkyRadii.x;
+    float t_top = skyRaySphere(ro, rd, SkyRadii.y);
+    float t_gnd = skyRaySphere(ro, rd, Rg);
+    if (t_top <= 0.0)
+      return res;
+    float tmax = (t_gnd > 0.0) ? min(t_top, t_gnd) : t_top;
+    if (tmax <= 0.0)
+      return res;
+
+    float ct_sun  = dot(rd, sun_dir);
+    float ph_ray  = skyRayleighPhase(ct_sun);
+    float ph_mie  = skyMiePhase(ct_sun, SkyMieScatter.w);
+    float ph_iso  = 1.0 / (4.0 * PI);
+
+    vec3 throughput = vec3(1.0);
+    float dt        = tmax / float(nsteps);
+
+    // planet-shadow penumbra half width (see the shadow term in the loop, which
+    // ramps over 2x this, the sun's full angular diameter). It is the sun's own
+    // angular radius and NOTHING more: the raymarch samples sit
+    // ~0.32 degrees apart in the sun elevation they flip at, so a window any
+    // wider overlaps two or three of them, stacks their transitions into a step
+    // LARGER than the one it was meant to remove, and lights the ground shadow
+    // past every sample's true terminator. This is the SkySunDisc default
+    // (_sunDiscAngularRadius, 0.265 degrees) written as a constant because that
+    // block is bound for the visible sky only, not for the LUT bakes.
+    const float penumbra_half_width = 0.004625; // 0.265 degrees, radians
+
+    for (int i = 0; i < nsteps; i++) {
+      vec3 p      = ro + rd * ((float(i) + 0.5) * dt);
+      float r     = length(p);
+      vec3 up     = p / max(r, 1e-6);
+      SkyMedium m = skySampleMedium(r - Rg);
+
+      vec3 seg_ext = exp(-m._extinction * dt);
+      vec3 sigma   = max(m._extinction, vec3(1e-7));
+
+      float mu_sun = dot(up, sun_dir);
+      vec3 t_sun   = skySampleTransmittance(r, mu_sun);
+      // planet shadow: the sun ray from this point must clear the ground sphere.
+      // A binary clear/blocked test flips at ONE exact sun elevation per sample
+      // altitude, and with a fixed step count those flips land at slightly
+      // different elevations, so a setting sun sweeps them past one another and
+      // the LUT row jitters — a sawtooth streak through the low-sun band. So the
+      // test is taken continuously instead. The sun ray grazes the ground sphere
+      // exactly at mu_sun == -sqrt(1-(Rg/r)^2) (the sine of the local horizon
+      // dip), and the margin against it is measured in sines rather than angles
+      // because cos(dip) = Rg/r > 0.98 everywhere in the shell, i.e. the two
+      // agree to ~2% and no inverse trig is needed.
+      // The ramp is ONE-SIDED, entirely on the LIT side of the grazing angle: a
+      // window straddling it would light samples the hard test leaves in shadow,
+      // and measurement shows that added energy is worse than the sawtooth it
+      // smooths. So below the threshold this matches the hard test exactly, and
+      // above it the term can only ever REMOVE energy — the softening is
+      // energy-conservative by construction.
+      // ONLY the sky-view pass (use_ms_lut) softens. The multi-scatter bake
+      // marches 20 steps over the whole sphere, so its samples flip even further
+      // apart, and it is measured insensitive to the softening anyway (isotropic
+      // phase, 64 directions averaged) — it keeps the hard test.
+      float sin_dip = -sqrt(max(1.0 - (Rg * Rg) / max(r * r, 1e-6), 0.0));
+      float shadow  = use_ms_lut //
+                          ? smoothstep(0.0, 2.0 * penumbra_half_width, mu_sun - sin_dip)
+                          : ((skyRaySphere(p, sun_dir, Rg) < 0.0) ? 1.0 : 0.0);
+
+      vec3 scat_phased  = m._scatterRayleigh * ph_ray + vec3(m._scatterMie * ph_mie);
+      vec3 scat_iso     = (m._scatterRayleigh + vec3(m._scatterMie)) * ph_iso;
+      vec3 scat_total   = m._scatterRayleigh + vec3(m._scatterMie);
+
+      // single scatter (energy-conserving analytic segment integral)
+      vec3 S = SkySunIlluminance.rgb * shadow * t_sun * scat_phased;
+      if (use_ms_lut)
+        S += skySampleMultiScatter(r, mu_sun) * scat_total;
+      res._luminance += throughput * ((S - S * seg_ext) / sigma);
+
+      // multi-scatter bake accumulators (isotropic phase)
+      vec3 ms_t = scat_iso;
+      res._msTransfer += throughput * ((ms_t - ms_t * seg_ext) / sigma);
+      vec3 ms_l = SkySunIlluminance.rgb * shadow * t_sun * scat_iso;
+      res._msLuminance += throughput * ((ms_l - ms_l * seg_ext) / sigma);
+
+      throughput *= seg_ext;
+    }
+
+    if (with_ground && t_gnd > 0.0) {
+      vec3 p       = ro + rd * tmax;
+      float r      = length(p);
+      vec3 up      = p / max(r, 1e-6);
+      float mu_sun = dot(up, sun_dir);
+      if (mu_sun > 0.0) {
+        vec3 g = SkyGroundAlbedo.rgb * INV_PI * mu_sun * SkySunIlluminance.rgb * skySampleTransmittance(r, mu_sun);
+        res._luminance += throughput * g;
+        res._msLuminance += throughput * g;
+      }
+    }
+    return res;
+  }
+
+  ///////////////////////////////////////////////////////////
+  // multi-scatter LUT texel: 64 uniformly distributed directions, each
+  // raymarched with an isotropic phase, then the infinite scattering-order
+  // series collapsed to psi = L2 / (1 - fms) (Hillaire eq. 10).
+  ///////////////////////////////////////////////////////////
+
+  vec3 skyComputeMultiScatter(float r, float sun_ct) {
+    vec3 ro      = vec3(0.0, 0.0, r);
+    vec3 sun_dir = vec3(sqrt(max(1.0 - sun_ct * sun_ct, 0.0)), 0.0, sun_ct);
+    vec3 lum     = vec3(0.0);
+    vec3 fms     = vec3(0.0);
+    for (int i = 0; i < 8; i++) {
+      for (int j = 0; j < 8; j++) {
+        float ra    = (float(i) + 0.5) * 0.125;
+        float rb    = (float(j) + 0.5) * 0.125;
+        float theta = 2.0 * PI * ra;
+        float phi   = acos(1.0 - 2.0 * rb);
+        float sp    = sin(phi);
+        vec3 rd     = vec3(cos(theta) * sp, sin(theta) * sp, cos(phi));
+        SkyScatterResult s = skyIntegrateScattered(ro, rd, sun_dir, 20, false, true);
+        lum += s._msLuminance;
+        fms += s._msTransfer;
+      }
+    }
+    lum *= (1.0 / 64.0);
+    fms *= (1.0 / 64.0);
+    return lum / max(vec3(1.0) - fms, vec3(1e-4));
+  }
+}
+///////////////////////////////////////////////////////////////////////////////

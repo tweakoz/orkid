@@ -15,8 +15,11 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/reflect/properties/register.h>
+#include <ork/reflect/properties/registerX.inl> // template DEFINITIONS — needed to instantiate floatProperty<>()
 
 #include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeACES.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_common.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/sky_atmosphere.h>
 
 ImplementReflectionX(ork::lev2::PostFxNodeACES, "PostFxNodeACES");
 
@@ -24,6 +27,64 @@ ImplementReflectionX(ork::lev2::PostFxNodeACES, "PostFxNodeACES");
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 void PostFxNodeACES::describeX(class_t* c) {
+  // Reflect the exposure so an AUTHORED value survives tojson -> player; without
+  // it the deserialized node silently falls back to the header default (1.0 =
+  // tonemap only, no grade).
+  c->floatProperty("exposure", float_range{0.0f, 64.0f}, &PostFxNodeACES::_exposure);
+  // The adaptation curve's knobs, reflected for the same reason: they are what
+  // an author (and the owner, live) tunes, and the shipped playback path
+  // re-deserializes this node from the .ecs with no python anywhere.
+  c->floatProperty("adaptDayLuminance", float_range{1.0e-9f, 1.0e6f}, &PostFxNodeACES::_adaptDayLuminance);
+  c->floatProperty("adaptTwilightLuminance", float_range{1.0e-9f, 1.0e6f}, &PostFxNodeACES::_adaptTwilightLuminance);
+  c->floatProperty("adaptFloorLuminance", float_range{1.0e-9f, 1.0e6f}, &PostFxNodeACES::_adaptFloorLuminance);
+  c->floatProperty("adaptDay", float_range{0.0f, 64.0f}, &PostFxNodeACES::_adaptDay);
+  c->floatProperty("adaptTwilight", float_range{0.0f, 64.0f}, &PostFxNodeACES::_adaptTwilight);
+  // The floor's range is the ODD one on purpose: it is the dark-adaptation
+  // opening, and a night that a monitor can show is three decades above the
+  // grading gains its two siblings live in.
+  c->floatProperty("adaptFloor", float_range{0.0f, 4096.0f}, &PostFxNodeACES::_adaptFloor);
+}
+///////////////////////////////////////////////////////////////////////////////
+namespace {
+// 0 at x0, 1 at x1, smoothstep between — C1 at both ends, so the adaptation
+// never kinks where one anchor segment hands over to the next.
+inline float _smoothramp(float x, float x0, float x1) {
+  if (x1 == x0)
+    return (x >= x1) ? 1.0f : 0.0f;
+  float t = (x - x0) / (x1 - x0);
+  if (t <= 0.0f)
+    return 0.0f;
+  if (t >= 1.0f)
+    return 1.0f;
+  return t * t * (3.0f - 2.0f * t);
+}
+} // namespace
+///////////////////////////////////////////////////////////////////////////////
+// The work is done in log10(luminance) because available light spans four to
+// five decades between noon and a moonless night: a linear interpolation across
+// that range spends its whole resolution on the day end and steps the entire
+// night in one texel of the curve.
+float PostFxNodeACES::sceneAdaptation(float luminance, float seed_sun_elevation_sin) const {
+  // WARM-UP SEED: no publish has happened, so there is no measurement. Sun up =
+  // the day anchor, sun down = the floor anchor. Two branches, not a ramp —
+  // growing an elevation curve here would rebuild the very thing the measured
+  // drive replaced.
+  if (luminance < 0.0f)
+    return (seed_sun_elevation_sin > 0.0f) ? _adaptDay : _adaptFloor;
+
+  const float lo   = std::max(_adaptFloorLuminance, 1.0e-12f);
+  const float logL = log10f(std::max(luminance, lo));
+  const float logF = log10f(lo);
+  const float logT = log10f(std::max(_adaptTwilightLuminance, lo));
+  const float logD = log10f(std::max(_adaptDayLuminance, lo));
+
+  if (logL <= logT) {
+    // FLOOR -> TWILIGHT: brighter means LESS gain. This is the limb a moonrise
+    // travels, and the one the sign gate pins down.
+    return _adaptFloor + (_adaptTwilight - _adaptFloor) * _smoothramp(logL, logF, logT);
+  }
+  // TWILIGHT -> DAY: back up to the identity as real daylight arrives.
+  return _adaptTwilight + (_adaptDay - _adaptTwilight) * _smoothramp(logL, logT, logD);
 }
 ///////////////////////////////////////////////////////////////////////////////
 namespace posteffect_aces {
@@ -98,7 +159,18 @@ struct IMPL {
             FBI->PushRtGroup(_rtg_out.get());
             _freestyle_mtl->begin(_tek_aces,framedata);
             _freestyle_mtl->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
-            _freestyle_mtl->bindParamFloat(_fxpExposure, _node->_exposure);
+            // AUTHORED exposure COMPOSED with this frame's scene adaptation —
+            // never replaced by it. pbrcommon is set on the RCFD by the forward
+            // node's render; a chain with no forward node in front of it (unlit,
+            // 2D) has none, and then there is no environment to have measured, so
+            // the node grades on the authored value alone.
+            float adaptation = 1.0f;
+            if (auto pbrcommon = framedata->_pbrcommon) {
+              adaptation = _node->sceneAdaptation( //
+                  pbrcommon->availableLightLuminance(),
+                  pbrcommon->skySunElevationSin());
+            }
+            _freestyle_mtl->bindParamFloat(_fxpExposure, _node->_exposure * adaptation);
             _freestyle_mtl->bindParamTexture(_fxpInputMap, final_rtg->texture(0).get());
             _freestyle_mtl->bindParamMatrix(_fxpMVP, fmtx4::Identity());
             rquad(finalw,finalh);

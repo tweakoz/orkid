@@ -58,6 +58,19 @@ public:
   // no entry mirrors tier 0 (the main material + its gid buckets). Resolved by the host like _gid_*.
   std::map<std::string, std::string> _lod_material_assets;
   std::string _material_asset_name;      // PbrMaterialGenData asset to bind (artifact registry key)
+  // O3 stage 3 — STORED-MODE per-section texture-ARRAY bake (opt-in, additive; the E.3 bucket path is
+  // untouched). When _section_bake is set, THIS drawable draws with a SINGLE material (_material_asset_name,
+  // the stored SAMPLER — surface_stored sampling one sampler2DArray per capture target at the section's
+  // layer) and _gid_material_assets takes its SECOND role as the per-gid BAKE MAP: each section-layer is
+  // baked with THAT gid's material's capture technique (adobe content into adobe layers, timber into timber).
+  // COLD = in-frame GPU bake + content-addressed PNG cache write + placeholder->rebind; WARM = load cache.
+  // Unbound gids fall back to the main material. Nothing is deprecated: _section_bake=false keeps the whole
+  // classic bucket path (gid_materials -> per-gid draws) byte-identical.
+  bool _section_bake     = false;
+  int  _section_bake_res = 256;          // per-layer bake resolution (A8: reflected, tweakable)
+  bool _section_mips     = true;         // A8: build trilinear mip chains for the baked section arrays
+                                         // (minification anti-aliasing; default ON). env ORKID_SECTION_MIPS overrides.
+  std::vector<std::string> _section_targets; // capture-target names (== array-sampler names) in MRT order
   bool _animated  = false;               // re-evaluate the graph each frame (S.time assets)
   bool _face_viz  = false;               // per-triangle face-id buffer -> the face-viz FS
   bool _tag_viz   = false;               // __tags FACE channel -> the selection-group FS (implies face_viz)

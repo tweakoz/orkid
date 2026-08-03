@@ -158,7 +158,8 @@ def build_roads_layout(extent_m=EXTENT_M, layout_cell_m=48.0, field_dim=256, see
       width_m=6.0,
       max_grade=0.22,
       w_slope=8.0,
-      grade_weight=8.0)
+      grade_weight=8.0,
+      export="roadshills")   # street_spine artifact (physics-proxy law) — spine_collider consumes BY NAME
   spine = town._terminal
   # roadbed_mask emits the FLATTEN INPUTS on the REAL height: Out (roadbed coverage) +
   # RoadElev. stock MaskBlend composes them (mix(height, RoadElev, Roadbed) == road_elev

@@ -9,6 +9,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 #include <array>
+#include <atomic>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -100,6 +101,15 @@ struct VulkanDeviceInfo {
   bool _supportsVulkan13           = false;
   bool _supportsTimelineSemaphores = false;
   bool _supportsSynchronization2   = false;
+  bool _supportsMeshShader         = false; // VK_EXT_mesh_shader ENABLED + meshShader feature chained
+  uint32_t _maxMeshWkgInvocations  = 0;     // maxMeshWorkGroupInvocations; 0 until the ext is chained
+  bool _supportsTaskShader         = false; // taskShader feature CHAINED (the amplification stage is legal)
+  uint32_t _maxTaskWkgInvocations  = 0;     // maxTaskWorkGroupInvocations; 0 unless taskShader chained
+  uint32_t _maxTaskPayloadSize     = 0;     // maxTaskPayloadSize (bytes); 0 unless taskShader chained
+  bool _supportsMultiview          = false; // core VK1.1 multiview feature bit chained VK_TRUE
+  uint32_t _maxMultiviewViewCount  = 0;     // maxMultiviewViewCount; 0 until multiview is chained
+  bool _supportsMultiviewMeshShader = false; // mesh stage legal inside a multiview pass
+  uint32_t _maxMeshMultiviewViewCount = 0;  // maxMeshMultiviewViewCount; 0 until the mesh ext is chained
 
   size_t _maxWkgCountX = 0;
   size_t _maxWkgCountY = 0;
@@ -249,6 +259,14 @@ struct VkGeometryBufferInterface final : public GeometryBufferInterface {
       const FxShaderStorageBuffer* indirect_args,
       size_t args_offset = 0,
       int index_size = 4) final;
+
+  //////////////////////////////////////////////
+  // taskless EXT mesh shaders
+  //////////////////////////////////////////////
+
+  void DrawMeshTasksEML(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) final;
+
+  void DrawMeshTasksIndirectEML(const FxShaderStorageBuffer* indirect_args, size_t args_offset = 0) final;
 
   //////////////////////////////////////////////
   // nvidia mesh shaders
@@ -682,6 +700,11 @@ struct VkFxInterface final : public FxInterface {
       const std::string& shadertext,  //
       shadlang::slpcache_ptr_t slp_cache);
 
+  // interplay between the current rasterstate stack top and the pass stateblock
+  //  rasterstate (if any) - higher priority wins. Every _fetchPipeline* variant
+  //  bakes from this, and _bindPipeline reads it back for dynamic state.
+  rasterstate_ptr_t _effectiveRasterState();
+
   vkpipelinestate_rawptr_t _fetchPipeline( vkvtxbuf_ptr_t vb, vkprimclass_ptr_t primclas);
   vkpipelinestate_ptr_t _createPipeline( vkvtxbuf_ptr_t vb,             //
                                         vkprimclass_ptr_t primclas,    //
@@ -689,6 +712,10 @@ struct VkFxInterface final : public FxInterface {
   // SSBO-only pipelines (no vertex buffer, vertex shader reads from SSBO via gl_VertexID)
   vkpipelinestate_rawptr_t _fetchPipelineSSBO(vkprimclass_ptr_t primclas);
   vkpipelinestate_ptr_t _createPipelineSSBO(vkprimclass_ptr_t primclas, vkrasterstate_ptr_t rstate);
+  // taskless mesh pipelines (MESH+FRAGMENT stages; no vertex input, no input assembly,
+  //  hence no vertex buffer and no primclass — topology comes from the mesh stage itself)
+  vkpipelinestate_rawptr_t _fetchPipelineMesh();
+  vkpipelinestate_ptr_t _createPipelineMesh(vkrasterstate_ptr_t rstate);
   void _createPipelineReport(vkpipelinestate_ptr_t pipeline);           //
   VkPipelineLayoutCreateInfo _createPipelineLayoutData(vkpipelinestate_ptr_t pipeline);
   // ubo
@@ -732,6 +759,18 @@ struct VkFxInterface final : public FxInterface {
   void _logMissingBindState(const std::string& name);
 
   std::vector<uint32_t> _dynamic_offsets;
+
+  // Dedicated backing buffers for the per-frame-constant uniform blocks
+  // (isNonDynamicUniformBlock). Recorded by bindUniformBuffer, read by the
+  // descriptor-write path. Keyed by block name: one buffer serves every
+  // program declaring that block, so this is process-wide state, not per-pass.
+  std::map<std::string, vkbuffer_ptr_t> _nondynamic_ubo_buffers;
+
+  // Zero-filled stand-in for programs that DECLARE a non-dynamic block but
+  // never bind it — they read zeros under the dynamic path too, and must keep
+  // reading zeros. Shared per size; see the descriptor-write site.
+  vkbuffer_ptr_t _zeroUniformBuffer(size_t length);
+  std::map<size_t, vkbuffer_ptr_t> _zero_ubo_buffers;
   
   vkfxshaderpassstate_rawptr_t _current_shader_pass_state = nullptr;
   vkpipelinestate_rawptr_t     _currentPipeline = nullptr;
@@ -785,6 +824,8 @@ struct VkComputeInterface : public ComputeInterface {
   void dispatchCompute(const FxComputeShader* shader, uint32_t numgroups_x, uint32_t numgroups_y, uint32_t numgroups_z) final;
 
   void dispatchComputeIndirect(const FxComputeShader* shader, FxShaderStorageBuffer* args, size_t args_offset = 0) final;
+
+  void dispatchComputeInline(const FxComputeShader* shader, uint32_t numgroups_x, uint32_t numgroups_y, uint32_t numgroups_z) final;
 
 
   void bindStorageBuffer(const FxComputeShader* shader, uint32_t binding_index, FxShaderStorageBuffer* buffer) final;
@@ -935,6 +976,15 @@ struct VkThreadedQueue {
 
 using vkthreadedqueue_ptr_t = std::shared_ptr<VkThreadedQueue>;
 
+// monotonic count of every vkQueueSubmit the engine has issued (all queues, all threads).
+//  VkContext turns it into the per-frame Context::submitCount() at the frame boundary.
+std::atomic<uint64_t>& vkGlobalSubmitCounter();
+
+// ERROR-severity validation messages seen by the debug messenger, and whether the
+//  validation layer is loaded at all (instance-global, like the messenger itself).
+int vkValidationErrorCount();
+bool vkValidationArmed();
+
 ////////////////////////////////////////////////////////////////////////////////
 
 struct VkContext : public Context {
@@ -1016,6 +1066,18 @@ public:
   ComputeInterface* CI() final;
   DrawingInterface* DWI() final;
   int msaaMaxSamples() final;   // from VkPhysicalDeviceLimits framebufferColor+DepthSampleCounts
+  bool supportsVolumeRenderTarget(EBufferFormat fmt) final; // vkGetPhysicalDeviceImageFormatProperties probe
+  bool supportsMeshShader() const final; // VK_EXT_mesh_shader enabled on this device
+  bool supportsTaskShader() const final; // + the taskShader (amplification) feature chained
+  uint32_t maxTaskPayloadSize() const final;
+  int taskShaderDrawCount() const final;
+  bool supportsMeshShaderIndirect() const final; // + vkCmdDrawMeshTasksIndirectEXT loadable
+  bool supportsMultiview() const final;            // core VK1.1 multiview feature chained
+  int maxMultiviewViewCount() const final;         // device's maxMultiviewViewCount (0 if unsupported)
+  bool supportsMultiviewMeshShader() const final;  // mesh stage legal inside a multiview pass
+  uint32_t maxMeshMultiviewViewCount() const final;
+  int validationErrorCount() const final;
+  bool validationArmed() const final;
 
   time_predictor_ptr_t getScanoutPredictor() const final {
     return (_fbi && _fbi->_output) ? _fbi->_output->getScanoutPredictor() : nullptr;
@@ -1194,6 +1256,15 @@ public:
   PFN_vkCmdEndRendering _vkCmdEndRenderingKHR                 = nullptr;
   PFN_vkCmdInsertDebugUtilsLabelEXT _vkCmdInsertDebugUtilsLabelEXT = nullptr;
   PFN_vkCmdSetCullModeEXT _vkCmdSetCullModeEXT                = nullptr;
+  PFN_vkCmdSetDepthWriteEnableEXT _vkCmdSetDepthWriteEnableEXT = nullptr;
+  // bumped at each mesh draw when the bound pass carries a task stage — the only
+  //  honest answer to "did the amplification stage run" (a taskless fallback still draws).
+  void _countMeshDraw();
+  std::atomic<int> _task_shader_draws{0};
+  PFN_vkCmdDrawMeshTasksEXT _vkCmdDrawMeshTasksEXT            = nullptr;
+  // INDIRECT mesh draw (count-variant deliberately absent: MoltenVK implements the direct and
+  // indirect entries only, so vkCmdDrawMeshTasksIndirectCountEXT is never loaded or called).
+  PFN_vkCmdDrawMeshTasksIndirectEXT _vkCmdDrawMeshTasksIndirectEXT = nullptr;
   //////////////////////////////////////////////
   // Buffers pending cleanup - accumulated when no primary CB is active
   // Moved to primary CB's cleanup list when a new primary CB begins
@@ -1247,6 +1318,8 @@ public:
   
   bool _renderPassActive = false;
   vkrtgrpimpl_ptr_t _activeRenderPassRTG = nullptr;
+
+  uint64_t _submitCounterMark = 0; // vkGlobalSubmitCounter() value at the last frame boundary
 
   void suspendRenderPass();
   void resumeRenderPass();

@@ -247,6 +247,20 @@ void pyinit_scenegraph(py::module& module_ecs) {
             }
           })
       .def(
+          "hasParam",
+          [](sgsystemdata_ptr_t sgsys, const std::string& key) -> bool { //
+            return sgsys->hasUserSceneParam(key);
+          },
+          R"doc(
+        True if `key` was authored into the user params (declareParams or
+        deserialize). The absent-check python runtimes need to fill defaults
+        WITHOUT clobbering author values — declareParams is assignment, so a
+        caller that means "default" must ask first.
+
+        Parameters:
+        key (str): user scene param name.
+     )doc")
+      .def(
           "addPostFxNode",
           [](sgsystemdata_ptr_t sgsys, const std::string& name, lev2::compositorpostnode_ptr_t node) {
             sgsys->addPostFxNode(name, node);

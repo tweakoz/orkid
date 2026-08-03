@@ -121,18 +121,37 @@ class Player:
     """
 
     def __init__(self, app, session, virtual_dt=_VIRTUAL_DT, virtualize_clock=True,
-                 window=None):
+                 window=None, rebase=False):
         self._app = app
         self._session = session
         self._window = window            # None=main window, else an EzSecondaryWin target
         self._virtual_dt = float(virtual_dt)
         self._virtualize_clock = bool(virtualize_clock)
-        self._by_frame = {}
+        # A Player targets ONE window. Records tagged with a recording-session
+        # window key ("win": secondary-window events) are SKIPPED — the tag names
+        # the recording session's window, which need not exist on replay (v1).
+        # rebase=True shifts frames so the earliest record fires at counter 0
+        # (live captures carry absolute frame stamps from mid-session).
+        self._skipped_tagged = 0
+        recs = []
         for rec in session.records:
-            self._by_frame.setdefault(int(rec.frame), []).append(rec.as_dict())
+            d = rec.as_dict()
+            if d.get("win"):
+                self._skipped_tagged += 1
+                continue
+            recs.append(d)
+        base = min((int(d["frame"]) for d in recs), default=0) if rebase else 0
+        self._by_frame = {}
+        for d in recs:
+            self._by_frame.setdefault(int(d["frame"]) - base, []).append(d)
         self._max_frame = max(self._by_frame) if self._by_frame else -1
         self._done = self._max_frame < 0
         self._injected = 0
+        # catch-up cursor: on_update fires every pending frame in (last, counter],
+        # so a driver whose sampling is coarser than the record clock (a render-tick
+        # drive over update-counter stamps) never skips records. Sorted once here.
+        self._frames_sorted = sorted(self._by_frame)
+        self._next_index = 0
 
     @property
     def session(self):
@@ -145,6 +164,10 @@ class Player:
     @property
     def injected_count(self):
         return self._injected
+
+    @property
+    def skipped_tagged(self):
+        return self._skipped_tagged
 
     @property
     def max_frame(self):
@@ -161,11 +184,17 @@ class Player:
                 ctx.virtual_time_enabled = True
                 ctx.virtual_time = counter * self._virtual_dt
         dst = _dst(self._app, self._window)
-        for rec in self._by_frame.get(counter, ()):
-            ev = _event_from_record(rec)
-            if ev is not None:
-                dst.injectUiEvent(ev)
-                self._injected += 1
+        # catch-up: fire EVERY not-yet-fired frame <= counter, in frame order (a
+        # coarser driver clock lands the skipped frames' records in this batch —
+        # natively multiple events arrive in one poll batch the same way).
+        while (self._next_index < len(self._frames_sorted)
+               and self._frames_sorted[self._next_index] <= counter):
+            for rec in self._by_frame[self._frames_sorted[self._next_index]]:
+                ev = _event_from_record(rec)
+                if ev is not None:
+                    dst.injectUiEvent(ev)
+                    self._injected += 1
+            self._next_index += 1
         if counter >= self._max_frame:
             self._done = True
 
@@ -268,6 +297,30 @@ def key_chord(app, keycode, mods=None, window=None):
     accelerator like cmd-] => key_chord(app, 93, mods={'super_': True}))."""
     key_down(app, keycode, mods=mods, window=window)
     key_up(app, keycode, mods=mods, window=window)
+
+
+def _focus(app, code_name, window=None):
+    """Inject a raw focus event (GOT_KEYFOCUS / LOST_KEYFOCUS). These are engine-RAW
+    (the enterleave callback synthesizes them on window enter/exit) and are NOT in the
+    factory's derived-refuse set, so the pointer factory accepts the code; the inject
+    funnel fills the last pointer position (a focus event carries no coords of its own).
+    Used by gates that reproduce the window-exit kill chain (cross-window drag)."""
+    from orkengine.core import CrcStringProxy
+    ui = _ui()
+    code = int(getattr(CrcStringProxy(), code_name).hashed)
+    _dst(app, window).injectUiEvent(ui.Event.make_pointer(
+        code=code, x=0, y=0, screen_w=1, screen_h=1))
+
+
+def lost_keyfocus(app, window=None):
+    """Inject LOST_KEYFOCUS — what window-exit manifests as mid-drag (the engine
+    synthesizes focus loss from mouse-leave; the app never lost real OS focus)."""
+    _focus(app, "LOST_KEYFOCUS", window=window)
+
+
+def got_keyfocus(app, window=None):
+    """Inject GOT_KEYFOCUS — window re-enter."""
+    _focus(app, "GOT_KEYFOCUS", window=window)
 
 
 def type_text(app, text, window=None):

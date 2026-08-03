@@ -13,6 +13,7 @@
 
 #include <ork/lev2/aud/singularity/synthdata.h>
 #include <ork/lev2/aud/singularity/synth.h>
+#include <ork/lev2/aud/singularity/dspblocks.h>
 #include <ork/lev2/aud/singularity/hud.h>
 #include <ork/reflect/properties/registerX.inl>
 
@@ -287,12 +288,24 @@ void ControlBlockInst::keyOn(const KeyOnInfo& KOI, controlblockdata_constptr_t C
   assert(CBD);
   auto l = KOI._layer;
 
+  // a re-key on a layer whose previous note was never reset would otherwise
+  //  orphan that note's instances (their storage AND the lookup slots aliasing
+  //  them). idempotent - Layer::keyOn resets before it gets here.
+  l->releaseControllers();
+
   size_t i = 0;
-  std::vector<ControllerInst*> instances;
-  for (auto item : CBD->_controllers_by_name) {
-    auto name = item.first;
-    auto data = item.second;
+  // the instance list is bounded by _cinst itself and this runs on the audio
+  //  thread at every note-on - a vector here allocated per note.
+  ControllerInst* instances[kmaxctrlperblock] = {nullptr};
+  size_t numinstances                         = 0;
+  for (const auto& item : CBD->_controllers_by_name) {
+    const auto& data = item.second;
     if (data) {
+      OrkAssertIFMT(
+          i < kmaxctrlperblock, //
+          "singularity control block <%s> exceeds %d controllers",
+          data->_name.c_str(),
+          kmaxctrlperblock);
       auto cinst = data->instantiate(l);
       cinst->_name            = data->_name;
 
@@ -300,9 +313,8 @@ void ControlBlockInst::keyOn(const KeyOnInfo& KOI, controlblockdata_constptr_t C
 
 
       //cinst->_controller_data = data;
-      l->_controld2iMap[data]     = cinst;
-      l->_controlMap[data->_name] = cinst;
-      instances.push_back(cinst);
+      l->bindController(data.get(), cinst);
+      instances[numinstances++] = cinst;
       if(l->_keymods){
         auto it = l->_keymods->_mods.find(data->_name);
         if(it!=l->_keymods->_mods.end()){
@@ -320,11 +332,10 @@ void ControlBlockInst::keyOn(const KeyOnInfo& KOI, controlblockdata_constptr_t C
         }
       }
       _cinst[i++] = cinst;
-      OrkAssert(i < kmaxctrlperblock);
     }
   }
-  for( auto cinst : instances ){
-    cinst->keyOn(KOI);
+  for (size_t j = 0; j < numinstances; j++) {
+    instances[j]->keyOn(KOI);
   }
 
 }
@@ -339,6 +350,24 @@ void ControlBlockInst::compute() {
     if (_cinst[i])
       _cinst[i]->compute();
   }
+}
+void ControlBlockInst::clear() {
+  for (int i = 0; i < kmaxctrlperblock; i++) {
+    delete _cinst[i];
+    _cinst[i] = nullptr;
+  }
+}
+ControlBlockInst::~ControlBlockInst() {
+  clear();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void* ControllerInst::operator new(size_t nbytes) {
+  return dspInstanceAlloc(nbytes);
+}
+void ControllerInst::operator delete(void* ptr, size_t nbytes) {
+  dspInstanceFree(ptr, nbytes);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

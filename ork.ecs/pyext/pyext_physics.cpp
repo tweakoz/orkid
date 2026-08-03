@@ -176,6 +176,33 @@ void pyinit_physics(py::module& module_ecs) {
               [](bulletshapescatterdata_ptr_t& shape, std::string val) { shape->_ogeo_path = val; });
   type_codec->registerStdCodec<bulletshapescatterdata_ptr_t>(shapescatter_type);
   /////////////////////////////////////////////////////////////////////////////////
+  // roads: the WALKABLE RIBBON proxy swept from the street_spine baked artifact
+  // (physics-proxy law — derives from generating data, never the render mesh).
+  auto shapespine_type =
+      py::class_<BulletShapeSpineData, BulletShapeBaseData, bulletshapespinedata_ptr_t>(module_ecs, "BulletShapeSpineData")
+          .def(py::init<>())
+          .def_property(
+              "spine_asset",
+              [](const bulletshapespinedata_ptr_t& shape) -> std::string { return shape->_spine_asset; },
+              [](bulletshapespinedata_ptr_t& shape, std::string val) { shape->_spine_asset = val; })
+          .def_property(
+              "ogeo_path",
+              [](const bulletshapespinedata_ptr_t& shape) -> std::string { return shape->_ogeo_path; },
+              [](bulletshapespinedata_ptr_t& shape, std::string val) { shape->_ogeo_path = val; })
+          .def_property(
+              "shoulder_m",
+              [](const bulletshapespinedata_ptr_t& shape) -> float { return shape->_shoulder_m; },
+              [](bulletshapespinedata_ptr_t& shape, float val) { shape->_shoulder_m = val; })
+          .def_property(
+              "lift_m",
+              [](const bulletshapespinedata_ptr_t& shape) -> float { return shape->_lift_m; },
+              [](bulletshapespinedata_ptr_t& shape, float val) { shape->_lift_m = val; })
+          .def_property(
+              "ground_asset",
+              [](const bulletshapespinedata_ptr_t& shape) -> std::string { return shape->_ground_asset; },
+              [](bulletshapespinedata_ptr_t& shape, std::string val) { shape->_ground_asset = val; });
+  type_codec->registerStdCodec<bulletshapespinedata_ptr_t>(shapespine_type);
+  /////////////////////////////////////////////////////////////////////////////////
   // E.2-walk: the asset-wired heightfield collider — hf_asset resolves the baked
   // HeightField artifact + manifest scale, so physics collides with what renders.
   using bulletshapeterraindata_ptr_t = std::shared_ptr<BulletShapeTerrainData>;
@@ -201,7 +228,25 @@ void pyinit_physics(py::module& module_ecs) {
           .def_property(
               "render_dimension",
               [](const bulletshapeterraindata_ptr_t& shape) -> int { return shape->_render_dimension; },
-              [](bulletshapeterraindata_ptr_t& shape, int val) { shape->_render_dimension = val; });
+              [](bulletshapeterraindata_ptr_t& shape, int val) { shape->_render_dimension = val; })
+          // W·M SURFACE RESPONSE — physics leg. surface_weights names the RGBA class-weight
+          // capture the material also consumes ("" = feature off); friction_rows = M[:,friction]
+          // (per-class friction deltas dotted with the 4 class weights at each contact point).
+          .def_property(
+              "surface_weights",
+              [](const bulletshapeterraindata_ptr_t& shape) -> std::string { return shape->_surface_weights_channel; },
+              [](bulletshapeterraindata_ptr_t& shape, std::string val) { shape->_surface_weights_channel = val; })
+          .def_property(
+              "friction_rows",
+              [](const bulletshapeterraindata_ptr_t& shape) -> py::list {
+                py::list result;
+                for (auto f : shape->_friction_rows) result.append(f);
+                return result;
+              },
+              [](bulletshapeterraindata_ptr_t& shape, py::list lst) {
+                shape->_friction_rows.clear();
+                for (auto& item : lst) shape->_friction_rows.push_back(item.cast<float>());
+              });
   type_codec->registerStdCodec<bulletshapeterraindata_ptr_t>(shapeterrain_type);
   /////////////////////////////////////////////////////////////////////////////////
   // E.2-walk: the reusable walk-on-terrain behavior (CharacterController). Properties

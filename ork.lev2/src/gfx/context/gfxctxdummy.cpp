@@ -273,6 +273,12 @@ void DuGeometryBufferInterface::DrawIndexedIndirectEML(
     int index_size) {
 }
 
+void DuGeometryBufferInterface::DrawMeshTasksEML(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) {
+}
+
+void DuGeometryBufferInterface::DrawMeshTasksIndirectEML(const FxShaderStorageBuffer* indirect_args, size_t args_offset) {
+}
+
 DuTextureInterface::DuTextureInterface(Context& ctx)
     : TextureInterface(&ctx) {
 }

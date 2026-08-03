@@ -48,6 +48,10 @@ void GpuFrameTiming::noteFrame(float cpu_frame_ms, float present_idle_ms, float 
 
   ema(_cpuFrameMsEma, cpu_frame_ms);
   ema(_presentIdleMsEma, present_idle_ms);
+  // COMFORT-1: what the scheduler's slices cost the CPU last frame. Fed from
+  // noteSchedulerTelemetry (same frame, set just above this call), and the ONLY
+  // signal that sees an inline GPU job's fence wait — see the header.
+  ema(_microtaskCpuMsEma, float(_schedSpentUs) * 0.001f);
 
   // T2: reject any raw reading outside the sane window before it can pollute
   // the EMA or be used for this frame's budget — unvalidated MoltenVK
@@ -64,6 +68,9 @@ void GpuFrameTiming::noteFrame(float cpu_frame_ms, float present_idle_ms, float 
   bool have_ts      = (_gpuFrameMsEma >= 0.0f);
   _lastSourceIsTs   = have_ts;
   float headroom_ms = have_ts ? (_targetMs - _gpuFrameMsEma) : _presentIdleMsEma;
+  // COMFORT-1: charge the microtask slices' own wall against the headroom that
+  // is about to be handed back to them.
+  headroom_ms -= std::max(_microtaskCpuMsEma, 0.0f);
   float budget_ms   = headroom_ms - _safetyMs;
   float max_ms      = float(_maxBudgetUs) * 0.001f;
   budget_ms         = std::clamp(budget_ms, 0.0f, max_ms);
@@ -87,9 +94,10 @@ void GpuFrameTiming::_maybeTrace() {
       return;
     _schedTraceTimer.Start();
     printf(
-        "[gpumt] gpu_ms=%.2f idle_ms=%.2f budget_us=%lld src=%s sched=%d/%lldus q=%d\n",
+        "[gpumt] gpu_ms=%.2f idle_ms=%.2f mt_ms=%.2f budget_us=%lld src=%s sched=%d/%lldus q=%d\n",
         _gpuFrameMsEma,
         _presentIdleMsEma,
+        _microtaskCpuMsEma,
         (long long)_lastBudgetUs,
         _lastSourceIsTs ? "ts" : "idle",
         _schedSlices,
@@ -100,9 +108,10 @@ void GpuFrameTiming::_maybeTrace() {
       return;
     _traceTimer.Start();
     printf(
-        "[gpumt] gpu_ms=%.2f idle_ms=%.2f budget_us=%lld src=%s\n",
+        "[gpumt] gpu_ms=%.2f idle_ms=%.2f mt_ms=%.2f budget_us=%lld src=%s\n",
         _gpuFrameMsEma,
         _presentIdleMsEma,
+        _microtaskCpuMsEma,
         (long long)_lastBudgetUs,
         _lastSourceIsTs ? "ts" : "idle");
   }
@@ -158,6 +167,113 @@ static constexpr uint64_t kStarvationFrames   = 300;   // §2.3 MAINTENANCE floo
 static constexpr int64_t  kMaxEstimateScaleQ16 = int64_t(65536) << 8; // T1 guardrail: 256x cap so a chronically-mis-estimating task can't explode the scale
 static constexpr int      kMaxSlicesPerFrame   = 65536; // termination guard (0-cost slices can't spin the drain)
 static constexpr int64_t  kUnboundedFrameBudgetUs = int64_t(1) << 50; // ~13 days: effectively-infinite per-frame budget for no-deadline (UNBOUNDED) contexts; far below INT64_MAX so budget-=measured stays overflow-safe
+static constexpr uint64_t kDeferralEscapeFrames = 20;  // COMFORT-1: est>budget may DEFER a task, never drop it — after this many consecutive skips one slice runs regardless
+
+///////////////////////////////////////////////////////////////////////////////
+// MicrotaskCostRegistry (COMFORT-1) — see the header for the design and the
+// failure mode it exists to avoid.
+///////////////////////////////////////////////////////////////////////////////
+
+namespace {
+
+// Peak-tracking asymmetry: an under-estimate must be believed almost at once
+// (that is the frame that hitches), while recovering from a one-time outlier
+// takes a handful of slices. Symmetric smoothing gives one or the other, never
+// both.
+static constexpr double kScaleAlphaUp   = 0.5;
+static constexpr double kScaleAlphaDown = 0.15;
+// A single sample carries at most 8x into the EMA. Above that the estimate is
+// already past any budget a frame can grant (8x the 3ms-class seeds is ~24ms vs
+// the 25ms budget cap), so a bigger number changes no gating decision — it only
+// lengthens the recovery. Cold-JIT warmup slices (measured 647ms for a first
+// filter-material build) are exactly that case: real, non-recurring, and worth
+// nothing as a persistent estimate.
+static constexpr double kMaxScaleSampleQ16 = 65536.0 * 8.0;
+
+std::mutex& _costRegistryMutex() {
+  static std::mutex mtx;
+  return mtx;
+}
+MicrotaskCostRegistry::entry_map_t& _costRegistry() {
+  static MicrotaskCostRegistry::entry_map_t reg;
+  return reg;
+}
+
+} // anonymous namespace
+
+int64_t MicrotaskCostRegistry::seedScaleQ16(const std::string& key) {
+  if (key.empty())
+    return 65536;
+  std::lock_guard<std::mutex> lk(_costRegistryMutex());
+  auto& e = _costRegistry()[key];
+  e._instancesSeeded++;
+  e._lastSeedScaleQ16 = std::max<int64_t>(65536, int64_t(e._estScaleQ16Ema));
+  return e._lastSeedScaleQ16;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void MicrotaskCostRegistry::noteSlice(const std::string& key, int64_t raw_estimate_us, int64_t measured_us) {
+  if (key.empty())
+    return;
+  std::lock_guard<std::mutex> lk(_costRegistryMutex());
+  auto& e        = _costRegistry()[key];
+  e._lastSliceUs = measured_us;
+  if (measured_us > e._worstSliceUs) {
+    e._secondWorstSliceUs = e._worstSliceUs;
+    e._worstSliceUs       = measured_us;
+  } else if (measured_us > e._secondWorstSliceUs) {
+    e._secondWorstSliceUs = measured_us;
+  }
+  e._totalSliceUs += measured_us;
+  e._sliceCount++;
+  if (raw_estimate_us <= 0)
+    return;
+  // The scale this slice WOULD have needed for est == measured. Floored at 1x:
+  // the task's own seed is the honest lower bound, and an estimate below it
+  // buys nothing.
+  double sample = double(measured_us) * 65536.0 / double(raw_estimate_us);
+  sample        = std::clamp(sample, 65536.0, kMaxScaleSampleQ16);
+  double alpha  = (sample > e._estScaleQ16Ema) ? kScaleAlphaUp : kScaleAlphaDown;
+  e._estScaleQ16Ema = (1.0 - alpha) * e._estScaleQ16Ema + alpha * sample;
+  e._estScaleQ16Ema = std::clamp(e._estScaleQ16Ema, 65536.0, double(kMaxEstimateScaleQ16));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void MicrotaskCostRegistry::noteDeferral(const std::string& key, bool escaped) {
+  if (key.empty())
+    return;
+  std::lock_guard<std::mutex> lk(_costRegistryMutex());
+  auto& e = _costRegistry()[key];
+  if (escaped)
+    e._escapes++;
+  else
+    e._deferrals++;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+MicrotaskCostRegistry::entry_map_t MicrotaskCostRegistry::snapshot() {
+  std::lock_guard<std::mutex> lk(_costRegistryMutex());
+  return _costRegistry();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void MicrotaskCostRegistry::resetMeasurements() {
+  std::lock_guard<std::mutex> lk(_costRegistryMutex());
+  for (auto& item : _costRegistry()) {
+    auto& e               = item.second;
+    e._lastSliceUs        = -1;
+    e._worstSliceUs       = 0;
+    e._secondWorstSliceUs = 0;
+    e._totalSliceUs       = 0;
+    e._sliceCount         = 0;
+    e._deferrals          = 0;
+    e._escapes            = 0;
+  }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -183,6 +299,12 @@ void GpuMicrotaskScheduler::_ensureEnvLoaded() {
   if (const char* v = std::getenv("ORKID_MT_MAX_US"))
     _maxBudgetUs = int64_t(atoll(v));
   _traceEnabled = (std::getenv("ORKID_MT_TRACE") != nullptr);
+  // COMFORT-1 measurement hook: budget an OFFSCREEN context as if it presented
+  // frames, so a headless gate can exercise the REALTIME budget/deferral path
+  // the WINDOW context lives under. Deliberately NOT extended to the LOADING
+  // context — that one MUST drain every pending phase per iteration (see the
+  // kUnboundedFrameBudgetUs note).
+  _forceRealtimeOffscreen = (std::getenv("ORKID_MT_FORCE_REALTIME") != nullptr);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -192,9 +314,12 @@ void GpuMicrotaskScheduler::_ensureLoadingClient() {
     return;
   _loadingTask = std::make_shared<LoadingPhaseMicrotask>();
   // Registered DIRECTLY (not via enqueue): permanent + NO asyncWorkBegin. A
-  // permanent task never completes, so tracking it would wedge the offscreen/
-  // movie exit gate at asyncWorkPending()>0 forever (T13). LoadingPhase
-  // completion is already tracked holistically by LoadJoinSet.
+  // permanent task never completes, so tracking THE TASK would wedge the offscreen/
+  // movie exit gate at asyncWorkPending()>0 forever (T13). Per-PHASE completion IS
+  // tracked instead: submitLoadingPhase() holds a "texture_upload" marker from
+  // submission until each phase's ops finish (producer-side; see gfxctx.cpp), so
+  // asyncWorkPending() covers in-flight texture uploads without ever tracking this
+  // never-ending task.
   std::lock_guard<std::mutex> lk(_mutex);
   _tasks.push_back(_loadingTask);
 }
@@ -204,6 +329,12 @@ void GpuMicrotaskScheduler::_ensureLoadingClient() {
 void GpuMicrotaskScheduler::enqueue(gpumicrotask_ptr_t task) {
   if (nullptr == task)
     return;
+  // COMFORT-1: a keyed task starts from what previous instances of its kind
+  // cost, so the first (heaviest) slices of a repeating job are gated on a real
+  // estimate instead of re-learning from scratch every cycle.
+  if (not task->_costKey.empty())
+    task->_estimateScaleQ16 = MicrotaskCostRegistry::seedScaleQ16(task->_costKey);
+  task->_activeCostKey = task->_costKey;
   // asyncWorkBegin BEFORE the task is visible to the drainer, so a settle/exit
   // waiter can never observe pending==0 in the window between publish and begin.
   asyncWorkBegin(task->_name);
@@ -243,8 +374,11 @@ int64_t GpuMicrotaskScheduler::_computeFrameBudget(Context* ctx) {
   // is UNBOUNDED. meTargetType is the principled swapchain-presence signal —
   // it is set exactly where an output attaches (initializeWindow/Offscreen/
   // LoaderContext). setBudgetMode() overrides this.
-  if (not _budgetModeExplicit)
-    _budgetMode = (ctx->meTargetType == TargetType::WINDOW) ? BudgetMode::REALTIME : BudgetMode::UNBOUNDED;
+  if (not _budgetModeExplicit) {
+    bool realtime = (ctx->meTargetType == TargetType::WINDOW)
+                 or (_forceRealtimeOffscreen and ctx->meTargetType == TargetType::OFFSCREEN);
+    _budgetMode = realtime ? BudgetMode::REALTIME : BudgetMode::UNBOUNDED;
+  }
 
   if (_budgetMode == BudgetMode::UNBOUNDED)
     // §2.2: a no-swapchain context (LOADING/OFFSCREEN) has NO per-frame deadline,
@@ -352,7 +486,15 @@ void GpuMicrotaskScheduler::runFrameSlices(Context* ctx) {
   std::vector<GpuMicrotask*>      ran_this_frame;
   std::vector<gpumicrotask_ptr_t> completed;
 
-  while (budget > 0 && slices_this_frame < kMaxSlicesPerFrame) {
+  // COMFORT-1: the loop is NOT gated on `budget > 0` any more. A frame with no
+  // headroom at all (a GPU-bound app, or an offscreen context whose frames are
+  // too short for a sane timestamp) used to skip the drain entirely — every
+  // pending task silently starved for as long as that lasted, with no
+  // accounting that could ever release them. Each iteration now either runs a
+  // slice or removes exactly one task from `active`, so it still terminates,
+  // and a zero budget defers tasks THROUGH the escape accounting instead of
+  // around it.
+  while (slices_this_frame < kMaxSlicesPerFrame) {
 
     gpumicrotask_ptr_t task = nullptr;
 
@@ -374,18 +516,65 @@ void GpuMicrotaskScheduler::runFrameSlices(Context* ctx) {
     if (nullptr == task)
       break; // nothing runnable
 
-    int64_t est         = est_of(task);
-    bool    first_slice = (0 == task->_slicesRun);
+    // Per-task frame quota. Checked BEFORE the estimate/deferral accounting: a
+    // task that has had its share of this frame is not deferred (nothing was
+    // unaffordable), it is simply done for now, so it must not accrue the
+    // deferral escape that would let it back in.
+    if (task->_maxSlicesPerFrame > 0) {
+      if (task->_sliceFrameIndex != _frameCounter) {
+        task->_sliceFrameIndex = _frameCounter;
+        task->_slicesThisFrame = 0;
+      }
+      if (task->_slicesThisFrame >= task->_maxSlicesPerFrame) {
+        remove_active(task);
+        continue;
+      }
+    }
 
-    // Would overshoot; leave for next frame. First-slice exemption: a task's
-    // very first slice always runs (budget>0 here) so a mis-estimate still
-    // learns its real cost (T1).
-    if (est > budget && not first_slice) {
+    // COMFORT-2: a multi-population task announces which population its NEXT
+    // slice belongs to. Crossing into one re-seeds the scale from THAT key's
+    // learned cost — otherwise the scale the previous population taught prices
+    // the new one, which is the mis-pricing per-key learning exists to avoid.
+    const std::string slice_key = task->sliceCostKey(); // by value: the cursor moves inside runSlice
+    if (slice_key != task->_activeCostKey) {
+      task->_activeCostKey    = slice_key;
+      task->_estimateScaleQ16 = MicrotaskCostRegistry::seedScaleQ16(slice_key);
+    }
+
+    int64_t raw_est     = std::max<int64_t>(task->sliceEstimateUs(), 0);
+    int64_t est         = (raw_est * task->_estimateScaleQ16) >> 16;
+    bool    first_slice = (0 == task->_slicesRun);
+    // COMFORT-1: the gate DEFERS, it must never DROP. A task the budget has
+    // skipped for kDeferralEscapeFrames consecutive frames runs one slice
+    // anyway — otherwise an estimate that outgrows every attainable budget
+    // (warmup outlier, frame-rate collapse) wedges the job forever, which is
+    // exactly the failure the fixed-seed estimate was written to dodge.
+    bool escape = (task->_framesDeferred >= kDeferralEscapeFrames);
+
+    // Affordable = there is budget left AND the estimate fits in it. First-slice
+    // exemption: a task's very first slice always runs (as long as ANY budget
+    // remains) so a mis-estimate still learns its real cost (T1).
+    // _unboundedDrain (cold start) is exempt outright: its whole point is that
+    // the frame it lands in pays for the result rather than the next fifty
+    // frames rendering without it. Termination is unaffected — the task's step
+    // plan is finite, a slice waiting off-thread hands the frame back
+    // (_yieldFrame), and kMaxSlicesPerFrame still bounds the loop.
+    bool affordable = task->_unboundedDrain //
+                      or ((budget > 0) and ((est <= budget) or first_slice));
+
+    // Would overshoot; leave for a later frame.
+    if (not affordable && not escape) {
+      task->_framesDeferred++;
+      MicrotaskCostRegistry::noteDeferral(slice_key, false);
       remove_active(task);
       continue;
     }
+    if (not affordable)
+      MicrotaskCostRegistry::noteDeferral(slice_key, true);
 
-    int64_t grant = (est > 0) ? std::min(est * 2, budget) : budget; // T1 hard per-slice cap
+    // T1 hard per-slice cap. An ESCAPING slice runs with a zero/negative budget
+    // by definition, so it is granted its own estimate rather than what is left.
+    int64_t grant = (est > 0) ? std::min(est * 2, std::max(budget, est)) : std::max(budget, int64_t(0));
     MicrotaskContext mctx{ctx, grant, _frameCounter};
 
     // MT1 measurement = CPU wall around runSlice. Per-slice GPU timestamps are a
@@ -404,6 +593,11 @@ void GpuMicrotaskScheduler::runFrameSlices(Context* ctx) {
 
     task->_lastMeasuredUs = measured;
     task->_slicesRun++;
+    task->_slicesThisFrame++;
+    task->_framesDeferred = 0;
+    // COMFORT-1: teach the cross-instance registry what this slice really cost
+    // (and record it for the python-visible cost stats).
+    MicrotaskCostRegistry::noteSlice(slice_key, raw_est, measured);
     slices_this_frame++;
     ran_this_frame.push_back(task.get());
     spent_by_class[int(task->_class)] += measured;
@@ -438,6 +632,14 @@ void GpuMicrotaskScheduler::runFrameSlices(Context* ctx) {
     if (not more) {
       // Non-permanent completion → drop + asyncWorkEnd.
       completed.push_back(task);
+      remove_active(task);
+    }
+
+    // OFF-THREAD WAIT HANDBACK — the slice ran (it is measured and accounted
+    // like any other, ~0us), it just could not advance, so it leaves this
+    // frame's active set instead of being re-picked into a spin.
+    if (task->_yieldFrame) {
+      task->_yieldFrame = false;
       remove_active(task);
     }
   }

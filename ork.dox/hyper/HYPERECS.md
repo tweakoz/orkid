@@ -1,22 +1,34 @@
 # HYPERECS — orkid declarative authoring tiers (standalone graph → ECS scene composite)
 
-> **STATUS (2026-07-04):** the three-tier authoring model described here is **implemented and in daily use**.
-> This doc is now the DESIGN + IMPLEMENTATION-STATUS reference; the remaining *open* (unimplemented) work lives
-> in the lean `HYPERECS_PLAN_JUN10.md` (same dir — its Appendix A holds the locked contracts, A6 indexes this
-> doc's standing commitments). Forward-work implementation specs (2026-07-04, owner-sequenced by holistic
+> **STATUS (2026-07-04, split 2026-08-01):** the three-tier authoring model described here is **implemented
+> and in daily use** — but a 2026-08-01 doc-accuracy audit split the claim in two. This doc is the DESIGN +
+> IMPLEMENTATION-STATUS reference; the remaining *open* (unimplemented) work lives in the lean
+> `HYPERECS_PLAN_JUN10.md` (same dir — its Appendix A holds the locked contracts, A6 indexes this doc's
+> standing commitments). Forward-work implementation specs (2026-07-04, owner-sequenced by holistic
 > outcome): `~/JUL04_SDFM3M4.md` (SDF NanoVDB + cross-family reach) and `~/JUL04_GRAMMARS.md` (LRuleSet
 > grammars, buildings, creatures).
 >
-> **What is landed:**
+> **What is landed (real, in production):**
 > - **Tier 1/2** — standalone + parameterized single-graph HyperSyn authoring (the permanent path; never removed).
-> - **Tier 3 — the ECS Scene composite** — the `ork.hypergraph.ecs.scene` Python surface (a `Scene` with
->   system-handle namespaces + entity/spawner sugar + the dual-use asset DSL; e.g. `self.terrain(...)`,
->   `self.walker(...)`, `self.projectile_pool(...)`, `self.scenegraph(...)`) → reflected `.ecs` → the pure-C++
->   `ork.ecs.player.exe` host (zero-Python playback; the D.5 host demo, owner-verified). This is the live
->   playback path (`ork.scene.viewer.py` = tojson → player).
-> - **The C++ materializers (§3.4) are REAL** — `AssetSystemData::materializeAll` (`ork.ecs/.../AssetSystem.cpp`)
->   + the `PbrMaterial`/`HeightField`/`Hypermesh` gendata `materialize()` (`ork.lev2/.../asset_gen.cpp`).
->   No longer the Python-only no-op an earlier draft warned about.
+> - **Tier 3 — the ECS Scene composite** — the `ork.hypergraph.ecs.scene` Python surface (a `Scene` with the
+>   primitive layer `system_data`/`archetype`/`component`/`spawner`, entity/spawner sugar, the
+>   `SceneGraphHandle`, the dual-use asset DSL `self.asset.*`, and the purpose-built mixin verbs —
+>   `self.terrain(...)`, `self.walker(...)`, `self.projectile_pool(...)`, `self.sky(...)`; see §4.11) →
+>   reflected `.ecs` → the pure-C++ `ork.ecs.player.exe` host (zero-Python playback; the D.5 host demo,
+>   owner-verified). This is the live playback path (`ork.scene.viewer.py` = tojson → player).
+> - **The C++ materializers (§3.4) are REAL** — `AssetSystemData::materializeAll` (`ork.ecs/src/scenegraph/AssetSystem.cpp`)
+>   + the gendata `materialize()` implementations. No longer the Python-only no-op an earlier draft warned about.
+> - **Two-pass lowering** (Pass 1 collect in `__init__`, Pass 2 emit in `build()`) and the JSON round-trip.
+>
+> **What is DESIGN-ONLY (2026-08-01 audit — zero code hits in the tree):**
+> - The **generic system-handle sugar layer** (§4.2–§4.6: `self.bullet(...)`, `bullet.shapes.sphere(...)`,
+>   factory namespaces per system). Only `SceneGraphHandle` was built that way; the production composition
+>   idiom is the mixin library + explicit primitive calls (§4.11).
+> - **Cross-entity wiring** — `SceneWiringSystem` / `SceneParametersSystem` / `self.expose` / `self.on` (§3.4
+>   items 2–3) — deferred as M5 by the scene module's own header (`ecs/scene/__init__.py`).
+> - The **`Expr.sim` time namespace** (§3.5).
+> - The **`session.stage()` stage-then-swap authoring API** (§3.6) — deferred as M6. The atomic-swap
+>   *primitive* it needs IS proven in the player's live round-trip restart (see §3.6 "what exists today").
 >
 > **Reality-vs-spec deltas to keep in mind while reading:** (1) stage-then-swap completes in **2–3 frames**,
 > not the single frame §3.6 states (barrier-protected, no tearing); (2) a few described sub-features remain
@@ -86,32 +98,44 @@ Same host as Tier 1; particle viewer gains a small CLI surface (`--param key=val
 
 ### 1.3 Tier 3 — Scene composite (opt-in, ECS-backed)
 
+Real example (condensed from the shipped `ork.data/scenes/mtl_cc.py` — SDF asset chain → PBR material →
+drawable → entity):
+
 ```python
-class ColVdbScene(Scene):
+class ClearcoatScene(Scene):
   def __init__(self):
     super().__init__()
-    SG       = self.scenegraph(preset="ForwardPBR", layers=["std_forward"])
-    particles = self.particles_global()
+    SG = self.scenegraph(
+        preset      = "ForwardPBR",
+        skybox_path = "<ork_envmaps2>/tozenv_nebula.xir",
+        AmbientLight = vec3(0.08))
 
-    mesh = self.asset.HollowFunnelMesh("funnel", top_outer=8.0, ...)
-    sdf  = self.asset.MeshToSdf("funnel_sdf", input_mesh=mesh, voxel_size=0.08)
-    mat  = self.material("chrome", color=vec4(1), metallic=1.0, roughness=0.05)
+    saddle_sdf = self.asset.ThickSaddleSdf("saddle_sdf",
+        half_extent_x=3.0, half_extent_z=3.0, saddle_coef=0.3,
+        thickness=0.35, voxel_size=0.04)
 
-    self.funnel_ent = self.entity("funnel_viz",
-      components=[SG.component(nodes={
-        "mesh": {"layer": "std_forward",
-                 "drawable": SG.drawables.vdb_mesh(grid=sdf, material=mat)},
+    mat_brushed = self.asset.PbrMaterial("saddle_mat_brushed",
+        base_color = vec4(0.95, 0.75, 0.30, 1.0),
+        metallic   = 1.0,
+        roughness  = 0.95)
+
+    drawable_brushed = self.asset.VdbGridToDrawable("saddle_drawable_brushed",
+        grid=saddle_sdf, material=mat_brushed, iso=0.0)
+
+    self.entity("saddle_brushed",
+      transform=Transform(translation=vec3(-4, 0, 0)),
+      components=[self.spinner(), SG.component(nodes={
+        "n": {"drawable": drawable_brushed},
       })])
-
-    self.ptc_ent = self.entity("ptc",
-      transform=Transform(translation=vec3(0, 5, 0)),
-      components=[particles.component(system=ColVdbSystem(funnel_sdf=sdf))])
-
-    # cross-entity continuous wire — uniform Expr syntax
-    self.ptc_ent.transform.y = 5.0 + Expr.sin(Expr.sim.time) * 2.0
 ```
 
-Hosted by `ork.scene.viewer.py` (or any ECS app via `EcsRuntime`). Lowers to a full `ecs.SceneData`. Round-trips through the standard reflection serializer.
+(An earlier revision showed `self.material(...)` and `self.particles_global()` here — neither exists;
+materials go through the asset DSL as `self.asset.PbrMaterial(...)`, and particle hosting is declared via
+`self.system_data("ParticlesGlobalSystem")` / the mixin verbs. The cross-entity `Expr.sim` wire it showed
+is unbuilt design — see §3.5.)
+
+Hosted by `ork.scene.viewer.py` (= tojson → `ork.ecs.player.exe`) or the Python-side `EcsRuntime`
+(ecsedit). Lowers to a full `ecs.SceneData`. Round-trips through the standard reflection serializer.
 
 ### 1.4 Same artifact contract across tiers
 
@@ -171,6 +195,22 @@ Given identical graph + seeds, materializers produce bit-identical output. No `t
 ## 3. Scene composite — design summary (Tier 3)
 
 ### 3.1 Surface (system-handle namespaces + entity sugar)
+
+> **STATUS (2026-08-01): partly design.** Of the example below, the entity sugar, `self.scenegraph(...)` /
+> `SG.component(nodes={...})`, and the `self.asset.*` DSL are real. `self.particles_global()`,
+> `self.material(...)`, `self.expose(...)`, the `Expr` continuous wires, and `self.on(...)` event wiring
+> are **unbuilt design** (M5 — see §3.4/§3.5). What exists today for system declaration is the primitive
+> layer plus purpose-built mixin verbs — e.g. from `ecs/scene/_projectiles.py`:
+>
+> ```python
+> self._ensure_system("BulletSystem", linGravity=vec3(0.0, -9.8, 0.0))
+> shape        = _ecs.BulletShapeSphereData()   # raw construct-then-mutate
+> shape.radius = float(radius)
+> arch = self.archetype(name + "_arch")
+> self.component(arch, "BulletObjectComponent", shape=shape, mass=float(mass), ...)
+> ```
+>
+> — or, one level up, the packaged conveniences `self.walker(...)` / `self.projectile_pool(...)` (§4.11).
 
 The Scene composite exposes a Python wrapper layer over the reflected ECS primitives. Each system, once declared, returns a handle whose attributes are the things that system contributes (components, sub-object factories, configuration). Entity sugar composes components from handles. See §4 for the full surface specification.
 
@@ -236,21 +276,58 @@ class FooScene(Scene):
 | `self.on(...)` (event wire) | `SceneEventWireData` table entry on `SceneWiringSystem` |
 | `payload=lambda evt: {...}` | **traced once at build** into a reflected data-extraction descriptor; lambda discarded |
 
+> **STATUS (2026-08-01):** the first six rows are real. The last four (`self.material` →
+> `PBRMaterial`, `self.expose` → `SceneParametersSystemData`, the continuous/event wire tables, the
+> traced payload lambda) are **unbuilt design** — materials actually lower via the asset DSL
+> (`self.asset.PbrMaterial(...)` → reflected `PbrMaterialGenData` on `AssetSystemData`), and no wiring /
+> params system exists (M5, §3.4). One honesty note on the asset row: a pure-Python gen with **no**
+> reflected gendata (e.g. `HollowFunnelMesh`) builds eagerly but is *silently excluded* from the JSON
+> round-trip (`ecs/scene/__init__.py`, the M2b.4 registration branch skips it).
+
 The Python `Scene` class is a **compiler frontend**. Its output is the canonical artifact. Same separation HyperSyn already enforces between Expr trees and lowered dataflow output (SKILL.md lines 17–34) — just one level up.
 
 ### 3.4 Three new reflected systems
 
 Beyond what SKILL.md already mandates, the Scene composite requires three new reflected ECS systems:
 
-1. **`AssetSystem` + `AssetGenData` hierarchy.** Holds the list of asset generators (FunnelMesh, MeshToSdf, MeshToDrawable, NoiseTexture, ...) in topo order. Materializes at SCENE_LOAD phase. Generators reference each other by stable string name. Editor surfaces every generator's reflected fields. *Replaces* ad-hoc Python helpers like `_build_funnel_grid()` in current `col_vdb.py` for Tier 3 usage; eager Python helpers remain for Tier 1/2.
+1. **`AssetSystem` + `AssetGenData` hierarchy — BUILT and in production.** Holds the list of asset generators in declaration order; generators reference each other by stable string name; the editor surfaces every generator's reflected fields. Eager Python `.build()` helpers remain for Tier 1/2.
 
-2. **`SceneParametersSystem`** — owns the canonical scene-param state (`name → default` map + live values). Per-graph mirror modules of `_DSL_SceneParameters` (one per consuming graph) lower as needed. Runtime mutation via existing `systemNotify` SET_PARAM channel; broadcast handled by the system.
+   **Audited real state (2026-08-01):** `AssetSystemData::materializeAll`
+   (`ork.ecs/src/scenegraph/AssetSystem.cpp:52`) dispatches by dynamic cast and natively materializes
+   `PbrMaterial` / `HeightField` / `Hypermesh` / `ImplicitSdf` (CPU-fanned to workers) / `ParticleSystem` /
+   `VdbGridToDrawable` / `Mesh` (`.ogeo` sidecar) / `HdriToXir` GenDatas. `FreestyleMaterial`,
+   `VdbFileSdf`, and `MeshSdf` still fall through with a printed *"left to the Python wire path"*
+   (`AssetSystem.cpp:117-124`); the Python table `_GENDATA_TO_WRAPPER`
+   (`ecs/scene/assets.py:1871`) covers all 10 reflected gendata kinds. **By-name artifact consumption is
+   the law**: the wire step patches component datas whose `_drawable_asset_name` /
+   `_particles_asset_name` / `"asset://<name>"` references resolve against the artifacts varmap
+   (`AssetSystem.cpp:229-364`).
 
-3. **`SceneWiringSystem`** — continuous + event wiring tables. Continuous entries carry source descriptor + optional pre-lowered chain + target descriptor. Event entries carry source token + reflected payload-extraction descriptor + sink token. Owns the per-frame pump.
+   **Parity-maintenance burden (named honestly):** three parallel implementations of the
+   materialize+wire step exist and must be kept in lockstep — (a) C++ `materializeAndWireScene`
+   (`AssetSystem.cpp:210`, the player path), (b) Python `EcsRuntime.load_scene` → `wire_scene_data`
+   (`ecs/runtime.py:96-126`, the ecsedit/ecsplay path), (c) `materialize_from_scenedata`
+   (`ecs/scene/assets.py:1885`, the materialize half wire_scene_data builds on). `runtime.py` itself
+   documents that it mirrors the C++ (`ensure_scenegraph_system`, ~:140). Any new gendata kind or wire
+   rule lands in all of them or drifts.
+
+   **M2b status:** the `assets.py` header still says reflected C++ wrappers are "future" — in fact 10+
+   wrapper classes already construct reflected `*GenData` (further along than the header claims), but
+   pure-Python gens without a gendata are silently excluded from the JSON round-trip (§3.3 note), so
+   M2b is not complete.
+
+2. **`SceneParametersSystem`** — owns the canonical scene-param state (`name → default` map + live values). Per-graph mirror modules of `_DSL_SceneParameters` (one per consuming graph) lower as needed. Runtime mutation via existing `systemNotify` SET_PARAM channel; broadcast handled by the system. **STATUS: design, not yet built (M5)** — zero code hits; the scene module's own header lists "cross-entity wiring + scene-level params" as out of scope (`ecs/scene/__init__.py:17-22`).
+
+3. **`SceneWiringSystem`** — continuous + event wiring tables. Continuous entries carry source descriptor + optional pre-lowered chain + target descriptor. Event entries carry source token + reflected payload-extraction descriptor + sink token. Owns the per-frame pump. **STATUS: design, not yet built (M5)** — same evidence as item 2.
 
 Each is a normal `SystemData` subclass — fits the existing pattern from BulletSystem / SceneGraphSystem / ParticlesGlobalSystem.
 
 ### 3.5 Time + state namespace
+
+> **STATUS (2026-08-01): design, not yet built.** No `Expr.sim` / `Expr.entity` / `Expr.slot` namespace
+> exists in the tree. What exists today: the particle DSL's `Expr.time` (per-slot meaning, unchanged) and
+> the dataflow-level declarative `S.time` clock (the B.4 param/animation/clock contract). The rename
+> below remains the recommendation, not the state.
 
 SKILL.md doesn't lock this; the Scene composite is the right place to formalize it:
 
@@ -266,6 +343,19 @@ Today's `Expr.time` *already* means per-slot time. Recommendation: rename to `Ex
 No cross-entity time references at the Expr level — that's what `scene.connect(A.x, B.y)` is for. Cross-entity refs go through the wiring system, not the per-graph Expr resolver.
 
 ### 3.6 Live mutation strategy — stage-then-swap
+
+> **STATUS (2026-08-01): the authoring-facing `session.*` API below is design, not yet built (M6)** —
+> `session.stage` / `session.revert` / the snapshot ring have zero code hits; the scene module's own
+> header lists "live mutation / stage-then-swap" as out of scope (`ecs/scene/__init__.py:17-22`).
+>
+> **What exists today — the atomic-swap primitive is proven in the player.** `ork.ecs.player.exe
+> --roundtrip N` (or Cmd+R live) clones the RUNNING scene: serialize → deserialize → byte-compare the
+> clone's re-serialization (any unreflected state shows up as a diff) → `materializeAndWireScene` the
+> clone on the render thread (`ork.ecs/examples/c++/player/main.cpp:1450-1509`), then hands it to the
+> update thread which adopts it on the next update tick via `REQ_RESTART`/`pending_fresh`
+> (`main.cpp:1259-1290` — stop, fresh Controller, bindScene, createSimulation, startSimulation). That is
+> exactly the stage-then-swap lifecycle below with the player as the only driver; wrapping it in the
+> `session` authoring surface remains future work.
 
 A `Scene` subclass produces an `ecs.SceneData` snapshot. The natural lifecycle for changes that affect a running scene is **stage-then-swap**: build a new `SceneData` off the GPU thread, hand it to the GPU thread in a single atomic operation, despawn the prior generation. The Tier 3 design adopts this as its v1 live-mutation contract; finer-grained incremental mutation is an opt-in future capability built on the same primitive.
 
@@ -355,6 +445,13 @@ The stage-then-swap pattern is the single architectural primitive on which all l
 
 ## 4. Authoring surface — system-handle namespaces
 
+> **STATUS (2026-08-01): the generic system-handle pattern was built for exactly ONE system.**
+> `SceneGraphHandle` (`self.scenegraph(...)` with `.component(nodes={...})` + the `.drawables.*` /
+> node-declaration namespace) is real. No other system grew a handle — there is no `self.bullet(...)`,
+> no `bullet.shapes.*`, no per-system factory namespaces (§4.2–§4.6 are design). The production Tier-3
+> composition idiom that emerged instead is **purpose-built mixins over the explicit primitive layer** —
+> see §4.11. The design below is kept as the record of the intended generalization.
+
 The Tier 3 authoring surface is built from one consistent pattern: **each ECS system, once declared, becomes a Python handle whose attributes are the things that system contributes** — components it owns, factory namespaces for its sub-objects, configuration properties. A scene is composed by collecting handles, building entities out of their components, and attaching spawners. The reflected `ecs.SceneData` is the canonical artifact; the Python surface is a wrapper layer that translates terse authoring intent into the engine's existing APIs.
 
 ### 4.1 The wrapper layer is where terseness lives
@@ -369,6 +466,11 @@ Every reflected C++ type used in the Scene composite has a Python wrapper. The w
 The wrapper layer does not bend the engine's data model — it bends only the **author's API surface**. The reflected `SceneData` is identical to what verbose `ecs.SceneData.declareArchetype/declareComponent/declareSpawner` calls would produce. Editor round-trip, JSON serialization, and reflection-based class lookup are unchanged.
 
 ### 4.2 The FullPowerScene example
+
+> **STATUS: aspirational** — `self.bullet(...)` and `bullet.shapes.sphere(...)` do not exist. The real
+> shipped equivalent of this scene shape is `self.projectile_pool(...)` (`ecs/scene/_projectiles.py`),
+> which internally does `self._ensure_system("BulletSystem", ...)` + `_ecs.BulletShapeSphereData()`
+> construct-then-mutate + explicit `archetype`/`component`/`spawner` calls. See §3.1 and §4.11.
 
 ```python
 class FullPowerScene(Scene):
@@ -481,9 +583,9 @@ The reason: other systems (BulletSystem, ParticlesGlobalSystem, audio, etc.) are
 
 The system-handle surface is **not a cap** on expressiveness. Anything `ecs.SceneData` supports is reachable, in three layers of decreasing sugar:
 
-1. **System-handle namespaces (recommended)** — the surface in §4.2 above. Built for the common case; covers 90%+ of authoring patterns.
-2. **Explicit primitive calls** — `self.archetype("Foo")`, `self.component(arch, "FooComponent", ...)`, `self.spawner("name", arch, ...)`, `self.system_data("FooSystem", ...)`. Reach for these when the system-handle wrapper doesn't cover what you need (multiple spawners off shared archetype with NodeInstanceData wiring, post-construction property mutation, cross-archetype references requiring forward declaration).
-3. **Raw escape** — `scene.on_lower(lambda sd: ...)` runs at the end of Pass 2 with the live `ecs.SceneData`. Reserved for system types Scene composite doesn't model at all (debug-only tooling, third-party components without wrappers). **Not** for filling gaps in the primitive surface — gaps are bugs in the wrapper layer.
+1. **System-handle namespaces** — the surface in §4.2 above. **As built (2026-08-01): scenegraph only** (`SceneGraphHandle`); the per-system generalization was never needed because layer 2 + the mixins (§4.11) covered the real scenes.
+2. **Explicit primitive calls — the COMMON path in production, not the rare fallback.** `self.archetype("Foo")`, `self.component(arch, "FooComponent", ...)` / `self.declare_component(...)`, `self.spawner("name", arch, ...)`, `self.system_data("FooSystem", ...)`. Every shipped mixin verb and most scene files bottom out here (e.g. `scn_swest.py` declares `HypermeshComponent` entities through `self.declare_component`).
+3. **Raw escape** — designed as `scene.on_lower(lambda sd: ...)` at the end of Pass 2. **Not built**; the closest shipped escape is appending extra reflected sub-calls onto a declaration (e.g. `self.SG._decl.sub_calls.append(("declareParams", ...))` in `scn_swest.py`).
 
 The sugar→primitive→raw progression is purely Python-side. Every layer produces the same reflected `SceneData`. A user moving between layers within one Scene is fine; the JSON output is unaffected by which layer was used at which point.
 
@@ -599,6 +701,66 @@ The same pattern Django uses for `urlpatterns.append(include('app.urls'))` and F
 #### The composition surface is the same as the authoring surface
 
 There's no separate "fragment API" — fragments use the exact same `scene.<verb>(...)`, `handle.<method>(...)`, `entity.<extension>(...)` calls as inline `__init__` code. This is intentional: anything an author can do inline, a fragment can do; anything a fragment can do, an author can copy-paste inline. The composition primitive is "function that takes a Scene" — nothing more.
+
+### 4.11 What exists today — the mixin idiom (the current Tier-3 composition layer)
+
+The composition mechanism that actually shipped is not per-system handles but **purpose-built mixins on
+the `Scene` base class itself** (`ecs/scene/__init__.py`, class definition ~:520):
+
+```python
+class Scene(TerrainMixin, WalkerMixin, ProjectilesMixin, SunMixin, MoonMixin,
+            StarsMixin, CelestialSkyMixin, SkyDomeMixin, CloudDeckMixin,
+            SkyMixin):
+```
+
+Each mixin is one `_*.py` file in `ecs/scene/` contributing domain verbs that expand into primitive-layer
+declarations — `_terrain.py` (`self.terrain(...)`, `self.scatter_collider(...)`), `_walker.py`
+(`self.walker(...)`), `_projectiles.py` (`self.projectile_pool(...)`), plus the whole sky/celestial
+library (`_sky.py`, `_sky_dome.py`, `_cloud_deck.py`, `_sun.py`, `_moon.py`, `_stars.py`,
+`_celestial_sky.py` with its `_celestial*` / `_night_policy.py` / `_star_dome.py` support modules).
+Shared plumbing the mixins ride: `self._ensure_system(typename, **kwargs)` (idempotent system
+declaration) and `self.append_system_script(path)` / `_set_primary_system_script(path)` (composable
+PythonSystem scripts — one-PythonSystem rule, see the hosting note at the end of this section). Real
+usage from the shipped `scn_scatter.py`:
+
+```python
+self.walker(
+    spawn        = vec3(0.0, HEIGHT_M + 0.0, 0.0),
+    radius       = 0.35,
+    height       = 2.3,
+    mass         = 80.0,
+    move_force   = 6200.0,
+    eye_height   = 0.85,
+    gravity      = vec3(0.0, -19.8, 0.0))
+
+self.projectile_pool(
+    "ball_spawner",
+    radius      = BALL_R,
+    mass        = 3.0,
+    restitution = 0.9,
+    max_count   = MAX_BALLS,
+    lifetime    = 16.0,
+    trail       = fire)
+```
+
+This is §4.10's fragment idea inverted: instead of free functions taking a `scene`, the library ships
+mixin classes whose methods ARE the fragment calls — same primitive expansions underneath, same reflected
+`SceneData` out. A new domain library today lands as a new mixin file plus its asset wrappers, not as a
+system handle. (The two idioms are not in conflict; if the handle layer is ever generalized, mixin verbs
+would simply call it.)
+
+**Player/python-hosting honesty note (2026-08-01).** Scenes composed this way often declare a
+`PythonSystem` with layered scripts (e.g. walk input + sky-time controls). The facts that govern hosting:
+the DSL structurally forbids two PythonSystems — systems are keyed by typename, a duplicate
+`system_data("PythonSystem", ...)` raises `ValueError` (`ecs/scene/__init__.py:621`); composition is
+`append_system_script(...)` onto the ONE system (`PythonSystemData::_sceneScriptPathsCSV` +
+`PythonSystem::_extraScripts` fan every hook to all scripts, `ork.ecs/inc/ork/ecs/pysys/PythonComponent.h:67-71,207-209`).
+The pure-C++ player decides whether to embed Python by scanning the raw scene JSON for
+`"PythonSystemData"` BEFORE GPU init (`player/main.cpp:~544-563`) and, having constructed the
+interpreter, immediately releases the GIL for good via `PyEval_SaveThread()` — that release is the
+zero-python-contention guarantee. The python-HOSTED path (`ork.ecsplay.py`) wedges/crashes with composed
+system scripts (extra script deadlocks the update thread pre-first-tick; pre-existing, filed —
+commit 5048ed81d findings): **`ork.ecs.player.exe` is the supported host for composed-script scenes.**
 
 ---
 
@@ -724,6 +886,27 @@ Net contract: open a JSON in any Python process that has imported the same libra
 > exactly as §6.3 describes — each contributes Ops, a materializer, and a Scene verb.
 > The `sdf` family is now a shipped standalone family (see SKILL.md), consumable from any tier the same
 > way hypermesh is. No claim in this doc is superseded.
+>
+> **Cross-ref update (2026-08-01) — the reflected-`LRuleSet` grammar generalization LANDED.** The tree's
+> labels are **GR-1 / GR-2 / GR-B** (the planning label "L5" appears nowhere in the tree). What landed:
+> - **GR-1 — the reflected grammar core** (slices 2026-07-09 → 2026-07-27): reflected schema
+>   `LExpr`/`LSymbolDef`/`LTurtleOp`/`LParamBinding`/`LRuleDef`/`LRuleSet` (all `DeclareConcreteX`),
+>   extracted family-neutral into `ork.core/inc/ork/grammar/{lruleset,rewrite,vocabulary}.h` on
+>   2026-07-27 (schema + rewrite pass lev2-free; per-family op-vocabulary registry — the reusability
+>   seam). The evaluator `deriveLRuleSet` (`ork.lev2/src/gfx/hypermesh/hmdflow_lruleset.cpp:266`) is
+>   consumed by `LSystemModuleData` via its reflected `grammar` property. The Python DSL front-end
+>   (grammars authored, not archetype-selected) landed 2026-07-09; the four **stock species presets**
+>   (`dflow/lsystem/presets.py`, "species = data" — the legacy C++ archetype switch deleted) landed
+>   2026-07-19 and are the Tier-2 form; `scn_lsystem.py` is the live Tier-3 example.
+> - **GR-2 — slot consumption** (2026-07-27, commit c4dbd0031): the grammar's emitted `XfSlot`s finally
+>   drive instancing — `LeafScatter` grew `source=SLOTS` (`instance_at_slots`); gated by
+>   `test_lsystem_slot_instancing.py` (consumed==emitted, world-frame transform match, and the
+>   off-by-default negative control: default source stays NODES, byte-identical).
+> - **GR-B — the grammar-building library** (2026-07-19, commit 41b0bbc53): parameterized building
+>   generators (`assets/hypermesh/_building.py` + variants) with `scn_hamlet.py` as the exemplar.
+>
+> Still forward from that campaign: the GPU L-system rewrite, creature vocab, straight-skeleton,
+> space-colonization (see `HYPERECS_PLAN_JUN10.md` item 4 / A7).
 
 The Scene composite must make HyperSyn graph authoring **identical** to how it works today, just hostable inside a larger structure. Three concrete promises:
 
@@ -800,11 +983,22 @@ Both are reflected; both round-trip; both extend the asset DSL surface.
 | Hot reload | 1/2/3 | controller stop → rebuild → JSON → controller start | full round-trip |
 | Runtime mutation (live param drag) | 1/2/3 | `controller.systemNotify(SceneParametersSystem, ...)` (Tier 3) or per-graph `set_param` (Tier 1/2) | live |
 
+> **STATUS (2026-08-01):** the Tier-3 cell of the last row is **unbuilt** — `SceneParametersSystem` does
+> not exist (§3.4 item 2). `systemNotify` itself is real and in daily use, but its shipped channels are
+> per-system vocabularies (the player drives `UpdateFramebufferSize`/`UpdateCamera` on the SceneGraphSystem,
+> `player/main.cpp:1305,1328`, plus devkey/input/sky-time messages) — there is no scene-level parameter
+> broadcast.
+
 The Python `.py` file is the **seed**. The JSON is the **canonical artifact**. The editor is the **interactive tweaker**. The tier choice is set by the asset's complexity, not by an arbitrary preference.
 
 ---
 
 ## 8. Concrete implementation foothold
+
+> **Kept as the historical plan record (2026-08-01).** The foothold below was executed (Stages A–E per
+> `HYPERECS_PLAN_JUN10.md`); LOC estimates and file lists reflect the June plan, not the current tree.
+> One delta: acid test #5 (the `examples/external_stub/` external-library round-trip proof) was **never
+> built** — §5's extensibility contract remains proven only by orkid-internal types.
 
 Build the smallest set of things that proves the round-trip — without disrupting Tier 1/2:
 
@@ -836,7 +1030,7 @@ Build the smallest set of things that proves the round-trip — without disrupti
 2. **Tier 2 demo**: `col_vdb.py` ported to use `assets.HollowFunnelMesh(...).build()` instead of the hand-rolled `_build_funnel_grid()`. Still loadable by `ork.particle.viewer.py`.
 3. **Tier 3 round-trip**: a new `col_vdb_scene.py` declared as a `Scene`. Run via `ork.scene.viewer.py`. Serialize the resulting `ecs.SceneData` to JSON; reload from JSON; verify identical runtime behavior.
 4. **Primitive completeness**: a `Scene` subclass that declares all the same things `physics/FPS.py` does — explicit archetypes, multiple spawners per archetype, custom system parameters — entirely through the Scene primitive surface, no `on_lower` escape hatch needed.
-5. **External-library round-trip**: a stub library outside orkid (literally `examples/external_stub/` with one `SystemData` subclass and one `AssetGenData` subclass) is `import`-able from a Scene-subclass `.py`; the resulting JSON loads correctly in a fresh process that imports the stub; loading WITHOUT importing the stub fails at deserialize time with the engine's existing "Class not Found" assertion naming the unknown class. This proves §5's extensibility contract end-to-end.
+5. **External-library round-trip**: a stub library outside orkid (literally `examples/external_stub/` with one `SystemData` subclass and one `AssetGenData` subclass) is `import`-able from a Scene-subclass `.py`; the resulting JSON loads correctly in a fresh process that imports the stub; loading WITHOUT importing the stub fails at deserialize time with the engine's existing "Class not Found" assertion naming the unknown class. This proves §5's extensibility contract end-to-end. **(Never built — see the §8 note.)**
 
 Wiring, scene-exposed params, and event handling are deferred to a second pass once the foothold runs.
 
@@ -854,6 +1048,8 @@ Wiring, scene-exposed params, and event handling are deferred to a second pass o
 - **JSON loading inherits the reflection serializer's existing contract** — missing-class on deserialize is a loud assertion naming the unknown class. The Scene composite adds no resolution layer; the host imports whatever libraries the scene was authored against.
 
 ### 9.2 Still on the table
+
+*All four items below re-checked 2026-08-01: still open.*
 
 - **Aggressive vs. conservative `Expr.time` rename.** Recommend aggressive (rename to `slot.t`, deprecate alias) — we're in design-the-shape mode. Soft break with deprecation warning, not hard break.
 - **Asset content-addressed caching to disk.** For small scenes, always-re-bake works. For heavy meshes, file-side `.vdb`/`.xgm` artifacts next to the JSON become load-bearing. Defer until a heavy use case demands it.

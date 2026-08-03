@@ -43,11 +43,47 @@ obt.net.py sync <node> L R --pull                         # make local == remote
 obt.net.py gitsync <node> <local_repo> <remote_repo>      # align git base (branch+HEAD)
                                                           #   via bundle, NO push; --tree
                                                           #   chains the uncommitted delta
+                                                          #   LFS objects the node lacks
+                                                          #   ride along (--no-lfs off,
+                                                          #   --lfs-max-mb caps a seed)
 obt.net.py diff <node> <local_dir> <remote_dir>           # +/-/M/L classified; rc0=equal
 obt.net.py watch [--node N] [--grep P]                    # live fleet event tail (ctrl-c)
 ```
 Nodes run inside OBT shells, so staged tools (`ork.build.py`, `obt.dep.*`, `ork.cpp.db.*`)
 work directly: `obt.net.py run @linux,gpu -- ork.cpp.db.search.py MySymbol --porcelain`.
+
+## Coordination traffic (seat mail — the fleet's other half)
+
+The same controller carries COORDINATOR MAIL between seats. Targets are SEAT names
+(never `coord-*` node names), and the route is derived from config — msg verbs take no
+`--controller`.
+
+```bash
+obt.net.py route <seat>                                   # derived class + liveness; sends nothing
+obt.net.py msg send <seat|@coords> --subject S --body-file F
+obt.net.py msg list                                       # reads YOUR local ~/coordination/inbox/
+obt.net.py msg ack <ts-or-path>                           # moves it to inbox/acked/ (audit trail)
+obt.net.py push <seat> <local> <remote>                   # order flips between the two:
+obt.net.py pull <seat> <remote> <local>                   #   push=local first, pull=remote first
+```
+
+Routing classes, in decision order (`route` prints the one it picked):
+`coord-seat` (a `coord-<target>` node on YOUR controller → hub-to-sub) · `work-node` (a
+worker on your controller — REFUSED for msg: workers execute, they are not mail
+endpoints) · `coord-master` (your config's `master` key → sub-to-hub) · `ssh` (a declared
+`sshhosts` entry — a first-class file route, NEVER a fallback for a down bus link).
+Collisions raise a hard RouteError; routing never guesses.
+
+Config in `~/.obt-global/obtnet.json`: `coordid` (every seat) · `master` (subs only — the
+hub's address; `controller` always stays local) · `sshhosts` (hub only).
+`@coords` resolves on YOUR OWN controller: every live `coord-*` there plus your `sshhosts`
+entries. On a hub that is the sub seats (and its own mailbox); on a sub it does NOT
+include the hub — the hub is reached by seat name.
+
+Payloads are documents, not chat. Bringing a seat up is not this skill:
+`.claude/skills/hub-coordinator/BRINGUP.md` / `.claude/skills/sub-coordinator/BRINGUP.md`;
+architecture and the full config contract in
+`.claude/skills/hub-coordinator/COORDINATION_OPS.md`.
 
 ## Rules
 - Long or unbounded work: ALWAYS `submit` (never `run`) and give an honest `--timeout`.
@@ -60,3 +96,10 @@ work directly: `obt.net.py run @linux,gpu -- ork.cpp.db.search.py MySymbol --por
 - Anything that opens a window on a node needs the owner's consent first.
 - Logs stay remote. On failure the verdict + auto-tail is usually enough; escalate with
   bounded `log --grep`, never full dumps.
+- `@each`/`@any` SEE MAILBOX NODES: `coord-*` nodes are live registrations and selectors
+  do not skip them. `sync`/`gitsync` fan-outs are harmless there (content verbs only), but
+  `build`/`test`/`scene`/`run` with `@each` earns a `restricted node ... refuses` reply
+  from every mailbox node, and one refusal flips the whole fan-out's exit code to failure.
+  Name worker nodes explicitly (or use a narrower selector) for execution verbs.
+- Mail is not work: never send a job to a `coord-*` node, never address mail to a worker.
+  Both are refused by design, not by accident.

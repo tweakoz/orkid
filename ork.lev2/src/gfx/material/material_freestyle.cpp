@@ -9,6 +9,17 @@
 
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
+
+using cache_impl_t = FxPipelineCacheImpl<FreestyleMaterial>;
+
+using freestylecache_impl_ptr_t = std::shared_ptr<cache_impl_t>;
+
+static freestylecache_impl_ptr_t _getfreestylecache(){
+  static freestylecache_impl_ptr_t _gcache = std::make_shared<cache_impl_t>();
+  return _gcache;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 FreestyleMaterial::FreestyleMaterial() {
   _rasterstate->setBlendingMacro(BlendingMacro::OFF);
   _rasterstate->setDepthTest(EDepthTest::LEQUALS);
@@ -19,6 +30,16 @@ FreestyleMaterial::FreestyleMaterial() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 FreestyleMaterial::~FreestyleMaterial() {
+  // Pointer-keyed cache eviction — see FxPipelineCacheImpl::removeCache. Skipping
+  // this leaves a cache reachable by the next material that lands on this
+  // address, whose pipelines then rebind THIS material's freed resources.
+  auto dead_cache = _getfreestylecache()->removeCache(this);
+  if (dead_cache and _initialTarget) {
+    // Its pipelines may hold the last ref to GPU-owning binds; drop them on the
+    // owning context's thread, past the frames still in flight.
+    constexpr int kDelayFrames = 3; // > MAX_FRAMES_IN_FLIGHT
+    _initialTarget->enqueueDelayedDestroy([dead_cache]() {}, kDelayFrames);
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -57,15 +78,6 @@ fxpipeline_ptr_t FreestyleMaterial::_createFxPipeline(const FxPipelinePermutatio
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-using cache_impl_t = FxPipelineCacheImpl<FreestyleMaterial>;
-
-using freestylecache_impl_ptr_t = std::shared_ptr<cache_impl_t>;
-
-static freestylecache_impl_ptr_t _getfreestylecache(){
-  static freestylecache_impl_ptr_t _gcache = std::make_shared<cache_impl_t>();
-  return _gcache;
-}
 
 fxpipelinecache_constptr_t FreestyleMaterial::_doFxPipelineCache(fxpipelinepermutation_set_constptr_t perms) const { // final
   return _getfreestylecache()->getCache(this);
@@ -369,7 +381,12 @@ void FreestyleMaterial::begin(
     const FxShaderTechnique* tekStereo,
     rcfd_ptr_t RCFD) {
   const auto& CPD = RCFD->topCPD();
-  begin(CPD.isSinglePassStereo() ? tekStereo : tekMono, RCFD);
+  // GATE 0 NC2 SITE 3 of 3 — same invariant as the two FxPipelineCache sites: EVERY
+  //  stereo-selection entry the gate exercises honors the hook, and the gate bypasses
+  //  none. This dispatch is the one a below-the-compositor caller draws through, so a
+  //  control armed anywhere must bite HERE or the gate reports a control it never armed.
+  bool stereo = CPD.isSinglePassStereo() and not gate0ForceMonoTechnique();
+  begin(stereo ? tekStereo : tekMono, RCFD);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::end(rcfd_ptr_t RCFD) {

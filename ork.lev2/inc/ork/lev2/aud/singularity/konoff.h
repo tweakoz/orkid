@@ -36,6 +36,10 @@ struct KeyOnModifiers{
   map_t _mods;
   uint32_t _layermask = 0xffffffff;
   bool _dangling = false;
+  // voice-steal priority: higher survives longer. originates in the emitter
+  //  component data and rides the kmods because that is the one object already
+  //  threaded from every ECS keyOn call site down to Layer::_keymods.
+  int _priority = 0;
   outbus_ptr_t _outbus_override = nullptr;
 };
 

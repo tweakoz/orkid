@@ -26,7 +26,6 @@ namespace ork::lev2 {
 struct TileParams {
   int x, y;          // Tile position in pixels
   int width, height; // Tile dimensions
-  int mip_level;     // For diffuse filtering (specular uses roughness level)
   float roughness;   // For specular filtering  
   
   // NDC and UV coordinates computed from tile position
@@ -46,7 +45,6 @@ struct XIRProcessFuture {
   
   // Debug images - captured during processing
   image_list_t _specular_images;  // One per roughness level
-  image_list_t _diffuse_images;   // One per mip level
   
   datablock_ptr_t get() {
     std::unique_lock<std::mutex> lock(_mutex);
@@ -70,11 +68,9 @@ struct XIRProcessFuture {
     _cv.notify_all();
   }
   
-  void setDebugImages(const image_list_t& spec_images, 
-                      const image_list_t& diff_images) {
+  void setDebugImages(const image_list_t& spec_images) {
     std::lock_guard<std::mutex> lock(_mutex);
     _specular_images = spec_images;
-    _diffuse_images = diff_images;
   }
 };
 
@@ -90,7 +86,15 @@ using xirprocessfuture_wkptr_t = std::weak_ptr<XIRProcessFuture>;
 ////////////////////////////////////////////////////////////////////////////////
 
 struct EnvMapProcessor {
-  
+
+  // COMFORT-1: importance-sample count for the specular filter pass — the only
+  // filter pass there is (W4-S9 deleted the prefiltered diffuse). This is the
+  // BAKE-TIME value and every baked .xir in the tree was filtered with it, so
+  // changing it changes those bytes. A caller that can afford less quality (the
+  // procedural sky feed) passes its own; the count rides the filterenv UBO
+  // (A8), never shader text.
+  static constexpr int kBakedSpecularSamples = 8192;
+
   // Process a single environment map file to XIR format
   // Returns true on success, XIR data written to output_path
   static bool processToXIR(
@@ -108,11 +112,11 @@ struct EnvMapProcessor {
       const std::vector<std::string>& extensions = {".exr", ".hdr", ".png", ".dds"});
   
   // TaskGraph-based filtering - creates the full filtering pipeline
-  // is_hdr_source: when true, captures in RGBA16F (half-float) to preserve HDR range
+  // Every capture is RGBA16F, whatever the source encoding was — see
+  // initEnvFilterState.
   static taskgraph_ptr_t createFilteringTaskGraph(
       texture_ptr_t rawenvmap,
-      bool is_equirectangular,
-      bool is_hdr_source);
+      bool is_equirectangular);
 
   // MT2 (JUL05_GPUMICROTASK §2.6): the sliced, scheduler-driven equivalent of
   // createFilteringTaskGraph. Filters `rawenvmap` ONE roughness/mip level per
@@ -127,9 +131,25 @@ struct EnvMapProcessor {
   static gpumicrotask_ptr_t createRadiancePrefilterMicrotask(
       texture_ptr_t rawenvmap,
       bool is_equirectangular,
-      bool is_hdr_source,
       pbr::radiancemaps_ptr_t target,
-      std::function<void(datablock_ptr_t)> on_complete);
+      std::function<void(datablock_ptr_t)> on_complete,
+      int specular_samples = kBakedSpecularSamples,
+      // How this job's work is CUT UP (plain ints — this class knows nothing of
+      // SkyAtmosphereData and must not): submits per level, slices per frame, and
+      // one publish-chain slice's output-pixel budget. 0 on any of them means
+      // UNSET and resolves to the matching ORKID_MT_IBL_* env var, else the
+      // measured default in the .cpp — so the bake callers, which pass none of
+      // them, keep the pre-property behavior by construction.
+      int level_batches      = 0,
+      int slices_per_frame   = 0,
+      int mipchain_budget_px = 0,
+      // COLD START: this is a feed's FIRST bake and nothing usable is published
+      // yet, so the job drops its per-frame quota and its budget gate and
+      // drains in the frame it starts in (GpuMicrotask::_unboundedDrain). Only
+      // the caller can know that — a bake caller passes nothing and keeps the
+      // paced behavior, and the flag is per-instance, so the next cycle paces
+      // normally with no reset anywhere.
+      bool cold_start        = false);
 
   // Byte-identity harness (§3 MT2 gate b): bake `input_path` to XIR via the
   // microtask path instead of the burst taskgraph. Enqueues on gloadercontext's
@@ -146,15 +166,8 @@ struct EnvMapProcessor {
       float roughness,
       int num_samples);
   
-  static void renderDiffuseTile(
-      Context* ctx,
-      const TileParams& tile,
-      texture_ptr_t src_tex,
-      rtbuffer_ptr_t target_buffer);
-  
   // Constants for tile sizes
   static constexpr int SPECULAR_TILE_SIZE = 128;
-  static constexpr int DIFFUSE_TILE_SIZE = 256;
 };
 
 } // namespace ork::lev2

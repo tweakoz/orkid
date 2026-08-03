@@ -1,0 +1,153 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 780" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <filter id="shadow">
+      <feDropShadow dx="2" dy="2" stdDeviation="2" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  <rect x="0" y="0" width="1000" height="780" fill="#1a1a2e"/>
+  <text x="500" y="30" font-family="Arial" font-size="18" font-weight="bold" fill="white" text-anchor="middle">.ogeo file layout — chunkfile container + payload (real 216-byte example: P + uv + one triangle)</text>
+  <text x="500" y="48" font-size="11.5" fill="#aaa" text-anchor="middle">all fields little-endian, byte-packed, no alignment, no compression &#8212; offsets from the actual file</text>
+
+  <!-- ============ left: whole-file byte map ============ -->
+  <!-- container framing (blue) -->
+  <g>
+    <rect x="110" y="66" width="360" height="26" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="40" y="83" font-family="monospace" font-size="11" fill="#aaa">0x0000</text>
+    <text x="120" y="83" font-family="monospace" font-size="11.5" font-weight="bold" fill="white">magic  "chkf"</text>
+    <text x="465" y="83" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="end">63 68 6b 66</text>
+
+    <rect x="110" y="92" width="360" height="26" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="40" y="109" font-family="monospace" font-size="11" fill="#aaa">0x0004</text>
+    <text x="120" y="109" font-family="monospace" font-size="11" fill="#93c5fd">i32 string_block_len = 22</text>
+
+    <!-- string block (warm) -->
+    <rect x="110" y="118" width="360" height="96" fill="#5a4a3a" stroke="#f59e0b" stroke-width="1.5"/>
+    <text x="40" y="135" font-family="monospace" font-size="11" fill="#aaa">0x0008</text>
+    <text x="120" y="135" font-family="monospace" font-size="11" font-weight="bold" fill="white">string block (22 bytes, NUL-terminated, deduped)</text>
+    <text x="130" y="152" font-family="monospace" font-size="10.5" fill="#fed7aa">@0  "ogeo"   &#8212; file-type tag (registered first)</text>
+    <text x="130" y="167" font-family="monospace" font-size="10.5" fill="#fed7aa">@5  "HEADER"   @12  "DATA"   &#8212; chunk names</text>
+    <text x="130" y="182" font-family="monospace" font-size="10.5" fill="#fed7aa">@17 "P"   @19 "uv"   &#8212; channel names</text>
+    <text x="130" y="199" font-size="10.5" fill="#aaa">a "string index" anywhere = byte offset into this pool</text>
+
+    <rect x="110" y="214" width="360" height="26" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="40" y="231" font-family="monospace" font-size="11" fill="#aaa">0x001e</text>
+    <text x="120" y="231" font-family="monospace" font-size="11" fill="#93c5fd">i32 filetype_str = 0  &#8594;  "ogeo"</text>
+
+    <rect x="110" y="240" width="360" height="26" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="40" y="257" font-family="monospace" font-size="11" fill="#aaa">0x0022</text>
+    <text x="120" y="257" font-family="monospace" font-size="11" fill="#93c5fd">i32 num_chunks = 2   (reader max 64)</text>
+  </g>
+
+  <!-- chunk table (purple) -->
+  <g>
+    <rect x="110" y="266" width="360" height="58" fill="#4c1d95" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="40" y="283" font-family="monospace" font-size="11" fill="#aaa">0x0026</text>
+    <text x="120" y="283" font-family="monospace" font-size="11" font-weight="bold" fill="white">chunk table entry 0</text>
+    <text x="130" y="300" font-family="monospace" font-size="10.5" fill="#c4b5fd">i32 name = 5 &#8594; "HEADER"</text>
+    <text x="130" y="315" font-family="monospace" font-size="10.5" fill="#c4b5fd">u64 offset = 0    u64 length = 66</text>
+
+    <rect x="110" y="324" width="360" height="58" fill="#4c1d95" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="40" y="341" font-family="monospace" font-size="11" fill="#aaa">0x003a</text>
+    <text x="120" y="341" font-family="monospace" font-size="11" font-weight="bold" fill="white">chunk table entry 1</text>
+    <text x="130" y="358" font-family="monospace" font-size="10.5" fill="#c4b5fd">i32 name = 12 &#8594; "DATA"</text>
+    <text x="130" y="373" font-family="monospace" font-size="10.5" fill="#c4b5fd">u64 offset = 66    u64 length = 72</text>
+  </g>
+
+  <!-- HEADER payload (green) -->
+  <g>
+    <rect x="110" y="382" width="360" height="212" fill="#1a3a3a" stroke="#34d399" stroke-width="1.5"/>
+    <text x="40" y="399" font-family="monospace" font-size="11" fill="#aaa">0x004e</text>
+    <text x="120" y="399" font-family="monospace" font-size="11" font-weight="bold" fill="white">"HEADER" payload (66 bytes)  &#8592; payload base</text>
+    <text x="130" y="417" font-family="monospace" font-size="10.5" fill="#a7f3d0">u32 version = 1</text>
+    <text x="130" y="432" font-family="monospace" font-size="10.5" fill="#a7f3d0">u32 num_points = 3   u32 num_polys = 1   (advisory)</text>
+    <text x="130" y="450" font-family="monospace" font-size="10.5" font-weight="bold" fill="#34d399">POINT set: u32 channel_count = 2</text>
+    <text x="142" y="466" font-family="monospace" font-size="10.5" fill="#a7f3d0">u64 name=17 "P"    u8 type=3 VEC3   u32 count=3</text>
+    <text x="142" y="481" font-family="monospace" font-size="10.5" fill="#a7f3d0">u64 name=19 "uv"   u8 type=2 VEC2   u32 count=3</text>
+    <text x="130" y="499" font-family="monospace" font-size="10" fill="#a7f3d0">VERTEX = 0    PRIM = 0    DETAIL = 0   (always present)</text>
+    <text x="130" y="517" font-family="monospace" font-size="10.5" font-weight="bold" fill="#34d399">topology:</text>
+    <text x="142" y="533" font-family="monospace" font-size="10.5" fill="#a7f3d0">u32 poly_count = 1</text>
+    <text x="142" y="548" font-family="monospace" font-size="10.5" fill="#a7f3d0">u32 corner_count[0] = 3</text>
+    <text x="142" y="563" font-family="monospace" font-size="10.5" fill="#a7f3d0">u32 index_count = 3</text>
+    <text x="130" y="582" font-size="10.5" fill="#aaa">channels: ascending bytewise name order per owner set</text>
+  </g>
+
+  <!-- DATA payload (warm-red) -->
+  <g>
+    <rect x="110" y="594" width="360" height="118" fill="#7c2d12" stroke="#fb923c" stroke-width="1.5"/>
+    <text x="40" y="611" font-family="monospace" font-size="11" fill="#aaa">0x0090</text>
+    <text x="120" y="611" font-family="monospace" font-size="11" font-weight="bold" fill="white">"DATA" payload (72 bytes) &#8212; raw arrays</text>
+    <text x="130" y="629" font-family="monospace" font-size="10.5" fill="#fed7aa">P: 3 &#215; vec3 = 36 B   (f32 x,y,z per element)</text>
+    <text x="130" y="644" font-family="monospace" font-size="10.5" fill="#fed7aa">uv: 3 &#215; vec2 = 24 B</text>
+    <text x="130" y="659" font-family="monospace" font-size="10.5" fill="#fed7aa">indices: 3 &#215; i32 = 12 B   (0, 1, 2)</text>
+    <text x="130" y="677" font-size="10.5" fill="#aaa">order = exactly the HEADER announcement order:</text>
+    <text x="130" y="691" font-size="10.5" fill="#aaa">owner sets POINT&#8594;VERTEX&#8594;PRIM&#8594;DETAIL, then topology indices</text>
+    <text x="40" y="730" font-family="monospace" font-size="11" fill="#aaa">0x00d8</text>
+    <text x="120" y="730" font-size="11.5" fill="#aaa">end of file (216 bytes)</text>
+  </g>
+
+  <!-- ============ right: expansions + laws ============ -->
+  <text x="530" y="83" font-size="12.5" font-weight="bold" fill="#ddd">chunk table entry (20 bytes, packed)</text>
+  <g>
+    <rect x="530" y="92" width="130" height="34" fill="#4c1d95" stroke="#a78bfa" stroke-width="1.5"/>
+    <rect x="660" y="92" width="150" height="34" fill="#4c1d95" stroke="#a78bfa" stroke-width="1.5"/>
+    <rect x="810" y="92" width="150" height="34" fill="#4c1d95" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="595" y="106" font-family="monospace" font-size="11" fill="#c4b5fd" text-anchor="middle">i32 name</text>
+    <text x="595" y="120" font-size="10" fill="#aaa" text-anchor="middle">string offset</text>
+    <text x="735" y="106" font-family="monospace" font-size="11" fill="#c4b5fd" text-anchor="middle">u64 offset</text>
+    <text x="735" y="120" font-size="10" fill="#aaa" text-anchor="middle">from payload base</text>
+    <text x="885" y="106" font-family="monospace" font-size="11" fill="#c4b5fd" text-anchor="middle">u64 length</text>
+    <text x="885" y="120" font-size="10" fill="#aaa" text-anchor="middle">bytes</text>
+    <text x="530" y="144" font-size="10.5" fill="#aaa">entries in ascending name order; payloads contiguous in the same order</text>
+  </g>
+
+  <text x="530" y="180" font-size="12.5" font-weight="bold" fill="#ddd">channel descriptor (13 bytes, packed)</text>
+  <g>
+    <rect x="530" y="189" width="190" height="34" fill="#1a3a3a" stroke="#34d399" stroke-width="1.5"/>
+    <rect x="720" y="189" width="110" height="34" fill="#1a3a3a" stroke="#34d399" stroke-width="1.5"/>
+    <rect x="830" y="189" width="130" height="34" fill="#1a3a3a" stroke="#34d399" stroke-width="1.5"/>
+    <text x="625" y="203" font-family="monospace" font-size="11" fill="#a7f3d0" text-anchor="middle">u64 name</text>
+    <text x="625" y="217" font-size="10" fill="#aaa" text-anchor="middle">string offset</text>
+    <text x="775" y="203" font-family="monospace" font-size="11" fill="#a7f3d0" text-anchor="middle">u8 datatype</text>
+    <text x="775" y="217" font-size="10" fill="#aaa" text-anchor="middle">tag 0..6</text>
+    <text x="895" y="203" font-family="monospace" font-size="11" fill="#a7f3d0" text-anchor="middle">u32 count</text>
+    <text x="895" y="217" font-size="10" fill="#aaa" text-anchor="middle">elements</text>
+  </g>
+
+  <text x="530" y="260" font-size="12.5" font-weight="bold" fill="#ddd">element type tags</text>
+  <g font-family="monospace" font-size="10.5" fill="#ddd">
+    <text x="530" y="278">0 FLOAT  f32 (4 B)</text>
+    <text x="530" y="294">1 INT    i32 (4 B)</text>
+    <text x="530" y="310">2 VEC2   f32 x,y (8 B)</text>
+    <text x="530" y="326">3 VEC3   f32 x,y,z (12 B)</text>
+    <text x="720" y="278">4 VEC4   f32 x,y,z,w (16 B)</text>
+    <text x="720" y="294">5 QUAT   f32 w,x,y,z (16 B) &#8212; scalar FIRST</text>
+    <text x="720" y="310">6 MTX4   16&#215;f32 COLUMN-major (64 B)</text>
+    <text x="720" y="326">   (TRS: translation = floats 12,13,14)</text>
+  </g>
+
+  <!-- law callout -->
+  <rect x="530" y="352" width="440" height="96" rx="8" fill="#7c2d12" stroke="#fb923c" stroke-width="2" filter="url(#shadow)"/>
+  <text x="750" y="374" font-size="12" font-weight="bold" fill="white" text-anchor="middle">CONTIGUITY LAW (what the reader actually does)</text>
+  <text x="750" y="393" font-size="11" fill="#fed7aa" text-anchor="middle">the reader copies each chunk's `length` bytes SEQUENTIALLY in table order</text>
+  <text x="750" y="408" font-size="11" fill="#fed7aa" text-anchor="middle">and IGNORES the stored `offset` field &#8212; payloads must be contiguous,</text>
+  <text x="750" y="423" font-size="11" fill="#fed7aa" text-anchor="middle">in table order, first offset 0. (offset: written, never consumed)</text>
+  <text x="750" y="440" font-family="monospace" font-size="10" fill="#fed7aa" text-anchor="middle">DATA length must equal &#931;(count &#183; elementsize) + 4 &#183; index_count</text>
+
+  <!-- versioning note -->
+  <rect x="530" y="466" width="440" height="76" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="750" y="488" font-size="12" font-weight="bold" fill="white" text-anchor="middle">VERSIONING</text>
+  <text x="750" y="506" font-size="11" fill="#93c5fd" text-anchor="middle">container: unversioned ("chkf" magic + file-type string only)</text>
+  <text x="750" y="521" font-size="11" fill="#93c5fd" text-anchor="middle">payload: u32 version = 1; readers HARD-REJECT any other value</text>
+  <text x="750" y="536" font-size="10.5" fill="#aaa" text-anchor="middle">new channel names = not a format change; new type tags = format change</text>
+
+  <!-- owner sets note -->
+  <rect x="530" y="560" width="440" height="90" rx="8" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="750" y="582" font-size="12" font-weight="bold" fill="white" text-anchor="middle">OWNER SETS (always 4, this order)</text>
+  <text x="750" y="600" font-size="11" fill="#a7f3d0" text-anchor="middle">POINT (per point) &#8594; VERTEX (per corner) &#8594; PRIM (per polygon) &#8594; DETAIL (global)</text>
+  <text x="750" y="615" font-size="11" fill="#a7f3d0" text-anchor="middle">shipped artifacts populate POINT (+ topology for meshes);</text>
+  <text x="750" y="630" font-size="11" fill="#a7f3d0" text-anchor="middle">point clouds (ScatterSet, road spine) write topology as 0, 0</text>
+  <text x="750" y="645" font-size="10.5" fill="#aaa" text-anchor="middle">an empty owner set is the single u32 0</text>
+
+  <text x="530" y="690" font-size="10.5" fill="#aaa">codec: ork.lev2/src/gfx/meshutil/geometry.cpp &#8212; container: ork.core/src/file/chunkfile.cpp</text>
+  <text x="530" y="705" font-size="10.5" fill="#aaa">full field tables + worked example: OGEO.md</text>
+</svg>

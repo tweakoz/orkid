@@ -30,11 +30,12 @@ static logchannel_ptr_t logchan_simupdate = logger()->configureChannel("ecs-simu
 ///////////////////////////////////////////////////////////////////////////////
 float Simulation::_computeDeltaTime() {
 
-  float frame_rate = 0.0f;
+  float frame_rate           = desiredFrameRate();
+  bool externally_fixed_rate = (frame_rate != 0.0f);
 
   ork::opq::assertOnQueue2(opq::updateSerialQueue());
   float systime = float(OldSchool::GetRef().GetLoResTime());
-  float fdelta  = (frame_rate != 0.0f) ? (1.0f / frame_rate) : (systime - mUpTime);
+  float fdelta  = externally_fixed_rate ? (1.0f / frame_rate) : (systime - mUpTime);
 
   static float fbasetime = systime;
 
@@ -83,7 +84,11 @@ float Simulation::_computeDeltaTime() {
       // update clock
       ///////////////////////////////
 
-      mDeltaTime     = (mPrevDeltaTime + fdelta) / 2;
+      // wall-clock dt is averaged with the previous tick to keep frame jitter from
+      // beating through the sim; an externally fixed rate must NOT be averaged —
+      // otherwise the first tick spends a half delta and the run stops being one
+      // exact step per tick (the whole point of the fixed clock).
+      mDeltaTime     = externally_fixed_rate ? fdelta : ((mPrevDeltaTime + fdelta) / 2);
       mPrevDeltaTime = fdelta;
       mLastGameTime  = mGameTime;
       mGameTime += mDeltaTime;

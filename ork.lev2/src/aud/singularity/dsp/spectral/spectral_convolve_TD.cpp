@@ -46,7 +46,7 @@ SpectralConvolveTDData::SpectralConvolveTDData(std::string name, float fb)
 ///////////////////////////////////////////////////////////////////////////////
 
 dspblk_ptr_t SpectralConvolveTDData::createInstance() const { // override
-  return std::make_shared<SpectralConvolveTD>(this);
+  return createDspInstance<SpectralConvolveTD>(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -117,13 +117,20 @@ void SpectralConvolveTD::doKeyOn(const KeyOnInfo& koi) { // final
   _inpqR.resize(frames_per_controlpass);
   _outqL.resize(frames_per_controlpass);
   _outqR.resize(frames_per_controlpass);
+  // Non-uniform partitioning: head stage at control-pass granularity keeps
+  // zero latency; the IR bulk runs at large partitions (2k) so per-block cost
+  // no longer scales with full IR length.
+  constexpr size_t k_tail_blocksize = 2048;
+
   _convolverL.init(
-    frames_per_controlpass, // blocksize
+    frames_per_controlpass, // head blocksize
+    k_tail_blocksize,       // tail blocksize
     imp->_impulseL.data(), // impulse
     imp->_impulseL.size()); // impulse length
 
   _convolverR.init(
-    frames_per_controlpass, // blocksize
+    frames_per_controlpass, // head blocksize
+    k_tail_blocksize,       // tail blocksize
     imp->_impulseR.data(), // impulse
     imp->_impulseR.size()); // impulse length
 }

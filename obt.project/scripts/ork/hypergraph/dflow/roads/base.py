@@ -55,7 +55,8 @@ class Roads:
   def route_spine(self, pois, height=None, slope=None, curvature=None, discharge=None,
                   width_m=6.0, max_grade=0.12, w_slope=6.0, w_curv=3.0, w_water=1.0e4,
                   disch_thresh=0.55, grade_weight=4.0, base_cost=1.0,
-                  min_radius_m=24.0, station_m=8.0, vcurve_len_m=120.0, clearance_m=0.3):
+                  min_radius_m=24.0, station_m=8.0, vcurve_len_m=120.0, clearance_m=0.3,
+                  export=""):
     """Least-cost spine forest from terrain field channels, then CURVATURE-SMOOTHED
     (centripetal Catmull-Rom resampled at station_m, per-station turn capped at
     station/min_radius — a hard curvature floor). The road_elev profile then gets C1
@@ -84,6 +85,10 @@ class Roads:
     m.station_m = float(station_m)
     m.vcurve_len_m = float(vcurve_len_m)
     m.clearance_m = float(clearance_m)
+    # PHYSICS-PROXY LAW: export="<name>" bakes the built spine as the NAMED artifact
+    # <assetcache>/roads/<name>/street_spine.ogeo — the scene's spine_collider (and
+    # future nav/audio) consume it BY NAME, never the render mesh.
+    m.export_name = str(export)
     m.seed = self.seed
     self._add(m, "route_spine")
     for (fld, name) in ((height, "Height"), (slope, "Slope"), (curvature, "Curvature"), (discharge, "Discharge")):

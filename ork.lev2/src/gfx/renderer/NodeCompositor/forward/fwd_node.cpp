@@ -33,6 +33,11 @@ void ForwardNode::doGpuInit(lev2::Context* pTARG, int iW, int iH) {
   _impl.get<std::shared_ptr<ForwardPbrNodeImpl>>()->init(pTARG, iW, iH);
 }
 ///////////////////////////////////////////////////////////////////////////////
+void ForwardNode::renderPrologue(CompositorDrawData& drawdata) {
+  auto impl = _impl.get<std::shared_ptr<ForwardPbrNodeImpl>>();
+  impl->_render_prologue(drawdata);
+}
+///////////////////////////////////////////////////////////////////////////////
 void ForwardNode::DoRender(CompositorDrawData& drawdata) {
   auto impl = _impl.get<std::shared_ptr<ForwardPbrNodeImpl>>();
   impl->_render_top(drawdata);

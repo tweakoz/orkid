@@ -23,7 +23,9 @@
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/lev2/gfx/material_freestyle.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/sky_atmosphere.h>
 #include <ork/kernel/datacache.h>
+#include <ork/kernel/async_tracker.h>
 #include <ork/gfx/brdf.inl>
 #include <ork/gfx/dds.h>
 #include <ork/lev2/gfx/texman.h>
@@ -36,6 +38,7 @@
 #include <ork/lev2/gfx/xir_format.h>
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/image.h>
+#include <ork/lev2/gfx/renderer/probe_sh.h>
 
 #include <ork/profiling.inl>
 #include <ork/asset/Asset.inl>
@@ -53,7 +56,173 @@ static logchannel_ptr_t logchan_pbrcom = logger()->configureChannel("PBRCOM", fv
 CommonStuff::CommonStuff() {
 
   _radiance_maps = std::make_shared<RadianceMaps>();
+  _sky_ibl        = std::make_shared<SkyIblState>();
   _clearcolor     = fvec4(0, 0, 0, 1);
+}
+///////////////////////////////////////////////////////////////////////////////
+// SKYLIGHT slice B3 — the snapshot law's enforcement point. Reaching beginCycle
+// with a job already in flight means the caller's gate is broken and the
+// running prefilter is about to have its source repainted underneath it.
+void SkyIblState::beginCycle() {
+  bool expected = false;
+  OrkAssertI(
+      _inflight.compare_exchange_strong(expected, true),
+      "sky IBL refilter cycle started while another was still in flight - the equirect snapshot "
+      "would mutate under a running microtask (SKYLIGHT snapshot law)");
+  _cycles_started++;
+  _frames_this_cycle.store(0); // the span the auto-sized fade window is read from
+  _chain_timer.Start();        // start-to-start, so the ceiling bounds the cycle RATE
+
+  // The set this cycle is about to replace, captured BY VALUE: the publish
+  // assigns the new textures into the very object _maps points at. A first
+  // cycle (empty target) leaves this null, which is what makes the baked ->
+  // procedural handover snap rather than fade out of black maps.
+  _pendingPrevMaps = nullptr;
+  if (_maps and _maps->_filtenvSpecularMapArray)
+    _pendingPrevMaps = std::make_shared<RadianceMaps>(*_maps);
+}
+///////////////////////////////////////////////////////////////////////////////
+// Runs after publishStagedToTarget has swapped the maps AND their GPU uploads
+// have completed (the publish defers this continuation to the last upload's
+// completion semaphore), so neither _ready nor _generation ever announces an
+// object the GPU cannot sample yet.
+void SkyIblState::completeCycle(Context* ctx, int fade_frames, float fade_max_secs) {
+
+  ////////////////////////////////////////
+  // crossfade start (the swap frame)
+  ////////////////////////////////////////
+
+  if (_pendingPrevMaps) {
+    // a cycle that completed while the previous fade was still running: the
+    // older set is dropped here rather than blended three ways.
+    if (_prevMaps)
+      _retireMaps(ctx, _prevMaps);
+    _prevMaps        = _pendingPrevMaps;
+    _pendingPrevMaps = nullptr;
+    int frames       = std::max(fade_frames, 0);
+    _fade_frames_total.store(frames);
+    _fade_frames_remaining.store(frames);
+    // the fade's other bound, started on the swap frame: the window ENDS at
+    // whichever of the two arrives first, so the clock has to run from the same
+    // instant the frame count does.
+    _fade_max_secs.store(std::max(fade_max_secs, 0.0f));
+    _fade_timer.Start();
+    if (0 == frames) { // fade disabled - the historical hard swap
+      _retireMaps(ctx, _prevMaps);
+      _prevMaps = nullptr;
+    }
+  }
+
+  // how long THIS cycle took, in frames the render loop actually ran.
+  _cycle_frames.store(_frames_this_cycle.load());
+
+  // provisional cadence floor: with the fade disabled the cycle settles right
+  // here, so this is the whole floor. With a fade running, tickCrossfade
+  // overwrites it at fade end with the fuller measurement.
+  _last_settle_secs.store(_chain_timer.SecsSinceStart());
+
+  _generation++;
+  _ready.store(true);
+  _inflight.store(false);
+}
+///////////////////////////////////////////////////////////////////////////////
+// One frame of the fade window, from the forward prologue (render thread).
+void SkyIblState::tickCrossfade(Context* ctx) {
+  // the frame clock the cycle-span measurement rides on — outside the fade
+  // early-out below, since a cycle spans frames where no fade is running.
+  _frames_this_cycle++;
+  int remaining = _fade_frames_remaining.load();
+  if (remaining <= 0)
+    return;
+  remaining--;
+  // WALL-CLOCK BOUND. The frame window is sized from a measured frame SPAN, so
+  // at a high frame rate it outlasts any duration a viewer would call a fade
+  // (hundreds of frames offscreen); the budget ends it on time whatever the
+  // rate. Retiring here rather than merely pinning the weight is what lets the
+  // chained trigger's fadeSettled() see the fade as over.
+  float budget = _fade_max_secs.load();
+  if ((budget > 0.0f) and (_fade_timer.SecsSinceStart() >= double(budget)))
+    remaining = 0;
+  _fade_frames_remaining.store(remaining);
+  if (0 == remaining) {
+    _retireMaps(ctx, _prevMaps);
+    _prevMaps = nullptr;
+    // the full cadence floor: cycle start (when _chain_timer restarted) through
+    // the frame the fade finished on — the earliest a next cycle may begin
+    // without blending a third map set.
+    _last_settle_secs.store(_chain_timer.SecsSinceStart());
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+// The chained fade window: as long as the last cycle took, so the fade is still
+// interpolating right up to the frame the next publish lands on and the feed
+// reads as piecewise-linear keyframe interpolation rather than 2-degree steps.
+// Clamped low (a 1-frame "fade" is the pop it exists to hide) and high (a
+// stalled cycle must not leave the outgoing maps blended in for seconds).
+int SkyIblState::autoFadeFrames(int fallback) const {
+  if (fallback <= 0) // explicit fade-disable — the hard swap the knob asked for
+    return 0;
+  int cycle_frames = _cycle_frames.load();
+  if (cycle_frames <= 0)
+    return fallback;
+  return std::clamp(cycle_frames, 2, 60);
+}
+///////////////////////////////////////////////////////////////////////////////
+// The chain cadence ceiling. Chaining's own pacing is the fade plus the angle
+// floor, neither of which is a rate: on a fast day cycle over a cheap frame the
+// feed will start a cycle every few milliseconds and spend the frame loop on
+// IBL. This is the only clock in the trigger.
+bool SkyIblState::chainCadenceElapsed(float max_hz) const {
+  if (max_hz <= 0.0f) // uncapped — the continuous behavior the knob sits on top of
+    return true;
+  if (_cycles_started.load() == 0) // nothing has started, so nothing to pace against
+    return true;
+  return _chain_timer.SecsSinceStart() >= (1.0 / double(max_hz));
+}
+///////////////////////////////////////////////////////////////////////////////
+// The declared cadence. Reads the same start-to-start clock the ceiling does, so
+// the interval a scene declares is measured cycle-START to cycle-START. This is
+// only the DECLARED half of the trigger: the caller also requires fadeSettled(),
+// which floors the achieved cadence at cadenceFloorSecs() — so the effective
+// interval is max(declared, floor), and a declaration under the floor is logged
+// once rather than silently clamped. secs <= 0 means the knob is disabled, in
+// which case this is never the trigger and the caller keeps the sun-angle policy;
+// a feed that has never run a cycle is never held back (the first-ever snapshot
+// is immediate in every mode).
+bool SkyIblState::snapshotIntervalElapsed(float secs) const {
+  if (secs <= 0.0f)
+    return false;
+  if (_cycles_started.load() == 0)
+    return true;
+  return _chain_timer.SecsSinceStart() >= double(secs);
+}
+///////////////////////////////////////////////////////////////////////////////
+// The larger of the two progresses, because the fade ENDS at whichever bound
+// lands first: riding frames alone stretches the ramp over wall-clock time at a
+// high frame rate, riding the clock alone would jump the weight at the budget
+// on a slow one. Reading them together keeps the ramp monotone through either
+// hand-off.
+float SkyIblState::fadeWeight() const {
+  int total     = _fade_frames_total.load();
+  int remaining = _fade_frames_remaining.load();
+  if ((total <= 0) or (remaining <= 0))
+    return 1.0f;
+  float by_frames = 1.0f - (float(remaining) / float(total));
+  float budget    = _fade_max_secs.load();
+  float by_clock  = 0.0f;
+  if (budget > 0.0f)
+    by_clock = float(_fade_timer.SecsSinceStart() / double(budget));
+  return std::clamp(std::max(by_frames, by_clock), 0.0f, 1.0f);
+}
+///////////////////////////////////////////////////////////////////////////////
+// The last reference to a retired set drops MAX_FRAMES_IN_FLIGHT later, never
+// inline: the frames still in flight may hold descriptors pointing at these
+// textures (§1.6 rule 3, same delay the publish path uses).
+void SkyIblState::_retireMaps(Context* ctx, radiancemaps_ptr_t maps) {
+  if ((nullptr == maps) or (nullptr == ctx))
+    return;
+  constexpr int kDelayFrames = 3;
+  ctx->enqueueDelayedDestroy([maps]() {}, kDelayFrames);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CommonStuff::assignEnvTexture(asset::asset_ptr_t texasset) {
@@ -206,56 +375,10 @@ image_ptr_t buildRowwiseImage(int w, int h, F&& row_color) {
   return img;
 }
 
-// Cosine-weighted hemisphere integral E(n) = (1/π) ∫ L(ω) max(0, n·ω) dω,
-// rasterized into an RGBA32F image (row index ↔ surface normal polar angle).
-// The cosine kernel only depends on (theta_n, theta_w), so we precompute a
-// per-row × per-theta_w table once via a Meyers singleton and per-call work
-// collapses to a length-kT dot product per row.
-image_ptr_t buildDiffuseImage(
-    const std::vector<std::pair<float, fvec3>>& stops, int W, int H) {
-  OrkAssert(H == kProcEnvH);
-  constexpr int kT = 32, kP = 32;
-  struct Kernel { float w[kProcEnvH][kT]; float inv_sum[kProcEnvH]; };
-  static const Kernel kernel = [] {
-    Kernel out{};
-    for (int row = 0; row < kProcEnvH; ++row) {
-      float v_row   = float(row) / float(kProcEnvH - 1);
-      float theta_n = (1.0f - v_row) * float(PI);    // V=0 → down, V=1 → up
-      float nx = sinf(theta_n), ny = cosf(theta_n);
-      float w_sum = 0.0f;
-      for (int it = 0; it < kT; ++it) {
-        float theta_w = (float(it) + 0.5f) / float(kT) * float(PI);
-        float cy = cosf(theta_w), cx = sinf(theta_w);
-        float s = 0.0f;
-        for (int ip = 0; ip < kP; ++ip) {
-          float phi = (float(ip) + 0.5f) / float(kP) * 2.0f * float(PI);
-          float dot = nx * (cx * cosf(phi)) + ny * cy;
-          if (dot > 0.0f) { float w = dot * cx; s += w; w_sum += w; }
-        }
-        out.w[row][it] = s;
-      }
-      out.inv_sum[row] = (w_sum > 0.0f) ? 1.0f / w_sum : 0.0f;
-    }
-    return out;
-  }();
-
-  fvec3 L_table[kT];
-  for (int it = 0; it < kT; ++it)
-    L_table[it] = sampleGradientAt(stops, (float(it) + 0.5f) / float(kT));
-
-  return buildRowwiseImage(W, H, [&](float v) {
-    int row = int(v * (H - 1) + 0.5f);
-    fvec3 acc(0);
-    for (int it = 0; it < kT; ++it) acc = acc + L_table[it] * kernel.w[row][it];
-    return acc * kernel.inv_sum[row];
-  });
-}
-
 // In-place upload — reuses VkImage / TextureArray slices, no descriptor churn.
 void uploadRadianceMapsImages(
     radiancemaps_ptr_t maps,
     const std::vector<image_ptr_t>& spec_images,
-    image_ptr_t diffuse_image,
     Context* ctx) {
   OrkAssert(int(spec_images.size()) == maps->_numRoughnessLevels);
   auto txi = ctx->TXI();
@@ -263,10 +386,45 @@ void uploadRadianceMapsImages(
     auto slice = maps->_filtenvSpecularMapArray->slice(i);
     txi->updateTextureArraySlice(slice.get(), spec_images[i]);
   }
-  txi->initTextureFromImage(maps->_filtenvDiffuseMap.get(), diffuse_image, false, false);
 }
 
 } // namespace
+
+///////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+// THE AMBIENT PROJECTION (W4-S9). See pbr_common.h for why every publish site
+// funnels through here.
+///////////////////////////////////////////////////////////////////////////////
+
+RadianceSH projectRadianceSH(const Image& equirect_level0) {
+  RadianceSH rval;
+  fvec3 coeffs[kProbeSHCoeffs];
+  if (not projectEquirectImageSH(equirect_level0, coeffs))
+    return rval; // invalid: the caller must leave its set unprojected
+  for (int i = 0; i < kProbeSHCoeffs; i++)
+    rval._coeffs[i] = fvec4(coeffs[i].x, coeffs[i].y, coeffs[i].z, 0.0f);
+  // sphere-mean radiance = L0 * Y00; Rec.709 of it is the available-light
+  // measure, in the map's own (undecoded) units.
+  fvec3 mean  = coeffs[0] * 0.2820948f;
+  rval._luminance = mean.x * 0.2126f + mean.y * 0.7152f + mean.z * 0.0722f;
+  rval._valid     = true;
+  return rval;
+}
+
+void assignRadianceSH(radiancemaps_ptr_t maps, const RadianceSH& sh) {
+  if ((nullptr == maps) or (not sh._valid))
+    return;
+  for (int i = 0; i < 9; i++)
+    maps->_shCoeffs[i] = sh._coeffs[i];
+  maps->_shValid = true;
+}
+
+void publishRadianceMapsSH(radiancemaps_ptr_t maps, image_ptr_t equirect_level0) {
+  if ((nullptr == maps) or (nullptr == equirect_level0))
+    return;
+  assignRadianceSH(maps, projectRadianceSH(*equirect_level0));
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -292,10 +450,6 @@ radiancemaps_ptr_t CommonStuff::makeProceduralRadianceMaps(Context* ctx) {
   }
   txi->initTextureArray2DFromData(specular_arr.get(), TID);
 
-  auto diffuse_tex        = std::make_shared<Texture>();
-  diffuse_tex->_debugName = "procRadDiff";
-  txi->initTextureFromImage(diffuse_tex.get(), black, false, false);
-
   // Equirectangular: U wraps, V clamps (no pole bleed at V=0/V=1).
   auto setEquirectangularSampling = [&](Texture* tex) {
     tex->TexSamplingMode()._texAddrModeS = TextureAddressMode::WRAP;
@@ -304,10 +458,8 @@ radiancemaps_ptr_t CommonStuff::makeProceduralRadianceMaps(Context* ctx) {
     txi->ApplySamplingMode(tex);
   };
   setEquirectangularSampling(specular_arr->_tex.get());
-  setEquirectangularSampling(diffuse_tex.get());
 
   maps->_filtenvSpecularMapArray = specular_arr;
-  maps->_filtenvDiffuseMap       = diffuse_tex;
 
   maps->_brdfIntegrationMapGGX    = PBRMaterial::brdfIntegrationMap(ctx, "GGX");
   maps->_brdfIntegrationMapVelvet = PBRMaterial::brdfIntegrationMap(ctx, "GGXVELVET");
@@ -329,8 +481,7 @@ void CommonStuff::updateRadianceMapsGradient(
   fvec3 avg = sphereAverage(stops);
 
   // Specular slices: gradient at V, lerped toward sphere-average by the
-  // slice's roughness. Diffuse: per-row directional irradiance via the
-  // factored hemisphere integral in buildDiffuseImage.
+  // slice's roughness.
   std::vector<image_ptr_t> spec;
   spec.reserve(maps->_specularRoughnessValues.size());
   for (float r : maps->_specularRoughnessValues) {
@@ -339,8 +490,11 @@ void CommonStuff::updateRadianceMapsGradient(
       return c * (1.0f - r) + avg * r;
     }));
   }
-  auto diff = buildDiffuseImage(stops, W, H);
-  uploadRadianceMapsImages(maps, spec, diff, ctx);
+  uploadRadianceMapsImages(maps, spec, ctx);
+  // The AMBIENT of a gradient env, off the same slice-0 image the reflections
+  // read (W4-S9) — the cosine convolution that used to be rasterized into a
+  // diffuse map is applied at the read now, from these nine coefficients.
+  publishRadianceMapsSH(maps, spec[0]);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -377,6 +531,61 @@ void RadianceMapCache::clear() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void RadianceMapCache::refilterFromTexture(
+    texture_ptr_t source,                             //
+    radiancemaps_ptr_t target,                        //
+    lev2::Context* ctx,                               //
+    std::function<void(datablock_ptr_t)> on_complete, //
+    int specular_samples,                             //
+    bool steady_state,                                //
+    int level_batches,                                //
+    int slices_per_frame,                             //
+    int mipchain_budget_px,                           //
+    bool cold_start) {                                //
+
+  // Fail loud rather than silently skipping a cycle: the caller has already
+  // taken the in-flight flag, so a quiet return here would wedge the feed.
+  OrkAssertI(source != nullptr, "RadianceMapCache::refilterFromTexture: no source texture");
+  OrkAssertI(target != nullptr, "RadianceMapCache::refilterFromTexture: no target radiance maps");
+  OrkAssertI(ctx != nullptr, "RadianceMapCache::refilterFromTexture: no render context to schedule on");
+
+  // Same equirect sampling the asset path applies to an .exr/.hdr source: u
+  // wraps across the +-180 meridian, v/r clamp so the poles never fold back
+  // through the seam. The source is an RTG texture, which is handed the
+  // context's base sampler when it is realized — so this push is what actually
+  // installs the modes recorded on it.
+  source->TexSamplingMode()._texAddrModeS = TextureAddressMode::WRAP;
+  source->TexSamplingMode()._texAddrModeT = TextureAddressMode::CLAMP;
+  source->TexSamplingMode()._texAddrModeR = TextureAddressMode::CLAMP;
+  ctx->TXI()->ApplySamplingMode(source.get());
+
+  // Equirect is STRUCTURAL here (the snapshot is a float equirect by
+  // construction), not sniffed from a file extension. The scheduler wraps the
+  // task in asyncWorkBegin/End, so the settle/exit gate covers this refilter
+  // exactly as it covers the asset-path one — until the caller declares the feed
+  // steady, from which point the gate stops treating it as work that finishes.
+  auto task = EnvMapProcessor::createRadiancePrefilterMicrotask(
+      source, true, target, on_complete, specular_samples, //
+      level_batches,
+      slices_per_frame,
+      mipchain_budget_px,
+      cold_start);
+  // BEFORE the enqueue (which is what fires asyncWorkBegin under this tag), so a
+  // settle/drain census can never sample the recurring feed as one-shot work.
+  if (steady_state)
+    asyncWorkMarkSteady(task->_name);
+  ctx->_microtaskScheduler.enqueue(task);
+  logchan_pbrcom->log(
+      "RadianceMapCache::refilterFromTexture: enqueued microtask for <%s> %dx%d spec_samples<%d> cold_start<%d>",
+      source->_debugName.c_str(),
+      source->_width,
+      source->_height,
+      specular_samples,
+      int(cold_start));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void RadianceMapCache::refilter(const AssetPath& raw_source_path, radiancemaps_ptr_t target) {
   if (nullptr == target) {
     logchan_pbrcom->log("RadianceMapCache::refilter: null target radiance maps — ignoring");
@@ -408,7 +617,6 @@ void RadianceMapCache::refilter(const AssetPath& raw_source_path, radiancemaps_p
   auto ext = resolved.getExtension();
   std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
   bool is_equirectangular = (ext == "exr" || ext == "hdr");
-  bool is_hdr_source      = (ext == "exr" || ext == "hdr");
 
   if (is_equirectangular) {
     rawenvmap->TexSamplingMode()._texAddrModeS = TextureAddressMode::WRAP;
@@ -420,7 +628,7 @@ void RadianceMapCache::refilter(const AssetPath& raw_source_path, radiancemaps_p
   // Enqueue on the WINDOW context's scheduler (T11). The scheduler wraps the
   // task in asyncWorkBegin/End for us — the settle/exit gate covers the refilter.
   auto task = EnvMapProcessor::createRadiancePrefilterMicrotask(
-      rawenvmap, is_equirectangular, is_hdr_source, target, nullptr);
+      rawenvmap, is_equirectangular, target, nullptr);
   ctx->_microtaskScheduler.enqueue(task);
   logchan_pbrcom->log("RadianceMapCache::refilter: enqueued microtask for <%s> on window scheduler", resolved.c_str());
 }
@@ -446,6 +654,80 @@ void CommonStuff::requestAndRefSkyboxTexture(asset::loadrequest_ptr_t load_req) 
   // window) publish the SAME object we bind here, so the first compositor frame
   // is lit. Same bind, same member — only the load is now shared, not re-run.
   _radiance_maps = getRadianceMapCache()->get(load_req->_asset_path);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// BAKED IBL COLD START — see the header for why a frame count cannot stand in
+// for this. Runs at the top of the forward prologue, before anything reads the
+// env samplers.
+//
+// The wait is on the LOAD REQUEST's pending count, which the XIR chain releases
+// at exactly one place per outcome (both decode error returns and the terminal
+// render-thread swap), so it means "finished", not "succeeded" — isPublished()
+// is then asked separately, and a finished-but-empty set is a loud failure
+// rather than a silently black scene.
+//
+// Pumping ctx's deferred queue is what lets the wait resolve: the loader's fence
+// poll lands the publish there, and this thread is the only one that drains it.
+// The loader thread makes its own progress independently, so this blocks on
+// nothing that blocks on us. The ceiling exists because a wedged loader must
+// still yield a frame (slow, wrong lighting, LOUD) instead of a hang.
+///////////////////////////////////////////////////////////////////////////////
+
+void CommonStuff::drainPendingRadianceMapLoad(Context* ctx) {
+  if ((nullptr == ctx) or (nullptr == _radiance_maps))
+    return;
+  auto req = _radiance_maps->_loadRequest;
+  if (nullptr == req) // no baked skybox requested (procedural-only or unlit scene)
+    return;
+  if (_radiance_maps->isPublished())
+    return;
+  if (_baked_cold_start_failed) // reported once; the set never publishes now
+    return;
+
+  // wall-clock ceiling on the drain. Data-defined: an 8K HDRI on a loaded box
+  // legitimately takes seconds, and the number that must never be hit is a
+  // deployment property, not an appearance one.
+  static const double kCeilingSecs = []() -> double {
+    if (const char* v = std::getenv("ORKID_IBL_COLDSTART_CEILING_SECS"))
+      return atof(v);
+    return 30.0;
+  }();
+
+  Timer timer;
+  timer.Start();
+  while ((req->_partial_load_counter.load() > 0) and (timer.SecsSinceStart() < kCeilingSecs)) {
+    ctx->processDeferredOps(); // the loader's fence poll publishes THROUGH here
+    std::this_thread::sleep_for(std::chrono::microseconds(200));
+  }
+  // the publish op may have been enqueued between the last drain and the
+  // counter reaching zero — one more pass, so a successful load never reports.
+  ctx->processDeferredOps();
+
+  // printf, not a log channel: this reports a first-frame stall the viewer sees,
+  // and its failure half reports a scene that will render black forever. Neither
+  // may depend on a channel being switched on.
+  double waited = timer.SecsSinceStart();
+  if (_radiance_maps->isPublished()) {
+    printf(
+        "[IBL-COLDSTART] skybox <%s> was still unpublished at frame<%d> (the first lit frame) - drained "
+        "in-frame, waited %.3f s (the frame is LIT, not black)\n",
+        req->_asset_path.c_str(),
+        ctx->GetTargetFrame(),
+        waited);
+    fflush(stdout);
+    return;
+  }
+
+  _baked_cold_start_failed = true;
+  printf(
+      "[IBL-COLDSTART] FAILED: skybox <%s> did not publish after %.3f s (load status <%llx>) - this scene "
+      "renders with a BLACK environment. The XIR decode/upload chain terminated without handing back "
+      "radiance maps, or the loader thread stopped pumping before its fence poll landed.\n",
+      req->_asset_path.c_str(),
+      waited,
+      (unsigned long long)req->_assetStatus);
+  fflush(stdout);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -540,12 +822,115 @@ void CommonStuff::_writeEnvTexture(asset::asset_ptr_t const& tex) {
   assignEnvTexture(tex);
 }
 ///////////////////////////////////////////////////////////////////////////////
-lev2::texturearray_ptr_t CommonStuff::envSpecularTexture() const {
-  return _radiance_maps->_filtenvSpecularMapArray;
+// SKYLIGHT lane B slice B3 — the IBL source branch. PROCEDURAL scenes light
+// from the sky's own refiltered snapshot, but only from the moment the FIRST
+// procedural cycle has published: through the warm-up window (and through every
+// baked scene, L6) this keeps returning the baked maps, so no frame ever renders
+// against a black or half-filled IBL.
+radiancemaps_ptr_t CommonStuff::activeRadianceMaps() const {
+  if ((_sky_source == SkySource::PROCEDURAL) and _sky_ibl and _sky_ibl->proceduralMapsReady())
+    return _sky_ibl->_maps;
+  return _radiance_maps;
 }
 ///////////////////////////////////////////////////////////////////////////////
-lev2::texture_ptr_t CommonStuff::envDiffuseTexture() const {
-  return _radiance_maps->_filtenvDiffuseMap;
+lev2::texturearray_ptr_t CommonStuff::envSpecularTexture() const {
+  return activeRadianceMaps()->_filtenvSpecularMapArray;
+}
+///////////////////////////////////////////////////////////////////////////////
+// The crossfade's aliasing rule, in ONE place. A fade only exists between two
+// PROCEDURAL sets that this frame is actually lit by: a baked scene (or the
+// warm-up window, or a scene that just switched back to baked mid-fade) gets
+// null here, which sends the prev accessors straight back to the current maps
+// and pins the weight at 1.0 - byte-identical to a build without the fade.
+radiancemaps_ptr_t CommonStuff::_crossfadePrevMaps() const {
+  if ((_sky_source != SkySource::PROCEDURAL) or (nullptr == _sky_ibl))
+    return nullptr;
+  if (not _sky_ibl->proceduralMapsReady())
+    return nullptr;
+  if (_sky_ibl->_fade_frames_remaining.load() <= 0)
+    return nullptr;
+  return _sky_ibl->_prevMaps;
+}
+///////////////////////////////////////////////////////////////////////////////
+lev2::texturearray_ptr_t CommonStuff::envSpecularTexturePrev() const {
+  auto prev = _crossfadePrevMaps();
+  if (prev and prev->_filtenvSpecularMapArray)
+    return prev->_filtenvSpecularMapArray;
+  return envSpecularTexture();
+}
+///////////////////////////////////////////////////////////////////////////////
+// The pre-scale's decode side. Same branch as activeRadianceMaps(), so through
+// the warm-up window (and in every baked scene) this is exactly 1.0 and the
+// shader multiply is a no-op.
+float CommonStuff::envCaptureScaleInv() const {
+  if ((_sky_source != SkySource::PROCEDURAL) or (nullptr == _sky_ibl) or (nullptr == _atmosphere))
+    return 1.0f;
+  if (not _sky_ibl->proceduralMapsReady())
+    return 1.0f;
+  float scale = _atmosphere->_iblCaptureScale;
+  return (scale > 0.0f) ? (1.0f / scale) : 1.0f;
+}
+///////////////////////////////////////////////////////////////////////////////
+// AVAILABLE LIGHT. The measurement rides the maps the frame is actually lit by,
+// so it decodes through the SAME capture pre-scale those maps were written at —
+// reading it against any other set would report a luminance in the wrong units.
+// No wait, no fence, no lock: the float was filled on the render thread by the
+// publish that swapped these maps in, out of the CPU capture buffer the
+// packaging already held.
+float CommonStuff::availableLightLuminance() const {
+  auto maps = activeRadianceMaps();
+  if (nullptr == maps)
+    return -1.0f;
+  if (maps->_measuredLuminance < 0.0f)
+    return -1.0f;
+  return maps->_measuredLuminance * envCaptureScaleInv();
+}
+///////////////////////////////////////////////////////////////////////////////
+float CommonStuff::skySunElevationSin() const {
+  // The IBL cycle's own record of where the sun was, rather than a re-derivation:
+  // the seed exists to describe the sky that HAS NOT published yet, and this is
+  // the last thing that looked at it. Defaults to overhead (day) on a scene that
+  // has never snapped.
+  if (nullptr == _sky_ibl)
+    return 1.0f;
+  return _sky_ibl->_last_snapshot_dir_to_sun.y;
+}
+///////////////////////////////////////////////////////////////////////////////
+// SKY SH PROBE — same gate as activeRadianceMaps()/envCaptureScaleInv(), so the
+// probe can never be served over baked maps or through the warm-up window. The
+// crossfade is resolved HERE rather than in the shader: the weight is one scalar
+// per frame, and blending nine coefficients on the CPU costs a fragment nothing
+// and halves what the UBO has to carry.
+bool CommonStuff::envSHCoeffs(fvec4 out[9]) const {
+  bool have_probe = (_sky_source == SkySource::PROCEDURAL) //
+                and (nullptr != _sky_ibl)                  //
+                and _sky_ibl->_sh_valid                    //
+                and _sky_ibl->proceduralMapsReady();
+  if (have_probe) {
+    float w = envCrossfadeWeight();
+    for (int i = 0; i < 9; i++)
+      out[i] = _sky_ibl->_sh_prev[i] + (_sky_ibl->_sh_cur[i] - _sky_ibl->_sh_prev[i]) * w;
+    return true; // the probe already carries decoded radiance
+  }
+  // THE AUTHORED SKY (W4-S9). The bound map set's own projection — a baked
+  // scene's whole ambient, and the procedural warm-up window's. Its
+  // coefficients are in the MAP's units, so the capture pre-scale is divided
+  // out here, at the same seam and by the same factor a shader read of those
+  // maps decodes with.
+  auto maps = activeRadianceMaps();
+  if ((nullptr == maps) or (not maps->_shValid))
+    return false;
+  float decode = envCaptureScaleInv();
+  for (int i = 0; i < 9; i++)
+    out[i] = maps->_shCoeffs[i] * decode;
+  return true;
+}
+///////////////////////////////////////////////////////////////////////////////
+float CommonStuff::envCrossfadeWeight() const {
+  auto prev = _crossfadePrevMaps();
+  if (nullptr == prev)
+    return 1.0f;
+  return _sky_ibl->fadeWeight();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CommonStuff::_readEnvTexture(asset::asset_ptr_t& tex) const {

@@ -98,6 +98,12 @@ def parse_args():
                  help="render at the display's backing (Retina) scale; default is LoDPI to save fillrate")
   p.add_argument("--vr", action="store_true",
                  help="VR: present on the HMD through the active XR runtime (player only; needs ORKID_VR_DRIVER=openxr + a live runtime, else NoVR desktop fallback)")
+  p.add_argument("--devkeys", action="store_true",
+                 help="player dev keys [E/G/T/H/M/B/R] + key legend (thin passthrough; DEFAULT ON when not in VR — owner ruling jul30)")
+  p.add_argument("--no-devkeys", dest="no_devkeys", action="store_true",
+                 help="suppress the default-on dev keys")
+  p.add_argument("--physics-debug", dest="physics_debug", action="store_true",
+                 help="Bullet debug wireframe ON from startup (thin passthrough; the VR/offscreen path — no keyboard needed)")
   p.add_argument("--offscreen", action="store_true",
                  help="headless (no window): with --movie records a movie, else renders forever as fast as it can (player only)")
   p.add_argument("--movie", default=None, metavar="PATH",
@@ -114,6 +120,11 @@ def parse_args():
 
 
 def main():
+  # The ECS sub-interpreter machinery is GIL-OFF by design; under PYTHON_GIL=1 it
+  # deadlocks (see test_gil_ecs_regression.py). The wrapper sets this too — this is
+  # the belt for the runner we exec below. setdefault: an explicit caller value wins.
+  os.environ.setdefault("PYTHON_GIL", "0")
+
   args = parse_args()
 
   if args.list or not args.scene_file:
@@ -213,6 +224,12 @@ def main():
     # passthrough — the player owns the runtime check + NoVR fallback. One playback path.
     if args.vr:
       cmd += ["--vr"]
+    # physics-debug instrumentation (player only): both thin passthroughs.
+    # dev keys default ON outside VR (owner ruling jul30); --no-devkeys opts out
+    if (args.devkeys or not args.vr) and not args.no_devkeys:
+      cmd += ["--devkeys"]
+    if args.physics_debug:
+      cmd += ["--physics-debug"]
     # OFFSCREEN (headless, player only): with --movie record a clip; without, render
     # forever as fast as it can (perf/soak). --movie implies offscreen in the player.
     if args.movie:

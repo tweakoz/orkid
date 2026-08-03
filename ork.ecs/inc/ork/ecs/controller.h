@@ -11,6 +11,7 @@
 
 #include "types.h"
 #include <set>
+#include <thread>
 #include <ork/util/crc.h>
 #include <ork/file/path.h>
 #include <ork/kernel/concurrent_queue.h>
@@ -176,6 +177,13 @@ struct Controller {
 
 	LockedResource<simulation_ptr_t> _simulation;
 
+	// Identity+context of the render/GPU thread, recorded on every gpuUpdate/gpuInit.
+	// A transport op running on THIS thread must service the GPU-phase rendezvous
+	// queue while it waits for _simulation (see _transportAtomicOp); a caller on any
+	// other thread is not the drain servicer and blocks plainly.
+	std::atomic<std::thread::id> _gpuThreadId{};
+	std::atomic<lev2::Context*> _lastGpuContext{nullptr};
+
 	void_lambda_t _onSimulationExit;
 
 	// State change callback system
@@ -212,6 +220,9 @@ private:
 
 	void _enqueueEvent(event_ptr_t event);
 	void _enqueueRequest(request_ptr_t request);
+
+	// Drain-aware acquisition of _simulation for render-thread transport ops.
+	void _transportAtomicOp(const std::function<void(simulation_ptr_t&)>& op);
 
   void _mutateObject(std::function<void(id2obj_map_t&)> operation);
 

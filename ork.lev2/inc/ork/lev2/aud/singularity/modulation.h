@@ -89,7 +89,14 @@ struct DspParamData final : public ork::Object {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct DspParam : public ork::Object {
+// the per-note binding of one DspParamData. NOT an ork::Object, and it must
+//  stay that way: every DspBlock instance embeds kmaxparmperblock of these and
+//  a block is instantiated on the AUDIO THREAD at every note-on, while
+//  ork::Object's constructor mints a uuid - one getrandom() syscall each. that
+//  was 32 syscalls per block, ~160 per voice, and it owned the note-on spike
+//  (~190us typical, 24ms when the kernel stalled). nothing here is reflected,
+//  serialized or castable, so the base bought nothing.
+struct DspParam {
 
   DspParam();
   void reset();

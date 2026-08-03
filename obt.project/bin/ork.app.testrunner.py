@@ -291,7 +291,7 @@ tests = {
         },
         "ScenePlayer": {
             "ecsscn2": {
-                "_commands": ["ork.ecsplay.py", "-s", orkdir + "/ork.data/ecsscenes/ecsscn2.json"],
+                "_commands": ["ork.ecsplay.py", "-s", orkdir + "/ork.data/ecsscenes/ecsscn2.ecs"],
                 "_options": { "Fullscreen": ["-f"] },
             },
         },

@@ -213,8 +213,8 @@ struct SpectralConvolveTD : public DspBlock {
   floatvect_t _outqR;
   floatvect_t _impulseL;
   floatvect_t _impulseR;
-  fftconvolver::FFTConvolver _convolverL;
-  fftconvolver::FFTConvolver _convolverR;
+  fftconvolver::TwoStageFFTConvolver _convolverL;
+  fftconvolver::TwoStageFFTConvolver _convolverR;
 };
 
 using spectralconvolveTDdata_ptr_t = std::shared_ptr<SpectralConvolveTDData>;

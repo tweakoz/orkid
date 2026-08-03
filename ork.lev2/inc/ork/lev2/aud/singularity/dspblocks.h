@@ -38,6 +38,50 @@ struct IoConfig final : public ork::Object {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+// dsp instance storage recycler.
+//  a note-on instantiates the dsp grid of every layer it keys, on the audio
+//  thread. the instances themselves cannot be reused across notes (a recycled
+//  block would carry the previous note's filter/phase state), so what is pooled
+//  is the STORAGE: allocate_shared draws the combined control-block+object from
+//  a size-classed free list that the block's destruction refills, and the
+//  object is constructed fresh on top of it exactly as make_shared did.
+//  a momentarily empty (or full) free list falls through to the global
+//  allocator - the pool refills itself on the next return, so the degrade is
+//  bounded to the warmup and to growth past any previous concurrency peak.
+///////////////////////////////////////////////////////////////////////////////
+
+static constexpr size_t kdspinstancealign = 64;
+
+void* dspInstanceAlloc(size_t nbytes);
+void dspInstanceFree(void* ptr, size_t nbytes);
+size_t dspInstancePoolMisses(); // storage that had to come from the allocator
+
+template <typename T> struct DspInstanceAllocator {
+  using value_type = T;
+  DspInstanceAllocator() = default;
+  template <typename U> constexpr DspInstanceAllocator(const DspInstanceAllocator<U>&) noexcept {
+  }
+  T* allocate(size_t count) {
+    static_assert(alignof(T) <= kdspinstancealign, "dsp instance storage is 64 byte aligned");
+    return static_cast<T*>(dspInstanceAlloc(count * sizeof(T)));
+  }
+  void deallocate(T* ptr, size_t count) noexcept {
+    dspInstanceFree(ptr, count * sizeof(T));
+  }
+  template <typename U> bool operator==(const DspInstanceAllocator<U>&) const noexcept {
+    return true;
+  }
+  template <typename U> bool operator!=(const DspInstanceAllocator<U>&) const noexcept {
+    return false;
+  }
+};
+
+// every DspBlockData::createInstance override instantiates through this.
+template <typename T, typename... A> std::shared_ptr<T> createDspInstance(A&&... args) {
+  return std::allocate_shared<T>(DspInstanceAllocator<T>(), std::forward<A>(args)...);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct DspBlockData : public ork::Object {
 
@@ -173,14 +217,28 @@ struct DspStageData final : public ork::Object {
   int _numblocks = 0;
   void dump() const;
 };
+// the block stack is capped by kmaxdspblocksperstage (structural), so it is a
+//  fixed array: the vector's growth was a heap allocation per stage, on the
+//  audio thread, at every note-on. the traversals are templates for the same
+//  reason - a std::function capturing more than a pointer heap-allocates, and
+//  these run per stage per block per control pass.
 struct DspStage final {
-  std::vector<dspblk_ptr_t> _blocks;
-  using blockfn_t = std::function<void(dspblk_ptr_t)>;
-  void forEachBlock(blockfn_t fn);
+  template <typename F> void forEachBlock(const F& fn) {
+    for (int i = 0; i < _numblocks; i++) {
+      const auto& b = _blocks[i];
+      if (b)
+        fn(b);
+    }
+  }
+  void clear() {
+    for (int i = 0; i < _numblocks; i++)
+      _blocks[i] = nullptr;
+    _numblocks = 0;
+  }
+  std::array<dspblk_ptr_t, kmaxdspblocksperstage> _blocks;
+  int _numblocks = 0;
 };
 
-///////////////////////////////////////////////////////////////////////////////
-// TODO - reuse DspStages
 ///////////////////////////////////////////////////////////////////////////////
 
 struct AlgStageBlock{
@@ -209,6 +267,15 @@ struct AlgData final : public ork::Object {
   std::map<std::string, dspstagedata_ptr_t> _stageByName;
 
   mutable std::vector<alg_ptr_t> _voicecache;
+  // guards _voicecache: post-H2 setEffect can alloc (createAlgInst, caller
+  // thread) while a prior install's commit event returns a spent alg
+  // (returnAlgInst, audio thread) against the same shared AlgData.
+  mutable std::mutex _voicecache_mutex;
+  // instances handed out by createAlgInst. _voicecache is kept reserved to at
+  // least this many entries - and that growth is done unlocked on the create
+  // path - so returnAlgInst (audio thread) can neither reallocate nor wait on
+  // a thread that is mid-malloc.
+  mutable size_t _numalginstances = 0;
 };
 
 algdata_ptr_t configureKrzAlgorithm(int algid);
@@ -220,12 +287,16 @@ struct Alg final {
   Alg(const AlgData& algd);
   ~Alg();
 
-  using stagefn_t = std::function<void(dspstage_ptr_t)>;
-
   void keyOn(KeyOnInfo& koi);
   void keyOff();
 
-  void forEachStage(stagefn_t fn);
+  template <typename F> void forEachStage(const F& fn) {
+    for (int istage = 0; istage < kmaxdspstagesperlayer; istage++) {
+      const auto& stage = _stageblock._stages[istage];
+      if (stage)
+        fn(stage);
+    }
+  }
 
   void beginCompute();
   void doComputePass();

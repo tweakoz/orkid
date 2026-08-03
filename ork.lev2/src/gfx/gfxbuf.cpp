@@ -12,6 +12,7 @@
 #include <ork/lev2/gfx/rtgroup.h>
 
 #include <ork/lev2/glfw/ctx_glfw.h>
+#include <ork/lev2/init.h>
 #include <ork/lev2/vr/vr.h>
 #if defined(__linux__)
 #include <ork/lev2/drm/ctx_drm.h>
@@ -120,6 +121,17 @@ void Window::initContext() {
   if (mpCTXBASE) {
     mpCTXBASE->setContext(_sharedcontext.get());
 
+    // Offscreen outranks DRM: DRM is on-screen presentation only.
+    auto ctxglfw   = dynamic_cast<CtxGLFW*>(mpCTXBASE);
+    bool offscreen = (ctxglfw && ctxglfw->_appinitdata && ctxglfw->_appinitdata->_offscreen) //
+                     || (_ginitdata && _ginitdata->_offscreen);
+
+    if (offscreen) {
+      // Use offscreen context for offscreen mode
+      _sharedcontext->initializeOffscreenContext(this);
+      return;
+    }
+
     // Check if we're in DRM mode
 #if defined(__linux__)
     auto ctxdrm = dynamic_cast<CtxDRM*>(mpCTXBASE);
@@ -130,12 +142,7 @@ void Window::initContext() {
     }
 #endif
 
-    // Check if we're in GLFW offscreen mode
-    auto ctxglfw = dynamic_cast<CtxGLFW*>(mpCTXBASE);
-    if (ctxglfw && ctxglfw->_appinitdata && ctxglfw->_appinitdata->_offscreen) {
-      // Use offscreen context for offscreen mode
-      _sharedcontext->initializeOffscreenContext(this);
-    } else {
+    {
       // Fail loud, not cryptic: a VR device that owns HMD presentation imports its own
       //  swapchain and presents to the headset directly — there is no on-screen surface
       //  to create. Reaching the window path means the windowless policy was not applied

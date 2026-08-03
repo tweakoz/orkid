@@ -28,6 +28,25 @@ using namespace ork::audio::singularity;
 enum class EmitterState : int { IDLE = 0, BURSTING = 1 };
 
 ///////////////////////////////////////////////////////////////////////////////
+// Emitter RNG seeding is CONTENT KEYED, never entropy keyed: an offline render
+// of a scene must reproduce sample for sample across runs and machines.
+// FNV-1a rather than std::hash — the standard libraries disagree on std::hash,
+// which would make the same scene sound different per platform.
+///////////////////////////////////////////////////////////////////////////////
+
+static constexpr uint64_t kStochWavFnvBasis = 0xcbf29ce484222325ull;
+static constexpr uint64_t kStochWavFnvPrime = 0x100000001b3ull;
+static constexpr const char* kStochWavSeedSalt = "StochWavSoundEmitterComponent/v1";
+
+inline uint64_t stochwav_fnv1a64(const char* str, uint64_t hash = kStochWavFnvBasis) {
+  for (const char* p = str; p and *p; p++) {
+    hash ^= uint64_t(uint8_t(*p));
+    hash *= kStochWavFnvPrime;
+  }
+  return hash;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct ActiveVoice {
   programInst* _progInst         = nullptr;
@@ -36,10 +55,10 @@ struct ActiveVoice {
   float _pendingPitchCents       = 0.0f;
   bool _pitchApplied             = false;
 
-  // Per-voice panner controller instances (resolved after liveKeyOn's deferred keyOn)
-  ControllerInst* _panAngleCtrl  = nullptr;
-  ControllerInst* _panDistCtrl   = nullptr;
-  bool _panControllersResolved   = false;  // false until layer controllers found
+  // NO cached ControllerInst here. a note's controller instances are owned by
+  //  the layer and released the moment that layer is re-keyed (a steal can do
+  //  that at any time, from the audio thread), so this system re-resolves them
+  //  through the voice's programInst -> layer every frame it publishes a pan.
 
   // One-shot duration tracking — triggers keyOff when sample finishes
   float _sampleDuration          = 0.0f;  // seconds (0 = unknown/looping)
@@ -73,7 +92,7 @@ public:
 
   std::vector<ActiveVoice> _activeVoices;
   float _elapsedTime     = 0.0f;
-  std::mt19937 _rng{std::random_device{}()};
+  std::mt19937 _rng; // re-seeded from the entity name at _onActivate
 
   // Poisson burst state machine
   EmitterState _state        = EmitterState::IDLE;

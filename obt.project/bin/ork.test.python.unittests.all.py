@@ -62,6 +62,20 @@ lev2_tests = {
     "gfx_camera": orklev2_tests_dir/"gfx_camera.py",
 }
 ###############################################################################
+# obt.project tests — the authoring-side python (scene DSL helpers, pure-math
+# models). These also run standalone under a bare python3.
+project_tests_dir = orkdir / "obt.project"/"unittests"
+project_tests = {
+    "celestial": project_tests_dir/"celestial.py",
+    "night_policy": project_tests_dir/"night_policy.py",
+    "celestial_orbit_script": project_tests_dir/"celestial_orbit_script.py",
+    "moon_phase": project_tests_dir/"moon_phase.py",
+    "moon_placement": project_tests_dir/"moon_placement.py",
+    "star_dome": project_tests_dir/"star_dome.py",
+    "star_catalog": project_tests_dir/"star_catalog.py",
+    "star_splat": project_tests_dir/"star_splat.py",
+}
+###############################################################################
 orkecs_tests_dir = orkdir / "ork.ecs"/"pyext"/"unittests"
 ecs_tests = {
     "ecs": orkecs_tests_dir/"ecs.py",
@@ -69,6 +83,7 @@ ecs_tests = {
 ###############################################################################
 register_tests(core_tests)
 register_tests(lev2_tests)
+register_tests(project_tests)
 #register_tests(ecs_tests)
 ###############################################################################
 

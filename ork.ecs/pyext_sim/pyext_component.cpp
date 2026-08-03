@@ -14,6 +14,33 @@ void register_component(typename py::module_& module, typename nanobindadapter::
                           auto wrapped = pyentity_ptr_t(comp->GetEntity());
                           return wrapped;
                         })
+                    // The SIMULATION this component runs in — the same object a
+                    // system script is handed. Components reach entity state
+                    // through comp.entity; this is the SIM-GLOBAL channel
+                    // (simulation.vars), which is how a behavior script shares
+                    // state with a system script (one clock, one control block)
+                    // without either of them knowing the other's entity names.
+                    // Per-sim by construction: the varmap dies with the
+                    // simulation, so a restarted sim never inherits stale state
+                    // the way a python module global would.
+                    .prop_ro(
+                        "sim",
+                        [](pycomponent_ptr_t comp) -> pysim_ptr_t {
+                          return pysim_ptr_t(comp->sceneInst());
+                        })
+                    // The author's payload for THIS component, carried in the
+                    // .ecs (PythonComponentData::_scriptData) rather than in the
+                    // process environment — so a behavior script reads the same
+                    // value in the authoring process and in a separately
+                    // launched player. Empty string on any non-python component.
+                    .prop_ro(
+                        "script_data",
+                        [](pycomponent_ptr_t comp) -> std::string {
+                          auto as_python = dynamic_cast<const PythonComponent*>(comp.get());
+                          if (nullptr == as_python)
+                            return std::string();
+                          return as_python->GetCD()._scriptData;
+                        })
                     .def(
                         "__repr__",
                         [](pycomponent_ptr_t comp) -> std::string {

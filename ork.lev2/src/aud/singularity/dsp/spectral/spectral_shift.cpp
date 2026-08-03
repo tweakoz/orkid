@@ -32,7 +32,7 @@ SpectralShiftData::SpectralShiftData(std::string name, float fb)
 ///////////////////////////////////////////////////////////////////////////////
 
 dspblk_ptr_t SpectralShiftData::createInstance() const { // override
-  return std::make_shared<SpectralShift>(this);
+  return createDspInstance<SpectralShift>(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

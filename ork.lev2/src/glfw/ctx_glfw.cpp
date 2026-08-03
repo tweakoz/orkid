@@ -14,6 +14,7 @@
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/ui/context.h>
+#include <ork/lev2/ui/dock_coordinator.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/kernel/msgrouter.inl>
 #include <ork/math/basicfilters.h>
@@ -60,6 +61,33 @@ bool syncMetalLayerScale(GLFWwindow* window, bool allow_hidpi, int* out_w, int* 
 
 ///////////////////////////////////////////////////////////////////////////////
 static CtxGLFW* _gctx = nullptr;
+///////////////////////////////////////////////////////////////////////////////
+// F2a-lite drag cursor seam. Standard cursors are created once (GLFW 3.4) and set
+// on the drag window (v1: the primary on-screen window, which owns OS capture for
+// the common case). All drag code is main-thread, so no locking is needed. Wired
+// once from the first non-offscreen window; a no-op until then (offscreen gates).
+///////////////////////////////////////////////////////////////////////////////
+static GLFWwindow* _g_drag_cursor_window            = nullptr;
+static GLFWcursor* _g_drag_cursors[4]               = {nullptr, nullptr, nullptr, nullptr};
+static void _setDragCursorImpl(int kind) {
+  if (not _g_drag_cursor_window)
+    return;
+  if (kind < 0 || kind > 3)
+    kind = 0;
+  if (not _g_drag_cursors[kind]) {
+    // index order matches ui::DragCursor: ARROW, RESIZE_ALL, HAND, NOT_ALLOWED
+    static const int shapes[4] = {
+        GLFW_ARROW_CURSOR, GLFW_RESIZE_ALL_CURSOR, GLFW_POINTING_HAND_CURSOR, GLFW_NOT_ALLOWED_CURSOR};
+    _g_drag_cursors[kind] = glfwCreateStandardCursor(shapes[kind]);
+  }
+  glfwSetCursor(_g_drag_cursor_window, _g_drag_cursors[kind]);
+}
+static void _installDragCursorSeam(GLFWwindow* win) {
+  if (_g_drag_cursor_window) // first (primary) on-screen window wins
+    return;
+  _g_drag_cursor_window = win;
+  ui::DockCoordinator::instance()->setDragCursorFn(&_setDragCursorImpl);
+}
 ///////////////////////////////////////////////////////////////////////////////
 struct ApiImpl {};
 using apiimpl_ptr_t = std::shared_ptr<ApiImpl>;
@@ -574,6 +602,7 @@ void CtxGLFW::Show() {
       glfwSetWindowAttrib(_glfwWindow, GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
       // glfwSetInputMode(_glfwWindow, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
       // glfwSetInputMode(_glfwWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+      _installDragCursorSeam(_glfwWindow); // F2a-lite drag cursors (primary window)
     }
 
     glfwSetWindowRefreshCallback(_glfwWindow, _glfw_callback_refresh);

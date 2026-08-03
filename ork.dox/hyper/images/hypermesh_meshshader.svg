@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#666"/>
+    </marker>
+    <filter id="shadow">
+      <feDropShadow dx="2" dy="2" stdDeviation="2" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  <rect x="0" y="0" width="1000" height="700" fill="#1a1a2e"/>
+
+  <!-- lane backgrounds -->
+  <rect x="0" y="38" width="1000" height="176" fill="#252540"/>
+  <rect x="0" y="214" width="1000" height="160" fill="#20203a"/>
+  <rect x="0" y="374" width="1000" height="250" fill="#252540"/>
+
+  <text x="500" y="26" font-family="Arial" font-size="18" font-weight="bold" fill="white" text-anchor="middle">hypermesh — the mesh-shader path (opt-in; GPU leg unverified — pull-VS is production)</text>
+
+  <!-- lane separators -->
+  <line x1="16" y1="214" x2="984" y2="214" stroke="#4a5568" stroke-dasharray="6 4"/>
+  <line x1="16" y1="374" x2="984" y2="374" stroke="#4a5568" stroke-dasharray="6 4"/>
+
+  <!-- ================= CPU PARTITION ================= -->
+  <text x="20" y="54" font-family="Arial" font-size="12" font-weight="bold" fill="#aaa">CPU PARTITION — ORKID_HYPERMESH_MESHLETS, microtask-sliced, async</text>
+
+  <rect x="20" y="66" width="222" height="86" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="131" y="86" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">MeshletTopology snapshot</text>
+  <text x="131" y="104" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">CPU fan-tri of the CSR —</text>
+  <text x="131" y="119" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">never the GPU index buffer</text>
+  <text x="131" y="134" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">(atomicAdd order races)</text>
+
+  <line x1="242" y1="109" x2="274" y2="109" stroke="#666" marker-end="url(#arr)"/>
+
+  <rect x="276" y="66" width="250" height="86" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="401" y="86" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">MeshletBuilder</text>
+  <text x="401" y="104" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">greedy adjacency clustering,</text>
+  <text x="401" y="119" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">indices only · only caps close</text>
+  <text x="401" y="134" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">a bucket · append fast path</text>
+
+  <line x1="526" y1="109" x2="558" y2="109" stroke="#666" marker-end="url(#arr)"/>
+
+  <rect x="560" y="66" width="216" height="86" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="668" y="86" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">MeshletPartition</text>
+  <text x="668" y="104" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">desc {vOff,vCnt,pOff,pCnt}</text>
+  <text x="668" y="119" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">+ vertex list + 3×8-bit prims</text>
+  <text x="668" y="134" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">caps 64/128 mac · 256/256</text>
+
+  <line x1="776" y1="109" x2="808" y2="109" stroke="#666" marker-end="url(#arr)"/>
+
+  <rect x="810" y="66" width="170" height="86" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="895" y="86" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">MeshletChannel</text>
+  <text x="895" y="104" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">double-buffered publish</text>
+  <text x="895" y="119" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">PAIR INVARIANT: topology</text>
+  <text x="895" y="134" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">+ partition, never split</text>
+
+  <text x="500" y="188" font-family="Arial" font-size="11" fill="#6b7280" text-anchor="middle">rebuild keyed on topoVersion + counts + COW buffer handles; an in-flight rebuild is superseded, never queued</text>
+
+  <!-- elbow: publish -> drive -->
+  <polyline points="895,152 895,200 150,200 150,242" fill="none" stroke="#666" marker-end="url(#arr)"/>
+
+  <!-- ================= PER-FRAME DRIVE ================= -->
+  <text x="20" y="230" font-family="Arial" font-size="12" font-weight="bold" fill="#aaa">PER-FRAME DRIVE DECISION — transitions logged once</text>
+
+  <rect x="28" y="244" width="244" height="86" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="150" y="264" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">partition current?</text>
+  <text x="150" y="282" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">topoVersion + vert count —</text>
+  <text x="150" y="297" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">NOT buffer identity (re-pool</text>
+  <text x="150" y="312" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">keeps a good partition)</text>
+
+  <line x1="272" y1="287" x2="304" y2="287" stroke="#666" marker-end="url(#arr)"/>
+  <text x="288" y="278" font-family="Arial" font-size="10" fill="#aaa" text-anchor="middle">yes</text>
+
+  <rect x="306" y="244" width="250" height="86" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="431" y="264" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">upload meshlet SSBOs</text>
+  <text x="431" y="282" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">sif_ml_desc / vtx / prim</text>
+  <text x="431" y="297" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">(+ bounds, + cull counters);</text>
+  <text x="431" y="312" font-family="monospace" font-size="10.5" fill="#93c5fd" text-anchor="middle">always through the partition</text>
+
+  <line x1="556" y1="287" x2="588" y2="287" stroke="#666" marker-end="url(#arr)"/>
+
+  <rect x="590" y="244" width="240" height="86" rx="8" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="710" y="264" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">cs_meshlet_bounds</text>
+  <text x="710" y="282" font-family="monospace" font-size="10.5" fill="#a7f3d0" text-anchor="middle">per-cluster sphere + cone,</text>
+  <text x="710" y="297" font-family="monospace" font-size="10.5" fill="#a7f3d0" text-anchor="middle">OBJECT space, from LIVE</text>
+  <text x="710" y="312" font-family="monospace" font-size="10.5" fill="#a7f3d0" text-anchor="middle">positions; never host-written</text>
+
+  <rect x="850" y="244" width="130" height="86" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="915" y="268" font-family="monospace" font-size="11.5" font-weight="bold" fill="white" text-anchor="middle">else: pull-VS</text>
+  <text x="915" y="286" font-family="monospace" font-size="10" fill="#93c5fd" text-anchor="middle">no partition yet /</text>
+  <text x="915" y="300" font-family="monospace" font-size="10" fill="#93c5fd" text-anchor="middle">topology moved /</text>
+  <text x="915" y="314" font-family="monospace" font-size="10" fill="#93c5fd" text-anchor="middle">upload refused</text>
+
+  <text x="500" y="352" font-family="Arial" font-size="11" fill="#6b7280" text-anchor="middle">up-front refusals (loud, per cause): instanced · gid buckets · no VK_EXT_mesh_shader · non-freestyle material · missing technique/blocks</text>
+
+  <!-- elbow: drive -> draw -->
+  <polyline points="431,330 431,360 150,360 150,402" fill="none" stroke="#666" marker-end="url(#arr)"/>
+
+  <!-- ================= DRAW ================= -->
+  <text x="20" y="390" font-family="Arial" font-size="12" font-weight="bold" fill="#aaa">DRAW — taskless, direct-sized, single-view (task / multiview / indirect all closed at device creation)</text>
+
+  <rect x="28" y="404" width="244" height="92" rx="8" fill="#4c1d95" stroke="#a78bfa" stroke-width="2" filter="url(#shadow)"/>
+  <text x="150" y="424" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">DrawMeshTasks</text>
+  <text x="150" y="442" font-family="monospace" font-size="10.5" fill="#c4b5fd" text-anchor="middle">one workgroup per published</text>
+  <text x="150" y="457" font-family="monospace" font-size="10.5" fill="#c4b5fd" text-anchor="middle">meshlet — CPU-sized, NEVER</text>
+  <text x="150" y="472" font-family="monospace" font-size="10.5" fill="#c4b5fd" text-anchor="middle">the indirect draw; no index</text>
+  <text x="150" y="487" font-family="monospace" font-size="10.5" fill="#c4b5fd" text-anchor="middle">buffer, no args</text>
+
+  <line x1="272" y1="450" x2="304" y2="450" stroke="#666" marker-end="url(#arr)"/>
+
+  <rect x="306" y="404" width="380" height="92" rx="8" fill="#1a3a3a" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <text x="496" y="424" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">mesh stage (FWD_SSBO_CUSTOM_MESH)</text>
+  <text x="496" y="442" font-family="monospace" font-size="10.5" fill="#a7f3d0" text-anchor="middle">ml_count guard → in-stage cluster REJECT</text>
+  <text x="496" y="457" font-family="monospace" font-size="10.5" fill="#a7f3d0" text-anchor="middle">(frustum vs GPU bounds, planes from the SAME</text>
+  <text x="496" y="472" font-family="monospace" font-size="10.5" fill="#a7f3d0" text-anchor="middle">matrix that places vertices) → decode unique</text>
+  <text x="496" y="487" font-family="monospace" font-size="10.5" fill="#a7f3d0" text-anchor="middle">verts ONCE → mvp*position → emit local tris</text>
+
+  <line x1="686" y1="450" x2="718" y2="450" stroke="#666" marker-end="url(#arr)"/>
+
+  <rect x="720" y="404" width="260" height="92" rx="8" fill="#4c1d95" stroke="#a78bfa" stroke-width="2" filter="url(#shadow)"/>
+  <text x="850" y="426" font-family="monospace" font-size="12" font-weight="bold" fill="white" text-anchor="middle">raster → forward FS</text>
+  <text x="850" y="444" font-family="monospace" font-size="10.5" fill="#c4b5fd" text-anchor="middle">same varying contract, same</text>
+  <text x="850" y="459" font-family="monospace" font-size="10.5" fill="#c4b5fd" text-anchor="middle">order as the pull VS — one</text>
+  <text x="850" y="474" font-family="monospace" font-size="10.5" fill="#c4b5fd" text-anchor="middle">image, two producers</text>
+  <text x="850" y="489" font-family="monospace" font-size="10" fill="#6b7280" text-anchor="middle">+ _MESH_DEPTHPREPASS twin</text>
+
+  <rect x="28" y="520" width="952" height="66" rx="8" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="7 5"/>
+  <text x="504" y="542" font-family="monospace" font-size="11.5" font-weight="bold" fill="#fbbf24" text-anchor="middle">TASKLESS PAYLOAD LAW (mac): ≤128/128 declared · &lt;16KB payload · NO workgroup vars · NO barriers</text>
+  <text x="504" y="560" font-family="monospace" font-size="10.5" fill="#fed7aa" text-anchor="middle">miss any → silent emulation, ~1000 render-pass restarts per draw, green build, no diagnostic</text>
+  <text x="504" y="576" font-family="monospace" font-size="10.5" fill="#fed7aa" text-anchor="middle">the codegen gate asserts the native-route conditions at GENERATION time (terrain clears it by 80 bytes)</text>
+
+  <text x="500" y="614" font-family="Arial" font-size="11" fill="#aaa" text-anchor="middle">gates: codegen (7 text proofs incl. byte-neutrality + cap parity + native-route guard) · A/B draw smoke (warm + cold, proof-of-path)</text>
+
+  <!-- legend -->
+  <rect x="20" y="640" width="14" height="14" rx="3" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="40" y="651" font-family="Arial" font-size="12" fill="#ddd">C++ / GPU data</text>
+  <rect x="180" y="640" width="14" height="14" rx="3" fill="#1a3a3a" stroke="#34d399"/>
+  <text x="200" y="651" font-family="Arial" font-size="12" fill="#ddd">GPU compute / mesh stage</text>
+  <rect x="400" y="640" width="14" height="14" rx="3" fill="#4c1d95" stroke="#a78bfa"/>
+  <text x="420" y="651" font-family="Arial" font-size="12" fill="#ddd">render / draw</text>
+  <rect x="560" y="640" width="14" height="14" rx="3" fill="none" stroke="#f59e0b"/>
+  <text x="580" y="651" font-family="Arial" font-size="12" fill="#ddd">platform tripwire</text>
+</svg>

@@ -37,10 +37,14 @@ RtBuffer::RtBuffer(const RtGroup* rtg, int slot, EBufferFormat efmt, int iW, int
       break;
   }
 
+  _numLayers = rtg->_numLayers;
+
   if(with_texture){
     _texture = std::make_shared<Texture>();
     _texture->_texFormat = efmt;
-    _texture->_texType   = rtg->_cubeMap ? ETEXTYPE_CUBE : ETEXTYPE_2D;
+    _texture->_texType   = rtg->_cubeMap    ? ETEXTYPE_CUBE       //
+                        : (_numLayers > 1)  ? ETEXTYPE_2D_ARRAY   //
+                                            : ETEXTYPE_2D;
     _texture->_width     = iW;
     _texture->_height    = iH;
     _texture->_debugName = FormatString("rtg%d", slot);
@@ -126,6 +130,34 @@ int RtGroup::height() const {
 ViewportRect RtGroup::viewportRect() const {
   return ViewportRect(0, 0, miW, miH);
 }
+uint32_t RtGroup::viewMask() const {
+  ///////////////////////////////////////////////////////////////////////////////
+  // GATE 0 NEGATIVE CONTROL 1 — "viewMask = 0x1" (layer 1 never rendered).
+  //  Read ONCE, HERE, inside the single accessor both rendering structs go through
+  //  (VkRenderingInfo.viewMask and VkPipelineRenderingCreateInfo.viewMask), so the two
+  //  cannot disagree about the mask — a disagreement is invalid at draw time and is
+  //  precisely what this one-accessor shape exists to prevent.
+  //  Default OFF; announces itself once when armed. It can only narrow a group that is
+  //  ALREADY multiview, so no mono RTG is reachable from it.
+  ///////////////////////////////////////////////////////////////////////////////
+  static const uint32_t _gate0_override = []() -> uint32_t {
+    auto env = std::getenv("ORKID_GATE0_VIEWMASK");
+    if (not env)
+      return 0u;
+    uint32_t v = uint32_t(std::strtoul(env, nullptr, 0));
+    if (v)
+      printf("GATE0: ORKID_GATE0_VIEWMASK=%s — multiview passes FORCED to viewMask 0x%x\n", env, v);
+    return v;
+  }();
+
+  // one bit per view; 0 means "not a multiview pass" (the only shape every legacy RTG has).
+  if (not(_multiview and (_numLayers > 1)))
+    return 0u;
+  if (_gate0_override)
+    return _gate0_override;
+  OrkAssert(_numLayers <= 31); // the mask is 32 bits wide; a wider shift is undefined, not merely wrong
+  return (1u << uint32_t(_numLayers)) - 1u;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -140,6 +172,8 @@ rtgroup_ptr_t RtGroup::clone() const {
   rval->_impl       = _this->_impl;
   rval->_autoclear  = _this->_autoclear;
   rval->_depthOnly  = _this->_depthOnly;
+  rval->_numLayers  = _this->_numLayers;
+  rval->_multiview  = _this->_multiview;
   return rval;
 }
 
@@ -219,6 +253,10 @@ rtgroup_ptr_t RtgSet::fetch(uint64_t key) {
     rval = std::make_shared<RtGroup>(_context, _width, _height, _msaasamples);
     rval->_name = _name + FormatString(".%zx", key);
     rval->_autoclear = _autoclear;
+    // BEFORE any buffer is created: RtBuffer copies _numLayers at construction, so a
+    //  layer count applied afterwards would leave 2D buffers inside a layered group.
+    rval->_numLayers = _numLayers;
+    rval->_multiview = _multiview;
 
     rval->createDepthBuffer(EBufferFormat::Z32F, true);
 

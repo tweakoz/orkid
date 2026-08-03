@@ -325,8 +325,20 @@ void DspParamData::useKrzEvnOddEvaluator() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+// every DspBlock carries kmaxparmperblock DspParams and binds _data only for
+//  the params the block actually declares (DspBlock::keyOn/initDspParam). the
+//  unbound remainder used to default-construct a private DspParamData (plus its
+//  BlockModulationData) EACH: 2 heap allocations x 32 params x every block
+//  instantiated, on the audio thread, at every note-on. _data is a const handle
+//  and an unbound param is never evaluated, so one immutable placeholder serves
+//  them all.
+static dspparam_constptr_t unboundParamData() {
+  static dspparam_constptr_t the_placeholder = std::make_shared<DspParamData>();
+  return the_placeholder;
+}
+
 DspParam::DspParam() {
-  _data = std::make_shared<DspParamData>();
+  _data = unboundParamData();
   reset();
 }
 

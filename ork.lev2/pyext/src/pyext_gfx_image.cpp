@@ -103,8 +103,10 @@ void pyinit_gfx_image(py::module& module_lev2) {
         return EBufferFormatToName(img->_format);
       })
       .def_property_readonly("data", [](image_ptr_t img) -> datablock_ptr_t { return img->_data; })
-      .def("writeToFile", [](image_ptr_t img, const std::string& outpath) {
-        img->writeToFile(file::Path(outpath));
+      .def("writeToFile", [](image_ptr_t img, const std::string& outpath) -> bool {
+        // returns False (with a loud stderr error) on an unrecognized/extension-less
+        // path or an OIIO write failure — never a silent no-op reporting success.
+        return img->writeToFile(file::Path(outpath));
       })
       .def("invert", [](image_ptr_t img, uint8_t channel_mask) {
         img->invert(channel_mask);

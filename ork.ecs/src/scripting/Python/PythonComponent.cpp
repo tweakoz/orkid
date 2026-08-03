@@ -45,6 +45,7 @@ void PythonComponentData::describeX(ComponentDataClass* clazz) {
       ->annotate("editor.class", "ged.factory.filelist")
       ->annotate("editor.filetype", "lua")
       ->annotate("editor.filebase", "src://scripts/");
+  clazz->directProperty("ScriptData", &PythonComponentData::_scriptData);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

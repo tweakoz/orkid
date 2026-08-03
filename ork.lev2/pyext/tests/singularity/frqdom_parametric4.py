@@ -35,7 +35,7 @@ class TestApp(frqdom.WaveformsApp):
       frqs = vec4(frqA,frqB,frqC,frqD)
       gains = vec4(-24,-48,-48,-48)
       qvals = vec4(1,4,4,4)
-      sir.parametricEQ4(frqs,gains,qvals)
+      sir.parametricEQ4(48000, frqs,gains,qvals)
       irdataset.set(i, sir)
     ############################
     dspstg = newlyr.stage("DSP")

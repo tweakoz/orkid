@@ -96,27 +96,30 @@ void Font::load(Context* context, fontdesc_ptr_t fdesc) {
   _materialDeferred = std::make_shared<PBRMaterial>();
 
   //////////////////////////////////////////////////////////////////////
-  // stereo mode
+  // freestyle text material — ONE technique for mono and stereo alike.
+  //  This used to resolve "uitext_stereo", which ui.fxv2 has never defined: the lookup
+  //  returned null, the forced-technique pipeline came back non-null with a null
+  //  _technique, and the first VR text draw dereferenced it. Stereo text now draws the
+  //  ordinary uitext technique, which the multiview shader variant makes per-view.
   //////////////////////////////////////////////////////////////////////
 
   _fs_material = std::make_shared<FreestyleMaterial>();
   _fs_material->gpuInit(context, "orkshader://ui");
   _fs_material->_rasterstate->_priority = 128;
-  _tek_stereo_text = _fs_material->technique("uitext_stereo");
+  _tek_text = _fs_material->technique("uitext");
+  OrkAssert(_tek_text);
   FxPipelinePermutation permu;
-  permu._forced_technique = _tek_stereo_text;
+  permu._forced_technique = _tek_text;
   auto fxcache            = _fs_material->pipelineCache();
   OrkAssert(fxcache);
-  _pipe_stereo = fxcache->findPipeline(permu);
-  OrkAssert(_pipe_stereo);
-  auto paramMVPL     = _fs_material->param("mvp_l");
-  auto paramMVPR     = _fs_material->param("mvp_r");
+  _pipe_text = fxcache->findPipeline(permu);
+  OrkAssert(_pipe_text);
+  auto paramMVP      = _fs_material->param("mvp");
   auto paramColorMap = _fs_material->param("ColorMap");
   auto paramModColor = _fs_material->param("ModColor");
-  _pipe_stereo->bindParam(paramMVPL, "RCFD_Camera_MVP_Left"_crcsh);
-  _pipe_stereo->bindParam(paramMVPR, "RCFD_Camera_MVP_Right"_crcsh);
-  _pipe_stereo->bindParam(paramColorMap, _texture);
-  _pipe_stereo->bindParam(paramModColor, "RCFD_MODCOLOR"_crcsh);
+  _pipe_text->bindParam(paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
+  _pipe_text->bindParam(paramColorMap, _texture);
+  _pipe_text->bindParam(paramModColor, "RCFD_MODCOLOR"_crcsh);
 
   //////////////////////////////////////////////////////////////////////
   // mono mode

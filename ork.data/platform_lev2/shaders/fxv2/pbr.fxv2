@@ -2,11 +2,22 @@
 // FxConfigs
 ///////////////////////////////////////////////////////////////
 fxconfig fxcfg_default {
+	// pbrtools pulls in skytools (lib_sky) for FWD_SKYBOX_PROC.
 	import "orkshader://pbrtools.i2";
 }
 ///////////////////////////////////////////////////////////////
-state_block sb_no_cull : sb_default {
+// SKYBOX state: the fullscreen sky quad NEVER writes depth. It draws at NDC z
+// 0.9999 (fwdnode_impl_sub.cpp::_render_skybox), which is finite eye distance
+// n/(1-z) ~= 10000*near -- a written 0.9999 z-REJECTS every fragment beyond it
+// (~4.8 km at near=0.5, and it also seeds the next frame's HZB with a false
+// occluder). The quad depth still has to beat the 1.0 depth CLEAR for the LESS
+// test, so it stays 0.9999; only the WRITE is off, leaving the background at the
+// cleared far value. This state block is what the pipeline actually consumes:
+// on a priority tie the technique state block wins over the rasterstate the
+// pass code sets (VkFxInterface::_fetchPipeline).
+state_block sb_skybox : sb_default {
 	CullTest = OFF;
+	DepthMask = false;
 }
 ///////////////////////////////////////////////////////////////
 // sb_cullcw kept as an alias of sb_default; vertex-color techniques get
@@ -36,7 +47,29 @@ technique PIK_SKELETON {
 ///////////////////////////////////////////////////////////////
 technique FWD_SKYBOX_MO {
 	fxconfig=fxcfg_default;
-	vf_pass={vs_forward_skybox_mono,ps_forward_skybox_mono,sb_no_cull}
+	vf_pass={vs_forward_skybox_mono,ps_forward_skybox_mono,sb_skybox}
+}
+///////////////////////////////////////////////////////////////
+// SINGLE-PASS STEREO peer. Same fullscreen quad and same vertex stage — the
+// skybox's per-view state is the unprojection matrix, which lives in the
+// fragment stage (spvr_inv_vp[ofx_viewIndex] vs inv_vp).
+technique FWD_SKYBOX_ST {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_skybox_mono,ps_forward_skybox_stereo,sb_skybox}
+}
+///////////////////////////////////////////////////////////////
+// procedural sky (SKYLIGHT lane B). Selected per scene by the sky-source
+// switch on pbr::CommonStuff; shares the baked technique's quad + vertex shader.
+technique FWD_SKYBOX_PROC {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_skybox_mono,ps_forward_skybox_proc,sb_skybox}
+}
+///////////////////////////////////////////////////////////////
+// ...and its single-pass-stereo peer. Same quad, same vertex stage; the
+// fragment unprojects through spvr_inv_vp[view] instead of the mono inv_vp.
+technique FWD_SKYBOX_PROC_ST {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_skybox_mono,ps_forward_skybox_proc_stereo,sb_skybox}
 }
 ///////////////////////////////////////////////////////////////
 technique FWD_UNLIT_NI_MO {
@@ -59,6 +92,24 @@ technique FWD_SKELETON {
 technique FWD_CT_NM_RI_NI_MO { 
 	fxconfig=fxcfg_default;
 	vf_pass={vs_forward_test,ps_forward_test,sb_default}
+}
+///////////////////////////////////////////////////////////////
+// SINGLE-PASS STEREO peers of the _MO techniques above. Same fragment stage, same
+// state block; only the vertex stage differs (per-view clip transform). Selected by
+// the _stereo permutation bit, exactly like every other _MO/_ST pair.
+technique FWD_CT_NM_RI_NI_ST {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_test_stereo,ps_forward_test_stereo,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique FWD_CT_NM_RI_IN_ST {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_instanced_stereo,ps_forward_test_stereo,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique FWD_CT_NM_SK_NI_ST {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_skinned_stereo,ps_forward_test_stereo,sb_default}
 }
 ///////////////////////////////////////////////////////////////
 technique FWD_CV_NM_RI_NI_MO {
@@ -97,6 +148,34 @@ technique FWD_CT_NM_SK_NI_MO {
 	vf_pass={vs_forward_skinned_mono,ps_forward_test,sb_default}
 }
 ///////////////////////////////////////////////////////////////
+// SINGLE-PASS STEREO peers of the vertex-color and matrices-only-instanced
+// techniques above. Same fragment stage, same state block; only the vertex
+// stage differs (per-view clip transform).
+technique FWD_CV_NM_RI_NI_ST {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_test_vtxcol_stereo,ps_forward_test_vtxcol,sb_cullcw}
+}
+///////////////////////////////////////////////////////////////
+technique FWD_CV_NM_RI_NI_ST_ALPHA {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_test_vtxcol_stereo,ps_forward_test_vtxcol_alpha,sb_cullcw_alpha}
+}
+///////////////////////////////////////////////////////////////
+technique FWD_CV_NM_RI_IN_ST {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_instanced_vc_stereo,ps_forward_test_vtxcol,sb_cullcw}
+}
+///////////////////////////////////////////////////////////////
+technique FWD_CV_NM_RI_IN_ST_ALPHA {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_instanced_vc_stereo,ps_forward_instanced_vtxcol_alpha,sb_cullcw_alpha}
+}
+///////////////////////////////////////////////////////////////
+technique FWD_CT_NM_IM_NI_ST {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_instanced_mtxonly_stereo,ps_forward_test,sb_default}
+}
+///////////////////////////////////////////////////////////////
 state_block sb_dpp : sb_default {
 	CullTest = OFF;
 	DepthTest = LESS;
@@ -108,14 +187,62 @@ technique FWD_DEPTHPREPASS_RI_NI_MO {
 	vf_pass={vs_forward_depthprepass_mono,ps_forward_depthprepass_mono,sb_dpp}
 }
 ///////////////////////////////////////////////////////////////
+technique FWD_DEPTHPREPASS_RI_NI_ST {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_depthprepass_stereo,ps_forward_depthprepass_mono,sb_dpp}
+}
+///////////////////////////////////////////////////////////////
 technique FWD_DEPTHPREPASS_SK_NI_MO {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_forward_depthprepass_skinned_mono,ps_forward_depthprepass_mono,sb_dpp}
 }
 ///////////////////////////////////////////////////////////////
+technique FWD_DEPTHPREPASS_SK_NI_ST {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_depthprepass_skinned_stereo,ps_forward_depthprepass_mono,sb_dpp}
+}
+///////////////////////////////////////////////////////////////
 technique FWD_DEPTHPREPASS_RI_IN_MO {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_forward_depthprepass_instanced_mono,ps_forward_depthprepass_mono,sb_dpp}
+}
+///////////////////////////////////////////////////////////////
+technique FWD_DEPTHPREPASS_RI_IN_ST {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_depthprepass_instanced_stereo,ps_forward_depthprepass_mono,sb_dpp}
+}
+///////////////////////////////////////////////////////////////
+// MASKED depth prepass — selected per material when AlphaCutoff is active.
+technique FWD_DEPTHPREPASS_MASKED_RI_NI_MO {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_depthprepass_masked_mono,ps_forward_depthprepass_masked_mono,sb_dpp}
+}
+///////////////////////////////////////////////////////////////
+technique FWD_DEPTHPREPASS_MASKED_SK_NI_MO {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_depthprepass_masked_skinned_mono,ps_forward_depthprepass_masked_mono,sb_dpp}
+}
+///////////////////////////////////////////////////////////////
+technique FWD_DEPTHPREPASS_MASKED_RI_IN_MO {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_depthprepass_masked_instanced_mono,ps_forward_depthprepass_masked_mono,sb_dpp}
+}
+///////////////////////////////////////////////////////////////
+// SINGLE-PASS STEREO peers of the masked depth prepass. Same masked fragment
+// (the cutout test is view-invariant); only the clip transform is per-view.
+technique FWD_DEPTHPREPASS_MASKED_RI_NI_ST {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_depthprepass_masked_stereo,ps_forward_depthprepass_masked_mono,sb_dpp}
+}
+///////////////////////////////////////////////////////////////
+technique FWD_DEPTHPREPASS_MASKED_SK_NI_ST {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_depthprepass_masked_skinned_stereo,ps_forward_depthprepass_masked_mono,sb_dpp}
+}
+///////////////////////////////////////////////////////////////
+technique FWD_DEPTHPREPASS_MASKED_RI_IN_ST {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_depthprepass_masked_instanced_stereo,ps_forward_depthprepass_masked_mono,sb_dpp}
 }
 ///////////////////////////////////////////////////////////////
 technique GBU_CT_VN_RI_NI_MO {
