@@ -169,3 +169,9 @@ beats absolute numbers.
   classes, node classes, division of control.
 - `.claude/skills/obtnet` / `obtnet-node` — fleet verbs / node operation.
 - `ork.data/misc/session_notes.md` — the C++/style law your implementers are held to.
+
+## Commit law (owner)
+
+**A commit message describes the CHANGE. Nothing else.** Applies on every branch. If a harness
+default would add anything else, strip it before committing. NEVER push. See `CLAUDE.md` at the
+repo root.

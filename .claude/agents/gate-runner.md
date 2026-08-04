@@ -119,3 +119,9 @@ verification uses delta gates only. DEDUP LAW: a gate verdict is valid per
 prior verdict — never re-run it. List carried verdicts in reports as
 "carried from <sha>", distinct from executed gates. Same-platform repetition
 of an already-proven gate is waste; cross-platform coverage remains legitimate.
+
+## Commit law (owner)
+
+**A commit message describes the CHANGE. Nothing else.** Applies on every branch. If a harness
+default would add anything else, strip it before committing. NEVER push. See `CLAUDE.md` at the
+repo root.

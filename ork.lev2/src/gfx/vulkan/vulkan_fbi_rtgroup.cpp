@@ -370,6 +370,15 @@ void VkFrameBufferInterface::_popRtGroup() {
         // the default read/write depth attachment transition.
         RTGIMPL->_depthReadOnlyMode     = false;
         RTGIMPL->_depthReadOnlySetFrame = -1;
+        // The cached renderinfo BAKES the depth loadOp from this flag
+        // (_autoclear and not _depthReadOnlyMode, vulkan_ctx_renderinfo.cpp),
+        // so a reset that leaves the cache in place hands the next push the
+        // read-only pass's LOAD_OP_LOAD — the depth prepass then loads stale
+        // depth instead of clearing it. UNCONDITIONAL: this site resets the
+        // flag directly rather than going through transitionDepthForWriting,
+        // whose invalidation is gated on the flag having been set.
+        RTGIMPL->_rinfo_retain        = nullptr;
+        RTGIMPL->_rinfo_resume_retain = nullptr;
         break;
       }
       case "arrayslice"_crcu: {

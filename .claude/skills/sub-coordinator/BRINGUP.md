@@ -11,6 +11,12 @@ a reason to restart anything.
 Context: run from this seat's OBT shell. `obt.*` tools are invoked BARE (on PATH).
 `<seat>` below = this seat's name (its `coordid`).
 
+IF YOU ARE PARKED ON A PERMISSION PROMPT, nobody is watching (owner, aug03): you were
+launched into a DETACHED screen, so an approval prompt stalls you indefinitely and the
+hub sees only an empty roster. The owner attaches and sets this session to AUTO as part
+of bringup. Nothing for you to do about it except keep going the moment you are unblocked
+— and do not conclude the bus or your config is broken because a step never returned.
+
 ## Procedure
 
 0. **Version gate** (fail HERE, not at step 5 — both sub seats hit this on 2026-07-29):

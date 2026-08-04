@@ -104,16 +104,45 @@ Per enabled seat, in order:
    controller + mailbox):
 
        # config_dir ABSENT (default profile + existing login):
-       ssh <host> "screen -dmS <claude.screen_session> bash -lc 'cd <claude.cwd> && env -u CLAUDE_CONFIG_DIR ~/.local/bin/claude \"<claude.startup_prompt>\"'"
+       ssh <host> "screen -dmS <claude.screen_session> bash -lc 'cd <claude.cwd> && env -u CLAUDE_CONFIG_DIR -u CLAUDE_CODE_CHILD_SESSION ~/.local/bin/claude \"<claude.startup_prompt>\"'"
        # config_dir PRESENT (pinned account profile):
-       ssh <host> "screen -dmS <claude.screen_session> bash -lc 'cd <claude.cwd> && CLAUDE_CONFIG_DIR=<claude.config_dir> ~/.local/bin/claude \"<claude.startup_prompt>\"'"
+       ssh <host> "screen -dmS <claude.screen_session> bash -lc 'cd <claude.cwd> && env -u CLAUDE_CODE_CHILD_SESSION CLAUDE_CONFIG_DIR=<claude.config_dir> ~/.local/bin/claude \"<claude.startup_prompt>\"'"
 
    Any `env.extra_env` entries (e.g. OBT_COORD_HOME for same-box seats) go into the
    launch env too. Same-box seats: no ssh, same line locally.
+
+   **`-u CLAUDE_CODE_CHILD_SESSION` IS LOAD-BEARING ON SAME-BOX SEATS (owner-authorized
+   fix, aug03).** A same-box launch inherits the hub's whole environment; if the hub
+   session itself carries that marker, the seat starts with TRANSCRIPT SAVING OFF and
+   writes no `.jsonl` at all — its entire day is unauditable and unresumable after a
+   crash. Observed aug03: m5maxtozx (launched locally) saved nothing while unisix
+   (launched over ssh, which scrubs the env) was fine — that difference is the proof of
+   mechanism, and it is why the flag is harmless-but-redundant on the ssh forms and
+   ESSENTIAL on the local one. Corollary for diagnosis: a missing `.jsonl` is NOT
+   evidence that a seat failed to start — read its console before concluding anything.
    CHECK: `ssh <host> screen -ls` shows the session. Owner attaches any time:
    `ssh <host> -t screen -r <session>`. MAC NOTE (owner fix jul29): macOS's bundled
    screen mangles truecolor — set the claude THEME to ANSI colors for sessions living
    under mac screen.
+
+   **OWNER STEP — the seats do NOT come up on their own (owner, aug03).** A freshly
+   launched seat lands in a detached screen in MANUAL permission mode and parks on the
+   FIRST tool call needing approval, with nobody there to answer. The owner attaches to
+   each seat's screen and sets it to AUTO before it can proceed:
+   `ssh <host> -t screen -r <session>` (same-box: `screen -r <session>`), set auto, detach.
+   Tell the owner which sessions are waiting as soon as they are launched — this is the
+   one bringup step the hub cannot do for itself.
+   FIELD EVIDENCE (aug03): both seats sat idle ~25 minutes with the hub roster empty
+   before this was understood; once on auto, both answered a hub probe unattended in
+   ~5 minutes. SYMPTOM SIGNATURE if you meet it again: seat process alive at low CPU,
+   its transcript `.jsonl` FROZEN at the last tool_result (a pending prompt is never
+   written to the transcript), and `coord-<seat>` absent from the hub roster. Note
+   `screen -X hardcopy` returns an EMPTY file for a never-attached window, so an empty
+   capture is NOT evidence of a dead session — read the console with
+   `TERM=xterm-256color timeout 6 script -q /dev/null screen -x <session>` instead.
+   In a pinch the hub can answer prompts blind with `screen -S <session> -X stuff "1"`
+   (option 1 is always Yes; on two-option prompts option 2 is No, so never send 2
+   unseen) — but that is a rescue, not the procedure.
 4. WORKERS (`start` not false only): PREFER the seat's launcher scripts when they
    exist (`~/.obt-coord/<seat>/bin/launch-*.sh` — no quoting layers, the jul29
    lesson): `screen -dmS <screen_session> <script>`. Otherwise the canonical line:
